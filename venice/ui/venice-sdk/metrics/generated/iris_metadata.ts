@@ -1291,7 +1291,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxOk",
       "displayName": "Rx OK Frames",
-      "description": "Frames received OK",
+      "description": "Good Frames received",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1303,7 +1303,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxAll",
       "displayName": "Rx All Frames",
-      "description": "Frames Received All (Good and Bad Frames)",
+      "description": "All Frames received (Good and Bad)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1315,7 +1315,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxBadFcs",
       "displayName": "Rx Bad FCS Frames",
-      "description": "Frames Received with Bad FCS",
+      "description": "Frames received with bad FCS",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1327,7 +1327,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxBadAll",
       "displayName": "Rx All Bad Frames",
-      "description": "Frames with any bad (CRC, Length, Align)",
+      "description": "Frames received with any bad (CRC, Length or Align)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1339,7 +1339,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "OctetsRxOk",
       "displayName": "Rx OK Octets",
-      "description": "Octets Received in Good Frames",
+      "description": "Octets received in Good Frames",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1351,7 +1351,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "OctetsRxAll",
       "displayName": "Rx All Octets",
-      "description": "Octets Received (Good/Bad Frames)",
+      "description": "Octets received in all frames (Good and Bad)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1363,7 +1363,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxUnicast",
       "displayName": "Rx Unicast Frames",
-      "description": "Frames Received with Unicast Address",
+      "description": "Frames received with Unicast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1375,7 +1375,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxMulticast",
       "displayName": "Rx Multicast Frames",
-      "description": "Frames Received with Multicast Address",
+      "description": "Frames received with Multicast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1387,7 +1387,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxBroadcast",
       "displayName": "Rx Broadcast Frames",
-      "description": "Frames Received with Broadcast Address",
+      "description": "Frames received with Broadcast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1399,7 +1399,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPause",
       "displayName": "Rx Pause Frames",
-      "description": "Frames Received of type PAUSE",
+      "description": "Frames received of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1411,7 +1411,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxBadLength",
       "displayName": "Rx Bad Length Frames",
-      "description": "Frames Received with Bad Length",
+      "description": "Frames received with lenth error. EtherType field < 1536, and frame size > received length value.",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1423,7 +1423,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxUndersized",
       "displayName": "Rx Undersized Frames",
-      "description": "Frames Received Undersized",
+      "description": "Frames received with frame size < min frame size(64 Octets)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1435,7 +1435,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxOversized",
       "displayName": "Rx Oversized Frames",
-      "description": "Frames Received Oversized",
+      "description": "Frames received with frame size > max frame size(9216 Octets) but < jabber size(9232 Octets)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1447,7 +1447,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxFragments",
       "displayName": "Rx Fragment Frames",
-      "description": "Fragments Received",
+      "description": "Fragment frames received",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1459,7 +1459,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxJabber",
       "displayName": "Rx Jabber Frames",
-      "description": "Jabber Received",
+      "description": "Frames received with (frame size > max frame size(9216 Octets) with CRC error) or (frame size > jabber size(9232 Octets))",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1471,7 +1471,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPripause",
       "displayName": "Rx PFC Frames",
-      "description": "Frames Received of PFC",
+      "description": "Frames received of type PFC",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1483,7 +1483,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxTooLong",
       "displayName": "Rx Too long Frames",
-      "description": "Received Frames Too Long",
+      "description": "Frames received with frame size > max frame size(9216 Octets)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1495,7 +1495,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxDropped",
       "displayName": "Rx Dropped Frames",
-      "description": "Received Frames Dropped (Buffer Full)",
+      "description": "Received frames dropped (Buffer Full)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1507,7 +1507,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxLessThan_64B",
       "displayName": "Rx Less than 64b Frames",
-      "description": "Frames Received Length less than 64",
+      "description": "Frames received of length < 64 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1519,7 +1519,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_64B",
       "displayName": "Rx 64b Frames",
-      "description": "Frames Received Length=64",
+      "description": "Frames received of length 64 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1531,7 +1531,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_65B_127B",
       "displayName": "Rx 65b_127b Frames",
-      "description": "Frames Received Length=65~127",
+      "description": "Frames received of length 65~127 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1543,7 +1543,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_128B_255B",
       "displayName": "Rx 128b_255b Frames",
-      "description": "Frames Received Length=128~255",
+      "description": "Frames received of length 128~255 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1555,7 +1555,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_256B_511B",
       "displayName": "Rx 256b_511b Frames",
-      "description": "Frames Received Length=256~511",
+      "description": "Frames received of length 256~511 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1567,7 +1567,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_512B_1023B",
       "displayName": "Rx 512b_1023b Frames",
-      "description": "Frames Received Length=512~1023",
+      "description": "Frames received of length 512~1023 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1579,7 +1579,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_1024B_1518B",
       "displayName": "Rx 1024b_1518b Frames",
-      "description": "Frames Received Length=1024~1518",
+      "description": "Frames received of length 1024~1518 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1591,7 +1591,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_1519B_2047B",
       "displayName": "Rx 1519b_2047b Frames",
-      "description": "Frames Received Length=1519~2047",
+      "description": "Frames received of length 1519~2047 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1603,7 +1603,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_2048B_4095B",
       "displayName": "Rx 2048b_4095b Frames",
-      "description": "Frames Received Length=2048~4095",
+      "description": "Frames received of length 2048~4095 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1615,7 +1615,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_4096B_8191B",
       "displayName": "Rx 4096b_8191b Frames",
-      "description": "Frames Received Length=4096~8191",
+      "description": "Frames received of length 4096~8191 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1627,7 +1627,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_8192B_9215B",
       "displayName": "Rx 8192b_9215b Frames",
-      "description": "Frames Received Length=8192~9215",
+      "description": "Frames received of length 8192~9215 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1639,7 +1639,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxOther",
       "displayName": "Rx Other Frames",
-      "description": "Frames Received Length greater than 9215",
+      "description": "Frames received of length > 9215 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1651,7 +1651,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxOk",
       "displayName": "Tx OK Frames",
-      "description": "Frames Transmitted OK",
+      "description": "Good frames transmitted",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1663,7 +1663,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxAll",
       "displayName": "Tx All Frames",
-      "description": "Frames Transmitted All (Good/Bad Frames)",
+      "description": "All frames transmitted (Good and Bad)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1675,7 +1675,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxBad",
       "displayName": "Tx Bad Frames",
-      "description": "Frames Transmitted Bad",
+      "description": "Frames transmitted with bad (CRC, Length or Align)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1687,7 +1687,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "OctetsTxOk",
       "displayName": "Tx OK Octets",
-      "description": "Octets Transmitted Good",
+      "description": "Octets transmitted in good frames",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1699,7 +1699,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "OctetsTxTotal",
       "displayName": "Tx All Octets",
-      "description": "Octets Transmitted Total (Good/Bad)",
+      "description": "Octets transmitted in all frames (Good and Bad)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1711,7 +1711,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxUnicast",
       "displayName": "Tx Unicast Frames",
-      "description": "Frames Transmitted with Unicast Address",
+      "description": "Frames transmitted with Unicast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1723,7 +1723,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxMulticast",
       "displayName": "Tx Multicast Frames",
-      "description": "Frames Transmitted with Multicast Address",
+      "description": "Frames transmitted with Multicast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1735,7 +1735,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxBroadcast",
       "displayName": "Tx Broadcast Frames",
-      "description": "Frames Transmitted with Broadcast Address",
+      "description": "Frames transmitted with Broadcast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1747,7 +1747,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPause",
       "displayName": "Tx Pause Frames",
-      "description": "Frames Transmitted of type PAUSE",
+      "description": "Frames transmitted of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1759,7 +1759,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPripause",
       "displayName": "Tx PFC Frames",
-      "description": "Frames Transmitted of PFC",
+      "description": "Frames transmitted of type PFC",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1771,7 +1771,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxVlan",
       "displayName": "Tx VLAN Frames",
-      "description": "Frames Transmitted VLAN",
+      "description": "Frames transmitted with vlan header",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1783,7 +1783,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxLessThan_64B",
       "displayName": "Tx Less than 64b Frames",
-      "description": "Frames Transmitted Length<64",
+      "description": "Frames transmitted of length < 64 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1795,7 +1795,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_64B",
       "displayName": "Tx 64b Frames",
-      "description": "Frames Transmitted Length=64",
+      "description": "Frames transmitted of length 64 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1807,7 +1807,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_65B_127B",
       "displayName": "Tx 65b_127b Frames",
-      "description": "Frames Transmitted Length=65~127",
+      "description": "Frames transmitted of length 65~127 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1819,7 +1819,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_128B_255B",
       "displayName": "Tx 128b_255b Frames",
-      "description": "Frames Transmitted Length=128~255",
+      "description": "Frames transmitted of length 128~255 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1831,7 +1831,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_256B_511B",
       "displayName": "Tx 256b_511b Frames",
-      "description": "Frames Transmitted Length=256~511",
+      "description": "Frames transmitted of length 256~511 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1843,7 +1843,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_512B_1023B",
       "displayName": "Tx 512b_1023b Frames",
-      "description": "Frames Transmitted Length=512~1023",
+      "description": "Frames transmitted of length 512~1023 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1855,7 +1855,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_1024B_1518B",
       "displayName": "Tx 1024b_1518b Frames",
-      "description": "Frames Transmitted Length=1024~1518",
+      "description": "Frames transmitted of length 1024~1518 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1867,7 +1867,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_1519B_2047B",
       "displayName": "Tx 1519b_2047b Frames",
-      "description": "Frames Transmitted Length=1519~2047",
+      "description": "Frames transmitted of length 1519~2047 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1879,7 +1879,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_2048B_4095B",
       "displayName": "Tx 2048b_4095b Frames",
-      "description": "Frames Transmitted Length=2048~4095",
+      "description": "Frames transmitted of length 2048~4095 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1891,7 +1891,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_4096B_8191B",
       "displayName": "Tx 4096b_8191b Frames",
-      "description": "Frames Transmitted Length=4096~8191",
+      "description": "Frames transmitted of length 4096~8191 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1903,7 +1903,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTx_8192B_9215B",
       "displayName": "Tx 8192b_9215b Frames",
-      "description": "Frames Transmitted Length=8192~9215",
+      "description": "Frames transmitted of length 8192~9215 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1915,7 +1915,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxOther",
       "displayName": "Tx Other Frames",
-      "description": "Frames Transmitted Length greater than 9215",
+      "description": "Frames transmitted of length > 9215 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1927,7 +1927,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPri_0",
       "displayName": "Tx PFC Pri0 Frames",
-      "description": "Frames Transmitted of PFC Pri#0",
+      "description": "Frames transmitted of PFC priority 0",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1939,7 +1939,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPri_1",
       "displayName": "Tx PFC Pri1 Frames",
-      "description": "Frames Transmitted of PFC Pri#1",
+      "description": "Frames transmitted of PFC priority 1",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1951,7 +1951,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPri_2",
       "displayName": "Tx PFC Pri2 Frames",
-      "description": "Frames Transmitted of PFC Pri#2",
+      "description": "Frames transmitted of PFC priority 2",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1963,7 +1963,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPri_3",
       "displayName": "Tx PFC Pri3 Frames",
-      "description": "Frames Transmitted of PFC Pri#3",
+      "description": "Frames transmitted of PFC priority 3",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1975,7 +1975,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPri_4",
       "displayName": "Tx PFC Pri4 Frames",
-      "description": "Frames Transmitted of PFC Pri#4",
+      "description": "Frames transmitted of PFC priority 4",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1987,7 +1987,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPri_5",
       "displayName": "Tx PFC Pri5 Frames",
-      "description": "Frames Transmitted of PFC Pri#5",
+      "description": "Frames transmitted of PFC priority 5",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1999,7 +1999,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPri_6",
       "displayName": "Tx PFC Pri6 Frames",
-      "description": "Frames Transmitted of PFC Pri#6",
+      "description": "Frames transmitted of PFC priority 6",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2011,7 +2011,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPri_7",
       "displayName": "Tx PFC Pri7 Frames",
-      "description": "Frames Transmitted of PFC Pri#7",
+      "description": "Frames transmitted of PFC priority 7",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2023,7 +2023,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPri_0",
       "displayName": "Rx PFC Pri0 Frames",
-      "description": "Frames Received of PFC Pri#0",
+      "description": "Frames received of PFC priority 0",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2035,7 +2035,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPri_1",
       "displayName": "Rx PFC Pri1 Frames",
-      "description": "Frames Received of PFC Pri#1",
+      "description": "Frames received of PFC priority 1",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2047,7 +2047,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPri_2",
       "displayName": "Rx PFC Pri2 Frames",
-      "description": "Frames Received of PFC Pri#2",
+      "description": "Frames received of PFC priority 2",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2059,7 +2059,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPri_3",
       "displayName": "Rx PFC Pri3 Frames",
-      "description": "Frames Received of PFC Pri#3",
+      "description": "Frames received of PFC priority 3",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2071,7 +2071,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPri_4",
       "displayName": "Rx PFC Pri4 Frames",
-      "description": "Frames Received of PFC Pri#4",
+      "description": "Frames received of PFC priority 4",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2083,7 +2083,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPri_5",
       "displayName": "Rx PFC Pri5 Frames",
-      "description": "Frames Received of PFC Pri#5",
+      "description": "Frames received of PFC priority 5",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2095,7 +2095,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPri_6",
       "displayName": "Rx PFC Pri6 Frames",
-      "description": "Frames Received of PFC Pri#6",
+      "description": "Frames received of PFC priority 6",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2107,7 +2107,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPri_7",
       "displayName": "Rx PFC Pri7 Frames",
-      "description": "Frames Received of PFC Pri#7",
+      "description": "Frames received of PFC priority 7",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2119,7 +2119,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxTruncated",
       "displayName": "Tx Truncated Frames",
-      "description": "Frames Truncated",
+      "description": "Frames transmitted with truncation",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2130,8 +2130,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "TxPps",
-      "displayName": "Tx PPS",
-      "description": "Transmit BW Packets per second",
+      "displayName": "Tx Packets/sec",
+      "description": "Transmit BW Packets per second(PPS)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2142,8 +2142,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "TxBytesps",
-      "displayName": "Tx BPS",
-      "description": "Transmit BW Bytes per second",
+      "displayName": "Tx Bytes/sec",
+      "description": "Transmit BW Bytes per second(BPS)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2154,8 +2154,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "RxPps",
-      "displayName": "Rx PPS",
-      "description": "Receive BW Packets per second",
+      "displayName": "Rx Packets/sec",
+      "description": "Receive BW Packets per second(PPS)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2166,8 +2166,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "RxBytesps",
-      "displayName": "Rx BPS",
-      "description": "Receive BW Bytes per second",
+      "displayName": "Rx Bytes/sec",
+      "description": "Receive BW Bytes per second(BPS)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2205,7 +2205,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxOk",
       "displayName": "Rx OK Frames",
-      "description": "Frames received OK",
+      "description": "Good Frames received",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2217,7 +2217,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxAll",
       "displayName": "Rx All Frames",
-      "description": "Frames Received All (Good and Bad Frames)",
+      "description": "All Frames received (Good and Bad)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2229,7 +2229,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxBadFcs",
       "displayName": "Rx Bad FCS Frames",
-      "description": "Frames Received with Bad FCS",
+      "description": "Frames received with bad FCS",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2241,7 +2241,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxBadAll",
       "displayName": "Rx All Bad Frames",
-      "description": "Frames with any bad (CRC, Length, Align)",
+      "description": "Frames with any bad (CRC, Length or Align)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2253,7 +2253,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "OctetsRxOk",
       "displayName": "Rx OK Octets",
-      "description": "Octets Received in Good Frames",
+      "description": "Octets received in Good Frames",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2265,7 +2265,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "OctetsRxAll",
       "displayName": "Rx All Octets",
-      "description": "Octets Received (Good/Bad Frames)",
+      "description": "Octets received in all frames (Good and Bad)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2277,7 +2277,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxUnicast",
       "displayName": "Rx Unicast Frames",
-      "description": "Frames Received with Unicast Address",
+      "description": "Frames received with Unicast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2289,7 +2289,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxMulticast",
       "displayName": "Rx Multicast Frames",
-      "description": "Frames Received with Multicast Address",
+      "description": "Frames received with Multicast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2301,7 +2301,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxBroadcast",
       "displayName": "Rx Broadcast Frames",
-      "description": "Frames Received with Broadcast Address",
+      "description": "Frames received with Broadcast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2313,7 +2313,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxPause",
       "displayName": "Rx Pause Frames",
-      "description": "Frames Received of type PAUSE",
+      "description": "Frames received of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2325,7 +2325,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxBadLength",
       "displayName": "Rx Bad Length Frames",
-      "description": "Frames Received with Bad Length",
+      "description": "Frames received with lenth error. EtherType field < 1536, and frame size > received length value.",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2337,7 +2337,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxUndersized",
       "displayName": "Rx Undersized Frames",
-      "description": "Frames Received Undersized",
+      "description": "Frames received with frame size < min frame size(64 Octets)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2349,7 +2349,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxOversized",
       "displayName": "Rx Oversized Frames",
-      "description": "Frames Received Oversized",
+      "description": "Frames received with frame size > max frame size(9216 Octets) but < jabber size(9232 Octets)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2361,7 +2361,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxFragments",
       "displayName": "Rx Fragment Frames",
-      "description": "Fragments Received",
+      "description": "Fragment frames received",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2373,7 +2373,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxJabber",
       "displayName": "Rx Jabber Frames",
-      "description": "Jabber Received",
+      "description": "Frames received with (frame size > max frame size(9216 Octets) with CRC error) or (frame size > jabber size(9232 Octets))",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2385,7 +2385,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_64B",
       "displayName": "Rx 64b Frames",
-      "description": "Frames Received Length=64",
+      "description": "Frames received of length 64 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2397,7 +2397,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_65B_127B",
       "displayName": "Rx 65b_127b Frames",
-      "description": "Frames Received Length=65~127",
+      "description": "Frames received of length 65~127 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2409,7 +2409,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_128B_255B",
       "displayName": "Rx 128b_255b Frames",
-      "description": "Frames Received Length=128~255",
+      "description": "Frames received of length 128~255 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2421,7 +2421,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_256B_511B",
       "displayName": "Rx 256b_511b Frames",
-      "description": "Frames Received Length=256~511",
+      "description": "Frames received of length 256~511 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2433,7 +2433,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_512B_1023B",
       "displayName": "Rx 512b_1023b Frames",
-      "description": "Frames Received Length=512~1023",
+      "description": "Frames received of length 512~1023 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2445,7 +2445,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRx_1024B_1518B",
       "displayName": "Rx 1024b_1518b Frames",
-      "description": "Frames Received Length=1024~1518",
+      "description": "Frames received of length 1024~1518 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2457,7 +2457,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxGt_1518B",
       "displayName": "Rx Greater than 1518b Frames",
-      "description": "Frames Received Length greater than 1518",
+      "description": "Frames received of length > 1518 octets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2469,7 +2469,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesRxFifoFull",
       "displayName": "Rx FIFO Full Frames",
-      "description": "Frames Received FIFO Full",
+      "description": "Frames received with FIFO Full",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2481,7 +2481,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxOk",
       "displayName": "Tx OK Frames",
-      "description": "Frames Transmitted OK",
+      "description": "Good frames transmitted",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2493,7 +2493,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxAll",
       "displayName": "Tx All Frames",
-      "description": "Frames Transmitted All (Good/Bad Frames)",
+      "description": "All frames transmitted (Good and Bad)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2505,7 +2505,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxBad",
       "displayName": "Tx Bad Frames",
-      "description": "Frames Transmitted Bad",
+      "description": "Frames transmitted with bad (CRC, Length or Align)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2517,7 +2517,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "OctetsTxOk",
       "displayName": "Tx OK Octets",
-      "description": "Octets Transmitted Good",
+      "description": "Octets transmitted in good frames",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2529,7 +2529,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "OctetsTxTotal",
       "displayName": "Tx All Octets",
-      "description": "Octets Transmitted Total (Good/Bad)",
+      "description": "Octets transmitted in all frames (Good and Bad)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2541,7 +2541,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxUnicast",
       "displayName": "Tx Unicast Frames",
-      "description": "Frames Transmitted with Unicast Address",
+      "description": "Frames transmitted with Unicast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2553,7 +2553,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxMulticast",
       "displayName": "Tx Multicast Frames",
-      "description": "Frames Transmitted with Multicast Address",
+      "description": "Frames transmitted with Multicast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2565,7 +2565,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxBroadcast",
       "displayName": "Tx Broadcast Frames",
-      "description": "Frames Transmitted with Broadcast Address",
+      "description": "Frames transmitted with Broadcast Address",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2577,7 +2577,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "FramesTxPause",
       "displayName": "Tx Pause Frames",
-      "description": "Frames Transmitted of type PAUSE",
+      "description": "Frames transmitted of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2588,8 +2588,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "TxPps",
-      "displayName": "Tx PPS",
-      "description": "Transmit BW Packets per second",
+      "displayName": "Tx Packets/sec",
+      "description": "Transmit bandwidth in  Packets per second(PPS)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2600,8 +2600,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "TxBytesps",
-      "displayName": "Tx BPS",
-      "description": "Transmit BW Bytes per second",
+      "displayName": "Tx Bytes/sec",
+      "description": "Transmit bandwidth in Bytes per second(BPS)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2612,8 +2612,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "RxPps",
-      "displayName": "Rx PPS",
-      "description": "Receive BW Packets per second",
+      "displayName": "Rx Packets/sec",
+      "description": "Receive bandwidth in Packets per second(PPS)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2624,8 +2624,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "RxBytesps",
-      "displayName": "Rx BPS",
-      "description": "Receive BW Bytes per second",
+      "displayName": "Rx Bytes/sec",
+      "description": "Receive bandwidth in Bytes per second(BPS)",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2663,7 +2663,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxUnicastBytes",
       "displayName": "Rx Unicast Bytes",
-      "description": "Rx Unicast Bytes",
+      "description": "Bytes received in packets with unicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2675,7 +2675,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxUnicastPackets",
       "displayName": "Rx Unicast Packets",
-      "description": "Rx Unicast Packets",
+      "description": "Packets received with unicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2687,7 +2687,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxMulticastBytes",
       "displayName": "Rx Multicast Bytes",
-      "description": "Rx Multicast Bytes",
+      "description": "Bytes received in packets with multicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2699,7 +2699,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxMulticastPackets",
       "displayName": "Rx Multicast Packets",
-      "description": "Rx Multicast Packets",
+      "description": "Packets received with multicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2711,7 +2711,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxBroadcastBytes",
       "displayName": "Rx Broadcast Bytes",
-      "description": "Rx Broadcast Bytes",
+      "description": "Bytes received in packets with broadcast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2723,7 +2723,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxBroadcastPackets",
       "displayName": "Rx Broadcast Packets",
-      "description": "Rx Broadcast Packets",
+      "description": "Packets received with broadcast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2735,7 +2735,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxDropUnicastBytes",
       "displayName": "Rx Drop Unicast Bytes",
-      "description": "Rx Drop Unicast Bytes",
+      "description": "Bytes of received packets dropped with unicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2747,7 +2747,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxDropUnicastPackets",
       "displayName": "Rx Drop Unicast Packets",
-      "description": "Rx Drop Unicast Packets",
+      "description": "Received packets dropped with unicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2759,7 +2759,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxDropMulticastBytes",
       "displayName": "Rx Drop Multicast Bytes",
-      "description": "Rx Drop Multicast Bytes",
+      "description": "Bytes of received packets dropped with multicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2771,7 +2771,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxDropMulticastPackets",
       "displayName": "Rx Drop Multicast Packets",
-      "description": "Rx Drop Multicast Packets",
+      "description": "Received packets dropped with multicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2783,7 +2783,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxDropBroadcastBytes",
       "displayName": "Rx Drop Broadcast Bytes",
-      "description": "Rx Drop Broadcast Bytes",
+      "description": "Bytes of received packets dropped with broadcast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2795,7 +2795,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "RxDropBroadcastPackets",
       "displayName": "Rx Drop Broadcast Packets",
-      "description": "Rx Drop Broadcast Packets",
+      "description": "Received packets dropped with broadcast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2807,7 +2807,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxUnicastBytes",
       "displayName": "Tx Unicast Bytes",
-      "description": "Tx Unicast Bytes",
+      "description": "Bytes transmitted in packets with unicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2819,7 +2819,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxUnicastPackets",
       "displayName": "Tx Unicast Packets",
-      "description": "Tx Unicast Packets",
+      "description": "Packets transmitted with unicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2831,7 +2831,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxMulticastBytes",
       "displayName": "Tx Multicast Bytes",
-      "description": "Tx Multicast Bytes",
+      "description": "Bytes transmitted in packets with multicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2843,7 +2843,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxMulticastPackets",
       "displayName": "Tx Multicast Packets",
-      "description": "Tx Multicast Packets",
+      "description": "Packets transmitted with multicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2855,7 +2855,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxBroadcastBytes",
       "displayName": "Tx Broadcast Bytes",
-      "description": "Tx Broadcast Bytes",
+      "description": "Bytes transmitted in packets with broadcast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2867,7 +2867,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxBroadcastPackets",
       "displayName": "Tx Broadcast Packets",
-      "description": "Tx Broadcast Packets",
+      "description": "Packets transmitted with broadcast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2879,7 +2879,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxDropUnicastBytes",
       "displayName": "Tx Drop Unicast Bytes",
-      "description": "Tx Drop Unicast Bytes",
+      "description": "Bytes of transmit packets dropped with unicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2891,7 +2891,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxDropUnicastPackets",
       "displayName": "Tx Drop Unicast Packets",
-      "description": "Tx Drop Unicast Packets",
+      "description": "Transmit packets dropped with unicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2903,7 +2903,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxDropMulticastBytes",
       "displayName": "Tx Drop Multicast Bytes",
-      "description": "Tx Drop Multicast Bytes",
+      "description": "Bytes of transmit packets dropped with multicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2915,7 +2915,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxDropMulticastPackets",
       "displayName": "Tx Drop Multicast Packets",
-      "description": "Tx Drop Multicast Packets",
+      "description": "Transmit packets dropped with multicast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2927,7 +2927,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxDropBroadcastBytes",
       "displayName": "Tx Drop Broadcast Bytes",
-      "description": "Tx Drop Broadcast Bytes",
+      "description": "Bytes of transmit packets dropped with broadcast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2939,7 +2939,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     {
       "name": "TxDropBroadcastPackets",
       "displayName": "Tx Drop Broadcast Packets",
-      "description": "Tx Drop Broadcast Packets",
+      "description": "Transmit packets dropped with broadcast destination",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2950,7 +2950,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "TxPkts",
-      "displayName": "Tx Pkts",
+      "displayName": "Tx Packets",
       "description": "Total Transmit Packets",
       "units": "Count",
       "baseType": "Counter",
@@ -2974,7 +2974,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "RxPkts",
-      "displayName": "Rx Pkts",
+      "displayName": "Rx Packets",
       "description": "Total Receive Packets",
       "units": "Count",
       "baseType": "Counter",
@@ -2998,8 +2998,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "TxPps",
-      "displayName": "Tx PPS",
-      "description": "Transmit BW Packets per second",
+      "displayName": "Tx Packets/sec",
+      "description": "Transmit bandwidth in Packets per second",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -3010,8 +3010,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "TxBytesps",
-      "displayName": "Tx BPS",
-      "description": "Transmit BW Bytes per second",
+      "displayName": "Tx Bytes/sec",
+      "description": "Transmit bandwidth in Bytes per second",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -3022,8 +3022,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "RxPps",
-      "displayName": "Rx PPS",
-      "description": "Receive BW Packets per second",
+      "displayName": "Rx Packets/sec",
+      "description": "Receive bandwidth in Packets per second",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -3034,8 +3034,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "RxBytesps",
-      "displayName": "Rx BPS",
-      "description": "Receive BW Bytes per second",
+      "displayName": "Rx Bytes/sec",
+      "description": "Receive bandwidth in Bytes per second",
       "units": "Count",
       "baseType": "Counter",
       "tags": [

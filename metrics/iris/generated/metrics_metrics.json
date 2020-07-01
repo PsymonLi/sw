@@ -11,174 +11,174 @@
         {
           "Name": "RxUnicastBytes",
           "DisplayName": "Rx Unicast Bytes",
-          "Description": "Rx Unicast Bytes",
+          "Description": "Bytes received in packets with unicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxUnicastPackets",
           "DisplayName": "Rx Unicast Packets",
-          "Description": "Rx Unicast Packets",
+          "Description": "Packets received with unicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxMulticastBytes",
           "DisplayName": "Rx Multicast Bytes",
-          "Description": "Rx Multicast Bytes",
+          "Description": "Bytes received in packets with multicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxMulticastPackets",
           "DisplayName": "Rx Multicast Packets",
-          "Description": "Rx Multicast Packets",
+          "Description": "Packets received with multicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxBroadcastBytes",
           "DisplayName": "Rx Broadcast Bytes",
-          "Description": "Rx Broadcast Bytes",
+          "Description": "Bytes received in packets with broadcast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxBroadcastPackets",
           "DisplayName": "Rx Broadcast Packets",
-          "Description": "Rx Broadcast Packets",
+          "Description": "Packets received with broadcast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxDropUnicastBytes",
           "DisplayName": "Rx Drop Unicast Bytes",
-          "Description": "Rx Drop Unicast Bytes",
+          "Description": "Bytes of received packets dropped with unicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxDropUnicastPackets",
           "DisplayName": "Rx Drop Unicast Packets",
-          "Description": "Rx Drop Unicast Packets",
+          "Description": "Received packets dropped with unicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxDropMulticastBytes",
           "DisplayName": "Rx Drop Multicast Bytes",
-          "Description": "Rx Drop Multicast Bytes",
+          "Description": "Bytes of received packets dropped with multicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxDropMulticastPackets",
           "DisplayName": "Rx Drop Multicast Packets",
-          "Description": "Rx Drop Multicast Packets",
+          "Description": "Received packets dropped with multicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxDropBroadcastBytes",
           "DisplayName": "Rx Drop Broadcast Bytes",
-          "Description": "Rx Drop Broadcast Bytes",
+          "Description": "Bytes of received packets dropped with broadcast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxDropBroadcastPackets",
           "DisplayName": "Rx Drop Broadcast Packets",
-          "Description": "Rx Drop Broadcast Packets",
+          "Description": "Received packets dropped with broadcast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxUnicastBytes",
           "DisplayName": "Tx Unicast Bytes",
-          "Description": "Tx Unicast Bytes",
+          "Description": "Bytes transmitted in packets with unicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxUnicastPackets",
           "DisplayName": "Tx Unicast Packets",
-          "Description": "Tx Unicast Packets",
+          "Description": "Packets transmitted with unicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxMulticastBytes",
           "DisplayName": "Tx Multicast Bytes",
-          "Description": "Tx Multicast Bytes",
+          "Description": "Bytes transmitted in packets with multicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxMulticastPackets",
           "DisplayName": "Tx Multicast Packets",
-          "Description": "Tx Multicast Packets",
+          "Description": "Packets transmitted with multicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxBroadcastBytes",
           "DisplayName": "Tx Broadcast Bytes",
-          "Description": "Tx Broadcast Bytes",
+          "Description": "Bytes transmitted in packets with broadcast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxBroadcastPackets",
           "DisplayName": "Tx Broadcast Packets",
-          "Description": "Tx Broadcast Packets",
+          "Description": "Packets transmitted with broadcast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxDropUnicastBytes",
           "DisplayName": "Tx Drop Unicast Bytes",
-          "Description": "Tx Drop Unicast Bytes",
+          "Description": "Bytes of transmit packets dropped with unicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxDropUnicastPackets",
           "DisplayName": "Tx Drop Unicast Packets",
-          "Description": "Tx Drop Unicast Packets",
+          "Description": "Transmit packets dropped with unicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxDropMulticastBytes",
           "DisplayName": "Tx Drop Multicast Bytes",
-          "Description": "Tx Drop Multicast Bytes",
+          "Description": "Bytes of transmit packets dropped with multicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxDropMulticastPackets",
           "DisplayName": "Tx Drop Multicast Packets",
-          "Description": "Tx Drop Multicast Packets",
+          "Description": "Transmit packets dropped with multicast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxDropBroadcastBytes",
           "DisplayName": "Tx Drop Broadcast Bytes",
-          "Description": "Tx Drop Broadcast Bytes",
+          "Description": "Bytes of transmit packets dropped with broadcast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxDropBroadcastPackets",
           "DisplayName": "Tx Drop Broadcast Packets",
-          "Description": "Tx Drop Broadcast Packets",
+          "Description": "Transmit packets dropped with broadcast destination",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxPkts",
-          "DisplayName": "Tx Pkts",
+          "DisplayName": "Tx Packets",
           "Description": "Total Transmit Packets",
           "Units": "Count",
           "BaseType": "Counter"
@@ -192,7 +192,7 @@
         },
         {
           "Name": "RxPkts",
-          "DisplayName": "Rx Pkts",
+          "DisplayName": "Rx Packets",
           "Description": "Total Receive Packets",
           "Units": "Count",
           "BaseType": "Counter"
@@ -206,29 +206,29 @@
         },
         {
           "Name": "TxPps",
-          "DisplayName": "Tx PPS",
-          "Description": "Transmit BW Packets per second",
+          "DisplayName": "Tx Packets/sec",
+          "Description": "Transmit bandwidth in Packets per second",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxBytesps",
-          "DisplayName": "Tx BPS",
-          "Description": "Transmit BW Bytes per second",
+          "DisplayName": "Tx Bytes/sec",
+          "Description": "Transmit bandwidth in Bytes per second",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxPps",
-          "DisplayName": "Rx PPS",
-          "Description": "Receive BW Packets per second",
+          "DisplayName": "Rx Packets/sec",
+          "Description": "Receive bandwidth in Packets per second",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxBytesps",
-          "DisplayName": "Rx BPS",
-          "Description": "Receive BW Bytes per second",
+          "DisplayName": "Rx Bytes/sec",
+          "Description": "Receive bandwidth in Bytes per second",
           "Units": "Count",
           "BaseType": "Counter"
         }

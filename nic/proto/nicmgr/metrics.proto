@@ -16,39 +16,39 @@ message LifMetrics {
 
     fixed64        Key                              = 1; // Lif ifidx
 
-    delphi.Counter rx_unicast_bytes                 = 2 [(venice.metricsField) = {DisplayName: "Rx Unicast Bytes" Description: "Rx Unicast Bytes"}];        // Unicast bytes received at LIF
-    delphi.Counter rx_unicast_packets               = 3 [(venice.metricsField) = {DisplayName: "Rx Unicast Packets" Description: "Rx Unicast Packets"}];    // Unicast packets received at LIF
-    delphi.Counter rx_multicast_bytes               = 4 [(venice.metricsField) = {DisplayName: "Rx Multicast Bytes" Description: "Rx Multicast Bytes"}];    // Multicast bytes received at LIF
-    delphi.Counter rx_multicast_packets             = 5 [(venice.metricsField) = {DisplayName: "Rx Multicast Packets" Description: "Rx Multicast Packets"}];// Multicast packets received at LIF
-    delphi.Counter rx_broadcast_bytes               = 6 [(venice.metricsField) = {DisplayName: "Rx Broadcast Bytes" Description: "Rx Broadcast Bytes"}];    // Broadcast bytes received at LIF
-    delphi.Counter rx_broadcast_packets             = 7 [(venice.metricsField) = {DisplayName: "Rx Broadcast Packets" Description: "Rx Broadcast Packets"}];// Broadcast packets received at LIF
+    delphi.Counter rx_unicast_bytes                 = 2 [(venice.metricsField) = {DisplayName: "Rx Unicast Bytes" Description: "Bytes received in packets with unicast destination"}];      // Unicast bytes received at LIF
+    delphi.Counter rx_unicast_packets               = 3 [(venice.metricsField) = {DisplayName: "Rx Unicast Packets" Description: "Packets received with unicast destination"}];             // Unicast packets received at LIF
+    delphi.Counter rx_multicast_bytes               = 4 [(venice.metricsField) = {DisplayName: "Rx Multicast Bytes" Description: "Bytes received in packets with multicast destination"}];  // Multicast bytes received at LIF
+    delphi.Counter rx_multicast_packets             = 5 [(venice.metricsField) = {DisplayName: "Rx Multicast Packets" Description: "Packets received with multicast destination"}];         // Multicast packets received at LIF
+    delphi.Counter rx_broadcast_bytes               = 6 [(venice.metricsField) = {DisplayName: "Rx Broadcast Bytes" Description: "Bytes received in packets with broadcast destination"}];  // Broadcast bytes received at LIF
+    delphi.Counter rx_broadcast_packets             = 7 [(venice.metricsField) = {DisplayName: "Rx Broadcast Packets" Description: "Packets received with broadcast destination"}];         // Broadcast packets received at LIF
     delphi.Counter __rsvd__0                        = 8 [json_name="-"];
     delphi.Counter __rsvd__1                        = 9 [json_name="-"];
 
-    delphi.Counter rx_drop_unicast_bytes            = 10 [(venice.metricsField) = {DisplayName: "Rx Drop Unicast Bytes" Description: "Rx Drop Unicast Bytes"}];        ; // Unicast bytes dropped during received (per LIF)
-    delphi.Counter rx_drop_unicast_packets          = 11 [(venice.metricsField) = {DisplayName: "Rx Drop Unicast Packets" Description: "Rx Drop Unicast Packets"}];    ; // Unicast packets dropped during received (per LIF)
-    delphi.Counter rx_drop_multicast_bytes          = 12 [(venice.metricsField) = {DisplayName: "Rx Drop Multicast Bytes" Description: "Rx Drop Multicast Bytes"}];    ; // Multicast bytes dropped during received (per LIF)
-    delphi.Counter rx_drop_multicast_packets        = 13 [(venice.metricsField) = {DisplayName: "Rx Drop Multicast Packets" Description: "Rx Drop Multicast Packets"}];; // Multicast packets dropped during received (per LIF)
-    delphi.Counter rx_drop_broadcast_bytes          = 14 [(venice.metricsField) = {DisplayName: "Rx Drop Broadcast Bytes" Description: "Rx Drop Broadcast Bytes"}];    ; // Broadcast bytes dropped during received (per LIF)
-    delphi.Counter rx_drop_broadcast_packets        = 15 [(venice.metricsField) = {DisplayName: "Rx Drop Broadcast Packets" Description: "Rx Drop Broadcast Packets"}];; // Broadcast packets dropped during received (per LIF)
+    delphi.Counter rx_drop_unicast_bytes            = 10 [(venice.metricsField) = {DisplayName: "Rx Drop Unicast Bytes" Description: "Bytes of received packets dropped with unicast destination"}];    // Unicast bytes dropped during received (per LIF)
+    delphi.Counter rx_drop_unicast_packets          = 11 [(venice.metricsField) = {DisplayName: "Rx Drop Unicast Packets" Description: "Received packets dropped with unicast destination"}];           // Unicast packets dropped during received (per LIF)
+    delphi.Counter rx_drop_multicast_bytes          = 12 [(venice.metricsField) = {DisplayName: "Rx Drop Multicast Bytes" Description: "Bytes of received packets dropped with multicast destination"}];// Multicast bytes dropped during received (per LIF)
+    delphi.Counter rx_drop_multicast_packets        = 13 [(venice.metricsField) = {DisplayName: "Rx Drop Multicast Packets" Description: "Received packets dropped with multicast destination"}];       // Multicast packets dropped during received (per LIF)
+    delphi.Counter rx_drop_broadcast_bytes          = 14 [(venice.metricsField) = {DisplayName: "Rx Drop Broadcast Bytes" Description: "Bytes of received packets dropped with broadcast destination"}];// Broadcast bytes dropped during received (per LIF)
+    delphi.Counter rx_drop_broadcast_packets        = 15 [(venice.metricsField) = {DisplayName: "Rx Drop Broadcast Packets" Description: "Received packets dropped with broadcast destination"}];       // Broadcast packets dropped during received (per LIF)
     delphi.Counter rx_dma_error                     = 16 [json_name="-"]; // Packet DMA errors
     delphi.Counter __rsvd__2                        = 17 [json_name="-"];
 
-    delphi.Counter tx_unicast_bytes                 = 18[(venice.metricsField) = {DisplayName: "Tx Unicast Bytes" Description: "Tx Unicast Bytes"}];        ; // Unicast bytes transmitted by LIF
-    delphi.Counter tx_unicast_packets               = 19[(venice.metricsField) = {DisplayName: "Tx Unicast Packets" Description: "Tx Unicast Packets"}];    ; // Unicast packets transmitted by LIF
-    delphi.Counter tx_multicast_bytes               = 20[(venice.metricsField) = {DisplayName: "Tx Multicast Bytes" Description: "Tx Multicast Bytes"}];    ; // Multicast bytes transmitted by LIF
-    delphi.Counter tx_multicast_packets             = 21[(venice.metricsField) = {DisplayName: "Tx Multicast Packets" Description: "Tx Multicast Packets"}];; // Multicast packets transmitted by LIF
-    delphi.Counter tx_broadcast_bytes               = 22[(venice.metricsField) = {DisplayName: "Tx Broadcast Bytes" Description: "Tx Broadcast Bytes"}];    ; // Broadcast bytes transmitted by LIF
-    delphi.Counter tx_broadcast_packets             = 23[(venice.metricsField) = {DisplayName: "Tx Broadcast Packets" Description: "Tx Broadcast Packets"}];; // Broadcast packets transmitted by LIF
+    delphi.Counter tx_unicast_bytes                 = 18[(venice.metricsField) = {DisplayName: "Tx Unicast Bytes" Description: "Bytes transmitted in packets with unicast destination"}];       // Unicast bytes transmitted by LIF
+    delphi.Counter tx_unicast_packets               = 19[(venice.metricsField) = {DisplayName: "Tx Unicast Packets" Description: "Packets transmitted with unicast destination"}];              // Unicast packets transmitted by LIF
+    delphi.Counter tx_multicast_bytes               = 20[(venice.metricsField) = {DisplayName: "Tx Multicast Bytes" Description: "Bytes transmitted in packets with multicast destination"}];   // Multicast bytes transmitted by LIF
+    delphi.Counter tx_multicast_packets             = 21[(venice.metricsField) = {DisplayName: "Tx Multicast Packets" Description: "Packets transmitted with multicast destination"}];          // Multicast packets transmitted by LIF
+    delphi.Counter tx_broadcast_bytes               = 22[(venice.metricsField) = {DisplayName: "Tx Broadcast Bytes" Description: "Bytes transmitted in packets with broadcast destination"}];   // Broadcast bytes transmitted by LIF
+    delphi.Counter tx_broadcast_packets             = 23[(venice.metricsField) = {DisplayName: "Tx Broadcast Packets" Description: "Packets transmitted with broadcast destination"}];          // Broadcast packets transmitted by LIF
     delphi.Counter __rsvd__3                        = 24 [json_name="-"];
     delphi.Counter __rsvd__4                        = 25 [json_name="-"];
 
-    delphi.Counter tx_drop_unicast_bytes            = 26[(venice.metricsField) = {DisplayName: "Tx Drop Unicast Bytes" Description: "Tx Drop Unicast Bytes"}];        ; // Unicast bytes dropped during transmit (per LIF)
-    delphi.Counter tx_drop_unicast_packets          = 27[(venice.metricsField) = {DisplayName: "Tx Drop Unicast Packets" Description: "Tx Drop Unicast Packets"}];    ; // Unicast packets dropped during transmit (per LIF)
-    delphi.Counter tx_drop_multicast_bytes          = 28[(venice.metricsField) = {DisplayName: "Tx Drop Multicast Bytes" Description: "Tx Drop Multicast Bytes"}];    ; // Multicast bytes dropped during transmit (per LIF)
-    delphi.Counter tx_drop_multicast_packets        = 29[(venice.metricsField) = {DisplayName: "Tx Drop Multicast Packets" Description: "Tx Drop Multicast Packets"}];; // Multicast packets dropped during transmit (per LIF)
-    delphi.Counter tx_drop_broadcast_bytes          = 30[(venice.metricsField) = {DisplayName: "Tx Drop Broadcast Bytes" Description: "Tx Drop Broadcast Bytes"}];    ; // Broadcast bytes dropped during transmit (per LIF)
-    delphi.Counter tx_drop_broadcast_packets        = 31[(venice.metricsField) = {DisplayName: "Tx Drop Broadcast Packets" Description: "Tx Drop Broadcast Packets"}];; // Broadcast packets dropped during transmit (per LIF)
+    delphi.Counter tx_drop_unicast_bytes            = 26[(venice.metricsField) = {DisplayName: "Tx Drop Unicast Bytes" Description: "Bytes of transmit packets dropped with unicast destination"}];     // Unicast bytes dropped during transmit (per LIF)
+    delphi.Counter tx_drop_unicast_packets          = 27[(venice.metricsField) = {DisplayName: "Tx Drop Unicast Packets" Description: "Transmit packets dropped with unicast destination"}];            // Unicast packets dropped during transmit (per LIF)
+    delphi.Counter tx_drop_multicast_bytes          = 28[(venice.metricsField) = {DisplayName: "Tx Drop Multicast Bytes" Description: "Bytes of transmit packets dropped with multicast destination"}]; // Multicast bytes dropped during transmit (per LIF)
+    delphi.Counter tx_drop_multicast_packets        = 29[(venice.metricsField) = {DisplayName: "Tx Drop Multicast Packets" Description: "Transmit packets dropped with multicast destination"}];        // Multicast packets dropped during transmit (per LIF)
+    delphi.Counter tx_drop_broadcast_bytes          = 30[(venice.metricsField) = {DisplayName: "Tx Drop Broadcast Bytes" Description: "Bytes of transmit packets dropped with broadcast destination"}]; // Broadcast bytes dropped during transmit (per LIF)
+    delphi.Counter tx_drop_broadcast_packets        = 31[(venice.metricsField) = {DisplayName: "Tx Drop Broadcast Packets" Description: "Transmit packets dropped with broadcast destination"}];        // Broadcast packets dropped during transmit (per LIF)
     delphi.Counter tx_dma_error                     = 32 [json_name="-"]; // Packet DMA errors
     delphi.Counter __rsvd__5                        = 33 [json_name="-"];
 
@@ -115,14 +115,14 @@ message LifMetrics {
     delphi.Counter rsvd40                         = 88 [json_name="-"];
     delphi.Counter rsvd41                         = 89 [json_name="-"];
 
-    delphi.Counter tx_pkts                        = 90 [(venice.metricsField) = {DisplayName: "Tx Pkts" Description: "Total Transmit Packets"}];
+    delphi.Counter tx_pkts                        = 90 [(venice.metricsField) = {DisplayName: "Tx Packets" Description: "Total Transmit Packets"}];
     delphi.Counter tx_bytes                       = 91 [(venice.metricsField) = {DisplayName: "Tx Bytes" Description: "Total Transmit Bytes"}];
-    delphi.Counter rx_pkts                        = 92 [(venice.metricsField) = {DisplayName: "Rx Pkts" Description: "Total Receive Packets"}];
+    delphi.Counter rx_pkts                        = 92 [(venice.metricsField) = {DisplayName: "Rx Packets" Description: "Total Receive Packets"}];
     delphi.Counter rx_bytes                       = 93 [(venice.metricsField) = {DisplayName: "Rx Bytes" Description: "Total Receive Bytes"}];
-    delphi.Counter tx_pps                         = 94 [(venice.metricsField) = {DisplayName: "Tx PPS" Description: "Transmit BW Packets per second"}];
-    delphi.Counter tx_bytesps                     = 95 [(venice.metricsField) = {DisplayName: "Tx BPS" Description: "Transmit BW Bytes per second"}];
-    delphi.Counter rx_pps                         = 96 [(venice.metricsField) = {DisplayName: "Rx PPS" Description: "Receive BW Packets per second"}];
-    delphi.Counter rx_bytesps                     = 97 [(venice.metricsField) = {DisplayName: "Rx BPS" Description: "Receive BW Bytes per second"}];
+    delphi.Counter tx_pps                         = 94 [(venice.metricsField) = {DisplayName: "Tx Packets/sec" Description: "Transmit bandwidth in Packets per second"}];
+    delphi.Counter tx_bytesps                     = 95 [(venice.metricsField) = {DisplayName: "Tx Bytes/sec" Description: "Transmit bandwidth in Bytes per second"}];
+    delphi.Counter rx_pps                         = 96 [(venice.metricsField) = {DisplayName: "Rx Packets/sec" Description: "Receive bandwidth in Packets per second"}];
+    delphi.Counter rx_bytesps                     = 97 [(venice.metricsField) = {DisplayName: "Rx Bytes/sec" Description: "Receive bandwidth in Bytes per second"}];
 
     delphi.Counter rdma_req_rx_pkt_seq_err         = 98 [json_name="-"];
     delphi.Counter rdma_req_rx_rnr_retry_err       = 99 [json_name="-"];

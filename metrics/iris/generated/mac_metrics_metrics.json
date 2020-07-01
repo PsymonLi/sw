@@ -11,518 +11,518 @@
         {
           "Name": "FramesRxOk",
           "DisplayName": "Rx OK Frames",
-          "Description": "Frames received OK",
+          "Description": "Good Frames received",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxAll",
           "DisplayName": "Rx All Frames",
-          "Description": "Frames Received All (Good and Bad Frames)",
+          "Description": "All Frames received (Good and Bad)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxBadFcs",
           "DisplayName": "Rx Bad FCS Frames",
-          "Description": "Frames Received with Bad FCS",
+          "Description": "Frames received with bad FCS",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxBadAll",
           "DisplayName": "Rx All Bad Frames",
-          "Description": "Frames with any bad (CRC, Length, Align)",
+          "Description": "Frames received with any bad (CRC, Length or Align)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "OctetsRxOk",
           "DisplayName": "Rx OK Octets",
-          "Description": "Octets Received in Good Frames",
+          "Description": "Octets received in Good Frames",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "OctetsRxAll",
           "DisplayName": "Rx All Octets",
-          "Description": "Octets Received (Good/Bad Frames)",
+          "Description": "Octets received in all frames (Good and Bad)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxUnicast",
           "DisplayName": "Rx Unicast Frames",
-          "Description": "Frames Received with Unicast Address",
+          "Description": "Frames received with Unicast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxMulticast",
           "DisplayName": "Rx Multicast Frames",
-          "Description": "Frames Received with Multicast Address",
+          "Description": "Frames received with Multicast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxBroadcast",
           "DisplayName": "Rx Broadcast Frames",
-          "Description": "Frames Received with Broadcast Address",
+          "Description": "Frames received with Broadcast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPause",
           "DisplayName": "Rx Pause Frames",
-          "Description": "Frames Received of type PAUSE",
+          "Description": "Frames received of type PAUSE",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxBadLength",
           "DisplayName": "Rx Bad Length Frames",
-          "Description": "Frames Received with Bad Length",
+          "Description": "Frames received with lenth error. EtherType field \u003c 1536, and frame size \u003e received length value.",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxUndersized",
           "DisplayName": "Rx Undersized Frames",
-          "Description": "Frames Received Undersized",
+          "Description": "Frames received with frame size \u003c min frame size(64 Octets)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxOversized",
           "DisplayName": "Rx Oversized Frames",
-          "Description": "Frames Received Oversized",
+          "Description": "Frames received with frame size \u003e max frame size(9216 Octets) but \u003c jabber size(9232 Octets)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxFragments",
           "DisplayName": "Rx Fragment Frames",
-          "Description": "Fragments Received",
+          "Description": "Fragment frames received",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxJabber",
           "DisplayName": "Rx Jabber Frames",
-          "Description": "Jabber Received",
+          "Description": "Frames received with (frame size \u003e max frame size(9216 Octets) with CRC error) or (frame size \u003e jabber size(9232 Octets))",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPripause",
           "DisplayName": "Rx PFC Frames",
-          "Description": "Frames Received of PFC",
+          "Description": "Frames received of type PFC",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxTooLong",
           "DisplayName": "Rx Too long Frames",
-          "Description": "Received Frames Too Long",
+          "Description": "Frames received with frame size \u003e max frame size(9216 Octets)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxDropped",
           "DisplayName": "Rx Dropped Frames",
-          "Description": "Received Frames Dropped (Buffer Full)",
+          "Description": "Received frames dropped (Buffer Full)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxLessThan_64B",
           "DisplayName": "Rx Less than 64b Frames",
-          "Description": "Frames Received Length less than 64",
+          "Description": "Frames received of length \u003c 64 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_64B",
           "DisplayName": "Rx 64b Frames",
-          "Description": "Frames Received Length=64",
+          "Description": "Frames received of length 64 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_65B_127B",
           "DisplayName": "Rx 65b_127b Frames",
-          "Description": "Frames Received Length=65~127",
+          "Description": "Frames received of length 65~127 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_128B_255B",
           "DisplayName": "Rx 128b_255b Frames",
-          "Description": "Frames Received Length=128~255",
+          "Description": "Frames received of length 128~255 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_256B_511B",
           "DisplayName": "Rx 256b_511b Frames",
-          "Description": "Frames Received Length=256~511",
+          "Description": "Frames received of length 256~511 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_512B_1023B",
           "DisplayName": "Rx 512b_1023b Frames",
-          "Description": "Frames Received Length=512~1023",
+          "Description": "Frames received of length 512~1023 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_1024B_1518B",
           "DisplayName": "Rx 1024b_1518b Frames",
-          "Description": "Frames Received Length=1024~1518",
+          "Description": "Frames received of length 1024~1518 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_1519B_2047B",
           "DisplayName": "Rx 1519b_2047b Frames",
-          "Description": "Frames Received Length=1519~2047",
+          "Description": "Frames received of length 1519~2047 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_2048B_4095B",
           "DisplayName": "Rx 2048b_4095b Frames",
-          "Description": "Frames Received Length=2048~4095",
+          "Description": "Frames received of length 2048~4095 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_4096B_8191B",
           "DisplayName": "Rx 4096b_8191b Frames",
-          "Description": "Frames Received Length=4096~8191",
+          "Description": "Frames received of length 4096~8191 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_8192B_9215B",
           "DisplayName": "Rx 8192b_9215b Frames",
-          "Description": "Frames Received Length=8192~9215",
+          "Description": "Frames received of length 8192~9215 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxOther",
           "DisplayName": "Rx Other Frames",
-          "Description": "Frames Received Length greater than 9215",
+          "Description": "Frames received of length \u003e 9215 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxOk",
           "DisplayName": "Tx OK Frames",
-          "Description": "Frames Transmitted OK",
+          "Description": "Good frames transmitted",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxAll",
           "DisplayName": "Tx All Frames",
-          "Description": "Frames Transmitted All (Good/Bad Frames)",
+          "Description": "All frames transmitted (Good and Bad)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxBad",
           "DisplayName": "Tx Bad Frames",
-          "Description": "Frames Transmitted Bad",
+          "Description": "Frames transmitted with bad (CRC, Length or Align)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "OctetsTxOk",
           "DisplayName": "Tx OK Octets",
-          "Description": "Octets Transmitted Good",
+          "Description": "Octets transmitted in good frames",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "OctetsTxTotal",
           "DisplayName": "Tx All Octets",
-          "Description": "Octets Transmitted Total (Good/Bad)",
+          "Description": "Octets transmitted in all frames (Good and Bad)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxUnicast",
           "DisplayName": "Tx Unicast Frames",
-          "Description": "Frames Transmitted with Unicast Address",
+          "Description": "Frames transmitted with Unicast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxMulticast",
           "DisplayName": "Tx Multicast Frames",
-          "Description": "Frames Transmitted with Multicast Address",
+          "Description": "Frames transmitted with Multicast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxBroadcast",
           "DisplayName": "Tx Broadcast Frames",
-          "Description": "Frames Transmitted with Broadcast Address",
+          "Description": "Frames transmitted with Broadcast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPause",
           "DisplayName": "Tx Pause Frames",
-          "Description": "Frames Transmitted of type PAUSE",
+          "Description": "Frames transmitted of type PAUSE",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPripause",
           "DisplayName": "Tx PFC Frames",
-          "Description": "Frames Transmitted of PFC",
+          "Description": "Frames transmitted of type PFC",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxVlan",
           "DisplayName": "Tx VLAN Frames",
-          "Description": "Frames Transmitted VLAN",
+          "Description": "Frames transmitted with vlan header",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxLessThan_64B",
           "DisplayName": "Tx Less than 64b Frames",
-          "Description": "Frames Transmitted Length\u003c64",
+          "Description": "Frames transmitted of length \u003c 64 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_64B",
           "DisplayName": "Tx 64b Frames",
-          "Description": "Frames Transmitted Length=64",
+          "Description": "Frames transmitted of length 64 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_65B_127B",
           "DisplayName": "Tx 65b_127b Frames",
-          "Description": "Frames Transmitted Length=65~127",
+          "Description": "Frames transmitted of length 65~127 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_128B_255B",
           "DisplayName": "Tx 128b_255b Frames",
-          "Description": "Frames Transmitted Length=128~255",
+          "Description": "Frames transmitted of length 128~255 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_256B_511B",
           "DisplayName": "Tx 256b_511b Frames",
-          "Description": "Frames Transmitted Length=256~511",
+          "Description": "Frames transmitted of length 256~511 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_512B_1023B",
           "DisplayName": "Tx 512b_1023b Frames",
-          "Description": "Frames Transmitted Length=512~1023",
+          "Description": "Frames transmitted of length 512~1023 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_1024B_1518B",
           "DisplayName": "Tx 1024b_1518b Frames",
-          "Description": "Frames Transmitted Length=1024~1518",
+          "Description": "Frames transmitted of length 1024~1518 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_1519B_2047B",
           "DisplayName": "Tx 1519b_2047b Frames",
-          "Description": "Frames Transmitted Length=1519~2047",
+          "Description": "Frames transmitted of length 1519~2047 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_2048B_4095B",
           "DisplayName": "Tx 2048b_4095b Frames",
-          "Description": "Frames Transmitted Length=2048~4095",
+          "Description": "Frames transmitted of length 2048~4095 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_4096B_8191B",
           "DisplayName": "Tx 4096b_8191b Frames",
-          "Description": "Frames Transmitted Length=4096~8191",
+          "Description": "Frames transmitted of length 4096~8191 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTx_8192B_9215B",
           "DisplayName": "Tx 8192b_9215b Frames",
-          "Description": "Frames Transmitted Length=8192~9215",
+          "Description": "Frames transmitted of length 8192~9215 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxOther",
           "DisplayName": "Tx Other Frames",
-          "Description": "Frames Transmitted Length greater than 9215",
+          "Description": "Frames transmitted of length \u003e 9215 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_0",
           "DisplayName": "Tx PFC Pri0 Frames",
-          "Description": "Frames Transmitted of PFC Pri#0",
+          "Description": "Frames transmitted of PFC priority 0",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_1",
           "DisplayName": "Tx PFC Pri1 Frames",
-          "Description": "Frames Transmitted of PFC Pri#1",
+          "Description": "Frames transmitted of PFC priority 1",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_2",
           "DisplayName": "Tx PFC Pri2 Frames",
-          "Description": "Frames Transmitted of PFC Pri#2",
+          "Description": "Frames transmitted of PFC priority 2",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_3",
           "DisplayName": "Tx PFC Pri3 Frames",
-          "Description": "Frames Transmitted of PFC Pri#3",
+          "Description": "Frames transmitted of PFC priority 3",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_4",
           "DisplayName": "Tx PFC Pri4 Frames",
-          "Description": "Frames Transmitted of PFC Pri#4",
+          "Description": "Frames transmitted of PFC priority 4",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_5",
           "DisplayName": "Tx PFC Pri5 Frames",
-          "Description": "Frames Transmitted of PFC Pri#5",
+          "Description": "Frames transmitted of PFC priority 5",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_6",
           "DisplayName": "Tx PFC Pri6 Frames",
-          "Description": "Frames Transmitted of PFC Pri#6",
+          "Description": "Frames transmitted of PFC priority 6",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_7",
           "DisplayName": "Tx PFC Pri7 Frames",
-          "Description": "Frames Transmitted of PFC Pri#7",
+          "Description": "Frames transmitted of PFC priority 7",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_0",
           "DisplayName": "Rx PFC Pri0 Frames",
-          "Description": "Frames Received of PFC Pri#0",
+          "Description": "Frames received of PFC priority 0",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_1",
           "DisplayName": "Rx PFC Pri1 Frames",
-          "Description": "Frames Received of PFC Pri#1",
+          "Description": "Frames received of PFC priority 1",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_2",
           "DisplayName": "Rx PFC Pri2 Frames",
-          "Description": "Frames Received of PFC Pri#2",
+          "Description": "Frames received of PFC priority 2",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_3",
           "DisplayName": "Rx PFC Pri3 Frames",
-          "Description": "Frames Received of PFC Pri#3",
+          "Description": "Frames received of PFC priority 3",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_4",
           "DisplayName": "Rx PFC Pri4 Frames",
-          "Description": "Frames Received of PFC Pri#4",
+          "Description": "Frames received of PFC priority 4",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_5",
           "DisplayName": "Rx PFC Pri5 Frames",
-          "Description": "Frames Received of PFC Pri#5",
+          "Description": "Frames received of PFC priority 5",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_6",
           "DisplayName": "Rx PFC Pri6 Frames",
-          "Description": "Frames Received of PFC Pri#6",
+          "Description": "Frames received of PFC priority 6",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_7",
           "DisplayName": "Rx PFC Pri7 Frames",
-          "Description": "Frames Received of PFC Pri#7",
+          "Description": "Frames received of PFC priority 7",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxTruncated",
           "DisplayName": "Tx Truncated Frames",
-          "Description": "Frames Truncated",
+          "Description": "Frames transmitted with truncation",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxPps",
-          "DisplayName": "Tx PPS",
-          "Description": "Transmit BW Packets per second",
+          "DisplayName": "Tx Packets/sec",
+          "Description": "Transmit BW Packets per second(PPS)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxBytesps",
-          "DisplayName": "Tx BPS",
-          "Description": "Transmit BW Bytes per second",
+          "DisplayName": "Tx Bytes/sec",
+          "Description": "Transmit BW Bytes per second(BPS)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxPps",
-          "DisplayName": "Rx PPS",
-          "Description": "Receive BW Packets per second",
+          "DisplayName": "Rx Packets/sec",
+          "Description": "Receive BW Packets per second(PPS)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxBytesps",
-          "DisplayName": "Rx BPS",
-          "Description": "Receive BW Bytes per second",
+          "DisplayName": "Rx Bytes/sec",
+          "Description": "Receive BW Bytes per second(BPS)",
           "Units": "Count",
           "BaseType": "Counter"
         }
@@ -540,252 +540,252 @@
         {
           "Name": "FramesRxOk",
           "DisplayName": "Rx OK Frames",
-          "Description": "Frames received OK",
+          "Description": "Good Frames received",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxAll",
           "DisplayName": "Rx All Frames",
-          "Description": "Frames Received All (Good and Bad Frames)",
+          "Description": "All Frames received (Good and Bad)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxBadFcs",
           "DisplayName": "Rx Bad FCS Frames",
-          "Description": "Frames Received with Bad FCS",
+          "Description": "Frames received with bad FCS",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxBadAll",
           "DisplayName": "Rx All Bad Frames",
-          "Description": "Frames with any bad (CRC, Length, Align)",
+          "Description": "Frames with any bad (CRC, Length or Align)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "OctetsRxOk",
           "DisplayName": "Rx OK Octets",
-          "Description": "Octets Received in Good Frames",
+          "Description": "Octets received in Good Frames",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "OctetsRxAll",
           "DisplayName": "Rx All Octets",
-          "Description": "Octets Received (Good/Bad Frames)",
+          "Description": "Octets received in all frames (Good and Bad)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxUnicast",
           "DisplayName": "Rx Unicast Frames",
-          "Description": "Frames Received with Unicast Address",
+          "Description": "Frames received with Unicast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxMulticast",
           "DisplayName": "Rx Multicast Frames",
-          "Description": "Frames Received with Multicast Address",
+          "Description": "Frames received with Multicast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxBroadcast",
           "DisplayName": "Rx Broadcast Frames",
-          "Description": "Frames Received with Broadcast Address",
+          "Description": "Frames received with Broadcast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPause",
           "DisplayName": "Rx Pause Frames",
-          "Description": "Frames Received of type PAUSE",
+          "Description": "Frames received of type PAUSE",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxBadLength",
           "DisplayName": "Rx Bad Length Frames",
-          "Description": "Frames Received with Bad Length",
+          "Description": "Frames received with lenth error. EtherType field \u003c 1536, and frame size \u003e received length value.",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxUndersized",
           "DisplayName": "Rx Undersized Frames",
-          "Description": "Frames Received Undersized",
+          "Description": "Frames received with frame size \u003c min frame size(64 Octets)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxOversized",
           "DisplayName": "Rx Oversized Frames",
-          "Description": "Frames Received Oversized",
+          "Description": "Frames received with frame size \u003e max frame size(9216 Octets) but \u003c jabber size(9232 Octets)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxFragments",
           "DisplayName": "Rx Fragment Frames",
-          "Description": "Fragments Received",
+          "Description": "Fragment frames received",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxJabber",
           "DisplayName": "Rx Jabber Frames",
-          "Description": "Jabber Received",
+          "Description": "Frames received with (frame size \u003e max frame size(9216 Octets) with CRC error) or (frame size \u003e jabber size(9232 Octets))",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_64B",
           "DisplayName": "Rx 64b Frames",
-          "Description": "Frames Received Length=64",
+          "Description": "Frames received of length 64 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_65B_127B",
           "DisplayName": "Rx 65b_127b Frames",
-          "Description": "Frames Received Length=65~127",
+          "Description": "Frames received of length 65~127 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_128B_255B",
           "DisplayName": "Rx 128b_255b Frames",
-          "Description": "Frames Received Length=128~255",
+          "Description": "Frames received of length 128~255 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_256B_511B",
           "DisplayName": "Rx 256b_511b Frames",
-          "Description": "Frames Received Length=256~511",
+          "Description": "Frames received of length 256~511 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_512B_1023B",
           "DisplayName": "Rx 512b_1023b Frames",
-          "Description": "Frames Received Length=512~1023",
+          "Description": "Frames received of length 512~1023 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRx_1024B_1518B",
           "DisplayName": "Rx 1024b_1518b Frames",
-          "Description": "Frames Received Length=1024~1518",
+          "Description": "Frames received of length 1024~1518 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxGt_1518B",
           "DisplayName": "Rx Greater than 1518b Frames",
-          "Description": "Frames Received Length greater than 1518",
+          "Description": "Frames received of length \u003e 1518 octets",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxFifoFull",
           "DisplayName": "Rx FIFO Full Frames",
-          "Description": "Frames Received FIFO Full",
+          "Description": "Frames received with FIFO Full",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxOk",
           "DisplayName": "Tx OK Frames",
-          "Description": "Frames Transmitted OK",
+          "Description": "Good frames transmitted",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxAll",
           "DisplayName": "Tx All Frames",
-          "Description": "Frames Transmitted All (Good/Bad Frames)",
+          "Description": "All frames transmitted (Good and Bad)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxBad",
           "DisplayName": "Tx Bad Frames",
-          "Description": "Frames Transmitted Bad",
+          "Description": "Frames transmitted with bad (CRC, Length or Align)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "OctetsTxOk",
           "DisplayName": "Tx OK Octets",
-          "Description": "Octets Transmitted Good",
+          "Description": "Octets transmitted in good frames",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "OctetsTxTotal",
           "DisplayName": "Tx All Octets",
-          "Description": "Octets Transmitted Total (Good/Bad)",
+          "Description": "Octets transmitted in all frames (Good and Bad)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxUnicast",
           "DisplayName": "Tx Unicast Frames",
-          "Description": "Frames Transmitted with Unicast Address",
+          "Description": "Frames transmitted with Unicast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxMulticast",
           "DisplayName": "Tx Multicast Frames",
-          "Description": "Frames Transmitted with Multicast Address",
+          "Description": "Frames transmitted with Multicast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxBroadcast",
           "DisplayName": "Tx Broadcast Frames",
-          "Description": "Frames Transmitted with Broadcast Address",
+          "Description": "Frames transmitted with Broadcast Address",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPause",
           "DisplayName": "Tx Pause Frames",
-          "Description": "Frames Transmitted of type PAUSE",
+          "Description": "Frames transmitted of type PAUSE",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxPps",
-          "DisplayName": "Tx PPS",
-          "Description": "Transmit BW Packets per second",
+          "DisplayName": "Tx Packets/sec",
+          "Description": "Transmit bandwidth in  Packets per second(PPS)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "TxBytesps",
-          "DisplayName": "Tx BPS",
-          "Description": "Transmit BW Bytes per second",
+          "DisplayName": "Tx Bytes/sec",
+          "Description": "Transmit bandwidth in Bytes per second(BPS)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxPps",
-          "DisplayName": "Rx PPS",
-          "Description": "Receive BW Packets per second",
+          "DisplayName": "Rx Packets/sec",
+          "Description": "Receive bandwidth in Packets per second(PPS)",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "RxBytesps",
-          "DisplayName": "Rx BPS",
-          "Description": "Receive BW Bytes per second",
+          "DisplayName": "Rx Bytes/sec",
+          "Description": "Receive bandwidth in Bytes per second(BPS)",
           "Units": "Count",
           "BaseType": "Counter"
         }
