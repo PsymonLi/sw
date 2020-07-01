@@ -269,6 +269,7 @@
 ./elba/verif/apis/elb_base_api.h
 ./elba/verif/apis/elb_cp_sw_api.h
 ./elba/verif/apis/elb_csr_util_api.h
+./elba/verif/apis/elb_ddr_spd.h
 ./elba/verif/apis/elb_dpa_sw_api.h
 ./elba/verif/apis/elb_freq_sw_api.h
 ./elba/verif/apis/elb_he_sw_api.h
