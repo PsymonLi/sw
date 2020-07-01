@@ -84,6 +84,10 @@ def craft_pkt(_types, _dicts):
             if 'sport' not in _dict.keys() or \
                'dport' not in _dict.keys():
                 raise Exception('TCP: sport and/or dport not found')
+            elif 'flags' in _dict.keys():
+                pkt = pkt/TCP(sport=int(_dict['sport']),
+                              dport=int(_dict['dport']),
+                              flags=_dict['flags'])
             else:
                 pkt = pkt/TCP(sport=int(_dict['sport']),
                               dport=int(_dict['dport']))
@@ -143,6 +147,9 @@ class Pktgen():
         self.dport = None
         self.icmp_type = None
         self.icmp_code = None
+        self.flags = None
+        self.seq = None
+        self.ack = None
 
     # ========
     # Setters
@@ -212,6 +219,15 @@ class Pktgen():
 
     def set_icmp_code(self, icmp_code):
         self.icmp_code = icmp_code
+    
+    def set_flags(self, flags):
+        self.flags = flags
+
+    def set_seq(self, seq):
+        self.seq = seq
+
+    def set_ack(self, ack):
+        self.ack = ack
 
     # ========
     # Getters
@@ -281,6 +297,15 @@ class Pktgen():
 
     def get_icmp_code(self):
         return self.icmp_code
+
+    def get_flags(self, flags):
+        return self.flags
+
+    def get_seq(self, seq):
+        return self.seq
+
+    def get_ack(self, ack):
+        return self.ack
 
     # ========
     # Return: sip & dip for nat flow
@@ -431,11 +456,16 @@ class Pktgen():
 
         types.append(self.proto)
         if self.proto == 'UDP' or self.proto == 'TCP':
-            dicts.append({'sport' : self.sport, 'dport' : self.dport})
+            if self.flags is not None:
+                dicts.append({'sport' : self.sport, 'dport' : self.dport, 'flags' : self.flags})
+            else:
+                dicts.append({'sport' : self.sport, 'dport' : self.dport})
         else: # ICMP
             dicts.append({'icmp_type' : self.icmp_type, 
                         'icmp_code' : self.icmp_code})
 
+
+        api.Logger.info(dicts)
         pkt = craft_pkt(types, dicts)
         pkt = pkt/get_payload(self.pyld_size)
         #logging.debug("Crafted pkt: {}".format(pkt.show()))

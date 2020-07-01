@@ -104,13 +104,12 @@ def get_flow_hit_count(node):
 
     return flow_hit_count
 
-# ===========================================
-# Return: True or False
-# Match flows with flow entries in flow cache
-# Check src_ip, dst_ip, proto, 
-# for UDP/TCP, add check for sport and dport
-# ===========================================
-def match_dynamic_flows(tc, vnic_id, flow):
+# ========================================
+# Return: flow_dump_req for flow entries
+# grep sip/dip/sport/dport/vnic/proto
+# from flow info
+# ========================================
+def get_flow_entries(tc, vnic_id, flow):
 
     # Dump all flow entries from flow cache
     req = api.Trigger_CreateExecuteCommandsRequest()
@@ -142,7 +141,17 @@ def match_dynamic_flows(tc, vnic_id, flow):
 
     api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd)
 
-    # TODO: Change response in tc.response, and verify in the middle
+    return flow_dump_req
+
+# ===========================================
+# Return: True or False
+# Match flows with flow entries in flow cache
+# Check src_ip, dst_ip, proto, 
+# for UDP/TCP, add check for sport and dport
+# ===========================================
+def match_dynamic_flows(tc, vnic_id, flow):
+
+    flow_dump_req = get_flow_entries(tc, vnic_id, flow)
     flow_dump_resp = api.Trigger(flow_dump_req)
 
     for cmd in flow_dump_resp.commands:
@@ -154,6 +163,53 @@ def match_dynamic_flows(tc, vnic_id, flow):
     api.Logger.info('Verify this flow has already been installed in flow cache.')
 
     return True
+
+# ================================
+# Return: session id of the flow
+# grep index from flow info
+# ================================
+def get_session_id(tc, vnic_id, flow):
+
+    flow_dump_req = get_flow_entries(tc, vnic_id, flow)
+    flow_dump_resp = api.Trigger(flow_dump_req)
+
+    for cmd in flow_dump_resp.commands:
+        api.PrintCommandResults(cmd)
+        if cmd.exit_code != 0:
+            api.Logger.info("Verify this flow hasn't been successfully installed yet.")
+            return None
+
+    api.Logger.info('Verify this flow has already been installed in flow cache.')
+    session_id =  None
+
+    pattern = "(index:)(\w*)"
+    mo = re.search(pattern,flow_dump_resp.commands[0].stdout)
+    session_id = mo.group(2)
+
+    return session_id
+
+# ================================
+# Return: conntrack id of the flow
+# Input: session id in str decimal
+# return conntrack id in str decimal
+# ================================
+def get_conntrack_id(node, session_id):
+    param =  "session_info_index " + session_id
+    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "session_info", param)
+    pattern = "(conntrack_id : )(\w*)"
+    mo = re.search(pattern,output_lines)
+
+    return str(int(mo.group(2), 16))
+
+# ================================
+# Input: conntrack_id in str decimal
+# Print conntrack table 
+# ================================
+def get_conntrack_state(node, conntrack_id):
+    param =  "conntrack_index " + conntrack_id
+    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "conntrack", param)
+
+    # TODO: add grep conntrack state
 
 # ===========================================
 # Return: List of (node, nic) pairs names for 
@@ -210,3 +266,5 @@ def configureHostIntfMtu(req, node, intf, mtu=1500):
     
     cmd = base_cmd + CMD_SEP + CMD_SEP.join(cmd_args)
     api.Trigger_AddHostCommand(req, node, cmd)
+
+
