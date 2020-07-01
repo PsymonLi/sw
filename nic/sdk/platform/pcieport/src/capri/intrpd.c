@@ -263,8 +263,12 @@ pcieport_handle_mac_intr(pcieport_t *p)
      * these as the link settles depending on how long the BIOS
      * takes to bring up the link after reset.
      * We'll count LTSSM_ST_CHANGED below for stats.
+     *
+     * Don't log RXTLP_ERR, we sometimes see a stream of these when
+     * the host crashes.  These are counted in int_mac_stats above.
      */
-    if (int_mac & ~MAC_INTREGF_(LTSSM_ST_CHANGED)) {
+    if (int_mac & ~(MAC_INTREGF_(LTSSM_ST_CHANGED) |
+                    MAC_INTREGF_(RXTLP_ERR))) {
         pciesys_loginfo("pcieport_intr: int_mac 0x%x sta_rst 0x%x\n",
                         int_mac, sta_rst);
     }

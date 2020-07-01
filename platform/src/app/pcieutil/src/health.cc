@@ -97,8 +97,10 @@ show_tx_fc_credits(const int port)
     printf("port%d tx_fc_credits %-7s %-9s: hdr %3d data %5d\n", \
            port, w, pnp, txfc_hdr, txfc_data)
 
+    if (p) {
     PTXFC_CRED(port, "initial", "posted",    p->txfc_phdr,  p->txfc_pdata);
     PTXFC_CRED(port, "initial", "nonposted", p->txfc_nphdr, p->txfc_npdata);
+    }
     PTXFC_CRED(port, "current", "posted",       txfc_phdr,     txfc_pdata);
     PTXFC_CRED(port, "current", "nonposted",    txfc_nphdr,    txfc_npdata);
 }
