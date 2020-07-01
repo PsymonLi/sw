@@ -228,6 +228,14 @@ func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Int
 			update = true
 		}
 	}
+
+	if agentNetif.Spec.Type == netproto.InterfaceSpec_HOST_PF.String() {
+		if obj.NetworkInterfaceState.Status.IFHostStatus.HostIfName != agentNetif.Status.IFHostStatus.HostIfName ||
+			obj.NetworkInterfaceState.Status.IFHostStatus.MACAddress != agentNetif.Status.IFHostStatus.MACAddress {
+			log.Infof("Updating network interface host if status %v : %v", agentNetif.Name, agentNetif.Status.IFHostStatus)
+			update = true
+		}
+	}
 	if update {
 		obj.NetworkInterfaceState.NetworkInterface = *(convertNetifObj(nodeID, &obj.NetworkInterfaceState.NetworkInterface,
 			agentNetif))

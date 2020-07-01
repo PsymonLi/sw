@@ -595,6 +595,8 @@ func (a *ApuluAPI) HandleInterface(oper types.Operation, intf netproto.Interface
 		if intf.Spec.Type == netproto.InterfaceSpec_UPLINK_ETH.String() || intf.Spec.Type == netproto.InterfaceSpec_UPLINK_MGMT.String() {
 			return nil, nil
 		}
+		// Retain the existing Status
+		intf.Status = existingIntf.Status
 	case types.Delete:
 		var existingIntf netproto.Interface
 

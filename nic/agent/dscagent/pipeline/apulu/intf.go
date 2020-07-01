@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -213,7 +214,7 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 					updsubnet.Request[0].HostIf = updsubnet.Request[0].HostIf[:length-1]
 				}
 				// If detach, send admin-status down before subnet update
-				if intf.Spec.AdminStatus == "UP" {
+				if strings.ToLower(intf.Spec.AdminStatus) == "up" {
 					intfReq.Request[0].AdminStatus = halapi.IfStatus_IF_STATUS_DOWN
 				}
 				if err := interfaceUpdate(); err != nil {
@@ -250,7 +251,7 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 			// Ideally NPM might send 2 updates, but this is to handle if NPM
 			// sends only one update
 			interfaceUpdated = false
-			if intf.Spec.AdminStatus == "UP" {
+			if strings.ToLower(intf.Spec.AdminStatus) == "up" {
 				intfReq.Request[0].AdminStatus = halapi.IfStatus_IF_STATUS_UP
 			}
 		}
@@ -325,7 +326,7 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collecto
 		return nil, err
 	}
 
-	if intf.Spec.AdminStatus == "UP" {
+	if strings.ToLower(intf.Spec.AdminStatus) == "up" {
 		ifStatus = halapi.IfStatus_IF_STATUS_UP
 	} else {
 		ifStatus = halapi.IfStatus_IF_STATUS_DOWN
