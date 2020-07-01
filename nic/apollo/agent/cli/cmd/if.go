@@ -40,10 +40,11 @@ var lifShowCmd = &cobra.Command{
 }
 
 var ifShowCmd = &cobra.Command{
-	Use:   "interface",
-	Short: "show interface information",
-	Long:  "show interface object information",
-	Run:   ifShowCmdHandler,
+	Use:     "interface",
+	Short:   "show interface information",
+	Long:    "show interface object information",
+	Run:     ifShowCmdHandler,
+	PreRunE: ifShowCmdPreRun,
 }
 
 var lldpShowCmd = &cobra.Command{
@@ -100,15 +101,16 @@ func init() {
 	lldpShowCmd.AddCommand(lldpShowNeighborsCmd)
 	lldpShowCmd.AddCommand(lldpShowInterfacesCmd)
 	lldpShowCmd.AddCommand(lldpShowStatisticsCmd)
+	lldpShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 
 	lifShowCmd.Flags().StringVar(&lifID, "id", "", "Specify Lif ID")
 	lifShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	lifShowCmd.Flags().Bool("summary", false, "Display number of objects")
+
 	ifShowCmd.Flags().StringVar(&ifType, "type", "", "Specify interface type (uplink, control, host, l3)")
 	ifShowCmd.Flags().StringVar(&ifID, "id", "", "Specify interface ID")
 	ifShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	ifShowCmd.Flags().Bool("summary", false, "Display number of objects")
-	lldpShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 
 	clearCmd.AddCommand(lifClearCmd)
 	lifClearCmd.AddCommand(lifClearStatsCmd)
@@ -213,6 +215,19 @@ func lifClearStatsCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 }
+func ifShowCmdPreRun(cmd *cobra.Command, args []string) error {
+	if cmd == nil {
+		return fmt.Errorf("Invalid argument")
+	}
+
+	if cmd.Flags().Changed("type") && !validateIfTypeStr(ifType) {
+		return fmt.Errorf("Invalid argument for \"type\", please choose from [host, l3, uplink, control]\n")
+	}
+	if !cmd.Flags().Changed("id") && !cmd.Flags().Changed("type") {
+		return fmt.Errorf("Required flag(s) \"type\" or \"id\" have/has not been set\n")
+	}
+	return nil
+}
 
 func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 	// Connect to PDS
@@ -233,25 +248,6 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 		req = &pds.InterfaceGetRequest{
 			Id: [][]byte{uuid.FromStringOrNil(ifID).Bytes()},
 		}
-	} else if cmd != nil && cmd.Flags().Changed("type") == true {
-		if validateIfTypeStr(ifType) != true {
-			fmt.Printf("Invalid interface type specified. Must be one of host, l3, uplink, control\n")
-			return
-		}
-		req = &pds.InterfaceGetRequest{
-			Id: [][]byte{},
-		}
-	} else if cmd != nil && cmd.Flags().Changed("summary") == true {
-		req = &pds.InterfaceGetRequest{
-			Id: [][]byte{},
-		}
-	} else if cmd != nil && cmd.Flags().Changed("yaml") == true {
-		req = &pds.InterfaceGetRequest{
-			Id: [][]byte{},
-		}
-	} else if cmd != nil {
-		fmt.Printf("Command requires a flag. Refer to help string\n")
-		return
 	} else {
 		req = &pds.InterfaceGetRequest{
 			Id: [][]byte{},
@@ -291,7 +287,7 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
 			printIfHeader(respType)
 			printIf(resp)
-			fmt.Printf("\nNumber of ifs : 1\n")
+			fmt.Printf("\nNumber of interfaces : 1\n")
 		}
 	} else if cmd != nil && cmd.Flags().Changed("type") {
 		printIfHeader(ifType)
@@ -305,7 +301,7 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 				count += 1
 			}
 		}
-		fmt.Printf("\nNumber of %s ifs : %d\n", ifType, count)
+		fmt.Printf("\nNumber of %s interfaces : %d\n", ifType, count)
 	} else {
 		// print all if types
 		var num_intfs [pds.IfType_IF_TYPE_HOST + 1]int
@@ -373,15 +369,15 @@ func printIfSummary(count [pds.IfType_IF_TYPE_HOST + 1]int) {
 	for i = 1; i <= int32(pds.IfType_IF_TYPE_HOST); i++ {
 		x := pds.IfType(i)
 		ifStr := strings.ToLower(strings.Replace(strings.Replace(x.String(), "IF_TYPE_", "", -1), "_", "-", -1))
-		keyStr := fmt.Sprintf("Number of %s ifs ", ifStr)
+		keyStr := fmt.Sprintf("Number of %s interfaces ", ifStr)
 		fmt.Printf("%-24s: %d\n", keyStr, count[i])
 		total += count[i]
 	}
-	fmt.Printf("%-24s: %d\n", "Total number of ifs ", total)
+	fmt.Printf("%-24s: %d\n", "Total number of interfaces ", total)
 }
 
 func printIfHeader(str string) {
-	switch str {
+	switch strings.ToLower(str) {
 	case "uplink":
 		hdrLine := strings.Repeat("-", 136)
 		fmt.Println(hdrLine)
@@ -629,7 +625,7 @@ func lldpShowCmdHandler(cmd *cobra.Command, args []string, cmdType int) {
 				printIfLldpInfo(resp, cmdType, &num_intfs)
 			}
 		}
-		fmt.Printf("%-24s: %d\n", "Total number of ifs ", num_intfs)
+		fmt.Printf("%-24s: %d\n", "Total number of interfaces ", num_intfs)
 	}
 }
 
