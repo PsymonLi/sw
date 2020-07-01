@@ -209,7 +209,27 @@ def get_conntrack_state(node, conntrack_id):
     param =  "conntrack_index " + conntrack_id
     output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "conntrack", param)
 
-    # TODO: add grep conntrack state
+    pattern = "(flow_state: )(\w*)"
+    mo = re.search(pattern, output_lines)
+
+    return str(int(mo.group(2), 16))
+
+# ================================
+# Return: True or False
+# Input: node, vnic_id and flow
+# Validates the flow_state in conntrack
+# table against expected state
+# ================================
+def verify_conntrack_state(tc, flow, exp_state):
+    session_id = utils.get_session_id(tc, tc.vnic_id, flow)
+    conntrack_id = utils.get_conntrack_id(tc.bitw_node_name, session_id)
+    api.Logger.info("conntrack_id is %s" % conntrack_id)
+
+    flow_state = utils.get_conntrack_state(tc.bitw_node_name, conntrack_id)
+    api.Logger.info("flow_state: expected %s, actual %s" % (exp_state, flow_state))
+
+    return flow_state == exp_state
+
 
 # ===========================================
 # Return: List of (node, nic) pairs names for 
