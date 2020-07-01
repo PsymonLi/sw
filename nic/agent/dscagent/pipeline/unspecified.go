@@ -1766,7 +1766,7 @@ func (i *FakeAgentAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string
 }
 
 // HandleAlerts unimplemented
-func (i *FakeAgentAPI) HandleAlerts(ctx context.Context, evtsDispatcher events.Dispatcher) {
+func (i *FakeAgentAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
 	return
 }
 
@@ -1790,11 +1790,6 @@ func (i *FakeAgentAPI) startDynamicWatch(kinds []string) {
 
 	}
 	go startWatcher()
-}
-
-func (a *FakeAgentAPI) StartAlertPoliciesWatch(ctx context.Context) {
-	log.Info("StartAlertPoliciesWatch not implemented by unspecified Pipeline")
-	return
 }
 
 // GetDSCAgentStatus returns the current agent status

@@ -19,7 +19,7 @@ type ControllerAPI interface {
 	Start(kinds []string) error
 	Stop() error
 	WatchTechSupport()
-	WatchAlertPolicies(ctx context.Context) error
+	WatchAlertPolicies() error
 	GetAgentStatus(context.Context, *api.Empty) (*dscagentproto.DSCAgentStatus, error)
 }
 
@@ -146,10 +146,7 @@ type PipelineAPI interface {
 	HandleTechSupport(obj tsproto.TechSupportRequest) (techSupportArtifact string, err error)
 
 	// HandleAlerts relays alerts from pen-oper to various exporters
-	HandleAlerts(ctx context.Context, evtsDispatcher events.Dispatcher)
-
-	// StartAlertPoliciesWatch starts watcher for alert policies
-	StartAlertPoliciesWatch(ctx context.Context)
+	HandleAlerts(evtsDispatcher events.Dispatcher)
 
 	// GetDSCAgentStatus returns the current agent status
 	GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus)

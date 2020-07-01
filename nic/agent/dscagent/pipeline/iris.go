@@ -2341,7 +2341,7 @@ func (i *IrisAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, err
 }
 
 // HandleAlerts unimplemented
-func (i *IrisAPI) HandleAlerts(ctx context.Context, evtsDispatcher events.Dispatcher) {
+func (i *IrisAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
 	return
 }
 
@@ -2439,11 +2439,6 @@ func (i *IrisAPI) startDynamicWatch(kinds []string) {
 
 	}
 	go startWatcher()
-}
-
-// StartAlertPoliciesWatch starts alert policies watch
-func (a *IrisAPI) StartAlertPoliciesWatch(ctx context.Context) {
-	return
 }
 
 // GetDSCAgentStatus returns the current agent status

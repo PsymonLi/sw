@@ -164,10 +164,13 @@ func (a *ApuluAPI) PipelineInit() error {
 	// initialize stream for Lif events
 	a.initEventStream()
 
+	// handle alerts & alert policies
+	a.startAlertPoliciesWatch()
+
 	// handle all the metrics
 	apulu.HandleMetrics(a.InfraAPI, a.MetricsSvcClient)
-	// Ensure that the watches for all objects are set up since Apulu doesn't have a profile that dictates which objects to be watched
 
+	// Ensure that the watches for all objects are set up since Apulu doesn't have a profile that dictates which objects to be watched
 	a.startDynamicWatch(types.CloudPipelineKinds)
 
 	// Start a tech support watcher. Ideally this should be handled via nimbus aggregate watch. In such a case we could have
@@ -1514,9 +1517,9 @@ func (a *ApuluAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, er
 }
 
 // HandleAlerts start consuming alerts from operd plugin & export
-func (a *ApuluAPI) HandleAlerts(ctx context.Context, evtsDispatcher events.Dispatcher) {
+func (a *ApuluAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
 	// handle all the alerts
-	apulu.HandleAlerts(ctx, evtsDispatcher, a.AlertsSvcClient)
+	apulu.HandleAlerts(evtsDispatcher, a.AlertsSvcClient)
 }
 
 // ReplayConfigs replays last known configs from boltDB
@@ -2431,26 +2434,26 @@ func (a *ApuluAPI) startDynamicWatch(kinds []string) {
 	go startWatcher()
 }
 
-func (a *ApuluAPI) StartAlertPoliciesWatch(ctx context.Context) {
-	log.Infof("Starting Alert policy Watch")
-	ticker := time.NewTicker(30 * time.Second)
-	for {
-		select {
-		case <-ctx.Done():
-			log.Info("Context done, alert policy watch exiting")
-			return
-		case <-ticker.C:
-			if a.ControllerAPI == nil {
-				log.Info("Waiting for controller registration")
-			} else {
-				err := a.ControllerAPI.WatchAlertPolicies(ctx)
-				if err == nil {
-					log.Infof("Watching Alert policies")
-					return
+func (a *ApuluAPI) startAlertPoliciesWatch() {
+	log.Infof("Initiating alert policy watch")
+	startAlertPolicyWatcher := func() {
+		ticker := time.NewTicker(5 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				if a.ControllerAPI == nil {
+					log.Info("Waiting for controller registration before starting alert policy watch")
+				} else {
+					err := a.ControllerAPI.WatchAlertPolicies()
+					if err == nil {
+						log.Infof("Started alert policy watch")
+						return
+					}
 				}
 			}
 		}
 	}
+	go startAlertPolicyWatcher()
 }
 
 // GetDSCAgentStatus returns the current agent status

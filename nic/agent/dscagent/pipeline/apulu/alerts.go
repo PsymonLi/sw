@@ -13,7 +13,7 @@ import (
 
 	gogoproto "github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/pensando/sw/api"
 	evtsapi "github.com/pensando/sw/api/generated/events"
@@ -29,10 +29,10 @@ import (
 
 var UnhealthyServices []string
 
-// helper function to convert HAL alert to venice alert
+// helper function to convert operd alert to venice alert
 func convertToVeniceAlert(nEvt *operdapi.Alert) *evtsapi.Event {
 	uuid := uuid.NewV4().String()
-	// TODO: Timestamp is not populated by pdsagent
+	// TODO: Timestamp is not populated by operd
 	// until then use current time instead of nEvt.GetTimestamp()
 	ts := gogoproto.TimestampNow()
 
@@ -72,17 +72,22 @@ func convertToVeniceAlert(nEvt *operdapi.Alert) *evtsapi.Event {
 	return vAlert
 }
 
-func queryAlerts(ctx context.Context, evtsDispatcher events.Dispatcher, stream operdapi.AlertsSvc_AlertsGetClient) {
+func queryAlerts(evtsDispatcher events.Dispatcher, client operdapi.AlertsSvcClient) {
+	emptyStruct := &halapi.Empty{}
+
+	// create a stream for alerts
+	stream, err := client.AlertsGet(context.Background(), emptyStruct)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrAlertsGet,
+			"AlertsGet failure | Err %v", err))
+		return
+	}
+
+	log.Info("Streaming alerts from pen-oper plugin")
 	for {
 		resp, err := stream.Recv()
 		if err == io.EOF {
 			break
-		}
-		select {
-		case <-ctx.Done():
-			log.Info("Closing alerts query with pen-oper")
-			return
-		default:
 		}
 		if err != nil {
 			log.Error(errors.Wrapf(types.ErrAlertsRecv,
@@ -107,46 +112,32 @@ func queryAlerts(ctx context.Context, evtsDispatcher events.Dispatcher, stream o
 		// send to dispatcher
 		if err := evtsDispatcher.Action(*vAlert); err != nil {
 			log.Error(errors.Wrapf(types.ErrAlertsFwd,
-				"Error forwarding alert {%+v} to venice, err: %v", alert, err))
-			return
+				"Error dispatching alert {%+v}, err: %v", alert, err))
 		} else {
-			log.Infof("Forwarded alert %+v to venice", alert)
+			log.Infof("Dispatched alert %+v", alert)
 		}
 	}
 	return
 }
 
 // HandleAlerts handles collecting and reporting of alerts
-func HandleAlerts(ctx context.Context, evtsDispatcher events.Dispatcher, client operdapi.AlertsSvcClient) {
-	emptyStruct := &halapi.Empty{}
-	// create a stream for alerts
-	alertsStream, err := client.AlertsGet(ctx, emptyStruct)
-	if err != nil {
-		log.Error(errors.Wrapf(types.ErrAlertsGet,
-			"AlertsGet failure | Err %v", err))
-		return
-	}
-
+func HandleAlerts(evtsDispatcher events.Dispatcher, client operdapi.AlertsSvcClient) {
 	// periodically query for alerts from pen_oper plugin
-	go func(stream operdapi.AlertsSvc_AlertsGetClient) {
+	startAlertsExport := func() {
 		ticker := time.NewTicker(time.Second * 5)
-
 		for {
 			select {
-			case <-ctx.Done():
-				log.Info("Closing periodic alerts query with pen-oper")
-				return
 			case <-ticker.C:
-				log.Info("Querying alerts")
 				penOperURL := fmt.Sprintf("127.0.0.1:%s", types.PenOperGRPCDefaultPort)
 				if utils.IsServerUp(penOperURL) == false {
-					// pen_oper is not up yet, skip querying
+					// wait until pen-oper plugin is up
 					continue
 				}
-				queryAlerts(ctx, evtsDispatcher, stream)
+				queryAlerts(evtsDispatcher, client)
 			}
 		}
-	}(alertsStream)
+	}
+	go startAlertsExport()
 	return
 }
 

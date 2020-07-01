@@ -213,6 +213,8 @@ func (c *API) HandleVeniceCoordinates(obj types.DistributedServiceCardStatus) er
 			log.Error(errors.Wrapf(types.ErrControllerWatcherStop, "Controller API: %s", err))
 		}
 		c.Unlock()
+		// stop network mode services on moving to host mode
+		c.stopNetworkModeServices()
 		c.InfraAPI.StoreConfig(obj)
 
 		if err := c.PipelineAPI.PurgeConfigs(true); err != nil {
@@ -310,7 +312,6 @@ func (c *API) start(ctx context.Context) error {
 
 		watchExited := make(chan bool)
 		netIfExited := make(chan bool)
-		alertsWatcherExited := make(chan bool)
 		go func() {
 			c.watchObjects()
 			watchExited <- true
@@ -324,22 +325,12 @@ func (c *API) start(ctx context.Context) error {
 			netIfExited <- true
 		}()
 
-		alertsCtx, cancelAlertsWatcher := context.WithCancel(ctx)
-		// Start Alerts watcher
-		go func() {
-			c.alertsWatcher(alertsCtx)
-			alertsWatcherExited <- true
-		}()
-
 		// TODO Watch for Mirror and NetflowSessions
 		<-watchExited
 		cancelNetIf()
 		<-netIfExited
-		cancelAlertsWatcher()
-		<-alertsWatcherExited
 
 		c.closeConnections()
-		c.stopAlertPoliciesWatch()
 		time.Sleep(types.ControllerWaitDelay)
 
 	}
@@ -384,8 +375,8 @@ func (c *API) startPolicyWatcher() {
 	}()
 }
 
-func (c *API) stopAlertPoliciesWatch() {
-	log.Info("Stopping alert policy watchers")
+func (c *API) stopNetworkModeServices() {
+	log.Info("Stopping network mode services")
 	if c.policyWatcher != nil {
 		c.policyWatcher.Stop()
 		c.policyWatcher = nil
@@ -398,22 +389,13 @@ func (c *API) stopAlertPoliciesWatch() {
 
 	if c.evtsDispatcher != nil {
 		c.evtsDispatcher.DeleteExporter(exporters.Venice.String())
-		c.evtsDispatcher.Shutdown()
-		c.evtsDispatcher = nil
 	}
-	if c.evtsRPCServer != nil {
-		c.evtsRPCServer.Stop()
-		c.evtsRPCServer = nil
-	}
+	// not shutting down dispatcher / proxy server on switching to host mode
+	// so that events can still be logged in persistent store
 }
 
 // WatchAlertPolicies watches for alert/event policies & handles alerts. Cloud Pipeline only
-func (c *API) WatchAlertPolicies(ctx context.Context) error {
-
-	if c.WatchCtx == nil {
-		log.Info("Controller API: WatchCtx is not set")
-		return fmt.Errorf("Controller API: WatchCtx is not set")
-	}
+func (c *API) WatchAlertPolicies() error {
 
 	if c.ResolverClient == nil {
 		log.Info("Controller API: Resolver client is not set yet")
@@ -479,7 +461,7 @@ func (c *API) WatchAlertPolicies(ctx context.Context) error {
 	c.evtsRPCServer = rpcServer
 	c.evtsDispatcher.Start()
 	log.Info("Controller API: Started Events Dispatcher")
-	c.PipelineAPI.HandleAlerts(ctx, c.evtsDispatcher)
+	c.PipelineAPI.HandleAlerts(c.evtsDispatcher)
 	return nil
 }
 
@@ -643,7 +625,6 @@ func (c *API) Stop() error {
 	c.cancelWatcher = nil
 
 	c.closeConnections()
-	c.stopAlertPoliciesWatch()
 	// Wait for nimbus client to drain all active watchers
 	c.Wait()
 
@@ -651,11 +632,6 @@ func (c *API) Stop() error {
 	c.nimbusClient = nil
 
 	return nil
-}
-
-func (c *API) alertsWatcher(ctx context.Context) {
-	log.Infof("Starting Alerts watcher")
-	c.PipelineAPI.StartAlertPoliciesWatch(ctx)
 }
 
 func (c *API) netIfWorker(ctx context.Context) {
