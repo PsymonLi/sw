@@ -248,7 +248,7 @@ vpc:
               srcguard: false         # true or false (default false)
               public  : false
               tagged  : true         # true or false (default true)
-              vnicencapvalue : 999
+              vnicencapvalue : 998
               vnictype : "local"
               remoteroutes :
                     - '3.1.0.0\24'
