@@ -1420,15 +1420,15 @@ func TestOverlayTxn(t *testing.T) {
 	err = txn2.Update(key, testobj)
 	AssertOk(t, err, "update failed")
 
-	err = txn1.Delete(key)
-	AssertOk(t, err, "delete failed")
-	err = txn2.Delete(key)
-	AssertOk(t, err, "delete failed")
-
 	err = txn1.Touch(key)
 	AssertOk(t, err, "touch failed")
 	err = txn2.Touch(key)
 	AssertOk(t, err, "touch failed")
+
+	err = txn1.Delete(key)
+	AssertOk(t, err, "delete failed")
+	err = txn2.Delete(key)
+	AssertOk(t, err, "delete failed")
 
 	Assert(t, !txn1.IsEmpty(), "should not be empty")
 }
