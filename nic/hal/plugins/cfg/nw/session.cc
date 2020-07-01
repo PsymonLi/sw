@@ -4246,7 +4246,7 @@ session_set_tcp_state (session_t *session, hal::flow_role_t role,
     if (flow)
         flow->state = tcp_state;
 
-    HAL_TRACE_DEBUG("Updated tcp state to {}", (uint32_t)tcp_state);
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "Updated tcp state to {}", (uint32_t)tcp_state);
 }
 
 bool
