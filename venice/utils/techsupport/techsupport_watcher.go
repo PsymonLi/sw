@@ -8,7 +8,10 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 	tsconfig "github.com/pensando/sw/venice/ctrler/tsm/config"
+	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/rpckit"
 
 	action "github.com/pensando/sw/venice/utils/techsupport/actionengine"
 	export "github.com/pensando/sw/venice/utils/techsupport/exporter"
@@ -38,13 +41,30 @@ func (ag *TSMClient) runTechSupportWatcher() {
 	defer func() {
 		log.Infof("Stopping Techsupport Watcher")
 		ag.waitGrp.Done()
+
+		if ag.tsGrpcClient != nil {
+			ag.tsGrpcClient.Close()
+			ag.tsGrpcClient = nil
+		}
 	}()
 
 	for {
-		if ag.tsGrpcClient == nil {
-			log.Errorf("grpcclient is not initialized. cannot start techsupport watcher.")
-			return
+		log.Infof("Creating Techsupport RPC Client")
+		if ag.tsGrpcClient != nil {
+			ag.tsGrpcClient.Close()
+			ag.tsGrpcClient = nil
 		}
+
+		tsGrpcClient, err := rpckit.NewRPCClient(ag.name, globals.Tsm, rpckit.WithBalancer(balancer.New(ag.resolverClient)))
+		if err != nil {
+			log.Errorf("Failed to create rpc client. Err : %v. Retrying...", err)
+			if ag.isStopped() {
+				return
+			}
+			time.Sleep(time.Second)
+			continue
+		}
+		ag.tsGrpcClient = tsGrpcClient
 
 		// start watch for techsupport requests
 		client := tsproto.NewTechSupportApiClient(ag.tsGrpcClient.ClientConn)
@@ -80,7 +100,6 @@ func (ag *TSMClient) runTechSupportWatcher() {
 			ag.notifications = append(ag.notifications, evtList.Events...)
 			ag.handleTechSupportEvents(evtList)
 		}
-		log.Infof("TSMClient %s stopped watch", ag.name)
 	}
 }
 

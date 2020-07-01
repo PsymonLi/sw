@@ -7,7 +7,10 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/diagnostics"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
+	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/rpckit"
 )
 
 func (ag *TSMClient) handleModuleEvent(event *diagnostics.Module) {
@@ -37,47 +40,68 @@ func (ag *TSMClient) RunModuleWatcher() {
 	defer func() {
 		log.Infof("Stopping module watcher")
 		ag.waitGrp.Done()
+
+		if ag.diagGrpcClient != nil {
+			ag.diagGrpcClient.Close()
+			ag.diagGrpcClient = nil
+		}
 	}()
 
-	if ag.tsGrpcClient == nil {
-		log.Errorf("techsupport grpc client not initialized. cannot start module watcher.")
-		return
-	}
-
-	ag.diagnosticsAPIClient = tsproto.NewDiagnosticsApiClient(ag.tsGrpcClient.ClientConn)
-	if ag.diagnosticsAPIClient == nil {
-		log.Error("Failed to create diagnostics API Client.")
-		return
-	}
-
-	opt1 := &api.ListWatchOptions{
-		FieldSelector: fmt.Sprintf("status.mac-address=%s", ag.mac),
-	}
-	opt1.Name = fmt.Sprintf("%s*", ag.mac)
-
-	stream, err := ag.diagnosticsAPIClient.WatchModule(ag.ctx, opt1)
-	if err != nil {
-		log.Errorf("Failed to establish watch on module. Err : %v", err)
-		return
-	}
-
-	log.Infof("Started watching module objects for %v", opt1.Name)
-
 	for {
-		moduleEvent, err := stream.Recv()
+		log.Infof("Creating Diag RPC Client")
+		if ag.diagGrpcClient != nil {
+			ag.diagGrpcClient.Close()
+			ag.diagGrpcClient = nil
+		}
 
+		diagGrpcClient, err := rpckit.NewRPCClient(ag.name, globals.Tsm, rpckit.WithBalancer(balancer.New(ag.resolverClient)))
 		if err != nil {
-			log.Errorf("Error in receiving stream: %v", err)
+			log.Errorf("Failed to create rpc client. Err : %v. Retrying...", err)
+
 			if ag.isStopped() {
-				log.Log("Agent stopped.")
 				return
 			}
 
 			time.Sleep(time.Second)
-			break
+			continue
+		}
+		ag.diagGrpcClient = diagGrpcClient
+
+		ag.diagnosticsAPIClient = tsproto.NewDiagnosticsApiClient(ag.diagGrpcClient.ClientConn)
+		if ag.diagnosticsAPIClient == nil {
+			log.Error("Failed to create diagnostics API Client.")
+			return
 		}
 
-		ag.moduleCh <- *moduleEvent
-		ag.handleModuleEvent(moduleEvent)
+		opt1 := &api.ListWatchOptions{
+			FieldSelector: fmt.Sprintf("status.mac-address=%s", ag.mac),
+		}
+		opt1.Name = fmt.Sprintf("%s*", ag.mac)
+
+		stream, err := ag.diagnosticsAPIClient.WatchModule(ag.ctx, opt1)
+		if err != nil {
+			log.Errorf("Failed to establish watch on module. Err : %v", err)
+			return
+		}
+
+		log.Infof("Started watching module objects for %v", opt1.Name)
+
+		for {
+			moduleEvent, err := stream.Recv()
+
+			if err != nil {
+				log.Errorf("Error in receiving stream: %v", err)
+				if ag.isStopped() {
+					log.Log("Agent stopped.")
+					return
+				}
+
+				time.Sleep(time.Second)
+				break
+			}
+
+			ag.moduleCh <- *moduleEvent
+			ag.handleModuleEvent(moduleEvent)
+		}
 	}
 }

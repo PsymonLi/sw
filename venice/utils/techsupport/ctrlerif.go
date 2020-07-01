@@ -40,7 +40,8 @@ type TSMClient struct {
 	// the notifications that have been received
 	notifications []*tsproto.TechSupportRequestEvent
 	// rpc client used to watch and send updates
-	tsGrpcClient *rpckit.RPCClient
+	tsGrpcClient   *rpckit.RPCClient
+	diagGrpcClient *rpckit.RPCClient
 	// API client used to watch and send updates
 	tsAPIClient          tsproto.TechSupportApiClient
 	diagnosticsAPIClient tsproto.DiagnosticsApiClient
@@ -160,6 +161,11 @@ func (ag *TSMClient) Stop() {
 		ag.tsGrpcClient = nil
 	}
 	ag.tsAPIClient = nil
+
+	if ag.diagGrpcClient != nil {
+		ag.diagGrpcClient.Close()
+		ag.diagGrpcClient = nil
+	}
 	ag.diagnosticsAPIClient = nil
 
 	if ag.resolverClient != nil {
