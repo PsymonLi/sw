@@ -14,6 +14,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/apollo/framework/api_ipc.hpp"
+#include "nic/apollo/core/core.hpp"
 
 namespace api {
 
@@ -48,7 +49,7 @@ static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
     // IPC peers interseted in MIRROR_SESSION object
     { OBJ_ID_MIRROR_SESSION,
         {
-            { PDS_IPC_ID_ROUTING, false},
+            { core::PDS_THREAD_ID_ROUTING_CFG, false},
         }
     },
     // IPC peers interseted in NAT_PORT_BLOCK object
@@ -67,6 +68,12 @@ static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
     { OBJ_ID_SECURITY_PROFILE,
         {
             { PDS_IPC_ID_VPP, false},
+        }
+    },
+    // IPC peers interseted in TEP object
+    { OBJ_ID_TEP,
+        {
+            { core::PDS_THREAD_ID_ROUTING_CFG, false},
         }
     },
 };

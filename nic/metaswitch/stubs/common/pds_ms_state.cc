@@ -15,8 +15,8 @@ namespace pds_ms {
 
 state_t* state_t::g_state_ = nullptr;
 std::recursive_mutex state_t::g_mtx_;
-
 template<> sdk::lib::slab* slab_obj_t<cookie_t>::slab_ = nullptr;
+sdk::event_thread::event_thread* state_t::routing_cfg_thr = nullptr;
 
 state_t::state_t(void)
 {

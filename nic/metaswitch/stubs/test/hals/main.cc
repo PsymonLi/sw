@@ -453,7 +453,8 @@ TEST(pds_ms_ip_track_test, crud_test) {
    int repeat = 2000;
     for (int i=0; i< repeat; ++i) { 
         auto ip_track_obj_key = pds_ms::msidx2pdsobjkey(mirror_id++);
-        pds_ms::ip_track_add(ip_track_obj_key, track, OBJ_ID_MIRROR_SESSION);
+        pds_ms::ip_track_add(ip_track_obj_key, track, OBJ_ID_MIRROR_SESSION,
+                             false /* create */);
         ip_track_obj_map.emplace(std::make_pair(track, ip_track_obj_key));
         track.addr.v4_addr += 1;
     }

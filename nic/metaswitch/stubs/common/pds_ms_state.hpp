@@ -24,12 +24,13 @@ extern "C"
 #include "nic/metaswitch/stubs/common/pds_ms_ecmp_idx_guard.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_ifindex.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_ip_track_store.hpp"
+#include "nic/apollo/learn/learn_api.hpp"
 #include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
 #include "nic/sdk/lib/slab/slab.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/port.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
-#include "nic/apollo/learn/learn_api.hpp"
+#include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include <mutex>
 #include <memory>
 #include <unordered_set>
@@ -111,6 +112,7 @@ public:
             learn::api_batch_commit(bg_.release());
         }
     }
+
 public:
     tep_store_t& tep_store(void) {return tep_store_;}
     bd_store_t&  bd_store(void) {return bd_store_;}
@@ -178,6 +180,8 @@ public:
     NTL_TIMER_LIST_CB *get_route_timer_list() { return &route_timer_list_; }
     
     void init_timer_list(NTL_TIMER_LIST_CB *, NTL_TIMER_PROC *);
+
+    static sdk::event_thread::event_thread* routing_cfg_thr;
 
 private:
     static constexpr uint32_t k_max_fp_ports = 2;

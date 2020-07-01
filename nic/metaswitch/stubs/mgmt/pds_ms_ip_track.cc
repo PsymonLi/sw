@@ -63,14 +63,16 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
             ip_track_obj = state->ip_track_store().get(pds_obj_key);
 
             if (ip_track_obj == nullptr && stop) {
-                PDS_TRACE_INFO("Dest IP track %s stop entry not found",
-                               pds_obj_key.str());
+                PDS_TRACE_VERBOSE("Dest IP track %s stop entry not found",
+                                  pds_obj_key.str());
                 return SDK_RET_ENTRY_NOT_FOUND;
             }
             if (ip_track_obj != nullptr && !stop) {
-                PDS_TRACE_INFO("UUID %s Dest IP track %s start entry already exists",
-                               pds_obj_key.str(), ipaddr2str(&destip));
-                return SDK_RET_ENTRY_EXISTS;
+                if (IPADDR_EQ(&ip_track_obj->destip(), &destip)) {
+                    PDS_TRACE_VERBOSE("UUID %s Dest IP track %s start entry already exists",
+                                   pds_obj_key.str(), ipaddr2str(&destip));
+                    return SDK_RET_ENTRY_EXISTS;
+                }
             }
             if (stop) {
                 destip = ip_track_obj->destip();
@@ -158,10 +160,12 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
 
 // API called when a Dest IP needs to be tracked
 sdk_ret_t
-ip_track_add (const pds_obj_key_t& pds_obj_key, ip_addr_t& destip, obj_id_t pds_obj_id)
+ip_track_add (const pds_obj_key_t& pds_obj_key, ip_addr_t& destip,
+              obj_id_t pds_obj_id, bool op_update)
 {
     std::lock_guard<std::mutex> lck(pds_ms::mgmt_state_t::grpc_lock());
-    return configure_static_tracking_route_(pds_obj_key, destip, pds_obj_id, false);
+    return configure_static_tracking_route_(pds_obj_key, destip, pds_obj_id,
+                                            false);
 }
 
 // API called when a Dest IP no longer needs to be tracked
@@ -170,7 +174,8 @@ ip_track_del (const pds_obj_key_t& pds_obj_key)
 {
     ip_addr_t dummy_ip = {0};
     std::lock_guard<std::mutex> lck(pds_ms::mgmt_state_t::grpc_lock());
-    return configure_static_tracking_route_(pds_obj_key, dummy_ip, OBJ_ID_NONE, true);
+    return configure_static_tracking_route_(pds_obj_key, dummy_ip, OBJ_ID_NONE,
+                                            true /* delete */);
 }
 
 // API called from gRPC test

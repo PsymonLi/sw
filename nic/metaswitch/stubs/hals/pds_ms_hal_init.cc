@@ -12,18 +12,21 @@
 #include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_l2f_mai.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hals_route.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_cfg_msg.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/lib/ipc/ipc_ms.hpp"
 #include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/api/core/msg.h"
+#include "nic/apollo/core/core.hpp"
 #include "nic/apollo/core/msg.h"
 #include "nic/apollo/agent/core/core.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
+#include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include <li_fte.hpp>
 
 extern NBB_ULONG li_proc_id;
@@ -185,25 +188,6 @@ hal_event_callback (sdk::ipc::ipc_msg_ptr msg, const void *ctx)
     return;
 }
 
-static void
-pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
-{
-    pds_cfg_msg_t *cfg_msg;
-    pds_msg_list_t *msg_list;
-    sdk_ret_t ret = SDK_RET_OK;
-
-    PDS_TRACE_DEBUG("Rcvd PDS_MSG_TYPE_CFG_OBJ_SET IPC msg");
-    msg_list = (pds_msg_list_t *)ipc_msg->data();
-    for (uint32_t i = 0; i < msg_list->num_msgs; i++) {
-        cfg_msg = &msg_list->msgs[i].cfg_msg;
-        PDS_TRACE_DEBUG("Rcvd api obj %u, api op %u", cfg_msg->obj_id,
-                        cfg_msg->op);
-        // TODO: handle the msg
-        ret = SDK_RET_OK;
-    }
-    sdk::ipc::respond(ipc_msg, (const void *)&ret, sizeof(sdk_ret_t));
-}
-
 void
 ipc_init_cb (int fd, sdk::ipc::handler_ms_cb cb, void *ctx)
 {
@@ -216,6 +200,15 @@ ipc_init_cb (int fd, sdk::ipc::handler_ms_cb cb, void *ctx)
     return;
 }
 
+static void
+init_routing_cfg_thr (void* ctx)
+{
+    PDS_TRACE_DEBUG ("Started Routing Cfg thread %p", state_t::routing_cfg_thr);
+
+    sdk::ipc::reg_request_handler(PDS_MSG_TYPE_CFG_OBJ_SET,
+                                  pds_msg_cfg_callback, NULL);
+}
+
 bool
 hal_init (void)
 {
@@ -225,20 +218,36 @@ hal_init (void)
     sdk::ipc::subscribe(EVENT_ID_IP_LEARN, &hal_event_callback, NULL);
     sdk::ipc::subscribe(EVENT_ID_MAC_AGE, &hal_event_callback, NULL);
     sdk::ipc::subscribe(EVENT_ID_IP_AGE, &hal_event_callback, NULL);
-    sdk::ipc::reg_request_handler(PDS_MSG_TYPE_CFG_OBJ_SET,
-                                  pds_msg_cfg_callback, NULL);
     // Initialize the Nbase timer list
     {
         auto ctx = state_t::thread_context();
         ctx.state()->init_timer_list(ctx.state()->get_route_timer_list(),
                                      route_timer_expiry_cb);
     }
+
+    // Routing config thread receives the IP track events from
+    // HAL API thread and converts them to MS CTM MIB requests
+    // Need a separate thread to avoid blocking on CTM completion from
+    // the main NBASE threads.
+    state_t::routing_cfg_thr = sdk::event_thread::event_thread::factory(
+        "routing_cfg", core::PDS_THREAD_ID_ROUTING_CFG,
+        sdk::lib::THREAD_ROLE_CONTROL,
+        0x0, // use all control cores
+        init_routing_cfg_thr, // entry fn
+        NULL, // exit fn
+        NULL, // event callbak
+        sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+        sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+        true /* can yield */, true /* sync ipc */);
+
+    state_t::routing_cfg_thr->start(nullptr);
     return true;
 }
 
 void
 hal_deinit (void)
 {
+    // Routing config thread is automatically cleaned up by HAL
     return;
 }
 

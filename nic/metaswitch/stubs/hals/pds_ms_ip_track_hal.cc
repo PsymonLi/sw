@@ -3,6 +3,8 @@
 
 #include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_defs.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
+#include "nic/apollo/api/internal/pds_tep.hpp"
 
 namespace pds_ms {
 
@@ -13,20 +15,27 @@ ip_track_reachability_change (const pds_obj_key_t& pds_obj_key,
 							  ms_hw_tbl_id_t nhgroup_id,
 							  obj_id_t pds_obj_id) {
 
-    PDS_TRACE_DEBUG("++++ UUID %s IP Track %s reachability change to "
-                    "Underlay NHgroup %d ++++",
-                    pds_obj_key.str(), ipaddr2str(&destip), nhgroup_id);
+    api::nh_info_t nhinfo;
+    nhinfo.nh_type = PDS_NH_TYPE_UNDERLAY_ECMP;
+    nhinfo.nh_group = msidx2pdsobjkey(nhgroup_id, true /* underlay UUID */);
 
-    // TODO Call HAL API based on obj type
-    // pds_obj_key_t nh_group = msidx2pdsobjkey(nhgroup_id);
+    // HAL does not take const keys
+    auto key = pds_obj_key;
 
     switch (pds_obj_id) {
-        case OBJ_ID_MIRROR_SESSION:
-            break;
-        case OBJ_ID_TEP:
-            break;
-        default:
-            SDK_ASSERT(0);
+    case OBJ_ID_TEP:
+        PDS_TRACE_DEBUG("++++ IP track UUID %s TEP %s reachability change"
+                        " to underlay NHgroup %d ++++",
+                        pds_obj_key.str(), ipaddr2str(&destip), nhgroup_id);
+        api::pds_tep_update(&key, &nhinfo);
+        break;
+    case OBJ_ID_MIRROR_SESSION:
+        PDS_TRACE_DEBUG("++++ IP track UUID %s Mirror session %s"
+                        " reachability change to underlay NHgroup %d ++++",
+                        pds_obj_key.str(), ipaddr2str(&destip), nhgroup_id);
+        break;
+    default:
+        SDK_ASSERT(0);
     }
     return SDK_RET_OK;
 }

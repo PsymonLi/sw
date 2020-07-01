@@ -303,6 +303,7 @@ pds_ms_ctm_rcv_ips (NBB_IPS *ips NBB_CCXT NBB_CXT)
 ms_txn_guard_t::ms_txn_guard_t(uint32_t pid, NBB_ULONG correlator) {
     if (nbb_thread_global_data == nullptr) {
         nbb_thread_global_data = nbb_alloc_tgd();
+        nbb_alloced_tgd_ = true;
     }
     nbs_enter_shared_context(pid, &saved_context_ NBB_CCXT);
     NBS_GET_SHARED_DATA();
@@ -331,7 +332,7 @@ ms_txn_guard_t::~ms_txn_guard_t(void) {
     correlator_ = 0;
     NBS_RELEASE_SHARED_DATA();
     nbs_exit_shared_context(&saved_context_  NBB_CCXT);
-    if (nbb_thread_global_data != nullptr) {
+    if (nbb_alloced_tgd_) {
         nbb_free_tgd(NBB_CXT);
     }
     if (!end_txn_) {

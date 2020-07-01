@@ -21,6 +21,7 @@
 #include "gen/proto/device.grpc.pb.h"
 #include "gen/proto/interface.grpc.pb.h"
 #include <gen/proto/vpc.grpc.pb.h>
+#include <gen/proto/tunnel.grpc.pb.h>
 #include <gen/proto/subnet.grpc.pb.h>
 #include <gen/proto/bgp.grpc.pb.h>
 #include <gen/proto/evpn.grpc.pb.h>
@@ -69,6 +70,7 @@ static unique_ptr<pds::IfSvc::Stub>     g_rr_if_stub_;
 static unique_ptr<pds::BGPSvc::Stub>    g_rr_bgp_stub_;
 static unique_ptr<pds::CPRouteSvc::Stub> g_rr_route_stub_;
 static unique_ptr<pds_ms::DebugPdsMsSvc::Stub>  g_rr_debug_stub_;
+static unique_ptr<pds::TunnelSvc::Stub>    g_tunnel_stub_;
 
 // Simulate random UUIDs
 static constexpr int k_underlay_vpc_id = 10;
@@ -80,6 +82,7 @@ static constexpr int k_bgp_id = 50;
 static constexpr int k_l3_if_id  = 400;
 static constexpr int k_l3_if_id_2  = 410;
 static constexpr int k_lo_if_id  = 401;
+static constexpr int k_tunnel_id  = 500;
 static int g_mirror_id  = 601;
 
 static void create_device_proto_grpc (bool overlay_routing = true) {
@@ -1056,6 +1059,39 @@ static void delete_ip_track (ip_addr_t& ip, uint32_t id) {
     }
 }
 
+static void create_tunnel_proto_grpc () {
+    TunnelRequest      request;
+    TunnelResponse     response;
+    ClientContext   context;
+    Status          ret_status;
+
+    auto proto_spec = request.add_request();
+    proto_spec->set_id(pds_ms::msidx2pdsobjkey(k_tunnel_id).id, PDS_MAX_KEY_LEN);
+    proto_spec->set_vpcid(pds_ms::msidx2pdsobjkey(k_underlay_vpc_id).id, PDS_MAX_KEY_LEN);
+
+    auto localip = proto_spec->mutable_localip();
+    localip->set_af(types::IP_AF_INET);
+    localip->set_v4addr(0xa0000001);
+
+    auto peerip = proto_spec->mutable_remoteip();
+    peerip->set_af(types::IP_AF_INET);
+    peerip->set_v4addr(0xc0000001);
+
+#if 0
+    auto proto_encap = proto_spec->mutable_encap();
+    proto_encap->set_type(types::ENCAP_TYPE_VXLAN);
+    proto_encap->mutable_value()->set_vnid(200);
+#endif
+    printf ("Pushing Tunnel proto...\n");
+    ret_status = g_tunnel_stub_->TunnelCreate(&context, request, &response);
+    if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
+        printf("%s failed! ret_status=%d (%s) response.status=%d\n",
+                __FUNCTION__, ret_status.error_code(), ret_status.error_message().c_str(),
+                response.apistatus());
+        exit(1);
+    }
+}
+
 static void configure_overlay (bool different=false)
 {
     create_vpc_proto_grpc();
@@ -1096,6 +1132,7 @@ int main(int argc, char** argv)
     g_rr_bgp_stub_     = BGPSvc::NewStub (rr_channel);
     g_rr_route_stub_   = CPRouteSvc::NewStub (rr_channel);
     g_rr_debug_stub_   = pds_ms::DebugPdsMsSvc::NewStub (rr_channel);
+    g_tunnel_stub_     = TunnelSvc::NewStub (channel);
 
     mac_str_to_addr(g_test_conf_.mac_address.c_str(), g_system_mac_addr);
 
@@ -1157,6 +1194,9 @@ int main(int argc, char** argv)
             create_bgp_peer_proto_grpc(false, true /* second peer */);
             create_bgp_peer_af_proto_grpc(false, true);
             sleep (2);
+        }
+        if (underlay_only && g_node_id == 1) {
+            create_tunnel_proto_grpc();
         }
         if (underlay_only)  {
             printf ("Testapp Config Init is successful!\n");

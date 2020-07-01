@@ -122,12 +122,7 @@ NBB_BYTE hals_l3_integ_subcomp_t::nhpi_squash_cascaded_hops() {
     // But in Squashed pathset mode, PSM returns a Direct pathset containing
     // nexthops for each ToR which is ideal for us to program HAL.
     //
-    auto mgmt_ctxt = mgmt_state_t::thread_context();
-    if (mgmt_ctxt.state()->overlay_routing_en()) {
-        PDS_TRACE_INFO ("NHPI registration Enable Cascaded pathsets");
-        return ATG_NO;
-    }
-    PDS_TRACE_INFO ("NHPI registration Disable Cascaded pathsets");
-    return ATG_YES;
+    PDS_TRACE_INFO ("NHPI registration Enable Cascaded pathsets");
+    return ATG_NO;
 }
 } // End namespace

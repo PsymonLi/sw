@@ -16,7 +16,7 @@ ip_track_reachability_change (const pds_obj_key_t& pds_obj_key,
 							  ms_hw_tbl_id_t nhgroup_id,
 							  obj_id_t pds_obj_id);
 
-};
+} // End namespace
 
 #endif
 

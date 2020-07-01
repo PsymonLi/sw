@@ -32,6 +32,7 @@ public:
 private:
     NBB_SAVED_CONTEXT saved_context_;
     NBB_ULONG   correlator_ = 0;
+    bool nbb_alloced_tgd_ = false;
     bool end_txn_ = false;
 };
 

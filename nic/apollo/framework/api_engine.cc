@@ -636,7 +636,7 @@ api_engine::populate_api_msg_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
             continue;
         }
         if ((it->ipc_id == (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG) &&
-            (ipc_msg()->sender() == core::PDS_THREAD_ID_ROUTING)) {
+            (ipc_msg()->sender() == PDS_IPC_ID_ROUTING)) {
             // block this combination
             // TODO: move this out of api engine
             continue;

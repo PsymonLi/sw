@@ -31,6 +31,10 @@ namespace api {
 typedef struct api_obj_ipc_peer_info_s {
     pds_ipc_id_t ipc_id;
     bool ntfn;
+    api_obj_ipc_peer_info_s(pds_ipc_id_t ipc_id_, bool ntfn_)
+        : ipc_id (ipc_id_), ntfn (ntfn_) {};
+    api_obj_ipc_peer_info_s(uint32_t ipc_id_, bool ntfn_)
+        : ipc_id ((pds_ipc_id_t) ipc_id_), ntfn (ntfn_) {};
 } api_obj_ipc_peer_info_t;
 
 // list of IPC endpoint infos per API object

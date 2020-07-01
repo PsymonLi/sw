@@ -226,19 +226,8 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
                                             ips_info_.ecmp_id, pds_obj_id);
     }
 
-    if (mgmt_state_t::thread_context().state()->overlay_routing_en()) {
-        // No underlay route programming to HAL in overlay routing mode
-        return SDK_RET_OK;
-    }
-
-    // TODO temporary until non-overlay TEP also starts using the new
-    // DestIP track
-    pds_route_spec_t route_spec = {0};
-    auto& route_attrs = route_spec.attrs;
-    route_attrs.prefix = ips_info_.pfx;
-    route_attrs.nh_type = PDS_NH_TYPE_UNDERLAY_ECMP;
-    route_attrs.nh_group = msidx2pdsobjkey(ips_info_.ecmp_id, true);
-    return api::pds_underlay_route_update(&route_spec);
+    // No underlay route programming to HAL
+    return SDK_RET_OK;
 }
 
 sdk_ret_t hals_route_t::underlay_route_del_() {
