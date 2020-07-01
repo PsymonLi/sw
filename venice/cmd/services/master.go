@@ -293,6 +293,7 @@ func (m *masterService) Start() error {
 		URL:     fmt.Sprintf("%s:%s", globals.Localhost, globals.CMDGRPCAuthPort),
 	}
 	m.resolverSvc.AddServiceInstance(&localCMDSvcInstance)
+	go m.k8sSvc.ElasticCuratorPodCleanup()
 
 	// add local citadel service
 	var localCitadelInstance = k8stypes.ServiceInstance{

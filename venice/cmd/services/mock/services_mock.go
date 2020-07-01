@@ -385,6 +385,10 @@ func (m *K8sService) StartServices([]string) error {
 func (m *K8sService) Stop() {
 }
 
+// ElasticCuratorPodCleanup is a mock
+func (m *K8sService) ElasticCuratorPodCleanup() {
+}
+
 // DeleteNode deletes a node
 func (m *K8sService) DeleteNode(name string) error {
 	return nil

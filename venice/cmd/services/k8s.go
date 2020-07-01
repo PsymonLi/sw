@@ -32,8 +32,9 @@ import (
 )
 
 var (
-	interval           = time.Second * 30
-	memoryHogIndicator = "memory-hog"
+	interval                  = time.Second * 30
+	memoryHogIndicator        = "memory-hog"
+	curatorPodCleanupInterval = time.Minute * 3
 )
 
 const (
@@ -1052,4 +1053,29 @@ func isCronJob(pod *v1.Pod) bool {
 	}
 
 	return false
+}
+
+// ElasticCuratorPodCleanup clean up the curator pod after it's done
+func (k *k8sService) ElasticCuratorPodCleanup() {
+
+	ticker := time.NewTicker(curatorPodCleanupInterval)
+	for {
+		select {
+		case <-ticker.C:
+			if k.isLeader {
+				podList, err := k.client.CoreV1().Pods(defaultNS).List(metav1.ListOptions{LabelSelector: "job-name"})
+				if err != nil {
+					log.Errorf("Error getting pod from Kubernetes: %v", err)
+				}
+				for _, pod := range podList.Items {
+					if strings.HasPrefix(pod.Name, globals.ElasticSearchCurator) && pod.Status.ContainerStatuses[0].State.Terminated != nil {
+						err = k.client.CoreV1().Pods(defaultNS).Delete(pod.Name, &metav1.DeleteOptions{})
+						if err != nil {
+							log.Errorf("Delete of Pod %v Failed %v", pod.Name, err)
+						}
+					}
+				}
+			}
+		}
+	}
 }

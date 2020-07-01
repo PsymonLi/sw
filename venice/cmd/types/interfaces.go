@@ -249,6 +249,9 @@ type K8sService interface {
 
 	// Stop the k8s service.
 	Stop()
+
+	// ElasticCuratorPodCleanup clean up the curator pod after it's done
+	ElasticCuratorPodCleanup()
 }
 
 // NtpService is the interface for managing config of local NTP daemon (deployed through K8s)
