@@ -380,6 +380,7 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                 tag = obj.second.get<std::string>("tagged", "");
                 if (tag.empty() || !tag.compare("true")) {
                     test_params->tag_vnics = true;
+                    SDK_ASSERT(obj.second.find("vlan-start") != obj.second.not_found());
                     test_params->vlan_start =
                         std::stol(obj.second.get<std::string>("vlan-start"));
                 } else if (!tag.compare("false")) {
