@@ -421,9 +421,10 @@ def InitEthTxTsoPackets(tc, obj, args=None):
         segobj.GID('EXP_PKT%d' % i)
 
         segpkt = segobj.spktobj.spkt
-        segpkt[IP].id += i - 1
+        if IP in segpkt:
+            segpkt[IP].id = (segpkt[IP].id + i - 1) & 0xffff
         segpkt[TCP].payload.data = pkt[TCP].payload.data[bytes_off:bytes_off+seg_len]
-        segpkt[TCP].seq += bytes_off
+        segpkt[TCP].seq = (segpkt[TCP].seq + bytes_off) & 0xffffffff
 
         segobj.headers.payload.meta.size = seg_len
         segobj.payloadsize = seg_len
