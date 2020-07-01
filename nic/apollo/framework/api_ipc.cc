@@ -18,62 +18,62 @@
 
 namespace api {
 
-// WARNING !! WARNING !! WARNING !!
-// NOTE: keep ipc_peer_api_obj_map_t and api_obj_ipc_peer_map_t in sync always
-// WARNING !! WARNING !! WARNING !!
+// g_api_obj_ipc_peer_map contains subscription of IPC endpoints per object id
 static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
     // IPC peers interseted in DEVICE object
     { OBJ_ID_DEVICE,
         {
-            { PDS_IPC_ID_VPP, false},
+            { PDS_IPC_ID_VPP, false, {}},
         }
     },
     // IPC peers interseted in VPC object
     { OBJ_ID_VPC,
         {
-            { PDS_IPC_ID_VPP, false},
+            { PDS_IPC_ID_VPP, false, {}},
         }
     },
     // IPC peers interseted in SUBNET object
     { OBJ_ID_SUBNET,
         {
-            { PDS_IPC_ID_VPP, false},
+            { PDS_IPC_ID_VPP, false, {}},
         }
     },
     // IPC peers interseted in VNIC object
     { OBJ_ID_VNIC,
         {
-            { PDS_IPC_ID_VPP, false},
+            { PDS_IPC_ID_VPP, false, {}},
         }
     },
     // IPC peers interseted in MIRROR_SESSION object
     { OBJ_ID_MIRROR_SESSION,
         {
-            { core::PDS_THREAD_ID_ROUTING_CFG, false},
+            { (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG, false,
+                {PDS_IPC_ID_ROUTING}},
         }
     },
     // IPC peers interseted in NAT_PORT_BLOCK object
     { OBJ_ID_NAT_PORT_BLOCK,
         {
-            { PDS_IPC_ID_VPP, false},
+            { PDS_IPC_ID_VPP, false, {}},
         }
     },
     // IPC peers interseted in DHCP_POLICY object
     { OBJ_ID_DHCP_POLICY,
         {
-            { PDS_IPC_ID_VPP, false},
+            { PDS_IPC_ID_VPP, false, {}},
         }
     },
     // IPC peers interseted in SECURITY_PROFILE object
     { OBJ_ID_SECURITY_PROFILE,
         {
-            { PDS_IPC_ID_VPP, false},
+            { PDS_IPC_ID_VPP, false, {}},
         }
     },
     // IPC peers interseted in TEP object
     { OBJ_ID_TEP,
         {
-            { core::PDS_THREAD_ID_ROUTING_CFG, false},
+            { (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG, false,
+                {PDS_IPC_ID_ROUTING}},
         }
     },
 };

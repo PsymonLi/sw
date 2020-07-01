@@ -559,7 +559,11 @@ api_engine::count_api_msg_(obj_id_t obj_id, api_base *api_obj,
     // corresponding counters
     api_obj_ipc_peer_list_t& ipc_ep_list = ipc_peer_list(obj_id);
     for (auto it = ipc_ep_list.begin(); it != ipc_ep_list.end(); ++it) {
-        if (it->ipc_id == ipc_msg()->sender()) {
+        // if the sender and receiver are same, we can prune this msg
+        // if the sender is black listed by this receiver, we can prune this msg
+        if ((ipc_msg()->sender() == it->ipc_id) ||
+            (it->blocked_senders.find((pds_ipc_id_t)ipc_msg()->sender()) !=
+                 it->blocked_senders.end())) {
             continue;
         }
         // atleast one IPC endpoint is "potentially" interested in this API msg
@@ -632,13 +636,11 @@ api_engine::populate_api_msg_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     // to be send in respective msg list
     api_obj_ipc_peer_list_t& ipc_ep_list = ipc_peer_list(obj_ctxt->obj_id);
     for (auto it = ipc_ep_list.begin(); it != ipc_ep_list.end(); ++it) {
-        if (it->ipc_id == ipc_msg()->sender()) {
-            continue;
-        }
-        if ((it->ipc_id == (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG) &&
-            (ipc_msg()->sender() == PDS_IPC_ID_ROUTING)) {
-            // block this combination
-            // TODO: move this out of api engine
+        // if the sender and receiver are same, we can prune this msg
+        // if the sender is black listed by this receiver, we can prune this msg
+        if ((ipc_msg()->sender() == it->ipc_id) ||
+            (it->blocked_senders.find((pds_ipc_id_t)ipc_msg()->sender()) !=
+                 it->blocked_senders.end())) {
             continue;
         }
         if (it->ntfn) {
