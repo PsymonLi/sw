@@ -1027,8 +1027,9 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
 
     vnet_buffer(p)->pds_flow_data.ses_id = hdr->session_id;
     vnet_buffer(p)->pds_flow_data.flow_hash = hdr->flow_hash;
-    BIT_SET(vnet_buffer(p)->pds_flow_data.flags,
-            pds_get_cpu_flags_from_hdr(hdr));
+    vnet_buffer(p)->pds_flow_data.flags = pds_get_cpu_flags_from_hdr(hdr);
+    vnet_buffer2(p)->pds_nat_data.xlate_idx = 0;
+    vnet_buffer2(p)->pds_nat_data.xlate_idx2 = 0;
     if (vnic) {
         BIT_SET(vnet_buffer(p)->pds_flow_data.flags,
                 pds_get_cpu_flags_from_vnic(vnic));

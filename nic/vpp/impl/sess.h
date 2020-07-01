@@ -14,10 +14,10 @@ extern "C" {
 
 typedef struct session_info_s {
     uint16_t tx_rewrite_flags;
-    uint16_t tx_xlate_id;
+    uint32_t tx_xlate_id;
     uint16_t tx_xlate_id2;
     uint16_t rx_rewrite_flags;
-    uint16_t rx_xlate_id;
+    uint32_t rx_xlate_id;
     uint16_t rx_xlate_id2;
     uint16_t meter_id;
     uint64_t timestamp;
