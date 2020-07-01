@@ -60,6 +60,7 @@ using namespace sdk::asic::pd;
 #define RXDMA_SYMBOLS_MAX   13
 #define TXDMA_SYMBOLS_MAX   15
 #define IPSEC_N2H_GLOBAL_STATS_OFFSET 512
+#define NACL_TEST_LIF_TYPE  0x6
 
 #define UDP_SPORT_OFFSET    34
 #define UDP21_SPORT_OFFSET  66
@@ -98,12 +99,14 @@ typedef struct cache_line_s {
 
 uint32_t g_lif0 = 0x1;
 uint32_t g_lif1 = 0x2;
+uint32_t g_lif2 = 0x3;
 uint16_t g_vpc_id = 0x2FC;
 uint16_t g_bd_id = 0x2FD;
 uint16_t g_vnic_id = 0x2FE;
 uint32_t g_device_ipv4_addr = 0x64656667;
 uint64_t g_device_mac = 0x00AABBCCDDEEULL;
 uint32_t g_nexthop_id_arm = 0x137;
+uint32_t g_nexthop_id_ncsi = 0x138;
 uint32_t g_flow_ohash_id = 0x4A54;
 uint32_t g_mapping_ohash_id = 0x77A10;
 uint32_t g_local_mapping_ohash_id = 0x1177;
@@ -650,6 +653,7 @@ device_init (void)
 
     asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_0, g_lif0);
     asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_1, g_lif1);
+    asicpd_tm_uplink_lif_set(TM_PORT_NCSI, g_lif2);
 
     uint64_t session_stats_addr;
     session_stats_addr = asicpd_get_mem_addr(JSTATSBASE);
@@ -671,13 +675,16 @@ nacl_init ()
     uint32_t index;
 
     index = 0;
+
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
     key.control_metadata_flow_miss = 1;
-    mask.control_metadata_flow_miss_mask = ~0;
     key.ingress_recirc_defunct_flow = 1;
+    key.control_metadata_lif_type = 0;
+    mask.control_metadata_flow_miss_mask = ~0;
     mask.ingress_recirc_defunct_flow_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
     data.action_u.nacl_nacl_redirect_to_arm.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.action_u.nacl_nacl_redirect_to_arm.nexthop_id = g_nexthop_id_arm;
@@ -688,10 +695,23 @@ nacl_init ()
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
     key.control_metadata_flow_miss = 1;
+    key.control_metadata_lif_type = 0;
     mask.control_metadata_flow_miss_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
     data.action_u.nacl_nacl_redirect_to_arm.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.action_u.nacl_nacl_redirect_to_arm.nexthop_id = g_nexthop_id_arm;
+    entry_write(tbl_id, index, &key, &mask, &data, false, 0);
+
+    index++;
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.control_metadata_lif_type = NACL_TEST_LIF_TYPE;
+    mask.control_metadata_lif_type_mask = ~0;
+    data.action_id = NACL_NACL_REDIRECT_ID;
+    data.action_u.nacl_nacl_redirect.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    data.action_u.nacl_nacl_redirect.nexthop_id = g_nexthop_id_ncsi;
     entry_write(tbl_id, index, &key, &mask, &data, false, 0);
 }
 
@@ -781,6 +801,15 @@ lif_table_init (void)
     lif_info->vnic_id = 0;
     lif_info->direction = P4_LIF_DIR_UPLINK;
     entry_write(tbl_id, g_lif1, 0, 0, &data, false, 0);
+
+    memset(&data, 0, sizeof(data));
+    data.action_id = LIF_LIF_INFO_ID;
+    lif_info->vpc_id = 0;
+    lif_info->bd_id = 0;
+    lif_info->vnic_id = 0;
+    lif_info->direction = P4_LIF_DIR_UPLINK;
+    lif_info->lif_type = NACL_TEST_LIF_TYPE;
+    entry_write(tbl_id, g_lif2, 0, 0, &data, false, 0);
 }
 
 static void
@@ -1454,7 +1483,11 @@ nexthops_init (void)
     data.action_id = NEXTHOP_NEXTHOP_INFO_ID;
     nexthop_info->port = TM_PORT_UPLINK_1;
     entry_write(tbl_id, g_nexthop_id_arm, 0, 0, &data, false, 0);
+
     memset(&data, 0, sizeof(data));
+    data.action_id = NEXTHOP_NEXTHOP_INFO_ID;
+    nexthop_info->port = TM_PORT_NCSI;
+    entry_write(tbl_id, g_nexthop_id_ncsi, 0, 0, &data, false, 0);
 
     memset(&data, 0, sizeof(data));
     data.action_id = NEXTHOP_NEXTHOP_INFO_ID;
@@ -2018,6 +2051,25 @@ TEST_F(apulu_test, test1)
                 get_next_pkt(opkt, port, cos);
                 EXPECT_TRUE(opkt == epkt);
                 EXPECT_TRUE(port == TM_PORT_UPLINK_0);
+            }
+            testcase_end(tcid, i + 1);
+        }
+    }
+
+    tcid++;
+    if (tcid_filter == 0 || tcid == tcid_filter) {
+        ipkt.resize(sizeof(g_snd_pkt15));
+        memcpy(ipkt.data(), g_snd_pkt15, sizeof(g_snd_pkt15));
+        epkt.resize(sizeof(g_rcv_pkt15));
+        memcpy(epkt.data(), g_rcv_pkt15, sizeof(g_rcv_pkt15));
+        std::cout << "[TCID=" << tcid << "] NACL:lif_type" << std::endl;
+        for (i = 0; i < tcscale; i++) {
+            testcase_begin(tcid, i + 1);
+            step_network_pkt(ipkt, TM_PORT_NCSI);
+            if (!getenv("SKIP_VERIFY")) {
+                get_next_pkt(opkt, port, cos);
+                EXPECT_TRUE(opkt == epkt);
+                EXPECT_TRUE(port == TM_PORT_NCSI);
             }
             testcase_end(tcid, i + 1);
         }

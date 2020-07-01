@@ -562,7 +562,7 @@ ${table}_hwkey_hwmask_build(uint32_t tableid,
 //::                            #endif
     trit_x = k & m;
     trit_y = ~k & m;
-//::                            if width == 1:
+//::                            if ((width == 1) or (width < 8)):
     p4pd_utils_copy_into_hwentry(hwkey_x,
                    (${tablebyte} * 8) + (7 - ${containerstart}) - ${mat_key_start_bit}, /* Dest bit position */
                    &trit_x,

@@ -21,7 +21,7 @@ p4pd_utils_copy_into_hwentry(uint8_t *dest,
 
     (void)p4pd_utils_copy_into_hwentry;
 
-    uint8_t src_byte, dest_byte, dest_byte_mask;
+    uint8_t src_byte;
     uint8_t bits_in_src_byte1, bits_in_src_byte2 = 0;
 
     if (!num_bits || src == NULL || num_bits > 8) {
@@ -51,22 +51,9 @@ p4pd_utils_copy_into_hwentry(uint8_t *dest,
         // So just copy the entire byte.
         *dest = src_byte;
     } else {
-        if (num_bits == 1) {
-            // copying a single bit from src to destination
-            // clear out single bit in destination where a bit
-            // from source will be copied into.
-            dest_byte = *dest;
-            dest_byte_mask = 0xFF ^ ( 1 << (dest_start_bit % 8));
-            dest_byte &= dest_byte_mask;
-            // get that single bit from source
-            src_byte = (*src >> (src_start_bit % 8)) & 0x1;
-            // position src bit at place where it should go in dest
-            src_byte <<= (dest_start_bit % 8);
-            dest_byte |= src_byte;
-            *dest |= dest_byte;
-        } else {
-            p4pd_utils_copy_le_src_to_be_dest(dest, dest_start_bit,
-                                              src, src_start_bit, num_bits);
+        for (int k = 0; k < num_bits; k++) {
+            p4pd_utils_copy_single_bit(dest, dest_start_bit - k, src,
+                                       (src_start_bit + num_bits - 1 - k), 1);
         }
     }
 }
