@@ -31,6 +31,7 @@ type Statemgr struct {
 	ctkitReconnectCh  chan string // Emits the kind that reconnected
 	probeQMutex       sync.RWMutex
 	probeQs           map[string]*channelqueue.ChQueue
+	RestoreActive     bool
 }
 
 // NewStatemgr creates a new state mgr
@@ -102,6 +103,16 @@ func (s *Statemgr) RemoveProbeChannel(orchKey string) error {
 	chQ.Stop()
 	delete(s.probeQs, orchKey)
 	return nil
+}
+
+// RemoveAllProbeChannel removes all probe channels
+func (s *Statemgr) RemoveAllProbeChannel() {
+	s.probeQMutex.Lock()
+	defer s.probeQMutex.Unlock()
+	for key, chQ := range s.probeQs {
+		chQ.Stop()
+		delete(s.probeQs, key)
+	}
 }
 
 // AddProbeChannel sets the channel for communication with vcprobe

@@ -28,6 +28,10 @@ func (sm *Statemgr) GetOrchestratorWatchOptions() *api.ListWatchOptions {
 
 // OnOrchestratorCreate creates a orchestrator based on watch event
 func (sm *Statemgr) OnOrchestratorCreate(w *ctkit.Orchestrator) error {
+	if sm.RestoreActive {
+		sm.logger.Infof("Snapshot restore active, skipping orch event")
+		return nil
+	}
 	_, ok := sm.probeQs[w.Orchestrator.Name]
 	if ok {
 		return fmt.Errorf("vc probe channel already created")

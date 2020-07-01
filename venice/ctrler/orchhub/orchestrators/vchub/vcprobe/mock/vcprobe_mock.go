@@ -570,6 +570,19 @@ func (mr *MockProbeInfMockRecorder) GetPenDVS(dcName, dvsName, retry interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPenDVS", reflect.TypeOf((*MockProbeInf)(nil).GetPenDVS), dcName, dvsName, retry)
 }
 
+// GetDVSConfig mocks base method
+func (m *MockProbeInf) GetDVSConfig(dcName, dvsName string, retry int) (*mo.DistributedVirtualSwitch, error) {
+	ret := m.ctrl.Call(m, "GetDVSConfig", dcName, dvsName, retry)
+	ret0, _ := ret[0].(*mo.DistributedVirtualSwitch)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDVSConfig indicates an expected call of GetDVSConfig
+func (mr *MockProbeInfMockRecorder) GetDVSConfig(dcName, dvsName, retry interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDVSConfig", reflect.TypeOf((*MockProbeInf)(nil).GetDVSConfig), dcName, dvsName, retry)
+}
+
 // UpdateDVSPortsVlan mocks base method
 func (m *MockProbeInf) UpdateDVSPortsVlan(dcName, dvsName string, portsSetting vcprobe.PenDVSPortSettings, forceWrite bool, retry int) error {
 	ret := m.ctrl.Call(m, "UpdateDVSPortsVlan", dcName, dvsName, portsSetting, forceWrite, retry)

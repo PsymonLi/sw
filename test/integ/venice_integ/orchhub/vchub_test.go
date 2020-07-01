@@ -384,7 +384,7 @@ func TestSnapshotRestore(t *testing.T) {
 		}
 
 		return true, nil
-	}, "Failed to find hosts", "5s", "30s")
+	}, "Failed to find hosts", "5s", "60s")
 
 	// Remove previous snapshot
 	err = tinfo.objClient.RemoveObject(paths[0])

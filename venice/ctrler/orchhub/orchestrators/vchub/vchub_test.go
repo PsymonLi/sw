@@ -3018,6 +3018,15 @@ func TestVerifyOverride(t *testing.T) {
 	// Make it Pensando host
 	err = hostSystem1.AddNic("vmnic0", conv.MacString(pNicMac))
 
+	hostSystem2, err := dc1.AddHost("host2")
+	AssertOk(t, err, "failed host2 create")
+	err = dvs.AddHostWithoutRuntime(hostSystem2)
+	AssertOk(t, err, "failed to add Host to DVS")
+
+	pNicMac2 := append(createPenPnicBase(), 0xab, 0x00, 0x00)
+	// Make it Pensando host
+	err = hostSystem2.AddNic("vmnic0", conv.MacString(pNicMac2))
+
 	sm, _, err := smmock.NewMockStateManager()
 	if err != nil {
 		t.Fatalf("Failed to create state manager. Err : %v", err)
@@ -3128,6 +3137,59 @@ func TestVerifyOverride(t *testing.T) {
 
 	probe.DvsStateMapLock.Unlock()
 
+	vchub.verifyOverrides(false)
+
+	AssertEventually(t, func() (bool, interface{}) {
+		probe.DvsStateMapLock.Lock()
+		defer probe.DvsStateMapLock.Unlock()
+		overrides := probe.DvsStateMap[dcName][dvsName]
+		if len(overrides) != 2 {
+			return false, fmt.Errorf("overrides length was %d", len(overrides))
+		}
+		// Check override is present
+		return true, nil
+	}, "Failed to find overrides")
+
+	probe.DvsStateMapLock.Lock()
+
+	overrides = probe.DvsStateMap[dcName][dvsName]
+	for port, config := range overrides {
+		vlan := config.Config.Setting.(*types.VMwareDVSPortSetting).Vlan.(*types.VmwareDistributedVirtualSwitchVlanIdSpec).VlanId
+		retVlan := currOverrides[port]
+		if vlan != retVlan {
+			probe.DvsStateMapLock.Unlock()
+			AssertEquals(t, retVlan, vlan, "Vlan was not reset for port %s", port)
+		}
+	}
+	probe.DvsStateMapLock.Unlock()
+
+	// Create workload on bad host that is connected to the same DVS port
+	vnics := []sim.VNIC{
+		sim.VNIC{
+			MacAddress:   "ab:aa:bb:bb:dd:dd",
+			PortgroupKey: pg.Reference().Value,
+			PortKey:      "11",
+		},
+		sim.VNIC{
+			MacAddress:   "ab:aa:bb:bb:dd:ee",
+			PortgroupKey: pg.Reference().Value,
+			PortKey:      "12",
+		},
+	}
+	vchub.vcReadCh <- createVMEvent(dc1.Obj.Name, dc1.Obj.Self.Value, "vm2", "vm-1000", hostSystem2.Obj.Self.Value, vnics)
+
+	AssertEventually(t, func() (bool, interface{}) {
+		wl, err := sm.Controller().Workload().List(context.Background(), &api.ListWatchOptions{})
+		if err != nil {
+			return false, err
+		}
+		if len(wl) != 2 {
+			return false, fmt.Errorf("Found %d workloads", len(wl))
+		}
+		return true, nil
+	}, "Failed to find workloads")
+
+	// Overrides shouldn't change
 	vchub.verifyOverrides(false)
 
 	AssertEventually(t, func() (bool, interface{}) {

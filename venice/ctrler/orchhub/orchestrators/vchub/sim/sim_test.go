@@ -121,7 +121,7 @@ func TestList(t *testing.T) {
 
 	// Check Hosts
 	var hss []mo.HostSystem
-	getKind(t, c, "HostSystem", []string{"name", "config"}, &hss)
+	getKind(t, c, "HostSystem", []string{"name", "config", "runtime"}, &hss)
 	AssertEquals(t, 2, len(hss), "Recieved incorrect amount of hosts")
 	sort.Slice(hss, func(i, j int) bool {
 		return hss[i].Name < hss[j].Name
@@ -134,6 +134,7 @@ func TestList(t *testing.T) {
 		}
 	}
 	Assert(t, hasNic == true, "Failed to find testNIC")
+	AssertEquals(t, types.HostSystemConnectionStateConnected, hss[0].Runtime.ConnectionState, "host runtime was not set")
 
 	// Remove nic
 	host.RemoveNic("testNIC")
@@ -197,9 +198,11 @@ func TestList(t *testing.T) {
 
 	// Check DVSs
 	var dvss []mo.DistributedVirtualSwitch
-	getKind(t, c, "DistributedVirtualSwitch", []string{"name", "summary"}, &dvss)
+	getKind(t, c, "DistributedVirtualSwitch", []string{"name", "summary", "runtime"}, &dvss)
 	AssertEquals(t, "dvs1", dvss[0].Name, "DVS had incorrect name")
 	AssertEquals(t, int32(512), dvss[0].Summary.NumPorts, "DVS had incorrect number of ports")
+	Assert(t, dvss[0].Runtime != nil, "dvs did not have runtime info")
+	AssertEquals(t, 2, len(dvss[0].Runtime.HostMemberRuntime), "dvs did not have host members filled out")
 
 	var pgs []mo.DistributedVirtualPortgroup
 	getKind(t, c, "DistributedVirtualPortgroup", []string{"name", "config"}, &pgs)

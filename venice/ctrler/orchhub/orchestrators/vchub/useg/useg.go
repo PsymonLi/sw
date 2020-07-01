@@ -288,7 +288,7 @@ func (u *Allocator) newHostVlanAllocator(host string) error {
 	if _, ok := u.hostMgrs[host]; ok {
 		return nil
 	}
-	seed := time.Now().Unix()
+	seed := time.Now().UnixNano()
 	vlanMgr := usegvlanmgr.NewVlanManager(FirstUsegVlan, usegvlanmgr.VlanMax, true, seed)
 	u.hostMgrs[host] = vlanMgr
 	return nil

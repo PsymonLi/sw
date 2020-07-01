@@ -261,6 +261,28 @@ func (v *VCProbe) getPenDVSPorts(dcName, dvsName string, criteria *types.Distrib
 	return ret, nil
 }
 
+// GetDVSConfig returns the mo object for the given DVS
+func (v *VCProbe) GetDVSConfig(dcName string, dvsName string, retry int) (*mo.DistributedVirtualSwitch, error) {
+	fn := func() (interface{}, error) {
+		objDvs, err := v.GetPenDVS(dcName, dvsName, 1)
+		if err != nil {
+			return nil, err
+		}
+		var dvsObj mo.DistributedVirtualSwitch
+		err = objDvs.Properties(v.ClientCtx, objDvs.Reference(), []string{"name", "runtime"}, &dvsObj)
+		if err != nil {
+			v.Log.Errorf("Failed at getting dv port group properties, err: %s", err)
+			return nil, err
+		}
+		return &dvsObj, nil
+	}
+	ret, err := v.withRetry(fn, retry)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*mo.DistributedVirtualSwitch), err
+}
+
 func (v *VCProbe) isOverrideEqual(portsSetting PenDVSPortSettings, ports []types.DistributedVirtualPort) bool {
 	expMap := map[string]int32{}
 	for key, portInfo := range portsSetting {

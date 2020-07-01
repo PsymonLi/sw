@@ -96,6 +96,9 @@ func (q *ChQueue) run() {
 		if item == nil {
 			select {
 			case <-q.ctx.Done():
+				q.lock.Lock()
+				q.active = false
+				q.lock.Unlock()
 				return
 			case obj := <-q.inbox:
 				q.evtQ.PushBack(obj)
@@ -103,6 +106,9 @@ func (q *ChQueue) run() {
 		} else {
 			select {
 			case <-q.ctx.Done():
+				q.lock.Lock()
+				q.active = false
+				q.lock.Unlock()
 				return
 			case obj := <-q.inbox:
 				q.evtQ.PushBack(obj)

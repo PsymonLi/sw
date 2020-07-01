@@ -158,22 +158,18 @@ func (v *VCHub) setupVCHub(stateMgr *statemgr.Statemgr, config *orchestration.Or
 	v.tagSyncInitializedMap = map[string]bool{}
 	v.launchTime = time.Now().String()
 
-	// Set connection status as unknown
-	o, err := stateMgr.Controller().Orchestrator().Find(&config.ObjectMeta)
-	if err != nil {
-		logger.Errorf("Orchestrator Object %v does not exist",
-			config.GetKey())
-	} else {
-		v.orchUpdateLock.Lock()
-		v.OrchConfig.Status.Status = orchestration.OrchestratorStatus_Unknown.String()
-		v.OrchConfig.Status.LastTransitionTime = &api.Timestamp{}
-		v.OrchConfig.Status.LastTransitionTime.SetTime(time.Now())
-		v.OrchConfig.Status.Message = ""
+	v.orchUpdateLock.Lock()
+	v.OrchConfig.Status.Status = orchestration.OrchestratorStatus_Unknown.String()
+	v.OrchConfig.Status.LastTransitionTime = &api.Timestamp{}
+	v.OrchConfig.Status.LastTransitionTime.SetTime(time.Now())
+	v.OrchConfig.Status.Message = ""
 
-		o.Orchestrator.Status = v.OrchConfig.Status
-		o.Write()
-		v.orchUpdateLock.Unlock()
+	err := v.writeOrchStatus()
+	if err != nil {
+		logger.Errorf("Failed to write orch status %s", err)
 	}
+
+	v.orchUpdateLock.Unlock()
 
 	v.setupPCache()
 
@@ -539,6 +535,10 @@ func (v *VCHub) createVMWorkloadName(namespace, objName string) string {
 
 func (v *VCHub) parseVMKeyFromWorkloadName(workloadName string) (vmKey string) {
 	return fmt.Sprintf("%s", utils.ParseGlobalKey(v.OrchID, "", workloadName))
+}
+
+func (v *VCHub) parseHostKeyFromWorkloadName(hostName string) (hostKey string) {
+	return fmt.Sprintf("%s", utils.ParseGlobalKey(v.OrchID, "", hostName))
 }
 
 // IsSyncDone return status of the sync

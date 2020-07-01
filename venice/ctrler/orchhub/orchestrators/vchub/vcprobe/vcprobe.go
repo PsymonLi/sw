@@ -128,6 +128,7 @@ type ProbeInf interface {
 	AddPenDVS(dcName string, dvsCreateSpec *types.DVSCreateSpec, equalFn DVSConfigDiff, retry int) error
 	RenameDVS(dcName, oldName string, newName string, retry int) error
 	GetPenDVS(dcName, dvsName string, retry int) (*object.DistributedVirtualSwitch, error)
+	GetDVSConfig(dcName, dvsName string, retry int) (*mo.DistributedVirtualSwitch, error)
 	UpdateDVSPortsVlan(dcName, dvsName string, portsSetting PenDVSPortSettings, forceWrite bool, retry int) error
 	GetPenDVSPorts(dcName, dvsName string, criteria *types.DistributedVirtualSwitchPortCriteria, retry int) ([]types.DistributedVirtualPort, error)
 	RemovePenDVS(dcName, dvsName string, retry int) error
@@ -781,7 +782,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			// host1 has stopped at this time and change the vlan-overrides ?? Not used rightnow
 			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
 		case *types.VmBeingHotMigratedEvent:
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
 			msg := defs.VMotionStartMsg{
 				VMKey:        e.Vm.Vm.Value,
 				DstHostKey:   e.DestHost.Host.Value,
@@ -852,7 +853,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			s := strings.Split(e.EventTypeId, ".")
 			evType := s[len(s)-1]
 			if evType == "VmHotMigratingWithEncryptionEvent" {
-				v.Log.Infof("EventEx %d - %s - TypeId %s", e.GetEvent().Key, ref.Value, e.EventTypeId)
+				v.Log.Infof("EventEx %d - %s - TypeId %s for VM %s", e.GetEvent().Key, ref.Value, e.EventTypeId, e.Vm.Vm.Value)
 				msg := defs.VMotionStartMsg{
 					VMKey:        e.Vm.Vm.Value,
 					DcID:         ref.Value,

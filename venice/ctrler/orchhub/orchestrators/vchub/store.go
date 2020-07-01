@@ -65,17 +65,6 @@ func (v *VCHub) startEventsListener() {
 			case defs.VCConnectionStatus:
 				// we've reconnected, trigger sync
 				connStatus := m.Val.(session.ConnectionState)
-				o, err := v.StateMgr.Controller().Orchestrator().Find(&v.OrchConfig.ObjectMeta)
-				// Connection transisitions
-				// only healthy can go to degraded.
-				if err != nil {
-					// orchestrator object does not exists anymore
-					// this should never happen
-					v.Log.Errorf("Orchestrator Object %v does not exist",
-						v.OrchConfig.GetKey())
-					return
-				}
-
 				previousState := v.OrchConfig.Status.Status
 				previousMsg := v.OrchConfig.Status.Message
 
@@ -189,8 +178,10 @@ func (v *VCHub) startEventsListener() {
 					v.discoveredDCsLock.Unlock()
 					v.OrchConfig.Status.DiscoveredNamespaces = []string{}
 				}
-				o.Orchestrator.Status = v.OrchConfig.Status
-				o.Write()
+				err = v.writeOrchStatus()
+				if err != nil {
+					v.Log.Errorf("Failed to write orch status %s", err)
+				}
 				v.orchUpdateLock.Unlock()
 
 			default:
@@ -422,18 +413,9 @@ func (v *VCHub) removeDiscoveredDC(dcName string) {
 
 		v.orchUpdateLock.Lock()
 		defer v.orchUpdateLock.Unlock()
-		o, err := v.StateMgr.Controller().Orchestrator().Find(&v.OrchConfig.ObjectMeta)
-		if err != nil {
-			// orchestrator object does not exists anymore
-			// this should never happen
-			v.Log.Errorf("removeDiscoveredDC: Orchestrator Object %v does not exist",
-				v.OrchConfig.GetKey())
-			return
-		}
 
 		v.OrchConfig.Status.DiscoveredNamespaces = dcList
-		o.Orchestrator.Status = v.OrchConfig.Status
-		err = o.Write()
+		err := v.writeOrchStatus()
 
 		if err != nil {
 			v.Log.Errorf("removeDiscoveredDC: Failed to update orch status %s", err)
@@ -463,18 +445,9 @@ func (v *VCHub) addDiscoveredDC(dcName string) {
 
 		v.orchUpdateLock.Lock()
 		defer v.orchUpdateLock.Unlock()
-		o, err := v.StateMgr.Controller().Orchestrator().Find(&v.OrchConfig.ObjectMeta)
-		if err != nil {
-			// orchestrator object does not exists anymore
-			// this should never happen
-			v.Log.Errorf("AddDiscoveredDC: Orchestrator Object %v does not exist",
-				v.OrchConfig.GetKey())
-			return
-		}
 
 		v.OrchConfig.Status.DiscoveredNamespaces = dcList
-		o.Orchestrator.Status = v.OrchConfig.Status
-		err = o.Write()
+		err := v.writeOrchStatus()
 
 		if err != nil {
 			v.Log.Errorf("AddDiscoveredDC: Failed to update orch status %s", err)
@@ -505,18 +478,9 @@ func (v *VCHub) renameDiscoveredDC(oldName, newName string) {
 
 		v.orchUpdateLock.Lock()
 		defer v.orchUpdateLock.Unlock()
-		o, err := v.StateMgr.Controller().Orchestrator().Find(&v.OrchConfig.ObjectMeta)
-		if err != nil {
-			// orchestrator object does not exists anymore
-			// this should never happen
-			v.Log.Errorf("RenameDiscoveredDC: Orchestrator Object %v does not exist",
-				v.OrchConfig.GetKey())
-			return
-		}
 
 		v.OrchConfig.Status.DiscoveredNamespaces = dcList
-		o.Orchestrator.Status = v.OrchConfig.Status
-		err = o.Write()
+		err := v.writeOrchStatus()
 
 		if err != nil {
 			v.Log.Errorf("RenameDiscoveredDC: Failed to update orch status %s", err)
@@ -524,4 +488,19 @@ func (v *VCHub) renameDiscoveredDC(oldName, newName string) {
 	} else {
 		v.discoveredDCsLock.Unlock()
 	}
+}
+
+func (v *VCHub) writeOrchStatus() error {
+	o, err := v.StateMgr.Controller().Orchestrator().Find(&v.OrchConfig.ObjectMeta)
+	if err != nil {
+		return fmt.Errorf("Failed to find orch object: %s", err)
+	}
+	o.Lock()
+	// Take fields that are updated by stateMgr and merge with vchub's status info
+	v.OrchConfig.Status.IncompatibleDSCs = o.Status.IncompatibleDSCs
+	o.Orchestrator.Status = v.OrchConfig.Status
+	v.Log.Infof("Writing orch status: %+v", o.Orchestrator.Status)
+	err = o.Write()
+	o.Unlock()
+	return err
 }

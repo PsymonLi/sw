@@ -73,7 +73,6 @@ type InstanceManager struct {
 	stateMgr          *statemgr.Statemgr
 	orchIDMgr         orchIDMgr
 	vcHubOpts         []vchub.Option
-	restoreActive     bool
 }
 
 // Stop stops the watcher
@@ -196,12 +195,7 @@ func (w *InstanceManager) handleRestore() {
 	defer w.orchMapLock.Unlock()
 
 	// Remove all probe channels as config will be replayed
-	for _, orchEntry := range w.orchestratorMap {
-		err := w.stateMgr.RemoveProbeChannel(orchEntry.config.Name)
-		if err != nil {
-			w.logger.Errorf("Err while removing probe ch, err %s", err)
-		}
-	}
+	w.stateMgr.RemoveAllProbeChannel()
 
 	// This list goes to apiserver and will return the objects post restore
 	// These objects are not in ctkits cache yet (cache should have pre-restore config)
@@ -328,7 +322,7 @@ func (w *InstanceManager) watchOrchestratorConfig() {
 					// Apiserver moves snapshot status to complete
 					//
 					// On active status, shutdown watchers so ctkit cache remains as is and
-					// we process no more events. instanceManager.restoreActive is set to prevent
+					// we process no more events. instanceManager.stateMgr.RestoreActive is set to prevent
 					// processing of any events that have been received before watchers are closed.
 					//
 					// On status failure, restart stopped watchers.
@@ -340,35 +334,35 @@ func (w *InstanceManager) watchOrchestratorConfig() {
 					// restart the watchers
 					switch obj.Status.Status {
 					case cluster.SnapshotRestoreStatus_Active.String():
-						if w.restoreActive {
+						if w.stateMgr.RestoreActive {
 							// nothing to do, already active
 							continue
 						}
 						w.logger.Infof("Snapshot restore is active")
-						w.restoreActive = true
+						w.stateMgr.RestoreActive = true
 						// Stop the watchers
 						w.stateMgr.StopWatchersOnRestore()
 					case cluster.SnapshotRestoreStatus_Failed.String():
-						if !w.restoreActive {
+						if !w.stateMgr.RestoreActive {
 							// nothing to do, could be old status
 							continue
 						}
 						w.logger.Infof("Snapshot restore failed")
-						w.restoreActive = false
+						w.stateMgr.RestoreActive = false
 						w.stateMgr.RestartWatchersOnRestore()
 					case cluster.SnapshotRestoreStatus_Completed.String():
-						if !w.restoreActive {
+						if !w.stateMgr.RestoreActive {
 							// nothing to do, could be old status
 							continue
 						}
 						w.logger.Infof("Snapshot restore completed successfully")
-						w.restoreActive = false
+						w.stateMgr.RestoreActive = false
 						// Tell instance manager to restart itself and the watchers
 						w.handleRestore()
 						w.stateMgr.RestartWatchersOnRestore()
 					}
 				case *orchestration.Orchestrator:
-					if !w.restoreActive {
+					if !w.stateMgr.RestoreActive {
 						w.handleConfigEvent(evt.Type, obj)
 					} else {
 						w.logger.Infof("Snapshot restore in progress, skipping event for %s", obj.GetName())

@@ -204,6 +204,7 @@ func addDCState(t *testing.T, vchub *VCHub, dcName string) {
 		Pgs:     map[string]*PenPG{},
 		pgIDMap: map[string]*PenPG{},
 		probe:   vchub.probe,
+		ports:   map[string]portEntry{},
 	}
 	vchub.DcMap[dcName] = &PenDC{
 		State: vchub.State,

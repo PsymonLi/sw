@@ -270,10 +270,6 @@ func TestListAndWatch(t *testing.T) {
 }
 
 func TestDVSAndPG(t *testing.T) {
-	// TestHostName: "jingyiz-vcsa67new.pensando.io",
-	// TestUser:     "administrator@vsphere.local",
-	// TestPassword: "N0isystem$",
-
 	testParams := &testutils.TestParams{
 		TestHostName: "127.0.0.1:8989",
 		TestUser:     "user",
@@ -352,6 +348,15 @@ func TestDVSAndPG(t *testing.T) {
 		}
 		return true, nil
 	}, "Session is not Ready", "1s", "10s")
+
+	err = vcp.AddPenDC("DC2", 5)
+	AssertOk(t, err, "Failed to create DC")
+
+	err = vcp.RemovePenDC("DC2", 5)
+	AssertOk(t, err, "Failed to remove DC")
+
+	h1, err := dc1.AddHost("host1")
+	AssertOk(t, err, "failed host create")
 
 	// Trigger the test
 	//var mapPortsSetting *PenDVSPortSettings
@@ -458,11 +463,19 @@ func TestDVSAndPG(t *testing.T) {
 	_, err = vcp.GetPenDVS(testParams.TestDCName, testParams.TestDVSName, retryCount)
 	Assert(t, err != nil, "Found deleted DVS %s", testParams.TestDVSName)
 
-	err = vcp.AddPenDC("DC2", 5)
-	AssertOk(t, err, "Failed to create DC")
+	// Add DVS through sim
+	simDVS, err := dc1.AddDVS(dvsCreateSpec)
+	AssertOk(t, err, "Failed to add dvs through sim")
+	err = simDVS.AddHost(h1)
+	AssertOk(t, err, "Failed to add host to dvs")
 
-	err = vcp.RemovePenDC("DC2", 5)
-	AssertOk(t, err, "Failed to remove DC")
+	dvsObjConfig, err := vcp.GetDVSConfig(testParams.TestDCName, testParams.TestDVSName, retryCount)
+	AssertOk(t, err, "failed to get dvs object")
+	Assert(t, dvsObjConfig.Runtime != nil, "dvs runtime was nil")
+
+	err = vcp.RemovePenDVS(testParams.TestDCName, testParams.TestDVSName, retryCount)
+	AssertOk(t, err, "Failed to delete DVS")
+
 }
 
 func TestEventReceiver(t *testing.T) {

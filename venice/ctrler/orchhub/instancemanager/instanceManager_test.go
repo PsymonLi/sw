@@ -373,13 +373,13 @@ func TestSnapshot(t *testing.T) {
 
 	instMgr.Start()
 
-	AssertEquals(t, false, instMgr.restoreActive, "restore isn't active")
+	AssertEquals(t, false, instMgr.stateMgr.RestoreActive, "restore isn't active")
 
 	snapshot.Status.Status = cluster.SnapshotRestoreStatus_Active.String()
 	err = sm.Controller().SnapshotRestore().Update(&snapshot)
 	AssertOk(t, err, "failed to create snapshot")
 	AssertEventually(t, func() (bool, interface{}) {
-		if !instMgr.restoreActive {
+		if !instMgr.stateMgr.RestoreActive {
 			return false, nil
 		}
 		return true, nil
@@ -390,7 +390,7 @@ func TestSnapshot(t *testing.T) {
 	err = sm.Controller().SnapshotRestore().Update(&snapshot)
 	AssertOk(t, err, "failed to create snapshot")
 	AssertEventually(t, func() (bool, interface{}) {
-		if instMgr.restoreActive {
+		if instMgr.stateMgr.RestoreActive {
 			return false, nil
 		}
 		return true, nil
@@ -401,7 +401,7 @@ func TestSnapshot(t *testing.T) {
 	err = sm.Controller().SnapshotRestore().Update(&snapshot)
 	AssertOk(t, err, "failed to create snapshot")
 	AssertEventually(t, func() (bool, interface{}) {
-		if instMgr.restoreActive {
+		if instMgr.stateMgr.RestoreActive {
 			return false, nil
 		}
 		return true, nil
@@ -412,7 +412,7 @@ func TestSnapshot(t *testing.T) {
 	err = sm.Controller().SnapshotRestore().Update(&snapshot)
 	AssertOk(t, err, "failed to create snapshot")
 	AssertEventually(t, func() (bool, interface{}) {
-		if !instMgr.restoreActive {
+		if !instMgr.stateMgr.RestoreActive {
 			return false, nil
 		}
 		return true, nil
@@ -423,7 +423,7 @@ func TestSnapshot(t *testing.T) {
 	err = sm.Controller().SnapshotRestore().Update(&snapshot)
 	AssertOk(t, err, "failed to create snapshot")
 	AssertEventually(t, func() (bool, interface{}) {
-		if instMgr.restoreActive {
+		if instMgr.stateMgr.RestoreActive {
 			return false, nil
 		}
 		return true, nil

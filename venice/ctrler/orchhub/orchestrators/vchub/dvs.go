@@ -17,11 +17,17 @@ import (
 	"github.com/pensando/sw/venice/utils/events/recorder"
 )
 
+type portEntry struct {
+	vlan int
+	host string
+}
+
 // PenDVS represents an instance of a Distributed Virtual Switch
 type PenDVS struct {
 	sync.Mutex
 	*defs.State
 	DcName  string
+	DcID    string
 	DvsName string
 	DvsRef  types.ManagedObjectReference
 	// Map from PG display name to PenPG
@@ -31,6 +37,7 @@ type PenDVS struct {
 	UsegMgr            useg.Inf
 	probe              vcprobe.ProbeInf
 	writeTaskScheduled bool
+	ports              map[string]portEntry
 }
 
 // PenDVSPortSettings represents a group of DVS port settings
@@ -174,10 +181,12 @@ func (d *PenDC) AddPenDVS() error {
 			State:   d.State,
 			probe:   d.probe,
 			DcName:  dcName,
+			DcID:    d.dcRef.Value,
 			DvsName: dvsName,
 			UsegMgr: useg,
 			Pgs:     map[string]*PenPG{},
 			pgIDMap: map[string]*PenPG{},
+			ports:   map[string]portEntry{},
 		}
 
 		d.DvsMap[dvsName] = penDVS
@@ -220,35 +229,45 @@ func (d *PenDVS) GetPortSettings() ([]types.DistributedVirtualPort, error) {
 }
 
 // SetPortVlanOverride overrides the port settings with the given vlan
-func (d *PenDVS) SetPortVlanOverride(port string, vlan int, workloadName string, mac string) error {
-	// Get lock to prevent two different threads
-	// configuring the dvs at the same time.
-	d.Lock()
-	defer d.Unlock()
-	d.Log.Debugf("SetPortVlanOverride called with port: %v vlan:%v", port, vlan)
-	ports := vcprobe.PenDVSPortSettings{
-		port: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
-			VlanId: int32(vlan),
-		},
-	}
-	err := d.probe.UpdateDVSPortsVlan(d.DcName, d.DvsName, ports, false, defaultRetryCount)
-	if err != nil {
-		d.Log.Errorf("Failed to set vlan override for DC %s - dvs %s, err %s", d.DcName, d.DvsName, err)
+// TODO: Verify override for a bad host isn't taking effect
+// func (d *PenDVS) SetPortVlanOverride(port string, vlan int, workloadName string, mac string) error {
+// 	// Get lock to prevent two different threads
+// 	// configuring the dvs at the same time.
+// 	d.Lock()
+// 	defer d.Unlock()
+// 	d.Log.Debugf("SetPortVlanOverride called with port: %v vlan:%v", port, vlan)
+// 	ports := vcprobe.PenDVSPortSettings{
+// 		port: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
+// 			VlanId: int32(vlan),
+// 		},
+// 	}
+// 	err := d.probe.UpdateDVSPortsVlan(d.DcName, d.DvsName, ports, false, defaultRetryCount)
+// 	if err != nil {
+// 		d.Log.Errorf("Failed to set vlan override for DC %s - dvs %s, err %s", d.DcName, d.DvsName, err)
 
-		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s for workload %s interface %s. Traffic may be impacted. %v", d.State.OrchConfig.Name, d.DcName, workloadName, mac, err)
+// 		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s for workload %s interface %s. Traffic may be impacted. %v", d.State.OrchConfig.Name, d.DcName, workloadName, mac, err)
 
-		if d.Ctx.Err() == nil && d.probe.IsSessionReady() {
-			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
-		}
-		return err
-	}
-	return nil
-}
+// 		if d.Ctx.Err() == nil && d.probe.IsSessionReady() {
+// 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
+// 		}
+// 		return err
+// 	}
+// 	return nil
+// }
 
 type overrideReq struct {
-	port string
-	vlan int
-	mac  string
+	port       string
+	vlan       int
+	mac        string
+	hostSystem string
+}
+
+// ReleasePort releases the port override state
+func (d *PenDVS) ReleasePort(port string) {
+	d.Log.Infof("Release port %s", port)
+	d.Lock()
+	delete(d.ports, port)
+	d.Unlock()
 }
 
 // SetVMVlanOverrides sets all overrides for the given workload
@@ -263,12 +282,64 @@ func (d *PenDVS) SetVMVlanOverrides(interfaces []overrideReq, workloadName strin
 	ports := vcprobe.PenDVSPortSettings{}
 	d.Log.Infof("SetVMVlanOverrides called for workload %s", workloadName)
 	d.Log.Debugf("SetVMVlanOverrides called for workload %s with %+v", workloadName, interfaces)
+	var portSettings map[string]bool
+	var connectedHosts map[string]bool
 	for _, inf := range interfaces {
 		port := inf.port
 		vlan := inf.vlan
+		if entry, ok := d.ports[port]; ok && entry.vlan != vlan {
+			// Already have an entry for a different override
+			// Check if the override became unset on the DVS
+			// workload.go should call ReleasePort, but this will
+			// derive it as a failsafe.
+			if portSettings == nil {
+				// Fetch port and build portSettings
+				portSettings = map[string]bool{}
+				portInfo, err := d.GetPortSettings()
+				if err != nil {
+					d.Log.Errorf("Failed to get port settings: %s", err)
+					return err // have this vlan request go to retry queue
+				}
+				for _, p := range portInfo {
+					setting, ok := p.Config.Setting.(*types.VMwareDVSPortSetting)
+					if ok {
+						if vlanSpec, ok := setting.Vlan.(*types.VmwareDistributedVirtualSwitchVlanIdSpec); ok {
+							if dvsEntry, ok := d.ports[p.Key]; ok && vlanSpec.VlanId == int32(dvsEntry.vlan) {
+								// vlan override exists on this port and is equal to what our config says
+								portSettings[p.Key] = true
+							}
+						}
+					}
+				}
+				d.Log.Infof("Port settings: %v", portSettings)
+			}
+			if portSettings[port] {
+				// DVS matches our state. Check if incoming request is for a host that is not connected
+				if connectedHosts == nil {
+					var err error
+					connectedHosts, err = d.buildConnectedHostMap()
+					if err != nil {
+						return err // Request will be put on retryQueue
+					}
+				}
+				if _, ok := connectedHosts[inf.hostSystem]; !ok {
+					// This request is bad. Keep what is currently programmed
+					d.Log.Errorf("Skipping vlan override for port %v, mac %v, vlan %v since the host %s is not connected to dvs", inf.port, inf.mac, inf.vlan, inf.hostSystem)
+					continue
+				}
+			}
+		}
 		ports[port] = &types.VmwareDistributedVirtualSwitchVlanIdSpec{
 			VlanId: int32(vlan),
 		}
+		d.ports[port] = portEntry{
+			vlan: vlan,
+			host: inf.hostSystem,
+		}
+	}
+	if len(ports) == 0 {
+		d.Log.Infof("No port overrides to apply")
+		return nil
 	}
 	err := d.probe.UpdateDVSPortsVlan(d.DcName, d.DvsName, ports, force, defaultRetryCount)
 	if err != nil {
@@ -333,7 +404,11 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 	}
 
 	workloads := v.pCache.ListWorkloads(v.Ctx, false)
-	workloadOverride := map[string]int{}
+
+	workloadOverride := map[string]struct {
+		vlan int
+		host string
+	}{}
 	for _, workload := range workloads {
 		if !utils.IsObjForOrch(workload.Labels, v.VcID, dcName) {
 			// Filter out workloads not for this Orch/DC
@@ -355,6 +430,7 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 			continue
 		}
 
+		var connectedHosts map[string]bool
 		for _, entry := range vnics.Interfaces {
 			if entry.portOverrideSet {
 				vlan, err := dvs.UsegMgr.GetVlanForVnic(entry.MacAddress, host)
@@ -362,16 +438,52 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 					v.Log.Errorf("Failed to get vlan for vnic workload %s mac %s", workload.Name, entry.MacAddress)
 					continue
 				}
-				workloadOverride[entry.Port] = vlan
+				if oldEntry, ok := workloadOverride[entry.Port]; ok {
+					v.Log.Errorf("Duplicate info for port %s, Mac %s, new vlan %v new host %s, old vlan %v old host %s", entry.Port, entry.MacAddress, vlan, host, oldEntry.vlan, oldEntry.host)
+					dvsEntry, ok := dvs.ports[entry.Port]
+					// Take whichever is set in dvs ports map
+					if ok && dvsEntry.vlan == oldEntry.vlan {
+						// old value is correct
+						v.Log.Infof("Dvs ports has old vlan set for the port. Skipping this entry")
+						continue
+					} else if ok && dvsEntry.vlan == vlan {
+						// new value is correct. set in map
+						v.Log.Infof("Dvs ports has new vlan set for the port. Updating override map")
+					} else {
+						// This shouldn't happen. Fetch dvs host members and figure out which is correct
+						v.Log.Infof("Dvs ports doesn't match either vlan. Fetching host members")
+						if connectedHosts == nil {
+							var err error
+							connectedHosts, err = dvs.buildConnectedHostMap()
+							if err != nil {
+								v.Log.Infof("Failed to get connected host map, skipping entry...")
+								continue
+							}
+						}
+						if _, ok := connectedHosts[host]; !ok {
+							// This request is bad. Keep what is currently programmed
+							v.Log.Errorf("Skipping vlan override for port %v, mac %v, vlan %v since the host %s is not connected to dvs", entry.Port, entry.MacAddress, vlan, host)
+							continue
+						}
+						v.Log.Infof("Taking newer port entry")
+					}
+				}
+				workloadOverride[entry.Port] = struct {
+					vlan int
+					host string
+				}{
+					vlan: vlan,
+					host: host,
+				}
 			}
 		}
 	}
 	portSetting := vcprobe.PenDVSPortSettings{}
 
-	for port, vlan := range workloadOverride {
-		if currVlan, ok := currOverrides[port]; !ok || currVlan != vlan {
+	for port, entry := range workloadOverride {
+		if currVlan, ok := currOverrides[port]; !ok || currVlan != entry.vlan {
 			portSetting[port] = &types.VmwareDistributedVirtualSwitchVlanIdSpec{
-				VlanId: int32(vlan),
+				VlanId: int32(entry.vlan),
 			}
 		}
 	}
@@ -379,10 +491,27 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 		v.Log.Debugf("No overrides to apply")
 		return
 	}
+	v.Log.Infof("Writing back overrides %+v", portSetting)
 	err := v.probe.UpdateDVSPortsVlan(dcName, dvsName, portSetting, forceWrite, defaultRetryCount)
 	if err != nil {
 		v.Log.Errorf("Failed to set vlan overrides for DC %s - dvs %s, err %s", dcName, dvsName, err)
 	}
+}
+
+func (d *PenDVS) buildConnectedHostMap() (map[string]bool, error) {
+	connectedHosts := map[string]bool{}
+	dvsObj, err := d.probe.GetDVSConfig(d.DcName, d.DvsName, defaultRetryCount)
+	if err != nil {
+		d.Log.Errorf("Failed to get penDVS: %s", err)
+		return nil, err
+	}
+	if dvsObj.Runtime != nil {
+		for _, hostEntry := range dvsObj.Runtime.HostMemberRuntime {
+			connectedHosts[hostEntry.Host.Value] = true
+		}
+	}
+	d.Log.Infof("connected hosts: %v", connectedHosts)
+	return connectedHosts, nil
 }
 
 func (v *VCHub) verifyOverrides(forceWrite bool) {

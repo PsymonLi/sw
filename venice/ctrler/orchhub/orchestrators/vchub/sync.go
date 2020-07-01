@@ -503,6 +503,11 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 	}
 	v.Log.Debugf("Overrides currently set %+v", overrides)
 
+	connectedHosts, err := penDvs.buildConnectedHostMap()
+	if err != nil {
+		v.Log.Errorf("Failed to get connected hosts")
+	}
+
 	// Set assignments.
 	overridesList := []overrideReq{}
 	for _, vm := range vms {
@@ -518,11 +523,19 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 				// We didn't assign this vm a useg yet.
 			}
 			if vlan != overrides[port].vlan {
+				if connectedHosts != nil {
+					// Verify that this host is connected.
+					if _, ok := connectedHosts[vm.Runtime.Host.Value]; !ok {
+						v.Log.Errorf("Skipping vlan override for port %v, mac %v, vlan %v since the host %s is not connected to dvs", port, macStr, vlan, vm.Runtime.Host.Value)
+						continue
+					}
+				}
 				// We have an assignment for this vnic that is different, change the override to the right value
 				overridesList = append(overridesList, overrideReq{
-					port: port,
-					vlan: vlan,
-					mac:  macStr,
+					port:       port,
+					vlan:       vlan,
+					mac:        macStr,
+					hostSystem: vm.Runtime.Host.Value,
 				})
 				// assign the right override value
 				v.Log.Errorf("Reassigning port % to have override of %v instead of %s", port, vlan, overrides[port].vlan)

@@ -791,10 +791,16 @@ func (v *VCHub) releaseUsegVlans(wlObj *workload.Workload, old bool) error {
 	}
 	// TODO: Remove hardcoded dvs name
 	dvs := dc.GetPenDVS(CreateDVSName(dc.Name))
+	vnics := v.getWorkloadVnics(wlObj.Name)
 	if old {
 		for _, intf := range wlObj.Status.Interfaces {
 			v.Log.Infof("Release old useg vlan %d for intf %s, workload %s, host %s", intf.MicroSegVlan,
 				intf.MACAddress, wlObj.Name, hostName)
+			if vnics != nil {
+				if entry, ok := vnics.Interfaces[intf.MACAddress]; ok {
+					dvs.ReleasePort(entry.Port)
+				}
+			}
 			err := dvs.UsegMgr.ReleaseVlanForVnic(intf.MACAddress, hostName)
 			if err != nil {
 				return fmt.Errorf("Failed to release vlan %d on host %s: %s", intf.MicroSegVlan, hostName, err)
@@ -804,6 +810,11 @@ func (v *VCHub) releaseUsegVlans(wlObj *workload.Workload, old bool) error {
 		for _, intf := range wlObj.Spec.Interfaces {
 			v.Log.Infof("Release new useg vlan %d for intf %s, workload %s, host %s", intf.MicroSegVlan,
 				intf.MACAddress, wlObj.Name, hostName)
+			if vnics != nil {
+				if entry, ok := vnics.Interfaces[intf.MACAddress]; ok {
+					dvs.ReleasePort(entry.Port)
+				}
+			}
 			err := dvs.UsegMgr.ReleaseVlanForVnic(intf.MACAddress, hostName)
 			if err != nil {
 				return fmt.Errorf("Failed to release vlan %d on host %s: %s", intf.MicroSegVlan, hostName, err)
@@ -845,9 +856,10 @@ func (v *VCHub) setVlanOverride(wlObj *workload.Workload, forceWrite bool, withD
 			continue
 		}
 		overrides = append(overrides, overrideReq{
-			port: entry.Port,
-			vlan: int(inf.MicroSegVlan),
-			mac:  inf.MACAddress,
+			port:       entry.Port,
+			vlan:       int(inf.MicroSegVlan),
+			mac:        inf.MACAddress,
+			hostSystem: v.parseHostKeyFromWorkloadName(wlObj.Spec.HostName),
 		})
 	}
 
@@ -1031,6 +1043,10 @@ func (v *VCHub) releaseInterface(dcName string, inf *workload.WorkloadIntfSpec, 
 
 		// TODO: Remove hardcoded dvs name
 		dvs := dc.GetPenDVS(CreateDVSName(dcName))
+		vnic := v.getVnicInfoForWorkload(workloadObj.Name, inf.MACAddress)
+		if vnic != nil {
+			dvs.ReleasePort(vnic.Port)
+		}
 		err := dvs.UsegMgr.ReleaseVlanForVnic(inf.MACAddress, workloadObj.Spec.HostName)
 		if err != nil {
 			v.Log.Errorf("Failed to release vlan %v", err)
@@ -1148,9 +1164,10 @@ func (v *VCHub) assignUsegs(workload *workload.Workload) {
 			workload.Spec.Interfaces[i].MicroSegVlan = uint32(vlan)
 			v.Log.Debugf("inf %s assigned %d", inf.MACAddress, vlan)
 			overridesList = append(overridesList, overrideReq{
-				port: entry.Port,
-				vlan: vlan,
-				mac:  inf.MACAddress,
+				port:       entry.Port,
+				vlan:       vlan,
+				mac:        inf.MACAddress,
+				hostSystem: v.parseHostKeyFromWorkloadName(workload.Spec.HostName),
 			})
 		}
 	}

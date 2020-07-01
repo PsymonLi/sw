@@ -694,8 +694,17 @@ func (v *Datacenter) RemoveVMIP(vm *simulator.VirtualMachine, macAddr string) ([
 	return vm.Guest.Net, nil
 }
 
+// AddHostWithoutRuntime adds the host but doesn't populate the runtime field
+func (v *DVS) AddHostWithoutRuntime(host *Host) error {
+	return v.addHost(host, false)
+}
+
 // AddHost adds a host to the DVS
 func (v *DVS) AddHost(host *Host) error {
+	return v.addHost(host, true)
+}
+
+func (v *DVS) addHost(host *Host, withRuntime bool) error {
 	ref := host.Obj.Reference()
 	for _, member := range v.Obj.Config.GetDVSConfigInfo().Host {
 		if member.Config.Host.Value == ref.Value {
@@ -717,16 +726,27 @@ func (v *DVS) AddHost(host *Host) error {
 	}
 	host.Obj.Config.Network.ProxySwitch = append(host.Obj.Config.Network.ProxySwitch, dvsProxy)
 	v.Obj.Config.GetDVSConfigInfo().Host = append(v.Obj.Config.GetDVSConfigInfo().Host, newMember)
+	if withRuntime {
+		if v.Obj.Runtime == nil {
+			v.Obj.Runtime = &types.DVSRuntimeInfo{}
+		}
+		v.Obj.Runtime.HostMemberRuntime = append(v.Obj.Runtime.HostMemberRuntime, types.HostMemberRuntimeInfo{
+			Host: ref,
+		})
+		host.Obj.Runtime.ConnectionState = types.HostSystemConnectionStateConnected
+	}
 	d := simulator.Map.Get(v.Obj.Reference())
 	if d == nil {
 		return fmt.Errorf("failed to add host: dvs reference %v was not in simulator map. DVS obj: %+v", v.Obj.Reference(), v.Obj)
 	}
 	simulator.Map.Update(d, []types.PropertyChange{
 		{Name: "config", Val: v.Obj.Config},
+		{Name: "runtime", Val: v.Obj.Runtime},
 	})
 	h := simulator.Map.Get(host.Obj.Reference())
 	simulator.Map.Update(h, []types.PropertyChange{
 		{Name: "config", Val: host.Obj.Config},
+		{Name: "runtime", Val: host.Obj.Runtime},
 	})
 	return nil
 }
