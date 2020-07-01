@@ -20,6 +20,7 @@ import (
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/mock"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/session"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
+	"github.com/pensando/sw/venice/ctrler/orchhub/utils/channelqueue"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 )
@@ -195,9 +196,10 @@ func (v *VCHub) startEventsListener() {
 			default:
 				v.Log.Errorf("Unknown event %s", m.MsgType)
 			}
-		case evt, ok := <-apiServerCh:
+		case elem, ok := <-apiServerCh:
 			// processVeniceEvents will be false when we are disconnected,
 			// and will be set to true once connection is restored AND sync has run
+			evt := elem.(channelqueue.Item)
 			v.processVeniceEventsLock.Lock()
 			processEvent := v.processVeniceEvents
 			v.processVeniceEventsLock.Unlock()

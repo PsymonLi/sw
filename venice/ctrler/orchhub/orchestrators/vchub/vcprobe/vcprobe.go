@@ -15,6 +15,7 @@ import (
 
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/session"
+	"github.com/pensando/sw/venice/ctrler/orchhub/utils/channelqueue"
 )
 
 const (
@@ -26,6 +27,13 @@ var vmProps = []string{"config", "name", "runtime", "guest"}
 type dcCtxEntry struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+	eventQ *channelqueue.ChQueue
+}
+
+// preEvent represents events before they are processed (as received from vcenter)
+type preEvent struct {
+	ref types.ManagedObjectReference
+	ev  []types.BaseEvent
 }
 
 // VCProbe represents an instance of a vCenter Interface
@@ -270,6 +278,7 @@ func (v *VCProbe) StopWatchForDC(dcName, dcID string) {
 	} else {
 		v.Log.Infof("Canceling watchers for DC %s", dcID)
 		ctxEntry.cancel()
+		ctxEntry.eventQ.Stop()
 		delete(v.dcCtxMap, dcID)
 	}
 
@@ -296,12 +305,15 @@ func (v *VCProbe) StartWatchForDC(dcName, dcID string) {
 		return
 	}
 	ctx, cancel := context.WithCancel(clientCtx)
-	v.dcCtxMap[dcID] = dcCtxEntry{ctx, cancel}
+	eventQ := channelqueue.NewChQueue()
+	v.dcCtxMap[dcID] = dcCtxEntry{ctx, cancel, eventQ}
 
 	ref := types.ManagedObjectReference{
 		Type:  string(defs.Datacenter),
 		Value: dcID,
 	}
+
+	eventQ.Start(ctx)
 
 	v.tryForever(func() bool {
 		v.Log.Infof("Host watch Started on DC %s", dcName)
@@ -349,7 +361,7 @@ func (v *VCProbe) StartWatchForDC(dcName, dcID string) {
 	}
 	go func() {
 		defer v.ReleaseClient()
-		v.runEventReceiver(ref)
+		v.runEventReceiver(dcName, ref)
 	}()
 }
 
@@ -654,7 +666,7 @@ func (v *VCProbe) deleteEventTracker(ref types.ManagedObjectReference) {
 	}
 }
 
-func (v *VCProbe) runEventReceiver(ref types.ManagedObjectReference) {
+func (v *VCProbe) runEventReceiver(dcName string, ref types.ManagedObjectReference) {
 
 	v.dcCtxMapLock.Lock()
 	dcID := ref.Value
@@ -665,6 +677,11 @@ func (v *VCProbe) runEventReceiver(ref types.ManagedObjectReference) {
 		return
 	}
 	ctx := ctxEntry.ctx
+
+	// Use the same Wg used by watchers
+	v.WatcherWg.Add(1)
+	go v.processEvents(ctx, ctxEntry.eventQ)
+
 releaseEventTracker:
 	for ctx.Err() == nil {
 		for !v.SessionReady {
@@ -678,11 +695,29 @@ releaseEventTracker:
 		if eventMgr == nil {
 			break releaseEventTracker
 		}
-		// Events() will deliver the last N events, and then will block and call receiveEvents on new events.
-		// TODO there should be a way to request events newer than a eventId, not clear if that is
-		// supported
+		// Get vmFolder Ref to minize the number of events received
+		dcObj, err := v.getDCObj(dcName, v.GetClient())
+		if err != nil {
+			v.Log.Errorf("No DC obj for %s", dcName)
+			continue
+		}
+		dcFolders, err := dcObj.Folders(ctx)
+		if err != nil {
+			v.Log.Errorf("Cannot get DCFolders for %s", dcName)
+			continue
+		}
+		vmFolderRef := dcFolders.VmFolder.Reference()
+		// Event tailing is used to keep getting events as they are generated. A pre processing function
+		// is used to decouple heavy event prcessing from the reciver callback. This function sends events
+		// to another go routine to do the processing. The event page size is also increased
+		// so we do not miss any events. To avoid any blocking on go channel, channelqueue utils are used
+		// between pre-processor (receiveEventsPre) and events processor.
+		receiveEventsPre := func(_ref types.ManagedObjectReference, events []types.BaseEvent) error {
+			ctxEntry.eventQ.Send(preEvent{ref, events})
+			return nil
+		}
 		v.initEventTracker(ref)
-		eventMgr.Events(ctx, []types.ManagedObjectReference{ref}, 10, true, false, v.receiveEvents)
+		eventMgr.Events(ctx, []types.ManagedObjectReference{vmFolderRef}, 256, true, false, receiveEventsPre)
 		v.deleteEventTracker(ref)
 		if ctx.Err() != nil {
 			break releaseEventTracker
@@ -691,6 +726,23 @@ releaseEventTracker:
 		v.Log.Infof("Event Receiver for DC %s restarting", dcID)
 	}
 	v.Log.Infof("Event Receiver for DC %s Exited", dcID)
+}
+
+func (v *VCProbe) processEvents(ctx context.Context, eventQ *channelqueue.ChQueue) {
+	defer v.WatcherWg.Done()
+	eventCh := eventQ.ReadCh()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case elem, ok := <-eventCh:
+			if ok {
+				if preEv, ok := elem.(preEvent); ok {
+					v.receiveEvents(preEv.ref, preEv.ev)
+				}
+			}
+		}
+	}
 }
 
 func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types.BaseEvent) error {

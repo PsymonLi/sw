@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
     "strconv"
+	"strings"
 
 	TestUtils "github.com/pensando/sw/venice/utils/testutils"
 
@@ -16,6 +17,7 @@ import (
     "github.com/vmware/govmomi/vim25/mo"
     "github.com/vmware/govmomi/vim25/types"
     "github.com/vmware/govmomi/object"
+	"github.com/vmware/govmomi/event"
 )
 
 func TestMain(m *testing.M) {
@@ -544,28 +546,253 @@ func Test_vmotions(t *testing.T) {
     TestUtils.Assert(t, vc != nil, "Vencter context set")
 
     // specify all vms to be moved
+//    vmRelocations := []vmRelocationSpec {
+//        {   vmName: "testnode8",
+//            srcDcName: "HPE-ESX1",
+//            srcHostName: "192.168.71.139",
+//            dstDcName: "HPE-ESX1",
+//            dstHostName: "192.168.70.205",
+//        },
+//        {   vmName: "testnode3",
+//            srcDcName: "HPE-ESX1",
+//            srcHostName: "192.168.70.205",
+//            dstDcName: "HPE-ESX1",
+//            dstHostName: "192.168.71.139",
+//        },
+//    }
     vmRelocations := []vmRelocationSpec {
-        {    vmName: "testnode8",
-            srcDcName: "HPE-ESX1",
-            srcHostName: "192.168.71.139",
-            dstDcName: "HPE-ESX1",
-            dstHostName: "192.168.70.205",
-        },
-        {    vmName: "testnode3",
-            srcDcName: "HPE-ESX1",
-            srcHostName: "192.168.70.205",
-            dstDcName: "HPE-ESX1",
-            dstHostName: "192.168.71.139",
-        },
+		// host-1 : 10.8.100.105
+        {   vmName: "workload-host-1-w0", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.105",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.103.6", },
+        {   vmName: "workload-host-1-w4", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.105",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.103.6", },
+        {   vmName: "workload-host-1-w8", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.105",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.103.6", },
+        {   vmName: "workload-host-1-w12", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.105",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.103.6", },
+        {   vmName: "workload-host-1-w16", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.105",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.103.6", },
+        {   vmName: "workload-host-1-w20", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.105",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.103.6", },
+        {   vmName: "workload-host-1-w24", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.105",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.103.6", },
+        {   vmName: "workload-host-1-w28", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.105",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.103.6", },
+
+		// host-2 : 10.8.103.6
+        {   vmName: "workload-host-2-w0", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.103.6",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.102.7", },
+        {   vmName: "workload-host-2-w4", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.103.6",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.102.7", },
+        {   vmName: "workload-host-2-w8", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.103.6",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.102.7", },
+        {   vmName: "workload-host-2-w12", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.103.6",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.7", },
+        {   vmName: "workload-host-2-w16", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.103.6",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.7", },
+        {   vmName: "workload-host-2-w20", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.103.6",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.7", },
+        {   vmName: "workload-host-2-w24", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.103.6",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.7", },
+        {   vmName: "workload-host-2-w28", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.103.6",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.7", },
+
+        {   vmName: "workload-host-3-w0", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.7",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.164", },
+        {   vmName: "workload-host-3-w4", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.7",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.164", },
+        {   vmName: "workload-host-3-w8", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.7",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.164", },
+        {   vmName: "workload-host-3-w12", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.7",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.100.164", },
+        {   vmName: "workload-host-3-w16", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.7",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.164", },
+        {   vmName: "workload-host-3-w20", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.7",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.164", },
+        {   vmName: "workload-host-3-w24", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.7",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.164", },
+        {   vmName: "workload-host-3-w28", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.7",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.164", },
+
+        {   vmName: "workload-host-4-w0", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.164",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.107", },
+        {   vmName: "workload-host-4-w4", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.164",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.107", },
+        {   vmName: "workload-host-4-w8", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.164",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.107", },
+        {   vmName: "workload-host-4-w12", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.164",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.100.107", },
+        {   vmName: "workload-host-4-w16", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.164",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.107", },
+        {   vmName: "workload-host-4-w20", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.164",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.107", },
+        {   vmName: "workload-host-4-w24", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.164",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.107", },
+        {   vmName: "workload-host-4-w28", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.164",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.107", },
+
+        {   vmName: "workload-host-5-w0", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.107",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.2", },
+        {   vmName: "workload-host-5-w4", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.107",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.2", },
+        {   vmName: "workload-host-5-w8", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.107",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.2", },
+        {   vmName: "workload-host-5-w12", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.107",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.100.2", },
+        {   vmName: "workload-host-5-w16", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.107",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.2", },
+        {   vmName: "workload-host-5-w20", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.107",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.2", },
+        {   vmName: "workload-host-5-w24", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.107",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.2", },
+        {   vmName: "workload-host-5-w28", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.107",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.2", },
+
+        {   vmName: "workload-host-6-w0", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.2",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.106", },
+        {   vmName: "workload-host-6-w4", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.2",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.106", },
+        {   vmName: "workload-host-6-w8", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.2",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.106", },
+        {   vmName: "workload-host-6-w12", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.2",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.100.106", },
+        {   vmName: "workload-host-6-w16", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.2",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.106", },
+        {   vmName: "workload-host-6-w20", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.2",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.106", },
+        {   vmName: "workload-host-6-w24", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.2",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.106", },
+        {   vmName: "workload-host-6-w28", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.2",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.106", },
+
+        {   vmName: "workload-host-7-w0", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.106",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.102.56", },
+        {   vmName: "workload-host-7-w4", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.106",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.102.56", },
+        {   vmName: "workload-host-7-w8", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.106",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.102.56", },
+        {   vmName: "workload-host-7-w12", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.106",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.102.56", },
+        {   vmName: "workload-host-7-w16", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.106",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.56", },
+        {   vmName: "workload-host-7-w20", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.106",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.56", },
+        {   vmName: "workload-host-7-w24", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.106",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.56", },
+        {   vmName: "workload-host-7-w28", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.100.106",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.102.56", },
+
+        {   vmName: "workload-host-8-w0", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.56",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.105", },
+        {   vmName: "workload-host-8-w4", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.56",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.105", },
+        {   vmName: "workload-host-8-w8", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.56",
+									  		dstDcName: "3784-iota-dc", dstHostName: "10.8.100.105", },
+        {   vmName: "workload-host-8-w12", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.56",
+											dstDcName: "3784-iota-dc", dstHostName: "10.8.100.105", },
+        {   vmName: "workload-host-8-w16", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.56",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.105", },
+        {   vmName: "workload-host-8-w20", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.56",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.105", },
+        {   vmName: "workload-host-8-w24", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.56",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.105", },
+        {   vmName: "workload-host-8-w28", 	srcDcName: "3784-iota-dc", srcHostName: "10.8.102.56",
+										  	dstDcName: "3784-iota-dc", dstHostName: "10.8.100.105", },
     }
-    for i:=0; i<2; i++ {
+
+	// optional event listener
+	runEventReceiver := func (vc *Vcenter, ref types.ManagedObjectReference) {
+		// return
+		ctx := vc.Ctx()
+		// chQ := channelqueue.NewChQueue()
+		// chQ.Start(ctx)
+		chQ := make(chan types.BaseEvent, 1000)
+
+		receiveEvents := func (ref types.ManagedObjectReference, events []types.BaseEvent) error {
+			l := len(events)
+			for i := l-1; i >=0; i-- {
+				// fmt.Printf("Post Event\n")
+				chQ <- events[i]
+				// chQ.Send(events[i])
+			}
+			return nil
+		}
+
+		go func () {
+			// readCh := chQ.ReadCh()
+			fmt.Printf("Event Processor start\n")
+			for {
+			select {
+				case <-ctx.Done():
+					return
+				case ev := <-chQ:
+					// Ignore all events that do not point to Pen-DVS, e.Dvs.Dvs is not populated
+					switch e := ev.(type) {
+					case *types.VmEmigratingEvent:
+						fmt.Printf("Event %d - %v - %T for VM %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+					case *types.VmBeingHotMigratedEvent:
+						fmt.Printf("Event %d - %v - %T for VM %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+					case *types.VmBeingMigratedEvent:
+						fmt.Printf("Event %d - %v - %T for VM %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+					case *types.VmBeingRelocatedEvent:
+						fmt.Printf("Event %d - %v - %T for VM %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+					case *types.VmMigratedEvent:
+						fmt.Printf("Event %d - %v - %T for VM %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+					case *types.VmRelocatedEvent:
+						fmt.Printf("Event %d - %v - %T for VM %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+					case *types.VmRelocateFailedEvent:
+						fmt.Printf("Event %d - %v - %T for VM %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+					case *types.VmFailedMigrateEvent:
+						fmt.Printf("Event %d - %v - %T for VM %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+					case *types.MigrationEvent:
+						// This may be a generic vMotion failure.. but it does not have DestHost Info
+						fmt.Printf("Event %d - %v - %T for VM %s reason %s\n", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.Fault.LocalizedMessage)
+					case *types.EventEx:
+						s := strings.Split(e.EventTypeId, ".")
+						evType := s[len(s)-1]
+						if evType == "VmHotMigratingWithEncryptionEvent" {
+							fmt.Printf("EventEx %d - %v - TypeId %s Vm %s\n", e.GetEvent().Key, ref.Value, e.EventTypeId, e.Vm.Vm.Value)
+						} else {
+							// v.Log.Debugf("Ignored EventEx %d - %s - TypeId %s...", e.GetEvent().Key, ref.Value, e.EventTypeId)
+						}
+					case *types.ExtendedEvent:
+						// v.Log.Debugf("Ignored ExtendedEvent %d - TypeId %s ...", e.GetEvent().Key, ref.Value, e.EventTypeId)
+					default:
+						// fmt.Printf("Ignored Event %d\n", e.GetEvent().Key)
+						// v.Log.Debugf("Ignored Event %d - %s - %T received ... (+%v)", ev.GetEvent().Key, ref.Value, ev, ev)
+						// v.Log.Debugf("Ignored Event %d - %s - %T received ...", ev.GetEvent().Key, ref.Value, ev)
+					}
+			}
+		}
+		}()
+
+		eventMgr := event.NewManager(vc.Client().Client)
+		fmt.Printf("Event Receiver Starting on %v\n", ref)
+		eventMgr.Events(ctx, []types.ManagedObjectReference{ref}, 10, true, false, receiveEvents)
+		// Done
+		fmt.Printf("Event Receiver Exiting\n")
+	}
+	{
+		dcName := "3784-iota-dc"
+		finder := vc.Finder()
+		if finder == nil {
+			fmt.Printf("Error finder\n")
+		} else {
+			dc, _ := finder.Datacenter(vc.Ctx(), dcName)
+			dcFolders, _ := dc.Folders(vc.Ctx())
+			go runEventReceiver(vc, dcFolders.VmFolder.Reference())
+		}
+	}
+	// Get DC reference, get conext and start receiver
+    for i:=0; i<1; i++ {
     relocationTasks := map[string]*object.Task{}
     for _, relo := range vmRelocations {
+		fmt.Printf("Start Vmotion\n")
         srcHostName := relo.srcHostName
         dstHostName := relo.dstHostName
         srcDcName := relo.srcDcName
         dstDcName := relo.dstDcName
-        if (i % 2) == 0 {
+        if (i % 2) != 0 {
             // reverse
             srcHostName = relo.dstHostName
             dstHostName = relo.srcHostName
@@ -600,9 +827,9 @@ func Test_vmotions(t *testing.T) {
         relocationTasks[relo.vmName] = task
     }
     for vmName, task := range relocationTasks {
-        fmt.Printf("Wait for vmotion %s", vmName)
+        fmt.Printf("Wait for vmotion %s\n", vmName)
         _, err = task.WaitForResult(vc.Ctx())
-        TestUtils.AssertOk(t, err, "Relocation of VM %s failed %s", vmName, err)
+        TestUtils.AssertOk(t, err, "Relocation of VM %s failed %s\n", vmName, err)
     }
     time.Sleep(5*time.Second)
     }

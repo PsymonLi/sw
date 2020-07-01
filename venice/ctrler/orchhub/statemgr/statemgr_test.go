@@ -96,13 +96,14 @@ func TestNetworkWatcher(t *testing.T) {
 	Assert(t, (err == nil), "network could not be created")
 	expNets["prod-cece-vlan300"] = true
 
-	receiveNetworks := func(pChl <-chan channelqueue.Item, rcvNets map[string]bool) {
+	receiveNetworks := func(pChl <-chan channelqueue.QItem, rcvNets map[string]bool) {
 		for {
-			msg, ok := <-pChl
+			m, ok := <-pChl
 			if !ok {
 				logger.Infof("probe chl closed")
 				return
 			}
+			msg := m.(channelqueue.Item)
 			logger.Infof("Received net %s on probe chl", msg.ObjMeta.Name)
 			rcvNets[msg.ObjMeta.Name] = true
 		}

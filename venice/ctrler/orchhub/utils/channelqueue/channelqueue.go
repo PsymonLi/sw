@@ -21,6 +21,9 @@ const (
 	chanSize = 50
 )
 
+// QItem is an abstract to use Q for all structs
+type QItem interface{}
+
 // Item is the items that are sent on the queue
 type Item struct {
 	EvtType kvstore.WatchEventType
@@ -36,8 +39,8 @@ type ChQueue struct {
 	cancelFn context.CancelFunc
 	// Doubly linked list of events.
 	evtQ    *list.List
-	inbox   chan Item
-	outbox  chan Item
+	inbox   chan QItem
+	outbox  chan QItem
 	notifCh chan bool
 }
 
@@ -45,8 +48,8 @@ type ChQueue struct {
 func NewChQueue() *ChQueue {
 	q := &ChQueue{
 		evtQ:   list.New(),
-		inbox:  make(chan Item, chanSize),
-		outbox: make(chan Item),
+		inbox:  make(chan QItem, chanSize),
+		outbox: make(chan QItem),
 	}
 	return q
 }
@@ -74,7 +77,7 @@ func (q *ChQueue) Stop() {
 }
 
 // Send adds an item to the queue, or blackholes the value if the queue is not active
-func (q *ChQueue) Send(item Item) {
+func (q *ChQueue) Send(item QItem) {
 	q.lock.RLock()
 	if q.active {
 		q.inbox <- item
@@ -83,7 +86,7 @@ func (q *ChQueue) Send(item Item) {
 }
 
 // ReadCh returns a channel for consumers to read sent events
-func (q *ChQueue) ReadCh() <-chan Item {
+func (q *ChQueue) ReadCh() <-chan QItem {
 	return q.outbox
 }
 
@@ -103,7 +106,7 @@ func (q *ChQueue) run() {
 				return
 			case obj := <-q.inbox:
 				q.evtQ.PushBack(obj)
-			case q.outbox <- item.Value.(Item):
+			case q.outbox <- item.Value.(QItem):
 				q.evtQ.Remove(item)
 			}
 		}
