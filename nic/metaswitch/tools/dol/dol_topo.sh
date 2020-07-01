@@ -333,7 +333,7 @@ if [ $DOL_RUN == 1 ]; then
        echo Overlay ECMP not found FAIL
        ret=1
     fi
-    if grep -q "128.16.0.0/16 route.*added to pending batch" $DUTDIR/pds-agent.log; then
+    if grep -q "Route Add IPS VRF 2 Prefix 128.16.0.0/16" $DUTDIR/pds-agent.log; then
        echo Type 5 route pending batch PASS
     else
        echo Type 5 route not installed FAIL
