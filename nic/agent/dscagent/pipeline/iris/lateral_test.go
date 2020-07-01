@@ -16,6 +16,7 @@ import (
 	"github.com/pensando/netlink"
 
 	"github.com/pensando/sw/api"
+	irisUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/iris/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	. "github.com/pensando/sw/venice/utils/testutils"
@@ -39,7 +40,7 @@ func getKey(meta api.ObjectMeta) string {
 
 func waitForUnresolve(ip string) {
 	for {
-		_, ok := destIPToMAC.Load(ip + "-")
+		_, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(ip, ""))
 		if !ok {
 			break
 		}
@@ -168,8 +169,8 @@ func TestMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	if oldNwCount != newNwCount {
 		t.Fatalf("Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
 	}
-	if oldEpCount != newEpCount {
-		t.Fatalf("Endpoint count must remain unchaged. Before: %v | After: %v", oldEpCount, newEpCount)
+	if oldEpCount+1 != newEpCount {
+		t.Fatalf("Endpoint count must increase by 1. Before: %v | After: %v", oldEpCount, newEpCount)
 	}
 	if oldTunCount+1 != newTunCount {
 		t.Fatalf("Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
@@ -207,6 +208,7 @@ func TestMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 }
 
 func TestNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
@@ -307,8 +309,8 @@ func TestNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	newTunCount := len(listTun)
 
 	Assert(t, oldNwCount == newNwCount, "Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldEpCount == newEpCount, "Endpoint count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldTunCount == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
+	Assert(t, oldEpCount+1 == newEpCount, "Endpoint count must increase by 1. Before: %v | After: %v", oldNwCount, newNwCount)
+	Assert(t, oldTunCount == newTunCount, "Tunnel count must remain unchanged. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
 	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, "", false)
@@ -338,6 +340,7 @@ func TestNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 }
 
 func TestMirrorSessionCreateUnknownCollector(t *testing.T) {
@@ -365,7 +368,7 @@ func TestMirrorSessionCreateUnknownCollector(t *testing.T) {
 
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), MgmtIP, destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp did not resolve ")
 	}
@@ -406,6 +409,7 @@ func TestMirrorSessionCreateUnknownCollector(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	// Ensure the objects are really gone
 	dat, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
@@ -462,7 +466,7 @@ func TestNetflowSessionCreateUnknownCollector(t *testing.T) {
 
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), MgmtIP, destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -495,6 +499,7 @@ func TestNetflowSessionCreateUnknownCollector(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 
@@ -569,7 +574,7 @@ func TestNetflowSessionAndMirrorSessionPointingToSameCollector(t *testing.T) {
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), MgmtIP, destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -631,6 +636,7 @@ func TestNetflowSessionAndMirrorSessionPointingToSameCollector(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 
@@ -749,7 +755,7 @@ func TestTwoMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	newTunCount := len(listTun)
 
 	Assert(t, oldNwCount == newNwCount, "Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldEpCount == newEpCount, "Endpoint count must remain unchaged. Before: %v | After: %v", oldEpCount, newEpCount)
+	Assert(t, oldEpCount+1 == newEpCount, "Endpoint count must increase by 1. Before: %v | After: %v", oldEpCount, newEpCount)
 	Assert(t, oldTunCount+1 == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
@@ -784,6 +790,7 @@ func TestTwoMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	GwCache = sync.Map{}
 }
 
@@ -931,8 +938,8 @@ func TestTwoNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	newTunCount := len(listTun)
 
 	Assert(t, oldNwCount == newNwCount, "Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldEpCount == newEpCount, "Endpoint count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldTunCount == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
+	Assert(t, oldEpCount+1 == newEpCount, "Endpoint count must increase by 1. Before: %v | After: %v", oldEpCount, newEpCount)
+	Assert(t, oldTunCount == newTunCount, "Tunnel count must remain unchanged. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
 	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy1.GetKey(), destIPOutSideSubnet, "", false)
@@ -967,6 +974,7 @@ func TestTwoNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	GwCache = sync.Map{}
 }
 
@@ -1013,7 +1021,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorIP(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), MgmtIP, destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1066,6 +1074,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorIP(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 
@@ -1162,7 +1171,7 @@ func TestTwoNetflowSessionCreatesWithSameUnknownCollector(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy2.GetKey(), MgmtIP, destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1199,6 +1208,7 @@ func TestTwoNetflowSessionCreatesWithSameUnknownCollector(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err := infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 
@@ -1303,7 +1313,7 @@ func TestTwoNetflowSessionCreatesIdempotency(t *testing.T) {
 
 	AssertEquals(t, epCountAfter1stCreate, epCountAfter2ndCreate, "For idempotent netflow session creates, EP count must remain same")
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1340,6 +1350,7 @@ func TestTwoNetflowSessionCreatesIdempotency(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err := infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 
@@ -1405,7 +1416,7 @@ func TestTwoMirrorSessionCreatesIdempotency(t *testing.T) {
 	AssertEquals(t, epCountAfter1stCreate, epCountAfter2ndCreate, "For idempotent mirror session creates, EP count must remain same")
 	AssertEquals(t, tunnelCountAfter1stCreate, tunnelCountAfter2ndCreate, "For idempotent mirror session creates, EP count must remain same")
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1441,6 +1452,7 @@ func TestTwoMirrorSessionCreatesIdempotency(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err := infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 
@@ -1475,7 +1487,7 @@ func TestCreateDeleteLateralObjUnknownCollectorWithTunnel(t *testing.T) {
 
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), MgmtIP, destIPOutSideSubnet, "", true)
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1517,6 +1529,7 @@ func TestCreateDeleteLateralObjUnknownCollectorWithTunnel(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	// Ensure the objects are really gone
 	dat, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
@@ -1574,7 +1587,7 @@ func TestCreateDeleteLateralObjUnknownCollectorWithoutTunnel(t *testing.T) {
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), MgmtIP, destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1602,6 +1615,7 @@ func TestCreateDeleteLateralObjUnknownCollectorWithoutTunnel(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	// Ensure the objects are really gone
 	dat, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
@@ -1704,7 +1718,7 @@ func TestCreateDeleteLateralObjVeniceKnownCollectorWithTunnel(t *testing.T) {
 	newTunCount := len(listTun)
 
 	Assert(t, oldNwCount == newNwCount, "Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldEpCount == newEpCount, "Endpoint count must remain unchaged. Before: %v | After: %v", oldEpCount, newEpCount)
+	Assert(t, oldEpCount+1 == newEpCount, "Endpoint count must increase by 1. Before: %v | After: %v", oldEpCount, newEpCount)
 	Assert(t, oldTunCount+1 == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
@@ -1727,6 +1741,7 @@ func TestCreateDeleteLateralObjVeniceKnownCollectorWithTunnel(t *testing.T) {
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	GwCache = sync.Map{}
 }
 
@@ -1762,7 +1777,7 @@ func TestFailedARPResolution(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), mgmtIP, destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Creating lateral objects must succeed.")
-	mac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	mac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if ok {
 		Assert(t, mac == "", "Lateral object creates must fail on failed arp resolutions %v", mac)
 	}
@@ -1771,6 +1786,7 @@ func TestFailedARPResolution(t *testing.T) {
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	GwCache = sync.Map{}
 }
 
@@ -1805,7 +1821,7 @@ func TestFailedARPResolutionRetry(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), mgmtIP, destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Creating lateral objects must succeed.")
-	mac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	mac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if ok {
 		Assert(t, mac == "", "Lateral object creates must fail on failed arp resolutions %v", mac)
 	}
@@ -1822,7 +1838,7 @@ func TestFailedARPResolutionRetry(t *testing.T) {
 
 	// Wait for next loop to run
 	time.Sleep(time.Second * 70)
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if ok {
 		Assert(t, dmac != "", "Arp Not resolved ")
 	}
@@ -1851,6 +1867,7 @@ func TestFailedARPResolutionRetry(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err := infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 
@@ -1902,7 +1919,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorMac(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), MgmtIP, destIPOutSideSubnet1, "", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
+	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1919,7 +1936,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorMac(t *testing.T) {
 		Name:      fmt.Sprintf("_internal-%s", destIPOutSideSubnet),
 	}
 
-	dmac1, ok := destIPToMAC.Load(destIPOutSideSubnet1 + "-")
+	dmac1, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet1, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1971,6 +1988,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorMac(t *testing.T) {
 
 	time.Sleep(time.Second * 10)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta1))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 
@@ -2026,12 +2044,12 @@ func TestTwoMirrorSessionCreatesWithSameIP(t *testing.T) {
 		},
 	}
 
-	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), mgmtIP, destIPOutSideSubnet1, "", true)
+	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), mgmtIP, destIPOutSideSubnet1, "40.0.0.1", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), mgmtIP, destIPOutSideSubnet1, "", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac1, ok := destIPToMAC.Load(destIPOutSideSubnet1 + "-")
+	dmac1, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet1, ""))
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -2062,7 +2080,7 @@ func TestTwoMirrorSessionCreatesWithSameIP(t *testing.T) {
 	AssertOk(t, err, "Lateral tunnel obj not found")
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet1, "", true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet1, "40.0.0.1", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	_, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
@@ -2077,6 +2095,7 @@ func TestTwoMirrorSessionCreatesWithSameIP(t *testing.T) {
 
 	waitForUnresolve(destIPOutSideSubnet)
 
+	Assert(t, len(doneCache) == 0, "Leaking goroutines in doneCache")
 	dat, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral endpoint obj found, when it is not expected to be created. Found: %v", dat)
 

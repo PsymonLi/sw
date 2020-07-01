@@ -210,3 +210,7 @@ func MatchRuleEqual(mr1, mr2 netproto.MatchRule) bool {
 	}
 	return true
 }
+
+func GenerateCompositeKey(destIP, gwIP string) string {
+	return destIP + "-" + gwIP
+}

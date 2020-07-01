@@ -284,23 +284,26 @@ func TestHandleNetflowUpdates(t *testing.T) {
 	}
 	internalCol := "192.168.100.101"
 	internalCol1 := "192.168.100.103"
+	gwIP := ""
+	internalColKey := internalCol + "-" + gwIP
+	internalCol1Key := internalCol1 + "-" + gwIP
 	var col1Count, col2Count int
-	if _, ok := lateralDB[internalCol]; ok {
-		col1Count = len(lateralDB[internalCol])
+	if _, ok := lateralDB[internalColKey]; ok {
+		col1Count = len(lateralDB[internalColKey])
 	}
-	if _, ok := lateralDB[internalCol1]; ok {
-		col2Count = len(lateralDB[internalCol1])
+	if _, ok := lateralDB[internalCol1Key]; ok {
+		col2Count = len(lateralDB[internalCol1Key])
 	}
 	err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, ok := lateralDB[internalCol]; !ok {
+	if _, ok := lateralDB[internalColKey]; !ok {
 		t.Fatalf("192.168.100.101 collector not created. DB %v", lateralDB)
 	}
-	if len(lateralDB[internalCol]) != col1Count+1 {
-		t.Fatalf("Collector keys not populated for 192.168.100.101. %v", lateralDB[internalCol])
+	if len(lateralDB[internalColKey]) != col1Count+1 {
+		t.Fatalf("Collector keys not populated for 192.168.100.101. %v", lateralDB[internalColKey])
 	}
 	netflow.Spec.Exports[0].Destination = "192.168.100.103"
 	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Update, netflow, 65)
@@ -308,23 +311,23 @@ func TestHandleNetflowUpdates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, ok := lateralDB[internalCol]; ok && len(lateralDB[internalCol]) != col1Count {
+	if _, ok := lateralDB[internalColKey]; ok && len(lateralDB[internalColKey]) != col1Count {
 		t.Fatalf("192.168.100.101 should be removed. DB %v", lateralDB)
 	}
-	if _, ok := lateralDB[internalCol1]; !ok {
+	if _, ok := lateralDB[internalCol1Key]; !ok {
 		t.Fatalf("192.168.100.103 collector not created. DB %v", lateralDB)
 	}
-	if len(lateralDB[internalCol1]) != col2Count+1 {
-		t.Fatalf("Collector keys not populated. %v", lateralDB[internalCol1])
+	if len(lateralDB[internalCol1Key]) != col2Count+1 {
+		t.Fatalf("Collector keys not populated. %v", lateralDB[internalCol1Key])
 	}
 	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, netflow, 65)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := lateralDB[internalCol]; ok && len(lateralDB[internalCol]) != col1Count {
+	if _, ok := lateralDB[internalColKey]; ok && len(lateralDB[internalColKey]) != col1Count {
 		t.Fatalf("192.168.100.101 should be removed. DB %v", lateralDB)
 	}
-	if _, ok := lateralDB[internalCol1]; ok && len(lateralDB[internalCol1]) != col2Count {
+	if _, ok := lateralDB[internalCol1Key]; ok && len(lateralDB[internalCol1Key]) != col2Count {
 		t.Fatalf("192.168.100.101 should be removed. DB %v", lateralDB)
 	}
 }
