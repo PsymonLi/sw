@@ -80,7 +80,7 @@ enum EventTypes {
 
     NODE_UNREACHABLE                = 10 [(category)    = Cluster,
                                           (severity)    = CRITICAL,
-                                          (desc)        = "Node is unreachable",
+                                          (desc)        = "One of the PSM cluster nodes is disconnected from the leader node. Recommendation is to check that the disconnected node is available and verify connectivity from this node.",
                                           (suppress_mm) = true];
 
     CLOCK_SYNC_FAILED                = 11 [(category)    = Cluster,
@@ -106,17 +106,17 @@ enum EventTypes {
 
     QUORUM_MEMBER_UNHEALTHY         = 18 [(category)   = Cluster,
                                          (severity)    = CRITICAL,
-                                         (desc)        = "Quorum member is now unhealthy",
+                                         (desc)        = "One of the member PSM nodes is not able to participate in quorum activities. Recommendation is to check the node's health (CPU/Memory/Disk) and verify network connectivity between PSM controller nodes. If no anomalies are observed and the event happens repeatedly, collect show-tech and contact Pensando Support.",
                                          (suppress_mm) = true];
 
     UNSUPPORTED_QUORUM_SIZE         = 19 [(category)   = Cluster,
                                          (severity)    = CRITICAL,
-                                         (desc)        = "Quorum size is below supported minimum",
+                                         (desc)        = "PSM cluster requires a minimum of 3 quorum nodes to operate in a highly-available fashion. The system has detected that the number of quorum nodes is below the minimum. Recommendation is to contact Pensando Support.",
                                          (suppress_mm) = true];
 
     QUORUM_UNHEALTHY                = 20 [(category)   = Cluster,
                                          (severity)    = CRITICAL,
-                                         (desc)        = "Quorum does not have enough healthy members",
+                                         (desc)        = "System has detected that the number of available quorum nodes is below the minimum threshold (N/2+1). Recommendation is to check which quorum nodes are unhealthy and try to bring them back online. Check each node (CPU/Memory) and verify network connectivity between PSM controller nodes. If the issue cannot be resolved, contact Pensando Support.",
                                          (suppress_mm) = true];
 
     // ------------------------------- Diagnostic events ----------------------------- //
@@ -138,7 +138,7 @@ enum EventTypes {
 
     CONFIG_RESTORE_FAILED           = 32 [(category)   = Cluster,
                                          (severity)    = CRITICAL,
-                                         (desc)        = "Configuration restore operation failed",
+                                         (desc)        = "The system failed to restore system configuration from a snapshot. This could be due to a corrupted snapshot or version incompatibility.",
                                          (suppress_mm) = true];
 
 
@@ -154,7 +154,7 @@ enum EventTypes {
 
     DSC_UNREACHABLE                 = 102 [(category)    = Cluster,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "DSC is unreachable",
+                                           (desc)        = "DSC is not reachable from PSM. Recommendation is to check connectivity between PSM and corresponding DSC management port.",
                                            (suppress_mm) = true];
 
     DSC_HEALTHY                     = 103 [(category)    = Cluster,
@@ -164,7 +164,7 @@ enum EventTypes {
 
     DSC_UNHEALTHY                   = 104 [(category)    = Cluster,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "DSC is unhealthy",
+                                           (desc)        = "DSC has experienced a process crash. System performance may be impacted. Further policy changes will not be applied to this DSC till the server is reloaded. Recommendation is to collect a show-tech and contact Pensando Support.",
                                            (suppress_mm) = true];
 
     HOST_DSC_SPEC_CONFLICT          = 105 [(category)    = Cluster,
@@ -192,7 +192,7 @@ enum EventTypes {
 
     AUDITING_FAILED                 = 301 [(category)    = Cluster,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "Writing of AuditEvent failed",
+                                           (desc)        = "PSM failed to generate an audit event for an API call. This usually indicates problems with the embedded data store. Recommendation is to check the health of the cluster nodes. If the event occurs repeatedly, collect show-tech and contact Pensando Support.",
                                            (suppress_mm) = true];
 
     PASSWORD_CHANGED                = 302 [(category)    = Cluster,
@@ -229,7 +229,7 @@ enum EventTypes {
 
     NAPLES_SERVICE_STOPPED          = 502 [(category)    = System,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "Naples service stopped",
+                                           (desc)        = "DSC related process has been stopped. System performance may be impacted. Further policy changes will not be applied to this DSC till it is reloaded. Recommendation is to collect a show-tech and contact Pensando Support.",
                                            (suppress_mm) = true];
 
     SERVICE_PENDING                 = 503 [(category)    = System,
@@ -243,7 +243,7 @@ enum EventTypes {
 
     SERVICE_UNRESPONSIVE            = 505 [(category)    = System,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "Service unresponsive due to lack of system resources"];
+                                           (desc)        = "A PSM service failed to start or became unresponsive. Some functionality may not be available. Recommendation is to check health of PSM nodes (CPU/Memory/Disk) and verify network connectivity."];
 
     SYSTEM_COLDBOOT                 = 506 [(category)    = System,
                                            (severity)    = WARN,
@@ -256,15 +256,15 @@ enum EventTypes {
 
     NAPLES_FATAL_INTERRUPT          = 508 [(category)    = System,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "Naples has a fatal interrupt"];
+                                           (desc)        = "DSC has encountered a fatal interrupt. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando support."];
 
     NAPLES_CATTRIP_INTERRUPT        = 509 [(category)    = System,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "System encountered cattrip resetting system"];
+                                           (desc)        = "DSC temperature has crossed a fatal threshold, and this DSC has been reloaded. Recommendation is to check environmental conditions."];
 
     NAPLES_OVER_TEMP                = 510 [(category)    = System,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "System temperature is above threshold."];
+                                           (desc)        = "DSC temperature is above the critical threshold of 105C, system performance may be degraded. Host will be reloaded if temperature crosses fatal threshold. Recommendation is to check environmental conditions."];
 
     NAPLES_OVER_TEMP_EXIT           = 511 [(category)    = System,
                                            (severity)    = INFO,
@@ -272,7 +272,7 @@ enum EventTypes {
 
     NAPLES_PANIC_EVENT              = 512 [(category)    = System,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "System panic on the previous boot"];
+                                           (desc)        = "DSC encountered a panic during the last boot. Recommendation is to collect show tech and contact Pensando support."];
 
     NAPLES_POST_DIAG_FAILURE_EVENT  = 513 [(category)    = System,
                                            (severity)    = WARN,
@@ -288,7 +288,7 @@ enum EventTypes {
 
     NAPLES_ERR_PCIEHEALTH_EVENT     = 516 [(category)    = System,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "System has detected a pcie link health error"];
+                                           (desc)        = "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support."];
 
      DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD = 517 [(category) = System,
                                                     (severity) = CRITICAL,
@@ -308,7 +308,7 @@ enum EventTypes {
      // ------------------------------ Resource events -------------------------- //
      DISK_THRESHOLD_EXCEEDED         = 601 [(category) = Resource,
                                             (severity) = CRITICAL,
-                                            (desc)     = "Disk threshold exceeded"];
+                                            (desc)     = "PSM has detected that disk occupancy is above 75% on one or more partitions. Recommendation is to free up disk space on the PSM node(s) by removing firmware images, tech-support bundles and config snapshots. If the event occurs repeatedly, collect show-tech and contact Pensando Support."];
 
     // ------------------------------ Rollout events -------------------------- //
     ROLLOUT_STARTED                 = 701 [(category) = Rollout,
@@ -321,7 +321,7 @@ enum EventTypes {
 
     ROLLOUT_FAILED                  = 703 [(category) = Rollout,
                                            (severity) = CRITICAL,
-                                           (desc)     = "Rollout failed"];
+                                           (desc)     = "Software rollout was not completed successfully. Check Rollout Status to get more details."];
 
     ROLLOUT_SUSPENDED               = 704 [(category) = Rollout,
                                            (severity) = INFO,
@@ -338,7 +338,7 @@ enum EventTypes {
 
     TCP_HALF_OPEN_SESSION_LIMIT_REACHED       = 902 [(category) = Cluster,
                                                      (severity) = CRITICAL,
-                                                     (desc)     = "TCP Session Limit reached"];
+                                                     (desc)     = "Maximum set TCP Session Limit of DSC reached. No more new TCP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the TCP session limit, if needed."];
 
     UDP_ACTIVE_SESSION_LIMIT_APPROACH         = 903 [(category) = Cluster,
                                                      (severity) = WARN,
@@ -346,7 +346,7 @@ enum EventTypes {
 
     UDP_ACTIVE_SESSION_LIMIT_REACHED          = 904 [(category) = Cluster,
                                                      (severity) = CRITICAL,
-                                                     (desc)     = "UDP Session Limit reached"];
+                                                     (desc)     = "Maximum set UDP Session Limit of DSC reached. No more new UDP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the UDP session limit, if needed."];
 
     ICMP_ACTIVE_SESSION_LIMIT_APPROACH        = 905 [(category) = Cluster,
                                                      (severity) = WARN,
@@ -354,7 +354,7 @@ enum EventTypes {
 
     ICMP_ACTIVE_SESSION_LIMIT_REACHED         = 906 [(category) = Cluster,
                                                      (severity) = CRITICAL,
-                                                     (desc)     = "ICMP Session Limit reached"];
+                                                     (desc)     = "Maximum configured ICMP Session Limit for DSC reached. No more new ICMP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the ICMP session limit, if needed."];
 
     OTHER_ACTIVE_SESSION_LIMIT_APPROACH       = 907 [(category) = Cluster,
                                                      (severity) = WARN,
@@ -385,22 +385,22 @@ enum EventTypes {
     // ------------------------- Orchestration events ------------------------- //
     ORCH_CONNECTION_ERROR                  = 1001 [(category) = Orchestration,
                                            (severity) = CRITICAL,
-                                           (desc)     = "Failed to connect to orchestrator"];
+                                           (desc)     = "PSM failed to connect to orchestrator. Recommendation is to check connectivity between PSM and orchestrator."];
     ORCH_LOGIN_FAILURE                     = 1002 [(category) = Orchestration,
                                            (severity) = WARN,
                                            (desc)     = "Login credentials were invalid for orchestrator."];
     ORCH_CONFIG_PUSH_FAILURE               = 1003 [(category) = Orchestration,
                                            (severity) = CRITICAL,
-                                           (desc)     = "Failed to push some configurations to orchestrator"];
+                                           (desc)     = "PSM was unable to write configuration to an external orchestrator. Some functionality may be impacted. Recommendation is for the user to verify orchestrator permissions given to PSM."];
     ORCH_INVALID_ACTION                    = 1004 [(category) = Orchestration,
                                            (severity) = WARN,
                                            (desc)     = "User performed an action that is not supported"];
     MIGRATION_FAILED                       = 1005 [(category) = Orchestration,
                                            (severity) = CRITICAL,
-                                           (desc)     = "Migration Failed"];
+                                           (desc)     = "PSM encountered an error during the migration of a workload to target DSC. Existing flows may experience interruption in traffic. Recommendation is to collect tech-support and contact Pensando support."];
     MIGRATION_TIMED_OUT                    = 1006 [(category) = Orchestration,
                                            (severity) = CRITICAL,
-                                           (desc)     = "Migration Timed out"];
+                                           (desc)     = "PSM migration of a workload to target DSC exceeded the time limit and was aborted. Traffic may be impacted. Recommendation is to collect tech-support and contact Pensando support."];
     ORCH_ALREADY_MANAGED                   = 1007 [(category) = Orchestration,
                                            (severity) = WARN,
                                            (desc)     = "Another PSM may be managing the same namespace"];
@@ -412,19 +412,19 @@ enum EventTypes {
                                            (desc)        = "Workload provisioned on a host with no admitted DSC"];
     ORCH_DSC_MODE_INCOMPATIBLE             = 1010 [(category)    = Orchestration,
                                            (severity)    = CRITICAL,
-                                           (desc)        = "DSC mode is incompatible."];
+                                           (desc)        = "DSC profile is incompatible for Orchestrator integration. Recommendation is to make sure DSC is set to the correct profile."];
     ORCH_HOST_CONFLICT                     = 1011 [(category)    = Orchestration,
                                            (severity)    = WARN,
                                            (desc)        = "Unable to create host due to conflicts with a user created host"];
     DSC_ENDPOINT_MIGRATION_FAILED          = 1012 [(category) = Orchestration,
                                            (severity) = CRITICAL,
-                                           (desc)     = "DSC Endpoint migration failed"];
+                                           (desc)     = "PSM encountered an error during the migration of a workload to target DSC. Existing flows may experience interruption in traffic. Recommendation is to collect tech-support and contact Pensando support."];
     DSC_ENDPOINT_MIGRATION_ABORTED         = 1013 [(category) = Orchestration,
                                            (severity) = CRITICAL,
                                            (desc)     = "DSC Endpoint migration aborted"];
     DSC_ENDPOINT_MIGRATION_TIMEOUT         = 1014 [(category) = Orchestration,
                                            (severity) = CRITICAL,
-                                           (desc)     = "DSC Endpoint migration timeout"];
+                                           (desc)     = "PSM migration of a workload to target DSC exceeded the time limit and was aborted. Traffic may be impacted. Recommendation is to collect tech-support and contact Pensando support."];
 
     // ------------------------- Controller events ------------------------- //
     COLLECTOR_REACHABLE                    = 1101 [(category) = Network,
@@ -446,7 +446,7 @@ enum EventTypes {
     // ----------------------------- Flowlog events -------------------------- //
     FLOWLOGS_DROPPED                      = 1301 [(category)    = System,
                                             (severity)          = CRITICAL,
-                                            (desc)              = "Flowlogs dropped",
+                                            (desc)              = "Firewall flow logs have been dropped. Check the alert to get more inforamation.",
                                             (suppress_mm)       = true];
     FLOWLOGS_REPORTING_ERROR              = 1302 [(category)    = System,
                                             (severity)          = WARN,
@@ -454,7 +454,7 @@ enum EventTypes {
                                             (suppress_mm)       = true];
     FLOWLOGS_RATE_LIMITED                 = 1303 [(category)    = System,
                                             (severity)          = CRITICAL,
-                                            (desc)              = "Flowlogs rate limited",
+                                            (desc)              = "Firewall flow logs are currently rate-limited. Check the alert to get more information.",
                                             (suppress_mm)       = true];
     BOND0_NO_IP		                  = 1401 [(category)    = Network,
                                            (severity)    	= CRITICAL,

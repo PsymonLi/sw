@@ -124,7 +124,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'DISK_THRESHOLD_EXCEEDED' : {
       "Name": "DISK_THRESHOLD_EXCEEDED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Disk threshold exceeded",
+      "Desc": "PSM has detected that disk occupancy is above 75% on one or more partitions. Recommendation is to free up disk space on the PSM node(s) by removing firmware images, tech-support bundles and config snapshots. If the event occurs repeatedly, collect show-tech and contact Pensando Support.",
   },
   'DSC_ENDPOINT_MIGRATION_ABORTED' : {
       "Name": "DSC_ENDPOINT_MIGRATION_ABORTED",
@@ -134,22 +134,22 @@ export const eventTypes: { [name: string]: EventType } = {
   'DSC_ENDPOINT_MIGRATION_FAILED' : {
       "Name": "DSC_ENDPOINT_MIGRATION_FAILED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "DSC Endpoint migration failed",
+      "Desc": "PSM encountered an error during the migration of a workload to target DSC. Existing flows may experience interruption in traffic. Recommendation is to collect tech-support and contact Pensando support.",
   },
   'DSC_ENDPOINT_MIGRATION_TIMEOUT' : {
       "Name": "DSC_ENDPOINT_MIGRATION_TIMEOUT",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "DSC Endpoint migration timeout",
+      "Desc": "PSM migration of a workload to target DSC exceeded the time limit and was aborted. Traffic may be impacted. Recommendation is to collect tech-support and contact Pensando support.",
   },
   'MIGRATION_FAILED' : {
       "Name": "MIGRATION_FAILED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Migration Failed",
+      "Desc": "PSM encountered an error during the migration of a workload to target DSC. Existing flows may experience interruption in traffic. Recommendation is to collect tech-support and contact Pensando support.",
   },
   'MIGRATION_TIMED_OUT' : {
       "Name": "MIGRATION_TIMED_OUT",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Migration Timed out",
+      "Desc": "PSM migration of a workload to target DSC exceeded the time limit and was aborted. Traffic may be impacted. Recommendation is to collect tech-support and contact Pensando support.",
   },
   'ORCH_ALREADY_MANAGED' : {
       "Name": "ORCH_ALREADY_MANAGED",
@@ -159,17 +159,17 @@ export const eventTypes: { [name: string]: EventType } = {
   'ORCH_CONFIG_PUSH_FAILURE' : {
       "Name": "ORCH_CONFIG_PUSH_FAILURE",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Failed to push some configurations to orchestrator",
+      "Desc": "PSM was unable to write configuration to an external orchestrator. Some functionality may be impacted. Recommendation is for the user to verify orchestrator permissions given to PSM.",
   },
   'ORCH_CONNECTION_ERROR' : {
       "Name": "ORCH_CONNECTION_ERROR",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Failed to connect to orchestrator",
+      "Desc": "PSM failed to connect to orchestrator. Recommendation is to check connectivity between PSM and orchestrator.",
   },
   'ORCH_DSC_MODE_INCOMPATIBLE' : {
       "Name": "ORCH_DSC_MODE_INCOMPATIBLE",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "DSC mode is incompatible.",
+      "Desc": "DSC profile is incompatible for Orchestrator integration. Recommendation is to make sure DSC is set to the correct profile.",
   },
   'ORCH_DSC_NOT_ADMITTED' : {
       "Name": "ORCH_DSC_NOT_ADMITTED",
@@ -214,7 +214,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'AUDITING_FAILED' : {
       "Name": "AUDITING_FAILED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Writing of AuditEvent failed",
+      "Desc": "PSM failed to generate an audit event for an API call. This usually indicates problems with the embedded data store. Recommendation is to check the health of the cluster nodes. If the event occurs repeatedly, collect show-tech and contact Pensando Support.",
   },
   'AUTO_GENERATED_TLS_CERT' : {
       "Name": "AUTO_GENERATED_TLS_CERT",
@@ -239,7 +239,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'CONFIG_RESTORE_FAILED' : {
       "Name": "CONFIG_RESTORE_FAILED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Configuration restore operation failed",
+      "Desc": "The system failed to restore system configuration from a snapshot. This could be due to a corrupted snapshot or version incompatibility.",
   },
   'DSC_ADMITTED' : {
       "Name": "DSC_ADMITTED",
@@ -279,12 +279,12 @@ export const eventTypes: { [name: string]: EventType } = {
   'DSC_UNHEALTHY' : {
       "Name": "DSC_UNHEALTHY",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "DSC is unhealthy",
+      "Desc": "DSC has experienced a process crash. System performance may be impacted. Further policy changes will not be applied to this DSC till the server is reloaded. Recommendation is to collect a show-tech and contact Pensando Support.",
   },
   'DSC_UNREACHABLE' : {
       "Name": "DSC_UNREACHABLE",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "DSC is unreachable",
+      "Desc": "DSC is not reachable from PSM. Recommendation is to check connectivity between PSM and corresponding DSC management port.",
   },
   'ELECTION_CANCELLED' : {
       "Name": "ELECTION_CANCELLED",
@@ -319,7 +319,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'ICMP_ACTIVE_SESSION_LIMIT_REACHED' : {
       "Name": "ICMP_ACTIVE_SESSION_LIMIT_REACHED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "ICMP Session Limit reached",
+      "Desc": "Maximum configured ICMP Session Limit for DSC reached. No more new ICMP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the ICMP session limit, if needed.",
   },
   'LEADER_CHANGED' : {
       "Name": "LEADER_CHANGED",
@@ -364,7 +364,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'NODE_UNREACHABLE' : {
       "Name": "NODE_UNREACHABLE",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Node is unreachable",
+      "Desc": "One of the PSM cluster nodes is disconnected from the leader node. Recommendation is to check that the disconnected node is available and verify connectivity from this node.",
   },
   'OTHER_ACTIVE_SESSION_LIMIT_APPROACH' : {
       "Name": "OTHER_ACTIVE_SESSION_LIMIT_APPROACH",
@@ -404,12 +404,12 @@ export const eventTypes: { [name: string]: EventType } = {
   'QUORUM_MEMBER_UNHEALTHY' : {
       "Name": "QUORUM_MEMBER_UNHEALTHY",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Quorum member is now unhealthy",
+      "Desc": "One of the member PSM nodes is not able to participate in quorum activities. Recommendation is to check the node&#x27;s health (CPU/Memory/Disk) and verify network connectivity between PSM controller nodes. If no anomalies are observed and the event happens repeatedly, collect show-tech and contact Pensando Support.",
   },
   'QUORUM_UNHEALTHY' : {
       "Name": "QUORUM_UNHEALTHY",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Quorum does not have enough healthy members",
+      "Desc": "System has detected that the number of available quorum nodes is below the minimum threshold (N/2+1). Recommendation is to check which quorum nodes are unhealthy and try to bring them back online. Check each node (CPU/Memory) and verify network connectivity between PSM controller nodes. If the issue cannot be resolved, contact Pensando Support.",
   },
   'TCP_HALF_OPEN_SESSION_LIMIT_APPROACH' : {
       "Name": "TCP_HALF_OPEN_SESSION_LIMIT_APPROACH",
@@ -419,7 +419,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'TCP_HALF_OPEN_SESSION_LIMIT_REACHED' : {
       "Name": "TCP_HALF_OPEN_SESSION_LIMIT_REACHED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "TCP Session Limit reached",
+      "Desc": "Maximum set TCP Session Limit of DSC reached. No more new TCP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the TCP session limit, if needed.",
   },
   'UDP_ACTIVE_SESSION_LIMIT_APPROACH' : {
       "Name": "UDP_ACTIVE_SESSION_LIMIT_APPROACH",
@@ -429,12 +429,12 @@ export const eventTypes: { [name: string]: EventType } = {
   'UDP_ACTIVE_SESSION_LIMIT_REACHED' : {
       "Name": "UDP_ACTIVE_SESSION_LIMIT_REACHED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "UDP Session Limit reached",
+      "Desc": "Maximum set UDP Session Limit of DSC reached. No more new UDP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the UDP session limit, if needed.",
   },
   'UNSUPPORTED_QUORUM_SIZE' : {
       "Name": "UNSUPPORTED_QUORUM_SIZE",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Quorum size is below supported minimum",
+      "Desc": "PSM cluster requires a minimum of 3 quorum nodes to operate in a highly-available fashion. The system has detected that the number of quorum nodes is below the minimum. Recommendation is to contact Pensando Support.",
   },
   'CONFIG_FAIL' : {
       "Name": "CONFIG_FAIL",
@@ -479,7 +479,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'ROLLOUT_FAILED' : {
       "Name": "ROLLOUT_FAILED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Rollout failed",
+      "Desc": "Software rollout was not completed successfully. Check Rollout Status to get more details.",
   },
   'ROLLOUT_STARTED' : {
       "Name": "ROLLOUT_STARTED",
@@ -509,12 +509,12 @@ export const eventTypes: { [name: string]: EventType } = {
   'FLOWLOGS_DROPPED' : {
       "Name": "FLOWLOGS_DROPPED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Flowlogs dropped",
+      "Desc": "Firewall flow logs have been dropped. Check the alert to get more inforamation.",
   },
   'FLOWLOGS_RATE_LIMITED' : {
       "Name": "FLOWLOGS_RATE_LIMITED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Flowlogs rate limited",
+      "Desc": "Firewall flow logs are currently rate-limited. Check the alert to get more information.",
   },
   'FLOWLOGS_REPORTING_ERROR' : {
       "Name": "FLOWLOGS_REPORTING_ERROR",
@@ -534,17 +534,17 @@ export const eventTypes: { [name: string]: EventType } = {
   'NAPLES_CATTRIP_INTERRUPT' : {
       "Name": "NAPLES_CATTRIP_INTERRUPT",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "System encountered cattrip resetting system",
+      "Desc": "DSC temperature has crossed a fatal threshold, and this DSC has been reloaded. Recommendation is to check environmental conditions.",
   },
   'NAPLES_ERR_PCIEHEALTH_EVENT' : {
       "Name": "NAPLES_ERR_PCIEHEALTH_EVENT",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "System has detected a pcie link health error",
+      "Desc": "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support.",
   },
   'NAPLES_FATAL_INTERRUPT' : {
       "Name": "NAPLES_FATAL_INTERRUPT",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Naples has a fatal interrupt",
+      "Desc": "DSC has encountered a fatal interrupt. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando support.",
   },
   'NAPLES_INFO_PCIEHEALTH_EVENT' : {
       "Name": "NAPLES_INFO_PCIEHEALTH_EVENT",
@@ -554,7 +554,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'NAPLES_OVER_TEMP' : {
       "Name": "NAPLES_OVER_TEMP",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "System temperature is above threshold.",
+      "Desc": "DSC temperature is above the critical threshold of 105C, system performance may be degraded. Host will be reloaded if temperature crosses fatal threshold. Recommendation is to check environmental conditions.",
   },
   'NAPLES_OVER_TEMP_EXIT' : {
       "Name": "NAPLES_OVER_TEMP_EXIT",
@@ -564,7 +564,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'NAPLES_PANIC_EVENT' : {
       "Name": "NAPLES_PANIC_EVENT",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "System panic on the previous boot",
+      "Desc": "DSC encountered a panic during the last boot. Recommendation is to collect show tech and contact Pensando support.",
   },
   'NAPLES_POST_DIAG_FAILURE_EVENT' : {
       "Name": "NAPLES_POST_DIAG_FAILURE_EVENT",
@@ -574,7 +574,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'NAPLES_SERVICE_STOPPED' : {
       "Name": "NAPLES_SERVICE_STOPPED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Naples service stopped",
+      "Desc": "DSC related process has been stopped. System performance may be impacted. Further policy changes will not be applied to this DSC till it is reloaded. Recommendation is to collect a show-tech and contact Pensando Support.",
   },
   'NAPLES_WARN_PCIEHEALTH_EVENT' : {
       "Name": "NAPLES_WARN_PCIEHEALTH_EVENT",
@@ -604,7 +604,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'SERVICE_UNRESPONSIVE' : {
       "Name": "SERVICE_UNRESPONSIVE",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Service unresponsive due to lack of system resources",
+      "Desc": "A PSM service failed to start or became unresponsive. Some functionality may not be available. Recommendation is to check health of PSM nodes (CPU/Memory/Disk) and verify network connectivity.",
   },
   'SYSTEM_COLDBOOT' : {
       "Name": "SYSTEM_COLDBOOT",

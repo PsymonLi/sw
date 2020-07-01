@@ -108,7 +108,7 @@ func init() {
 		EType:      NODE_UNREACHABLE.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "Node is unreachable",
+		Desc:       "One of the PSM cluster nodes is disconnected from the leader node. Recommendation is to check that the disconnected node is available and verify connectivity from this node.",
 		SuppressMM: true}
 
 	eventTypes[CLOCK_SYNC_FAILED] = &EventTypeAttributes{
@@ -143,21 +143,21 @@ func init() {
 		EType:      QUORUM_MEMBER_UNHEALTHY.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "Quorum member is now unhealthy",
+		Desc:       "One of the member PSM nodes is not able to participate in quorum activities. Recommendation is to check the node's health (CPU/Memory/Disk) and verify network connectivity between PSM controller nodes. If no anomalies are observed and the event happens repeatedly, collect show-tech and contact Pensando Support.",
 		SuppressMM: true}
 
 	eventTypes[UNSUPPORTED_QUORUM_SIZE] = &EventTypeAttributes{
 		EType:      UNSUPPORTED_QUORUM_SIZE.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "Quorum size is below supported minimum",
+		Desc:       "PSM cluster requires a minimum of 3 quorum nodes to operate in a highly-available fashion. The system has detected that the number of quorum nodes is below the minimum. Recommendation is to contact Pensando Support.",
 		SuppressMM: true}
 
 	eventTypes[QUORUM_UNHEALTHY] = &EventTypeAttributes{
 		EType:      QUORUM_UNHEALTHY.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "Quorum does not have enough healthy members",
+		Desc:       "System has detected that the number of available quorum nodes is below the minimum threshold (N/2+1). Recommendation is to check which quorum nodes are unhealthy and try to bring them back online. Check each node (CPU/Memory) and verify network connectivity between PSM controller nodes. If the issue cannot be resolved, contact Pensando Support.",
 		SuppressMM: true}
 
 	eventTypes[MODULE_CREATION_FAILED] = &EventTypeAttributes{
@@ -185,7 +185,7 @@ func init() {
 		EType:      CONFIG_RESTORE_FAILED.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "Configuration restore operation failed",
+		Desc:       "The system failed to restore system configuration from a snapshot. This could be due to a corrupted snapshot or version incompatibility.",
 		SuppressMM: true}
 
 	eventTypes[DSC_ADMITTED] = &EventTypeAttributes{
@@ -206,7 +206,7 @@ func init() {
 		EType:      DSC_UNREACHABLE.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "DSC is unreachable",
+		Desc:       "DSC is not reachable from PSM. Recommendation is to check connectivity between PSM and corresponding DSC management port.",
 		SuppressMM: true}
 
 	eventTypes[DSC_HEALTHY] = &EventTypeAttributes{
@@ -220,7 +220,7 @@ func init() {
 		EType:      DSC_UNHEALTHY.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "DSC is unhealthy",
+		Desc:       "DSC has experienced a process crash. System performance may be impacted. Further policy changes will not be applied to this DSC till the server is reloaded. Recommendation is to collect a show-tech and contact Pensando Support.",
 		SuppressMM: true}
 
 	eventTypes[HOST_DSC_SPEC_CONFLICT] = &EventTypeAttributes{
@@ -262,7 +262,7 @@ func init() {
 		EType:      AUDITING_FAILED.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "Writing of AuditEvent failed",
+		Desc:       "PSM failed to generate an audit event for an API call. This usually indicates problems with the embedded data store. Recommendation is to check the health of the cluster nodes. If the event occurs repeatedly, collect show-tech and contact Pensando Support.",
 		SuppressMM: true}
 
 	eventTypes[PASSWORD_CHANGED] = &EventTypeAttributes{
@@ -311,7 +311,7 @@ func init() {
 		EType:      NAPLES_SERVICE_STOPPED.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "Naples service stopped",
+		Desc:       "DSC related process has been stopped. System performance may be impacted. Further policy changes will not be applied to this DSC till it is reloaded. Recommendation is to collect a show-tech and contact Pensando Support.",
 		SuppressMM: true}
 
 	eventTypes[SERVICE_PENDING] = &EventTypeAttributes{
@@ -332,7 +332,7 @@ func init() {
 		EType:      SERVICE_UNRESPONSIVE.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "Service unresponsive due to lack of system resources",
+		Desc:       "A PSM service failed to start or became unresponsive. Some functionality may not be available. Recommendation is to check health of PSM nodes (CPU/Memory/Disk) and verify network connectivity.",
 		SuppressMM: false}
 
 	eventTypes[SYSTEM_COLDBOOT] = &EventTypeAttributes{
@@ -353,21 +353,21 @@ func init() {
 		EType:      NAPLES_FATAL_INTERRUPT.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "Naples has a fatal interrupt",
+		Desc:       "DSC has encountered a fatal interrupt. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando support.",
 		SuppressMM: false}
 
 	eventTypes[NAPLES_CATTRIP_INTERRUPT] = &EventTypeAttributes{
 		EType:      NAPLES_CATTRIP_INTERRUPT.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "System encountered cattrip resetting system",
+		Desc:       "DSC temperature has crossed a fatal threshold, and this DSC has been reloaded. Recommendation is to check environmental conditions.",
 		SuppressMM: false}
 
 	eventTypes[NAPLES_OVER_TEMP] = &EventTypeAttributes{
 		EType:      NAPLES_OVER_TEMP.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "System temperature is above threshold.",
+		Desc:       "DSC temperature is above the critical threshold of 105C, system performance may be degraded. Host will be reloaded if temperature crosses fatal threshold. Recommendation is to check environmental conditions.",
 		SuppressMM: false}
 
 	eventTypes[NAPLES_OVER_TEMP_EXIT] = &EventTypeAttributes{
@@ -381,7 +381,7 @@ func init() {
 		EType:      NAPLES_PANIC_EVENT.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "System panic on the previous boot",
+		Desc:       "DSC encountered a panic during the last boot. Recommendation is to collect show tech and contact Pensando support.",
 		SuppressMM: false}
 
 	eventTypes[NAPLES_POST_DIAG_FAILURE_EVENT] = &EventTypeAttributes{
@@ -409,7 +409,7 @@ func init() {
 		EType:      NAPLES_ERR_PCIEHEALTH_EVENT.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "System has detected a pcie link health error",
+		Desc:       "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support.",
 		SuppressMM: false}
 
 	eventTypes[DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD] = &EventTypeAttributes{
@@ -444,7 +444,7 @@ func init() {
 		EType:      DISK_THRESHOLD_EXCEEDED.String(),
 		Severity:   "critical",
 		Category:   "",
-		Desc:       "Disk threshold exceeded",
+		Desc:       "PSM has detected that disk occupancy is above 75% on one or more partitions. Recommendation is to free up disk space on the PSM node(s) by removing firmware images, tech-support bundles and config snapshots. If the event occurs repeatedly, collect show-tech and contact Pensando Support.",
 		SuppressMM: false}
 
 	eventTypes[ROLLOUT_STARTED] = &EventTypeAttributes{
@@ -465,7 +465,7 @@ func init() {
 		EType:      ROLLOUT_FAILED.String(),
 		Severity:   "critical",
 		Category:   "rollout",
-		Desc:       "Rollout failed",
+		Desc:       "Software rollout was not completed successfully. Check Rollout Status to get more details.",
 		SuppressMM: false}
 
 	eventTypes[ROLLOUT_SUSPENDED] = &EventTypeAttributes{
@@ -493,7 +493,7 @@ func init() {
 		EType:      TCP_HALF_OPEN_SESSION_LIMIT_REACHED.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "TCP Session Limit reached",
+		Desc:       "Maximum set TCP Session Limit of DSC reached. No more new TCP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the TCP session limit, if needed.",
 		SuppressMM: false}
 
 	eventTypes[UDP_ACTIVE_SESSION_LIMIT_APPROACH] = &EventTypeAttributes{
@@ -507,7 +507,7 @@ func init() {
 		EType:      UDP_ACTIVE_SESSION_LIMIT_REACHED.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "UDP Session Limit reached",
+		Desc:       "Maximum set UDP Session Limit of DSC reached. No more new UDP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the UDP session limit, if needed.",
 		SuppressMM: false}
 
 	eventTypes[ICMP_ACTIVE_SESSION_LIMIT_APPROACH] = &EventTypeAttributes{
@@ -521,7 +521,7 @@ func init() {
 		EType:      ICMP_ACTIVE_SESSION_LIMIT_REACHED.String(),
 		Severity:   "critical",
 		Category:   "cluster",
-		Desc:       "ICMP Session Limit reached",
+		Desc:       "Maximum configured ICMP Session Limit for DSC reached. No more new ICMP sessions will be allowed until the old ones age out. Recommendation is to check for misbehaving hosts, and increase the ICMP session limit, if needed.",
 		SuppressMM: false}
 
 	eventTypes[OTHER_ACTIVE_SESSION_LIMIT_APPROACH] = &EventTypeAttributes{
@@ -577,7 +577,7 @@ func init() {
 		EType:      ORCH_CONNECTION_ERROR.String(),
 		Severity:   "critical",
 		Category:   "",
-		Desc:       "Failed to connect to orchestrator",
+		Desc:       "PSM failed to connect to orchestrator. Recommendation is to check connectivity between PSM and orchestrator.",
 		SuppressMM: false}
 
 	eventTypes[ORCH_LOGIN_FAILURE] = &EventTypeAttributes{
@@ -591,7 +591,7 @@ func init() {
 		EType:      ORCH_CONFIG_PUSH_FAILURE.String(),
 		Severity:   "critical",
 		Category:   "",
-		Desc:       "Failed to push some configurations to orchestrator",
+		Desc:       "PSM was unable to write configuration to an external orchestrator. Some functionality may be impacted. Recommendation is for the user to verify orchestrator permissions given to PSM.",
 		SuppressMM: false}
 
 	eventTypes[ORCH_INVALID_ACTION] = &EventTypeAttributes{
@@ -605,14 +605,14 @@ func init() {
 		EType:      MIGRATION_FAILED.String(),
 		Severity:   "critical",
 		Category:   "",
-		Desc:       "Migration Failed",
+		Desc:       "PSM encountered an error during the migration of a workload to target DSC. Existing flows may experience interruption in traffic. Recommendation is to collect tech-support and contact Pensando support.",
 		SuppressMM: false}
 
 	eventTypes[MIGRATION_TIMED_OUT] = &EventTypeAttributes{
 		EType:      MIGRATION_TIMED_OUT.String(),
 		Severity:   "critical",
 		Category:   "",
-		Desc:       "Migration Timed out",
+		Desc:       "PSM migration of a workload to target DSC exceeded the time limit and was aborted. Traffic may be impacted. Recommendation is to collect tech-support and contact Pensando support.",
 		SuppressMM: false}
 
 	eventTypes[ORCH_ALREADY_MANAGED] = &EventTypeAttributes{
@@ -640,7 +640,7 @@ func init() {
 		EType:      ORCH_DSC_MODE_INCOMPATIBLE.String(),
 		Severity:   "critical",
 		Category:   "",
-		Desc:       "DSC mode is incompatible.",
+		Desc:       "DSC profile is incompatible for Orchestrator integration. Recommendation is to make sure DSC is set to the correct profile.",
 		SuppressMM: false}
 
 	eventTypes[ORCH_HOST_CONFLICT] = &EventTypeAttributes{
@@ -654,7 +654,7 @@ func init() {
 		EType:      DSC_ENDPOINT_MIGRATION_FAILED.String(),
 		Severity:   "critical",
 		Category:   "",
-		Desc:       "DSC Endpoint migration failed",
+		Desc:       "PSM encountered an error during the migration of a workload to target DSC. Existing flows may experience interruption in traffic. Recommendation is to collect tech-support and contact Pensando support.",
 		SuppressMM: false}
 
 	eventTypes[DSC_ENDPOINT_MIGRATION_ABORTED] = &EventTypeAttributes{
@@ -668,7 +668,7 @@ func init() {
 		EType:      DSC_ENDPOINT_MIGRATION_TIMEOUT.String(),
 		Severity:   "critical",
 		Category:   "",
-		Desc:       "DSC Endpoint migration timeout",
+		Desc:       "PSM migration of a workload to target DSC exceeded the time limit and was aborted. Traffic may be impacted. Recommendation is to collect tech-support and contact Pensando support.",
 		SuppressMM: false}
 
 	eventTypes[COLLECTOR_REACHABLE] = &EventTypeAttributes{
@@ -703,7 +703,7 @@ func init() {
 		EType:      FLOWLOGS_DROPPED.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "Flowlogs dropped",
+		Desc:       "Firewall flow logs have been dropped. Check the alert to get more inforamation.",
 		SuppressMM: true}
 
 	eventTypes[FLOWLOGS_REPORTING_ERROR] = &EventTypeAttributes{
@@ -717,7 +717,7 @@ func init() {
 		EType:      FLOWLOGS_RATE_LIMITED.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "Flowlogs rate limited",
+		Desc:       "Firewall flow logs are currently rate-limited. Check the alert to get more information.",
 		SuppressMM: true}
 
 	eventTypes[BOND0_NO_IP] = &EventTypeAttributes{
