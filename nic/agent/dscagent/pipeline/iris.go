@@ -428,6 +428,10 @@ func handleNetwork(i *IrisAPI, oper types.Operation, network netproto.Network) (
 		// Alloc ID if ID field is empty. This will be pre-populated in case of config replays
 		if network.Status.NetworkID == 0 {
 			network.Status.NetworkID = i.InfraAPI.AllocateID(types.NetworkID, types.NetworkOffSet)
+			if network.Status.NetworkID == types.UntaggedCollVLAN {
+				log.Infof("Skipping the use of reserved VLAN ID: %v", types.UntaggedCollVLAN)
+				network.Status.NetworkID = i.InfraAPI.AllocateID(types.NetworkID, types.NetworkOffSet)
+			}
 		}
 
 	case types.Update:
