@@ -1,24 +1,24 @@
-## penctl show system status
+## penctl show ncsi mcast
 
-show current system status
+ncsi mcast info
 
 ### Synopsis
 
 
 
-------------------------------------
- show current system status 
-------------------------------------
+-----------------------------------------
+ Show NCSI mcast 
+-----------------------------------------
 
 
 ```
-penctl show system status [flags]
+penctl show ncsi mcast [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for status
+  -h, --help   help for mcast
 ```
 
 ### Options inherited from parent commands
@@ -35,5 +35,5 @@ penctl show system status [flags]
 ```
 
 ### SEE ALSO
-* [penctl show system](penctl_show_system.md)	 - show system information
+* [penctl show ncsi](penctl_show_ncsi.md)	 - ncsi info
 

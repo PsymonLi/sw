@@ -1,30 +1,30 @@
-.. _penctl_show_system_status:
+.. _penctl_show_ncsi_bcast:
 
-penctl show system status
--------------------------
+penctl show ncsi bcast
+----------------------
 
-show current system status
+ncsi bcast info
 
 Synopsis
 ~~~~~~~~
 
 
 
-------------------------------------
- show current system status 
-------------------------------------
+-----------------------------------------
+ Show NCSI bcast 
+-----------------------------------------
 
 
 ::
 
-  penctl show system status [flags]
+  penctl show ncsi bcast [flags]
 
 Options
 ~~~~~~~
 
 ::
 
-  -h, --help   help for status
+  -h, --help   help for bcast
 
 Options inherited from parent commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,5 +43,5 @@ Options inherited from parent commands
 SEE ALSO
 ~~~~~~~~
 
-* `penctl show system <penctl_show_system.rst>`_ 	 - show system information
+* `penctl show ncsi <penctl_show_ncsi.rst>`_ 	 - ncsi info
 

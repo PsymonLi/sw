@@ -40,6 +40,7 @@ Show Object and Information
 * [penctl show interface](penctl_show_interface.md)	 - Show interface
 * [penctl show logs](penctl_show_logs.md)	 - Show logs from Distributed Service Card
 * [penctl show metrics](penctl_show_metrics.md)	 - Show metrics from Distributed Service Card
+* [penctl show ncsi](penctl_show_ncsi.md)	 - ncsi info
 * [penctl show port](penctl_show_port.md)	 - show port object
 * [penctl show proc-meminfo](penctl_show_proc-meminfo.md)	 - Check /proc/meminfo file on Distributed Service Card
 * [penctl show qos-class](penctl_show_qos-class.md)	 - show qos-class object

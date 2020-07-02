@@ -48,6 +48,7 @@ SEE ALSO
 * `penctl show interface <penctl_show_interface.rst>`_ 	 - Show interface
 * `penctl show logs <penctl_show_logs.rst>`_ 	 - Show logs from Distributed Service Card
 * `penctl show metrics <penctl_show_metrics.rst>`_ 	 - Show metrics from Distributed Service Card
+* `penctl show ncsi <penctl_show_ncsi.rst>`_ 	 - ncsi info
 * `penctl show port <penctl_show_port.rst>`_ 	 - show port object
 * `penctl show proc-meminfo <penctl_show_proc-meminfo.rst>`_ 	 - Check /proc/meminfo file on Distributed Service Card
 * `penctl show qos-class <penctl_show_qos-class.rst>`_ 	 - show qos-class object

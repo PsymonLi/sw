@@ -40,7 +40,7 @@ SEE ALSO
 ~~~~~~~~
 
 * `penctl show <penctl_show.rst>`_ 	 - Show Object and Information
+* `penctl show system alompresent <penctl_show_system_alompresent.rst>`_ 	 - check if alom is present or not
 * `penctl show system queue-statistics <penctl_show_system_queue-statistics.rst>`_ 	 - show system queue-statistics
 * `penctl show system statistics <penctl_show_system_statistics.rst>`_ 	 - show system statistics
-* `penctl show system status <penctl_show_system_status.rst>`_ 	 - show current system status
 

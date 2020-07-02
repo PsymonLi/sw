@@ -20,7 +20,6 @@ penctl show metrics [flags]
 ```
   -h, --help          help for metrics
   -k, --kind string   Kind for metrics object
-  -n, --name string   Name/Key for metrics object
 ```
 
 ### Options inherited from parent commands

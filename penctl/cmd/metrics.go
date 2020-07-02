@@ -27,6 +27,7 @@ func init() {
 	metricsShowCmd.Flags().StringVarP(&genericname, "name", "n", "", "Name/Key for metrics object")
 	metricsShowCmd.Flags().StringVarP(&generickind, "kind", "k", "", "Kind for metrics object")
 	metricsShowCmd.MarkFlagRequired("kind")
+	metricsShowCmd.Flags().MarkHidden("name")
 }
 
 func genericmetricsShowCmdHandler(cmd *cobra.Command, args []string) error {
