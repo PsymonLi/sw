@@ -1,15 +1,14 @@
 #! /usr/bin/python3
 from itertools import product
+from collections import Counter
 import ipaddress
 from bitstring import BitArray
-from collections import Counter
 import iota.harness.api as api
 import iota.test.iris.utils.iperf as iperf
 import iota.test.utils.naples_host as host
 import iota.test.iris.config.workload.api as wl_api
 import iota.harness.infra.utils.toeplitz as toeplitz
 from iota.harness.infra.utils.toeplitz import *
-import pdb
 
 def generate_flows(tc, num_flows, num_queues):
     queue_used = Counter()
@@ -56,8 +55,7 @@ def send_iperf_cmd(tc, client_port, server_port, test_packet_count):
     server_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
     client_req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
 
-    cmd_descr = f"Server: [({tc.server.workload_name})({tc.server_ip})] <--> Client: \
-                          [({tc.client.workload_name})({tc.client_ip})]"
+    cmd_descr = f"Server: [({tc.server.workload_name})({tc.server_ip})] <--> Client: [({tc.client.workload_name})({tc.client_ip})]"
     tc.cmd_descr.append(cmd_descr)
 
     server_cmd = None
@@ -89,7 +87,7 @@ def send_iperf_cmd(tc, client_port, server_port, test_packet_count):
     api.Logger.info("Start Client")
     tc.iperf_client_resp = api.Trigger(client_req)
 
-    api.Logger.info("Ready to terminate")
+    api.Logger.info("Client Returned. Terminate Server")
     api.Trigger_TerminateAllCommands(server_resp)
 
     return api.types.status.SUCCESS
@@ -105,7 +103,7 @@ def trigger_iperf(tc, num_queues):
 
     # get the client and server port numbers, based on hash and ip addr.
     for queue, server_port, client_port in generate_flows(tc, num_flows, num_queues):
-        api.Logger.info(f"------- RSS for: queue ---> {queue} -------")
+        api.Logger.info(f"------------ RSS for: queue ---> {queue} ------------")
 
         # collect stats before the test
         stats_before_test = get_rx_queue_stats(tc)
@@ -113,7 +111,6 @@ def trigger_iperf(tc, num_queues):
             api.Logger.error("Could not get stats")
             return api.types.status.FAILURE
 
-        api.Logger.info("Send iperf, generate traffic on a specific queues")
         send_iperf_cmd(tc, client_port, server_port, test_packet_count)
 
         if verify_iperf(tc) is api.types.status.SUCCESS:
@@ -167,8 +164,6 @@ def verify_iperf(tc):
         api.Logger.info("Number of connection timeouts : {}".format(conn_timedout))
     if control_socker_err > 0:
         api.Logger.info("Number of control socket errors : {}".format(control_socker_err))
-
-    api.Logger.info("Iperf test successfull")
 
     return api.types.status.SUCCESS
 
@@ -238,11 +233,9 @@ def Setup(tc):
     tc.num_sessions = int(getattr(tc.args, "num_sessions", 1))
 
     # log which iterration is in progress:
-    api.Logger.info(f"=============== %s ===============" % tc.rss_enum)
+    api.Logger.info(f"==================== %s ====================" % tc.rss_enum)
     api.Logger.info(f"ip_proto:{tc.tc_ip_proto}, proto: {tc.proto}, rss: {tc.iterators.rss}, iperf_sessions: {tc.num_sessions}")
 
-    #TODO: Is this different ?
-    #tc.nodes = api.GetNaplesHostnames()
     tc.nodes = api.GetWorkloadNodeHostnames()
     tc.os = api.GetNodeOs(tc.nodes[0])
     if tc.os == 'freebsd':
