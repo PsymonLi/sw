@@ -74,7 +74,11 @@ Status
     {{if (HasSuffix $rpc "Update")}}
     PDS_TRACE_INFO("Received gRPC {{.RequestType.Name}} Update");
     {{else}}
+      {{if (HasSuffix $rpc "Get") }}
+    PDS_TRACE_VERBOSE("Received gRPC {{.RequestType.Name}}");
+      {{else}}
     PDS_TRACE_INFO("Received gRPC {{.RequestType.Name}}");
+      {{end}}
     {{end}}
     // lock to allow only one grpc thread processing at a time
     std::lock_guard<std::mutex> lck(pds_ms::mgmt_state_t::grpc_lock());
@@ -451,12 +455,16 @@ Status
     if (ret != types::API_STATUS_OK) {
         PDS_TRACE_ERR ("Failed to process gRPC {{.RequestType.Name}}: %s", pds_ms_api_ret_str(ret));
     } else {
+    {{if (HasSuffix $rpc "Get") }}
+        PDS_TRACE_VERBOSE ("Processed gRPC {{.RequestType.Name}} successfully");
+    {{else}}
         PDS_TRACE_DEBUG ("Processed gRPC {{.RequestType.Name}} successfully");
+    {{end}}
 
-  {{if and (HasSuffix $rpc "Get") (HasPrefix $fileName "internal_") }}
+    {{if and (HasSuffix $rpc "Get") (HasPrefix $fileName "internal_") }}
         //pds_ms_dump_{{$respMsgName| ToLower}}(proto_resp);
         pds_ms_convert_{{$respMsgName | ToLower}}_ext_response (proto_resp, resp);
-  {{end}}
+    {{end}}
     }
     return Status::OK;
   {{end}}
