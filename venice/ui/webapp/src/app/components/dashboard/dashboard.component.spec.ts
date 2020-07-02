@@ -44,6 +44,9 @@ import { DsbdcardComponent } from './widgets/dsbdcard/dsbdcard.component';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { FwlogService } from '@app/services/generated/fwlog.service';
 import { SearchService } from '@app/services/generated/search.service';
+import { FirewalltoptenComponent } from './widgets/firewalltopten/firewalltopten/firewalltopten.component';
+import { ToprulescardComponent } from './widgets/firewalltopten/toprulescard/toprulescard.component';
+import { SecurityService } from '@app/services/generated/security.service';
 @Component({
   template: ''
 })
@@ -68,6 +71,8 @@ describe('DashboardComponent', () => {
         DsbdcardComponent,
         HostCardComponent,
         RrhealthcardComponent,
+        FirewalltoptenComponent,
+        ToprulescardComponent,
       ],
       imports: [
 
@@ -100,6 +105,7 @@ describe('DashboardComponent', () => {
         WorkloadService,
         FwlogService,
         SearchService,
+        SecurityService,
       ]
     });
       });

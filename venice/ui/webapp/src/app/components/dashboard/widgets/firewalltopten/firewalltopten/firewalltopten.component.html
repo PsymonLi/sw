@@ -1,0 +1,13 @@
+<div fxFlex="1 0 auto" fxLayout="column">
+  <div fxLayout="row" fxFlex="1 0 auto">
+    <app-toprulescard [title]="'TOP ALLOW RULES'" [data]="this.ruleCountLists['allow']"
+                      [dataReady]="!this.loading" [ruleMap]="ruleMap" [ruleAction]="'allow'">
+    </app-toprulescard>
+    <app-toprulescard [title]="'TOP DENY RULES'" [data]="this.ruleCountLists['deny']"
+                      [dataReady]="!this.loading" [ruleMap]="ruleMap" [ruleAction]="'deny'">
+    </app-toprulescard>
+    <app-toprulescard [title]="'TOP REJECT RULES'" [data]="this.ruleCountLists['reject']"
+                      [dataReady]="!this.loading" [ruleMap]="ruleMap" [ruleAction]="'reject'">
+    </app-toprulescard>
+  </div>
+</div>

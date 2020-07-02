@@ -26,6 +26,8 @@ import { WorkloadsComponent } from './workloads/workloads.component';
 import { DsbdcardComponent } from './widgets/dsbdcard/dsbdcard.component';
 import { HostCardComponent } from './widgets/hostcard/hostcard.component';
 import { RrhealthcardComponent } from './widgets/rrhealthcard/rrhealthcard.component';
+import { FirewalltoptenComponent } from './widgets/firewalltopten/firewalltopten/firewalltopten.component';
+import { ToprulescardComponent } from './widgets/firewalltopten/toprulescard/toprulescard.component';
 
 @NgModule({
   id: 'dashboardModule',
@@ -42,6 +44,6 @@ import { RrhealthcardComponent } from './widgets/rrhealthcard/rrhealthcard.compo
     dashboardRouter,
     SharedModule
   ],
-  declarations: [DashboardComponent, SystemcapacitywidgetComponent, DsbdworkloadComponent, ForwardDropComponent, PolicyhealthComponent, SoftwareversionComponent, NaplesComponent, WorkloadsComponent, DsbdcardComponent, HostCardComponent, RrhealthcardComponent]
+  declarations: [DashboardComponent, SystemcapacitywidgetComponent, DsbdworkloadComponent, ForwardDropComponent, PolicyhealthComponent, SoftwareversionComponent, NaplesComponent, WorkloadsComponent, DsbdcardComponent, HostCardComponent, RrhealthcardComponent, FirewalltoptenComponent, ToprulescardComponent]
 })
 export class DashboardModule { }

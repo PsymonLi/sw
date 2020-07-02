@@ -1,0 +1,61 @@
+@import "src/global-mixins";
+
+.toprulescard {
+  min-width: 471px;
+  min-height: 360px;
+}
+
+.toprulescard-chart {
+  @include primary-font(14px);
+}
+
+.toprulescard-legend-colors {
+  width: 15px;
+  height: 15px;
+  border: 1px solid #676763;
+}
+
+.toprulescard-legend-colors.active {
+  width: 15px;
+  height: 15px;
+  border: 2px solid #676763;
+}
+
+.toprulescard-rule-text {
+  @include primary-font(14px, #676763, 400);
+}
+
+.toprulescard-rule-text span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toprulescard-rule-text.active {
+  text-decoration: underline;
+}
+
+.toprulescard-body {
+  margin: 10px;
+  width: 535px;
+}
+
+.toprulescard-highlighted-legend {
+  border: 1.5px solid #676763;
+}
+
+.toprulescard-rule-details {
+  width: 335px;
+}
+
+.toprulescard-no-hits-text {
+  @include primary-font(18px, #676763, 400);
+}
+
+.toprulescard-update-time {
+  @include primary-font(14px, #676763, 400);
+}
+
+.toprulescard-clickable {
+  cursor: pointer;
+}

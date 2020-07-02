@@ -21,12 +21,15 @@
     <app-rrhealthcard></app-rrhealthcard>
   </div>
 </div>
-<div fxLayout="row" *ngIf="hideOldWidgets" style="flex-wrap: wrap">
+<div fxLayout="row" *ngIf="hideOldWidgets">
   <app-dsbdcard fxFlex="1 1 auto" [displayData]="naplesDisplayData"></app-dsbdcard>
   <app-dsbdcard fxFlex="1 1 auto" class="dashboard-workload" [displayData]="workloadsDisplayData">
   </app-dsbdcard>
   <app-dsbdcard fxFlex="1 1 auto" class="dashboard-services " [displayData]="servicesDisplayData">
   </app-dsbdcard>
+</div>
+<div fxLayout="row" *ngIf="hideOldWidgets">
+  <app-firewalltopten></app-firewalltopten>
 </div>
 
 <!-- Previous dashboard -->
