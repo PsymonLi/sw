@@ -43,7 +43,7 @@ def getNaplesIntfMacAddrDict(naples_node):
 
 def changeIntfMacAddr(node, intf_mac_dict, on_naples=False, isRollback=False):
     result = api.types.status.SUCCESS
-    mac_offset = 80
+    mac_offset = 200
 
     for intf, mac_addr in intf_mac_dict.items():
         if isRollback:
@@ -382,6 +382,10 @@ def getNaplesIntfMcastEndPoints(naples_node):
         vlan_id = getInterfaceVlanID(naples_node, intf, True)
         mcastMAC_list = naples_utils.GetMcastMACAddress(naples_node, intf)
         for mac in mcastMAC_list:
+            # Skip for EDP (Extreme Discover Protocol) mac.
+            # In linux its being shown as multicast.
+            if mac == "00:e0:2b:00:00:00":
+                continue
             naples_mc_ep = (vlan_id, mac, intf)
             naples_mc_ep_set.add(naples_mc_ep)
     return naples_mc_ep_set

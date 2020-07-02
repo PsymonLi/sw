@@ -34,7 +34,7 @@ def GetMcastMACAddress(node, interface):
     cmd = "ip maddr show " + interface + " | grep link | cut -d' ' -f3"
     api.Trigger_AddNaplesCommand(req, node, cmd)
     resp = api.Trigger(req)
-    mcastMAC_list = list(filter(None, resp.commands[0].stdout.strip("\n").split("\r")))
+    mcastMAC_list = list(filter(None, resp.commands[0].stdout.strip('\n').strip("\r").replace("\n","").split("\r")))
     return mcastMAC_list
 
 def SetMACAddress(node, interface, mac_addr):
