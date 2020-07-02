@@ -185,6 +185,9 @@ func (m *mockCtrler) WatchSmartNICUpdates() {
 	defer m.Unlock()
 	m.smartNICWatcherRunning = true
 }
+func (m *mockCtrler) StopWatch() {
+
+}
 
 func (m *mockCtrler) Stop() {
 	m.Lock()

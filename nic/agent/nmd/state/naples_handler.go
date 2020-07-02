@@ -996,6 +996,10 @@ func (n *NMD) SendNICUpdates() error {
 // StopManagedMode stop the ongoing tasks meant for managed mode
 func (n *NMD) StopManagedMode() error {
 	log.Info("Stopping Managed Mode.")
+	if n.cmd != nil {
+		n.cmd.StopWatch()
+	}
+
 	n.modeChange.Lock()
 	defer n.modeChange.Unlock()
 
@@ -1030,13 +1034,12 @@ func (n *NMD) StopManagedMode() error {
 	// to complete
 	n.Wait()
 
-	// cmd, rollout and tlsProvider are protected by modeChange lock
-
 	if n.cmd != nil {
 		n.cmd.Stop()
 		n.cmd = nil
 	}
 
+	// rollout and tlsProvider are protected by modeChange lock
 	if n.rollout != nil {
 		n.rollout.Stop()
 		n.rollout = nil

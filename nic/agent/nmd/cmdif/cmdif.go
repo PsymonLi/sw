@@ -265,9 +265,9 @@ func (client *CmdClient) runSmartNICWatcher() {
 	}
 }
 
-// Stop stops CmdClient  and all watching go routines
-func (client *CmdClient) Stop() {
-	log.Infof("Stopping Client: %+v", client)
+// StopWatch stops watch goroutine
+func (client *CmdClient) StopWatch() {
+	log.Infof("Stopping PSM watch events for client: %v", client)
 	if client.watchCancel != nil {
 		client.watchCancel()
 	}
@@ -277,6 +277,13 @@ func (client *CmdClient) Stop() {
 	client.watchCtx, client.watchCancel = nil, nil
 	client.smartNICWatcherRunning = false
 	client.Unlock()
+	log.Infof("PSM watch events stopped")
+}
+
+// Stop stops CmdClient  and all watching go routines
+func (client *CmdClient) Stop() {
+	log.Infof("Stopping Client: %+v", client)
+	client.StopWatch()
 
 	client.closeUpdatesRPC()
 	client.closeRegistrationRPC()

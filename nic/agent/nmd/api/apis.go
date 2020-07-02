@@ -31,6 +31,9 @@ type CmdAPI interface {
 	// WatchSmartNICUpdates starts a CMD watchers to receive SmartNIC objects updates
 	WatchSmartNICUpdates()
 
+	// StopWatch stops the CMD watchers
+	StopWatch()
+
 	// Stop stops the CMD watchers and releases all resources
 	Stop()
 
