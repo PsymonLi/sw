@@ -1467,8 +1467,10 @@ ep_get_session_info (ep_t *ep, SessionGetResponseMsg *rsp, uint64_t ts)
                     // Dont send sync if TimeStamp is not modified, for any type of session.
                     // For ALG sessions, irrespective of whatever type it is, sync it as long as
                     // TS is modified
-                    if ((!session_modified_after_timestamp(session, ts)) &&
-                        (!session->alg)) {
+                    if (!session_modified_after_timestamp(session, ts)) {
+                        continue;
+                    }
+                    if (!session->alg) {
                         if (!session->conn_track_en) {
                             // If its UDP session, no term sync send
                             continue;

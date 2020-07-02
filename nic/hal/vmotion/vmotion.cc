@@ -16,11 +16,18 @@ vmotion_src_host_fsm_def* vmotion::src_host_fsm_def_ = vmotion_src_host_fsm_def:
 hal_ret_t
 vmotion_init (int vmotion_port)
 {
-    HAL_TRACE_INFO("vmotion init port:{}", vmotion_port);
-    vmotion *vm =
-        vmotion::factory(VMOTION_MAX_THREADS, (vmotion_port ? vmotion_port : VMOTION_PORT));
+    vmotion *vmn = g_hal_state->get_vmotion();
 
-    g_hal_state->set_vmotion(vm);
+    if (vmn) {
+        HAL_TRACE_ERR("vmotion already initialized port:{} vmn:{:p}", vmotion_port, (void *)vmn);
+        return HAL_RET_OK;
+    }
+
+    HAL_TRACE_INFO("vmotion init port:{}", vmotion_port);
+
+    vmn = vmotion::factory(VMOTION_MAX_THREADS, (vmotion_port ? vmotion_port : VMOTION_PORT));
+
+    g_hal_state->set_vmotion(vmn);
 
     return HAL_RET_OK;
 }

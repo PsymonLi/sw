@@ -26,8 +26,8 @@ namespace hal {
 #define VMOTION_SESS_NORMALIZATION   300000       // (in Milliseconds) - 5 Minutes
 #define VMOTION_CONNECT_RETRY_TIME   30           // in Seconds
 #define VMOTION_TIMEOUT              900000       // (in Milliseconds) - 15 Minutes
-#define VMOTION_THR_DELAY_DEL_TIME   1000         // (in Milliseconds) - 1 Sec
-#define VMOTION_DESTROY_DELAY_TIME   250          // (in Milliseconds) - 1 Sec
+#define VMOTION_THR_DELAY_DEL_TIME   50           // (in Milliseconds) - 50 MilliSec
+#define VMOTION_DESTROY_DELAY_TIME   250          // (in Milliseconds) - 250 MilliSec
 #define VMOTION_DELAY_DEL_MAX_ATTEMPT  3
 #define VMOTION_MAX_HISTORY_ENTRIES  40
 
