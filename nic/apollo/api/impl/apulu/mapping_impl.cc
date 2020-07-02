@@ -1496,13 +1496,13 @@ mapping_impl::add_overlay_ip_mapping_entries_(vpc_impl *vpc,
                                             mapping_hdl_, &mapping_tbl_params,
                                             spec);
 
-    // add entry to LOCAL_MAPPING table for overlay IP
-    ret = mapping_impl_db()->local_mapping_tbl()->insert(&local_mapping_tbl_params);
-    SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
-
     // add entry to MAPPING table for overlay IP
     ret = mapping_impl_db()->mapping_tbl()->insert(&mapping_tbl_params);
     SDK_ASSERT(ret == SDK_RET_OK);
+
+    // add entry to LOCAL_MAPPING table for overlay IP
+    ret = mapping_impl_db()->local_mapping_tbl()->insert(&local_mapping_tbl_params);
+    SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
 
     // add entry to rxdma MAPPING table for overlay IP
     if (spec->num_tags) {
