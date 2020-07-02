@@ -235,10 +235,10 @@ export class NetworkComponent extends DataComponent implements OnInit {
   ngOnInit() {
     this.tableLoading = true;
     this.setDefaultToolbar();
+    this.buildAdvSearchCols();
     this.getNetworks();
     this.getVcenterIntegrations();
     this.watchWorkloads();
-    this.buildAdvSearchCols();
   }
 
   creationFormClose() {
@@ -337,47 +337,45 @@ export class NetworkComponent extends DataComponent implements OnInit {
 
   searchWorkloadNames(requirement: FieldsRequirement, data = this.dataObjects): any[] {
     const outputs: any[] = [];
+    const searchValues = requirement.values || [];
+    const operator = TableUtility.convertOperator(String(requirement.operator));
+    // if notcontains or notEquals, use the regular operator (contains/equals) and flip the results
+    const isNot = operator.slice(0, 3) === 'not';
+    const operatorAdjusted = isNot ? operator.slice(3).toLocaleLowerCase() : operator;
+    const activateFunc = TableUtility.filterConstraints[operatorAdjusted];
     for (let i = 0; data && i < data.length; i++) {
-      const workloads = (data[i]._ui as NetworkUIModel).associatedWorkloads;
-      for (let k = 0; k < workloads.length; k++) {
-        const recordValueName = _.get(workloads[k], ['meta', 'name']);
-        const searchValues = requirement.values;
-        let operator = String(requirement.operator);
-        operator = TableUtility.convertOperator(operator);
-        for (let j = 0; j < searchValues.length; j++) {
-          const activateFunc = TableUtility.filterConstraints[operator];
-          if (activateFunc && activateFunc(recordValueName, searchValues[j])) {
-            outputs.push(data[i]);
-          }
-        }
+      const workloads = (data[i]._ui as NetworkUIModel).associatedWorkloads || [];
+      const found = workloads.some(workload => searchValues.some(value => activateFunc && activateFunc(workload.meta.name, value)));
+      if (found) {
+        outputs.push(data[i]);
       }
     }
-    return outputs;
+    return isNot ? _.differenceWith(data, outputs, _.isEqual) : outputs;
   }
 
   searchOrchestrators(requirement: FieldsRequirement, data = this.dataObjects): any[] {
     const outputs: any[] = [];
+    const searchValues = requirement.values || [];
+    const operator = TableUtility.convertOperator(String(requirement.operator));
+    // if notcontains or notEquals, use the regular operator (contains/equals) and flip the results
+    const isNot = operator.slice(0, 3) === 'not';
+    const operatorAdjusted = isNot ? operator.slice(3).toLocaleLowerCase() : operator;
+    const activateFunc = TableUtility.filterConstraints[operatorAdjusted];
     for (let i = 0; data && i < data.length; i++) {
-      const orchestrators = data[i].spec.orchestrators;
-      for (let k = 0; k < orchestrators.length; k++) {
-        const recordValuevCenter = _.get(orchestrators[k], ['orchestrator-name']);
-        const recordValueHostDataCenter = _.get(orchestrators[k], ['namespace']);
-        const searchValues = requirement.values;
-        let operator = String(requirement.operator);
-        operator = TableUtility.convertOperator(operator);
-        for (let j = 0; j < searchValues.length; j++) {
-          const activateFunc = TableUtility.filterConstraints[operator];
-          if (activateFunc && activateFunc(recordValuevCenter, searchValues[j])) {
-            outputs.push(data[i]);
-          } else if (activateFunc && activateFunc(recordValueHostDataCenter, searchValues[j])) {
-            outputs.push(data[i]);
-          }
-        }
+      const orchestrators = data[i].spec.orchestrators || [];
+      const foundData = orchestrators.some(orch => {
+        return searchValues.some(value => {
+          return activateFunc && (activateFunc(orch['orchestrator-name'], value) || activateFunc(orch['namespace'], value));
+        });
+      });
+      if (foundData) {
+        outputs.push(data[i]);
       }
-     }
-    return outputs;
+    }
+    return isNot ? _.differenceWith(data, outputs, _.isEqual) : outputs;
   }
-      /**
+
+  /**
    * Execute table search
    * @param field
    * @param order
