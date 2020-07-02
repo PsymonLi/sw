@@ -829,12 +829,21 @@ func (k *k8sService) UnRegister(o types.K8sPodEventObserver) {
 	k.Lock()
 	defer k.Unlock()
 	var i int
+	var found bool
 	for i = range k.observers {
 		if k.observers[i] == o {
+			found = true
 			break
 		}
 	}
-	k.observers = append(k.observers[:i], k.observers[i+1:]...)
+	if found {
+		log.Infof("UnRegister removing observer: %v, %#v", i, k.observers[i])
+		if i == len(k.observers)-1 {
+			k.observers = k.observers[:i]
+		} else {
+			k.observers = append(k.observers[:i], k.observers[i+1:]...)
+		}
+	}
 }
 
 // All the observers are notified of the event even if someone fails,

@@ -20,11 +20,11 @@ import (
 )
 
 const (
-	queueSize           = 1000
-	apiSrvRetryInterval = time.Second
-	apiSrvMaxRetries    = 30
-	// QueueFullEventMsg is the event message when module object cannot be enqueued because of full queue
-	QueueFullEventMsg = "diagnostic module processing queue is full"
+	queueSize           = 2000
+	apiSrvRetryInterval = 5 * time.Second
+	apiSrvMaxRetries    = 6
+	// EnqueueFailureEventMsg is the event message when module object cannot be enqueued
+	EnqueueFailureEventMsg = "failed to enqueue diagnostic module for processing"
 )
 
 // updater is a singleton that implements Updater interface where module object is persisted in API server
@@ -54,9 +54,9 @@ func (u *updater) Enqueue(module *diagapi.Module, oper Oper) error {
 	select {
 	case u.modChan <- wrk:
 	default:
-		recorder.Event(eventtypes.MODULE_CREATION_FAILED, QueueFullEventMsg, module)
+		recorder.Event(eventtypes.MODULE_CREATION_FAILED, EnqueueFailureEventMsg, module)
 		// returns error if work queue is full
-		return errors.New("module processing queue is full")
+		return errors.New("failed to enqueue diagnostic module")
 	}
 	return nil
 }
@@ -81,7 +81,6 @@ func (u *updater) Stop() {
 	u.Lock()
 	u.cancel()
 	if u.modChan != nil {
-		close(u.modChan)
 		u.modChan = nil
 	}
 	// wait for all go routines to return after Stop() has been called
@@ -122,7 +121,12 @@ func (u *updater) doWork(apicl apiclient.Services) error {
 				}
 			case Delete:
 				_, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-					return apicl.DiagnosticsV1().Module().Delete(u.ctx, wrk.module.GetObjectMeta())
+					m, err := apicl.DiagnosticsV1().Module().Delete(u.ctx, wrk.module.GetObjectMeta())
+					if err != nil && strings.Contains(err.Error(), "NotFound") {
+						u.logger.InfoLog("method", "doWork", "msg", fmt.Sprintf("module already deleted (%+v), err: %v", wrk.module, err))
+						return nil, nil
+					}
+					return m, err
 				}, apiSrvRetryInterval, apiSrvMaxRetries)
 				if err != nil {
 					u.logger.ErrorLog("method", "doWork", "msg", fmt.Sprintf("failed to delete module (%+v), err: %v", wrk.module, err))

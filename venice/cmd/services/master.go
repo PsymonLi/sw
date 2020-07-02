@@ -73,6 +73,7 @@ type masterService struct {
 	resolverSvcObserver  *resolverServiceObserver
 	cfgWatcherSvc        types.CfgWatcherService
 	diagModuleSvc        module.Updater
+	diagSvcObserver      types.K8sPodEventObserver
 	isLeader             bool
 	enabled              bool
 	configs              configs.Interface
@@ -206,6 +207,54 @@ func (r *resolverServiceObserver) OnNotifyServiceInstance(e k8stypes.ServiceInst
 	return nil
 }
 
+type diagServiceObserver struct {
+	moduleUpdater module.Updater
+}
+
+func (d *diagServiceObserver) OnNotifyK8sPodEvent(e types.K8sPodEvent) error {
+	if e.Pod.Status.HostIP == "" {
+		// pod is not yet assigned to a node, skip creating module
+		log.Debugf("pod: %v not yet assigned to node: %v", e.Pod.Name, e.Pod.Spec.NodeName)
+		return nil
+	}
+	var diagModules []*diagapi.Module
+	for _, container := range e.Pod.Spec.Containers {
+		// pause containers are not present in this list
+		diagmod := &diagapi.Module{}
+		diagmod.Defaults("all")
+		diagmod.Name = fmt.Sprintf("%s-%s", e.Pod.Spec.NodeName, container.Name)
+		diagmod.Status.Service = e.Pod.Name
+		diagmod.Status.Module = container.Name
+		diagmod.Status.Category = diagapi.ModuleStatus_Venice.String()
+		diagmod.Status.Node = e.Pod.Spec.NodeName
+		for _, port := range container.Ports {
+			servicePort := diagapi.ServicePort{Name: port.Name, Port: port.ContainerPort}
+			diagmod.Status.ServicePorts = append(diagmod.Status.ServicePorts, servicePort)
+		}
+		diagModules = append(diagModules, diagmod)
+		log.Debugf("pod: %v, node: %v", e.Pod.Name, e.Pod.Spec.NodeName)
+		log.Debugf("pod: %v, HostIP from status : %v", e.Pod.Name, e.Pod.Status.HostIP)
+	}
+	switch e.Type {
+	case types.K8sPodAdded:
+		for _, diagmod := range diagModules {
+			d.moduleUpdater.Enqueue(diagmod, module.Create)
+			log.Infof("creating diagnostic module: %+v", *diagmod)
+		}
+	case types.K8sPodModified:
+		for _, diagmod := range diagModules {
+			d.moduleUpdater.Enqueue(diagmod, module.Update)
+			log.Infof("updating diagnostic module: %+v", *diagmod)
+		}
+	case types.K8sPodDeleted:
+		for _, diagmod := range diagModules {
+			d.moduleUpdater.Enqueue(diagmod, module.Delete)
+			log.Infof("deleting diagnostic module: %+v", *diagmod)
+		}
+	}
+	return nil
+}
+
 // NewMasterService returns a Master Service
 func NewMasterService(nodeID string, options ...MasterOption) types.MasterService {
 	m := masterService{
@@ -237,10 +286,6 @@ func NewMasterService(nodeID string, options ...MasterOption) types.MasterServic
 	}
 	if m.resolverSvc == nil {
 		m.resolverSvc = NewResolverService(m.k8sSvc)
-	}
-
-	if m.diagModuleSvc == nil {
-		m.diagModuleSvc = module.GetUpdater(globals.Cmd, globals.APIServer, env.ResolverClient, env.Logger.WithContext("submodule", "diagnostics"))
 	}
 
 	m.leaderSvc.Register(&m)
@@ -329,53 +374,6 @@ func (m *masterService) startLeaderServices() error {
 		}
 	}
 
-	// setup diagnostics
-	m.diagModuleSvc.Start()
-	var observer types.K8sPodEventObserverFunc
-	observer = func(e types.K8sPodEvent) error {
-		if e.Pod.Status.HostIP == "" {
-			// pod is not yet assigned to a node, skip creating module
-			log.Debugf("pod: %v not yet assigned to node: %v", e.Pod.Name, e.Pod.Spec.NodeName)
-			return nil
-		}
-		var diagModules []*diagapi.Module
-		for _, container := range e.Pod.Spec.Containers {
-			diagmod := &diagapi.Module{}
-			diagmod.Defaults("all")
-			diagmod.Name = fmt.Sprintf("%s-%s", e.Pod.Spec.NodeName, container.Name)
-			diagmod.Status.Service = e.Pod.Name
-			diagmod.Status.Module = container.Name
-			diagmod.Status.Category = diagapi.ModuleStatus_Venice.String()
-			diagmod.Status.Node = e.Pod.Spec.NodeName
-			for _, port := range container.Ports {
-				servicePort := diagapi.ServicePort{Name: port.Name, Port: port.ContainerPort}
-				diagmod.Status.ServicePorts = append(diagmod.Status.ServicePorts, servicePort)
-			}
-			diagModules = append(diagModules, diagmod)
-			log.Debugf("pod: %v, node: %v", e.Pod.Name, e.Pod.Spec.NodeName)
-			log.Debugf("pod: %v, HostIP from status : %v", e.Pod.Name, e.Pod.Status.HostIP)
-		}
-		switch e.Type {
-		case types.K8sPodAdded:
-			for _, diagmod := range diagModules {
-				m.diagModuleSvc.Enqueue(diagmod, module.Create)
-				log.Infof("creating diagnostic module: %+v", *diagmod)
-			}
-		case types.K8sPodModified:
-			for _, diagmod := range diagModules {
-				m.diagModuleSvc.Enqueue(diagmod, module.Update)
-				log.Infof("updating diagnostic module: %+v", *diagmod)
-			}
-		case types.K8sPodDeleted:
-			for _, diagmod := range diagModules {
-				m.diagModuleSvc.Enqueue(diagmod, module.Delete)
-				log.Infof("deleting diagnostic module: %+v", *diagmod)
-			}
-		}
-		return nil
-	}
-	m.k8sSvc.Register(observer)
-
 	// observe pod events and record events accordingly
 	m.resolverSvc.Register(m.resolverSvcObserver)
 	// should only be running on leader node
@@ -395,6 +393,15 @@ func (m *masterService) startLeaderServices() error {
 	}
 	m.clusterHealthMonitor.Start()
 
+	if m.diagModuleSvc == nil {
+		m.diagModuleSvc = module.GetUpdater(globals.Cmd, globals.APIServer, env.ResolverClient, env.Logger.WithContext("submodule", "diagnostics"))
+	} else {
+		m.diagModuleSvc.Start()
+	}
+	m.diagSvcObserver = &diagServiceObserver{moduleUpdater: m.diagModuleSvc}
+	// setup diagnostics
+	m.k8sSvc.Register(m.diagSvcObserver)
+	log.Infof("registered diagnostics observer")
 	return nil
 }
 
@@ -404,7 +411,6 @@ func (m *masterService) Stop() {
 	m.Lock()
 	defer m.Unlock()
 	m.enabled = false
-	m.diagModuleSvc.Stop()
 	m.stopLeaderServices()
 	m.k8sSvc.Stop()
 	m.resolverSvc.Stop()
@@ -415,6 +421,12 @@ func (m *masterService) Stop() {
 
 // caller holds the lock
 func (m *masterService) stopLeaderServices() {
+	if m.diagModuleSvc != nil {
+		m.diagModuleSvc.Stop() // only leader needs to create diagnostic modules
+		m.k8sSvc.UnRegister(m.diagSvcObserver)
+		log.Infof("unregistered diagnostics observer")
+		m.diagSvcObserver = nil
+	}
 	if m.clusterHealthMonitor != nil {
 		m.clusterHealthMonitor.Stop()
 		m.clusterHealthMonitor = nil

@@ -406,12 +406,20 @@ func (m *K8sService) UnRegister(o types.K8sPodEventObserver) {
 	m.Lock()
 	defer m.Unlock()
 	var i int
+	var found bool
 	for i = range m.observers {
 		if m.observers[i] == o {
+			found = true
 			break
 		}
 	}
-	m.observers = append(m.observers[:i], m.observers[i+1:]...)
+	if found {
+		if i == len(m.observers)-1 {
+			m.observers = m.observers[:i]
+		} else {
+			m.observers = append(m.observers[:i], m.observers[i+1:]...)
+		}
+	}
 }
 
 func (m *K8sService) notify(e types.K8sPodEvent) error {
