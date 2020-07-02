@@ -35,8 +35,7 @@ pds_ret_t pds_conntrack_ctx_get(uint32_t conntrack_id,
 pds_ret_t pds_conntrack_ctx_get_clr(uint32_t conntrack_id,
                                     uint64_t *ret_handle);
 void pds_conntrack_ctx_move(uint32_t conntrack_id,
-                            uint64_t handle, 
-                            bool move_complete);
+                            uint64_t handle);
 
 static inline bool
 pds_conntrack_ctx_session_handle_valid(uint64_t handle)

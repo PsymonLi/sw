@@ -36,6 +36,7 @@
 #define PDS_FLOW_DEFAULT_MONITOR_INTERVAL       (300)
 #define TCP_KEEP_ALIVE_RETRY_COUNT_MAX          3
 #define TCP_KEEP_ALIVE_TIMEOUT                  1 // in seconds
+#define PDS_PENDING_DELETE_TIMEOUT              1 // in seconds
 
 #define foreach_flow_classify_next                                  \
         _(IP4_FLOW_PROG, "pds-ip4-flow-program" )                   \
@@ -72,6 +73,7 @@
         _(DEFUNCT_RFLOW, "Defunct rflow")                           \
         _(L2L_NDEF_IFLOW, "Non-defunct L2l iflow")                  \
         _(VRIP_MAC_MISMATCH, "VR IPv4 packet with invalid MAC")     \
+        _(QID_MISMATCH, "QID mismatch for existing flow")           \
 
 #define foreach_flow_prog_next                                      \
         _(FWD_FLOW, "pds-fwd-flow" )                                \
@@ -125,6 +127,7 @@
         _(HALF_CLOSE_TIMER, "Half close timer expired")             \
         _(CLOSE_TIMER, "Close timer expired")                       \
         _(DROP_TIMER, "Drop timer expired")                         \
+        _(CLOSE_OVERDUE_TIMER, "Close overdue timer expired")       \
 
 typedef enum
 {
@@ -349,6 +352,7 @@ typedef struct pds_flow_main_s {
     u64 tcp_half_close_timeout;
     u64 tcp_close_timeout;
     u64 tcp_keep_alive_timeout;
+    u64 close_overdue_timeout;
     u64 *idle_timeout;
     u64 *drop_timeout;
     u64 *idle_timeout_ticks;
@@ -534,7 +538,7 @@ always_inline void pds_session_id_dealloc(u32 ses_id)
 }
 
 always_inline pds_flow_hw_ctx_t *
-pds_flow_get_hw_ctx_no_check (u32 index)
+pds_flow_get_session_no_check (u32 index)
 {
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_hw_ctx_t *ctx;
@@ -558,6 +562,20 @@ always_inline pds_flow_hw_ctx_t * pds_flow_get_session (u32 ses_id)
         return NULL;
     }
     return ctx;
+}
+
+always_inline bool pds_is_valid_handle (u64 handle)
+{
+    if (handle == 0xFFFFFFFFFFFFFFFF) {
+        return false;
+    }
+    return true;
+}
+
+always_inline void pds_invalidate_handle (u64 *handle)
+{
+    *handle = 0xFFFFFFFFFFFFFFFF;
+    return;
 }
 
 always_inline bool pds_flow_ses_id_valid (u32 ses_id)
@@ -667,6 +685,7 @@ always_inline void pds_session_id_flush(void)
     pool_free(fm->session_index_pool);
     fm->session_index_pool = NULL;
     pool_init_fixed(fm->session_index_pool, fm->max_sessions);
+
     for (u32 i = 0; i < vec_len(fm->session_id_thr_local_pool); i++) {
         fm->session_id_thr_local_pool[i].sess_count = -1;
         fm->session_id_thr_local_pool[i].del_sess_count = 0;
@@ -693,6 +712,6 @@ always_inline void pds_session_id_flush(void)
 }                                                                   \
 
 void pds_session_update_data(u32 ses_id, u64 new_handle,
-                             bool iflow, bool move_complete, bool lock);
+                             bool iflow, bool lock);
 
 #endif    // __VPP_FLOW_NODE_H__

@@ -282,21 +282,14 @@ pds_conntrack_ctx_get_clr(uint32_t conntrack_id,
 
 void
 pds_conntrack_ctx_move(uint32_t conntrack_id,
-                       uint64_t handle, 
-                       bool move_complete)
+                       uint64_t handle) 
 {
-    /*
-     * 2-step move (see Bucket::defragment_())
-     */
-    if (move_complete) {
-    } else {
-        ctx_entry_t *ctx = conntrack_ctx.ctx_entry_get(conntrack_id);
-        if (ctx) {
-            uint64_t old_handle;
-            SDK_ATOMIC_EXCHANGE_UINT64(&ctx->handle, &handle, &old_handle);
-            if (!old_handle) {
-                SDK_ATOMIC_STORE_UINT64(&ctx->handle, &old_handle);
-            }
+    ctx_entry_t *ctx = conntrack_ctx.ctx_entry_get(conntrack_id);
+    if (ctx) {
+        uint64_t old_handle;
+        SDK_ATOMIC_EXCHANGE_UINT64(&ctx->handle, &handle, &old_handle);
+        if (!old_handle) {
+            SDK_ATOMIC_STORE_UINT64(&ctx->handle, &old_handle);
         }
     }
 }

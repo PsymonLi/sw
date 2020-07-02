@@ -18,6 +18,7 @@ enum FlowState {
     FLOW_STATE_HALFCLOSE_IFLOW = 5;
     FLOW_STATE_HALFCLOSE_RFLOW = 6;
     FLOW_STATE_CLOSE           = 7;
+    FLOW_STATE_PENDING_CLOSE   = 8;
 }
 
 enum FlowType {

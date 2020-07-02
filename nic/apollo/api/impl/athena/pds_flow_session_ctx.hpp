@@ -33,8 +33,7 @@ pds_ret_t pds_flow_session_ctx_get(uint32_t session_id,
 pds_ret_t pds_flow_session_ctx_get_clr(uint32_t session_id,
                                        uint64_t *ret_handle);
 void pds_flow_session_ctx_move(uint32_t session_id,
-                               uint64_t handle, 
-                               bool move_complete);
+                               uint64_t handle); 
 #ifdef __cplusplus
 }
 #endif

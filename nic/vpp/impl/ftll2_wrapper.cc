@@ -43,9 +43,7 @@ ftll2_get_with_handle(ftl *obj, uint64_t handle)
     params.handle.tohandle(handle);
     params.entry = &entry;
 
-    if (SDK_RET_OK != obj->get_with_handle(&params)) {
-        return -1;
-    }
+    FTL_RETRY_API(obj->get_with_handle, &params, FTL_MAX_API_RETRY_COUNT, 0);
 
     entry.get_key_metadata_src(sip);
     entry.get_key_metadata_dst(dip);

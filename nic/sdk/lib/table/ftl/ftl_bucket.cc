@@ -487,10 +487,6 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
     PRINT_API_CTX("PCTX", pctx);
     PRINT_API_CTX("TCTX", tctx);
 
-    // notify the application whenever handle changes for an entry.
-    // notification is sent twice - once before move and once after move.
-    // reason for 2 notifications is application can invoke its locking
-    // mechanism before start move and unlock after move.
     if ((ectx != tctx) && ectx->params->movecb) {
 
         // Handles must supply pindex, plus sindex if applicable.
@@ -507,7 +503,6 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
         // Update epoch
         old_handle.epoch(++tctx->bucket->epoch_);
         new_handle.epoch(ectx->bucket->epoch_);
-        ectx->params->movecb(tctx->entry, old_handle, new_handle, false);
     }
 
     // STEP 2: Move tctx key+data to ectx key+data
@@ -554,7 +549,7 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
             // correct context to the 2nd move step, ectx has to be re-read.
             ret = ectx->bucket->read_(ectx, true);
             SDK_ASSERT(ret == SDK_RET_OK);
-            ectx->params->movecb(ectx->entry, old_handle, new_handle, true);
+            ectx->params->movecb(ectx->entry, old_handle, new_handle);
         }
     }
     return SDK_RET_OK;

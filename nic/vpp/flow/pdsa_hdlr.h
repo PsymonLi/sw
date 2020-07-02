@@ -41,6 +41,7 @@ typedef enum {
     PDS_FLOW_STATE_HALF_CLOSE_IFLOW,
     PDS_FLOW_STATE_HALF_CLOSE_RFLOW,
     PDS_FLOW_STATE_CLOSE,
+    PDS_FLOW_STATE_PENDING_DELETE,
 } pds_flow_state;
 
 // packet types - Any new addition should be handled in

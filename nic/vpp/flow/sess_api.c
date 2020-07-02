@@ -7,6 +7,7 @@
 #include "node.h"
 #include <sess.h>
 #include <vnic.h>
+#include <ftl_error.h>
 
 always_inline uint8_t
 pds_flow_get_ctr_idx (uint8_t proto, bool isv4)
@@ -49,6 +50,7 @@ pds_flow_delete_session (u32 ses_id)
     int flow_log_enabled = 0;
     int thread = vlib_get_thread_index();
     uint8_t ctr_idx;
+    int ret;
 
     if (PREDICT_FALSE(session == NULL)) {
         return;
@@ -67,10 +69,21 @@ pds_flow_delete_session (u32 ses_id)
                                      session->drop,
                                      thread);
         }
-        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, session->iflow.handle,
-                                                thread) != 0)) {
-            goto end;
+        if (pds_is_valid_handle(session->iflow.handle)) {
+            //handle may already be invalid as a result of previous attempt
+            //to delete which resulted in retry failure
+            ret = ftlv4_get_with_handle(table4, session->iflow.handle, thread);
+
+            if (PREDICT_FALSE(ret!= 0)) {
+                if (ret == FTL_RETRY)
+                    goto start_close_overdue_timer;
+                else
+                    goto end;
+            }
         }
+
+        pds_invalidate_handle(&session->iflow.handle);
+
         if (PREDICT_FALSE(session->nat)) {
             ftlv4_update_iflow_nat_session(table4, thread);
         }
@@ -81,6 +94,14 @@ pds_flow_delete_session (u32 ses_id)
                                                 thread) != 0)) {
             goto end;
         }
+
+        if (PREDICT_FALSE(ret!= 0)) {
+            if (ret == FTL_RETRY)
+                goto start_close_overdue_timer;
+            else
+                goto end;
+        }
+
         if (PREDICT_FALSE(session->nat)) {
             ftlv4_update_rflow_nat_session(table4, thread);
         }
@@ -120,5 +141,16 @@ pds_flow_delete_session (u32 ses_id)
 end:
     pds_flow_session_unlock(ses_id);
     return;
+
+start_close_overdue_timer:
+    session->flow_state = PDS_FLOW_STATE_PENDING_DELETE;
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread],
+                         session->timer_hdl,
+                         ses_id,
+                         PDS_FLOW_CLOSE_OVERDUE_TIMER,
+                         fm->close_overdue_timeout);
+    pds_flow_session_unlock(ses_id);
+    return;
+
 }
 

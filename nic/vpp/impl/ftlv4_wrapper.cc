@@ -90,17 +90,15 @@ done:
 
 static void
 ftlv4_move_cb (base_table_entry_t *entry, handle_t old_handle,
-               handle_t new_handle, bool move_complete)
+               handle_t new_handle)
 {
     ipv4_flow_hash_entry_t *v4entry = (ipv4_flow_hash_entry_t *)entry;
     uint32_t ses_id = v4entry->get_session_index();
 
     if (v4entry->get_flow_role() == TCP_FLOW_INITIATOR) {
-        g_ses_cb (ses_id, new_handle.tou64(), true,
-                  move_complete, true);
+        g_ses_cb (ses_id, new_handle.tou64(), true, true);
     } else {
-        g_ses_cb (ses_id, new_handle.tou64(), false,
-                  move_complete, true);
+        g_ses_cb (ses_id, new_handle.tou64(), false, true);
     }
 }
 
@@ -145,9 +143,7 @@ ftlv4_get_with_handle (ftlv4 *obj, uint64_t handle,
     params.handle.tohandle(handle);
     params.entry = v4entry;
 
-    if (SDK_RET_OK != obj->get_with_handle(&params)) {
-        return -1;
-    }
+    FTL_RETRY_API(obj->get_with_handle, &params, FTL_MAX_API_RETRY_COUNT, 0);
 
     return 0;
 }
@@ -222,14 +218,16 @@ static inline sdk::sdk_ret_t
 ftlv4_read_with_handle (ftlv4 *obj, uint64_t handle,
                         ipv4_flow_hash_entry_t &entry, uint16_t thread_id)
 {
-    sdk::sdk_ret_t ret;
+    sdk::sdk_ret_t ret = SDK_RET_OK;
     sdk_table_api_params_t params = {0};
 
     params.thread_id = thread_id;
     params.handle.tohandle(handle);
     params.entry = &entry;
 
-    ret = obj->get_with_handle(&params);
+    FTL_RETRY_API_WITH_RET(obj->get_with_handle, &params, 
+                           FTL_MAX_API_RETRY_COUNT, ret);
+ 
     return ret;
 }
 
@@ -948,9 +946,7 @@ ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint64_t handle,
     params.handle.tohandle(handle);
     params.entry = &v4entry;
 
-    if (SDK_RET_OK != obj->get_with_handle(&params)) {
-        return -1;
-    }
+    FTL_RETRY_API(obj->get_with_handle, &params, FTL_MAX_API_RETRY_COUNT, 0);
 
     memset(&params, 0, sizeof(params));
     ftlv4_set_key_lookup_id(&v4entry, lookup_id);

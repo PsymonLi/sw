@@ -214,17 +214,15 @@ done:
 
 static void
 ftl_move_cb (base_table_entry_t *entry, handle_t old_handle,
-             handle_t new_handle, bool move_complete)
+             handle_t new_handle)
 {
     flow_hash_entry_t *flow_entry = (flow_hash_entry_t *)entry;
     uint32_t ses_id = flow_entry->get_session_index();
 
     if (flow_entry->get_flow_role() == TCP_FLOW_INITIATOR) {
-        g_ses_cb (ses_id, new_handle.tou64(), true,
-                  move_complete, true);
+        g_ses_cb (ses_id, new_handle.tou64(), true, true);
     } else {
-        g_ses_cb (ses_id, new_handle.tou64(), false,
-                  move_complete, true);
+        g_ses_cb (ses_id, new_handle.tou64(), false, true);
     }
 }
 
@@ -263,9 +261,7 @@ ftl_remove_with_handle(ftl *obj, uint64_t handle)
     params.handle.tohandle(handle);
     params.entry = &entry;
 
-    if (SDK_RET_OK != obj->get_with_handle(&params)) {
-        return -1;
-    }
+    FTL_RETRY_API(obj->get_with_handle, &params, FTL_MAX_API_RETRY_COUNT, 0);
 
     if (!ftl_remove(obj, &entry, 0)) {
         return -1;
@@ -335,9 +331,7 @@ ftl_export_with_handle (ftl *obj, uint64_t handle,
     params.handle.tohandle(handle);
     params.entry = &entry;
 
-    if (SDK_RET_OK != obj->get_with_handle(&params)) {
-        return -1;
-    }
+    FTL_RETRY_API(obj->get_with_handle, &params, FTL_MAX_API_RETRY_COUNT, 0);
 
     return ftl_export_with_entry(&entry, reason, drop);
 }

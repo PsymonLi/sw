@@ -66,6 +66,7 @@ static const char *pds_flow_state_str[] = {
     "HalfCloseIflow",
     "HalfCloseRflow",
     "Close",
+    "PendingDelete"
 };
 
 static clib_error_t *

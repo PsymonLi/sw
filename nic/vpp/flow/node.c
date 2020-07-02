@@ -1761,7 +1761,7 @@ VLIB_REGISTER_NODE (pds_flow_classify_node) = {
 
 void
 pds_session_update_data(u32 ses_id, u64 new_handle,
-                        bool iflow, bool move_complete, bool lock)
+                        bool iflow, bool lock)
 {
     pds_flow_hw_ctx_t *session = NULL;
     pds_flow_index_t *index = NULL;

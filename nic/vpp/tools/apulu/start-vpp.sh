@@ -12,10 +12,10 @@ source /nic/tools/upgmgr_core_base.sh
 dom=$( upgmgr_init_domain )
 if [[ $dom == $UPGRADE_DOMAIN_B ]];then
     CPU_MNIC="cpu_mnic2"
-    VPP_CONF="vpp_dom_b_1_worker.conf"
+    VPP_CONF="vpp_dom_b_2_workers.conf"
 else
     CPU_MNIC="cpu_mnic0"
-    VPP_CONF="vpp_1_worker.conf"
+    VPP_CONF="vpp_2_workers.conf"
 fi
 
 counter=600

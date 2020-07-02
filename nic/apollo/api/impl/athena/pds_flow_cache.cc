@@ -50,8 +50,7 @@ typedef struct pds_flow_iterate_cbdata_s {
 static void
 ftl_table_entry_move (base_table_entry_t *base_entry,
                       handle_t old_handle, 
-                      handle_t new_handle,
-                      bool move_complete);
+                      handle_t new_handle);
 static char *
 pds_flow6_key2str (void *key)
 {
@@ -129,13 +128,12 @@ pds_flow_ctx_clr(pds_flow_spec_index_type_t type,
 static inline void
 pds_flow_ctx_move(pds_flow_spec_index_type_t type,
                   uint32_t index,
-                  uint64_t handle,
-                  bool move_complete)
+                  uint64_t handle)
 {
     if (IS_INDEX_TYPE_SESSION(type)) {
-        pds_flow_session_ctx_move(index, handle, move_complete);
+        pds_flow_session_ctx_move(index, handle);
     } else if (IS_INDEX_TYPE_CONNTRACK(type)) {
-        pds_conntrack_ctx_move(index, handle, move_complete);
+        pds_conntrack_ctx_move(index, handle);
     }
 }
 
@@ -352,12 +350,11 @@ pds_flow_cache_entry_update (pds_flow_spec_t *spec)
 static void
 ftl_table_entry_move (base_table_entry_t *base_entry,
                       handle_t old_handle, 
-                      handle_t new_handle,
-                      bool move_complete)
+                      handle_t new_handle)
 {
     flow_hash_entry_t *entry = (flow_hash_entry_t *)base_entry;
     pds_flow_ctx_move((pds_flow_spec_index_type_t)entry->get_idx_type(),
-                      entry->get_idx(), new_handle.tou64(), move_complete);
+                      entry->get_idx(), new_handle.tou64());
 }
 
 pds_ret_t

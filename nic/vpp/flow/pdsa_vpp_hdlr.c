@@ -24,7 +24,10 @@ pds_flow_cfg_set (uint8_t con_track_en,
             PDS_FLOW_SEC_TO_TIMER_TICK(tcp_half_close_timeout);
     fm->tcp_close_timeout =
             PDS_FLOW_SEC_TO_TIMER_TICK(tcp_close_timeout);
-    fm->tcp_keep_alive_timeout = PDS_FLOW_SEC_TO_TIMER_TICK(TCP_KEEP_ALIVE_TIMEOUT);
+    fm->tcp_keep_alive_timeout = 
+        PDS_FLOW_SEC_TO_TIMER_TICK(TCP_KEEP_ALIVE_TIMEOUT);
+    fm->close_overdue_timeout = 
+        PDS_FLOW_SEC_TO_TIMER_TICK(PDS_PENDING_DELETE_TIMEOUT);
 
     for (i = PDS_FLOW_PROTO_START; i < PDS_FLOW_PROTO_END; i++) {
         vec_elt(fm->idle_timeout, i) =

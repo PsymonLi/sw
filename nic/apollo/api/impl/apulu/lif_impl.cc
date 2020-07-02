@@ -35,8 +35,8 @@
 #define COPP_LEARN_MISS_DHCP_REQ_FROM_HOST_PPS  250
 #define COPP_LEARN_MISS_IP4_FROM_HOST_PPS       250
 #define COPP_ARP_FROM_ARM_PPS                   250
-#define COPP_BURST(pps)                         ((uint64_t)((pps)/10))
-#define COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS      300000
+#define COPP_BURST(pps)                         ((uint64_t)((pps)/2))
+#define COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS      600000
 #define COPP_DEFUNCT_FLOW_TO_DATAPATH_LIF_PPS   50000
 
 // 4 bits of copp class can be used to account for copp drops

@@ -18,18 +18,52 @@ typedef char* (*appdata2str_t)(void *data);
 typedef void (*session_update_cb) (uint32_t ses_id,
                                    uint64_t new_handle64,
                                    bool iflow,
-                                   bool move_complete, bool lock);
+                                   bool lock);
 typedef int (*nat_flow_dealloc_cb) (uint32_t vpc_id, uint32_t dip, uint16_t dport,
              uint8_t protocol, uint32_t sip, uint16_t sport);
 
 #ifdef __cplusplus
 
 #include "gen/p4gen/p4/include/ftl.h"
+#include <ftl_error.h>
 
 extern "C" {
 #endif
 
 #define FTL_ENTRY_STR_MAX   2048
+#define FTL_MAX_API_RETRY_COUNT 3
+
+#define FTL_RETRY_API(_func, _args, _retry_count, _continue) \
+do {                                                         \
+    int loop = _retry_count;                                 \
+    sdk::sdk_ret_t retval;                                   \
+    retval = _func(_args);                                   \
+    if (retval != SDK_RET_OK) {                              \
+        while ((retval == SDK_RET_RETRY) && loop) {          \
+            retval = _func(_args);                           \
+            loop--;                                          \
+        }                                                    \
+        if (retval != SDK_RET_OK) {                          \
+            if (!_continue) {                                \
+                if (retval == SDK_RET_RETRY)                 \
+                    return FTL_RETRY;                        \
+                return -1;                                   \
+            }                                                \
+        }                                                    \
+    }                                                        \
+}while(0)
+
+#define FTL_RETRY_API_WITH_RET(_func, _args, _retry_count, _retval) \
+do {                                                                \
+    int loop = _retry_count;                                        \
+    _retval = _func(_args);                                         \
+    if (_retval != SDK_RET_OK) {                                    \
+        while ((_retval == SDK_RET_RETRY) && loop) {                \
+            _retval = _func(_args);                                 \
+            loop--;                                                 \
+        }                                                           \
+    }                                                               \
+}while(0)
 
 // max 256 packets are processed by VPP, so 512 flows
 #define MAX_FLOW_ENTRIES_PER_BATCH 512

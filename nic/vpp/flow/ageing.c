@@ -901,6 +901,13 @@ pds_flow_drop_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
     return;
 }
 
+static void
+pds_flow_close_overdue_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
+{
+    pds_flow_delete_session(ses_id);
+    return;
+}
+
 static flow_expiration_handler *flow_exp_handlers[PDS_FLOW_TIMER_LAST] =
 {
     pds_flow_connection_timeout,
@@ -909,6 +916,7 @@ static flow_expiration_handler *flow_exp_handlers[PDS_FLOW_TIMER_LAST] =
     pds_flow_half_close_timeout,
     pds_flow_close_timeout,
     pds_flow_drop_timeout,
+    pds_flow_close_overdue_timeout,
 };
 
 void

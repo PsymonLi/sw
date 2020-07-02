@@ -1068,6 +1068,11 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
             counter[FLOW_CLASSIFY_COUNTER_SES_NOT_FOUND] += 1;
             return;
         }
+        if (PREDICT_FALSE(ctx->thread_id != vlib_get_thread_index())) {
+            *next = FLOW_CLASSIFY_NEXT_DROP;
+            counter[FLOW_CLASSIFY_COUNTER_QID_MISMATCH] += 1;
+            return;
+        }
         if (pds_flow_packet_l2l(ctx->packet_type)) {
             ret = pds_flow_l2l_packet_process(p, hdr, ctx,
                                               flags, next,
@@ -1551,7 +1556,7 @@ pds_program_cached_sessions(void)
 
         // Program the sessions and set pds_flow_hw_ctx_t too.
         // Create the pds_flow_hw_ctx_t
-        ctx = pds_flow_get_hw_ctx_no_check(session_index);
+        ctx = pds_flow_get_session_no_check(session_index);
         //ASSERT(ctx->is_in_use == 0);
         ctx->is_in_use = 1;
         ctx->proto = pds_flow_trans_proto(sess->proto);

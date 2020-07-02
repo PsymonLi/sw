@@ -105,8 +105,7 @@ typedef struct sdk_table_api_params_ sdk_table_api_params_t;
 typedef char* (*bytes2str_t)(void *bytes);
 typedef bool (*iterate_t)(sdk_table_api_params_t *params);
 typedef void (*move_cb_t)(base_table_entry_t *entry,
-                          handle_t old_handle, handle_t new_handle,
-                          bool move_complete);
+                          handle_t old_handle, handle_t new_handle);
 
 typedef enum sdk_table_api_op_ {
     SDK_TABLE_API_NONE,

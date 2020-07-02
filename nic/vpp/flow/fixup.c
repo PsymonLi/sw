@@ -94,7 +94,7 @@ pds_flow_lookup_id_update (pds_flow_hw_ctx_t *session, bool iflow,
         flow_log_error("%s ftlv4 insert failed", __FUNCTION__);
         return -1;
     }
-    pds_session_update_data(ses_id, new_handle, iflow, false, false);
+    pds_session_update_data(ses_id, new_handle, iflow, false);
     return 0;
 }
 

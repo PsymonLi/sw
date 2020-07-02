@@ -301,21 +301,14 @@ pds_flow_session_ctx_get_clr(uint32_t session_id,
 
 void
 pds_flow_session_ctx_move(uint32_t session_id,
-                          uint64_t handle, 
-                          bool move_complete)
+                          uint64_t handle) 
 {
-    /*
-     * 2-step move (see Bucket::defragment_())
-     */
-    if (move_complete) {
-    } else {
-        ctx_entry_t *ctx = session_ctx.ctx_entry_get(session_id);
-        if (ctx) {
-            uint64_t old_handle;
-            SDK_ATOMIC_EXCHANGE_UINT64(&ctx->handle, &handle, &old_handle);
-            if (!old_handle) {
-                SDK_ATOMIC_STORE_UINT64(&ctx->handle, &old_handle);
-            }
+    ctx_entry_t *ctx = session_ctx.ctx_entry_get(session_id);
+    if (ctx) {
+        uint64_t old_handle;
+        SDK_ATOMIC_EXCHANGE_UINT64(&ctx->handle, &handle, &old_handle);
+        if (!old_handle) {
+            SDK_ATOMIC_STORE_UINT64(&ctx->handle, &old_handle);
         }
     }
 }

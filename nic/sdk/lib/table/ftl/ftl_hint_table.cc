@@ -211,7 +211,6 @@ __label__ done;
     // Initialize the context
     SDK_ASSERT_RETURN(initctx_(hctx) == SDK_RET_OK, SDK_RET_ERR);
 
-    lock_(hctx);
     hctx->bucket->read_(hctx);
     ret = hctx->bucket->insert_(hctx);
     if (unlikely(ret == SDK_RET_COLLISION)) {
@@ -224,7 +223,6 @@ __label__ done;
         ret = hctx->bucket->write_(hctx);
     }
 
-    unlock_(hctx);
 done:
     return ret;
 }
@@ -343,7 +341,6 @@ __label__ done;
     auto hctx = ctxnew_(ctx);
     SDK_ASSERT_RETURN(initctx_(hctx) == SDK_RET_OK, SDK_RET_ERR);
 
-    lock_(hctx);
     hctx->bucket->read_(hctx);
 
     // Remove entry from the bucket
@@ -362,7 +359,6 @@ __label__ done;
     }
 
 done:
-    unlock_(hctx);
     return ret;
 }
 
@@ -405,12 +401,10 @@ hint_table::get_with_handle_(Apictx *ctx) {
     auto hctx = ctxnew_(ctx);
     SDK_ASSERT(initctx_with_handle_(hctx) == SDK_RET_OK);
 
-    lock_(hctx);
     auto ret = hctx->bucket->read_(hctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket read r:%d", ret);
     hctx->params->entry->copy_key_data(hctx->entry);
 done:
-    unlock_(hctx);
     return ret;
 }
 
