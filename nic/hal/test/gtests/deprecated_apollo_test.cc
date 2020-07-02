@@ -472,7 +472,7 @@ TEST_F(apollo_test, test1) {
     p4pd_cfg_t    p4pd_cfg = {
         .table_map_cfg_file = "apollo/p4_table_map.json",
         .p4pd_pgm_name = "apollo",
-        .cfg_path = std::getenv("HAL_CONFIG_PATH")
+        .cfg_path = std::getenv("CONFIG_PATH")
     };
     const char *hal_conf_file = "conf/hal.json";
     char *default_config_dir = NULL;
@@ -488,7 +488,7 @@ TEST_F(apollo_test, test1) {
     ASSERT_NE(ret, -1);
     ret = capri_load_config((char *)"obj/apollo/pgm_bin");
     ASSERT_NE(ret, -1);
-    cfg.cfg_path = std::string(std::getenv("HAL_CONFIG_PATH"));
+    cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
     cfg.pgm_name = "apollo";
     if (getenv("HAL_PLATFORM_MODE_RTL")) {
         hal_conf_file = "conf/hal_apollo_rtl.json";

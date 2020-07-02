@@ -13,6 +13,8 @@
 #include "lib/pal/pal.hpp"
 #include "platform/pciehdevices/include/pci_ids.h"
 #include "lib/catalog/catalog.hpp"
+#include "lib/device/device.hpp"
+#include "lib/utils/path_utils.hpp"
 
 //FIXME: Bharat needs to fix this smac hack
 #define NCSI_CMD_BEGIN_BANNER() \
@@ -393,24 +395,27 @@ CmdHndler::CmdHndler(std::shared_ptr<IpcService> IpcObj, transport *XportObj) {
      * https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers */
     get_version_resp.mf_id = htonl(51886);
 
-    char* hal_cfg_path = std::getenv("HAL_CONFIG_PATH");
+    char *cfg_path = std::getenv("CONFIG_PATH");
+    char *pipeline = std::getenv("PIPELINE");
 
-    //if (hal_cfg_path.empty())
-    if (!hal_cfg_path)
-        hal_cfg_path = (char *)"./";
+    if (!cfg_path)
+        cfg_path = (char *)"./";
 
-    SDK_TRACE_INFO("HAL_CONFIG_PATH: %s", hal_cfg_path);
-
-    sdk::lib::device *device = sdk::lib::device::factory("/sysconfig/config0/device.conf");
-    std::string mpart_json = sdk::platform::utils::mpartition::get_mpart_file_path(hal_cfg_path, "iris", device->get_feature_profile());
-
-    mempartition = sdk::platform::utils::mpartition::factory(mpart_json.c_str());
+    SDK_TRACE_INFO("config_path:%s, pipeline:%s", cfg_path, pipeline);
+    sdk::lib::device *device =
+        sdk::lib::device::factory(sdk::lib::get_device_conf_path());
+    std::string profile =
+        sdk::lib::dev_feature_profile_to_string(device->get_feature_profile());
+    std::string mpart_json =
+        sdk::lib::get_mpart_file_path(cfg_path, std::string(pipeline), catalog_db, 
+                                      profile, platform_type_t::PLATFORM_TYPE_HW);
+    mempartition =
+        sdk::platform::utils::mpartition::factory(mpart_json.c_str());
 
     populate_fw_name_ver();
 
     assert(sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_HW) ==
            sdk::lib::PAL_RET_OK);
-
 }
 
 int CmdHndler::SendNcsiCmdResponse(const void *buf, ssize_t sz)

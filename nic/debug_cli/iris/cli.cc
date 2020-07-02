@@ -9,6 +9,7 @@
 #include "nic/sdk/asic/rw/asicrw.hpp"
 #include "nic/sdk/lib/p4/p4_utils.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "gen/p4gen/p4/include/p4pd.h"
 #include "nic/hal/pd/iris/p4pd_mem.hpp"
@@ -23,6 +24,7 @@ cli_init (char *ptr)
     pal_ret_t    pal_ret;
     p4pd_error_t p4pd_ret;
     p4pd_cfg_t   p4pd_cfg, p4pd_rxdma_cfg, p4pd_txdma_cfg;
+    std::string  mpart_json;
 
     //printf("Initing: Please wait for the prompt ...\n");
 
@@ -38,12 +40,17 @@ cli_init (char *ptr)
 
     asic_cfg_t asic_cfg;
     memset(&asic_cfg, 0, sizeof(asic_cfg_t));
-    asic_cfg.cfg_path = std::string(std::getenv("HAL_CONFIG_PATH"));
+    asic_cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
     // asic_cfg.default_config_dir = std::string(std::getenv("HAL_PBC_INIT_CONFIG"));
     asic_cfg.admin_cos = 1;
     asic_cfg.num_rings = 0;
     asic_cfg.ring_meta = NULL;
-    std::string mpart_json = asic_cfg.cfg_path + "/iris/hbm_mem.json";
+    asic_cfg.catalog = catalog::factory(asic_cfg.cfg_path, "",
+                                        platform_type_t::PLATFORM_TYPE_HW);
+    mpart_json =
+        sdk::lib::get_mpart_file_path(asic_cfg.cfg_path, "iris",
+                                      asic_cfg.catalog, "",
+                                      platform_type_t::PLATFORM_TYPE_HW);
     asic_cfg.mempartition =
         sdk::platform::utils::mpartition::factory(mpart_json.c_str());
 
@@ -69,8 +76,6 @@ cli_init (char *ptr)
     asic_cfg.asm_cfg[1].base_addr = std::string(JP4PLUS_PRGM);
 #endif
 
-    asic_cfg.catalog = catalog::factory(asic_cfg.cfg_path, "",
-                                        platform_type_t::PLATFORM_TYPE_HW);
     auto device_cfg_path  = std::string(SYSCONFIG_PATH) + "/" + DEVICE_CFG_FNAME;
     auto device = sdk::lib::device::factory(device_cfg_path);
     SDK_ASSERT(device != NULL);

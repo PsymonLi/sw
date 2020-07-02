@@ -10,11 +10,10 @@ export BIN_PATH=$NIC_DIR/bin/
 export PATH=${PATH}:${BIN_PATH}
 export PLATFORM_DIR=/naples/platform
 export LOG_DIR=/naples/data/logs
-export HAL_CONFIG_PATH=$NIC_DIR/conf/
-export CONFIG_PATH=$HAL_CONFIG_PATH
+export CONFIG_PATH=$NIC_DIR/conf/
 export PERSISTENT_LOG_DIR=/obfl
 export NON_PERSISTENT_LOG_DIR=$LOG_DIR
-export LD_LIBRARY_PATH=$NIC_DIR/lib64:$NIC_DIR/lib:$HAL_CONFIG_PATH/plugins/lif:$HAL_CONFIG_PATH/linkmgr:$HAL_CONFIG_PATH/sdk:$HAL_CONFIG_PATH/sdk/external:usr/local/lib:/usr/lib::$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$NIC_DIR/lib64:$NIC_DIR/lib:$CONFIG_PATH/plugins/lif:$CONFIG_PATH/linkmgr:$CONFIG_PATH/sdk:$CONFIG_PATH/sdk/external:usr/local/lib:/usr/lib::$LD_LIBRARY_PATH
 export NICMGR_LIBRARY_PATH=$PLATFORM_DIR/lib:$NIC_DIR/lib:$NIC_DIR/conf/sdk:$LD_LIBRARY_PATH
 export NICMGR_CONFIG_PATH=$PLATFORM_DIR/etc/nicmgrd
 unset MODEL_ZMQ_TYPE_TCP
@@ -25,7 +24,6 @@ export CMD_GRPC_UNAUTH_PORT=9002
 export NPM_RPC_PORT=9005
 export DISABLE_NICMGR_HAL_THREAD=1  # using fake nicmgr configuration, so disabling
 export OPERD_REGIONS="/naples/nic/conf/operd-regions.json"
-export CONFIG_PATH=$HAL_CONFIG_PATH
 
 #Setup ssh
 echo "root:pen123" | chpasswd
@@ -148,7 +146,7 @@ fi
 # starting the processes from log directory so that cores are saved there
 cd "$LOG_DIR"
 
-#$NIC_DIR/bin/cap_model +PLOG_MAX_QUIT_COUNT=0 +plog=info +model_debug=$HAL_CONFIG_PATH/iris/model_debug.json > $LOG_DIR/model.log 2>&1 &
+#$NIC_DIR/bin/cap_model +PLOG_MAX_QUIT_COUNT=0 +plog=info +model_debug=$CONFIG_PATH/iris/model_debug.json > $LOG_DIR/model.log 2>&1 &
 
 if [ ! -z "$NO_DATAPATH" ]; then
     echo "Starting sysmgr ...no datapth"
@@ -167,7 +165,7 @@ else
         echo "Running Capri model WITHOUT Qemu"
         $NIC_DIR/bin/cap_model +PLOG_MAX_QUIT_COUNT=0 > /dev/null 2>&1 &
         # $NIC_DIR/bin/cap_model +PLOG_MAX_QUIT_COUNT=0 > $LOG_DIR/model.log 2>&1 &
-        # $NIC_DIR/bin/cap_model +PLOG_MAX_QUIT_COUNT=0 +plog=info +model_debug=$HAL_CONFIG_PATH/iris/model_debug.json > $LOG_DIR/model.log 2>&1 &
+        # $NIC_DIR/bin/cap_model +PLOG_MAX_QUIT_COUNT=0 +plog=info +model_debug=$CONFIG_PATH/iris/model_debug.json > $LOG_DIR/model.log 2>&1 &
         PID=`ps -eaf | grep cap_model | grep -v grep | awk '{print $2}'`
     fi
 

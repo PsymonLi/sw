@@ -391,7 +391,7 @@ def create_device_conf(fname, mode):
 
 def run_hal(args):
     snort_dir = nic_dir + "/hal/third-party/snort3/export"
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf"
     os.environ["LD_LIBRARY_PATH"] = "/home/asic/bin/tools/lib64:" + os.environ["LD_LIBRARY_PATH"]
     #os.environ["LD_LIBRARY_PATH"] += ":" + nic_dir + "/../bazel-bin/nic/model_sim/" + ":" + snort_dir + "/x86_64/lib/"
     #os.environ["LD_LIBRARY_PATH"] += ":" + nic_dir + "/sdk/obj/lib"
@@ -448,8 +448,9 @@ def run_hal(args):
 
     FNULL = open(os.devnull, 'w')
     FOUT  = open(nic_dir + "/hal_stdout.log", 'w')
-    print (bin_dir + '/hal', jsonfile)
-    p = Popen([bin_dir+'/hal', "--config", jsonfile], preexec_fn=demote, stdout=FOUT, stderr=FNULL)
+    cmd_args = [bin_dir+'/hal', "--config", jsonfile, "--platform=catalog_4g.json"]
+    print (" ".join(cmd_args))
+    p = Popen(" ".join(cmd_args), preexec_fn=demote, stdout=FOUT, stderr=FNULL, shell=True)
     global hal_process
     hal_process = p
     print "* Starting HAL pid (" + str(p.pid) + ")"
@@ -536,7 +537,7 @@ def run_nicmgr(args, standalone=False):
     lib_dir = os.path.join(nic_dir, "build/x86_64/iris", asic, "lib")
     os.environ["DOL"] = "1"
     os.environ["LD_LIBRARY_PATH"] += ":" + lib_dir
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf/"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf/"
     print "LD_LIBRARY_PATH: " + os.environ["LD_LIBRARY_PATH"]
     os.chdir(nic_dir)
     cmd = [os.path.join(bin_dir, 'nicmgrd'), "-c", "none", "-p", "sim"]
@@ -676,7 +677,7 @@ def run_athena_app(args):
     os.environ["LOG_DIR"] = nic_dir + '/'
     os.environ["PERSISTENT_LOG_DIR"] = nic_dir + '/'
     os.environ["CONFIG_PATH"] = nic_dir + "/conf/"
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf"
     os.environ["PDSPKG_TOPDIR"] = nic_dir
 
     if args.athena_app_mock_mode is True:
@@ -723,7 +724,7 @@ def run_athena_gtests(args):
     os.environ["LOG_DIR"] = nic_dir + '/'
     os.environ["PERSISTENT_LOG_DIR"] = nic_dir + '/'
     os.environ["CONFIG_PATH"] = nic_dir + "/conf/"
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf"
     os.environ["PDSPKG_TOPDIR"] = nic_dir
 
     #Huge-pages for DPDK
@@ -755,7 +756,7 @@ def run_athena_gtests(args):
 
 # Run filter tests for libiris-c.so
 def run_filter_gtest(args):
-    #os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf"
+    #os.environ["CONFIG_PATH"] = nic_dir + "/conf"
     #os.environ["LD_LIBRARY_PATH"] += ":" + nic_dir + "/../bazel-bin/nic/model_sim/"
     os.environ["LD_LIBRARY_PATH"] += ":" + nic_dir + "/../platform/gen/x86_64/lib/"
     os.environ["LD_LIBRARY_PATH"] += ":" + nic_dir + "/build/x86_64/iris/" + asic + "/lib/"
@@ -772,7 +773,7 @@ def run_filter_gtest(args):
 
 # Run span tests for libiris-c.so
 def run_span_gtest(args):
-    #os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf"
+    #os.environ["CONFIG_PATH"] = nic_dir + "/conf"
     #os.environ["LD_LIBRARY_PATH"] += ":" + nic_dir + "/../bazel-bin/nic/model_sim/"
     os.chdir(nic_dir)
     cmd = ['../bazel-bin/nic/hal/iris-c/gtest/span_test']
@@ -782,7 +783,7 @@ def run_span_gtest(args):
 
 # Run GFT tests
 def run_gft_test(args):
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf"
     os.chdir(nic_dir)
     cmd = ['build/x86_64/gft/' + asic + '/bin/gft_test']
     p = Popen(cmd)
@@ -891,7 +892,7 @@ def run_apulu_test(args):
 
 # Run L2Switch tests
 def run_l2switch_test(args):
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf/"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf/"
     os.chdir(nic_dir)
     cmd = ['build/x86_64/l2switch/' + asic + '/bin/l2switch_test']
     p = Popen(cmd)
@@ -899,7 +900,7 @@ def run_l2switch_test(args):
 
 # Run Elektra tests
 def run_elektra_test(args):
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf/"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf/"
     os.chdir(nic_dir)
     cmd = ['build/x86_64/elektra/' + asic + '/bin/elektra_test']
     p = Popen(cmd)
@@ -907,7 +908,7 @@ def run_elektra_test(args):
 
 # Run Phoebus tests
 def run_phoebus_test(args):
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf/"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf/"
     os.chdir(nic_dir)
     cmd = ['build/x86_64/phoebus/' + asic + '/bin/phoebus_test']
     p = Popen(cmd)
@@ -915,7 +916,7 @@ def run_phoebus_test(args):
 
 # Run gft16 tests
 def run_gft16_test(args):
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf/"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf/"
     os.chdir(nic_dir)
     cmd = ['build/x86_64/gft16/' + asic + '/bin/gft16_test']
     p = Popen(cmd)
@@ -924,7 +925,7 @@ def run_gft16_test(args):
 
 # Run Hello tests
 def run_hello_test(args):
-    os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf"
+    os.environ["CONFIG_PATH"] = nic_dir + "/conf"
     os.chdir(nic_dir)
     cmd = ['build/x86_64/hello/' + asic + '/bin/hello_test']
     p = Popen(cmd)

@@ -82,7 +82,7 @@ PdClient::p4plus_rxdma_init_tables()
             .p4pd_pgm_name       = "iris",
             .p4pd_rxdma_pgm_name = "p4plus",
             .p4pd_txdma_pgm_name = "p4plus",
-            .cfg_path            = hal_cfg_path_.c_str(),
+            .cfg_path            = cfg_path_.c_str(),
     };
 
     NIC_LOG_DEBUG("Initializing p4plus RXDMA table");
@@ -141,7 +141,7 @@ PdClient::p4plus_txdma_init_tables()
         .p4pd_pgm_name       = "iris",
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path            = hal_cfg_path_.c_str(),
+        .cfg_path            = cfg_path_.c_str(),
     };
 
     NIC_LOG_DEBUG("Initializing p4plus TXDMA table");
@@ -453,12 +453,12 @@ int
 PdClient::create_dirs() {
     struct stat  st = { 0 };
 
-    if (hal_cfg_path_ == "") {
+    if (cfg_path_ == "") {
         // use the current dir
-        hal_cfg_path_ = "./";
+        cfg_path_ = "./";
         gen_dir_path_ = "./";
     } else {
-        gen_dir_path_ = string(hal_cfg_path_ + "/gen");
+        gen_dir_path_ = string(cfg_path_ + "/gen");
         // check if the gen dir exists
         if (stat(gen_dir_path_.c_str(), &st) == -1) {
             // doesn't exist, try to create
@@ -488,7 +488,7 @@ PdClient::init()
     // in soft init mode, we just need access to already programmed
     // lif qstates and the facility for that is in lif_mgr.
     if (sdk::asic::asic_is_soft_init()) {
-        NIC_LOG_DEBUG("Initializing HBM Memory Partitions from: {}...", hal_cfg_path_);
+        NIC_LOG_DEBUG("Initializing HBM Memory Partitions from: {}...", cfg_path_);
         mp_ = mpartition::factory(mpart_cfg_path_.c_str());
         assert(mp_);
 
@@ -503,15 +503,15 @@ PdClient::init()
     sdk::asic::pd::asicpd_state_pd_init(NULL);
 #endif
 
-    NIC_LOG_DEBUG("Loading p4plus RxDMA asic lib tables cfg_path: {}...", hal_cfg_path_);
+    NIC_LOG_DEBUG("Loading p4plus RxDMA asic lib tables cfg_path: {}...", cfg_path_);
     ret = p4plus_rxdma_init_tables();
     assert(ret == 0);
 
-    NIC_LOG_DEBUG("Loading p4plus TxDMA asic lib tables cfg_path: {}...", hal_cfg_path_);
+    NIC_LOG_DEBUG("Loading p4plus TxDMA asic lib tables cfg_path: {}...", cfg_path_);
     ret = p4plus_txdma_init_tables();
     assert(ret == 0);
 
-    NIC_LOG_DEBUG("Initializing HBM Memory Partitions from: {}...", hal_cfg_path_);
+    NIC_LOG_DEBUG("Initializing HBM Memory Partitions from: {}...", cfg_path_);
     mp_ = mpartition::factory(mpart_cfg_path_.c_str());
     assert(mp_);
 
@@ -553,10 +553,10 @@ PdClient* PdClient::factory(sdk::platform::platform_type_t platform,
 
     pdc->platform_ = platform;
 
-    pdc->hal_cfg_path_ = cfg_path;
-    NIC_LOG_INFO("HAL config path {}", pdc->hal_cfg_path_);
+    pdc->cfg_path_ = cfg_path;
+    NIC_LOG_INFO("HAL config path {}", pdc->cfg_path_);
 
-    pdc->gen_dir_path_ = pdc->hal_cfg_path_ + "/gen";
+    pdc->gen_dir_path_ = pdc->cfg_path_ + "/gen";
     NIC_LOG_INFO("GEN directory path {}", pdc->gen_dir_path_);
 
     pdc->mpart_cfg_path_ = mpart_file;

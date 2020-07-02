@@ -73,7 +73,7 @@ nicmgr_if_init(void)
     sdk_init();
 
     cfg.platform_type = platform_type_t::PLATFORM_TYPE_SIM;
-    cfg.cfg_path = std::string(getenv("HAL_CONFIG_PATH"));
+    cfg.cfg_path = std::string(getenv("CONFIG_PATH"));
     cfg.device_conf_file = FLAGS_nicmgr_config_file;
     cfg.fwd_mode = sdk::lib::FORWARDING_MODE_NONE;
     cfg.micro_seg_en = false;

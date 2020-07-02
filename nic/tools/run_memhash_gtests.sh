@@ -9,7 +9,7 @@ export NON_PERSISTENT_LOG_DIR=${TOPDIR}
 export ASIC_MOCK_MODE=1
 export BUILD_DIR=${TOPDIR}/build/x86_64/apollo/${ASIC}
 export GEN_TEST_RESULTS_DIR=${BUILD_DIR}/gtest_results
-export HAL_CONFIG_PATH=${TOPDIR}/conf
+export CONFIG_PATH=${TOPDIR}/conf
 export DISABLE_AGING=1
 export COVFILE=${TOPDIR}/coverage/sim_bullseye_hal.cov
 

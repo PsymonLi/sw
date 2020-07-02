@@ -4,12 +4,13 @@ SYSCONFIG=/sysconfig/config0
 TOOLS_DIR=`dirname $0`
 ABS_TOOLS_DIR=`readlink -f $TOOLS_DIR`
 export NIC_DIR=`dirname $ABS_TOOLS_DIR`
-export HAL_CONFIG_PATH=$NIC_DIR/conf/
+export CONFIG_PATH=$NIC_DIR/conf/
 export PERSISTENT_LOG_DIR=/obfl
 export NON_PERSISTENT_LOG_DIR=/var/log/pensando
 export HAL_LIBRARY_PATH=$NIC_DIR/lib:$NIC_DIR/../platform/lib:/usr/local/lib:/usr/lib/aarch64-linux-gnu:$LD_LIBRARY_PATH
 export HAL_PBC_INIT_CONFIG="2x100_hbm"
-export COVFILE=$HAL_CONFIG_PATH/hw_bullseye_hal.cov
+export COVFILE=$CONFIG_PATH/hw_bullseye_hal.cov
+export PIPELINE="iris"
 #export DISABLE_AGING=1
 
 #nicmgr specific
@@ -31,11 +32,11 @@ if [ -r $SYSCONFIG/sysuuid ]; then
 fi
 
 if [[ "$FWD_MODE" == "classic" ]]; then
-    cp $HAL_CONFIG_PATH/hal_classic.ini $HAL_CONFIG_PATH/hal.ini
+    cp $CONFIG_PATH/hal_classic.ini $CONFIG_PATH/hal.ini
 elif [[ "$FWD_MODE" == "hostpin" ]]; then
-    cp $HAL_CONFIG_PATH/hal_hostpin.ini $HAL_CONFIG_PATH/hal.ini
+    cp $CONFIG_PATH/hal_hostpin.ini $CONFIG_PATH/hal.ini
 elif [[ "$FWD_MODE" == "switch" ]]; then
-    cp $HAL_CONFIG_PATH/hal_switch.ini $HAL_CONFIG_PATH/hal.ini
+    cp $CONFIG_PATH/hal_switch.ini $CONFIG_PATH/hal.ini
 else
     echo "Unknown forwarding mode $FWD_MODE"
     exit 1

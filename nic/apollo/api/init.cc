@@ -17,6 +17,7 @@
 #include "nic/sdk/platform/pal/include/pal.h"
 #include "nic/sdk/platform/fru/fru.hpp"
 #include "nic/sdk/lib/kvstore/kvstore.hpp"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
@@ -52,6 +53,18 @@ static sysmon_memory_threshold_cfg_t mem_threshold_cfg[] = {
         .mem_threshold_percent = PDS_SYSMON_LOGDIR_THRESHOLD
     }
 };
+
+static inline std::string
+pds_memory_profile_to_string (pds_memory_profile_t profile)
+{
+    switch (profile) {
+    case PDS_MEMORY_PROFILE_ROUTER:
+        return std::string("router");
+    case PDS_MEMORY_PROFILE_DEFAULT:
+    default:
+        return std::string("");
+    }
+}
 
 namespace api {
 
@@ -320,20 +333,14 @@ static sdk_ret_t
 mpartition_init (pds_init_params_t *params, std::string mem_str)
 {
     std::string       mem_json;
+    std::string       mem_profile;
 
-    // parse hbm memory region configuration file
-    if (params->memory_profile == PDS_MEMORY_PROFILE_DEFAULT) {
-        mem_json = "hbm_mem.json";
-    } else if (params->memory_profile == PDS_MEMORY_PROFILE_ROUTER) {
-        mem_json = "hbm_mem_router.json";
-    } else {
-        PDS_TRACE_ERR("Unknown profile %u, aborting ...",
-                      params->memory_profile);
-        return SDK_RET_INVALID_ARG;
-    }
+    mem_profile = pds_memory_profile_to_string(params->memory_profile);
+    mem_json = sdk::lib::get_mpart_file_path(api::g_pds_state.cfg_path(),
+                                             api::g_pds_state.pipeline(),
+                                             api::g_pds_state.catalogue(),
+                                             mem_profile, api::g_pds_state.platform_type());
     api::g_pds_state.set_mempartition_cfg(mem_json);
-    mem_json = api::g_pds_state.cfg_path() + "/" + params->pipeline + "/" +
-                   mem_str + "/" + mem_json;
 
     // check if the memory carving configuration file exists
     if (access(mem_json.c_str(), R_OK) < 0) {
@@ -389,16 +396,6 @@ spawn_feature_threads (void)
 }
 
 }    // namespace api
-
-std::string
-pds_memory_profile_to_string (pds_memory_profile_t profile)
-{
-    switch (profile) {
-    case PDS_MEMORY_PROFILE_DEFAULT:
-    default:
-        return std::string("");
-    }
-}
 
 std::string
 pds_device_profile_to_string (pds_device_profile_t profile)

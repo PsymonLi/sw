@@ -23,6 +23,7 @@
 #include "nic/sdk/platform/marvell/marvell.hpp"
 #include "lib/logger/logger.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/linkmgr/linkmgr.hpp"
 #include "nic/hal/lib/hal_handle.hpp"
 #include "nic/hal/src/internal/proxy.hpp"
@@ -177,11 +178,10 @@ hal_init (hal_cfg_t *hal_cfg)
     hal_ret_t          ret      = HAL_RET_OK;
     std::string        mpart_json;
     marvell_cfg_t      marvell_cfg;
+    std::string        profile;
 
     // read the startup device config
     hal_device_cfg_init(hal_cfg);
-
-    mpart_json = sdk::platform::utils::mpartition::get_mpart_file_path(hal_cfg->cfg_path, hal_cfg->feature_set, (sdk::lib::dev_feature_profile_t)hal_cfg->device_cfg.feature_profile);
 
     // do SDK initialization, if any
     hal_sdk_init();
@@ -190,12 +190,20 @@ hal_init (hal_cfg_t *hal_cfg)
     if (hal_logger_init(hal_cfg) != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to initialize HAL logger, ignoring ...");
     }
-    HAL_TRACE_ERR("----------------------------- HAL Start -----------------------------");
-    HAL_TRACE_INFO("Initializing HAL with : {}", mpart_json);
+    HAL_TRACE_INFO("----------------------------- HAL Start -----------------------------");
 
     // parse and initialize the catalog
-    catalog = sdk::lib::catalog::factory(hal_cfg->cfg_path, hal_cfg->catalog_file, hal_cfg->platform);
+    catalog = sdk::lib::catalog::factory(hal_cfg->cfg_path,
+                                         hal_cfg->catalog_file,
+                                         hal_cfg->platform);
     SDK_ASSERT_TRACE_RETURN(catalog != NULL, HAL_RET_ERR, "Catalog file error");
+    profile =
+        sdk::lib::dev_feature_profile_to_string(hal_cfg->device_cfg.feature_profile);
+    mpart_json =
+        sdk::lib::get_mpart_file_path(hal_cfg->cfg_path,
+                                      std::string(hal_cfg->feature_set),
+                                      catalog, profile, hal_cfg->platform);
+    HAL_TRACE_INFO("Initializing HAL with : {}", mpart_json);
     hal_cfg->catalog = catalog;
     hal_cfg->mempartition =
         sdk::platform::utils::mpartition::factory(mpart_json.c_str());

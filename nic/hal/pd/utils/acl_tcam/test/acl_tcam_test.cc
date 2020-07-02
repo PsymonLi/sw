@@ -449,7 +449,7 @@ int main(int argc, char **argv)
         .p4pd_pgm_name       = "iris",
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path            = std::getenv("HAL_CONFIG_PATH")
+        .cfg_path            = std::getenv("CONFIG_PATH")
     };
 
     ::testing::InitGoogleTest(&argc, argv);

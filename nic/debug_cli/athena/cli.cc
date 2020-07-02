@@ -13,6 +13,7 @@
 #include "nic/sdk/asic/rw/asicrw.hpp"
 #include "nic/sdk/lib/p4/p4_utils.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/apollo/api/impl/athena/impl_utils.hpp"
 #include "nic/debug_cli/include/cli.hpp"
 
@@ -26,6 +27,7 @@ cli_init (char *ptr)
     asic_cfg_t  asic_cfg;
     catalog      *catalog;
     p4pd_cfg_t   p4pd_cfg;
+    std::string  mpart_json;
 
     // initialize PAL
     pal_ret = sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_HW);
@@ -37,8 +39,9 @@ cli_init (char *ptr)
     asic_cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
     catalog = catalog::factory(asic_cfg.cfg_path, "",
                                platform_type_t::PLATFORM_TYPE_HW);
-    std::string mpart_json = asic_cfg.cfg_path + "/athena/" +
-        catalog->memory_capacity_str() + "/hbm_mem.json";
+    mpart_json =
+        sdk::lib::get_mpart_file_path(asic_cfg.cfg_path, "athena", catalog,
+                                      "", platform_type_t::PLATFORM_TYPE_HW);
     asic_cfg.mempartition =
         sdk::platform::utils::mpartition::factory(mpart_json.c_str());
 

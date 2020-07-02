@@ -121,6 +121,26 @@ private:
     sdk_ret_t populate_qos_profile(std::string qos_profile_name);
 };
 
+static inline const std::string
+dev_feature_profile_to_string (dev_feature_profile_t profile)
+{
+    switch (profile) {
+    case FEATURE_PROFILE_BASE:
+        return std::string("base");
+    case FEATURE_PROFILE_STORAGE:
+        return std::string("storage");
+    case FEATURE_PROFILE_SRIOV:
+        return std::string("sriov");
+    case FEATURE_PROFILE_VIRTUALIZED:
+        return std::string("virtualized");
+    case FEATURE_PROFILE_PROXY:
+        return std::string("proxy");
+    case FEATURE_PROFILE_DEVELOPER:
+        return std::string("developer");
+    default:
+        return std::string("base");
+    }
+}
 
 }    // namespace lib
 }    // namespace sdk

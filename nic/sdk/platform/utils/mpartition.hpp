@@ -205,23 +205,6 @@ public:
     sdk_ret_t upgrade_hitless_offset_regions(const char *cfg_path,
                                              bool oper_table_persist);
 
-static inline std::string get_mpart_file_path(std::string cfg_path,
-        const char *feature_set, sdk::lib::dev_feature_profile_t profile)
-{
-    std::string profile_name;
-
-    profile_name = std::string(DEV_FEATURE_PROFILE_str(profile));
-    profile_name.replace(0, std::string("FEATURE_PROFILE").length(), "");
-    std::transform(profile_name.begin(), profile_name.end(),
-            profile_name.begin(), ::tolower);
-
-#ifdef ELBA
-    return cfg_path + "/" + feature_set + "/hbm_mem_elba" + profile_name + ".json";
-#else
-    return cfg_path + "/" + feature_set + "/hbm_mem" + profile_name + ".json";
-#endif
-}
-
 private:
     static mpartition *instance_;
     mpartition_region_t *regions_;

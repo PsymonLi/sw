@@ -1,8 +1,8 @@
 nic/conf/init_bins                                                /nic/conf/init_bins/
 nic/conf/$PIPELINE/hal_hw.json                                    /nic/conf/$PIPELINE/
-nic/conf/$PIPELINE/8g/hbm_mem_router.json                         /nic/conf/$PIPELINE/8g/
-nic/conf/$PIPELINE/8g/hbm_mem.json                                /nic/conf/$PIPELINE/8g/
-nic/conf/$PIPELINE/4g/hbm_mem.json                                /nic/conf/$PIPELINE/4g/
+nic/conf/$PIPELINE/$ASIC/8g/hbm_mem_router.json                   /nic/conf/$PIPELINE/8g/
+nic/conf/$PIPELINE/$ASIC/8g/hbm_mem.json                          /nic/conf/$PIPELINE/8g/
+nic/conf/$PIPELINE/$ASIC/4g/hbm_mem.json                          /nic/conf/$PIPELINE/4g/
 nic/conf/$PIPELINE/operd-regions.json                             /nic/conf/
 nic/conf/$PIPELINE/operd.json                                     /nic/conf/
 nic/conf/$PIPELINE/operd-decoders.json                            /nic/conf/

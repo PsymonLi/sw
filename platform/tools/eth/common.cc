@@ -27,6 +27,7 @@
 #include "nic/sdk/platform/pal/include/pal.h"
 #include "platform/utils/mpartition.hpp"
 
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "gen/platform/mem_regions.hpp"
 
 #include "impl.hpp"
@@ -125,56 +126,49 @@ get_lif_qstate (uint16_t lif, queue_info_t qinfo[QTYPE_MAX])
 }
 
 std::string
-hal_cfg_path (void)
+cfg_path (void)
 {
-    std::string hal_cfg_path_;
-    if (std::getenv("HAL_CONFIG_PATH") == NULL) {
-        hal_cfg_path_ = "/nic/conf/";
+    std::string cfg_path_;
+    if (std::getenv("CONFIG_PATH") == NULL) {
+        cfg_path_ = "/nic/conf/";
     } else {
-        hal_cfg_path_ = std::string(std::getenv("HAL_CONFIG_PATH"));
+        cfg_path_ = std::string(std::getenv("CONFIG_PATH"));
     }
 
-    return hal_cfg_path_;
+    return cfg_path_;
 }
 
 std::string
 mpart_cfg_path (void)
 {
     std::string mpart_json;
-    std::string hal_cfg_path_ = hal_cfg_path();
-    std::string capacity_str;
+    std::string cfg_path_ = cfg_path();
+    sdk::lib::catalog  *catalog;
+    std::string profile_name = "";
+    std::string pipeline = "iris";
 
-    if (pal_mem_get_phys_totalsize() == 0x80000000)
-        capacity_str = "4g";
-    else
-        capacity_str = "8g";
-
-    // WARNING -- this must be picked based on profile, this is guaranteed to be
-    // broken soon
 #if defined(APOLLO)
-    mpart_json = hal_cfg_path_ + "/apollo/" + capacity_str + "/hbm_mem.json";
+    pipeline = "apollo";
 #elif defined(ARTEMIS)
-    mpart_json = hal_cfg_path_ + "/artemis/" + capacity_str + "/hbm_mem.json";
+    pipeline = "artemis";
 #elif defined(APULU)
-    mpart_json = hal_cfg_path_ + "/apulu/" + capacity_str + "/hbm_mem.json";
+    pipeline = "apulu";
 #elif defined(ATHENA)
-    mpart_json = hal_cfg_path_ + "/athena/" + capacity_str + "/hbm_mem.json";
+    pipeline = "athena";
 #else
-    std::string profile_name;
     sdk::lib::dev_feature_profile_t feature_profile;
     sdk::lib::device *device =
         sdk::lib::device::factory("/sysconfig/config0/device.conf");
 
     feature_profile = device->get_feature_profile();
     profile_name = std::string(DEV_FEATURE_PROFILE_str(feature_profile));
-    profile_name.replace(0, std::string("FEATURE_PROFILE").length(), "");
+    profile_name.replace(0, std::string("FEATURE_PROFILE_").length(), "");
     std::transform(profile_name.begin(), profile_name.end(),
                    profile_name.begin(), ::tolower);
-    mpart_json =  hal_cfg_path_ + "/" +
-        "iris" + "/hbm_mem" + profile_name + ".json";
 #endif
-
-    return mpart_json;
+    catalog = catalog::factory();
+    return sdk::lib::get_mpart_file_path(cfg_path_, pipeline, 
+                                        catalog, profile_name, platform_type_t::PLATFORM_TYPE_HW);
 }
 
 void

@@ -67,7 +67,7 @@ public:
     void update(void);
     void destroy(PdClient *pdc);
 
-    std::string hal_cfg_path_;
+    std::string cfg_path_;
     std::string gen_dir_path_;
     std::string mpart_cfg_path_;
     sdk::platform::platform_type_t platform_;

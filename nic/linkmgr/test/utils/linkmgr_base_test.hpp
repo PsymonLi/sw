@@ -61,7 +61,7 @@ linkmgr_initialize (const char c_file[])
     sdk::lib::thread::control_cores_mask_set(0x1);
 
     // makeup the full file path
-    cfg_path = std::getenv("HAL_CONFIG_PATH");
+    cfg_path = std::getenv("CONFIG_PATH");
     if (cfg_path) {
         cfg_file = std::string(cfg_path) + "/" + cfg_file;
     } else {

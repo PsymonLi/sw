@@ -60,10 +60,9 @@ fi
 
 if [ $pipeline == "iris" ]; then
 export LD_LIBRARY_PATH=/nic/lib:/nic/cli:/platform/lib
-export HAL_CONFIG_PATH=/nic/conf
+export CONFIG_PATH=/nic/conf
 else
 export LD_LIBRARY_PATH=/nic/lib:/nic/cli
-export HAL_CONFIG_PATH=/nic/conf
 export CONFIG_PATH=/nic/conf
 fi
 

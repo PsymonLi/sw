@@ -7,6 +7,7 @@
 #include "nic/sdk/model_sim/include/lib_model_client.h"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "gen/p4gen/gft/include/p4pd.h"
@@ -1452,19 +1453,19 @@ TEST_F(gft_test, test1) {
     char *default_config_dir = NULL;
     asic_cfg_t cfg;
     sdk::lib::catalog *catalog;
+    std::string mpart_json;
 
     p4pd_cfg_t    p4pd_cfg = {
         .table_map_cfg_file  = "gft/p4_table_map.json",
         .p4pd_pgm_name       = "gft",
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path = std::getenv("HAL_CONFIG_PATH")
+        .cfg_path = std::getenv("CONFIG_PATH")
     };
 
-    cfg.cfg_path = std::string(std::getenv("HAL_CONFIG_PATH"));
-    std::string mpart_json = cfg.cfg_path + "/gft/hbm_mem.json";
+    cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
     platform_type_t platform = platform_type_t::PLATFORM_TYPE_SIM;
-    catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog.json");
+    catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog_4g.json");
     if (getenv("HAL_PLATFORM_RTL")) {
         platform = platform_type_t::PLATFORM_TYPE_RTL;
     } else if (getenv("HAL_PLATFORM_HW")) {
@@ -1472,6 +1473,8 @@ TEST_F(gft_test, test1) {
         catalog = sdk::lib::catalog::factory(cfg.cfg_path, "");
     }
     ASSERT_TRUE(catalog != NULL);
+    mpart_json = sdk::lib::get_mpart_file_path(cfg.cfg_path, "gft", 
+                                               catalog, "", platform);
     cfg.catalog = catalog;
     cfg.mempartition = sdk::platform::utils::mpartition::factory(mpart_json.c_str());
 

@@ -1490,10 +1490,10 @@ TEST_F(gft_test, test1) {
         .p4pd_pgm_name       = "gft16_p4",
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path = std::getenv("HAL_CONFIG_PATH")
+        .cfg_path = std::getenv("CONFIG_PATH")
     };
 
-    cfg.cfg_path = std::string(std::getenv("HAL_CONFIG_PATH"));
+    cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
     std::string mpart_json = cfg.cfg_path + "/gft16/hbm_mem.json";
     platform_type_t platform = platform_type_t::PLATFORM_TYPE_SIM;
     catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog.json");

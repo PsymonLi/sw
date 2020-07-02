@@ -593,9 +593,9 @@ SSLHelper::init_pse_engine()
         return HAL_RET_OPENSSL_ENGINE_NOT_FOUND;
     }
 
-    cfg_path = getenv("HAL_CONFIG_PATH");
+    cfg_path = getenv("CONFIG_PATH");
     if (!cfg_path) {
-        HAL_TRACE_ERR("Please set HAL_CONFIG_PATH env. variable");
+        HAL_TRACE_ERR("Please set CONFIG_PATH env. variable");
         SDK_ASSERT_RETURN(0, HAL_RET_ERR);
     }
 

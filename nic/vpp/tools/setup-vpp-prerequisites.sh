@@ -9,7 +9,6 @@ APP_ID=$3
 #echo $NICDIR
 
 #VPP Partial init env variables
-export HAL_CONFIG_PATH=$NICDIR/conf/
 export CONFIG_PATH=$NICDIR/conf/
 export ZMQ_SOC_DIR='/sw/nic'
 #This is used in DPDK to chosing DESC/Pkt buffer memory pool

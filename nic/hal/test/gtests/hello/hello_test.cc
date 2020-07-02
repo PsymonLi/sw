@@ -288,10 +288,10 @@ TEST_F(hello_test, test1) {
         .p4pd_pgm_name       = "hello_p4",
         .p4pd_rxdma_pgm_name = "",
         .p4pd_txdma_pgm_name = "",
-        .cfg_path = std::getenv("HAL_CONFIG_PATH")
+        .cfg_path = std::getenv("CONFIG_PATH")
     };
 
-    cfg.cfg_path = std::string(std::getenv("HAL_CONFIG_PATH"));
+    cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
     const char *hal_conf_file = "conf/hello/hal.json";
     platform_type_t platform = platform_type_t::PLATFORM_TYPE_SIM;
     catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog.json");

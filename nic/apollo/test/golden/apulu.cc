@@ -1636,7 +1636,7 @@ TEST_F(apulu_test, test1)
                                  .cfg_path = std::getenv("CONFIG_PATH")};
 
     cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
-    std::string mpart_json = cfg.cfg_path + "/apulu/8g/hbm_mem.json";
+    std::string mpart_json = cfg.cfg_path + "/apulu/capri/8g/hbm_mem.json";
 
     platform_type_t platform = platform_type_t::PLATFORM_TYPE_SIM;
     printf("Parsing sim catalog ...\n");

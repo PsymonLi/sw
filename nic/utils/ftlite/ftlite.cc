@@ -45,21 +45,21 @@ initialize_pds(void)
         .p4pd_pgm_name       = "apollo_p4",
         .p4pd_rxdma_pgm_name = "apollo_rxdma",
         .p4pd_txdma_pgm_name = "apollo_txdma",
-        .cfg_path = std::getenv("HAL_CONFIG_PATH")
+        .cfg_path = std::getenv("CONFIG_PATH")
     };
     p4pd_cfg_t p4pd_rxdma_cfg = {
         .table_map_cfg_file  = "apollo/rxdma_table_map.json",
         .p4pd_pgm_name       = "apollo_p4",
         .p4pd_rxdma_pgm_name = "apollo_rxdma",
         .p4pd_txdma_pgm_name = "apollo_txdma",
-        .cfg_path = std::getenv("HAL_CONFIG_PATH")
+        .cfg_path = std::getenv("CONFIG_PATH")
     };
     p4pd_cfg_t p4pd_txdma_cfg = {
         .table_map_cfg_file  = "apollo/txdma_table_map.json",
         .p4pd_pgm_name       = "apollo_p4",
         .p4pd_rxdma_pgm_name = "apollo_rxdma",
         .p4pd_txdma_pgm_name = "apollo_txdma",
-        .cfg_path = std::getenv("HAL_CONFIG_PATH")
+        .cfg_path = std::getenv("CONFIG_PATH")
     };
 
     /* initialize PAL */
@@ -67,7 +67,7 @@ initialize_pds(void)
     SDK_ASSERT(pal_ret == sdk::lib::PAL_RET_OK);
 
     memset(&asic_cfg, 0, sizeof(asic_cfg_t));
-    asic_cfg.cfg_path = std::string(std::getenv("HAL_CONFIG_PATH"));
+    asic_cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
     std::string mpart_json = asic_cfg.cfg_path + "/apollo/hbm_mem.json";
     asic_cfg.mempartition =
         sdk::platform::utils::mpartition::factory(mpart_json.c_str());

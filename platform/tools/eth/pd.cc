@@ -82,7 +82,7 @@ p4plus_rxdma_init_tables()
     uint32_t                   tid;
     p4pd_table_properties_t    tinfo;
     p4pd_error_t               rc;
-    std::string hal_cfg_path_ = hal_cfg_path();
+    std::string cfg_path_ = cfg_path();
 
 #if defined(APOLLO)
     p4pd_cfg_t                 p4pd_cfg = {
@@ -90,7 +90,7 @@ p4plus_rxdma_init_tables()
             .p4pd_pgm_name       = "apollo",
             .p4pd_rxdma_pgm_name = "p4plus",
             .p4pd_txdma_pgm_name = "p4plus",
-            .cfg_path            = hal_cfg_path_.c_str(),
+            .cfg_path            = cfg_path_.c_str(),
     };
 #elif defined(ARTEMIS)
     p4pd_cfg_t                 p4pd_cfg = {
@@ -98,7 +98,7 @@ p4plus_rxdma_init_tables()
             .p4pd_pgm_name       = "artemis",
             .p4pd_rxdma_pgm_name = "p4plus",
             .p4pd_txdma_pgm_name = "p4plus",
-            .cfg_path            = hal_cfg_path_.c_str(),
+            .cfg_path            = cfg_path_.c_str(),
     };
 #elif defined(APULU)
     p4pd_cfg_t                 p4pd_cfg = {
@@ -106,7 +106,7 @@ p4plus_rxdma_init_tables()
             .p4pd_pgm_name       = "apulu",
             .p4pd_rxdma_pgm_name = "p4plus",
             .p4pd_txdma_pgm_name = "p4plus",
-            .cfg_path            = hal_cfg_path_.c_str(),
+            .cfg_path            = cfg_path_.c_str(),
     };
 #elif defined(ATHENA)
     p4pd_cfg_t                 p4pd_cfg = {
@@ -114,7 +114,7 @@ p4plus_rxdma_init_tables()
             .p4pd_pgm_name       = "apollo", /* FIXME - change to athena when ready */
             .p4pd_rxdma_pgm_name = "p4plus",
             .p4pd_txdma_pgm_name = "p4plus",
-            .cfg_path            = hal_cfg_path_.c_str(),
+            .cfg_path            = cfg_path_.c_str(),
     };
 #else
     p4pd_cfg_t                 p4pd_cfg = {
@@ -122,7 +122,7 @@ p4plus_rxdma_init_tables()
             .p4pd_pgm_name       = "iris",
             .p4pd_rxdma_pgm_name = "p4plus",
             .p4pd_txdma_pgm_name = "p4plus",
-            .cfg_path            = hal_cfg_path_.c_str(),
+            .cfg_path            = cfg_path_.c_str(),
     };
 #endif
 
@@ -175,7 +175,7 @@ p4plus_txdma_init_tables()
     uint32_t                   tid;
     p4pd_table_properties_t    tinfo;
     p4pd_error_t               rc;
-    std::string hal_cfg_path_ = hal_cfg_path();
+    std::string cfg_path_ = cfg_path();
 
 #if defined(APOLLO)
     p4pd_cfg_t                 p4pd_cfg = {
@@ -183,7 +183,7 @@ p4plus_txdma_init_tables()
         .p4pd_pgm_name       = "apollo",
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path            = hal_cfg_path_.c_str(),
+        .cfg_path            = cfg_path_.c_str(),
     };
 #elif defined(ARTEMIS)
     p4pd_cfg_t                 p4pd_cfg = {
@@ -191,7 +191,7 @@ p4plus_txdma_init_tables()
         .p4pd_pgm_name       = "artemis",
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path            = hal_cfg_path_.c_str(),
+        .cfg_path            = cfg_path_.c_str(),
     };
 #elif defined(APULU)
     p4pd_cfg_t                 p4pd_cfg = {
@@ -199,7 +199,7 @@ p4plus_txdma_init_tables()
         .p4pd_pgm_name       = "apulu",
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path            = hal_cfg_path_.c_str(),
+        .cfg_path            = cfg_path_.c_str(),
     };
 #elif defined(ATHENA)
     p4pd_cfg_t                 p4pd_cfg = {
@@ -207,7 +207,7 @@ p4plus_txdma_init_tables()
         .p4pd_pgm_name       = "apollo", /* FIXME - change to athena when ready */
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path            = hal_cfg_path_.c_str(),
+        .cfg_path            = cfg_path_.c_str(),
     };
 #else
     p4pd_cfg_t                 p4pd_cfg = {
@@ -215,7 +215,7 @@ p4plus_txdma_init_tables()
         .p4pd_pgm_name       = "iris",
         .p4pd_rxdma_pgm_name = "p4plus",
         .p4pd_txdma_pgm_name = "p4plus",
-        .cfg_path            = hal_cfg_path_.c_str(),
+        .cfg_path            = cfg_path_.c_str(),
     };
 #endif
 

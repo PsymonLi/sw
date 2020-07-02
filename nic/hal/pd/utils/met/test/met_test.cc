@@ -1,6 +1,7 @@
 #include "nic/hal/pd/utils/met/met.hpp"
 #include "nic/hal/iris/datapath/p4/include/defines.h"
 #include "nic/sdk/lib/pal/pal.hpp"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/platform/utils/mpartition.hpp"
 #include <gtest/gtest.h>
@@ -478,10 +479,13 @@ TEST_F(met_test, test9) {
 
 int main(int argc, char **argv) {
     std::string logfile;
-    std::string cfg_path = std::string(std::getenv("HAL_CONFIG_PATH"));
+    std::string cfg_path = std::string(std::getenv("CONFIG_PATH"));
     std::string mpart_json;
-
-    mpart_json  = cfg_path + "/iris/hbm_mem.json";
+    sdk::lib::catalog *catalog;
+    
+    catalog = sdk::lib::catalog::factory(cfg_path, "/catalog_4g.json", platform_type_t::PLATFORM_TYPE_SIM);
+    mpart_json = sdk::lib::get_mpart_file_path(cfg_path, "iris", catalog, "",
+                                               platform_type_t::PLATFORM_TYPE_SIM);
     // Instantiate the singleton class
     sdk::platform::utils::mpartition::factory(mpart_json.c_str());
 

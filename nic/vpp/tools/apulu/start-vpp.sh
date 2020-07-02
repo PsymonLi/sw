@@ -2,7 +2,6 @@
 
 #VPP Partial init env variables
 export NIC_DIR=/nic/
-export HAL_CONFIG_PATH=$NIC_DIR/conf/
 export CONFIG_PATH=$NIC_DIR/conf/
 export VPP_LOG_FILE=/var/log/pensando/vpp.log
 
@@ -36,4 +35,4 @@ if [ $start_vpp == 0 ]; then
     echo "UIO device not created, not starting VPP!!"
     exit 1
 fi
-exec $NIC_DIR/bin/vpp -c $HAL_CONFIG_PATH/vpp/$VPP_CONF
+exec $NIC_DIR/bin/vpp -c $CONFIG_PATH/vpp/$VPP_CONF

@@ -385,7 +385,7 @@ hal_parse_cfg (const char *cfgfile, hal_cfg_t *hal_cfg)
     }
 
    // makeup the full file path
-    cfg_path = std::getenv("HAL_CONFIG_PATH");
+    cfg_path = std::getenv("CONFIG_PATH");
     if (cfg_path) {
         // stash this path so we can use it in all other modules
         hal_cfg->cfg_path = std::string(cfg_path);

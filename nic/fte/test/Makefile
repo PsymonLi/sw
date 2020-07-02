@@ -28,4 +28,4 @@ include $(TOPDIR)/make/Makefile.inc
 
 GEN_TEST_RESULTS_DIR = $(TOPDIR)/gen/test_results
 gtest:
-	LD_LIBRARY_PATH=$(TOPDIR)/obj HAL_CONFIG_PATH=$(TOPDIR)/conf $(TOPDIR)/obj/$(PROGRAM) --gtest_output="xml:$(GEN_TEST_RESULTS_DIR)/$(PROGRAM).xml"
+	LD_LIBRARY_PATH=$(TOPDIR)/obj CONFIG_PATH=$(TOPDIR)/conf $(TOPDIR)/obj/$(PROGRAM) --gtest_output="xml:$(GEN_TEST_RESULTS_DIR)/$(PROGRAM).xml"

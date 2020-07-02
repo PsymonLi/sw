@@ -7,6 +7,7 @@
 #include "lib/thread/thread.hpp"
 #include "nic/sdk/linkmgr/linkmgr.hpp"
 #include "nic/sdk/platform/utils/mpartition.hpp"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/hal/core/core.hpp"
 #include "nic/include/hal_cfg.hpp"
 #include "nic/hal/apollo2/hal_state.hpp"
@@ -72,7 +73,7 @@ hal_init (hal_cfg_t *hal_cfg)
     hal_ret_t    ret      = HAL_RET_OK;
     sdk::lib::thread *thread;
     sdk::linkmgr::linkmgr_cfg_t  sdk_cfg;
-    std::string mpart_json = hal_cfg->cfg_path + "/apollo/hbm_mem.json";
+    std::string mpart_json;
 
     // check to see if HAL is running with root permissions
     user = getenv("USER");
@@ -93,6 +94,9 @@ hal_init (hal_cfg_t *hal_cfg)
     catalog = sdk::lib::catalog::factory(hal_cfg->cfg_path, hal_cfg->catalog_file);
     SDK_ASSERT(catalog != NULL);
     hal_cfg->catalog = catalog;
+    mpart_json =
+        sdk::lib::get_mpart_file_path(hal_cfg.cfg_path, "apollo", catalog, "",
+                                      platform_type_t::PLATFORM_TYPE_MOCK);
     hal_cfg->mempartition =
         sdk::platform::utils::mpartition::factory(mpart_json.c_str());
 

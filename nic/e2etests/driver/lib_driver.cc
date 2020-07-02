@@ -29,9 +29,9 @@ map<tuple<uint64_t, uint32_t, uint32_t>, queue_info_t> queue_map;
 
 uint64_t get_qstate_addr(uint16_t lif, uint32_t qtype, uint32_t qid) {
     // Cleanup: Move this to an one-time init function.
-    string hal_cfg_path = string(getenv("HAL_CONFIG_PATH"));
-    if (hal_cfg_path != "") {
-        qstate_mgr *qsm = qstate_mgr::factory((hal_cfg_path + "gen/lif_qstate_info.json").c_str(), NULL);
+    string cfg_path = string(getenv("CONFIG_PATH"));
+    if (cfg_path != "") {
+        qstate_mgr *qsm = qstate_mgr::factory((cfg_path + "gen/lif_qstate_info.json").c_str(), NULL);
         if (qsm) {
             uint64_t qaddr = qsm->get_hwlifid_qstate_address(lif, qtype, qid);
             if (qaddr != SDK_INVALID_HBM_ADDRESS) {
@@ -43,7 +43,7 @@ uint64_t get_qstate_addr(uint16_t lif, uint32_t qtype, uint32_t qid) {
             printf("get_qstate_addr: Failed to create qstate mgr\n");
         }
     } else {
-        printf("get_qstate_addr: Failed to get HAL_CONFIG_PATH\n");
+        printf("get_qstate_addr: Failed to get CONFIG_PATH\n");
     }
 
     char *grpc_port_env;

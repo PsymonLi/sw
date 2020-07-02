@@ -142,6 +142,9 @@ hal_initialize (bool disable_fte, const char c_file[], string vmotion_port, bool
     }
 #endif
 
+    // set catalog to use
+    hal::g_hal_cfg.catalog_file = "/catalog_4g.json";
+    
     // disabling async logging
     hal::g_hal_cfg.sync_mode_logging = true;
 

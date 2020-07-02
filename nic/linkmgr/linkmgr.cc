@@ -150,7 +150,7 @@ linkmgr_global_init (linkmgr_cfg_t *linkmgr_cfg)
     sdk::linkmgr::linkmgr_cfg_t sdk_cfg;
 
     // makeup the full file path
-    cfg_path = std::getenv("HAL_CONFIG_PATH");
+    cfg_path = std::getenv("CONFIG_PATH");
 
     if (cfg_path) {
         cfg_file     = std::string(cfg_path) + "/" + cfg_file;

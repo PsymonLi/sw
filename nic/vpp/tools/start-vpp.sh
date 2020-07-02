@@ -7,7 +7,6 @@ mount -t hugetlbfs nodev /dev/hugepages
 
 #VPP Partial init env variables
 export NIC_DIR=/nic/
-export HAL_CONFIG_PATH=$NIC_DIR/conf/
 export CONFIG_PATH=$NIC_DIR/conf/
 export VPP_LOG_FILE=/var/log/pensando/vpp.log
 
@@ -31,4 +30,4 @@ if [ $start_vpp == 0 ]; then
     exit 1
 fi
 
-exec $NIC_DIR/bin/vpp -c $HAL_CONFIG_PATH/vpp/vpp_3_workers.conf
+exec $NIC_DIR/bin/vpp -c $CONFIG_PATH/vpp/vpp_3_workers.conf

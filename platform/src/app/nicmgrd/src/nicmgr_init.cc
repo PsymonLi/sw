@@ -11,6 +11,7 @@
 #include <sys/time.h>
 
 #include "nic/sdk/lib/device/device.hpp"
+#include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/lib/utils/port_utils.hpp"
@@ -157,12 +158,12 @@ nicmgr_init (platform_type_t platform,
     sdk::lib::dev_forwarding_mode_t fwd_mode;
     UpgradeMode upg_mode;
     devicemgr_cfg_t cfg;
-    std::string hal_cfg_path;
+    std::string cfg_path;
 
-    if (std::getenv("HAL_CONFIG_PATH") == NULL) {
-        hal_cfg_path = "/nic/conf/";
+    if (std::getenv("CONFIG_PATH") == NULL) {
+        cfg_path = "/nic/conf/";
     } else {
-        hal_cfg_path = std::string(std::getenv("HAL_CONFIG_PATH"));
+        cfg_path = std::string(std::getenv("CONFIG_PATH"));
     }
 
     // instantiate the logger
@@ -171,7 +172,7 @@ nicmgr_init (platform_type_t platform,
     NIC_LOG_INFO("Nicmgr initializing!");
 
     if (platform == platform_type_t::PLATFORM_TYPE_SIM) {
-        profile = hal_cfg_path + "/../../" + "platform/src/app/nicmgrd/etc/eth.json";
+        profile = cfg_path + "/../../" + "platform/src/app/nicmgrd/etc/eth.json";
         fwd_mode = sdk::lib::FORWARDING_MODE_CLASSIC;
         goto dev_init;
     } else {
@@ -203,11 +204,12 @@ dev_init:
     register_for_events();
 
     cfg.platform_type = platform;
-    cfg.cfg_path = hal_cfg_path;
+    cfg.cfg_path = cfg_path;
     cfg.device_conf_file = device_file;
     cfg.fwd_mode = fwd_mode;
     cfg.micro_seg_en = micro_seg_en;
     cfg.shm_mgr = NULL;
+    cfg.catalog = sdk::lib::catalog::factory();
     cfg.EV_A = thread->ev_loop();
     devmgr = new DeviceManager(&cfg);
     if (!devmgr) {

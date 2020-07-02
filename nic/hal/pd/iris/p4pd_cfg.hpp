@@ -15,7 +15,7 @@ pipeline_cfg_init (p4pd_cfg_t *p4pd_cfg, p4pd_cfg_t *p4pd_rxdma_cfg,
          p4pd_cfg->p4pd_pgm_name       = "iris";
          p4pd_cfg->p4pd_rxdma_pgm_name = "p4plus";
          p4pd_cfg->p4pd_txdma_pgm_name = "p4plus";
-         p4pd_cfg->cfg_path = std::getenv("HAL_CONFIG_PATH");
+         p4pd_cfg->cfg_path = std::getenv("CONFIG_PATH");
      }
 
      if (p4pd_rxdma_cfg) {
@@ -23,7 +23,7 @@ pipeline_cfg_init (p4pd_cfg_t *p4pd_cfg, p4pd_cfg_t *p4pd_rxdma_cfg,
          p4pd_rxdma_cfg->p4pd_pgm_name       = "iris_p4";
          p4pd_rxdma_cfg->p4pd_rxdma_pgm_name = "iris_rxdma";
          p4pd_rxdma_cfg->p4pd_txdma_pgm_name = "iris_txdma";
-         p4pd_rxdma_cfg->cfg_path = std::getenv("HAL_CONFIG_PATH");
+         p4pd_rxdma_cfg->cfg_path = std::getenv("CONFIG_PATH");
      }
 
      if (p4pd_txdma_cfg) {
@@ -31,7 +31,7 @@ pipeline_cfg_init (p4pd_cfg_t *p4pd_cfg, p4pd_cfg_t *p4pd_rxdma_cfg,
          p4pd_txdma_cfg->p4pd_pgm_name       = "iris_p4";
          p4pd_txdma_cfg->p4pd_rxdma_pgm_name = "iris_rxdma";
          p4pd_txdma_cfg->p4pd_txdma_pgm_name = "iris_txdma";
-         p4pd_txdma_cfg->cfg_path = std::getenv("HAL_CONFIG_PATH");
+         p4pd_txdma_cfg->cfg_path = std::getenv("CONFIG_PATH");
      }
 
      return SDK_RET_OK;

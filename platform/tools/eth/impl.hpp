@@ -27,7 +27,7 @@ typedef struct {
 } queue_info_t;
 
 bool get_lif_qstate(uint16_t lif, queue_info_t qinfo[QTYPE_MAX]);
-std::string hal_cfg_path();
+std::string cfg_path();
 std::string mpart_cfg_path();
 void qinfo(uint16_t lif);
 void *memrev(void *block, size_t elnum);

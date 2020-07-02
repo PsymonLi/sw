@@ -5,7 +5,7 @@ ABS_TOOLS_DIR=`readlink -f $TOOLS_DIR`
 NIC_DIR=`dirname $ABS_TOOLS_DIR`
 
 export ZMQ_SOC_DIR=$NIC_DIR
-export HAL_CONFIG_PATH=$NIC_DIR/conf/
+export CONFIG_PATH=$NIC_DIR/conf/
 rm -f $NIC_DIR/linkmgr.log
 
 catalog_file=catalog.json

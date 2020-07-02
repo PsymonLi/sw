@@ -251,8 +251,20 @@ public:
     uint32_t ifindex_to_tm_port(uint32_t ifindex);
 
     // lookups based on asic
-    sdk::platform::asic_type_t asic_type(uint32_t asic) {
+    sdk::platform::asic_type_t asic_type(uint32_t asic = 0) {
         return catalog_db_.asics[asic].type;
+    }
+    std::string asic_type_str(uint32_t asic = 0) const {
+        switch (catalog_db_.asics[asic].type) {
+        case sdk::platform::asic_type_t::SDK_ASIC_TYPE_CAPRI:
+            return std::string("capri");
+        case sdk::platform::asic_type_t::SDK_ASIC_TYPE_ELBA:
+            return std::string("elba");
+        case sdk::platform::asic_type_t::SDK_ASIC_TYPE_NONE:
+            return std::string("none");
+        default:
+            SDK_ASSERT(0);
+        }
     }
 
     // lookups based on asic, asic_port

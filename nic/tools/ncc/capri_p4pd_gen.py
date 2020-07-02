@@ -476,7 +476,7 @@ int main()
 
     """ + \
     """
-    setenv("HAL_CONFIG_PATH", "%s", 1);
+    setenv("CONFIG_PATH", "%s", 1);
     """ % ('./conf') + \
     """
     lib_model_connect();

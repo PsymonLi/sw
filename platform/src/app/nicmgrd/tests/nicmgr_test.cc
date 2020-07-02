@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "nic/sdk/lib/device/device.hpp"
+#include "nic/sdk/lib/catalog/catalog.hpp"
 #include "platform/src/lib/nicmgr/include/dev.hpp"
 #include "platform/src/lib/nicmgr/include/eth_dev.hpp"
 #include "platform/src/lib/nicmgr/include/eth_if.h"
@@ -126,8 +127,9 @@ nicmgr_init()
     sdk_init();
 
     cfg.platform_type = platform_type_t::PLATFORM_TYPE_SIM;
-    cfg.cfg_path = std::string(getenv("HAL_CONFIG_PATH"));
+    cfg.cfg_path = std::string(getenv("CONFIG_PATH"));
     cfg.device_conf_file = "../nic/conf/device.conf";
+    cfg.catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog_4g.json", platform_type_t::PLATFORM_TYPE_SIM);
     cfg.fwd_mode = sdk::lib::FORWARDING_MODE_NONE;
     cfg.micro_seg_en = false;
     cfg.shm_mgr = NULL;

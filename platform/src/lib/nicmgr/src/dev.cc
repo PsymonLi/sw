@@ -20,6 +20,7 @@
 #include "nic/sdk/platform/misc/include/maclib.h"
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
 #include "nic/sdk/platform/mnet/include/mnet.h"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 
 #include "logger.hpp"
 
@@ -287,23 +288,23 @@ DeviceManager::GetConfigFiles(devicemgr_cfg_t *cfg, string &hbm_mem_json_file,
     device = sdk::lib::device::factory(cfg->device_conf_file);
     feature_profile = device->get_feature_profile();
     profile_name = std::string(DEV_FEATURE_PROFILE_str(feature_profile));
-    profile_name.replace(0, std::string("FEATURE_PROFILE").length(), "");
+    profile_name.replace(0, std::string("FEATURE_PROFILE_").length(), "");
     std::transform(profile_name.begin(), profile_name.end(),
                    profile_name.begin(), ::tolower);
-    hbm_mem_json_file =  hal_cfg_dir + "/" +
-        "iris" + "/hbm_mem" + profile_name + ".json";
-    device_json_file =
-        string("/platform/etc/nicmgrd/device" + profile_name + ".json");
-#else
-    hbm_mem_json_file = hal_cfg_dir + "/" + cfg->pipeline + "/" +
-                            cfg->catalog->memory_capacity_str() + "/";
-    if (cfg->memory_profile.empty() ||
-        (cfg->memory_profile.compare("default") == 0)) {
-        hbm_mem_json_file += "hbm_mem.json";
-    } else {
-        hbm_mem_json_file += "hbm_mem_" + cfg->memory_profile + ".json";
-    }
 
+    hbm_mem_json_file =  sdk::lib::get_mpart_file_path(hal_cfg_dir, "iris",
+                                                        cfg->catalog, profile_name,
+                                                        cfg->platform_type);
+    device_json_file =
+        string("/platform/etc/nicmgrd/device_" + profile_name + ".json");
+#else
+    std::string mem_profile;
+
+    mem_profile = (cfg->memory_profile.empty() || 
+                  (cfg->memory_profile.compare("default") == 0)) ? "" : cfg->memory_profile;
+    hbm_mem_json_file = sdk::lib::get_mpart_file_path(hal_cfg_dir, cfg->pipeline,
+                                                      cfg->catalog, mem_profile,
+                                                      cfg->platform_type);
     if (cfg->platform_type == platform_type_t::PLATFORM_TYPE_SIM) {
         device_json_file = hal_cfg_dir + "/" + cfg->pipeline + "/device.json";
     } else {

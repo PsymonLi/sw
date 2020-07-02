@@ -105,7 +105,7 @@ protected:
 
     // Will be called at the beginning of all test cases in this class
     static void SetUpTestCase() {
-        //setenv("HAL_CONFIG_PATH", "/nic/conf", 1);
+        //setenv("CONFIG_PATH", "/nic/conf", 1);
         //fte_base_test::SetUpTestCase("hal_hw.json");
         fte_base_test::SetUpTestCase();
 

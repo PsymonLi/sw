@@ -4,7 +4,7 @@ nic/conf/$PIPELINE                                                  /nic/conf/$P
 # config files
 nic/conf/$PIPELINE/hal_hw.json                                      /nic/conf/
 nic/conf/gft/plugins.json                                           /nic/conf/$PIPELINE/
-nic/conf/$PIPELINE/hbm_mem.json                                     /nic/conf/
+nic/conf/$PIPELINE/capri/4g/hbm_mem.json                            /nic/conf/4g/
 nic/conf/catalog_hw_68-0003.json                                    /nic/conf/
 nic/conf/catalog_hw_68-0004.json                                    /nic/conf/
 nic/conf/catalog_hw_68-0005.json                                    /nic/conf/
