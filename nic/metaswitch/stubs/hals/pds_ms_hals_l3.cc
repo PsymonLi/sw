@@ -85,7 +85,7 @@ NBB_BYTE hals_l3_integ_subcomp_t::ropi_delete_route(ATG_ROPI_ROUTE_ID route_id) 
 };
 
 NBB_BYTE hals_l3_integ_subcomp_t::nhpi_squash_cascaded_hops() { 
-    // Metaswitch FTM and EVPN components use Metaswitch PSM component
+    // Metaswitch IP Routing (FTM) and EVPN components use Metaswitch PSM
     // to request paths for the Next-hop that they receive in respective
     // routes. For each request PSM programs ECMP nexthops to the HAL NHPI
     // stub as and when required.
@@ -105,22 +105,33 @@ NBB_BYTE hals_l3_integ_subcomp_t::nhpi_squash_cascaded_hops() {
     // would have been required if we had chosen to use Indirect Pathset to
     // program HAL.
     //
-    // Cascaded mode is ideal in the overlay routing case where only overlay
-    // routes are programmed to HAL but underlay routes are not. EVPN requests
+    // Cascaded mode is ideal in our case to stitch overlay objects to
+    // underlay nexthop groups in both overlay and non-overlay routing modes.
+    //
+    // In non-overlay routing mode, a separate IP track object is used to track
+    // reachability to each underlay destination IP that is configured from the
+    // controller over gRPC and is converted into a static IP route in Metaswitch.
+    // Each such tracked object will get its own indirect pathset but many or all
+    // of them could share the same direct pathset.
+    //
+    // In the overlay routing mode Metaswitch DC-EVPN requests
     // path to each remote Tunnel IP. All remote Tunnels are reachable via the
     // same set of immediate connected paths (ToRs) and hence end up sharing the
-    // same Direct Pathset. If Squashed mode is used then a separate Direct
-    // pathset would be created for each Tunnel.
+    // same Direct Pathset.
     //
-    // Squashed mode is ideal for the underlay routing case where only underlay
-    // routes are programmed to HAL. Unlinke Overlay routes underlay routes have
-    // the ToR itself as the NextHop.
-    // So in Cascaded mode FTM requests path to each nexthop for the default route
+    // If Squashed mode had been used in either of these cases then a separate
+    // Direct pathset would have been created for each Tunnel or IP tracked object.
+    //
+    // However in Cascaded mode for route prefixes directly learnt by underlay BGP
+    // (eg: default route received from ToR), MS FTM internally requests separate
+    // path to each nexthop learnt by BGP for the prefix.
     // PSM creates a separate Direct Pathset for each ToR and then returns an
     // Indirect Nexthop pointing to 2 separate Direct Pathsets. In this case HAL
     // would not have ECMP Nexthop Group.
-    // But in Squashed pathset mode, PSM returns a Direct pathset containing
-    // nexthops for each ToR which is ideal for us to program HAL.
+    // So if BGP underlay routes are required to be installed in the hardware
+    // then the Squashed pathset mode would be better fit since PSM returns a
+    // Direct pathset containing nexthops for each ToR which is ideal for us to
+    // program HAL.
     //
     PDS_TRACE_INFO ("NHPI registration Enable Cascaded pathsets");
     return ATG_NO;

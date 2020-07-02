@@ -7,6 +7,7 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
 #include "nic/metaswitch/stubs/mgmt/gen/svc/internal_gen.hpp"
 #include "gen/proto/internal_cp_route.pb.h"
 #include "nic/metaswitch/stubs/mgmt/gen/mgmt/pds_ms_internal_cp_route_utils_gen.hpp"
@@ -16,38 +17,47 @@ namespace pds_ms {
 static void
 release_ip_track_obj_ (const pds_obj_key_t& pds_obj_key)
 {
-    auto state_ctxt = state_t::thread_context();
-    auto state = state_ctxt.state();
+    obj_id_t pds_obj_id;
 
-    auto ip_track_obj = state->ip_track_store().get(pds_obj_key);
-    if (ip_track_obj == nullptr) return;
+    {
+        auto state_ctxt = state_t::thread_context();
+        auto state = state_ctxt.state();
 
-    auto indirect_ps_id = ip_track_obj->indirect_ps_id();
-    state->ip_track_internalip_store().
-        erase(ip_track_obj->internal_ip_prefix());
-    state->ip_track_store().erase(pds_obj_key);
+        auto ip_track_obj = state->ip_track_store().get(pds_obj_key);
+        if (ip_track_obj == nullptr) return;
 
-    auto indirect_ps_obj =
-        state->indirect_ps_store().get(indirect_ps_id);
-    if (indirect_ps_obj != nullptr) {
-        PDS_TRACE_DEBUG("Reset IP track Obj %s from indirect pathset %d",
-                        pds_obj_key.str(), indirect_ps_id);
-        indirect_ps_obj->del_ip_track_obj(pds_obj_key);
-        ip_track_obj->set_indirect_ps_id(PDS_MS_ECMP_INVALID_INDEX);
+        pds_obj_id = ip_track_obj->pds_obj_id();
+
+        auto indirect_ps_id = ip_track_obj->indirect_ps_id();
+        state->ip_track_internalip_store().
+            erase(ip_track_obj->internal_ip_prefix());
+        state->ip_track_store().erase(pds_obj_key);
+
+        auto indirect_ps_obj =
+            state->indirect_ps_store().get(indirect_ps_id);
+        if (indirect_ps_obj != nullptr) {
+            PDS_TRACE_DEBUG("Reset IP track Obj %s from indirect pathset %d",
+                            pds_obj_key.str(), indirect_ps_id);
+            indirect_ps_obj->del_ip_track_obj(pds_obj_key);
+            ip_track_obj->set_indirect_ps_id(PDS_MS_ECMP_INVALID_INDEX);
+        }
     }
+    // Invoke any cleanup required in HAL as part of delete
+    ip_track_reachability_delete(pds_obj_key, pds_obj_id);
 }
 
 static sdk_ret_t
 configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
                                   ip_addr_t& destip,
-                                  obj_id_t pds_obj_id, bool stop)
+                                  obj_id_t pds_obj_id, bool op_delete,
+                                  bool update = false)
 {
     CPStaticRouteSpec static_route_spec;
     ip_track_obj_t *ip_track_obj = nullptr;
     ip_prefix_t internal_ip_pfx;
     types::ApiStatus  ret;
 
-    if (!stop && destip.af != IP_AF_IPV4) {
+    if (!op_delete && destip.af != IP_AF_IPV4) {
         PDS_TRACE_ERR("Dest IP tracking is only supported for IPv4");
         return SDK_RET_INVALID_ARG;
     }
@@ -62,22 +72,23 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
             auto state = state_ctxt.state();
             ip_track_obj = state->ip_track_store().get(pds_obj_key);
 
-            if (ip_track_obj == nullptr && stop) {
-                PDS_TRACE_VERBOSE("Dest IP track %s stop entry not found",
+            if (ip_track_obj == nullptr && op_delete) {
+                PDS_TRACE_VERBOSE("Dest IP track %s delete - entry not found",
                                   pds_obj_key.str());
                 return SDK_RET_ENTRY_NOT_FOUND;
             }
-            if (ip_track_obj != nullptr && !stop) {
+            if (ip_track_obj != nullptr && !op_delete) {
                 if (IPADDR_EQ(&ip_track_obj->destip(), &destip)) {
                     PDS_TRACE_VERBOSE("UUID %s Dest IP track %s start entry already exists",
                                    pds_obj_key.str(), ipaddr2str(&destip));
                     return SDK_RET_ENTRY_EXISTS;
                 }
             }
-            if (stop) {
+            if (op_delete) {
                 destip = ip_track_obj->destip();
                 internal_ip_pfx = ip_track_obj->internal_ip_prefix();
                 pds_obj_id = ip_track_obj->pds_obj_id();
+                ip_track_obj->set_deleted(true);
             } else {
                 std::unique_ptr<ip_track_obj_t> ip_track_obj_uptr
                     (new ip_track_obj_t(pds_obj_key, destip, pds_obj_id));
@@ -91,7 +102,7 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
 
         PDS_TRACE_INFO("UUID %s Dest IP track %s %s internal ip %s OBJ ID %d",
                        pds_obj_key.str(), ipaddr2str(&destip),
-                       (stop) ? "stop" : "start",
+                       (op_delete) ? "delete" : "create",
                        ippfx2str(&internal_ip_pfx), pds_obj_id);
 
         // Route Table ID is unused since Static route is only supported
@@ -107,7 +118,7 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
         nh_addr_spec->set_af(types::IP_AF_INET);
         nh_addr_spec->set_v4addr(destip.addr.v4_addr);
 
-        if (!stop) {
+        if (!op_delete) {
             static_route_spec.set_admindist(10);
             static_route_spec.set_state(types::ADMIN_STATE_ENABLE);
             static_route_spec.set_override(true);
@@ -132,11 +143,12 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
         PDS_MS_END_TXN(correlator);
         ret = pds_ms::mgmt_state_t::ms_response_wait();
 
-        if (stop) {
+        if (op_delete) {
             release_ip_track_obj_(pds_obj_key);
         }
     } catch (const pds_ms::Error& e) {
-        if (!stop) {
+        if (!update) {
+            // Release the IP track object when create or delete fails
             release_ip_track_obj_(pds_obj_key);
         }
         PDS_TRACE_ERR ("Dest IP track %s failed %s CTM Transaction aborted",
@@ -145,15 +157,15 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
     }
 
     if (ret != types::API_STATUS_OK) {
-        if (!stop) {
+        if (!op_delete) {
             release_ip_track_obj_(pds_obj_key);
         }
         PDS_TRACE_ERR ("Dest IP track %s internal route %s failed %s",
-                        ipaddr2str(&destip), (stop) ? "delete" : "create",
+                        ipaddr2str(&destip), (op_delete) ? "delete" : "create",
                         pds_ms_api_ret_str(ret));
     } else {
         PDS_TRACE_DEBUG ("Dest IP track %s internal route %s successful",
-                        ipaddr2str(&destip), (stop) ? "delete" : "create");
+                        ipaddr2str(&destip), (op_delete) ? "delete" : "create");
     }
     return pds_ms_api_to_sdk_ret(ret);
 }
@@ -165,7 +177,7 @@ ip_track_add (const pds_obj_key_t& pds_obj_key, ip_addr_t& destip,
 {
     std::lock_guard<std::mutex> lck(pds_ms::mgmt_state_t::grpc_lock());
     return configure_static_tracking_route_(pds_obj_key, destip, pds_obj_id,
-                                            false);
+                                            false, op_update);
 }
 
 // API called when a Dest IP no longer needs to be tracked

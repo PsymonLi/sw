@@ -93,6 +93,7 @@ static void create_device_proto_grpc (bool overlay_routing = true) {
     pds_device_spec_t device_spec = {0};
 
     device_spec.overlay_routing_en = (overlay_routing) ? TRUE : FALSE;
+    device_spec.dev_oper_mode = PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
     device_spec.device_ip_addr.af  = types::IP_AF_INET;
     device_spec.device_ip_addr.addr.v4_addr = (g_test_conf_.local_lo_ip_addr);
     device_spec.gateway_ip_addr.af          = types::IP_AF_INET;
@@ -1150,6 +1151,8 @@ int main(int argc, char** argv)
         if (!underlay_only || g_node_id == 1) {
             // Create loopback intf for TEP IP on PDSA
             // Create dummy interface in Pegasus as well to use as Nexthop for Static default route
+            //create_intf_proto_grpc(true /*loopback*/, false, false, true);
+            //create_intf_proto_grpc(true /*loopback*/, false, true);
             create_intf_proto_grpc(true /*loopback*/);
         }
         if (g_node_id == 2 && !underlay_only) {

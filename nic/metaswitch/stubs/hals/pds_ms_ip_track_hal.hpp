@@ -12,9 +12,12 @@ namespace pds_ms {
 // Call-back from MS underlay route update
 sdk_ret_t
 ip_track_reachability_change (const pds_obj_key_t& pds_obj_key,
-                              ip_addr_t& destip,
+                              const ip_addr_t& destip,
 							  ms_hw_tbl_id_t nhgroup_id,
 							  obj_id_t pds_obj_id);
+sdk_ret_t
+ip_track_reachability_delete (const pds_obj_key_t& pds_obj_key,
+                              obj_id_t pds_obj_id);
 
 } // End namespace
 

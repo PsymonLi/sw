@@ -201,20 +201,17 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
             pds_obj_key = ip_track_obj->pds_obj_key();
             destip = ip_track_obj->destip();
             pds_obj_id = ip_track_obj->pds_obj_id();
+            if (ip_track_obj->deleted()) {
+                PDS_TRACE_DEBUG("Ignore route update for delete ip rtacked object");
+                return SDK_RET_OK;
+            }
             tracked = true;
 
-            auto mgmt_ctxt = mgmt_state_t::thread_context();
-            // TODO - for now cascaded mode and indirect pathsets are only
-            // used for overlay routing enabled mode. Remove check later
-            // when we switch to cascaded mode for ovelay routing dis as well.
-            if (mgmt_ctxt.state()->overlay_routing_en()) {
-                // Add to back-ref: indirect pathset -> list of ip-track obj uuids
-                auto nhgroup_id =
-                    state_lookup_indirect_ps_and_map_ip(state,ips_info_.pathset_id,
-                                                        destip, false, pds_obj_key);
-                ip_track_obj->set_indirect_ps_id(ips_info_.pathset_id);
-                ips_info_.ecmp_id = nhgroup_id;
-            }
+            auto nhgroup_id =
+                state_lookup_indirect_ps_and_map_ip(state,ips_info_.pathset_id,
+                                                    destip, false, pds_obj_key);
+            ip_track_obj->set_indirect_ps_id(ips_info_.pathset_id);
+            ips_info_.ecmp_id = nhgroup_id;
         }
     }
 
@@ -226,7 +223,10 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
                                             ips_info_.ecmp_id, pds_obj_id);
     }
 
-    // No underlay route programming to HAL
+    // No underlay route programming to HAL.
+    // Underlay IP route programming to HAL requires Squashed mode to get the
+    // correct NH Group.
+    // Refer comment in pds_ms_hals_l3.cc
     return SDK_RET_OK;
 }
 
@@ -256,6 +256,13 @@ sdk_ret_t hals_route_t::underlay_route_del_() {
                     // We can also reach here when tracking is deleted for an object
                     // in which case nothing to do here. Need to differentiate between
                     // these 2 cases.
+                }
+                if (!ip_track_obj->deleted()) {
+                    // Reachability lost as opposed to IP track object delete.
+                    // Need to blackhole the object.
+                    ip_track_reachability_change(pds_obj_key, ip_track_obj->destip(),
+                                                 PDS_MS_ECMP_INVALID_INDEX, 
+                                                 ip_track_obj->pds_obj_id());
                 }
             }
         }
@@ -374,10 +381,12 @@ hals_route_t::handle_add_upd_ips(ATG_ROPI_UPDATE_ROUTE* add_upd_route_ips)
     }
 
     PDS_TRACE_DEBUG("Route Add IPS VRF %d Prefix %s Type %d Pathset %d"
-                    " Overlay NHgroup %d",
+                    " %s NHgroup %d",
                      ips_info_.vrf_id, ippfx2str(&ips_info_.pfx),
                      add_upd_route_ips->route_properties.type,
-                     ips_info_.pathset_id, ips_info_.ecmp_id);
+                     ips_info_.pathset_id,
+                     (ips_info_.vrf_id == PDS_MS_DEFAULT_VRF_ID) ? "underlay" : "overlay",
+                     ips_info_.ecmp_id);
 
     if (ips_info_.vrf_id == PDS_MS_DEFAULT_VRF_ID) {
         // We should not reach here in Overlay routing mode.

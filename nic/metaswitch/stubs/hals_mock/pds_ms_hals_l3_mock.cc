@@ -5,6 +5,7 @@
 
 #include <hals_c_includes.hpp>
 #include "nic/metaswitch/stubs/hals/pds_ms_hals_l3.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
 
 namespace pds_ms {
 
@@ -43,6 +44,12 @@ NBB_BYTE hals_l3_integ_subcomp_t::ropi_delete_route(ATG_ROPI_ROUTE_ID route_id) 
 }
 NBB_BYTE hals_l3_integ_subcomp_t::nhpi_squash_cascaded_hops() { 
     return ATG_NO;
+}
+
+sdk_ret_t
+ip_track_reachability_delete (const pds_obj_key_t& pds_obj_key,
+                              obj_id_t pds_obj_id) {
+    return SDK_RET_OK;
 }
 
 } // End namespace
