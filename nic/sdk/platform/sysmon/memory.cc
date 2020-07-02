@@ -389,11 +389,11 @@ memory_threshold_cfg_init (void)
 /*
  * Checks memory usage % for each path in sysmon_memory_threshold_cfg_t.
  * If curr memory usage crosses above threshold,
- *       ==> raise SYSMON_MEM_PARTITION_USAGE_ABOVE_THRESHOLD
+ *       ==> raise SYSMON_FILESYSTEM_USAGE_ABOVE_THRESHOLD
  * If curr memory usage crosses below threshold,
- *       ==> raise SYSMON_MEM_PARTITION_USAGE_BELOW_THRESHOLD
+ *       ==> raise SYSMON_FILESYSTEM_USAGE_BELOW_THRESHOLD
  * If there is no crossover,
- *       ==> raise SYSMON_MEM_PARTITION_USAGE_NONE
+ *       ==> raise SYSMON_FILESYSTEM_USAGE_NONE
  */
 void
 check_memory_threshold (void)
@@ -404,7 +404,7 @@ check_memory_threshold (void)
     uint64_t    curr_mem_usage;
     sysmon_memory_threshold_cfg_t    *cfg = g_sysmon_cfg.memory_threshold_cfg;
     memory_threshold_cfg_internal_t  *mem_cfg;
-    sysmon_mem_threshold_event_t     event;
+    sysmon_filesystem_threshold_event_t event;
 
     if (cfg == NULL) {
         return;
@@ -431,12 +431,12 @@ check_memory_threshold (void)
             curr_mem_usage = strtoul(psline, NULL, 10);
             if ((curr_mem_usage >= mem_cfg->mem_threshold) &&
                 (mem_cfg->prev_mem_usage < mem_cfg->mem_threshold)) {
-                event = SYSMON_MEM_PARTITION_USAGE_ABOVE_THRESHOLD;
+                event = SYSMON_FILESYSTEM_USAGE_ABOVE_THRESHOLD;
             } else if ((curr_mem_usage < mem_cfg->mem_threshold) &&
                 (mem_cfg->prev_mem_usage >= mem_cfg->mem_threshold)) {
-                event = SYSMON_MEM_PARTITION_USAGE_BELOW_THRESHOLD;
+                event = SYSMON_FILESYSTEM_USAGE_BELOW_THRESHOLD;
             } else {
-                event = SYSMON_MEM_PARTITION_USAGE_NONE;
+                event = SYSMON_FILESYSTEM_USAGE_NONE;
             }
             mem_cfg->prev_mem_usage = curr_mem_usage;
             g_sysmon_cfg.memory_threshold_event_cb(event, cfg[i].path.c_str(),

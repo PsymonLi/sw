@@ -290,13 +290,13 @@ enum EventTypes {
                                            (severity)    = CRITICAL,
                                            (desc)        = "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support."];
 
-     DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD = 517 [(category) = System,
-                                                    (severity) = CRITICAL,
-                                                    (desc) = "Memory usage of the partition is above threshold percentage"];
+    DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD = 517 [(category) = System,
+                                                (severity) = CRITICAL,
+                                                (desc) = "Usage of the filesystem partition is above threshold"];
 
-     DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD = 518 [(category) = System,
-                                                    (severity) = INFO,
-                                                    (desc) = "Memory usage of the partition is below threshold percentage"];
+    DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD = 518 [(category) = System,
+                                                (severity) = INFO,
+                                                (desc) = "Usage of the filesystem partition is below threshold"];
 
     MEM_TEMP_ABOVE_THRESHOLD        = 519 [(category)    = System,
                                            (severity)    = CRITICAL,

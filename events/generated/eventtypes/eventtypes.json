@@ -386,14 +386,14 @@
  ],
  "system": [
   {
-   "Name": "DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD",
+   "Name": "DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD",
    "Severity": "critical",
-   "Desc": "Memory usage of the partition is above threshold percentage"
+   "Desc": "Usage of the filesystem partition is above threshold"
   },
   {
-   "Name": "DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD",
+   "Name": "DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD",
    "Severity": "info",
-   "Desc": "Memory usage of the partition is below threshold percentage"
+   "Desc": "Usage of the filesystem partition is below threshold"
   },
   {
    "Name": "FLOWLOGS_DROPPED",

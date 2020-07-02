@@ -30,10 +30,10 @@ typedef enum {
 } sysmon_pciehealth_severity_t;
 
 typedef enum {
-    SYSMON_MEM_PARTITION_USAGE_NONE = 0,
-    SYSMON_MEM_PARTITION_USAGE_ABOVE_THRESHOLD,
-    SYSMON_MEM_PARTITION_USAGE_BELOW_THRESHOLD,
-} sysmon_mem_threshold_event_t;
+    SYSMON_FILESYSTEM_USAGE_NONE = 0,
+    SYSMON_FILESYSTEM_USAGE_ABOVE_THRESHOLD,
+    SYSMON_FILESYSTEM_USAGE_BELOW_THRESHOLD,
+} sysmon_filesystem_threshold_event_t;
 
 typedef struct systemled_s {
     sysmond_led_event_t event;
@@ -64,7 +64,7 @@ typedef void (*postdiag_event_cb_t)(void);
 typedef void (*liveness_event_cb_t)(void);
 typedef void (*pciehealth_event_cb_t)(sysmon_pciehealth_severity_t sev,
                                       const char *reason);
-typedef void (*memory_threshold_event_cb_t)(sysmon_mem_threshold_event_t event,
+typedef void (*memory_threshold_event_cb_t)(sysmon_filesystem_threshold_event_t event,
                                             const char *path,
                                             uint32_t threshold_percent);
 

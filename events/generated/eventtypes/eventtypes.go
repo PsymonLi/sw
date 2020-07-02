@@ -412,18 +412,18 @@ func init() {
 		Desc:       "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support.",
 		SuppressMM: false}
 
-	eventTypes[DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD] = &EventTypeAttributes{
-		EType:      DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD.String(),
+	eventTypes[DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD] = &EventTypeAttributes{
+		EType:      DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "Memory usage of the partition is above threshold percentage",
+		Desc:       "Usage of the filesystem partition is above threshold",
 		SuppressMM: false}
 
-	eventTypes[DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD] = &EventTypeAttributes{
-		EType:      DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD.String(),
+	eventTypes[DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD] = &EventTypeAttributes{
+		EType:      DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD.String(),
 		Severity:   "info",
 		Category:   "system",
-		Desc:       "Memory usage of the partition is below threshold percentage",
+		Desc:       "Usage of the filesystem partition is below threshold",
 		SuppressMM: false}
 
 	eventTypes[MEM_TEMP_ABOVE_THRESHOLD] = &EventTypeAttributes{

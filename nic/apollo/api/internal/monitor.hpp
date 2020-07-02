@@ -202,23 +202,23 @@ pciehealth_event_cb (sysmon_pciehealth_severity_t sev, const char *reason)
 }
 
 void
-memory_threshold_event_cb (sysmon_mem_threshold_event_t event,
+memory_threshold_event_cb (sysmon_filesystem_threshold_event_t event,
                            const char *path, uint32_t threshold_percent)
 {
     char event_log[512];
 
-    if (event == SYSMON_MEM_PARTITION_USAGE_ABOVE_THRESHOLD) {
+    if (event == SYSMON_FILESYSTEM_USAGE_ABOVE_THRESHOLD) {
         snprintf(event_log, sizeof(event_log),
                  "%s is above memory usage threshold of %u percent", path,
                  threshold_percent);
         operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD, event_log);
-    } else if (event == SYSMON_MEM_PARTITION_USAGE_BELOW_THRESHOLD) {
+            operd::alerts::DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD, event_log);
+    } else if (event == SYSMON_FILESYSTEM_USAGE_BELOW_THRESHOLD) {
         snprintf(event_log, sizeof(event_log),
                  "%s is below memory usage threshold of %u percent", path,
                  threshold_percent);
         operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD, event_log);
+            operd::alerts::DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD, event_log);
     }
 }
 

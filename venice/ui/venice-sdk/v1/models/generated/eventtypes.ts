@@ -93,8 +93,8 @@ export const categoryToEventType: { [cat: string]: string[] } = {
     'ROLLOUT_SUSPENDED',
   ],
   system: [
-    'DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD',
-    'DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD',
+    'DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD',
+    'DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD',
     'FLOWLOGS_DROPPED',
     'FLOWLOGS_RATE_LIMITED',
     'FLOWLOGS_REPORTING_ERROR',
@@ -496,15 +496,15 @@ export const eventTypes: { [name: string]: EventType } = {
       "Severity": EventsEvent_severity.info,
       "Desc": "Rollout suspended",
   },
-  'DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD' : {
-      "Name": "DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD",
+  'DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD' : {
+      "Name": "DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Memory usage of the partition is above threshold percentage",
+      "Desc": "Usage of the filesystem partition is above threshold",
   },
-  'DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD' : {
-      "Name": "DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD",
+  'DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD' : {
+      "Name": "DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD",
       "Severity": EventsEvent_severity.info,
-      "Desc": "Memory usage of the partition is below threshold percentage",
+      "Desc": "Usage of the filesystem partition is below threshold",
   },
   'FLOWLOGS_DROPPED' : {
       "Name": "FLOWLOGS_DROPPED",
