@@ -365,19 +365,25 @@ pds_upgrade_repeal_hdlr (sdk::upg::upg_ev_params_t *params)
     return pds_upgrade(params);
 }
 
+static sdk_ret_t
+pds_upgrade_dummy (sdk::upg::upg_ev_params_t *params)
+{
+    return SDK_RET_IN_PROGRESS;
+}
+
 static void
 upg_ev_fill (sdk::upg::upg_ev_t *ev)
 {
     ev->svc_ipc_id = core::PDS_THREAD_ID_UPGRADE;
     strncpy(ev->svc_name, "pdsagent", sizeof(ev->svc_name));
-    ev->compat_check_hdlr = pds_upgrade;
+    ev->compat_check_hdlr = pds_upgrade_dummy;
     ev->start_hdlr = pds_upgrade_start_hdlr;
     ev->backup_hdlr = pds_upgrade;
     ev->prepare_hdlr = pds_upgrade;
     ev->pre_switchover_hdlr = pds_upgrade;
     ev->switchover_hdlr = pds_upgrade;
     ev->rollback_hdlr = pds_upgrade;
-    ev->ready_hdlr = pds_upgrade;
+    ev->ready_hdlr = pds_upgrade_dummy;
     ev->config_replay_hdlr = pds_upgrade;
     ev->sync_hdlr = pds_upgrade;
     ev->repeal_hdlr = pds_upgrade_repeal_hdlr;

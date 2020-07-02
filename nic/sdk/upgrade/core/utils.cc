@@ -48,7 +48,6 @@ svc_sequence_to_str (const svc_sequence_list svcs)
     if (!str.empty()) {
         str.pop_back();
         str.pop_back();
-        str.pop_back();
     }
     return str;
 }

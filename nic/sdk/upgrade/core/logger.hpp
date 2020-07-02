@@ -108,9 +108,17 @@ extern const char *g_upg_log_pfx;
                     svc, status, stage);
 
 #define LOG_STAGE_START(evseq_type, svcs, timeout, domain)                     \
-    UPG_TRACE_INFO("Triggering %s event sequence to service(es) %s, "          \
-                    "timeout %f in domain %s", evseq_type, svcs, timeout,      \
-                    domain);
+{                                                                              \
+    if (strcmp(domain, "A") == 0) {                                            \
+        UPG_TRACE_INFO("Triggering %s event sequence to service(es) %s, "      \
+                       "timeout %f in domain %s", evseq_type, svcs, timeout,   \
+                       domain);                                                \
+    } else {                                                                   \
+        UPG_TRACE_INFO("Triggering %s event sequence to service(es), "         \
+                       "timeout %f in domain %s", evseq_type, timeout, domain);\
+    }                                                                          \
+}
+
 
 }    // namespace upg
 }    // namespace sdk
