@@ -129,8 +129,6 @@ mirror_session_feeder::spec_compare(
             (spec->erspan_spec.vlan_strip_en !=
              this->spec.erspan_spec.vlan_strip_en))
             return false;
-        // @sarat we can uncomment below code post the hw_id_ fix
-        /*
         if ((spec->erspan_spec.vpc != this->spec.erspan_spec.vpc) ||
             (spec->erspan_spec.dscp != this->spec.erspan_spec.dscp) ||
             (spec->erspan_spec.span_id != this->spec.erspan_spec.span_id))
@@ -144,7 +142,6 @@ mirror_session_feeder::spec_compare(
                 return false;
             }
         }
-        */
     }
     return true;
 }

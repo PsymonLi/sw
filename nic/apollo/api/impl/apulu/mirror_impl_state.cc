@@ -49,6 +49,7 @@ mirror_impl_state::alloc_hw_id(pds_obj_key_t *key, uint16_t *hw_id) {
         for (uint8_t i = 0; i < PDS_MAX_MIRROR_SESSION; i++) {
             if (!(session_bmap_ & (1 << i))) {
                 *hw_id = i;
+                session_bmap_ |= (1<<i);
                 return SDK_RET_OK;
             }
         }
@@ -61,7 +62,7 @@ mirror_impl_state::free_hw_id(uint16_t hw_id) {
     if (hw_id >= PDS_MAX_MIRROR_SESSION) {
         return SDK_RET_INVALID_ARG;
     }
-    hw_id &= ~(1 << hw_id);
+    session_bmap_ &= ~(1 << hw_id);
     return SDK_RET_OK;
 }
 
