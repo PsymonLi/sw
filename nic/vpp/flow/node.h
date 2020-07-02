@@ -621,7 +621,8 @@ always_inline void pds_session_set_data(u32 ses_id, u64 i_handle, u64 r_handle,
                                         pds_flow_protocol proto,
                                         uint8_t vnic_id, bool v4,
                                         bool host_origin, u8 packet_type,
-                                        bool drop, u8 thread_id)
+                                        bool drop, u8 thread_id,
+                                        bool napt)
 {
     pds_flow_main_t *fm = &pds_flow_main;
 
@@ -636,12 +637,7 @@ always_inline void pds_session_set_data(u32 ses_id, u64 i_handle, u64 r_handle,
     data->src_vnic_id = vnic_id;
     data->iflow_rx = host_origin;
     data->packet_type = packet_type;
-    if (PREDICT_FALSE(data->packet_type == PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAT ||
-        data->packet_type == PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAPT)) {
-        data->nat = 1;
-    } else {
-        data->nat = 0;
-    }
+    data->nat = napt;
     data->drop = drop;
     data->thread_id = thread_id;
     //pds_flow_prog_unlock();

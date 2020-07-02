@@ -1243,7 +1243,7 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
                              true, pds_is_rx_pkt(p0),
                              vnet_buffer(p0)->pds_flow_data.packet_type,
                              pds_is_flow_drop(p0),
-                             thread_index);
+                             thread_index, pds_is_flow_napt_en(p0));
         counter[FLOW_PROG_COUNTER_FLOW_SUCCESS]++;
         next[i/2] = pds_flow_prog_get_next_node();
         ftlv4_cache_log_session(i, i+1, FLOW_EXPORT_REASON_ADD, thread_index);
@@ -1326,7 +1326,7 @@ pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter,
                              false, pds_is_rx_pkt(p0),
                              vnet_buffer(p0)->pds_flow_data.packet_type,
                              pds_is_flow_drop(p0),
-                             thread_index);
+                             thread_index, pds_is_flow_napt_en(p0));
         counter[FLOW_PROG_COUNTER_FLOW_SUCCESS]++;
         next[i/2] = pds_flow_prog_get_next_node();
         ftlv6_cache_log_session(i, i+1, FLOW_EXPORT_REASON_ADD);
