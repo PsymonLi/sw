@@ -26,10 +26,12 @@
 <ng-template #actionButtonsTemplate>
   <div fxFlex="none" fxLayoutAlign="start center">
     <!-- TABLE FUNCTION ICONS HERE -->
-    <mat-icon class="global-multi-records-delete-icon"
-              *ngIf="areSelectedRowsDeletable()"
-              [matTooltip]="'Delete selected hosts'"
-              (click)="onDeleteSelectedRows($event)">delete</mat-icon>
+    <div *roleGuard="'clusterhost_delete'">
+      <mat-icon class="global-multi-records-delete-icon"
+                *ngIf="areSelectedRowsDeletable()"
+                [matTooltip]="'Delete selected hosts'"
+                (click)="onDeleteSelectedRows($event)">delete</mat-icon>
+    </div>
   </div>
 
 </ng-template>

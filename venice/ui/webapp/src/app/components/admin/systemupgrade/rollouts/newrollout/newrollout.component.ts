@@ -971,7 +971,7 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
       if (ret === null) {
         break; // since all rules are 'AND'ed together. If one matches nothing, we dont have to check for the rest.
       }
-      if (matchRule[1] === 'in') {
+      if (matchRule[1] === 'in' || matchRule[1] === 'equals') {
         if (naplesNICSet === null) {
           naplesNICSet = Array.from(ret);
         }

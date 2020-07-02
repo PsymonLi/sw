@@ -88,7 +88,7 @@ export class SearchUtil {
 
   public static booleanOperators = [
     { label: 'equals', value: 'equals' },
-    { label: 'not equals', value: 'not equals' }
+    { label: 'not equals', value: 'notequals' }
   ];
 
   /**
