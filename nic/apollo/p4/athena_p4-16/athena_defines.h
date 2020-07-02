@@ -86,6 +86,19 @@
 #define P4E_DROP_REASON_MAX             P4E_DROP_POLICER
 
 /*****************************************************************************/
+/* redir reasons - these are bit positions to be used in ASM                  */
+/*****************************************************************************/
+#define P4I_REDIR_FLOW_MISS              0
+#define P4I_REDIR_MAC_FLOW_MISS          1
+#define P4I_REDIR_REASON_MIN             P4I_REDIR_FLOW_MISS
+#define P4I_REDIR_REASON_MAX             P4I_REDIR_MAC_FLOW_MISS
+
+#define P4E_REDIR_NACL                   0
+#define P4E_REDIR_CONNTRACK              1
+#define P4E_REDIR_REASON_MIN              P4E_REDIR_NACL
+#define P4E_REDIR_REASON_MAX              P4E_REDIR_CONNTRACK
+
+/*****************************************************************************/
 /* VNIC Type                                                                 */
 /*****************************************************************************/
 #define P4_VNIC_TYPE_L3                         0

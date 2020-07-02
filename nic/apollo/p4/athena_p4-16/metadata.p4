@@ -154,6 +154,8 @@ struct control_metadata_t {
 	bit<14> tx_packet_len;
 	bit<32> p4i_drop_reason;
 	bit<32> p4e_drop_reason;
+	bit<16> p4i_redir_reason;
+	bit<16> p4e_redir_reason;
 
         // NACL Results
 	bit<1> redir_type;

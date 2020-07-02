@@ -232,7 +232,7 @@ setup_l2_flow_v4_conntrack_tcp(void)
         return ret;
     }
 
-
+    /*
     ret = create_flow_v6_tcp_udp (g_tcp_vnic_id, &g_h2s_sipv6, &g_h2s_dipv6,
             g_h2s_proto, g_h2s_sport, g_h2s_dport,
             PDS_FLOW_SPEC_INDEX_CONNTRACK, g_conntrack_index);
@@ -241,7 +241,7 @@ setup_l2_flow_v4_conntrack_tcp(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
-
+    */
 
     /* setup udp flow */
 
@@ -2125,196 +2125,6 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-   /*  OPEN_CONN_SENT STATE  */
-   /* program flow state OPEN_CONN_SENT, S2H flag='R', expected RST_CLOSE */
-    p_flow_state = OPEN_CONN_SENT;
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet("TCP-L2-IPv4: OPEN_CONN_SENT s2h R pkt", g_snd_pkt_ipv4_tcp_s2h_r,
-            sizeof(g_snd_pkt_ipv4_tcp_s2h_r), g_s_port,
-    g_rcv_pkt_ipv4_tcp_s2h_r, sizeof(g_rcv_pkt_ipv4_tcp_s2h_r), g_h_port);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = RST_CLOSE;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    /* program flow state OPEN_CONN_SENT, H2S flag='R', expected RST_CLOSE */
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet_wmask("TCP-L2-IPv4: OPEN_CONN_SENT h2s R pkt", g_snd_pkt_ipv4_tcp_h2s_r,
-            sizeof(g_snd_pkt_ipv4_tcp_h2s_r), g_h_port,
-			    g_rcv_pkt_ipv4_tcp_h2s_r, sizeof(g_rcv_pkt_ipv4_tcp_h2s_r), g_s_port, mask_start_pos);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = RST_CLOSE;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-    
-    /* program flow state OPEN_CONN_SENT, H2S flag='F', expected FIN_SENT */
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet_wmask("TCP-L2-IPv4: OPEN_CONN_SENT h2s F pkt", g_snd_pkt_ipv4_tcp_h2s_f,
-            sizeof(g_snd_pkt_ipv4_tcp_h2s_f), g_h_port,
-			    g_rcv_pkt_ipv4_tcp_h2s_f, sizeof(g_rcv_pkt_ipv4_tcp_h2s_f), g_s_port, mask_start_pos);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = FIN_SENT;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    /* program flow state OPEN_CONN_SENT, S2H flag='F', expected FIN_RECV */
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet("TCP-L2-IPv4: OPEN_CONN_SENT s2h F pkt", g_snd_pkt_ipv4_tcp_s2h_f,
-            sizeof(g_snd_pkt_ipv4_tcp_s2h_f), g_s_port,
-			    g_rcv_pkt_ipv4_tcp_s2h_f, sizeof(g_rcv_pkt_ipv4_tcp_s2h_f), g_h_port);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = FIN_RECV;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    /* program flow state OPEN_CONN_SENT, S2H flag='A', expected ESTABLISHED */
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet("TCP-L2-IPv4: OPEN_CONN_SENT s2h A pkt", g_snd_pkt_ipv4_tcp_s2h_a,
-            sizeof(g_snd_pkt_ipv4_tcp_s2h_a), g_s_port,
-			    g_rcv_pkt_ipv4_tcp_s2h_a, sizeof(g_rcv_pkt_ipv4_tcp_s2h_a), g_h_port);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = ESTABLISHED;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-   /*  OPEN_CONN_RECV STATE  */
-    /* program flow state OPEN_CONN_RECV, S2H flag='R', expected RST_CLOSE */
-    p_flow_state = OPEN_CONN_RECV;
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet("TCP-L2-IPv4: OPEN_CONN_RECV s2h R pkt", g_snd_pkt_ipv4_tcp_s2h_r,
-            sizeof(g_snd_pkt_ipv4_tcp_s2h_r), g_s_port,
-    g_rcv_pkt_ipv4_tcp_s2h_r, sizeof(g_rcv_pkt_ipv4_tcp_s2h_r), g_h_port);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = RST_CLOSE;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    /* program flow state OPEN_CONN_RECV, H2S flag='R', expected RST_CLOSE */
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet_wmask("TCP-L2-IPv4: OPEN_CONN_RECV h2s R pkt", g_snd_pkt_ipv4_tcp_h2s_r,
-            sizeof(g_snd_pkt_ipv4_tcp_h2s_r), g_h_port,
-			    g_rcv_pkt_ipv4_tcp_h2s_r, sizeof(g_rcv_pkt_ipv4_tcp_h2s_r), g_s_port, mask_start_pos);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = RST_CLOSE;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-    
-    /* program flow state OPEN_CONN_RECV, H2S flag='F', expected FIN_SENT */
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet_wmask("TCP-L2-IPv4: OPEN_CONN_RECV h2s F pkt", g_snd_pkt_ipv4_tcp_h2s_f,
-            sizeof(g_snd_pkt_ipv4_tcp_h2s_f), g_h_port,
-			    g_rcv_pkt_ipv4_tcp_h2s_f, sizeof(g_rcv_pkt_ipv4_tcp_h2s_f), g_s_port, mask_start_pos);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = FIN_SENT;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    /* program flow state OPEN_CONN_RECV, S2H flag='F', expected FIN_RECV */
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet("TCP-L2-IPv4: OPEN_CONN_RECV s2h F pkt", g_snd_pkt_ipv4_tcp_s2h_f,
-            sizeof(g_snd_pkt_ipv4_tcp_s2h_f), g_s_port,
-			    g_rcv_pkt_ipv4_tcp_s2h_f, sizeof(g_rcv_pkt_ipv4_tcp_s2h_f), g_h_port);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = FIN_RECV;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    /* program flow state OPEN_CONN_RECV, H2S flag='A', expected ESTABLISHED */
-    ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    ret = send_packet_wmask("TCP-L2-IPv4: OPEN_CONN_RECV h2s A pkt", g_snd_pkt_ipv4_tcp_h2s_a,
-            sizeof(g_snd_pkt_ipv4_tcp_h2s_a), g_h_port,
-			    g_rcv_pkt_ipv4_tcp_h2s_a, sizeof(g_rcv_pkt_ipv4_tcp_h2s_a), g_s_port, mask_start_pos);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
-    e_flow_state = ESTABLISHED;
-    ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
     }
@@ -2330,7 +2140,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
     }
 
     h2s_allowed_flow_state = 0x3FF & (~(1 << PDS_FLOW_STATE_SYN_SENT));
-    s2h_allowed_flow_state = (1 << PDS_FLOW_STATE_SYN_SENT);
+    s2h_allowed_flow_state = (1 << PDS_FLOW_STATE_SYNACK_RECV);
 
     ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
 					h2s_allowed_flow_state, s2h_allowed_flow_state);
@@ -2348,14 +2158,14 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    /* program flow state SYN_SENT, !allowed_flow_state,  H2S flag='R', expected  SYN_SENT*/
+    /* program flow state SYN_SENT, !allowed_flow_state,  H2S flag='A', expected  SYNACK_RECV*/
     ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
-    ret = send_packet_wmask("TCP-L2-IPv4: NOT ALLOWED, SYN_SENT h2s R pkt", g_snd_pkt_ipv4_tcp_h2s_r,
-            sizeof(g_snd_pkt_ipv4_tcp_h2s_r), g_h_port,
+    ret = send_packet_wmask("TCP-L2-IPv4: NOT ALLOWED, SYN_SENT h2s A pkt", g_snd_pkt_ipv4_tcp_h2s_a,
+            sizeof(g_snd_pkt_ipv4_tcp_h2s_a), g_h_port,
 			    NULL, 0, 0, mask_start_pos);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2368,15 +2178,15 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
     }
     
     /*  SYN_RECV STATE  */
-    /* program flow state SYN_RECV, !allowed, h2s  flag='SA', expected SYN_RECV */
+    /* program flow state SYN_RECV, !allowed, h2s  flag='SA', expected SYNACK_SENT */
     p_flow_state = PDS_FLOW_STATE_SYN_RECV;
     ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
-    h2s_allowed_flow_state = 0x3FF & (~(1 << PDS_FLOW_STATE_SYN_RECV));
-    s2h_allowed_flow_state = (1 << PDS_FLOW_STATE_SYN_RECV);
+    h2s_allowed_flow_state = 0x3FF & (~(1 << PDS_FLOW_STATE_SYNACK_SENT));
+    s2h_allowed_flow_state = (1 << PDS_FLOW_STATE_SYNACK_SENT);
 
     ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
 					h2s_allowed_flow_state, s2h_allowed_flow_state);
@@ -2388,7 +2198,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    e_flow_state = PDS_FLOW_STATE_SYN_RECV;
+    e_flow_state = PDS_FLOW_STATE_SYNACK_SENT;
     ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2414,15 +2224,15 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
     }
 
     /*  SYNACK_SENT STATE  */
-    /* program flow state SYNACK_SENT, !allowed, S2H flag='A', expected SYNACK_SENT */
+    /* program flow state SYNACK_SENT, !allowed, S2H flag='A', expected ESTABLISHED */
     p_flow_state = PDS_FLOW_STATE_SYNACK_SENT;
     ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
-    h2s_allowed_flow_state = (1 << PDS_FLOW_STATE_SYNACK_SENT);;
-    s2h_allowed_flow_state = 0x3FF & (~(1 << PDS_FLOW_STATE_SYNACK_SENT));
+    h2s_allowed_flow_state = (1 << ESTABLISHED);
+    s2h_allowed_flow_state = 0x3FF & (~(1 << ESTABLISHED));
 
     ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
 					h2s_allowed_flow_state, s2h_allowed_flow_state);
@@ -2434,7 +2244,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    e_flow_state = PDS_FLOW_STATE_SYNACK_SENT;
+    e_flow_state = ESTABLISHED;
     ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2445,6 +2255,12 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
+
+    h2s_allowed_flow_state = (1 << RST_CLOSE);
+    s2h_allowed_flow_state = 0x3FF & (~(1 << RST_CLOSE));
+
+    ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
+					h2s_allowed_flow_state, s2h_allowed_flow_state);
 
     ret = send_packet_wmask("TCP-L2-IPv4: ALLOWED SYNACK_SENT h2s R pkt", g_snd_pkt_ipv4_tcp_h2s_r,
             sizeof(g_snd_pkt_ipv4_tcp_h2s_r), g_h_port,
@@ -2467,8 +2283,8 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    h2s_allowed_flow_state = (1 << PDS_FLOW_STATE_SYNACK_RECV);
-    s2h_allowed_flow_state = 0x3FF & (~(1 << PDS_FLOW_STATE_SYNACK_RECV));
+    h2s_allowed_flow_state = (1 << ESTABLISHED);
+    s2h_allowed_flow_state = 0x3FF & (~(1 << ESTABLISHED));
 
     ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
 					h2s_allowed_flow_state, s2h_allowed_flow_state);
@@ -2489,6 +2305,12 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
+    h2s_allowed_flow_state = (1 << RST_CLOSE);
+    s2h_allowed_flow_state = 0x3FF & (~(1 << RST_CLOSE));
+
+    ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
+					h2s_allowed_flow_state, s2h_allowed_flow_state);
+
     ret = send_packet("TCP-L2-IPv4: SYNACK_RECV !ALLOWED, s2h R pkt", g_snd_pkt_ipv4_tcp_s2h_r,
             sizeof(g_snd_pkt_ipv4_tcp_s2h_r), g_s_port,
     NULL, 0, g_h_port);
@@ -2496,7 +2318,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    e_flow_state = PDS_FLOW_STATE_SYNACK_RECV;
+    e_flow_state = RST_CLOSE;
     ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2510,8 +2332,8 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    h2s_allowed_flow_state = 0x3FF & (~(1 << ESTABLISHED));
-    s2h_allowed_flow_state = (1 << ESTABLISHED);
+    h2s_allowed_flow_state = 0x3FF & (~(1 << RST_CLOSE));
+    s2h_allowed_flow_state = (1 << RST_CLOSE);
 
     ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
 					h2s_allowed_flow_state, s2h_allowed_flow_state);
@@ -2529,7 +2351,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    /* program flow state ESTABLISHED, !ALLOWED, H2S flag='R', expected ESTABLISHED */
+    /* program flow state ESTABLISHED, !ALLOWED, H2S flag='R', expected RST_CLOSE */
     ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2542,7 +2364,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    e_flow_state = ESTABLISHED;
+    e_flow_state = RST_CLOSE;
     ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2556,8 +2378,8 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    h2s_allowed_flow_state = 0x3FF & (~(1 << FIN_SENT));
-    s2h_allowed_flow_state = (1 << FIN_SENT);
+    h2s_allowed_flow_state = 0x3FF & (~(1 << RST_CLOSE));
+    s2h_allowed_flow_state = (1 << RST_CLOSE);
 
     ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
 					h2s_allowed_flow_state, s2h_allowed_flow_state);
@@ -2575,7 +2397,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    /* program flow state FIN_SENT, !ALLOWED H2S flag='R', expected FIN_SENT */
+    /* program flow state FIN_SENT, !ALLOWED H2S flag='R', expected RST_CLOSE */
     ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2588,7 +2410,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    e_flow_state = FIN_SENT;
+    e_flow_state = RST_CLOSE;
     ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2602,8 +2424,8 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    h2s_allowed_flow_state = 0x3FF & (~(1 << FIN_RECV));
-    s2h_allowed_flow_state = (1 << FIN_RECV);
+    h2s_allowed_flow_state = 0x3FF & (~(1 << RST_CLOSE));
+    s2h_allowed_flow_state = (1 << RST_CLOSE);
 
     ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
 					h2s_allowed_flow_state, s2h_allowed_flow_state);
@@ -2621,7 +2443,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    /* program flow state FIN_RECV, !ALLOWED,  H2S flag='R', expected FIN_RECV */
+    /* program flow state FIN_RECV, !ALLOWED,  H2S flag='R', expected RST_CLOSE */
     ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2634,7 +2456,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    e_flow_state = FIN_RECV;
+    e_flow_state = RST_CLOSE;
     ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2675,12 +2497,12 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
 
     ret = send_packet_wmask("TCP-L2-IPv4: TIME_WAIT !ALLOWED h2s R pkt", g_snd_pkt_ipv4_tcp_h2s_r,
             sizeof(g_snd_pkt_ipv4_tcp_h2s_r), g_h_port,
-			    NULL, 0, g_s_port, mask_start_pos);
+			    g_rcv_pkt_ipv4_tcp_h2s_r, sizeof(g_rcv_pkt_ipv4_tcp_h2s_r) , g_s_port, mask_start_pos);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
-    e_flow_state = TIME_WAIT;
+    e_flow_state = REMOVED;
     ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2694,8 +2516,8 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    h2s_allowed_flow_state = (1 << RST_CLOSE);
-    s2h_allowed_flow_state = 0x3FF & (~(1 << RST_CLOSE));
+    h2s_allowed_flow_state = (1 << PDS_FLOW_STATE_SYN_SENT);
+    s2h_allowed_flow_state = 0x3FF & (~(1 << PDS_FLOW_STATE_SYN_RECV));
 
     ret = update_session_info_conntrack(g_session_id_v4_tcp, g_conntrack_id_v4_tcp, 
 					h2s_allowed_flow_state, s2h_allowed_flow_state);
@@ -2714,7 +2536,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-   /* program flow state RST_CLOSE, !ALLOWED, S2H flag='S', expected RST_CLOSE */
+   /* program flow state RST_CLOSE, !ALLOWED, S2H flag='S', expected PDS_FLOW_STATE_SYN_RECV */
     ret = create_conntrack_all(g_conntrack_id_v4_tcp, p_flow_type, p_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -2727,13 +2549,13 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
-    e_flow_state = RST_CLOSE;
+    e_flow_state = PDS_FLOW_STATE_SYN_RECV;
     ret = compare_conntrack(g_conntrack_id_v4_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
-
+#if 0
     /* IPV6 CONNTRACK ONLY */
     /*  SYN_SENT STATE  */
     /* program flow state SYN_SENT, S2H flag='SA', expected SYNACK_RECV */
@@ -2742,19 +2564,20 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
-
+    
     ret = send_packet("TCP-L2-IPv6: s2h SA pkt", g_snd_pkt_ipv6_tcp_s2h_sa,
             sizeof(g_snd_pkt_ipv6_tcp_s2h_sa), g_s_port,
 			    NULL, 0, 0);
     if (ret != SDK_RET_OK) {
         return ret;
     }
-
+    
     e_flow_state = PDS_FLOW_STATE_SYNACK_RECV;
     ret = compare_conntrack(g_conntrack_id_v6_tcp, e_flow_type, e_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
     }
+    
 
     /* program flow state SYN_SENT, S2H flag='R', expected REMOVE */
     ret = create_conntrack_all(g_conntrack_id_v6_tcp, p_flow_type, p_flow_state);
@@ -2762,6 +2585,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
+    
     ret = send_packet("TCP-L2-IPv6: s2h R pkt", g_snd_pkt_ipv6_tcp_s2h_r,
             sizeof(g_snd_pkt_ipv6_tcp_s2h_r), g_s_port,
 			    NULL, 0, 0);
@@ -2774,6 +2598,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
+    
 
     /* program flow state SYN_SENT, H2S flag='R', expected REMOVE */
     ret = create_conntrack_all(g_conntrack_id_v6_tcp, p_flow_type, p_flow_state);
@@ -2781,6 +2606,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
 
+    
     ret = send_packet_wmask("TCP-L2-IPv6: h2s R pkt", g_snd_pkt_ipv6_tcp_h2s_r,
             sizeof(g_snd_pkt_ipv6_tcp_h2s_r), g_h_port,
 			    NULL, 0, 0, mask_start_pos);
@@ -2794,12 +2620,14 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
         return ret;
     }
     
+
     /* program flow state SYN_SENT, H2S flag='F', expected REMOVE */
     ret = create_conntrack_all(g_conntrack_id_v6_tcp, p_flow_type, p_flow_state);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
+   
     ret = send_packet_wmask("TCP-L2-IPv6: h2s F pkt", g_snd_pkt_ipv6_tcp_h2s_f,
             sizeof(g_snd_pkt_ipv6_tcp_h2s_f), g_h_port,
 			    NULL, 0, 0, mask_start_pos);
@@ -2812,6 +2640,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
+    
 
     /* program flow state SYN_SENT, S2H flag='F', expected REMOVE */
     ret = create_conntrack_all(g_conntrack_id_v6_tcp, p_flow_type, p_flow_state);
@@ -2831,6 +2660,7 @@ athena_gtest_test_l2_flows_conntrack_tcp(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
+#endif
 
     /*  UDP IPV4 */
     /*  OPEN_CONN_SENT  */

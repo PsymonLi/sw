@@ -19,7 +19,7 @@
 #define VNIC_ID_L2_UDPSPORT    0x000d
 #define VNIC_ID_RECIRC    0x000e
 #define VNIC_ID_GENEVE_ENCAP    0x000f
-#define VNIC_ID_L2_CONN_TCP    0x0020
+#define VNIC_ID_L2_CONN_TCP    0x0021
 
 #define VLAN_ID_VLAN0         0x0
 #define VLAN_ID_UDP         0x0001

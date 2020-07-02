@@ -142,9 +142,9 @@ control p4e_statistics(inout cap_phv_intr_global_h intr_global,
 					   @__ref bit<64>  nacl_drop,
 					   @__ref bit<64> flow_hit,
 					   @__ref bit<64> flow_log_ovfl,
-					   @__ref bit<64>  conntrack_drop
-
+					   @__ref bit<64>  conntrack_redir
 					 ) {
+
       if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_HOST) == P4E_STATS_FLAG_TX_TO_HOST) {
 	tx_to_host = tx_to_host + 1;
       } 
@@ -159,8 +159,8 @@ control p4e_statistics(inout cap_phv_intr_global_h intr_global,
         nacl_drop = nacl_drop + 1;
       } 
 
-      if(metadata.cntrl.egress_drop_reason[P4E_DROP_CONNTRACK:P4E_DROP_CONNTRACK] == 1) {
-        nacl_drop = nacl_drop + 1;
+      if(metadata.cntrl.p4e_redir_reason[P4E_REDIR_CONNTRACK:P4E_REDIR_CONNTRACK] == 1) {
+        conntrack_redir = conntrack_redir + 1;
       } 
 
       if(!hdr.egress_recirc_header.isValid() && (metadata.cntrl.flow_miss == FALSE)) {

@@ -9,6 +9,15 @@
     metadata.cntrl.egress_drop_reason[x:x] = 1; \
     intr_global.drop = 1;
 
+#define REDIR_PACKET_INGRESS(x) \
+    metadata.cntrl.p4i_redir_reason[x:x] = 1; \
+    metadata.cntrl.flow_miss = 1;
+
+#define REDIR_PACKET_EGRESS(x) \
+    metadata.cntrl.p4e_redir_reason[x:x] = 1; \
+    metadata.cntrl.flow_miss = 1;
+
+
 #define SET_BIT_VALUE(m, x, v) \
     m[x:x] = v;
 
