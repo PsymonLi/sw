@@ -34,17 +34,23 @@ func init() {
 }
 
 func eraseConfigCmdHandler(cmd *cobra.Command, args []string) error {
-	v := &nmd.DistributedServiceCardCmdExecute{
-		Executable: "eraseConfig",
-		Opts:       strings.Join([]string{""}, ""),
+	if isUserSureToProceedWithAction("Are you sure to continue with erase-config?") {
+		v := &nmd.DistributedServiceCardCmdExecute{
+			Executable: "eraseConfig",
+			Opts:       strings.Join([]string{""}, ""),
+		}
+		return naplesExecCmdNoPrint(v)
 	}
-	return naplesExecCmdNoPrint(v)
+	return nil
 }
 
 func factoryDefaultCmdHandler(cmd *cobra.Command, args []string) error {
-	v := &nmd.DistributedServiceCardCmdExecute{
-		Executable: "factoryDefault",
-		Opts:       strings.Join([]string{""}, ""),
+	if isUserSureToProceedWithAction("Are you sure to continue with resetting to factory-default?") {
+		v := &nmd.DistributedServiceCardCmdExecute{
+			Executable: "factoryDefault",
+			Opts:       strings.Join([]string{""}, ""),
+		}
+		return naplesExecCmdNoPrint(v)
 	}
-	return naplesExecCmdNoPrint(v)
+	return nil
 }
