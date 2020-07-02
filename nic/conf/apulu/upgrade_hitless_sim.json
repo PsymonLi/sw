@@ -104,8 +104,6 @@
         "sync": {
             "//": "opearational states syncing",
             "svc": {
-                "event_sequence": "serial",
-                "names": [ "vpp" ],
                 "domain": "B"
             },
             "events": [
