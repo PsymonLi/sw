@@ -306,13 +306,15 @@ asicpd_program_table_thread_constant (uint32_t tableid, uint8_t table_thread_id,
 }
 
 sdk_ret_t
-asicpd_deparser_init (void)
+asicpd_deparser_init(p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp)
 {
-    elba_deparser_init(TM_PORT_INGRESS, TM_PORT_EGRESS);
+    if (ing_dp == NULL || egr_dp == NULL) {
+        return SDK_RET_INVALID_ARG;
+    }
+    elba_deparser_init(ing_dp, egr_dp);
 
     return SDK_RET_OK;
 }
-
 int
 asicpd_table_entry_read (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
                          uint16_t *hwentry_bit_len)

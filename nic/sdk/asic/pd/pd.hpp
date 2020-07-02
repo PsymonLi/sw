@@ -100,12 +100,22 @@ typedef struct hw_fifo_stats_s {
     bool            full;
 } hw_fifo_stats_t;
 
+typedef struct p4_deparser_cfg_s {
+    uint8_t  recirc_oport;
+    uint8_t  max_recirc_cnt;
+    bool     increment_recirc_cnt_en;
+    bool     clear_recirc_bit_en;
+    bool     drop_max_recirc_cnt;
+} p4_deparser_cfg_t;  
+
+
+
 sdk_ret_t asicpd_program_table_constant(uint32_t tableid, uint64_t const_value);
 sdk_ret_t asicpd_p4plus_table_mpu_base_init(p4pd_cfg_t *p4pd_cfg);
 sdk_ret_t asicpd_program_p4plus_table_mpu_base_pc();
 sdk_ret_t asicpd_table_mpu_base_init(p4pd_cfg_t *p4pd_cfg);
 sdk_ret_t asicpd_program_table_mpu_pc(void);
-sdk_ret_t asicpd_deparser_init(void);
+sdk_ret_t asicpd_deparser_init(p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp);
 sdk_ret_t asicpd_program_hbm_table_base_addr(void);
 // all tables
 sdk_ret_t asicpd_set_hbm_table_base_addr(void);

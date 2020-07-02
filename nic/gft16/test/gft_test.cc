@@ -1484,6 +1484,7 @@ TEST_F(gft_test, test1) {
     char *default_config_dir = NULL;
     asic_cfg_t cfg;
     sdk::lib::catalog *catalog;
+    p4_deparser_cfg_t   ing_dp = { 0 }, egr_dp = { 0 };
 
     p4pd_cfg_t    p4pd_cfg = {
         .table_map_cfg_file  = "gft16/p4_table_map.json",
@@ -1544,7 +1545,14 @@ TEST_F(gft_test, test1) {
     ASSERT_EQ(ret, SDK_RET_OK);
     ret = sdk::asic::pd::asicpd_program_table_mpu_pc();
     ASSERT_EQ(ret, SDK_RET_OK);
-    ret = sdk::asic::pd::asicpd_deparser_init();
+
+    ing_dp.increment_recirc_cnt_en = 1;
+    ing_dp.drop_max_recirc_cnt = 1;
+    ing_dp.clear_recirc_bit_en = 1;
+    ing_dp.recirc_oport = TM_PORT_INGRESS;
+    ing_dp.max_recirc_cnt = 4;
+    egr_dp.recirc_oport = TM_PORT_EGRESS;
+    ret = sdk::asic::pd::asicpd_deparser_init(&ing_dp, &egr_dp);
     ASSERT_EQ(ret, SDK_RET_OK);
 
     ret = sdk::asic::pd::asicpd_program_hbm_table_base_addr();

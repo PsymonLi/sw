@@ -221,7 +221,7 @@ sdk_ret_t elba_p4plus_table_init(platform_type_t platform_type,
                                  int stage_sxdma_act,
                                  int stage_tableid_sxdma_act);
 
-void elba_deparser_init(int tm_port_ingress, int tm_port_egress);
+void elba_deparser_init(p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp);
 
 void elba_program_hbm_table_base_addr(int tableid, int stage_tableid,
                                       char *tablename, int stage, int pipe);

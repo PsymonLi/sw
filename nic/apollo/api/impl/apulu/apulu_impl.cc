@@ -790,6 +790,8 @@ sdk_ret_t
 apulu_impl::pipeline_init(void) {
     sdk_ret_t  ret;
     p4pd_cfg_t p4pd_cfg;
+    p4_deparser_cfg_t   ing_dp = { 0 }, egr_dp = { 0 };
+
     std::string cfg_path = api::g_pds_state.cfg_path();
 
     p4pd_cfg.cfg_path = cfg_path.c_str();
@@ -810,7 +812,18 @@ apulu_impl::pipeline_init(void) {
     SDK_ASSERT(ret == SDK_RET_OK);
     ret = sdk::asic::pd::asicpd_program_table_mpu_pc();
     SDK_ASSERT(ret == SDK_RET_OK);
-    ret = sdk::asic::pd::asicpd_deparser_init();
+
+    ing_dp.increment_recirc_cnt_en = 1;
+    ing_dp.drop_max_recirc_cnt = 1;
+    ing_dp.clear_recirc_bit_en = 1;
+    ing_dp.recirc_oport = TM_PORT_INGRESS;
+    ing_dp.max_recirc_cnt = 4;
+    egr_dp.recirc_oport = TM_PORT_EGRESS;
+    egr_dp.max_recirc_cnt = 4;
+    egr_dp.increment_recirc_cnt_en = 1;
+    egr_dp.drop_max_recirc_cnt = 1;
+    egr_dp.clear_recirc_bit_en = 1;
+    ret = sdk::asic::pd::asicpd_deparser_init(&ing_dp, &egr_dp);
     SDK_ASSERT(ret == SDK_RET_OK);
 
     g_pds_impl_state.init(&api::g_pds_state);
@@ -957,6 +970,7 @@ apulu_impl::upgrade_switchover(void) {
     p4_tbl_eng_cfg_t *cfg;
     uint32_t num_cfgs, max_cfgs;
     std::list<qstate_cfg_t> q;
+    p4_deparser_cfg_t   ing_dp = { 0 }, egr_dp = { 0 };
 
     // return error if the pipeline is not quiesced
     if (!sdk::asic::asic_is_quiesced()) {
@@ -973,7 +987,18 @@ apulu_impl::upgrade_switchover(void) {
             return ret;
         }
     }
-    ret = sdk::asic::pd::asicpd_deparser_init();
+
+    ing_dp.increment_recirc_cnt_en = 1;
+    ing_dp.drop_max_recirc_cnt = 1;
+    ing_dp.clear_recirc_bit_en = 1;
+    ing_dp.recirc_oport = TM_PORT_INGRESS;
+    ing_dp.max_recirc_cnt = 4;
+    egr_dp.increment_recirc_cnt_en = 1;
+    egr_dp.drop_max_recirc_cnt = 1;
+    egr_dp.clear_recirc_bit_en = 1;
+    egr_dp.max_recirc_cnt = 4;
+    egr_dp.recirc_oport = TM_PORT_EGRESS;
+    ret = sdk::asic::pd::asicpd_deparser_init(&ing_dp, &egr_dp);
     if (ret != SDK_RET_OK) {
         return ret;
     }

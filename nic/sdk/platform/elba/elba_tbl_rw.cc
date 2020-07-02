@@ -653,25 +653,35 @@ p4_invalidate_cache (uint64_t addr, uint32_t size_in_bytes,
 }
 
 void
-elba_deparser_init(int tm_port_ingress, int tm_port_egress)
+elba_deparser_init (p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp)
 {
     elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     cpp_int recirc_rw_bm = 0;
+
+    if (ing_dp == NULL || egr_dp == NULL) {
+        SDK_TRACE_ERR("Ing DP cfg %p and/or Egr DP cfg %p are invalid \n", 
+                      ing_dp, egr_dp);
+        return;
+    }
     // Ingress deparser is indexed with 1
     elb0.dpr.dpr[1].cfg_global_2.read();
-    elb0.dpr.dpr[1].cfg_global_2.increment_recirc_cnt_en(1);
-    elb0.dpr.dpr[1].cfg_global_2.drop_max_recirc_cnt(1);
+    elb0.dpr.dpr[1].cfg_global_2.increment_recirc_cnt_en(ing_dp->increment_recirc_cnt_en);
+    elb0.dpr.dpr[1].cfg_global_2.drop_max_recirc_cnt(ing_dp->drop_max_recirc_cnt);
     // Drop after 4 recircs
-    elb0.dpr.dpr[1].cfg_global_2.max_recirc_cnt(4);
-    elb0.dpr.dpr[1].cfg_global_2.recirc_oport(tm_port_ingress);
-    elb0.dpr.dpr[1].cfg_global_2.clear_recirc_bit_en(1);
-    recirc_rw_bm |= 1<<tm_port_ingress;
-    recirc_rw_bm |= 1<<tm_port_egress;
+    elb0.dpr.dpr[1].cfg_global_2.max_recirc_cnt(ing_dp->max_recirc_cnt);
+    elb0.dpr.dpr[1].cfg_global_2.recirc_oport(ing_dp->recirc_oport);
+    elb0.dpr.dpr[1].cfg_global_2.clear_recirc_bit_en(ing_dp->clear_recirc_bit_en);
+    recirc_rw_bm |= 1<<ing_dp->recirc_oport;
+    recirc_rw_bm |= 1<<egr_dp->recirc_oport;
     elb0.dpr.dpr[1].cfg_global_2.recirc_rw_bm(recirc_rw_bm);
     elb0.dpr.dpr[1].cfg_global_2.write();
     // Egress deparser is indexed with 0
     elb0.dpr.dpr[0].cfg_global_2.read();
-    elb0.dpr.dpr[0].cfg_global_2.increment_recirc_cnt_en(0);
+    elb0.dpr.dpr[0].cfg_global_2.increment_recirc_cnt_en(egr_dp->increment_recirc_cnt_en);
+    elb0.dpr.dpr[0].cfg_global_2.max_recirc_cnt(egr_dp->max_recirc_cnt);
+    elb0.dpr.dpr[0].cfg_global_2.drop_max_recirc_cnt(egr_dp->drop_max_recirc_cnt);
+    elb0.dpr.dpr[0].cfg_global_2.recirc_oport(egr_dp->recirc_oport);
+    elb0.dpr.dpr[0].cfg_global_2.increment_recirc_cnt_en(egr_dp->clear_recirc_bit_en);
     elb0.dpr.dpr[0].cfg_global_2.frame_size_rw_bm(0xffff);
     elb0.dpr.dpr[0].cfg_global_2.write();
 }

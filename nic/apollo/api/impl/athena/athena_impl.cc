@@ -42,6 +42,7 @@ extern sdk_ret_t init_service_lif(uint32_t lif_id, const char *cfg_path);
 
 using ftlite::internal::ipv6_entry_t;
 using ftlite::internal::ipv4_entry_t;
+using namespace sdk::asic::pd;
 
 namespace api {
 namespace impl {
@@ -1117,6 +1118,7 @@ athena_impl::pipeline_init(void) {
     sdk_ret_t  ret;
     p4pd_cfg_t p4pd_cfg;
     std::string cfg_path = api::g_pds_state.cfg_path();
+    p4_deparser_cfg_t   ing_dp = { 0 }, egr_dp = { 0 };
 
     p4pd_cfg.cfg_path = cfg_path.c_str();
     ret = pipeline_p4_hbm_init(&p4pd_cfg);
@@ -1134,7 +1136,20 @@ athena_impl::pipeline_init(void) {
     SDK_ASSERT(ret == SDK_RET_OK);
     ret = sdk::asic::pd::asicpd_program_table_mpu_pc();
     SDK_ASSERT(ret == SDK_RET_OK);
-    ret = sdk::asic::pd::asicpd_deparser_init();
+
+    ing_dp.increment_recirc_cnt_en = 1;
+    ing_dp.drop_max_recirc_cnt = 1;
+    ing_dp.clear_recirc_bit_en = 1;
+    ing_dp.recirc_oport = TM_PORT_INGRESS;
+    ing_dp.max_recirc_cnt = 4;
+
+    egr_dp.recirc_oport = TM_PORT_EGRESS;
+    egr_dp.increment_recirc_cnt_en = 1;
+    egr_dp.drop_max_recirc_cnt = 1;
+    egr_dp.clear_recirc_bit_en = 0;
+    egr_dp.max_recirc_cnt = 2;
+
+    ret = sdk::asic::pd::asicpd_deparser_init(&ing_dp, &egr_dp);
     SDK_ASSERT(ret == SDK_RET_OK);
 
     g_pds_impl_state.init(&api::g_pds_state);

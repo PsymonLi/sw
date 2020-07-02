@@ -16,6 +16,7 @@
 #include "asic/asic.hpp"
 #include "asic/pd/pd.hpp"
 
+using namespace sdk::asic::pd;
 namespace sdk {
 namespace platform {
 namespace capri {
@@ -122,7 +123,7 @@ int capri_p4plus_table_init(platform_type_t platform_type,
                             int stage_txdma_act_ext,
                             int stage_tableid_txdma_act_ext);
 
-void capri_deparser_init(int tm_port_ingress, int tm_port_egress);
+void capri_deparser_init(p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp);
 
 void capri_program_hbm_table_base_addr(int tableid, int stage_tableid,
                                        char *tablename, int stage, int pipe);

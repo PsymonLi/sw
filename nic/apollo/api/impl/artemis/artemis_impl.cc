@@ -866,6 +866,8 @@ sdk_ret_t
 artemis_impl::pipeline_init(void) {
     sdk_ret_t  ret;
     p4pd_cfg_t p4pd_cfg;
+    p4_deparser_cfg_t   ing_dp = { 0 }, egr_dp = { 0 };
+
     std::string cfg_path = api::g_pds_state.cfg_path();
 
     p4pd_cfg.cfg_path = cfg_path.c_str();
@@ -890,8 +892,16 @@ artemis_impl::pipeline_init(void) {
     SDK_ASSERT(ret == SDK_RET_OK);
     ret = sdk::asic::pd::asicpd_program_table_mpu_pc();
     SDK_ASSERT(ret == SDK_RET_OK);
-    ret = sdk::asic::pd::asicpd_deparser_init();
+
+    ing_dp.increment_recirc_cnt_en = 1;
+    ing_dp.drop_max_recirc_cnt = 1;
+    ing_dp.clear_recirc_bit_en = 1;
+    ing_dp.recirc_oport = TM_PORT_INGRESS;
+    ing_dp.max_recirc_cnt = 4;
+    egr_dp.recirc_oport = TM_PORT_EGRESS;
+    ret = sdk::asic::pd::asicpd_deparser_init(&ing_dp, &egr_dp);
     SDK_ASSERT(ret == SDK_RET_OK);
+
     g_pds_impl_state.init(&api::g_pds_state);
     api::g_pds_state.lif_db()->impl_state_set(g_pds_impl_state.lif_impl_db());
 

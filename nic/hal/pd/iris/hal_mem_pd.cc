@@ -1261,6 +1261,7 @@ pd_mem_init_phase2 (pd_func_args_t *pd_func_args)
 
     pd_mem_init_phase2_args_t           *ph2_args;
     hal::hal_cfg_t                      *hal_cfg;
+    p4_deparser_cfg_t                   ing_dp = { 0 }, egr_dp = { 0 };
 
     pipeline_cfg_init(&p4pd_cfg, NULL, NULL);
 
@@ -1282,7 +1283,15 @@ pd_mem_init_phase2 (pd_func_args_t *pd_func_args)
     // Following routines must be called after capri asic init
     SDK_ASSERT(sdk::asic::pd::asicpd_table_mpu_base_init(&p4pd_cfg) == SDK_RET_OK);
     SDK_ASSERT(sdk::asic::pd::asicpd_program_table_mpu_pc() == SDK_RET_OK);
-    SDK_ASSERT(sdk::asic::pd::asicpd_deparser_init() == SDK_RET_OK);
+
+    ing_dp.increment_recirc_cnt_en = 1;
+    ing_dp.drop_max_recirc_cnt = 1;
+    ing_dp.clear_recirc_bit_en = 1;
+    ing_dp.recirc_oport = TM_PORT_INGRESS;
+    ing_dp.max_recirc_cnt = 4;
+    egr_dp.recirc_oport = TM_PORT_EGRESS;
+    SDK_ASSERT(sdk::asic::pd::asicpd_deparser_init(&ing_dp, &egr_dp) == SDK_RET_OK);
+
     SDK_ASSERT(sdk::asic::pd::asicpd_program_hbm_table_base_addr() == SDK_RET_OK);
     g_hal_state_pd->init_flow_table();
 

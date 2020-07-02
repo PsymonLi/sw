@@ -687,25 +687,35 @@ p4plus_invalidate_cache_all (p4plus_cache_action_t action)
 }
 
 void
-capri_deparser_init (int tm_port_ingress, int tm_port_egress)
+capri_deparser_init (p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp)
 {
     cap_top_csr_t &cap0 = g_capri_state_pd->cap_top();
+
+    if (ing_dp == NULL || egr_dp == NULL) {
+        SDK_TRACE_ERR("Ing DP cfg %p and/or Egr DP cfg %p are invalid \n", 
+                      ing_dp, egr_dp);
+        return;
+    }
     cpp_int recirc_rw_bm = 0;
     // Ingress deparser is indexed with 1
     cap0.dpr.dpr[1].cfg_global_2.read();
-    cap0.dpr.dpr[1].cfg_global_2.increment_recirc_cnt_en(1);
-    cap0.dpr.dpr[1].cfg_global_2.drop_max_recirc_cnt(1);
+    cap0.dpr.dpr[1].cfg_global_2.increment_recirc_cnt_en(ing_dp->increment_recirc_cnt_en);
+    cap0.dpr.dpr[1].cfg_global_2.drop_max_recirc_cnt(ing_dp->drop_max_recirc_cnt);
     // Drop after 4 recircs
-    cap0.dpr.dpr[1].cfg_global_2.max_recirc_cnt(4);
-    cap0.dpr.dpr[1].cfg_global_2.recirc_oport(tm_port_ingress);
-    cap0.dpr.dpr[1].cfg_global_2.clear_recirc_bit_en(1);
-    recirc_rw_bm |= 1<<tm_port_ingress;
-    recirc_rw_bm |= 1<<tm_port_egress;
+    cap0.dpr.dpr[1].cfg_global_2.max_recirc_cnt(ing_dp->max_recirc_cnt);
+    cap0.dpr.dpr[1].cfg_global_2.recirc_oport(ing_dp->recirc_oport);
+    cap0.dpr.dpr[1].cfg_global_2.clear_recirc_bit_en(ing_dp->clear_recirc_bit_en);
+    recirc_rw_bm |= 1<<ing_dp->recirc_oport;
+    recirc_rw_bm |= 1<<egr_dp->recirc_oport;
     cap0.dpr.dpr[1].cfg_global_2.recirc_rw_bm(recirc_rw_bm);
     cap0.dpr.dpr[1].cfg_global_2.write();
     // Egress deparser is indexed with 0
     cap0.dpr.dpr[0].cfg_global_2.read();
-    cap0.dpr.dpr[0].cfg_global_2.increment_recirc_cnt_en(0);
+    cap0.dpr.dpr[0].cfg_global_2.increment_recirc_cnt_en(egr_dp->increment_recirc_cnt_en);
+    cap0.dpr.dpr[0].cfg_global_2.max_recirc_cnt(egr_dp->max_recirc_cnt);
+    cap0.dpr.dpr[0].cfg_global_2.drop_max_recirc_cnt(egr_dp->drop_max_recirc_cnt);
+    cap0.dpr.dpr[0].cfg_global_2.recirc_oport(egr_dp->recirc_oport);
+    cap0.dpr.dpr[0].cfg_global_2.clear_recirc_bit_en(egr_dp->clear_recirc_bit_en);
     cap0.dpr.dpr[0].cfg_global_2.frame_size_rw_bm(0xffff);
     cap0.dpr.dpr[0].cfg_global_2.write();
 }
