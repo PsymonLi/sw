@@ -111,6 +111,7 @@ typedef struct flow_cache_policy_info_s {
     uint16_t vlan_id;
     uint16_t vnic_id;
     uint32_t src_slot_id;
+    bool conntrack;
     bool skip_flow_log;
     uint32_t epoch;
     l2_flows_range_info_t l2_flows_range;
@@ -133,6 +134,10 @@ extern uint16_t g_vnic_id_list[MAX_VNIC_ID];
 extern uint32_t g_num_policies;
 extern v4_flows_info_t g_v4_flows[MAX_V4_FLOWS];
 extern uint8_t g_num_v4_flows;
+extern bool g_flow_age_normal_tmo_set;
+extern pds_flow_age_timeouts_t g_flow_age_normal_tmo;
+extern bool g_flow_age_accel_tmo_set;
+extern pds_flow_age_timeouts_t g_flow_age_accel_tmo;
 
 }
 

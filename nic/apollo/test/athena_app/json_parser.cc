@@ -7,6 +7,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/api/include/athena/pds_flow_age.h"
 #include "fte_athena.hpp"
 #include "json_parser.hpp"
 
@@ -22,6 +23,10 @@ uint16_t g_vnic_id_list[MAX_VNIC_ID];
 uint32_t g_num_policies;
 v4_flows_info_t g_v4_flows[MAX_V4_FLOWS];
 uint8_t g_num_v4_flows;
+bool g_flow_age_normal_tmo_set;
+pds_flow_age_timeouts_t g_flow_age_normal_tmo;
+bool g_flow_age_accel_tmo_set;
+pds_flow_age_timeouts_t g_flow_age_accel_tmo;
 
 static int
 str2mac(const char* mac, uint8_t *out)
@@ -44,6 +49,7 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
     v4_flows_info_t *v4_flows_info;
     uint16_t vnic_id;
     boost::optional<std::string> vnic_type;
+    boost::optional<std::string> conntrack;
     uint8_t h2s_mac_lo[ETH_ADDR_LEN];
     uint8_t h2s_mac_hi[ETH_ADDR_LEN];
     uint8_t s2h_mac_lo[ETH_ADDR_LEN];
@@ -63,6 +69,78 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
     read_json(json_cfg, json_pt);
     printf("Parsing file %s for policies...\n", cfg_file.c_str());
     try {
+        boost::optional<pt::ptree&> flow_age_normal_tmo = json_pt.get_child_optional("flow_age_normal_tmo");
+        if (flow_age_normal_tmo) {
+            std::string normal_tmo_set = flow_age_normal_tmo.get().get<std::string>("tmo_set");
+            if (normal_tmo_set.compare("yes") == 0) {
+                g_flow_age_normal_tmo_set = 1;
+                g_flow_age_normal_tmo.tcp_syn_tmo = flow_age_normal_tmo.get().get<uint32_t>("tcp_syn_tmo");
+                g_flow_age_normal_tmo.tcp_est_tmo = flow_age_normal_tmo.get().get<uint32_t>("tcp_est_tmo");
+                g_flow_age_normal_tmo.tcp_fin_tmo = flow_age_normal_tmo.get().get<uint32_t>("tcp_fin_tmo");
+                g_flow_age_normal_tmo.tcp_timewait_tmo = flow_age_normal_tmo.get().get<uint32_t>("tcp_timewait_tmo");
+                g_flow_age_normal_tmo.tcp_rst_tmo = flow_age_normal_tmo.get().get<uint32_t>("tcp_rst_tmo");
+                g_flow_age_normal_tmo.icmp_tmo = flow_age_normal_tmo.get().get<uint32_t>("icmp_tmo");
+                g_flow_age_normal_tmo.udp_tmo = flow_age_normal_tmo.get().get<uint32_t>("udp_tmo");
+                g_flow_age_normal_tmo.udp_est_tmo = flow_age_normal_tmo.get().get<uint32_t>("udp_est_tmo");
+                g_flow_age_normal_tmo.others_tmo = flow_age_normal_tmo.get().get<uint32_t>("others_tmo");
+                g_flow_age_normal_tmo.session_tmo = flow_age_normal_tmo.get().get<uint32_t>("session_tmo");
+            } else {
+                g_flow_age_normal_tmo_set = 0;
+            }
+        } else {
+            g_flow_age_normal_tmo_set = 0;
+        }
+ 
+        boost::optional<pt::ptree&> flow_age_accel_tmo = json_pt.get_child_optional("flow_age_accel_tmo");
+        if (flow_age_accel_tmo) {
+            std::string accel_tmo_set = flow_age_accel_tmo.get().get<std::string>("tmo_set");
+            if (accel_tmo_set.compare("yes") == 0) {
+                g_flow_age_accel_tmo_set = 1;
+                g_flow_age_accel_tmo.tcp_syn_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_syn_tmo");
+                g_flow_age_accel_tmo.tcp_est_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_est_tmo");
+                g_flow_age_accel_tmo.tcp_fin_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_fin_tmo");
+                g_flow_age_accel_tmo.tcp_timewait_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_timewait_tmo");
+                g_flow_age_accel_tmo.tcp_rst_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_rst_tmo");
+                g_flow_age_accel_tmo.icmp_tmo = flow_age_accel_tmo.get().get<uint32_t>("icmp_tmo");
+                g_flow_age_accel_tmo.udp_tmo = flow_age_accel_tmo.get().get<uint32_t>("udp_tmo");
+                g_flow_age_accel_tmo.udp_est_tmo = flow_age_accel_tmo.get().get<uint32_t>("udp_est_tmo");
+                g_flow_age_accel_tmo.others_tmo = flow_age_accel_tmo.get().get<uint32_t>("others_tmo");
+                g_flow_age_accel_tmo.session_tmo = flow_age_accel_tmo.get().get<uint32_t>("session_tmo");
+            } else {
+                g_flow_age_accel_tmo_set = 0;
+            }
+        } else {
+            g_flow_age_accel_tmo_set = 0;
+        }
+
+        if (g_flow_age_normal_tmo_set) {
+            printf("g_flow_age_normal_tmo_set: %u \n", g_flow_age_normal_tmo_set);
+            printf("tcp_syn_tmo: %u \n", g_flow_age_normal_tmo.tcp_syn_tmo);
+            printf("tcp_est_tmo: %u \n", g_flow_age_normal_tmo.tcp_est_tmo);
+            printf("tcp_fin_tmo: %u \n", g_flow_age_normal_tmo.tcp_fin_tmo);
+            printf("tcp_timewait_tmo: %u \n", g_flow_age_normal_tmo.tcp_timewait_tmo);
+            printf("tcp_rst_tmo: %u \n", g_flow_age_normal_tmo.tcp_rst_tmo);
+            printf("icmp_tmo: %u \n", g_flow_age_normal_tmo.icmp_tmo);
+            printf("udp_tmo: %u \n", g_flow_age_normal_tmo.udp_tmo);
+            printf("udp_est_tmo: %u \n", g_flow_age_normal_tmo.udp_est_tmo);
+            printf("others_tmo: %u \n", g_flow_age_normal_tmo.others_tmo);
+            printf("session_tmo: %u \n", g_flow_age_normal_tmo.session_tmo);
+        }
+
+        if (g_flow_age_accel_tmo_set) {
+            printf("g_flow_age_accel_tmo_set: %u \n", g_flow_age_accel_tmo_set);
+            printf("tcp_syn_tmo: %u \n", g_flow_age_accel_tmo.tcp_syn_tmo);
+            printf("tcp_est_tmo: %u \n", g_flow_age_accel_tmo.tcp_est_tmo);
+            printf("tcp_fin_tmo: %u \n", g_flow_age_accel_tmo.tcp_fin_tmo);
+            printf("tcp_timewait_tmo: %u \n", g_flow_age_accel_tmo.tcp_timewait_tmo);
+            printf("tcp_rst_tmo: %u \n", g_flow_age_accel_tmo.tcp_rst_tmo);
+            printf("icmp_tmo: %u \n", g_flow_age_accel_tmo.icmp_tmo);
+            printf("udp_tmo: %u \n", g_flow_age_accel_tmo.udp_tmo);
+            printf("udp_est_tmo: %u \n", g_flow_age_accel_tmo.udp_est_tmo);
+            printf("others_tmo: %u \n", g_flow_age_accel_tmo.others_tmo);
+            printf("session_tmo: %u \n", g_flow_age_accel_tmo.session_tmo);
+        }
+
         BOOST_FOREACH (pt::ptree::value_type &vnic,
                        json_pt.get_child("vnic")) {
             vnic_id = vnic.second.get<uint32_t>("vnic_id");
@@ -117,6 +195,13 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
             }
 
             pt::ptree& session = vnic.second.get_child("session");
+            conntrack = session.get_optional<std::string>("conntrack");
+            if (conntrack && (conntrack.get() == "yes")) {
+                policy->conntrack = 1;
+            } else {
+                policy->conntrack = 0;
+            }
+            printf("VNIC:%u conntrack:%u \n", vnic_id, policy->conntrack);
             policy->epoch = session.get<uint16_t>("epoch");
             policy->skip_flow_log = session.get<bool>("skip_flow_log");
             pt::ptree& session_info_s2h = session.get_child("to_host");

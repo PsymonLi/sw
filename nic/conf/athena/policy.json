@@ -1,10 +1,41 @@
 {
+    "flow_age_normal_tmo": {
+        "tmo_set": "no",
+        "tcp_syn_tmo": "60",
+        "tcp_est_tmo": "86400",
+        "tcp_fin_tmo": "120",
+        "tcp_timewait_tmo": "120",
+        "tcp_rst_tmo": "10",
+        "icmp_tmo": "15",
+        "udp_tmo": "30",
+        "udp_est_tmo": "180",
+        "others_tmo": "300",
+        "session_tmo": "300",
+        "_comment": "tmo_set should be yes to have these values configured",
+        "_comment1": "except session_tmo all are conntrack timeout values"
+    },
+    "flow_age_accel_tmo": {
+        "tmo_set": "no",
+        "tcp_syn_tmo": "6",
+        "tcp_est_tmo": "8640",
+        "tcp_fin_tmo": "12",
+        "tcp_timewait_tmo": "12",
+        "tcp_rst_tmo": "1",
+        "icmp_tmo": "1",
+        "udp_tmo": "3",
+        "udp_est_tmo": "18",
+        "others_tmo": "30",
+        "session_tmo": "30",
+        "_comment": "tmo_set should be yes to have these values configured",
+        "_comment1": "except session_tmo all are conntrack timeout values"
+    },
     "vnic": [
         {
             "vnic_id": "1",
             "vlan_id": "100",
             "slot_id": "1000",
             "session": {
+                "conntrack": "yes",
                 "epoch": "1234",
                 "skip_flow_log" : "false",
                 "to_host": {
@@ -40,6 +71,7 @@
             "vlan_id": "101",
             "slot_id": "1001",
             "session": {
+                "conntrack": "yes",
                 "epoch": "1234",
                 "skip_flow_log" : "false",
                 "to_host": {
@@ -75,6 +107,7 @@
             "vlan_id": "102",
             "slot_id": "1002",
             "session": {
+                "conntrack": "yes",
                 "epoch": "1234",
                 "skip_flow_log" : "false",
                 "to_host": {
@@ -125,6 +158,7 @@
                 "_comment": "In both directions, it is the dmac in pkt"
             },
             "session": {
+                "conntrack": "yes",
                 "epoch": "1234",
                 "skip_flow_log" : "false",
                 "to_host": {

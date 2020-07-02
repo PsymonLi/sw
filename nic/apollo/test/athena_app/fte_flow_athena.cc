@@ -55,6 +55,7 @@
 #include "gen/p4gen/p4/include/ftl.h"
 #include "athena_test.hpp"
 #include "app_test_utils.hpp"
+#include "conntrack_aging.hpp"
 #include "json_parser.hpp"
 
 uint32_t num_flows_added = 0;
@@ -69,6 +70,8 @@ static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
 #define IP_PROTOCOL_ICMP 0x01
 #define IP_PROTOCOL_ICMPV6 0x3A
 
+#define TCP_SYN_FLAG 0x02
+
 #define IPV4_ADDR_LEN 4
 #define IPV6_ADDR_LEN 16
 #define IPV6_HDR_LEN 40
@@ -77,7 +80,7 @@ static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
 #define HOST_TO_SWITCH 0x1
 #define SWITCH_TO_HOST 0x2
 
-#define MAX_SESSION_INDEX 0x3D0900   // 4M Seesion IDs
+static rte_indexer *g_conntrack_indexer;
 static rte_indexer *g_session_indexer;
 uint32_t g_session_rewrite_index = 1;
 
@@ -151,9 +154,45 @@ uint8_t s2h_l2vlan_encap_hdr[] = {
 };
 
 sdk_ret_t
+fte_conntrack_indexer_init (void)
+{
+    g_conntrack_indexer = rte_indexer::factory(PDS_CONNTRACK_ID_MAX,
+                                               true, true);
+    if (g_conntrack_indexer == NULL) {
+        PDS_TRACE_DEBUG("g_conntrack_indexer init failed.\n");
+        return SDK_RET_ERR;
+    }
+    return SDK_RET_OK;
+}
+
+void
+fte_conntrack_indexer_destroy (void)
+{
+    rte_indexer::destroy(g_conntrack_indexer);
+}
+
+sdk_ret_t
+fte_conntrack_index_alloc (uint32_t *conntrack_id)
+{
+    return g_conntrack_indexer->alloc(conntrack_id);
+}
+
+sdk_ret_t
+fte_conntrack_index_free (uint32_t conntrack_id)
+{
+    return g_conntrack_indexer->free(conntrack_id);
+}
+
+static inline uint8_t
+fte_is_conntrack_enabled (uint16_t vnic_id)
+{
+    return (g_flow_cache_policy[vnic_id].conntrack);
+}
+
+sdk_ret_t
 fte_session_indexer_init (void)
 {
-    g_session_indexer = rte_indexer::factory(MAX_SESSION_INDEX,
+    g_session_indexer = rte_indexer::factory(PDS_FLOW_SESSION_INFO_ID_MAX,
                                              true, true);
     if (g_session_indexer == NULL) {
         PDS_TRACE_DEBUG("g_session_indexer init failed.\n");
@@ -382,7 +421,8 @@ fte_nat_csum_adj_h2s_v4 (struct ipv4_hdr *iph, uint32_t new_ipaddr)
 
 static sdk_ret_t
 fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
-                            uint8_t *dir, uint16_t *ip_off, uint16_t *vnic_id)
+                            uint8_t *dir, uint16_t *ip_off,
+                            uint16_t *vnic_id, uint8_t *tcp_flags)
 {
     struct ether_hdr *eth0;
     struct ipv4_hdr *ip40;
@@ -570,9 +610,78 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
             key->l4.tcp_udp.sport = dport;
             key->l4.tcp_udp.dport = sport;
         }
+        if (protocol == IP_PROTOCOL_TCP) {
+            *tcp_flags = tcp0->tcp_flags;
+        }
     }
 
     return SDK_RET_OK;
+}
+
+static sdk_ret_t
+fte_conntrack_state_create (uint32_t conntrack_index,
+                            pds_flow_spec_t *flow_spec,
+                            uint8_t flow_dir, uint8_t tcp_flags)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    pds_conntrack_spec_t conn_spec;
+
+    conn_spec.key.conntrack_id = conntrack_index;
+
+    if (flow_spec->key.ip_proto == IP_PROTOCOL_TCP) {
+        conn_spec.data.flow_type = PDS_FLOW_TYPE_TCP;
+        if (tcp_flags & TCP_SYN_FLAG) {
+            if (flow_dir == HOST_TO_SWITCH) {
+                conn_spec.data.flow_state = PDS_FLOW_STATE_SYN_SENT;
+            } else {
+                conn_spec.data.flow_state = PDS_FLOW_STATE_SYN_RECV;
+            }
+        } else {
+            // TCP connection pickup not supported.
+            return SDK_RET_INVALID_OP;
+        }
+    } else {
+        if (flow_spec->key.ip_proto == IP_PROTOCOL_UDP) {
+            conn_spec.data.flow_type = PDS_FLOW_TYPE_UDP;
+        } else if (flow_spec->key.ip_proto == IP_PROTOCOL_ICMP) {
+            conn_spec.data.flow_type = PDS_FLOW_TYPE_ICMP;
+        } else {
+            conn_spec.data.flow_type = PDS_FLOW_TYPE_OTHERS;
+        }
+
+        if (flow_dir == HOST_TO_SWITCH) {
+            conn_spec.data.flow_state = OPEN_CONN_SENT;
+        } else {
+            conn_spec.data.flow_state = OPEN_CONN_RECV;
+        }
+    }
+
+    ret = (sdk_ret_t)pds_conntrack_state_create(&conn_spec);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_DEBUG("pds_conntrack_state_create failed. \n");
+        return ret;
+    }
+
+    return SDK_RET_OK;
+}
+
+static sdk_ret_t
+fte_conntrack_state_delete (uint32_t conntrack_index)
+{
+    pds_conntrack_key_t conn_key;
+
+    memset(&conn_key, 0, sizeof(conn_key));
+    conn_key.conntrack_id = conntrack_index;
+    return (sdk_ret_t)pds_conntrack_state_delete(&conn_key);
+}
+
+static inline void
+fte_conntrack_free (uint16_t vnic_id, uint32_t conntrack_index)
+{
+    if (fte_is_conntrack_enabled(vnic_id)) {
+        fte_conntrack_state_delete(conntrack_index);
+        fte_conntrack_index_free(conntrack_index);
+    }
 }
 
 static void
@@ -879,6 +988,9 @@ fte_get_session_rewrite_id (uint16_t vnic_id, uint32_t local_ip,
 
 static sdk_ret_t
 fte_session_info_create (uint32_t session_index,
+                         uint32_t conntrack_index,
+                         uint16_t h2s_allowed_flow_state_bitmask,
+                         uint16_t s2h_allowed_flow_state_bitmask,
                          uint32_t h2s_rewrite_id,
                          uint32_t s2h_rewrite_id)
 {
@@ -888,8 +1000,15 @@ fte_session_info_create (uint32_t session_index,
     spec.key.session_info_id = session_index;
     spec.key.direction = (SWITCH_TO_HOST | HOST_TO_SWITCH);
 
+    spec.data.conntrack_id = conntrack_index;
+
     spec.data.host_to_switch_flow_info.rewrite_id = h2s_rewrite_id;
+    spec.data.host_to_switch_flow_info.allowed_flow_state_bitmask =
+                                    h2s_allowed_flow_state_bitmask;
+
     spec.data.switch_to_host_flow_info.rewrite_id = s2h_rewrite_id;
+    spec.data.switch_to_host_flow_info.allowed_flow_state_bitmask =
+                                    s2h_allowed_flow_state_bitmask;
 
     return (sdk_ret_t)pds_flow_session_info_create(&spec);
 }
@@ -1214,30 +1333,63 @@ fte_flow_prog (struct rte_mbuf *m)
     uint8_t flow_dir;
     uint16_t ip_offset;
     uint16_t vnic_id = 0;
+    uint8_t tcp_flags = 0;
     uint32_t h2s_rewrite_id;
     uint32_t s2h_rewrite_id;
+    uint32_t conntrack_index = 0;
     uint32_t session_index;
+    uint16_t h2s_flow_state_bmp = 0;
+    uint16_t s2h_flow_state_bmp = 0;
     struct ether_hdr *l2_flow_eth_hdr = NULL;
 
     memset(&flow_spec, 0, sizeof(pds_flow_spec_t));
     ret = fte_flow_extract_prog_args(m, &flow_spec, &flow_dir,
-                                     &ip_offset, &vnic_id);
+                                &ip_offset, &vnic_id, &tcp_flags);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_flow_extract_prog_args failed. \n");
         return ret;
     }
-    flow_spec.data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
-
-    ret = fte_session_index_alloc(&session_index);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_session_index_alloc failed. \n");
-        return ret;
-    }
-    flow_spec.data.index = session_index;
 
     // PKT Rewrite
     fte_flow_pkt_rewrite(m, flow_dir, ip_offset, vnic_id,
                          &l2_flow_eth_hdr);
+
+    if (fte_is_conntrack_enabled(vnic_id)) {
+        ret = fte_conntrack_index_alloc(&conntrack_index);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("fte_conntrack_index_alloc failed. \n");
+            return ret;
+        }
+        ret = fte_conntrack_state_create(conntrack_index, &flow_spec,
+                                         flow_dir, tcp_flags);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("fte_conntrack_state_create failed. \n");
+            return ret;
+        }
+        if (flow_spec.key.ip_proto == IP_PROTOCOL_TCP) {
+            // allowed_flow_state_bitmask
+            if (flow_dir == HOST_TO_SWITCH) {
+                // Applicable SYN states - HOST side initiated flows
+                // SYN_SENT & SYNACK_RECV
+                h2s_flow_state_bmp = 0x3F3;
+                s2h_flow_state_bmp = 0x3F3;
+            } else {
+                // Applicable SYN states - SWITCH side initiated flows
+                // SYN_RECV & SYNACK_SENT
+                s2h_flow_state_bmp = 0x3ED;
+                h2s_flow_state_bmp = 0x3ED;
+            }
+        }
+    }
+
+    flow_spec.data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
+    ret = fte_session_index_alloc(&session_index);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_DEBUG("fte_session_index_alloc failed. \n");
+        fte_conntrack_free(vnic_id, conntrack_index);
+        return ret;
+    }
+    flow_spec.data.index = session_index;
 
     ret = fte_get_session_rewrite_id(vnic_id,
                             (*(uint32_t *)flow_spec.key.ip_saddr),
@@ -1245,14 +1397,18 @@ fte_flow_prog (struct rte_mbuf *m)
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_get_session_rewrite_id failed. \n");
         fte_session_index_free(session_index);
+        fte_conntrack_free(vnic_id, conntrack_index);
         return ret;
     }
 
-    ret = fte_session_info_create(session_index, h2s_rewrite_id,
-                                  s2h_rewrite_id);
+    ret = fte_session_info_create(session_index, conntrack_index,
+                                  h2s_flow_state_bmp,
+                                  s2h_flow_state_bmp,
+                                  h2s_rewrite_id, s2h_rewrite_id);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_session_info_create failed. \n");
         fte_session_index_free(session_index);
+        fte_conntrack_free(vnic_id, conntrack_index);
         return ret;
     }
 
@@ -1261,6 +1417,7 @@ fte_flow_prog (struct rte_mbuf *m)
         PDS_TRACE_DEBUG("pds_flow_cache_entry_create failed. \n");
         fte_session_info_delete(session_index);
         fte_session_index_free(session_index);
+        fte_conntrack_free(vnic_id, conntrack_index);
         return ret;
     }
 
@@ -1277,6 +1434,7 @@ fte_flow_prog (struct rte_mbuf *m)
             pds_flow_cache_entry_delete_by_flow_info(&flow_data);
             fte_session_info_delete(session_index);
             fte_session_index_free(session_index);
+            fte_conntrack_free(vnic_id, conntrack_index);
             return ret;
         }
     }
@@ -1790,8 +1948,11 @@ fte_setup_v4_flows_json (void)
                             }
 
                             ret = fte_session_info_create(
-                                    session_index, h2s_rewrite_id,
-                                    s2h_rewrite_id);
+                                    session_index,
+                                    0 /* conntrack_index */,
+                                    0 /* h2s_flow_state_bmp */,
+                                    0 /* s2h_flow_state_bmp */,
+                                    h2s_rewrite_id, s2h_rewrite_id);
                             if (ret != SDK_RET_OK) {
                                 PDS_TRACE_DEBUG(
                                     "fte_session_info_create failed.\n");
@@ -1852,6 +2013,20 @@ fte_setup_flow (void)
     void *bmp_mem;
     uint16_t vnic_id;
     uint16_t i;
+
+    if (g_flow_age_normal_tmo_set) {
+        ret = (sdk_ret_t)pds_flow_age_normal_timeouts_set(&g_flow_age_normal_tmo);
+        if (ret != SDK_RET_OK) {
+            printf("pds_flow_age_normal_timeouts_set failed. \n");
+        }
+    }
+
+    if (g_flow_age_accel_tmo_set) {
+        ret = (sdk_ret_t)pds_flow_age_accel_timeouts_set(&g_flow_age_accel_tmo);
+        if (ret != SDK_RET_OK) {
+            printf("pds_flow_age_accel_timeouts_set failed. \n");
+        }
+    }
 
     for (i = 0; i < g_num_policies; i++) {
         vnic_id = g_vnic_id_list[i];
@@ -2041,6 +2216,7 @@ fte_flows_aging_expiry_fn(uint32_t expiry_id,
              * If FTE also maintains a bitmap of allocated conntrack IDs,
              * the expiry_id should be released here.
              */
+            fte_conntrack_index_free(expiry_id);
         }
         break;
 
@@ -2055,6 +2231,12 @@ sdk_ret_t
 fte_flows_init ()
 {
     sdk_ret_t sdk_ret = SDK_RET_OK;
+
+    sdk_ret = fte_conntrack_indexer_init();
+    if (sdk_ret != SDK_RET_OK) {
+        PDS_TRACE_DEBUG("fte_conntrack_indexer_init failed.\n");
+        return sdk_ret;
+    }
 
     sdk_ret = fte_session_indexer_init();
     if (sdk_ret != SDK_RET_OK) {
