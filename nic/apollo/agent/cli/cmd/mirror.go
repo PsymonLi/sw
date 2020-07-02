@@ -43,6 +43,13 @@ var mirrorSessionShowCmd = &cobra.Command{
 	PreRunE: mirrorSessionShowCmdPreRun,
 }
 
+var mirrorSessionShowStatisticsCmd = &cobra.Command{
+	Use:   "statistics",
+	Short: "show mirror session statistics",
+	Long:  "show mirror session statistics",
+	Run:   mirrorSessionShowStatisticsCmdHandler,
+}
+
 var mirrorSessionDebugCmd = &cobra.Command{
 	Use:    "mirror",
 	Short:  "debug mirror session",
@@ -73,6 +80,11 @@ func init() {
 	mirrorSessionShowCmd.Flags().StringVarP(&spanType, "type", "t", "", "Specify mirror session type to display (erspan or rspan)")
 	mirrorSessionShowCmd.Flags().StringVarP(&mirrorsessionID, "id", "i", "", "Specify Mirror session ID")
 	mirrorSessionShowCmd.MarkFlagRequired("type")
+
+	mirrorSessionShowCmd.AddCommand(mirrorSessionShowStatisticsCmd)
+	mirrorSessionShowStatisticsCmd.Flags().Bool("yaml", false, "Output in yaml")
+	mirrorSessionShowStatisticsCmd.Flags().StringVarP(&mirrorsessionID, "id",
+		"i", "", "Specify mirrorSession ID")
 
 	debugCreateCmd.AddCommand(mirrorSessionDebugCmd)
 	mirrorSessionDebugCmd.AddCommand(mirrorRspanSessionCreateCmd)
@@ -433,4 +445,64 @@ func mirrorErspanSessionCreateCmdHandler(cmd *cobra.Command, args []string) {
 	}
 	fmt.Println("Creating mirror session succeeded")
 	return
+}
+
+func mirrorSessionShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewMirrorSvcClient(c)
+
+	var req *pds.MirrorSessionGetRequest
+	if cmd != nil && cmd.Flags().Changed("id") {
+		// Get specific Mirror Session 
+		req = &pds.MirrorSessionGetRequest{
+			Id: [][]byte{uuid.FromStringOrNil(mirrorsessionID).Bytes()},
+		}
+	} else {
+		// Get all Mirror Sessions 
+		req = &pds.MirrorSessionGetRequest{
+			Id: [][]byte{},
+		}
+	}
+
+	// PDS call
+	respMsg, err := client.MirrorSessionGet(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Mirror session Get failed, err %v\n", err)
+		return
+	}
+
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+
+	// Print Mirror Sessions 
+	if cmd != nil && cmd.Flags().Changed("yaml") {
+		for _, resp := range respMsg.Response {
+			respType := reflect.ValueOf(resp)
+			b, _ := yaml.Marshal(respType.Interface())
+			fmt.Println(string(b))
+			fmt.Println("---")
+		}
+	} else {
+		for _, resp := range respMsg.Response {
+			spec := resp.GetSpec()
+			stats := resp.GetStats()
+			fmt.Printf("Mirror Session ID: %s\n", utils.IdToStr(spec.GetId()))
+			fmt.Printf("\tPackets    : %d\n", stats.GetPacketCount())
+			fmt.Printf("\tBytes      : %d\n", stats.GetByteCount())
+		}
+	}
 }

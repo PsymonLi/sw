@@ -204,8 +204,10 @@ MirrorSvcImpl::MirrorSessionGet(ServerContext *context,
         ret = pds_mirror_session_read_all(pds_mirror_session_api_info_to_proto,
                                           proto_rsp);
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
+        return Status::OK;
     }
     for (int i = 0; i < proto_req->id_size(); i++) {
+        memset(&info, 0, sizeof(pds_mirror_session_info_t));
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
         ret = pds_mirror_session_read(&key, &info);
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));

@@ -22,6 +22,7 @@ from apollo.config.objects.rmapping import client as rmapClient
 
 import apollo.config.utils as utils
 import types_pb2 as types_pb2
+import pdb
 
 class VnicStatus(base.StatusObjectBase):
     def __init__(self):
@@ -283,9 +284,9 @@ class VnicObject(base.ConfigObjectBase):
         spec.SwitchVnic = self.SwitchVnic
         utils.GetRpcEncap(self.Node, self.MplsSlot, self.Vnid, spec.FabricEncap)
         for rxmirror in self.RxMirror:
-            spec.RxMirrorSessionId.append(int(rxmirror))
+            spec.RxMirrorSessionId.append(utils.PdsUuid.GetUUIDfromId(int(rxmirror), api.ObjectTypes.MIRROR))
         for txmirror in self.TxMirror:
-            spec.TxMirrorSessionId.append(int(txmirror))
+            spec.TxMirrorSessionId.append(utils.PdsUuid.GetUUIDfromId(int(txmirror), api.ObjectTypes.MIRROR))
         spec.V4MeterId = utils.PdsUuid.GetUUIDfromId(self.V4MeterId, api.ObjectTypes.METER)
         spec.V6MeterId = utils.PdsUuid.GetUUIDfromId(self.V6MeterId, api.ObjectTypes.METER)
         for policyid in self.IngV4SecurityPolicyIds:

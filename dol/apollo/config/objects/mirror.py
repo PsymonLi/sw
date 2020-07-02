@@ -34,8 +34,7 @@ class MirrorSessionObject(base.ConfigObjectBase):
             self.VPCId = vpcid
             self.SpanID = self.Id
             self.Dscp = dscp
-            self.SrcIP = srcip
-            self.DstIP = dstip
+            self.DstIP = ipaddress.ip_address(dstip)
             self.TunnelId = tunnel_id
         else:
             assert(0)
@@ -55,8 +54,8 @@ class MirrorSessionObject(base.ConfigObjectBase):
             logger.info("- InterfaceId: %s |vlanId:%d" %\
                         (self.UplinkIfUUID, self.VlanId))
         elif self.SpanType == 'ERSPAN':
-            logger.info("- VPCId:%d|TunnelId:%d|DstIP:%s|SrcIP:%s|Dscp:%d|SpanID:%d" %\
-                        (self.VPCId, self.TunnelId, self.DstIP, self.SrcIP, self.Dscp, self.SpanID))
+            logger.info("- VPCId:%d|TunnelId:%d|DstIP:%s|Dscp:%d|SpanID:%d" %\
+                        (self.VPCId, self.TunnelId, self.DstIP, self.Dscp, self.SpanID))
         else:
             assert(0)
         return
@@ -70,12 +69,12 @@ class MirrorSessionObject(base.ConfigObjectBase):
         spec.Id = self.GetKey()
         spec.SnapLen = self.SnapLen
         if self.SpanType == 'RSPAN':
-            spec.RspanSpec.UplinkIf = self.UplinkIfUUID.GetUuid()
+            spec.RspanSpec.Interface = self.UplinkIfUUID.GetUuid()
             spec.RspanSpec.Encap.type = types_pb2.ENCAP_TYPE_DOT1Q
             spec.RspanSpec.Encap.value.VlanId = self.VlanId
         elif self.SpanType == 'ERSPAN':
             spec.ErspanSpec.TunnelId = utils.PdsUuid.GetUUIDfromId(self.TunnelId, ObjectTypes.TUNNEL)
-            utils.GetRpcIPAddr(self.SrcIP, spec.ErspanSpec.SrcIP)
+            utils.GetRpcIPAddr(self.DstIP, spec.ErspanSpec.DstIP)
             spec.ErspanSpec.Dscp = self.Dscp
             spec.ErspanSpec.SpanId = self.SpanID
             spec.ErspanSpec.VPCId = utils.PdsUuid.GetUUIDfromId(self.VPCId, ObjectTypes.VPC)
@@ -96,7 +95,7 @@ class MirrorSessionObject(base.ConfigObjectBase):
         elif self.SpanType == 'ERSPAN':
             #if spec.ErspanSpec.TunnelId != self.TunnelId:
             #    return False
-            if utils.ValidateRpcIPAddr(self.SrcIP, spec.ErspanSpec.SrcIP) is False:
+            if utils.ValidateRpcIPAddr(self.DstIP, spec.ErspanSpec.DstIP) is False:
                 return False
             #if spec.ErspanSpec.Dscp != self.Dscp:
             #    return False

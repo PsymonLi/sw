@@ -377,18 +377,16 @@ func vnicShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
 		for _, resp := range respMsg.Response {
 			spec := resp.GetSpec()
 			stats := resp.GetStats()
-			fmt.Printf("\n")
 			fmt.Printf("Vnic ID: %s\n", utils.IdToStr(spec.GetId()))
-			fmt.Printf("\tTxBytes       : %d\n", stats.GetTxBytes())
-			fmt.Printf("\tTxPackets     : %d\n", stats.GetTxPackets())
-			fmt.Printf("\tRxBytes       : %d\n", stats.GetRxBytes())
-			fmt.Printf("\tRxPackets     : %d\n", stats.GetRxPackets())
-			fmt.Printf("\tMeterTxBytes  : %d\n", stats.GetMeterTxBytes())
-			fmt.Printf("\tMeterTxPackets: %d\n", stats.GetMeterTxPackets())
-			fmt.Printf("\tMeterRxBytes  : %d\n", stats.GetMeterRxBytes())
-			fmt.Printf("\tMeterRxPackets: %d\n", stats.GetMeterRxPackets())
-			fmt.Printf("\tActiveSessions: %d\n", stats.GetActiveSessions())
-			fmt.Printf("\n")
+			fmt.Printf("\tTxBytes           : %d\n", stats.GetTxBytes())
+			fmt.Printf("\tTxPackets         : %d\n", stats.GetTxPackets())
+			fmt.Printf("\tRxBytes           : %d\n", stats.GetRxBytes())
+			fmt.Printf("\tRxPackets         : %d\n", stats.GetRxPackets())
+			fmt.Printf("\tMeterTxBytes      : %d\n", stats.GetMeterTxBytes())
+			fmt.Printf("\tMeterTxPackets    : %d\n", stats.GetMeterTxPackets())
+			fmt.Printf("\tMeterRxBytes      : %d\n", stats.GetMeterRxBytes())
+			fmt.Printf("\tMeterRxPackets    : %d\n", stats.GetMeterRxPackets())
+			fmt.Printf("\tActiveSessions    : %d\n", stats.GetActiveSessions())
 		}
 	}
 }

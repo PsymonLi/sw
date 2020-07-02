@@ -137,7 +137,7 @@ pds_vnic_proto_to_api_spec (pds_vnic_spec_t *api_spec,
         return SDK_RET_INVALID_ARG;
     }
     api_spec->num_tx_mirror_session = proto_spec.txmirrorsessionid_size();
-    for (uint8_t i = 0; api_spec->num_tx_mirror_session; i++) {
+    for (uint8_t i = 0; i < api_spec->num_tx_mirror_session; i++) {
         pds_obj_key_proto_to_api_spec(&api_spec->tx_mirror_session[i],
                                       proto_spec.txmirrorsessionid(i));
     }
@@ -147,7 +147,7 @@ pds_vnic_proto_to_api_spec (pds_vnic_spec_t *api_spec,
         return SDK_RET_INVALID_ARG;
     }
     api_spec->num_rx_mirror_session = proto_spec.rxmirrorsessionid_size();
-    for (uint8_t i = 0; api_spec->num_rx_mirror_session; i++) {
+    for (uint8_t i = 0; i < api_spec->num_rx_mirror_session; i++) {
         pds_obj_key_proto_to_api_spec(&api_spec->rx_mirror_session[i],
                                       proto_spec.rxmirrorsessionid(i));
     }
