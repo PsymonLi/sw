@@ -1139,5 +1139,9 @@ func isDataplaneClassic() bool {
 
 func isRebootRequired(oldCfg, newCfg nmd.DistributedServiceCard) bool {
 	// Here the element DSCProfile is actually the Device Profile which controls lif numbers
+	if oldCfg.Spec.Mode != newCfg.Spec.Mode && newCfg.Spec.Mode == nmd.MgmtMode_HOST.String() {
+		return true
+	}
+
 	return oldCfg.Spec.DSCProfile != newCfg.Spec.DSCProfile
 }
