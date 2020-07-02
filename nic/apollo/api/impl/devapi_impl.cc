@@ -148,6 +148,12 @@ devapi_impl::lif_init(lif_info_t *info) {
     }
 
 err:
+    if (ret == SDK_RET_OK) {
+        // pass the sched offsets and entries to nicmgr. nicmgr uses this in
+        // hitless upgrade to reserve the entries in B instead of fresh alloc
+        info->tx_sched_table_offset = lif_spec.tx_sched_table_offset;
+        info->tx_sched_num_table_entries = lif_spec.tx_sched_num_table_entries;
+    }
     return ret;
 }
 

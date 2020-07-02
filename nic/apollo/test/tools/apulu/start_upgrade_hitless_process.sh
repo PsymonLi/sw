@@ -34,16 +34,19 @@ fi
 function trap_finish () {
     terminate "vpp -c ${PDSPKG_TOPDIR}"
     terminate "$BUILD_DIR/bin/pciemgrd"
+    terminate "$BUILD_DIR/bin/operd"
     terminate "$BUILD_DIR/bin/pdsupgmgr"
     terminate "$PDSPKG_TOPDIR/apollo/tools/apulu/start-agent-sim.sh"
     terminate "$BUILD_DIR/bin/pdsagent"
     terminate "$PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh"
+    rm /sw/nic/conf/vpp_startup.conf
 }
 trap trap_finish EXIT
 
 
 # start processes
 $BUILD_DIR/bin/pciemgrd -d &
+$BUILD_DIR/bin/operd $CONFIG_PATH/apulu/operd.json $CONFIG_PATH/apulu/operd-decoders.json &
 $PDSPKG_TOPDIR/apollo/tools/$PIPELINE/start-agent-sim.sh > $PDSPKG_TOPDIR/agent.log 2>&1 &
 
 upg_wait_for_pdsagent

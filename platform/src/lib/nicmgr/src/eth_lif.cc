@@ -2484,10 +2484,12 @@ EthLif::_CmdSetAttr(void *req, void *req_data, void *resp, void *resp_data)
         }
         break;
     case IONIC_LIF_ATTR_NAME:
-        NIC_LOG_INFO("{}: name changed to {}", hal_lif_info_.name, cmd->name);
-        strncpy0(lif_pstate->name, cmd->name, sizeof(lif_pstate->name));
-        strncpy0(hal_lif_info_.name, cmd->name, sizeof(hal_lif_info_.name));
-        dev_api->lif_upd_name(hal_lif_info_.lif_id, lif_pstate->name);
+        if (!IsLifTypeCpu()) {
+            NIC_LOG_INFO("{}: name changed to {}", hal_lif_info_.name, cmd->name);
+            strncpy0(lif_pstate->name, cmd->name, sizeof(lif_pstate->name));
+            strncpy0(hal_lif_info_.name, cmd->name, sizeof(hal_lif_info_.name));
+            dev_api->lif_upd_name(hal_lif_info_.lif_id, lif_pstate->name);
+        }
         break;
     case IONIC_LIF_ATTR_MTU:
         if (cmd->mtu != lif_pstate->mtu) {
@@ -3484,6 +3486,11 @@ EthLif::UpgradeSyncHandler(void)
     NIC_LOG_DEBUG("{}: syncing config during upgrade", lif_pstate->name);
 
     if (lif_pstate->state >= LIF_STATE_INIT) {
+        hal_lif_info_.tx_sched_table_offset = lif_pstate->tx_sched_table_offset;
+        hal_lif_info_.tx_sched_num_table_entries = lif_pstate->tx_sched_num_table_entries;
+        hal_lif_info_.qstate_mem_address = lif_pstate->qstate_mem_address;
+        hal_lif_info_.qstate_mem_size = lif_pstate->qstate_mem_size;
+
         dev_api->lif_init(&hal_lif_info_);
 
         // Program RSS table

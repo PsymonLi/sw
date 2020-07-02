@@ -120,13 +120,101 @@ linkmgr_ctrl_timers_start (void)
     return SDK_RET_OK;
 }
 
+/// \brief     restore the port state during upgrade
+/// \param[in] port_p pointer to port struct
+/// \return    SDK_RET_OK on success, failure status code on error
+static sdk_ret_t
+port_restore_ (port *port_p)
+{
+    sdk_ret_t ret;
+    uint64_t mask = 1 << (port_p->port_num() - 1);
+
+    // init the bringup and debounce timers
+    port_p->timers_init();
+
+    if(port_p->port_type() != port_type_t::PORT_TYPE_MGMT) {
+        g_linkmgr_state->set_port_bmap_mask(g_linkmgr_state->port_bmap_mask() |
+                                            mask);
+    }
+    // set the source mac addr for pause frames
+    // TODO required during upgrade?
+    // port_p->port_mac_set_pause_src_addr(args->mac_addr);
+
+    // init MAC stats hbm region address
+    ret = port::port_mac_stats_init(port_p);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("port %u mac stats init failed", port_p->port_num());
+        return ret;
+    }
+    return SDK_RET_OK;
+}
+
+/// \brief     enable port operations after upgrade
+/// \param[in] port_p pointer to port struct
+/// \return    SDK_RET_OK on success, failure status code on error
+static sdk_ret_t
+port_switchover_ (port *port_p)
+{
+    sdk_ret_t ret;
+    uint32_t ifindex;
+    uint64_t mask = 1 << (port_p->port_num() - 1);
+
+    ifindex =
+        sdk::lib::catalog::logical_port_to_ifindex(port_p->port_num());
+    SDK_TRACE_DEBUG("port upgrade switchover for port %s",
+                    eth_ifindex_to_str(ifindex).c_str());
+
+    ret = port_restore_(port_p);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("port upgrade failed to restore port %s",
+                      eth_ifindex_to_str(ifindex).c_str());
+        return ret;
+    }
+
+    // If Link was UP before upgrade:
+    //     Add the port to link poll timer
+    //     Set port bmap to reflect link up
+    // Else:
+    //     Disable the port
+    //     If the port admin state is up
+    //         Enable the port
+    if (port_p->oper_status() == port_oper_status_t::PORT_OPER_STATUS_UP) {
+        // add to link status poll timer if the link was up before upgrade
+        ret = port_link_poll_timer_add(port_p);
+
+        // set bmap for link status
+        g_linkmgr_state->set_port_bmap(g_linkmgr_state->port_bmap() | mask);
+    } else {
+        // disable a port to invoke soft reset
+        ret = port_p->port_disable();
+        if (ret != SDK_RET_OK) {
+            SDK_TRACE_ERR("port %u disable failed", port_p->port_num());
+        }
+        if (port_p->admin_state() == port_admin_state_t::PORT_ADMIN_STATE_UP) {
+            ret = port_p->port_enable();
+            if (ret != SDK_RET_OK) {
+                SDK_TRACE_ERR("port %u enable failed", port_p->port_num());
+            }
+        }
+    }
+    return ret;
+}
+
 /// \brief callback for the port switchover event
 ///        in the context of the linkmgr-ctrl thread
 static void
 linkmgr_ctrl_switchover (ipc_msg_ptr msg, const void *ctx)
 {
+    port *port_p;
+
     linkmgr_ctrl_timers_start();
 
+    for (uint32_t i = 0; i < LINKMGR_MAX_PORTS; i++) {
+        port_p = g_linkmgr_state->port_p(i);
+        if (port_p) {
+            port_switchover_(port_p);
+        }
+    }
     // send response back to blocked caller
     respond(msg, NULL, 0);
 }
@@ -217,6 +305,7 @@ linkmgr_event_thread_init (void *ctxt)
     int         exp_build_id = serdes_build_id();
     int         exp_rev_id   = serdes_rev_id();
     std::string cfg_file     = "fw/" + serdes_fw_file();
+    serdes_fn_t *serdes_fn = serdes_fns();
 
     cfg_file = std::string(g_linkmgr_cfg.cfg_path) + "/" + cfg_file;
 
@@ -236,10 +325,10 @@ linkmgr_event_thread_init (void *ctxt)
                 continue;
             }
 
-            sdk::linkmgr::serdes_fns.serdes_spico_upload(sbus_addr, cfg_file.c_str());
+            serdes_fn->serdes_spico_upload(sbus_addr, cfg_file.c_str());
 
-            int build_id = sdk::linkmgr::serdes_fns.serdes_get_build_id(sbus_addr);
-            int rev_id   = sdk::linkmgr::serdes_fns.serdes_get_rev(sbus_addr);
+            int build_id = serdes_fn->serdes_get_build_id(sbus_addr);
+            int rev_id   = serdes_fn->serdes_get_rev(sbus_addr);
 
             if (build_id != exp_build_id || rev_id != exp_rev_id) {
                 SDK_TRACE_DEBUG("sbus_addr 0x%x,"
@@ -250,11 +339,11 @@ linkmgr_event_thread_init (void *ctxt)
                 // TODO fail if no match
             }
 
-            sdk::linkmgr::serdes_fns.serdes_spico_status(sbus_addr);
+            serdes_fn->serdes_spico_status(sbus_addr);
 
             SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
                             sbus_addr,
-                            sdk::linkmgr::serdes_fns.serdes_spico_crc(sbus_addr));
+                            serdes_fn->serdes_spico_crc(sbus_addr));
         }
     }
 
@@ -267,7 +356,9 @@ linkmgr_event_thread_init (void *ctxt)
     // xcvr memory
     // In upgrade mode, timers are started during switchover
     linkmgr_ctrl_timers_init();
-
+    if (g_linkmgr_state->port_restore_state() == false) {
+        linkmgr_ctrl_timers_start();
+    }
     reg_request_handler(LINKMGR_OPERATION_PORT_ENABLE,
                         port_enable_req_handler, NULL);
     reg_request_handler(LINKMGR_OPERATION_PORT_DISABLE,

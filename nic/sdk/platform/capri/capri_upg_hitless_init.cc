@@ -14,6 +14,7 @@
 #include "platform/capri/capri_tbl_rw.hpp"
 #include "platform/capri/capri_state.hpp"
 #include "platform/capri/capri_quiesce.hpp"
+#include "platform/capri/capri_barco_crypto.hpp"
 
 namespace sdk {
 namespace platform {
@@ -53,7 +54,10 @@ capri_upgrade_hitless_init (asic_cfg_t *cfg)
     ret = capri_quiesce_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "Capri quiesce init failure, err %u", ret);
-
+    // TODO : need to recheck the barco init
+    ret = capri_barco_crypto_init(cfg->platform);
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                            "Capri barco init failure, err %u", ret);
     if (cfg->completion_func) {
         cfg->completion_func(sdk::SDK_STATUS_ASIC_INIT_DONE);
     }

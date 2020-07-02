@@ -1691,7 +1691,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
                             mac_info.mtu, mac_info.num_lanes, mac_info.fec,
                             mac_info.force_global_init);
 
-            sdk::linkmgr::mac_fns.mac_cfg(&mac_info);
+            sdk::linkmgr::mac_fns(port_type_t::PORT_TYPE_ETH)->mac_cfg(&mac_info);
             break;
 
         case 3:
@@ -1707,7 +1707,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
                             ", enable: {}",
                             mac_port_num, speed, num_lanes, enable);
 
-            sdk::linkmgr::mac_fns.mac_enable(
+            sdk::linkmgr::mac_fns(port_type_t::PORT_TYPE_ETH)->mac_enable(
                     mac_port_num, speed, num_lanes, enable);
             break;
 
@@ -1724,7 +1724,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
                             ", reset: {}",
                             mac_port_num, speed, num_lanes, reset);
 
-            sdk::linkmgr::mac_fns.mac_soft_reset(
+            sdk::linkmgr::mac_fns(port_type_t::PORT_TYPE_ETH)->mac_soft_reset(
                     mac_port_num, speed, num_lanes, reset);
             break;
 
@@ -1732,7 +1732,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             mac_port_num = req.val1();
             /* HAL_TRACE_DEBUG("mac_faults mac_port: {}, faults: {}",
                             mac_port_num,
-                            sdk::linkmgr::mac_fns.mac_faults_get(mac_port_num));
+                            sdk::linkmgr::mac_fns(port_type_t::PORT_TYPE_ETH)->mac_faults_get(mac_port_num));
             */
             break;
 
@@ -1740,7 +1740,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             mac_port_num = req.val1();
             HAL_TRACE_DEBUG("mac_sync mac_port: {}, sync: {}",
                             mac_port_num,
-                            sdk::linkmgr::mac_fns.mac_sync_get(mac_port_num));
+                            sdk::linkmgr::mac_fns(port_type_t::PORT_TYPE_ETH)->mac_sync_get(mac_port_num));
             break;
 
         case 7:
@@ -1753,7 +1753,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
 
             HAL_TRACE_DEBUG("serdes_cfg sbus_addr: {}, speed: {}, cable: {}",
                             sbus_addr, speed, cable_type);
-            sdk::linkmgr::serdes_fns.serdes_cfg(sbus_addr, serdes_info);
+            sdk::linkmgr::serdes_fns()->serdes_cfg(sbus_addr, serdes_info);
             break;
 
         case 8:
@@ -1765,7 +1765,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
 
             HAL_TRACE_DEBUG("serdes_output_enable sbus_addr: {}, enable: {}",
                             sbus_addr, enable);
-            sdk::linkmgr::serdes_fns.serdes_output_enable(sbus_addr, enable);
+            sdk::linkmgr::serdes_fns()->serdes_output_enable(sbus_addr, enable);
             break;
 
         case 9:
@@ -1774,7 +1774,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
 
             HAL_TRACE_DEBUG("serdes_ical_start sbus_addr: {}",
                             sbus_addr);
-            sdk::linkmgr::serdes_fns.serdes_ical_start(sbus_addr, (port_speed_t)speed);
+            sdk::linkmgr::serdes_fns()->serdes_ical_start(sbus_addr, (port_speed_t)speed);
             break;
 
         case 10:
@@ -1782,7 +1782,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
 
             HAL_TRACE_DEBUG("serdes_pcal_start sbus_addr: {}",
                             sbus_addr);
-            sdk::linkmgr::serdes_fns.serdes_pcal_start(sbus_addr);
+            sdk::linkmgr::serdes_fns()->serdes_pcal_start(sbus_addr);
             break;
 
         case 11:
@@ -1790,7 +1790,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
 
             HAL_TRACE_DEBUG("serdes_pcal_continuous_start sbus_addr: {}",
                             sbus_addr);
-            sdk::linkmgr::serdes_fns.serdes_pcal_continuous_start(sbus_addr);
+            sdk::linkmgr::serdes_fns()->serdes_pcal_continuous_start(sbus_addr);
             break;
 
         case 12:
@@ -1799,7 +1799,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG(
                     "serdes_dfe_status sbus_addr: {}, status: {}",
                     sbus_addr,
-                    sdk::linkmgr::serdes_fns.serdes_dfe_status(sbus_addr));
+                    sdk::linkmgr::serdes_fns()->serdes_dfe_status(sbus_addr));
             break;
 
         case 13:
@@ -1808,7 +1808,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
 
             HAL_TRACE_DEBUG("serdes_eye_get sbus_addr: {}, eye_type: {}",
                             sbus_addr, eye_type);
-            sdk::linkmgr::serdes_fns.serdes_eye_get(sbus_addr, eye_type);
+            sdk::linkmgr::serdes_fns()->serdes_eye_get(sbus_addr, eye_type);
             break;
 
         case 14:
@@ -1820,7 +1820,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
 
             HAL_TRACE_DEBUG("serdes_rx_lpbk sbus_addr: {}, enable: {}",
                             sbus_addr, enable);
-            sdk::linkmgr::serdes_fns.serdes_rx_lpbk(sbus_addr, enable);
+            sdk::linkmgr::serdes_fns()->serdes_rx_lpbk(sbus_addr, enable);
             break;
 
         case 15:
@@ -1828,21 +1828,21 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             hard      = req.val2();
             HAL_TRACE_DEBUG("serdes_sbus_reset sbus_addr: {}, hard: {}",
                             sbus_addr, hard);
-            sdk::linkmgr::serdes_fns.serdes_sbus_reset(sbus_addr, hard);
+            sdk::linkmgr::serdes_fns()->serdes_sbus_reset(sbus_addr, hard);
             break;
 
         case 16:
             sbus_addr = req.val1();
             HAL_TRACE_DEBUG("serdes_spico_reset sbus_addr: {}",
                             sbus_addr);
-            sdk::linkmgr::serdes_fns.serdes_spico_reset(sbus_addr);
+            sdk::linkmgr::serdes_fns()->serdes_spico_reset(sbus_addr);
             break;
 
         case 17:
             sbus_addr = req.val1();
             HAL_TRACE_DEBUG("serdes_spico_upload sbus_addr: {}",
                             sbus_addr);
-            sdk::linkmgr::serdes_fns.serdes_spico_upload(
+            sdk::linkmgr::serdes_fns()->serdes_spico_upload(
                                         sbus_addr, filename.c_str());
             break;
 
@@ -1885,7 +1885,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
         case 21:
             sbus_addr = req.val1();
             HAL_TRACE_DEBUG("spico_status sbus_addr: {}", sbus_addr);
-            sdk::linkmgr::serdes_fns.serdes_spico_status(sbus_addr);
+            sdk::linkmgr::serdes_fns()->serdes_spico_status(sbus_addr);
             break;
 
         case 22:
@@ -1893,7 +1893,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG(
                     "serdes_rev sbus_addr: {}, rev: {}",
                     sbus_addr,
-                    sdk::linkmgr::serdes_fns.serdes_get_rev(sbus_addr));
+                    sdk::linkmgr::serdes_fns()->serdes_get_rev(sbus_addr));
             break;
 
         case 23:
@@ -1901,7 +1901,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG(
                     "serdes_build_id sbus_addr: {}, build_id: {}",
                     sbus_addr,
-                    sdk::linkmgr::serdes_fns.serdes_get_build_id(sbus_addr));
+                    sdk::linkmgr::serdes_fns()->serdes_get_build_id(sbus_addr));
             break;
 
         case 24:
@@ -1909,7 +1909,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG(
                     "serdes_spico_crc sbus_addr: {}, spico_crc: {}",
                     sbus_addr,
-                    sdk::linkmgr::serdes_fns.serdes_spico_crc(sbus_addr));
+                    sdk::linkmgr::serdes_fns()->serdes_spico_crc(sbus_addr));
             break;
 
         case 25:
@@ -1917,7 +1917,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG(
                     "serdes_get_eng_id sbus_addr: {}, eng_id: {}",
                     sbus_addr,
-                    sdk::linkmgr::serdes_fns.serdes_get_eng_id(sbus_addr));
+                    sdk::linkmgr::serdes_fns()->serdes_get_eng_id(sbus_addr));
             break;
 
         case 26:
@@ -1939,7 +1939,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG("spico_int sbus_addr: {}, int_code: {},"
                             " int_data: {}, result: {}",
                             sbus_addr, int_code, int_data,
-                            sdk::linkmgr::serdes_fns.serdes_spico_int(
+                            sdk::linkmgr::serdes_fns()->serdes_spico_int(
                                     sbus_addr, int_code, int_data));
             break;
 
@@ -1953,7 +1953,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG("serdes_get_errors sbus_addr: {}, clear: {},"
                             " result: {}",
                             sbus_addr, reset,
-                            sdk::linkmgr::serdes_fns.serdes_get_errors(
+                            sdk::linkmgr::serdes_fns()->serdes_get_errors(
                                 sbus_addr, reset));
             break;
 
@@ -1972,7 +1972,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
 
             HAL_TRACE_DEBUG("serdes signal detect sbus_addr: {}, signal: {}",
                             sbus_addr,
-                            sdk::linkmgr::serdes_fns.serdes_signal_detect(
+                            sdk::linkmgr::serdes_fns()->serdes_signal_detect(
                                                             sbus_addr));
             break;
 
@@ -1987,7 +1987,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG("serdes_prbs31 sbus_addr: {}, speed: {}, cable: {}",
                             sbus_addr, speed, cable_type);
 
-            sdk::linkmgr::serdes_fns.serdes_prbs_start(sbus_addr, serdes_info);
+            sdk::linkmgr::serdes_fns()->serdes_prbs_start(sbus_addr, serdes_info);
 
             break;
 

@@ -14,6 +14,8 @@ namespace linkmgr {
 // global aapl info
 Aapl_t *aapl = NULL;
 
+static serdes_fn_t serdes_fns_;
+
 #define serdes_spico_int_check_hw(sbus_addr, int_code, int_data)  \
     avago_spico_int_check(aapl, __func__, __LINE__,         \
                           sbus_addr, int_code, int_data);   \
@@ -1331,6 +1333,12 @@ serdes_aacs_start_hw(int port)
     avago_aacs_server(aapl, port);
 }
 
+serdes_fn_t *
+serdes_fns (void)
+{
+    return &serdes_fns_;
+}
+
 sdk_ret_t
 port_serdes_fn_init(platform_type_t platform_type,
                     uint32_t        jtag_id,
@@ -1340,7 +1348,7 @@ port_serdes_fn_init(platform_type_t platform_type,
                     int             port,
                     std::string     ip)
 {
-    serdes_fn_t        *serdes_fn = &serdes_fns;
+    serdes_fn_t        *serdes_fn = &serdes_fns_;
 
     serdes_fn->serdes_basic_cfg     = &serdes_cfg_default;
     serdes_fn->serdes_cfg           = &serdes_cfg_default;

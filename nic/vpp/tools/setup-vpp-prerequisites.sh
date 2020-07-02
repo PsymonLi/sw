@@ -24,11 +24,13 @@ VPP_PKG_DIR=$NICDIR/sdk/third-party/vpp-pkg/x86_64
 rm -rf /usr/lib/vpp_plugins/*
 mkdir -p /usr/lib/vpp_plugins/
 ln -s $VPP_PKG_DIR/lib/vpp_plugins/dpdk_plugin.so /usr/lib/vpp_plugins/dpdk_plugin.so
-rm -f $NICDIR/conf/vpp_startup.conf
+rm -f /sw/nic/conf/vpp_startup.conf
+# vpp need config in /sw/nic/conf. as we bootup instance after another it is
+# ok to overwrite the running instance config
 if [ $APP_ID -eq 3 ];then # second domain
-    ln -s $NICDIR/vpp/conf/upgrade/startup_${PIPELINE}_dom_b.conf $NICDIR/conf/vpp_startup.conf
+    ln -s $NICDIR/vpp/conf/upgrade/startup_${PIPELINE}_dom_b.conf /sw/nic/conf/vpp_startup.conf
 else
-    ln -s $NICDIR/vpp/conf/startup_$PIPELINE.conf $NICDIR/conf/vpp_startup.conf
+    ln -s $NICDIR/vpp/conf/startup_$PIPELINE.conf /sw/nic/conf/vpp_startup.conf
 fi
 #Create softlink for all vpp plugins
 find $NICDIR/vpp/ -name *.mk | xargs grep MODULE_TARGET | grep "\.lib" | awk '{ print $3 }' |  sed 's/\.lib/.so/g' | xargs -I@ bash -c "ln -s $NICDIR/build/x86_64/$PIPELINE/lib/@ /usr/lib/vpp_plugins/@"

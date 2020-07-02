@@ -91,14 +91,16 @@
         "config_replay": {
             "//": "config replay",
             "svc": {
-              "domain": "B"
+              "domain": "B",
+              "rsp_timeout": "600000ms"
             },
             "events": [
                 { "name": "svc_rsp_ok",   "next_stage": "sync" },
                 { "name": "svc_rsp_fail", "next_stage": "repeal"             },
                 { "name": "svc_rsp_crit", "next_stage": "repeal"             },
                 { "name": "svc_no_rsp",   "next_stage": "repeal"             }
-            ]
+            ],
+            "pre_hooks" : ["upgmgr_hitless.sh"]
         },
 
         "sync": {

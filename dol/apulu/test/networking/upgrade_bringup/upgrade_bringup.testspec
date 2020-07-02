@@ -1,0 +1,36 @@
+selectors:
+    root: ref://store/templates/id=NODE
+    maxlimits: 1
+    node      : filter://NodeType=DUT
+
+session:
+    - step:
+        trigger:
+            configs:
+                - object: ref://testcase/config/root
+                  method: UpgradeBringupCmd
+                  fields:
+                      cmd: ConfigReplayReadyWait
+        expect:
+            delay: 10
+
+    - step:
+        trigger:
+            configs:
+                - object: ref://testcase/config/root
+                  method: Create
+        expect:
+            configs:
+                - object: ref://testcase/config/root
+                  method: Read
+    - step:
+        trigger:
+            configs:
+                - object: ref://testcase/config/root
+                  method: UpgradeBringupCmd
+                  fields:
+                      cmd: ConfigReplayDone
+        expect:
+            delay: 10
+
+

@@ -21,10 +21,12 @@ elif [[ $STAGE_NAME == "UPG_STAGE_PREPARE" && $STAGE_TYPE == "PRE" ]]; then
     dom=$( upgmgr_get_alt_domain  )
     echo $dom > /tmp/start_new
 elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
-    # give some time here for process B to bringup its interfaces before
-    # switchover. otherwise program_bin re-config may hang. this is because 
-    # quiesce does not work in sim
-    sleep 20
+    echo "Nothing to do"
+elif [[ $STAGE_NAME == "UPG_STAGE_CONFIG_REPLAY" && $STAGE_TYPE == "PRE" ]]; then
+    touch /tmp/config_replay_ready
+    while [ ! -e /tmp/config_replay_done ]; do
+        sleep 1
+    done
 else
     echo "unknown input"
     exit 1

@@ -59,6 +59,7 @@ typedef struct upg_ev_params_s {
 typedef sdk_ret_t (*upg_ev_hdlr_t)(upg_ev_params_t *params);
 
 sdk_ret_t upg_init(pds_init_params_t *params);
+sdk_ret_t upg_soft_init(pds_init_params_t *params);
 sdk_ret_t upg_graceful_init(pds_init_params_t *params);
 sdk_ret_t upg_hitless_init(pds_init_params_t *params);
 sdk_ret_t nicmgr_upg_graceful_init(void);

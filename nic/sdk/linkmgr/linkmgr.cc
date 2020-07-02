@@ -560,29 +560,6 @@ xcvr_init_ (linkmgr_cfg_t *cfg)
     return sdk::platform::xcvr_init(cfg->xcvr_event_cb, mem, NULL);
 }
 
-/// \brief  sends msg to linkmgr-ctrl thread to start the link poll and
-///         transceiver poll timers
-/// \return SDK_RET_OK on success, failure status code on error
-static sdk_ret_t
-linkmgr_timers_start (void)
-{
-    sdk_ret_t ret;
-    linkmgr_entry_data_t data;
-
-    // wait for linkmgr control thread to process port event
-    while (!is_linkmgr_ctrl_thread_ready()) {
-        pthread_yield();
-    }
-    data.ctxt  = NULL;
-    data.timer = NULL;
-    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_SWITCHOVER, &data,
-                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
-    if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Error notifying control-thread for port enable");
-    }
-    return ret;
-}
-
 sdk_ret_t
 linkmgr_init (linkmgr_cfg_t *cfg)
 {
@@ -599,19 +576,16 @@ linkmgr_init (linkmgr_cfg_t *cfg)
     // initialize the port mac and serdes functions
     port::port_init(cfg);
 
-    if ((ret = thread_init(cfg)) != SDK_RET_OK) {
-        SDK_TRACE_ERR("linkmgr thread init failed");
-        return ret;
-    }
-
     if (cfg->use_shm) {
         // allocate port and transceiver struct in shared memory
         ret = linkmgr_shm_init(cfg);
     } else {
         xcvr_init_(cfg);
     }
-    // start link poll and transceiver poll timers
-    linkmgr_timers_start();
+    if ((ret = thread_init(cfg)) != SDK_RET_OK) {
+        SDK_TRACE_ERR("linkmgr thread init failed");
+        return ret;
+    }
     return ret;
 }
 
@@ -1089,110 +1063,27 @@ port_quiesce (void *pd_p, linkmgr_async_response_cb_t response_cb,
     }
     return ret;
 }
-/// \brief     restore the port state during upgrade
-/// \param[in] port_p pointer to port struct
-/// \return    SDK_RET_OK on success, failure status code on error
-static sdk_ret_t
-port_restore_ (port *port_p)
-{
-    sdk_ret_t ret;
-    uint64_t mask = 1 << (port_p->port_num() - 1);
-
-    // init the bringup and debounce timers
-    port_p->timers_init();
-
-    port_p->set_mac_fns(&mac_fns);
-    port_p->set_serdes_fns(&serdes_fns);
-    if(port_p->port_type() == port_type_t::PORT_TYPE_MGMT) {
-        port_p->set_mac_fns(&mac_mgmt_fns);
-    } else {
-        g_linkmgr_state->set_port_bmap_mask(g_linkmgr_state->port_bmap_mask() |
-                                            mask);
-    }
-    // set the source mac addr for pause frames
-    // TODO required during upgrade?
-    // port_p->port_mac_set_pause_src_addr(args->mac_addr);
-
-    // init MAC stats hbm region address
-    ret = port::port_mac_stats_init(port_p);
-    if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("port %u mac stats init failed", port_p->port_num());
-        return ret;
-    }
-    return SDK_RET_OK;
-}
-
-/// \brief     enable port operations after upgrade
-/// \param[in] port_p pointer to port struct
-/// \return    SDK_RET_OK on success, failure status code on error
-static sdk_ret_t
-port_switchover_ (port *port_p)
-{
-    sdk_ret_t ret;
-    uint32_t ifindex;
-    uint64_t mask = 1 << (port_p->port_num() - 1);
-
-    ifindex =
-        sdk::lib::catalog::logical_port_to_ifindex(port_p->port_num());
-    SDK_TRACE_DEBUG("port upgrade switchover for port %s",
-                    eth_ifindex_to_str(ifindex).c_str());
-
-    ret = port_restore_(port_p);
-    if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Failed to restore port %s",
-                      eth_ifindex_to_str(ifindex).c_str());
-        return ret;
-    }
-
-    // If Link was UP before upgrade:
-    //     Add the port to link poll timer
-    //     Set port bmap to reflect link up
-    // Else:
-    //     Disable the port
-    //     If the port admin state is up
-    //         Enable the port
-    if (port_p->oper_status() == port_oper_status_t::PORT_OPER_STATUS_UP) {
-        // add to link status poll timer if the link was up before upgrade
-        ret = port_link_poll_timer_add(port_p);
-
-        // set bmap for link status
-        g_linkmgr_state->set_port_bmap(g_linkmgr_state->port_bmap() | mask);
-    } else {
-        // disable a port to invoke soft reset
-        ret = port_disable(port_p);
-        if (ret != SDK_RET_OK) {
-            SDK_TRACE_ERR("port %u disable failed", port_p->port_num());
-        }
-        if (port_p->admin_state() == port_admin_state_t::PORT_ADMIN_STATE_UP) {
-            ret = port_enable(port_p);
-            if (ret != SDK_RET_OK) {
-                SDK_TRACE_ERR("port %u enable failed", port_p->port_num());
-            }
-        }
-    }
-    return ret;
-}
 
 sdk_ret_t
 port_upgrade_switchover (void)
 {
-    uint32_t i;
-    port *port_p;
+    sdk_ret_t ret;
+    linkmgr_entry_data_t data = { 0 };
 
     if (!g_linkmgr_cfg.use_shm) {
         SDK_TRACE_DEBUG("port switchover not supported for non-shm");
         return SDK_RET_OK;
     }
-    // start link poll and transceiver poll timers
-    linkmgr_timers_start();
-
-    for (i = 0; i < LINKMGR_MAX_PORTS; i++) {
-        port_p = g_linkmgr_state->port_p(i);
-        if (port_p) {
-            port_switchover_(port_p);
-        }
+    // wait for linkmgr control thread to process port event
+    while (!is_linkmgr_ctrl_thread_ready()) {
+        pthread_yield();
     }
-    return SDK_RET_OK;
+    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_SWITCHOVER, &data,
+                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Error notifying control-thread for port switchover");
+    }
+    return ret;
 }
 
 static port *
@@ -1284,12 +1175,8 @@ port_create (port_args_t *args)
     port_p->set_user_fec_type(args->user_fec_type);
 
     port_p->set_derived_fec_type(args->derived_fec_type);
-    port_p->set_mac_fns(&mac_fns);
-    port_p->set_serdes_fns(&serdes_fns);
 
-    if(args->port_type == port_type_t::PORT_TYPE_MGMT) {
-        port_p->set_mac_fns(&mac_mgmt_fns);
-    } else {
+    if(args->port_type != port_type_t::PORT_TYPE_MGMT) {
         g_linkmgr_state->set_port_bmap_mask(g_linkmgr_state->port_bmap_mask() |
                                             (1 << (args->port_num - 1)));
     }
@@ -1691,7 +1578,7 @@ static void*
 linkmgr_aacs_start (void* ctxt)
 {
     if (g_linkmgr_state->aacs_server_port_num() != -1) {
-        sdk::linkmgr::serdes_fns.serdes_aacs_start(
+        serdes_fns()->serdes_aacs_start(
             g_linkmgr_state->aacs_server_port_num());
     }
 

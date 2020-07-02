@@ -75,19 +75,19 @@ region_kind_to_str (region_kind_t kind)
 }
 
 sdk_ret_t
-mpartition::dump_regions_info (const char *cfg_path) {
-    std::string         gen_dir = std::string(cfg_path) + "/gen";
+mpartition::dump_regions_info (const char *path) {
+    std::string         dir = std::string(path);
     pt::ptree           root, regions, entry;
     mpartition_region_t *reg;
     char                numbuf[64];
     struct stat         st = { 0 };
 
     // check if the gen dir exists
-    if (stat(gen_dir.c_str(), &st) == -1) {
+    if (stat(dir.c_str(), &st) == -1) {
         // doesn't exist, try to create
-        if (mkdir(gen_dir.c_str(), 0755) < 0) {
-            SDK_TRACE_ERR("Gen directory %s/ doesn't exist, failed to create one\n",
-                          gen_dir.c_str());
+        if (mkdir(dir.c_str(), 0755) < 0) {
+            SDK_TRACE_ERR("Directory %s/ doesn't exist, failed to create one\n",
+                           dir.c_str());
             return SDK_RET_ERR;
         }
     }
@@ -106,7 +106,7 @@ mpartition::dump_regions_info (const char *cfg_path) {
 
     }
     root.add_child("regions", regions);
-    pt::write_json(gen_dir + "/" + MPART_INFO_FILE_NAME, root);
+    pt::write_json(dir + "/" + MPART_INFO_FILE_NAME, root);
     return SDK_RET_OK;
 }
 
@@ -119,9 +119,9 @@ mpartition::dump_regions_info (const char *cfg_path) {
 // It also validates the static offsets which should be consistent
 // across upgrades.
 sdk_ret_t
-mpartition::upgrade_hitless_offset_regions (const char *cfg_path,
+mpartition::upgrade_hitless_offset_regions (const char *path,
                                             bool oper_table_persist) {
-    std::string         file = std::string(cfg_path) + "/gen/" + MPART_INFO_FILE_NAME;
+    std::string         file = std::string(path) + "/" + MPART_INFO_FILE_NAME;
     pt::ptree           json_pt;
     mpartition_region_t *mreg;
     std::vector<std::pair <uint64_t, uint64_t> > free_mem; // start address, end address

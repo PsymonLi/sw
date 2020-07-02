@@ -16,6 +16,9 @@ namespace linkmgr {
 uint8_t mx_init[MAX_MAC];
 uint8_t bx_init[MAX_MAC];
 
+static mac_fn_t mac_fns_;
+static mac_fn_t mac_mgmt_fns_;
+
 //---------------------------------------------------------------------------
 // HAPS platform methods
 //---------------------------------------------------------------------------
@@ -1100,11 +1103,20 @@ mac_tx_drain_default (uint32_t mac_inst, uint32_t mac_ch, bool drain)
     return 0;
 }
 
+mac_fn_t *
+mac_fns (port_type_t port_type)
+{
+    if (port_type == port_type_t::PORT_TYPE_MGMT) {
+        return &mac_mgmt_fns_;
+    }
+    return &mac_fns_;
+}
+
 sdk_ret_t
 port_mac_fn_init(linkmgr_cfg_t *cfg)
 {
-    mac_fn_t        *mac_fn       = &mac_fns;
-    mac_fn_t        *mac_mgmt_fn  = &mac_mgmt_fns;
+    mac_fn_t        *mac_fn       = &mac_fns_;
+    mac_fn_t        *mac_mgmt_fn  = &mac_mgmt_fns_;
     platform_type_t platform_type = cfg->platform_type;
 
     mac_fn->mac_cfg            = &mac_cfg_default;

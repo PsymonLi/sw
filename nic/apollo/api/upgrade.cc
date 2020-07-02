@@ -261,7 +261,7 @@ upg_init (pds_init_params_t *params)
     // offset the memory regions based on the regions in use
     if (sdk::platform::sysinit_mode_hitless(mode)) {
         ret = g_pds_state.mempartition()->upgrade_hitless_offset_regions(
-            api::g_pds_state.cfg_path().c_str(), false);
+            PDS_UPGRADE_SHMSTORE_VPATH_HITLESS, false);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Upgrade hitless memory offset failed");
             return ret;
@@ -311,6 +311,27 @@ upg_init (pds_init_params_t *params)
     if (!sdk::platform::sysinit_mode_default(mode)) {
         ret = upg_shmstore_open(mode);
         if (ret != SDK_RET_OK) {
+            return ret;
+        }
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+upg_soft_init (pds_init_params_t *params)
+{
+    sysinit_mode_t mode;
+    sdk_ret_t ret;
+
+    mode = sdk::upg::init_mode();
+    // soft inited applications such as vpp, needs the upgraded
+    // mem regions for its libraries, ex ftl
+    if (sdk::platform::sysinit_mode_hitless(mode)) {
+        // offset the memory regions based on the regions in use
+        ret = g_pds_state.mempartition()->upgrade_hitless_offset_regions(
+            PDS_UPGRADE_SHMSTORE_VPATH_HITLESS, false);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Upgrade hitless memory offset failed");
             return ret;
         }
     }

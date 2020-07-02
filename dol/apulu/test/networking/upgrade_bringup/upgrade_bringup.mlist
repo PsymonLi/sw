@@ -1,0 +1,29 @@
+# Feature networking Modules List for Local to Remote scenario
+feature:
+    id          : upgrade
+    sub         : upgradebringup
+    package     : test.networking
+    module      : upgrade_bringup
+    runorder    : 100
+    enable      : True
+    ignore      : False
+
+modules:
+    - module:
+        name    : L2_IPV4_TCP_PRE
+        spec    : local2remote.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False
+
+    - module:
+        name    : UPGRADE_BRINGUP
+        spec    : upgrade_bringup.testspec
+
+    - module:
+        name    : L2_IPV4_TCP_POST
+        spec    : local2remote.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False
+

@@ -172,10 +172,6 @@ dhcp_policy_impl::activate_hw(api_base *api_obj, api_base *orig_obj,
             PDS_TRACE_ERR("Failed to program DHCP relay NACL redirect entry "
                           "at %u", nacl_idx_);
             return sdk::SDK_RET_HW_PROGRAM_ERR;
-        } else {
-            PDS_TRACE_DEBUG("Programmed NACL entry idx %u, ktype %u, lif %u",
-                            nacl_idx_, key.key_metadata_ktype,
-                            key.capri_intrinsic_lif);
         }
 
         // cover the regular case where dst port is 68
@@ -186,10 +182,6 @@ dhcp_policy_impl::activate_hw(api_base *api_obj, api_base *orig_obj,
             PDS_TRACE_ERR("Failed to program DHCP relay NACL redirect entry "
                           "at %u", nacl_idx_ + 1);
             return sdk::SDK_RET_HW_PROGRAM_ERR;
-        } else {
-            PDS_TRACE_DEBUG("Programmed NACL entry idx %u, ktype %u, lif %u",
-                            nacl_idx_ + 1, key.key_metadata_ktype,
-                            key.capri_intrinsic_lif);
         }
         break;
 

@@ -350,9 +350,6 @@ mpartition_init (pds_init_params_t *params, std::string mem_str)
     }
     api::g_pds_state.set_mempartition(
         sdk::platform::utils::mpartition::factory(mem_json.c_str()));
-    // below file is used during upgrade
-    api::g_pds_state.mempartition()->dump_regions_info(
-        api::g_pds_state.cfg_path().c_str());
 
     PDS_TRACE_DEBUG("Initializing PDS with memory json %s", mem_json.c_str());
     return SDK_RET_OK;
@@ -525,6 +522,12 @@ pds_init (pds_init_params_t *params)
         // raise HAL_UP event
         sdk::ipc::broadcast(EVENT_ID_PDS_HAL_UP, NULL, 0);
     } else {
+        // upgrade soft init
+        ret = api::upg_soft_init(params);
+        if (ret != SDK_RET_OK) {
+            return SDK_RET_ERR;
+        }
+
         // impl init
         SDK_ASSERT(impl_base::init(params, &asic_cfg) == SDK_RET_OK);
     }

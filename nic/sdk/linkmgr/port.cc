@@ -20,10 +20,6 @@ using namespace sdk::asic::pd;
 namespace sdk {
 namespace linkmgr {
 
-mac_fn_t    mac_fns;
-mac_fn_t    mac_mgmt_fns;
-serdes_fn_t serdes_fns;
-
 // Debounce timer expiration handler
 sdk_ret_t
 port::port_debounce_timer_cb(void)
@@ -156,7 +152,7 @@ port::port_mac_cfg_fec(port_fec_type_t fec_type)
 
     mac_info.force_global_init = false;
 
-    mac_fns()->mac_cfg_fec(&mac_info);
+    mac_fns(port_type())->mac_cfg_fec(&mac_info);
 
     return SDK_RET_OK;
 }
@@ -187,7 +183,7 @@ port::port_mac_cfg(void)
 
     mac_info.force_global_init = false;
 
-    mac_fns()->mac_cfg(&mac_info);
+    mac_fns(port_type())->mac_cfg(&mac_info);
 
     return SDK_RET_OK;
 }
@@ -197,7 +193,7 @@ port::port_mac_enable(bool enable)
 {
     uint32_t mac_port_num = port_mac_port_num_calc();
 
-    mac_fns()->mac_enable(
+    mac_fns(port_type())->mac_enable(
                mac_port_num,
                static_cast<uint32_t>(this->port_speed_),
                this->num_lanes_,
@@ -211,7 +207,7 @@ port::port_mac_soft_reset(bool reset)
 {
     uint32_t mac_port_num = port_mac_port_num_calc();
 
-    mac_fns()->mac_soft_reset(
+    mac_fns(port_type())->mac_soft_reset(
                    mac_port_num,
                    static_cast<uint32_t>(this->port_speed_),
                    this->num_lanes_,
@@ -223,7 +219,7 @@ port::port_mac_soft_reset(bool reset)
 sdk_ret_t
 port::port_mac_stats_reset(bool reset)
 {
-    mac_fns()->mac_stats_reset(this->mac_id_, this->mac_ch_, reset);
+    mac_fns(port_type())->mac_stats_reset(this->mac_id_, this->mac_ch_, reset);
     port_mac_stats_persist_clear(reset);
 
     return SDK_RET_OK;
@@ -234,7 +230,7 @@ port::port_mac_intr_en(bool enable)
 {
     uint32_t mac_port_num = port_mac_port_num_calc();
 
-    mac_fns()->mac_intr_enable(
+    mac_fns(port_type())->mac_intr_enable(
             mac_port_num,
             static_cast<uint32_t>(this->port_speed_),
             this->num_lanes_,
@@ -248,7 +244,7 @@ port::port_mac_intr_clr(void)
 {
     uint32_t mac_port_num = port_mac_port_num_calc();
 
-    mac_fns()->mac_intr_clear(
+    mac_fns(port_type())->mac_intr_clear(
             mac_port_num,
             static_cast<uint32_t>(this->port_speed_),
             this->num_lanes_);
@@ -259,19 +255,19 @@ port::port_mac_intr_clr(void)
 sdk_ret_t
 port::port_mac_faults_clear(void)
 {
-    mac_fns()->mac_faults_clear(this->mac_id(), this->mac_ch());
+    mac_fns(port_type())->mac_faults_clear(this->mac_id(), this->mac_ch());
     return SDK_RET_OK;
 }
 
 bool
 port::port_mac_faults_get(void)
 {
-    return mac_fns()->mac_faults_get(this->mac_id(), this->mac_ch());
+    return mac_fns(port_type())->mac_faults_get(this->mac_id(), this->mac_ch());
 }
 
 sdk_ret_t
 port::port_mac_send_remote_faults(bool send) {
-    mac_fns()->mac_send_remote_faults(
+    mac_fns(port_type())->mac_send_remote_faults(
                 this->mac_id(), this->mac_ch(), send);
     return SDK_RET_OK;
 }
@@ -281,7 +277,7 @@ port::port_mac_sync_get(void)
 {
     uint32_t mac_port_num = port_mac_port_num_calc();
 
-    return mac_fns()->mac_sync_get(mac_port_num);
+    return mac_fns(port_type())->mac_sync_get(mac_port_num);
 }
 
 sdk_ret_t
@@ -289,7 +285,7 @@ port::port_flush_set (bool enable)
 {
     uint32_t mac_port_num = port_mac_port_num_calc();
 
-    mac_fns()->mac_flush_set(mac_port_num, enable);
+    mac_fns(port_type())->mac_flush_set(mac_port_num, enable);
 
     return SDK_RET_OK;
 }
@@ -1730,7 +1726,7 @@ port::set_bringup_duration(void)
 sdk_ret_t
 port::port_mac_stats_get (uint64_t *stats_data)
 {
-    mac_fns()->mac_stats_get(this->mac_id_, this->mac_ch_, stats_data);
+    mac_fns(port_type())->mac_stats_get(this->mac_id_, this->mac_ch_, stats_data);
     // correct mac errata stats
     this->port_mac_stats_errata_correct(stats_data);
     // add persist stats to this current stats_data and return
@@ -1743,13 +1739,13 @@ port::port_mac_stats_get (uint64_t *stats_data)
 sdk_ret_t
 port::port_deinit (void)
 {
-    mac_fns()->mac_deinit (this->mac_id_, this->mac_ch_);
+    mac_fns(port_type())->mac_deinit (this->mac_id_, this->mac_ch_);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 port::port_mac_set_pause_src_addr(uint8_t *mac_addr) {
-    mac_fns()->mac_pause_src_addr(mac_id(), mac_ch(), mac_addr);
+    mac_fns(port_type())->mac_pause_src_addr(mac_id(), mac_ch(), mac_addr);
     return SDK_RET_OK;
 }
 
@@ -1951,7 +1947,7 @@ port::port_mac_stats_persist_update(void)
     uint64_t stats_data[MAX_MAC_STATS];
 
     if (this->persist_stats_collect_ == true) {
-        mac_fns()->mac_stats_get(this->mac_id_, this->mac_ch_, stats_data);
+        mac_fns(port_type())->mac_stats_get(this->mac_id_, this->mac_ch_, stats_data);
 
         // correct mac errata stats
         this->port_mac_stats_errata_correct(stats_data);
@@ -2007,7 +2003,7 @@ port::port_pb_enable (bool enable)
 
 sdk_ret_t
 port::port_mac_tx_drain(bool drain) {
-    mac_fns()->mac_tx_drain(mac_id(), mac_ch(), drain);
+    mac_fns(port_type())->mac_tx_drain(mac_id(), mac_ch(), drain);
     return SDK_RET_OK;
 }
 

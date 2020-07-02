@@ -71,10 +71,9 @@ typedef struct mac_fn_s_ {
                          bool drain);
 } mac_fn_t;
 
-extern mac_fn_t mac_fns;
-extern mac_fn_t mac_mgmt_fns;
-
 sdk_ret_t port_mac_fn_init(linkmgr_cfg_t *cfg);
+
+mac_fn_t *mac_fns(port_type_t port_type);
 
 }    // namespace linkmgr
 }    // namespace sdk

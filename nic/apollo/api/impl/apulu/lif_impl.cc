@@ -23,6 +23,7 @@
 #include "nic/apollo/api/impl/apulu/if_impl.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl.hpp"
 #include "nic/apollo/api/impl/apulu/nacl_data.h"
+#include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/p4/common/defines.h"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
@@ -618,7 +619,17 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     nexthop_info_entry_t nexthop_info_entry;
 
     strncpy(name_, spec->name, sizeof(name_));
-    PDS_TRACE_DEBUG("Creating s/w datapath lif %s", name_);
+    // during hitless upgrade, domain-b uses cpu_mnic2
+    if (sdk::platform::sysinit_domain_b(api::g_upg_state->init_domain())) {
+        if (!strncmp(name_, "cpu_mnic0", strlen("cpu_mnic0"))) {
+            return SDK_RET_OK;
+        }
+    } else {
+        if (!strncmp(name_, "cpu_mnic2", strlen("cpu_mnic2"))) {
+            return SDK_RET_OK;
+        }
+    }
+    PDS_TRACE_DEBUG("Creating s/w datapath lif %s, id %u", name_, id_);
     // allocate required nexthop to point to ARM datapath lif
     ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
     if (ret != SDK_RET_OK) {
@@ -1205,6 +1216,16 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     nexthop_info_entry_t nexthop_info_entry;
 
     strncpy(name_, spec->name, sizeof(name_));
+    // during hitless upgrade, domain-b uses cpu_mnic3
+    if (sdk::platform::sysinit_domain_b(api::g_upg_state->init_domain())) {
+        if (!strncmp(name_, "cpu_mnic1", strlen("cpu_mnic1"))) {
+            return SDK_RET_OK;
+        }
+    } else {
+        if (!strncmp(name_, "cpu_mnic3", strlen("cpu_mnic3"))) {
+            return SDK_RET_OK;
+        }
+    }
     PDS_TRACE_DEBUG("Creating learn lif %s", name_);
     // allocate required nexthop to point to ARM datapath lif
     ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);

@@ -191,7 +191,7 @@ init_ipsec_lif (uint32_t lif_id)
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-service_lif_upg_verify (uint32_t lif_id, const char *cfg_path)
+service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
 {
     int32_t rv;
     uint8_t pgm_offset = 0;
@@ -274,5 +274,32 @@ service_lif_upg_verify (uint32_t lif_id, const char *cfg_path)
                  qstate.hbm_address + sizeof(lifqstate_t),
                  sizeof(lifqstate_t), pgm_offset);
     }
+    return SDK_RET_OK;
+}
+
+/**
+ * @brief     routine to validate service LIFs config during upgrade
+ *            during A to B upgrade this will be called by B
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t
+ipsec_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
+{
+
+   lif_qstate_t *lif_qstate = (lif_qstate_t *)SDK_CALLOC(
+                               PDS_MEM_ALLOC_ID_HACK_IMPL_LIF_QSTATE,
+                               sizeof(lif_qstate_t));
+    lif_qstate->lif_id = lif_id;
+    lif_qstate->hbm_address = api::g_pds_state.mempartition()->start_addr(
+                              JIPSEC_LIF2QSTATE_MAP_NAME);
+    lif_qstate->type[0].qtype_info.size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
+    lif_qstate->type[0].qtype_info.entries = PDS_MAX_IPSEC_SA_SHIFT;
+    lif_qstate->type[0].hbm_offset = 0;
+    lif_qstate->type[1].qtype_info.size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
+    lif_qstate->type[1].qtype_info.entries = PDS_MAX_IPSEC_SA_SHIFT;
+    lif_qstate->type[1].hbm_offset = IPSEC_QSTATE_SIZE * PDS_MAX_IPSEC_SA;
+    api::g_pds_state.set_ipsec_lif_qstate(lif_qstate);
+
+    // TODO : further checks in config including pc offsets
     return SDK_RET_OK;
 }

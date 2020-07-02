@@ -92,4 +92,5 @@ status=${PIPESTATUS[0]}
 
 # end of script
 rm -rf $PDSPKG_TOPDIR/model.log
+stop_upgrade_manager
 exit $status

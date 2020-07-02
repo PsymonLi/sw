@@ -61,8 +61,6 @@ typedef struct serdes_fn_s_ {
     int (*serdes_eye_check)        (uint32_t sbus_addr, uint32_t *values);
 } serdes_fn_t;
 
-extern serdes_fn_t serdes_fns;
-
 sdk_ret_t
 port_serdes_fn_init(platform_type_t platform_type,
                     uint32_t        jtag_id,
@@ -80,6 +78,8 @@ sbus_access (uint32_t sbus_addr,
              unsigned char reg_addr,
              unsigned char command,
              uint *sbus_data);
+
+serdes_fn_t *serdes_fns(void);
 
 }    // namespace linkmgr
 }    // namespace sdk
