@@ -73,11 +73,13 @@
               class="global-table-action-icon"
               (click)="expandRowRequest($event, rowData)">edit
     </mat-icon>
-    <mat-icon matTooltip="Delete Network"
-              *roleGuard="'networknetwork_delete'"
-              class="global-table-action-icon"
-              (click)="onDeleteRecord($event, rowData)">delete
-    </mat-icon>
+    <ng-container *ngIf="!hideDeleteIcon(rowData)">
+      <mat-icon matTooltip="Delete Network"
+                *roleGuard="'networknetwork_delete'"
+                class="global-table-action-icon"
+                (click)="onDeleteRecord($event, rowData)">delete
+      </mat-icon>
+    </ng-container>
   </div>
 </ng-template>
 
@@ -120,7 +122,7 @@
         -->
         <mat-icon [ngClass]="{
             'global-multi-records-delete-icon': true,
-            'global-button-disabled': !hasSelectedRows()
+            'global-button-disabled': disableMultupleDeleteIcon()
           }"
                   (click)="onDeleteSelectedNetworks($event)"
                   [matTooltip]="hasSelectedRows() ? 'Delete selected networks' : 'Select networks to delete'">

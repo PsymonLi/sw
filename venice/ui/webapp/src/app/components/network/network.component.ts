@@ -442,6 +442,29 @@ export class NetworkComponent extends DataComponent implements OnInit {
     this.inLabelEditMode = false;
   }
 
+  isNetworkInternal(network: NetworkNetwork) {
+    return network && network.meta && network.meta.labels &&
+        network.meta.labels['io.pensando.psm-internal'];
+  }
+
+  hideDeleteIcon(network: NetworkNetwork): boolean {
+    return this.isNetworkInternal(network);
+  }
+
+  disableMultupleDeleteIcon() {
+    if (!this.hasSelectedRows()) {
+      return true;
+    }
+    const selectedObjects = this.getSelectedDataObjects();
+    for (let i = 0; i < selectedObjects.length; i++) {
+      const network: NetworkNetwork = selectedObjects[i] as NetworkNetwork;
+      if (this.isNetworkInternal(network)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
     this.inLabelEditMode = false;
   }
