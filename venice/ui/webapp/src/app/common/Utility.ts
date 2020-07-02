@@ -1243,7 +1243,7 @@ export class Utility {
     } else {
       propInfo = instance.getPropInfo(keys[keys.length - 1]);
     }
-    if (propInfo == null && reportMissingPropInf) {
+    if (propInfo === null && reportMissingPropInf) {
       console.error('propInfo was null, supplied property path is likely invalid. Input keys and instance: [' + keys + '] [' + ((instance.kind) ? instance.kind : instance + ']'));
     }
     return propInfo;

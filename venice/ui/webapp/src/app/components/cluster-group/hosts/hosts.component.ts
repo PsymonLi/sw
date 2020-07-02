@@ -524,7 +524,8 @@ export class HostsComponent extends DataComponent implements OnInit {
         operator = TableUtility.convertOperator(operator);
         for (let j = 0; j < searchValues.length; j++) {
           const activateFunc = TableUtility.filterConstraints[operator];
-          if (activateFunc && (activateFunc(recordValueID, searchValues[j]) || activateFunc(recordValueMac, searchValues[j]))) {
+          const searchMac = Utility.MACADDRESS_REGEX.test(searchValues[j]);
+          if (activateFunc && ((!searchMac && activateFunc(recordValueID, searchValues[j])) || (searchMac && activateFunc(recordValueMac, searchValues[j])))) {
             outputs.push(data[i]);
           }
         }
