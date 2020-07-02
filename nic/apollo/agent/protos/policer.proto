@@ -57,12 +57,11 @@ message PolicerSpec {
 
 // operational status of the policer, if any
 message PolicerStatus {
+  uint32 HwId   = 1; // policer hw id
 }
 
 // stats of the policer, if any
 message PolicerStats {
-  uint64 Accept = 1;
-  uint64 Drop   = 2;
 }
 
 // Policer policy object

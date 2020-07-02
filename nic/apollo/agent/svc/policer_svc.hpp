@@ -97,6 +97,7 @@ static inline void
 pds_policer_api_status_to_proto (pds::PolicerStatus *proto_status,
                                  const pds_policer_status_t *api_status)
 {
+    proto_status->set_hwid(api_status->hw_id);
 }
 
 // populate proto buf stats from policer API stats

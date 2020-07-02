@@ -105,14 +105,13 @@ func printPolicerSummary(count int) {
 func printPolicerHeader() {
 	hdrLine := strings.Repeat("-", 103)
 	fmt.Println(hdrLine)
-	fmt.Printf("%-40s%-10s%-5s%-14s%-14s%-10s%-10s\n",
-		"ID", "Direction", "Type", "PPS/BPS", "Burst", "AcceptCnt", "DropCnt")
+	fmt.Printf("%-40s%-10s%-5s%-14s%-14s\n",
+		"ID", "Direction", "Type", "PPS/BPS", "Burst")
 	fmt.Println(hdrLine)
 }
 
 func printPolicer(p *pds.Policer) {
 	spec := p.GetSpec()
-	stats := p.GetStats()
 
 	typeStr := ""
 	var burst uint64
@@ -126,9 +125,8 @@ func printPolicer(p *pds.Policer) {
 		count = spec.GetBPSPolicer().GetBytesPerSecond()
 		burst = spec.GetBPSPolicer().GetBurst()
 	}
-	fmt.Printf("%-40s%-10s%-5s%-14d%-14d%-10d%-10d\n",
+	fmt.Printf("%-40s%-10s%-5s%-14d%-14d\n",
 		utils.IdToStr(spec.GetId()),
 		strings.Replace(spec.GetDirection().String(), "POLICER_DIR_", "", -1),
-		typeStr, count, burst,
-		stats.GetAccept(), stats.GetDrop())
+		typeStr, count, burst)
 }

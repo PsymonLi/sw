@@ -154,7 +154,9 @@ public:
     ///           framework's dependency list
     /// \param[in] obj_ctxt    transient state associated with this API
     /// \return   SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t add_deps(api_obj_ctxt_t *obj_ctxt) override;
+    virtual sdk_ret_t add_deps(api_obj_ctxt_t *obj_ctxt) override {
+        return SDK_RET_OK;
+    }
 
     /// \brief          read config
     /// \param[out]     info pointer to the info object
