@@ -49,10 +49,10 @@ export class PsmSelectBoxComponent extends FormInputComponent implements OnInit,
   ngOnChanges(changes: SimpleChanges) {
     if (changes.options) {
       if (this.addEmptyOption) {
-        this.allOptions = [...this.options, {
+        this.allOptions = [{
           label: this.emptyOptionLabel,
           value: null
-        }];
+        }, ...this.options];
       } else {
         this.allOptions = [...this.options];
       }

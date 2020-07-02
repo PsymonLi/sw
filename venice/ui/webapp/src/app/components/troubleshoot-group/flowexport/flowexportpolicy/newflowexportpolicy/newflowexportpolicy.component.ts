@@ -175,10 +175,13 @@ export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowEx
     if (arr.length === 1) {
       return Utility.isProtocolNoPortsValid(prot);
     }
+    if (prot.trim().toLowerCase() === 'any') {
+      return false;
+    }
     if (!Utility.isProtocolHasPortsValid(prot)) {
       return false;
     }
-    return Utility.isPortRangeValid(arr[1]);
+    return Utility.isSingleOrMultiplePortValid(arr[1]);
   }
 
   areAllRulesEmpty() {

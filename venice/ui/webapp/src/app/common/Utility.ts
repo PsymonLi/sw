@@ -802,6 +802,21 @@ export class Utility {
       port.toLowerCase() === 'any';
   }
 
+  // support 4 type of ports, 1)single port, 2) comma seprated ports
+  // 3) port range, 4) comma seperated port or port ranges
+  public static isSingleOrMultiplePortValid(port: string): boolean {
+    if (!port || !port.trim()) {
+      return false;
+    }
+    const portsArray: string[] = port.split(',');
+    for (let i = 0; i < portsArray.length; i++) {
+      if (!Utility.isPortRangeValid(portsArray[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   public static isPortRangeValid(port: string): boolean {
     if (!port || !port.trim()) {
       return false;
