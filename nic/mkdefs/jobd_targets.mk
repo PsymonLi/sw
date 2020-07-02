@@ -569,22 +569,25 @@ jobd/dol/apulu/lpm: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo lpm_overlap_priority --feature lpm --sub v4_overlap
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo lpm_full_overlap_priority --feature lpm --sub v4_full_overlap
 
-.PHONY: jobd/dol/apulu/dual_policy
-jobd/dol/apulu/dual_policy: ${JOBD_PREREQS}
+.PHONY: jobd/dol/apulu/dual_security_policy
+jobd/dol/apulu/dual_security_policy: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub multi_policy
 
-.PHONY: jobd/dol/apulu/dual_policy_anydeny
-jobd/dol/apulu/dual_policy_anydeny: ${JOBD_PREREQS}
+.PHONY: jobd/dol/apulu/dual_security_policy_anydeny
+jobd/dol/apulu/dual_security_policy_anydeny: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex_anydeny --sub multi_policy
 
-.PHONY: jobd/dol/apulu/vnic_subnet_policy
-jobd/dol/apulu/vnic_subnet_policy: ${JOBD_PREREQS}
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub multi_policy_subnet_vnic
+.PHONY: jobd/dol/apulu/security_policy
+jobd/dol/apulu/security_policy: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub subnet_vnic_multi_policy
 
-.PHONY: jobd/dol/apulu/vnic_subnet_policy_scale
-jobd/dol/apulu/vnic_subnet_policy_scale: ${JOBD_PREREQS}
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub scale_policy_subnet_vnic
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub scale_tag
+.PHONY: jobd/dol/apulu/security_policy_scale
+jobd/dol/apulu/security_policy_scale: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub subnet_vnic_policy_scale
+
+.PHONY: jobd/dol/apulu/security_policy_tags_scale
+jobd/dol/apulu/security_policy_tags_scale: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex_tags --sub policy_tags_scale
 
 .PHONY: jobd/dol/apulu/learn
 jobd/dol/apulu/learn: ${JOBD_PREREQS}

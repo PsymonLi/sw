@@ -1,6 +1,6 @@
 feature:
     id          : policy
-    sub         : multi_policy_subnet_vnic
+    sub         : subnet_vnic_multi_policy
     package     : test.networking
     module      : policy
     runorder    : 8080

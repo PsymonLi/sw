@@ -174,8 +174,8 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
-  apulu/dol/dual_policy:
-    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/dual_policy"]
+  apulu/dol/dual_security_policy:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/dual_security_policy"]
     owners: ["email:sai@pensando.io"]
     area:
     sub-area:
@@ -183,8 +183,8 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
-  apulu/dol/dual_policy_anydeny:
-    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/dual_policy_anydeny"]
+  apulu/dol/dual_security_policy_anydeny:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/dual_security_policy_anydeny"]
     owners: ["email:sai@pensando.io"]
     area:
     sub-area:
@@ -192,8 +192,8 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
-  apulu/dol/vnic_subnet_policy:
-    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/vnic_subnet_policy"]
+  apulu/dol/security_policy:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/security_policy"]
     owners: ["email:vgunta@pensando.io"]
     area:
     sub-area:
@@ -201,8 +201,17 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
-  apulu/dol/vnic_subnet_policy_scale:
-    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/vnic_subnet_policy_scale"]
+  apulu/dol/security_policy_scale:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/security_policy_scale"]
+    owners: ["email:vgunta@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
+  apulu/dol/security_policy_tags_scale:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/security_policy_tags_scale"]
     owners: ["email:vgunta@pensando.io"]
     area:
     sub-area:

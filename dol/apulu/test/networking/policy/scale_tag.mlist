@@ -1,6 +1,6 @@
 feature:
     id          : policy
-    sub         : scale_tag
+    sub         : policy_tags_scale
     package     : test.networking
     module      : policy
     runorder    : 8080
