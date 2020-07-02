@@ -47,8 +47,8 @@ TEST_F(device_test, device_workflow_b1) {
     if (!apulu()) return;
 
     device_feeder feeder;
-    feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_b1<device_feeder>(feeder);
 }
@@ -59,11 +59,11 @@ TEST_F(device_test, device_workflow_b2) {
     if (!apulu()) return;
 
     device_feeder feeder1, feeder1A;
-    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                 PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                  PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1A.init("2.0.0.1", "00:02:01:00:0A:0B", "2.0.0.2", false, false, 0,
-                  false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1A.init("2.0.0.1", "00:02:01:00:0A:0B", "2.0.0.2", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_b2<device_feeder>(feeder1, feeder1A);
 }
@@ -72,14 +72,14 @@ TEST_F(device_test, device_workflow_b2) {
 /// \ref WF_1
 TEST_F(device_test, device_workflow_1) {
     device_feeder feeder;
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_1<device_feeder>(feeder);
 
     if (apulu()) {
-        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                    0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                    PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                     PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_1<device_feeder>(feeder);
     }
@@ -89,14 +89,14 @@ TEST_F(device_test, device_workflow_1) {
 /// \ref WF_2
 TEST_F(device_test, device_workflow_2) {
     device_feeder feeder;
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_2<device_feeder>(feeder);
 
     if (apulu()) {
-        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                    0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                    PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                     PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_2<device_feeder>(feeder);
     }
@@ -106,14 +106,14 @@ TEST_F(device_test, device_workflow_2) {
 /// \ref WF_4
 TEST_F(device_test, device_workflow_4) {
     device_feeder feeder;
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_4<device_feeder>(feeder);
 
     if (apulu()) {
-        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                    0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                    PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                     PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_4<device_feeder>(feeder);
     }
@@ -123,26 +123,26 @@ TEST_F(device_test, device_workflow_4) {
 /// \ref WF_6
 TEST_F(device_test, device_workflow_6) {
     device_feeder feeder1, feeder1A, feeder1B;
-    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                 PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                  PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false, false,
-                  0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1B.init("1.0.0.1", "00:02:01:0A:0B:0C", "99.99.99.99", false, false,
-                  0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1B.init("1.0.0.1", "00:02:01:0A:0B:0C", "99.99.99.99", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_6<device_feeder>(feeder1, feeder1A, feeder1B);
 
     if (apulu()) {
         feeder1.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
-                     false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                     PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                      PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         feeder1A.init("2001:1::1", "00:02:01:00:0A:0B", "2002:1::2", false,
-                      false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                      PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                       PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         feeder1B.init("2001:1::1", "00:02:01:0A:0B:0C", "2003:1::2", false,
-                      false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                      PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                       PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_6<device_feeder>(feeder1, feeder1A, feeder1B);
     }
@@ -152,26 +152,26 @@ TEST_F(device_test, device_workflow_6) {
 /// \ref WF_7
 TEST_F(device_test, device_workflow_7) {
     device_feeder feeder1, feeder1A, feeder1B;
-    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false,
-                 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                 PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                  PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false, false,
-                  0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1B.init("1.0.0.1", "00:02:01:0A:0B:0C", "99.99.99.99", false, false,
-                  0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1B.init("1.0.0.1", "00:02:01:0A:0B:0C", "99.99.99.99", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_7<device_feeder>(feeder1, feeder1A, feeder1B);
 
     if (apulu()) {
-        feeder1.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                     0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder1.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                     PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                      PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-        feeder1A.init("2001:1::1", "00:02:01:00:0A:0B", "2002:1::2", false, false,
-                      0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder1A.init("2001:1::1", "00:02:01:00:0A:0B", "2002:1::2", false,
+                      PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                       PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-        feeder1B.init("2001:1::1", "00:02:01:0A:0B:0C", "2003:1::2", false, false,
-                      0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder1B.init("2001:1::1", "00:02:01:0A:0B:0C", "2003:1::2", false,
+                      PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                       PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_7<device_feeder>(feeder1, feeder1A, feeder1B);
     }
@@ -183,26 +183,26 @@ TEST_F(device_test, device_workflow_8) {
     if (!apulu()) return;
 
     device_feeder feeder1, feeder1A, feeder1B;
-    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                 PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                  PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false, false,
-                  0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1B.init("1.0.0.1", "00:02:01:0A:0B:0C", "99.99.99.99", false, false,
-                  0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1B.init("1.0.0.1", "00:02:01:0A:0B:0C", "99.99.99.99", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_8<device_feeder>(feeder1, feeder1A, feeder1B);
 
     if (apulu()) {
-        feeder1.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                     0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder1.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                     PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                      PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-        feeder1A.init("2001:1::1", "00:02:01:00:0A:0B", "2002:1::2", false, false,
-                      0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder1A.init("2001:1::1", "00:02:01:00:0A:0B", "2002:1::2", false,
+                      PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                       PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-        feeder1B.init("2001:1::1", "00:02:01:0A:0B:0C", "2003:1::2", false, false,
-                      0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder1B.init("2001:1::1", "00:02:01:0A:0B:0C", "2003:1::2", false,
+                      PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                       PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_8<device_feeder>(feeder1, feeder1A, feeder1B);
     }
@@ -214,20 +214,20 @@ TEST_F(device_test, device_workflow_9) {
     if (!apulu()) return;
 
     device_feeder feeder1, feeder1A;
-    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                 PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                  PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false, false,
-                  0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_9<device_feeder>(feeder1, feeder1A);
 
     if (apulu()) {
         feeder1.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
-                     false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                     PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                      PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         feeder1A.init("2001:1::1", "00:02:01:00:0A:0B", "2002:1::2", false,
-                      false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                      PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                       PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_9<device_feeder>(feeder1, feeder1A);
     }
@@ -239,14 +239,14 @@ TEST_F(device_test, device_workflow_neg_1) {
     if (!apulu()) return;
 
     device_feeder feeder;
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_neg_1<device_feeder>(feeder);
 
     if (apulu()) {
-        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                    0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                    PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                     PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_neg_1<device_feeder>(feeder);
     }
@@ -256,14 +256,14 @@ TEST_F(device_test, device_workflow_neg_1) {
 /// \ref WF_N_3
 TEST_F(device_test, device_workflow_neg_3) {
     device_feeder feeder;
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_neg_3<device_feeder>(feeder);
 
     if (apulu()) {
-        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                    0, false, PDS_DEVICE_PROFILE_DEFAULT,
+        feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                    PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                     PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_neg_3<device_feeder>(feeder);
     }
@@ -273,20 +273,20 @@ TEST_F(device_test, device_workflow_neg_3) {
 /// \ref WF_N_5
 TEST_F(device_test, DISABLED_device_workflow_neg_5) {
     device_feeder feeder1, feeder1A;
-    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                 PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                  PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
-    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false, false,
-                  0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder1A.init("1.0.0.1", "00:02:01:00:0A:0B", "111.0.0.111", false,
+                  PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                   PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     workflow_neg_5<device_feeder>(feeder1, feeder1A);
 
     if (apulu()) {
         feeder1.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
-                     false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                     PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                      PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         feeder1A.init("2001:1::1", "00:02:01:00:0A:0B", "2002:1::2", false,
-                      false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                      PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                       PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
         workflow_neg_5<device_feeder>(feeder1, feeder1A);
     }
@@ -304,9 +304,9 @@ TEST_F(device_test, device_update_device_ip) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger
@@ -331,9 +331,9 @@ TEST_F(device_test, device_update_device_mac) {
     uint64_t mac;
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger
@@ -358,9 +358,9 @@ TEST_F(device_test, device_update_gateway_ip) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger
@@ -384,8 +384,8 @@ TEST_F(device_test, device_update_bridging_en) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                  PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
@@ -409,13 +409,13 @@ TEST_F(device_test, device_update_learning_en) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger
-    spec.learning_en = true;
+    spec.learn_spec.learn_mode = PDS_LEARN_MODE_AUTO;
     device_update(feeder, &spec, DEVICE_ATTR_LEARNING_EN);
 
     // validate
@@ -434,13 +434,14 @@ TEST_F(device_test, device_update_learn_age_timeout) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger
-    spec.learn_age_timeout = feeder.spec.learn_age_timeout + 1;
+    spec.learn_spec.learn_age_timeout =
+        feeder.spec.learn_spec.learn_age_timeout + 1;
     device_update(feeder, &spec, DEVICE_ATTR_LEARN_AGE_TIME_OUT);
 
     // validate
@@ -459,9 +460,9 @@ TEST_F(device_test, device_update_overlay_routing_en) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger
@@ -484,9 +485,9 @@ TEST_F(device_test, device_update_device_profile) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger
@@ -509,9 +510,9 @@ TEST_F(device_test, device_update_memory_profile) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger
@@ -535,9 +536,9 @@ TEST_F(device_test, device_update_dev_oper_mode) {
     pds_device_spec_t spec = {0};
 
     // init
-    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false, false, 0,
-                 false, PDS_DEVICE_PROFILE_DEFAULT,
-                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+    feeder.init("1.0.0.1", "00:02:01:00:00:01", "1.0.0.2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
+                PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
     device_create(feeder);
 
     // trigger

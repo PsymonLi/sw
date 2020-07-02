@@ -13,12 +13,12 @@ namespace api {
 //----------------------------------------------------------------------------
 
 void
-device_feeder::init(const char * device_ip_str, std::string mac_addr_str,
-                    const char *  gw_ip_str, bool bridge_en, bool learn_en,
-                    uint32_t learn_age_timeout, bool overlay_routing_en,
-                    pds_device_profile_t dp, pds_memory_profile_t mp,
-                    pds_device_oper_mode_t dev_op_mode, int num_device,
-                    bool stash) {
+device_feeder::init(const char *device_ip_str, std::string mac_addr_str,
+                    const char *gw_ip_str, bool bridge_en,
+                    pds_learn_mode_t learn_mode, uint32_t learn_age_timeout,
+                    bool overlay_routing_en, pds_device_profile_t dp,
+                    pds_memory_profile_t mp, pds_device_oper_mode_t dev_op_mode,
+                    int num_device, bool stash) {
 
     memset(&spec, 0, sizeof(pds_device_spec_t));
 
@@ -28,8 +28,8 @@ device_feeder::init(const char * device_ip_str, std::string mac_addr_str,
         mac_str_to_addr((char *)mac_addr_str.c_str(), spec.device_mac_addr);
     }
     spec.bridging_en = bridge_en;
-    spec.learning_en = learn_en;
-    spec.learn_age_timeout = learn_age_timeout;
+    spec.learn_spec.learn_mode = learn_mode;
+    spec.learn_spec.learn_age_timeout = learn_age_timeout;
     spec.overlay_routing_en = overlay_routing_en;
     spec.device_profile = dp;
     spec.memory_profile = mp;
@@ -115,10 +115,11 @@ device_attr_update (device_feeder& feeder, pds_device_spec_t *spec,
         feeder.spec.bridging_en = spec->bridging_en;
     }
     if (bit_isset(chg_bmap, DEVICE_ATTR_LEARNING_EN)) {
-        feeder.spec.learning_en = spec->learning_en;
+        feeder.spec.learn_spec.learn_mode = spec->learn_spec.learn_mode;
     }
     if (bit_isset(chg_bmap, DEVICE_ATTR_LEARN_AGE_TIME_OUT)) {
-        feeder.spec.learn_age_timeout = spec->learn_age_timeout;
+        feeder.spec.learn_spec.learn_age_timeout =
+            spec->learn_spec.learn_age_timeout;
     }
     if (bit_isset(chg_bmap, DEVICE_ATTR_OVERLAY_ROUTING_EN)) {
         feeder.spec.overlay_routing_en = spec->overlay_routing_en;
@@ -172,23 +173,26 @@ static device_feeder k_device_feeder;
 void sample_device_setup(pds_batch_ctxt_t bctxt) {
     // setup and teardown parameters should be in sync
     k_device_feeder.init(k_device_ip, "00:00:01:02:0a:0b", "90.0.0.2", false,
-                         false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
-                         PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+                         PDS_LEARN_MODE_NONE, 0, false,
+                         PDS_DEVICE_PROFILE_DEFAULT, PDS_MEMORY_PROFILE_DEFAULT,
+                         PDS_DEV_OPER_MODE_HOST);
     many_create(bctxt, k_device_feeder);
 }
 
 void sample_device_setup_validate() {
     k_device_feeder.init(k_device_ip, "00:00:01:02:0a:0b", "90.0.0.2", false,
-                         false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
-                         PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+                         PDS_LEARN_MODE_NONE, 0, false,
+                         PDS_DEVICE_PROFILE_DEFAULT, PDS_MEMORY_PROFILE_DEFAULT,
+                         PDS_DEV_OPER_MODE_HOST);
     many_read(k_device_feeder);
 }
 
 void sample_device_teardown(pds_batch_ctxt_t bctxt) {
     // this feeder base values doesn't matter in case of deletes
     k_device_feeder.init(k_device_ip, "00:00:01:02:0a:0b", "90.0.0.2", false,
-                         false, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
-                         PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST);
+                         PDS_LEARN_MODE_NONE, 0, false,
+                         PDS_DEVICE_PROFILE_DEFAULT, PDS_MEMORY_PROFILE_DEFAULT,
+                         PDS_DEV_OPER_MODE_HOST);
     many_delete(bctxt, k_device_feeder);
 }
 

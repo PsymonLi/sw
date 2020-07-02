@@ -213,11 +213,21 @@ public:
 
     /// \brief return true if learning is enabled or else false
     /// \return    true or false based on whether learning is enabled or not
-    bool learning_enabled(void) const { return learning_en_; }
+    bool learning_enabled(void) const {
+        return learn_spec_.learn_mode != PDS_LEARN_MODE_NONE;
+    }
+
+    /// \brief return configured learning mode
+    /// \return    learn mode configured by the user
+    pds_learn_mode_t learn_mode(void) const {
+        return learn_spec_.learn_mode;
+    }
 
     /// \brief return the aging timeout for MAC or IP when learning is enabled
     /// \return    aging timeout value in seconds
-    uint32_t learn_age_timeout(void) const { return learn_age_timeout_; }
+    uint32_t learn_age_timeout(void) const {
+        return learn_spec_.learn_age_timeout;
+    }
 
     /// \brief return true if control plane stack is enabled or else false
     /// \return  true or false based on whether control plane stack is enabled
@@ -241,7 +251,6 @@ private:
     /// \param[out] spec specification
     void fill_spec_(pds_device_spec_t *spec);
 
-
     /// \brief  free h/w resources used by this object, if any
     ///         (this API is invoked during object deletes)
     /// \return SDK_RET_OK on success, failure status code on error
@@ -261,10 +270,8 @@ private:
     pds_device_oper_mode_t oper_mode_;
     ///< true if L2 bridging is enabled
     bool bridging_en_;
-    ///< true if learning is enabled
-    bool learning_en_;
-    ///< aging timeout in seconds for learnt MAC or IP
-    uint32_t learn_age_timeout_;
+    ///< MAC/IP learning configuration
+    pds_learn_spec_t learn_spec_;
     ///< true if control plane stack is enabled
     bool overlay_routing_en_;
     ///< Tx policer

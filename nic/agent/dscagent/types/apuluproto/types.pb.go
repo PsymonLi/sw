@@ -65,6 +65,8 @@
 		VPCPeerGetResponse
 		VPCPeerDeleteRequest
 		VPCPeerDeleteResponse
+		LearnSource
+		LearnSpec
 		DeviceSpec
 		DeviceStatus
 		DeviceStatsEntry

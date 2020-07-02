@@ -70,11 +70,18 @@ func deleteDeviceHandler(client halapi.DeviceSvcClient) error {
 func convertDevice(lbip *halapi.IPAddress) *halapi.DeviceRequest {
 	return &halapi.DeviceRequest{
 		Request: &halapi.DeviceSpec{
-			DevOperMode:         halapi.DeviceOperMode_DEVICE_OPER_MODE_HOST,
-			MemoryProfile:       halapi.MemoryProfile_MEMORY_PROFILE_DEFAULT,
-			BridgingEn:          true,
-			LearningEn:          true,
-			LearnAgeTimeout:     300,
+			DevOperMode:   halapi.DeviceOperMode_DEVICE_OPER_MODE_HOST,
+			MemoryProfile: halapi.MemoryProfile_MEMORY_PROFILE_DEFAULT,
+			BridgingEn:    true,
+			LearnSpec: &halapi.LearnSpec{
+				LearnMode:       halapi.LearnMode_LEARN_MODE_AUTO,
+				LearnAgeTimeout: 300,
+				LearnSource: &halapi.LearnSource{
+					ArpLearnEn:     true,
+					DhcpLearnEn:    true,
+					DataPktLearnEn: true,
+				},
+			},
 			OverlayRoutingEn:    true,
 			IPAddr:              lbip,
 			FwPolicyXposnScheme: halapi.FwPolicyXposn_FW_POLICY_XPOSN_ANY_DENY,

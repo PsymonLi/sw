@@ -88,16 +88,16 @@ func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			return
 		}
 		updateSpec = &pds.DeviceSpec{
-			IPAddr:           spec.GetIPAddr(),
-			MACAddr:          spec.GetMACAddr(),
-			GatewayIP:        spec.GetGatewayIP(),
-			DevOperMode:      spec.GetDevOperMode(),
-			BridgingEn:       spec.GetBridgingEn(),
-			LearningEn:       spec.GetLearningEn(),
+			IPAddr:      spec.GetIPAddr(),
+			MACAddr:     spec.GetMACAddr(),
+			GatewayIP:   spec.GetGatewayIP(),
+			DevOperMode: spec.GetDevOperMode(),
+			BridgingEn:  spec.GetBridgingEn(),
+			//LearningEn:       spec.GetLearningEn(),
 			OverlayRoutingEn: spec.GetOverlayRoutingEn(),
-			LearnAgeTimeout:  spec.GetLearnAgeTimeout(),
-			DeviceProfile:    spec.GetDeviceProfile(),
-			MemoryProfile:    inputToMemoryProfile(memoryProfile),
+			//LearnAgeTimeout:  spec.GetLearnAgeTimeout(),
+			DeviceProfile: spec.GetDeviceProfile(),
+			MemoryProfile: inputToMemoryProfile(memoryProfile),
 		}
 	} else if cmd.Flags().Changed("device-profile") {
 		if isValidDeviceProfile(deviceProfile) == false {
@@ -105,16 +105,16 @@ func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			return
 		}
 		updateSpec = &pds.DeviceSpec{
-			IPAddr:           spec.GetIPAddr(),
-			MACAddr:          spec.GetMACAddr(),
-			GatewayIP:        spec.GetGatewayIP(),
-			DevOperMode:      spec.GetDevOperMode(),
-			BridgingEn:       spec.GetBridgingEn(),
-			LearningEn:       spec.GetLearningEn(),
+			IPAddr:      spec.GetIPAddr(),
+			MACAddr:     spec.GetMACAddr(),
+			GatewayIP:   spec.GetGatewayIP(),
+			DevOperMode: spec.GetDevOperMode(),
+			BridgingEn:  spec.GetBridgingEn(),
+			//LearningEn:       spec.GetLearningEn(),
 			OverlayRoutingEn: spec.GetOverlayRoutingEn(),
-			LearnAgeTimeout:  spec.GetLearnAgeTimeout(),
-			MemoryProfile:    spec.GetMemoryProfile(),
-			DeviceProfile:    inputToDeviceProfile(deviceProfile),
+			//LearnAgeTimeout:  spec.GetLearnAgeTimeout(),
+			MemoryProfile: spec.GetMemoryProfile(),
+			DeviceProfile: inputToDeviceProfile(deviceProfile),
 		}
 	} else if cmd.Flags().Changed("learn-age-timeout") {
 		if deviceTimeout < 30 || deviceTimeout > 86400 {
@@ -122,16 +122,16 @@ func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			return
 		}
 		updateSpec = &pds.DeviceSpec{
-			IPAddr:           spec.GetIPAddr(),
-			MACAddr:          spec.GetMACAddr(),
-			GatewayIP:        spec.GetGatewayIP(),
-			DevOperMode:      spec.GetDevOperMode(),
-			BridgingEn:       spec.GetBridgingEn(),
-			LearningEn:       spec.GetLearningEn(),
+			IPAddr:      spec.GetIPAddr(),
+			MACAddr:     spec.GetMACAddr(),
+			GatewayIP:   spec.GetGatewayIP(),
+			DevOperMode: spec.GetDevOperMode(),
+			BridgingEn:  spec.GetBridgingEn(),
+			//LearningEn:       spec.GetLearningEn(),
 			OverlayRoutingEn: spec.GetOverlayRoutingEn(),
 			MemoryProfile:    spec.GetMemoryProfile(),
 			DeviceProfile:    spec.GetDeviceProfile(),
-			LearnAgeTimeout:  deviceTimeout,
+			//LearnAgeTimeout:  deviceTimeout,
 		}
 	}
 
@@ -297,7 +297,8 @@ func printDevice(resp *pds.DeviceGetResponse) {
 		utils.IPAddrToStr(spec.GetGatewayIP()),
 		strings.Replace(spec.GetMemoryProfile().String(), "MEMORY_PROFILE_", "", -1),
 		strings.Replace(spec.GetDeviceProfile().String(), "DEVICE_PROFILE_", "", -1),
-		spec.GetBridgingEn(), spec.GetLearningEn(), spec.GetLearnAgeTimeout(),
+		spec.GetBridgingEn(), true, 0,
+		//spec.GetLearningEn(), spec.GetLearnAgeTimeout(),
 		strings.Replace(spec.GetDevOperMode().String(), "DEVICE_OPER_MODE_", "", -1),
 		spec.GetOverlayRoutingEn(), utils.MactoStr(status.GetSystemMACAddress()),
 		memoryStr)
@@ -323,8 +324,8 @@ func printDeviceDetail(resp *pds.DeviceGetResponse) {
 	fmt.Printf("%-26s : %s\n", "Device Profile",
 		strings.Replace(spec.GetDeviceProfile().String(), "DEVICE_PROFILE_", "", -1))
 	fmt.Printf("%-26s : %t\n", "Bridging Enabled", spec.GetBridgingEn())
-	fmt.Printf("%-26s : %t\n", "Learning Enabled", spec.GetLearningEn())
-	fmt.Printf("%-26s : %d\n", "Learn Age Timeout (sec)", spec.GetLearnAgeTimeout())
+	//fmt.Printf("%-26s : %t\n", "Learning Enabled", spec.GetLearningEn())
+	//fmt.Printf("%-26s : %d\n", "Learn Age Timeout (sec)", spec.GetLearnAgeTimeout())
 	fmt.Printf("%-26s : %s\n", "Device Oper Mode",
 		strings.Replace(spec.GetDevOperMode().String(), "DEVICE_OPER_MODE_", "", -1))
 	fmt.Printf("%-26s : %t\n", "Overlay Routing Enabled", spec.GetOverlayRoutingEn())

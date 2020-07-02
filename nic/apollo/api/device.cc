@@ -107,8 +107,7 @@ device_entry::init_config(api_ctxt_t *api_ctxt) {
     memcpy(&gw_ip_addr_, &spec->gateway_ip_addr, sizeof(gw_ip_addr_));
     oper_mode_ = spec->dev_oper_mode;
     bridging_en_ = spec->bridging_en;
-    learning_en_ = spec->learning_en;
-    learn_age_timeout_ = spec->learn_age_timeout;
+    learn_spec_ = spec->learn_spec;
     overlay_routing_en_ = spec->overlay_routing_en;
     tx_policer_ = spec->tx_policer;
     return SDK_RET_OK;
@@ -136,7 +135,7 @@ device_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
 
     if ((oper_mode_ != spec->dev_oper_mode) ||
         (bridging_en_ != spec->bridging_en) ||
-        (learning_en_ != spec->learning_en) ||
+        (learn_spec_.learn_mode != spec->learn_spec.learn_mode) ||
         (overlay_routing_en_ != spec->overlay_routing_en)) {
         PDS_TRACE_WARN("Some of the device obj's attribute changes will take "
                        "affect after next reboot");
@@ -196,7 +195,7 @@ void
 device_entry::fill_spec_(pds_device_spec_t *spec) {
     spec->gateway_ip_addr = gw_ip_addr_;
     spec->dev_oper_mode = oper_mode_;
-    spec->learn_age_timeout = learn_age_timeout_;
+    spec->learn_spec.learn_age_timeout = learn_spec_.learn_age_timeout;
     spec->device_profile = api::g_pds_state.device_profile();
     spec->memory_profile = api::g_pds_state.memory_profile();
     spec->tx_policer = tx_policer_;

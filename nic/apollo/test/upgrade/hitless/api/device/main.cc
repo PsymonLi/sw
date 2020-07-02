@@ -48,8 +48,8 @@ TEST_F(device_upg_test, device_upg_workflow_u1) {
     device_feeder feeder;
 
     // setup device
-    feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false, false,
-                0, false, PDS_DEVICE_PROFILE_DEFAULT,
+    feeder.init("2001:1::1", "00:02:01:00:00:01", "2001:1::2", false,
+                PDS_LEARN_MODE_NONE, 0, false, PDS_DEVICE_PROFILE_DEFAULT,
                 PDS_MEMORY_PROFILE_DEFAULT, PDS_DEV_OPER_MODE_HOST, 1, true);
     // backup
     workflow_u1_s1<device_feeder>(feeder);

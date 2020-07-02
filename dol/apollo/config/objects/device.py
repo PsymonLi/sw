@@ -18,8 +18,30 @@ import device_pb2 as device_pb2
 import types_pb2 as types_pb2
 import ipaddress
 
+class LearnSource():
+    def __init__(self, arp, dhcp, data):
+        self.ArpLearnEn = arp
+        self.DhcpLearnEn = dhcp
+        self.DataPktLearnEn = data
+        return
+
+class LearnSpec():
+    def __init__(self, mode, agetimeout, arp, dhcp, data):
+        self.LearnMode = mode
+        self.LearnAgeTimeout = agetimeout
+        self.LearnSource = LearnSource(arp, dhcp, data)
+        return
+
 class DeviceObject(base.ConfigObjectBase):
     def __init__(self, node, spec):
+
+        def __get_learnmode(mode):
+            if mode == "auto":
+                return device_pb2.LEARN_MODE_AUTO
+            if mode == "notify":
+                return device_pb2.LEARN_MODE_NOTIFY
+            return device_pb2.LEARN_MODE_NONE
+
         super().__init__(api.ObjectTypes.DEVICE, node)
         self.SetSingleton(True)
         self.GID("Device1")
@@ -31,7 +53,6 @@ class DeviceObject(base.ConfigObjectBase):
         if self.Mode == 'auto':
             self.Mode = utils.GetDefaultDeviceMode()
         self.BridgingEnabled = getattr(spec, 'bridging', False)
-        self.LearningEnabled = getattr(spec, 'learning', False)
         self.LearnAgeTimeout = getattr(spec, 'learningagetimeout', 300)
         self.OverlayRoutingEn = getattr(spec, 'overlayrouting', False)
         self.SymmetricRoutingEn = getattr(spec, 'symmetricrouting', False)
@@ -63,6 +84,12 @@ class DeviceObject(base.ConfigObjectBase):
         self.PolicyAnyDeny = getattr(spec, 'any-deny-policy', False)
         self.Mutable = utils.IsUpdateSupported()
         self.IPMappingPriority = getattr(spec, 'ip-mapping-priority', 0)
+        self.LearnSpec = LearnSpec(__get_learnmode(getattr(spec, 'learn-mode', None)), \
+                                   getattr(spec, 'agetimeout', 10), \
+                                   getattr(spec, 'dhcp-learn-enable', True), \
+                                   getattr(spec, 'arp-learn-enable', True), \
+                                   getattr(spec, 'datapkt-learn-enable', True))
+        self.LearningEnabled = (self.LearnSpec.LearnMode != device_pb2.LEARN_MODE_NONE)
 
         ################# PRIVATE ATTRIBUTES OF DEVICE OBJECT #####################
         self.__spec = spec
@@ -118,10 +145,13 @@ class DeviceObject(base.ConfigObjectBase):
         elif self.Mode == "host":
             spec.DevOperMode = device_pb2.DEVICE_OPER_MODE_HOST
         spec.BridgingEn = self.BridgingEnabled
-        spec.LearningEn = self.LearningEnabled
-        spec.LearnAgeTimeout = self.LearnAgeTimeout
         spec.OverlayRoutingEn = self.OverlayRoutingEn
         spec.IPMappingPriority = self.IPMappingPriority
+        spec.LearnSpec.LearnMode = self.LearnSpec.LearnMode
+        spec.LearnSpec.LearnAgeTimeout = self.LearnSpec.LearnAgeTimeout
+        spec.LearnSpec.LearnSource.ArpLearnEn = self.LearnSpec.LearnSource.ArpLearnEn
+        spec.LearnSpec.LearnSource.DhcpLearnEn = self.LearnSpec.LearnSource.DhcpLearnEn
+        spec.LearnSpec.LearnSource.DataPktLearnEn = self.LearnSpec.LearnSource.DataPktLearnEn
         if self.PolicyAnyDeny == True:
             spec.FwPolicyXposnScheme = types_pb2.FW_POLICY_XPOSN_ANY_DENY
         else :
@@ -147,10 +177,17 @@ class DeviceObject(base.ConfigObjectBase):
                     return False
         if spec.BridgingEn != self.BridgingEnabled:
             return False
-        if spec.LearningEn != self.LearningEnabled:
-            return False
-        if spec.LearnAgeTimeout != self.LearnAgeTimeout:
-            return False
+        if spec.LearnSpec.LearnMode != device_pb2.LEARN_MODE_NONE:
+            if spec.LearnSpec.LearnMode != self.LearnSpec.LearnMode:
+                return False
+            if spec.LearnSpec.LearnAgeTimeout != self.LearnSpec.LearnAgeTimeout:
+                return False
+            if spec.LearnSpec.LearnSource.ArpLearnEn != self.LearnSpec.LearnSource.ArpLearnEn:
+                return False
+            if spec.LearnSpec.LearnSource.DhcpLearnEn != self.LearnSpec.LearnSource.DhcpLearnEn:
+                return False
+            if spec.LearnSpec.LearnSource.DataPktLearnEn != self.LearnSpec.LearnSource.DataPktLearnEn:
+                return False
         if spec.OverlayRoutingEn != self.OverlayRoutingEn:
             return False
         if spec.IPMappingPriority != self.IPMappingPriority:
@@ -171,10 +208,6 @@ class DeviceObject(base.ConfigObjectBase):
             if spec['macaddr'] != self.MACAddr.getnum():
                 return False
         if spec['bridgingen'] != self.BridgingEnabled:
-            return False
-        if spec['learningen'] != self.LearningEnabled:
-            return False
-        if spec['learnagetimeout'] != self.LearnAgeTimeout:
             return False
         if spec['overlayroutingen'] != self.OverlayRoutingEn:
             return False

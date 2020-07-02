@@ -38,12 +38,12 @@ public:
     device_feeder(const device_feeder& feeder);
 
     // Initialize feeder with the base set of values
-    void init(const char * device_ip_str, std::string mac_addr_str,
-              const char * gw_ip_str, bool bridge_en, bool learn_en,
-              uint32_t learn_age_time, bool overlay_routing_en,
-              pds_device_profile_t dp, pds_memory_profile_t mp,
-              pds_device_oper_mode_t dev_op_mode, int num_device = 1,
-              bool stash_ = false);
+    void init(const char *device_ip_str, std::string mac_addr_str,
+              const char *gw_ip_str, bool bridge_en,
+              pds_learn_mode_t learn_mode, uint32_t learn_age_time,
+              bool overlay_routing_en, pds_device_profile_t dp,
+              pds_memory_profile_t mp, pds_device_oper_mode_t dev_op_mode,
+              int num_device = 1, bool stash_ = false);
 
     // Iterate helper routines
     void iter_next(int width = 1) { cur_iter_pos++; }

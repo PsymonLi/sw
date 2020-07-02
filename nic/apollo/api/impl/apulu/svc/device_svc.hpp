@@ -41,6 +41,34 @@ pds_fw_policy_xposn_to_api_spec (types::FwPolicyXposn xposn)
     }
 }
 
+static inline pds::LearnMode
+pds_learn_mode_api_spec_to_proto (pds_learn_mode_t mode)
+{
+    switch (mode) {
+    case PDS_LEARN_MODE_NOTIFY:
+        return pds::LEARN_MODE_NOTIFY;
+    case PDS_LEARN_MODE_AUTO:
+        return pds::LEARN_MODE_AUTO;
+    default:
+        break;
+    }
+    return pds::LEARN_MODE_NONE;
+}
+
+static inline pds_learn_mode_t
+pds_learn_mode_proto_to_api_spec (pds::LearnMode mode)
+{
+    switch (mode) {
+    case pds::LEARN_MODE_NOTIFY:
+        return PDS_LEARN_MODE_NOTIFY;
+    case pds::LEARN_MODE_AUTO:
+        return PDS_LEARN_MODE_AUTO;
+    default:
+        break;
+    }
+    return PDS_LEARN_MODE_NONE;
+}
+
 // populate proto buf spec from device API spec
 static inline void
 pds_device_api_spec_to_proto (pds::DeviceSpec *proto_spec,
@@ -58,8 +86,19 @@ pds_device_api_spec_to_proto (pds::DeviceSpec *proto_spec,
                                       &api_spec->gateway_ip_addr);
     }
     proto_spec->set_bridgingen(api_spec->bridging_en);
-    proto_spec->set_learningen(api_spec->learning_en);
-    proto_spec->set_learnagetimeout(api_spec->learn_age_timeout);
+    if (api_spec->learn_spec.learn_mode != PDS_LEARN_MODE_NONE) {
+        proto_spec->mutable_learnspec()->set_learnmode(
+            pds_learn_mode_api_spec_to_proto(api_spec->learn_spec.learn_mode));
+        proto_spec->mutable_learnspec()->set_learnagetimeout(
+            api_spec->learn_spec.learn_age_timeout);
+        proto_spec->mutable_learnspec()->mutable_learnsource()->
+            set_arplearnen(api_spec->learn_spec.learn_source.arp_learn_en);
+        proto_spec->mutable_learnspec()->mutable_learnsource()->
+            set_dhcplearnen(api_spec->learn_spec.learn_source.dhcp_learn_en);
+        proto_spec->mutable_learnspec()->mutable_learnsource()->
+            set_datapktlearnen(
+                api_spec->learn_spec.learn_source.data_pkt_learn_en);
+    }
     proto_spec->set_overlayroutingen(api_spec->overlay_routing_en);
     proto_spec->set_symmetricroutingen(api_spec->symmetric_routing_en);
     // xlate device operational mode
@@ -151,8 +190,32 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
         ipaddr_proto_spec_to_api_spec(&api_spec->gateway_ip_addr, gwipaddr);
     }
     api_spec->bridging_en = proto_spec.bridgingen();
-    api_spec->learning_en = proto_spec.learningen();
-    api_spec->learn_age_timeout = proto_spec.learnagetimeout();
+    if (proto_spec.has_learnspec()) {
+        api_spec->learn_spec.learn_mode =
+            pds_learn_mode_proto_to_api_spec(proto_spec.learnspec().learnmode());
+        if (api_spec->learn_spec.learn_mode != PDS_LEARN_MODE_NONE) {
+            api_spec->learn_spec.learn_age_timeout =
+                proto_spec.learnspec().learnagetimeout();
+            if (api_spec->learn_spec.learn_age_timeout == 0) {
+                // default timeout is 5 mins
+                api_spec->learn_spec.learn_age_timeout = 300;
+            }
+            if (proto_spec.learnspec().has_learnsource()) {
+                api_spec->learn_spec.learn_source.arp_learn_en =
+                    proto_spec.learnspec().learnsource().arplearnen();
+                api_spec->learn_spec.learn_source.dhcp_learn_en =
+                    proto_spec.learnspec().learnsource().dhcplearnen();
+                api_spec->learn_spec.learn_source.data_pkt_learn_en =
+                    proto_spec.learnspec().learnsource().datapktlearnen();
+            } else if (api_spec->learn_spec.learn_mode != PDS_LEARN_MODE_NONE) {
+                api_spec->learn_spec.learn_source.arp_learn_en = true;
+                api_spec->learn_spec.learn_source.dhcp_learn_en = true;
+                api_spec->learn_spec.learn_source.data_pkt_learn_en = true;
+            }
+        }
+    } else {
+        api_spec->learn_spec.learn_mode = PDS_LEARN_MODE_NONE;
+    }
     api_spec->overlay_routing_en = proto_spec.overlayroutingen();
     api_spec->symmetric_routing_en = proto_spec.symmetricroutingen();
     switch (proto_spec.devopermode()) {

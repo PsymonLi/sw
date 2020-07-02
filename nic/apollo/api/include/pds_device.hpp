@@ -78,6 +78,48 @@ typedef enum pds_memory_profile_e {
     PDS_MEMORY_PROFILE_ROUTER  = 1,
 } pds_memory_profile_t;
 
+/// support learn modes
+typedef enum pds_learn_mode_e {
+  PDS_LEARN_MODE_NONE   = 0,
+  // in LEARN_MODE_NOTIFY mode, when a unknown MAC/IP is seen, notification
+  // is generated via operd to the app, learn module will not populate the
+  // p4 tables with the MAC or IP; they will be programmed when app comes back
+  // and install vnics and/or IP mappings because of these learn notifications
+  // NOTE:
+  // 1. as learn events are simply notified to app, learn module doesn't need to
+  //    perform aging of the MAC/IP entries in this mode.
+  // 2. in order to de-dup back-to-back learn events and not bombard the app
+  //    listening  to these notifications, some state will be maintained about
+  //    the notified MAC/IP entries and will be deleted within short time
+  PDS_LEARN_MODE_NOTIFY = 1,
+  // in LEARN_MODE_AUTO, learn module will learn and automatically program the
+  // learnt MAC/IP in the datapath. Additionally, notifications will be
+  // generated for the clients of interest via operd
+  PDS_LEARN_MODE_AUTO   = 2,
+} pds_learn_mode_t;
+
+/// supported types of packets for learning
+typedef struct pds_learn_source_s {
+    /// enable/disable learning from ARP/RARP/GARP
+    bool arp_learn_en;
+    /// enable/disable learning from dhcp traffic
+    bool dhcp_learn_en;
+    /// enable/disable learning from data packets
+    bool data_pkt_learn_en;
+} pds_learn_source_t;
+
+/// MAC/IP learning related configuration knobs
+typedef struct pds_learn_spec_s {
+    /// MAC/IP learning mode
+    pds_learn_mode_t   learn_mode;
+    /// MAC, IP aging timeout (in seconds) for learnt entries
+    /// NOTE: if learning is enabled and this parameter is 0, default
+    ///       age timeout of 5 mins is assumed
+    uint32_t           learn_age_timeout;
+    /// possible sources for MAC/IP learning
+    pds_learn_source_t learn_source;
+} pds_learn_spec_t;
+
 /// \brief device specification
 typedef struct pds_device_s {
     /// device IP address
@@ -88,10 +130,8 @@ typedef struct pds_device_s {
     ip_addr_t              gateway_ip_addr;
     /// enable or disable forwarding based on L2 entries
     bool                   bridging_en;
-    /// enable or disable L2/IP learning
-    bool                   learning_en;
-    /// MAC, IP aging timeout (in seconds) for learnt entries
-    uint32_t               learn_age_timeout;
+    /// MAC/IP learning controls
+    pds_learn_spec_t       learn_spec;
     /// enable or disable evpn for overlay routing/bridging
     /// NOTE: when overlay_routing_en is modified, it will take affect only
     ///        after reboot of NAPLES/DSC

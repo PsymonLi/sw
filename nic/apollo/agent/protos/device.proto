@@ -71,6 +71,53 @@ enum DeviceOperMode {
   DEVICE_OPER_MODE_BITW_CLASSIC_SWITCH = 4;
 }
 
+// supported learn modes
+enum LearnMode {
+  LEARN_MODE_NONE   = 0;
+  // in LEARN_MODE_NOTIFY mode, when a unknown MAC/IP is seen, notification
+  // is generated via operd to the app, learn module will not populate the
+  // p4 tables with the MAC or IP; they will be programmed when app comes back
+  // and install vnics and/or IP mappings because of these learn notifications
+  // NOTE:
+  // 1. as learn events are simply notified to app, learn module doesn't need to
+  //    perform aging of the MAC/IP entries in this mode.
+  // 2. in order to de-dup back-to-back learn events and not bombard the app
+  //    listening  to these notifications, some state will be maintained about
+  //    the notified MAC/IP entries and will be deleted within short time
+  LEARN_MODE_NOTIFY = 1;
+  // in LEARN_MODE_AUTO, learn module will learn and automatically program the
+  // learnt MAC/IP in the datapath. Additionally, notifications will be
+  // generated for the clients of interest via operd
+  LEARN_MODE_AUTO   = 2;
+}
+
+// supported types of packets for learning
+// NOTE: when all learn sources are set to false, LearnMode must be set to
+//       LEARN_MODE_NONE
+message LearnSource {
+  // when ArpLearnEn is set to true, learning will happen from ARP/GARP/RARP
+  // traffic
+  bool ArpLearnEn     = 1 [(gogoproto.moretags) = "meta:default=true"];
+  // when DhcpLearnEn is se to true, learning will happen from DHCP traffic
+  bool DhcpLearnEn    = 2 [(gogoproto.moretags) = "meta:default=true"];
+  // when DataPktLearnEn is set to true, learning will happen from non-protocol
+  // data traffic
+  bool DataPktLearnEn = 3 [(gogoproto.moretags) = "meta:default=true"];
+}
+
+// MAC/IP learning related configuration knobs
+message LearnSpec {
+  // NOTE: when LearnMode mode is modified, it will take affect only after
+  //       next reboot of NAPLES/DSC
+  LearnMode   LearnMode       = 1 [(gogoproto.moretags) = "meta:default=LEARN_MODE_NONE"];
+  // LearnAgeTimeout is the aging timeout (in seconds) for learnt MAC or IP
+  // addresses if LearningEn is set to true. If this is not set and learning is
+  // enabled, default value is assumed for aging
+  uint32      LearnAgeTimeout = 2 [(gogoproto.moretags) = "meta:range:30-86400,meta:default=300"];
+  // LearnSource captures packet types that can result in MAC/IP learning
+  LearnSource LearnSource     = 3 [(gogoproto.moretags) = "LearnMode!=LEARN_MODE_NONE"];
+}
+
 message DeviceSpec {
   // local IP address in the underlay (i.e. MyTEP IP or local TEP IP)
   types.IPAddress     IPAddr              = 1;
@@ -92,14 +139,9 @@ message DeviceSpec {
   // NOTE: when operational mode is modified, it will take affect only after
   //       next reboot of NAPLES/DSC
   bool                BridgingEn          = 7 [(gogoproto.moretags) = "meta:mandatory"];
-  // if LearningEn is true, MAC and IP learning is enabled
-  // NOTE: when operational mode is modified, it will take affect only after
-  //       next reboot of NAPLES/DSC
-  bool                LearningEn          = 8 [(gogoproto.moretags) = "meta:mandatory"];
-  // LearnAgeTimeout is the aging timeout (in seconds) for learnt MAC or IP
-  // addresses if LearningEn is set to true. If this is not set and learning is
-  // enabled, default value is assumed for aging
-  uint32              LearnAgeTimeout     = 9 [(gogoproto.moretags) = "meta:range:30-86400,meta:default=300"];
+  // MAC/IP learning controls
+  // NOTE: if LearnSpec is not configured learning is disabled by default
+  LearnSpec           LearnSpec           = 8;
   // priority of IP mapping entries (this priority, if configured, will be
   // used to break the tie in case both LPM/prefix and a mapping entry are
   // hit in the datapath (i.e., /32 IP mapping entry is also in some LPM
@@ -114,15 +156,15 @@ message DeviceSpec {
   // 4. if the value of this attribute is updated on the fly, it will not
   //    affect the flows/sessions that are already created, but it will take
   //    affect only on the new sessions/flows created after such an update
-  uint32              IPMappingPriority   = 10 [(gogoproto.moretags) = "meta:range:0-1023"];
+  uint32              IPMappingPriority   = 9 [(gogoproto.moretags) = "meta:range:0-1023"];
   // firewal (if enabled) action trasnposition logic dictates how the policy
   // lookup results are processed when multiple security policies are applied
   // on a packet
-  types.FwPolicyXposn FwPolicyXposnScheme = 11 [(gogoproto.moretags) = "meta:default=FW_POLICY_XPOSN_GLOBAL_PRIORITY"];
+  types.FwPolicyXposn FwPolicyXposnScheme = 10 [(gogoproto.moretags) = "meta:default=FW_POLICY_XPOSN_GLOBAL_PRIORITY"];
   // enable the control plane stack for overlay routing
   // NOTE: when OverlayRoutingEn is modified, it will take affect only after
   //       next reboot of NAPLES/DSC
-  bool                OverlayRoutingEn    = 12 [(gogoproto.moretags) = "meta:mandatory"];
+  bool                OverlayRoutingEn    = 11 [(gogoproto.moretags) = "meta:mandatory"];
   // when SymmetricRoutingEn is set to true, outgoing inter-subnet (encapped)
   // traffic carries VPC's VxLAN vnid and incoming inter-subnet (encapped)
   // traffic is expected to come with VPC's VxLAN vnid. If SymmetricRoutingEn is
@@ -132,11 +174,11 @@ message DeviceSpec {
   // NOTE: if the value of this attribute is updated on the fly, it will not
   //       affect the flows/sessions that are already created, but it will take
   //       affect only on the new sessions/flows created after such an update
-  bool                SymmetricRoutingEn  = 13 [(gogoproto.moretags) = "meta:default=false"];
+  bool                SymmetricRoutingEn  = 12 [(gogoproto.moretags) = "meta:default=false"];
   // TxPolicerId, if configured, will rate limit the Tx bandwidth (bytes per
   // second) or PPS (packets per second) of all host interfaces put together
   // to the configured value
-  bytes               TxPolicerId         = 14;
+  bytes               TxPolicerId         = 13;
 }
 
 // device operational status

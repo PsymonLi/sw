@@ -125,7 +125,7 @@ device_cfg_entry_dump (pds_cfg_msg_t *msg, void *buf)
         strcpy(bridge_enable, "-");
     }
 
-    if (msg->device.spec.spec.learning_en) {
+    if (msg->device.spec.spec.learn_spec.learn_mode != PDS_LEARN_MODE_NONE) {
         strcpy(learn_enable, "LEARN");
     } else {
         strcpy(learn_enable, "-");
@@ -157,8 +157,8 @@ device_cfg_entry_dump (pds_cfg_msg_t *msg, void *buf)
              ipaddr2str(&(msg->device.spec.spec.device_ip_addr)),
              macaddr2str(msg->device.spec.spec.device_mac_addr),
              ipaddr2str(&(msg->device.spec.spec.gateway_ip_addr)), "DEFAULT",
-             dev_profile,  msg->device.spec.spec.learn_age_timeout, oper_mode,
-             flags);
+             dev_profile,  msg->device.spec.spec.learn_spec.learn_age_timeout,
+             oper_mode, flags);
 
     buf_entry_dump(buf);
 
