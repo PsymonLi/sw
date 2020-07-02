@@ -5,12 +5,13 @@ import re
 
 import nat_pb2 as nat_pb2
 import types_pb2 as types_pb2
+import api
 
 class NatPbObject():
     def __init__(self, id, vpc_id=None, prefix=None, port_lo=None, port_hi=None, proto=None, addr_type="public"):
         super().__init__()
         self.id = id
-        self.uuid = utils.PdsUuid(self.id)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.NAT)
         self.vpc_id = vpc_id
         self.prefix = prefix
         self.port_lo = port_lo

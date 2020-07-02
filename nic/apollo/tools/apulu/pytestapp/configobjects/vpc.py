@@ -6,12 +6,13 @@ import types_pb2 as types_pb2
 import ipaddress
 import utils
 import re
+import api
 
 class VpcObject():
     def __init__(self, id, type = vpc_pb2.VPC_TYPE_TENANT, encaptype=types_pb2.ENCAP_TYPE_VXLAN, encapvalue=None, rmac=None, v4routetableid=None):
         #print(encapvalue)
         self.id       = id
-        self.uuid     = utils.PdsUuid(self.id)
+        self.uuid     = utils.PdsUuid(self.id, objtype=api.ObjectTypes.VPC)
         self.type     = type
         self.encaptype = encaptype
         self.encapvalue = encapvalue

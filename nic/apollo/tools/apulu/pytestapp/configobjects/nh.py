@@ -6,7 +6,7 @@ import types_pb2 as types_pb2
 import ipaddress
 import utils
 import re
-
+import api
 
 class UnderlayNhObject():
     def __init__(self, l3intfid, underlaymac ):
@@ -27,7 +27,7 @@ class IPNhObject():
 class NexthopObject():
     def __init__(self, id, type, l3intfid, underlaymac, vpcid=None, nhip=None, vlanid=None, macaddr=None ):
         self.id = id
-        self.uuid = utils.PdsUuid(self.id)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.NEXTHOP)
         self.type = type
         self.l3intfid = l3intfid
         self.underlaymac = underlaymac

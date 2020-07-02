@@ -5,6 +5,7 @@ import types_pb2 as types_pb2
 import policy_pb2 as policy_pb2
 import ipaddress as ipaddress
 import utils
+import api
 
 PROTO_TCP = 6
 PROTO_UDP = 17
@@ -14,7 +15,7 @@ protos = {PROTO_TCP, PROTO_UDP}
 class PolicyObject():
     def __init__(self, id, af, direction, rules, default_action=types_pb2.SECURITY_RULE_ACTION_ALLOW):
         self.id = id
-        self.uuid     = utils.PdsUuid(self.id)
+        self.uuid     = utils.PdsUuid(self.id, objtype=api.ObjectTypes.POLICY)
         self.af       = af
         self.direction = direction
         self.rules = rules
@@ -82,7 +83,7 @@ class rule_obj:
 class SecurityProfileObject():
     def __init__(self, id, tcp_idle_timeout, udp_idle_timeout, icmp_idle_timeout, conn_track_en=False):
         self.id = id
-        self.uuid = utils.PdsUuid(self.id)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.SECURITY_PROFILE)
         self.tcp_idle_timeout = tcp_idle_timeout
         self.udp_idle_timeout = udp_idle_timeout
         self.icmp_idle_timeout = icmp_idle_timeout

@@ -4,12 +4,13 @@ import re
 
 import service_pb2 as service_pb2
 import types_pb2 as types_pb2
+import api
 
 class SvcMappingObject():
     def __init__(self, id, vpcid, backend_ip, backend_port, vip, service_port):
         super().__init__()
         self.id    = id
-        self.uuid = utils.PdsUuid(self.id)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.SVCMAPPING)
         self.vpcid = vpcid
         self.backend_ip = backend_ip
         self.backend_port = backend_port

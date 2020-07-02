@@ -5,6 +5,7 @@ import re
 
 import subnet_pb2 as subnet_pb2
 import types_pb2 as types_pb2
+import api
 
 class SubnetObject():
     def __init__(self, id, vpcid, v4prefix, hostifindex, v4virtualrouterip, virtualroutermac, v4routetableid, fabricencap='VXLAN', fabricencapid=1, node_uuid=None, dhcp_policy_id=None,
@@ -13,7 +14,7 @@ class SubnetObject():
         self.id    = id
         self.vpcid = vpcid
         self.dhcp_policy_id = dhcp_policy_id
-        self.uuid = utils.PdsUuid(self.id)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.SUBNET)
         self.v4prefix = v4prefix
 
         self.hostifuuid = []

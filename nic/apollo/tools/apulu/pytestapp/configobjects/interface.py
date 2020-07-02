@@ -7,7 +7,7 @@ import ipaddress
 import utils
 import re
 import socket
-
+import api
 
 class L3IfObject():
     def __init__(self, vpcid, prefix, portid, encap, macaddr, node_uuid=None):
@@ -37,7 +37,7 @@ class LoopbackIfObject():
 class InterfaceObject():
     def __init__(self, id, iftype, ifadminstatus, vpcid=None, prefix=None, portid=None, encap=None, macaddr=None, node_uuid=None, gateway=None):
         self.id = id
-        self.uuid = utils.PdsUuid(self.id)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.INTERFACE)
         self.iftype = iftype
         self.ifadminstatus = ifadminstatus
         if iftype == interface_pb2.IF_TYPE_L3:

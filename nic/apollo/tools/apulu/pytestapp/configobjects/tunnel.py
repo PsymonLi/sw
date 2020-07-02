@@ -5,12 +5,13 @@ import tunnel_pb2 as tunnel_pb2
 import types_pb2 as types_pb2
 import ipaddress
 import utils
+import api
 
 class TunnelObject():
 
     def __init__(self, id, vpcid, localip, remoteip, macaddr, tunneltype, encaptype, vnid, nhid=None):
         self.id        = id
-        self.uuid      = utils.PdsUuid(self.id)
+        self.uuid      = utils.PdsUuid(self.id, objtype=api.ObjectTypes.TUNNEL)
         self.vpcid     = vpcid
         self.localip   = ipaddress.IPv4Address(localip)
         self.remoteip  = ipaddress.IPv4Address(remoteip)

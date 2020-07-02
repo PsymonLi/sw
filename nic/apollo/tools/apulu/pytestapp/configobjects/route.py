@@ -5,12 +5,13 @@ import route_pb2 as route_pb2
 import types_pb2 as types_pb2
 import ipaddress
 import utils
+import api
 
 class RouteObject():
     def __init__(self, id, route_table_id, addrfamily, prefix, nhtype, nhid, nat_type=None, nat_addr_type="public", meteren=False, dnat_ip=None):
         assert(nhtype == "tunnel")
         self.id = id
-        self.uuid = utils.PdsUuid(self.id)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.STATIC_ROUTE)
         self.prefix = prefix
         self.nhtype = nhtype
         self.nhid = nhid
@@ -51,7 +52,7 @@ class RouteObject():
 class RouteTableObject():
     def __init__(self, id, addrfamily, routes=None):
         self.id = id
-        self.uuid = utils.PdsUuid(self.id)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.ROUTE)
         self.addrfamily = addrfamily
         self.routes = routes
         return
