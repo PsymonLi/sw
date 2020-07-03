@@ -1,5 +1,5 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { SharedModule } from '@app/components/shared/shared.module';
 import { DsbdcardComponent } from './dsbdcard.component';
 
 describe('DsbdcardComponent', () => {
@@ -8,7 +8,10 @@ describe('DsbdcardComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ DsbdcardComponent ]
+      declarations: [ DsbdcardComponent ],
+      imports: [
+        SharedModule
+      ],
     })
     .compileComponents();
   }));

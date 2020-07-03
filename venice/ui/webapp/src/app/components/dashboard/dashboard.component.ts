@@ -6,7 +6,7 @@ import { BaseComponent } from '@components/base/base.component';
 
 import { ControllerService } from '../../services/controller.service';
 import { MetricsqueryService, TelemetryPollingMetricQueries, MetricsPollingQuery, MetricsPollingOptions } from '@app/services/metricsquery.service';
-import { Telemetry_queryMetricsQuerySpec, ITelemetry_queryMetricsQuerySpec, Telemetry_queryMetricsQuerySpec_function, Telemetry_queryMetricsQuerySpec_sort_order } from '@sdk/v1/models/generated/telemetry_query';
+import { Telemetry_queryMetricsQuerySpec, ITelemetry_queryMetricsQuerySpec, Telemetry_queryMetricsQuerySpec_function, Telemetry_queryMetricsQuerySpec_sort_order, Telemetry_queryMetricsQueryResult } from '@sdk/v1/models/generated/telemetry_query';
 import { MetricsUtility } from '@app/common/MetricsUtility';
 import { ITelemetry_queryMetricsQueryResponse, ITelemetry_queryMetricsQueryResult } from '@sdk/v1/models/telemetry_query';
 import { CardStates } from '../shared/basecard/basecard.component';
@@ -43,6 +43,7 @@ import { interval } from 'rxjs';
  */
 
 const MS_PER_MINUTE: number = 60000;
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -55,6 +56,9 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
   naples: ReadonlyArray<ClusterDistributedServiceCard> = [];
   workloads: ReadonlyArray<WorkloadWorkload> = [];
   hosts: ReadonlyArray<ClusterHost> = [];
+  pifData: Telemetry_queryMetricsQueryResult = null;
+  topDscsChartData: any = null;
+  topDscsChartOption: any = null;
   gridsterOptions: any = {
     gridType: 'fixed',
     fixedRowHeight: 275,
@@ -74,6 +78,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
   pinnedWidgets: PinnedDashboardWidgetData[];
 
   lastUpdateTime: string = '';
+  MetricsPollingFrequency: number = MetricsUtility.FIVE_MINUTES;
 
   timeSeriesData: ITelemetry_queryMetricsQueryResult;
   currentData: ITelemetry_queryMetricsQueryResult;
@@ -84,31 +89,35 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
     cardState: CardStates.LOADING
   };
 
+  hideOldWidgets: boolean = false;
+
   naplesDisplayData = {
     title: 'Naples',
+    lastUpdateTime: '',
     alerts: [0, 0, 0],
     rows: [
       {title: '', value: '', unit: 'TOTAL NAPLES'},
       {title: 'BANDWIDTH', value: '', unit: 'TX & RX'},
       {title: 'TOTAL PACKETS', value: '', unit: 'TX & RX'},
-      {title: 'DROP PACKETS', value: '', unit: 'TX & RX'},
+      {title: 'CONNECTION PER SECOND', value: '', unit: ''},
     ]
   };
 
   workloadsDisplayData = {
     title: 'Workloads',
+    lastUpdateTime: '',
     alerts: [0, 0, 0],
     rows: [
-      {title: '', value: '', unit: 'TOTAL WORKLOADS'},
-      {title: 'VCENTER WORKLOADS', value: '', unit: 'WORKLOADS'},
-      {title: 'TOTAL HOSTS', value: '', unit: 'HOSTS'},
-      {title: 'VCENTER HOSTS', value: '', unit: 'HOSTS'},
+      {title: '', value: '', unit: 'VCENTER / TOTAL WORKLOADS'},
+      {title: 'BANDWIDTH', value: '', unit: 'TX & RX'},
+      {title: 'DROP PACKETS', value: '', unit: 'TX & RX'},
+      {title: 'VCENTER / TOTAL HOSTS', value: '', unit: ''},
     ]
   };
 
-  hideOldWidgets: boolean = false;
   servicesDisplayData = {
     title: 'Services',
+    lastUpdateTime: '',
     rows: [
       {title: '', value: '', unit: 'TOTAL SERVICES'},
       {title: 'SESSIONS', value: '', unit: 'ACTIVE & DENIED'},
@@ -134,7 +143,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
    * Component enters init stage. It is about to show up
    */
   ngOnInit() {
-    this.hideOldWidgets = this.uiconfigsService.isFeatureEnabled('showDashboardFlowdrops');
+    this.hideOldWidgets = this.uiconfigsService.isFeatureEnabled('showDashboardHiddenCharts');
 
     this._controllerService.publish(Eventtypes.COMPONENT_INIT, { 'component': 'DashboardComponent', 'state': Eventtypes.COMPONENT_INIT });
     this._controllerService.setToolbarData({
@@ -256,6 +265,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
         rules['deny'][l['rule-id']] = true;
       }
     }
+    this.servicesDisplayData.lastUpdateTime = new Date(Date.now()).toString();
     this.servicesDisplayData.rows[0].value = '' + Object.keys(destinations).length;
     this.servicesDisplayData.rows[1].value = '' + Object.keys(sessions['allow']).length + ' & ' + Object.keys(sessions['deny']).length;
     this.servicesDisplayData.rows[2].value = '' + Object.keys(rules['allow']).length + ' & ' + Object.keys(rules['deny']).length;
@@ -276,6 +286,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
       const protocolStr = protocolArr.join(', ') + ' & ' + last;
       this.servicesDisplayData.rows[3].value = protocolStr;
     }
+    this.servicesDisplayData = { ...this.servicesDisplayData };
   }
 
   getAlertsWatch() {
@@ -359,8 +370,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
             }
           });
         }
-        this.workloadsDisplayData.rows[0].value = '' + this.workloads.length;
-        this.workloadsDisplayData.rows[1].value = '' + vcenterWorkloads;
+        this.workloadsDisplayData.rows[0].value = vcenterWorkloads + ' / ' + this.workloads.length;
         this.workloadsDisplayData = { ...this.workloadsDisplayData };
       }
     );
@@ -371,6 +381,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
           return;
         }
         this.hosts = response.data;
+        this.getTop5HostBandwidth();
         let vcenterHosts: number = 0;
         if (this.hosts) {
           this.hosts.forEach(host => {
@@ -380,38 +391,163 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
             }
           });
         }
-        this.workloadsDisplayData.rows[2].value = '' + this.hosts.length;
-        this.workloadsDisplayData.rows[3].value = '' + vcenterHosts;
+        this.workloadsDisplayData.rows[3].value = vcenterHosts + ' / ' + this.hosts.length;
         this.workloadsDisplayData = { ...this.workloadsDisplayData };
       }
     );
     this.subscriptions.push(hostSubscription);
   }
 
-  updateInterfacesStats(data) {
-    let totalRxBandWidth: number = 0;
-    let totalTxBandWidth: number = 0;
-    let totalRx: number = 0;
-    let totalTx: number = 0;
-    let totalRxDrop: number = 0;
-    let totalTxDrop: number = 0;
-    data.series.forEach(item => {
-      totalRxBandWidth += item.values[0][17];
-      totalTxBandWidth += item.values[0][18];
-      totalRx += item.values[0][7];
-      totalTx += item.values[0][8];
-      const newRxDrop = item.values[0][1] + item.values[0][2] + item.values[0][3];
-      totalRxDrop += newRxDrop;
-      const newTxDrop = item.values[0][4] + item.values[0][5] + item.values[0][6];
-      totalTxDrop += newTxDrop;
-    });
-    this.naplesDisplayData.rows[1].value = Utility.formatBytes(totalTxBandWidth, 2)
-        + '/s & ' + Utility.formatBytes(totalRxBandWidth) + '/s';
-    this.naplesDisplayData.rows[2].value = Utility.formatBytes(totalTx, 2)
-        + ' & ' + Utility.formatBytes(totalRx);
-    this.naplesDisplayData.rows[3].value = Utility.formatBytes(totalTxDrop, 2)
-        + ' & ' + Utility.formatBytes(totalRxDrop);
-    this.naplesDisplayData = { ...this.naplesDisplayData };
+  updateInterfacesStats(results) {
+    const lifData = results[0];
+    const pifData = results[1];
+    const cpsData = results[2];
+    let lastUpdateTime: string = null;
+    if (lifData && lifData.series && lifData.series.length > 0) {
+      lastUpdateTime = lifData.series[0].values[0][0];
+      let totalRxBandWidth: number = 0;
+      let totalTxBandWidth: number = 0;
+      let totalRxDrop: number = 0;
+      let totalTxDrop: number = 0;
+      lifData.series.forEach(item => {
+        totalRxBandWidth += item.values[0][17];
+        totalTxBandWidth += item.values[0][18];
+        const newRxDrop = item.values[0][1] + item.values[0][2] + item.values[0][3];
+        totalRxDrop += newRxDrop;
+        const newTxDrop = item.values[0][4] + item.values[0][5] + item.values[0][6];
+        totalTxDrop += newTxDrop;
+      });
+      this.workloadsDisplayData.rows[1].value = Utility.formatBytes(totalTxBandWidth, 2)
+          + '/s & ' + Utility.formatBytes(totalRxBandWidth) + '/s';
+      this.workloadsDisplayData.rows[2].value = Utility.formatBytes(totalTxDrop, 2)
+          + ' & ' + Utility.formatBytes(totalRxDrop);
+    }
+    if (pifData && pifData.series && pifData.series.length > 0) {
+      if (!lastUpdateTime) {
+        lastUpdateTime = pifData.series[0].values[0][0];
+      }
+      let totalRxBandWidth: number = 0;
+      let totalTxBandWidth: number = 0;
+      let totalRx: number = 0;
+      let totalTx: number = 0;
+      pifData.series.forEach(item => {
+        totalRxBandWidth += item.values[0][5];
+        totalTxBandWidth += item.values[0][6];
+        totalRx += item.values[0][1];
+        totalTx += item.values[0][2];
+      });
+      this.naplesDisplayData.rows[1].value = Utility.formatBytes(totalTxBandWidth, 2)
+          + '/s & ' + Utility.formatBytes(totalRxBandWidth) + '/s';
+      this.naplesDisplayData.rows[2].value = Utility.formatBytes(totalTx, 2)
+          + ' & ' + Utility.formatBytes(totalRx);
+      this.pifData = pifData;
+      this.getTop5HostBandwidth();
+    }
+
+    if (cpsData && cpsData.series && cpsData.series.length > 0) {
+      if (!lastUpdateTime) {
+        lastUpdateTime = cpsData.series[0].values[0][0];
+      }
+      let totalCpsCount = 0;
+      cpsData.series.forEach(item => {
+        totalCpsCount += item.values[0][1];
+      });
+      this.naplesDisplayData.rows[3].value = totalCpsCount.toString();
+    }
+
+    this.naplesDisplayData = { ...this.naplesDisplayData, lastUpdateTime };
+    this.workloadsDisplayData = { ...this.workloadsDisplayData, lastUpdateTime };
+  }
+
+  getTop5HostBandwidth() {
+    if (this.hosts && this.pifData) {
+      this.hosts.forEach(host => {
+        host._ui.bandwidth = {
+          rx: 0,
+          tx: 0
+        };
+      });
+      this.pifData.series.forEach(item => {
+        if (item && item.tags && item.values && item.values.length > 0) {
+          const tags: any = item.tags;
+          if (tags.name) {
+            const dscMac = tags.name.split('-')[0];
+            const targethost: ClusterHost = this.hosts.find(host => {
+              if (host.spec && host.spec.dscs && host.spec.dscs.length > 0) {
+                for (let i = 0; i < host.spec.dscs.length; i++) {
+                  const dsc = host.spec.dscs[i];
+                  if (dsc['mac-address'] === dscMac) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            });
+            if (targethost) {
+              targethost._ui.bandwidth.rx += item.values[0][5];
+              targethost._ui.bandwidth.tx += item.values[0][6];
+            }
+          }
+        }
+      });
+      (this.hosts as ClusterHost[]).sort((a, b) =>
+        a._ui.bandwidth.rx + a._ui.bandwidth.tx >
+        b._ui.bandwidth.rx + b._ui.bandwidth.tx ? -1 : 1);
+      const topDscs = {rxs: [], txs: [], names: []};
+      for (let i = 0; i < this.hosts.length && i < 5; i++) {
+        if (this.hosts[i]._ui.bandwidth.rx > 0 &&
+            this.hosts[i]._ui.bandwidth.tx > 0) {
+          topDscs.rxs.push(this.hosts[i]._ui.bandwidth.rx);
+          topDscs.txs.push(this.hosts[i]._ui.bandwidth.tx);
+          topDscs.names.push(this.hosts[i].meta.name);
+        }
+      }
+      this.topDscsChartOption = {
+        responsive: true,
+        scales: {
+          xAxes: [{
+            stacked: true,
+            gridLines: { display: false },
+          }],
+          yAxes: [{
+            stacked: true,
+            ticks: {
+              callback: function(value) { return Utility.formatBytes(value) + ' /s'; },
+             },
+          }],
+        },
+        legend: {
+          display: true,
+        },
+        tooltips: {
+          callbacks: {
+            intersect: false,
+            label: (tooltipItem, data) => {
+              const rxValue = this.topDscsChartData.datasets[0].data[tooltipItem.index];
+              const txValue = this.topDscsChartData.datasets[1].data[tooltipItem.index];
+              return  ['RX: ' + Utility.formatBytes(rxValue) + ' /s',
+                      'TX: ' + Utility.formatBytes(txValue) + ' /s',
+                      'Total: ' + Utility.formatBytes(rxValue + txValue) + ' /s'];
+            }
+          }
+        }
+      };
+      this.topDscsChartData = {
+        labels: topDscs.names,
+        datasets: [
+          {
+            label: 'RX',
+            backgroundColor: 'rgba(165,236,201, 1)',
+            data: topDscs.rxs
+          },
+          {
+            label: 'TX',
+            backgroundColor: 'rgba(200,234,165, 1)',
+            data: topDscs.txs
+          }
+        ]
+      };
+    }
   }
 
   startInterfaceStatsPoll() {
@@ -420,27 +556,34 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
         tenant: Utility.getInstance().getTenant()
       };
 
-      const query: MetricsPollingQuery = this.topologyInterfaceQuery(
-        'LifMetrics', ['RxDropBroadcastBytes', 'RxDropMulticastBytes', 'RxDropUnicastBytes',
-        'TxDropBroadcastBytes', 'TxDropMulticastBytes', 'TxDropUnicastBytes', 'RxBytes',
-        'TxBytes', 'RxDropBroadcastPackets', 'RxDropMulticastPackets', 'RxDropUnicastPackets',
-        'TxDropBroadcastPackets', 'TxDropMulticastPackets', 'TxDropUnicastPackets',
-        'RxPkts', 'TxPkts', 'RxBytesps', 'TxBytesps', 'RxPps', 'TxPps']);
-      queryList.queries.push(query);
+    const query: MetricsPollingQuery = this.topologyInterfaceQuery(
+      'LifMetrics', ['RxDropBroadcastBytes', 'RxDropMulticastBytes', 'RxDropUnicastBytes',
+      'TxDropBroadcastBytes', 'TxDropMulticastBytes', 'TxDropUnicastBytes', 'RxBytes',
+      'TxBytes', 'RxDropBroadcastPackets', 'RxDropMulticastPackets', 'RxDropUnicastPackets',
+      'TxDropBroadcastPackets', 'TxDropMulticastPackets', 'TxDropUnicastPackets',
+      'RxPkts', 'TxPkts', 'RxBytesps', 'TxBytesps', 'RxPps', 'TxPps']);
+    queryList.queries.push(query);
 
-      // refresh every 35 seconds
-      const sub = this.metricsqueryService.pollMetrics('topologyInterfaces', queryList, MetricsUtility.FIVE_MINUTES).subscribe(
-        (data: ITelemetry_queryMetricsQueryResponse) => {
-          if (data && data.results && data.results.length === queryList.queries.length) {
-            console.log();
-            this.updateInterfacesStats(data.results[0]);
-          }
-        },
-        (err) => {
-          this._controllerService.invokeErrorToaster('Error', 'Failed to load interface metrics.');
+    const query2: MetricsPollingQuery = this.topologyInterfaceQuery(
+      'MacMetrics', ['OctetsRxOk', 'OctetsTxOk', 'FramesRxOk', 'FramesTxOk',
+      'RxBytesps', 'TxBytesps', 'RxPps', 'TxPps']);
+    queryList.queries.push(query2);
+
+    const query3: MetricsPollingQuery = this.cpsQuery(
+      'FteCPSMetrics', ['ConnectionsPerSecond']);
+    queryList.queries.push(query3);
+
+    const sub = this.metricsqueryService.pollMetrics('topologyInterfaces', queryList, this.MetricsPollingFrequency).subscribe(
+      (data: ITelemetry_queryMetricsQueryResponse) => {
+        if (data && data.results && data.results.length === queryList.queries.length) {
+          this.updateInterfacesStats(data.results);
         }
-      );
-      this.subscriptions.push(sub);
+      },
+      (err) => {
+        this._controllerService.invokeErrorToaster('Error', 'Failed to load interface metrics.');
+      }
+    );
+    this.subscriptions.push(sub);
   }
 
   topologyInterfaceQuery(kind: string, fields: string[]): MetricsPollingQuery {
@@ -450,6 +593,22 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
       'selector': null,
       'function': Telemetry_queryMetricsQuerySpec_function.last,
       'group-by-field': 'name',
+      'group-by-time': null,
+      'fields': fields != null ? fields : [],
+      'sort-order': Telemetry_queryMetricsQuerySpec_sort_order.descending,
+      'start-time': 'now() - 1m' as any,
+      'end-time': 'now()' as any,
+    };
+    return { query: new Telemetry_queryMetricsQuerySpec(query), pollingOptions: {} };
+  }
+
+  cpsQuery(kind: string, fields: string[]): MetricsPollingQuery {
+    const query: ITelemetry_queryMetricsQuerySpec = {
+      'kind': kind,
+      'name': null,
+      'selector': null,
+      'function': Telemetry_queryMetricsQuerySpec_function.last,
+      'group-by-field': 'reporterID',
       'group-by-time': null,
       'fields': fields != null ? fields : [],
       'sort-order': Telemetry_queryMetricsQuerySpec_sort_order.descending,

@@ -67,3 +67,17 @@
   // width: 250;
   height: 100%;
 }
+
+.dsbd-panel-chart {
+  height: 400px;
+
+  .dsbd-panel-chart-container {
+    height: 100%;
+  }
+}
+
+.dsbdcard-lastupdateTime {
+  @include primary-font(16px);
+  margin-right: 20px;
+  line-height: 30px;
+}

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef, Input } from '@angular/core';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Utility } from '@app/common/Utility';
@@ -32,7 +32,9 @@ export class FirewalltoptenComponent implements OnInit, OnDestroy {
   themeColor: string = '#61b3a0';
   subscriptions: Subscription[] = [];
   loading: boolean = false;
-  updateInterval: number = 5;
+
+
+  @Input() updateInterval: number = 5 * 60000;
 
   constructor(
     protected fwlogService: FwlogService,
@@ -62,7 +64,7 @@ export class FirewalltoptenComponent implements OnInit, OnDestroy {
       fields: [],
     };
     queryList.queries.push({ query: query });
-    const sub = this.metricsqueryService.pollMetrics('firewallTopTen', queryList, this.updateInterval * 60000).subscribe(
+    const sub = this.metricsqueryService.pollMetrics('firewallTopTen', queryList, this.updateInterval).subscribe(
       (data: ITelemetry_queryMetricsQueryResponse) => {
         if (data && data.results && data.results.length) {
           this.loading = true;

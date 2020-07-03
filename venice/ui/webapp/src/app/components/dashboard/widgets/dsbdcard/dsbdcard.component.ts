@@ -2,6 +2,7 @@ import { Component, OnInit, Input } from '@angular/core';
 
 interface DisplayData {
   title: string;
+  lastUpdateTime?: string;
   alerts: number[];
   rows: any[];
 }

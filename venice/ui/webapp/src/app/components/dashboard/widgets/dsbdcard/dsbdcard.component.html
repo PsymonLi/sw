@@ -3,8 +3,10 @@
     <div class="detail-card-border"></div>
 
     <!-- header -->
-    <div fxLayout="row" class="detail-card-header">
-      {{ displayData.title }}
+    <div fxLayout="row" class="detail-card-header" fxLayoutAlign="space-between">
+      <span>{{ displayData.title }}</span>
+      <span class="dsbdcard-lastupdateTime" *ngIf="displayData.lastUpdateTime">Last Updated:
+        {{ displayData.lastUpdateTime | PrettyDate}}</span>
     </div>
 
     <!-- stats body -->

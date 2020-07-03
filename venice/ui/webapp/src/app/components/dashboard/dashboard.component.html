@@ -21,7 +21,7 @@
     <app-rrhealthcard></app-rrhealthcard>
   </div>
 </div>
-<div fxLayout="row" *ngIf="hideOldWidgets">
+<div fxLayout="row wrap" *ngIf="hideOldWidgets">
   <app-dsbdcard fxFlex="1 1 auto" [displayData]="naplesDisplayData"></app-dsbdcard>
   <app-dsbdcard fxFlex="1 1 auto" class="dashboard-workload" [displayData]="workloadsDisplayData">
   </app-dsbdcard>
@@ -29,7 +29,25 @@
   </app-dsbdcard>
 </div>
 <div fxLayout="row" *ngIf="hideOldWidgets">
-  <app-firewalltopten></app-firewalltopten>
+  <app-firewalltopten [updateInterval]="MetricsPollingFrequency"></app-firewalltopten>
+</div>
+<div fxLayout="row wrap" *ngIf="hideOldWidgets">
+  <div fxFlex="1 0 500px" *ngIf="topDscsChartOption && topDscsChartData"
+       class="detail-card detail-card-wrapper dsbd-panel-chart" fxLayout="column">
+    <div class="detail-card-border"></div>
+    <div fxLayout="row" class="detail-card-header" fxLayoutAlign="space-between">
+      <span>Top {{ topDscsChartData.labels.length }} Host Bandwidth</span>
+      <span class="dsbdcard-lastupdateTime">Last Updated: {{ lastUpdateTime | PrettyDate}}</span>
+    </div>
+    <div class="detail-card-border"></div>
+    <div class="dsbd-panel-chart-container" fxLayout="column" fxLayoutAlign="center">
+      <p-chart type="bar" [data]="topDscsChartData" [options]="topDscsChartOption">
+      </p-chart>
+    </div>
+    <div class="detail-card-border"></div>
+  </div>
+  <div fxFlex="1 0 500px"></div>
+  <div fxFlex="1 0 500px"></div>
 </div>
 
 <!-- Previous dashboard -->
