@@ -1,5 +1,6 @@
 #include "service_factory.hpp"
 
+#include <map>
 #include <memory>
 #include <string>
 
@@ -82,6 +83,19 @@ static std::vector<ServiceSpecDepPtr> dependencies_from_obj(pt::ptree obj)
    return dependencies;
 }
 
+static std::map<std::string, std::string> env_from_obj(pt::ptree obj)
+{
+    std::map<std::string, std::string> env_vars;
+
+    if (obj.count("env") != 0) {
+        for (auto env: obj.get_child("env")) {
+            env_vars[env.first] = env.second.get_value<std::string>();
+        }
+    }
+
+    return env_vars;
+}
+
 static unsigned long cpu_affinity_from_obj(pt::ptree obj)
 {
     std::string val = obj.get<std::string>("cpu-affinity", "0xffffffff");
@@ -129,6 +143,7 @@ static ServiceSpecPtr spec_from_obj(pt::ptree obj)
     }
     spec->dependencies = dependencies_from_obj(obj);
     spec->cpu_affinity = cpu_affinity_from_obj(obj);
+    spec->env_vars = env_from_obj(obj);
 
     return spec;
 }

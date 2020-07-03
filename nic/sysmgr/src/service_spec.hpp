@@ -1,6 +1,7 @@
 #ifndef __SERVICE_SPEC_HPP__
 #define __SERVICE_SPEC_HPP__
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,18 +33,18 @@ typedef std::shared_ptr<ServiceSpecDep> ServiceSpecDepPtr;
 
 class ServiceSpec {
 public:
-    std::string                    name;
-    std::string                    command;
-    std::vector<ServiceSpecDepPtr> dependencies;
-    enum service_kind              kind;
-    int                            flags;
-    double                         timeout;
-    double                         mem_limit;
-    unsigned long                  cpu_affinity; //Directly calls
-                                                 //sched_affinity()
-    std::string                    cpuset;       //Acted on by cgroup infra.
-    int                            cpu_shares;
-    static std::shared_ptr<ServiceSpec>   create();
+    std::string                        name;
+    std::string                        command;
+    std::vector<ServiceSpecDepPtr>     dependencies;
+    enum service_kind                  kind;
+    int                                flags;
+    double                             timeout;
+    double                             mem_limit;
+    unsigned long                      cpu_affinity;
+    std::string                        cpuset;
+    int                                cpu_shares;
+    std::map<std::string, std::string> env_vars;
+    static std::shared_ptr<ServiceSpec> create();
 };
 typedef std::shared_ptr<ServiceSpec> ServiceSpecPtr;
 

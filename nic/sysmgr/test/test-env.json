@@ -1,0 +1,12 @@
+[{
+    "name": "env-script",
+    "command": "/usr/src/github.com/pensando/sw/nic/sysmgr/test/env-script.sh",
+    "dependencies": [],
+    "env" : {
+        "TEST": "TEST-OK",
+        "TEST2": "TEST2-OK",
+        "TEST3": "TEST3-OK"
+    },
+    "flags": [],
+    "timeout": 30.0
+}]

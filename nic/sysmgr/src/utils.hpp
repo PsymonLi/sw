@@ -1,6 +1,7 @@
 #ifndef __UTILS_HPP__
 #define __UTILS_HPP__
 
+#include <map>
 #include <string>
 
 #include "bus_api.hpp"
@@ -26,7 +27,9 @@ extern SysmgrEventsPtr g_events;
 
 extern void        exec_command(const std::string &command);
 extern void        exists_or_mkdir(const char *dir);
-extern void        launch(const std::string &name, const std::string &command,
+extern void        launch(const std::string &name,
+                          const std::map<std::string, std::string> &env_vars,
+                          const std::string &command,
                           unsigned long cpu_affinity, double mem_limit,
                           int cpu_shares, const std::string &cpuset,
                           process_t *new_process);

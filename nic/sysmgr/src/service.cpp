@@ -42,9 +42,9 @@ void Service::launch()
 {
     process_t new_process;
 
-    ::launch(this->spec->name, this->spec->command, this->spec->cpu_affinity,
-             this->spec->mem_limit, this->spec->cpu_shares,
-             this->spec->cpuset, &new_process);
+    ::launch(this->spec->name, this->spec->env_vars, this->spec->command,
+             this->spec->cpu_affinity, this->spec->mem_limit,
+             this->spec->cpu_shares, this->spec->cpuset, &new_process);
 
     this->pid = new_process.pid;
 

@@ -182,7 +182,9 @@ void close_on_exec(int fd)
     }
 }
 
-void launch(const std::string &name, const std::string &command,
+void launch(const std::string &name,
+            const std::map<std::string, std::string> &env_vars,
+            const std::string &command,
             unsigned long cpu_affinity, double mem_limit,
             int cpu_shares, const std::string &cpuset,
             process_t *new_process)
@@ -212,6 +214,10 @@ void launch(const std::string &name, const std::string &command,
     }
     else if (pid == 0)
     {
+        for (auto env: env_vars) {
+            setenv(env.first.c_str(), env.second.c_str(), 1);
+        }
+            
         // Destroy the ev loop
         ev_loop_fork(EV_DEFAULT);
         ev_loop_destroy(EV_DEFAULT);
