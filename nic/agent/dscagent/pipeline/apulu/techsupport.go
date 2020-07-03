@@ -16,7 +16,7 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 )
 
-func HandleTechSupport(client operdapi.OperSvcClient, skipCores bool, instanceID string) (string, error) {
+func HandleTechSupport(client operdapi.TechSupportSvcClient, skipCores bool, instanceID string) (string, error) {
 	techSupportReq := &operdapi.TechSupportRequest{
 		Request: &operdapi.TechSupportSpec{
 			SkipCores: skipCores,

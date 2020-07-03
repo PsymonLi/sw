@@ -8,12 +8,13 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/globals.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
+#include "nic/sdk/lib/operd/decoder.h"
 #include "nic/sdk/lib/operd/operd.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/apollo/include/globals.hpp"
 #include "core/state.hpp"
-#include "svc/alerts.hpp"
+#include "svc/oper.hpp"
 #include "svc/metrics.hpp"
 
 using grpc::Server;
@@ -24,10 +25,10 @@ static sdk::event_thread::event_thread *g_pen_oper_grpc_thread;
 static void
 grpc_svc_init (void)
 {
-    ServerBuilder  *server_builder;
-    AlertsSvcImpl  alerts_svc;
+    ServerBuilder *server_builder;
+    OperSvcImpl oper_svc;
     MetricsSvcImpl metrics_svc;
-    std::string    grpc_server_addr;
+    std::string grpc_server_addr;
 
     // do gRPC initialization
     grpc_init();
@@ -40,7 +41,7 @@ grpc_svc_init (void)
                                      grpc::InsecureServerCredentials());
 
     // register for all the oper services
-    server_builder->RegisterService(&alerts_svc);
+    server_builder->RegisterService(&oper_svc);
     server_builder->RegisterService(&metrics_svc);
 
     fprintf(stdout, "pen_oper plugin server listening on ... %s\n",
@@ -106,21 +107,34 @@ plugin_init (void)
     return 0;
 }
 
-// consumes alerts from operd daemon
+static inline pen_oper_info_type_t
+pen_oper_get_info_type (sdk::operd::log_ptr entry)
+{
+    switch (entry->encoder()) {
+    case OPERD_DECODER_ALERTS:
+        return PENOPER_INFO_TYPE_ALERT;
+    default:
+        // pen-oper plugin is not interested in other info types yet
+        break;
+    }
+    return PENOPER_INFO_TYPE_NONE;
+}
+
+// consumes info from operd daemon & publishes to registered subscribers
 void
 handler(sdk::operd::log_ptr entry)
 {
-    operd::Alert alert;
+    pen_oper_info_type_t info_type;
 
-    bool result = alert.ParseFromArray(entry->data(), entry->data_length());
-    assert(result == true);
-
-    fprintf(stdout, "pen_oper alert %s %s %s %s\n", alert.name().c_str(),
-            alert.category().c_str(), alert.description().c_str(),
-            alert.message().c_str());
-
+    info_type = pen_oper_get_info_type(entry);
+    if (info_type == PENOPER_INFO_TYPE_NONE) {
+        fprintf(stderr, "Non-registered info of type %u received\n",
+                entry->encoder());
+        assert(0);
+        return;
+    }
     // push to all pen_oper consumers
-    publish_alert(&alert);
+    publish_oper_info(info_type, entry->data(), entry->data_length());
 }
 
 } // extern "C"

@@ -9,7 +9,7 @@ import apollo.config.agent.api as api
 import apollo.config.utils as utils
 import apollo.config.objects.base as base
 
-import oper_pb2 as oper_pb2
+import techsupport_pb2 as techsupport_pb2
 
 class TechSupportStatus(base.StatusObjectBase):
     def __init__(self):
@@ -59,7 +59,7 @@ class TechSupportObject(base.ConfigObjectBase):
         return self.Status.GetTechSupportFile()
 
     def GetGrpcTechSupportCollectMessage(self):
-        grpcmsg = oper_pb2.TechSupportRequest()
+        grpcmsg = techsupport_pb2.TechSupportRequest()
         self.PopulateRequest(grpcmsg)
         return grpcmsg
 

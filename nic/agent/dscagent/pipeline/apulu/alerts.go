@@ -72,17 +72,27 @@ func convertToVeniceAlert(nEvt *operdapi.Alert) *evtsapi.Event {
 	return vAlert
 }
 
-func queryAlerts(evtsDispatcher events.Dispatcher, client operdapi.AlertsSvcClient) {
-	emptyStruct := &halapi.Empty{}
+func queryAlerts(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClient) {
+	operInfoReqMsg := &operdapi.OperInfoRequest{
+		Request: []*operdapi.OperInfoSpec{
+			{
+				InfoType: operdapi.OperInfoType_OPER_INFO_TYPE_ALERT,
+				Action:   operdapi.OperInfoOp_OPER_INFO_OP_SUBSCRIBE,
+			},
+		},
+	}
 
 	// create a stream for alerts
-	stream, err := client.AlertsGet(context.Background(), emptyStruct)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stream, err := client.OperInfoSubscribe(ctx)
 	if err != nil {
-		log.Error(errors.Wrapf(types.ErrAlertsGet,
-			"AlertsGet failure | Err %v", err))
+		log.Error(errors.Wrapf(types.ErrAlertsGet, "Alerts subscription failure | Err %v", err))
 		return
 	}
 
+	// send subscription request for alerts stream
+	stream.Send(operInfoReqMsg)
 	log.Info("Streaming alerts from pen-oper plugin")
 	for {
 		resp, err := stream.Recv()
@@ -94,14 +104,21 @@ func queryAlerts(evtsDispatcher events.Dispatcher, client operdapi.AlertsSvcClie
 				"Error receiving alerts | Err %v", err))
 			continue
 		}
-		if resp.GetApiStatus() != halapi.ApiStatus_API_STATUS_OK {
+		if resp.GetStatus() != halapi.ApiStatus_API_STATUS_OK {
 			log.Error(errors.Wrapf(types.ErrAlertsRecv,
 				"Alerts response failure, | Err %v",
-				resp.GetApiStatus().String()))
+				resp.GetStatus().String()))
 			continue
 		}
+		if resp.GetInfoType() != operdapi.OperInfoType_OPER_INFO_TYPE_ALERT {
+			log.Error(errors.Wrapf(types.ErrAlertsRecv,
+				"Invalid Alerts %v in response",
+				resp.GetInfoType().String()))
+			continue
+		}
+
 		// process the alerts
-		alert := resp.GetResponse()
+		alert := resp.GetAlertInfo()
 		processAlert(alert)
 		// convert to venice alert format
 		vAlert := convertToVeniceAlert(alert)
@@ -121,8 +138,8 @@ func queryAlerts(evtsDispatcher events.Dispatcher, client operdapi.AlertsSvcClie
 }
 
 // HandleAlerts handles collecting and reporting of alerts
-func HandleAlerts(evtsDispatcher events.Dispatcher, client operdapi.AlertsSvcClient) {
-	// periodically query for alerts from pen_oper plugin
+func HandleAlerts(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClient) {
+	// check if pen-oper plugin is up and subscribe for alerts
 	startAlertsExport := func() {
 		ticker := time.NewTicker(time.Second * 5)
 		for {

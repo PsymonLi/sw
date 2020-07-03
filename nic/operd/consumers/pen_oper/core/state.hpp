@@ -11,11 +11,11 @@
 
 using sdk::lib::eventmgr;
 
-typedef enum pen_oper_info_types_s {
+typedef enum pen_oper_info_type_s {
     PENOPER_INFO_TYPE_NONE,
-    PENOPER_INFO_TYPE_ALERTS,
+    PENOPER_INFO_TYPE_ALERT,
     PENOPER_INFO_TYPE_MAX,
-} pen_oper_info_types_t;
+} pen_oper_info_type_t;
 
 namespace core {
 

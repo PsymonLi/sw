@@ -11,7 +11,7 @@ from http import HTTPStatus
 
 # operd proto
 import oper_pb2_grpc as oper_pb2_grpc
-import alerts_pb2_grpc as alerts_pb2_grpc
+import techsupport_pb2_grpc as techsupport_pb2_grpc
 
 # pds proto
 import batch_pb2_grpc as batch_pb2_grpc
@@ -475,8 +475,8 @@ class OperdClient(AgentClientBase):
 
     def CreateStubs(self):
         if GlobalOptions.dryrun: return
-        self.Stubs[OperdObjectTypes.TECHSUPPORT] = ClientStub(oper_pb2_grpc.OperSvcStub,
-                                                              self.Channel, 'Oper')
+        self.Stubs[OperdObjectTypes.TECHSUPPORT] = ClientStub(techsupport_pb2_grpc.TechSupportSvcStub,
+                                                              self.Channel, '')
         return
 
     def CreateMsgReqTable(self):
@@ -496,8 +496,8 @@ class PenOperClient(AgentClientBase):
 
     def CreateStubs(self):
         if GlobalOptions.dryrun: return
-        self.Stubs[PenOperObjectTypes.ALERTS] = ClientStub(alerts_pb2_grpc.AlertsSvcStub,
-                                                           self.Channel, 'Alerts')
+        self.Stubs[PenOperObjectTypes.ALERTS] = ClientStub(oper_pb2_grpc.OperSvcStub,
+                                                           self.Channel, '')
         return
 
     def CreateMsgReqTable(self):

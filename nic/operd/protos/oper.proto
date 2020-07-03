@@ -4,64 +4,51 @@
 //------------------------------------------------------------------------------
 ///
 /// \file
-/// protobuf specification for operational objects
+/// protobuf specification for operational info
 ///
 //------------------------------------------------------------------------------
 
 syntax = "proto3";
 package operd;
 
-import "gogo.proto";
-import "meta/meta.proto";
 import "types.proto";
+import "alerts.proto";
 
 service OperSvc {
-  // TechSupport helps collecting all the debug information on the
-  // Distrubuted Services Card (DSC) platform for troubleshooting. The collected
-  // information includes trace files from various components, syslogs, core
-  // files, output of various debug commands etc.
-
-  // TechSupportCollect initiates a new techsupport information collection
-  // NOTE: This API will fail, if there is already one pending request in
-  //       progress
-  rpc TechSupportCollect (TechSupportRequest) returns (TechSupportResponse) {}
+  rpc OperInfoSubscribe (stream OperInfoRequest) returns (stream OperInfoResponse) {}
 }
 
-// TechSupportSpec defines the configuration of the techsupport object
-message TechSupportSpec {
-  // SkipCores can be set to true to exclude core files from techsupport
-  // output
-  bool SkipCores = 1;
+// Operational Info exported by operd plugin through push / subscription model
+enum OperInfoType {
+  OPER_INFO_TYPE_NONE   = 0;
+  OPER_INFO_TYPE_ALERT  = 1;
 }
 
-// TechSupportStatus captures the current status of the techsupport job
-message TechSupportStatus {
-  // full path of the gzipped techsupport file created, if successful
-  string FilePath  = 1;
+// OperInfoOp indicates whether client is subscribing or unsubscribing
+enum OperInfoOp {
+  OPER_INFO_OP_NONE        = 0;
+  OPER_INFO_OP_SUBSCRIBE   = 1;
+  OPER_INFO_OP_UNSUBSCRIBE = 2;
 }
 
-// TechSupportStats contains stats related to techsupport
-message TechSupportStats {
+message OperInfoSpec {
+  // oper info of interest
+  OperInfoType InfoType  = 1;
+  // action is either subscribe or unsubscribe
+  OperInfoOp   Action    = 2;
 }
 
-// Techsupport object
-message TechSupport {
-  meta.TypeMeta     TypeMeta = 1 [(gogoproto.embed) = true, (gogoproto.jsontag) = ",inline"];
-  meta.ObjMeta      ObjMeta  = 2 [(gogoproto.embed) = true, (gogoproto.jsontag) = "meta,omitempty"];
-  TechSupportSpec   Spec     = 3 [(gogoproto.jsontag) = "spec,omitempty"];
-  TechSupportStatus Status   = 4 [(gogoproto.jsontag) = "status,omitempty"];
-  TechSupportStats  Stats    = 5 [(gogoproto.jsontag) = "stats,omitempty"];
+// OperInfoRequest captures the operational information for subscription/unsubscription
+message OperInfoRequest {
+  repeated OperInfoSpec Request = 1;
 }
 
-// TechSupport create request
-message TechSupportRequest {
-  // config specification
-  TechSupportSpec Request  = 1;
-}
-
-// TechSupport create response
-message TechSupportResponse {
-  // success or failure status
-  types.ApiStatus   ApiStatus = 1;
-  TechSupportStatus Response  = 2;
+message OperInfoResponse {
+  types.ApiStatus Status    = 1;
+  OperInfoType    InfoType  = 2;
+  // operational information specific to InfoId
+  oneof oper_info {
+      // information specific for alerts
+      Alert       AlertInfo = 3;
+  }
 }

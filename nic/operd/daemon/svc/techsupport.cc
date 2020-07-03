@@ -6,9 +6,9 @@
 #include <cstdlib>
 #include <string>
 #include <time.h>
-#include "gen/proto/oper.grpc.pb.h"
+#include "gen/proto/techsupport.grpc.pb.h"
 #include "gen/proto/types.pb.h"
-#include "oper.hpp"
+#include "techsupport.hpp"
 
 static inline std::string
 get_techsupport_filename (void)
@@ -88,9 +88,9 @@ get_exit_status (int rc)
 }
 
 Status
-OperSvcImpl::TechSupportCollect(ServerContext *context,
-                                const TechSupportRequest *req,
-                                TechSupportResponse *rsp) {
+TechSupportSvcImpl::TechSupportCollect(ServerContext *context,
+                                       const TechSupportRequest *req,
+                                       TechSupportResponse *rsp) {
     int rc;
     std::string tsdir = "/data/techsupport/";
     auto tsrsp = rsp->mutable_response();

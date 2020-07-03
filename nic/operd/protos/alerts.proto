@@ -14,11 +14,6 @@ package operd;
 import "gogo.proto";
 import "types.proto";
 
-service AlertsSvc {
-  // Alerts exposes the alerts produced by various services/processes
-  rpc AlertsGet(types.Empty) returns (stream AlertsGetResponse) {}
-}
-
 enum AlertSeverity {
   DEBUG    = 0;
   INFO     = 1;

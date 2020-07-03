@@ -69,18 +69,17 @@ class PortObject(base.ConfigObjectBase):
 
     def __validate_link_alert(self, alert):
         logger.info(f"Validating link alert {alert} against {self}")
-        if not alert or not utils.ValidateGrpcResponse(alert):
+        if not alert:
             return False
-        spec = alert.Response
-        if spec.Name != f"LINK_{self.AdminState}":
+        if alert.Name != f"LINK_{self.AdminState}":
             return False
-        if spec.Category != "Network":
+        if alert.Category != "Network":
             return False
-        if spec.Severity != alerts_pb2.INFO:
+        if alert.Severity != alerts_pb2.INFO:
             return False
-        if spec.Description != f"Port link is {self.AdminState.lower()}":
+        if alert.Description != f"Port link is {self.AdminState.lower()}":
             return False
-        if not self.UUID.String() in spec.Message:
+        if not self.UUID.String() in alert.Message:
             return False
         return True
 

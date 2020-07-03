@@ -9,6 +9,7 @@ import apollo.config.agent.api as api
 import apollo.config.objects.base as base
 import apollo.config.utils as utils
 
+import oper_pb2 as oper_pb2
 import types_pb2 as types_pb2
 
 class AlertsObject(base.ConfigObjectBase):
@@ -28,20 +29,32 @@ class AlertsObject(base.ConfigObjectBase):
         return
 
     def GetGrpcAlertsMessage(self):
-        grpcmsg = types_pb2.Empty()
+        grpcmsg = oper_pb2.OperInfoRequest()
+        spec = grpcmsg.Request.add()
+        spec.InfoType = oper_pb2.OPER_INFO_TYPE_ALERT
+        spec.Action = oper_pb2.OPER_INFO_OP_SUBSCRIBE
         return grpcmsg
 
     def RequestAlertsStream(self):
-        msg = self.GetGrpcAlertsMessage()
-        response = api.penOperClient[self.Node].Request(self.ObjType, 'AlertsGet', [msg])
+        def GetOperInfoRequestIterator():
+            messages = [self.GetGrpcAlertsMessage()]
+            for m in messages:
+                yield m
+
+        response = api.penOperClient[self.Node].Request(self.ObjType, 'OperInfoSubscribe', [GetOperInfoRequestIterator()])
         self.Stream = response[0] if response else None
         logger.info(f"received alerts stream {self.Stream} from {self.Node}")
 
     def GetAlerts(self):
         if not self.Stream:
             return None
-        for alert in self.Stream:
-            yield alert
+        for infoResp in self.Stream:
+            assert (infoResp.Status == types_pb2.API_STATUS_OK),\
+                   f"Alerts get failed on {self.Node}, rc {infoResp.Status}"
+            assert (infoResp.InfoType == oper_pb2.OPER_INFO_TYPE_ALERT),\
+                   f"Unexpected oper info {infoResp.InfoType} received on "\
+                   f"{self.Node} instead of alerts"
+            yield infoResp.AlertInfo
 
     def DrainAlerts(self, spec=None):
         try:

@@ -10,7 +10,7 @@
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/include/globals.hpp"
 #include "nic/operd/daemon/operd_impl.hpp"
-#include "nic/operd/daemon/svc/oper.hpp"
+#include "nic/operd/daemon/svc/techsupport.hpp"
 
 static sdk::event_thread::event_thread *g_grpc_svc_thread;
 
@@ -21,8 +21,8 @@ static void
 grpc_svc_init (void)
 {
     ServerBuilder *server_builder;
-    OperSvcImpl   oper_svc;
-    std::string   grpc_server_addr;
+    TechSupportSvcImpl techsupport_svc;
+    std::string grpc_server_addr;
 
     // do gRPC initialization
     grpc_init();
@@ -35,7 +35,7 @@ grpc_svc_init (void)
                                      grpc::InsecureServerCredentials());
 
     // register for the oper services
-    server_builder->RegisterService(&oper_svc);
+    server_builder->RegisterService(&techsupport_svc);
 
     fprintf(stdout, "operd server listening on ... %s\n",
             grpc_server_addr.c_str());

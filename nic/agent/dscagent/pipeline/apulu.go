@@ -56,8 +56,8 @@ type ApuluAPI struct {
 	RoutingClient           msapi.BGPSvcClient
 	EvpnClient              msapi.EvpnSvcClient
 	CPRouteSvcClient        msapi.CPRouteSvcClient
+	TechSupportSvcClient    operdapi.TechSupportSvcClient
 	OperSvcClient           operdapi.OperSvcClient
-	AlertsSvcClient         operdapi.AlertsSvcClient
 	MetricsSvcClient        operdapi.MetricsSvcClient
 	LocalInterfaces         sync.Map
 }
@@ -97,8 +97,8 @@ func NewPipelineAPI(infraAPI types.InfraAPI) (*ApuluAPI, error) {
 		RoutingClient:           msapi.NewBGPSvcClient(conn),
 		EvpnClient:              msapi.NewEvpnSvcClient(conn),
 		MirrorClient:            halapi.NewMirrorSvcClient(conn),
-		OperSvcClient:           operdapi.NewOperSvcClient(operdconn),
-		AlertsSvcClient:         operdapi.NewAlertsSvcClient(penoperconn),
+		TechSupportSvcClient:    operdapi.NewTechSupportSvcClient(operdconn),
+		OperSvcClient:           operdapi.NewOperSvcClient(penoperconn),
 		MetricsSvcClient:        operdapi.NewMetricsSvcClient(penoperconn),
 	}
 
@@ -1513,13 +1513,13 @@ func (a *ApuluAPI) HandleRouteTable(oper types.Operation, routetableObj netproto
 
 // HandleTechSupport requests techsupport to operd
 func (a *ApuluAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, error) {
-	return apulu.HandleTechSupport(a.OperSvcClient, obj.Spec.SkipCores, obj.Spec.InstanceID)
+	return apulu.HandleTechSupport(a.TechSupportSvcClient, obj.Spec.SkipCores, obj.Spec.InstanceID)
 }
 
 // HandleAlerts start consuming alerts from operd plugin & export
 func (a *ApuluAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
 	// handle all the alerts
-	apulu.HandleAlerts(evtsDispatcher, a.AlertsSvcClient)
+	apulu.HandleAlerts(evtsDispatcher, a.OperSvcClient)
 }
 
 // ReplayConfigs replays last known configs from boltDB
