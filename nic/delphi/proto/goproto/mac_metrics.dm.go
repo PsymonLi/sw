@@ -31,7 +31,7 @@ type MacMetrics struct {
 
 	FramesRxBroadcast metrics.Counter
 
-	FramesRxPause metrics.Counter
+	FramesRxPause metrics.Counter `structs:"-"`
 
 	FramesRxBadLength metrics.Counter
 
@@ -41,7 +41,7 @@ type MacMetrics struct {
 
 	FramesRxFragments metrics.Counter
 
-	FramesRxJabber metrics.Counter
+	FramesRxJabber metrics.Counter `structs:"-"`
 
 	FramesRxPripause metrics.Counter
 
@@ -93,7 +93,7 @@ type MacMetrics struct {
 
 	FramesTxBroadcast metrics.Counter
 
-	FramesTxPause metrics.Counter
+	FramesTxPause metrics.Counter `structs:"-"`
 
 	FramesTxPripause metrics.Counter
 
@@ -1816,7 +1816,7 @@ type MgmtMacMetrics struct {
 
 	FramesRxBroadcast metrics.Counter
 
-	FramesRxPause metrics.Counter
+	FramesRxPause metrics.Counter `structs:"-"`
 
 	FramesRxBadLength metrics.Counter
 
@@ -1826,7 +1826,7 @@ type MgmtMacMetrics struct {
 
 	FramesRxFragments metrics.Counter
 
-	FramesRxJabber metrics.Counter
+	FramesRxJabber metrics.Counter `structs:"-"`
 
 	FramesRx_64B metrics.Counter
 
@@ -1842,7 +1842,7 @@ type MgmtMacMetrics struct {
 
 	FramesRxGt_1518B metrics.Counter
 
-	FramesRxFifoFull metrics.Counter
+	FramesRxFifoFull metrics.Counter `structs:"-"`
 
 	FramesTxOk metrics.Counter
 
@@ -1860,7 +1860,7 @@ type MgmtMacMetrics struct {
 
 	FramesTxBroadcast metrics.Counter
 
-	FramesTxPause metrics.Counter
+	FramesTxPause metrics.Counter `structs:"-"`
 
 	TxPps metrics.Counter
 

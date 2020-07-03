@@ -11,10 +11,10 @@ import "metrics_annotations.proto";
 
 message MacMetrics {
     option (venice.metricInfo) = {
-        DisplayName: "Uplink Interface Packet Statistics",
-        Description: "Key index - PORT ID",
+        DisplayName: "Uplink Interface",
+        Description: "Uplink Interface Packet Statistics",
         Scope: PerEthPort,
-        Tags: [ Level4 ]
+        Tags: [ Level3 ]
     };
     fixed32             Key                     = 1;    // Port id
     delphi.Counter      frames_rx_ok            = 2 [(venice.metricsField) = {DisplayName: "Rx OK Frames" Description: "Good Frames received"}];
@@ -26,12 +26,12 @@ message MacMetrics {
     delphi.Counter      frames_rx_unicast       = 8 [(venice.metricsField) = {DisplayName: "Rx Unicast Frames" Description: "Frames received with Unicast Address"}];
     delphi.Counter      frames_rx_multicast     = 9 [(venice.metricsField) = {DisplayName: "Rx Multicast Frames" Description: "Frames received with Multicast Address"}];
     delphi.Counter      frames_rx_broadcast     = 10 [(venice.metricsField) = {DisplayName: "Rx Broadcast Frames" Description: "Frames received with Broadcast Address"}];
-    delphi.Counter      frames_rx_pause         = 11 [(venice.metricsField) = {DisplayName: "Rx Pause Frames" Description: "Frames received of type PAUSE"}];
+    delphi.Counter      frames_rx_pause         = 11 [json_name="-"];
     delphi.Counter      frames_rx_bad_length    = 12 [(venice.metricsField) = {DisplayName: "Rx Bad Length Frames" Description: "Frames received with lenth error. EtherType field < 1536, and frame size > received length value."}];
     delphi.Counter      frames_rx_undersized    = 13 [(venice.metricsField) = {DisplayName: "Rx Undersized Frames" Description: "Frames received with frame size < min frame size(64 Octets)"}];
     delphi.Counter      frames_rx_oversized     = 14 [(venice.metricsField) = {DisplayName: "Rx Oversized Frames" Description: "Frames received with frame size > max frame size(9216 Octets) but < jabber size(9232 Octets)"}];
     delphi.Counter      frames_rx_fragments     = 15 [(venice.metricsField) = {DisplayName: "Rx Fragment Frames" Description: "Fragment frames received"}];
-    delphi.Counter      frames_rx_jabber        = 16 [(venice.metricsField) = {DisplayName: "Rx Jabber Frames" Description: "Frames received with (frame size > max frame size(9216 Octets) with CRC error) or (frame size > jabber size(9232 Octets))"}];
+    delphi.Counter      frames_rx_jabber        = 16 [json_name="-"];
     delphi.Counter      frames_rx_pripause      = 17 [(venice.metricsField) = {DisplayName: "Rx PFC Frames" Description: "Frames received of type PFC"}];
     delphi.Counter      frames_rx_stomped_crc   = 18 [json_name="-"];
     delphi.Counter      frames_rx_too_long      = 19 [(venice.metricsField) = {DisplayName: "Rx Too long Frames" Description: "Frames received with frame size > max frame size(9216 Octets)"}];
@@ -57,7 +57,7 @@ message MacMetrics {
     delphi.Counter      frames_tx_unicast       = 39 [(venice.metricsField) = {DisplayName: "Tx Unicast Frames" Description: "Frames transmitted with Unicast Address"}];
     delphi.Counter      frames_tx_multicast     = 40 [(venice.metricsField) = {DisplayName: "Tx Multicast Frames" Description: "Frames transmitted with Multicast Address"}];
     delphi.Counter      frames_tx_broadcast     = 41 [(venice.metricsField) = {DisplayName: "Tx Broadcast Frames" Description: "Frames transmitted with Broadcast Address"}];
-    delphi.Counter      frames_tx_pause         = 42 [(venice.metricsField) = {DisplayName: "Tx Pause Frames" Description: "Frames transmitted of type PAUSE"}];
+    delphi.Counter      frames_tx_pause         = 42 [json_name="-"];
     delphi.Counter      frames_tx_pripause      = 43 [(venice.metricsField) = {DisplayName: "Tx PFC Frames" Description: "Frames transmitted of type PFC"}];
     delphi.Counter      frames_tx_vlan          = 44 [(venice.metricsField) = {DisplayName: "Tx VLAN Frames" Description: "Frames transmitted with vlan header"}];
     delphi.Counter      frames_tx_less_than_64b = 45 [(venice.metricsField) = {DisplayName: "Tx Less than 64b Frames" Description: "Frames transmitted of length < 64 octets"}];
@@ -114,10 +114,10 @@ message MacMetrics {
 
 message MgmtMacMetrics {
     option (venice.metricInfo) = {
-        DisplayName: "Management Interface Packet Statistics",
-        Description: "Key index - PORT ID",
+        DisplayName: "Management Interface",
+        Description: "Management Interface Packet Statistics",
         Scope: PerMgmtPort,
-        Tags: [ Level4 ]
+        Tags: [ Level3 ]
     };
     fixed32             Key                     = 1;    // Port id
     delphi.Counter      frames_rx_ok            = 2 [(venice.metricsField) = {DisplayName: "Rx OK Frames" Description: "Good Frames received"}];
@@ -129,12 +129,12 @@ message MgmtMacMetrics {
     delphi.Counter      frames_rx_unicast       = 8 [(venice.metricsField) = {DisplayName: "Rx Unicast Frames" Description: "Frames received with Unicast Address"}];
     delphi.Counter      frames_rx_multicast     = 9 [(venice.metricsField) = {DisplayName: "Rx Multicast Frames" Description: "Frames received with Multicast Address"}];
     delphi.Counter      frames_rx_broadcast     = 10 [(venice.metricsField) = {DisplayName: "Rx Broadcast Frames" Description: "Frames received with Broadcast Address"}];
-    delphi.Counter      frames_rx_pause         = 11 [(venice.metricsField) = {DisplayName: "Rx Pause Frames" Description: "Frames received of type PAUSE"}];
+    delphi.Counter      frames_rx_pause         = 11 [json_name="-"];
     delphi.Counter      frames_rx_bad_length    = 12 [(venice.metricsField) = {DisplayName: "Rx Bad Length Frames" Description: "Frames received with lenth error. EtherType field < 1536, and frame size > received length value."}];
     delphi.Counter      frames_rx_undersized    = 13 [(venice.metricsField) = {DisplayName: "Rx Undersized Frames" Description: "Frames received with frame size < min frame size(64 Octets)"}];
     delphi.Counter      frames_rx_oversized     = 14 [(venice.metricsField) = {DisplayName: "Rx Oversized Frames" Description: "Frames received with frame size > max frame size(9216 Octets) but < jabber size(9232 Octets)"}];
     delphi.Counter      frames_rx_fragments     = 15 [(venice.metricsField) = {DisplayName: "Rx Fragment Frames" Description: "Fragment frames received"}];
-    delphi.Counter      frames_rx_jabber        = 16 [(venice.metricsField) = {DisplayName: "Rx Jabber Frames" Description: "Frames received with (frame size > max frame size(9216 Octets) with CRC error) or (frame size > jabber size(9232 Octets))"}];
+    delphi.Counter      frames_rx_jabber        = 16 [json_name="-"];
     delphi.Counter      frames_rx_64b           = 17 [(venice.metricsField) = {DisplayName: "Rx 64b Frames" Description: "Frames received of length 64 octets"}];
     delphi.Counter      frames_rx_65b_127b      = 18 [(venice.metricsField) = {DisplayName: "Rx 65b_127b Frames" Description: "Frames received of length 65~127 octets"}];
     delphi.Counter      frames_rx_128b_255b     = 19 [(venice.metricsField) = {DisplayName: "Rx 128b_255b Frames" Description: "Frames received of length 128~255 octets"}];
@@ -142,7 +142,7 @@ message MgmtMacMetrics {
     delphi.Counter      frames_rx_512b_1023b    = 21 [(venice.metricsField) = {DisplayName: "Rx 512b_1023b Frames" Description: "Frames received of length 512~1023 octets"}];
     delphi.Counter      frames_rx_1024b_1518b   = 22 [(venice.metricsField) = {DisplayName: "Rx 1024b_1518b Frames" Description: "Frames received of length 1024~1518 octets"}];
     delphi.Counter      frames_rx_gt_1518b      = 23 [(venice.metricsField) = {DisplayName: "Rx Greater than 1518b Frames" Description: "Frames received of length > 1518 octets"}];
-    delphi.Counter      frames_rx_fifo_full     = 24 [(venice.metricsField) = {DisplayName: "Rx FIFO Full Frames" Description: "Frames received with FIFO Full"}];
+    delphi.Counter      frames_rx_fifo_full     = 24 [json_name="-"];
     delphi.Counter      frames_tx_ok            = 25 [(venice.metricsField) = {DisplayName: "Tx OK Frames" Description: "Good frames transmitted"}];
     delphi.Counter      frames_tx_all           = 26 [(venice.metricsField) = {DisplayName: "Tx All Frames" Description: "All frames transmitted (Good and Bad)"}];
     delphi.Counter      frames_tx_bad           = 27 [(venice.metricsField) = {DisplayName: "Tx Bad Frames" Description: "Frames transmitted with bad (CRC, Length or Align)"}];
@@ -151,7 +151,7 @@ message MgmtMacMetrics {
     delphi.Counter      frames_tx_unicast       = 30 [(venice.metricsField) = {DisplayName: "Tx Unicast Frames" Description: "Frames transmitted with Unicast Address"}];
     delphi.Counter      frames_tx_multicast     = 31 [(venice.metricsField) = {DisplayName: "Tx Multicast Frames" Description: "Frames transmitted with Multicast Address"}];
     delphi.Counter      frames_tx_broadcast     = 32 [(venice.metricsField) = {DisplayName: "Tx Broadcast Frames" Description: "Frames transmitted with Broadcast Address"}];
-    delphi.Counter      frames_tx_pause         = 33 [(venice.metricsField) = {DisplayName: "Tx Pause Frames" Description: "Frames transmitted of type PAUSE"}];
+    delphi.Counter      frames_tx_pause         = 33 [json_name="-"];
     delphi.Counter      tx_pps                  = 34 [(venice.metricsField) = {DisplayName: "Tx Packets/sec" Description: "Transmit bandwidth in  Packets per second(PPS)"}];
     delphi.Counter      tx_bytesps              = 35 [(venice.metricsField) = {DisplayName: "Tx Bytes/sec" Description: "Transmit bandwidth in Bytes per second(BPS)"}];
     delphi.Counter      rx_pps                  = 36 [(venice.metricsField) = {DisplayName: "Rx Packets/sec" Description: "Receive bandwidth in Packets per second(PPS)"}];

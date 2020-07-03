@@ -5,8 +5,8 @@
   "Messages": [
     {
       "Name": "MacMetrics",
-      "Description": "Key index - PORT ID",
-      "DisplayName": "Uplink Interface Packet Statistics",
+      "Description": "Uplink Interface Packet Statistics",
+      "DisplayName": "Uplink Interface",
       "Fields": [
         {
           "Name": "FramesRxOk",
@@ -72,13 +72,6 @@
           "BaseType": "Counter"
         },
         {
-          "Name": "FramesRxPause",
-          "DisplayName": "Rx Pause Frames",
-          "Description": "Frames received of type PAUSE",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
           "Name": "FramesRxBadLength",
           "DisplayName": "Rx Bad Length Frames",
           "Description": "Frames received with lenth error. EtherType field \u003c 1536, and frame size \u003e received length value.",
@@ -103,13 +96,6 @@
           "Name": "FramesRxFragments",
           "DisplayName": "Rx Fragment Frames",
           "Description": "Fragment frames received",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "FramesRxJabber",
-          "DisplayName": "Rx Jabber Frames",
-          "Description": "Frames received with (frame size \u003e max frame size(9216 Octets) with CRC error) or (frame size \u003e jabber size(9232 Octets))",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -271,13 +257,6 @@
           "Name": "FramesTxBroadcast",
           "DisplayName": "Tx Broadcast Frames",
           "Description": "Frames transmitted with Broadcast Address",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "FramesTxPause",
-          "DisplayName": "Tx Pause Frames",
-          "Description": "Frames transmitted of type PAUSE",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -528,14 +507,14 @@
         }
       ],
       "Tags": [
-        "Level4"
+        "Level3"
       ],
       "Scope": "PerEthPort"
     },
     {
       "Name": "MgmtMacMetrics",
-      "Description": "Key index - PORT ID",
-      "DisplayName": "Management Interface Packet Statistics",
+      "Description": "Management Interface Packet Statistics",
+      "DisplayName": "Management Interface",
       "Fields": [
         {
           "Name": "FramesRxOk",
@@ -601,13 +580,6 @@
           "BaseType": "Counter"
         },
         {
-          "Name": "FramesRxPause",
-          "DisplayName": "Rx Pause Frames",
-          "Description": "Frames received of type PAUSE",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
           "Name": "FramesRxBadLength",
           "DisplayName": "Rx Bad Length Frames",
           "Description": "Frames received with lenth error. EtherType field \u003c 1536, and frame size \u003e received length value.",
@@ -632,13 +604,6 @@
           "Name": "FramesRxFragments",
           "DisplayName": "Rx Fragment Frames",
           "Description": "Fragment frames received",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "FramesRxJabber",
-          "DisplayName": "Rx Jabber Frames",
-          "Description": "Frames received with (frame size \u003e max frame size(9216 Octets) with CRC error) or (frame size \u003e jabber size(9232 Octets))",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -688,13 +653,6 @@
           "Name": "FramesRxGt_1518B",
           "DisplayName": "Rx Greater than 1518b Frames",
           "Description": "Frames received of length \u003e 1518 octets",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "FramesRxFifoFull",
-          "DisplayName": "Rx FIFO Full Frames",
-          "Description": "Frames received with FIFO Full",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -755,13 +713,6 @@
           "BaseType": "Counter"
         },
         {
-          "Name": "FramesTxPause",
-          "DisplayName": "Tx Pause Frames",
-          "Description": "Frames transmitted of type PAUSE",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
           "Name": "TxPps",
           "DisplayName": "Tx Packets/sec",
           "Description": "Transmit bandwidth in  Packets per second(PPS)",
@@ -791,7 +742,7 @@
         }
       ],
       "Tags": [
-        "Level4"
+        "Level3"
       ],
       "Scope": "PerMgmtPort"
     }

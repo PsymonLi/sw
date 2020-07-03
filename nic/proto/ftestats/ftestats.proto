@@ -9,14 +9,14 @@ message FteCPSMetrics {
     option (delphi.datapath_metrics) = true;
     option (venice.metricInfo) = {
         DisplayName: "CPS Statistics",
-        Description: "Key index - FTE ID",
+        Description: "Connections per second related statistics",
         Scope: PerFTE,
         Tags: [ Level4 ]
         Features: [FLOWAWARE,FLOWAWARE_FIREWALL]
     };
     fixed64        Key                        = 1;     // FTE ID
 
-    delphi.Counter connections_per_second     = 2  [(venice.metricsField) = {DisplayName: "CPS" Description: "Connections per second" Units: Gauge } ];
+    delphi.Counter connections_per_second     = 2  [(venice.metricsField) = {DisplayName: "Connections Per Second" Description: "The number of connections established per second on DSCs" Units: Gauge } ];
     delphi.Counter max_connections_per_second = 3  [(venice.metricsField) = {DisplayName: "Max-CPS" Description: "Max Connections per second" Units: Gauge Tags:[ Level7 ] }];
     delphi.Counter packets_per_second         = 4  [(venice.metricsField) = {DisplayName: "PPS" Description: "Packets per second" Tags:[ Level7 ] }];
     delphi.Counter max_packets_per_second     = 5  [(venice.metricsField) = {DisplayName: "Max-PPS" Description: "Max packets per second" Tags:[ Level7 ] }];
@@ -51,10 +51,10 @@ message FteLifQMetrics {
 message SessionSummaryMetrics {
     option (delphi.datapath_metrics) = true;
     option (venice.metricInfo) = {
-        DisplayName: "Session Summary Statistics",
-        Description: "Key index - FTE ID",
+        DisplayName: "Session",
+        Description: "Session Summary Related Statistics",
         Scope: PerFTE,
-        Tags: [ Level4 ]
+        Tags: [ Level1 ]
         Features: [FLOWAWARE,FLOWAWARE_FIREWALL]
     };
     fixed64        Key                           = 1;

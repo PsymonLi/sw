@@ -8,10 +8,10 @@ import "metrics_annotations.proto";
 message LifMetrics {
     option (delphi.datapath_metrics) = true;
     option (venice.metricInfo) = {
-        DisplayName: "Logical Interface Statistics",
-        Description: "Key index - LIF IfIndex",
+        DisplayName: "Logical Interface",
+        Description: "Logical Interface Statistics",
         Scope: PerLIF,
-        Tags: [ Level4 ]
+        Tags: [ Level3 ]
     };
 
     fixed64        Key                              = 1; // Lif ifidx

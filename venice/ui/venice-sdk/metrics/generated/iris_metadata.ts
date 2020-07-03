@@ -489,8 +489,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
 },
   DropMetrics: {
   "name": "DropMetrics",
-  "description": "Key index - Global ID",
-  "displayName": "ASIC Ingress Drop Statistics",
+  "description": "Asic Forwarding Drops Statistics",
+  "displayName": "Forwarding Drops",
   "fields": [
     {
       "name": "DropParseLenError",
@@ -794,7 +794,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "tags": [
-    "Level4"
+    "Level2"
   ],
   "scope": "PerASIC",
   "objectKind": "DistributedServiceCard",
@@ -802,13 +802,13 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
 },
   FteCPSMetrics: {
   "name": "FteCPSMetrics",
-  "description": "Key index - FTE ID",
+  "description": "Connections per second related statistics",
   "displayName": "CPS Statistics",
   "fields": [
     {
       "name": "ConnectionsPerSecond",
-      "displayName": "CPS",
-      "description": "Connections per second",
+      "displayName": "Connections Per Second",
+      "description": "The number of connections established per second on DSCs",
       "units": "Gauge",
       "baseType": "Counter",
       "tags": [
@@ -1052,8 +1052,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
 },
   SessionSummaryMetrics: {
   "name": "SessionSummaryMetrics",
-  "description": "Key index - FTE ID",
-  "displayName": "Session Summary Statistics",
+  "description": "Session Summary Related Statistics",
+  "displayName": "Session",
   "fields": [
     {
       "name": "TotalActiveSessions",
@@ -1273,7 +1273,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "tags": [
-    "Level4"
+    "Level1"
   ],
   "scope": "PerFTE",
   "features": [
@@ -1285,8 +1285,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
 },
   MacMetrics: {
   "name": "MacMetrics",
-  "description": "Key index - PORT ID",
-  "displayName": "Uplink Interface Packet Statistics",
+  "description": "Uplink Interface Packet Statistics",
+  "displayName": "Uplink Interface",
   "fields": [
     {
       "name": "FramesRxOk",
@@ -1397,18 +1397,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
-      "name": "FramesRxPause",
-      "displayName": "Rx Pause Frames",
-      "description": "Frames received of type PAUSE",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
       "name": "FramesRxBadLength",
       "displayName": "Rx Bad Length Frames",
       "description": "Frames received with lenth error. EtherType field < 1536, and frame size > received length value.",
@@ -1448,18 +1436,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "name": "FramesRxFragments",
       "displayName": "Rx Fragment Frames",
       "description": "Fragment frames received",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
-      "name": "FramesRxJabber",
-      "displayName": "Rx Jabber Frames",
-      "description": "Frames received with (frame size > max frame size(9216 Octets) with CRC error) or (frame size > jabber size(9232 Octets))",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1736,18 +1712,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "name": "FramesTxBroadcast",
       "displayName": "Tx Broadcast Frames",
       "description": "Frames transmitted with Broadcast Address",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
-      "name": "FramesTxPause",
-      "displayName": "Tx Pause Frames",
-      "description": "Frames transmitted of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2190,7 +2154,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "tags": [
-    "Level4"
+    "Level3"
   ],
   "scope": "PerEthPort",
   "objectKind": "NetworkInterface",
@@ -2199,8 +2163,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
 },
   MgmtMacMetrics: {
   "name": "MgmtMacMetrics",
-  "description": "Key index - PORT ID",
-  "displayName": "Management Interface Packet Statistics",
+  "description": "Management Interface Packet Statistics",
+  "displayName": "Management Interface",
   "fields": [
     {
       "name": "FramesRxOk",
@@ -2311,18 +2275,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
-      "name": "FramesRxPause",
-      "displayName": "Rx Pause Frames",
-      "description": "Frames received of type PAUSE",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
       "name": "FramesRxBadLength",
       "displayName": "Rx Bad Length Frames",
       "description": "Frames received with lenth error. EtherType field < 1536, and frame size > received length value.",
@@ -2362,18 +2314,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "name": "FramesRxFragments",
       "displayName": "Rx Fragment Frames",
       "description": "Fragment frames received",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
-      "name": "FramesRxJabber",
-      "displayName": "Rx Jabber Frames",
-      "description": "Frames received with (frame size > max frame size(9216 Octets) with CRC error) or (frame size > jabber size(9232 Octets))",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2458,18 +2398,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "name": "FramesRxGt_1518B",
       "displayName": "Rx Greater than 1518b Frames",
       "description": "Frames received of length > 1518 octets",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
-      "name": "FramesRxFifoFull",
-      "displayName": "Rx FIFO Full Frames",
-      "description": "Frames received with FIFO Full",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2575,18 +2503,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
-      "name": "FramesTxPause",
-      "displayName": "Tx Pause Frames",
-      "description": "Frames transmitted of type PAUSE",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
       "name": "TxPps",
       "displayName": "Tx Packets/sec",
       "description": "Transmit bandwidth in  Packets per second(PPS)",
@@ -2648,7 +2564,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "tags": [
-    "Level4"
+    "Level3"
   ],
   "scope": "PerMgmtPort",
   "objectKind": "NetworkInterface",
@@ -2657,8 +2573,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
 },
   LifMetrics: {
   "name": "LifMetrics",
-  "description": "Key index - LIF IfIndex",
-  "displayName": "Logical Interface Statistics",
+  "description": "Logical Interface Statistics",
+  "displayName": "Logical Interface",
   "fields": [
     {
       "name": "RxUnicastBytes",
@@ -3058,7 +2974,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "tags": [
-    "Level4"
+    "Level3"
   ],
   "scope": "PerLIF",
   "objectKind": "NetworkInterface",

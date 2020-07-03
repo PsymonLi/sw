@@ -5,8 +5,8 @@
   "Messages": [
     {
       "Name": "LifMetrics",
-      "Description": "Key index - LIF IfIndex",
-      "DisplayName": "Logical Interface Statistics",
+      "Description": "Logical Interface Statistics",
+      "DisplayName": "Logical Interface",
       "Fields": [
         {
           "Name": "RxUnicastBytes",
@@ -234,7 +234,7 @@
         }
       ],
       "Tags": [
-        "Level4"
+        "Level3"
       ],
       "Scope": "PerLIF"
     }

@@ -5,8 +5,8 @@
   "Messages": [
     {
       "Name": "DropMetrics",
-      "Description": "Key index - Global ID",
-      "DisplayName": "ASIC Ingress Drop Statistics",
+      "Description": "Asic Forwarding Drops Statistics",
+      "DisplayName": "Forwarding Drops",
       "Fields": [
         {
           "Name": "DropParseLenError",
@@ -178,7 +178,7 @@
         }
       ],
       "Tags": [
-        "Level4"
+        "Level2"
       ],
       "Scope": "PerASIC"
     }

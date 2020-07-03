@@ -5,13 +5,13 @@
   "Messages": [
     {
       "Name": "FteCPSMetrics",
-      "Description": "Key index - FTE ID",
+      "Description": "Connections per second related statistics",
       "DisplayName": "CPS Statistics",
       "Fields": [
         {
           "Name": "ConnectionsPerSecond",
-          "DisplayName": "CPS",
-          "Description": "Connections per second",
+          "DisplayName": "Connections Per Second",
+          "Description": "The number of connections established per second on DSCs",
           "Units": "Gauge",
           "BaseType": "Counter"
         },
@@ -156,8 +156,8 @@
     },
     {
       "Name": "SessionSummaryMetrics",
-      "Description": "Key index - FTE ID",
-      "DisplayName": "Session Summary Statistics",
+      "Description": "Session Summary Related Statistics",
+      "DisplayName": "Session",
       "Fields": [
         {
           "Name": "TotalActiveSessions",
@@ -287,7 +287,7 @@
         }
       ],
       "Tags": [
-        "Level4"
+        "Level1"
       ],
       "Scope": "PerFTE",
       "Features": [

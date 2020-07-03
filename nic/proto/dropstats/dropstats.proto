@@ -9,10 +9,10 @@ message DropMetrics {
     option (delphi.datapath_metrics) = true;
 
     option (venice.metricInfo) = {
-        DisplayName: "ASIC Ingress Drop Statistics",
-        Description: "Key index - Global ID",
+        DisplayName: "Forwarding Drops",
+        Description: "Asic Forwarding Drops Statistics",
         Scope: PerASIC,
-        Tags: [ Level4 ]
+        Tags: [ Level2 ]
     };
 
     fixed64          Key                              = 1;        // Global id 0
