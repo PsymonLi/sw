@@ -124,7 +124,7 @@ def Main(args):
     for node in api.GetNaplesHostnames():
         storeClient = EzAccessStoreClient[node]
         if storeClient.IsDeviceLearningEnabled():
-            if not learn_utils.SetDeviceLearnTimeout(storeClient.GetDevice().LearnAgeTimeout):
+            if not learn_utils.SetDeviceLearnTimeout(storeClient.GetDevice().GetLearnAgeTimeout()):
                 return api.types.status.FAILURE
             if not learn_utils.ClearLearnData():
                 return api.types.status.FAILURE

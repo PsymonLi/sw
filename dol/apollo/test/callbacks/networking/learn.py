@@ -5,7 +5,7 @@ from infra.common.objects import MacAddressBase
 
 def GetLearnDelay(testcase, args):
     if args.delay_type == "age":
-        return testcase.config.devicecfg.LearnAgeTimeout
+        return testcase.config.devicecfg.GetLearnAgeTimeout()
     else:
         return 30
 

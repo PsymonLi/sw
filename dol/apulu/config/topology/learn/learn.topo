@@ -26,7 +26,7 @@ node:
         stack               : ipv4 # ipv4 (default), ipv6
         bridging            : true # false (default), true
         learn-mode          : auto
-        learningagetimeout  : 30
+        learn-agetimeout    : 30
         ipaddress           : None # Taken from resmgr
         gateway             : None # Taken from resmgr
         encap               : vxlan # vxlan or mplsodup

@@ -102,7 +102,7 @@ def ExistsOnDevice(ep_mac_ip):
 def VerifyIPAgeRefreshed(tc, ep_ip):
     if not PopulateRuntimeInfo(ep_ip):
         return False
-    age = tc.config.devicecfg.LearnAgeTimeout
+    age = tc.config.devicecfg.GetLearnAgeTimeout()
     # allow 10 second worst case test delay
     return ep_ip.RuntimeInfo.Ttl > (age - 10)
 

@@ -27,21 +27,20 @@ class LearnSource():
 
 class LearnSpec():
     def __init__(self, mode, agetimeout, arp, dhcp, data):
-        self.LearnMode = mode
-        self.LearnAgeTimeout = agetimeout
-        self.LearnSource = LearnSource(arp, dhcp, data)
-        return
-
-class DeviceObject(base.ConfigObjectBase):
-    def __init__(self, node, spec):
-
         def __get_learnmode(mode):
             if mode == "auto":
                 return device_pb2.LEARN_MODE_AUTO
             if mode == "notify":
                 return device_pb2.LEARN_MODE_NOTIFY
             return device_pb2.LEARN_MODE_NONE
+        self.LearnMode = __get_learnmode(mode)
+        self.LearnModeStr = mode
+        self.LearnAgeTimeout = agetimeout
+        self.LearnSource = LearnSource(arp, dhcp, data)
+        return
 
+class DeviceObject(base.ConfigObjectBase):
+    def __init__(self, node, spec):
         super().__init__(api.ObjectTypes.DEVICE, node)
         self.SetSingleton(True)
         self.GID("Device1")
@@ -53,7 +52,6 @@ class DeviceObject(base.ConfigObjectBase):
         if self.Mode == 'auto':
             self.Mode = utils.GetDefaultDeviceMode()
         self.BridgingEnabled = getattr(spec, 'bridging', False)
-        self.LearnAgeTimeout = getattr(spec, 'learningagetimeout', 300)
         self.OverlayRoutingEn = getattr(spec, 'overlayrouting', False)
         self.SymmetricRoutingEn = getattr(spec, 'symmetricrouting', False)
         #TODO: based on stack, get ip & gw addr
@@ -84,11 +82,11 @@ class DeviceObject(base.ConfigObjectBase):
         self.PolicyAnyDeny = getattr(spec, 'any-deny-policy', False)
         self.Mutable = utils.IsUpdateSupported()
         self.IPMappingPriority = getattr(spec, 'ip-mapping-priority', 0)
-        self.LearnSpec = LearnSpec(__get_learnmode(getattr(spec, 'learn-mode', None)), \
-                                   getattr(spec, 'agetimeout', 10), \
-                                   getattr(spec, 'dhcp-learn-enable', True), \
-                                   getattr(spec, 'arp-learn-enable', True), \
-                                   getattr(spec, 'datapkt-learn-enable', True))
+        self.LearnSpec = LearnSpec(getattr(spec, 'learn-mode', None), \
+                                   getattr(spec, 'learn-agetimeout', 300), \
+                                   getattr(spec, 'learn-dhcp-enable', True), \
+                                   getattr(spec, 'learn-arp-enable', True), \
+                                   getattr(spec, 'learn-datapkt-enable', True))
         self.LearningEnabled = (self.LearnSpec.LearnMode != device_pb2.LEARN_MODE_NONE)
 
         ################# PRIVATE ATTRIBUTES OF DEVICE OBJECT #####################
@@ -121,13 +119,19 @@ class DeviceObject(base.ConfigObjectBase):
         return
 
     def __repr__(self):
-        return "Device1|IPAddr:%s|GatewayAddr:%s|MAC:%s|Encap:%s|OverlayRoutingEn:%s" %\
-               (self.IPAddr, self.GatewayAddr, self.MACAddr.get(),
-               utils.GetEncapTypeString(self.EncapType), self.OverlayRoutingEn)
+        return (f"Device1|IPAddr:{self.IPAddr}|GatewayAddr:{self.GatewayAddr}|" \
+                f"MAC:{self.MACAddr.get()}|Encap:{utils.GetEncapTypeString(self.EncapType)}" \
+                f"|OverlayRoutingEn:{self.OverlayRoutingEn}")
 
     def Show(self):
         logger.info("Device Object: %s" % self)
         logger.info("- %s" % repr(self))
+        logger.info(f"  LearnSpec LearnMode:{self.LearnSpec.LearnModeStr}({self.LearnSpec.LearnMode})")
+        if self.LearnSpec.LearnMode != device_pb2.LEARN_MODE_NONE:
+            logger.info(f"  LearnAgeTimeout:{self.LearnSpec.LearnAgeTimeout}|" \
+                        f"LearnSource ARPLearnEn:{self.LearnSpec.LearnSource.ArpLearnEn}|" \
+                        f"DHCPLearnEn:{self.LearnSpec.LearnSource.DhcpLearnEn}|"\
+                        f"DataPktLearnEn:{self.LearnSpec.LearnSource.DataPktLearnEn}")
         return
 
     def PopulateKey(self, grpcmsg):
@@ -248,6 +252,9 @@ class DeviceObject(base.ConfigObjectBase):
         if resp != None:
             return resp[0]
         return None
+
+    def GetLearnAgeTimeout(self):
+        return self.LearnSpec.LearnAgeTimeout
 
 class DeviceObjectClient(base.ConfigClientBase):
     def __init__(self):

@@ -13,14 +13,14 @@ device:
     mode               : host
     stack              : ipv4
     bridging           : false
+    learn-mode         : auto # none (default), auto, notify
+    learn-agetimeout   : 36000
     overlayrouting     : true
-    learning           : true
     ipaddress          : '17.17.17.17'
     gateway            : '1.0.0.1'
     macaddress         : macaddr/0000.aaaa.aaa1
     encap              : vxlan
     origin             : implicitly-created
-    learningagetimeout : 36000
 
 uplink:
     - entry:

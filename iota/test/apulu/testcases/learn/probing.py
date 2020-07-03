@@ -44,7 +44,7 @@ def Verify(tc):
     max_retry = 2
     interval = 2
     retry = 0
-    deviceLearnAgeTimeout = EzAccessStoreClient[tc.node].GetDevice().LearnAgeTimeout
+    deviceLearnAgeTimeout = EzAccessStoreClient[tc.node].GetDevice().GetLearnAgeTimeout()
 
     while retry < max_retry:
         ret, data = learn_utils.ReadLearnIPOperData(tc.node, tc.learn_ip_obj)

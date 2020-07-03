@@ -19,7 +19,7 @@ device:
     mode        : host # bitw (default), host
     stack       : ipv4 # ipv4 (default), ipv6
     bridging    : false # false (default), true
-    learning    : false # false (default), true
+    learn-mode  : none # none (default), auto, notify
     ipaddress   : '1.0.0.3' # Taken from resmgr
     gateway     : '1.0.0.1' # Taken from resmgr
     macaddress  : macaddr/0000.bbbb.bbb1

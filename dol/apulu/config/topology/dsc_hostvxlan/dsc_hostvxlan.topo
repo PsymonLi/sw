@@ -10,7 +10,7 @@ node:
         mode             : host
         stack            : ipv4
         bridging         : true
-        learning         : true
+        learn-mode       : auto
         ipaddress        : None
         gateway          : None
         encap            : vxlan

@@ -27,7 +27,7 @@ device:
     mode        : host
     stack       : ipv4
     bridging    : false
-    learning    : false
+    learn-mode  : none # none (default), auto, notify
     ipaddress   : '40.40.40.40'
     gateway     : '1.0.0.1'
     macaddress  : macaddr/0000.bbbb.bbb1
