@@ -90,8 +90,6 @@ func (sma *SmIPAM) GetIPAMPolicyWatchOptions() *api.ListWatchOptions {
 }
 
 func convertIPAMPolicy(ipam *IPAMState) *netproto.IPAMPolicy {
-	server := &netproto.DHCPServer{}
-
 	meta := api.ObjectMeta{
 		Tenant:          ipam.IPAMPolicy.Tenant,
 		Namespace:       ipam.IPAMPolicy.Namespace,
@@ -109,6 +107,7 @@ func convertIPAMPolicy(ipam *IPAMState) *netproto.IPAMPolicy {
 	obj.Spec = netproto.IPAMPolicySpec{}
 	obj.Spec.DHCPRelay = &netproto.DHCPRelayPolicy{}
 	for _, srv := range ipam.IPAMPolicy.Spec.DHCPRelay.Servers {
+		server := &netproto.DHCPServer{}
 		log.Debug("convertIPAMPolicy: dhcp server info: ", srv)
 		server.IPAddress = srv.IPAddress
 		server.VirtualRouter = srv.VirtualRouter

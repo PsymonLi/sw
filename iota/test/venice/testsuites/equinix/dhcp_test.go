@@ -216,8 +216,6 @@ var _ = Describe("IPAM Tests", func() {
 
 		})
 
-		/*
-		Venice Error: Only one DHCP server configuration is supported
 		It("Multiple IPAM servers in a policy", func() {
 
 			tenants, err := getTenants()
@@ -263,7 +261,6 @@ var _ = Describe("IPAM Tests", func() {
 				deleteIPAMPolicy(customIpam, t)
 			}
 		})
-		*/
 
 		It("Change Servers in IPAM Policy", func() {
 
@@ -465,7 +462,7 @@ func verifyIPAMonSubnet(subnet, ipam, tenant string) error {
 		for i, srv := range iData[0].Spec.DHCPRelay.Servers {
 			if srv.IPAddress != veniceIpam.PolicyObj.Spec.DHCPRelay.Servers[i].IPAddress {
 				log.Infof("IPAM curl op: [%+v] && json: [%+v]", s, iData[0])
-				log.Errorf("Venice IP :%v doesn't match with Netagent IP :%v", srv.IPAddress, veniceIpam.PolicyObj.Spec.DHCPRelay.Servers[i].IPAddress)
+				log.Errorf("Venice IP :%v doesn't match with Netagent IP :%v", veniceIpam.PolicyObj.Spec.DHCPRelay.Servers[i].IPAddress, srv.IPAddress)
 				return false
 			}
 		}
@@ -578,6 +575,9 @@ func validateIPAMPolicy(name, vrf, tenant string, ip string) {
 			match = true
 			break
 		}
+	}
+	if match == false {
+		log.Errorf("validateIPAMPolicy: IPAM [%+v] doesnt have server ip %v", obj.PolicyObj, ip)
 	}
 	Expect(match == true).Should(BeTrue())
 }
