@@ -701,6 +701,9 @@ vnic_impl::program_vnic_nh_(pds_device_oper_mode_t oper_mode,
         lif = lif_impl_db()->find(&spec->host_if);
         if (lif) {
             nh_data->set_lif(lif->id());
+            nh_data->set_drop(FALSE);
+        } else {
+            nh_data->set_drop(TRUE);
         }
         nh_data->set_port(TM_PORT_DMA);
         if (spec->vnic_encap.type == PDS_ENCAP_TYPE_DOT1Q) {
