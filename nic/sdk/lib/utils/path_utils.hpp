@@ -28,14 +28,21 @@ get_device_conf_path (void)
 }
 
 /// \brief     gets path to the configuration files
+/// \param[in] plaform_type type of platform
 /// \return    return path to configuration file, if
 ///            successful, else empty string
 static inline __attribute__((always_inline)) std::string
-get_config_path (void)
+get_config_path (platform_type_t platform_type)
 {
     char *config_path = std::getenv("CONFIG_PATH");
 
-    return std::string(config_path ? config_path : "./conf");
+    if (config_path) {
+        return config_path;
+    } else if (likely(platform_type == platform_type_t::PLATFORM_TYPE_HW)) {
+        return "/nic/conf";
+    } else {
+        return "./conf";
+    }
 }
 
 /// \brief     gets the path to pipeline file

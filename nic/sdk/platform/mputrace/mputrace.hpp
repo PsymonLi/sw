@@ -40,8 +40,10 @@ typedef struct mputrace_global_state_s {
     char MPUTRACE_DUMP_FILE[MPUTRACE_STR_NAME_LEN];
     mem_addr_t trace_base;
     mem_addr_t trace_end;
+    std::string cfg_path;
     std::string profile;
     std::string pipeline;
+    platform_type_t platform_type;
     sdk_trace_level_e trace_level;
 } mputrace_global_state_t;
 

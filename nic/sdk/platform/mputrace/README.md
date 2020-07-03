@@ -1,8 +1,16 @@
 # MPUTRACE
 
+Usage: captrace  [-p <profile>] 
+                 <command> [<args>]
+
 captrace is a tool to enable tracing on each Match Processing Unit (MPU) using
 the independent trace facility provided by the ASIC.
 
+-p profile 
+    This optional argument provides feature memory profile to load 
+    e.g. base, router, storage etc. In absence of this option default memory profile
+    is loaded.
+    
 captrace supports the following operations
 config <cfg.json>
     It takes a config json file as input. The input file specifies the MPUs that

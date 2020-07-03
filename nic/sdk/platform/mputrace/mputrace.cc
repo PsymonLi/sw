@@ -9,7 +9,6 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include <boost/property_tree/json_parser.hpp>
 #include "third-party/asic/capri/model/utils/cap_csr_py_if.h"
 #include "lib/utils/path_utils.hpp"
 #include "platform/utils/mpart_rsvd.hpp"
@@ -18,19 +17,28 @@
 #include "platform/csr/asicrw_if.hpp"
 #include "platform/mputrace/mputrace.hpp"
 
+#define roundup(x, y) ((((x) + ((y)-1)) / (y)) * (y)) /* to any y */
+
 namespace sdk {
 namespace platform {
 
-#define roundup(x, y) ((((x) + ((y)-1)) / (y)) * (y)) /* to any y */
-
 // Placeholder for the global state in mputrace app
 mputrace_global_state_t g_state = {};
+
+}    //    end namespace platform
+}    //    end namespace sdk
+
+using namespace sdk::platform;
 
 void
 usage (char *argv[])
 {
     std::cerr << "Usage: " << "captrace" << " [-p <profile>] \n" 
               << "       " << "        " << " <command> [<args>]\n\n"
+              << "-p profile\n"
+              << "    This optional argument provides feature memory profile to load\n"
+              << "    e.g. base, router, storage etc. In absence of this option default\n"
+              << "    memory profile is loaded.\n\n"
               << "captrace is a tool to enable tracing on each Match Processing Unit (MPU) using\n" 
               << "the independent trace facility provided by the ASIC.\n\n"
               << "captrace supports following commands: \n" 
@@ -52,25 +60,21 @@ mputrace_error (char *argv[])
 static inline void
 mputrace_capri_init()
 {
-    platform_type_t            platform_type;
     std::string                mpart_file;
     utils::mpartition          *mpartition = NULL;
     sdk::lib::catalog          *catalog;
 
-#ifdef __x86_64__
-    platform_type = platform_type_t::PLATFORM_TYPE_SIM;
-#elif __aarch64__
-    platform_type = platform_type_t::PLATFORM_TYPE_HW;
-#endif
-
-    assert(sdk::lib::pal_init(platform_type) == sdk::lib::PAL_RET_OK);
-    catalog = sdk::lib::catalog::factory(sdk::lib::get_config_path(), "", platform_type);
-    mpart_file = sdk::lib::get_mpart_file_path(sdk::lib::get_config_path(), g_state.pipeline,
-                                               catalog, g_state.profile, platform_type);
-    assert(mpartition = sdk::platform::utils::mpartition::factory(mpart_file.c_str()));
+    assert(sdk::lib::pal_init(g_state.platform_type) == sdk::lib::PAL_RET_OK);
+    catalog = sdk::lib::catalog::factory(g_state.cfg_path, "",
+                                         g_state.platform_type);
+    mpart_file = sdk::lib::get_mpart_file_path(g_state.cfg_path,
+                                               g_state.pipeline,
+                                               catalog, g_state.profile,
+                                               g_state.platform_type);
+    assert(mpartition = utils::mpartition::factory(mpart_file.c_str()));
     g_state.trace_base = roundup(mpartition->start_addr("mpu-trace"), 4096);
     g_state.trace_end = mpartition->start_addr("mpu-trace") + mpartition->size("mpu-trace");
-    sdk::platform::capri::csr_init();
+    capri::csr_init();
 }
 
 static int
@@ -118,9 +122,6 @@ mputrace_handle_options (int argc, char *argv[])
     return ret;
 }
 
-}    //    end namespace platform
-}    //    end namespace sdk
-
 static inline void
 get_profile (int *argc, char **argv)
 {
@@ -131,11 +132,11 @@ get_profile (int *argc, char **argv)
         if (strcmp(argv[i], "-p") == 0) {
             if (unlikely(++i >= *argc)) {
                 fprintf(stderr, "Missing argument for \"-p\"\n");
-                sdk::platform::usage(argv);
+                usage(argv);
                 exit(EXIT_FAILURE);
             }
-            sdk::platform::g_state.profile = std::string(argv[i]);
-            cout << "Profile: " << sdk::platform::g_state.profile << std::endl;
+            g_state.profile = std::string(argv[i]);
+            cout << "Profile: " << g_state.profile << std::endl;
         } else {
             // skip the profile argument
             argv[new_argc] = argv[i];
@@ -153,7 +154,7 @@ logger_trace_cb (uint32_t mod_id, sdk_trace_level_e trace_level,
     char       logbuf[1024];
     va_list    args;
 
-    if (trace_level > sdk::platform::g_state.trace_level) {
+    if (trace_level > g_state.trace_level) {
         return 0;
     }
     va_start(args, fmt);
@@ -167,23 +168,25 @@ get_pipeline (void)
     std::string pipeline_file;
     boost::property_tree::ptree pt;
 
-    pipeline_file = sdk::lib::get_pipeline_file_path(sdk::lib::get_config_path());
+    pipeline_file = sdk::lib::get_pipeline_file_path(g_state.cfg_path);
     std::ifstream json_cfg(pipeline_file.c_str());
     read_json(json_cfg, pt);
-    sdk::platform::g_state.pipeline = pt.get<std::string>("pipeline");   
+    g_state.pipeline = pt.get<std::string>("pipeline");
 }
 
 int
 main (int argc, char *argv[])
 {
     if (argc < MPUTRACE_MAX_ARG - 1) {
-        sdk::platform::usage(argv);
+        usage(argv);
         exit(EXIT_FAILURE);
     }
 
-    sdk::platform::g_state.trace_level = sdk::lib::sdk_trace_level_e::SDK_TRACE_LEVEL_ERR;
+    g_state.platform_type = platform_type_t::PLATFORM_TYPE_HW;
+    g_state.cfg_path = sdk::lib::get_config_path(g_state.platform_type);
+    g_state.trace_level = sdk::lib::sdk_trace_level_e::SDK_TRACE_LEVEL_ERR;
     sdk::lib::logger::init(logger_trace_cb);
     get_profile(&argc, argv);
     get_pipeline();
-    return sdk::platform::mputrace_handle_options(argc, argv);
+    return mputrace_handle_options(argc, argv);
 }
