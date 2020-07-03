@@ -115,7 +115,7 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
     this.measurements = [];
     Object.keys(this.metricsMetadata).forEach( (m) => {
       const mObj: MetricMeasurement = this.metricsMetadata[m];
-      mObj.fields.sort(this.sortField);
+      mObj.fields.sort(this.sortMethod);
       const upGroup: string = mObj.uiGroup;
       if (!this.measurementMapping[upGroup]) {
         this.measurementMapping[upGroup] = [];
@@ -127,11 +127,11 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
         this.measurementMapping[mObj.name] = this.measurementMapping[upGroup];
       }
     });
-    this.measurements.sort(this.sortMeasurement);
+    this.measurements.sort(this.sortMethod);
   }
 
 
-  sortField(a: MetricField, b: MetricField) {
+  sortMethod(a: MetricField | MetricMeasurement, b: MetricField | MetricMeasurement) {
     if ((!a.tags || a.tags.length === 0) && b.tags && b.tags.length > 0) {
       return 1;
     }
@@ -141,20 +141,13 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
     if ((!a.tags || a.tags.length === 0) && (!b.tags || b.tags.length === 0)) {
       return a.displayName > b.displayName ? 1 : -1;
     }
-    if (a.tags && a.tags.length > 0 && b.tags && b.tags.length) {
-      const tagA = a.tags[0];
-      const tagB = b.tags[0];
-      if (tagA === tagB) {
-        return a.displayName > b.displayName ? 1 : -1;
-      }
-      return tagA > tagB ? 1 : -1;
+    const tagA = a.tags[0];
+    const tagB = b.tags[0];
+    if (tagA === tagB) {
+      return a.displayName > b.displayName ? 1 : -1;
     }
+    return tagA > tagB ? 1 : -1;
   }
-
-  sortMeasurement(a: MetricMeasurement, b: MetricMeasurement) {
-    return a.displayName > b.displayName ? 1 : -1;
-  }
-
 
   ngAfterViewInit() {
     // Pushing to next event loop so that updating the graphTitle doesn't cause an angular change detection error.
