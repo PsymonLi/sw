@@ -23,6 +23,8 @@ e2e-targets:
          servers:
            - type: server-a
          nic-type: naples
+         constraints:
+           same-switch: true
    provision:
        username: vm
        password: vm

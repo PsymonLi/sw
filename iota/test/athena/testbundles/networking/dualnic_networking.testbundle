@@ -48,6 +48,7 @@ testcases:
             nat       : ['no']
             pyld_size : [64, 1024]
             iptype    : ['v4']
+            proto     : ['ICMP', 'TCP', 'UDP']
         args    :
             pkt_cnt   : 10
 
@@ -60,6 +61,7 @@ testcases:
             nat       : ['yes']
             pyld_size : [1024, 4096]
             iptype    : ['v4']
+            proto     : ['ICMP', 'TCP', 'UDP']
         args    :
             pkt_cnt   : 10
 
@@ -72,6 +74,7 @@ testcases:
             nat       : ['no']
             pyld_size : [4096, 9000]
             iptype    : ['v4']
+            proto     : ['ICMP', 'TCP', 'UDP']
         args    :
             pkt_cnt   : 10
 
@@ -84,6 +87,7 @@ testcases:
             nat       : ['yes']
             pyld_size : [64, 9000]
             iptype    : ['v4']
+            proto     : ['ICMP', 'TCP', 'UDP']
         args    :
             pkt_cnt   : 10
 
