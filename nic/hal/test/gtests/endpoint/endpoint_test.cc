@@ -64,6 +64,7 @@ protected:
   // Will be called at the beginning of all test cases in this class
   static void SetUpTestCase() {
     hal_base_test::SetUpTestCase();
+    hal_test_utils_slab_disable_delete();
   }
 };
 
@@ -501,6 +502,117 @@ TEST_F(endpoint_test, test3)
     ret = hal::securityprofile_update(sp_spec, &sp_rsp);
     hal::hal_cfg_db_close();
     ASSERT_TRUE(ret == HAL_RET_OK);
+}
+
+// ----------------------------------------------------------------------------
+// Creating a endpoint with add/delete
+// ----------------------------------------------------------------------------
+TEST_F(endpoint_test, test4)
+{
+    hal_ret_t                   ret;
+    VrfSpec                  ten_spec;
+    VrfResponse              ten_rsp;
+    L2SegmentSpec               l2seg_spec;
+    L2SegmentResponse           l2seg_rsp;
+    InterfaceSpec               up_spec;
+    InterfaceResponse           up_rsp;
+    EndpointSpec                ep_spec;
+    EndpointResponse            ep_rsp;
+    EndpointUpdateRequest       ep_req;
+    EndpointDeleteRequest       ep_del_req;
+    EndpointDeleteResponse      ep_del_rsp;
+    NetworkSpec                 nw_spec;
+    NetworkResponse             nw_rsp;
+    ::google::protobuf::uint32  ip1 = 0x0a000003;
+    ::google::protobuf::uint32  ip2 = 0x0a000004;
+    NetworkKeyHandle            *nkh = NULL;
+    slab_stats_t            *pre      = NULL   , *post = NULL;
+    bool                    is_leak   = false;
+
+
+    // Create vrf
+    ten_spec.mutable_key_or_handle()->set_vrf_id(4);
+    ten_spec.set_vrf_type(types::VRF_TYPE_CUSTOMER);
+    hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
+    ret = hal::vrf_create(ten_spec, &ten_rsp);
+    hal::hal_cfg_db_close();
+    ASSERT_TRUE(ret == HAL_RET_OK);
+
+    // Create network
+    nw_spec.set_rmac(0x0002DEADBEEE);
+    nw_spec.mutable_key_or_handle()->mutable_nw_key()->mutable_ip_prefix()->set_prefix_len(24);
+    nw_spec.mutable_key_or_handle()->mutable_nw_key()->mutable_ip_prefix()->mutable_address()->set_ip_af(types::IP_AF_INET);
+    nw_spec.mutable_key_or_handle()->mutable_nw_key()->mutable_ip_prefix()->mutable_address()->set_v4_addr(0x0a000000);
+    nw_spec.mutable_key_or_handle()->mutable_nw_key()->mutable_vrf_key_handle()->set_vrf_id(4);
+    hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
+    ret = hal::network_create(nw_spec, &nw_rsp);
+    hal::hal_cfg_db_close();
+    ASSERT_TRUE(ret == HAL_RET_OK);
+    uint64_t nw_hdl = nw_rsp.mutable_status()->mutable_key_or_handle()->nw_handle();
+
+    // Create L2 Segment
+    l2seg_spec.mutable_vrf_key_handle()->set_vrf_id(4);
+    nkh = l2seg_spec.add_network_key_handle();
+    nkh->set_nw_handle(nw_hdl);
+    l2seg_spec.mutable_key_or_handle()->set_segment_id(41);
+    l2seg_spec.mutable_wire_encap()->set_encap_type(types::ENCAP_TYPE_DOT1Q);
+    l2seg_spec.mutable_wire_encap()->set_encap_value(41);
+    hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
+    ret = hal::l2segment_create(l2seg_spec, &l2seg_rsp);
+    hal::hal_cfg_db_close();
+    ASSERT_TRUE(ret == HAL_RET_OK);
+    uint64_t l2seg_hdl = l2seg_rsp.mutable_l2segment_status()->mutable_key_or_handle()->l2segment_handle();
+
+    // Create an uplink
+    up_spec.set_type(intf::IF_TYPE_UPLINK);
+    up_spec.mutable_key_or_handle()->set_interface_id(41);
+    up_spec.mutable_if_uplink_info()->set_port_num(PORT_NUM_1);
+    hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
+    ret = hal::interface_create(up_spec, &up_rsp);
+    hal::hal_cfg_db_close();
+    ASSERT_TRUE(ret == HAL_RET_OK);
+    ::google::protobuf::uint64 up_hdl = up_rsp.mutable_status()->if_handle();
+    
+    pre = hal_test_utils_collect_slab_stats();
+
+    // Create Endpoint
+    ep_spec.mutable_vrf_key_handle()->set_vrf_id(4);
+    ep_spec.mutable_key_or_handle()->mutable_endpoint_key()->mutable_l2_key()->mutable_l2segment_key_handle()->set_l2segment_handle(l2seg_hdl);
+    ep_spec.mutable_endpoint_attrs()->mutable_interface_key_handle()->set_if_handle(up_hdl);
+    ep_spec.mutable_key_or_handle()->mutable_endpoint_key()->mutable_l2_key()->set_mac_address(0x00000000ABCD);
+    ep_spec.mutable_endpoint_attrs()->add_ip_address();
+    ep_spec.mutable_endpoint_attrs()->mutable_ip_address(0)->set_ip_af(types::IP_AF_INET);
+    ep_spec.mutable_endpoint_attrs()->mutable_ip_address(0)->set_v4_addr(ip1);  // 10.0.0.1
+    hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
+    ret = hal::endpoint_create(ep_spec, &ep_rsp);
+    hal::hal_cfg_db_close();
+    ASSERT_TRUE(ret == HAL_RET_OK);
+
+    // Update EP
+    ep_req.mutable_vrf_key_handle()->set_vrf_id(4);
+    ep_req.mutable_key_or_handle()->mutable_endpoint_key()->mutable_l2_key()->mutable_l2segment_key_handle()->set_l2segment_handle(l2seg_hdl);
+    ep_req.mutable_endpoint_attrs()->mutable_interface_key_handle()->set_if_handle(up_hdl);
+    ep_req.mutable_key_or_handle()->mutable_endpoint_key()->mutable_l2_key()->set_mac_address(0x00000000ABCD);
+    ep_req.mutable_endpoint_attrs()->add_ip_address();
+    ep_req.mutable_endpoint_attrs()->mutable_ip_address(0)->set_ip_af(types::IP_AF_INET);
+    ep_req.mutable_endpoint_attrs()->mutable_ip_address(0)->set_v4_addr(ip2);  // 10.0.0.1
+    hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
+    ret = hal::endpoint_update(ep_req, &ep_rsp);
+    hal::hal_cfg_db_close();
+    ASSERT_TRUE(ret == HAL_RET_OK);
+
+    // Delete EP
+    ep_del_req.mutable_vrf_key_handle()->set_vrf_id(4);
+    ep_del_req.mutable_key_or_handle()->mutable_endpoint_key()->mutable_l2_key()->mutable_l2segment_key_handle()->set_l2segment_handle(l2seg_hdl);
+    ep_del_req.mutable_key_or_handle()->mutable_endpoint_key()->mutable_l2_key()->set_mac_address(0x00000000ABCD);
+    hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
+    ret = hal::endpoint_delete(ep_del_req, &ep_del_rsp);
+    hal::hal_cfg_db_close();
+    ASSERT_TRUE(ret == HAL_RET_OK);
+    
+    post = hal_test_utils_collect_slab_stats();
+    hal_test_utils_check_slab_leak(pre, post, &is_leak);
+    ASSERT_TRUE(is_leak == false);
 }
 
 int main(int argc, char **argv) {

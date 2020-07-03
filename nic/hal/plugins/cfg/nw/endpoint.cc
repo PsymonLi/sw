@@ -921,6 +921,9 @@ endpoint_del_from_db (ep_t *ep)
                         l3_key.vrf_id, ipaddr2str(&l3_key.ip_addr));
     }
 
+    // Clean up ip list
+    ret = endpoint_free_ip_list(&ep->ip_list_head);
+
     // del EP as back ref from if
     if (ep->if_handle != HAL_HANDLE_INVALID) {
         hal_if = find_if_by_handle(ep->if_handle);
@@ -1154,7 +1157,7 @@ ep_init_from_spec (ep_t *ep, const EndpointSpec& spec, bool create)
     vrf_t                           *vrf = NULL;
     l2seg_t                         *l2seg = NULL;
     if_t                            *hal_if = NULL;
-    ep_l3_entry_t                   **l3_entry = NULL;
+    // ep_l3_entry_t                   **l3_entry = NULL;
     ep_ip_entry_t                   **ip_entry = NULL;
     nwsec_group_t                   *nwsec_group = NULL;
     hal_ret_t                       ret = HAL_RET_OK;
@@ -1206,17 +1209,21 @@ ep_init_from_spec (ep_t *ep, const EndpointSpec& spec, bool create)
     num_ips = spec.endpoint_attrs().ip_address_size();
     HAL_TRACE_DEBUG("Num IPs in EP {}", num_ips);
     if (num_ips) {
+#if 0
         l3_entry = (ep_l3_entry_t **)HAL_CALLOC(HAL_MEM_ALLOC_EP,
                                                 num_ips * sizeof(ep_l3_entry_t *));
+#endif
         ip_entry = (ep_ip_entry_t **)HAL_CALLOC(HAL_MEM_ALLOC_EP,
                                                 num_ips * sizeof(ep_ip_entry_t *));
 
         for (i = 0; i < num_ips; i++) {
+#if 0
             l3_entry[i] = (ep_l3_entry_t *)g_hal_state->ep_l3_entry_slab()->alloc();
             if (l3_entry[i] == NULL) {
                 ret = HAL_RET_OOM;
                 goto end;
             }
+#endif
 
             ip_entry[i] = (ep_ip_entry_t *)g_hal_state->ep_ip_entry_slab()->alloc();
             if (ip_entry[i] == NULL) {
