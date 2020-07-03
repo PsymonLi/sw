@@ -103,8 +103,11 @@ export class Utility {
 
   public static HERO_CARD_THIRDVALUE_LENGTH: number = 15;
 
-  public static UNSUPPORTED_CATEGORIES = ['Diagnostics'];
-  public static UNSUPPORTED_KINDS = ['License', 'Module', 'StatsPolicy', 'Service', 'LbPolicy', 'VirtualRouter', 'IPAMPolicy', 'RoutingConfig', 'RouteTable', 'Bucket', 'Object', 'SecurityGroup', 'Certificate', 'TrafficEncryptionPolicy'];
+  public static UNSUPPORTED_CATEGORIES_ENTERPRISE = ['Diagnostics'];
+  public static UNSUPPORTED_CATEGORIES_CLOUD = ['Orchestration'];
+  // List the unsupported kinds for PSM-enterprise and PSM-cloud
+  public static UNSUPPORTED_KINDS_ENTERPRISE = ['License', 'Module', 'StatsAlertPolicy', 'StatsPolicy', 'Service', 'LbPolicy', 'VirtualRouter', 'IPAMPolicy', 'RoutingConfig', 'RouteTable', 'Bucket', 'Object', 'SecurityGroup', 'Certificate', 'TrafficEncryptionPolicy'];
+  public static UNSUPPORTED_KINDS_CLOUD = ['LbPolicy', 'Service', 'IPAMPolicy', 'TrafficEncryptionPolicy', 'StatsPolicy', 'Bucket', 'Object', 'SecurityGroup', 'Certificate',  'Orchestration', 'FirewallProfile', 'DSCProfile', 'Network', 'NetworkSecurityPolicy', 'Workload', 'Network', 'StatsAlertPolicy', 'AlertDestination', 'MirrorSession', 'FwlogPolicy', 'FlowExportPolicy', 'App'];
 
   public static allColors = [
     '#97b8df',
@@ -1277,16 +1280,47 @@ export class Utility {
     return ret;
   }
 
+
   /**
    * Follow
    *  pensando/sw/venice/ui/venice-sdk/v1/models/generated/category-mapping.model.ts
    */
-
   public static getCategories(): any[] {
     let cats = Object.keys(CategoryMapping);
-    cats = cats.filter((cat) => !Utility.UNSUPPORTED_CATEGORIES.includes(cat)); // filter out unsupported categories
+    cats = Utility.filterCategories(cats); // filter out unsupported categories
     cats = cats.sort();
     return cats;
+  }
+
+  /**
+   * 2020-07-01.  PSM-enterpriese and PSM-cloud supports different kinds.
+   * This API filter out un-supported kinds.
+   * @param kinds
+   */
+  public static filterKinds(kinds: string[]): string[] {
+    let myKinds = kinds;
+    if (Utility.getInstance().getUIConfigsService() && Utility.getInstance().getUIConfigsService().isFeatureEnabled('enterprise')) {
+      myKinds = kinds.filter((kind) => !Utility.UNSUPPORTED_KINDS_ENTERPRISE.includes(kind));
+    }
+    if (Utility.getInstance().getUIConfigsService() && Utility.getInstance().getUIConfigsService().isFeatureEnabled('cloud')) {
+      myKinds = myKinds.filter((kind) => !Utility.UNSUPPORTED_KINDS_CLOUD.includes(kind));
+    }
+    return myKinds;
+  }
+
+  /**
+   * Filter out unsuppported categories base on PSM-enterrise or PSM-cloud
+   * @param cats
+   */
+  public static  filterCategories(cats: string[]): any[] {
+    let myCats = cats;
+    if (Utility.getInstance().getUIConfigsService() && Utility.getInstance().getUIConfigsService().isFeatureEnabled('enterprise')) {
+      myCats = cats.filter((cat) => !Utility.UNSUPPORTED_CATEGORIES_ENTERPRISE.includes(cat));
+    }
+    if (Utility.getInstance().getUIConfigsService() && Utility.getInstance().getUIConfigsService().isFeatureEnabled('cloud')) {
+      myCats = cats.filter((cat) => !Utility.UNSUPPORTED_CATEGORIES_CLOUD.includes(cat));
+    }
+    return myCats;
   }
 
   public static getKinds(): any[] {
@@ -1294,7 +1328,7 @@ export class Utility {
     let kinds = [];
     cats.filter((cat) => {
       let catKeys = Object.keys(CategoryMapping[cat]);
-      catKeys = catKeys.filter((kind) => !Utility.UNSUPPORTED_KINDS.includes(kind)); // filter out unsupported kinds
+      catKeys =  Utility.filterKinds(catKeys);
       kinds = kinds.concat(catKeys);
     });
     kinds = kinds.sort();
@@ -1330,7 +1364,7 @@ export class Utility {
       return [];
     }
     let kinds = Object.keys(obj);
-    kinds = kinds.filter((kind) => !Utility.UNSUPPORTED_KINDS.includes(kind)); // filter out unsupported kinds
+    kinds =  Utility.filterKinds(kinds); // filter out unsupported kinds
     return kinds;
   }
 
