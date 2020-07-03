@@ -232,7 +232,7 @@ execute_exit_script (upg_status_t status)
     }
 }
 
-static upg_status_t
+upg_status_t
 get_exit_status (void)
 {
     upg_status_t status;
@@ -273,7 +273,6 @@ move_to_nextstage (void)
 
     if (fsm_states.current_stage() == fsm_states.end_stage()) {
         upg_status_t status = get_exit_status();
-        execute_exit_script(status);
         LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
         fsm_states.init_params()->fsm_completion_cb(status);
         SDK_ASSERT(0);
@@ -342,7 +341,6 @@ upg_event_handler (upg_event_msg_t *event)
             fsm_states.set_current_stage(id);
             if (fsm_states.current_stage() == fsm_states.end_stage()) {
                 upg_status_t status = get_exit_status();
-                execute_exit_script(status);
                 LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
                 // not expeting to come back here
                 fsm_states.init_params()->fsm_completion_cb(status);
@@ -370,7 +368,6 @@ timeout_cb (EV_P_ ev_timer *w, int revents)
         move_to_nextstage();
     } else {
         UPG_TRACE_WARN("Upgrade must not wait for response in last stage");
-        execute_exit_script(get_exit_status());
         LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
         fsm_states.init_params()->fsm_completion_cb(UPG_STATUS_FAIL);
         SDK_ASSERT(0);
@@ -837,7 +834,6 @@ init_fsm (fsm_init_params_t *params)
     LOG_STAGE_STARTED(upg_stage2str(fsm_states.current_stage()));
     if (!execute_pre_hooks(fsm_states.current_stage())) {
         fsm_states.update_stage_progress(SVC_RSP_FAIL);
-        execute_exit_script(get_exit_status());
         LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
         return SDK_RET_ERR;
     }

@@ -28,6 +28,13 @@ namespace upg {
 
 static bool stage_in_progress = false;
 
+upg_status_t
+get_exit_status (const svc_rsp_code_t rsp)
+{
+    return rsp == SVC_RSP_OK ? UPG_STATUS_OK : rsp == SVC_RSP_CRIT ?
+        UPG_STATUS_CRITICAL : UPG_STATUS_FAIL;
+}
+
 static bool
 invoke_hooks (upg_stage_t stage_id, hook_execution_t hook_type,
               svc_rsp_code_t status=SVC_RSP_MAX)
@@ -217,8 +224,10 @@ upg_event_interactive_handler (upg_event_msg_t *event)
         fsm_states.timer_stop();
         if (fsm_states.is_current_stage_over(event->stage)) {
             if (!execute_post_hooks(id, svc_rsp_code(event->rsp_status))) {
+                fsm_states.set_prev_stage_rsp(SVC_RSP_FAIL);
                 fsm_states.init_params()->fsm_completion_cb(UPG_STATUS_FAIL);
             } else {
+                fsm_states.set_prev_stage_rsp(svc_rsp_code(event->rsp_status));
                 if (svc_rsp_code(event->rsp_status) != SVC_RSP_OK) {
                     fsm_states.init_params()->fsm_completion_cb(event->rsp_status);
                 } else {
@@ -226,18 +235,11 @@ upg_event_interactive_handler (upg_event_msg_t *event)
                 }
             }
             stage_in_progress = false;
-        } else if (fsm_states.is_serial_event_sequence() &&
+        } else if (stage_in_progress && fsm_states.is_serial_event_sequence() &&
                    fsm_states.has_next_svc()) {
             send_ipc_to_next_service();
         }
     }
-}
-
-static upg_status_t
-get_exit_status (const svc_rsp_code_t rsp)
-{
-    return rsp == SVC_RSP_OK ? UPG_STATUS_OK : rsp == SVC_RSP_CRIT ?
-        UPG_STATUS_CRITICAL : UPG_STATUS_FAIL;
 }
 
 void
@@ -261,6 +263,7 @@ fsm::update_stage_progress_interactive(const svc_rsp_code_t rsp) {
         }
         execute_post_hooks(current_stage_, rsp);
         fsm_states.timer_stop();
+        fsm_states.set_prev_stage_rsp(rsp);
         fsm_states.init_params()->fsm_completion_cb(get_exit_status(rsp));
         stage_in_progress = false;
     } else {

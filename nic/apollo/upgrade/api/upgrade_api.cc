@@ -41,6 +41,7 @@ upg_fsm_completion_hdlr (upg_status_t status)
     } else {
         UPG_TRACE_ERR("Upgrade failed !!");
     }
+    sdk::upg::execute_exit_script(status);
     // this process is no more needed as the upgrade stages are done now
     sleep(5);
     exit(0);
@@ -49,7 +50,7 @@ upg_fsm_completion_hdlr (upg_status_t status)
 static void
 upg_ipc_peer_error_hdlr (ipc_peer_ctx *ctx)
 {
-    UPG_TRACE_INFO("Upgrade peer commands done");
+    sdk::upg::execute_exit_script(sdk::upg::get_exit_status());
     // TODO look the status and decide the upgrade ok/fail
     sleep(5);
     exit(0);

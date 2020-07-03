@@ -82,6 +82,7 @@ public:
     svc_sequence_list svc_sequence(void) const { return svc_sequence_; }
     bool has_next_svc(void) const { return pending_response_ > 0; }
     svc_rsp_code_t prev_stage_rsp(void) const { return prev_stage_rsp_; }
+    void set_prev_stage_rsp(svc_rsp_code_t rsp) { prev_stage_rsp_ = rsp; }
     void set_current_stage(const upg_stage_t id);
     void update_stage_progress(const svc_rsp_code_t rsp);
     void update_stage_progress_interactive(const svc_rsp_code_t rsp);
@@ -133,6 +134,7 @@ void upg_event_handler(upg_event_msg_t *event);
 void upg_event_interactive_handler(upg_event_msg_t *event);
 sdk_ret_t upg_interactive_stage_exec(upg_stage_t stage);
 void execute_exit_script (upg_status_t status);
+upg_status_t get_exit_status(void);
 
 extern struct ev_loop *loop;
 extern ev_timer timeout_watcher;
