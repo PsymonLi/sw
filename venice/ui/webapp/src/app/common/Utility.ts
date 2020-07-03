@@ -107,7 +107,7 @@ export class Utility {
   public static UNSUPPORTED_CATEGORIES_CLOUD = ['Orchestration'];
   // List the unsupported kinds for PSM-enterprise and PSM-cloud
   public static UNSUPPORTED_KINDS_ENTERPRISE = ['License', 'Module', 'StatsAlertPolicy', 'StatsPolicy', 'Service', 'LbPolicy', 'VirtualRouter', 'IPAMPolicy', 'RoutingConfig', 'RouteTable', 'Bucket', 'Object', 'SecurityGroup', 'Certificate', 'TrafficEncryptionPolicy'];
-  public static UNSUPPORTED_KINDS_CLOUD = ['LbPolicy', 'Service', 'IPAMPolicy', 'TrafficEncryptionPolicy', 'StatsPolicy', 'Bucket', 'Object', 'SecurityGroup', 'Certificate',  'Orchestration', 'FirewallProfile', 'DSCProfile', 'Network', 'NetworkSecurityPolicy', 'Workload', 'Network', 'StatsAlertPolicy', 'AlertDestination', 'MirrorSession', 'FwlogPolicy', 'FlowExportPolicy', 'App'];
+  public static UNSUPPORTED_KINDS_CLOUD = ['LbPolicy', 'Service', 'IPAMPolicy', 'TrafficEncryptionPolicy', 'StatsPolicy', 'Bucket', 'Object', 'SecurityGroup', 'Certificate',  'Orchestration', 'FirewallProfile', 'DSCProfile', 'Network', 'NetworkSecurityPolicy', 'Workload', 'Network', 'StatsAlertPolicy', 'MirrorSession', 'FwlogPolicy', 'FlowExportPolicy', 'App'];
 
   public static allColors = [
     '#97b8df',
