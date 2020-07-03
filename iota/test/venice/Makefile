@@ -55,8 +55,10 @@ rolloutrela-nightly: tot-upgrade-bundle
 	cd ../../ && make
 	RELEASE_A=1 NO_AUTO_DISCOVERY=1 ../../bin/iota_cmd run --suite rollout2rela --topo default 
 
-rollout-bminus2b: tot-upgrade-bundle
+rollout-bminus2b:
+	cd ../../../ && make ws-tools && make pull-assets
 	mkdir -p ${GOPATH}/src/github.com/pensando/sw/relbminus-bundle
+	mkdir -p ${GOPATH}/src/github.com/pensando/sw/upgrade-bundle
 	asset-pull bundle_image 1.8.0-E-34 ${GOPATH}/src/github.com/pensando/sw/relbminus-bundle/bundle.tar
 	cd ${GOPATH}/src/github.com/pensando/sw/relbminus-bundle && tar -xvf bundle.tar
 	asset-pull esx_driver 1.8.0-E-34 ${GOPATH}/src/github.com/pensando/sw/platform/esxdriver.tgz

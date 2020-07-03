@@ -17,8 +17,6 @@ e2e-targets:
    feature:
    max-duration: 10h
    build-dependencies:
-     - build-iris-arm
-     - build-venice-upgrade-image
    clusters:
      - image: build-160
        count: 3

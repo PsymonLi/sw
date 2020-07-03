@@ -2,6 +2,7 @@ package rolloutrelbminus_test
 
 import (
 	"errors"
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"time"
 
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
@@ -34,7 +35,7 @@ var _ = Describe("rollout bminus to tot tests", func() {
 	Context("Iota Rollout bminus to tot tests", func() {
 		It("Perform bminus to tot Rollout", func() {
 
-			rollout, err := ts.model.CreateRolloutObject("upgrade-bundle", "release_bminus_iris", "Graceful")
+			rollout, err := ts.model.GetRolloutObject(common.RolloutSpec{BundleType: "upgrade-bundle", TargetBranch: "master"}, ts.scaleData)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			workloadPairs := ts.model.WorkloadPairs().WithinNetwork().Any(40)
