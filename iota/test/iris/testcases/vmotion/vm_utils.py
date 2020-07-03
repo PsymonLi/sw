@@ -56,7 +56,7 @@ def get_session_info(tc, wl):
     cookie_idx = 0
     for cmd in tc.resp.commands:
         api.Logger.info("Results for %s" % (tc.cmd_cookies[cookie_idx]))
-        api.PrintCommandResults(cmd)
+        # api.PrintCommandResults(cmd)
         if tc.cmd_cookies[cookie_idx].find("hal show session") != -1 and cmd.stdout == '':
            api.Logger.info("hal show session returned no sessions")
            return None
@@ -332,12 +332,16 @@ def do_vmotion(tc, dsc_to_dsc):
     # wait for vmotion thread to complete, meaning vmotion is done on vcenter
     for vm_thread in vm_threads:
         vm_thread.join()
+    for wl_info in tc.move_info: 
+        update_ep_migr_status(tc, wl_info.wl, wl_info.new_node, "DONE")
+        # delete_ep_info(tc, wl_info.wl, wl_info.old_node)
     if tc.resp != api.types.status.SUCCESS:
         api.Logger.info("vmotion failed")
         return api.types.status.FAILURE
     else:
         api.Logger.info("vmotion successful")
         return api.types.status.SUCCESS
+
 
 
 def create_ep_info(tc, wl, dest_node, migr_state, src_node):
@@ -369,11 +373,27 @@ def create_ep_info(tc, wl, dest_node, migr_state, src_node):
     # this triggers endpoint on new host(naples) to setup flows
     agent_api.PushConfigObjects([object], [dest_node], True)
 
+def update_ep_migr_status(tc, wl, node, migr_state):
+    ep_filter = "meta.name=" + wl.workload_name + ";"
+    objects = agent_api.QueryConfigs("Endpoint", filter=ep_filter)
+    assert(len(objects) == 1)
+    # update to indicate completion of vmotion
+    object                          = copy.deepcopy(objects[0])
+    object.spec.migration           = migr_state 
+    object.spec.node_uuid           = tc.uuidMap[node]
+    agent_api.UpdateConfigObjects([object], [node], True)
+    # update to keep new node happy, only in iota 
+    object.spec.migration           = None
+    object.spec.node_uuid           = tc.uuidMap[node]
+    agent_api.UpdateConfigObjects([object], [node], True)
+
+
+
 def delete_ep_info(tc, wl, node):
     ep_filter = "meta.name=" + wl.workload_name + ";"
     objects = agent_api.QueryConfigs("Endpoint", filter=ep_filter)
     assert(len(objects) == 1)
-    object = objects[0]
+    object                          = copy.deepcopy(objects[0])
     agent_api.DeleteConfigObjects([object], [node], True)
 
 def vm_move_back(tc):
@@ -388,6 +408,7 @@ def vm_move_back(tc):
            create_ep_info(tc, tc.wl, tc.old_node, "START", tc.new_node)
     for vm_thread in vm_threads:
        vm_thread.join()
+    update_ep_migr_status(tc, tc.wl, tc.old_node, "DONE")
     if (api.IsNaplesNode(tc.new_node)):
        delete_ep_info(tc, tc.wl, tc.new_node)
     return api.types.status.SUCCESS
@@ -753,5 +774,6 @@ def move_back_vms(tc):
         vm_thread.join()
     time.sleep(5)
     for wl_info in tc.move_info:
+       update_ep_migr_status(tc, wl_info.wl, wl_info.old_node, "DONE")
        if (api.IsNaplesNode(wl_info.new_node)):
             delete_ep_info(tc, wl_info.wl, wl_info.new_node)

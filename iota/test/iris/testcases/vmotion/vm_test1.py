@@ -196,6 +196,9 @@ def do_vmotion(tc, dsc_to_dsc):
     # wait for vmotion thread to complete, meaning vmotion is done on vcenter
     for vm_thread in vm_threads:
         vm_thread.join()
+
+    for wl_info in tc.move_info: 
+        vm_utils.update_ep_migr_status(tc, wl_info.wl, wl_info.new_node, "DONE")
     return api.types.status.SUCCESS
 
 def getNonNaplesNodes(tc):
@@ -329,6 +332,7 @@ def Teardown(tc):
     for vm_thread in vm_threads:
         vm_thread.join()
     for wl_info in tc.move_info:
+       vm_utils.update_ep_migr_status(tc, wl_info.wl, wl_info.old_node, "DONE")
        if (api.IsNaplesNode(wl_info.new_node)):
             delete_ep_info(tc, wl_info.wl, wl_info.new_node)
     return api.types.status.SUCCESS

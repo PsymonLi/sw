@@ -97,8 +97,8 @@ def Verify(tc):
     for wl_info in tc.move_info:
         vm_utils.get_sessions_info(tc, wl_info.new_node)
         wl_info.sess_info_after = vm_utils.get_session_info(tc, wl_info.wl)
-        import pprint
-        pprint.pprint(wl_info.sess_info_after)
+        #import pprint
+        #pprint.pprint(wl_info.sess_info_after)
     ret1 =  vm_utils.wait_and_verify_fuz(tc)
     if tc.resp is None:
         api.Logger.info("trigger failed, skipping verify")

@@ -3059,6 +3059,9 @@ build_tcp_packet (hal::flow_t *flow, session_t *session,
         eth_hdr = (ether_header_t *)vlan_hdr;
     }
 
+    if (!eth_hdr) {
+        return 0;
+    }
     memcpy(eth_hdr->smac, flow->config.l2_info.smac, ETH_ADDR_LEN);
     memcpy(eth_hdr->dmac, flow->config.l2_info.dmac, ETH_ADDR_LEN);
 
