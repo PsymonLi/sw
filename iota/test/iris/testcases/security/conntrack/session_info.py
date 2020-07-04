@@ -88,6 +88,4 @@ def get_respflowstats(data):
     return get_flowstats(data['stats'])
 
 def get_tcpstate(flow):
-    print ("state is {}".format(flow['flowdata']['flowinfo']['tcpstate']))
-
-    return flow['flowdata']['flowinfo']['tcpstate']
+    return TcpState(int(flow['flowdata']['flowinfo']['tcpstate']))
