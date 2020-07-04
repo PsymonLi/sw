@@ -17,6 +17,24 @@ void load_route_test_output ()
     test_params()->test_output = &g_route_pds_mock;
 }
 
+void route_pds_mock_t::init(void) 
+{
+    // Expect VPC at init
+    auto input = dynamic_cast<route_input_params_t*> (test_params()->test_input);
+    auto op = API_OP_CREATE;
+    expected_pds.emplace_back (OBJ_ID_VPC, op);
+    expected_pds.back().prereq = true;
+    auto& vpc_spec = expected_pds.back().vpc;
+    vpc_spec = input->vpc_spec; 
+    if (op != API_OP_UPDATE) {
+        // Add route table also to expect
+        expected_pds.emplace_back (OBJ_ID_ROUTE_TABLE, op);
+        auto& route_table = expected_pds.back().route_table;
+        route_table.key = vpc_spec.v4_route_table;
+        route_table.route_info = nullptr;
+    }
+}
+
 void route_pds_mock_t::generate_addupd_specs(const route_input_params_t& input,
                                              batch_spec_t& pds_batch) 
 {
@@ -45,6 +63,7 @@ void route_pds_mock_t::generate_del_specs(const route_input_params_t& input,
 
 void route_pds_mock_t::validate_()
 {    
+    auto input = dynamic_cast<route_input_params_t*> (test_params()->test_input);
     if (mock_pds_spec_op_fail_ ||
         mock_pds_batch_commit_fail_) {
         // Verify all temporary objects and cookies are freed
@@ -60,13 +79,14 @@ void route_pds_mock_t::validate_()
     { // Enter state thread context
         auto state_ctxt = pds_ms::state_t::thread_context();
         auto state = state_ctxt.state();
-        auto rttbl = state->route_table_store().get(pds_ms::msidx2pdsobjkey(1));
+        auto rttbl = state->route_table_store().
+            get(pds_ms::msidx2pdsobjkey(input->vrf_id));
         if (op_delete_update_) {
             // Object is removed from store synchronously for deletes
-            ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_RTTABLE_SLAB_ID) , (uint32_t)2);
+            ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_RTTABLE_SLAB_ID) , (uint32_t)1);
             ASSERT_EQ (rttbl->num_routes() , 0);
         } else {
-            ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_RTTABLE_SLAB_ID) , (uint32_t)2);
+            ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_RTTABLE_SLAB_ID) , (uint32_t)1);
             ASSERT_EQ (rttbl->num_routes() , 1);
         }
         ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_COOKIE_SLAB_ID) , (uint32_t)1);
@@ -84,15 +104,16 @@ void route_pds_mock_t::validate_()
         // Verify no change to slab - all temporary objects released
         auto state_ctxt = pds_ms::state_t::thread_context();
         auto state = state_ctxt.state();
-        ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_RTTABLE_SLAB_ID) , (uint32_t)2);
+        ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_RTTABLE_SLAB_ID) , (uint32_t)1);
         ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_COOKIE_SLAB_ID) , (uint32_t)0);
         return;
     }
 
     auto state_ctxt = pds_ms::state_t::thread_context();
     auto state = state_ctxt.state();
-    auto rttbl = state->route_table_store().get(pds_ms::msidx2pdsobjkey(1));
-    ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_RTTABLE_SLAB_ID) , (uint32_t)2);
+    auto rttbl = state->route_table_store().
+        get(pds_ms::msidx2pdsobjkey(input->vrf_id));
+    ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_RTTABLE_SLAB_ID) , (uint32_t)1);
     ASSERT_EQ (state->get_slab_in_use (pds_ms::PDS_MS_COOKIE_SLAB_ID) , (uint32_t)0);
     if (op_delete_update_) {
         ASSERT_EQ (rttbl->num_routes() , 0);

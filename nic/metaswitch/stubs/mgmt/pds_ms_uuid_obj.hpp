@@ -9,8 +9,10 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mib_idx_gen.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_slab_object.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
+#include "nic/apollo/api/include/pds_subnet.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
+#include <unordered_map>
 #include <memory>
 
 namespace pds_ms {
@@ -38,8 +40,8 @@ public:
     // MS HAL stub delete is invoked
     virtual bool delay_release() {return false;}
 private:
-    uuid_obj_type_t obj_type_;
-    pds_obj_key_t          uuid_;
+    uuid_obj_type_t   obj_type_;
+    pds_obj_key_t     uuid_;
 };
 
 using uuid_obj_uptr_t = std::unique_ptr<uuid_obj_t>;
@@ -142,10 +144,25 @@ public:
     // so that internal MS VRF ID is not released and reallocated until
     // all VRF state is cleaned up all the way down until MS HAL stubs
     bool delay_release() override {return true;}
+
+    // Subnet VR-IP uniqueness validation within VPC
+    void replace_vrip(const pds_subnet_spec_t& old_subnet_spec,
+                      const pds_subnet_spec_t& spec);
+    void set_vrip(const pds_subnet_spec_t& spec);
+    void reset_vrip(const pds_subnet_spec_t& spec);
+    // Throw exception if VR-IP not unique within subnet 
+    void check_vrip(const pds_subnet_spec_t& spec);
+
 private:
     bool is_default_;
     mib_idx_gen_guard_t  idx_guard = MIB_IDX_GEN_TBL_VRF;
+    std::unordered_map<ip_addr_t, pds_obj_key_t, ip_hash> vrip_list_;
+    // Throw exception if VR-IP not unique within subnet 
+    void check_vrip_ (const ip_addr_t& ip, const pds_obj_key_t& subnet);
+    void replace_vrip_(const ip_addr_t& old_ip, const ip_addr_t& new_ip,
+                       const pds_obj_key_t& subnet_key);
 };
+
 using vpc_uuid_obj_uptr_t = std::unique_ptr<vpc_uuid_obj_t>;
 void vpc_uuid_obj_slab_init(slab_uptr_t slabs_[], sdk::lib::slab_id_t slab_id);
 

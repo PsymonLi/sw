@@ -83,7 +83,8 @@ public:
    }
    void next(void) override {
        subnet_spec.key = pds_ms::msidx2pdsobjkey(++bd_uuid); ++bd_id;
-       str2ipv4addr("24.4.10.1", &subnet_spec.v4_prefix.v4_addr);
+       subnet_spec.v4_prefix.v4_addr += 0x1000000;
+       subnet_spec.v4_vr_ip = subnet_spec.v4_prefix.v4_addr;
        subnet_spec.fabric_encap.val.vnid  += 100;
        auto state_ctxt = pds_ms::state_t::thread_context();
    }
@@ -96,6 +97,7 @@ public:
        subnet_spec.key = pds_ms::msidx2pdsobjkey(++bd_uuid); ++bd_id;
        subnet_spec.fabric_encap.val.vnid  += 100;
        str2ipv4addr("33.3.10.1", &subnet_spec.v4_prefix.v4_addr);
+       subnet_spec.v4_vr_ip = subnet_spec.v4_prefix.v4_addr;
        auto state_ctxt = pds_ms::state_t::thread_context();
        state_ctxt.state()->subnet_store().add_upd (bd_id,
                                                new pds_ms::subnet_obj_t(subnet_spec));

@@ -16,17 +16,18 @@ class route_input_params_t : public test_input_base_t {
 public:
     ip_addr_t       route_ip;
     uint32_t        pfxlen;
-    char            vrf_name_route[5] = "1";
+    char            vrf_name_route[5] = "8";
+    pds_vpc_spec_t  vpc_spec = {0};
+    uint32_t           vrf_id, vrf_uuid;
 
    // These inputs are used to generate feeder inputs 
    // as well as output verifications 
    virtual void init(const char *rip, uint32_t len) {
         test::extract_ip_addr (rip, &route_ip);
         pfxlen = len;
-        pds_vpc_spec_t  vpc_spec = {0};
 
        // Create VPC store entry
-        int vrf_id = 1;
+        vrf_id = 8;
         pds_obj_key_t route_table_key = pds_ms::msidx2pdsobjkey(vrf_id);
         vpc_spec.key = pds_ms::msidx2pdsobjkey(vrf_id);
         vpc_spec.type = PDS_VPC_TYPE_TENANT;
@@ -35,7 +36,7 @@ public:
         mac_str_to_addr((char*) "04:06:03:09:00:03", vpc_spec.vr_mac);
         vpc_spec.v4_route_table = route_table_key;
         vpc_spec.fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
-        vpc_spec.fabric_encap.val.vnid  = 100;
+        vpc_spec.fabric_encap.val.vnid  = 800;
         vpc_spec.tos = 5;
         auto state_ctxt = pds_ms::state_t::thread_context(); 
         state_ctxt.state()->vpc_store().add_upd (vrf_id,
@@ -44,6 +45,7 @@ public:
                             new pds_ms::route_table_obj_t(route_table_key, IP_AF_IPV4));
    }
    virtual ~route_input_params_t(void) {};
+   virtual void trigger_init() {};
 };
 
 void load_route_test_input(void);

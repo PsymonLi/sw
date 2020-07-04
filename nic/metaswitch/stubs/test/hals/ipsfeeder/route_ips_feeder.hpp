@@ -20,6 +20,10 @@ public:
     pds_ms::hals_l3_integ_subcomp_t hals_is; 
     ms_ifindex_t   prev_if_bind = 0;
 
+   void trigger_init() override {
+        pds_ms::vpc_create(&vpc_spec, 0);
+   }
+
     ATG_ROPI_UPDATE_ROUTE generate_add_upd_ips(void) {
         ATG_ROPI_UPDATE_ROUTE add_upd = {0};
         int len = strlen(vrf_name_route);
@@ -63,6 +67,17 @@ public:
     void next(void) override { }
     bool ips_mock() override {return true;}
 
+    void cleanup() override {
+        // Delete the VPC created as a pre-req
+        std::cout << " ====== Cleanup ========" << std::endl;
+        // TODO Fix - currently VPC delete is not calling HAL stub VRF delete
+       auto state_ctxt = pds_ms::state_t::thread_context();
+       std::cout << "Erasing VPC from store" << std::endl;
+       state_ctxt.state()->vpc_store().erase(vrf_id);
+       state_ctxt.state()->route_table_store()
+           .erase(pds_ms::msidx2pdsobjkey(vrf_id));
+       pds_ms::vpc_delete(vpc_spec.key, 0);
+    }
 private:
     bool op_update_ = false;
 };

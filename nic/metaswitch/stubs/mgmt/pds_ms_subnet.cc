@@ -407,6 +407,10 @@ subnet_create (pds_subnet_spec_t *spec, pds_batch_ctxt_t bctxt)
                             bd_id, spec->key)) {
             return SDK_RET_INVALID_ARG;
         }
+        // Throw error if VR-IP not unique within VPC
+        mgmt_state_t::thread_context().state()->
+            vpc_uuid_obj(spec->vpc)->check_vrip(*spec);
+        
         // Sort HostIf list before caching in store
         std::sort(spec->host_if, spec->host_if + spec->num_host_if);
         cache_subnet_spec (spec, bd_id, pds_ms_subnet_cache_op_t::CREATE);
@@ -420,8 +424,12 @@ subnet_create (pds_subnet_spec_t *spec, pds_batch_ctxt_t bctxt)
             cache_subnet_spec (spec, bd_id, pds_ms_subnet_cache_op_t::COMMIT_DEL);
             return pds_ms_api_to_sdk_ret (ret_status);
         }
+
         mgmt_set_vni(spec->fabric_encap.val.vnid,
                      mgmt_obj_type_e::SUBNET, bd_id, spec->key);
+        mgmt_state_t::thread_context().state()->
+            vpc_uuid_obj(spec->vpc)->set_vrip(*spec);
+
         PDS_TRACE_DEBUG ("Subnet %s bd %d create is successfully processed",
                          spec->key.str(), bd_id);
     } catch (const Error& e) {
@@ -486,6 +494,9 @@ subnet_delete (pds_obj_key_t &key, pds_batch_ctxt_t bctxt)
         });
 
         mgmt_reset_vni(spec->fabric_encap.val.vnid);
+        mgmt_state_t::thread_context().state()->
+            vpc_uuid_obj(spec->vpc)->reset_vrip(*spec);
+
         if (cache_subnet_spec (spec, bd_id, pds_ms_subnet_cache_op_t::COMMIT_DEL)) {
             // Subnet UUID is released by the L2F BD stub usually.
             // But if L2F BD stub was never invoked for this subnet
@@ -648,6 +659,10 @@ subnet_update (pds_subnet_spec_t *spec, pds_batch_ctxt_t bctxt)
         mgmt_uuid_guard_t uuid_guard;
         bd_id = subnet_uuid_2_idx_fetch(spec->key, false);
 
+        // Throw error if VR-IP not unique within VPC
+        mgmt_state_t::thread_context().state()->
+            vpc_uuid_obj(spec->vpc)->check_vrip(*spec);
+
         // Update subnet spec in cache before fastpath commit
         // or MS CTM transaction commit
         // Sort HostIf list before caching in store
@@ -670,6 +685,10 @@ subnet_update (pds_subnet_spec_t *spec, pds_batch_ctxt_t bctxt)
             PDS_TRACE_DEBUG ("Subnet %s field update successfully processed",
                              spec->key.str());
         }
+
+        mgmt_state_t::thread_context().state()->
+            vpc_uuid_obj(spec->vpc)->replace_vrip(old_subnet_spec, *spec);
+
     } catch (const Error& e) {
         PDS_TRACE_ERR ("Subnet %s BD %d update failed %s",
                         spec->key.str(), bd_id, e.what());

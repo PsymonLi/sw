@@ -161,6 +161,9 @@ public:
     }
     uuid_obj_t* lookup_uuid(const pds_obj_key_t& uuid);
 
+    // Throws exception if the given VPC is not found in the UUID store
+    vpc_uuid_obj_t* vpc_uuid_obj(const pds_obj_key_t& vpc_key);
+
     mib_idx_gen_indexer_t&  mib_indexer() {return mib_indexer_;}
     void set_rt_pending_add(const uint8_t *rt_str, rt_type_e type,
                              pend_rt_t::ms_id_t id) {

@@ -421,6 +421,8 @@ TEST_F(pds_ms_hals_test, route_test) {
     auto route_input = dynamic_cast<pds_ms_test::route_input_params_t*>
                               (test_input);
     route_input->init("10.1.1.1", 24);
+    test_output->init();
+    route_input->trigger_init();
 
     // Create
     std::cout << "=== ROUTE Create test ===" << std::endl;

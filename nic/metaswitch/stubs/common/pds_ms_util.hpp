@@ -345,7 +345,6 @@ pds_obj_key_proto_to_spec (pds_obj_key_t *key,
     return SDK_RET_OK;
 }
 
-
 } // End namespace
 
 static inline bool operator==(const ip_addr_t& a,

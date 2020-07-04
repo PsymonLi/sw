@@ -452,6 +452,42 @@ static void create_subnet_proto_grpc (uint32_t subnet_id) {
     }
 }
 
+static void update_subnet_proto_grpc (uint32_t subnet_id) {
+    SubnetRequest   request;
+    SubnetResponse  response;
+    ClientContext   context;
+    Status          ret_status;
+
+    request.mutable_batchctxt()->set_batchcookie(1);
+
+    auto proto_spec = request.add_request();
+    proto_spec->set_id(pds_ms::msidx2pdsobjkey(subnet_id).id, PDS_MAX_KEY_LEN);
+    proto_spec->set_vpcid(pds_ms::msidx2pdsobjkey(k_vpc_id).id, PDS_MAX_KEY_LEN);
+    auto proto_encap = proto_spec->mutable_fabricencap();
+    proto_encap->set_type(types::ENCAP_TYPE_VXLAN);
+    proto_encap->mutable_value()->set_vnid(g_test_conf_.vni[subnet_id-1]);
+
+    // TODO: Host IfIndex needs to refer to an actual LIF Index in HAL
+    //       Else failure in non-mock PDS mode.
+    //proto_spec->set_hostif(test::uuid_from_objid(g_test_conf_.lif_if_index,
+    //                                             g_system_mac_addr).id,
+    //                       PDS_MAX_KEY_LEN);
+    proto_spec->set_ipv4virtualrouterip(g_test_conf_.local_gwip_addr[subnet_id-1]);
+    proto_spec->set_virtualroutermac((uint64_t)0x001122334455);
+    auto v4_prefix = proto_spec->mutable_v4prefix();
+    v4_prefix->set_len(24);
+    v4_prefix->set_addr (g_test_conf_.local_gwip_addr[subnet_id-1]);
+
+    printf ("Pushing Subnet proto...\n");
+    ret_status = g_subnet_stub_->SubnetUpdate(&context, request, &response);
+    if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
+        printf("%s failed! ret_status=%d (%s) response.status=%d\n",
+                __FUNCTION__, ret_status.error_code(), ret_status.error_message().c_str(),
+                response.apistatus());
+        exit(1);
+    }
+}
+
 static void delete_subnet_proto_grpc (uint32_t subnet_id) {
     SubnetDeleteRequest   request;
     SubnetDeleteResponse  response;
@@ -756,7 +792,13 @@ int main(int argc, char** argv)
                 delete_evpn_evi_proto_grpc();
             }
 #endif
-            delete_subnet_proto_grpc(1);
+            delete_subnet_proto_grpc(atoi(argv[2]));
+            return 0;
+        } else if (!strcmp (argv[1], "subnet-create")) {
+            create_subnet_proto_grpc(atoi(argv[2]));
+            return 0;
+        } else if (!strcmp (argv[1], "subnet-upd")) {
+            update_subnet_proto_grpc(atoi(argv[2]));
             return 0;
         } else if (!strcmp(argv[1], "amx-open")) {
             set_amx_control(true);

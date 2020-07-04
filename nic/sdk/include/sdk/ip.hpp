@@ -804,4 +804,13 @@ ip_addr_within_prefix (ip_prefix_t *prefix, ip_addr_t *addr)
     return true;
 }
 
+static inline ip_addr_t
+ipv4addr2ipaddr (const ipv4_addr_t& ipv4)
+{
+    ip_addr_t ip = {0};
+    ip.af = IP_AF_IPV4;
+    ip.addr.v4_addr = ipv4;
+    return ip;
+}
+
 #endif    // __IP_HPP__

@@ -275,6 +275,22 @@ bool mgmt_check_vni(pds_vnid_id_t vni, mgmt_obj_type_e obj_type,
     return true;
 }
 
+vpc_uuid_obj_t*
+mgmt_state_t::vpc_uuid_obj (const pds_obj_key_t& key) {
+    auto uuid_obj = lookup_uuid(key);
+    if (uuid_obj == nullptr) {
+        throw Error(std::string("Unknown VPC Key ")
+                    .append(key.str()), SDK_RET_INVALID_ARG);
+    }
+    if (uuid_obj->obj_type() != uuid_obj_type_t::VPC) {
+        throw Error(std::string("Invalid VPC Key ").append(key.str())
+                    .append(" of obj-type ")
+                    .append(uuid_obj_type_str(uuid_obj->obj_type())),
+                    SDK_RET_INVALID_ARG);
+    }
+    return (vpc_uuid_obj_t*) uuid_obj;
+}
+
 bool
 mgmt_state_init (void)
 {

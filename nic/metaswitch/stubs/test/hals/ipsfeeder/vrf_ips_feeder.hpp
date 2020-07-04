@@ -46,6 +46,15 @@ public:
         pds_ms::vpc_update(&vpc_spec, 0);
     }
     bool ips_mock() override {return true;}
+    void cleanup() override {
+        // TODO Fix - currently VPC delete is not calling HAL stub VRF delete
+       auto state_ctxt = pds_ms::state_t::thread_context();
+       std::cout << "Erasing VPC from store" << std::endl;
+       state_ctxt.state()->vpc_store().erase(vrf_id);
+       state_ctxt.state()->route_table_store()
+           .erase(pds_ms::msidx2pdsobjkey(vrf_id));
+       pds_ms::vpc_delete(vpc_spec.key, 0);
+    }
 };
 
 } // End Namespace

@@ -124,5 +124,76 @@ interface_uuid_obj_slab_init (slab_uptr_t slabs_[], sdk::lib::slab_id_t slab_id)
     interface_uuid_obj_t::set_slab(slabs_[slab_id].get());
 }
 
+void vpc_uuid_obj_t::replace_vrip_(const ip_addr_t& old_ip,
+                                   const ip_addr_t& new_ip,
+                                   const pds_obj_key_t& subnet_key) {
+    if (!ip_addr_is_zero(&old_ip)) {
+        vrip_list_.erase(old_ip);
+    }
+    if (!ip_addr_is_zero(&new_ip)) {
+        vrip_list_[new_ip] = subnet_key;
+    }
+}
+
+void vpc_uuid_obj_t::replace_vrip(const pds_subnet_spec_t& old_subnet_spec,
+                                  const pds_subnet_spec_t& spec)
+{
+    if (spec.v4_vr_ip != old_subnet_spec.v4_vr_ip) {
+        replace_vrip_(ipv4addr2ipaddr(old_subnet_spec.v4_vr_ip),
+                      ipv4addr2ipaddr(spec.v4_vr_ip), spec.key);
+    }
+    if (!IPADDR_EQ(&spec.v6_vr_ip, &old_subnet_spec.v6_vr_ip)) {
+        replace_vrip_(old_subnet_spec.v6_vr_ip, spec.v6_vr_ip, spec.key);
+    }
+}
+
+void vpc_uuid_obj_t::set_vrip(const pds_subnet_spec_t& spec) {
+    auto ipv4 = ipv4addr2ipaddr(spec.v4_vr_ip);
+    if (!ip_addr_is_zero(&ipv4)) {
+        vrip_list_[ipv4] = spec.key;
+    }
+    auto& ipv6 = spec.v6_vr_ip;
+    if (!ip_addr_is_zero(&ipv6)) {
+        vrip_list_[ipv6] = spec.key;
+    }
+}
+
+void vpc_uuid_obj_t::reset_vrip(const pds_subnet_spec_t& spec) {
+    auto ipv4 = ipv4addr2ipaddr(spec.v4_vr_ip);
+    if (!ip_addr_is_zero(&ipv4)) {
+        vrip_list_.erase(ipv4);
+    }
+    auto& ipv6 = spec.v6_vr_ip;
+    if (!ip_addr_is_zero(&ipv6)) {
+        vrip_list_.erase(ipv6);
+    }
+}
+
+void vpc_uuid_obj_t::check_vrip_(const ip_addr_t& ip,
+                                 const pds_obj_key_t& subnet) {
+    auto it = vrip_list_.find(ip);
+    if (it == vrip_list_.end()) {
+        return;
+    }
+    if (subnet == it->second) {
+        return;
+    }
+    throw Error (std::string("VR-IP ").append(ipaddr2str(&ip)) 
+                 .append(" already used by subnet ")
+                 .append(it->second.str()), SDK_RET_INVALID_ARG);
+}
+
+void vpc_uuid_obj_t::check_vrip(const pds_subnet_spec_t& spec)
+{
+    auto ipv4 = ipv4addr2ipaddr(spec.v4_vr_ip);
+    if (!ip_addr_is_zero(&ipv4)) {
+        check_vrip_(ipv4, spec.key);
+    }
+    auto& ipv6 = spec.v6_vr_ip;
+    if (!ip_addr_is_zero(&ipv6)) {
+        check_vrip_(ipv6, spec.key);
+    }
+}
+
 } // End namespace
 
