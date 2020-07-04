@@ -233,15 +233,15 @@ pds_impl_db_vr_ip_mac_get (uint16_t subnet, uint32_t *vr_ip, uint8_t **vr_mac)
     return 0;
 }
 
-int
+bool
 pds_impl_db_vr_ip_get (uint16_t subnet, uint32_t *vr_ip)
 {
     pds_impl_db_subnet_entry_t *entry = pds_impl_db_subnet_get(subnet);
     if (PREDICT_FALSE(!entry)) {
-        return -1;
+        return false;
     }
     *vr_ip = entry->vr_ip.ip4.data_u32;
-    return 0;
+    return true;
 }
 
 int

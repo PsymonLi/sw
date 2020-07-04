@@ -11,8 +11,9 @@
 extern "C" {
 #endif
 
-#define IPV4_MASK 0xFFFFFFFF
-#define IPV4_PFX_LEN 32
+#define INVALID_SUBNET_ID   0
+#define IPV4_MASK           0xFFFFFFFF
+#define IPV4_PFX_LEN        32
 
 int pds_l2vnid_get(uint16_t bd_id, uint32_t *l2_vni);
 

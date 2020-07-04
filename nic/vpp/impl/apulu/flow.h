@@ -6,6 +6,7 @@
 #define __VPP_IMPL_APULU_FLOW_H__
 
 #include <netinet/in.h>
+#include <netinet/ether.h>
 #include <arpa/inet.h>
 #include <gen/p4gen/apulu/include/p4pd.h>
 #include <sess.h>
@@ -20,10 +21,10 @@
 #include "p4_cpu_hdr_utils.h"
 #include "impl_db.h"
 #include "vnic.h"
-#include <netinet/ether.h>
 #include "gen/p4gen/p4/include/ftl.h"
 #include "sess_helper.h"
 #include <vppinfra/atomics.h>
+#include "bd.h"
 
 #define PDS_FLOW_UPLINK0_LIF_ID     0x0
 #define PDS_FLOW_UPLINK1_LIF_ID     0x1
@@ -644,6 +645,11 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
         }
         mapping = pds_flow_mapping_over_route_check(hdr, 0);
         if (mapping) {
+            if (PREDICT_FALSE(INVALID_SUBNET_ID == hdr->egress_bd_id)) {
+                *next = FLOW_CLASSIFY_NEXT_DROP;
+                counter[FLOW_CLASSIFY_COUNTER_INVALID_EGRESS_BD] += 1;
+                return;
+            }
             // assume l2l traffic is handled by vswitch on host
             if (PREDICT_FALSE(hdr->is_local)) {
                 vnet_buffer(p)->pds_flow_data.egress_lkp_id = hdr->egress_bd_id;
@@ -805,6 +811,11 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
                 }
             }
         } else {
+            if (PREDICT_FALSE(INVALID_SUBNET_ID == hdr->egress_bd_id)) {
+                *next = FLOW_CLASSIFY_NEXT_DROP;
+                counter[FLOW_CLASSIFY_COUNTER_INVALID_EGRESS_BD] += 1;
+                return;
+            }
             if ((hdr->is_l3_vnid) ||
                 (hdr->egress_bd_id != hdr->src_bd_id)) {
                 pkt_type = PDS_FLOW_R2L_INTER_SUBNET;

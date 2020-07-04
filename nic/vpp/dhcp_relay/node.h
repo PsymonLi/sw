@@ -44,8 +44,9 @@
 #define foreach_dhcp_relay_to_server_counter                \
     _(TX, "Sent to DHCP server")                            \
     _(NO_VNIC, "VNIC not found")                            \
+    _(NO_SUBNET_VR_IP, "Subnet VR IP not found")            \
     _(NO_DHCP, "DHCP server not configured")                \
-    _(LINEARIZE_FAILED, "Buffer linearization failed")       \
+    _(LINEARIZE_FAILED, "Buffer linearization failed")      \
     _(PACKET_TOO_BIG, "Packet too big")                     \
 
 #define foreach_dhcp_relay_to_server_next                   \

@@ -5,6 +5,8 @@
 #ifndef __VPP_INFRA_UTILS_H__
 #define __VPP_INFRA_UTILS_H__
 
+#include <stdbool.h>
+
 #define ETH_HDR_LEN                                 14
 // MAC address
 #define ETH_ADDR_LEN                                 6

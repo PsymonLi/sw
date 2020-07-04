@@ -541,22 +541,30 @@ pds_dhcp_relay_to_server_x1 (vlib_main_t *vm,
     dhcp_relay_server_t *server = NULL;
     dhcp_option_t *o, *end;
     u32 len = 0;
-    u8 is_discover = 0;
+    u8 is_broadcast = 0;
     pds_impl_db_vnic_entry_t *vnic_info = NULL;
     u16 vnic_id;
     dhcp_relay_main_t *dm = &dhcp_relay_main;
     u16 *svr_idx = NULL;
-    u32 server_ip = 0;
+    u32 server_ip = 0, vr_ip = 0, opt_54_present = 0;
 
     h0 = vlib_buffer_get_current(b0);
 
     vlib_buffer_advance(b0, -(sizeof (*u0)));
     u0 = vlib_buffer_get_current(b0);
 
+    vlib_buffer_advance(b0, -(sizeof(*ip0)));
+    ip0 = vlib_buffer_get_current(b0);
+
     vnic_id = vnet_buffer(b0)->pds_dhcp_data.vnic_id;
     vnic_info = pds_impl_db_vnic_get(vnic_id);
     if(vnic_info == NULL) {
         counter[DHCP_RELAY_TO_SVR_COUNTER_NO_VNIC]++;
+        *next0 = PDS_DHCP_RELAY_TO_SVR_NEXT_DROP;
+        goto trace;
+    }
+    if(!pds_impl_db_vr_ip_get(vnic_info->subnet_hw_id, &vr_ip)) {
+        counter[DHCP_RELAY_TO_SVR_COUNTER_NO_SUBNET_VR_IP]++;
         *next0 = PDS_DHCP_RELAY_TO_SVR_NEXT_DROP;
         goto trace;
     }
@@ -579,19 +587,30 @@ pds_dhcp_relay_to_server_x1 (vlib_main_t *vm,
     while (o->option != DHCP_PACKET_OPTION_END && o < end) {
         if (DHCP_PACKET_OPTION_MSG_TYPE == o->option) {
             if (DHCP_PACKET_DISCOVER == o->data[0]) {
-                is_discover = 1;
+                is_broadcast = 1;
             }
         } else if (54 == o->option) {
             // get dhcp server IP
             server_ip = o->data_as_u32[0];
+            if (server_ip == vr_ip) {
+                is_broadcast = 1;
+            }
+            opt_54_present = 1;
         }
         o = (dhcp_option_t *) (o->data + o->length);
     }
-    // if discover then pick first server and do packet manupulation.
+    if (!opt_54_present) {
+        u32 dst_ip = clib_host_to_net_u32(ip0->dst_address.as_u32);
+        if ((dst_ip == 0xffffffff) || (dst_ip == vr_ip)){
+            is_broadcast = 1;
+        }
+        server_ip = dst_ip;
+    }
+    // if broadcast then pick first server and do packet manipulation.
     // packet has to be replicated to all servers.
     // if not discover msg, then find actual dhcp server to which packet
     // has to be unicast and forward
-    if (is_discover) {
+    if (is_broadcast) {
         server = pool_elt_at_index(dm->server_pool, policy->servers[0]);
     } else {
         pool_foreach(svr_idx, policy->servers, (({
@@ -607,9 +626,6 @@ pds_dhcp_relay_to_server_x1 (vlib_main_t *vm,
     }
 
 found_server:
-    vlib_buffer_advance(b0, -(sizeof(*ip0)));
-    ip0 = vlib_buffer_get_current(b0);
-
     // disable UDP checksum
     u0->checksum = 0;
     sum0 = ip0->checksum;
@@ -665,9 +681,9 @@ found_server:
     *next0 = PDS_DHCP_RELAY_TO_SVR_NEXT_LINUX_INJECT;
 
     // if we have multiple servers configured and this is the
-    // client's discover message, then send copies to each of
+    // client's broadcast message, then send copies to each of
     // those servers
-    if (is_discover && vec_len(policy->servers) > 1) {
+    if (is_broadcast && vec_len(policy->servers) > 1) {
         u32 ii;
         for (ii = 1; ii < vec_len(policy->servers); ii++) {
             vlib_buffer_t *c0;
@@ -739,7 +755,7 @@ dhcp_relay_to_server_input (vlib_main_t *vm,
                             vlib_node_runtime_t *node,
                             vlib_frame_t *from_frame)
 {
-    u32 counter[DHCP_RELAY_TO_CLIENT_COUNTER_LAST] = {0};
+    u32 counter[DHCP_RELAY_TO_SVR_COUNTER_LAST] = {0};
 
     PDS_PACKET_LOOP_START {
         PDS_PACKET_SINGLE_LOOP_START {
@@ -750,9 +766,9 @@ dhcp_relay_to_server_input (vlib_main_t *vm,
         } PDS_PACKET_SINGLE_LOOP_END;
     } PDS_PACKET_LOOP_END;
 
-#define _(n, s) \
-    vlib_node_increment_counter (vm, dhcp_relay_to_server_node.index,   \
-                                 DHCP_RELAY_TO_SVR_COUNTER_##n,          \
+#define _(n, s)                                                             \
+    vlib_node_increment_counter (vm, dhcp_relay_to_server_node.index,       \
+                                 DHCP_RELAY_TO_SVR_COUNTER_##n,             \
                                  counter[DHCP_RELAY_TO_SVR_COUNTER_##n]);
     foreach_dhcp_relay_to_server_counter
 #undef _

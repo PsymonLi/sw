@@ -64,6 +64,7 @@
         _(MAX_EXCEEDED, "Session count exceeded packets")           \
         _(VNIC_NOT_FOUND, "Unknown vnic")                           \
         _(VPC_NOT_FOUND, "Unknown vpc")                             \
+        _(INVALID_EGRESS_BD, "Invalid egress subnet")               \
         _(ICMP_VRIP, "VR IPv4 request packets received")            \
         _(UNKOWN, "Unknown flow packets")                           \
         _(VRIP_DROP, "Unknown VR IPv4 packets")                     \
@@ -258,8 +259,8 @@ typedef CLIB_PACKED(struct pds_flow_hw_ctx_s {
     pds_flow_index_t rflow;
 
     u16 ingress_bd;
-    u8 dst_vnic_id;
-    u8 padding_1;
+    u16 dst_vnic_id : 10; // Max VNIC ID is 1024, so we need 10 bits
+    u16 padding_1 : 6;
 
     u32 is_in_use : 1;
     u32 proto : 2; // enum pds_flow_protocol
@@ -273,12 +274,13 @@ typedef CLIB_PACKED(struct pds_flow_hw_ctx_s {
     u8 iflow_rx : 1; // true if iflow is towards the host
     u8 monitor_seen : 1; // 1 if monitor process has seen flow
     u8 nat : 1;
-    u8 drop : 1;
-    u8 src_vnic_id : 7;
+    u8 padding_2;
+    u16 drop : 1;
+    u16 src_vnic_id : 10;
     u16 thread_id : 2;
-    u16 reserved_1 : 14;
+    u16 reserved_1 : 3;
 
-    u32 padding_2;
+    u32 padding_3;
 }) pds_flow_hw_ctx_t;
 
 typedef struct pds_flow_sess_id_thr_local_pool_s {
@@ -637,7 +639,7 @@ always_inline pds_flow_protocol pds_flow_trans_proto(u8 proto)
 
 always_inline void pds_session_set_data(u32 ses_id, u64 i_handle, u64 r_handle,
                                         pds_flow_protocol proto,
-                                        uint8_t vnic_id, bool v4,
+                                        uint16_t vnic_id, bool v4,
                                         bool host_origin, u8 packet_type,
                                         bool drop, u8 thread_id,
                                         bool napt)
