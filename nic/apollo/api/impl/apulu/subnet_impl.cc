@@ -851,7 +851,6 @@ local_mapping_dhcp_binding_upd_cb_ (sdk_table_api_params_t *params)
     key = (local_mapping_swkey_t *)(params->key);
     data = (local_mapping_appdata_t *)(params->appdata);
 
-    
     vpc_key = subnet->vpc();
     vpc = vpc_find(&vpc_key);
     vpc_hw_id = ((vpc_impl *)vpc->impl())->hw_id();
@@ -923,8 +922,8 @@ sdk_ret_t
 subnet_impl::fill_spec_(pds_subnet_spec_t *spec) {
     sdk_ret_t ret;
     p4pd_error_t p4pd_ret;
-    p4e_bd_actiondata_t bd_data;
     vni_actiondata_t vni_data;
+    p4e_bd_actiondata_t bd_data;
     vni_swkey_t vni_key = { 0 };
     sdk_table_api_params_t tparams;
 
@@ -937,6 +936,7 @@ subnet_impl::fill_spec_(pds_subnet_spec_t *spec) {
     spec->fabric_encap.val.vnid = bd_data.p4e_bd_info.vni;
     spec->fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
     sdk::lib::memrev(spec->vr_mac, bd_data.p4e_bd_info.vrmac, ETH_ADDR_LEN);
+    spec->tos = bd_data.p4e_bd_info.tos;
     vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
     PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                    VNI_VNI_INFO_ID, handle_t::null());
@@ -947,13 +947,6 @@ subnet_impl::fill_spec_(pds_subnet_spec_t *spec) {
                       bd_data.p4e_bd_info.vni, ret);
         return sdk::SDK_RET_HW_READ_ERR;
     }
-
-    // validate values read from hw table with sw state
-    // TODO: this is disabled as the data being written and read back aren't
-    // same
-    //SDK_ASSERT(vni_data.vni_info.bd_id == hw_id_);
-    //SDK_ASSERT(!memcmp(vni_data.vni_info.rmac, spec->vr_mac, ETH_ADDR_LEN));
-
     return SDK_RET_OK;
 }
 

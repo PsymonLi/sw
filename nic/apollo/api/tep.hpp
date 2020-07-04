@@ -21,8 +21,10 @@
 #define PDS_REMOTE_TEP_MAC            0x0E0D0A0B0200
 
 // attribute update bits for TEP object
-#define PDS_TEP_UPD_OVERLAY_NH    0x1    // overlay nexthop related info update
-                                         // in TEP -> TEP case
+#define PDS_TEP_UPD_NH_TYPE       0x1    // update of nexthop type
+#define PDS_TEP_UPD_NH            0x2    // nh type is same, but nh has changed
+#define PDS_TEP_UPD_OVERLAY_NH    0x4    // nh type is same, but specifically,
+                                         // overlay nexthop has changed
 
 namespace api {
 

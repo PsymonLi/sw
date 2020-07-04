@@ -187,28 +187,38 @@ fill_p4_tep_data_from_nhgroup_ (tep_entry *tep, pds_obj_key_t *nhgroup_key,
 }
 
 sdk_ret_t
-tep_impl::activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
-                                        pds_tep_spec_t *spec) {
+tep_impl::program_tunnel_(api_op_t api_op, tep_entry *tep, pds_tep_spec_t *spec,
+                          tunnel_actiondata_t *tep_data,
+                          api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
     tep_entry *tep2;
     pds_obj_key_t nh_key;
     p4pd_error_t p4pd_ret;
-    pds_nh_type_t nh_type;
     pds_obj_key_t nhgroup_key;
-    tunnel_actiondata_t tep_data = { 0 };
     tunnel2_actiondata_t tep2_data = { 0 };
 
+    if (api_op == API_OP_CREATE) {
+        memset(tep_data, 0, sizeof(*tep_data));
+    } else {
+        // do read-modify-write
+        p4pd_ret = p4pd_global_entry_read(P4TBL_ID_TUNNEL, hw_id_,
+                                          NULL, NULL, tep_data);
+        if (p4pd_ret != P4PD_SUCCESS) {
+            PDS_TRACE_ERR("Failed to read TEP %s at TUNNEL table idx %u",
+                          spec->key.str(), hw_id_);
+            return sdk::SDK_RET_HW_PROGRAM_ERR;
+        }
+    }
     switch (spec->nh_type) {
     case PDS_NH_TYPE_UNDERLAY_ECMP:
-        ret = fill_p4_tep_data_from_nhgroup_(tep, &spec->nh_group, &tep_data);
+        ret = fill_p4_tep_data_from_nhgroup_(tep, &spec->nh_group, tep_data);
         if (ret != SDK_RET_OK) {
             return ret;
         }
-        //program_tep2 = true;
         break;
 
     case PDS_NH_TYPE_UNDERLAY:
-        ret = fill_p4_tep_data_from_nh_(tep, &spec->nh, &tep_data);
+        ret = fill_p4_tep_data_from_nh_(tep, &spec->nh, tep_data);
         if (ret != SDK_RET_OK) {
             return ret;
         }
@@ -224,13 +234,13 @@ tep_impl::activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
         }
         if (tep2->nh_type() == PDS_NH_TYPE_UNDERLAY) {
             nh_key = tep2->nh();
-            ret = fill_p4_tep_data_from_nh_(tep, &nh_key, &tep_data);
+            ret = fill_p4_tep_data_from_nh_(tep, &nh_key, tep_data);
             if (ret != SDK_RET_OK) {
                 return ret;
             }
         } else if (tep2->nh_type() == PDS_NH_TYPE_UNDERLAY_ECMP) {
             nhgroup_key = tep2->nh_group();
-            ret = fill_p4_tep_data_from_nhgroup_(tep, &nhgroup_key, &tep_data);
+            ret = fill_p4_tep_data_from_nhgroup_(tep, &nhgroup_key, tep_data);
             if (ret != SDK_RET_OK) {
                 return ret;
             }
@@ -238,31 +248,29 @@ tep_impl::activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
         break;
 
     case PDS_NH_TYPE_BLACKHOLE:
-        PDS_IMPL_FILL_TEP_DATA_FROM_NH(&tep_data,
+        PDS_IMPL_FILL_TEP_DATA_FROM_NH(tep_data,
                                        PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID);
         break;
 
     case PDS_NH_TYPE_NONE:
-        // consult the underlay route db to figure out the nexthop for this
-        if (pds_underlay_nexthop(spec->remote_ip.addr.v4_addr,
-                                 &nh_type, &nh_key) == SDK_RET_OK) {
-            if (nh_type == PDS_NH_TYPE_UNDERLAY) {
-                ret = fill_p4_tep_data_from_nh_(tep, &nh_key, &tep_data);
-                if (ret != SDK_RET_OK) {
-                    return ret;
-                }
-            } else if (nh_type == PDS_NH_TYPE_UNDERLAY_ECMP) {
-                ret = fill_p4_tep_data_from_nhgroup_(tep, &nh_key, &tep_data);
-                if (ret != SDK_RET_OK) {
-                    return ret;
-                }
-            }
-        } else {
-            // TEP reachability is unknown, use system drop nexthop
-            PDS_TRACE_DEBUG("TEP %s reachability unknown, using black hole "
-                            "nexthop", spec->tep.str());
-            PDS_IMPL_FILL_TEP_DATA_FROM_NH(&tep_data,
+        if (api_op == API_OP_CREATE) {
+            // point to blackhole NH and wait for the update from routing stack
+            PDS_IMPL_FILL_TEP_DATA_FROM_NH(tep_data,
                                            PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID);
+        } else {
+            // TEP update case
+            if (obj_ctxt->upd_bmap & PDS_TEP_UPD_NH_TYPE) {
+                // this TEP was pointing to some other NH type earlier and is
+                // explicitly being updated to NONE, we need to accept reachability
+                // information from routing stack that will come later, point to
+                // blackhole NH and wait for routing statck to provide an update
+                PDS_IMPL_FILL_TEP_DATA_FROM_NH(tep_data,
+                                               PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID);
+            } else {
+                // if nexthop information has not changed, don't override as
+                // routing stacj would have programmed the right reachability
+                // information by now
+            }
         }
         break;
 
@@ -274,19 +282,19 @@ tep_impl::activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
     }
 
     if (spec->encap.type != PDS_ENCAP_TYPE_NONE) {
-        tep_data.tunnel_action.vni = spec->encap.val.value;
+        tep_data->tunnel_action.vni = spec->encap.val.value;
     }
     if (spec->remote_ip.af == IP_AF_IPV4) {
-        tep_data.tunnel_action.ip_type = IPTYPE_IPV4;
-        memcpy(tep_data.tunnel_action.dipo, &spec->remote_ip.addr.v4_addr,
+        tep_data->tunnel_action.ip_type = IPTYPE_IPV4;
+        memcpy(tep_data->tunnel_action.dipo, &spec->remote_ip.addr.v4_addr,
                IP4_ADDR8_LEN);
         // fill TUNNEL2 table data as well
         tep2_data.tunnel2_action.ip_type = IPTYPE_IPV4;
         memcpy(tep2_data.tunnel2_action.dipo, &spec->remote_ip.addr.v4_addr,
                IP4_ADDR8_LEN);
     } else if (spec->remote_ip.af == IP_AF_IPV6) {
-        tep_data.tunnel_action.ip_type = IPTYPE_IPV6;
-        sdk::lib::memrev(tep_data.tunnel_action.dipo,
+        tep_data->tunnel_action.ip_type = IPTYPE_IPV6;
+        sdk::lib::memrev(tep_data->tunnel_action.dipo,
                          spec->remote_ip.addr.v6_addr.addr8,
                          IP6_ADDR8_LEN);
         // fill TUNNEL2 table data as well
@@ -295,15 +303,15 @@ tep_impl::activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
                          spec->remote_ip.addr.v6_addr.addr8,
                          IP6_ADDR8_LEN);
     }
-    sdk::lib::memrev(tep_data.tunnel_action.dmaci, spec->mac, ETH_ADDR_LEN);
+    sdk::lib::memrev(tep_data->tunnel_action.dmaci, spec->mac, ETH_ADDR_LEN);
     if (spec->tos) {
-        tep_data.tunnel_action.tos_override = 1;
-        tep_data.tunnel_action.tos = spec->tos;
+        tep_data->tunnel_action.tos_override = 1;
+        tep_data->tunnel_action.tos = spec->tos;
     }
-    tep_data.action_id = TUNNEL_TUNNEL_INFO_ID;
+    tep_data->action_id = TUNNEL_TUNNEL_INFO_ID;
     // program TUNNEL table
     p4pd_ret = p4pd_global_entry_write(P4TBL_ID_TUNNEL, hw_id_,
-                                       NULL, NULL, &tep_data);
+                                       NULL, NULL, tep_data);
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to program TEP %s at idx %u",
                       spec->key.str(), hw_id_);
@@ -322,7 +330,6 @@ tep_impl::activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
     return SDK_RET_OK;
 }
 
-#define tunnel2_action    action_u.tunnel2_tunnel2_info
 sdk_ret_t
 tep_impl::activate_create_tunnel2_(pds_epoch_t epoch, tep_entry *tep,
                                    pds_tep_spec_t *spec) {
@@ -418,18 +425,19 @@ tep_impl::activate_create_tunnel2_(pds_epoch_t epoch, tep_entry *tep,
 
 sdk_ret_t
 tep_impl::activate_create_(pds_epoch_t epoch, tep_entry *tep,
-                           pds_tep_spec_t *spec) {
+                           pds_tep_spec_t *spec, api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
+    tunnel_actiondata_t tep_data;
 
     PDS_TRACE_DEBUG("Activating TEP %s create, h/w id %u",
                     spec->key.str(), hw_id_);
     if (tep->type() == PDS_TEP_TYPE_INTER_DC) {
         // program outer tunnel in double encap case
-        ret = activate_create_tunnel2_(epoch, tep, spec);
-    } else {
-        ret = activate_create_tunnel_table_(epoch, tep, spec);
+        return activate_create_tunnel2_(epoch, tep, spec);
     }
-    return ret;
+    // non-INTER_DC tunnel
+    memset(&tep_data, 0, sizeof(tep_data));
+    return program_tunnel_(API_OP_CREATE, tep, spec, &tep_data, obj_ctxt);
 }
 
 sdk_ret_t
@@ -533,12 +541,6 @@ tep_impl::activate_delete_(pds_epoch_t epoch, tep_entry *tep) {
 }
 
 sdk_ret_t
-tep_impl::activate_update_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
-                                        pds_tep_spec_t *spec) {
-    return activate_create_tunnel_table_(epoch, tep, spec);
-}
-
-sdk_ret_t
 tep_impl::activate_update_tunnel2_(pds_epoch_t epoch, tep_entry *tep,
                                    pds_tep_spec_t *spec) {
     return activate_create_tunnel2_(epoch, tep, spec);
@@ -549,17 +551,17 @@ tep_impl::activate_update_(pds_epoch_t epoch, tep_entry *tep,
                            tep_entry *orig_tep, api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
     pds_tep_spec_t *spec;
+    tunnel_actiondata_t tep_data;
 
     spec = &obj_ctxt->api_params->tep_spec;
     PDS_TRACE_DEBUG("Activating TEP %s update, h/w id1 %u",
                     tep->key().str(), hw_id_);
     if (tep->type() == PDS_TEP_TYPE_INTER_DC) {
         // update outer tunnel in double encap case
-        ret = activate_update_tunnel2_(epoch, tep, spec);
-    } else {
-        ret = activate_update_tunnel_table_(epoch, tep, spec);
+        return activate_update_tunnel2_(epoch, tep, spec);
     }
-    return ret;
+    // non-INTER_DC tunnel
+    return program_tunnel_(API_OP_UPDATE, tep, spec, &tep_data, obj_ctxt);
 }
 
 sdk_ret_t
@@ -571,7 +573,7 @@ tep_impl::activate_hw(api_base *api_obj, api_base *orig_obj, pds_epoch_t epoch,
     switch (api_op) {
     case API_OP_CREATE:
         spec = &obj_ctxt->api_params->tep_spec;
-        ret = activate_create_(epoch, (tep_entry *)api_obj, spec);
+        ret = activate_create_(epoch, (tep_entry *)api_obj, spec, obj_ctxt);
         break;
 
     case API_OP_DELETE:

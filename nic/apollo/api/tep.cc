@@ -193,8 +193,14 @@ tep_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
         return SDK_RET_INVALID_ARG;
     }
 
-    if ((nh_type_ == PDS_NH_TYPE_OVERLAY) && (tep_ != spec->tep)) {
-        obj_ctxt->upd_bmap = PDS_TEP_UPD_OVERLAY_NH;
+    if (nh_type_ == spec->nh_type) {
+        if ((nh_type_ == PDS_NH_TYPE_OVERLAY) && (tep_ != spec->tep)) {
+            obj_ctxt->upd_bmap |= PDS_TEP_UPD_OVERLAY_NH;
+        }
+        // all other cases there is no special handling for nexthop updates
+    } else {
+        // nexthop type itself has changed
+        obj_ctxt->upd_bmap |= PDS_TEP_UPD_NH_TYPE;
     }
     return SDK_RET_OK;
 }

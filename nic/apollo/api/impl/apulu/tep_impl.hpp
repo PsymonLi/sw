@@ -175,21 +175,26 @@ private:
 
     /// \brief     program TEP related tables during TEP create by enabling
     ///            stage0 tables corresponding to the new epoch
-    /// \param[in] epoch epoch being activated
+    /// \param[in] api_op API operation (CREATE or UPDATE)
     /// \param[in] tep  TEP obj being programmed
     /// \param[in] spec TEP configuration
+    /// \param[in] tep_data P4 tep entry data pointer
+    /// \param[in] obj_ctxt transient state associated with this API
     /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
-                                            pds_tep_spec_t *spec);
+    sdk_ret_t program_tunnel_(api_op_t api_op, tep_entry *tep,
+                              pds_tep_spec_t *spec,
+                              tunnel_actiondata_t *tep_data,
+                              api_obj_ctxt_t *obj_ctxt);
 
     /// \brief     program TEP related tables during TEP create by enabling
     ///            stage0 tables corresponding to the new epoch
     /// \param[in] epoch epoch being activated
     /// \param[in] tep  TEP obj being programmed
     /// \param[in] spec TEP configuration
+    /// \param[in] obj_ctxt transient state associated with this API
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t activate_create_(pds_epoch_t epoch, tep_entry *tep,
-                               pds_tep_spec_t *spec);
+                               pds_tep_spec_t *spec, api_obj_ctxt_t *obj_ctxt);
 
     /// \brief     program outer tunnel (MPLSoUDP in this case) related tables
     ///            during TEP delete by disabling stage0 tables corresponding to
@@ -222,15 +227,6 @@ private:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t activate_update_tunnel2_(pds_epoch_t epoch, tep_entry *tep,
                                        pds_tep_spec_t *spec);
-
-    /// \brief     program TEP related tables during TEP update by enabling
-    ///            stage0 tables corresponding to the new epoch
-    /// \param[in] epoch epoch being activated
-    /// \param[in] tep  TEP obj being updated
-    /// \param[in] spec TEP configuration
-    /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t activate_update_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
-                                            pds_tep_spec_t *spec);
 
     /// \brief     program TEP related tables during TEP update by enabling
     ///            stage0 tables corresponding to the new epoch
