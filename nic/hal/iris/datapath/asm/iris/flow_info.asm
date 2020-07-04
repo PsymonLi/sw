@@ -226,6 +226,9 @@ flow_miss:
   seq           c1, r5[0], 0
   nop.!c1.e
   phvwr         p.control_metadata_flow_miss_ingress, 1
+  seq           c1, k.control_metadata_flow_learn, TRUE
+  seq           c2, k.l4_metadata_ip_bm_mc_policy_enf_cfg_en, TRUE
+  bcf           [!c1 | !c2], flow_miss_common
   phvwr         p.control_metadata_i2e_flags[P4_I2E_FLAGS_FLOW_MISS], 1
   seq           c1, k.flow_lkp_metadata_lkp_type, FLOW_KEY_LOOKUP_TYPE_IPV4
   bcf           [c1], validate_ipv4_flow_key
