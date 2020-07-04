@@ -130,13 +130,14 @@ testcases:
     # Connection Tracking Test
     #=======================================
 
-#    -   name    : Connection_Tracking_Test
-#        testcase: testcases.networking.conntrack
-#        enable  : True
-#        iterators :
-#            type      : nested
-#            state     : ['SYNACK_SENT','SYNACK_RECV','ESTABLISHED_H2S', 'ESTABLISHED_S2H','FIN_SENT','FIN_RECV','TIME_WAIT_H2S','TIME_WAIT_S2H','RST_CLOSE_H2S',#'RST_CLOSE_S2H']
-#            proto     : ['TCP']
+    -   name    : Connection_Tracking_Test
+        testcase: testcases.networking.conntrack
+        enable  : True
+        iterators :
+            type      : nested
+            # TODO add 'RST_CLOSE_H2S','RST_CLOSE_S2H'
+            state     : ['SYNACK_SENT','SYNACK_RECV','ESTABLISHED_H2S', 'ESTABLISHED_S2H','FIN_SENT','FIN_RECV','TIME_WAIT_H2S','TIME_WAIT_S2H']
+            proto     : ['TCP']
 
     #=======================================
     # Aging Tests (without traffic)

@@ -381,10 +381,10 @@ def Setup(tc):
         tc.plcy_obj = json.load(fd)
 
     # get vnic
-    tc.vnic = utils.get_vnic(tc.plcy_obj, tc.vnic_type, tc.nat)
+    tc.vnic = utils.get_vnic(tc.plcy_obj, tc.vnic_type, tc.nat, _stateful=True)
 
     # get vnic id
-    tc.vnic_id = utils.get_vnic_id(tc.plcy_obj, tc.vnic_type, tc.nat)
+    tc.vnic_id = utils.get_vnic_id(tc.plcy_obj, tc.vnic_type, tc.nat, _stateful=True)
     api.Logger.info('vnic id: {}'.format(tc.vnic_id))
 
     # get node info
@@ -502,62 +502,62 @@ def Trigger(tc):
 
             elif tc.state == 'SYNACK_SENT' and idx == 0:
                 api.Logger.info("Verify connection tracking state SYNACK_SENT")
-                get_state_synack(tc, node, flow, pkt_gen, 'h2s')
-                if utils.verify_conntrack_state(tc, flow, FlowState.SYNACK_SENT) == False:
+                get_state_synack(tc, node, flow, pkt_gen, 's2h')
+                if utils.verify_conntrack_state(tc, flow, FlowState.SYNACK_SENT.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'SYNACK_RECV' and idx == 1:
                 api.Logger.info("Verify connection tracking state SYNACK_RECV")
-                get_state_synack(tc, node, flow, pkt_gen, 's2h')
-                if utils.verify_conntrack_state(tc, flow, FlowState.SYNACK_RECV) == False:
+                get_state_synack(tc, node, flow, pkt_gen, 'h2s')
+                if utils.verify_conntrack_state(tc, flow, FlowState.SYNACK_RECV.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'ESTABLISHED_H2S' and idx == 2:
                 api.Logger.info("Verify connection tracking state ESTABLISHED_H2S")
                 get_state_established(tc, node, flow, pkt_gen, 'h2s')
-                if utils.verify_conntrack_state(tc, flow, FlowState.ESTABLISHED) == False:
+                if utils.verify_conntrack_state(tc, flow, FlowState.ESTABLISHED.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'ESTABLISHED_S2H' and idx == 3:
                 api.Logger.info("Verify connection tracking state ESTABLISHED_S2H")
                 get_state_established(tc, node, flow, pkt_gen, 's2h')
-                if utils.verify_conntrack_state(tc, flow, FlowState.ESTABLISHED) == False:
+                if utils.verify_conntrack_state(tc, flow, FlowState.ESTABLISHED.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'FIN_SENT' and idx == 4:
                 api.Logger.info("Verify connection tracking state FIN_SENT")
                 get_state_fin(tc, node, flow, pkt_gen, 'h2s')
-                if utils.verify_conntrack_state(tc, flow, FlowState.FIN_SENT) == False:
+                if utils.verify_conntrack_state(tc, flow, FlowState.FIN_SENT.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'FIN_RECV' and idx == 5:
                 api.Logger.info("Verify connection tracking state FIN_RECV")
                 get_state_fin(tc, node, flow, pkt_gen, 's2h')
-                if utils.verify_conntrack_state(tc, flow, FlowState.FIN_RECV) == False:
+                if utils.verify_conntrack_state(tc, flow, FlowState.FIN_RECV.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'TIME_WAIT_H2S' and idx == 6:
                 api.Logger.info("Verify connection tracking state TIME_WAIT")
                 get_state_time_wait(tc, node, flow, pkt_gen, 's2h')
-                if utils.verify_conntrack_state(tc, flow, FlowState.TIME_WAIT) == False:
+                if utils.verify_conntrack_state(tc, flow, FlowState.TIME_WAIT.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'TIME_WAIT_S2H' and idx == 7:
                 api.Logger.info("Verify connection tracking state TIME_WAIT")
                 get_state_time_wait(tc, node, flow, pkt_gen, 's2h')
-                if utils.verify_conntrack_state(tc, flow, FlowState.TIME_WAIT) == False:
+                if utils.verify_conntrack_state(tc, flow, FlowState.TIME_WAIT.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'RST_CLOSE_H2S' and idx == 8:
                 api.Logger.info("Verify connection tracking state RST_CLOSE")
                 get_state_rst(tc, node, flow, pkt_gen, 's2h')
-                if utils.verify_conntrack_state(tc, flow, FlowState.RST_CLOSE) == False:
+                if utils.verify_conntrack_state(tc, flow, FlowState.RST_CLOSE.value) == False:
                     return api.types.status.FAILURE
 
             elif tc.state == 'RST_CLOSE_S2H' and idx == 9:
                 api.Logger.info("Verify connection tracking state RST_CLOSE")
                 get_state_rst(tc, node, flow, pkt_gen, 's2h')
-                if utils.verify_conntrack_state(tc, flow, FlowState.RST_CLOSE) == False:
+                if utils.verify_conntrack_state(tc, flow, FlowState.RST_CLOSE.value) == False:
                     return api.types.status.FAILURE
 
     return api.types.status.SUCCESS

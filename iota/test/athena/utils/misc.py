@@ -20,11 +20,20 @@ def is_L2_vnic(_vnic):
 
     return "vnic_type" in _vnic and _vnic['vnic_type'] == 'L2'
 
+# ===========================================
+# Return: True or False
+# returns True if _vnic object is stateful
+# returns False otherwise
+# ===========================================
+def is_stateful_vnic(_vnic):
+
+    return "conntrack" in _vnic['session'] and _vnic['session']['conntrack'] == 'yes'
+
 # ==============================================
 # Return: vnic object from given policy handle
 # gets vnic object based on vnic type and nat
 # ==============================================
-def get_vnic(plcy_obj, _vnic_type, _nat):
+def get_vnic(plcy_obj, _vnic_type, _nat, _stateful = False):
 
     vnics = plcy_obj['vnic']
 
@@ -34,6 +43,8 @@ def get_vnic(plcy_obj, _vnic_type, _nat):
 
         if vnic_type == _vnic_type and \
            nat == _nat:
+            if _stateful and not is_stateful_vnic(vnic):
+                continue
             return vnic
 
     raise Exception("Matching vnic not found")
@@ -62,10 +73,10 @@ def get_vnic_index(plcy_obj, _vnic_type, _nat):
 # gets vnic id of vnic from given
 # policy handle
 # ===========================================
-def get_vnic_id(plcy_obj, _vnic_type, _nat):
+def get_vnic_id(plcy_obj, _vnic_type, _nat, _stateful = False):
 
     # get vnic
-    vnic = get_vnic(plcy_obj, _vnic_type, _nat)
+    vnic = get_vnic(plcy_obj, _vnic_type, _nat, _stateful = _stateful)
     return int(vnic['vnic_id'])
 
 # ===========================================
@@ -184,7 +195,7 @@ def get_session_id(tc, vnic_id, flow):
 
     pattern = "(index:)(\w*)"
     mo = re.search(pattern,flow_dump_resp.commands[0].stdout)
-    session_id = mo.group(2)
+    session_id = str(mo.group(2))
 
     return session_id
 
@@ -209,10 +220,10 @@ def get_conntrack_state(node, conntrack_id):
     param =  "conntrack_index " + conntrack_id
     output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "conntrack", param)
 
-    pattern = "(flow_state: )(\w*)"
+    pattern = "(flow_state : )(\w*)"
     mo = re.search(pattern, output_lines)
 
-    return str(int(mo.group(2), 16))
+    return int(mo.group(2), 16)
 
 # ================================
 # Return: True or False
@@ -221,15 +232,14 @@ def get_conntrack_state(node, conntrack_id):
 # table against expected state
 # ================================
 def verify_conntrack_state(tc, flow, exp_state):
-    session_id = utils.get_session_id(tc, tc.vnic_id, flow)
-    conntrack_id = utils.get_conntrack_id(tc.bitw_node_name, session_id)
+    session_id = get_session_id(tc, tc.vnic_id, flow)
+    conntrack_id = get_conntrack_id(tc.bitw_node_name, session_id)
     api.Logger.info("conntrack_id is %s" % conntrack_id)
 
-    flow_state = utils.get_conntrack_state(tc.bitw_node_name, conntrack_id)
+    flow_state = get_conntrack_state(tc.bitw_node_name, conntrack_id)
     api.Logger.info("flow_state: expected %s, actual %s" % (exp_state, flow_state))
 
     return flow_state == exp_state
-
 
 # ===========================================
 # Return: List of (node, nic) pairs names for 
