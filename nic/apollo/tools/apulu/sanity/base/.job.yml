@@ -225,3 +225,4 @@ image:
 
 logfiles:
   - /sw/nic/nic_sanity_logs.tar.gz
+  - /sw/nic/dol_techsupport.tar.gz

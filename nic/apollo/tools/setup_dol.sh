@@ -8,15 +8,9 @@ DSCAGENTMODE=0
 SETUP_WAIT_TIME=600
 # list of processes
 SIM_PROCESSES=("vpp_main" "operd" "pdsagent" "pciemgrd" "sysmgr" "dhcpd")
-TS_NAME=nic_sanity_logs.tar.gz
-
+TS_NAME=dol_techsupport.tar.gz
+EXIT_STATUS=0
 NAPLES_INTERFACES=("dsc0" "dsc1" "eth1" "oob_mnic0")
-
-# set file size limit to user configured value or 10GB
-if [[ -z "${LOG_SIZE}" ]]; then
-    LOG_SIZE=$((10*1024*1024))
-fi
-ulimit -f $LOG_SIZE
 
 CMDARGS=""
 argc=$#
@@ -56,8 +50,6 @@ function stop_model() {
 function stop_processes () {
     echo "======> Setting Phasers to kill"
     for process in ${SIM_PROCESSES[@]}; do
-        #dump backtrace of process to file, useful for debugging if process hangs
-        pstack `pgrep -x ${process}` > $PDSPKG_TOPDIR/${process}_bt.log 2>&1
         printf "\n *** Nuking ${process}"
         pkill -9 ${process} || { echo -n " - already dead"; }
     done
@@ -122,8 +114,7 @@ function remove_ipc_files () {
 }
 
 function remove_shm_files () {
-    rm -f /dev/shm/pds_* /dev/shm/ipc_* /dev/shm/metrics_* /dev/shm/alerts
-    rm -f /dev/shm/nicmgr_shm /dev/shm/sysmgr /dev/shm/vpp /dev/shm/upgradelog
+    rm -f /dev/shm/*
 }
 
 function remove_interfaces () {
@@ -161,16 +152,25 @@ function remove_stale_files () {
 function remove_logs () {
     # NOT to be used post run
     echo "======> Incinerating logs from unknown stardate"
-    sudo rm -rf ${PDSPKG_TOPDIR}/*log* ${PDSPKG_TOPDIR}/core* ${PDSPKG_TOPDIR}/*Techsupport*
+    sudo rm -rf ${PDSPKG_TOPDIR}/*log* ${PDSPKG_TOPDIR}/core* ${PDSPKG_TOPDIR}/${TS_NAME}
     sudo rm -rf /var/log/pensando/ /obfl/ /data/ /sysconfig/
     sudo rm -rf /update/*
     # pciemgrd saves here in sim mode
     sudo rm -rf /root/.pcie*
 }
 
+function collect_process_state () {
+    for process in ${SIM_PROCESSES[@]}; do
+        #dump backtrace of process to file, useful for debugging if process hangs
+        pstack `pgrep -x ${process}` > $PDSPKG_TOPDIR/${process}_bt.log 2>&1
+    done
+}
+
 function collect_techsupport () {
     echo "======> Recording captain's logs, stardate `date +%x_%H:%M:%S:%N`"
     if ls ${PDSPKG_TOPDIR}/core.* 1> /dev/null 2>&1; then
+        # fail the run if core found
+        EXIT_STATUS=1
         echo " *** waiting for the core to be produced"
         sleep 60
     fi
@@ -184,6 +184,7 @@ function finish () {
          return
     fi
     echo "======> Starting shutdown sequence"
+    collect_process_state
     collect_techsupport
     if [ $DRYRUN == 0 ]; then
         stop_upgrade_manager
@@ -194,6 +195,7 @@ function finish () {
     fi
     ${PDSPKG_TOPDIR}/tools/print-cores.sh
     remove_stale_files
+    exit ${EXIT_STATUS}
 }
 trap finish EXIT
 
@@ -263,6 +265,14 @@ function setup_fru () {
     fi
 }
 
+function setup_file_limit () {
+    # set file size limit to user configured value or 10GB
+    if [[ -z "${LOG_SIZE}" ]]; then
+        LOG_SIZE=$((10*1024*1024))
+    fi
+    ulimit -f $LOG_SIZE
+}
+
 function setup_hugepages () {
     echo 4096 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
     mkdir /dev/hugepages
@@ -270,6 +280,7 @@ function setup_hugepages () {
 }
 
 function setup_env () {
+    setup_file_limit
     sudo mkdir -p /var/log/pensando/ /obfl/ /sysconfig/config0/ /data/
     setup_conf_files
     setup_fru
@@ -291,7 +302,3 @@ function setup () {
     setup_env
 }
 setup
-
-if [ $PIPELINE == 'artemis' ];then
-    export AGENT_TEST_HOOKS_LIB='libdolagenthooks.so'
-fi

@@ -11,7 +11,7 @@
       "ip route",
       "iptables -L",
       "arp -a",
-      "netstat -tuln",
+      "netstat -aen",
       "/nic/tools/fwupdate -l",
       "/nic/tools/fwupdate -r",
       "/nic/tools/fwupdate -S",
@@ -79,6 +79,9 @@
       "/obfl/",
       "/sysconfig/",
       "/dev/shm/",
-      "/data/pre-upgrade-logs/"
+      "/data/pre-upgrade-logs/",
+      "/data/pen-netagent.db",
+      "/data/pdsagent.db",
+      "/nic/etc/VERSION.json"
     ]
 }

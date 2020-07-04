@@ -9,13 +9,10 @@
       "ip route",
       "iptables -L",
       "arp -a",
-      "netstat -tuln",
+      "netstat -aen",
       "pcieutil techsupport",
       "pdsctl show techsupport",
-      "pdsctl show bgp",
-      "pdsctl show bgp peers",
-      "pdsctl show bgp ip unicast nlri",
-      "pdsctl show bgp l2vpn evpn nlri",
+      "pdsctl show bgp techsupport",
       "/sw/nic/vpp/tools/vppctl-sim.sh show version",
       "/sw/nic/vpp/tools/vppctl-sim.sh show plugins",
       "/sw/nic/vpp/tools/vppctl-sim.sh show threads",
@@ -51,10 +48,8 @@
       "/sw/nic/vpp/tools/vppctl-sim.sh show pds vpc status",
       "/sw/nic/vpp/tools/vppctl-sim.sh show pds device status",
       "/sw/nic/vpp/tools/vppctl-sim.sh show pds flow replication statistics",
-      "mkdir -p /data/logs/",
-      "rsync --progress -ah --exclude=*model*log* /sw/nic/*log* /data/logs/",
-      "mkdir -p /data/core/",
-      "cp /sw/nic/core* /data/core/"
+      "mkdir -p /data/logs/ && rsync --progress -ah --exclude=*model*log* /sw/nic/*log* /data/logs/",
+      "mkdir -p /data/core/ && cp /sw/nic/core* /data/core/"
     ],
   "cores": [
       "/data/core/"
@@ -65,6 +60,8 @@
       "/update/",
       "/data/logs/",
       "/dev/shm/",
-      "/sysconfig/"
+      "/sysconfig/",
+      "/data/pen-netagent.db",
+      "/sw/nic/pdsagent.db"
     ]
 }
