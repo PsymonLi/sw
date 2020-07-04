@@ -129,6 +129,10 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
     for (u32 i = 0; i < sess_info_cache_batch_get_count(thread_id); i++) {
         sess_info_t *sess = sess_info_cache_batch_get_entry_index(i, thread_id);
         ctx = pds_flow_get_session(sess->id);
+        // If we have failed to program session don't start the timers
+        if (PREDICT_FALSE(!ctx)) {
+            continue;
+        }
 
         switch (ctx->flow_state) {
         case PDS_FLOW_STATE_CONN_SETUP:
