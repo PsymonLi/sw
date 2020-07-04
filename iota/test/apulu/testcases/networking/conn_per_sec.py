@@ -390,7 +390,7 @@ def Trigger(tc):
         return api.types.status.FAILURE
 
 def Verify(tc):
-    udp_tolerance = 0.5
+    udp_tolerance = 1
     server, client = tc.workload_pair[0], tc.workload_pair[1]
 
     retval = api.types.status.SUCCESS

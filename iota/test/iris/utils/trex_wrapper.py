@@ -389,13 +389,13 @@ class TRexIotaWrapper(ASTFClient):
                              (server_hw_ins, int(serverAccepts)))
             return api.types.status.FAILURE
 
-        if abs(totalNumOfConn - connattempt) >= (totalNumOfConn * 0.15):
+        if abs(totalNumOfConn - connattempt) >= (totalNumOfConn * 0.25):
             api.Logger.error("UDP connection attempted are out of expectation, expected: %s, found: %s"%
                              (totalNumOfConn, connattempt))
 
         if serverAccepts != clientConnects :
             if (int(clientConnects) * 2) != server_hw_ins: 
-                if abs(serverAccepts - clientConnects) > (clientConnects * (tolerance/100)):
+                if abs(server_hw_ins - clientConnects) > (clientConnects * (tolerance/100)):
                     api.Logger.error("Drop connection validation failed, (server)udps_accepts: %s, "
                                      "(client)udp_connects: %s, tolerance: %s"%
                                      (serverAccepts, clientConnects, tolerance))
