@@ -13,6 +13,7 @@
 #include "nic/metaswitch/stubs/hals/pds_ms_l2f_mai.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hals_route.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_cfg_msg.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/lib/ipc/ipc_ms.hpp"
@@ -207,6 +208,7 @@ init_routing_cfg_thr (void* ctx)
 
     sdk::ipc::reg_request_handler(PDS_MSG_TYPE_CFG_OBJ_SET,
                                   pds_msg_cfg_callback, NULL);
+    upg_ipc_init();
 }
 
 bool

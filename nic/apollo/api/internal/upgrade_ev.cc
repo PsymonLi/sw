@@ -43,8 +43,7 @@ static void
 upg_graceful_additional_ev_send (sdk::upg::upg_ev_params_t *params)
 {
     sdk_ret_t ret;
-    std::list<api::upg_ev_graceful_t> ev_threads;
-    ev_threads = api::g_upg_state->ev_threads_hdlr_graceful();
+    auto& ev_threads = api::g_upg_state->ev_threads_hdlr_graceful();
     std::list<api::upg_ev_graceful_t>::iterator ev = ev_threads.begin();
     upg_ev_msg_id_t id = g_upg_state->ev_in_progress_id();
 
@@ -121,8 +120,7 @@ static sdk_ret_t
 upg_graceful_ev_send (sdk::upg::upg_ev_params_t *params)
 {
     sdk_ret_t ret;
-    std::list<api::upg_ev_graceful_t> ev_threads;
-    ev_threads = api::g_upg_state->ev_threads_hdlr_graceful();
+    auto& ev_threads = api::g_upg_state->ev_threads_hdlr_graceful();
     std::list<api::upg_ev_graceful_t>::iterator ev = ev_threads.begin();
 
     switch(params->id) {
@@ -186,8 +184,7 @@ static sdk_ret_t
 upg_hitless_ev_send (sdk::upg::upg_ev_params_t *params)
 {
     sdk_ret_t ret;
-    std::list<api::upg_ev_hitless_t> ev_threads;
-    ev_threads = api::g_upg_state->ev_threads_hdlr_hitless();
+    auto& ev_threads = api::g_upg_state->ev_threads_hdlr_hitless();
     std::list<api::upg_ev_hitless_t>::iterator ev = ev_threads.begin();
 
     switch(params->id) {

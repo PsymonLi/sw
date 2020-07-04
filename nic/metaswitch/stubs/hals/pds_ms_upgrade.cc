@@ -6,6 +6,7 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_stub_api.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
+#include "nic/apollo/core/core.hpp"
 #include "nic/apollo/core/trace.hpp"
 extern "C" {
 #include <amxpenapi.h>
@@ -13,99 +14,93 @@ extern "C" {
 
 namespace pds_ms {
 
-static sdk_ret_t
-pds_ms_upg_cb_ev_compat_check (api::upg_ev_params_t *params)
+///////////////////////////////////////////////////////////////
+// Below functions starting with upg_cb_ev_xxx are called from
+// upgrade thread context and should not block
+//
+static void
+upg_cb_ev_response_hdlr (sdk::ipc::ipc_msg_ptr msg,
+                      const void *cookie)
 {
-    PDS_TRACE_DEBUG("In PDS MS upgrade compat check callback...");
-    return SDK_RET_OK;
+    auto params = (api::upg_ev_params_t *)msg->data();
+
+    PDS_TRACE_DEBUG("Upgrade callback event %s response from Routing is %u",
+                    upg_msgid2str(params->id), params->rsp_code);
+    api::upg_ev_process_response(params->rsp_code, params->id);
 }
 
 static sdk_ret_t
-pds_ms_upg_cb_ev_backup (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade backup callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_start (api::upg_ev_params_t *params)
+upg_cb_ev_send_ipc (api::upg_ev_params_t *params)
 {
     if (!sdk::platform::sysinit_mode_hitless(params->mode)) {
         // Nothing to do for graceful upgrade
         return SDK_RET_OK;
     }
-    PDS_TRACE_DEBUG("Received hitless upgrade start event...");
+    PDS_TRACE_DEBUG("Upgrade callback event %s", upg_msgid2str(params->id));
+    sdk::ipc::request(core::PDS_THREAD_ID_ROUTING_CFG, params->id,
+                      params, sizeof(*params),
+                      upg_cb_ev_response_hdlr, NULL);
+    return SDK_RET_IN_PROGRESS;
+}
 
-    // lock grpc
-    mgmt_state_t::thread_context().state()->set_upg_ht_start();
-
-    // TODO Lock Hals stubs
-
-    // TODO Increase snapshot flush timer and force flush before BGP disable
-
-    // Disable BGP to close listen socket and all network route updates
-    // Also saves the do_graceful restart in snapshot before going down
-    auto ret = mgmt_stub_api_set_bgp_state(false);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("hitless upgrade start - failed to disable BGP");
-        return ret;
-    }
-
-    // Close AMX socket
-    amx_pen_close_socket();
-
-    PDS_TRACE_DEBUG ("hitless upgrade start completed successfully");
+static sdk_ret_t
+upg_cb_ev_compat_check (api::upg_ev_params_t *params)
+{
     return SDK_RET_OK;
 }
 
 static sdk_ret_t
-pds_ms_upg_cb_ev_ready (api::upg_ev_params_t *params)
+upg_cb_ev_start (api::upg_ev_params_t *params)
 {
-    PDS_TRACE_DEBUG("In PDS MS upgrade ready callback...");
+    return upg_cb_ev_send_ipc(params);
+}
+
+static sdk_ret_t
+upg_cb_ev_backup (api::upg_ev_params_t *params)
+{
     return SDK_RET_OK;
 }
 
 static sdk_ret_t
-pds_ms_upg_cb_ev_config_replay (api::upg_ev_params_t *params)
+upg_cb_ev_ready (api::upg_ev_params_t *params)
 {
-    PDS_TRACE_DEBUG("In PDS MS upgrade replay callback...");
     return SDK_RET_OK;
 }
 
 static sdk_ret_t
-pds_ms_upg_cb_ev_sync (api::upg_ev_params_t *params)
+upg_cb_ev_config_replay (api::upg_ev_params_t *params)
 {
-    PDS_TRACE_DEBUG("In PDS MS upgrade sync callback...");
     return SDK_RET_OK;
 }
 
 static sdk_ret_t
-pds_ms_upg_cb_ev_quiesce (api::upg_ev_params_t *params)
+upg_cb_ev_sync (api::upg_ev_params_t *params)
 {
-    PDS_TRACE_DEBUG("In PDS MS upgrade quiesce callback...");
+    return upg_cb_ev_send_ipc(params);
+}
+
+static sdk_ret_t
+upg_cb_ev_quiesce (api::upg_ev_params_t *params)
+{
     return SDK_RET_OK;
 }
 
 static sdk_ret_t
-pds_ms_upg_cb_ev_switchover (api::upg_ev_params_t *params)
+upg_cb_ev_pre_switchover (api::upg_ev_params_t *params)
 {
-    PDS_TRACE_DEBUG("In PDS MS upgrade switchover callback...");
     return SDK_RET_OK;
 }
 
 static sdk_ret_t
-pds_ms_upg_cb_ev_pre_switchover (api::upg_ev_params_t *params)
+upg_cb_ev_switchover (api::upg_ev_params_t *params)
 {
-    PDS_TRACE_DEBUG("In PDS MS upgrade pre switchover callback...");
     return SDK_RET_OK;
 }
 
 static sdk_ret_t
-pds_ms_upg_cb_ev_repeal (api::upg_ev_params_t *params)
+upg_cb_ev_repeal (api::upg_ev_params_t *params)
 {
-    PDS_TRACE_DEBUG("In PDS MS upgrade repeal callback...");
-    mgmt_state_t::thread_context().state()->set_upg_ht_repeal();
-    return SDK_RET_OK;
+    return upg_cb_ev_send_ipc(params);
 }
 
 sdk_ret_t
@@ -115,21 +110,106 @@ pds_ms_upg_hitless_init (void)
 
     memset(&ev_hdlr, 0, sizeof(ev_hdlr));
     strncpy(ev_hdlr.thread_name, "routing", sizeof(ev_hdlr.thread_name));
-    ev_hdlr.compat_check_hdlr = pds_ms_upg_cb_ev_compat_check;
-    ev_hdlr.start_hdlr = pds_ms_upg_cb_ev_start;
-    ev_hdlr.backup_hdlr = pds_ms_upg_cb_ev_backup;
-    ev_hdlr.ready_hdlr = pds_ms_upg_cb_ev_ready;
-    ev_hdlr.config_replay_hdlr = pds_ms_upg_cb_ev_config_replay;
-    ev_hdlr.sync_hdlr = pds_ms_upg_cb_ev_sync;
-    ev_hdlr.quiesce_hdlr = pds_ms_upg_cb_ev_quiesce;
-    ev_hdlr.pre_switchover_hdlr = pds_ms_upg_cb_ev_pre_switchover;
-    ev_hdlr.switchover_hdlr = pds_ms_upg_cb_ev_switchover;
-    ev_hdlr.repeal_hdlr = pds_ms_upg_cb_ev_repeal;
+
+    ev_hdlr.compat_check_hdlr = upg_cb_ev_compat_check;
+    ev_hdlr.start_hdlr = upg_cb_ev_start;
+    ev_hdlr.backup_hdlr = upg_cb_ev_backup;
+    ev_hdlr.ready_hdlr = upg_cb_ev_ready;
+    ev_hdlr.config_replay_hdlr = upg_cb_ev_config_replay;
+    ev_hdlr.sync_hdlr = upg_cb_ev_sync;
+    ev_hdlr.quiesce_hdlr = upg_cb_ev_quiesce;
+    ev_hdlr.pre_switchover_hdlr = upg_cb_ev_pre_switchover;
+    ev_hdlr.switchover_hdlr = upg_cb_ev_switchover;
+    ev_hdlr.repeal_hdlr = upg_cb_ev_repeal;
 
     // register for upgrade events
     api::upg_ev_thread_hdlr_register(ev_hdlr);
     PDS_TRACE_DEBUG("Registered hitless upgrade handlers..");
     return SDK_RET_OK;
+}
+
+///////////////////////////////////////////////////////////////
+// Below functions staarting with upg_ipc_xxx are called from
+// Routing Cfg thread context
+//
+static void
+upg_ipc_process_response (sdk_ret_t status, sdk::ipc::ipc_msg_ptr msg)
+{
+    if (status == SDK_RET_IN_PROGRESS) {
+        return;
+    }
+
+    auto params = (api::upg_ev_params_t *)(msg->data());
+    api::upg_ev_params_t resp;
+
+    PDS_TRACE_DEBUG("Upgrade IPC %s response %u",
+                    upg_msgid2str(params->id), status);
+
+    resp.id = params->id;
+    resp.rsp_code = status;
+    sdk::ipc::respond(msg, (const void *)&resp, sizeof(resp));
+}
+
+static void
+upg_ipc_start_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    auto params = (api::upg_ev_params_t *)(msg->data());
+    PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
+
+    try {
+        // lock grpc
+        mgmt_state_t::thread_context().state()->set_upg_ht_start();
+
+        // TODO Lock Hals stubs
+
+        // TODO Increase snapshot flush timer and force flush before BGP disable
+
+        // Disable BGP to close listen socket and all network route updates
+        // Also saves the do_graceful restart in snapshot before going down
+        auto ret = mgmt_stub_api_set_bgp_state(false);
+        if (ret != SDK_RET_OK) {
+            throw Error ("failed to disable BGP", ret);
+        }
+
+        // Close AMX socket
+        amx_pen_close_socket();
+
+        PDS_TRACE_DEBUG ("hitless upgrade start completed successfully");
+
+    } catch (Error& e) {
+        PDS_TRACE_ERR("hitless upgrade start failed - %s", e.what());
+        upg_ipc_process_response(e.rc(), msg);
+        return;
+    }
+    upg_ipc_process_response(SDK_RET_OK, msg);
+}
+
+static void
+upg_ipc_sync_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    auto params = (api::upg_ev_params_t *)(msg->data());
+    PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
+
+    upg_ipc_process_response(SDK_RET_OK, msg);
+}
+
+static void
+upg_ipc_repeal_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    auto params = (api::upg_ev_params_t *)(msg->data());
+    PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
+
+    mgmt_state_t::thread_context().state()->set_upg_ht_repeal();
+    upg_ipc_process_response(SDK_RET_OK, msg);
+}
+
+void
+upg_ipc_init (void)
+{
+    SDK_TRACE_DEBUG ("Registering Upgrade IPC handlers");
+    sdk::ipc::reg_request_handler(UPG_MSG_ID_START, upg_ipc_start_hdlr, NULL);
+    sdk::ipc::reg_request_handler(UPG_MSG_ID_SYNC, upg_ipc_sync_hdlr, NULL);
+    sdk::ipc::reg_request_handler(UPG_MSG_ID_REPEAL, upg_ipc_repeal_hdlr, NULL);
 }
 
 sdk_ret_t
@@ -139,7 +219,7 @@ pds_ms_upg_hitless_start_test (void)
         .id = UPG_MSG_ID_START,
         .mode = sysinit_mode_t::SYSINIT_MODE_HITLESS
     };
-    pds_ms_upg_cb_ev_start(&params);
+    upg_cb_ev_start(&params);
     return params.rsp_code;
 }
 

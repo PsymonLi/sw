@@ -267,11 +267,7 @@ sdk_ret_t hals_route_t::underlay_route_del_() {
             }
         }
     }
-
-    if (mgmt_state_t::thread_context().state()->overlay_routing_en()) {
-        return SDK_RET_OK;
-    }
-    return api::pds_underlay_route_delete(&ips_info_.pfx);
+    return SDK_RET_OK;
 }
 
 static void
