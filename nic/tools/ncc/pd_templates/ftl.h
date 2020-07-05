@@ -1,6 +1,6 @@
 //:: import os, pdb, re, itertools, functools
 //:: from ftl_utils import *
-//:: from collections import OrderedDict
+//:: from collections import OrderedDict, defaultdict
 //:: pddict = _context['pddict']
 //::
 //:: if pddict['p4plus']:
@@ -58,6 +58,20 @@
 //::        tabledict[table] = tableid
 //::        tableid += 1
 //::    #endif
+//:: #endfor
+//:: 
+//:: # Generate action name to table mapping. If a hash table
+//:: # and corresponding ohash table use same action name then
+//:: # consider it as single table entry. 
+//:: action2table = defaultdict(set)
+//:: for table in pddict['tables']:
+//::    if not is_table_ftl_gen(table, pddict):
+//::        continue
+//::    #endif
+//::    for action in pddict['tables'][table]['actions']:
+//::        (actionname, actionflddict, _) = action
+//::        action2table[actionname].add(table.strip("_ohash")) 
+//::    #endfor
 //:: #endfor
 //::
 //:: output_h_dir = _context['output_h_dir']
@@ -583,7 +597,14 @@
 //::
 //::                # construct the struct names
 //::                struct_name = actionname
-//::                struct_full_name = struct_name + '_entry_t'
+//::
+//::                # If same action is used by two differnt tables, make struct_name
+//::                # unique by appending table name to it.
+//::                if len(action2table[struct_name]) >  1:
+//::                    struct_full_name = table + "_" + struct_name + '_entry_t'
+//::                else:
+//::                    struct_full_name = struct_name + '_entry_t'
+//::                #endif
 //::
 //::                k_d_action_data_json['INGRESS_KD'][table][actionname] = kd_json
 //::
@@ -591,8 +612,7 @@
 //::                if struct_full_name in structs_gen_dict:
 //::                    continue
 //::                #endif
-//::                structs_gen_dict[struct_full_name] = 1
-
+//::                structs_gen_dict[struct_full_name] = 1 
 //::
 //::                ######################################
 //::                # KEY STRUCT

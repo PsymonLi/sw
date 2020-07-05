@@ -173,10 +173,8 @@ struct control_metadata_t {
 	bit <1>  flow_log_select_ptr;
 	bit <1>  flow_log_done;
 	bit <1>  flow_log_select;
-	bit <20> flow_log_hash;
+	bit <21> flow_log_hash;
 	bit <1>  flow_log_collision;   
-	bit <20> flow_log_hash_0;   
-	bit <20> flow_log_hash_1;   
 
         /*  Mirroring  */
 	bit <1> mirroring_en;

@@ -1731,6 +1731,11 @@ setup_flows(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
+
+    ret = athena_gtest_setup_flow_log();
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
     
 #endif
     return ret;
@@ -1899,6 +1904,9 @@ TEST(athena_gtest, sim)
    /* L2 TCP Flow with Geneve Encap for Conntrack */
     ASSERT_TRUE(athena_gtest_test_l2_flows_conntrack_tcp() == SDK_RET_OK);
     
+    ASSERT_TRUE(athena_gtest_test_flow_log(0) == SDK_RET_OK);
+
+    ASSERT_TRUE((athena_gtest_test_flow_log(1)) == SDK_RET_OK);
 
 
     iterate_dump_flows();
@@ -1911,7 +1919,6 @@ TEST(athena_gtest, sim)
     pds_global_teardown();
 
 }
-
 
 void inline
 print_usage (char **argv)

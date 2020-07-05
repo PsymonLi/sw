@@ -22,6 +22,14 @@
 #define __PACK__            __attribute__((packed))
 #endif
 
+/// \brief Key type
+typedef enum pds_key_type_e {
+    KEY_TYPE_INVALID = 0,
+    KEY_TYPE_IPV4,          ///< IPV4
+    KEY_TYPE_IPV6,          ///< IPV6
+    KEY_TYPE_L2,            ///< L2 flow
+    KEY_TYPE_MAX
+} pds_key_type_t;
 
 #define _PDS_ENUM_FIELD(_name, _val, _desc) _name = _val,
 #define _PDS_ENUM_STR(_name, _val, _desc)                               \

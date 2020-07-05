@@ -14,12 +14,14 @@
 #define VNIC_ID_L2_SLOW_PATH   0x0008
 #define VNIC_ID_L2_ICMP        0x0009
 #define VNIC_ID_L2_NAT         0x000a
-#define VNIC_ID_VLAN0         0x000b
-#define VNIC_ID_UDPSPORT    0x000c
+#define VNIC_ID_VLAN0          0x000b
+#define VNIC_ID_UDPSPORT       0x000c
 #define VNIC_ID_L2_UDPSPORT    0x000d
 #define VNIC_ID_RECIRC    0x000e
 #define VNIC_ID_GENEVE_ENCAP    0x000f
 #define VNIC_ID_L2_CONN_TCP    0x0021
+#define VNIC_ID_FLOW_LOG_L3    0x0010
+#define VNIC_ID_FLOW_LOG_L2    0x0011
 
 #define VLAN_ID_VLAN0         0x0
 #define VLAN_ID_UDP         0x0001
@@ -34,30 +36,34 @@
 #define VLAN_ID_L2_ICMP        0x0009
 #define VLAN_ID_L2_NAT         0x000a
 
-#define VLAN_ID_UDPSPORT    0x000c
+#define VLAN_ID_UDPSPORT       0x000c
 #define VLAN_ID_L2_UDPSPORT    0x000d
 #define VLAN_ID_RECIRC    0x000e
 #define VLAN_ID_GENEVE_ENCAP    0x000f
+#define VLAN_ID_FLOW_LOG_L3    0x0010
+#define VLAN_ID_FLOW_LOG_L2    0x0011
 #define VLAN_ID_L2_CONN_TCP         0x0020
 
 
 //#define MPLS_LABEL_UDP      0x49440
-#define MPLS_LABEL_UDP      0x6789a
-#define MPLS_LABEL_TCP      0x6789b
-#define MPLS_LABEL_SLOW_PATH    0x6789c
-#define MPLS_LABEL_ICMP     0x6789d
-#define MPLS_LABEL_NAT      0x6789e
-#define MPLS_LABEL_VLAN0      0x6789f
-#define MPLS_LABEL_UDPSPORT    0x678a0
+#define MPLS_LABEL_UDP            0x6789a
+#define MPLS_LABEL_TCP            0x6789b
+#define MPLS_LABEL_SLOW_PATH      0x6789c
+#define MPLS_LABEL_ICMP           0x6789d
+#define MPLS_LABEL_NAT            0x6789e
+#define MPLS_LABEL_VLAN0          0x6789f
+#define MPLS_LABEL_UDPSPORT       0x678a0
+#define MPLS_LABEL_FLOW_LOG_L3    0x678a1
 
-#define GENEVE_DST_SLOT_ID_UDP      0x1234a
-#define GENEVE_DST_SLOT_ID_TCP      0x1234b
+#define GENEVE_DST_SLOT_ID_UDP          0x1234a
+#define GENEVE_DST_SLOT_ID_TCP          0x1234b
 #define GENEVE_DST_SLOT_ID_SLOW_PATH    0x1234c
 #define GENEVE_DST_SLOT_ID_ICMP     0x1234d
 #define GENEVE_DST_SLOT_ID_NAT      0x1234e
 #define GENEVE_DST_SLOT_ID_UDPSPORT      0x1234f
 #define GENEVE_DST_SLOT_ID_RECIRC      0x12350
 #define GENEVE_DST_SLOT_ID_GENEVE_ENCAP      0x12351
+#define GENEVE_DST_SLOT_ID_FLOW_LOG_L2  0x12352
 #define GENEVE_DST_SLOT_ID_CONN_TCP      0x12360
 
 
@@ -411,5 +417,10 @@ athena_gtest_setup_l2_flows_conntrack_tcp(void);
 sdk_ret_t
 athena_gtest_test_l2_flows_conntrack_tcp(void);
 
+sdk_ret_t 
+athena_gtest_setup_flow_log(void);
+
+sdk_ret_t
+athena_gtest_test_flow_log (uint8_t tableid);
 
 #endif /* __ATHENA_GTEST_HPP__ */

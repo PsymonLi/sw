@@ -167,10 +167,11 @@ control p4e_statistics(inout cap_phv_intr_global_h intr_global,
         flow_hit = flow_hit + 1;
       } 
 
-      if(hdr.egress_recirc_header.isValid() && metadata.cntrl.flow_log_done == FALSE) {
+      if (hdr.egress_recirc_header.isValid() &&
+              metadata.cntrl.flow_log_done == FALSE &&
+              metadata.cntrl.skip_flow_log == FALSE) {
         flow_log_ovfl = flow_log_ovfl + 1;
-      } 
-
+      }
     }
 
  @name(".p4i_stats_error")

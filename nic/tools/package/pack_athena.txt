@@ -249,13 +249,15 @@ nic/build/$ARCH/$PIPELINE/bin/fd_send                             /nic/conf/
 nic/apollo/tools/athena/start-agent-stub.sh                       /nic/tools/
 nic/apollo/tools/athena/start-agent.sh                            /nic/tools/
 nic/apollo/tools/athena/start-sec-agent.sh                        /nic/tools/
-nic/apollo/tools/athena/start-sec-agent-iota.sh                        /nic/tools/
+nic/apollo/tools/athena/start-sec-agent-iota.sh                   /nic/tools/
 nic/apollo/tools/athena/start-agent-skip-dpdk.sh                  /nic/tools/
+nic/apollo/tools/athena/start-flow-logger.sh                      /nic/tools/
 nic/apollo/tools/start-nmd.sh                                     /nic/tools/
 nic/apollo/tools/store_agent_log.sh                               /nic/tools/
 nic/build/$ARCH/$PIPELINE/lib/libtrace.so                         /nic/lib/
 nic/build/$ARCH/$PIPELINE/bin/athena_app                          /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/athena_cps                          /nic/bin/
+nic/build/$ARCH/$PIPELINE/bin/athena_flow_logger                  /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/athena_client                       /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pcieutil                            /nic/bin/
 nic/build/$ARCH/$PIPELINE/lib/libsvc_athena.so                    /nic/lib/

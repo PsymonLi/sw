@@ -17,14 +17,14 @@ control flow_log_lookup(inout cap_phv_intr_global_h intr_global,
            
     @name(".flow_log_crc_0")
       action flow_log_crc_0_a(bit<8> dummy) {
-      metadata.cntrl.flow_log_hash =  __hash_value()[19:0];
+      metadata.cntrl.flow_log_hash =  __hash_value()[20:0];
       metadata.scratch.dummy = dummy;
     }
 
     /*
     @name(".flow_log_crc_1")
       action flow_log_crc_1_a(bit<8> dummy) {
-      metadata.cntrl.flow_log_hash =  __hash_value()[19:0];
+      metadata.cntrl.flow_log_hash =  __hash_value()[20:0];
       metadata.scratch.dummy = dummy;
     }
     */    

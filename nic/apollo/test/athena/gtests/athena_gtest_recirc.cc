@@ -159,7 +159,7 @@ setup_l2_flow_recirc(void)
 
     memset(&host_mac, 0, sizeof(host_mac));
     ret = create_session_info_all(ipv4_session_id, /*conntrack_id*/0,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -239,7 +239,7 @@ setup_l2_flow_recirc(void)
     ipv6_session_id = g_session_index;
     g_session_index++;
     ret = create_session_info_all(ipv6_session_id, /*conntrack_id*/0,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -284,7 +284,7 @@ setup_l2_flow_recirc(void)
 
     memset(&host_mac, 0, sizeof(host_mac));
     ret = create_session_info_all(ipv4_session_id, /*conntrack_id*/0,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -321,7 +321,7 @@ setup_l2_flow_recirc(void)
     ipv6_session_id = g_session_index;
     g_session_index++;
     ret = create_session_info_all(ipv6_session_id, /*conntrack_id*/0,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -360,7 +360,7 @@ setup_l2_flow_recirc(void)
 
     memset(&host_mac, 0, sizeof(host_mac));
     ret = create_session_info_all(ipv4_session_id, /*conntrack_id*/0,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -397,7 +397,7 @@ setup_l2_flow_recirc(void)
     ipv6_session_id = g_session_index;
     g_session_index++;
     ret = create_session_info_all(ipv6_session_id, /*conntrack_id*/0,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,

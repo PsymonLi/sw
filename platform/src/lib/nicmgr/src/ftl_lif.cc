@@ -1132,7 +1132,9 @@ FtlLif::ftl_lif_reset_action(ftl_lif_event_t event,
     }
     session_scanners_ctl.stop();
     conntrack_scanners_ctl.stop();
-    mpu_timestamp_ctl.stop();
+    if (sdk::asic::asic_is_hard_init()) {
+        mpu_timestamp_ctl.stop();
+    }
     pollers_ctl.stop();
 
     if (cmd->quiesce_check) {
@@ -1910,6 +1912,7 @@ ftl_lif_queues_ctl_t::init(const mpu_timestamp_init_cmd_t *cmd)
         qstate.qstate_2ring.host_wrings = 0;
         qstate.qstate_2ring.total_wrings = MPU_TIMESTAMP_RING_MAX;
         qstate.qstate_2ring.pid = cmd->pid;
+        qstate.g_mpu_timestamp_addr = lif.pd->mp_->start_addr(FTL_DEV_GLOBAL_MPU_TS_HBM_HANDLE);
         qs_access.small_write(0, (uint8_t *)&qstate, sizeof(qstate));
         qs_access.cache_invalidate();
     }

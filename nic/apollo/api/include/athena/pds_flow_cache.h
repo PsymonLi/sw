@@ -23,15 +23,6 @@ extern "C" {
 
 #define PDS_FLOW_TABLE_MAX_RECIRC    (8)
 
-/// \brief Key type
-typedef enum pds_key_type_e {
-    KEY_TYPE_INVALID = 0,
-    KEY_TYPE_IPV4,          ///< IPV4
-    KEY_TYPE_IPV6,          ///< IPV6
-    KEY_TYPE_L2,            ///< L2 flow
-    KEY_TYPE_MAX
-} pds_key_type_t;
-
 /// \brief TCP/UDP key fields
 typedef struct pds_flow_key_tcp_udp_s {
     uint16_t    sport;    ///< Src port

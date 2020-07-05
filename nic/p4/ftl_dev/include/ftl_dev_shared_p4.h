@@ -188,7 +188,8 @@ header_type mpu_timestamp_cb_t {
         CAPRI_QSTATE_HEADER_RING(1)
         timestamp                       : 64;
         num_updates                     : 64;
-        pad                             : 240;
+        g_mpu_timestamp_addr            : 64;
+        pad                             : 176;
         cb_activate                     : 16;  // must be last in CB
     }
 }
@@ -196,12 +197,12 @@ header_type mpu_timestamp_cb_t {
 #define MPU_TIMESTAMP_CB_DATA                                                   \
     rsvd, cosA, cosB, cos_sel, eval_last,                                       \
     host, total, pid, pi_0, ci_0, pi_1, ci_1,                                   \
-    timestamp, num_updates,                                                     \
+    timestamp, num_updates, g_mpu_timestamp_addr,                               \
     pad, cb_activate                                                            \
     
 #define MPU_TIMESTAMP_CB_PRAGMA                                                 \
 @pragma little_endian pi_0 ci_0 pi_1 ci_1                                       \
-    timestamp num_updates cb_activate                                           \
+    timestamp num_updates g_mpu_timestamp_addr cb_activate                      \
 
 #define MPU_TIMESTAMP_CB_USE(scratch)                                           \
     modify_field(scratch.rsvd, rsvd);                                           \
@@ -218,6 +219,7 @@ header_type mpu_timestamp_cb_t {
     modify_field(scratch.ci_1, ci_1);                                           \
     modify_field(scratch.timestamp, timestamp);                                 \
     modify_field(scratch.num_updates, num_updates);                             \
+    modify_field(scratch.g_mpu_timestamp_addr, g_mpu_timestamp_addr);                             \
     modify_field(scratch.pad, pad);                                             \
     modify_field(scratch.cb_activate, cb_activate);                             \
     

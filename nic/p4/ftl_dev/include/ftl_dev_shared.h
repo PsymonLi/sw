@@ -8,6 +8,7 @@
  */
 #define FTL_DEV_AGE_TIMEOUTS_HBM_HANDLE         "ftl_dev_age_tmo"
 #define FTL_DEV_POLLER_RINGS_HBM_HANDLE         "ftl_dev_poller_rings"
+#define FTL_DEV_GLOBAL_MPU_TS_HBM_HANDLE        "ftl_dev_g_mpu_ts"
 
 /*
  * HW control block (i.e., qstate) definitions
@@ -223,6 +224,13 @@
 #define MPU_SESSION_TIMESTAMP_MAX               (1 << MPU_SESSION_TIMESTAMP_BITS)
 #define MPU_SESSION_TIMESTAMP_MASK              (MPU_SESSION_TIMESTAMP_MAX - 1)
 
+#define MPU_FLOW_LOG_TIMESTAMP_LSB               23
+#define MPU_FLOW_LOG_TIMESTAMP_BITS              18
+#define MPU_FLOW_LOG_TIMESTAMP_MSB               (MPU_FLOW_LOG_TIMESTAMP_LSB + \
+                                                 MPU_FLOW_LOG_TIMESTAMP_BITS - 1)
+#define MPU_FLOW_LOG_TIMESTAMP_MAX               (1 << MPU_FLOW_LOG_TIMESTAMP_BITS)
+#define MPU_FLOW_LOG_TIMESTAMP_MASK              (MPU_FLOW_LOG_TIMESTAMP_MAX - 1)
+
 #define MPU_CONNTRACK_TIMESTAMP_LSB             23
 #define MPU_CONNTRACK_TIMESTAMP_BITS            24
 #define MPU_CONNTRACK_TIMESTAMP_MSB             (MPU_CONNTRACK_TIMESTAMP_LSB + \
@@ -291,8 +299,27 @@ scanner_conntrack_timestamp_diff(uint32_t conntrack_ts_end,
     conntrack_ts_start &= MPU_CONNTRACK_TIMESTAMP_MASK;
 
     return conntrack_ts_end < conntrack_ts_start ?
-           MPU_CONNTRACK_TIMESTAMP_MAX - conntrack_ts_start + conntrack_ts_end :
-           conntrack_ts_end - conntrack_ts_start;
+            MPU_CONNTRACK_TIMESTAMP_MAX - conntrack_ts_start + conntrack_ts_end :
+            conntrack_ts_end - conntrack_ts_start;
+}
+
+static inline uint32_t
+flow_log_timestamp(uint64_t mpu_timestamp)
+{
+    uint32_t ts = (uint32_t)(mpu_timestamp >> MPU_FLOW_LOG_TIMESTAMP_LSB);
+
+    return ts & MPU_FLOW_LOG_TIMESTAMP_MASK;
+}
+
+static inline uint32_t
+flow_log_timestamp_diff(uint32_t flow_log_ts_end,
+                        uint32_t flow_log_ts_start)
+{
+    flow_log_ts_end &= MPU_FLOW_LOG_TIMESTAMP_MASK;
+    flow_log_ts_start &= MPU_FLOW_LOG_TIMESTAMP_MASK;
+
+    return flow_log_ts_end < flow_log_ts_start ? 0 :
+           flow_log_ts_end - flow_log_ts_start;
 }
 
 /**
@@ -414,7 +441,8 @@ typedef struct {
     qstate_2ring_cb_t       qstate_2ring;
     uint64_t                timestamp;
     uint64_t                num_updates;
-    uint8_t                 pad[30];
+    uint64_t                g_mpu_timestamp_addr;
+    uint8_t                 pad[22];
     scanner_session_cb_activate_t cb_activate;  // must be last in CB
 } __attribute__((packed)) mpu_timestamp_qstate_t;
 

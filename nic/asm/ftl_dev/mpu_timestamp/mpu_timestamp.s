@@ -52,6 +52,7 @@ _timestamp_start:
     // as one atomic write (the ARM will never see any partial writes).
     
     tblwr.c2    d.timestamp, r_timestamp[47:0]
+    memwr.dx    d.g_mpu_timestamp_addr, r_timestamp[47:0]
     tbladd.c2   d.num_updates, 1
     
     /*

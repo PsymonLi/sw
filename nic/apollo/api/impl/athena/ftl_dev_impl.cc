@@ -11,6 +11,7 @@
 #include "ftl_dev_impl.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "gen/p4gen/athena/include/p4pd.h"
+#include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 
@@ -28,6 +29,8 @@ static lif_identity_t       lif_ident;
 static lif_queues_ctl_t     *queues_ctl[FTL_QTYPE_MAX];
 
 static platform_type_t      platform_type;
+
+static uint64_t             *g_mpu_timestamp_va = NULL;
 
 static inline queue_identity_t *
 pollers_qident(void)
@@ -389,6 +392,40 @@ mpu_timestamp(void)
     return ftl_lif ? ftl_lif->mpu_timestamp() : 0;
 }
 
+sdk_ret_t
+mpu_timestamp_global_init (void)
+{
+    uint64_t hbm_paddr = 0;
+
+    if (!platform_is_hw(api::g_pds_state.platform_type())) {
+        PDS_TRACE_DEBUG("%s: Skiping for non hw platforms ", __FUNCTION__);
+        return SDK_RET_OK;
+    }
+    hbm_paddr = api::g_pds_state.mempartition()->start_addr(
+                                   FTL_DEV_GLOBAL_MPU_TS_HBM_HANDLE);
+    if (hbm_paddr == INVALID_MEM_ADDRESS) {
+        PDS_TRACE_ERR("failed to obtain HBM paddr for %s",
+                          FTL_DEV_GLOBAL_MPU_TS_HBM_HANDLE);
+        return SDK_RET_NO_RESOURCE;
+    }
+    g_mpu_timestamp_va =  (uint64_t *)
+                  sdk::lib::pal_mem_map(hbm_paddr, 64);
+    if (!g_mpu_timestamp_va) {
+        PDS_TRACE_ERR("failed to memory map addr 0x%" PRIx64 " ",
+                      hbm_paddr);
+        return SDK_RET_ERR;
+    }
+    PDS_TRACE_DEBUG("pa is  0x%" PRIx64 " va is %p ",
+                      hbm_paddr, g_mpu_timestamp_va);
+    return SDK_RET_OK;
+}
+
+uint64_t
+mpu_timestamp_v2(void)
+{
+    return g_mpu_timestamp_va ? *g_mpu_timestamp_va : 0;
+}
+
 static pds_ret_t
 dev_identify(void)
 {
@@ -490,10 +527,6 @@ lif_init(pds_cinit_params_t *params)
              */
             if (platform_is_hw(platform_type) &&
                 (params->flow_age_pid == getpid())) {
-
-                if (mpu_timestamp_ctl() && (ret == PDS_RET_OK)) {
-                    ret = mpu_timestamp_ctl()->start(&devcmd_qinit);
-                }
                 if (session_scanners() && (ret == PDS_RET_OK)) {
                     ret = session_scanners()->start(&devcmd_qinit);
                 }
@@ -501,6 +534,13 @@ lif_init(pds_cinit_params_t *params)
                     ret = conntrack_scanners()->start(&devcmd_qinit);
                 }
             }
+            if (platform_is_hw(platform_type) &&
+                    sdk::asic::asic_is_hard_init()) {
+                if (mpu_timestamp_ctl() && (ret == PDS_RET_OK)) {
+                    ret = mpu_timestamp_ctl()->start(&devcmd_qinit);
+                }
+            }
+            
             devcmd_qinit.owner_pre_unlock();
         }
         rte_atomic16_set(&lif_init_completed, 1);

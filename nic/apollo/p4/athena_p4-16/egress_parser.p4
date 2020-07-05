@@ -227,20 +227,34 @@ parser AthenaEgressParser(packet_in packet,
   state parse_icmp_v4_1 {
     icmp_1_hdr_offset = packet.state_byte_offset();
     packet.extract(hdr.l4_u.icmpv4);
+    metadata.l4.l4_dport_1 = hdr.l4_u.icmpv4.icmp_typeCode;
     metadata.l4.icmp_valid = TRUE;
     
+    transition select(hdr.l4_u.icmpv4.icmp_typeCode) {
+        ICMP_ECHO_REQ_TYPE_CODE : parse_icmp_echo_1;
+        ICMP_ECHO_REPLY_TYPE_CODE : parse_icmp_echo_1;
+        default : accept;
     
-    transition accept;
+    }
   }
 
+  state parse_icmp_echo_1 {
+    packet.extract(hdr.icmp_echo);
+    metadata.l4.l4_sport_1 = hdr.icmp_echo.identifier; 
+    transition accept;
+  }
   
   state parse_icmp_v6_1 {
     icmp_1_hdr_offset = packet.state_byte_offset();
     packet.extract(hdr.l4_u.icmpv6);
+    metadata.l4.l4_dport_1 = hdr.l4_u.icmpv6.icmp_typeCode;
     metadata.l4.icmp_valid = TRUE;
-
-    
-    transition accept;
+    transition select(hdr.l4_u.icmpv6.icmp_typeCode) {
+        ICMP6_ECHO_REQ_TYPE_CODE : parse_icmp_echo_1;
+        ICMP6_ECHO_REPLY_TYPE_CODE : parse_icmp_echo_1;
+        default : accept;
+       
+    }
   }
   
   state parse_tcp_1 {
@@ -639,8 +653,8 @@ parser AthenaEgressParser(packet_in packet,
     
     
     transition select(hdr.ip_2.ipv4.protocol) {
-      IP_PROTO_ICMP       : parse_icmp_v4_1;
-      IP_PROTO_TCP        : parse_tcp_1;
+      IP_PROTO_ICMP       : parse_icmp_v4_2;
+      IP_PROTO_TCP        : parse_tcp_2;
       IP_PROTO_UDP        : parse_udp_2;
       default             : accept;
     }
@@ -657,15 +671,48 @@ parser AthenaEgressParser(packet_in packet,
     //   metadata.cntrl.ipv6_ulp_2 = hdr.ip_2.ipv6.nextHdr;
     
     transition select(hdr.ip_2.ipv6.nextHdr) {
-      IP_PROTO_ICMPV6 : parse_icmp_v6_1;
-      IP_PROTO_TCP    : parse_tcp_1;
+      IP_PROTO_ICMPV6 : parse_icmp_v6_2;
+      IP_PROTO_TCP    : parse_tcp_2;
       IP_PROTO_UDP    : parse_udp_2;
       default : accept;
       }
     
    }
  
- 
+  state parse_icmp_v4_2 {
+    icmp_1_hdr_offset = packet.state_byte_offset();
+    packet.extract(hdr.l4_u.icmpv4);
+    metadata.l4.l4_dport_2 = hdr.l4_u.icmpv4.icmp_typeCode;
+    metadata.l4.icmp_valid = TRUE;
+    
+    transition select(hdr.l4_u.icmpv4.icmp_typeCode) {
+        ICMP_ECHO_REQ_TYPE_CODE : parse_icmp_echo_2;
+        ICMP_ECHO_REPLY_TYPE_CODE : parse_icmp_echo_2;
+        default : accept;
+    
+    }
+  }
+
+  state parse_icmp_v6_2 {
+    icmp_1_hdr_offset = packet.state_byte_offset();
+    packet.extract(hdr.l4_u.icmpv6);
+    metadata.l4.l4_dport_1 = hdr.l4_u.icmpv6.icmp_typeCode;
+    metadata.l4.icmp_valid = TRUE;
+    transition select(hdr.l4_u.icmpv6.icmp_typeCode) {
+        ICMP6_ECHO_REQ_TYPE_CODE : parse_icmp_echo_2;
+        ICMP6_ECHO_REPLY_TYPE_CODE : parse_icmp_echo_2;
+        default : accept;
+    }
+  }
+  
+  state parse_tcp_2 {
+    packet.extract(hdr.l4_u.tcp);
+    l4_2_hdr_offset = packet.state_byte_offset();
+    metadata.l4.l4_sport_2 = hdr.l4_u.tcp.srcPort;
+    metadata.l4.l4_dport_2 = hdr.l4_u.tcp.dstPort;
+
+    transition accept;
+  }
 
   state parse_udp_2 {
     packet.extract(hdr.l4_u.udp);
@@ -677,9 +724,13 @@ parser AthenaEgressParser(packet_in packet,
     
     transition accept;
     
-    
   }
       
+  state parse_icmp_echo_2 {
+    packet.extract(hdr.icmp_echo);
+    metadata.l4.l4_sport_2 = hdr.icmp_echo.identifier; 
+    transition accept;
+  }
  
 }
 
@@ -767,6 +818,7 @@ control AthenaEgressDeparser(packet_out packet,
 	  packet.emit(hdr.l4_u.icmpv4);
 	  icmpv4CsumDepEg_1.update_len(hdr.l4_u.icmpv4, metadata.csum.icmp_len_1);
 	  hdr.l4_u.icmpv4.hdrChecksum = icmpv4CsumDepEg_1.get();
+	  packet.emit(hdr.icmp_echo);
 	} else if (hdr.l4_u.icmpv6.isValid()) {
 	  packet.emit(hdr.l4_u.icmpv6);
 	  
@@ -777,6 +829,7 @@ control AthenaEgressDeparser(packet_out packet,
 		hdr.ip_2.ipv6.dstAddr, metadata.csum.icmp_len_1});
 	  icmpv6CsumDepEg_1.update_pseudo_hdr_constant(IP_PROTO_ICMPV6);
 	  hdr.l4_u.icmpv6.hdrChecksum = icmpv6CsumDepEg_1.get();
+	  packet.emit(hdr.icmp_echo);
 	} else if (hdr.l4_u.tcp.isValid()) {
 	  packet.emit(hdr.l4_u.tcp);
 	  packet.emit(hdr.tcp_options_blob);

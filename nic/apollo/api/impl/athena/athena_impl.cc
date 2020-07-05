@@ -1146,7 +1146,7 @@ athena_impl::pipeline_init(void) {
     egr_dp.recirc_oport = TM_PORT_EGRESS;
     egr_dp.increment_recirc_cnt_en = 1;
     egr_dp.drop_max_recirc_cnt = 1;
-    egr_dp.clear_recirc_bit_en = 0;
+    egr_dp.clear_recirc_bit_en = 1;
     egr_dp.max_recirc_cnt = 2;
 
     ret = sdk::asic::pd::asicpd_deparser_init(&ing_dp, &egr_dp);

@@ -116,6 +116,11 @@ pds_global_init (pds_cinit_params_t *params)
             PDS_TRACE_ERR("Flow aging init failed with ret %u\n", ret);
         }
     }
+
+    ret = ftl_dev_impl::mpu_timestamp_global_init();
+    if (ret != SDK_RET_OK) {
+        return (pds_ret_t)ret;
+    }
     return (pds_ret_t)ret;
 }
 

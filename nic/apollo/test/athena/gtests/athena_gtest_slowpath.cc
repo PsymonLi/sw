@@ -117,7 +117,7 @@ setup_flow_v4_udp_epoch_mismatch(void)
 
     memset(&host_mac, 0, sizeof(host_mac));
     ret = create_session_info_all(g_session_index, /*conntrack_id*/0,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ g_epoch_val, /*h2s_epoch_vnic_id*/ h2s_epoch1_id,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,

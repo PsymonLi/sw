@@ -154,7 +154,7 @@ setup_l2_flow_v4_conntrack_tcp(void)
     memset(&host_mac, 0, sizeof(host_mac));
     g_session_id_v4_tcp = g_session_index;
     ret = create_session_info_all(g_session_index, /*conntrack_id*/g_conntrack_index,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -199,7 +199,7 @@ setup_l2_flow_v4_conntrack_tcp(void)
 
     /* IPV6 flow and associated session */
     ret = create_session_info_all(g_session_index, /*conntrack_id*/g_conntrack_index,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -249,7 +249,7 @@ setup_l2_flow_v4_conntrack_tcp(void)
 
     memset(&host_mac, 0, sizeof(host_mac));
     ret = create_session_info_all(g_session_index, /*conntrack_id*/g_conntrack_index,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -299,7 +299,7 @@ setup_l2_flow_v4_conntrack_tcp(void)
     flow_type = PDS_FLOW_TYPE_ICMP;
     memset(&host_mac, 0, sizeof(host_mac));
     ret = create_session_info_all(g_session_index, /*conntrack_id*/g_conntrack_index,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
@@ -348,7 +348,7 @@ setup_l2_flow_v4_conntrack_tcp(void)
     flow_type = PDS_FLOW_TYPE_OTHERS;
     memset(&host_mac, 0, sizeof(host_mac));
     ret = create_session_info_all(g_session_index, /*conntrack_id*/g_conntrack_index,
-                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+                /*skip_flow_log*/ TRUE, /*host_mac*/ &host_mac,
 
                 /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
                 /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
