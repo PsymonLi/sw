@@ -182,8 +182,9 @@ class VnicObject(base.ConfigObjectBase):
     def Show(self):
         logger.info("VNIC object:", self)
         logger.info("- %s" % repr(self))
-        logger.info("- Vlan: %s %d|Mpls:%d|Vxlan:%d|MAC:%s|SourceGuard:%s|Movable:%s"\
-        % (self.Dot1Qenabled, self.VlanId, self.MplsSlot, self.Vnid, self.MACAddr, str(self.SourceGuard), self.Movable))
+        logger.info("- Vlan: %s %d|Mpls:%d|Vxlan:%d|MAC:%s|SourceGuard:%s|Movable:%s|Dot1Qenabled:%s"\
+        % (self.Dot1Qenabled, self.VlanId, self.MplsSlot, self.Vnid, self.MACAddr, str(self.SourceGuard), \
+        self.Movable, self.Dot1Qenabled))
         logger.info("- RxMirror:", self.RxMirror)
         logger.info("- TxMirror:", self.TxMirror)
         logger.info("- V4MeterId:%d|V6MeterId:%d" %(self.V4MeterId, self.V6MeterId))
@@ -246,8 +247,10 @@ class VnicObject(base.ConfigObjectBase):
     def AutoUpdate(self):
         #if self.Dot1Qenabled:
             #self.VlanId = next(ResmgrClient[self.Node].VnicVlanIdAllocator)
-        self.UseHostIf = not(self.UseHostIf)
+        #TODO add a separate case for toggling usehostif, as the packet gets dropped
+        #self.UseHostIf = not(self.UseHostIf)
         self.SourceGuard = not(self.SourceGuard)
+        logger.info(f'Updated attributes - SourceGuard')
         return
 
     def RollbackAttributes(self):
