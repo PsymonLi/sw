@@ -359,6 +359,15 @@ export class UsersComponent extends BaseComponent implements OnInit, OnDestroy {
     return roles;
   }
 
+  getUserRolebindings(user: AuthUser): AuthRoleBinding[] {
+    return  this.authRoleBindings.filter(rb => rb.spec.users.includes(user.meta.name));
+  }
+
+  getUserRolebindingNames(user: AuthUser): String[] {
+    // Basically, it is  this.authRoleBindings.filter(rb => rb.spec.users.includes(user.meta.name)).map(rb =>  rb.meta.name)
+    return this.getUserRolebindings(user).map(rb =>  rb.meta.name);
+  }
+
   getUserRoleName(user: AuthUser): any {
     const _ = Utility.getLodash();
     return _.result(user, 'status.roles');
@@ -694,61 +703,136 @@ export class UsersComponent extends BaseComponent implements OnInit, OnDestroy {
   }
   /**
    * This API serves html template
+   * Logic:
+   * 1. LoginUser can change himself
+   * 2. LogiinUser can not change AdminRole user
+   * 3. loginUser with permission can change other user
    */
   showEditUserButton(user: AuthUser): boolean {
-    const _ = Utility.getLodash();
-    const value: any = _.result(user, 'status.roles');
-    return (value && value.length > 0) || true;
+    const loginUser = Utility.getInstance().getLoginUser();
+    if (loginUser.meta.name === user.meta.name) {  // 1
+      return true;
+    } else {
+      const userRoles = this.getUserRoleName(user);
+      if (userRoles && !userRoles.includes('AdminRole')) { // 2 , 3
+         return true;
+      }
+    }
+    return false;
   }
 
   /**
    * This API serves html template
+   * Logic:
+   * 1. if loginUser is an adminRole user, he can change anything
+   * 2. if underline role is "AdminRole",  loginUser can not change
+   * 3. loginUser with permission can change other role
    */
   showEditRoleButton(role: AuthRole): boolean {
-    if (!this.uiconfigsService.isAuthorized(UIRolePermissions.authrole_update)) {
-      return false;
+    const loginUser = Utility.getInstance().getLoginUser();
+    if (this.uiconfigsService.isAuthorized(UIRolePermissions.authrole_update)) {
+      if (loginUser.status.roles.includes('AdminRole')) {
+        return true;   // 1
+      } else {
+        if (role.meta.name === 'AdminRole') {
+          return false;   // 2
+        } else {
+          return true;   // 3
+        }
+      }
     }
-    return true;
+    return false;
   }
 
   /**
    * This API serves html template
+   * Logic:
+   * 1. if loginUser is an adminRole user, he can change anything
+   * 2. if underline rolebinding is "AdminRoleBinding",  loginUser can not change
+   * 3. loginUser with permission can change other rolebinding
    */
   showEditBindingRoleButton(rolebinding: AuthRoleBinding): boolean {
-    if (!this.uiconfigsService.isAuthorized(UIRolePermissions.authrolebinding_update)) {
-      return false;
+    const loginUser = Utility.getInstance().getLoginUser();
+    if (this.uiconfigsService.isAuthorized(UIRolePermissions.authrolebinding_update)) {
+      if (loginUser.status.roles.includes('AdminRole')) {
+        return true;   // 1
+      } else {
+        if (rolebinding.meta.name === 'AdminRoleBinding') {
+          return false;   // 2
+        } else {
+          return true;   // 3
+        }
+      }
     }
-    return true;
+    return false;
   }
 
   /**
    * This API serves html template
+   *  Logic
+   *  1. check if user has authorization to delete other user
+   *  2. don't delete any user in "AdminRole"
+   *  3. don't delete login-user himself
    */
   showDeleteUserButton(user: AuthUser): boolean {
     const _ = Utility.getLodash();
-    const value: any = _.result(user, 'status.roles');
+    const rolevalues: any = _.result(user, 'status.roles');
     const loginname = Utility.getInstance().getLoginName();
-    return ((value && value.length > 0) || true) && (user.meta.name !== loginname);
+    if (this.uiconfigsService.isAuthorized(UIRolePermissions.authuser_delete)) {
+      if (!rolevalues.includes('AdminRole') && loginname !== user.meta.name) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
    * This API serves html template
+   * Logic:
+   * 1. if loginUser is an adminRole user, he can change anything
+   * 2. if underline rolebinding is "AdminRoleBinding",  loginUser can not delete
+   * 3. If loginUser is in rolebinding "A" and underline rolebinding is "A",  login user can not delete
+   * 4. loginUser with permission can delete other rolebinding
    */
   showDeleteRoleBindingButton(rolebinding: AuthRoleBinding): boolean {
-    if (!this.uiconfigsService.isAuthorized(UIRolePermissions.authrolebinding_delete)) {
-      return false;
+    const loginUser = Utility.getInstance().getLoginUser();
+    if (this.uiconfigsService.isAuthorized(UIRolePermissions.authrolebinding_delete)) {
+      if (loginUser.status.roles.includes('AdminRole') ) {
+        return true;
+      } else {
+        const userRolebindingNames = this.getUserRolebindingNames(loginUser);
+        if (rolebinding.meta.name === 'AdminRoleBinding' || userRolebindingNames.includes(rolebinding.meta.name)) {
+          return false;
+        } else {
+          return true;
+        }
+      }
     }
-    return (this.authRoleBindings && this.authRoleBindings.length > 1);
+    return false;
   }
 
-  /**
+ /**
    * This API serves html template
+   * Logic:
+   * 1. if loginUser is an adminRole user, he can change anything
+   * 2. if underline role is "AdminRole",  loginUser can not delete
+   * 3. If loginUser is in role "A" and underline role is "A",  login user can not delete
+   * 4. loginUser with permission can delete other role
    */
   showDeleteRoleButton(role: AuthRole): boolean {
-    if (!this.uiconfigsService.isAuthorized(UIRolePermissions.authrole_delete)) {
-      return false;
+    const loginUser = Utility.getInstance().getLoginUser();
+    if (this.uiconfigsService.isAuthorized(UIRolePermissions.authrole_delete)) {
+      if (loginUser.status.roles.includes('AdminRole') ) {  // 1
+        return true;
+      } else {
+        if (role.meta.name === 'AdminRole' || loginUser.status.roles.includes(role.meta.name)) { // 2 , 3
+          return false;
+        } else {
+          return true; // 4
+        }
+      }
     }
-    return (this.authRoles && this.authRoles.length > 1);
+    return false;
   }
   /**
    * This API serves html template.
@@ -1047,11 +1131,10 @@ export class UsersComponent extends BaseComponent implements OnInit, OnDestroy {
 
   /**
    * This API serves html template
+   * To determine whether to show change-password button, we follow the same logic of showEditUserButton()
    */
-  showEditButton(user: AuthUser) {
-    const _ = Utility.getLodash();
-    const value: any = _.result(user, 'status.roles');
-    return (value && value.length > 0) || true;
+  showChangePasswordButton(user: AuthUser) {
+    return this.showEditUserButton(user);
   }
 
   /**

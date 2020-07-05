@@ -24,7 +24,7 @@ import {Icon} from '@app/models/frontend/shared/icon.interface';
  *
  * Note: authpolicy.component.html includes two <app-ldap> and <app-radius> tags.  One for 'update' and the other for 'create', developer must be careful to wire up @Input and @Output.
  *
- * As Auth-policy is a singleton in Venice, user should re-login to Venice after auth-policy is updated.
+ * As Auth-policy is a singleton in PSM, user should re-login to PSM after auth-policy is updated.
  */
 @Component({
   selector: 'app-authpolicy',

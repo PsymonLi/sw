@@ -551,7 +551,7 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
 
 
   /**
-   * Per back-end process, once user uploads a "bundle.tar" to Venice.
+   * Per back-end process, once user uploads a "bundle.tar" to PSM.
    *  https://venice:port/objstore/v1/tenant/default/images/objects result will contain
    *  [{
    *   "kind": "Object",

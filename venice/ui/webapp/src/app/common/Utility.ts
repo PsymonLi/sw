@@ -2524,7 +2524,7 @@ export class Utility {
   }
 
   /**
-   * This API will inform user to re-login to Venice. It is being used in this.getControllerService()
+   * This API will inform user to re-login to PSM. It is being used in this.getControllerService()
    * @param errorReponse
    */
   interceptHttpError(errorReponse: any | HttpErrorResponse) {

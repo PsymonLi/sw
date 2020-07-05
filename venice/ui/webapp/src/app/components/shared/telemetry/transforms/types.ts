@@ -110,7 +110,7 @@ export abstract class MetricTransform<T> {
   onMeasurementChange() {}
   onFieldChange() {}
   onDebugModeChange() {}
-  // Hook called before query goes to Venice
+  // Hook called before query goes to PSM
   transformQuery(opts: TransformQuery): boolean {
     return true;
   }

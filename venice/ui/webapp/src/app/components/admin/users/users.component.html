@@ -189,7 +189,7 @@
                         (click)="onEditUser($event, user)">edit</mat-icon>
             </button>
           </div>
-          <div class="usertemplate-div-card-icon-div-edit" *ngIf="showEditButton(user)">
+          <div class="usertemplate-div-card-icon-div-edit" *ngIf="showChangePasswordButton(user)">
             <button mat-icon-button
                     class="usertemplate-div-card-icon-operation-button usertemplate-div-card-icon-changepassword-button">
               <mat-icon [matTooltip]="'Change password'" class="usertemplate-div-card-icon-button"

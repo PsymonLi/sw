@@ -525,7 +525,38 @@ export class NaplesComponent extends DataComponent implements OnInit {
           advancedSearchOperator: SearchUtil.stringOperators
         }
       );
+    } else {
+      this.advSearchCols.push(
+        {
+          field: 'status.control-plane-status', header: 'Control Plane Status', localSearch: true, kind: 'ControlPlaneStatus',
+          filterfunction: this.searchControlPlaneStatus,
+          advancedSearchOperator: SearchUtil.stringOperators
+        }
+      );
     }
+  }
+  searchControlPlaneStatus (requirement: FieldsRequirement, data = this.dataObjects): any[] {
+    const outputs: any[] = [];
+    let isNot = false;
+    for (let i = 0; data && i < data.length; i++) {
+      const bgpstatus = data[i].status['control-plane-status']['bgp-status'];
+      for (let k = 0; k < bgpstatus.length; k++) {
+        const recordValue = _.get(bgpstatus[k], ['peer-address']);
+        const searchValues = requirement.values;
+        let operator = String(requirement.operator);
+        // if notcontains or notEquals, use the regular operator (contains/equals) and flip the results
+        isNot = (operator.slice(0, 3) === 'not');
+        operator = TableUtility.convertOperator(operator);
+        const operatorAdjusted = isNot ? operator.slice(3).toLocaleLowerCase() : operator;
+        const activateFunc = TableUtility.filterConstraints[operatorAdjusted];
+        for (let j = 0; j < searchValues.length; j++) {
+          if (activateFunc && activateFunc(recordValue, searchValues[j])) {
+            outputs.push(data[i]);
+          }
+        }
+      }
+    }
+    return isNot ? _.differenceWith(data, outputs, _.isEqual) : outputs;
   }
 
   watchHosts() {
@@ -1293,23 +1324,27 @@ export class NaplesComponent extends DataComponent implements OnInit {
 
   searchWorkloads(requirement: FieldsRequirement, data = this.dataObjects): any[] {
     const outputs: any[] = [];
+    const searchValues = requirement.values || [];
+    const operator = TableUtility.convertOperator(String(requirement.operator));
+     // if notcontains or notEquals, use the regular operator (contains/equals) and flip the results
+     const isNot = operator.slice(0, 3) === 'not';
+     const operatorAdjusted = isNot ? operator.slice(3).toLocaleLowerCase() : operator;
+     const activateFunc = TableUtility.filterConstraints[operatorAdjusted];
+
     for (let i = 0; data && i < data.length; i++) {
-      const workloads = (data[i]._ui as DSCUiModel).associatedWorkloads;
-      // workloads[i] is a full object
-      for (let k = 0; k < workloads.length; k++) {
-        const recordValue = _.get(workloads[k], ['meta', 'name']);
-        const searchValues = requirement.values;
-        let operator = String(requirement.operator);
-        operator = TableUtility.convertOperator(operator);
-        for (let j = 0; j < searchValues.length; j++) {
-          const activateFunc = TableUtility.filterConstraints[operator];
-          if (activateFunc && activateFunc(recordValue, searchValues[j])) {
-            outputs.push(data[i]);
-          }
+      const workloads = (data[i]._ui).associatedWorkloads || [];
+      // check for workload name
+      const foundWorkloadName = workloads.some(workload => searchValues.some(value => activateFunc && activateFunc(workload.meta.name, value)));
+      if (foundWorkloadName) {
+        outputs.push(data[i]);
+      } else if (data[i].meta.labels && data[i].meta.labels['io.pensando.orch-name']) {
+        const foundWorkloadVM = workloads.some(workload => searchValues.some(value => activateFunc && activateFunc(workload.meta.labels['io.pensando.orch-name'], value)));
+        if (foundWorkloadVM) {
+          outputs.push(data[i]);
         }
       }
     }
-    return outputs;
+    return isNot ? _.differenceWith(data, outputs, _.isEqual) : outputs;
   }
 
   searchConditions(requirement: FieldsRequirement, data = this.dataObjects): any[] {
