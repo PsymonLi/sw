@@ -19,19 +19,13 @@
 #include "pcieutilpd.h"
 
 static void
-show_port_lanes(void)
+show_port_lanes(const int port)
 {
-#if defined(ASIC_CAPRI)
-    // make sure all lanes are detected
-    const uint16_t port_lanes =
-        pal_reg_rd32(PP_(PORT_P_STA_P_PORT_LANES_7_0, 0));
-    printf("port_lanes.detected: 0x%02x\n", port_lanes & 0xff);
-    printf("port_lanes.active:   0x%02x\n", (port_lanes >> 8) & 0xff);
-#elif defined(ASIC_ELBA)
-    // XXX ELBA-TODO push this down to asic-specific?
-    printf("port_lanes.detected: ELBA-TODO\n");
-    printf("port_lanes.active:   ELBA-TODO\n");
-#endif
+    uint32_t lanes_detected, lanes_active;
+
+    pcieport_get_lanes(port, &lanes_detected, &lanes_active);
+    printf("port_lanes.detected: 0x%02x\n", lanes_detected);
+    printf("port_lanes.active:   0x%02x\n", lanes_active);
 }
 
 static void
@@ -127,7 +121,7 @@ healthdetails(int argc, char *argv[])
         return;
     }
 
-    show_port_lanes();
+    show_port_lanes(port);
     show_mac_k_gen(port);
     show_linksta2(port);
     show_devctl(port);

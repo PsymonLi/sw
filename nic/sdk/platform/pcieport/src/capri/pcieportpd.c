@@ -102,3 +102,33 @@ pcieportpd_is_accessible(const int port)
      */
     return (sta_rst & STA_RSTF_(PERSTN)) != 0 && ltssm_st >= 0x9;
 }
+
+/*
+ * Each port has a port_lanes register that reports the status of
+ * each ports lanes.  The 16 port lanes are hardwired to each port
+ * with this mapping:
+ *
+ *     port 0 = physical lanes [7:0]
+ *     port 1 = physical lanes [3:2]
+ *     port 2 = physical lanes [7:4]
+ *     port 3 = physical lanes [7:6]
+ *     port 4 = physical lanes [15:8]
+ *     port 5 = physical lanes [12:10]
+ *     port 6 = physical lanes [15:12]
+ *     port 7 = physical lanes [15:14]
+ */
+int
+pcieport_get_lanes(const int port,
+                   u_int32_t *lanes_detected, u_int32_t *lanes_active)
+{
+    u_int32_t port_lanes;
+    int r = 0;
+
+    if (pal_pciepreg_rd32(PXP_(STA_P_PORT_LANES_7_0, port), &port_lanes) < 0) {
+        port_lanes = 0;
+        r = -1;
+    }
+    if (lanes_detected) *lanes_detected = port_lanes & 0xff;
+    if (lanes_active)   *lanes_active   = (port_lanes >> 8) & 0xff;
+    return r;
+}

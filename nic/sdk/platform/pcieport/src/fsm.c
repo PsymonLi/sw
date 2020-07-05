@@ -112,7 +112,7 @@ pcieport_update_linkinfo(pcieport_t *p)
 {
     portcfg_read_genwidth(p->port, &p->cur_gen, &p->cur_width);
     portcfg_read_bus(p->port, &p->pribus, &p->secbus, &p->subbus);
-    p->cur_reversed = pcieport_get_mac_lanes_reversed(p);
+    p->cur_reversed = pcieport_get_mac_lanes_reversed(p->port);
     pciesys_logdebug("port%d: gen%dx%d%s pri %02x sec %02x sub %02x\n",
                      p->port, p->cur_gen, p->cur_width,
                      p->cur_reversed ? "r" : "",

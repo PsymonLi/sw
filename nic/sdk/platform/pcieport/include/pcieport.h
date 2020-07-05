@@ -151,6 +151,11 @@ void pcieport_showportstats(const int port, const unsigned int flags);
 void pcieport_clearportstats(const int port, const unsigned int flags);
 pcieport_stats_t *pcieport_stats_get(const int port);
 int pcieport_get_recovery(const int port);
+u_int32_t pcieport_get_sta_p_port_mac(const int port);
+u_int32_t pcieport_get_sta_c_port_mac(const int port);
+int pcieport_get_mac_lanes_reversed(const int port);
+int pcieport_get_lanes(const int port,
+                       u_int32_t *lanes_detected, u_int32_t *lanes_active);
 
 const char *pcieport_stname(const pcieportst_t st);
 const char *pcieport_evname(const pcieportev_t ev);

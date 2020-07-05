@@ -92,22 +92,22 @@
     mac(32,  TXBFR_OVERFLOW,            x, 0, 0)
 
 #define PP_PORT_P_SAT_P_PORT_CNT_GENERATOR(mac) \
-    mac(32,  8B10B_128B130B_SKP_OS_ERR, x, 0, 0) \
-    mac(32,  CORE_INITIATED_RECOVERY,   x, 0, 0) \
-    mac(32,  DESKEW_ERR,                x, 0, 0) \
-    mac(32,  FC_TIMEOUT,                x, 0, 0) \
-    mac(32,  FCPE,                      x, 0, 0) \
-    mac(32,  LTSSM_STATE_CHANGED,       x, 0, 0) \
-    mac(32,  PHYSTATUS_ERR,             x, 0, 0) \
-    mac(32,  REPLAY_NUM_ERR,            x, 0, 0) \
-    mac(32,  REPLAY_TIMER_ERR,          x, 0, 0) \
-    mac(32,  RX_BAD_DLLP,               x, 0, 0) \
-    mac(32,  RX_BAD_TLP,                x, 0, 0) \
-    mac(32,  RX_NAK_RECEIVED,           x, 0, 0) \
-    mac(32,  RX_NULLIFIED,              x, 0, 0) \
-    mac(32,  RXBFR_OVERFLOW,            x, 0, 0) \
-    mac(32,  TX_NAK_SENT,               x, 0, 0) \
-    mac(32,  TXBUF_ECC_ERR,             x, 0, 0)
+    mac(32p, 8B10B_128B130B_SKP_OS_ERR, x, 0, 0) \
+    mac(32p, CORE_INITIATED_RECOVERY,   x, 0, 0) \
+    mac(32p, DESKEW_ERR,                x, 0, 0) \
+    mac(32p, FC_TIMEOUT,                x, 0, 0) \
+    mac(32p, FCPE,                      x, 0, 0) \
+    mac(32p, LTSSM_STATE_CHANGED,       x, 0, 0) \
+    mac(32p, PHYSTATUS_ERR,             x, 0, 0) \
+    mac(32p, REPLAY_NUM_ERR,            x, 0, 0) \
+    mac(32p, REPLAY_TIMER_ERR,          x, 0, 0) \
+    mac(32p, RX_BAD_DLLP,               x, 0, 0) \
+    mac(32p, RX_BAD_TLP,                x, 0, 0) \
+    mac(32p, RX_NAK_RECEIVED,           x, 0, 0) \
+    mac(32p, RX_NULLIFIED,              x, 0, 0) \
+    mac(32p, RXBFR_OVERFLOW,            x, 0, 0) \
+    mac(32p, TX_NAK_SENT,               x, 0, 0) \
+    mac(32p, TXBUF_ECC_ERR,             x, 0, 0)
 
 #define DB_WA_SAT_WA_GENERATOR(mac) \
     mac(32f, AXI_ERR, rresp,               0, 8) \

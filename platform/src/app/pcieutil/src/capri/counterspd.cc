@@ -89,6 +89,21 @@ read_or_clear_32(const uint64_t addr)
     }
 }
 
+static uint32_t
+read_or_clear_32p(const uint64_t addr)
+{
+    if (global_flags & F_CLEAR) {
+        pal_pciepreg_wr32(addr, 0);
+        return 0;
+    } else {
+        uint32_t v;
+        if (pal_pciepreg_rd32(addr, &v) < 0) {
+            v = 0;
+        }
+        return v;
+    }
+}
+
 static uint64_t
 read_or_clear_64(const uint64_t addr)
 {
@@ -107,6 +122,16 @@ show_counter_32(const int port,
                 const uint8_t bits, const uint8_t bitc)
 {
     const uint32_t v = read_or_clear_32(addr);
+    show_counter(port, v, grp, ctr);
+}
+
+static void
+show_counter_32p(const int port,
+                 const uint64_t addr,
+                 const char *grp, const char *ctr, const char *fld,
+                 const uint8_t bits, const uint8_t bitc)
+{
+    const uint32_t v = read_or_clear_32p(addr);
     show_counter(port, v, grp, ctr);
 }
 

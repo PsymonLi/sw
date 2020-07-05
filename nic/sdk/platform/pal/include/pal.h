@@ -51,6 +51,7 @@ extern "C" {
 #include "pal_mm.h"
 #include "pal_watchdog.h"
 #include "pal_int.h"
+#include "pal_pcie.h"
 
 int pal_get_env(void);
 int pal_is_asic(void);

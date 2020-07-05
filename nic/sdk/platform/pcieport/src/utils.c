@@ -403,34 +403,45 @@ pcieport_get_perstn(pcieport_t *p)
 }
 
 u_int32_t
-pcieport_get_sta_c_port_mac(pcieport_t *p)
+pcieport_get_sta_c_port_mac(const int port)
 {
-    return pal_reg_rd32(PXC_(STA_C_PORT_MAC, p->port));
+    return pal_reg_rd32(PXC_(STA_C_PORT_MAC, port));
 }
 
 u_int32_t
-pcieport_get_sta_p_port_mac(pcieport_t *p)
+pcieport_get_sta_p_port_mac(const int port)
 {
-    return pal_reg_rd32(PXP_(STA_P_PORT_MAC, p->port));
+    uint32_t v;
+
+    if (pal_pciepreg_rd32(PXP_(STA_P_PORT_MAC, port), &v) < 0) {
+        v = 0;
+    }
+    return v;
 }
 
 int
-pcieport_get_mac_lanes_reversed(pcieport_t *p)
+pcieport_get_mac_lanes_reversed(const int port)
 {
-    const u_int32_t sta_mac = pcieport_get_sta_p_port_mac(p);
+    const u_int32_t sta_mac = pcieport_get_sta_p_port_mac(port);
     return (sta_mac & STA_P_PORT_MACF_(LANES_REVERSED)) != 0;
 }
 
 int
 pcieport_get_ltssm_st_cnt(pcieport_t *p)
 {
-    return pal_reg_rd32(PXP_(SAT_P_PORT_CNT_LTSSM_STATE_CHANGED, p->port));
+    const uint64_t pa = PXP_(SAT_P_PORT_CNT_LTSSM_STATE_CHANGED, p->port);
+    uint32_t v;
+
+    if (pal_pciepreg_rd32(pa, &v) < 0) {
+        v = 0;
+    }
+    return v;
 }
 
 void
 pcieport_set_ltssm_st_cnt(pcieport_t *p, const int cnt)
 {
-    pal_reg_wr32(PXP_(SAT_P_PORT_CNT_LTSSM_STATE_CHANGED, p->port), cnt);
+    pal_pciepreg_wr32(PXP_(SAT_P_PORT_CNT_LTSSM_STATE_CHANGED, p->port), cnt);
 }
 
 static void

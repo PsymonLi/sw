@@ -476,9 +476,8 @@ pcieportpd_intr_inherit(pcieport_t *p)
 #endif
 
     if (pcieport_is_accessible(p->port)) {
-        u_int64_t pa = PXP_(SAT_P_PORT_CNT_LTSSM_STATE_CHANGED, p->port);
-        ltssm_cnt = pal_reg_rd32(pa);
         portcfg_read_bus(p->port, NULL, &secbus, NULL);
+        ltssm_cnt = pcieport_get_ltssm_st_cnt(p);
     } else {
         secbus = 0;
         ltssm_cnt = 0;
@@ -502,10 +501,12 @@ pcieportpd_intr_inherit(pcieport_t *p)
 void
 pcieportpd_intr_clear_sbus_ecc(void)
 {
+#ifdef __aarch64__
     const int pcsd_ecc_ints = (PP_INTREGF_(PPSD_SBE) |
                                PP_INTREGF_(PPSD_DBE));
 
     pal_reg_wr32(PP_(INT_PP_INTREG, 0), pcsd_ecc_ints);
+#endif
 }
 
 #define MAC_INTRS       (MAC_INTREGF_(RST_UP2DN) | \

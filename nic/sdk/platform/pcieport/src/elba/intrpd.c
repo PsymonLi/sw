@@ -397,9 +397,8 @@ pcieportpd_intr_inherit(pcieport_t *p)
 #endif
 
     if (pcieport_is_accessible(p->port)) {
-        u_int64_t pa = PXP_(SAT_P_PORT_CNT_LTSSM_STATE_CHANGED, p->port);
-        ltssm_cnt = pal_reg_rd32(pa);
         portcfg_read_bus(p->port, NULL, &secbus, NULL);
+        ltssm_cnt = pcieport_get_ltssm_st_cnt(p);
     } else {
         secbus = 0;
         ltssm_cnt = 0;

@@ -168,8 +168,13 @@ pcieport_stats_get(const int port)
 int
 pcieport_get_recovery(const int port)
 {
-    uint64_t pa = PXP_(SAT_P_PORT_CNT_CORE_INITIATED_RECOVERY, port);
-    return pal_reg_rd32(pa);
+    const uint64_t pa = PXP_(SAT_P_PORT_CNT_CORE_INITIATED_RECOVERY, port);
+    uint32_t v;
+
+    if (pal_pciepreg_rd32(pa, &v) < 0) {
+        v = 0;
+    }
+    return v;
 }
 
 int

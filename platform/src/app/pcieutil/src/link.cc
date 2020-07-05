@@ -64,19 +64,6 @@ ltssm_str(const unsigned int ltssm)
     return ltssm_strs[ltssm];
 }
 
-u_int32_t
-pcieport_get_sta_p_port_mac(const int port)
-{
-    return pal_reg_rd32(PXP_(STA_P_PORT_MAC, port));
-}
-
-int
-pcieport_get_mac_lanes_reversed(const int port)
-{
-    const u_int32_t sta_mac = pcieport_get_sta_p_port_mac(port);
-    return (sta_mac & STA_P_PORT_MACF_(LANES_REVERSED)) != 0;
-}
-
 static void
 linkpoll(int argc, char *argv[])
 {
@@ -95,7 +82,7 @@ linkpoll(int argc, char *argv[])
         int width;
         u_int8_t recovery;
     } ostbuf, *ost = &ostbuf, nstbuf, *nst = &nstbuf, *tst;
-    u_int64_t otm, ntm, starttm, totaltm, pa;
+    u_int64_t otm, ntm, starttm, totaltm;
     int port, polltm_us, opt, showall, showfifos;
     char genGxW_str[16], fifo_str[16];
     struct tm *tm;
@@ -172,8 +159,7 @@ linkpoll(int argc, char *argv[])
         if (pcieport_is_accessible(port)) {
             portcfg_read_genwidth(port, &nst->gen, &nst->width);
             nst->reversed = pcieport_get_mac_lanes_reversed(port);
-            pa = PXP_(SAT_P_PORT_CNT_CORE_INITIATED_RECOVERY, port);
-            nst->recovery = pal_reg_rd32(pa);
+            nst->recovery = pcieport_get_recovery(port);
         } else {
             nst->gen = 0;
             nst->width = 0;
@@ -185,7 +171,7 @@ linkpoll(int argc, char *argv[])
             u_int16_t portfifo[8], depths;
 #ifdef ASIC_CAPRI
             // XXX ELBA-TODO - make pcieport_portfifo_depth()
-            pa = PXB_(STA_ITR_PORTFIFO_DEPTH);
+            const u_int64_t pa = PXB_(STA_ITR_PORTFIFO_DEPTH);
             pal_reg_rd32w(pa, (u_int32_t *)portfifo, 4);
             depths = portfifo[port];
 #else

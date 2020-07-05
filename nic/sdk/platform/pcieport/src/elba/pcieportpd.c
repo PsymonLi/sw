@@ -97,3 +97,13 @@ pcieportpd_is_accessible(const int port)
      */
     return (sta_rst & STA_RSTF_(PERSTN)) != 0 && ltssm_st >= 0x9;
 }
+
+int
+pcieport_get_lanes(const int port,
+                   u_int32_t *lanes_detected, u_int32_t *lanes_active)
+{
+    /* XXX ELBA-TODO */
+    if (lanes_detected) *lanes_detected = 0;
+    if (lanes_active)   *lanes_active   = 0;
+    return 0;
+}

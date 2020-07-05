@@ -22,13 +22,15 @@ portcfgpd_base(const int port)
 u_int32_t
 portcfgpd_readdw(const int port, const u_int16_t addr)
 {
+    u_int32_t v;
     assert(addr < 4096);
-    return pal_reg_rd32(portcfgpd_base(port) + addr);
+    pal_pciepreg_rd32(portcfgpd_base(port) + addr, &v);
+    return v;
 }
 
 void
 portcfgpd_writedw(const int port, const u_int16_t addr, u_int32_t val)
 {
     assert(addr < 4096);
-    pal_reg_wr32(portcfgpd_base(port) + addr, val);
+    pal_pciepreg_wr32(portcfgpd_base(port) + addr, val);
 }
