@@ -78,6 +78,11 @@
 		DeviceGetResponse
 		DeviceDeleteRequest
 		DeviceDeleteResponse
+		FTPOptions
+		DNSOptions
+		MSRPCOptions
+		SunRPCOptions
+		ALGSpec
 		SecurityRuleAttrs
 		SecurityRuleInfo
 		SecurityPolicySpec

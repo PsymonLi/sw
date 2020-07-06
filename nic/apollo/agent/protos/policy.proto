@@ -31,6 +31,86 @@ service SecurityPolicySvc {
   rpc SecurityProfileDelete (SecurityProfileDeleteRequest) returns (SecurityProfileDeleteResponse) {}
 }
 
+// FTP ALG specific options
+message FTPOptions {
+  // allow FTP data sessions with IP address that is different from
+  // control sessions
+  bool AllowIPMismatch = 1;
+}
+
+// DNS ALG specific options
+message DNSOptions {
+  // DNS session will be closed if response is not seen for a DNS query within
+  // ResponseTimeout seconds
+  uint32 ResponseTimeout            = 1 [(gogoproto.moretags) = "meta:default=60"];
+  //  when DropMultiQueryMessage is set, drop DNS query messages that contain
+  //  more than one DNS query in same packet
+  bool   DropMultiQueryMessage      = 2;
+  // when DropLargeDomainNameMessage is set, DNS mwessages containing domain
+  // name exceeding 255 bytes are dropped
+  bool   DropLargeDomainNameMessage = 3;
+  // when DropLongLabelMessage is set, DNS messages containing labels
+  // exceeding 63 bytes are dropped
+  bool   DropLongLabelMessage       = 4;
+  // when DropMultiZonePackets is set, DNS messages containing more than one
+  // zone are dropped
+  bool   DropMultiZonePackets       = 5;
+  // MaxMessageLength defines the maximum length of the DNS query/response
+  // message the ALG will handle
+  uint32 MaxMessageLength           = 6 [(gogoproto.moretags) = "meta:range:512-8192,meta:default=512"];
+}
+
+// MSRPC ALG specific options
+message MSRPCOptions {
+  // RPC program uuids
+  repeated bytes ProgramId = 1;
+}
+
+// SunRPC ALG specific options
+message SunRPCOptions {
+  // RPC program uuids
+  repeated bytes ProgramId = 1;
+}
+
+// ALG specifices with Application Level Gateway (ALG) should be invoked
+// when a rule match happens. This ALG will also be reported in the flow
+// logs
+// NOTE:
+// 1. TFTP, DNS ALGs are supported on UDP only
+// 2. FTP, RTSP ALGs are supported on TCP only
+// 3. SUNRPC and MSRPC ALGs are supported on both TCP and UDP
+enum ALG {
+  ALG_NONE   = 0;
+  // TFTP ALG
+  ALG_TFTP   = 1;
+  // FTP ALG
+  ALG_FTP    = 2;
+  // DNS ALG
+  ALG_DNS    = 3;
+  // SUNRPC ALG
+  ALG_SUNRPC = 4;
+  // MSRPC ALG
+  ALG_MSRPC  = 5;
+  // RTSP ALG
+  ALG_RTSP   = 6;
+}
+
+message ALGSpec {
+  // ALG to invoke (if set to ALG_NONE, no ALG is invoked)
+  ALG             ALG           = 1;
+  // ALG specific options, if any
+  oneof alg_options {
+    FTPOptions    FTPOptions    = 2;
+    DNSOptions    DNSOptions    = 3;
+    MSRPCOptions  MSRPCOptions  = 4;
+    SunRPCOptions SunRPCOptions = 5;
+  }
+  // IdleTimeout indicates ALG specific session timeout in seconds
+  // if IdleTimeout is not set, timeout from SecurityProfile object
+  // is applied on both control and data sessions of the ALG
+  uint32          IdleTimeout   = 6;
+}
+
 // security rule attributes
 message SecurityRuleAttrs {
   // stateful rule results in flow/session creation whereas stateless rule
@@ -42,6 +122,9 @@ message SecurityRuleAttrs {
   types.RuleMatch          Match    = 3;
   // action to take when this rule is matched
   types.SecurityRuleAction Action   = 4 [(gogoproto.moretags) = "meta:mandatory"];
+  // ALGSpec contains optional ALG specific behavior, if ALG is enabled for
+  // this rule
+  ALGSpec                  ALGSpec  = 5;
 }
 
 // SecurityRuleInfo is a single rule in the security policy
