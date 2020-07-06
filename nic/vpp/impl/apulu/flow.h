@@ -327,14 +327,18 @@ pds_flow_add_tx_hdrs_x2 (vlib_buffer_t *b0, vlib_buffer_t *b1)
     u32 lif0, lif1;
     u32 ses_id0, ses_id1;
     pds_flow_hw_ctx_t *ses0, *ses1;
+    bool iflow0, iflow1;
 
-    if (pds_is_flow_l2l(b0)) {
+    iflow0 = !pds_is_rflow(b0);
+    iflow1 = !pds_is_rflow(b1);
+
+    if (pds_is_flow_l2l(b0) && iflow0) {
         pds_flow_add_vxlan_template(b0);
         lif0 = PDS_FLOW_UPLINK0_LIF_ID;
     } else {
         lif0 = vnet_buffer(b0)->pds_flow_data.lif;
     }
-    if (pds_is_flow_l2l(b1)) {
+    if (pds_is_flow_l2l(b1) && iflow1) {
         pds_flow_add_vxlan_template(b1);
         lif1 = PDS_FLOW_UPLINK0_LIF_ID;
     } else {
@@ -352,14 +356,14 @@ pds_flow_add_tx_hdrs_x2 (vlib_buffer_t *b0, vlib_buffer_t *b1)
 
     ses_id0 = vnet_buffer(b0)->pds_flow_data.ses_id;
     ses0 = pds_flow_get_session(ses_id0);
-    if (ses0 && ses0->ingress_bd) {
+    if (iflow0 && ses0 && ses0->ingress_bd) {
         tx0->flow_lkp_id_override = 1;
         tx0->flow_lkp_id =
             clib_host_to_net_u16(ses0->ingress_bd);
     }
     ses_id1 = vnet_buffer(b1)->pds_flow_data.ses_id;
     ses1 = pds_flow_get_session(ses_id1);
-    if (ses1 && ses1->ingress_bd) {
+    if (iflow1 && ses1 && ses1->ingress_bd) {
         tx1->flow_lkp_id_override = 1;
         tx1->flow_lkp_id =
             clib_host_to_net_u16(ses1->ingress_bd);
@@ -378,8 +382,11 @@ pds_flow_add_tx_hdrs_x1 (vlib_buffer_t *b0)
     u32 lif = 0;
     u32 ses_id;
     pds_flow_hw_ctx_t *ses;
+    bool iflow0;
 
-    if (pds_is_flow_l2l(b0)) {
+    iflow0 = !pds_is_rflow(b0);
+
+    if (pds_is_flow_l2l(b0) && iflow0) {
         pds_flow_add_vxlan_template(b0);
         lif = PDS_FLOW_UPLINK0_LIF_ID;
     } else {
@@ -391,7 +398,7 @@ pds_flow_add_tx_hdrs_x1 (vlib_buffer_t *b0)
     tx0->lif_sbit8_ebit10 = lif >> 0x8;
     ses_id = vnet_buffer(b0)->pds_flow_data.ses_id;
     ses = pds_flow_get_session(ses_id);
-    if (ses && ses->ingress_bd) {
+    if (iflow0 && ses && ses->ingress_bd) {
         tx0->flow_lkp_id_override = 1;
         tx0->flow_lkp_id =
             clib_host_to_net_u16(ses->ingress_bd);
