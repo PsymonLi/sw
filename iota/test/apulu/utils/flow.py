@@ -4,7 +4,6 @@ import iota.harness.api as api
 import iota.test.apulu.utils.pdsctl as pdsctl
 import iota.test.utils.p4ctl as p4ctl
 from apollo.config.store import client as EzAccessStoreClient
-from iota.harness.infra.glopts import GlobalOptions
 
 txRewriteFlags = {
     'PDS_FLOW_L2L_INTRA_SUBNET' : '0x1001',
@@ -57,7 +56,7 @@ def verifyFlowLogging(af, workload_pairs):
     return api.types.status.SUCCESS
 
 def clearFlowTable(workload_pairs):
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         return api.types.status.SUCCESS
 
     nodes = api.GetNaplesHostnames()
@@ -92,7 +91,7 @@ def parseFlowEntries(entries, w1, w2):
     return iflow_found, rflow_found
 
 def verifyFlowTable(af, workload_pairs):
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         return api.types.status.SUCCESS
     for pair in workload_pairs:
         w1 = pair[0]
@@ -123,7 +122,7 @@ def verifyFlowTable(af, workload_pairs):
     return api.types.status.SUCCESS
 
 def getFlowEntries(node):
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         # Return a dummy entry
         resp = ["256     I/H       3     2.0.0.2             6915      2.0.0.5             2048        ICMP   A"]
         return api.types.status.SUCCESS, resp
@@ -169,7 +168,7 @@ def verifyFtlEntry(node, flowHandle):
     return api.types.status.SUCCESS, resp
 
 def verifyFlowFlags(node, flowHandle, pktType):
-    if GlobalOptions.dryrun:
+    if api.IsDryrun():
         return api.types.status.SUCCESS
 
     # Verify that the local_to_local flag is correctly set in FTL for flow

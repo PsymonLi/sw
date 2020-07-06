@@ -144,7 +144,8 @@ class InterfaceObject(base.ConfigObjectBase):
             elif self.Type == topo.InterfaceTypes.ETH:
                 if (not ifinst['spec']['type'] == 'HOST_PF'):
                     continue
-                if (ifinst['meta']['uuid'] != self.UUID.UuidStr):
+                if (ifinst['status']['if-host-status']['host-ifname'] !=
+                    self.IfName):
                     continue
             else:
                 continue

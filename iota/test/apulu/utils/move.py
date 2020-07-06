@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+import ipaddress
 import iota.harness.api as api
 import iota.harness.infra.store as store
 import iota.test.apulu.config.api as config_api
@@ -8,6 +9,7 @@ import iota.test.utils.host as host_utils
 import iota.harness.infra.utils.parser as parser
 import iota.test.apulu.utils.connectivity as conn_utils
 import iota.test.apulu.utils.learn as learn_utils
+import pdb
 
 # DOL
 import infra.common.objects as objects
@@ -199,12 +201,30 @@ def MoveEpMACEntry(workload, target_subnet, ep_mac_addr, ep_ip_prefixes):
 
     return api.types.status.SUCCESS
 
-def MoveEpIPEntry(src_workload, dst_workload, ep_ip_prefix):
+def __get_workload_by_prefix(node, addr):
+    workload = None
+    for vnic in vnic_client.Objects(node):
+        if ipaddress.ip_address(addr) in vnic.SUBNET.IPPrefix[1]:
+            workload = config_api.FindWorkloadByVnic(vnic)
+            break
+
+    assert(workload), f"Failed to get workload for {addr} in {node}"
+    return workload
+
+def MoveEpIPEntry(src_node, dst_node, ep_ip_prefix):
     """
     Moves IP from source workload to destination workload.
     """
     ep_ip_addr = __ip_from_prefix(ep_ip_prefix)
     src_primary_move = False
+
+    # Determine the source and destination workload based on prefix
+    src_workload = __get_workload_by_prefix(src_node, ep_ip_addr)
+    dst_workload = __get_workload_by_prefix(dst_node, ep_ip_addr)
+
+    api.Logger.debug(f"Moving IP prefixes {ep_ip_prefix} {src_workload.workload_name}"
+                     f"({src_workload.node_name}) => {dst_workload.workload_name}"
+                     f"({dst_workload.node_name})")
 
     # Update mapping entries on source workload and modify the IP addresses
     # If moving IP is the primary, then make one of the secondary IPs as primary
@@ -216,8 +236,8 @@ def MoveEpIPEntry(src_workload, dst_workload, ep_ip_prefix):
         src_workload.sec_ip_prefixes.remove(src_workload.ip_prefix)
         src_workload.sec_ip_addresses.remove(src_workload.ip_address)
 
-        api.Logger.info(f"Changing IP address from {ep_ip_prefix} to {src_workload.ip_prefix} "
-                        f"on {src_workload.workload_name}")
+        api.Logger.debug(f"Changing IP address from {ep_ip_prefix} to {src_workload.ip_prefix} "
+                         f"on {src_workload.workload_name}")
         ret = __del_ip_from_workloads(src_workload, ep_ip_addr)
         if ret != api.types.status.SUCCESS:
             return ret
@@ -227,7 +247,7 @@ def MoveEpIPEntry(src_workload, dst_workload, ep_ip_prefix):
     elif ep_ip_prefix in src_workload.sec_ip_prefixes:
         src_workload.sec_ip_prefixes.remove(ep_ip_prefix)
         src_workload.sec_ip_addresses.remove(ep_ip_addr)
-        api.Logger.info(f"Removing IP address {ep_ip_prefix} from {src_workload.workload_name}")
+        api.Logger.debug(f"Removing IP address {ep_ip_prefix} from {src_workload.workload_name}")
         ret = __del_ip_from_workloads(src_workload, ep_ip_addr)
         if ret != api.types.status.SUCCESS:
             return ret
@@ -240,7 +260,7 @@ def MoveEpIPEntry(src_workload, dst_workload, ep_ip_prefix):
     if src_primary_move:
         dst_workload.sec_ip_prefixes += [ep_ip_prefix]
         dst_workload.sec_ip_addresses += [__ip_from_prefix(ep_ip_prefix)]
-        api.Logger.info(f"Adding IP address {ep_ip_prefix} to {dst_workload.workload_name}")
+        api.Logger.debug(f"Adding IP address {ep_ip_prefix} to {dst_workload.workload_name}")
         ret = __add_ip_to_workloads(dst_workload, ep_ip_addr, secondary=True)
         if ret != api.types.status.SUCCESS:
             return ret
@@ -252,8 +272,8 @@ def MoveEpIPEntry(src_workload, dst_workload, ep_ip_prefix):
         dst_workload.sec_ip_prefixes += [cur_pri_prefix]
         dst_workload.sec_ip_addresses += [__ip_from_prefix(cur_pri_prefix)]
 
-        api.Logger.info(f"Changing IP address from {cur_pri_prefix} to {ep_ip_prefix} "
-                        f"on {dst_workload.workload_name}")
+        api.Logger.debug(f"Changing IP address from {cur_pri_prefix} to {ep_ip_prefix} "
+                         f"on {dst_workload.workload_name}")
 
         ret = __add_ip_to_workloads(dst_workload, dst_workload.ip_address)
         if ret != api.types.status.SUCCESS:
@@ -270,7 +290,7 @@ def MoveEpIPEntry(src_workload, dst_workload, ep_ip_prefix):
                          dst_workload.interface, ep_ip_addr)
 
     # Send Grat ARP
-    arp.SendGratArp([src_workload, dst_workload])
+    arp.SendGratArp([dst_workload])
 
     return ret
 

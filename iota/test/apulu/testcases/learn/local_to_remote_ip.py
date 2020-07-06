@@ -12,7 +12,6 @@ import iota.test.apulu.utils.misc as misc_utils
 import iota.test.utils.ping as ping
 import iota.test.apulu.utils.vppctl as vppctl
 import iota.test.apulu.utils.pdsctl as pdsctl
-import pdb
 
 from apollo.config.resmgr import client as ResmgrClient
 from iota.harness.infra.glopts import GlobalOptions
@@ -39,23 +38,21 @@ def __setup_background_ping(tc):
 
 def Setup(tc):
 
-    subnet_mov = getattr(tc.iterators, "subnet_mov", "intra-subnet")
+    flow_type = getattr(tc.iterators, "flow_type", "intra-subnet")
     tc.skip = False
     tc.mv_ctx = {}
     tc.bg_cmd_resp = None
+    tc.sessionInfo = {}
 
     # Select movable workload pair
-    if subnet_mov == "intra-subnet":
+    if flow_type == "intra-subnet":
         wl_type = config_api.WORKLOAD_PAIR_TYPE_REMOTE_ONLY
         wl_scope = config_api.WORKLOAD_PAIR_SCOPE_INTRA_SUBNET
-    elif subnet_mov == "inter-subnet-local":
-        wl_type = config_api.WORKLOAD_PAIR_TYPE_LOCAL_ONLY
-        wl_scope = config_api.WORKLOAD_PAIR_SCOPE_INTER_SUBNET
-    elif subnet_mov == "inter-subnet-remote":
+    elif flow_type == "inter-subnet":
         wl_type = config_api.WORKLOAD_PAIR_TYPE_REMOTE_ONLY
         wl_scope = config_api.WORKLOAD_PAIR_SCOPE_INTER_SUBNET
     else:
-        assert 0, ("Move %s not supported" % subnet_mov)
+        assert 0, ("Flow type %s not supported" % flow_type)
 
     pairs = config_api.GetWorkloadPairs(wl_type, wl_scope)
     if not pairs:
@@ -68,7 +65,7 @@ def Setup(tc):
     tc.mv_ctx['src_wl'] = src_wl
     tc.mv_ctx['dst_wl'] = dst_wl
     tc.mv_ctx['ip_prefix'] = src_wl.ip_prefix
-    tc.mv_ctx['inter'] = "inter" in subnet_mov
+    tc.mv_ctx['inter'] = "inter" in flow_type
     tc.wl_pairs = pairs
 
     # Clear move stats
@@ -77,6 +74,11 @@ def Setup(tc):
 
     # Clear flows
     flow_utils.clearFlowTable(None)
+
+    # Increase ICMP idle timeout
+    cmd = "set pds security-profile icmp-idle-timeout 600"
+    vppctl.ExecuteVPPctlCommand(src_wl.node_name, cmd)
+    vppctl.ExecuteVPPctlCommand(dst_wl.node_name, cmd)
 
     ret = __setup_background_ping(tc)
     if ret != api.types.status.SUCCESS:
@@ -106,9 +108,7 @@ def Trigger(tc):
     src_wl = tc.mv_ctx['src_wl']
     dst_wl = tc.mv_ctx['dst_wl']
 
-    api.Logger.info(f"Moving IP prefixes {ip_prefix} {src_wl.workload_name}"
-                    f"({src_wl.node_name}) => {dst_wl.workload_name}({dst_wl.node_name})")
-    return move_utils.MoveEpIPEntry(src_wl, dst_wl, ip_prefix)
+    return move_utils.MoveEpIPEntry(src_wl.node_name, dst_wl.node_name, ip_prefix)
 
 def __validate_move_stats(home, new_home):
 
@@ -145,7 +145,6 @@ def __validate_move_stats(home, new_home):
         ret = api.types.status.FAILURE
     return ret
 
-sessionInfo = {}
 def __validate_flows(tc, node):
     # Validates new flows on the node
     ret = api.types.status.SUCCESS
@@ -156,6 +155,9 @@ def __validate_flows(tc, node):
     ret, entries = flow_utils.getFlowEntries(node)
     if ret != api.types.status.SUCCESS:
         return ret
+
+    if node not in tc.sessionInfo:
+        tc.sessionInfo[node] = {}
 
     for pair in tc.workload_pairs:
         # Find the corresponding flow
@@ -180,7 +182,7 @@ def __validate_flows(tc, node):
 
         assert(matchFound)
         # Only validate new flows. Existing flows will be validated on move
-        if sesId in sessionInfo:
+        if sesId in tc.sessionInfo[node]:
             continue
 
         showCmd = "pds flow session %s" % sesId
@@ -209,24 +211,26 @@ def __validate_flows(tc, node):
             return ret
 
         # Store the session details
-        sessionInfo[sesId] = {}
-        sessionInfo[sesId]['srcIp'] = resp['srcIp']
-        sessionInfo[sesId]['dstIp'] = resp['dstIp']
-        sessionInfo[sesId]['iflowHandle'] = resp['iflowHandle']
-        sessionInfo[sesId]['rflowHandle'] = resp['rflowHandle']
-        sessionInfo[sesId]['pktType'] = resp['pktType']
+        tc.sessionInfo[node][sesId] = {}
+        tc.sessionInfo[node][sesId]['srcIp'] = resp['srcIp']
+        tc.sessionInfo[node][sesId]['dstIp'] = resp['dstIp']
+        tc.sessionInfo[node][sesId]['iflowHandle'] = resp['iflowHandle']
+        tc.sessionInfo[node][sesId]['rflowHandle'] = resp['rflowHandle']
+        tc.sessionInfo[node][sesId]['pktType'] = resp['pktType']
     return ret
 
-def __validate_flow_move(node, ipaddr, move):
+def __validate_flow_move(tc, node, ipPrefix, move):
 
     ret = api.types.status.SUCCESS
+    ipaddr = ipPrefix.split("/")[0]
 
-    for sesId in sessionInfo:
-        prevPktType = sessionInfo[sesId]['pktType']
+    for sesId in tc.sessionInfo[node]:
+        prevPktType = tc.sessionInfo[node][sesId]['pktType']
         # Check if the moved IP matches the src/dst IP of the session
-        if sessionInfo[sesId]['srcIp'] == ipaddr:
+        srcMove = dstMove = False
+        if tc.sessionInfo[node][sesId]['srcIp'] == ipaddr:
             srcMove = True
-        elif sessionInfo[sesId]['dstIp'] == ipaddr:
+        elif tc.sessionInfo[node][sesId]['dstIp'] == ipaddr:
             dstMove = True
         else:
             continue
@@ -250,15 +254,15 @@ def __validate_flow_move(node, ipaddr, move):
 
         # Obtain the new direction
         newDir = list(prevDir)
-        if srcMove:
-            modify = newDir[0]
-        else:
-            modify = newDir[2]
         modify = 'L' if move == 'R2L' else 'R'
+        if srcMove:
+            newDir[0] = modify
+        else:
+            newDir[2] = modify
         newDir = ''.join(newDir)
 
         # In this case, session should have been deleted
-        assert(newDir == 'R2R')
+        assert(newDir != 'R2R')
 
         # Obtain the new expected packetType
         expPktType = 'PDS_FLOW_%s_%s_SUBNET' % (newDir, scope)
@@ -278,31 +282,31 @@ def __validate_flow_move(node, ipaddr, move):
 
         if scope == 'INTRA':
             # No flow handle changes for intra prefixes
-            assert iflowHandle == sessionInfo[sesId][0]
-            assert rflowHandle == sessionInfo[sesId][1]
+            assert resp['iflowHandle'] == tc.sessionInfo[node][sesId]['iflowHandle']
+            assert resp['rflowHandle'] == tc.sessionInfo[node][sesId]['rflowHandle']
         else:
             # For srcMove, iflow changes and for dstMove, rflow changes
+            prevHandle = None
             if srcMove:
-                assert resp['iflowHandle'] != sessionInfo[sesId]['iflowHandle']
-                assert resp['rflowHandle'] == sessionInfo[sesId]['rflowHandle']
-                prevHandle = sessionInfo[sesId]['iflowHandle']
+                assert resp['iflowHandle'] != tc.sessionInfo[node][sesId]['iflowHandle']
+                assert resp['rflowHandle'] == tc.sessionInfo[node][sesId]['rflowHandle']
+                prevHandle = tc.sessionInfo[node][sesId]['iflowHandle']
             else:
-                assert resp['iflowHandle'] == sessionInfo[sesId]['iflowHandle']
-                assert resp['rflowHandle'] != sessionInfo[sesId]['rflowHandle']
-                prevHandle = sessionInfo[sesId]['rflowHandle']
+                assert resp['iflowHandle'] == tc.sessionInfo[node][sesId]['iflowHandle']
+                assert resp['rflowHandle'] != tc.sessionInfo[node][sesId]['rflowHandle']
+                prevHandle = tc.sessionInfo[node][sesId]['rflowHandle']
 
-        # Also ensure that previous flow is deleted
-        ret, ftlResp = verifyFtlEntry(node, prevHandle)
-        if ret != api.types.status.SUCCESS:
-            return ret
-        # Checks that lookup ID is 0 i.e invalid
-        assert ftlResp.splitlines()[4].split()[2] == '0x0'
+            # Also ensure that previous flow is deleted
+            ret, ftlResp = flow_utils.verifyFtlEntry(node, prevHandle)
+            if ret != api.types.status.SUCCESS:
+                return ret
+            # Verify that the session ID is different (in case it is reused)
+            assert (int(ftlResp.splitlines()[12].split()[2], 0) != int(sesId))
 
         # Store the updated session info
-        sessionInfo[sesId] = {}
-        sessionInfo[sesId]['iflowHandle'] = resp['iflowHandle']
-        sessionInfo[sesId]['rflowHandle'] = resp['rflowHandle']
-        sessionInfo[sesId]['pktType'] = resp['pktType']
+        tc.sessionInfo[node][sesId]['iflowHandle'] = resp['iflowHandle']
+        tc.sessionInfo[node][sesId]['rflowHandle'] = resp['rflowHandle']
+        tc.sessionInfo[node][sesId]['pktType'] = resp['pktType']
     return ret
 
 def __verify_background_ping(tc):
@@ -338,14 +342,14 @@ def Verify(tc):
     api.Logger.verbose("Move statistics are matching expectation on both nodes")
 
     # Validate flow moves on source and destination workloads
-    ret = __validate_flow_move(tc.mv_ctx['src_wl'].node_name,
+    ret = __validate_flow_move(tc, tc.mv_ctx['src_wl'].node_name,
                                tc.mv_ctx['ip_prefix'], 'L2R')
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to validate flows on node %s" %
                          tc.mv_ctx['src_wl'].node_name)
         return api.types.status.FAILURE
 
-    ret = __validate_flow_move(tc.mv_ctx['dst_wl'].node_name,
+    ret = __validate_flow_move(tc, tc.mv_ctx['dst_wl'].node_name,
                                tc.mv_ctx['ip_prefix'], 'R2L')
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to validate flows on node %s" %
@@ -367,9 +371,7 @@ def Teardown(tc):
     src_wl = tc.mv_ctx['src_wl']
     dst_wl = tc.mv_ctx['dst_wl']
 
-    api.Logger.info(f"Restoring IP prefixes {ip_prefix} {dst_wl.workload_name}"
-                    f"({dst_wl.node_name}) => {src_wl.workload_name}({src_wl.node_name})")
-    move_utils.MoveEpIPEntry(dst_wl, src_wl, ip_prefix)
+    move_utils.MoveEpIPEntry(dst_wl.node_name, src_wl.node_name, ip_prefix)
 
     misc_utils.Sleep(5) # let metaswitch carry it to the other side
     learn_utils.DumpLearnData()
@@ -380,14 +382,14 @@ def Teardown(tc):
     api.Logger.verbose("Move statistics are matching expectation on both nodes")
 
     # Validate flow move on src and dst.
-    ret = __validate_flow_move(tc.mv_ctx['src_wl'].node_name,
+    ret = __validate_flow_move(tc, tc.mv_ctx['src_wl'].node_name,
                                tc.mv_ctx['ip_prefix'], 'R2L')
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to validate flows on node %s" %
                          tc.mv_ctx['src_wl'].node_name)
         return api.types.status.FAILURE
 
-    ret = __validate_flow_move(tc.mv_ctx['dst_wl'].node_name,
+    ret = __validate_flow_move(tc, tc.mv_ctx['dst_wl'].node_name,
                                tc.mv_ctx['ip_prefix'], 'L2R')
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to validate flows on node %s" %

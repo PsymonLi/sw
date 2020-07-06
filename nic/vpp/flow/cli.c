@@ -824,6 +824,7 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     pds_flow_hw_ctx_t *session;
     struct in_addr src, dst;
     char srcstr[INET_ADDRSTRLEN + 1], dststr[INET_ADDRSTRLEN + 1];
+    char handle_str[255] = {0};
     char delimiter[130] = "";
     int ret = 0;
 
@@ -831,7 +832,7 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     pds_session_track_get_info(ses_id, &session_track_info);
     session = pds_flow_get_session(ses_id);
     if (!session) {
-        vlib_cli_output(vm, "Session doesn't exists!");
+        vlib_cli_output(vm, "Session does not exist");
         return;
     }
 
@@ -875,10 +876,10 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     vlib_cli_output(vm, "  %-21s: %d", "Ingress Subnet ID",
                     session->ingress_bd);
     vlib_cli_output(vm, "  %-21s: %lu", "Timer Handle", session->timer_hdl);
-    vlib_cli_output(vm, "  %-21s: %s", "IFlow handle",
-                    ftlv4_get_handle_str(session->iflow.handle));
-    vlib_cli_output(vm, "  %-21s: %s", "RFlow handle",
-                    ftlv4_get_handle_str(session->rflow.handle));
+    ftlv4_get_handle_str(handle_str, session->iflow.handle);
+    vlib_cli_output(vm, "  %-21s: %s", "IFlow handle", handle_str);
+    ftlv4_get_handle_str(handle_str, session->rflow.handle);
+    vlib_cli_output(vm, "  %-21s: %s", "RFlow handle", handle_str);
     vlib_cli_output(vm, "  %-21s: %s", "Packet type",
                     pds_flow_pkt_type_str[session->packet_type]);
     vlib_cli_output(vm, "  %-21s: %s", "Flags",
@@ -1122,4 +1123,59 @@ VLIB_CLI_COMMAND (show_pds_flow_session_command, static) =
                   "timer-wheel} [detail]",
     .function = show_pds_flow_session_info_command_fn,
     .is_mp_safe = 1,
+};
+
+static clib_error_t *
+set_vpp_pds_secprofile_command_fn (vlib_main_t *vm,
+                                   unformat_input_t *input,
+                                   vlib_cli_command_t *cmd)
+{
+    pds_flow_main_t *fm = &pds_flow_main;
+    u32 tcp_idle_timeout, udp_idle_timeout, icmp_idle_timeout, other_idle_timeout;
+    u32 tcp_syn_timeout, tcp_half_close_timeout, tcp_close_timeout;
+    u32 tcp_drop_timeout, udp_drop_timeout, icmp_drop_timeout, other_drop_timeout;
+
+    while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT) {
+        if (unformat(input, "tcp-idle-timeout %u", &tcp_idle_timeout)) {
+            fm->idle_timeout[PDS_FLOW_PROTO_TCP] = PDS_FLOW_SEC_TO_TIMER_TICK(tcp_idle_timeout);
+        } else if (unformat(input, "udp-idle-timeout %u", &udp_idle_timeout)) {
+            fm->idle_timeout[PDS_FLOW_PROTO_UDP] = PDS_FLOW_SEC_TO_TIMER_TICK(udp_idle_timeout);
+        } else if (unformat(input, "icmp-idle-timeout %u", &icmp_idle_timeout)) {
+            fm->idle_timeout[PDS_FLOW_PROTO_ICMP] = PDS_FLOW_SEC_TO_TIMER_TICK(icmp_idle_timeout);
+        } else if (unformat(input, "other-idle-timeout %u", &other_idle_timeout)) {
+            fm->idle_timeout[PDS_FLOW_PROTO_OTHER] = PDS_FLOW_SEC_TO_TIMER_TICK(other_idle_timeout);
+        } else if (unformat(input, "tcp-syn-timeout %u", &tcp_syn_timeout)) {
+            fm->tcp_con_setup_timeout = PDS_FLOW_SEC_TO_TIMER_TICK(tcp_syn_timeout);
+        } else if (unformat(input, "tcp-half-close-timeout %u", &tcp_half_close_timeout)) {
+            fm->tcp_half_close_timeout = PDS_FLOW_SEC_TO_TIMER_TICK(tcp_half_close_timeout);
+        } else if (unformat(input, "tcp-close-timeout %u", &tcp_close_timeout)) {
+            fm->tcp_close_timeout = PDS_FLOW_SEC_TO_TIMER_TICK(tcp_close_timeout);
+        } else if (unformat(input, "tcp-drop-timeout %u", &tcp_drop_timeout)) {
+            fm->drop_timeout[PDS_FLOW_PROTO_TCP] = PDS_FLOW_SEC_TO_TIMER_TICK(tcp_drop_timeout);
+        } else if (unformat(input, "udp-drop-timeout %u", &udp_drop_timeout)) {
+            fm->drop_timeout[PDS_FLOW_PROTO_UDP] = PDS_FLOW_SEC_TO_TIMER_TICK(udp_drop_timeout);
+        } else if (unformat(input, "icmp-drop-timeout %u", &icmp_drop_timeout)) {
+            fm->drop_timeout[PDS_FLOW_PROTO_ICMP] = PDS_FLOW_SEC_TO_TIMER_TICK(icmp_drop_timeout);
+        } else if (unformat(input, "other-drop-timeout %u", &other_drop_timeout)) {
+            fm->drop_timeout[PDS_FLOW_PROTO_OTHER] = PDS_FLOW_SEC_TO_TIMER_TICK(other_drop_timeout);
+        } else {
+            vlib_cli_output(vm, "ERROR: Invalid command");
+            goto done;
+        }
+    }
+
+done:
+    return 0;
+}
+
+VLIB_CLI_COMMAND (set_vpp_pds_secprofile_command, static) =
+{
+    .path = "set pds security-profile",
+    .short_help = "set pds security-profile [tcp-idle-timeout <timeout>] "
+                  "[udp-idle-timeout <timeout>] [icmp-idle-timeout <timeout>] "
+                  "[other-idle-timeout <timeout>] [tcp-syn-timeout <timeout>] "
+                  "[tcp-half-close-timeout <timeout>] [tcp-close-timeout <timeout>] "
+                  "[tcp-drop-timeout <timeout>] [udp-drop-timeout <timeout>] "
+                  "[icmp-drop-timeout <timeout>] [other-drop-timeout <timeout>]",
+    .function = set_vpp_pds_secprofile_command_fn,
 };

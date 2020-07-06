@@ -77,8 +77,13 @@ def ParseShowSessionCommand(node_name, type, args=None):
     resp['iflowHandle'] = vppResp[20]
     resp['rflowHandle'] = vppResp[21]
     resp['pktType'] = vppResp[22].split()[3]
-    resp['srcIp'] = vppResp[28].split()[1]
-    resp['dstIp'] = vppResp[28].split()[2]
+    # For L2L packets, we also print destination VNIC ID
+    if 'L2L' in resp['pktType']:
+        resp['srcIp'] = vppResp[29].split()[1]
+        resp['dstIp'] = vppResp[29].split()[2]
+    else:
+        resp['srcIp'] = vppResp[28].split()[1]
+        resp['dstIp'] = vppResp[28].split()[2]
     return ret, resp
 
 def GetVppV4FlowStatistics(node_name, counter, args=None):

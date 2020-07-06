@@ -449,7 +449,7 @@ int ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint64_t handle,
                                      uint64_t *ret_handle,
                                      uint16_t lookup_id, bool l2l);
 
-char *ftlv4_get_handle_str (uint64_t handle);
+void ftlv4_get_handle_str (char *handle_str, uint64_t handle);
 
 int ftlv6_remove_cached_entry(ftlv6 *obj);
 

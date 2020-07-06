@@ -10,7 +10,7 @@ testcases:
         stress    : True
         iterators :
             type       : simple
-            subnet_mov : [ intra-subnet ]
+            flow_type  : [ intra-subnet, inter-subnet ]
 
     -   name    : Local_To_Remote_Mac
         testcase: testcases.learn.local_to_remote_mac
