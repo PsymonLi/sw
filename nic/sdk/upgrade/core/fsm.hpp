@@ -34,9 +34,9 @@ typedef void (*upg_event_fwd_cb_t)(upg_stage_t stage, std::string svc_name,
 
 // fsm initialization parameters
 typedef struct fsm_init_params_s {
-    sdk::platform::sysinit_mode_t upg_mode;     // upgrade mode
+    sdk::platform::sysinit_mode_t upg_mode; // upgrade mode
     struct ev_loop *ev_loop;                // event loop
-    fsm_completion_cb_t fsm_completion_cb;  // fsm completion
+    fsm_completion_cb_t fsm_completion_cb;  // fsm exit or fsm stage exit
     // fsm event forward handler for hitless upgrade
     upg_event_fwd_cb_t upg_event_fwd_cb;
     upg_stage_t entry_stage;                // start a specific discovery stage

@@ -30,7 +30,7 @@ namespace api {
 
 /// \brief     fsm completion handler
 static void
-upg_fsm_completion_hdlr (upg_status_t status)
+upg_fsm_exit_hdlr (upg_status_t status)
 {
     if (g_ipc_msg_in_ptr) {
         sdk::ipc::respond(g_ipc_msg_in_ptr, &status, sizeof(status));
@@ -48,7 +48,7 @@ upg_fsm_completion_hdlr (upg_status_t status)
 }
 
 static void
-upg_ipc_peer_error_hdlr (ipc_peer_ctx *ctx)
+upg_interactive_fsm_exit_hdlr (ipc_peer_ctx *ctx)
 {
     sdk::upg::execute_exit_script(sdk::upg::get_exit_status());
     // TODO look the status and decide the upgrade ok/fail
@@ -57,7 +57,7 @@ upg_ipc_peer_error_hdlr (ipc_peer_ctx *ctx)
 }
 
 static void
-upg_interactive_fsm_completion_hdlr (upg_status_t status)
+upg_interactive_fsm_stage_completion_hdlr (upg_status_t status)
 {
     UPG_TRACE_INFO("Hitless interactive stage completed, status %u",
                    status);
@@ -82,7 +82,7 @@ upg_interactive_request (const void *data, const size_t size)
                     upg_stage2str(stage));
     ret = sdk::upg::upg_interactive_stage_exec(stage);
     if (ret != SDK_RET_IN_PROGRESS) {
-        upg_interactive_fsm_completion_hdlr(UPG_STATUS_FAIL);
+        upg_interactive_fsm_stage_completion_hdlr(UPG_STATUS_FAIL);
     }
 }
 
@@ -143,7 +143,7 @@ upg_peer_init (bool client)
         }
         g_ipc_peer_ctx->recv_cb = upg_interactive_response;
     }
-    g_ipc_peer_ctx->err_cb = upg_ipc_peer_error_hdlr;
+    g_ipc_peer_ctx->err_cb = upg_interactive_fsm_exit_hdlr;
     return SDK_RET_OK;
 
 err_exit:
@@ -197,7 +197,7 @@ upg_fsm_init (sysinit_mode_t mode, upg_stage_t entry_stage,
     memset(&params, 0, sizeof(params));
     params.upg_mode = mode;
     params.ev_loop = g_upg_event_thread->ev_loop();
-    params.fsm_completion_cb = upg_fsm_completion_hdlr;
+    params.fsm_completion_cb = upg_fsm_exit_hdlr;
 
     params.entry_stage = entry_stage;
     params.fw_pkgname = fw_pkgname;
@@ -210,7 +210,7 @@ upg_fsm_init (sysinit_mode_t mode, upg_stage_t entry_stage,
             params.upg_event_fwd_cb = upg_event_send_to_peer_hdlr;
         } else {
             params.interactive_mode = true;
-            params.fsm_completion_cb = upg_interactive_fsm_completion_hdlr;
+            params.fsm_completion_cb = upg_interactive_fsm_stage_completion_hdlr;
         }
     }
 
@@ -242,7 +242,7 @@ upg_ev_request_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
                      req->fw_pkgname, true);
     } else {
         UPG_TRACE_ERR("Unknown request id %u", req->id);
-        upg_fsm_completion_hdlr(UPG_STATUS_FAIL);
+        upg_fsm_exit_hdlr(UPG_STATUS_FAIL);
     }
 }
 
@@ -329,5 +329,5 @@ upg_config_replay_done (void)
 void
 upg_abort (void)
 {
-    api::upg_fsm_completion_hdlr(UPG_STATUS_FAIL);
+    api::upg_fsm_exit_hdlr(UPG_STATUS_FAIL);
 }
