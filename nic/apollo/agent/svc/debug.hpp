@@ -79,6 +79,8 @@ public:
                            pds::InternalPortResponseMsg *rsp) override;
     Status FlowStatsSummaryGet(ServerContext *context, const Empty *req,
                                pds::FlowStatsSummaryResponse *rsp) override;
+    Status DataPathAssistStatsGet(ServerContext *context, const Empty *req,
+                                  pds::DataPathAssistStatsResponse *rsp) override;
 };
 
 #endif    // __AGENT_SVC_DEBUG_HPP__

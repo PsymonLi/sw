@@ -70,6 +70,7 @@ flow_monitor_process (vlib_main_t * vm,
             pdsa_flow_stats_publish(fm->flow_metrics_hdl,
                                     (uint64_t *)fm->stats.counter);
             publish_time = PDS_FLOW_STATS_PUBLISH_INTERVAL;
+            pds_flow_monitor_accumulate_stats((void *)vm);
         }
 
         if (monitor_time == 0) {

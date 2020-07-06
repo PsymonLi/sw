@@ -28,6 +28,7 @@ const (
 	metricsTableMgmtPort        = "MgmtMacMetrics"
 	metricsTableHostIf          = "LifMetrics"
 	metricsFlowStatsSummary     = "FlowStatsSummary"
+	metricsDataPathAssistStats  = "DataPathAssistStats"
 	metricsTableMemory          = "MemoryMetrics"
 	metricsTablePower           = "PowerMetrics"
 	metricsTableASICTemperature = "AsicTemperatureMetrics"
@@ -39,6 +40,15 @@ var metricsTables = []string{
 	metricsTableMgmtPort,
 	metricsTableHostIf,
 	metricsFlowStatsSummary,
+	metricsTableMemory,
+	metricsTablePower,
+	metricsTableASICTemperature,
+	metricsTablePortTemperature,
+	metricsDataPathAssistStats,
+}
+
+// subset of above array with only sysmon metrics tables
+var sysmonMetricsTables = []string{
 	metricsTableMemory,
 	metricsTablePower,
 	metricsTableASICTemperature,
@@ -207,8 +217,11 @@ func queryFlowStatsSummaryMetrics(infraObj types.InfraAPI, metricsClient operdap
 	processMetrics(infraObj, metricsClient, metricsFlowStatsSummary, 0)
 }
 
+func queryDataPathAssistStatsMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsSvc_MetricsGetClient) {
+	processMetrics(infraObj, metricsClient, metricsDataPathAssistStats, 0)
+}
+
 func querySysmonMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsSvc_MetricsGetClient) {
-	sysmonMetricsTables := metricsTables[4:8]
 	for _, metricName := range sysmonMetricsTables {
 		processMetrics(infraObj, metricsClient, metricName, 0)
 	}
@@ -263,6 +276,7 @@ func HandleMetrics(infraAPI types.InfraAPI, client operdapi.MetricsSvcClient) er
 				}
 				queryInterfaceMetrics(infraAPI, stream)
 				queryFlowStatsSummaryMetrics(infraAPI, stream)
+				queryDataPathAssistStatsMetrics(infraAPI, stream)
 				querySysmonMetrics(infraAPI, stream)
 			}
 		}

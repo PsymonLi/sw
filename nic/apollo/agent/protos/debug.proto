@@ -36,6 +36,7 @@ service DebugSvc {
   rpc StopAacsServer (types.Empty) returns (types.Empty) {}
   rpc InternalPortGet (InternalPortRequestMsg) returns (InternalPortResponseMsg) {}
   rpc FlowStatsSummaryGet (types.Empty) returns (FlowStatsSummaryResponse) {}
+  rpc DataPathAssistStatsGet(types.Empty) returns (DataPathAssistStatsResponse) {}
 }
 
 enum TraceLevel {
@@ -555,4 +556,20 @@ message FlowStatsSummaryResponse {
   uint64          NumOtherIPv6Sessions = 9;
   uint64          NumL2Sessions        = 10;
   uint64          NumSessionErrors     = 11;
+}
+
+message DataPathAssistStatsResponse {
+  types.ApiStatus ApiStatus                   = 1;
+  uint64          NumPktsRx                   = 2;
+  uint64          NumDrops                    = 3;
+  uint64          NumDHCPPktsRx               = 4;
+  uint64          NumDHCPPktsTxtoProxyServer  = 5;
+  uint64          NumDHCPPktsTxtoRelayServer  = 6;
+  uint64          NumDHCPPktsTxtoRelayClient  = 7;
+  uint64          NumDHCPDrops                = 8;
+  uint64          NumARPPktsRx                = 9;
+  uint64          NumARPRepliesSent           = 10;
+  uint64          NumARPDrops                 = 11;
+  uint64          NumSessionsLearned          = 12;
+  uint64          NumSessionsAged             = 13;
 }

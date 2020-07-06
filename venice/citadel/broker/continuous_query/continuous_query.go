@@ -24,6 +24,7 @@ var MetricsGroupByFieldsMap = map[string][]string{
 	"AsicPowerMetrics":       {`"name"`, `"reporterID"`, `"tenant"`},
 	"AsicTemperatureMetrics": {`"name"`, `"reporterID"`, `"tenant"`},
 	"Cluster":                {`"name"`, `"reporterID"`, `"tenant"`},
+	"DataPathAssistStats":    {`"name"`, `"reporterID"`, `"tenant"`},
 	"DistributedServiceCard": {`"name"`, `"reporterID"`, `"tenant"`},
 	"DropMetrics":            {`"name"`, `"reporterID"`, `"tenant"`},
 	"FlowStatsSummary":       {`"name"`, `"reporterID"`, `"tenant"`},

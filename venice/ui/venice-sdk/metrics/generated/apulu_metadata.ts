@@ -2,6 +2,175 @@ import { MetricMeasurement } from './metadata';
 import { Telemetry_queryMetricsQuerySpec_function } from "@sdk/v1/models/generated/telemetry_query";
 
 export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
+  DataPathAssistStats: {
+  "name": "DataPathAssistStats",
+  "description": "Statistics of packets processed by CPU",
+  "displayName": "Datapath Assist Statistics",
+  "tags": [
+    "Level7"
+  ],
+  "scope": "PerASIC",
+  "fields": [
+    {
+      "name": "TotalPktsRx",
+      "displayName": "Total Packets Received",
+      "description": "Total Packets Received",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "TotalDrops",
+      "displayName": "Total Packets Dropped",
+      "description": "Total Packets Dropped",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "DHCPPktsRx",
+      "displayName": "DHCP Packets Received",
+      "description": "DHCP Packets Received",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "DHCPPktsTx2ProxyServer",
+      "displayName": "DHCP Packets Sent to Proxy Server",
+      "description": "DHCP Packets Sent to Proxy Server",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "DHCPPktsTx2RelayServer",
+      "displayName": "DHCP Packets Sent to Relay Server",
+      "description": "DHCP Packets Sent to Relay Server",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "DHCPPktsTx2RelayClient",
+      "displayName": "DHCP Packets Sent to Relay Client",
+      "description": "DHCP Packets Sent to Relay Client",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "DHCPDrops",
+      "displayName": "DHCP Packets Dropped",
+      "description": "DHCP Packets Dropped",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "ARPPktsRx",
+      "displayName": "ARP Packets Received",
+      "description": "ARP Packets Received",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "ARPRepliesTx",
+      "displayName": "ARP Replies Sent",
+      "description": "ARP Replies Sent",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "ARPDrops",
+      "displayName": "ARP Packets Dropped",
+      "description": "ARP Packets Dropped",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "TotalSessionsLearned",
+      "displayName": "Total Sessions Learned",
+      "description": "Total Sessions Learned",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "TotalSessionsAged",
+      "displayName": "Total Sessions Aged",
+      "description": "Total Sessions Aged",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    }
+  ],
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "DataPathAssistStats"
+},
   FlowStatsSummary: {
   "name": "FlowStatsSummary",
   "description": "Session Summary",

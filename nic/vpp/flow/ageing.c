@@ -18,7 +18,7 @@
 #include "pdsa_uds_hdlr.h"
 #include "sess_api.h"
 
-typedef void (flow_expiration_handler) (u32 ses_id, u64 cur_time, u64 timestamp);
+typedef bool (flow_expiration_handler) (u32 ses_id, u64 cur_time, u64 timestamp);
 
 typedef struct flow_age_setup_trace_s {
     u32 session_id;
@@ -798,7 +798,7 @@ VLIB_REGISTER_NODE(pds_flow_age_node) = {
     .error_strings = flow_timer_expired_strings
 };
 
-static void
+static bool
 pds_flow_connection_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_main_t *fm = &pds_flow_main;
@@ -818,13 +818,13 @@ pds_flow_connection_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
                              fm->idle_timeout[session->proto]);
     } else {
         pds_flow_delete_session(ses_id);
-        return;
+        return true;
     }
 
-    return;
+    return false;
 }
 
-static void
+static bool
 pds_flow_idle_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_main_t *fm = &pds_flow_main;
@@ -836,7 +836,7 @@ pds_flow_idle_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
     if (pds_flow_age_session_expired(session, cur_time, timestamp, &diff_time)) {
         if (!fm->con_track_en || session->proto != PDS_FLOW_PROTO_TCP) {
             pds_flow_delete_session(ses_id);
-            return;
+            return true;
         }
         // connection tracking enabled and protocol is TCP, send keep-alive
         pds_flow_send_keep_alive(session);
@@ -847,10 +847,10 @@ pds_flow_idle_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
                              (fm->idle_timeout[session->proto] - diff_time));
     }
 
-    return;
+    return false;
 }
 
-static void
+static bool
 pds_flow_keep_alive_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_main_t *fm = &pds_flow_main;
@@ -869,43 +869,44 @@ pds_flow_keep_alive_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
                              (fm->idle_timeout[session->proto] - diff_time));
         // Reset retry count
         session->keep_alive_retry = 0;
-        return;
+        return false;
     }
 
     if (session->keep_alive_retry == TCP_KEEP_ALIVE_RETRY_COUNT_MAX) {
         pds_flow_delete_session(ses_id);
-        return;
+        return true;
     }
     // send a keep alive message for both flows
     pds_flow_send_keep_alive(session);
+    return false;
 }
 
-static void
+static bool
 pds_flow_half_close_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_delete_session(ses_id);
-    return;
+    return true;
 }
 
-static void
+static bool
 pds_flow_close_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_delete_session(ses_id);
-    return;
+    return true;
 }
 
-static void
+static bool
 pds_flow_drop_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_delete_session(ses_id);
-    return;
+    return true;
 }
 
-static void
+static bool
 pds_flow_close_overdue_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_delete_session(ses_id);
-    return;
+    return true;
 }
 
 static flow_expiration_handler *flow_exp_handlers[PDS_FLOW_TIMER_LAST] =
@@ -917,6 +918,7 @@ static flow_expiration_handler *flow_exp_handlers[PDS_FLOW_TIMER_LAST] =
     pds_flow_close_timeout,
     pds_flow_drop_timeout,
     pds_flow_close_overdue_timeout,
+    NULL,
 };
 
 void
@@ -929,7 +931,7 @@ pds_flow_expired_timers_dispatch (u32 * expired_timers)
     pds_flow_main_t *fm = &pds_flow_main;
     int thread = vlib_get_thread_index();
     static u32 age_node_index = ~0L;
-    vlib_main_t *vm = vlib_get_main(); 
+    vlib_main_t *vm = vlib_get_main();
 
     vec_validate(fm->ses_time[thread-1], (vec_len(expired_timers) - 1));
 
@@ -957,8 +959,10 @@ pds_flow_expired_timers_dispatch (u32 * expired_timers)
             continue;
         }
         session->timer_hdl = ~0;
-        (*flow_exp_handlers[timer_id]) (ses_index, cur_time, 
-                                        fm->ses_time[thread-1][i]);
+        if ((*flow_exp_handlers[timer_id]) (ses_index, cur_time,
+                                            fm->ses_time[thread-1][i])) {
+            counter[PDS_FLOW_SESSION_DELETED]++;
+        }
         counter[timer_id]++;
     }
 

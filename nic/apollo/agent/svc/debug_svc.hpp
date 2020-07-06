@@ -256,32 +256,64 @@ pds_table_stats_entry_to_proto (pds_table_stats_t *stats, void *ctxt)
 }
 
 static inline void
-pds_flow_stats_summary_to_proto (pds_flow_stats_summary_t *flow_stats,
+pds_flow_stats_summary_to_proto (debug::pds_flow_stats_summary_t *flow_stats,
                                  void *ctxt)
 {
     pds::FlowStatsSummaryResponse *proto_rsp =
         (pds::FlowStatsSummaryResponse *)ctxt;
 
     proto_rsp->set_numtcpv4sessions(flow_stats->value[
-                                    FLOW_STATS_TCPV4_SESSION_COUNT]);
+                                    FLOW_TYPE_COUNTER_TCPV4]);
     proto_rsp->set_numudpv4sessions(flow_stats->value[
-                                    FLOW_STATS_UDPV4_SESSION_COUNT]);
+                                    FLOW_TYPE_COUNTER_UDPV4]);
     proto_rsp->set_numicmpv4sessions(flow_stats->value[
-                                     FLOW_STATS_ICMPV4_SESSION_COUNT]);
+                                     FLOW_TYPE_COUNTER_ICMPV4]);
     proto_rsp->set_numotheripv4sessions(flow_stats->value[
-                                        FLOW_STATS_OTHERV4_SESSION_COUNT]);
+                                        FLOW_TYPE_COUNTER_OTHERV4]);
     proto_rsp->set_numtcpv6sessions(flow_stats->value[
-                                    FLOW_STATS_TCPV6_SESSION_COUNT]);
+                                    FLOW_TYPE_COUNTER_TCPV6]);
     proto_rsp->set_numudpv6sessions(flow_stats->value[
-                                    FLOW_STATS_UDPV6_SESSION_COUNT]);
+                                    FLOW_TYPE_COUNTER_UDPV6]);
     proto_rsp->set_numicmpv6sessions(flow_stats->value[
-                                     FLOW_STATS_ICMPV6_SESSION_COUNT]);
+                                     FLOW_TYPE_COUNTER_ICMPV6]);
     proto_rsp->set_numotheripv6sessions(flow_stats->value[
-                                        FLOW_STATS_OTHERV6_SESSION_COUNT]);
+                                        FLOW_TYPE_COUNTER_OTHERV6]);
     proto_rsp->set_numl2sessions(flow_stats->value[
-                                 FLOW_STATS_L2_SESSION_COUNT]);
+                                 FLOW_TYPE_COUNTER_L2]);
     proto_rsp->set_numsessionerrors(flow_stats->value[
-                                    FLOW_STATS_ERROR_SESSION_COUNT]);
+                                    FLOW_TYPE_COUNTER_ERROR]);
+}
+
+static inline void
+pds_datapath_assist_stats_to_proto (debug::pds_datapath_assist_stats_t *stats,
+                                    void *ctxt)
+{
+    pds::DataPathAssistStatsResponse *proto_rsp = (pds::DataPathAssistStatsResponse *)ctxt;
+
+    proto_rsp->set_numpktsrx(stats->value[
+                             PDS_DATAPATH_ASSIST_STAT_TOTALPKTSRX]);
+    proto_rsp->set_numdrops(stats->value[
+                            PDS_DATAPATH_ASSIST_STAT_TOTALDROPS]);
+    proto_rsp->set_numdhcppktsrx(stats->value[
+                                 PDS_DATAPATH_ASSIST_STAT_DHCPPKTSRX]);
+    proto_rsp->set_numdhcppktstxtoproxyserver(stats->value[
+                             PDS_DATAPATH_ASSIST_STAT_DHCPPKTSTXTOPROXYSERVER]);
+    proto_rsp->set_numdhcppktstxtorelayserver(stats->value[
+                             PDS_DATAPATH_ASSIST_STAT_DHCPPKTSTXTORELAYSERVER]);
+    proto_rsp->set_numdhcppktstxtorelayclient(stats->value[
+                             PDS_DATAPATH_ASSIST_STAT_DHCPPKTSTXTORELAYCLIENT]);
+    proto_rsp->set_numdhcpdrops(stats->value[
+                                PDS_DATAPATH_ASSIST_STAT_DHCPDROPS]);
+    proto_rsp->set_numarppktsrx(stats->value[
+                                PDS_DATAPATH_ASSIST_STAT_ARPPKTSRX]);
+    proto_rsp->set_numarprepliessent(stats->value[
+                                     PDS_DATAPATH_ASSIST_STAT_ARPREPLIESSENT]);
+    proto_rsp->set_numarpdrops(stats->value[
+                               PDS_DATAPATH_ASSIST_STAT_ARPDROPS]);
+    proto_rsp->set_numsessionslearned(stats->value[
+                               PDS_DATAPATH_ASSIST_STAT_TOTALSESSIONSLEARNED]);
+    proto_rsp->set_numsessionsaged(stats->value[
+                                   PDS_DATAPATH_ASSIST_STAT_TOTALSESSIONSAGED]);
 }
 
 #endif    //__AGENT_SVC_DEBUG_SVC_HPP__

@@ -1210,7 +1210,7 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
     vlib_buffer_t *p0;
     pds_flow_main_t *fm = &pds_flow_main;
     uint8_t ctr_idx;
-    uint64_t ses_ctr[FLOW_TYPE_COUNTER_LAST] = {0};
+    uint64_t ses_ctr[FLOW_TYPE_COUNTER_MAX] = {0};
 
     for (i = 0; i < size; i+=2) {
         p0 = b[i/2];
@@ -1298,7 +1298,7 @@ pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter,
     vlib_buffer_t *p0;
     pds_flow_main_t *fm = &pds_flow_main;
     uint8_t ctr_idx;
-    uint64_t ses_ctr[FLOW_TYPE_COUNTER_LAST] = {0};
+    uint64_t ses_ctr[FLOW_TYPE_COUNTER_MAX] = {0};
 
     for (i = 0; i < size; i+=2) {
         p0 = b[i/2];
@@ -1832,6 +1832,7 @@ pds_flow_init (vlib_main_t * vm)
     pds_flow_pipeline_init(vm);
 
     fm->flow_metrics_hdl = pdsa_flow_stats_init();
+    fm->datapath_assist_metrics_hdl = pdsa_datapath_assist_stats_init();
 
     /* Create the TCP keep alive packet template */
     {

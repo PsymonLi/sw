@@ -102,6 +102,13 @@ var dropShowCmd = &cobra.Command{
 	Run:   dropShowCmdHandler,
 }
 
+var datapathAssistStatsShowCmd = &cobra.Command{
+	Use:   "datapath-assist",
+	Short: "show system datapath assist statistics",
+	Long:  "displays statistics of datapath packets punted to CPU",
+	Run:   datapathAssistStatsShowCmdHandler,
+}
+
 var pbDetailShowCmd = &cobra.Command{
 	Use:   "detail",
 	Short: "show packet buffer statistics detail",
@@ -148,6 +155,9 @@ func init() {
 
 	systemStatsShowCmd.AddCommand(dropShowCmd)
 	dropShowCmd.Flags().Bool("yaml", true, "Output in yaml")
+
+	systemStatsShowCmd.AddCommand(datapathAssistStatsShowCmd)
+	datapathAssistStatsShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 }
 
 func dropShowCmdHandler(cmd *cobra.Command, args []string) {
@@ -216,6 +226,62 @@ func printDropStats(resp *pds.DeviceGetResponse) {
 			entry.GetName(),
 			entry.GetCount())
 	}
+}
+
+func datapathAssistStatsShowCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	yamlOutput := (cmd != nil) && cmd.Flags().Changed("yaml")
+	client := pds.NewDebugSvcClient(c)
+
+	var empty *pds.Empty
+
+	// PDS call
+	respMsg, err := client.DataPathAssistStatsGet(context.Background(), empty)
+	if err != nil {
+		fmt.Printf("Getting datapath assist statistics failed, err %v\n", err)
+		return
+	}
+
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+
+	if yamlOutput {
+		respType := reflect.ValueOf(respMsg)
+		b, _ := yaml.Marshal(respType.Interface())
+		fmt.Println(string(b))
+		fmt.Println("---")
+	} else {
+		datapathAssistStatsPrint(respMsg)
+	}
+}
+
+func datapathAssistStatsPrint(resp *pds.DataPathAssistStatsResponse) {
+	fmt.Printf("%-36s: %d\n", "Total Packets Received", resp.GetNumPktsRx())
+	fmt.Printf("%-36s: %d\n", "Total Packets Dropped", resp.GetNumDrops())
+	fmt.Printf("%-36s: %d\n", "DHCP Packets Received", resp.GetNumDHCPPktsRx())
+	fmt.Printf("%-36s: %d\n", "DHCP Packets Sent to Proxy Server", resp.GetNumDHCPPktsTxtoProxyServer())
+	fmt.Printf("%-36s: %d\n", "DHCP Packets Sent to Relay Server", resp.GetNumDHCPPktsTxtoRelayServer())
+	fmt.Printf("%-36s: %d\n", "DHCP Packets Sent to Relay Client", resp.GetNumDHCPPktsTxtoRelayClient())
+	fmt.Printf("%-36s: %d\n", "DHCP Packets Dropped", resp.GetNumDHCPDrops())
+	fmt.Printf("%-36s: %d\n", "ARP Packets Received", resp.GetNumARPPktsRx())
+	fmt.Printf("%-36s: %d\n", "ARP Replies Sent", resp.GetNumARPRepliesSent())
+	fmt.Printf("%-36s: %d\n", "ARP Packets Dropped", resp.GetNumARPDrops())
+	fmt.Printf("%-36s: %d\n", "Total Sessions Learned", resp.GetNumSessionsLearned())
+	fmt.Printf("%-36s: %d\n", "Total Sessions Aged", resp.GetNumSessionsAged())
 }
 
 func systemQueueCreditsShowCmdHandler(cmd *cobra.Command, args []string) {

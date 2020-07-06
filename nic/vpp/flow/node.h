@@ -20,6 +20,7 @@
 #include <nic/p4/common/defines.h>
 #include <ftl_wrapper.h>
 #include "pdsa_hdlr.h"
+#include "stats.h"
 
 #define MAX_FLOWS_PER_FRAME                     (VLIB_FRAME_SIZE * 2)
 #define PDS_FLOW_SESSION_POOL_COUNT_MAX         VLIB_FRAME_SIZE
@@ -129,6 +130,7 @@
         _(CLOSE_TIMER, "Close timer expired")                       \
         _(DROP_TIMER, "Drop timer expired")                         \
         _(CLOSE_OVERDUE_TIMER, "Close overdue timer expired")       \
+        _(SESSION_DELETED, "Session Deleted")                       \
 
 typedef enum
 {
@@ -193,14 +195,6 @@ typedef enum
 #undef _
     SESSION_PROG_COUNTER_LAST,
 } flow_session_counter_t;
-
-typedef enum
-{
-#define _(n,s) FLOW_TYPE_COUNTER_##n,
-    foreach_flow_type_counter
-#undef _
-    FLOW_TYPE_COUNTER_LAST,
-} flow_type_counter_t;
 
 typedef enum
 {
@@ -296,7 +290,7 @@ typedef struct pds_flow_rewrite_flags_s {
 } pds_flow_rewrite_flags_t;
 
 typedef struct pds_flow_stats_s {
-    volatile u64 counter[FLOW_TYPE_COUNTER_LAST];
+    volatile u64 counter[FLOW_TYPE_COUNTER_MAX];
 } pds_flow_stats_t;
 
 typedef struct pds_flow_repl_stats_s {
@@ -366,6 +360,7 @@ typedef struct pds_flow_main_s {
     u8 con_track_en;
     pds_flow_stats_t stats;
     void *flow_metrics_hdl;
+    void *datapath_assist_metrics_hdl;
     u16 drop_nexthop;
     // packet template to send TCP keep alives
     vlib_packet_template_t tcp_keepalive_packet_template;

@@ -26,4 +26,5 @@ var CloudDscMetricsList = []string{
 	"AsicTemperatureMetrics",
 	"PortTemperatureMetrics",
 	"FlowStatsSummary",
+	"DataPathAssistStats",
 }

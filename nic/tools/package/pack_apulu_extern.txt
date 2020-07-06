@@ -18,6 +18,7 @@ nic/operd/metrics/cloud/mac_metrics.json                          /nic/conf/
 nic/operd/metrics/cloud/flowstats_metrics.json                    /nic/conf/
 nic/operd/metrics/cloud/sysmond_metrics.json                      /nic/conf/
 nic/operd/metrics/cloud/pcie_metrics.json                         /nic/conf/
+nic/operd/metrics/cloud/datapath_assist_stats_metrics.json        /nic/conf/
 
 # system level tools
 nic/apollo/tools/$PIPELINE/bringup_mgmt_ifs.sh                    /nic/tools/

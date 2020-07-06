@@ -8,6 +8,7 @@
 #include "nic/sdk/platform/marvell/marvell.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/api/debug.hpp"
+#include "nic/apollo/api/internal/debug.hpp"
 #include "nic/apollo/agent/core/state.hpp"
 #include "nic/apollo/agent/svc/debug_svc.hpp"
 #include "nic/apollo/agent/svc/meter_svc.hpp"
@@ -462,13 +463,28 @@ Status
 DebugSvcImpl::FlowStatsSummaryGet(ServerContext *context,
                                   const Empty *req,
                                   pds::FlowStatsSummaryResponse *rsp) {
-    pds_flow_stats_summary_t flow_stats;
+    debug::pds_flow_stats_summary_t flow_stats;
     sdk_ret_t ret;
 
     ret = debug::pds_flow_summary_get(&flow_stats);
     rsp->set_apistatus(sdk_ret_to_api_status(ret));
     if (ret == sdk::SDK_RET_OK) {
         pds_flow_stats_summary_to_proto(&flow_stats, rsp);
+    }
+    return Status::OK;
+}
+
+Status
+DebugSvcImpl::DataPathAssistStatsGet(ServerContext *context,
+                                     const Empty *req,
+                                     pds::DataPathAssistStatsResponse *rsp) {
+    debug::pds_datapath_assist_stats_t datapath_assist_stats;
+    sdk_ret_t ret;
+
+    ret = debug::pds_datapath_assist_stats_get(&datapath_assist_stats);
+    rsp->set_apistatus(sdk_ret_to_api_status(ret));
+    if (ret == sdk::SDK_RET_OK) {
+        pds_datapath_assist_stats_to_proto(&datapath_assist_stats, rsp);
     }
     return Status::OK;
 }

@@ -19,6 +19,7 @@ nic/operd/metrics/venice/mac_metrics.json                         /nic/conf/
 nic/operd/metrics/venice/flowstats_metrics.json                   /nic/conf/
 nic/operd/metrics/venice/sysmond_metrics.json                     /nic/conf/
 nic/operd/metrics/venice/pcie_metrics.json                        /nic/conf/
+nic/operd/metrics/venice/datapath_assist_stats_metrics.json       /nic/conf/
 
 # system level tools
 nic/apollo/tools/$PIPELINE/bringup_mgmt_ifs_venice.sh             /nic/tools/bringup_mgmt_ifs.sh

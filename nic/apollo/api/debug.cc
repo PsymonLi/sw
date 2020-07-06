@@ -9,7 +9,6 @@
 #include "nic/sdk/linkmgr/port_mac.hpp"
 #include "nic/sdk/linkmgr/linkmgr.hpp"
 #include "nic/sdk/include/sdk/uds.hpp"
-#include "nic/sdk/lib/metrics/metrics.hpp"
 #include "nic/sdk/platform/asicerror/interrupts.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
@@ -20,7 +19,6 @@
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/api/utils.hpp"
-#include "nic/vpp/flow/pdsa_hdlr.h"
 
 using sdk::utils::in_mem_fsm_logger;
 using sdk::utils::record_t;
@@ -338,28 +336,6 @@ pds_flow_clear (pds_flow_key_t key)
                       PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
 
     return ret;
-}
-
-/// \brief retrieve flow statistics summary from VPP
-sdk_ret_t
-pds_flow_summary_get (pds_flow_stats_summary_t *flow_stats)
-{
-    static void *vpp_stats_handle = NULL;
-    sdk::metrics::counters_t counters;
-
-    if (vpp_stats_handle == NULL) {
-        vpp_stats_handle = sdk::metrics::metrics_open(FLOW_STATS_SCHEMA_NAME);
-        if (vpp_stats_handle == NULL) {
-            return SDK_RET_ERR;
-        }
-    }
-    counters = sdk::metrics::metrics_read(vpp_stats_handle,
-                                          *(sdk::metrics::key_t *)
-                                          api::uuid_from_objid(0).id);
-    for (int i = 0; i < FLOW_STATS_MAX; i++) {
-        flow_stats->value[i] = counters[i].second;
-    }
-    return SDK_RET_OK;
 }
 
 /**

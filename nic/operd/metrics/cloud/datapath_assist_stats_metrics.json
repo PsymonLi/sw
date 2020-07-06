@@ -1,0 +1,98 @@
+{
+  "Messages": [
+    {
+      "Name": "DataPathAssistStats",
+      "Description": "Statistics of packets processed by CPU",
+      "DisplayName": "Datapath Assist Statistics",
+      "Scope": "PerASIC",
+      "Fields": [
+        {
+          "Name": "Total Pkts Rx",
+          "DisplayName": "Total Packets Received",
+          "Description": "Total Packets Received",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "Total Drops",
+          "DisplayName": "Total Packets Dropped",
+          "Description": "Total Packets Dropped",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "DHCP Pkts Rx",
+          "DisplayName": "DHCP Packets Received",
+          "Description": "DHCP Packets Received",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "DHCP Pkts Tx to Proxy Server",
+          "DisplayName": "DHCP Packets Sent to Proxy Server",
+          "Description": "DHCP Packets Sent to Proxy Server",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "DHCP Pkts Tx to Relay Server",
+          "DisplayName": "DHCP Packets Sent to Relay Server",
+          "Description": "DHCP Packets Sent to Relay Server",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "DHCP Pkts Tx to Relay Client",
+          "DisplayName": "DHCP Packets Sent to Relay Client",
+          "Description": "DHCP Packets Sent to Relay Client",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "DHCP Drops",
+          "DisplayName": "DHCP Packets Dropped",
+          "Description": "DHCP Packets Dropped",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "ARP Pkts Rx",
+          "DisplayName": "ARP Packets Received",
+          "Description": "ARP Packets Received",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "ARP Replies Sent",
+          "DisplayName": "ARP Replies Sent",
+          "Description": "ARP Replies Sent",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "ARP Drops",
+          "DisplayName": "ARP Packets Dropped",
+          "Description": "ARP Packets Dropped",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "Total Sessions Learned",
+          "DisplayName": "Total Sessions Learned",
+          "Description": "Total Sessions Learned",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "Total Sessions Aged",
+          "DisplayName": "Total Sessions Aged",
+          "Description": "Total Sessions Aged",
+          "Units": "Count",
+          "BaseType": "Counter"
+        }
+      ]
+    }
+  ]
+}
+
+
