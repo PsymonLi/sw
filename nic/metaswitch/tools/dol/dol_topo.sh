@@ -130,6 +130,7 @@ if [ $HITLESS_UPG == 1 ]; then
     echo "Simulate Hitless upgrade Domain B Sync config replay in 5 seconds"
     sleep 5
     client-app-cfg 1
+    docker exec -it -e CONFIG_PATH="$DOL_CFG"1 "$CONTAINER"1 sh -c "$CLIENTAPP htupg-sync"
     exit
 fi
 

@@ -202,10 +202,12 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
             destip = ip_track_obj->destip();
             pds_obj_id = ip_track_obj->pds_obj_id();
             if (ip_track_obj->deleted()) {
-                PDS_TRACE_DEBUG("Ignore route update for delete ip rtacked object");
+                PDS_TRACE_DEBUG("Ignore route update for ip tracked object %s thats already deleted",
+                                pds_obj_key.str());
                 return SDK_RET_OK;
             }
             tracked = true;
+            ip_track_set_reachable (ip_track_obj, true);
 
             auto nhgroup_id =
                 state_lookup_indirect_ps_and_map_ip(state,ips_info_.pathset_id,
@@ -215,9 +217,6 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
         }
     }
 
-    if (ips_info_.ecmp_id == PDS_MS_ECMP_INVALID_INDEX) {
-        return SDK_RET_OK;
-    }
     if (tracked) {
         return ip_track_reachability_change(pds_obj_key, destip,
                                             ips_info_.ecmp_id, pds_obj_id);
@@ -251,17 +250,18 @@ sdk_ret_t hals_route_t::underlay_route_del_() {
                                     pds_obj_key.str(), indirect_ps_id);
                     indirect_ps_obj->del_ip_track_obj(pds_obj_key);
                     ip_track_obj->set_indirect_ps_id(PDS_MS_ECMP_INVALID_INDEX);
-                    // TODO: HAL objects associated with tracked Dest IPs need to be
-                    // black-holed when the underlay reachability is lost ??
-                    // We can also reach here when tracking is deleted for an object
-                    // in which case nothing to do here. Need to differentiate between
-                    // these 2 cases.
                 }
+                // Underlay route delete can happen
+                // a) either when tracking is deleted for an object
+                // b) or reachability is lost for a tracked object
                 if (!ip_track_obj->deleted()) {
+                    ip_track_set_reachable (ip_track_obj, false);
+
                     // Reachability lost as opposed to IP track object delete.
-                    // Need to blackhole the object.
-                    ip_track_reachability_change(pds_obj_key, ip_track_obj->destip(),
-                                                 PDS_MS_ECMP_INVALID_INDEX, 
+                    // Need to blackhole the object - invoke HAL outside state lock
+                    ip_track_reachability_change(pds_obj_key,
+                                                 ip_track_obj->destip(),
+                                                 PDS_MS_ECMP_INVALID_INDEX,
                                                  ip_track_obj->pds_obj_id());
                 }
             }

@@ -16,6 +16,9 @@ pds_ms_upg_hitless_init (void);
 sdk_ret_t
 pds_ms_upg_hitless_start_test (void);
 
+sdk_ret_t
+pds_ms_upg_hitless_sync_test (void);
+
 void
 upg_ipc_init (void);
 

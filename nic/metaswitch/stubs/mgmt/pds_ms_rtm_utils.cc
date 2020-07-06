@@ -101,6 +101,15 @@ pds_ms_fill_amb_cipr_rtm (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
         data->addr_family = AMB_INETWK_ADDR_TYPE_IPV4;
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_QCR_ENT_ADDR_FAM);
 
+        // Increase RPM Dead wait timer to 5 minutes by default
+        // This helps during hitless upgrade by having RTM on domain A retain
+        // the BGP routes for 5 minutes even after BGP disable.
+        // Assumption is that by 5 minutes either the switchover to Domain B
+        // would have hapened or the repeal back to domain A would have happened
+        // in which case the BGP on domain A would have been enabled again
+        data->dead_rpm_tmr = 5;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_QCR_ENT_DEAD_RPM_TMR);
+
         data->i3_index = PDS_MS_LIM_ENT_INDEX;
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_QCR_ENT_I3_INDEX);
 

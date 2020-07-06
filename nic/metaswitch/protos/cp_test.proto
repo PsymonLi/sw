@@ -70,6 +70,7 @@ message HitlessUpgTestEventSpec {
   };
     bool  Start = 1;
     bool  Rollback = 2;
+    bool  Sync = 3;
 }
 
 message HitlessUpgTestResponse {

@@ -253,16 +253,52 @@ static void set_amx_control (bool open) {
     }
 }
 
-static void htls_upg_test (bool start) {
+static void htls_upg_start_test () {
     pds_ms::HitlessUpgTestEventSpec      request;
     pds_ms::HitlessUpgTestResponse     response;
     ClientContext   context;
     Status          ret_status;
 
     auto proto_spec = &request;
-    if (start) {
-       proto_spec->set_start (true);
+    proto_spec->set_start (true);
+
+    printf ("Simulating Hitless upgrade test event...\n");
+    ret_status = g_cp_test_stub_->HitlessUpgTestEvent(&context, request, &response);
+    if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
+        printf("%s failed! ret_status=%d (%s) response.status=%d\n",
+                __FUNCTION__, ret_status.error_code(), ret_status.error_message().c_str(),
+                response.apistatus());
+        exit(1);
     }
+}
+
+static void htls_upg_rollbk_test () {
+    pds_ms::HitlessUpgTestEventSpec      request;
+    pds_ms::HitlessUpgTestResponse     response;
+    ClientContext   context;
+    Status          ret_status;
+
+    auto proto_spec = &request;
+    proto_spec->set_rollback (true);
+
+    printf ("Simulating Hitless upgrade test event...\n");
+    ret_status = g_cp_test_stub_->HitlessUpgTestEvent(&context, request, &response);
+    if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
+        printf("%s failed! ret_status=%d (%s) response.status=%d\n",
+                __FUNCTION__, ret_status.error_code(), ret_status.error_message().c_str(),
+                response.apistatus());
+        exit(1);
+    }
+}
+
+static void htls_upg_sync_test () {
+    pds_ms::HitlessUpgTestEventSpec      request;
+    pds_ms::HitlessUpgTestResponse     response;
+    ClientContext   context;
+    Status          ret_status;
+
+    auto proto_spec = &request;
+    proto_spec->set_sync (true);
 
     printf ("Simulating Hitless upgrade test event...\n");
     ret_status = g_cp_test_stub_->HitlessUpgTestEvent(&context, request, &response);
@@ -1413,10 +1449,13 @@ int main(int argc, char** argv)
         } else if (!strcmp(argv[1], "amx-close")) {
             set_amx_control(false);
         } else if (!strcmp(argv[1], "htupg-start")) {
-            htls_upg_test(true);
+            htls_upg_start_test();
             return 0;
         } else if (!strcmp(argv[1], "htupg-rollbk")) {
-            htls_upg_test(false);
+            htls_upg_rollbk_test();
+            return 0;
+        } else if (!strcmp(argv[1], "htupg-sync")) {
+            htls_upg_sync_test();
             return 0;
         }
         return 0;

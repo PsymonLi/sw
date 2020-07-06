@@ -304,6 +304,11 @@ htls_upg_test_event (const HitlessUpgTestEventSpec *req,
          if (ret == SDK_RET_OK) {
              return types::API_STATUS_OK;
          }
+    } else if (req->sync()) {
+         auto ret = pds_ms_upg_hitless_sync_test();
+         if (ret == SDK_RET_OK) {
+             return types::API_STATUS_OK;
+         }
     }
     return types::API_STATUS_INVALID_ARG;
 }

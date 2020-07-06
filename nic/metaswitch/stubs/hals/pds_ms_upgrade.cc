@@ -5,12 +5,15 @@
 
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_stub_api.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/core/trace.hpp"
 extern "C" {
 #include <amxpenapi.h>
 }
+#include <chrono>
 
 namespace pds_ms {
 
@@ -129,7 +132,7 @@ pds_ms_upg_hitless_init (void)
 }
 
 ///////////////////////////////////////////////////////////////
-// Below functions staarting with upg_ipc_xxx are called from
+// Below functions starting with upg_ipc_xxx are called from
 // Routing Cfg thread context
 //
 static void
@@ -184,12 +187,28 @@ upg_ipc_start_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     upg_ipc_process_response(SDK_RET_OK, msg);
 }
 
+// Time needed from end of gRPC config replay to establish BGP peering,
+// installing nexthops in HAL and stitching all IP track objects to
+// their nexthop groups
+constexpr uint32_t k_upg_routing_convergence_time = 10;  // in seconds
+
 static void
 upg_ipc_sync_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 {
     auto params = (api::upg_ev_params_t *)(msg->data());
     PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
 
+    std::unique_lock<std::mutex> lk (state_t::upg_sync_cv_mtx);
+    auto ret = state_t::upg_sync_cv.
+        wait_for (lk,
+                  std::chrono::seconds(k_upg_routing_convergence_time),
+                  ip_track_are_all_reachable);
+
+    if (!ret) {
+        PDS_TRACE_ERR("PDS MS Sync exiting without Routing convergence");
+    } else {
+        PDS_TRACE_INFO("PDS MS Sync Routing convergence complete");
+    }
     upg_ipc_process_response(SDK_RET_OK, msg);
 }
 
@@ -220,6 +239,17 @@ pds_ms_upg_hitless_start_test (void)
         .mode = sysinit_mode_t::SYSINIT_MODE_HITLESS
     };
     upg_cb_ev_start(&params);
+    return params.rsp_code;
+}
+
+sdk_ret_t
+pds_ms_upg_hitless_sync_test (void)
+{
+    api::upg_ev_params_t  params {
+        .id = UPG_MSG_ID_SYNC,
+        .mode = sysinit_mode_t::SYSINIT_MODE_HITLESS
+    };
+    upg_cb_ev_sync(&params);
     return params.rsp_code;
 }
 

@@ -183,6 +183,11 @@ public:
 
     static sdk::event_thread::event_thread* routing_cfg_thr;
 
+    // Hitless Upgrade Sync stage condition variable
+    // to block until Routing convergence 
+    static std::condition_variable upg_sync_cv;
+    static std::mutex upg_sync_cv_mtx;
+
 private:
     static constexpr uint32_t k_max_fp_ports = 2;
     // Unique ptr helps to uninitialize cleanly in case of initialization errors

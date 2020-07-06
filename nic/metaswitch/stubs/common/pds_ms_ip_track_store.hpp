@@ -50,6 +50,11 @@ public:
     void set_deleted(bool deleted) {deleted_ = deleted;}
     bool deleted() {return deleted_;}
 
+    // Used during upgrade to ensure all tracked ips have
+    // reachability
+    void set_reachable(bool reachable) {reachable_ = reachable;}
+    bool reachable() {return reachable_;}
+
 private:  
     pds_obj_key_t  pds_obj_key_; // IP whose reachability is being tracked
     ip_addr_t  destip_; // IP whose reachability is being tracked
@@ -57,7 +62,9 @@ private:
     // Index generator for internal IP used to create static routes
     // for tracking destination IP
     uint32_t internal_index_;
+
     bool     deleted_ = false;
+    bool     reachable_ = false;
 
     // Indirect pathset associated with this tracked IP
     ms_ps_id_t indirect_ps_id_ = PDS_MS_ECMP_INVALID_INDEX;

@@ -4,6 +4,7 @@
 #include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_defs.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/apollo/api/internal/pds_tep.hpp"
 #include "nic/apollo/api/internal/pds_mirror.hpp"
 
@@ -13,9 +14,9 @@ namespace pds_ms {
 sdk_ret_t
 ip_track_reachability_change (const pds_obj_key_t& pds_obj_key,
                               const ip_addr_t& destip,
-							  ms_hw_tbl_id_t nhgroup_id,
-							  obj_id_t pds_obj_id) {
-
+                              ms_hw_tbl_id_t nhgroup_id,
+                              obj_id_t pds_obj_id)
+{
     bool op_delete = false;
     api::nh_info_t nhinfo;
     if (nhgroup_id != PDS_MS_ECMP_INVALID_INDEX) {
@@ -55,8 +56,8 @@ ip_track_reachability_change (const pds_obj_key_t& pds_obj_key,
 
 sdk_ret_t
 ip_track_reachability_delete (const pds_obj_key_t& pds_obj_key,
-                              obj_id_t pds_obj_id) {
-
+                              obj_id_t pds_obj_id)
+{
     // HAL does not take const keys
     auto key = pds_obj_key;
 
@@ -66,5 +67,35 @@ ip_track_reachability_delete (const pds_obj_key_t& pds_obj_key,
     }
     return SDK_RET_OK;
 }
+
+bool
+ip_track_are_all_reachable (void)
+{
+    auto state_ctxt = state_t::thread_context();
+    bool all_reachable = true;
+    state_ctxt.state()->ip_track_store().
+        walk([&all_reachable] (const pds_obj_key_t& key,
+                               ip_track_obj_t& ip_track_obj) -> bool {
+            if (!ip_track_obj.reachable()) {
+                all_reachable = false;
+                return false; // Break walk
+            }
+            return true;
+        });
+    return all_reachable;
+}
+
+void
+ip_track_set_reachable (ip_track_obj_t* ip_track_obj, bool reachable)
+{
+    {
+        std::lock_guard<std::mutex> lk (state_t::upg_sync_cv_mtx);
+        ip_track_obj->set_reachable(reachable);
+    }
+    if (reachable) {
+        state_t::upg_sync_cv.notify_one();
+    }
+}
+
 
 } // End namespace
