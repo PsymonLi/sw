@@ -324,9 +324,37 @@ class ConfigObjectBase(base.ConfigObjectBase):
         self.__unimplemented()
         return False
 
+    def GetPdsSpecScalarAttrs(self):
+        """
+        # returns a list of scalar attributes to be validated on read
+        # NOTE: returning an empty list would validate all attributes
+        """
+        return []
+
+    def GetPdsSpec(self):
+        grpcmsg = self.GetGrpcCreateMessage()
+        if self.IsSingleton():
+            return grpcmsg.Request
+        return grpcmsg.Request[0]
+
+    def ValidatePdsSpecScalarAttrs(self, objSpec, spec):
+        scalarAttrs = self.GetPdsSpecScalarAttrs()
+        mismatchingAttrs = utils.CompareSpec(objSpec, spec, scalarAttrs)
+        return mismatchingAttrs
+
+    def ValidatePdsSpecCompositeAttrs(self, objSpec, spec):
+        return []
+
     def ValidateSpec(self, spec):
-        self.__unimplemented()
-        return False
+        objSpec = self.GetPdsSpec()
+        mismatchingAttrs = self.ValidatePdsSpecScalarAttrs(objSpec, spec) +\
+                           self.ValidatePdsSpecCompositeAttrs(objSpec, spec)
+        if len(mismatchingAttrs) != 0:
+            logger.error(f"{self} validation failed for {mismatchingAttrs}")
+            logger.error(f"Obj spec for {self} - {objSpec}")
+            logger.error(f"Pds spec for {self} - {spec}")
+            return False
+        return True
 
     def ValidateStats(self, stats):
         return True

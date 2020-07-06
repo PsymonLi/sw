@@ -352,22 +352,11 @@ class VpcObject(base.ConfigObjectBase):
                 return False
         return True
 
-    def ValidateSpec(self, spec):
-        if spec.Id != self.GetKey():
-            return False
-        if spec.Type != self.Type:
-            return False
-        if utils.ValidateTunnelEncap(self.Node, self.Vnid, spec.FabricEncap) is False:
-            return False
-        if spec.ToS != self.Tos:
-            return False
-        if utils.IsPipelineApulu():
-            if spec.VirtualRouterMac != self.VirtualRouterMACAddr.getnum():
-                return False
-        return True
+    def GetPdsSpecScalarAttrs(self):
+        return ['Id', 'Type', 'V4RouteTableId', 'V6RouteTableId', 'VirtualRouterMac', 'FabricEncap', 'ToS']
 
     def ValidateYamlSpec(self, spec):
-        if utils.GetYamlSpecAttr(spec) != self.GetKey():
+        if  utils.GetYamlSpecAttr(spec) != self.GetKey():
             return False
         if spec['type'] != self.Type:
             return False

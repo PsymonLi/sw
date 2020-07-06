@@ -394,29 +394,16 @@ class SubnetObject(base.ConfigObjectBase):
             return False
         return True
 
-    def ValidateSpec(self, spec):
-        if spec.Id != self.GetKey():
-            return False
-        if spec.VPCId != self.VPC.GetKey():
-            return False
-        if spec.VirtualRouterMac != self.VirtualRouterMACAddr.getnum():
-            return False
-        if spec.V4RouteTableId != utils.PdsUuid.GetUUIDfromId(self.V4RouteTableId, ObjectTypes.ROUTE):
-            return False
-        if spec.V6RouteTableId != utils.PdsUuid.GetUUIDfromId(self.V6RouteTableId, ObjectTypes.ROUTE):
-            return False
-        policySpecAttrs = ['IngV4SecurityPolicyId', 'IngV6SecurityPolicyId', 'EgV4SecurityPolicyId', 'EgV6SecurityPolicyId']
-        policyConfigAttrs = ['IngV4SecurityPolicyIds', 'IngV6SecurityPolicyIds', 'EgV4SecurityPolicyIds', 'EgV6SecurityPolicyIds']
-        for cattr,sattr in zip(policyConfigAttrs, policySpecAttrs):
-            if not utils.ValidatePolicyAttr(getattr(self, cattr, None), getattr(spec, sattr, None)):
-                return False
-        if utils.ValidateTunnelEncap(self.Node, self.Vnid, spec.FabricEncap) is False:
-            return False
-        if utils.IsPipelineApulu():
-            if len(self.HostIfUuid):
-                if spec.HostIf[0] != self.HostIfUuid[0].GetUuid():
-                    return False
-        return True
+    def GetPdsSpecScalarAttrs(self):
+        return ['Id', 'VPCId', 'V4Prefix', 'IPv4VirtualRouterIP', 'VirtualRouterMac', 'V4RouteTableId', 'V6RouteTableId', 'FabricEncap', 'ToS']
+
+    def ValidatePdsSpecCompositeAttrs(self, objSpec, spec):
+        mismatchingAttrs = []
+        listAttrs = ['HostIf', 'IngV4SecurityPolicyId', 'IngV6SecurityPolicyId', 'EgV4SecurityPolicyId', 'EgV6SecurityPolicyId']
+        for attr in listAttrs:
+            if not utils.ValidateListAttr(getattr(objSpec, attr), getattr(spec, attr)):
+                mismatchingAttrs.append(attr)
+        return mismatchingAttrs
 
     def ValidateYamlSpec(self, spec):
         if utils.GetYamlSpecAttr(spec) != self.GetKey():

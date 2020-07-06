@@ -162,41 +162,23 @@ class DeviceObject(base.ConfigObjectBase):
             spec.FwPolicyXposnScheme = types_pb2.FW_POLICY_XPOSN_GLOBAL_PRIORITY
         return
 
-    def ValidateSpec(self, spec):
-        if utils.ValidateRpcIPAddr(self.IPAddr, spec.IPAddr) is False:
-            return False
-        if utils.ValidateRpcIPAddr(self.GatewayAddr, spec.GatewayIP) is False:
-            return False
-        if utils.IsPipelineApollo():
-            # TODO: Fix read for artemis
-            # in Apulu, device mac addr will come from uplink l3 interface
-            if spec.MACAddr != self.MACAddr.getnum():
-                return False
-        if utils.IsPipelineApulu():
-            if self.Mode == "bitw":
-                if spec.DevOperMode != device_pb2.DEVICE_OPER_MODE_BITW:
-                    return False
-            elif self.Mode == "host":
-                if spec.DevOperMode != device_pb2.DEVICE_OPER_MODE_HOST:
-                    return False
-        if spec.BridgingEn != self.BridgingEnabled:
-            return False
+    def GetPdsSpecScalarAttrs(self):
+        return ['IPAddr', 'GatewayIP', 'DevOperMode', 'MemoryProfile', 'DeviceProfile', 'BridgingEn', 'IPMappingPriority', 'FwPolicyXposnScheme', 'OverlayRoutingEn', 'SymmetricRoutingEn']
+
+    def ValidatePdsSpecCompositeAttrs(self, objSpec, spec):
+        mismatchingAttrs = []
         if spec.LearnSpec.LearnMode != device_pb2.LEARN_MODE_NONE:
-            if spec.LearnSpec.LearnMode != self.LearnSpec.LearnMode:
-                return False
-            if spec.LearnSpec.LearnAgeTimeout != self.LearnSpec.LearnAgeTimeout:
-                return False
-            if spec.LearnSpec.LearnSource.ArpLearnEn != self.LearnSpec.LearnSource.ArpLearnEn:
-                return False
-            if spec.LearnSpec.LearnSource.DhcpLearnEn != self.LearnSpec.LearnSource.DhcpLearnEn:
-                return False
-            if spec.LearnSpec.LearnSource.DataPktLearnEn != self.LearnSpec.LearnSource.DataPktLearnEn:
-                return False
-        if spec.OverlayRoutingEn != self.OverlayRoutingEn:
-            return False
-        if spec.IPMappingPriority != self.IPMappingPriority:
-            return False
-        return True
+            if spec.LearnSpec.LearnMode != objSpec.LearnSpec.LearnMode:
+                mismatchingAttrs.append('LearnMode')
+            if spec.LearnSpec.LearnAgeTimeout != objSpec.LearnSpec.LearnAgeTimeout:
+                mismatchingAttrs.append('LearnAgeTimeout')
+            if spec.LearnSpec.LearnSource.ArpLearnEn != objSpec.LearnSpec.LearnSource.ArpLearnEn:
+                mismatchingAttrs.append('ArpLearnEn')
+            if spec.LearnSpec.LearnSource.DhcpLearnEn != objSpec.LearnSpec.LearnSource.DhcpLearnEn:
+                mismatchingAttrs.append('DhcpLearnEn')
+            if spec.LearnSpec.LearnSource.DataPktLearnEn != objSpec.LearnSpec.LearnSource.DataPktLearnEn:
+                mismatchingAttrs.append('DataPktLearnEn')
+        return mismatchingAttrs
 
     def ValidateYamlSpec(self, spec):
         if utils.IsPipelineApulu():

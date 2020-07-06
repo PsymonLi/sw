@@ -279,6 +279,20 @@ def ValidateRpcEncap(encaptype, encapval, dstencap):
             return False
     return True
 
+def CompareSpec(objSpec, agentSpec, attrs=None):
+    mismatchingAttrs = []
+    if not attrs or len(attrs) == 0:
+        # if nothing passed, validate all attributes present in objSpec
+        attrs = objSpec.DESCRIPTOR.fields_by_name.keys()
+        agentSpecAttrs = agentSpec.DESCRIPTOR.fields_by_name.keys()
+        # make sure objSpec & agentSpec have same attributes
+        mismatchingAttrs.extend(list(set(attrs) ^ set(agentSpecAttrs)))
+
+    for attr in attrs:
+        if getattr(objSpec, attr, None) != getattr(agentSpec, attr, None):
+            mismatchingAttrs.append(attr)
+    return mismatchingAttrs
+
 def ValidateGrpcResponse(resp, expApiStatus=types_pb2.API_STATUS_OK):
     return expApiStatus == resp.ApiStatus
 
@@ -1150,6 +1164,10 @@ def CopySpec(spec, ifspec):
     for attr in ifspec.__dict__:
         setattr(spec, attr, getattr(ifspec, attr))
     return spec
+
+def ValidateListAttr(cfgAttr, specAttr):
+    mismatchCount = len(set(cfgAttr) ^ set(specAttr))
+    return True if mismatchCount == 0 else False
 
 def ValidatePolicyAttr(cfgAttr, specAttr):
     if cfgAttr == None and specAttr == None:

@@ -182,9 +182,9 @@ class VnicObject(base.ConfigObjectBase):
     def Show(self):
         logger.info("VNIC object:", self)
         logger.info("- %s" % repr(self))
-        logger.info("- Vlan: %s %d|Mpls:%d|Vxlan:%d|MAC:%s|SourceGuard:%s|Movable:%s|Dot1Qenabled:%s"\
+        logger.info("- Vlan: %s %d|Mpls:%d|Vxlan:%d|MAC:%s|SourceGuard:%s|Movable:%s"\
         % (self.Dot1Qenabled, self.VlanId, self.MplsSlot, self.Vnid, self.MACAddr, str(self.SourceGuard), \
-        self.Movable, self.Dot1Qenabled))
+        self.Movable))
         logger.info("- RxMirror:", self.RxMirror)
         logger.info("- TxMirror:", self.TxMirror)
         logger.info("- V4MeterId:%d|V6MeterId:%d" %(self.V4MeterId, self.V6MeterId))
