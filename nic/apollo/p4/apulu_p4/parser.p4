@@ -160,7 +160,6 @@ parser start {
     return select(capri_intrinsic.tm_iport) {
         TM_PORT_INGRESS : parse_ingress_recirc_header;
         TM_PORT_DMA : parse_txdma_to_ingress;
-        TM_PORT_EGRESS : parse_egress_to_ingress;
         default : parse_uplink;
         0x1 mask 0 : deparse_ingress;
         0x2 mask 0 : egress_start;
@@ -176,12 +175,6 @@ parser parse_uplink {
 parser parse_ingress_recirc_header {
     extract(capri_p4_intrinsic);
     extract(ingress_recirc);
-    return parse_ingress_packet;
-}
-
-@pragma xgress ingress
-parser parse_egress_to_ingress {
-    extract(capri_p4_intrinsic);
     return parse_ingress_packet;
 }
 
@@ -409,9 +402,14 @@ parser parse_udp_2 {
 @pragma deparse_only
 @pragma xgress ingress
 parser deparse_ingress {
-    // intrinsic headers
     extract(capri_intrinsic);
     extract(capri_p4_intrinsic);
+
+    extract(capri_txdma_intrinsic);
+    extract(p4plus_to_p4);
+    extract(p4plus_to_p4_vlan);
+    extract(arm_to_p4i);
+
     extract(capri_rxdma_intrinsic);
 
     extract(ingress_recirc);

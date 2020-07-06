@@ -7,15 +7,13 @@ struct phv_                 p;
 
 %%
 
+.assert(offsetof(p, capri_p4_intrinsic_valid) - offsetof(p, capri_intrinsic_valid) == 1)
+
 p4i_drop_stats:
     seq             c1, r5, r0
     seq.!c1         c1, k.control_metadata_rx_packet, TRUE
     nop.c1.e
-    phvwr.f         p.{capri_p4_intrinsic_valid, \
-                        arm_to_p4i_valid, \
-                        p4plus_to_p4_vlan_valid, \
-                        p4plus_to_p4_valid, \
-                        capri_txdma_intrinsic_valid}, 0x10
+    phvwr.f         p.capri_p4_intrinsic_valid, 1
     add             r7, r0, k.capri_p4_intrinsic_packet_len
     addi            r6, r0, 0x1000001
     or              r7, r7, r6, 32
