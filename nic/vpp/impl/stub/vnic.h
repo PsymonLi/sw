@@ -60,6 +60,10 @@ pds_src_vnic_info_get (uint16_t lkp_id, uint32_t addr, uint8_t **rewrite,
     return 0;
 }
 
+static inline void
+pds_vnic_active_session_clear(void) {
+}
+
 #ifdef __cplusplus
 }
 #endif

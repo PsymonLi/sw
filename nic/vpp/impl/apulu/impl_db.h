@@ -95,6 +95,9 @@ pds_impl_db_device_entry_t * pds_impl_db_device_get(void);
 int pds_impl_db_vr_ip_mac_get (uint16_t subnet, uint32_t *vr_ip, uint8_t **vr_mac);
 bool pds_impl_db_vr_ip_get (uint16_t subnet, uint32_t *vr_ip);
 
+typedef void pds_foreach_vnic_cb(pds_impl_db_vnic_entry_t *);
+void  pds_impl_db_foreach_vnic(pds_foreach_vnic_cb *cb);
+
 #ifdef __cplusplus
 }
 #endif

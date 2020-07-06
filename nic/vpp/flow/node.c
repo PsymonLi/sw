@@ -1234,7 +1234,10 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
             }
             goto err_rflow;
         }
-        ses_ctr[ftlv4_cache_get_counter_index(i, thread_index)]++;
+        if (PREDICT_TRUE(!pds_is_flow_session_present(p0))) {
+            // don't increment ctr if session is already present
+            ses_ctr[ftlv4_cache_get_counter_index(i, thread_index)]++;
+        }
         pds_session_set_data(session_id, i_handle,
                              r_handle,
                              pds_flow_trans_proto(ftlv4_cache_get_proto(i, 
@@ -1317,7 +1320,10 @@ pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter,
             }
             goto err_rflow;
         }
-        ses_ctr[ftlv6_cache_get_counter_index(i)]++;
+        if (PREDICT_TRUE(!pds_is_flow_session_present(p0))) {
+            // don't increment ctr if session is already present
+            ses_ctr[ftlv6_cache_get_counter_index(i)]++;
+        }
         p0 = b[i/2];
         pds_session_set_data(session_id, i_handle,
                              r_handle,

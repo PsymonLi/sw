@@ -286,3 +286,19 @@ pds_impl_db_init (void)
 
     return 0;
 }
+
+void
+pds_impl_db_foreach_vnic (pds_foreach_vnic_cb *cb)
+{
+    u16 *offset;
+    pds_impl_db_vnic_entry_t *entry;
+
+    vec_foreach(offset, impl_db_ctx.vnic_pool_idx) {
+        if ((*offset) == 0xffff) {
+            continue;
+        }
+        entry = pool_elt_at_index(impl_db_ctx.vnic_pool_base, (*offset));
+        //assert(entry);
+        (*cb)(entry);
+    }
+}

@@ -5,6 +5,7 @@
 #ifndef __VPP_IMPL_APULU_VNIC_H__
 #define __VPP_IMPL_APULU_VNIC_H__
 
+#include <vnet/ip/ip.h>
 #include <nic/vpp/infra/utils.h>
 #include <nic/vpp/infra/operd/alerts.h>
 #include <nic/apollo/packet/apulu/p4_cpu_hdr.h>
@@ -20,6 +21,7 @@ int pds_dst_vnic_info_get(uint16_t lkp_id, uint32_t addr, uint16_t *vnic_id,
                           uint16_t *vnic_nh_hw_id);
 int pds_src_vnic_info_get(uint16_t lkp_id, uint32_t addr, uint8_t **rewrite,
                           uint16_t *host_lif_hw_id);
+void pds_vnic_active_session_clear(void);
 
 static inline int
 pds_ingress_bd_id_get (void *hdr)
