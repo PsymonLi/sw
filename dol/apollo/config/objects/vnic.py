@@ -183,8 +183,8 @@ class VnicObject(base.ConfigObjectBase):
         logger.info("VNIC object:", self)
         logger.info("- %s" % repr(self))
         logger.info("- Vlan: %s %d|Mpls:%d|Vxlan:%d|MAC:%s|SourceGuard:%s|Movable:%s"\
-        % (self.Dot1Qenabled, self.VlanId, self.MplsSlot, self.Vnid, self.MACAddr, str(self.SourceGuard), \
-        self.Movable))
+        % (self.Dot1Qenabled, self.VlanId, self.MplsSlot, self.Vnid, self.MACAddr,\
+           str(self.SourceGuard), self.Movable))
         logger.info("- RxMirror:", self.RxMirror)
         logger.info("- TxMirror:", self.TxMirror)
         logger.info("- V4MeterId:%d|V6MeterId:%d" %(self.V4MeterId, self.V6MeterId))
@@ -260,9 +260,10 @@ class VnicObject(base.ConfigObjectBase):
             self.RollbackMany(attrlist)
             utils.ModifyPolicyDependency(self, False)
         else:
-            if self.Dot1Qenabled:
-                self.VlanId = self.GetPrecedent().VlanId
-            self.UseHostIf = not(self.UseHostIf)
+            #if self.Dot1Qenabled:
+            #    self.VlanId = self.GetPrecedent().VlanId
+            self.SourceGuard = not(self.SourceGuard)
+            logger.info(f'Rolled back attributes - SourceGuard')
         return
 
     def PopulateKey(self, grpcmsg):
