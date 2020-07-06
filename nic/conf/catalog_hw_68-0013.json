@@ -6,7 +6,7 @@
     "emmc_size": "16",
     "memory_size": "8",
     "num_asics" : "1",
-    "board_type" : "Naples100 IBM",
+    "board_type" : "Naples100",
     "voltages" :
     {
         "startup_arm" : "",
