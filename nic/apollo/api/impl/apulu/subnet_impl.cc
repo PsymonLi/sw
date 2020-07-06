@@ -352,7 +352,8 @@ subnet_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
 }
 
 sdk_ret_t
-subnet_impl::add_vr_ip_mapping_entries_(pds_subnet_spec_t *spec) {
+subnet_impl::add_vr_ip_mapping_entries_(uint16_t bd_hw_id,
+                                        pds_subnet_spec_t *spec) {
     sdk_ret_t ret;
     lif_impl *lif;
     vpc_entry *vpc;
@@ -366,7 +367,7 @@ subnet_impl::add_vr_ip_mapping_entries_(pds_subnet_spec_t *spec) {
 
     // fill the MAPPING table entry data
     PDS_IMPL_FILL_SUBNET_VR_IP_MAPPING_DATA(&mapping_data,
-                                            lif->nh_idx(), hw_id_);
+                                            lif->nh_idx(), bd_hw_id);
     // program the IPv4 VR IP in the MAPPING table
     if (v4_vr_ip_mapping_hdl_.valid()) {
         // fill the IPv4 key
@@ -419,7 +420,7 @@ subnet_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
 
     // install MAPPING table entries for VR IPs pointing to datapath lif
     if (v4_vr_ip_mapping_hdl_.valid() || v6_vr_ip_mapping_hdl_.valid()) {
-        ret = add_vr_ip_mapping_entries_(spec);
+        ret = add_vr_ip_mapping_entries_(hw_id_, spec);
         if (unlikely(ret != SDK_RET_OK)) {
             return ret;
         }
@@ -538,16 +539,16 @@ subnet_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
     sdk_ret_t ret;
     p4pd_error_t p4pd_ret;
     subnet_impl *orig_impl;
+    pds_subnet_spec_t *spec;
     p4i_bd_actiondata_t p4i_bd_data;
     p4e_bd_actiondata_t p4e_bd_data;
-    pds_subnet_spec_t *spec;
 
     spec = &obj_ctxt->api_params->subnet_spec;
     orig_impl = (subnet_impl *)(((subnet_entry *)orig_obj)->impl());
 
     // install MAPPING table entries for VR IPs pointing to datapath lif
     if (v4_vr_ip_mapping_hdl_.valid() || v6_vr_ip_mapping_hdl_.valid()) {
-        ret = add_vr_ip_mapping_entries_(spec);
+        ret = add_vr_ip_mapping_entries_(orig_impl->hw_id(), spec);
         if (unlikely(ret != SDK_RET_OK)) {
             return ret;
         }

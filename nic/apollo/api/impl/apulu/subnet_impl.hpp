@@ -220,9 +220,11 @@ private:
                                        pds_subnet_spec_t *spec);
 
     /// \brief reserve the mapping table resources needed for VR IP of subnet
+    /// \param[in]  bd_hw_id h/w id of the subnet
     /// \param[in]  spec    subnet configuration
     /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t add_vr_ip_mapping_entries_(pds_subnet_spec_t *spec);
+    sdk_ret_t add_vr_ip_mapping_entries_(uint16_t bd_hw_id,
+                                         pds_subnet_spec_t *spec);
 
     /// \brief      program subnet related tables during subnet create by
     ///             enabling stage0 tables corresponding to the new epoch
