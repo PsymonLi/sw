@@ -119,6 +119,9 @@ extern const char *g_upg_log_pfx;
     }                                                                          \
 }
 
+#define LOG_DUPLICATE_RSP(svc)                                                 \
+    UPG_TRACE_ERR("Duplicate service response from %s", svc);
+
 
 }    // namespace upg
 }    // namespace sdk

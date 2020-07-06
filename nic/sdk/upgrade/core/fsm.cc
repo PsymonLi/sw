@@ -328,7 +328,14 @@ upg_event_handler (upg_event_msg_t *event)
 
     LOG_RESPONSE_MSG(event->rsp_svc_name, upg_status2str(event->rsp_status));
     if (event->stage == id && fsm_states.is_valid_service(svc_name)) {
-        fsm_states.clear_pending_svc(svc_name);
+        if (fsm_states.find_pending_svc(svc_name)) {
+            fsm_states.clear_pending_svc(svc_name);
+        } else {
+            // This is a valid svc but fsm has
+            // already got the response
+            LOG_DUPLICATE_RSP(svc_name.c_str());
+            return;
+        }
 
         if ((event->stage == fsm_states.start_stage()) ||
             fsm_states.is_discovery()) {
@@ -517,8 +524,7 @@ fsm::is_valid_service(const std::string svc) const {
 }
 
 void
-fsm::skip_svc(void)
-{
+fsm::skip_svc(void) {
     SDK_ASSERT(pending_response_ > 0);
     pending_response_--;
 }
@@ -532,8 +538,7 @@ fsm::next_svc(void) const {
 }
 
 std::string
-fsm::pending_svcs(void)
-{
+fsm::pending_svcs(void) {
     std::string svcs;
     for (auto const& s : pending_svcs_) {
         svcs += s + ", ";
@@ -541,9 +546,18 @@ fsm::pending_svcs(void)
     return svcs;
 }
 
+bool
+fsm::find_pending_svc(std::string svc) const {
+    auto itr = std::find(pending_svcs_.begin(), pending_svcs_.end(), svc);
+    if (itr != pending_svcs_.end()) {
+       return true;
+    } else {
+        return false;
+    }
+}
+
 void
-fsm::clear_pending_svc(std::string svc)
-{
+fsm::clear_pending_svc(std::string svc) {
     auto itr = std::find(pending_svcs_.begin(), pending_svcs_.end(), svc);
     if (itr != pending_svcs_.end()) {
         pending_svcs_.erase(itr);
@@ -551,8 +565,7 @@ fsm::clear_pending_svc(std::string svc)
 }
 
 void
-fsm::set_pending_svcs(void)
-{
+fsm::set_pending_svcs(void) {
     for (auto svc : svc_sequence_) {
         pending_svcs_.push_back(svc);
     }

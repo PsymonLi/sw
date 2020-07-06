@@ -91,6 +91,7 @@ dispatch_event (ipc_svc_dom_id_t dom, upg_stage_t id, upg_svc svc)
     SDK_ASSERT(fsm_stages.find(id) != fsm_stages.end());
 
     if (svc.has_valid_ipc_id()) {
+        fsm_states.set_pending_svc(svc.name());
         svc.dispatch_event(dom, id, fsm_states.init_params()->upg_mode);
     }
 }
@@ -120,6 +121,7 @@ send_discovery_event (ipc_svc_dom_id_t dom, upg_stage_t id)
     SDK_ASSERT(fsm_stages.find(id) != fsm_stages.end());
     LOG_BROADCAST_MSG(ipc_svc_dom_id_to_name(dom));
 
+    fsm_states.set_pending_svcs();
     upg_send_broadcast_request(dom, id, fsm_states.init_params()->upg_mode,
                                fsm_services.size(), fsm_states.timeout());
 }
@@ -162,6 +164,7 @@ upg_interactive_stage_exec (upg_stage_t stage)
         return SDK_RET_ERR;
     }
     stage_in_progress = true;
+    fsm_states.clear_pending_svcs();
     // todo:
     fsm_states.set_current_stage(stage);
 
@@ -215,6 +218,15 @@ upg_event_interactive_handler (upg_event_msg_t *event)
 
     LOG_RESPONSE_MSG(event->rsp_svc_name, upg_status2str(event->rsp_status));
     if (event->stage == id && fsm_states.is_valid_service(svc_name)) {
+        if (fsm_states.find_pending_svc(svc_name)) {
+            fsm_states.clear_pending_svc(svc_name);
+        } else {
+            // This is a valid svc but fsm has
+            // already got the response
+            LOG_DUPLICATE_RSP(svc_name.c_str());
+            return;
+        }
+
         if (fsm_states.is_discovery()) {
             update_ipc_id(svc_name, event->rsp_svc_ipc_id);
         }
