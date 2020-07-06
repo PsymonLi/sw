@@ -2294,14 +2294,19 @@ func (i *IrisAPI) initLifStream(uid string) {
 	}
 	log.Infof("Iris API: %s | %s", types.InfoPipelineInit, types.InfoSingletonLifGet)
 
-	lifStream, err := i.EventClient.EventListen(context.Background())
-	if err != nil {
-		log.Error(errors.Wrapf(types.ErrPipelineEventListen, "Iris Init: %v", err))
-	}
+	go func() {
+		// subscribe to event stream
+		var stream halapi.Event_EventListenClient
+		for {
+			stream, err = i.EventClient.EventListen(context.Background())
+			if err != nil {
+				time.Sleep(time.Second * 1)
+				continue
+			}
+			stream.Send(evtReqMsg)
+			break
+		}
 
-	lifStream.Send(evtReqMsg)
-
-	go func(stream halapi.Event_EventListenClient) {
 		for {
 			resp, err := stream.Recv()
 			if err == io.EOF {
@@ -2317,16 +2322,17 @@ func (i *IrisAPI) initLifStream(uid string) {
 			}
 
 			lif := resp.GetLifEvent()
-
-			err = i.createHostInterface(uid, lif.Spec, lif.Status)
-
+			if lif != nil {
+				err = i.createHostInterface(uid, lif.Spec, lif.Status)
+			}
 		}
+	}()
 
-	}(lifStream)
-
-	// Store initial Lifs
-	for _, lif := range lifs.Response {
-		i.createHostInterface(uid, lif.Spec, lif.Status)
+	if lifs != nil {
+		// Store initial Lifs
+		for _, lif := range lifs.Response {
+			i.createHostInterface(uid, lif.Spec, lif.Status)
+		}
 	}
 }
 
@@ -2358,16 +2364,21 @@ func (i *IrisAPI) createPortsAndUplinks(uid string) error {
 	ports, err := i.PortClient.PortGet(context.Background(), portReqMsg)
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrPipelinePortGet, "Iris Init: %v", err))
-		return errors.Wrapf(types.ErrPipelinePortGet, "Iris Init: %v", err)
 	}
 
-	portStream, err := i.EventClient.EventListen(context.Background())
-	if err != nil {
-		log.Error(errors.Wrapf(types.ErrPipelineEventListen, "Iris Init: %v", err))
-	}
-	portStream.Send(evtReqMsg)
+	go func() {
+		// subscribe to event stream
+		var stream halapi.Event_EventListenClient
+		for {
+			stream, err = i.EventClient.EventListen(context.Background())
+			if err != nil {
+				time.Sleep(time.Second * 1)
+				continue
+			}
+			stream.Send(evtReqMsg)
+			break
+		}
 
-	go func(stream halapi.Event_EventListenClient) {
 		for {
 			resp, err := stream.Recv()
 			if err == io.EOF {
@@ -2390,11 +2401,13 @@ func (i *IrisAPI) createPortsAndUplinks(uid string) error {
 
 		}
 
-	}(portStream)
+	}()
 
-	// Store initial uplinks
-	for _, port := range ports.Response {
-		i.createUplinkInterface(uid, port.Spec, port.Status)
+	if ports != nil {
+		// Store initial uplinks
+		for _, port := range ports.Response {
+			i.createUplinkInterface(uid, port.Spec, port.Status)
+		}
 	}
 
 	return nil

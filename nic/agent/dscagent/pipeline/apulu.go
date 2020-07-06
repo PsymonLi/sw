@@ -2057,13 +2057,6 @@ func (a *ApuluAPI) initEventStream() {
 		},
 	}
 
-	// subscribe to event stream
-	eventStream, err := a.EventClient.EventSubscribe(context.Background())
-	if err != nil {
-		log.Error(errors.Wrapf(types.ErrPipelineEventListen, "Init: %v", err))
-	}
-	eventStream.Send(evtReqMsg)
-
 	// get all the host IFs known at this time
 	ifReqMsg := &halapi.InterfaceGetRequest{
 		Id: [][]byte{},
@@ -2082,7 +2075,19 @@ func (a *ApuluAPI) initEventStream() {
 		log.Error(errors.Wrapf(types.ErrPipelinePortGet, "Init: %v", err))
 	}
 
-	go func(stream halapi.EventSvc_EventSubscribeClient) {
+	go func() {
+		// subscribe to event stream
+		var stream halapi.EventSvc_EventSubscribeClient
+		for {
+			stream, err = a.EventClient.EventSubscribe(context.Background())
+			if err != nil {
+				time.Sleep(time.Second * 1)
+				continue
+			}
+			stream.Send(evtReqMsg)
+			break
+		}
+
 		for {
 			resp, err := stream.Recv()
 			if err == io.EOF {
@@ -2107,25 +2112,33 @@ func (a *ApuluAPI) initEventStream() {
 			case halapi.EventId_EVENT_ID_HOST_IF_UP:
 				fallthrough
 			case halapi.EventId_EVENT_ID_HOST_IF_DOWN:
-				err = a.handleHostInterface(intf.Spec, intf.Status)
+				if intf != nil {
+					err = a.handleHostInterface(intf.Spec, intf.Status)
+				}
 			case halapi.EventId_EVENT_ID_PORT_CREATE:
 				fallthrough
 			case halapi.EventId_EVENT_ID_PORT_UP:
 				fallthrough
 			case halapi.EventId_EVENT_ID_PORT_DOWN:
-				err = a.handleUplinkInterface(port.Spec, port.Status)
+				if port != nil {
+					err = a.handleUplinkInterface(port.Spec, port.Status)
+				}
 			}
 		}
-	}(eventStream)
+	}()
 
-	// Store initial host ifs
-	for _, intf := range intfs.Response {
-		a.handleHostInterface(intf.Spec, intf.Status)
+	if intfs != nil {
+		// Store initial host ifs
+		for _, intf := range intfs.Response {
+			a.handleHostInterface(intf.Spec, intf.Status)
+		}
 	}
 
-	// handle the ports
-	for _, port := range ports.Response {
-		a.handleUplinkInterface(port.Spec, port.Status)
+	if ports != nil {
+		// handle the ports
+		for _, port := range ports.Response {
+			a.handleUplinkInterface(port.Spec, port.Status)
+		}
 	}
 
 	// list of uplink interfaces and store the key/lldp neighbor info
