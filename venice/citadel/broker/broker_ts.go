@@ -1358,15 +1358,19 @@ func (br *Broker) DeleteOldData(ctx context.Context, database, measurement, bord
 			br.logger.Errorf("Failed to send delete request to replica %v. Err: %v", repl, err)
 		}
 		// parse the response
-		for _, rs := range resp.Result {
-			rslt := query.Result{}
-			err := rslt.UnmarshalJSON(rs.Data)
-			if err != nil {
-				return results, err
+		if resp != nil {
+			for _, rs := range resp.Result {
+				if rs != nil {
+					rslt := query.Result{}
+					err := rslt.UnmarshalJSON(rs.Data)
+					if err != nil {
+						return results, err
+					}
+					// Since we are making each query individually,
+					// we need to manually set the StatementID
+					results = append(results, &rslt)
+				}
 			}
-			// Since we are making each query individually,
-			// we need to manually set the StatementID
-			results = append(results, &rslt)
 		}
 	}
 
