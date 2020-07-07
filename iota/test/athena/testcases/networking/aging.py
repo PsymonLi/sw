@@ -62,17 +62,21 @@ def VerifyDumpCount(tc):
 
     for node, nic in tc.node_nic_pairs:
         req = api.Trigger_CreateExecuteCommandsRequest()
+        if hasattr(tc.args, "stdout_file"):
+            api.Trigger_AddNaplesCommand(req, node, "cat %s" % (tc.args.stdout_file), nic)
+
         api.Trigger_AddNaplesCommand(req, node, "grep -c %s %s" % (tc.args.dump_sym,
                                      tc.args.dump_file), nic)
         resp = api.Trigger(req)
-        cmd = resp.commands[0]
-        api.PrintCommandResults(cmd)
+        for cmd in resp.commands:
+            api.PrintCommandResults(cmd)
 
-        actual_count = cmd.stdout.strip().split()[0]
-        if int(actual_count) != expected_count:
-            api.Logger.error("%s actual_count %s != expected_count %d in %s" % (tc.args.dump_sym, 
-                             actual_count, expected_count, tc.args.dump_file))
-            return api.types.status.FAILURE
+            if "grep -c" in cmd.command:
+                actual_count = cmd.stdout.strip().split()[0]
+                if int(actual_count) != expected_count:
+                    api.Logger.error("%s actual_count %s != expected_count %d in %s" % (tc.args.dump_sym, 
+                                     actual_count, expected_count, tc.args.dump_file))
+                    return api.types.status.FAILURE
 
     return api.types.status.SUCCESS
 

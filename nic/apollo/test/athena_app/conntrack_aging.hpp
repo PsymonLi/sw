@@ -27,6 +27,8 @@ bool conntrack_populate_simple(test_vparam_ref_t vparam);
 bool conntrack_populate_random(test_vparam_ref_t vparam);
 bool conntrack_populate_full(test_vparam_ref_t vparam);
 bool conntrack_and_cache_populate(test_vparam_ref_t vparam);
+bool conntrack_aging_traffic_chkpt_start(test_vparam_ref_t vparam);
+bool conntrack_aging_traffic_chkpt_end(test_vparam_ref_t vparam);
 bool conntrack_aging_test(test_vparam_ref_t vparam);
 bool conntrack_aging_normal_tmo_set(test_vparam_ref_t vparam);
 bool conntrack_aging_accel_tmo_set(test_vparam_ref_t vparam);
@@ -45,6 +47,8 @@ bool conntrack_aging_metrics_show(test_vparam_ref_t vparam);
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_populate_random),              \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_populate_full),                \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_and_cache_populate),           \
+    APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_traffic_chkpt_start),    \
+    APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_traffic_chkpt_end),      \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_test),                   \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_expiry_log_set),         \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_normal_tmo_set),         \

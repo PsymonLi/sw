@@ -38,6 +38,7 @@ static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
  */
 static aging_tolerance_t    ct_tolerance(EXPIRY_TYPE_CONNTRACK);
 static aging_metrics_t      conntrack_metrics(ftl_dev_if::FTL_QTYPE_SCANNER_CONNTRACK);
+static ftl_table_metrics_t  session_ftl_metrics;
 
 const aging_tolerance_t&
 ct_tolerance_get(void)
@@ -430,6 +431,35 @@ done:
     return ct_tolerance.create_id_map_size() &&
            CONNTRACK_CREATE_RET_VALIDATE(ret) &&
            CONNTRACK_CREATE_RET_VALIDATE(cache_ret);
+}
+
+bool
+conntrack_aging_traffic_chkpt_start(test_vparam_ref_t vparam)
+{
+    conntrack_metrics.baseline();
+    session_ftl_metrics.baseline();
+    ct_tolerance.reset(UINT32_MAX);
+    ct_tolerance.using_fte_indices(true);
+
+    TEST_LOG_INFO("Current active FTL entries: %" PRIu64 "\n",
+                  session_ftl_metrics.num_entries());
+    return true;
+}
+
+bool
+conntrack_aging_traffic_chkpt_end(test_vparam_ref_t vparam)
+{
+    uint64_t    actual = session_ftl_metrics.delta_num_entries();
+    uint32_t    expected = vparam.expected_num();
+
+    if (expected) {
+        TEST_LOG_INFO("Test param expected active FTL entries: %u vs actual: %"
+                      PRIu64 "\n", expected, actual);
+    } else {
+        TEST_LOG_INFO("Delta active FTL entries: %" PRIu64 "\n", actual);
+    }
+    ct_tolerance.create_id_map_override(actual);
+    return true;
 }
 
 pds_ret_t

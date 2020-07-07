@@ -130,6 +130,26 @@ testcases:
     # Connection Tracking Test
     #=======================================
 
+    -   name    : Connection_Tracking_Clear_Flows
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            clear_flow_set: True
+
+    -   name    : Flow_Gen_Conntrack
+        testcase: testcases.networking.config.flow_gen
+        enable  : True
+        args    :
+            max_dyn_flow_count : 64
+
+    -   name    : Conntrack_Aging_Chkpt_Start
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : conntrack_aging_chkpt_start.txt
+            log_file: /var/log/pensando/iota_conntrack_aging_chkpt_start_test.log
+
     -   name    : Connection_Tracking_Test
         testcase: testcases.networking.conntrack
         enable  : True
@@ -137,6 +157,18 @@ testcases:
             type      : nested
             state     : ['SYNACK_SENT','SYNACK_RECV','ESTABLISHED_H2S', 'ESTABLISHED_S2H','FIN_SENT','FIN_RECV','TIME_WAIT_H2S','TIME_WAIT_S2H','RST_CLOSE_H2S','RST_CLOSE_S2H']
             proto     : ['TCP']
+
+    -   name    : Conntrack_Aging_Chkpt_End
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : conntrack_aging_chkpt_end.txt
+            stdout_file: /data/iota_conntrack_chkpt_start.log
+            dump_file: /data/iota_conntrack_chkpt_end.log
+            dump_sym: flow_state
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_conntrack_aging_chkpt_end_test.log
 
     #=======================================
     # Aging Tests (without traffic)
@@ -226,7 +258,7 @@ testcases:
         args    :
             clear_flow_set: True
 
-    -   name    : Flow_Gen
+    -   name    : Flow_Gen_Aging
         testcase: testcases.networking.config.flow_gen
         enable  : True
         args    :

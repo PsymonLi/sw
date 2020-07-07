@@ -1,0 +1,17 @@
+
+test_log_file_create /var/log/pensando/iota_conntrack_aging_chkpt_end_test.log
+
+conntrack_dump /data/iota_conntrack_chkpt_start.log
+
+conntrack_aging_traffic_chkpt_end
+conntrack_aging_normal_tmo_set {tcp synack_sent 3} {tcp synack_recv 3} {tcp established 3} {tcp fin_sent 3} {tcp fin_recv 3} {tcp time_wait 3} {tcp rst_close 3}
+conntrack_aging_test
+
+conntrack_dump /data/iota_conntrack_chkpt_end.log
+
+conntrack_aging_metrics_show
+conntrack_aging_accel_control false
+conntrack_aging_tmo_factory_dflt_set
+conntrack_aging_fini
+
+skip_fte_flow_prog_set false
