@@ -7,7 +7,8 @@
 
 #include "repl_state_tp_common.h"
 
-#define SOCKET_FILE "/run/vpp/sync.sock"
+#define VPP_UIPC_REPL_SOCKET_DIR "/share/vpp"
+#define VPP_UIPC_REPL_SOCKET_FILE "/share/vpp/sync.sock"
 #define BUF_SIZE 4096
 #define sqname "vpp_sess_syncq"
 

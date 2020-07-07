@@ -30,6 +30,8 @@ vpp_hitless_upg_ev_hdlr (upg_ev_params_t *params)
                        __FUNCTION__);
         i = repl_state_tp_server_init();
         if (i != 0) {
+            upg_log_notice("%s: repl_state_tp_server_init failed with errno %d\n",
+                           __FUNCTION__, i);
             ret = SDK_RET_ERR;
         }
         break;
@@ -48,6 +50,8 @@ vpp_hitless_upg_ev_hdlr (upg_ev_params_t *params)
                        __FUNCTION__);
         i = repl_state_tp_client_init();
         if (i != 0) {
+            upg_log_notice("%s: repl_state_tp_client_init failed with errno %d\n",
+                           __FUNCTION__, i);
             ret = SDK_RET_ERR;
         }
         upg_log_notice("%s: Inter domain UIPC client state sync: %d\n",

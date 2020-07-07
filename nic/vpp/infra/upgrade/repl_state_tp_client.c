@@ -71,21 +71,22 @@ repl_state_tp_client_init()
     clib_error_t *error = 0;
     clib_file_t clib_file = { 0 };
 
-    s->config = SOCKET_FILE;
+    memset(s, '\0', sizeof(*s));
+    s->config = VPP_UIPC_REPL_SOCKET_FILE;
     // We don't use non-blocking connect here as by the time we are here
     // server must be up and running
     s->flags = CLIB_SOCKET_F_IS_CLIENT |
                CLIB_SOCKET_F_SEQPACKET;    /* no stream boundaries headache */
 
     // makedir of file socket
-    u8 *tmp = format(0, "%s", "/run/vpp");
+    u8 *tmp = format(0, "%s", VPP_UIPC_REPL_SOCKET_DIR);
     vlib_unix_recursive_mkdir((char *) tmp);
     vec_free (tmp);
 
     error = clib_socket_init(s);
     if (error) {
         clib_error_report(error);
-        return 1;
+        return error->code;
     }
 
     clib_file.read_function = repl_state_tp_client_read;

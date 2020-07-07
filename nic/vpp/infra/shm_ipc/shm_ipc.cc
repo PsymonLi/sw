@@ -11,7 +11,7 @@
 #include "shm_ipc_private.hpp"
 
 static const int BATCH_SIZE = 16;
-using mshm = boost::interprocess::managed_shared_memory;
+using mshm = boost::interprocess::managed_mapped_file;
 
 struct shm_ipcq {
     shm_ipcq(const char *name, bool is_producer, mshm *shmp);
@@ -22,7 +22,7 @@ struct shm_ipcq {
     uint64_t reads, writes;
     uint32_t old_entries;
     std::vector<BufferObj *>freeq;
-    boost::interprocess::managed_shared_memory *shm;
+    boost::interprocess::managed_mapped_file *shm;
     std::string qname;
     std::string sq_name;
     std::string aq_name;
@@ -151,7 +151,7 @@ shm_ipcq_mgr::deleteq (const char *qname)
 bool
 shm_ipcq_mgr::init (void)
 {
-    shm = sdk::lib::shmmgr::factory("IPC_MEMSTORE", SHM_IPC_MEMSTORE_SIZE,
+    shm = sdk::lib::shmmgr::factory("/share/vpp_ipc_memstore", SHM_IPC_MEMSTORE_SIZE,
                                     sdk::lib::SHM_OPEN_OR_CREATE);
     return shm ? true : false;
 }

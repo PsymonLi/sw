@@ -7,7 +7,7 @@
 
 #ifdef __cplusplus
 
-#include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/lockfree/spsc_queue.hpp>
 
 // num_qs, change this to the number of threads if we have to create
@@ -44,7 +44,7 @@ struct BufferObj {
     uint8_t data[VPP_SHMIPC_BUFFER_SIZE];
 };
 
-typedef boost::interprocess::managed_shared_memory::handle_t ptr_handle_t;
+typedef boost::interprocess::managed_mapped_file::handle_t ptr_handle_t;
 typedef boost::lockfree::spsc_queue<ptr_handle_t,
                                     boost::lockfree::capacity<ipc_qsize>
                                     > spsc_q;

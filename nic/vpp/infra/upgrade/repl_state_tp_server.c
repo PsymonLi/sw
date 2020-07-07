@@ -85,6 +85,7 @@ repl_state_tp_server_accept (clib_file_t * uf)
     clib_socket_t *client = &repl_state_tp_client_sock;
     clib_file_t clib_file = { 0 };
 
+    memset(client, '\0', sizeof(*client));
     error = clib_socket_accept(s, client);
     if (error) {
         return error;
@@ -114,20 +115,21 @@ repl_state_tp_server_init (void)
     clib_socket_t *s = &repl_state_tp_server_sock;
     clib_error_t *error = 0;
 
-    s->config = SOCKET_FILE;
+    memset(s, '\0', sizeof(*s));
+    s->config = VPP_UIPC_REPL_SOCKET_FILE;
     s->flags = CLIB_SOCKET_F_IS_SERVER |
                CLIB_SOCKET_F_ALLOW_GROUP_WRITE |    /* PF_LOCAL socket only */
                CLIB_SOCKET_F_SEQPACKET;    /* no stream boundaries headache */
 
     // makedir of file socket
-    u8 *tmp = format(0, "%s", "/run/vpp");
+    u8 *tmp = format(0, "%s", VPP_UIPC_REPL_SOCKET_DIR);
     vlib_unix_recursive_mkdir((char *) tmp);
     vec_free (tmp);
 
     error = clib_socket_init(s);
     if (error) {
         clib_error_report(error);
-        return 1;
+        return error->code;
     }
 
     clib_file_t clib_file = { 0 };
