@@ -20,10 +20,12 @@ import (
 	"github.com/pensando/sw/venice/cmd/grpc"
 	"github.com/pensando/sw/venice/cmd/grpc/server/certificates/certapi"
 	roprotos "github.com/pensando/sw/venice/ctrler/rollout/rpcserver/protos"
+	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/certs"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 	mockevtsrecorder "github.com/pensando/sw/venice/utils/events/recorder/mock"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/rpckit"
 	tu "github.com/pensando/sw/venice/utils/testutils"
 )
 
@@ -56,7 +58,8 @@ var (
 // Mock platform agent
 type mockAgent struct {
 	sync.Mutex
-	nicDB map[string]*cmd.DistributedServiceCard
+	nicDB     map[string]*cmd.DistributedServiceCard
+	rpcServer *rpckit.RPCServer
 }
 
 // RegisterNMD registers NMD with PlatformAgent
@@ -100,6 +103,21 @@ func (m *mockAgent) GetPlatformCertificate(nic *cmd.DistributedServiceCard) ([]b
 
 func (m *mockAgent) GetPlatformSigner(nic *cmd.DistributedServiceCard) (crypto.Signer, error) {
 	return nil, nil
+}
+
+// StartServer starts the RPC server used by NMD.
+// It is needed because NMD will not proceed if it cannot connect
+func (m *mockAgent) StartServer(url string) error {
+	s, err := rpckit.NewRPCServer(globals.Netagent, globals.Localhost+":"+globals.AgentGRPCPort, rpckit.WithTLSProvider(nil))
+	m.rpcServer = s
+	return err
+}
+
+func (m *mockAgent) StopServer() {
+	if m.rpcServer != nil {
+		m.rpcServer.Stop()
+		m.rpcServer = nil
+	}
 }
 
 type mockCtrler struct {
@@ -313,6 +331,12 @@ func createNMD(t *testing.T, dbPath, mode, nodeID string) (*NMD, *mockAgent, *mo
 	roC := &mockRolloutCtrler{}
 	upgAgt := &mockUpgAgent{}
 
+	err = ag.StartServer(globals.Localhost + ":" + globals.AgentGRPCPort)
+	if err != nil {
+		log.Errorf("Error starting mock agent server: %v", err)
+		return nil, nil, nil, nil, nil
+	}
+
 	// create new NMD
 	nm, err := NewNMD(nil,
 		//ag,
@@ -360,9 +384,13 @@ func createNMD(t *testing.T, dbPath, mode, nodeID string) (*NMD, *mockAgent, *mo
 }
 
 // stopNMD stops NMD server and optionally deleted emDB file
-func stopNMD(t *testing.T, nm *NMD, cleanupDB bool) {
+func stopNMD(t *testing.T, nm *NMD, ma *mockAgent, cleanupDB bool) {
 	if nm != nil {
 		nm.Stop()
+	}
+
+	if ma != nil {
+		ma.StopServer()
 	}
 
 	if cleanupDB {

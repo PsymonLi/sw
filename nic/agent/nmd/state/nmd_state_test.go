@@ -32,9 +32,9 @@ func TestSmartNICCreateUpdateDelete(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, "", "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, "", "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
-	defer stopNMD(t, nm, false)
+	defer stopNMD(t, nm, ma, false)
 
 	// NIC message
 	nic := cmd.DistributedServiceCard{
@@ -79,9 +79,9 @@ func TestCtrlrSmartNICRegisterAndUpdate(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, ct, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, ct, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
-	defer stopNMD(t, nm, true)
+	defer stopNMD(t, nm, ma, true)
 
 	// NIC message
 	nic := cmd.DistributedServiceCard{
@@ -120,10 +120,10 @@ func TestNaplesDefaultNetworkMode(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
-	defer stopNMD(t, nm, true)
+	defer stopNMD(t, nm, ma, true)
 
 	f1 := func() (bool, interface{}) {
 
@@ -164,8 +164,8 @@ func TestNaplesNetworkMode(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// Start NMD in network mode
-	nm, _, cm, _, ro := createNMD(t, emDBPath, "network", nicKey1)
-	defer stopNMD(t, nm, true)
+	nm, ma, cm, _, ro := createNMD(t, emDBPath, "network", nicKey1)
+	defer stopNMD(t, nm, ma, true)
 	Assert(t, (nm != nil), "Failed to start NMD", nm)
 
 	cfg := nmd.DistributedServiceCard{
@@ -313,9 +313,9 @@ func TestNaplesModeTransitions(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
-	defer stopNMD(t, nm, true)
+	defer stopNMD(t, nm, ma, true)
 
 	f1 := func() (bool, interface{}) {
 
@@ -400,9 +400,9 @@ func TestNaplesNetworkModeManualApproval(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey2)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey2)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
-	defer stopNMD(t, nm, true)
+	defer stopNMD(t, nm, ma, true)
 
 	var err error
 	var resp NaplesConfigResp
@@ -471,9 +471,9 @@ func TestNaplesNetworkModeInvalidNIC(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey3)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey3)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
-	defer stopNMD(t, nm, true)
+	defer stopNMD(t, nm, ma, true)
 
 	var err error
 	var resp NaplesConfigResp
@@ -547,7 +547,7 @@ func TestNaplesRestartNetworkMode(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
 	var err error
@@ -591,11 +591,11 @@ func TestNaplesRestartNetworkMode(t *testing.T) {
 	AssertEventually(t, f2, "Failed to verify network Mode", string("10ms"), string("30s"))
 
 	// stop NMD, don't clean up DB file
-	stopNMD(t, nm, false)
+	stopNMD(t, nm, ma, false)
 
 	// create NMD again, simulating restart
-	nm, _, _, _, _ = createNMD(t, emDBPath, "host", "")
-	defer stopNMD(t, nm, true)
+	nm, ma, _, _, _ = createNMD(t, emDBPath, "host", "")
+	defer stopNMD(t, nm, ma, true)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 	AssertEventually(t, f2, "Failed to verify network Mode after Restart", string("10ms"), string("30s"))
 }
@@ -606,8 +606,8 @@ func TestNaplesInvalidMode(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// Start NMD in network mode
-	nm, _, _, _, _ := createNMD(t, emDBPath, "network", nicKey1)
-	defer stopNMD(t, nm, true)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "network", nicKey1)
+	defer stopNMD(t, nm, ma, true)
 	Assert(t, (nm != nil), "Failed to start NMD", nm)
 	type testCase struct {
 		name     string
@@ -779,7 +779,7 @@ func TestNaplesRollout(t *testing.T) {
 
 	// create nmd
 	t.Log("Create nmd")
-	nm, _, _, upgAg, roCtrl := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, upgAg, roCtrl := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 	Assert(t, (upgAg != nil), "Failed to create nmd", nm)
 	Assert(t, (roCtrl != nil), "Failed to create nmd", nm)
@@ -894,6 +894,8 @@ func TestNaplesRollout(t *testing.T) {
 	err = nm.DeleteDSCRollout()
 	Assert(t, (err == nil), "DeleteDSCRollout Failed")
 
+	// stop NMD
+	stopNMD(t, nm, ma, true)
 }
 
 func TestNaplesCmdExec(t *testing.T) {
@@ -902,7 +904,7 @@ func TestNaplesCmdExec(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
 	v := &nmd.DistributedServiceCardCmdExecute{
@@ -941,7 +943,7 @@ func TestNaplesCmdExec(t *testing.T) {
 	AssertEventually(t, f1, "Failed to post exec cmd")
 
 	// stop NMD, don't clean up DB file
-	stopNMD(t, nm, false)
+	stopNMD(t, nm, ma, false)
 }
 
 func mustOpen(f string) *os.File {
@@ -957,7 +959,7 @@ func TestNaplesFileUpload(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
 	f1 := func() (bool, interface{}) {
@@ -1028,7 +1030,7 @@ func TestNaplesFileUpload(t *testing.T) {
 	AssertEventually(t, f1, "Failed to upload file")
 
 	// stop NMD, don't clean up DB file
-	stopNMD(t, nm, false)
+	stopNMD(t, nm, ma, false)
 }
 
 func TestNaplesFileUploadNoUploadFile(t *testing.T) {
@@ -1036,7 +1038,7 @@ func TestNaplesFileUploadNoUploadFile(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
 	f1 := func() (bool, interface{}) {
@@ -1105,7 +1107,7 @@ func TestNaplesFileUploadNoUploadFile(t *testing.T) {
 	AssertEventually(t, f1, "Failed to upload file")
 
 	// stop NMD, don't clean up DB file
-	stopNMD(t, nm, false)
+	stopNMD(t, nm, ma, false)
 }
 
 func TestNaplesFileUploadNoUploadPath(t *testing.T) {
@@ -1113,7 +1115,7 @@ func TestNaplesFileUploadNoUploadPath(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
 	f1 := func() (bool, interface{}) {
@@ -1183,7 +1185,7 @@ func TestNaplesFileUploadNoUploadPath(t *testing.T) {
 	AssertEventually(t, f1, "Failed to upload file")
 
 	// stop NMD, don't clean up DB file
-	stopNMD(t, nm, false)
+	stopNMD(t, nm, ma, false)
 }
 
 func TestNaplesPkgVerify(t *testing.T) {
@@ -1191,7 +1193,7 @@ func TestNaplesPkgVerify(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
 	os.Remove("/tmp/fwupdate")
@@ -1269,7 +1271,7 @@ func TestNaplesPkgVerify(t *testing.T) {
 	AssertEventually(t, f1, "Failed to verify package")
 
 	// stop NMD, don't clean up DB file
-	stopNMD(t, nm, false)
+	stopNMD(t, nm, ma, false)
 }
 
 func TestNaplesSetBootImg(t *testing.T) {
@@ -1277,7 +1279,7 @@ func TestNaplesSetBootImg(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
 	f1 := func() (bool, interface{}) {
@@ -1353,7 +1355,7 @@ func TestNaplesSetBootImg(t *testing.T) {
 	AssertEventually(t, f1, "Failed to verify package")
 
 	// stop NMD, don't clean up DB file
-	stopNMD(t, nm, false)
+	stopNMD(t, nm, ma, false)
 }
 
 func TestNaplesPkgInstall(t *testing.T) {
@@ -1361,7 +1363,7 @@ func TestNaplesPkgInstall(t *testing.T) {
 	os.Remove(emDBPath)
 
 	// create nmd
-	nm, _, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
+	nm, ma, _, _, _ := createNMD(t, emDBPath, "host", nicKey1)
 	Assert(t, (nm != nil), "Failed to create nmd", nm)
 
 	f1 := func() (bool, interface{}) {
@@ -1437,5 +1439,5 @@ func TestNaplesPkgInstall(t *testing.T) {
 	AssertEventually(t, f1, "Failed to verify package")
 
 	// stop NMD, don't clean up DB file
-	stopNMD(t, nm, false)
+	stopNMD(t, nm, ma, false)
 }
