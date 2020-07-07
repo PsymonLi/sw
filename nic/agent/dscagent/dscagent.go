@@ -3,6 +3,7 @@
 package dscagent
 
 import (
+	"os"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -29,6 +30,7 @@ type DSCAgent struct {
 
 // NewDSCAgent returns a new instance of DSCAgent
 func NewDSCAgent(logger log.Logger, npmURL, tpmURL, tsmURL, restURL string) (*DSCAgent, error) {
+	var controllerAPI types.ControllerAPI
 	evtsRecorder, err := recorder.NewRecorder(&recorder.Config{
 		Component: types.Netagent}, logger)
 	if err != nil {
@@ -44,9 +46,17 @@ func NewDSCAgent(logger log.Logger, npmURL, tpmURL, tsmURL, restURL string) (*DS
 		return nil, err
 	}
 
+	// TODO controller needs to be pipeline aware to default to specific watch kinds
+	pipelineKind, _ := os.LookupEnv("NAPLES_PIPELINE")
+	if pipelineKind == "apollo" {
+		controllerAPI = controller.NewControllerAPI(pipelineAPI, types.CloudPipelineKinds, infraAPI, npmURL, restURL)
+	} else {
+		controllerAPI = controller.NewControllerAPI(pipelineAPI, types.BaseNetKinds, infraAPI, npmURL, restURL)
+	}
+
 	d := DSCAgent{
 		PipelineAPI:   pipelineAPI,
-		ControllerAPI: controller.NewControllerAPI(pipelineAPI, infraAPI, npmURL, restURL),
+		ControllerAPI: controllerAPI,
 		InfraAPI:      infraAPI,
 		Logger:        logger,
 		EvtsRecorder:  evtsRecorder,

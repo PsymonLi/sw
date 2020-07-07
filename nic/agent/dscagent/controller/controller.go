@@ -74,12 +74,12 @@ type RestServer struct {
 }
 
 // NewControllerAPI returns a new Controller API Handler
-func NewControllerAPI(p types.PipelineAPI, i types.InfraAPI, npmURL, restURL string) *API {
+func NewControllerAPI(p types.PipelineAPI, watchKinds []string, i types.InfraAPI, npmURL, restURL string) *API {
 	c := &API{
 		PipelineAPI: p,
 		InfraAPI:    i,
 		npmURL:      npmURL,
-		kinds:       types.BaseNetKinds,
+		kinds:       watchKinds,
 	}
 	c.RestServer = c.newRestServer(restURL, c.PipelineAPI)
 

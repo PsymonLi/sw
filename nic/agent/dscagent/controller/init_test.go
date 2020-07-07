@@ -531,7 +531,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	c = NewControllerAPI(pipelineAPI, infraAPI, fakeServer.grpcServer.GetListenURL(), ctrlerLis.ListenURL.String())
+	c = NewControllerAPI(pipelineAPI, types.BaseNetKinds, infraAPI, fakeServer.grpcServer.GetListenURL(), ctrlerLis.ListenURL.String())
 	o := types.DistributedServiceCardStatus{
 		DSCName:  "mock-dsc",
 		DSCMode:  "network_managed_inband",
