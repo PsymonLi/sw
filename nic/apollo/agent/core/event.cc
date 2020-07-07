@@ -18,8 +18,8 @@ handle_event_request (const pds_event_spec_t *spec, void *ctxt)
         core::agent_state::state()->event_mgr()->subscribe(spec->event_id,
                                                            ctxt);
     } else if (spec->event_op == PDS_EVENT_OP_UNSUBSCRIBE) {
-        core::agent_state::state()->event_mgr()->subscribe(spec->event_id,
-                                                           ctxt);
+        core::agent_state::state()->event_mgr()->unsubscribe(spec->event_id,
+                                                             ctxt);
     } else {
         return SDK_RET_INVALID_ARG;
     }

@@ -11,7 +11,9 @@ Status
 EventSvcImpl::EventSubscribe(ServerContext* context,
                              grpc::ServerReaderWriter<EventResponse,
                                                       EventRequest> *stream) {
+    sdk_ret_t ret;
     EventRequest event_req;
+    EventResponse event_rsp;
     pds_event_spec_t event_spec;
 
     do {
@@ -23,7 +25,17 @@ EventSvcImpl::EventSubscribe(ServerContext* context,
                 memset(&event_spec, 0, sizeof(event_spec));
                 pds_event_spec_proto_to_api_spec(&event_spec,
                                                  event_req.request(i));
-                core::handle_event_request(&event_spec, stream);
+                ret = core::handle_event_request(&event_spec, stream);
+                if (unlikely(ret != SDK_RET_OK)) {
+                    PDS_TRACE_ERR("Invalid event request in stream {}",
+                                  (void *)stream);
+                    event_rsp.set_status(
+                        types::ApiStatus::API_STATUS_INVALID_ARG);
+                    stream->Write(event_rsp);
+                    core::agent_state::state()->event_mgr()->unsubscribe_listener(
+                        (void *)stream);
+                    return Status::CANCELLED;
+                }
             }
         }
 
@@ -46,8 +58,12 @@ event_send_cb (sdk::lib::event_id_t event_id_t, void *event_ctxt, void *ctxt)
         (grpc::ServerReaderWriter<EventResponse, EventRequest> *)ctxt;
 
     PDS_TRACE_VERBOSE("Sending event {} to stream {}", event_id_t, ctxt)
-    auto ret = stream->Write(*rsp);
-    PDS_TRACE_VERBOSE("stream->Write returned {}", ret);
+    if (!stream->Write(*rsp)) {
+        PDS_TRACE_ERR("Failed to send event {} to stream {}",
+                      event_id_t, ctxt);
+        // broken stream, return false so that subscriber gets removed
+        return false;
+    }
     return true;
 }
 
