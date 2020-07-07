@@ -456,24 +456,30 @@ func (c *client) GetStreamObjectAtOffset(ctx context.Context, objectName string,
 
 // StatObject returns information about the object
 func (c *client) StatObject(objectName string) (*ObjectStats, error) {
+	// Fwlogs are not streamed. There is no need to do List before Stat for fwlog objects.
+	// Skipping List will help in reducing time needed for stating objects.
+	// During venice isolation dpne using firewall rule, every read & write api timeout increases to 1 min
+	// due to minio's behavior. Durisn such a scenario, we cannot afford doing List before Stat for every
+	// fwlog object.
+	if c.bucketName != globals.FwlogsBucketName {
+		pgfile := objNameToInProgress(objectName)
+		stname := objNameToStreamObjName(objectName, 0)
 
-	pgfile := objNameToInProgress(objectName)
-	stname := objNameToStreamObjName(objectName, 0)
-
-	objList, err := c.ListObjects(objectName)
-	if err != nil {
-		return nil, err
-	}
-
-	// check for stream object
-	for _, f := range objList {
-		if f == pgfile {
-			objectName = pgfile
+		objList, err := c.ListObjects(objectName)
+		if err != nil {
+			return nil, err
 		}
 
-		if f == stname {
-			objectName = stname
-			break
+		// check for stream object
+		for _, f := range objList {
+			if f == pgfile {
+				objectName = pgfile
+			}
+
+			if f == stname {
+				objectName = stname
+				break
+			}
 		}
 	}
 
