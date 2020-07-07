@@ -90,6 +90,7 @@ UpgSvcImpl::ConfigReplayReadyCheck(ServerContext *context,
                                    pds::ConfigReplayReadyRsp *rsp) {
     sdk_ret_t ret = upg_config_replay_ready_check();
 
+    UPG_TRACE_INFO("Configuration replay ready check, ret %u", ret);
     rsp->set_isready(ret ==  SDK_RET_OK ? true : false);
     return Status::OK;
 }

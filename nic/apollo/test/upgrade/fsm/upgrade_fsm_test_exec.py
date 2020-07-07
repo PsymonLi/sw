@@ -107,7 +107,7 @@ def at_exit():
     os.system("pkill pdsupgmgr")
     PDSPKG_TOPDIR = os.getenv("PDSPKG_TOPDIR")
     os.system("rm -f {0}/fsm_test_*.log".format(PDSPKG_TOPDIR))
-    os.system("rm -f {0}/upgrade.log".format(PDSPKG_TOPDIR))
+    os.system("rm -f {0}/upgrademgr.log".format(PDSPKG_TOPDIR))
 
 
 def add_timestamp(caller):
@@ -235,7 +235,7 @@ class ExecutePdsUpgradeFsmTest(object):
         self.setup_env_mock += self.PIPELINE
 
         self.fsm_logs = "{0}/fsm_test_*.log".format(self.PDSPKG_TOPDIR)
-        self.upgrade_log = "{0}/upgrade.log".format(self.PDSPKG_TOPDIR)
+        self.upgrade_log = "{0}/upgrademgr.log".format(self.PDSPKG_TOPDIR)
         self.pdsagent_log = "{0}/pdsagent.log".format(self.PDSPKG_TOPDIR)
         self.logs_dir = os.path.join("/tmp", "upgmgr_fsm_test")
         execute(cmd="rm -rf {0}".format(self.logs_dir), return_check=False)
@@ -335,10 +335,20 @@ class ExecutePdsUpgradeFsmTest(object):
             return_check=False)
 
     def __start_pds_upgrade_client__(self):
+        status = ""
         Log("", "INFO", message(9).format(self.pdsupgclient), call_stack=False)
         command = self.pdsupgclient
-        ret = execute(cmd=command, return_check=False)
-        return ret
+        fp = open("/tmp/upgmgr_fsm_test/upg_status.txt", "w")
+        fp.close()
+        execute(cmd=command, return_check=False)
+        execute(cmd="sleep 20", return_check=True) # TODO check for pdsupgmgr exit
+        with open("/tmp/upgmgr_fsm_test/upg_status.txt", "r") as fp:
+            status = fp.read()
+        if status.find("success") == 0:
+            return 0
+        elif status.find("fail") == 0:
+            return 1
+        assert(0)
 
     def __start_pds_upgrade__(self):
         Log("", "INFO", message(9).format(self.pdsupgmgr), call_stack=False)

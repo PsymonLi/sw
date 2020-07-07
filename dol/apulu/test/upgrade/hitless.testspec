@@ -38,3 +38,5 @@ session:
             configs            :
                 - object       : ref://testcase/config/root
                   method       : ValidateCfgPostUpgrade
+                - object       : ref://testcase/config/root
+                  method       : VerifyUpgradeDoneStatus

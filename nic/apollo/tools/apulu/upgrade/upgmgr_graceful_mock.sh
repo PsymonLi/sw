@@ -2,11 +2,13 @@
 # top level script which will invoke this if mock/sim mode set
 
 source $PDSPKG_TOPDIR/sdk/upgrade/core/upgmgr_core_base.sh
+source $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade/upgmgr_base.sh
 upgmgr_parse_inputs $*
 
 echo "In mock/sim, starting commands for $STAGE_NAME"
 
 if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
+    upgmgr_set_upgrade_status  "in-progress"
     echo "compat check, skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
@@ -24,7 +26,11 @@ elif [[ $STAGE_NAME == "UPG_STAGE_SWITCHOVER" && $STAGE_TYPE == "PRE" ]]; then
 
 elif [[ $STAGE_NAME == "UPG_STAGE_READY" && $STAGE_TYPE == "POST" ]]; then
     upgmgr_clear_init_mode
-    echo "finish, skipping"
+    if [[ $STAGE_STATUS == "ok" ]]; then
+        upgmgr_graceful_success
+    else
+        upgmgr_set_upgrade_status "failed"
+    fi
 else
     echo "unknown input"
     exit 1

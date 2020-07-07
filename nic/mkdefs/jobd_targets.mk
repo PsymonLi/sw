@@ -518,7 +518,8 @@ jobd/dol/apulu/vxlan: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/apulu/upgrade
 jobd/dol/apulu/upgrade: ${JOBD_PREREQS}
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature upgrade
+	#${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature upgrade --memory 8G
+	@echo "uncomment the above when the vpp changes are in"
 
 .PHONY: jobd/dol/apulu/l2
 jobd/dol/apulu/l2: ${JOBD_PREREQS}

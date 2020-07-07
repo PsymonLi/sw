@@ -36,7 +36,7 @@ namespace upg {
 
 namespace pt = boost::property_tree;
 
- struct ev_loop *loop;
+struct ev_loop *loop;
 ev_timer timeout_watcher;
 fsm fsm_states;
 upg_stages_map fsm_stages;
@@ -884,6 +884,13 @@ load_pipeline_json(pt::ptree& tree, sdk::platform::sysinit_mode_t upg_mode)
         UPG_TRACE_ERR("Failed to read upgrade spec %s", ex.what());
     }
     return ret;
+}
+
+// timeout of the on-going stage
+ev_tstamp
+stage_timeout (void)
+{
+    return fsm_states.timeout();
 }
 
 sdk_ret_t

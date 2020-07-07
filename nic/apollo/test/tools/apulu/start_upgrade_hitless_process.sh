@@ -43,7 +43,6 @@ function trap_finish () {
 }
 trap trap_finish EXIT
 
-
 # start processes
 $BUILD_DIR/bin/pciemgrd -d &
 $BUILD_DIR/bin/operd $CONFIG_PATH/apulu/operd.json $CONFIG_PATH/apulu/operd-decoders.json &
@@ -55,8 +54,6 @@ $PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh ${DOL_ARGS} &
 
 # start upgrade manager
 upg_setup $BUILD_DIR/gen/upgrade_hitless_sim.json upgrade_hitless.json
-$BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > $PDSPKG_TOPDIR/upgrade_mgr.log 2>&1 &
+$BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > $PDSPKG_TOPDIR/upgrade.log 2>&1 &
 
-touch /tmp/agent_up
-
-wait
+tail --pid=$PPID -f /dev/null

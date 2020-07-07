@@ -2,6 +2,7 @@
 import pdb
 
 from infra.common.logging import logger
+from infra.common.glopts import GlobalOptions
 
 from apollo.config.resmgr import Resmgr
 from apollo.config.store import EzAccessStore
@@ -106,7 +107,8 @@ class UpgradeObject(base.ConfigObjectBase):
             return True
         msg = upgrade_pb2.EmptyMsg()
         resp = api.upgradeClient[self.Node].Request(self.ObjType, 'ConfigReplayReadyCheck', [msg])
-        return resp.IsReady
+        for r in resp:
+            return r.IsReady
 
     def ConfigReplayStarted(self):
         if utils.IsDryRun():
@@ -135,8 +137,8 @@ class UpgradeObject(base.ConfigObjectBase):
         return True
 
     def PollConfigReplayReady(self, spec=None):
-        retry = getattr(spec, "retry", 10)
-        sleep_interval = getattr(spec, "sleep_interval", 0.5)
+        retry = getattr(spec, "retry", 300)
+        sleep_interval = getattr(spec, "sleep_interval", 1)
         while retry:
             logger.info(f"retry{retry}: Polling upgrade manager for ConfigReplay state")
             retry -= 1
@@ -150,6 +152,7 @@ class UpgradeObject(base.ConfigObjectBase):
         return False
 
     def TriggerCfgReplay(self, spec=None):
+        GlobalOptions.skip_host_driver_load = 1
         from apollo.config.node import client as NodeClient
         logger.info("TriggerCfgReplay: Replaying Config ")
         self.ConfigReplayStarted()
@@ -163,9 +166,27 @@ class UpgradeObject(base.ConfigObjectBase):
         NodeClient.Read(self.Node)
         return True
 
+    def VerifyUpgradeDoneStatus(self, spec=None):
+        if utils.IsDryRun():
+            return True
+        retry = 60
+        while retry:
+            with open("/update/pds_upg_status.txt", 'r') as fp:
+                status=fp.read()
+                logger.info("upgrade status %s" %status)
+                if status.find("success") != -1:
+                    return True
+                if status.find("failed") != -1:
+                    return False
+            retry = retry - 1
+            utils.Sleep(1)
+        return False
+
     def SetupCfgFilesForUpgrade(self, spec=None):
         # For hardware nothing to setup specifically
         if not utils.IsDol():
+            return True
+        if utils.IsDryRun():
             return True
         mode = "hitless"
         if hasattr(spec, "UpgMode"):
@@ -176,9 +197,10 @@ class UpgradeObject(base.ConfigObjectBase):
         if mode == "hitless":
             # setup hitless upgrade config files
             upg_setup_cmds = "apollo/test/tools/apulu/setup_hitless_upgrade_cfg_sim.sh"
-            if not RunCmd(upg_setup_cmds, timeout=20, background=False):
+            if not RunCmd(upg_setup_cmds, timeout=20, background=True):
                 logger.error("Command Execution Failed: %s"%upg_setup_cmds)
                 return False
+            utils.Sleep(10) # setup is executed in the background.
         return True
 
     def SetupTestcaseConfig(self, obj):

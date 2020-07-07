@@ -4,6 +4,8 @@ DRYRUN=0
 NO_STOP=0
 DEBUGMODE=0
 DSCAGENTMODE=0
+MEMORY_8G=0
+unset CATALOG
 # max wait time for system to come up
 SETUP_WAIT_TIME=600
 # list of processes
@@ -16,7 +18,6 @@ CMDARGS=""
 argc=$#
 argv=($@)
 for (( j=0; j<argc; j++ )); do
-    [ "${argv[j]}" != '--nostop' ] && CMDARGS+="${argv[j]} "
     if [ ${argv[j]} == '--pipeline' ];then
         PIPELINE=${argv[j+1]}
     elif [ ${argv[j]} == '--netagent' ];then
@@ -27,7 +28,15 @@ for (( j=0; j<argc; j++ )); do
         DEBUGMODE=1
     elif [[ ${argv[j]} == '--nostop' ]];then
         NO_STOP=1
+        continue
+    elif [[ ${argv[j]} == '--memory' ]];then
+        if [  ${argv[j+1]} == "8G" ];then
+            MEMORY_8G=1
+        fi
+        ((j++))
+        continue
     fi
+    CMDARGS+="${argv[j]} "
 done
 
 CUR_DIR=$( readlink -f $( dirname $0 ) )
@@ -45,6 +54,23 @@ fi
 
 function stop_model() {
     pkill cap_model
+}
+
+function setup_catalog() {
+    if [ $MEMORY_8G -eq 1 ];then  # default is 4G
+        CATALOG=`readlink $CONFIG_PATH/apulu/catalog.json`
+        rm $CONFIG_PATH/apulu/catalog.json
+        ln -s ../catalog_hw_68-0004.json $CONFIG_PATH/apulu/catalog.json
+        mkdir -p /share # used for hitless upgrade
+    fi
+}
+
+function revert_catalog() {
+    echo "revering catalog"
+    if [ ! -z "$CATALOG" ];then
+        rm $CONFIG_PATH/apulu/catalog.json
+        ln -s $CATALOG $CONFIG_PATH/apulu/catalog.json
+    fi
 }
 
 function stop_processes () {
@@ -93,14 +119,21 @@ function start_processes () {
 function start_upgrade_manager () {
     if [ $PIPELINE == 'apulu' ];then
         echo "======> Starting Upgrade Manager"
-        $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade/start-upgmgr-mock.sh -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > upgrade_mgr.log &
+        $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade/start-upgmgr-mock.sh -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > upgrade.log &
     fi
 }
 
 function stop_upgrade_manager () {
     if [ $PIPELINE == 'apulu' ];then
+        operdctl dump upgradelog > upgrademgr.log
         pkill pdsupgmgr
     fi
+}
+
+function remove_upgrade_files() {
+    sudo rm -rf /update /share /.upgrade*
+    # pciemgrd saves here in sim mode
+    sudo rm -rf /root/.pcie*
 }
 
 function remove_db () {
@@ -130,7 +163,9 @@ function remove_metrics_conf_files () {
 function remove_conf_files () {
     sudo rm -f $CONFIG_PATH/pipeline.json
     sudo rm -f $CONFIG_PATH/vpp_startup.conf
+    sudo rm -f $CONFIG_PATH/operd-regions.json
     remove_metrics_conf_files
+    revert_catalog
 }
 
 function remove_stale_files () {
@@ -154,9 +189,6 @@ function remove_logs () {
     echo "======> Incinerating logs from unknown stardate"
     sudo rm -rf ${PDSPKG_TOPDIR}/*log* ${PDSPKG_TOPDIR}/core* ${PDSPKG_TOPDIR}/${TS_NAME}
     sudo rm -rf /var/log/pensando/ /obfl/ /data/ /sysconfig/
-    sudo rm -rf /update/*
-    # pciemgrd saves here in sim mode
-    sudo rm -rf /root/.pcie*
 }
 
 function collect_process_state () {
@@ -195,6 +227,7 @@ function finish () {
     fi
     ${PDSPKG_TOPDIR}/tools/print-cores.sh
     remove_stale_files
+    remove_upgrade_files
     exit ${EXIT_STATUS}
 }
 trap finish EXIT
@@ -230,12 +263,20 @@ function setup_metrics_conf_files () {
     ln -s $METRICS_CONF_DIR/*.json $CONFIG_PATH/ | echo -n ""
 }
 
+function setup_operd_regions_file() {
+    sudo rm -f $CONFIG_PATH/operd-regions.json
+    ln -s $CONFIG_PATH/$PIPELINE/operd-regions.json $CONFIG_PATH/operd-regions.json
+    export OPERD_REGIONS=$CONFIG_PATH/operd-regions.json
+}
+
 function setup_conf_files () {
     # TODO Remove this once agent code is fixed
     # Create dummy device.conf - agent is trying to update it when device object is updated.
     # Without this, pdsagent crashes since config file is not found.
     sudo touch /sysconfig/config0/device.conf
     setup_metrics_conf_files
+    setup_catalog
+    setup_operd_regions_file
 }
 
 function setup_interfaces () {
@@ -281,7 +322,7 @@ function setup_hugepages () {
 
 function setup_env () {
     setup_file_limit
-    sudo mkdir -p /var/log/pensando/ /obfl/ /sysconfig/config0/ /data/
+    sudo mkdir -p /var/log/pensando/ /obfl/ /sysconfig/config0/ /data/ /update/
     setup_conf_files
     setup_fru
     if [[ $DSCAGENTMODE == 1 ]]; then
@@ -297,6 +338,7 @@ function setup () {
     stop_model
     # remove stale files from older runs
     remove_stale_files
+    remove_upgrade_files
     remove_logs
     # setup env
     setup_env

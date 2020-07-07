@@ -47,13 +47,19 @@ elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; t
     fi
 
 elif [[ $STAGE_NAME == "UPG_STAGE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
-    upgmgr_clear_init_domain  # these files no more in use
     upgmgr_clear_init_mode
     if [[ $STAGE_STATUS == "ok" ]]; then
         echo "Switchover successful, Unloading the previous instance"
         # $PENVISORCTL unload
     else
         echo "Switchover failed" # TODO penvisor actions
+    fi
+
+elif [[ $STAGE_NAME == "UPG_STAGE_FINISH" && $STAGE_TYPE == "POST" ]]; then
+    if [[ $STAGE_STATUS == "ok" ]]; then
+        upgmgr_set_upgrade_status "success"
+    else
+        upgmgr_set_upgrade_status "failed"
     fi
 
 else

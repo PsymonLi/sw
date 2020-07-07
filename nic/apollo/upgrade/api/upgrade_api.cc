@@ -22,6 +22,7 @@ static sdk::event_thread::event_thread *g_upg_event_thread;
 static std::string g_tools_dir;
 static ipc_peer_ctx *g_ipc_peer_ctx;
 static upg_stage_t g_current_upg_stage = UPG_STAGE_NONE;
+static bool g_config_replay_done = false;
 static sdk::ipc::ipc_msg_ptr g_ipc_msg_in_ptr;
 // for interactive stage handling
 static upg_event_msg_t g_upg_event_msg_in;
@@ -92,6 +93,7 @@ static void
 upg_interactive_response (const void *data, const size_t size)
 {
     upg_event_msg_t *msg_in = &g_upg_event_msg_in;
+    uint32_t max_wait = (uint32_t)sdk::upg::stage_timeout();
 
     if (size != sizeof(upg_status_t)) {
         UPG_TRACE_ERR("Invalid request, size %lu, expected size %lu",
@@ -101,6 +103,26 @@ upg_interactive_response (const void *data, const size_t size)
     msg_in->rsp_status = *(upg_status_t *)data;
     UPG_TRACE_INFO("Hitless interactive response stage %s, status %u",
                    upg_stage2str(msg_in->stage), msg_in->rsp_status);
+    // if it is a ready stage and the current response is OK, wait for
+    // ready done by the controller.
+    if ((g_current_upg_stage == UPG_STAGE_CONFIG_REPLAY) &&
+        (!getenv("UPGMGR_READY_STAGE_WAIT_DISABLE"))) {
+        UPG_TRACE_INFO("Wating for config replay, timeout %u", max_wait);
+        // no need to delay if the current status is fail
+        if (msg_in->rsp_status == UPG_STATUS_OK) {
+            while (max_wait > 0) {
+                if (g_config_replay_done == true) {
+                    break;
+                }
+                sleep(1);
+                max_wait--;
+            }
+            if (max_wait == 0) {
+                UPG_TRACE_ERR("Hitless config replay timedout..");
+                msg_in->rsp_status = UPG_STATUS_FAIL;
+            }
+        }
+    }
     // respond to upgmgr, send it as an ipc event it is registerd for
     sdk::upg::upg_event_handler(msg_in);
 }
@@ -230,13 +252,11 @@ upg_ev_request_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     g_ipc_msg_in_ptr = msg;
 
     if (req->id == UPG_REQ_MSG_ID_START) {
-#ifdef __aarch64__
         // respond back immediately for NMD to exit the grpc wait. upgrade
         // actual status should be read from the generated file
         upg_status_t status = UPG_STATUS_OK;
         sdk::ipc::respond(g_ipc_msg_in_ptr, &status, sizeof(status));
         g_ipc_msg_in_ptr = NULL;
-#endif
         // start the fsm
         upg_fsm_init(req->upg_mode, UPG_STAGE_COMPAT_CHECK,
                      req->fw_pkgname, true);
@@ -321,9 +341,7 @@ upg_config_replay_ready_check (void)
 void
 upg_config_replay_done (void)
 {
-    upg_status_t status = UPG_STATUS_OK;
-
-    api::upg_interactive_response((void *)&status, sizeof(upg_status_t));
+    g_config_replay_done = true;
 }
 
 void

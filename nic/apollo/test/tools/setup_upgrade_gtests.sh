@@ -50,12 +50,12 @@ function collect_techsupport () {
 
 function upg_finish() {
     echo "===== Collecting logs for $1 ====="
-    for f in "/tmp/upgrade_*.log"; do
+    for f in "/tmp/upgrade*.log"; do
         if [ -e "$f" ];then
             cp $f ${PDSPKG_TOPDIR}
         fi
     done
-    operdctl dump $OPERD_REGION > upgrade.log
+    operdctl dump $OPERD_REGION > upgrademgr.log
     operdctl dump $OPERD_REGION # dump to the console
 
     collect_techsupport $1

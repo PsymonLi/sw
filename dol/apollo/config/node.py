@@ -206,30 +206,6 @@ class NodeObject(base.ConfigObjectBase):
             assert(0)
         return True
 
-    def UpgradeBringupCmd(self, spec=None):
-        # this is a temporary function till we incorporate the hitless
-        # bringup to DOL. We can remove the spec and this function once
-        # hitless bringup infra is ready
-        if spec.cmd == "ConfigReplayReadyWait":
-            # till we fix this routine in sanity run. check the hitless
-            # directory exists or not
-            if not os.path.exists("/share/"):
-                GlobalOptions.skip_host_driver_load = 1
-                return True
-            max_wait = 600
-            open("/tmp/config_replay_ready_wait","w+")
-            while not os.path.exists("/tmp/config_replay_ready"):
-                logger.info("Waiting for config replay ready notification")
-                max_wait = max_wait - 1
-                if max_wait == 0:
-                    assert(0)
-                utils.Sleep(1)
-            GlobalOptions.skip_host_driver_load = 1
-        elif spec.cmd == "ConfigReplayDone":
-            logger.info("Config replay done")
-            open("/tmp/config_replay_done","w+")
-        return True
-
     def ConnectToModel(self):
         # Add DUTNode check?
         if self.__connected:

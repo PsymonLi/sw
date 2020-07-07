@@ -8,6 +8,4 @@ $CUR_DIR/run_upgrade_graceful_test.sh
 [[ $? -ne 0 ]] && echo "Graceful test failed!" && exit 1
 $CUR_DIR/run_upgrade_hitless_gtests.sh
 [[ $? -ne 0 ]] && echo "Hitless gtest failed!" && exit 1
-$CUR_DIR/run_upgrade_hitless_test.sh
-[[ $? -ne 0 ]] && echo "Hitless test failed!" && exit 1
 exit 0

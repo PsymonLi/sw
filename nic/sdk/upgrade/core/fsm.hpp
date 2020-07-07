@@ -136,6 +136,7 @@ void upg_event_interactive_handler(upg_event_msg_t *event);
 sdk_ret_t upg_interactive_stage_exec(upg_stage_t stage);
 void execute_exit_script (upg_status_t status);
 upg_status_t get_exit_status(void);
+ev_tstamp stage_timeout(void);
 
 extern struct ev_loop *loop;
 extern ev_timer timeout_watcher;

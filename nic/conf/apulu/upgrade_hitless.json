@@ -187,7 +187,8 @@
                 { "name": "svc_rsp_fail", "next_stage": "exit" },
                 { "name": "svc_rsp_crit", "next_stage": "exit" },
                 { "name": "svc_no_rsp",   "next_stage": "exit" }
-           ]
+           ],
+           "post_hooks" : ["upgmgr_hitless.sh"]
         },
 
         "exit": { }
