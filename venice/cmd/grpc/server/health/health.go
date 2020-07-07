@@ -70,7 +70,7 @@ func (s *RPCServer) updateCondition(node *cache.NodeState, alive bool, lastHeart
 			if cond.Status == cluster.ConditionStatus_TRUE.String() {
 				if status == cluster.ConditionStatus_UNKNOWN {
 					recorder.Event(eventtypes.NODE_UNREACHABLE,
-						fmt.Sprintf("Venice node %s is %s", node.GetName(), eventtypes.NODE_UNREACHABLE.String()), node.Node)
+						fmt.Sprintf("PSM node %s is %s", node.GetName(), eventtypes.NODE_UNREACHABLE.String()), node.Node)
 				}
 			}
 
@@ -78,7 +78,7 @@ func (s *RPCServer) updateCondition(node *cache.NodeState, alive bool, lastHeart
 			if cond.Status == cluster.ConditionStatus_UNKNOWN.String() {
 				if status == cluster.ConditionStatus_TRUE {
 					recorder.Event(eventtypes.NODE_HEALTHY,
-						fmt.Sprintf("Venice node %s is %s", node.GetName(), cluster.NodeCondition_HEALTHY.String()), node.Node)
+						fmt.Sprintf("PSM node %s is %s", node.GetName(), cluster.NodeCondition_HEALTHY.String()), node.Node)
 				}
 			}
 
@@ -92,7 +92,7 @@ func (s *RPCServer) updateCondition(node *cache.NodeState, alive bool, lastHeart
 	// create
 	if status == cluster.ConditionStatus_UNKNOWN {
 		recorder.Event(eventtypes.NODE_UNREACHABLE,
-			fmt.Sprintf("Venice node %s is %s", node.GetName(), eventtypes.NODE_UNREACHABLE.String()), node.Node)
+			fmt.Sprintf("PSM node %s is %s", node.GetName(), eventtypes.NODE_UNREACHABLE.String()), node.Node)
 	}
 	node.Status.Conditions = append(node.Status.Conditions,
 		cluster.NodeCondition{
@@ -148,7 +148,7 @@ func (s *RPCServer) Heartbeat(ctx context.Context, req *grpc.HeartbeatRequest) (
 		node.Defaults("all")
 		node.Name = req.NodeID
 		recorder.Event(eventtypes.NODE_HEALTHY,
-			fmt.Sprintf("Venice node %s is %s", req.GetNodeID(), cluster.NodeCondition_HEALTHY.String()), node)
+			fmt.Sprintf("PSM node %s is %s", req.GetNodeID(), cluster.NodeCondition_HEALTHY.String()), node)
 	}
 	s.nodes[req.NodeID] = time.Now()
 	log.Infof("Got heartbeat from %s", req.NodeID)
