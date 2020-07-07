@@ -439,9 +439,17 @@ pds_each_flow_fixup (u32 event_id, u32 addr,
     bool ret = true, iflow;
     pds_flow_pkt_type pkt_type;
     pds_flow_move_thread_t *fixup;
+    int max_retry = 25;
 
     if (PREDICT_FALSE(session == NULL)) {
         return ret;
+    }
+    while (!session->prog_done) {
+        usleep(1);
+        if (0 == --max_retry) {
+            // this flow is not ready for fixup yet, so return
+            return ret;
+        }
     }
     pkt_type = session->packet_type;
 

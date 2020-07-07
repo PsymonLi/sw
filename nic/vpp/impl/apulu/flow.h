@@ -212,6 +212,7 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
         }
         return;
     }
+    ctx->prog_done = 1;
     next[0] = (pds_flow_age_supported() && !pds_is_flow_defunct(b)) ?
               SESSION_PROG_NEXT_AGE_FLOW : SESSION_PROG_NEXT_FWD_FLOW;
     vlib_buffer_advance(b, pds_session_get_advance_offset());

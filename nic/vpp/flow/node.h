@@ -254,7 +254,8 @@ typedef CLIB_PACKED(struct pds_flow_hw_ctx_s {
 
     u16 ingress_bd;
     u16 dst_vnic_id : 10; // Max VNIC ID is 1024, so we need 10 bits
-    u16 padding_1 : 6;
+    u16 prog_done : 1;
+    u16 padding_1 : 5;
 
     u32 is_in_use : 1;
     u32 proto : 2; // enum pds_flow_protocol
@@ -430,6 +431,10 @@ always_inline void pds_session_id_alloc2(u32 *ses_id0, u32 *ses_id1)
     if (PREDICT_TRUE(thr_local_pool->sess_count >= 1)) {
         *ses_id1 = thr_local_pool->sess_ids[thr_local_pool->sess_count - 1];
         *ses_id0 = thr_local_pool->sess_ids[thr_local_pool->sess_count];
+        ctx = pool_elt_at_index(fm->session_index_pool, (*ses_id0 - 1));
+        ctx->is_in_use = 1;
+        ctx = pool_elt_at_index(fm->session_index_pool, (*ses_id1 - 1));
+        ctx->is_in_use = 1;
         thr_local_pool->sess_count -= 2;
         return;
     }
@@ -454,6 +459,10 @@ always_inline void pds_session_id_alloc2(u32 *ses_id0, u32 *ses_id1)
     if (PREDICT_TRUE(thr_local_pool->sess_count >= 1)) {
         *ses_id1 = thr_local_pool->sess_ids[thr_local_pool->sess_count - 1];
         *ses_id0 = thr_local_pool->sess_ids[thr_local_pool->sess_count];
+        ctx = pool_elt_at_index(fm->session_index_pool, (*ses_id0 - 1));
+        ctx->is_in_use = 1;
+        ctx = pool_elt_at_index(fm->session_index_pool, (*ses_id1 - 1));
+        ctx->is_in_use = 1;
         thr_local_pool->sess_count -= 2;
         return;
     }
@@ -471,6 +480,8 @@ always_inline u32 pds_session_id_alloc(void)
 
     if (PREDICT_TRUE(thr_local_pool->sess_count >= 0)) {
         ret = thr_local_pool->sess_ids[thr_local_pool->sess_count];
+        ctx = pool_elt_at_index(fm->session_index_pool, (ret - 1));
+        ctx->is_in_use = 1;
         thr_local_pool->sess_count--;
         return ret;
     }
@@ -491,6 +502,8 @@ always_inline u32 pds_session_id_alloc(void)
     pds_flow_prog_unlock();
     if (PREDICT_TRUE(thr_local_pool->sess_count >= 0)) {
         ret = thr_local_pool->sess_ids[thr_local_pool->sess_count];
+        ctx = pool_elt_at_index(fm->session_index_pool, (ret - 1));
+        ctx->is_in_use = 1;
         thr_local_pool->sess_count--;
         return ret;
     }

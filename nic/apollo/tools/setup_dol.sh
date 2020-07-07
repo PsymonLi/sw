@@ -212,8 +212,9 @@ function collect_techsupport () {
 }
 
 function finish () {
+    EXIT_STATUS=$?
     if [ $NO_STOP == 1 ]; then
-         return
+         exit ${EXIT_STATUS}
     fi
     echo "======> Starting shutdown sequence"
     collect_process_state
