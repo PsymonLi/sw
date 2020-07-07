@@ -26,6 +26,9 @@
 // system wide blackhole nexthop
 #define PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID    0
 
+// uplink ECMP nexthop group id (used in BITW modes)
+#define PDS_IMPL_UPLINK_ECMP_NHGROUP_HW_ID    1
+
 // system drop route's class priority must be the lowest priority
 #define PDS_IMPL_SYSTEM_DROP_ROUTE_CLASS_PRIO 63
 

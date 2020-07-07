@@ -29,6 +29,9 @@ nexthop_group_impl_state::nexthop_group_impl_state(pds_state *state) {
     p4pd_global_table_properties_get(P4TBL_ID_ECMP, &tinfo);
     nhgroup_idxr_ = rte_indexer::factory(tinfo.tabledepth, true, true);
     SDK_ASSERT(nhgroup_idxr_ != NULL);
+
+    // allocate a reserved NH for uplink ECMP traffic
+    nhgroup_idxr_->alloc(PDS_IMPL_UPLINK_ECMP_NHGROUP_HW_ID);
 }
 
 nexthop_group_impl_state::~nexthop_group_impl_state() {

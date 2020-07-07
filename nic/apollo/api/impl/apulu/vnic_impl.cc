@@ -157,8 +157,9 @@ vnic_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
             lif_vlan_hdl_ = tparams.handle;
         }
 
-        if (device->oper_mode() == PDS_DEV_OPER_MODE_HOST ||
-            device->oper_mode() == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH) {
+        if ((g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) ||
+            (g_pds_state.device_oper_mode() ==
+                 PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
             subnet = subnet_find(&spec->subnet);
             if (unlikely(subnet == NULL)) {
                 PDS_TRACE_ERR("Unable to find subnet %s for vnic %s",
@@ -476,7 +477,7 @@ vnic_impl::program_rxdma_vnic_info_(vnic_entry *vnic, vpc_entry *vpc,
     memset(&vnic_info_data, 0, sizeof(vnic_info_data));
     vnic_info_data.action_id = VNIC_INFO_RXDMA_VNIC_INFO_RXDMA_ID;
 
-    oper_mode = device_find()->oper_mode();
+    oper_mode = g_pds_state.device_oper_mode();
     // populate IPv4 route table root address in Rx direction entry
     route_table_key = subnet->v4_route_table();
     if (route_table_key == PDS_ROUTE_TABLE_ID_INVALID) {
@@ -776,7 +777,7 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     pds_vnic_spec_t *spec = &obj_ctxt->api_params->vnic_spec;
 
     device = device_find();
-    oper_mode = device->oper_mode();
+    oper_mode = g_pds_state.device_oper_mode();
     // get the subnet of this vnic
     subnet = subnet_find(&spec->subnet);
     if (subnet == NULL) {

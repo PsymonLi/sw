@@ -155,7 +155,6 @@ if_impl::program_l3_if_(if_entry *intf, pds_if_spec_t *spec) {
         PDS_TRACE_ERR("Failed to read P4I_DEVICE_INFO table");
         return sdk::SDK_RET_HW_READ_ERR;
     }
-    // TODO: cleanup capri dependency
     port_num = if_impl::port(intf);
     if (port_num == TM_PORT_UPLINK_0) {
         sdk::lib::memrev(p4i_device_info_data.p4i_device_info.device_mac_addr1,
@@ -364,10 +363,13 @@ if_impl::activate_create_(pds_epoch_t epoch, if_entry *intf,
             // in "host" enabled mode, uplinks are uplinks
             lif_data.lif_action.direction = P4_LIF_DIR_UPLINK;
             lif_data.lif_action.lif_type = P4_LIF_TYPE_UPLINK;
-        } else {
+        } else if (g_pds_state.device_oper_mode() ==
+                       PDS_DEV_OPER_MODE_BITW_SMART_SWITCH) {
             // in "bitw" mode, we program uplinks as host interfaces
             lif_data.lif_action.direction = P4_LIF_DIR_HOST;
             lif_data.lif_action.lif_type = P4_LIF_TYPE_HOST;
+        } else {
+            SDK_ASSERT(FALSE);
         }
         lif_data.lif_action.vnic_id = PDS_IMPL_RSVD_VNIC_HW_ID;
         lif_data.lif_action.bd_id = PDS_IMPL_RSVD_BD_HW_ID;

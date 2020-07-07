@@ -234,7 +234,7 @@ private:
     sdk_ret_t activate_delete_(pds_epoch_t epoch, if_entry *intf);
 
 private:
-    uint16_t    hw_id_;    ///< h/w id of this interface
+    uint16_t    hw_id_;     ///< h/w id of this interface
 };
 
 /// @}
