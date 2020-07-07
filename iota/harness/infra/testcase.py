@@ -771,13 +771,6 @@ class Testcase:
                 self.iterRes.addResults(iter_data.GetInstanceId(), result)
                 iter_data.SetStatus(result)
 
-                #If the tests have failed, lets run debug actions.
-                if result != types.status.SUCCESS:
-                    debug_result = self.__run_common_debugs(iter_data);
-                    if debug_result != types.status.SUCCESS:
-                        Logger.error("Common debugs failed.")
-                        result = debug_result
-
                 for task_name, bt in self.__background_tasks.items():
                     bt_stop_result = bt.StopTask('teardown')
                     bt.CollectTask()
@@ -787,6 +780,13 @@ class Testcase:
                 if teardown_result != types.status.SUCCESS:
                     Logger.error("Teardown callback failed.")
                     result = teardown_result
+
+                # If the tests have failed (at any stage), lets run debug actions.
+                if result != types.status.SUCCESS:
+                    debug_result = self.__run_common_debugs(iter_data)
+                    if debug_result != types.status.SUCCESS:
+                        Logger.error(f"Common debugs failed, ret {debug_result}")
+                        result = debug_result
 
                 iter_data.StopTime()
 

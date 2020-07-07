@@ -653,6 +653,8 @@ class TestSuite:
     def ExitHandler(self):
         if GlobalOptions.dryrun:
             return
+        status = self.__teardown()
+        Logger.info("Testsuite {self.Name()} teardown STATUS = {status}")
         api.UnsetBreakoutInterfaces()
         logcollector.CollectLogs()
         logcollector.CollectTechSupport(self.Name())
@@ -718,10 +720,6 @@ class TestSuite:
         self.__update_stats()
         Logger.info("Testsuite %s FINAL STATUS = %d" % (self.Name(), self.result))
 
-        status = self.__teardown()
-        # TODO: add teardown validation
-        #moved to atexit() call
-        #logcollector.CollectLogs()
         self.__timer.Stop()
         return self.result
 
