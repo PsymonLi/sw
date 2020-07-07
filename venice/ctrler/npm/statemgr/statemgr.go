@@ -1164,7 +1164,7 @@ func (sm *Statemgr) DeleteObjectToMbus(key string, obj mbusObject, refs map[stri
 	dbObject := obj.GetDBObject()
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
-	obj.reinitObjTracking(meta.GenerationID)
+	obj.resetObjTracking(meta.GenerationID)
 	if obj.updateNotificationEnabled() {
 		sm.PeriodicUpdaterPush(obj)
 	}

@@ -1142,7 +1142,7 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionDelete(obj *ctkit.MirrorSess
 	log.Infof("Got mirror delete for %#v", obj.ObjectMeta)
 	smm.Lock()
 	defer smm.Unlock()
-	ms, err := MirrorSessionStateFromObj(obj)
+	ms, err := smm.sm.FindMirrorSession(obj.ObjectMeta.Tenant, obj.ObjectMeta.Name)
 	if err != nil {
 		log.Errorf("Error finding mirror object for delete %v", err)
 		return err

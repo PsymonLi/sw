@@ -52,7 +52,7 @@ var testMirrorSessions = []monitoring.MirrorSession{
 						IPAddresses: []string{"10.1.1.10"},
 					},
 					AppProtoSel: &monitoring.AppProtoSelector{
-						ProtoPorts: []string{"ipprotocol/6"},
+						ProtoPorts: []string{"tcp/6"},
 					},
 				},
 				{

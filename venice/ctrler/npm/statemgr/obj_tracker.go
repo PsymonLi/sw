@@ -19,6 +19,7 @@ type stateObj interface {
 
 type objectTrackerIntf interface {
 	reinitObjTracking(genID string) error
+	resetObjTracking(genID string)
 	startDSCTracking(string) error
 	stopDSCTracking(string) error
 	incrementGenID() string
@@ -77,6 +78,14 @@ func (objTracker *smObjectTracker) reinitObjTracking(genID string) error {
 	objTracker.generationID = genID
 
 	return nil
+}
+
+func (objTracker *smObjectTracker) resetObjTracking(genID string) {
+
+	objTracker.trackerLock.Lock()
+	defer objTracker.trackerLock.Unlock()
+	objTracker.nodeVersions = make(map[string]string)
+	objTracker.generationID = genID
 }
 
 func (objTracker *smObjectTracker) startDSCTracking(dsc string) error {

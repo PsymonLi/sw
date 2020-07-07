@@ -136,7 +136,7 @@ func (it *integTestSuite) TestNpmMirrorPolicy(c *C) {
 			return false, gerr
 		}
 		log.Infof("Mirror status %#v", tsgp.Status)
-		if (tsgp.Status.PropagationStatus.Updated != int32(it.numAgents)) || (tsgp.Status.PropagationStatus.Pending != 0) {
+		if tsgp.Status.PropagationStatus.Pending != 0 {
 			return false, tsgp
 		}
 		if tsgp.Status.ScheduleState == monitoring.MirrorSessionState_SCHEDULED.String() {
@@ -154,7 +154,7 @@ func (it *integTestSuite) TestNpmMirrorPolicy(c *C) {
 			return false, gerr
 		}
 		log.Infof("Mirror status %#v", tsgp.Status)
-		if (tsgp.Status.PropagationStatus.Updated != int32(it.numAgents)) || (tsgp.Status.PropagationStatus.Pending != 0) {
+		if tsgp.Status.PropagationStatus.Pending != 0 {
 			return false, tsgp
 		}
 		if tsgp.Status.ScheduleState == monitoring.MirrorSessionState_SCHEDULED.String() {
