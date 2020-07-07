@@ -144,6 +144,10 @@ public:
     }
     string memory_profile_string(void) { return memory_profile_str_; }
     string device_profile_string(void) { return device_profile_str_; }
+    void set_default_pf_state(pds_if_state_t state) {
+        default_pf_state_ = state;
+    }
+    pds_if_state_t default_pf_state(void) { return default_pf_state_; }
     string firmware_version(void) { return firmware_version_str_; }
     string firmware_description(void) { return firmware_description_str_; }
     string firmware_build_time(void) { return firmware_build_time_str_; }
@@ -287,6 +291,7 @@ private:
     pds_memory_profile_t    memory_profile_;
     pds_device_profile_t    device_profile_;
     pds_device_oper_mode_t  device_oper_mode_;
+    pds_if_state_t          default_pf_state_;
     string                  memory_profile_str_;
     string                  device_profile_str_;
     string                  firmware_version_str_;

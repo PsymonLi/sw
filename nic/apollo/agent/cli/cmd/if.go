@@ -399,10 +399,10 @@ func printIfHeader(str string) {
 			"VPC", "IPPrefix", "Encap", "MACAddress")
 		fmt.Println(hdrLine)
 	case "host":
-		hdrLine := strings.Repeat("-", 168)
+		hdrLine := strings.Repeat("-", 178)
 		fmt.Println(hdrLine)
-		fmt.Printf("%-40s%-14s%-14s%-20s%-40s%-40s\n",
-			"ID", "IfIndex", "Interface", "MACAddress", "Lif", "Policer")
+		fmt.Printf("%-40s%-14s%-14s%-20s%-40s%-40s%-10s\n",
+			"ID", "IfIndex", "Interface", "MACAddress", "Lif", "Policer", "AdminState")
 		fmt.Println(hdrLine)
 	}
 }
@@ -455,17 +455,19 @@ func printIf(intf *pds.Interface) {
 	case pds.IfType_IF_TYPE_HOST:
 		policer := utils.IdToStr(spec.GetHostIfSpec().GetTxPolicer())
 		lifs := status.GetHostIfStatus().GetLifId()
+		adminState := strings.Replace(spec.GetAdminStatus().String(),
+			"IF_STATUS_", "", -1)
 		first := true
 		for _, lif := range lifs {
 			if first {
-				fmt.Printf("%-40s0x%-12x%-14s%-20s%-40s%-40s\n",
+				fmt.Printf("%-40s0x%-12x%-14s%-20s%-40s%-40s%-10s\n",
 					utils.IdToStr(spec.GetId()), ifIndex,
 					status.GetHostIfStatus().GetName(),
 					utils.MactoStr(status.GetHostIfStatus().GetMacAddress()),
-					utils.IdToStr(lif), policer)
+					utils.IdToStr(lif), policer, adminState)
 				first = false
 			} else {
-				fmt.Printf("%-88s%-40s%-40s\n",
+				fmt.Printf("%-88s%-40s%-40s%-10s\n",
 					"", utils.IdToStr(lif), "")
 			}
 		}

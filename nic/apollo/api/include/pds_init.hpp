@@ -45,6 +45,7 @@ typedef struct pds_init_params_s {
                                                 ///< all config files are present,
                                                 ///< files under \<cfg_path\>/pipeline/
                                                 ///< are picked by the software
+    pds_if_state_t            default_pf_state; ///< default state of PF (up/down)
     pds_event_cb_t            event_cb;         ///< callback registered for events
 } pds_init_params_t;
 

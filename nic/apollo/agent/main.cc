@@ -40,6 +40,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/algorithm/string.hpp>
 
 using std::string;
 using grpc::Server;
@@ -161,7 +162,18 @@ svc_reg (void)
 static void inline
 print_usage (char **argv)
 {
-    fprintf(stdout, "Usage : %s -c|--config <cfg.json>\n", argv[0]);
+    fprintf(stdout, "Usage : %s -c|--config <cfg.json>\n\n", argv[0]);
+    fprintf(stdout, "Optional Flags:\n");
+    fprintf(stdout, "%-30s %s\n",
+            "-p,--memory-profile", "Specify memory profile");
+    fprintf(stdout, "%-30s %s\n",
+            "-d,--device-profile", "Specify device profile");
+    fprintf(stdout, "%-30s %s\n",
+            "-o,--oper-mode", "Specify oper mode");
+    fprintf(stdout, "%-30s %s\n",
+            "-s,--default-pf-state", "Specify device pf admin state (up/down)");
+    fprintf(stdout, "%-30s %s\n",
+            "-h,--help", "Display this message");
 }
 
 int
@@ -172,19 +184,20 @@ main (int argc, char **argv)
     sdk::lib::thread *thr;
     boost::property_tree::ptree pt;
     string       cfg_path, cfg_file, memory_profile, device_profile;
-    string       oper_mode, pipeline, file;
+    string       default_pf_state, oper_mode, pipeline, file;
 
     struct option longopts[] = {
-       { "config",          required_argument, NULL, 'c' },
-       { "memory-profile",  required_argument, NULL, 'p' }, // TODO change to -m
-       { "device-profile",  required_argument, NULL, 'd' },
-       { "oper-mode",       required_argument, NULL, 'o' },
-       { "help",            no_argument,       NULL, 'h' },
-       { 0,                 0,                 0,     0 }
+       { "config",           required_argument, NULL, 'c' },
+       { "memory-profile",   required_argument, NULL, 'p' }, // TODO change to -m
+       { "device-profile",   required_argument, NULL, 'd' },
+       { "oper-mode",        required_argument, NULL, 'o' },
+       { "default-pf-state", required_argument, NULL, 's' },
+       { "help",             no_argument,       NULL, 'h' },
+       { 0,                  0,                 0,     0 }
     };
 
     // parse CLI options
-    while ((oc = getopt_long(argc, argv, ":hc:p:o:W;", longopts, NULL)) != -1) {
+    while ((oc = getopt_long(argc, argv, ":hsc:p:o:W;", longopts, NULL)) != -1) {
         switch (oc) {
         case 'c':
             if (optarg) {
@@ -226,6 +239,25 @@ main (int argc, char **argv)
             }
             break;
 
+        case 's':
+            if (optarg) {
+                default_pf_state = std::string(optarg);
+                boost::to_lower(default_pf_state);
+                if (default_pf_state != string("up") &&
+                    default_pf_state != string("down")) {
+                    fprintf(stderr, "incorrect argument for \"default-pf-state\""
+                                    " , please refer to help string\n");
+                    print_usage(argv);
+                    exit(1);
+                }
+            } else {
+                    fprintf(stderr, "default-pf-state (up/down) "
+                                    "is not specified\n");
+                    print_usage(argv);
+                    exit(1);
+            }
+            break;
+
         case 'h':
             print_usage(argv);
             exit(0);
@@ -246,6 +278,10 @@ main (int argc, char **argv)
             exit(1);
             break;
         }
+    }
+    // if default-pf-state is not set, set it to "up"
+    if (default_pf_state.empty()) {
+        default_pf_state = "up";
     }
 
     // form the full path to the config directory
@@ -290,6 +326,7 @@ main (int argc, char **argv)
     // initialize the agent
     if ((ret = core::agent_init(cfg_file, memory_profile,
                                 device_profile, oper_mode,
+                                default_pf_state,
                                 pipeline)) != SDK_RET_OK) {
         fprintf(stderr, "Agent initialization failed, err %u", ret);
     }

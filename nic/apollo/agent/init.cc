@@ -148,7 +148,7 @@ sdk_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
 static inline sdk_ret_t
 init_pds (std::string cfg_file, std::string memory_profile,
           std::string device_profile, std::string pipeline,
-          std::string oper_mode)
+          std::string oper_mode, std::string default_pf_state)
 {
     sdk_ret_t ret;
     pds_init_params_t init_params;
@@ -196,6 +196,11 @@ init_pds (std::string cfg_file, std::string memory_profile,
         init_params.device_oper_mode = PDS_DEV_OPER_MODE_NONE;
     }
     init_params.event_cb = handle_event_ntfn;
+
+    init_params.default_pf_state = PDS_IF_STATE_UP;
+    if (default_pf_state == string("down")) {
+        init_params.default_pf_state = PDS_IF_STATE_DOWN;
+    }
     ret = pds_init(&init_params);
     return ret;
 }
@@ -339,7 +344,7 @@ spawn_svc_server_thread (void)
 sdk_ret_t
 agent_init (std::string cfg_file, std::string memory_profile,
             std::string device_profile, std::string device_oper_mode,
-            std::string pipeline)
+            std::string default_pf_state, std::string pipeline)
 {
     sdk_ret_t ret;
     sdk::lib::thread *thread;
@@ -358,7 +363,7 @@ agent_init (std::string cfg_file, std::string memory_profile,
 
     // initialize PDS library
     ret = init_pds(cfg_file, memory_profile, device_profile,
-                   pipeline, device_oper_mode);
+                   pipeline, device_oper_mode, default_pf_state);
 
     // spawn service server thread
     ret = spawn_svc_server_thread();

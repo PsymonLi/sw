@@ -2,6 +2,9 @@
     {
         "name": "agent",
         "command": "/naples/nic/tools/start-pdsagent-mock.sh",
+        "env" : {
+            "DEFAULT_PF_STATE": "down"
+        },
         "dependencies": [],
         "flags": ["save_stdout_on_crash"],
         "memory-limit": 0,

@@ -29,5 +29,10 @@ if [ $PIPELINE != 'apulu' ]; then
     export IPC_MOCK_MODE=1
 fi
 
+if [[ -n ${DEFAULT_PF_STATE} ]]; then
+    echo "Default PF State $DEFAULT_PF_STATE"
+    CMDARGS=" --default-pf-state=$DEFAULT_PF_STATE "
+fi
+
 #GDB='gdb --args'
 #VALGRIND='valgrind --leak-check=full --show-leak-kinds=all --gen-suppressions=all --error-limit=no --verbose --log-file=valgrind-out.txt --track-origins=yes'
