@@ -364,7 +364,6 @@ func (sw *nexus3kRest) SetBreakoutMode(port string) error {
 	cmds = []string{
 		"interface " + parts[0] + "/" + parts[1] + "/1",
 		"fec off",
-                "mtu 9216",
 	}
 	sw.runConfigCommands(cmds)
 	return nil

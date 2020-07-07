@@ -1002,7 +1002,6 @@ func (sw *nexus3k) SetBreakoutMode(port string) error {
 	portStr := parts[0] + "/" + parts[1] + "/1"
 	cmds = []string{
 		"fec off",
-                "mtu 9216",
 	}
 	sw.runConfigIFCommands(portStr, cmds)
 	return nil
