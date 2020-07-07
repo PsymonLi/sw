@@ -209,6 +209,11 @@ show_flow_stats_command_fn (vlib_main_t * vm,
         ip4 = ip6 = 1;
     }
 
+    if (vlib_get_suspend_resume_worker_threads()) {
+        vlib_cli_output(vm, "Worker threads are suspended!");
+        goto done;
+    }
+
     buf = calloc(1, DISPLAY_BUF_SIZE);
     if (!buf) {
         vlib_cli_output(vm, "ERROR: Failed to allocate  display buffer!");
@@ -694,6 +699,11 @@ clear_flow_stats_command_fn (vlib_main_t * vm,
 
     if (!af_set) {
         ip4 = ip6 = 1;
+    }
+
+    if (vlib_get_suspend_resume_worker_threads()) {
+        vlib_cli_output(vm, "Worker threads are suspended!");
+        goto done;
     }
 
     if (all_threads) {

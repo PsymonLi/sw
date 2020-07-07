@@ -38,8 +38,12 @@ format_pds_fwd_flow_trace (u8 * s, va_list * args)
     CLIB_UNUSED (vlib_node_t * node) = va_arg(*args, vlib_node_t *);
     fwd_flow_trace_t *t = va_arg(*args, fwd_flow_trace_t *);
 
-    s = format(s, "Out Interface %U",
+    if (vnet_hw_interface_is_valid (vnet_get_main(), t->hw_index)) {
+        s = format(s, "Out Interface %U",
                format_vnet_hw_if_index_name, vnet_get_main(), t->hw_index);
+    } else {
+        s = format (s, "Out Interface Deleted");
+    }
     return s;
 }
 
