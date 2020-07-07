@@ -54,9 +54,20 @@ func (ag *TSMClient) runTechSupportWatcher() {
 			ag.tsGrpcClient.Close()
 			ag.tsGrpcClient = nil
 		}
+		b := balancer.New(ag.resolverClient)
+		if b == nil {
+			if ag.isStopped() {
+				return
+			}
 
-		tsGrpcClient, err := rpckit.NewRPCClient(ag.name, globals.Tsm, rpckit.WithBalancer(balancer.New(ag.resolverClient)))
+			time.Sleep(time.Second)
+			continue
+		}
+
+		tsGrpcClient, err := rpckit.NewRPCClient(ag.name, globals.Tsm, rpckit.WithBalancer(b))
 		if err != nil {
+			b.Close()
+
 			log.Errorf("Failed to create rpc client. Err : %v. Retrying...", err)
 			if ag.isStopped() {
 				return

@@ -56,13 +56,6 @@ func buildNodeTechSupportRequest(tsr *monitoring.TechSupportRequest, nodeName st
 	return atsr
 }
 
-// a request is active (needs to be worked on) if it is not completed or failed
-func isActiveTechSupportRequest(tsr *monitoring.TechSupportRequest) bool {
-	return tsr.Status.Status != monitoring.TechSupportJobStatus_Completed.String() &&
-		tsr.Status.Status != monitoring.TechSupportJobStatus_Failed.String() &&
-		tsr.Status.Status != monitoring.TechSupportJobStatus_TimeOut.String()
-}
-
 // listTechSupportRequestsActive list only requests that are not completed
 func (r *TechSupportRPCServer) listTechSupportRequestsActive(ctx context.Context, nodeName, nodeKind string) ([]*statemgr.TechSupportRequestState, error) {
 	var tsrsList []*statemgr.TechSupportRequestState
@@ -72,11 +65,12 @@ func (r *TechSupportRPCServer) listTechSupportRequestsActive(ctx context.Context
 		tsrs := objs.(*statemgr.TechSupportRequestState)
 		tsrs.Lock()
 		tsr := tsrs.TechSupportRequest
-		if isActiveTechSupportRequest(tsr) && r.nodeSelectorMatch(nodeName, nodeKind, tsr.Spec.NodeSelector) {
+		if statemgr.IsActiveTechSupportRequest(tsr) && r.nodeSelectorMatch(nodeName, nodeKind, tsr.Spec.NodeSelector) {
 			tsrsList = append(tsrsList, tsrs)
 		}
 		tsrs.Unlock()
 	}
+
 	return tsrsList, nil
 }
 
@@ -305,7 +299,7 @@ func (r *TechSupportRPCServer) WatchTechSupportRequests(params *tsproto.WatchTec
 
 			nodeTSR := buildNodeTechSupportRequest(tsrs.TechSupportRequest, nodeName)
 			if eventType == api.EventType_CreateEvent {
-				if !isActiveTechSupportRequest(tsr) {
+				if !statemgr.IsActiveTechSupportRequest(tsr) {
 					tsrs.Unlock()
 					continue
 				}

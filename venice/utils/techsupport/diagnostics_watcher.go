@@ -54,8 +54,19 @@ func (ag *TSMClient) RunModuleWatcher() {
 			ag.diagGrpcClient = nil
 		}
 
-		diagGrpcClient, err := rpckit.NewRPCClient(ag.name, globals.Tsm, rpckit.WithBalancer(balancer.New(ag.resolverClient)))
+		b := balancer.New(ag.resolverClient)
+		if b == nil {
+			if ag.isStopped() {
+				return
+			}
+
+			time.Sleep(time.Second)
+			continue
+		}
+
+		diagGrpcClient, err := rpckit.NewRPCClient(ag.name, globals.Tsm, rpckit.WithBalancer(b))
 		if err != nil {
+			b.Close()
 			log.Errorf("Failed to create rpc client. Err : %v. Retrying...", err)
 
 			if ag.isStopped() {

@@ -3,14 +3,12 @@ package techsupport
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/pensando/sw/api/generated/diagnostics"
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 	tsconfig "github.com/pensando/sw/venice/ctrler/tsm/config"
 	"github.com/pensando/sw/venice/globals"
-	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/resolver"
 	"github.com/pensando/sw/venice/utils/rpckit"
@@ -121,22 +119,6 @@ func (ag *TSMClient) Start() {
 	go ag.StartWorking()
 
 	if ag.resolverClient != nil {
-		for {
-			tsGrpcClient, err := rpckit.NewRPCClient(ag.name, globals.Tsm, rpckit.WithBalancer(balancer.New(ag.resolverClient)))
-			if err != nil {
-				log.Errorf("Error creating TSM client %s: %v", ag.name, err)
-
-				if ag.isStopped() {
-					return
-				}
-			} else {
-				ag.tsGrpcClient = tsGrpcClient
-				break
-			}
-
-			time.Sleep(time.Second)
-		}
-
 		ag.waitGrp.Add(1)
 		go ag.runTechSupportWatcher()
 

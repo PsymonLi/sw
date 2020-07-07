@@ -247,3 +247,12 @@ func NewStatemgr(wr writer.Writer, rslvr resolver.Interface) (*Statemgr, error) 
 
 	return stateMgr, nil
 }
+
+// IsActiveTechSupportRequest a request is active (needs to be worked on) if it is not completed or failed
+func IsActiveTechSupportRequest(tsr *monitoring.TechSupportRequest) bool {
+	log.Infof("Inside is Active for %v.", tsr)
+	log.Infof("Result is %v", tsr.Status.Status != monitoring.TechSupportJobStatus_Completed.String() && tsr.Status.Status != monitoring.TechSupportJobStatus_Failed.String() && tsr.Status.Status != monitoring.TechSupportJobStatus_TimeOut.String())
+	return tsr.Status.Status != monitoring.TechSupportJobStatus_Completed.String() &&
+		tsr.Status.Status != monitoring.TechSupportJobStatus_Failed.String() &&
+		tsr.Status.Status != monitoring.TechSupportJobStatus_TimeOut.String()
+}

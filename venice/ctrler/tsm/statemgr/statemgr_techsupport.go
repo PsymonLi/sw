@@ -284,6 +284,11 @@ func (sm *Statemgr) handleTechSupportEvent(evt *kvstore.WatchEvent) {
 		// if this is a TechSupportRequest, we may have to initialize status and push the update back to ApiServer
 		tsr, ok := obj.(*monitoring.TechSupportRequest)
 		if ok {
+			if !IsActiveTechSupportRequest(tsr) {
+				log.Errorf("Techsupport request %v already in terminal state of %v.", tsr.Name, tsr.Status.Status)
+				return
+			}
+
 			if tsr.Status.ControllerNodeResults == nil {
 				tsr.Status.ControllerNodeResults = make(map[string]*monitoring.TechSupportNodeResult)
 			}
