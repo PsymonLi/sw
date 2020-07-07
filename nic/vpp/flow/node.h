@@ -430,10 +430,6 @@ always_inline void pds_session_id_alloc2(u32 *ses_id0, u32 *ses_id1)
     if (PREDICT_TRUE(thr_local_pool->sess_count >= 1)) {
         *ses_id1 = thr_local_pool->sess_ids[thr_local_pool->sess_count - 1];
         *ses_id0 = thr_local_pool->sess_ids[thr_local_pool->sess_count];
-        ctx = pool_elt_at_index(fm->session_index_pool, (*ses_id0 - 1));
-        ctx->is_in_use = 1;
-        ctx = pool_elt_at_index(fm->session_index_pool, (*ses_id1 - 1));
-        ctx->is_in_use = 1;
         thr_local_pool->sess_count -= 2;
         return;
     }
@@ -458,10 +454,6 @@ always_inline void pds_session_id_alloc2(u32 *ses_id0, u32 *ses_id1)
     if (PREDICT_TRUE(thr_local_pool->sess_count >= 1)) {
         *ses_id1 = thr_local_pool->sess_ids[thr_local_pool->sess_count - 1];
         *ses_id0 = thr_local_pool->sess_ids[thr_local_pool->sess_count];
-        ctx = pool_elt_at_index(fm->session_index_pool, (*ses_id0 - 1));
-        ctx->is_in_use = 1;
-        ctx = pool_elt_at_index(fm->session_index_pool, (*ses_id1 - 1));
-        ctx->is_in_use = 1;
         thr_local_pool->sess_count -= 2;
         return;
     }
@@ -479,8 +471,6 @@ always_inline u32 pds_session_id_alloc(void)
 
     if (PREDICT_TRUE(thr_local_pool->sess_count >= 0)) {
         ret = thr_local_pool->sess_ids[thr_local_pool->sess_count];
-        ctx = pool_elt_at_index(fm->session_index_pool, (ret - 1));
-        ctx->is_in_use = 1;
         thr_local_pool->sess_count--;
         return ret;
     }
@@ -501,8 +491,6 @@ always_inline u32 pds_session_id_alloc(void)
     pds_flow_prog_unlock();
     if (PREDICT_TRUE(thr_local_pool->sess_count >= 0)) {
         ret = thr_local_pool->sess_ids[thr_local_pool->sess_count];
-        ctx = pool_elt_at_index(fm->session_index_pool, (ret - 1));
-        ctx->is_in_use = 1;
         thr_local_pool->sess_count--;
         return ret;
     }
