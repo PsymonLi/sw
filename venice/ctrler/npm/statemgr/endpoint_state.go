@@ -638,10 +638,10 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			//sm.mbus.DeleteObjectWithReferences(epinfo.MakeKey("cluster"), &oldEP, references(epinfo))
 
 			newEP.Spec.Migration = netproto.MigrationState_NONE.String()
+			newEP.Status.NodeUUID = newEP.Spec.NodeUUID
 			newEP.Spec.HomingHostAddr = ""
 			eps.moveEP = &newEP
 			sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
-			//sm.mbus.AddObjectWithReferences(epinfo.MakeKey("cluster"), &newEP, references(epinfo))
 
 			eps.Endpoint.Status.NodeUUID = eps.Endpoint.Spec.NodeUUID
 			eps.Endpoint.Status.MicroSegmentVlan = eps.Endpoint.Spec.MicroSegmentVlan
@@ -666,15 +666,14 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 		log.Errorf("Error while moving Endpoint [%v]. Expected [done] state, got [%v]. Aborting migration.", eps.Endpoint.Name, eps.Endpoint.Status.Migration.Status)
 		newEP.Spec.Migration = netproto.MigrationState_ABORT.String()
 		newEP.Spec.HomingHostAddr = ""
-		// Before sending delete, ensure the Status and Spec NodeUUID are same, to avoid sending the delete to both DSCs
-		newEP.Status.NodeUUID = newEP.Spec.NodeUUID
 
 		// There can only be one object reference in the memdb for a particular object name, kind
 		// To use nimbus channel, update the existingObj in memdb to point to the desired object
 		eps.moveEP = &newEP
-
+		// Update the in-memory state of netagent
+		sm.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 		// Send delete to the NEW DSC
-		//sm.mbus.DeleteObjectWithReferences(epinfo.MakeKey("cluster"), &newEP, references(epinfo))
+		newEP.Status.NodeUUID = newEP.Spec.NodeUUID
 		sm.DeleteObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
 		// Clean up all the migration state in the netproto object
@@ -715,6 +714,13 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			eps, _ := EndpointStateFromObj(epinfo)
 			if eps != nil {
 				eps.Endpoint.Lock()
+				if eps.Endpoint.Status.Migration == nil {
+					log.Errorf("Unexpected EP [%v] migration status is nil. Exiting move.", eps.Endpoint.Name)
+					eps.moveEP = nil
+					eps.Endpoint.Unlock()
+					return
+				}
+
 				if eps.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_FINAL_SYNC.String() {
 					log.Infof("Waiting for last sync to finish for EP [%v].", eps.Endpoint.Name)
 					lastSyncRetryCount = lastSyncRetryCount + 1
@@ -734,10 +740,9 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 
 						newEP.Spec.Migration = netproto.MigrationState_NONE.String()
 						newEP.Spec.HomingHostAddr = ""
-						eps.moveEP = &newEP
-
 						// Ensure the Spec and Status NodeUUID are same when finally setting the memdb object
 						newEP.Status.NodeUUID = newEP.Spec.NodeUUID
+						eps.moveEP = &newEP
 						sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
 						ws, err := sm.FindWorkload(eps.Endpoint.Tenant, getWorkloadNameFromEPName(eps.Endpoint.Name))
