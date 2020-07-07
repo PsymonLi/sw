@@ -66,6 +66,7 @@ static void create_device_proto_grpc () {
     pds_device_spec_t device_spec = {0};
 
     device_spec.overlay_routing_en = TRUE;
+    device_spec.dev_oper_mode = PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
     device_spec.device_ip_addr.af  = types::IP_AF_INET;
     device_spec.device_ip_addr.addr.v4_addr = (g_test_conf_.local_lo_ip_addr);
     device_spec.gateway_ip_addr.af          = types::IP_AF_INET;

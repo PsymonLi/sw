@@ -98,7 +98,7 @@ message LimIfStatus {
   // The type of interface.
   LimIfType         Type         = 6 [(venice.pdsaFields) = {Field: "type"}];
   // The MAC address of the interface.
-  string            MacAddr      = 7 [(venice.pdsaFields) = {Field: "mac_address"}];
+  bytes             MacAddr      = 7 [(venice.pdsaFields) = {Field: "mac_address"}];
   // The MTU of the interface
   uint32            Mtu          = 8 [(venice.pdsaFields) = {Field: "mtu"}];
   // The loopback mode used on this interface.

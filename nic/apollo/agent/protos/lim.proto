@@ -92,7 +92,7 @@ message LimIfStatus {
   // The type of interface.
   LimIfType         Type         = 6;
   // The MAC address of the interface.
-  string            MacAddr      = 7;
+  bytes             MacAddr      = 7;
   // The MTU of the interface
   uint32            Mtu          = 8;
   // The loopback mode used on this interface.
