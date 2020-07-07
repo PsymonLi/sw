@@ -2,8 +2,10 @@ import {
   Component,
   EventEmitter,
   Input,
+  OnChanges,
   OnInit,
   Output,
+  SimpleChanges,
   ViewChild,
   ViewEncapsulation,
  } from '@angular/core';
@@ -64,7 +66,7 @@ export interface LocalSearchResult {
   encapsulation: ViewEncapsulation.None,
 })
 
-export class AdvancedSearchComponent implements OnInit {
+export class AdvancedSearchComponent implements OnInit, OnChanges {
   @ViewChild('fieldRepeater') fieldRepeater: RepeaterComponent;
   @Input() formArray = new FormArray([]);
   @Input() keyFormName: string = 'keyFormControl';
@@ -120,6 +122,16 @@ export class AdvancedSearchComponent implements OnInit {
 
   ngOnInit() {
     this.searchArchiveQuery = {};
+    this.initFields();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.cols) {
+      this.initFields();
+    }
+  }
+
+  initFields() {
     this.fieldData = this.generateFieldData(this.customQueryOptions);
     this.genValueLabelToFieldMap();
   }

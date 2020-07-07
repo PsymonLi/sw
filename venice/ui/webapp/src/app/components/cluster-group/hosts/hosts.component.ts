@@ -403,21 +403,21 @@ export class HostsComponent extends DataComponent implements OnInit {
         // check if any hosts have vcenter integration
         // once such a host is found add advSearchCol and break
         const oneHostWithVCenter: boolean = this.dataObjects.some(data => data.meta.labels && data.meta.labels['io.pensando.vcenter.display-name']);
-
+        // remove vcenter search entry as PSM does not integrate with VMWare
         if (oneHostWithVCenter && !this.vcenterAddedToAdvSearch) {
-          this.advSearchCols.push(
+          this.advSearchCols = [
+            ...this.advSearchCols,
             {
-              field: 'vcenter', header: 'vCenter', localSearch: true,
+              field: 'vcenter-host', header: 'vCenter Host', localSearch: true,
               filterfunction: this.searchVCenter,
               advancedSearchOperator: SearchUtil.stringOperators
             }
-          );
+          ];
           this.vcenterAddedToAdvSearch = true;
         } else if (!oneHostWithVCenter && this.vcenterAddedToAdvSearch) {
           this.advSearchCols = this.advSearchCols.filter((col) => {
-            return col.field !== 'vcenter';
+            return col.field !== 'vcenter-host';
           });
-          this.vcenterAddedToAdvSearch = false;
         }
 
         this.tableLoading = this.isTableLoading();
@@ -491,24 +491,27 @@ export class HostsComponent extends DataComponent implements OnInit {
 
   searchWorkloads(requirement: FieldsRequirement, data = this.dataObjects): any[] {
     const outputs: any[] = [];
-    for (let i = 0; data && i < data.length; i++) {
-      const hostUiModel: HostUiModel = data[i]._ui;
-      const workloads = hostUiModel.processedWorkloads;
+    const searchValues = requirement.values || [];
+    const operator = TableUtility.convertOperator(String(requirement.operator));
+     // if notcontains or notEquals, use the regular operator (contains/equals) and flip the results
+     const isNot = operator.slice(0, 3) === 'not';
+     const operatorAdjusted = isNot ? operator.slice(3).toLocaleLowerCase() : operator;
+     const activateFunc = TableUtility.filterConstraints[operatorAdjusted];
 
-      for (let k = 0; k < workloads.length; k++) {
-        const recordValue = _.get(workloads[k], ['meta', 'name']);
-        const searchValues = requirement.values;
-        let operator = String(requirement.operator);
-        operator = TableUtility.convertOperator(operator);
-        for (let j = 0; j < searchValues.length; j++) {
-          const activateFunc = TableUtility.filterConstraints[operator];
-          if (activateFunc && activateFunc(recordValue, searchValues[j])) {
-            outputs.push(data[i]);
-          }
+    for (let i = 0; data && i < data.length; i++) {
+      const workloads = (data[i]._ui).processedWorkloads || [];
+      // check for workload name
+      const foundWorkloadName = workloads.some(workload => searchValues.some(value => activateFunc && activateFunc(workload.meta.name, value)));
+      if (foundWorkloadName) {
+        outputs.push(data[i]);
+      } else if (data[i].meta.labels && data[i].meta.labels['io.pensando.vcenter.display-name']) {
+        const foundWorkloadVM = workloads.some(workload => searchValues.some(value => activateFunc && activateFunc(workload.meta.labels['io.pensando.vcenter.display-name'], value)));
+        if (foundWorkloadVM) {
+          outputs.push(data[i]);
         }
       }
     }
-    return outputs;
+    return isNot ? _.differenceWith(data, outputs, _.isEqual) : outputs;
   }
 
   searchDSCs(requirement: FieldsRequirement, data = this.dataObjects): any[] {

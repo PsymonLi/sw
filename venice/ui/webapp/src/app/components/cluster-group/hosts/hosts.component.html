@@ -24,13 +24,21 @@
 </app-pagebody>
 
 <ng-template #actionButtonsTemplate>
-  <div fxFlex="none" fxLayoutAlign="start center">
+  <div class="hosts-action-template" fxLayout="row">
+    <div *ngIf="dataObjects.length !== dataObjectsBackUp.length"
+         class="hosts-table-header-title-append">
+      <span matTooltip="Total workloads">
+        | System has ({{ dataObjectsBackUp.length }})
+      </span>
+    </div>
+
     <!-- TABLE FUNCTION ICONS HERE -->
     <div *roleGuard="'clusterhost_delete'">
       <mat-icon class="global-multi-records-delete-icon"
                 *ngIf="areSelectedRowsDeletable()"
                 [matTooltip]="'Delete selected hosts'"
-                (click)="onDeleteSelectedRows($event)">delete</mat-icon>
+                (click)="onDeleteSelectedRows($event)">delete
+      </mat-icon>
     </div>
   </div>
 
@@ -38,7 +46,7 @@
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <div fxLayout="row" style="border-bottom: 1px solid #d9d9d9;">
+  <div fxLayout="row" style="border-bottom: 1px solid #d9d9d9;" class="host-table-caption">
     <app-tableheader fxFlex="auto" fxLayout="row" [tableMenuItems]="hostTable.tableMenuItems"
                      title="Hosts"
                      [total]="dataObjects.length" [icon]="headerIcon"
@@ -62,15 +70,14 @@
   <ng-container [ngSwitch]="col.field">
     <ng-container *ngSwitchCase="'meta.name'">
       <div class="ellipsisText">
-        <div [title]="rowData.meta.name">
+        <div>
           <img class="hosts-column-venice-icon"
-               src="/assets/images/icons/ico-venice-info-grey.svg" />
+               src="/assets/images/icons/ico-venice-info-grey.svg" [matTooltip]="'PSM Host'" />
           {{rowData.meta.name}}
         </div>
-        <div [title]="rowData.meta.labels['io.pensando.vcenter.display-name']"
-             *ngIf="rowData.meta.labels && rowData.meta.labels['io.pensando.vcenter.display-name']">
+        <div *ngIf="rowData.meta.labels && rowData.meta.labels['io.pensando.vcenter.display-name']">
           <img class="hosts-column-vcenter-icon"
-               src="/assets/images/icons/ico-vcenter-info-grey.svg" />
+               src="/assets/images/icons/ico-vcenter-info-grey.svg" [matTooltip]="'vCenter Host'" />
           {{rowData.meta.labels['io.pensando.vcenter.display-name']}}
         </div>
       </div>

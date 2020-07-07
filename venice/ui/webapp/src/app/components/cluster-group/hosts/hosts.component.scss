@@ -23,3 +23,18 @@
   width: 16px;
   margin-right: 5px;
 }
+
+.hosts-table-header-title-append {
+  @include primary-font(20px, #484848);
+  margin-right: 5px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.hosts-action-template {
+  width: 100%;
+}
+
+.host-table-caption .tableheader-title-container {
+  flex: 0 0 auto !important;
+}
