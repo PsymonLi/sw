@@ -228,33 +228,6 @@ func (d *PenDVS) GetPortSettings() ([]types.DistributedVirtualPort, error) {
 	return d.probe.GetPenDVSPorts(d.DcName, d.DvsName, &types.DistributedVirtualSwitchPortCriteria{}, 1)
 }
 
-// SetPortVlanOverride overrides the port settings with the given vlan
-// TODO: Verify override for a bad host isn't taking effect
-// func (d *PenDVS) SetPortVlanOverride(port string, vlan int, workloadName string, mac string) error {
-// 	// Get lock to prevent two different threads
-// 	// configuring the dvs at the same time.
-// 	d.Lock()
-// 	defer d.Unlock()
-// 	d.Log.Debugf("SetPortVlanOverride called with port: %v vlan:%v", port, vlan)
-// 	ports := vcprobe.PenDVSPortSettings{
-// 		port: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
-// 			VlanId: int32(vlan),
-// 		},
-// 	}
-// 	err := d.probe.UpdateDVSPortsVlan(d.DcName, d.DvsName, ports, false, defaultRetryCount)
-// 	if err != nil {
-// 		d.Log.Errorf("Failed to set vlan override for DC %s - dvs %s, err %s", d.DcName, d.DvsName, err)
-
-// 		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s for workload %s interface %s. Traffic may be impacted. %v", d.State.OrchConfig.Name, d.DcName, workloadName, mac, err)
-
-// 		if d.Ctx.Err() == nil && d.probe.IsSessionReady() {
-// 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
-// 		}
-// 		return err
-// 	}
-// 	return nil
-// }
-
 type overrideReq struct {
 	port       string
 	vlan       int
@@ -280,6 +253,7 @@ func (d *PenDVS) SetVMVlanOverrides(interfaces []overrideReq, workloadName strin
 	d.Lock()
 	defer d.Unlock()
 	ports := vcprobe.PenDVSPortSettings{}
+	req := map[string]int{}
 	d.Log.Infof("SetVMVlanOverrides called for workload %s", workloadName)
 	d.Log.Debugf("SetVMVlanOverrides called for workload %s with %+v", workloadName, interfaces)
 	var portSettings map[string]bool
@@ -332,6 +306,7 @@ func (d *PenDVS) SetVMVlanOverrides(interfaces []overrideReq, workloadName strin
 		ports[port] = &types.VmwareDistributedVirtualSwitchVlanIdSpec{
 			VlanId: int32(vlan),
 		}
+		req[port] = vlan
 		d.ports[port] = portEntry{
 			vlan: vlan,
 			host: inf.hostSystem,
@@ -344,6 +319,8 @@ func (d *PenDVS) SetVMVlanOverrides(interfaces []overrideReq, workloadName strin
 	err := d.probe.UpdateDVSPortsVlan(d.DcName, d.DvsName, ports, force, defaultRetryCount)
 	if err != nil {
 		d.Log.Errorf("Failed to set vlan override for DC %s - dvs %s, err %s", d.DcName, d.DvsName, err)
+
+		d.Log.Errorf("Failed request was %+v", req)
 
 		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s for workload %s. Traffic may be impacted. %v", d.State.OrchConfig.Name, d.DcName, workloadName, err)
 
@@ -491,10 +468,16 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 		v.Log.Debugf("No overrides to apply")
 		return
 	}
+
 	v.Log.Infof("Writing back overrides %+v", portSetting)
 	err := v.probe.UpdateDVSPortsVlan(dcName, dvsName, portSetting, forceWrite, defaultRetryCount)
 	if err != nil {
 		v.Log.Errorf("Failed to set vlan overrides for DC %s - dvs %s, err %s", dcName, dvsName, err)
+		v.Log.Errorf("Failed request was %+v", workloadOverride)
+	} else if !forceWrite {
+		// If there are any changes someone else must have modified the DVS. Raise event...
+		evtMsg := fmt.Sprintf("%v : Port overrides were modified for DVS %v in Datacenter %v. Overrides have been changed back.", v.State.OrchConfig.Name, dvsName, dcName)
+		recorder.Event(eventtypes.ORCH_INVALID_ACTION, evtMsg, v.State.OrchConfig)
 	}
 }
 

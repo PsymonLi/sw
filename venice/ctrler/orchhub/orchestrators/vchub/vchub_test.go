@@ -3137,6 +3137,10 @@ func TestVerifyOverride(t *testing.T) {
 
 	probe.DvsStateMapLock.Unlock()
 
+	eventRecorder := mockevtsrecorder.NewRecorder("vchub_test_vlan_limit",
+		log.GetNewLogger(log.GetDefaultConfig("vchub_test_vlan_limit")))
+	_ = recorder.Override(eventRecorder)
+
 	vchub.verifyOverrides(false)
 
 	AssertEventually(t, func() (bool, interface{}) {
@@ -3162,6 +3166,17 @@ func TestVerifyOverride(t *testing.T) {
 		}
 	}
 	probe.DvsStateMapLock.Unlock()
+
+	// Verify event was generated
+	AssertEventually(t, func() (bool, interface{}) {
+		foundEvent := false
+		for _, evt := range eventRecorder.GetEvents() {
+			if evt.EventType == eventtypes.ORCH_INVALID_ACTION.String() {
+				foundEvent = true
+			}
+		}
+		return foundEvent, nil
+	}, "Failed to find vlan failure event", "1s", "10s")
 
 	// Create workload on bad host that is connected to the same DVS port
 	vnics := []sim.VNIC{

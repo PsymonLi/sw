@@ -3,6 +3,7 @@ package vchub
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"strings"
 	"testing"
@@ -103,12 +104,16 @@ func TestDebug(t *testing.T) {
 	}, "failed to find PG")
 
 	testDebug := func(action string, params map[string]string, exp string) {
-		ret, err := vchub.debugHandler(action, params)
-		AssertOk(t, err, "Failed to get debug info")
-		retJSON, err := json.Marshal(ret)
-		AssertOk(t, err, "Failed to marshal debug info")
-
-		Assert(t, strings.Contains(string(retJSON), exp), "debug strings were not equal, got:  %v, expected to contain: %v", string(retJSON), exp)
+		AssertEventually(t, func() (bool, interface{}) {
+			ret, err := vchub.debugHandler(action, params)
+			AssertOk(t, err, "Failed to get debug info")
+			retJSON, err := json.Marshal(ret)
+			AssertOk(t, err, "Failed to marshal debug info")
+			if !strings.Contains(string(retJSON), exp) {
+				return false, fmt.Errorf("debug strings were not equal, got:  %v, expected to contain: %v", string(retJSON), exp)
+			}
+			return true, nil
+		}, "Debug string did not match")
 	}
 
 	params := map[string]string{
@@ -117,9 +122,11 @@ func TestDebug(t *testing.T) {
 	testDebug(DebugUseg, params, `{"PG":{"#Pen-PG-n1-primary":2,"#Pen-PG-n1-secondary":3},"Hosts":{}}`)
 
 	params = map[string]string{}
-	debugString := `{"Host":{"//` + vchub.createHostName(defaultTestParams.TestDCName, host2.Obj.Self.Value) + `":{"kind":"Host","api-version":"v1","meta":{"name":"` + vchub.createHostName(defaultTestParams.TestDCName, host2.Obj.Self.Value) + `","generation-id":"","labels":{"io.pensando.namespace":"PenTestDC","io.pensando.orch-name":"127.0.0.1:8989","io.pensando.vcenter.display-name":"host2"},"creation-time":"","mod-time":""},"spec":{},"status":{}}},` + `"Workload":{"default/default/` + vchub.createHostName(defaultTestParams.TestDCName, vm.Summary.Vm.Value) + `":{"kind":"Workload","api-version":"v1","meta":{"name":"` + vchub.createHostName(defaultTestParams.TestDCName, vm.Summary.Vm.Value) + `","tenant":"default","namespace":"default","generation-id":"","labels":{"io.pensando.namespace":"` + defaultTestParams.TestDCName + `","io.pensando.orch-name":"127.0.0.1:8989","io.pensando.vcenter.display-name":"vm1"},"creation-time":"","mod-time":""},"spec":{"host-name":"` + vchub.createHostName(defaultTestParams.TestDCName, vm.Runtime.Host.Value) + `"},"status":{"propagation-status":{"generation-id":"","updated":0,"pending":0,"min-version":"","status":"","pending-dscs":null}}}}}`
+	debugStringHost2 := `"//` + vchub.createHostName(defaultTestParams.TestDCName, host2.Obj.Self.Value) + `":{"kind":"Host","api-version":"v1","meta":{"name":"` + vchub.createHostName(defaultTestParams.TestDCName, host2.Obj.Self.Value) + `","generation-id":"","labels":{"io.pensando.namespace":"PenTestDC","io.pensando.orch-name":"127.0.0.1:8989","io.pensando.vcenter.display-name":"host2"},"creation-time":"","mod-time":""},"spec":{},"status":{}}`
+	debugStringWorkload := `"default/default/` + vchub.createHostName(defaultTestParams.TestDCName, vm.Summary.Vm.Value) + `":{"kind":"Workload","api-version":"v1","meta":{"name":"` + vchub.createHostName(defaultTestParams.TestDCName, vm.Summary.Vm.Value) + `","tenant":"default","namespace":"default","generation-id":"","labels":{"io.pensando.namespace":"` + defaultTestParams.TestDCName + `","io.pensando.orch-name":"127.0.0.1:8989","io.pensando.vcenter.display-name":"vm1"},"creation-time":"","mod-time":""},"spec":{"host-name":"` + vchub.createHostName(defaultTestParams.TestDCName, vm.Runtime.Host.Value) + `"},"status":{"propagation-status":{"generation-id":"","updated":0,"pending":0,"min-version":"","status":"","pending-dscs":null}`
 
-	testDebug(DebugCache, params, debugString)
+	testDebug(DebugCache, params, debugStringHost2)
+	testDebug(DebugCache, params, debugStringWorkload)
 	params = map[string]string{}
 	testDebug(DebugState, params, `{"PenTestDC":{"ID":"datacenter-2","DVS":{"#Pen-DVS-PenTestDC":{"ID":"`+dvs.Obj.Self.Value+`","PGs":{"#Pen-PG-n1":{"ID":"`+pgID+`","Network":"n1"}}}}}}`)
 
