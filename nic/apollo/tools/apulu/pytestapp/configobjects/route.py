@@ -11,7 +11,7 @@ class RouteObject():
     def __init__(self, id, route_table_id, addrfamily, prefix, nhtype, nhid, nat_type=None, nat_addr_type="public", meteren=False, dnat_ip=None):
         assert(nhtype == "tunnel")
         self.id = id
-        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.STATIC_ROUTE)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.ROUTE)
         self.prefix = prefix
         self.nhtype = nhtype
         self.nhid = nhid
@@ -28,10 +28,10 @@ class RouteObject():
         grpcmsg = route_pb2.RouteRequest()
         spec = grpcmsg.Request
         spec.Id = self.uuid.GetUuid()
-        spec.RouteTableId = utils.PdsUuid.GetUUIDfromId(self.route_table_id)
+        spec.RouteTableId = utils.PdsUuid.GetUUIDfromId(self.route_table_id, objtype=api.ObjectTypes.ROUTETABLE)
 
         if self.nhtype == 'tunnel':
-            spec.Attrs.TunnelId = utils.PdsUuid.GetUUIDfromId(self.nhid)
+            spec.Attrs.TunnelId = utils.PdsUuid.GetUUIDfromId(self.nhid, objtype=api.ObjectTypes.TUNNEL)
         else:
             assert(0)
         spec.Attrs.Prefix.Addr.Af = self.addrfamily
@@ -52,7 +52,7 @@ class RouteObject():
 class RouteTableObject():
     def __init__(self, id, addrfamily, routes=None):
         self.id = id
-        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.ROUTE)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.ROUTETABLE)
         self.addrfamily = addrfamily
         self.routes = routes
         return
@@ -65,7 +65,7 @@ class RouteTableObject():
         for route in self.routes:
             rtspec = spec.Routes.add()
             if route.nhtype == 'tunnel':
-                rtspec.Attrs.TunnelId = utils.PdsUuid.GetUUIDfromId(route.nhid)
+                rtspec.Attrs.TunnelId = utils.PdsUuid.GetUUIDfromId(route.nhid, objtype=api.ObjectTypes.TUNNEL)
             else:
                 assert(0)
             rtspec.Attrs.Prefix.Addr.Af = self.addrfamily

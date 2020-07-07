@@ -28,5 +28,5 @@ class VpcObject():
         if self.encaptype == types_pb2.ENCAP_TYPE_VXLAN:
            spec.FabricEncap.value.Vnid = self.encapvalue
         if self.v4routetableid:
-            spec.V4RouteTableId = utils.PdsUuid.GetUUIDfromId(self.v4routetableid)
+            spec.V4RouteTableId = utils.PdsUuid.GetUUIDfromId(self.v4routetableid, objtype=api.ObjectTypes.ROUTETABLE)
         return grpcmsg

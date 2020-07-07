@@ -33,9 +33,9 @@ class VnicObject():
     def GetGrpcCreateMessage(self):
         grpcmsg = vnic_pb2.VnicRequest()
         spec = grpcmsg.Request.add()
-        spec.Id = utils.PdsUuid.GetUUIDfromId(self.id)
+        spec.Id = self.uuid.GetUuid()
         spec.Primary = self.primary
-        spec.SubnetId = utils.PdsUuid.GetUUIDfromId(self.subnetid)
+        spec.SubnetId = utils.PdsUuid.GetUUIDfromId(self.subnetid, objtype=api.ObjectTypes.SUBNET)
         spec.MACAddress = utils.getmac2num(self.macaddr)
         spec.SourceGuardEnable = self.sourceguard
         if re.search( 'VXLAN', self.fabricencap, re.I ):

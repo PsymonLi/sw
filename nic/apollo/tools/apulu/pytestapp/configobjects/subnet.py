@@ -40,9 +40,9 @@ class SubnetObject():
         grpcmsg = subnet_pb2.SubnetRequest()
         spec = grpcmsg.Request.add()
         spec.Id = self.uuid.GetUuid()
-        spec.VPCId = utils.PdsUuid.GetUUIDfromId(self.vpcid)
+        spec.VPCId = utils.PdsUuid.GetUUIDfromId(self.vpcid, objtype=api.ObjectTypes.VPC)
         if self.dhcp_policy_id:
-            spec.DHCPPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.dhcp_policy_id))
+            spec.DHCPPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.dhcp_policy_id, objtype=api.ObjectTypes.DHCP_POLICY))
         spec.V4Prefix.Len = self.v4prefix.prefixlen
         spec.V4Prefix.Addr = int( self.v4prefix.network_address)
 
@@ -53,13 +53,13 @@ class SubnetObject():
         spec.IPv4VirtualRouterIP = int(self.v4virtualrouterip)
         spec.VirtualRouterMac = utils.getmac2num(self.virtualroutermac)
         if self.v4routetableid:
-            spec.V4RouteTableId = utils.PdsUuid.GetUUIDfromId(self.v4routetableid)
+            spec.V4RouteTableId = utils.PdsUuid.GetUUIDfromId(self.v4routetableid, objtype=api.ObjectTypes.ROUTETABLE)
         for cur_hostifuuid in self.hostifuuid:
             spec.HostIf.append(cur_hostifuuid.GetUuid())
 
         if self.ingress_policy_id:
-            spec.IngV4SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.ingress_policy_id))
+            spec.IngV4SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.ingress_policy_id, objtype=api.ObjectTypes.POLICY))
         if self.egress_policy_id:
-            spec.EgV4SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.egress_policy_id))
+            spec.EgV4SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.egress_policy_id, objtype=api.ObjectTypes.POLICY))
         return grpcmsg
 

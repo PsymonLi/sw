@@ -10,7 +10,7 @@ class DhcpPolicyObject():
     def __init__(self, id, server_ip=None, mtu=None, gateway_ip=None, dns_server=None, ntp_server=None, domain_name=None, lease_timeout=None, boot_filename=None):
         super().__init__()
         self.id = id
-        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.DHCP_PROXY)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.DHCP_POLICY)
         self.server_ip = server_ip
         self.mtu = mtu
         self.gateway_ip = gateway_ip

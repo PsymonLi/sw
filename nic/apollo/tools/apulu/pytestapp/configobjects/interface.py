@@ -55,7 +55,7 @@ class InterfaceObject():
         spec.Type = self.iftype
         spec.AdminStatus = self.ifadminstatus
         if self.iftype == interface_pb2.IF_TYPE_L3:
-            spec.L3IfSpec.VpcId = utils.PdsUuid.GetUUIDfromId(self.ifobj.vpcid)
+            spec.L3IfSpec.VpcId = utils.PdsUuid.GetUUIDfromId(self.ifobj.vpcid, objtype=api.ObjectTypes.VPC)
             spec.L3IfSpec.Prefix.Addr.Af = 1
             spec.L3IfSpec.Prefix.Len = int(self.ifobj.prefix._prefixlen)
             spec.L3IfSpec.Prefix.Addr.V4Addr = int(self.ifobj.prefix.ip)

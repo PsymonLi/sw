@@ -10,7 +10,7 @@ class SvcMappingObject():
     def __init__(self, id, vpcid, backend_ip, backend_port, vip, service_port):
         super().__init__()
         self.id    = id
-        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.SVCMAPPING)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.SVC_MAPPING)
         self.vpcid = vpcid
         self.backend_ip = backend_ip
         self.backend_port = backend_port
@@ -22,7 +22,7 @@ class SvcMappingObject():
         grpcmsg = service_pb2.SvcMappingRequest()
         spec = grpcmsg.Request.add()
         spec.Id = self.uuid.GetUuid()
-        spec.Key.VPCId = utils.PdsUuid.GetUUIDfromId(self.vpcid)
+        spec.Key.VPCId = utils.PdsUuid.GetUUIDfromId(self.vpcid, objtype=api.ObjectTypes.VPC)
         spec.Key.BackendIP.Af = types_pb2.IP_AF_INET
         spec.Key.BackendIP.V4Addr = int(self.backend_ip)
         spec.Key.BackendPort = int(self.backend_port)

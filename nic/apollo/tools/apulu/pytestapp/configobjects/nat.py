@@ -25,7 +25,7 @@ class NatPbObject():
         grpcmsg = nat_pb2.NatPortBlockRequest()
         spec = grpcmsg.Request.add()
         spec.Id = self.uuid.GetUuid()
-        spec.VpcId = utils.PdsUuid.GetUUIDfromId(self.vpc_id)
+        spec.VpcId = utils.PdsUuid.GetUUIDfromId(self.vpc_id, objtype=api.ObjectTypes.VPC)
         spec.Protocol = self.proto_num
         spec.NatAddress.Prefix.IPv4Subnet.Addr.Af = types_pb2.IP_AF_INET
         spec.NatAddress.Prefix.IPv4Subnet.Addr.V4Addr = int(self.prefix.network_address)

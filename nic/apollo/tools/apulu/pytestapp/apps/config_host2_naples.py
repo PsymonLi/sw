@@ -17,7 +17,7 @@ import nh
 import node
 import bgp
 
-import netaddr
+#import netaddr
 import argparse
 import os
 import time

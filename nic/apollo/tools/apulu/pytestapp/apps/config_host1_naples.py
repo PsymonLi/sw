@@ -19,7 +19,7 @@ import nat
 import bgp
 import service_mapping
 
-import netaddr
+#import netaddr
 import argparse
 import os
 import time

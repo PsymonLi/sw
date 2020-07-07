@@ -27,7 +27,7 @@ class IPNhObject():
 class NexthopObject():
     def __init__(self, id, type, l3intfid, underlaymac, vpcid=None, nhip=None, vlanid=None, macaddr=None ):
         self.id = id
-        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.NEXTHOP)
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.NH)
         self.type = type
         self.l3intfid = l3intfid
         self.underlaymac = underlaymac
@@ -44,11 +44,11 @@ class NexthopObject():
         if re.search( 'underlay', self.type, re.I ):
             underlaynhobj = UnderlayNhObject( self.l3intfid, self.underlaymac )
             #spec.UnderlayNhInfo.L3InterfaceId = underlaynhobj.l3intfid.id 
-            spec.UnderlayNhInfo.L3Interface = utils.PdsUuid.GetUUIDfromId(underlaynhobj.l3intfid)
+            spec.UnderlayNhInfo.L3Interface = utils.PdsUuid.GetUUIDfromId(underlaynhobj.l3intfid, objtype=api.ObjectTypes.INTERFACE)
             spec.UnderlayNhInfo.UnderlayMAC = utils.getmac2num(underlaynhobj.underlaymac,reorder=False )
         elif re.search( 'ip', self.type, re.I):
             ipnhobj =  IPNhObject( self.vpcid, self.nhip, self.vlanid, self.macaddr )
-            spec.IPNhInfo.VPCId = utils.PdsUuid.GetUUIDfromId(self.ipnhobj.vpcid)
+            spec.IPNhInfo.VPCId = utils.PdsUuid.GetUUIDfromId(self.ipnhobj.vpcid, objtype=api.ObjectTypes.VPC)
             spec.IPNhInfo.IP = self.ipnhobj.nhip
             spec.IPNhInfo.Vlan = self.vlanid
             spec.IPNhInfo.Mac = utils.getmac2num(self.ipnhobj.macaddr, reorder=False )

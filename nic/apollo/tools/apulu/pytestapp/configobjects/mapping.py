@@ -6,11 +6,12 @@ import types_pb2 as types_pb2
 import ipaddress
 import utils
 import re
-
+import api
 
 class MappingObject():
     def __init__(self, id, key_type, macaddr, ip, vpcid, subnetid=None, tunnelid=None, encaptype=None, encapslotid=None, nexthopgroupid=None, vnicid=None, public_ip=None, tags=[]):
         self.id = id
+        self.uuid = utils.PdsUuid(self.id, objtype=api.ObjectTypes.MAPPING)
         self.keytype = key_type
         self.macaddr  = utils.getmac2num(macaddr)
         if type(ip) is ipaddress.IPv4Address:
@@ -35,18 +36,18 @@ class MappingObject():
     def GetGrpcCreateMessage(self):
         grpcmsg = mapping_pb2.MappingRequest()
         spec = grpcmsg.Request.add()
-        spec.Id = utils.PdsUuid.GetUUIDfromId(self.id)
+        spec.Id = self.uuid.GetUuid()
         if re.search( 'l3', self.keytype, re.I ):
-            spec.IPKey.VPCId = utils.PdsUuid.GetUUIDfromId(self.vpcid)
+            spec.IPKey.VPCId = utils.PdsUuid.GetUUIDfromId(self.vpcid, objtype=api.ObjectTypes.VPC)
             spec.IPKey.IPAddr.Af = types_pb2.IP_AF_INET
             spec.IPKey.IPAddr.V4Addr = self.ip
 
         if self.subnetid is not None:
-           spec.SubnetId = utils.PdsUuid.GetUUIDfromId(self.subnetid)
+           spec.SubnetId = utils.PdsUuid.GetUUIDfromId(self.subnetid, objtype=api.ObjectTypes.SUBNET)
         if self.tunnelid is not None:
-           spec.TunnelId = utils.PdsUuid.GetUUIDfromId(self.tunnelid)
+           spec.TunnelId = utils.PdsUuid.GetUUIDfromId(self.tunnelid, objtype=api.ObjectTypes.TUNNEL)
         if self.nexthopgroupid is not None:
-           spec.NexthopGroupId = utils.PdsUuid.GetUUIDfromId(self.nexthopgroupid)
+           spec.NexthopGroupId = utils.PdsUuid.GetUUIDfromId(self.nexthopgroupid, objtype=api.ObjectTypes.NHGROUP)
 
         spec.MACAddr  = self.macaddr
         if self.public_ip:
@@ -61,6 +62,6 @@ class MappingObject():
         #elif self.af == types_pb2.IP_AF_INET6:
         #    spec.Id.IPAddr.V6Addr = self.ip
         if self.vnicid is not None:
-           spec.VnicId = utils.PdsUuid.GetUUIDfromId(self.vnicid)
+           spec.VnicId = utils.PdsUuid.GetUUIDfromId(self.vnicid, objtype=api.ObjectTypes.VNIC)
         spec.Tags.extend(self.tags)
         return grpcmsg

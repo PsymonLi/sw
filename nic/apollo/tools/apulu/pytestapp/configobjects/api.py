@@ -67,7 +67,8 @@ class ObjectTypes(enum.IntEnum):
     SVC_MAPPING = 19
     SECURITY_PROFILE = 20
     ROUTETABLE = 21
-    MAX = 22
+    NHGROUP = 22
+    MAX = 23
 
 class ClientStub:
     def __init__(self, stubclass, channel, rpc_prefix):
