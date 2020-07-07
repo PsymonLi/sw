@@ -29,32 +29,33 @@ def __GetP4CtlCmd_WRITE_TABLE(table_name, params=""):
 ##
 # Add P4ctl command
 ##
-def AddP4CtlCmd(req, node_name, cmd):
-    return api.Trigger_AddNaplesCommand(req, node_name, __GetP4CtlExecCmd(cmd))
+def AddP4CtlCmd(req, node_name, cmd, device_name=None):
+    return api.Trigger_AddNaplesCommand(req, node_name, __GetP4CtlExecCmd(cmd),
+            device_name)
 
-def AddP4CtlCmd_LIST(req, node_name, params=""):
-    return AddP4CtlCmd(req, node_name, __GetP4CtlCmd_LIST(params))
+def AddP4CtlCmd_LIST(req, node_name, params="", device_name=None):
+    return AddP4CtlCmd(req, node_name, __GetP4CtlCmd_LIST(params), device_name)
 
-def AddP4CtlCmd_READ(req, node_name, cmd):
-    return AddP4CtlCmd(req, node_name, __GetP4CtlCmd_READ(cmd))
+def AddP4CtlCmd_READ(req, node_name, cmd, device_name=None):
+    return AddP4CtlCmd(req, node_name, __GetP4CtlCmd_READ(cmd), device_name)
 
-def AddP4CtlCmd_WRITE(req, node_name, cmd):
-    return AddP4CtlCmd(req, node_name, __GetP4CtlCmd_WRITE(cmd))
+def AddP4CtlCmd_WRITE(req, node_name, cmd, device_name=None):
+    return AddP4CtlCmd(req, node_name, __GetP4CtlCmd_WRITE(cmd), device_name)
 
-def AddP4CtlCmd_READ_TABLE(req, node_name, table_name, params=""):
+def AddP4CtlCmd_READ_TABLE(req, node_name, table_name, params="", device_name=None):
     cmd = __GetP4CtlCmd_READ_TABLE(table_name, params)
-    return AddP4CtlCmd(req, node_name, cmd)
+    return AddP4CtlCmd(req, node_name, cmd, device_name)
 
-def AddP4CtlCmd_WRITE_TABLE(req, node_name, table_name, params=""):
+def AddP4CtlCmd_WRITE_TABLE(req, node_name, table_name, params="", device_name=None):
     cmd = __GetP4CtlCmd_WRITE_TABLE(table_name, params)
-    return AddP4CtlCmd(req, node_name, cmd)
+    return AddP4CtlCmd(req, node_name, cmd, device_name)
 
 ##
 # Run p4ctl command
 ##
-def RunP4ctlCmd(node_name, cmd, print_result=True):
+def RunP4ctlCmd(node_name, cmd, print_result=True, device_name=None):
     req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
-    AddP4CtlCmd(req, node_name, cmd)
+    AddP4CtlCmd(req, node_name, cmd, device_name)
     resp = api.Trigger(req)
     if not resp:
         return None
@@ -66,27 +67,32 @@ def RunP4ctlCmd(node_name, cmd, print_result=True):
         else:
             return cmd.stdout
 
-def RunP4ctlCmd_LIST(node_name, params="", print_result=True):
-    return RunP4ctlCmd(node_name, __GetP4CtlCmd_LIST(params), print_result=print_result)
+def RunP4ctlCmd_LIST(node_name, params="", print_result=True, device_name=None):
+    return RunP4ctlCmd(node_name, __GetP4CtlCmd_LIST(params), print_result, device_name)
 
-def RunP4CtlCmd_READ(node_name, params="", print_result=True):
-    return RunP4ctlCmd(node_name, __GetP4CtlCmd_READ(params), print_result=print_result)
+def RunP4CtlCmd_READ(node_name, params="", print_result=True, device_name=None):
+    return RunP4ctlCmd(node_name, __GetP4CtlCmd_READ(params), print_result, device_name)
 
-def RunP4CtlCmd_READ_TABLE(node_name, table_name, params="", print_result=True):
-    return RunP4ctlCmd(node_name, __GetP4CtlCmd_READ_TABLE(table_name, params), print_result=print_result)
+def RunP4CtlCmd_READ_TABLE(node_name, table_name, params="", print_result=True, device_name=None):
+    return RunP4ctlCmd(node_name, __GetP4CtlCmd_READ_TABLE(table_name, params), print_result, device_name)
 
-def RunP4ctlCmd_WRITE(node_name, table_name, params="", print_result=True):
-    return RunP4ctlCmd(node_name, __GetP4CtlCmd_WRITE(params), print_result=print_result)
+def RunP4ctlCmd_WRITE(node_name, table_name, params="", print_result=True, device_name=None):
+    return RunP4ctlCmd(node_name, __GetP4CtlCmd_WRITE(params), print_result, device_name)
 
-def RunP4ctlCmd_WRITE_TABLE(node_name, table_name, params="", print_result=True):
-    return RunP4ctlCmd(node_name, __GetP4CtlCmd_WRITE_TABLE(table_name, params), print_result=print_result)
+def RunP4ctlCmd_WRITE_TABLE(node_name, table_name, params="", print_result=True, device_name=None):
+    return RunP4ctlCmd(node_name, __GetP4CtlCmd_WRITE_TABLE(table_name, params), print_result, device_name)
 
 __tables_cache = {}
-def GetTables(node_name):
+def GetTables(node_name, device_name=None):
+    if not device_name:
+        dev_names = api.GetDeviceNames(node_name)
+        device_name = dev_names[0]
+    
     def __GetTables():
         tables = []
         marker = "---"
-        out = RunP4ctlCmd_LIST(node_name, "--out_json", print_result=False)
+        out = RunP4ctlCmd_LIST(node_name, "--out_json", print_result=False, 
+                                device_name=device_name)
         if not out:
             return tables
         try:
@@ -103,6 +109,6 @@ def GetTables(node_name):
         return tables
 
     global __tables_cache
-    if node_name not in __tables_cache:
-        __tables_cache[node_name] = __GetTables()
-    return __tables_cache[node_name]
+    if (node_name, device_name) not in __tables_cache:
+        __tables_cache[(node_name, device_name)] = __GetTables()
+    return __tables_cache[(node_name, device_name)]

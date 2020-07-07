@@ -66,7 +66,7 @@ instances:
 
         - workload:
             node        : node1
-            count       : 8
+            count       : 16
             spec        : tagged
             interface   : auto
             # Distribution is equal, 1 on each interface
@@ -85,7 +85,7 @@ instances:
 
         - workload:
             node        : node2
-            count       : 8
+            count       : 16
             spec        : tagged
             interface   : auto
             # Distribution is equal, 1 on each interface

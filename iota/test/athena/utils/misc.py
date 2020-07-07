@@ -101,10 +101,11 @@ def get_wl_idx(uplink, vnic_idx):
 # get flow hit count from p4ctl table read
 # convert it from little endian hex to decimal
 # ===========================================
-def get_flow_hit_count(node):
+def get_flow_hit_count(node_name, device_name=None):
 
     # Dump table from p4ctl and verify flow hit counter
-    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "p4e_stats", "all")
+    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node_name, "p4e_stats", "all",
+                                                device_name)
     pattern = "(flow_hit : 0x)(\w*)"
     mo = re.search(pattern,output_lines)
 
@@ -120,18 +121,21 @@ def get_flow_hit_count(node):
 # grep sip/dip/sport/dport/vnic/proto
 # from flow info
 # ========================================
-def get_flow_entries(tc, vnic_id, flow):
+def get_flow_entries(node_name, vnic_id, flow, device_name):
 
     # Dump all flow entries from flow cache
     req = api.Trigger_CreateExecuteCommandsRequest()
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, "export PATH=$PATH:/nic/lib && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib && /nic/bin/athena_client --flow_cache_dump /data/flow_dump_iota.log")
+    api.Trigger_AddNaplesCommand(req, node_name, "export PATH=$PATH:/nic/lib && "
+            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib && "
+            "/nic/bin/athena_client --flow_cache_dump /data/flow_dump_iota.log",
+            device_name)
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
         api.PrintCommandResults(cmd)
         if cmd.exit_code != 0:
             api.Logger.error("Error: Dump flow through athena_client failed")
-            return api.types.status.FAILURE
+            return (api.types.status.FAILURE, None)
 
     flow_dump_req = api.Trigger_CreateExecuteCommandsRequest()
     flow_dump_cmd = ""
@@ -143,45 +147,48 @@ def get_flow_entries(tc, vnic_id, flow):
     flow_dump_cmd += (" | grep DstIP:" + flow.dip)
 
     if flow.proto == 'ICMP':
-        flow_dump_cmd += (" | grep Sport:" + flow.icmp_type)
-        flow_dump_cmd += (" | grep Dport:" + flow.icmp_code)
+        type_code = (int(flow.icmp_code) << 8) | int(flow.icmp_type)
+        flow_dump_cmd += (" | grep Sport:" + str(type_code))
 
     else:
         flow_dump_cmd += (" | grep Sport:" + str(flow.sport))
         flow_dump_cmd += (" | grep Dport:" + str(flow.dport))
 
-    api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd)
+    api.Trigger_AddNaplesCommand(flow_dump_req, node_name, flow_dump_cmd,
+                                device_name)
 
-    return flow_dump_req
+    return (api.types.status.SUCCESS, flow_dump_req)
 
-# ===========================================
-# Return: True or False
-# Match flows with flow entries in flow cache
-# Check src_ip, dst_ip, proto, 
+# ============================================================
+# Return: Return error code, num of flow cache entries 
+# matching given flow. Check src_ip, dst_ip, proto, 
 # for UDP/TCP, add check for sport and dport
-# ===========================================
-def match_dynamic_flows(tc, vnic_id, flow):
+# ============================================================
+def match_dynamic_flows(node_name, vnic_id, flow, device_name=None):
 
-    flow_dump_req = get_flow_entries(tc, vnic_id, flow)
+    rc, flow_dump_req = get_flow_entries(node_name, vnic_id, flow, device_name)
+    if rc != api.types.status.SUCCESS:
+        return (rc, 0)
     flow_dump_resp = api.Trigger(flow_dump_req)
 
+    num_matching_ent = 0
     for cmd in flow_dump_resp.commands:
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            api.Logger.info("Verify this flow hasn't been successfully installed yet.")
-            return False
+        if 'grep' in cmd.command and cmd.stdout is not None:
+            num_matching_ent = len(cmd.stdout.splitlines())
 
-    api.Logger.info('Verify this flow has already been installed in flow cache.')
+    api.Logger.info('Number of matching flow entries = %d' % num_matching_ent)
 
-    return True
+    return (api.types.status.SUCCESS, num_matching_ent)
 
 # ================================
 # Return: session id of the flow
 # grep index from flow info
 # ================================
-def get_session_id(tc, vnic_id, flow):
+def get_session_id(node_name, vnic_id, flow, device_name=None):
 
-    flow_dump_req = get_flow_entries(tc, vnic_id, flow)
+    rc, flow_dump_req = get_flow_entries(node_name, vnic_id, flow, device_name)
+    if rc != api.types.status.SUCCESS:
+        return None
     flow_dump_resp = api.Trigger(flow_dump_req)
 
     for cmd in flow_dump_resp.commands:
@@ -231,12 +238,12 @@ def get_conntrack_state(node, conntrack_id):
 # Validates the flow_state in conntrack
 # table against expected state
 # ================================
-def verify_conntrack_state(tc, flow, exp_state):
-    session_id = get_session_id(tc, tc.vnic_id, flow)
-    conntrack_id = get_conntrack_id(tc.bitw_node_name, session_id)
+def verify_conntrack_state(node_name, vnic_id, flow, exp_state):
+    session_id = get_session_id(node_name, vnic_id, flow)
+    conntrack_id = get_conntrack_id(node_name, session_id)
     api.Logger.info("conntrack_id is %s" % conntrack_id)
 
-    flow_state = get_conntrack_state(tc.bitw_node_name, conntrack_id)
+    flow_state = get_conntrack_state(node_name, conntrack_id)
     api.Logger.info("flow_state: expected %s, actual %s" % (exp_state, flow_state))
 
     return flow_state == exp_state

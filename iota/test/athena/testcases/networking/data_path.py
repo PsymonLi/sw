@@ -468,12 +468,19 @@ def Trigger(tc):
             if not tc.skip_flow_hit_check:
                 flow_hit_count_before = utils.get_flow_hit_count(tc.bitw_node_name)
 
-            find_match = utils.match_dynamic_flows(tc, tc.vnic_id, flow)
+            rc, num_match_before = utils.match_dynamic_flows(tc.bitw_node_name, tc.vnic_id, flow)
+            if rc != api.types.status.SUCCESS:
+                api.Logger.error("match_dynamic_flows failed")
+                return rc
 
             send_pkt(tc, node, pkt_gen, flow, tc.pkt_cnt)
 
-            verify = utils.match_dynamic_flows(tc, tc.vnic_id, flow)
-            if not verify:
+            rc, num_match_after = utils.match_dynamic_flows(tc.bitw_node_name, tc.vnic_id, flow)
+            if rc != api.types.status.SUCCESS:
+                api.Logger.error("match_dynamic_flows failed")
+                return rc
+
+            if num_match_after == 0:
                 api.Logger.error("ERROR: flow is not installed in flow cache")
                 return api.types.status.FAILURE
 
@@ -491,7 +498,7 @@ def Trigger(tc):
             flow_hit_count = flow_hit_count_after - flow_hit_count_before
 
 
-            if find_match:
+            if num_match_before != 0:
                 # If flow is already installed in the flow cache, all pkts should go to fast path
                 cal_flow_hit_count = 2 * tc.pkt_cnt
             else:
