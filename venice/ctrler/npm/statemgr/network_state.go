@@ -4,7 +4,6 @@ package statemgr
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -666,10 +665,6 @@ func (sm *Statemgr) cleanUnusedNetworks() {
 			if err != nil {
 				log.Errorf("Ignore error deleting the network. Err: %v", err)
 			}
-		} else if len(nw.endpointDB) == 0 && IsCleanupCandidate(nw.Network) {
-			// rel A to rel B stale networks gets cleaned up
-			log.Errorf("marking for garbage collection networkstate: {%+v}", nw)
-			nw.curState = networkMarkDelete
 		}
 	}
 
@@ -709,92 +704,6 @@ func (ns *NetworkState) isNetworkMarkedDelete() bool {
 }
 func (ns *NetworkState) isNetworkDeleted() bool {
 	return ns.curState == networkDeleted
-}
-
-// only for rel A to rel B
-// TODO : remove on rel C and up
-// This approach will mark all the network which are not associated
-// with orchhub to be labled for garbage collection when they become
-// unused by npm
-func (sm *Statemgr) labelInternalNetworkObjects() {
-	// 1. get all network and create a networkMap without any orch reference
-	// 2. find any workload owned by orchhub
-	// 3. remove associated networks from the networkMap
-	// 4. Mark all remaining networks which are in networkMap
-	sm.networkKindLock.Lock()
-	defer sm.networkKindLock.Unlock()
-	networkMap := make(map[uint32]*ctkit.Network)
-	networkVlanMap := make(map[string]uint32)
-	netObjs, err := sm.ctrler.Network().List(context.Background(), &api.ListWatchOptions{})
-	if err == nil {
-		for _, nw := range netObjs {
-			if len(nw.Network.Spec.Orchestrators) > 0 {
-				// orchhub reference networks are not to be removed by garbage
-				// collector
-				log.Infof("network [%+v] with orch ref will not be labeled", nw.Network)
-				continue
-			}
-			networkMap[nw.Network.Spec.VlanID] = nw
-			networkVlanMap[nw.Network.Name] = nw.Network.Spec.VlanID
-		}
-	} else {
-		log.Infof("Error getting network list %v", err)
-		return
-	}
-	var workloads []*ctkit.Workload
-	workloads, err = sm.ctrler.Workload().List(context.Background(), &api.ListWatchOptions{})
-	if err == nil {
-		for _, ws := range workloads {
-			if !isOrchHubKeyPresent(ws.Workload.Labels) {
-				log.Infof("venice owned workload [%v] network will be labeled", ws)
-				continue
-			}
-
-			for ii := range ws.Workload.Spec.Interfaces {
-				intf := ws.Workload.Spec.Interfaces[ii]
-				if len(intf.Network) > 0 {
-					if vlan, ok := networkVlanMap[intf.Network]; ok {
-						//log.Infof("Orchhub owned Named Network [%v] will not be labeled", intf.Network)
-						delete(networkMap, vlan)
-					}
-				} else {
-					//log.Infof("Orchhub owned External Network [%v] will not be labeled", intf.ExternalVlan)
-					delete(networkMap, intf.ExternalVlan)
-				}
-			}
-		}
-	} else {
-		log.Infof("Error getting workload list %v", err)
-	}
-	for _, ns := range networkMap {
-		//Ignore internal network labeling if tenant is default
-		if ns.Tenant != "default" {
-			continue
-		}
-		if !IsObjInternal(ns.Labels) {
-			log.Infof("Updating Network %v with internal label", ns)
-			nwt := network.Network{
-				TypeMeta: api.TypeMeta{Kind: "Network"},
-				ObjectMeta: api.ObjectMeta{
-					Name:      ns.Name,
-					Tenant:    ns.Tenant,
-					Namespace: ns.Namespace,
-					Labels:    ns.Labels,
-				},
-				Spec:   ns.Spec,
-				Status: ns.Status,
-			}
-			if nwt.Labels == nil {
-				nwt.Labels = map[string]string{}
-			}
-			AddNpmSystemLabel(nwt.Labels)
-			err := sm.ctrler.Network().Update(&nwt)
-			if err != nil {
-				log.Errorf("Ignore error updating the network[%v]. Err: %v", nwt, err)
-			}
-
-		}
-	}
 }
 
 // Write writes the object to api server

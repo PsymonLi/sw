@@ -522,7 +522,6 @@ func (sm *Statemgr) ResyncComplete() {
 	sm.cleanUnusedNetworks()
 	if !sm.initialResyncDone {
 		// label the objects for relA to relB
-		sm.labelInternalNetworkObjects()
 		sm.initialResyncDone = true
 		log.Info("Initial Rsync complete done")
 		sm.resyncDone <- true
