@@ -717,6 +717,7 @@ capri_deparser_init (p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp)
     cap0.dpr.dpr[0].cfg_global_2.recirc_oport(egr_dp->recirc_oport);
     cap0.dpr.dpr[0].cfg_global_2.clear_recirc_bit_en(egr_dp->clear_recirc_bit_en);
     cap0.dpr.dpr[0].cfg_global_2.frame_size_rw_bm(0xffff);
+    cap0.dpr.dpr[0].cfg_global_2.recirc_rw_bm(recirc_rw_bm);
     cap0.dpr.dpr[0].cfg_global_2.write();
 }
 

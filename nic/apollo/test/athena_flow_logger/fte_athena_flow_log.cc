@@ -38,12 +38,13 @@ fte_ath_flow_log_cb_fn (pds_flow_log_table_iter_cb_arg_t *arg)
     pds_flow_log_entry_key_t  *key = NULL;
     pds_flow_log_entry_data_t *data = NULL;
     FILE                      *fp = NULL;
+/*
     char                      srcstr[INET6_ADDRSTRLEN];
     char                      dststr[INET6_ADDRSTRLEN];
     char                      start_time[256];
     char                      end_time[256];
 
-
+*/
     if (arg == NULL) {
         PDS_TRACE_ERR("fte_ath_flow_log_cb_fn called with NULL arguments \n");
         return;
@@ -64,6 +65,7 @@ fte_ath_flow_log_cb_fn (pds_flow_log_table_iter_cb_arg_t *arg)
         return;
     }
 
+    /*
     if (key->key_type == KEY_TYPE_IPV6) {
         inet_ntop(AF_INET6, key->ip_saddr, srcstr, INET6_ADDRSTRLEN);
         inet_ntop(AF_INET6, key->ip_daddr, dststr, INET6_ADDRSTRLEN);
@@ -89,6 +91,29 @@ fte_ath_flow_log_cb_fn (pds_flow_log_table_iter_cb_arg_t *arg)
             data->pkt_from_host, data->pkt_from_switch,
             data->bytes_from_host, data->bytes_from_switch,
             start_time, end_time);
+    */
+    fprintf(fp, "Index %u:\n" 
+            "Key ==> SrcIP: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x, "
+            "DstIP: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x, "
+            "Dport: %u, Sport: %u, Proto %u, "
+            "Ktype: %u, VNICID:%u, disposition:%u\n"
+            "Data ==>  pkts_from_host: %u, pkts_from_switch: %u, "
+            "bytes_from_host: %lu, bytes_from_switch:%lu, "
+            "start_timestamp: %lu, end_timestamp: %lu\n",
+            arg->key.entry_idx, 
+            key->ip_saddr[0], key->ip_saddr[1], key->ip_saddr[2], key->ip_saddr[3],
+            key->ip_saddr[4], key->ip_saddr[5], key->ip_saddr[6], key->ip_saddr[7],
+            key->ip_saddr[8], key->ip_saddr[9], key->ip_saddr[10], key->ip_saddr[11],
+            key->ip_saddr[12], key->ip_saddr[13], key->ip_saddr[14], key->ip_saddr[15],
+            key->ip_daddr[0], key->ip_daddr[1], key->ip_daddr[2], key->ip_daddr[3],
+            key->ip_daddr[4], key->ip_daddr[5], key->ip_daddr[6], key->ip_daddr[7],
+            key->ip_daddr[8], key->ip_daddr[9], key->ip_daddr[10], key->ip_daddr[11],
+            key->ip_daddr[12], key->ip_daddr[13], key->ip_daddr[14], key->ip_daddr[15],
+            key->dport, key->sport,
+            key->proto, key->key_type, key->vnic_id, key->disposition,
+            data->pkt_from_host, data->pkt_from_switch,
+            data->bytes_from_host, data->bytes_from_switch,
+            data->start_time, data->last_time);
 }
 
 void 
