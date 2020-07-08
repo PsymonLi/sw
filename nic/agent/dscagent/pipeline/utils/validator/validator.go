@@ -8,7 +8,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
@@ -543,13 +542,13 @@ func generateRuleHash(r *netproto.PolicyRule, key string) uint64 {
 	return h.Sum64()
 }
 
-// ValidateNwAttach checks if this subnet is attached to any host-pfs and returns the UUIDs for host-pfs
-func ValidateNwAttach(i types.InfraAPI, tenant, namespace, name string) (bool, [][]byte) {
-	var intfUUIDs [][]byte
+// ValidateNwAttach checks if this subnet is attached to any host-pfs and returns attached host-pfs
+func ValidateNwAttach(i types.InfraAPI, tenant, namespace, name string) []netproto.Interface {
+	var intfs []netproto.Interface
 	data, err := i.List("Interface")
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrBadRequest, "Interfaces not found: Err: %v", types.ErrObjNotFound))
-		return false, intfUUIDs
+		return intfs
 	}
 
 	for _, intf := range data {
@@ -565,20 +564,11 @@ func ValidateNwAttach(i types.InfraAPI, tenant, namespace, name string) (bool, [
 		}
 
 		if nwIf.Spec.VrfName == tenant && nwIf.Spec.Network == name {
-			uid, err := uuid.FromString(nwIf.UUID)
-			if err != nil {
-				log.Errorf("Interface: %s could not get UUID [%v] | Err: %s", nwIf.GetKey(), nwIf.UUID, err)
-				continue
-			}
-			intfUUIDs = append(intfUUIDs, uid.Bytes())
+			intfs = append(intfs, nwIf)
 		}
 	}
 
-	if len(intfUUIDs) > 0 {
-		return true, intfUUIDs
-	}
-
-	return false, intfUUIDs
+	return intfs
 }
 
 // ValidateIPAMPolicy performs static field validations on server IP and named reference validation on underlay vp

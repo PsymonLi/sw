@@ -501,7 +501,7 @@ func (a *ApuluAPI) HandleNetwork(oper types.Operation, network netproto.Network)
 	defer log.Infof("Network: %s | Op: %s | %s", network.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = apulu.HandleSubnet(a.InfraAPI, a.SubnetClient, a.EvpnClient, oper, network, vrf.Status.VrfID, uplinkIDs)
+	err = apulu.HandleSubnet(a.InfraAPI, a.SubnetClient, a.InterfaceClient, a.EvpnClient, oper, network, vrf.Status.VrfID, uplinkIDs)
 	if err != nil {
 		log.Error(err)
 		return nil, err

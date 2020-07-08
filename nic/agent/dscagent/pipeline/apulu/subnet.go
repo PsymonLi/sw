@@ -24,12 +24,12 @@ import (
 )
 
 // HandleSubnet handles crud operations on subnet TODO use SubnetClient here
-func HandleSubnet(infraAPI types.InfraAPI, client halapi.SubnetSvcClient, msc msTypes.EvpnSvcClient,
-	oper types.Operation, nw netproto.Network,
+func HandleSubnet(infraAPI types.InfraAPI, client halapi.SubnetSvcClient, interfaceClient halapi.IfSvcClient,
+	msc msTypes.EvpnSvcClient, oper types.Operation, nw netproto.Network,
 	vpcID uint64, uplinkIDs []uint64) error {
 	switch oper {
 	case types.Create:
-		return createSubnetHandler(infraAPI, client, msc, nw, vpcID, uplinkIDs)
+		return createSubnetHandler(infraAPI, client, interfaceClient, msc, nw, vpcID, uplinkIDs)
 	case types.Update:
 		return updateSubnetHandler(infraAPI, client, msc, nw, vpcID, uplinkIDs)
 	case types.Delete:
@@ -45,7 +45,7 @@ type rtImpExp struct {
 	exp bool
 }
 
-func createSubnetHandler(infraAPI types.InfraAPI, client halapi.SubnetSvcClient,
+func createSubnetHandler(infraAPI types.InfraAPI, client halapi.SubnetSvcClient, interfaceClient halapi.IfSvcClient,
 	msc msTypes.EvpnSvcClient, nw netproto.Network, vpcID uint64, uplinkIDs []uint64) error {
 
 	subnetReq, err := convertNetworkToSubnet(infraAPI, nw, uplinkIDs)
@@ -74,6 +74,24 @@ func createSubnetHandler(infraAPI types.InfraAPI, client halapi.SubnetSvcClient,
 		}
 	}
 	log.Infof("Subnet: %s Create returned | Status: %s | Response: %+v", nw.GetKey(), resp.ApiStatus, resp.Response)
+
+	// During config replay bring up the host_pfs if they attached to a subnet
+	if len(subnetReq.Request[0].HostIf) != 0 {
+		log.Infof("Subnet: %s attached to host pfs, bringing them up", nw.GetKey())
+		intfs := validator.ValidateNwAttach(infraAPI, nw.Tenant, nw.Namespace, nw.Name)
+		for _, intf := range intfs {
+			collectorMap := make(map[uint64]int)
+			err = validator.ValidateInterface(infraAPI, intf, collectorMap, MirrorKeyToSessionIdMapping)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			err = HandleInterface(infraAPI, interfaceClient, client, types.Update, intf, collectorMap)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+	}
 
 	defer func() {
 		if !success {
@@ -665,8 +683,17 @@ func convertNetworkToSubnet(infraAPI types.InfraAPI, nw netproto.Network, uplink
 	}
 
 	// check if the network is attached to any host-pfs
-	attached, intfUUIDs = validator.ValidateNwAttach(infraAPI, nw.Tenant, nw.Namespace, nw.Name)
-	if attached {
+	intfs := validator.ValidateNwAttach(infraAPI, nw.Tenant, nw.Namespace, nw.Name)
+	if len(intfs) != 0 {
+		for _, intf := range intfs {
+			uid, err := uuid.FromString(intf.UUID)
+			if err != nil {
+				log.Errorf("Interface: %s could not get UUID [%v] | Err: %s", intf.GetKey(), intf.UUID, err)
+				continue
+			}
+			intfUUIDs = append(intfUUIDs, uid.Bytes())
+		}
+		attached = true
 		log.Infof("subnet %s attached to interface uids: %v", nw.GetKey(), intfUUIDs)
 	}
 
