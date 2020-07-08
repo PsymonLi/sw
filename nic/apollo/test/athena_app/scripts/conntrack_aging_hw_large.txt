@@ -25,7 +25,8 @@ conntrack_aging_test
 conntrack_aging_tmo_artificial_long_set
 conntrack_populate_random {371 2993539}
 conntrack_aging_normal_tmo_set {ICMP unestablished 3} {icmp established 3}  {others unestablished 3} {others established 3}
-conntrack_aging_normal_tmo_set {udp unestablished 3} {UDP ESTABLISHED 3}
+conntrack_aging_normal_tmo_set {ICMP open_conn_sent 3} {icmp open_conn_recv 3} {others open_conn_sent 3} {others open_conn_recv 3}
+conntrack_aging_normal_tmo_set {udp unestablished 3} {UDP ESTABLISHED 3} {udp open_conn_sent 3} {udp open_conn_recv 3}
 conntrack_aging_normal_tmo_set {tcp unestablished 3} {TCP syn_sent 3} {TCP SYN_RECV 3} {tcp synack_sent 3} {tcp synack_recv 3} {tcp established 3} {tcp fin_sent 40} {tcp fin_recv 3} {tcp time_wait 3} {tcp rst_close 3}
 conntrack_aging_test
 
@@ -39,7 +40,8 @@ conntrack_aging_test
 conntrack_aging_tmo_artificial_long_set
 conntrack_populate_random
 conntrack_aging_normal_tmo_set {ICMP unestablished 3} {icmp established 3}  {others unestablished 3} {others established 3}
-conntrack_aging_normal_tmo_set {udp unestablished 3} {UDP ESTABLISHED 3}
+conntrack_aging_normal_tmo_set {ICMP open_conn_sent 3} {icmp open_conn_recv 3} {others open_conn_sent 3} {others open_conn_recv 3}
+conntrack_aging_normal_tmo_set {udp unestablished 3} {UDP ESTABLISHED 3} {udp open_conn_sent 3} {udp open_conn_recv 3}
 conntrack_aging_normal_tmo_set {tcp unestablished 3} {TCP syn_sent 3} {TCP SYN_RECV 3} {tcp synack_sent 3} {tcp synack_recv 3} {tcp established 3} {tcp fin_sent 40} {tcp fin_recv 3} {tcp time_wait 3} {tcp rst_close 3}
 conntrack_aging_test
 

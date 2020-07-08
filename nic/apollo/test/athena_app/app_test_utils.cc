@@ -66,6 +66,10 @@ const static std::map<string,pds_flow_state_t> flowstate2num_map =
     {"RST_CLOSE",       RST_CLOSE},
     {"removed",         REMOVED},
     {"REMOVED",         REMOVED},
+    {"open_conn_sent",  OPEN_CONN_SENT},
+    {"OPEN_CONN_SENT",  OPEN_CONN_SENT},
+    {"open_conn_recv",  OPEN_CONN_RECV},
+    {"OPEN_CONN_RECV",  OPEN_CONN_RECV},
 };
 
 const static char *flowtype_str_table[] =
@@ -89,6 +93,8 @@ const static char *flowstate_str_table[] =
     [TIME_WAIT]                  = "time_wait",
     [RST_CLOSE]                  = "rst_close",
     [REMOVED]                    = "removed",
+    [OPEN_CONN_SENT]             = "open_conn_sent",
+    [OPEN_CONN_RECV]             = "open_conn_recv",
 };
 
 const static std::map<string,uint32_t> proto2num_map =
@@ -827,6 +833,8 @@ aging_tmo_cfg_t::conntrack_tmo_set(pds_flow_type_t flowtype,
 
         switch (flowstate) {
         case UNESTABLISHED:
+        case OPEN_CONN_SENT:
+        case OPEN_CONN_RECV:
             tmo_rec.udp_tmo = tmo_val;
             break;
         case ESTABLISHED:
@@ -840,11 +848,35 @@ aging_tmo_cfg_t::conntrack_tmo_set(pds_flow_type_t flowtype,
         break;
 
     case PDS_FLOW_TYPE_ICMP:
-        tmo_rec.icmp_tmo = tmo_val;
+
+        switch (flowstate) {
+        case UNESTABLISHED:
+        case OPEN_CONN_SENT:
+        case OPEN_CONN_RECV:
+        case ESTABLISHED:
+            tmo_rec.icmp_tmo = tmo_val;
+            break;
+        default:
+            TEST_LOG_ERR("Invalid ICMP flowstate %u\n", flowstate);
+            errors++;
+            break;
+        }
         break;
 
     case PDS_FLOW_TYPE_OTHERS:
-        tmo_rec.others_tmo = tmo_val;
+
+        switch (flowstate) {
+        case UNESTABLISHED:
+        case OPEN_CONN_SENT:
+        case OPEN_CONN_RECV:
+        case ESTABLISHED:
+            tmo_rec.others_tmo = tmo_val;
+            break;
+        default:
+            TEST_LOG_ERR("Invalid Others flowstate %u\n", flowstate);
+            errors++;
+            break;
+        }
         break;
 
     default:

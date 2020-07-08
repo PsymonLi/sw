@@ -751,9 +751,14 @@ randomize_seed(void)
 
 static inline uint32_t
 randomize_max(uint32_t val_max,
-              bool zero_ok = false)
+              bool zero_ok = false,
+              uint32_t val_exclude = 0)
 {
     uint32_t rand_num = rand() % (val_max + 1);
+    if (val_exclude && (rand_num == val_exclude)) {
+        SDK_ASSERT(zero_ok);
+        rand_num = (rand_num - 1) % (val_max + 1);
+    }
     return (rand_num ? rand_num : (zero_ok ? 0 : 1));
 }
 

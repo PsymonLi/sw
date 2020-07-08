@@ -5,7 +5,7 @@
 #include "ingress.h"
 #include "capri-macros.h"
 #include "ftl_dev_shared.h"
-#include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/apollo/p4/athena_p4-16/athena_defines.h"
 
 #define BITS_PER_BYTE                           8
 #define SIZE_IN_BITS(bytes)                     ((bytes) * BITS_PER_BYTE)
@@ -530,10 +530,10 @@
     
 #define CONNTRACK_EXPIRY_CHECK_UDP_FLOW_STATES_e(_exp_bit, _udp_tmo,            \
                                                  _udp_est_tmo)                  \
-    seq         c1, r_flow_state, CONNTRACK_FLOW_STATE_UNESTABLISHED;           \
-    sle.c1.e    c1, _udp_tmo, r_timestamp;                                      \
+    seq         c1, r_flow_state, CONNTRACK_FLOW_STATE_ESTABLISHED;             \
+    sle.c1.e    c1, _udp_est_tmo, r_timestamp;                                  \
     phvwri.c1   p.session_kivec0_##_exp_bit##_expired, 1;                       \
-    sle.e       c1, _udp_est_tmo, r_timestamp;                                  \
+    sle.e       c1, _udp_tmo, r_timestamp;                                      \
     phvwri.c1   p.session_kivec0_##_exp_bit##_expired, 1;                       \
     
 #define CONNTRACK_BRCASE_FLOW_STATE_e(_flow_state, _exp_bit, _tmo)              \
@@ -549,6 +549,9 @@
 #define CONNTRACK_EXPIRY_CHECK_TCP_FLOW_STATES_e(_exp_bit, _tcp_syn_tmo,        \
                                                  _tcp_est_tmo, _tcp_fin_tmo,    \
                                                  _tcp_wait_tmo, _tcp_rst_tmo)   \
+    seq         c1, r_flow_state, CONNTRACK_FLOW_STATE_REMOVED;                 \
+    phvwri.c1.e p.session_kivec0_##_exp_bit##_expired, 1;                       \
+    nop;                                                                        \
   .brbegin;                                                                     \
     br          r_flow_state[3:0];                                              \
     nop;                                                                        \
@@ -573,11 +576,16 @@
     CONNTRACK_BRCASE_FLOW_STATE_e(CONNTRACK_FLOW_STATE_RST_CLOSE,               \
                                   _exp_bit, _tcp_rst_tmo)                       \
     CONNTRACK_BRCASE_FLOW_STATE_UNUSED_e(CONNTRACK_FLOW_STATE_REMOVED)          \
-    CONNTRACK_BRCASE_FLOW_STATE_UNUSED_e(CONNTRACK_FLOW_STATE_RSVD0)            \
-    CONNTRACK_BRCASE_FLOW_STATE_UNUSED_e(CONNTRACK_FLOW_STATE_RSVD1)            \
-    CONNTRACK_BRCASE_FLOW_STATE_UNUSED_e(CONNTRACK_FLOW_STATE_RSVD2)            \
-    CONNTRACK_BRCASE_FLOW_STATE_UNUSED_e(CONNTRACK_FLOW_STATE_RSVD3)            \
-    CONNTRACK_BRCASE_FLOW_STATE_UNUSED_e(CONNTRACK_FLOW_STATE_RSVD4)            \
+    CONNTRACK_BRCASE_FLOW_STATE_e(CONNTRACK_FLOW_STATE_OPEN_CONN_SENT,          \
+                                  _exp_bit, _tcp_syn_tmo)                       \
+    CONNTRACK_BRCASE_FLOW_STATE_e(CONNTRACK_FLOW_STATE_OPEN_CONN_RECV,          \
+                                  _exp_bit, _tcp_syn_tmo)                       \
+    CONNTRACK_BRCASE_FLOW_STATE_e(CONNTRACK_FLOW_STATE_RSVD0,                   \
+                                  _exp_bit, _tcp_syn_tmo)                       \
+    CONNTRACK_BRCASE_FLOW_STATE_e(CONNTRACK_FLOW_STATE_RSVD1,                   \
+                                  _exp_bit, _tcp_syn_tmo)                       \
+    CONNTRACK_BRCASE_FLOW_STATE_e(CONNTRACK_FLOW_STATE_RSVD2,                   \
+                                  _exp_bit, _tcp_syn_tmo)                       \
   .brend;                                                                       \
 
 #define CONNTRACK_EXPIRY_CHECK_ALL_FLOW_TYPES_e(_exp_bit, _icmp_tmo,            \

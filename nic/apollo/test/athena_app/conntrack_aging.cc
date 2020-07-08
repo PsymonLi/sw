@@ -194,22 +194,25 @@ conntrack_populate_random(test_vparam_ref_t vparam)
              * Randomize flowtype and flowstate if needed
              */
             if (randomize_typestate) {
+                pds_flow_state_t flow_state_max;
+
                 spec.data.flow_type = (pds_flow_type_t)
                      randomize_max((uint32_t)PDS_FLOW_TYPE_OTHERS, true);
                 /*
-                 * Exclude REMOVED state as it would not be aged
+                 * Exclude REMOVED state as it would be aged too rapidly
                  */
+                flow_state_max = spec.data.flow_type == PDS_FLOW_TYPE_TCP ?
+                                 RST_CLOSE : OPEN_CONN_RECV;
                 spec.data.flow_state = (pds_flow_state_t)
-                     randomize_max((uint32_t)RST_CLOSE, true);
+                     randomize_max((uint32_t)flow_state_max, true,
+                                   (uint32_t)REMOVED);
             }
 
             ret = pds_conntrack_state_create(&spec);
             if (!CONNTRACK_CREATE_RET_VALIDATE(ret)) {
                 break;
             }
-            if (spec.data.flow_state != REMOVED) {
-                ct_tolerance.create_id_map_insert(spec.key.conntrack_id);
-            }
+            ct_tolerance.create_id_map_insert(spec.key.conntrack_id);
         }
     }
 

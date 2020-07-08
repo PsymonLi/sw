@@ -35,7 +35,8 @@ session_populate_random 92868 3137088
 conntrack_populate_random {13 1846977}
 session_aging_accel_tmo_set 5
 conntrack_aging_accel_tmo_set {ICMP unestablished 2} {icmp established 2}  {others unestablished 2} {others established 2}
-conntrack_aging_accel_tmo_set {udp unestablished 2} {UDP ESTABLISHED 2}
+conntrack_aging_accel_tmo_set {ICMP open_conn_sent 2} {icmp open_conn_recv 2} {others open_conn_sent 2} {others open_conn_recv 2}
+conntrack_aging_accel_tmo_set {udp unestablished 2} {UDP ESTABLISHED 2} {udp open_conn_sent 2} {udp open_conn_recv 2}
 conntrack_aging_accel_tmo_set {tcp unestablished 2} {TCP syn_sent 2} {TCP SYN_RECV 2} {tcp synack_sent 2} {tcp synack_recv 2} {tcp established 2} {tcp fin_sent 2} {tcp fin_recv 2} {tcp time_wait 2} {tcp rst_close 2}
 combined_aging_test
 
