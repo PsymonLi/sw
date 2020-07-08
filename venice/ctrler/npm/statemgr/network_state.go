@@ -21,6 +21,7 @@ import (
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/venice/ctrler/npm/utils"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/memdb"
 	"github.com/pensando/sw/venice/utils/ref"
@@ -486,7 +487,7 @@ func (sm *SmNetwork) OnNetworkCreate(nw *ctkit.Network) error {
 		return err
 	}
 
-	if IsObjInternal(ns.Network.Labels) {
+	if utils.IsObjInternal(ns.Network.Labels) {
 		ns.Network.SetInternal()
 	}
 	// On restart npm might receive create events for networks that were rejected earlier.
@@ -540,7 +541,7 @@ func (sm *SmNetwork) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) er
 		return nil
 	}
 
-	if IsObjInternal(nw.Network.Labels) {
+	if utils.IsObjInternal(nw.Network.Labels) {
 		nw.SetInternal()
 	}
 	// find the network state

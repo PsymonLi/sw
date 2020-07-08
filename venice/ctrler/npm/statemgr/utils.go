@@ -5,17 +5,11 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/pensando/sw/venice/globals"
-
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	npmutils "github.com/pensando/sw/venice/ctrler/npm/utils"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
-)
-
-var (
-	// NpmNameKey is the key used to label npm created objects
-	NpmNameKey = fmt.Sprintf("%s%s", globals.SystemLabelPrefix, "psm-internal")
 )
 
 func cloneRD(in *network.RouteDistinguisher) *netproto.RouteDistinguisher {
@@ -70,26 +64,13 @@ func ParseToIPPrefix(in string) (*netproto.IPPrefix, error) {
 
 // AddNpmSystemLabel mark object label to identify venice created object
 func AddNpmSystemLabel(labels map[string]string) {
-	labels[NpmNameKey] = "Auto"
+	labels[npmutils.NpmNameKey] = "Auto"
 }
 
 // IsCleanupCandidate check whether a network can be garbage collected
 func IsCleanupCandidate(nw *ctkit.Network) bool {
 	if nw != nil {
-		return IsObjInternal(nw.Labels) && len(nw.Spec.Orchestrators) == 0
-	}
-	return false
-}
-
-// IsObjInternal check for venice auto created object label
-func IsObjInternal(labels map[string]string) bool {
-	if labels == nil {
-		return false
-	}
-	if val, ok := labels[NpmNameKey]; ok {
-		if val == "Auto" {
-			return true
-		}
+		return npmutils.IsObjInternal(nw.Labels) && len(nw.Spec.Orchestrators) == 0
 	}
 	return false
 }

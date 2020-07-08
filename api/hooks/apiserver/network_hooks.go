@@ -23,6 +23,7 @@ import (
 	apiutils "github.com/pensando/sw/api/utils"
 	"github.com/pensando/sw/venice/apiserver"
 	apisrvpkg "github.com/pensando/sw/venice/apiserver/pkg"
+	npmutils "github.com/pensando/sw/venice/ctrler/npm/utils"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/featureflags"
@@ -276,6 +277,32 @@ func (h *networkHooks) checkNetworkMutableFields(ctx context.Context, kv kvstore
 	}
 	if in.Spec.VxlanVNI != existingNw.Spec.VxlanVNI {
 		return i, true, fmt.Errorf("cannot modify VxlanVNI of a network")
+	}
+	return i, true, nil
+}
+
+func (h *networkHooks) networkInternalObjectValidate(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
+	_, ok := i.(network.Network)
+	if !ok {
+		h.logger.ErrorLog("method", "networkInternalObjectValidate", "msg", fmt.Sprintf("API server network hook called for invalid object type [%#v]", i))
+		return i, true, errors.New("invalid input type")
+	}
+
+	existingNw := &network.Network{}
+	pctx := apiutils.SetVar(ctx, apiutils.CtxKeyGetPersistedKV, true)
+	err := kv.Get(pctx, key, existingNw)
+	if err != nil {
+		log.Errorf("did not find obj [%v] on delete (%s)", key, err)
+		return i, true, err
+	}
+	if !npmutils.IsObjInternal(existingNw.Labels) {
+		// we are good to delete network object
+		return i, true, nil
+	}
+	// Reject user-initiated deletion of internal network objects
+	if apiutils.IsUserRequestCtx(ctx) {
+		log.Errorf("PSM internal object deletion is not allowed : %v", existingNw.Name)
+		return i, true, fmt.Errorf("PSM internal object deletion is not allowed")
 	}
 	return i, true, nil
 }
@@ -843,6 +870,7 @@ func registerNetworkHooks(svc apiserver.Service, logger log.Logger) {
 	svc.GetCrudService("Network", apiintf.UpdateOper).GetRequestType().WithValidate(hooks.validateNetworkConfig)
 	svc.GetCrudService("Network", apiintf.UpdateOper).WithPreCommitHook(hooks.networkOrchConfigPrecommit).WithResourceAllocHook(hooks.networkSubnetReserve)
 	svc.GetCrudService("Network", apiintf.UpdateOper).WithPreCommitHook(hooks.checkNetworkMutableFields)
+	svc.GetCrudService("Network", apiintf.DeleteOper).WithPreCommitHook(hooks.networkInternalObjectValidate)
 	svc.GetCrudService("Network", apiintf.DeleteOper).WithPostCommitHook(hooks.releaseNetworkResources)
 	svc.GetCrudService("NetworkInterface", apiintf.UpdateOper).GetRequestType().WithValidate(hooks.validateNetworkIntfConfig)
 	svc.GetCrudService("NetworkInterface", apiintf.UpdateOper).WithPreCommitHook(hooks.checkNetworkInterfaceMutable)
