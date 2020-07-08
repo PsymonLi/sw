@@ -559,14 +559,19 @@ func (ros *RolloutState) preUpgradeSmartNICs() {
 		return
 	}
 	sn := orderSmartNICs(ros.Rollout.Spec.OrderConstraints, ros.Rollout.Spec.DSCMustMatchConstraint, snStates, ros, op)
-
-	for _, s := range sn {
-		log.Debugf("op:%s for %s", op.String(), spew.Sdump(s))
-		if ros.Spec.Strategy == roproto.RolloutSpec_EXPONENTIAL.String() {
-			ros.issueDSCOpExponential(s, op, snStatusList)
-		} else {
-			ros.issueDSCOpLinear(s, op, snStatusList)
+	/* process the list to support parallel DSC Upgrade */
+	s := make([]*SmartNICState, 0)
+	for _, sVal := range sn {
+		for _, val := range sVal {
+			s = append(s, val)
 		}
+	}
+
+	log.Debugf("op:%s for %s", op.String(), spew.Sdump(s))
+	if ros.Spec.Strategy == roproto.RolloutSpec_EXPONENTIAL.String() {
+		ros.issueDSCOpExponential(s, op, snStatusList)
+	} else {
+		ros.issueDSCOpLinear(s, op, snStatusList)
 	}
 
 	log.Infof("completed smartNIC Rollout Preupgrade")
@@ -741,13 +746,19 @@ func (ros *RolloutState) doUpdateSmartNICs() {
 	}
 
 	sn := orderSmartNICs(ros.Rollout.Spec.OrderConstraints, ros.Rollout.Spec.DSCMustMatchConstraint, snStates, ros, op)
-	for _, s := range sn {
-		log.Debugf("op:%s for %s", op.String(), spew.Sdump(s))
-		if ros.Spec.Strategy == roproto.RolloutSpec_EXPONENTIAL.String() {
-			ros.issueDSCOpExponential(s, op, snStatusList)
-		} else {
-			ros.issueDSCOpLinear(s, op, snStatusList)
+	/* process the list to support parallel DSC Upgrade */
+	s := make([]*SmartNICState, 0)
+	for _, sVal := range sn {
+		for _, val := range sVal {
+			s = append(s, val)
 		}
+	}
+
+	log.Debugf("op:%s for %s", op.String(), spew.Sdump(s))
+	if ros.Spec.Strategy == roproto.RolloutSpec_EXPONENTIAL.String() {
+		ros.issueDSCOpExponential(s, op, snStatusList)
+	} else {
+		ros.issueDSCOpLinear(s, op, snStatusList)
 	}
 	log.Infof("completed smartNIC Rollout")
 }
