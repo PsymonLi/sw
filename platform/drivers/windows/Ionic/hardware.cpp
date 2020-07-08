@@ -839,14 +839,19 @@ find_intr_msg(struct ionic *ionic, ULONG proc_idx, ULONG proximity)
             if (proximity == ANY_PROCESSOR_INDEX) {
 				return intr;
             }
-            if (proximity == NOT_PROCESSOR_INDEX &&
-				intr->proc_idx != proc_idx) {
-				return intr;
-            }
 			if( proximity == ANY_PROCESSOR_CLOSE_INDEX &&
 				intr->numa_node == ionic->numa_node) {
 				return intr;
 			}
+            if (proximity == NOT_PROCESSOR_INDEX &&
+				intr->proc_idx > proc_idx) {
+				return intr;
+            }
+            if (proximity == NOT_PROCESSOR_CLOSE_INDEX &&
+				intr->numa_node == ionic->numa_node &&
+				intr->proc_idx > proc_idx) {
+				return intr;
+            }
             if (proximity == MATCH_PROCESSOR_INDEX &&
                 intr->affinity_policy == IrqPolicySpecifiedProcessors &&
 				intr->proc_idx == proc_idx) {
