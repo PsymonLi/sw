@@ -98,7 +98,7 @@ action ipfix_start(rsvd, cos_a, cos_b, cos_sel, eval_last, host_rings,
                    seq_no, domain_id, ipfix_hdr_offset, next_record_offset,
                    flow_hash_table_type, flow_hash_index_next,
                    flow_hash_index_max, flow_hash_overflow_index_max,
-                   export_time, export_zombie) {
+                   export_zombie, export_time) {
     modify_field(qstate_metadata.rsvd, rsvd);
     modify_field(qstate_metadata.cos_a, cos_a);
     modify_field(qstate_metadata.cos_b, cos_b);
@@ -120,8 +120,8 @@ action ipfix_start(rsvd, cos_a, cos_b, cos_sel, eval_last, host_rings,
     modify_field(qstate_metadata.flow_hash_index_max, flow_hash_index_max);
     modify_field(qstate_metadata.flow_hash_overflow_index_max,
                  flow_hash_overflow_index_max);
-    modify_field(qstate_metadata.export_time, export_time);
     modify_field(qstate_metadata.export_zombie, export_zombie);
+    modify_field(qstate_metadata.export_time, export_time);
 
     modify_field(ipfix_metadata.qstate_addr, p4_txdma_intr.qstate_addr);
     modify_field(ipfix_metadata.export_id, p4_txdma_intr.qid);
@@ -183,7 +183,7 @@ action ipfix_create_record(pc, rsvd, cos_a, cos_b, cos_sel, eval_last,
                            ipfix_hdr_offset, next_record_offset,
                            flow_hash_table_type, flow_hash_index_next,
                            flow_hash_index_max, flow_hash_overflow_index_max,
-                           export_time) {
+                           export_zombie, export_time) {
     modify_field(qstate_metadata.pc, pc);
     modify_field(qstate_metadata.rsvd, rsvd);
     modify_field(qstate_metadata.cos_a, cos_a);
@@ -206,6 +206,7 @@ action ipfix_create_record(pc, rsvd, cos_a, cos_b, cos_sel, eval_last,
     modify_field(qstate_metadata.flow_hash_index_max, flow_hash_index_max);
     modify_field(qstate_metadata.flow_hash_overflow_index_max,
                  flow_hash_overflow_index_max);
+    modify_field(qstate_metadata.export_zombie, export_zombie);
     modify_field(qstate_metadata.export_time, export_time);
 
     modify_field(scratch_metadata.flow_type, ipfix_metadata.flow_type);
@@ -226,7 +227,7 @@ action ipfix_export_packet(pc, rsvd, cos_a, cos_b, cos_sel, eval_last,
                            ipfix_hdr_offset, next_record_offset,
                            flow_hash_table_type, flow_hash_index_next,
                            flow_hash_index_max, flow_hash_overflow_index_max,
-                           export_time) {
+                           export_zombie, export_time) {
     modify_field(qstate_metadata.pc, pc);
     modify_field(qstate_metadata.rsvd, rsvd);
     modify_field(qstate_metadata.cos_a, cos_a);
@@ -249,6 +250,7 @@ action ipfix_export_packet(pc, rsvd, cos_a, cos_b, cos_sel, eval_last,
     modify_field(qstate_metadata.flow_hash_index_max, flow_hash_index_max);
     modify_field(qstate_metadata.flow_hash_overflow_index_max,
                  flow_hash_overflow_index_max);
+    modify_field(qstate_metadata.export_zombie, export_zombie);
     modify_field(qstate_metadata.export_time, export_time);
 
     modify_field(scratch_metadata.scan_complete, ipfix_metadata.scan_complete);
