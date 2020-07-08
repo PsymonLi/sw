@@ -36,10 +36,10 @@ var nodeTokenCmdDescription = `Login to PSM and get node token to access DSC(s)
 
 Sample invocations:
 1. Get node-token with wildcard audience ("*")
-   > psm/build/bin/psmctl.linux get node-token --audience="*" --psm-ip="10.7.100.79" --psm-port="10001" --token-ouput "/tmp/token2.pem"
+   > psm/build/bin/psmctl.linux get node-token --audience="*" --psm-ip="10.7.100.79" --psm-port="10001" --token-output ~/token.pem
 2. Get node-token with multiple audience MACs
-   > psm/build/bin/psmctl.linux get node-token --audience="mac.addr.one,mac.addr.two" --psm-ip="10.7.100.79" --psm-port="10001" --token-ouput "/tmp/token2.pem"
-   > psm/build/bin/psmctl.linux get node-token --audience="mac.addr.one" --audience="mac.addr.two" --psm-ip="10.7.100.79" --psm-port="10001" --token-ouput "/tmp/token2.pem"
+   > psm/build/bin/psmctl.linux get node-token --audience="mac.addr.one,mac.addr.two" --psm-ip="10.7.100.79" --psm-port="10001" --token-output ~/token.pem
+   > psm/build/bin/psmctl.linux get node-token --audience="mac.addr.one" --audience="mac.addr.two" --psm-ip="10.7.100.79" --psm-port="10001" --token-output ~/token.pem
 `
 
 var getCmd = &cobra.Command{
