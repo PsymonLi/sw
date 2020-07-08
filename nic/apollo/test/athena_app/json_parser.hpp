@@ -24,6 +24,11 @@ namespace fte_ath {
 #define ENCAP_MPLSOUDP 1
 #define ENCAP_GENEVE   2
 
+#define EGR_ACTION_TO_HOST 1
+#define EGR_ACTION_TO_SWITCH 2
+#define EGR_ACTION_DROP 3
+#define EGR_ACTION_DROP_BY_SL 4
+
 typedef struct l2_flows_range_info_s {
     uint64_t h2s_mac_lo;
     uint64_t h2s_mac_hi;
@@ -39,6 +44,7 @@ typedef struct session_info_s {
     uint8_t tcp_flags;
     uint64_t policer_bw1;
     uint8_t host_mac[ETH_ADDR_LEN];
+    uint8_t egress_action;  
 } session_info_t;
 
 typedef struct mplsoudp_encap_info_s {

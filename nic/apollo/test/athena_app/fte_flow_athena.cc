@@ -188,6 +188,37 @@ fte_is_conntrack_enabled (uint16_t vnic_id)
 {
     return (g_flow_cache_policy[vnic_id].conntrack);
 }
+static inline bool
+fte_skip_flow_log (uint16_t vnic_id) 
+{
+    return g_flow_cache_policy[vnic_id].skip_flow_log;
+}
+
+static pds_egress_action_t
+fte_get_egress_action (uint16_t vnic_id, uint8_t dir)
+{
+    uint8_t             json_egress_action  = 0;
+    pds_egress_action_t egress_action; 
+
+    if (dir == SWITCH_TO_HOST) {
+        json_egress_action = g_flow_cache_policy[vnic_id].to_host.egress_action;
+        egress_action = EGRESS_ACTION_TX_TO_HOST; 
+    } else if (dir == HOST_TO_SWITCH) {
+        json_egress_action = g_flow_cache_policy[vnic_id].to_switch.egress_action;
+        egress_action = EGRESS_ACTION_TX_TO_SWITCH; 
+    } else {
+        //Asummming to Host as default
+        egress_action = EGRESS_ACTION_TX_TO_HOST;
+    }
+
+    if (json_egress_action == EGR_ACTION_DROP) {
+        return EGRESS_ACTION_DROP;
+    } else if (json_egress_action == EGR_ACTION_DROP_BY_SL) {
+        return EGRESS_ACTION_DROP_BY_SL;
+    }
+
+    return egress_action;
+} 
 
 sdk_ret_t
 fte_session_indexer_init (void)
@@ -992,7 +1023,10 @@ fte_session_info_create (uint32_t session_index,
                          uint16_t h2s_allowed_flow_state_bitmask,
                          uint16_t s2h_allowed_flow_state_bitmask,
                          uint32_t h2s_rewrite_id,
-                         uint32_t s2h_rewrite_id)
+                         uint32_t s2h_rewrite_id,
+                         bool     skip_flow_log,
+                         pds_egress_action_t  h2s_egress_action,
+                         pds_egress_action_t  s2h_egress_action)
 {
     pds_flow_session_spec_t spec;
 
@@ -1001,14 +1035,17 @@ fte_session_info_create (uint32_t session_index,
     spec.key.direction = (SWITCH_TO_HOST | HOST_TO_SWITCH);
 
     spec.data.conntrack_id = conntrack_index;
+    spec.data.skip_flow_log = skip_flow_log;
 
     spec.data.host_to_switch_flow_info.rewrite_id = h2s_rewrite_id;
     spec.data.host_to_switch_flow_info.allowed_flow_state_bitmask =
                                     h2s_allowed_flow_state_bitmask;
+    spec.data.host_to_switch_flow_info.egress_action = h2s_egress_action;
 
     spec.data.switch_to_host_flow_info.rewrite_id = s2h_rewrite_id;
     spec.data.switch_to_host_flow_info.allowed_flow_state_bitmask =
                                     s2h_allowed_flow_state_bitmask;
+    spec.data.switch_to_host_flow_info.egress_action = s2h_egress_action;
 
     return (sdk_ret_t)pds_flow_session_info_create(&spec);
 }
@@ -1341,6 +1378,9 @@ fte_flow_prog (struct rte_mbuf *m)
     uint16_t h2s_flow_state_bmp = 0;
     uint16_t s2h_flow_state_bmp = 0;
     struct ether_hdr *l2_flow_eth_hdr = NULL;
+    bool     skip_flow_log = false;
+    pds_egress_action_t h2s_egress_action = EGRESS_ACTION_TX_TO_SWITCH;
+    pds_egress_action_t s2h_egress_action = EGRESS_ACTION_TX_TO_HOST;
 
     memset(&flow_spec, 0, sizeof(pds_flow_spec_t));
     ret = fte_flow_extract_prog_args(m, &flow_spec, &flow_dir,
@@ -1401,10 +1441,17 @@ fte_flow_prog (struct rte_mbuf *m)
         return ret;
     }
 
+    skip_flow_log = fte_skip_flow_log(vnic_id);
+    h2s_egress_action = fte_get_egress_action(vnic_id, HOST_TO_SWITCH);
+    s2h_egress_action = fte_get_egress_action(vnic_id, SWITCH_TO_HOST);
+
     ret = fte_session_info_create(session_index, conntrack_index,
                                   h2s_flow_state_bmp,
                                   s2h_flow_state_bmp,
-                                  h2s_rewrite_id, s2h_rewrite_id);
+                                  h2s_rewrite_id, s2h_rewrite_id,
+                                  skip_flow_log, 
+                                  h2s_egress_action, 
+                                  s2h_egress_action);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_session_info_create failed. \n");
         fte_session_index_free(session_index);
@@ -1952,7 +1999,8 @@ fte_setup_v4_flows_json (void)
                                     0 /* conntrack_index */,
                                     0 /* h2s_flow_state_bmp */,
                                     0 /* s2h_flow_state_bmp */,
-                                    h2s_rewrite_id, s2h_rewrite_id);
+                                    h2s_rewrite_id, s2h_rewrite_id, 0, 
+                                    EGRESS_ACTION_TX_TO_SWITCH, EGRESS_ACTION_TX_TO_HOST);
                             if (ret != SDK_RET_OK) {
                                 PDS_TRACE_DEBUG(
                                     "fte_session_info_create failed.\n");

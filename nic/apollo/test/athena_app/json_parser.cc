@@ -50,6 +50,7 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
     uint16_t vnic_id;
     boost::optional<std::string> vnic_type;
     boost::optional<std::string> conntrack;
+    boost::optional<std::string> egress_action;
     uint8_t h2s_mac_lo[ETH_ADDR_LEN];
     uint8_t h2s_mac_hi[ETH_ADDR_LEN];
     uint8_t s2h_mac_lo[ETH_ADDR_LEN];
@@ -209,6 +210,17 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
                 session_info_s2h.get<uint8_t>("tcp_flags");
             policy->to_host.policer_bw1 =
                 std::strtoull(session_info_s2h.get<std::string>("policer_bw1").c_str(), NULL, 10);
+            egress_action  = session_info_s2h.get_optional<std::string>("egress_action");
+            if (egress_action) {
+                if (egress_action.get() == "drop") {
+                    policy->to_host.egress_action = EGR_ACTION_DROP;
+                } else if (egress_action.get() == "drop_by_sl") {
+                    policy->to_host.egress_action = EGR_ACTION_DROP_BY_SL;
+                }
+            } else {
+                policy->to_host.egress_action = EGR_ACTION_TO_HOST;
+            }
+
             pt::ptree& session_info_h2s = session.get_child("to_switch");
             policy->to_switch.tcp_flags =
                 session_info_h2s.get<uint8_t>("tcp_flags");
@@ -216,6 +228,16 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
                 std::strtoull(session_info_h2s.get<std::string>("policer_bw1").c_str(), NULL, 10);
             str2mac(session_info_h2s.get<std::string>("host_mac").c_str(),
                     policy->to_switch.host_mac);
+            egress_action  = session_info_h2s.get_optional<std::string>("egress_action");
+            if (egress_action) {
+                if (egress_action.get() == "drop") {
+                    policy->to_switch.egress_action = EGR_ACTION_DROP;
+                } else if (egress_action.get() == "drop_by_sl") {
+                    policy->to_switch.egress_action = EGR_ACTION_DROP_BY_SL;
+                }
+            } else {
+                policy->to_switch.egress_action = EGR_ACTION_TO_SWITCH;
+            }
 
             pt::ptree& rewrite_underlay = vnic.second.get_child("rewrite_underlay");
             std::string encap_type = rewrite_underlay.get<std::string>("type");
