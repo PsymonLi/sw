@@ -32,7 +32,7 @@ nexthop_impl_state::nexthop_impl_state(pds_state *state) {
 
     // reserve one nexthop for each uplink
     SDK_ASSERT(nh_idxr_->alloc_block(PDS_IMPL_UPLINK_NH_HW_ID_START,
-                                     g_pds_state.catalogue()->num_fp_ports(),
+                                     TM_UPLINK_PORT_END + 1,
                                      false) == SDK_RET_OK);
 }
 
