@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/pensando/sw/venice/utils/ratelimit"
 
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
@@ -63,7 +66,7 @@ func SendToVenice(resolver resolver.Interface, source string, vosTarget string) 
 		return fmt.Errorf("Could not create client (%s)", err)
 	}
 
-	stat, err := os.Stat(source)
+	_, err = os.Stat(source)
 	if err != nil {
 		return err
 	}
@@ -77,8 +80,11 @@ func SendToVenice(resolver resolver.Interface, source string, vosTarget string) 
 		"techsupport": vosTarget,
 	}
 
-	_, err = client.PutObjectOfSize(context.Background(), vosTarget, f, stat.Size(), meta)
+	lreader := ratelimit.NewReader(f, 2*1024*1024, 100*time.Millisecond)
+
+	_, err = client.PutObject(context.Background(), vosTarget, lreader, meta)
 	if err != nil {
+		log.Errorf("Upload TechSupport: Could not put object [%s] to datastore (%s)", vosTarget, err)
 		return err
 	}
 
