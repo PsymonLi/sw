@@ -136,7 +136,7 @@ get_lldpcli_show_cmd (std::string intf, bool nbrs, std::string status_file)
 {
     char cmd[PATH_MAX];
 
-    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show %s ports %s -f json0 > %s",
+    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show %s ports %s -f json0 > %s; sync;",
              nbrs ? "neighbors" : "interface", intf.c_str(), status_file.c_str());
     return std::string(cmd);
 }
@@ -154,8 +154,15 @@ interface_lldp_parse_json (bool nbrs, pds_lldp_status_t *lldp_status,
         PDS_TRACE_ERR("{} doesn't exist or not accessible\n", lldp_status_file.c_str());
         return SDK_RET_ERR;
     }
-    std::ifstream json_cfg(lldp_status_file.c_str());
-    read_json(json_cfg, json_pt);
+
+    try {
+        std::ifstream json_cfg(lldp_status_file.c_str());
+        read_json(json_cfg, json_pt);
+    } catch (std::exception const& e) {
+        std::cerr << e.what() << std::endl;
+        PDS_TRACE_ERR("Error parsing lldp status json");
+        return SDK_RET_ERR;
+    }
 
     try {
         BOOST_FOREACH (pt::ptree::value_type &lldp,
@@ -466,8 +473,15 @@ lldp_stats_parse_json (pds_if_lldp_stats_t *lldp_stats,
         PDS_TRACE_ERR("{} doesn't exist or not accessible\n", lldp_stats_file.c_str());
         return SDK_RET_ERR;
     }
-    std::ifstream json_cfg(lldp_stats_file.c_str());
-    read_json(json_cfg, json_pt);
+
+    try {
+        std::ifstream json_cfg(lldp_stats_file.c_str());
+        read_json(json_cfg, json_pt);
+    } catch (std::exception const& e) {
+        std::cerr << e.what() << std::endl;
+        PDS_TRACE_ERR("Error parsing lldp stats json");
+        return SDK_RET_ERR;
+    }
 
     try {
         BOOST_FOREACH (pt::ptree::value_type &lldp,
@@ -552,7 +566,7 @@ interface_lldp_stats_get (uint16_t lif_id, pds_if_lldp_stats_t *lldp_stats)
     stats_file = "/tmp/" + std::to_string(iter++) + "_lldp_stats.json";
 
     // get the LLDP stats in json format
-    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show statistics ports %s -f json0 > %s",
+    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show statistics ports %s -f json0 > %s; sync;",
              interfaces[lif_id].c_str(), stats_file.c_str());
     std::string lldpcmd = std::string(cmd);
     rc = system(lldpcmd.c_str());
