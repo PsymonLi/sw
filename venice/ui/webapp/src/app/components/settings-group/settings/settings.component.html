@@ -22,10 +22,11 @@
     <mat-card>
       <mat-card-title>Endpoint settings</mat-card-title>
       <mat-form-field class="mat-input-url">
-        <input matInput (blur)="setEnvironmentUrl($event.target.value)" [placeholder]="envUrl">
+        <input autocomplete="off" matInput (blur)="setEnvironmentUrl($event.target.value)"
+               [placeholder]="envUrl">
       </mat-form-field>
       <mat-form-field class="mat-input-port">
-        <input matInput [placeholder]="envPort">
+        <input autocomplete="off" matInput [placeholder]="envPort">
       </mat-form-field>
       <mat-slide-toggle [checked]="startState" (change)="toggleHandlerEndpoint($event)">
         Use endpoint instead of fake data

@@ -13,7 +13,8 @@
   <ng-template pTemplate="caption">
     <div style="text-align: right">
       <i class="fa fa-search"></i>
-      <input class="api-capture-search-input" type="text" pInputText size="40" placeholder="Search"
+      <input autocomplete="off" class="api-capture-search-input" type="text" pInputText size="40"
+             placeholder="Search"
              (input)="apiCapture.filterGlobal($event.target.value, 'contains')">
     </div>
   </ng-template>

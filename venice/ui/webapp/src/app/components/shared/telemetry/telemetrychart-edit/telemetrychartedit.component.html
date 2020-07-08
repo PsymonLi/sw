@@ -246,7 +246,8 @@
   <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start center">
     <div fxFlex="nogrow">Graph Title: </div>
     <div fxFlex="10px"></div>
-    <input fxFlex="300px" [formControl]="transform.title" class="telemetrychartedit-name"
+    <input autocomplete="off" fxFlex="300px" [formControl]="transform.title"
+           class="telemetrychartedit-name"
            spellcheck="false" type="text" pInputText placeholder="Unique Graph Name...">
   </div>
 </ng-template>

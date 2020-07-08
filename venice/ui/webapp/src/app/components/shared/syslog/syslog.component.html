@@ -36,7 +36,8 @@
 
         <div fxFlex="nogrow" fxLayout="column" class="syslog-fieldtitle-prefix-value">
           <div fxFlex="30px" fxLayout="row" class="syslog-value">
-            <input appErrorTooltip formControlName="prefix" appFloatLabel="Prefix" fxFlex="nogrow"
+            <input autocomplete="off" appErrorTooltip formControlName="prefix"
+                   appFloatLabel="Prefix" fxFlex="nogrow"
                    class="syslog-input syslog-prefix"
                    spellcheck="false" type="text" pInputText>
           </div>
@@ -66,14 +67,14 @@
         <span class="syslog-target-span" *ngIf="syslogRequiredOption" [ngClass]="{
                         'requiredField': isFieldEmptySysLog(syslogServerForm.get(['targets', index]).value['destination'])
                       }">
-          <input formControlName="destination" appErrorTooltip fxFlex="nogrow"
+          <input autocomplete="off" formControlName="destination" appErrorTooltip fxFlex="nogrow"
                  class="syslog-input syslog-destination"
                  spellcheck="false" type="text" pInputText appFloatLabel="Destination">
         </span>
         <span class="syslog-target-span" *ngIf="!syslogRequiredOption" [ngClass]="{
           'requiredField': isFieldDestinationRequired(syslogServerForm.get(['targets', index]))
         }">
-          <input formControlName="destination" appErrorTooltip fxFlex="nogrow"
+          <input autocomplete="off" formControlName="destination" appErrorTooltip fxFlex="nogrow"
                  class="syslog-input syslog-destination"
                  spellcheck="false" type="text" pInputText appFloatLabel="Destination">
         </span>
@@ -81,7 +82,7 @@
       <div fxFlex="15px"></div>
       <div fxFlex="150px" fxLayout="row" class="syslog-value">
         <span>
-          <input formControlName="gateway" appErrorTooltip fxFlex="nogrow"
+          <input autocomplete="off" formControlName="gateway" appErrorTooltip fxFlex="nogrow"
                  class="syslog-input syslog-gateway"
                  spellcheck="false" type="text" pInputText appFloatLabel="Gateway">
         </span>
@@ -91,14 +92,14 @@
         <span class="syslog-target-span" *ngIf="syslogRequiredOption" [ngClass]="{
                     'requiredField': isFieldEmptySysLog(syslogServerForm.get(['targets', index]).value['transport'])
                   }">
-          <input formControlName="transport" appErrorTooltip fxFlex="nogrow"
+          <input autocomplete="off" formControlName="transport" appErrorTooltip fxFlex="nogrow"
                  class="syslog-input syslog-transport"
                  spellcheck="false" type="text" pInputText appFloatLabel="Transport">
         </span>
         <span class="syslog-target-span" *ngIf="!syslogRequiredOption" [ngClass]="{
           'requiredField': isFieldTransportRequired(syslogServerForm.get(['targets', index]))
         }">
-          <input formControlName="transport" appErrorTooltip fxFlex="nogrow"
+          <input autocomplete="off" formControlName="transport" appErrorTooltip fxFlex="nogrow"
                  class="syslog-input syslog-transport"
                  spellcheck="false" type="text" pInputText appFloatLabel="Transport">
         </span>
@@ -143,13 +144,13 @@
             <!-- Field Values -->
             <div fxFlex="nogrow" fxLayout="column">
               <div fxFlex="30px" fxLayout="row" class="syslog-value">
-                <input appErrorTooltip formControlName="username" fxFlex="nogrow"
+                <input autocomplete="off" appErrorTooltip formControlName="username" fxFlex="nogrow"
                        class="syslog-input"
                        spellcheck="false" type="text" pInputText
                        placeholder="">
               </div>
               <div fxFlex="30px" fxLayout="row" class="syslog-value">
-                <input appErrorTooltip formControlName="password" fxFlex="nogrow"
+                <input autocomplete="off" appErrorTooltip formControlName="password" fxFlex="nogrow"
                        class="syslog-input"
                        spellcheck="false" type="password" pInputText
                        placeholder="">
@@ -169,7 +170,8 @@
             <!-- Field Values -->
             <div fxFlex="nogrow" fxLayout="column">
               <div fxFlex="30px" fxLayout="row" class="syslog-value">
-                <input appErrorTooltip formControlName="bearer-token" fxFlex="nogrow"
+                <input autocomplete="off" appErrorTooltip formControlName="bearer-token"
+                       fxFlex="nogrow"
                        class="syslog-input" spellcheck="false" type="text" pInputText
                        placeholder="">
               </div>

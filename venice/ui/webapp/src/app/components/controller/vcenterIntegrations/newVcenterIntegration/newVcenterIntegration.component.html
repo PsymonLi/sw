@@ -16,13 +16,15 @@
   <div fxFlex fxLayout="column" [formGroup]="newObject.$formGroup">
     <div fxFlex="nogrow" fxLayout="column">
       <span formGroupName="meta" [ngClass]="{requiredField: isNameRequired()}">
-        <input fxFlex="nogrow" formControlName="name" class="newVcenter-input" appErrorTooltip
+        <input autocomplete="off" fxFlex="nogrow" formControlName="name" class="newVcenter-input"
+               appErrorTooltip
                spellcheck="false" type="text"
                pInputText appFloatLabel="Name">
       </span>
       <div fxFlex="15px"></div>
       <span formGroupName="spec" [ngClass]="{requiredField: isUriRequired()}">
-        <input fxFlex="nogrow" formControlName="uri" class="newVcenter-input" appErrorTooltip
+        <input autocomplete="off" fxFlex="nogrow" formControlName="uri" class="newVcenter-input"
+               appErrorTooltip
                spellcheck="false" type="text"
                pInputText appFloatLabel="URI">
       </span>
@@ -66,20 +68,23 @@
             <div fxLayout="column" *ngSwitchCase="'username-password'" [@slideInOut]>
               <span
                     [ngClass]="{requiredField: isUsernameRequired()}">
-                <input fxFlex="nogrow" class="newVcenter-input" formControlName="username"
+                <input autocomplete="off" fxFlex="nogrow" class="newVcenter-input"
+                       formControlName="username"
                        appErrorTooltip spellcheck="false" appFloatLabel="User Name"
                        type="text" pInputText>
               </span>
               <div fxFlex="15px"></div>
               <span *ngIf="!isInline"
                     [ngClass]="{requiredField: isPasswordRequired()}">
-                <input fxFlex="nogrow" class="newVcenter-input" formControlName="password"
+                <input autocomplete="off" fxFlex="nogrow" class="newVcenter-input"
+                       formControlName="password"
                        appErrorTooltip spellcheck="false" appFloatLabel="Password"
                        type="password" pInputText>
               </span>
               <div *ngIf="isInline" fxLayout="column"
                    [ngClass]="{requiredField: isPasswordRequired()}">
-                <input fxFlex="nogrow" class="newVcenter-input newVcenter-hardcoded-password"
+                <input autocomplete="off" fxFlex="nogrow"
+                       class="newVcenter-input newVcenter-hardcoded-password"
                        formControlName="password" appErrorTooltip spellcheck="false" type="password"
                        appFloatLabel="**********************************************************"
                        pInputText>

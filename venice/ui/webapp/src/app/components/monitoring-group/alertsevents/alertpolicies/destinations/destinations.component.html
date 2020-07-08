@@ -26,7 +26,7 @@
     <div class="destinations-search" fxFlex="fxFlex" fxLayoutAlign="start center">
       <!-- Find destination by: 
       <mat-form-field fxFlex="nogrow" floatLabel="never">
-        <input matInput placeholder="Name" (input)="destinationsTurboTable?.filterGlobal($event.target.value, 'contains')">
+        <input autocomplete="off" matInput placeholder="Name" (input)="destinationsTurboTable?.filterGlobal($event.target.value, 'contains')">
       </mat-form-field> -->
     </div>
   </app-tableheader>

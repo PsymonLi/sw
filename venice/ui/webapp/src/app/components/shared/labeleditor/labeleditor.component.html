@@ -23,7 +23,7 @@
                   [matTooltip]="labelWarnings[index]">warning</mat-icon>
         <!--     label key-->
         <div fxFlex="nogrow" style="padding: 5px">
-          <input pInputText [(ngModel)]="prop.key"
+          <input autocomplete="off" pInputText [(ngModel)]="prop.key"
                  [ngClass]="getKeyClassWithValidator(prop)"
                  [readonly]=" hasProp( prop, 'keyEditable' )  ? !prop.keyEditable : ( metadata.keysEditable ?  !metadata.keysEditable : 'true')"
                  (change)="onFormChange(prop, index)"
@@ -35,7 +35,8 @@
         <!--     label value-->
         <div fxFlex="nogrow" style="padding: 5px"
              [class]=" prop.valueParentClass ? prop.valueParentClass : ( metadata.valuesParentsClasses ? metadata.valuesParentsClasses : '')">
-          <input pInputText *ngIf="prop.element == 'input' || ! hasProp(prop, 'element')"
+          <input autocomplete="off" pInputText
+                 *ngIf="prop.element == 'input' || ! hasProp(prop, 'element')"
                  [ngClass]="getValueClassWithValidator(prop)"
                  [type]="prop.inputType ? prop.inputType : 'text' "
                  [(ngModel)]="prop.value"

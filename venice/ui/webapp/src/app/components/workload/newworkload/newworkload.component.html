@@ -19,7 +19,8 @@
         <span [ngClass]="{
           'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
         }">
-          <input formControlName="name" appErrorTooltip spellcheck="false" type="text"
+          <input autocomplete="off" formControlName="name" appErrorTooltip spellcheck="false"
+                 type="text"
                  class="new-workload-input new-workload-name" pInputText
                  appFloatLabel="Unique Workload Name" fxFlex="235px">
         </span>
@@ -55,7 +56,7 @@
               'new-workload-interface-box-address': true,
               'requiredField': isFieldEmpty(inf.get(['mac-address']))
             }">
-              <input fxFlex="nogrow" appFloatLabel="MAC Address"
+              <input autocomplete="off" fxFlex="nogrow" appFloatLabel="MAC Address"
                      appErrorTooltip class="new-workload-mac-address" spellcheck="false"
                      type="text" pInputText formControlName="mac-address">
             </span>
@@ -72,7 +73,8 @@
               'new-workload-interface-box-vlan': true,
               'requiredField': isFieldEmpty(inf.get(['external-vlan']))
             }">
-              <input fxFlex="nogrow" appFloatLabel="External VLAN" appErrorTooltip
+              <input autocomplete="off" fxFlex="nogrow" appFloatLabel="External VLAN"
+                     appErrorTooltip
                      formControlName="external-vlan" spellcheck="false" type="number"
                      class="new-workload-external-vlan" pInputText min="0" max="4095">
             </span>
@@ -81,7 +83,8 @@
               'new-workload-interface-box-vlan': true,
               'requiredField': isFieldEmpty(inf.get(['micro-seg-vlan']))
             }">
-              <input fxFlex="nogrow" appFloatLabel="Micro-seg VLAN" appErrorTooltip
+              <input autocomplete="off" fxFlex="nogrow" appFloatLabel="Micro-seg VLAN"
+                     appErrorTooltip
                      formControlName="micro-seg-vlan" spellcheck="false" type="number"
                      class="new-workload-micro-seg-vlan" pInputText min="1" max="4095">
             </span>

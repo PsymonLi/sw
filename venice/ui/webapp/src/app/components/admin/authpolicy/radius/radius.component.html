@@ -126,7 +126,8 @@
           <ng-container *roleGuard="'authauthenticationpolicy_update'">
             <div fxFlex fxLayout="column" *ngIf="radiusEditMode">
               <div fxFlex="30px" fxLayout="row" class="radius-value">
-                <input fxFlex="nogrow" formControlName="nas-id" class="radius-input"
+                <input autocomplete="off" fxFlex="nogrow" formControlName="nas-id"
+                       class="radius-input"
                        spellcheck="false" type="text" pInputText placeholder="">
               </div>
             </div>
@@ -198,7 +199,8 @@
           <!-- Field Values -->
           <div fxFlex fxLayout="column">
             <div fxFlex="30px" fxLayout="row" class="radius-value">
-              <input fxFlex="nogrow" class="radius-input" formControlName="url" appErrorTooltip
+              <input autocomplete="off" fxFlex="nogrow" class="radius-input" formControlName="url"
+                     appErrorTooltip
                      spellcheck="false" type="text" pInputText placeholder="">
             </div>
           </div>
@@ -216,7 +218,8 @@
           <!-- Field Values - edit mode -->
           <div fxFlex fxLayout="column" *ngIf="radiusEditMode">
             <div fxFlex="30px" fxLayout="row" class="radius-value">
-              <input fxFlex="nogrow" formControlName="secret" appErrorTooltip type="password"
+              <input autocomplete="off" fxFlex="nogrow" formControlName="secret" appErrorTooltip
+                     type="password"
                      class="radius-input radius-server-secret" spellcheck="false"
                      pInputText placeholder="">
             </div>

@@ -7,7 +7,8 @@
       <div fxFlex="auto" fxLayout="column" [formGroup]="newObject.$formGroup">
         <div fxFlex="none" fxLayout="row" formGroupName="meta" class="newsecuritygroup-row">
           <div fxFlex="none" class="newsecuritygroup-field-label">NAME:</div>
-          <input fxFlex="300px" formControlName="name" class="newsecuritygroup-name" appErrorTooltip
+          <input autocomplete="off" fxFlex="300px" formControlName="name"
+                 class="newsecuritygroup-name" appErrorTooltip
                  spellcheck="false" type="text" pInputText
                  placeholder="Unique Security Group Name...">
         </div>

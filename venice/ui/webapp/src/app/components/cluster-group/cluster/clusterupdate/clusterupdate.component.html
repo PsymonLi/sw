@@ -31,7 +31,7 @@
       <div fxFlex fxLayout="column" class="clusterupdate-ntp-servers-parent">
         <div class="clusterupdate-quorum-title">NTP Servers:</div>
         <div fxFlex="nogrow" fxLayout="row">
-          <input placeholder="Unique NTP Server Name..." appErrorTooltip
+          <input autocomplete="off" placeholder="Unique NTP Server Name..." appErrorTooltip
                  spellcheck="false" pInputText
                  class="clusterupdate-input" [formControl]="addNTP">
           <div fxFlex="7px"></div>
@@ -58,7 +58,7 @@
     <div fxLayout="column" formGroupName="spec">
       <!-- <div fxFlex="nogrow">
         <div class="clusterupdate-ip-title">Virtual IP:</div>
-        <input appFloatLabel="Edit Virtual IP.." appErrorTooltip
+        <input autocomplete="off" appFloatLabel="Edit Virtual IP.." appErrorTooltip
                spellcheck="false" formControlName="virtual-ip"
                pInputText class="clusterupdate-input">
       </div>

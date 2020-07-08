@@ -4,7 +4,7 @@
       <div fxLayout="row" fxLayoutAlign="start center" formGroupName="meta">
         <div class="newrole-panel-rolegroup-header-add-property-label">Name:</div>
         <div class="newrole-panel-rolegroup-header-add-property-value">
-          <input *ngIf="!isEditMode()" fxFlex="200px" formControlName="name"
+          <input autocomplete="off" *ngIf="!isEditMode()" fxFlex="200px" formControlName="name"
                  class="newrole-input-item newrole-fullname"
                  spellcheck="false" type="text" pInputText placeholder="Role Name..."
                  appErrorTooltip>
@@ -80,7 +80,7 @@
                         <!-- comment out permission.resource-tenant per VS-241 (GS-release) -->
                         <!-- 
                           <div fxFlex="30px" fxLayout="row" class="newrole-value">
-                            <input fxFlex="nogrow" formControlName="resource-tenant"
+                            <input autocomplete="off" fxFlex="nogrow" formControlName="resource-tenant"
                                    class="newrole-host" spellcheck="false"
                                    type="text" pInputText placeholder="tenant...">
                           </div> 
@@ -103,7 +103,7 @@
                         </div>
                         <!-- TODO: 2019-01-10 comment it out per back-end request for now
                            <div fxFlex="30px" fxLayout="row" class="newrole-value">
-                            <input fxFlex="nogrow" formControlName="resource-namespace" class="newrole-port" spellcheck="false"
+                            <input autocomplete="off" fxFlex="nogrow" formControlName="resource-namespace" class="newrole-port" spellcheck="false"
                               type="text" pInputText placeholder="namespace...">
                           </div> -->
                       </div>
@@ -111,7 +111,7 @@
                     <!--  TODO: 2019-01-17 comment it out per back-end request for now
                       <div class="newrolw-fieldtitle"> Resource Names: </div>
                       <div>
-                        <input fxFlex="nogrow" formControlName="resource-names" class="newrole-port" spellcheck="false"
+                        <input autocomplete="off" fxFlex="nogrow" formControlName="resource-names" class="newrole-port" spellcheck="false"
                           type="text" pInputText placeholder="resourece names...">
                       </div> 
                      -->

@@ -32,7 +32,8 @@
       <span [ngClass]="{
          'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
        }">
-        <input formControlName="name" class="newsgpolicy-name-box" appFloatLabel="Unique Name"
+        <input autocomplete="off" formControlName="name" class="newsgpolicy-name-box"
+               appFloatLabel="Unique Name"
                appErrorTooltip spellcheck="false" type="text" pInputText>
       </span>
     </div>
@@ -236,14 +237,14 @@
       <div fxFlex="none" fxLayout="row">
         <span [style.width]="'200px'"
               [ngClass]="{'requiredField': isFieldEmpty(target.get(['protocol']))}">
-          <input class="newsgpolicy-name-box" fxFlex="nogrow" spellcheck="false"
+          <input autocomplete="off" class="newsgpolicy-name-box" fxFlex="nogrow" spellcheck="false"
                  pInputText formControlName="protocol" appFloatLabel="Protocol">
         </span>
       </div>
       <div fxFlex="20px"></div>
       <div fxFlex="none" fxLayout="row">
         <span [style.width]="'200px'" [ngClass]="{'requiredField': isPortRequired(target)}">
-          <input class="newsgpolicy-name-box" fxFlex="nogrow" spellcheck="false"
+          <input autocomplete="off" class="newsgpolicy-name-box" fxFlex="nogrow" spellcheck="false"
                  pInputText formControlName="ports" appFloatLabel="Ports">
         </span>
       </div>

@@ -24,7 +24,8 @@
                 'newhost-general-box': true,
                 'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
               }">
-        <input fxFlex="nogrow" formControlName="name" class="newhost-name" appErrorTooltip
+        <input autocomplete="off" fxFlex="nogrow" formControlName="name" class="newhost-name"
+               appErrorTooltip
                spellcheck="false" type="text"
                pInputText appFloatLabel="Name...">
       </span>
@@ -86,7 +87,8 @@
                       'newhost-general-box': true,
                       'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
                     }">
-              <input fxFlex="nogrow" formControlName="name" appErrorTooltip class="newhost-name"
+              <input autocomplete="off" fxFlex="nogrow" formControlName="name" appErrorTooltip
+                     class="newhost-name"
                      matspellcheck="false"
                      appFloatLabel="Unique Host Name..." type="text" pInputText>
             </span>
@@ -145,7 +147,8 @@
                             'newhost-general-box': true,
                             'requiredField': isFieldEmpty(newObject.$formGroup.get(['spec', 'dscs', 0, 'id']))
                           }">
-                <input fxFlex="nogrow" class="newhost-NAPLES-name" formControlName="id"
+                <input autocomplete="off" fxFlex="nogrow" class="newhost-NAPLES-name"
+                       formControlName="id"
                        appErrorTooltip spellcheck="false"
                        type="text" pInputText>
               </span>
@@ -158,7 +161,8 @@
                           'newhost-general-box': true,
                           'requiredField': isFieldEmpty(newObject.$formGroup.get(['spec', 'dscs', 0, 'mac-address']))
                         }">
-                <input fxFlex="nogrow" class="newhost-mac-address" formControlName="mac-address"
+                <input autocomplete="off" fxFlex="nogrow" class="newhost-mac-address"
+                       formControlName="mac-address"
                        appErrorTooltip spellcheck="false"
                        type="text" pInputText>
               </span>

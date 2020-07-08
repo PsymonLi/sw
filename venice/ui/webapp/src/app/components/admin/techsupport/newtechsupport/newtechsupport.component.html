@@ -6,7 +6,8 @@
         'newtechsupport-name': true,
         'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
       }">
-        <input formControlName="name" appErrorTooltip spellcheck="false" type="text"
+        <input autocomplete="off" formControlName="name" appErrorTooltip spellcheck="false"
+               type="text"
                class="newtechsupport-name" pInputText appFloatLabel="Tech Support Request Name">
       </span>
     </div>

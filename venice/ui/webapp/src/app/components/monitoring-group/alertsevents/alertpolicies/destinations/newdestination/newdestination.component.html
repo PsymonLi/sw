@@ -11,11 +11,12 @@
           'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
         }">
           <!-- First row-->
-          <input fxFlex="300px" formControlName="name" class="newdestination-name" appErrorTooltip
+          <input autocomplete="off" fxFlex="300px" formControlName="name"
+                 class="newdestination-name" appErrorTooltip
                  spellcheck="false" type="text" pInputText
                  appFloatLabel="Unique Destination Name...">
           <!-- Commented out as it still isn't decided whether there will be a description -->
-          <!-- <input fxFlex class="newdestination-description" spellcheck="false" type="text"  pInputText  placeholder="Brief Description (optional)..."> -->
+          <!-- <input autocomplete="off" fxFlex class="newdestination-description" spellcheck="false" type="text"  pInputText  placeholder="Brief Description (optional)..."> -->
 
         </div>
         <!-- Buffer, creating as a div so there are no hiccups in the animation-->
@@ -99,12 +100,14 @@
                       <!-- Field Values -->
                       <div fxFlex fxLayout="column">
                         <div fxFlex="30px" fxLayout="row" class="newdestination-value">
-                          <input fxFlex="nogrow" formControlName="host" appErrorTooltip
+                          <input autocomplete="off" fxFlex="nogrow" formControlName="host"
+                                 appErrorTooltip
                                  class="newdestination-host" spellcheck="false" type="text"
                                  pInputText placeholder="">
                         </div>
                         <div fxFlex="30px" fxLayout="row" class="newdestination-value">
-                          <input fxFlex="nogrow" appErrorTooltip formControlName="port"
+                          <input autocomplete="off" fxFlex="nogrow" appErrorTooltip
+                                 formControlName="port"
                                  class="newdestination-port" spellcheck="false" type="text"
                                  pInputText placeholder="">
                         </div>
@@ -130,7 +133,8 @@
                                       [options]="versionOptions"></p-dropdown>
                         </div>
                         <div fxFlex="30px" fxLayout="row" class="newdestination-value">
-                          <input fxFlex="nogrow" appErrorTooltip formControlName="community-or-user"
+                          <input autocomplete="off" fxFlex="nogrow" appErrorTooltip
+                                 formControlName="community-or-user"
                                  class="newdestination-usertype" spellcheck="false" type="text"
                                  pInputText placeholder="">
                         </div>
@@ -164,7 +168,8 @@
                                       [options]="authAlgoOptions"></p-dropdown>
                         </div>
                         <div fxFlex="30px" fxLayout="row" class="newdestination-value">
-                          <input fxFlex="nogrow" appErrorTooltip formControlName="password"
+                          <input autocomplete="off" fxFlex="nogrow" appErrorTooltip
+                                 formControlName="password"
                                  class="newdestination-authpassword" spellcheck="false" type="text"
                                  pInputText
                                  placeholder="">
@@ -198,7 +203,7 @@
                                       [options]="encryptAlgoOptions"></p-dropdown>
                         </div>
                         <div fxFlex="30px" fxLayout="row" class="newdestination-value">
-                          <input fxFlex="nogrow" formControlName="password"
+                          <input autocomplete="off" fxFlex="nogrow" formControlName="password"
                                  class="newdestination-encryptpassword" spellcheck="false"
                                  type="password" pInputText
                                  placeholder="">

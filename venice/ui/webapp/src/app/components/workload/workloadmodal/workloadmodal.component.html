@@ -24,7 +24,7 @@
         <div class="workloadmodal-item">Security Group Name:
         </div>
         <mat-form-field floatLabel="never">
-          <input matInput placeholder="Search for Security Group name"
+          <input autocomplete="off" matInput placeholder="Search for Security Group name"
                  [errorStateMatcher]="errorStateMatcherExisting"
                  [formControl]="existingSecurityGroupFormControl" [matAutocomplete]="auto">
           <mat-error *ngIf="existingSecurityGroupFormControl.hasError('required')">
@@ -60,7 +60,7 @@
     <div class="workloadmodal-item">Security Group Name:
     </div>
     <mat-form-field floatLabel="never">
-      <input matInput placeholder="Must be a unique group name"
+      <input autocomplete="off" matInput placeholder="Must be a unique group name"
              [errorStateMatcher]="errorStateMatcherName"
              [formControl]="newSecurityGroupFormControl">
       <mat-error *ngIf="newSecurityGroupFormControl.hasError('required')">

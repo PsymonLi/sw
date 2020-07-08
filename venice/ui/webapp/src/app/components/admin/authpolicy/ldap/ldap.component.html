@@ -140,7 +140,8 @@
           <ng-container *ngIf="LDAPEditMode">
             <div fxFlex fxLayout="column" *roleGuard="'authauthenticationpolicy_update'">
               <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                <input fxFlex="nogrow" formControlName="bind-dn" appErrorTooltip class="ldap-input"
+                <input autocomplete="off" fxFlex="nogrow" formControlName="bind-dn" appErrorTooltip
+                       class="ldap-input"
                        spellcheck="false" type="text" pInputText placeholder="">
                 <div fxFlex="nogrow" class="global-button-primary ldap-bind-connection-button"
                      (click)="onCheckLDAPBindConnect($event)">Test Bind</div>
@@ -151,7 +152,7 @@
                 </mat-icon>
               </div>
               <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                <input fxFlex="nogrow" formControlName="bind-password"
+                <input autocomplete="off" fxFlex="nogrow" formControlName="bind-password"
                        class="ldap-input" spellcheck="false" type="text" pInputText
                        placeholder="password" type="password" appErrorTooltip>
               </div>
@@ -196,16 +197,19 @@
           <ng-container *ngIf="LDAPEditMode">
             <div fxFlex fxLayout="column" *roleGuard="'authauthenticationpolicy_update'">
               <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                <input fxFlex="nogrow" class="ldap-input" formControlName="base-dn" appErrorTooltip
+                <input autocomplete="off" fxFlex="nogrow" class="ldap-input"
+                       formControlName="base-dn" appErrorTooltip
                        spellcheck="false" type="text" pInputText placeholder="">
               </div>
               <ng-container formGroupName="attribute-mapping">
                 <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                  <input fxFlex="nogrow" class="ldap-input" formControlName="user-object-class"
+                  <input autocomplete="off" fxFlex="nogrow" class="ldap-input"
+                         formControlName="user-object-class"
                          appErrorTooltip spellcheck="false" type="text" pInputText placeholder="">
                 </div>
                 <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                  <input fxFlex="nogrow" class="ldap-input" formControlName="group-object-class"
+                  <input autocomplete="off" fxFlex="nogrow" class="ldap-input"
+                         formControlName="group-object-class"
                          appErrorTooltip spellcheck="false" type="text" pInputText placeholder="">
                 </div>
               </ng-container>
@@ -253,15 +257,18 @@
           <ng-container *ngIf="LDAPEditMode">
             <div fxFlex fxLayout="column" *roleGuard="'authauthenticationpolicy_update'">
               <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                <input fxFlex="nogrow" class="ldap-input" formControlName="user" spellcheck="false"
+                <input autocomplete="off" fxFlex="nogrow" class="ldap-input" formControlName="user"
+                       spellcheck="false"
                        appErrorTooltip type="text" pInputText placeholder="">
               </div>
               <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                <input fxFlex="nogrow" class="ldap-input" formControlName="group" spellcheck="false"
+                <input autocomplete="off" fxFlex="nogrow" class="ldap-input" formControlName="group"
+                       spellcheck="false"
                        appErrorTooltip type="text" pInputText placeholder="">
               </div>
               <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                <input fxFlex="nogrow" class="ldap-input" formControlName="tenant"
+                <input autocomplete="off" fxFlex="nogrow" class="ldap-input"
+                       formControlName="tenant"
                        spellcheck="false"
                        type="text" pInputText placeholder="">
               </div>
@@ -297,11 +304,13 @@
           <ng-container *ngIf="LDAPEditMode">
             <div fxFlex fxLayout="column" *roleGuard="'authauthenticationpolicy_update'">
               <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                <input fxFlex="nogrow" class="ldap-input" formControlName="fullname"
+                <input autocomplete="off" fxFlex="nogrow" class="ldap-input"
+                       formControlName="fullname"
                        spellcheck="false" type="text" pInputText placeholder="">
               </div>
               <div fxFlex="30px" fxLayout="row" class="ldap-value">
-                <input fxFlex="nogrow" class="ldap-input" formControlName="email" spellcheck="false"
+                <input autocomplete="off" fxFlex="nogrow" class="ldap-input" formControlName="email"
+                       spellcheck="false"
                        type="text" pInputText placeholder="">
               </div>
             </div>
@@ -388,7 +397,8 @@
           <!-- Field Values -->
           <div fxFlex fxLayout="column">
             <div fxFlex="30px" fxLayout="row" class="ldap-value">
-              <input fxFlex="nogrow" class="ldap-input" formControlName="url" appErrorTooltip
+              <input autocomplete="off" fxFlex="nogrow" class="ldap-input" formControlName="url"
+                     appErrorTooltip
                      spellcheck="false" type="text" pInputText placeholder="">
             </div>
           </div>
@@ -420,7 +430,8 @@
               Verify Server Certificate
             </div>
             <div fxFlex="30px" fxLayout="row" class="ldap-value">
-              <input fxFlex="nogrow" class="ldap-input" formControlName="server-name"
+              <input autocomplete="off" fxFlex="nogrow" class="ldap-input"
+                     formControlName="server-name"
                      appErrorTooltip spellcheck="false" type="text" pInputText placeholder="">
             </div>
           </div>

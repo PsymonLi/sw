@@ -22,7 +22,8 @@
       <span [ngClass]="{
         'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
       }">
-        <input fxFlex="342px" formControlName="name" class="new-dsc-profile-name" appErrorTooltip
+        <input autocomplete="off" fxFlex="342px" formControlName="name" class="new-dsc-profile-name"
+               appErrorTooltip
                spellcheck="false"
                type="text" pInputText appFloatLabel="Unique DSP Profile Name...">
       </span>

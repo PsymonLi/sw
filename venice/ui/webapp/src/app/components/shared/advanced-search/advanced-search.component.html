@@ -2,7 +2,8 @@
   <div fxFlex="auto" fxLayout="row" fxLayoutAlign="center center"
        class="advanced-search advanced-search-bar ui-inputgroup">
     <div fxFlex="60" fxLayoutAlign="center center">
-      <input [(ngModel)]="search" type="text" pInputText [disabled]="showAdvancedPanel"
+      <input autocomplete="off" [(ngModel)]="search" type="text" pInputText
+             [disabled]="showAdvancedPanel"
              placeholder="Search" class="advanced-search-bar-input" (keydown)="onKeydown($event)"
              fxFlex="auto" />
       <button (click)="cancelClicked()" pButton
@@ -29,7 +30,8 @@
                 fxLayoutAlign="start stretch">
         <span class="advanced-search-expansion-span-label"
               fxLayoutAlign="start center">Keyword:</span>
-        <input [(ngModel)]="generalSearch" type="text" pInputText placeholder="General Search"
+        <input autocomplete="off" [(ngModel)]="generalSearch" type="text" pInputText
+               placeholder="General Search"
                class="advanced-search-general-search" (keydown)="onKeydown($event)">
         <span class="advanced-search-expansion-span-label"
               fxLayoutAlign="start center">Column:</span>

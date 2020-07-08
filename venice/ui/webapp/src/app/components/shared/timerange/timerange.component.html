@@ -24,7 +24,7 @@
       <div fxFlex="auto" fxLayout="column" class="timerange-value">
         <div class="timerange-time-text">START:</div>
         <div fxFlex="auto" fxLayout="row">
-          <input appErrorTooltip [errorMessage]="groupErrorMessage"
+          <input autocomplete="off" appErrorTooltip [errorMessage]="groupErrorMessage"
                  [ngClass]="groupErrorMessage.length != 0 ? 'error' : ''" fxFlex
                  class="timerange-input" spellcheck="false" type="text"
                  formControlName="startTime" pInputText placeholder="">
@@ -44,7 +44,7 @@
       <div fxFlex="auto" fxLayout="column" class="timerange-value">
         <div class="timerange-time-text">END:</div>
         <div fxFlex="auto" fxLayout="row">
-          <input appErrorTooltip [errorMessage]="groupErrorMessage"
+          <input autocomplete="off" appErrorTooltip [errorMessage]="groupErrorMessage"
                  [ngClass]="groupErrorMessage.length != 0 ? 'error' : ''" fxFlex
                  class="timerange-input" spellcheck="false" type="text"
                  formControlName="endTime" pInputText placeholder="">

@@ -3,7 +3,7 @@
     <div fxLayout="row" formGroupName="meta">
       <div class="newrolebinding-panel-rolegroup-header-add-property-label">Name:</div>
       <div class="newrolebinding-panel-rolegroup-header-add-property-value">
-        <input *ngIf="!isEditMode()" fxFlex="200px" formControlName="name"
+        <input autocomplete="off" *ngIf="!isEditMode()" fxFlex="200px" formControlName="name"
                class="newrolebinding-input-item newrolebinding-fullname"
                appErrorTooltip spellcheck="false" type="text" pInputText
                placeholder="Rolebinding Name...">

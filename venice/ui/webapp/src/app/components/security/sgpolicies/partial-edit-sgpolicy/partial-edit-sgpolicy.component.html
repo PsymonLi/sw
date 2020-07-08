@@ -32,7 +32,7 @@
       <span [ngClass]="{
           'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
         }">
-        <input formControlName="name" class="partial-edit-sgpolicy-name-box"
+        <input autocomplete="off" formControlName="name" class="partial-edit-sgpolicy-name-box"
                appFloatLabel="Unique Name"
                appErrorTooltip spellcheck="false" type="text" pInputText>
       </span>
@@ -88,7 +88,7 @@
     <!-- RuleNumber commented for now, component doesnt have rule reorder logic at this time. -->
     <!-- <div class="partial-edit-sgpolicy-order-header" fxFlex="none" fxLayout="row" fxLayoutAlign="start center">
       <div fxLayout="row" fxLayoutAlign="start end">
-        <input fxFlex="50px" [formControl]="ruleNumberEditControl" class="partial-edit-sgpolicy-number-edit"
+        <input autocomplete="off" fxFlex="50px" [formControl]="ruleNumberEditControl" class="partial-edit-sgpolicy-number-edit"
                appErrorTooltip
                spellcheck="false" type="text" pInputText>
       </div>
@@ -311,14 +311,16 @@
       <div fxFlex="none" fxLayout="row">
         <span [style.width]="'200px'"
               [ngClass]="{'requiredField': isFieldEmpty(target.get(['protocol']))}">
-          <input class="partial-edit-sgpolicy-name-box" fxFlex="nogrow" spellcheck="false"
+          <input autocomplete="off" class="partial-edit-sgpolicy-name-box" fxFlex="nogrow"
+                 spellcheck="false"
                  pInputText formControlName="protocol" appFloatLabel="Protocol">
         </span>
       </div>
       <div fxFlex="30px"></div>
       <div fxFlex="none" fxLayout="row">
         <span [style.width]="'200px'" [ngClass]="{'requiredField': isPortRequired(target)}">
-          <input class="partial-edit-sgpolicy-name-box" fxFlex="nogrow" spellcheck="false"
+          <input autocomplete="off" class="partial-edit-sgpolicy-name-box" fxFlex="nogrow"
+                 spellcheck="false"
                  pInputText formControlName="ports" appFloatLabel="Ports">
         </span>
       </div>

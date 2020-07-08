@@ -5,7 +5,7 @@
       <div fxLayout="row" formGroupName="spec">
         <div class="newuser-panel-rolegroup-header-add-property-label">Full Name:</div>
         <div class="newuser-panel-rolegroup-header-add-property-value">
-          <input fxFlex="200px" formControlName="fullname"
+          <input autocomplete="off" fxFlex="200px" formControlName="fullname"
                  class="newuser-input-item newuser-fullname" spellcheck="false" type="text"
                  pInputText placeholder="Full Name..."
                  appErrorTooltip>
@@ -15,7 +15,8 @@
       <div fxLayout="row" formGroupName="spec">
         <div class="newuser-panel-rolegroup-header-add-property-label">Email:</div>
         <div class="newuser-panel-rolegroup-header-add-property-value ">
-          <input fxFlex="200px" formControlName="email" class="newuser-input-item newuser-email"
+          <input autocomplete="off" fxFlex="200px" formControlName="email"
+                 class="newuser-input-item newuser-email"
                  spellcheck="false" type="email" pInputText
                  placeholder="Email"
                  appErrorTooltip>
@@ -39,7 +40,8 @@
       <div fxLayout="row" formGroupName="meta">
         <div class="newuser-panel-rolegroup-header-add-property-label">Login Name:</div>
         <div class="newuser-panel-rolegroup-header-add-property-value">
-          <input fxFlex="200px" formControlName="name" class="newuser-input-item newuser-loginname"
+          <input autocomplete="off" fxFlex="200px" formControlName="name"
+                 class="newuser-input-item newuser-loginname"
                  spellcheck="false" type="text"
                  pInputText placeholder="Login Name..."
                  appErrorTooltip>
@@ -49,7 +51,7 @@
       <div fxLayout="row" formGroupName="spec">
         <div class="newuser-panel-rolegroup-header-add-property-label">Password:</div>
         <div class="newuser-panel-rolegroup-header-add-property-value">
-          <input fxFlex="200px" formControlName="password"
+          <input autocomplete="off" fxFlex="200px" formControlName="password"
                  class="newuser-input-item newuser-Password"
                  spellcheck="false" type="password"
                  pInputText placeholder="Password..." appErrorTooltip>
@@ -62,7 +64,8 @@
       <div fxLayout="row" formGroupName="spec">
         <div class="newuser-panel-rolegroup-header-add-property-label">Auth-Type:</div>
         <div class="newuser-panel-rolegroup-header-add-property-value">
-          <input fxFlex="200px" formControlName="type" class="newuser-input-item newuser-type"
+          <input autocomplete="off" fxFlex="200px" formControlName="type"
+                 class="newuser-input-item newuser-type"
                  spellcheck="false" type="text" readonly="true" value="LOACL"
                  pInputText placeholder="LOCAL">
         </div>
@@ -71,7 +74,7 @@
       <div fxLayout="row">
         <div class="newuser-panel-rolegroup-header-add-property-label">Confirm-Password:</div>
         <div class="newuser-panel-rolegroup-header-add-property-value">
-          <input fxFlex="200px" appConfirmEqualValidator="password"
+          <input autocomplete="off" fxFlex="200px" appConfirmEqualValidator="password"
                  formControlName="confirmPassword" class="newuser-input-item newuser-type"
                  spellcheck="false" type="password"
                  pInputText placeholder="Confirm Password" appErrorTooltip>

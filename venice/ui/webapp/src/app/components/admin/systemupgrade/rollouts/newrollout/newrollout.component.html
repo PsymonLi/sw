@@ -101,7 +101,8 @@
           'newrollout-general-box': true,
           'requiredField': isFieldEmpty(newRollout.$formGroup.get(['meta', 'name']))
           }">
-        <input fxFlex="300px" [formControl]="newRollout.$formGroup.get(['meta', 'name'])"
+        <input autocomplete="off" fxFlex="300px"
+               [formControl]="newRollout.$formGroup.get(['meta', 'name'])"
                appErrorTooltip
                class="newrollout-input-common"
                matspellcheck="false" type="text" pInputText
@@ -170,7 +171,8 @@
     </div>
 
     <div fxLayout="row" class="newrollout-input-padding" *ngIf="isToShowNicDiv()">
-      <input fxFlex="200px" [formControl]="newRollout.$formGroup.get(['spec', 'max-parallel'])"
+      <input autocomplete="off" fxFlex="200px"
+             [formControl]="newRollout.$formGroup.get(['spec', 'max-parallel'])"
              appErrorTooltip
              class="newrollout-input-common"
              matspellcheck="false" type="number" pInputText
@@ -182,7 +184,7 @@
     <div fxLayout="column" class="newrollout-nic-div" *ngIf="isToShowNicDiv()">
 
       <div fxFlex="auto" class="newrollout-maxnic-div newrollout-input-padding" fxLayout="row">
-        <input fxFlex="200px"
+        <input autocomplete="off" fxFlex="200px"
                [formControl]="newRollout.$formGroup.get(['spec', 'max-nic-failures-before-abort'])"
                appErrorTooltip
                class="newrollout-input-common" matspellcheck="false" type="number"

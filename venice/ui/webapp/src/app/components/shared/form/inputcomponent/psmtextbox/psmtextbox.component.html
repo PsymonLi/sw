@@ -1,7 +1,7 @@
 <div fxLayout="row" fxLayoutAlign="start end">
   <div [class]="getIconSpanClasses()">*</div>
   <div [class]="getSpanClasses()">
-    <input [id]="boxId" appendTo="body" [class]="getComponentClass()"
+    <input autocomplete="off" [id]="boxId" appendTo="body" [class]="getComponentClass()"
            spellcheck="false" type="text" pInputText
            [disabled]="disabled" [matTooltip]="getTooltip()"
            [matTooltipClass]="currentTooltipClass"

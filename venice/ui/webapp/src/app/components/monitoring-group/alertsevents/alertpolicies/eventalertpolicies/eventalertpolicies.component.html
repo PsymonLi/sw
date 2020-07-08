@@ -27,7 +27,7 @@
       <!-- Lazy render currently doesn't support filtering -->
       <!-- Find Policy by: 
       <mat-form-field fxFlex="nogrow" floatLabel="never">
-        <input matInput placeholder="Name" (input)="table?.filterGlobal($event.target.value, 'contains')">
+        <input autocomplete="off" matInput placeholder="Name" (input)="table?.filterGlobal($event.target.value, 'contains')">
       </mat-form-field> -->
     </div>
   </app-tableheader>

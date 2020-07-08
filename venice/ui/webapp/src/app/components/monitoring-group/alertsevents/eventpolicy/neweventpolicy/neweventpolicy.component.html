@@ -12,7 +12,8 @@
             <span [ngClass]="{
               'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
             }" class="neweventpolicy-span">
-              <input fxFlex="300px" formControlName="name" class="neweventpolicy-name"
+              <input autocomplete="off" fxFlex="300px" formControlName="name"
+                     class="neweventpolicy-name"
                      appErrorTooltip
                      spellcheck="false" type="text" pInputText
                      appFloatLabel="Unique Policy Name...">

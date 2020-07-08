@@ -15,7 +15,8 @@
                             'newfwlog-general-box': true,
                             'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
                           }">
-            <input fxFlex="none" formControlName="name" class="newfwlogpolicy-name" appErrorTooltip
+            <input autocomplete="off" fxFlex="none" formControlName="name"
+                   class="newfwlogpolicy-name" appErrorTooltip
                    spellcheck="false"
                    type="text" pInputText appFloatLabel="Unique Policy Name...">
           </span>
@@ -33,7 +34,7 @@
               </div>
               <div fxFlex="nogrow" fxLayout="column">
                 <div fxFlex="30px" fxLayout="row" class="newfwlogpolicy-value">
-                  <input fxFlex="nogrow" appErrorTooltip formControlName="vrf-name"
+                  <input autocomplete="off" fxFlex="nogrow" appErrorTooltip formControlName="vrf-name"
                          class="newfwlogpolicy-input"
                          spellcheck="false" type="text" pInputText
                          placeholder="">

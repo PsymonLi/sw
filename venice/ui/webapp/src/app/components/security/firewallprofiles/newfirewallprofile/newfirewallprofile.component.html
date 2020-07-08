@@ -36,7 +36,8 @@
           'newfirewallprofile-general-box': true,
           'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
           }">
-        <input fxFlex="300px" [formControl]="newObject.$formGroup.get(['meta', 'name'])"
+        <input autocomplete="off" fxFlex="300px"
+               [formControl]="newObject.$formGroup.get(['meta', 'name'])"
                appErrorTooltip
                class="newfirewallprofile-input-common" matspellcheck="false" type="text" pInputText
                appFloatLabel="Unique Firewall Profile Name">
@@ -51,7 +52,7 @@
     <div class="ui-flex" fxLayout="row">
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'session-idle-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
@@ -60,7 +61,7 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'tcp-connection-setup-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
@@ -69,7 +70,7 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'tcp-close-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
@@ -78,7 +79,7 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'tcp-half-closed-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
@@ -90,7 +91,7 @@
     <div class="ui-flex" fxLayout="row">
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'tcp-drop-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
@@ -99,7 +100,7 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'udp-drop-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
@@ -108,7 +109,7 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'icmp-drop-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
@@ -117,7 +118,8 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px" [formControl]="newObject.$formGroup.get(['spec', 'drop-timeout'])"
+          <input autocomplete="off" fxFlex="200px"
+                 [formControl]="newObject.$formGroup.get(['spec', 'drop-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
                  appFloatLabel="Drop Timeout">
@@ -128,7 +130,8 @@
     <div class="ui-flex" fxLayout="row">
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px" [formControl]="newObject.$formGroup.get(['spec', 'tcp-timeout'])"
+          <input autocomplete="off" fxFlex="200px"
+                 [formControl]="newObject.$formGroup.get(['spec', 'tcp-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
                  appFloatLabel="TCP Timeout">
@@ -136,7 +139,8 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px" [formControl]="newObject.$formGroup.get(['spec', 'udp-timeout'])"
+          <input autocomplete="off" fxFlex="200px"
+                 [formControl]="newObject.$formGroup.get(['spec', 'udp-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
                  appFloatLabel="UDP Timeout">
@@ -144,7 +148,8 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px" [formControl]="newObject.$formGroup.get(['spec', 'icmp-timeout'])"
+          <input autocomplete="off" fxFlex="200px"
+                 [formControl]="newObject.$formGroup.get(['spec', 'icmp-timeout'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="text" pInputText
                  appFloatLabel="ICMP Timeout">
@@ -152,7 +157,7 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <!-- <div fxLayout="row">
-          <input fxFlex="200px" [formControl]="newObject.$formGroup.get(['spec', 'drop-timeout'])"
+          <input autocomplete="off" fxFlex="200px" [formControl]="newObject.$formGroup.get(['spec', 'drop-timeout'])"
             appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false" type="text" pInputText
             appFloatLabel="DROP Timeout">
         </div> -->
@@ -163,7 +168,7 @@
     <div class="ui-flex" fxLayout="row">
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'tcp-half-open-session-limit'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="number" pInputText
@@ -172,7 +177,7 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'udp-active-session-limit'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="number" pInputText
@@ -181,7 +186,7 @@
       </div>
       <div fxLayout="column" class="newfirewallprofile-column ui-flex">
         <div fxLayout="row">
-          <input fxFlex="200px"
+          <input autocomplete="off" fxFlex="200px"
                  [formControl]="newObject.$formGroup.get(['spec', 'icmp-active-session-limit'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="number" pInputText

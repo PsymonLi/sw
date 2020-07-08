@@ -5,27 +5,28 @@
       <div fxFlex="none" class="troubleshooting-config-item">
         Source:
         <mat-form-field floatLabel="never">
-          <input matInput [formControl]="sourceFormControl" (blur)="submitSource()"
+          <input autocomplete="off" matInput [formControl]="sourceFormControl"
+                 (blur)="submitSource()"
                  placeholder="IP/Port">
         </mat-form-field>
       </div>
       <div fxFlex="none" class="troubleshooting-config-item">
         Destination:
         <mat-form-field floatLabel="never">
-          <input [formControl]="destFormControl" (blur)="submitDest()" matInput
+          <input autocomplete="off" [formControl]="destFormControl" (blur)="submitDest()" matInput
                  placeholder="IP/Port">
         </mat-form-field>
       </div>
       <div fxFlex="none" class="troubleshooting-config-item">
         <mat-form-field floatLabel="never">
-          <input matInput [matDatepicker]="picker" placeholder="start date">
+          <input autocomplete="off" matInput [matDatepicker]="picker" placeholder="start date">
           <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
       </div>
       <div fxFlex="none" class="troubleshooting-config-item">
         <mat-form-field floatLabel="never">
-          <input matInput [matDatepicker]="picker2" placeholder="end date">
+          <input autocomplete="off" matInput [matDatepicker]="picker2" placeholder="end date">
           <mat-datepicker-toggle matSuffix [for]="picker2"></mat-datepicker-toggle>
           <mat-datepicker #picker2></mat-datepicker>
         </mat-form-field>

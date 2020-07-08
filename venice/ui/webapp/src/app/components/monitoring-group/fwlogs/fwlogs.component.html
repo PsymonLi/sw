@@ -159,14 +159,16 @@
     <div fxFlex="nogrow" fxLayout="column">
       <div fxFlex="10px"></div>
       <div fxFlex="30px" fxLayout="row" class="fwlogs-value">
-        <input matTooltip="Should be a valid v4 or v6 IP address. Ex: 10.1.1.2, ff02::5"
+        <input autocomplete="off"
+               matTooltip="Should be a valid v4 or v6 IP address. Ex: 10.1.1.2, ff02::5"
                fxFlex="nogrow" class="fwlogs-input" spellcheck="false" type="text"
                formControlName="source-ips" pInputText
                (keyup)="keyUpInput($event)"
                placeholder="10.1.1.1">
       </div>
       <div fxFlex="30px" fxLayout="row" class="fwlogs-value">
-        <input matTooltip="Should be a valid v4 or v6 IP address. Ex: 10.1.1.2, ff02::5"
+        <input autocomplete="off"
+               matTooltip="Should be a valid v4 or v6 IP address. Ex: 10.1.1.2, ff02::5"
                fxFlex="nogrow" class="fwlogs-input" spellcheck="false" type="text"
                formControlName="destination-ips" pInputText
                (keyup)="keyUpInput($event)"
@@ -176,16 +178,18 @@
     <div fxFlex="nogrow" fxLayout="column">
       <div fxFlex="10px"></div>
       <div fxFlex="30px" fxLayout="row" class="fwlogs-value">
-        <!-- <input matTooltip="Ports are comma separated. Ex 8000, 8001" fxFlex="nogrow" -->
-        <input matTooltip="Port should be number in range [0, 65536]. Ex 8000" fxFlex="nogrow"
+        <!-- <input autocomplete="off" matTooltip="Ports are comma separated. Ex 8000, 8001" fxFlex="nogrow" -->
+        <input autocomplete="off" matTooltip="Port should be number in range [0, 65536]. Ex 8000"
+               fxFlex="nogrow"
                class="fwlogs-inputport" spellcheck="false"
                formControlName="source-ports" type="text" pInputText
                (keyup)="keyUpInput($event)"
                placeholder="Port">
       </div>
       <div fxFlex="30px" fxLayout="row" class="fwlogs-value">
-        <!-- <input matTooltip="Ports are comma separated. Ex 8000, 8001" fxFlex="nogrow" -->
-        <input matTooltip="Port should be number in range [0, 65536]. Ex 8000" fxFlex="nogrow"
+        <!-- <input autocomplete="off" matTooltip="Ports are comma separated. Ex 8000, 8001" fxFlex="nogrow" -->
+        <input autocomplete="off" matTooltip="Port should be number in range [0, 65536]. Ex 8000"
+               fxFlex="nogrow"
                class="fwlogs-inputport" spellcheck="false"
                formControlName="destination-ports" type="text" pInputText
                (keyup)="keyUpInput($event)"
@@ -205,7 +209,8 @@
     <div fxFlex="nogrow" fxLayout="column">
       <div fxFlex="10px"></div>
       <div fxFlex="30px" fxLayout="row" class="fwlogs-value">
-        <input fxFlex="nogrow" class="fwlogs-input" spellcheck="false" type="text"
+        <input autocomplete="off" fxFlex="nogrow" class="fwlogs-input" spellcheck="false"
+               type="text"
                formControlName="protocols" pInputText
                (keyup)="keyUpInput($event)"
                placeholder="TCP">

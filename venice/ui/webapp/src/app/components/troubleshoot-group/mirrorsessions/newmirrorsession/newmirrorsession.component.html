@@ -47,7 +47,7 @@
           'newmirrorsession-general-box': true,
           'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
         }">
-      <input formControlName="name" appFloatLabel="Unique Name"
+      <input autocomplete="off" formControlName="name" appFloatLabel="Unique Name"
              appErrorTooltip spellcheck="false" type="text" pInputText>
     </span>
     <div fxFlex="89px"></div>
@@ -56,7 +56,7 @@
             'newmirrorsession-general-box': true,
             'requiredField': isFieldEmpty(newObject.$formGroup.get(['spec', 'span-id']))
           }">
-      <input formControlName="span-id" appFloatLabel="ERSPAN ID"
+      <input autocomplete="off" formControlName="span-id" appFloatLabel="ERSPAN ID"
              appErrorTooltip spellcheck="false" type="number" min="1" max="1023" pInputText>
     </span>
   </div>
@@ -66,7 +66,7 @@
   <div fxFlex="none" fxLayout="row">
     <span [formGroup]="newObject.$formGroup.get(['spec'])"
           class="newmirrorsession-general-box">
-      <input formControlName="packet-size" appFloatLabel="Packet Size"
+      <input autocomplete="off" formControlName="packet-size" appFloatLabel="Packet Size"
              appErrorTooltip spellcheck="false" type="number" min="0" pInputText>
     </span>
     <div fxFlex="79px"></div>
@@ -112,13 +112,13 @@
           'newmirrorsession-collector-box': true,
           'requiredField': isFieldEmpty(collector.get(['export-config', 'destination']))
         }">
-      <input fxFlex="nogrow" appFloatLabel="Destination" appErrorTooltip
+      <input autocomplete="off" fxFlex="nogrow" appFloatLabel="Destination" appErrorTooltip
              formControlName="destination" spellcheck="false" type="text" pInputText>
     </span>
     <div fxFlex="10px"></div>
     <span fxFlex="none" fxLayout="row" [formGroup]="collector.get(['export-config'])"
           class="newmirrorsession-collector-box">
-      <input fxFlex="nogrow" appFloatLabel="Gateway" appErrorTooltip
+      <input autocomplete="off" fxFlex="nogrow" appFloatLabel="Gateway" appErrorTooltip
              formControlName="gateway" spellcheck="false" type="text" pInputText>
     </span>
     <div fxFlex="10px"></div>

@@ -13,7 +13,8 @@
        class="labelselector-expanded">
     <div fxFlex="20px"></div>
     <div fxFlex='120px' class="labelselector-inputcontainer">
-      <input matInput spellcheck="false" placeholder="Object : Label" aria-label="Object : Label"
+      <input autocomplete="off" matInput spellcheck="false" placeholder="Object : Label"
+             aria-label="Object : Label"
              [matAutocomplete]="autoLabel" [errorStateMatcher]="labelObj.errorStateMatcher"
              [formControl]="labelObj.formControl">
       <mat-autocomplete #autoLabel="matAutocomplete" class="labelselector-autocomplete-holder">

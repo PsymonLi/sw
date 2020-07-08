@@ -16,7 +16,7 @@
       </ng-container>
     </li>
     <li class="ui-chips-input-token">
-      <input *ngIf="!useAutoComplete" #inputtext type="text" [attr.id]="inputId"
+      <input autocomplete="off" *ngIf="!useAutoComplete" #inputtext type="text" [attr.id]="inputId"
              [attr.placeholder]="(value && value.length ? null : placeholder)"
              [attr.tabindex]="tabindex" (keydown)="onKeydown($event)"
              [attr.maxlength]="maxChipLength" (mouseleave)="onInputMouseout()"
