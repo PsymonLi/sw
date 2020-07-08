@@ -769,6 +769,19 @@ pd_collector_create(pd_func_args_t *pd_func_args)
     }
     HAL_TRACE_DEBUG("{}: CPU VLAN {}", __FUNCTION__, cfg->vlan);
 
+    // Reset collector stats
+    if (likely(is_platform_type_hw())) {
+        sdk::types::mem_addr_t vaddr;
+        sdk::types::mem_addr_t stats_mem_addr =
+            asicpd_get_mem_addr(ASIC_HBM_REG_IPFIX_STATS);
+        SDK_ASSERT(stats_mem_addr != INVALID_MEM_ADDRESS);
+
+        stats_mem_addr += ((1 << IPFIX_STATS_SHIFT)*cfg->collector_id);
+        sdk::lib::pal_ret_t ret = sdk::lib::pal_physical_addr_to_virtual_addr(stats_mem_addr, &vaddr);
+        SDK_ASSERT(ret == sdk::lib::PAL_RET_OK);
+        bzero((void *)vaddr, sizeof(collector_stats_t));
+    }
+
     pd_collector_populate_export_info(cfg, c_args->ep, d);
 
 #if 0
