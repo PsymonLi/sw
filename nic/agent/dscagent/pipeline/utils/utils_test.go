@@ -5,6 +5,7 @@ package utils
 import (
 	"testing"
 
+	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 )
 
@@ -145,4 +146,84 @@ func TestClassifyInterfaceMirrorGenericAttributes(t *testing.T) {
 			t.Errorf("failed [%v,%v] -> [%v]", c.in1, c.in2, ClassifyInterfaceMirrorGenericAttributes(c.in1, c.in2))
 		}
 	}
+}
+
+func TestIsSafeProfileMove(t *testing.T) {
+	Profile1 := netproto.Profile{
+		TypeMeta: api.TypeMeta{Kind: "Profile"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "TransparentBasenet",
+		},
+		Spec: netproto.ProfileSpec{
+			FwdMode:    "TRANSPARENT",
+			PolicyMode: "BASENET",
+		},
+	}
+	Profile2 := netproto.Profile{
+		TypeMeta: api.TypeMeta{Kind: "Profile"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "TransparentFlowaware",
+		},
+		Spec: netproto.ProfileSpec{
+			FwdMode:    "TRANSPARENT",
+			PolicyMode: "FLOWAWARE",
+		},
+	}
+	Profile3 := netproto.Profile{
+		TypeMeta: api.TypeMeta{Kind: "Profile"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "InsertionEnforced",
+		},
+		Spec: netproto.ProfileSpec{
+			FwdMode:    "INSERTION",
+			PolicyMode: "ENFORCED",
+		},
+	}
+
+	safe := IsSafeProfileMove(Profile1, Profile2)
+	if !safe {
+		t.Fatalf("Expecting safe profile move from %s to %s", Profile1.GetKey(), Profile2.GetKey())
+	}
+
+	safe = IsSafeProfileMove(Profile2, Profile3)
+	if !safe {
+		t.Fatalf("Expecting safe profile move from %s to %s", Profile2.GetKey(), Profile3.GetKey())
+	}
+
+	safe = IsSafeProfileMove(Profile3, Profile3)
+	if !safe {
+		t.Fatalf("Expecting safe profile move from %s to %s", Profile3.GetKey(), Profile3.GetKey())
+	}
+
+	safe = IsSafeProfileMove(Profile2, Profile2)
+	if !safe {
+		t.Fatalf("Expecting safe profile move from %s to %s", Profile2.GetKey(), Profile2.GetKey())
+	}
+
+	safe = IsSafeProfileMove(Profile1, Profile1)
+	if !safe {
+		t.Fatalf("Expecting safe profile move from %s to %s", Profile1.GetKey(), Profile1.GetKey())
+	}
+
+	safe = IsSafeProfileMove(Profile3, Profile2)
+	if safe {
+		t.Fatalf("Expecting unsafe profile move from %s to %s", Profile3.GetKey(), Profile2.GetKey())
+	}
+
+	safe = IsSafeProfileMove(Profile2, Profile1)
+	if safe {
+		t.Fatalf("Expecting unsafe profile move from %s to %s", Profile2.GetKey(), Profile1.GetKey())
+	}
+
+	safe = IsSafeProfileMove(Profile3, Profile1)
+	if safe {
+		t.Fatalf("Expecting unsafe profile move from %s to %s", Profile3.GetKey(), Profile1.GetKey())
+	}
+	return
 }

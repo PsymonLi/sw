@@ -495,11 +495,12 @@ func ConvertVeniceToLocalInterfaceName(veniceInterfaceName, dscId, dscName strin
 // IsSafeProfileMove checks if the given profile move is safe (forward) or needs a config purge (backward)
 func IsSafeProfileMove(fromProfile netproto.Profile, toProfile netproto.Profile) bool {
 	var fromProfileLevel, toProfileLevel int
+
 	// Cover base cases
-	if strings.ToLower(fromProfile.Spec.FwdMode) == strings.ToLower(netproto.ProfileSpec_INSERTION.String()) {
-		return false
-	} else if strings.ToLower(toProfile.Spec.FwdMode) == strings.ToLower(netproto.ProfileSpec_INSERTION.String()) {
+	if strings.ToLower(toProfile.Spec.FwdMode) == strings.ToLower(netproto.ProfileSpec_INSERTION.String()) {
 		return true
+	} else if strings.ToLower(fromProfile.Spec.FwdMode) == strings.ToLower(netproto.ProfileSpec_INSERTION.String()) {
+		return false
 	} else {
 		switch strings.ToLower(toProfile.Spec.PolicyMode) {
 		case strings.ToLower(netproto.ProfileSpec_ENFORCED.String()):
@@ -521,7 +522,7 @@ func IsSafeProfileMove(fromProfile netproto.Profile, toProfile netproto.Profile)
 		}
 	}
 
-	return (fromProfileLevel < toProfileLevel)
+	return (fromProfileLevel <= toProfileLevel)
 }
 
 // MirrorDir gives the netagent mirror direction for netproto's mirror direction

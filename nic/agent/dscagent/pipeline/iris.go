@@ -1983,6 +1983,7 @@ func (i *IrisAPI) PurgeConfigs(deleteDB bool) error {
 func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	// SGPolicies, Apps, Endpoints,  Networks, MirrorSessions, FlowExportPolicies
 	log.Info("Starting Decomission workflow")
+	var oper types.Operation
 
 	// Populuate in memory state
 	v := netproto.Vrf{TypeMeta: api.TypeMeta{Kind: "Vrf"}}
@@ -2014,6 +2015,9 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	// Clean up the DB
 	if deleteDB {
 		i.InfraAPI.Purge()
+		oper = types.Purge
+	} else {
+		oper = types.Delete
 	}
 
 	log.Info("Stores purged. Ensured state consistency")
@@ -2122,7 +2126,7 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	}
 
 	for _, profile := range profiles {
-		if _, err := handleProfile(i, types.Purge, profile); err != nil {
+		if _, err := handleProfile(i, oper, profile); err != nil {
 			log.Errorf("Failed to purge the Profiles. Err: %v", err)
 		}
 	}
