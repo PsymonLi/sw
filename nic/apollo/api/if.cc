@@ -403,8 +403,8 @@ if_entry::port_get_(port_args_t *port_args) {
         PDS_TRACE_ERR("Failed to get port 0x%s info, err %u", key().str(), ret);
         return ret;
     }
-    phy_port = sdk::lib::catalog::ifindex_to_phy_port(ifindex());
-    if (phy_port != -1) {
+    if (port_args->port_type != port_type_t::PORT_TYPE_MGMT) {
+        phy_port = sdk::lib::catalog::ifindex_to_phy_port(ifindex());
         ret = sdk::platform::xcvr_get(phy_port - 1,
                                       &port_args->xcvr_event_info);
         if (ret != SDK_RET_OK) {
