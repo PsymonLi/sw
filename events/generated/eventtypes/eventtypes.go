@@ -426,18 +426,74 @@ func init() {
 		Desc:       "Usage of the filesystem partition is below threshold",
 		SuppressMM: false}
 
-	eventTypes[MEM_TEMP_ABOVE_THRESHOLD] = &EventTypeAttributes{
-		EType:      MEM_TEMP_ABOVE_THRESHOLD.String(),
+	eventTypes[DSC_MEM_TEMP_ABOVE_THRESHOLD] = &EventTypeAttributes{
+		EType:      DSC_MEM_TEMP_ABOVE_THRESHOLD.String(),
 		Severity:   "critical",
 		Category:   "system",
 		Desc:       "DSC memory temperature is above the critical threshold. System performance may be degraded",
 		SuppressMM: false}
 
-	eventTypes[MEM_TEMP_BELOW_THRESHOLD] = &EventTypeAttributes{
-		EType:      MEM_TEMP_BELOW_THRESHOLD.String(),
+	eventTypes[DSC_MEM_TEMP_BELOW_THRESHOLD] = &EventTypeAttributes{
+		EType:      DSC_MEM_TEMP_BELOW_THRESHOLD.String(),
 		Severity:   "info",
 		Category:   "system",
 		Desc:       "DSC memory temperature has fallen below the critical threshold",
+		SuppressMM: false}
+
+	eventTypes[DSC_SERVICE_STARTED] = &EventTypeAttributes{
+		EType:      DSC_SERVICE_STARTED.String(),
+		Severity:   "debug",
+		Category:   "system",
+		Desc:       "DSC service started",
+		SuppressMM: true}
+
+	eventTypes[DSC_SERVICE_STOPPED] = &EventTypeAttributes{
+		EType:      DSC_SERVICE_STOPPED.String(),
+		Severity:   "critical",
+		Category:   "system",
+		Desc:       "DSC related process has been stopped. System performance may be impacted. Further policy changes will not be applied to this DSC till it is reloaded. Recommendation is to collect a show-tech and contact Pensando Support.",
+		SuppressMM: true}
+
+	eventTypes[DSC_CATTRIP_INTERRUPT] = &EventTypeAttributes{
+		EType:      DSC_CATTRIP_INTERRUPT.String(),
+		Severity:   "critical",
+		Category:   "system",
+		Desc:       "DSC temperature has crossed a fatal threshold, and this DSC has been reloaded. Recommendation is to check environmental conditions.",
+		SuppressMM: false}
+
+	eventTypes[DSC_PANIC_EVENT] = &EventTypeAttributes{
+		EType:      DSC_PANIC_EVENT.String(),
+		Severity:   "critical",
+		Category:   "system",
+		Desc:       "DSC encountered a panic during the last boot. Recommendation is to collect show tech and contact Pensando support.",
+		SuppressMM: false}
+
+	eventTypes[DSC_POST_DIAG_FAILURE_EVENT] = &EventTypeAttributes{
+		EType:      DSC_POST_DIAG_FAILURE_EVENT.String(),
+		Severity:   "warn",
+		Category:   "system",
+		Desc:       "DSC post diag test failed",
+		SuppressMM: false}
+
+	eventTypes[DSC_INFO_PCIEHEALTH_EVENT] = &EventTypeAttributes{
+		EType:      DSC_INFO_PCIEHEALTH_EVENT.String(),
+		Severity:   "info",
+		Category:   "system",
+		Desc:       "DSC has detected a pcie link health event",
+		SuppressMM: false}
+
+	eventTypes[DSC_WARN_PCIEHEALTH_EVENT] = &EventTypeAttributes{
+		EType:      DSC_WARN_PCIEHEALTH_EVENT.String(),
+		Severity:   "warn",
+		Category:   "system",
+		Desc:       "DSC has detected a pcie link health warning",
+		SuppressMM: false}
+
+	eventTypes[DSC_ERR_PCIEHEALTH_EVENT] = &EventTypeAttributes{
+		EType:      DSC_ERR_PCIEHEALTH_EVENT.String(),
+		Severity:   "critical",
+		Category:   "system",
+		Desc:       "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support.",
 		SuppressMM: false}
 
 	eventTypes[DISK_THRESHOLD_EXCEEDED] = &EventTypeAttributes{

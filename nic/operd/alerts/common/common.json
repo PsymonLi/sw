@@ -1,15 +1,15 @@
 [
     {
-        "name": "SERVICE_STARTED",
+        "name": "DSC_SERVICE_STARTED",
         "category": "System",
         "severity": "DEBUG",
-        "description": "Service started"
+        "description": "DSC service started"
     },
     {
-        "name": "NAPLES_SERVICE_STOPPED",
+        "name": "DSC_SERVICE_STOPPED",
         "category": "System",
         "severity": "CRITICAL",
-        "description": "Naples service stopped"
+        "description": "DSC service stopped"
     },
     {
         "name": "SYSTEM_COLDBOOT",
@@ -30,49 +30,49 @@
         "description": "Port link is down"
     },
     {
-        "name": "MEM_TEMP_ABOVE_THRESHOLD",
+        "name": "DSC_MEM_TEMP_ABOVE_THRESHOLD",
         "category": "System",
         "severity": "CRITICAL",
         "description": "DSC memory temperature is above the critical threshold. System performance may be degraded"
     },
     {
-        "name": "MEM_TEMP_BELOW_THRESHOLD",
+        "name": "DSC_MEM_TEMP_BELOW_THRESHOLD",
         "category": "System",
         "severity": "INFO",
         "description": "DSC memory temperature has fallen below the critical threshold"
     },
     {
-        "name": "NAPLES_CATTRIP_INTERRUPT",
+        "name": "DSC_CATTRIP_INTERRUPT",
         "category": "System",
         "severity": "CRITICAL",
         "description": "DSC temperature crossed the fatal threshold and cattrip is triggered, resetting the system"
     },
     {
-        "name": "NAPLES_PANIC_EVENT",
+        "name": "DSC_PANIC_EVENT",
         "category": "System",
         "severity": "CRITICAL",
         "description": "DSC panic occurred on previous boot"
     },
     {
-        "name": "NAPLES_POST_DIAG_FAILURE_EVENT",
+        "name": "DSC_POST_DIAG_FAILURE_EVENT",
         "category": "System",
         "severity": "WARN",
         "description": "DSC post diag test failed"
     },
     {
-        "name": "NAPLES_INFO_PCIEHEALTH_EVENT",
+        "name": "DSC_INFO_PCIEHEALTH_EVENT",
         "category": "System",
         "severity": "INFO",
         "description": "DSC has detected a pcie link health event"
     },
     {
-        "name": "NAPLES_WARN_PCIEHEALTH_EVENT",
+        "name": "DSC_WARN_PCIEHEALTH_EVENT",
         "category": "System",
         "severity": "WARN",
         "description": "DSC has detected a pcie link health warning"
     },
     {
-        "name": "NAPLES_ERR_PCIEHEALTH_EVENT",
+        "name": "DSC_ERR_PCIEHEALTH_EVENT",
         "category": "System",
         "severity": "CRITICAL",
         "description": "DSC has detected a pcie link health error"

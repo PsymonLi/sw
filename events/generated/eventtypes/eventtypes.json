@@ -386,6 +386,16 @@
  ],
  "system": [
   {
+   "Name": "DSC_CATTRIP_INTERRUPT",
+   "Severity": "critical",
+   "Desc": "DSC temperature has crossed a fatal threshold, and this DSC has been reloaded. Recommendation is to check environmental conditions."
+  },
+  {
+   "Name": "DSC_ERR_PCIEHEALTH_EVENT",
+   "Severity": "critical",
+   "Desc": "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support."
+  },
+  {
    "Name": "DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD",
    "Severity": "critical",
    "Desc": "Usage of the filesystem partition is above threshold"
@@ -394,6 +404,46 @@
    "Name": "DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD",
    "Severity": "info",
    "Desc": "Usage of the filesystem partition is below threshold"
+  },
+  {
+   "Name": "DSC_INFO_PCIEHEALTH_EVENT",
+   "Severity": "info",
+   "Desc": "DSC has detected a pcie link health event"
+  },
+  {
+   "Name": "DSC_MEM_TEMP_ABOVE_THRESHOLD",
+   "Severity": "critical",
+   "Desc": "DSC memory temperature is above the critical threshold. System performance may be degraded"
+  },
+  {
+   "Name": "DSC_MEM_TEMP_BELOW_THRESHOLD",
+   "Severity": "info",
+   "Desc": "DSC memory temperature has fallen below the critical threshold"
+  },
+  {
+   "Name": "DSC_PANIC_EVENT",
+   "Severity": "critical",
+   "Desc": "DSC encountered a panic during the last boot. Recommendation is to collect show tech and contact Pensando support."
+  },
+  {
+   "Name": "DSC_POST_DIAG_FAILURE_EVENT",
+   "Severity": "warn",
+   "Desc": "DSC post diag test failed"
+  },
+  {
+   "Name": "DSC_SERVICE_STARTED",
+   "Severity": "debug",
+   "Desc": "DSC service started"
+  },
+  {
+   "Name": "DSC_SERVICE_STOPPED",
+   "Severity": "critical",
+   "Desc": "DSC related process has been stopped. System performance may be impacted. Further policy changes will not be applied to this DSC till it is reloaded. Recommendation is to collect a show-tech and contact Pensando Support."
+  },
+  {
+   "Name": "DSC_WARN_PCIEHEALTH_EVENT",
+   "Severity": "warn",
+   "Desc": "DSC has detected a pcie link health warning"
   },
   {
    "Name": "FLOWLOGS_DROPPED",
@@ -409,16 +459,6 @@
    "Name": "FLOWLOGS_REPORTING_ERROR",
    "Severity": "warn",
    "Desc": "Flowlogs could not be reported"
-  },
-  {
-   "Name": "MEM_TEMP_ABOVE_THRESHOLD",
-   "Severity": "critical",
-   "Desc": "DSC memory temperature is above the critical threshold. System performance may be degraded"
-  },
-  {
-   "Name": "MEM_TEMP_BELOW_THRESHOLD",
-   "Severity": "info",
-   "Desc": "DSC memory temperature has fallen below the critical threshold"
   },
   {
    "Name": "NAPLES_CATTRIP_INTERRUPT",

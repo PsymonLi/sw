@@ -298,17 +298,52 @@ enum EventTypes {
                                                 (severity) = INFO,
                                                 (desc) = "Usage of the filesystem partition is below threshold"];
 
-    MEM_TEMP_ABOVE_THRESHOLD        = 519 [(category)    = System,
+    DSC_MEM_TEMP_ABOVE_THRESHOLD    = 519 [(category)    = System,
                                            (severity)    = CRITICAL,
                                            (desc)        = "DSC memory temperature is above the critical threshold. System performance may be degraded"];
-    MEM_TEMP_BELOW_THRESHOLD        = 520 [(category)    = System,
+
+    DSC_MEM_TEMP_BELOW_THRESHOLD    = 520 [(category)    = System,
                                            (severity)    = INFO,
                                            (desc)        = "DSC memory temperature has fallen below the critical threshold"];
 
-     // ------------------------------ Resource events -------------------------- //
-     DISK_THRESHOLD_EXCEEDED         = 601 [(category) = Resource,
-                                            (severity) = CRITICAL,
-                                            (desc)     = "PSM has detected that disk occupancy is above 75% on one or more partitions. Recommendation is to free up disk space on the PSM node(s) by removing firmware images, tech-support bundles and config snapshots. If the event occurs repeatedly, collect show-tech and contact Pensando Support."];
+    DSC_SERVICE_STARTED             = 521 [(category)    = System,
+                                           (severity)    = DEBUG,
+                                           (desc)        = "DSC service started",
+                                           (suppress_mm) = true];
+
+    DSC_SERVICE_STOPPED             = 522 [(category)    = System,
+                                           (severity)    = CRITICAL,
+                                           (desc)        = "DSC related process has been stopped. System performance may be impacted. Further policy changes will not be applied to this DSC till it is reloaded. Recommendation is to collect a show-tech and contact Pensando Support.",
+                                           (suppress_mm) = true];
+
+    DSC_CATTRIP_INTERRUPT           = 523 [(category)    = System,
+                                           (severity)    = CRITICAL,
+                                           (desc)        = "DSC temperature has crossed a fatal threshold, and this DSC has been reloaded. Recommendation is to check environmental conditions."];
+
+    DSC_PANIC_EVENT                 = 524 [(category)    = System,
+                                           (severity)    = CRITICAL,
+                                           (desc)        = "DSC encountered a panic during the last boot. Recommendation is to collect show tech and contact Pensando support."];
+
+    DSC_POST_DIAG_FAILURE_EVENT     = 525 [(category)    = System,
+                                           (severity)    = WARN,
+                                           (desc)        = "DSC post diag test failed"];
+
+    DSC_INFO_PCIEHEALTH_EVENT       = 526 [(category)    = System,
+                                           (severity)    = INFO,
+                                           (desc)        = "DSC has detected a pcie link health event"];
+
+    DSC_WARN_PCIEHEALTH_EVENT       = 527 [(category)    = System,
+                                           (severity)    = WARN,
+                                           (desc)        = "DSC has detected a pcie link health warning"];
+
+    DSC_ERR_PCIEHEALTH_EVENT        = 528 [(category)    = System,
+                                           (severity)    = CRITICAL,
+                                           (desc)        = "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support."];
+
+    // ------------------------------ Resource events -------------------------- //
+    DISK_THRESHOLD_EXCEEDED         = 601 [(category) = Resource,
+                                           (severity) = CRITICAL,
+                                           (desc)     = "PSM has detected that disk occupancy is above 75% on one or more partitions. Recommendation is to free up disk space on the PSM node(s) by removing firmware images, tech-support bundles and config snapshots. If the event occurs repeatedly, collect show-tech and contact Pensando Support."];
 
     // ------------------------------ Rollout events -------------------------- //
     ROLLOUT_STARTED                 = 701 [(category) = Rollout,

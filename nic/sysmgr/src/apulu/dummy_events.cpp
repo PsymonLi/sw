@@ -38,11 +38,11 @@ void
 DummyLogger::ServiceStartedEvent(std::string svc) {
     printf("ooops\n");
     fflush(stdout);
-    g_alerts->alert(operd::alerts::SERVICE_STARTED, "Service: %s", svc.c_str());
+    g_alerts->alert(operd::alerts::DSC_SERVICE_STARTED, "Service: %s", svc.c_str());
 }
 
 void
 DummyLogger::ServiceStoppedEvent(std::string svc) {
-    g_alerts->alert(operd::alerts::NAPLES_SERVICE_STOPPED, "Service: %s",
+    g_alerts->alert(operd::alerts::DSC_SERVICE_STOPPED, "Service: %s",
                     svc.c_str());
 }

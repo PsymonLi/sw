@@ -109,12 +109,12 @@ temperature_event_cb (system_temperature_t *temperature,
     switch (hbm_event) {
     case sysmon_hbm_threshold_event_t::SYSMON_HBM_TEMP_ABOVE_THRESHOLD:
         operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::MEM_TEMP_ABOVE_THRESHOLD,
+            operd::alerts::DSC_MEM_TEMP_ABOVE_THRESHOLD,
             "Memory temperature above threshold");
         break;
     case sysmon_hbm_threshold_event_t::SYSMON_HBM_TEMP_BELOW_THRESHOLD:
         operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::MEM_TEMP_BELOW_THRESHOLD,
+            operd::alerts::DSC_MEM_TEMP_BELOW_THRESHOLD,
             "Memory temperature below threshold");
         break;
     default:
@@ -158,7 +158,7 @@ void
 cattrip_event_cb (void)
 {
     operd::alerts::alert_recorder::get()->alert(
-        operd::alerts::NAPLES_CATTRIP_INTERRUPT, "DSC temperature crossed the "
+        operd::alerts::DSC_CATTRIP_INTERRUPT, "DSC temperature crossed the "
         "fatal threshold and will reset");
 }
 
@@ -173,7 +173,7 @@ memory_event_cb (system_memory_t *system_memory)
 void
 panic_event_cb (void)
 {
-    operd::alerts::alert_recorder::get()->alert(operd::alerts::NAPLES_PANIC_EVENT,
+    operd::alerts::alert_recorder::get()->alert(operd::alerts::DSC_PANIC_EVENT,
                                                 "Panic occurred on DSC "
                                                 "on the previous boot");
 }
@@ -182,7 +182,7 @@ void
 postdiag_event_cb (void)
 {
     operd::alerts::alert_recorder::get()->alert(
-        operd::alerts::NAPLES_POST_DIAG_FAILURE_EVENT,
+        operd::alerts::DSC_POST_DIAG_FAILURE_EVENT,
         "DSC post diag failed in this boot");
 }
 
@@ -191,31 +191,31 @@ pciehealth_event_cb (sysmon_pciehealth_severity_t sev, const char *reason)
 {
     if (sev == SYSMON_PCIEHEALTH_INFO) {
         operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::NAPLES_INFO_PCIEHEALTH_EVENT, reason);
+            operd::alerts::DSC_INFO_PCIEHEALTH_EVENT, reason);
     } else if (sev == SYSMON_PCIEHEALTH_WARN){
         operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::NAPLES_WARN_PCIEHEALTH_EVENT, reason);
+            operd::alerts::DSC_WARN_PCIEHEALTH_EVENT, reason);
     } else if (sev == SYSMON_PCIEHEALTH_ERROR){
         operd::alerts::alert_recorder::get()->alert(
-            operd::alerts::NAPLES_ERR_PCIEHEALTH_EVENT, reason);
+            operd::alerts::DSC_ERR_PCIEHEALTH_EVENT, reason);
     }
 }
 
 void
-memory_threshold_event_cb (sysmon_filesystem_threshold_event_t event,
-                           const char *path, uint32_t threshold_percent)
+filesystem_threshold_event_cb (sysmon_filesystem_threshold_event_t event,
+                               const char *path, uint32_t threshold_percent)
 {
     char event_log[512];
 
     if (event == SYSMON_FILESYSTEM_USAGE_ABOVE_THRESHOLD) {
         snprintf(event_log, sizeof(event_log),
-                 "%s is above memory usage threshold of %u percent", path,
+                 "%s is above filesystem usage threshold of %u percent", path,
                  threshold_percent);
         operd::alerts::alert_recorder::get()->alert(
             operd::alerts::DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD, event_log);
     } else if (event == SYSMON_FILESYSTEM_USAGE_BELOW_THRESHOLD) {
         snprintf(event_log, sizeof(event_log),
-                 "%s is below memory usage threshold of %u percent", path,
+                 "%s is below filesystem usage threshold of %u percent", path,
                  threshold_percent);
         operd::alerts::alert_recorder::get()->alert(
             operd::alerts::DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD, event_log);

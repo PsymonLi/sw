@@ -254,7 +254,7 @@ sysmon_init (void)
     sysmon_cfg.panic_event_cb = panic_event_cb;
     sysmon_cfg.postdiag_event_cb = postdiag_event_cb;
     sysmon_cfg.pciehealth_event_cb = pciehealth_event_cb;
-    sysmon_cfg.memory_threshold_event_cb = memory_threshold_event_cb;
+    sysmon_cfg.memory_threshold_event_cb = filesystem_threshold_event_cb;
 
     sysmon_cfg.num_memory_threshold_cfg = SDK_ARRAY_SIZE(mem_threshold_cfg);
     sysmon_cfg.memory_threshold_cfg = mem_threshold_cfg;
