@@ -104,7 +104,7 @@ export class Utility {
   public static HERO_CARD_THIRDVALUE_LENGTH: number = 15;
 
   public static UNSUPPORTED_CATEGORIES_ENTERPRISE = ['Diagnostics'];
-  public static UNSUPPORTED_CATEGORIES_CLOUD = ['Orchestration'];
+  public static UNSUPPORTED_CATEGORIES_CLOUD = ['Orchestration', 'Security', 'Workload'];
   // List the unsupported kinds for PSM-enterprise and PSM-cloud
   public static UNSUPPORTED_KINDS_ENTERPRISE = ['License', 'Module', 'StatsAlertPolicy', 'StatsPolicy', 'Service', 'LbPolicy', 'VirtualRouter', 'IPAMPolicy', 'RoutingConfig', 'RouteTable', 'Bucket', 'Object', 'SecurityGroup', 'Certificate', 'TrafficEncryptionPolicy'];
   public static UNSUPPORTED_KINDS_CLOUD = ['LbPolicy', 'Service', 'IPAMPolicy', 'TrafficEncryptionPolicy', 'StatsPolicy', 'Bucket', 'Object', 'SecurityGroup', 'Certificate',  'Orchestration', 'FirewallProfile', 'DSCProfile', 'Network', 'NetworkSecurityPolicy', 'Workload', 'Network', 'StatsAlertPolicy', 'MirrorSession', 'FwlogPolicy', 'FlowExportPolicy', 'App'];

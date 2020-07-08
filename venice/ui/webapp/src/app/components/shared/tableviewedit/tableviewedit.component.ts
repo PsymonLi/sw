@@ -617,7 +617,7 @@ export abstract class TablevieweditAbstract<I, T extends I> extends TableviewAbs
    * Uses ForkJoin
    */
   onDeleteSelectedRowsForkJoin($event) {
-    const selectedDataObjects = this.getSelectedDataObjects();
+    const selectedDataObjects = this.getObjetsForDeleteSelectedRowsForkJoin();
     this.controllerService.invokeConfirm({
       header: 'Delete selected ' + selectedDataObjects.length + ' records?',
       message: 'This action cannot be reversed',
@@ -628,10 +628,26 @@ export abstract class TablevieweditAbstract<I, T extends I> extends TableviewAbs
         }
         const allSuccessSummary = 'Deleted';
         const partialSuccessSummary = 'Partially deleted';
-        const msg = 'Deleted ' + selectedDataObjects.length + ' selected records.';
+        const msg = this.buildMessageForDeleteSelectedRowsForkJoin(selectedDataObjects);
         this.deleteMultipleRecords(selectedDataObjects, allSuccessSummary, partialSuccessSummary, msg); // with forkjoin
       }
     });
+  }
+
+  /**
+   * Override-able API.
+   * Let sub-class override this api.  See snapshot.component.ts
+   */
+  getObjetsForDeleteSelectedRowsForkJoin(): T[] {
+    return this.getSelectedDataObjects();
+  }
+
+  /**
+   * Override-able API.
+   * Let sub-class override this api.  See snapshot.component.ts
+   */
+  buildMessageForDeleteSelectedRowsForkJoin(selectedDataObjects: any[]): string {
+    return `Deleted ${selectedDataObjects.length} selected ${selectedDataObjects.length === 1 ? 'record' : 'records'}.`;
   }
 }
 

@@ -67,7 +67,7 @@
   <div fxFlex="none" fxLayoutAlign="start center" *roleGuard="'objstorebucket_delete'">
     <!-- TABLE FUNCTION ICONS HERE -->
     <mat-icon class="global-multi-records-delete-icon"
-              *ngIf="hasSelectedRows()"
+              *ngIf="showMultiDeleteButton()"
               [matTooltip]="'Delete selected snapshots'"
               (click)="onDeleteSelectedRowsForkJoin($event)">delete</mat-icon>
   </div>

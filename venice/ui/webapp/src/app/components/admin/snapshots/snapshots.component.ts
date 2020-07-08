@@ -93,6 +93,8 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
   });
   savingConfig: boolean = false;
 
+  deletedSnapshots: string[] = [];
+
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected cdr: ChangeDetectorRef,
@@ -229,6 +231,7 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
     } else {
       this.dataObjects = []; // it possible that server has no snapshot images.
     }
+    this.dataObjects = [...this.dataObjects];
   }
 
   /**
@@ -322,7 +325,7 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
 
   }
   generateDeleteSuccessMsg(object: ObjstoreObject): string {
-    return 'Deleted cluster configuration snapshot ' + object.meta.name;
+    return 'Deleted cluster configuration snapshot ' + object.meta.name ;
 
   }
 
@@ -331,7 +334,7 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
    * @param rowData
    */
   showDeleteIcon(rowData: ObjstoreObject): boolean {
-    return true;
+    return !this.deletedSnapshots.includes(rowData.meta.name);
   }
 
   displayColumn(data, col): any {
@@ -476,12 +479,53 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
     return filenames;
   }
 
+  /**
+   * This API serves in html template
+   * VS-1788 - previously deleted rows may still in table. Don't show the delete icon if the selected row is in deletedSnapshots
+   */
+  showMultiDeleteButton(): boolean {
+    if (!this.hasSelectedRows()) {
+      return false;
+    } else {
+      const found = this.getSelectedDataObjects().find( snapshot => this.deletedSnapshots.includes(snapshot.meta.name));
+      return (!found);
+    }
+  }
+
+  /**
+   * Override super's API to filter selected rows
+   */
+  getObjetsForDeleteSelectedRowsForkJoin(): any[] {
+    let mySelectedRows = this.getSelectedDataObjects();
+    mySelectedRows = mySelectedRows.filter( snapshot => !this.deletedSnapshots.includes(snapshot.meta.name));
+    return mySelectedRows;
+  }
+
+  /**
+   * Override super's api to advise user to wait for completion of table refresh.
+   * @param selectedDataObjects
+   */
+  buildMessageForDeleteSelectedRowsForkJoin(selectedDataObjects: any[]): string {
+    return `Deleted ${selectedDataObjects.length} selected ${selectedDataObjects.length === 1 ? 'record' : 'records'}. Please wait for table refresh and click "New Data" if it appears.`;
+  }
+
    /**
   * Overrides callback function
+  * Due to VS-1788, after a delete operation, table may still show deleted rows
+  * We stored deleted reccords information in deletedSnapshots
+  * Refesh table, clear selected objects and call this.refresh()
+  *
+  * It is a bit hacky.  Wait until we convert snapshot page to use pagination
+  *
   */
   onInvokeAPIonMultipleRecordsSuccess () {
+    this.tableLoading = true;  // block access
+    const selectedSnapshotsNames = this.getSelectedDataObjects().map((selectedSnapshot) => selectedSnapshot.meta.name);
+    this.deletedSnapshots = [...selectedSnapshotsNames];
+    this.dataObjects = this.dataObjects.filter( snapshot => !this.deletedSnapshots.includes(snapshot.meta.name));
+    this.dataObjects = Utility.getLodash().cloneDeep(this.dataObjects);
     this.clearSelectedDataObjects();  // we have to clear table selected objects after deleting records
-    this.refresh();
+    setTimeout(() => {this.refresh(); } , 3000); // wait for table re-render
   }
 
   onInvokeAPIonMultipleRecordsFailure() {}
