@@ -111,7 +111,6 @@ func (m *ServiceHandlers) setupLBIf() {
 		Request: []*pdstypes.InterfaceSpec{
 			{
 				Id:          lbuid,
-				Type:        pdstypes.IfType_IF_TYPE_LOOPBACK,
 				AdminStatus: pdstypes.IfStatus_IF_STATUS_UP,
 				Ifinfo: &pdstypes.InterfaceSpec_LoopbackIfSpec{
 					LoopbackIfSpec: &pdstypes.LoopbackIfSpec{},

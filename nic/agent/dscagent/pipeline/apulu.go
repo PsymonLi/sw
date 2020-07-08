@@ -1791,7 +1791,7 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.InterfaceSpec, status *halap
 		return err
 	}
 	// form the interface name
-	ifName, err := utils.GetIfName(utils.ConvertMAC(uid.String()[24:]), status.GetIfIndex(), spec.GetType().String())
+	ifName, err := utils.GetIfName(utils.ConvertMAC(uid.String()[24:]), status.GetIfIndex(), "")
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrBadRequest,
 			"Failed to form interface name, uuid %v, ifindex %x, err %v",
@@ -1799,8 +1799,8 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.InterfaceSpec, status *halap
 		return err
 	}
 	// skip any non-host ifs
-	if spec.GetType() != halapi.IfType_IF_TYPE_HOST {
-		log.Infof("Skipping IF_CREATE event for if %v, type %v", uid.String(), spec.GetType().String())
+	if spec.GetHostIfSpec() == nil {
+		log.Infof("Skipping IF_CREATE event for if %v", uid.String())
 		return nil
 	}
 	log.Infof("Got host If update Spec:[%+v] Status [%+v]", spec, status)
@@ -1943,7 +1943,7 @@ func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.P
 		log.Error("Could not get Interface for port %v", ifName)
 	} else {
 		for _, u := range intfs.Response {
-			if u.Spec.GetType().String() == "IF_TYPE_UPLINK" {
+			if u.Spec.GetUplinkSpec() != nil {
 				pid, err := uuid.FromBytes(u.Spec.GetUplinkSpec().GetPortId())
 				if err != nil {
 					log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse intf's port uuid %v, err %v", u.Spec.GetUplinkSpec().GetPortId(), err))
@@ -2158,7 +2158,7 @@ func (a *ApuluAPI) initEventStream() {
 			}
 
 			// move this check to top
-			if i.Spec.GetType().String() != "IF_TYPE_UPLINK" {
+			if i.Spec.GetUplinkSpec() == nil {
 				continue
 			}
 			lldpNbrChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisStatus()
@@ -2192,7 +2192,7 @@ func (a *ApuluAPI) initEventStream() {
 
 				// loop through the response and check for LLDP neighbor update
 				for _, i := range intf.Response {
-					if i.Spec.GetType().String() != "IF_TYPE_UPLINK" {
+					if i.Spec.GetUplinkSpec() == nil {
 						continue
 					}
 					uid, err := uuid.FromBytes(i.Spec.GetId())
@@ -2296,7 +2296,7 @@ func (a *ApuluAPI) updateUplinkIntfHostname(intf *netproto.Interface, obj types.
 	}
 
 	for _, i := range u.Response {
-		if i.Spec.GetType().String() != "IF_TYPE_UPLINK" {
+		if i.Spec.GetUplinkSpec() == nil {
 			continue
 		}
 		pid, err := uuid.FromBytes(i.Spec.GetUplinkSpec().GetPortId())
@@ -2320,7 +2320,6 @@ func (a *ApuluAPI) updateUplinkIntfHostname(intf *netproto.Interface, obj types.
 			Request: []*halapi.InterfaceSpec{
 				{
 					Id:          i.Spec.Id,
-					Type:        i.Spec.Type,
 					AdminStatus: i.Spec.AdminStatus,
 					Ifinfo: &halapi.InterfaceSpec_UplinkSpec{
 						UplinkSpec: &halapi.UplinkSpec{

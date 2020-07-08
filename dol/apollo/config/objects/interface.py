@@ -337,7 +337,6 @@ class ControlInterfaceObject(InterfaceObject):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
         spec.AdminStatus = interface_pb2.IF_STATUS_UP
-        spec.Type = interface_pb2.IF_TYPE_CONTROL
         utils.GetRpcIfIPPrefix(self.IfIpPrefix, spec.ControlIfSpec.Prefix)
         spec.ControlIfSpec.MACAddress = self.MacAddr.getnum()
         if self.Gateway:
@@ -347,8 +346,6 @@ class ControlInterfaceObject(InterfaceObject):
 
     def ValidateSpec(self, spec):
         if not super().ValidateSpec(spec):
-            return False
-        if spec.Type != interface_pb2.IF_TYPE_CONTROL:
             return False
         return True
 
@@ -425,7 +422,6 @@ class L3InterfaceObject(InterfaceObject):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
         spec.AdminStatus = interface_pb2.IF_STATUS_UP
-        spec.Type = interface_pb2.IF_TYPE_L3
         spec.L3IfSpec.PortId = self.Port.GetUuid()
         spec.L3IfSpec.MACAddress = self.MacAddr.getnum()
         spec.L3IfSpec.VpcId = utils.PdsUuid.GetUUIDfromId(self.VPCId, api.ObjectTypes.VPC)
@@ -435,8 +431,6 @@ class L3InterfaceObject(InterfaceObject):
 
     def ValidateSpec(self, spec):
         if not super().ValidateSpec(spec):
-            return False
-        if spec.Type != interface_pb2.IF_TYPE_L3:
             return False
         # Skip comparing port ID, since netagent uses a diff UUID
         if not self.IsOriginImplicitlyCreated() and spec.L3IfSpec.PortId != self.Port.GetUuid():
@@ -472,7 +466,6 @@ class LoopbackInterfaceObject(InterfaceObject):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
         spec.AdminStatus = interface_pb2.IF_STATUS_UP
-        spec.Type = interface_pb2.IF_TYPE_LOOPBACK
         utils.GetRpcIPPrefix(self.IpPrefix, spec.LoopbackIfSpec.Prefix)
         return
 

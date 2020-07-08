@@ -397,7 +397,6 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collecto
 			Request: []*halapi.InterfaceSpec{
 				{
 					Id:          uid.Bytes(),
-					Type:        halapi.IfType_IF_TYPE_L3,
 					AdminStatus: ifStatus,
 					Ifinfo: &halapi.InterfaceSpec_L3IfSpec{
 						L3IfSpec: &halapi.L3IfSpec{
@@ -425,7 +424,6 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collecto
 			Request: []*halapi.InterfaceSpec{
 				{
 					Id:          uid.Bytes(),
-					Type:        halapi.IfType_IF_TYPE_HOST,
 					AdminStatus: ifStatus,
 					Ifinfo: &halapi.InterfaceSpec_HostIfSpec{
 						HostIfSpec: &halapi.HostIfSpec{},
@@ -441,7 +439,6 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collecto
 			Request: []*halapi.InterfaceSpec{
 				{
 					Id:          uid.Bytes(),
-					Type:        halapi.IfType_IF_TYPE_LOOPBACK,
 					AdminStatus: ifStatus,
 					Ifinfo: &halapi.InterfaceSpec_LoopbackIfSpec{
 						LoopbackIfSpec: &halapi.LoopbackIfSpec{

@@ -97,7 +97,6 @@ pds_if_api_spec_to_proto (pds::InterfaceSpec *proto_spec,
                           const pds_if_spec_t *api_spec)
 {
     proto_spec->set_id(api_spec->key.id, PDS_MAX_KEY_LEN);
-    proto_spec->set_type(if_type_to_proto_if_type(api_spec->type));
     proto_spec->set_adminstatus(
                 pds_admin_state_to_proto_admin_state(api_spec->admin_state));
 
@@ -105,7 +104,8 @@ pds_if_api_spec_to_proto (pds::InterfaceSpec *proto_spec,
     case IF_TYPE_UPLINK:
         {
             auto proto_uplink = proto_spec->mutable_uplinkspec();
-            proto_uplink->set_portid(api_spec->uplink_info.port.id, PDS_MAX_KEY_LEN);
+            proto_uplink->set_portid(api_spec->uplink_info.port.id,
+                                     PDS_MAX_KEY_LEN);
         }
         break;
     case IF_TYPE_L3:
@@ -130,7 +130,7 @@ pds_if_api_spec_to_proto (pds::InterfaceSpec *proto_spec,
             auto af = api_spec->loopback_if_info.ip_prefix.addr.af;
             if (af == IP_AF_IPV4 || af == IP_AF_IPV6) {
                 ippfx_api_spec_to_proto_spec(proto_loopback->mutable_prefix(),
-                                             &api_spec->loopback_if_info.ip_prefix);
+                    &api_spec->loopback_if_info.ip_prefix);
             }
         }
         break;
@@ -140,16 +140,16 @@ pds_if_api_spec_to_proto (pds::InterfaceSpec *proto_spec,
             auto af = api_spec->control_if_info.ip_prefix.addr.af;
             if (af == IP_AF_IPV4 || af == IP_AF_IPV6) {
                 ippfx_api_spec_to_proto_spec(proto_control_if->mutable_prefix(),
-                                             &api_spec->control_if_info.ip_prefix);
+                    &api_spec->control_if_info.ip_prefix);
             }
             proto_control_if->set_macaddress(
                 MAC_TO_UINT64(api_spec->control_if_info.mac_addr));
             if (api_spec->control_if_info.gateway.af == IP_AF_IPV4) {
                 ipv4addr_api_spec_to_proto_spec(proto_control_if->mutable_gateway(),
-                                                &api_spec->control_if_info.gateway.addr.v4_addr);
+                    &api_spec->control_if_info.gateway.addr.v4_addr);
             } else {
                 ipv6addr_api_spec_to_proto_spec(proto_control_if->mutable_gateway(),
-                                                &api_spec->control_if_info.gateway.addr.v6_addr);
+                    &api_spec->control_if_info.gateway.addr.v6_addr);
             }
         }
         break;
@@ -410,8 +410,8 @@ pds_if_proto_to_api_spec (pds_if_spec_t *api_spec,
     pds_obj_key_proto_to_api_spec(&api_spec->key, proto_spec.id());
     api_spec->admin_state =
         proto_admin_state_to_pds_admin_state(proto_spec.adminstatus());
-    switch (proto_spec.type()) {
-    case pds::IF_TYPE_L3:
+    switch (proto_spec.ifinfo_case()) {
+    case pds::InterfaceSpec::kL3IfSpec:
         if (proto_spec.txmirrorsessionid_size()) {
             PDS_TRACE_ERR("Tx Mirroring not supported on L3 interface {}",
                           api_spec->key.str());
@@ -435,7 +435,7 @@ pds_if_proto_to_api_spec (pds_if_spec_t *api_spec,
                                      proto_spec.l3ifspec().prefix());
         break;
 
-    case pds::IF_TYPE_LOOPBACK:
+    case pds::InterfaceSpec::kLoopbackIfSpec:
         if (proto_spec.txmirrorsessionid_size()) {
             PDS_TRACE_ERR("Tx Mirroring not supported on loopback interface {}",
                           api_spec->key.str());
@@ -451,19 +451,20 @@ pds_if_proto_to_api_spec (pds_if_spec_t *api_spec,
                                      proto_spec.loopbackifspec().prefix());
         break;
 
-    case pds::IF_TYPE_UPLINK:
+    case pds::InterfaceSpec::kUplinkSpec:
+        api_spec->type = IF_TYPE_UPLINK;
         pds_obj_key_proto_to_api_spec(&api_spec->uplink_info.port,
                                       proto_spec.uplinkspec().portid());
         break;
 
-    case pds::IF_TYPE_CONTROL:
+    case pds::InterfaceSpec::kControlIfSpec:
         if (proto_spec.txmirrorsessionid_size()) {
-            PDS_TRACE_ERR("Tx Mirroring not supported on inband interface {}",
+            PDS_TRACE_ERR("Tx Mirroring not supported on control interface {}",
                           api_spec->key.str());
             return SDK_RET_INVALID_ARG;
         }
         if (proto_spec.rxmirrorsessionid_size()) {
-            PDS_TRACE_ERR("Rx Mirroring not supported on inband interface {}",
+            PDS_TRACE_ERR("Rx Mirroring not supported on control interface {}",
                           api_spec->key.str());
             return SDK_RET_INVALID_ARG;
         }
@@ -476,7 +477,7 @@ pds_if_proto_to_api_spec (pds_if_spec_t *api_spec,
                                       proto_spec.controlifspec().gateway());
         break;
 
-    case pds::IF_TYPE_HOST:
+    case pds::InterfaceSpec::kHostIfSpec:
         api_spec->type = IF_TYPE_HOST;
         pds_obj_key_proto_to_api_spec(&api_spec->host_if_info.tx_policer,
                                       proto_spec.hostifspec().txpolicer());

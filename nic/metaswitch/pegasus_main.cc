@@ -62,7 +62,7 @@ IfSvcImpl::InterfaceCreate(ServerContext *context,
         auto api_spec = &api_if_spec;
         auto request = proto_req->request(i);
 
-        if (request.type() != pds::IF_TYPE_LOOPBACK) {
+        if (request.ifinfo_case() != pds::InterfaceSpec::kLoopbackIfSpec) {
             PDS_TRACE_ERR("Cannot create non-loopback interfaces on Pegasus");
             proto_rsp->set_apistatus(
                 types::ApiStatus::API_STATUS_OPERATION_NOT_ALLOWED);

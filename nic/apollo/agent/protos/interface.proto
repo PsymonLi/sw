@@ -180,8 +180,6 @@ message InterfaceSpec {
   // NOTE: interface ids start from 1, for IF_TYPE_UPLINK this id is in the
   //       range [1...max-ports#] and same for IF_TYPE_UPLINK_PC
   bytes            Id                = 1 [(gogoproto.moretags) = "meta:mandatory"];
-  // type of the interface
-  IfType           Type              = 2 [(gogoproto.moretags) = "meta:mandatory,immutable"];
   // 1. AdminState on ethernet interfaces will bring up or down adminstratively
   // 2. AdminState on host interface (PF/VF etc.) will give the ability to the
   //    cloud provider to shutdown traffic from/to a PF irrespective of the
@@ -191,21 +189,21 @@ message InterfaceSpec {
   //    host OR if the AdminState configured in this object is DOWN, then PF
   //    will remain in down state and traffic will be dropped and host will see
   //    this PF as down
-  IfStatus         AdminStatus       = 3 [(gogoproto.moretags) = "meta:default=IF_STATUS_UP"];
+  IfStatus         AdminStatus       = 2 [(gogoproto.moretags) = "meta:default=IF_STATUS_UP"];
   // interface type specific configuration
   oneof ifinfo {
     // uplink specific configuration
-    UplinkSpec     UplinkSpec        = 4 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_UPLINK}"];
-    UplinkPCSpec   UplinkPCSpec      = 5 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_UPLINK_PC}"];
-    L3IfSpec       L3IfSpec          = 6 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_L3}"];
-    LoopbackIfSpec LoopbackIfSpec    = 7 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_LOOPBACK"];
-    ControlIfSpec  ControlIfSpec     = 8 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_CONTROL"];
-    HostIfSpec     HostIfSpec        = 9 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_HOST"];
+    UplinkSpec     UplinkSpec        = 3 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_UPLINK}"];
+    UplinkPCSpec   UplinkPCSpec      = 4 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_UPLINK_PC}"];
+    L3IfSpec       L3IfSpec          = 5 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_L3}"];
+    LoopbackIfSpec LoopbackIfSpec    = 6 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_LOOPBACK"];
+    ControlIfSpec  ControlIfSpec     = 7 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_CONTROL"];
+    HostIfSpec     HostIfSpec        = 8 [(gogoproto.moretags) = "meta:constraints={InterfaceSpec.Type==IF_TYPE_HOST"];
   }
   // Tx/egress mirror session id list, if any
-  repeated bytes   TxMirrorSessionId = 10;
+  repeated bytes   TxMirrorSessionId = 9;
   // Rx/ingress mirror session id list, if any
-  repeated bytes   RxMirrorSessionId = 11;
+  repeated bytes   RxMirrorSessionId = 10;
 }
 
 message LldpIfPortStatus {

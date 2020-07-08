@@ -151,14 +151,13 @@ func ifUpdateCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 	ifResp := ifRespMsg.GetResponse()
-	if ifResp[0].GetSpec().GetType() != pds.IfType_IF_TYPE_HOST {
+	if ifResp[0].GetSpec().GetHostIfSpec() == nil {
 		fmt.Printf("Only update of  host interface supported\n")
 		return
 	}
 
 	spec := &pds.InterfaceSpec{
 		Id:          uuid.FromStringOrNil(ifID).Bytes(),
-		Type:        pds.IfType_IF_TYPE_HOST,
 		AdminStatus: ifResp[0].GetSpec().GetAdminStatus(),
 		Ifinfo: &pds.InterfaceSpec_HostIfSpec{
 			HostIfSpec: &pds.HostIfSpec{
@@ -275,28 +274,48 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 		}
 	} else if cmd != nil && cmd.Flags().Changed("summary") {
 		var num_intfs [pds.IfType_IF_TYPE_HOST + 1]int
+		var intfType pds.IfType
 		for _, resp := range respMsg.Response {
-			if resp.GetSpec().GetType() != pds.IfType_IF_TYPE_NONE {
-				num_intfs[resp.GetSpec().GetType()] += 1
+			switch resp.GetSpec().GetIfinfo().(type) {
+			case *pds.InterfaceSpec_UplinkSpec:
+				intfType = pds.IfType_IF_TYPE_UPLINK
+			case *pds.InterfaceSpec_L3IfSpec:
+				intfType = pds.IfType_IF_TYPE_L3
+			case *pds.InterfaceSpec_ControlIfSpec:
+				intfType = pds.IfType_IF_TYPE_CONTROL
+			case *pds.InterfaceSpec_HostIfSpec:
+				intfType = pds.IfType_IF_TYPE_HOST
+			default:
+				intfType = pds.IfType_IF_TYPE_NONE
+			}
+			if intfType != pds.IfType_IF_TYPE_NONE {
+				num_intfs[intfType] += 1
 			}
 		}
 		printIfSummary(num_intfs)
 	} else if cmd != nil && cmd.Flags().Changed("id") {
 		for _, resp := range respMsg.Response {
-			respType := resp.GetSpec().GetType().String()
-			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
-			printIfHeader(respType)
+			switch resp.GetSpec().GetIfinfo().(type) {
+			case *pds.InterfaceSpec_UplinkSpec:
+				printIfHeader("uplink")
+			case *pds.InterfaceSpec_L3IfSpec:
+				printIfHeader("l3")
+			case *pds.InterfaceSpec_ControlIfSpec:
+				printIfHeader("control")
+			case *pds.InterfaceSpec_HostIfSpec:
+				printIfHeader("host")
+			default:
+			}
 			printIf(resp)
-			fmt.Printf("\nNumber of interfaces : 1\n")
 		}
 	} else if cmd != nil && cmd.Flags().Changed("type") {
 		printIfHeader(ifType)
-		respType := ""
 		count := 0
 		for _, resp := range respMsg.Response {
-			respType = resp.GetSpec().GetType().String()
-			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
-			if strings.ToLower(respType) == ifType {
+			if (ifType == "uplink" && resp.GetSpec().GetUplinkSpec() != nil) ||
+				(ifType == "l3" && resp.GetSpec().GetL3IfSpec() != nil) ||
+				(ifType == "control" && resp.GetSpec().GetControlIfSpec() != nil) ||
+				(ifType == "host" && resp.GetSpec().GetHostIfSpec() != nil) {
 				printIf(resp)
 				count += 1
 			}
@@ -307,38 +326,33 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 		var num_intfs [pds.IfType_IF_TYPE_HOST + 1]int
 		printIfHeader("uplink")
 		for _, resp := range respMsg.Response {
-			respType := resp.GetSpec().GetType().String()
-			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
-			if strings.ToLower(respType) == "uplink" {
+			if resp.GetSpec().GetUplinkSpec() != nil {
 				printIf(resp)
+				num_intfs[pds.IfType_IF_TYPE_UPLINK] += 1
 			}
 		}
 		fmt.Printf("\n")
 		printIfHeader("l3")
 		for _, resp := range respMsg.Response {
-			respType := resp.GetSpec().GetType().String()
-			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
-			if strings.ToLower(respType) == "l3" {
+			if resp.GetSpec().GetL3IfSpec() != nil {
 				printIf(resp)
+				num_intfs[pds.IfType_IF_TYPE_L3] += 1
 			}
 		}
 		fmt.Printf("\n")
 		printIfHeader("control")
 		for _, resp := range respMsg.Response {
-			respType := resp.GetSpec().GetType().String()
-			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
-			if strings.ToLower(respType) == "control" {
+			if resp.GetSpec().GetControlIfSpec() != nil {
 				printIf(resp)
+				num_intfs[pds.IfType_IF_TYPE_CONTROL] += 1
 			}
 		}
 		fmt.Printf("\n")
 		printIfHeader("host")
 		for _, resp := range respMsg.Response {
-			respType := resp.GetSpec().GetType().String()
-			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
-			num_intfs[resp.GetSpec().GetType()] += 1
-			if strings.ToLower(respType) == "host" {
+			if resp.GetSpec().GetHostIfSpec() != nil {
 				printIf(resp)
+				num_intfs[pds.IfType_IF_TYPE_HOST] += 1
 			}
 		}
 		fmt.Printf("\n")
@@ -360,7 +374,6 @@ func validateIfTypeStr(str string) bool {
 	default:
 		return false
 	}
-
 }
 
 func printIfSummary(count [pds.IfType_IF_TYPE_HOST + 1]int) {
@@ -412,8 +425,8 @@ func printIf(intf *pds.Interface) {
 	status := intf.GetStatus()
 	ifIndex := status.GetIfIndex()
 	ifStr := ifIndexToPortIdStr(ifIndex)
-	switch spec.GetType() {
-	case pds.IfType_IF_TYPE_UPLINK:
+	switch spec.GetIfinfo().(type) {
+	case *pds.InterfaceSpec_UplinkSpec:
 		adminState := strings.Replace(spec.GetAdminStatus().String(),
 			"IF_STATUS_", "", -1)
 		adminState = strings.Replace(adminState, "_", "-", -1)
@@ -425,7 +438,7 @@ func printIf(intf *pds.Interface) {
 		fmt.Printf("%-40s0x%-12x%-14s%-11s%-11s%-40s%-6s\n",
 			utils.IdToStr(spec.GetId()), ifIndex, ifStr,
 			adminState, operState, portNum, lifId)
-	case pds.IfType_IF_TYPE_L3:
+	case *pds.InterfaceSpec_L3IfSpec:
 		adminState := strings.Replace(spec.GetAdminStatus().String(),
 			"IF_STATUS_", "", -1)
 		adminState = strings.Replace(adminState, "_", "-", -1)
@@ -440,7 +453,7 @@ func printIf(intf *pds.Interface) {
 		fmt.Printf("%-40s0x%-12x%-14s%-11s%-11s%-40s%-40s%-18s%-14s%-20s\n",
 			utils.IdToStr(spec.GetId()), ifIndex, ifStr, adminState, operState,
 			portNum, vpc, ipPrefix, encap, mac)
-	case pds.IfType_IF_TYPE_CONTROL:
+	case *pds.InterfaceSpec_ControlIfSpec:
 		adminState := strings.Replace(spec.GetAdminStatus().String(),
 			"IF_STATUS_", "", -1)
 		adminState = strings.Replace(adminState, "_", "-", -1)
@@ -452,7 +465,7 @@ func printIf(intf *pds.Interface) {
 		fmt.Printf("%-40s0x%-12x%-14s%-11s%-11s%-18s%-20s\n",
 			utils.IdToStr(spec.GetId()), ifIndex, ifStr,
 			adminState, operState, ipPrefix, mac)
-	case pds.IfType_IF_TYPE_HOST:
+	case *pds.InterfaceSpec_HostIfSpec:
 		policer := utils.IdToStr(spec.GetHostIfSpec().GetTxPolicer())
 		lifs := status.GetHostIfStatus().GetLifId()
 		adminState := strings.Replace(spec.GetAdminStatus().String(),
@@ -623,7 +636,7 @@ func lldpShowCmdHandler(cmd *cobra.Command, args []string, cmdType int) {
 		}
 	} else {
 		for _, resp := range respMsg.Response {
-			if resp.GetSpec().GetType() == pds.IfType_IF_TYPE_UPLINK {
+			if resp.GetSpec().GetUplinkSpec() != nil {
 				printIfLldpInfo(resp, cmdType, &num_intfs)
 			}
 		}
