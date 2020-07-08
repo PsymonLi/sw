@@ -30,8 +30,10 @@ nexthop_impl_state::nexthop_impl_state(pds_state *state) {
     nh_idxr_ = rte_indexer::factory(tinfo.tabledepth, true, true);
     SDK_ASSERT(nh_idxr_ != NULL);
 
-    // reserve next 8 nexthops (1 for each uplink)
-    SDK_ASSERT(nh_idxr_->alloc_block(1, 9, false) == SDK_RET_OK);
+    // reserve one nexthop for each uplink
+    SDK_ASSERT(nh_idxr_->alloc_block(PDS_IMPL_UPLINK_NH_HW_ID_START,
+                                     g_pds_state.catalogue()->num_fp_ports(),
+                                     false) == SDK_RET_OK);
 }
 
 nexthop_impl_state::~nexthop_impl_state() {

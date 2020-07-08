@@ -191,7 +191,7 @@ fill_route_attrs (pds_route_attrs_t *attrs, pds_nh_type_t type,
         attrs->tep = int2pdsobjkey(base_tep_id + num);
         break;
     case PDS_NH_TYPE_OVERLAY_ECMP:
-        num = (route_id % (PDS_MAX_NEXTHOP_GROUP-1));
+        num = (route_id % (PDS_MAX_NEXTHOP_GROUP-2));
         attrs->nh_group = int2pdsobjkey(base_id + num);
         break;
     case PDS_NH_TYPE_PEER_VPC:

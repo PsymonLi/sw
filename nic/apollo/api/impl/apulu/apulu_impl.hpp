@@ -26,6 +26,10 @@
 // system wide blackhole nexthop
 #define PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID    0
 
+// one nexthop per uplink is reserved during init time
+// NOTE: nexthop index = tm_port (of uplink) + 1
+#define PDS_IMPL_UPLINK_NH_HW_ID_START        1
+
 // uplink ECMP nexthop group id (used in BITW modes)
 #define PDS_IMPL_UPLINK_ECMP_NHGROUP_HW_ID    1
 

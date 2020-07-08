@@ -149,6 +149,8 @@ typedef struct catalog_s {
     uint32_t                   num_logical_ports;                     // number of logical port in the board
     uint32_t                   num_logical_oob_ports;                 // number of logical oob port in the board
     uint32_t                   num_fp_ports;                          // number of front panel ports in the board
+    uint32_t                   num_eth_ports;                         // number of front panel eth ports in the board
+    uint32_t                   num_mgmt_ports;                        // number of front panel mgmt ports in the board
     bool                       access_mock_mode;                      // do not access HW, dump only reads/writes
     catalog_asic_t             asics[MAX_ASICS];                      // per asic information
     catalog_logical_port_t     logical_ports[MAX_LOGICAL_PORTS];      // per port information
@@ -294,7 +296,16 @@ public:
     uint32_t mac_ch(uint32_t logical_port, uint32_t lane);
     uint32_t logical_port_to_tm_port(uint32_t logical_port);
 
-    // return number of physical ports (fp_ports == phy_ports)
+    /// \brief  returns number of front panel eth ports
+    /// \return number of front panel eth ports
+    uint32_t num_eth_ports(void) const { return catalog_db_.num_eth_ports; }
+
+    /// \brief  returns number of front panel management ports
+    /// \return number of front panel management ports
+    uint32_t num_mgmt_ports(void) const { return catalog_db_.num_mgmt_ports; }
+
+    /// \brief  returns number of front panel/physical ports
+    /// \return number of front panel/physical ports
     uint32_t num_fp_ports(void) const { return catalog_db_.num_fp_ports; }
     port_type_t  port_type_fp(uint32_t fp_port);
     port_admin_state_t  admin_state_fp(uint32_t fp_port);

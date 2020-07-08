@@ -225,14 +225,21 @@ catalog::populate_fp_port(ptree::value_type &fp_port,
 sdk_ret_t
 catalog::populate_fp_ports(ptree &prop_tree)
 {
+    catalog_db_.num_mgmt_ports = 0;
+    catalog_db_.num_eth_ports = 0;
+
     for (ptree::value_type &fp_port : prop_tree.get_child("fp_ports")) {
         catalog_fp_port_t *fp_port_p =
                             &catalog_db_.fp_ports[
                             fp_port.second.get<uint32_t>("port_num", 0) - 1];
 
         populate_fp_port(fp_port, fp_port_p);
+        if (fp_port_p->type == port_type_t::PORT_TYPE_MGMT) {
+            catalog_db_.num_mgmt_ports++;
+        } else {
+            catalog_db_.num_eth_ports++;
+        }
     }
-
     return SDK_RET_OK;
 }
 

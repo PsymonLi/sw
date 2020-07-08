@@ -272,7 +272,6 @@ lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
                       "at idx %u", key_.str(), nh_idx_);
         return sdk::SDK_RET_HW_PROGRAM_ERR;
     }
-    PDS_TRACE_ERR("Used nh idx %u", nh_idx_);
 
     // cap ARP packets from oob lif(s) to 256 pps
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);

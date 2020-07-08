@@ -695,10 +695,13 @@ apulu_impl::checksum_init_(void) {
     return SDK_RET_OK;
 }
 
+#define ecmp_info       action_u.ecmp_ecmp_info
 sdk_ret_t
 apulu_impl::table_init_(void) {
-    sdk_ret_t     ret;
-    mem_addr_t    addr;
+    sdk_ret_t ret;
+    mem_addr_t addr;
+    p4pd_error_t p4pd_ret;
+    ecmp_actiondata_t ecmp_data = { 0 };
 
     ret = inter_pipe_init_();
     if (ret != SDK_RET_OK) {
@@ -750,6 +753,19 @@ apulu_impl::table_init_(void) {
     sdk::asic::pd::asicpd_program_table_thread_constant(P4TBL_ID_NEXTHOP, 0, 0);
     sdk::asic::pd::asicpd_program_table_thread_constant(P4TBL_ID_NEXTHOP, 1, 1);
 
+    // program the uplink ecmp entry at the reserved index
+    ecmp_data.action_id = ECMP_ECMP_INFO_ID;
+    ecmp_data.ecmp_info.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    ecmp_data.ecmp_info.num_nexthops = g_pds_state.catalogue()->num_eth_ports();
+    ecmp_data.ecmp_info.nexthop_base = PDS_IMPL_UPLINK_NH_HW_ID_START;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_ECMP,
+                                       PDS_IMPL_UPLINK_ECMP_NHGROUP_HW_ID,
+                                       NULL, NULL, &ecmp_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program nexthop group at idx %u in "
+                      "ECMP table", PDS_IMPL_UPLINK_ECMP_NHGROUP_HW_ID);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
     return SDK_RET_OK;
 }
 
