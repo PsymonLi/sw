@@ -469,7 +469,7 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 		return
 	}
 
-	v.Log.Infof("Writing back overrides %+v", portSetting)
+	v.Log.Infof("Writing back overrides %+v", workloadOverride)
 	err := v.probe.UpdateDVSPortsVlan(dcName, dvsName, portSetting, forceWrite, defaultRetryCount)
 	if err != nil {
 		v.Log.Errorf("Failed to set vlan overrides for DC %s - dvs %s, err %s", dcName, dvsName, err)
@@ -544,6 +544,7 @@ func (v *VCHub) verifyOverrides(forceWrite bool) {
 	v.DcMapLock.Unlock()
 
 	wg.Wait()
+	v.Log.Infof("Verify overrides done")
 }
 
 // Resetting vlan overrides is not needed. As soon as port is disconnected,

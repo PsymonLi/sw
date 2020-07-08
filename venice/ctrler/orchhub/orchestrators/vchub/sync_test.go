@@ -314,6 +314,17 @@ func TestVCSyncHost(t *testing.T) {
 	err = sm.Controller().Host().Create(&staleHost3)
 	AssertOk(t, err, "failed to create host")
 
+	// Host for this orch but in another DC
+	staleHostOtherDC := createHostObj(
+		vchub.createHostName("", "hostOtherDC"),
+		"test",
+		conv.MacString(pNicMac),
+	)
+	utils.AddOrchNameLabel(staleHostOtherDC.Labels, orchConfig.Name)
+	utils.AddOrchNamespaceLabel(staleHostOtherDC.Labels, "dc2")
+	err = sm.Controller().Host().Create(&staleHostOtherDC)
+	AssertOk(t, err, "failed to create host")
+
 	// Create stale workload
 	staleWorkload := createWorkloadObj(
 		vchub.createVMWorkloadName(dc1.Obj.Self.Value, "staleWorkload"),
@@ -330,6 +341,22 @@ func TestVCSyncHost(t *testing.T) {
 	err = sm.Controller().Workload().Create(&staleWorkload)
 	AssertOk(t, err, "failed to create workload")
 
+	// Create stale workload in other DC
+	staleWorkloadOtherDC := createWorkloadObj(
+		vchub.createVMWorkloadName("", "staleWorkloadOtherDC"),
+		staleHostOtherDC.Name,
+		[]workload.WorkloadIntfSpec{
+			workload.WorkloadIntfSpec{
+				MACAddress:   "aaaa.bbbb.cccc",
+				MicroSegVlan: 2000,
+			},
+		},
+	)
+
+	vchub.addWorkloadLabels(&staleWorkloadOtherDC, "staleWorkloadOtherDC", "dc2")
+	err = sm.Controller().Workload().Create(&staleWorkloadOtherDC)
+	AssertOk(t, err, "failed to create workload")
+
 	host1 := createHostObj(
 		vchub.createHostName(dc1.Obj.Self.Value, hostSystem1.Obj.Self.Value),
 		"test1",
@@ -337,8 +364,6 @@ func TestVCSyncHost(t *testing.T) {
 	)
 	utils.AddOrchNameLabel(host1.Labels, orchConfig.Name)
 	utils.AddOrchNamespaceLabel(host1.Labels, dc1.Obj.Name)
-
-	time.Sleep(1 * time.Second)
 
 	vchub.Sync()
 
@@ -367,6 +392,10 @@ func TestVCSyncHost(t *testing.T) {
 				if len(hostnames) != len(hosts) {
 					return false, fmt.Errorf("expected %d hosts but got %d", len(hostnames), len(hosts))
 				}
+				opts = api.ListWatchOptions{}
+				workloads, err := sm.Controller().Workload().List(context.Background(), &opts)
+				AssertOk(t, err, "failed to get hosts")
+				AssertEquals(t, 0, len(workloads), "expected no workloads found %v", workloads)
 			}
 			return true, nil
 		}, "Failed to find hosts")

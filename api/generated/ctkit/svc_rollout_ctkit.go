@@ -553,7 +553,10 @@ func (ct *ctrlerCtx) runRolloutWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "RolloutWatcher")
 	for {
@@ -575,9 +578,11 @@ func (ct *ctrlerCtx) runRolloutWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Rollout_Watch").Inc()
 		defer ct.stats.Counter("Rollout_Watch").Dec()
@@ -685,13 +690,19 @@ func (ct *ctrlerCtx) StopWatchRollout(handler RolloutHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -1729,7 +1740,10 @@ func (ct *ctrlerCtx) runRolloutActionWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "RolloutActionWatcher")
 	for {
@@ -1751,9 +1765,11 @@ func (ct *ctrlerCtx) runRolloutActionWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("RolloutAction_Watch").Inc()
 		defer ct.stats.Counter("RolloutAction_Watch").Dec()
@@ -1861,13 +1877,19 @@ func (ct *ctrlerCtx) StopWatchRolloutAction(handler RolloutActionHandler) error 
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 

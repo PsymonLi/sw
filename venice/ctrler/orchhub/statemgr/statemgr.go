@@ -100,6 +100,7 @@ func (s *Statemgr) RemoveProbeChannel(orchKey string) error {
 		return fmt.Errorf("vc probe channel [%s] not found", orchKey)
 	}
 
+	s.logger.Infof("removing probe channel for %s", orchKey)
 	chQ.Stop()
 	delete(s.probeQs, orchKey)
 	return nil
@@ -110,6 +111,7 @@ func (s *Statemgr) RemoveAllProbeChannel() {
 	s.probeQMutex.Lock()
 	defer s.probeQMutex.Unlock()
 	for key, chQ := range s.probeQs {
+		s.logger.Infof("removing probe channel for %s", key)
 		chQ.Stop()
 		delete(s.probeQs, key)
 	}
@@ -125,6 +127,8 @@ func (s *Statemgr) AddProbeChannel(orchKey string) error {
 	if ok {
 		return fmt.Errorf("vc probe channel [%s] already exists", orchKey)
 	}
+
+	s.logger.Infof("Adding probe channel for %s", orchKey)
 
 	chQ := channelqueue.NewChQueue()
 	s.probeQs[orchKey] = chQ

@@ -34,7 +34,8 @@ func (sm *Statemgr) OnOrchestratorCreate(w *ctkit.Orchestrator) error {
 	}
 	_, ok := sm.probeQs[w.Orchestrator.Name]
 	if ok {
-		return fmt.Errorf("vc probe channel already created")
+		sm.logger.Errorf("vc probe channel already created")
+		return nil
 	}
 
 	err := sm.AddProbeChannel(w.Orchestrator.GetName())
@@ -133,6 +134,9 @@ func (o *OrchestratorState) RemoveIncompatibleDSC(dsc string) error {
 }
 
 func (o *OrchestratorState) checkAndUpdateDSCList() error {
+	o.Lock()
+	defer o.Unlock()
+
 	for dsc := range o.incompatibleDscs {
 		dscState := o.stateMgr.FindDSC(dsc, "")
 		// If DSC is now compatible, remove from the Incompatible list

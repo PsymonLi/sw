@@ -221,6 +221,8 @@ func TestSnapshotRestore(t *testing.T) {
 	// Create orch2 with manage DC1 only.
 	// Perform snapshot restore
 
+	// Test no orch config to restore with orch config
+
 	// Test snapshot restore where orch config does not change
 
 	vcInfo := tinfo.vcConfig
@@ -386,9 +388,75 @@ func TestSnapshotRestore(t *testing.T) {
 		return true, nil
 	}, "Failed to find hosts", "5s", "60s")
 
+	logger.Infof("-------------- 	no orch config to restore with orch config --------------")
+
+	// Delete all orch configs and replay snapshot again
+	deleteAllOrchestrators()
+	// no hosts should exist
+	AssertEventually(t, func() (bool, interface{}) {
+		hosts, err := tinfo.apicl.ClusterV1().Host().List(ctx, &api.ListWatchOptions{})
+		if err != nil {
+			return false, err
+		}
+		if len(hosts) != 0 {
+			return false, fmt.Errorf("Found %d hosts, expected 0", len(hosts))
+		}
+		return true, nil
+	}, "Failed to find hosts", "5s", "60s")
+
+	// replay snapshot
+	snapshotRestore, err = tinfo.apicl.ClusterV1().SnapshotRestore().Restore(context.Background(), &resReq)
+	AssertOk(t, err, "Failed to restore snapshot: %v", apierrors.FromError(err))
+
+	// Wait for restore to move to completion
+	AssertEventually(t, func() (bool, interface{}) {
+		snapshot, err := tinfo.apicl.ClusterV1().SnapshotRestore().Get(ctx, snapshotRestore.GetObjectMeta())
+		if err != nil {
+			return false, err
+		}
+		if snapshot.Status.Status != cluster.SnapshotRestoreStatus_Completed.String() {
+			return false, fmt.Errorf("Snapshot not completed, in state %s", snapshot.Status.Status)
+		}
+		return true, nil
+	}, "Restore didn't finish", "5s", "60s")
+
+	// Two host should now exist again
+	AssertEventually(t, func() (bool, interface{}) {
+		hosts, err := tinfo.apicl.ClusterV1().Host().List(ctx, &api.ListWatchOptions{})
+		if err != nil {
+			return false, err
+		}
+		if len(hosts) != 2 {
+			return false, fmt.Errorf("Found %d hosts, expected 2", len(hosts))
+		}
+		for _, host := range hosts {
+			if host.Labels[utils.OrchNameKey] != "vc1" {
+				return false, fmt.Errorf("Host %s had orch label %s", host.Name, host.Labels[utils.OrchNameKey])
+			}
+		}
+
+		return true, nil
+	}, "Failed to find hosts", "5s", "60s")
+
+	// Verify orchestrator status has been populated
+	AssertEventually(t, func() (bool, interface{}) {
+		obj, err := tinfo.apicl.OrchestratorV1().Orchestrator().Get(ctx, &api.ObjectMeta{
+			Name: "vc1",
+		})
+		if err != nil {
+			return false, err
+		}
+		if obj.Status.Status != orchestration.OrchestratorStatus_Success.String() {
+			return false, fmt.Errorf("Connection status was %s", obj.Status.Status)
+		}
+		return true, nil
+	}, "Orch status never updated to success", "100ms", "10s")
+
 	// Remove previous snapshot
 	err = tinfo.objClient.RemoveObject(paths[0])
 	AssertOk(t, err, "Failed to delete snapshot")
+
+	logger.Infof("-------------- snapshot restore where orch config does not change --------------")
 
 	// Take snapshot with two hosts
 	tinfo.l.Infof("Taking snapshot")

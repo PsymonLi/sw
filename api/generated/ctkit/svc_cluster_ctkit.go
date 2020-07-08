@@ -561,7 +561,10 @@ func (ct *ctrlerCtx) runClusterWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "ClusterWatcher")
 	for {
@@ -583,9 +586,11 @@ func (ct *ctrlerCtx) runClusterWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Cluster_Watch").Inc()
 		defer ct.stats.Counter("Cluster_Watch").Dec()
@@ -693,13 +698,19 @@ func (ct *ctrlerCtx) StopWatchCluster(handler ClusterHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -1623,7 +1634,10 @@ func (ct *ctrlerCtx) runNodeWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "NodeWatcher")
 	for {
@@ -1645,9 +1659,11 @@ func (ct *ctrlerCtx) runNodeWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Node_Watch").Inc()
 		defer ct.stats.Counter("Node_Watch").Dec()
@@ -1755,13 +1771,19 @@ func (ct *ctrlerCtx) StopWatchNode(handler NodeHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -2570,7 +2592,10 @@ func (ct *ctrlerCtx) runHostWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "HostWatcher")
 	for {
@@ -2592,9 +2617,11 @@ func (ct *ctrlerCtx) runHostWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Host_Watch").Inc()
 		defer ct.stats.Counter("Host_Watch").Dec()
@@ -2702,13 +2729,19 @@ func (ct *ctrlerCtx) StopWatchHost(handler HostHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -3517,7 +3550,10 @@ func (ct *ctrlerCtx) runDistributedServiceCardWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "DistributedServiceCardWatcher")
 	for {
@@ -3539,9 +3575,11 @@ func (ct *ctrlerCtx) runDistributedServiceCardWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("DistributedServiceCard_Watch").Inc()
 		defer ct.stats.Counter("DistributedServiceCard_Watch").Dec()
@@ -3649,13 +3687,19 @@ func (ct *ctrlerCtx) StopWatchDistributedServiceCard(handler DistributedServiceC
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -4464,7 +4508,10 @@ func (ct *ctrlerCtx) runTenantWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "TenantWatcher")
 	for {
@@ -4486,9 +4533,11 @@ func (ct *ctrlerCtx) runTenantWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Tenant_Watch").Inc()
 		defer ct.stats.Counter("Tenant_Watch").Dec()
@@ -4596,13 +4645,19 @@ func (ct *ctrlerCtx) StopWatchTenant(handler TenantHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -5411,7 +5466,10 @@ func (ct *ctrlerCtx) runVersionWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "VersionWatcher")
 	for {
@@ -5433,9 +5491,11 @@ func (ct *ctrlerCtx) runVersionWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Version_Watch").Inc()
 		defer ct.stats.Counter("Version_Watch").Dec()
@@ -5543,13 +5603,19 @@ func (ct *ctrlerCtx) StopWatchVersion(handler VersionHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -6358,7 +6424,10 @@ func (ct *ctrlerCtx) runConfigurationSnapshotWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "ConfigurationSnapshotWatcher")
 	for {
@@ -6380,9 +6449,11 @@ func (ct *ctrlerCtx) runConfigurationSnapshotWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("ConfigurationSnapshot_Watch").Inc()
 		defer ct.stats.Counter("ConfigurationSnapshot_Watch").Dec()
@@ -6490,13 +6561,19 @@ func (ct *ctrlerCtx) StopWatchConfigurationSnapshot(handler ConfigurationSnapsho
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -7363,7 +7440,10 @@ func (ct *ctrlerCtx) runSnapshotRestoreWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "SnapshotRestoreWatcher")
 	for {
@@ -7385,9 +7465,11 @@ func (ct *ctrlerCtx) runSnapshotRestoreWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("SnapshotRestore_Watch").Inc()
 		defer ct.stats.Counter("SnapshotRestore_Watch").Dec()
@@ -7495,13 +7577,19 @@ func (ct *ctrlerCtx) StopWatchSnapshotRestore(handler SnapshotRestoreHandler) er
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -8368,7 +8456,10 @@ func (ct *ctrlerCtx) runLicenseWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "LicenseWatcher")
 	for {
@@ -8390,9 +8481,11 @@ func (ct *ctrlerCtx) runLicenseWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("License_Watch").Inc()
 		defer ct.stats.Counter("License_Watch").Dec()
@@ -8500,13 +8593,19 @@ func (ct *ctrlerCtx) StopWatchLicense(handler LicenseHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -9315,7 +9414,10 @@ func (ct *ctrlerCtx) runDSCProfileWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "DSCProfileWatcher")
 	for {
@@ -9337,9 +9439,11 @@ func (ct *ctrlerCtx) runDSCProfileWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("DSCProfile_Watch").Inc()
 		defer ct.stats.Counter("DSCProfile_Watch").Dec()
@@ -9447,13 +9551,19 @@ func (ct *ctrlerCtx) StopWatchDSCProfile(handler DSCProfileHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -10270,7 +10380,10 @@ func (ct *ctrlerCtx) runCredentialsWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "CredentialsWatcher")
 	for {
@@ -10292,9 +10405,11 @@ func (ct *ctrlerCtx) runCredentialsWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Credentials_Watch").Inc()
 		defer ct.stats.Counter("Credentials_Watch").Dec()
@@ -10402,13 +10517,19 @@ func (ct *ctrlerCtx) StopWatchCredentials(handler CredentialsHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 

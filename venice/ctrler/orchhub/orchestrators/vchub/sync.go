@@ -85,12 +85,14 @@ func (v *VCHub) sync() bool {
 		v.Log.Errorf("Failed to list DCs, %s", err)
 		return false
 	}
+	processedDCs := map[string]bool{}
 	for _, dc := range dcs {
 		// TODO: Remove
 		if !v.isManagedNamespace(dc.Name) {
 			v.Log.Infof("Skipping DC %s", dc.Name)
 			continue
 		}
+		processedDCs[dc.Name] = true
 
 		_, err := v.NewPenDC(dc.Name, dc.Self.Value)
 		if err != nil {
@@ -125,6 +127,31 @@ func (v *VCHub) sync() bool {
 		v.syncVMs(workloads, dc, vms, pgs, vmkMap)
 		// Removing hosts after removing workloads to fix WL -> Host dependency
 		v.syncStaleHosts(dc, vcHosts, hosts)
+	}
+
+	// Remove any hosts or workloads that are in a DC that isn't managed anymore
+	// or does not exist anymore
+	for _, workload := range workloads {
+		if utils.IsObjForOrch(workload.Labels, v.VcID, "") {
+			dc, ok := utils.GetOrchNamespaceFromObj(workload.Labels)
+			if ok {
+				if _, ok := processedDCs[dc]; !ok {
+					v.Log.Infof("Deleting stale workload %s", workload.Name)
+					v.deleteWorkload(&workload.Workload)
+				}
+			}
+		}
+	}
+	for _, host := range hosts {
+		if utils.IsObjForOrch(host.Labels, v.VcID, "") {
+			dc, ok := utils.GetOrchNamespaceFromObj(host.Labels)
+			if ok {
+				if _, ok := processedDCs[dc]; !ok {
+					v.Log.Infof("Deleting stale host %s", host.Name)
+					v.deleteHostState(host, true)
+				}
+			}
+		}
 	}
 
 	// Process any API events we have missed (migration.status.done/timeout)

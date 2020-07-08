@@ -553,7 +553,10 @@ func (ct *ctrlerCtx) runNetworkWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "NetworkWatcher")
 	for {
@@ -575,9 +578,11 @@ func (ct *ctrlerCtx) runNetworkWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Network_Watch").Inc()
 		defer ct.stats.Counter("Network_Watch").Dec()
@@ -685,13 +690,19 @@ func (ct *ctrlerCtx) StopWatchNetwork(handler NetworkHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -1500,7 +1511,10 @@ func (ct *ctrlerCtx) runServiceWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "ServiceWatcher")
 	for {
@@ -1522,9 +1536,11 @@ func (ct *ctrlerCtx) runServiceWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Service_Watch").Inc()
 		defer ct.stats.Counter("Service_Watch").Dec()
@@ -1632,13 +1648,19 @@ func (ct *ctrlerCtx) StopWatchService(handler ServiceHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -2447,7 +2469,10 @@ func (ct *ctrlerCtx) runLbPolicyWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "LbPolicyWatcher")
 	for {
@@ -2469,9 +2494,11 @@ func (ct *ctrlerCtx) runLbPolicyWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("LbPolicy_Watch").Inc()
 		defer ct.stats.Counter("LbPolicy_Watch").Dec()
@@ -2579,13 +2606,19 @@ func (ct *ctrlerCtx) StopWatchLbPolicy(handler LbPolicyHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -3394,7 +3427,10 @@ func (ct *ctrlerCtx) runVirtualRouterWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "VirtualRouterWatcher")
 	for {
@@ -3416,9 +3452,11 @@ func (ct *ctrlerCtx) runVirtualRouterWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("VirtualRouter_Watch").Inc()
 		defer ct.stats.Counter("VirtualRouter_Watch").Dec()
@@ -3526,13 +3564,19 @@ func (ct *ctrlerCtx) StopWatchVirtualRouter(handler VirtualRouterHandler) error 
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -4341,7 +4385,10 @@ func (ct *ctrlerCtx) runNetworkInterfaceWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "NetworkInterfaceWatcher")
 	for {
@@ -4363,9 +4410,11 @@ func (ct *ctrlerCtx) runNetworkInterfaceWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("NetworkInterface_Watch").Inc()
 		defer ct.stats.Counter("NetworkInterface_Watch").Dec()
@@ -4473,13 +4522,19 @@ func (ct *ctrlerCtx) StopWatchNetworkInterface(handler NetworkInterfaceHandler) 
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -5288,7 +5343,10 @@ func (ct *ctrlerCtx) runIPAMPolicyWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "IPAMPolicyWatcher")
 	for {
@@ -5310,9 +5368,11 @@ func (ct *ctrlerCtx) runIPAMPolicyWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("IPAMPolicy_Watch").Inc()
 		defer ct.stats.Counter("IPAMPolicy_Watch").Dec()
@@ -5420,13 +5480,19 @@ func (ct *ctrlerCtx) StopWatchIPAMPolicy(handler IPAMPolicyHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -6243,7 +6309,10 @@ func (ct *ctrlerCtx) runRoutingConfigWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "RoutingConfigWatcher")
 	for {
@@ -6265,9 +6334,11 @@ func (ct *ctrlerCtx) runRoutingConfigWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("RoutingConfig_Watch").Inc()
 		defer ct.stats.Counter("RoutingConfig_Watch").Dec()
@@ -6375,13 +6446,19 @@ func (ct *ctrlerCtx) StopWatchRoutingConfig(handler RoutingConfigHandler) error 
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -7190,7 +7267,10 @@ func (ct *ctrlerCtx) runRouteTableWatcher() {
 	// create context
 	ctx, cancel := context.WithCancel(context.Background())
 	ct.Lock()
-	ct.watchCancel[kind] = cancel
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	wg := ct.watchCancel[kind].wg
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "RouteTableWatcher")
 	for {
@@ -7212,9 +7292,11 @@ func (ct *ctrlerCtx) runRouteTableWatcher() {
 
 	// setup wait group
 	ct.waitGrp.Add(1)
+	wg.Add(1)
 
 	// start a goroutine
 	go func() {
+		defer wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("RouteTable_Watch").Inc()
 		defer ct.stats.Counter("RouteTable_Watch").Dec()
@@ -7322,13 +7404,19 @@ func (ct *ctrlerCtx) StopWatchRouteTable(handler RouteTableHandler) error {
 	}
 
 	ct.Lock()
-	cancel, _ := ct.watchCancel[kind]
-	cancel()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
 	if _, ok := ct.watchers[kind]; ok {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
 	ct.Unlock()
+
+	cancelEntry.wg.Wait()
+
+	workerPool.Stop()
 
 	time.Sleep(100 * time.Millisecond)
 

@@ -153,6 +153,11 @@ func (ks *kindStore) DeleteObject(key string) error {
 type CtrlDefReactor struct {
 }
 
+type watchCancelEntry struct {
+	cancelFn context.CancelFunc
+	wg       sync.WaitGroup
+}
+
 type ctrlerCtx struct {
 	sync.Mutex                                      // lock for the controller
 	name        string                              // controller name
@@ -162,7 +167,7 @@ type ctrlerCtx struct {
 	resolver    resolver.Interface                  // name resolver
 	stoped      bool                                // stop the watchers
 	watchers    map[string]kvstore.Watcher          // watchers
-	watchCancel map[string]context.CancelFunc       // stop watcher
+	watchCancel map[string]*watchCancelEntry        // watcher cancel info
 	handlers    map[string]interface{}              // event handlers
 	waitGrp     sync.WaitGroup                      // wait group to wait on all go routines to exit
 	kinds       map[string]*kindStore               // DB of all kinds
@@ -274,7 +279,7 @@ func NewController(spec CtrlerSpec) (Controller, CtrlDefReactor, error) {
 		resolver:    spec.Resolver,
 		stoped:      false,
 		watchers:    make(map[string]kvstore.Watcher),
-		watchCancel: make(map[string]context.CancelFunc),
+		watchCancel: make(map[string]*watchCancelEntry),
 		handlers:    make(map[string]interface{}),
 		kinds:       make(map[string]*kindStore),
 		workPools:   make(map[string]*shardworkers.WorkerPool),
@@ -354,8 +359,8 @@ func (ct *ctrlerCtx) Stop() error {
 	}
 
 	// cancel all watchers
-	for _, cancel := range ct.watchCancel {
-		cancel()
+	for _, entry := range ct.watchCancel {
+		entry.cancelFn()
 	}
 
 	// stop api client
@@ -1287,7 +1292,9 @@ func (agg *aggwatchAPI) runLoop(wopts *api.AggWatchOptions, reactor AggWatchReac
 	ctx, cancel := context.WithCancel(context.Background())
 
 	agg.ct.Lock()
-	agg.ct.watchCancel[aggWatckKind] = cancel
+	agg.ct.watchCancel[aggWatckKind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
 	agg.ct.Unlock()
 
 	ct := agg.ct

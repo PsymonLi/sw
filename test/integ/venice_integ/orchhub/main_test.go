@@ -336,12 +336,8 @@ func deleteAllNetworks() error {
 	return nil
 }
 
-func cleanup() error {
-	// Delete all networks, orch config, teardown sim
-	opts := &api.ListWatchOptions{}
-	deleteAllNetworks()
-
-	orchs, err := tinfo.apicl.OrchestratorV1().Orchestrator().List(context.Background(), opts)
+func deleteAllOrchestrators() error {
+	orchs, err := tinfo.apicl.OrchestratorV1().Orchestrator().List(context.Background(), &api.ListWatchOptions{})
 	if err != nil {
 		logger.Errorf("Failed to list orchs: %s", err)
 		return err
@@ -352,6 +348,13 @@ func cleanup() error {
 			logger.Errorf("Deleting orch config gave err %s", err)
 		}
 	}
+	return nil
+}
+
+func cleanup() error {
+	// Delete all networks, orch config, teardown sim
+	deleteAllNetworks()
+	deleteAllOrchestrators()
 
 	// Give time for orchhub to process
 	time.Sleep(5 * time.Second)

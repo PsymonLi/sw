@@ -780,9 +780,9 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			// This event does not contain useful information, but it is generated
 			// after migration start event.. it may be a good time assume that traffic on
 			// host1 has stopped at this time and change the vlan-overrides ?? Not used rightnow
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s. Time %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.CreatedTime)
 		case *types.VmBeingHotMigratedEvent:
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s. Time %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.CreatedTime)
 			msg := defs.VMotionStartMsg{
 				VMKey:        e.Vm.Vm.Value,
 				DstHostKey:   e.DestHost.Host.Value,
@@ -791,7 +791,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			}
 			v.generateMigrationEvent(defs.VMotionStart, msg)
 		case *types.VmBeingMigratedEvent:
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s. Time %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.CreatedTime)
 			msg := defs.VMotionStartMsg{
 				VMKey:      e.Vm.Vm.Value,
 				DstHostKey: e.DestHost.Host.Value,
@@ -799,7 +799,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			}
 			v.generateMigrationEvent(defs.VMotionStart, msg)
 		case *types.VmBeingRelocatedEvent:
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s. Time %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.CreatedTime)
 			msg := defs.VMotionStartMsg{
 				VMKey:      e.Vm.Vm.Value,
 				DstHostKey: e.DestHost.Host.Value,
@@ -807,7 +807,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			}
 			v.generateMigrationEvent(defs.VMotionStart, msg)
 		case *types.VmMigratedEvent:
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s. Time %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.CreatedTime)
 			msg := defs.VMotionDoneMsg{
 				VMKey:      e.Vm.Vm.Value,
 				SrcHostKey: e.SourceHost.Host.Value,
@@ -815,7 +815,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			}
 			v.generateMigrationEvent(defs.VMotionDone, msg)
 		case *types.VmRelocatedEvent:
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s. Time %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.CreatedTime)
 			msg := defs.VMotionDoneMsg{
 				VMKey:      e.Vm.Vm.Value,
 				SrcHostKey: e.SourceHost.Host.Value,
@@ -823,7 +823,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			}
 			v.generateMigrationEvent(defs.VMotionDone, msg)
 		case *types.VmRelocateFailedEvent:
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s. Time %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.CreatedTime)
 			msg := defs.VMotionFailedMsg{
 				VMKey:      e.Vm.Vm.Value,
 				DstHostKey: e.DestHost.Host.Value,
@@ -832,7 +832,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			}
 			v.generateMigrationEvent(defs.VMotionFailed, msg)
 		case *types.VmFailedMigrateEvent:
-			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
+			v.Log.Infof("Event %d - %s - %T for VM %s. Time %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.CreatedTime)
 			msg := defs.VMotionFailedMsg{
 				VMKey:      e.Vm.Vm.Value,
 				DstHostKey: e.DestHost.Host.Value,

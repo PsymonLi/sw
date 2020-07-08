@@ -356,9 +356,9 @@ func (w *InstanceManager) watchOrchestratorConfig() {
 							continue
 						}
 						w.logger.Infof("Snapshot restore completed successfully")
-						w.stateMgr.RestoreActive = false
 						// Tell instance manager to restart itself and the watchers
 						w.handleRestore()
+						w.stateMgr.RestoreActive = false
 						w.stateMgr.RestartWatchersOnRestore()
 					}
 				case *orchestration.Orchestrator:
