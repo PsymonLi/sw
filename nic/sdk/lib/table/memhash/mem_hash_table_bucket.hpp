@@ -26,9 +26,9 @@ public:
     friend mem_hash_hint_table;
 
     enum bucket_type {
-        // Spine entry. Has [ K, D and Hints ]
+        // spine entry. has [ K, D and Hints ]
         BUCKET_TYPE_SPINE,
-        // Chain entry. Has [ K, D and only 1 Hint ]
+        // chain entry. has [ K, D and only 1 Hint ]
         BUCKET_TYPE_CHAIN,
     };
 
@@ -68,10 +68,10 @@ private:
     bool iterate_(mem_hash_api_context *ctx);
 
 public:
-    mem_hash_table_bucket() {
+    mem_hash_table_bucket(void) {
     }
 
-    ~mem_hash_table_bucket() {
+    ~mem_hash_table_bucket(void) {
     }
 
 } __attribute__ ((packed));

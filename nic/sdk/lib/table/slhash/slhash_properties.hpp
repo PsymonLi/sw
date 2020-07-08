@@ -31,12 +31,12 @@ public:
     bytes2str_t key2str;
     bytes2str_t data2str;
 
-    // Overflow Table ID
+    // overflow Table ID
     bool has_oflow_table;
     uint32_t oflow_table_id;
 
 public:
-    properties() {
+    properties(void) {
         table_id = 0;
         table_size = 0;
         swkey_len = 0;
@@ -49,7 +49,7 @@ public:
         health = sdk::table::HEALTH_GREEN;
     }
 
-    ~properties() {
+    ~properties(void) {
     }
 
     sdk_ret_t init(sdk_table_factory_params_t *params) {

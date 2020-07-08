@@ -62,7 +62,7 @@ sltctx::swcompare(uint32_t idx1, uint32_t idx2) {
 }
 
 void
-sltctx::clearsw() {
+sltctx::clearsw(void) {
     // KEY's default value is always FF
     memset(swkey, 0xFF, SDK_TABLE_MAX_SW_KEY_LEN);
     memset(swkeymask, 0xFF, SDK_TABLE_MAX_SW_KEY_LEN);
@@ -72,7 +72,7 @@ sltctx::clearsw() {
 }
 
 void
-sltctx::clearhw() {
+sltctx::clearhw(void) {
     // KEY's default value is always FF
     memset(hwkey, 0xFF, SDK_TABLE_MAX_HW_KEY_LEN);
     memset(hwkeymask, 0xFF, SDK_TABLE_MAX_HW_KEY_LEN);
@@ -82,19 +82,21 @@ sltctx::clearhw() {
 }
 
 void
-sltctx::copyin() {
+sltctx::copyin(void) {
     memcpy(swkey, params->key, props->swkey_len);
     if (params->mask) {
         memcpy(swkeymask, params->mask, props->swkey_len);
     } else {
         memset(swkeymask, ~0, props->swkey_len);
     }
-    memcpy(swdata, params->appdata, props->swdata_len);
+    if (params->appdata) {
+        memcpy(swdata, params->appdata, props->swdata_len);
+    }
     return;
 }
 
 void
-sltctx::copyout() {
+sltctx::copyout(void) {
     if (params->key)
         memcpy(params->key, swkey, props->swkey_len);
     else
@@ -118,7 +120,7 @@ printbytes(const char *name, bytes2str_t b2s, void *b, uint32_t len) {
 }
 
 void
-sltctx::print_sw() {
+sltctx::print_sw(void) {
     SLTCAM_TRACE_VERBOSE("SW Fields");
     printbytes("Key", props->key2str, swkey, props->swkey_len);
     printbytes("Mask", props->key2str, swkeymask, props->swkey_len);
@@ -126,7 +128,7 @@ sltctx::print_sw() {
 }
 
 void
-sltctx::print_hw() {
+sltctx::print_hw(void) {
     SLTCAM_TRACE_VERBOSE("HW Fields");
     printbytes("Key", props->key2str, hwkey, props->hwkey_len);
     printbytes("Mask", props->key2str, hwkeymask, props->hwkey_len);
@@ -134,7 +136,7 @@ sltctx::print_hw() {
 }
 
 void
-sltctx::print_params() {
+sltctx::print_params(void) {
     if (params) {
         SLTCAM_TRACE_VERBOSE("Input Params");
         printbytes("Key", props->key2str, params->key, props->swkey_len);
@@ -144,7 +146,7 @@ sltctx::print_params() {
 }
 
 sdk_ret_t
-sltctx::init() {
+sltctx::init(void) {
     params = NULL;
     tcam_index = 0;
     dbslot = 0;

@@ -8,7 +8,7 @@ export ASIC_MOCK_MODE=1
 export ASIC_MOCK_MEMORY_MODE=1
 
 # PI gtests
-export PATH=${PATH}:${BUILD_DIR}/bin
+export PATH=${PATH}:${BUILD_DIR}/${ASIC}/bin
 $ARGS memhash_test $*
 #perf record --call-graph fp memhash_test --gtest_filter="scale.insert1M"
 #gdb --args memhash_test --gtest_filter="scale.insert1M"

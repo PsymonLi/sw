@@ -27,7 +27,7 @@ public:
     static slhash* factory(sdk_table_factory_params_t *params);
     static void destroy(slhash *slhash);
 
-    // All Public APIs
+    // all public APIs
     sdk_ret_t insert(sdk_table_api_params_t *params);
     sdk_ret_t remove(sdk_table_api_params_t *params);
     sdk_ret_t get(sdk_table_api_params_t *params);
@@ -37,27 +37,27 @@ public:
     sdk_ret_t release(sdk_table_api_params_t *params);
     sdk_ret_t stats_get(sdk_table_api_stats_t *api_stats,
                         sdk_table_stats_t *table_stats);
-    sdk_ret_t txn_start();
-    sdk_ret_t txn_end();
+    sdk_ret_t txn_start(void);
+    sdk_ret_t txn_end(void);
     
     // DEV USAGE ONLY:
-    // Api to check sanity of the internal state
-    sdk_ret_t sanitize();
+    // api to check sanity of the internal state
+    sdk_ret_t sanitize(void);
 
 private:
-    slhash() {
+    slhash(void) {
         SDK_SPINLOCK_INIT(&slock_, PTHREAD_PROCESS_PRIVATE);
     }
-    ~slhash() {
+    ~slhash(void) {
         SDK_SPINLOCK_DESTROY(&slock_);
     }
     sdk_ret_t init_(sdk_table_factory_params_t *params);
-    sdk_ret_t find_();
-    sdk_ret_t insert_();
-    sdk_ret_t remove_();
-    sdk_ret_t update_();
-    sdk_ret_t reserve_();
-    sdk_ret_t release_();
+    sdk_ret_t find_(void);
+    sdk_ret_t insert_(void);
+    sdk_ret_t remove_(void);
+    sdk_ret_t update_(void);
+    sdk_ret_t reserve_(void);
+    sdk_ret_t release_(void);
 
 private:
     sdk::table::slhash_internal::properties props_;
@@ -66,9 +66,9 @@ private:
     sdk_spinlock_t slock_;
     slhctx ctx_;
     
-    // Hash table
+    // hash table
     sdk::table::slhash_internal::table table_;
-    // Overflow TCAM
+    // overflow TCAM
     sdk::table::sltcam *tcam_;
 };
 

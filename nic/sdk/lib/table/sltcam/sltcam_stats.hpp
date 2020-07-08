@@ -19,18 +19,29 @@ private:
     sdk::table::sdk_table_stats_t tabstats_;
 
 public:
-    stats() {
+    stats(void) {
         memset(&apistats_, 0, sizeof(apistats_));
         memset(&tabstats_, 0, sizeof(tabstats_));
     }
 
-    ~stats() {
+    ~stats(void) {
     }
 
     sdk_ret_t insert(sdk_ret_t status) {
         if (status == SDK_RET_OK) {
             apistats_.insert++;
             tabstats_.entries++;
+        } else if (status == SDK_RET_ENTRY_EXISTS) {
+            apistats_.insert_duplicate++;
+        } else {
+            apistats_.insert_fail++;
+        }
+        return SDK_RET_OK;
+    }
+
+    sdk_ret_t insert_after_reserve(sdk_ret_t status) {
+        if (status == SDK_RET_OK) {
+            apistats_.insert++;
         } else if (status == SDK_RET_ENTRY_EXISTS) {
             apistats_.insert_duplicate++;
         } else {
@@ -63,6 +74,7 @@ public:
     sdk_ret_t reserve(sdk_ret_t status) {
         if (status == SDK_RET_OK) {
             apistats_.reserve++;
+            tabstats_.entries++;
         } else {
             apistats_.reserve_fail++;
         }
@@ -72,6 +84,7 @@ public:
     sdk_ret_t release(sdk_ret_t status) {
         if (status == SDK_RET_OK) {
             apistats_.release++;
+            tabstats_.entries--;
         } else {
             apistats_.release_fail++;
         }

@@ -68,9 +68,9 @@ mem_hash_p4pd_hwkey_hwmask_build(uint32_t tableid, void *swkey,
                                  uint8_t *hw_key_y);
 
 void
-mem_hash_p4pd_stats_reset();
+mem_hash_p4pd_stats_reset(void);
 
 void
-mem_hash_p4pd_stats_print();
+mem_hash_p4pd_stats_print(void);
 
 #endif

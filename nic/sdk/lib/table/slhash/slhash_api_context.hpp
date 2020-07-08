@@ -23,11 +23,11 @@ public:
     sdk_table_api_params_t *params;
     sdk_table_api_op_t op;
 
-    // Full 32bit hash value
+    // full 32bit hash value
     bool hash_valid;
     uint32_t hash_32b;
     
-    // Index
+    // index
     bool index_valid;
     uint32_t index;
 
@@ -39,35 +39,37 @@ public:
     // HW Key for Hash Calculation
     uint8_t hwkey[SDK_TABLE_MAX_HW_KEY_LEN];
 
-    // Output Handle
+    // output Handle
     sdk::table::handle_t ohandle;
 
-    // Params for tcam apis
+    // params for tcam apis
     bool tcam_params_valid;
     sdk_table_api_params_t tcam_params;
 
 public:
-    slhctx() { init(sdk::table::SDK_TABLE_API_NONE, NULL, NULL); }
+    slhctx(void) { init(sdk::table::SDK_TABLE_API_NONE, NULL, NULL); }
         
-    int keycompare();
+    int keycompare(void);
     sdk_ret_t init(sdk_table_api_op_t op,
                    sdk_table_api_params_t *params,
                    sdk::table::slhash_internal::properties *props);
     
-    sdk_ret_t calchash();
-    sdk_ret_t read();
-    sdk_ret_t write();
+    sdk_ret_t calchash(void);
+    sdk_ret_t read(void);
+    sdk_ret_t write(void);
+    sdk_ret_t write_key(void);
 
-    void clear_();
-    void copyin_();
-    void copyout();
+    void clear_(void);
+    void copy_keyin_(void);
+    void copyin_(void);
+    void copyout(void);
 
-    void print_sw();
-    void print_hw();
-    void print_params();
+    void print_sw(void);
+    void print_hw(void);
+    void print_params(void);
 
-    sdk::table::handle_t inhandle();
-    sdk::table::handle_t outhandle();
+    sdk::table::handle_t inhandle(void);
+    sdk::table::handle_t outhandle(void);
 };
 
 } // namespace slhash_internal

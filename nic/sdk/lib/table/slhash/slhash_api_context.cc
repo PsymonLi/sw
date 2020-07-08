@@ -17,22 +17,23 @@ namespace sdk {
 namespace table {
 namespace slhash_internal {
 
+static char g_buff[4096];
+
 char*
 rawstr(void *data, uint32_t len) {
-    static char str[512];
     uint32_t i = 0;
     uint32_t slen = 0;
     for (i = 0; i < len; i++) {
-        slen += sprintf(str+slen, "%02x", ((uint8_t*)data)[i]);
+        slen += sprintf(g_buff+slen, "%02x", ((uint8_t*)data)[i]);
     }
-    return str;
+    return g_buff;
 }
 
 //----------------------------------------------------------------------------
-// Calculate the CRC32 Hash
+// calculate the CRC32 Hash
 //----------------------------------------------------------------------------
 sdk_ret_t
-slhctx::calchash() {
+slhctx::calchash(void) {
     if (!params->hash_valid) {
         SLHASH_TRACE_DEBUG("Generating Hash: TableID=%d, KeyLength=%d, "
                            "DataLength=%d", props->table_id,
@@ -58,10 +59,10 @@ slhctx::calchash() {
 }
 
 //----------------------------------------------------------------------------
-// Read entry from HW
+// read entry from HW
 //----------------------------------------------------------------------------
 sdk_ret_t
-slhctx::read() {
+slhctx::read(void) {
     // index must be valid by now
     SDK_ASSERT(index_valid);
 
@@ -73,8 +74,8 @@ slhctx::read() {
 }
 
 void
-slhctx::clear_() {
-    // Clear HW and SW fields
+slhctx::clear_(void) {
+    // clear HW and SW fields
     memset(hwkey, 0, SDK_TABLE_MAX_HW_KEY_LEN);
     memset(swkey, 0, SDK_TABLE_MAX_SW_KEY_LEN);
     memset(swkeymask, 0, SDK_TABLE_MAX_SW_KEY_LEN);
@@ -83,26 +84,58 @@ slhctx::clear_() {
 }
 
 void
-slhctx::copyin_() {
+slhctx::copyin_(void) {
     memcpy(swkey, params->key, props->swkey_len);
     memset(swkeymask, ~0, props->swkey_len);
     memcpy(swdata, params->appdata, props->swdata_len);
     return;
 }
 
+void
+slhctx::copy_keyin_(void) {
+    memcpy(swkey, params->key, props->swkey_len);
+    memset(swkeymask, ~0, props->swkey_len);
+    return;
+}
+
 //----------------------------------------------------------------------------
-// Write entry to HW
+// write key entry to HW
 //----------------------------------------------------------------------------
 sdk_ret_t
-slhctx::write() {
-    static char buff[4096] = {0};
+slhctx::write_key(void) {
+    if (op != sdk::table::SDK_TABLE_API_RESERVE) {
+        assert(0);
+    }
+    // copy input key params
+    copy_keyin_();
 
+    if (props->entry_trace_en) {
+        p4pd_global_table_ds_decoded_string_get(props->table_id, index,
+                                                swkey, swkeymask, swdata,
+                                                g_buff, sizeof(g_buff));
+        SLHASH_TRACE_DEBUG("Table: %s, EntryIndex:%u\n%s",
+                           props->name, index, g_buff);
+    }
+    SLHASH_TRACE_DEBUG("Table: %s, EntryIndex:%u",
+                       props->name, index);
+    print_hw();
+
+    auto p4pdret = p4pd_global_entry_install(props->table_id, index,
+                                             swkey, swkeymask, swdata);
+    return p4pdret == P4PD_SUCCESS ? sdk::SDK_RET_OK : sdk::SDK_RET_ERR;
+}
+
+//----------------------------------------------------------------------------
+// write entry to HW
+//----------------------------------------------------------------------------
+sdk_ret_t
+slhctx::write(void) {
     if (op == sdk::table::SDK_TABLE_API_INSERT ||
         op == sdk::table::SDK_TABLE_API_UPDATE) {
-        // Copy input params
+        // copy input params
         copyin_();
     } else if (op == SDK_TABLE_API_REMOVE) {
-        // Clear all contents for deletion
+        // clear all contents for deletion
         clear_();
     } else {
         assert(0);
@@ -111,9 +144,9 @@ slhctx::write() {
     if (props->entry_trace_en) {
         p4pd_global_table_ds_decoded_string_get(props->table_id, index,
                                                 swkey, swkeymask, swdata,
-                                                buff, sizeof(buff));
+                                                g_buff, sizeof(g_buff));
         SLHASH_TRACE_DEBUG("Table: %s, EntryIndex:%u\n%s",
-                           props->name, index, buff);
+                           props->name, index, g_buff);
     }
     SLHASH_TRACE_DEBUG("Table: %s, EntryIndex:%u",
                        props->name, index);
@@ -125,12 +158,12 @@ slhctx::write() {
 }
 
 sdk::table::handle_t
-slhctx::inhandle() {
+slhctx::inhandle(void) {
     return params ? params->handle : sdk::table::handle_t::null();
 }
 
 sdk::table::handle_t
-slhctx::outhandle() {
+slhctx::outhandle(void) {
     if (inhandle().valid()) {
         return inhandle();
     }
@@ -145,7 +178,7 @@ slhctx::outhandle() {
 }
 
 int
-slhctx::keycompare() {
+slhctx::keycompare(void) {
     if (inhandle().valid()) {
         return 0;
     }
@@ -153,10 +186,10 @@ slhctx::keycompare() {
 }
 
 void
-slhctx::copyout() {
+slhctx::copyout(void) {
     if (!outhandle().svalid()) {
-        // Copy out the 'sw' fields only if the entry is in hash table.
-        // For TCAM entries, the tcam.get() api itself would have copied
+        // copy out the 'sw' fields only if the entry is in hash table.
+        // for TCAM entries, the tcam.get() api itself would have copied
         // the data.
         if (params->key) {
             memcpy(params->key, swkey, props->swkey_len);
@@ -179,7 +212,7 @@ printbytes(const char *name, bytes2str_t b2s, void *b, uint32_t len) {
 }
 
 void
-slhctx::print_sw() {
+slhctx::print_sw(void) {
     SLHASH_TRACE_VERBOSE("SW Fields");
     printbytes("Key", props->key2str, swkey, props->swkey_len);
     printbytes("Mask", props->key2str, swkeymask, props->swkey_len);
@@ -187,13 +220,13 @@ slhctx::print_sw() {
 }
 
 void
-slhctx::print_hw() {
+slhctx::print_hw(void) {
     SLHASH_TRACE_VERBOSE("HW Fields");
     printbytes("Key", props->key2str, hwkey, props->hwkey_len);
 }
 
 void
-slhctx::print_params() {
+slhctx::print_params(void) {
     if (params) {
         SLHASH_TRACE_DEBUG("Input Params");
         printbytes("Key", props->key2str, params->key, props->swkey_len);

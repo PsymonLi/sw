@@ -14,6 +14,8 @@ using sltctx = sdk::table::sltcam_internal::sltctx;
 namespace sdk {
 namespace table {
 
+static char g_buff[4096];
+
 #define SLTCAM_API_BEGIN(_name) {                            \
         SLTCAM_TRACE_DEBUG("%s sltcam begin: %s %s",         \
                             "--", _name, "--");              \
@@ -101,20 +103,19 @@ sltcam::destroy(sltcam *table)
 }
 
 //----------------------------------------------------------------------------
-// Write entry to HW
+// write entry to HW
 //----------------------------------------------------------------------------
 sdk_ret_t
 sltcam::write_(sltctx *ctx) {
     p4pd_error_t p4pdret;
-    static char buff[4096] = {0};
 
     if (ctx->props->entry_trace_en) {
         p4pd_global_table_ds_decoded_string_get(ctx->props->table_id,
                                                 ctx->tcam_index,
                                                 ctx->swkey, ctx->swkeymask,
-                                                ctx->swdata, buff, sizeof(buff));
+                                                ctx->swdata, g_buff, sizeof(g_buff));
         SLTCAM_TRACE_DEBUG("Table: %s, EntryIndex:%u\n%s",
-                           ctx->props->name, ctx->tcam_index, buff);
+                           ctx->props->name, ctx->tcam_index, g_buff);
     }
 
     SLTCAM_TRACE_DEBUG("Table: %s, EntryIndex:%u",
@@ -127,7 +128,7 @@ sltcam::write_(sltctx *ctx) {
 }
 
 //----------------------------------------------------------------------------
-// Read entry from HW
+// read entry from HW
 //----------------------------------------------------------------------------
 sdk_ret_t
 sltcam::read_(sltctx *ctx) {
@@ -141,7 +142,7 @@ sltcam::read_(sltctx *ctx) {
 }
 
 //----------------------------------------------------------------------------
-// Allocate a TCAM index
+// allocate a TCAM index
 //----------------------------------------------------------------------------
 sdk_ret_t
 sltcam::alloc_(sltctx *ctx) {
@@ -211,35 +212,43 @@ sltcam::find_(sltctx *ctx) {
 }
 
 //---------------------------------------------------------------------------
-// Insert tcam entry by key or handle
+// insert tcam entry by key or handle
 //---------------------------------------------------------------------------
 sdk_ret_t
 sltcam::insert(sdk::table::sdk_table_api_params_t *params) {
 __label__ done;
     sdk_ret_t ret = sdk::SDK_RET_OK;
+    bool existing_entry = false;
     SLTCAM_API_BEGIN_();
 
     auto ctx = create_sltctx(sdk::table::SDK_TABLE_API_INSERT, params, &props_);
     SDK_ASSERT_RETURN(ctx, sdk::SDK_RET_OOM);
 
-    // Validate this ctx (& api params) with the transaction
+    // validate this ctx (& api params) with the transaction
     ret = txn_.validate(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR_GOTO(done, "txn validate, r:%d", ret);
     }
 
-    // Check if an entry with same key exists already.
+    // check if an entry with same key exists already.
     ret = find_(ctx);
     if (ret == sdk::SDK_RET_OK) {
-        ret = sdk::SDK_RET_ENTRY_EXISTS;
-        // Return the handle of the existing entry
-        goto handle_set;
+        if (txn_.valid()) {
+            // if transaction is valid, then entry will already
+            // be reserved, overwrite existing entry
+            existing_entry = true;
+        } else {
+            // if transaction is invalid, then duplicate insert
+            ret = sdk::SDK_RET_ENTRY_EXISTS;
+            // return the handle of the existing entry
+            goto handle_set;
+        }
     } else if (ret != sdk::SDK_RET_ENTRY_NOT_FOUND) {
         SLTCAM_TRACE_ERR_GOTO(done, "find, r:%d", ret);
     }
 
-    // Allocate a tcam entry if not already reserved.
-    if (ctx->params->handle.valid() == false) {
+    // allocate a tcam entry if it doesn't exist
+    if (!existing_entry) {
         ctx->params->num_handles = 1;
         ret = alloc_(ctx);
         if (ret != sdk::SDK_RET_OK) {
@@ -247,38 +256,51 @@ __label__ done;
         }
     }
 
-    // Copy the params to sw fields
+    // copy the params to sw fields
     ctx->copyin();
 
-    // Write to HW
+    // write to HW
     ret = write_(ctx);
     if (ret != sdk::SDK_RET_OK) {
+        if (existing_entry) {
+            // remove from sw db
+            ret = db_.remove(ctx);
+            if (ret != sdk::SDK_RET_OK) {
+                SLTCAM_TRACE_ERR_GOTO(done, "sltcam insert db remove, r:%d", ret);
+            }
+        }
         dealloc_(ctx);
         SLTCAM_TRACE_ERR_GOTO(done, "write, r:%d", ret);
     }
 
-    // Insert to sw db
-    ret = db_.insert(ctx);
-    if (ret != sdk::SDK_RET_OK) {
-        SLTCAM_TRACE_ERR_GOTO(done, "db insert, r:%d", ret);
+    // insert to sw db if not already reserved
+    if (!existing_entry) {
+        ret = db_.insert(ctx);
+        if (ret != sdk::SDK_RET_OK) {
+            SLTCAM_TRACE_ERR_GOTO(done, "db insert, r:%d", ret);
+        }
     }
 
-    // Release this handle
+    // release this handle
     txn_.release(ctx);
 
 handle_set:
-    // Save the handle
+    // save the handle
     params->handle.pindex(ctx->tcam_index);
 
 done:
     //db_.sanitize(ctx);
     SLTCAM_API_END_(ret);
-    stats_.insert(ret);
+    if (txn_.valid()) {
+        stats_.insert_after_reserve(ret);
+    } else {
+        stats_.insert(ret);
+    }
     return ret;
 }
 
 //---------------------------------------------------------------------------
-// Update tcam entry given key or handle
+// update tcam entry given key or handle
 //---------------------------------------------------------------------------
 sdk_ret_t
 sltcam::update(sdk::table::sdk_table_api_params_t *params) {
@@ -288,13 +310,13 @@ __label__ done;
     auto ctx = create_sltctx(sdk::table::SDK_TABLE_API_UPDATE, params, &props_);
     SDK_ASSERT_RETURN(ctx, sdk::SDK_RET_OOM);
 
-    // Validate this ctx (& api params) with the transaction
+    // validate this ctx (& api params) with the transaction
     auto ret = txn_.validate(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR_GOTO(done, "txn validate, r:%d", ret);
     }
 
-    // Find the tcam_index, if handle is not provided.
+    // find the tcam_index, if handle is not provided.
     if (ctx->params->handle.valid() == false) {
         ret = find_(ctx);
         if (ret != sdk::SDK_RET_OK) {
@@ -302,10 +324,10 @@ __label__ done;
         }
     }
 
-    // Copy the params to sw fields
+    // copy the params to sw fields
     ctx->copyin();
 
-    // Write to HW
+    // write to HW
     ret = write_(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR_GOTO(done, "write, r:%d", ret);
@@ -319,7 +341,7 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Remove tcam entry given key or handle
+// remove tcam entry given key or handle
 //---------------------------------------------------------------------------
 sdk_ret_t
 sltcam::remove(sdk::table::sdk_table_api_params_t *params) {
@@ -329,7 +351,7 @@ __label__ done;
     auto ctx = create_sltctx(sdk::table::SDK_TABLE_API_REMOVE, params, &props_);
     SDK_ASSERT_RETURN(ctx, sdk::SDK_RET_OOM);
 
-    // Validate this ctx (& api params) with the transaction
+    // validate this ctx (& api params) with the transaction
     auto ret = txn_.validate(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR_GOTO(done, "txn validate, r:%d", ret);
@@ -342,7 +364,7 @@ __label__ done;
         if (ret != sdk::SDK_RET_OK) {
             SLTCAM_TRACE_ERR_GOTO(done, "read, r:%d", ret);
         }
-        // Copy the swkey into params->key
+        // copy the swkey into params->key
         ctx->copyout();
     }
 
@@ -352,28 +374,28 @@ __label__ done;
         SLTCAM_TRACE_ERR_GOTO(done, "find, r:%d", ret);
     }
 
-    // Remove from HW using swkey
+    // remove from HW using swkey
     ctx->clearsw();
     ret = write_(ctx);
     if (ret != sdk::SDK_RET_OK) {
-        // At this point, not much can be done, print err and proceed
+        // at this point, not much can be done, print err and proceed
         SLTCAM_TRACE_ERR("write, r:%d", ret);
     }
 
-    // Remove the entry from the DB
+    // remove the entry from the DB
     ret = db_.remove(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR_GOTO(done, "db remove, r:%d", ret);
     }
 
-    // Release this handle
+    // release this handle
     txn_.release(ctx);
 
-    // Free the tcam entry
+    // free the tcam entry
     ctx->params->num_handles = 1;
     ret = dealloc_(ctx);
     if (ret != sdk::SDK_RET_OK) {
-        // At this point, not much can be done, print err and proceed
+        // at this point, not much can be done, print err and proceed
         SLTCAM_TRACE_ERR("dealloc, r:%d", ret);
     }
 
@@ -385,7 +407,7 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Get TCAM entry by key or handle
+// get TCAM entry by key or handle
 //---------------------------------------------------------------------------
 sdk_ret_t
 sltcam::get(sdk::table::sdk_table_api_params_t *params) {
@@ -408,10 +430,10 @@ __label__ done;
         SLTCAM_TRACE_ERR_GOTO(done, "read, r:%d", ret);
     }
 
-    // Copy the data out
+    // copy the data out
     ctx->copyout();
 
-    // Save the handle
+    // save the handle
     params->handle.pindex(ctx->tcam_index);
 
 done:
@@ -421,7 +443,7 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Iterate over all tcam entries
+// iterate over all tcam entries
 //---------------------------------------------------------------------------
 sdk_ret_t
 sltcam::iterate(sdk::table::sdk_table_api_params_t *params) {
@@ -458,7 +480,7 @@ done:
 }
 
 //----------------------------------------------------------------------------
-// Get TCAM statistics
+// get TCAM statistics
 //----------------------------------------------------------------------------
 sdk_ret_t
 sltcam::stats_get(sdk::table::sdk_table_api_stats_t *api_stats,
@@ -471,30 +493,56 @@ sltcam::stats_get(sdk::table::sdk_table_api_stats_t *api_stats,
 }
 
 //---------------------------------------------------------------------------
-// Reserve an entry
+// reserve an entry
 //---------------------------------------------------------------------------
 sdk_ret_t
 sltcam::reserve(sdk::table::sdk_table_api_params_t *params) {
 __label__ done;
     SLTCAM_API_BEGIN_();
 
-    auto ctx = create_sltctx(sdk::table::SDK_TABLE_API_RELEASE,
+    auto ctx = create_sltctx(sdk::table::SDK_TABLE_API_RESERVE,
                              params, &props_);
     SDK_ASSERT_RETURN(ctx, sdk::SDK_RET_OOM);
 
-    // Allocate the entry
-    auto ret = alloc_(ctx);
+    // check if an entry with same key exists already.
+    // find_ identifies insert location in sw db
+    auto ret = find_(ctx);
+    if (ret == sdk::SDK_RET_OK) {
+        ret = sdk::SDK_RET_ENTRY_EXISTS;
+        goto done;
+    } else if (ret != sdk::SDK_RET_ENTRY_NOT_FOUND) {
+        SLTCAM_TRACE_ERR_GOTO(done, "reserve find, r:%d", ret);
+    }
+
+    // allocate the entry
+    ret = alloc_(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR_GOTO(done, "alloc, r:%d", ret);
     }
 
-    // Reserve the entry in the transaction
+    // reserve the entry in the transaction
     ret = txn_.reserve(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR_GOTO(done, "txn reserve, r:%d", ret);
     }
 
-    // Save the handle
+    // copy the params to sw fields
+    ctx->copyin();
+
+    // write to HW
+    ret = write_(ctx);
+    if (ret != sdk::SDK_RET_OK) {
+        dealloc_(ctx);
+        SLTCAM_TRACE_ERR_GOTO(done, "reserve write, r:%d", ret);
+    }
+
+    // insert to sw db
+    ret = db_.insert(ctx);
+    if (ret != sdk::SDK_RET_OK) {
+        SLTCAM_TRACE_ERR_GOTO(done, "reserve db insert, r:%d", ret);
+    }
+
+    // save the handle
     params->handle.pindex(ctx->tcam_index);
 
 done:
@@ -505,23 +553,45 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Release an entry
+// release an entry
 //---------------------------------------------------------------------------
 sdk_ret_t
 sltcam::release(sdk::table::sdk_table_api_params_t *params) {
+    sdk_ret_t ret;
     SLTCAM_API_BEGIN_();
 
     auto ctx = create_sltctx(sdk::table::SDK_TABLE_API_RELEASE,
                                  params, &props_);
     SDK_ASSERT_RETURN(ctx, sdk::SDK_RET_OOM);
 
-    // Release this entry from the transaction
-    auto ret = txn_.release(ctx);
+    // if entry has been reserved we need to remove it from hw
+    // find dbslot
+    ret = find_(ctx);
+    if (ret != sdk::SDK_RET_OK) {
+        SLTCAM_TRACE_ERR_GOTO(done, "find, r:%d", ret);
+    }
+
+    // remove from HW using swkey
+    ctx->clearsw();
+    ret = write_(ctx);
+    if (ret != sdk::SDK_RET_OK) {
+        // at this point, not much can be done, print err and proceed
+        SLTCAM_TRACE_ERR("write, r:%d", ret);
+    }
+
+    // remove the entry from the DB
+    ret = db_.remove(ctx);
+    if (ret != sdk::SDK_RET_OK) {
+        SLTCAM_TRACE_ERR_GOTO(done, "db remove, r:%d", ret);
+    }
+
+    // release this entry from the transaction
+    ret = txn_.release(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR_GOTO(done, "txn release, r:%d", ret);
     }
 
-    // Free the entry
+    // free the entry
     ret = dealloc_(ctx);
     if (ret != sdk::SDK_RET_OK) {
         SLTCAM_TRACE_ERR("dealloc, r:%d", ret);
@@ -534,10 +604,10 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Start the transaction
+// start the transaction
 //---------------------------------------------------------------------------
 sdk_ret_t
-sltcam::txn_start() {
+sltcam::txn_start(void) {
     SLTCAM_API_BEGIN_();
     auto ret = txn_.start();
     SLTCAM_API_END_(ret);
@@ -545,10 +615,10 @@ sltcam::txn_start() {
 }
 
 //---------------------------------------------------------------------------
-// End the transaction
+// end the transaction
 //---------------------------------------------------------------------------
 sdk_ret_t
-sltcam::txn_end() {
+sltcam::txn_end(void) {
     SLTCAM_API_BEGIN_();
     auto ret = txn_.end();
     SLTCAM_API_END_(ret);
@@ -556,10 +626,10 @@ sltcam::txn_end() {
 }
 
 //---------------------------------------------------------------------------
-// Sanitize internal data structures
+// sanitize internal data structures
 //---------------------------------------------------------------------------
 sdk_ret_t
-sltcam::sanitize() {
+sltcam::sanitize(void) {
     auto ctx = create_sltctx(sdk::table::SDK_TABLE_API_UPDATE, NULL, &props_);
     SDK_ASSERT_RETURN(ctx, sdk::SDK_RET_OOM);
     db_.sanitize(ctx);

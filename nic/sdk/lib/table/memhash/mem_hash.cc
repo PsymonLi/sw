@@ -58,7 +58,7 @@ crc32_aarch64(const uint64_t *p, uint32_t len) {
 #endif
 
 //---------------------------------------------------------------------------
-// Factory method to instantiate the class
+// factory method to instantiate the class
 //---------------------------------------------------------------------------
 mem_hash *
 mem_hash::factory(sdk_table_factory_params_t *params) {
@@ -133,7 +133,7 @@ mem_hash::init_(sdk_table_factory_params_t *params) {
     props_->stable_id = tinfo.oflow_table_id;
     SDK_ASSERT(props_->stable_id);
 
-    // Assumption: All mem_hash tables will have a HINT table
+    // assumption: All mem_hash tables will have a HINT table
     SDK_ASSERT(tinfo.has_oflow_table);
 
     p4pdret = p4pd_global_table_properties_get(props_->stable_id, &ctinfo);
@@ -175,14 +175,14 @@ mem_hash::init_(sdk_table_factory_params_t *params) {
     return SDK_RET_OK;
 }
 
-mem_hash::mem_hash() {
+mem_hash::mem_hash(void) {
     props_ = NULL;
     main_table_ = NULL;
     SDK_SPINLOCK_INIT(&slock_, PTHREAD_PROCESS_PRIVATE);
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Destructor
+// mem_hash destructor
 //---------------------------------------------------------------------------
 void
 mem_hash::destroy(mem_hash *table) {
@@ -198,14 +198,14 @@ mem_hash::destroy(mem_hash *table) {
     SDK_FREE(SDK_MEM_ALLOC_MEM_HASH, table);
 }
 
-mem_hash::~mem_hash() {
+mem_hash::~mem_hash(void) {
     props_->~properties_t();
     SDK_FREE(SDK_MEM_ALLOC_MEM_HASH_PROPERTIES, props_);
     SDK_SPINLOCK_DESTROY(&slock_);
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Insert entry with hash value
+// mem_hash insert entry with hash value
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::genhash_(sdk_table_api_params_t *params) {
@@ -214,7 +214,7 @@ mem_hash::genhash_(sdk_table_api_params_t *params) {
     uint32_t hash_32b = 0;
 
     if (params->hash_valid) {
-        // If hash_valid is set in the params, skip computing it.
+        // if hash_valid is set in the params, skip computing it.
         return SDK_RET_OK;
     }
 
@@ -240,7 +240,7 @@ mem_hash::genhash_(sdk_table_api_params_t *params) {
 }
 
 //---------------------------------------------------------------------------
-// mem_hash: Create API context. This is used by all APIs
+// mem_hash: create API context. this is used by all APIs
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::ctxinit_(sdk_table_api_op_t op,
@@ -262,7 +262,7 @@ mem_hash::ctxinit_(sdk_table_api_op_t op,
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Insert entry to mem_hash table
+// mem_hash insert entry to mem_hash table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::insert(sdk_table_api_params_t *params) {
@@ -292,7 +292,7 @@ insert_return:
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Update entry to mem_hash table
+// mem_hash update entry to mem_hash table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::update(sdk_table_api_params_t *params) {
@@ -320,7 +320,7 @@ update_return:
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Remove entry from mem_hash table
+// mem_hash remove entry from mem_hash table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::remove(sdk_table_api_params_t *params) {
@@ -348,7 +348,7 @@ remove_return:
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Get entry from mem_hash table
+// mem_hash get entry from mem_hash table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::get(sdk_table_api_params_t *params) {
@@ -376,7 +376,7 @@ get_return:
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Reserve entry in mem_hash table
+// mem_hash reserve entry in mem_hash table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::reserve(sdk_table_api_params_t *params) {
@@ -407,7 +407,7 @@ reserve_return:
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Release entry in mem_hash table
+// mem_hash release entry in mem_hash table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::release(sdk_table_api_params_t *params) {
@@ -438,7 +438,7 @@ release_return:
 }
 
 //---------------------------------------------------------------------------
-// mem_hash Get Stats from mem_hash table
+// mem_hash get stats from mem_hash table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash::stats_get(sdk_table_api_stats_t *api_stats,
@@ -451,7 +451,7 @@ mem_hash::stats_get(sdk_table_api_stats_t *api_stats,
 }
 
 sdk_ret_t
-mem_hash::state_validate() {
+mem_hash::state_validate(void) {
     auto ret = ctxinit_(sdk::table::SDK_TABLE_API_VALIDATE, NULL);
     if (ret != SDK_RET_OK) {
         MEMHASH_TRACE_ERR("failed to create api context. ret:%d", ret);
@@ -469,7 +469,7 @@ mem_hash::state_validate() {
 // mem_hash start transaction
 //---------------------------------------------------------------------------
 sdk_ret_t
-mem_hash::txn_start() {
+mem_hash::txn_start(void) {
     sdk_ret_t ret;
     MEM_HASH_API_BEGIN_();
     ret = txn_.start();
@@ -481,7 +481,7 @@ mem_hash::txn_start() {
 // mem_hash end transaction
 //---------------------------------------------------------------------------
 sdk_ret_t
-mem_hash::txn_end() {
+mem_hash::txn_end(void) {
     sdk_ret_t ret = SDK_RET_OK;
     MEM_HASH_API_BEGIN_();
     ret = txn_.end();

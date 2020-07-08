@@ -10,6 +10,8 @@
 namespace sdk {
 namespace table {
 
+static char g_buff[4096];
+
 #define CHECK_INDEX_LIMIT(index, rv, label) { \
     if (index >= props_->ptable_size) {       \
         rv = SDK_RET_NO_RESOURCE;             \
@@ -490,12 +492,11 @@ sdk_ret_t
 sldirectmap::entry_trace_(const char *fname, void *data, uint32_t index)
 {
     sdk_ret_t    ret;
-    char         buff[4096] = {0};
 
-    ret = entry_to_str(data, index, buff, sizeof(buff));
+    ret = entry_to_str(data, index, g_buff, sizeof(g_buff));
     SDK_ASSERT(ret == SDK_RET_OK);
     DIRECTMAP_TRACE_DEBUG("%s, TableId:%d, Index: %u\n%s", fname,
-                          props_->ptable_id, index, buff);
+                          props_->ptable_id, index, g_buff);
     return SDK_RET_OK;
 }
 

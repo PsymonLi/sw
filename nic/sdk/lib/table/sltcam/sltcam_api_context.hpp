@@ -26,7 +26,7 @@ public:
     bool tcam_index_valid;
     uint32_t tcam_index;
 
-    // Tree Index
+    // tree Index
     bool dbslot_valid;
     uint32_t dbslot;
 
@@ -41,20 +41,20 @@ public:
     uint8_t hwdata[SDK_TABLE_MAX_HW_DATA_LEN];
 
 public:
-    sltctx() { init(); }
-    ~sltctx() {}
+    sltctx(void) { init(); }
+    ~sltctx(void) {}
 
     int swcompare(uint32_t idx);
     int swcompare(uint32_t idx1, uint32_t idx2);
-    sdk_ret_t init();
-    void clearsw();
-    void clearhw();
-    void copyin();
-    void copyout();
+    sdk_ret_t init(void);
+    void clearsw(void);
+    void clearhw(void);
+    void copyin(void);
+    void copyout(void);
 
-    void print_sw();
-    void print_hw();
-    void print_params();
+    void print_sw(void);
+    void print_hw(void);
+    void print_params(void);
 };
 
 } // namespace sltcam_internal

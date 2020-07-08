@@ -19,12 +19,12 @@ private:
     sdk::table::sdk_table_stats_t tabstats_;
 
 public:
-    stats() {
+    stats(void) {
         memset(&apistats_, 0, sizeof(apistats_));
         memset(&tabstats_, 0, sizeof(tabstats_));
     }
 
-    ~stats() {
+    ~stats(void) {
     }
 
     sdk_ret_t insert(sdk_ret_t status, sdk::table::handle_t hdl) {

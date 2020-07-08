@@ -31,7 +31,7 @@ public:
     bytes2str_t data2str;
 
 public:
-    properties() {
+    properties(void) {
         table_id = 0;
         table_size = 0;
         swkey_len = 0;
@@ -43,7 +43,7 @@ public:
         health = sdk::table::HEALTH_GREEN;
     }
 
-    ~properties() {
+    ~properties(void) {
     }
 
     sdk_ret_t init(sdk_table_factory_params_t *params) {

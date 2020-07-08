@@ -29,7 +29,7 @@ __label__ done;
     sdk::sdk_ret_t ret = sdk::SDK_RET_OK;
     if (ctx.inhandle().valid()) {
         if (ctx.inhandle().svalid()) {
-            // Secondary index is valid for this handle,
+            // secondary index is valid for this handle,
             // then the entry will be present in TCAM
             return sdk::SDK_RET_ENTRY_NOT_FOUND;
         }
@@ -37,7 +37,7 @@ __label__ done;
             return sdk::SDK_RET_ENTRY_NOT_FOUND;
         }
     } else {
-        // Calculate the hash
+        // calculate the hash
         ret = ctx.calchash();
         SLHASH_RET_CHECK_AND_GOTO(ret, done, "calchash, r:%d", ret);
     }
@@ -70,16 +70,16 @@ table::insert(slhctx &ctx) {
     SDK_ASSERT(ctx.index_valid);
     auto &bkt = buckets_[ctx.index];
 
-    // Use the bucket if it is available
+    // use the bucket if it is available
     if (bkt.isused()) {
-        // Bucket is already used.
+        // bucket is already used.
         return sdk::SDK_RET_COLLISION;
     }
 
-    // Allocate this bucket
+    // allocate this bucket
     bkt.alloc();
 
-    // Write the bucket to HW
+    // write the bucket to HW
     ctx.write();
 
     return sdk::SDK_RET_OK;
@@ -92,7 +92,7 @@ table::update(slhctx &ctx) {
     // bucket must be valid for update
     SDK_ASSERT(buckets_[ctx.index].isused());
 
-    // Write the bucket to HW
+    // write the bucket to HW
     ctx.write();
 
     return sdk::SDK_RET_OK;
@@ -104,18 +104,18 @@ table::remove(slhctx &ctx) {
     SDK_ASSERT(ctx.index_valid);
     auto &bkt = buckets_[ctx.index];
 
-    // If this bucket is not valid, then this entry is not present.
+    // if this bucket is not valid, then this entry is not present.
     if (!bkt.isused()) {
         return sdk::SDK_RET_ENTRY_NOT_FOUND;
     }
 
-    // Make sure the key matches the entry
+    // make sure the key matches the entry
     SDK_ASSERT(ctx.keycompare() == 0);
    
-    // Write the bucket to HW
+    // write the bucket to HW
     ctx.write();
 
-    // Free this bucket
+    // free this bucket
     bkt.free();
 
     return sdk::SDK_RET_OK;
@@ -127,14 +127,17 @@ table::reserve(slhctx &ctx) {
     SDK_ASSERT(ctx.index_valid);
     auto &bkt = buckets_[ctx.index];
 
-    // Use the bucket if it is available
+    // use the bucket if it is available
     if (bkt.isbusy()) {
-        // Bucket is already used.
+        // bucket is already used.
         return sdk::SDK_RET_COLLISION;
     }
 
-    // Reserve this bucket
+    // reserve this bucket
     bkt.reserve();
+
+    // write key to HW to detect duplicate keys during batch reserve
+    ctx.write_key();
     return sdk::SDK_RET_OK;
 }
 
@@ -144,13 +147,13 @@ table::release(slhctx &ctx) {
     SDK_ASSERT(ctx.index_valid);
     auto &bkt = buckets_[ctx.index];
 
-    // Use the bucket if it is available
+    // use the bucket if it is available
     if (bkt.isreserved() == false) {
-        // Bucket is already used.
+        // bucket is already used.
         return sdk::SDK_RET_ENTRY_NOT_FOUND;
     }
 
-    // Allocate this bucket
+    // allocate this bucket
     bkt.release();
 
     return sdk::SDK_RET_OK;

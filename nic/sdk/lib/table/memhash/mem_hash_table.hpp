@@ -38,14 +38,14 @@ protected:
     sdk_ret_t init_(uint32_t id, uint32_t size);
 
 public:
-    mem_hash_base_table() {
+    mem_hash_base_table(void) {
         table_id_ = 0;
         table_size_ = 0;
         num_table_index_bits_ = 0;
         buckets_ = NULL;
     }
 
-    ~mem_hash_base_table() {
+    ~mem_hash_base_table(void) {
     }
 
     bool iterate_(mem_hash_api_context *ctx);
@@ -90,12 +90,12 @@ private:
 
 public:
     static mem_hash_hint_table* factory(sdk::table::properties_t *props);
-    mem_hash_hint_table() {
+    mem_hash_hint_table(void) {
         indexer_ = NULL;
         nctx_ = 0;
     }
 
-    ~mem_hash_hint_table() {
+    ~mem_hash_hint_table(void) {
     }
 };
 
@@ -125,12 +125,12 @@ private:
 public:
     static mem_hash_main_table* factory(sdk::table::properties_t *props);
 
-    mem_hash_main_table() {
+    mem_hash_main_table(void) {
         hint_table_ = NULL;
         num_hash_bits_ = 0;
     }
 
-    ~mem_hash_main_table() {
+    ~mem_hash_main_table(void) {
     }
 };
 

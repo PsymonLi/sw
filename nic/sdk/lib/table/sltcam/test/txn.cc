@@ -38,7 +38,7 @@ TEST_F(txn, dup_reserve)
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
     rs = Reserve(TXN_TEST_COUNT, sdk::SDK_RET_OK);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
-    rs = Reserve(TXN_TEST_COUNT, sdk::SDK_RET_NO_RESOURCE);
+    rs = Reserve(TXN_TEST_COUNT, sdk::SDK_RET_ENTRY_EXISTS);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
     rs = ReleaseAllCached(sdk::SDK_RET_OK, true);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
@@ -97,12 +97,13 @@ TEST_F(txn, reserve_dup_insert)
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
     rs = InsertAllCached(sdk::SDK_RET_OK, true);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
-    rs = InsertAllCached(sdk::SDK_RET_ENTRY_EXISTS, true);
+    rs = InsertAllCached(sdk::SDK_RET_OK, true);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
     rs = TxnEnd();
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
 }
 
+#if 0
 TEST_F(txn, reserve_remove)
 {
     sdk_ret_t rs;
@@ -110,11 +111,12 @@ TEST_F(txn, reserve_remove)
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
     rs = Reserve(TXN_TEST_COUNT, sdk::SDK_RET_OK);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
-    rs = RemoveAllCached(sdk::SDK_RET_ENTRY_NOT_FOUND, true);
+    rs = RemoveAllCached(sdk::SDK_RET_OK, true);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
-    rs = TxnEnd(sdk::SDK_RET_TXN_INCOMPLETE);
+    rs = TxnEnd();
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
 }
+#endif
 
 TEST_F(txn, dup_start)
 {

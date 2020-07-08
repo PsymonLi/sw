@@ -48,7 +48,7 @@ static struct memhash_p4pd_api_stats_s {
 #endif
 
 void
-mem_hash_p4pd_stats_print() {
+mem_hash_p4pd_stats_print(void) {
     MEMHASH_TRACE_VERBOSE("hwfield set:%d get:%d "
                           "appdata set:%d get:%d "
                           "entry read:%d install:%d "
@@ -64,7 +64,7 @@ mem_hash_p4pd_stats_print() {
 }
 
 void
-mem_hash_p4pd_stats_reset() {
+mem_hash_p4pd_stats_reset(void) {
     memset(&memhash_p4pd_api_stats, 0, sizeof(memhash_p4pd_api_stats));
 }
 

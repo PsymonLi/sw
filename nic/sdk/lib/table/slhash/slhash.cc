@@ -100,10 +100,10 @@ slhash::destroy(slhash *slh)
 }
 
 sdk_ret_t
-slhash::find_() {
+slhash::find_(void) {
     auto ret = table_.find(ctx_);
     if (ret == sdk::SDK_RET_ENTRY_NOT_FOUND) {
-        // Search the TCAM if not found in hash table
+        // search the TCAM if not found in hash table
         ret = tcam_->get(&ctx_.tcam_params);
         if (ret == sdk::SDK_RET_OK) {
             ctx_.tcam_params_valid = true;
@@ -113,7 +113,7 @@ slhash::find_() {
 }
 
 sdk_ret_t
-slhash::insert_() {
+slhash::insert_(void) {
     auto ret = table_.insert(ctx_);
     if (ret == sdk::SDK_RET_COLLISION) {
         ret = tcam_->insert(&ctx_.tcam_params);
@@ -125,44 +125,44 @@ slhash::insert_() {
 }
 
 //---------------------------------------------------------------------------
-// Insert tcam entry by key or handle
+// insert tcam entry by key or handle
 //---------------------------------------------------------------------------
 sdk_ret_t
 slhash::insert(sdk::table::sdk_table_api_params_t *params) {
 __label__ done, outhandle;
     SLHASH_API_BEGIN_();
 
-    // Initialize the context
+    // initialize the context
     auto ret = ctx_.init(sdk::table::SDK_TABLE_API_INSERT, params, &props_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "ctx init, r:%d", ret);
 
-    // Validate this ctx (& api params) with the transaction
+    // validate this ctx (& api params) with the transaction
     ret = txn_.validate(ctx_);
     SDK_ASSERT(ret == SDK_RET_OK);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "txn validate, r:%d", ret);
 
-    // If handle is valid, we dont need to find the entry.
+    // if handle is valid, we dont need to find the entry.
     if (!params->handle.valid()) {
-        // Check if an entry with same key exists already.
+        // check if an entry with same key exists already.
         ret = find_();
         if (ret == sdk::SDK_RET_OK) {
             ret = sdk::SDK_RET_ENTRY_EXISTS;
-            // Return the handle of the existing entry
+            // return the handle of the existing entry
             goto outhandle;
         } else if (ret != sdk::SDK_RET_ENTRY_NOT_FOUND) {
             SLHASH_TRACE_ERROR_AND_GOTO(done, "find, r:%d", ret);
         }
     }
 
-    // Insert the entry
+    // insert the entry
     ret = insert_();
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "insert_, r:%d", ret);
 
-    // Release this handle
+    // release this handle
     txn_.release(ctx_);
 
 outhandle:
-    // Save the handle
+    // save the handle
     params->handle = ctx_.outhandle();
     SLHASH_TRACE_DEBUG("Handle: %s", params->handle.tostr());
 
@@ -173,10 +173,10 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Update tcam entry given key or handle
+// update tcam entry given key or handle
 //---------------------------------------------------------------------------
 sdk_ret_t
-slhash::update_() {
+slhash::update_(void) {
     if (ctx_.outhandle().svalid()) {
         auto ret = tcam_->update(&ctx_.tcam_params);
         if (ret == sdk::SDK_RET_OK) {
@@ -189,30 +189,30 @@ slhash::update_() {
 }
 
 //---------------------------------------------------------------------------
-// Update tcam entry given key or handle
+// update tcam entry given key or handle
 //---------------------------------------------------------------------------
 sdk_ret_t
 slhash::update(sdk::table::sdk_table_api_params_t *params) {
 __label__ done;
     SLHASH_API_BEGIN_();
 
-    // Initialize the context
+    // initialize the context
     auto ret = ctx_.init(sdk::table::SDK_TABLE_API_UPDATE, params, &props_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "ctx init, r:%d", ret);
 
-    // Validate this ctx (& api params) with the transaction
+    // validate this ctx (& api params) with the transaction
     ret = txn_.validate(ctx_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "txn validate, r:%d", ret);
 
-    // Make sure the entry exists.
+    // make sure the entry exists.
     ret = find_();
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "find, r:%d", ret);
 
-    // Update the entry
+    // update the entry
     ret = update_();
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "update_, r:%d", ret);
 
-    // Save the handle
+    // save the handle
     params->handle = ctx_.outhandle();
 
 done:
@@ -222,10 +222,10 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Remove Implementation (private)
+// remove Implementation (private)
 //---------------------------------------------------------------------------
 sdk_ret_t
-slhash::remove_() {
+slhash::remove_(void) {
     auto ret = table_.remove(ctx_);
     if (ret == sdk::SDK_RET_ENTRY_NOT_FOUND) {
         ret = tcam_->remove(&ctx_.tcam_params);
@@ -237,31 +237,31 @@ slhash::remove_() {
 }
 
 //---------------------------------------------------------------------------
-// Remove API (public)
+// remove API (public)
 //---------------------------------------------------------------------------
 sdk_ret_t
 slhash::remove(sdk::table::sdk_table_api_params_t *params) {
 __label__ done;
     SLHASH_API_BEGIN_();
 
-    // Initialize the context
+    // initialize the context
     auto ret = ctx_.init(sdk::table::SDK_TABLE_API_REMOVE, params, &props_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "ctx init, r:%d", ret);
 
-    // Validate this ctx (& api params) with the transaction
+    // validate this ctx (& api params) with the transaction
     ret = txn_.validate(ctx_);
     SDK_ASSERT(ret == SDK_RET_OK);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "txn validate, r:%d", ret);
 
-    // Make sure the entry exists.
+    // make sure the entry exists.
     ret = find_();
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "find, r:%d", ret);
 
-    // Remove from Hash Table or TCAM
+    // remove from Hash Table or TCAM
     ret = remove_();
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "remove_, r:%d", ret);
 
-    // Release this handle
+    // release this handle
     txn_.release(ctx_);
 
 done:
@@ -271,22 +271,22 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Get TCAM entry by key or handle
+// get TCAM entry by key or handle
 //---------------------------------------------------------------------------
 sdk_ret_t
 slhash::get(sdk::table::sdk_table_api_params_t *params) {
 __label__ done;
     SLHASH_API_BEGIN_();
 
-    // Initialize the context
+    // initialize the context
     auto ret = ctx_.init(sdk::table::SDK_TABLE_API_GET, params, &props_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "ctx init, r:%d", ret);
 
-    // Find the entry in Hash table or TCAM
+    // find the entry in Hash table or TCAM
     ret = find_();
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "find, r:%d", ret);
 
-    // CopyOut the data
+    // copy out the data
     ctx_.copyout();
 
 done:
@@ -296,7 +296,7 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Iterate over all tcam entries
+// iterate over all tcam entries
 //---------------------------------------------------------------------------
 sdk_ret_t
 slhash::iterate(sdk::table::sdk_table_api_params_t *params) {
@@ -336,7 +336,7 @@ done:
 }
 
 //----------------------------------------------------------------------------
-// Get Table and API statistics
+// get Table and API statistics
 //----------------------------------------------------------------------------
 sdk_ret_t
 slhash::stats_get(sdk::table::sdk_table_api_stats_t *api_stats,
@@ -357,10 +357,10 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Reserve Implementation (private)
+// reserve Implementation (private)
 //---------------------------------------------------------------------------
 sdk_ret_t
-slhash::reserve_() {
+slhash::reserve_(void) {
 __label__ done;
     auto ret = table_.reserve(ctx_);
     if (ret == sdk::SDK_RET_COLLISION) {
@@ -369,7 +369,7 @@ __label__ done;
             ctx_.tcam_params_valid = true;
         }
     } else if (ret == sdk::SDK_RET_OK) {
-        // We should reserve the entry in the transaction only if
+        // we should reserve the entry in the transaction only if
         // it was reserved from the hash table, else tcam will track
         // it as part of its transaction.
         ret = txn_.reserve(ctx_);
@@ -381,33 +381,33 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Reserve API (public)
+// reserve API (public)
 //---------------------------------------------------------------------------
 sdk_ret_t
 slhash::reserve(sdk::table::sdk_table_api_params_t *params) {
 __label__ done, outhandle;
     SLHASH_API_BEGIN_();
 
-    // Initialize the context
+    // initialize the context
     auto ret = ctx_.init(sdk::table::SDK_TABLE_API_RESERVE, params, &props_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "ctx init, r:%d", ret);
 
-    // Check if an entry exists already.
+    // check if an entry exists already.
     ret = find_();
     if (ret == sdk::SDK_RET_OK) {
         ret = sdk::SDK_RET_ENTRY_EXISTS;
-        // Return the handle of the existing entry
+        // return the handle of the existing entry
         goto outhandle;
     } else if (ret != sdk::SDK_RET_ENTRY_NOT_FOUND) {
         SLHASH_TRACE_ERROR_AND_GOTO(done, "find, r:%d", ret);
     }
 
-    // Reserve the entry in Hash Table or TCAM
+    // reserve the entry in Hash Table or TCAM
     ret = reserve_();
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "reserve_, r:%d", ret);
 
 outhandle:
-    // Save the handle
+    // save the handle
     params->handle = ctx_.outhandle();
     SLHASH_TRACE_DEBUG("Handle: %s", params->handle.tostr());
 
@@ -418,17 +418,17 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Release API (public)
+// release API (public)
 //---------------------------------------------------------------------------
 sdk_ret_t
 slhash::release(sdk::table::sdk_table_api_params_t *params) {
     SLHASH_API_BEGIN_();
 
-    // Initialize the context
+    // initialize the context
     auto ret = ctx_.init(sdk::table::SDK_TABLE_API_RELEASE, params, &props_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "ctx init, r:%d", ret);
 
-    // Validate this ctx (& api params) with the transaction
+    // validate this ctx (& api params) with the transaction
     ret = txn_.validate(ctx_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "txn validate, r:%d", ret);
 
@@ -436,7 +436,7 @@ slhash::release(sdk::table::sdk_table_api_params_t *params) {
                                   : table_.release(ctx_);
     SLHASH_RET_CHECK_AND_GOTO(ret, done, "release, r:%d", ret);
 
-    // Release this handle
+    // release this handle
     txn_.release(ctx_);
 
 done:
@@ -446,10 +446,10 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Start the transaction
+// start the transaction
 //---------------------------------------------------------------------------
 sdk_ret_t
-slhash::txn_start() {
+slhash::txn_start(void) {
 __label__ done;
     SLHASH_API_BEGIN_();
     auto ret = txn_.start();
@@ -463,10 +463,10 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// End the transaction
+// end the transaction
 //---------------------------------------------------------------------------
 sdk_ret_t
-slhash::txn_end() {
+slhash::txn_end(void) {
 __label__ done;
     SLHASH_API_BEGIN_();
     auto ret = txn_.end();
@@ -480,10 +480,10 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// Sanitize internal data structures
+// sanitize internal data structures
 //---------------------------------------------------------------------------
 sdk_ret_t
-slhash::sanitize() {
+slhash::sanitize(void) {
     return sdk::SDK_RET_OK;
 }
 

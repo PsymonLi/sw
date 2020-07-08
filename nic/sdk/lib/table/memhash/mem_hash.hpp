@@ -42,15 +42,15 @@ private:
     sdk_ret_t genhash_(sdk_table_api_params_t *params);
     sdk_ret_t ctxinit_(sdk_table_api_op_t op,
                        sdk_table_api_params_t *params);
-    mem_hash();
-    ~mem_hash();
+    mem_hash(void);
+    ~mem_hash(void);
 
 public:
     static mem_hash *factory(sdk_table_factory_params_t *params);
     static void destroy(mem_hash *memhash);
 
-    sdk_ret_t txn_start();
-    sdk_ret_t txn_end();
+    sdk_ret_t txn_start(void);
+    sdk_ret_t txn_end(void);
     sdk_ret_t insert(sdk_table_api_params_t *params);
     sdk_ret_t update(sdk_table_api_params_t *params);
     sdk_ret_t remove(sdk_table_api_params_t *params);
@@ -60,7 +60,7 @@ public:
     sdk_ret_t stats_get(sdk_table_api_stats_t *api_stats,
                         sdk_table_stats_t *table_stats);
     sdk_ret_t iterate(sdk_table_api_params_t *params);
-    sdk_ret_t state_validate();
+    sdk_ret_t state_validate(void);
 };
 
 }   // namespace table

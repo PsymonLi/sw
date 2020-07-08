@@ -45,7 +45,6 @@ TEST_F(TEST_CLASS_NAME, reserve_release)
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
 }
 
-#if 0 
 // Duplicate Reserves cannot be detected yet, as
 // the key is not written to HW during reserve.
 TEST_F(TEST_CLASS_NAME, dup_reserve)
@@ -53,19 +52,18 @@ TEST_F(TEST_CLASS_NAME, dup_reserve)
     sdk_ret_t rs;
     rs = TxnStart();
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
-    rs = Reserve(2*TEST_OP_COUNT, sdk::SDK_RET_OK,
+    rs = Reserve(TEST_OP_COUNT, sdk::SDK_RET_OK,
                  TEST_USE_HANDLE_OR_KEY, TEST_SET_OR_CLR_HASH);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
-    rs = Reserve(2*TEST_OP_COUNT, sdk::SDK_RET_NO_RESOURCE,
+    rs = Reserve(TEST_OP_COUNT, sdk::SDK_RET_ENTRY_EXISTS,
                  TEST_USE_HANDLE_OR_KEY, TEST_SET_OR_CLR_HASH);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
-    rs = Release(2*TEST_OP_COUNT, sdk::SDK_RET_OK,
+    rs = Release(TEST_OP_COUNT, sdk::SDK_RET_OK,
                  TEST_USE_HANDLE_OR_KEY, TEST_SET_OR_CLR_HASH);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
     rs = TxnEnd();
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
 }
-#endif
 
 TEST_F(TEST_CLASS_NAME, reserve_dup_release)
 {

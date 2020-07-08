@@ -42,14 +42,14 @@ public:
     sdk_ret_t txn_end(void);
 
     // DEV USAGE ONLY:
-    // Api to check sanity of the internal state
+    // api to check sanity of the internal state
     sdk_ret_t sanitize(void);
 
 private:
-    sltcam() {
+    sltcam(void) {
         SDK_SPINLOCK_INIT(&slock_, PTHREAD_PROCESS_PRIVATE);
     }
-    ~sltcam() {
+    ~sltcam(void) {
         SDK_SPINLOCK_DESTROY(&slock_);
     }
     sdk_ret_t init_(sdk_table_factory_params_t *params);

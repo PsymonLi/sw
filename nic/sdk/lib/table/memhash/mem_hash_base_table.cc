@@ -34,11 +34,11 @@ mem_hash_base_table::init_(uint32_t id, uint32_t size) {
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_base_table Destructor
+// mem_hash_base_table destructor
 //---------------------------------------------------------------------------
 void
 mem_hash_base_table::destroy_(mem_hash_base_table *table) {
-    // Free the Hash table entries.
+    // free the Hash table entries.
     SDK_FREE(SDK_MEM_ALLOC_MEM_HASH_TABLE_ENTRIES, table->buckets_);
     table->buckets_ = NULL;
 }

@@ -15,7 +15,7 @@ using sdk::table::memhash::mem_hash_api_context;
 #define MASK(_nbits) ((1 << (_nbits)) - 1)
 
 //---------------------------------------------------------------------------
-// Factory method to instantiate the mem_hash_main_table class
+// factory method to instantiate the mem_hash_main_table class
 //---------------------------------------------------------------------------
 mem_hash_main_table *
 mem_hash_main_table::factory(sdk::table::properties_t *props) {
@@ -72,16 +72,16 @@ mem_hash_main_table::destroy_(mem_hash_main_table *table) {
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table initctx_ : Initialize API context
+// mem_hash_main_table initctx_ : initialize API context
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_main_table::initctx_(mem_hash_api_context *ctx) {
-    // By now, we should have a valid hash value.
+    // by now, we should have a valid hash value.
     SDK_ASSERT(ctx->params->hash_valid);
 
     ctx->table_id = table_id_;
 
-    // Derive the table_index
+    // derive the table_index
     ctx->table_index = ctx->params->hash_32b % table_size_;
     ctx->hash_msbits = (ctx->params->hash_32b >> num_table_index_bits_) & MASK(num_hash_bits_);
     ctx->bucket = &buckets_[ctx->table_index];
@@ -93,7 +93,7 @@ mem_hash_main_table::initctx_(mem_hash_api_context *ctx) {
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table insert_with_handle_: Insert entry to main table
+// mem_hash_main_table insert_with_handle_: insert entry to main table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_main_table::insert_with_handle_(mem_hash_api_context *ctx) {
@@ -102,8 +102,8 @@ mem_hash_main_table::insert_with_handle_(mem_hash_api_context *ctx) {
     SDK_ASSERT(ctx->handle->pvalid());
     SDK_ASSERT(ctx->table_index == ctx->handle->pindex());
     if (!ctx->handle->svalid()) {
-        // This handle is for the main table.
-        // Write key and data to the hardware.
+        // this handle is for the main table.
+        // write key and data to the hardware.
         ret = static_cast<mem_hash_table_bucket*>(ctx->bucket)->insert_with_handle_(ctx);
     } else {
         ctx->hint = ctx->handle->sindex();
@@ -114,29 +114,29 @@ mem_hash_main_table::insert_with_handle_(mem_hash_api_context *ctx) {
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table insert_: Insert entry to main table
+// mem_hash_main_table insert_: insert entry to main table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_main_table::insert_(mem_hash_api_context *ctx) {
     sdk_ret_t ret = SDK_RET_OK;
     SDK_ASSERT(initctx_(ctx) == SDK_RET_OK);
 
-    // If handle is valid, insert directly using the handle.
+    // if handle is valid, insert directly using the handle.
     if (ctx->handle->valid()) {
         return insert_with_handle_(ctx);
     }
 
     // INSERT SEQUENCE:
-    // 1) Insert to Main Table
-    // 2) If COLLISION:
-    //      2.1) Call Hint Table insert api
-    //          2.1.1) Insert to Hint Table
-    //          2.1.2) If COLLISION:
-    //              2.1.2.1) Recursive call to (2.1)
-    //          2.1.3) If SUCCESS, write Hint Table bucket to HW
-    //      2.2) If Hint Table insert is Successful,
-    //           Write the Main Table bucket to HW
-    // 3) Else if SUCCESS, insert is complete.
+    // 1) insert to main table
+    // 2) if COLLISION:
+    //      2.1) call hint table insert api
+    //          2.1.1) insert to hint table
+    //          2.1.2) if COLLISION:
+    //              2.1.2.1) recursive call to (2.1)
+    //          2.1.3) if SUCCESS, write hint table bucket to HW
+    //      2.2) if hint table insert is successful,
+    //           write the main table bucket to HW
+    // 3) else if SUCCESS, insert is complete.
 
     ret = static_cast<mem_hash_table_bucket*>(ctx->bucket)->insert_(ctx);
     if (ret == SDK_RET_COLLISION) {
@@ -146,10 +146,10 @@ mem_hash_main_table::insert_(mem_hash_api_context *ctx) {
 
     if (ret == SDK_RET_OK) {
         // 2 CASES:
-        // CASE 1: Write to HW only if this is a terminal node.
+        // CASE 1: write to HW only if this is a terminal node.
         //
-        // CASE 2: In case of collision, after the downstream nodes are
-        //         written. we can update the main entry. This will ensure
+        // CASE 2: in case of collision, after the downstream nodes are
+        //         written. we can update the main entry. this will ensure
         //         make before break for any downstream changes.
         ret = static_cast<mem_hash_table_bucket*>(ctx->bucket)->write_(ctx);
         ctx->handle->pindex(ctx->table_index);
@@ -161,7 +161,7 @@ mem_hash_main_table::insert_(mem_hash_api_context *ctx) {
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table remove_with_handle_: Remove entry from main table
+// mem_hash_main_table remove_with_handle_: remove entry from main table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_main_table::remove_with_handle_(mem_hash_api_context *ctx) {
@@ -170,8 +170,8 @@ mem_hash_main_table::remove_with_handle_(mem_hash_api_context *ctx) {
     SDK_ASSERT(ctx->handle->pvalid());
     SDK_ASSERT(ctx->table_index == ctx->handle->pindex());
     if (!ctx->handle->svalid()) {
-        // This handle is for the main table.
-        // Write key and data to the hardware.
+        // this handle is for the main table.
+        // write key and data to the hardware.
         MEMHASH_TRACE_VERBOSE("writing to main table.");
         ret = static_cast<mem_hash_table_bucket*>(ctx->bucket)->remove_with_handle_(ctx);
     } else {
@@ -184,14 +184,14 @@ mem_hash_main_table::remove_with_handle_(mem_hash_api_context *ctx) {
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table remove_: Remove entry from main table
+// mem_hash_main_table remove_: remove entry from main table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_main_table::remove_(mem_hash_api_context *ctx) {
     sdk_ret_t ret = SDK_RET_OK;
     SDK_ASSERT(initctx_(ctx) == SDK_RET_OK);
 
-    // If handle is valid, insert directly using the handle.
+    // if handle is valid, insert directly using the handle.
     if (ctx->handle->valid()) {
         return remove_with_handle_(ctx);
     }
@@ -204,8 +204,8 @@ mem_hash_main_table::remove_(mem_hash_api_context *ctx) {
     SDK_ASSERT(ctx->match_type);
 
     if (ctx->is_exact_match()) {
-        // This means there was an exact match in the main table and
-        // it was removed. Check and defragment the hints if required.
+        // this means there was an exact match in the main table and
+        // it was removed. check and defragment the hints if required.
         if (ctx->is_hint_valid()) {
             ret = hint_table_->defragment_(ctx);
             if (ret != SDK_RET_OK) {
@@ -213,7 +213,7 @@ mem_hash_main_table::remove_(mem_hash_api_context *ctx) {
             }
         }
     } else {
-        // We have a hint match, traverse the hints to remove the entry.
+        // we have a hint match, traverse the hints to remove the entry.
         ret = hint_table_->remove_(ctx);
         if (ret != SDK_RET_OK) {
             MEMHASH_TRACE_ERR("hint table remove_ failed, ret:%d", ret);
@@ -224,7 +224,7 @@ mem_hash_main_table::remove_(mem_hash_api_context *ctx) {
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table update_: Remove entry from main table
+// mem_hash_main_table update_: remove entry from main table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_main_table::find_(mem_hash_api_context *ctx,
@@ -232,7 +232,7 @@ mem_hash_main_table::find_(mem_hash_api_context *ctx,
     sdk_ret_t ret = SDK_RET_OK;
 
     if (!ctx->sw_valid) {
-        // If sw_valid, then context is already initialized.
+        // if sw_valid, then context is already initialized.
         SDK_ASSERT(initctx_(ctx) == SDK_RET_OK);
     }
 
@@ -243,11 +243,11 @@ mem_hash_main_table::find_(mem_hash_api_context *ctx,
     }
 
     if (ctx->is_exact_match()) {
-        // This means there was an exact match in the main table
+        // this means there was an exact match in the main table
         *match_ctx = ctx;
         return SDK_RET_OK;
     } else {
-        // We have a hint match, traverse the hints to find a the entry.
+        // we have a hint match, traverse the hints to find a the entry.
         ret = hint_table_->find_(ctx, match_ctx);
         if (ret != SDK_RET_OK) {
             MEMHASH_TRACE_ERR("find_ failed, ret:%d", ret);
@@ -258,7 +258,7 @@ mem_hash_main_table::find_(mem_hash_api_context *ctx,
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table update_: Remove entry from main table
+// mem_hash_main_table update_: remove entry from main table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_main_table::update_(mem_hash_api_context *ctx) {
@@ -286,7 +286,7 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table update_: Remove entry from main table
+// mem_hash_main_table update_: remove entry from main table
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_main_table::get_(mem_hash_api_context *ctx) {
@@ -301,7 +301,7 @@ __label__ done;
         goto done;
     }
 
-    // Set the Handle
+    // set the handle
     if (MEMHASH_API_CONTEXT_IS_MAIN(match_ctx)) {
         match_ctx->handle->pindex(match_ctx->table_index);
         ctx->params->handle.pindex(match_ctx->table_index);
@@ -320,7 +320,7 @@ done:
 }
 
 //---------------------------------------------------------------------------
-// mem_hash_main_table iterate_: Iterate entries from main table
+// mem_hash_main_table iterate_: iterate entries from main table
 //---------------------------------------------------------------------------
 bool
 mem_hash_main_table::iterate_(mem_hash_api_context *ctx) {
@@ -336,10 +336,10 @@ mem_hash_main_table::iterate_(mem_hash_api_context *ctx) {
 
 sdk_ret_t
 mem_hash_main_table::validate_(mem_hash_api_context *ctx) {
-    // Currently there is no state validation in main table.
-    // Future validations can be added here.
+    // currently there is no state validation in main table.
+    // future validations can be added here.
 
-    // Next: Validate the hint table
+    // next: validate the hint table
     auto ret = hint_table_->validate_(ctx);
     if (ret != SDK_RET_OK) {
         return ret;

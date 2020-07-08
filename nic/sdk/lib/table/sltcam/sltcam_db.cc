@@ -32,18 +32,18 @@ __label__ done, notfound;
     sdk::sdk_ret_t ret = sdk::SDK_RET_ERR;
 
     ctx->dbslot_valid = true;
-    ctx->dbslot = MID(lo,hi); // Start from middle
+    ctx->dbslot = MID(lo,hi); // start from middle
     while(lo <= hi && elem_get_(ctx->dbslot)->valid()) {
         //SLTCAM_TRACE_VERBOSE("lo:%d hi:%d slot:%d", lo, hi, slot);
         cmpresult = ctx->swcompare(elem_get_(ctx->dbslot)->data());
         if (cmpresult == 0) {
-            // Match
+            // match
             ctx->tcam_index = elem_get_(ctx->dbslot)->data();
             ctx->tcam_index_valid = true;
             ret = sdk::SDK_RET_OK;
             goto done;
         } else if (cmpresult < 0) {
-            // Lower bound
+            // lower bound
             if (ctx->dbslot == 0) {
                 goto notfound;
             }
@@ -111,11 +111,11 @@ sdk_ret_t
 db::insert(sltctx *ctx) {
     // dbslot must be valid by now
     SDK_ASSERT(ctx->dbslot_valid);
-    // Grow the DB for insertion
+    // grow the DB for insertion
     SDK_ASSERT(grow_(ctx) == sdk::SDK_RET_OK);
-    // Set the Data
+    // set the Data
     elem_get_(ctx->dbslot)->set(ctx->tcam_index);
-    // Increment the count
+    // increment the count
     count_++;
     return sdk::SDK_RET_OK;
 }
@@ -124,11 +124,11 @@ sdk_ret_t
 db::remove(sltctx *ctx) {
     // dbslot must be valid by now
     SDK_ASSERT(ctx->dbslot_valid);
-    // Delete the data
+    // delete the data
     elem_get_(ctx->dbslot)->clear();
-    // Shrink the DB
+    // shrink the DB
     SDK_ASSERT(shrink_(ctx) == sdk::SDK_RET_OK);
-    // Decrement the count
+    // decrement the count
     SDK_ASSERT(count_);
     count_--;
     return sdk::SDK_RET_OK;

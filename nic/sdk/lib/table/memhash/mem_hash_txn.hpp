@@ -22,19 +22,19 @@ private:
     uint32_t reserved_count_;
 
 public:
-    mem_hash_txn() {
+    mem_hash_txn(void) {
         valid_ = false;
         reserved_count_ = 0;
     }
 
-    ~mem_hash_txn() {
+    ~mem_hash_txn(void) {
     }
 
-    bool is_valid() {
+    bool is_valid(void) {
         return valid_;
     }
 
-    sdk_ret_t start() {
+    sdk_ret_t start(void) {
         if (valid_) {
             MEMHASH_TRACE_ERR("transaction already in progress");
             return SDK_RET_TXN_EXISTS;
@@ -50,7 +50,7 @@ public:
         return SDK_RET_OK;
     }
 
-    sdk_ret_t end() {
+    sdk_ret_t end(void) {
         if (valid_ == false) {
             MEMHASH_TRACE_ERR("transaction not started");
             return SDK_RET_TXN_NOT_FOUND;
@@ -65,20 +65,20 @@ public:
         return SDK_RET_OK;
     }
 
-    sdk_ret_t reserve() {
+    sdk_ret_t reserve(void) {
         reserved_count_++;
         MEMHASH_TRACE_VERBOSE("txn: reserved count = %d", reserved_count_);
         return SDK_RET_OK;
     }
 
-    sdk_ret_t release() {
+    sdk_ret_t release(void) {
         SDK_ASSERT(reserved_count_);
         reserved_count_--;
         MEMHASH_TRACE_VERBOSE("txn: reserved count = %d", reserved_count_);
         return SDK_RET_OK;
     }
 
-    sdk_ret_t validate() {
+    sdk_ret_t validate(void) {
         if (valid_ == false && reserved_count_ != 0) {
             return SDK_RET_TXN_INCOMPLETE;
         }

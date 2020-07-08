@@ -45,14 +45,14 @@ private:
     }
 
 public:
-    txn() {
+    txn(void) {
         valid_ = false;
         reserved_count_ = 0;
         table_size_ = 0;
         indexer_ = NULL;
     }
 
-    ~txn() {
+    ~txn(void) {
         indexer::destroy(indexer_);
     }
 
@@ -66,7 +66,7 @@ public:
         return sdk::SDK_RET_OK;
     }
 
-    bool valid() {
+    bool valid(void) {
         return valid_;
     }
 
@@ -84,7 +84,7 @@ public:
         return sdk::SDK_RET_OK;
     }
 
-    sdk_ret_t start() {
+    sdk_ret_t start(void) {
         if (valid()) {
             SLHASH_TRACE_ERR("transaction already in progress");
             return sdk::SDK_RET_TXN_EXISTS;
@@ -100,7 +100,7 @@ public:
         return sdk::SDK_RET_OK;
     }
 
-    sdk_ret_t end() {
+    sdk_ret_t end(void) {
         if (!valid()) {
             SLHASH_TRACE_ERR("transaction not started");
             return sdk::SDK_RET_TXN_NOT_FOUND;

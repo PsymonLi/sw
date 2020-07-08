@@ -8,5 +8,5 @@ export ASIC_MOCK_MODE=1
 export ASIC_MOCK_MEMORY_MODE=1
 
 # PI gtests
-export PATH=${PATH}:${BUILD_DIR}/bin
+export PATH=${PATH}:${BUILD_DIR}/${ASIC}/bin
 LD_PRELOAD=${PRELOADS} $GDB sltcam_test $*

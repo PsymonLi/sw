@@ -34,7 +34,7 @@ private:
     uint32_t release_fail_;
 
 public:
-    mem_hash_api_stats() {
+    mem_hash_api_stats(void) {
         insert_ = 0;
         insert_duplicate_ = 0;
         insert_fail_ = 0;
@@ -51,7 +51,7 @@ public:
         release_fail_ = 0;
     }
 
-    ~mem_hash_api_stats() {
+    ~mem_hash_api_stats(void) {
     }
 
     sdk_ret_t insert(sdk_ret_t status) {
@@ -143,12 +143,12 @@ private:
     uint32_t    hints_;
 
 public:
-    mem_hash_table_stats() {
+    mem_hash_table_stats(void) {
         entries_ = 0;
         hints_ = 0;
     }
 
-    ~mem_hash_table_stats() {
+    ~mem_hash_table_stats(void) {
     }
 
     sdk_ret_t insert(bool is_hint) {
