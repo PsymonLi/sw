@@ -390,19 +390,21 @@ devapi_lif::add_mac(mac_t mac, bool re_add)
             if (!skip_registration) {
                 // Register new mac across all existing vlans
                 for (auto vlan_it = vlan_table_.cbegin(); vlan_it != vlan_table_.cend(); vlan_it++) {
-                    // Check if (MacVlan) filter is already present
-                    mac_vlan = std::make_tuple(mac, *vlan_it);
-                    if (mac_vlan_table_.find(mac_vlan) == mac_vlan_table_.end()) {
-                        // No (MacVlan) filter. Creating (Mac, Vlan)
-                        ret = create_macvlan_filter(mac, *vlan_it);
-                        if (ret != SDK_RET_OK) {
-                            NIC_LOG_ERR("lif:{}: Adding mac:{} failed for vlan: {}. Cleaning up this mac.",
-                                        get_id(), macaddr2str(mac), *vlan_it);
-                            del_mac(mac, false /* update_db */, true /* add failure */);
-                            goto end;
+                    if (is_classicfwd(*vlan_it)) {
+                        // Check if (MacVlan) filter is already present
+                        mac_vlan = std::make_tuple(mac, *vlan_it);
+                        if (mac_vlan_table_.find(mac_vlan) == mac_vlan_table_.end()) {
+                            // No (MacVlan) filter. Creating (Mac, Vlan)
+                            ret = create_macvlan_filter(mac, *vlan_it);
+                            if (ret != SDK_RET_OK) {
+                                NIC_LOG_ERR("lif:{}: Adding mac:{} failed for vlan: {}. Cleaning up this mac.",
+                                            get_id(), macaddr2str(mac), *vlan_it);
+                                del_mac(mac, false /* update_db */, true /* add failure */);
+                                goto end;
+                            }
+                        } else {
+                            NIC_LOG_DEBUG("(Mac,Vlan) filter present. No-op");
                         }
-                    } else {
-                        NIC_LOG_DEBUG("(Mac,Vlan) filter present. No-op");
                     }
                 }
             }
