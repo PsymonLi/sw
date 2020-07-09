@@ -49,6 +49,10 @@ var (
 	portAutoNeg    string
 	portSpeed      string
 	portNumLanes   uint32
+	portPause      string
+	txPause        string
+	rxPause        string
+	portMtu        uint32
 )
 
 var portShowCmd = &cobra.Command{
@@ -128,6 +132,45 @@ func ValidateNumLanes(numLanes uint32) bool {
 	return true
 }
 
+// ValidateMtu returns true if the MTU is within 64-9216
+func ValidateMtu(mtu uint32) bool {
+    if mtu < 64 || mtu > 9216 {
+        fmt.Printf("Invalid MTU. MTU must be in the range 64-9216\n")
+        return false
+    }
+    return true
+}
+
+func isPauseTypeValid(str string) bool {
+    switch str {
+    case "link-level":
+        return true
+    case "link":
+        return true
+    case "pfc":
+        return true
+    case "none":
+        return true
+    default:
+        return false
+    }
+}
+
+func inputToPauseType(str string) pds.PortPauseType {
+    switch str {
+    case "link-level":
+        return pds.PortPauseType_PORT_PAUSE_TYPE_LINK
+    case "link":
+        return pds.PortPauseType_PORT_PAUSE_TYPE_LINK
+    case "pfc":
+        return pds.PortPauseType_PORT_PAUSE_TYPE_PFC
+    case "none":
+        return pds.PortPauseType_PORT_PAUSE_TYPE_NONE
+    default:
+        return pds.PortPauseType_PORT_PAUSE_TYPE_NONE
+    }
+}
+
 func init() {
 	showCmd.AddCommand(portShowCmd)
 	portShowCmd.AddCommand(portStatsShowCmd)
@@ -154,6 +197,10 @@ func init() {
 	portUpdateCmd.Flags().StringVar(&portAutoNeg, "auto-neg", "enable", "Enable or disable auto-neg using enable | disable")
 	portUpdateCmd.Flags().StringVar(&portSpeed, "speed", "", "Set port speed - none, 1g, 10g, 25g, 40g, 50g, 100g")
 	portUpdateCmd.Flags().Uint32Var(&portNumLanes, "num-lanes", 4, "Specify number of lanes")
+	portUpdateCmd.Flags().StringVar(&portPause, "pause-type", "none", "Specify pause-type - link, pfc, none")
+	portUpdateCmd.Flags().StringVar(&txPause, "tx-pause", "disable", "Enable or disable TX pause using enable | disable")
+	portUpdateCmd.Flags().StringVar(&rxPause, "rx-pause", "disable", "Enable or disable RX pause using enable | disable")
+	portUpdateCmd.Flags().Uint32Var(&portMtu, "mtu", 0, "Specify port MTU")
 	portUpdateCmd.MarkFlagRequired("port")
 
 	clearCmd.AddCommand(portClearCmd)
@@ -215,7 +262,11 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 		cmd.Flags().Changed("auto-neg") == false &&
 		cmd.Flags().Changed("speed") == false &&
 		cmd.Flags().Changed("fec-type") == false &&
-		cmd.Flags().Changed("num-lanes") == false {
+		cmd.Flags().Changed("num-lanes") == false &&
+		cmd.Flags().Changed("mtu") == false &&
+		cmd.Flags().Changed("pause-type") == false &&
+		cmd.Flags().Changed("tx-pause") == false &&
+		cmd.Flags().Changed("rx-pause") == false {
 		fmt.Printf("Command arguments not provided correctly, refer to help string for guidance\n")
 		return
 	}
@@ -275,6 +326,43 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 		numLanes = portNumLanes
 	}
 
+    if cmd.Flags().Changed("pause-type") == true {
+        if isPauseTypeValid(portPause) == false {
+            fmt.Printf("Command arguments not provided correctly. Refer to help string for guidance\n")
+            return
+        }
+        pauseType = inputToPauseType(portPause)
+    }
+
+    if cmd.Flags().Changed("tx-pause") == true {
+        if strings.Compare(txPause, "disable") == 0 {
+            txPauseEn = false
+        } else if strings.Compare(txPause, "enable") == 0 {
+            txPauseEn = true
+        } else {
+            fmt.Printf("Command arguments not provided correctly. Refer to help string for guidance\n")
+            return
+        }
+    }
+
+   if cmd.Flags().Changed("rx-pause") == true {
+        if strings.Compare(rxPause, "disable") == 0 {
+            rxPauseEn = false
+        } else if strings.Compare(rxPause, "enable") == 0 {
+            rxPauseEn = true
+        } else {
+            fmt.Printf("Command arguments not provided correctly. Refer to help string for guidance\n")
+            return
+        }
+    }
+
+    if cmd.Flags().Changed("mtu") == true {
+        if ValidateMtu(portMtu) == false {
+            return
+        }
+        mtu = portMtu
+    }
+
 	client := pds.NewPortSvcClient(c)
 
 	getReq := &pds.PortGetRequest{
@@ -305,15 +393,23 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			speed = resp.GetSpec().GetSpeed()
 		}
 		debounceTimeout = resp.GetSpec().GetDeBounceTimeout()
-		mtu = resp.GetSpec().GetMtu()
-		pauseType = resp.GetSpec().GetPauseType()
+		if cmd.Flags().Changed("mtu") == false {
+			mtu = resp.GetSpec().GetMtu()
+		}
+		if cmd.Flags().Changed("pause-type") == false {
+			pauseType = resp.GetSpec().GetPauseType()
+		}
 		loopbackMode = resp.GetSpec().GetLoopbackMode()
 		if cmd.Flags().Changed("num-lanes") == false {
 			numLanes = resp.GetSpec().GetNumLanes()
 		}
 		portType = resp.GetSpec().GetType()
-		txPauseEn = resp.GetSpec().GetTxPauseEn()
-		rxPauseEn = resp.GetSpec().GetRxPauseEn()
+		if cmd.Flags().Changed("tx-pause") == false {
+			txPauseEn = resp.GetSpec().GetTxPauseEn()
+		}
+		if cmd.Flags().Changed("rx-pause") == false {
+			rxPauseEn = resp.GetSpec().GetRxPauseEn()
+		}
 	}
 
 	var req *pds.PortUpdateRequest
