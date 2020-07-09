@@ -22,7 +22,8 @@
 
 // attribute update bits for TEP object
 #define PDS_TEP_UPD_NH_TYPE       0x1    // update of nexthop type
-#define PDS_TEP_UPD_NH            0x2    // nh type is same, but nh has changed
+#define PDS_TEP_UPD_UNDERLAY_NH   0x2    // nh type is same, underlay nh/nhgroup
+                                         // has changed
 #define PDS_TEP_UPD_OVERLAY_NH    0x4    // nh type is same, but specifically,
                                          // overlay nexthop has changed
 

@@ -75,9 +75,11 @@ pds_tep_api_spec_to_proto (pds::TunnelSpec *proto_spec,
     case PDS_NH_TYPE_OVERLAY:
         proto_spec->set_tunnelid(api_spec->tep.id, PDS_MAX_KEY_LEN);
         break;
+    case PDS_NH_TYPE_BLACKHOLE:
+        proto_spec->mutable_dropnexthop();
+        break;
+    case PDS_NH_TYPE_NONE:
     default:
-        //PDS_TRACE_ERR("Unsupported nexthop type {} in TEP {} spec",
-                      //api_spec->nh_type, api_spec->key.id);
         return SDK_RET_INVALID_ARG;
     }
     proto_spec->set_tos(api_spec->tos);
@@ -169,7 +171,12 @@ pds_tep_proto_to_api_spec (pds_tep_spec_t *api_spec,
         pds_obj_key_proto_to_api_spec(&api_spec->tep,
                                       proto_spec.tunnelid());
         break;
+    case pds::TunnelSpec::kDropNexthop:
+        api_spec->nh_type = PDS_NH_TYPE_BLACKHOLE;
+        break;
     case pds::TunnelSpec::NH_NOT_SET:
+        break;
+    default:
         api_spec->nh_type = PDS_NH_TYPE_NONE;
         break;
     }

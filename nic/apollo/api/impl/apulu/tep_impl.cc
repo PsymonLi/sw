@@ -187,28 +187,23 @@ fill_p4_tep_data_from_nhgroup_ (tep_entry *tep, pds_obj_key_t *nhgroup_key,
 }
 
 sdk_ret_t
-tep_impl::program_tunnel_(api_op_t api_op, tep_entry *tep, pds_tep_spec_t *spec,
-                          tunnel_actiondata_t *tep_data,
-                          api_obj_ctxt_t *obj_ctxt) {
+tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
+                            pds_tep_spec_t *spec,
+                            tunnel_actiondata_t *tep_data,
+                            api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
     tep_entry *tep2;
     pds_obj_key_t nh_key;
-    p4pd_error_t p4pd_ret;
     pds_obj_key_t nhgroup_key;
-    tunnel2_actiondata_t tep2_data = { 0 };
 
-    if (api_op == API_OP_CREATE) {
-        memset(tep_data, 0, sizeof(*tep_data));
-    } else {
-        // do read-modify-write
-        p4pd_ret = p4pd_global_entry_read(P4TBL_ID_TUNNEL, hw_id_,
-                                          NULL, NULL, tep_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
-            PDS_TRACE_ERR("Failed to read TEP %s at TUNNEL table idx %u",
-                          spec->key.str(), hw_id_);
-            return sdk::SDK_RET_HW_PROGRAM_ERR;
-        }
+    if ((api_op == API_OP_UPDATE)                       &&
+        !(obj_ctxt->upd_bmap & PDS_TEP_UPD_NH_TYPE)     &&
+        !(obj_ctxt->upd_bmap & PDS_TEP_UPD_UNDERLAY_NH) &&
+        !(obj_ctxt->upd_bmap & PDS_TEP_UPD_OVERLAY_NH)) {
+        // update operation, but forwarding information has not changed
+        return SDK_RET_OK;
     }
+
     switch (spec->nh_type) {
     case PDS_NH_TYPE_UNDERLAY_ECMP:
         ret = fill_p4_tep_data_from_nhgroup_(tep, &spec->nh_group, tep_data);
@@ -268,17 +263,18 @@ tep_impl::program_tunnel_(api_op_t api_op, tep_entry *tep, pds_tep_spec_t *spec,
         } else {
             // TEP update case
             if (obj_ctxt->upd_bmap & PDS_TEP_UPD_NH_TYPE) {
-                // this TEP was pointing to some other NH type earlier and is
-                // explicitly being updated to NONE, we need to accept
-                // reachability information from routing stack that will come
-                // later, point to // blackhole NH and wait for routing statck
-                // to provide an update
-                PDS_IMPL_FILL_TEP_DATA_FROM_NH(tep_data,
-                                               PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID);
-            } else {
-                // if nexthop information has not changed, don't override as
-                // routing stack would have programmed the right reachability
-                // information by now
+                // update to PDS_NH_TYPE_NONE is same as no update (i.e., user
+                // wants to retain the current forwarding information), this can
+                // happen when
+                // 1. user doesn't provide any nexthop information (i.e.,
+                //    PDS_NH_TYPE_NONE) and later
+                // 2. routing stack updates the TEP with reachability
+                //    information (thus changing the nh_type_ from
+                //    PDS_NH_TYPE_NONE to something else) and then
+                // 3. user updates some other attribute of TEP but still
+                //    providing no nexthop information
+                // in this case, nh_type_ change is detected but in reality user
+                // intention is not to update it
             }
         }
         break;
@@ -288,6 +284,35 @@ tep_impl::program_tunnel_(api_op_t api_op, tep_entry *tep, pds_tep_spec_t *spec,
                       spec->nh_type, spec->key.str());
         SDK_ASSERT_RETURN(false, SDK_RET_INVALID_ARG);
         break;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+tep_impl::program_tunnel_(api_op_t api_op, tep_entry *tep, pds_tep_spec_t *spec,
+                          tunnel_actiondata_t *tep_data,
+                          api_obj_ctxt_t *obj_ctxt) {
+    sdk_ret_t ret;
+    p4pd_error_t p4pd_ret;
+    tunnel2_actiondata_t tep2_data = { 0 };
+
+    if (api_op == API_OP_CREATE) {
+        memset(tep_data, 0, sizeof(*tep_data));
+    } else {
+        // do read-modify-write
+        p4pd_ret = p4pd_global_entry_read(P4TBL_ID_TUNNEL, hw_id_,
+                                          NULL, NULL, tep_data);
+        if (p4pd_ret != P4PD_SUCCESS) {
+            PDS_TRACE_ERR("Failed to read TEP %s at TUNNEL table idx %u",
+                          spec->key.str(), hw_id_);
+            return sdk::SDK_RET_HW_PROGRAM_ERR;
+        }
+    }
+
+    // fill the nexthop information for this TEP
+    ret = fill_tep_nh_info_(api_op, tep, spec, tep_data, obj_ctxt);
+    if (unlikely(ret != SDK_RET_OK)) {
+        return ret;
     }
 
     if (spec->encap.type != PDS_ENCAP_TYPE_NONE) {

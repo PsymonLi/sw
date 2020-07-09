@@ -61,29 +61,32 @@ message TunnelSpec {
     // 1. currently the 2nd tunnel is expected to be MPLSoUDP only
     // 2. more than 2 tunnels can't be supported in a chain
     bytes         TunnelId              = 10;
+    // DropNexthop is used to explicity drop traffic destined to this tunnel
+    // (even when there is reachability), administratively
+    types.DropNexthop DropNexthop           = 11;
   }
   // MAC address of the remote IP (i.e., remote side of the tunnel)
   // NOTE: if dataplane is supposed to resolve this, set to 0
-  uint64          MACAddress            = 11;
+  uint64          MACAddress            = 12;
   // type of this tunnel
   // RemoteService flag is true when tunnel is pointing to a service
   // that is in a different data center and packet needs to be carried
   // with 2 fabric encaps. IPv4 traffic in this case goes thru protocol
   // translation (to IPv6) and then goes in a Vxlan tunnel
-  bool            RemoteService         = 12;
+  bool            RemoteService         = 13;
   // RemoteServiceEncap must be set if the tunnel type is
   // TUNNEL_TYPE_REMOTE_SERVICE, this is the outer most vnid seen when the
   // packet is receievd from the remote service
-  types.Encap     RemoteServiceEncap    = 13;
+  types.Encap     RemoteServiceEncap    = 14;
   // public IP of the remote service tunnel that is used as SIPo
   // in the encapped VXLAN packet in the Tx direction
-  types.IPAddress RemoteServicePublicIP = 14;
+  types.IPAddress RemoteServicePublicIP = 15;
   // when ToS is configured on a tunnel object, all traffic destined to the
   // tunnel will carry dscp value as configured.
   // ToS field is 1 byte value that is populated in the DSCP field of IPv4 outer
   // header or in the Traffic Class field of IPv6 outer header, this value will
   // be written as-is (i.e., not interpreted) during encap time by the dataplane
-  uint32           ToS                  = 15;
+  uint32           ToS                  = 16;
 }
 
 // operational status of the tunnel, if any

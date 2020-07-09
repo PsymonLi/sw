@@ -175,6 +175,18 @@ private:
                                        pds_tep_spec_t *spec,
                                        api_obj_ctxt_t *obj_ctxt);
 
+    /// \brief     fill the nexthop specific information for the TEP
+    /// \param[in] api_op API operation (CREATE or UPDATE)
+    /// \param[in] tep  TEP obj being programmed
+    /// \param[in] spec TEP configuration
+    /// \param[in] tep_data P4 tep entry data pointer
+    /// \param[in] obj_ctxt transient state associated with this API
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
+                                pds_tep_spec_t *spec,
+                                tunnel_actiondata_t *tep_data,
+                                api_obj_ctxt_t *obj_ctxt);
+
     /// \brief     program TEP related tables during TEP create by enabling
     ///            stage0 tables corresponding to the new epoch
     /// \param[in] api_op API operation (CREATE or UPDATE)
