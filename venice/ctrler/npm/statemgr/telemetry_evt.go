@@ -48,6 +48,16 @@ func (fes *FlowExportPolicyState) GetKey() string {
 	return fes.FlowExportPolicy.GetKey()
 }
 
+// GetKind returns the kind
+func (fes *FlowExportPolicyState) GetKind() string {
+	return fes.FlowExportPolicy.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (fes *FlowExportPolicyState) GetGenerationID() string {
+	return fes.FlowExportPolicy.GenerationID
+}
+
 //TrackedDSCs tracked DSCs
 func (fes *FlowExportPolicyState) TrackedDSCs() []string {
 
@@ -419,7 +429,7 @@ func (smm *SmFlowExportPolicyInterface) ProcessDSCUpdate(dsc *cluster.Distribute
 	}
 
 	//Run only if profile changes.
-	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile || smm.sm.dscRecommissioned(dsc, ndsc) {
 		if smm.sm.isDscFlowawareMode(ndsc) || smm.sm.isDscEnforcednMode(ndsc) {
 			smm.dscTracking(ndsc, true)
 		} else {

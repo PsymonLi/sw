@@ -303,6 +303,10 @@ func (obj *testObj) References(tenant string, path string, resp map[string]apiin
 	}
 }
 
+func (obj *testObj) ClearReferences() {
+	obj.depMap = make(map[string]*apiintf.ReferenceObj)
+}
+
 func (obj *testObj) Referrers(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
 	for key, value := range obj.revDepMap {
 		value := value
@@ -377,6 +381,39 @@ func sendObjects(evt kvstore.WatchEventType, kind string, start, end int) error 
 			var err error
 			refs := make(map[string]apiintf.ReferenceObj)
 			obj.References(obj.GetObjectMeta().GetTenant(), "", refs)
+			ctx := &testObjCtx{event: evt, obj: obj}
+			switch evt {
+			case kvstore.Created:
+				err = ctrlerInst.objResolver.ProcessAdd(ctx)
+			case kvstore.Updated:
+				err = ctrlerInst.objResolver.ProcessUpdate(ctx)
+			case kvstore.Deleted:
+				err = ctrlerInst.objResolver.ProcessDelete(ctx)
+			}
+			errs <- err
+		}()
+	}
+
+	for ii := 0; ii < len(objs); ii++ {
+		err := <-errs
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func sendObjectsWithNoRefs(evt kvstore.WatchEventType, kind string, start, end int) error {
+	// add an object
+	if start == 0 && end == 0 {
+		end = len(testObjStore[kind])
+	}
+	objs := testObjStore[kind][start:end]
+	errs := make(chan error, len(objs))
+	for _, obj := range objs {
+		obj := obj
+		go func() {
+			var err error
+			obj.ClearReferences()
 			ctx := &testObjCtx{event: evt, obj: obj}
 			switch evt {
 			case kvstore.Created:
@@ -769,6 +806,59 @@ func TestObjResolverDepDelTest_3(t *testing.T) {
 	evtsExp.evKindMap[kvstore.Deleted]["b"] = maxObj
 	evtsExp.evKindMap[kvstore.Deleted]["c"] = maxObj
 	evtsExp.evKindMap[kvstore.Deleted]["d"] = maxObj
+	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
+	AssertOk(t, err, "Error verifying objects")
+
+}
+
+func TestObjResolverDepDelTest_4(t *testing.T) {
+	initObjectStore()
+
+	var evtsExp eventsRcvd
+	evtsExp.Reset()
+	evtRcvd.Reset()
+	ctrlerInst.Reset()
+
+	maxObj := 10
+	relations := []relation{
+		{"a", "b", 0, maxObj},
+	}
+
+	generateObjectReferences(relations)
+
+	err := sendObjects(kvstore.Created, "a", 0, maxObj)
+	AssertOk(t, err, "Error creating object")
+
+	//Make sure we receive no objects
+	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Millisecond))
+	Assert(t, err == nil, "Error verifying objects")
+
+	err = sendObjects(kvstore.Created, "b", 0, maxObj)
+	AssertOk(t, err, "Error creating object")
+
+	//Make sure we receive objects of b as it has no deps
+	evtsExp.evKindMap[kvstore.Created]["a"] = maxObj
+	evtsExp.evKindMap[kvstore.Created]["b"] = maxObj
+	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
+	AssertOk(t, err, "Error verifying objects")
+
+	err = sendObjects(kvstore.Deleted, "b", 0, maxObj)
+	AssertOk(t, err, "Error creating object")
+	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
+	AssertOk(t, err, "Error verifying objects")
+
+	//Now lets send add of b kind as they are still in marked for delete state
+	err = sendObjects(kvstore.Created, "b", 0, maxObj)
+	AssertOk(t, err, "Error creating object")
+	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
+	AssertOk(t, err, "Error verifying objects")
+
+	//Make sure we receive objects of b as it has no deps
+	err = sendObjectsWithNoRefs(kvstore.Updated, "a", 0, maxObj)
+	AssertOk(t, err, "Error creating object")
+	evtsExp.evKindMap[kvstore.Updated]["a"] = maxObj
+	evtsExp.evKindMap[kvstore.Created]["b"] = maxObj + maxObj
+	evtsExp.evKindMap[kvstore.Deleted]["b"] = maxObj
 	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 

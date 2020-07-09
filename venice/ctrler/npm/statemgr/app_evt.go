@@ -150,6 +150,16 @@ func (aps *AppState) GetKey() string {
 	return aps.App.GetKey()
 }
 
+// GetKind returns the kind of App
+func (aps *AppState) GetKind() string {
+	return aps.App.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (aps *AppState) GetGenerationID() string {
+	return aps.App.GenerationID
+}
+
 //TrackedDSCs get DSCs that needs to be tracked
 func (aps *AppState) TrackedDSCs() []string {
 
@@ -492,7 +502,7 @@ func (sma *SmApp) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cl
 	}
 
 	//Run only if profile changes.
-	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile || sma.sm.dscRecommissioned(dsc, ndsc) {
 		if sma.sm.isDscEnforcednMode(ndsc) {
 			sma.dscTracking(ndsc, true)
 		} else {

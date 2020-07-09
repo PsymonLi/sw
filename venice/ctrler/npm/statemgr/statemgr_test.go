@@ -315,6 +315,8 @@ func createMirror(stateMgr *Statemgr, tenant, mirrorName string, spanID uint32, 
 	// create sg
 	err := stateMgr.ctrler.MirrorSession().Create(&mr)
 
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
 	return &mr, err
 }
 
@@ -361,6 +363,8 @@ func updateMirror(stateMgr *Statemgr, tenant, mirrorName string, spanID uint32, 
 
 	err := stateMgr.ctrler.MirrorSession().Update(&mr)
 
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
 	return &mr, err
 }
 
@@ -384,6 +388,8 @@ func updateInterfaceMirror(stateMgr *Statemgr, tenant, mirrorName string, direct
 
 	err := stateMgr.ctrler.MirrorSession().Update(&mr)
 
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
 	return &mr, err
 }
 
@@ -404,6 +410,8 @@ func deleteMirror(stateMgr *Statemgr, tenant, mirrorName string, selector *label
 	// create sg
 	err := stateMgr.ctrler.MirrorSession().Delete(&mr)
 
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
 	return &mr, err
 }
 
@@ -519,6 +527,8 @@ func createNetworkInterface(stateMgr *Statemgr, intfName string, dsc string, lab
 		},
 	})
 
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
 	//stateMgr.ctrler.NetworkInterface().Create(&nr)
 	return &nr, err
 }
@@ -579,6 +589,8 @@ func updateNetworkInterface(stateMgr *Statemgr, intfName string, dsc string, lab
 			},
 		}) */
 
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
 	return &nr, err
 }
 
@@ -609,6 +621,8 @@ func deleteNetworkInterface(stateMgr *Statemgr, intfName string, label map[strin
 			Type: "UPLINK_ETH",
 		},
 	})
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
 
 	return &nr, err
 }
@@ -4644,14 +4658,17 @@ func TestMirrorCreateDeleteWithNetworkInterface(t *testing.T) {
 		AssertOk(t, err, "Error find interfaces")
 		Assert(t, len(intfs) == numOfIntfs, "Number of interfaces don't match")
 
-		for _, intf := range intfs {
+		AssertEventually(t, func() (bool, interface{}) {
+			for _, intf := range intfs {
 
-			log.Infof("Mirror sessions %v ", len(intf.mirrorSessions))
-			Assert(t, len(intf.mirrorSessions) == 0, "Number of mirror sesiosn don't match")
-			Assert(t, len(smgrMirrorInterface.getAllInterfaceMirrorSessions()) == 0, "Number of mirror sesiosn don't match")
-			Assert(t, len(intf.mirrorSessions) == 0, "Mirror sessions not cleared")
+				log.Infof("Mirror sessions %v ", len(intf.mirrorSessions))
+				if len(intf.mirrorSessions) != 0 || len(intf.mirrorSessions) != 0 || len(smgrMirrorInterface.getAllInterfaceMirrorSessions()) != 0 {
+					return false, fmt.Errorf("Error Number of mirror sesiosn don't match")
+				}
 
-		}
+			}
+			return true, nil
+		}, "Interface session found", "1ms", "1s")
 	}
 
 	for i := 0; i < numOfIntfs; i++ {
@@ -7910,6 +7927,7 @@ func TestWatcherWithMirrorRemoveLabel(t *testing.T) {
 		watcher.evtsExp.Reset()
 		watcher.evtsRcvd.Reset()
 		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Interface"] = 2 //update is sent twice
+		watcher.evtsExp.evKindMap[memdb.DeleteEvent]["InterfaceMirrorSession"] = numCollectors
 	}
 
 	for i := 0; i < numOfIntfs; i++ {
@@ -7934,7 +7952,7 @@ func TestWatcherWithMirrorRemoveLabel(t *testing.T) {
 	for _, watcher := range watchers {
 		watcher := watcher
 		go func() {
-			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(2*time.Second))
 		}()
 
 	}

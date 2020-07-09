@@ -773,6 +773,16 @@ func (ns *NetworkState) GetKey() string {
 	return ns.Network.GetKey()
 }
 
+// GetKind returns the kind
+func (ns *NetworkState) GetKind() string {
+	return ns.Network.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (ns *NetworkState) GetGenerationID() string {
+	return ns.Network.GenerationID
+}
+
 //TrackedDSCs keeps a list of DSCs being tracked for propagation status
 func (ns *NetworkState) TrackedDSCs() []string {
 	dscs, _ := ns.stateMgr.ListDistributedServiceCards()

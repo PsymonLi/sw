@@ -91,6 +91,16 @@ func (mss *MirrorSessionState) GetKey() string {
 	return mss.MirrorSession.GetKey()
 }
 
+//GetKind get kind
+func (mss *MirrorSessionState) GetKind() string {
+	return mss.MirrorSession.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (mss *MirrorSessionState) GetGenerationID() string {
+	return mss.MirrorSession.GenerationID
+}
+
 func propgatationStatusDifferent(
 	current *monitoring.PropagationStatus,
 	other *monitoring.PropagationStatus) bool {
@@ -312,7 +322,8 @@ func (mss *MirrorSessionState) isFlowBasedMirroring() bool {
 }
 
 func (mss *MirrorSessionState) setMirrorSessionRunning(ms *monitoring.MirrorSession) error {
-	if mss.State == monitoring.MirrorSessionState_ACTIVE {
+	//If current is Flow based mirroring and active, nothing new to do do
+	if isFlowBasedMirroring(&mss.MirrorSession.MirrorSession) && mss.State == monitoring.MirrorSessionState_ACTIVE {
 		log.Infof("Mirror session %v already active", mss.MirrorSession.Name)
 		return fmt.Errorf("session active")
 	}
@@ -403,6 +414,14 @@ func (ms *interfaceMirrorSession) GetKey() string {
 	return ms.ms.GetKey()
 }
 
+func (ms *interfaceMirrorSession) GetKind() string {
+	return ms.ms.GetKind()
+}
+
+func (ms *interfaceMirrorSession) GetGenerationID() string {
+	return ms.ms.generationID
+}
+
 func (ms *interfaceMirrorSession) Write() error {
 	return ms.ms.Write()
 }
@@ -485,7 +504,6 @@ type SmMirrorSessionInterface struct {
 	mirrorSessions     *sync.Map
 	mirrorTimerWatcher chan MirrorTimerEvent // mirror session Timer watcher
 	numMirrorSessions  int                   // total mirror sessions created
-	dscMirrorSessions  map[string]*[]*dscMirrorSession
 }
 
 var smgrMirrorInterface *SmMirrorSessionInterface
@@ -507,7 +525,6 @@ func initSmMirrorInterface() {
 	mgr := MustGetStatemgr()
 	smgrMirrorInterface = &SmMirrorSessionInterface{
 		sm:                 mgr,
-		dscMirrorSessions:  make(map[string]*[]*dscMirrorSession),
 		mirrorTimerWatcher: make(chan MirrorTimerEvent, watcherQueueLen),
 	}
 	smgrMirrorInterface.mirrorSessions = new(sync.Map)
@@ -1337,7 +1354,7 @@ func (smm *SmMirrorSessionInterface) ProcessDSCUpdate(dsc *cluster.DistributedSe
 	}
 
 	//Run only if profile changes.
-	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile || smm.sm.dscRecommissioned(dsc, ndsc) {
 		if smm.sm.isDscFlowawareMode(ndsc) || smm.sm.isDscEnforcednMode(ndsc) {
 			smm.dscTracking(ndsc, true)
 		} else {

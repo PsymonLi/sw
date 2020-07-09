@@ -303,6 +303,16 @@ func (fps *FirewallProfileState) GetKey() string {
 	return fps.FirewallProfile.GetKey()
 }
 
+// GetKind returns the kind
+func (fps *FirewallProfileState) GetKind() string {
+	return fps.FirewallProfile.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (fps *FirewallProfileState) GetGenerationID() string {
+	return fps.FirewallProfile.GenerationID
+}
+
 // ListFirewallProfiles lists all apps
 func (sm *Statemgr) ListFirewallProfiles() ([]*FirewallProfileState, error) {
 	objs := sm.ListObjects("FirewallProfile")
@@ -399,7 +409,7 @@ func (sma *SmFwProfile) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, nd
 	}
 
 	//Run only if profile changes.
-	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile || sma.sm.dscRecommissioned(dsc, ndsc) {
 		if sma.sm.isDscEnforcednMode(ndsc) {
 			sma.dscTracking(ndsc, true)
 		} else {

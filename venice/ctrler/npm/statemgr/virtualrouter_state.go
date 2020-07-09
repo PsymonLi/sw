@@ -368,6 +368,16 @@ func (vs *VirtualRouterState) GetKey() string {
 	return vs.VirtualRouter.GetKey()
 }
 
+// GetKind returns the kind
+func (vs *VirtualRouterState) GetKind() string {
+	return vs.VirtualRouter.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (vs *VirtualRouterState) GetGenerationID() string {
+	return vs.VirtualRouter.GenerationID
+}
+
 func (vs *VirtualRouterState) isMarkedForDelete() bool {
 	return vs.markedForDelete
 }
@@ -510,7 +520,7 @@ func (sma *SmVirtualRouter) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard
 		return
 	}
 	//Run only if profile changes.
-	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile || sma.sm.dscRecommissioned(dsc, ndsc) {
 		sma.dscTracking(ndsc, true)
 	}
 }

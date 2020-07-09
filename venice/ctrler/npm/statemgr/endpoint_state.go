@@ -234,6 +234,16 @@ func (eps *EndpointState) GetKey() string {
 	return eps.Endpoint.GetKey()
 }
 
+// GetKind returns the kind
+func (eps *EndpointState) GetKind() string {
+	return eps.Endpoint.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (eps *EndpointState) GetGenerationID() string {
+	return eps.Endpoint.GenerationID
+}
+
 //TrackedDSCs tracked DSCs
 func (eps *EndpointState) TrackedDSCs() []string {
 
@@ -880,7 +890,7 @@ func (sma *SmEndpoint) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, nds
 	}
 
 	//Run only if profile changes.
-	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile || sma.sm.dscRecommissioned(dsc, ndsc) {
 		if sma.sm.isDscEnforcednMode(ndsc) {
 			sma.dscTracking(ndsc, true)
 		} else {

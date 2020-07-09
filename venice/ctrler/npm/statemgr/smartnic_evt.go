@@ -36,6 +36,11 @@ func (sns *DistributedServiceCardState) GetKey() string {
 	return sns.DistributedServiceCard.GetKey()
 }
 
+// GetKind returns the kind
+func (sns *DistributedServiceCardState) GetKind() string {
+	return sns.DistributedServiceCard.GetKind()
+}
+
 // Write write the obect to api server
 func (sns *DistributedServiceCardState) Write() error {
 	var err error
@@ -170,6 +175,11 @@ func (sm *Statemgr) dscCreate(smartNic *ctkit.DistributedServiceCard) (*Distribu
 func (sm *Statemgr) dscDecommissioned(dsc *cluster.DistributedServiceCard) bool {
 	return dsc.Spec.MgmtMode != strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String()) ||
 		strings.ToLower(dsc.Status.AdmissionPhase) == strings.ToLower(cluster.DistributedServiceCardStatus_REJECTED.String())
+}
+
+func (sm *Statemgr) dscRecommissioned(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) bool {
+	return dsc.Spec.MgmtMode != strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String()) &&
+		ndsc.Spec.MgmtMode == strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String())
 }
 
 func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard, sns *DistributedServiceCardState, sendSgPolicies bool) {

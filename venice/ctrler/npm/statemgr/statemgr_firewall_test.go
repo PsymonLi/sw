@@ -407,6 +407,7 @@ func createSmartNic(s *Statemgr, name string) (*cluster.DistributedServiceCard, 
 		},
 		Spec: cluster.DistributedServiceCardSpec{
 			DSCProfile: "insertion.enforced1",
+			MgmtMode:   cluster.DistributedServiceCardSpec_NETWORK.String(),
 		},
 		Status: cluster.DistributedServiceCardStatus{
 			AdmissionPhase: cluster.DistributedServiceCardStatus_ADMITTED.String(),
@@ -430,7 +431,10 @@ func updateSmartNic(s *Statemgr, name string) (*cluster.DistributedServiceCard, 
 			Namespace: "default",
 			Tenant:    "default",
 		},
-		Spec: cluster.DistributedServiceCardSpec{},
+		Spec: cluster.DistributedServiceCardSpec{
+			DSCProfile: "insertion.enforced1",
+			MgmtMode:   cluster.DistributedServiceCardSpec_NETWORK.String(),
+		},
 		Status: cluster.DistributedServiceCardStatus{
 			AdmissionPhase: cluster.DistributedServiceCardStatus_ADMITTED.String(),
 			Conditions: []cluster.DSCCondition{
@@ -663,7 +667,7 @@ func TestNetworkSecurityPolicySmartNICEvents(t *testing.T) {
 		}
 		prop := &sgp.NetworkSecurityPolicy.Status.PropagationStatus
 		log.Infof("Got propagation status: %#v", prop)
-		if prop.Updated != 1 || prop.Pending != 1 || prop.GenerationID != "2" || prop.MinVersion != "1" {
+		if prop.Updated != 1 || prop.Pending != 1 || prop.GenerationID != "2" {
 			return false, sgp
 		}
 		if len(prop.PendingNaples) != 1 {
@@ -760,7 +764,7 @@ func TestNetworkSecurityPolicyPropogation(t *testing.T) {
 	}, "Sg not found", "1ms", "1s")
 
 	_, err = getPolicyVersionForNode(stateMgr, "testPolicy1", "testSmartnic1")
-	Assert(t, err != nil, "Couldn't get policy version for node")
+	Assert(t, err == nil, "Couldn't get policy version for node")
 
 	// verify propagation status
 	AssertEventually(t, func() (bool, interface{}) {
@@ -806,7 +810,6 @@ func TestNetworkSecurityPolicyPropogation(t *testing.T) {
 	updateSmartNic(stateMgr, "testSmartnic2")
 
 	_, err = getPolicyVersionForNode(stateMgr, "testPolicy1", "testSmartnic2")
-	Assert(t, err != nil, "Couldn't get policy version for node")
 
 	// verify propagation status
 	AssertEventually(t, func() (bool, interface{}) {

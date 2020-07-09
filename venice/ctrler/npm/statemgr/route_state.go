@@ -291,6 +291,16 @@ func (rtCfgSt *RoutingConfigState) GetKey() string {
 	return rtCfgSt.RoutingConfig.GetKey()
 }
 
+// GetKind returns the kind
+func (rtCfgSt *RoutingConfigState) GetKind() string {
+	return rtCfgSt.RoutingConfig.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (rtCfgSt *RoutingConfigState) GetGenerationID() string {
+	return rtCfgSt.RoutingConfig.GenerationID
+}
+
 //TrackedDSCs keeps a list of DSCs being tracked for propagation status
 func (rtCfgSt *RoutingConfigState) TrackedDSCs() []string {
 	dscs, _ := rtCfgSt.stateMgr.ListDistributedServiceCards()

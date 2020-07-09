@@ -12,13 +12,14 @@ import (
 //StatusWriter write interface
 type stateObj interface {
 	GetKey() string
+	GetKind() string
 	Write() error
 	TrackedDSCs() []string
 	getPropStatus() objPropagationStatus
 }
 
 type objectTrackerIntf interface {
-	reinitObjTracking(genID string) error
+	reinitObjTracking(objGenID, genID string) error
 	resetObjTracking(genID string)
 	startDSCTracking(string) error
 	stopDSCTracking(string) error
@@ -27,18 +28,20 @@ type objectTrackerIntf interface {
 }
 
 type objPropagationStatus struct {
-	generationID string
-	updated      int32
-	pending      int32
-	minVersion   string
-	pendingDSCs  []string
-	status       string
+	generationID         string
+	internalgenerationID string
+	updated              int32
+	pending              int32
+	minVersion           string
+	pendingDSCs          []string
+	status               string
 }
 
 type smObjectTracker struct {
 	nodeVersions  map[string]string // Map for node -> version
 	obj           stateObj
 	generationID  string
+	objGenID      string
 	noUpdateNotif bool
 	trackerLock   sync.Mutex
 }
@@ -60,14 +63,15 @@ func (objTracker *smObjectTracker) incrementGenID() string {
 }
 
 // initNodeVersions initializes node versions for the policy
-func (objTracker *smObjectTracker) reinitObjTracking(genID string) error {
+func (objTracker *smObjectTracker) reinitObjTracking(objGenID, genID string) error {
 
 	objTracker.trackerLock.Lock()
 	defer objTracker.trackerLock.Unlock()
 
 	dscs := objTracker.obj.TrackedDSCs()
 
-	//objTracker.nodeVersions = make(map[string]string)
+	//reset as some DSCs may not be valid
+	objTracker.nodeVersions = make(map[string]string)
 	// walk all smart nics
 	for _, dsc := range dscs {
 		if _, ok := objTracker.nodeVersions[dsc]; !ok {
@@ -76,6 +80,8 @@ func (objTracker *smObjectTracker) reinitObjTracking(genID string) error {
 	}
 
 	objTracker.generationID = genID
+	//For status always set the generation ID of the object meta
+	objTracker.objGenID = objGenID
 
 	return nil
 }
@@ -169,7 +175,7 @@ func (objTracker *smObjectTracker) getPropStatus() objPropagationStatus {
 	objTracker.trackerLock.Lock()
 	defer objTracker.trackerLock.Unlock()
 
-	propStatus := objPropagationStatus{generationID: objTracker.generationID}
+	propStatus := objPropagationStatus{generationID: objTracker.objGenID, internalgenerationID: objTracker.generationID}
 	for node, version := range objTracker.nodeVersions {
 		if objTracker.generationID != version {
 			propStatus.pendingDSCs = append(propStatus.pendingDSCs, node)
@@ -182,7 +188,10 @@ func (objTracker *smObjectTracker) getPropStatus() objPropagationStatus {
 		}
 
 	}
-	if propStatus.pending == 0 {
+
+	if propStatus.pending == 0 && propStatus.updated == 0 {
+		propStatus.status = fmt.Sprintf("N/A")
+	} else if propStatus.pending == 0 {
 		propStatus.status = fmt.Sprintf("Propagation Complete")
 	} else {
 		propStatus.status = fmt.Sprintf("Propagation pending on: %s", strings.Join(propStatus.pendingDSCs, ", "))

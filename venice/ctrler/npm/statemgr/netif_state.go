@@ -222,7 +222,7 @@ func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Int
 		update = true
 	}
 
-	if agentNetif.Spec.Type == netproto.InterfaceSpec_UPLINK_ETH.String() {
+	if agentNetif.Spec.Type == netproto.InterfaceSpec_UPLINK_ETH.String() && obj.NetworkInterfaceState.Status.IFUplinkStatus != nil {
 		if checkLLDPNeighborUpdate(obj.NetworkInterfaceState.Status.IFUplinkStatus.LLDPNeighbor, agentNetif.Status.IFUplinkStatus.LLDPNeighbor) == true {
 			log.Infof("Updating network interface LLDPNeighbor %v : %v", agentNetif.Name, obj.NetworkInterfaceState.Status.IFUplinkStatus.LLDPNeighbor)
 			update = true
@@ -351,8 +351,10 @@ type dscMirrorSession struct {
 // SmNetworkInterface is statemanager struct for NetworkInterface
 type SmNetworkInterface struct {
 	featureMgrBase
-	sm           *Statemgr
-	intfsByLabel map[string]*labelInterfaces //intferfaces by labels
+	sm                          *Statemgr
+	dscMirrorSessions           map[string]*[]*dscMirrorSession
+	intfsByLabel                map[string]*labelInterfaces //intferfaces by labels
+	interfaceMirrorUpdaterQueue chan *NetworkInterfaceState // to serialize interface mirror updates
 }
 
 // NetworkInterfaceState is a wrapper for NetworkInterface object
@@ -363,6 +365,13 @@ type NetworkInterfaceState struct {
 	mirrorSessions         []string
 	smObjectTracker
 	markedForDelete bool
+}
+
+// spin up go routine to process interface mirror updates
+func newInterfaceUpdater() chan *NetworkInterfaceState {
+	updateChan := make(chan *NetworkInterfaceState, maxUpdateChannelSize)
+	go smgrNetworkInterface.runInterfaceMirrorUpdater(updateChan)
+	return updateChan
 }
 
 var smgrNetworkInterface *SmNetworkInterface
@@ -383,9 +392,11 @@ func (sma *SmNetworkInterface) CompleteRegistration() {
 func initSmNetworkInterface() {
 	mgr := MustGetStatemgr()
 	smgrNetworkInterface = &SmNetworkInterface{
-		sm:           mgr,
-		intfsByLabel: make(map[string]*labelInterfaces),
+		sm:                mgr,
+		dscMirrorSessions: make(map[string]*[]*dscMirrorSession),
+		intfsByLabel:      make(map[string]*labelInterfaces),
 	}
+	smgrNetworkInterface.interfaceMirrorUpdaterQueue = newInterfaceUpdater()
 	mgr.Register("statemgrnetif", smgrNetworkInterface)
 }
 
@@ -705,7 +716,7 @@ func removeMirrorSession(nw *NetworkInterfaceState, session string) {
 			nw.mirrorSessions[i] = nw.mirrorSessions[len(nw.mirrorSessions)-1]
 			nw.mirrorSessions[len(nw.mirrorSessions)-1] = ""
 			nw.mirrorSessions = nw.mirrorSessions[:len(nw.mirrorSessions)-1]
-			dscMSessions, ok := smgrMirrorInterface.dscMirrorSessions[nw.NetworkInterfaceState.Status.DSC]
+			dscMSessions, ok := smgrNetworkInterface.dscMirrorSessions[nw.NetworkInterfaceState.Status.DSC]
 			if ok {
 				for _, dscMs := range *dscMSessions {
 					if dscMs.name == session {
@@ -727,10 +738,10 @@ func addMirrorSession(nw *NetworkInterfaceState, ms *interfaceMirrorSelector) {
 			return
 		}
 	}
-	dscMSessions, ok := smgrMirrorInterface.dscMirrorSessions[nw.NetworkInterfaceState.Status.DSC]
+	dscMSessions, ok := smgrNetworkInterface.dscMirrorSessions[nw.NetworkInterfaceState.Status.DSC]
 	if !ok {
-		smgrMirrorInterface.dscMirrorSessions[nw.NetworkInterfaceState.Status.DSC] = &[]*dscMirrorSession{}
-		dscMSessions = smgrMirrorInterface.dscMirrorSessions[nw.NetworkInterfaceState.Status.DSC]
+		smgrNetworkInterface.dscMirrorSessions[nw.NetworkInterfaceState.Status.DSC] = &[]*dscMirrorSession{}
+		dscMSessions = smgrNetworkInterface.dscMirrorSessions[nw.NetworkInterfaceState.Status.DSC]
 	}
 
 	added := false
@@ -787,7 +798,8 @@ func (nw *NetworkInterfaceState) TrackedDSCs() []string {
 }
 
 func (sma *SmNetworkInterface) updateMirror(nw *NetworkInterfaceState) error {
-
+	smgrNetworkInterface.Lock()
+	defer smgrNetworkInterface.Unlock()
 	collectorIntfState := make(map[string]*intfMirrorState)
 	setupInitialStates([]*NetworkInterfaceState{nw}, collectorIntfState)
 
@@ -894,14 +906,35 @@ func (sma *SmNetworkInterface) UpdateInterfacesMatchingSelector(oldSelCol *inter
 
 	log.Infof("Number of nw interfaces states %v", len(nwInterfaceStatesMap))
 	for _, nw := range nwInterfaceStatesMap {
-		nw.NetworkInterfaceState.Lock()
-		sma.updateMirror(nw)
-		nw.NetworkInterfaceState.Unlock()
+		sma.interfaceMirrorUpdaterQueue <- nw
 	}
 
-	//Send delete of interface mirror session if not refernced
+	return nil
+}
+
+func (sma *SmNetworkInterface) runInterfaceMirrorUpdater(queue chan *NetworkInterfaceState) {
+
+	for {
+		select {
+		case nwIntf, ok := <-queue:
+			if ok == false {
+				return
+			}
+			if !nwIntf.markedForDelete {
+				nwIntf.NetworkInterfaceState.Lock()
+				sma.updateMirror(nwIntf)
+				nwIntf.NetworkInterfaceState.Unlock()
+			}
+			sma.cleanUpDscMirrorSessions()
+		}
+	}
+}
+
+func (sma *SmNetworkInterface) cleanUpDscMirrorSessions() {
+
+	//Send delete of interface mirror session if not referenced
 	sm := MustGetStatemgr()
-	for dsc, dscMirrorSessions := range smgrMirrorInterface.dscMirrorSessions {
+	for dsc, dscMirrorSessions := range smgrNetworkInterface.dscMirrorSessions {
 		index := 0
 		for _, dscMs := range *dscMirrorSessions {
 			if dscMs.refCnt == 0 {
@@ -922,7 +955,6 @@ func (sma *SmNetworkInterface) UpdateInterfacesMatchingSelector(oldSelCol *inter
 		*dscMirrorSessions = (*dscMirrorSessions)[:index]
 	}
 
-	return nil
 }
 
 // FindNetworkInterface finds network interface
@@ -954,6 +986,16 @@ func (sma *SmNetworkInterface) clearLabelMap(ifcfg *NetworkInterfaceState) {
 // GetKey returns the key of Network
 func (nw *NetworkInterfaceState) GetKey() string {
 	return nw.NetworkInterfaceState.GetKey()
+}
+
+// GetKind returns the kind
+func (nw *NetworkInterfaceState) GetKind() string {
+	return nw.NetworkInterfaceState.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (nw *NetworkInterfaceState) GetGenerationID() string {
+	return nw.NetworkInterfaceState.GenerationID
 }
 
 // Write writes the object to api server
@@ -1007,13 +1049,8 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceCreate(ctkitNetif *ctkit.Networ
 	}
 	ifcfg.pushObject = pushObj
 
-	if interfaceMirroringAllowed(ctkitNetif.NetworkInterface.Spec.Type) {
-		smgrMirrorInterface.Lock()
-		err = sma.updateMirror(ifcfg)
-		if err != nil {
-			log.Errorf("Error updating interface mirror %v", err)
-		}
-		smgrMirrorInterface.Unlock()
+	if interfaceMirroringAllowed(ctkitNetif.NetworkInterface.Spec.Type) && len(ctkitNetif.NetworkInterface.Labels) != 0 {
+		sma.interfaceMirrorUpdaterQueue <- ifcfg
 	}
 
 	return nil
@@ -1037,9 +1074,7 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceUpdate(ctkitNetif *ctkit.Networ
 		ctkitNetif.ObjectMeta = nctkitNetif.ObjectMeta
 		sma.updateLabelMap(currIntf)
 		currIntf.NetworkInterfaceState.Labels = nctkitNetif.Labels
-		smgrMirrorInterface.Lock()
-		sma.updateMirror(currIntf)
-		smgrMirrorInterface.Unlock()
+		sma.interfaceMirrorUpdaterQueue <- currIntf
 	}
 	ctkitNetif.ObjectMeta = nctkitNetif.ObjectMeta
 	ctkitNetif.Spec = nctkitNetif.Spec
@@ -1071,6 +1106,9 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceDelete(ctkitNetif *ctkit.Networ
 
 	ifcfg.markedForDelete = true
 	sma.clearLabelMap(ifcfg)
+	smgrNetworkInterface.Lock()
+	sma.interfaceMirrorUpdaterQueue <- ifcfg
+	smgrNetworkInterface.Unlock()
 	return sma.sm.DeletePushObjectToMbus(ctkitNetif.MakeKey(string(apiclient.GroupNetwork)),
 		ifcfg, references(ctkitNetif))
 }

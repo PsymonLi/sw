@@ -227,7 +227,6 @@ func (it *integTestSuite) TestNpmSgPolicyValidators(c *C) {
 
 	// try updating the policy with invalid app
 	sgp.Spec.Rules[0].Apps = []string{"invalid"}
-	sgp.ObjectMeta.GenerationID = incrementGenID(sgp.ObjectMeta.GenerationID)
 	_, err = it.apisrvClient.SecurityV1().NetworkSecurityPolicy().Update(context.Background(), &sgp)
 	Assert(c, err != nil, "sgpolicy update with invalid app reference didnt fail")
 
@@ -572,7 +571,6 @@ func (it *integTestSuite) TestNpmSgPolicyBurstChange(c *C) {
 				},
 			}
 			sgp.Spec.Rules = append(sgp.Spec.Rules, newRule)
-			sgp.ObjectMeta.GenerationID = incrementGenID(sgp.ObjectMeta.GenerationID)
 			_, err = it.apisrvClient.SecurityV1().NetworkSecurityPolicy().Update(context.Background(), &sgp)
 			AssertOk(c, err, "error updating sg policy")
 		}

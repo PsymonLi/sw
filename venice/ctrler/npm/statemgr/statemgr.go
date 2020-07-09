@@ -38,6 +38,7 @@ const maxUpdateChannelSize = 32768
 type updatable interface {
 	Write() error
 	GetKey() string
+	GetKind() string
 }
 
 // updatable is an interface all updatable objects have to implement
@@ -777,6 +778,11 @@ func (sm *Statemgr) ReferenceCodeForSelectivePush() {
 
 */
 // runPeriodicUpdater runs periodic and write objects back
+
+func periodicKey(obj updatable) string {
+	return obj.GetKind() + "/" + obj.GetKey()
+}
+
 func runPeriodicUpdater(queue chan updatable) {
 	ticker := time.NewTicker(1 * time.Second)
 	pending := make(map[string]updatable)
@@ -788,7 +794,7 @@ func runPeriodicUpdater(queue chan updatable) {
 				shouldExit = true
 				continue
 			}
-			pending[obj.GetKey()] = obj
+			pending[periodicKey(obj)] = obj
 		case _ = <-ticker.C:
 			failedUpdate := []updatable{}
 			for _, obj := range pending {
@@ -798,7 +804,7 @@ func runPeriodicUpdater(queue chan updatable) {
 			}
 			pending = make(map[string]updatable)
 			for _, obj := range failedUpdate {
-				pending[obj.GetKey()] = obj
+				pending[periodicKey(obj)] = obj
 			}
 			if shouldExit == true {
 				log.Warnf("Exiting periodic updater")
@@ -1126,6 +1132,8 @@ type mbusObject interface {
 	Write() error
 	GetDBObject() memdb.Object
 	GetKey() string
+	GetKind() string
+	GetGenerationID() string
 }
 
 type mbusPushObject interface {
@@ -1137,7 +1145,7 @@ type mbusPushObject interface {
 func (sm *Statemgr) AddObjectToMbus(key string, obj mbusObject, refs map[string]apiintf.ReferenceObj) error {
 	dbObject := obj.GetDBObject()
 	meta := dbObject.GetObjectMeta()
-	obj.reinitObjTracking(meta.GenerationID)
+	obj.reinitObjTracking(obj.GetGenerationID(), meta.GenerationID)
 	if obj.updateNotificationEnabled() {
 		sm.PeriodicUpdaterPush(obj)
 	}
@@ -1151,7 +1159,7 @@ func (sm *Statemgr) UpdateObjectToMbus(key string, obj mbusObject, refs map[stri
 	dbObject := obj.GetDBObject()
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
-	obj.reinitObjTracking(meta.GenerationID)
+	obj.reinitObjTracking(obj.GetGenerationID(), meta.GenerationID)
 	if obj.updateNotificationEnabled() {
 		sm.PeriodicUpdaterPush(obj)
 	}
@@ -1178,7 +1186,7 @@ func (sm *Statemgr) AddPushObjectToMbus(key string, obj mbusObject,
 	dbObject := obj.GetDBObject()
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
-	obj.reinitObjTracking(meta.GenerationID)
+	obj.reinitObjTracking(obj.GetGenerationID(), meta.GenerationID)
 	if obj.updateNotificationEnabled() {
 		sm.PeriodicUpdaterPush(obj)
 	}
@@ -1199,7 +1207,7 @@ func (sm *Statemgr) UpdatePushObjectToMbus(key string, obj mbusPushObject,
 	pushObject := obj.PushObject()
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
-	obj.reinitObjTracking(meta.GenerationID)
+	obj.reinitObjTracking(obj.GetGenerationID(), meta.GenerationID)
 	if obj.updateNotificationEnabled() {
 		sm.PeriodicUpdaterPush(obj)
 	}
@@ -1254,7 +1262,7 @@ func (sm *Statemgr) DeletePushObjectToMbus(key string, obj mbusPushObject,
 	pushObject := obj.PushObject()
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
-	obj.reinitObjTracking(meta.GenerationID)
+	obj.reinitObjTracking(obj.GetGenerationID(), meta.GenerationID)
 	if obj.updateNotificationEnabled() {
 		sm.PeriodicUpdaterPush(obj)
 	}

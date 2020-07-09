@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	mapset "github.com/deckarep/golang-set"
+
 	"github.com/pensando/sw/api/graph"
 	apiintf "github.com/pensando/sw/api/interfaces"
 	"github.com/pensando/sw/venice/utils/kvstore"
@@ -19,6 +21,8 @@ type opResolver interface {
 	trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent, error)
 	//get unresolved objects
 	getUnResolvedObjects(key string) []apiintf.CtkitObject
+	// revaluate key when reference is removed as part of update
+	revaluate(kind string, keys []string) error
 }
 
 //ObjectResolver is interface to do resolution on the controller DB
@@ -244,6 +248,10 @@ func (r *addResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent, er
 	return pendingObjects, nil
 }
 
+func (r *addResolver) revaluate(kind string, keys []string) error {
+	return nil
+}
+
 func (r *deleteResolver) getUnResolvedObjects(key string) []apiintf.CtkitObject {
 	return nil
 }
@@ -337,26 +345,110 @@ func (r *deleteResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent,
 	return pendingObjects, nil
 }
 
-func (resolver *ObjectResolver) updateReferences(obj apiintf.CtkitObject) {
+func (r *deleteResolver) revaluate(kind string, keys []string) error {
 
-	if obj.References() == nil {
-		return
+	inFlightObjects := []apiintf.CtkitEvent{}
+	pendingObjects := []apiintf.CtkitEvent{}
+
+	objDB := r.md.GetObjectStore(kind)
+
+	for _, reference := range keys {
+		log.Infof("Reevaluate Delete %v", reference)
+		referenceObj, _ := objDB.GetObject(getRefKey(reference))
+		if referenceObj != nil {
+			referenceObj.Lock()
+			if referenceObj.IsDelUnResolved() {
+				if r.resolvedCheck(referenceObj.GetKey()) {
+					//Put the deleted node to run as next loop
+					inFlightObjects = append(inFlightObjects, apiintf.CtkitEvent{Event: kvstore.Deleted, Obj: referenceObj})
+					log.Infof("Object key %v resolved\n", referenceObj.GetKey())
+					referenceObj.SetEvent(kvstore.Deleted)
+					referenceObj.SetMarkedForDelete()
+					r.md.ResolvedRun(referenceObj)
+					for _, pobj := range referenceObj.PendingEvents() {
+						pendingObjects = append(pendingObjects, pobj)
+					}
+					referenceObj.ClearPendingEvents()
+				}
+			}
+			referenceObj.Unlock()
+		}
+	}
+	for _, inFlight := range inFlightObjects {
+		r.trigger(inFlight.Obj)
 	}
 
-	node := graph.Node{
+	//Process all pending ones which were waiting for object
+	for _, pobj := range pendingObjects {
+		//When objected is deleted, only create/update events will be queued
+		if pobj.Event == kvstore.Created {
+			r.objResolver.processAddInternal(pobj.Obj)
+		} else if pobj.Event == kvstore.Updated {
+			err := r.objResolver.processUpdateInternal(pobj.Obj)
+			if err != nil {
+				log.Errorf("Error in process add for %v : %v", pobj.Obj.GetKey(), err.Error())
+			}
+		}
+	}
+
+	return nil
+}
+
+func (resolver *ObjectResolver) updateReferences(obj apiintf.CtkitObject) {
+
+	oldNode := resolver.objGraph.References(obj.GetKey())
+
+	newNode := graph.Node{
 		This: obj.GetKey(),
 		Refs: make(map[string][]string),
 	}
 
-	for field, refs := range obj.References() {
-		objKey := getKeyForGraphDB(obj.GetKind(), refs.RefKind, field)
-		node.Refs[objKey] = []string{}
-		for _, ref := range refs.Refs {
-			node.Refs[objKey] = append(node.Refs[objKey], ref)
+	if obj.References() != nil {
+		for field, refs := range obj.References() {
+			objKey := getKeyForGraphDB(obj.GetKind(), refs.RefKind, field)
+			newNode.Refs[objKey] = []string{}
+			for _, ref := range refs.Refs {
+				newNode.Refs[objKey] = append(newNode.Refs[objKey], ref)
+			}
 		}
+
+		resolver.objGraph.UpdateNode(&newNode)
 	}
 
-	resolver.objGraph.UpdateNode(&node)
+	oldnodeRemove := graph.Node{
+		This: obj.GetKey(),
+		Refs: make(map[string][]string),
+	}
+
+	if oldNode != nil {
+		for refs, vals := range oldNode.Refs {
+			newVals, ok := newNode.Refs[refs]
+			if !ok {
+				oldnodeRemove.Refs[refs] = append(oldnodeRemove.Refs[refs], vals...)
+				continue
+			}
+			var nset, oset []interface{}
+			for i := range newVals {
+				nset = append(nset, newVals[i])
+			}
+			for i := range vals {
+				oset = append(oset, vals[i])
+			}
+
+			ns := mapset.NewSetFromSlice(nset)
+			os := mapset.NewSetFromSlice(oset)
+			del := os.Difference(ns).ToSlice()
+			for _, key := range del {
+				oldnodeRemove.Refs[refs] = append(oldnodeRemove.Refs[refs], key.(string))
+			}
+		}
+
+		for key, refs := range oldnodeRemove.Refs {
+			_, dkind, _ := getSKindDKindFieldKey(key)
+			resolver.deleteResolver.revaluate(dkind, refs)
+		}
+
+	}
 }
 
 func (resolver *ObjectResolver) clearReferences(key string) {

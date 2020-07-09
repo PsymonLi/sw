@@ -238,6 +238,11 @@ func (dps *DSCProfileState) GetKey() string {
 	return dps.DSCProfile.GetKey()
 }
 
+// GetKind returns the kind of DSCProfile
+func (dps *DSCProfileState) GetKind() string {
+	return dps.DSCProfile.GetKind()
+}
+
 func (dps *DSCProfileState) propagatationStatusDifferent(
 	current *cluster.PropagationStatus,
 	other *cluster.PropagationStatus) bool {

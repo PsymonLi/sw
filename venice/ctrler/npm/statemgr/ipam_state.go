@@ -263,6 +263,16 @@ func (ips *IPAMState) GetKey() string {
 	return ips.IPAMPolicy.GetKey()
 }
 
+// GetKind returns the kind
+func (ips *IPAMState) GetKind() string {
+	return ips.IPAMPolicy.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (ips *IPAMState) GetGenerationID() string {
+	return ips.IPAMPolicy.GenerationID
+}
+
 //TrackedDSCs keeps a list of DSCs being tracked for propagation status
 func (ips *IPAMState) TrackedDSCs() []string {
 	dscs, _ := ips.stateMgr.ListDistributedServiceCards()
@@ -394,7 +404,7 @@ func (sma *SmIPAM) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *c
 		return
 	}
 	//Run only if profile changes.
-	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile || sma.sm.dscRecommissioned(dsc, ndsc) {
 		sma.dscTracking(ndsc, true)
 	}
 }

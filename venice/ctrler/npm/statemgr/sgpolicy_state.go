@@ -136,6 +136,16 @@ func (sgp *SgpolicyState) GetKey() string {
 	return sgp.NetworkSecurityPolicy.GetKey()
 }
 
+// GetKind returns the kind
+func (sgp *SgpolicyState) GetKind() string {
+	return sgp.NetworkSecurityPolicy.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (sgp *SgpolicyState) GetGenerationID() string {
+	return sgp.NetworkSecurityPolicy.GenerationID
+}
+
 // Write writes the object to api server
 func (sgp *SgpolicyState) Write() error {
 	var err error
@@ -625,7 +635,7 @@ func (sma *SmSecurityPolicy) ProcessDSCUpdate(dsc *cluster.DistributedServiceCar
 	}
 
 	//Run only if profile changes.
-	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile || sma.sm.dscRecommissioned(dsc, ndsc) {
 		if sma.sm.isDscEnforcednMode(ndsc) {
 			sma.dscTracking(ndsc, true)
 		} else {
