@@ -22,6 +22,7 @@ def process_response(req_msg, resp_msg):
             spec = resp.Spec
             print ("Entry %d" %idx)
             print ("-----------------------");
+            print ("Spec: ID: %s" % spec.Id)
             print ("Spec: LocalAddr: %s" % long2ip(socket.ntohl(spec.LocalAddr.V4Addr)))
             print ("Spec: PeerAddr : %s" % long2ip(socket.ntohl(spec.PeerAddr.V4Addr)))
             print ("Spec: RemoteASN : %d" % spec.RemoteASN)

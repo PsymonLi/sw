@@ -116,20 +116,12 @@ nbase_init ()
     pds_ms_reg_pre_get_bgppeerspec_amb_bgp_peer(bgp_peer_pre_get);
     pds_ms_reg_pre_set_evpnevispec_amb_evpn_evi(evpn_evi_pre_set);
     pds_ms_reg_pre_get_evpnevispec_amb_evpn_evi(evpn_evi_pre_get);
-    pds_ms_reg_post_get_evpnevispec_amb_evpn_evi(evpn_evi_post_get);
-    pds_ms_reg_post_getall_evpnevispec_amb_evpn_evi(evpn_evi_post_getall);
     pds_ms_reg_pre_set_evpnevirtspec_amb_evpn_evi_rt(evpn_evi_rt_pre_set);
     pds_ms_reg_pre_get_evpnevirtspec_amb_evpn_evi_rt(evpn_evi_rt_pre_get);
-    pds_ms_reg_post_get_evpnevirtspec_amb_evpn_evi_rt(evpn_evi_rt_post_get);
-    pds_ms_reg_post_getall_evpnevirtspec_amb_evpn_evi_rt(evpn_evi_rt_post_getall);
     pds_ms_reg_pre_set_evpnipvrfspec_amb_evpn_ip_vrf(evpn_ip_vrf_pre_set);
     pds_ms_reg_pre_get_evpnipvrfspec_amb_evpn_ip_vrf(evpn_ip_vrf_pre_get);
-    pds_ms_reg_post_get_evpnipvrfspec_amb_evpn_ip_vrf(evpn_ip_vrf_post_get);
-    pds_ms_reg_post_getall_evpnipvrfspec_amb_evpn_ip_vrf(evpn_ip_vrf_post_getall);
     pds_ms_reg_pre_set_evpnipvrfrtspec_amb_evpn_ip_vrf_rt(evpn_ip_vrf_rt_pre_set);
     pds_ms_reg_pre_get_evpnipvrfrtspec_amb_evpn_ip_vrf_rt(evpn_ip_vrf_rt_pre_get);
-    pds_ms_reg_post_get_evpnipvrfrtspec_amb_evpn_ip_vrf_rt(evpn_ip_vrf_rt_post_get);
-    pds_ms_reg_post_getall_evpnipvrfrtspec_amb_evpn_ip_vrf_rt(evpn_ip_vrf_rt_post_getall);
     pds_ms_reg_pre_set_bgppeerafspec_amb_bgp_peer_afi_safi(bgp_peer_afi_safi_pre_set);
     pds_ms_reg_pre_get_bgppeerafspec_amb_bgp_peer_afi_safi(bgp_peer_afi_safi_pre_get);
     pds_ms_reg_pre_fill_get_bgppeerafspec_amb_bgp_peer_afi_safi(
@@ -137,6 +129,24 @@ nbase_init ()
     pds_ms_reg_pre_fill_get_bgpspec_amb_bgp_rm_ent(bgp_rm_ent_pre_fill_get);
     pds_ms_reg_pre_set_liminterfaceaddrspec_amb_lim_l3_if_addr(lim_l3_if_addr_pre_set);
     pds_ms_reg_pre_set_cpstaticroutespec_amb_cipr_rtm_static_rt(cp_route_pre_set);
+
+    // we dont need some post-get registrations on RR
+    if (mgmt_state_t::thread_context().state()->rr_mode() == false) {
+        pds_ms_reg_post_get_bgpspec_amb_bgp_rm_ent (bgp_rm_ent_post_get);
+        pds_ms_reg_post_getall_bgpspec_amb_bgp_rm_ent (bgp_rm_ent_post_getall);
+        pds_ms_reg_post_get_bgppeerspec_amb_bgp_peer(bgp_peer_post_get);
+        pds_ms_reg_post_getall_bgppeerspec_amb_bgp_peer(bgp_peer_post_getall);
+        pds_ms_reg_post_get_bgppeerafspec_amb_bgp_peer_afi_safi(bgp_peer_afi_safi_post_get);
+        pds_ms_reg_post_getall_bgppeerafspec_amb_bgp_peer_afi_safi(bgp_peer_afi_safi_post_getall);
+        pds_ms_reg_post_get_evpnevispec_amb_evpn_evi(evpn_evi_post_get);
+        pds_ms_reg_post_getall_evpnevispec_amb_evpn_evi(evpn_evi_post_getall);
+        pds_ms_reg_post_get_evpnevirtspec_amb_evpn_evi_rt(evpn_evi_rt_post_get);
+        pds_ms_reg_post_getall_evpnevirtspec_amb_evpn_evi_rt(evpn_evi_rt_post_getall);
+        pds_ms_reg_post_get_evpnipvrfspec_amb_evpn_ip_vrf(evpn_ip_vrf_post_get);
+        pds_ms_reg_post_getall_evpnipvrfspec_amb_evpn_ip_vrf(evpn_ip_vrf_post_getall);
+        pds_ms_reg_post_get_evpnipvrfrtspec_amb_evpn_ip_vrf_rt(evpn_ip_vrf_rt_post_get);
+        pds_ms_reg_post_getall_evpnipvrfrtspec_amb_evpn_ip_vrf_rt(evpn_ip_vrf_rt_post_getall);
+    }
 
     /***************************************************************************/
     /* Initialize the System Manager create parms.                             */

@@ -396,12 +396,89 @@ populate_disable_peer_af_spec (BGPPeerSpec &peer, BGPPeerAfSpec *peer_af,
 }
 
 NBB_VOID
+bgp_rm_ent_get_common(BGPGetResponse *resp)
+{
+    // no need to do anything if get failed
+    if (resp->apistatus() != types::ApiStatus::API_STATUS_OK) {
+        return;
+    }
+
+    auto mgmt_ctxt = mgmt_state_t::thread_context();
+    auto res = resp->mutable_response();
+    auto spec = res->mutable_spec();
+    mgmt_ctxt.state()->walk_uuid([&spec]
+        (const pds_obj_key_t &key, uuid_obj_t *uuid_obj) -> bool {
+        if (uuid_obj->obj_type() == uuid_obj_type_t::BGP) {
+            // assuming singleton BGP global spec
+            spec->set_id(key.id, PDS_MAX_KEY_LEN);
+            return false;
+        }
+        return true;
+    });
+}
+
+NBB_VOID
+bgp_rm_ent_post_get(BGPSpec &req, BGPGetResponse* resp, NBB_VOID* kh)
+{
+    return bgp_rm_ent_get_common(resp);
+}
+
+NBB_VOID
+bgp_rm_ent_post_getall(const BGPGetRequest *req, BGPGetResponse* resp)
+{
+    return bgp_rm_ent_get_common(resp);
+}
+
+NBB_VOID
 bgp_rm_ent_pre_get(BGPSpec &req, BGPGetResponse* resp, NBB_VOID* kh)
 {
     BGPKeyHandle *key_spec = (BGPKeyHandle *)kh;
 
     // set UUID from key handle to req
     req.set_id(key_spec->id());
+}
+
+NBB_VOID
+bgp_peer_post_get_common(BGPPeerGetResponse* resp)
+{
+    // no need to do anything if get failed
+    if (resp->apistatus() != types::ApiStatus::API_STATUS_OK) {
+        return;
+    }
+
+    auto mgmt_ctxt = mgmt_state_t::thread_context();
+    for (int i = 0; i< resp->response_size(); i++) {
+        auto res = resp->mutable_response(i);
+        auto spec = res->mutable_spec();
+        mgmt_ctxt.state()->walk_uuid([&spec]
+            (const pds_obj_key_t &key, uuid_obj_t *uuid_obj) -> bool {
+            if (uuid_obj->obj_type() == uuid_obj_type_t::BGP_PEER) {
+                bgp_peer_uuid_obj_t * peer_uuid = (bgp_peer_uuid_obj_t*)uuid_obj;
+                auto& ms_key = peer_uuid->ms_id();
+                ip_addr_t l,p;
+                ip_addr_spec_to_ip_addr (spec->localaddr(), &l);
+                ip_addr_spec_to_ip_addr (spec->peeraddr(), &p);
+                if (IPADDR_EQ(&l, &ms_key.local_ip) &&
+                    IPADDR_EQ(&p, &ms_key.peer_ip)) {
+                    spec->set_id(key.id, PDS_MAX_KEY_LEN);
+                    return false;
+                }
+           }
+           return true;
+        });
+    }
+}
+
+NBB_VOID
+bgp_peer_post_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh)
+{
+    return bgp_peer_post_get_common(resp);
+}
+
+NBB_VOID
+bgp_peer_post_getall(const BGPPeerGetRequest *req, BGPPeerGetResponse* resp)
+{
+    return bgp_peer_post_get_common(resp);
 }
 
 NBB_VOID
@@ -563,6 +640,54 @@ bool
 bgp_rm_ent_pre_fill_get (amb_bgp_rm_ent *data)
 {
     return (data->admin_status == AMB_BGP_ADMIN_STATUS_UP);
+}
+
+NBB_VOID
+bgp_peer_afi_safi_get_common (BGPPeerAfGetResponse* resp)
+{
+    // no need to do anything if get failed
+    if (resp->apistatus() != types::ApiStatus::API_STATUS_OK) {
+        return;
+    }
+
+    auto mgmt_ctxt = mgmt_state_t::thread_context();
+    for (int i = 0; i< resp->response_size(); i++) {
+        auto res = resp->mutable_response(i);
+        auto spec = res->mutable_spec();
+        mgmt_ctxt.state()->walk_uuid([&spec]
+            (const pds_obj_key_t &key, uuid_obj_t *uuid_obj) -> bool {
+            if (uuid_obj->obj_type() == uuid_obj_type_t::BGP_PEER_AF) {
+                bgp_peer_af_uuid_obj_t *peer_af_uuid = (bgp_peer_af_uuid_obj_t*)uuid_obj;
+                auto& ms_key = peer_af_uuid->ms_id();
+                ip_addr_t l,p;
+                ip_addr_spec_to_ip_addr (spec->localaddr(), &l);
+                ip_addr_spec_to_ip_addr (spec->peeraddr(), &p);
+                if (IPADDR_EQ(&l, &ms_key.local_ip) &&
+                    IPADDR_EQ(&p, &ms_key.peer_ip) &&
+                    (spec->afi() == ms_key.afi) &&
+                    (spec->safi() == ms_key.safi)) {
+                    spec->set_id(key.id, PDS_MAX_KEY_LEN);
+                    return false;
+                }
+           }
+           return true;
+        });
+    }
+}
+
+NBB_VOID
+bgp_peer_afi_safi_post_get(BGPPeerAfSpec &req,
+                           BGPPeerAfGetResponse* resp,
+                           NBB_VOID* kh)
+{
+    return bgp_peer_afi_safi_get_common(resp);
+}
+
+NBB_VOID
+bgp_peer_afi_safi_post_getall(const BGPPeerAfGetRequest *req,
+                              BGPPeerAfGetResponse* resp)
+{
+    return bgp_peer_afi_safi_get_common(resp);
 }
 
 NBB_VOID

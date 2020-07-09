@@ -19,6 +19,7 @@ def process_response(req_msg, resp_msg):
         resp = resp_msg.Response
         spec = resp.Spec
         print ("-----------------------");
+        print ("Spec: Id : %s" % spec.Id)
         print ("Spec: LocalASN : %d" % spec.LocalASN)
         print ("Spec: RouterID: 0x%X" % spec.RouterId)
         print ("Spec: ClusterID: 0x%X" % spec.ClusterId)

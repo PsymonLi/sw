@@ -178,10 +178,19 @@ bgp_peer_afi_safi_pre_set(BGPPeerAfSpec &req, NBB_LONG row_status,
                           NBB_ULONG correlator, NBB_VOID* kh, bool op_update=false);
 
 NBB_VOID bgp_rm_ent_pre_get(BGPSpec &req, BGPGetResponse* resp, NBB_VOID* kh);
+NBB_VOID bgp_rm_ent_post_get(BGPSpec &req, BGPGetResponse* resp, NBB_VOID* kh);
+NBB_VOID bgp_rm_ent_post_getall(const BGPGetRequest *req, BGPGetResponse* resp);
 NBB_VOID bgp_peer_pre_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh);
+NBB_VOID bgp_peer_post_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh);
+NBB_VOID bgp_peer_post_getall(const BGPPeerGetRequest *req, BGPPeerGetResponse* resp);
 NBB_VOID bgp_peer_afi_safi_pre_get(BGPPeerAfSpec &req,
                                    BGPPeerAfGetResponse* resp,
                                    NBB_VOID* kh);
+NBB_VOID bgp_peer_afi_safi_post_get(BGPPeerAfSpec &req,
+                                    BGPPeerAfGetResponse* resp,
+                                    NBB_VOID* kh);
+NBB_VOID bgp_peer_afi_safi_post_getall(const BGPPeerAfGetRequest *req,
+                                       BGPPeerAfGetResponse* resp);
 bool bgp_rm_ent_pre_fill_get (amb_bgp_rm_ent *data);
 bool bgp_peer_afi_safi_pre_fill_get (amb_bgp_peer_afi_safi *data);
 NBB_VOID bgp_peer_status_get_fill_func (BGPPeerSpec& req,

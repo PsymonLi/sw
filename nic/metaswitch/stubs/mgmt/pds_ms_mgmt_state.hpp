@@ -160,6 +160,11 @@ public:
         uuid_store_.erase(uuid);
     }
     uuid_obj_t* lookup_uuid(const pds_obj_key_t& uuid);
+    void walk_uuid(const std::function<bool(const pds_obj_key_t&, uuid_obj_t*)>& cb_fn) {
+        for (auto& obj: uuid_store_) {
+            if (!cb_fn (obj.first, obj.second.get())) {break;}
+        }
+    }
 
     // Throws exception if the given VPC is not found in the UUID store
     vpc_uuid_obj_t* vpc_uuid_obj(const pds_obj_key_t& vpc_key);
