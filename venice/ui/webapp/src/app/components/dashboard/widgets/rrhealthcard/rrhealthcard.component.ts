@@ -324,4 +324,8 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
     );
   }
 
+  onAlertNumberClick($event, type: string) {
+    this.controllerService.navigate(['/monitoring', 'alertsevents']);
+  }
+
 }

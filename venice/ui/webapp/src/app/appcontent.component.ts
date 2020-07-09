@@ -24,8 +24,8 @@ import { FieldsRequirement_operator, ISearchSearchResponse, SearchSearchRequest,
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import * as moment from 'moment';
 import { ConfirmDialog } from 'primeng/primeng';
-import { Subject, Subscription, Observable, forkJoin } from 'rxjs';
-import { filter, map, takeUntil } from 'rxjs/operators';
+import { Subject, Subscription, Observable, forkJoin, of } from 'rxjs';
+import { filter, map, takeUntil, catchError } from 'rxjs/operators';
 import { SideNavItem, sideNavMenu } from './appcontent.sidenav';
 import { Utility } from './common/Utility';
 import { selectorSettings } from './components/settings-group';
@@ -129,6 +129,10 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
   // isUINavigationBlocked stops the sidenav and other elements from rendering.
   isScreenBlocked: boolean = false;
   isUINavigationBlocked: boolean = false;
+
+  modulesSubscription: any = null;
+  routingListforkjoinSubscription: any = null;
+  pegasusNodes: any[] = null;
 
   constructor(
     protected _controllerService: ControllerService,
@@ -297,7 +301,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     //   // template: this.helpTemplate
     //   id: 'authpolicy'
     // });
-   // /*
+    // /*
   }
 
   /**
@@ -412,7 +416,9 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     this.unsubscribeStore$.next();
     this.unsubscribeStore$.complete();
     this.subscriptions.forEach((sub) => {
-      sub.unsubscribe();
+      if (sub) {
+        sub.unsubscribe();
+      }
     });
     this._boolInitApp = false;
     this.idle.stop();
@@ -456,6 +462,13 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     this.store.dispatch(logout());
     this._boolInitApp = false;
     this.navigate(['/login']);
+    this.subscriptions.forEach((sub) => {
+      if (sub) {
+        sub.unsubscribe();
+      }
+    });
+    Utility.getInstance().setRoutinghealthlist(null);
+    this.pegasusNodes = null;
   }
 
 
@@ -743,108 +756,113 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     }
   }
 
-   /**
-   * Fetch diagnostics module
-   */
+  /**
+  * Fetch diagnostics module
+  *
+  * getModules() may report that [n1, n2, n3] are running RR-sevices.
+  * UI uses folkjoin() to fetch RR-Status from  [n1, n2, n3]
+  *
+  * VS-2081
+  * User purposely shuts down n2.
+  * 1.  routingService.GetHealthZ(n2 ) will fail.  We use obsevable.pipe(..) technique to catch n2's failure and show n1, n2 RR-Status
+  * 2. Backend may constantly pusing updated modules records to UI from web-socket connections
+  *  We don't want to constantly fetching RR-Status of [n1, n2, n3]. Thus, we use lodash.differenceWith(..) api to control whether to invoke folkjoin calls
+  *
+  */
   getModules() {
-    const subscription = this.diagnosticsService.ListModuleCache().subscribe(
+    if (this.modulesSubscription) {
+      this.modulesSubscription.unsubscribe();
+    }
+    this.modulesSubscription = this.diagnosticsService.ListModuleCache().subscribe(
       (response) => {
         /* module json looks like this
-         {
-            "kind": "Module",
-            "api-version": "v1",
-            "meta": {
-                "name": "node2-pen-pegasus"
-            },
-            "spec": {
-                "log-level": "info"
-            },
-            "status": {
-                "node": "node2",
-                "module": "pen-pegasus",
-                "category": "venice",
-                "service": "pen-pegasus-676fcbcc64-sc97j",
-                "service-ports": [
-                    {
-                        "name": "pen-pegasus",
-                        "port": 179
-                    },
-                    {
-                        "name": "pen-pegasus-cxm",
-                        "port": 8001
-                    }
-                ]
-            }
-         },
+         {"kind":"Module","api-version":"v1","meta":{"name":"node2-pen-pegasus"},"spec":{"log-level":"info"},"status":{"node":"node2","module":"pen-pegasus","category":"venice","service":"pen-pegasus-676fcbcc64-sc97j","service-ports":[{"name":"pen-pegasus","port":179},{"name":"pen-pegasus-cxm","port":8001}]}}
         */
         const pegasusNodes = response.data.filter(module => module.status.module === 'pen-pegasus');
+        const _ = Utility.getLodash();
+        const diff = _.differenceWith(pegasusNodes, this.pegasusNodes, _.isEqual);
+        if ( !(diff && diff.length > 0)) {
+          return;
+        } else {
+          this.pegasusNodes = _.cloneDeep(pegasusNodes);
+        }
         // find nodes that host "pen-pegasus" module
         // user routing.proto HealthStatus to figure out RR health
-        const nodeNames = pegasusNodes.map( node => node.status.node);
+        const nodeNames = pegasusNodes.map(node => node.status.node);
         const observables: Observable<any>[] = [];
-        nodeNames.forEach( (n: string ) => {
+        nodeNames.forEach((n: string) => {
           // build url  /routing/v1/node2/health // node2 is nodeNames[i];
           if (!Utility.isEmpty(n)) {
-              observables.push(this.routingService.GetHealthZ(n));
+            const ob = this.routingService.GetHealthZ(n).pipe(catchError((err) => {
+              return of({ body: err.body, statusCode: err.statusCode, isError: true, node: n }); // this records which call failed in forkjoin
+            }));
+            observables.push(ob); // this.routingService.GetHealthZ(n));
           }
         });
-        if (observables.length === 0 ) {
+        if (observables.length === 0) {
           return;
         }
-        const sub = forkJoin(observables).subscribe(
+        if (this.routingListforkjoinSubscription ) {
+          this.routingListforkjoinSubscription.unsubscribe();
+        }
+        this.routingListforkjoinSubscription = forkJoin(observables).subscribe(
           (results) => {
-            const isAllOK = Utility.isForkjoinResultAllOK(results);
-            if (isAllOK) {
-              // process RRStatus    /routing/v1/node2/health return json like below
-              /*
-                 {
-                     "kind": "",
-                     "meta": {
-                         "name": "",     <=============  no name
-                         "generation-id": "",
-                         "creation-time": "",
-                         "mod-time": ""
-                     },
-                     "spec": {},
-                     "status": {
-                         "router-id": "192.168.30.12",
-                         "internal-peers": {
-                             "configured": 2,
-                             "established": 2   <-------- this is healthy configured_# = established_#
-                         },
-                         "external-peers": {
-                             "configured": 3,
-                             "established": 0   <--------- this is not healthy configured_# != established_#
-                         },
-                         "unexpected-peers": 0
-                     }
-                 }
-              */
-              const routinghealthlist = results.map((r, i) => {
+             const isAllOK = Utility.isForkjoinResultAllOK(results);
+            // process RRStatus    /routing/v1/node2/health return json like below
+            /*
+               {
+                   "kind": "",
+                   "meta": {
+                       "name": "",     <=============  no name
+                       "generation-id": "",
+                       "creation-time": "",
+                       "mod-time": ""
+                   },
+                   "spec": {},
+                   "status": {
+                       "router-id": "192.168.30.12",
+                       "internal-peers": {
+                           "configured": 2,
+                           "established": 2   <-------- this is healthy configured_# = established_#
+                       },
+                       "external-peers": {
+                           "configured": 3,
+                           "established": 0   <--------- this is not healthy configured_# != established_#
+                       },
+                       "unexpected-peers": 0
+                   }
+               }
+            */
+            const routinghealthlist = [];
+            const errorNodes = [];
+            results.forEach((r, i) => {
+              if (r.isError ) {
+                errorNodes.push(r.node);
+              } else {
                 const obj = new RoutingHealth(r.body);
                 obj.meta.name = obj.meta.name ? obj.meta.name : obj.status['router-id']; // patch name
                 obj._ui = { node: nodeNames[i] };
-                return obj;
-              });
-              Utility.getInstance().setRoutinghealthlist(routinghealthlist);
-              this._controllerService.publish(Eventtypes.RR_HEALTH_STATUS, routinghealthlist);
-            } else {
-              const error = Utility.joinErrors(results);
-              this._controllerService.invokeRESTErrorToaster('Failure', error);
+                routinghealthlist.push(obj);
+              }
+            });
+            if (errorNodes && errorNodes.length > 0 ) {
+              this._controllerService.invokeErrorToaster('Failure', 'Failed to get route reflector health status from ' + errorNodes.join(' , '));
             }
+            Utility.getInstance().setRoutinghealthlist(routinghealthlist);
+            this._controllerService.publish(Eventtypes.RR_HEALTH_STATUS, routinghealthlist);
           },
           (error) => {
             this._controllerService.invokeRESTErrorToaster('Failure', error);
           }
         );
-        this.subscriptions.push(sub);
+        this.subscriptions.push(this.routingListforkjoinSubscription);
 
       },
       (error) => {
         this._controllerService.invokeRESTErrorToaster('Error', 'Failed to fetch modules');
       }
     );
-    this.subscriptions.push(subscription);
+    this.subscriptions.push(this.modulesSubscription);
   }
 
   /**

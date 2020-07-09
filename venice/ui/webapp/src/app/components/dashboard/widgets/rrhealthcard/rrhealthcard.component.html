@@ -33,12 +33,22 @@
             <div fxFlex="100%" fxLayout="row">
               <div class="rrhealthcard-alerts-text">Warning Alerts</div>
               <div fxFlex="1 0 auto"></div>
-              <div class="rrhealthcard-alerts-number">{{this.alertCountMap['warn']}}</div>
+              <div class="rrhealthcard-alerts-number" *ngIf="this.alertCountMap['warn'] == 0">
+                {{this.alertCountMap['warn']}}</div>
+              <div class="rrhealthcard-alerts-number rrhealthcard-alerts-number-with-link"
+                   *ngIf="this.alertCountMap['warn'] > 0" [matTooltip]="'Click to go to alert page'"
+                   (click)="onAlertNumberClick($event, 'warn')">{{this.alertCountMap['warn']}}</div>
             </div>
             <div fxFlex="100%" fxLayout="row">
               <div class="rrhealthcard-alerts-text">Critical Alerts</div>
               <div fxFlex="1 0 auto"></div>
-              <div class="rrhealthcard-alerts-number">{{this.alertCountMap['critical']}}</div>
+              <div class="rrhealthcard-alerts-number" *ngIf="this.alertCountMap['critical'] == 0">
+                {{this.alertCountMap['critical']}}</div>
+              <div class="rrhealthcard-alerts-number rrhealthcard-alerts-number-with-link"
+                   *ngIf="this.alertCountMap['critical'] >0"
+                   [matTooltip]="'Click to go to alert page'"
+                   (click)="onAlertNumberClick($event, 'critical')">
+                {{this.alertCountMap['critical']}}</div>
             </div>
           </div>
         </div>

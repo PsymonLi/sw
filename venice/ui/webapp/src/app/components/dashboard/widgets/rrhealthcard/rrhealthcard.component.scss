@@ -57,6 +57,10 @@
   .rrhealthcard-alerts-number {
     @include primary-font(16px, #b592e3, 400);
   }
+
+  .rrhealthcard-alerts-number.rrhealthcard-alerts-number-with-link {
+    cursor: pointer;
+  }
 }
 
 .rrhealthcard-dialog-header {

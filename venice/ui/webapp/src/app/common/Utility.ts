@@ -1441,7 +1441,7 @@ export class Utility {
       case 'FwlogPolicy':
         return 'monitoring/fwlogs/fwlogpolicies';
       case 'FlowExportPolicy':
-        return 'monitoring/flowexport';
+          return 'troubleshoot/flowexport';
       case 'User':
       case 'Role':
       case 'RoleBinding':
