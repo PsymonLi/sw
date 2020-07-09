@@ -44,9 +44,9 @@ export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowEx
   MACS_TOOLTIP: string = 'Type in mac address and hit enter or space key to add more.';
   PORTS_ERRORMSG: string = 'Invalid Protocol/Port';
   PROTS_ERRORMSG: string = 'Invalid Protocol/Port';
-  PROTS_TOOLTIP: string = 'Type in valid layer3 or layer 4 protocol and protocol/port, ' +
+  PROTS_TOOLTIP: string = 'Type in a valid layer 3 or layer 4 protocol and protocol/port, ' +
                           'hit enter or space key to add more. Port can be individual or range.' +
-                          'for example: icmp, any/2345, tcp/60001-60100...';
+                          ' For example: icmp, any, tcp/60001-60100...';
 
   protoAppOptions: Object[] = [
     { label: 'PROTO-PORTS', value: 'Protocols Ports' },
@@ -349,5 +349,3 @@ export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowEx
   }
 
 }
-
-

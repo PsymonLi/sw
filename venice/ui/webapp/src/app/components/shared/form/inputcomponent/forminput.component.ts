@@ -121,10 +121,6 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   }
 
   getTooltip(): string {
-    if (this.hintTooltip) {
-      this.currentTooltipClass = this.tooltipClass;
-      return this.hintTooltip;
-    }
     if (this.ngControl && this.ngControl.control &&
         this.ngControl.touched && this.ngControl.invalid &&
         this.ngControl.dirty) {
@@ -142,6 +138,10 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
         }
       }
       return msgs.join('\n');
+    }
+    if (this.hintTooltip) {
+      this.currentTooltipClass = this.tooltipClass;
+      return this.hintTooltip;
     }
     if (this.ngControl && this.ngControl.control) {
       this.currentTooltipClass = this.tooltipClass;

@@ -319,7 +319,6 @@
     }
   }
 
-  .app-formchips-requiredField,
   .requiredField {
     color: #dd3b09;
 
@@ -344,16 +343,6 @@
   .requiredField {
     :first-child {
       width: calc(100% - 10px) !important;
-    }
-  }
-
-  .app-formchips-requiredField {
-    &:before {
-      top: 14px;
-    }
-
-    label {
-      left: 0.5em;
     }
   }
 }

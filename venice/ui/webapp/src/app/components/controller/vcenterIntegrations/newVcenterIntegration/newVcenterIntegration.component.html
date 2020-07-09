@@ -39,14 +39,13 @@
           </mat-radio-button>
         </mat-radio-group>
       </div>
-      <span *ngIf="pickedOption !== ALL_DATACENTERS"
-            [ngClass]="{'app-formchips-requiredField': isFieldEmpty(newObject.$formGroup.get(['spec', 'manage-namespaces']))}">
-        <app-formchips fxFlex="none" [chipsLabel]="'Datacenter Names'"
-                       [itemValidator]="isValidDCName"
-                       [formControl]="newObject.$formGroup.get(['spec', 'manage-namespaces'])"
-                       boxStyleClass="newVcenter-dcnames-boxes" [toolTip]="DCNAMES_TOOLTIP">
-        </app-formchips>
-      </span>
+      <div fxLayout="row">
+        <app-psmchipsbox *ngIf="pickedOption !== ALL_DATACENTERS"
+                         fxFlex="410px" label="Datacenter Names"
+                         [formControl]="newObject.$formGroup.get(['spec', 'manage-namespaces'])"
+                         [toolTip]="DCNAMES_TOOLTIP" [showRequiredOnEmpty]="true">
+        </app-psmchipsbox>
+      </div>
       <app-fieldcontainer fieldTitle="Credential">
         <div fxflex="nogrow" fxLayout="column" class="newVcenter-cred-box"
              [formGroup]="newObject.$formGroup.get(['spec','credentials'])">

@@ -48,16 +48,6 @@ $dary-grey: #a9a9a9;
   .new-export-policy-rule-template {
     cursor: pointer;
 
-    .export-policy-rule-boxes {
-      ul {
-        width: 240px;
-        white-space: nowrap;
-        overflow: hidden !important;
-        font-size: 14px !important;
-        height: 30px !important;
-      }
-    }
-
     .flow-export-policy-rule-inputs {
       justify-content: space-between;
       padding: 0px 10px 10px;

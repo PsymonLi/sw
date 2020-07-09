@@ -100,6 +100,12 @@ $dary-grey: #a9a9a9;
         width: 100px;
       }
 
+      .newmirrorsession-interface-chips-box {
+        .psm-form-chips-box {
+          height: 30px !important;
+        }
+      }
+
       .newmirrorsession-interface-selectbox {
         height: 30px;
         font-size: 14px;
@@ -149,9 +155,7 @@ $dary-grey: #a9a9a9;
   }
 
   app-orderedlist {
-    width: 95%;
-    min-width: 650px;
-    max-width: 750px;
+    width: 590px
   }
 }
 
@@ -161,7 +165,7 @@ $dary-grey: #a9a9a9;
 }
 
 .newmirrorsession-rule-row {
-  padding-left: 20px;
+  padding-left: 10px;
 }
 
 .newmirrorsession-rule-app legend {

@@ -187,17 +187,12 @@
       </p-dropdown>
     </span>
     <div fxFlex="15px"></div>
-    <span *ngIf="!labelValueOptionsMap[selector.get(['key']).value] as labelValueOptions"
-          [ngClass]="{
-            'newmirrorsession-interface-box': true,
-            'app-formchips-requiredField': isFieldEmpty(selector.get(['values'])) && labelValueOptions
-    }">
-      <app-formchips fxFlex="none" [chipsLabel]="'Label Values'"
-                     [formControl]="selector.get('values')" [toolTip]="LABELVALUES_TOOLTIP"
-                     [itemValidator]="isValidLabelValue"
-                     boxStyleClass="newmirrorsession-labelvalues-boxes">
-      </app-formchips>
-    </span>
+    <app-psmchipsbox class="newmirrorsession-interface-chips-box"
+                     *ngIf="!labelValueOptionsMap[selector.get(['key']).value] as labelValueOptions"
+                     fxFlex="210px" label="Label Values" [formControl]="selector.get('values')"
+                     [showRequired]="isFieldEmpty(selector.get(['values']))"
+                     [toolTip]="LABELVALUES_TOOLTIP">
+    </app-psmchipsbox>
     <span *ngIf="labelValueOptionsMap[selector.get(['key']).value] as labelValueOptions"
           fxFlex="none" fxLayout="row" [ngClass]="{
         'newmirrorsession-interface-box': true,
@@ -232,105 +227,23 @@
 
 <ng-template #ruleTemplateEdit let-data="data" let-index="index" let-inEdit="inEdit">
   <!-- data is MonitoringMatchRule -->
-  <div fxFlex="auto" fxLayout="column" fxLayoutGap="15px"
-       fxLayoutAlign="center none" class="newmirrorsession-rule-template">
-    <div fxFlex="none" fxLayout="row" fxLayoutGap="40px" class="newmirrorsession-rule-row">
-      <!--
-      <app-fieldcontainer class="newmirrorsession-rule-source" fieldTitle="Source">
-        <legend>Source</legend>
-        <div fxFlex="none" fxLayout="row" fxLayoutGap="40px">
-          <div fxFlex="none" fxLayout="column">
-            <div fxFlex="5px"></div>
-            <app-formchips fxFlex="none" [chipsLabel]="IPS_LABEL"
-                           [formControl]="data.rule.$formGroup.get(['source', 'ip-addresses'])"
-                           boxStyleClass="newmirrorsession-rule-boxes" [itemValidator]="isValidIP"
-                           [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-            </app-formchips>
-          </div>
-          <div fxFlex="none" fxLayout="column">
-            <div fxFlex="5px"></div>
-            <app-formchips fxFlex="none" [chipsLabel]="MACS_LABEL"
-                           [formControl]="data.rule.$formGroup.get(['source', 'mac-addresses'])"
-                           boxStyleClass="newmirrorsession-rule-boxes"
-                           [itemValidator]="isValidMAC"
-                           [itemErrorMsg]="MACS_ERRORMSG" [toolTip]="MACS_TOOLTIP">
-            </app-formchips>
-          </div>
-        </div>
-      </app-fieldcontainer>
-      -->
-      <app-formchips fxFlex="none" [chipsLabel]="'Source ' + IPS_LABEL"
-                     [formControl]="data.rule.$formGroup.get(['source', 'ip-addresses'])"
-                     boxStyleClass="newmirrorsession-rule-boxes" [itemValidator]="isValidIP"
-                     [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-      </app-formchips>
-      <app-formchips fxFlex="none" [chipsLabel]="'Target ' + IPS_LABEL"
-                     [formControl]="data.rule.$formGroup.get(['destination', 'ip-addresses'])"
-                     boxStyleClass="newmirrorsession-rule-boxes" [itemValidator]="isValidIP"
-                     [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-      </app-formchips>
+  <div fxFlex="auto" fxLayout="column" fxLayoutGap="15px">
+    <div fxFlex="none" fxLayout="row" fxLayoutGap="10px" class="newmirrorsession-rule-row">
+      <app-psmchipsbox fxFlex="270px" [label]="'Source ' + IPS_LABEL"
+                       [formControl]="data.rule.$formGroup.get(['source', 'ip-addresses'])"
+                       [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
+      </app-psmchipsbox>
+      <app-psmchipsbox fxFlex="270px" [label]="'Destination ' + IPS_LABEL"
+                       [formControl]="data.rule.$formGroup.get(['destination', 'ip-addresses'])"
+                       [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
+      </app-psmchipsbox>
     </div>
-    <!--
-    <div fxFlex="none">
-      <app-fieldcontainer class="newmirrorsession-rule-source" fieldTitle="Target">
-        <div fxFlex="none" fxLayout="row" fxLayoutGap="40px">
-          <div fxFlex="none" fxLayout="column">
-            <div fxFlex="5px"></div>
-            <app-formchips fxFlex="none" [chipsLabel]="IPS_LABEL"
-                           [formControl]="data.rule.$formGroup.get(['destination', 'ip-addresses'])"
-                           boxStyleClass="newmirrorsession-rule-boxes" [itemValidator]="isValidIP"
-                           [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-            </app-formchips>
-          </div>
-          <div fxFlex="none" fxLayout="column">
-            <div fxFlex="5px"></div>
-            <app-formchips fxFlex="none" [chipsLabel]="MACS_LABEL"
-                           [formControl]="data.rule.$formGroup.get(['destination', 'mac-addresses'])"
-                           boxStyleClass="newmirrorsession-rule-boxes"
-                           [itemValidator]="isValidMAC"
-                           [itemErrorMsg]="MACS_ERRORMSG" [toolTip]="MACS_TOOLTIP">
-            </app-formchips>
-          </div>
-        </div>
-      </app-fieldcontainer>
-    </div>
-    -->
     <div fxFlex="none" class="newmirrorsession-rule-row">
-      <app-formchips fxFlex="none" [chipsLabel]="'Protocol / Ports'"
-                     [formControl]="data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports'])"
-                     boxStyleClass="newmirrorsession-proto-boxes"
-                     [itemValidator]="isValidProto"
-                     [itemErrorMsg]="PROTS_ERRORMSG" [toolTip]="PROTS_TOOLTIP">
-      </app-formchips>
-      <!-- comment out for relase A
-        <legend>Protocol Or App</legend>
-        <mat-radio-group fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start center"
-                         fxLayoutGap="25px" class="newmirrorsession-attach-radio"
-                         [(ngModel)]="data.selectedProtoAppOption"
-                         (change)="onRadioButtonChange($event, data)">
-          <mat-radio-button fxFlex="nogrow" fxLayoutAlign="start center" color="primary"
-                            [disableRipple]="true" *ngFor="let option of protoAppOptions"
-                            [value]="option.value">
-            {{option.label}}
-          </mat-radio-button>
-        </mat-radio-group>
-        <div [@slideInOut] *ngIf="data.selectedProtoAppOption === PROTO_PORTS_OPTION">
-          <app-formchips fxFlex="none"
-                         [formControl]="data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports'])"
-                         boxStyleClass="newmirrorsession-proto-boxes" [itemValidator]="isValidProto"
-                         [itemErrorMsg]="PROTS_ERRORMSG" [toolTip]="PROTS_TOOLTIP"
-                         placeholder="ex: tcp/1234, arp">
-          </app-formchips>
-        </div>
-        <div [@slideInOut] *ngIf="data.selectedProtoAppOption === APPS_OPTION">
-          <p-multiSelect class="newmirrorsession-multiselect" fxFlex="240px"
-                         appendTo="body" [filter]="false" [showHeader]="false"
-                         [showToggleAll]="false"
-                         defaultLabel="Select Apps..." [options]="securityAppOptions"
-                         [formControl]="data.rule.$formGroup.get(['app-protocol-selectors', 'applications'])">
-          </p-multiSelect>
-        </div>
-        -->
+      <app-psmchipsbox fxFlex="270px" label="Protocol / Ports"
+                       [formControl]="data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports'])"
+                       [itemValidator]="isValidProto" [itemErrorMsg]="PROTS_ERRORMSG"
+                       [toolTip]="PROTS_TOOLTIP">
+      </app-psmchipsbox>
     </div>
   </div>
 </ng-template>
@@ -354,18 +267,6 @@
               </span>
             </div>
           </div>
-          <!--
-          <div *ngIf="data.rule.$formGroup.get(['source', 'mac-addresses']).value.length !== 0"
-               fxFlex="none" fxLayout="row">
-            <div fxFlex="none" class="newmirrorsession-bold-subtext-ipmac">MAC:</div>
-            <div fxFlex="none" fxLayout="column">
-              <span *ngFor="let mac of getDataArray(data, 'source', 'mac-addresses')"
-                    class="newmirrorsession-rule-content">
-                {{mac}}
-              </span>
-            </div>
-          </div>
-          -->
         </div>
 
         <div fxFlex="33" fxLayout="column" fxLayouAlign="start start">
@@ -381,18 +282,6 @@
               </span>
             </div>
           </div>
-          <!--
-          <div *ngIf="data.rule.$formGroup.get(['destination', 'mac-addresses']).value.length !== 0"
-               fxFlex="none" fxLayout="row">
-            <div fxFlex="none" class="newmirrorsession-bold-subtext-ipmac">MAC:</div>
-            <div fxFlex="none" fxLayout="column">
-              <span *ngFor="let mac of getDataArray(data, 'destination', 'mac-addresses')"
-                    class="newmirrorsession-rule-content">
-                {{mac}}
-              </span>
-            </div>
-          </div>
-          -->
         </div>
 
         <div fxFlex="34" fxLayout="column" fxLayouAlign="start start">
@@ -409,19 +298,6 @@
               </span>
             </div>
           </div>
-          <!--
-          <div *ngIf="data.selectedProtoAppOption === 'applications' && 
-            data.rule.$formGroup.get(['app-protocol-selectors', 'applications']).value.length !== 0"
-               fxFlex="none" fxLayout="row">
-            <div fxFlex="none" class="newmirrorsession-bold-subtext-proto">Applications:</div>
-            <div fxFlex="none" fxLayout="column">
-              <span *ngFor="let app of getDataArray(data, 'app-protocol-selectors', 'applications')"
-                    class="newmirrorsession-rule-content">
-                {{app}}
-              </span>
-            </div>
-          </div>
-          -->
         </div>
       </div>
     </div>

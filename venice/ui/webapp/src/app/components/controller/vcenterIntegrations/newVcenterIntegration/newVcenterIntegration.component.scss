@@ -38,16 +38,6 @@ $dary-grey: #a9a9a9;
     @include global-mat-radio(12px);
   }
 
-  .newVcenter-dcnames-boxes {
-    ul {
-      width: 400px;
-      white-space: nowrap;
-      overflow: hidden !important;
-      font-size: 16px !important;
-      height: 30px !important;
-    }
-  }
-
   .newVcenter-cred-box {
     width: 370px;
     margin: 0px auto;

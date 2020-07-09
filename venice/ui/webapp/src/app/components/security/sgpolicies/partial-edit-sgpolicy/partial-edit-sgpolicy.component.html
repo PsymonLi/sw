@@ -1,4 +1,4 @@
-<div fxFlex="auto" fxLayout="column" class="partial-edit-sgpolicy-container">
+<div fxFlex="auto" fxLayout="column" class="psm-form partial-edit-sgpolicy-container">
 
   <div fxFlex="auto" fxLayout="row">
     <ng-container *ngTemplateOutlet="meta"></ng-container>
@@ -115,97 +115,18 @@
       <div fxFlex="20px"></div>
 
       <div class="partial-edit-sgpolicy-chips" fxFlex="none" fxLayout="row">
-        <span
-              [ngClass]="{'app-formchips-requiredField': isFieldEmpty(data.rule.$formGroup.get(['from-ip-addresses']))}">
-          <app-formchips fxFlex="none" [chipsLabel]="'Source ' + IPS_LABEL"
+        <app-psmchipsbox fxFlex="400px" [label]="'Source ' + IPS_LABEL"
+                         [showRequiredOnEmpty]="true"
                          [formControl]="data.rule.$formGroup.get(['from-ip-addresses'])"
-                         boxStyleClass="partial-edit-sgpolicy-chip" [itemValidator]="isValidIP"
-                         [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-          </app-formchips>
-        </span>
+                         [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
+        </app-psmchipsbox>
         <div fxFlex="20px"></div>
-        <span
-              [ngClass]="{'app-formchips-requiredField': isFieldEmpty(data.rule.$formGroup.get(['to-ip-addresses']))}">
-          <app-formchips fxFlex="none" [chipsLabel]="'Destination ' + IPS_LABEL"
+        <app-psmchipsbox fxFlex="400px" [label]="'Destination ' + IPS_LABEL"
+                         [showRequiredOnEmpty]="true"
                          [formControl]="data.rule.$formGroup.get(['to-ip-addresses'])"
-                         boxStyleClass="partial-edit-sgpolicy-chip" [itemValidator]="isValidIP"
-                         [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-          </app-formchips>
-        </span>
+                         [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
+        </app-psmchipsbox>
       </div>
-
-      <!--
-      <div fxFlex="none" fxLayout="column" fxLayoutAlign="start start">
-        <div fxFlex="none">FROM</div>
-        <div fxFlex="none" fxLayout="row">
-          <div fxFlex="15px"></div>
-          <div fxFlex="none" fxLayout="column" fxLayoutGap="10px">
-            <div fxFlex="5px"></div>
-            <span
-                  [ngClass]="{'app-formchips-requiredField': isFieldEmpty(data.rule.$formGroup.get(['from-ip-addresses']))}">
-              <app-formchips fxFlex="none" [chipsLabel]="IPS_LABEL"
-                             [formControl]="data.rule.$formGroup.get(['from-ip-addresses'])"
-                             boxStyleClass="partial-edit-sgpolicy-chip" [itemValidator]="isValidIP"
-                             [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-              </app-formchips>
-            </span>
-          </div> -->
-      <!-- Release-A Constraints -->
-      <!-- <div fxFlex="none" fxLayout="column" fxLayoutGap="10px">            
-            <div fxFlex="none" fxLayout="row">
-              <div fxFlex="none">Security Groups:</div>
-              <div fxFlex="5px"></div>
-              <div fxFlex="none" class="partial-edit-sgpolicy-subtext">(specify one or more)</div>
-            </div>
-            <div fxFlex="30px">
-              <p-multiSelect class="partial-edit-sgpolicy-from-sg" fxFlex="300px"
-                              formControlName="from-security-groups"
-                              appErrorTooltip appendTo="body"
-                              [filter]="false" [showToggleAll]="false"
-                              [showHeader]="false" [options]="securityGroupOptions"></p-multiSelect>
-            </div>
-          </div> -->
-      <!--
-        </div>
-      </div>
-      -->
-      <!--
-      <div fxFlex="20px"></div>
-
-      <div fxFlex="none" fxLayout="column" fxLayoutAlign="start start">
-        <div fxFlex="none">TO</div>
-        <div fxFlex="none" fxLayout="row">
-          <div fxFlex="15px"></div>
-          <div fxFlex="none" fxLayout="column" fxLayoutGap="10px">
-            <div fxFlex="5px"></div>
-            <span
-                  [ngClass]="{'app-formchips-requiredField': isFieldEmpty(data.rule.$formGroup.get(['to-ip-addresses']))}">
-              <app-formchips fxFlex="none" [chipsLabel]="IPS_LABEL"
-                             [formControl]="data.rule.$formGroup.get(['to-ip-addresses'])"
-                             boxStyleClass="partial-edit-sgpolicy-chip" [itemValidator]="isValidIP"
-                             [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-              </app-formchips>
-            </span>
-          </div> -->
-      <!-- Release-A Constraints -->
-      <!-- <div fxFlex="none" fxLayout="column" fxLayoutGap="10px">
-            <div fxFlex="none" fxLayout="row">
-              <div fxFlex="none">Security Groups:</div>
-              <div fxFlex="5px"></div>
-              <div fxFlex="none" class="partial-edit-sgpolicy-subtext">(specify one or more)</div>
-            </div>
-            <div fxFlex="30px">
-              <p-multiSelect class="partial-edit-sgpolicy-from-sg" fxFlex="300px"
-                              formControlName="to-security-groups"
-                              appErrorTooltip appendTo="body"
-                              [filter]="false" [showToggleAll]="false"
-                              [showHeader]="false" [options]="securityGroupOptions"></p-multiSelect>
-            </div>
-          </div> -->
-      <!--
-        </div>
-      </div>
-      -->
       <div fxFlex="20px"></div>
 
     </ng-container>

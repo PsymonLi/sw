@@ -75,6 +75,11 @@ $vertical-gutter: 5px;
 .newsgpolicy-rule-template {
   margin-left: 15px;
   width: 525px;
+
+  app-psmchipsbox {
+    position: relative;
+    left: -10px;
+  }
 }
 
 .newsgpolicy-add-rule {

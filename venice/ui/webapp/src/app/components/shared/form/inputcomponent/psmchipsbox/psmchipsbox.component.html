@@ -1,0 +1,19 @@
+<div fxLayout="row" fxLayoutAlign="start start">
+  <div [class]="getIconSpanClasses()">*</div>
+  <div [class]="getSpanClasses()">
+    <app-chips [id]="boxId" [addOnBlur]="true" [addOnTab]="true"
+               [formControl]="formCtrl" [styleClass]="defaultStyleClass"
+               (onFocus)="onChipsFocus()" (onBlur)="onChipsBlur()"
+               [matTooltip]="toolTip" [matTooltipClass]="tooltipClass">
+      <ng-template let-item let-cancelFunc="cancelFunc" pTemplate="item">
+        <div fxLayout="row" fxLayoutAlign="start center" class="ui-chips-token-item"
+             [ngClass]="{'error': !itemValidator(item)}">
+          <div fxFlex="none" class="ui-chips-token-item-text">{{item}}</div>
+          <mat-icon fxFlex="none" class="ui-chips-token-icon-cancel"
+                    (click)="cancelFunc($event)">close</mat-icon>
+        </div>
+      </ng-template>
+    </app-chips>
+    <label *ngIf="label" [for]="boxId">{{ label }}</label>
+  </div>
+</div>

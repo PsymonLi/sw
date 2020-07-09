@@ -56,24 +56,25 @@ export class PsmTextBoxComponent extends FormInputComponent implements OnInit, A
     return this.innerValue === val;
   }
 
-  // if user choose all value, then disable all other options
   protected setOutputValue(val: any): any {
     let newVal = super.setOutputValue(val);
-    if (this.convertToList && Array.isArray(newVal)) {
-      newVal = newVal.join(',');
+    if (this.convertToList) {
+      if (!Array.isArray(newVal)) {
+        newVal = newVal.split(',');
+      }
+      if (this.autoTrim && newVal && newVal.length > 0) {
+        newVal = newVal.map((item: string) => item.trim());
+      }
+    } else if (this.autoTrim && val) {
+      newVal = newVal.trim();
     }
     return newVal;
   }
 
   protected setInputValue(val: any): any {
     let newVal: any = super.setInputValue(val);
-    if (this.convertToList) {
-      newVal = newVal.split(',');
-      if (this.autoTrim && newVal && newVal.length > 0) {
-        newVal = newVal.map(item => item.trim());
-      }
-    } else if (this.autoTrim && val) {
-      newVal = newVal.trim();
+    if (this.convertToList && Array.isArray(newVal)) {
+      newVal = newVal.join(',');
     }
     return newVal;
   }

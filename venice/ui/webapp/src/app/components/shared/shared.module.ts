@@ -23,6 +23,7 @@ import { FieldselectorComponent } from './fieldselector/fieldselector.component'
 import { HerocardComponent } from './herocard/herocard.component';
 import { WidgetsModule } from 'web-app-framework';
 import { WorkloadsColumnComponent } from './table-columns/workloadscolumn.component';
+import { PsmChipsBoxComponent } from './form/inputcomponent/psmchipsbox/psmchipsbox.component';
 import { PsmNumberBoxComponent } from './form/inputcomponent/psmnumberbox/psmnumberbox.component';
 import { PsmTextBoxComponent } from './form/inputcomponent/psmtextbox/psmtextbox.component';
 import { PsmSelectBoxComponent } from './form/inputcomponent/psmselectbox/psmselectbox.component';
@@ -47,7 +48,6 @@ import { UIChartComponent } from './primeng-chart/chart';
 import { OrderedlistComponent } from './orderedlist/orderedlist.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { ChipsComponent } from './chips/chips.component';
-import { FormChipsComponent } from './chips/formChips.component';
 import { DomHandler } from 'primeng/api';
 import { FeatureGuardDirective } from './directives/featureGuard.directive';
 import { AlertstableComponent } from './alertsevents/alertstable/alertstable.component';
@@ -91,6 +91,7 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     HerocardComponent,
     WorkloadsColumnComponent,
     PsmNumberBoxComponent,
+    PsmChipsBoxComponent,
     PsmTextBoxComponent,
     PsmSelectBoxComponent,
     PsmMultiSelectComponent,
@@ -114,7 +115,6 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     UIChartComponent,
     OrderedlistComponent,
     ChipsComponent,
-    FormChipsComponent,
     AlertstableComponent,
     EventstableComponent,
     SyslogComponent,
@@ -144,6 +144,7 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     FieldselectorComponent,
     HerocardComponent,
     WorkloadsColumnComponent,
+    PsmChipsBoxComponent,
     PsmNumberBoxComponent,
     PsmTextBoxComponent,
     PsmSelectBoxComponent,
@@ -168,7 +169,6 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     UIChartComponent,
     OrderedlistComponent,
     ChipsComponent,
-    FormChipsComponent,
     AlertstableComponent,
     EventstableComponent,
     SyslogComponent,

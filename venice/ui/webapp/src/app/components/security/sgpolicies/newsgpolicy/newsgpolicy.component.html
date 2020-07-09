@@ -1,4 +1,4 @@
-<div fxLayout="column" fxLayoutAlign="start center" class="newsgpolicy-container">
+<div fxLayout="column" fxLayoutAlign="start center" class="psm-form newsgpolicy-container">
   <div fxLayout="column" fxLayoutAlign="start">
     <div fxFlex="auto" fxLayout="row">
       <ng-container *ngTemplateOutlet="meta"></ng-container>
@@ -94,23 +94,17 @@
         </div>
         <div fxFlex="20px"></div>
         <div fxFlex="none" fxLayout="row">
-          <span
-                [ngClass]="{'app-formchips-requiredField': isFieldEmpty(data.rule.$formGroup.get(['from-ip-addresses']))}">
-            <app-formchips fxFlex="none" chipsLabel="Source IP Addresses"
+          <app-psmchipsbox fxFlex="210px" [label]="'Source ' + IPS_LABEL"
+                           [showRequiredOnEmpty]="true"
                            [formControl]="data.rule.$formGroup.get(['from-ip-addresses'])"
-                           boxStyleClass="newsgpolicy-chip" [itemValidator]="isValidIP"
-                           [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-            </app-formchips>
-          </span>
-          <div fxFlex="20px"></div>
-          <span
-                [ngClass]="{'app-formchips-requiredField': isFieldEmpty(data.rule.$formGroup.get(['to-ip-addresses']))}">
-            <app-formchips fxFlex="none" chipsLabel="Destination IP Addresses"
+                           [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
+          </app-psmchipsbox>
+          <div fxFlex="10px"></div>
+          <app-psmchipsbox fxFlex="210px" [label]="'Destination ' + IPS_LABEL"
+                           [showRequiredOnEmpty]="true"
                            [formControl]="data.rule.$formGroup.get(['to-ip-addresses'])"
-                           boxStyleClass="newsgpolicy-chip" [itemValidator]="isValidIP"
-                           [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-            </app-formchips>
-          </span>
+                           [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
+          </app-psmchipsbox>
           <!-- Release-A Constraints -->
           <!-- <div fxFlex="none" fxLayout="column" fxLayoutGap="10px">            
               <div fxFlex="none" fxLayout="row">
@@ -185,7 +179,8 @@
               <div>{{ displayArrayField(data, 'from-ip-addresses') }}</div>
             </div>
           </div>
-          <div fxFlex="20px"></div>
+        </div>
+        <div fxFlex="" fxLayout="row">
           <div fxFlex="none" fxLayout="column" fxLayouAlign="start start">
             <div *ngIf="data.rule.$formGroup.get('to-security-groups').value.length !== 0"
                  fxFlex="auto"

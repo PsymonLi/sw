@@ -1,4 +1,4 @@
-<div fxFlex="auto" fxLayout="column" class="new-workload-container">
+<div fxFlex="auto" fxLayout="column" class="psm-form new-workload-container">
   <app-inlinebuttons class="new-workload" *ngIf="isInline"
                      [saveButtonClass]="computeInlineButtonClass()"
                      [saveTooltip]="getTooltip()"
@@ -61,13 +61,10 @@
                      type="text" pInputText formControlName="mac-address">
             </span>
             <div fxFlex="10px"></div>
-            <span fxFlex="none" fxLayout="row" class="new-workload-interface-ip">
-              <app-formchips fxFlex="none" [chipsLabel]="IPS_LABEL"
-                             [formControl]="inf.get(['ip-addresses'])" [toolTip]="IPS_TOOLTIP"
-                             boxStyleClass="new-workload-interface-ipbox"
-                             [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
-              </app-formchips>
-            </span>
+            <app-psmtextbox fxFlex="155px" [label]="IPS_LABEL"
+                            formControlName="ip-addresses" [hintTooltip]="IPS_TOOLTIP"
+                            [convertToList]="true" [autoTrim]="true">
+            </app-psmtextbox>
             <div fxFlex="10px"></div>
             <span fxFlex="none" fxLayout="row" [ngClass]="{
               'new-workload-interface-box-vlan': true,

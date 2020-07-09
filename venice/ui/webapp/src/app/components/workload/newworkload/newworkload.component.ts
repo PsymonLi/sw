@@ -29,7 +29,7 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
 
   IPS_LABEL: string = 'IP Addresses';
   IPS_ERRORMSG: string = 'Invalid IP addresses';
-  IPS_TOOLTIP: string = 'Type in ip address and hit enter or space key to add more.';
+  IPS_TOOLTIP: string = 'Type in a single or multiple IP addresses separated by commas.';
   MACS_LABEL: string = 'MAC Addresses';
   MACS_ERRORMSG: string = 'Invalid MAC addresses. It should be aaaa.bbbb.cccc format.';
   validationMessage: string;
@@ -60,6 +60,9 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
         if (!form.get(['external-vlan']).value) {
           form.get(['external-vlan']).setValue(0);
         }
+        form.get(['ip-addresses']).setValidators([
+          this.isValidIpAddresses()
+        ]);
       });
     }
 
@@ -80,9 +83,9 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
     newInterface.get('mac-address').setValidators([
       this.isValidMacAddress()
     ]);
-    newInterface.get('external-vlan').setValidators([minValueValidator(0), maxValueValidator(4095)]);
-    newInterface.get('micro-seg-vlan').setValidators([minValueValidator(1), maxValueValidator(4095)]);
-
+    newInterface.get('ip-addresses').setValidators([
+      this.isValidIpAddresses()
+    ]);
     interfaces.push(newInterface);
   }
 
@@ -93,8 +96,25 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
     }
   }
 
-  isValidIP(ip: string) {
-    return IPUtility.isValidIPWithOptionalMask(ip);
+  isValidIpAddresses(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value: string[] = control.value;
+      if (Utility.isValueOrArrayEmpty(value)) {
+        return null;
+      }
+      for (let i = 0; i < value.length; i++) {
+        const ip: string = value[i].trim();
+        if (!IPUtility.isValidIPWithOptionalMask(ip)) {
+          return {
+            objectName: {
+              required: true,
+              message: this.IPS_ERRORMSG
+            }
+          };
+        }
+      }
+      return null;
+    };
   }
 
   isValidMacAddress(): ValidatorFn {

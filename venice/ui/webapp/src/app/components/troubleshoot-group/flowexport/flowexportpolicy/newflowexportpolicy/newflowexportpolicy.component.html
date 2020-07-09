@@ -98,76 +98,21 @@
   <div fxFlex="auto" fxLayout="column" fxLayoutGap="10px"
        fxLayoutAlign="center none" class="new-export-policy-rule-template">
     <div fxFlex="none" fxLayout="row" fxLayoutGap="40px" class="flow-export-policy-rule-row">
-      <app-formchips fxFlex="none" [chipsLabel]="'Source ' + IPS_LABEL"
-                     [formControl]="data.rule.$formGroup.get(['source', 'ip-addresses'])"
-                     boxStyleClass="export-policy-rule-boxes" [itemValidator]="isValidIP"
-                     [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-      </app-formchips>
-      <app-formchips fxFlex="none" [chipsLabel]="'Target ' + IPS_LABEL"
-                     [formControl]="data.rule.$formGroup.get(['destination', 'ip-addresses'])"
-                     boxStyleClass="export-policy-rule-boxes" [itemValidator]="isValidIP"
-                     [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-      </app-formchips>
+      <app-psmchipsbox fxFlex="250px" [label]="'Source ' + IPS_LABEL"
+                       [formControl]="data.rule.$formGroup.get(['source', 'ip-addresses'])"
+                       [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
+      </app-psmchipsbox>
+      <app-psmchipsbox fxFlex="250px" [label]="'Destination ' + IPS_LABEL"
+                       [formControl]="data.rule.$formGroup.get(['destination', 'ip-addresses'])"
+                       [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
+      </app-psmchipsbox>
     </div>
-    <!--
-    <div fxFlex="none">
-      <app-fieldcontainer fieldTitle="Source">
-        <div fxFlex="none" fxLayout="row">
-          <div fxFlex="none" fxLayout="column" class="flow-export-policy-rule-inputs">
-            <app-formchips fxFlex="none" [chipsLabel]="IPS_LABEL"
-                           [formControl]="data.rule.$formGroup.get(['source', 'ip-addresses'])"
-                           boxStyleClass="export-policy-rule-boxes" [itemValidator]="isValidIP"
-                           [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-            </app-formchips>
-          </div>
-          <div fxFlex="none" fxLayout="column" class="flow-export-policy-rule-inputs">
-            <app-formchips fxFlex="none" [chipsLabel]="MACS_LABEL"
-                           [formControl]="data.rule.$formGroup.get(['source', 'mac-addresses'])"
-                           boxStyleClass="export-policy-rule-boxes" [itemValidator]="isValidMAC"
-                           [itemErrorMsg]="MACS_ERRORMSG" [toolTip]="MACS_TOOLTIP">
-            </app-formchips>
-          </div>
-        </div>
-      </app-fieldcontainer>
-    </div>
-    <div fxFlex="none">
-      <app-fieldcontainer fieldTitle="Target">
-        <div fxFlex="none" fxLayout="row">
-          <div fxFlex="none" fxLayout="column" class="flow-export-policy-rule-inputs">
-            <app-formchips fxFlex="none" [chipsLabel]="IPS_LABEL"
-                           [formControl]="data.rule.$formGroup.get(['destination', 'ip-addresses'])"
-                           boxStyleClass="export-policy-rule-boxes" [itemValidator]="isValidIP"
-                           [itemErrorMsg]="IPS_ERRORMSG" [toolTip]="IPS_TOOLTIP">
-            </app-formchips>
-          </div>
-          <div fxFlex="none" fxLayout="column" class="flow-export-policy-rule-inputs">
-            <app-formchips fxFlex="none" [chipsLabel]="MACS_LABEL"
-                           [formControl]="data.rule.$formGroup.get(['destination', 'mac-addresses'])"
-                           boxStyleClass="export-policy-rule-boxes" [itemValidator]="isValidMAC"
-                           [itemErrorMsg]="MACS_ERRORMSG" [toolTip]="MACS_TOOLTIP">
-            </app-formchips>
-          </div>
-        </div>
-      </app-fieldcontainer>
-    </div>
-    -->
     <div fxFlex="none" class="flow-export-policy-rule-row">
-      <app-formchips fxFlex="none" [chipsLabel]="protoAppOptions[0]['value']"
-                     [formControl]="data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports'])"
-                     boxStyleClass="export-policy-rule-boxes" [itemValidator]="isValidProto"
-                     [itemErrorMsg]="PORTS_ERRORMSG" [toolTip]="PROTS_TOOLTIP">
-      </app-formchips>
-      <!--
-      <app-fieldcontainer fieldTitle="Protocol">
-        <div fxFlex="none" fxLayout="column" class="flow-export-policy-rule-inputs">
-          <app-formchips fxFlex="none" [chipsLabel]="protoAppOptions[0]['value']"
-                         [formControl]="data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports'])"
-                         boxStyleClass="export-policy-rule-boxes" [itemValidator]="isValidProto"
-                         [itemErrorMsg]="PORTS_ERRORMSG" [toolTip]="PROTS_TOOLTIP">
-          </app-formchips>
-        </div>
-      </app-fieldcontainer>
-      -->
+      <app-psmchipsbox fxFlex="250px" label="Protocol / Ports"
+                       [formControl]="data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports'])"
+                       [itemValidator]="isValidProto" [itemErrorMsg]="PROTS_ERRORMSG"
+                       [toolTip]="PROTS_TOOLTIP">
+      </app-psmchipsbox>
     </div>
   </div>
 </ng-template>

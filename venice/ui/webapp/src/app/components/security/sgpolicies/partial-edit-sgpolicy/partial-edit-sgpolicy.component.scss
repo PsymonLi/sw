@@ -28,33 +28,12 @@ $vertical-gutter: 5px;
 }
 
 .partial-edit-sgpolicy-chips {
-  .ui-float-label>label {
-    top: 1em;
+  app-psmchipsbox {
+    position: relative;
+    left: -10px;
   }
 }
 
-.partial-edit-sgpolicy-chip {
-  border: 1px solid #d6d6d6;
-  border-radius: 2px;
-  height: 90px;
-  overflow-y: auto;
-  width: 400px;
-
-  &:focus,
-  &:hover {
-    border: solid 1px #6ba0e5;
-  }
-
-  &.ui-chips .ui-inputtext {
-    border: none;
-    min-height: 100%;
-
-    &:hover,
-    &.ui-state-focus {
-      border: none !important;
-    }
-  }
-}
 
 .partial-edit-sgpolicy-fieldtitle {
   margin: $vertical-gutter $horizontal-gutter;

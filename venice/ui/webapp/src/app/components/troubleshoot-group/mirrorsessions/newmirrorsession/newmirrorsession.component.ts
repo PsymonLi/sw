@@ -52,9 +52,9 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
   MACS_ERRORMSG: string = 'Invalid MAC addresses. It should be aaaa.bbbb.cccc format.';
   MACS_TOOLTIP: string = 'Type in mac address and hit enter or space key to add more.';
   PROTS_ERRORMSG: string = 'Invalid Protocol/Port';
-  PROTS_TOOLTIP: string = 'Type in valid layer3 or layer 4 protocol and protocol/port, ' +
+  PROTS_TOOLTIP: string = 'Type in a valid layer 3 or layer 4 protocol and protocol/port, ' +
     'hit enter or space key to add more. Port can be individual or range.' +
-    'for example: icmp, any/2345, tcp/60001-60100...';
+    ' For example: icmp, any, tcp/60001-60100...';
   LABEL_HELP: string = ' To create a new uplink interface, please go to the Networks Overview page to select uplink interfaces and create labels. These labels will be used to reference their respective network interfaces.';
   LABELVALUES_TOOLTIP: string = 'Type in uplink interface label values. Press enter or space key to add multiple values.' + this.LABEL_HELP;
   LABELVALUES_SELECT_TOOLTIP: string = 'Select uplink interface label values.' + this.LABEL_HELP;

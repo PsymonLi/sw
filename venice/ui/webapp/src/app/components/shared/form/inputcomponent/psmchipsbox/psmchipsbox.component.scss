@@ -1,0 +1,76 @@
+$matchColor : #6ba0e5;
+$errorColor : #e57553;
+
+.psm-form {
+  .psm-form-chips-box-container {
+    width: calc(100% - 10px);
+
+    &>label {
+      left: .75em;
+      top: 0px;
+      margin-top: .5em;
+    }
+
+    .psm-form-chips-box {
+      border: 1px solid #d6d6d6;
+      border-radius: 2px;
+      width: 100%;
+      height: 60px;
+      overflow-y: auto;
+      white-space: normal;
+
+      &:hover {
+        border: solid 1px $matchColor;
+      }
+
+      &.ui-chips .ui-inputtext {
+        border: none !important;
+        border-radius: 0px !important;
+        min-height: 100%;
+
+        &:hover,
+        &.ui-state-focus {
+          border: none !important;
+          border-radius: 0px !important;
+        }
+      }
+
+      &.ui-chips>.ui-state-default {
+        border: none !important;
+        border-radius: 0px !important;
+      }
+    }
+
+    &.psm-chips-focused {
+      &>label {
+        top: -1.5em;
+        left: .25em;
+        font-size: 12px;
+        color: $matchColor;
+      }
+
+      .psm-form-chips-box {
+        border: solid 1px $matchColor;
+      }
+    }
+
+    &.psm-chips-noneEmpty {
+      &>label {
+        top: -1.5em;
+        left: .25em;
+        font-size: 12px;
+      }
+    }
+  }
+
+  app-psmchipsbox .psm-required-box {
+    position: relative;
+    top: 10px;
+  }
+
+  app-psmchipsbox.ng-invalid .psm-form-chips-box-container {
+    .psm-form-chips-box {
+      border: solid 1px $errorColor;
+    }
+  }
+}
