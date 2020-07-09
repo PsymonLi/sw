@@ -977,7 +977,7 @@ func (n *NMD) SendNICUpdates() error {
 
 			if agentStatus != nil {
 				nicObj.Status.ControlPlaneStatus = agentStatus.ControlPlaneStatus
-				nicObj.Status.IsConnectedToVenice = agentStatus.IsConnectedToVenice
+				nicObj.Status.IsConnectedToPSM = agentStatus.IsConnectedToVenice
 				nicObj.Status.UnhealthyServices = agentStatus.UnhealthyServices
 			}
 

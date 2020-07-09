@@ -289,7 +289,7 @@ func (s *RPCServer) UpdateSmartNIC(updObj *cluster.DistributedServiceCard) (*clu
 		}
 		refObj.Status.Conditions = updObj.Status.Conditions
 		refObj.Status.ControlPlaneStatus = updObj.Status.ControlPlaneStatus
-		refObj.Status.IsConnectedToVenice = updObj.Status.IsConnectedToVenice
+		refObj.Status.IsConnectedToPSM = updObj.Status.IsConnectedToPSM
 		refObj.Status.UnhealthyServices = updObj.Status.UnhealthyServices
 		//reset versionMismatch & AdmissionPhaseReason if the nic is running the right version
 		if refObj.Status.VersionMismatch {

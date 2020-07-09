@@ -1723,8 +1723,8 @@
             "format": "boolean"
           },
           {
-            "name": "status.is-connected-to-venice",
-            "description": "IsConnectedToVenice is set to true if connected to venice.",
+            "name": "status.is-connected-to-psm",
+            "description": "IsConnectedToPSM is set to true if connected to PSM.",
             "in": "query",
             "required": false,
             "type": "boolean",
@@ -7715,10 +7715,10 @@
           "$ref": "#/definitions/clusterDSCControlPlaneStatus",
           "description": "DSC Control Plane Status."
         },
-        "is-connected-to-venice": {
+        "is-connected-to-psm": {
           "type": "boolean",
           "format": "boolean",
-          "description": "IsConnectedToVenice is set to true if connected to venice."
+          "description": "IsConnectedToPSM is set to true if connected to PSM."
         },
         "unhealthy-services": {
           "type": "array",

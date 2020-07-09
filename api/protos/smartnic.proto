@@ -185,8 +185,8 @@ message DistributedServiceCardStatus {
     // DSC Control Plane Status
     DSCControlPlaneStatus ControlPlaneStatus    = 13 [(gogoproto.jsontag) = "control-plane-status,omitempty"];
 
-    // IsConnectedToVenice is set to true if connected to venice
-    bool IsConnectedToVenice        = 14 [(gogoproto.jsontag) = "is-connected-to-venice,omitempty"];
+    // IsConnectedToPSM is set to true if connected to PSM
+    bool IsConnectedToPSM		= 14 [(gogoproto.jsontag) = "is-connected-to-psm,omitempty"];
 
     // Lists the unhealthy services of a distributed service card
     repeated string UnhealthyServices = 15 [(gogoproto.jsontag) = "unhealthy-services,omitempty"];

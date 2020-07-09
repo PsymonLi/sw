@@ -27,7 +27,7 @@ export interface IClusterDistributedServiceCardStatus {
     'adm-phase-reason'?: string;
     'version-mismatch'?: boolean;
     'control-plane-status'?: IClusterDSCControlPlaneStatus;
-    'is-connected-to-venice'?: boolean;
+    'is-connected-to-psm'?: boolean;
     'unhealthy-services'?: Array<string>;
     '_ui'?: any;
 }
@@ -62,8 +62,8 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
     'version-mismatch': boolean = null;
     /** DSC Control Plane Status. */
     'control-plane-status': ClusterDSCControlPlaneStatus = null;
-    /** IsConnectedToVenice is set to true if connected to venice. */
-    'is-connected-to-venice': boolean = null;
+    /** IsConnectedToPSM is set to true if connected to PSM. */
+    'is-connected-to-psm': boolean = null;
     /** Lists the unhealthy services of a distributed service card. */
     'unhealthy-services': Array<string> = null;
     public static propInfo: { [prop in keyof IClusterDistributedServiceCardStatus]: PropInfoItem } = {
@@ -135,8 +135,8 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
             required: false,
             type: 'object'
         },
-        'is-connected-to-venice': {
-            description:  `IsConnectedToVenice is set to true if connected to venice.`,
+        'is-connected-to-psm': {
+            description:  `IsConnectedToPSM is set to true if connected to PSM.`,
             required: false,
             type: 'boolean'
         },
@@ -270,12 +270,12 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
         } else {
             this['control-plane-status'].setValues(null, fillDefaults);
         }
-        if (values && values['is-connected-to-venice'] != null) {
-            this['is-connected-to-venice'] = values['is-connected-to-venice'];
-        } else if (fillDefaults && ClusterDistributedServiceCardStatus.hasDefaultValue('is-connected-to-venice')) {
-            this['is-connected-to-venice'] = ClusterDistributedServiceCardStatus.propInfo['is-connected-to-venice'].default;
+        if (values && values['is-connected-to-psm'] != null) {
+            this['is-connected-to-psm'] = values['is-connected-to-psm'];
+        } else if (fillDefaults && ClusterDistributedServiceCardStatus.hasDefaultValue('is-connected-to-psm')) {
+            this['is-connected-to-psm'] = ClusterDistributedServiceCardStatus.propInfo['is-connected-to-psm'].default;
         } else {
-            this['is-connected-to-venice'] = null
+            this['is-connected-to-psm'] = null
         }
         if (values && values['unhealthy-services'] != null) {
             this['unhealthy-services'] = values['unhealthy-services'];
@@ -304,7 +304,7 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
                 'adm-phase-reason': CustomFormControl(new FormControl(this['adm-phase-reason']), ClusterDistributedServiceCardStatus.propInfo['adm-phase-reason']),
                 'version-mismatch': CustomFormControl(new FormControl(this['version-mismatch']), ClusterDistributedServiceCardStatus.propInfo['version-mismatch']),
                 'control-plane-status': CustomFormGroup(this['control-plane-status'].$formGroup, ClusterDistributedServiceCardStatus.propInfo['control-plane-status'].required),
-                'is-connected-to-venice': CustomFormControl(new FormControl(this['is-connected-to-venice']), ClusterDistributedServiceCardStatus.propInfo['is-connected-to-venice']),
+                'is-connected-to-psm': CustomFormControl(new FormControl(this['is-connected-to-psm']), ClusterDistributedServiceCardStatus.propInfo['is-connected-to-psm']),
                 'unhealthy-services': CustomFormControl(new FormControl(this['unhealthy-services']), ClusterDistributedServiceCardStatus.propInfo['unhealthy-services']),
             });
             // generate FormArray control elements
@@ -352,7 +352,7 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
             this._formGroup.controls['adm-phase-reason'].setValue(this['adm-phase-reason']);
             this._formGroup.controls['version-mismatch'].setValue(this['version-mismatch']);
             this['control-plane-status'].setFormGroupValuesToBeModelValues();
-            this._formGroup.controls['is-connected-to-venice'].setValue(this['is-connected-to-venice']);
+            this._formGroup.controls['is-connected-to-psm'].setValue(this['is-connected-to-psm']);
             this._formGroup.controls['unhealthy-services'].setValue(this['unhealthy-services']);
         }
     }
