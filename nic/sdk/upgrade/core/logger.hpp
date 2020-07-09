@@ -99,10 +99,6 @@ extern const char *g_upg_log_pfx;
     UPG_TRACE_INFO("Sending request to service %s, timeout %f, domain %s",     \
                    svc, timeout, domain);
 
-#define LOG_RESPONSE_MSG(svc, status)                                          \
-    UPG_TRACE_INFO("Received response from service %s, status %s",             \
-                    svc, status);
-
 #define LOG_WRONG_RESPONSE_ERR_MSG(svc, status, stage)                         \
     UPG_TRACE_ERR("Received response from service %s, status %s, stage %s",    \
                     svc, status, stage);
@@ -116,6 +112,17 @@ extern const char *g_upg_log_pfx;
     } else {                                                                   \
         UPG_TRACE_INFO("Triggering %s event sequence to service(es), "         \
                        "timeout %f in domain %s", evseq_type, timeout, domain);\
+    }                                                                          \
+}
+
+#define LOG_RESPONSE_MSG(svc, status, domain)                                  \
+{                                                                              \
+    if (strcmp(domain, "A") == 0) {                                            \
+        UPG_TRACE_INFO("Received response from service %s, status %s",         \
+                       svc, status);                                           \
+    } else {                                                                   \
+        UPG_TRACE_INFO("Received response from domain %s, status %s",          \
+                       domain, status);                                        \
     }                                                                          \
 }
 

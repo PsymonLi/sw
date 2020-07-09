@@ -216,7 +216,8 @@ upg_event_interactive_handler (upg_event_msg_t *event)
     upg_stage_t id = fsm_states.current_stage();
     std::string svc_name = event->rsp_svc_name;
 
-    LOG_RESPONSE_MSG(event->rsp_svc_name, upg_status2str(event->rsp_status));
+    LOG_RESPONSE_MSG(event->rsp_svc_name, upg_status2str(event->rsp_status),
+                     "A");
     if (event->stage == id && fsm_states.is_valid_service(svc_name)) {
         if (fsm_states.find_pending_svc(svc_name)) {
             fsm_states.clear_pending_svc(svc_name);

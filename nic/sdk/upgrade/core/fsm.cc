@@ -53,17 +53,16 @@ dispatch_event (ipc_svc_dom_id_t dom, upg_stage_t id, upg_svc svc)
     SDK_ASSERT(fsm_stages.find(id) != fsm_stages.end());
 
     if (svc.has_valid_ipc_id()) {
+        fsm_states.set_pending_svc(svc.name());
         if (dom == IPC_SVC_DOM_ID_B &&
             fsm_states.init_params()->upg_event_fwd_cb) {
             UPG_TRACE_INFO("Sending request to domain %s, timeout %f",
                            ipc_svc_dom_id_to_name(dom), fsm_states.timeout())
-            fsm_states.clear_pending_svcs();
             fsm_states.init_params()->upg_event_fwd_cb(id, svc.name(),
                                                        svc.ipc_id());
         } else {
             LOG_SEND_MSG(svc.name().c_str(), fsm_states.timeout(),
                          ipc_svc_dom_id_to_name(dom));
-            fsm_states.set_pending_svc(svc.name());
             svc.dispatch_event(dom, id, fsm_states.init_params()->upg_mode);
         }
     }
@@ -91,15 +90,14 @@ send_discovery_event (ipc_svc_dom_id_t dom, upg_stage_t id)
 {
     SDK_ASSERT(fsm_stages.find(id) != fsm_stages.end());
     LOG_BROADCAST_MSG(ipc_svc_dom_id_to_name(dom));
+    fsm_states.set_pending_svcs();
     if (dom == IPC_SVC_DOM_ID_B &&
         fsm_states.init_params()->upg_event_fwd_cb) {
-            fsm_states.clear_pending_svcs();
             std::string svc_name = fsm_states.next_svc();
             upg_svc svc = fsm_services[svc_name];
             fsm_states.init_params()->upg_event_fwd_cb(id, svc_name,
                                                        svc.ipc_id());
     } else {
-        fsm_states.set_pending_svcs();
         upg_send_broadcast_request(dom, id, fsm_states.init_params()->upg_mode,
                                    fsm_services.size(), fsm_states.timeout());
     }
@@ -326,7 +324,8 @@ upg_event_handler (upg_event_msg_t *event)
     upg_stage_t id = fsm_states.current_stage();
     std::string svc_name = event->rsp_svc_name;
 
-    LOG_RESPONSE_MSG(event->rsp_svc_name, upg_status2str(event->rsp_status));
+    LOG_RESPONSE_MSG(event->rsp_svc_name, upg_status2str(event->rsp_status),
+                     ipc_svc_dom_id_to_name(fsm_states.domain()));
     if (event->stage == id && fsm_states.is_valid_service(svc_name)) {
         if (fsm_states.find_pending_svc(svc_name)) {
             fsm_states.clear_pending_svc(svc_name);
@@ -474,7 +473,7 @@ fsm::update_stage_progress(const svc_rsp_code_t rsp) {
                           upg_stage2str(current_stage_));
             break;
         case SVC_RSP_NONE:
-            if (fsm_states.is_empty_pending_svcs()) {
+            if (fsm_states.domain() == IPC_SVC_DOM_ID_B) {
                 UPG_TRACE_ERR("Timer expired, no service response across ipc domain");
             } else {
                 std::string svcs = fsm_states.pending_svcs();
