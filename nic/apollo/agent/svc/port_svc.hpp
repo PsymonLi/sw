@@ -488,6 +488,13 @@ pds_port_api_stats_to_proto (pds::PortStats *proto_stats,
         }
     }
     proto_stats->set_numlinkdown(api_stats->port_stats.num_linkdown);
+
+    auto linkinfo = proto_stats->mutable_linktiminginfo();
+    linkinfo->set_last_down_timestamp(api_stats->port_stats.last_down_timestamp);
+
+    auto duration = linkinfo->mutable_bringup_duration();
+    duration->set_sec(api_stats->port_stats.bringup_duration.tv_sec);
+    duration->set_nsec(api_stats->port_stats.bringup_duration.tv_nsec);
 }
 
 static inline void

@@ -183,6 +183,8 @@
 		LifGetResponse
 		MacStats
 		MgmtMacStats
+		TimeDuration
+		LinkTimingInfo
 		PortStats
 		PortSpec
 		PortLinkStatus

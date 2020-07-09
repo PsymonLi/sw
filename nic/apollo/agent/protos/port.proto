@@ -160,10 +160,22 @@ message MgmtMacStats {
   uint64           Count = 2;
 }
 
+message TimeDuration {
+    uint32    sec  = 1;
+    uint64    nsec = 2; // nsec after sec's
+}
+
+// Port's Link timing info
+message LinkTimingInfo {
+    string        last_down_timestamp   = 1; // Port last down time
+    TimeDuration  bringup_duration      = 2; // Port bringup time
+}
+
 message PortStats {
-  repeated MacStats     MacStats     = 1;
-  repeated MgmtMacStats MgmtMacStats = 2;
-  uint32                NumLinkDown  = 3;  // Number of link down events
+  repeated MacStats     MacStats       = 1;
+  repeated MgmtMacStats MgmtMacStats   = 2;
+  uint32                NumLinkDown    = 3; // Number of link down events
+  LinkTimingInfo        LinkTimingInfo = 4; // Port's link timing info
 }
 
 // PortAdminState specifies if the port is enabled (admin up) or disabled (admin down)

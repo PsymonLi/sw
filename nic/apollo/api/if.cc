@@ -370,6 +370,9 @@ if_entry::fill_port_if_stats_(pds_if_stats_t *stats, port_args_t *port_args) {
     memcpy(stats->port_stats.stats, port_args->stats_data,
            sizeof(uint64_t) * MAX_MAC_STATS);
     stats->port_stats.num_linkdown = port_args->num_link_down;
+    strncpy(stats->port_stats.last_down_timestamp, port_args->last_down_timestamp, TIME_STR_SIZE);
+    stats->port_stats.bringup_duration.tv_sec = port_args->bringup_duration.tv_sec;
+    stats->port_stats.bringup_duration.tv_nsec = port_args->bringup_duration.tv_nsec;
 }
 
 void

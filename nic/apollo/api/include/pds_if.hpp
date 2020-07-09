@@ -297,6 +297,8 @@ typedef struct pds_if_status_s {
 typedef struct pds_if_port_stats_s {
     uint64_t stats[MAX_MAC_STATS];  ///< MAC statistics
     uint32_t num_linkdown;          ///< number of linkdown for the port
+    char last_down_timestamp[TIME_STR_SIZE];
+    timespec_t bringup_duration;
 } __PACK__ pds_if_port_stats_t;
 
 /// \brief interface statistics
