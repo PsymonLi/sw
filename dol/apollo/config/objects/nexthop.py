@@ -361,6 +361,10 @@ class NexthopObjectClient(base.ConfigClientBase):
             return
         cookie = utils.GetBatchCookie(node)
         if utils.IsPipelineApulu():
+            if utils.IsBatchingDisabled():
+                # L3 interfaces go via MS and they need time to make it to HAL before
+                # we can push nexthops pointing to them
+                utils.Sleep(5)
             logger.info(f"Creating {len(self.__underlay_objs[node])} underlay {self.ObjType.name} Objects in {node}")
             msgs = list(map(lambda x: x.GetGrpcCreateMessage(cookie), self.__underlay_objs[node].values()))
             list(map(lambda x: x.SetHwHabitant(False), self.Objects(node)))
