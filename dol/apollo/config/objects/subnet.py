@@ -258,15 +258,14 @@ class SubnetObject(base.ConfigObjectBase):
                 self.HostIfIdx = [utils.LifId2LifIfIndex(self.HostIf.lif.id)]
                 self.HostIfUuid = [utils.PdsUuid(self.HostIfIdx[0])] if self.HostIfIdx[0] else []
         self.V4RouteTableId = 0
-
         # remove self from dependee list of those policies before updating it
         utils.ModifyPolicyDependency(self, True)
         self.IngV4SecurityPolicyIds = [PolicyClient.GetIngV4SecurityPolicyId(self.Node, self.VPC.VPCId)]
         self.EgV4SecurityPolicyIds = [PolicyClient.GetEgV4SecurityPolicyId(self.Node, self.VPC.VPCId)]
         utils.ModifyPolicyDependency(self, False)
         if self.IpV6Valid:
-            self.VirtualRouterIPAddr[0] = next(Resmgr.CreateIpv6AddrPool(self.IPPrefix[0]))
-        self.VirtualRouterIPAddr[1] = next(Resmgr.CreateIpv4AddrPool(self.IPPrefix[1]))
+            self.VirtualRouterIPAddr[0] += 100
+        self.VirtualRouterIPAddr[1] += 100
         self.IPAMname = None
         return
 

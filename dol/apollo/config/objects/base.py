@@ -258,6 +258,11 @@ class ConfigObjectBase(base.ConfigObjectBase):
 
     def CopyObject(self):
         clone = copy.copy(self)
+        for attr in vars(self):
+            val = getattr(self, attr)
+            # for non config object and list/dict/tuple attributes, make a complete copy
+            if isinstance(val, (list, dict, tuple)) and not isinstance(val, ConfigObjectBase):
+                setattr(clone, attr, copy.copy(val))
         return clone
 
     def GetMutableAttributes(self):
