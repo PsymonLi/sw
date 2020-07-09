@@ -131,14 +131,18 @@ vnic_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
             }
             hw_id_ = idx;
 
-            // reserve an entry in the NEXTHOP table for this local vnic
-            ret = nexthop_impl_db()->nh_idxr()->alloc(&idx);
-            if (ret != SDK_RET_OK) {
-                PDS_TRACE_ERR("Failed to allocate nexthop entry for "
-                              "vnic %s, err %u", spec->key.str(), ret);
-                return ret;
+            if ((g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) ||
+                (g_pds_state.device_oper_mode() ==
+                     PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
+                // reserve an entry in the NEXTHOP table for this local vnic
+                ret = nexthop_impl_db()->nh_idxr()->alloc(&idx);
+                if (ret != SDK_RET_OK) {
+                    PDS_TRACE_ERR("Failed to allocate nexthop entry for "
+                                  "vnic %s, err %u", spec->key.str(), ret);
+                    return ret;
+                }
+                nh_idx_ = idx;
             }
-            nh_idx_ = idx;
         }
 
         // reserve an entry in LIF_VLAN table
@@ -736,6 +740,9 @@ vnic_impl::program_vnic_nh_(pds_device_oper_mode_t oper_mode,
         }
         break;
     case PDS_DEV_OPER_MODE_BITW_SMART_SERVICE:
+        // in this mode all flows use PDS_IMPL_UPLINK_ECMP_NHGROUP_HW_ID
+        // ECMP nexthop
+#if 0
         // uplink0 is host port, uplink1 is sdn port by default
         // TODO: we can make this configurable
         nh_data->set_port(0);
@@ -748,6 +755,7 @@ vnic_impl::program_vnic_nh_(pds_device_oper_mode_t oper_mode,
                           "idx %u", spec->key.str(), nh_idx_);
             return sdk::SDK_RET_HW_PROGRAM_ERR;
         }
+#endif
         break;
     case PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH:
     default:

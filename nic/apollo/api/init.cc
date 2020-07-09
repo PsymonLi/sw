@@ -469,10 +469,10 @@ pds_init (pds_init_params_t *params)
     api::g_pds_state.set_device_oper_mode(params->device_oper_mode);
     api::g_pds_state.set_default_pf_state(params->default_pf_state);
 
-    PDS_TRACE_INFO("Initializing PDS with device profile %u, memory profile %u"
-                   ", default-pf-state %u", params->device_profile,
-                   params->memory_profile, params->default_pf_state);
-
+    PDS_TRACE_INFO("Initializing PDS with device profile %u, "
+                   "memory profile %u, default PF state %u, oper mode %u",
+                   params->device_profile, params->memory_profile,
+                   params->default_pf_state, params->device_oper_mode);
 
     // setup all asic specific config params
     api::asic_global_config_init(params, &asic_cfg);

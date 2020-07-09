@@ -364,7 +364,7 @@ if_impl::activate_create_(pds_epoch_t epoch, if_entry *intf,
             lif_data.lif_action.direction = P4_LIF_DIR_UPLINK;
             lif_data.lif_action.lif_type = P4_LIF_TYPE_UPLINK;
         } else if (g_pds_state.device_oper_mode() ==
-                       PDS_DEV_OPER_MODE_BITW_SMART_SWITCH) {
+                       PDS_DEV_OPER_MODE_BITW_SMART_SERVICE) {
             // in "bitw" mode, we program uplinks as host interfaces
             lif_data.lif_action.direction = P4_LIF_DIR_HOST;
             lif_data.lif_action.lif_type = P4_LIF_TYPE_HOST;

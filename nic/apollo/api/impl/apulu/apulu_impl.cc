@@ -352,6 +352,7 @@ apulu_impl::init_(pipeline_cfg_t *pipeline_cfg) {
     if (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_NONE) {
         // default mode is host mode for apulu
         PDS_TRACE_DEBUG("Setting device operational mode to host mode");
+        //g_pds_state.set_device_oper_mode(PDS_DEV_OPER_MODE_BITW_SMART_SERVICE);
         g_pds_state.set_device_oper_mode(PDS_DEV_OPER_MODE_HOST);
     }
     return SDK_RET_OK;
@@ -491,6 +492,8 @@ sdk_ret_t
 apulu_impl::nacl_init_(void) {
     sdk_ret_t ret;
     nacl_swkey_t key;
+    mac_addr_t mac_addr;
+    ipv4_addr_t v4_addr;
     p4pd_error_t p4pd_ret;
     nacl_swkey_mask_t mask;
     nacl_actiondata_t data;
@@ -510,7 +513,8 @@ apulu_impl::nacl_init_(void) {
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
-    // drop all IP fragments from host lifs
+    // drop all IP fragments from host lifs (i.e., tenant traffic)
+    // NOTE: underlay IP fragments for inband/oob interfaces is allowed
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
@@ -525,6 +529,85 @@ apulu_impl::nacl_init_(void) {
     data.action_id = NACL_NACL_DROP_ID;
     data.nacl_drop_action.drop_reason_valid = 1;
     data.nacl_drop_action.drop_reason = P4I_DROP_IP_FRAGMENT;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    // drop all encapped IP fragments received on uplinks
+    // NOTE: underlay IP fragments for inband/oob interfaces is allowed
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_entry_valid = 1;
+    key.control_metadata_rx_packet = 1;
+    key.control_metadata_lif_type = P4_LIF_TYPE_UPLINK;
+    key.control_metadata_ip_fragment = 1;
+    key.control_metadata_tunneled_packet = 1;
+    mask.key_metadata_entry_valid_mask = ~0;
+    mask.control_metadata_rx_packet_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
+    mask.control_metadata_ip_fragment_mask = ~0;
+    mask.control_metadata_tunneled_packet_mask = ~0;
+    data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_IP_FRAGMENT;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    // drop tenant L2 multicast traffic
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_ktype = KEY_TYPE_MAC;
+    key.key_metadata_entry_valid = 1;
+    mac_str_to_addr((char *)"01:00:5E:00:00:00", mac_addr);
+    sdk::lib::memrev(key.ethernet_1_dstAddr, mac_addr, ETH_ADDR_LEN);
+    mask.key_metadata_ktype_mask = ~0;
+    mask.key_metadata_entry_valid_mask = ~0;
+    mac_str_to_addr((char *)"FF:FF:FF:00:00:00", mac_addr);
+    sdk::lib::memrev(mask.ethernet_1_dstAddr_mask, mac_addr, ETH_ADDR_LEN);
+    data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_L2_MULTICAST;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    // drop tenant IP multicast traffic from PFs and uplinks
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_ktype = KEY_TYPE_IPV4;
+    key.key_metadata_entry_valid = 1;
+    v4_addr = 0xE0000000;
+    memcpy(key.key_metadata_dst, &v4_addr, sizeof(v4_addr));
+    mask.key_metadata_ktype_mask = ~0;
+    mask.key_metadata_entry_valid_mask = ~0;
+    v4_addr = 0xF0000000;
+    memcpy(mask.key_metadata_dst_mask, &v4_addr, sizeof(v4_addr));
+    data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_IP_MULTICAST;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    // drop traffic from host PF/VFs when no subnet is associated with it
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_entry_valid = 1;
+    key.control_metadata_rx_packet = 0;
+    key.control_metadata_lif_type = P4_LIF_TYPE_HOST;
+    key.control_metadata_flow_miss = 1;
+    key.control_metadata_tunneled_packet = 0;
+    key.key_metadata_flow_lkp_id = PDS_IMPL_RSVD_VPC_HW_ID;
+    mask.key_metadata_entry_valid_mask = ~0;
+    mask.control_metadata_rx_packet_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
+    mask.control_metadata_flow_miss_mask = ~0;
+    mask.control_metadata_tunneled_packet_mask = ~0;
+    mask.key_metadata_flow_lkp_id_mask = ~0;
+    data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_PF_SUBNET_BINDING;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
