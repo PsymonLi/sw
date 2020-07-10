@@ -5,6 +5,9 @@ conntrack_dump /data/iota_conntrack_chkpt_start.log
 
 conntrack_aging_traffic_chkpt_end
 conntrack_aging_normal_tmo_set {tcp synack_sent 3} {tcp synack_recv 3} {tcp established 3} {tcp fin_sent 3} {tcp fin_recv 3} {tcp time_wait 3} {tcp rst_close 3}
+conntrack_aging_normal_tmo_set {icmp unestablished 3} {icmp established 3} {icmp open_conn_sent 3} {icmp open_conn_recv 3}
+conntrack_aging_normal_tmo_set {udp unestablished 3} {udp established 3} {udp open_conn_sent 3} {udp open_conn_recv 3}
+conntrack_aging_normal_tmo_set {others unestablished 3} {others established 3} {others open_conn_sent 3} {others open_conn_recv 3}
 conntrack_aging_test
 
 conntrack_dump /data/iota_conntrack_chkpt_end.log
@@ -13,5 +16,9 @@ conntrack_aging_metrics_show
 conntrack_aging_accel_control false
 conntrack_aging_tmo_factory_dflt_set
 conntrack_aging_fini
+
+session_aging_accel_control false
+session_aging_tmo_factory_dflt_set
+session_aging_fini
 
 skip_fte_flow_prog_set false

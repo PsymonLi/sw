@@ -19,6 +19,7 @@ import iota.harness.infra.store as store
 import iota.test.athena.testcases.networking.config.flow_gen as flow_gen 
 import iota.test.athena.utils.misc as utils
 import iota.test.athena.utils.pkt_gen as pktgen
+import iota.test.athena.utils.athena_client as client
 
 DEFAULT_H2S_GEN_PKT_FILENAME = './h2s_pkt.pcap'
 DEFAULT_H2S_RECV_PKT_FILENAME = './h2s_recv_pkt.pcap'
@@ -580,6 +581,20 @@ def Verify(tc):
             if 'recv_pkt' in cmd.command and 'FAIL' in cmd.stdout:
                 api.Logger.error("Datapath test failed")
                 return api.types.status.FAILURE
+
+    tc.node_nic_pairs = athena_app_utils.get_athena_node_nic_names()
+    for node, nic in tc.node_nic_pairs:
+        api.Logger.info("Dump conntrack and flow_cache on (%s, %s) ..." % (node, nic))
+
+        client.__execute_athena_client(node, nic, tc, '--conntrack_dump /data/iota_conntrack.log')
+        client.__execute_athena_client(node, nic, tc, '--flow_cache_dump /data/iota_flow.log')
+
+    req = api.Trigger_CreateExecuteCommandsRequest()
+    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, "cat /data/iota_conntrack.log")
+    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, "cat /data/iota_flow.log")
+    resp = api.Trigger(req)
+    for cmd in resp.commands:
+        api.PrintCommandResults(cmd)
 
     api.Logger.info('Datapath test passed')
 

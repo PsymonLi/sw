@@ -11,5 +11,11 @@ conntrack_aging_accel_control false
 conntrack_aging_tolerance_secs_set 0
 conntrack_aging_tmo_artificial_long_set
 
+session_aging_init
+session_aging_force_expired_ts false
+session_aging_accel_control false
+session_aging_tolerance_secs_set 0
+session_aging_tmo_artificial_long_set
+
 conntrack_aging_traffic_chkpt_start
 skip_fte_flow_prog_set false

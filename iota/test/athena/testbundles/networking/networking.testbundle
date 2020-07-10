@@ -153,6 +153,7 @@ testcases:
     -   name    : Connection_Tracking_Test
         testcase: testcases.networking.conntrack
         enable  : True
+        ignore  : True
         iterators :
             type      : nested
             state     : ['SYNACK_SENT','SYNACK_RECV','ESTABLISHED_H2S', 'ESTABLISHED_S2H','FIN_SENT','FIN_RECV','TIME_WAIT_H2S','TIME_WAIT_S2H','RST_CLOSE_H2S','RST_CLOSE_S2H']
@@ -161,12 +162,13 @@ testcases:
     -   name    : Conntrack_Aging_Chkpt_End
         testcase: testcases.networking.aging
         enable  : True
+        ignore  : True
         args    :
             test_dir: /nic/etc/test_scripts
             test    : conntrack_aging_chkpt_end.txt
             stdout_file: /data/iota_conntrack_chkpt_start.log
             dump_file: /data/iota_conntrack_chkpt_end.log
-            dump_sym: flow_state
+            dump_sym: flow_type:TCP
             dump_expected_count: 0
             log_file: /var/log/pensando/iota_conntrack_aging_chkpt_end_test.log
 

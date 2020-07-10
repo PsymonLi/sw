@@ -1007,7 +1007,7 @@ aging_tmo_cfg_t::tmo_factory_dflt_set(void)
 void 
 aging_tmo_cfg_t::tmo_artificial_long_set(void)
 {
-#define TMO_ARTIFICIAL_LONG     (SCANNER_SESSION_TMO_DFLT * 2)
+#define TMO_ARTIFICIAL_LONG     (SCANNER_SESSION_TMO_DFLT * 6)
     tmo_rec.tcp_syn_tmo      = TMO_ARTIFICIAL_LONG;
     tmo_rec.tcp_est_tmo      = TMO_ARTIFICIAL_LONG;
     tmo_rec.tcp_fin_tmo      = TMO_ARTIFICIAL_LONG;
