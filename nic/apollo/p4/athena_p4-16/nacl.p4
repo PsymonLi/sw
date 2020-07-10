@@ -77,6 +77,30 @@ control nacl_lookup(inout cap_phv_intr_global_h intr_global,
         stage = 3;
     }
 
+
+    /************************************************/
+    /* Small MPU action table to deal with drops    */
+    /************************************************/
+    @name(".egress_action_handler") action egress_action_handler_a() {
+      if( metadata.cntrl.egress_action == EGRESS_ACTION_DROP) {
+	metadata.cntrl.skip_flow_log = TRUE;		   
+	DROP_PACKET_EGRESS(P4E_DROP_EGRESS_ACTION);
+      } else if(hdr.egress_recirc_header.flow_log_disposition == 1) {
+	//This value is drop by security list
+	DROP_PACKET_EGRESS(P4E_DROP_SECURITY_LIST);
+      }	
+    }
+     
+
+    @name(".egress_action_handler") table egress_action_handler {
+        actions = {
+	  egress_action_handler_a;
+        }
+        default_action = egress_action_handler_a;
+        stage = 2;
+    }
+
+
     /*
     @name(".mirroring_nacl")
       action mirroring_nacl_a(bit<6> session_number) {
@@ -110,6 +134,7 @@ control nacl_lookup(inout cap_phv_intr_global_h intr_global,
     */
     apply {
         nacl.apply();
+	egress_action_handler.apply();
 	//TBD proper skip on span packets
 	/*
 	if(metadata.cntrl.mirroring_en == TRUE) {

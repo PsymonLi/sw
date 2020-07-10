@@ -29,7 +29,9 @@ control egress_key_init(inout cap_phv_intr_global_h intr_global,
     @name(".eg_native_ipv4_packet") action eg_native_ipv4_packet() {
         metadata.flow_log_key.salt =  FLOW_LOG_SALT_0;
         metadata.flow_log_key.vnic_id =  hdr.p4i_to_p4e_header.vnic_id;
-        metadata.flow_log_key.disposition =  metadata.cntrl.egress_action[0:0]; //TBD
+	if(metadata.cntrl.egress_action == EGRESS_ACTION_DROP_BY_SL) {
+	  metadata.flow_log_key.disposition = 1;
+	}
         metadata.flow_log_key.ktype =  P4_KEY_TYPE_IPV4;
 	if(metadata.cntrl.direction == TX_FROM_HOST) {
 	  hdr.eg_nat_u.egress_recirc_nat_header.flow_log_srcAddr = (bit<128>)hdr.ip_1.ipv4.srcAddr;
@@ -56,7 +58,9 @@ control egress_key_init(inout cap_phv_intr_global_h intr_global,
    @name(".eg_native_ipv6_packet") action eg_native_ipv6_packet() {
         metadata.flow_log_key.salt =  FLOW_LOG_SALT_0;
         metadata.flow_log_key.vnic_id =  hdr.p4i_to_p4e_header.vnic_id;
-        metadata.flow_log_key.disposition =  metadata.cntrl.egress_action[0:0]; //TBD
+	if(metadata.cntrl.egress_action == EGRESS_ACTION_DROP_BY_SL) {
+	  metadata.flow_log_key.disposition = 1;
+	}
         metadata.flow_log_key.ktype =  P4_KEY_TYPE_IPV6;
 
 	if(metadata.cntrl.direction == TX_FROM_HOST) {
@@ -159,7 +163,9 @@ control egress_key_init(inout cap_phv_intr_global_h intr_global,
     @name(".eg_tunneled_ipv4_packet") action eg_tunneled_ipv4_packet() {
         metadata.flow_log_key.salt =  FLOW_LOG_SALT_0;
         metadata.flow_log_key.vnic_id =  hdr.p4i_to_p4e_header.vnic_id;
-        metadata.flow_log_key.disposition =  metadata.cntrl.egress_action[0:0]; //TBD
+	if(metadata.cntrl.egress_action == EGRESS_ACTION_DROP_BY_SL) {
+	  metadata.flow_log_key.disposition = 1;
+	}
         metadata.flow_log_key.ktype =  P4_KEY_TYPE_IPV4;
 
 	if(metadata.cntrl.direction == TX_FROM_HOST) {	
@@ -186,7 +192,9 @@ control egress_key_init(inout cap_phv_intr_global_h intr_global,
     @name(".eg_tunneled_ipv6_packet") action eg_tunneled_ipv6_packet() {
         metadata.flow_log_key.salt =  FLOW_LOG_SALT_0;
         metadata.flow_log_key.vnic_id =  hdr.p4i_to_p4e_header.vnic_id;
-        metadata.flow_log_key.disposition =  metadata.cntrl.egress_action[0:0]; //TBD
+	if(metadata.cntrl.egress_action == EGRESS_ACTION_DROP_BY_SL) {
+	  metadata.flow_log_key.disposition = 1;
+	}
         metadata.flow_log_key.ktype =  P4_KEY_TYPE_IPV6;
 	if(metadata.cntrl.direction == TX_FROM_HOST) {	
 	  metadata.flow_log_key.src = hdr.ip_2.ipv6.srcAddr;

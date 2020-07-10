@@ -333,14 +333,6 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	 }
        }
        
-       //     metadata.scratch.packet_len = hdr.p4i_to_p4e_header.packet_len;
-#if 0
-       hdr.ip_2.ipv4.srcAddr = metadata.scratch.addr;
-       hdr.ip_2.ipv4.dstAddr = metadata.scratch.addr;
-       hdr.ipv6_2.srcAddr = nat_address;
-       hdr.ipv6_2.dstAddr = nat_addresss;
-       metadata.cntrl.egress_action = egress_action;
-#endif
      } else {
        metadata.cntrl.flow_miss = TRUE;
      }

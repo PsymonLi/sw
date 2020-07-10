@@ -98,11 +98,11 @@ control egress_inter_pipe(inout cap_phv_intr_global_h intr_global,
 
 
   @name(".p4e_to_uplink") action p4e_to_uplink_a() {
-    if(!hdr.egress_recirc_header.isValid()) {
+    if(!hdr.egress_recirc_header.isValid() && (intr_global.drop == 0)) {
       hdr.egress_recirc_header.setValid();
       hdr.eg_nat_u.egress_recirc_nat_header.setValid();
       intr_global.tm_oport = TM_PORT_EGRESS; 
-      hdr.egress_recirc_header.flow_log_disposition = metadata.flow_log_key.disposition;
+      hdr.egress_recirc_header.flow_log_disposition = metadata.flow_log_key.disposition; // This is also drop_by_securuty_list.
       hdr.egress_recirc_header.flow_log_select = metadata.cntrl.flow_log_select;
       hdr.egress_recirc_header.direction = metadata.cntrl.direction;
       hdr.egress_recirc_header.vnic_id = hdr.p4i_to_p4e_header.vnic_id;

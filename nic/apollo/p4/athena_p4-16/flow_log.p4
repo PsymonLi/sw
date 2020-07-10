@@ -125,14 +125,16 @@ control flow_log_lookup(inout cap_phv_intr_global_h intr_global,
 	 sport = metadata.flow_log_key.sport;
 	 dport = metadata.flow_log_key.dport;
 	 /*  write data */
-	 security_state = 0x3; //TBD
-	 pkt_from_host = (metadata.cntrl.direction == TX_FROM_HOST) ? (bit<32>)1 : 0;
-	 pkt_from_switch = (metadata.cntrl.direction == RX_FROM_SWITCH) ? (bit<32>)1 : 0;
-	 bytes_from_host = (metadata.cntrl.direction == TX_FROM_HOST) ? (bit<40>)intr_p4.packet_len : 0;
-	 bytes_from_switch = (metadata.cntrl.direction == RX_FROM_SWITCH) ? (bit<40>)intr_p4.packet_len : 0;
+	 //	 security_state = 0x3; //TBD
 	 start_timestamp = current_time[40:23];	 
 	 last_timestamp = current_time[40:23];	 
-
+	 if(metadata.cntrl.direction == TX_FROM_HOST) {
+	   pkt_from_host = (bit<32>)1;
+	   bytes_from_host = (bit<40>)intr_p4.packet_len + 4;
+	 } else {
+	   pkt_from_switch = (bit<32>)1;
+	   bytes_from_switch = (bit<40>)intr_p4.packet_len + 4;
+	 }
        } else {
 	 if((disposition == metadata.flow_log_key.disposition) &&
 	    (ktype == metadata.flow_log_key.ktype) &&
@@ -143,30 +145,21 @@ control flow_log_lookup(inout cap_phv_intr_global_h intr_global,
 	    (sport == metadata.flow_log_key.sport) &&
 	    (dport == metadata.flow_log_key.dport)) {
 	   /*  update data */
-	   security_state = 0x3; //TBD
+	   // security_state = 0x3; //TBD
 	   metadata.cntrl.flow_log_done = TRUE;
-	   pkt_from_host = pkt_from_host + ((metadata.cntrl.direction == TX_FROM_HOST) ? (bit<32>)1 : 0);
-	   pkt_from_switch = pkt_from_switch + ((metadata.cntrl.direction == RX_FROM_SWITCH) ? (bit<32>)1 : 0);
-	   bytes_from_host = bytes_from_host + ((metadata.cntrl.direction == TX_FROM_HOST) ? (bit<40>)intr_p4.packet_len : 0);
-	   bytes_from_switch = bytes_from_switch + ((metadata.cntrl.direction == RX_FROM_SWITCH) ? (bit<40>)intr_p4.packet_len : 0);
-	   //start_timestamp = start_timestamp;	//do we need filed that are not modified? 
 	   last_timestamp = current_time[40:23];	        
+	   if(metadata.cntrl.direction == TX_FROM_HOST) {
+	     pkt_from_host = pkt_from_host + (bit<32>)1;
+	     bytes_from_host = bytes_from_host + (bit<40>)intr_p4.packet_len + 4;
+	   } else {
+	     pkt_from_switch = pkt_from_switch + (bit<32>)1;
+	     bytes_from_switch = bytes_from_switch + (bit<40>)intr_p4.packet_len + 4;
+	   }
 	      
 	 } else { 
 	   //FLOW MISS
 	   metadata.cntrl.flow_log_collision = TRUE;
 	 }
-	 /* do we need unmodified fields */
-	 /*
-	 vld = 1;
-	 ktype = ktype;
-	 vnic_id = vnic_id;
-	 src_ip = src_ip;
-	 dst_ip = dst_ip;
-	 proto= proto;
-	 sport = sport;
-	 dport = dport;
-	 */
        }
     }
    

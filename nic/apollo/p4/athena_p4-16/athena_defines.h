@@ -81,7 +81,8 @@
 #define P4E_DROP_SECURITY_LIST          1
 #define P4E_DROP_NACL                   2
 #define P4E_DROP_CONNTRACK              3
-#define P4E_DROP_POLICER                4
+#define P4E_DROP_EGRESS_ACTION          4
+#define P4E_DROP_POLICER                5
 #define P4E_DROP_REASON_MIN             P4E_DROP_INVALID_NEXTHOP
 #define P4E_DROP_REASON_MAX             P4E_DROP_POLICER
 
@@ -150,6 +151,16 @@
 /*****************************************************************************/
 #define FLOW_LOG_SALT_0  0x73
 #define FLOW_LOG_SALT_1  0xAB
+
+/*****************************************************************************/
+/* Egress action encoding                                                                          */
+/*****************************************************************************/
+#define    EGRESS_ACTION_NONE               0   
+#define    EGRESS_ACTION_TX_TO_HOST         1  
+#define    EGRESS_ACTION_TX_TO_SWITCH       2  
+#define    EGRESS_ACTION_DROP               3   
+#define    EGRESS_ACTION_DROP_BY_SL         4       
+#define    EGRESS_ACTION_THROTTLE           5         
 
 
 #endif /* _ATHENA_DEFINES_H_ */
