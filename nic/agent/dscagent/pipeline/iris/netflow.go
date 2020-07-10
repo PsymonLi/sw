@@ -39,7 +39,8 @@ func HandleFlowExportPolicy(infraAPI types.InfraAPI, telemetryClient halapi.Tele
 	}
 }
 
-func buildExport(compositeKey string, collectorID uint64, netflow netproto.FlowExportPolicy, export netproto.ExportConfig) Export {
+// BuildExport builds an object for netflow collector
+func BuildExport(compositeKey string, collectorID uint64, netflow netproto.FlowExportPolicy, export netproto.ExportConfig) Export {
 	return Export{
 		CollectorID:      collectorID,
 		CompositeKey:     compositeKey,
@@ -61,7 +62,7 @@ func createFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 		collectorID := infraAPI.AllocateID(types.CollectorID, 0)
 		compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 		// Create export
-		exp := buildExport(compositeKey, collectorID, netflow, c)
+		exp := BuildExport(compositeKey, collectorID, netflow, c)
 		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Create, &exp, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrExportCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 			return errors.Wrapf(types.ErrExportCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
@@ -136,7 +137,7 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 			collectorID := w.collectorID
 			compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 			// Delete collector to HAL
-			exp := buildExport(compositeKey, collectorID, existingNetflow, w.export)
+			exp := BuildExport(compositeKey, collectorID, existingNetflow, w.export)
 			if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Delete, &exp, vrfID); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorDelete, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorDelete, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
@@ -150,7 +151,7 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 			collectorID := w.collectorID
 			compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 			// Update export
-			exp := buildExport(compositeKey, collectorID, netflow, w.export)
+			exp := BuildExport(compositeKey, collectorID, netflow, w.export)
 			if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Update, &exp, vrfID); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorUpdate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorUpdate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
@@ -164,7 +165,7 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 		collectorID := w.collectorID
 		compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 		// Create export
-		exp := buildExport(compositeKey, collectorID, netflow, w.export)
+		exp := BuildExport(compositeKey, collectorID, netflow, w.export)
 		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Create, &exp, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 			return errors.Wrapf(types.ErrCollectorCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
@@ -260,7 +261,7 @@ func deleteFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 		collectorID := collectorIDs[idx]
 		compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 		// Delete export
-		exp := buildExport(compositeKey, collectorID, netflow, c)
+		exp := BuildExport(compositeKey, collectorID, netflow, c)
 		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Delete, &exp, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrExportDelete, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 		}

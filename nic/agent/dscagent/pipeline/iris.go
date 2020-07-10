@@ -10,19 +10,17 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
-	"github.com/pensando/sw/nic/agent/protos/tsproto"
-
-	delphi "github.com/pensando/sw/nic/delphi/gosdk"
-	sysmgr "github.com/pensando/sw/nic/sysmgr/golib"
-
 	"github.com/gogo/protobuf/proto"
 	protoTypes "github.com/gogo/protobuf/types"
+	"github.com/mdlayher/arp"
 	"github.com/pkg/errors"
+
+	"github.com/pensando/netlink"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/common"
@@ -31,7 +29,11 @@ import (
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils/validator"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/nic/agent/protos/tsproto"
+	delphi "github.com/pensando/sw/nic/delphi/gosdk"
+	sysmgr "github.com/pensando/sw/nic/sysmgr/golib"
 	"github.com/pensando/sw/venice/utils/events"
 	"github.com/pensando/sw/venice/utils/log"
 )
@@ -207,7 +209,7 @@ func (i *IrisAPI) PipelineInit() error {
 
 	// Start the watch for bond0 IP so that ArpClient can be updated
 	log.Infof("Starting the IP watch on bond0")
-	iris.SecondaryIntfWatch(i.InfraAPI)
+	secondaryIntfWatch(i)
 
 	// Start the ARP receive loop. Should be singleton.
 	go iris.ResolveWatch()
@@ -2535,4 +2537,135 @@ func getNetworkID(tenant, namespace, name string) uint64 {
 		},
 	}
 	return networkIDs[nt.GetKey()]
+}
+
+func updateArpClient(mgmtIntf *net.Interface, mgmtLink netlink.Link) {
+	if mgmtIntf == nil {
+		return
+	}
+	log.Infof("new bond0 mgmtIntf %v", mgmtIntf)
+	// Check for idempotency and close older ARP clients
+	if iris.ArpClient != nil {
+		iris.ArpClient.Close()
+	}
+	client, err := arp.Dial(mgmtIntf)
+	if err != nil {
+		return
+	}
+	iris.MgmtIntf = mgmtIntf
+	iris.ArpClient = client
+	iris.MgmtLink = mgmtLink
+}
+
+func secondaryIntfWatch(i *IrisAPI) {
+	var mgmtIP, hwAddr string
+	mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(i.InfraAPI.GetConfig())
+	if err != nil {
+		log.Errorf("Failed to get the mgmt information. config: %v: %v", i.InfraAPI.GetConfig(), err)
+	} else {
+		mgmtIP = utils.GetMgmtIP(mgmtLink)
+		hwAddr = mgmtIntf.HardwareAddr.String()
+	}
+	log.Infof("bond0 IP: %v", mgmtIP)
+	updateArpClient(mgmtIntf, mgmtLink)
+	go func() {
+		ticker := time.NewTicker(time.Second * 1)
+		for {
+			select {
+			case <-ticker.C:
+				mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(i.InfraAPI.GetConfig())
+				if err == nil {
+					ip := utils.GetMgmtIP(mgmtLink)
+					addr := mgmtIntf.HardwareAddr.String()
+					ipChanged := ip != "" && ip != mgmtIP
+					addrChanged := addr != "" && addr != hwAddr
+					if ipChanged || addrChanged {
+						log.Infof("bond0 changed,IP: %s to %s, HardwareAddr: %s to %s. Updating ArpClient", mgmtIP, ip, hwAddr, addr)
+						updateArpClient(mgmtIntf, mgmtLink)
+						mgmtIP = ip
+						hwAddr = addr
+					}
+					if ipChanged {
+						updateMgmtIP(i, ip)
+					}
+				}
+			}
+		}
+	}()
+}
+
+func updateMgmtIP(i *IrisAPI, ip string) {
+	i.Lock()
+	defer i.Unlock()
+
+	log.Infof("Updating Mgmt IP: %v for internal tunnels", ip)
+	t := netproto.Tunnel{TypeMeta: api.TypeMeta{Kind: "Tunnel"}}
+	tunnels, _ := handleTunnel(i, types.List, t)
+
+	for _, tunnel := range tunnels {
+		// Update only internal tunnels
+		if !strings.Contains(tunnel.Name, "_internal") {
+			continue
+		}
+
+		vrf, err := validator.ValidateVrf(i.InfraAPI, tunnel.Tenant, tunnel.Namespace, tunnel.Name)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		vrfID := vrf.Status.VrfID
+
+		tunnel.Spec.Src = ip
+		err = iris.HandleTunnel(i.InfraAPI, i.IntfClient, types.Update, tunnel, vrfID)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
+	log.Infof("Updating Mgmt IP: %v for netflow packets and collectors", ip)
+	f := netproto.FlowExportPolicy{TypeMeta: api.TypeMeta{Kind: "FlowExportPolicy"}}
+	flowExportPolicies, _ := handleFlowExportPolicy(i, types.List, f)
+
+	for _, netflow := range flowExportPolicies {
+		vrf, err := validator.ValidateVrf(i.InfraAPI, netflow.Tenant, netflow.Namespace, netflow.Name)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		vrfID := vrf.Status.VrfID
+
+		netflowKey := fmt.Sprintf("%s/%s", netflow.Kind, netflow.GetKey())
+		collectorIDs := iris.NetflowDestToIDMapping[netflowKey]
+
+		for idx, c := range netflow.Spec.Exports {
+			collectorID := collectorIDs[idx]
+			compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
+			exp := iris.BuildExport(compositeKey, collectorID, netflow, c)
+
+			// terminate the old template packet control loop
+			cancel := iris.TemplateContextMap[exp.CompositeKey]
+			if cancel != nil {
+				cancel()
+			}
+			delete(iris.TemplateContextMap, exp.CompositeKey)
+
+			// Update the collector
+			if err := iris.HandleExport(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, types.Update, &exp, vrfID); err != nil {
+				log.Error(err)
+			}
+
+			// Start a new template packet control loop
+			templateCtx, cancel := context.WithCancel(context.Background())
+			destIP := net.ParseIP(exp.Destination)
+			var destPort int
+			if exp.Transport == nil {
+				destPort = types.DefaultNetflowExportPort
+			} else {
+				destPort, _ = strconv.Atoi(exp.Transport.Port)
+			}
+			go iris.SendTemplate(templateCtx, i.InfraAPI, destIP, destPort, &exp)
+			iris.TemplateContextMap[exp.CompositeKey] = cancel
+		}
+	}
+	log.Infof("Updated Mgmt IP: %v", ip)
 }

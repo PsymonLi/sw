@@ -516,59 +516,6 @@ func resolveWithDeadline(ctx context.Context, IP net.IP) (string, error) {
 	}
 }
 
-func updateArpClient(mgmtIntf *net.Interface, mgmtLink netlink.Link) {
-	if mgmtIntf == nil {
-		return
-	}
-	log.Infof("new bond0 mgmtIntf %v", mgmtIntf)
-	// Check for idempotency and close older ARP clients
-	if ArpClient != nil {
-		ArpClient.Close()
-	}
-	client, err := arp.Dial(mgmtIntf)
-	if err != nil {
-		return
-	}
-	MgmtIntf = mgmtIntf
-	ArpClient = client
-	MgmtLink = mgmtLink
-}
-
-// SecondaryIntfWatch starts a watch for IP on bond0 interface and updates ArpClient and MgmtIntf
-func SecondaryIntfWatch(infraAPI types.InfraAPI) {
-	var mgmtIP, hwAddr string
-	mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(infraAPI.GetConfig())
-	if err != nil {
-		log.Errorf("Failed to get the mgmt information. config: %v: %v", infraAPI.GetConfig(), err)
-	} else {
-		mgmtIP = utils.GetMgmtIP(mgmtLink)
-		hwAddr = mgmtIntf.HardwareAddr.String()
-	}
-	log.Infof("bond0 IP: %v", mgmtIP)
-	updateArpClient(mgmtIntf, mgmtLink)
-	go func() {
-		ticker := time.NewTicker(time.Second * 1)
-		for {
-			select {
-			case <-ticker.C:
-				mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(infraAPI.GetConfig())
-				if err == nil {
-					ip := utils.GetMgmtIP(mgmtLink)
-					addr := mgmtIntf.HardwareAddr.String()
-					ipChanged := ip != "" && ip != mgmtIP
-					addrChanged := addr != "" && addr != hwAddr
-					if ipChanged || addrChanged {
-						log.Infof("bond0 changed,IP: %s to %s, HardwareAddr: %s to %s. Updating ArpClient", mgmtIP, ip, hwAddr, addr)
-						updateArpClient(mgmtIntf, mgmtLink)
-						mgmtIP = ip
-						hwAddr = addr
-					}
-				}
-			}
-		}
-	}()
-}
-
 func deleteOrUpdateLateralEP(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, vrfID uint64, owner, destIP, gwIP string) error {
 	// Make sure only one go routine is updating EP at a point
 	mux.Lock()

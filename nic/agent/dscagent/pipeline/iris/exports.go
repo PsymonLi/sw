@@ -35,7 +35,8 @@ type Export struct {
 	TemplateInterval string
 }
 
-var templateContextMap = map[string]context.CancelFunc{}
+// TemplateContextMap maps a unique netflow collector to a control loop's cancel func
+var TemplateContextMap = map[string]context.CancelFunc{}
 
 // HandleExport handles crud operations on Export objects
 func HandleExport(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, export *Export, vrfID uint64) error {
@@ -77,8 +78,8 @@ func createExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.Telemet
 	} else {
 		destPort, _ = strconv.Atoi(export.Transport.Port)
 	}
-	go sendTemplate(templateCtx, infraAPI, destIP, destPort, export)
-	templateContextMap[export.CompositeKey] = cancel
+	go SendTemplate(templateCtx, infraAPI, destIP, destPort, export)
+	TemplateContextMap[export.CompositeKey] = cancel
 	return nil
 }
 
@@ -98,11 +99,11 @@ func updateExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.Telemet
 
 func deleteExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, export *Export, vrfID uint64) error {
 	cKey := convertCollectorKeyHandle(export.CollectorID)
-	cancel := templateContextMap[export.CompositeKey]
+	cancel := TemplateContextMap[export.CompositeKey]
 	if cancel != nil {
 		cancel()
 	}
-	delete(templateContextMap, export.CompositeKey)
+	delete(TemplateContextMap, export.CompositeKey)
 	collectorDeleteReq := &halapi.CollectorDeleteRequestMsg{
 		Request: []*halapi.CollectorDeleteRequest{
 			{
@@ -204,7 +205,8 @@ func convertCollector(infraAPI types.InfraAPI, export *Export, vrfID uint64, l2S
 }
 
 // TODO Remove this once the HAL side telemetry code is cleaned up. Agents must not be sending raw packets on sockets
-func sendTemplate(ctx context.Context, infraAPI types.InfraAPI, destIP net.IP, destPort int, export *Export) {
+// SendTemplate sends template packets periodically
+func SendTemplate(ctx context.Context, infraAPI types.InfraAPI, destIP net.IP, destPort int, export *Export) {
 	log.Infof("FlowExportPolicy | %s Collector: %s", types.InfoTemplateSendStart, destIP.String())
 	var templateTicker *time.Ticker
 	if len(export.TemplateInterval) > 0 {
