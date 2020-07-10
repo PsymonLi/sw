@@ -75,6 +75,11 @@ backup_stateful_obj_cb (void *obj, void *info)
         SDK_ASSERT(0);
     }
 
+    if (ret == SDK_RET_OK && upg_info->skipped) {
+        PDS_TRACE_VERBOSE("Stateful obj id %u key %s intentionally skipped",
+                          obj_id, keystr.c_str());
+        return false; // continue walk
+    }
     if (ret != SDK_RET_OK) {
         api::g_upg_state->set_backup_status(false);
         PDS_TRACE_ERR("Backup stateful obj id %u failed for key %s, err %u",

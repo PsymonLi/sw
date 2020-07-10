@@ -341,12 +341,10 @@ upg_soft_init (pds_init_params_t *params)
 sdk_ret_t
 upg_restore_api_objs (void)
 {
-    // TODO @sunny fix the hang
-    return SDK_RET_OK;
-
     if (sdk::platform::sysinit_mode_hitless(g_upg_state->init_mode())) {
         return upg_hitless_restore_api_objs();
     }
+    return SDK_RET_OK;
 }
 
 static sdk_ret_t
