@@ -362,7 +362,7 @@ type DeviceSpec struct {
 	//    affect the flows/sessions that are already created, but it will take
 	//    affect only on the new sessions/flows created after such an update
 	IPMappingPriority uint32 `protobuf:"varint,9,opt,name=IPMappingPriority,proto3" json:"IPMappingPriority,omitempty" meta:range:0-1023`
-	// firewal (if enabled) action trasnposition logic dictates how the policy
+	// firewall (if enabled) action transposition logic dictates how the policy
 	// lookup results are processed when multiple security policies are applied
 	// on a packet
 	FwPolicyXposnScheme FwPolicyXposn `protobuf:"varint,10,opt,name=FwPolicyXposnScheme,proto3,enum=types.FwPolicyXposn" json:"FwPolicyXposnScheme,omitempty" meta:default=FW_POLICY_XPOSN_GLOBAL_PRIORITY`

@@ -38,16 +38,19 @@ class EzAccessStore:
         return
 
     def SetTunnels(self, objs):
+        if len(objs) == 0: return
         if defs.TEST_TYPE == "IOTA":
             self.tunnels.db.clear()
         return self.tunnels.SetAll(objs)
 
     def SetNexthops(self, objs):
+        if len(objs) == 0: return
         if defs.TEST_TYPE == "IOTA":
             self.nexthops.db.clear()
         return self.nexthops.SetAll(objs)
 
     def SetNexthopgroups(self, objs):
+        if len(objs) == 0: return
         if defs.TEST_TYPE == "IOTA":
             self.nexthopgroups.db.clear()
         return self.nexthopgroups.SetAll(objs)

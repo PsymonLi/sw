@@ -11,7 +11,8 @@
         "name": "agent",
         "command": "/sw/nic/apollo/tools/apulu/start-agent-sim.sh",
         "env" : {
-            "DEFAULT_PF_STATE": "down"
+            "DEFAULT_PF_STATE": "down",
+            "DEVICE_OPER_MODE": "host"
         },
         "dependencies": [],
         "flags": ["save_stdout_on_crash"],

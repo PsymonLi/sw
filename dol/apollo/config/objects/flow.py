@@ -102,8 +102,8 @@ class FlowMapObjectHelper:
             # Has default route
             # Has Blackhole route
         """
-        if routetblobj.VPCPeeringEnabled or\
-           routetblobj.HasBlackHoleRoute:
+        if routetblobj and\
+           (routetblobj.VPCPeeringEnabled or routetblobj.HasBlackHoleRoute):
            return False
         return True
 

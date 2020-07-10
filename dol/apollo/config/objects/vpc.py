@@ -4,7 +4,6 @@ import json
 import pdb
 
 from infra.common.logging import logger
-from infra.common.glopts  import GlobalOptions
 import infra.common.objects as objects
 
 from apollo.config.store import client as EzAccessStoreClient
@@ -96,8 +95,7 @@ class VpcObject(base.ConfigObjectBase):
             self.PfxSel = 1
         else:
             self.PfxSel = 0
-        if getattr(spec, 'fabricencap', None) != None:
-            self.FabricEncap = utils.GetEncapType(spec.fabricencap)
+        self.FabricEncapType = utils.GetEncapType(getattr(spec, 'fabricencap', 'vxlan'))
         if getattr(spec, 'fabricencapvalue', None) != None:
             self.Vnid = spec.fabricencapvalue
         else:
@@ -190,7 +188,7 @@ class VpcObject(base.ConfigObjectBase):
         return
 
     def UpdateImplicit(self):
-        if (GlobalOptions.dryrun):
+        if utils.IsDryRun():
             return
         if (not self.IsOriginImplicitlyCreated()):
             return
@@ -280,7 +278,8 @@ class VpcObject(base.ConfigObjectBase):
         spec.V6RouteTableId = utils.PdsUuid.GetUUIDfromId(self.V6RouteTableId, api.ObjectTypes.ROUTE)
         spec.VirtualRouterMac = self.VirtualRouterMACAddr.getnum()
         spec.ToS = self.Tos
-        utils.GetRpcEncap(self.Node, self.Vnid, self.Vnid, spec.FabricEncap)
+        utils.PopulateRpcEncap(self.FabricEncapType,
+                               self.Vnid, spec.FabricEncap)
         if self.Nat46_pfx is not None:
             utils.GetRpcIPv6Prefix(self.Nat46_pfx, spec.Nat46Prefix)
         return
@@ -356,7 +355,7 @@ class VpcObject(base.ConfigObjectBase):
         return ['Id', 'Type', 'V4RouteTableId', 'V6RouteTableId', 'VirtualRouterMac', 'FabricEncap', 'ToS']
 
     def ValidateYamlSpec(self, spec):
-        if  utils.GetYamlSpecAttr(spec) != self.GetKey():
+        if utils.GetYamlSpecAttr(spec) != self.GetKey():
             return False
         if spec['type'] != self.Type:
             return False
@@ -478,7 +477,7 @@ class VpcObjectClient(base.ConfigClientBase):
         return
 
     def CreateObjects(self, node):
-        if GlobalOptions.netagent:
+        if utils.IsNetAgentMode():
             route.client.CreateObjects(node)
 
         # netagent requires route table before vpc
@@ -490,7 +489,7 @@ class VpcObjectClient(base.ConfigClientBase):
         tag.client.CreateObjects(node)
         policy.client.CreateObjects(node)
         policer.client.CreateObjects(node)
-        if not GlobalOptions.netagent:
+        if not utils.IsNetAgentMode():
             route.client.CreateObjects(node)
         meter.client.CreateObjects(node)
         BGPClient.CreateObjects(node)

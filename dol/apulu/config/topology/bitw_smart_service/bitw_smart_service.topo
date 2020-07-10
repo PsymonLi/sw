@@ -1,0 +1,107 @@
+# Bump in the wire topology for smart service mode
+meta:
+    id: TOPO_BITW_SMART_SERVICE
+
+dutnode : 1
+node:
+  - id : 1
+    device:
+        mode        : bitw_smart_service
+        stack       : ipv4
+        bridging    : false
+        learning    : false
+        ipaddress   : None
+        gateway     : None
+        encap       : None
+        tunnel      :
+            - count : 1
+              type  : underlay
+              origin: test-only
+
+    uplink:
+       - entry:
+           id      : uplink0
+           port    : 1
+           mode    : host
+           status  : UP
+
+       - entry:
+           id      : uplink1
+           port    : 2
+           mode    : switch
+           status  : UP
+
+    security_profile:
+        - id: 1
+
+    vpc:
+        - stack : ipv4
+          count : 1
+          type  : underlay
+          nexthop:
+            - type   : underlay
+              count  : 2
+              origin : test-only
+          interface:
+            - iid           : 1
+              iftype        : l3
+              ifadminstatus : UP
+              ipprefix      : '1.1.0.102\24'
+              macaddress    : macaddr/00ae.cd00.4fde
+              portid        : 1
+              encap         : none
+              origin        : test-only
+            - iid           : 2
+              iftype        : l3
+              ifadminstatus : UP
+              ipprefix      : '1.2.0.102\24'
+              macaddress    : macaddr/00ae.cd00.4fdd
+              portid        : 2
+              encap         : none
+              origin        : test-only
+
+        - stack : ipv4
+          count : 1
+          type  : tenant
+          subnet:
+            - count            : 1
+              v4prefixlen      : 24
+              v4prefix         : '9.0.0.0\24'
+              v4routerip       : '9.0.0.1'
+              vroutermac       : macaddr/0055.0100.0003
+              v4ingrpolicycount: 1
+              v4egrpolicycount : 1
+              vnic:
+                - id        : 1
+                  count     : 1
+                  vmac      : macaddr/00ae.cd00.0813
+                  ipcount   : 2
+                  lmap    :
+                    - id       : 1
+                      keytype  : l3
+                      lmacaddr : macaddr/00ae.cd00.0813
+                      lipaddr  : '3.1.0.102'
+                      origin   : test-only
+                  usehostif : false
+                  srcguard: false
+                  public  : false
+                  tagged  : true
+                  vnicencapvalue : 300
+              rmap:
+                - id       : 1
+                  count    : 1
+                  keytype  : l3
+                  rmacaddr : macaddr/00ae.cd00.000d
+                  ripaddr  : '9.0.0.3'
+                  origin   : test-only
+                - id       : 2
+                  count    : 1
+                  keytype  : l3
+                  rmacaddr : macaddr/00ae.cd00.000e
+                  ripaddr  : '9.0.0.103'
+                  origin   : test-only
+
+          policy:
+                  - type : specific
+                    policytype : default
+                    direction : bidir

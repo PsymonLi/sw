@@ -74,8 +74,7 @@ class SubnetObject(base.ConfigObjectBase):
         self.V4RouteTable = route.client.GetRouteV4Table(node, parent.VPCId, self.V4RouteTableId)
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
         self.IPAMname = 'Dhcp1'
-        if getattr(spec, 'fabricencap', None) != None:
-            self.FabricEncap = utils.GetEncapType(spec.fabricencap)
+        self.FabricEncapType = utils.GetEncapType(getattr(spec, 'fabricencap', 'vxlan'))
         if getattr(spec, 'fabricencapvalue', None) != None:
             self.Vnid = spec.fabricencapvalue
         else:
@@ -86,8 +85,6 @@ class SubnetObject(base.ConfigObjectBase):
             self.HostIf = InterfaceClient.GetHostInterface(node)
             if self.HostIf:
                 self.HostIfIdx.append(utils.LifId2LifIfIndex(self.HostIf.lif.id))
-            else:
-                self.HostIfIdx.append(getattr(parent, 'HostIfIdx', None))
             node_uuid = None
         else:
             self.HostIf = None
@@ -309,7 +306,8 @@ class SubnetObject(base.ConfigObjectBase):
         else:
             if self.DHCPPolicyIds != None:
                 spec.DHCPPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.DHCPPolicyIds, ObjectTypes.DHCP_PROXY))
-        utils.GetRpcEncap(self.Node, self.Vnid, self.Vnid, spec.FabricEncap)
+        utils.PopulateRpcEncap(self.FabricEncapType,
+                               self.Vnid, spec.FabricEncap)
         if utils.IsPipelineApulu():
             for uuid in self.HostIfUuid:
                 spec.HostIf.append(uuid.GetUuid())

@@ -145,7 +145,6 @@ class LocalMappingObject(base.MappingObjectBase):
         spec.SubnetId = self.VNIC.SUBNET.GetKey()
         spec.VnicId = self.VNIC.GetKey()
         spec.MACAddr = self.VNIC.MACAddr.getnum()
-        utils.GetRpcEncap(self.Node, self.VNIC.MplsSlot, self.VNIC.Vnid, spec.Encap)
         spec.PublicIP.Af = types_pb2.IP_AF_NONE
         if self.PublicIPAddr is not None:
             utils.GetRpcIPAddr(self.PublicIPAddr, spec.PublicIP)

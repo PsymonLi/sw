@@ -1,17 +1,9 @@
 [
     {
-        "name": "pciemgrd",
-        "command": "pciemgrd -d",
-        "dependencies": [],
-        "flags": ["critical"],
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
-    },
-    {
         "name": "agent",
         "command": "/sw/nic/apollo/tools/apulu/start-agent-sim.sh",
         "env": {
-            "DEVICE_OPER_MODE": "host"
+            "DEVICE_OPER_MODE": "bitw_smart_service"
         },
         "dependencies": [],
         "flags": ["save_stdout_on_crash"],

@@ -49,6 +49,7 @@ class TunnelObject(base.ConfigObjectBase):
                self.LocalIPAddr = ipaddress.IPv4Address(spec.srcaddr)
            else:
                self.LocalIPAddr = self.DEVICE.IPAddr
+        self.EncapType = utils.GetEncapType('vxlan')
         self.EncapValue = 0
         self.Nat = False
         self.NexthopId = 0
@@ -71,17 +72,21 @@ class TunnelObject(base.ConfigObjectBase):
             elif self.Type == tunnel_pb2.TUNNEL_TYPE_IGW:
                 self.RemoteIPAddr = next(ResmgrClient[node].TepIpAddressAllocator)
                 if self.DEVICE.IsEncapTypeMPLS():
+                    self.EncapType = utils.GetEncapType('mpls')
                     self.EncapValue = next(ResmgrClient[node].IGWMplsSlotIdAllocator)
                 else:
+                    self.EncapType = utils.GetEncapType('vxlan')
                     self.EncapValue = next(ResmgrClient[node].IGWVxlanIdAllocator)
             elif self.Type == tunnel_pb2.TUNNEL_TYPE_SERVICE:
                 self.RemoteIPAddr = next(ResmgrClient[node].TepIpv6AddressAllocator)
                 if hasattr(spec, "remote") and spec.remote is True:
                     self.Remote = True
                     self.RemoteServicePublicIP = next(ResmgrClient[node].RemoteSvcTunIPv4Addr)
+                    self.RemoteServiceEncapType = utils.GetEncapType('vxlan')
                     self.RemoteServiceEncap = next(ResmgrClient[node].IGWVxlanIdAllocator)
                 else:
                     self.Remote = False
+                self.EncapType = utils.GetEncapType('vxlan')
                 self.EncapValue = next(ResmgrClient[node].IGWVxlanIdAllocator)
             else:
                 if utils.IsV4Stack(self.DEVICE.Stack):
@@ -186,7 +191,7 @@ class TunnelObject(base.ConfigObjectBase):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
         spec.VPCId = utils.PdsUuid.GetUUIDfromId(0, ObjectTypes.VPC) # TODO: Create Underlay VPC
-        utils.GetRpcEncap(self.Node, self.EncapValue, self.EncapValue, spec.Encap)
+        utils.PopulateRpcEncap(self.EncapType, self.EncapValue, spec.Encap)
         spec.Type = self.Type
         utils.GetRpcIPAddr(self.LocalIPAddr, spec.LocalIP)
         utils.GetRpcIPAddr(self.RemoteIPAddr, spec.RemoteIP)
@@ -198,7 +203,7 @@ class TunnelObject(base.ConfigObjectBase):
             if self.Type is tunnel_pb2.TUNNEL_TYPE_SERVICE and self.Remote is True:
                 spec.RemoteService = self.Remote
                 utils.GetRpcIPAddr(self.RemoteServicePublicIP, spec.RemoteServicePublicIP)
-                utils.GetRpcEncap(self.Node, self.RemoteServiceEncap, self.RemoteServiceEncap, spec.RemoteServiceEncap)
+                utils.PopulateRpcEncap(self.RemoteServiceEncapType, self.RemoteServiceEncap, spec.RemoteServiceEncap)
         # In IOTA, with BGP Underlay support, we do not need to configure NextHop object/info. Instead,
         # NH resolution will be taken care by pds-agent/MS overlay-underlay NH stitching logic.
         if utils.IsDol():
@@ -223,7 +228,7 @@ class TunnelObject(base.ConfigObjectBase):
 
         if spec.Id != self.GetKey():
             return False
-        if utils.ValidateTunnelEncap(self.Node, self.EncapValue, spec.Encap) == False:
+        if not utils.ValidateRpcEncap(self.EncapType, self.EncapValue, spec.Encap):
             return False
         # TODO: LocalIP is optional & unused
         # if utils.ValidateRpcIPAddr(self.LocalIPAddr, spec.LocalIP) == False:
@@ -245,7 +250,7 @@ class TunnelObject(base.ConfigObjectBase):
                 # TODO: artemis
                 # if utils.ValidateRpcIPAddr(self.RemoteServicePublicIP, spec.RemoteServicePublicIP) == False:
                 #     return False
-                # if utils.ValidateTunnelEncap(self.Node, self.RemoteServiceEncap, spec.RemoteServiceEncap) == False:
+                # if utils.ValidateRpcEncap(self.RemoteServiceEncapType, self.RemoteServiceEncap, spec.RemoteServiceEncap) == False:
                 #     return False
         return True
 

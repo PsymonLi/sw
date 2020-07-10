@@ -291,25 +291,30 @@ device_conf_read (std::string& device_profile, std::string& memory_profile,
                   std::string& device_oper_mode)
 {
     boost::property_tree::ptree pt;
+    std::string dev_profile, mem_profile, dev_oper_mode;
 
-    PDS_TRACE_DEBUG("Reading device conf ...");
+    PDS_TRACE_DEBUG("Reading device conf {}", DEVICE_CONF_FILE);
     try {
         std::ifstream json_cfg(DEVICE_CONF_FILE);
         read_json(json_cfg, pt);
-        if (device_profile.empty()) {
-            device_profile = pt.get<std::string>("device-profile", "default");
-        }
-        if (memory_profile.empty()) {
-            memory_profile = pt.get<std::string>("memory-profile", "default");
-        }
-        if (device_oper_mode.empty()) {
-            device_oper_mode = pt.get<std::string>("oper-mode", "default");
-        }
+        dev_profile = pt.get<std::string>("device-profile", "default");
+        mem_profile = pt.get<std::string>("memory-profile", "default");
+        device_oper_mode = pt.get<std::string>("oper-mode", "default");
     } catch (...) {
         // we will hit this if DEVICE_CONF_FILE doesn't exist
-        device_profile = "default";
-        memory_profile = "default";
-        device_oper_mode = "default";
+        dev_profile = "default";
+        mem_profile = "default";
+        dev_oper_mode = "default";
+    }
+    // cmdline args take precedence over device conf values
+    if (device_profile.empty()) {
+        device_profile = dev_profile;
+    }
+    if (memory_profile.empty()) {
+        memory_profile = mem_profile;
+    }
+    if (device_oper_mode.empty()) {
+        device_oper_mode = dev_oper_mode;
     }
 }
 

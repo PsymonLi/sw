@@ -144,10 +144,7 @@ class DeviceObject(base.ConfigObjectBase):
         spec.GatewayIP.Af = types_pb2.IP_AF_INET
         spec.GatewayIP.V4Addr = int(self.GatewayAddr)
         spec.MACAddr = self.MACAddr.getnum()
-        if self.Mode == "bitw":
-            spec.DevOperMode = device_pb2.DEVICE_OPER_MODE_BITW
-        elif self.Mode == "host":
-            spec.DevOperMode = device_pb2.DEVICE_OPER_MODE_HOST
+        spec.DevOperMode = utils.GetRpcDeviceMode(self.Mode)
         spec.BridgingEn = self.BridgingEnabled
         spec.OverlayRoutingEn = self.OverlayRoutingEn
         spec.IPMappingPriority = self.IPMappingPriority
@@ -181,13 +178,8 @@ class DeviceObject(base.ConfigObjectBase):
         return mismatchingAttrs
 
     def ValidateYamlSpec(self, spec):
-        if utils.IsPipelineApulu():
-            if self.Mode == "bitw":
-                if spec['devopermode'] != device_pb2.DEVICE_OPER_MODE_BITW:
-                    return False
-            elif self.Mode == "host":
-                if spec['devopermode'] != device_pb2.DEVICE_OPER_MODE_HOST:
-                    return False
+        if spec['devopermode'] != utils.GetRpcDeviceMode(self.Mode):
+            return False
         if utils.IsPipelineApollo():
             # TODO: Fix read for artemis
             # in Apulu, device mac addr will come from uplink l3 interface
@@ -200,7 +192,12 @@ class DeviceObject(base.ConfigObjectBase):
         return True
 
     def IsBitwMode(self):
-        if self.Mode == "bitw":
+        if "bitw" in self.Mode:
+            return True
+        return False
+
+    def IsBitwSmartSvcMode(self):
+        if self.Mode == "bitw_smart_service":
             return True
         return False
 

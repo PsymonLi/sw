@@ -157,7 +157,7 @@ message DeviceSpec {
   //    affect the flows/sessions that are already created, but it will take
   //    affect only on the new sessions/flows created after such an update
   uint32              IPMappingPriority   = 9 [(gogoproto.moretags) = "meta:range:0-1023"];
-  // firewal (if enabled) action trasnposition logic dictates how the policy
+  // firewall (if enabled) action transposition logic dictates how the policy
   // lookup results are processed when multiple security policies are applied
   // on a packet
   types.FwPolicyXposn FwPolicyXposnScheme = 10 [(gogoproto.moretags) = "meta:default=FW_POLICY_XPOSN_GLOBAL_PRIORITY"];

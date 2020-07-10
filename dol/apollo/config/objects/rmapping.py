@@ -138,7 +138,6 @@ class RemoteMappingObject(base.MappingObjectBase):
         spec.MACAddr = self.MACAddr.getnum()
         for i in self.Tags:
             spec.Tags.append(i)
-        utils.GetRpcEncap(self.Node, self.MplsSlot, self.Vnid, spec.Encap)
         if utils.IsPipelineArtemis():
             utils.GetRpcIPAddr(self.ProviderIPAddr, spec.ProviderIp)
         return

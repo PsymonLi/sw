@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+import pdb
 from collections import defaultdict
 
 from infra.common.logging import logger
@@ -356,8 +357,9 @@ class NexthopObjectClient(base.ConfigClientBase):
         return
 
     def CreateObjects(self, node):
-        if (EzAccessStoreClient[node].IsDeviceOverlayRoutingEnabled()):
-            logger.info("Skipping creating nexthop objects")
+        if EzAccessStoreClient[node].IsDeviceOverlayRoutingEnabled() or\
+           EzAccessStoreClient[node].IsBitwMode():
+            logger.info(f"Skip Creating {self.ObjType.name} Objects in {node}")
             return
         cookie = utils.GetBatchCookie(node)
         if utils.IsPipelineApulu():

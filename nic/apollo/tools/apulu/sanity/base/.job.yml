@@ -109,7 +109,6 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
-
   apulu/pds_scale_test_mock:
     commands: ["make", "PIPELINE=apulu", "jobd/apulu/pds_scale_test_mock"]
     owners: ["email:akoradha@pensando.io" ]
@@ -213,6 +212,15 @@ targets:
   apulu/dol/security_policy_tags_scale:
     commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/security_policy_tags_scale"]
     owners: ["email:vgunta@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
+  apulu/dol/bitw_smart_service_e2e:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/bitw_smart_service_e2e"]
+    owners: ["email:param@pensando.io"]
     area:
     sub-area:
     feature:

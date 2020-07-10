@@ -8,14 +8,21 @@ setup ${PIPELINE}
 
 build
 
-# run all DSC apulu DOL dry runs
+# run all DSC apulu DOL
 DryRunSanity dsc_hostvxlan operd DSCAGENTMODE
 
-# run all PDS apulu DOL dry runs
+# run all PDS apulu bitw mode DOL
+export DEVICE_OPER_MODE=bitw_smart_service
+DryRunSanity bitw_smart_service bitw_networking
+unset DEVICE_OPER_MODE
+
+# run all PDS apulu host mode DOL
 DryRunSanity hostvxlan networking
 DryRunSanity l2_hostvxlan networking
 DryRunSanity learn learn
 DryRunSanity hostvxlan upgrade
+
+# run all PDS apulu host mode DOL (via UDS)
 export USE_UDS=1
 export BATCHING_DISABLED=1
 DryRunSanity hostvxlan networking

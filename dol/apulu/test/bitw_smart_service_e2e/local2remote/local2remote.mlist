@@ -1,0 +1,18 @@
+# Feature networking modules List for Local to Remote scenario in bitw smart service mode
+feature:
+    id          : bitw_smart_service_e2e
+    sub         : local2remote
+    package     : test.bitw_smart_service_e2e
+    module      : bitw_smart_service_e2e
+    runorder    : 100
+    enable      : True
+    ignore      : False
+
+modules:
+
+    - module:
+        name    : L2_IPV4_TCP_QTAG
+        spec    : local2remote.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True

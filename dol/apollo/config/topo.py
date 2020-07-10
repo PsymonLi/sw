@@ -83,6 +83,7 @@ class OriginTypes(enum.IntEnum):
      FIXED = 0
      DISCOVERED = 1
      IMPLICITLY_CREATED = 2
+     TEST_ONLY = 3 # object is used only by test-infra
 
 class SecurityRuleActionType(enum.IntEnum):
     NONE = 0

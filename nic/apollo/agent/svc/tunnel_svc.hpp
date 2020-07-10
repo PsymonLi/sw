@@ -70,7 +70,7 @@ pds_tep_api_spec_to_proto (pds::TunnelSpec *proto_spec,
         proto_spec->set_nexthopid(api_spec->nh.id, PDS_MAX_KEY_LEN);
         break;
     case PDS_NH_TYPE_UNDERLAY_ECMP:
-        proto_spec->set_nexthopid(api_spec->nh_group.id, PDS_MAX_KEY_LEN);
+        proto_spec->set_nexthopgroupid(api_spec->nh_group.id, PDS_MAX_KEY_LEN);
         break;
     case PDS_NH_TYPE_OVERLAY:
         proto_spec->set_tunnelid(api_spec->tep.id, PDS_MAX_KEY_LEN);

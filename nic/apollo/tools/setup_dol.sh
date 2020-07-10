@@ -9,7 +9,8 @@ unset CATALOG
 # max wait time for system to come up
 SETUP_WAIT_TIME=600
 # list of processes
-SIM_PROCESSES=("vpp_main" "operd" "pdsagent" "pciemgrd" "sysmgr" "dhcpd")
+SIM_PROCESSES=("sysmgr" "dhcpd")
+declare -A SYSMGR_PROCESS_NAME_MAP=(["agent"]="pdsagent" ["vpp"]="vpp_main" ["pen-netagent"]="netagent")
 TS_NAME=dol_techsupport.tar.gz
 EXIT_STATUS=0
 NAPLES_INTERFACES=("dsc0" "dsc1" "eth1" "oob_mnic0")
@@ -45,18 +46,43 @@ if [[ "$BASH_SOURCE" != "$0" ]]; then
 fi
 source $CUR_DIR/setup_env_sim.sh $PIPELINE
 
-if [[ $DSCAGENTMODE == 1 ]]; then
-    SIM_PROCESSES+=("nmd" "netagent")
-    METRICS_CONF_DIR=$PDSPKG_TOPDIR/operd/metrics/venice/
-else
-    METRICS_CONF_DIR=$PDSPKG_TOPDIR/operd/metrics/cloud/
-fi
+function setup_global_options () {
+    if [[ $DSCAGENTMODE == 1 ]]; then
+        METRICS_CONF_DIR=$PDSPKG_TOPDIR/operd/metrics/venice/
+        SYSMGR_CONF=pipeline-venice-dol.json
+    else
+        METRICS_CONF_DIR=$PDSPKG_TOPDIR/operd/metrics/cloud/
+        if [[ -n ${DEVICE_OPER_MODE} ]]; then
+            SYSMGR_CONF=pipeline-${DEVICE_OPER_MODE}-dol.json
+        else
+            SYSMGR_CONF=pipeline-dol.json
+        fi
+    fi
+    SYSMGR_CONF_FILE=$PDSPKG_TOPDIR/sysmgr/src/$PIPELINE/$SYSMGR_CONF
+    if [ $DRYRUN == 0 ]; then
+        # get process names from sysmgr conf file
+        SYSMGR_PROCESSES=$(cat ${SYSMGR_CONF_FILE} | jq -r '.[].name' | tr \\n " " | xargs)
+        SIM_PROCESSES+=(${SYSMGR_PROCESSES[@]})
+        # convert sysmgr process name to actual one
+        for (( j=0; j<${#SIM_PROCESSES[*]}; j++ )); do
+            process=${SIM_PROCESSES[j]}
+            pname=${SYSMGR_PROCESS_NAME_MAP[${process}]}
+            if [[ ${pname} ]]; then
+                SIM_PROCESSES[j]=${pname}
+            fi
+        done
+    else
+        # kill all processes in dry-run
+        SIM_PROCESSES=("vpp_main" "operd" "pdsagent" "pciemgrd" "sysmgr" "dhcpd" "nmd" "netagent" "cap_model")
+    fi
+}
+setup_global_options
 
-function stop_model() {
+function stop_model () {
     pkill cap_model
 }
 
-function setup_catalog() {
+function setup_catalog () {
     if [ $MEMORY_8G -eq 1 ];then  # default is 4G
         CATALOG=`readlink $CONFIG_PATH/apulu/catalog.json`
         rm $CONFIG_PATH/apulu/catalog.json
@@ -65,8 +91,8 @@ function setup_catalog() {
     fi
 }
 
-function revert_catalog() {
-    echo "revering catalog"
+function revert_catalog () {
+    echo " *** reverting catalog"
     if [ ! -z "$CATALOG" ];then
         rm $CONFIG_PATH/apulu/catalog.json
         ln -s $CATALOG $CONFIG_PATH/apulu/catalog.json
@@ -84,7 +110,7 @@ function stop_processes () {
     echo "======> Setting Phasers to stun"
 }
 
-function start_dhcp_server() {
+function start_dhcp_server () {
     sudo $PDSPKG_TOPDIR/apollo/tools/$PIPELINE/start-dhcpd-sim.sh -p $PIPELINE > dhcpd.log 2>&1
     if [[ $? != 0 ]]; then
         echo "ERR: Failed to start dhcpd!"
@@ -93,12 +119,7 @@ function start_dhcp_server() {
 }
 
 function start_sysmgr () {
-    if [[ $DSCAGENTMODE == 1 ]]; then
-        SYSMGR_CONF=pipeline-venice-dol.json
-    else
-        SYSMGR_CONF=pipeline-dol.json
-    fi
-    PENLOG_LOCATION=/var/log/pensando/ sysmgr $PDSPKG_TOPDIR/sysmgr/src/$PIPELINE/$SYSMGR_CONF &
+    PENLOG_LOCATION=/var/log/pensando/ sysmgr $SYSMGR_CONF_FILE &
 }
 
 function start_model () {
@@ -317,7 +338,7 @@ function setup_file_limit () {
 
 function setup_hugepages () {
     echo 4096 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-    mkdir /dev/hugepages
+    mkdir -p /dev/hugepages
     mount -t hugetlbfs nodev /dev/hugepages
 }
 

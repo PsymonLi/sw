@@ -12,6 +12,7 @@ import os
 from os import environ
 import pdb
 
+import device_pb2 as device_pb2
 import types_pb2 as types_pb2
 import tunnel_pb2 as tunnel_pb2
 import upgrade_pb2 as upgrade_pb2
@@ -260,23 +261,27 @@ def ValidateRpcIPPrefix(srcpfx, dstpfx):
             return False
     return True
 
-def ValidateTunnelEncap(node, srcencap, dstencap):
-    if dstencap.type != EzAccessStoreClient[node].GetDeviceEncapType():
+def ValidateRpcEncap(encapType, encapValue, encap):
+    if encapType != encap.type:
         return False
-    if EzAccessStoreClient[node].IsDeviceEncapTypeMPLS():
-         if dstencap.value.MPLSTag != srcencap:
-             return False
+    if encapType == types_pb2.ENCAP_TYPE_NONE:
+        pass
+    elif encapType == types_pb2.ENCAP_TYPE_DOT1Q:
+        if encapValue != encap.value.VlanId:
+            return False
+    elif encapType == types_pb2.ENCAP_TYPE_QINQ:
+        if encapValue[0] != encap.value.QinQ.CTag:
+            return False
+        if encapValue[1] != encap.value.QinQ.STag:
+            return False
+    elif encapType == types_pb2.ENCAP_TYPE_MPLSoUDP:
+        if encapValue != encap.value.MPLSTag:
+            return False
+    elif encapType == types_pb2.ENCAP_TYPE_VXLAN:
+        if encapValue != encap.value.Vnid:
+            return False
     else:
-        if dstencap.value.Vnid != srcencap:
-            return False
-    return True
-
-def ValidateRpcEncap(encaptype, encapval, dstencap):
-    if dstencap.type != encaptype:
         return False
-    if encaptype == types_pb2.ENCAP_TYPE_DOT1Q:
-        if encapval != dstencap.value.VlanId:
-            return False
     return True
 
 def CompareSpec(objSpec, agentSpec, attrs=None):
@@ -766,15 +771,15 @@ def GetEncapType(e):
     elif e == 'mplsoudp':
         return types_pb2.ENCAP_TYPE_MPLSoUDP
     else:
-        logger.error("ERROR: Invalid/Unknown Encap: %s" % e)
-        sys.exit(1)
-        return None
+        return types_pb2.ENCAP_TYPE_NONE
 
 def GetEncapTypeString(e):
     if e == types_pb2.ENCAP_TYPE_VXLAN:
         return "vxlan"
     elif e == types_pb2.ENCAP_TYPE_MPLSoUDP:
         return "mplsoudp"
+    elif e == types_pb2.ENCAP_TYPE_NONE:
+        return "None"
     else:
         logger.error("ERROR: Invalid/Unknown Encap: %s" % e)
         sys.exit(1)
@@ -856,12 +861,33 @@ def GetRpcIPRange(addrLow, addrHigh, addrRange):
         GetRpcIPAddr(addrHigh, addrRange.IPv4Range.High)
     return
 
-def GetRpcEncap(node, mplsslot, vxlanid, encap):
-    encap.type = EzAccessStoreClient[node].GetDeviceEncapType()
-    if EzAccessStoreClient[node].IsDeviceEncapTypeMPLS():
-         encap.value.MPLSTag  = mplsslot
+def PopulateRpcEncap(encapType, encapValue, specEncap):
+    specEncap.type = encapType
+    if encapType == types_pb2.ENCAP_TYPE_NONE:
+        pass
+    elif encapType == types_pb2.ENCAP_TYPE_DOT1Q:
+        specEncap.value.VlanId = encapValue
+    elif encapType == types_pb2.ENCAP_TYPE_QINQ:
+        specEncap.value.QinQ.CTag  = encapValue[0]
+        specEncap.value.QinQ.STag  = encapValue[1]
+    elif encapType == types_pb2.ENCAP_TYPE_MPLSoUDP:
+        specEncap.value.MPLSTag  = encapValue
+    elif encapType == types_pb2.ENCAP_TYPE_VXLAN:
+        specEncap.value.Vnid  = encapValue
     else:
-         encap.value.Vnid  = vxlanid
+        assert (0), f"Unsupported encap type {encapType}"
+
+def GetRpcDeviceMode(mode):
+    if mode == "host":
+        return device_pb2.DEVICE_OPER_MODE_HOST
+    elif mode == "bitw_smart_switch":
+        return device_pb2.DEVICE_OPER_MODE_BITW_SMART_SWITCH
+    elif mode == "bitw_smart_service":
+        return device_pb2.DEVICE_OPER_MODE_BITW_SMART_SERVICE
+    elif mode == "bitw_classic_switch":
+        return device_pb2.DEVICE_OPER_MODE_BITW_CLASSIC_SWITCH
+    return device_pb2.DEVICE_OPER_MODE_NONE
+
 
 def GetRpcDirection(direction):
     if direction == "ingress":
@@ -1105,6 +1131,11 @@ def IsBatchingDisabled():
 
 def IsDol():
     return defs.TEST_TYPE == "DOL"
+
+def IsBitwSmartSvcMode(node=None):
+    dutNode = EzAccessStore.GetDUTNode() if not node else node
+    deviceObj = EzAccessStoreClient[dutNode].GetDevice()
+    return deviceObj.IsBitwSmartSvcMode()
 
 def RunPdsctlShowCmd(node, cmd, args=None, yaml=True):
     if IsDol():

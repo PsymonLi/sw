@@ -352,6 +352,8 @@ class ControlInterfaceObject(InterfaceObject):
 class L3InterfaceObject(InterfaceObject):
     def __init__(self, node, spec):
         super().__init__(node, spec, topo.InterfaceTypes.L3)
+        if hasattr(spec, 'origin'):
+            self.SetOrigin(spec.origin)
         self.IpPrefix = None
         # In IOTA, get L3 interface IPs from testbed json file if present.
         # If not, then we'll use the one in the cfgyml.
@@ -671,6 +673,9 @@ class InterfaceObjectClient(base.ConfigClientBase):
         return
 
     def CreateObjects(self, node):
+        if EzAccessStoreClient[node].IsBitwMode():
+            logger.info(f"Skip Creating {self.ObjType.name} Objects in {node}")
+            return
         if not utils.IsNetAgentMode():
             cookie = utils.GetBatchCookie(node)
             if utils.IsL3InterfaceSupported():

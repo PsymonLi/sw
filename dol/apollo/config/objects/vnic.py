@@ -279,14 +279,14 @@ class VnicObject(base.ConfigObjectBase):
             spec.VnicEncap.value.VlanId = self.VlanId
         else:
             spec.VnicEncap.type = types_pb2.ENCAP_TYPE_NONE
-        spec.MACAddress = self.MACAddr.getnum()
+        if not utils.IsBitwSmartSvcMode(self.Node):
+            spec.MACAddress = self.MACAddr.getnum()
         spec.SourceGuardEnable = self.SourceGuard
         spec.Primary = self.Primary
         spec.HostName = self.HostName
         spec.MaxSessions = self.MaxSessions
         spec.MeterEn = self.MeterEn
         spec.SwitchVnic = self.SwitchVnic
-        utils.GetRpcEncap(self.Node, self.MplsSlot, self.Vnid, spec.FabricEncap)
         for rxmirror in self.RxMirror:
             spec.RxMirrorSessionId.append(utils.PdsUuid.GetUUIDfromId(int(rxmirror), api.ObjectTypes.MIRROR))
         for txmirror in self.TxMirror:
@@ -325,14 +325,6 @@ class VnicObject(base.ConfigObjectBase):
                                   self.VlanId, spec.VnicEncap) is False:
             logger.error("vnic encap mistmatch")
             return False
-        if EzAccessStoreClient[self.Node].IsDeviceEncapTypeMPLS():
-            if utils.ValidateTunnelEncap(self.Node, self.MplsSlot, spec.FabricEncap) is False:
-                logger.error("MPLS fabric encap mismatch on vnic")
-                return False
-        else:
-            if utils.ValidateTunnelEncap(self.Node, self.Vnid, spec.FabricEncap) is False:
-                logger.error("Vxlan fabric encap mismatch on vnic")
-                return False
         if self.UseHostIf and self.HostIfUuid:
             if spec.HostIf != self.HostIfUuid.GetUuid():
                 logger.error("host if mismatch on vnic")
@@ -341,9 +333,10 @@ class VnicObject(base.ConfigObjectBase):
             if spec.HostIf != self.SUBNET.HostIfUuid[0].GetUuid():
                 logger.error("host if mismatch on vnic")
                 return False
-        if spec.MACAddress != self.MACAddr.getnum():
-            logger.error("vnic mac mismatch on vnic")
-            return False
+        if not utils.IsBitwSmartSvcMode(self.Node):
+            if spec.MACAddress != self.MACAddr.getnum():
+                logger.error("vnic mac mismatch on vnic")
+                return False
         if spec.SourceGuardEnable != self.SourceGuard:
             logger.error("src guard attribute mismatch on vnic")
             return False
@@ -403,8 +396,9 @@ class VnicObject(base.ConfigObjectBase):
             elif self.UseHostIf and self.SUBNET.HostIfUuid:
                 if (utils.GetYamlSpecAttr(spec, 'hostif')) != self.SUBNET.HostIfUuid[0].GetUuid():
                     return False
-        if spec['macaddress'] != self.MACAddr.getnum():
-            return False
+        if not utils.IsBitwSmartSvcMode(self.Node):
+            if spec['macaddress'] != self.MACAddr.getnum():
+                return False
         if spec['sourceguardenable'] != self.SourceGuard:
             return False
         if utils.GetYamlSpecAttr(spec, 'v4meterid') != utils.PdsUuid.GetUUIDfromId(self.V4MeterId, api.ObjectTypes.METER):

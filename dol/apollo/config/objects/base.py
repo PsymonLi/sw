@@ -8,7 +8,6 @@ import random
 from collections import defaultdict
 
 from infra.common.logging import logger
-from infra.common.glopts  import GlobalOptions
 import infra.config.base as base
 
 import apollo.config.agent.api as api
@@ -186,6 +185,8 @@ class ConfigObjectBase(base.ConfigObjectBase):
         elif origin == 'implicitly-created':
             self.Origin = topo.OriginTypes.IMPLICITLY_CREATED
             self.SetHwHabitant(True)
+        elif origin == 'test-only':
+            self.Origin = topo.OriginTypes.TEST_ONLY
         # anything else is FIXED
         return
 
@@ -197,6 +198,9 @@ class ConfigObjectBase(base.ConfigObjectBase):
 
     def IsOriginImplicitlyCreated(self):
         return True if (self.Origin == topo.OriginTypes.IMPLICITLY_CREATED) else False
+
+    def IsOriginTestOnly(self):
+        return True if (self.Origin == topo.OriginTypes.TEST_ONLY) else False
 
     def HasPrecedent(self):
          return False if (self.Precedent == None) else True
@@ -502,6 +506,20 @@ class ConfigClientBase(base.ConfigClientBase):
     def GetObjectsByKeys(self, node, keys, filterfn=None):
         return list(filter(filterfn, map(lambda key: self.GetObjectByKey(node, key), keys)))
 
+    def GetObjectsByOrigins(self, node, originTypes=[]):
+        objDb = defaultdict(list)
+        cfgObjects = self.Objs[node].copy().values()
+        for obj in cfgObjects:
+            objDb[obj.Origin].append(obj)
+        if len(originTypes) == 0:
+            return objDb
+        keys = list(topo.OriginTypes)
+        keysToDelete = [k for k in keys if k not in originTypes]
+        for k in keysToDelete:
+            # remove non-requested origins
+            objDb.pop(k, None)
+        return objDb
+
     def GetObjectType(self):
         return self.ObjType
 
@@ -621,7 +639,7 @@ class ConfigClientBase(base.ConfigClientBase):
         return self.ValidateJSON(node, resps)
 
     def HttpRead(self, node):
-        if not GlobalOptions.netagent:
+        if not utils.IsNetAgentMode():
             return True
         resp = api.client[node].GetHttp(self.ObjType)
         logger.info("HTTP read:", resp)
@@ -632,7 +650,7 @@ class ConfigClientBase(base.ConfigClientBase):
 
     def ReadObjects(self, node):
         logger.info(f"Reading {self.ObjType.name} Objects from {node}")
-        if GlobalOptions.dryrun:
+        if utils.IsDryRun():
             return True
         if not self.GrpcRead(node):
             return False
@@ -645,28 +663,22 @@ class ConfigClientBase(base.ConfigClientBase):
 
     #TODO: cleanup APIs & deprecate
     def CreateObjects(self, node):
-        fixed, discovered, implicitly_created = [], [], []
-        for obj in self.Objects(node):
-            if obj.IsOriginImplicitlyCreated():
-                implicitly_created.append(obj)
-            elif obj.IsOriginFixed():
-                fixed.append(obj)
-            elif obj.IsOriginDiscovered():
-                discovered.append(obj)
-            else:
-                assert(0)
+        objDb = self.GetObjectsByOrigins(node)
+        fixed = objDb[topo.OriginTypes.FIXED]
+        discovered = objDb[topo.OriginTypes.DISCOVERED]
+        implicitly_created = objDb[topo.OriginTypes.IMPLICITLY_CREATED]
 
-        logger.info("%s objects: fixed: %d discovered %d implicity_created %d" \
-                %(self.ObjType.name, len(fixed), len(discovered),\
-                len(implicitly_created)))
+        logger.info(f"{self.ObjType.name} objects: {len(fixed)} fixed, "
+                    f"{len(discovered)} discovered, "
+                    f"and {len(implicitly_created)} implicity_created")
         # return if there is no fixed object
-        if len(fixed) == 0 and len(implicitly_created) == 0:
+        if len(fixed) == 0:
             logger.info(f"Skip Creating {self.ObjType.name} Objects in {node}")
-            return
+            return True
 
         self.ShowObjects(node)
         logger.info(f"Creating {len(fixed)} {self.ObjType.name} Objects in {node}")
-        if GlobalOptions.netagent:
+        if utils.IsNetAgentMode():
             api.client[node].Create(self.ObjType, fixed)
             #api.client[node].Update(self.ObjType, implicitly_created)
         else:
@@ -678,24 +690,17 @@ class ConfigClientBase(base.ConfigClientBase):
         return True
 
     def DeleteObjects(self, node):
-        cfgObjects = self.Objs[node].copy().values()
-        fixed, discovered, implicitly_created = [], [], []
-        for obj in cfgObjects:
-            if obj.IsOriginImplicitlyCreated():
-                implicitly_created.append(obj)
-            elif obj.IsOriginFixed():
-                fixed.append(obj)
-            elif obj.IsOriginDiscovered():
-                discovered.append(obj)
-            else:
-                assert(0)
+        objDb = self.GetObjectsByOrigins(node)
+        fixed = objDb[topo.OriginTypes.FIXED]
+        discovered = objDb[topo.OriginTypes.DISCOVERED]
+        implicitly_created = objDb[topo.OriginTypes.IMPLICITLY_CREATED]
 
-        logger.info("%s objects: fixed: %d discovered %d implicity_created %d" \
-                %(self.ObjType.name, len(fixed), len(discovered),\
-                len(implicitly_created)))
-        if len(fixed) == 0 and len(implicitly_created) == 0:
+        logger.info(f"{self.ObjType.name} objects: {len(fixed)} fixed, "
+                    f"{len(discovered)} discovered, "
+                    f"and {len(implicitly_created)} implicity_created")
+        if len(fixed) == 0:
             logger.info(f"Skip Deleting {self.ObjType.name} Objects in {node}")
-            return
+            return True
 
         logger.info(f"Deleting {len(fixed)} {self.ObjType.name} Objects in {node}")
         result = list(map(lambda x: x.Delete(), fixed))
@@ -734,7 +739,13 @@ class ConfigClientBase(base.ConfigClientBase):
 
     def OperateObjects(self, node, oper, cfgObjects=None):
         if not cfgObjects:
-            cfgObjects = self.Objects(node)
+            objDb = self.GetObjectsByOrigins(node)
+            fixed = objDb[topo.OriginTypes.FIXED]
+            implicitly_created = objDb[topo.OriginTypes.IMPLICITLY_CREATED]
+            if oper == 'Read':
+                cfgObjects = fixed + implicitly_created
+            else:
+                cfgObjects = fixed
         logger.info(f"{oper} {len(cfgObjects)} {self.ObjType.name} Objects in {node}")
         result = list(map(lambda x: getattr(x, oper)(), cfgObjects))
         if not all(result):
