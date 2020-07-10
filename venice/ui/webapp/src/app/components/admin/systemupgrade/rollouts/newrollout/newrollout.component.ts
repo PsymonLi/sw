@@ -989,6 +989,9 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
 
   // If there are no labels added (for any of the NICs), the upgrade using labels toggle button is hidden.
   enableUpgradeByLabel() {
+    if (this.selectedRolloutNicNodeTypes === RolloutUtil.ROLLOUTTYPE_VENICE_ONLY) {
+      return false;
+    }
     if (Object.keys(this.naplesRuleMap).length > 0) {
       return true;
     } else {

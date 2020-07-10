@@ -27,7 +27,7 @@ import { ConfirmDialog } from 'primeng/primeng';
 import { Subject, Subscription, Observable, forkJoin, of } from 'rxjs';
 import { filter, map, takeUntil, catchError } from 'rxjs/operators';
 import { SideNavItem, sideNavMenu } from './appcontent.sidenav';
-import { Utility } from './common/Utility';
+import { BulkeditProgressPayload, Utility } from './common/Utility';
 import { selectorSettings } from './components/settings-group';
 import { Eventtypes } from './enum/eventtypes.enum';
 import { ControllerService } from './services/controller.service';
@@ -47,6 +47,7 @@ export interface GetUserObjRequest {
 }
 
 const SIDE_MENU_INFO: string = 'SIDE_MENU_INFO';
+const DEFAULT_BULK_EDITING_MSG = 'A bulk operation is in progress.';
 /**
  * This is the entry point component of Pensando-Venice Web-Application
  */
@@ -133,6 +134,9 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
   modulesSubscription: any = null;
   routingListforkjoinSubscription: any = null;
   pegasusNodes: any[] = null;
+
+  isBulkEditing: boolean = false;
+  bulkEditMessage: string = DEFAULT_BULK_EDITING_MSG;
 
   constructor(
     protected _controllerService: ControllerService,
@@ -512,6 +516,13 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
           this.openedMenuItems[linkBase] = true;
           this.storeMenuInfo();
         }
+      });
+
+      this.subscriptions[Eventtypes.BULKEDIT_PROGRESS] = this._controllerService.subscribe(Eventtypes.BULKEDIT_PROGRESS, (payload) => {
+        this.showBulkEditingDialog(payload);
+      });
+      this.subscriptions[Eventtypes.BULKEDIT_COMPLETE] = this._controllerService.subscribe(Eventtypes.BULKEDIT_COMPLETE, () => {
+        this.closeBulkEditingDialog();
       });
   }
 
@@ -1001,5 +1012,16 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
 
   alertType(event) {
     this.onToolbarIconClick(event.event, this._rightSideNavIndicator);
+  }
+
+  showBulkEditingDialog(payload: BulkeditProgressPayload ) {
+    const payloadMessage = payload.count > 0 ? `Processing bulk ${payload.method || 'request'} for ${payload.count} ${payload.kind || 'PSM'} ${payload.count === 1 ? 'object' : 'objects'}.` : '';
+    this.bulkEditMessage = payloadMessage || DEFAULT_BULK_EDITING_MSG;
+    this.isBulkEditing = true;
+  }
+
+  closeBulkEditingDialog() {
+    this.isBulkEditing = false;
+    this.bulkEditMessage = DEFAULT_BULK_EDITING_MSG;
   }
 }

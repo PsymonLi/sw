@@ -14,7 +14,6 @@ import { NetworkNetworkInterface, NetworkNetworkInterfaceSpec_type } from '@sdk/
 import { ILabelsSelector, RolloutRollout } from '@sdk/v1/models/generated/rollout';
 import { SearchSearchRequest, SearchSearchRequest_mode } from '@sdk/v1/models/generated/search';
 import { IStagingBulkEditAction, StagingBuffer, StagingBulkEditAction, StagingCommitAction } from '@sdk/v1/models/generated/staging';
-import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import { TrimDefaultsAndEmptyFields as sdkTrimDefaultsAndEmptyFields, TrimUIFields as sdkTrimUIFields } from '@sdk/v1/utils/utility';
 import * as $ from 'jquery';
 import * as _ from 'lodash';
@@ -56,6 +55,13 @@ export interface VeniceObject {
   'kind'?: string;
   'api-version'?: string;
   'meta'?: IApiObjectMeta;
+}
+
+export interface BulkeditProgressPayload {
+  bulkeditType: string;
+  count?: number;
+  kind?: string;
+  method?: string;
 }
 
 export class Utility {

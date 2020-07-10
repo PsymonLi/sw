@@ -1,4 +1,4 @@
-import {  ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 
 import { SgpoliciesComponent } from './sgpolicies.component';
@@ -65,7 +65,7 @@ describe('SgpoliciesComponent', () => {
         MessageService
       ]
     });
-      });
+  });
 
   beforeEach(() => {
     fixture = TestBed.createComponent(SgpoliciesComponent);
@@ -85,17 +85,14 @@ describe('SgpoliciesComponent', () => {
         'creation-time': '2018-08-23T17:40:08.534909931Z'
       }
     });
-    sgPolicyObserver = new BehaviorSubject({
-      events: [
-        {
-          type: 'Created',
-          object: policy1
-        }
-      ]
-    });
-    spyOn(securityService, 'WatchNetworkSecurityPolicy').and.returnValue(
+
+    sgPolicyObserver = TestingUtility.createDataCacheSubject([
+      new SecurityNetworkSecurityPolicy(policy1)
+    ]);
+    spyOn(securityService, 'ListNetworkSecurityPolicyCache').and.returnValue(
       sgPolicyObserver
     );
+
     testingUtility = new TestingUtility(fixture);
     fixture.detectChanges();
   });
@@ -105,25 +102,31 @@ describe('SgpoliciesComponent', () => {
     testingUtility.verifyTable([policy1], component.cols, tableElem, {});
 
     // Watch events
-    sgPolicyObserver.next({
-      events: [
-        {
-          type: 'Created',
-          object: policy2
-        }
-      ]
-    });
+    const eventsCreate = [
+      {
+        type: 'Created',
+        object: policy2
+      }
+    ];
+    const objCreate = TestingUtility.createDataCacheObject([
+      new SecurityNetworkSecurityPolicy(policy1), new SecurityNetworkSecurityPolicy(policy2)
+    ], eventsCreate);
+    sgPolicyObserver.next(objCreate);
     fixture.detectChanges();
     testingUtility.verifyTable([policy2, policy1], component.cols, tableElem, {});
 
-    sgPolicyObserver.next({
-      events: [
-        {
-          type: 'Deleted',
-          object: policy1
-        }
-      ]
-    });
+    // -------- //
+
+    const eventsDelete = [
+      {
+        type: 'Delete',
+        object: policy2
+      }
+    ];
+    const objDelete = TestingUtility.createDataCacheObject([
+      new SecurityNetworkSecurityPolicy(policy2)
+    ], eventsDelete);
+    sgPolicyObserver.next(objDelete);
     fixture.detectChanges();
     testingUtility.verifyTable([policy2], component.cols, tableElem, {});
 

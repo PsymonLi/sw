@@ -240,6 +240,16 @@
   </div>
 </p-dialog>
 
+<p-dialog #bulkEditingDialog
+          [closable]="false"
+          [closeOnEscape]="false"
+          header="Bulk Operation in Progress"
+          [modal]="true"
+          [styleClass]="'bulk-editing-dialog'"
+          [(visible)]="isBulkEditing">
+  {{ bulkEditMessage }}
+</p-dialog>
+
 <ng-template #SideNavMenu let-items="items">
   <ng-container *ngIf="!isUINavigationBlocked">
     <ng-container *ngFor="let item of items">

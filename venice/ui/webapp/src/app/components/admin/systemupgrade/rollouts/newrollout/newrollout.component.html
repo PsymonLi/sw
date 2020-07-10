@@ -6,7 +6,7 @@
 
       <div class="newrollout-flex-container" [formGroup]="newRollout.$formGroup">
 
-        <div class="newrollout-child">
+        <div class="newrollout-child" *ngIf="selectedRolloutNicNodeTypes!='veniceonly'">
           <ng-container *ngTemplateOutlet="rolloutNicNodeType"></ng-container>
           <ng-container *ngTemplateOutlet="meta;context:{newRolloutForm: newRollout.$formGroup}">
           </ng-container>
@@ -14,7 +14,7 @@
           </ng-container>
         </div>
 
-        <div class="newrollout-child">
+        <div class="newrollout-child" *ngIf="selectedRolloutNicNodeTypes!='veniceonly'">
           <ng-container
                         *ngTemplateOutlet="upgradeDsc;context:{newRolloutForm: newRollout.$formGroup}">
           </ng-container>
@@ -204,8 +204,10 @@
 
     <div fxLayout="row" *ngIf="!enableUpgradeByLabel()"
          class="newrollout-NicConstraints-div newrollout-input-padding">
-      <div fxFlex="nogrow" class="newrollout-text">Cannot upgrade DSCs by labels. No
-        DSCs with labels found.</div>
+      <div fxFlex="nogrow" class="newrollout-text"
+           *ngIf="selectedRolloutNicNodeTypes!='veniceonly'">
+        Cannot upgrade DSCs by labels. No DSCs with labels found.
+      </div>
     </div>
 
     <div fxLayout="row" class="newrollout-input-padding" *ngIf="enableUpgradeByLabel()"

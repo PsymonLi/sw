@@ -595,6 +595,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   }
 
   getSGPoliciesDetail() {
+    this.loading = true;
     // We perform a get as well as a watch so that we can know if the object the user is
     // looking for exists or not.
     const getSubscription = this.securityService.GetNetworkSecurityPolicy(this.selectedPolicyId).subscribe(
@@ -608,6 +609,9 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
         // Putting focus onto the overlay to prevent user
         // being able to interact with the page underneath
         this.disableFormControls();
+      },
+      () => {
+        this.loading = false;
       }
     );
     this.subscriptions.push(getSubscription);
@@ -655,7 +659,10 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
         // Once receive server update, we update the toolbar.
         this.setToolbar(this.selectedPolicyId);
       },
-      this._controllerService.webSocketErrorHandler('Failed to get SG Policy')
+      this._controllerService.webSocketErrorHandler('Failed to get SG Policy'),
+      () => {
+        this.loading = false;
+      }
     );
     this.subscriptions.push(subscription);
   }

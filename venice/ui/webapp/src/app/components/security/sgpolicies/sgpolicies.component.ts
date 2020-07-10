@@ -26,6 +26,7 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
   dataObjects: ReadonlyArray<SecurityNetworkSecurityPolicy> = [];
   exportFilename: string = 'PSM-sgpolicies';
   exportMap: CustomExportMap = {};
+  tableLoading: boolean = false;
 
   securityApps: ReadonlyArray<SecurityApp> = [];
   securityAppOptions: SelectItem[] = [];
@@ -106,6 +107,24 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
   }
 
   getSecurityPolicies() {
+    this.tableLoading = true;
+    this.securityService.ListNetworkSecurityPolicyCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.dataObjects = response.data as ReadonlyArray<SecurityNetworkSecurityPolicy> ;
+        this.tableLoading = false;
+        this.shouldEnableButtons = (this.dataObjects.length === 0);
+      },
+      (error) => {
+        this.tableLoading = false;
+        this.controllerService.invokeRESTErrorToaster('Failed to get network security policies', error);
+      }
+    );
+  }
+  /*
+  getSecurityPolicies_backup() {
     this.securityService.ListNetworkSecurityPolicy().subscribe(
       (response) => {
         if (response && response.body) {
@@ -132,7 +151,7 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
       this._controllerService.webSocketErrorHandler('Failed to get security policies')
     );
     this.subscriptions.push(subscription);
-  }
+  } */
 
   getSecurityApps() {
     const sub = this.securityService.ListAppCache().subscribe(

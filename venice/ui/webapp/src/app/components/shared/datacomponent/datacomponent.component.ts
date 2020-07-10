@@ -1,9 +1,9 @@
 
 import { Observable, forkJoin } from 'rxjs';
-import { Utility } from '@app/common/Utility';
+import { BulkeditProgressPayload, Utility} from '@app/common/Utility';
 import { ControllerService } from '@app/services/controller.service';
 import { LocalSearchRequest, AdvancedSearchComponent } from '@app/components/shared/advanced-search/advanced-search.component';
-import { FieldsRequirement, SearchTextRequirement } from '@sdk/v1/models/generated/search';
+import { FieldsRequirement, IApiAny, SearchTextRequirement } from '@sdk/v1/models/generated/search';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
 import { Output, EventEmitter, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { TableCol } from '@app/components/shared/tableviewedit';
@@ -12,6 +12,7 @@ import { StagingCommitAction, StagingBuffer, IBulkeditBulkEditItem, IStagingBulk
 import { switchMap, buffer } from 'rxjs/operators';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { BaseComponent } from '@app/components/base/base.component';
+import { Eventtypes } from '@app/enum/eventtypes.enum';
 
 export abstract class DataComponent extends BaseComponent implements OnInit, OnDestroy {
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
@@ -231,6 +232,8 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
     if (observables.length <= 0) {
       return;
     }
+    const payload: BulkeditProgressPayload = { bulkeditType: 'forkjoin', count: observables.length };
+    this._controllerService.publish(Eventtypes.BULKEDIT_PROGRESS, payload );
     const sub = forkJoin(observables).subscribe(
       (results) => {
         this.operationOnMultiRecordsComplete.emit(results);
@@ -248,6 +251,9 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
         this.operationOnMultiRecordsComplete.emit(error);
         this.controllerService.invokeRESTErrorToaster('Failure', error);
         this.onInvokeAPIonMultipleRecordsFailure();
+      },
+      () => {
+        this._controllerService.publish(Eventtypes.BULKEDIT_COMPLETE, {} );
       }
     );
     this.subscriptions.push(sub);
@@ -281,6 +287,11 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
     if (veniceObjects.length <= 0) {
       return;
     }
+
+    const items = stagingBulkEditAction.spec && stagingBulkEditAction.spec.items ? stagingBulkEditAction.spec.items : [];
+    const object = items.length > 0 ? items[0].object : {} as IApiAny;
+    const payload: BulkeditProgressPayload = { bulkeditType: 'bulkedit', count: items.length, kind: object['kind'], method: object['method'] };
+    this._controllerService.publish(Eventtypes.BULKEDIT_PROGRESS, payload );
     let createdBuffer: StagingBuffer = null;  // responseBuffer.body as StagingBuffer;
     let buffername = null; // createdBuffer.meta.name;
     this.createStagingBuffer().pipe(   // (A) create buffer
@@ -317,6 +328,9 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
         this._controllerService.invokeRESTErrorToaster(failureTitle, error);
         this.onBulkEditFailure(error, veniceObjects, stagingBulkEditAction, successMsg, failureMsg);
         this.deleteStagingBuffer(buffername, failureMsg, false); // just delete tbe buffer to release resource
+      },
+      () => {
+        this._controllerService.publish(Eventtypes.BULKEDIT_COMPLETE, {});
       }
     );
   }
