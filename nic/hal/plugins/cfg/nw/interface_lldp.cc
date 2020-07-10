@@ -12,10 +12,13 @@
 #include "nic/hal/plugins/cfg/nw/interface_lldp.hpp"
 #include "nic/sdk/platform/fru/fru.hpp"
 #include "gen/proto/interface.pb.h"
+#include "nic/sdk/lib/runenv/runenv.h"
+#include "nic/sdk/platform/ncsi/ncsi_mgr.h"
 
 #define TNNL_ENC_TYPE intf::IfTunnelEncapType
 
 using intf::LldpIfStatus;
+using namespace sdk::lib;
 
 using std::string;
 namespace pt = boost::property_tree;
@@ -89,6 +92,16 @@ hal_lldp_config_init (void)
                       macaddr2str(g_hal_state->system_mac(), true), rc);
     }
     HAL_TRACE_DEBUG("Configured LLDP system description {}", cmd);
+
+    // Enable LLDP on OOB - For NCSI Cards, dont enable
+    if (runenv::is_feature_enabled(NCSI_FEATURE) != FEATURE_ENABLED) {
+        snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli configure system interface pattern inb*,oob*");
+        rc = system(cmd);
+        if (rc == -1) {
+            HAL_TRACE_ERR("lldp configure interface pattern failed with error {}", rc);
+        }
+        HAL_TRACE_DEBUG("Configured LLDP interface pattern {}", cmd);
+    }
     return HAL_RET_OK;
 }
 
@@ -97,7 +110,7 @@ get_lldpcli_show_cmd (std::string intf, bool nbrs, std::string status_file)
 {
     char cmd[PATH_MAX];
 
-    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show %s ports %s -f json0 > %s",
+    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show %s ports %s -f json0 > %s; sync;",
              nbrs ? "neighbors" : "interface", intf.c_str(), status_file.c_str());
     return std::string(cmd);
 }
@@ -115,8 +128,15 @@ interface_lldp_parse_json (bool nbrs, LldpIfStatus *lldp_status,
         HAL_TRACE_ERR("{} doesn't exist or not accessible\n", lldp_status_file.c_str());
         return SDK_RET_ERR;
     }
-    std::ifstream json_cfg(lldp_status_file.c_str());
-    read_json(json_cfg, json_pt);
+
+    try {
+        std::ifstream json_cfg(lldp_status_file.c_str());
+        read_json(json_cfg, json_pt);
+    } catch (std::exception const& e) {
+        std::cerr << e.what() << std::endl;
+        HAL_TRACE_VERBOSE("Error parsing lldp status json");
+        return SDK_RET_ERR;
+    }
 
     try {
         BOOST_FOREACH (pt::ptree::value_type &lldp,
@@ -351,7 +371,7 @@ interface_lldp_parse_json (bool nbrs, LldpIfStatus *lldp_status,
         }
     } catch (std::exception const& e) {
         std::cerr << e.what() << std::endl;
-        HAL_TRACE_ERR("Error reading lldp status json");
+        HAL_TRACE_VERBOSE("Error reading lldp status json");
         return SDK_RET_ERR;
     }
     return SDK_RET_OK;
@@ -431,8 +451,14 @@ lldp_stats_parse_json (LldpIfStats *lldp_stats,
         HAL_TRACE_ERR("{} doesn't exist or not accessible\n", lldp_stats_file.c_str());
         return SDK_RET_ERR;
     }
-    std::ifstream json_cfg(lldp_stats_file.c_str());
-    read_json(json_cfg, json_pt);
+    try {
+        std::ifstream json_cfg(lldp_stats_file.c_str());
+        read_json(json_cfg, json_pt);
+    } catch (std::exception const& e) {
+        std::cerr << e.what() << std::endl;
+        HAL_TRACE_VERBOSE("Error parsing lldp stats json");
+        return SDK_RET_ERR;
+    }
 
     try {
         BOOST_FOREACH (pt::ptree::value_type &lldp,
@@ -486,7 +512,7 @@ lldp_stats_parse_json (LldpIfStats *lldp_stats,
         }
     } catch (std::exception const& e) {
         std::cerr << e.what() << std::endl;
-        HAL_TRACE_ERR("Error reading lldp stats json");
+        HAL_TRACE_VERBOSE("Error reading lldp stats json");
         return SDK_RET_ERR;
     }
     return SDK_RET_OK;
@@ -516,7 +542,7 @@ interface_lldp_stats_get (uint16_t uplink_idx, LldpIfStats *lldp_stats)
     stats_file = "/tmp/" + std::to_string(iter++) + "_lldp_stats.json";
 
     // get the LLDP stats in json format
-    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show statistics ports %s -f json0 > %s",
+    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show statistics ports %s -f json0 > %s; sync;",
              interfaces[uplink_idx].c_str(), stats_file.c_str());
     std::string lldpcmd = std::string(cmd);
     rc = system(lldpcmd.c_str());
