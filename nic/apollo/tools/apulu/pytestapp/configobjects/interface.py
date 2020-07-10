@@ -52,7 +52,6 @@ class InterfaceObject():
         grpcmsg = interface_pb2.InterfaceRequest()
         spec = grpcmsg.Request.add()
         spec.Id = self.uuid.GetUuid()
-        spec.Type = self.iftype
         spec.AdminStatus = self.ifadminstatus
         if self.iftype == interface_pb2.IF_TYPE_L3:
             spec.L3IfSpec.VpcId = utils.PdsUuid.GetUUIDfromId(self.ifobj.vpcid, objtype=api.ObjectTypes.VPC)
