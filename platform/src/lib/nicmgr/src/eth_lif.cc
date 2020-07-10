@@ -38,6 +38,12 @@ using namespace sdk::platform::utils;
 
 #define HOST_ADDR(lif, addr) ((1ULL << 63) | (lif << 52) | (addr))
 
+#ifdef SIM
+#define STATS_TIMER_PERIOD 10
+#else
+#define STATS_TIMER_PERIOD 0.1
+#endif
+
 sdk::lib::indexer *EthLif::fltr_allocator = sdk::lib::indexer::factory(4096);
 
 const char *
@@ -119,7 +125,7 @@ EthLif::EthLif(Eth *dev, devapi *dev_api, const void *dev_spec,
     EthLif::device_inited = false;
 
     // Init stats timer
-    ev_timer_init(&stats_timer, &EthLif::StatsUpdate, 0.0, 0.1);
+    ev_timer_init(&stats_timer, &EthLif::StatsUpdate, 0.0, STATS_TIMER_PERIOD);
     stats_timer.data = this;
     ev_timer_init(&sched_eval_timer, &EthLif::SchedBulkEvalHandler, 0.0, 0.02);
     sched_eval_timer.data = this;
