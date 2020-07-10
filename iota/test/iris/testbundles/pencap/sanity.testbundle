@@ -1,0 +1,14 @@
+meta:
+    name    : pencap
+    os      : [ linux]
+    nics    : [ pensando]
+    targetcount : 1
+
+
+testcases:
+    -   name    : sysinfo
+        testcase: testcases.pencap.sysinfo
+        enable  : True
+        args    :
+
+

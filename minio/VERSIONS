@@ -23,4 +23,4 @@ systemd_docker 0.3.0
 ova 0.0.2
 nist 0.0.2
 dhcpd dhcpd-4.4.2.no-nsupdate-4
-pencap 1.1.0
+pencap 2.0

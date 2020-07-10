@@ -54,6 +54,7 @@ testbundles:
         - subifs/subifs-precheckin.testbundle
         - rx_mode/rx_mode.testbundle
         - classic/driver-features-sanity.testbundle
+        - pencap/sanity.testbundle
         - system/obfl_check.testbundle
         - system/ssh_check.testbundle
         - sysmon/interrupts.testbundle
@@ -64,6 +65,7 @@ testbundles:
         # Relative paths from iota/test/iris/testbundles/
         - classic/ethtool.testbundle
         - networking/connectivity.testbundle
+        - pencap/sanity.testbundle
         - linktest/linktest.testbundle
         - filters/filters.testbundle
         - mtu/mtu.testbundle
