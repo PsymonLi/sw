@@ -848,6 +848,34 @@ delete_vnics (uint32_t num_vpcs, uint32_t num_subnets, uint32_t num_vnics)
     return rv;
 }
 
+sdk_ret_t
+delete_nat_port_blocks (uint32_t num_vpcs, uint32_t num_nat)
+{
+    sdk_ret_t         rv = SDK_RET_OK;
+    pds_obj_key_t     key = {0};
+    uint16_t          nat_key = 1;
+
+    for (uint32_t i = 1; i <= (uint64_t)num_vpcs; i++) {
+        for (uint32_t j = 1; j <= num_nat; j++) {
+            key = test::int2pdsobjkey(nat_key);
+            rv = delete_nat_port_block(&key);
+            SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                                    "delete nat failed, nat key %u, ret %u",
+                                    nat_key, rv);
+            nat_key++;
+        }
+    }
+    key = test::int2pdsobjkey(nat_key);
+    rv = delete_nat_port_block(&key);
+    SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                            "delete nat failed, nat key %u, ret %u",
+                            nat_key, rv);
+    rv = delete_nat_port_block(NULL);
+    SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                             "delete nat failed, ret %u", rv);
+    return rv;
+}
+
 // VPC prefix is /8, subnet id is encoded in next 10 bits (making it /18 prefix)
 // leaving LSB 14 bits for VNIC IPs
 sdk_ret_t
@@ -979,38 +1007,44 @@ create_vpcs (uint32_t num_vpcs, uint32_t num_policies,
 }
 
 sdk_ret_t
-create_nat_port_blocks (uint32_t num_vpcs, ip_prefix_t *napt_prefix)
+create_nat_port_blocks (uint32_t num_vpcs, uint32_t num_nat, ip_prefix_t *napt_prefix)
 {
     sdk_ret_t rv;
     ip_addr_t lo_addr;
     ip_addr_t hi_addr;
     ipvx_range_t ip_range;
     pds_nat_port_block_spec_t pds_napt;
+    uint16_t nat_key = 1;
 
-    if (ip_prefix_is_zero(napt_prefix)) {
+    if (num_nat == 0) {
         return SDK_RET_OK;
     }
 
-    ip_prefix_ip_low(napt_prefix, &lo_addr);
-    ip_prefix_ip_high(napt_prefix, &hi_addr);
-    ip_range.af = IP_AF_IPV4;
-    ip_range.ip_lo.v4_addr = lo_addr.addr.v4_addr;
-    ip_range.ip_hi.v4_addr = hi_addr.addr.v4_addr;
     for (uint32_t i = 1; i <= num_vpcs; i++) {
-        memset(&pds_napt, 0, sizeof(pds_napt));
-        pds_napt.key = test::int2pdsobjkey(i);
-        pds_napt.vpc = test::int2pdsobjkey(i);
-        pds_napt.ip_proto = IP_PROTO_UDP;
-        pds_napt.nat_ip_range = ip_range;
-        pds_napt.nat_port_range.port_lo = 1024;
-        pds_napt.nat_port_range.port_hi = 65535;
-        pds_napt.address_type = ADDR_TYPE_PUBLIC;
-        rv = create_nat_port_block(&pds_napt);
-        SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
-                                "create nat port block %u failed, rv %u",
-                                i, rv);
-        if (rv != SDK_RET_OK) {
-            return rv;
+        for (uint32_t j = 0; j <= num_nat; j++) {
+            memset(&pds_napt, 0, sizeof(pds_napt));
+
+            ip_prefix_ip_low(&napt_prefix[j], &lo_addr);
+            ip_prefix_ip_high(&napt_prefix[j], &hi_addr);
+            ip_range.af = IP_AF_IPV4;
+            ip_range.ip_lo.v4_addr = lo_addr.addr.v4_addr;
+            ip_range.ip_hi.v4_addr = hi_addr.addr.v4_addr;
+
+            pds_napt.key = test::int2pdsobjkey(nat_key);
+            pds_napt.vpc = test::int2pdsobjkey(i);
+            pds_napt.ip_proto = IP_PROTO_UDP;
+            pds_napt.nat_ip_range = ip_range;
+            pds_napt.nat_port_range.port_lo = 1024;
+            pds_napt.nat_port_range.port_hi = 65535;
+            pds_napt.address_type = ADDR_TYPE_PUBLIC;
+            rv = create_nat_port_block(&pds_napt);
+            SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                                    "create nat port block %u failed, rv %u",
+                                    i, rv);
+            if (rv != SDK_RET_OK) {
+                return rv;
+            }
+            nat_key++;
         }
     }
 
@@ -1982,6 +2016,9 @@ delete_objects (void)
         return ret;
     }
 
+    // delete nat port blocks
+    ret = delete_nat_port_blocks(g_test_params.num_vpcs, g_test_params.num_nat);
+
     clock_gettime(CLOCK_MONOTONIC, &end_ts);
     sdk::timestamp_to_nsecs(&end_ts, &end_ns);
     float time = (float(end_ns - start_ns)) /1000000000;
@@ -2032,7 +2069,6 @@ create_objects (void)
             return ret;
         }
     }
-
     if (artemis()) {
         // create v4 tags
         ret = create_tags(g_test_params.num_tag_trees/2,
@@ -2178,7 +2214,8 @@ create_objects (void)
 
     if (apulu()) {
         ret = create_nat_port_blocks(g_test_params.num_vpcs,
-                                     &g_test_params.napt_pfx);
+                                     g_test_params.num_nat,
+                                     &g_test_params.napt_pfx[0]);
         if (ret != SDK_RET_OK) {
             return ret;
         }

@@ -121,7 +121,8 @@ typedef struct test_params_s {
     };
     // napt config
     struct {
-        ip_prefix_t napt_pfx;
+        uint32_t num_nat;
+        ip_prefix_t napt_pfx[255];
     };
     // flow config
     struct {
@@ -223,6 +224,7 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
     string pfxstr, str;
     uint32_t i;
     char *tep_encap_env;
+    uint32_t nat_index = 0;
 
     // parse the config and create objects
     std::ifstream json_cfg(cfg_file);
@@ -413,7 +415,7 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                 }
             } else if (kind == "napt") {
                 pfxstr = obj.second.get<std::string>("napt-prefix");
-                assert(str2ipv4pfx((char *)pfxstr.c_str(), &test_params->napt_pfx) == 0);
+                assert(str2ipv4pfx((char *)pfxstr.c_str(), &test_params->napt_pfx[nat_index++]) == 0);
             } else if (kind == "flows") {
                 test_params->num_tcp = std::stol(obj.second.get<std::string>("num_tcp"));
                 test_params->num_udp = std::stol(obj.second.get<std::string>("num_udp"));
@@ -491,6 +493,7 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
     test_params->max_underlay_nh = 2;
     test_params->max_overlay_nh = 2;
     test_params->num_dhcp_policies = 2;
+    test_params->num_nat = nat_index;
     return SDK_RET_OK;
 }
 

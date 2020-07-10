@@ -110,6 +110,16 @@ delete_vnic (pds_obj_key_t *key)
 }
 
 sdk_ret_t
+delete_nat_port_block (pds_obj_key_t *key)
+{
+    if (key) {
+        return pds_nat_port_block_delete(key);
+    } else {
+        return SDK_RET_OK;
+    }
+}
+
+sdk_ret_t
 create_subnet (pds_subnet_spec_t *pds_subnet)
 {
     if (pds_subnet) {

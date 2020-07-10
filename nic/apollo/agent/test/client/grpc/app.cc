@@ -95,27 +95,28 @@ std::unique_ptr<pds::IfSvc::Stub>                g_if_stub_;
 std::unique_ptr<pds::Svc::Stub>                  g_svc_mapping_stub_;
 std::unique_ptr<pds::DHCPSvc::Stub>              g_dhcp_stub_;
 
-pds::RouteTableRequest        g_route_table_req;
-pds::SecurityPolicyRequest    g_policy_req;
-pds::MappingRequest           g_mapping_req;
-pds::VnicRequest              g_vnic_req;
-pds::VnicDeleteRequest        g_vnic_req_del;
-pds::SubnetRequest            g_subnet_req;
-pds::VPCRequest               g_vpc_req;
-pds::DHCPPolicyRequest        g_dhcp_req;
-pds::VPCPeerRequest           g_vpc_peer_req;
-pds::TunnelRequest            g_tunnel_req;
-pds::MirrorSessionRequest     g_mirror_session_req;
-pds::MeterRequest             g_meter_req;
-pds::TagRequest               g_tag_req;
-pds::PolicerRequest           g_policer_req;
-pds::NexthopRequest           g_nexthop_req;
-pds::NhGroupRequest           g_nexthop_group_req;
-pds::SvcMappingRequest        g_svc_mapping_req;
-pds::VPCDeleteRequest         g_vpc_req_del;
-pds::VPCGetRequest            g_vpc_req_get;
-pds::NatPortBlockRequest      g_nat_port_block_req;
-pds::InterfaceRequest         g_if_req;
+pds::RouteTableRequest         g_route_table_req;
+pds::SecurityPolicyRequest     g_policy_req;
+pds::MappingRequest            g_mapping_req;
+pds::VnicRequest               g_vnic_req;
+pds::VnicDeleteRequest         g_vnic_req_del;
+pds::SubnetRequest             g_subnet_req;
+pds::VPCRequest                g_vpc_req;
+pds::DHCPPolicyRequest         g_dhcp_req;
+pds::VPCPeerRequest            g_vpc_peer_req;
+pds::TunnelRequest             g_tunnel_req;
+pds::MirrorSessionRequest      g_mirror_session_req;
+pds::MeterRequest              g_meter_req;
+pds::TagRequest                g_tag_req;
+pds::PolicerRequest            g_policer_req;
+pds::NexthopRequest            g_nexthop_req;
+pds::NhGroupRequest            g_nexthop_group_req;
+pds::SvcMappingRequest         g_svc_mapping_req;
+pds::VPCDeleteRequest          g_vpc_req_del;
+pds::VPCGetRequest             g_vpc_req_get;
+pds::NatPortBlockRequest       g_nat_port_block_req;
+pds::NatPortBlockDeleteRequest g_nat_port_block_req_del;
+pds::InterfaceRequest          g_if_req;
 
 #define APP_GRPC_BATCH_COUNT    5000
 
@@ -299,6 +300,38 @@ create_nat_port_block_impl (pds_nat_port_block_spec_t *spec)
         }
         g_nat_port_block_req.clear_request();
     }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+delete_nat_port_block_impl (pds_obj_key_t *key)
+{
+    ClientContext   context;
+    NatPortBlockDeleteResponse     response;
+    Status          ret_status;
+
+    if (key != NULL) {
+        g_nat_port_block_req_del.add_id(key->id);
+    }
+
+    if ((g_nat_port_block_req_del.id_size() >= APP_GRPC_BATCH_COUNT) || !key) {
+        ret_status = g_nat_stub_->NatPortBlockDelete(&context, g_nat_port_block_req_del, &response);
+        if (!ret_status.ok()) {
+            printf("delete nat failed ret_status:%u err:%u\n", ret_status.ok(),
+                   ret_status.error_code());
+            return SDK_RET_ERR;
+        }
+        for (int i = 0; i < response.apistatus_size(); i++) {
+            int status = response.apistatus(i);
+            if (status != types::API_STATUS_OK) {
+                printf("%s failed for request i:%d, status:%d\n",
+                       __FUNCTION__, i, status);
+                return SDK_RET_ERR;
+            }
+        }
+        g_nat_port_block_req_del.clear_id();
+    }
+
     return SDK_RET_OK;
 }
 

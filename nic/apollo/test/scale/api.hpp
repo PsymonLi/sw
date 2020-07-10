@@ -32,6 +32,7 @@ sdk_ret_t delete_vnic(pds_obj_key_t *key);
 sdk_ret_t create_subnet(pds_subnet_spec_t *pds_subnet);
 sdk_ret_t create_vpc(pds_vpc_spec_t *pds_vpc);
 sdk_ret_t create_nat_port_block(pds_nat_port_block_spec_t *pds_napt);
+sdk_ret_t delete_nat_port_block(pds_obj_key_t *key);
 sdk_ret_t read_vpc(pds_obj_key_t *key, pds_vpc_info_t *info);
 sdk_ret_t update_vpc(pds_vpc_spec_t *pds_vpc);
 sdk_ret_t delete_vpc(pds_obj_key_t *key);

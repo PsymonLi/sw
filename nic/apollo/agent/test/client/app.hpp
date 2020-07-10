@@ -38,6 +38,7 @@ sdk_ret_t create_subnet_impl(pds_subnet_spec_t *spec);
 sdk_ret_t create_vpc_impl(pds_vpc_spec_t *spec = NULL);
 sdk_ret_t create_dhcp_policy_impl(pds_dhcp_policy_spec_t *spec);
 sdk_ret_t create_nat_port_block_impl(pds_nat_port_block_spec_t *spec = NULL);
+sdk_ret_t delete_nat_port_block_impl(pds_obj_key_t *key);
 sdk_ret_t read_vpc_impl(pds_obj_key_t *key = NULL, pds_vpc_info_t *info = NULL);
 sdk_ret_t update_vpc_impl(pds_vpc_spec_t *spec = NULL);
 sdk_ret_t delete_vpc_impl(pds_obj_key_t *key = NULL);

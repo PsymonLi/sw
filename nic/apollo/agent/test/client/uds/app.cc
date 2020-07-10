@@ -307,6 +307,30 @@ create_nat_port_block_impl (pds_nat_port_block_spec_t *spec)
 }
 
 sdk_ret_t
+delete_nat_port_block_impl (pds_obj_key_t *key)
+{
+    NatPortBlockDeleteRequest   request;
+    sdk_ret_t                   ret;
+    ServiceRequestMessage       service_req;
+    ServiceResponseMessage      service_rsp;
+
+    if (key) {
+        auto any_req = service_req.mutable_configmsg();
+        request.add_id(key->id);
+        any_req->PackFrom(request);
+        service_req.set_configop(types::SERVICE_OP_DELETE);
+        ret = service_request_send(&service_req, &service_rsp);
+        if ((ret != SDK_RET_OK) || (service_rsp.apistatus() != types::API_STATUS_OK)) {
+            printf("%s failed!\n", __FUNCTION__);
+            return SDK_RET_ERR;
+        }
+    }
+
+    return SDK_RET_OK;
+}
+
+
+sdk_ret_t
 create_vpc_impl (pds_vpc_spec_t *spec)
 {
     sdk_ret_t               ret;
