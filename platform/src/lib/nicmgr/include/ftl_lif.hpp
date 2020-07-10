@@ -355,8 +355,10 @@ public:
     uint32_t qcount(void) { return qcount_; }
     uint32_t qcount_actual(void) { return qcount_actual_; }
     uint32_t quiesce_qid(void) { return quiesce_qid_; }
+    bool queue_empty(uint32_t qid);
     int64_t qid_qstate_addr(uint32_t qid);
-    const mem_access_t *qid_qstate_access(uint32_t qid);
+    const mem_access_t *qid_qstate_access(uint32_t qid,
+                                          bool log_error = true);
     const mem_access_t *qid_wring_access(uint32_t qid);
 
     bool empty_qstate_access(void) { return qstate_access.empty(); }
@@ -466,6 +468,8 @@ public:
     uint64_t LifIdGet(void) { return hal_lif_info_.lif_id; }
     const std::string& LifNameGet(void) { return lif_name; }
     uint64_t mpu_timestamp(void) { return mpu_timestamp_access.curr_timestamp(); }
+    bool queue_empty(enum ftl_qtype qtype,
+                     uint32_t qid);
 
     lif_info_t                  hal_lif_info_;
 

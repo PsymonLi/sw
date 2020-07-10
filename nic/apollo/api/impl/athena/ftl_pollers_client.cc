@@ -280,6 +280,9 @@ poll(uint32_t qid,
         return PDS_RET_INVALID_ARG;
     }
 
+    if (ftl_dev_impl::pollers_queue_empty(qid)) {
+        return PDS_RET_OK;
+    }
     burst_count = FTL_POLLERS_BURST_COUNT;
     ret = ftl_dev_impl::pollers_dequeue_burst(qid, queue->poller_slot_data,
                                               FTL_POLLERS_BURST_BUF_SZ,

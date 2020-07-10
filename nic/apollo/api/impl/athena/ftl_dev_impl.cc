@@ -20,7 +20,7 @@ namespace ftl_dev_impl {
 static rte_atomic16_t       module_inited = RTE_ATOMIC16_INIT(0);
 static rte_atomic16_t       lif_init_initiated = RTE_ATOMIC16_INIT(0);
 static rte_atomic16_t       lif_init_completed = RTE_ATOMIC16_INIT(0);
-static rte_spinlock_t       tmo_cfg_lock = RTE_SPINLOCK_INITIALIZER;
+static simple_spinlock_t    tmo_cfg_lock;
 
 static FtlDev               *ftl_dev;
 static FtlLif               *ftl_lif;
@@ -290,6 +290,15 @@ pollers_dequeue_burst(uint32_t qid,
                                        slot_data_buf_sz, burst_count);
     }
     return ret;
+}
+
+/*
+ * Optimized path to determine queue empty state
+ */
+bool
+pollers_queue_empty(uint32_t qid)
+{
+    return pollers() ? pollers()->queue_empty(qid) : true;
 }
 
 pds_ret_t
@@ -667,13 +676,10 @@ lif_queues_ctl_t::lif_queues_ctl_t(enum ftl_qtype qtype,
     qdepth(qdepth),
     table_sz(0)
 {
-    spinlocks = (rte_spinlock_t *)SDK_MALLOC(SDK_MEM_ALLOC_FTL_DEV_IMPL_LOCKS,
-                                             sizeof(rte_spinlock_t) * qcount);
+    spinlocks = (simple_spinlock_t *)SDK_MALLOC(SDK_MEM_ALLOC_FTL_DEV_IMPL_LOCKS,
+                                                sizeof(simple_spinlock_t) * qcount);
     SDK_ASSERT_RETURN_VOID(spinlocks);
-
-    for (uint32_t qid = 0; qid < qcount; qid++) {
-        rte_spinlock_init(&spinlocks[qid]);
-    }
+    simple_spinlock_init_multi(spinlocks, qcount);
 }
 
 lif_queues_ctl_t::~lif_queues_ctl_t()
@@ -942,6 +948,17 @@ lif_queues_ctl_t::dequeue_burst(uint32_t qid,
     return ret;
 }
 
+/*
+ * Optimized path to determine queue empty state;
+ * No lock needed until the actual dequeuing takes place (which would
+ * be able to handle queue empty/not-empty correctly).
+ */
+bool
+lif_queues_ctl_t::queue_empty(uint32_t qid)
+{
+    return ftl_lif ? ftl_lif->queue_empty(qtype, qid) : true; 
+}
+
 pds_ret_t
 lif_queues_ctl_t::pollers_init(devcmd_t *devcmd)
 {
@@ -1061,14 +1078,14 @@ void
 lif_queues_ctl_t::lock(uint32_t qid)
 {
     SDK_ASSERT_RETURN_VOID(qid < qcount);
-    rte_spinlock_lock(&spinlocks[qid]);
+    simple_spinlock_lock(&spinlocks[qid]);
 }
 
 void
 lif_queues_ctl_t::unlock(uint32_t qid)
 {
     SDK_ASSERT_RETURN_VOID(qid < qcount);
-    rte_spinlock_unlock(&spinlocks[qid]);
+    simple_spinlock_unlock(&spinlocks[qid]);
 }
 
 void
@@ -1084,7 +1101,7 @@ lif_queues_ctl_t::lock_all(void)
      * lock which is suitably fine-grained and less contentious.
      */
     for (uint32_t qid = 0; qid < qcount; qid++) {
-        rte_spinlock_lock(&spinlocks[qid]);
+        simple_spinlock_lock(&spinlocks[qid]);
     }
 }
 
@@ -1095,7 +1112,7 @@ lif_queues_ctl_t::unlock_all(void)
      * See comments in lock_all().
      */
     for (uint32_t qid = 0; qid < qcount; qid++) {
-        rte_spinlock_unlock(&spinlocks[qid]);
+        simple_spinlock_unlock(&spinlocks[qid]);
     }
 }
 
@@ -1267,14 +1284,14 @@ static void
 age_tmo_cfg_lock(void *user_arg,
                  uint32_t idx)
 {
-    rte_spinlock_lock(&tmo_cfg_lock);
+    simple_spinlock_lock(&tmo_cfg_lock);
 }
 
 static void
 age_tmo_cfg_unlock(void *user_arg,
                    uint32_t idx)
 {
-    rte_spinlock_unlock(&tmo_cfg_lock);
+    simple_spinlock_unlock(&tmo_cfg_lock);
 }
 
 /*

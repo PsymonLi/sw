@@ -56,6 +56,7 @@ pds_ret_t pollers_dequeue_burst(uint32_t qid,
                                 poller_slot_data_t *slot_data_buf,
                                 uint32_t slot_data_buf_sz,
                                 uint32_t *burst_count);
+bool pollers_queue_empty(uint32_t qid);
 pds_ret_t normal_timeouts_set(const pds_flow_age_timeouts_t *age_tmo);
 pds_ret_t normal_timeouts_get(pds_flow_age_timeouts_t *age_tmo);
 pds_ret_t accel_timeouts_set(const pds_flow_age_timeouts_t *age_tmo);
@@ -78,6 +79,30 @@ bool lif_init_done(void);
 class devcmd_t;
 
 /**
+ * Simple fast spinlock
+ */
+typedef uint8_t     simple_spinlock_t;
+
+static inline void
+simple_spinlock_init_multi(simple_spinlock_t *lock,
+                           uint32_t count)
+{
+    memset((void *)lock, 0, sizeof(*lock) * count);
+}
+
+static inline void
+simple_spinlock_lock(simple_spinlock_t *lock)
+{
+    while (__atomic_exchange_n(lock, 1, __ATOMIC_ACQUIRE));
+}
+
+static inline void
+simple_spinlock_unlock(simple_spinlock_t *lock)
+{
+    __atomic_store_n(lock, 0, __ATOMIC_RELEASE);
+}
+
+/**
  * Queues control class
  */
 class lif_queues_ctl_t {
@@ -98,6 +123,7 @@ public:
                             uint32_t slot_data_buf_sz,
                             uint32_t *burst_count,
                             devcmd_t *owner_devcmd = nullptr);
+    bool queue_empty(uint32_t qid);
     void lock(uint32_t qid);
     void unlock(uint32_t qid);
     void lock_all(void);
@@ -111,7 +137,7 @@ private:
     uint32_t                qcount_actual;
     uint32_t                qdepth;
     uint32_t                table_sz;
-    rte_spinlock_t          *spinlocks;
+    simple_spinlock_t       *spinlocks;
 
     pds_ret_t pollers_init(devcmd_t *devcmd);
     pds_ret_t scanners_init(devcmd_t *devcmd);

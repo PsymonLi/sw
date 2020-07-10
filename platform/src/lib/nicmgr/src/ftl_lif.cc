@@ -1631,6 +1631,37 @@ FtlLif::accel_age_tmo_cb_select(void)
 }
 
 /*
+ * Optimized path to determine queue empty state:
+ * this function bypasses FSM for faster access and can return correct result
+ * even if queues have not been initialized.
+ */
+bool
+FtlLif::queue_empty(enum ftl_qtype qtype,
+                    uint32_t qid)
+{
+    switch (qtype) {
+
+    case FTL_QTYPE_SCANNER_SESSION:
+        return session_scanners_ctl.queue_empty(qid);
+
+    case FTL_QTYPE_SCANNER_CONNTRACK:
+        return conntrack_scanners_ctl.queue_empty(qid);
+
+    case FTL_QTYPE_POLLER:
+        return pollers_ctl.queue_empty(qid);
+
+    case FTL_QTYPE_MPU_TIMESTAMP:
+        return mpu_timestamp_ctl.queue_empty(qid);
+
+    default:
+        NIC_LOG_ERR("{}: Unsupported qtype {}", LifNameGet(), qtype);
+        break;
+    }
+
+    return true;
+}
+
+/*
  * One-time state machine initialization for efficient direct indexing.
  */
 static void
@@ -2106,17 +2137,18 @@ ftl_lif_queues_ctl_t::dequeue_burst(uint32_t qid,
                                     uint8_t *buf,
                                     uint32_t buf_sz)
 {
-    const mem_access_t  *qstate_access;
-    const mem_access_t  *wring_access;
-    uint32_t            slot_offset;
-    qstate_1ring_cb_t   qstate_1ring_cb;
-    uint32_t            avail_count;
-    uint32_t            read_count;
-    uint32_t            total_read_sz;
-    uint32_t            max_read_sz;
-    uint32_t            read_sz;
-    uint32_t            cndx;
-    uint32_t            pndx;
+    const mem_access_t          *qstate_access;
+    const mem_access_t          *wring_access;
+    volatile qstate_1ring_cb_t  *qstate_vaddr;
+    uint32_t                    slot_offset;
+    qstate_1ring_cb_t           qstate_1ring_cb;
+    uint32_t                    avail_count;
+    uint32_t                    read_count;
+    uint32_t                    total_read_sz;
+    uint32_t                    max_read_sz;
+    uint32_t                    read_sz;
+    uint32_t                    cndx;
+    uint32_t                    pndx;
 
     qstate_access = qid_qstate_access(qid);
     wring_access = qid_wring_access(qid);
@@ -2125,12 +2157,22 @@ ftl_lif_queues_ctl_t::dequeue_burst(uint32_t qid,
     }
 
     if (qdepth && slot_data_sz) {
-        qstate_access->small_read(offsetof(qstate_1ring_cb_t, p_ndx0),
-                                  (uint8_t *)&qstate_1ring_cb.p_ndx0,
-                                  sizeof(qstate_1ring_cb.p_ndx0) +
-                                  sizeof(qstate_1ring_cb.c_ndx0));
-        cndx = qstate_1ring_cb.c_ndx0 & qdepth_mask;
-        pndx = qstate_1ring_cb.p_ndx0 & qdepth_mask;
+        qstate_vaddr = (volatile qstate_1ring_cb_t *)qstate_access->va();
+        if (qstate_vaddr) {
+
+            /*
+             * Faster path with vaddr present
+             */
+            cndx = qstate_vaddr->c_ndx0 & qdepth_mask;
+            pndx = qstate_vaddr->p_ndx0 & qdepth_mask;
+        } else {
+            qstate_access->small_read(offsetof(qstate_1ring_cb_t, p_ndx0),
+                                      (uint8_t *)&qstate_1ring_cb.p_ndx0,
+                                      sizeof(qstate_1ring_cb.p_ndx0) +
+                                      sizeof(qstate_1ring_cb.c_ndx0));
+            cndx = qstate_1ring_cb.c_ndx0 & qdepth_mask;
+            pndx = qstate_1ring_cb.p_ndx0 & qdepth_mask;
+        }
         if (cndx == pndx) {
             *burst_count = 0;
             return FTL_RC_SUCCESS;
@@ -2164,10 +2206,15 @@ ftl_lif_queues_ctl_t::dequeue_burst(uint32_t qid,
             wring_access->large_read(0, buf, total_read_sz);
         }
 
-        qstate_1ring_cb.c_ndx0 = (cndx + read_count) & qdepth_mask;
-        qstate_access->small_write(offsetof(qstate_1ring_cb_t, c_ndx0),
-                                   (uint8_t *)&qstate_1ring_cb.c_ndx0,
-                                   sizeof(qstate_1ring_cb.c_ndx0));
+        cndx = (cndx + read_count) & qdepth_mask;
+        if (qstate_vaddr) {
+            qstate_vaddr->c_ndx0 = cndx;
+        } else {
+            qstate_1ring_cb.c_ndx0 = cndx;
+            qstate_access->small_write(offsetof(qstate_1ring_cb_t, c_ndx0),
+                                       (uint8_t *)&qstate_1ring_cb.c_ndx0,
+                                       sizeof(qstate_1ring_cb.c_ndx0));
+        }
         qstate_access->cache_invalidate();
         *burst_count = read_count;
         return FTL_RC_SUCCESS;
@@ -2179,9 +2226,6 @@ ftl_lif_queues_ctl_t::dequeue_burst(uint32_t qid,
 bool
 ftl_lif_queues_ctl_t::quiesce(void)
 {
-    const mem_access_t  *qstate_access;
-    qstate_2ring_cb_t   qstate_2ring_cb;
-
     if (!quiescing) {
         quiescing = true;
         quiesce_qid_ = 0;
@@ -2197,21 +2241,11 @@ ftl_lif_queues_ctl_t::quiesce(void)
             if (sched_workaround2_qid_exclude(qcount_actual_, quiesce_qid_)) {
                 continue;
             }
-            qstate_access = qid_qstate_access(quiesce_qid_);
-            if (!qstate_access) {
-                continue;
-            }
-            qstate_access->small_read(offsetof(qstate_2ring_cb_t, p_ndx0),
-                                      (uint8_t *)&qstate_2ring_cb.p_ndx0,
-                                      sizeof(qstate_2ring_cb.p_ndx0) +
-                                      sizeof(qstate_2ring_cb.c_ndx0) +
-                                      sizeof(qstate_2ring_cb.p_ndx1) +
-                                      sizeof(qstate_2ring_cb.c_ndx1));
+
             /*
              * As part of deactivate, MPU would set c_ndx = p_ndx
              */
-            if ((qstate_2ring_cb.c_ndx0 != qstate_2ring_cb.p_ndx0) ||
-                (qstate_2ring_cb.c_ndx1 != qstate_2ring_cb.p_ndx1)) {
+            if (!queue_empty(quiesce_qid_)) {
                 return false;
             }
         }
@@ -2496,6 +2530,82 @@ ftl_lif_queues_ctl_t::poller_init_single(const poller_init_single_cmd_t *cmd)
     return FTL_RC_SUCCESS;
 }
 
+bool
+ftl_lif_queues_ctl_t::queue_empty(uint32_t qid)
+{
+    const mem_access_t          *qstate_access;
+    uint32_t                    cndx0;
+    uint32_t                    pndx0;
+    uint32_t                    cndx1;
+    uint32_t                    pndx1;
+
+    qstate_access = qid_qstate_access(qid, false);
+    if (!qstate_access) {
+        return true;
+    }
+
+    switch (qtype()) {
+
+    case FTL_QTYPE_SCANNER_SESSION:
+    case FTL_QTYPE_SCANNER_CONNTRACK:
+    case FTL_QTYPE_MPU_TIMESTAMP:
+    {
+        volatile qstate_2ring_cb_t  *qstate_vaddr =
+                 (volatile qstate_2ring_cb_t *)qstate_access->va();
+        if (qstate_vaddr) {
+
+            /*
+             * Faster path with vaddr present
+             */
+            cndx0 = qstate_vaddr->c_ndx0 & qdepth_mask;
+            pndx0 = qstate_vaddr->p_ndx0 & qdepth_mask;
+            cndx1 = qstate_vaddr->c_ndx1 & qdepth_mask;
+            pndx1 = qstate_vaddr->p_ndx1 & qdepth_mask;
+        } else {
+            qstate_2ring_cb_t   qstate_2ring_cb;
+            qstate_access->small_read(offsetof(qstate_2ring_cb_t, p_ndx0),
+                                      (uint8_t *)&qstate_2ring_cb.p_ndx0,
+                                      sizeof(qstate_2ring_cb.p_ndx0) +
+                                      sizeof(qstate_2ring_cb.c_ndx0) +
+                                      sizeof(qstate_2ring_cb.p_ndx1) +
+                                      sizeof(qstate_2ring_cb.c_ndx1));
+            cndx0 = qstate_2ring_cb.c_ndx0 & qdepth_mask;
+            pndx0 = qstate_2ring_cb.p_ndx0 & qdepth_mask;
+            cndx1 = qstate_2ring_cb.c_ndx1 & qdepth_mask;
+            pndx1 = qstate_2ring_cb.p_ndx1 & qdepth_mask;
+        }
+        return (cndx0 == pndx0) && (cndx1 == pndx1);
+    }
+
+    case FTL_QTYPE_POLLER:
+    {
+        volatile qstate_1ring_cb_t  *qstate_vaddr =
+                 (volatile qstate_1ring_cb_t *)qstate_access->va();
+        if (qstate_vaddr) {
+
+            /*
+             * Faster path with vaddr present
+             */
+            cndx0 = qstate_vaddr->c_ndx0 & qdepth_mask;
+            pndx0 = qstate_vaddr->p_ndx0 & qdepth_mask;
+        } else {
+            qstate_1ring_cb_t   qstate_1ring_cb;
+            qstate_access->small_read(offsetof(qstate_1ring_cb_t, p_ndx0),
+                                      (uint8_t *)&qstate_1ring_cb.p_ndx0,
+                                      sizeof(qstate_1ring_cb.p_ndx0) +
+                                      sizeof(qstate_1ring_cb.c_ndx0));
+            cndx0 = qstate_1ring_cb.c_ndx0 & qdepth_mask;
+            pndx0 = qstate_1ring_cb.p_ndx0 & qdepth_mask;
+        }
+        return (cndx0 == pndx0);
+    }
+
+    default:
+        break;
+    }
+    return true;
+}
+
 int64_t
 ftl_lif_queues_ctl_t::qid_qstate_addr(uint32_t qid)
 {
@@ -2513,13 +2623,14 @@ ftl_lif_queues_ctl_t::qid_qstate_addr(uint32_t qid)
 }
 
 const mem_access_t *
-ftl_lif_queues_ctl_t::qid_qstate_access(uint32_t qid)
+ftl_lif_queues_ctl_t::qid_qstate_access(uint32_t qid,
+                                        bool log_error)
 {
     const mem_access_t  *access;
 
     access = qid < (uint32_t)qstate_access.size() ?
              &qstate_access.at(qid) : nullptr;
-    if (!access) {
+    if (!access && log_error) {
         NIC_LOG_ERR("{}: Failed to get qstate access for qtype {} qid {}",
                     lif.LifNameGet(), qtype(), qid);
     }
