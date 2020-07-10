@@ -332,6 +332,10 @@ def Verify(tc):
         api.Logger.error("Failed in check_pds_agent_debug_data")
         result = api.types.status.FAILURE
 
+    # Todo : need to put BGP peer establishment check
+    api.Logger.info("Sleep for 30 secs for BGP session establishment")
+    misc_utils.Sleep(30)
+
     # verify connectivity
     if VerifyConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Connectivity Check after Upgrade .")
