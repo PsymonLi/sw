@@ -55,6 +55,6 @@ echo "Bringing up OOB/Inband/Internal-Management IFs ..."
 $NIC_DIR/tools/bringup_mgmt_ifs.sh &> /var/log/pensando/mgmt_if.log
 
 # start cronjobs
-nice crond -c /nic/conf/apollo/crontabs
+nice crond -c /nic/conf/artemis/crontabs
 
 echo "System initialization done ..."
