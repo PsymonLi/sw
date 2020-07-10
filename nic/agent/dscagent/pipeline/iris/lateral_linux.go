@@ -29,6 +29,7 @@ import (
 const (
 	refreshDuration      = time.Duration(time.Minute * 1)
 	arpResolutionTimeout = time.Duration(time.Second * 3)
+	staticRouteTimeout   = time.Duration(time.Second)
 )
 
 var lateralDB = map[string][]string{}
@@ -63,10 +64,6 @@ func CreateLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 	)
 
 	arpResolverKey = irisUtils.GenerateCompositeKey(destIP, gwIP)
-	ep, err = generateLateralEP(infraAPI, intfClient, epClient, vrfID, owner, destIP, gwIP)
-	if err != nil {
-		return err
-	}
 	collectorKnown, tunnelKnown := reconcileLateralObjects(infraAPI, owner, destIP, tunnelOp)
 	if collectorKnown {
 		var knownCollector *netproto.Endpoint
@@ -115,11 +112,17 @@ func CreateLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 
 	log.Infof("One or more lateral object creation needed. CreateEP: %v, CreateTunnel: %v", !collectorKnown, !tunnelKnown)
 
-	if !collectorKnown && ep != nil {
-		dmac := ep.Spec.MacAddress
-		log.Infof("Set the composite key name with dmac: %s", dmac)
-		objectName = fmt.Sprintf("_internal-%s", dmac)
-		collectorCompositeKey = fmt.Sprintf("collector|%s", objectName)
+	if !collectorKnown {
+		ep, err = generateLateralEP(infraAPI, intfClient, epClient, vrfID, owner, destIP, gwIP)
+		if err != nil {
+			return err
+		}
+		if ep != nil {
+			dmac := ep.Spec.MacAddress
+			log.Infof("Set the composite key name with dmac: %s", dmac)
+			objectName = fmt.Sprintf("_internal-%s", dmac)
+			collectorCompositeKey = fmt.Sprintf("collector|%s", objectName)
+		}
 	}
 
 	log.Infof("Lateral object DB pre refcount increment: %v", lateralDB)
@@ -310,8 +313,8 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 	if internalEP && len(lateralDB[arpResolverKey]) == 0 {
 		if err := deleteOrUpdateLateralEP(infraAPI, intfClient, epClient, vrfID, owner, destIP, gwIP); err != nil {
 			log.Errorf("Failed to delete or update lateral endpoint IP: %s. Err: %v", destIP, err)
-			return err
 		}
+		// Cancel ARP loop and cleanup object state even if HAL delete returns error
 		// Cancel ARP loop if we are removing lateral objects
 		cancel, ok := doneCache[arpResolverKey]
 		if ok {
@@ -320,7 +323,7 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 			cleanup(destIP, gwIP)
 		}
 		delete(lateralDB, arpResolverKey)
-		return nil
+		return err
 	}
 
 	// if not internal ep and created by venice
@@ -626,12 +629,12 @@ func deleteOrUpdateLateralEP(infraAPI types.InfraAPI, intfClient halapi.Interfac
 		// Check for pending dependencies
 		if len(lateralDB[collectorCompositeKey]) == 0 {
 			log.Infof("Deleting lateral endpoint %v", lateralEP.ObjectMeta.Name)
+			delete(lateralDB, collectorCompositeKey)
 			err := deleteEndpointHandler(infraAPI, epClient, intfClient, *lateralEP, vrfID, types.UntaggedCollVLAN)
 			if err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorEPDeleteFailure, "MirrorSession: %s |  Err: %v", owner, err))
 				return errors.Wrapf(types.ErrCollectorEPDeleteFailure, "MirrorSession: %s |  Err: %v", owner, err)
 			}
-			delete(lateralDB, collectorCompositeKey)
 		} else {
 			epMac = lateralEP.Spec.MacAddress
 			ignoreArpKey = irisUtils.GenerateCompositeKey(destIP, gwIP)
@@ -840,16 +843,36 @@ func generateLateralEP(infraAPI types.InfraAPI, intfClient halapi.InterfaceClien
 		refreshCtx, done := context.WithCancel(context.Background())
 		doneCache[arpResolverKey] = done
 
+		staticRoute := func(arpResolverKey, destIP, gwIP string, refreshCtx context.Context) {
+			ticker := time.NewTicker(staticRouteTimeout)
+			for {
+				select {
+				case <-ticker.C:
+					// Attempt installing route only if the ARP refresh loop is active
+					_, ok := doneCache[arpResolverKey]
+					if ok {
+						_, dest, _ := net.ParseCIDR(destIP + "/32")
+						route := &netlink.Route{
+							Dst: dest,
+							Gw:  net.ParseIP(gwIP),
+						}
+						if err := netlink.RouteAdd(route); err != nil {
+							log.Errorf("Failed to configure static route %v. Err: %v", route, err)
+							continue
+						}
+						log.Infof("Installed route for %v via %s", dest, gwIP)
+					} else {
+						log.Infof("ARP refresh loop cancelled, cancelling static route installation loop for IP: %v gw: %v", destIP, gwIP)
+					}
+				case <-refreshCtx.Done():
+					log.Infof("Cancelling ARP static route installation loop for IP: %v gw: %v", destIP, gwIP)
+				}
+				return
+			}
+		}
+
 		if gwIP != "" {
-			_, dest, _ := net.ParseCIDR(destIP + "/32")
-			log.Infof("Installing route for %v via %s", dest, gwIP)
-			route := &netlink.Route{
-				Dst: dest,
-				Gw:  net.ParseIP(gwIP),
-			}
-			if err := netlink.RouteAdd(route); err != nil {
-				log.Errorf("Failed to configure static route %v. Err: %v", route, err)
-			}
+			go staticRoute(arpResolverKey, destIP, gwIP, refreshCtx)
 		}
 		go startRefreshLoop(infraAPI, intfClient, epClient, vrfID, owner, refreshCtx, destIP, gwIP)
 		// Give the routine a chance to run

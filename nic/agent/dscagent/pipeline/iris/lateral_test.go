@@ -169,8 +169,8 @@ func TestMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	if oldNwCount != newNwCount {
 		t.Fatalf("Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
 	}
-	if oldEpCount+1 != newEpCount {
-		t.Fatalf("Endpoint count must increase by 1. Before: %v | After: %v", oldEpCount, newEpCount)
+	if oldEpCount != newEpCount {
+		t.Fatalf("Endpoint count must remain unchanged. Before: %v | After: %v", oldEpCount, newEpCount)
 	}
 	if oldTunCount+1 != newTunCount {
 		t.Fatalf("Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
@@ -309,7 +309,7 @@ func TestNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	newTunCount := len(listTun)
 
 	Assert(t, oldNwCount == newNwCount, "Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldEpCount+1 == newEpCount, "Endpoint count must increase by 1. Before: %v | After: %v", oldNwCount, newNwCount)
+	Assert(t, oldEpCount == newEpCount, "Endpoint count must remain unchanged. Before: %v | After: %v", oldNwCount, newNwCount)
 	Assert(t, oldTunCount == newTunCount, "Tunnel count must remain unchanged. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
@@ -754,8 +754,8 @@ func TestTwoMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	listTun, _ = infraAPI.List("Tunnel")
 	newTunCount := len(listTun)
 
-	Assert(t, oldNwCount == newNwCount, "Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldEpCount+1 == newEpCount, "Endpoint count must increase by 1. Before: %v | After: %v", oldEpCount, newEpCount)
+	Assert(t, oldNwCount == newNwCount, "Network count must remain unchanged. Before: %v | After: %v", oldNwCount, newNwCount)
+	Assert(t, oldEpCount == newEpCount, "Endpoint count must remain unchanged. Before: %v | After: %v", oldEpCount, newEpCount)
 	Assert(t, oldTunCount+1 == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
@@ -937,8 +937,8 @@ func TestTwoNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	listTun, _ = infraAPI.List("Tunnel")
 	newTunCount := len(listTun)
 
-	Assert(t, oldNwCount == newNwCount, "Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldEpCount+1 == newEpCount, "Endpoint count must increase by 1. Before: %v | After: %v", oldEpCount, newEpCount)
+	Assert(t, oldNwCount == newNwCount, "Network count must remain unchanged. Before: %v | After: %v", oldNwCount, newNwCount)
+	Assert(t, oldEpCount == newEpCount, "Endpoint count must remain unchanged. Before: %v | After: %v", oldEpCount, newEpCount)
 	Assert(t, oldTunCount == newTunCount, "Tunnel count must remain unchanged. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
@@ -1717,8 +1717,8 @@ func TestCreateDeleteLateralObjVeniceKnownCollectorWithTunnel(t *testing.T) {
 	listTun, _ = infraAPI.List("Tunnel")
 	newTunCount := len(listTun)
 
-	Assert(t, oldNwCount == newNwCount, "Network count must remain unchaged. Before: %v | After: %v", oldNwCount, newNwCount)
-	Assert(t, oldEpCount+1 == newEpCount, "Endpoint count must increase by 1. Before: %v | After: %v", oldEpCount, newEpCount)
+	Assert(t, oldNwCount == newNwCount, "Network count must remain unchanged. Before: %v | After: %v", oldNwCount, newNwCount)
+	Assert(t, oldEpCount == newEpCount, "Endpoint count must remain unchanged. Before: %v | After: %v", oldEpCount, newEpCount)
 	Assert(t, oldTunCount+1 == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
