@@ -12,7 +12,7 @@
 #include "ionic_regs.h"
 
 #define IONIC_MAX_TX_DESC		8192
-#define IONIC_MAX_RX_DESC		16384
+#define IONIC_MAX_RX_DESC		8192
 #define IONIC_MIN_TXRX_DESC		16
 #define IONIC_DEF_TXRX_DESC		4096
 #define IONIC_LIFS_MAX			1024

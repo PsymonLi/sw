@@ -105,8 +105,10 @@ static void ionic_link_status_check(struct ionic_lif *lif)
 	unsigned long i;
 	bool link_up;
 
-	if (!test_bit(IONIC_LIF_F_LINK_CHECK_REQUESTED, lif->state) ||
-	    test_bit(IONIC_LIF_F_QUEUE_RESET, lif->state))
+	/* If we're here but the bit is not set, then another thread
+	 * got here before we did and this check is unnecessary.
+	 */
+	if (!test_bit(IONIC_LIF_F_LINK_CHECK_REQUESTED, lif->state))
 		return;
 
 	link_status = le16_to_cpu(lif->info->status.link_status);
@@ -114,11 +116,13 @@ static void ionic_link_status_check(struct ionic_lif *lif)
 
 	if (link_up) {
 		if (lif->netdev->flags & IFF_UP && netif_running(netdev)) {
+			mutex_lock(&lif->queue_lock);
 			ionic_start_queues(lif);
 
 			for_each_eth_lif(lif->ionic, i, slif)
 				if (!is_master_lif(slif))
 					ionic_start_queues(slif);
+			mutex_unlock(&lif->queue_lock);
 		}
 
 		if (!netif_carrier_ok(netdev)) {
@@ -141,11 +145,13 @@ static void ionic_link_status_check(struct ionic_lif *lif)
 		}
 
 		if (lif->netdev->flags & IFF_UP && netif_running(netdev)) {
+			mutex_lock(&lif->queue_lock);
 			ionic_stop_queues(lif);
 
 			for_each_eth_lif(lif->ionic, i, slif)
 				if (!is_master_lif(slif))
 					ionic_stop_queues(slif);
+			mutex_unlock(&lif->queue_lock);
 		}
 	}
 
@@ -1718,7 +1724,7 @@ static void ionic_txrx_deinit(struct ionic_lif *lif)
 {
 	unsigned int i;
 
-	if (lif->txqcqs) {
+	if (lif->txqcqs && lif->txqcqs[0].qcq) {
 		for (i = 0; i < lif->nxqs; i++) {
 			ionic_lif_qcq_deinit(lif, lif->txqcqs[i].qcq);
 			ionic_tx_flush(&lif->txqcqs[i].qcq->cq);
@@ -1726,7 +1732,7 @@ static void ionic_txrx_deinit(struct ionic_lif *lif)
 		}
 	}
 
-	if (lif->rxqcqs) {
+	if (lif->rxqcqs && lif->rxqcqs[0].qcq) {
 		for (i = 0; i < lif->nxqs; i++) {
 			ionic_lif_qcq_deinit(lif, lif->rxqcqs[i].qcq);
 			ionic_rx_flush(&lif->rxqcqs[i].qcq->cq);
@@ -2623,30 +2629,23 @@ int ionic_reset_queues(struct ionic_lif *lif, ionic_reset_cb cb, void *arg)
 	bool running;
 	int err = 0;
 
-	/* Put off the next watchdog timeout */
-#ifdef HAVE_NETIF_TRANS_UPDATE
-	netif_trans_update(lif->netdev);
-#else
-	lif->netdev->trans_start = jiffies;
-#endif
-	err = ionic_wait_for_bit(lif, IONIC_LIF_F_QUEUE_RESET);
-	if (err) {
-		netdev_err(lif->netdev, "%s: timeout waiting for LIF_QUEUE_RESET - err %d\n",
-			   __func__, err);
-		return -EBUSY;
-	}
+	mutex_lock(&lif->queue_lock);
 
 	running = netif_running(lif->netdev);
-	if (running)
+	if (running) {
+		netif_device_detach(lif->netdev);
 		err = ionic_stop(lif->netdev);
+	}
 
 	if (cb)
 		cb(lif, arg);
 
-	if (!err && running)
-		ionic_open(lif->netdev);
+	if (!err && running) {
+		err = ionic_open(lif->netdev);
+		netif_device_attach(lif->netdev);
+	}
 
-	clear_bit(IONIC_LIF_F_QUEUE_RESET, lif->state);
+	mutex_unlock(&lif->queue_lock);
 
 	return err;
 }
@@ -2995,12 +2994,11 @@ static void ionic_lif_deinit(struct ionic_lif *lif)
 		cancel_work_sync(&lif->deferred.work);
 		cancel_work_sync(&lif->tx_timeout_work);
 		ionic_rx_filters_deinit(lif);
+		if (is_master_lif(lif))
+			ionic_lif_rss_deinit(lif);
 	}
 
 	if (is_master_lif(lif)) {
-		if (lif->netdev->features & NETIF_F_RXHASH)
-			ionic_lif_rss_deinit(lif);
-
 		ionic_eqs_deinit(lif->ionic);
 		ionic_eqs_free(lif->ionic);
 	}
@@ -3009,6 +3007,8 @@ static void ionic_lif_deinit(struct ionic_lif *lif)
 	ionic_lif_qcq_deinit(lif, lif->notifyqcq);
 	ionic_lif_qcq_deinit(lif, lif->adminqcq);
 
+	mutex_destroy(&lif->dbid_inuse_lock);
+	mutex_destroy(&lif->queue_lock);
 	ionic_lif_reset(lif);
 }
 
@@ -3186,6 +3186,7 @@ static int ionic_lif_init(struct ionic_lif *lif)
 		return err;
 
 	lif->hw_index = le16_to_cpu(comp.hw_index);
+	mutex_init(&lif->queue_lock);
 
 	/* now that we have the hw_index we can figure out our doorbell page */
 	mutex_init(&lif->dbid_inuse_lock);

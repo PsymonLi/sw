@@ -271,12 +271,6 @@ static void ionic_rx_clean(struct ionic_queue *q,
 		return;
 	}
 
-	if (unlikely(test_bit(IONIC_LIF_F_QUEUE_RESET, q->lif->state))) {
-		/* no packet processing while resetting */
-		stats->dropped++;
-		return;
-	}
-
 	if (le16_to_cpu(comp->len) > netdev->mtu + ETH_HLEN) {
 		stats->dropped++;
 		net_warn_ratelimited("%s: RX PKT TOO LARGE! comp->len %d\n",
