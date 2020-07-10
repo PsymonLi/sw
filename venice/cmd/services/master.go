@@ -235,7 +235,16 @@ func (d *diagServiceObserver) OnNotifyK8sPodEvent(e types.K8sPodEvent) error {
 		log.Debugf("pod: %v, node: %v", e.Pod.Name, e.Pod.Spec.NodeName)
 		log.Debugf("pod: %v, HostIP from status : %v", e.Pod.Name, e.Pod.Status.HostIP)
 	}
-	switch e.Type {
+	eventType := e.Type
+	if e.Pod.DeletionTimestamp != nil {
+		// this is set for deployment pods when there is a network partition, that is how kubectl determines pod's Terminating status
+		// refer https://github.com/kubernetes/kubernetes/issues/22839
+		// all conditions are true except for ready in this case
+		// delete module for this pod
+		eventType = types.K8sPodDeleted
+		log.Infof("pod: %v, node: %v, host IP: %v, marked for deletion", e.Pod.Name, e.Pod.Spec.NodeName, e.Pod.Status.HostIP)
+	}
+	switch eventType {
 	case types.K8sPodAdded:
 		for _, diagmod := range diagModules {
 			d.moduleUpdater.Enqueue(diagmod, module.Create)
