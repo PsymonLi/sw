@@ -205,6 +205,7 @@ func (sw *nexus3kRest) UnsetTrunkVlanRange(port string, vlanRange string) error 
 func (sw *nexus3kRest) SetTrunkMode(port string) error {
 	cmds := []string{
 		"interface " + port,
+		"switchport",
 		"switchport mode trunk",
 	}
 	return sw.runConfigCommands(cmds)

@@ -1465,7 +1465,7 @@ class PenOrchestrator:
         if self.__naples:
             for naples_inst in self.__naples:
                 try: 
-                    naples_inst.Connect(bringup_oob=(not GlobalOptions.auto_discover)) # Make sure it is connected
+                    naples_inst.Connect(bringup_oob=(naples_inst.IsOOBAvailable() and (not GlobalOptions.auto_discover))) # Make sure it is connected
                     naples_inst.SendlineExpect("/nic/tools/fwupdate -l", "#", trySync=True)
                     naples_inst.SendlineExpect("ifconfig -a", "#", trySync=True)
                     naples_inst.Close()
@@ -1706,6 +1706,8 @@ class PenOrchestrator:
                     __fast_update()
                     print ("Fast update successfull")
                     return
+                else:
+                    print ("Skipping Fast update")
             except:
                 # Because ForceSwitchToGoldFW is time-sensetive operation (sending Ctrl-c), allowing both IpmiReset
                 self.__ipmi_reboot_allowed = True
@@ -1793,7 +1795,7 @@ class PenOrchestrator:
 
         #Naples would have rebooted to, login again.
         for naples_inst in self.__naples:
-            naples_inst.Connect(bringup_oob=(not GlobalOptions.auto_discover))
+            naples_inst.Connect(bringup_oob=(naples_inst.IsOOBAvailable() and (not GlobalOptions.auto_discover)))
 
         # Common to Case 2 and Case 1.
         # Initialize the Node, this is needed in all cases.

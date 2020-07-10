@@ -864,6 +864,7 @@ func (sw *nexus3k) UnsetTrunkVlanRange(port string, vlanRange string) error {
 
 func (sw *nexus3k) SetTrunkMode(port string) error {
 	cmds := []string{
+		"switchport",
 		"switchport mode trunk",
 	}
 

@@ -178,8 +178,21 @@ func (sm *Statemgr) dscDecommissioned(dsc *cluster.DistributedServiceCard) bool 
 }
 
 func (sm *Statemgr) dscRecommissioned(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) bool {
-	return dsc.Spec.MgmtMode != strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String()) &&
-		ndsc.Spec.MgmtMode == strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String())
+	if dsc.Spec.MgmtMode != strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String()) &&
+		ndsc.Spec.MgmtMode == strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String()) {
+		//Host Mode -> network mode and DSC admitted
+		if strings.ToLower(ndsc.Status.AdmissionPhase) == strings.ToLower(cluster.DistributedServiceCardStatus_ADMITTED.String()) {
+			return true
+		}
+	}
+	if (dsc.Spec.MgmtMode == ndsc.Spec.MgmtMode) && (ndsc.Spec.MgmtMode == strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String())) {
+		//Already in network mode, but now from pending -> admitted
+		if strings.ToLower(dsc.Status.AdmissionPhase) == strings.ToLower(cluster.DistributedServiceCardStatus_PENDING.String()) &&
+			strings.ToLower(ndsc.Status.AdmissionPhase) == strings.ToLower(cluster.DistributedServiceCardStatus_ADMITTED.String()) {
+			return true
+		}
+	}
+	return false
 }
 
 func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard, sns *DistributedServiceCardState, sendSgPolicies bool) {
@@ -237,7 +250,7 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 			}
 		}
 	} else {
-		if nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_ADMITTED.String() &&
+		if (nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_ADMITTED.String()) &&
 			!sm.dscDecommissioned(nsnic) {
 			sns.decommissioned = false
 			_, err = sm.AddDsc(smartNic)
