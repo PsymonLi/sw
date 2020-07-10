@@ -33,6 +33,7 @@
         "command": "/nic/tools/start-vpp.sh",
         "dependencies": [],
         "flags": ["save_stdout_on_crash"],
+        "memory-limit": 512.0,
         "timeout": 0.0,
         "cpu-affinity": "0xC"
     },
