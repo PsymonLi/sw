@@ -247,6 +247,10 @@ func (jq *jobQueue) updateArchiveRequestStatus(req *monitoring.ArchiveRequest) (
 
 func shouldProcessJob(j archive.Job) bool {
 	req := j.GetArchiveRequest()
+	return shouldProcessRequest(req)
+}
+
+func shouldProcessRequest(req *monitoring.ArchiveRequest) bool {
 	switch req.Status.Status {
 	case monitoring.ArchiveRequestStatus_Scheduled.String(), monitoring.ArchiveRequestStatus_Running.String(), "":
 		return true

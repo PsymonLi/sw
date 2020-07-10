@@ -120,6 +120,10 @@ func (s *serviceImpl) processEventCb(evt *kvstore.WatchEvent) error {
 			s.logger.ErrorLog("method", "processEventCb", "msg", fmt.Sprintf("watcher found object of invalid type: %+v", evt.Object))
 			return errors.New("watcher found object of invalid type")
 		}
+		if !shouldProcessRequest(req) {
+			s.logger.InfoLog("method", "processEventCb", "msg", fmt.Sprintf("archive request [%s|%s] for log type [%s] has already been processed, status [%s]", req.Tenant, req.Name, req.Spec.Type, req.Status.Status))
+			return nil
+		}
 		exporter, err := s.pickExporter(req)
 		if err != nil {
 			s.logger.ErrorLog("method", "processEventCb", "msg", "unable to create exporter", "error", err)
