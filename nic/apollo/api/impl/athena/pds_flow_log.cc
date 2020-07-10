@@ -20,6 +20,9 @@
 #include "nic/apollo/p4/athena_p4-16/athena_defines.h"
 #include "ftl_dev_impl.hpp"
 
+#define NSECINMSEC 1000000
+#define MSECINSEC 1000
+
 using namespace sdk;
 
 extern "C" {
@@ -98,8 +101,8 @@ static void
 pds_flow_log_hw_data_to_info (flow_log_0_flow_log_entry_t *entry,
                               pds_flow_log_entry_info_t   *info)
 {
-    uint64_t cur_mpu_ts = 0;
-    time_t    cur_time = { 0 };
+    uint64_t           cur_mpu_ts = 0, cur_time_ms = 0;
+    struct timespec    cur_time = { 0 };
 
     if (entry == NULL || info == NULL) {
         return;
@@ -128,18 +131,15 @@ pds_flow_log_hw_data_to_info (flow_log_0_flow_log_entry_t *entry,
 
 
     cur_mpu_ts = ftl_dev_impl::mpu_timestamp_v2(); 
-    PDS_TRACE_VERBOSE("%s: cur_mpu_ts ix %ld, last ts %d, first ts %d", 
-                    __FUNCTION__, cur_mpu_ts, entry->get_last_timestamp(), entry->get_start_timestamp());
-    time(&cur_time);
-    info->data.last_time = cur_time - (ftl_dev_if::flow_log_timestamp_diff( 
-                                    ftl_dev_if::flow_log_timestamp(cur_mpu_ts), 
-                                    entry->get_last_timestamp()))/100;
-    info->data.start_time = cur_time - (ftl_dev_if::flow_log_timestamp_diff( 
-                                    ftl_dev_if::flow_log_timestamp(cur_mpu_ts), 
-                                    entry->get_start_timestamp()))/100;
-    PDS_TRACE_VERBOSE("%s: cur time is %s \n", __FUNCTION__, asctime(localtime(&cur_time)));
-    PDS_TRACE_VERBOSE("%s: start time is %s \n", __FUNCTION__, asctime(localtime(&info->data.start_time)));
-    PDS_TRACE_VERBOSE("%s: last time is %s \n", __FUNCTION__, asctime(localtime(&info->data.last_time)));
+    clock_gettime(CLOCK_REALTIME, &cur_time);
+    cur_time_ms = (cur_time.tv_sec * MSECINSEC + cur_time.tv_nsec/NSECINMSEC);
+
+    info->data.last_time = cur_time_ms - 10 *(ftl_dev_if::flow_log_timestamp_diff( 
+                                ftl_dev_if::flow_log_timestamp(cur_mpu_ts), 
+                                entry->get_last_timestamp()));
+    info->data.start_time = cur_time_ms - 10 *(ftl_dev_if::flow_log_timestamp_diff( 
+                                ftl_dev_if::flow_log_timestamp(cur_mpu_ts), 
+                                entry->get_start_timestamp()));
     info->data.security_state = entry->get_security_state();
 }
 

@@ -263,6 +263,8 @@ control key_init(inout cap_phv_intr_global_h intr_global,
     hdr.p4i_to_p4e_header.packet_len = (bit<16>)intr_p4.frame_size - (bit<16>)metadata.offset.l2_1;
     if (intr_global.tm_oq != TM_P4_RECIRC_QUEUE) {
         intr_global.tm_iq = intr_global.tm_oq;
+     } else {
+       intr_global.tm_oq = intr_global.tm_iq;
     }
     
   }
