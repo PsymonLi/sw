@@ -128,6 +128,7 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
     pds_flow_rewrite_flags_t *rewrite_flags;
     pds_flow_hw_ctx_t *ctx;
     bool ses_track_en;
+    u8 drop;
 
     ctx = pds_flow_get_session(session_id);
     if (PREDICT_FALSE(!ctx)) {
@@ -161,22 +162,26 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
                                      ctx->packet_type);
     if (PREDICT_FALSE(pds_flow_packet_l2l(ctx->packet_type))) {
         session_tx_rewrite_flags = rewrite_flags->tx_rewrite |
-            (pds_is_flow_l2l_tx_vlan(b) ?
+                (pds_is_flow_l2l_tx_vlan(b) ?
                 (P4_REWRITE_VLAN_ENCAP << P4_REWRITE_VLAN_START) :
                 (P4_REWRITE_VLAN_DECAP << P4_REWRITE_VLAN_START));
         session_rx_rewrite_flags = rewrite_flags->rx_rewrite |
-            (pds_is_flow_l2l_rx_vlan(b) ?
+                (pds_is_flow_l2l_rx_vlan(b) ?
                 (P4_REWRITE_VLAN_ENCAP << P4_REWRITE_VLAN_START) :
                 (P4_REWRITE_VLAN_DECAP << P4_REWRITE_VLAN_START));
+        // for l2l untill we know result of both policies, keep
+        // session in drop state.
+        drop = pds_is_rx_pkt(b) ? ctx->drop : 1;
     } else {
         session_tx_rewrite_flags = rewrite_flags->tx_rewrite;
         session_rx_rewrite_flags = rewrite_flags->rx_rewrite |
-            (pds_is_flow_rx_vlan(b) ?
+                (pds_is_flow_rx_vlan(b) ?
                 (P4_REWRITE_VLAN_ENCAP << P4_REWRITE_VLAN_START) : 0);
+        drop = ctx->drop;
     }
     ses_track_en = fm->con_track_en && (ctx->proto == PDS_FLOW_PROTO_TCP);
     actiondata.session_tracking_en = ses_track_en;
-    actiondata.drop = ctx->drop;
+    actiondata.drop = ctx->sess_drop = drop;
     actiondata.qid_en = true;
     // qid starts from 0 and worker thread id from 1
     actiondata.qid = (thread_id - 1);

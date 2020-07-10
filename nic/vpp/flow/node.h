@@ -271,9 +271,13 @@ typedef CLIB_PACKED(struct pds_flow_hw_ctx_s {
     u8 nat : 1;
     u8 padding_2;
     u16 drop : 1;
+    // this will hold whats programmed in session table as in l2l cases drop bit
+    // would hold result of first policy evaluation only.
+    // in non l2l cases, both drop and sess_drop will be same.
+    u16 sess_drop : 1;
     u16 src_vnic_id : 10;
     u16 thread_id : 2;
-    u16 reserved_1 : 3;
+    u16 reserved_1 : 2;
 
     u32 padding_3;
 }) pds_flow_hw_ctx_t;

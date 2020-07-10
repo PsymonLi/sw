@@ -448,7 +448,7 @@ pds_each_flow_fixup (u32 event_id, u32 addr,
         usleep(1);
         if (0 == --max_retry) {
             // this flow is not ready for fixup yet, so return
-            return ret;
+            goto done;
         }
     }
     pkt_type = session->packet_type;
