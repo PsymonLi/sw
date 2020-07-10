@@ -135,17 +135,59 @@ var typesMapRouting = map[string]*api.Struct{
 		},
 
 		CLITags: map[string]api.CLIInfo{
-			"api-version":      api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
-			"generation-id":    api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
-			"kind":             api.CLIInfo{Path: "Kind", Skip: false, Insert: "", Help: ""},
-			"labels":           api.CLIInfo{Path: "Labels", Skip: false, Insert: "", Help: ""},
-			"name":             api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
-			"namespace":        api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
-			"resource-version": api.CLIInfo{Path: "ResourceVersion", Skip: false, Insert: "", Help: ""},
-			"self-link":        api.CLIInfo{Path: "SelfLink", Skip: false, Insert: "", Help: ""},
-			"status":           api.CLIInfo{Path: "Status.Status", Skip: false, Insert: "", Help: ""},
-			"tenant":           api.CLIInfo{Path: "Tenant", Skip: false, Insert: "", Help: ""},
-			"uuid":             api.CLIInfo{Path: "UUID", Skip: false, Insert: "", Help: ""},
+			"api-version":        api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
+			"capsneg":            api.CLIInfo{Path: "Status.CapsNeg", Skip: false, Insert: "", Help: ""},
+			"capsrcvd":           api.CLIInfo{Path: "Status.CapsRcvd", Skip: false, Insert: "", Help: ""},
+			"capssent":           api.CLIInfo{Path: "Status.CapsSent", Skip: false, Insert: "", Help: ""},
+			"connectretrycount":  api.CLIInfo{Path: "Status.ConnectRetryCount", Skip: false, Insert: "", Help: ""},
+			"fsmestablishedtime": api.CLIInfo{Path: "Status.FsmEstablishedTime", Skip: false, Insert: "", Help: ""},
+			"fsmesttransitions":  api.CLIInfo{Path: "Status.FsmEstTransitions", Skip: false, Insert: "", Help: ""},
+			"generation-id":      api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
+			"holdtime":           api.CLIInfo{Path: "Status.HoldTime", Skip: false, Insert: "", Help: ""},
+			"inkeepalives":       api.CLIInfo{Path: "Status.InKeepalives", Skip: false, Insert: "", Help: ""},
+			"innotifications":    api.CLIInfo{Path: "Status.InNotifications", Skip: false, Insert: "", Help: ""},
+			"inopens":            api.CLIInfo{Path: "Status.InOpens", Skip: false, Insert: "", Help: ""},
+			"inprfxes":           api.CLIInfo{Path: "Status.InPrfxes", Skip: false, Insert: "", Help: ""},
+			"inprfxesexpwdr":     api.CLIInfo{Path: "Status.InPrfxesExpWdr", Skip: false, Insert: "", Help: ""},
+			"inprfxesimpwdr":     api.CLIInfo{Path: "Status.InPrfxesImpWdr", Skip: false, Insert: "", Help: ""},
+			"inrefreshes":        api.CLIInfo{Path: "Status.InRefreshes", Skip: false, Insert: "", Help: ""},
+			"intotalmessages":    api.CLIInfo{Path: "Status.InTotalMessages", Skip: false, Insert: "", Help: ""},
+			"inupdates":          api.CLIInfo{Path: "Status.InUpdates", Skip: false, Insert: "", Help: ""},
+			"inupdateselpstime":  api.CLIInfo{Path: "Status.InUpdatesElpsTime", Skip: false, Insert: "", Help: ""},
+			"keepalive":          api.CLIInfo{Path: "Status.KeepAlive", Skip: false, Insert: "", Help: ""},
+			"kind":               api.CLIInfo{Path: "Kind", Skip: false, Insert: "", Help: ""},
+			"labels":             api.CLIInfo{Path: "Labels", Skip: false, Insert: "", Help: ""},
+			"lasterrorrcvd":      api.CLIInfo{Path: "Status.LastErrorRcvd", Skip: false, Insert: "", Help: ""},
+			"lasterrorsent":      api.CLIInfo{Path: "Status.LastErrorSent", Skip: false, Insert: "", Help: ""},
+			"localaddr":          api.CLIInfo{Path: "Status.LocalAddr", Skip: false, Insert: "", Help: ""},
+			"name":               api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
+			"namespace":          api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
+			"orfentrycount":      api.CLIInfo{Path: "Status.OrfEntryCount", Skip: false, Insert: "", Help: ""},
+			"outkeepalives":      api.CLIInfo{Path: "Status.OutKeepalives", Skip: false, Insert: "", Help: ""},
+			"outnotifications":   api.CLIInfo{Path: "Status.OutNotifications", Skip: false, Insert: "", Help: ""},
+			"outopens":           api.CLIInfo{Path: "Status.OutOpens", Skip: false, Insert: "", Help: ""},
+			"outprfxes":          api.CLIInfo{Path: "Status.OutPrfxes", Skip: false, Insert: "", Help: ""},
+			"outprfxesdenied":    api.CLIInfo{Path: "Status.OutPrfxesDenied", Skip: false, Insert: "", Help: ""},
+			"outprfxesexpwdr":    api.CLIInfo{Path: "Status.OutPrfxesExpWdr", Skip: false, Insert: "", Help: ""},
+			"outprfxesimpwdr":    api.CLIInfo{Path: "Status.OutPrfxesImpWdr", Skip: false, Insert: "", Help: ""},
+			"outrefreshes":       api.CLIInfo{Path: "Status.OutRefreshes", Skip: false, Insert: "", Help: ""},
+			"outtotalmessages":   api.CLIInfo{Path: "Status.OutTotalMessages", Skip: false, Insert: "", Help: ""},
+			"outupdateelpstime":  api.CLIInfo{Path: "Status.OutUpdateElpsTime", Skip: false, Insert: "", Help: ""},
+			"outupdates":         api.CLIInfo{Path: "Status.OutUpdates", Skip: false, Insert: "", Help: ""},
+			"peergr":             api.CLIInfo{Path: "Status.Peergr", Skip: false, Insert: "", Help: ""},
+			"peerindex":          api.CLIInfo{Path: "Status.PeerIndex", Skip: false, Insert: "", Help: ""},
+			"prev-status":        api.CLIInfo{Path: "Status.PrevStatus", Skip: false, Insert: "", Help: ""},
+			"rcvdmsgelpstime":    api.CLIInfo{Path: "Status.RcvdMsgElpsTime", Skip: false, Insert: "", Help: ""},
+			"receivedholdtime":   api.CLIInfo{Path: "Status.ReceivedHoldTime", Skip: false, Insert: "", Help: ""},
+			"resource-version":   api.CLIInfo{Path: "ResourceVersion", Skip: false, Insert: "", Help: ""},
+			"routerefrrcvd":      api.CLIInfo{Path: "Status.RouteRefrRcvd", Skip: false, Insert: "", Help: ""},
+			"routerefrsent":      api.CLIInfo{Path: "Status.RouteRefrSent", Skip: false, Insert: "", Help: ""},
+			"self-link":          api.CLIInfo{Path: "SelfLink", Skip: false, Insert: "", Help: ""},
+			"sellocaladdrtype":   api.CLIInfo{Path: "Status.SelLocalAddrType", Skip: false, Insert: "", Help: ""},
+			"stalepathtime":      api.CLIInfo{Path: "Status.StalePathTime", Skip: false, Insert: "", Help: ""},
+			"status":             api.CLIInfo{Path: "Status.Status", Skip: false, Insert: "", Help: ""},
+			"tenant":             api.CLIInfo{Path: "Tenant", Skip: false, Insert: "", Help: ""},
+			"uuid":               api.CLIInfo{Path: "UUID", Skip: false, Insert: "", Help: ""},
 		},
 	},
 	"routing.NeighborFilter": &api.Struct{
@@ -206,6 +248,90 @@ var typesMapRouting = map[string]*api.Struct{
 		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(NeighborStatus{}) },
 		Fields: map[string]api.Field{
 			"Status": api.Field{Name: "Status", CLITag: api.CLIInfo{ID: "status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "status", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"PrevStatus": api.Field{Name: "PrevStatus", CLITag: api.CLIInfo{ID: "prev-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "prev-status", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"LastErrorRcvd": api.Field{Name: "LastErrorRcvd", CLITag: api.CLIInfo{ID: "lasterrorrcvd", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "lasterrorrcvd", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"LastErrorSent": api.Field{Name: "LastErrorSent", CLITag: api.CLIInfo{ID: "lasterrorsent", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "lasterrorsent", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"LocalAddr": api.Field{Name: "LocalAddr", CLITag: api.CLIInfo{ID: "localaddr", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "localaddr", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"HoldTime": api.Field{Name: "HoldTime", CLITag: api.CLIInfo{ID: "holdtime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "holdtime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"KeepAlive": api.Field{Name: "KeepAlive", CLITag: api.CLIInfo{ID: "keepalive", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "keepalive", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"CapsSent": api.Field{Name: "CapsSent", CLITag: api.CLIInfo{ID: "capssent", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "capssent", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"CapsRcvd": api.Field{Name: "CapsRcvd", CLITag: api.CLIInfo{ID: "capsrcvd", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "capsrcvd", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"CapsNeg": api.Field{Name: "CapsNeg", CLITag: api.CLIInfo{ID: "capsneg", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "capsneg", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"SelLocalAddrType": api.Field{Name: "SelLocalAddrType", CLITag: api.CLIInfo{ID: "sellocaladdrtype", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "sellocaladdrtype", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"InNotifications": api.Field{Name: "InNotifications", CLITag: api.CLIInfo{ID: "innotifications", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "innotifications", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutNotifications": api.Field{Name: "OutNotifications", CLITag: api.CLIInfo{ID: "outnotifications", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outnotifications", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"InUpdates": api.Field{Name: "InUpdates", CLITag: api.CLIInfo{ID: "inupdates", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "inupdates", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutUpdates": api.Field{Name: "OutUpdates", CLITag: api.CLIInfo{ID: "outupdates", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outupdates", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"InKeepalives": api.Field{Name: "InKeepalives", CLITag: api.CLIInfo{ID: "inkeepalives", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "inkeepalives", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutKeepalives": api.Field{Name: "OutKeepalives", CLITag: api.CLIInfo{ID: "outkeepalives", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outkeepalives", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"InRefreshes": api.Field{Name: "InRefreshes", CLITag: api.CLIInfo{ID: "inrefreshes", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "inrefreshes", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutRefreshes": api.Field{Name: "OutRefreshes", CLITag: api.CLIInfo{ID: "outrefreshes", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outrefreshes", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"InTotalMessages": api.Field{Name: "InTotalMessages", CLITag: api.CLIInfo{ID: "intotalmessages", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "intotalmessages", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutTotalMessages": api.Field{Name: "OutTotalMessages", CLITag: api.CLIInfo{ID: "outtotalmessages", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outtotalmessages", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"FsmEstTransitions": api.Field{Name: "FsmEstTransitions", CLITag: api.CLIInfo{ID: "fsmesttransitions", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "fsmesttransitions", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"ConnectRetryCount": api.Field{Name: "ConnectRetryCount", CLITag: api.CLIInfo{ID: "connectretrycount", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "connectretrycount", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"Peergr": api.Field{Name: "Peergr", CLITag: api.CLIInfo{ID: "peergr", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "peergr", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"StalePathTime": api.Field{Name: "StalePathTime", CLITag: api.CLIInfo{ID: "stalepathtime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "stalepathtime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OrfEntryCount": api.Field{Name: "OrfEntryCount", CLITag: api.CLIInfo{ID: "orfentrycount", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "orfentrycount", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"RcvdMsgElpsTime": api.Field{Name: "RcvdMsgElpsTime", CLITag: api.CLIInfo{ID: "rcvdmsgelpstime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "rcvdmsgelpstime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"RouteRefrSent": api.Field{Name: "RouteRefrSent", CLITag: api.CLIInfo{ID: "routerefrsent", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "routerefrsent", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"RouteRefrRcvd": api.Field{Name: "RouteRefrRcvd", CLITag: api.CLIInfo{ID: "routerefrrcvd", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "routerefrrcvd", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"InPrfxes": api.Field{Name: "InPrfxes", CLITag: api.CLIInfo{ID: "inprfxes", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "inprfxes", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutPrfxes": api.Field{Name: "OutPrfxes", CLITag: api.CLIInfo{ID: "outprfxes", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outprfxes", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutUpdateElpsTime": api.Field{Name: "OutUpdateElpsTime", CLITag: api.CLIInfo{ID: "outupdateelpstime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outupdateelpstime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutPrfxesDenied": api.Field{Name: "OutPrfxesDenied", CLITag: api.CLIInfo{ID: "outprfxesdenied", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outprfxesdenied", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutPrfxesImpWdr": api.Field{Name: "OutPrfxesImpWdr", CLITag: api.CLIInfo{ID: "outprfxesimpwdr", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outprfxesimpwdr", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutPrfxesExpWdr": api.Field{Name: "OutPrfxesExpWdr", CLITag: api.CLIInfo{ID: "outprfxesexpwdr", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outprfxesexpwdr", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"InPrfxesImpWdr": api.Field{Name: "InPrfxesImpWdr", CLITag: api.CLIInfo{ID: "inprfxesimpwdr", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "inprfxesimpwdr", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"InPrfxesExpWdr": api.Field{Name: "InPrfxesExpWdr", CLITag: api.CLIInfo{ID: "inprfxesexpwdr", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "inprfxesexpwdr", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"ReceivedHoldTime": api.Field{Name: "ReceivedHoldTime", CLITag: api.CLIInfo{ID: "receivedholdtime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "receivedholdtime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"FsmEstablishedTime": api.Field{Name: "FsmEstablishedTime", CLITag: api.CLIInfo{ID: "fsmestablishedtime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "fsmestablishedtime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"InUpdatesElpsTime": api.Field{Name: "InUpdatesElpsTime", CLITag: api.CLIInfo{ID: "inupdateselpstime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "inupdateselpstime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"InOpens": api.Field{Name: "InOpens", CLITag: api.CLIInfo{ID: "inopens", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "inopens", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"OutOpens": api.Field{Name: "OutOpens", CLITag: api.CLIInfo{ID: "outopens", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "outopens", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"PeerIndex": api.Field{Name: "PeerIndex", CLITag: api.CLIInfo{ID: "peerindex", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "peerindex", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
 		},
 	},
 }

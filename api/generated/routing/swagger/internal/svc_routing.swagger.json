@@ -833,7 +833,9 @@
     "routingNeighborStatus": {
       "type": "object",
       "required": [
-        "status"
+        "status",
+        "prev-status",
+        "sellocaladdrtype"
       ],
       "properties": {
         "status": {
@@ -847,6 +849,201 @@
             "established"
           ],
           "default": "idle"
+        },
+        "prev-status": {
+          "type": "string",
+          "enum": [
+            "idle",
+            "connect",
+            "active",
+            "opensent",
+            "openconfirmed",
+            "established"
+          ],
+          "default": "idle"
+        },
+        "lasterrorrcvd": {
+          "type": "string"
+        },
+        "lasterrorsent": {
+          "type": "string"
+        },
+        "localaddr": {
+          "type": "string",
+          "example": "10.1.1.1, ff02::5 ",
+          "description": "Should be a valid v4 or v6 IP address."
+        },
+        "holdtime": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "keepalive": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "capssent": {
+          "type": "string"
+        },
+        "capsrcvd": {
+          "type": "string"
+        },
+        "capsneg": {
+          "type": "string"
+        },
+        "sellocaladdrtype": {
+          "type": "string",
+          "enum": [
+            "other",
+            "ipv4",
+            "ipv6",
+            "nsap",
+            "hdlc",
+            "bbn1822",
+            "ieee802",
+            "e163",
+            "e164",
+            "f69",
+            "x121",
+            "ipx",
+            "appletalk",
+            "decnetiv",
+            "banyanvin",
+            "e164_nsap",
+            "ipv4_tna",
+            "ipv6_tna",
+            "nsap_tna",
+            "vpn_ipv4",
+            "vpn_ipv6",
+            "l2vpn"
+          ],
+          "default": "other"
+        },
+        "innotifications": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outnotifications": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "inupdates": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outupdates": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "inkeepalives": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outkeepalives": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "inrefreshes": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outrefreshes": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "intotalmessages": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outtotalmessages": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "fsmesttransitions": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "connectretrycount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "peergr": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "stalepathtime": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "orfentrycount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "rcvdmsgelpstime": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "routerefrsent": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "routerefrrcvd": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "inprfxes": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outprfxes": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outupdateelpstime": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outprfxesdenied": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outprfxesimpwdr": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outprfxesexpwdr": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "inprfxesimpwdr": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "inprfxesexpwdr": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "receivedholdtime": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "fsmestablishedtime": {
+          "type": "string"
+        },
+        "inupdateselpstime": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "inopens": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "outopens": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "peerindex": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     }

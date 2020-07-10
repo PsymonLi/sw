@@ -32,6 +32,40 @@ export enum RoutingNeighborStatus_status {
     'established' = "established",
 }
 
+export enum RoutingNeighborStatus_prev_status {
+    'idle' = "idle",
+    'connect' = "connect",
+    'active' = "active",
+    'opensent' = "opensent",
+    'openconfirmed' = "openconfirmed",
+    'established' = "established",
+}
+
+export enum RoutingNeighborStatus_sellocaladdrtype {
+    'other' = "other",
+    'ipv4' = "ipv4",
+    'ipv6' = "ipv6",
+    'nsap' = "nsap",
+    'hdlc' = "hdlc",
+    'bbn1822' = "bbn1822",
+    'ieee802' = "ieee802",
+    'e163' = "e163",
+    'e164' = "e164",
+    'f69' = "f69",
+    'x121' = "x121",
+    'ipx' = "ipx",
+    'appletalk' = "appletalk",
+    'decnetiv' = "decnetiv",
+    'banyanvin' = "banyanvin",
+    'e164_nsap' = "e164_nsap",
+    'ipv4_tna' = "ipv4_tna",
+    'ipv6_tna' = "ipv6_tna",
+    'nsap_tna' = "nsap_tna",
+    'vpn_ipv4' = "vpn_ipv4",
+    'vpn_ipv6' = "vpn_ipv6",
+    'l2vpn' = "l2vpn",
+}
+
 
 export enum ApiListWatchOptions_sort_order_uihint {
     'by-creation-time' = "By Creation Time",
@@ -79,6 +113,8 @@ export class AllEnums {
     ApiListWatchOptions_sort_order = ApiListWatchOptions_sort_order;
     NetworkBGPNeighbor_enable_address_families = NetworkBGPNeighbor_enable_address_families;
     RoutingNeighborStatus_status = RoutingNeighborStatus_status;
+    RoutingNeighborStatus_prev_status = RoutingNeighborStatus_prev_status;
+    RoutingNeighborStatus_sellocaladdrtype = RoutingNeighborStatus_sellocaladdrtype;
 
     ApiListWatchOptions_sort_order_uihint = ApiListWatchOptions_sort_order_uihint;
 }

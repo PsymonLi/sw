@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	goruntime "runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +20,7 @@ import (
 	"github.com/pensando/sw/events/generated/eventtypes"
 	pdstypes "github.com/pensando/sw/nic/apollo/agent/gen/pds"
 	msTypes "github.com/pensando/sw/nic/metaswitch/gen/agent/pds_ms"
+	"github.com/pensando/sw/nic/metaswitch/rtrctl/utils"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/perseus/env"
 	"github.com/pensando/sw/venice/perseus/types"
@@ -532,10 +535,116 @@ func (m *ServiceHandlers) GetNeighbor(ctx context.Context, in *routing.NeighborF
 	return &routing.Neighbor{}, nil
 }
 
+func getPeerCfgFromCache(peer string) (*network.BGPNeighbor, error) {
+	if cache.config.Spec.BGPConfig != nil {
+		for _, n := range cache.config.Spec.BGPConfig.Neighbors {
+			if n.IPAddress == peer {
+				return n, nil
+			}
+		}
+		return nil, fmt.Errorf("peer not in cache")
+	}
+	return nil, fmt.Errorf("BGPConfig not in cache")
+}
+
 // ListNeighbors lists neighbors
 func (m *ServiceHandlers) ListNeighbors(ctx context.Context, in *routing.NeighborFilter) (*routing.NeighborList, error) {
 	log.Infof("got call for ListNeighbors [%+v]", in)
-	return &routing.NeighborList{}, nil
+	respMsg, err := m.pegasusClient.BGPPeerGet(context.Background(), &pdstypes.BGPPeerGetRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("Getting Peers failed (%s)", err)
+	}
+	if respMsg.ApiStatus != pdstypes.ApiStatus_API_STATUS_OK {
+		return nil, errors.New("Operation failed with error")
+	}
+	neighbors := &routing.NeighborList{}
+	neighbors.TypeMeta.Kind = "NeighborList"
+	for _, p := range respMsg.Response {
+		peer := utils.NewBGPPeer(p)
+		var n *network.BGPNeighbor
+		if ne, ok := getPeerCfgFromCache(peer.Spec.PeerAddr); ok != nil {
+			log.Infof("did not get peer back from cache [%+v]", peer)
+			n = ne
+		}
+		neighbor := &routing.Neighbor{
+			Status: routing.NeighborStatus{
+				Status:             peer.Status.Status,
+				PrevStatus:         peer.Status.PrevStatus,
+				LastErrorRcvd:      peer.Status.LastErrorRcvd,
+				LastErrorSent:      peer.Status.LastErrorSent,
+				LocalAddr:          peer.Status.LocalAddr,
+				HoldTime:           peer.Status.HoldTime,
+				KeepAlive:          peer.Status.KeepAlive,
+				CapsSent:           peer.Status.CapsSent,
+				CapsRcvd:           peer.Status.CapsRcvd,
+				CapsNeg:            peer.Status.CapsNeg,
+				SelLocalAddrType:   peer.Status.SelLocalAddrType,
+				InNotifications:    peer.Status.InNotifications,
+				OutNotifications:   peer.Status.OutNotifications,
+				InUpdates:          peer.Status.InUpdates,
+				OutUpdates:         peer.Status.OutUpdates,
+				InKeepalives:       peer.Status.InKeepalives,
+				OutKeepalives:      peer.Status.OutKeepalives,
+				InRefreshes:        peer.Status.InRefreshes,
+				OutRefreshes:       peer.Status.OutRefreshes,
+				InTotalMessages:    peer.Status.InTotalMessages,
+				OutTotalMessages:   peer.Status.OutTotalMessages,
+				FsmEstTransitions:  peer.Status.FsmEstTransitions,
+				ConnectRetryCount:  peer.Status.ConnectRetryCount,
+				Peergr:             peer.Status.Peergr,
+				StalePathTime:      peer.Status.StalePathTime,
+				OrfEntryCount:      peer.Status.OrfEntryCount,
+				RcvdMsgElpsTime:    peer.Status.RcvdMsgElpsTime,
+				RouteRefrSent:      peer.Status.RouteRefrSent,
+				RouteRefrRcvd:      peer.Status.RouteRefrRcvd,
+				InPrfxes:           peer.Status.InPrfxes,
+				OutPrfxes:          peer.Status.OutPrfxes,
+				OutUpdateElpsTime:  peer.Status.OutUpdateElpsTime,
+				OutPrfxesDenied:    peer.Status.OutPrfxesDenied,
+				OutPrfxesImpWdr:    peer.Status.OutPrfxesImpWdr,
+				OutPrfxesExpWdr:    peer.Status.OutPrfxesExpWdr,
+				InPrfxesImpWdr:     peer.Status.InPrfxesImpWdr,
+				InPrfxesExpWdr:     peer.Status.InPrfxesExpWdr,
+				ReceivedHoldTime:   peer.Status.ReceivedHoldTime,
+				FsmEstablishedTime: peer.Status.FsmEstablishedTime,
+				InUpdatesElpsTime:  peer.Status.InUpdatesElpsTime,
+				InOpens:            peer.Status.InOpens,
+				OutOpens:           peer.Status.OutOpens,
+				PeerIndex:          peer.Status.PeerIndex,
+			},
+		}
+		if n != nil {
+			neighbor.Spec = network.BGPNeighbor{
+				Shutdown:              n.Shutdown,
+				DSCAutoConfig:         n.DSCAutoConfig,
+				IPAddress:             n.IPAddress,
+				RemoteAS:              n.RemoteAS,
+				MultiHop:              n.MultiHop,
+				KeepaliveInterval:     n.KeepaliveInterval,
+				Holdtime:              n.Holdtime,
+				EnableAddressFamilies: n.EnableAddressFamilies,
+			}
+		} else {
+			neighbor.Spec.Shutdown = true
+			if peer.Spec.State == "ENABLE" {
+				neighbor.Spec.Shutdown = false
+			}
+			neighbor.Spec = network.BGPNeighbor{
+				IPAddress: peer.Spec.PeerAddr,
+				RemoteAS: api.BgpAsn{
+					ASNumber: peer.Spec.RemoteASN,
+				},
+				MultiHop:              peer.Spec.TTL,
+				KeepaliveInterval:     peer.Spec.KeepAlive,
+				Holdtime:              peer.Spec.HoldTime,
+				EnableAddressFamilies: []string{network.BGPAddressFamily_L2vpnEvpn.String()},
+			}
+		}
+		neighbor.ObjectMeta.Name = neighbor.Spec.IPAddress + "-" + strings.Join(neighbor.Spec.EnableAddressFamilies, "-")
+		neighbor.TypeMeta.Kind = "Neighbor"
+		neighbors.Items = append(neighbors.Items, neighbor)
+	}
+	return neighbors, nil
 }
 
 type peerHealth struct {

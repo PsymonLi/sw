@@ -8,9 +8,53 @@ import { minValueValidator, maxValueValidator, minLengthValidator, maxLengthVali
 import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
 import { RoutingNeighborStatus_status,  } from './enums';
+import { RoutingNeighborStatus_prev_status,  } from './enums';
+import { RoutingNeighborStatus_sellocaladdrtype,  } from './enums';
 
 export interface IRoutingNeighborStatus {
     'status': RoutingNeighborStatus_status;
+    'prev-status': RoutingNeighborStatus_prev_status;
+    'lasterrorrcvd'?: string;
+    'lasterrorsent'?: string;
+    'localaddr'?: string;
+    'holdtime'?: number;
+    'keepalive'?: number;
+    'capssent'?: string;
+    'capsrcvd'?: string;
+    'capsneg'?: string;
+    'sellocaladdrtype': RoutingNeighborStatus_sellocaladdrtype;
+    'innotifications'?: number;
+    'outnotifications'?: number;
+    'inupdates'?: number;
+    'outupdates'?: number;
+    'inkeepalives'?: number;
+    'outkeepalives'?: number;
+    'inrefreshes'?: number;
+    'outrefreshes'?: number;
+    'intotalmessages'?: number;
+    'outtotalmessages'?: number;
+    'fsmesttransitions'?: number;
+    'connectretrycount'?: number;
+    'peergr'?: number;
+    'stalepathtime'?: number;
+    'orfentrycount'?: number;
+    'rcvdmsgelpstime'?: number;
+    'routerefrsent'?: number;
+    'routerefrrcvd'?: number;
+    'inprfxes'?: number;
+    'outprfxes'?: number;
+    'outupdateelpstime'?: number;
+    'outprfxesdenied'?: number;
+    'outprfxesimpwdr'?: number;
+    'outprfxesexpwdr'?: number;
+    'inprfxesimpwdr'?: number;
+    'inprfxesexpwdr'?: number;
+    'receivedholdtime'?: number;
+    'fsmestablishedtime'?: string;
+    'inupdateselpstime'?: number;
+    'inopens'?: number;
+    'outopens'?: number;
+    'peerindex'?: number;
     '_ui'?: any;
 }
 
@@ -19,12 +63,229 @@ export class RoutingNeighborStatus extends BaseModel implements IRoutingNeighbor
     /** Field for holding arbitrary ui state */
     '_ui': any = {};
     'status': RoutingNeighborStatus_status = null;
+    'prev-status': RoutingNeighborStatus_prev_status = null;
+    'lasterrorrcvd': string = null;
+    'lasterrorsent': string = null;
+    /** Should be a valid v4 or v6 IP address. */
+    'localaddr': string = null;
+    'holdtime': number = null;
+    'keepalive': number = null;
+    'capssent': string = null;
+    'capsrcvd': string = null;
+    'capsneg': string = null;
+    'sellocaladdrtype': RoutingNeighborStatus_sellocaladdrtype = null;
+    'innotifications': number = null;
+    'outnotifications': number = null;
+    'inupdates': number = null;
+    'outupdates': number = null;
+    'inkeepalives': number = null;
+    'outkeepalives': number = null;
+    'inrefreshes': number = null;
+    'outrefreshes': number = null;
+    'intotalmessages': number = null;
+    'outtotalmessages': number = null;
+    'fsmesttransitions': number = null;
+    'connectretrycount': number = null;
+    'peergr': number = null;
+    'stalepathtime': number = null;
+    'orfentrycount': number = null;
+    'rcvdmsgelpstime': number = null;
+    'routerefrsent': number = null;
+    'routerefrrcvd': number = null;
+    'inprfxes': number = null;
+    'outprfxes': number = null;
+    'outupdateelpstime': number = null;
+    'outprfxesdenied': number = null;
+    'outprfxesimpwdr': number = null;
+    'outprfxesexpwdr': number = null;
+    'inprfxesimpwdr': number = null;
+    'inprfxesexpwdr': number = null;
+    'receivedholdtime': number = null;
+    'fsmestablishedtime': string = null;
+    'inupdateselpstime': number = null;
+    'inopens': number = null;
+    'outopens': number = null;
+    'peerindex': number = null;
     public static propInfo: { [prop in keyof IRoutingNeighborStatus]: PropInfoItem } = {
         'status': {
             enum: RoutingNeighborStatus_status,
             default: 'idle',
             required: true,
             type: 'string'
+        },
+        'prev-status': {
+            enum: RoutingNeighborStatus_prev_status,
+            default: 'idle',
+            required: true,
+            type: 'string'
+        },
+        'lasterrorrcvd': {
+            required: false,
+            type: 'string'
+        },
+        'lasterrorsent': {
+            required: false,
+            type: 'string'
+        },
+        'localaddr': {
+            description:  `Should be a valid v4 or v6 IP address.`,
+            hint:  '10.1.1.1, ff02::5 ',
+            required: false,
+            type: 'string'
+        },
+        'holdtime': {
+            required: false,
+            type: 'number'
+        },
+        'keepalive': {
+            required: false,
+            type: 'number'
+        },
+        'capssent': {
+            required: false,
+            type: 'string'
+        },
+        'capsrcvd': {
+            required: false,
+            type: 'string'
+        },
+        'capsneg': {
+            required: false,
+            type: 'string'
+        },
+        'sellocaladdrtype': {
+            enum: RoutingNeighborStatus_sellocaladdrtype,
+            default: 'other',
+            required: true,
+            type: 'string'
+        },
+        'innotifications': {
+            required: false,
+            type: 'number'
+        },
+        'outnotifications': {
+            required: false,
+            type: 'number'
+        },
+        'inupdates': {
+            required: false,
+            type: 'number'
+        },
+        'outupdates': {
+            required: false,
+            type: 'number'
+        },
+        'inkeepalives': {
+            required: false,
+            type: 'number'
+        },
+        'outkeepalives': {
+            required: false,
+            type: 'number'
+        },
+        'inrefreshes': {
+            required: false,
+            type: 'number'
+        },
+        'outrefreshes': {
+            required: false,
+            type: 'number'
+        },
+        'intotalmessages': {
+            required: false,
+            type: 'number'
+        },
+        'outtotalmessages': {
+            required: false,
+            type: 'number'
+        },
+        'fsmesttransitions': {
+            required: false,
+            type: 'number'
+        },
+        'connectretrycount': {
+            required: false,
+            type: 'number'
+        },
+        'peergr': {
+            required: false,
+            type: 'number'
+        },
+        'stalepathtime': {
+            required: false,
+            type: 'number'
+        },
+        'orfentrycount': {
+            required: false,
+            type: 'number'
+        },
+        'rcvdmsgelpstime': {
+            required: false,
+            type: 'number'
+        },
+        'routerefrsent': {
+            required: false,
+            type: 'number'
+        },
+        'routerefrrcvd': {
+            required: false,
+            type: 'number'
+        },
+        'inprfxes': {
+            required: false,
+            type: 'number'
+        },
+        'outprfxes': {
+            required: false,
+            type: 'number'
+        },
+        'outupdateelpstime': {
+            required: false,
+            type: 'number'
+        },
+        'outprfxesdenied': {
+            required: false,
+            type: 'number'
+        },
+        'outprfxesimpwdr': {
+            required: false,
+            type: 'number'
+        },
+        'outprfxesexpwdr': {
+            required: false,
+            type: 'number'
+        },
+        'inprfxesimpwdr': {
+            required: false,
+            type: 'number'
+        },
+        'inprfxesexpwdr': {
+            required: false,
+            type: 'number'
+        },
+        'receivedholdtime': {
+            required: false,
+            type: 'number'
+        },
+        'fsmestablishedtime': {
+            required: false,
+            type: 'string'
+        },
+        'inupdateselpstime': {
+            required: false,
+            type: 'number'
+        },
+        'inopens': {
+            required: false,
+            type: 'number'
+        },
+        'outopens': {
+            required: false,
+            type: 'number'
+        },
+        'peerindex': {
+            required: false,
+            type: 'number'
         },
     }
 
@@ -69,6 +330,300 @@ export class RoutingNeighborStatus extends BaseModel implements IRoutingNeighbor
         } else {
             this['status'] = null
         }
+        if (values && values['prev-status'] != null) {
+            this['prev-status'] = values['prev-status'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('prev-status')) {
+            this['prev-status'] = <RoutingNeighborStatus_prev_status>  RoutingNeighborStatus.propInfo['prev-status'].default;
+        } else {
+            this['prev-status'] = null
+        }
+        if (values && values['lasterrorrcvd'] != null) {
+            this['lasterrorrcvd'] = values['lasterrorrcvd'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('lasterrorrcvd')) {
+            this['lasterrorrcvd'] = RoutingNeighborStatus.propInfo['lasterrorrcvd'].default;
+        } else {
+            this['lasterrorrcvd'] = null
+        }
+        if (values && values['lasterrorsent'] != null) {
+            this['lasterrorsent'] = values['lasterrorsent'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('lasterrorsent')) {
+            this['lasterrorsent'] = RoutingNeighborStatus.propInfo['lasterrorsent'].default;
+        } else {
+            this['lasterrorsent'] = null
+        }
+        if (values && values['localaddr'] != null) {
+            this['localaddr'] = values['localaddr'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('localaddr')) {
+            this['localaddr'] = RoutingNeighborStatus.propInfo['localaddr'].default;
+        } else {
+            this['localaddr'] = null
+        }
+        if (values && values['holdtime'] != null) {
+            this['holdtime'] = values['holdtime'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('holdtime')) {
+            this['holdtime'] = RoutingNeighborStatus.propInfo['holdtime'].default;
+        } else {
+            this['holdtime'] = null
+        }
+        if (values && values['keepalive'] != null) {
+            this['keepalive'] = values['keepalive'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('keepalive')) {
+            this['keepalive'] = RoutingNeighborStatus.propInfo['keepalive'].default;
+        } else {
+            this['keepalive'] = null
+        }
+        if (values && values['capssent'] != null) {
+            this['capssent'] = values['capssent'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('capssent')) {
+            this['capssent'] = RoutingNeighborStatus.propInfo['capssent'].default;
+        } else {
+            this['capssent'] = null
+        }
+        if (values && values['capsrcvd'] != null) {
+            this['capsrcvd'] = values['capsrcvd'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('capsrcvd')) {
+            this['capsrcvd'] = RoutingNeighborStatus.propInfo['capsrcvd'].default;
+        } else {
+            this['capsrcvd'] = null
+        }
+        if (values && values['capsneg'] != null) {
+            this['capsneg'] = values['capsneg'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('capsneg')) {
+            this['capsneg'] = RoutingNeighborStatus.propInfo['capsneg'].default;
+        } else {
+            this['capsneg'] = null
+        }
+        if (values && values['sellocaladdrtype'] != null) {
+            this['sellocaladdrtype'] = values['sellocaladdrtype'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('sellocaladdrtype')) {
+            this['sellocaladdrtype'] = <RoutingNeighborStatus_sellocaladdrtype>  RoutingNeighborStatus.propInfo['sellocaladdrtype'].default;
+        } else {
+            this['sellocaladdrtype'] = null
+        }
+        if (values && values['innotifications'] != null) {
+            this['innotifications'] = values['innotifications'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('innotifications')) {
+            this['innotifications'] = RoutingNeighborStatus.propInfo['innotifications'].default;
+        } else {
+            this['innotifications'] = null
+        }
+        if (values && values['outnotifications'] != null) {
+            this['outnotifications'] = values['outnotifications'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outnotifications')) {
+            this['outnotifications'] = RoutingNeighborStatus.propInfo['outnotifications'].default;
+        } else {
+            this['outnotifications'] = null
+        }
+        if (values && values['inupdates'] != null) {
+            this['inupdates'] = values['inupdates'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('inupdates')) {
+            this['inupdates'] = RoutingNeighborStatus.propInfo['inupdates'].default;
+        } else {
+            this['inupdates'] = null
+        }
+        if (values && values['outupdates'] != null) {
+            this['outupdates'] = values['outupdates'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outupdates')) {
+            this['outupdates'] = RoutingNeighborStatus.propInfo['outupdates'].default;
+        } else {
+            this['outupdates'] = null
+        }
+        if (values && values['inkeepalives'] != null) {
+            this['inkeepalives'] = values['inkeepalives'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('inkeepalives')) {
+            this['inkeepalives'] = RoutingNeighborStatus.propInfo['inkeepalives'].default;
+        } else {
+            this['inkeepalives'] = null
+        }
+        if (values && values['outkeepalives'] != null) {
+            this['outkeepalives'] = values['outkeepalives'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outkeepalives')) {
+            this['outkeepalives'] = RoutingNeighborStatus.propInfo['outkeepalives'].default;
+        } else {
+            this['outkeepalives'] = null
+        }
+        if (values && values['inrefreshes'] != null) {
+            this['inrefreshes'] = values['inrefreshes'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('inrefreshes')) {
+            this['inrefreshes'] = RoutingNeighborStatus.propInfo['inrefreshes'].default;
+        } else {
+            this['inrefreshes'] = null
+        }
+        if (values && values['outrefreshes'] != null) {
+            this['outrefreshes'] = values['outrefreshes'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outrefreshes')) {
+            this['outrefreshes'] = RoutingNeighborStatus.propInfo['outrefreshes'].default;
+        } else {
+            this['outrefreshes'] = null
+        }
+        if (values && values['intotalmessages'] != null) {
+            this['intotalmessages'] = values['intotalmessages'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('intotalmessages')) {
+            this['intotalmessages'] = RoutingNeighborStatus.propInfo['intotalmessages'].default;
+        } else {
+            this['intotalmessages'] = null
+        }
+        if (values && values['outtotalmessages'] != null) {
+            this['outtotalmessages'] = values['outtotalmessages'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outtotalmessages')) {
+            this['outtotalmessages'] = RoutingNeighborStatus.propInfo['outtotalmessages'].default;
+        } else {
+            this['outtotalmessages'] = null
+        }
+        if (values && values['fsmesttransitions'] != null) {
+            this['fsmesttransitions'] = values['fsmesttransitions'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('fsmesttransitions')) {
+            this['fsmesttransitions'] = RoutingNeighborStatus.propInfo['fsmesttransitions'].default;
+        } else {
+            this['fsmesttransitions'] = null
+        }
+        if (values && values['connectretrycount'] != null) {
+            this['connectretrycount'] = values['connectretrycount'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('connectretrycount')) {
+            this['connectretrycount'] = RoutingNeighborStatus.propInfo['connectretrycount'].default;
+        } else {
+            this['connectretrycount'] = null
+        }
+        if (values && values['peergr'] != null) {
+            this['peergr'] = values['peergr'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('peergr')) {
+            this['peergr'] = RoutingNeighborStatus.propInfo['peergr'].default;
+        } else {
+            this['peergr'] = null
+        }
+        if (values && values['stalepathtime'] != null) {
+            this['stalepathtime'] = values['stalepathtime'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('stalepathtime')) {
+            this['stalepathtime'] = RoutingNeighborStatus.propInfo['stalepathtime'].default;
+        } else {
+            this['stalepathtime'] = null
+        }
+        if (values && values['orfentrycount'] != null) {
+            this['orfentrycount'] = values['orfentrycount'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('orfentrycount')) {
+            this['orfentrycount'] = RoutingNeighborStatus.propInfo['orfentrycount'].default;
+        } else {
+            this['orfentrycount'] = null
+        }
+        if (values && values['rcvdmsgelpstime'] != null) {
+            this['rcvdmsgelpstime'] = values['rcvdmsgelpstime'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('rcvdmsgelpstime')) {
+            this['rcvdmsgelpstime'] = RoutingNeighborStatus.propInfo['rcvdmsgelpstime'].default;
+        } else {
+            this['rcvdmsgelpstime'] = null
+        }
+        if (values && values['routerefrsent'] != null) {
+            this['routerefrsent'] = values['routerefrsent'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('routerefrsent')) {
+            this['routerefrsent'] = RoutingNeighborStatus.propInfo['routerefrsent'].default;
+        } else {
+            this['routerefrsent'] = null
+        }
+        if (values && values['routerefrrcvd'] != null) {
+            this['routerefrrcvd'] = values['routerefrrcvd'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('routerefrrcvd')) {
+            this['routerefrrcvd'] = RoutingNeighborStatus.propInfo['routerefrrcvd'].default;
+        } else {
+            this['routerefrrcvd'] = null
+        }
+        if (values && values['inprfxes'] != null) {
+            this['inprfxes'] = values['inprfxes'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('inprfxes')) {
+            this['inprfxes'] = RoutingNeighborStatus.propInfo['inprfxes'].default;
+        } else {
+            this['inprfxes'] = null
+        }
+        if (values && values['outprfxes'] != null) {
+            this['outprfxes'] = values['outprfxes'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outprfxes')) {
+            this['outprfxes'] = RoutingNeighborStatus.propInfo['outprfxes'].default;
+        } else {
+            this['outprfxes'] = null
+        }
+        if (values && values['outupdateelpstime'] != null) {
+            this['outupdateelpstime'] = values['outupdateelpstime'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outupdateelpstime')) {
+            this['outupdateelpstime'] = RoutingNeighborStatus.propInfo['outupdateelpstime'].default;
+        } else {
+            this['outupdateelpstime'] = null
+        }
+        if (values && values['outprfxesdenied'] != null) {
+            this['outprfxesdenied'] = values['outprfxesdenied'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outprfxesdenied')) {
+            this['outprfxesdenied'] = RoutingNeighborStatus.propInfo['outprfxesdenied'].default;
+        } else {
+            this['outprfxesdenied'] = null
+        }
+        if (values && values['outprfxesimpwdr'] != null) {
+            this['outprfxesimpwdr'] = values['outprfxesimpwdr'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outprfxesimpwdr')) {
+            this['outprfxesimpwdr'] = RoutingNeighborStatus.propInfo['outprfxesimpwdr'].default;
+        } else {
+            this['outprfxesimpwdr'] = null
+        }
+        if (values && values['outprfxesexpwdr'] != null) {
+            this['outprfxesexpwdr'] = values['outprfxesexpwdr'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outprfxesexpwdr')) {
+            this['outprfxesexpwdr'] = RoutingNeighborStatus.propInfo['outprfxesexpwdr'].default;
+        } else {
+            this['outprfxesexpwdr'] = null
+        }
+        if (values && values['inprfxesimpwdr'] != null) {
+            this['inprfxesimpwdr'] = values['inprfxesimpwdr'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('inprfxesimpwdr')) {
+            this['inprfxesimpwdr'] = RoutingNeighborStatus.propInfo['inprfxesimpwdr'].default;
+        } else {
+            this['inprfxesimpwdr'] = null
+        }
+        if (values && values['inprfxesexpwdr'] != null) {
+            this['inprfxesexpwdr'] = values['inprfxesexpwdr'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('inprfxesexpwdr')) {
+            this['inprfxesexpwdr'] = RoutingNeighborStatus.propInfo['inprfxesexpwdr'].default;
+        } else {
+            this['inprfxesexpwdr'] = null
+        }
+        if (values && values['receivedholdtime'] != null) {
+            this['receivedholdtime'] = values['receivedholdtime'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('receivedholdtime')) {
+            this['receivedholdtime'] = RoutingNeighborStatus.propInfo['receivedholdtime'].default;
+        } else {
+            this['receivedholdtime'] = null
+        }
+        if (values && values['fsmestablishedtime'] != null) {
+            this['fsmestablishedtime'] = values['fsmestablishedtime'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('fsmestablishedtime')) {
+            this['fsmestablishedtime'] = RoutingNeighborStatus.propInfo['fsmestablishedtime'].default;
+        } else {
+            this['fsmestablishedtime'] = null
+        }
+        if (values && values['inupdateselpstime'] != null) {
+            this['inupdateselpstime'] = values['inupdateselpstime'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('inupdateselpstime')) {
+            this['inupdateselpstime'] = RoutingNeighborStatus.propInfo['inupdateselpstime'].default;
+        } else {
+            this['inupdateselpstime'] = null
+        }
+        if (values && values['inopens'] != null) {
+            this['inopens'] = values['inopens'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('inopens')) {
+            this['inopens'] = RoutingNeighborStatus.propInfo['inopens'].default;
+        } else {
+            this['inopens'] = null
+        }
+        if (values && values['outopens'] != null) {
+            this['outopens'] = values['outopens'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('outopens')) {
+            this['outopens'] = RoutingNeighborStatus.propInfo['outopens'].default;
+        } else {
+            this['outopens'] = null
+        }
+        if (values && values['peerindex'] != null) {
+            this['peerindex'] = values['peerindex'];
+        } else if (fillDefaults && RoutingNeighborStatus.hasDefaultValue('peerindex')) {
+            this['peerindex'] = RoutingNeighborStatus.propInfo['peerindex'].default;
+        } else {
+            this['peerindex'] = null
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -77,6 +632,48 @@ export class RoutingNeighborStatus extends BaseModel implements IRoutingNeighbor
         if (!this._formGroup) {
             this._formGroup = new FormGroup({
                 'status': CustomFormControl(new FormControl(this['status'], [required, enumValidator(RoutingNeighborStatus_status), ]), RoutingNeighborStatus.propInfo['status']),
+                'prev-status': CustomFormControl(new FormControl(this['prev-status'], [required, enumValidator(RoutingNeighborStatus_prev_status), ]), RoutingNeighborStatus.propInfo['prev-status']),
+                'lasterrorrcvd': CustomFormControl(new FormControl(this['lasterrorrcvd']), RoutingNeighborStatus.propInfo['lasterrorrcvd']),
+                'lasterrorsent': CustomFormControl(new FormControl(this['lasterrorsent']), RoutingNeighborStatus.propInfo['lasterrorsent']),
+                'localaddr': CustomFormControl(new FormControl(this['localaddr']), RoutingNeighborStatus.propInfo['localaddr']),
+                'holdtime': CustomFormControl(new FormControl(this['holdtime']), RoutingNeighborStatus.propInfo['holdtime']),
+                'keepalive': CustomFormControl(new FormControl(this['keepalive']), RoutingNeighborStatus.propInfo['keepalive']),
+                'capssent': CustomFormControl(new FormControl(this['capssent']), RoutingNeighborStatus.propInfo['capssent']),
+                'capsrcvd': CustomFormControl(new FormControl(this['capsrcvd']), RoutingNeighborStatus.propInfo['capsrcvd']),
+                'capsneg': CustomFormControl(new FormControl(this['capsneg']), RoutingNeighborStatus.propInfo['capsneg']),
+                'sellocaladdrtype': CustomFormControl(new FormControl(this['sellocaladdrtype'], [required, enumValidator(RoutingNeighborStatus_sellocaladdrtype), ]), RoutingNeighborStatus.propInfo['sellocaladdrtype']),
+                'innotifications': CustomFormControl(new FormControl(this['innotifications']), RoutingNeighborStatus.propInfo['innotifications']),
+                'outnotifications': CustomFormControl(new FormControl(this['outnotifications']), RoutingNeighborStatus.propInfo['outnotifications']),
+                'inupdates': CustomFormControl(new FormControl(this['inupdates']), RoutingNeighborStatus.propInfo['inupdates']),
+                'outupdates': CustomFormControl(new FormControl(this['outupdates']), RoutingNeighborStatus.propInfo['outupdates']),
+                'inkeepalives': CustomFormControl(new FormControl(this['inkeepalives']), RoutingNeighborStatus.propInfo['inkeepalives']),
+                'outkeepalives': CustomFormControl(new FormControl(this['outkeepalives']), RoutingNeighborStatus.propInfo['outkeepalives']),
+                'inrefreshes': CustomFormControl(new FormControl(this['inrefreshes']), RoutingNeighborStatus.propInfo['inrefreshes']),
+                'outrefreshes': CustomFormControl(new FormControl(this['outrefreshes']), RoutingNeighborStatus.propInfo['outrefreshes']),
+                'intotalmessages': CustomFormControl(new FormControl(this['intotalmessages']), RoutingNeighborStatus.propInfo['intotalmessages']),
+                'outtotalmessages': CustomFormControl(new FormControl(this['outtotalmessages']), RoutingNeighborStatus.propInfo['outtotalmessages']),
+                'fsmesttransitions': CustomFormControl(new FormControl(this['fsmesttransitions']), RoutingNeighborStatus.propInfo['fsmesttransitions']),
+                'connectretrycount': CustomFormControl(new FormControl(this['connectretrycount']), RoutingNeighborStatus.propInfo['connectretrycount']),
+                'peergr': CustomFormControl(new FormControl(this['peergr']), RoutingNeighborStatus.propInfo['peergr']),
+                'stalepathtime': CustomFormControl(new FormControl(this['stalepathtime']), RoutingNeighborStatus.propInfo['stalepathtime']),
+                'orfentrycount': CustomFormControl(new FormControl(this['orfentrycount']), RoutingNeighborStatus.propInfo['orfentrycount']),
+                'rcvdmsgelpstime': CustomFormControl(new FormControl(this['rcvdmsgelpstime']), RoutingNeighborStatus.propInfo['rcvdmsgelpstime']),
+                'routerefrsent': CustomFormControl(new FormControl(this['routerefrsent']), RoutingNeighborStatus.propInfo['routerefrsent']),
+                'routerefrrcvd': CustomFormControl(new FormControl(this['routerefrrcvd']), RoutingNeighborStatus.propInfo['routerefrrcvd']),
+                'inprfxes': CustomFormControl(new FormControl(this['inprfxes']), RoutingNeighborStatus.propInfo['inprfxes']),
+                'outprfxes': CustomFormControl(new FormControl(this['outprfxes']), RoutingNeighborStatus.propInfo['outprfxes']),
+                'outupdateelpstime': CustomFormControl(new FormControl(this['outupdateelpstime']), RoutingNeighborStatus.propInfo['outupdateelpstime']),
+                'outprfxesdenied': CustomFormControl(new FormControl(this['outprfxesdenied']), RoutingNeighborStatus.propInfo['outprfxesdenied']),
+                'outprfxesimpwdr': CustomFormControl(new FormControl(this['outprfxesimpwdr']), RoutingNeighborStatus.propInfo['outprfxesimpwdr']),
+                'outprfxesexpwdr': CustomFormControl(new FormControl(this['outprfxesexpwdr']), RoutingNeighborStatus.propInfo['outprfxesexpwdr']),
+                'inprfxesimpwdr': CustomFormControl(new FormControl(this['inprfxesimpwdr']), RoutingNeighborStatus.propInfo['inprfxesimpwdr']),
+                'inprfxesexpwdr': CustomFormControl(new FormControl(this['inprfxesexpwdr']), RoutingNeighborStatus.propInfo['inprfxesexpwdr']),
+                'receivedholdtime': CustomFormControl(new FormControl(this['receivedholdtime']), RoutingNeighborStatus.propInfo['receivedholdtime']),
+                'fsmestablishedtime': CustomFormControl(new FormControl(this['fsmestablishedtime']), RoutingNeighborStatus.propInfo['fsmestablishedtime']),
+                'inupdateselpstime': CustomFormControl(new FormControl(this['inupdateselpstime']), RoutingNeighborStatus.propInfo['inupdateselpstime']),
+                'inopens': CustomFormControl(new FormControl(this['inopens']), RoutingNeighborStatus.propInfo['inopens']),
+                'outopens': CustomFormControl(new FormControl(this['outopens']), RoutingNeighborStatus.propInfo['outopens']),
+                'peerindex': CustomFormControl(new FormControl(this['peerindex']), RoutingNeighborStatus.propInfo['peerindex']),
             });
         }
         return this._formGroup;
@@ -89,6 +686,48 @@ export class RoutingNeighborStatus extends BaseModel implements IRoutingNeighbor
     setFormGroupValuesToBeModelValues() {
         if (this._formGroup) {
             this._formGroup.controls['status'].setValue(this['status']);
+            this._formGroup.controls['prev-status'].setValue(this['prev-status']);
+            this._formGroup.controls['lasterrorrcvd'].setValue(this['lasterrorrcvd']);
+            this._formGroup.controls['lasterrorsent'].setValue(this['lasterrorsent']);
+            this._formGroup.controls['localaddr'].setValue(this['localaddr']);
+            this._formGroup.controls['holdtime'].setValue(this['holdtime']);
+            this._formGroup.controls['keepalive'].setValue(this['keepalive']);
+            this._formGroup.controls['capssent'].setValue(this['capssent']);
+            this._formGroup.controls['capsrcvd'].setValue(this['capsrcvd']);
+            this._formGroup.controls['capsneg'].setValue(this['capsneg']);
+            this._formGroup.controls['sellocaladdrtype'].setValue(this['sellocaladdrtype']);
+            this._formGroup.controls['innotifications'].setValue(this['innotifications']);
+            this._formGroup.controls['outnotifications'].setValue(this['outnotifications']);
+            this._formGroup.controls['inupdates'].setValue(this['inupdates']);
+            this._formGroup.controls['outupdates'].setValue(this['outupdates']);
+            this._formGroup.controls['inkeepalives'].setValue(this['inkeepalives']);
+            this._formGroup.controls['outkeepalives'].setValue(this['outkeepalives']);
+            this._formGroup.controls['inrefreshes'].setValue(this['inrefreshes']);
+            this._formGroup.controls['outrefreshes'].setValue(this['outrefreshes']);
+            this._formGroup.controls['intotalmessages'].setValue(this['intotalmessages']);
+            this._formGroup.controls['outtotalmessages'].setValue(this['outtotalmessages']);
+            this._formGroup.controls['fsmesttransitions'].setValue(this['fsmesttransitions']);
+            this._formGroup.controls['connectretrycount'].setValue(this['connectretrycount']);
+            this._formGroup.controls['peergr'].setValue(this['peergr']);
+            this._formGroup.controls['stalepathtime'].setValue(this['stalepathtime']);
+            this._formGroup.controls['orfentrycount'].setValue(this['orfentrycount']);
+            this._formGroup.controls['rcvdmsgelpstime'].setValue(this['rcvdmsgelpstime']);
+            this._formGroup.controls['routerefrsent'].setValue(this['routerefrsent']);
+            this._formGroup.controls['routerefrrcvd'].setValue(this['routerefrrcvd']);
+            this._formGroup.controls['inprfxes'].setValue(this['inprfxes']);
+            this._formGroup.controls['outprfxes'].setValue(this['outprfxes']);
+            this._formGroup.controls['outupdateelpstime'].setValue(this['outupdateelpstime']);
+            this._formGroup.controls['outprfxesdenied'].setValue(this['outprfxesdenied']);
+            this._formGroup.controls['outprfxesimpwdr'].setValue(this['outprfxesimpwdr']);
+            this._formGroup.controls['outprfxesexpwdr'].setValue(this['outprfxesexpwdr']);
+            this._formGroup.controls['inprfxesimpwdr'].setValue(this['inprfxesimpwdr']);
+            this._formGroup.controls['inprfxesexpwdr'].setValue(this['inprfxesexpwdr']);
+            this._formGroup.controls['receivedholdtime'].setValue(this['receivedholdtime']);
+            this._formGroup.controls['fsmestablishedtime'].setValue(this['fsmestablishedtime']);
+            this._formGroup.controls['inupdateselpstime'].setValue(this['inupdateselpstime']);
+            this._formGroup.controls['inopens'].setValue(this['inopens']);
+            this._formGroup.controls['outopens'].setValue(this['outopens']);
+            this._formGroup.controls['peerindex'].setValue(this['peerindex']);
         }
     }
 }

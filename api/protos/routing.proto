@@ -47,7 +47,73 @@ message NeighborStatus {
         OpenConfirmed   = 4;
         Established     = 5;
     }
-    string Status = 1 [(gogoproto.jsontag) = "status", (venice.check) = "StrEnum(NeighborStatus.State)"];
+    enum AddrType {
+        OTHER     = 0;
+        IPV4      = 1;
+        IPV6      = 2;
+        NSAP      = 3;
+        HDLC      = 4;
+        BBN1822   = 5;
+        IEEE802   = 6;
+        E163      = 7;
+        E164      = 8;
+        F69       = 9;
+        X121      = 10;
+        IPX       = 11;
+        APPLETALK = 12;
+        DECNETIV  = 13;
+        BANYANVIN = 14;
+        E164_NSAP = 15;
+        IPV4_TNA  = 16;
+        IPV6_TNA  = 17;
+        NSAP_TNA  = 18;
+        VPN_IPV4  = 19;
+        VPN_IPV6  = 20;
+        L2VPN     = 25;
+    }
+    string Status               = 1 [(gogoproto.jsontag) = "status", (venice.check) = "StrEnum(NeighborStatus.State)"];
+    string PrevStatus           = 2 [(gogoproto.jsontag) = "prev-status", (venice.check) = "StrEnum(NeighborStatus.State)"];
+    string LastErrorRcvd        = 3 [(gogoproto.jsontag) = "lasterrorrcvd"];
+    string LastErrorSent        = 4 [(gogoproto.jsontag) = "lasterrorsent"];
+    string LocalAddr            = 5 [(gogoproto.jsontag) = "localaddr", (venice.check) = "EmptyOr(IPAddr())"];
+    uint32 HoldTime             = 6 [(gogoproto.jsontag) = "holdtime"];
+    uint32 KeepAlive            = 7 [(gogoproto.jsontag) = "keepalive"];
+    string CapsSent             = 8 [(gogoproto.jsontag) = "capssent"];
+    string CapsRcvd             = 9 [(gogoproto.jsontag) = "capsrcvd"];
+    string CapsNeg              = 10 [(gogoproto.jsontag) = "capsneg"];
+    string SelLocalAddrType     = 11 [(gogoproto.jsontag) = "sellocaladdrtype", (venice.check) = "StrEnum(NeighborStatus.AddrType)"];
+    uint32 InNotifications      = 12 [(gogoproto.jsontag) = "innotifications"];
+    uint32 OutNotifications     = 13 [(gogoproto.jsontag) = "outnotifications"];
+    uint32 InUpdates            = 14 [(gogoproto.jsontag) = "inupdates"];
+    uint32 OutUpdates           = 15 [(gogoproto.jsontag) = "outupdates"];
+    uint32 InKeepalives         = 16 [(gogoproto.jsontag) = "inkeepalives"];
+    uint32 OutKeepalives        = 17 [(gogoproto.jsontag) = "outkeepalives"];
+    uint32 InRefreshes          = 18 [(gogoproto.jsontag) = "inrefreshes"];
+    uint32 OutRefreshes         = 19 [(gogoproto.jsontag) = "outrefreshes"];
+    uint32 InTotalMessages      = 20 [(gogoproto.jsontag) = "intotalmessages"];
+    uint32 OutTotalMessages     = 21 [(gogoproto.jsontag) = "outtotalmessages"];
+    uint32 FsmEstTransitions    = 22 [(gogoproto.jsontag) = "fsmesttransitions"];
+    uint32 ConnectRetryCount    = 23 [(gogoproto.jsontag) = "connectretrycount"];
+    uint32 Peergr               = 24 [(gogoproto.jsontag) = "peergr"];
+    uint32 StalePathTime        = 25 [(gogoproto.jsontag) = "stalepathtime"];
+    uint32 OrfEntryCount        = 26 [(gogoproto.jsontag) = "orfentrycount"];
+    uint32 RcvdMsgElpsTime      = 27 [(gogoproto.jsontag) = "rcvdmsgelpstime"];
+    uint32 RouteRefrSent        = 28 [(gogoproto.jsontag) = "routerefrsent"];
+    uint32 RouteRefrRcvd        = 29 [(gogoproto.jsontag) = "routerefrrcvd"];
+    uint32 InPrfxes             = 30 [(gogoproto.jsontag) = "inprfxes"];
+    uint32 OutPrfxes            = 31 [(gogoproto.jsontag) = "outprfxes"];
+    uint32 OutUpdateElpsTime    = 34 [(gogoproto.jsontag) = "outupdateelpstime"];
+    uint32 OutPrfxesDenied      = 35 [(gogoproto.jsontag) = "outprfxesdenied"];
+    uint32 OutPrfxesImpWdr      = 36 [(gogoproto.jsontag) = "outprfxesimpwdr"];
+    uint32 OutPrfxesExpWdr      = 37 [(gogoproto.jsontag) = "outprfxesexpwdr"];
+    uint32 InPrfxesImpWdr       = 38 [(gogoproto.jsontag) = "inprfxesimpwdr"];
+    uint32 InPrfxesExpWdr       = 39 [(gogoproto.jsontag) = "inprfxesexpwdr"];
+    uint32 ReceivedHoldTime     = 40 [(gogoproto.jsontag) = "receivedholdtime"];
+    string FsmEstablishedTime   = 41 [(gogoproto.jsontag) = "fsmestablishedtime"];
+    uint32 InUpdatesElpsTime    = 42 [(gogoproto.jsontag) = "inupdateselpstime"];
+    uint32 InOpens              = 43 [(gogoproto.jsontag) = "inopens"];
+    uint32 OutOpens             = 44 [(gogoproto.jsontag) = "outopens"];
+    uint32 PeerIndex            = 45 [(gogoproto.jsontag) = "peerindex"];
 }
 
 message NeighborFilter {

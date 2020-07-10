@@ -61,6 +61,86 @@ func (x NeighborStatus_State) String() string {
 	return NeighborStatus_State_vname[int32(x)]
 }
 
+// NeighborStatus_AddrType_normal is a map of normalized values for the enum
+var NeighborStatus_AddrType_normal = map[string]string{
+	"appletalk": "appletalk",
+	"banyanvin": "banyanvin",
+	"bbn1822":   "bbn1822",
+	"decnetiv":  "decnetiv",
+	"e163":      "e163",
+	"e164":      "e164",
+	"e164_nsap": "e164_nsap",
+	"f69":       "f69",
+	"hdlc":      "hdlc",
+	"ieee802":   "ieee802",
+	"ipv4":      "ipv4",
+	"ipv4_tna":  "ipv4_tna",
+	"ipv6":      "ipv6",
+	"ipv6_tna":  "ipv6_tna",
+	"ipx":       "ipx",
+	"l2vpn":     "l2vpn",
+	"nsap":      "nsap",
+	"nsap_tna":  "nsap_tna",
+	"other":     "other",
+	"vpn_ipv4":  "vpn_ipv4",
+	"vpn_ipv6":  "vpn_ipv6",
+	"x121":      "x121",
+}
+
+var NeighborStatus_AddrType_vname = map[int32]string{
+	0:  "other",
+	1:  "ipv4",
+	2:  "ipv6",
+	3:  "nsap",
+	4:  "hdlc",
+	5:  "bbn1822",
+	6:  "ieee802",
+	7:  "e163",
+	8:  "e164",
+	9:  "f69",
+	10: "x121",
+	11: "ipx",
+	12: "appletalk",
+	13: "decnetiv",
+	14: "banyanvin",
+	15: "e164_nsap",
+	16: "ipv4_tna",
+	17: "ipv6_tna",
+	18: "nsap_tna",
+	19: "vpn_ipv4",
+	20: "vpn_ipv6",
+	25: "l2vpn",
+}
+
+var NeighborStatus_AddrType_vvalue = map[string]int32{
+	"other":     0,
+	"ipv4":      1,
+	"ipv6":      2,
+	"nsap":      3,
+	"hdlc":      4,
+	"bbn1822":   5,
+	"ieee802":   6,
+	"e163":      7,
+	"e164":      8,
+	"f69":       9,
+	"x121":      10,
+	"ipx":       11,
+	"appletalk": 12,
+	"decnetiv":  13,
+	"banyanvin": 14,
+	"e164_nsap": 15,
+	"ipv4_tna":  16,
+	"ipv6_tna":  17,
+	"nsap_tna":  18,
+	"vpn_ipv4":  19,
+	"vpn_ipv6":  20,
+	"l2vpn":     25,
+}
+
+func (x NeighborStatus_AddrType) String() string {
+	return NeighborStatus_AddrType_vname[int32(x)]
+}
+
 var _ validators.DummyVar
 var validatorMapRouting = make(map[string]map[string][]func(string, interface{}) error)
 
@@ -304,6 +384,8 @@ func (m *NeighborStatus) Defaults(ver string) bool {
 	ret = true
 	switch ver {
 	default:
+		m.PrevStatus = "idle"
+		m.SelLocalAddrType = "other"
 		m.Status = "idle"
 	}
 	return ret
@@ -538,6 +620,10 @@ func (m *NeighborStatus) Validate(ver, path string, ignoreStatus bool, ignoreSpe
 
 func (m *NeighborStatus) Normalize() {
 
+	m.PrevStatus = NeighborStatus_State_normal[strings.ToLower(m.PrevStatus)]
+
+	m.SelLocalAddrType = NeighborStatus_AddrType_normal[strings.ToLower(m.SelLocalAddrType)]
+
 	m.Status = NeighborStatus_State_normal[strings.ToLower(m.Status)]
 
 }
@@ -608,6 +694,41 @@ func init() {
 	validatorMapRouting = make(map[string]map[string][]func(string, interface{}) error)
 
 	validatorMapRouting["NeighborStatus"] = make(map[string][]func(string, interface{}) error)
+
+	validatorMapRouting["NeighborStatus"]["all"] = append(validatorMapRouting["NeighborStatus"]["all"], func(path string, i interface{}) error {
+		m := i.(*NeighborStatus)
+		if err := validators.EmptyOr(validators.IPAddr, m.LocalAddr, nil); err != nil {
+			return fmt.Errorf("%v failed validation: %s", path+"."+"LocalAddr", err.Error())
+		}
+		return nil
+	})
+
+	validatorMapRouting["NeighborStatus"]["all"] = append(validatorMapRouting["NeighborStatus"]["all"], func(path string, i interface{}) error {
+		m := i.(*NeighborStatus)
+
+		if _, ok := NeighborStatus_State_vvalue[m.PrevStatus]; !ok {
+			vals := []string{}
+			for k1, _ := range NeighborStatus_State_vvalue {
+				vals = append(vals, k1)
+			}
+			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"PrevStatus", vals)
+		}
+		return nil
+	})
+
+	validatorMapRouting["NeighborStatus"]["all"] = append(validatorMapRouting["NeighborStatus"]["all"], func(path string, i interface{}) error {
+		m := i.(*NeighborStatus)
+
+		if _, ok := NeighborStatus_AddrType_vvalue[m.SelLocalAddrType]; !ok {
+			vals := []string{}
+			for k1, _ := range NeighborStatus_AddrType_vvalue {
+				vals = append(vals, k1)
+			}
+			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"SelLocalAddrType", vals)
+		}
+		return nil
+	})
+
 	validatorMapRouting["NeighborStatus"]["all"] = append(validatorMapRouting["NeighborStatus"]["all"], func(path string, i interface{}) error {
 		m := i.(*NeighborStatus)
 
