@@ -55,8 +55,8 @@
         (key_)->key_metadata_lif = 0;                              \
         (key_)->ctag_1_vid = (encap_)->val.vlan_tag;               \
     } else if ((encap_)->type == PDS_ENCAP_TYPE_QINQ) {            \
-        (key_)->key_metadata_lif = (encap_)->val.qinq.s_tag;       \
-        (key_)->ctag_1_vid = (encap_)->val.qinq.c_tag;             \
+        (key_)->key_metadata_lif = 0;                              \
+        (key_)->ctag_1_vid = (encap_)->val.qinq.s_tag;             \
     }                                                              \
 }
 
