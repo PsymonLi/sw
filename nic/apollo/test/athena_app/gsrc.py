@@ -10,7 +10,7 @@ cd /local/jason/b1/sw/nic/apollo/test/athena_app
 '''
 
 from os import system, mkdir, chdir, path, makedirs, getcwd, environ
-from  shutil import copytree, ignore_patterns, make_archive, copyfile, copy
+from  shutil import copytree, ignore_patterns, make_archive, copyfile, copymode, copy
 import argparse
 # from getDepHeaders import Parser
 import sys
@@ -19,12 +19,12 @@ import os
 asic = environ.get('ASIC', 'capri')
 
 def parse_input ():
-    parser = argparse.ArgumentParser(description="Create oracle src tree")
+    parser = argparse.ArgumentParser(description="Create mini athena src tree")
     parser.add_argument('--dst', default='pensando', 
            help='Dst folder relative to /sw where all the src and Athena App should be copied', dest='dst')
     parser.add_argument('--src', default='.', 
            help='Src tree folder', dest='src')
-    parser.add_argument('--spec', default='oracle', 
+    parser.add_argument('--spec', default='athena_spec', 
            help='src selection specification', dest='spec')
     args = parser.parse_args()
     return args
@@ -65,7 +65,7 @@ def copy_src(src, dst):
                     if not os.path.isdir(os.path.dirname(os.path.abspath(dst1))):
                         os.makedirs(os.path.dirname(os.path.abspath(dst1)))
                         print("C: %s" % os.path.dirname(line))
-                    copyfile(src1, dst1, follow_symlinks=False)
+                    copy(src1, dst1, follow_symlinks=False)
                     print("F: %s" % line)
         else:
             # if not os.path.isdir(os.path.dirname(os.path.abspath(dst1))):
