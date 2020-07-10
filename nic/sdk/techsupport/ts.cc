@@ -18,7 +18,11 @@ using namespace std;
 namespace sdk {
 namespace ts {
 
+#ifdef SIM
+#define TASK_TIMEOUT  300 // 5mins timeout per task
+#else
 #define TASK_TIMEOUT  120 // 2mins timeout per task
+#endif
 
 static inline int
 ts_get_exit_status (int rc)

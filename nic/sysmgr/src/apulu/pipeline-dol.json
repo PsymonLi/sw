@@ -4,8 +4,7 @@
         "command": "pciemgrd -d",
         "dependencies": [],
         "flags": ["critical"],
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
     },
     {
         "name": "agent",
@@ -17,23 +16,20 @@
         "flags": ["save_stdout_on_crash"],
         "memory-limit": 0,
         "cpu-max-percentage": 75,
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
     },
     {
         "name": "vpp",
         "command": "/sw/nic/vpp/tools/start-vpp-sim.sh",
         "dependencies": [],
         "flags": ["save_stdout_on_crash"],
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
     },
     {
         "name": "operd",
         "command": "operd /sw/nic/conf/apulu/operd.json /sw/nic/conf/apulu/operd-decoders.json",
         "dependencies": [],
         "flags": [],
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
      }
 ]

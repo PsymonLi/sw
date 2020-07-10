@@ -9,24 +9,21 @@
         "flags": ["save_stdout_on_crash"],
         "memory-limit": 0,
         "cpu-max-percentage": 75,
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
     },
     {
         "name": "vpp",
         "command": "/naples/nic/tools/start-vpp-naples-sim.sh",
         "dependencies": [],
         "flags": ["save_stdout_on_crash"],
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
     },
     {
         "name": "operd",
         "command": "/naples/nic/bin/operd /naples/nic/conf/operd.json /naples/nic/conf/operd-decoders.json",
         "dependencies": [],
         "flags": [],
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
     },
     {
         "name": "nmd",
@@ -34,8 +31,7 @@
         "dependencies": [],
         "flags": ["save_stdout_on_crash", "cap_stdout_stderr"],
         "cpu-max-percentage": 25,
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
     },
     {
         "name": "pen-netagent",
@@ -44,8 +40,7 @@
         "flags": ["save_stdout_on_crash", "cap_stdout_stderr"],
         "memory-limit": 0,
         "cpu-max-percentage": 75,
-        "timeout": 0.0,
-        "cpu-affinity": "0x3"
+        "timeout": 0.0
      },
      {
         "name": "firewall",
@@ -53,7 +48,6 @@
         "kind": "oneshot",
         "dependencies": [],
         "flags": [],
-        "timeout": 0.0,
-        "cpu-affinity": "0x2"
+        "timeout": 0.0
      }
 ]
