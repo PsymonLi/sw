@@ -89,6 +89,35 @@ device_conf_update (pds_device_spec_t *spec)
     }
 }
 
+static inline void
+pds_device_state_update (pds_device_spec_t *curr, pds_device_spec_t *spec)
+{
+    curr->device_ip_addr = spec->device_ip_addr;
+    MAC_ADDR_COPY(curr->device_mac_addr, spec->device_mac_addr);
+    curr->gateway_ip_addr = spec->gateway_ip_addr;
+    curr->bridging_en = spec->bridging_en;
+    curr->learn_spec = spec->learn_spec;
+    curr->overlay_routing_en = spec->overlay_routing_en;
+    curr->symmetric_routing_en = spec->symmetric_routing_en;
+    curr->ip_mapping_priority = spec->ip_mapping_priority;
+    curr->fw_action_xposn_scheme = spec->fw_action_xposn_scheme;
+    curr->tx_policer = spec->tx_policer;
+}
+
+// function to copy only the mutables fields into the new spec
+static inline void
+pds_device_copy_mutable_attrs (pds_device_spec_t *new_spec,
+                               pds_device_spec_t *spec)
+{
+    new_spec->device_ip_addr = spec->device_ip_addr;
+    MAC_ADDR_COPY(new_spec->device_mac_addr, spec->device_mac_addr);
+    new_spec->gateway_ip_addr = spec->gateway_ip_addr;
+    new_spec->learn_spec = spec->learn_spec;
+    new_spec->ip_mapping_priority = spec->ip_mapping_priority;
+    new_spec->fw_action_xposn_scheme = spec->fw_action_xposn_scheme;
+    new_spec->tx_policer = spec->tx_policer;
+}
+
 sdk_ret_t
 pds_svc_device_create (const pds::DeviceRequest *proto_req,
                        pds::DeviceResponse *proto_rsp)
@@ -138,8 +167,6 @@ pds_svc_device_create (const pds::DeviceRequest *proto_req,
             }
             goto end;
         }
-        memcpy(core::agent_state::state()->device(), api_spec,
-               sizeof(pds_device_spec_t));
     }
 
     // update device.conf with persistent attrs
@@ -164,7 +191,7 @@ pds_svc_device_update (const pds::DeviceRequest *proto_req,
 {
     sdk_ret_t ret;
     pds_batch_ctxt_t bctxt;
-    pds_device_spec_t api_spec;
+    pds_device_spec_t api_spec, mutable_api_spec;
     bool batched_internally = false;
     pds_batch_params_t batch_params;
 
@@ -188,21 +215,28 @@ pds_svc_device_update (const pds::DeviceRequest *proto_req,
         batched_internally = true;
     }
 
+    // copy existing device spec
+    memcpy(&mutable_api_spec, core::agent_state::state()->device(),
+           sizeof(pds_device_spec_t));
+    // get spec in update request
     ret = pds_device_proto_to_api_spec(&api_spec, proto_req->request());
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Invalid device object specification, err %u", ret);
         goto end;
     }
+    // copy mutable fields from update request to mutable api spec
+    pds_device_copy_mutable_attrs(&mutable_api_spec, &api_spec);
     if (!core::agent_state::state()->pds_mock_mode()) {
-        ret = pds_device_update(&api_spec, bctxt);
+        ret = pds_device_update(&mutable_api_spec, bctxt);
         if (ret != SDK_RET_OK) {
             if (batched_internally) {
                 pds_batch_destroy(bctxt);
             }
             goto end;
         }
-        memcpy(core::agent_state::state()->device(), &api_spec,
-               sizeof(pds_device_spec_t));
+        // copy mutable api spec to agent copy of spec
+        pds_device_state_update(core::agent_state::state()->device(),
+                                &mutable_api_spec);
     }
 
     // update device.conf with persistent attrs

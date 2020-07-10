@@ -121,8 +121,8 @@ func printRouteTableSummary(count int) {
 func printRouteTableHeader() {
 	hdrLine := strings.Repeat("-", 158)
 	fmt.Println(hdrLine)
-	fmt.Printf("%-40s%-10s%-40s%-20s%-8s%-40s\n%-40s%-10s%-40s%-20s%-8s%-40s\n",
-		"Route Table ID", "Priority", "Route ID", "Prefix", "NextHop", "NextHop",
+	fmt.Printf("%-40s%-10s%-40s%-20s%-8s%-40s\n%-40s%-10s%-40s%-14s%-20s%-8s%-40s\n",
+		"Route Table ID", "Priority", "Route ID", "ClassPriority", "Prefix", "NextHop", "NextHop",
 		"", "Enabled", "", "", "Type", "")
 	fmt.Println(hdrLine)
 }
@@ -140,6 +140,7 @@ func printRouteTable(rt *pds.RouteTable) {
 	if priorityEn {
 		priorityStr = "Y"
 	}
+	classPriority := "-"
 
 	fmt.Printf("%-40s%-9s", utils.IdToStr(spec.GetId()),
 		priorityStr)
@@ -150,7 +151,10 @@ func printRouteTable(rt *pds.RouteTable) {
 		if first != true {
 			fmt.Printf("%-40s%-9s", "", "")
 		}
-		fmt.Printf("%-40s", utils.IdToStr(route.GetId()))
+		if priorityStr == "Y" {
+			classPriority = fmt.Sprint(route.GetAttrs().GetClassPriority())
+		}
+		fmt.Printf("%-40s%-14s", utils.IdToStr(route.GetId()), classPriority)
 		switch route.GetAttrs().GetNh().(type) {
 		case *pds.RouteAttrs_NextHop:
 			fmt.Printf("%-20s%-8s%-40s\n",

@@ -33,9 +33,13 @@ class LearnSpec():
             if mode == "notify":
                 return device_pb2.LEARN_MODE_NOTIFY
             return device_pb2.LEARN_MODE_NONE
+        def __get_learn_agetimeout(mode, agetimeout):
+            if mode == "auto" or mode == "notify":
+                return agetimeout
+            return 0
         self.LearnMode = __get_learnmode(mode)
         self.LearnModeStr = mode
-        self.LearnAgeTimeout = agetimeout
+        self.LearnAgeTimeout = __get_learn_agetimeout(mode, agetimeout)
         self.LearnSource = LearnSource(arp, dhcp, data)
         return
 

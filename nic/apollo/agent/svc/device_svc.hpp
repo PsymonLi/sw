@@ -266,6 +266,10 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
                 api_spec->learn_spec.learn_source.dhcp_learn_en = true;
                 api_spec->learn_spec.learn_source.data_pkt_learn_en = true;
             }
+        } else {
+            if (api_spec->learn_spec.learn_age_timeout) {
+                return SDK_RET_INVALID_ARG;
+            }
         }
     } else {
         api_spec->learn_spec.learn_mode = PDS_LEARN_MODE_NONE;

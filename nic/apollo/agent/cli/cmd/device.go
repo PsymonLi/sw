@@ -299,19 +299,8 @@ func deviceShowCmdHandler(cmd *cobra.Command, args []string) {
 	} else if cmd != nil && cmd.Flags().Changed("detail") {
 		printDeviceDetail(resp)
 	} else {
-		printDeviceHeader()
 		printDevice(resp)
 	}
-}
-
-func printDeviceHeader() {
-	hdrLine := strings.Repeat("-", 186)
-	fmt.Println(hdrLine)
-	fmt.Printf("%-16s%-20s%-16s%-12s%-12s%-12s%-12s%-16s%-16s%-10s%-18s%-20s%-6s\n",
-		"IPAddr", "MACAddr", "GatewayIP",
-		"MemProfile", "DevProfile", "BridgingEn", "LearnMode", "LearnAgeTimeout",
-		"IPMappingPrio", "OperMode", "OverlayRoutingEn", "FRU MAC", "Memory")
-	fmt.Println(hdrLine)
 }
 
 func printDevice(resp *pds.DeviceGetResponse) {
@@ -327,20 +316,28 @@ func printDevice(resp *pds.DeviceGetResponse) {
 		return
 	}
 
-	mode := strings.Replace(spec.GetLearnSpec().GetLearnMode().String(), "LEARN_MODE_", "", -1)
 	memoryStr := fmt.Sprintf("%dG", status.GetMemory())
-	fmt.Printf("%-16s%-20s%-16s%-12s%-12s%-12t%-12s%-16d%-16d%-10s%-18t%-20s%-6s\n",
-		utils.IPAddrToStr(spec.GetIPAddr()),
-		utils.MactoStr(spec.GetMACAddr()),
-		utils.IPAddrToStr(spec.GetGatewayIP()),
-		strings.Replace(spec.GetMemoryProfile().String(), "MEMORY_PROFILE_", "", -1),
-		strings.Replace(spec.GetDeviceProfile().String(), "DEVICE_PROFILE_", "", -1),
-		spec.GetBridgingEn(), mode,
-		spec.GetLearnSpec().GetLearnAgeTimeout(),
-		spec.GetIPMappingPriority(),
-		strings.Replace(spec.GetDevOperMode().String(), "DEVICE_OPER_MODE_", "", -1),
-		spec.GetOverlayRoutingEn(), utils.MactoStr(status.GetSystemMACAddress()),
-		memoryStr)
+	fmt.Printf("%-30s: %s\n", "IP Address", utils.IPAddrToStr(spec.GetIPAddr()))
+	fmt.Printf("%-30s: %s\n", "MAC Address", utils.MactoStr(spec.GetMACAddr()))
+	fmt.Printf("%-30s: %s\n", "Gateway IP", utils.IPAddrToStr(spec.GetGatewayIP()))
+	fmt.Printf("%-30s: %s\n", "Memory Profile",
+		strings.ToLower(strings.Replace(spec.GetMemoryProfile().String(),
+			"MEMORY_PROFILE_", "", -1)))
+	fmt.Printf("%-30s: %s\n", "Device Profile",
+		strings.ToLower(strings.Replace(spec.GetDeviceProfile().String(),
+			"DEVICE_PROFILE_", "", -1)))
+	fmt.Printf("%-30s: %t\n", "Bridging Enabled", spec.GetBridgingEn())
+	fmt.Printf("%-30s: %s\n", "Learn Mode",
+		strings.ToLower(strings.Replace(spec.GetLearnSpec().GetLearnMode().String(),
+			"LEARN_MODE_", "", -1)))
+	fmt.Printf("%-30s: %d\n", "Learn Age Timeout", spec.GetLearnSpec().GetLearnAgeTimeout())
+	fmt.Printf("%-30s: %d\n", "IP Mapping Priority", spec.GetIPMappingPriority())
+	fmt.Printf("%-30s: %s\n", "Operational Mode",
+		strings.ToLower(strings.Replace(spec.GetDevOperMode().String(),
+			"DEVICE_OPER_MODE_", "", -1)))
+	fmt.Printf("%-30s: %t\n", "Overlay Routing Enabled", spec.GetOverlayRoutingEn())
+	fmt.Printf("%-30s: %s\n", "FRU MAC Address", utils.MactoStr(status.GetSystemMACAddress()))
+	fmt.Printf("%-30s: %s\n", "Memory", memoryStr)
 }
 
 func printDeviceDetail(resp *pds.DeviceGetResponse) {

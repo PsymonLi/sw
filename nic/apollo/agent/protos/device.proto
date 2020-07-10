@@ -128,13 +128,13 @@ message DeviceSpec {
   // operational mode of the device
   // NOTE: when operational mode is modified, it will take affect only after
   //       next reboot of NAPLES/DSC
-  DeviceOperMode      DevOperMode         = 4 [(gogoproto.moretags) = "meta:mandatory"];
+  DeviceOperMode      DevOperMode         = 4 [(gogoproto.moretags) = "meta:mandatory, persisted"];
   // Memory Profile (only MEMORY_PROFILE_DEFAULT is supported)
   // NOTE: when a device profile is changed, it will take affect after next
   // reboot of NAPLES/DSC
-  MemoryProfile       MemoryProfile       = 5 [(gogoproto.moretags) = "meta:mandatory"];
+  MemoryProfile       MemoryProfile       = 5 [(gogoproto.moretags) = "meta:mandatory, persisted"];
   // Device Profile
-  DeviceProfile       DeviceProfile       = 6 [(gogoproto.moretags) = "meta:mandatory"];
+  DeviceProfile       DeviceProfile       = 6 [(gogoproto.moretags) = "meta:mandatory, persisted"];
   // if BridgingEn is true, L2 functionality based on MAC addresses kicks in
   // NOTE: when operational mode is modified, it will take affect only after
   //       next reboot of NAPLES/DSC
