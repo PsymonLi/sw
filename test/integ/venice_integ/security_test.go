@@ -611,7 +611,7 @@ func (it *veniceIntegSuite) TestSgPolicyCommitBuffer(c *C) {
 					return false, gsgp[0].Spec.Rules
 				}
 				return true, nil
-			}, fmt.Sprintf("SGPolicy not found in agent. SGP: %v", sgp.GetKey()), "10ms", it.pollTimeout())
+			}, fmt.Sprintf("SGPolicy not found in agent. SGP: %v", sgp.GetKey()), "10s", "300s")
 		}
 
 		// verify sgpolicy status reflects propagation status
@@ -695,7 +695,7 @@ func (it *veniceIntegSuite) TestSgPolicyCommitBuffer(c *C) {
 					return false, gsgp[0].Spec.Rules
 				}
 				return true, nil
-			}, fmt.Sprintf("SGPolicy not found in agent SGP: %v", sgp.GetKey()), "10ms", it.pollTimeout())
+			}, fmt.Sprintf("SGPolicy not found in agent SGP: %v", sgp.GetKey()), "10s", "300s")
 		}
 
 		// verify sgpolicy status reflects propagation status
