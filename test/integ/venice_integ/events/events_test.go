@@ -94,6 +94,8 @@ func TestEvents(t *testing.T) {
 	evtsRecorder.Event(eventtypes.SERVICE_STARTED, "test event - 1", nil)
 	evtsRecorder.Event(eventtypes.SERVICE_RUNNING, "test event - 2", nil)
 
+	time.Sleep(1 * time.Second)
+
 	// verify that it has reached elasticsearch; these are the first occurrences of an event
 	// so it should have reached elasticsearch without being de-duped.
 	query := es.NewBoolQuery().Must(es.NewMatchQuery("source.component", componentID),
