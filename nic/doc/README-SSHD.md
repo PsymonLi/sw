@@ -8,6 +8,7 @@ The file '/nic/conf/system_boot_config' that is bundled in with Naples Distribut
 Content of this file is processed at the boot uptime of DSC and sets the system behavior accordingly.
 
 This is a build time defined file and is not expected to be edited after.
+However, if the adminstrator of the system needs to alter the customisation, it can be done by placing override file '/sysconfig/config0/system_boot_config'. This override configuration file will be copied over as 'nic/conf/system_boot_config' during boot up and processed.
 
 1. SSHD behavior on boot up and customzation of it:
 ---------------------------------------------------
@@ -63,7 +64,7 @@ passwords based authentication with SSH.
     ------
     1. Disabling clear text password through this knob will not allow
     password based authenticaton, even if password based authentication for
-    root user through ROOT_PASSWORD setting.
+    root user is enabled through ROOT_PASSWORD setting.
     2. If ROOT_PASSWORD setting disabled password based authentication, this
     setting (SSHD_PASSWORD_AUTHENTICATION) automatically is interpreted as
     'no' i.e. no clear text password accepted through SSH.
@@ -84,3 +85,33 @@ Content of this file is processed at the boot uptime of DSC and controls the sys
 ----------------------------------------------
 Set the knob ROOT_PASSWORD to 'on' if DSC should allow password based
 authentication into root account of the system.
+
+
+Enabling SSH:
+=============
+If SSH is disabled on a DSC, it can be enabled through the below procedure.
+
+1. Create customization file to enable SSH on reboot of DSC.
+    # cp /nic/conf/system_boot_config /sysconfig/config0/
+
+2. Edit the file contents to look as below.
+
+    # cat /sysconfig/config0/system_boot_config
+    SSHD_BOOT_BEHAVIOR=on
+    SSHD_PERSIST=off
+    SSHD_PASSWORD_AUTHENTICATION=yes
+    ROOT_PASSWORD=on
+    SSH_KEYS_PERSIST=on
+    #
+
+    Note that, with the above configuration example password based SSH authentication is allowed ('SSHD_PASSWORD_AUTHENTICATION=yes') and persistence is turned 'off'. 
+    i. If password based authentication is to be turned off, then one has to
+       load public key of ssh user into the DSC either through 'penctl'
+       command interface or by editing the public key into the file:
+       /sysconfig/config0/.authorized_keys
+   ii. If persistence is to be turned 'on', then user has to clear off
+       any previous cached state, by the below command, before reboot (step 3)
+       of this procedure:
+       # mv /sysconfig/config0/ssh/sshd_config /sysconfig/config0/ssh/sshd_config.`date+"%Y%m%d%H%M%S"`
+3. Reboot the system as below. DSC should come up with SSH enabled.
+   # sysreset.sh
