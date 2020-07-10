@@ -21,9 +21,6 @@ namespace api {
 // forward declaration
 class dhcp_state;
 
-// attribute update bits for DHCP policy object
-#define PDS_SUBNET_UPD_DHCP_PROXY_POLICY    0x1
-
 /// \defgroup PDS_DHCP_POLICY - DHCP policy functionality
 /// \ingroup PDS_DHCP
 /// @{

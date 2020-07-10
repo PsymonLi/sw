@@ -28,6 +28,7 @@ class subnet_state;
 #define PDS_SUBNET_UPD_V4_VR_IP            0x8
 #define PDS_SUBNET_UPD_V6_VR_IP            0x10
 #define PDS_SUBNET_UPD_FABRIC_ENCAP        0x20
+#define PDS_SUBNET_UPD_DHCP_PROXY_POLICY   0x40
 
 /// \defgroup PDS_SUBNET_ENTRY - subnet entry functionality
 /// \ingroup PDS_SUBNET
