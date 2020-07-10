@@ -44,6 +44,7 @@
 #include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
 #include "nic/sdk/lib/bitmap/bitmap.hpp"
 #include "fte_athena.hpp"
+#include "nic/apollo/p4/include/athena_defines.h"
 #include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_vnic.h"
 #include "nic/apollo/api/include/athena/pds_flow_session_info.h"
@@ -65,16 +66,8 @@ namespace fte_ath {
 
 static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
 
-#define IP_PROTOCOL_TCP 0x06
-#define IP_PROTOCOL_UDP 0x11
-#define IP_PROTOCOL_ICMP 0x01
-#define IP_PROTOCOL_ICMPV6 0x3A
-
-#define TCP_SYN_FLAG 0x02
-
 #define IPV4_ADDR_LEN 4
 #define IPV6_ADDR_LEN 16
-#define IPV6_HDR_LEN 40
 
 // Flow direction bitmask
 #define HOST_TO_SWITCH 0x1
@@ -392,15 +385,15 @@ fte_nat_csum_adj_h2s_v4 (struct ipv4_hdr *iph, uint32_t new_ipaddr)
     ipcsum[1] = (tmp_ipcsum & 0xff);
 
     ip_proto = iph->next_proto_id;
-    if ((ip_proto != IP_PROTOCOL_TCP) &&
-        (ip_proto != IP_PROTOCOL_UDP)) {
+    if ((ip_proto != IP_PROTO_TCP) &&
+        (ip_proto != IP_PROTO_UDP)) {
         return;
     }
 
     ip_hlen = ((iph->version_ihl & IPV4_HDR_IHL_MASK) *
                IPV4_IHL_MULTIPLIER);
     tcph = (struct tcp_hdr *)((uint8_t *)iph + ip_hlen);
-    if (ip_proto == IP_PROTOCOL_TCP) {
+    if (ip_proto == IP_PROTO_TCP) {
         l4csum = (uint8_t *) &(tcph->cksum);
         l4csum_adj = 1;
     } else {
@@ -500,7 +493,7 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
     udp0 = (struct udp_hdr *)(ip40 + 1);
 
     if (((ip40->version_ihl >> 4) == 4) &&
-        (ip40->next_proto_id == IP_PROTOCOL_UDP)) {
+        (ip40->next_proto_id == IP_PROTO_UDP)) {
         dport = rte_be_to_cpu_16(udp0->dst_port);
         if ((mplsoudp = (dport == 0x19EB)) ||
             (geneve = (dport == 0x17C1))) {
@@ -571,9 +564,9 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         uint32_t dnat_local_ip;
 
         protocol = ip40->next_proto_id;
-        if ((protocol != IP_PROTOCOL_TCP) &&
-            (protocol != IP_PROTOCOL_UDP) && 
-            (protocol != IP_PROTOCOL_ICMP)) {
+        if ((protocol != IP_PROTO_TCP) &&
+            (protocol != IP_PROTO_UDP) && 
+            (protocol != IP_PROTO_ICMP)) {
             PDS_TRACE_DEBUG("Unsupported IP Proto:%u\n", protocol);
             return SDK_RET_INVALID_OP;
         }
@@ -603,9 +596,9 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         struct ipv6_hdr *ip60 = (struct ipv6_hdr *)ip40;
 
         protocol = ip60->proto;
-        if ((protocol != IP_PROTOCOL_TCP) &&
-            (protocol != IP_PROTOCOL_UDP) && 
-            (protocol != IP_PROTOCOL_ICMPV6)) {
+        if ((protocol != IP_PROTO_TCP) &&
+            (protocol != IP_PROTO_UDP) && 
+            (protocol != IP_PROTO_ICMPV6)) {
             PDS_TRACE_DEBUG("Unsupported IPV6 Proto:%u\n", protocol);
             return SDK_RET_INVALID_OP;
         }
@@ -620,12 +613,12 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         }
 
         tcp0 = (struct tcp_hdr *) (((uint8_t *) ip60) +
-                    IPV6_HDR_LEN);
+                    IPV6_BASE_HDR_SIZE);
     }
 
     key->ip_proto = protocol;
-    if ((protocol == IP_PROTOCOL_ICMP) ||
-        (protocol == IP_PROTOCOL_ICMPV6)) {
+    if ((protocol == IP_PROTO_ICMP) ||
+        (protocol == IP_PROTO_ICMPV6)) {
         struct icmp_hdr *icmph = ((struct icmp_hdr *)tcp0);
 
         key->l4.icmp.type = icmph->icmp_type;
@@ -641,7 +634,7 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
             key->l4.tcp_udp.sport = dport;
             key->l4.tcp_udp.dport = sport;
         }
-        if (protocol == IP_PROTOCOL_TCP) {
+        if (protocol == IP_PROTO_TCP) {
             *tcp_flags = tcp0->tcp_flags;
         }
     }
@@ -659,9 +652,9 @@ fte_conntrack_state_create (uint32_t conntrack_index,
 
     conn_spec.key.conntrack_id = conntrack_index;
 
-    if (flow_spec->key.ip_proto == IP_PROTOCOL_TCP) {
+    if (flow_spec->key.ip_proto == IP_PROTO_TCP) {
         conn_spec.data.flow_type = PDS_FLOW_TYPE_TCP;
-        if (tcp_flags & TCP_SYN_FLAG) {
+        if (tcp_flags & TCP_FLAG_SYN) {
             if (flow_dir == HOST_TO_SWITCH) {
                 conn_spec.data.flow_state = PDS_FLOW_STATE_SYN_SENT;
             } else {
@@ -672,9 +665,10 @@ fte_conntrack_state_create (uint32_t conntrack_index,
             return SDK_RET_INVALID_OP;
         }
     } else {
-        if (flow_spec->key.ip_proto == IP_PROTOCOL_UDP) {
+        if (flow_spec->key.ip_proto == IP_PROTO_UDP) {
             conn_spec.data.flow_type = PDS_FLOW_TYPE_UDP;
-        } else if (flow_spec->key.ip_proto == IP_PROTOCOL_ICMP) {
+        } else if ((flow_spec->key.ip_proto == IP_PROTO_ICMP) ||
+                   (flow_spec->key.ip_proto == IP_PROTO_ICMPV6)) {
             conn_spec.data.flow_type = PDS_FLOW_TYPE_ICMP;
         } else {
             conn_spec.data.flow_type = PDS_FLOW_TYPE_OTHERS;
@@ -1406,7 +1400,7 @@ fte_flow_prog (struct rte_mbuf *m)
             PDS_TRACE_DEBUG("fte_conntrack_state_create failed. \n");
             return ret;
         }
-        if (flow_spec.key.ip_proto == IP_PROTOCOL_TCP) {
+        if (flow_spec.key.ip_proto == IP_PROTO_TCP) {
             // allowed_flow_state_bitmask
             if (flow_dir == HOST_TO_SWITCH) {
                 // Applicable SYN states - HOST side initiated flows
@@ -1460,12 +1454,14 @@ fte_flow_prog (struct rte_mbuf *m)
     }
 
     ret = (sdk_ret_t)pds_flow_cache_entry_create(&flow_spec);
-    if ((ret != SDK_RET_OK) && (ret != SDK_RET_ENTRY_EXISTS)) {
-        PDS_TRACE_DEBUG("pds_flow_cache_entry_create failed. \n");
+    if (ret != SDK_RET_OK) {
         fte_session_info_delete(session_index);
         fte_session_index_free(session_index);
         fte_conntrack_free(vnic_id, conntrack_index);
-        return ret;
+        if (ret != SDK_RET_ENTRY_EXISTS) {
+            PDS_TRACE_DEBUG("pds_flow_cache_entry_create failed. \n");
+            return ret;
+        }
     }
 
     if (fte_is_vnic_type_l2(vnic_id)) {
