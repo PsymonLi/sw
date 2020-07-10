@@ -71,7 +71,12 @@ type Option func(*Indexer)
 // Indexer is an implementation of the indexer.Interface
 type Indexer struct {
 	sync.RWMutex
-	wg         sync.WaitGroup
+	wg sync.WaitGroup
+
+	// Do not use baseCtx for any functionality. Its only used for spinning
+	// new sub ctx whenever indexer restarts
+	baseCtx context.Context
+
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	logger     log.Logger
@@ -232,6 +237,7 @@ func NewIndexer(ctx context.Context,
 	logger log.Logger, opts ...Option) (Interface, error) {
 	newCtx, cancelFunc := context.WithCancel(ctx)
 	indexer := Indexer{
+		baseCtx:                                  ctx,
 		ctx:                                      newCtx,
 		rsr:                                      rsr,
 		wg:                                       sync.WaitGroup{},
@@ -272,102 +278,115 @@ func NewIndexer(ctx context.Context,
 	indexer.maxWriters = indexer.maxOrderedWriters + indexer.maxAppendOnlyWriters
 	indexer.indexMaxBuffer = indexer.maxWriters * indexBatchSize
 
-	logger.Infof("Creating Indexer, apiserver-addr: %s, watchAPIServer %d, watchVos %d",
-		apiServerAddr, indexer.watchAPIServer, indexer.watchVos)
+	logger.Infof("Created new indexer: {%+v}", &indexer)
+	return &indexer, nil
+}
 
-	if indexer.elasticClient == nil {
+func (idr *Indexer) createClients() error {
+	idr.logger.Infof("Creating indexer's clients, apiserver-addr: %s, watchAPIServer %d, watchVos %d",
+		idr.apiServerAddr, idr.watchAPIServer, idr.watchVos)
+
+	if idr.elasticClient == nil {
 		// Initialize elastic client
 		result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-			return elastic.NewAuthenticatedClient("", rsr, logger.WithContext("submodule", "elastic"))
+			return elastic.NewAuthenticatedClient("", idr.rsr, idr.logger.WithContext("submodule", "elastic"))
 		}, elasticWaitIntvl, maxElasticRetries)
 		if err != nil {
-			logger.Errorf("Failed to create elastic client, err: %v", err)
-			return nil, err
+			idr.logger.Errorf("Failed to create elastic client, err: %v", err)
+			return err
 		}
-		logger.Debugf("Created elastic client")
-		indexer.elasticClient = result.(elastic.ESClient)
+		idr.logger.Debugf("Created elastic client")
+		idr.elasticClient = result.(elastic.ESClient)
 	}
 
-	if indexer.watchAPIServer {
+	if idr.watchAPIServer {
 		// Initialize api client
-		apiClientBalancer := balancer.New(rsr)
+		apiClientBalancer := balancer.New(idr.rsr)
 		result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-			return apiservice.NewGrpcAPIClient(globals.Spyglass, globals.APIServer, logger, rpckit.WithBalancer(apiClientBalancer))
+			return apiservice.NewGrpcAPIClient(globals.Spyglass, globals.APIServer, idr.logger, rpckit.WithBalancer(apiClientBalancer))
 		}, apiSrvWaitIntvl, maxAPISrvRetries)
 		if err != nil {
-			logger.Errorf("Failed to create api client, addr: %s err: %v",
-				apiServerAddr, err)
-			indexer.elasticClient.Close()
+			idr.logger.Errorf("Failed to create api client, addr: %s err: %v",
+				idr.apiServerAddr, err)
+			idr.elasticClient.Close()
 			apiClientBalancer.Close()
-			return nil, err
+			return err
 		}
 
-		logger.Debugf("Created API client")
-		indexer.apiClient = result.(apiservice.Services)
+		idr.logger.Debugf("Created API client")
+		idr.apiClient = result.(apiservice.Services)
 	}
 
-	if indexer.watchVos {
+	if idr.watchVos {
 		// Create objstrore http client for fwlogs
 		result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-			return CreateBucketClient(ctx, rsr, globals.DefaultTenant, fwlogsBucketName)
+			return CreateBucketClient(ctx, idr.rsr, globals.DefaultTenant, fwlogsBucketName)
 		}, apiSrvWaitIntvl, maxAPISrvRetries)
 		if err != nil {
-			logger.Errorf("Failed to create objstore client for fwlogs")
-			return nil, err
+			idr.logger.Errorf("Failed to create objstore client for fwlogs")
+			return err
 		}
-		indexer.vosFwLogsHTTPClient = result.(objstore.Client)
+		idr.vosFwLogsHTTPClient = result.(objstore.Client)
 
 		// create grpc client with vos
-		vosClientBalancer := balancer.New(rsr)
+		vosClientBalancer := balancer.New(idr.rsr)
 		result, err = utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-			return apiservice.NewGrpcAPIClient(globals.Spyglass, globals.Vos, logger, rpckit.WithBalancer(vosClientBalancer))
+			return apiservice.NewGrpcAPIClient(globals.Spyglass, globals.Vos, idr.logger, rpckit.WithBalancer(vosClientBalancer))
 		}, apiSrvWaitIntvl, maxAPISrvRetries)
 		if err != nil {
-			logger.Errorf("Failed to create vos client, addr: %s err: %v",
-				apiServerAddr, err)
-			indexer.elasticClient.Close()
-			indexer.apiClient.Close()
+			idr.logger.Errorf("Failed to create vos client, addr: %s err: %v",
+				idr.apiServerAddr, err)
+			idr.elasticClient.Close()
+			idr.apiClient.Close()
 			vosClientBalancer.Close()
-			return nil, err
+			return err
 		}
 
-		logger.Debugf("Created Vos API client")
-		indexer.vosClient = result.(apiservice.Services)
+		idr.logger.Debugf("Created Vos API client")
+		idr.vosClient = result.(apiservice.Services)
 
 		// create vos internal grpc client
-		vosInternalClientBalancer := balancer.New(rsr)
+		vosInternalClientBalancer := balancer.New(idr.rsr)
 		result, err = utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
 			client, err := rpckit.NewRPCClient(globals.Spyglass, globals.Vos, rpckit.WithBalancer(vosInternalClientBalancer))
 			if err != nil {
-				logger.ErrorLog("msg", "Failed to connect to gRPC server", "URL", globals.Vos, "err", err)
+				idr.logger.ErrorLog("msg", "Failed to connect to gRPC server", "URL", globals.Vos, "err", err)
 				return nil, err
 			}
 			return client, err
 		}, apiSrvWaitIntvl, maxAPISrvRetries)
 		if err != nil {
-			logger.Errorf("Failed to create vos internal client, addr: %s err: %v",
-				apiServerAddr, err)
-			indexer.elasticClient.Close()
-			indexer.apiClient.Close()
+			idr.logger.Errorf("Failed to create vos internal client, addr: %s err: %v",
+				idr.apiServerAddr, err)
+			idr.elasticClient.Close()
+			idr.apiClient.Close()
 			vosClientBalancer.Close()
 			vosInternalClientBalancer.Close()
-			return nil, err
+			return err
 		}
 
-		indexer.vosInternalClient = result.(*rpckit.RPCClient)
+		idr.vosInternalClient = result.(*rpckit.RPCClient)
 	}
 
-	logger.Infof("Created new indexer: {%+v}", &indexer)
-	return &indexer, nil
+	return nil
 }
 
 // Start starts the watchers for API-server objects for Indexing
 func (idr *Indexer) Start() error {
+	newCtx, cancelFunc := context.WithCancel(idr.baseCtx)
+	idr.ctx = newCtx
+	idr.cancelFunc = cancelFunc
 
 	idr.logger.Infof("Starting indexer")
 
+	err := idr.createClients()
+	if err != nil {
+		idr.logger.Errorf("Failed to setup indexer's clients, err: %v", err)
+		return err
+	}
+
 	// initialize indexes
-	err := idr.initSearchDB()
+	err = idr.initSearchDB()
 	if err != nil {
 		idr.logger.Errorf("Failed to setup indices for search, err: %v", err)
 		return err
@@ -451,7 +470,12 @@ func (idr *Indexer) initializeAndStartWatchers() {
 	idr.startWatchers()
 
 	if idr.watchVos {
-		idr.vosDiskWtcher.startVosDiskMonitorWatcher(idr.watcherDone)
+		recover := func() {
+			if idr.GetRunningStatus() == true {
+				idr.restartWatchers()
+			}
+		}
+		idr.vosDiskWtcher.startVosDiskMonitorWatcher(idr.watcherDone, recover)
 	}
 }
 
