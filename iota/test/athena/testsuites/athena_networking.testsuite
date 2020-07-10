@@ -38,10 +38,12 @@ testbundles:
     precheckin:
         #- classic/driver-features-sanity.testbundle
         - networking/networking.testbundle
+        - classic/flow-logging.testbundle
 
     sanity:
         # Relative paths from iota/test/athena/testbundles/
         - networking/bootstrap.testbundle
+        - classic/flow-logging-sanity.testbundle
 
     regression:
         # Relative paths from iota/test/athena/testbundles/

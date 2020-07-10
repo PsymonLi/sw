@@ -1,0 +1,115 @@
+meta:
+    name    : flow-logging
+    os      : [ linux ]
+    nics    : [ pensando ]
+
+testcases:
+    -   name    : Verify_Athena_App_Running_No_DPDK
+        testcase: testcases.networking.athena_app_no_dpdk_verify
+        enable  : True
+
+    -   name    : Pdsctl_Port_Cmd
+        testcase: testcases.networking.pdsctl_port
+        enable  : True
+
+    -   name    : Pdsctl_Show_Cmd
+        testcase: testcases.networking.pdsctl_show
+        enable  : True
+
+    #=======================================
+    # Data Path Test
+    #=======================================
+
+    -   name    : Generate_DP_Policy
+        testcase: testcases.networking.generate_dp_policy
+        enable  : True
+        args:
+            skip_flow_log_vnics : [5,6,7,8]
+
+        # UDP/TCP/ICMP max dyn flows = 4M
+        # NAT UDP/TCP max dyn flows ~ 130K, ICMP = 512 
+        # flow_cnt specified in Data_Path_Test should not
+        # exceed max_dyn_flow_count specified below
+
+    -   name    : Flow_Gen
+        testcase: testcases.networking.config.flow_gen
+        enable  : True
+        args    :
+            max_dyn_flow_count : 64
+
+    #=======================================
+    # Flow Log Test - L3 TCP
+    #=======================================
+
+    -   name    : Start_Flow_Log_App_L3_TCP
+        testcase: testcases.flow_log.start_flow_log_app
+
+    -   name    : Data_Path_Test_L3_TCP
+        testcase: testcases.networking.data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L3']
+            nat       : ['no']
+            proto     : ['TCP']
+            pyld_size : [64]
+            flow_type : ['dynamic']
+        args    :
+            flow_cnt  : 1
+            pkt_cnt   : 1
+
+    -   name    : Check_Flow_Log_File_L3_TCP_no_data
+        testcase: testcases.flow_log.check_flow_log
+        enable  : True
+        args    :
+            num_pkts      : 0
+
+    -   name    : Data_Path_Test_L3_TCP_2nd_packet
+        testcase: testcases.networking.data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L3']
+            nat       : ['no']
+            proto     : ['TCP']
+            pyld_size : [64]
+            flow_type : ['dynamic']
+        args    :
+            flow_cnt  : 1
+            pkt_cnt   : 1
+
+    -   name    : Check_Flow_Log_File_L3_TCP
+        testcase: testcases.flow_log.check_flow_log
+        enable  : True
+        args    :
+            num_pkts      : 1
+
+    #=======================================
+    # Skip flow log tests
+    #=======================================
+
+    -   name    : Start_Flow_Log_App_skip_flow_log
+        testcase: testcases.flow_log.start_flow_log_app
+        enable  : True
+
+    -   name    : Data_Path_Test_TCP_skip_flow_log
+        testcase: testcases.networking.data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L3']
+            nat       : ['no']
+            proto     : ['TCP']
+            pyld_size : [64]
+            flow_type : ['dynamic']
+        args    :
+            skip_flow_log: True
+            flow_cnt  : 1
+            pkt_cnt   : 10
+
+    -   name    : Check_Flow_Log_File_0_no_data_skip_flow_log
+        testcase: testcases.flow_log.check_flow_log
+        enable  : True
+        args    :
+            num_pkts      : 0
+

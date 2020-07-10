@@ -252,6 +252,7 @@ nic/apollo/tools/athena/start-sec-agent.sh                        /nic/tools/
 nic/apollo/tools/athena/start-sec-agent-iota.sh                   /nic/tools/
 nic/apollo/tools/athena/start-agent-skip-dpdk.sh                  /nic/tools/
 nic/apollo/tools/athena/start-flow-logger.sh                      /nic/tools/
+nic/apollo/tools/athena/start-flow-logger-iota.sh                 /nic/tools/
 nic/apollo/tools/start-nmd.sh                                     /nic/tools/
 nic/apollo/tools/store_agent_log.sh                               /nic/tools/
 nic/build/$ARCH/$PIPELINE/lib/libtrace.so                         /nic/lib/

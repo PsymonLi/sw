@@ -34,6 +34,8 @@ def gen_plcy_cfg_local_wl_topo(tc):
 
     tc.dp_policy_json_path = api.GetTestsuiteAttr("dp_policy_json_path")
 
+    tc.skip_flow_log_vnics = getattr(tc.args, "skip_flow_log_vnics", [])
+
     # Read template policy.json file
     plcy_obj = None
     
@@ -124,6 +126,12 @@ def gen_plcy_cfg_local_wl_topo(tc):
             vnic['l2_flows_range']['h2s_mac_hi'] = str(mac_hi)
             vnic['l2_flows_range']['s2h_mac_lo'] = str(mac_lo)
             vnic['l2_flows_range']['s2h_mac_hi'] = str(mac_hi)
+
+        # Set skip_flow_log if vnic is part of the skip_flow_log_vnics
+        if int(vnic_id) in tc.skip_flow_log_vnics:
+            api.Logger.info('Setting skip_flow_log for vnic %d' % (
+                            int(vnic_id)))
+            vnic['session']['skip_flow_log'] = "true"
 
     # write vlan/mac addr and flow info to actual file 
     with open(tc.dp_policy_json_path, 'w+') as fd:
@@ -308,8 +316,8 @@ def Trigger(tc):
 
     for node, nic in tc.wl_node_nic_pairs:
         # configure host interface MTUs to jumbo (9198 max allowed on Linux)
-        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)][0], 9198)
-        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)][1], 9198)
+        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)][0], 9150)
+        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)][1], 9150)
 
     resp = api.Trigger(req)
     tc.resp.append(resp)

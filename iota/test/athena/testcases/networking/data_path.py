@@ -51,6 +51,7 @@ def parse_args(tc):
     tc.flow_cnt            = 1
     tc.pkt_cnt             = 2
     tc.skip_flow_hit_check = False
+    tc.skip_flow_log = False
 
     #==============================================================
     # update non-default cmd options
@@ -81,6 +82,9 @@ def parse_args(tc):
 
     if hasattr(tc.args, 'skip_flow_hit_check'):
         tc.skip_flow_hit_check = tc.args.skip_flow_hit_check
+
+    if hasattr(tc.args, 'skip_flow_log'):
+        tc.skip_flow_log = tc.args.skip_flow_log
 
     api.Logger.info('vnic_type: {}, nat: {}, pyld_size: {} '
                     'proto: {}, bidir: {}, flow_type: {} '
@@ -353,10 +357,11 @@ def Setup(tc):
         tc.plcy_obj = json.load(fd)
 
     # get vnic
-    tc.vnic = utils.get_vnic(tc.plcy_obj, tc.vnic_type, tc.nat)
+    tc.vnic = utils.get_vnic(tc.plcy_obj, tc.vnic_type, tc.nat, _stateful = False, _skip_flow_log = tc.skip_flow_log)
 
     # get vnic id
-    tc.vnic_id = utils.get_vnic_id(tc.plcy_obj, tc.vnic_type, tc.nat)
+    #tc.vnic_id = utils.get_vnic_id(tc.plcy_obj, tc.vnic_type, tc.nat)
+    tc.vnic_id = int(tc.vnic['vnic_id'])
     api.Logger.info('vnic id: {}'.format(tc.vnic_id))
 
     # get node info

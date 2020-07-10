@@ -33,16 +33,18 @@ def is_stateful_vnic(_vnic):
 # Return: vnic object from given policy handle
 # gets vnic object based on vnic type and nat
 # ==============================================
-def get_vnic(plcy_obj, _vnic_type, _nat, _stateful = False):
+def get_vnic(plcy_obj, _vnic_type, _nat, _stateful = False, _skip_flow_log = False):
 
     vnics = plcy_obj['vnic']
 
     for vnic in vnics:
         vnic_type = 'L2' if is_L2_vnic(vnic) else 'L3'
         nat = 'yes' if "nat" in vnic else 'no'
+        skip_flow_log = True if vnic['session']['skip_flow_log'] == "true" else False
 
         if vnic_type == _vnic_type and \
-           nat == _nat:
+           nat == _nat and \
+           skip_flow_log == _skip_flow_log:
             if _stateful and not is_stateful_vnic(vnic):
                 continue
             return vnic
