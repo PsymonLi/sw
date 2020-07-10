@@ -291,7 +291,7 @@ def ping_resp_verify(tc):
             resp_flow, _ = tc.flow_match_after[cl_node]['icmp_resp'][0]
             req_flow.Display()
             resp_flow.Display()
-            pass        # TODO: fix counters issue on node1 athena nic
+            return api.types.status.FAILURE
 
         hit_cnt_before = tc.flow_hit_cnt_before[cl_node][1]
         hit_cnt_after = tc.flow_hit_cnt_after[cl_node][1]
@@ -503,8 +503,8 @@ def Setup(tc):
     with open(api.GetTestsuiteAttr("node2_dp_policy_json_path")) as fd:
         node2_plcy_obj = json.load(fd)
 
-    node1_vnic_idx = utils.get_vnic_index(node1_plcy_obj, tc.vnic_type, tc.nat)
-    node2_vnic_idx = utils.get_vnic_index(node2_plcy_obj, tc.vnic_type, tc.nat)
+    node1_vnic_idx = utils.get_vnic_pos(node1_plcy_obj, tc.vnic_type, tc.nat)
+    node2_vnic_idx = utils.get_vnic_pos(node2_plcy_obj, tc.vnic_type, tc.nat)
 
     api.Logger.info('node1 vnic idx %d, node2 vnic idx %d' % (
                     node1_vnic_idx, node2_vnic_idx))

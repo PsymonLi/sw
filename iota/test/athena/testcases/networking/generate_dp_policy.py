@@ -23,6 +23,7 @@ E2E_NODE2_DP_PLCY_JSON_PATH = \
 
 
 slot_id_base = { 'node1' : 1000, 'node2' : 2000 }
+HOST_INTF_MTU = 9150
 
 def _get_slot_id(node, vnic_id):
     return slot_id_base[node] + vnic_id
@@ -284,7 +285,10 @@ def Setup(tc):
     if tc.dualnic:
         for node, nic in tc.wl_node_nic_pairs:
             tc.host_ifs[(node, nic)] = api.GetNaplesHostInterfaces(node, nic)
-        
+            workloads = api.GetWorkloads(node)
+            for wl in workloads:
+                tc.host_ifs[(node, nic)].append(wl.interface)
+
         gen_plcy_cfg_e2e_wl_topo(tc)
 
         wl_nodes = [nname for nname, nic in tc.wl_node_nic_pairs]
@@ -307,7 +311,7 @@ def Trigger(tc):
 
     # Copy policy.json to /data and restart Athena sec app on Athena Node
     tc.resp = []
-    
+
     req = api.Trigger_CreateExecuteCommandsRequest()
         
     for node, nic in tc.athena_node_nic_pairs:
@@ -316,8 +320,8 @@ def Trigger(tc):
 
     for node, nic in tc.wl_node_nic_pairs:
         # configure host interface MTUs to jumbo (9198 max allowed on Linux)
-        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)][0], 9150)
-        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)][1], 9150)
+        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)], 
+                                                        HOST_INTF_MTU)
 
     resp = api.Trigger(req)
     tc.resp.append(resp)

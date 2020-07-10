@@ -51,22 +51,22 @@ def get_vnic(plcy_obj, _vnic_type, _nat, _stateful = False, _skip_flow_log = Fal
 
     raise Exception("Matching vnic not found")
 
-# ==============================================
-# Return: vnic object from given policy handle
-# gets index of vnic object based on vnic type 
-# and nat
-# ==============================================
-def get_vnic_index(plcy_obj, _vnic_type, _nat):
+# ===================================================
+# Return: pos of vnic object in the list of vnics for
+# the given policy handle
+# Gets vnic object based on vnic_type and nat
+# ===================================================
+def get_vnic_pos(plcy_obj, _vnic_type, _nat):
 
     vnics = plcy_obj['vnic']
 
-    for idx, vnic in enumerate(vnics):
+    for pos, vnic in enumerate(vnics):
         vnic_type = 'L2' if is_L2_vnic(vnic) else 'L3'
         nat = 'yes' if "nat" in vnic else 'no'
 
         if vnic_type == _vnic_type and \
            nat == _nat:
-            return idx
+            return pos
 
     raise Exception("Matching vnic not found")
 
@@ -292,18 +292,19 @@ def configureNaplesIntf(req, node, intf,
         cmd += "ip addr del " + ip + "/" + mask + " dev " + intf
         api.Trigger_AddNaplesCommand(req, node, cmd)
 
-# =============================================
+# ======================================================
 # Return: void
-# Configure host interface MTU
-# =============================================
-def configureHostIntfMtu(req, node, intf, mtu=1500):
+# Configure host interface MTU for a list of 
+# interfaces
+# ======================================================
+def configureHostIntfMtu(req, node, intf_list, mtu=1500):
     
-    CMD_SEP = ' '
+    base_cmd = "ifconfig "
+    mtu_args = " mtu " + str(mtu)
+    
+    for intf in intf_list:
+        cmd = base_cmd + intf + mtu_args
+        api.Trigger_AddHostCommand(req, node, cmd)
 
-    base_cmd = "ifconfig"
-    cmd_args = [intf, "mtu", str(mtu)]
-    
-    cmd = base_cmd + CMD_SEP + CMD_SEP.join(cmd_args)
-    api.Trigger_AddHostCommand(req, node, cmd)
 
 
