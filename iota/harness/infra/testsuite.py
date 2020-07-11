@@ -654,7 +654,7 @@ class TestSuite:
         if GlobalOptions.dryrun:
             return
         status = self.__teardown()
-        Logger.info("Testsuite {self.Name()} teardown STATUS = {status}")
+        Logger.info(f"Testsuite {self.Name()} teardown STATUS = {status}")
         api.UnsetBreakoutInterfaces()
         logcollector.CollectLogs()
         logcollector.CollectTechSupport(self.Name())

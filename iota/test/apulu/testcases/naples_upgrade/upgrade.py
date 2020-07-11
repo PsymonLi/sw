@@ -308,17 +308,37 @@ def Verify(tc):
 
     if checkUpgradeStatusViaConsole(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in validation of Upgrade Manager completion status via Console")
-        if upgrade_utils.VerifyUpgLog(tc.nodes, tc.GetLogsDir()):
-            api.Logger.error("Failed to verify the upgrademgr logs after upgrade failed...")
-        return api.types.status.FAILURE
+        result = api.types.status.FAILURE
+
     if not naples_utils.EnableReachability(tc.nodes):
         api.Logger.error(f"Failed to reach naples {tc.nodes} post upgrade switchover")
-        return api.types.status.FAILURE
+        result = api.types.status.FAILURE
 
-    # verify connectivity
+    # verify mgmt connectivity
     if VerifyMgmtConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Mgmt Connectivity Check after Upgrade .")
         result = api.types.status.FAILURE
+
+    if result != api.types.status.SUCCESS:
+        api.Logger.info("DUMP Upgrade Manager Logs")
+        # Failure could be due to upgrade failure before/after switchover or
+        # management connectivity failure. Hence dump the upgrade_mgr.log
+        # via console for debug purpose.
+        api.Logger.SetSkipLogPrefix(True)
+        for node in tc.nodes:
+            (resp, exit_code) = api.RunNaplesConsoleCmd(node, "cat /obfl/upgrademgr.log", True)
+            if exit_code != 0:
+                api.Logger.info("Failed to dump /obfl/upgrademgr.log from "
+                                "node: %s, exit_code:%s " %(node, exit_code))
+            else:
+                api.Logger.info("Dump /obfl/upgrademgr.log from "
+                                "node: %s, exit_code:%s " %(node, exit_code))
+                lines = resp.split('\r\n')
+                for line in lines:
+                    api.Logger.info(line.strip())
+        api.Logger.SetSkipLogPrefix(False)
+        return api.types.status.FAILURE
+
 
     # push configs after upgrade
     UpdateConfigAfterUpgrade(tc)

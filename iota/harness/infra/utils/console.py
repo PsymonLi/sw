@@ -49,7 +49,7 @@ class Console(object):
         if self.hdl == None or not self.hdl.isalive():
             self.hdl = self.__get_handle()
         self.hdl.sendline(cmd)
-        self.hdl.expect("#")
+        self.hdl.expect("#", timeout=self.timeout)
         return
 
     def __get_output(self, command, get_exit_code=False):
