@@ -489,18 +489,17 @@ flow_cache_entry_iterate_cb (sdk_table_api_params_t *params)
         key->ip_proto = ftlv6_get_key_proto(hwentry);
 
         switch (key->ip_proto) {
-            case IP_PROTO_TCP:
-            case IP_PROTO_UDP:    
-                key->l4.tcp_udp.sport = ftlv6_get_key_sport(hwentry);
-                key->l4.tcp_udp.dport = ftlv6_get_key_dport(hwentry);
-                break;
             case IP_PROTO_ICMP:
             case IP_PROTO_ICMPV6:
                 key->l4.icmp.identifier = ftlv6_get_key_sport(hwentry);
                 key->l4.icmp.type = ftlv6_get_key_dport(hwentry) >> 8;
                 key->l4.icmp.code = ftlv6_get_key_dport(hwentry) & 0x00ff;
                 break;
+            case IP_PROTO_TCP:
+            case IP_PROTO_UDP:    
             default:
+                key->l4.tcp_udp.sport = ftlv6_get_key_sport(hwentry);
+                key->l4.tcp_udp.dport = ftlv6_get_key_dport(hwentry);
                 break;
         }
         data->index = ftlv6_get_index(hwentry);

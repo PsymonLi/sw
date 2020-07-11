@@ -564,12 +564,6 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         uint32_t dnat_local_ip;
 
         protocol = ip40->next_proto_id;
-        if ((protocol != IP_PROTO_TCP) &&
-            (protocol != IP_PROTO_UDP) && 
-            (protocol != IP_PROTO_ICMP)) {
-            PDS_TRACE_DEBUG("Unsupported IP Proto:%u\n", protocol);
-            return SDK_RET_INVALID_OP;
-        }
         
         src_ip = rte_be_to_cpu_32(ip40->src_addr);
         dst_ip = rte_be_to_cpu_32(ip40->dst_addr);
@@ -596,12 +590,6 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         struct ipv6_hdr *ip60 = (struct ipv6_hdr *)ip40;
 
         protocol = ip60->proto;
-        if ((protocol != IP_PROTO_TCP) &&
-            (protocol != IP_PROTO_UDP) && 
-            (protocol != IP_PROTO_ICMPV6)) {
-            PDS_TRACE_DEBUG("Unsupported IPV6 Proto:%u\n", protocol);
-            return SDK_RET_INVALID_OP;
-        }
 
         key->key_type = KEY_TYPE_IPV6;
         if (*dir == HOST_TO_SWITCH) {
@@ -624,7 +612,8 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         key->l4.icmp.type = icmph->icmp_type;
         key->l4.icmp.code = icmph->icmp_code;
         key->l4.icmp.identifier = rte_be_to_cpu_16(icmph->icmp_ident);
-    } else {
+    } else if ((protocol == IP_PROTO_TCP) ||
+               (protocol == IP_PROTO_UDP)) {
         sport = rte_be_to_cpu_16(tcp0->src_port);
         dport = rte_be_to_cpu_16(tcp0->dst_port);
         if (*dir == HOST_TO_SWITCH) {
@@ -637,6 +626,9 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         if (protocol == IP_PROTO_TCP) {
             *tcp_flags = tcp0->tcp_flags;
         }
+    } else {
+        key->l4.tcp_udp.sport = 0;
+        key->l4.tcp_udp.dport = 0;
     }
 
     return SDK_RET_OK;
@@ -683,7 +675,8 @@ fte_conntrack_state_create (uint32_t conntrack_index,
 
     ret = (sdk_ret_t)pds_conntrack_state_create(&conn_spec);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("pds_conntrack_state_create failed. \n");
+        PDS_TRACE_DEBUG("pds_conntrack_state_create failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
         return ret;
     }
 
@@ -1122,7 +1115,8 @@ fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
                                     flow_range, eth_hdr,
                                     &h2s_bmp_posn, &s2h_bmp_posn);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_l2_flow_check_macaddr failed.\n");
+        PDS_TRACE_DEBUG("fte_l2_flow_check_macaddr failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
         return ret;
     }
 
@@ -1154,8 +1148,8 @@ fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
 
         ret = (sdk_ret_t)pds_l2_flow_cache_entry_create(&spec_h2s);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create "
-                            "H2S failed. \n");
+            PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create H2S failed."
+                            " ret: %s \n", SDK_RET_ENTRIES_str(ret));
             rte_bitmap_clear(flow_range->h2s_bmp, h2s_bmp_posn);
             return ret;
         }
@@ -1170,8 +1164,8 @@ fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
 
         ret = (sdk_ret_t)pds_l2_flow_cache_entry_create(&spec_s2h);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create "
-                            "S2H failed. \n");
+            PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create S2H failed."
+                            " ret: %s \n", SDK_RET_ENTRIES_str(ret));
             rte_bitmap_clear(flow_range->s2h_bmp, s2h_bmp_posn);
             return ret;
         }
@@ -1351,7 +1345,8 @@ fte_session_info_create_all(uint32_t session_id, uint32_t conntrack_id,
 
     ret = pds_flow_session_info_create(&spec);
     if (ret != PDS_RET_OK) {
-        PDS_TRACE_ERR("Failed to program session s2h info : %u\n", ret);
+        PDS_TRACE_ERR("Failed to program session s2h info. "
+                      "ret: %s \n", PDS_RET_ENTRIES_str(ret));
     }
     return (sdk_ret_t)ret;
 }
@@ -1380,7 +1375,8 @@ fte_flow_prog (struct rte_mbuf *m)
     ret = fte_flow_extract_prog_args(m, &flow_spec, &flow_dir,
                                 &ip_offset, &vnic_id, &tcp_flags);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_flow_extract_prog_args failed. \n");
+        PDS_TRACE_DEBUG("fte_flow_extract_prog_args failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
         return ret;
     }
 
@@ -1391,13 +1387,15 @@ fte_flow_prog (struct rte_mbuf *m)
     if (fte_is_conntrack_enabled(vnic_id)) {
         ret = fte_conntrack_index_alloc(&conntrack_index);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("fte_conntrack_index_alloc failed. \n");
+            PDS_TRACE_DEBUG("fte_conntrack_index_alloc failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
             return ret;
         }
         ret = fte_conntrack_state_create(conntrack_index, &flow_spec,
                                          flow_dir, tcp_flags);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("fte_conntrack_state_create failed. \n");
+            PDS_TRACE_DEBUG("fte_conntrack_state_create failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
             return ret;
         }
         if (flow_spec.key.ip_proto == IP_PROTO_TCP) {
@@ -1419,7 +1417,8 @@ fte_flow_prog (struct rte_mbuf *m)
     flow_spec.data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
     ret = fte_session_index_alloc(&session_index);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_session_index_alloc failed. \n");
+        PDS_TRACE_DEBUG("fte_session_index_alloc failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
         fte_conntrack_free(vnic_id, conntrack_index);
         return ret;
     }
@@ -1429,7 +1428,8 @@ fte_flow_prog (struct rte_mbuf *m)
                             (*(uint32_t *)flow_spec.key.ip_saddr),
                             &h2s_rewrite_id, &s2h_rewrite_id);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_get_session_rewrite_id failed. \n");
+        PDS_TRACE_DEBUG("fte_get_session_rewrite_id failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
         fte_session_index_free(session_index);
         fte_conntrack_free(vnic_id, conntrack_index);
         return ret;
@@ -1447,7 +1447,8 @@ fte_flow_prog (struct rte_mbuf *m)
                                   h2s_egress_action, 
                                   s2h_egress_action);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_session_info_create failed. \n");
+        PDS_TRACE_DEBUG("fte_session_info_create failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
         fte_session_index_free(session_index);
         fte_conntrack_free(vnic_id, conntrack_index);
         return ret;
@@ -1459,7 +1460,8 @@ fte_flow_prog (struct rte_mbuf *m)
         fte_session_index_free(session_index);
         fte_conntrack_free(vnic_id, conntrack_index);
         if (ret != SDK_RET_ENTRY_EXISTS) {
-            PDS_TRACE_DEBUG("pds_flow_cache_entry_create failed. \n");
+            PDS_TRACE_DEBUG("pds_flow_cache_entry_create failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
             return ret;
         }
     }
@@ -1469,8 +1471,8 @@ fte_flow_prog (struct rte_mbuf *m)
                     l2_flow_eth_hdr, h2s_rewrite_id, s2h_rewrite_id);
         if (ret != SDK_RET_OK) {
             pds_flow_data_t flow_data;
-            PDS_TRACE_DEBUG("fte_l2_flow_cache_entry_create "
-                            "failed. \n");
+            PDS_TRACE_DEBUG("fte_l2_flow_cache_entry_create failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
             memset(&flow_data, 0, sizeof(flow_data));
             flow_data.index = session_index;
             flow_data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
@@ -1843,7 +1845,8 @@ fte_setup_dnat_flow (flow_cache_policy_info_t *policy)
         ret = fte_create_dnat_map_ipv4(policy->vnic_id, nat_ip,
                                        local_ip, 0);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("fte_create_dnat_map_ipv4 failed. \n");
+            PDS_TRACE_DEBUG("fte_create_dnat_map_ipv4 failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
             return ret;
         }
 
@@ -1866,7 +1869,7 @@ fte_setup_dnat_flow (flow_cache_policy_info_t *policy)
                             
             if (ret != SDK_RET_OK) {
                 PDS_TRACE_DEBUG("fte_h2s_nat_v4_session_rewrite_mplsoudp "
-                                "failed.\n");
+                                "failed. ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
             }
         } else if (rewrite_underlay->encap_type == ENCAP_GENEVE) {
@@ -1892,7 +1895,7 @@ fte_setup_dnat_flow (flow_cache_policy_info_t *policy)
 
             if (ret != SDK_RET_OK) {
                 PDS_TRACE_DEBUG("fte_h2s_nat_v4_session_rewrite_geneve "
-                                "failed.\n");
+                                "failed. ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
             }
         } else {
@@ -1910,7 +1913,7 @@ fte_setup_dnat_flow (flow_cache_policy_info_t *policy)
                     (ipv4_addr_t)local_ip);
             if (ret != SDK_RET_OK) {
                 PDS_TRACE_DEBUG("fte_s2h_nat_v4_session_rewrite_l2 "
-                                "failed.\n");
+                                "failed. ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
             }
         } else {
@@ -1922,7 +1925,8 @@ fte_setup_dnat_flow (flow_cache_policy_info_t *policy)
                     REWRITE_NAT_TYPE_IPV4_DNAT,
                     (ipv4_addr_t)local_ip);
             if (ret != SDK_RET_OK) {
-                PDS_TRACE_DEBUG("fte_s2h_nat_v4_session_rewrite failed.\n");
+                PDS_TRACE_DEBUG("fte_s2h_nat_v4_session_rewrite "
+                                "failed. ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
             }
         }
@@ -1978,7 +1982,8 @@ fte_setup_v4_flows_json (void)
                                     &h2s_rewrite_id, &s2h_rewrite_id);
                             if (ret != SDK_RET_OK) {
                                 PDS_TRACE_DEBUG(
-                                    "fte_get_session_rewrite_id failed.\n");
+                                    "fte_get_session_rewrite_id "
+                                    "failed. ret: %s \n", SDK_RET_ENTRIES_str(ret));
                                 return ret;
                             }
 
@@ -1986,7 +1991,8 @@ fte_setup_v4_flows_json (void)
                                     &session_index);
                             if (ret != SDK_RET_OK) {
                                 PDS_TRACE_DEBUG(
-                                    "fte_session_index_alloc failed.\n");
+                                    "fte_session_index_alloc failed. "
+                                    "ret: %s \n", SDK_RET_ENTRIES_str(ret));
                                 return ret;
                             }
 
@@ -1999,7 +2005,8 @@ fte_setup_v4_flows_json (void)
                                     EGRESS_ACTION_TX_TO_SWITCH, EGRESS_ACTION_TX_TO_HOST);
                             if (ret != SDK_RET_OK) {
                                 PDS_TRACE_DEBUG(
-                                    "fte_session_info_create failed.\n");
+                                    "fte_session_info_create failed. "
+                                    "ret: %s \n", SDK_RET_ENTRIES_str(ret));
                                 return ret;
                             }
 
@@ -2011,9 +2018,9 @@ fte_setup_v4_flows_json (void)
                             if (ret != SDK_RET_OK) {
                                 PDS_TRACE_DEBUG("Flow Create Fail: SrcIP:0x%x DstIP:0x%x "
                                     "Dport:%u Sport:%u Proto:%u "
-                                    "VNICID:%u index:%u\n",
+                                    "VNICID:%u index:%u ret:%s \n",
                                     sip, dip, dport, sport, proto,
-                                    vnic_id, session_index);
+                                    vnic_id, session_index, SDK_RET_ENTRIES_str(ret));
                                 // Even on collision/flow insert fail,
                                 // continue the flow creation
                                 // return ret;
@@ -2059,16 +2066,30 @@ fte_setup_flow (void)
     uint16_t i;
 
     if (g_flow_age_normal_tmo_set) {
-        ret = (sdk_ret_t)pds_flow_age_normal_timeouts_set(&g_flow_age_normal_tmo);
+        ret = (sdk_ret_t)pds_flow_age_accel_control(false);
         if (ret != SDK_RET_OK) {
-            printf("pds_flow_age_normal_timeouts_set failed. \n");
+            printf("pds_flow_age_accel_control disable failed. "
+                   "ret:%u \n", ret);
+        } else {
+            ret = (sdk_ret_t)pds_flow_age_normal_timeouts_set(&g_flow_age_normal_tmo);
+            if (ret != SDK_RET_OK) {
+                printf("pds_flow_age_normal_timeouts_set failed. "
+                       "ret:%u \n", ret);
+            }
         }
     }
 
     if (g_flow_age_accel_tmo_set) {
-        ret = (sdk_ret_t)pds_flow_age_accel_timeouts_set(&g_flow_age_accel_tmo);
+        ret = (sdk_ret_t)pds_flow_age_accel_control(true);
         if (ret != SDK_RET_OK) {
-            printf("pds_flow_age_accel_timeouts_set failed. \n");
+            printf("pds_flow_age_accel_control enable failed. "
+                   "ret:%u \n", ret);
+        } else {
+            ret = (sdk_ret_t)pds_flow_age_accel_timeouts_set(&g_flow_age_accel_tmo);
+            if (ret != SDK_RET_OK) {
+                printf("pds_flow_age_accel_timeouts_set failed. "
+                       "ret:%u \n", ret);
+            }
         }
     }
 
@@ -2079,7 +2100,8 @@ fte_setup_flow (void)
         ret = fte_vlan_to_vnic_map(policy->vlan_id, vnic_id,
                                    policy->vnic_type);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("fte_vlan_to_vnic_map failed.\n");
+            PDS_TRACE_DEBUG("fte_vlan_to_vnic_map failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
             return ret;
         }
 
@@ -2087,7 +2109,8 @@ fte_setup_flow (void)
         ret = fte_mpls_label_to_vnic_map(policy->src_slot_id, vnic_id,
                                          policy->vnic_type);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("fte_mpls_label_to_vnic_map failed.\n");
+            PDS_TRACE_DEBUG("fte_mpls_label_to_vnic_map failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
             return ret;
         }
 
@@ -2139,7 +2162,8 @@ fte_setup_flow (void)
         if (policy->nat_enabled) {
             ret = fte_setup_dnat_flow(policy);
             if (ret != SDK_RET_OK) {
-                PDS_TRACE_DEBUG("fte_setup_dnat_flow failed.\n");
+                PDS_TRACE_DEBUG("fte_setup_dnat_flow failed. "
+                                "ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
            }
         }
@@ -2159,7 +2183,7 @@ fte_setup_flow (void)
                             
             if (ret != SDK_RET_OK) {
                 PDS_TRACE_DEBUG("fte_h2s_v4_session_rewrite_mplsoudp "
-                                "failed.\n");
+                                "failed. ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
             }
         } else if (rewrite_underlay->encap_type == ENCAP_GENEVE) {
@@ -2182,7 +2206,7 @@ fte_setup_flow (void)
                             rewrite_underlay->u.geneve.orig_phy_ip);
             if (ret != SDK_RET_OK) {
                 PDS_TRACE_DEBUG("fte_h2s_v4_session_rewrite_geneve "
-                                "failed.\n");
+                                "failed. ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
             }
         } else {
@@ -2200,7 +2224,7 @@ fte_setup_flow (void)
                             policy->vlan_id);
             if (ret != SDK_RET_OK) {
                 PDS_TRACE_DEBUG("fte_s2h_v4_session_rewrite_l2 "
-                                "failed.\n");
+                                "failed. ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
             }
         } else {
@@ -2210,7 +2234,8 @@ fte_setup_flow (void)
                             (mac_addr_t *)rewrite_host->ep_smac,
                             policy->vlan_id);
             if (ret != SDK_RET_OK) {
-                PDS_TRACE_DEBUG("fte_s2h_v4_session_rewrite failed.\n");
+                PDS_TRACE_DEBUG("fte_s2h_v4_session_rewrite failed. "
+                                "ret: %s \n", SDK_RET_ENTRIES_str(ret));
                 return ret;
             }
         }
@@ -2218,7 +2243,8 @@ fte_setup_flow (void)
 
     ret = fte_setup_v4_flows_json();
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_setup_v4_flows_json failed.\n");
+        PDS_TRACE_DEBUG("fte_setup_v4_flows_json failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
         return ret;
     }
 
@@ -2278,13 +2304,15 @@ fte_flows_init ()
 
     sdk_ret = fte_conntrack_indexer_init();
     if (sdk_ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_conntrack_indexer_init failed.\n");
+        PDS_TRACE_DEBUG("fte_conntrack_indexer_init failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(sdk_ret));
         return sdk_ret;
     }
 
     sdk_ret = fte_session_indexer_init();
     if (sdk_ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_session_indexer_init failed.\n");
+        PDS_TRACE_DEBUG("fte_session_indexer_init failed. "
+                        "ret: %s \n", SDK_RET_ENTRIES_str(sdk_ret));
         return sdk_ret;
     }
 
@@ -2297,13 +2325,15 @@ fte_flows_init ()
                                                      fte_flows_aging_expiry_fn);
     }
     if (sdk_ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("fte aging callback override failed.\n");
+        PDS_TRACE_ERR("fte aging callback override failed. "
+                      "ret: %s \n", SDK_RET_ENTRIES_str(sdk_ret));
         return sdk_ret;
     }
 
     if (!skip_fte_flow_prog()) {
         if ((sdk_ret = fte_setup_flow()) != SDK_RET_OK) {
-            PDS_TRACE_DEBUG("fte_setup_flow failed.\n");
+            PDS_TRACE_DEBUG("fte_setup_flow failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(sdk_ret));
             return sdk_ret;
         } else {
             PDS_TRACE_DEBUG("fte_setup_flow success.\n");

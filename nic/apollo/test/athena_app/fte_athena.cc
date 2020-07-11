@@ -995,7 +995,8 @@ fte_get_flow_stats(pds_flow_stats_t *stats)
          memset(&flow_stats[i], 0, sizeof(pds_flow_stats_t));
          ret = pds_flow_cache_stats_get(i, &flow_stats[i]);
          if (ret != PDS_RET_OK) {
-             PDS_TRACE_ERR("Stats get failed for core#%u\n", i);
+             PDS_TRACE_ERR("Stats get failed for core#%u "
+                           "ret: %s \n", i, PDS_RET_ENTRIES_str(ret));
              break;
          }
          accumulate_stats(stats, &flow_stats[i]);
