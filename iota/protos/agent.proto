@@ -16,6 +16,9 @@ service IotaAgentApi {
     // AddNode brings up the node with the personality
     rpc AddNode (Node) returns (Node) {};
 
+    // RetrieveNode builds Node msg for agent <-> server to sync
+    rpc ReInitNode (Node) returns (Node) {};
+
     // DeleteNode, remove the personaltiy set
     rpc DeleteNode (Node) returns (Node) {};
 

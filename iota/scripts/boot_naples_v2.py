@@ -53,7 +53,7 @@ parser.add_argument('--timeout', dest='timeout',
 parser.add_argument('--image-manifest', dest='image_manifest',
                     default='/sw/images/latest.json', help='Image manifest file')
 parser.add_argument('--mode', dest='mode', default='hostpin',
-                    choices=["classic", "hostpin", "bitw", "hostpin_dvs", "unified"],
+                    choices=["classic", "hostpin", "bitw", "hostpin_dvs", "unified", 'sriov'],
                     help='Naples mode - hostpin / classic.')
 parser.add_argument('--debug', dest='debug',
                     action='store_true', help='Enable Debug Mode')

@@ -54,7 +54,8 @@ firmware = utils.List2Enum(__fwtype)
 __nicModes = [
     'CLASSIC',
     'BITW',
-    'HOSTPIN'
+    'HOSTPIN',
+    'SRIOV'
 ]
 nicModes = utils.List2Enum(__nicModes)
 

@@ -51,6 +51,9 @@ service TopologyApi {
     // GetNodes returns the topology information of all the nodes.
     rpc GetNodes (NodeMsg) returns (NodeMsg) {};
 
+    // GetNodes returns the topology information of all the nodes.
+    rpc ReInitNodes (NodeMsg) returns (NodeMsg) {};
+
     // SaveNodes saves node and download state from host to runner/localhost
     rpc SaveNodes (NodeMsg) returns (NodeMsg) {};
 
@@ -389,8 +392,8 @@ message NaplesConfig {
     // Venice IPs to use, if specified agent will come up im managed mode.
     repeated string venice_ips   = 4;
 
-    // host intfs , returned as part of add node
-    repeated string host_intfs   = 5;
+    // device-intfs , returned as part of add node
+    repeated Interfaces  host_intfs   = 5;
 
     // Naples IP in hw mode.
     string naples_ip_address     = 6;
@@ -422,7 +425,7 @@ message NaplesConfig {
 }
 
 message NaplesConfigs {
-    repeated NaplesConfig configs = 2;
+    repeated NaplesConfig configs = 1;
 }
 
 message ThirdPartyNicConfig {
@@ -488,11 +491,13 @@ message WorkloadMsg{
 
 enum InterfaceType {
     INTERFACE_TYPE_NONE       = 0;
-    INTERFACE_TYPE_VSS        = 1;
-    INTERFACE_TYPE_SRIOV      = 2;
-    INTERFACE_TYPE_DVS        = 3;
-    INTERFACE_TYPE_DVS_PVLAN  = 4;
-    INTERFACE_TYPE_BOND       = 5;
+    INTERFACE_TYPE_NATIVE     = 1;
+    INTERFACE_TYPE_VSS        = 2;
+    INTERFACE_TYPE_SRIOV      = 3;
+    INTERFACE_TYPE_DVS        = 4;
+    INTERFACE_TYPE_DVS_PVLAN  = 5;
+    INTERFACE_TYPE_BOND       = 6;
+    INTERFACE_TYPE_MGMT       = 7;
 }
 
 enum WorkloadType {
@@ -517,6 +522,15 @@ message ExposedPorts {
     string  Port    = 1;
     
     string  Proto   = 2;
+}
+
+message Interfaces {
+    
+    InterfaceType       type            = 1;
+
+    repeated string     interfaces      = 2;
+
+    string              parent          = 3;
 }
 
 message Interface {
@@ -562,6 +576,8 @@ message Interface {
      string   switch_name                   = 14;
     
      string   network_name                  = 15;
+
+    uint32    interface_index               = 16;
 }
 
 message Workload {

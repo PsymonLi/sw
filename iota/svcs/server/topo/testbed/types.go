@@ -163,7 +163,9 @@ type TestNodeInterface interface {
 	IpmiNodeControl(name string, restoreState bool, method string, useNcsi bool) error
 	ReloadNode(name string, restoreState bool, method string, useNcsi bool) error
 	SetNodeMsg(*iota.Node)
-	GetNodeMsg(name string) *iota.Node
+	SetNodeResponse(*iota.Node)
+	GetNodeMsg(ctx context.Context, name string) *iota.Node
+	ReInitNode(ctx context.Context, name string) *iota.Node
 	GetNodeInfo() NodeInfo
 	AddWorkloads(req *iota.WorkloadMsg) (*iota.WorkloadMsg, error)
 	DeleteWorkloads(req *iota.WorkloadMsg) (*iota.WorkloadMsg, error)

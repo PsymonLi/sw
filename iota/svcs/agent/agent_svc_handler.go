@@ -94,7 +94,24 @@ func (agent *Service) AddNode(ctx context.Context, in *iota.Node) (*iota.Node, e
 	}
 
 	resp.Name = in.GetName()
+	agent.logger.Printf("Personality Init Node Complete :%v", resp)
 
+	return resp, nil
+}
+
+func (agent *Service) ReInitNode(ctx context.Context, in *iota.Node) (*iota.Node, error) {
+	agent.logger.Printf("Received ReInitNode : %v", in)
+
+	/* Not checking if the node running an instance */
+
+	resp, err := agent.node.Init(in)
+
+	if err != nil {
+		agent.logger.Errorf("Failed to re-init node : %v", err)
+		return resp, err
+	}
+	resp.Name = in.GetName()
+	agent.logger.Printf("Response to ReInit Node :%v", resp)
 	return resp, nil
 }
 

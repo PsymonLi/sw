@@ -53,6 +53,17 @@ const (
 	MaxInterfaceBringUpRetries = 180
 )
 
+const (
+	InterfaceTypeNone      = "unknown"
+	InterfaceTypeNative    = "native"
+	InterfaceTypeVSS       = "vss"
+	InterfaceTypeSRIOV     = "sriov"
+	InterfaceTypeDVS       = "dvs"
+	InterfaceTypeDVS_PVLAN = "dvs-pvlan"
+	InterfaceTypeBond      = "bond"
+	InterfaceTypeMgmt      = "mgmt"
+)
+
 var (
 	//ContainerPrivileged run container in privileged mode
 	ContainerPrivileged    = true
@@ -610,15 +621,24 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		fallthrough
 	case "freebsd":
 		ifconfigCmd := []string{}
-		switch app.osDistro {
-		case "rhel":
-			ifconfigCmd = append(ifconfigCmd, "ip", "link", "set", spec.Parent, "up")
+		switch spec.IntfType {
+		case InterfaceTypeSRIOV:
+			fallthrough
+		case InterfaceTypeNative:
+			fallthrough
 		default:
-			ifconfigCmd = append(ifconfigCmd, "ifconfig", spec.Parent, "up")
+			switch app.osDistro {
+			case "rhel":
+				ifconfigCmd = append(ifconfigCmd, "ip", "link", "set", spec.Parent, "up")
+			default:
+				ifconfigCmd = append(ifconfigCmd, "ifconfig", spec.Parent, "up")
+			}
 		}
-		if retCode, stdout, _ := utils.Run(ifconfigCmd, 0, false, false, nil); retCode != 0 {
-			return "", errors.Errorf("Could not bring up parent interface %s : %s", spec.Parent, stdout)
+		app.logger.Printf("Executing cmd :%v\n", ifconfigCmd)
+		if retCode, stdout, err := utils.Run(ifconfigCmd, 0, false, false, nil); retCode != 0 {
+			return "", errors.Errorf("Could not bring up parent interface %s : %s, err: %v", spec.Parent, stdout, err.Error())
 		}
+
 	case "windows":
 		name, ok := WindowsPortNameMapping[spec.Parent]["Name"]
 		if !ok {
@@ -630,7 +650,39 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		}
 
 	}
-	intfToAttach := spec.Parent
+	intfToAttach := spec.Name
+
+	// For SRIOV Interface, additional commands are required
+	switch app.osType {
+	case "linux":
+		vfTrustCmd := []string{}
+		switch spec.IntfType {
+		case InterfaceTypeSRIOV:
+			switch app.osDistro {
+			case "ubuntu":
+				fallthrough
+			case "rhel":
+				// ip link set enp182s0 vf 8 trust on
+				vfTrustCmd = append(vfTrustCmd, "ip", "link", "set", spec.Parent, "vf", strconv.Itoa(spec.Index), "trust", "on")
+			default:
+				vfTrustCmd = append(vfTrustCmd, "echo")
+			}
+		default:
+			app.logger.Errorf("Unsupported OS-Distro for SRIOV: %v", app.osDistro)
+			vfTrustCmd = append(vfTrustCmd, "echo")
+
+		}
+		app.logger.Printf("Excecuting cmd :%v\n", vfTrustCmd)
+		if retCode, stdout, err := utils.Run(vfTrustCmd, 0, false, false, nil); retCode != 0 {
+			return "", errors.Errorf("Could not setup SRIOV trust %s vf=%d: %s, err: %v", spec.Name, spec.Index, stdout, err.Error())
+		}
+
+	case "windows":
+		fallthrough
+	case "freebsd":
+		app.logger.Println("No SRIOV Support")
+
+	}
 
 	if spec.PrimaryVlan != 0 {
 		app.logger.Println("Add VLAN interface ", spec.Parent, spec.PrimaryVlan)
@@ -679,16 +731,51 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		app.logger.Println("Changing MAC Address ", spec.Mac)
 		switch app.osType {
 		case "linux":
-			//Mac address change only works on linux
 			setMacAddrCmd := []string{}
-			switch app.osDistro {
-			case "rhel":
-				setMacAddrCmd = append(setMacAddrCmd, "ip", "link", "set", "dev", intfToAttach, "address", spec.Mac)
+			switch spec.IntfType {
+			case InterfaceTypeSRIOV:
+				switch app.osDistro {
+				case "ubuntu":
+					fallthrough
+				case "rhel":
+					// Example: ip link set enp182s0 vf 8 mac 00:ae:cf:01:1e:0a
+					setMacAddrCmd = append(setMacAddrCmd, "ip", "link", "set", spec.Parent, "vf", strconv.Itoa(spec.Index), "mac", spec.Mac)
+					if retCode, stdout, err := utils.Run(setMacAddrCmd, 0, false, false, nil); retCode != 0 {
+						app.logger.Errorf("Excecuting cmd :%v failed :%v\n", setMacAddrCmd, stdout)
+						return "", errors.Wrap(err, stdout)
+					}
+
+					// Example: ifconfig enp182s0f7 hw ether 00:ae:cf:01:1e:0a
+					setMacAddrCmd = setMacAddrCmd[:0]
+					setMacAddrCmd = append(setMacAddrCmd, "ifconfig", intfToAttach, "hw", "ether", spec.Mac)
+					if retCode, stdout, err := utils.Run(setMacAddrCmd, 0, false, false, nil); retCode != 0 {
+						app.logger.Errorf("Excecuting cmd :%v failed :%v\n", setMacAddrCmd, stdout)
+						return "", errors.Wrap(err, stdout)
+					}
+
+					setMacAddrCmd = setMacAddrCmd[:0]
+					setMacAddrCmd = append(setMacAddrCmd, "ip", "link", "set", intfToAttach, "up")
+					if retCode, stdout, err := utils.Run(setMacAddrCmd, 0, false, false, nil); retCode != 0 {
+						app.logger.Errorf("Excecuting cmd :%v failed :%v\n", setMacAddrCmd, stdout)
+						return "", errors.Wrap(err, stdout)
+					}
+				default:
+					app.logger.Errorf("Unsupported OS-Distro for SRIOV: %v", app.osDistro)
+				}
 			default:
-				setMacAddrCmd = append(setMacAddrCmd, "ifconfig", intfToAttach, "hw", "ether", spec.Mac)
-			}
-			if retCode, stdout, err := utils.Run(setMacAddrCmd, 0, false, false, nil); retCode != 0 {
-				return "", errors.Wrap(err, stdout)
+				fallthrough
+			case InterfaceTypeNative:
+				//Mac address change only works on linux
+				switch app.osDistro {
+				case "rhel":
+					setMacAddrCmd = append(setMacAddrCmd, "ip", "link", "set", "dev", intfToAttach, "address", spec.Mac)
+				default:
+					setMacAddrCmd = append(setMacAddrCmd, "ifconfig", intfToAttach, "hw", "ether", spec.Mac)
+				}
+				app.logger.Printf("Executing cmd :%v\n", setMacAddrCmd)
+				if retCode, stdout, err := utils.Run(setMacAddrCmd, 0, false, false, nil); retCode != 0 {
+					return "", errors.Wrap(err, stdout)
+				}
 			}
 		case "windows":
 			name, ok := WindowsPortNameMapping[spec.Parent]["Name"]
@@ -709,12 +796,27 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		switch app.osType {
 		case "linux":
 			cmd := []string{}
-			switch app.osDistro {
-			case "rhel":
-				// RHEL ifconfig is deprecated. Using ip cmd
-				cmd = append(cmd, "ip", "a", "add", spec.IPV4Address, "dev", intfToAttach)
+			switch spec.IntfType {
+			case InterfaceTypeSRIOV:
+				switch app.osDistro {
+				case "ubuntu":
+					fallthrough
+				case "rhel":
+					cmd = append(cmd, "ip", "a", "add", spec.IPV4Address, "dev", intfToAttach)
+				default:
+					app.logger.Errorf("Unsupported OS-Distro for SRIOV: %v", app.osDistro)
+					cmd = append(cmd, "echo")
+				}
 			default:
-				cmd = append(cmd, "ifconfig", intfToAttach, spec.IPV4Address)
+				fallthrough
+			case InterfaceTypeNative:
+				switch app.osDistro {
+				case "rhel":
+					// RHEL ifconfig is deprecated. Using ip cmd
+					cmd = append(cmd, "ip", "a", "add", spec.IPV4Address, "dev", intfToAttach)
+				default:
+					cmd = append(cmd, "ifconfig", intfToAttach, spec.IPV4Address)
+				}
 			}
 			if retCode, stdout, err := utils.Run(cmd, 0, false, false, nil); retCode != 0 {
 				return "", errors.Wrap(err, stdout)
@@ -746,17 +848,36 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		case "linux":
 			cmdDel := []string{}
 			cmdAdd := []string{}
-			switch app.osDistro {
-			case "rhel":
-				// RHEL ifconfig is deprecated. Using ip cmd
-				cmdDel = append(cmdDel, "ip", "a", "del", spec.IPV6Address, "dev", intfToAttach)
-				cmdAdd = append(cmdDel, "ip", "a", "add", spec.IPV6Address, "dev", intfToAttach)
+			switch spec.IntfType {
+			case InterfaceTypeSRIOV:
+				switch app.osDistro {
+				case "ubuntu":
+					fallthrough
+				case "rhel":
+					cmdDel = append(cmdDel, "ip", "a", "del", spec.IPV6Address, "dev", intfToAttach)
+					cmdAdd = append(cmdAdd, "ip", "a", "add", spec.IPV6Address, "dev", intfToAttach)
+				default:
+					app.logger.Errorf("Unsupported OS-Distro for SRIOV: %v", app.osDistro)
+					cmdDel = append(cmdDel, "echo")
+					cmdAdd = append(cmdAdd, "echo")
+				}
 			default:
-				cmdDel = append(cmdDel, "ifconfig", intfToAttach, "inet6", "del", spec.IPV6Address)
-				cmdAdd = append(cmdAdd, "ifconfig", intfToAttach, "inet6", "add", spec.IPV6Address)
+				fallthrough
+			case InterfaceTypeNative:
+				switch app.osDistro {
+				case "rhel":
+					// RHEL ifconfig is deprecated. Using ip cmd
+					cmdDel = append(cmdDel, "ip", "a", "del", spec.IPV6Address, "dev", intfToAttach)
+					cmdAdd = append(cmdAdd, "ip", "a", "add", spec.IPV6Address, "dev", intfToAttach)
+				default:
+					cmdDel = append(cmdDel, "ifconfig", intfToAttach, "inet6", "del", spec.IPV6Address)
+					cmdAdd = append(cmdAdd, "ifconfig", intfToAttach, "inet6", "add", spec.IPV6Address)
+				}
 			}
+			app.logger.Printf("Executing del-cmd :%v\n", cmdDel)
 			utils.Run(cmdDel, 0, false, false, nil)
 			if retCode, stdout, err := utils.Run(cmdAdd, 0, false, false, nil); retCode != 0 {
+				app.logger.Printf("Failed for add-cmd :%v stdout :%v\n", cmdAdd, stdout)
 				return "", errors.Wrap(err, stdout)
 			}
 		case "freebsd":
@@ -972,18 +1093,24 @@ func (app *bareMetalWorkload) BringUp(args ...string) error {
 	app.bgCmds = new(sync.Map)
 	if runtime.GOOS == "freebsd" {
 		app.osType = "freebsd"
+		app.osDistro = ""
 		return nil
 	}
 
 	f, err := os.Open(Common.WindowsPortMappingFile)
 	if err != nil {
 		app.osType = "linux"
+		app.osDistro = ""
 		osRelease, err := utils.ReadOsRelease()
-		if err != nil {
+		if err == nil {
 			app.osDistro = osRelease["ID"]
+		} else {
+			app.logger.Errorf("Failed to read osRelease: %v", err.Error())
 		}
+		app.logger.Infof("workload is running on os:%v with distro:%v\n", app.osType, app.osDistro)
 	} else {
 		app.osType = "windows"
+		app.osDistro = ""
 		var err error
 		getPortNameMapping := func() {
 			err = json.NewDecoder(f).Decode(&WindowsPortNameMapping)
@@ -994,7 +1121,6 @@ func (app *bareMetalWorkload) BringUp(args ...string) error {
 			return errors.Errorf("Failed to decode json file: %v", err)
 		}
 	}
-	app.logger.Println("workload is running on ", app.osType)
 
 	return nil
 }

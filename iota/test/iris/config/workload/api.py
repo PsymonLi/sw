@@ -76,7 +76,7 @@ def __add_workloads(nodes):
                 if api.GetTestbedNicMode(node.Name(), dev_name) == 'hostpin_dvs':
                     if node.Name() not in vmotion_enabled_nodes:
                         vmotion_enabled_nodes.append(node.Name())
-            elif api.GetTestbedNicMode(node.Name(), dev_name) == 'classic':
+            elif api.GetTestbedNicMode(node.Name(), dev_name) in ['classic', 'sriov']:
                 if node.Name() not in classic_wload_nodes:
                     classic_wload_nodes.append(node.Name())
             else:
@@ -135,7 +135,7 @@ def RestoreWorkloads():
     return __recover_workloads()
 
 def DeleteWorkloads(target_node=None):
-    if api.GetTestbedNicMode(target_node) == 'classic':
+    if api.GetTestbedNicMode(target_node) in ['classic', 'sriov']:
         return __delete_classic_workloads()
     else:
         return __delete_workloads()
@@ -231,7 +231,7 @@ def __delete_workloads(target_node = None):
     return api.types.status.SUCCESS
 
 def ReAddWorkloads(node):
-    if api.GetTestbedNicMode(node) == 'classic':
+    if api.GetTestbedNicMode(node) in ['classic', 'sriov']:
         __delete_classic_workloads(node)
         __readd_classic_workloads(node)
     else:
@@ -278,7 +278,7 @@ def Main(args):
         RestoreWorkloads()
     else:
         nic_mode = api.GetConfigNicMode()
-        if nic_mode not in ['classic']:
+        if nic_mode not in ['classic', 'sriov']:
             kinds = ["SecurityProfile"] if nic_mode == 'unified' else None
             netagent_api.PushBaseConfig(kinds=kinds)
         __add_workloads(api.GetNodes())

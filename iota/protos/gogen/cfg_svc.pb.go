@@ -45,6 +45,7 @@
 		WorkloadMsg
 		DvsInfo
 		ExposedPorts
+		Interfaces
 		Interface
 		Workload
 		TriggerMsg

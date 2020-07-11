@@ -1,0 +1,158 @@
+meta:
+    name        : transparent_basenet_sriov
+    description : Transparent Basenet Test Suite in SRIOV Mode
+    description : Classic NIC Testsuite in SRIOV Mode
+    mode        : hardware
+    cfgmode     : netagent
+    #nicmode will be removed from this once we have fwd/policy mode config added to testsuite
+    nicmode     : sriov
+    os          : [ linux ]
+    ignore_list : []
+
+packages:
+    - iota.test.iris
+
+image_manifest:
+    spec        : images/latest.json
+    naples      : capri
+
+setup:
+    topology: test/iris/topologies/classic_baremetal_sriov/classic_baremetal.topology
+    config  :
+
+        - step : utils.cleanup
+        - step : testcases.penctl.install
+        - step : utils.host_sriov_config
+        - step : utils.naples_profile
+          args :
+            profile : FEATURE_PROFILE_SRIOV
+        - step : utils.setup_sriov_vfs
+        - step : testcases.penctl.enable_ssh
+        - step : utils.naples_workloads
+        - step : config.config_link_flap
+        - step : config.workload.api
+        - step : config.netagent.naples_inband_ip_config
+        - step : testcases.drivers.install_iperf
+
+common:
+    verifs:
+        -   step    : verif.utils.verify_interrupts
+        -   step    : verif.utils.verify_ionic_stats
+        #-   step    : verif.utils.verify_links
+        #-   step    : verif.utils.verify_cores
+        #-   step    : verif.utils.verify_topology_health
+    debugs:
+        # Commenting out techsupport collection. If tech support fails,
+        #   run gets stuck for a long time
+        #-   step : verif.utils.collect_logs_and_cores
+
+    setup:
+        #-   step    : verif.utils.link_flap
+        #-   step    : verif.utils.del_add_config
+
+testbundles:
+    precheckin:
+        - networking/connectivity.testbundle
+        #- networking/lif_telemetry_precheckin.testbundle
+        #- filters/filters.testbundle
+        #- subifs/subifs-precheckin.testbundle
+        #- rx_mode/rx_mode.testbundle
+        #- classic/driver-features-sanity.testbundle
+        #- system/obfl_check.testbundle
+        #- system/ssh_check.testbundle
+        #- sysmon/interrupts.testbundle
+        #- cpld/cpldupgrade.testbundle
+        #- hpe_ilo/hpe_ilo.testbundle
+
+    sanity:
+        # Relative paths from iota/test/iris/testbundles/
+        - classic/ethtool.testbundle
+        - networking/connectivity.testbundle
+        - linktest/linktest.testbundle
+        - filters/filters.testbundle
+        - mtu/mtu.testbundle
+        - networking/lif_telemetry.testbundle
+        - subifs/subifs.testbundle
+        - rx_mode/rx_mode.testbundle
+        - vlanoffload/vlanoffload.testbundle
+        - linktest/linktest.testbundle
+        - mnic/mnic_classic.testbundle
+        - linktest/linktest.testbundle
+        #- classic/driver-features-int_mgmt-sanity.testbundle
+        - linktest/linktest.testbundle
+        - classic/driver-features-oob-1g-sanity.testbundle
+        - linktest/linktest.testbundle
+        - tso/tso.testbundle
+        - drivercsum/drivercsum.testbundle
+        - classic/driver-features-sanity.testbundle
+        - linktest/linktest.testbundle
+        - penctl/penctl_classic.testbundle
+        #- penctl/mode_change.testbundle
+        - post_diag/post_diag.testbundle
+        - asic_tools/asic_tools.testbundle
+        - system/obfl_check.testbundle
+        - system/ssh_check.testbundle
+        - sysmon/interrupts.testbundle
+        - cpld/cpldupgrade.testbundle
+        - hpe_ilo/hpe_ilo.testbundle
+        #- classic/nvme.testbundle
+        #- sriov/sriov.testbundle
+
+    extended:
+        # Relative paths from iota/test/iris/testbundles/
+
+    regression:
+        # Relative paths from iota/test/iris/testbundles/
+        - networking/lif_telemetry_regression.testbundle
+        - tso/tso_regr.testbundle
+        - classic/driver-features.testbundle
+        - rss/rss.testbundle
+        - penctl/mode_change.testbundle
+
+    compat:
+        common:
+            # Relative paths from iota/test/iris/testbundles/
+            - networking/connectivity.testbundle
+            - classic/ethtool.testbundle
+            - filters/filters.testbundle
+            - mtu/mtu.testbundle
+            - subifs/subifs-precheckin.testbundle
+            - rx_mode/rx_mode.testbundle
+            - tso/tso.testbundle
+            - drivercsum/drivercsum.testbundle
+            - classic/driver-features-sanity.testbundle
+            - penctl/penctl_classic.testbundle
+
+        Fw-1.1.1-E-15: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.3.2-E-3: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.5.0-E-14: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.8.0-E-48: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-latest:
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.1.1-E-15: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.3.2-E-3: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.5.0-E-14: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.8.0-E-48: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-latest:
+            # Relative paths from iota/test/iris/testbundles/
+
+teardown:
+    #- step      : verif.utils.collect_logs_and_cores
+    #- step      : testcases.frequency.clock_settings_td

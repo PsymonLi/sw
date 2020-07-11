@@ -20,6 +20,7 @@ func (n *TestNode) Trigger(triggerReq *iota.TriggerMsg) (*iota.TriggerMsg, error
 func (n *TestNode) TriggerWithContext(ctx context.Context,
 	triggerReq *iota.TriggerMsg) (*iota.TriggerMsg, error) {
 
+	log.Infof("TOPO SVC | DEBUG | Trigger Agent. Request : %v", triggerReq)
 	if n.triggerLocal {
 		return n.TriggerWithContextLocally(ctx, triggerReq)
 	}

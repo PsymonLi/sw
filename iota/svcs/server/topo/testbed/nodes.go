@@ -92,7 +92,7 @@ func (n *TestNode) AddNode() error {
 		return fmt.Errorf("adding node %v failed. Agent Returned non ok status: %v", n.info.Name, resp.NodeStatus.ApiStatus)
 	}
 	//n.Node.NodeUuid = resp.NodeUuid
-	n.SetNodeMsg(resp)
+	n.SetNodeResponse(resp)
 	log.Infof("Node response set for %v", resp.Name)
 	return nil
 }
@@ -694,17 +694,17 @@ func (n *VcenterNode) ReloadNode(name string, restoreState bool, method string, 
 }
 
 // GetNodeMsg returns nodettate
-func (n *VcenterNode) GetNodeMsg(name string) *iota.Node {
+func (n *VcenterNode) GetNodeMsg(ctx context.Context, name string) *iota.Node {
 	for _, mn := range n.managedNodes {
 		if mn.GetNodeInfo().Name == name {
-			return mn.GetNodeMsg(name)
+			return mn.GetNodeMsg(ctx, name)
 		}
 	}
 
 	return n.RespNode
 }
 
-// GetNodeMsg returns nodettate
+// GetWorkloads returns workloads
 func (n *VcenterNode) GetWorkloads(name string) []*iota.Workload {
 	for _, mn := range n.managedNodes {
 		if mn.GetNodeInfo().Name == name {
@@ -720,6 +720,9 @@ func (n *VcenterNode) GetWorkloads(name string) []*iota.Workload {
 func (n *TestNode) SetNodeMsg(msg *iota.Node) {
 	n.Node = msg
 	n.info.Name = msg.Name
+}
+
+func (n *TestNode) SetNodeResponse(msg *iota.Node) {
 	n.RespNode = msg
 }
 
@@ -735,8 +738,32 @@ func (n *TestNode) AddNetworks(ctx context.Context, networkMsg *iota.NetworksMsg
 }
 
 //GetNodeMsg gets node msg
-func (n *TestNode) GetNodeMsg(name string) *iota.Node {
-	log.Infof("Node response set for %v", n.RespNode.Name)
+func (n *TestNode) GetNodeMsg(ctx context.Context, name string) *iota.Node {
+	log.Infof("TOPO SVC | DEBUG | GetNodeMsg for %v ", name)
+	return n.RespNode
+}
+
+// ReInitNode re-init agent/node
+func (n *TestNode) ReInitNode(ctx context.Context, name string) *iota.Node {
+	resp, err := n.AgentClient.ReInitNode(ctx, n.Node)
+	if err != nil {
+		log.Errorf("TOPO SVC | GetNodeMsg  | Error in ReInitNode invocation %v", err.Error())
+		return n.RespNode
+	}
+	n.SetNodeResponse(resp)
+	//This is the ugliest hack
+	//Some workload might be living in this node
+	//Point those workload to this new agent client
+	if n.workloadMap != nil {
+		n.workloadMap.Range(func(key interface{}, item interface{}) bool {
+			wload := item.(iotaWorkload)
+			if wload.workload != nil && wload.workload.GetWorkloadAgent() != n.AgentClient {
+				wload.workload.SetWorkloadAgent(n.AgentClient)
+			}
+			return true
+		})
+	}
+	log.Infof("Node response updated for %v", n.RespNode.Name)
 	return n.RespNode
 }
 
@@ -940,15 +967,26 @@ func (n *VcenterNode) EntityCopy(cfg *ssh.ClientConfig, req *iota.EntityCopyMsg)
 
 //GetHostInterfaces get host interfaces
 func (n *TestNode) GetHostInterfaces() ([]string, error) {
-	msg := n.GetNodeMsg(n.GetNodeInfo().Name)
+	msg := n.GetNodeMsg(nil, n.GetNodeInfo().Name)
 
 	log.Infof("Get host intf %v %v", n.GetNodeInfo().Name, msg)
 	if msg.Type == iota.PersonalityType_PERSONALITY_NAPLES ||
-		msg.Type == iota.PersonalityType_PERSONALITY_NAPLES_DVS {
-		if msg.GetNaplesConfigs().Configs == nil {
-			return nil, errors.New("No naples config found")
+		msg.Type == iota.PersonalityType_PERSONALITY_NAPLES_DVS ||
+		msg.Type == iota.PersonalityType_PERSONALITY_NAPLES_BOND {
+		for _, config := range msg.GetNaplesConfigs().GetConfigs() {
+			if config == nil {
+				log.Errorf("No naples config found")
+				continue
+			}
+			for _, intf := range config.GetHostIntfs() {
+				if intf.GetType() == iota.InterfaceType_INTERFACE_TYPE_NATIVE {
+					return intf.Interfaces, nil
+				}
+			}
+			log.Errorf("No host-interfaces found for this naples")
+			continue
 		}
-		return msg.GetNaplesConfigs().Configs[0].HostIntfs, nil
+		return nil, errors.New("No naples config found or no host-interfaces")
 	}
 
 	if msg.Type == iota.PersonalityType_PERSONALITY_THIRD_PARTY_NIC ||
@@ -963,7 +1001,7 @@ func (n *TestNode) GetHostInterfaces() ([]string, error) {
 
 //GetSSLThumbprint get ssl thumbprint
 func (n *TestNode) GetSSLThumbprint() (string, error) {
-	msg := n.GetNodeMsg(n.GetNodeInfo().Name)
+	msg := n.GetNodeMsg(nil, n.GetNodeInfo().Name)
 
 	if msg.EsxConfig != nil {
 		return msg.EsxConfig.SslThumbprint, nil

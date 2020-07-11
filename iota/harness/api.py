@@ -126,6 +126,11 @@ def GetAddedNodes(req):
     Logger.debug("Get Nodes:")
     return __rpc(req, gl_topo_svc_stub.GetNodes)
 
+def ReInitNodes(req):
+    global gl_topo_svc_stub
+    Logger.debug("ReInit Nodes:")
+    return __rpc(req, gl_topo_svc_stub.ReInitNodes)
+
 def ReloadNodes(req):
     Logger.debug("Reloading Nodes:")
     return __rpc(req, gl_topo_svc_stub.ReloadNodes)
@@ -141,6 +146,9 @@ def SaveNodes(req):
 def RestoreNodes(req):
     Logger.debug("Restore Nodes:")
     return __rpc(req, gl_topo_svc_stub.RestoreNodes)
+
+def RebuildTopology():
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().Build(store.GetTestbed().GetCurrentTestsuite(), reinit=True)
 
 def IsWorkloadRunning(wl):
     return store.IsWorkloadRunning(wl)
@@ -361,11 +369,23 @@ def GetTopologyDirectory():
 def GetNaplesHostInterfaces(node_name, device_name=None):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNaplesHostInterfaces(node_name, device_name)
 
-def AllocateHostInterfaceForNode(name):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().AllocateHostInterfaceForNode(name)
+def AllocateHostInterfaceForNode(node_name):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().AllocateHostInterfaceForNode(node_name)
 
-def GetWorkloadNodeHostInterfaces(name, device_name=None):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetWorkloadNodeHostInterfaces(name, device_name)
+def GetWorkloadNodeHostInterfaces(node_name, device_name=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetWorkloadNodeHostInterfaces(node_name, device_name)
+
+def GetWorkloadNodeHostInterfaceType(node_name, device_name=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetWorkloadNodeHostInterfaceType(node_name, device_name)
+
+def GetNodeParentHostInterface(node_name, dev_name, hostIntf):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNodeParentHostInterface(node_name, dev_name, hostIntf)
+
+def GetNodeVirtualFunctions(node_name, dev_name = None, parent_intf=None):
+    return store.GetTestBed().GetCurrentTestsuite().GetTopology().GetNaplesHostVirtualFunctions(node_name, device_name, parent_intf)
+
+def GetNodeParentHostInterfaceIndex(node_name, dev_name, hostIntf):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNodeParentHostInterfaceIndex(node_name, dev_name, hostIntf)
 
 def GetWorkloadTypeForNode(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetWorkloadTypeForNode(node_name)

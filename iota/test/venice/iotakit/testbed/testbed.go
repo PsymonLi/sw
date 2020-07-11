@@ -1994,7 +1994,11 @@ func (tb *TestBed) setupTestBed() error {
 						node.NaplesConfigs.Configs[iter].NodeUuid = naplesConfig.NodeUuid
 						node.NaplesConfigs.Configs[iter].NaplesIpAddress = naplesConfig.NaplesIpAddress
 						node.NaplesConfigs.Configs[iter].NaplesSecondaryIpAddress = naplesConfig.NaplesSecondaryIpAddress
-						node.HostIntfs[convertToVeniceFormatMac(naplesConfig.NodeUuid)] = naplesConfig.HostIntfs
+						for _, intf := range naplesConfig.HostIntfs {
+							if intf.Type == iota.InterfaceType_INTERFACE_TYPE_NATIVE {
+								node.HostIntfs[convertToVeniceFormatMac(naplesConfig.NodeUuid)] = intf.Interfaces
+							}
+						}
 					}
 					if kubeInfo != nil {
 						// check the node is up from k8s master

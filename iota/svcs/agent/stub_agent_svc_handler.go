@@ -26,6 +26,11 @@ func (*StubService) AddNode(ctx context.Context, req *iota.Node) (*iota.Node, er
 	return resp, nil
 }
 
+func (*StubService) ReInitNode(ctx context.Context, in *iota.Node) (*iota.Node, error) {
+	resp := &iota.Node{}
+	return resp, nil
+}
+
 // SaveNode save node personality for reboot
 func (*StubService) SaveNode(ctx context.Context, req *iota.Node) (*iota.Node, error) {
 	resp := &iota.Node{}

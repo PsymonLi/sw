@@ -305,10 +305,14 @@ class NodeWorkloads(object):
         for idx, dev_name in enumerate(self.__nic_devices):
             iflist = []
             hostIfList = api.GetWorkloadNodeHostInterfaces(self.GetNodeName(), dev_name)
+            ifType = api.GetWorkloadNodeHostInterfaceType(self.GetNodeName(), dev_name)
             for ifnum, hostIntf in enumerate(hostIfList):
                 obj = parser.Dict2Object({})
                 setattr(obj, 'HostInterface', hostIntf)
+                setattr(obj, 'ParentHostInterface', api.GetNodeParentHostInterface(self.GetNodeName(), dev_name, hostIntf))
                 setattr(obj, 'LogicalInterface', 'host_if{0}'.format(ifnum + 1))
+                setattr(obj, 'InterfaceIndex', api.GetNodeParentHostInterfaceIndex(self.GetNodeName(), dev_name, hostIntf))
+                setattr(obj, 'InterfaceType', ifType)
                 iflist.append(obj)
             if iflist:
                 self.__interfaces[dev_name] = iflist
@@ -374,9 +378,10 @@ class NodeWorkloads(object):
                 wl_msg.workload_name = self.GetNodeName() + "_" + intfObj.HostInterface + "_subif_" + str(vlan)
                 wl_msg.node_name = self.GetNodeName() # wl.node
                 intf.pinned_port = 1
-                intf.interface_type = topo_svc.INTERFACE_TYPE_VSS
+                intf.interface_type = intfObj.InterfaceType
                 intf.interface = intfObj.HostInterface
-                intf.parent_interface = intfObj.HostInterface
+                intf.parent_interface = intfObj.ParentHostInterface
+                intf.interface_index = intfObj.InterfaceIndex
                 wl_msg.workload_type = api.GetWorkloadTypeForNode(self.GetNodeName())
                 wl_msg.workload_image = api.GetWorkloadImageForNode(self.GetNodeName())
                 wl_msg.mgmt_ip = api.GetMgmtIPAddress(wl_msg.node_name)
@@ -402,7 +407,7 @@ class NodeWorkloads(object):
                 intf.uplink_vlan = intf.encap_vlan
                 wl_msg.node_name = self.GetNodeName()
                 intf.pinned_port = 1
-                intf.interface_type = topo_svc.INTERFACE_TYPE_VSS
+                intf.interface_type = intfObj.InterfaceType
                 # node_intf = node_ifs[wl.node][int(intfObj.replace('host_if', '')) - 1]
                 if api.GetWorkloadTypeForNode(self.GetNodeName()) == topo_svc.WorkloadType.Value('WORKLOAD_TYPE_BARE_METAL'):
                     intf.interface = intfObj.HostInterface + "_" + str(vlan)
@@ -410,7 +415,8 @@ class NodeWorkloads(object):
                 else:
                     intf.interface = intfObj.HostInterface + "_mv%d" % (subif_indx+1)
                     wl_msg.workload_name = self.GetNodeName() + "_" + intfObj.HostInterface + "_mv%d" % (subif_indx+1)
-                intf.parent_interface = intfObj.HostInterface
+                intf.parent_interface = intfObj.ParentHostInterface
+                intf.interface_index = intfObj.InterfaceIndex
                 wl_msg.workload_type = api.GetWorkloadTypeForNode(self.GetNodeName())
                 wl_msg.workload_image = api.GetWorkloadImageForNode(self.GetNodeName())
                 wl_msg.mgmt_ip = api.GetMgmtIPAddress(wl_msg.node_name)

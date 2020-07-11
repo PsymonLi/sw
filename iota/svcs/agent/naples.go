@@ -61,6 +61,17 @@ var workloadTypeMap = map[iota.WorkloadType]string{
 	iota.WorkloadType_WORKLOAD_TYPE_BARE_METAL_MAC_VLAN_ENCAP: Workload.WorkloadTypeMacVlanEncap,
 }
 
+var interfaceTypeMap = map[iota.InterfaceType]string{
+	iota.InterfaceType_INTERFACE_TYPE_NONE:      Workload.InterfaceTypeNone,
+	iota.InterfaceType_INTERFACE_TYPE_NATIVE:    Workload.InterfaceTypeNative,
+	iota.InterfaceType_INTERFACE_TYPE_VSS:       Workload.InterfaceTypeVSS,
+	iota.InterfaceType_INTERFACE_TYPE_SRIOV:     Workload.InterfaceTypeSRIOV,
+	iota.InterfaceType_INTERFACE_TYPE_DVS:       Workload.InterfaceTypeDVS,
+	iota.InterfaceType_INTERFACE_TYPE_DVS_PVLAN: Workload.InterfaceTypeDVS_PVLAN,
+	iota.InterfaceType_INTERFACE_TYPE_BOND:      Workload.InterfaceTypeBond,
+	iota.InterfaceType_INTERFACE_TYPE_MGMT:      Workload.InterfaceTypeMgmt,
+}
+
 var nodOSMap = map[iota.TestBedNodeOs]string{
 	iota.TestBedNodeOs_TESTBED_NODE_OS_LINUX:   "linux",
 	iota.TestBedNodeOs_TESTBED_NODE_OS_FREEBSD: "freebsd",
@@ -285,9 +296,14 @@ func (naples *naplesSimNode) init(in *iota.Node, withQemu bool) (resp *iota.Node
 	//if in.GetNaplesConfig() == nil {
 	//	in.NodeInfo = &iota.Node_NaplesConfig{NaplesConfigs: &iota.NaplesConfig{}}
 	//}
-	naplesConfig.HostIntfs = Utils.GetIntfsMatchingPrefix(naplesSimHostIntfPrefix)
 
-	naples.logger.Println("Naples sim host interfaces : ", naplesConfig.HostIntfs)
+	naplesConfig.HostIntfs = append(naplesConfig.HostIntfs,
+		&iota.Interfaces{
+			Type:       iota.InterfaceType_INTERFACE_TYPE_NATIVE,
+			Interfaces: Utils.GetIntfsMatchingPrefix(naplesSimHostIntfPrefix),
+		})
+
+	naples.logger.Println("Naples sim host interfaces : ", naplesConfig.HostIntfs[0].Interfaces)
 
 	/* Finally add entity type */
 	if err := naples.addNodeEntities(in); err != nil {
@@ -401,7 +417,7 @@ func (dnode *dataNode) configureWorkload(wload Workload.Workload, in *iota.Workl
 
 	for index, intf := range in.Interfaces {
 		spec := Workload.InterfaceSpec{
-			IntfType:      intf.GetInterfaceType().String(),
+			IntfType:      interfaceTypeMap[intf.GetInterfaceType()],
 			Parent:        intf.GetParentInterface(),
 			Name:          intf.GetInterface(),
 			Mac:           intf.GetMacAddress(),
@@ -411,7 +427,7 @@ func (dnode *dataNode) configureWorkload(wload Workload.Workload, in *iota.Workl
 			SecondaryVlan: int(intf.GetSecondaryEncapVlan()),
 			Switch:        intf.GetSwitchName(),
 			NetworkName:   intf.GetNetworkName(),
-			Index:         index,
+			Index:         int(intf.GetInterfaceIndex()),
 		}
 		attachedIntf, err := wload.AddInterface(spec)
 		if err != nil {
@@ -680,7 +696,7 @@ func (dnode *dataNode) DeleteWorkloads(in *iota.WorkloadMsg) (*iota.WorkloadMsg,
 
 // Trigger invokes the workload's trigger. It could be ping, start client/server etc..
 func (dnode *dataNode) triggerValidate(in *iota.TriggerMsg) (*iota.TriggerMsg, error) {
-	dnode.logger.Println("Trigger message received.")
+	dnode.logger.Println("Trigger message received for validation.")
 
 	validate := func() error {
 		for _, cmd := range in.Commands {
@@ -972,6 +988,12 @@ var hostIntfCmd = func(osType string, nicType, hint string) []string {
 	return fullCmd
 }
 
+var virtualFuncCmd = func(osType string, nicType, hint string) []string {
+	fullCmd := []string{Common.DstIotaNicFinderCommand, "--mac-hint", hint, "--intf-type", "virt-funcs", "--op", "intfs", "--os", osType}
+
+	return fullCmd
+}
+
 var bondIntfCmd = func(osType string, nicType, hint string) []string {
 	fullCmd := []string{Common.DstIotaNicFinderCommand, "--mac-hint", hint, "--intf-type", "bond-intf", "--op", "intfs", "--os", osType}
 
@@ -1001,6 +1023,31 @@ func (naples *naplesHwNode) getHostInterfaces(osType string, nicType, hint strin
 
 	}
 	return hostIntfs, nil
+}
+
+func (naples *naplesHwNode) getVirtualFunctions(osType string, nicType, hint string) ([]string, error) {
+	var virtualFunctions []string
+
+	naples.logger.Printf("Search Virtual-functions for OS %v and hint: %v", osType, hint)
+	if hint == "" {
+		return virtualFunctions, nil
+	}
+	fullCmd := virtualFuncCmd(osType, nicType, hint)
+	_, stdout, err := Utils.RunCmd(fullCmd, 0, false, true, nil)
+	if err != nil {
+		return nil, err
+	}
+	naples.logger.Printf("Host virtual-functions cmd : %v", strings.Join(fullCmd, " "))
+	naples.logger.Printf("Host virtual-function output: %v", strings.Split(stdout, "\n"))
+
+	for _, intf := range strings.Split(stdout, "\n") {
+		if intf != "" {
+			virtualFunctions = append(virtualFunctions, intf)
+		}
+
+	}
+	naples.logger.Printf("Found %v virtual-functions", len(virtualFunctions))
+	return virtualFunctions, nil
 }
 
 var naplesIPCmd = func(osType string, nicType, hint string) []string {
@@ -1157,8 +1204,24 @@ func (naples *naplesHwNode) Init(in *iota.Node) (*iota.Node, error) {
 					naples.logger.Error(err.Error())
 					return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: err.Error()}}, err
 				}
-				naplesConfig.HostIntfs = hostIntfs
-				naples.logger.Printf("Naples host interfaces : %v", naplesConfig.HostIntfs)
+				naples.logger.Printf("Naples host interfaces : %v", hostIntfs)
+				naplesConfig.HostIntfs = append(naplesConfig.HostIntfs,
+					&iota.Interfaces{
+						Type:       iota.InterfaceType_INTERFACE_TYPE_NATIVE,
+						Interfaces: hostIntfs,
+					})
+
+				// Gather virtual-functions
+				virtualFuncs, err := naples.getVirtualFunctions(nodOSMap[in.GetOs()], naplesConfig.GetNicType(), naplesConfig.GetNicHint())
+				if err == nil && len(virtualFuncs) > 0 {
+					naplesConfig.HostIntfs = append(naplesConfig.HostIntfs,
+						&iota.Interfaces{
+							Type:       iota.InterfaceType_INTERFACE_TYPE_SRIOV,
+							Interfaces: virtualFuncs,
+						})
+				} else if err != nil {
+					naples.logger.Error(err.Error())
+				}
 			}
 		default:
 			naples.logger.Printf("Skipping host interface detection on naples")
@@ -1180,23 +1243,26 @@ func (naples *naplesHwNode) Init(in *iota.Node) (*iota.Node, error) {
 			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR}}, err
 		}
 
-		for _, intf := range naplesConfig.HostIntfs {
-			var cmd []string
-			naples.logger.Info("Bringing up host intf " + intf)
-			enableShell := true
+		for _, naplesHostIfs := range naplesConfig.HostIntfs {
+			if naplesHostIfs.Type == iota.InterfaceType_INTERFACE_TYPE_NATIVE {
+				for _, intf := range naplesHostIfs.Interfaces {
+					var cmd []string
+					naples.logger.Info("Bringing up host intf " + intf)
+					enableShell := true
 
-			if in.GetOs() != iota.TestBedNodeOs_TESTBED_NODE_OS_WINDOWS {
-				cmd = append(cmd, "ifconfig", intf, "up")
-			} else {
-				enableShell = false
-				ifName := naples.windowsPortNameMapping[intf]["Name"]
-				cmd = []string{Common.WindowsPowerShell, "Enable-NetAdapter \"" + ifName + "\" -Confirm:$false"}
-			}
-
-			if _, stdout, err := Utils.Run(cmd, 0, false, enableShell, nil); err != nil {
-				msg := fmt.Sprintf("Failed to bring host interface %s up err : %s", intf, stdout)
-				naples.logger.Error(msg)
-				return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
+					if in.GetOs() != iota.TestBedNodeOs_TESTBED_NODE_OS_WINDOWS {
+						cmd = append(cmd, "ifconfig", intf, "up")
+					} else {
+						enableShell = false
+						ifName := naples.windowsPortNameMapping[intf]["Name"]
+						cmd = []string{Common.WindowsPowerShell, "Enable-NetAdapter \"" + ifName + "\" -Confirm:$false"}
+					}
+					if _, stdout, err := Utils.Run(cmd, 0, false, enableShell, nil); err != nil {
+						msg := fmt.Sprintf("Failed to bring host interface %s up err : %s", intf, stdout)
+						naples.logger.Error(msg)
+						return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
+					}
+				}
 			}
 		}
 

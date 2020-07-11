@@ -92,7 +92,7 @@ class TestSuite:
         self.__ignoreList = getattr(spec.meta, "ignore_list", [])
         self.__images = self.__load_image_manifest()
         self.__process_provision_spec()
-        self.__defaultNicMode = getattr(spec.meta, "nicmode", types.nicModes.CLASSIC)
+        self.__defaultNicMode = getattr(spec.meta, "nicmode", "classic")
         self.__defaultNicPipeline = GlobalOptions.pipeline
         self.__portspeed = self.__getPortSpeedFromTestsuite(spec.meta)
         return

@@ -3,6 +3,7 @@ package utils
 import (
 	"bufio"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
 )
@@ -12,28 +13,32 @@ import (
 const EtcOsRelease string = "/etc/os-release"
 
 // Returns a map of os-release key-value
-func ReadOsRelease() (osRelease map[string]string, err error) {
-	osRelease, err = parseOsReleaseFile(EtcOsRelease)
-	return
+func ReadOsRelease() (map[string]string, error) {
+	return parseOsReleaseFile(EtcOsRelease)
 }
 
 // Internal function to parse given file and return key-value map
-func parseOsReleaseFile(fileName string) (osRelease map[string]string, err error) {
-	osRelease = make(map[string]string)
+func parseOsReleaseFile(fileName string) (map[string]string, error) {
+	osRelease := make(map[string]string)
 
 	lines, err := readFile(fileName)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, line := range lines {
 		key, value, err := parseLine(line)
-		if err != nil {
+		if err == nil {
 			osRelease[key] = value
+		} else {
+			log.Errorf("Failed to parse line :%v, err: %v", line, err.Error())
 		}
 	}
-	return
+	return osRelease, nil
 }
 
 // Read file into slice of lines
-func readFile(fileName string) (lines []string, err error) {
+func readFile(fileName string) ([]string, error) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return nil, err
@@ -41,6 +46,7 @@ func readFile(fileName string) (lines []string, err error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	lines := make([]string, 0)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
@@ -48,32 +54,30 @@ func readFile(fileName string) (lines []string, err error) {
 }
 
 // main function to parse given line, handling variations
-func parseLine(line string) (key string, value string, err error) {
-	err = nil
-
+func parseLine(line string) (string, string, error) {
 	// skip empty lines
 	if len(line) == 0 {
-		err = errors.New("Skipping: zero-length lines")
-		return
+		err := errors.New("Skipping: zero-length lines")
+		return "", "", err
 	}
 
 	// skip comments
 	if line[0] == '#' {
-		err = errors.New("Skipping: commented lines")
-		return
+		err := errors.New("Skipping: commented lines")
+		return "", "", err
 	}
 
 	// try to split string at the first '='
 	splitString := strings.SplitN(line, "=", 2)
 	if len(splitString) != 2 {
-		err = errors.New("Can not parse key=value")
-		return
+		err := errors.New("Can not parse key=value")
+		return "", "", err
 	}
 
 	// trim white space from key and value
-	key = splitString[0]
+	key := splitString[0]
 	key = strings.Trim(key, " ")
-	value = splitString[1]
+	value := splitString[1]
 	value = strings.Trim(value, " ")
 
 	// Handle double quotes
@@ -94,5 +98,5 @@ func parseLine(line string) (key string, value string, err error) {
 	value = strings.Replace(value, `\$`, `$`, -1)
 	value = strings.Replace(value, `\\`, `\`, -1)
 	value = strings.Replace(value, "\\`", "`", -1)
-	return
+	return key, value, nil
 }

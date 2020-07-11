@@ -4,9 +4,10 @@ import argparse
 import sys
 import json
 import os
+import re
 
 parser = argparse.ArgumentParser(description='Pensando NIC Finder')
-parser.add_argument('--intf-type', dest='intf_type', default='data-nic', choices=['int-mnic','data-nic'])
+parser.add_argument('--intf-type', dest='intf_type', default='data-nic', choices=['int-mnic','data-nic', 'virt-funcs'])
 parser.add_argument('--op', dest='op', default='intfs', choices=['intfs','mnic-ip'])
 parser.add_argument('--os', dest='os', default='linux', choices=['linux','esx','freebsd','windows'])
 parser.add_argument('--mac-hint', dest='mac_hint')
@@ -22,13 +23,29 @@ def __get_nics_output_esx():
 
 esx_interface_types = {
     "int-mnic" : ["Management Controller", "Ethernet Management"],
-    "data-nic" : ["Ethernet Controller", "Ethernet PF"]
+    "data-nic" : ["Ethernet Controller", "Ethernet PF"],
+    "virt-funcs" : []
 }
 
 def MacInRange(mac, mac_hint):
+    if mac:
         num1 = int(mac_hint.replace(':', ''), 16)
         num2 = int(mac.replace(':', ''), 16)
         return abs(num2 - num1) <= _MAC_DIFF
+    return False
+
+def IsVirtualFunction(businfo, parent_businfos):
+    if businfo:
+        child_prefix = re.match('pci@\w+:\w+:', businfo)
+        if not child_prefix:
+            return False
+        for parent in parent_businfos:
+            parent_prefix = re.match('pci@\w+:\w+:', parent)
+            if not parent_prefix:
+                continue
+            if parent_prefix[0] == child_prefix[0]:
+                return True
+    return False
 
 def __print_mnic_ip_esx(mac_hint, intf_type):
     output = __get_nics_output_esx()
@@ -77,7 +94,7 @@ def __get_nics_output_linux():
 
 
 
-def __get_devices_linux(mac_hint, physical=True):
+def __get_devices_linux(mac_hint, physical=True, virtual=False):
     children = []
     def populateChildren(entry, children):
         children.append(entry)
@@ -88,17 +105,29 @@ def __get_devices_linux(mac_hint, physical=True):
     entries=json.loads(__get_nics_output_linux())
     populateChildren(entries, children)
     devs=[]
-    for child in children:
-        if child.get("id") == "network" and ("serial" in child) and ("businfo" in child) and ("logicalname" in child):
-            if MacInRange(child["serial"], mac_hint):
-                addr=str(child["businfo"].split(":")[1])
-                physical_link = child["capabilities"].get("fibre", None)
-                if physical and physical_link:
-                    devs.append((child["logicalname"], int(addr, 16)))
-                elif not physical and not physical_link:
-                    devs.append((child["logicalname"], int(addr, 16)))
+    pen_nic_children = list(filter(lambda child: 
+                "network" in child.get("id", None) and 
+                "configuration" in child and 
+                "driver" in child.get("configuration", None) and 
+                child["configuration"].get("driver", {}) == "ionic", children))
 
-
+    parent_businfo = []
+    for child in pen_nic_children:
+        if "capabilities" not in child or "logicalname" not in child:
+            continue
+        physical_link = child["capabilities"].get("fibre", None)
+        if MacInRange(child.get("serial", None), mac_hint):
+            addr=str(child["businfo"].split(":")[1])
+            if physical and physical_link and not virtual:
+                devs.append((child["logicalname"], int(addr, 16)))
+            elif not physical and not physical_link and not virtual:
+                devs.append((child["logicalname"], int(addr, 16)))
+            parent_businfo.append(child["businfo"])
+        elif virtual and IsVirtualFunction(child.get("businfo", None), parent_businfo):
+            if physical and physical_link:
+                devs.append((child["logicalname"], int(addr, 16)))
+            elif not physical and not physical_link:
+                devs.append((child["logicalname"], int(addr, 16)))
 
     devs.sort(key = lambda x: x[1])
     return devs
@@ -107,6 +136,13 @@ def __get_devices_linux(mac_hint, physical=True):
 def __print_intfs_linux(mac_hint, intf_type):
     if intf_type == "data-nic":
         devs = __get_devices_linux(mac_hint, physical=True)
+        if len(devs) == 0:
+            print("Not able to find Naples Data ports", file=sys.stderr)
+            return 1
+        for dev in devs:
+            print(dev[0])
+    elif intf_type == "virt-funcs":
+        devs = __get_devices_linux(mac_hint, physical=True, virtual=True)
         if len(devs) == 0:
             print("Not able to find Naples Data ports", file=sys.stderr)
             return 1
@@ -166,6 +202,8 @@ def __print_intfs_freebsd(mac_hint, intf_type):
         devs.pop()
         for dev in devs:
             print(dev[0])
+    elif intf_type == "virt-funcs":
+        pass
     else:
         if len(devs) == 0:
             print("Not able to find Naples OOB port", file=sys.stderr)
@@ -283,6 +321,8 @@ def __print_intfs_windows(mac_hint, intf_type):
         devs.pop()
         for dev in devs:
             print(dev[0])
+    elif intf_type == "virt-funcs":
+        pass
     else:
         print(devs[-1][0])
 

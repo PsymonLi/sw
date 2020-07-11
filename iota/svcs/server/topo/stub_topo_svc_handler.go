@@ -100,6 +100,14 @@ func (ts *StubTopologyService) GetNodes(ctx context.Context, req *iota.NodeMsg) 
 	return req, nil
 }
 
+// ReInitNodes returns the current topology information
+func (ts *StubTopologyService) ReInitNodes(ctx context.Context, req *iota.NodeMsg) (*iota.NodeMsg, error) {
+	log.Infof("TOPO SVC | DEBUG | ReInitNodes. Received Request Msg: %v", req)
+
+	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
+	return req, nil
+}
+
 // AddWorkloads adds a workload on a given node
 func (ts *StubTopologyService) AddWorkloads(ctx context.Context, req *iota.WorkloadMsg) (*iota.WorkloadMsg, error) {
 	log.Infof("TOPO SVC | DEBUG | AddWorkloads. Received Request Msg: %v", req)

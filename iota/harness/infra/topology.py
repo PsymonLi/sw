@@ -118,6 +118,7 @@ class Node(object):
             self.__mac = ""
             self.__host_intfs = None
             self.__bond_intfs = None
+            self.__vf_intfs = {}
             self.__host_if_alloc_idx = 0
             self.__nic_mgmt_ip = None
             self.__nic_console_ip = None
@@ -134,6 +135,32 @@ class Node(object):
 
         def HostIntfs(self):
             return self.__host_intfs
+
+        def VirtualFuncIntfs(self, parent_intf = None):
+            if parent_intf:
+                return self.__vf_intfs[parent_intf]
+            all_vf = []
+            for _, intfs in self.__vf_intfs.items():
+                all_vf.extend(intfs)
+            return all_vf
+
+        def ParentInterface(self, intf):
+            if not self.__vf_intfs:
+                return intf
+
+            for host_intf, vf_list in self.__vf_intfs.items():
+                if intf in vf_list:
+                    return host_intf
+            return intf
+
+        def VFIndex(self, intf):
+            if not self.__vf_intfs:
+                return 0
+
+            for _, vf_list in self.__vf_intfs.items():
+                if intf in vf_list:
+                    return vf_list.index(intf)
+            return 0
 
         def BondIntfs(self):
             return self.__bond_intfs
@@ -185,6 +212,14 @@ class Node(object):
 
         def SetBondIntfs(self, bond_intfs):
             self.__bond_intfs = bond_intfs
+
+        def SetVirtualFuncIntfs(self, vf_intfs):
+            for intf in vf_intfs:
+                for host_intf in self.__host_intfs:
+                    if re.search(host_intf[:-1], intf):
+                        vf_list = self.__vf_intfs.get(host_intf, [])
+                        vf_list.append(intf)
+                        self.__vf_intfs[host_intf] = vf_list
 
         def SetPorts(self, ports, speed):
             self.__ports = ports
@@ -776,6 +811,24 @@ class Node(object):
             for dev in self.GetDevices():
                 iflist.extend(self.__get_device(dev).BondIntfs())
             return iflist
+ 
+    def VirtualFunctionInterfaces(self, device = None, parent_intf = None):
+        if device:
+            dev = self.__get_device(device)
+            return dev.VirtualFuncIntfs(parent_intf)
+        else:
+            iflist = []
+            for dev in self.GetDevices():
+                iflist.extend(self.__get_device(dev).VirtualFuncIntfs(parent_intf))
+            return iflist
+
+    def ParentHostInterface(self, device_name, intf):
+        dev = self.__get_device(device_name)
+        return dev.ParentInterface(intf)
+
+    def VirtualFunctionIndex(self, device_name, intf):
+        dev = self.__get_device(device_name)
+        return dev.VFIndex(intf)
 
     def AllocateHostInterface(self, device = None):
         dev = self.__get_device(device)
@@ -954,15 +1007,28 @@ class Node(object):
             Logger.info("Setting orch node as %s" % (self.Name()))
             self.__topo.SetOrchNode(self)
 
+        self.__host_intfs = []
         if self.IsNaples():
             for naples_config in resp.naples_configs.configs:
                 device = self.__get_device(naples_config.name)
                 assert(device)
                 device.SetUuid(naples_config.node_uuid)
-                device.SetHostIntfs(naples_config.host_intfs)
+                for intfs in naples_config.host_intfs:
+                    if intfs.type == topo_pb2.INTERFACE_TYPE_NATIVE:
+                        device.SetHostIntfs(intfs.interfaces)
+                        self.__host_intfs.extend(intfs.interfaces)
+                        Logger.info("Host with Native Interfaces :%s" % intfs.interfaces)
+                    elif intfs.type == topo_pb2.INTERFACE_TYPE_BOND:
+                        Logger.info("Host with Bond Interfaces :%s" % intfs.interfaces)
+                        device.SetBondIntfs(intfs.interfaces)
+                        self.__host_intfs.extend(intfs.interfaces)
+                    elif intfs.type == topo_pb2.INTERFACE_TYPE_SRIOV:
+                        Logger.info("Host with SRIOV Interfaces :%s" % intfs.interfaces)
+                        device.SetVirtualFuncIntfs(intfs.interfaces)
+                        self.__host_intfs.extend(intfs.interfaces)
+
                 device.SetNicIntMgmtIP(naples_config.naples_ip_address)
                 Logger.info("Nic: %s UUID: %s" % (naples_config.name, naples_config.node_uuid))
-                self.__host_intfs.extend(naples_config.host_intfs)
 
         elif self.IsThirdParty():
             if GlobalOptions.dryrun:
@@ -1478,7 +1544,7 @@ class Topology(object):
 
         return types.status.SUCCESS
 
-    def Build(self, testsuite):
+    def Build(self, testsuite, reinit=False):
         Logger.info("Getting Nodes:")
         req = topo_pb2.NodeMsg()
         req.node_op = topo_pb2.ADD
@@ -1488,7 +1554,10 @@ class Topology(object):
             ret = node.AddToNodeMsg(msg, self, testsuite)
             assert(ret == types.status.SUCCESS)
 
-        resp = api.GetAddedNodes(req)
+        if reinit:
+            resp = api.ReInitNodes(req)
+        else:
+            resp = api.GetAddedNodes(req)
         if not api.IsApiResponseOk(resp):
             return types.status.FAILURE
 
@@ -1569,6 +1638,9 @@ class Topology(object):
     def GetNaplesBondInterfaces(self, node_name, device_name=None):
         return self.__nodes[node_name].BondInterfaces(device_name)
 
+    def GetNaplesHostVirtualFunctions(self, node_name, device_name=None, parent_intf = None):
+        return self.__nodes[node_name].VirtualFunctionInterfaces(device_name, parent_intf)
+
     def IsBondingEnabled(self, node_name):
         return self.__nodes[node_name].IsBondingEnabled()
 
@@ -1585,8 +1657,32 @@ class Topology(object):
     def GetWorkloadNodeHostInterfaces(self, node_name, device_name=None):
         if self.IsBondingEnabled(node_name):
             return self.GetNaplesBondInterfaces(node_name, device_name)
+        elif store.GetTestbed().GetCurrentTestsuite().GetDefaultNicMode() == "sriov":
+            return self.GetNaplesHostVirtualFunctions(node_name, device_name)
         else:
             return self.GetNaplesHostInterfaces(node_name, device_name)
+
+    def GetWorkloadNodeHostInterfaceType(self, node_name, device_name=None):
+        if self.IsBondingEnabled(node_name):
+            return topo_pb2.INTERFACE_TYPE_NATIVE # TODO: Should be replaced with INTERFACE_TYPE_BOND
+        elif store.GetTestbed().GetCurrentTestsuite().GetDefaultNicMode() == "sriov":
+            return topo_pb2.INTERFACE_TYPE_SRIOV
+        else:
+            return topo_pb2.INTERFACE_TYPE_NATIVE 
+
+    def GetNodeParentHostInterface(self, node_name, device_name, intf):
+        if store.GetTestbed().GetCurrentTestsuite().GetDefaultNicMode() == "sriov":
+            return self.__nodes[node_name].ParentHostInterface(device_name, intf)
+
+        return intf
+
+    def GetNodeParentHostInterfaceIndex(self, node_name, device_name, intf):
+        if self.IsBondingEnabled(node_name):
+            return 0 # Not used
+        elif store.GetTestbed().GetCurrentTestsuite().GetDefaultNicMode() == "sriov":
+            return self.__nodes[node_name].VirtualFunctionIndex(device_name, intf)
+        else:
+            return 0 # Not used
 
     def GetWorkloadTypeForNode(self, node_name):
         return self.__nodes[node_name].WorkloadType()

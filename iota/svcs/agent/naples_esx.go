@@ -622,7 +622,11 @@ func (naples *esxNaplesHwNode) setHostIntfs(in *iota.Node) error {
 			naples.logger.Error(msg)
 			return errors.New(msg)
 		}
-		naplesCfg.HostIntfs = naplesDataIntfs
+		naplesCfg.HostIntfs = append(naplesCfg.HostIntfs,
+			&iota.Interfaces{
+				Type:       iota.InterfaceType_INTERFACE_TYPE_NATIVE,
+				Interfaces: naplesDataIntfs,
+			})
 	}
 	return nil
 }

@@ -294,6 +294,12 @@ func (ms *mockIotaServer) GetNodes(ctx context.Context, req *iota.NodeMsg) (*iot
 	return req, nil
 }
 
+func (ms *mockIotaServer) ReInitNodes(ctx context.Context, req *iota.NodeMsg) (*iota.NodeMsg, error) {
+	log.Debugf("GetNodes(): Received Request Msg: %v", req)
+	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
+	return req, nil
+}
+
 func (ms *mockIotaServer) SaveNode(ctx context.Context, req *iota.NodeMsg) (*iota.NodeMsg, error) {
 	log.Debugf("SaveNode(): Received Request Msg: %v", req)
 	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK

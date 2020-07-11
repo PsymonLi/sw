@@ -707,7 +707,7 @@ func (ts *TopologyService) AddNodes(ctx context.Context, req *iota.NodeMsg) (*io
 	}
 
 	for idx, node := range newNodes {
-		req.Nodes[idx] = node.GetNodeMsg(node.GetNodeInfo().Name)
+		req.Nodes[idx] = node.GetNodeMsg(ctx, node.GetNodeInfo().Name)
 		if req.Nodes[idx].GetNodeStatus().ApiStatus != iota.APIResponseType_API_STATUS_OK {
 			req.ApiResponse.ErrorMsg = "Node :" + req.Nodes[idx].GetName() + " : " + req.Nodes[idx].GetNodeStatus().ErrorMsg + "\n"
 			req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
@@ -738,12 +738,33 @@ func (ts *TopologyService) GetNodes(ctx context.Context, req *iota.NodeMsg) (*io
 	}
 
 	for name, node := range ts.ProvisionedNodes {
-		respMsg := node.GetNodeMsg(name)
+		respMsg := node.GetNodeMsg(ctx, name)
 		log.Infof("Returning provisioned node %v : %v\n", name, respMsg.Name)
 		resp.Nodes = append(resp.Nodes, respMsg)
 	}
 
 	log.Infof("TOPO SVC | DEBUG | GetNodes Returned: %v", resp)
+	return &resp, nil
+}
+
+// ReInitNodes re-init nodes
+func (ts *TopologyService) ReInitNodes(ctx context.Context, req *iota.NodeMsg) (*iota.NodeMsg, error) {
+	log.Infof("TOPO SVC | DEBUG | ReInitNodes. Received Request Msg: %v", req)
+
+	resp := iota.NodeMsg{
+		AllocatedVlans: ts.tbInfo.allocatedVlans,
+		ApiResponse: &iota.IotaAPIResponse{
+			ApiStatus: iota.APIResponseType_API_STATUS_OK,
+		},
+	}
+
+	for name, node := range ts.ProvisionedNodes {
+		respMsg := node.ReInitNode(ctx, name)
+		log.Infof("Returning provisioned node after re-init %v: %v\n", name, respMsg.Name)
+		resp.Nodes = append(resp.Nodes, respMsg)
+	}
+
+	log.Infof("TOPO SVC | DEBUG | ReInitNodes Returned: %v", resp)
 	return &resp, nil
 }
 
@@ -798,7 +819,7 @@ func (ts *TopologyService) IpmiNodeAction(ctx context.Context, req *iota.ReloadM
 	}
 
 	for idx, rnode := range rNodes {
-		req.NodeMsg.Nodes[idx] = rnode.node.GetNodeMsg(rnode.name)
+		req.NodeMsg.Nodes[idx] = rnode.node.GetNodeMsg(ctx, rnode.name)
 		if req.NodeMsg.Nodes[idx].GetNodeStatus().ApiStatus != iota.APIResponseType_API_STATUS_OK {
 			req.ApiResponse.ErrorMsg = "Node :" + req.NodeMsg.Nodes[idx].GetName() + " : " + req.NodeMsg.Nodes[idx].GetNodeStatus().ErrorMsg + "\n"
 			req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
@@ -852,7 +873,7 @@ func (ts *TopologyService) ReloadNodes(ctx context.Context, req *iota.ReloadMsg)
 	}
 
 	for idx, rnode := range rNodes {
-		req.NodeMsg.Nodes[idx] = rnode.node.GetNodeMsg(rnode.name)
+		req.NodeMsg.Nodes[idx] = rnode.node.GetNodeMsg(ctx, rnode.name)
 		if req.NodeMsg.Nodes[idx].GetNodeStatus().ApiStatus != iota.APIResponseType_API_STATUS_OK {
 			req.ApiResponse.ErrorMsg = "Node :" + req.NodeMsg.Nodes[idx].GetName() + " : " + req.NodeMsg.Nodes[idx].GetNodeStatus().ErrorMsg + "\n"
 			req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
@@ -1362,7 +1383,7 @@ func (ts *TopologyService) RestoreNodes(ctx context.Context, req *iota.NodeMsg) 
 				return err
 			}
 			node.SetNodeAgent(iota.NewIotaAgentApiClient(c.Client))
-			resp, err := node.GetNodeAgent().ReloadNode(ctx, node.GetNodeMsg(node.GetNodeInfo().Name))
+			resp, err := node.GetNodeAgent().ReloadNode(ctx, node.GetNodeMsg(ctx, node.GetNodeInfo().Name))
 			log.Infof("TOPO SVC | RestoreNodes | ReloadNode Agent . Received Response Msg: %v", resp)
 			if err != nil {
 				log.Errorf("Reload node %v failed. Err: %v", node.GetNodeInfo().Name, err)
