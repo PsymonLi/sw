@@ -1280,9 +1280,9 @@ pd_mirror_session_stats_populate (mirror_session_t *session)
     ret = pd_mirror_stats_get(session, &del_metrics);
     metrics->del_metrics.pkts += del_metrics.pkts;
     metrics->del_metrics.bytes += del_metrics.bytes;
-    HAL_TRACE_DEBUG("Populate mirror stats for swid: {} tag: {}, pkts: {}, bytes: {}",
-                    session->sw_id, metrics->tag,
-                    del_metrics.pkts, del_metrics.bytes);
+    HAL_TRACE_VERBOSE("Populate mirror stats for swid: {} tag: {}, pkts: {}, bytes: {}",
+                      session->sw_id, metrics->tag,
+                      del_metrics.pkts, del_metrics.bytes);
 
     return ret;
 }
