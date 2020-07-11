@@ -76,6 +76,7 @@
     ],
   "logs": [
       "/var/log/",
+      "/data/logstash/",
       "/obfl/",
       "/sysconfig/",
       "/dev/shm/",

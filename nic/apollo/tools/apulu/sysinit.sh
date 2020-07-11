@@ -84,6 +84,7 @@ echo "Bringing up internal mnic interfaces ..."
 $PDSPKG_TOPDIR/tools/bringup_mgmt_ifs.sh &> $NON_PERSISTENT_LOG_DIR/mgmt_if.log
 
 # start cronjobs
+rm -rf /data/logstash/
 nice crond -c $PDSPKG_TOPDIR/conf/apulu/crontabs
 
 echo "System initialization done ..."
