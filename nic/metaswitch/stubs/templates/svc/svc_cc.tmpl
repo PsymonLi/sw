@@ -244,6 +244,7 @@ Status
                     {{end}}
                     {{if $statusMsgHasNoKeys}}
                     {{$pkgName}}::{{$specMsgName}} proto_status;
+                    proto_status = proto_spec;
                     pds_ms_get_{{$specMsgName | ToLower}}_from_{{$keyHandleReqName | ToLower}}(req_proto_spec, proto_status);
                     pds_ms_validate_{{$specMsgName | ToLower}}(proto_status);
                     {{else}}
