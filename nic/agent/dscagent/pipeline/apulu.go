@@ -1187,12 +1187,12 @@ func (a *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror net
 	case types.Update:
 		existingMirrorSession, err = getMirrorSessionObj(a.InfraAPI, mirror)
 		//check if existing session and new request are same and ignore
-		if err != nil && proto.Equal(&existingMirrorSession.Spec, &mirror.Spec) {
-			return nil, nil
-		} else {
+		if err != nil {
 			return nil, err
 		}
-
+		if proto.Equal(&existingMirrorSession.Spec, &mirror.Spec) {
+			return nil, nil
+		}
 	case types.Delete:
 		existingMirrorSession, err = getMirrorSessionObj(a.InfraAPI, mirror)
 		if err != nil {
@@ -1623,6 +1623,27 @@ func (a *ApuluAPI) ReplayConfigs() error {
 				log.Info("Replaying persisted Network Security Policy object")
 				if _, err := a.HandleNetworkSecurityPolicy(types.Create, nsp); err != nil {
 					log.Errorf("Failed to recreate Network Security Policy: %v. Err: %v", nsp.GetKey(), err)
+				}
+			}
+		}
+	}
+
+	//Replay InterfaceMirrorSession Object
+	mirrorKind := netproto.InterfaceMirrorSession{
+		TypeMeta: api.TypeMeta{Kind: "InterfaceMirrorSession"},
+	}
+
+	mirrorSessions, err := a.HandleInterfaceMirrorSession(types.List, mirrorKind)
+	if err == nil {
+		for _, mirrorSession := range mirrorSessions {
+			creator, ok := mirrorSession.ObjectMeta.Labels["CreatedBy"]
+			if ok && creator == "Venice" {
+				log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", mirrorSession.Kind, mirrorSession.GetKey())
+				a.InfraAPI.Delete(mirrorSession.Kind, mirrorSession.GetKey())
+
+				log.Info("Replaying persisted Interface Mirror Session object")
+				if _, err := a.HandleInterfaceMirrorSession(types.Create, mirrorSession); err != nil {
+					log.Errorf("Failed to recreate Interface Mirror Session: %v. Err: %v", mirrorSession.GetKey(), err)
 				}
 			}
 		}
