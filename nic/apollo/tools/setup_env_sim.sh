@@ -31,8 +31,7 @@ export LOG_DIR=$NON_PERSISTENT_LOG_DIR
 export ZMQ_SOC_DIR=${ZMQ_SOC_DIR:-$PDSPKG_TOPDIR}
 
 
-if [[ -n ${DEFAULT_PF_STATE} ]]; then
-    echo "Default PF State $DEFAULT_PF_STATE"
+if [ -n "$DEFAULT_PF_STATE" ]; then
     CMDARGS+=" --default-pf-state=$DEFAULT_PF_STATE "
 fi
 

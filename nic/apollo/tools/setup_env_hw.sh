@@ -13,8 +13,7 @@ export NON_PERSISTENT_LOG_DIR='/var/log/pensando/'
 export LOG_DIR=$NON_PERSISTENT_LOG_DIR
 
 
-if [[ -n ${DEFAULT_PF_STATE} ]]; then
-    echo "Default PF state $DEFAULT_PF_STATE"
+if [ -n "$DEFAULT_PF_STATE" ]; then
     CMDARGS=" --default-pf-state=$DEFAULT_PF_STATE "
 fi
 

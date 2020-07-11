@@ -29,8 +29,7 @@ if [ $PIPELINE != 'apulu' ]; then
     export IPC_MOCK_MODE=1
 fi
 
-if [[ -n ${DEFAULT_PF_STATE} ]]; then
-    echo "Default PF State $DEFAULT_PF_STATE"
+if [ -n "$DEFAULT_PF_STATE" ]; then
     CMDARGS=" --default-pf-state=$DEFAULT_PF_STATE "
 fi
 
