@@ -48,6 +48,17 @@ def DumpMirrorSessions(nodes=[]):
     for cmd in resp.commands:
         api.PrintCommandResults(cmd)
 
+def DumpFlowmonSessions(nodes=[]):
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    nodes = nodes if nodes else api.GetNaplesHostnames()
+    for node in nodes:
+        api.Trigger_AddNaplesCommand(req, node, "/nic/bin/halctl show flow-monitor")
+        api.Trigger_AddNaplesCommand(req, node, "/nic/bin/halctl show collector")
+
+    resp = api.Trigger(req)
+    for cmd in resp.commands:
+        api.PrintCommandResults(cmd)
+
 def GetMirrorCollectorsInfo(collector_wl, collector_ip, collector_type):
     return [ {'workload': wl, 'cfg': ip, 'type': t} for wl,ip,t in zip(collector_wl, collector_ip, collector_type) ]
 

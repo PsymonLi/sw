@@ -212,6 +212,9 @@ def Trigger(tc):
             agent_api.RemoveConfigObjects(flowmon_spec_objects)
             break
 
+        api.Logger.info("Test for FlowMon with {} sessions {} collectors".format(
+                        tc.iterators.num_flowmon_sessions, num_exports_at_create))
+        utils.DumpFlowmonSessions()
         ret = InjectTestTrafficAndValidateCapture(tc, tc.iterators.num_flowmon_sessions, num_exports_at_create)
 
         result = ret['res']
@@ -224,6 +227,9 @@ def Trigger(tc):
             if result != api.types.status.SUCCESS:
                 api.Logger.info("Failed in Flowmon Collector configuration")
             else:
+                api.Logger.info("Test for FlowMon with {} sessions {} collectors".format(
+                                 tc.iterators.num_flowmon_sessions, tc.iterators.num_exports))
+                utils.DumpFlowmonSessions()
                 ret = InjectTestTrafficAndValidateCapture(tc, tc.iterators.num_flowmon_sessions, tc.iterators.num_exports)
                 result = ret['res']
                 ret_count = ret['count']
@@ -237,6 +243,9 @@ def Trigger(tc):
                 agent_api.RemoveConfigObjects(obj)
                 tc.test_iterator_data[iteration] = {}
 
+            api.Logger.info("Test for FlowMon with {} sessions {} collectors".format(
+                            1, tc.iterators.num_exports))
+            utils.DumpFlowmonSessions()
             ret = InjectTestTrafficAndValidateCapture(tc, 1, tc.iterators.num_exports)
             result = ret['res']
             ret_count = ret['count']
