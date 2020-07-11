@@ -119,15 +119,167 @@ nacl_dump_header (int fd)
                 "RP  - Rx packet                TP  - Tunnel Pkt\n"
                 "NhV - ARM to P4 Nexthop Valid  LMM - Local mapping miss\n"
                 "Act - Action (R - Redirect, AR - Redirect to ARM, P - Permit)\n"
-                "KT  - Key type\n");
-    dprintf(fd, "%s\n", std::string(190, '-').c_str());
+                "KT  - Key type                 DF  - Don't Fragment\n");
+    dprintf(fd, "%s\n", std::string(193, '-').c_str());
     dprintf(fd, "%-4s%-8s%-6s%-3s%-3s%-3s%-3s%-3s%-4s%-4s"
-            "%-18s%-6s%-40s%-40s%-6s%-6s%-7s%-4s%-10s%-5s%-7s\n",
+            "%-18s%-6s%-40s%-40s%-6s%-6s%-7s%-4s%-10s%-5s%-8s%-2s\n",
             "Idx", "LifType", "Lif", "LE",
             "FM", "RP", "TP", "KT", "NhV", "LMM",
             "DMAC", "Proto", "SIP", "DIP", "SPort", "DPort",
-            "VnicID", "Act", "Nexthop", "Data", "CoPPIdx");
-    dprintf(fd, "%s\n", std::string(190, '-').c_str());
+            "VnicID", "Act", "Nexthop", "Data", "CoPPIdx", "DF");
+    dprintf(fd, "%s\n", std::string(193, '-').c_str());
+}
+
+void
+print_nacl_entry (int fd, uint32_t idx, nacl_swkey_t &key,
+                  nacl_swkey_mask_t &mask, nacl_actiondata_t &data)
+{
+    // print the key fields
+    dprintf(fd, "%-4u", idx);
+    if (mask.control_metadata_lif_type_mask) {
+        dprintf(fd, "%-8u",
+                key.control_metadata_lif_type);
+    } else {
+        dprintf(fd, "%-8s", "*");
+    }
+    if (mask.capri_intrinsic_lif_mask) {
+        dprintf(fd, "%-6u", key.capri_intrinsic_lif);
+    } else {
+        dprintf(fd, "%-6s", "*");
+    }
+    if (mask.control_metadata_learn_enabled_mask) {
+        dprintf(fd, "%-3u",
+                key.control_metadata_learn_enabled);
+    } else {
+        dprintf(fd, "%-3s", "*");
+    }
+    if (mask.control_metadata_flow_miss_mask) {
+        dprintf(fd, "%-3u",
+                key.control_metadata_flow_miss);
+    } else {
+        dprintf(fd, "%-3s", "*");
+    }
+    if (mask.control_metadata_rx_packet_mask) {
+        dprintf(fd, "%-3u", key.control_metadata_rx_packet);
+    } else {
+        dprintf(fd, "%-3s", "*");
+    }
+    if (mask.control_metadata_tunneled_packet_mask) {
+        dprintf(fd, "%-3u",
+                key.control_metadata_tunneled_packet);
+    } else {
+        dprintf(fd, "%-3s", "*");
+    }
+    if (mask.key_metadata_ktype_mask) {
+        if (key.key_metadata_ktype == KEY_TYPE_IPV4) {
+            dprintf(fd, "%-3s", "V4");
+        } else if (key.key_metadata_ktype == KEY_TYPE_IPV6) {
+            dprintf(fd, "%-3s", "V6");
+        } else if (key.key_metadata_ktype == KEY_TYPE_MAC) {
+            dprintf(fd, "%-3s", "L2");
+        } else {
+            dprintf(fd, "%-3s", "NA");
+        }
+    } else {
+        dprintf(fd, "%-3s", "*");
+    }
+    if (mask.arm_to_p4i_nexthop_valid_mask) {
+        dprintf(fd, "%-4u",
+                key.arm_to_p4i_nexthop_valid);
+    } else {
+        dprintf(fd, "%-4s", "*");
+    }
+    if (mask.control_metadata_local_mapping_miss_mask) {
+        dprintf(fd, "%-4u",
+                key.control_metadata_local_mapping_miss);
+    } else {
+        dprintf(fd, "%-4s", "*");
+    }
+    if (memcmp(mask.ethernet_1_dstAddr_mask, &g_zero_mac,
+               sizeof(mask.ethernet_1_dstAddr_mask))) {
+        dprintf(fd, "%-18s",
+                macaddr2str(key.ethernet_1_dstAddr));
+    } else {
+        dprintf(fd, "%-18s", "*");
+    }
+    if (mask.key_metadata_proto_mask) {
+        dprintf(fd, "%-6u", key.key_metadata_proto);
+    } else {
+        dprintf(fd, "%-6s", "*");
+    }
+    if (memcmp(mask.key_metadata_src_mask, &g_zero_ip.addr,
+               sizeof(mask.key_metadata_src_mask))) {
+        if (key.key_metadata_ktype == KEY_TYPE_IPV4) {
+            dprintf(fd, "%-40s", ipv4addr2str(*(uint32_t *)key.key_metadata_src));
+        } else if (key.key_metadata_ktype == KEY_TYPE_IPV6) {
+            ipv6_addr_t v6_addr;
+            sdk::lib::memrev(v6_addr.addr8, key.key_metadata_src, IP6_ADDR8_LEN);
+            dprintf(fd, "%-40s", ipv6addr2str(v6_addr));
+        } else {
+            dprintf(fd, "%-40s", "NA");
+        }
+    } else {
+        dprintf(fd, "%-40s", "*");
+    }
+    if (memcmp(mask.key_metadata_dst_mask, &g_zero_ip.addr,
+               sizeof(mask.key_metadata_dst_mask))) {
+        if (key.key_metadata_ktype == KEY_TYPE_IPV4) {
+            dprintf(fd, "%-40s", ipv4addr2str(*(uint32_t *)key.key_metadata_dst));
+        } else if (key.key_metadata_ktype == KEY_TYPE_IPV6) {
+            ipv6_addr_t v6_addr;
+            sdk::lib::memrev(v6_addr.addr8, key.key_metadata_dst, IP6_ADDR8_LEN);
+            dprintf(fd, "%-40s", ipv6addr2str(v6_addr));
+        } else {
+            dprintf(fd, "%-40s", "N/A");
+        }
+    } else {
+        dprintf(fd, "%-40s", "*");
+    }
+    if (mask.key_metadata_sport_mask) {
+        dprintf(fd, "%-6u", key.key_metadata_sport);
+    } else {
+        dprintf(fd, "%-6s", "*");
+    }
+    if (mask.key_metadata_dport_mask) {
+        if (key.key_metadata_ktype == KEY_TYPE_MAC) {
+            dprintf(fd, "%-6s", ethtype2str(key.key_metadata_dport));
+        } else {
+            dprintf(fd, "%-6u", key.key_metadata_dport);
+        }
+    } else {
+        dprintf(fd, "%-6s", "*");
+    }
+    if (mask.vnic_metadata_vnic_id_mask) {
+        dprintf(fd, "%-7u", key.vnic_metadata_vnic_id);
+    } else {
+        dprintf(fd, "%-7s", "*");
+    }
+    // print the data fields
+    if (data.action_id == NACL_NACL_PERMIT_ID) {
+        dprintf(fd, "%-4s%-10s%-5s%-8s", "P", "-", "-", "-");
+    } else if (data.action_id == NACL_NACL_REDIRECT_ID) {
+        dprintf(fd, "%-4s", "R");
+        dprintf(fd, "%-2u/%-7u%-5s%-8u",
+                data.action_u.nacl_nacl_redirect.nexthop_type,
+                data.action_u.nacl_nacl_redirect.nexthop_id, "-",
+                data.action_u.nacl_nacl_redirect.copp_policer_id);
+    } else if (data.action_id == NACL_NACL_REDIRECT_TO_ARM_ID) {
+        dprintf(fd, "%-4s", "AR");
+        dprintf(fd, "%-2u/%-7u%-5u%-8u",
+                data.action_u.nacl_nacl_redirect_to_arm.nexthop_type,
+                data.action_u.nacl_nacl_redirect_to_arm.nexthop_id,
+                data.action_u.nacl_nacl_redirect_to_arm.data,
+                data.action_u.nacl_nacl_redirect_to_arm.copp_policer_id);
+    } else {
+        dprintf(fd, "%-4s%-10s%-5s%-8s", "D", "-", "-", "-");
+    }
+    // print ip fragmentation
+    if (mask.control_metadata_ip_fragment_mask) {
+        dprintf(fd, "%-2d", key.control_metadata_ip_fragment);
+    } else {
+        dprintf(fd, "%-2s", "*");
+    }
+    dprintf(fd, "\n");
 }
 
 sdk_ret_t
@@ -145,146 +297,7 @@ apulu_impl_state::nacl_dump(int fd) {
                 if (!key.key_metadata_entry_valid) {
                     continue;
                 }
-                // print the key fields
-                dprintf(fd, "%-4u", i);
-                if (mask.control_metadata_lif_type_mask) {
-                    dprintf(fd, "%-8u",
-                            key.control_metadata_lif_type);
-                } else {
-                    dprintf(fd, "%-8s", "*");
-                }
-                if (mask.capri_intrinsic_lif_mask) {
-                    dprintf(fd, "%-6u", key.capri_intrinsic_lif);
-                } else {
-                    dprintf(fd, "%-6s", "*");
-                }
-                if (mask.control_metadata_learn_enabled_mask) {
-                    dprintf(fd, "%-3u",
-                            key.control_metadata_learn_enabled);
-                } else {
-                    dprintf(fd, "%-3s", "*");
-                }
-                if (mask.control_metadata_flow_miss_mask) {
-                    dprintf(fd, "%-3u",
-                            key.control_metadata_flow_miss);
-                } else {
-                    dprintf(fd, "%-3s", "*");
-                }
-                if (mask.control_metadata_rx_packet_mask) {
-                    dprintf(fd, "%-3u", key.control_metadata_rx_packet);
-                } else {
-                    dprintf(fd, "%-3s", "*");
-                }
-                if (mask.control_metadata_tunneled_packet_mask) {
-                    dprintf(fd, "%-3u",
-                            key.control_metadata_tunneled_packet);
-                } else {
-                    dprintf(fd, "%-3s", "*");
-                }
-                if (mask.key_metadata_ktype_mask) {
-                    if (key.key_metadata_ktype == KEY_TYPE_IPV4) {
-                        dprintf(fd, "%-3s", "V4");
-                    } else if (key.key_metadata_ktype == KEY_TYPE_IPV6) {
-                        dprintf(fd, "%-3s", "V6");
-                    } else if (key.key_metadata_ktype == KEY_TYPE_MAC) {
-                        dprintf(fd, "%-3s", "L2");
-                    } else {
-                        dprintf(fd, "%-3s", "NA");
-                    }
-                } else {
-                    dprintf(fd, "%-3s", "*");
-                }
-                if (mask.arm_to_p4i_nexthop_valid_mask) {
-                    dprintf(fd, "%-4u",
-                            key.arm_to_p4i_nexthop_valid);
-                } else {
-                    dprintf(fd, "%-4s", "*");
-                }
-                if (mask.control_metadata_local_mapping_miss_mask) {
-                    dprintf(fd, "%-4u",
-                            key.control_metadata_local_mapping_miss);
-                } else {
-                    dprintf(fd, "%-4s", "*");
-                }
-                if (memcmp(mask.ethernet_1_dstAddr_mask, &g_zero_mac,
-                           sizeof(mask.ethernet_1_dstAddr_mask))) {
-                    dprintf(fd, "%-18s",
-                            macaddr2str(key.ethernet_1_dstAddr));
-                } else {
-                    dprintf(fd, "%-18s", "*");
-                }
-                if (mask.key_metadata_proto_mask) {
-                    dprintf(fd, "%-6u", key.key_metadata_proto);
-                } else {
-                    dprintf(fd, "%-6s", "*");
-                }
-                if (memcmp(mask.key_metadata_src_mask, &g_zero_ip.addr,
-                           sizeof(mask.key_metadata_src_mask))) {
-                    if (key.key_metadata_ktype == KEY_TYPE_IPV4) {
-                        dprintf(fd, "%-40s", ipv4addr2str(*(uint32_t *)key.key_metadata_src));
-                    } else if (key.key_metadata_ktype == KEY_TYPE_IPV6) {
-                        ipv6_addr_t v6_addr;
-                        sdk::lib::memrev(v6_addr.addr8, key.key_metadata_src, IP6_ADDR8_LEN);
-                        dprintf(fd, "%-40s", ipv6addr2str(v6_addr));
-                    } else {
-                        dprintf(fd, "%-40s", "NA");
-                    }
-                } else {
-                    dprintf(fd, "%-40s", "*");
-                }
-                if (memcmp(mask.key_metadata_dst_mask, &g_zero_ip.addr,
-                           sizeof(mask.key_metadata_dst_mask))) {
-                    if (key.key_metadata_ktype == KEY_TYPE_IPV4) {
-                        dprintf(fd, "%-40s", ipv4addr2str(*(uint32_t *)key.key_metadata_dst));
-                    } else if (key.key_metadata_ktype == KEY_TYPE_IPV6) {
-                        ipv6_addr_t v6_addr;
-                        sdk::lib::memrev(v6_addr.addr8, key.key_metadata_dst, IP6_ADDR8_LEN);
-                        dprintf(fd, "%-40s", ipv6addr2str(v6_addr));
-                    } else {
-                        dprintf(fd, "%-40s", "N/A");
-                    }
-                } else {
-                    dprintf(fd, "%-40s", "*");
-                }
-                if (mask.key_metadata_sport_mask) {
-                    dprintf(fd, "%-6u", key.key_metadata_sport);
-                } else {
-                    dprintf(fd, "%-6s", "*");
-                }
-                if (mask.key_metadata_dport_mask) {
-                    if (key.key_metadata_ktype == KEY_TYPE_MAC) {
-                        dprintf(fd, "%-6s", ethtype2str(key.key_metadata_dport));
-                    } else {
-                        dprintf(fd, "%-6u", key.key_metadata_dport);
-                    }
-                } else {
-                    dprintf(fd, "%-6s", "*");
-                }
-                if (mask.vnic_metadata_vnic_id_mask) {
-                    dprintf(fd, "%-7u", key.vnic_metadata_vnic_id);
-                } else {
-                    dprintf(fd, "%-7s", "*");
-                }
-                // print the data fields
-                if (data.action_id == NACL_NACL_PERMIT_ID) {
-                    dprintf(fd, "%-4s", "P");
-                } else if (data.action_id == NACL_NACL_REDIRECT_ID) {
-                    dprintf(fd, "%-4s", "R");
-                    dprintf(fd, "%-2u/%-7u%-5s%-7u",
-                            data.action_u.nacl_nacl_redirect.nexthop_type,
-                            data.action_u.nacl_nacl_redirect.nexthop_id, "-",
-                            data.action_u.nacl_nacl_redirect.copp_policer_id);
-                } else if (data.action_id == NACL_NACL_REDIRECT_TO_ARM_ID) {
-                    dprintf(fd, "%-4s", "AR");
-                    dprintf(fd, "%-2u/%-7u%-5u%-7u",
-                            data.action_u.nacl_nacl_redirect_to_arm.nexthop_type,
-                            data.action_u.nacl_nacl_redirect_to_arm.nexthop_id,
-                            data.action_u.nacl_nacl_redirect_to_arm.data,
-                            data.action_u.nacl_nacl_redirect_to_arm.copp_policer_id);
-                } else {
-                    dprintf(fd, "%-4s%-10s%-5s%-7s", "D", "-", "-", "-");
-                }
-                dprintf(fd, "\n");
+                print_nacl_entry(fd, i, key, mask, data);
             } else {
                 PDS_TRACE_ERR("Failed to read NACL entry at idx %u", i);
             }
