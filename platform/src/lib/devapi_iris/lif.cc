@@ -1673,7 +1673,7 @@ devapi_lif::is_classicfwd(vlan_t vlan)
     //   - ARM OOB - All traffic
     //   TODO: This is causing vlans to be created in GS case.
     // if (hal->get_fwd_mode() == sdk::platform::FWD_MODE_CLASSIC ||
-    if (!hal->get_micro_seg_en() ||
+    if (is_swm() || !hal->get_micro_seg_en() ||
         (is_hostmgmt() || is_intmgmtmnic() ||
          is_oobmnic() || vlan == NATIVE_VLAN_ID)) {
         return true;
