@@ -123,6 +123,10 @@ func (f *mockBackend) SetBucketLifecycleWithContext(ctx context.Context, bucketN
 	return nil
 }
 
+func (f *mockBackend) GetBucketLifecycle(bucketName string) (string, error) {
+	return "", nil
+}
+
 func (f *mockBackend) ClusterInfo(ctx context.Context) (string, error) {
 	info := map[string]string{"dummyInfo": "dummyValue"}
 	out, err := json.Marshal(info)

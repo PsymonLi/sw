@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/pensando/sw/venice/utils/k8s"
 	"github.com/pensando/sw/venice/utils/ratelimit"
 
@@ -34,6 +36,7 @@ const (
 	uploadSnapshotsPath    = "/uploads/snapshots/"
 	downloadPath           = "/downloads/images/**"
 	bucketDiskThresholdKey = "bucketDiskThresholds"
+	bucketLifecycleKey     = "bucketLifecycle"
 )
 
 type httpHandler struct {
@@ -350,6 +353,18 @@ func (h *httpHandler) debugConfigHandler() func(w http.ResponseWriter, req *http
 			})
 			config[bucketDiskThresholdKey] = ths
 
+			// For now, we only return lifecycle of fwlogs bucket and only for default tenant
+			// Enhance it for multi tenants and other buckets.
+			bucketName := globals.DefaultTenant + "." + globals.FwlogsBucketName
+			lc, err := h.client.GetBucketLifecycle(bucketName)
+			if err != nil {
+				log.Errorf("Error in fetching bucket lifecycle: %v", err)
+				http.Error(w, "error in fetching bucket lifecycle", http.StatusInternalServerError)
+			}
+			lcMap := map[string]string{}
+			lcMap[bucketName] = lc
+			config[bucketLifecycleKey] = lcMap
+
 			out, err := json.Marshal(config)
 			if err != nil {
 				log.Errorf("Error in marshling output: %v", err)
@@ -375,6 +390,8 @@ func (h *httpHandler) debugConfigHandler() func(w http.ResponseWriter, req *http
 			}
 
 			h.updateBucketThresholdPaths(w, config)
+
+			h.updateBucketLifecycle(w, config)
 		default:
 			http.Error(w, "only GET and POST are supported", http.StatusBadRequest)
 		}
@@ -458,6 +475,25 @@ func (h *httpHandler) updateBucketThresholdPaths(w http.ResponseWriter, config m
 				}
 			}
 			h.instance.bucketDiskThresholds.Store(p, c)
+		}
+	}
+}
+
+func (h *httpHandler) updateBucketLifecycle(w http.ResponseWriter, config map[string]interface{}) {
+	if v, ok := config[bucketLifecycleKey]; ok {
+		data, ok := v.(map[string]interface{})
+		if !ok {
+			http.Error(w, "bucket lifecycle config should be in form map[string]string", http.StatusBadRequest)
+			return
+		}
+		for bucket, lc := range data {
+			lifecycle := lc.(string)
+			err := h.client.SetBucketLifecycleWithContext(context.Background(), bucket, lifecycle)
+			if err != nil {
+				http.Error(w,
+					errors.Wrap(err, fmt.Sprintf("SetBucketLifecycle operation[%s]", bucket)).Error(),
+					http.StatusInternalServerError)
+			}
 		}
 	}
 }

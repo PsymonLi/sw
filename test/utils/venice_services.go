@@ -357,7 +357,13 @@ func StartVos(ctx context.Context, logger log.Logger, credsManager minio.Credent
 	go func() {
 		url := "localhost"
 		paths := new(sync.Map)
-		paths.Store("/data/default.fwlogs", 50.00)
+		// paths.Store("/data/default.fwlogs", 50.00)
+		paths.Store("", vospkg.DiskMonitorConfig{
+			TenantName:               "",
+			CombinedBuckets:          []string{"fwlogs", "meta-fwlogs"},
+			CombinedThresholdPercent: 80.00,
+		})
+
 		args := []string{globals.Vos,
 			"server", "--address", fmt.Sprintf("%s:%s", url, globals.VosMinioPort), "/data"}
 		credsMgrChannel := make(chan interface{}, 1)

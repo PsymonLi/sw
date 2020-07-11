@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -274,7 +275,7 @@ func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
 			log.Infof("objstore DataUsageInfo empty result")
 		}
 		return err == nil && info != "", nil
-	}, "objstore DataUsageInfo API failed", "500ms", "15s")
+	}, "objstore DataUsageInfo API failed", "500ms", "30s")
 
 	// IsCluserOnline
 	AssertEventually(c, func() (bool, interface{}) {
@@ -286,7 +287,7 @@ func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
 			log.Infof("objstore admin IsClusterOnline false")
 		}
 		return err == nil && online, nil
-	}, "objstore IsClusterOnline API failed", "500ms", "15s")
+	}, "objstore IsClusterOnline API failed", "500ms", "30s")
 
 	// ServerInfo
 	AssertEventually(c, func() (bool, interface{}) {
@@ -298,11 +299,11 @@ func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
 			log.Infof("objstore admin ServerInfo empty result")
 		}
 		return err == nil && info != "", nil
-	}, "objstore ServerInfo API failed", "500ms", "15s")
+	}, "objstore ServerInfo API failed", "500ms", "30s")
 }
 
 // basic test to make sure all components come up
-func (it *objstoreIntegSuite) TestObjStoreAdminDebugRESTApis(c *C) {
+func (it *objstoreIntegSuite) TestObjStoreDebugRESTApis(c *C) {
 	time.Sleep(time.Second * 5)
 
 	baseURL := "http://" + vosDebugURL
@@ -313,12 +314,14 @@ func (it *objstoreIntegSuite) TestObjStoreAdminDebugRESTApis(c *C) {
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		AssertOk(c, err, "error is reading response of "+url)
+		fmt.Println("response", string(body[:]))
 		config := map[string]interface{}{}
 		err = json.Unmarshal(body, &config)
 		AssertOk(c, err, "error is unmarshaling response of "+url)
 		return config
 	}
 
+	/***** Test Admin APIs *********/
 	// Get ClusterInfo
 	AssertEventually(c, func() (bool, interface{}) {
 		config := getHelper(baseURL + "/debug/minio/clusterinfo")
@@ -332,7 +335,7 @@ func (it *objstoreIntegSuite) TestObjStoreAdminDebugRESTApis(c *C) {
 			log.Infof("cluster is not online, returned value: %s", v.(string))
 		}
 		return false, nil
-	}, "objstore /debug/minio/clusterinfo API failed", "500ms", "15s")
+	}, "objstore /debug/minio/clusterinfo API failed", "500ms", "30s")
 
 	AssertEventually(c, func() (bool, interface{}) {
 		config := getHelper(baseURL + "/debug/minio/datausageinfo")
@@ -342,5 +345,76 @@ func (it *objstoreIntegSuite) TestObjStoreAdminDebugRESTApis(c *C) {
 		}
 		log.Errorf("bucketsCount is not present in /debug/minio/datausageinfo response, response: %s", config)
 		return false, nil
-	}, "objstore /debug/minio/datausageinfo API failed", "500ms", "15s")
+	}, "objstore /debug/minio/datausageinfo API failed", "500ms", "30s")
+
+	/***** Test debug/config APIs *********/
+	AssertEventually(c, func() (bool, interface{}) {
+		config := getHelper(baseURL + "/debug/config")
+		_, ok := config["bucketLifecycle"]
+		if ok {
+			return true, nil
+		}
+		log.Errorf("bucketLifecycle is not present in /debug/config response, response: %s", config)
+		return false, nil
+	}, "objstore /debug/config API failed", "500ms", "30s")
+
+	oc, err := objstore.NewClient("default",
+		"fwlogs", it.resolverClient, objstore.WithCredentialsManager(it.credsManger))
+	AssertOk(c, err, fmt.Sprintf("obj store client failed"))
+	_, err = oc.ListObjects("")
+	AssertOk(c, err, fmt.Sprintf("list objects failed"))
+
+	obj1Data := []byte("test object")
+	b := bytes.NewBuffer(obj1Data)
+	meta := map[string]string{
+		"Key1": "val1",
+	}
+
+	// put obj
+	n, err := oc.PutObjectOfSize(context.Background(), "obj1", b, int64(len(obj1Data)), meta)
+	AssertOk(c, err, fmt.Sprintf("put object failed"))
+	Assert(c, n > 0, fmt.Sprintf("put object returned invalid bytes"))
+
+	// Set Bucket lifecycle
+	lifecycle := `<LifecycleConfiguration>
+					<Rule>
+					<ID>expire-bucket</ID>
+					<Prefix></Prefix>
+					<Status>Enabled</Status>
+					<Expiration>
+						<Date>%s</Date>
+					</Expiration>
+					</Rule>
+					</LifecycleConfiguration>`
+	y, m, d := time.Now().Date()
+	ts := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	tsString := ts.Format(time.RFC3339)
+	lc := fmt.Sprintf(lifecycle, tsString)
+	reqMap := map[string]interface{}{}
+	lcMap := map[string]string{}
+	lcMap["default.fwlogs"] = lc
+	reqMap["bucketLifecycle"] = lcMap
+	reqBody, err := json.Marshal(reqMap)
+	AssertOk(c, err, "error is marshaling POST request for /debug/config")
+	req, err := http.NewRequest("POST", baseURL+"/debug/config", bytes.NewBuffer(reqBody))
+	AssertOk(c, err, "error is creating POST request for /debug/config")
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	AssertOk(c, err, "error is POSTing request for /debug/config")
+	defer resp.Body.Close()
+	_, err = ioutil.ReadAll(resp.Body)
+	AssertOk(c, err, "error is reading response body for /debug/config")
+	Assert(c, resp.Status == "200 OK", "incorrect response status")
+
+	// Now get lifecycle
+	config := getHelper(baseURL + "/debug/config")
+	lcConfigInterface, ok := config["bucketLifecycle"]
+	Assert(c, ok, "bucketLifecycle key is not present in /debug/config response")
+	fmt.Println("Shrey lcConfig", lcConfigInterface)
+	lcConfig := lcConfigInterface.(map[string]interface{})
+	defaultFwlogsLc, ok := lcConfig["default.fwlogs"]
+	dateSubstringToMatch := fmt.Sprintf("<Date>%s</Date>", tsString)
+	Assert(c, ok, "lifecycle config is not present for default.fwlogs bucket")
+	Assert(c, strings.Contains(defaultFwlogsLc.(string), dateSubstringToMatch), "fetched lc config is not same to the one that was posted")
 }
