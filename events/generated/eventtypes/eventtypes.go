@@ -414,7 +414,7 @@ func init() {
 
 	eventTypes[DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD] = &EventTypeAttributes{
 		EType:      DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD.String(),
-		Severity:   "critical",
+		Severity:   "warn",
 		Category:   "system",
 		Desc:       "Usage of the filesystem partition is above threshold",
 		SuppressMM: false}

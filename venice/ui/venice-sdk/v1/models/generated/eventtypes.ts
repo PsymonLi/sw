@@ -516,7 +516,7 @@ export const eventTypes: { [name: string]: EventType } = {
   },
   'DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD' : {
       "Name": "DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD",
-      "Severity": EventsEvent_severity.critical,
+      "Severity": EventsEvent_severity.warn,
       "Desc": "Usage of the filesystem partition is above threshold",
   },
   'DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD' : {

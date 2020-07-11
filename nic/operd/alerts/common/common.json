@@ -80,7 +80,7 @@
     {
         "name": "DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD",
         "category": "System",
-        "severity": "CRITICAL",
+        "severity": "WARN",
         "description": "Usage of the filesystem partition is above threshold"
     },
     {

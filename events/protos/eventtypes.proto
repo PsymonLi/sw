@@ -291,7 +291,7 @@ enum EventTypes {
                                            (desc)        = "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect tech-support and contact Pensando Support."];
 
     DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD = 517 [(category) = System,
-                                                (severity) = CRITICAL,
+                                                (severity) = WARN,
                                                 (desc) = "Usage of the filesystem partition is above threshold"];
 
     DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD = 518 [(category) = System,

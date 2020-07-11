@@ -397,7 +397,7 @@
   },
   {
    "Name": "DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD",
-   "Severity": "critical",
+   "Severity": "warn",
    "Desc": "Usage of the filesystem partition is above threshold"
   },
   {
