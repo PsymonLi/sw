@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	timeFormat = "2006-01-02T15:04:05"
-	bucketName = "fwlogs"
-	tenantName = "default"
+	timeFormat     = "2006-01-02T15:04:05"
+	bucketName     = "fwlogs"
+	tenantName     = "default"
+	defaultVrfName = "default"
 )
 
 var _ = Describe("tests for storing firewall logs in object store and elastic", func() {
@@ -173,7 +174,7 @@ func pushLogsAndVerify(timeout time.Duration, nodeIpsToSkipFromQuery ...string) 
 	jitter := 30 * time.Second
 	Eventually(func() error {
 		currentObjectCountNaplesA, err =
-			ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, jitter, nodeIpsToSkipFromQuery...)
+			ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, defaultVrfName,  jitter, nodeIpsToSkipFromQuery...)
 		jitter = jitter + (30 * time.Second)
 		return err
 	}).Should(Succeed())
@@ -182,7 +183,7 @@ func pushLogsAndVerify(timeout time.Duration, nodeIpsToSkipFromQuery ...string) 
 	if naplesAMac != naplesBMac {
 		Eventually(func() error {
 			currentObjectCountNaplesB, err =
-				ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, jitter, nodeIpsToSkipFromQuery...)
+				ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, defaultVrfName, jitter, nodeIpsToSkipFromQuery...)
 			jitter = jitter + (30 * time.Second)
 			return err
 		}).Should(Succeed())
@@ -208,7 +209,7 @@ func pushLogsAndVerify(timeout time.Duration, nodeIpsToSkipFromQuery ...string) 
 			jitter = 30 * time.Second
 			Eventually(func() error {
 				newObjectCountNaplesA, err =
-					ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, jitter, nodeIpsToSkipFromQuery...)
+					ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, defaultVrfName, jitter, nodeIpsToSkipFromQuery...)
 				jitter = jitter + (30 * time.Second)
 				return err
 			}).Should(Succeed())
@@ -217,7 +218,7 @@ func pushLogsAndVerify(timeout time.Duration, nodeIpsToSkipFromQuery ...string) 
 			if naplesAMac != naplesBMac {
 				Eventually(func() error {
 					newObjectCountNaplesB, err =
-						ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, jitter, nodeIpsToSkipFromQuery...)
+						ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, defaultVrfName, jitter, nodeIpsToSkipFromQuery...)
 					jitter = jitter + (30 * time.Second)
 					return err
 				}).Should(Succeed())

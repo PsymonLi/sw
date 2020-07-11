@@ -522,7 +522,7 @@ func downloadCsvFileViaPSMRESTAPI(bucketName, objectName string, url string) [][
 	By(fmt.Sprintf("downloading object %s, using url %s", objectName, url))
 	ctx := ts.tu.MustGetLoggedInContext(context.Background())
 	// replace first 5 "/" with "_"
-	name := strings.Replace(objectName, "/", "_", 5)
+	name := strings.Replace(objectName, "/", "_", 6)
 	uri := fmt.Sprintf("https://%s/objstore/v1/downloads/%s/%s", url, bucketName, name)
 	req, err := http.NewRequest("GET", uri, nil)
 	Expect(err).NotTo(HaveOccurred())
@@ -567,7 +567,7 @@ func downloadFwlogObjectContentViaPSMRESTAPI(objectName string, url string) fwlo
 	By(fmt.Sprintf("downloading object content %s, using url %s", objectName, url))
 	ctx := ts.tu.MustGetLoggedInContext(context.Background())
 	// replace first 5 "/" with "_"
-	name := strings.Replace(objectName, "/", "_", 5)
+	name := strings.Replace(objectName, "/", "_", 6)
 	uri := fmt.Sprintf("https://%s/fwlog/v1/objects/%s", url, name)
 	req, err := http.NewRequest("GET", uri, nil)
 	Expect(err).NotTo(HaveOccurred())

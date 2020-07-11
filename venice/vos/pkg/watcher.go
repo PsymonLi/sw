@@ -245,10 +245,11 @@ func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListW
 			dscID = strings.TrimSuffix(dscID, "/")
 			result := []runtime.Object{}
 			tokens := strings.Split(lastProcessedKey, "/")
-			y, _ := strconv.Atoi(tokens[1])
-			m, _ := strconv.Atoi(tokens[2])
-			d, _ := strconv.Atoi(tokens[3])
-			h, _ := strconv.Atoi(tokens[4])
+			vrf := tokens[1]
+			y, _ := strconv.Atoi(tokens[2])
+			m, _ := strconv.Atoi(tokens[3])
+			d, _ := strconv.Atoi(tokens[4])
+			h, _ := strconv.Atoi(tokens[5])
 			tThat := time.Date(y, time.Month(m), d, h, 0, 0, 0, time.UTC)
 			tNow := time.Now().UTC()
 			for {
@@ -260,6 +261,8 @@ func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListW
 				doneCh := make(chan struct{})
 				var b bytes.Buffer
 				b.WriteString(dscID)
+				b.WriteString("/")
+				b.WriteString(vrf)
 				b.WriteString("/")
 				b.WriteString(strconv.Itoa(y))
 				b.WriteString("/")

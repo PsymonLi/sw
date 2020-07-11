@@ -331,7 +331,7 @@ func transmitLogs(ctx context.Context,
 	fls *objstoreFlowlogsState) func() {
 	return func() {
 		// TODO: this can be optimized. Bucket name should be calcualted only once per hour.
-		tenantName := getTenantNameFromSourceVrf(vrf)
+		tenantName, vrfName := getTenantAndVrfFromSourceVrf(vrf)
 		bucketName := getBucketName(tenantName)
 		indexBucketName := getIndexBucketName(tenantName)
 
@@ -345,6 +345,8 @@ func transmitLogs(ctx context.Context,
 		y, m, d := startTs.Date()
 		h, _, _ := startTs.Clock()
 		objNameBuffer.WriteString(strings.ToLower(strings.Replace(fls.nodeUUID, ":", "-", -1)))
+		objNameBuffer.WriteString("/")
+		objNameBuffer.WriteString(vrfName)
 		objNameBuffer.WriteString("/")
 		objNameBuffer.WriteString(strconv.Itoa(y))
 		objNameBuffer.WriteString("/")
@@ -594,9 +596,9 @@ func InitMinioCredsManager(obj interface{}) error {
 	}
 }
 
-func getTenantNameFromSourceVrf(vrf uint64) string {
+func getTenantAndVrfFromSourceVrf(vrf uint64) (string, string) {
 	// There is only 1 tenant as of now.
-	return "default"
+	return "default", "default"
 }
 
 func populateMetaWithTrends(meta map[string]string, trends map[string]interface{}) {

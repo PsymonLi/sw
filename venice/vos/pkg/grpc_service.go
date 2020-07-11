@@ -286,7 +286,7 @@ func (g *grpcBackend) AutoListObject(ctx context.Context, in *api.ListWatchOptio
 
 	fSelector := in.GetFieldSelector()
 	var startTs, endTs time.Time
-	var dscID string
+	var dscID, vrfName string
 	if !utils.IsEmpty(fSelector) {
 		fldSelectors, err := fields.Parse(fSelector)
 		if err != nil {
@@ -309,11 +309,13 @@ func (g *grpcBackend) AutoListObject(ctx context.Context, in *api.ListWatchOptio
 				}
 			case "dsc-id":
 				dscID = values[0]
+			case "vrf-name":
+				vrfName = values[0]
 			}
 		}
 	}
 
-	if in.Namespace != fwlogsBucketName && (!startTs.IsZero() || !endTs.IsZero() || dscID != "") {
+	if in.Namespace != fwlogsBucketName && (!startTs.IsZero() || !endTs.IsZero() || dscID != "" || vrfName != "") {
 		return nil, apierrors.ToGrpcError("fieldselectors are only supported for fwlogs namespace", []string{""}, int32(codes.InvalidArgument), "", nil)
 	}
 	t := objstore.Object{}
@@ -339,7 +341,7 @@ func (g *grpcBackend) AutoListObject(ctx context.Context, in *api.ListWatchOptio
 	}
 	if in.Namespace == fwlogsBucketName {
 		var err error
-		ret, err = listFwLogObjects(g.client, bucket, startTs, endTs, dscID, fwLogsMaxResults)
+		ret, err = listFwLogObjects(g.client, bucket, startTs, endTs, dscID, vrfName, fwLogsMaxResults)
 		if err != nil {
 			return nil, apierrors.ToGrpcError(err, []string{}, int32(codes.InvalidArgument), "", nil)
 		}
@@ -491,7 +493,7 @@ func (g *grpcBackend) DownloadFile(obj *objstore.Object, stream objstore.Objstor
 	name := obj.Name
 	if obj.Namespace == fwlogsBucketName {
 		// convert 1st 5 "_" to "/"
-		name = strings.Replace(name, "_", "/", 5)
+		name = strings.Replace(name, "_", "/", 6)
 		log.Infof("got call to DownloadFile, new name %s, bucket %s", name, bucket)
 	}
 	buf := make([]byte, 1024*1024)

@@ -282,7 +282,7 @@ func (sm *VcenterSysModel) MoveWorkloads(wc *objects.WorkloadCollection, hc *obj
 
 // GetFwLogObjectCount gets the object count for firewall logs under the bucket with the given name
 func (sm *VcenterSysModel) GetFwLogObjectCount(tenantName string,
-	bucketName string, objectKeyPrefix string, jitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
+	bucketName string, naplesMac string, vrfName string, jitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 

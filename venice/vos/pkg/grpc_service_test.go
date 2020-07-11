@@ -664,7 +664,7 @@ func TestListFwlogObjects(t *testing.T) {
 		return objCh
 	}
 	fb.statFunc = func(bucketName, objectName string, opts minioclient.StatObjectOptions) (minioclient.ObjectInfo, error) {
-		tokens := strings.Split(strings.Split(objectName, "/")[5], "_")
+		tokens := strings.Split(strings.Split(objectName, "/")[6], "_")
 		oi := minioclient.ObjectInfo{}
 		oi.Key = objectName
 		meta := map[string][]string{}
@@ -679,7 +679,7 @@ func TestListFwlogObjects(t *testing.T) {
 	t1 := ts
 	for i := 0; i < 100; i++ {
 		h, _, _ := t1.Clock()
-		key := "aaa.bbb.ccc.ddd" + "/2006/1/2/" + strconv.Itoa(h) + "/" +
+		key := "aaa.bbb.ccc.ddd/default/2006/1/2/" + strconv.Itoa(h) + "/" +
 			t1.Format(timeFormat) + "_" + t1.Add(time.Minute).Format(timeFormat) + ".csv.gz"
 		fb.PutObject("default"+fwlogsBucketName, key, nil, 0, minioclient.PutObjectOptions{})
 		t1 = t1.Add(time.Minute)
@@ -687,42 +687,42 @@ func TestListFwlogObjects(t *testing.T) {
 
 	res, err := srv.AutoListObject(ctx, &api.ListWatchOptions{
 		ObjectMeta:    api.ObjectMeta{Namespace: "fwlogs", Tenant: "default"},
-		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T15:01:00Z,dsc-id=aaa.bbb.ccc.ddd"})
+		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T15:01:00Z,dsc-id=aaa.bbb.ccc.ddd,vrf-name=default"})
 	AssertOk(t, err, "List Objects failed")
 	Assert(t, len(res.Items) == 1, "result is %d", len(res.Items))
 
 	// Reset the objCh. It gets closed after every call to ListObjects.
 	res, err = srv.AutoListObject(ctx, &api.ListWatchOptions{
 		ObjectMeta:    api.ObjectMeta{Namespace: "fwlogs", Tenant: "default"},
-		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T15:10:00Z,dsc-id=aaa.bbb.ccc.ddd"})
+		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T15:10:00Z,dsc-id=aaa.bbb.ccc.ddd,vrf-name=default"})
 	AssertOk(t, err, "List Objects failed")
 	Assert(t, len(res.Items) == 10, "result is %d", len(res.Items))
 
 	// Reset the objCh. It gets closed after every call to ListObjects.
 	res, err = srv.AutoListObject(ctx, &api.ListWatchOptions{
 		ObjectMeta:    api.ObjectMeta{Namespace: "fwlogs", Tenant: "default"},
-		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T15:59:59Z,dsc-id=aaa.bbb.ccc.ddd"})
+		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T15:59:59Z,dsc-id=aaa.bbb.ccc.ddd,vrf-name=default"})
 	AssertOk(t, err, "List Objects failed")
 	Assert(t, len(res.Items) == 59, "result is %d", len(res.Items))
 
 	// Reset the objCh. It gets closed after every call to ListObjects.
 	res, err = srv.AutoListObject(ctx, &api.ListWatchOptions{
 		ObjectMeta:    api.ObjectMeta{Namespace: "fwlogs", Tenant: "default"},
-		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T16:40:00Z,dsc-id=aaa.bbb.ccc.ddd"})
+		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T16:40:00Z,dsc-id=aaa.bbb.ccc.ddd,vrf-name=default"})
 	AssertOk(t, err, "List Objects failed")
 	Assert(t, len(res.Items) == 100, "result is %d", len(res.Items))
 
 	// Reset the objCh. It gets closed after every call to ListObjects.
 	res, err = srv.AutoListObject(ctx, &api.ListWatchOptions{
 		ObjectMeta:    api.ObjectMeta{Namespace: "fwlogs", Tenant: "default"},
-		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T16:50:00Z,dsc-id=aaa.bbb.ccc.ddd"})
+		FieldSelector: "start-time=2006-01-02T15:00:00Z,end-time=2006-01-02T16:50:00Z,dsc-id=aaa.bbb.ccc.ddd,vrf-name=default"})
 	AssertOk(t, err, "List Objects failed")
 	Assert(t, len(res.Items) == 100, "result is %d", len(res.Items))
 
 	// Reset the objCh. It gets closed after every call to ListObjects.
 	res, err = srv.AutoListObject(ctx, &api.ListWatchOptions{
 		ObjectMeta:    api.ObjectMeta{Namespace: "fwlogs", Tenant: "default"},
-		FieldSelector: "start-time=2006-01-02T15:10:00Z,end-time=2006-01-02T16:10:00Z,dsc-id=aaa.bbb.ccc.ddd"})
+		FieldSelector: "start-time=2006-01-02T15:10:00Z,end-time=2006-01-02T16:10:00Z,dsc-id=aaa.bbb.ccc.ddd,vrf-name=default"})
 	AssertOk(t, err, "List Objects failed")
 	Assert(t, len(res.Items) == 60, "result is %d", len(res.Items))
 }

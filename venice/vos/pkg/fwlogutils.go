@@ -15,9 +15,13 @@ import (
 
 func listFwLogObjects(client vos.BackendClient,
 	bucket string, startTs, endTs time.Time,
-	dscID string, maxResults int) (*objstore.ObjectList, error) {
+	dscID, vrfName string, maxResults int) (*objstore.ObjectList, error) {
 	if dscID == "" {
 		return nil, fmt.Errorf("dsc-id is required for filtering")
+	}
+
+	if vrfName == "" {
+		return nil, fmt.Errorf("vrf-name is required for filtering")
 	}
 
 	if startTs.IsZero() || endTs.IsZero() {
@@ -41,7 +45,9 @@ loop:
 
 		y, m, d := temp.Date()
 		h, _, _ := temp.Clock()
-		prefix := dscID + "/" + strconv.Itoa(y) +
+		prefix := dscID +
+			"/" + vrfName +
+			"/" + strconv.Itoa(y) +
 			"/" + strconv.Itoa(int(m)) +
 			"/" + strconv.Itoa(d) +
 			"/" + strconv.Itoa(h)

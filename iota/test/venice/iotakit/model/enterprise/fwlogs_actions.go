@@ -28,11 +28,11 @@ var currTime = time.Now()
 
 // GetFwLogObjectCount gets the object count for firewall logs under the bucket with the given name
 func (sm *SysModel) GetFwLogObjectCount(
-	tenantName string, bucketName string, objectKeyPrefix string, timeJitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
+	tenantName string, bucketName string, naplesMac string, vrfName string,  timeJitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
 	timeFormat := "2006-01-02T15:04:05Z"
 	startTs := currTime.UTC().Add(-40 * time.Minute).Add(-1 * timeJitter).Format(timeFormat)
-	endTs := time.Now().UTC().Add(40 * time.Minute).Add(1 * timeJitter).Format(timeFormat)
-	fs := "start-time=" + startTs + ",end-time=" + endTs + ",dsc-id=" + objectKeyPrefix
+        endTs := time.Now().UTC().Add(40 * time.Minute).Add(1 * timeJitter).Format(timeFormat)
+	fs := "start-time=" + startTs + ",end-time=" + endTs + ",dsc-id=" + naplesMac + ",vrf-name=" + vrfName
 	opts := api.ListWatchOptions{
 		ObjectMeta: api.ObjectMeta{
 			Tenant:    tenantName,
@@ -74,7 +74,7 @@ outer:
 		fmt.Println("Ended list")
 
 		if len(list) != 0 {
-			fmt.Println("objectKeyPrefix, lenList", objectKeyPrefix, len(list))
+			fmt.Println("naples, lenList", naplesMac, len(list))
 			return len(list), nil
 		}
 	}
@@ -85,13 +85,13 @@ outer:
 // getLatestObjectName gets the last entry from the list
 // Minio lists objects in chronological order, hence its safe to return the last
 // entry from the list.
-func (sm *SysModel) getLatestObjectName(tenantName, bucketName, objectKeyPrefix string) (string, error) {
+func (sm *SysModel) getLatestObjectName(tenantName, bucketName, naplesMac, vrfName string) (string, error) {
 	temp := []string{}
 	timeFormat := "2006-01-02T15:04:05Z"
 	// Look for 20 minute time span
-	startTs := time.Now().UTC().Add(-10 * time.Minute).Format(timeFormat)
-	endTs := time.Now().UTC().Add(10 * time.Minute).Format(timeFormat)
-	fs := "start-time=" + startTs + ",end-time=" + endTs + ",dsc-id=" + objectKeyPrefix
+	startTs := time.Now().UTC().Add(-20 * time.Minute).Format(timeFormat)
+	endTs := time.Now().UTC().Add(20 * time.Minute).Format(timeFormat)
+	fs := "start-time=" + startTs + ",end-time=" + endTs + ",dsc-id=" + naplesMac + ",vrf-name=" + vrfName
 	opts := api.ListWatchOptions{
 		ObjectMeta: api.ObjectMeta{
 			Tenant:    tenantName,
@@ -119,7 +119,7 @@ func (sm *SysModel) getLatestObjectName(tenantName, bucketName, objectKeyPrefix 
 
 		if len(list) != 0 {
 			for _, o := range list {
-				if objectKeyPrefix == "" || strings.Contains(o.Name, objectKeyPrefix) {
+				if naplesMac == "" || strings.Contains(o.Name, naplesMac) {
 					temp = append(temp, o.Name)
 				}
 			}
@@ -127,7 +127,7 @@ func (sm *SysModel) getLatestObjectName(tenantName, bucketName, objectKeyPrefix 
 	}
 
 	if len(temp) == 0 {
-		return "", fmt.Errorf("no objects found for prefix %s", objectKeyPrefix)
+		return "", fmt.Errorf("no objects found for prefix %s", naplesMac)
 	}
 
 	return temp[len(temp)-1], nil
@@ -135,26 +135,26 @@ func (sm *SysModel) getLatestObjectName(tenantName, bucketName, objectKeyPrefix 
 
 // FindFwlogForWorkloadPairsFromObjStore finds workload ip addresses in firewall log
 func (sm *SysModel) FindFwlogForWorkloadPairsFromObjStore(
-	tenantName, protocol string, port uint32, fwaction string, wpc *objects.WorkloadPairCollection) error {
+	tenantName, vrfName, protocol string, port uint32, fwaction string, wpc *objects.WorkloadPairCollection) error {
 	for _, wp := range wpc.Pairs {
 		ipA := wp.First.GetIP()
 		ipB := wp.Second.GetIP()
 		aMac := wp.First.NaplesMAC()
 		bMac := wp.Second.NaplesMAC()
-		return sm.findFwlogForWorkloadPairsFromObjStore(tenantName,
+		return sm.findFwlogForWorkloadPairsFromObjStore(tenantName, vrfName,
 			ipA, ipB, protocol, port, fwaction, aMac, bMac)
 	}
 	return nil
 }
 
 func (sm *SysModel) findFwlogForWorkloadPairsFromObjStore(
-	tenantName, srcIP, destIP, protocol string, port uint32, fwaction, naplesA, naplesB string) error {
-	latestObjectNameA, err := sm.getLatestObjectName(tenantName, "fwlogs", naplesA)
+	tenantName, vrfName, srcIP, destIP, protocol string, port uint32, fwaction, naplesA, naplesB string) error {
+	latestObjectNameA, err := sm.getLatestObjectName(tenantName, "fwlogs", naplesA, vrfName)
 	if err != nil {
 		return fmt.Errorf("could not find latest object for naples %s", naplesA)
 	}
 
-	latestObjectNameB, err := sm.getLatestObjectName(tenantName, "fwlogs", naplesB)
+	latestObjectNameB, err := sm.getLatestObjectName(tenantName, "fwlogs", naplesB, vrfName)
 	if err != nil {
 		return fmt.Errorf("could not find latest object for naples %s", naplesB)
 	}
@@ -231,7 +231,7 @@ func (sm *SysModel) downloadCsvFileViaPSMRESTAPI(bucketName, objectName string, 
 	}
 
 	// replace first 5 "/" with "_"
-	name := strings.Replace(objectName, "/", "_", 5)
+	name := strings.Replace(objectName, "/", "_", 6)
 	uri := fmt.Sprintf("https://%s/objstore/v1/downloads/%s/%s", url, bucketName, name)
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
@@ -285,7 +285,7 @@ func (sm *SysModel) FindFwlogForWorkloadPairsFromElastic(
 		ipB := wp.Second.GetIP()
 		aMac := wp.First.NaplesMAC()
 		bMac := wp.Second.NaplesMAC()
-		return sm.findFwlogForWorkloadPairsFromObjStore(tenantName,
+		return sm.findFwlogForWorkloadPairsFromElastic(tenantName,
 			ipA, ipB, protocol, port, fwaction, aMac, bMac)
 	}
 	return nil
@@ -302,7 +302,6 @@ func (sm *SysModel) findFwlogForWorkloadPairsFromElastic(
 	query := &fwlog.FwLogQuery{
 		DestIPs:    []string{destIP},
 		SourceIPs:  []string{srcIP},
-		DestPorts:  []uint32{port},
 		MaxResults: 50,
 		Tenants:    []string{globals.DefaultTenant},
 	}
@@ -323,16 +322,40 @@ func (sm *SysModel) findFwlogForWorkloadPairsFromElastic(
 		}
 	}
 
+	// Try the reverse as well
+	query = &fwlog.FwLogQuery{
+		DestIPs:    []string{srcIP},
+		SourceIPs:  []string{destIP},
+		MaxResults: 50,
+		Tenants:    []string{globals.DefaultTenant},
+	}
+
+	resp = fwlog.FwLogList{}
+	err = searchutils.FwLogQuery(ctx, url, query, &resp)
+	if err != nil {
+		return err
+	}
+
+	for _, log := range resp.Items {
+		if log.SrcIP == destIP &&
+			log.DestIP == srcIP &&
+			log.DestPort == port &&
+			log.Protocol == protocol &&
+			log.Action == fwaction {
+			return nil
+		}
+	}
+
 	return fmt.Errorf("log not found in Elastic for srcIP %s, destIP %s, protocol %s, port %d, fwAction %s",
 		srcIP, destIP, protocol, port, fwaction)
 }
 
-func (sm *SysModel) VerifyFwlogFromAllNaples(tenantName string, bucketName string, failOnZero bool) error {
+func (sm *SysModel) VerifyFwlogFromAllNaples(tenantName string, vrfName string, bucketName string, failOnZero bool) error {
 	var failedCount = 0
 	for _, sim := range sm.FakeNaples {
 		mac := sim.Instances[0].Dsc.Status.PrimaryMAC
 		// VerifyFwlogFromAllNaples is not used anywhere as of now, passing a dummy jitter value
-		cnt, err := sm.GetFwLogObjectCount(tenantName, bucketName, mac, 30*time.Second)
+		cnt, err := sm.GetFwLogObjectCount(tenantName, bucketName, mac, vrfName, 30*time.Second)
 		if err != nil {
 			return err
 		}

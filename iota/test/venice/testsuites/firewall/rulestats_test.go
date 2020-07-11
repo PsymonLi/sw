@@ -54,7 +54,7 @@ var _ = Describe("rulestats tests", func() {
 
 			// check fwlog, enable when fwlogs are reported to Venice
 			Eventually(func() error {
-				return ts.model.FindFwlogForWorkloadPairsFromObjStore("default", "TCP", 8000, "allow", workloadPairs)
+				return ts.model.FindFwlogForWorkloadPairsFromObjStore("default", "default", "TCP", 8000, "allow", workloadPairs)
 			}).Should(Succeed())
 
 			// verify TCP hits and total hits got incremented
@@ -87,7 +87,7 @@ var _ = Describe("rulestats tests", func() {
 
 			// check fwlog ,enable when fwlogs are reported to Venice
 			Eventually(func() error {
-				return ts.model.FindFwlogForWorkloadPairsFromObjStore("default", "UDP", 9000, "allow", workloadPairs)
+				return ts.model.FindFwlogForWorkloadPairsFromObjStore("default", "default", "UDP", 9000, "allow", workloadPairs)
 			}).Should(Succeed())
 
 			// verify UDP hits and total hits got incremented
@@ -121,7 +121,7 @@ var _ = Describe("rulestats tests", func() {
 
 			// check fwlog, enable when fwlogs are reported to Venice
 			Eventually(func() error {
-				return ts.model.FindFwlogForWorkloadPairsFromObjStore("default", "ICMP", 0, "allow", workloadPairs)
+				return ts.model.FindFwlogForWorkloadPairsFromObjStore("default", "default", "ICMP", 0, "allow", workloadPairs)
 			}).Should(Succeed())
 
 			// verify ICMP hits and total hits got incremented

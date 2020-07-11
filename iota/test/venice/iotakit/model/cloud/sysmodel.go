@@ -631,7 +631,7 @@ func (sm *SysModel) NewNetworkSecurityPolicy(name string) *objects.NetworkSecuri
 
 // FindFwlogForWorkloadPairsFromObjStore find fwlog pairs
 func (sm *SysModel) FindFwlogForWorkloadPairsFromObjStore(tenantName,
-	protocol string, port uint32, fwaction string, wpc *objects.WorkloadPairCollection) error {
+	vrfName, protocol string, port uint32, fwaction string, wpc *objects.WorkloadPairCollection) error {
 	return fmt.Errorf("not implemented")
 }
 
@@ -642,7 +642,7 @@ func (sm *SysModel) FindFwlogForWorkloadPairsFromElastic(tenantName,
 }
 
 // GetFwLogObjectCount gets the object count for firewall logs under the bucket with the given name
-func (sm *SysModel) GetFwLogObjectCount(tenantName string, bucketName string, objectKeyPrefix string, jitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
+func (sm *SysModel) GetFwLogObjectCount(tenantName string, bucketName string, naplesMac string, vrfName string,  jitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 

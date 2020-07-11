@@ -264,7 +264,7 @@ func (a *fwlogHandler) DownloadFwLogFileContent(ctx context.Context, in *api.Lis
 		return nil, fmt.Errorf("query is supported only for 'default' tenant")
 	}
 	// convert 1st 5 "_" to "/"
-	name := strings.Replace(in.Name, "_", "/", 5)
+	name := strings.Replace(in.Name, "_", "/", 6)
 	objReader, err := a.vosFwLogsHTTPClient.GetObject(ctx, name)
 	if err != nil {
 		return nil, err
