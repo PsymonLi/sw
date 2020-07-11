@@ -124,6 +124,11 @@ static hal_ret_t validate_arp_packet(const struct ether_arp *arphead,
 
     opcode = ntohs(arphead->ea_hdr.ar_op);
 
+    if (!sep) {
+        HAL_TRACE_ERR("Invalid ARP Request SEP NULL");
+        return HAL_RET_ERR;
+    }
+
     if ((opcode != ARPOP_REQUEST) && (opcode != ARPOP_REPLY) &&
             (opcode != ARPOP_REVREQUEST) && (opcode != ARPOP_REVREPLY)) {
         HAL_TRACE_ERR(
