@@ -1,36 +1,18 @@
 #!/usr/bin/python3
 
+import sys
 import json
-import os
 import time
 import logging
-import re
-from scapy.all import *
-from scapy.contrib.mpls import MPLS
-from scapy.contrib.geneve import GENEVE
-from enum import Enum
-from ipaddress import ip_address
 import copy 
 
 import iota.harness.api as api
-import iota.test.athena.utils.athena_app as athena_app_utils
 import iota.test.athena.utils.flow as flow_utils 
-import iota.harness.infra.store as store
-import iota.test.athena.testcases.networking.config.flow_gen as flow_gen 
+import iota.test.athena.testcases.networking.config.flow_gen as flow_gen
 import iota.test.athena.utils.misc as utils
 import iota.test.athena.utils.pkt_gen as pktgen
 
-DEFAULT_H2S_GEN_PKT_FILENAME = './h2s_pkt.pcap'
-DEFAULT_H2S_RECV_PKT_FILENAME = './h2s_recv_pkt.pcap'
-DEFAULT_S2H_RECV_PKT_FILENAME = './s2h_recv_pkt.pcap'
-DEFAULT_S2H_GEN_PKT_FILENAME = './s2h_pkt.pcap'
-SEND_PKT_SCRIPT_FILENAME = '/scripts/send_pkt.py'
-RECV_PKT_SCRIPT_FILENAME = '/scripts/recv_pkt.py'
-CURR_DIR = os.path.dirname(os.path.realpath(__file__))
-
-DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
 SNIFF_TIMEOUT = 3
-
 NUM_FIRST_PKT_PER_FLOW = 1
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
@@ -254,7 +236,7 @@ def send_pkt(tc, node, pkt_gen, flow, pkt_cnt):
     pkt_gen.setup_pkt()
     recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
                 "--timeout %s --pkt_cnt %d" % (tc.up0_intf, 
-                DEFAULT_H2S_RECV_PKT_FILENAME, 
+                pktgen.DEFAULT_H2S_RECV_PKT_FILENAME,
                 str(SNIFF_TIMEOUT), pkt_cnt)
 
     api.Trigger_AddHostCommand(h2s_req, node.Name(), recv_cmd,
@@ -272,7 +254,7 @@ def send_pkt(tc, node, pkt_gen, flow, pkt_cnt):
     pkt_gen.setup_pkt()
     send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
                 "--pkt_cnt %d" % (tc.up1_intf, 
-                DEFAULT_H2S_GEN_PKT_FILENAME, pkt_cnt)
+                pktgen.DEFAULT_H2S_GEN_PKT_FILENAME, pkt_cnt)
 
     api.Trigger_AddHostCommand(h2s_req, node.Name(), 'sleep 0.5')
     api.Trigger_AddHostCommand(h2s_req, node.Name(), send_cmd)
@@ -311,7 +293,7 @@ def send_pkt(tc, node, pkt_gen, flow, pkt_cnt):
     pkt_gen.setup_pkt()
     recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
                 "--timeout %s --pkt_cnt %d" % (tc.up1_intf, 
-                DEFAULT_S2H_RECV_PKT_FILENAME, 
+                pktgen.DEFAULT_S2H_RECV_PKT_FILENAME,
                 str(SNIFF_TIMEOUT), pkt_cnt)
 
     api.Trigger_AddHostCommand(s2h_req, node.Name(), recv_cmd,
@@ -329,7 +311,7 @@ def send_pkt(tc, node, pkt_gen, flow, pkt_cnt):
     pkt_gen.setup_pkt()
     send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
                 "--pkt_cnt %d" % (tc.up0_intf, 
-                DEFAULT_S2H_GEN_PKT_FILENAME, pkt_cnt)
+                pktgen.DEFAULT_S2H_GEN_PKT_FILENAME, pkt_cnt)
 
     api.Trigger_AddHostCommand(s2h_req, node.Name(), 'sleep 0.5')
     api.Trigger_AddHostCommand(s2h_req, node.Name(), send_cmd)
@@ -365,32 +347,11 @@ def Setup(tc):
     api.Logger.info('vnic id: {}'.format(tc.vnic_id))
 
     # get node info
-    tc.bitw_node_name = None
-    tc.bitw_node = None
-    
-    tc.wl_node_name = None
-    tc.wl_node = None
-
-    # Assuming only one bitw node and one workload node
-    nics =  store.GetTopology().GetNicsByPipeline("athena")
-    for nic in nics:
-        tc.bitw_node_name = nic.GetNodeName()
-        break
-
-    workloads = api.GetWorkloads()
-    if len(workloads) == 0:
-        api.Logger.error('No workloads available')
-        return api.types.status.FAILURE
-
-    tc.wl_node_name = workloads[0].node_name 
+    tc.bitw_node_name = api.GetTestsuiteAttr("bitw_node_name")
+    tc.wl_node_name = api.GetTestsuiteAttr("wl_node_name")
+    tc.wl_node = api.GetTestsuiteAttr("wl_node")
 
     tc.nodes = api.GetNodes()
-    for node in tc.nodes:
-        if node.Name() == tc.bitw_node_name:
-            tc.bitw_node = node
-        else:
-            tc.wl_node = node    
-
 
     host_intfs = api.GetNaplesHostInterfaces(tc.wl_node_name)
     
@@ -426,13 +387,12 @@ def Setup(tc):
 
     # fetch flows needed for the test
     tc.flows = get_flows(tc)
-    
+
     # copy send/recv scripts to node
+    send_pkt_script_fname = api.GetTestsuiteAttr("send_pkt_path")
+    recv_pkt_script_fname = api.GetTestsuiteAttr("recv_pkt_path")
     for node in tc.nodes:
         if node is tc.wl_node:
-            send_pkt_script_fname = CURR_DIR + SEND_PKT_SCRIPT_FILENAME
-            recv_pkt_script_fname = CURR_DIR + RECV_PKT_SCRIPT_FILENAME 
-
             api.CopyToHost(node.Name(), [send_pkt_script_fname], "")
             api.CopyToHost(node.Name(), [recv_pkt_script_fname], "")
 

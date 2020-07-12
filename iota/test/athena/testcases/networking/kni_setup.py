@@ -9,21 +9,8 @@ from ipaddress import ip_address
 def Setup(tc):
 
     # get node info
-    tc.bitw_node_name = None
-    tc.wl_node_name = None
-
-    # Assuming only one bitw node and one workload node
-    nics =  store.GetTopology().GetNicsByPipeline("athena")
-    for nic in nics:
-        tc.bitw_node_name = nic.GetNodeName()
-        break
-
-    workloads = api.GetWorkloads()
-    if len(workloads) == 0:
-        api.Logger.error('No workloads available')
-        return api.types.status.FAILURE
-
-    tc.wl_node_name = workloads[0].node_name 
+    tc.bitw_node_name = api.GetTestsuiteAttr("bitw_node_name")
+    tc.wl_node_name = api.GetTestsuiteAttr("wl_node_name")
 
     host_intfs = api.GetNaplesHostInterfaces(tc.wl_node_name)
 
@@ -35,13 +22,16 @@ def Setup(tc):
     up0_intf = host_intfs[0]
     up1_intf = host_intfs[1]
 
+    workloads = api.GetWorkloads()
+    if len(workloads) == 0:
+        api.Logger.error('No workloads available')
+        return api.types.status.FAILURE
+
     tc.wl0 = workloads[1]
     tc.wl1 = workloads[3]
 
     api.SetTestsuiteAttr("kni_wl", tc.wl0)
     api.SetTestsuiteAttr("kni_wl_sub", tc.wl1)
-    api.SetTestsuiteAttr("bitw_node_name", tc.bitw_node_name)
-    api.SetTestsuiteAttr("wl_node_name", tc.wl_node_name)
 
     api.Logger.info("wl0: vlan: {}, mac: {}, ip: {}".format(tc.wl0.uplink_vlan, tc.wl0.mac_address, tc.wl0.ip_address))
     api.Logger.info("wl1: vlan: {}, mac: {}, ip: {}".format(tc.wl1.uplink_vlan, tc.wl1.mac_address, tc.wl1.ip_address))

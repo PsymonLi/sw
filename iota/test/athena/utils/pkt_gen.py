@@ -9,10 +9,10 @@ from scapy.contrib.geneve import GENEVE
 import iota.test.athena.utils.misc as utils
 import iota.harness.api as api
 
-DEFAULT_H2S_GEN_PKT_FILENAME     = '/h2s_pkt.pcap'
-DEFAULT_H2S_RECV_PKT_FILENAME    = '/h2s_recv_pkt.pcap'
-DEFAULT_S2H_RECV_PKT_FILENAME    = '/s2h_recv_pkt.pcap'
-DEFAULT_S2H_GEN_PKT_FILENAME     = '/s2h_pkt.pcap'
+DEFAULT_H2S_GEN_PKT_FILENAME     = 'h2s_pkt.pcap'
+DEFAULT_H2S_RECV_PKT_FILENAME    = 'h2s_recv_pkt.pcap'
+DEFAULT_S2H_RECV_PKT_FILENAME    = 's2h_recv_pkt.pcap'
+DEFAULT_S2H_GEN_PKT_FILENAME     = 's2h_pkt.pcap'
 DEFAULT_PAYLOAD                  = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
 CURR_DIR                         = os.path.dirname(os.path.realpath(__file__))
 
@@ -474,7 +474,7 @@ class Pktgen():
         elif self.dir_ == 's2h':
             fname = DEFAULT_S2H_RECV_PKT_FILENAME if self.Rx == True else DEFAULT_S2H_GEN_PKT_FILENAME
 
-        with open(CURR_DIR + fname, 'w+') as fd:
+        with open(CURR_DIR + '/' + fname, 'w+') as fd:
             logging.debug('Writing crafted pkt to pcap file %s' % fd.name)
             wrpcap(fd.name, pkt)
 
