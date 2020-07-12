@@ -1218,6 +1218,10 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
                 break
             pkt_count += 1
 
+            if pkt.haslayer(ERSPAN_II) == False and\
+               pkt.haslayer(ERSPAN_III) == False:
+                continue
+
             if pkt.haslayer(IP):
                 # Collector-IP validation
                 collector = pkt[IP].dst
@@ -1243,11 +1247,7 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
                                      .format(pkt_size, tc.iterators.pktsize))
                     tc.result[c] = api.types.status.FAILURE
 
-            if pkt.haslayer(ERSPAN_II) == False and\
-               pkt.haslayer(ERSPAN_III) == False:
-                continue
             pkt_erspan_count += 1
-
             # GRE-Sequence-number validation (errors are ignored in
             # in classic-mode until code-fix is in)
             if pkt.haslayer(GRE):
