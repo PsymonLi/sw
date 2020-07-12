@@ -1396,6 +1396,8 @@ fte_flow_prog (struct rte_mbuf *m)
         if (ret != SDK_RET_OK) {
             PDS_TRACE_DEBUG("fte_conntrack_state_create failed. "
                             "ret: %s \n", SDK_RET_ENTRIES_str(ret));
+            // free the conntrack index that was allocated
+            fte_conntrack_index_free(conntrack_index);
             return ret;
         }
         if (flow_spec.key.ip_proto == IP_PROTO_TCP) {
