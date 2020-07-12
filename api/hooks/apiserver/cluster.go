@@ -149,8 +149,8 @@ func (cl *clusterHooks) createFirewallProfile(ctx context.Context, kv kvstore.In
 	fwp.Defaults("all")
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	fwp.APIVersion = apiSrv.GetVersion()
-	fwp.SelfLink = fwp.MakeURI("configs", fwp.APIVersion, string(apiclient.GroupSecurity))
 	fwp.Name = "default"
+	fwp.SelfLink = fwp.MakeURI("configs", fwp.APIVersion, string(apiclient.GroupSecurity))
 	fwp.Tenant = r.Name
 	fwp.GenerationID = "1"
 	fwp.UUID = uuid.NewV4().String()
@@ -178,8 +178,8 @@ func (cl *clusterHooks) deleteFirewallProfile(ctx context.Context, kv kvstore.In
 	fwp.Defaults("all")
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	fwp.APIVersion = apiSrv.GetVersion()
-	fwp.SelfLink = fwp.MakeURI("configs", fwp.APIVersion, string(apiclient.GroupSecurity))
 	fwp.Name = "default"
+	fwp.SelfLink = fwp.MakeURI("configs", fwp.APIVersion, string(apiclient.GroupSecurity))
 	fwp.Tenant = r.Name
 	fwk := fwp.MakeKey(string(apiclient.GroupSecurity))
 	err := txn.Delete(fwk)
@@ -200,8 +200,8 @@ func (cl *clusterHooks) createDefaultVirtualRouter(ctx context.Context, kv kvsto
 	vrf.Defaults("all")
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	vrf.APIVersion = apiSrv.GetVersion()
-	vrf.SelfLink = vrf.MakeURI("configs", vrf.APIVersion, string(apiclient.GroupNetwork))
 	vrf.Name = "default"
+	vrf.SelfLink = vrf.MakeURI("configs", vrf.APIVersion, string(apiclient.GroupNetwork))
 	vrf.Tenant = r.Name
 	vrf.Namespace = globals.DefaultNamespace
 	vrf.GenerationID = "1"
@@ -230,8 +230,8 @@ func (cl *clusterHooks) deleteDefaultVirtualRouter(ctx context.Context, kv kvsto
 	vrf.Defaults("all")
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	vrf.APIVersion = apiSrv.GetVersion()
-	vrf.SelfLink = vrf.MakeURI("configs", vrf.APIVersion, string(apiclient.GroupNetwork))
 	vrf.Name = "default"
+	vrf.SelfLink = vrf.MakeURI("configs", vrf.APIVersion, string(apiclient.GroupNetwork))
 	vrf.Tenant = r.Name
 	vrf.Namespace = globals.DefaultNamespace
 	vrfk := vrf.MakeKey(string(apiclient.GroupNetwork))
@@ -253,8 +253,8 @@ func (cl *clusterHooks) createDefaultRouteTable(ctx context.Context, kv kvstore.
 	rt.Defaults("all")
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	rt.APIVersion = apiSrv.GetVersion()
-	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupNetwork))
 	rt.Name = "default.default"
+	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupNetwork))
 	rt.Tenant = r.Name
 	rt.Namespace = globals.DefaultNamespace
 	rt.GenerationID = "1"
@@ -299,8 +299,8 @@ func (cl *clusterHooks) updateDefaultDSCProfile(ctx context.Context, kv kvstore.
 	}
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	rt.APIVersion = apiSrv.GetVersion()
-	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupCluster))
 	rt.Name = globals.DefaultDSCProfile
+	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupCluster))
 	rt.Tenant = ""
 	rt.Namespace = ""
 	rt.GenerationID = "1"
@@ -351,8 +351,8 @@ func (cl *clusterHooks) createDefaultDSCProfile(ctx context.Context, kv kvstore.
 	}
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	rt.APIVersion = apiSrv.GetVersion()
-	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupCluster))
 	rt.Name = globals.DefaultDSCProfile
+	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupCluster))
 	rt.Tenant = ""
 	rt.Namespace = ""
 	rt.GenerationID = "1"
@@ -384,8 +384,8 @@ func (cl *clusterHooks) deleteDefaultRouteTable(ctx context.Context, kv kvstore.
 	rt.Defaults("all")
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	rt.APIVersion = apiSrv.GetVersion()
-	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupNetwork))
 	rt.Name = "default.default"
+	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupNetwork))
 	rt.Tenant = r.Name
 	rt.Namespace = globals.DefaultNamespace
 	rtk := rt.MakeKey(string(apiclient.GroupNetwork))
@@ -1217,8 +1217,8 @@ func (cl *clusterHooks) nodePreCommitHook(ctx context.Context, kvs kvstore.Inter
 		insertionFWProfile.Spec.FeatureSet = cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String()
 		apiSrv := apisrvpkg.MustGetAPIServer()
 		insertionFWProfile.APIVersion = apiSrv.GetVersion()
-		insertionFWProfile.SelfLink = insertionFWProfile.MakeURI("configs", insertionFWProfile.APIVersion, string(apiclient.GroupCluster))
 		insertionFWProfile.Name = "InsertionFWProfile"
+		insertionFWProfile.SelfLink = insertionFWProfile.MakeURI("configs", insertionFWProfile.APIVersion, string(apiclient.GroupCluster))
 		insertionFWProfile.Tenant = ""
 		insertionFWProfile.Namespace = ""
 		insertionFWProfile.GenerationID = "1"
@@ -1242,8 +1242,8 @@ func (cl *clusterHooks) nodePreCommitHook(ctx context.Context, kvs kvstore.Inter
 		dscDefaultProfile := &cluster.DSCProfile{}
 		dscDefaultProfile.Defaults("all")
 		dscDefaultProfile.APIVersion = apiSrv.GetVersion()
-		dscDefaultProfile.SelfLink = dscDefaultProfile.MakeURI("configs", dscDefaultProfile.APIVersion, string(apiclient.GroupCluster))
 		dscDefaultProfile.Name = globals.DefaultDSCProfile
+		dscDefaultProfile.SelfLink = dscDefaultProfile.MakeURI("configs", dscDefaultProfile.APIVersion, string(apiclient.GroupCluster))
 		dscDefaultProfile.Tenant = ""
 		dscDefaultProfile.Namespace = ""
 		dscDefaultProfile.GenerationID = "1"

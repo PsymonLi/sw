@@ -524,8 +524,8 @@ func (h *networkHooks) createDefaultVRFRouteTable(ctx context.Context, kv kvstor
 	rt.Defaults("all")
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	rt.APIVersion = apiSrv.GetVersion()
-	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupNetwork))
 	rt.Name = r.Name + "." + "default"
+	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupNetwork))
 	rt.Tenant = r.Tenant
 	rt.Namespace = r.Namespace
 	rt.GenerationID = "1"
@@ -554,8 +554,8 @@ func (h *networkHooks) deleteDefaultVRFRouteTable(ctx context.Context, kv kvstor
 	rt.Defaults("all")
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	rt.APIVersion = apiSrv.GetVersion()
-	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupNetwork))
 	rt.Name = r.Name + "." + "default"
+	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupNetwork))
 	rt.Tenant = r.Tenant
 	rt.Namespace = r.Namespace
 	rtk := rt.MakeKey(string(apiclient.GroupNetwork))
