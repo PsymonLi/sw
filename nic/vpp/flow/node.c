@@ -987,11 +987,11 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
             // sport = ICMP identifier if echo else 0
             // dport = ((u16) (icmp0->type << 8)) | icmp0->code
             dport = ((u16) (icmp0->type << 8)) | icmp0->code;
-            if (PREDICT_TRUE(icmp0->type == ICMP4_echo_request)) {
+            if (PREDICT_TRUE(icmp0->type == ICMP4_echo_request && icmp0->code == 0)) {
                 sport = *((u16 *) (icmp0 + 1));
                 sport = clib_net_to_host_u16(sport);
                 r_dport = (ICMP4_echo_reply << 8) | icmp0->code;
-            } else if (icmp0->type == ICMP4_echo_reply) {
+            } else if (icmp0->type == ICMP4_echo_reply && icmp0->code == 0) {
                 sport = *((u16 *) (icmp0 + 1));
                 sport = clib_net_to_host_u16(sport);
                 r_dport = (ICMP4_echo_request << 8) | icmp0->code;
@@ -1134,14 +1134,14 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
                 // sport = ICMP identifier if echo else 0
                 // dport = ((u16) (icmp0->type << 8)) | icmp0->code
                 dport = ((u16) (icmp0->type << 8)) | icmp0->code;
-                if (PREDICT_TRUE(icmp0->type == ICMP4_echo_request)) {
+                if (PREDICT_TRUE(icmp0->type == ICMP6_echo_request && icmp0->code == 0)) {
                     sport = *((u16 *) (icmp0 + 1));
                     sport = clib_net_to_host_u16(sport);
-                    r_dport = (ICMP4_echo_reply << 8) | icmp0->code;
-                } else if (icmp0->type == ICMP4_echo_reply) {
+                    r_dport = (ICMP6_echo_reply << 8) | icmp0->code;
+                } else if (icmp0->type == ICMP6_echo_reply && icmp0->code == 0) {
                     sport = *((u16 *) (icmp0 + 1));
                     sport = clib_net_to_host_u16(sport);
-                    r_dport = (ICMP4_echo_request << 8) | icmp0->code;
+                    r_dport = (ICMP6_echo_request << 8) | icmp0->code;
                 } else {
                     sport = 0;
                     r_dport = dport;
