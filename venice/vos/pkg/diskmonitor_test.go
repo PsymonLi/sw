@@ -82,17 +82,22 @@ func TestDiskUpdateOps(t *testing.T) {
 	os.MkdirAll(tempDir, os.ModePerm)
 	exec.Command("/bin/sh", "-c", "cp * "+tempDir+"/.").Output()
 
+	tempMetaDir := "./default.meta-fwlogs/data"
+	os.MkdirAll(tempMetaDir, os.ModePerm)
+	exec.Command("/bin/sh", "-c", "cp * "+tempMetaDir+"/.").Output()
+
 	// Remove dummy dirs and files
 	defer func() {
 		os.RemoveAll(tempDir)
+		os.RemoveAll(tempMetaDir)
 	}()
 
 	// Test static threshold
 	paths := new(sync.Map)
 	c := DiskMonitorConfig{
-		TenantName:               "default",
-		CombinedThresholdPercent: 0.00001,
-		CombinedBuckets:          []string{"fwlogs"},
+		TenantName:               "",
+		CombinedThresholdPercent: 0.0001,
+		CombinedBuckets:          []string{"fwlogs", "meta-fwlogs"},
 	}
 	paths.Store("", c)
 	cancelFunc, err := inst.createDiskUpdateWatcher(paths, time.Second*2, []string{"./"})
@@ -109,6 +114,8 @@ func TestDiskUpdateOps(t *testing.T) {
 	Assert(t, diskUpdate.Status.Path == "./", "diskupdate path is not correct", diskUpdate.Status.Path)
 	Assert(t, diskUpdate.Status.Size_ != 0, "diskupdate size is 0")
 	Assert(t, diskUpdate.Status.UsedByNamespace != 0, "diskupdate used is 0")
+	Assert(t, ((float64(diskUpdate.Status.UsedByNamespace)/float64(diskUpdate.Status.Size_))*100) >= float64(0.0001),
+		"incorrect threshold notification")
 	cancelFunc()
 
 	// Cover dynamic threshold.

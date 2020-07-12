@@ -50,9 +50,9 @@ func newDiskMonitorConfig(tenantName string,
 func isThresholdReached(basePath string,
 	c DiskMonitorConfig, size uint64, thresholdPercent float64, paths []string) (bool, uint64, error) {
 	var used uint64
-	tenantNames := []string{}
+	tenantNames := map[string]struct{}{}
 	if c.TenantName != "" {
-		tenantNames = append(tenantNames, c.TenantName)
+		tenantNames[c.TenantName] = struct{}{}
 	} else {
 		// List all the dirs under the basePath and extract tenant names from them.
 		dir, err := os.Open(basePath)
@@ -78,7 +78,7 @@ func isThresholdReached(basePath string,
 					if len(tokens) != 2 {
 						continue
 					}
-					tenantNames = append(tenantNames, tokens[0])
+					tenantNames[tokens[0]] = struct{}{}
 				}
 			}
 		}
@@ -108,7 +108,6 @@ func isThresholdReached(basePath string,
 				if reached {
 					return true, tmp, nil
 				}
-				used += tmp
 			} else {
 				used += uint64(file.Size())
 			}
@@ -118,14 +117,14 @@ func isThresholdReached(basePath string,
 
 			p := (float64(temp) / float64(size)) * 100
 			if p >= thresholdPercent {
-				log.Infof("disk threshold reached for namespace %s", currPath)
+				log.Infof("disk threshold reached for namespace %s, used %+v, th %+v, usedSize %+v", currPath, p, thresholdPercent, temp)
 				return true, temp, nil
 			}
 		}
 		return false, used, nil
 	}
 
-	for _, tn := range tenantNames {
+	for tn := range tenantNames {
 		for _, bucket := range c.CombinedBuckets {
 			currPath := filepath.Join(basePath, tn+"."+bucket)
 			reached, tmp, err := helper(currPath, c, size, thresholdPercent)
@@ -143,14 +142,14 @@ func isThresholdReached(basePath string,
 }
 
 // disk usage of path/disk
-func diskUsage(tenant string, c DiskMonitorConfig, paths []string) (bool, uint64, uint64, string, error) {
+func diskUsage(tenant string, c DiskMonitorConfig, paths []string) (bool, uint64, uint64, string, float64, error) {
 	// No need to go over all the disks as they are replication of each other.
 	basePath := paths[0]
 	fs := syscall.Statfs_t{}
 	err := syscall.Statfs(basePath, &fs)
 	if err != nil {
 		log.Errorf("monitor disk usage path %s, err %+v", basePath, err)
-		return false, 0, 0, basePath, fmt.Errorf("monitor disk usage err:  %+v", err)
+		return false, 0, 0, basePath, c.CombinedThresholdPercent, fmt.Errorf("monitor disk usage err:  %+v", err)
 	}
 	all := fs.Blocks * uint64(fs.Bsize)
 	allInGB := all / bytesToGBConversionFactor
@@ -173,7 +172,7 @@ func diskUsage(tenant string, c DiskMonitorConfig, paths []string) (bool, uint64
 	}
 
 	reached, used, err := isThresholdReached(basePath, c, all, th, paths)
-	return reached, all, used, basePath, err
+	return reached, all, used, basePath, th, err
 }
 
 func (w *storeWatcher) monitorDisks(ctx context.Context,
@@ -194,16 +193,15 @@ func (w *storeWatcher) statDisk(monitorConfig *sync.Map, paths []string) {
 	monitorConfig.Range(func(k interface{}, v interface{}) bool {
 		tenant := k.(string)
 		t := v.(DiskMonitorConfig)
-		reached, all, used, p, err := diskUsage(tenant, t, paths)
+		reached, all, used, p, th, err := diskUsage(tenant, t, paths)
 		if err != nil {
 			return false
 		}
 
 		// Generate notification only if the disk threshold is reached
 		if reached {
-			obj := makeEvent(p, all, used)
+			obj := makeEvent(p, all, used, th)
 			evType := kvstore.Created
-			log.Debugf("sending watch event [%v][%v][%+v]", diskUpdateWatchPath, evType, obj)
 			qs := w.watchPrefixes.Get(diskUpdateWatchPath)
 			for j := range qs {
 				err := qs[j].Enqueue(evType, obj, nil)
@@ -216,7 +214,9 @@ func (w *storeWatcher) statDisk(monitorConfig *sync.Map, paths []string) {
 	})
 }
 
-func makeEvent(path string, all, used uint64) runtime.Object {
+func makeEvent(path string, all, used uint64, th float64) runtime.Object {
+	log.Infof("sending disk monitor watch event diskUpdateWatchPath %+v, path %+v, size %+v, used %+v, th %+v",
+		diskUpdateWatchPath, path, all, used, th)
 	obj := &protos.DiskUpdate{}
 	obj.Status.Path = path
 	obj.Status.Size_ = all

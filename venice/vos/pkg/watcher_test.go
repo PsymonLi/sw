@@ -17,11 +17,15 @@ import (
 )
 
 type fakeWatchServer struct {
-	ctx context.Context
+	ctx         context.Context
+	sendEventFn func(*objstore.AutoMsgObjectWatchHelper)
 }
 
 // Send implements a mock interface
-func (f *fakeWatchServer) Send(*objstore.AutoMsgObjectWatchHelper) error {
+func (f *fakeWatchServer) Send(ev *objstore.AutoMsgObjectWatchHelper) error {
+	if f.sendEventFn != nil {
+		f.sendEventFn(ev)
+	}
 	return nil
 }
 

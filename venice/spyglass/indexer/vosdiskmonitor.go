@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -20,8 +19,8 @@ import (
 )
 
 const (
-	vosDiskMonitorID       = 101
-	cleanIntervalInMinutes = 10 // minutes
+	vosDiskMonitorID                 = 101
+	maxGetObjectsFromElasticTryCount = 3
 )
 
 type vosDiskWatcher struct {
@@ -43,6 +42,8 @@ type vosDiskWatcher struct {
 	elasticClient elastic.ESClient
 
 	vosFwlogsHTTPClient objstore.Client
+
+	cleanupInterval time.Duration
 }
 
 func newVosDiskWatcher(ctx context.Context,
@@ -51,7 +52,8 @@ func newVosDiskWatcher(ctx context.Context,
 	numFwLogObjectsToDelete int,
 	vosInternalClient *rpckit.RPCClient,
 	elasticClient elastic.ESClient,
-	vosFwlogsHTTPClient objstore.Client) (*vosDiskWatcher, error) {
+	vosFwlogsHTTPClient objstore.Client,
+	cleanupInterval time.Duration) (*vosDiskWatcher, error) {
 	opts := api.ListWatchOptions{}
 	cc := vosinternalprotos.NewObjstoreInternalServiceClient(vosInternalClient.ClientConn)
 	watch, err := cc.WatchDiskThresholdUpdates(ctx, &opts)
@@ -61,7 +63,7 @@ func newVosDiskWatcher(ctx context.Context,
 	return &vosDiskWatcher{ctx: ctx, wg: wg, numFwLogObjectsToDelete: numFwLogObjectsToDelete,
 		vosDiskUpdateWatcher: watch, logger: logger, elasticClient: elasticClient,
 		vosFwlogsHTTPClient: vosFwlogsHTTPClient, lastCleanupTime: time.Time{},
-		isCleanupRunning: false}, nil
+		isCleanupRunning: false, cleanupInterval: cleanupInterval}, nil
 }
 
 func (vw *vosDiskWatcher) StopWatchers() {
@@ -121,8 +123,8 @@ func (vw *vosDiskWatcher) startVosDiskMonitorWatcher(doneCh <-chan bool, recover
 }
 
 func (vw *vosDiskWatcher) handleVosDiskMonitorUpdate(obj *vosinternalprotos.DiskUpdate) {
-	// we are only interetsed in the fwlog bucket notification
-	if !strings.Contains(obj.Status.Path, fwlogsBucketName) {
+	if vw.isCleanupRunning {
+		vw.logger.Infof("cleanup is already runnin, ignoring vos disk update %+v", obj)
 		return
 	}
 
@@ -130,13 +132,8 @@ func (vw *vosDiskWatcher) handleVosDiskMonitorUpdate(obj *vosinternalprotos.Disk
 	// threshold is reached.
 	vw.logger.Infof("handling vos disk update %+v", obj)
 
-	if vw.isCleanupRunning {
-		vw.logger.Infof("cleanup is already runnin, ignoring vos disk update %+v", obj)
-		return
-	}
-
 	// Dont cleanup within 10 minute interval, these could be stale messages
-	if !vw.lastCleanupTime.IsZero() && time.Now().Sub(vw.lastCleanupTime).Minutes() < cleanIntervalInMinutes {
+	if !vw.lastCleanupTime.IsZero() && time.Now().Sub(vw.lastCleanupTime).Seconds() < vw.cleanupInterval.Seconds() {
 		vw.logger.Infof("ignoring vos disk update %+v", obj)
 		return
 	}
@@ -154,7 +151,7 @@ func (vw *vosDiskWatcher) cleanupOldObjects() {
 		maxResults = vw.numFwLogObjectsToDelete
 	}
 	objectsFetched := 0
-
+	tryCount := 0
 	for {
 		if objectsFetched >= vw.numFwLogObjectsToDelete {
 			break
@@ -172,13 +169,23 @@ func (vw *vosDiskWatcher) cleanupOldObjects() {
 			return
 		}
 
+		if len(objs) == 0 {
+			tryCount++
+			if tryCount == maxGetObjectsFromElasticTryCount {
+				vw.logger.Infof("no objects fetched in 3 tries, returning")
+				return
+			}
+			continue
+		}
+
 		objectsFetched += num
 
-		vw.logger.Infof("disk used capacity reached, total objects %d", len(objs))
+		vw.logger.Infof("disk used capacity reached, total tenants %d", len(objs))
 
 		wg := sync.WaitGroup{}
 		erroredObjs := map[string]map[string]struct{}{}
 		for tenant, tenantObjs := range objs {
+			vw.logger.Infof("disk used capacity reached, tenant %s total objects %d", tenant, len(tenantObjs))
 			objectCh := make(chan string)
 			errorCh := vw.vosFwlogsHTTPClient.RemoveObjectsWithContext(
 				vw.ctx,

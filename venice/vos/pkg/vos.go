@@ -49,15 +49,12 @@ const (
 	defaultFlowlogsLifecycleConfig = `<LifecycleConfiguration><Rule><ID>expire-flowlogs</ID><Prefix></Prefix><Status>Enabled</Status>` +
 		`<Expiration><Days>30</Days></Expiration></Rule></LifecycleConfiguration>`
 	periodicDiskMonitorTime = time.Minute * 30
-)
-
-const (
-	metaPrefix          = "X-Amz-Meta-"
-	metaCreationTime    = "Creation-Time"
-	metaFileName        = "file"
-	metaContentType     = "content-type"
-	fwlogsBucketName    = "fwlogs"
-	diskUpdateWatchPath = "diskupdates"
+	metaPrefix              = "X-Amz-Meta-"
+	metaCreationTime        = "Creation-Time"
+	metaFileName            = "file"
+	metaContentType         = "content-type"
+	fwlogsBucketName        = "fwlogs"
+	diskUpdateWatchPath     = "diskupdates"
 )
 
 var (
@@ -71,16 +68,17 @@ type Option func(vos.Interface)
 
 type instance struct {
 	sync.RWMutex
-	ctx                  context.Context
-	cancel               context.CancelFunc
-	wg                   sync.WaitGroup
-	pluginsMap           map[string]*pluginSet
-	watcherMap           map[string]*storeWatcher
-	store                apiintf.Store
-	pfxWatcher           watchstream.WatchedPrefixes
-	client               vos.BackendClient
-	bootupArgs           []string
-	bucketDiskThresholds *sync.Map
+	ctx                     context.Context
+	cancel                  context.CancelFunc
+	wg                      sync.WaitGroup
+	pluginsMap              map[string]*pluginSet
+	watcherMap              map[string]*storeWatcher
+	store                   apiintf.Store
+	pfxWatcher              watchstream.WatchedPrefixes
+	client                  vos.BackendClient
+	bootupArgs              []string
+	bucketDiskThresholds    *sync.Map
+	periodicDiskMonitorTime time.Duration
 }
 
 func (i *instance) Init(client vos.BackendClient) {
@@ -143,7 +141,7 @@ func (i *instance) createDefaultBuckets(client vos.BackendClient) error {
 			}
 
 			if strings.Compare(strings.ToLower(n), globals.FwlogsBucketName) == 0 {
-				metaBucketName := "meta-" + name
+				metaBucketName := "default." + "meta-" + strings.ToLower(n)
 				if err = i.createBucket(metaBucketName, lifecycle, false); err != nil {
 					log.Errorf("create bucket [%v] failed retry [%d] (%s)", metaBucketName, retryCount, err)
 					loop = true
@@ -224,7 +222,8 @@ func (i *instance) Watch(ctx context.Context,
 // Vos is setup differently when testURL is provided. For example, tls is not used whil testing and
 // insecure minio connection is initialized.
 func New(ctx context.Context, trace bool, testURL string, credentialsManagerChannel <-chan interface{}, opts ...Option) (vos.Interface, error) {
-	inst := &instance{}
+	inst := &instance{periodicDiskMonitorTime: periodicDiskMonitorTime}
+
 	// Run options
 	for _, opt := range opts {
 		if opt != nil {
@@ -338,7 +337,7 @@ func New(ctx context.Context, trace bool, testURL string, credentialsManagerChan
 		return nil, errors.Wrap(err, "failed to create buckets")
 	}
 
-	_, err = inst.createDiskUpdateWatcher(inst.bucketDiskThresholds, periodicDiskMonitorTime, DiskPaths)
+	_, err = inst.createDiskUpdateWatcher(inst.bucketDiskThresholds, inst.periodicDiskMonitorTime, DiskPaths)
 	if err != nil {
 		log.Errorf("failed to start disk watcher (%+v)", err)
 		return nil, errors.Wrap(err, "failed to start disk watcher")
@@ -402,6 +401,15 @@ func WithBucketDiskThresholds(th *sync.Map) func(vos.Interface) {
 	return func(i vos.Interface) {
 		if inst, ok := i.(*instance); ok {
 			inst.bucketDiskThresholds = th
+		}
+	}
+}
+
+// WithDiskMonitorDuration sets custom disk monitor time
+func WithDiskMonitorDuration(t time.Duration) func(vos.Interface) {
+	return func(i vos.Interface) {
+		if inst, ok := i.(*instance); ok {
+			inst.periodicDiskMonitorTime = t
 		}
 	}
 }

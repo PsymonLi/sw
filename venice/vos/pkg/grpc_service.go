@@ -421,6 +421,7 @@ func (g *grpcBackend) AutoWatchObject(opts *api.ListWatchOptions, stream objstor
 				Object: item.(*objstore.Object),
 			},
 		}
+
 		stream.Send(&evs)
 	}
 	err := g.instance.Watch(stream.Context(), bucket, peer, handleFn, opts)

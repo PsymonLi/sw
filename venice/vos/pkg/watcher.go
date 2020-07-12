@@ -14,11 +14,19 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/objstore"
 	apiintf "github.com/pensando/sw/api/interfaces"
+	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/runtime"
 	"github.com/pensando/sw/venice/utils/watchstream"
+	"github.com/pensando/sw/venice/utils/workfarm"
 	"github.com/pensando/sw/venice/vos"
+)
+
+const (
+	lastProcessedKeyMaxAge = time.Minute * 60
+	numListWorkers         = 10
+	listWorkersBufferSize  = 100
 )
 
 // storeImpl implements the apiintf.Store interface
@@ -50,16 +58,17 @@ func (s *storeImpl) List(bucket, kind string, opts api.ListWatchOptions) ([]runt
 		return []runtime.Object{}, nil
 	}
 
+	ret := []runtime.Object{}
 	tokens := strings.Split(bucket, ".")
 	bucketName := tokens[1]
 	if bucketName == fwlogsBucketName {
 		if len(opts.FieldChangeSelector) != 0 {
 			return s.handleListFwLogsDuringGrpcInit(bucket, opts)
 		}
-		log.Infof("fwlogs lastProcessedKeys are empty, doing normal listing")
+		log.Infof("fwlogs lastProcessedKeys are empty, skip listing")
+		return ret, nil
 	}
 
-	var ret []runtime.Object
 	doneCh := make(chan struct{})
 	objCh := s.BaseBackendClient.ListObjectsV2(bucket, "", true, doneCh)
 	for mobj := range objCh {
@@ -152,6 +161,10 @@ func (w *storeWatcher) Watch(ctx context.Context, cleanupFn func()) {
 	// Start a listener on the minio store. Restart on errors, exit on ctx being cancelled. Push to wait queue as we see events.
 	defer cleanupFn()
 	count := 0
+	skipDeleteEvents := false
+	if strings.Contains(w.bucket, globals.FwlogsBucketName) {
+		skipDeleteEvents = true
+	}
 ESTAB:
 	for {
 		doneCh := make(chan struct{})
@@ -176,6 +189,9 @@ ESTAB:
 				for i := range ev.Records {
 					log.Debugf("received event [%+v]", ev.Records[i])
 					evType, obj := w.makeEvent(ev.Records[i])
+					if evType == kvstore.Deleted && skipDeleteEvents {
+						continue
+					}
 					path := w.bucket + ":" + ev.Records[i].S3.Object.Key
 					qs := w.watchPrefixes.Get(path)
 					for j := range qs {
@@ -225,6 +241,7 @@ func (w *storeWatcher) makeEvent(event minio.NotificationEvent) (kvstore.WatchEv
 }
 
 func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListWatchOptions) ([]runtime.Object, error) {
+	timeFormat := "2006-01-02T150405"
 	results := []runtime.Object{}
 	wg := sync.WaitGroup{}
 
@@ -237,21 +254,65 @@ func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListW
 		time.Now().String(), lastProcessedKeys)
 
 	output := make(chan []runtime.Object, 1000)
+	ctxNew, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
 
-	for k, v := range lastProcessedKeys {
-		wg.Add(1)
-		go func(output chan<- []runtime.Object, wg *sync.WaitGroup, dscID, lastProcessedKey string) {
+	listFunc := func(output chan<- []runtime.Object, wg *sync.WaitGroup, dscID, lastProcessedKey string) func() {
+		return func() {
 			defer wg.Done()
 			dscID = strings.TrimSuffix(dscID, "/")
 			result := []runtime.Object{}
 			tokens := strings.Split(lastProcessedKey, "/")
+			if len(tokens) < 7 {
+				log.Errorf("incorrect lastProcessedKey, len(tokens) is less then expected %s", lastProcessedKey)
+				return
+			}
 			vrf := tokens[1]
-			y, _ := strconv.Atoi(tokens[2])
-			m, _ := strconv.Atoi(tokens[3])
-			d, _ := strconv.Atoi(tokens[4])
-			h, _ := strconv.Atoi(tokens[5])
+			y, err := strconv.Atoi(tokens[2])
+			if err != nil {
+				log.Errorf("failed to parse year from object name %s", lastProcessedKey)
+				return
+			}
+			m, err := strconv.Atoi(tokens[3])
+			if err != nil {
+				log.Errorf("failed to parse month from object name %s", lastProcessedKey)
+				return
+			}
+			d, err := strconv.Atoi(tokens[4])
+			if err != nil {
+				log.Errorf("failed to parse day from object name %s", lastProcessedKey)
+				return
+			}
+			h, err := strconv.Atoi(tokens[5])
+			if err != nil {
+				log.Errorf("failed to parse hour from object name %s", lastProcessedKey)
+				return
+			}
+			objectRelativeName := strings.Split(tokens[6], "_")
+			if len(objectRelativeName) < 2 {
+				log.Errorf("incorrect object relative name %s", lastProcessedKey)
+				return
+			}
+
+			objectStartTs, err := time.Parse(timeFormat, objectRelativeName[0])
+			if err != nil {
+				log.Errorf("error in parsing object's startts %s", lastProcessedKey)
+				return
+			}
+
 			tThat := time.Date(y, time.Month(m), d, h, 0, 0, 0, time.UTC)
 			tNow := time.Now().UTC()
+
+			// Don't list if the lastProcessedKey is older than 1 hours
+			if objectStartTs.After(tNow) || tNow.Sub(objectStartTs).Minutes() > lastProcessedKeyMaxAge.Minutes() {
+				log.Errorf("skipping list for DSC as the last processed key is older then %+v, %+v, %+v, %s, %s",
+					lastProcessedKeyMaxAge, tNow, objectStartTs, dscID, lastProcessedKey)
+				return
+			}
+
+			log.Infof("list for DSC as the last processed key %+v, %+v, %+v, %s, %s",
+				lastProcessedKeyMaxAge, tNow, objectStartTs, dscID, lastProcessedKey)
+
 			for {
 				if tThat.Equal(tNow) || tThat.After(tNow) {
 					break
@@ -307,8 +368,16 @@ func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListW
 				tThat = tThat.Add(time.Duration(1) * time.Hour)
 			}
 			output <- result
-		}(output, &wg, k, v)
+		}
 	}
+
+	listWorkers := workfarm.NewWorkers(ctxNew, numListWorkers, listWorkersBufferSize)
+	for k, v := range lastProcessedKeys {
+		wg.Add(1)
+		f := listFunc(output, &wg, k, v)
+		listWorkers.PostWorkItem(f)
+	}
+
 	wg.Wait()
 	close(output)
 	for result := range output {

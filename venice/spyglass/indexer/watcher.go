@@ -137,7 +137,8 @@ func (idr *Indexer) createWatchers() error {
 			idr.numFwLogObjectsToDelete,
 			idr.vosInternalClient,
 			idr.elasticClient,
-			idr.vosFwLogsHTTPClient)
+			idr.vosFwLogsHTTPClient,
+			idr.vosDiskMonitorCleanupInterval)
 
 		if err != nil {
 			// Stop existing watchers

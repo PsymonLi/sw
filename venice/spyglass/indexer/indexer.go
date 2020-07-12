@@ -24,6 +24,7 @@ import (
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
 	objstore "github.com/pensando/sw/venice/utils/objstore/client"
+	minio "github.com/pensando/sw/venice/utils/objstore/minio"
 	"github.com/pensando/sw/venice/utils/resolver"
 	"github.com/pensando/sw/venice/utils/rpckit"
 )
@@ -60,9 +61,10 @@ const (
 
 	// Remove data for last 30 minutes. It will free up ~5.2Gb assuming the
 	// data is generated at the rate of 20CPS per DSC.
-	numFwLogObjectsToDelete = 30000
-	enableFwlogIndexing     = int32(1)
-	disableFwlogIndexing    = int32(0)
+	numFwLogObjectsToDelete       = 30000
+	enableFwlogIndexing           = int32(1)
+	disableFwlogIndexing          = int32(0)
+	vosDiskMonitorCleanupInterval = 10 * time.Minute
 )
 
 // Option fills the optional params for Indexer
@@ -185,6 +187,12 @@ type Indexer struct {
 	// vosdisk watcher
 	vosDiskWtcher           *vosDiskWatcher
 	numFwLogObjectsToDelete int
+
+	// objstore credentials manager
+	credentialsManager minio.CredentialsManager
+
+	// disk monitor cleanup interval used by vosdiskmonitor
+	vosDiskMonitorCleanupInterval time.Duration
 }
 
 // WithElasticClient passes a custom client for Elastic
@@ -213,6 +221,20 @@ func WithDisableAPIServerWatcher() Option {
 func WithNumVosObjectsToDelete(num int) Option {
 	return func(idr *Indexer) {
 		idr.numFwLogObjectsToDelete = num
+	}
+}
+
+// WithCredentialsManager passes credentials manager for connecting to objstore
+func WithCredentialsManager(credentialsManager minio.CredentialsManager) Option {
+	return func(idr *Indexer) {
+		idr.credentialsManager = credentialsManager
+	}
+}
+
+// WithDiskMonitorCleanupInterval is used for setting custom disk monitor cleaup interval
+func WithDiskMonitorCleanupInterval(t time.Duration) Option {
+	return func(idr *Indexer) {
+		idr.vosDiskMonitorCleanupInterval = t
 	}
 }
 
@@ -259,6 +281,7 @@ func NewIndexer(ctx context.Context,
 		lastFwlogsDroppedCriticalEventRaisedTime: map[string]time.Time{},
 		lastFwlogsDroppedWarnEventRaisedTime:     map[string]time.Time{},
 		eventCheckerLock:                         sync.Mutex{},
+		vosDiskMonitorCleanupInterval:            vosDiskMonitorCleanupInterval,
 	}
 
 	for _, opt := range opts {
@@ -320,7 +343,7 @@ func (idr *Indexer) createClients() error {
 	if idr.watchVos {
 		// Create objstrore http client for fwlogs
 		result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-			return CreateBucketClient(ctx, idr.rsr, globals.DefaultTenant, fwlogsBucketName)
+			return CreateBucketClient(ctx, idr.rsr, globals.DefaultTenant, fwlogsBucketName, idr.credentialsManager)
 		}, apiSrvWaitIntvl, maxAPISrvRetries)
 		if err != nil {
 			idr.logger.Errorf("Failed to create objstore client for fwlogs")
@@ -787,14 +810,15 @@ func (idr *Indexer) deleteIndexHelper(indexMapper globals.DataType, tenantName s
 
 // CreateBucketClient creates an objstore client
 // Its upper case becuase finder package is also using the same function
-func CreateBucketClient(ctx context.Context, resolver resolver.Interface, tenantName string, bucketName string) (objstore.Client, error) {
+func CreateBucketClient(ctx context.Context,
+	resolver resolver.Interface, tenantName string, bucketName string, credentialsManager minio.CredentialsManager) (objstore.Client, error) {
 	tlsp, err := rpckit.GetDefaultTLSProvider(globals.Vos)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting tls provider (%s)", err)
 	}
 
 	if tlsp == nil {
-		return objstore.NewClient(tenantName, bucketName, resolver)
+		return objstore.NewClient(tenantName, bucketName, resolver, objstore.WithCredentialsManager(credentialsManager))
 	}
 
 	tlsc, err := tlsp.GetClientTLSConfig(globals.Vos)
@@ -803,7 +827,7 @@ func CreateBucketClient(ctx context.Context, resolver resolver.Interface, tenant
 	}
 	tlsc.ServerName = globals.Vos
 
-	return objstore.NewClient(tenantName, bucketName, resolver, objstore.WithTLSConfig(tlsc))
+	return objstore.NewClient(tenantName, bucketName, resolver, objstore.WithTLSConfig(tlsc), objstore.WithCredentialsManager(credentialsManager))
 }
 
 func (idr *Indexer) updateLastProcessedkeys(lastProcessedKey string) {
@@ -819,7 +843,7 @@ func (idr *Indexer) updateLastProcessedkeys(lastProcessedKey string) {
 func (idr *Indexer) getLastProcessedKeys() (map[string]string, error) {
 	// Create objstrore http client for fwlogs
 	result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-		return CreateBucketClient(idr.ctx, idr.rsr, globals.DefaultTenant, fwlogsSystemMetaBucketName)
+		return CreateBucketClient(idr.ctx, idr.rsr, globals.DefaultTenant, fwlogsSystemMetaBucketName, idr.credentialsManager)
 	}, apiSrvWaitIntvl, maxAPISrvRetries)
 
 	if err != nil {
@@ -872,7 +896,7 @@ func (idr *Indexer) persistLastProcessedkeys() error {
 	idr.logger.Infof("start persising fwlogs lastProcessedObjectKey")
 	// Create objstrore http client for fwlogs
 	result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-		return CreateBucketClient(ctx, idr.rsr, globals.DefaultTenant, fwlogsSystemMetaBucketName)
+		return CreateBucketClient(ctx, idr.rsr, globals.DefaultTenant, fwlogsSystemMetaBucketName, idr.credentialsManager)
 	}, apiSrvWaitIntvl, maxAPISrvRetries)
 
 	if err != nil {

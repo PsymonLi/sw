@@ -402,7 +402,6 @@ func TestMinioDebugHandlers(t *testing.T) {
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		AssertOk(t, err, "error is reading response of "+url)
-		fmt.Println("Shrey ", string(body[:]))
 		config := map[string]interface{}{}
 		err = json.Unmarshal(body, &config)
 		AssertOk(t, err, "error is unmarshaling response of "+url)

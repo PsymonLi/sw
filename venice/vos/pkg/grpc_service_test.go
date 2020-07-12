@@ -16,6 +16,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/objstore"
+	"github.com/pensando/sw/venice/globals"
 	. "github.com/pensando/sw/venice/utils/testutils"
 	"github.com/pensando/sw/venice/vos"
 )
@@ -725,4 +726,208 @@ func TestListFwlogObjects(t *testing.T) {
 		FieldSelector: "start-time=2006-01-02T15:10:00Z,end-time=2006-01-02T16:10:00Z,dsc-id=aaa.bbb.ccc.ddd,vrf-name=default"})
 	AssertOk(t, err, "List Objects failed")
 	Assert(t, len(res.Items) == 60, "result is %d", len(res.Items))
+}
+
+func TestAutoWatchFwlogObjects(t *testing.T) {
+	fb := &mockBackend{}
+	inst := &instance{}
+	inst.Init(fb)
+	srv := grpcBackend{client: fb, instance: inst}
+	fb.listFwLogObjFn = func(prefix string) <-chan minioclient.ObjectInfo {
+		objCh := make(chan minioclient.ObjectInfo, 1000)
+		go func() {
+			for k := range fb.fwlogObjects {
+				if strings.Contains(k, prefix) {
+					objCh <- minioclient.ObjectInfo{Key: k}
+				}
+			}
+			close(objCh)
+		}()
+		return objCh
+	}
+	fb.statFunc = func(bucketName, objectName string, opts minioclient.StatObjectOptions) (minioclient.ObjectInfo, error) {
+		tokens := strings.Split(strings.Split(objectName, "/")[6], "_")
+		oi := minioclient.ObjectInfo{}
+		oi.Key = objectName
+		meta := map[string][]string{}
+		meta[metaPrefix+"Startts"] = []string{tokens[0]}
+		meta[metaPrefix+"Endts"] = []string{strings.Split(tokens[1], ".")[0]}
+		oi.Metadata = http.Header(meta)
+		return oi, nil
+	}
+
+	// List objects using the last processed keys file
+	timeFormat := "2006-01-02T150405"
+	dscs := []string{"aaa.bbb.ccc.ddd", "aaa.bbb.ccc.eee", "aaa.bbb.ccc.fff", "aaa.bbb.ccc.ggg"}
+	baseGenerationTime := time.Now().Add(-50 * time.Minute).UTC()
+	addedObject := 0
+	for _, dsc := range dscs {
+		generationTs := baseGenerationTime.Add(time.Minute * 30)
+		for i := 0; i < 100; i++ {
+			addedObject++
+			y, m, d := generationTs.Date()
+			h, _, _ := generationTs.Clock()
+			key := fmt.Sprintf("%s/default/%d/%d/%d/%d", dsc, y, m, d, h) + "/" +
+				generationTs.Format(timeFormat) + "_" + generationTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+			fb.PutObject("default."+fwlogsBucketName, key, nil, 0, minioclient.PutObjectOptions{})
+			generationTs = generationTs.Add(time.Second)
+		}
+	}
+
+	// Pass incorrect object keys that cannt be parsed, no events will be received
+	t.Run("TestAutoWatchObject for fwlogs with incorrect lastProcessedKeys", func(t *testing.T) {
+		lastProcessedKeys := map[string]string{}
+		lastProcessedKeys["00ae.cd00.0930/"] = "00ae.cd00.0930/2020/6/29/20/2020-06-29T204906_2020-06-29T204917.csv.gzip"
+		lastProcessedKeys["00ae.cd00.0a38/"] = "00ae.cd00.0a38/2020/6/29/20/2020-06-29T204929_2020-06-29T204936.csv.gzip"
+		lastProcessedKeys["00ae.cd00.38d0/"] = "00ae.cd00.38d0/2020/6/29/20/2020-06-29T204904_2020-06-29T204954.csv.gzip"
+		lastProcessedKeys["00ae.cd00.3990/"] = "00ae.cd00.3990/2020/6/29/20/2020-06-29T204848_2020-06-29T205001.csv.gzip"
+		lastProcessedKeys["00ae.cd00.3a98/"] = "00ae.cd00.3a98/2020/6/29/20/2020-06-29T204847_2020-06-29T204854.csv.gzip"
+		lastProcessedKeys["00ae.cd01.01d0/"] = "00ae.cd01.01d0/2020/6/29/20/2020-06-29T204533_2020-06-29T204646.csv.gzip"
+		opts := api.ListWatchOptions{}
+		opts.Tenant = globals.DefaultTenant
+		opts.Namespace = globals.FwlogsBucketName
+		objectVersions := []string{}
+		for _, v := range lastProcessedKeys {
+			objectVersions = append(objectVersions, v)
+		}
+		opts.FieldChangeSelector = objectVersions
+
+		testChannel := make(chan *objstore.AutoMsgObjectWatchHelper, 100)
+
+		newCtx, cancelFunc := context.WithCancel(context.Background())
+		fw := &fakeWatchServer{ctx: newCtx}
+		go func() {
+			time.Sleep(2 * time.Second)
+			cancelFunc()
+		}()
+
+		fw.sendEventFn = func(evt *objstore.AutoMsgObjectWatchHelper) {
+			testChannel <- evt
+		}
+		err := srv.AutoWatchObject(&opts, fw)
+		AssertOk(t, err, "error encountered in setting AutoWatchObject for fwlogs")
+	})
+
+	// Pass incorrect object keys that cannt be parsed, no events will be received
+	t.Run("TestAutoWatchObject for fwlogs with lastProcessedKeys that older then 1 hour", func(t *testing.T) {
+		// Pass keys which are older then 1 hour
+		listTs := baseGenerationTime.Add(-1 * time.Hour)
+		y, m, d := listTs.Date()
+		h, _, _ := listTs.Clock()
+		lastProcessedKeys := map[string]string{}
+		lastProcessedKeys["aaa.bbb.ccc.ddd/"] = fmt.Sprintf("aaa.bbb.ccc.ddd/default/%d/%d/%d/%d/", y, m, d, h) +
+			listTs.Format(timeFormat) + "_" + listTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+		lastProcessedKeys["aaa.bbb.ccc.eee/"] = fmt.Sprintf("aaa.bbb.ccc.eee/default/%d/%d/%d/%d/", y, m, d, h) +
+			listTs.Format(timeFormat) + "_" + listTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+		lastProcessedKeys["aaa.bbb.ccc.fff/"] = fmt.Sprintf("aaa.bbb.ccc.fff/default/%d/%d/%d/%d/", y, m, d, h) +
+			listTs.Format(timeFormat) + "_" + listTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+		lastProcessedKeys["aaa.bbb.ccc.ggg/"] = fmt.Sprintf("aaa.bbb.ccc.ggg/default/%d/%d/%d/%d/", y, m, d, h) +
+			listTs.Format(timeFormat) + "_" + listTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+		opts := api.ListWatchOptions{}
+		opts.Tenant = globals.DefaultTenant
+		opts.Namespace = globals.FwlogsBucketName
+		objectVersions := []string{}
+		for _, v := range lastProcessedKeys {
+			objectVersions = append(objectVersions, v)
+		}
+		opts.FieldChangeSelector = objectVersions
+
+		testChannel := make(chan *objstore.AutoMsgObjectWatchHelper, 100)
+
+		newCtx, cancelFunc := context.WithCancel(context.Background())
+		fw := &fakeWatchServer{ctx: newCtx}
+		go func() {
+			time.Sleep(2 * time.Second)
+			cancelFunc()
+		}()
+
+		fw.sendEventFn = func(evt *objstore.AutoMsgObjectWatchHelper) {
+			testChannel <- evt
+		}
+
+		eventCount := 0
+		ctx, canc := context.WithTimeout(context.Background(), time.Second*10)
+		defer canc()
+
+		go func() {
+			for {
+				select {
+				case <-testChannel:
+					eventCount++
+					if eventCount == 400 {
+						break
+					}
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+
+		go func() {
+			time.Sleep(time.Second * 5)
+			Assert(t, eventCount == 0, "some objects got listed, no objects should have got listed")
+		}()
+
+		err := srv.AutoWatchObject(&opts, fw)
+		AssertOk(t, err, "error encountered in setting AutoWatchObject for fwlogs")
+	})
+
+	// Pass correct object keys, events should be received
+	t.Run("TestAutoWatchObject for fwlogs with correct lastProcessedKeys", func(t *testing.T) {
+		// Start from ts which is before generationTs
+		listTs := baseGenerationTime.Add(time.Minute * 15)
+		y, m, d := listTs.Date()
+		h, _, _ := listTs.Clock()
+		lastProcessedKeys := map[string]string{}
+		lastProcessedKeys["aaa.bbb.ccc.ddd/"] = fmt.Sprintf("aaa.bbb.ccc.ddd/default/%d/%d/%d/%d/", y, m, d, h) +
+			listTs.Format(timeFormat) + "_" + listTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+		lastProcessedKeys["aaa.bbb.ccc.eee/"] = fmt.Sprintf("aaa.bbb.ccc.eee/default/%d/%d/%d/%d/", y, m, d, h) +
+			listTs.Format(timeFormat) + "_" + listTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+		lastProcessedKeys["aaa.bbb.ccc.fff/"] = fmt.Sprintf("aaa.bbb.ccc.fff/default/%d/%d/%d/%d/", y, m, d, h) +
+			listTs.Format(timeFormat) + "_" + listTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+		lastProcessedKeys["aaa.bbb.ccc.ggg/"] = fmt.Sprintf("aaa.bbb.ccc.ggg/default/%d/%d/%d/%d/", y, m, d, h) +
+			listTs.Format(timeFormat) + "_" + listTs.Add(time.Minute).Format(timeFormat) + ".csv.gz"
+		opts := api.ListWatchOptions{}
+		opts.Tenant = globals.DefaultTenant
+		opts.Namespace = globals.FwlogsBucketName
+		objectVersions := []string{}
+		for _, v := range lastProcessedKeys {
+			objectVersions = append(objectVersions, v)
+		}
+		opts.FieldChangeSelector = objectVersions
+
+		testChannel := make(chan *objstore.AutoMsgObjectWatchHelper, 100)
+
+		newCtx, cancelFunc := context.WithCancel(context.Background())
+		fw := &fakeWatchServer{ctx: newCtx}
+		go func() {
+			time.Sleep(10 * time.Second)
+			cancelFunc()
+		}()
+
+		fw.sendEventFn = func(evt *objstore.AutoMsgObjectWatchHelper) {
+			testChannel <- evt
+		}
+
+		eventCount := 0
+		go func() {
+			for {
+				select {
+				case <-testChannel:
+					eventCount++
+					if eventCount == 400 {
+						break
+					}
+				}
+			}
+		}()
+
+		go func() {
+			time.Sleep(time.Second * 10)
+			Assert(t, eventCount == 400, "all the objects did not get listed, eventCount %d", eventCount)
+		}()
+
+		err := srv.AutoWatchObject(&opts, fw)
+		AssertOk(t, err, "error encountered in setting AutoWatchObject for fwlogs")
+	})
 }

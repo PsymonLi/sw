@@ -126,8 +126,20 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 			return
 		}
 
+		var fwlogsMetaReq *elastic.BulkRequest
+		if meta["Metaversion"] == "v1" {
+			fwlogsMetaReq, err = idr.parseFwLogsMetaV1(id, meta, key, ometa, timeFormat, uuid, nodeUUID)
+			if err != nil {
+				idr.logger.Errorf("Writer %d, object %s, error %s", id, key, err.Error())
+				return
+			}
+		}
+
 		// Verify rate
 		if !idr.flowlogsRateLimiters.allowN(globalFlowlogsRateLimiter, logcount) {
+			// If logs are getting rate limited just update the objectmeta index
+			idr.updateFwlogObjectMetaIndex(id, key, fwlogsMetaReq, pushWorkers)
+
 			idr.logger.Infof("Writer: %d batchsize len: %d, objectName %s, rate-limited",
 				id,
 				logcount,
@@ -153,15 +165,6 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 			}
 
 			return
-		}
-
-		var fwlogsMetaReq *elastic.BulkRequest
-		if meta["Metaversion"] == "v1" {
-			fwlogsMetaReq, err = idr.parseFwLogsMetaV1(id, meta, key, ometa, timeFormat, uuid, nodeUUID)
-			if err != nil {
-				idr.logger.Errorf("Writer %d, object %s, error %s", id, key, err.Error())
-				return
-			}
 		}
 
 		// Getting the object, unzipping it and reading the data should happen in a loop
@@ -234,6 +237,16 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 
 	processWorkers.postWorkItem(handleEvent)
 	return nil
+}
+
+func (idr *Indexer) updateFwlogObjectMetaIndex(
+	id int, key string, fwlogsMetaReq *elastic.BulkRequest, pushWorkers *workers) {
+	reqs := []*elastic.BulkRequest{fwlogsMetaReq}
+	idr.logger.Infof("Writer: %d Calling Bulk Api reached batchsize len: %d",
+		id,
+		len(reqs))
+	helper(idr.ctx, id, idr.logger, idr.elasticClient, bulkTimeout, indexRetryIntvl, reqs, pushWorkers)
+	idr.updateLastProcessedkeys(key)
 }
 
 func (idr *Indexer) parseFwLogsCsvV1(id int,

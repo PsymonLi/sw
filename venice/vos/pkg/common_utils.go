@@ -26,7 +26,7 @@ func updateObjectMeta(info *minio.ObjectInfo, ometa *api.ObjectMeta) {
 
 	// Minio does not provide the creation and mod times sometimes in events. Check and workaround
 	if updCrTime {
-		log.Errorf("[%v]failed to parse creation time [%s](%s)", ometa.Name, info.Metadata.Get(key), err)
+		log.Debugf("[%v]failed to parse creation time [%s](%s)", ometa.Name, info.Metadata.Get(key), err)
 		// Override the creation time
 		ts, err := types.TimestampProto(time.Now())
 		if err == nil {
@@ -42,7 +42,7 @@ func updateObjectMeta(info *minio.ObjectInfo, ometa *api.ObjectMeta) {
 	}
 	if updModTime {
 		// minio failed to give the mod time. Log error and do the next best thing to mark mod time as creationtime
-		log.Errorf("failed to parse modification time [%s](%s)", info.LastModified, err)
+		log.Debugf("failed to parse modification time [%s](%s)", info.LastModified, err)
 		ometa.ModTime.Timestamp = ometa.CreationTime.Timestamp
 	}
 	ometa.Labels = make(map[string]string)

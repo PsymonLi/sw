@@ -583,9 +583,9 @@ func TestMapperDisableIndexing(t *testing.T) {
 	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["logscount"]
 	Assert(t, ok, "indexing is enabled on fwlogobjects::logscount")
 	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["startts"]
-	Assert(t, ok, "indexing is enabled on fwlogobjects::startts")
+	Assert(t, !ok, "indexing is enabled on fwlogobjects::startts")
 	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["endts"]
-	Assert(t, ok, "indexing is enabled on fwlogobjects::endts")
+	Assert(t, !ok, "indexing is enabled on fwlogobjects::endts")
 	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["key"]
 	Assert(t, !ok, "indexing is disabled on fwlogobjects::key")
 	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["tenant"]

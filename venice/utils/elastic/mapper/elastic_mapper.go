@@ -111,8 +111,6 @@ var isIndexingDisabled = map[string]map[string]struct{}{
 	},
 	elastic.GetDocType(globals.FwLogsObjects): {
 		"logscount": struct{}{},
-		"startts":   struct{}{},
-		"endts":     struct{}{},
 		"bucket":    struct{}{},
 	},
 }

@@ -98,7 +98,7 @@ func newFwLogHandler(fdr *Finder) (fwlog.FwLogV1Server, error) {
 	if fdr.vosFinder {
 		// Create objstore http client for fwlogs
 		result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-			return indexer.CreateBucketClient(ctx, fdr.rsr, globals.DefaultTenant, globals.FwlogsBucketName)
+			return indexer.CreateBucketClient(ctx, fdr.rsr, globals.DefaultTenant, globals.FwlogsBucketName, nil)
 		}, waitIntvl, maxRetries)
 		if err != nil {
 			log.Errorf("Failed to create objstore client for fwlogs")

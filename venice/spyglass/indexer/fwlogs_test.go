@@ -91,9 +91,9 @@ func SkipTestAppendOnlyWriter(t *testing.T) {
 	credsMgrChannel := make(chan interface{}, 1)
 	credsMgrChannel <- mockCredentialManager
 	setupVos(t, ctx, logger, "127.0.0.1", credsMgrChannel)
-	setupSpyglass(ctx, t, r, esClient, logger)
+	setupSpyglass(ctx, t, r, esClient, logger, mockCredentialManager)
 	setupTmAgent(ctx, t, r, mockCredentialManager)
-	startFwLogGen(100, 1000)
+	startFwLogGen(100, 5000)
 
 	// TestVerifyFirewallIndexName verifies that the firewall index is created
 	t.Run("TestVerifyFirewallIndexName", func(t *testing.T) {
@@ -149,7 +149,7 @@ func SkipTestFlowLogsRateLimitingAtDSC(t *testing.T) {
 }
 
 func setupSpyglass(ctx context.Context, t *testing.T,
-	r resolver.Interface, es elastic.ESClient, logger log.Logger) {
+	r resolver.Interface, es elastic.ESClient, logger log.Logger, credsManager minio.CredentialsManager) {
 	// Create the indexer
 	go func(r resolver.Interface) {
 		cache := cache.NewCache(logger)
@@ -160,7 +160,9 @@ func setupSpyglass(ctx context.Context, t *testing.T,
 			logger,
 			indexer.WithElasticClient(es),
 			indexer.WithDisableAPIServerWatcher(),
-			indexer.WithNumVosObjectsToDelete(1))
+			indexer.WithNumVosObjectsToDelete(1),
+			indexer.WithCredentialsManager(credsManager),
+			indexer.WithDiskMonitorCleanupInterval(time.Second*30))
 
 		AssertOk(t, err, "failed to add indexer")
 		Assert(t, idxer != nil, "failed to create indexer")
@@ -210,16 +212,17 @@ func setupVos(t *testing.T, ctx context.Context, logger log.Logger, url string, 
 	go func() {
 		paths := new(sync.Map)
 		c := vospkg.DiskMonitorConfig{
-			TenantName:               "default",
-			CombinedThresholdPercent: 0.000001,
-			CombinedBuckets:          []string{"fwlogs"},
+			TenantName:               "",
+			CombinedThresholdPercent: 0.0000022,
+			CombinedBuckets:          []string{"fwlogs", "meta-fwlogs"},
 		}
 		paths.Store("", c)
 		args := []string{globals.Vos, "server", "--address", fmt.Sprintf("%s:%s", url, globals.VosMinioPort), "/disk1"}
 		_, err := vospkg.New(ctx, false, url,
 			credentialManagerChannel,
 			vospkg.WithBootupArgs(args),
-			vospkg.WithBucketDiskThresholds(paths))
+			vospkg.WithBucketDiskThresholds(paths),
+			vospkg.WithDiskMonitorDuration(30*time.Second))
 		AssertOk(t, err, "error in initiating Vos")
 	}()
 }
@@ -301,9 +304,7 @@ func verifyAndReturnFirewallIndexName(t *testing.T, esClient elastic.ESClient) s
 
 func verifyDiskMonitoring(ctx context.Context, t *testing.T, esClient elastic.ESClient, logger log.Logger) {
 	query := es.NewMatchAllQuery()
-	// The rate at which we are posting objects, it will create 9 objects
-	maxCount := 9
-	reachedMax := false
+	prevCount := 0
 	assert := func() (bool, interface{}) {
 		result, err := esClient.Search(ctx,
 			elastic.GetIndex(globals.FwLogsObjects, ""), // index
@@ -324,15 +325,17 @@ func verifyDiskMonitoring(ctx context.Context, t *testing.T, esClient elastic.ES
 			return false, nil
 		}
 
-		// Wait till theresult reaches max count
-		// Deletion will start after that
-		if len(result.Hits.Hits) != maxCount && !reachedMax {
+		if prevCount == 0 {
+			prevCount = len(result.Hits.Hits)
 			return false, nil
 		}
 
-		reachedMax = true
+		if prevCount > len(result.Hits.Hits) {
+			return true, nil
+		}
 
-		return maxCount > len(result.Hits.Hits), nil
+		prevCount = len(result.Hits.Hits)
+		return false, nil
 	}
 
 	AssertEventually(t, assert, "old objects are not getting deleted from elastic", string("1s"), string("300s"))
@@ -535,7 +538,6 @@ func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context,
 	agentstate.UpdateHostName(dscID)
 	AssertEventually(t, func() (bool, interface{}) {
 		for _, ev := range mockEventsRecorder.GetEvents() {
-			fmt.Println("Shrey event", ev)
 			if ev.EventType == eventtypes.FLOWLOGS_REPORTING_ERROR.String() &&
 				ev.Category == "system" &&
 				ev.Severity == "warn" &&
