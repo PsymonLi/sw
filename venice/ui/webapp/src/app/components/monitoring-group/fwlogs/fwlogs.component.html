@@ -121,14 +121,14 @@
     <ng-container
                   *ngIf="currentRuleObject && currentRuleObject['proto-ports'] && currentRuleObject['from-ip-addresses'].length>0">
       <div fxLayout="row wrap">
-        <b>From I/Ps :</b>
+        <b>From IPs :</b>
         <div>&nbsp;</div>
         <div>{{currentRuleObject["from-ip-addresses"].join(', ')}}</div>
       </div>
     </ng-container>
     <ng-container
                   *ngIf="currentRuleObject && currentRuleObject['proto-ports'] && currentRuleObject['to-ip-addresses'].length>0">
-      <div fxLayout="row wrap"><b>To I/Ps:</b>
+      <div fxLayout="row wrap"><b>To IPs :</b>
         &nbsp;
         <div>{{currentRuleObject["to-ip-addresses"].join(", ")}}</div>
       </div>

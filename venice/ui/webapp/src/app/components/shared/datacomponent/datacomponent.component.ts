@@ -22,18 +22,9 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
   protected stagingService: StagingService;
 
   constructor(protected controllerService: ControllerService,
-      protected uiconfigsService: UIConfigsService) {
-      super(controllerService, uiconfigsService);
-      this.setupBulkEdit();
-  }
-
-  onDestroyHook() {}
-
-  ngOnDestroy(): void {
-    this.onDestroyHook();
-    this.subscriptions.forEach(subscription => {
-      subscription.unsubscribe();
-    });
+    protected uiconfigsService: UIConfigsService) {
+    super(controllerService, uiconfigsService);
+    this.setupBulkEdit();
   }
 
 
@@ -41,7 +32,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
    * Call this from ngOnInit in derived class: tableviewedit or pentable
    */
   setupBulkEdit() {
-      this.stagingService = Utility.getInstance().getStagingServices();
+    this.stagingService = Utility.getInstance().getStagingServices();
   }
 
   abstract getSelectedDataObjects(): any[];
@@ -52,8 +43,8 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
   }
 
   commitStagingBuffer(buffername: string): Observable<any> {
-      const commitBufferBody: StagingCommitAction = Utility.buildCommitBufferCommit(buffername);
-      return this.stagingService.Commit(buffername, commitBufferBody);
+    const commitBufferBody: StagingCommitAction = Utility.buildCommitBufferCommit(buffername);
+    return this.stagingService.Commit(buffername, commitBufferBody);
   }
 
   createStagingBuffer(): Observable<any> {
@@ -90,7 +81,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
    * This API builds an IBulkeditBulkEditItem
    *
    */
-  trimObjectForBulkeditItem(vObject: any, model, previousVal = null, trimDefaults = true ): any {
+  trimObjectForBulkeditItem(vObject: any, model, previousVal = null, trimDefaults = true): any {
     return vObject;
   }
 
@@ -135,25 +126,25 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
    * Override-able api
    * It is used when buledit commit buffer failed.
    */
-  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string ) {
+  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
     // doing nothing
     // By looking into parameters, one can find out the operation context.
   }
 
-    /**
-   * This API verify if (about to commit) buffer content match bulkedit request and original user request
-   * @stagingBulkEditAction is original user input
-   * @bulkeditResponse has bulkedit content
-   * @getbufferResponse buffer content
-   *
-   * One can override this API to customize verification logic
-   * In case, there are multiple bulkedi operations in one component
-   * stagingBulkEditAction can tell the differences of bulkedit operations
-   *
-   */
-  verifybulkEditBufferContent(stagingBulkEditAction: IStagingBulkEditAction, bulkeditResponse: any, getbufferResponse: any ): boolean {
+  /**
+ * This API verify if (about to commit) buffer content match bulkedit request and original user request
+ * @stagingBulkEditAction is original user input
+ * @bulkeditResponse has bulkedit content
+ * @getbufferResponse buffer content
+ *
+ * One can override this API to customize verification logic
+ * In case, there are multiple bulkedi operations in one component
+ * stagingBulkEditAction can tell the differences of bulkedit operations
+ *
+ */
+  verifybulkEditBufferContent(stagingBulkEditAction: IStagingBulkEditAction, bulkeditResponse: any, getbufferResponse: any): boolean {
     try {
-       return  (stagingBulkEditAction.spec.items.length  === getbufferResponse.body.status.items.length &&  getbufferResponse.body.status.items.length === bulkeditResponse.body.status.items.length);
+      return (stagingBulkEditAction.spec.items.length === getbufferResponse.body.status.items.length && getbufferResponse.body.status.items.length === bulkeditResponse.body.status.items.length);
     } catch (error) {
       console.error(this.getClassName() + ' .verifybulkEditBufferContent() ' + error);
       return false;
@@ -168,7 +159,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
    * @param veniceObjects
    * @param buffername
    */
-  buildBulkEditPayloadHelper(veniceObjects: any[], method: string,  buffername: string = ''): IStagingBulkEditAction {
+  buildBulkEditPayloadHelper(veniceObjects: any[], method: string, buffername: string = ''): IStagingBulkEditAction {
     const stagingBulkEditAction: IStagingBulkEditAction = Utility.buildStagingBulkEditAction(buffername);
     stagingBulkEditAction.spec.items = [];
     for (const vObject of veniceObjects) {
@@ -194,7 +185,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
   }
 
   // Override if component needs to do anything as the delete request is sent out (e.g. loading animation, etc)
-  onDeleteConfirm() {}
+  onDeleteConfirm() { }
 
   /**
    * This API is used in html template. P-table with checkbox enables user to select multiple records. User can delete multiple records.
@@ -262,8 +253,8 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
   /**
    * Overridable API for ForkJoin success and failure
   */
-  onInvokeAPIonMultipleRecordsSuccess () {}
-  onInvokeAPIonMultipleRecordsFailure() {}
+  onInvokeAPIonMultipleRecordsSuccess() { }
+  onInvokeAPIonMultipleRecordsFailure() { }
 
   /**
    * This API perform bulkedit call.
@@ -299,22 +290,22 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
         createdBuffer = responseBuffer.body as StagingBuffer;
         buffername = createdBuffer.meta.name;
         stagingBulkEditAction.meta.name = buffername;  // make sure to set buffer-name to stagingBulkEditAction
-        return  this.stagingService.Bulkedit(buffername, stagingBulkEditAction, null, false, false).pipe(
+        return this.stagingService.Bulkedit(buffername, stagingBulkEditAction, null, false, false).pipe(
           // third parameter has to be 'null'. o.w, REST API url will be screwed up
-         switchMap( (bulkeditResponse) => {
-           return this.stagingService.GetBuffer(buffername).pipe(
-             switchMap( getbufferResponse => {
-               if (this.verifybulkEditBufferContent(stagingBulkEditAction, bulkeditResponse, getbufferResponse)) {
-                   return this.commitStagingBuffer(buffername); //  commit buffer
-               } else {
-                  console.error(this.getClassName() + ' bulkEditHelper() verifybulkEditBufferContent() failed ' , stagingBulkEditAction, bulkeditResponse,  getbufferResponse ) ;
+          switchMap((bulkeditResponse) => {
+            return this.stagingService.GetBuffer(buffername).pipe(
+              switchMap(getbufferResponse => {
+                if (this.verifybulkEditBufferContent(stagingBulkEditAction, bulkeditResponse, getbufferResponse)) {
+                  return this.commitStagingBuffer(buffername); //  commit buffer
+                } else {
+                  console.error(this.getClassName() + ' bulkEditHelper() verifybulkEditBufferContent() failed ', stagingBulkEditAction, bulkeditResponse, getbufferResponse);
                   const error = new Error('Failed to verify commit buffer content');
                   this.onBulkEditFailure(error, veniceObjects, stagingBulkEditAction, successMsg, failureMsg + ' ' + error.toString());
                   throw error;
-              }
-             })
-           );
-         }),
+                }
+              })
+            );
+          }),
         );
       })
     ).subscribe(
@@ -336,13 +327,13 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
   }
 
   formatLabels(labelObj) {
-      const labels = [];
-      if (labelObj != null) {
-          Object.keys(labelObj).forEach((key) => {
-          labels.push(key + ': ' + labelObj[key]);
-          });
-      }
-      return labels.join(', ');
+    const labels = [];
+    if (labelObj != null) {
+      Object.keys(labelObj).forEach((key) => {
+        labels.push(key + ': ' + labelObj[key]);
+      });
+    }
+    return labels.join(', ');
   }
 
   // TODO: Add updatewithforkjoin
@@ -382,5 +373,15 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
       this.controllerService.invokeErrorToaster('Error', error.toString());
       return [];
     }
+  }
+
+  /** override super's API */
+  ngOnDestroy() {
+    this.ngOnDestroyHook();
+    this.controllerService.setToolbarData({
+      buttons: [],
+      breadcrumb: [],
+    });
+    super.ngOnDestroy();  // call supers' API
   }
 }

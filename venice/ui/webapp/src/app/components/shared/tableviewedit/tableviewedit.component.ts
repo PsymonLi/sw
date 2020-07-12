@@ -486,27 +486,7 @@ export abstract class TableviewAbstract<I, T extends I> extends DataComponent im
     this.controllerService.invokeInfoToaster('FileExported', this.exportFilename + '.json');
   }
 
-  /**
-   * This is an API hook for child class to override
-   */
-  ngOnDestroyHook() {
-    // do nothing;
-  }
 
-  ngOnDestroy() {
-    this.ngOnDestroyHook();
-    this.subscriptions.forEach(sub => {
-      sub.unsubscribe();
-    });
-    this.controllerService.publish(Eventtypes.COMPONENT_DESTROY, {
-      'component': this.getClassName(), 'state':
-        Eventtypes.COMPONENT_DESTROY
-    });
-    this.controllerService.setToolbarData({
-      buttons: [],
-      breadcrumb: [],
-    });
-  }
 
   onColumnSelectChange($event) {
     this.tableContainer.onColumnSelectChange($event);

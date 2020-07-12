@@ -135,6 +135,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
   routingListforkjoinSubscription: any = null;
   pegasusNodes: any[] = null;
 
+  MAX_ALERT_THRESHOLD_NUMBERS: number = 5000;
   isBulkEditing: boolean = false;
   bulkEditMessage: string = DEFAULT_BULK_EDITING_MSG;
 
@@ -538,8 +539,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     if (this._boolInitApp === true) {
       return;
     } else {
-      // As we use listAlertCache() to fetch alerts.  this.getAlerts() is not needed.
-      this.getAlertsWatch();
+      this.getAlerts();
     }
     this._boolInitApp = true;
     this._setupIdle();
@@ -903,11 +903,18 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
       resp => {
         const body = resp.body as ISearchSearchResponse;
         this.startingAlertCount = parseInt(body['total-hits'], 10);
-        this.alertNumbers = this.startingAlertCount;
-        // Now that we have the count already in the system, we start the watch
-        this.getAlertsWatch();
+        // PSM may contain many alerts. We don't want to call getAlertsWatch which uses ListAlertCache(). It could cause grpc error
+        if (this.startingAlertCount > this.MAX_ALERT_THRESHOLD_NUMBERS) {
+          this._controllerService.invokeErrorToaster('Warning', 'There are over ' + this.MAX_ALERT_THRESHOLD_NUMBERS + ' alerts in PSM. Please go to Monitoring/Alerts page to resolve alerts', [], true, true);
+        } else {
+          this.alertNumbers = this.startingAlertCount;
+          // Now that we have the count already in the system, we start the watch
+          this.getAlertsWatch();
+        }
       },
-      this._controllerService.webSocketErrorHandler('Failed to get Alerts'),
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Error -  Failed to search Alerts', error);
+      }
     );
     this.subscriptions.push(this.alertGetSubscription);
   }
@@ -928,7 +935,6 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
         this.alerts = myAlerts.filter((alert: MonitoringAlert) => {
           return (this.isAlertInOpenState(alert));
         });
-
         // VS-630 sort the alerts in desc order
         this.alerts = Utility.sortDate(this.alerts, ['meta', 'creation-time'], -1);
         this.updateHighestSeverity();
@@ -957,7 +963,9 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
           }
         }
       },
-      this._controllerService.webSocketErrorHandler('Failed to get Alerts'),
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Error -  Failed to fetch Alerts', error);
+      }
     );
     this.subscriptions.push(this.alertWatchSubscription);
   }

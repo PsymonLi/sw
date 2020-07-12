@@ -36,26 +36,29 @@
     </div>
   </mat-expansion-panel>
 
-  <app-tableviewedit fxLayout="column" class="snapshots-widget"
-                     dataKey="meta.name"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand" [data]="dataObjects" [cols]="cols"
-                     [virtualRowHeight]="50"
-                     [expandedRowData]="expandedRowData" [captionTemplate]="captionTemplate"
-                     [createTemplate]="createTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate" [enableCheckbox]="true"
-                     [tableLoading]="tableLoading"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)"
-                     (operationOnMultiRecordsComplete)="postDeleteRecord()">
-  </app-tableviewedit>
+  <app-pentable #snapshotsTable
+                dataKey="meta.name"
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [createTemplate]="createTemplate"
+                [expandTemplate]="expandTemplate"
+                [columns]="cols"
+                [data]="dataObjects"
+                [enableCheckbox]="true"
+                [loading]="tableLoading"
+                [rowHeight]="46"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
+                [loading]="tableLoading">
 
+  </app-pentable>
 </app-pagebody>
 
 
 <ng-template #captionTemplate let-count="count">
   <app-tableheader title="Configurations" [total]="count" fxFlex="auto" fxLayout="row"
-                   [tableMenuItems]="tableMenuItems"
+                   [tableMenuItems]="snapshotsTable.tableMenuItems"
                    [enableColumnSelect]="true" [cols]="cols"
                    (columnSelectChange)="onColumnSelectChange($event)" [icon]="headerIcon">
     <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
@@ -67,9 +70,9 @@
   <div fxFlex="none" fxLayoutAlign="start center" *roleGuard="'objstorebucket_delete'">
     <!-- TABLE FUNCTION ICONS HERE -->
     <mat-icon class="global-multi-records-delete-icon"
-              *ngIf="showMultiDeleteButton()"
+              *ngIf="hasSelectedRows()"
               [matTooltip]="'Delete selected snapshots'"
-              (click)="onDeleteSelectedRowsForkJoin($event)">delete</mat-icon>
+              (click)="handleDelete()">delete</mat-icon>
   </div>
 
 </ng-template>

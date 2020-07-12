@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
@@ -17,6 +17,10 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
 import { maxLengthValidator, patternValidator } from '@sdk/v1/utils/validators';
 import { Observable } from 'rxjs';
 import { AUTH_KEY } from '@app/core';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { AdvancedSearchComponent } from '@app/components/shared/advanced-search/advanced-search.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
 
 /**
  * This component let user run CRUD operations on snapshot configurations.
@@ -34,13 +38,15 @@ import { AUTH_KEY } from '@app/core';
   animations: [Animations],
   encapsulation: ViewEncapsulation.None
 })
-export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, ObjstoreObject> implements OnInit {
+export class SnapshotsComponent extends DataComponent implements OnInit {
   public static SNAPSHOT_UI_FIELD_DOWNLOADURL: string = 'downloadurl';
   public static SNAPSHOT_NAMESPACES: string = 'snapshots';
   public static SNAPSHOT_RESTORE_METANAME: string = 'SnapshotRestore';
 
-  dataObjects: ReadonlyArray<ObjstoreObject> = [];
+  @ViewChild('snapshotsTable') snapshotsTable: PentableComponent;
 
+  dataObjects: ReadonlyArray<ObjstoreObject> = [];
+  dataObjectsBackUp: ReadonlyArray<ObjstoreObject> = [];
   /** file upload variables */
   uploadedFiles: any[] = [];
   uploadingFiles: string[] = [];
@@ -101,10 +107,16 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
     private objstoreService: ObjstoreService,
     protected clusterService: ClusterService) {
 
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
   }
 
-  postNgInit(): void {
+  ngOnInit(): void {
+    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
+      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
+    });
+
+    this.tableLoading = true;
+    this.setDefaultToolbar();
     this.checkAndMakeSnapshotPolicy();
     this.getSnapshots();
   }
@@ -126,7 +138,7 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
           computeClass: () => this.shouldEnable_takesnapshot_button ? '' : 'global-button-disabled',
           callback: () => {
             this.setToolbarSaveSnapshots();
-            this.createNewObject();
+            this.snapshotsTable.createNewObject();
           }
         };
         buttons.push(saveButton);
@@ -143,9 +155,6 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
     this.getSnapshots();
   }
 
-  isSaveSnapshotsOpen() {
-    return this.creatingMode;
-  }
 
   /**
    * Set toolbar buttons when form is open for "save a config snapshot"
@@ -228,6 +237,7 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
         entries.push(snapshotImage);
       });
       this.dataObjects = (entries.length > 0) ? entries : [];
+      this.dataObjectsBackUp = (entries.length > 0) ? entries : [];
     } else {
       this.dataObjects = []; // it possible that server has no snapshot images.
     }
@@ -313,12 +323,6 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
   deleteRecord(object: ObjstoreObject): Observable<{ body: ObjstoreObject | IApiStatus | Error, statusCode: number }> {
     return this.objstoreService.DeleteObject(SnapshotsComponent.SNAPSHOT_NAMESPACES, object.meta.name);
   }
-
-  postDeleteRecord() {
-    this.refresh();
-  }
-
-
 
   generateDeleteConfirmMsg(object: ObjstoreObject): string {
     return 'Are you sure you want to delete cluster configuration snapshot: ' + object.meta.name;
@@ -547,5 +551,89 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
       this.fileUploadProgress = (progress > this.fileUploadProgress) ? progress : this.fileUploadProgress;
     }
   }
-}
   /** File upload API  END */
+
+
+  onColumnSelectChange(event) {
+    this.snapshotsTable.onColumnSelectChange(event);
+  }
+
+  editFormClose(rowData) {
+    if (this.snapshotsTable.showRowExpand) {
+      this.snapshotsTable.toggleRow(rowData);
+    }
+  }
+
+  expandRowRequest(event, rowData) {
+    if (!this.snapshotsTable.showRowExpand) {
+      this.snapshotsTable.toggleRow(rowData, event);
+    }
+  }
+
+  onDeleteRecord(event, object) {
+    this.snapshotsTable.onDeleteRecord(
+      event,
+      object,
+      this.generateDeleteConfirmMsg(object),
+      this.generateDeleteSuccessMsg(object),
+      this.deleteRecord.bind(this),
+      () => {
+        this.clearSelectedDataObjects();
+        this.refresh();
+      }
+    );
+  }
+
+  clearSelectedDataObjects() {
+    this.snapshotsTable.selectedDataObjects = [];
+  }
+
+  getSelectedDataObjects() {
+    return this.snapshotsTable.selectedDataObjects;
+  }
+
+  creationFormClose() {
+    this.snapshotsTable.creationFormClose();
+  }
+
+  onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
+    this.tableLoading = false;
+  }
+
+  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
+    this.tableLoading = false;
+    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+  }
+
+  deleteMultipleRecords() {
+    const selected = this.getSelectedDataObjects();
+    const observables: Observable<any>[] = [];
+    for (const snapshot of selected) {
+      const sub = this.objstoreService.DeleteObject(SnapshotsComponent.SNAPSHOT_NAMESPACES, snapshot.meta.name);
+      observables.push(sub);
+    }
+    if (observables.length > 0) {
+      const allSuccessSummary = 'Delete';
+      const partialSuccessSummary = 'Partially Delete';
+      const msg = 'Deleted Selected Snaphots';
+      this.invokeAPIonMultipleRecords(observables, allSuccessSummary, partialSuccessSummary, msg);
+    }
+  }
+
+  handleDelete() {
+    this.controllerService.invokeConfirm({
+      header: `Delete ${this.getSelectedDataObjects().length} selected ${this.getSelectedDataObjects().length === 1 ? 'record' : 'records'}?`,
+      message: 'This action cannot be reversed',
+      acceptLabel: 'Delete',
+      accept: () => {
+        this.tableLoading = true;
+        this.deleteMultipleRecords();
+      }
+    });
+  }
+  onDestroyHook() {
+    this._controllerService.publish(Eventtypes.COMPONENT_DESTROY, {
+      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_DESTROY
+    });
+  }
+}

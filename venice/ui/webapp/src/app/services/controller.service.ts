@@ -494,6 +494,11 @@ export class ControllerService {
       return;
     }
 
+    if ( error instanceof String) {
+      this.invokeErrorToaster(summary, error.toString());
+      return;
+    }
+
     if (error.statusCode !== 0) {
       // If status code is 400, we should almost always have a body with error message
       let errorMsg = error.body != null ?

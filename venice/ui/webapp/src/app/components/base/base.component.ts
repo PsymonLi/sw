@@ -1,4 +1,4 @@
-import { OnInit } from '@angular/core';
+import { OnInit, OnDestroy } from '@angular/core';
 import { AbstractControl, FormArray } from '@angular/forms';
 import { Utility } from '@app/common/Utility';
 import { LogService } from '@app/services/logging/log.service';
@@ -13,7 +13,7 @@ import { PrettyDatePipe } from '../shared/Pipes/PrettyDate.pipe';
 /**
  * Basic component that all components should extend from
  */
-export class BaseComponent implements OnInit {
+export class BaseComponent implements OnInit , OnDestroy {
   // protected static googleLoaded: any;
   private _interval: any;
   protected logger: LogService;
@@ -318,6 +318,22 @@ export class BaseComponent implements OnInit {
   dateToString(date) {
     const prettyDate = new PrettyDatePipe('en-US');
     return prettyDate.transform(date);
+  }
+
+  /**
+   * This is an API hook for child class to override
+   */
+  ngOnDestroyHook() {
+    // do nothing;
+  }
+
+  ngOnDestroy() {
+    this.ngOnDestroyHook();
+    this.subscriptions.forEach(sub => {
+      if (sub) {
+        sub.unsubscribe();
+      }
+    });
   }
 
 }

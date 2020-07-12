@@ -47,6 +47,8 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
   isRRListNotConfigured: boolean = true;
   alertSubscription: Subscription;
 
+  timeOutReference: any = null;
+
   constructor(protected uiconfigsService: UIConfigsService,
               protected controllerService: ControllerService,
               protected monitoringService: MonitoringService,
@@ -57,7 +59,7 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
 
   ngOnInit() {
     this.cardState = CardStates.LOADING;
-    setTimeout(() => {
+    this.timeOutReference = setTimeout(() => {
       this.getRoutingHealth();
     }, 2000);
     this.buildMenuItems();
@@ -87,7 +89,7 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
       Utility.exportContent(JSON.stringify(exportObj, null, 2), 'text/json;charset=utf-8;', fieldName);
       Utility.getInstance().getControllerService().invokeInfoToaster('Data exported', 'Please find ' + fieldName + ' in your downloads folder');
     } else {
-      setTimeout(() => {
+       this.timeOutReference = setTimeout(() => {
         this.exportJson();
       }, 1000);
     }
@@ -193,11 +195,11 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
         }
     },
     (error) => {
-      this.controllerService.invokeRESTErrorToaster('Failure', 'Failed to search alerts');
+      this.controllerService.invokeRESTErrorToaster('Failed to search alerts', error);
     },
     () => {
       this.lastUpdateTime = new Date().toISOString();
-      setTimeout(() => {
+      this.timeOutReference = setTimeout(() => {
         this.pollAlerts();
       }, 30000);
     });
@@ -322,6 +324,9 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
         subscription.unsubscribe();
       }
     );
+    if (this.timeOutReference ) {
+      clearTimeout(this.timeOutReference);
+    }
   }
 
   onAlertNumberClick($event, type: string) {
