@@ -14,7 +14,7 @@
 #include "nic/apollo/api/impl/lpm/lpm_impl.hpp"
 
 sdk_ret_t
-lpm_build_tree (lpm_itable_t *itable, uint32_t default_nh, uint32_t max_routes,
+lpm_build_tree (lpm_itable_t *itable, uint32_t default_data, uint32_t max_entries,
                 mem_addr_t lpm_tree_root_addr, uint32_t lpm_mem_size)
 {
     sdk_ret_t           ret;
@@ -24,13 +24,13 @@ lpm_build_tree (lpm_itable_t *itable, uint32_t default_nh, uint32_t max_routes,
     uint32_t            nstages, nkeys_per_table;
 
     PDS_TRACE_DEBUG("Building lpm tree type %u, interval count %u, "
-                    "default nh %u, max routes %u, root addr 0x%lx, "
+                    "default data %u, max entries %u, root addr 0x%lx, "
                     "lpm block size %u", itable->tree_type,
-                    itable->num_intervals, default_nh, max_routes,
+                    itable->num_intervals, default_data, max_entries,
                     lpm_tree_root_addr, lpm_mem_size);
 
-    /**< compute the # of stages, required including the def route */
-    nstages = lpm_stages(itable->tree_type, ((max_routes + 1) << 1));
+    /**< compute the # of stages required including the default entry */
+    nstages = lpm_stages(itable->tree_type, ((max_entries + 1) << 1));
     SDK_ASSERT(nstages > 0 && nstages <= LPM_MAX_STAGES);
 
     /**< initialize all the stage meta */
@@ -56,7 +56,7 @@ lpm_build_tree (lpm_itable_t *itable, uint32_t default_nh, uint32_t max_routes,
     nkeys_per_table = smeta.keys_per_table >> 1;
     last_stage_info = &smeta.stage_info[nstages-1];
     /**< set the default data for the first table */
-    lpm_set_default_data(smeta.tree_type, last_stage_info, default_nh);
+    lpm_set_default_data(smeta.tree_type, last_stage_info, default_data);
     for (uint32_t i = 0; i < itable->num_intervals; i++) {
         lpm_add_key_to_last_stage(smeta.tree_type, last_stage_info,
                                   &itable->nodes[i]);
@@ -66,7 +66,7 @@ lpm_build_tree (lpm_itable_t *itable, uint32_t default_nh, uint32_t max_routes,
             /**< otherwise, lpm_flush_tables() will write it */
             if (++i < itable->num_intervals) {
                 /**< promote the next node, if any, to the previous stage(s) */
-                lpm_promote_route(&itable->nodes[i], nstages - 2, &smeta);
+                lpm_promote_entry(&itable->nodes[i], nstages - 2, &smeta);
                 /**< Write the current table to HW memory */
                 lpm_write_last_stage_table(smeta.tree_type, last_stage_info);
                 /**< set the default data for the next table */

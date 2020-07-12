@@ -11,11 +11,11 @@ struct phv_             p;
 
 mapping_tag_info:
     seq             c1, k.p4_to_rxdma_rx_packet, FALSE
-    phvwr.c1       p.{rx_to_tx_hdr_dtag0_classid...rx_to_tx_hdr_dtag4_classid},\
-                        d.{mapping_tag_info_d.classid0...mapping_tag_info_d.classid4}
+    phvwr.c1       p.{lpm_metadata_dtag0...lpm_metadata_dtag4},\
+                        d.{mapping_tag_info_d.tag0...mapping_tag_info_d.tag4}
     nop.e
-    phvwr.!c1       p.{rx_to_tx_hdr_stag0_classid...rx_to_tx_hdr_stag4_classid},\
-                        d.{mapping_tag_info_d.classid0...mapping_tag_info_d.classid4}
+    phvwr.!c1       p.{lpm_metadata_stag0...lpm_metadata_stag4},\
+                        d.{mapping_tag_info_d.tag0...mapping_tag_info_d.tag4}
 
 /*****************************************************************************/
 /* error function                                                            */

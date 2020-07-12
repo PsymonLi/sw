@@ -241,7 +241,7 @@ lpm_finalize_stages (lpm_stage_meta_t *smeta, uint32_t nstages,
 }
 
 void
-lpm_promote_route (lpm_inode_t *inode, uint32_t stage, lpm_stage_meta_t *smeta)
+lpm_promote_entry (lpm_inode_t *inode, uint32_t stage, lpm_stage_meta_t *smeta)
 {
     sdk_ret_t           ret;
     lpm_stage_info_t    *curr_stage;
@@ -250,7 +250,7 @@ lpm_promote_route (lpm_inode_t *inode, uint32_t stage, lpm_stage_meta_t *smeta)
     curr_stage = &smeta->stage_info[stage];
     if (curr_stage->curr_index == smeta->keys_per_table) {
         /**< time to promote this to previous stage */
-        lpm_promote_route(inode, stage - 1, smeta);
+        lpm_promote_entry(inode, stage - 1, smeta);
         /**< flush current table to hw since its full */
         ret = lpm_write_stage_table(smeta->tree_type, curr_stage);
         SDK_ASSERT(ret == SDK_RET_OK);

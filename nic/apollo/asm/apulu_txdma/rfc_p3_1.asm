@@ -32,21 +32,12 @@ rfc_p3_1:
     seq        c1, k.rx_to_tx_hdr_sacl_base_addr0, r0
     phvwr.c1.e p.txdma_predicate_rfc_enable, FALSE
 
-    /* Load sacl base addr to r1 */
-    add        r1, k.rx_to_tx_hdr_sacl_base_addr0, r0
-    /* Is this an even numbered pass? */
-    seq        c1, k.txdma_control_recirc_count[0:0], r0
-    /* if so, add SACL_P1_3_TABLE_OFFSET to sacl base address. */
-    addi.c1    r1, r1, SACL_P1_3_TABLE_OFFSET
-    /* P1 table index = (dtag_classid | (sip_classid0 << SACL_TAG_CLASSID_WIDTH)). */
-    add.c1     r2, k.txdma_control_dtag_classid, k.rx_to_tx_hdr_sip_classid0, \
-                                                 SACL_TAG_CLASSID_WIDTH
-    /* Else, add SACL_P1_1_TABLE_OFFSET to sacl base address. */
-    addi.!c1   r1, r1, SACL_P1_1_TABLE_OFFSET
-    /* P1 table index = (sport_classid0 | (sip_classid0 << SACL_SPORT_CLASSID_WIDTH)). */
-    add.!c1    r2, k.rx_to_tx_hdr_sport_classid0, k.rx_to_tx_hdr_sip_classid0, \
+    /* Load sacl base addr + SACL_P1_TABLE_OFFSET to r1 */
+    add        r1, r0, k.rx_to_tx_hdr_sacl_base_addr0
+    addi       r1, r1, SACL_P1_TABLE_OFFSET
+    /* P1 table index = SIP:SPORT. */
+    add        r2, k.rx_to_tx_hdr_sport_classid0, k.rx_to_tx_hdr_sip_classid0, \
                                                   SACL_SPORT_CLASSID_WIDTH
-
     /* Write P1 table index to PHV */
     phvwr      p.txdma_control_rfc_index, r2
     /* Compute the byte offset for P1 table index */

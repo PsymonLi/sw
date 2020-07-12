@@ -1,7 +1,6 @@
+#include "nic/apollo/asm/include/apulu.h"
 #include "../../p4/include/lpm_defines.h"
 #include "../../p4/include/apulu_sacl_defines.h"
-
-#include "nic/apollo/asm/include/apulu.h"
 #include "INGRESS_p.h"
 #include "ingress.h"
 

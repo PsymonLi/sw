@@ -93,7 +93,7 @@ sdk_ret_t lpm_finalize_stages(lpm_stage_meta_t *smeta, uint32_t nstages,
 sdk_ret_t lpm_flush_tables(lpm_stage_meta_t *smeta, uint32_t nstages,
                            lpm_itable_t *itable);
 
-void lpm_promote_route(lpm_inode_t *inode, uint32_t stage,
+void lpm_promote_entry(lpm_inode_t *inode, uint32_t stage,
                        lpm_stage_meta_t *smeta);
 
 #endif    // __LPM_PRIV_HPP__

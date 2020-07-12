@@ -14,14 +14,10 @@ pkt_enqueue:
     // Clear the intrinsic recirc count to prevent TTL drop
     phvwr        p.capri_p4_intr_recirc_count, r0
 
-    // Increment the local_recirc_count.
-    add          r1, k.lpm_metadata_recirc_count, 1
-    phvwr        p.lpm_metadata_recirc_count, r1
-
     // Are we done with processing SACLs...?!
     seq          c1, k.lpm_metadata_sacl_base_addr, r0
-    // If not, stop
-    nop.!c1.e
+    // If not, enable recirc and stop.
+    phvwr.!c1.e  p.capri_p4_intr_recirc, TRUE
 
     // Yes. Copy the data that need to go to txdma
     phvwr        p.rx_to_tx_hdr_rx_packet, k.p4_to_rxdma_rx_packet
@@ -29,6 +25,9 @@ pkt_enqueue:
     phvwr        p.rx_to_tx_hdr_vpc_id, k.p4_to_rxdma_vpc_id
     phvwr        p.rx_to_tx_hdr_vnic_id, k.p4_to_rxdma_vnic_info_key[10:1]
     phvwr        p.rx_to_tx_hdr_iptype, k.p4_to_rxdma_iptype
+
+    // Disable recirc
+    phvwr        p.capri_p4_intr_recirc, FALSE
 
     // check q full
     add         r1, r0, d.pkt_enqueue_d.sw_pindex0
@@ -48,7 +47,7 @@ pkt_enqueue:
     // dma pkt desc
     CAPRI_DMA_CMD_PHV2MEM_SETUP(pktdesc_phv2mem_dma_cmd, r3, \
                                 rx_to_tx_hdr_remote_ip, \
-                                rx_to_tx_hdr_pad8)
+                                rx_to_tx_hdr_pad_end)
     phvwr       p.pktdesc_phv2mem_dma_cmd_round, 1
 
     // use Qid1 to ring door-bell. Qid0 is used as a completionQ between txdma

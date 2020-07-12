@@ -46,6 +46,9 @@ action vnic_info_rxdma(lpm_base1, lpm_base2, lpm_base3, lpm_base4,
         modify_field(lpm_metadata.lpm2_key, (p4_to_rxdma.flow_dport |
                                             (p4_to_rxdma.flow_proto << 24)));
         modify_field(p4_to_rxdma.lpm2_enable, TRUE);
+
+        // Set sacl state to indicate that we are processing SPORT/DPORT.
+        modify_field(lpm_metadata.sacl_proc_state, SACL_PROC_STATE_SPORT_DPORT);
     }
 }
 
@@ -65,5 +68,7 @@ table vnic_info_rxdma {
 }
 
 control vnic_info_rxdma {
-    apply(vnic_info_rxdma);
+    if (p4_to_rxdma.vnic_info_en == TRUE) {
+        apply(vnic_info_rxdma);
+    }
 }

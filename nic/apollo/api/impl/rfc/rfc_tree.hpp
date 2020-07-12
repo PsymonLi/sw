@@ -80,7 +80,7 @@ typedef struct rfc_tree_s {
     rfc_tree_type_t    type;
     itable_t           itable;
     uint32_t           num_intervals;
-    rfc_table_t        rfc_table;
+    rfc_table_t        *rfc_table;
 } rfc_tree_t;
 
 typedef struct rfc_ctxt_s {
@@ -92,6 +92,10 @@ typedef struct rfc_ctxt_s {
     rfc_tree_t     dtag_tree;          ///< RFC tree for dst tags used in policy
     rfc_tree_t     port_tree;          ///< RFC tree for port
     rfc_tree_t     proto_port_tree;    ///< RFC tree for protocol-port
+    rfc_table_t    sip_stag_tbl;       ///< RFC classids for sip-stag
+    rfc_table_t    dip_dtag_tbl;       ///< RFC classids for dip-dtag
+    rfc_table_t    sport_tbl;          ///< RFC classids for sports
+    rfc_table_t    proto_dport_tbl;    ///< RFC classids for protocol-dport
     ///< phase 1 information
     rfc_table_t    p1_table;           ///< phase 1 RFC table
     rfc_table_t    p2_table;           ///< phase 2 RFC table
@@ -100,8 +104,6 @@ typedef struct rfc_ctxt_s {
     size_t         cbm_size;           ///< size of class-bit-map (CBM)
     mem_addr_t     base_addr;          ///< base address of the entire RFC block
     uint32_t       mem_size;           ///< RFC memory block size
-    tag2class_cb_t tag2class_cb;       ///< class id allocater
-    void           *tag2class_cb_ctxt; ///< opaque ctxt passed to above callback
 } rfc_ctxt_t;
 
 void rfc_ctxt_destroy(rfc_ctxt_t *rfc_ctxt);

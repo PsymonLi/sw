@@ -10,8 +10,6 @@ action pkt_enqueue(PKTQ_QSTATE) {
 
     // Clear the hw controlled ttl to prevent TTL drop
     modify_field(capri_p4_intr.recirc_count, 0);
-    // Increment the local ttl
-    modify_field(lpm_metadata.recirc_count, lpm_metadata.recirc_count + 1);
 
     // Are we done with processing SACLs...?!
     if (lpm_metadata.sacl_base_addr == 0) {
@@ -27,6 +25,11 @@ action pkt_enqueue(PKTQ_QSTATE) {
 
         // k-vector
         modify_field(scratch_metadata.dma_size, capri_p4_intr.packet_len);
+        // No more recircs
+        modify_field(capri_p4_intr.recirc, FALSE);
+    } else {
+        // We are not done processing. Do recirc.
+        modify_field(capri_p4_intr.recirc, TRUE);
     }
 }
 

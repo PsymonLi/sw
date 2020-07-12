@@ -13,6 +13,8 @@ header_type scratch_metadata_t {
         field40         :  40;
         field64         :  64;
         field128        : 128;
+        stag            :  32;
+        dtag            :  32;
         qid             :  24;
         dma_size        :  16;
         hint_valid      :   1;
@@ -32,10 +34,28 @@ header_type lpm_metadata_t {
         lpm2_next_addr  : 40;
 
         sacl_base_addr  : 40;
-        recirc_count    : 8;
+        root_change     : 1;
+        root_count      : 3;
+        stag_count      : 4;
+        dtag_count      : 4;
+        sacl_proc_state : 4;
 
         mapping_ohash   : 32;
         mapping_tag_idx : 24;
+
+        stag            : 32;
+        dtag            : 32;
+
+        stag0           : 32;
+        stag1           : 32;
+        stag2           : 32;
+        stag3           : 32;
+        stag4           : 32;
+        dtag0           : 32;
+        dtag1           : 32;
+        dtag2           : 32;
+        dtag3           : 32;
+        dtag4           : 32;
     }
 }
 

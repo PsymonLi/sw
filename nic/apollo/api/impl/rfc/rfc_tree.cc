@@ -172,7 +172,7 @@ rfc_tree_destroy (rfc_tree_t *rfc_tree)
     if (rfc_tree->itable.nodes) {
         free(rfc_tree->itable.nodes);
     }
-    rfc_table_destroy(&rfc_tree->rfc_table);
+    rfc_tree->rfc_table = NULL;
 }
 
 void
@@ -184,6 +184,10 @@ rfc_ctxt_destroy (rfc_ctxt_t *rfc_ctxt)
     rfc_tree_destroy(&rfc_ctxt->proto_port_tree);
     rfc_tree_destroy(&rfc_ctxt->stag_tree);
     rfc_tree_destroy(&rfc_ctxt->dtag_tree);
+    rfc_table_destroy(&rfc_ctxt->sip_stag_tbl);
+    rfc_table_destroy(&rfc_ctxt->dip_dtag_tbl);
+    rfc_table_destroy(&rfc_ctxt->sport_tbl);
+    rfc_table_destroy(&rfc_ctxt->proto_dport_tbl);
     rfc_table_destroy(&rfc_ctxt->p1_table);
     rfc_table_destroy(&rfc_ctxt->p2_table);
     if (rfc_ctxt->cbm) {
@@ -203,69 +207,75 @@ rfc_ctxt_init (rfc_ctxt_t *rfc_ctxt, policy_params_t *policy_params)
 
     // setup memory for SIP LPM tree
     rfc_ctxt->sip_tree.type = RFC_TREE_TYPE_SIP;
+    rfc_ctxt->sip_tree.rfc_table = &rfc_ctxt->sip_stag_tbl;
     rfc_ctxt->sip_tree.itable.nodes =
         (inode_t *)calloc(1, sizeof(inode_t) * num_nodes);
     if (rfc_ctxt->sip_tree.itable.nodes == NULL) {
         return sdk::SDK_RET_OOM;
     }
-    new (&rfc_ctxt->sip_tree.rfc_table.cbm_map) cbm_map_t();
-    rfc_ctxt->sip_tree.rfc_table.max_classes =
-        (policy->af == IP_AF_IPV4) ? sacl_sip_v4_tree_max_classes() :
-                                     sacl_sip_v6_tree_max_classes();
 
     // setup memory for DIP LPM tree
     rfc_ctxt->dip_tree.type = RFC_TREE_TYPE_DIP;
+    rfc_ctxt->dip_tree.rfc_table = &rfc_ctxt->dip_dtag_tbl;
     rfc_ctxt->dip_tree.itable.nodes =
         (inode_t *)calloc(1, sizeof(inode_t) * num_nodes);
     if (rfc_ctxt->dip_tree.itable.nodes == NULL) {
         return sdk::SDK_RET_OOM;
     }
-    new (&rfc_ctxt->dip_tree.rfc_table.cbm_map) cbm_map_t();
-    rfc_ctxt->dip_tree.rfc_table.max_classes =
-            (policy->af == IP_AF_IPV4) ? sacl_dip_v4_tree_max_classes() :
-                                         sacl_dip_v6_tree_max_classes();
 
     // setup memory for stag "tree"
     rfc_ctxt->stag_tree.type = RFC_TREE_TYPE_STAG;
+    rfc_ctxt->stag_tree.rfc_table = &rfc_ctxt->sip_stag_tbl;
     rfc_ctxt->stag_tree.itable.nodes =
         (inode_t *)calloc(1, sizeof(inode_t) * num_nodes);
     if (rfc_ctxt->stag_tree.itable.nodes == NULL) {
         return sdk::SDK_RET_OOM;
     }
-    new (&rfc_ctxt->stag_tree.rfc_table.cbm_map) cbm_map_t();
-    rfc_ctxt->stag_tree.rfc_table.max_classes = sacl_stag_tree_max_classes();
 
     // setup memory for dtag "tree"
     rfc_ctxt->dtag_tree.type = RFC_TREE_TYPE_DTAG;
+    rfc_ctxt->dtag_tree.rfc_table = &rfc_ctxt->dip_dtag_tbl;
     rfc_ctxt->dtag_tree.itable.nodes =
         (inode_t *)calloc(1, sizeof(inode_t) * num_nodes);
     if (rfc_ctxt->dtag_tree.itable.nodes == NULL) {
         return sdk::SDK_RET_OOM;
     }
-    new (&rfc_ctxt->dtag_tree.rfc_table.cbm_map) cbm_map_t();
-    rfc_ctxt->dtag_tree.rfc_table.max_classes = sacl_dtag_tree_max_classes();
 
     // setup memory for sport LPM tree
     rfc_ctxt->port_tree.type = RFC_TREE_TYPE_PORT;
+    rfc_ctxt->port_tree.rfc_table = &rfc_ctxt->sport_tbl;
     rfc_ctxt->port_tree.itable.nodes =
         (inode_t *)calloc(1, sizeof(inode_t) * num_nodes);
     if (rfc_ctxt->port_tree.itable.nodes == NULL) {
         goto cleanup;
     }
-    new (&rfc_ctxt->port_tree.rfc_table.cbm_map) cbm_map_t();
-    rfc_ctxt->port_tree.rfc_table.max_classes =
-        sacl_sport_tree_max_classes();
 
     // setup memory for protocol + dport LPM tree
     rfc_ctxt->proto_port_tree.type = RFC_TREE_TYPE_PROTO_PORT;
+    rfc_ctxt->proto_port_tree.rfc_table = &rfc_ctxt->proto_dport_tbl;
     rfc_ctxt->proto_port_tree.itable.nodes =
         (inode_t *)calloc(1, sizeof(inode_t) * num_nodes);
     if (rfc_ctxt->proto_port_tree.itable.nodes == NULL) {
         goto cleanup;
     }
-    new (&rfc_ctxt->proto_port_tree.rfc_table.cbm_map) cbm_map_t();
-    rfc_ctxt->proto_port_tree.rfc_table.max_classes =
-        sacl_proto_dport_tree_max_classes();
+
+    // setup the sip/stag classes
+    new (&rfc_ctxt->sip_stag_tbl.cbm_map) cbm_map_t();
+    rfc_ctxt->sip_stag_tbl.max_classes = (policy->af == IP_AF_IPV4) ?
+                                             sacl_sip_v4_tree_max_classes() :
+                                             sacl_sip_v6_tree_max_classes();
+    // setup the dip/dtag classes
+    new (&rfc_ctxt->dip_dtag_tbl.cbm_map) cbm_map_t();
+    rfc_ctxt->dip_dtag_tbl.max_classes = (policy->af == IP_AF_IPV4) ?
+                                             sacl_dip_v4_tree_max_classes() :
+                                             sacl_dip_v6_tree_max_classes();
+    // setup the sport classes
+    new (&rfc_ctxt->sport_tbl.cbm_map) cbm_map_t();
+    rfc_ctxt->sport_tbl.max_classes = sacl_sport_tree_max_classes();
+
+    // setup the proto+dport classes
+    new (&rfc_ctxt->proto_dport_tbl.cbm_map) cbm_map_t();
+    rfc_ctxt->proto_dport_tbl.max_classes = sacl_proto_dport_tree_max_classes();
 
     // setup P1 table
     new (&rfc_ctxt->p1_table.cbm_map) cbm_map_t();
@@ -285,8 +295,6 @@ rfc_ctxt_init (rfc_ctxt_t *rfc_ctxt, policy_params_t *policy_params)
     }
     rfc_ctxt->base_addr = policy_params->rfc_tree_root_addr;
     rfc_ctxt->mem_size = policy_params->rfc_mem_size;
-    rfc_ctxt->tag2class_cb = policy_params->tag2class_cb;
-    rfc_ctxt->tag2class_cb_ctxt = policy_params->tag2class_cb_ctxt;
     return SDK_RET_OK;
 
 cleanup:

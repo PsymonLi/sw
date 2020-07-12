@@ -34,6 +34,8 @@ read_qstate_info:
     phvwr       p.txdma_control_pktdesc_addr1, r3
     addi        r3, r3, 64
     phvwr       p.txdma_control_pktdesc_addr2, r3
+    addi        r3, r3, 64
+    phvwr       p.txdma_control_pktdesc_addr3, r3
 
     add.e       r2, r2, d.{read_qstate_info_d.ring0_base}.dx
     phvwr.f     p.txdma_control_payload_addr, r2

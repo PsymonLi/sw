@@ -23,6 +23,9 @@ action read_qstate_info(PKTQ_QSTATE) {
         modify_field(txdma_control.pktdesc_addr2,
                       scratch_qstate_info.ring1_base +
                       (scratch_qstate_info.sw_cindex0 << APULU_PKT_DESC_SHIFT) + 64);
+        modify_field(txdma_control.pktdesc_addr3,
+                      scratch_qstate_info.ring1_base +
+                      (scratch_qstate_info.sw_cindex0 << APULU_PKT_DESC_SHIFT) + 128);
 
         modify_field(scratch_qstate_info.sw_cindex0,
                      scratch_qstate_info.sw_cindex0 + 1);
@@ -47,66 +50,47 @@ table read_qstate {
 action read_pktdesc1(remote_ip,
                      route_base_addr,
                      sacl_base_addr0,
+                     sacl_base_addr1,
+                     sacl_base_addr2,
+                     sacl_base_addr3,
+                     sacl_base_addr4,
+                     sacl_base_addr5,
+                     src_bd_id,
+                     pad1,
+                     src_mapping_hit,
                      sip_classid0,
                      dip_classid0,
-                     pad0,
+                     pad_classid0,
                      sport_classid0,
                      dport_classid0,
-                     sacl_base_addr1,
                      sip_classid1,
                      dip_classid1,
-                     pad1,
+                     pad_classid1,
                      sport_classid1,
-                     dport_classid1,
-                     sacl_base_addr2,
-                     sip_classid2,
-                     dip_classid2,
-                     pad2,
-                     sport_classid2,
-                     dport_classid2,
-                     sacl_base_addr3,
-                     sip_classid3,
-                     dip_classid3,
-                     pad3,
-                     sport_classid3,
-                     dport_classid3,
-                     src_bd_id,
-                     pad7,
-                     src_mapping_hit
+                     dport_classid1
                     )
 {
     modify_field(rx_to_tx_hdr.remote_ip, remote_ip);
     modify_field(rx_to_tx_hdr.route_base_addr, route_base_addr);
     modify_field(rx_to_tx_hdr.sacl_base_addr0, sacl_base_addr0);
+    modify_field(rx_to_tx_hdr.sacl_base_addr1, sacl_base_addr1);
+    modify_field(rx_to_tx_hdr.sacl_base_addr2, sacl_base_addr2);
+    modify_field(rx_to_tx_hdr.sacl_base_addr3, sacl_base_addr3);
+    modify_field(rx_to_tx_hdr.sacl_base_addr4, sacl_base_addr4);
+    modify_field(rx_to_tx_hdr.sacl_base_addr5, sacl_base_addr5);
+    modify_field(rx_to_tx_hdr.src_bd_id, src_bd_id);
+    modify_field(scratch_metadata.field7, pad1);
+    modify_field(rx_to_tx_hdr.src_mapping_hit, src_mapping_hit);
     modify_field(rx_to_tx_hdr.sip_classid0, sip_classid0);
     modify_field(rx_to_tx_hdr.dip_classid0, dip_classid0);
-    modify_field(scratch_metadata.field4, pad0);
+    modify_field(scratch_metadata.field4, pad_classid0);
     modify_field(rx_to_tx_hdr.sport_classid0, sport_classid0);
     modify_field(rx_to_tx_hdr.dport_classid0, dport_classid0);
-    modify_field(rx_to_tx_hdr.sacl_base_addr1, sacl_base_addr1);
     modify_field(rx_to_tx_hdr.sip_classid1, sip_classid1);
     modify_field(rx_to_tx_hdr.dip_classid1, dip_classid1);
-    modify_field(scratch_metadata.field4, pad1);
+    modify_field(scratch_metadata.field4, pad_classid1);
     modify_field(rx_to_tx_hdr.sport_classid1, sport_classid1);
     modify_field(rx_to_tx_hdr.dport_classid1, dport_classid1);
-    modify_field(rx_to_tx_hdr.sacl_base_addr2, sacl_base_addr2);
-    modify_field(rx_to_tx_hdr.sip_classid2, sip_classid2);
-    modify_field(rx_to_tx_hdr.dip_classid2, dip_classid2);
-    modify_field(scratch_metadata.field4, pad2);
-    modify_field(rx_to_tx_hdr.sport_classid2, sport_classid2);
-    modify_field(rx_to_tx_hdr.dport_classid2, dport_classid2);
-    modify_field(rx_to_tx_hdr.sacl_base_addr3, sacl_base_addr3);
-    modify_field(rx_to_tx_hdr.sip_classid3, sip_classid3);
-    modify_field(rx_to_tx_hdr.dip_classid3, dip_classid3);
-    modify_field(scratch_metadata.field4, pad3);
-    modify_field(rx_to_tx_hdr.sport_classid3, sport_classid3);
-    modify_field(rx_to_tx_hdr.dport_classid3, dport_classid3);
-    modify_field(rx_to_tx_hdr.src_bd_id, src_bd_id);
-    modify_field(scratch_metadata.field7, pad7);
-    modify_field(rx_to_tx_hdr.src_mapping_hit, src_mapping_hit);
-
-    modify_field(txdma_to_p4e.src_bd_id, src_bd_id);
-    modify_field(txdma_to_p4e.src_mapping_hit, src_mapping_hit);
 
     // Setup for route LPM lookup
     if (route_base_addr != 0) {
@@ -128,7 +112,7 @@ action read_pktdesc1(remote_ip,
         // Write P1 table lookup address to PHV
         modify_field(txdma_control.rfc_table_addr,              // P1 Lookup Addr =
                      sacl_base_addr0 +                          // Region Base +
-                     SACL_P1_1_TABLE_OFFSET +                   // Table Base +
+                     SACL_P1_TABLE_OFFSET +                     // Table Base +
                      (((scratch_metadata.field20) /             // Index Bytes
                        SACL_P1_ENTRIES_PER_CACHE_LINE) *
                       SACL_CACHE_LINE_SIZE));
@@ -149,17 +133,24 @@ table read_pktdesc1 {
     }
 }
 
-
-action read_pktdesc2(sacl_base_addr4,
+action read_pktdesc2(sip_classid2,
+                     dip_classid2,
+                     pad_classid2,
+                     sport_classid2,
+                     dport_classid2,
+                     sip_classid3,
+                     dip_classid3,
+                     pad_classid3,
+                     sport_classid3,
+                     dport_classid3,
                      sip_classid4,
                      dip_classid4,
-                     pad4,
+                     pad_classid4,
                      sport_classid4,
                      dport_classid4,
-                     sacl_base_addr5,
                      sip_classid5,
                      dip_classid5,
-                     pad5,
+                     pad_classid5,
                      sport_classid5,
                      dport_classid5,
                      vpc_id,
@@ -167,29 +158,56 @@ action read_pktdesc2(sacl_base_addr4,
                      iptype,
                      rx_packet,
                      payload_len,
-                     stag0_classid,
-                     stag1_classid,
-                     stag2_classid,
-                     stag3_classid,
-                     stag4_classid,
-                     dtag0_classid,
-                     dtag1_classid,
-                     dtag2_classid,
-                     dtag3_classid,
-                     dtag4_classid,
-                     pad6,
-                     pad8)
+                     stag0_classid0,
+                     stag1_classid0,
+                     stag2_classid0,
+                     stag3_classid0,
+                     stag4_classid0,
+                     dtag0_classid0,
+                     dtag1_classid0,
+                     dtag2_classid0,
+                     dtag3_classid0,
+                     dtag4_classid0,
+                     stag0_classid1,
+                     stag1_classid1,
+                     stag2_classid1,
+                     stag3_classid1,
+                     stag4_classid1,
+                     dtag0_classid1,
+                     dtag1_classid1,
+                     dtag2_classid1,
+                     dtag3_classid1,
+                     dtag4_classid1,
+                     stag0_classid2,
+                     stag1_classid2,
+                     stag2_classid2,
+                     stag3_classid2,
+                     stag4_classid2,
+                     dtag0_classid2,
+                     dtag1_classid2,
+                     dtag2_classid2,
+                     dtag3_classid2,
+                     dtag4_classid2,
+                     pad2)
 {
-    modify_field(rx_to_tx_hdr.sacl_base_addr4, sacl_base_addr4);
+    modify_field(rx_to_tx_hdr.sip_classid2, sip_classid2);
+    modify_field(rx_to_tx_hdr.dip_classid2, dip_classid2);
+    modify_field(scratch_metadata.field4, pad_classid2);
+    modify_field(rx_to_tx_hdr.sport_classid2, sport_classid2);
+    modify_field(rx_to_tx_hdr.dport_classid2, dport_classid2);
+    modify_field(rx_to_tx_hdr.sip_classid3, sip_classid3);
+    modify_field(rx_to_tx_hdr.dip_classid3, dip_classid3);
+    modify_field(scratch_metadata.field4, pad_classid3);
+    modify_field(rx_to_tx_hdr.sport_classid3, sport_classid3);
+    modify_field(rx_to_tx_hdr.dport_classid3, dport_classid3);
     modify_field(rx_to_tx_hdr.sip_classid4, sip_classid4);
     modify_field(rx_to_tx_hdr.dip_classid4, dip_classid4);
-    modify_field(scratch_metadata.field4, pad4);
+    modify_field(scratch_metadata.field4, pad_classid4);
     modify_field(rx_to_tx_hdr.sport_classid4, sport_classid4);
     modify_field(rx_to_tx_hdr.dport_classid4, dport_classid4);
-    modify_field(rx_to_tx_hdr.sacl_base_addr5, sacl_base_addr5);
     modify_field(rx_to_tx_hdr.sip_classid5, sip_classid5);
     modify_field(rx_to_tx_hdr.dip_classid5, dip_classid5);
-    modify_field(scratch_metadata.field4, pad5);
+    modify_field(scratch_metadata.field4, pad_classid5);
     modify_field(rx_to_tx_hdr.sport_classid5, sport_classid5);
     modify_field(rx_to_tx_hdr.dport_classid5, dport_classid5);
     modify_field(rx_to_tx_hdr.vpc_id, vpc_id);
@@ -197,22 +215,41 @@ action read_pktdesc2(sacl_base_addr4,
     modify_field(rx_to_tx_hdr.iptype, iptype);
     modify_field(rx_to_tx_hdr.rx_packet, rx_packet);
     modify_field(rx_to_tx_hdr.payload_len, payload_len);
-    modify_field(rx_to_tx_hdr.stag0_classid, stag0_classid);
-    modify_field(rx_to_tx_hdr.stag1_classid, stag1_classid);
-    modify_field(rx_to_tx_hdr.stag2_classid, stag2_classid);
-    modify_field(rx_to_tx_hdr.stag3_classid, stag3_classid);
-    modify_field(rx_to_tx_hdr.stag4_classid, stag4_classid);
-    modify_field(rx_to_tx_hdr.dtag0_classid, dtag0_classid);
-    modify_field(rx_to_tx_hdr.dtag1_classid, dtag1_classid);
-    modify_field(rx_to_tx_hdr.dtag2_classid, dtag2_classid);
-    modify_field(rx_to_tx_hdr.dtag3_classid, dtag3_classid);
-    modify_field(rx_to_tx_hdr.dtag4_classid, dtag4_classid);
-    modify_field(scratch_metadata.field4, pad6);
-    modify_field(scratch_metadata.field2, pad8);
+    modify_field(rx_to_tx_hdr.stag0_classid0, stag0_classid0);
+    modify_field(rx_to_tx_hdr.stag1_classid0, stag1_classid0);
+    modify_field(rx_to_tx_hdr.stag2_classid0, stag2_classid0);
+    modify_field(rx_to_tx_hdr.stag3_classid0, stag3_classid0);
+    modify_field(rx_to_tx_hdr.stag4_classid0, stag4_classid0);
+    modify_field(rx_to_tx_hdr.dtag0_classid0, dtag0_classid0);
+    modify_field(rx_to_tx_hdr.dtag1_classid0, dtag1_classid0);
+    modify_field(rx_to_tx_hdr.dtag2_classid0, dtag2_classid0);
+    modify_field(rx_to_tx_hdr.dtag3_classid0, dtag3_classid0);
+    modify_field(rx_to_tx_hdr.dtag4_classid0, dtag4_classid0);
+    modify_field(rx_to_tx_hdr.stag0_classid1, stag0_classid1);
+    modify_field(rx_to_tx_hdr.stag1_classid1, stag1_classid1);
+    modify_field(rx_to_tx_hdr.stag2_classid1, stag2_classid1);
+    modify_field(rx_to_tx_hdr.stag3_classid1, stag3_classid1);
+    modify_field(rx_to_tx_hdr.stag4_classid1, stag4_classid1);
+    modify_field(rx_to_tx_hdr.dtag0_classid1, dtag0_classid1);
+    modify_field(rx_to_tx_hdr.dtag1_classid1, dtag1_classid1);
+    modify_field(rx_to_tx_hdr.dtag2_classid1, dtag2_classid1);
+    modify_field(rx_to_tx_hdr.dtag3_classid1, dtag3_classid1);
+    modify_field(rx_to_tx_hdr.dtag4_classid1, dtag4_classid1);
+    modify_field(rx_to_tx_hdr.stag0_classid2, stag0_classid2);
+    modify_field(rx_to_tx_hdr.stag1_classid2, stag1_classid2);
+    modify_field(rx_to_tx_hdr.stag2_classid2, stag2_classid2);
+    modify_field(rx_to_tx_hdr.stag3_classid2, stag3_classid2);
+    modify_field(rx_to_tx_hdr.stag4_classid2, stag4_classid2);
+    modify_field(rx_to_tx_hdr.dtag0_classid2, dtag0_classid2);
+    modify_field(rx_to_tx_hdr.dtag1_classid2, dtag1_classid2);
+    modify_field(rx_to_tx_hdr.dtag2_classid2, dtag2_classid2);
+    modify_field(rx_to_tx_hdr.dtag3_classid2, dtag3_classid2);
+    modify_field(rx_to_tx_hdr.dtag4_classid2, dtag4_classid2);
+    modify_field(scratch_metadata.field4, pad2);
 
     // Copy the first set of TAGs
-    modify_field(txdma_control.stag_classid, stag0_classid);
-    modify_field(txdma_control.dtag_classid, dtag0_classid);
+    modify_field(txdma_control.stag_classid, stag0_classid0);
+    modify_field(txdma_control.dtag_classid, dtag0_classid0);
 }
 
 @pragma stage 1
@@ -226,8 +263,85 @@ table read_pktdesc2 {
     }
 }
 
+action read_pktdesc3(stag0_classid3,
+                     stag1_classid3,
+                     stag2_classid3,
+                     stag3_classid3,
+                     stag4_classid3,
+                     dtag0_classid3,
+                     dtag1_classid3,
+                     dtag2_classid3,
+                     dtag3_classid3,
+                     dtag4_classid3,
+                     stag0_classid4,
+                     stag1_classid4,
+                     stag2_classid4,
+                     stag3_classid4,
+                     stag4_classid4,
+                     dtag0_classid4,
+                     dtag1_classid4,
+                     dtag2_classid4,
+                     dtag3_classid4,
+                     dtag4_classid4,
+                     stag0_classid5,
+                     stag1_classid5,
+                     stag2_classid5,
+                     stag3_classid5,
+                     stag4_classid5,
+                     dtag0_classid5,
+                     dtag1_classid5,
+                     dtag2_classid5,
+                     dtag3_classid5,
+                     dtag4_classid5,
+                     pad_end)
+{
+    modify_field(rx_to_tx_hdr.stag0_classid3, stag0_classid3);
+    modify_field(rx_to_tx_hdr.stag1_classid3, stag1_classid3);
+    modify_field(rx_to_tx_hdr.stag2_classid3, stag2_classid3);
+    modify_field(rx_to_tx_hdr.stag3_classid3, stag3_classid3);
+    modify_field(rx_to_tx_hdr.stag4_classid3, stag4_classid3);
+    modify_field(rx_to_tx_hdr.dtag0_classid3, dtag0_classid3);
+    modify_field(rx_to_tx_hdr.dtag1_classid3, dtag1_classid3);
+    modify_field(rx_to_tx_hdr.dtag2_classid3, dtag2_classid3);
+    modify_field(rx_to_tx_hdr.dtag3_classid3, dtag3_classid3);
+    modify_field(rx_to_tx_hdr.dtag4_classid3, dtag4_classid3);
+    modify_field(rx_to_tx_hdr.stag0_classid4, stag0_classid4);
+    modify_field(rx_to_tx_hdr.stag1_classid4, stag1_classid4);
+    modify_field(rx_to_tx_hdr.stag2_classid4, stag2_classid4);
+    modify_field(rx_to_tx_hdr.stag3_classid4, stag3_classid4);
+    modify_field(rx_to_tx_hdr.stag4_classid4, stag4_classid4);
+    modify_field(rx_to_tx_hdr.dtag0_classid4, dtag0_classid4);
+    modify_field(rx_to_tx_hdr.dtag1_classid4, dtag1_classid4);
+    modify_field(rx_to_tx_hdr.dtag2_classid4, dtag2_classid4);
+    modify_field(rx_to_tx_hdr.dtag3_classid4, dtag3_classid4);
+    modify_field(rx_to_tx_hdr.dtag4_classid4, dtag4_classid4);
+    modify_field(rx_to_tx_hdr.stag0_classid5, stag0_classid5);
+    modify_field(rx_to_tx_hdr.stag1_classid5, stag1_classid5);
+    modify_field(rx_to_tx_hdr.stag2_classid5, stag2_classid5);
+    modify_field(rx_to_tx_hdr.stag3_classid5, stag3_classid5);
+    modify_field(rx_to_tx_hdr.stag4_classid5, stag4_classid5);
+    modify_field(rx_to_tx_hdr.dtag0_classid5, dtag0_classid5);
+    modify_field(rx_to_tx_hdr.dtag1_classid5, dtag1_classid5);
+    modify_field(rx_to_tx_hdr.dtag2_classid5, dtag2_classid5);
+    modify_field(rx_to_tx_hdr.dtag3_classid5, dtag3_classid5);
+    modify_field(rx_to_tx_hdr.dtag4_classid5, dtag4_classid5);
+    modify_field(scratch_metadata.field4, pad_end);
+}
+
+@pragma stage 1
+@pragma raw_index_table
+table read_pktdesc3 {
+    reads {
+        txdma_control.pktdesc_addr3  : exact;
+    }
+    actions {
+        read_pktdesc3;
+    }
+}
+
 control read_qstate {
     apply(read_qstate);
     apply(read_pktdesc1);
     apply(read_pktdesc2);
+    apply(read_pktdesc3);
 }

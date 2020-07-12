@@ -103,103 +103,114 @@ rfc_p0_eq_class_tables_dump (rfc_ctxt_t *rfc_ctxt)
                    (rfc_ctxt->policy->af == IP_AF_IPV4) ?
                        ITREE_TYPE_IPV4_SIP_ACL : ITREE_TYPE_IPV6_SIP_ACL);
     PDS_TRACE_DEBUG("RFC P0 SIP prefix tree equivalence class table dump :");
-    rfc_eq_class_table_dump(&rfc_ctxt->sip_tree.rfc_table);
+    rfc_eq_class_table_dump(rfc_ctxt->sip_tree.rfc_table);
 
     PDS_TRACE_DEBUG("RFC P0 STAG interval tree dump :");
     rfc_itree_dump(&rfc_ctxt->stag_tree, ITREE_TYPE_STAG);
     PDS_TRACE_DEBUG("RFC P0 STAG equivalence class table dump :");
-    rfc_eq_class_table_dump(&rfc_ctxt->stag_tree.rfc_table);
+    rfc_eq_class_table_dump(rfc_ctxt->stag_tree.rfc_table);
 
     PDS_TRACE_DEBUG("RFC P0 DIP prefix interval tree dump :");
     rfc_itree_dump(&rfc_ctxt->dip_tree,
                    (rfc_ctxt->policy->af == IP_AF_IPV4) ?
                        ITREE_TYPE_IPV4_DIP_ACL : ITREE_TYPE_IPV6_DIP_ACL);
     PDS_TRACE_DEBUG("RFC P0 DIP prefix tree equivalence class table dump :");
-    rfc_eq_class_table_dump(&rfc_ctxt->dip_tree.rfc_table);
+    rfc_eq_class_table_dump(rfc_ctxt->dip_tree.rfc_table);
 
     PDS_TRACE_DEBUG("RFC P0 DTAG interval tree dump :");
     rfc_itree_dump(&rfc_ctxt->dtag_tree, ITREE_TYPE_DTAG);
     PDS_TRACE_DEBUG("RFC P0 DTAG equivalence class table dump :");
-    rfc_eq_class_table_dump(&rfc_ctxt->dtag_tree.rfc_table);
+    rfc_eq_class_table_dump(rfc_ctxt->dtag_tree.rfc_table);
 
     PDS_TRACE_DEBUG("RFC P0 port interval tree dump :");
     rfc_itree_dump(&rfc_ctxt->port_tree, ITREE_TYPE_PORT);
     PDS_TRACE_DEBUG("RFC P0 port tree equivalence class table dump :");
-    rfc_eq_class_table_dump(&rfc_ctxt->port_tree.rfc_table);
+    rfc_eq_class_table_dump(rfc_ctxt->port_tree.rfc_table);
 
     PDS_TRACE_DEBUG("RFC P0 (proto, port) interval tree dump :");
     rfc_itree_dump(&rfc_ctxt->proto_port_tree, ITREE_TYPE_PROTO_PORT);
     PDS_TRACE_DEBUG("RFC P0 (proto, port) tree equivalence class table dump :");
-    rfc_eq_class_table_dump(&rfc_ctxt->proto_port_tree.rfc_table);
+    rfc_eq_class_table_dump(rfc_ctxt->proto_port_tree.rfc_table);
 }
 
 sdk_ret_t
-rfc_tree_add_defaults (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table)
+rfc_tree_reserve_default_classid (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table)
 {
     uint8_t       *bits;
     uint16_t      class_id;
     rte_bitmap    *cbm_new;
 
-    //Allocate memory for bitmap, and initialize
-    posix_memalign((void **)&bits, CACHE_LINE_SIZE, rfc_ctxt->cbm_size);
-    cbm_new = rte_bitmap_init(rfc_ctxt->policy->max_rules, bits, rfc_ctxt->cbm_size);
+    // PDS_IMPL_DEFAULT_CLASSID has to be defined to be 0.
+    if (rfc_table->num_classes == 0) {
 
-    if (cbm_new == NULL) {
-        PDS_TRACE_ERR("cant allocate memory for bitmap");
-        return SDK_RET_OOM;
+        // allocate memory for bitmap, and initialize
+        posix_memalign((void **) &bits, CACHE_LINE_SIZE, rfc_ctxt->cbm_size);
+        cbm_new = rte_bitmap_init(rfc_ctxt->policy->max_rules, bits,
+                                  rfc_ctxt->cbm_size);
+
+        if (cbm_new == NULL) {
+            PDS_TRACE_ERR("cant allocate memory for bitmap");
+            return SDK_RET_OOM;
+        }
+
+        class_id = rfc_table->num_classes++;
+        PDS_TRACE_DEBUG("default class id allocated is %u", class_id);
+        rfc_table->cbm_table[class_id].class_id = class_id;
+        rfc_table->cbm_table[class_id].cbm = cbm_new;
+        rfc_table->cbm_map[cbm_new] = class_id;
     }
-
-    class_id = rfc_table->num_classes++;
-    PDS_TRACE_DEBUG("default class id allocated is %u", class_id);
-    rfc_table->cbm_table[class_id].class_id = class_id;
-    rfc_table->cbm_table[class_id].cbm = cbm_new;
-    rfc_table->cbm_map[cbm_new] = class_id;
 
     return SDK_RET_OK;
 }
 
 sdk_ret_t
-rfc_policy_add_defaults (rfc_ctxt_t *rfc_ctxt)
+rfc_policy_reserve_default_classids (rfc_ctxt_t *rfc_ctxt)
 {
     sdk_ret_t ret;
 
     if (rfc_ctxt->sip_tree.num_intervals == 0) {
-        ret = rfc_tree_add_defaults(rfc_ctxt, &rfc_ctxt->sip_tree.rfc_table);
+        ret = rfc_tree_reserve_default_classid(rfc_ctxt,
+                                               rfc_ctxt->sip_tree.rfc_table);
         if (ret != SDK_RET_OK) {
             return ret;
         }
     }
 
     if (rfc_ctxt->dip_tree.num_intervals == 0) {
-        ret = rfc_tree_add_defaults(rfc_ctxt, &rfc_ctxt->dip_tree.rfc_table);
+        ret = rfc_tree_reserve_default_classid(rfc_ctxt,
+                                               rfc_ctxt->dip_tree.rfc_table);
         if (ret != SDK_RET_OK) {
             return ret;
         }
     }
 
     if (rfc_ctxt->stag_tree.num_intervals == 0) {
-        ret = rfc_tree_add_defaults(rfc_ctxt, &rfc_ctxt->stag_tree.rfc_table);
+        ret = rfc_tree_reserve_default_classid(rfc_ctxt,
+                                               rfc_ctxt->stag_tree.rfc_table);
         if (ret != SDK_RET_OK) {
             return ret;
         }
     }
 
     if (rfc_ctxt->dtag_tree.num_intervals == 0) {
-        ret = rfc_tree_add_defaults(rfc_ctxt, &rfc_ctxt->dtag_tree.rfc_table);
+        ret = rfc_tree_reserve_default_classid(rfc_ctxt,
+                                               rfc_ctxt->dtag_tree.rfc_table);
         if (ret != SDK_RET_OK) {
             return ret;
         }
     }
 
     if (rfc_ctxt->port_tree.num_intervals == 0) {
-        ret = rfc_tree_add_defaults(rfc_ctxt, &rfc_ctxt->port_tree.rfc_table);
+        ret = rfc_tree_reserve_default_classid(rfc_ctxt,
+                                               rfc_ctxt->port_tree.rfc_table);
         if (ret != SDK_RET_OK) {
             return ret;
         }
     }
 
     if (rfc_ctxt->proto_port_tree.num_intervals == 0) {
-        ret = rfc_tree_add_defaults(rfc_ctxt, &rfc_ctxt->proto_port_tree.rfc_table);
+        ret = rfc_tree_reserve_default_classid(rfc_ctxt,
+                                               rfc_ctxt->proto_port_tree.rfc_table);
         if (ret != SDK_RET_OK) {
             return ret;
         }
@@ -225,6 +236,13 @@ rfc_policy_create (policy_params_t *policy_params)
         goto cleanup;
     }
 
+    ///< reserve default classids for each tree to represent no rule match
+    ret = rfc_policy_reserve_default_classids(&rfc_ctxt);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to add default rules, err %u", ret);
+        goto cleanup;
+    }
+
     ///< build all the interval trees with the given policy
     rfc_build_itables(&rfc_ctxt);
 
@@ -240,13 +258,6 @@ rfc_policy_create (policy_params_t *policy_params)
                               policy_params->rfc_mem_size);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to build RFC LPM trees, err %u", ret);
-        goto cleanup;
-    }
-
-    // add default rules for RFC trees that dont have at least one rule
-    ret = rfc_policy_add_defaults(&rfc_ctxt);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to add default rules, err %u", ret);
         goto cleanup;
     }
 

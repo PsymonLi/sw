@@ -54,13 +54,13 @@ sacl_proto_dport_tree_max_classes (void)
 uint16_t
 sacl_stag_tree_max_classes (void)
 {
-    return SACL_TAG_TREE_MAX_CLASSES;
+    return SACL_STAG_TREE_MAX_CLASSES;
 }
 
 uint16_t
 sacl_dtag_tree_max_classes (void)
 {
-    return SACL_TAG_TREE_MAX_CLASSES;
+    return SACL_DTAG_TREE_MAX_CLASSES;
 }
 
 uint16_t
@@ -203,7 +203,7 @@ rfc_compute_p0_itree_classes (rfc_ctxt_t *rfc_ctxt, rfc_tree_t *rfc_tree,
     class_id_cb_ctxt_t cb_ctxt;
     uint32_t num_intervals = 0;
     itable_t *itable = &rfc_tree->itable;
-    rfc_table_t *rfc_table = &rfc_tree->rfc_table;
+    rfc_table_t *rfc_table = rfc_tree->rfc_table;
 
     /**
      * walk over the interval table, compute class id and class bitmap for each
@@ -261,8 +261,8 @@ rfc_compute_p0_classes (rfc_ctxt_t *rfc_ctxt)
     }
 
     ret = rfc_compute_p0_itree_classes(rfc_ctxt, &rfc_ctxt->stag_tree,
-              rfc_p0_tag_tree_inode_eq_cb, rfc_compute_tag_class_id_cb,
-              SACL_TAG_TREE_MAX_CLASSES);
+              rfc_p0_tag_tree_inode_eq_cb, rfc_compute_class_id_cb,
+              SACL_STAG_TREE_MAX_CLASSES);
     if (ret != SDK_RET_OK) {
         return ret;
     }
@@ -276,8 +276,8 @@ rfc_compute_p0_classes (rfc_ctxt_t *rfc_ctxt)
     }
 
     ret = rfc_compute_p0_itree_classes(rfc_ctxt, &rfc_ctxt->dtag_tree,
-              rfc_p0_tag_tree_inode_eq_cb, rfc_compute_tag_class_id_cb,
-              SACL_TAG_TREE_MAX_CLASSES);
+              rfc_p0_tag_tree_inode_eq_cb, rfc_compute_class_id_cb,
+              SACL_DTAG_TREE_MAX_CLASSES);
     if (ret != SDK_RET_OK) {
         return ret;
     }

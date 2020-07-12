@@ -3,62 +3,62 @@
 #include "nic/apollo/asm/include/apulu.h"
 #include "INGRESS_p.h"
 #include "ingress.h"
-#include "INGRESS_setup_rfc_k.h"
+#include "INGRESS_setup_rfc1_k.h"
 
 struct phv_            p;
-struct setup_rfc_k_    k;
+struct setup_rfc1_k_   k;
 
 %%
 
-setup_rfc:
+setup_rfc1:
     // Is the current combination done?
-    seq              c1, k.txdma_control_recirc_count[0:0], r0
+    seq              c1, r0, k.txdma_control_recirc_count[0:0]
     // No. Stop.
     nop.c1.e
     nop
 
     // Done for combination. Initialize for the next combination.
     seq              c1, k.txdma_control_stag_count, 0
-    add.c1           r1, k.rx_to_tx_hdr_stag1_classid, r0
+    add.c1           r1, r0, k.rx_to_tx_hdr_stag1_classid0
     seq              c1, k.txdma_control_stag_count, 1
-    add.c1           r1, k.rx_to_tx_hdr_stag2_classid, r0
+    add.c1           r1, r0, k.rx_to_tx_hdr_stag2_classid0
     seq              c1, k.txdma_control_stag_count, 2
-    add.c1           r1, k.rx_to_tx_hdr_stag3_classid, r0
+    add.c1           r1, r0, k.rx_to_tx_hdr_stag3_classid0
     seq              c1, k.txdma_control_stag_count, 3
-    add.c1           r1, k.rx_to_tx_hdr_stag4_classid, r0
+    add.c1           r1, r0, k.rx_to_tx_hdr_stag4_classid0
     seq              c1, k.txdma_control_stag_count, 4
-    add.c1           r1, r0, SACL_TAG_TREE_RSVD_CLASSID
+    add.c1           r1, r0, SACL_CLASSID_DEFAULT
 
     // Is the next STAG is valid.
-    sne              c1, r1, SACL_TAG_TREE_RSVD_CLASSID
+    sne              c1, r1, SACL_CLASSID_DEFAULT
     // Yes. Increment STAG count, and copy the new STAG to PHV and Stop.
     add.c1           r3, k.txdma_control_stag_count, 1
     phvwr.c1.e       p.txdma_control_stag_count, r3
     phvwr.c1         p.txdma_control_stag_classid, r1
 
     // Else (STAG is invalid): Reinitialize STAG and Find the next DTAG
-    phvwr            p.txdma_control_stag_classid, k.rx_to_tx_hdr_stag0_classid
+    phvwr            p.txdma_control_stag_classid, k.rx_to_tx_hdr_stag0_classid0
     phvwr            p.txdma_control_stag_count, r0
     seq              c1, k.txdma_control_dtag_count, 0
-    add.c1           r2, k.rx_to_tx_hdr_dtag1_classid, r0
+    add.c1           r2, r0, k.rx_to_tx_hdr_dtag1_classid0
     seq              c1, k.txdma_control_dtag_count, 1
-    add.c1           r2, k.rx_to_tx_hdr_dtag2_classid, r0
+    add.c1           r2, r0, k.rx_to_tx_hdr_dtag2_classid0
     seq              c1, k.txdma_control_dtag_count, 2
-    add.c1           r2, k.rx_to_tx_hdr_dtag3_classid, r0
+    add.c1           r2, r0, k.rx_to_tx_hdr_dtag3_classid0
     seq              c1, k.txdma_control_dtag_count, 3
-    add.c1           r2, k.rx_to_tx_hdr_dtag4_classid, r0
+    add.c1           r2, r0, k.rx_to_tx_hdr_dtag4_classid0
     seq              c1, k.txdma_control_dtag_count, 4
-    add.c1           r2, r0, SACL_TAG_TREE_RSVD_CLASSID
+    add.c1           r2, r0, SACL_CLASSID_DEFAULT
 
     // Is the next DTAG is valid.
-    sne              c1, r2, SACL_TAG_TREE_RSVD_CLASSID
+    sne              c1, r2, SACL_CLASSID_DEFAULT
     // Yes. Increment DTAG count, and copy the new DTAG to PHV and Stop.
     add.c1           r3, k.txdma_control_dtag_count, 1
     phvwr.c1.e       p.txdma_control_dtag_count, r3
     phvwr.c1         p.txdma_control_dtag_classid, r2
 
     // Else (DTAG is invalid): Reinitialize DTAG
-    phvwr            p.txdma_control_dtag_classid, k.rx_to_tx_hdr_dtag0_classid
+    phvwr            p.txdma_control_dtag_classid, k.rx_to_tx_hdr_dtag0_classid0
     phvwr            p.txdma_control_dtag_count, r0
     // Done for policy root. Inrement root count and initialize next policy root
     add              r3, k.txdma_control_root_count, 1
@@ -102,9 +102,9 @@ load2:
 
 load3:
     phvwr            p.rx_to_tx_hdr_sip_classid0, k.rx_to_tx_hdr_sip_classid3
-    add              r3, k.rx_to_tx_hdr_dip_classid3_s6_e7, \
-                         k.rx_to_tx_hdr_dip_classid3_s0_e5, 2
-    add              r3, k.rx_to_tx_hdr_dip_classid3_s8_e9, r3, 2
+    add              r3, k.rx_to_tx_hdr_dip_classid3_s9_e9, \
+                         k.rx_to_tx_hdr_dip_classid3_s6_e8, 1
+    add              r3, r3, k.rx_to_tx_hdr_dip_classid3_s0_e5, 4
     phvwr            p.rx_to_tx_hdr_dip_classid0, r3
     phvwr.e          p.rx_to_tx_hdr_sport_classid0, k.rx_to_tx_hdr_sport_classid3
     phvwr            p.rx_to_tx_hdr_dport_classid0, k.rx_to_tx_hdr_dport_classid3
@@ -136,6 +136,6 @@ clearall:
 /*****************************************************************************/
 .align
 .assert $ < ASM_INSTRUCTION_OFFSET_MAX
-setup_rfc_error:
+setup_rfc1_error:
     phvwr.e         p.capri_intr_drop, 1
     nop

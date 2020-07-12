@@ -65,6 +65,16 @@ tree_base_addr_size (mem_addr_t rfc_block_base_addr, itree_type_t tree_type,
         *tree_size = SACL_PROTO_DPORT_TABLE_SIZE;
         break;
 
+    case ITREE_TYPE_STAG:
+        *tree_base_addr = rfc_block_base_addr + SACL_STAG_TABLE_OFFSET;
+        *tree_size = SACL_STAG_TABLE_SIZE;
+        break;
+
+    case ITREE_TYPE_DTAG:
+        *tree_base_addr = rfc_block_base_addr + SACL_DTAG_TABLE_OFFSET;
+        *tree_size = SACL_DTAG_TABLE_SIZE;
+        break;
+
     default:
         SDK_ASSERT(0);
         break;
@@ -102,11 +112,14 @@ rfc_build_lpm_tree (lpm_itable_t *lpm_itable, rfc_tree_t *rfc_tree,
             lpm_itable->nodes[i].port = itable->nodes[i].port;
         } else if (lpm_itable->tree_type == ITREE_TYPE_PROTO_PORT) {
             lpm_itable->nodes[i].key32 = itable->nodes[i].key32;
+        } else if (lpm_itable->tree_type == ITREE_TYPE_STAG) {
+            lpm_itable->nodes[i].key32 = itable->nodes[i].key32;
+        } else if (lpm_itable->tree_type == ITREE_TYPE_DTAG) {
+            lpm_itable->nodes[i].key32 = itable->nodes[i].key32;
         }
         lpm_itable->nodes[i].data = itable->nodes[i].rfc.class_id;
     }
-    ret = lpm_build_tree(lpm_itable, (lpm_itable->num_intervals > 0) ?
-                                     lpm_itable->nodes[lpm_itable->num_intervals-1].data:0,
+    ret = lpm_build_tree(lpm_itable, SACL_CLASSID_DEFAULT,
                          max_rules, tree_base_addr, mem_size);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to build RFC tree type %u, err : %u",
@@ -135,6 +148,10 @@ rfc_build_lpm_trees (rfc_ctxt_t *rfc_ctxt,
 
     max_intervals = MAX(rfc_ctxt->sip_tree.num_intervals,
                         rfc_ctxt->dip_tree.num_intervals);
+    max_intervals = MAX(rfc_ctxt->stag_tree.num_intervals,
+                        max_intervals);
+    max_intervals = MAX(rfc_ctxt->dtag_tree.num_intervals,
+                        max_intervals);
     max_intervals = MAX(rfc_ctxt->port_tree.num_intervals,
                         max_intervals);
     max_intervals = MAX(rfc_ctxt->proto_port_tree.num_intervals,
@@ -150,7 +167,7 @@ rfc_build_lpm_trees (rfc_ctxt_t *rfc_ctxt,
         return sdk::SDK_RET_OOM;
     }
 
-    /**< build LPM tree for th SIP portion of the rules */
+    /**< build LPM tree for the SIP portion of the rules */
     itable.num_intervals = rfc_ctxt->sip_tree.num_intervals;
     if (rfc_ctxt->policy->af == IP_AF_IPV4) {
         itable.tree_type = ITREE_TYPE_IPV4_SIP_ACL;
@@ -168,7 +185,7 @@ rfc_build_lpm_trees (rfc_ctxt_t *rfc_ctxt,
         goto cleanup;
     }
 
-    /**< build LPM tree for th DIP portion of the rules */
+    /**< build LPM tree for the DIP portion of the rules */
     itable.num_intervals = rfc_ctxt->dip_tree.num_intervals;
     if (rfc_ctxt->policy->af == IP_AF_IPV4) {
         itable.tree_type = ITREE_TYPE_IPV4_DIP_ACL;
@@ -181,6 +198,30 @@ rfc_build_lpm_trees (rfc_ctxt_t *rfc_ctxt,
                         &tree_base_addr, &tree_size);
     ret = rfc_build_lpm_tree(&itable, &rfc_ctxt->dip_tree,
                              tree_base_addr, tree_size, nodes);
+    if (ret != SDK_RET_OK) {
+        goto cleanup;
+    }
+
+    /**< build LPM tree for the STAG portion of the rules */
+    itable.tree_type = ITREE_TYPE_STAG;
+    itable.num_intervals = rfc_ctxt->stag_tree.num_intervals;
+    tree_base_addr_size(rfc_tree_root_addr, itable.tree_type,
+                        &tree_base_addr, &tree_size);
+    ret = rfc_build_lpm_tree(&itable, &rfc_ctxt->stag_tree,
+                             tree_base_addr, tree_size,
+                             SACL_STAG_TREE_MAX_NODES >> 1);
+    if (ret != SDK_RET_OK) {
+        goto cleanup;
+    }
+
+    /**< build LPM tree for the DTAG portion of the rules */
+    itable.tree_type = ITREE_TYPE_DTAG;
+    itable.num_intervals = rfc_ctxt->dtag_tree.num_intervals;
+    tree_base_addr_size(rfc_tree_root_addr, itable.tree_type,
+                        &tree_base_addr, &tree_size);
+    ret = rfc_build_lpm_tree(&itable, &rfc_ctxt->dtag_tree,
+                             tree_base_addr, tree_size,
+                             SACL_DTAG_TREE_MAX_NODES >> 1);
     if (ret != SDK_RET_OK) {
         goto cleanup;
     }

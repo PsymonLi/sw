@@ -96,10 +96,9 @@ mapping_impl_state::mapping_impl_state(pds_state *state) {
     memset(&local_mapping_tag_data, 0, local_mapping_tag_data.entry_size());
     memset(&mapping_tag_data, 0, mapping_tag_data.entry_size());
     for (uint32_t i = 0; i < PDS_MAX_TAGS_PER_MAPPING; i++) {
-        local_mapping_tag_fill_class_id_(&local_mapping_tag_data, i,
-                                         PDS_IMPL_RSVD_MAPPING_CLASS_ID);
-        mapping_tag_fill_class_id_(&mapping_tag_data, i,
-                                   PDS_IMPL_RSVD_MAPPING_CLASS_ID);
+        local_mapping_tag_fill_tag_(&local_mapping_tag_data, i,
+                                    PDS_IMPL_RSVD_MAPPING_TAG);
+        mapping_tag_fill_tag_(&mapping_tag_data, i, PDS_IMPL_RSVD_MAPPING_TAG);
     }
     ret = local_mapping_tag_data.write(PDS_IMPL_RSVD_TAG_HW_ID);
     SDK_ASSERT(ret == SDK_RET_OK);

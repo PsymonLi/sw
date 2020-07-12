@@ -1195,12 +1195,10 @@ parser start {
 
 control ingress {
     if (p4_to_rxdma.apulu_p4plus == 1) {
-        if (p4_to_rxdma.vnic_info_en == TRUE) {
-            vnic_info_rxdma();
-        }
+        vnic_info_rxdma();
         rxdma_mapping();
         sacl_lpm();
-        derive_tag_classids();
+        derive_tags();
         pkt_enqueue();
     } else {
         common_p4plus_stage0();

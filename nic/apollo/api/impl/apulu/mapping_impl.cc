@@ -191,30 +191,25 @@ mapping_impl::mapping_tags_read_(pds_mapping_key_t *key,
                 goto err;
             }
             // retrieve the class id values
-            if (mapping_tag_data.classid0 !=
-                    PDS_IMPL_RSVD_MAPPING_CLASS_ID) {
-                impl->class_id_[0] = mapping_tag_data.classid0;
-                impl->num_class_id_++;
+            if (mapping_tag_data.tag0 != PDS_IMPL_RSVD_MAPPING_TAG) {
+                impl->tags_[0] = mapping_tag_data.tag0;
+                impl->num_tags_++;
             }
-            if (mapping_tag_data.classid1 !=
-                    PDS_IMPL_RSVD_MAPPING_CLASS_ID) {
-                impl->class_id_[1] = mapping_tag_data.classid1;
-                impl->num_class_id_++;
+            if (mapping_tag_data.tag1 != PDS_IMPL_RSVD_MAPPING_TAG) {
+                impl->tags_[1] = mapping_tag_data.tag1;
+                impl->num_tags_++;
             }
-            if (mapping_tag_data.classid2 !=
-                    PDS_IMPL_RSVD_MAPPING_CLASS_ID) {
-                impl->class_id_[2] = mapping_tag_data.classid2;
-                impl->num_class_id_++;
+            if (mapping_tag_data.tag2 != PDS_IMPL_RSVD_MAPPING_TAG) {
+                impl->tags_[2] = mapping_tag_data.tag2;
+                impl->num_tags_++;
             }
-            if (mapping_tag_data.classid3 !=
-                    PDS_IMPL_RSVD_MAPPING_CLASS_ID) {
-                impl->class_id_[3] = mapping_tag_data.classid3;
-                impl->num_class_id_++;
+            if (mapping_tag_data.tag3 != PDS_IMPL_RSVD_MAPPING_TAG) {
+                impl->tags_[3] = mapping_tag_data.tag3;
+                impl->num_tags_++;
             }
-            if (mapping_tag_data.classid4 !=
-                    PDS_IMPL_RSVD_MAPPING_CLASS_ID) {
-                impl->class_id_[4] = mapping_tag_data.classid4;
-                impl->num_class_id_++;
+            if (mapping_tag_data.tag4 != PDS_IMPL_RSVD_MAPPING_TAG) {
+                impl->tags_[4] = mapping_tag_data.tag4;
+                impl->num_tags_++;
             }
         }
         impl->rxdma_mapping_hdl_ = tparams.handle;
@@ -286,7 +281,7 @@ mapping_impl::public_mapping_read_(pds_mapping_key_t *key,
 
     // read the rxdma MAPPING table entry of public IP if this mapping
     // has tags configured
-    if (impl->num_class_id_) {
+    if (impl->num_tags_) {
         PDS_IMPL_FILL_RXDMA_IP_MAPPING_KEY(&rxdma_mapping_key,
                                            ((vpc_impl *)vpc->impl())->hw_id(),
                                            &public_ip);
@@ -389,13 +384,9 @@ mapping_impl::build(pds_mapping_key_t *key, mapping_entry *mapping) {
         impl->vnic_hw_id_ = PDS_IMPL_RSVD_VNIC_HW_ID;
     }
     impl->vpc_hw_id_ = ((vpc_impl *)vpc->impl())->hw_id();
-    mapping->set_num_tags(impl->num_class_id_);
-    for (uint8_t i = 0; i < impl->num_class_id_; i++) {
-        ret = ((vpc_impl *)vpc->impl())->find_tag(impl->class_id_[i],
-                                                  &tag, is_local);
-        if (ret == SDK_RET_OK) {
-            mapping->set_tag(i, tag);
-        }
+    mapping->set_num_tags(impl->num_tags_);
+    for (uint8_t i = 0; i < impl->num_tags_; i++) {
+        mapping->set_tag(i, impl->tags_[i]);
     }
     return impl;
 
@@ -539,27 +530,6 @@ mapping_impl::reserve_public_ip_resources_(mapping_entry *mapping,
 }
 
 sdk_ret_t
-mapping_impl::allocate_tag_classes_(vpc_impl *vpc, bool local,
-                                    mapping_entry *mapping,
-                                    pds_mapping_spec_t *spec) {
-    sdk_ret_t ret;
-
-    // allocate class id for each tag
-    for (uint32_t i = 0; i < spec->num_tags; i++) {
-        ret = vpc->alloc_class_id(spec->tags[i], local, &class_id_[i]);
-        if (unlikely(ret != SDK_RET_OK)) {
-            PDS_TRACE_ERR("Failed to allocate class id for tag %u of "
-                          "remote local mapping %s %s, err %u",
-                          spec->tags[i], mapping->key().str(),
-                          mapping->key2str().c_str(), ret);
-            return ret;
-        }
-        num_class_id_++;
-    }
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
 mapping_impl::reserve_rxdma_mapping_tag_resources_(vpc_entry *vpc, bool local,
                                                    mapping_entry *mapping,
                                                    pds_mapping_spec_t *spec) {
@@ -573,10 +543,10 @@ mapping_impl::reserve_rxdma_mapping_tag_resources_(vpc_entry *vpc, bool local,
         return SDK_RET_OK;
     }
 
-    // allocate class id for each tag configured for this mapping
-    ret = allocate_tag_classes_((vpc_impl *)vpc->impl(), local, mapping, spec);
-    if (unlikely(ret != SDK_RET_OK)) {
-        return ret;
+    // Save the tags configured for this mapping
+    for (uint32_t i = 0; i < spec->num_tags; i++) {
+        tags_[i] = spec->tags[i];
+        num_tags_++;
     }
 
     // allocate an index in the rxdma MAPPING_TAG table
@@ -849,11 +819,10 @@ mapping_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
                 }
             } else if (obj_ctxt->upd_bmap & PDS_MAPPING_UPD_TAGS_UPD) {
                 // probably some new tags and/or some same old tags and/or
-                // some tags got removed, allocate class ids needed in all cases
-                ret = allocate_tag_classes_((vpc_impl *)vpc->impl(), false,
-                                            new_mapping, spec);
-                if (unlikely(ret != SDK_RET_OK)) {
-                    return ret;
+                // some tags got removed, save new tags in all cases
+                for (uint32_t i = 0; i < spec->num_tags; i++) {
+                    tags_[i] = spec->tags[i];
+                    num_tags_++;
                 }
             }
             // reserve resources, if needed, for public IP updates
@@ -895,11 +864,10 @@ mapping_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
                 }
             } else if (obj_ctxt->upd_bmap & PDS_MAPPING_UPD_TAGS_UPD) {
                 // probably some new tags and/or some same old tags and/or
-                // some tags got removed, allocate class ids needed in all cases
-                ret = allocate_tag_classes_((vpc_impl *)vpc->impl(), false,
-                                            new_mapping, spec);
-                if (unlikely(ret != SDK_RET_OK)) {
-                    return ret;
+                // some tags got removed, save tags in all cases
+                for (uint32_t i = 0; i < spec->num_tags; i++) {
+                    tags_[i] = spec->tags[i];
+                    num_tags_++;
                 }
             }
             // NOTE: for other two tag update cases, no need to allocate any
@@ -944,7 +912,7 @@ mapping_impl::nuke_resources(api_base *api_obj) {
 
     // release any class ids allocated for this mapping
     if ((mapping->is_local() == false) ||
-        (num_class_id_ && (mapping->skey().type == PDS_MAPPING_TYPE_L3))) {
+        (num_tags_ && (mapping->skey().type == PDS_MAPPING_TYPE_L3))) {
         vpc = vpc_impl_db()->find(vpc_hw_id_);
 
         // free up the entry in the RXDMA_MAPPING table
@@ -958,17 +926,6 @@ mapping_impl::nuke_resources(api_base *api_obj) {
                 PDS_TRACE_ERR("Failed to remove entry in rxdma MAPPING table %s, "
                               "err %u", mapping->key2str().c_str(), ret);
                 return ret;
-            }
-        }
-
-        // free all the class ids in use
-        for (uint32_t i = 0; i < num_class_id_; i++) {
-            ret = vpc->release_class_id(class_id_[i], mapping->is_local());
-            if (unlikely(ret != SDK_RET_OK)) {
-                PDS_TRACE_ERR("Failed to free classid %u allocated to remote "
-                              "mapping %s, err %u", class_id_[i],
-                              api_obj->key2str().c_str(), ret);
-                // continue freeing the resources
             }
         }
     }
@@ -1145,18 +1102,6 @@ mapping_impl::release_local_mapping_resources_(api_base *api_obj) {
         ret = mapping_impl_db()->rxdma_mapping_tbl()->release(&tparams);
         SDK_ASSERT(ret == SDK_RET_OK);
     }
-    // release any class ids allocated for this mapping
-    if (num_class_id_ && (mapping->skey().type == PDS_MAPPING_TYPE_L3)) {
-        for (uint32_t i = 0; i < num_class_id_; i++) {
-            ret = vpc->release_class_id(class_id_[i], true);
-            if (unlikely(ret != SDK_RET_OK)) {
-                PDS_TRACE_ERR("Failed to free classid %u allocated to local "
-                              "mapping %s, err %u", class_id_[i],
-                              api_obj->key2str().c_str(), ret);
-                // continue freeing the resources
-            }
-        }
-    }
     return SDK_RET_OK;
 }
 
@@ -1198,19 +1143,6 @@ mapping_impl::release_remote_mapping_resources_(api_base *api_obj) {
                                        NULL, NULL, 0, rxdma_mapping_hdl_);
         ret = mapping_impl_db()->rxdma_mapping_tbl()->release(&tparams);
         SDK_ASSERT(ret == SDK_RET_OK);
-    }
-
-    // release any class ids allocated for this mapping
-    if (num_class_id_ && (mapping->skey().type == PDS_MAPPING_TYPE_L3)) {
-        for (uint32_t i = 0; i < num_class_id_; i++) {
-            ret = vpc->release_class_id(class_id_[i], false);
-            if (unlikely(ret != SDK_RET_OK)) {
-                PDS_TRACE_ERR("Failed to free classid %u allocated to remote "
-                              "mapping %s, err %u", class_id_[i],
-                              api_obj->key2str().c_str(), ret);
-                // continue freeing the resources
-            }
-        }
     }
     return SDK_RET_OK;
 }
@@ -1522,28 +1454,27 @@ mapping_impl::program_local_mapping_tag_entries_(void) {
     memset(&mapping_tag_data, 0, mapping_tag_data.entry_size());
     // while programming always program all class-ids including invalid ones
     for (uint32_t i = 0; i < PDS_MAX_TAGS_PER_MAPPING; i++) {
-        local_mapping_tag_fill_class_id_(&local_mapping_tag_data, i,
-                                         class_id_[i]);
-        mapping_tag_fill_class_id_(&mapping_tag_data, i, class_id_[i]);
+        local_mapping_tag_fill_tag_(&local_mapping_tag_data, i, tags_[i]);
+        mapping_tag_fill_tag_(&mapping_tag_data, i, tags_[i]);
     }
     PDS_TRACE_VERBOSE("Adding local mapping tag entry at index %u, "
-                      "classid[0-4] %lu %lu %lu %lu %lu",
+                      "tag[0-4] %lu %lu %lu %lu %lu",
                       rxdma_local_mapping_tag_idx_,
-                      local_mapping_tag_data.classid0,
-                      local_mapping_tag_data.classid1,
-                      local_mapping_tag_data.classid2,
-                      local_mapping_tag_data.classid3,
-                      local_mapping_tag_data.classid4);
+                      local_mapping_tag_data.tag0,
+                      local_mapping_tag_data.tag1,
+                      local_mapping_tag_data.tag2,
+                      local_mapping_tag_data.tag3,
+                      local_mapping_tag_data.tag4);
     ret = local_mapping_tag_data.write(rxdma_local_mapping_tag_idx_);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     PDS_TRACE_VERBOSE("Adding mapping tag entry at index %u, "
-                      "classid[0-4] %lu %lu %lu %lu %lu",
+                      "tag[0-4] %lu %lu %lu %lu %lu",
                       rxdma_mapping_tag_idx_,
-                      mapping_tag_data.classid0,
-                      mapping_tag_data.classid1,
-                      mapping_tag_data.classid2,
-                      mapping_tag_data.classid3,
-                      mapping_tag_data.classid4);
+                      mapping_tag_data.tag0,
+                      mapping_tag_data.tag1,
+                      mapping_tag_data.tag2,
+                      mapping_tag_data.tag3,
+                      mapping_tag_data.tag4);
     ret = mapping_tag_data.write(rxdma_mapping_tag_idx_);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
 
@@ -1682,16 +1613,16 @@ mapping_impl::add_remote_mapping_entries_(vpc_entry *vpc, subnet_entry *subnet,
         memset(&mapping_tag_data, 0, mapping_tag_data.entry_size());
         // while programming always program all class-ids including invalid ones
         for (uint32_t i = 0; i < PDS_MAX_TAGS_PER_MAPPING; i++) {
-            mapping_tag_fill_class_id_(&mapping_tag_data, i, class_id_[i]);
+            mapping_tag_fill_tag_(&mapping_tag_data, i, tags_[i]);
         }
         PDS_TRACE_VERBOSE("Adding mapping tag entry at index %u, "
-                          "classid[0-4] %lu %lu %lu %lu %lu",
+                          "tag[0-4] %lu %lu %lu %lu %lu",
                           rxdma_mapping_tag_idx_,
-                          mapping_tag_data.classid0,
-                          mapping_tag_data.classid1,
-                          mapping_tag_data.classid2,
-                          mapping_tag_data.classid3,
-                          mapping_tag_data.classid4);
+                          mapping_tag_data.tag0,
+                          mapping_tag_data.tag1,
+                          mapping_tag_data.tag2,
+                          mapping_tag_data.tag3,
+                          mapping_tag_data.tag4);
         ret = mapping_tag_data.write(rxdma_mapping_tag_idx_);
         SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     }
@@ -2162,16 +2093,16 @@ mapping_impl::program_remote_mapping_tag_tables_(void) {
     memset(&mapping_tag_data, 0, mapping_tag_data.entry_size());
     // while programming always program all class-ids including invalid ones
     for (uint32_t i = 0; i < PDS_MAX_TAGS_PER_MAPPING; i++) {
-        mapping_tag_fill_class_id_(&mapping_tag_data, i, class_id_[i]);
+        mapping_tag_fill_tag_(&mapping_tag_data, i, tags_[i]);
     }
     PDS_TRACE_VERBOSE("Adding mapping tag entry at index %u, "
-                      "classid[0-4] %lu %lu %lu %lu %lu",
+                      "tag[0-4] %lu %lu %lu %lu %lu",
                       rxdma_mapping_tag_idx_,
-                      mapping_tag_data.classid0,
-                      mapping_tag_data.classid1,
-                      mapping_tag_data.classid2,
-                      mapping_tag_data.classid3,
-                      mapping_tag_data.classid4);
+                      mapping_tag_data.tag0,
+                      mapping_tag_data.tag1,
+                      mapping_tag_data.tag2,
+                      mapping_tag_data.tag3,
+                      mapping_tag_data.tag4);
     ret = mapping_tag_data.write(rxdma_mapping_tag_idx_);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     return SDK_RET_OK;
@@ -2194,7 +2125,6 @@ mapping_impl::activate_remote_mapping_update_(vpc_entry *vpc,
     sdk_table_api_params_t rxdma_mapping_tbl_params;
     mapping_impl *orig_mapping_impl = (mapping_impl *)orig_mapping->impl();
 
-
     if (obj_ctxt->upd_bmap & PDS_MAPPING_UPD_TAGS_ADD) {
         // program MAPPING_TAG table entry
         ret = program_remote_mapping_tag_tables_();
@@ -2202,7 +2132,7 @@ mapping_impl::activate_remote_mapping_update_(vpc_entry *vpc,
     } else if (obj_ctxt->upd_bmap & PDS_MAPPING_UPD_TAGS_DEL) {
         // update the MAPPING_TAG table entry with invalid tags
         // NOTE:
-        // 1. in this case class_id_[] is filled with reserved invalid tags
+        // 1. in this case tags_[] is filled with reserved invalid tags
         // 2. when the original object is deleted all tag related resources
         //    associated with it will be freed, so we don't need to xfer
         //    resource ownership to the cloned object

@@ -11,6 +11,8 @@
 #include <math.h>
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/impl/lpm/lpm.hpp"
+#include "nic/apollo/api/impl/lpm/lpm_stag.hpp"
+#include "nic/apollo/api/impl/lpm/lpm_dtag.hpp"
 #include "nic/apollo/api/impl/lpm/lpm_priv.hpp"
 #include "nic/apollo/api/impl/lpm/lpm_sport.hpp"
 #include "nic/apollo/api/impl/lpm/lpm_ipv4_acl.hpp"
@@ -28,22 +30,30 @@
 uint32_t
 lpm_entry_key_size (itree_type_t tree_type)
 {
-    if (tree_type == ITREE_TYPE_IPV4) {
+    switch (tree_type) {
+    case ITREE_TYPE_IPV4:
         return lpm_ipv4_route_key_size();
-    } else if (tree_type == ITREE_TYPE_IPV6) {
+    case ITREE_TYPE_IPV6:
         return lpm_ipv6_route_key_size();
-    } else if (tree_type == ITREE_TYPE_PROTO_PORT) {
-        return lpm_proto_dport_key_size();
-    } else if (tree_type == ITREE_TYPE_PORT) {
+    case ITREE_TYPE_PORT:
         return lpm_sport_key_size();
-    } else if (tree_type == ITREE_TYPE_IPV4_DIP_ACL) {
+    case ITREE_TYPE_PROTO_PORT:
+        return lpm_proto_dport_key_size();
+    case ITREE_TYPE_IPV4_DIP_ACL:
         return lpm_ipv4_acl_key_size();
-    } else if (tree_type == ITREE_TYPE_IPV6_DIP_ACL) {
+    case ITREE_TYPE_IPV6_DIP_ACL:
         return lpm_ipv6_acl_key_size();
-    } else if (tree_type == ITREE_TYPE_IPV4_SIP_ACL) {
+    case ITREE_TYPE_IPV4_SIP_ACL:
         return lpm_ipv4_sip_key_size();
-    } else if (tree_type == ITREE_TYPE_IPV6_SIP_ACL) {
+    case ITREE_TYPE_IPV6_SIP_ACL:
         return lpm_ipv6_sip_key_size();
+    case ITREE_TYPE_STAG:
+        return lpm_stag_key_size();
+    case ITREE_TYPE_DTAG:
+        return lpm_dtag_key_size();
+    default:
+        SDK_ASSERT(0);
+        break;
     }
     return 0;
 }
@@ -57,22 +67,30 @@ lpm_entry_key_size (itree_type_t tree_type)
 uint32_t
 lpm_keys_per_table (itree_type_t tree_type)
 {
-    if (tree_type == ITREE_TYPE_IPV4) {
+    switch (tree_type) {
+    case ITREE_TYPE_IPV4:
         return ((LPM_TABLE_SIZE / lpm_ipv4_route_key_size()) - 1);
-    } else if (tree_type == ITREE_TYPE_IPV6) {
+    case ITREE_TYPE_IPV6:
         return ((LPM_TABLE_SIZE / lpm_ipv6_route_key_size()) - 1);
-    } else if (tree_type == ITREE_TYPE_PROTO_PORT) {
-        return ((LPM_TABLE_SIZE / lpm_proto_dport_key_size()) - 1);
-    } else if (tree_type == ITREE_TYPE_PORT) {
+    case ITREE_TYPE_PORT:
         return ((LPM_TABLE_SIZE / lpm_sport_key_size()) - 1);
-    } else if (tree_type == ITREE_TYPE_IPV4_DIP_ACL) {
+    case ITREE_TYPE_PROTO_PORT:
+        return ((LPM_TABLE_SIZE / lpm_proto_dport_key_size()) - 1);
+    case ITREE_TYPE_IPV4_DIP_ACL:
         return ((LPM_TABLE_SIZE / lpm_ipv4_acl_key_size()) - 1);
-    } else if (tree_type == ITREE_TYPE_IPV6_DIP_ACL) {
+    case ITREE_TYPE_IPV6_DIP_ACL:
         return ((LPM_TABLE_SIZE / lpm_ipv6_acl_key_size()) - 1);
-    } else if (tree_type == ITREE_TYPE_IPV4_SIP_ACL) {
+    case ITREE_TYPE_IPV4_SIP_ACL:
         return ((LPM_TABLE_SIZE / lpm_ipv4_sip_key_size()) - 1);
-    } else if (tree_type == ITREE_TYPE_IPV6_SIP_ACL) {
+    case ITREE_TYPE_IPV6_SIP_ACL:
         return ((LPM_TABLE_SIZE / lpm_ipv6_sip_key_size()) - 1);
+    case ITREE_TYPE_STAG:
+        return ((LPM_TABLE_SIZE / lpm_stag_key_size()) - 1);
+    case ITREE_TYPE_DTAG:
+        return ((LPM_TABLE_SIZE / lpm_dtag_key_size()) - 1);
+    default:
+        SDK_ASSERT(0);
+        break;
     }
     return 0;
 }
@@ -94,24 +112,31 @@ lpm_keys_per_table (itree_type_t tree_type)
 uint32_t
 lpm_stages (itree_type_t tree_type, uint32_t num_intrvls)
 {
-    if (tree_type == ITREE_TYPE_IPV4) {
+    switch (tree_type) {
+    case ITREE_TYPE_IPV4:
         return lpm_ipv4_route_stages(num_intrvls);
-    } else if (tree_type == ITREE_TYPE_IPV6) {
+    case ITREE_TYPE_IPV6:
         return lpm_ipv6_route_stages(num_intrvls);
-    } else if (tree_type == ITREE_TYPE_PROTO_PORT) {
-        return lpm_proto_dport_stages(num_intrvls);
-    } else if (tree_type == ITREE_TYPE_PORT) {
+    case ITREE_TYPE_PORT:
         return lpm_sport_stages(num_intrvls);
-    } else if (tree_type == ITREE_TYPE_IPV4_DIP_ACL) {
+    case ITREE_TYPE_PROTO_PORT:
+        return lpm_proto_dport_stages(num_intrvls);
+    case ITREE_TYPE_IPV4_DIP_ACL:
         return lpm_ipv4_acl_stages(num_intrvls);
-    } else if (tree_type == ITREE_TYPE_IPV6_DIP_ACL) {
+    case ITREE_TYPE_IPV6_DIP_ACL:
         return lpm_ipv6_acl_stages(num_intrvls);
-    } else if (tree_type == ITREE_TYPE_IPV4_SIP_ACL) {
+    case ITREE_TYPE_IPV4_SIP_ACL:
         return lpm_ipv4_sip_stages(num_intrvls);
-    } else if (tree_type == ITREE_TYPE_IPV6_SIP_ACL) {
+    case ITREE_TYPE_IPV6_SIP_ACL:
         return lpm_ipv6_sip_stages(num_intrvls);
+    case ITREE_TYPE_STAG:
+        return lpm_stag_stages(num_intrvls);
+    case ITREE_TYPE_DTAG:
+        return lpm_dtag_stages(num_intrvls);
+    default:
+        SDK_ASSERT(0);
+        break;
     }
-
     return 0;
 }
 
@@ -160,6 +185,16 @@ lpm_add_key_to_stage (itree_type_t tree_type, lpm_stage_info_t *stage,
                                       stage->curr_index,
                                       lpm_inode);
         break;
+    case ITREE_TYPE_STAG:
+        lpm_stag_add_key_to_stage(stage->curr_table,
+                                  stage->curr_index,
+                                  lpm_inode);
+        break;
+    case ITREE_TYPE_DTAG:
+        lpm_dtag_add_key_to_stage(stage->curr_table,
+                                  stage->curr_index,
+                                  lpm_inode);
+        break;
     default:
         SDK_ASSERT(0);
         break;
@@ -203,6 +238,14 @@ lpm_write_stage_table (itree_type_t tree_type, lpm_stage_info_t *stage)
     case ITREE_TYPE_IPV6_SIP_ACL:
         lpm_ipv6_sip_write_stage_table(stage->curr_table_addr,
                                        stage->curr_table);
+        break;
+    case ITREE_TYPE_STAG:
+        lpm_stag_write_stage_table(stage->curr_table_addr,
+                                   stage->curr_table);
+        break;
+    case ITREE_TYPE_DTAG:
+        lpm_dtag_write_stage_table(stage->curr_table_addr,
+                                   stage->curr_table);
         break;
     default:
         SDK_ASSERT(0);
@@ -260,6 +303,16 @@ lpm_add_key_to_last_stage (itree_type_t tree_type, lpm_stage_info_t *stage,
                                            stage->curr_index,
                                            lpm_inode);
         break;
+    case ITREE_TYPE_STAG:
+        lpm_stag_add_key_to_last_stage(stage->curr_table,
+                                       stage->curr_index,
+                                       lpm_inode);
+        break;
+    case ITREE_TYPE_DTAG:
+        lpm_dtag_add_key_to_last_stage(stage->curr_table,
+                                       stage->curr_index,
+                                       lpm_inode);
+        break;
     default:
         SDK_ASSERT(0);
         break;
@@ -296,6 +349,12 @@ lpm_set_default_data (itree_type_t tree_type, lpm_stage_info_t *stage,
         break;
     case ITREE_TYPE_IPV6_SIP_ACL:
         lpm_ipv6_sip_set_default_data(stage->curr_table, default_data);
+        break;
+    case ITREE_TYPE_STAG:
+        lpm_stag_set_default_data(stage->curr_table, default_data);
+        break;
+    case ITREE_TYPE_DTAG:
+        lpm_dtag_set_default_data(stage->curr_table, default_data);
         break;
     default:
         SDK_ASSERT(0);
@@ -339,6 +398,14 @@ lpm_write_last_stage_table (itree_type_t tree_type, lpm_stage_info_t *stage)
     case ITREE_TYPE_IPV6_SIP_ACL:
         lpm_ipv6_sip_write_last_stage_table(stage->curr_table_addr,
                                             stage->curr_table);
+        break;
+    case ITREE_TYPE_STAG:
+        lpm_stag_write_last_stage_table(stage->curr_table_addr,
+                                        stage->curr_table);
+        break;
+    case ITREE_TYPE_DTAG:
+        lpm_dtag_write_last_stage_table(stage->curr_table_addr,
+                                        stage->curr_table);
         break;
     default:
         SDK_ASSERT(0);

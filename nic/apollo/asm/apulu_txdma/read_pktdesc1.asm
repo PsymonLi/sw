@@ -14,32 +14,24 @@ read_pktdesc1:
     phvwr         p.{rx_to_tx_hdr_remote_ip, \
                      rx_to_tx_hdr_route_base_addr, \
                      rx_to_tx_hdr_sacl_base_addr0, \
+                     rx_to_tx_hdr_sacl_base_addr1, \
+                     rx_to_tx_hdr_sacl_base_addr2, \
+                     rx_to_tx_hdr_sacl_base_addr3, \
+                     rx_to_tx_hdr_sacl_base_addr4, \
+                     rx_to_tx_hdr_sacl_base_addr5, \
+                     rx_to_tx_hdr_src_bd_id, \
+                     rx_to_tx_hdr_pad1, \
+                     rx_to_tx_hdr_src_mapping_hit, \
                      rx_to_tx_hdr_sip_classid0, \
                      rx_to_tx_hdr_dip_classid0, \
-                     rx_to_tx_hdr_pad0, \
+                     rx_to_tx_hdr_pad_classid0, \
                      rx_to_tx_hdr_sport_classid0, \
                      rx_to_tx_hdr_dport_classid0, \
-                     rx_to_tx_hdr_sacl_base_addr1, \
                      rx_to_tx_hdr_sip_classid1, \
                      rx_to_tx_hdr_dip_classid1, \
-                     rx_to_tx_hdr_pad1, \
+                     rx_to_tx_hdr_pad_classid1, \
                      rx_to_tx_hdr_sport_classid1, \
-                     rx_to_tx_hdr_dport_classid1, \
-                     rx_to_tx_hdr_sacl_base_addr2, \
-                     rx_to_tx_hdr_sip_classid2, \
-                     rx_to_tx_hdr_dip_classid2, \
-                     rx_to_tx_hdr_pad2, \
-                     rx_to_tx_hdr_sport_classid2, \
-                     rx_to_tx_hdr_dport_classid2, \
-                     rx_to_tx_hdr_sacl_base_addr3, \
-                     rx_to_tx_hdr_sip_classid3, \
-                     rx_to_tx_hdr_dip_classid3, \
-                     rx_to_tx_hdr_pad3, \
-                     rx_to_tx_hdr_sport_classid3, \
-                     rx_to_tx_hdr_dport_classid3, \
-                     rx_to_tx_hdr_src_bd_id, \
-                     rx_to_tx_hdr_pad7, \
-                     rx_to_tx_hdr_src_mapping_hit}, \
+                     rx_to_tx_hdr_dport_classid1}, \
                      d[511:0]
 
     phvwrpair  p.txdma_to_p4e_src_bd_id, \
@@ -61,9 +53,9 @@ read_pktdesc1:
     seq        c1, r1, r0
     nop.c1.e
 
-    /* Add SACL_P1_1_TABLE_OFFSET to sacl base address. */
-    addi       r1, r1, SACL_P1_1_TABLE_OFFSET
-    /* P1 table index = (sport_classid0 | (sip_classid0 << 7)). */
+    /* Add SACL_P1_TABLE_OFFSET to sacl base address. */
+    addi       r1, r1, SACL_P1_TABLE_OFFSET
+    /* P1 idx = (sport_classid0 | (sip_classid0 << SACL_SPORT_CLASSID_WIDTH)). */
     add        r2, d.read_pktdesc1_d.sport_classid0, d.read_pktdesc1_d.sip_classid0, \
                                                    SACL_SPORT_CLASSID_WIDTH
     /* Write P1 table index to PHV */

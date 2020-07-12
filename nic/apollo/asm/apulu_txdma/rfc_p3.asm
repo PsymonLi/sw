@@ -51,19 +51,11 @@ rfc_p3:
     phvwr.c1   p.txdma_to_p4e_sacl_action, r2
     phvwr.c1   p.txdma_to_p4e_sacl_root_num, k.txdma_control_recirc_count[3:1]
 
-    /* Load sacl base addr to r1 */
+    /* Load sacl base addr + SACL_P1_TABLE_OFFSET to r1 */
     add        r1, r0, k.rx_to_tx_hdr_sacl_base_addr0
-    /* Is this an even numbered pass? */
-    seq        c1, k.txdma_control_recirc_count[0:0], r0
-    /* If so, add SACL_P1_2_TABLE_OFFSET to sacl base address. */
-    addi.c1    r1, r1, SACL_P1_2_TABLE_OFFSET
-    /* P1 index = (dip_classid0 | (stag_classid << SACL_DIP_CLASSID_WIDTH)).*/
-    add.c1     r2, k.rx_to_tx_hdr_dip_classid0, k.txdma_control_stag_classid, \
-                                               SACL_DIP_CLASSID_WIDTH
-    /* Else, add SACL_P1_4_TABLE_OFFSET to sacl base address. */
-    addi.!c1   r1, r1, SACL_P1_4_TABLE_OFFSET
-    /* P1 index = (sport_classid0 | (stag_classid << SACL_SPORT_CLASSID_WIDTH)). */
-    add.!c1    r2, k.rx_to_tx_hdr_sport_classid0, k.txdma_control_stag_classid, \
+    addi       r1, r1, SACL_P1_TABLE_OFFSET
+    /* P1 index = STAG:SPORT. */
+    add        r2, k.rx_to_tx_hdr_sport_classid0, k.txdma_control_stag_classid, \
                                                  SACL_SPORT_CLASSID_WIDTH
     /* Write P1 table index to PHV */
     phvwr      p.txdma_control_rfc_index, r2

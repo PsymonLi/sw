@@ -133,76 +133,135 @@ header_type apulu_egress_recirc_header_t {
 
 header_type apulu_rx_to_tx_header_t {
     fields {
-        remote_ip       : 128;// Bytes 0 to 15
-        route_base_addr : 40; // Bytes 16 to 20
+        remote_ip       : 128;
+        route_base_addr : 40;
 
-        sacl_base_addr0 : 40; // Bytes 21 to 25
-        sip_classid0    : 10; // Bytes 26[0] to 27[1]
-        dip_classid0    : 10; // Bits 27[2] to 28[3]
-        pad0            : 4;  // Bits 28[4] to 28[7]
-        sport_classid0  : 8;  // Byte 29
-        dport_classid0  : 8;  // Byte 30
+        sacl_base_addr0 : 40;
+        sacl_base_addr1 : 40;
+        sacl_base_addr2 : 40;
+        sacl_base_addr3 : 40;
+        sacl_base_addr4 : 40;
+        sacl_base_addr5 : 40;
 
-        sacl_base_addr1 : 40; // Bytes 31 to 35
-        sip_classid1    : 10; // Bytes 36[0] to 37[1]
-        dip_classid1    : 10; // Bits 37[2] to 38[3]
-        pad1            : 4;  // Bits 38[4] to 38[7]
-        sport_classid1  : 8;  // Byte 39
-        dport_classid1  : 8;  // Byte 40
-
-        sacl_base_addr2 : 40; // Bytes 41 to 45
-        sip_classid2    : 10; // Bytes 46[0] to 47[1]
-        dip_classid2    : 10; // Bits 47[2] to 48[3]
-        pad2            : 4;  // Bits 48[4] to 48[7]
-        sport_classid2  : 8;  // Byte 49
-        dport_classid2  : 8;  // Byte 50
-
-        sacl_base_addr3 : 40; // Bytes 51 to 55
-        sip_classid3    : 10; // Bytes 56[0] to 57[1]
-        dip_classid3    : 10; // Bits 57[2] to 58[3]
-        pad3            : 4;  // Bits 58[4] to 58[7]
-        sport_classid3  : 8;  // Byte 59
-        dport_classid3  : 8;  // Byte 60
-
-        src_bd_id       : 16; // Bytes 61 to 62
-        pad7            : 7;  // Byte 63
+        src_bd_id       : 16;
+        pad1            : 7;
         src_mapping_hit : 1;
+
+        sip_classid0    : 10;
+        dip_classid0    : 10;
+        pad_classid0    : 4;
+        sport_classid0  : 8;
+        dport_classid0  : 8;
+
+        sip_classid1    : 10;
+        dip_classid1    : 10;
+        pad_classid1    : 4;
+        sport_classid1  : 8;
+        dport_classid1  : 8;
 
         /*--------------512b ---------------*/
 
-        sacl_base_addr4 : 40; // Bytes 64 to 68
-        sip_classid4    : 10; // Bytes 69[0] to 70[1]
-        dip_classid4    : 10; // Bits 70[2] to 71[3]
-        pad4            : 4;  // Bits 71[4] to 71[7]
-        sport_classid4  : 8;  // Byte 72
-        dport_classid4  : 8;  // Byte 73
+        sip_classid2    : 10;
+        dip_classid2    : 10;
+        pad_classid2    : 4;
+        sport_classid2  : 8;
+        dport_classid2  : 8;
 
-        sacl_base_addr5 : 40; // Bytes 74 to 78
-        sip_classid5    : 10; // Bytes 79[0] to 80[1]
-        dip_classid5    : 10; // Bits 80[2] to 81[3]
-        pad5            : 4;  // Bits 81[4] to 81[7]
-        sport_classid5  : 8;  // Byte 82
-        dport_classid5  : 8;  // Byte 83
+        sip_classid3    : 10;
+        dip_classid3    : 10;
+        pad_classid3    : 4;
+        sport_classid3  : 8;
+        dport_classid3  : 8;
 
-        vpc_id          : 16; // Bytes 84 and 85
-        vnic_id         : 16; // Bytes 86 and 87
+        sip_classid4    : 10;
+        dip_classid4    : 10;
+        pad_classid4    : 4;
+        sport_classid4  : 8;
+        dport_classid4  : 8;
 
-        iptype          : 1;  // Bit 88[0]
-        rx_packet       : 1;  // Bit 88[1]
-        payload_len     : 14; // Bit 88[2] to 89[7]
+        sip_classid5    : 10;
+        dip_classid5    : 10;
+        pad_classid5    : 4;
+        sport_classid5  : 8;
+        dport_classid5  : 8;
 
-        stag0_classid   : 10; // Bytes 90 to 102
-        stag1_classid   : 10;
-        stag2_classid   : 10;
-        stag3_classid   : 10;
-        stag4_classid   : 10;
-        dtag0_classid   : 10;
-        dtag1_classid   : 10;
-        dtag2_classid   : 10;
-        dtag3_classid   : 10;
-        dtag4_classid   : 10;
-        pad6            : 4;
+        vpc_id          : 16;
+        vnic_id         : 16;
 
-        pad8            : 200; // Bytes 103 to 127
+        iptype          : 1;
+        rx_packet       : 1;
+        payload_len     : 14;
+
+        stag0_classid0  : 10;
+        stag1_classid0  : 10;
+        stag2_classid0  : 10;
+        stag3_classid0  : 10;
+        stag4_classid0  : 10;
+        dtag0_classid0  : 10;
+        dtag1_classid0  : 10;
+        dtag2_classid0  : 10;
+        dtag3_classid0  : 10;
+        dtag4_classid0  : 10;
+
+        stag0_classid1  : 10;
+        stag1_classid1  : 10;
+        stag2_classid1  : 10;
+        stag3_classid1  : 10;
+        stag4_classid1  : 10;
+        dtag0_classid1  : 10;
+        dtag1_classid1  : 10;
+        dtag2_classid1  : 10;
+        dtag3_classid1  : 10;
+        dtag4_classid1  : 10;
+
+        stag0_classid2  : 10;
+        stag1_classid2  : 10;
+        stag2_classid2  : 10;
+        stag3_classid2  : 10;
+        stag4_classid2  : 10;
+        dtag0_classid2  : 10;
+        dtag1_classid2  : 10;
+        dtag2_classid2  : 10;
+        dtag3_classid2  : 10;
+        dtag4_classid2  : 10;
+
+        pad2            : 4;
+
+        /*--------------512b ---------------*/
+
+        stag0_classid3  : 10;
+        stag1_classid3  : 10;
+        stag2_classid3  : 10;
+        stag3_classid3  : 10;
+        stag4_classid3  : 10;
+        dtag0_classid3  : 10;
+        dtag1_classid3  : 10;
+        dtag2_classid3  : 10;
+        dtag3_classid3  : 10;
+        dtag4_classid3  : 10;
+
+        stag0_classid4  : 10;
+        stag1_classid4  : 10;
+        stag2_classid4  : 10;
+        stag3_classid4  : 10;
+        stag4_classid4  : 10;
+        dtag0_classid4  : 10;
+        dtag1_classid4  : 10;
+        dtag2_classid4  : 10;
+        dtag3_classid4  : 10;
+        dtag4_classid4  : 10;
+
+        stag0_classid5  : 10;
+        stag1_classid5  : 10;
+        stag2_classid5  : 10;
+        stag3_classid5  : 10;
+        stag4_classid5  : 10;
+        dtag0_classid5  : 10;
+        dtag1_classid5  : 10;
+        dtag2_classid5  : 10;
+        dtag3_classid5  : 10;
+        dtag4_classid5  : 10;
+
+        pad_end         : 4;
     }
 }

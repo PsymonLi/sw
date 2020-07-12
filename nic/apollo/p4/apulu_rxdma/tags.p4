@@ -1,25 +1,25 @@
 /******************************************************************************/
 /* derive tags based on local_tag_idx                                         */
 /******************************************************************************/
-action local_mapping_tag_info(classid0, classid1, classid2, classid3, classid4) {
+action local_mapping_tag_info(tag0, tag1, tag2, tag3, tag4) {
     if (p4_to_rxdma.rx_packet == FALSE) {
         // Tx packet
-        modify_field(rx_to_tx_hdr.stag0_classid, classid0);
-        modify_field(rx_to_tx_hdr.stag1_classid, classid1);
-        modify_field(rx_to_tx_hdr.stag2_classid, classid2);
-        modify_field(rx_to_tx_hdr.stag3_classid, classid3);
-        modify_field(rx_to_tx_hdr.stag4_classid, classid4);
+        modify_field(lpm_metadata.stag0, tag0);
+        modify_field(lpm_metadata.stag1, tag1);
+        modify_field(lpm_metadata.stag2, tag2);
+        modify_field(lpm_metadata.stag3, tag3);
+        modify_field(lpm_metadata.stag4, tag4);
     } else {
         // Rx packet
-        modify_field(rx_to_tx_hdr.dtag0_classid, classid0);
-        modify_field(rx_to_tx_hdr.dtag1_classid, classid1);
-        modify_field(rx_to_tx_hdr.dtag2_classid, classid2);
-        modify_field(rx_to_tx_hdr.dtag3_classid, classid3);
-        modify_field(rx_to_tx_hdr.dtag4_classid, classid4);
+        modify_field(lpm_metadata.dtag0, tag0);
+        modify_field(lpm_metadata.dtag1, tag1);
+        modify_field(lpm_metadata.dtag2, tag2);
+        modify_field(lpm_metadata.dtag3, tag3);
+        modify_field(lpm_metadata.dtag4, tag4);
     }
 }
 
-@pragma stage 7
+@pragma stage 6
 @pragma hbm_table
 @pragma index_table
 @pragma capi_bitfields_struct
@@ -36,25 +36,25 @@ table local_mapping_tag {
 /******************************************************************************/
 /* derive tags based on mapping_tag_idx                                       */
 /******************************************************************************/
-action mapping_tag_info(classid0, classid1, classid2, classid3, classid4) {
+action mapping_tag_info(tag0, tag1, tag2, tag3, tag4) {
     if (p4_to_rxdma.rx_packet == FALSE) {
         // Tx packet
-        modify_field(rx_to_tx_hdr.dtag0_classid, classid0);
-        modify_field(rx_to_tx_hdr.dtag1_classid, classid1);
-        modify_field(rx_to_tx_hdr.dtag2_classid, classid2);
-        modify_field(rx_to_tx_hdr.dtag3_classid, classid3);
-        modify_field(rx_to_tx_hdr.dtag4_classid, classid4);
+        modify_field(lpm_metadata.dtag0, tag0);
+        modify_field(lpm_metadata.dtag1, tag1);
+        modify_field(lpm_metadata.dtag2, tag2);
+        modify_field(lpm_metadata.dtag3, tag3);
+        modify_field(lpm_metadata.dtag4, tag4);
     } else {
         // Rx packet
-        modify_field(rx_to_tx_hdr.stag0_classid, classid0);
-        modify_field(rx_to_tx_hdr.stag1_classid, classid1);
-        modify_field(rx_to_tx_hdr.stag2_classid, classid2);
-        modify_field(rx_to_tx_hdr.stag3_classid, classid3);
-        modify_field(rx_to_tx_hdr.stag4_classid, classid4);
+        modify_field(lpm_metadata.stag0, tag0);
+        modify_field(lpm_metadata.stag1, tag1);
+        modify_field(lpm_metadata.stag2, tag2);
+        modify_field(lpm_metadata.stag3, tag3);
+        modify_field(lpm_metadata.stag4, tag4);
     }
 }
 
-@pragma stage 7
+@pragma stage 6
 @pragma hbm_table
 @pragma index_table
 @pragma capi_bitfields_struct
@@ -68,7 +68,7 @@ table mapping_tag {
     size : MAPPING_TAG_TABLE_SIZE;
 }
 
-control derive_tag_classids {
+control derive_tags {
     if (p4_to_rxdma.mapping_done == TRUE) {
         apply(local_mapping_tag);
         apply(mapping_tag);

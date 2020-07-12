@@ -211,45 +211,6 @@ rfc_p1_table_entry_pack (uint32_t table_idx, void *actiondata,
     case 50:
         action_data->action_u.rfc_p1_rfc_action_p1.id50 = cid;
         break;
-    case 51:
-        action_data->action_u.rfc_p1_rfc_action_p1.id51 = cid;
-        break;
-    case 52:
-        action_data->action_u.rfc_p1_rfc_action_p1.id52 = cid;
-        break;
-    case 53:
-        action_data->action_u.rfc_p1_rfc_action_p1.id53 = cid;
-        break;
-    case 54:
-        action_data->action_u.rfc_p1_rfc_action_p1.id54 = cid;
-        break;
-    case 55:
-        action_data->action_u.rfc_p1_rfc_action_p1.id55 = cid;
-        break;
-    case 56:
-        action_data->action_u.rfc_p1_rfc_action_p1.id56 = cid;
-        break;
-    case 57:
-        action_data->action_u.rfc_p1_rfc_action_p1.id57 = cid;
-        break;
-    case 58:
-        action_data->action_u.rfc_p1_rfc_action_p1.id58 = cid;
-        break;
-    case 59:
-        action_data->action_u.rfc_p1_rfc_action_p1.id59 = cid;
-        break;
-    case 60:
-        action_data->action_u.rfc_p1_rfc_action_p1.id60 = cid;
-        break;
-    case 61:
-        action_data->action_u.rfc_p1_rfc_action_p1.id61 = cid;
-        break;
-    case 62:
-        action_data->action_u.rfc_p1_rfc_action_p1.id62 = cid;
-        break;
-    case 63:
-        action_data->action_u.rfc_p1_rfc_action_p1.id63 = cid;
-        break;
     default:
         PDS_TRACE_ERR("Invalid entry number %u while packing RFC P1 table",
                       entry_num);
@@ -430,45 +391,6 @@ rfc_p2_table_entry_pack (uint32_t table_idx, void *actiondata,
             break;
         case 50:
             action_data->action_u.rfc_p2_rfc_action_p2.id50 = cid;
-            break;
-        case 51:
-            action_data->action_u.rfc_p2_rfc_action_p2.id51 = cid;
-            break;
-        case 52:
-            action_data->action_u.rfc_p2_rfc_action_p2.id52 = cid;
-            break;
-        case 53:
-            action_data->action_u.rfc_p2_rfc_action_p2.id53 = cid;
-            break;
-        case 54:
-            action_data->action_u.rfc_p2_rfc_action_p2.id54 = cid;
-            break;
-        case 55:
-            action_data->action_u.rfc_p2_rfc_action_p2.id55 = cid;
-            break;
-        case 56:
-            action_data->action_u.rfc_p2_rfc_action_p2.id56 = cid;
-            break;
-        case 57:
-            action_data->action_u.rfc_p2_rfc_action_p2.id57 = cid;
-            break;
-        case 58:
-            action_data->action_u.rfc_p2_rfc_action_p2.id58 = cid;
-            break;
-        case 59:
-            action_data->action_u.rfc_p2_rfc_action_p2.id59 = cid;
-            break;
-        case 60:
-            action_data->action_u.rfc_p2_rfc_action_p2.id60 = cid;
-            break;
-        case 61:
-            action_data->action_u.rfc_p2_rfc_action_p2.id61 = cid;
-            break;
-        case 62:
-            action_data->action_u.rfc_p2_rfc_action_p2.id62 = cid;
-            break;
-        case 63:
-            action_data->action_u.rfc_p2_rfc_action_p2.id63 = cid;
             break;
         default:
         PDS_TRACE_ERR("Invalid entry number %u while packing RFC P2 table",
@@ -1102,115 +1024,29 @@ rfc_compute_p3_tables (rfc_ctxt_t *rfc_ctxt, uint64_t addr_offset)
 sdk_ret_t
 rfc_build_eqtables (rfc_ctxt_t *rfc_ctxt)
 {
-    // combination 1
-    PDS_TRACE_DEBUG("Starting RFC combination 1");
-    PDS_TRACE_DEBUG("Computing P1 Table. SIP:SPORT (%ub:%ub), num classes %u:%u",
-                    SACL_SIP_CLASSID_WIDTH, SACL_SPORT_CLASSID_WIDTH,
-                    rfc_ctxt->sip_tree.rfc_table.num_classes,
-                    rfc_ctxt->port_tree.rfc_table.num_classes);
+    PDS_TRACE_DEBUG("Computing P1 Table. SIP|STAG:SPORT (%ub:%ub), num classes %u:%u",
+                    SACL_SIP_STAG_CLASSID_WIDTH, SACL_SPORT_CLASSID_WIDTH,
+                    rfc_ctxt->sip_stag_tbl.num_classes,
+                    rfc_ctxt->sport_tbl.num_classes);
     rfc_compute_p1_tables(rfc_ctxt,
-                          &rfc_ctxt->sip_tree.rfc_table,
-                          &rfc_ctxt->port_tree.rfc_table,
-                          SACL_P1_1_TABLE_OFFSET);
+                          &rfc_ctxt->sip_stag_tbl,
+                          &rfc_ctxt->sport_tbl,
+                          SACL_P1_TABLE_OFFSET);
     rfc_p1_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P2 Table. DIP:DPORT (%ub:%ub), num classes %u:%u",
-                    SACL_DIP_CLASSID_WIDTH, SACL_PROTO_DPORT_CLASSID_WIDTH,
-                    rfc_ctxt->dip_tree.rfc_table.num_classes,
-                    rfc_ctxt->proto_port_tree.rfc_table.num_classes);
+    PDS_TRACE_DEBUG("Computing P2 Table. DIP|DTAG:PROTO_DPORT (%ub:%ub), num classes %u:%u",
+                    SACL_DIP_DTAG_CLASSID_WIDTH, SACL_PROTO_DPORT_CLASSID_WIDTH,
+                    rfc_ctxt->dip_dtag_tbl.num_classes,
+                    rfc_ctxt->proto_dport_tbl.num_classes);
     rfc_compute_p2_tables(rfc_ctxt,
-                          &rfc_ctxt->dip_tree.rfc_table,
-                          &rfc_ctxt->proto_port_tree.rfc_table,
-                          SACL_P2_1_TABLE_OFFSET);
+                          &rfc_ctxt->dip_dtag_tbl,
+                          &rfc_ctxt->proto_dport_tbl,
+                          SACL_P2_TABLE_OFFSET);
     rfc_p2_eq_class_tables_dump(rfc_ctxt);
     PDS_TRACE_DEBUG("Computing P3 Table. P1:P2 (%ub:%ub), num classes %u:%u",
                     SACL_P1_CLASSID_WIDTH, SACL_P2_CLASSID_WIDTH,
                     rfc_ctxt->p1_table.num_classes,
                     rfc_ctxt->p2_table.num_classes);
-    rfc_compute_p3_tables(rfc_ctxt, SACL_P3_1_TABLE_OFFSET);
-    rfc_table_destroy(&rfc_ctxt->p1_table);
-    rfc_table_destroy(&rfc_ctxt->p2_table);
-
-    // combination 2
-    PDS_TRACE_DEBUG("Starting RFC combination 2");
-    PDS_TRACE_DEBUG("Computing P1 Table. STAG:DIP (%ub:%ub), num classes %u:%u",
-                    SACL_TAG_CLASSID_WIDTH, SACL_DIP_CLASSID_WIDTH,
-                    rfc_ctxt->stag_tree.rfc_table.num_classes,
-                    rfc_ctxt->dip_tree.rfc_table.num_classes);
-    rfc_compute_p1_tables(rfc_ctxt,
-                          &rfc_ctxt->stag_tree.rfc_table,
-                          &rfc_ctxt->dip_tree.rfc_table,
-                          SACL_P1_2_TABLE_OFFSET);
-    rfc_p1_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P2 Table. SPORT:DPORT (%ub:%ub), num classes %u:%u",
-                    SACL_SPORT_CLASSID_WIDTH, SACL_PROTO_DPORT_CLASSID_WIDTH,
-                    rfc_ctxt->port_tree.rfc_table.num_classes,
-                    rfc_ctxt->proto_port_tree.rfc_table.num_classes);
-    rfc_compute_p2_tables(rfc_ctxt,
-                          &rfc_ctxt->port_tree.rfc_table,
-                          &rfc_ctxt->proto_port_tree.rfc_table,
-                          SACL_P2_2_TABLE_OFFSET);
-    rfc_p2_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P3 Table. P1:P2 (%ub:%ub), num classes %u:%u",
-                    SACL_P1_CLASSID_WIDTH, SACL_P2_CLASSID_WIDTH,
-                    rfc_ctxt->p1_table.num_classes,
-                    rfc_ctxt->p2_table.num_classes);
-    rfc_compute_p3_tables(rfc_ctxt, SACL_P3_2_TABLE_OFFSET);
-    rfc_table_destroy(&rfc_ctxt->p1_table);
-    rfc_table_destroy(&rfc_ctxt->p2_table);
-
-    // combination 3
-    PDS_TRACE_DEBUG("Starting RFC combination 3");
-    PDS_TRACE_DEBUG("Computing P1 Table. SIP:DTAG (%ub:%ub), num classes %u:%u",
-                    SACL_SIP_CLASSID_WIDTH, SACL_TAG_CLASSID_WIDTH,
-                    rfc_ctxt->sip_tree.rfc_table.num_classes,
-                    rfc_ctxt->dtag_tree.rfc_table.num_classes);
-    rfc_compute_p1_tables(rfc_ctxt,
-                          &rfc_ctxt->sip_tree.rfc_table,
-                          &rfc_ctxt->dtag_tree.rfc_table,
-                          SACL_P1_3_TABLE_OFFSET);
-    rfc_p1_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P2 Table. SPORT:DPORT (%ub:%ub), num classes %u:%u",
-                    SACL_SPORT_CLASSID_WIDTH, SACL_PROTO_DPORT_CLASSID_WIDTH,
-                    rfc_ctxt->port_tree.rfc_table.num_classes,
-                    rfc_ctxt->proto_port_tree.rfc_table.num_classes);
-    rfc_compute_p2_tables(rfc_ctxt,
-                          &rfc_ctxt->port_tree.rfc_table,
-                          &rfc_ctxt->proto_port_tree.rfc_table,
-                          SACL_P2_3_TABLE_OFFSET);
-    rfc_p2_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P3 Table. P1:P2 (%ub:%ub), num classes %u:%u",
-                    SACL_P1_CLASSID_WIDTH, SACL_P2_CLASSID_WIDTH,
-                    rfc_ctxt->p1_table.num_classes,
-                    rfc_ctxt->p2_table.num_classes);
-    rfc_compute_p3_tables(rfc_ctxt, SACL_P3_3_TABLE_OFFSET);
-    rfc_table_destroy(&rfc_ctxt->p1_table);
-    rfc_table_destroy(&rfc_ctxt->p2_table);
-
-    // combination 4
-    PDS_TRACE_DEBUG("Starting RFC combination 4");
-    PDS_TRACE_DEBUG("Computing P1 Table. STAG:SPORT (%ub:%ub), num classes %u:%u",
-                    SACL_TAG_CLASSID_WIDTH, SACL_SPORT_CLASSID_WIDTH,
-                    rfc_ctxt->stag_tree.rfc_table.num_classes,
-                    rfc_ctxt->port_tree.rfc_table.num_classes);
-    rfc_compute_p1_tables(rfc_ctxt,
-                          &rfc_ctxt->stag_tree.rfc_table,
-                          &rfc_ctxt->port_tree.rfc_table,
-                          SACL_P1_4_TABLE_OFFSET);
-    rfc_p1_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P2 Table. DTAG:DPORT (%ub:%ub), num classes %u:%u",
-                    SACL_TAG_CLASSID_WIDTH, SACL_PROTO_DPORT_CLASSID_WIDTH,
-                    rfc_ctxt->dtag_tree.rfc_table.num_classes,
-                    rfc_ctxt->proto_port_tree.rfc_table.num_classes);
-    rfc_compute_p2_tables(rfc_ctxt,
-                          &rfc_ctxt->dtag_tree.rfc_table,
-                          &rfc_ctxt->proto_port_tree.rfc_table,
-                          SACL_P2_4_TABLE_OFFSET);
-    rfc_p2_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P3 Table. P1:P2 (%ub:%ub), num classes %u:%u",
-                    SACL_P1_CLASSID_WIDTH, SACL_P2_CLASSID_WIDTH,
-                    rfc_ctxt->p1_table.num_classes,
-                    rfc_ctxt->p2_table.num_classes);
-    rfc_compute_p3_tables(rfc_ctxt, SACL_P3_4_TABLE_OFFSET);
+    rfc_compute_p3_tables(rfc_ctxt, SACL_P3_TABLE_OFFSET);
     rfc_table_destroy(&rfc_ctxt->p1_table);
     rfc_table_destroy(&rfc_ctxt->p2_table);
 

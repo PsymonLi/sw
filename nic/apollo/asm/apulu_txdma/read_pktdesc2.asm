@@ -11,42 +11,67 @@ struct phv_              p;
 
 read_pktdesc2:
     /* Initialize rx_to_tx_hdr */
-    phvwr      p.{rx_to_tx_hdr_sacl_base_addr4, \
-               rx_to_tx_hdr_sip_classid4, \
-               rx_to_tx_hdr_dip_classid4, \
-               rx_to_tx_hdr_pad4, \
-               rx_to_tx_hdr_sport_classid4, \
-               rx_to_tx_hdr_dport_classid4, \
-               rx_to_tx_hdr_sacl_base_addr5, \
-               rx_to_tx_hdr_sip_classid5, \
-               rx_to_tx_hdr_dip_classid5, \
-               rx_to_tx_hdr_pad5, \
-               rx_to_tx_hdr_sport_classid5, \
-               rx_to_tx_hdr_dport_classid5, \
-               rx_to_tx_hdr_vpc_id, \
-               rx_to_tx_hdr_vnic_id, \
-               rx_to_tx_hdr_iptype, \
-               rx_to_tx_hdr_rx_packet, \
-               rx_to_tx_hdr_payload_len, \
-               rx_to_tx_hdr_stag0_classid, \
-               rx_to_tx_hdr_stag1_classid, \
-               rx_to_tx_hdr_stag2_classid, \
-               rx_to_tx_hdr_stag3_classid, \
-               rx_to_tx_hdr_stag4_classid, \
-               rx_to_tx_hdr_dtag0_classid, \
-               rx_to_tx_hdr_dtag1_classid, \
-               rx_to_tx_hdr_dtag2_classid, \
-               rx_to_tx_hdr_dtag3_classid, \
-               rx_to_tx_hdr_dtag4_classid, \
-               rx_to_tx_hdr_pad6, \
-               rx_to_tx_hdr_pad8}, \
-               d[511:(512-(offsetof(p,rx_to_tx_hdr_sacl_base_addr4) + \
-                   sizeof(p.rx_to_tx_hdr_sacl_base_addr4) - \
-                   offsetof(p, rx_to_tx_hdr_pad8)))]
+    phvwr     p.{rx_to_tx_hdr_sip_classid2, \
+                 rx_to_tx_hdr_dip_classid2, \
+                 rx_to_tx_hdr_pad_classid2, \
+                 rx_to_tx_hdr_sport_classid2, \
+                 rx_to_tx_hdr_dport_classid2, \
+                 rx_to_tx_hdr_sip_classid3, \
+                 rx_to_tx_hdr_dip_classid3, \
+                 rx_to_tx_hdr_pad_classid3, \
+                 rx_to_tx_hdr_sport_classid3, \
+                 rx_to_tx_hdr_dport_classid3, \
+                 rx_to_tx_hdr_sip_classid4, \
+                 rx_to_tx_hdr_dip_classid4, \
+                 rx_to_tx_hdr_pad_classid4, \
+                 rx_to_tx_hdr_sport_classid4, \
+                 rx_to_tx_hdr_dport_classid4, \
+                 rx_to_tx_hdr_sip_classid5, \
+                 rx_to_tx_hdr_dip_classid5, \
+                 rx_to_tx_hdr_pad_classid5, \
+                 rx_to_tx_hdr_sport_classid5, \
+                 rx_to_tx_hdr_dport_classid5, \
+                 rx_to_tx_hdr_vpc_id, \
+                 rx_to_tx_hdr_vnic_id, \
+                 rx_to_tx_hdr_iptype, \
+                 rx_to_tx_hdr_rx_packet, \
+                 rx_to_tx_hdr_payload_len, \
+                 rx_to_tx_hdr_stag0_classid0, \
+                 rx_to_tx_hdr_stag1_classid0, \
+                 rx_to_tx_hdr_stag2_classid0, \
+                 rx_to_tx_hdr_stag3_classid0, \
+                 rx_to_tx_hdr_stag4_classid0, \
+                 rx_to_tx_hdr_dtag0_classid0, \
+                 rx_to_tx_hdr_dtag1_classid0, \
+                 rx_to_tx_hdr_dtag2_classid0, \
+                 rx_to_tx_hdr_dtag3_classid0, \
+                 rx_to_tx_hdr_dtag4_classid0, \
+                 rx_to_tx_hdr_stag0_classid1, \
+                 rx_to_tx_hdr_stag1_classid1, \
+                 rx_to_tx_hdr_stag2_classid1, \
+                 rx_to_tx_hdr_stag3_classid1, \
+                 rx_to_tx_hdr_stag4_classid1, \
+                 rx_to_tx_hdr_dtag0_classid1, \
+                 rx_to_tx_hdr_dtag1_classid1, \
+                 rx_to_tx_hdr_dtag2_classid1, \
+                 rx_to_tx_hdr_dtag3_classid1, \
+                 rx_to_tx_hdr_dtag4_classid1, \
+                 rx_to_tx_hdr_stag0_classid2, \
+                 rx_to_tx_hdr_stag1_classid2, \
+                 rx_to_tx_hdr_stag2_classid2, \
+                 rx_to_tx_hdr_stag3_classid2, \
+                 rx_to_tx_hdr_stag4_classid2, \
+                 rx_to_tx_hdr_dtag0_classid2, \
+                 rx_to_tx_hdr_dtag1_classid2, \
+                 rx_to_tx_hdr_dtag2_classid2, \
+                 rx_to_tx_hdr_dtag3_classid2, \
+                 rx_to_tx_hdr_dtag4_classid2, \
+                 rx_to_tx_hdr_pad2}, \
+                 d[511:0]
 
     // Copy the first set of TAGs
-    phvwr.e    p.txdma_control_stag_classid, d.read_pktdesc2_d.stag0_classid
-    phvwr      p.txdma_control_dtag_classid, d.read_pktdesc2_d.dtag0_classid
+    phvwr.e    p.txdma_control_stag_classid, d.read_pktdesc2_d.stag0_classid0
+    phvwr      p.txdma_control_dtag_classid, d.read_pktdesc2_d.dtag0_classid0
 
 /*****************************************************************************/
 /* error function                                                            */

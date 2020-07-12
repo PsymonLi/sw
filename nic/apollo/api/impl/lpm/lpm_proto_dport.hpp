@@ -1,9 +1,9 @@
 /**
  * Copyright (c) 2018 Pensando Systems, Inc.
  *
- * @file    lpm_sport.hpp
+ * @file    lpm_proto_dport.hpp
  *
- * @brief   LPM Source Port Implementation
+ * @brief   LPM Protocol + Dest Port Implementation
  */
 
 #if !defined (__LPM_PROTO_DPORT_HPP__)

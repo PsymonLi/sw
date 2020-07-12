@@ -7,7 +7,7 @@ control pkt_enqueue {}
 control session_aging {}
 control session2flow {}
 control rxdma_mapping {}
-control derive_tag_classids {}
+control derive_tags {}
 
 #define p4_to_rxdma             app_header
 #define lpm1_enable             table0_valid

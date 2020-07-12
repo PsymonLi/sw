@@ -12,6 +12,7 @@ header_type txdma_control_metadata_t {
     fields {
         pktdesc_addr1       : 40;
         pktdesc_addr2       : 40;
+        pktdesc_addr3       : 40;
         rxdma_cindex_addr   : 40;
         rfc_table_addr      : 40;
         lpm1_base_addr      : 40;
@@ -31,7 +32,8 @@ header_type txdma_control_metadata_t {
 
         stag_count          : 4;
         dtag_count          : 4;
-        root_count          : 4;
+        root_change         : 1;
+        root_count          : 3;
         rule_priority       : 11;
         pad0                : 1;
     }

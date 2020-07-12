@@ -210,9 +210,9 @@ private:
         rxdma_mapping_tag_idx_ = PDS_IMPL_RSVD_TAG_HW_ID;
         nexthop_type_ = NEXTHOP_TYPE_MAX;
         nexthop_id_ = PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
-        num_class_id_ = 0;
+        num_tags_ = 0;
         for (uint32_t i = 0; i < PDS_MAX_TAGS_PER_MAPPING; i++) {
-            class_id_[i] = PDS_IMPL_RSVD_MAPPING_CLASS_ID;
+            tags_[i] = PDS_IMPL_RSVD_MAPPING_TAG;
         }
     }
 
@@ -257,18 +257,6 @@ private:
     sdk_ret_t reserve_public_ip_resources_(mapping_entry *mapping,
                                            vpc_impl *vpc, vnic_entry *vnic,
                                            pds_mapping_spec_t *spec);
-
-    /// \brief     allocate all classids corresponding to the tags
-    ///            configured on this mapping
-    ///            in the rxdma to support tag derivation
-    /// \param[in] vpc     VPC impl instance for this mapping
-    /// \param[in] local   true if the mapping is local
-    /// \param[in] mapping mapping object being processed
-    /// \param[in] spec    IP mapping configuration details
-    /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t allocate_tag_classes_(vpc_impl *vpc, bool local,
-                                    mapping_entry *mapping,
-                                    pds_mapping_spec_t *spec);
 
     /// \brief     reserve all resources needed for a mapping in the rxdma to
     ///            support tag derivation
@@ -752,59 +740,59 @@ private:
     // handles for RxDMA MAPPING table
     handle_t    rxdma_mapping_hdl_;
     handle_t    rxdma_mapping_public_ip_hdl_;
-    // number of class id(s) allocated for this mapping
-    uint32_t    num_class_id_;
-    // class id(s) of this mapping
-    uint32_t    class_id_[PDS_MAX_TAGS_PER_MAPPING];
+    // number of tags in this mapping
+    uint32_t    num_tags_;
+    // Tags in this mapping
+    uint32_t    tags_[PDS_MAX_TAGS_PER_MAPPING];
 };
 
 static inline sdk_ret_t
-local_mapping_tag_fill_class_id_ (local_mapping_tag_info_entry_t *tag_entry,
-                                  uint32_t idx, uint32_t class_id) {
+local_mapping_tag_fill_tag_ (local_mapping_tag_info_entry_t *tag_entry,
+                                  uint32_t idx, uint32_t tag) {
     switch (idx) {
     case 0:
-        tag_entry->classid0 = class_id;
+        tag_entry->tag0 = tag;
         break;
     case 1:
-        tag_entry->classid1 = class_id;
+        tag_entry->tag1 = tag;
         break;
     case 2:
-        tag_entry->classid2 = class_id;
+        tag_entry->tag2 = tag;
         break;
     case 3:
-        tag_entry->classid3 = class_id;
+        tag_entry->tag3 = tag;
         break;
     case 4:
-        tag_entry->classid4 = class_id;
+        tag_entry->tag4 = tag;
         break;
     default:
-        PDS_TRACE_ERR("Invalid class id index %u for mapping", idx);
+        PDS_TRACE_ERR("Invalid tag index %u for mapping", idx);
         return SDK_RET_INVALID_ARG;
     }
     return SDK_RET_OK;
 }
 
 static inline sdk_ret_t
-mapping_tag_fill_class_id_ (mapping_tag_info_entry_t *tag_entry,
-                            uint32_t idx, uint32_t class_id) {
+mapping_tag_fill_tag_ (mapping_tag_info_entry_t *tag_entry,
+                            uint32_t idx, uint32_t tag) {
     switch (idx) {
     case 0:
-        tag_entry->classid0 = class_id;
+        tag_entry->tag0 = tag;
         break;
     case 1:
-        tag_entry->classid1 = class_id;
+        tag_entry->tag1 = tag;
         break;
     case 2:
-        tag_entry->classid2 = class_id;
+        tag_entry->tag2 = tag;
         break;
     case 3:
-        tag_entry->classid3 = class_id;
+        tag_entry->tag3 = tag;
         break;
     case 4:
-        tag_entry->classid4 = class_id;
+        tag_entry->tag4 = tag;
         break;
     default:
-        PDS_TRACE_ERR("Invalid class id index %u for mapping", idx);
+        PDS_TRACE_ERR("Invalid tag index %u for mapping", idx);
         return SDK_RET_INVALID_ARG;
     }
     return SDK_RET_OK;

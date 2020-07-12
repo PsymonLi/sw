@@ -12,6 +12,8 @@ MODULE_SRCS     = ${MODULE_SRC_DIR}/../../lpm/lpm.cc \
                   ${MODULE_SRC_DIR}/../../lpm/lpm_ipv6_sip.cc \
                   ${MODULE_SRC_DIR}/../../lpm/lpm_proto_dport.cc \
                   ${MODULE_SRC_DIR}/../../lpm/lpm_sport.cc \
+                  ${MODULE_SRC_DIR}/../../lpm/lpm_stag.cc \
+                  ${MODULE_SRC_DIR}/../../lpm/lpm_dtag.cc \
                   $(wildcard ${MODULE_SRC_DIR}/*.cc)
 MODULE_PIPELINE = apulu
 include ${MKDEFS}/post.mk

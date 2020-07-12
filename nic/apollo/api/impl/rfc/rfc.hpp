@@ -38,10 +38,6 @@ typedef struct policy_params_s {
      *   detection
      */
     uint32_t rfc_mem_size;
-    /**< class id allocator */
-    tag2class_cb_t tag2class_cb;
-    /**< opaque ctxt passed to above callback */
-    void *tag2class_cb_ctxt;
 } policy_params_t;
 
 /**

@@ -19,15 +19,10 @@ vnic_info_rxdma:
     phvwr.c1     p.rx_to_tx_hdr_remote_ip, k.p4_to_rxdma_flow_dst
     phvwr.!c1    p.rx_to_tx_hdr_remote_ip, k.p4_to_rxdma_flow_src
 
-    // Is route root == NULL? goto process_salc_roots
-    seq          c1, d.vnic_info_rxdma_d.lpm_base1, r0
-    bcf          [c1], process_salc_roots
-
     // Copy route root and initialize remote_address
-    phvwr.!c1    p.rx_to_tx_hdr_route_base_addr, d.vnic_info_rxdma_d.lpm_base1
+    phvwr        p.rx_to_tx_hdr_route_base_addr, d.vnic_info_rxdma_d.lpm_base1
 
-process_salc_roots:
-    // if sacl_base_address == NULL, stop!
+    // if sacl_base_address0 == NULL, stop!
     add          r1, d.vnic_info_rxdma_d.lpm_base2, r0
     seq          c1, r1, r0
     nop.c1.e
@@ -51,6 +46,9 @@ process_salc_roots:
     phvwr        p.lpm_metadata_lpm2_base_addr, r2
     phvwr        p.lpm_metadata_lpm2_key[127:24], k.p4_to_rxdma_flow_proto
     phvwr        p.lpm_metadata_lpm2_key[23:0], k.p4_to_rxdma_flow_dport
+
+    // Set sacl state to indicate that we are processing SPORT/DPORT.
+    phvwr        p.lpm_metadata_sacl_proc_state, SACL_PROC_STATE_SPORT_DPORT
 
     // Enable both LPMs
     phvwr.e      p.p4_to_rxdma_lpm1_enable, TRUE

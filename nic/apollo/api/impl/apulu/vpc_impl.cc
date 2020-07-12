@@ -46,68 +46,10 @@ vpc_impl::factory(pds_vpc_spec_t *spec) {
         new (impl) vpc_impl(spec);
     }
     return impl;
-
-#if 0
-    // allocate tag/class state for this vpc
-    impl->tag_state_ =
-        (vpc_impl_tag_state_t *)SDK_CALLOC(PDS_MEM_ALLOC_ID_VPC_IMPL_TAG_STATE,
-                                           sizeof(vpc_impl_tag_state_t));
-    if (impl->tag_state_ == NULL) {
-        goto error;
-    }
-    new (impl->tag_state_) vpc_impl_tag_state_t();
-
-    // create classid indexer for local mappings
-    impl->tag_state_->local_mapping_classs_id_idxr_ =
-        rte_indexer::factory(PDS_MAX_CLASS_ID_PER_VPC, false, false);
-    if (impl->tag_state_->local_mapping_classs_id_idxr_ == NULL) {
-        goto error;
-    }
-    // set the reserved classid aside
-    impl->tag_state_->local_mapping_classs_id_idxr_->alloc(PDS_IMPL_RSVD_MAPPING_CLASS_ID);
-
-    // create classid indexer for remote mappings
-    impl->tag_state_->remote_mapping_class_id_idxr_ =
-        rte_indexer::factory(PDS_MAX_CLASS_ID_PER_VPC, false, false);
-    if (impl->tag_state_->remote_mapping_class_id_idxr_ == NULL) {
-        goto error;
-    }
-    // set the reserved classid aside
-    impl->tag_state_->remote_mapping_class_id_idxr_->alloc(PDS_IMPL_RSVD_MAPPING_CLASS_ID);
-    return impl;
-
-error:
-
-    if (impl) {
-        if (impl->tag_state_) {
-            if (impl->tag_state_->local_mapping_classs_id_idxr_) {
-                rte_indexer::destroy(impl->tag_state_->local_mapping_classs_id_idxr_);
-            }
-            if (impl->tag_state_->remote_mapping_class_id_idxr_) {
-                rte_indexer::destroy(impl->tag_state_->remote_mapping_class_id_idxr_);
-            }
-            SDK_FREE(PDS_MEM_ALLOC_ID_VPC_IMPL_TAG_STATE, impl->tag_state_);
-        }
-        impl->~vpc_impl();
-        vpc_impl_db()->free(impl);
-    }
-    return NULL;
-#endif
 }
 
 void
 vpc_impl::destroy(vpc_impl *impl) {
-#if 0
-    if (impl->tag_state_) {
-        if (impl->tag_state_->local_mapping_classs_id_idxr_) {
-            rte_indexer::destroy(impl->tag_state_->local_mapping_classs_id_idxr_);
-        }
-        if (impl->tag_state_->remote_mapping_class_id_idxr_) {
-            rte_indexer::destroy(impl->tag_state_->remote_mapping_class_id_idxr_);
-        }
-        SDK_FREE(PDS_MEM_ALLOC_ID_VPC_IMPL_TAG_STATE, impl->tag_state_);
-    }
-#endif
     impl->~vpc_impl();
     vpc_impl_db()->free(impl);
 }
@@ -386,7 +328,6 @@ vpc_impl::activate_update_(pds_epoch_t epoch, vpc_entry *new_vpc,
     // xfer resources from original object to the cloned object
     hw_id_ = orig_impl->hw_id_;
     bd_hw_id_ = orig_impl->bd_hw_id_;
-    tag_state_ = orig_impl->tag_state_;
 
     // fill the key
     memset(&vni_key, 0, sizeof(vni_key));
@@ -419,7 +360,6 @@ vpc_impl::activate_update_(pds_epoch_t epoch, vpc_entry *new_vpc,
     // relinquish the ownership of resources from old object
     orig_impl->hw_id_ = 0xFFFF;
     orig_impl->bd_hw_id_ = 0xFFFF;
-    orig_impl->tag_state_ = nullptr;
     if (!(obj_ctxt->upd_bmap & PDS_VPC_UPD_FABRIC_ENCAP)) {
         orig_impl->vni_hdl_ = handle_t::null();
     }
@@ -521,136 +461,6 @@ vpc_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
     status->hw_id = hw_id_;
     status->bd_hw_id = vni_data.vni_info.bd_id;
     return SDK_RET_OK;
-}
-
-sdk_ret_t
-vpc_impl::alloc_class_id(uint32_t tag, bool local, uint32_t *class_id) {
-    return vpc_impl_db()->alloc_class_id(tag, local, class_id);
-#if 0
-    sdk_ret_t ret;
-    rte_indexer *class_idxr;
-    tag2class_map_t::iterator it;
-    tag2class_map_t *tag2class_map;
-    class2tag_map_t *class2tag_map;
-
-    if (local) {
-        tag2class_map = &tag_state_->local_tag2class_map_;
-        class2tag_map = &tag_state_->local_class2tag_map_;
-        class_idxr = tag_state_->local_mapping_classs_id_idxr_;
-    } else {
-        tag2class_map = &tag_state_->remote_tag2class_map_;
-        class2tag_map = &tag_state_->remote_class2tag_map_;
-        class_idxr = tag_state_->remote_mapping_class_id_idxr_;
-    }
-
-    if (tag2class_map->find(tag) != tag2class_map->end()) {
-        // tag to class id mapping exists
-        (*tag2class_map)[tag].refcount++;
-        *class_id = (*tag2class_map)[tag].class_id;
-    } else {
-        // try to allocate new class id
-        ret = class_idxr->alloc(class_id);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to allocate class id for tag %u, err %u",
-                          tag, ret);
-            return ret;
-        }
-        // add tag -> class id mapping
-        (*tag2class_map)[tag].class_id = *class_id;
-        (*tag2class_map)[tag].refcount = 1;
-        // add class id -> tag mapping
-        (*class2tag_map)[*class_id] = tag;
-    }
-    return SDK_RET_OK;
-#endif
-}
-
-sdk_ret_t
-vpc_impl::release_class_id(uint32_t class_id, bool local) {
-    return vpc_impl_db()->release_class_id(class_id, local);
-#if 0
-    uint32_t tag;
-    sdk_ret_t ret;
-    rte_indexer *class_idxr;
-    tag2class_map_t::iterator it;
-    tag2class_map_t *tag2class_map;
-    class2tag_map_t *class2tag_map;
-
-    if (local) {
-        tag2class_map = &tag_state_->local_tag2class_map_;
-        class2tag_map = &tag_state_->local_class2tag_map_;
-        class_idxr = tag_state_->local_mapping_classs_id_idxr_;
-    } else {
-        tag2class_map = &tag_state_->remote_tag2class_map_;
-        class2tag_map = &tag_state_->remote_class2tag_map_;
-        class_idxr = tag_state_->remote_mapping_class_id_idxr_;
-    }
-
-    if (class2tag_map->find(class_id) != class2tag_map->end()) {
-        tag = (*class2tag_map)[class_id];
-        if (unlikely(tag2class_map->find(tag) == tag2class_map->end())) {
-            PDS_TRACE_ERR("tag2class lookup failed tag %u, class id %u",
-                          tag, class_id);
-            // go ahead and release the classid and class2tag map entry
-            class2tag_map->erase(class_id);
-            class_idxr->free(class_id);
-        } else {
-            (*tag2class_map)[tag].refcount--;
-            if ((*tag2class_map)[tag].refcount == 0) {
-                class2tag_map->erase(class_id);
-                tag2class_map->erase(tag);
-                class_idxr->free(class_id);
-            }
-        }
-    } else {
-        // handle it gracefully
-        PDS_TRACE_ERR("class id %u not in use", class_id);
-    }
-    return SDK_RET_OK;
-#endif
-}
-
-sdk_ret_t
-vpc_impl::release_tag(uint32_t tag, bool local) {
-    return vpc_impl_db()->release_tag(tag, local);
-#if 0
-    sdk_ret_t ret;
-    uint32_t class_id;
-    rte_indexer *class_idxr;
-    tag2class_map_t *tag2class_map;
-    class2tag_map_t *class2tag_map;
-
-    if (local) {
-        tag2class_map = &tag_state_->local_tag2class_map_;
-        class2tag_map = &tag_state_->local_class2tag_map_;
-        class_idxr = tag_state_->local_mapping_classs_id_idxr_;
-    } else {
-        tag2class_map = &tag_state_->remote_tag2class_map_;
-        class2tag_map = &tag_state_->remote_class2tag_map_;
-        class_idxr = tag_state_->remote_mapping_class_id_idxr_;
-    }
-
-    if (tag2class_map->find(tag) != tag2class_map->end()) {
-        (*tag2class_map)[tag].refcount--;
-        if ((*tag2class_map)[tag].refcount == 0) {
-            // cleanup the tag <-> class id mappings
-            class_id = (*tag2class_map)[tag].class_id;
-            tag2class_map->erase(tag);
-            class2tag_map->erase(class_id);
-            // free back the class id
-            class_idxr->free(class_id);
-        }
-    } else {
-        // handle it gracefully
-        PDS_TRACE_ERR("Tag %u has no class id allocated", tag);
-    }
-    return SDK_RET_OK;
-#endif
-}
-
-sdk_ret_t
-vpc_impl::find_tag(uint32_t class_id, uint32_t *tag, bool local) {
-    return vpc_impl_db()->find_tag(class_id, tag, local);
 }
 
 sdk_ret_t
