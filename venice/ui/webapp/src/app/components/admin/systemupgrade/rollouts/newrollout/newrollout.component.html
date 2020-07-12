@@ -6,7 +6,7 @@
 
       <div class="newrollout-flex-container" [formGroup]="newRollout.$formGroup">
 
-        <div class="newrollout-child" *ngIf="selectedRolloutNicNodeTypes!='veniceonly'">
+        <div class="newrollout-child">
           <ng-container *ngTemplateOutlet="rolloutNicNodeType"></ng-container>
           <ng-container *ngTemplateOutlet="meta;context:{newRolloutForm: newRollout.$formGroup}">
           </ng-container>
