@@ -168,7 +168,7 @@ func (a *ApuluAPI) PipelineInit() error {
 	a.startAlertPoliciesWatch()
 
 	// handle all the metrics
-	apulu.HandleMetrics(a.InfraAPI, a.MetricsSvcClient)
+	handleMetrics(a)
 
 	// Ensure that the watches for all objects are set up since Apulu doesn't have a profile that dictates which objects to be watched
 	a.startDynamicWatch(types.CloudPipelineKinds)

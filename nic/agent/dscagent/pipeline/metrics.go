@@ -1,6 +1,6 @@
 // +build apulu
 
-package apulu
+package pipeline
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 
+	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -57,8 +57,8 @@ var sysmonMetricsTables = []string{
 
 var tsdbObjs map[string]tsdb.Obj
 
-// GetMetricsKeyFromMac generates key of type []byte from mac address
-func GetMetricsKeyFromMac(objval int, mac string) []byte {
+// getMetricsKeyFromMac generates key of type []byte from mac address
+func getMetricsKeyFromMac(objval int, mac string) []byte {
 	output := make([]byte, 10)
 	output[0] = byte(objval)
 	output[8] = 0x42
@@ -75,7 +75,7 @@ func GetMetricsKeyFromMac(objval int, mac string) []byte {
 func queryPDSMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsSvc_MetricsGetClient, metricName string, keyId int) (resp *operdapi.MetricsGetResponse, err error) {
 	//construct metrics request object
 	metricsRequest := &operdapi.MetricsGetRequest{}
-	metricsRequest.Key = GetMetricsKeyFromMac(keyId, infraObj.GetDscName())
+	metricsRequest.Key = getMetricsKeyFromMac(keyId, infraObj.GetDscName())
 	metricsRequest.Name = metricName
 
 	//client supports bi-directional stream
@@ -142,12 +142,9 @@ func processMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsSvc_M
 	exportPDSMetrics(resp, metricName)
 }
 
-func queryInterfaceMetrics(infraAPI types.InfraAPI, stream operdapi.MetricsSvc_MetricsGetClient) (err error) {
-	var (
-		dat [][]byte
-	)
-
-	dat, err = infraAPI.List("Interface")
+func queryInterfaceMetrics(a *ApuluAPI, stream operdapi.MetricsSvc_MetricsGetClient) (err error) {
+	ifs := netproto.Interface{TypeMeta: api.TypeMeta{Kind: "Interface"}}
+	intfs, err := a.HandleInterface(types.List, ifs)
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrBadRequest, "Interface retrieval from db failed, Err: %v", err))
 		return errors.Wrapf(types.ErrBadRequest, "Interface retrieval from db failed, Err: %v", err)
@@ -155,13 +152,7 @@ func queryInterfaceMetrics(infraAPI types.InfraAPI, stream operdapi.MetricsSvc_M
 	metricsGetRequest := &operdapi.MetricsGetRequest{}
 
 	// walk over all the interfaces and query for statistics
-	for _, o := range dat {
-		var intf netproto.Interface
-		err := proto.Unmarshal(o, &intf)
-		if err != nil {
-			log.Error(errors.Wrapf(types.ErrUnmarshal, "Interface: %s | Err: %v", intf.GetKey(), err))
-			continue
-		}
+	for _, intf := range intfs {
 		uid, _ := uuid.FromString(intf.UUID)
 		metricsGetRequest.Key = uid.Bytes()
 		switch intf.Spec.Type {
@@ -227,10 +218,10 @@ func querySysmonMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsS
 	}
 }
 
-// HandleMetrics handles collecting and reporting of metrics
-func HandleMetrics(infraAPI types.InfraAPI, client operdapi.MetricsSvcClient) error {
+// handleMetrics handles collecting and reporting of metrics
+func handleMetrics(a *ApuluAPI) error {
 	// create a bidir stream for metrics
-	metricsStream, err := client.MetricsGet(context.Background())
+	metricsStream, err := a.MetricsSvcClient.MetricsGet(context.Background())
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrMetricsGet, "MetricsGet failure | Err %v", err))
 		return errors.Wrapf(types.ErrMetricsGet, "MetricsGet failure | Err %v", err)
@@ -274,10 +265,10 @@ func HandleMetrics(infraAPI types.InfraAPI, client operdapi.MetricsSvcClient) er
 					// pen_oper is not up, skip querying
 					continue
 				}
-				queryInterfaceMetrics(infraAPI, stream)
-				queryFlowStatsSummaryMetrics(infraAPI, stream)
-				queryDataPathAssistStatsMetrics(infraAPI, stream)
-				querySysmonMetrics(infraAPI, stream)
+				queryInterfaceMetrics(a, stream)
+				queryFlowStatsSummaryMetrics(a.InfraAPI, stream)
+				queryDataPathAssistStatsMetrics(a.InfraAPI, stream)
+				querySysmonMetrics(a.InfraAPI, stream)
 			}
 		}
 	}(metricsStream)
