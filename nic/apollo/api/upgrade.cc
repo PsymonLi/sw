@@ -192,7 +192,8 @@ upg_oper_shmstore_create (uint32_t thread_id, const char *name, size_t size,
                     g_upg_state->module_version(thread_id).minor,
                     g_upg_state->module_prev_version(thread_id).major,
                     g_upg_state->module_prev_version(thread_id).minor);
-    if (sdk::platform::sysinit_mode_hitless(mode)) {
+    if (sdk::platform::sysinit_mode_hitless(mode) ||
+        sdk::asic::asic_is_soft_init()) {
         curr_version = g_upg_state->module_version(thread_id);
         prev_version = g_upg_state->module_prev_version(thread_id);
         if (curr_version.version == prev_version.version) {
@@ -323,6 +324,12 @@ upg_soft_init (pds_init_params_t *params)
     sysinit_mode_t mode;
     sdk_ret_t ret;
 
+    // initialize upgrade state and call the upgade compatibitly checks
+    if ((g_upg_state = upg_state::factory(params)) == NULL) {
+        PDS_TRACE_ERR("Upgrade state creation failed");
+        return SDK_RET_OOM;
+    }
+
     mode = sdk::upg::init_mode();
     // soft inited applications such as vpp, needs the upgraded
     // mem regions for its libraries, ex ftl
@@ -335,6 +342,13 @@ upg_soft_init (pds_init_params_t *params)
             return ret;
         }
     }
+
+    ret = nicmgr_shmstore_create(mode);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Upgrade pds nicmgr shmstore create failed");
+        return ret;
+    }
+
     return SDK_RET_OK;
 }
 

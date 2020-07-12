@@ -137,6 +137,10 @@ DeviceManager::DeviceManager(devicemgr_cfg_t *cfg)
     this->hbm_mem_json_file = hbm_mem_json_file;
     this->dev_api = NULL;
     this->upg_state = UNKNOWN_STATE;
+    this->restore_store = cfg->restore_store;
+    this->backup_store = cfg->backup_store;
+    memcpy(&this->curr_version, &cfg->curr_version, sizeof(cfg->curr_version));
+    memcpy(&this->prev_version, &cfg->prev_version, sizeof(cfg->prev_version));
     this->thread = NULL;
 }
 
@@ -147,7 +151,6 @@ DeviceManager::Init(devicemgr_cfg_t *cfg) {
     LifsReset();
     PciemgrInit(cfg);
     HeartbeatStart();
-    this->shm_mem = nicmgr_shm::factory(true);
     NIC_HEADER_TRACE("DeviceManager Init Done");
 }
 
@@ -155,7 +158,6 @@ void
 DeviceManager::SoftInit(devicemgr_cfg_t *cfg) {
     PlatformInit(cfg);
     HalLifIDReserve();
-    this->shm_mem = nicmgr_shm::factory(false);
 #ifdef ATHENA
     SoftAddDevice(FTL);
 #endif
@@ -169,7 +171,6 @@ DeviceManager::UpgradeGracefulInit(devicemgr_cfg_t *cfg) {
     LifsReset();
     PciemgrInit(cfg);
     HeartbeatStart();
-    this->shm_mem = nicmgr_shm::factory(true);
     NIC_HEADER_TRACE("DeviceManager Graceful Init Done");
 }
 
@@ -180,7 +181,6 @@ DeviceManager::UpgradeHitlessInit(devicemgr_cfg_t *cfg) {
     if (sdk::asic::asic_is_hard_init()) {
         PciemgrInit(cfg);
     }
-    this->shm_mem = nicmgr_shm::factory(false);
     NIC_HEADER_TRACE("DeviceManager Hitless Init Done");
 }
 

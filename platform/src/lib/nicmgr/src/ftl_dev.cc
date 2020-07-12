@@ -15,6 +15,7 @@
 #include "nic/sdk/platform/misc/include/misc.h"
 
 #include "logger.hpp"
+#include "dev.hpp"
 #include "ftl_dev.hpp"
 #include "ftl_lif.hpp"
 #include "pd_client.hpp"
@@ -54,7 +55,6 @@ FtlDev::FtlDev(devapi *dapi,
     spec((ftl_devspec_t *)dev_spec),
     pd(pd_client),
     dev_api(dapi),
-    shm_mem(nicmgr_shm::getInstance()),
     lif_base(lif_base),
     dtor_lif_free(false),
     delphi_mounted(false),
@@ -62,18 +62,19 @@ FtlDev::FtlDev(devapi *dapi,
 {
     ftl_lif_res_t       lif_res;
     sdk_ret_t           ret = SDK_RET_OK;
-
-    dev_pstate = (ftldev_pstate_t *)
-                 shm_mem->alloc_find_pstate(FTL_DEV_NAME, sizeof(*dev_pstate));
-    if (!dev_pstate) {
-        NIC_LOG_ERR("{}: Failed to locate memory for pstate", DevNameGet());
-        throw;
-    }
+    DeviceManager *devmgr = DeviceManager::GetInstance();
 
     /*
      * Allocate LIFs if necessary
      */
     if (!lif_base) {
+        shm_mem = devmgr->getShmstore();
+        dev_pstate = (ftldev_pstate_t *)
+            shm_mem->create_segment(FTL_DEV_NAME, sizeof(*dev_pstate));
+        if (!dev_pstate) {
+            NIC_LOG_ERR("{}: Failed to locate memory for pstate", DevNameGet());
+            throw;
+        }
         new (dev_pstate) ftldev_pstate_t(spec);
         ret = pd->lm_->alloc_id(&lif_base, spec->lif_count);
         if (ret != SDK_RET_OK) {
@@ -104,15 +105,15 @@ FtlDev::SoftFtlDev(devapi *dapi,
                    PdClient *pd_client,
                    EV_P)
 {
-    nicmgr_shm          *shm_mem = nicmgr_shm::getInstance();
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    sdk::lib::shmstore  *shm_mem = devmgr->getRestoreShmstore();
     FtlDev              *dev;
     ftldev_pstate_t     *dev_pstate;
     ftl_devspec_t       *spec;
     ftl_timestamp_t     ts;
     uint32_t            lif_base;
 
-    dev_pstate = (ftldev_pstate_t *)
-                 shm_mem->alloc_find_pstate(FTL_DEV_NAME, sizeof(*dev_pstate));
+    dev_pstate = (ftldev_pstate_t *) shm_mem->open_segment(FTL_DEV_NAME);
     if (!dev_pstate) {
         NIC_LOG_DEBUG("No pstate memory for {} - skipping soft init",
                       FTL_DEV_NAME);

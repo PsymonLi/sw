@@ -11,10 +11,9 @@
 #ifndef __ETH_PSTATE_HPP__
 #define __ETH_PSTATE_HPP__
 
-#include "nicmgr_shm.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 
-#define IONIC_IFNAMSIZ  16
-
+#define IONIC_IFNAMSIZ 16
 #define RSS_HASH_KEY_SIZE   40
 #define RSS_IND_TBL_SIZE    128
 
@@ -33,6 +32,10 @@ enum eth_lif_state {
     LIF_STATE_DOWN,
 };
 
+typedef struct meta_info_s {
+    module_version_t vers;
+    uint64_t rsvd[4];
+} __PACK__ meta_info_t;
 
 /// \brief eth lif upgrade state persisted
 /// saved in shared memory to access after process restart.
@@ -42,13 +45,11 @@ typedef struct ethlif_pstate_v1_s {
 
     /// always assign the default valuse for the structure
     ethlif_pstate_v1_s () {
-        version_magic = 1;
+        metadata =  { 0 };
         lif_id = 0;
         memset(name, 0, sizeof(name));
         state = LIF_STATE_NONE;
-        // memset(lif_config, 0, sizeof(lif_config));
         host_lif_config_addr = 0;
-        // memset(lif_status, 0, sizeof(lif_status));
         host_lif_status_addr = 0;
         host_lif_stats_addr = 0;
         rss_type = LIF_RSS_TYPE_NONE;
@@ -66,8 +67,8 @@ typedef struct ethlif_pstate_v1_s {
         port_status = 0;
     }
 
-    /// Verions magic for the strucure
-    uint64_t version_magic;
+    /// meta data for the strucure
+    meta_info_t  metadata;
 
     /// lif id - used as shm segment identifier
     uint32_t lif_id;
@@ -81,7 +82,6 @@ typedef struct ethlif_pstate_v1_s {
     uint64_t host_lif_config_addr;
 
     /// lif status
-    // struct ionic_lif_status lif_status;
     uint64_t host_lif_status_addr;
 
     /// lif stats
@@ -101,8 +101,8 @@ typedef struct ethlif_pstate_v1_s {
 
     /// RSS config
     uint16_t rss_type;
-    uint8_t rss_key[RSS_HASH_KEY_SIZE];  // 40B
-    uint8_t rss_indir[RSS_IND_TBL_SIZE]; // 128B
+    uint8_t rss_key[RSS_HASH_KEY_SIZE];
+    uint8_t rss_indir[RSS_IND_TBL_SIZE];
 
     /// MTU info
     uint32_t mtu;
@@ -131,7 +131,7 @@ typedef struct ethdev_pstate_v1_s {
 
     // always assign the default values in the constructor
     ethdev_pstate_v1_s () {
-        version_magic = 1;
+        metadata =  { 0 };
         memset(name, 0, sizeof(name));
         memset(active_lif_set, 0, sizeof(active_lif_set));
         n_active_lif = 0;
@@ -143,7 +143,7 @@ typedef struct ethdev_pstate_v1_s {
     }
 
     /// Verions magic for the strucure
-    uint64_t version_magic;
+    meta_info_t  metadata;
 
     /// dev name - used as shm segment identifier
     char name[IONIC_IFNAMSIZ];
@@ -156,11 +156,9 @@ typedef struct ethdev_pstate_v1_s {
     uint64_t host_port_info_addr;
 
     /// Port Config
-    //  union ionic_port_config port_config;
     uint64_t host_port_config_addr;
 
     /// Port Status
-    //  struct ionic_port_status port_status;
     uint64_t host_port_status_addr;
 
     /// Port MAC Stats
@@ -176,4 +174,94 @@ typedef struct ethdev_pstate_v1_s {
 typedef ethdev_pstate_v1_t ethdev_pstate_t;
 typedef ethlif_pstate_v1_t ethlif_pstate_t;
 
-#endif    // __HITLESS_UPGRADE_HPP__
+
+/// \brief      get the size of eth lif pstate
+/// \param[in]  version  version to get size
+/// \return     pstate size
+size_t inline
+ethlif_pstate_size (uint16_t version)
+{
+    size_t pstate_size = 0;
+
+    switch(version) {
+    case 1:
+        pstate_size = sizeof(ethlif_pstate_v1_t);
+        break;
+    default:
+        pstate_size = 0;
+    }
+
+    return pstate_size;
+}
+
+/// \brief      get the size of eth dev pstate
+/// \param[in]  version  version to get size
+/// \return     pstate size
+size_t inline
+ethdev_pstate_size (uint16_t version)
+{
+    size_t pstate_size = 0;
+
+    switch(version) {
+    case 1:
+        pstate_size = sizeof(ethdev_pstate_v1_t);
+        break;
+    default:
+        pstate_size = 0;
+    }
+
+    return pstate_size;
+}
+
+///< size of metadata in the pstate
+#define metadata_size sizeof(meta_info_t)
+
+/// \brief      convert eth dev pstate struct to target version
+/// \param[in]  to  copy pstate to address
+/// \param[in]  from copy pstate from address
+/// \param[in]  to_version  target version to convert
+/// \param[in]  from_version  source version
+/// \return     none
+/// \remark     strip metadata from pstate and copy actual data
+void inline
+ethdev_pstate_transform (void *to,
+                         const void *from,
+                         module_version_t to_version,
+                         module_version_t from_version)
+{
+    size_t size = 0;
+
+    assert(from != NULL || to != NULL);
+
+    size = ethdev_pstate_size(from_version.minor);
+    assert(size != 0);
+
+    memcpy((char *)to + metadata_size, (char *)from + metadata_size,
+                  size - metadata_size);
+}
+
+/// \brief      convert eth lif pstate struct to target version
+/// \param[in]  to  copy pstate to address
+/// \param[in]  from copy pstate from address
+/// \param[in]  to_version  target version to convert
+/// \param[in]  from_version  source version
+/// \return     none
+/// \remark     strip metadata from pstate and copy actual data
+void inline
+ethlif_pstate_transform (void *to,
+                         const void *from,
+                         module_version_t to_version,
+                         module_version_t from_version)
+{
+    size_t size = 0;
+
+    assert(from != NULL || to != NULL);
+
+    size = ethlif_pstate_size(from_version.minor);
+    assert(size != 0);
+
+    memcpy((char *)to + metadata_size, (char *)from + metadata_size,
+                  size - metadata_size);
+}
+
+#endif    // __ETH_PSTATE_HPP__

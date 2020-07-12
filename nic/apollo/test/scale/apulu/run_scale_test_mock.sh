@@ -28,13 +28,6 @@ setup_conf_files
 
 export PATH=${PATH}:${BUILD_DIR}/bin
 
-echo "Starting VPP"
-sudo $NICDIR/vpp/tools/start-vpp-mock.sh --pipeline ${PIPELINE}
-if [[ $? != 0 ]]; then
-    echo "Failed to bring up VPP"
-    exit -1
-fi
-
 echo "Starting dhcpd"
 sudo $NICDIR/apollo/tools/${PIPELINE}/start-dhcpd-sim.sh -p ${PIPELINE}
 if [[ $? != 0 ]]; then

@@ -234,12 +234,14 @@ Eth::PortPbStatsMappingInit(const struct eth_devspec *spec, PdClient *pd)
 
 // constructor used for normal boot
 Eth::Eth(devapi *dev_api, void *dev_spec, PdClient *pd_client, EV_P) {
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+
     this->dev_api = dev_api;
     this->spec = (struct eth_devspec *)dev_spec;
     this->pd = pd_client;
     this->is_device_upgrade = false; // this is used only during graceful upgrade
     this->loop = loop;
-    this->shm_mem = nicmgr_shm::getInstance();
+    this->shm_mem = devmgr->getShmstore();
     NIC_LOG_DEBUG("{}: eth device initializing", spec->name);
 }
 
@@ -251,7 +253,6 @@ Eth::Eth(devapi *dev_api, struct EthDevInfo *dev_info, PdClient *pd_client, EV_P
     this->dev_resources = *(dev_info->eth_res);
     this->is_device_upgrade = false; // this is used only during graceful upgrade
     this->loop = loop;
-    this->shm_mem = nicmgr_shm::getInstance();
     NIC_LOG_DEBUG("{}: Restoring eth device in Upgrade mode", spec->name);
 }
 
@@ -271,21 +272,34 @@ Eth::DeviceInit()
 }
 
 void
-Eth::Init() {
-    uint64_t        lif_id;
-    eth_lif_res_t   *lif_res;
-    EthLif          *eth_lif;
+Eth::Init()
+{
+    uint64_t            lif_id;
+    eth_lif_res_t       *lif_res;
+    EthLif              *eth_lif;
+    DeviceManager       *devmgr = DeviceManager::GetInstance();
+    module_version_t    curr_version = devmgr->getCurrMetaVersion();
 
     // Set device attributes
     DeviceInit();
 
-    dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
-                                                                 sizeof(*dev_pstate));
+    // shm memory create
+    shm_mem = devmgr->getShmstore();
 
+    dev_pstate = (ethdev_pstate_t*)
+        shm_mem->create_segment(spec->name.c_str(), sizeof(*dev_pstate));
     if (dev_pstate == NULL) {
         NIC_LOG_ERR("{}: Failed to memory for pstate", spec->name);
         throw;
+    } else {
+        new (dev_pstate) ethdev_pstate_t();
+        memcpy(&dev_pstate->metadata.vers, &curr_version, sizeof(curr_version));
     }
+
+    NIC_LOG_INFO("{}: ethdev pstate created with version {} major: {} minor: {}",
+                 spec->name, dev_pstate->metadata.vers.version,
+                 dev_pstate->metadata.vers.major,
+                 dev_pstate->metadata.vers.minor);
 
     strncpy0(dev_pstate->name, spec->name.c_str(), sizeof(dev_pstate->name));
 
@@ -325,21 +339,35 @@ Eth::Init() {
 }
 
 void
-Eth::UpgradeGracefulInit(struct eth_devspec *spec) {
-    uint64_t        lif_id;
-    eth_lif_res_t   *lif_res;
-    EthLif          *eth_lif;
+Eth::UpgradeGracefulInit(struct eth_devspec *spec)
+{
+    uint64_t            lif_id;
+    eth_lif_res_t       *lif_res;
+    EthLif              *eth_lif;
+    DeviceManager       *devmgr = DeviceManager::GetInstance();
+    module_version_t    curr_version = devmgr->getCurrMetaVersion();
 
     // Set device attributes
     // TODO: Add VF support
     DeviceInit();
-    dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
-                                                                 sizeof(*dev_pstate));
 
+    // shm memory create
+    shm_mem = devmgr->getShmstore();
+
+    dev_pstate = (ethdev_pstate_t*)
+        shm_mem->create_segment(spec->name.c_str(), sizeof(*dev_pstate));
     if (dev_pstate == NULL) {
         NIC_LOG_ERR("{}: Failed to memory for pstate", spec->name);
         throw;
+    } else {
+        new (dev_pstate) ethdev_pstate_t();
+        memcpy(&dev_pstate->metadata.vers, &curr_version, sizeof(curr_version));
     }
+
+    NIC_LOG_INFO("{}: ethdev pstate created with version {} major: {} minor: {}",
+                 spec->name, dev_pstate->metadata.vers.version,
+                 dev_pstate->metadata.vers.major,
+                 dev_pstate->metadata.vers.minor);
 
     strncpy0(dev_pstate->name, spec->name.c_str(), sizeof(dev_pstate->name));
 
@@ -380,20 +408,76 @@ Eth::UpgradeGracefulInit(struct eth_devspec *spec) {
 void
 Eth::UpgradeHitlessInit(struct eth_devspec *spec)
 {
-    uint64_t        lif_id;
-    eth_lif_res_t   *lif_res;
-    EthLif          *eth_lif;
+    uint64_t            lif_id;
+    eth_lif_res_t       *lif_res;
+    EthLif              *eth_lif;
+    void*               to_pstate;
+    void*               from_pstate;
+    sdk::lib::shmstore  *restore_shm;
+    sdk::lib::shmstore  *backup_shm;
+    module_version_t    curr_version;
+    module_version_t    prev_version;
+    DeviceManager       *devmgr = DeviceManager::GetInstance();
 
     // Set device attributes
     // TODO: Add VF support
     DeviceInit();
-    dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
-                                                                 sizeof(*dev_pstate));
 
-    if (dev_pstate == NULL) {
-        NIC_LOG_ERR("{}: Failed to memory for pstate", spec->name);
-        throw;
+    // If restore_shm != NULL && backup_shm != NULL:
+    //     If !version match:
+    //          transpose the struct
+    //     Else:
+    //         should not touch here
+    // Else:
+    //     restore_store has the struct
+    //     from process A
+    curr_version = devmgr->getCurrMetaVersion();
+    prev_version = devmgr->getPrevMetaVersion();
+    restore_shm = devmgr->getRestoreShmstore();
+    backup_shm = devmgr->getShmstore();
+    if ((restore_shm != NULL) && (backup_shm != NULL)) {
+        if (curr_version.minor != prev_version.minor) {
+            to_pstate = backup_shm->create_segment(spec->name.c_str(),
+                                                    sizeof(*dev_pstate));
+            assert(to_pstate != NULL);
+            new (to_pstate) ethdev_pstate_t();
+            from_pstate = restore_shm->open_segment(spec->name.c_str());
+            assert(from_pstate != NULL);
+            ethdev_pstate_transform(to_pstate, from_pstate,
+                                    curr_version, prev_version);
+
+            //update the pstate memory
+            dev_pstate = (ethdev_pstate_t *)to_pstate;
+
+            memcpy(&dev_pstate->metadata.vers, &curr_version,
+                   sizeof(curr_version));
+
+            NIC_LOG_INFO("{}: Dev pstate converted to new version {}",
+                         spec->name, curr_version.version);
+
+            // update shm memory handler
+            shm_mem = backup_shm;
+        } else {
+            assert(0);
+        }
+    } else {
+        dev_pstate =
+            (ethdev_pstate_t*) restore_shm->open_segment(spec->name.c_str());
+        if (dev_pstate == NULL) {
+            NIC_LOG_ERR("{}: Failed to memory for pstate", spec->name);
+            return;
+        }
+
+        NIC_LOG_INFO("{}: Dev pstate opened version {}", spec->name,
+                     curr_version.version);
+
+        // update shm memory handler
+        shm_mem = restore_shm;
     }
+    NIC_LOG_INFO("{}: ethdev pstate created with version {} major: {} minor: {}",
+                 spec->name, dev_pstate->metadata.vers.version,
+                 dev_pstate->metadata.vers.major,
+                 dev_pstate->metadata.vers.minor);
 
     strncpy0(dev_pstate->name, spec->name.c_str(), sizeof(dev_pstate->name));
 

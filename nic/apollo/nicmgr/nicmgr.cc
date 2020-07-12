@@ -88,17 +88,10 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
     cfg.memory_profile = state->memory_profile_string();
     cfg.device_profile = state->device_profile_string();
     cfg.catalog = state->catalogue();
-    if (api::g_upg_state) {
-        cfg.backup_store = api::g_upg_state->backup_shmstore(thread_id, true);
-        cfg.restore_store = api::g_upg_state->restore_shmstore(thread_id, true);
-        cfg.curr_version = api::g_upg_state->module_version(thread_id);
-        cfg.prev_version = api::g_upg_state->module_prev_version(thread_id);
-    } else {
-        cfg.backup_store = NULL;
-        cfg.restore_store = NULL;
-        cfg.curr_version.version = 0;
-        cfg.prev_version.version = 0;
-    }
+    cfg.backup_store = api::g_upg_state->backup_shmstore(thread_id, true);
+    cfg.restore_store = api::g_upg_state->restore_shmstore(thread_id, true);
+    cfg.curr_version = api::g_upg_state->module_version(thread_id);
+    cfg.prev_version = api::g_upg_state->module_prev_version(thread_id);
 
     // initialize the linkmgr
     cfg.EV_A = curr_thread->ev_loop();

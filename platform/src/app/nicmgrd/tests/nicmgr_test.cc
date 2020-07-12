@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <stdio.h>
 
+#include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/lib/device/device.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "platform/src/lib/nicmgr/include/dev.hpp"
@@ -118,6 +119,25 @@ sdk_init (void)
     sdk::lib::logger::init(sdk_trace_cb);
 }
 
+#define SHM_NAME    "/dev/shm/nicmgr_meta"
+#define SHM_SIZE    (1 << 16)
+static sdk::lib::shmstore*
+nicmgr_shmstore_init (void)
+{
+    sdk::lib::shmstore* store = NULL;
+    std::string fname = SHM_NAME;
+    sdk_ret_t ret;
+
+    store = sdk::lib::shmstore::factory();
+    ret = store->create(fname.c_str(), SHM_SIZE);
+    if (ret != SDK_RET_OK) {
+        NIC_LOG_ERR("shm store create failed ret {}", ret);
+        return NULL;
+    }
+
+    return store;
+}
+
 void
 nicmgr_init()
 {
@@ -126,6 +146,7 @@ nicmgr_init()
     utils::logger::init();
     sdk_init();
 
+    memset(&cfg, 0, sizeof(devicemgr_cfg_t));
     cfg.platform_type = platform_type_t::PLATFORM_TYPE_SIM;
     cfg.cfg_path = std::string(getenv("CONFIG_PATH"));
     cfg.device_conf_file = "../nic/conf/device.conf";
@@ -133,6 +154,10 @@ nicmgr_init()
     cfg.fwd_mode = sdk::lib::FORWARDING_MODE_NONE;
     cfg.micro_seg_en = false;
     cfg.shm_mgr = NULL;
+    cfg.backup_store = nicmgr_shmstore_init();
+    cfg.restore_store = NULL;
+    cfg.curr_version = { 0 };
+    cfg.prev_version = { 0 };
     cfg.EV_A = NULL;
 
     devmgr = new DeviceManager(&cfg);

@@ -8,6 +8,7 @@
 using namespace std;
 
 #include "nic/include/edmaq.h"
+#include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/platform/devapi/devapi.hpp"
 #include "pd_client.hpp"
 #include "eth_pstate.hpp"
@@ -224,7 +225,7 @@ private:
 
     // persistent config
     ethlif_pstate_t *lif_pstate;
-    nicmgr_shm  *shm_mem;
+    sdk::lib::shmstore *shm_mem;
 
     // Services
     AdminQ *adminq;

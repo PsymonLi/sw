@@ -11,7 +11,7 @@
 
 #include "nic/include/eth_common.h"
 #include "nic/include/notify.hpp"
-
+#include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/lib/indexer/indexer.hpp"
 #include "nic/sdk/platform/devapi/devapi.hpp"
 
@@ -237,7 +237,7 @@ private:
     uint32_t port_pb_stats_size;
     // Eth Persistent states
     ethdev_pstate_t *dev_pstate;
-    nicmgr_shm  *shm_mem;
+    sdk::lib::shmstore *shm_mem;
     // Tasks
     EV_P;
     ev_prepare devcmd_prepare = {0};

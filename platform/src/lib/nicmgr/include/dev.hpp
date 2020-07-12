@@ -24,7 +24,6 @@
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
 
 #include "device.hpp"
-#include "nicmgr_shm.hpp"
 #include "pd_client.hpp"
 #include "ev.h"
 
@@ -191,6 +190,12 @@ public:
     void SetThread(sdk::lib::thread *thr) { thread = thr; }
     struct ev_loop *ev_loop(void) { return EV_A; }
 
+    // shmstore helper functions
+    sdk::lib::shmstore* getShmstore(void) { return backup_store; }
+    sdk::lib::shmstore* getRestoreShmstore(void) { return restore_store; }
+    module_version_t getCurrMetaVersion(void) { return curr_version; }
+    module_version_t getPrevMetaVersion(void) { return prev_version; }
+
 private:
     static DeviceManager *instance;
 
@@ -217,7 +222,14 @@ private:
     UpgradeState upg_state;
 
     // persistent state
-    nicmgr_shm *shm_mem;
+    sdk::lib::shmstore *backup_store;   // shared memory backup store instance
+                                        // from HAL for backing up the states
+    sdk::lib::shmstore *restore_store;  // shared memory backup store instance
+                                        // from HAL for restoring the states
+                                        // during bringup
+    module_version_t curr_version;      // curent version
+    module_version_t prev_version;      // previous version info passed from hal,
+                                        // valid only in upgrade scenarios
 
     // init helper functions
     void PlatformInit(devicemgr_cfg_t *cfg);

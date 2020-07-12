@@ -49,7 +49,7 @@
 // pds nicmgr upgrade store for device and lif operational states
 // ----------------------------------------------------------------------------
 #define PDS_NICMGR_UPGRADE_OPER_SHMSTORE_NAME      "pds_nicmgr_oper_upgdata"
-#define PDS_NICMGR_UPGRADE_OPER_SHMSTORE_SIZE      (30 * 1024)  // 30K
+#define PDS_NICMGR_UPGRADE_OPER_SHMSTORE_SIZE      (100 * 1024)  // 100K
 
 // ----------------------------------------------------------------------------
 // pds linkmgr upgrade store for port operational states

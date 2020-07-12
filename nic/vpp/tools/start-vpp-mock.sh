@@ -36,7 +36,7 @@ VPP_PKG_DIR=$NICDIR/sdk/third-party/vpp-pkg/x86_64
 #Set mock mode
 export ASIC_MOCK_MODE=1
 export ASIC_MOCK_MEMORY_MODE=1
-source $NICDIR/vpp/tools/setup-vpp-prerequisites.sh $NICDIR $PIPELINE
+source $NICDIR/vpp/tools/setup-vpp-prerequisites.sh $NICDIR $PIPELINE 1
 
 echo "Starting VPP"
 #start vpp

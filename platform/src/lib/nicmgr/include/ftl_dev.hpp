@@ -5,6 +5,7 @@
 #include <ev++.h>
 
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/platform/evutils/include/evutils.h"
 #include "nic/sdk/platform/devapi/devapi.hpp"
 #include "nic/sdk/platform/misc/include/misc.h"
@@ -12,7 +13,6 @@
 #include "device.hpp"
 #include "pd_client.hpp"
 #include "nic/include/ftl_dev_if.hpp"
-#include "nicmgr_shm.hpp"
 
 #define FTL_DEV_NAME                        "ftl"
 #define FTL_DEV_IFNAMSIZ                    16
@@ -101,7 +101,7 @@ typedef struct ftldev_pstate_v1_s {
         SDK_ATOMIC_STORE_UINT32(&base_lif_id_, &base_lif_id);
     }
     uint32_t base_lif_id(void)
-    { 
+    {
         uint32_t base_id;
         SDK_ATOMIC_LOAD_UINT32(&base_lif_id_, &base_id);
         return base_id;
@@ -167,7 +167,7 @@ public:
         dev_pstate->base_lif_id_set(base_lif_id);
     }
     uint32_t shm_base_lif_id(void)
-    { 
+    {
         return dev_pstate->base_lif_id();
     }
     void shm_lif_fully_inited_set(bool yesno)
@@ -191,7 +191,7 @@ private:
     // HAL Info
     devapi                      *dev_api;
     // Resources
-    nicmgr_shm                  *shm_mem;
+    sdk::lib::shmstore          *shm_mem;
     std::vector<FtlLif *>       lif_vec;
     uint32_t                    lif_base;
     bool                        dtor_lif_free;

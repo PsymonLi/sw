@@ -130,25 +130,38 @@ EthLif::EthLif(Eth *dev, devapi *dev_api, const void *dev_spec,
     ev_timer_init(&sched_eval_timer, &EthLif::SchedBulkEvalHandler, 0.0, 0.02);
     sched_eval_timer.data = this;
 
-    EthLif::shm_mem = nicmgr_shm::getInstance();
 }
 
 void
 EthLif::Init(void)
 {
-    char shm_id[256];
+    char shm_name[256];
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    module_version_t curr_version = devmgr->getCurrMetaVersion();
 
     NIC_LOG_INFO("{}: Lif Init", spec->name);
 
+    // shm memory handler
+    shm_mem = devmgr->getShmstore();
+
     // get the mem region for the persistent states
-    snprintf(shm_id, sizeof(shm_id), "%s_%lu", spec->name.c_str(), res->lif_id);
-    lif_pstate = (ethlif_pstate_t*) shm_mem->alloc_find_pstate(shm_id, sizeof(*lif_pstate));
+    snprintf(shm_name, sizeof(shm_name), "%s_%lu",
+             spec->name.c_str(), res->lif_id);
+
+    lif_pstate =
+        (ethlif_pstate_t*) shm_mem->create_segment(shm_name, sizeof(*lif_pstate));
     if (lif_pstate == NULL) {
         NIC_LOG_ERR("{}: Failed to allocate memory for pstate", spec->name);
         throw;
     } else {
         new (lif_pstate) ethlif_pstate_t();
+        memcpy(&lif_pstate->metadata.vers, &curr_version, sizeof(curr_version));
     }
+
+    NIC_LOG_INFO("{}: lif pstate created with version {} major: {} minor: {}",
+                 spec->name, lif_pstate->metadata.vers.version,
+                 lif_pstate->metadata.vers.major,
+                 lif_pstate->metadata.vers.minor);
 
     // Create LIF
     lif_pstate->state = LIF_STATE_CREATING;
@@ -208,19 +221,33 @@ EthLif::Init(void)
 void
 EthLif::UpgradeGracefulInit(void)
 {
-    char shm_id[256];
+    char shm_name[256];
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    module_version_t curr_version = devmgr->getCurrMetaVersion();
 
     NIC_LOG_INFO("{}: Lif Upgrade graceful Init", spec->name);
 
+    // shm memory handler
+    shm_mem = devmgr->getShmstore();
+
     // get the mem region for the persistent states
-    snprintf(shm_id, sizeof(shm_id), "%s_%lu", spec->name.c_str(), res->lif_id);
-    lif_pstate = (ethlif_pstate_t*) shm_mem->alloc_find_pstate(shm_id, sizeof(*lif_pstate));
+    snprintf(shm_name, sizeof(shm_name), "%s_%lu", spec->name.c_str(),
+             res->lif_id);
+
+    // allocate a segment from shm memory
+    lif_pstate =
+        (ethlif_pstate_t*) shm_mem->create_segment(shm_name, sizeof(*lif_pstate));
     if (lif_pstate == NULL) {
         NIC_LOG_ERR("{}: Failed to allocate memory for pstate", spec->name);
         throw;
     } else {
         new (lif_pstate) ethlif_pstate_t();
+        memcpy(&lif_pstate->metadata.vers, &curr_version, sizeof(curr_version));
     }
+    NIC_LOG_INFO("{}: lif pstate created with version {} major: {} minor: {}",
+                 spec->name, lif_pstate->metadata.vers.version,
+                 lif_pstate->metadata.vers.major,
+                 lif_pstate->metadata.vers.minor);
 
     // Create LIF
     lif_pstate->state = LIF_STATE_CREATING;
@@ -281,17 +308,73 @@ EthLif::UpgradeGracefulInit(void)
 void
 EthLif::UpgradeHitlessInit(void)
 {
-    char shm_id[256];
+    char shm_name[256];
+    void *to_pstate, *from_pstate;
+    sdk::lib::shmstore *restore_shm;
+    sdk::lib::shmstore *backup_shm;
+    module_version_t curr_version;
+    module_version_t prev_version;
+    DeviceManager *devmgr = DeviceManager::GetInstance();
 
     NIC_LOG_INFO("{}: Lif Upgrade Hitless Init", spec->name);
 
-    // get the mem region for the persistent states
-    snprintf(shm_id, sizeof(shm_id), "%s_%lu", spec->name.c_str(), res->lif_id);
-    lif_pstate = (ethlif_pstate_t*) shm_mem->alloc_find_pstate(shm_id, sizeof(*lif_pstate));
-    if (lif_pstate == NULL) {
-        NIC_LOG_ERR("{}: Failed to allocate memory for pstate", spec->name);
-        throw;
+    // get the segment name
+    snprintf(shm_name, sizeof(shm_name), "%s_%lu", spec->name.c_str(),
+             res->lif_id);
+
+    // If restore_shm != NULL && backup_shm != NULL:
+    //     If !version match:
+    //          transpose the struct
+    //     Else:
+    //         should not touch here
+    // Else:
+    //     restore_store has the struct
+    //     from process A
+    curr_version = devmgr->getCurrMetaVersion();
+    prev_version = devmgr->getPrevMetaVersion();
+    restore_shm = devmgr->getRestoreShmstore();
+    backup_shm = devmgr->getShmstore();
+    if ((restore_shm != NULL) && (backup_shm != NULL)) {
+        if (curr_version.minor != prev_version.minor) {
+            to_pstate = backup_shm->create_segment(shm_name, sizeof(*lif_pstate));
+            assert(to_pstate != NULL);
+            new (to_pstate) ethlif_pstate_t();
+            from_pstate = restore_shm->open_segment(shm_name);
+            assert(from_pstate != NULL);
+            ethlif_pstate_transform(to_pstate, from_pstate,
+                                    curr_version, prev_version);
+
+            NIC_LOG_INFO("{}: Lif pstate converted to new version {}",
+                         spec->name, curr_version.version);
+            // update pstate pointer
+            lif_pstate = (ethlif_pstate_t *)to_pstate;
+
+            memcpy(&lif_pstate->metadata.vers, &curr_version,
+                   sizeof(curr_version));
+
+            // update the shm memory handler
+            shm_mem = backup_shm;
+        } else {
+            assert(0);
+        }
+    } else {
+        // get the mem region for the persistent states
+        lif_pstate = (ethlif_pstate_t*) restore_shm->open_segment(shm_name);
+        if (lif_pstate == NULL) {
+            NIC_LOG_ERR("{}: Failed to open memory for pstate", spec->name);
+            throw;
+        }
+
+        NIC_LOG_INFO("{}: Lif pstate opened version {}", spec->name,
+                     curr_version.version);
+
+        // shm memory handler
+        shm_mem = restore_shm;
     }
+    NIC_LOG_INFO("{}: lif pstate created with version {} major: {} minor: {}",
+                 spec->name, lif_pstate->metadata.vers.version,
+                 lif_pstate->metadata.vers.major,
+                 lif_pstate->metadata.vers.minor);
 
     //FIXME: Initial values
     memset(&hal_lif_info_, 0, sizeof(lif_info_t));

@@ -14,6 +14,7 @@
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
+#include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/lib/utils/port_utils.hpp"
 #include "nic/hal/core/core.hpp"
 #include "platform/src/lib/nicmgr/include/dev.hpp"
@@ -144,6 +145,25 @@ register_for_events (void)
     // sdk::ipc::subscribe(event_id_t::EVENT_ID_MICRO_SEG, micro_seg_event_handler, NULL);
 }
 
+#define SHM_NAME    "/dev/shm/nicmgr_meta"
+#define SHM_SIZE    (1 << 16)
+static sdk::lib::shmstore*
+nicmgr_shmstore_init (void)
+{
+    sdk::lib::shmstore* store = NULL;
+    std::string fname = SHM_NAME;
+    sdk_ret_t ret;
+
+    store = sdk::lib::shmstore::factory();
+    ret = store->create(fname.c_str(), SHM_SIZE);
+    if (ret != SDK_RET_OK) {
+        NIC_LOG_ERR("shm store create failed ret {}", ret);
+        return NULL;
+    }
+
+    return store;
+}
+
 namespace nicmgr {
 
 void
@@ -210,6 +230,10 @@ dev_init:
     cfg.micro_seg_en = micro_seg_en;
     cfg.shm_mgr = NULL;
     cfg.catalog = sdk::lib::catalog::factory();
+    cfg.backup_store = nicmgr_shmstore_init();
+    cfg.restore_store = NULL;
+    cfg.curr_version = { 0 };
+    cfg.prev_version = { 0 };
     cfg.EV_A = thread->ev_loop();
     devmgr = new DeviceManager(&cfg);
     if (!devmgr) {
