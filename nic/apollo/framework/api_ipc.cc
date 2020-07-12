@@ -76,6 +76,13 @@ static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
                 {PDS_IPC_ID_ROUTING}},
         }
     },
+    // IPC peers interseted in interface object
+    { OBJ_ID_IF,
+        {
+            { (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG, false,
+                {PDS_IPC_ID_ROUTING}},
+        }
+    },
 };
 
 api_obj_ipc_peer_list_t&

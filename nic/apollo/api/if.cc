@@ -266,6 +266,26 @@ if_entry::cleanup_config(api_obj_ctxt_t *obj_ctxt) {
     return SDK_RET_OK;
 }
 
+bool
+if_entry::circulate(api_obj_ctxt_t *obj_ctxt) {
+    if (type_ == IF_TYPE_L3) {
+        return true;
+    }
+    return false;
+}
+
+sdk_ret_t
+if_entry::populate_msg(pds_msg_t *msg, api_obj_ctxt_t *obj_ctxt) {
+    msg->cfg_msg.op = obj_ctxt->api_op;
+    msg->cfg_msg.obj_id = OBJ_ID_IF;
+    if (obj_ctxt->api_op == API_OP_DELETE) {
+        msg->cfg_msg.intf.key = obj_ctxt->api_params->key;
+    } else {
+        msg->cfg_msg.intf.spec = obj_ctxt->api_params->if_spec;
+    }
+    return SDK_RET_OK;
+}
+
 sdk_ret_t
 if_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
     pds_if_spec_t *spec = &obj_ctxt->api_params->if_spec;

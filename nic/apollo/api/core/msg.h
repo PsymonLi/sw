@@ -19,6 +19,7 @@
 #include "nic/apollo/api/include/pds_nat.hpp"
 #include "nic/apollo/api/include/pds_subnet.hpp"
 #include "nic/apollo/api/include/pds_tep.hpp"
+#include "nic/apollo/api/include/pds_if.hpp"
 #include "nic/apollo/api/include/pds_vnic.hpp"
 #include "nic/apollo/api/include/pds_vport.hpp"
 #include "nic/apollo/api/include/pds_mirror.hpp"
@@ -126,6 +127,15 @@ typedef struct pds_tep_cfg_msg_s {
     pds_tep_status_t status;
 } pds_tep_cfg_msg_t;
 
+/// interface configurtation
+typedef struct pds_if_cfg_msg_s {
+    union {
+        pds_obj_key_t key;
+        pds_if_spec_t spec;
+    };
+    pds_if_status_t status;
+} pds_if_cfg_msg_t;
+
 /// ipsec encrypt sa configurtation
 typedef struct pds_ipsec_sa_encrypt_cfg_msg_s {
     union {
@@ -156,6 +166,7 @@ typedef struct pds_cfg_msg_s {
         pds_vpc_cfg_msg_t vpc;
         pds_subnet_cfg_msg_t subnet;
         pds_tep_cfg_msg_t tep;
+        pds_if_cfg_msg_t intf;
         pds_vnic_cfg_msg_t vnic;
         pds_vport_cfg_msg_t vport;
         pds_mirror_session_cfg_msg_t mirror_session;
