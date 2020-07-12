@@ -242,6 +242,9 @@ def get_conntrack_state(node, conntrack_id):
 # ================================
 def verify_conntrack_state(node_name, vnic_id, flow, exp_state):
     session_id = get_session_id(node_name, vnic_id, flow)
+    if session_id is None:
+        api.Logger.error("Error: Get session ID failed, flow is not installed")
+        return False
     conntrack_id = get_conntrack_id(node_name, session_id)
     api.Logger.info("conntrack_id is %s" % conntrack_id)
 

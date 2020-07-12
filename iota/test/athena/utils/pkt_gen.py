@@ -464,8 +464,7 @@ class Pktgen():
             dicts.append({'icmp_type' : self.icmp_type, 
                         'icmp_code' : self.icmp_code})
 
-
-        api.Logger.info(dicts)
+        api.Logger.debug(dicts)
         pkt = craft_pkt(types, dicts)
         pkt = pkt/get_payload(self.pyld_size)
         #logging.debug("Crafted pkt: {}".format(pkt.show()))

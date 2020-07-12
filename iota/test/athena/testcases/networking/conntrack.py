@@ -62,7 +62,7 @@ def parse_args(tc):
     tc.proto      = 'TCP'
     tc.bidir      = 'yes'
     tc.flow_type  = 'dynamic'
-    tc.flow_cnt   = 10
+    tc.flow_cnt   = 13
     tc.pkt_cnt    = 1
     tc.state      = None
 
@@ -106,6 +106,7 @@ def get_flows(tc):
                     tc.flow_cnt))
 
     return flows_resp
+
 
 def send_pkt_h2s(tc, node, flow, pkt_gen):
 
@@ -219,9 +220,9 @@ def send_pkt_s2h(tc, node, flow, pkt_gen):
     tc.resp.append(s2h_resp)
 
 
-def get_state_synack(tc, node, flow, pkt_gen, start_dir):
+def get_state_syn(tc, node, flow, pkt_gen, start_dir):
 
-    # Send packet to get state SYNACK_SENT/SYNACK_RECV
+    # Send packet to get state SYN_SENT/SYN_RECV
     flags = None
 
     if start_dir == 'h2s':
@@ -231,6 +232,22 @@ def get_state_synack(tc, node, flow, pkt_gen, start_dir):
         pkt_gen.set_flags('S')
         send_pkt_h2s(tc, node, flow, pkt_gen)
 
+    else:
+        # ==========================================
+        # Send and Receive SYN pkt in S2H direction
+        # ==========================================
+        pkt_gen.set_flags('S')
+        send_pkt_s2h(tc, node, flow, pkt_gen)
+
+def get_state_synack(tc, node, flow, pkt_gen, start_dir):
+
+    # Send packet to get state SYNACK_SENT/SYNACK_RECV
+    flags = None
+
+    if start_dir == 'h2s':
+
+        get_state_syn(tc, node, flow, pkt_gen, 'h2s')
+
         # =============================================
         # Send and Receive SYN_ACK pkt in S2H direction
         # =============================================
@@ -238,11 +255,7 @@ def get_state_synack(tc, node, flow, pkt_gen, start_dir):
         send_pkt_s2h(tc, node, flow, pkt_gen)
 
     else:
-        # ==========================================
-        # Send and Receive SYN pkt in S2H direction
-        # ==========================================
-        pkt_gen.set_flags('S')
-        send_pkt_s2h(tc, node, flow, pkt_gen)
+        get_state_syn(tc, node, flow, pkt_gen, 's2h')
 
         # =============================================
         # Send and Receive SYN_ACK pkt in H2S direction
@@ -501,64 +514,82 @@ def Trigger(tc):
             if tc.state is None:
                 api.Logger.error("No state to validate.")
 
-            elif tc.state == 'SYNACK_SENT' and idx == 0:
+            elif tc.state == 'SYN_SENT' and idx == 0:
+                api.Logger.info("Verify connection tracking state SYN_SENT")
+                get_state_syn(tc, node, flow, pkt_gen, 'h2s')
+                if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.SYN_SENT.value) == False:
+                    return api.types.status.FAILURE
+
+            elif tc.state == 'SYN_RECV' and idx == 1:
+                api.Logger.info("Verify connection tracking state SYN_RECV")
+                get_state_syn(tc, node, flow, pkt_gen, 's2h')
+                if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.SYN_RECV.value) == False:
+                    return api.types.status.FAILURE
+
+            elif tc.state == 'SYNACK_SENT' and idx == 2:
                 api.Logger.info("Verify connection tracking state SYNACK_SENT")
                 get_state_synack(tc, node, flow, pkt_gen, 's2h')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.SYNACK_SENT.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'SYNACK_RECV' and idx == 1:
+            elif tc.state == 'SYNACK_RECV' and idx == 3:
                 api.Logger.info("Verify connection tracking state SYNACK_RECV")
                 get_state_synack(tc, node, flow, pkt_gen, 'h2s')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.SYNACK_RECV.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'ESTABLISHED_H2S' and idx == 2:
+            elif tc.state == 'ESTABLISHED_H2S' and idx == 4:
                 api.Logger.info("Verify connection tracking state ESTABLISHED_H2S")
                 get_state_established(tc, node, flow, pkt_gen, 'h2s')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.ESTABLISHED.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'ESTABLISHED_S2H' and idx == 3:
+            elif tc.state == 'ESTABLISHED_S2H' and idx == 5:
                 api.Logger.info("Verify connection tracking state ESTABLISHED_S2H")
                 get_state_established(tc, node, flow, pkt_gen, 's2h')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.ESTABLISHED.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'FIN_SENT' and idx == 4:
+            elif tc.state == 'FIN_SENT' and idx == 6:
                 api.Logger.info("Verify connection tracking state FIN_SENT")
                 get_state_fin(tc, node, flow, pkt_gen, 'h2s')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.FIN_SENT.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'FIN_RECV' and idx == 5:
+            elif tc.state == 'FIN_RECV' and idx == 7:
                 api.Logger.info("Verify connection tracking state FIN_RECV")
                 get_state_fin(tc, node, flow, pkt_gen, 's2h')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.FIN_RECV.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'TIME_WAIT_H2S' and idx == 6:
+            elif tc.state == 'TIME_WAIT_H2S' and idx == 8:
                 api.Logger.info("Verify connection tracking state TIME_WAIT")
                 get_state_time_wait(tc, node, flow, pkt_gen, 's2h')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.TIME_WAIT.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'TIME_WAIT_S2H' and idx == 7:
+            elif tc.state == 'TIME_WAIT_S2H' and idx == 9:
                 api.Logger.info("Verify connection tracking state TIME_WAIT")
                 get_state_time_wait(tc, node, flow, pkt_gen, 's2h')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.TIME_WAIT.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'RST_CLOSE_H2S' and idx == 8:
+            elif tc.state == 'RST_CLOSE_H2S' and idx == 10:
+                api.Logger.info("Verify connection tracking state RST_CLOSE")
+                get_state_rst(tc, node, flow, pkt_gen, 'h2s')
+                if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.RST_CLOSE.value) == False:
+                    return api.types.status.FAILURE
+
+            elif tc.state == 'RST_CLOSE_S2H' and idx == 11:
                 api.Logger.info("Verify connection tracking state RST_CLOSE")
                 get_state_rst(tc, node, flow, pkt_gen, 's2h')
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.RST_CLOSE.value) == False:
                     return api.types.status.FAILURE
 
-            elif tc.state == 'RST_CLOSE_S2H' and idx == 9:
-                api.Logger.info("Verify connection tracking state RST_CLOSE")
-                get_state_rst(tc, node, flow, pkt_gen, 's2h')
-                if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.RST_CLOSE.value) == False:
+            elif tc.state == 'TEST' and idx == 12:
+                api.Logger.info("Test CT feature to avoid failure")
+                get_state_synack(tc, node, flow, pkt_gen, 's2h')
+                if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.SYNACK_SENT.value) == False:
                     return api.types.status.FAILURE
 
     return api.types.status.SUCCESS
