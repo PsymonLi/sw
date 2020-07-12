@@ -368,12 +368,12 @@ func (idr *Indexer) parseFwLogsMetaV1(id int,
 		count = 0
 	}
 
-	startTs, err := idr.parseTime(id, key, timeFormat, meta["Startts"], "startts")
+	startTs, err := idr.parseTime(id, key, time.RFC3339Nano, meta["Startts"], "startts")
 	if err != nil {
 		return nil, err
 	}
 
-	endTs, err := idr.parseTime(id, key, timeFormat, meta["Endts"], "endts")
+	endTs, err := idr.parseTime(id, key, time.RFC3339Nano, meta["Endts"], "endts")
 	if err != nil {
 		return nil, err
 	}

@@ -368,8 +368,8 @@ func transmitLogs(ctx context.Context,
 
 		// Object meta
 		meta := map[string]string{}
-		meta["startts"] = fStartTs
-		meta["endts"] = fEndTs
+		meta["startts"] = startTs.UTC().Format(time.RFC3339Nano)
+		meta["endts"] = endTs.UTC().Format(time.RFC3339Nano)
 		meta["logcount"] = strconv.Itoa(numLogs)
 		meta["csvversion"] = fwLogCSVVersion
 		meta["metaversion"] = fwLogMetaVersion

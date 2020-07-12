@@ -34,8 +34,6 @@ func listFwLogObjects(client vos.BackendClient,
 		TypeMeta: api.TypeMeta{Kind: "ObjectList"},
 	}
 
-	timeFormat := "2006-01-02T15:04:05"
-
 	temp := startTs
 loop:
 	for {
@@ -68,13 +66,13 @@ loop:
 			lObj := &objstore.Object{}
 			lObj.ObjectMeta.Name = mobj.Key
 			updateObjectMeta(&stat, &lObj.ObjectMeta)
-			mStartTs, err := time.Parse(timeFormat, lObj.ObjectMeta.Labels["Startts"])
+			mStartTs, err := time.Parse(time.RFC3339Nano, lObj.ObjectMeta.Labels["Startts"])
 			if err != nil {
 				log.Errorf("failed to parse startTs for object %s", mobj.Key)
 				continue
 			}
 
-			mEndTs, err := time.Parse(timeFormat, lObj.ObjectMeta.Labels["Endts"])
+			mEndTs, err := time.Parse(time.RFC3339Nano, lObj.ObjectMeta.Labels["Endts"])
 			if err != nil {
 				log.Errorf("failed to parse endTs for object %s", mobj.Key)
 				continue

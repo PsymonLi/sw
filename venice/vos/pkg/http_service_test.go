@@ -331,7 +331,7 @@ func TestDebugConfigHandler(t *testing.T) {
 	}
 	reqBody, err := json.Marshal(map[string]interface{}{
 		bucketDiskThresholdKey: map[string]DiskMonitorConfig{
-			"": DiskMonitorConfig{
+			"": {
 				TenantName:               "",
 				CombinedBuckets:          []string{"/root/dummy_path3", "/root/dummy_path4"},
 				CombinedThresholdPercent: 80.00,

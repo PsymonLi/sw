@@ -664,18 +664,29 @@ func TestListFwlogObjects(t *testing.T) {
 		}()
 		return objCh
 	}
+
+	timeFormat := "2006-01-02T15:04:05"
 	fb.statFunc = func(bucketName, objectName string, opts minioclient.StatObjectOptions) (minioclient.ObjectInfo, error) {
 		tokens := strings.Split(strings.Split(objectName, "/")[6], "_")
 		oi := minioclient.ObjectInfo{}
 		oi.Key = objectName
+		st, err := time.Parse(timeFormat, tokens[0])
+		if err != nil {
+			return oi, err
+		}
+		en, err := time.Parse(timeFormat, strings.Split(tokens[1], ".")[0])
+		if err != nil {
+			return oi, err
+		}
 		meta := map[string][]string{}
-		meta[metaPrefix+"Startts"] = []string{tokens[0]}
-		meta[metaPrefix+"Endts"] = []string{strings.Split(tokens[1], ".")[0]}
+
+		// Reformt the time using RFC3339Nano format, that format is used in production code.
+		meta[metaPrefix+"Startts"] = []string{st.Format(time.RFC3339Nano)}
+		meta[metaPrefix+"Endts"] = []string{en.Format(time.RFC3339Nano)}
 		oi.Metadata = http.Header(meta)
 		return oi, nil
 	}
 
-	timeFormat := "2006-01-02T15:04:05"
 	ts, _ := time.Parse(time.RFC3339, "2006-01-02T15:00:00Z")
 	t1 := ts
 	for i := 0; i < 100; i++ {

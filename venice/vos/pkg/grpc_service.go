@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/pensando/sw/api"
-	"github.com/pensando/sw/api/errors"
+	apierrors "github.com/pensando/sw/api/errors"
 	"github.com/pensando/sw/api/fields"
 	"github.com/pensando/sw/api/generated/objstore"
 	"github.com/pensando/sw/venice/globals"
