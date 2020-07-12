@@ -1727,9 +1727,9 @@ interface_create (InterfaceSpec& spec, InterfaceResponse *rsp)
 #endif
 
 end:
-    if (ret != HAL_RET_OK && ret != HAL_RET_ENTRY_EXISTS) {
+    if (ret != HAL_RET_OK) {
+        // Create failed because of PD error
         if (hal_if) {
-            // if there is an error, if will be freed in abort cb
             if_cleanup(hal_if);
             hal_if = NULL;
         }
