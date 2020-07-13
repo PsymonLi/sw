@@ -687,7 +687,8 @@ always_inline void pds_session_id_flush(void)
     pool_free(fm->session_index_pool);
     fm->session_index_pool = NULL;
     pool_init_fixed(fm->session_index_pool, fm->max_sessions);
-
+    clib_memset(fm->session_index_pool, 0,
+                fm->max_sessions * sizeof(pds_flow_hw_ctx_t));
     for (u32 i = 0; i < vec_len(fm->session_id_thr_local_pool); i++) {
         fm->session_id_thr_local_pool[i].sess_count = -1;
         fm->session_id_thr_local_pool[i].del_sess_count = 0;
