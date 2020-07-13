@@ -1029,6 +1029,7 @@ func TestPreUpgTimeout(t *testing.T) {
 	}
 
 	AssertEventually(t, addSmartNICResponse("naples1", protos.DSCOp_DSCPreCheckForDisruptive), "Expected naples1 spec to have outstanding Precheck Op")
+	AssertEventually(t, addSmartNICResponse("naples1", protos.DSCOp_DSCDisruptiveUpgrade), "Expected naples1 spec to have outstanding Disruptive Upgrade")
 	AssertEventually(t, func() (bool, interface{}) { return IsFSMInState(t, stateMgr, t.Name(), fsmstRolloutFail) }, "Expecting Rollout to be in Failure  state", "100ms", "2s")
 	stateMgr.RolloutWatcher <- kvstore.WatchEvent{Type: kvstore.Deleted, Object: &ro}
 }
@@ -1104,7 +1105,7 @@ func TestMaxFailuresNotHit(t *testing.T) {
 func TestMaxFailuresHit(t *testing.T) {
 
 	savedPreupgradeTimeout := preUpgradeTimeout
-	preUpgradeTimeout = 500 * time.Millisecond
+	preUpgradeTimeout = 800 * time.Millisecond
 	defer func() {
 		preUpgradeTimeout = savedPreupgradeTimeout
 	}()
@@ -1162,6 +1163,7 @@ func TestMaxFailuresHit(t *testing.T) {
 	AssertEventually(t, addSmartNICResponse("naples1", protos.DSCOp_DSCPreCheckForDisruptive), "Expected naples1 spec to have outstanding Precheck Op")
 	AssertEventually(t, addSmartNICResponse("naples0", protos.DSCOp_DSCPreCheckForDisruptive), "Expected naples0 spec to have outstanding Precheck Op")
 	AssertEventually(t, addSmartNICResponse("naples0", protos.DSCOp_DSCDisruptiveUpgrade), "Expected naples0 spec to have outstanding Disruptive Upgrade")
+	time.Sleep(time.Millisecond * 100)
 	AssertEventually(t, addSmartNICFailResponse("naples1", protos.DSCOp_DSCDisruptiveUpgrade), "Expected naples1 spec to have outstanding Disruptive Upgrade")
 	AssertEventually(t, func() (bool, interface{}) { return IsFSMInState(t, stateMgr, t.Name(), fsmstRolloutFail) }, "Expecting Rollout to be in Failure  state", "100ms", "2s")
 	stateMgr.RolloutWatcher <- kvstore.WatchEvent{Type: kvstore.Deleted, Object: &ro}
