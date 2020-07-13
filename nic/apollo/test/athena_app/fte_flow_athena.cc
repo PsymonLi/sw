@@ -1549,8 +1549,12 @@ fte_h2s_v4_session_rewrite_mplsoudp (uint32_t session_rewrite_id,
                      (uint8_t*)substrate_dmac, sizeof(mac_addr_t));
     sdk::lib::memrev(spec.data.u.mplsoudp_encap.l2_encap.smac,
                      (uint8_t*)substrate_smac, sizeof(mac_addr_t));
-    spec.data.u.mplsoudp_encap.l2_encap.insert_vlan_tag = TRUE;
-    spec.data.u.mplsoudp_encap.l2_encap.vlan_id = substrate_vlan;
+    if (substrate_vlan == 1) {
+        spec.data.u.mplsoudp_encap.l2_encap.insert_vlan_tag = FALSE;
+    } else {
+        spec.data.u.mplsoudp_encap.l2_encap.insert_vlan_tag = TRUE;
+        spec.data.u.mplsoudp_encap.l2_encap.vlan_id = substrate_vlan;
+    }
 
     spec.data.u.mplsoudp_encap.ip_encap.ip_saddr = substrate_sip;
     spec.data.u.mplsoudp_encap.ip_encap.ip_daddr = substrate_dip;
@@ -1590,8 +1594,12 @@ fte_h2s_v4_session_rewrite_geneve (uint32_t session_rewrite_id,
                      (uint8_t*)substrate_dmac, sizeof(mac_addr_t));
     sdk::lib::memrev(spec.data.u.geneve_encap.l2_encap.smac,
                      (uint8_t*)substrate_smac, sizeof(mac_addr_t));
-    spec.data.u.geneve_encap.l2_encap.insert_vlan_tag = TRUE;
-    spec.data.u.geneve_encap.l2_encap.vlan_id = substrate_vlan;
+    if (substrate_vlan == 1) {
+        spec.data.u.geneve_encap.l2_encap.insert_vlan_tag = FALSE;
+    } else {
+        spec.data.u.geneve_encap.l2_encap.insert_vlan_tag = TRUE;
+        spec.data.u.geneve_encap.l2_encap.vlan_id = substrate_vlan;
+    }
 
     spec.data.u.geneve_encap.ip_encap.ip_saddr = substrate_sip;
     spec.data.u.geneve_encap.ip_encap.ip_daddr = substrate_dip;
@@ -1638,8 +1646,12 @@ fte_h2s_nat_v4_session_rewrite_mplsoudp (uint32_t session_rewrite_id,
                      (uint8_t*)substrate_dmac, sizeof(mac_addr_t));
     sdk::lib::memrev(spec.data.u.mplsoudp_encap.l2_encap.smac,
                      (uint8_t*)substrate_smac, sizeof(mac_addr_t));
-    spec.data.u.mplsoudp_encap.l2_encap.insert_vlan_tag = TRUE;
-    spec.data.u.mplsoudp_encap.l2_encap.vlan_id = substrate_vlan;
+    if (substrate_vlan == 1) {
+        spec.data.u.mplsoudp_encap.l2_encap.insert_vlan_tag = FALSE;
+    } else {
+        spec.data.u.mplsoudp_encap.l2_encap.insert_vlan_tag = TRUE;
+        spec.data.u.mplsoudp_encap.l2_encap.vlan_id = substrate_vlan;
+    }
 
     spec.data.u.mplsoudp_encap.ip_encap.ip_saddr = substrate_sip;
     spec.data.u.mplsoudp_encap.ip_encap.ip_daddr = substrate_dip;
@@ -1682,8 +1694,12 @@ fte_h2s_nat_v4_session_rewrite_geneve (uint32_t session_rewrite_id,
                      (uint8_t*)substrate_dmac, sizeof(mac_addr_t));
     sdk::lib::memrev(spec.data.u.geneve_encap.l2_encap.smac,
                      (uint8_t*)substrate_smac, sizeof(mac_addr_t));
-    spec.data.u.geneve_encap.l2_encap.insert_vlan_tag = TRUE;
-    spec.data.u.geneve_encap.l2_encap.vlan_id = substrate_vlan;
+    if (substrate_vlan == 1) {
+        spec.data.u.geneve_encap.l2_encap.insert_vlan_tag = FALSE;
+    } else {
+        spec.data.u.geneve_encap.l2_encap.insert_vlan_tag = TRUE;
+        spec.data.u.geneve_encap.l2_encap.vlan_id = substrate_vlan;
+    }
 
     spec.data.u.geneve_encap.ip_encap.ip_saddr = substrate_sip;
     spec.data.u.geneve_encap.ip_encap.ip_daddr = substrate_dip;
