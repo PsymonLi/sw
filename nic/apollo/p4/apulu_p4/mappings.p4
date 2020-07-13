@@ -245,21 +245,22 @@ action mapping_info(entry_valid, is_local, pad11, nexthop_valid,
 
     if (entry_valid == TRUE) {
         // if hardware register indicates hit, take the results
-        modify_field(vnic_metadata.egress_bd_id, egress_bd_id);
-        modify_field(rewrite_metadata.dmaci, dmaci);
-        modify_field(scratch_metadata.flag, nexthop_valid);
-        modify_field(vnic_metadata.rx_vnic_id, rx_vnic_id);
-        modify_field(control_metadata.is_local, is_local);
         if (p4e_to_arm.valid == TRUE) {
             modify_field(p4e_to_arm.nexthop_type, txdma_to_p4e.nexthop_type);
             modify_field(p4e_to_arm.nexthop_id, txdma_to_p4e.nexthop_id);
             modify_field(p4e_to_arm.mapping_hit, TRUE);
             modify_field(p4e_to_arm.is_local, is_local);
+            modify_field(vnic_metadata.egress_bd_id, egress_bd_id);
+            modify_field(vnic_metadata.rx_vnic_id, rx_vnic_id);
         } else {
-            if ((nexthop_valid == TRUE) and
+            modify_field(scratch_metadata.flag, nexthop_valid);
+            if ((scratch_metadata.flag == TRUE) and
                 (scratch_metadata.priority <= p4e_i2e.priority)) {
                 modify_field(rewrite_metadata.nexthop_type, nexthop_type);
                 modify_field(p4e_i2e.nexthop_id, nexthop_id);
+                modify_field(rewrite_metadata.dmaci, dmaci);
+                modify_field(vnic_metadata.egress_bd_id, egress_bd_id);
+                modify_field(vnic_metadata.rx_vnic_id, rx_vnic_id);
             }
         }
         modify_field(egress_recirc.mapping_done, TRUE);
