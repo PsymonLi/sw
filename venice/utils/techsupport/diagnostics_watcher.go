@@ -54,12 +54,18 @@ func (ag *TSMClient) RunModuleWatcher() {
 			ag.diagGrpcClient = nil
 		}
 
+		if ag.isStopped() {
+			return
+		}
+
+		if ag.resolverClient == nil {
+			log.Error("resolver client is not initialized")
+			time.Sleep(time.Second)
+			continue
+		}
+
 		b := balancer.New(ag.resolverClient)
 		if b == nil {
-			if ag.isStopped() {
-				return
-			}
-
 			time.Sleep(time.Second)
 			continue
 		}
@@ -68,11 +74,6 @@ func (ag *TSMClient) RunModuleWatcher() {
 		if err != nil {
 			b.Close()
 			log.Errorf("Failed to create rpc client. Err : %v. Retrying...", err)
-
-			if ag.isStopped() {
-				return
-			}
-
 			time.Sleep(time.Second)
 			continue
 		}
