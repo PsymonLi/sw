@@ -60,6 +60,17 @@ pds_device_read (_Out_ pds_device_info_t *info)
 }
 
 sdk_ret_t
+pds_device_stats_reset (void)
+{
+    device_entry *entry = pds_device_find();
+
+    if (entry) {
+        return entry->reset_stats();
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 pds_device_update (_In_ pds_device_spec_t *device, _In_ pds_batch_ctxt_t bctxt)
 {
     return pds_device_api_handle(bctxt, API_OP_UPDATE, device);

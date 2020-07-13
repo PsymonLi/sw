@@ -116,6 +116,10 @@ public:
     virtual sdk_ret_t read_hw(api_base *api_obj, obj_key_t *key,
                               obj_info_t *info) override;
 
+    /// \brief      reset all the statistics associated with the device
+    /// \return     SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t reset_stats(void) override;
+
 private:
     /// \brief constructor
     device_impl() {}
@@ -146,6 +150,12 @@ private:
     /// \param[out] egr_drop_stats Egress drop statistics
     /// \return     Number of stats entries
     uint32_t fill_egr_drop_stats_(pds_device_drop_stats_t *egr_drop_stats);
+
+    /// \brief      clear ingress drop stats
+    void clear_ing_drop_stats_(void);
+
+    /// \brief      clear egress drop stats
+    void clear_egr_drop_stats_(void);
 };
 
 /// \@}

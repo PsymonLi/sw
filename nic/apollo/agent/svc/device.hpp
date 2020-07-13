@@ -16,6 +16,7 @@ using pds::DeviceRequest;
 using pds::DeviceSpec;
 using pds::DeviceDeleteRequest;
 using pds::DeviceResponse;
+using types::Empty;
 
 class DeviceSvcImpl final : public DeviceSvc::Service {
 public:
@@ -29,6 +30,9 @@ public:
     Status DeviceGet(ServerContext *context,
                      const pds::DeviceGetRequest *proto_req,
                      pds::DeviceGetResponse *proto_rsp) override;
+    Status DeviceStatsReset(ServerContext *context,
+                            const types::Empty *proto_req,
+                            types::Empty *proto_rsp) override;
 };
 
 #endif    // __AGENT_SVC_SWITCH_HPP__

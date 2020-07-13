@@ -16,6 +16,7 @@ service DeviceSvc {
   rpc DeviceUpdate (DeviceRequest) returns (DeviceResponse) {}
   rpc DeviceGet (DeviceGetRequest) returns (DeviceGetResponse) {}
   rpc DeviceDelete (DeviceDeleteRequest) returns (DeviceDeleteResponse) {}
+  rpc DeviceStatsReset (types.Empty) returns (types.Empty) {}
 }
 
 enum MemoryProfile {

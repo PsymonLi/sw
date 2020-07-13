@@ -376,20 +376,6 @@ apulu_impl::factory(pipeline_cfg_t *pipeline_cfg) {
 // TODO: usage of handles here is incorrect (may be delete by index ?)
 void
 apulu_impl::destroy(apulu_impl *impl) {
-    int i;
-    sdk_table_api_params_t tparams;
-
-    // remove drop stats table entries
-    for (i = P4E_DROP_REASON_MIN; i <= P4E_DROP_REASON_MAX; i++) {
-        memset(&tparams, 0, sizeof(sdk_table_api_params_t));
-        tparams.handle = apulu_impl_db()->egr_drop_stats_tbl_hdls_[i];
-        apulu_impl_db()->egress_drop_stats_tbl()->remove(&tparams);
-    }
-    for (i = P4I_DROP_REASON_MIN; i <= P4I_DROP_REASON_MAX; i++) {
-        memset(&tparams, 0, sizeof(sdk_table_api_params_t));
-        tparams.handle = apulu_impl_db()->ing_drop_stats_tbl_hdls_[i];
-        apulu_impl_db()->ingress_drop_stats_tbl()->remove(&tparams);
-    }
     api::impl::pds_impl_state::destroy(&api::impl::g_pds_impl_state);
     p4pd_cleanup();
 }
@@ -435,8 +421,6 @@ apulu_impl::inter_pipe_init_(void) {
 
 sdk_ret_t
 apulu_impl::egress_drop_stats_init_(void) {
-    sdk_ret_t                    ret;
-    sdk_table_api_params_t       tparams;
     p4e_drop_stats_swkey_t       key = { 0 };
     p4e_drop_stats_actiondata_t  data = { 0 };
     p4e_drop_stats_swkey_mask_t  key_mask = { 0 };
@@ -446,20 +430,16 @@ apulu_impl::egress_drop_stats_init_(void) {
         key_mask.control_metadata_p4e_drop_reason_mask =
             key.control_metadata_p4e_drop_reason;
         data.action_id = P4E_DROP_STATS_P4E_DROP_STATS_ID;
-        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &key, &key_mask, &data,
-                                       P4E_DROP_STATS_P4E_DROP_STATS_ID,
-                                       sdk::table::handle_t::null());
-        ret = apulu_impl_db()->egress_drop_stats_tbl()->insert(&tparams);
-        apulu_impl_db()->egr_drop_stats_tbl_hdls_[i] = tparams.handle;
-        SDK_ASSERT(ret == SDK_RET_OK);
+        if (p4pd_global_entry_write(P4TBL_ID_P4E_DROP_STATS, i,
+                                    (uint8_t *)&key, (uint8_t *)&key_mask, &data) == P4PD_SUCCESS) {
+            PDS_TRACE_ERR("Egress drop stats init failed at index %u", i);
+        } 
     }
-    return ret;
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
 apulu_impl::ingress_drop_stats_init_(void) {
-    sdk_ret_t                    ret;
-    sdk_table_api_params_t       tparams;
     p4i_drop_stats_swkey_t       key = { 0 };
     p4i_drop_stats_actiondata_t  data = { 0 };
     p4i_drop_stats_swkey_mask_t  key_mask = { 0 };
@@ -469,15 +449,12 @@ apulu_impl::ingress_drop_stats_init_(void) {
         key_mask.control_metadata_p4i_drop_reason_mask =
             key.control_metadata_p4i_drop_reason;
         data.action_id = P4I_DROP_STATS_P4I_DROP_STATS_ID;
-        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &key, &key_mask, &data,
-                                       P4I_DROP_STATS_P4I_DROP_STATS_ID,
-                                       sdk::table::handle_t::null());
-        ret = apulu_impl_db()->ingress_drop_stats_tbl()->insert(&tparams);
-        // TODO: storing handles is not going to work !!
-        apulu_impl_db()->ing_drop_stats_tbl_hdls_[i] = tparams.handle;
-        SDK_ASSERT(ret == SDK_RET_OK);
+        if (p4pd_global_entry_write(P4TBL_ID_P4I_DROP_STATS, i,
+                                    (uint8_t *)&key, (uint8_t *)&key_mask, &data) == P4PD_SUCCESS) {
+            PDS_TRACE_ERR("Ingress drop stats init failed at index %u", i);
+        } 
     }
-    return ret;
+    return SDK_RET_OK;
 }
 
 sdk_ret_t

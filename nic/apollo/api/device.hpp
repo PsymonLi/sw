@@ -191,6 +191,10 @@ public:
     /// \return     SDK_RET_OK on success, failure status code on error
     sdk_ret_t read(pds_device_info_t *info);
 
+    /// \brief      reset statistics
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t reset_stats(void);
+
     /// \brief  return the device's IP address
     /// \return IP address of the device
     const ip_addr_t& ip_addr(void) const { return ip_addr_; }

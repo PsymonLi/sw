@@ -245,6 +245,10 @@ sdk_ret_t pds_device_create(pds_device_spec_t *spec,
 /// \return     #SDK_RET_OK on success, failure status code on error
 sdk_ret_t pds_device_read(pds_device_info_t *info);
 
+/// \brief      reset device statistics
+/// \return     #SDK_RET_OK on success, failure status code on error
+sdk_ret_t pds_device_stats_reset(void);
+
 /// \brief     update device
 /// \param[in] spec specification
 /// \param[in] bctxt batch context if API is invoked in a batch

@@ -286,6 +286,11 @@ device_entry::read(pds_device_info_t *info) {
 }
 
 sdk_ret_t
+device_entry::reset_stats(void) {
+    return impl_->reset_stats();
+}
+
+sdk_ret_t
 device_entry::add_to_db(void) {
     return device_db()->insert(this);
 }

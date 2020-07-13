@@ -386,3 +386,11 @@ DeviceSvcImpl::DeviceGet(ServerContext *context,
     pds_svc_device_get(proto_req, proto_rsp);
     return Status::OK;
 }
+
+Status
+DeviceSvcImpl::DeviceStatsReset(ServerContext *context,
+                                const Empty *req,
+                                Empty *rsp) {
+    pds_device_stats_reset();
+    return Status::OK;
+}

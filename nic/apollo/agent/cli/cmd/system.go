@@ -116,6 +116,25 @@ var pbDetailShowCmd = &cobra.Command{
 	Run:   pbDetailShowCmdHandler,
 }
 
+var systemClearCmd = &cobra.Command{
+	Use:   "system",
+	Short: "clear system information",
+	Long:  "clear system information",
+}
+
+var systemStatsClearCmd = &cobra.Command{
+	Use:   "statistics",
+	Short: "clear system statistics",
+	Long:  "clear system statistics",
+}
+
+var dropClearCmd = &cobra.Command{
+	Use:   "drop",
+	Short: "clear system drop statistics",
+	Long:  "clear system drop statistics",
+	Run:   dropClearCmdHandler,
+}
+
 func init() {
 	debugCmd.AddCommand(systemDebugCmd)
 	systemDebugCmd.Flags().Uint32VarP(&clockFreq, "clock-frequency", "c", 0, "Specify clock-frequency (Allowed: 416, 833, 900, 957, 1033, 1100)")
@@ -158,6 +177,37 @@ func init() {
 
 	systemStatsShowCmd.AddCommand(datapathAssistStatsShowCmd)
 	datapathAssistStatsShowCmd.Flags().Bool("yaml", true, "Output in yaml")
+
+	clearCmd.AddCommand(systemClearCmd)
+	systemClearCmd.AddCommand(systemStatsClearCmd)
+	systemStatsClearCmd.AddCommand(dropClearCmd)
+}
+
+func dropClearCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewDeviceSvcClient(c)
+	var empty *pds.Empty
+
+	// PDS call
+	_, err = client.DeviceStatsReset(context.Background(), empty)
+	if err != nil {
+		fmt.Printf("Clear drop statistics failed, err %v\n", err)
+		return
+	}
+
+	fmt.Printf("Cleared drop statistics\n")
 }
 
 func dropShowCmdHandler(cmd *cobra.Command, args []string) {

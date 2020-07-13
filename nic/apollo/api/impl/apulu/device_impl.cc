@@ -277,6 +277,49 @@ device_impl::fill_status_(pds_device_status_t *status) {
     status->num_host_if = lif_impl_db()->num_host_lif();
 }
 
+void
+device_impl::clear_ing_drop_stats_(void) {
+    p4i_drop_stats_swkey_t       key = { 0 };
+    p4i_drop_stats_actiondata_t  data = { 0 };
+    p4i_drop_stats_swkey_mask_t  key_mask = { 0 };
+
+    for (uint32_t i = P4I_DROP_REASON_MIN; i <= P4I_DROP_REASON_MAX; i++) {
+        key.control_metadata_p4i_drop_reason = ((uint32_t)1 << i);
+        key_mask.control_metadata_p4i_drop_reason_mask =
+            key.control_metadata_p4i_drop_reason;
+        data.action_id = P4I_DROP_STATS_P4I_DROP_STATS_ID;
+        if (p4pd_global_entry_write(P4TBL_ID_P4I_DROP_STATS, i,
+                                    (uint8_t *)&key, (uint8_t *)&key_mask, &data) == P4PD_SUCCESS) {
+            PDS_TRACE_ERR("Ingress drop stats clear failed at index %u", i);
+        }
+    }
+}
+
+void
+device_impl::clear_egr_drop_stats_(void) {
+    p4e_drop_stats_swkey_t       key = { 0 };
+    p4e_drop_stats_actiondata_t  data = { 0 };
+    p4e_drop_stats_swkey_mask_t  key_mask = { 0 };
+
+    for (uint32_t i = P4E_DROP_REASON_MIN; i <= P4E_DROP_REASON_MAX; i++) {
+        key.control_metadata_p4e_drop_reason = ((uint32_t)1 << i);
+        key_mask.control_metadata_p4e_drop_reason_mask =
+            key.control_metadata_p4e_drop_reason;
+        data.action_id = P4E_DROP_STATS_P4E_DROP_STATS_ID;
+        if (p4pd_global_entry_write(P4TBL_ID_P4E_DROP_STATS, i,
+                                    (uint8_t *)&key, (uint8_t *)&key_mask, &data) == P4PD_SUCCESS) {
+            PDS_TRACE_ERR("Egress drop stats clear failed at index %u", i);
+        }
+    }
+}
+
+sdk_ret_t
+device_impl::reset_stats(void) {
+    clear_ing_drop_stats_();
+    clear_egr_drop_stats_();
+    return SDK_RET_OK;
+}
+
 uint32_t
 device_impl::fill_ing_drop_stats_(pds_device_drop_stats_t *ing_drop_stats) {
     p4pd_error_t pd_err = P4PD_SUCCESS;
