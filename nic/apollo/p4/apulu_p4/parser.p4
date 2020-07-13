@@ -88,6 +88,7 @@ header erspan_t3_opt_t erspan3_opt;
 // layer 1
 header ethernet_t ethernet_1;
 header vlan_tag_t ctag_1;
+header vlan_tag_t ctag2_1;
 header vlan_tag_t ctag_s;
 header arp_rarp_t arp;
 @pragma pa_header_union ingress ipv4_1 ipv6_1
@@ -223,6 +224,17 @@ parser parse_ingress_packet {
 
 parser parse_ctag_1 {
     extract(ctag_1);
+    return select(latest.etherType) {
+        ETHERTYPE_CTAG : parse_ctag2_1;
+        ETHERTYPE_IPV4 : parse_ipv4_1;
+        ETHERTYPE_IPV6 : parse_ipv6_1;
+        ETHERTYPE_ARP  : parse_arp;
+        default : ingress;
+    }
+}
+
+parser parse_ctag2_1 {
+    extract(ctag2_1);
     return select(latest.etherType) {
         ETHERTYPE_IPV4 : parse_ipv4_1;
         ETHERTYPE_IPV6 : parse_ipv6_1;
@@ -546,10 +558,21 @@ parser parse_egress_packet {
 parser parse_egress_ctag_1 {
     extract(ctag_1);
     return select(latest.etherType) {
+        ETHERTYPE_CTAG : parse_egress_ctag2_1;
         ETHERTYPE_IPV4 : parse_egress_ipv4_1;
         ETHERTYPE_IPV6 : parse_egress_ipv6_1;
         default : ingress;
         1 mask 0 : parse_ethernet_span_copy;
+    }
+}
+
+@pragma xgress egress
+parser parse_egress_ctag2_1 {
+    extract(ctag2_1);
+    return select(latest.etherType) {
+        ETHERTYPE_IPV4 : parse_egress_ipv4_1;
+        ETHERTYPE_IPV6 : parse_egress_ipv6_1;
+        default : ingress;
     }
 }
 

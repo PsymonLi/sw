@@ -15,8 +15,12 @@ lif_info:
     phvwr           p.p4i_i2e_rx_packet, d.lif_info_d.direction
     phvwr           p.control_metadata_learn_enabled, d.lif_info_d.learn_enabled
     phvwr           p.control_metadata_lif_type, d.lif_info_d.lif_type
-    seq             c1, d.lif_info_d.lif_vlan_en, TRUE
-    phvwr.c1        p.key_metadata_lif, k.arm_to_p4i_lif
+    // lif_vlan_mode
+    crestore        [c2-c1], d.lif_info_d.lif_vlan_mode, 0x3
+    bcf             [!c2], lif_vlan_mode_done
+    cmov            r7, c1, k.ctag2_1_vid, k.arm_to_p4i_lif
+    phvwr           p.key_metadata_lif, r7
+lif_vlan_mode_done:
     phvwr           p.vnic_metadata_vnic_id, d.lif_info_d.vnic_id
     phvwr           p.vnic_metadata_bd_id, d.lif_info_d.bd_id
     phvwr           p.vnic_metadata_vpc_id, d.lif_info_d.vpc_id

@@ -68,6 +68,8 @@ action tunneled_nonip_packet() {
     modify_field(key_metadata.ktype, KEY_TYPE_MAC);
     modify_field(key_metadata.src, ethernet_2.srcAddr);
     modify_field(key_metadata.dst, ethernet_2.dstAddr);
+    modify_field(key_metadata.proto, 0);
+    modify_field(key_metadata.sport, 0);
     modify_field(key_metadata.dport, ethernet_2.etherType);
 }
 

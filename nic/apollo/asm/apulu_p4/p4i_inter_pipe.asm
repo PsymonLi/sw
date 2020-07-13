@@ -162,6 +162,7 @@ tunnel_decap:
                         ipv4_1_valid, \
                         ipv6_1_valid, \
                         arp_valid, \
+                        ctag2_1_valid, \
                         ctag_1_valid, \
                         ethernet_1_valid}, 0
     sub             r6, k.capri_p4_intrinsic_frame_size, k.offset_metadata_l2_2

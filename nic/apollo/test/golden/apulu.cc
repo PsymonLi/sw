@@ -100,6 +100,7 @@ typedef struct cache_line_s {
 uint32_t g_lif0 = 0x1;
 uint32_t g_lif1 = 0x2;
 uint32_t g_lif2 = 0x3;
+uint32_t g_lif3 = 0x4;
 uint16_t g_vpc_id = 0x2FC;
 uint16_t g_bd_id = 0x2FD;
 uint16_t g_vnic_id = 0x2FE;
@@ -173,6 +174,13 @@ uint16_t g_vnic_id12 = 0x20C;
 uint8_t  g_proto13 = 0x11;
 uint16_t g_sport13 = 0x1234;
 uint16_t g_dport13 = 6081;
+
+uint16_t g_ctag16 = 116;
+uint16_t g_vpc_id16 = 0x216;
+uint16_t g_bd_id16 = 0x616;
+uint32_t g_session_id16 = 0x55E16;
+uint32_t g_nexthop_id16 = 0x2E16;
+
 mpartition *g_mempartition;
 
 class sort_mpu_programs_compare {
@@ -653,7 +661,8 @@ device_init (void)
 
     asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_0, g_lif0);
     asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_1, g_lif1);
-    asicpd_tm_uplink_lif_set(TM_PORT_NCSI, g_lif2);
+    asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_2, g_lif2);
+    asicpd_tm_uplink_lif_set(TM_PORT_NCSI, g_lif3);
 
     uint64_t session_stats_addr;
     session_stats_addr = asicpd_get_mem_addr(JSTATSBASE);
@@ -804,12 +813,21 @@ lif_table_init (void)
 
     memset(&data, 0, sizeof(data));
     data.action_id = LIF_LIF_INFO_ID;
+    lif_info->vpc_id = g_vpc_id;
+    lif_info->bd_id = 0;
+    lif_info->vnic_id = 0;
+    lif_info->direction = P4_LIF_DIR_UPLINK;
+    lif_info->lif_vlan_mode = APULU_LIF_VLAN_MODE_QINQ;
+    entry_write(tbl_id, g_lif2, 0, 0, &data, false, 0);
+
+    memset(&data, 0, sizeof(data));
+    data.action_id = LIF_LIF_INFO_ID;
     lif_info->vpc_id = 0;
     lif_info->bd_id = 0;
     lif_info->vnic_id = 0;
     lif_info->direction = P4_LIF_DIR_UPLINK;
     lif_info->lif_type = NACL_TEST_LIF_TYPE;
-    entry_write(tbl_id, g_lif2, 0, 0, &data, false, 0);
+    entry_write(tbl_id, g_lif3, 0, 0, &data, false, 0);
 }
 
 static void
@@ -828,6 +846,16 @@ lif_vlan_table_init (void)
     lif_vlan_info->vpc_id = g_vpc_id1;
     lif_vlan_info->bd_id = g_bd_id1;
     lif_vlan_info->vnic_id = 0;
+    entry_write(tbl_id, 0, &key, 0, &data, true, LIF_VLAN_HASH_TABLE_SIZE);
+
+    memset(&key, 0, sizeof(key));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_lif = g_ctag16;
+    key.ctag_1_vid = g_ctag1;
+    data.action_id = LIF_VLAN_LIF_VLAN_INFO_ID;
+    lif_vlan_info->vpc_id = g_vpc_id16;
+    lif_vlan_info->bd_id = g_bd_id16;
+    lif_vlan_info->vnic_id = g_vnic_id;
     entry_write(tbl_id, 0, &key, 0, &data, true, LIF_VLAN_HASH_TABLE_SIZE);
 }
 
@@ -1067,6 +1095,17 @@ mappings_init (void)
     mapping_info->egress_bd_id = g_egress_bd_id1;
     memcpy(mapping_info->dmaci, &g_dmaci1, 6);
     entry_write(tbl_id, 0, &key, NULL, &data, true, MAPPING_TABLE_SIZE);
+
+    memset(&key, 0, sizeof(key));
+    memset(&data, 0, sizeof(data));
+    key.p4e_i2e_mapping_lkp_type = KEY_TYPE_IPV4;
+    key.p4e_i2e_mapping_lkp_id = g_vpc_id16;
+    memcpy(key.p4e_i2e_mapping_lkp_addr, &g_dip1, 4);
+    mapping_info->entry_valid = 1;
+    mapping_info->nexthop_valid = 1;
+    mapping_info->nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    mapping_info->nexthop_id = g_nexthop_id16;
+    entry_write(tbl_id, 0, &key, NULL, &data, true, MAPPING_TABLE_SIZE);
 }
 
 static void
@@ -1294,6 +1333,20 @@ flows_init (void)
     flow_hash_info->flow_role = TCP_FLOW_RESPONDER;
     flow_hash_info->epoch = EPOCH;
     entry_write(tbl_id, 0, &key, NULL, &data, true, IPV4_FLOW_TABLE_SIZE);
+
+    memset(&key, 0, sizeof(key));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_flow_lkp_id = g_bd_id16;
+    key.key_metadata_ipv4_src = g_sip1;
+    key.key_metadata_ipv4_dst = g_dip1;
+    key.key_metadata_proto = g_proto1;
+    key.key_metadata_sport = g_sport1;
+    key.key_metadata_dport = g_dport1;
+    flow_hash_info->entry_valid = 1;
+    flow_hash_info->session_index = g_session_id16;
+    flow_hash_info->flow_role = TCP_FLOW_INITIATOR;
+    flow_hash_info->epoch = EPOCH;
+    entry_write(tbl_id, 0, &key, NULL, &data, true, IPV4_FLOW_TABLE_SIZE);
 }
 
 static void
@@ -1519,6 +1572,11 @@ nexthops_init (void)
     nexthop_info->tunnel2_id = g_tunnel2_id5;
     nexthop_info->vlan = g_vni5;
     entry_write(tbl_id, g_nexthop_id5, 0, 0, &data, false, 0);
+
+    memset(&data, 0, sizeof(data));
+    data.action_id = NEXTHOP_NEXTHOP_INFO_ID;
+    nexthop_info->port = TM_PORT_UPLINK_1;
+    entry_write(tbl_id, g_nexthop_id16, 0, 0, &data, false, 0);
 }
 
 static void
@@ -2077,6 +2135,25 @@ TEST_F(apulu_test, test1)
                 get_next_pkt(opkt, port, cos);
                 EXPECT_TRUE(opkt == epkt);
                 EXPECT_TRUE(port == TM_PORT_NCSI);
+            }
+            testcase_end(tcid, i + 1);
+        }
+    }
+
+    tcid++;
+    if (tcid_filter == 0 || tcid == tcid_filter) {
+        ipkt.resize(sizeof(g_snd_pkt16));
+        memcpy(ipkt.data(), g_snd_pkt16, sizeof(g_snd_pkt16));
+        epkt.resize(sizeof(g_rcv_pkt16));
+        memcpy(epkt.data(), g_rcv_pkt16, sizeof(g_rcv_pkt16));
+        std::cout << "[TCID=" << tcid << "] QinQ" << std::endl;
+        for (i = 0; i < tcscale; i++) {
+            testcase_begin(tcid, i + 1);
+            step_network_pkt(ipkt, TM_PORT_UPLINK_2);
+            if (!getenv("SKIP_VERIFY")) {
+                get_next_pkt(opkt, port, cos);
+                EXPECT_TRUE(opkt == epkt);
+                EXPECT_TRUE(port == TM_PORT_UPLINK_1);
             }
             testcase_end(tcid, i + 1);
         }

@@ -383,3 +383,12 @@ ipkt = Ether(dst='00:01:02:03:04:05', src='00:C1:C2:C3:C4:C5') / \
         TCP(sport=0x1234, dport=0x5678) / payload
 dump_pkt(ipkt, 'g_snd_pkt15')
 dump_pkt(ipkt, 'g_rcv_pkt15')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+ipkt = Ether(dst='00:01:02:03:04:05', src='00:C1:C2:C3:C4:C5') / \
+        Dot1Q(vlan=100) / \
+        Dot1Q(vlan=116) / \
+        IP(dst='10.10.1.1', src='11.11.1.1') / \
+        TCP(sport=0x1234, dport=0x5678) / payload
+dump_pkt(ipkt, 'g_snd_pkt16')
+dump_pkt(ipkt, 'g_rcv_pkt16')

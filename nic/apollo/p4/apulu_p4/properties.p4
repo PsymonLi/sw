@@ -2,7 +2,7 @@
 /* LIF info                                                                   */
 /******************************************************************************/
 action lif_info(direction, lif_type, vnic_id, bd_id, vpc_id, learn_enabled,
-                pinned_nexthop_type, pinned_nexthop_id, lif_vlan_en) {
+                pinned_nexthop_type, pinned_nexthop_id, lif_vlan_mode) {
     modify_field(control_metadata.rx_packet, direction);
     modify_field(p4i_i2e.rx_packet, direction);
     modify_field(control_metadata.lif_type, lif_type);
@@ -19,12 +19,21 @@ action lif_info(direction, lif_type, vnic_id, bd_id, vpc_id, learn_enabled,
     modify_field(p4i_i2e.nexthop_type, pinned_nexthop_type);
     modify_field(p4i_i2e.nexthop_id, pinned_nexthop_id);
     modify_field(control_metadata.learn_enabled, learn_enabled);
-    modify_field(scratch_metadata.flag, lif_vlan_en);
-    modify_field(key_metadata.lif, 0);
+    modify_field(scratch_metadata.lif_vlan_mode, lif_vlan_mode);
+    if (scratch_metadata.lif_vlan_mode == APULU_LIF_VLAN_MODE_LIF_VLAN) {
+        // ASM only
+        // modify_field(key_metadata.lif, capri_intrinsic.lif);
+        // modify_field(key_metadata.lif, arm_to_p4i.lif);
+    } else {
+        if (scratch_metadata.lif_vlan_mode == APULU_LIF_VLAN_MODE_QINQ) {
+            modify_field(key_metadata.lif, ctag2_1.vid);
+        } else {
+            modify_field(key_metadata.lif, 0);
+        }
+    }
     // ASM only
-    // copy key (capri_intrinsic.lif or arm_to_p4i.lif) to p4i_i2e.src_lif
-    // if lif_vlan_en is set, copy key (capri_intrinsic.lif or arm_to_p4i.lif)
-    // to key_metadata.lif
+    // modify_field(p4i_i2e.src_lif, capri_intrinsic.lif);
+    // modify_field(p4i_i2e.src_lif, arm_to_p4i.lif);
 }
 
 @pragma stage 0

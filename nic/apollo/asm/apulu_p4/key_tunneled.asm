@@ -14,9 +14,11 @@ tunneled_packet:
     nop
 tunneled_nonip_packet:
     phvwr           p.key_metadata_ktype, KEY_TYPE_MAC
+    phvwr           p.key_metadata_dport, k.ethernet_2_etherType
+    phvwr           p.key_metadata_sport, 0
     phvwr           p.key_metadata_src, k.ethernet_2_srcAddr
     phvwr.e         p.key_metadata_dst, k.ethernet_2_dstAddr
-    phvwr.f         p.key_metadata_dport, k.ethernet_2_etherType
+    phvwr.f         p.key_metadata_proto, 0
 
 tunneled_ipv4_packet:
     phvwr           p.control_metadata_ip_fragment, \

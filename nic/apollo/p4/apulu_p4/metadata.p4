@@ -25,7 +25,7 @@ header_type key_metadata_t {
         parsed_sport    : 16;
         parsed_dport    : 16;
         entry_valid     : 1;
-        lif             : 11;
+        lif             : 12;
 
         local_mapping_lkp_type  : 2;
         local_mapping_lkp_id    : 16;
@@ -159,6 +159,7 @@ header_type scratch_metadata_t {
         drop_reason         : 8;
         xlate_id            : 20;
         l2_pkt_type         : 2;
+        lif_vlan_mode       : 2;
 
         // policer
         policer_valid       : 1;
