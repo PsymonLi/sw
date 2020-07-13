@@ -20,7 +20,7 @@ pds_system_get_ticks (uint64_t sec)
 
     if (!g_clock_adjustment) {
         // freq in MHz
-        freq = asicpd_clock_freq_get();
+        freq = asicpd_get_core_freq();
         g_clock_adjustment = ((double)(((double)1)/(freq * 1000000)));
     }
 

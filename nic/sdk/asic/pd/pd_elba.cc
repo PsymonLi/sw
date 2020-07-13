@@ -610,6 +610,12 @@ asicpd_clock_freq_get (void)
     return 0;   /* ASIC yet to implement */
 }
 
+uint32_t
+asicpd_get_core_freq (void)
+{
+    return 0; /* ASIC yet to implement */
+}
+
 sdk_ret_t
 asicpd_adjust_perf (int chip_id, int inst_id, pd_adjust_perf_index_t &idx,
                     pd_adjust_perf_type_t perf_type)

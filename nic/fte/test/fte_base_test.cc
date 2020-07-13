@@ -53,6 +53,7 @@ hal_handle_t fte_base_test::add_vrf()
 
     // Create security profile
     sp_spec.mutable_key_or_handle()->set_profile_id(10);
+    sp_spec.set_cnxn_tracking_en(1); 
     hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
     ret = hal::securityprofile_create(sp_spec, &sp_rsp);
     hal::hal_cfg_db_close();
@@ -524,7 +525,8 @@ fte_base_test::inject_eth_pkt(const fte::lifqid_t &lifq,
     if (tcp) {
         cpu_rxhdr.tcp_seq_num = ntohl(tcp->seq());
         cpu_rxhdr.tcp_flags = ((tcp->get_flag(Tins::TCP::SYN) << 1) |
-                               (tcp->get_flag(Tins::TCP::ACK) << 4));
+                               (tcp->get_flag(Tins::TCP::ACK) << 4) |
+                               (tcp->get_flag(Tins::TCP::RST) << 2));
     }
 
     std::vector<uint8_t *>buffs;

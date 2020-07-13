@@ -30,6 +30,12 @@ void incr_num_exp_flows(rpc_info_t *info) {
     SDK_ATOMIC_INC_UINT32(&info->num_exp_flows, 1);
 }
 
+static inline bool session_state_is_reset(session_t *session) {
+    return(session &&
+           ((session->iflow->state == session::FLOW_TCP_STATE_RESET) ||
+            (session->rflow && session->rflow->state == session::FLOW_TCP_STATE_RESET)));
+}
+
 void
 insert_rpc_expflow_from_proto(fte::ctx_t &ctx, l4_alg_status_t *l4_sess, rpc_cb_t cb,
                               const FlowGateKey &flow_key, uint32_t idle_timeout)
@@ -257,7 +263,9 @@ fte::pipeline_action_t alg_rpc_session_delete_cb(fte::ctx_t &ctx) {
 
     app_sess = l4_sess->app_session;
     if (l4_sess->isCtrl == true) {
-        if (ctx.force_delete() == true|| (dllist_empty(&app_sess->exp_flow_lhead)\
+        if (ctx.force_delete() == true || 
+            (ctx.key().proto==IP_PROTO_TCP && session_state_is_reset(ctx.session())) || 
+             (dllist_empty(&app_sess->exp_flow_lhead)\
              && dllist_count(&app_sess->l4_sess_lhead) == 1 &&
             ((l4_alg_status_t *)dllist_entry(app_sess->l4_sess_lhead.next,\
                              l4_alg_status_t, l4_sess_lentry)) == l4_sess)) {
@@ -315,7 +323,7 @@ fte::pipeline_action_t alg_rpc_session_delete_cb(fte::ctx_t &ctx) {
 
             if (session != NULL &&
                 (session->iflow->config.key.proto == IP_PROTO_UDP ||
-                 session->iflow->state == session::FLOW_TCP_STATE_BIDIR_FIN_RCVD)) {
+                 session->iflow->state >= session::FLOW_TCP_STATE_BIDIR_FIN_RCVD)) {
                 if (session->fte_id == fte::fte_id()) {
                     session_delete_in_fte(session->hal_handle);
                 } else {

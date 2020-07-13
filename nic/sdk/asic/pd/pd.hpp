@@ -167,6 +167,7 @@ void asicpd_reset_qstate_map(uint32_t lif_id);
 sdk_ret_t asicpd_p4plus_invalidate_cache(mpartition_region_t *reg,
                                          uint64_t q_addr, uint32_t size);
 uint32_t asicpd_clock_freq_get(void);
+uint32_t asicpd_get_core_freq(void);
 sdk_ret_t asicpd_adjust_perf(int chip_id, int inst_id,
                              pd_adjust_perf_index_t &idx,
                              pd_adjust_perf_type_t perf_type);

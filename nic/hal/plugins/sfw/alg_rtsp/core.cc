@@ -295,7 +295,7 @@ fte::pipeline_action_t alg_rtsp_session_delete_cb(fte::ctx_t &ctx) {
             hal::session_t *session = hal::find_session_by_handle(ctrl_l4_sess->sess_hdl);
 
             if (session != NULL &&
-                session->iflow->state == session::FLOW_TCP_STATE_BIDIR_FIN_RCVD) {
+                session->iflow->state >= session::FLOW_TCP_STATE_BIDIR_FIN_RCVD) {
                 if (session->fte_id == fte::fte_id()) {
                     session_delete_in_fte(session->hal_handle);
                 } else {

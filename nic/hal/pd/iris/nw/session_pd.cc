@@ -405,9 +405,9 @@ p4pd_add_upd_flow_info_table_entry (pd_session_create_args_t *args, pd_flow_t *f
     }
     if (flow_attrs->drop) {
         d.action_id = FLOW_INFO_FLOW_HIT_DROP_ID;
-        sdk::lib::memrev(d.action_u.flow_info_flow_hit_drop.start_timestamp,
-                         (uint8_t *)&clock,
-                         sizeof(d.action_u.flow_info_flow_hit_drop.start_timestamp));
+        memcpy(d.action_u.flow_info_flow_hit_drop.start_timestamp,
+               (uint8_t *)&clock,
+               sizeof(d.action_u.flow_info_flow_hit_drop.start_timestamp));
 
     } else {
         d.action_id = FLOW_INFO_FLOW_INFO_ID;
@@ -561,9 +561,9 @@ p4pd_add_upd_flow_info_table_entry (pd_session_create_args_t *args, pd_flow_t *f
         // Dont update the start timestamp during update
         // we dont want to mess up aging logic
         if (!entry_exists) {
-            sdk::lib::memrev(d.action_u.flow_info_flow_info.start_timestamp,
-                         (uint8_t *)&clock,
-                         sizeof(d.action_u.flow_info_flow_info.start_timestamp));
+            memcpy(d.action_u.flow_info_flow_info.start_timestamp,
+                   (uint8_t *)&clock,
+                   sizeof(d.action_u.flow_info_flow_info.start_timestamp));
         }
     } // End updateion flow allow action
 
@@ -579,9 +579,9 @@ p4pd_add_upd_flow_info_table_entry (pd_session_create_args_t *args, pd_flow_t *f
             return ret;
         }
     } else {
-        sdk::lib::memrev((uint8_t *)&clock,
-                         d.action_u.flow_info_flow_info.start_timestamp,
-                         sizeof(d.action_u.flow_info_flow_info.start_timestamp));
+        memcpy((uint8_t *)&clock,
+               d.action_u.flow_info_flow_info.start_timestamp,
+               sizeof(d.action_u.flow_info_flow_info.start_timestamp));
         HAL_TRACE_VERBOSE("Writing flow info start timestamp {} to flow index {} action id {}"\
                         " read clock{}", args->clock, clock, 
                         flow_pd->assoc_hw_id, d.action_id);
@@ -1469,11 +1469,11 @@ pd_flow_get (pd_func_args_t *pd_func_args)
     ret = hal_sdk_ret_to_hal_ret(sdk_ret);
     if (ret == HAL_RET_OK) {
         if (f.action_id == FLOW_INFO_FLOW_HIT_DROP_ID) {
-            sdk::lib::memrev((uint8_t *)&args->flow_state->create_ts,
+            memcpy((uint8_t *)&args->flow_state->create_ts,
                 f.action_u.flow_info_flow_hit_drop.start_timestamp,
                 sizeof(f.action_u.flow_info_flow_hit_drop.start_timestamp));
         } else {
-            sdk::lib::memrev((uint8_t *)&args->flow_state->create_ts,
+            memcpy((uint8_t *)&args->flow_state->create_ts,
                 f.action_u.flow_info_flow_info.start_timestamp,
                 sizeof(f.action_u.flow_info_flow_info.start_timestamp));
         }
