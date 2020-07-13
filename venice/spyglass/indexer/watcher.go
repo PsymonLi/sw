@@ -238,11 +238,12 @@ func (idr *Indexer) startWatchers() {
 				// stopped, this is an expected condition and no recovery is
 				// needed. In all other cases, it is a watcher error that
 				// needs to be re-established.
-				if idr.GetRunningStatus() == true {
+				if idr.GetRunningStatus() == IndexerRunning {
 					err := fmt.Errorf("Channel read not ok for API Group %s", apiGroupMappings[chosen])
 					idr.logger.Errorf(err.Error())
 					// if its an error for objstore, we restart spyglass since we may have missed an event by the time we come back up
-					if strings.Contains(apiGroupMappings[chosen], "Objstore") {
+					if strings.Contains(apiGroupMappings[chosen], "objstore") {
+						idr.SetRunningStatus(IndexerStopping)
 						idr.stopWatchers()
 						idr.doneCh <- err
 						return

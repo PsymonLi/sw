@@ -35,3 +35,17 @@ type Interface interface {
 	// between elements in IDs and objects slice.
 	Bulk(index, docType string, IDs []string, objects []interface{}) error
 }
+
+// RunningStatus represents the status of indexer
+type RunningStatus uint32
+
+const (
+	// IndexerStopped ...
+	IndexerStopped RunningStatus = iota
+
+	// IndexerStopping ...
+	IndexerStopping
+
+	// IndexerRunning ...
+	IndexerRunning
+)

@@ -482,20 +482,21 @@ func (idr *Indexer) initializeAndStartWatchers() {
 
 	if err := idr.initialize(); err != nil {
 		idr.logger.Errorf("failed to create watchers, err: %v", err)
-		if idr.GetRunningStatus() == true {
+		if idr.GetRunningStatus() == IndexerRunning {
 			idr.doneCh <- err // context cancelled
 		}
 		return
 	}
 
 	// start the watchers
-	idr.SetRunningStatus(true)
+	idr.SetRunningStatus(IndexerRunning)
 	idr.startWatchers()
 
 	if idr.watchVos {
 		recover := func() {
-			if idr.GetRunningStatus() == true {
-				idr.restartWatchers()
+			if idr.GetRunningStatus() == IndexerRunning {
+				idr.stopWatchers()
+				idr.doneCh <- fmt.Errorf("error in vosdiskmonitor routine")
 			}
 		}
 		idr.vosDiskWtcher.startVosDiskMonitorWatcher(idr.watcherDone, recover)
@@ -546,11 +547,11 @@ func (idr *Indexer) restartWatchers() {
 // Stop stops all the watchers and writers for API-server objects
 func (idr *Indexer) Stop() {
 	idr.logger.Info("Stopping indexer...")
-	if idr.GetRunningStatus() == false {
+	if idr.GetRunningStatus() == IndexerStopped {
 		return
 	}
 
-	idr.SetRunningStatus(false)
+	idr.SetRunningStatus(IndexerStopped)
 	idr.cancelFunc()
 	idr.wg.Wait() // wait for all the watchers and writers to stop (<-ctx.Done())
 	// close the channel where the writers were receiving the request from
@@ -668,20 +669,14 @@ func (idr *Indexer) Delete(index, docType, ID string) error {
 }
 
 // SetRunningStatus updates the running status
-func (idr *Indexer) SetRunningStatus(status bool) {
-	if status {
-		atomic.StoreUint32(&idr.runningStatus, 1)
-	} else {
-		atomic.StoreUint32(&idr.runningStatus, 0)
-	}
+func (idr *Indexer) SetRunningStatus(status RunningStatus) {
+	atomic.StoreUint32(&idr.runningStatus, uint32(status))
 }
 
 // GetRunningStatus returns the current running status
-func (idr *Indexer) GetRunningStatus() bool {
-	if atomic.LoadUint32(&idr.runningStatus) == 1 {
-		return true
-	}
-	return false
+func (idr *Indexer) GetRunningStatus() RunningStatus {
+	v := atomic.LoadUint32(&idr.runningStatus)
+	return RunningStatus(v)
 }
 
 // Initialize the searchDB with indices
