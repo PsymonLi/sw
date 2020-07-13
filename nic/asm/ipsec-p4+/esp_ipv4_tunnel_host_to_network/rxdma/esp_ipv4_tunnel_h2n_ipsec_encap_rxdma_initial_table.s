@@ -21,6 +21,19 @@ esp_ipv4_tunnel_h2n_ipsec_encap_rxdma_initial_table:
     seq c5, d.cb_cindex, r1
     bcf [c5], esp_ipv4_tunnel_h2n_ipsec_encap_rxdma_initial_table_cb_ring_full
     nop
+
+#ifndef IRIS
+    // apollo pipelines don't have ext table
+esp_ipv4_tunnel_h2n_ipsec_encap_rxdma_initial_table2:
+    //smeqb c3, d.flags, IPSEC_FLAGS_RANDOM_MASK, IPSEC_FLAGS_RANDOM_MASK
+    //phvwr.c3 p.ipsec_to_stage2_is_random, 1
+    phvwr p.ipsec_global_ipsec_cb_index, d.ipsec_cb_index
+    phvwr p.ipsec_to_stage3_iv_salt, d.iv_salt
+    phvwrpair p.esp_header_spi, d.spi, p.esp_header_seqno, d.esn_lo
+    phvwr p.esp_header_iv, d.iv
+    nop
+#endif
+
     phvwr p.ipsec_global_ipsec_cb_pindex, d.cb_pindex
     tbladd d.esn_lo, 1
     tbladd d.iv, 1

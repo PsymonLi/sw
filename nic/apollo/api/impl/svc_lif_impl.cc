@@ -174,9 +174,9 @@ init_ipsec_lif (uint32_t lif_id)
     qstate.hbm_address = api::g_pds_state.mempartition()->start_addr(JIPSEC_LIF2QSTATE_MAP_NAME);
     SDK_ASSERT(qstate.hbm_address != INVALID_MEM_ADDRESS);
     qstate.params_in.type[0].entries = PDS_MAX_IPSEC_SA_SHIFT;
-    qstate.params_in.type[0].size = (IPSEC_QSTATE_SIZE_SHIFT - 3);
+    qstate.params_in.type[0].size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
     qstate.params_in.type[1].entries = PDS_MAX_IPSEC_SA_SHIFT;
-    qstate.params_in.type[1].size = (IPSEC_QSTATE_SIZE_SHIFT - 3);
+    qstate.params_in.type[1].size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
     asicpd_qstate_push(&qstate, 0);
 
     // initialize ipsec lif mgr

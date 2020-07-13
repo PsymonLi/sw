@@ -29,14 +29,12 @@
 //------------------------------------------------------------------------------
 
 typedef struct ipseccb_ctxt_s {
+    uint32_t                hw_id;
+    uint64_t                cb_base_pa;
+    int32_t                 key_index;
+    crypto_key_type_t       key_type;
+    uint32_t                key_size;
     union {
-        struct {
-            uint32_t                hw_id;
-            uint64_t                cb_base_pa;
-            int32_t                 key_index;
-            crypto_key_type_t       key_type;
-            uint32_t                key_size;
-        };
         pds_ipsec_sa_encrypt_spec_t *encrypt_spec;
         pds_ipsec_sa_decrypt_spec_t *decrypt_spec;
         pds_ipsec_sa_encrypt_info_t *encrypt_info;

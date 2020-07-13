@@ -206,6 +206,9 @@ ipseccb_encrypt_create (uint32_t hw_id, uint64_t base_pa,
     sdk_ret_t ret;
     ipseccb_ctxt_t ctxt = { 0 };
 
+    PDS_TRACE_DEBUG("ipseccb_encrypt_create: hw_id %u, base_pa 0x%lx",
+                    hw_id, base_pa);
+
     ctxt.hw_id = hw_id;
     ctxt.cb_base_pa = base_pa;
     ctxt.key_type = ipseccb_get_crypto_key_type(spec->encryption_algo);

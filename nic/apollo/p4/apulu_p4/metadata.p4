@@ -87,6 +87,7 @@ header_type control_metadata_t {
         ip2_fragment            : 1;
         erspan_copy             : 1;
         lif_tx_stats_id         : 16;
+        p4plus_app_id           : 4;
     }
 }
 

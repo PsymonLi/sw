@@ -3,8 +3,7 @@
 #include "ipsec_asm_defines.h"
 #include "capri-macros.h"
 
-struct rx_table_s3_t3_k k;
-struct rx_table_s3_t3_update_input_desc_aol2_d d;
+struct rx_table_s3_t2_k k;
 struct phv_ p;
 
 %%
@@ -13,7 +12,6 @@ struct phv_ p;
 esp_ipv4_tunnel_h2n_update_input_desc_aol2:
 
 dma_cmd_to_move_input_pkt_to_mem:
-    phvwri p.app_header_table3_valid, 0
     add r1, k.ipsec_to_stage3_iv_size, IPSEC_SALT_HEADROOM+ESP_FIXED_HDR_SIZE
     add r1, r1, k.ipsec_to_stage3_iv_size
     add r6, k.ipsec_global_in_desc_addr, IPSEC_PAGE_OFFSET

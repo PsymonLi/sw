@@ -101,6 +101,10 @@
 #define PDS_IMPL_CONTROL_NAMESPACE                   "vcn"
 #define PDS_IMPL_CONTROL_IF_NAME                     "ctrl0"
 
+// semaphore indices
+#define PDS_IMPL_SEMA_IPSEC_RX                       0
+#define PDS_IMPL_SEMA_IPSEC_TX                       2
+
 extern mac_addr_t g_zero_mac;
 extern ip_addr_t g_zero_ip;
 

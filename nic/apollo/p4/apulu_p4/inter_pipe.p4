@@ -168,7 +168,11 @@ control ingress_inter_pipe {
 /*****************************************************************************/
 /* Inter pipe : egress pipeline                                              */
 /*****************************************************************************/
-action egress_to_rxdma() {
+action p4e_app_classic_nic() {
+    remove_header(capri_txdma_intrinsic);
+    remove_header(p4e_i2e);
+    remove_header(txdma_to_p4e);
+    remove_header(egress_recirc);
     add_header(capri_rxdma_intrinsic);
     add_header(p4e_to_p4plus_classic_nic);
 
@@ -208,6 +212,10 @@ action egress_to_rxdma() {
     if (ctag_1.valid == TRUE) {
     }
 
+    modify_field(p4e_to_p4plus_classic_nic.l4_dport,
+                 key_metadata.dport);
+    modify_field(p4e_to_p4plus_classic_nic.l4_sport,
+                 key_metadata.sport);
     modify_field(p4e_to_p4plus_classic_nic.packet_len,
                  capri_p4_intrinsic.packet_len);
     modify_field(p4e_to_p4plus_classic_nic.p4plus_app_id,
@@ -320,7 +328,7 @@ action egress_recirc() {
     modify_field(capri_intrinsic.tm_oport, TM_PORT_EGRESS);
 }
 
-action p4e_inter_pipe() {
+action p4e_app_default() {
     remove_header(capri_txdma_intrinsic);
 
     if (egress_recirc.mapping_done == FALSE) {
@@ -331,16 +339,35 @@ action p4e_inter_pipe() {
     remove_header(p4e_i2e);
     remove_header(txdma_to_p4e);
     remove_header(egress_recirc);
-    if (capri_intrinsic.tm_oport == TM_PORT_DMA) {
-        egress_to_rxdma();
-    }
+}
+
+action p4e_app_ipsec() {
+    remove_header(capri_txdma_intrinsic);
+
+    remove_header(p4e_i2e);
+    remove_header(txdma_to_p4e);
+    remove_header(egress_recirc);
+
+    add_header(capri_rxdma_intrinsic);
+    add_header(p4e_to_p4plus_ipsec);
+
+    modify_field(capri_rxdma_intrinsic.rx_splitter_offset,
+                 (ASICPD_GLOBAL_INTRINSIC_HDR_SZ + ASICPD_RXDMA_INTRINSIC_HDR_SZ +
+                  P4PLUS_IPSEC_HDR_SZ));
 }
 
 @pragma stage 5
+@pragma index_table
 table p4e_inter_pipe {
-    actions {
-        p4e_inter_pipe;
+    reads {
+        control_metadata.p4plus_app_id  : exact;
     }
+    actions {
+        p4e_app_default;
+        p4e_app_classic_nic;
+        p4e_app_ipsec;
+    }
+    size : APP_TABLE_SIZE;
 }
 
 control egress_inter_pipe {

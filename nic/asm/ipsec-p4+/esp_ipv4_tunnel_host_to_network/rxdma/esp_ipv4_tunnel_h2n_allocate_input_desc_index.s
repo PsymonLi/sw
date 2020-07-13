@@ -14,7 +14,7 @@ struct phv_ p;
 esp_ipv4_tunnel_h2n_allocate_input_desc_index:
     add r5, r0, d.in_desc_index
     CAPRI_NEXT_TABLE_READ_NO_TABLE_LKUP(0, esp_ipv4_tunnel_h2n_update_input_desc_aol)
-    CAPRI_NEXT_TABLE_READ_NO_TABLE_LKUP(3, esp_ipv4_tunnel_h2n_update_input_desc_aol2)
+    CAPRI_NEXT_TABLE_READ_NO_TABLE_LKUP(2, esp_ipv4_tunnel_h2n_update_input_desc_aol2)
     phvwr.e p.ipsec_global_in_desc_addr, d.in_desc_index 
     nop  
 

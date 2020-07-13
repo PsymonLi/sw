@@ -344,6 +344,7 @@ lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
     memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
     nexthop_info_entry.lif = id_;
     nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for oob lif %s "
@@ -505,6 +506,7 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
     nexthop_info_entry.lif = id_;
     nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for oob lif %s "
@@ -620,6 +622,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
     nexthop_info_entry.lif = id_;
     nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for datapath lif %u "
@@ -959,6 +962,7 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
     nexthop_info_entry.lif = int_mgmt_lif->id();
     nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for host mgmt. lif %u "
@@ -999,6 +1003,7 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     // program the nexthop for internal mgmt. lif to host mgmt. lif traffic
     nexthop_info_entry.lif = host_mgmt_lif->id();
     nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for internal mgmt. "
@@ -1128,6 +1133,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
     nexthop_info_entry.lif = id_;
     nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for learn lif %u "
@@ -1390,6 +1396,7 @@ lif_impl::create_control_lif_(pds_lif_spec_t *spec) {
     memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
     nexthop_info_entry.lif = id_;
     nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for control lif %u "

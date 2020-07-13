@@ -711,6 +711,7 @@ vnic_impl::program_vnic_nh_(pds_device_oper_mode_t oper_mode,
             nh_data->set_drop(TRUE);
         }
         nh_data->set_port(TM_PORT_DMA);
+        nh_data->set_app_id(P4PLUS_APPTYPE_CLASSIC_NIC);
         if (spec->vnic_encap.type == PDS_ENCAP_TYPE_DOT1Q) {
             nh_data->set_vlan(spec->vnic_encap.val.vlan_tag);
         }

@@ -32,10 +32,11 @@ header mirror_blob_t mirror_blob;
 header apulu_p4i_to_rxdma_header_t p4i_to_rxdma;
 header apulu_txdma_to_p4e_header_t txdma_to_p4e;
 
-@pragma synthetic_header
 @pragma pa_field_union egress p4e_to_p4plus_classic_nic.l4_sport    key_metadata.sport
 @pragma pa_field_union egress p4e_to_p4plus_classic_nic.l4_dport    key_metadata.dport
+@pragma pa_header_union egress p4e_to_p4plus_ipsec
 header p4_to_p4plus_classic_nic_header_t p4e_to_p4plus_classic_nic;
+header p4_to_p4plus_ipsec_header_t p4e_to_p4plus_ipsec;
 @pragma synthetic_header
 @pragma pa_field_union egress p4e_to_p4plus_classic_nic_ip.ip_sa    ipv6_1.srcAddr
 @pragma pa_field_union egress p4e_to_p4plus_classic_nic_ip.ip_da    ipv6_1.dstAddr
@@ -784,6 +785,7 @@ parser deparse_egress {
     extract(p4e_to_p4plus_classic_nic);
     extract(p4e_to_p4plus_classic_nic_ip);
     extract(p4e_to_p4plus_classic_nic_ip2);
+    extract(p4e_to_p4plus_ipsec);
 
     // egress-to-egress recirc
     extract(egress_recirc);

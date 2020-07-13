@@ -9,20 +9,25 @@ struct phv_                 p;
 
 %%
 
-p4e_inter_pipe:
-    phvwr           p.capri_txdma_intrinsic_valid, 0
+.align
+p4e_app_default:
     seq             c1, k.egress_recirc_mapping_done, FALSE
     bcf             [c1], egress_recirc
-    phvwrmi.!c1     p.{p4e_i2e_valid, \
+    phvwrmi.!c1.e   p.{p4e_i2e_valid, \
                         p4e_to_arm_valid, \
                         txdma_to_p4e_valid, \
                         egress_recirc_valid}, 0x0, 0xB
-    seq             c1, k.capri_intrinsic_tm_oport, TM_PORT_DMA
-    nop.!c1.e
+    phvwr.f         p.capri_txdma_intrinsic_valid, 0
 
-egress_to_rxdma:
+.align
+p4e_app_classic_nic:
     // r7 actual packet len
     // c7 ctag_1 valid
+    phvwr           p.capri_txdma_intrinsic_valid, 0
+    phvwrmi         p.{p4e_i2e_valid, \
+                        p4e_to_arm_valid, \
+                        txdma_to_p4e_valid, \
+                        egress_recirc_valid}, 0x0, 0xB
     add             r7, r0, k.capri_p4_intrinsic_packet_len
     seq             c7, k.ctag_1_valid, TRUE
     phvwr           p.capri_rxdma_intrinsic_valid, TRUE
@@ -63,6 +68,8 @@ egress_to_rxdma_arm:
     phvwr           p.p4e_to_arm_src_mapping_hit, k.txdma_to_p4e_src_mapping_hit
 
 egress_to_rxdma_common:
+    phvwr           p.p4e_to_p4plus_classic_nic_l4_sport, k.key_metadata_sport
+    phvwr           p.p4e_to_p4plus_classic_nic_l4_dport, k.key_metadata_dport
     phvwr           p.p4e_to_p4plus_classic_nic_packet_len, r6
     phvwr           p.p4e_to_p4plus_classic_nic_p4plus_app_id, \
                         P4PLUS_APPTYPE_CLASSIC_NIC
@@ -202,10 +209,30 @@ egress_to_rxdma_rss2_ipv4_udp:
                         p4e_to_p4plus_classic_nic_csum_tcp_ok}, r7
 
 egress_recirc:
+    phvwr           p.capri_txdma_intrinsic_valid, 0
     phvwr           p.capri_intrinsic_tm_span_session, r0
     phvwr           p.egress_recirc_p4_to_arm_valid, k.p4e_to_arm_valid
     phvwr.e         p.egress_recirc_valid, TRUE
     phvwr.f         p.capri_intrinsic_tm_oport, TM_PORT_EGRESS
+
+.align
+p4e_app_ipsec:
+    phvwr           p.capri_txdma_intrinsic_valid, 0
+    phvwrmi.!c1     p.{p4e_i2e_valid, \
+                        p4e_to_arm_valid, \
+                        txdma_to_p4e_valid, \
+                        egress_recirc_valid}, 0x0, 0xB
+    phvwr           p.{ctag_0_valid...ethernet_0_valid}, 0
+    phvwr           p.capri_rxdma_intrinsic_valid, TRUE
+    phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_start, 14
+    sub             r6, k.capri_p4_intrinsic_packet_len, 14
+    phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_end, r6
+    phvwr.e         p.p4e_to_p4plus_ipsec_valid, TRUE
+
+    phvwr.f         p.capri_rxdma_intrinsic_rx_splitter_offset, \
+                        (ASICPD_GLOBAL_INTRINSIC_HDR_SZ + \
+                         ASICPD_RXDMA_INTRINSIC_HDR_SZ + \
+                         P4PLUS_IPSEC_HDR_SZ)
 
 /*****************************************************************************/
 /* error function                                                            */

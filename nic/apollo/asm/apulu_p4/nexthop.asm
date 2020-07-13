@@ -35,6 +35,7 @@ nexthop_info2:
     bcf             [!c1], nexthop_rewrite
     phvwr           p.capri_intrinsic_tm_oport, d.nexthop_info_d.port
     phvwr           p.capri_intrinsic_lif, d.nexthop_info_d.lif
+    phvwr           p.control_metadata_p4plus_app_id, d.nexthop_info_d.app_id
     phvwr           p.capri_rxdma_intrinsic_qtype, d.nexthop_info_d.qtype
     seq             c1, k.p4e_to_p4plus_classic_nic_rss_override, FALSE
     phvwr.c1        p.capri_rxdma_intrinsic_qid, d.nexthop_info_d.qid

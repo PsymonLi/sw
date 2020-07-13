@@ -9,13 +9,10 @@
 
 #define rx_table_s2_t0_action allocate_input_desc_index 
 #define rx_table_s2_t1_action allocate_output_desc_index 
-#define rx_table_s2_t2_action allocate_input_page_index 
-#define rx_table_s2_t3_action allocate_output_page_index 
 
 #define rx_table_s3_t0_action update_input_desc_aol 
 #define rx_table_s3_t1_action update_output_desc_aol 
-#define rx_table_s3_t2_action read_random_number_from_barco 
-#define rx_table_s3_t3_action update_input_desc_aol2 
+#define rx_table_s3_t2_action update_input_desc_aol2 
 
 #define rx_table_s4_t0_action ipsec_cb_tail_enqueue_input_desc 
 #define rx_table_s4_t2_action ipsec_cb_tail_enqueue_input_desc2 
@@ -333,13 +330,6 @@ action ipsec_cb_tail_enqueue_input_desc(pc, rsvd, cosA, cosB, cos_sel,
 }
 
 //stage 3
-action read_random_number_from_barco(random_number1, random_number2)
-{
-    modify_field( ipsec_random_number_scratch.random_number1, random_number1);
-    modify_field( ipsec_random_number_scratch.random_number2, random_number2);
-}
-
-//stage 3
 action update_output_desc_aol(addr0, offset0, length0,
                               addr1, offset1, length1,
                               addr2, offset2, length2,
@@ -361,7 +351,7 @@ action update_input_desc_aol2 (addr0, offset0, length0,
                               nextptr, rsvd)
 {
     IPSEC_SCRATCH_GLOBAL
-    IPSEC_SCRATCH_T3_S2S
+    IPSEC_SCRATCH_T2_S2S
     modify_field(ipsec_to_stage3_scratch.iv_size, ipsec_to_stage3.iv_size);
     // Original pkt to input descriptor pkt2mem 
     DMA_COMMAND_PKT2MEM_FILL(dma_cmd_pkt2mem, addr0+4+ipsec_to_stage3.iv_size, ipsec_to_stage3.packet_len, 0, 0)
@@ -407,39 +397,6 @@ action update_input_desc_aol (addr0, offset0, length0,
     modify_field(ipsec_to_stage3_scratch.packet_len, ipsec_to_stage3.packet_len); 
     modify_field(ipsec_to_stage3_scratch.pad_addr, ipsec_to_stage3.pad_addr); 
     modify_field(ipsec_to_stage3_scratch.pad_size, ipsec_to_stage3.pad_size); 
-}
-
-//stage 2 
-action allocate_output_page_index(out_page_index)
-{
-    modify_field(p42p4plus_hdr.table3_valid, 1);
-    modify_field(common_te3_phv.table_pc, 0); 
-    modify_field(common_te3_phv.table_raw_table_size, 3);
-    modify_field(common_te3_phv.table_lock_en, 0);
-    modify_field(common_te3_phv.table_addr, OUT_PAGE_ADDR_BASE+(PAGE_ENTRY_SIZE * out_page_index));
-    modify_field(ipsec_int_header.out_page, OUT_PAGE_ADDR_BASE+(PAGE_ENTRY_SIZE * out_page_index));
-    IPSEC_SCRATCH_GLOBAL
-    IPSEC_SCRATCH_T3_S2S
-}
-
-//stage 2 
-action allocate_input_page_index(in_page_index)
-{
-    modify_field(p42p4plus_hdr.table2_valid, 1);
-    modify_field(common_te2_phv.table_pc, 0); 
-    modify_field(common_te2_phv.table_raw_table_size, 3);
-    modify_field(common_te2_phv.table_lock_en, 0);
-    modify_field(common_te2_phv.table_addr, IN_PAGE_ADDR_BASE+(PAGE_ENTRY_SIZE * in_page_index));
-    modify_field(ipsec_int_header.in_page,  IN_PAGE_ADDR_BASE+(PAGE_ENTRY_SIZE * in_page_index)); 
-    modify_field(t0_s2s.in_page_addr, IN_PAGE_ADDR_BASE+(PAGE_ENTRY_SIZE * in_page_index));
-    IPSEC_SCRATCH_GLOBAL
-    IPSEC_SCRATCH_T2_S2S
-    if (ipsec_to_stage2.is_random == 1) {
-        modify_field(p42p4plus_hdr.table2_valid, 1);
-        modify_field(common_te2_phv.table_pc, 0);  //random-number read PC
-        modify_field(common_te2_phv.table_raw_table_size, 3); // 8 bytes or 16 bytes 
-        modify_field(common_te2_phv.table_addr, 0); // some hash define of barco crypt mem for now
-    }
 }
 
 //stage 2 

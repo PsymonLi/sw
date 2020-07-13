@@ -16,6 +16,7 @@
 #define NACL_TABLE_SIZE                                     512
 #define VNIC_TABLE_SIZE                                     1024
 #define DROP_STATS_TABLE_SIZE                               64
+#define APP_TABLE_SIZE                                      16
 
 #define MAPPING_TABLE_SIZE                                  4194304     // 4M
 #define MAPPING_OHASH_TABLE_SIZE                            524288      // 512K

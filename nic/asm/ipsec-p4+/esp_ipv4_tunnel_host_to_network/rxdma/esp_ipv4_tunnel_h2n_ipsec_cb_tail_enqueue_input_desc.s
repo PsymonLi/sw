@@ -29,7 +29,7 @@ esp_ipv4_tunnel_h2n_ipsec_cb_tail_enqueue_input_desc:
     add r7, k.ipsec_global_ipsec_cb_pindex, 1
     andi r7, r7, IPSEC_CB_RING_INDEX_MASK 
 
-    CAPRI_DMA_CMD_RING_DOORBELL2_SET_PI_STOP_FENCE(doorbell_cmd_dma_cmd, LIF_IPSEC_ESP, 0, k.ipsec_global_ipsec_cb_index, 0, r7, db_data_pid, db_data_index)
+    CAPRI_DMA_CMD_RING_DOORBELL2_SET_PI_STOP_FENCE(doorbell_cmd_dma_cmd, FIXME_IPSEC_LIF, 0, k.ipsec_global_ipsec_cb_index, 0, r7, db_data_pid, db_data_index)
     and r6, k.ipsec_to_stage4_flags, IPSEC_N2H_GLOBAL_FLAGS
     seq c1, r6, IPSEC_N2H_GLOBAL_FLAGS
     bcf [c1], esp_ipv4_tunnel_h2n_rxdma_disbale_dma_cmds 

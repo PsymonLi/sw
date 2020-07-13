@@ -19,6 +19,7 @@
 #include "nic/sdk/asic/asic.hpp"
 #include "nic/sdk/platform/ring/ring.hpp"
 #include "nic/sdk/platform/pal/include/pal_mem.h"
+#include "nic/sdk/asic/common/asic_common.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl.hpp"
@@ -411,11 +412,67 @@ apulu_impl::asm_config_init(pds_init_params_t *init_params,
 
 void
 apulu_impl::ring_config_init(asic_cfg_t *asic_cfg) {
-    asic_cfg->num_rings = 0;
+    int i = 0;
+
+    asic_cfg->num_rings = 2;
+    asic_cfg->ring_meta = (sdk::platform::ring_meta_t *)SDK_CALLOC(
+            SDK_MEM_ALLOC_PDS_RINGS, asic_cfg->num_rings *
+            sizeof(sdk::platform::ring_meta_t));
+
+    SDK_ASSERT(i < asic_cfg->num_rings);
+    asic_cfg->ring_meta[i].ring_name = "IPSEC_ENC_RNMPR";
+    asic_cfg->ring_meta[i].is_global = true;
+    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMPR_RX_NAME;
+    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_ENC_PAGE_BIG_RX_NAME;
+    asic_cfg->ring_meta[i].num_slots = IPSEC_NMPR_RING_SIZE;
+    asic_cfg->ring_meta[i].obj_size = IPSEC_NMPR_OBJ_SIZE;
+    asic_cfg->ring_meta[i].alloc_semaphore_addr =
+        ASIC_MEM_SEM_RAW_ADDR(PDS_IMPL_SEMA_IPSEC_RX);
+    asic_cfg->ring_meta[i].init_slots = true;
+    i++;
+
+    SDK_ASSERT(i < asic_cfg->num_rings);
+    asic_cfg->ring_meta[i].ring_name = "IPSEC_ENC_TNMPR";
+    asic_cfg->ring_meta[i].is_global = true;
+    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMPR_TX_NAME;
+    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_ENC_PAGE_BIG_TX_NAME;
+    asic_cfg->ring_meta[i].num_slots = IPSEC_NMPR_RING_SIZE;
+    asic_cfg->ring_meta[i].obj_size = IPSEC_NMPR_OBJ_SIZE;
+    asic_cfg->ring_meta[i].alloc_semaphore_addr =
+        ASIC_MEM_SEM_RAW_ADDR(PDS_IMPL_SEMA_IPSEC_TX);
+    asic_cfg->ring_meta[i].init_slots = true;
+    i++;
 }
 
 sdk_ret_t
 apulu_impl::inter_pipe_init_(void) {
+    p4pd_error_t p4pd_ret;
+    p4e_inter_pipe_actiondata_t data = { 0 };
+
+    data.action_id = P4E_INTER_PIPE_P4E_APP_DEFAULT_ID;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_INTER_PIPE,
+                                       P4PLUS_APPTYPE_DEFAULT,
+                                       NULL, NULL, &data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
+    data.action_id = P4E_INTER_PIPE_P4E_APP_CLASSIC_NIC_ID;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_INTER_PIPE,
+                                       P4PLUS_APPTYPE_CLASSIC_NIC,
+                                       NULL, NULL, &data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
+    data.action_id = P4E_INTER_PIPE_P4E_APP_IPSEC_ID;;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_INTER_PIPE,
+                                       P4PLUS_APPTYPE_IPSEC,
+                                       NULL, NULL, &data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
     return SDK_RET_OK;
 }
 

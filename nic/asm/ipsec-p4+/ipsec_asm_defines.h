@@ -1,5 +1,13 @@
 #include "capri-macros.h"
 
+// TODO : cleanup by moving LIF into CB
+#ifdef APULU
+#define FIXME_IPSEC_LIF 35
+#else
+#define FIXME_IPSEC_LIF LIF_IPSEC_ESP
+#endif
+    
+
 #define IPSEC_BLOCK_SIZE 16
 
 #define IPSEC_IP_HDR_OFFSET 64
