@@ -64,19 +64,44 @@ asic_get_hbm_region_by_address (uint64_t addr)
     return get_mem_partition()->region_by_address(addr);
 }
 
+void
+asic_reset_mem_region (mpartition_region_t *reg)
+{
+    mem_addr_t va, pa;
+
+    SDK_TRACE_DEBUG("Resetting %s memory region of size %lu",
+                    reg->mem_reg_name, reg->size);
+    pa = get_mem_partition()->addr(reg->start_offset);
+    va = (mem_addr_t)sdk::lib::pal_mem_map(pa, reg->size);
+    if (va) {
+        memset((void *)va, 0, reg->size);
+        sdk::lib::pal_mem_unmap((void *)va);
+    } else {
+        uint8_t zeros[1024] = {0};
+        int64_t rem = reg->size;
+        while (rem > 0) {
+            sdk::asic::asic_mem_write(pa, zeros, (uint64_t)rem > sizeof(zeros) ?
+                                      sizeof(zeros) : rem);
+            pa += sizeof(zeros);
+            rem -= sizeof(zeros);
+        }
+    }
+    SDK_TRACE_DEBUG("Resetting %s memory region done", reg->mem_reg_name);
+}
+
+
 // for HW platform this is now done during uboot
 void
 asic_reset_hbm_regions (asic_cfg_t *asic_cfg)
 {
     mpartition_region_t *reg;
-    mem_addr_t va, pa;
-    bool force_reset =
+    bool upgrade_init =
         sdk::platform::sysinit_mode_default(asic_cfg->init_mode) ? false : true;
 
     if (!asic_cfg)
         return;
 
-    if (!force_reset) {
+    if (!upgrade_init) {
         if (asic_cfg->platform != platform_type_t::PLATFORM_TYPE_HAPS &&
             asic_cfg->platform != platform_type_t::PLATFORM_TYPE_HW) {
             return;
@@ -86,24 +111,7 @@ asic_reset_hbm_regions (asic_cfg_t *asic_cfg)
     for (int i = 0; i < get_mem_partition()->num_regions(); i++) {
         reg = get_mem_partition()->region(i);
         if (reg->reset) {
-            // Reset only for haps
-            SDK_TRACE_DEBUG("Resetting %s hbm region", reg->mem_reg_name);
-
-            pa = get_mem_partition()->addr(reg->start_offset);
-            va = (mem_addr_t)sdk::lib::pal_mem_map(pa, reg->size);
-            if (va) {
-                memset((void *)va, 0, reg->size);
-                sdk::lib::pal_mem_unmap((void *)va);
-            } else {
-                uint8_t zeros[1024] = {0};
-                int64_t rem = reg->size;
-                while (rem > 0) {
-                    sdk::asic::asic_mem_write(pa, zeros, (uint64_t)rem > sizeof(zeros) ? sizeof(zeros) : rem);
-                    pa += sizeof(zeros);
-                    rem -= sizeof(zeros);
-                }
-            }
-            SDK_TRACE_DEBUG("Resetting %s hbm region done", reg->mem_reg_name);
+            asic_reset_mem_region(reg);
         }
     }
 }

@@ -51,10 +51,13 @@ upg_fsm_exit_hdlr (upg_status_t status)
 static void
 upg_interactive_fsm_exit_hdlr (ipc_peer_ctx *ctx)
 {
-    sdk::upg::execute_exit_script(sdk::upg::get_exit_status());
-    // TODO look the status and decide the upgrade ok/fail
-    sleep(5);
-    exit(0);
+    // exit only for the listener
+    if (ctx->recv_fd()) {
+        sdk::upg::execute_exit_script(sdk::upg::get_exit_status());
+        // TODO look the status and decide the upgrade ok/fail
+        sleep(5);
+        exit(0);
+    }
 }
 
 static void
@@ -119,7 +122,8 @@ upg_interactive_response (const void *data, const size_t size)
             }
             if (max_wait == 0) {
                 UPG_TRACE_ERR("Hitless config replay timedout..");
-                msg_in->rsp_status = UPG_STATUS_FAIL;
+                // TODO : Enable this with iota. till then ignore
+                // msg_in->rsp_status = UPG_STATUS_FAIL;
             }
         }
     }

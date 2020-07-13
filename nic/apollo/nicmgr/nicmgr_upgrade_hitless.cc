@@ -68,11 +68,6 @@ upg_ev_backup (upg_ev_params_t *params)
     return nicmgr_send_ipc(params);
 }
 
-static sdk_ret_t
-upg_ev_quiesce (upg_ev_params_t *params)
-{
-    return SDK_RET_OK;
-}
 
 static sdk_ret_t
 upg_ev_pre_switchover (upg_ev_params_t *params)
@@ -107,7 +102,6 @@ nicmgr_upg_hitless_init (void)
     ev_hdlr.sync_hdlr = upg_ev_sync;
     ev_hdlr.backup_hdlr = upg_ev_backup;
     ev_hdlr.repeal_hdlr = upg_ev_repeal;
-    ev_hdlr.quiesce_hdlr = upg_ev_quiesce;
     ev_hdlr.switchover_hdlr = upg_ev_switchover;
     ev_hdlr.pre_switchover_hdlr = upg_ev_pre_switchover;
     ev_hdlr.repeal_hdlr = upg_ev_repeal;

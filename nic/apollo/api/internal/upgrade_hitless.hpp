@@ -49,10 +49,7 @@ typedef struct upg_ev_hitless_s {
     /// operational state syncing (on B)
     upg_ev_hdlr_t sync_hdlr;
 
-    /// threads should be paused here to a safe point for switchover (on A)
-    upg_ev_hdlr_t quiesce_hdlr;
-
-    /// prepare for switching to B
+    /// prepare for switching to B. threads are paused to a safe state here
     upg_ev_hdlr_t pre_switchover_hdlr;
 
     /// pipeline switch should be done here (on B)
@@ -70,6 +67,8 @@ typedef struct upg_ev_hitless_s {
     ///   quiesce state.
     upg_ev_hdlr_t repeal_hdlr;
 
+    /// completed the upgrade (on A / B)
+    upg_ev_hdlr_t finish_hdlr;
 } upg_ev_hitless_t;
 
 /// register the thread to the main upgrade event handler

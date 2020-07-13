@@ -9,6 +9,7 @@ mount -t hugetlbfs nodev /dev/hugepages
 export NIC_DIR=/nic/
 export CONFIG_PATH=$NIC_DIR/conf/
 export VPP_LOG_FILE=/var/log/pensando/vpp.log
+export DATAPATH_MNIC="cpu_mnic0"
 
 ulimit -c unlimited
 

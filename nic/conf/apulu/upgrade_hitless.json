@@ -91,7 +91,8 @@
         "config_replay": {
             "//": "config replay",
             "svc": {
-              "domain": "B"
+                "domain": "B",
+                "rsp_timeout": "300000ms"
             },
             "events": [
                 { "name": "svc_rsp_ok",   "next_stage": "sync" },

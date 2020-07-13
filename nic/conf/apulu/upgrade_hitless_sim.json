@@ -179,6 +179,7 @@
             "svc": {
                 "event_sequence": "serial",
                 "names": [ "vpp", "pdsagent" ],
+                "rsp_timeout": "12000000ms",
                 "domain": "A"
             },
             "events": [

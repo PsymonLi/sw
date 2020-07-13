@@ -122,6 +122,11 @@ upg_ev_handler_ (sdk::ipc::ipc_msg_ptr msg, const void *ctxt,
         return upg_ev_process_response(SDK_RET_OK, info);
     }
 
+    // ignore the event, if handler is invalid
+    if (ev_func == UPGRADE_EV_HDLR_INVALID) {
+        return;
+    }
+
     // validate event-id vs stage
     SDK_TRACE_DEBUG("Upgrade IPC event stage %s starting..",
                     upg_stage2str(event->stage));

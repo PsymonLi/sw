@@ -7,6 +7,7 @@
 #include <nic/vpp/infra/api/intf.h>
 #include <init.h>
 #include <api.h>
+#include <assert.h>
 #include <vnic.h>
 #include <pdsa_impl_db_hdlr.h>
 #include "node.h"
@@ -614,7 +615,7 @@ pds_nh_tx_internal (vlib_main_t *vm, vlib_buffer_t *p, u16 *next, u32 *counter)
 {
     u16 nh_id;
     vlib_node_runtime_t *node;
-    static u32 cpu_mnic_if_index = ~0;
+    static __thread u32 cpu_mnic_if_index = ~0;
 
     nh_id = vnet_buffer(p)->pds_tx_data.nh_id;
     if (PREDICT_FALSE(nh_id == 0)) {
@@ -623,7 +624,9 @@ pds_nh_tx_internal (vlib_main_t *vm, vlib_buffer_t *p, u16 *next, u32 *counter)
     } else {
         pds_nh_add_tx_hdrs(p, nh_id);
         if (PREDICT_FALSE(((u32) ~0) == cpu_mnic_if_index)) {
-            cpu_mnic_if_index = pds_infra_get_sw_ifindex_by_name((u8*)"cpu_mnic0");
+            char *intf_name = getenv(PDS_CPU_INTF_NAME_ENV_VAR);
+            assert(NULL != intf_name);
+            cpu_mnic_if_index = pds_infra_get_sw_ifindex_by_name((u8*)intf_name);
         }
         vnet_buffer(p)->sw_if_index[VLIB_TX] = cpu_mnic_if_index;
         *next = NH_TX_NEXT_INTF_OUT;

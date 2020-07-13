@@ -222,6 +222,9 @@ void upg_invoke_ev_hdlr(sdk::ipc::ipc_msg_ptr msg, const void *ctxt,
 
 #undef EV_ID_UPGMGR
 
+// these events are ignored by the event handler
+#define UPGRADE_EV_HDLR_INVALID ((sdk::upg::upg_ev_hdlr_t)(-1ULL))
+
 }   // namespace upg
 }   // namespace sdk
 

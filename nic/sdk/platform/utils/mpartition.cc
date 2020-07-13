@@ -273,6 +273,20 @@ insert_common_regions (mpartition_region_t *reg, const char *name,
         MREGION_BASE_ADDR + offset + reg->size);
 }
 
+void
+mpartition::walk(mpartition_regions_walk_cb_t walk_cb, void *ctx) {
+    mpartition_region_t *reg;
+    bool rv;
+
+    for (int i = 0; i < num_regions_; i++) {
+        reg = &regions_[i];
+        rv = walk_cb(reg, ctx);
+        if (rv) {
+            break;
+        }
+    }
+}
+
 sdk_ret_t
 mpartition::region_init(const char *mpart_json_file, shmmgr *mmgr)
 {

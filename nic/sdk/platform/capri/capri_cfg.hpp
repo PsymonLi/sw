@@ -18,6 +18,7 @@ sdk_ret_t capri_verify_config(char *config_dir);
 sdk_ret_t capri_upgrade_config(asic_cfg_t *cfg);
 
 sdk_ret_t capri_init(asic_cfg_t *cfg);
+sdk_ret_t capri_cache_init(asic_cfg_t *cfg);
 sdk_ret_t capri_soft_init(asic_cfg_t *cfg);
 sdk_ret_t capri_upgrade_init(asic_cfg_t *cfg);
 sdk_ret_t capri_upgrade_hitless_init(asic_cfg_t *cfg);

@@ -3,7 +3,6 @@
 NICDIR=$1
 export PDSPKG_TOPDIR=$NICDIR
 PIPELINE=$2
-APP_ID=$3
 
 #set -x
 #echo $NICDIR
@@ -11,13 +10,29 @@ APP_ID=$3
 #VPP Partial init env variables
 export CONFIG_PATH=$NICDIR/conf/
 export ZMQ_SOC_DIR='/sw/nic'
-#This is used in DPDK to chosing DESC/Pkt buffer memory pool
-export DPDK_SIM_APP_ID=$APP_ID
 export VPP_LOG_FILE=$NICDIR/vpp.log
 
 ulimit -c unlimited
 
 VPP_PKG_DIR=$NICDIR/sdk/third-party/vpp-pkg/x86_64
+
+# check the upgrade init mode
+source ${NICDIR}/sdk/upgrade/core/upgmgr_core_base.sh
+dom=$( upgmgr_init_domain )
+if [[ $dom == $UPGRADE_DOMAIN_B ]];then
+    VPP_CONF="upgrade/vpp_dom_b_1_worker_sim.conf"
+    CPU_MNIC="cpu_mnic2"
+    VPPCTL_SOCK="/run/vpp/cli_dom_b.sock"
+    APP_ID=3
+else
+    VPP_CONF="vpp_1_worker_sim.conf"
+    CPU_MNIC="cpu_mnic0"
+    VPPCTL_SOCK="/run/vpp/cli.sock"
+    APP_ID=1
+fi
+export DATAPATH_MNIC=$CPU_MNIC
+#This is used in DPDK to chosing DESC/Pkt buffer memory pool
+export DPDK_SIM_APP_ID=$APP_ID
 
 #echo "$VPP_PKG_DIR"
 #setup libs required for vpp

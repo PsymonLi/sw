@@ -903,6 +903,12 @@ asicpd_pgm_init (void)
 }
 
 sdk_ret_t
+asicpd_cache_init (void)
+{
+    return capri_cache_init(NULL);
+}
+
+sdk_ret_t
 asicpd_p4plus_table_rw_init (void)
 {
     return capri_p4plus_table_rw_init();

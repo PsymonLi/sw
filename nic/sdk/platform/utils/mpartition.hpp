@@ -53,6 +53,10 @@ typedef struct mpartition_region_s {
     bool            upgrade_check_done; /**< for upgrade scenarios */
 } mpartition_region_t;
 
+// regions walk. return false to continue the walk, true to exit
+typedef bool (*mpartition_regions_walk_cb_t)(mpartition_region_t *region,
+                                             void *ctxt);
+
 class mpartition {
 public:
 
@@ -204,6 +208,13 @@ public:
      */
     sdk_ret_t upgrade_hitless_offset_regions(const char *cfg_path,
                                              bool oper_table_persist);
+    /*
+     * @brief Walk of the regions
+     *
+     * @param[in] walk_cb walk callback
+     * @param[in] ctx application context
+     */
+    void walk(mpartition_regions_walk_cb_t walk_cb, void *ctx);
 
 private:
     static mpartition *instance_;

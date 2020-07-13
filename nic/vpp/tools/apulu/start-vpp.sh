@@ -18,6 +18,8 @@ else
     VPP_CONF="vpp_2_workers.conf"
 fi
 
+export DATAPATH_MNIC=$CPU_MNIC
+
 counter=600
 start_vpp=0
 output=""

@@ -128,10 +128,14 @@ elba_pgm_init (void)
 }
 
 
-static sdk_ret_t
+sdk_ret_t
 elba_cache_init (asic_cfg_t *cfg)
 {
     sdk_ret_t ret = SDK_RET_OK;
+
+    if (!cfg) {
+        cfg = g_elba_state_pd->cfg();
+    }
 
     // Program Global parameters of the cache.
     ret = elba_hbm_cache_init(cfg);

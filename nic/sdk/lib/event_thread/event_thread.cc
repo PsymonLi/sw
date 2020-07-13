@@ -503,7 +503,12 @@ event_thread::stop(void) {
     this->stop_ = true;
     this->set_running(false);
 
-    ev_async_send(this->loop_, &this->async_watcher_);
+    // resume the thread if it is suspended state.
+    if (this->suspended()) {
+        this->resume_req();
+    } else {
+        ev_async_send(this->loop_, &this->async_watcher_);
+    }
 
     return SDK_RET_OK;
 }

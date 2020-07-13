@@ -842,6 +842,12 @@ asicpd_p4plus_table_rw_init (void)
 }
 
 sdk_ret_t
+asicpd_cache_init (void)
+{
+    return elba_cache_init(NULL);
+}
+
+sdk_ret_t
 asicpd_state_pd_init (asic_cfg_t *cfg)
 {
     return elba_state_pd_init(cfg);

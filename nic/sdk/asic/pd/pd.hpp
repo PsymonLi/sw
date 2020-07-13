@@ -272,6 +272,7 @@ sdk_ret_t asicpd_upgrade_init(asic_cfg_t *cfg);
 void asicpd_write_to_hw(bool val);
 void asicpd_cleanup(void);
 sdk_ret_t asicpd_pgm_init(void);
+sdk_ret_t asicpd_cache_init(void);
 sdk_ret_t asicpd_p4plus_table_rw_init(void);
 sdk_ret_t asicpd_state_pd_init(asic_cfg_t *cfg);
 void asicpd_csr_init(void);

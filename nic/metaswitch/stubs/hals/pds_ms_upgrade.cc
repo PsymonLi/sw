@@ -59,45 +59,9 @@ upg_cb_ev_start (api::upg_ev_params_t *params)
 }
 
 static sdk_ret_t
-upg_cb_ev_backup (api::upg_ev_params_t *params)
-{
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-upg_cb_ev_ready (api::upg_ev_params_t *params)
-{
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-upg_cb_ev_config_replay (api::upg_ev_params_t *params)
-{
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
 upg_cb_ev_sync (api::upg_ev_params_t *params)
 {
     return upg_cb_ev_send_ipc(params);
-}
-
-static sdk_ret_t
-upg_cb_ev_quiesce (api::upg_ev_params_t *params)
-{
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-upg_cb_ev_pre_switchover (api::upg_ev_params_t *params)
-{
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-upg_cb_ev_switchover (api::upg_ev_params_t *params)
-{
-    return SDK_RET_OK;
 }
 
 static sdk_ret_t
@@ -116,13 +80,7 @@ pds_ms_upg_hitless_init (void)
 
     ev_hdlr.compat_check_hdlr = upg_cb_ev_compat_check;
     ev_hdlr.start_hdlr = upg_cb_ev_start;
-    ev_hdlr.backup_hdlr = upg_cb_ev_backup;
-    ev_hdlr.ready_hdlr = upg_cb_ev_ready;
-    ev_hdlr.config_replay_hdlr = upg_cb_ev_config_replay;
     ev_hdlr.sync_hdlr = upg_cb_ev_sync;
-    ev_hdlr.quiesce_hdlr = upg_cb_ev_quiesce;
-    ev_hdlr.pre_switchover_hdlr = upg_cb_ev_pre_switchover;
-    ev_hdlr.switchover_hdlr = upg_cb_ev_switchover;
     ev_hdlr.repeal_hdlr = upg_cb_ev_repeal;
 
     // register for upgrade events

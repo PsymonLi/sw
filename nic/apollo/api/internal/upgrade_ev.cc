@@ -21,7 +21,11 @@ namespace api {
     api_params.mode = api::g_upg_state->ev_params()->mode;                  \
     api_params.id = msg_id;                                                 \
     api::g_upg_state->set_ev_in_progress_id(msg_id);                        \
+    ret = SDK_RET_OK;                                                       \
     for (; ev != ev_threads.end(); ++ev) {                                  \
+        if (!ev->hdlr) {                                                    \
+            continue;                                                       \
+        }                                                                   \
         PDS_TRACE_DEBUG("Upgrade event req %s to thread %s",                \
                         api::upg_msgid2str(msg_id), ev->thread_name);       \
         api::g_upg_state->ev_incr_in_progress();                            \
@@ -215,6 +219,9 @@ upg_hitless_ev_send (sdk::upg::upg_ev_params_t *params)
         // have additional events to send when the first operation completes
         // on all threads
         api::g_upg_state->set_ev_more(true);
+        break;
+    case UPG_EV_FINISH:
+        INVOKE_EV_THREAD_HDLR(ev, finish_hdlr, UPG_MSG_ID_FINISH);
         break;
     default:
         // TODO

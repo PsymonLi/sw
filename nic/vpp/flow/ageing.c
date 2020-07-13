@@ -8,6 +8,7 @@
 #include <sess.h>
 #include <mapping.h>
 #include <system.h>
+#include <assert.h>
 #include <feature.h>
 #include <pkt.h>
 #include <vnic.h>
@@ -578,7 +579,7 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
     u16 sport, dport, lkp_id;
     u32 *to_next = NULL;
     bool to_host = false;
-    static u32 cpu_mnic_if_index = ~0;
+    static __thread u32 cpu_mnic_if_index = ~0;
 
     h = vlib_packet_template_get_packet(vlib_get_main(),
                                         &fm->tcp_keepalive_packet_template, &bi);
@@ -695,7 +696,9 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
         eth0->type = clib_host_to_net_u16(ETHERNET_TYPE_IP4);
 
         if (PREDICT_FALSE(((u32) ~0) == cpu_mnic_if_index)) {
-            cpu_mnic_if_index = pds_infra_get_sw_ifindex_by_name((u8*)"cpu_mnic0");
+            char *intf_name = getenv(PDS_CPU_INTF_NAME_ENV_VAR);
+            assert(NULL != intf_name);
+            cpu_mnic_if_index = pds_infra_get_sw_ifindex_by_name((u8*)intf_name);
         }
         vnet_buffer(b)->sw_if_index[VLIB_RX] = cpu_mnic_if_index;
         vnet_buffer(b)->pds_flow_data.lif = host_lif_hw_id;

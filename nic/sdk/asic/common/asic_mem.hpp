@@ -26,6 +26,7 @@ void asic_reset_hbm_regions(asic_cfg_t *asic_cfg);
 mem_addr_t asic_get_mem_offset(const char *reg_name);
 mem_addr_t asic_get_mem_addr(const char *reg_name);
 uint32_t asic_get_mem_size_kb(const char *reg_name);
+void asic_reset_mem_region(mpartition_region_t *region);
 
 }    // namespace asic
 }    // namespace sdk

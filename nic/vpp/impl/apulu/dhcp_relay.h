@@ -9,6 +9,7 @@
 #include <nic/apollo/p4/include/apulu_defines.h>
 #include <nic/vpp/infra/api/intf.h>
 #include <api.h>
+#include <assert.h>
 #include <impl_db.h>
 
 #ifdef __cplusplus
@@ -91,7 +92,7 @@ pds_dhcp_relay_client_fill_tx_hdr_x2 (vlib_buffer_t *b0, vlib_buffer_t *b1,
                                       bool *error0, bool *error1)
 {
     p4_tx_cpu_hdr_t *tx0, *tx1;
-    static u32 cpu_mnic_if_index = ~0;
+    static __thread u32 cpu_mnic_if_index = ~0;
 
     *error0 = false;
     *error1 = false;
@@ -133,7 +134,9 @@ pds_dhcp_relay_client_fill_tx_hdr_x2 (vlib_buffer_t *b0, vlib_buffer_t *b1,
     tx1->nexthop_id = clib_host_to_net_u16(tx1->nexthop_id);
 
     if (((u32) ~0) == cpu_mnic_if_index) {
-        cpu_mnic_if_index = pds_infra_get_sw_ifindex_by_name((u8*)"cpu_mnic0");
+        char *intf_name = getenv(PDS_CPU_INTF_NAME_ENV_VAR);
+        assert(NULL != intf_name);
+        cpu_mnic_if_index = pds_infra_get_sw_ifindex_by_name((u8*)intf_name);
     }
     vnet_buffer(b0)->sw_if_index[VLIB_TX] = cpu_mnic_if_index;
     vnet_buffer(b1)->sw_if_index[VLIB_TX] = cpu_mnic_if_index;
@@ -144,7 +147,7 @@ always_inline void
 pds_dhcp_relay_client_fill_tx_hdr_x1 (vlib_buffer_t *b0, bool *error0)
 {
     p4_tx_cpu_hdr_t *tx0;
-    static u32 cpu_mnic_if_index = ~0;
+    static __thread u32 cpu_mnic_if_index = ~0;
     pds_impl_db_vnic_entry_t *vnic_info0;
 
     vnic_info0 = pds_impl_db_vnic_get(vnet_buffer(b0)->pds_dhcp_data.vnic_id);
@@ -170,7 +173,9 @@ pds_dhcp_relay_client_fill_tx_hdr_x1 (vlib_buffer_t *b0, bool *error0)
     tx0->nexthop_id = clib_host_to_net_u16(tx0->nexthop_id);
 
     if (((u32) ~0) == cpu_mnic_if_index) {
-        cpu_mnic_if_index = pds_infra_get_sw_ifindex_by_name((u8*)"cpu_mnic0");
+        char *intf_name = getenv(PDS_CPU_INTF_NAME_ENV_VAR);
+        assert(NULL != intf_name);
+        cpu_mnic_if_index = pds_infra_get_sw_ifindex_by_name((u8*)intf_name);
     }
     vnet_buffer(b0)->sw_if_index[VLIB_TX] = cpu_mnic_if_index;
     return;

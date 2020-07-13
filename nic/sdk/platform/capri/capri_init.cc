@@ -106,10 +106,14 @@ capri_pgm_init (void)
     return SDK_RET_OK;
 }
 
-static sdk_ret_t
+sdk_ret_t
 capri_cache_init (asic_cfg_t *cfg)
 {
     sdk_ret_t   ret = SDK_RET_OK;
+
+    if (!cfg) {
+        cfg = g_capri_state_pd->cfg();
+    }
 
     // Program Global parameters of the cache.
     ret = capri_hbm_cache_init(cfg);

@@ -169,7 +169,7 @@ class UpgradeObject(base.ConfigObjectBase):
     def VerifyUpgradeDoneStatus(self, spec=None):
         if utils.IsDryRun():
             return True
-        retry = 60
+        retry = 1200
         while retry:
             with open("/update/pds_upg_status.txt", 'r') as fp:
                 status=fp.read()
@@ -179,7 +179,7 @@ class UpgradeObject(base.ConfigObjectBase):
                 if status.find("failed") != -1:
                     return False
             retry = retry - 1
-            utils.Sleep(1)
+            utils.Sleep(10)
         return False
 
     def SetupCfgFilesForUpgrade(self, spec=None):

@@ -93,6 +93,8 @@
 #define PDS_PACKET_NEXT_NODE_ARR            (_nexts)
 #define PDS_PACKET_BUFFER_INDEX_PTR(_id)    (_from + _id)
 
+#define PDS_CPU_INTF_NAME_ENV_VAR           "DATAPATH_MNIC"
+
 __clib_unused always_inline uint8_t
 pds_p4_rx_get_l2_offset (p4_rx_cpu_hdr_t *hdr)
 {

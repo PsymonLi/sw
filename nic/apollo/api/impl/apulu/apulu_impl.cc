@@ -1127,6 +1127,12 @@ apulu_impl::upgrade_switchover(void) {
     // update rss config
     api::g_upg_state->tbl_eng_rss_cfg(&cfg);
     sdk::asic::pd::asicpd_rss_tbl_eng_cfg_modify(cfg);
+
+    ret = sdk::asic::pd::asicpd_cache_init();
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to re-initialize the cache");
+        return ret;
+    }
     return SDK_RET_OK;
 }
 

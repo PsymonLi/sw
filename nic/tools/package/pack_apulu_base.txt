@@ -359,7 +359,7 @@ nic/apollo/tools/apulu/upgrade/upgmgr_exit.sh                     /nic/tools/
 nic/apollo/tools/apulu/upgrade/upgmgr_backup_logs.sh              /nic/tools/
 nic/tools/switch_rootfs.sh                                        /nic/tools/
 nic/vpp/conf/upgrade/vpp_dom_b_1_worker.conf                      /nic/conf/vpp/
-nic/vpp/conf/upgrade/vpp_dom_b_2_worker.conf                      /nic/conf/vpp/
+nic/vpp/conf/upgrade/vpp_dom_b_2_workers.conf                     /nic/conf/vpp/
 nic/vpp/conf/upgrade/startup_$PIPELINE_dom_b.conf                 /nic/conf/vpp/startup_dom_b.conf
 nic/build/$ARCH/$PIPELINE/bin/pdsupgmgr                           /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pdsupgclient                        /nic/bin/

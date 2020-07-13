@@ -6,6 +6,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
 #include "nic/sdk/linkmgr/linkmgr.hpp"
+#include "nic/sdk/asic/common/asic_mem.hpp"
 #include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
@@ -445,12 +446,6 @@ upg_ev_ready (upg_ev_params_t *params)
 }
 
 static sdk_ret_t
-upg_ev_quiesce (upg_ev_params_t *params)
-{
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
 upg_ev_pre_switchover (upg_ev_params_t *params)
 {
     return SDK_RET_OK;
@@ -468,12 +463,6 @@ upg_ev_switchover (upg_ev_params_t *params)
     // sim it always fail, so ignore the error
     if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
         ret = SDK_RET_OK;
-    }
-    if (ret == SDK_RET_OK) {
-        ret = sdk::linkmgr::port_upgrade_switchover();
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Port switchover failed, ret %u", ret);
-        }
     }
     if (ret == SDK_RET_OK) {
         ret = impl_base::pipeline_impl()->upgrade_switchover();
@@ -494,6 +483,12 @@ upg_ev_switchover (upg_ev_params_t *params)
     // sim it always fail, so ignore the error
     if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
         ret = SDK_RET_OK;
+    }
+    if (ret == SDK_RET_OK) {
+        ret = sdk::linkmgr::port_upgrade_switchover();
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Port switchover failed, ret %u", ret);
+        }
     }
     return ret;
 }
@@ -516,6 +511,32 @@ upg_ev_repeal (upg_ev_params_t *params)
    return SDK_RET_OK;
 }
 
+static bool
+mpartition_reset_regions_by_kind_walk (mpartition_region_t *reg, void *ctx)
+{
+    // reset all regions used by A during A to B upgrade
+    // now we reset state regions also. but later when the support for state
+    // table re-use exists, should do this based on a switch
+    if (reg->kind == sdk::platform::utils::region_kind_t::MEM_REGION_KIND_CFGTBL ||
+        reg->kind == sdk::platform::utils::region_kind_t::MEM_REGION_KIND_OPERTBL) {
+        sdk::asic::asic_reset_mem_region(reg);
+    }
+    return false;
+}
+
+static sdk_ret_t
+upg_ev_finish (upg_ev_params_t *params)
+{
+    sdk_ret_t ret;
+
+    api::g_pds_state.mempartition()->walk(mpartition_reset_regions_by_kind_walk, NULL);
+    ret = pds_teardown();
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("PDS teardown failed");
+    }
+    return ret;
+}
+
 sdk_ret_t
 upg_hitless_init (pds_init_params_t *params)
 {
@@ -531,10 +552,10 @@ upg_hitless_init (pds_init_params_t *params)
     ev_hdlr.ready_hdlr = upg_ev_ready;
     ev_hdlr.config_replay_hdlr = upg_ev_config_replay;
     ev_hdlr.sync_hdlr = upg_ev_sync;
-    ev_hdlr.quiesce_hdlr = upg_ev_quiesce;
     ev_hdlr.switchover_hdlr = upg_ev_switchover;
     ev_hdlr.pre_switchover_hdlr = upg_ev_pre_switchover;
     ev_hdlr.repeal_hdlr = upg_ev_repeal;
+    ev_hdlr.finish_hdlr = upg_ev_finish;
 
     // register for upgrade events
     upg_ev_thread_hdlr_register(ev_hdlr);
