@@ -110,10 +110,24 @@ nexthop::nuke_resources_(void) {
 
 sdk_ret_t
 nexthop::init_config(api_ctxt_t *api_ctxt) {
+    if_entry *intf;
     pds_nexthop_spec_t *spec = &api_ctxt->api_params->nexthop_spec;
 
     memcpy(&this->key_, &spec->key, sizeof(key_));
     type_ = spec->type;
+    if (type_ == PDS_NH_TYPE_UNDERLAY) {
+        intf = if_db()->find(&spec->l3_if);
+        if (unlikely(intf == NULL)) {
+            PDS_TRACE_ERR("L3 interface %s not found, nh %s api op %u failed",
+                          spec->l3_if.str(), spec->key.str(), api_ctxt->api_op);
+            return SDK_RET_INVALID_ARG;
+        }
+        if (unlikely(intf->type() != IF_TYPE_L3)) {
+            PDS_TRACE_ERR("Unsupported interface %s type %u in nexthop %s",
+                          intf->key().str(), intf->type(), spec->key.str());
+            return SDK_RET_INVALID_ARG;
+        }
+    }
     return SDK_RET_OK;
 }
 
