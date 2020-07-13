@@ -42,7 +42,6 @@
     },
     "/routing/v1/{Instance}/neighbors": {
       "get": {
-        "summary": "option (venice.apiRestService) = { Object: \"Neighbor\" Method: [  \"list\" ] };",
         "operationId": "GetListNeighbors",
         "responses": {
           "200": {

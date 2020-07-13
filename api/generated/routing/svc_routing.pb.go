@@ -37,10 +37,7 @@ type RoutingV1Client interface {
 	GetNeighbor(ctx context.Context, in *NeighborFilter, opts ...grpc.CallOption) (*Neighbor, error)
 	//
 	HealthZ(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Health, error)
-	//    option (venice.apiRestService) = {
-	//         Object: "Neighbor"
-	//         Method: [  "list" ]
-	//    };
+	//
 	ListNeighbors(ctx context.Context, in *NeighborFilter, opts ...grpc.CallOption) (*NeighborList, error)
 }
 
@@ -119,10 +116,7 @@ type RoutingV1Server interface {
 	GetNeighbor(context.Context, *NeighborFilter) (*Neighbor, error)
 	//
 	HealthZ(context.Context, *EmptyReq) (*Health, error)
-	//    option (venice.apiRestService) = {
-	//         Object: "Neighbor"
-	//         Method: [  "list" ]
-	//    };
+	//
 	ListNeighbors(context.Context, *NeighborFilter) (*NeighborList, error)
 }
 

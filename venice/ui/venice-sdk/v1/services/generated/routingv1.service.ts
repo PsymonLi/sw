@@ -33,7 +33,6 @@ export class Routingv1Service extends AbstractService {
     return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: IRoutingHealth | Error, statusCode: number}>;
   }
   
-  /** option (venice.apiRestService) = { Object: "Neighbor" Method: [  "list" ] }; */
   public GetListNeighbors(Instance, queryParam: any = null):Observable<{body: IRoutingNeighborList | Error, statusCode: number}> {
     let url = this['baseUrlAndPort'] + '/routing/v1/{Instance}/neighbors';
     url = url.replace('{Instance}', Instance);
