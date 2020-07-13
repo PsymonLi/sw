@@ -231,6 +231,14 @@ nicmgr_shmstore_create (sysinit_mode_t mode)
 }
 
 sdk_ret_t
+svc_lif_shmstore_create (sysinit_mode_t mode)
+{
+    return upg_oper_shmstore_create(core::PDS_THREAD_ID_API,
+                                    PDS_AGENT_UPGRADE_OPER_SHMSTORE_NAME,
+                                    PDS_AGENT_UPGRADE_OPER_SHMSTORE_SIZE, mode);
+}
+
+sdk_ret_t
 upg_init (pds_init_params_t *params)
 {
     sdk_ret_t ret;
@@ -305,6 +313,12 @@ upg_init (pds_init_params_t *params)
     ret = nicmgr_shmstore_create(mode);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Upgrade pds nicmgr shmstore create failed");
+        return ret;
+    }
+
+    ret = svc_lif_shmstore_create(mode);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Upgrade pds svc lif shmstore create failed");
         return ret;
     }
 

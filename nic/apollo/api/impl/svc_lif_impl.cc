@@ -19,12 +19,14 @@
 #include "nic/sdk/p4/loader/loader.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/impl/apollo/apollo_impl.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/p4/include/defines.h"
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "nic/apollo/api/impl/devapi_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
+#include "nic/apollo/api/impl/svc_lif_impl_pstate.hpp"
 #include "nic/apollo/api/internal/pds_if.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 
@@ -58,6 +60,20 @@ typedef struct __attribute__((__packed__)) lifqstate_  {
 
     uint8_t  pad[(512-336)/8];
 } lifqstate_t;
+
+void inline
+init_lif_info (svc_lif_pstate_t *lif_pstate, sdk::platform::lif_info_t *lif_info)
+{
+    memset(lif_info, 0, sizeof(sdk::platform::lif_info_t));
+    strncpy(lif_info->name, "Apollo Service LIF", sizeof(lif_info->name));
+    lif_info->type = sdk::platform::LIF_TYPE_SERVICE;
+    lif_info->lif_id = lif_pstate->lif_id;
+    lif_info->tx_sched_table_offset = lif_pstate->tx_sched_table_offset;
+    lif_info->tx_sched_num_table_entries = lif_pstate->tx_sched_num_table_entries;
+    lif_info->queue_info[0].type_num = 0;
+    lif_info->queue_info[0].size = 1; // 64B
+    lif_info->queue_info[0].entries = 1; // 2 Queues
+}
 
 /**
  * @brief    init routine to initialize service LIFs
@@ -111,21 +127,38 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     sdk::asic::write_qstate(qstate.hbm_address + sizeof(lifqstate_t),
                             (uint8_t *) &txdma_qstate, sizeof(txdma_qstate));
 
-    //Program the TxDMA scheduler for this LIF.
+    // program the TxDMA scheduler for this LIF.
     sdk::platform::lif_info_t lif_info;
     api::pds_host_if_spec_t if_spec;
+    sdk::lib::shmstore  *backup_store;
+    svc_lif_pstate_t *lif_pstate;
+    module_version_t  cur_version;
 
-    memset(&lif_info, 0, sizeof(lif_info));
-    strncpy(lif_info.name, "Apollo Service LIF", sizeof(lif_info.name));
-    lif_info.lif_id = lif_id;
-    lif_info.type = sdk::platform::LIF_TYPE_SERVICE;
-    lif_info.tx_sched_table_offset = INVALID_INDEXER_INDEX;
-    lif_info.tx_sched_num_table_entries = 0;
-    lif_info.queue_info[0].type_num = 0;
-    lif_info.queue_info[0].size = 1; // 64B
-    lif_info.queue_info[0].entries = 1; // 2 Queues
+    // get backup shmstore and update lif pstate later once scheduler is programmed
+    backup_store = api::g_upg_state->backup_shmstore(core::PDS_THREAD_ID_API,
+                                                    true);
+    SDK_ASSERT(backup_store != NULL);
+    cur_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
+    // create segment to backup svc lif pstate
+    lif_pstate = (svc_lif_pstate_t *)backup_store->create_segment(SVC_LIF_SHM_NAME,
+                                                     sizeof(svc_lif_pstate_t));
+    if (lif_pstate == NULL) {
+        PDS_TRACE_ERR("Failed to create shmstore %s, for svc lif id %u",
+                      SVC_LIF_SHM_NAME, lif_id);
+        return SDK_RET_ERR;
+    } else {
+        new (lif_pstate) svc_lif_pstate_t();
+        memcpy(&lif_pstate->metadata.vers, &cur_version, sizeof(cur_version));
+    }
+    lif_pstate->lif_id = lif_id;
+
+    init_lif_info(lif_pstate, &lif_info);
     api::impl::host_if_spec_from_lif_info(if_spec, &lif_info);
     api::impl::lif_impl::program_tx_scheduler(&if_spec.lif);
+
+    // update lif pstate with latest value
+    lif_pstate->tx_sched_table_offset = if_spec.lif.tx_sched_table_offset;
+    lif_pstate->tx_sched_num_table_entries = if_spec.lif.tx_sched_num_table_entries;
     return SDK_RET_OK;
 }
 
@@ -195,9 +228,62 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
 {
     int32_t rv;
     uint8_t pgm_offset = 0;
+    sdk_ret_t ret;
     lifqstate_t lif_qstate;
+    svc_lif_pstate_t *lif_pstate;
+    sdk::platform::lif_info_t lif_info;
+    api::pds_host_if_spec_t if_spec;
     std::string prog_info_file;
     sdk::platform::utils::LIFQState qstate = { 0 };
+    sdk::lib::shmstore  *backup_store;
+    sdk::lib::shmstore  *restore_store;
+    module_version_t    cur_version;
+    module_version_t    prev_version;
+    void                *to_pstate;
+    void                *from_pstate;
+
+    backup_store = api::g_upg_state->backup_shmstore(core::PDS_THREAD_ID_API,
+                                                     true);
+    restore_store = api::g_upg_state->restore_shmstore(core::PDS_THREAD_ID_API,
+                                                       true);
+    cur_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
+    prev_version = api::g_upg_state->module_prev_version(core::PDS_THREAD_ID_API);
+    //     hitless init:
+    //     restore_store != NULL
+    //     if version match:
+    //         backup_store = NULL
+    //     else:
+    //         backup_store != NULL
+    SDK_ASSERT(restore_store != NULL);
+    if (cur_version.version != prev_version.version) {
+        SDK_ASSERT(backup_store != NULL);
+        to_pstate = backup_store->create_segment(SVC_LIF_SHM_NAME,
+                                                 sizeof(svc_lif_pstate_t));
+        SDK_ASSERT(to_pstate != NULL);
+        new (to_pstate) svc_lif_pstate_t();
+        from_pstate = restore_store->open_segment(SVC_LIF_SHM_NAME);
+        SDK_ASSERT(from_pstate != NULL);
+        // TODO: copy over data from from_pstate to to_pstate
+        lif_pstate = (svc_lif_pstate_t *)to_pstate;
+        if (lif_pstate->lif_id != lif_id) {
+            PDS_TRACE_ERR("Service lif id %u, did not match with previous version id %u",
+                           lif_id, lif_pstate->lif_id);
+            return SDK_RET_ENTRY_NOT_FOUND;
+        }
+        memcpy(&lif_pstate->metadata.vers, &cur_version,
+               sizeof(cur_version));
+        PDS_TRACE_DEBUG("svc lif %s, id %u, pstate converted to version %u",
+                        SVC_LIF_SHM_NAME, lif_id, cur_version.version);
+    } else {
+        lif_pstate = (svc_lif_pstate_t *)restore_store->open_segment(SVC_LIF_SHM_NAME);
+        if (lif_pstate == NULL || lif_pstate->lif_id != lif_id) {
+            PDS_TRACE_ERR("Either shmstore %s open failed or lif id %u, did not match"
+                          " with previous id %u",
+                          SVC_LIF_SHM_NAME, lif_id,
+                          (lif_pstate != NULL) ? lif_pstate->lif_id : lif_id);
+            return SDK_RET_ENTRY_NOT_FOUND;
+        }
+    }
 
     prog_info_file = std::string(cfg_path) + std::string("/") +
         std::string(LDD_INFO_FILE_RPATH) +
@@ -274,6 +360,16 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
                  qstate.hbm_address + sizeof(lifqstate_t),
                  sizeof(lifqstate_t), pgm_offset);
     }
+
+    //recover TxDMA scheduler state from shmstore segment
+    if (lif_pstate->tx_sched_table_offset == INVALID_INDEXER_INDEX ||
+        lif_pstate->tx_sched_num_table_entries == 0) {
+        return SDK_RET_ENTRY_NOT_FOUND;
+    }
+    init_lif_info(lif_pstate, &lif_info);
+    api::impl::host_if_spec_from_lif_info(if_spec, &lif_info);
+    ret = api::impl::lif_impl::reserve_tx_scheduler(&if_spec.lif);
+    SDK_ASSERT(ret == SDK_RET_OK);
     return SDK_RET_OK;
 }
 

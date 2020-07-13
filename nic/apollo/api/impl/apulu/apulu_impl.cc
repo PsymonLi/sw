@@ -1029,14 +1029,13 @@ apulu_impl::pipeline_upgrade_hitless_init(void) {
     api::g_pds_state.lif_db()->impl_state_set(g_pds_impl_state.lif_impl_db());
 
     // it can happen that service lif is modified during upgrade. in that case
-    // just initialize the new service lif
-    //
-    // during A to B upgrade and the service lif id of A(g_upg_state->service_lif_id)
-    // matches with B(APULU_SERVICE_LIF), verify the configs are perfectly matching
-    // TODO: if (initp->service_lif_id() != APULU_SERVICE_LIF)
-    //            ret = init_service_lif(APULU_SERVICE_LIF, p4pd_cfg.cfg_path);
-    //       else // below code
+    // just initialize the new service lif.
+    // during A to B upgrade verify if service lif id of A
+    // matches with B(APULU_SERVICE_LIF). verify all configs for exact match
     ret = service_lif_upgrade_verify(APULU_SERVICE_LIF, p4pd_cfg.cfg_path);
+    if (ret == SDK_RET_ENTRY_NOT_FOUND) {
+        ret = init_service_lif(APULU_SERVICE_LIF, p4pd_cfg.cfg_path);
+    }
     SDK_ASSERT(ret == SDK_RET_OK);
     ret = ipsec_lif_upgrade_verify(APULU_IPSEC_LIF, p4pd_cfg.cfg_path);
     SDK_ASSERT(ret == SDK_RET_OK);

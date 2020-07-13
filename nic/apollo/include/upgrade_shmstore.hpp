@@ -46,6 +46,12 @@
 #define PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_SIZE   (20 * 1024)
 
 // ----------------------------------------------------------------------------
+// pds agent upgrade store for service lif operational states
+// ----------------------------------------------------------------------------
+#define PDS_AGENT_UPGRADE_OPER_SHMSTORE_NAME      "pds_agent_oper_upgdata"
+#define PDS_AGENT_UPGRADE_OPER_SHMSTORE_SIZE      (30 * 1024)  // 30K
+
+// ----------------------------------------------------------------------------
 // pds nicmgr upgrade store for device and lif operational states
 // ----------------------------------------------------------------------------
 #define PDS_NICMGR_UPGRADE_OPER_SHMSTORE_NAME      "pds_nicmgr_oper_upgdata"
