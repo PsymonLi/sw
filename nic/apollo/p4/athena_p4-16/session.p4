@@ -511,6 +511,8 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
        hdr.ctag_0.vid   = vlan;
        hdr.ctag_0.etherType   = ethertype;
        hdr.ethernet_0.etherType   = ETHERTYPE_VLAN;
+     } else {
+       hdr.ethernet_0.etherType   = ethertype;
      }
    }
 

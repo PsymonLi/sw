@@ -130,7 +130,7 @@ create_h2s_session_rewrite_mplsoudp(uint32_t session_rewrite_id,
         mac_addr_t *substrate_dmac, mac_addr_t *substrate_smac,
         uint16_t substrate_vlan,
         uint32_t substrate_sip, uint32_t substrate_dip,
-        uint32_t mpls1_label, uint32_t mpls2_label, uint16_t substrate_udp_sport = 0);
+	uint32_t mpls1_label, uint32_t mpls2_label, uint16_t substrate_udp_sport = 0,  uint8_t insert_vlan_tag = 1);
 
 sdk_ret_t
 create_h2s_session_rewrite_mplsoudp_nat_ipv4(uint32_t session_rewrite_id,
@@ -168,7 +168,7 @@ create_h2s_session_rewrite_geneve(uint32_t session_rewrite_id,
 	uint32_t destination_slot_id, uint16_t sg_id1,
 	uint16_t sg_id2, uint16_t sg_id3,
         uint16_t sg_id4, uint16_t sg_id5,
-	uint16_t sg_id6, uint32_t originator_physical_ip, uint16_t substrate_udp_sport = 0);
+	uint16_t sg_id6, uint32_t originator_physical_ip, uint16_t substrate_udp_sport = 0, uint8_t insert_vlan_tag = 1);
 
 sdk_ret_t
 create_h2s_session_rewrite_geneve_nat_ipv4(uint32_t session_rewrite_id,

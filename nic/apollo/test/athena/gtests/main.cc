@@ -918,7 +918,7 @@ create_h2s_session_rewrite_mplsoudp(uint32_t session_rewrite_id,
         mac_addr_t *substrate_dmac, mac_addr_t *substrate_smac,
         uint16_t substrate_vlan,
         uint32_t substrate_sip, uint32_t substrate_dip,
-	uint32_t mpls1_label, uint32_t mpls2_label, uint16_t substrate_udp_sport)
+				    uint32_t mpls1_label, uint32_t mpls2_label, uint16_t substrate_udp_sport, uint8_t insert_vlan_tag)
 { 
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
@@ -934,7 +934,7 @@ create_h2s_session_rewrite_mplsoudp(uint32_t session_rewrite_id,
     spec.data.encap_type = ENCAP_TYPE_MPLSOUDP;
     sdk::lib::memrev(spec.data.u.mplsoudp_encap.l2_encap.dmac, (uint8_t*)substrate_dmac, sizeof(mac_addr_t));
     sdk::lib::memrev(spec.data.u.mplsoudp_encap.l2_encap.smac, (uint8_t*)substrate_smac, sizeof(mac_addr_t));
-    spec.data.u.mplsoudp_encap.l2_encap.insert_vlan_tag = TRUE;
+    spec.data.u.mplsoudp_encap.l2_encap.insert_vlan_tag = insert_vlan_tag;
     spec.data.u.mplsoudp_encap.l2_encap.vlan_id = substrate_vlan;
 
     spec.data.u.mplsoudp_encap.ip_encap.ip_saddr = substrate_sip;
@@ -1052,7 +1052,7 @@ create_h2s_session_rewrite_geneve(uint32_t session_rewrite_id,
 	uint32_t destination_slot_id, uint16_t sg_id1,
 	uint16_t sg_id2, uint16_t sg_id3,
         uint16_t sg_id4, uint16_t sg_id5,
-	uint16_t sg_id6, uint32_t originator_physical_ip, uint16_t substrate_udp_sport)
+        uint16_t sg_id6, uint32_t originator_physical_ip, uint16_t substrate_udp_sport, uint8_t insert_vlan_tag)
 { 
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
@@ -1068,7 +1068,7 @@ create_h2s_session_rewrite_geneve(uint32_t session_rewrite_id,
     spec.data.encap_type = ENCAP_TYPE_GENEVE;
     sdk::lib::memrev(spec.data.u.geneve_encap.l2_encap.dmac, (uint8_t*)substrate_dmac, sizeof(mac_addr_t));
     sdk::lib::memrev(spec.data.u.geneve_encap.l2_encap.smac, (uint8_t*)substrate_smac, sizeof(mac_addr_t));
-    spec.data.u.geneve_encap.l2_encap.insert_vlan_tag = TRUE;
+    spec.data.u.geneve_encap.l2_encap.insert_vlan_tag = insert_vlan_tag;
     spec.data.u.geneve_encap.l2_encap.vlan_id = substrate_vlan;
 
     spec.data.u.geneve_encap.ip_encap.ip_saddr = substrate_sip;
