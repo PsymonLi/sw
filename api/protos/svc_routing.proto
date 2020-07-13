@@ -18,12 +18,6 @@ service RoutingV1 {
     option (venice.apiPrefix)           = "";
     option (venice.apiVersion)          = "v1";
 
-//    option (venice.apiGrpcCrudService)  = "Neighbor";
-
-//    option (venice.apiRestService) = {
-//         Object: "Neighbor"
-//         Method: [  "list" ]
-//    };
     rpc ListNeighbors(NeighborFilter) returns(NeighborList) {
         option (google.api.http) = {
             get: "/{Instance}/neighbors"
