@@ -10,15 +10,14 @@ feature:
 
 modules:
     - module:
-        name    : IPV4_UDP_ENCAP
+        name    : N2L_IPV4_UDP
         spec    : igw2local.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
 
     - module:
-        name    : IPV4_DNAT
+        name    : N2L_IPV4_DNAT
         spec    : igw2local.testspec
         enable  : False
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW_NAT,Label=NETWORKING
-

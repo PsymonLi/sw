@@ -88,24 +88,28 @@ def GetExpectedStats(tc, args):
     spec['txbytes'] = 0
     spec['rxpackets'] = 0
     spec['rxbytes'] = 0
+    spec['metertxpackets'] = 0
+    spec['metertxbytes'] = 0
+    spec['meterrxpackets'] = 0
+    spec['meterrxbytes'] = 0
     if pktdir == "TX":
-        if packets.IsAnyCfgMissing(tc):
-            # In Tx packet stats are incremented irrespective of the policy result. 
-            # stats are not updated only incase of any missing configs.
-            spec['txpackets'] = 0
-            spec['txbytes'] = 0
-        else:
+        # update packet stats if it is not a config missing case; irrespective of policy evaluation
+        if not packets.IsAnyCfgMissing(tc):
             spec['txpackets'] = npkts
             spec['txbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
+            if tc.config.localmapping.VNIC.MeterEn and hasattr(tc.config, 'route') \
+                and tc.config.route.MeterEn:
+                spec['metertxpackets'] = npkts
+                spec['metertxbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
     else:
-        if packets.IsNegativeTestCase(tc, args):
-            # Rx packets stats are not updated if policy evaluation is deny or if any
-            # cfg is missing
-            spec['rxpackets'] = 0
-            spec['rxbytes'] = 0
-        else:
+        # update packet stats if there is no config missing and policy evaluation is not deny
+        if not packets.IsNegativeTestCase(tc, args):
             spec['rxpackets'] = npkts
             spec['rxbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
+            if tc.config.localmapping.VNIC.MeterEn and hasattr(tc.config, 'route') \
+                and tc.config.route.MeterEn:
+                spec['meterrxpackets'] = npkts
+                spec['meterrxbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
     return spec
 
 def GetModuleArgs(tc):

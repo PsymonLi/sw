@@ -17,6 +17,10 @@ def Setup(infra, module):
 def TestCaseSetup(tc):
     tc.AddIgnorePacketField('UDP', 'sport')
     tc.AddIgnorePacketField('UDP', 'chksum')
+    tc.AddIgnorePacketField('ICMP', 'chksum')
+    tc.AddIgnorePacketField('ICMP', 'ts_ori')
+    tc.AddIgnorePacketField('ICMP', 'ts_rx')
+    tc.AddIgnorePacketField('ICMP', 'ts_tx')
     tc.AddIgnorePacketField('IP', 'chksum') #Needed to pass NAT testcase
 
     iterelem = tc.module.iterator.Get()

@@ -1,0 +1,18 @@
+# Feature networking Modules List for Local to Internet Gateway scenario
+feature:
+    id          : meter
+    sub         : meter
+    package     : test.networking
+    module      : meter
+    runorder    : 1300
+    enable      : True
+    ignore      : True
+
+modules:
+    - module:
+        name : METER_L2N
+        mlist : local2igw.mlist
+
+    - module:
+        name : METER_N2L
+        mlist : igw2local.mlist

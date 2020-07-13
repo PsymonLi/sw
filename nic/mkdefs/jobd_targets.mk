@@ -606,6 +606,10 @@ jobd/dol/apulu/operd: ${JOBD_PREREQS}
 jobd/dol/apulu/bitw_smart_service_e2e: ${JOBD_PREREQS}
 	DEVICE_OPER_MODE=bitw_smart_service ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo bitw_smart_service --feature bitw_smart_service_e2e --dry
 
+.PHONY: jobd/dol/apulu/meter
+jobd/dol/apulu/meter: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan_meter --feature meter
+
 .PHONY: jobd/athena/gtests
 jobd/athena/gtests: ${JOBD_PREREQS}
 	${NICDIR}/apollo/test/tools/athena/run_gtests.sh ${COVERAGE_OPTS}

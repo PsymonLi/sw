@@ -215,8 +215,20 @@ def __get_dnat_route(route_tbl):
 def __get_dnat_route_dest(route_tbl):
     return str(route_tbl.DstNatIp)
 
+def __get_random_meteren_route(routetbl):
+    #pick a random route with meter enabled
+    routes = []
+    for route in routetbl.routes.values():
+        if route.MeterEn:
+            routes.append(route)
+    return random.choice(routes)
+
 def GetUsableHostFromRoute(testcase, packet, args=None):
-    route = __get_non_default_random_route(testcase.config.route)
+    routetbl = testcase.config.route
+    if routetbl.MeterEn:
+        route = __get_random_meteren_route(routetbl)
+    else:
+        route = __get_non_default_random_route(routetbl)
     routepfx = route.ipaddr if route else None
     pfxpos = __get_pfx_position_selector(testcase.module.args)
     addr = __get_host_from_pfx(routepfx, testcase.config.route.AddrFamily, pfxpos)

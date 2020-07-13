@@ -319,6 +319,7 @@ func printVnicDetail(vnic *pds.Vnic) {
 	} else {
 		fmt.Printf("%-30s : %s\n", "Egress IPv6 Security Group ID", "-")
 	}
+	fmt.Printf("%-30s : %t\n", "Meter Enable", spec.GetMeterEn())
 
 	lineStr := strings.Repeat("-", 60)
 	fmt.Println(lineStr)

@@ -62,5 +62,6 @@ DryRunSanity hostvxlan_ex policy SUB="scale_policy_subnet_vnic"
 DryRunSanity hostvxlan_ex policy SUB="scale_tag"
 DryRunSanity hostvxlan_ex_anydeny policy SUB="multi_policy"
 
+DryRunSanity hostvxlan_meter networking SUB="meter"
 # end of script
 clean_exit

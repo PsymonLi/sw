@@ -208,7 +208,7 @@ function remove_stale_files () {
 function remove_logs () {
     # NOT to be used post run
     echo "======> Incinerating logs from unknown stardate"
-    sudo rm -rf ${PDSPKG_TOPDIR}/*log* ${PDSPKG_TOPDIR}/core* ${PDSPKG_TOPDIR}/${TS_NAME}
+    sudo rm -f ${PDSPKG_TOPDIR}/*log* ${PDSPKG_TOPDIR}/core* ${PDSPKG_TOPDIR}/${TS_NAME}
     sudo rm -rf /var/log/pensando/ /obfl/ /data/ /sysconfig/
 }
 

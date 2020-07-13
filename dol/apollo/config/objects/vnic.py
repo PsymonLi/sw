@@ -38,6 +38,10 @@ class VnicStats(base.StatsObjectBase):
         self.RxBytes = stats.RxBytes
         self.RxPackets = stats.RxPackets
         self.ActiveSessions = stats.ActiveSessions
+        self.MeterTxBytes = stats.MeterTxBytes
+        self.MeterTxPackets = stats.MeterTxPackets
+        self.MeterRxBytes = stats.MeterRxBytes
+        self.MeterRxPackets = stats.MeterRxPackets
         return
 
     def __eq__(self, other):
@@ -123,7 +127,7 @@ class VnicObject(base.ConfigObjectBase):
         self.Primary = getattr(spec, 'primary', False)
         self.HostName = self.Node
         self.MaxSessions = getattr(spec, 'maxsessions', 0)
-        self.MeterEn = getattr(spec, 'meteren', True)
+        self.MeterEn = getattr(spec, 'meteren', False)
         self.FlowLearnEn = getattr(spec, 'flowlearnen', True)
         self.SwitchVnic = getattr(spec, 'switchvnic', False)
         # TODO: clean this host if logic
@@ -211,6 +215,7 @@ class VnicObject(base.ConfigObjectBase):
             logger.info(f"- Remote Routes:{self.RemoteRoutes}")
         if self.ServiceIPs:
             logger.info(f"- Service IPs:{self.ServiceIPs}")
+        logger.info(f"- MeterEn:{self.MeterEn}")
         self.Status.Show()
         self.Stats.Show()
         return
@@ -228,7 +233,8 @@ class VnicObject(base.ConfigObjectBase):
         entries = op.split("---")
         yamlOp = utils.LoadYaml(entries[0])
         if not yamlOp: return False
-        statAttrs = ['RxPackets', 'RxBytes', 'TxPackets', 'TxBytes']
+        statAttrs = ['RxPackets', 'RxBytes', 'TxPackets', 'TxBytes', 'MeterRxPackets', 'MeterRxBytes', 'MeterTxPackets', 'MeterTxBytes']
+        mismatch = False
         for statAttr in statAttrs:
             lstatAttr = statAttr.lower()
             if yamlOp['stats'][lstatAttr] != getattr(self.Stats, statAttr) + spec[lstatAttr]:
@@ -236,7 +242,9 @@ class VnicObject(base.ConfigObjectBase):
                 expStat = preStat + spec[lstatAttr]
                 output = yamlOp['stats'][lstatAttr]
                 logger.info(f"{statAttr} mismatch. PreStat: %d, ExpStat: %d, Output: %d" % (preStat, expStat, output))
-                return False
+                mismatch = True
+        if mismatch:
+            return False
         return True
 
     def SpecUpdate(self, spec):

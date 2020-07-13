@@ -188,6 +188,11 @@ class RouteTableObject(base.ConfigObjectBase):
             parent.V4RouteTableName = self.GID()
         self.UUID = utils.PdsUuid(self.RouteTblId, self.ObjType)
         self.routes = routes
+        self.MeterEn = False
+        for r in routes.values():
+            if r.MeterEn:
+                self.MeterEn = True
+                break
         self.TUNNEL = tunobj
         self.NhGroup = None
         self.DualEcmp = utils.IsDualEcmp(spec)
@@ -233,6 +238,7 @@ class RouteTableObject(base.ConfigObjectBase):
         elif self.NhGroup:
             logger.info("- TEP: None")
             logger.info("- NexthopGroup%d" % (self.NhGroup.Id))
+        logger.info(f"- MeterEn:{self.MeterEn}")
         for route in self.routes.values():
             route.Show()
         return

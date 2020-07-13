@@ -10,32 +10,31 @@ feature:
 
 modules:
     - module:
-        name    : IPV4_UDP_QTAG
+        name    : L2N_IPV4_UDP
         spec    : local2igw.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
 
     - module:
-        name    : IPV4_SNAT
+        name    : L2N_IPV4_SNAT
         spec    : local2igw.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW_NAT,Label=NETWORKING
 
     - module:
-        name    : IPV4_UDP_NAPT
+        name    : L2N_IPV4_UDP_NAPT
         spec    : local2igw.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW_NAPT,Label=NETWORKING
 
     - module:
-        name    : IPV4_ICMP_NAPT
+        name    : L2N_IPV4_ICMP_NAPT
         spec    : local2igw_icmp.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW_NAPT,Label=NETWORKING
 
     - module:
-        name    : IPV4_UDP_TWICE_NAT
+        name    : L2N_IPV4_UDP_TWICE_NAT
         spec    : local2igw_dnat.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW_NAPT_SERVICE,Label=NETWORKING
-

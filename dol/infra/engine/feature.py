@@ -62,6 +62,7 @@ class FeatureObject:
     def AddModulesFromMlists(self, test_path):
         for m in self.spec.modules:
             mspec = m.module
+            pdb.set_trace()
             if hasattr(mspec, 'mlist'):
                 mlist_name = getattr(mspec, 'mlist')
                 spec = parser.ParseFile(test_path, mlist_name)
@@ -116,8 +117,11 @@ class FeatureObject:
         if mlist_name is None:
             return
         spec = parser.ParseFile(path, mlist_name)
+        ignore = getattr(mspec, 'ignore', False)
         for mod in spec.modules:
             mspec = mod.module
+            if ignore:
+                mspec.ignore = ignore
             self.LoadOneModule(mspec, rename=True)
 
     def LoadModules(self, path, rename=False, args=None):
