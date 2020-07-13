@@ -284,7 +284,7 @@ def configureNaplesIntf(req, node, intf,
             api.Trigger_AddNaplesCommand(req, node, cmd)
             intf += '.' + vlan
 
-        cmd = "ifconfig " + intf + " " + ip + " netmask " + mask
+        cmd = "ifconfig " + intf + " " + ip + " netmask " + mask + " up"
         api.Trigger_AddNaplesCommand(req, node, cmd)
     else:
         if vlan is not None:
