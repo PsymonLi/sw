@@ -17,7 +17,7 @@ OS_TYPE_ESX   = "esx"
 def __load_linux_driver(node, node_os, manifest_file):
 
     image_manifest = parser.JsonParse(manifest_file)
-    driver_images = list(filter(lambda x: x.OS == node_os, image_manifest.Drivers))[0] 
+    driver_images = list(filter(lambda x: x.OS == node_os, image_manifest.Drivers))[0].Images[0]
     if driver_images is None: 
         api.Logger.error("Unable to load image manifest") 
         return api.types.status.FAILURE
@@ -177,7 +177,7 @@ def LoadFirmware(nodes, node_os, target_version):
 
 def __load_esxi_driver(node, node_os, manifest_file):
     image_manifest = parser.JsonParse(manifest_file)
-    driver_images = list(filter(lambda x: x.OS == node_os, image_manifest.Drivers))[0] 
+    driver_images = list(filter(lambda x: x.OS == node_os, image_manifest.Drivers))[0].Images[0]
     if driver_images is None: 
         api.Logger.error("Unable to load image manifest") 
         return api.types.status.FAILURE
