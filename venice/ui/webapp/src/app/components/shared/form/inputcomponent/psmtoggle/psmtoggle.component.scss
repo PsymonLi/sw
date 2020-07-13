@@ -1,0 +1,20 @@
+$errorColor : #e57553;
+
+.psm-form {
+  .psm-form-toggle-container {
+    width: 100%;
+    margin-left: 10px;
+
+    label {
+      left: .25em;
+      font-size: 12px;
+      top: -.75em;
+    }
+
+    .psm-form-toggle {
+      display: block;
+      width: 100%;
+    }
+
+  }
+}

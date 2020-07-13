@@ -1,8 +1,8 @@
 <div fxLayout="row" fxLayoutAlign="start end">
   <div [class]="getIconSpanClasses()">*</div>
   <div [class]="getSpanClasses()">
-    <input autocomplete="off" [id]="boxId" appendTo="body" [class]="getComponentClass()"
-           spellcheck="false" type="text" pInputText
+    <input autocomplete="off" [id]="boxId" [class]="getComponentClass()"
+           appendTo="body" spellcheck="false" type="text" pInputText
            [disabled]="disabled" [matTooltip]="getTooltip()"
            [matTooltipClass]="currentTooltipClass"
            [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"

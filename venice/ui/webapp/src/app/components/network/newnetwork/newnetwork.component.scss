@@ -1,20 +1,11 @@
 @import "src/global-mixins";
 
-.new-network-container {
-  background: white;
+.new-network-orchestrators-container {
+  width: cal(100% -10px);
+  margin-left: 10px;
 
-  .new-network-content {
-    margin: 20px 0px;
-    @include primary-font();
-
-    .new-network-orchestrators-container {
-      width: 636px;
-      margin-left: 10px;
-
-      app-psmselectbox {
-        position: relative;
-        left: -10px;
-      }
-    }
+  app-psmselectbox {
+    position: relative;
+    left: -10px;
   }
 }

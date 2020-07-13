@@ -1,138 +1,71 @@
 <div class="psm-form" fxFlex="auto" fxLayout="column">
-  <app-inlinebuttons class="newVcenter" *ngIf="isInline"
-                     [saveButtonClass]="computeFormSubmitButtonClass()"
-                     [saveTooltip]="getSubmitButtonToolTip()"
-                     (saveFunc)="saveObject()" (cancelFunc)="cancelObject()">
+  <app-inlinebuttons class="newVcenter" *ngIf="isInline" [form]="this">
   </app-inlinebuttons>
   <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start"
        [class]="isInline? 'newVcenter-editform-inline' : ''">
-    <!-- Limiting the size of the creation form - If it is inline, we have more room to fit in the save/cancel buttons -->
-    <div fxFlex="none" fxLayout="row" fxLayoutAlign="center" class="newVcenter-content">
+    <div fxFlex="400px" fxLayout="row" fxLayoutAlign="center"
+         class="psm-form-content">
       <ng-container *ngTemplateOutlet="singleMode;"></ng-container>
     </div>
   </div>
 </div>
+
 <ng-template #singleMode>
   <div fxFlex fxLayout="column" [formGroup]="newObject.$formGroup">
     <div fxFlex="nogrow" fxLayout="column">
-      <span formGroupName="meta" [ngClass]="{requiredField: isNameRequired()}">
-        <input autocomplete="off" fxFlex="nogrow" formControlName="name" class="newVcenter-input"
-               appErrorTooltip
-               spellcheck="false" type="text"
-               pInputText appFloatLabel="Name">
-      </span>
-      <div fxFlex="15px"></div>
-      <span formGroupName="spec" [ngClass]="{requiredField: isUriRequired()}">
-        <input autocomplete="off" fxFlex="nogrow" formControlName="uri" class="newVcenter-input"
-               appErrorTooltip
-               spellcheck="false" type="text"
-               pInputText appFloatLabel="URI">
-      </span>
-      <div fxFlex="5px"></div>
-      <div fxLayout="row" fxLayoutAlign="start center">
-        <mat-radio-group fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start center"
-                         fxLayoutGap="20px" class="newVcenter-radio-format"
-                         [(ngModel)]="pickedOption" [ngModelOptions]="{standalone: true}">
-          <mat-radio-button fxFlex="nogrow" color="primary" [disableRipple]="true"
-                            *ngFor="let option of chooseOptions" [value]="option.value">
-            {{option.label}}
-          </mat-radio-button>
-        </mat-radio-group>
+      <div formGroupName="meta" fxFlex="none" fxLayout="row">
+        <app-psmtextbox fxFlex="410px" label="Name" formControlName="name">
+        </app-psmtextbox>
       </div>
-      <div fxLayout="row">
-        <app-psmchipsbox *ngIf="pickedOption !== ALL_DATACENTERS"
+      <div fxFlex="15px"></div>
+      <div formGroupName="spec" fxFlex="none" fxLayout="row">
+        <app-psmtextbox fxFlex="410px" label="URI" formControlName="uri">
+        </app-psmtextbox>
+      </div>
+      <div fxFlex="15px"></div>
+      <div fxFlex="none" fxLayout="row">
+        <app-psmradiobuttons fxFlex="410px" [formControl]="datacenterCtrl"
+                             [isSmallSize]="true" [options]="chooseOptions">
+        </app-psmradiobuttons>
+      </div>
+      <div formGroupName="spec" fxLayout="row" fxFlex="none">
+        <app-psmchipsbox *ngIf="datacenterCtrl.value !== ALL_DATACENTERS"
                          fxFlex="410px" label="Datacenter Names"
-                         [formControl]="newObject.$formGroup.get(['spec', 'manage-namespaces'])"
+                         formControlName="manage-namespaces"
                          [toolTip]="DCNAMES_TOOLTIP" [showRequiredOnEmpty]="true">
         </app-psmchipsbox>
       </div>
-      <app-fieldcontainer fieldTitle="Credential">
-        <div fxflex="nogrow" fxLayout="column" class="newVcenter-cred-box"
-             [formGroup]="newObject.$formGroup.get(['spec','credentials'])">
-          <!-- //for release B, vs-1609, hide credential choices
-          <div class="newVcenter-radio-container">
-            <mat-radio-group fxFlex="nogrow" class="newVenter-attach-radio"
-                             fxLayoutAlign="start center" fxLayoutGap="10px"
-                             formControlName="auth-type">
-              <mat-radio-button fxFlex="nogrow" color="primary" [disableRipple]="true"
-                                *ngFor="let option of credentialTypes" [value]="option.label">
-                {{option.label}}
-              </mat-radio-button>
-            </mat-radio-group>
-          </div>
-          <div fxFlex="5px"></div>
-          -->
+      <app-fieldcontainer fieldTitle="Credential" class="newVcenter-cred-box">
+        <div fxflex="nogrow" [formGroup]="newObject.$formGroup.get(['spec','credentials'])">
           <div fxLayout="column"
                [ngSwitch]="newObject.$formGroup.get(['spec','credentials', 'auth-type']).value">
             <div fxLayout="column" *ngSwitchCase="'username-password'" [@slideInOut]>
-              <span
-                    [ngClass]="{requiredField: isUsernameRequired()}">
-                <input autocomplete="off" fxFlex="nogrow" class="newVcenter-input"
-                       formControlName="username"
-                       appErrorTooltip spellcheck="false" appFloatLabel="User Name"
-                       type="text" pInputText>
-              </span>
-              <div fxFlex="15px"></div>
-              <span *ngIf="!isInline"
-                    [ngClass]="{requiredField: isPasswordRequired()}">
-                <input autocomplete="off" fxFlex="nogrow" class="newVcenter-input"
-                       formControlName="password"
-                       appErrorTooltip spellcheck="false" appFloatLabel="Password"
-                       type="password" pInputText>
-              </span>
-              <div *ngIf="isInline" fxLayout="column"
-                   [ngClass]="{requiredField: isPasswordRequired()}">
-                <input autocomplete="off" fxFlex="nogrow"
-                       class="newVcenter-input newVcenter-hardcoded-password"
-                       formControlName="password" appErrorTooltip spellcheck="false" type="password"
-                       appFloatLabel="**********************************************************"
-                       pInputText>
-                <span class="newVcenter-hardcoded-password-label">Password</span>
+              <div fxFlex="none" fxLayout="row">
+                <app-psmtextbox fxFlex="370px" formControlName="username"
+                                label="User Name" [showRequired]="isUsernameRequired()">
+                </app-psmtextbox>
               </div>
-              <div *ngIf="!isInline" fxFlex="10px"></div>
-              <span fxFlex="none" fxLayout="column">
-                <span class="newVcenter-toggle-label">Disable Server Authentication</span>
-                <p-inputSwitch class="newVcenter-toggle" appendTo="body"
-                               [appErrorTooltip]="'DisableServerAuthentication flag can be used when a client does not want to authenticate a server.'"
+              <div fxFlex="15px"></div>
+              <div fxFlex="none" fxLayout="row">
+                <app-psmpassword fxFlex="370px" formControlName="password"
+                                 label="Password" [showRequired]="isPasswordRequired()"
+                                 [passwordMask]="!isInline? '': PASSWORD_MASK">
+                </app-psmpassword>
+              </div>
+              <div fxFlex="15px"></div>
+              <div fxFlex="none" fxLayout="row">
+                <app-psmtoggle fxFlex="250px" label="Disable Server Authentication"
                                formControlName="disable-server-authentication"
-                               (onChange)="onToggleChange()"></p-inputSwitch>
-              </span>
-              <div fxFlex="10px"></div>
-              <span class="textarea">
-                <textarea fxFlex="100" formControlName="ca-data" class="newVcenter-textarea"
-                          appErrorTooltip spellcheck="false" type="text" pInputTextarea
-                          autoResize="autoResize" appFloatLabel="CA Bundle"></textarea>
-              </span>
-            </div>
-            <div fxLayout="column" *ngSwitchCase="'token'" [@slideInOut]>
-              <span
-                    [ngClass]="{textarea: true,requiredField: isTokenRequired()}">
-                <textarea fxFlex="100" formControlName="bearer-token" class="newVcenter-textarea"
-                          appErrorTooltip spellcheck="false" type="text" pInputTextarea
-                          autoResize="autoResize" appFloatLabel="Token"></textarea>
-              </span>
-            </div>
-            <div fxLayout="column" *ngSwitchCase="'certs'" [@slideInOut]>
-              <span
-                    [ngClass]="{textarea: true, requiredField: iskeyRequired()}">
-                <textarea fxFlex="100" formControlName="key-data" class="newVcenter-textarea"
-                          appErrorTooltip spellcheck="false" type="text" pInputTextarea
-                          autoResize="autoResize" appFloatLabel="Private Key"></textarea>
-              </span>
-              <div fxFlex="10px"></div>
-              <span
-                    [ngClass]="{textarea: true, requiredField: isCertRequired()}">
-                <textarea fxFlex="100" formControlName="cert-data" class="newVcenter-textarea"
-                          appErrorTooltip spellcheck="false" type="text" pInputTextarea
-                          autoResize="autoResize" appFloatLabel="Cert"></textarea>
-              </span>
-              <div fxFlex="10px"></div>
-              <span
-                    [ngClass]="{textarea: true, requiredField: isCaRequired()}">
-                <textarea fxFlex="100" formControlName="ca-data" class="newVcenter-textarea"
-                          appErrorTooltip spellcheck="false" type="text" pInputTextarea
-                          autoResize="autoResize" appFloatLabel="CA Bundle"></textarea>
-              </span>
+                               (change)="onToggleChange()">
+                </app-psmtoggle>
+              </div>
+              <ng-container *ngIf="showCaData()">
+                <div fxFlex="10px"></div>
+                <div fxFlex="none" fxLayout="row">
+                  <app-psmtextarea fxFlex="370px" formControlName="ca-data" label="CA Bundle">
+                  </app-psmtextarea>
+                </div>
+              </ng-container>
             </div>
             <div fxFlex="10px"></div>
           </div>

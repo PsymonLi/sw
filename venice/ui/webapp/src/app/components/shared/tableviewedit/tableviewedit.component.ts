@@ -18,6 +18,7 @@ import { DataComponent } from '@app/components/shared/datacomponent/datacomponen
 import { LazyrenderComponent } from '@app/components/shared/lazyrender/lazyrender.component';
 import { TableMenuItem } from '@app/components/shared/tableheader/tableheader.component';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 /**
  * Table view edit component provides an easy way for other pages
@@ -645,7 +646,6 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
 
   oldButtons: ToolbarButton[] = [];
 
-  abstract getClassName(): string;
   // Hook to add extra logic during component initialization
   // Defining as abstract to enforce the idea that ngOnInit shouldn't be overriden unless
   // it's really needed.
@@ -675,6 +675,14 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
     }
     this.postNgInit();
     this.setDefaultValidation();
+  }
+
+  getClassName(): string {
+    return this.constructor.name;
+  }
+
+  debug(text: string = ' is rendering ......') {
+    console.warn(this.getClassName() + text);
   }
 
   // set for overriden
@@ -813,6 +821,45 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
     this.formClose.emit();
   }
 
+  /*
+   *  create a help method here
+   *  every setToolbar method will call this function
+   */
+  setCreationButtonsToolbar(creationText: string, permissions: UIRolePermissions | UIRolePermissions[]): void {
+    if (!permissions || this.checkPermisssions(permissions)) {
+      // If it is not inline, we change the toolbar buttons, and save the old one
+      // so that we can set it back when we are done
+      const currToolbar = this._controllerService.getToolbarData();
+      this.oldButtons = currToolbar.buttons;
+      currToolbar.buttons = [
+        {
+          cssClass: 'global-button-primary psm-form-creation-button',
+          text: creationText,
+          genTooltip: () => this.getSubmitButtonToolTip(),
+          callback: () => { this.saveObject(); },
+          computeClass: () => this.computeFormSubmitButtonClass()
+        },
+        {
+          cssClass: 'global-button-neutral psm-form-creation-button',
+          text: 'CANCEL',
+          callback: () => {
+            this.cancelObject();
+          }
+        },
+      ];
+
+      this._controllerService.setToolbarData(currToolbar);
+    }
+  }
+
+  checkPermisssions(permissions: UIRolePermissions | UIRolePermissions[]): boolean {
+    if (!Array.isArray(permissions)) {
+      permissions = [permissions];
+    }
+    return permissions.reduce((accumulator: boolean, currentValue: UIRolePermissions) =>
+        accumulator && this.uiconfigsService.isAuthorized(currentValue), true);
+  }
+
   /**
    * Sets the previously saved toolbar buttons
    * They should have been saved in the ngOnInit when we are inline.
@@ -874,6 +921,4 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
       (Array.isArray(ctrl.validator)) ? ctrl.setValidators([...ctrl.validator, validator]) : ctrl.setValidators([ctrl.validator, validator]);
     }
   }
-
-
 }

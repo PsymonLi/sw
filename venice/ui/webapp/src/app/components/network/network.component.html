@@ -85,7 +85,7 @@
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
   <app-newnetwork [style.width]="'100%'" [objectData]="rowData" [isInline]="true"
-                  (editFormClose)="editFormClose(rowData)" fxFlex="none"
+                  (formClose)="editFormClose(rowData)" fxFlex="none"
                   [existingObjects]='dataObjects'
                   [vcenters]="vcenters" [vcenterOptions]='vcenterOptions'>
   </app-newnetwork>

@@ -95,11 +95,14 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   selectOptions: SelectItem[] = [
     {label: 'Select by page', value: 'page'},
     {label: 'Select all', value: 'all'},
-];
-
+  ];
 
   constructor(private _route: ActivatedRoute, protected controllerService: ControllerService, protected renderer: Renderer2) {
     super(controllerService);
+  }
+
+  debug(text: string = 'Pen table is rendering ......') {
+    console.warn(text);
   }
 
   ngOnInit() {

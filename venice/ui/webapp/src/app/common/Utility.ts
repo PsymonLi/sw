@@ -892,6 +892,12 @@ export class Utility {
     return this.TIMEOUT_REGEX.test(timeout);
   }
 
+  public static isCertificateValid(certificate: string): boolean {
+    return certificate &&
+        certificate.startsWith('-----BEGIN CERTIFICATE-----') &&
+        certificate.endsWith('-----END CERTIFICATE-----');
+  }
+
   public static getMousePosition(event) {
     let posx = 0;
     let posy = 0;

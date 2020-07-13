@@ -1,0 +1,33 @@
+<div fxLayout="row" fxLayoutAlign="start end">
+  <div [class]="getSpanClasses()">
+    <mat-radio-group *ngIf="layout === 'horizontal'"
+                     fxLayout="row" fxLayoutGap="20px" fxFlex="nogrow"
+                     fxLayoutAlign="start center" [class]="getComponentClass()"
+                     [(ngModel)]="innerValue" [ngModelOptions]="{standalone: true}"
+                     [id]="boxId" [matTooltip]="getTooltip()"
+                     [matTooltipClass]="currentTooltipClass"
+                     [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
+                     (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
+                     (ngModelChange)="onInnerCtrlChange()">
+      <mat-radio-button fxFlex="nogrow" color="primary" [disableRipple]="true"
+                        *ngFor="let option of options" [value]="option.value">
+        {{option.label}}
+      </mat-radio-button>
+    </mat-radio-group>
+    <mat-radio-group *ngIf="layout === 'vertical'"
+                     fxLayout="column" fxFlex="nogrow" fxLayoutAlign="start"
+                     [class]="getComponentClass()"
+                     [(ngModel)]="innerValue" [ngModelOptions]="{standalone: true}"
+                     [id]="boxId" [matTooltip]="getTooltip()"
+                     [matTooltipClass]="currentTooltipClass"
+                     [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
+                     (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
+                     (ngModelChange)="onInnerCtrlChange()">
+      <mat-radio-button fxFlex="nogrow" color="primary" [disableRipple]="true"
+                        *ngFor="let option of options" [value]="option.value">
+        {{option.label}}
+      </mat-radio-button>
+    </mat-radio-group>
+    <label *ngIf="label" class="psm-form-radio-buttons-label" [for]="boxId">{{ label }}</label>
+  </div>
+</div>

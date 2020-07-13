@@ -27,6 +27,13 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
     this.setupBulkEdit();
   }
 
+  getClassName(): string {
+    return this.constructor.name;
+  }
+
+  debug(text: string = ' is rendering ......') {
+    console.warn(this.getClassName() + text);
+  }
 
   /**
    * Call this from ngOnInit in derived class: tableviewedit or pentable

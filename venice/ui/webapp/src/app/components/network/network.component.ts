@@ -122,17 +122,13 @@ export class NetworkComponent extends DataComponent implements OnInit {
         if (response.connIsErrorState) {
           return;
         }
-        this.dataObjectsBackup = this.buildNetworkWorkloadsMap(response.data);
-        if (!this.networkTable.isShowRowExpand()) {
-          this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackup);
-        }
+        this.dataObjectsBackup = response.data;
         this.tableLoading = false;
-        this.cdr.detectChanges();
+        this.buildNetworkWorkloadsMap();
       },
       (error) => {
         this.tableLoading = false;
         this.controllerService.invokeRESTErrorToaster('Error', 'Failed to get networks');
-        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -168,11 +164,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
           return;
         }
         this.workloadList = response.data as WorkloadWorkload[];
-        this.dataObjectsBackup = this.buildNetworkWorkloadsMap(this.dataObjects);
-        if (!this.networkTable.isShowRowExpand()) {
-          this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackup);
-        }
-        this.cdr.detectChanges();
+        this.buildNetworkWorkloadsMap();
       }
     );
     this.subscriptions.push(workloadSubscription);
@@ -248,8 +240,10 @@ export class NetworkComponent extends DataComponent implements OnInit {
   editFormClose(rowData) {
     if (this.networkTable.showRowExpand) {
       this.networkTable.toggleRow(rowData);
+      if (this.dataObjectsBackup !== this.dataObjects) {
+        this.dataObjects = this.dataObjectsBackup;
+      }
     }
-    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackup);
   }
 
   expandRowRequest(event, rowData) {
@@ -275,16 +269,24 @@ export class NetworkComponent extends DataComponent implements OnInit {
     );
   }
 
-  buildNetworkWorkloadsMap(responseData: any = []) {
-    const networkWorkloadsTuple: NetworkWorkloadsTuple =
-      ObjectsRelationsUtility.buildNetworkWorkloadsMap(this.workloadList || [], responseData);
-    return responseData.map(network => {
-      const associatedWorkloads: WorkloadWorkload[] =
-      networkWorkloadsTuple[network.meta.name] || [];
-      const uiModel: NetworkUIModel = { associatedWorkloads };
-      network._ui = uiModel;
-      return network;
-    });
+  buildNetworkWorkloadsMap() {
+    if (!Utility.isValueOrArrayEmpty(this.dataObjectsBackup)) {
+      if (!Utility.isValueOrArrayEmpty(this.workloadList)) {
+        const networkWorkloadsTuple: NetworkWorkloadsTuple =
+          ObjectsRelationsUtility.buildNetworkWorkloadsMap(this.workloadList, this.dataObjectsBackup);
+        this.dataObjectsBackup.forEach(network => {
+          const associatedWorkloads: WorkloadWorkload[] =
+          networkWorkloadsTuple[network.meta.name] || [];
+          const uiModel: NetworkUIModel = { associatedWorkloads };
+          network._ui = uiModel;
+          return network;
+        });
+      }
+      if (!this.networkTable.isShowRowExpand()) {
+        this.dataObjects = this.dataObjectsBackup;
+        this.cdr.detectChanges();
+      }
+    }
   }
 
   deleteRecord(object: NetworkNetwork): Observable<{ body: INetworkNetwork | IApiStatus | Error; statusCode: number }> {
@@ -297,10 +299,6 @@ export class NetworkComponent extends DataComponent implements OnInit {
 
   generateDeleteSuccessMsg(object: INetworkNetwork): string {
     return 'Deleted network ' + object.meta.name;
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
   }
 
   getSelectedDataObjects(): any[] {

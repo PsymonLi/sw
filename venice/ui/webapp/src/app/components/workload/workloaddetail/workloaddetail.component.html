@@ -170,6 +170,9 @@
         <div>{{ ipAddress }}</div>
       </ng-container>
     </ng-container>
+    <ng-container *ngSwitchCase="'external-vlan'">
+      {{ rowData[col.field] || 0 }}
+    </ng-container>
     <ng-container *ngSwitchDefault>
       {{ rowData[col.field] }}
     </ng-container>

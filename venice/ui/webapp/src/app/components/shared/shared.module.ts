@@ -26,9 +26,13 @@ import { WorkloadsColumnComponent } from './table-columns/workloadscolumn.compon
 import { PsmChipsBoxComponent } from './form/inputcomponent/psmchipsbox/psmchipsbox.component';
 import { PsmNumberBoxComponent } from './form/inputcomponent/psmnumberbox/psmnumberbox.component';
 import { PsmTextBoxComponent } from './form/inputcomponent/psmtextbox/psmtextbox.component';
+import { PsmTextAreaComponent } from './form/inputcomponent/psmtextarea/psmtextarea.component';
 import { PsmSelectBoxComponent } from './form/inputcomponent/psmselectbox/psmselectbox.component';
 import { PsmMultiSelectComponent } from './form/inputcomponent/psmmultiselectbox/psmmultiselectbox.component';
 import { PsmCalendarComponent } from './form/inputcomponent/psmcalendar/psmcalendar.component';
+import { PsmPasswordComponent } from './form/inputcomponent/psmpassword/psmpassword.component';
+import { PsmToggleComponent } from './form/inputcomponent/psmtoggle/psmtoggle.component';
+import { PsmRadioButtonsComponent } from './form/inputcomponent/psmradiobuttons/psmradiobuttons.component';
 import { ListContainerComponent } from './form/layout/listcontainer.component';
 import { FieldContainerComponent } from './form/layout/fieldcontainer.component';
 import { InlineButtonsComponent } from './form/layout/inlinebuttons.component';
@@ -93,9 +97,13 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     PsmNumberBoxComponent,
     PsmChipsBoxComponent,
     PsmTextBoxComponent,
+    PsmTextAreaComponent,
     PsmSelectBoxComponent,
     PsmMultiSelectComponent,
+    PsmToggleComponent,
     PsmCalendarComponent,
+    PsmPasswordComponent,
+    PsmRadioButtonsComponent,
     ListContainerComponent,
     FieldContainerComponent,
     InlineButtonsComponent,
@@ -147,9 +155,13 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     PsmChipsBoxComponent,
     PsmNumberBoxComponent,
     PsmTextBoxComponent,
+    PsmTextAreaComponent,
     PsmSelectBoxComponent,
     PsmMultiSelectComponent,
+    PsmToggleComponent,
     PsmCalendarComponent,
+    PsmPasswordComponent,
+    PsmRadioButtonsComponent,
     ListContainerComponent,
     FieldContainerComponent,
     InlineButtonsComponent,

@@ -1,0 +1,10 @@
+<div [class]="getSpanClasses()">
+  <p-inputSwitch [id]="boxId" [class]="getComponentClass()"
+                 appendTo="body" [matTooltip]="getTooltip()"
+                 [matTooltipClass]="currentTooltipClass"
+                 [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
+                 (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
+                 (ngModelChange)="onInnerCtrlChange()">
+  </p-inputSwitch>
+  <label *ngIf="label" [for]="boxId">{{ label }}</label>
+</div>

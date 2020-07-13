@@ -1,6 +1,6 @@
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { TemplatePortalDirective } from '@angular/cdk/portal';
-import { AfterViewInit, Component, HostBinding, OnDestroy, OnInit, ViewChild, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { AfterViewInit, Component, HostBinding, OnDestroy, OnInit, ViewChild, ViewEncapsulation, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material';
 import { MatSidenav, MatSidenavContainer } from '@angular/material/sidenav';
 import { NavigationEnd, Router } from '@angular/router';

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Animations } from '@app/animations';
 import { CustomExportMap, TableCol } from '@app/components/shared/tableviewedit';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
@@ -39,6 +39,7 @@ interface VcenterUIModel {
   encapsulation: ViewEncapsulation.None,
   templateUrl: './vcenterIntegrations.component.html',
   styleUrls: ['./vcenterIntegrations.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [Animations]
 })
 
@@ -137,7 +138,6 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
   onSearchvCenterIntegrations(field = this.vCenterIntegrationTable.sortField, order = this.vCenterIntegrationTable.sortOrder) {
     const searchResults = this.onSearchDataObjects(field, order, 'Orchestrator', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackUp, this.vCenterIntegrationTable.advancedSearchComponent);
     if (searchResults && searchResults.length > 0) {
-      this.dataObjects = [];
       this.dataObjects = searchResults;
     }
   }
@@ -154,11 +154,14 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
         if (response.connIsErrorState) {
           return;
         }
-        this.dataObjects = response.data;
+        this.dataObjectsBackUp = response.data;
         this.buildVCenterDatacenters();
         this.buildVCenterWorkloadsMap();
         this.tableLoading = false;
-        this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
+        if (!this.vCenterIntegrationTable.isDisabled()) {
+          this.dataObjects = [...this.dataObjectsBackUp];
+        }
+        this.cdr.detectChanges();
       },
       this.controllerService.webSocketErrorHandler('Failed to get vCenters')
     );
@@ -172,7 +175,7 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
         cssClass: 'global-button-primary vcenter-integrations-button vcenter-integrations-button-ADD',
         text: 'ADD VCENTER',
         computeClass: () => !this.vCenterIntegrationTable.showRowExpand ? '' : 'global-button-disabled',
-        callback: () => { this.vCenterIntegrationTable.createNewObject(); }
+        callback: () => { this.vCenterIntegrationTable.createNewObject(); this.cdr.detectChanges(); }
       }];
     }
     this.controllerService.setToolbarData({
@@ -207,16 +210,18 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
         }
         this.workloadList = response.data as WorkloadWorkload[];
         this.buildVCenterWorkloadsMap();
+        if (!this.vCenterIntegrationTable.isDisabled()) {
+          this.dataObjects = [...this.dataObjectsBackUp];
+        }
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(workloadSubscription);
   }
 
   buildVCenterDatacenters() {
-    if (this.dataObjects && this.dataObjects.length > 0) {
-      const vcenterWorkloadsTuple: VcenterWorkloadsTuple =
-        ObjectsRelationsUtility.buildVcenterWorkloadsMap(this.workloadList, this.dataObjects);
-      this.dataObjects.forEach(vcenter => {
+    if (!Utility.isValueOrArrayEmpty(this.dataObjectsBackUp)) {
+      this.dataObjectsBackUp.forEach(vcenter => {
         let datacenters: string[] = vcenter.spec['manage-namespaces'];
         if (datacenters && datacenters.length === 1 && datacenters[0] === 'all_namespaces') {
           datacenters = ['All Datacenters'];
@@ -227,16 +232,19 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
         };
         vcenter._ui = uiModel;
       });
-      this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
+      if (!this.vCenterIntegrationTable.isShowRowExpand()) {
+        this.dataObjects = this.dataObjectsBackUp;
+        this.cdr.detectChanges();
+      }
     }
   }
 
   buildVCenterWorkloadsMap() {
-    if (this.dataObjects && this.dataObjects.length > 0 &&
-        this.workloadList && this.workloadList.length > 0) {
+    if (!Utility.isValueOrArrayEmpty(this.dataObjectsBackUp) &&
+        !Utility.isValueOrArrayEmpty(this.workloadList)) {
       const vcenterWorkloadsTuple: VcenterWorkloadsTuple =
         ObjectsRelationsUtility.buildVcenterWorkloadsMap(this.workloadList, this.dataObjects);
-      this.dataObjects = this.dataObjects.map(vcenter => {
+      this.dataObjectsBackUp = this.dataObjectsBackUp.map(vcenter => {
         const associatedWorkloads: WorkloadWorkload[] =
           vcenterWorkloadsTuple[vcenter.meta.name] || [];
         const uiModel: VcenterUIModel = {
@@ -246,7 +254,10 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
         vcenter._ui = uiModel;
         return vcenter;
       });
-      this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
+      if (!this.vCenterIntegrationTable.isShowRowExpand()) {
+        this.dataObjects = this.dataObjectsBackUp;
+        this.cdr.detectChanges();
+      }
     }
   }
 
@@ -277,6 +288,7 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
       advancedSearchOperator: SearchUtil.stringOperators
     });
   }
+
   searchWorkloads(requirement: FieldsRequirement, data = this.dataObjects): any[] {
     const outputs: any[] = [];
     for (let i = 0; data && i < data.length; i++) {
@@ -296,6 +308,7 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
     }
     return outputs;
   }
+
   onColumnSelectChange(event) {
     this.vCenterIntegrationTable.onColumnSelectChange(event);
   }
@@ -307,6 +320,9 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
   editFormClose(rowData) {
     if (this.vCenterIntegrationTable.showRowExpand) {
       this.vCenterIntegrationTable.toggleRow(rowData);
+      if (this.dataObjectsBackUp !== this.dataObjects) {
+        this.dataObjects = this.dataObjectsBackUp;
+      }
     }
   }
 

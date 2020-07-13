@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, OnChanges, SimpleChanges } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
 import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Animations } from '@app/animations';
@@ -20,12 +20,10 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
   animations: Animations,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNetwork> implements OnInit, AfterViewInit {
+export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNetwork> implements OnInit, OnChanges, AfterViewInit {
   @Input() vcenterOptions: SelectItem[] = [];
   @Input() vcenters: ReadonlyArray<OrchestrationOrchestrator> = [];
   @Input() existingObjects: INetworkNetwork[] = [];
-
-  @Output() editFormClose: EventEmitter<any> = new EventEmitter<any>();
 
   datacenterNames: SelectItem[] = [];
 
@@ -45,10 +43,6 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
     private cdr: ChangeDetectorRef
   ) {
     super(_controllerService, uiconfigsService, NetworkNetwork);
-  }
-
-  getClassName() {
-    return this.constructor.name;
   }
 
   // merge all datacenters of the same vcenter together
@@ -109,6 +103,12 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
     const collectors = this.newObject.$formGroup.get(['spec', 'orchestrators']) as FormArray;
     if (collectors.length === 0) {
       this.addOrchestrator();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes.existingObjects) {
+      this.cdr.markForCheck();
     }
   }
 
@@ -220,38 +220,6 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
     return currValue;
   }
 
-  setToolbar() {
-    if (!this.isInline && this.uiconfigsService.isAuthorized(UIRolePermissions.networknetwork_create)) {
-      const currToolbar = this.controllerService.getToolbarData();
-      currToolbar.buttons = [
-        {
-          cssClass: 'global-button-primary global-button-padding',
-          text: 'CREATE NETWORK',
-          callback: () => { this.saveObject(); },
-          computeClass: () => this.computeFormSubmitButtonClass(),
-          genTooltip: () => this.getSubmitButtonToolTip(),
-        },
-        {
-          cssClass: 'global-button-neutral global-button-padding',
-          text: 'CANCEL',
-          callback: () => { this.cancelObject(); }
-        },
-      ];
-
-      this._controllerService.setToolbarData(currToolbar);
-    }
-  }
-
-  editSaveObject() {
-    this.saveObject();
-    this.editFormClose.emit();
-  }
-
-  editCancelObject() {
-    this.cancelObject();
-    this.editFormClose.emit();
-  }
-
   onVcenterChange(orchestrator: FormGroup) {
     orchestrator.get(['namespace']).setValue(null);
     if (orchestrator.get(['orchestrator-name']).value) {
@@ -313,6 +281,11 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
       return true;
     }
     return false;
+  }
+
+  setToolbar() {
+    this.setCreationButtonsToolbar('CREATE NETWORK',
+        UIRolePermissions.networknetwork_create);
   }
 
   createObject(object: INetworkNetwork) {

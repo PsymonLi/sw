@@ -1,0 +1,37 @@
+@import 'src/global-mixins';
+
+.psm-form {
+  .psm-form-radio-buttons-container {
+    width: 100%;
+    margin-left: 10px;
+
+    .psm-form-radio-buttons {
+      width: 100%;
+
+      .mat-radio-button {
+        padding-right: 5px;
+
+        .mat-radio-label-content {
+          @include primary-font(14px);
+          font-weight: 400;
+          color: #676763;
+          padding-top: 2px;
+          text-transform: capitalize;
+        }
+      }
+    }
+
+    .psm-form-radio-buttons-smallsize {
+      width: 100%;
+      @include global-mat-radio(12px);
+    }
+
+    .psm-form-radio-buttons-label {
+      top: 0%;
+      margin-top: -1em;
+      left: .25em;
+      font-size: 12px;
+    }
+  }
+
+}

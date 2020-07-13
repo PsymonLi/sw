@@ -16,7 +16,7 @@ export class InlineButtonsComponent {
 
   save() {
     if (this.form) {
-      this.form.editSaveObject();
+      this.form.saveObject();
     } else {
       this.saveFunc.emit();
     }
@@ -24,7 +24,7 @@ export class InlineButtonsComponent {
 
   cancel() {
     if (this.form) {
-      this.form.editCancelObject();
+      this.form.cancelObject();
     } else {
       this.cancelFunc.emit();
     }

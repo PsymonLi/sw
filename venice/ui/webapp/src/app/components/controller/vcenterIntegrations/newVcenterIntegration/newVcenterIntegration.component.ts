@@ -1,11 +1,10 @@
-import { AfterViewInit, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, OnDestroy, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, OnDestroy, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, SimpleChanges, OnChanges } from '@angular/core';
 import { Animations } from '@app/animations';
 import { ControllerService } from '@app/services/controller.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { OrchestrationService } from '@app/services/generated/orchestration.service';
 import { Utility } from '@app/common/Utility';
-import { CustomFormControl } from '@sdk/v1/utils/validators';
-import { FormGroup, ValidatorFn, AbstractControl, FormControl } from '@angular/forms';
+import { ValidatorFn, AbstractControl, FormControl, ValidationErrors } from '@angular/forms';
 import { IApiStatus, OrchestrationOrchestrator, IOrchestrationOrchestrator,
   IMonitoringExternalCred, MonitoringExternalCred_auth_type } from '@sdk/v1/models/generated/orchestration';
 import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
@@ -18,16 +17,16 @@ import { SelectItem } from 'primeng/api';
   templateUrl: './newVcenterIntegration.component.html',
   styleUrls: ['./newVcenterIntegration.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationOrchestrator, OrchestrationOrchestrator> implements OnInit, AfterViewInit, OnDestroy {
+export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationOrchestrator, OrchestrationOrchestrator> implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   @Input() isInline: boolean = false;
   @Input() existingObjects: IOrchestrationOrchestrator[] = [];
 
   DCNAMES_TOOLTIP: string = 'Type in datacenter name and hit enter or space key to add more.';
   ALL_DATACENTERS: string = 'all_namespaces';
+  PASSWORD_MASK: string = '**********************************************************';
 
   credentialTypes = Utility.convertEnumToSelectItem(MonitoringExternalCred_auth_type);
   currentObjCredType: string = 'none';
@@ -37,17 +36,19 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
     {label: 'Manage All Datacenters', value: this.ALL_DATACENTERS},
     {label: 'Manage Individual Datacenters', value: 'each'}
   ];
-  pickedOption: String = this.ALL_DATACENTERS;
+  datacenterCtrl: FormControl = new FormControl();
 
   constructor(protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
-    protected orchestrationService: OrchestrationService
+    protected orchestrationService: OrchestrationService,
+    private cdr: ChangeDetectorRef
   ) {
     super(_controllerService, uiconfigsService, OrchestrationOrchestrator);
   }
 
   postNgInit() {
     // for release B, vs-1609, set password as the only credetial method
+    this.datacenterCtrl.setValue(this.ALL_DATACENTERS);
     this.newObject.$formGroup.get(['spec', 'credentials', 'auth-type']).setValue(
       MonitoringExternalCred_auth_type['username-password']
     );
@@ -69,6 +70,12 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
     }
   }
 
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes.existingObjects) {
+      this.cdr.markForCheck();
+    }
+  }
+
   setValidators(newObject: OrchestrationOrchestrator) {
     if (!this.isInline) {
       newObject.$formGroup.get(['meta', 'name']).setValidators([
@@ -79,6 +86,8 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
       // disable name field
       this.newObject.$formGroup.get(['meta', 'name']).disable();
     }
+    this.newObject.$formGroup.get(['spec', 'credentials', 'ca-data'])
+        .setValidators([this.isCertValid()]);
   }
 
   processVcenterIntegration() {
@@ -87,7 +96,7 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
       if (dataCenters.length === 1 && dataCenters[0] === this.ALL_DATACENTERS) {
         this.newObject.$formGroup.get(['spec', 'manage-namespaces']).setValue(null);
       } else {
-        this.pickedOption = 'each';
+        this.datacenterCtrl.setValue('each');
       }
     }
     this.currentObjCredType =
@@ -119,7 +128,7 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
       this.submitButtonTooltip = 'Error: URI is empty.';
       return false;
     }
-    if (this.pickedOption !== this.ALL_DATACENTERS && this.isFieldEmpty(this.newObject.$formGroup.get(['spec', 'manage-namespaces']))) {
+    if (this.datacenterCtrl.value !== this.ALL_DATACENTERS && this.isFieldEmpty(this.newObject.$formGroup.get(['spec', 'manage-namespaces']))) {
       this.submitButtonTooltip = 'Error: Datacenter names are empty.';
       return false;
     }
@@ -233,59 +242,9 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
     return Utility.isModelNameUniqueValidator(existingObjects, 'newVcenterIntegration-name');
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
   setToolbar(): void {
-    if (!this.isInline && this.uiconfigsService.isAuthorized(UIRolePermissions.orchestrationorchestrator_create)) {
-      // If it is not inline, we change the toolbar buttons, and save the old one
-      // so that we can set it back when we are done
-      const currToolbar = this._controllerService.getToolbarData();
-      this.oldButtons = currToolbar.buttons;
-      currToolbar.buttons = [
-        {
-          cssClass: 'global-button-primary newVcenter-button newVcenter-save',
-          text: 'CREATE VCENTER',
-          genTooltip: () => this.getSubmitButtonToolTip(),
-          callback: () => { this.saveObject(); },
-          computeClass: () => this.computeFormSubmitButtonClass()
-        },
-        {
-          cssClass: 'global-button-neutral newVcenter-button newVcenter-cancel',
-          text: 'CANCEL',
-          callback: () => {
-            this.cancelObject();
-          }
-        },
-      ];
-
-      this._controllerService.setToolbarData(currToolbar);
-    }
-  }
-
-  /**
-   * override super api
-   * We make up the JSON object
-   */
-  createObject(newObject: IOrchestrationOrchestrator): Observable<{ body: IOrchestrationOrchestrator | IApiStatus | Error; statusCode: number; }> {
-    return this.orchestrationService.AddOrchestrator(newObject);
-  }
-
-  /**
-   * override super api
-   * We make up the JSON object
-   */
-  updateObject(newObject: IOrchestrationOrchestrator, oldObject: IOrchestrationOrchestrator): Observable<{ body: IOrchestrationOrchestrator | IApiStatus | Error; statusCode: number; }> {
-    return this.orchestrationService.UpdateOrchestrator(oldObject.meta.name, newObject, null, oldObject);
-  }
-
-  generateCreateSuccessMsg(object: IOrchestrationOrchestrator): string {
-    return 'Created vCenter ' + object.meta.name;
-  }
-
-  generateUpdateSuccessMsg(object: IOrchestrationOrchestrator): string {
-    return 'Updated vCenter ' + object.meta.name;
+    this.setCreationButtonsToolbar('CREATE VCENTER',
+        UIRolePermissions.orchestrationorchestrator_create);
   }
 
   getObjectValues(): IOrchestrationOrchestrator {
@@ -293,7 +252,7 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
     if (currValue.spec.credentials['disable-server-authentication'] == null) {
       currValue.spec.credentials['disable-server-authentication'] = true;
     }
-    if (this.pickedOption === this.ALL_DATACENTERS) {
+    if (this.datacenterCtrl.value === this.ALL_DATACENTERS) {
       currValue.spec['manage-namespaces'] = [this.ALL_DATACENTERS];
     }
     Utility.removeObjectProperties(currValue, 'status');
@@ -414,12 +373,52 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
     return true;
   }
 
+  showCaData(): boolean {
+    const formGroup = this.newObject.$formGroup.get(['spec', 'credentials']);
+    return !formGroup.get('disable-server-authentication').value;
+  }
+
   onToggleChange() {
     const formGroup = this.newObject.$formGroup.get(['spec', 'credentials']);
     if (formGroup.get('disable-server-authentication').value) {
       formGroup.get('ca-data').disable();
+      formGroup.get('ca-data').setValue(null);
     } else {
       formGroup.get('ca-data').enable();
     }
+  }
+
+  isCertValid(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const val: string = control.value;
+      if (!val) {
+        return null;
+      }
+      if (!Utility.isCertificateValid(val)) {
+        return {
+          objectName: {
+            required: false,
+            message: 'Invalid Certificate'
+          }
+        };
+      }
+      return null;
+    };
+  }
+
+  createObject(newObject: IOrchestrationOrchestrator): Observable<{ body: IOrchestrationOrchestrator | IApiStatus | Error; statusCode: number; }> {
+    return this.orchestrationService.AddOrchestrator(newObject);
+  }
+
+  updateObject(newObject: IOrchestrationOrchestrator, oldObject: IOrchestrationOrchestrator): Observable<{ body: IOrchestrationOrchestrator | IApiStatus | Error; statusCode: number; }> {
+    return this.orchestrationService.UpdateOrchestrator(oldObject.meta.name, newObject, null, oldObject);
+  }
+
+  generateCreateSuccessMsg(object: IOrchestrationOrchestrator): string {
+    return 'Created vCenter ' + object.meta.name;
+  }
+
+  generateUpdateSuccessMsg(object: IOrchestrationOrchestrator): string {
+    return 'Updated vCenter ' + object.meta.name;
   }
 }

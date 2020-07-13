@@ -1,0 +1,14 @@
+<div fxLayout="row" fxLayoutAlign="start start">
+  <div [class]="getIconSpanClasses()">*</div>
+  <div [class]="getSpanClasses()">
+    <textarea [id]="boxId" [class]="getComponentClass()" appendTo="body"
+              pellcheck="false" type="text" pInputTextarea autoResize="autoResize"
+              [disabled]="disabled" [matTooltip]="getTooltip()"
+              [matTooltipClass]="currentTooltipClass"
+              [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
+              (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
+              (ngModelChange)="onInnerCtrlChange()">
+    </textarea>
+    <label *ngIf="label" [for]="boxId">{{ label }}</label>
+  </div>
+</div>

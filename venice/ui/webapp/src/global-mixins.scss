@@ -487,6 +487,19 @@ $backgroundGradientYellow: linear-gradient(to left, rgba(255, 255, 255, 0), #fff
       visibility: visible;
     }
   }
+
+  .psm-form-content {
+    background: white;
+    margin-top: 20px;
+    @include primary-font();
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}
+
+.psm-form-creation-button {
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .ui-flex {

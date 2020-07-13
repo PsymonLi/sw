@@ -1,9 +1,9 @@
 <div fxFlex="auto" fxLayout="column" class="psm-form new-network-container">
   <app-inlinebuttons class="new-network" *ngIf="isInline" [form]="this">
   </app-inlinebuttons>
-  <div fxFlex="noshrink" fxLayout="column" fxLayoutAlign="start center"
+  <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start"
        [class]="isInline? 'new-network-editform-inline' : ''">
-    <div fxFlex="none" fxLayout="row" fxLayoutAlign="center" class="new-network-content">
+    <div fxFlex="640px" fxLayout="row" fxLayoutAlign="center" class="psm-form-content">
       <ng-container *ngTemplateOutlet="singleMode"></ng-container>
     </div>
   </div>
@@ -36,7 +36,7 @@
 
 <ng-template #vcenterRowTemplate let-orchestrator="item" let-index="index">
   <div fxFlex="585px" fxLayout="row" [formGroup]="orchestrator" fxLayoutAlign="start start">
-    <app-psmselectbox fxFlex="285px" label="vCenter Name"
+    <app-psmselectbox fxFlex="285px" label="vCenter Name" [showRequired]="false"
                       [addEmptyOption]="true" emptyOptionLabel="Select a vCenter"
                       (change)="onVcenterChange(orchestrator)"
                       [options]="vcenterOptions" formControlName="orchestrator-name">
