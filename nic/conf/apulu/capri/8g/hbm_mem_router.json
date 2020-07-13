@@ -463,6 +463,14 @@
             "cache": "p4plus-all"
         },
         {
+            "name": "rule_stats_v4",
+            "kind": "opertbl",
+            "_comment": "# of policies * 1K rules per policy * 64b per counter",
+            "_comment": "385 * 1K * 8B",
+            "size": "3080K",
+            "cache": "p4plus-all"
+        },
+        {
             "name": "sacl_v6",
             "kind": "cfgtbl",
             "_comment": "LPM tables:87360 + 87360 + 17472 + 17472 + 17472 + 2112 = 229248",

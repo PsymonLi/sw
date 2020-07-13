@@ -468,6 +468,14 @@
             "cache": "p4plus-all"
         },
         {
+            "name": "rule_stats_v4",
+            "kind": "opertbl",
+            "_comment": "# of policies * 1K rules per policy * 64b per counter",
+            "_comment": "33 * 1K * 8B",
+            "size": "264K",
+            "cache": "p4plus-all"
+        },
+        {
             "name": "sacl_v6",
             "kind": "cfgtbl",
             "_comment": "LPM tables:87360 + 87360 + 17472 + 17472 + 17472 + 2112 = 229248",
@@ -478,8 +486,7 @@
             "block_count": "33",
             "block_size": "1B",
             "max_elements": "1K",
-            "size": "1K",
-            "cache": "p4plus-all"
+            "size": "1K"
         },
         {
             "name": "vnic_info_rxdma",
