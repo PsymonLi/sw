@@ -61,6 +61,8 @@ class SubnetObject(base.ConfigObjectBase):
             self.IPPrefix[1] = ipaddress.ip_network(spec.v4prefix.replace('\\', '/'))
         else:
             self.IPPrefix[1] = parent.AllocIPv4SubnetPrefix(poolid)
+        self.ToS = getattr(spec, 'tos', 0)
+
         self.VirtualRouterIPAddr = {}
         self.VirtualRouterMacAddr = None
         self.V4RouteTableId = route.client.GetRouteV4TableId(node, parent.VPCId)
@@ -283,6 +285,7 @@ class SubnetObject(base.ConfigObjectBase):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
         spec.VPCId = self.VPC.GetKey()
+        spec.ToS = self.ToS
         utils.GetRpcIPv4Prefix(self.IPPrefix[1], spec.V4Prefix)
         if self.IpV6Valid:
             utils.GetRpcIPv6Prefix(self.IPPrefix[0], spec.V6Prefix)

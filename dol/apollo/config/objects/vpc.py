@@ -102,7 +102,7 @@ class VpcObject(base.ConfigObjectBase):
             self.Vnid = next(ResmgrClient[node].VxlanIdAllocator)
 
         self.VirtualRouterMACAddr = ResmgrClient[node].VirtualRouterMacAllocator.get()
-        self.Tos = 0 # to start with
+        self.ToS = getattr(spec, 'tos', 0)
         self.Mutable = utils.IsUpdateSupported()
         self.Status = VpcStatus()
         self.UpdateImplicit()
@@ -260,10 +260,10 @@ class VpcObject(base.ConfigObjectBase):
 
     def AutoUpdate(self):
         self.VirtualRouterMACAddr = ResmgrClient[self.Node].VirtualRouterMacAllocator.get()
-        self.Tos += 1
+        self.ToS += 1
 
     def RollbackAttributes(self):
-        attrlist = ["VirtualRouterMACAddr", "Tos", "Vnid"]
+        attrlist = ["VirtualRouterMACAddr", "ToS", "Vnid"]
         self.RollbackMany(attrlist)
 
     def PopulateKey(self, grpcmsg):
@@ -277,7 +277,7 @@ class VpcObject(base.ConfigObjectBase):
         spec.V4RouteTableId = utils.PdsUuid.GetUUIDfromId(self.V4RouteTableId, api.ObjectTypes.ROUTE)
         spec.V6RouteTableId = utils.PdsUuid.GetUUIDfromId(self.V6RouteTableId, api.ObjectTypes.ROUTE)
         spec.VirtualRouterMac = self.VirtualRouterMACAddr.getnum()
-        spec.ToS = self.Tos
+        spec.ToS = self.ToS
         utils.PopulateRpcEncap(self.FabricEncapType,
                                self.Vnid, spec.FabricEncap)
         if self.Nat46_pfx is not None:

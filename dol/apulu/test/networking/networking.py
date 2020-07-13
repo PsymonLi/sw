@@ -25,7 +25,6 @@ def TestCaseSetup(tc):
     tc.AddIgnorePacketField('UDP', 'chksum')
     tc.AddIgnorePacketField('IP', 'chksum') #Needed to pass NAT testcase
     # TODO: Ignore tos until all testspecs are updated to take tos from VPC
-    tc.AddIgnorePacketField('IP', 'tos')
     # vpp writes ip->id field in case of vrip packets
     # ignore ip->id field here
     ts_name = 'local2vrip.testspec'

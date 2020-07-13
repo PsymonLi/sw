@@ -57,6 +57,7 @@ class TunnelObject(base.ConfigObjectBase):
         self.NexthopGroupId = 0
         self.NEXTHOPGROUP = None
         self.validateFound = False
+        self.ToS = getattr(spec, 'tos', 0)
 
         if (hasattr(spec, 'nat')):
             self.Nat = spec.nat
@@ -191,6 +192,7 @@ class TunnelObject(base.ConfigObjectBase):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
         spec.VPCId = utils.PdsUuid.GetUUIDfromId(0, ObjectTypes.VPC) # TODO: Create Underlay VPC
+        spec.ToS = self.ToS
         utils.PopulateRpcEncap(self.EncapType, self.EncapValue, spec.Encap)
         spec.Type = self.Type
         utils.GetRpcIPAddr(self.LocalIPAddr, spec.LocalIP)

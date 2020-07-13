@@ -39,7 +39,7 @@ packets:
                 src     : ref://testcase/config/devicecfg/IP
                 dst     : callback://networking/packets/GetTunnelIPFromMapping
                 ttl     : 64
-                tos     : 0
+                tos     : ref://testcase/config/localmapping/VNIC/SUBNET/ToS
                 id      : 0
             vxlan:
                 vni     : ref://testcase/config/remotemapping/SUBNET/Vnid
