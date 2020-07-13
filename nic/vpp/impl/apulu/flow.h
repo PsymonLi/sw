@@ -1150,7 +1150,8 @@ vnic_check:
     }
 
     vlib_buffer_advance(p, pds_flow_classify_get_advance_offset(p, flag_orig));
-    if (PREDICT_FALSE(pds_vnic_active_sessions_increment(vnic) == false)) {
+    if (PREDICT_FALSE(!pds_is_flow_session_present(p) &&
+                      (pds_vnic_active_sessions_increment(vnic) == false))) {
         *next = FLOW_CLASSIFY_NEXT_DROP;
         counter[FLOW_CLASSIFY_COUNTER_MAX_EXCEEDED] += 1;
         goto end;

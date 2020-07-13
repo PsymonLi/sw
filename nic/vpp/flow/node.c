@@ -1224,12 +1224,12 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
             goto err;
         }
 
-        ret = ftlv4_cache_program_index(table, i, &i_handle, 
+        ret = ftlv4_cache_program_index(table, i, &i_handle,
                                         thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             goto err_iflow;
         }
-        ret = ftlv4_cache_program_index(table, i+1, &r_handle, 
+        ret = ftlv4_cache_program_index(table, i+1, &r_handle,
                                         thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             if (pds_is_flow_session_present(p0)) {
@@ -1244,7 +1244,7 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
         }
         pds_session_set_data(session_id, i_handle,
                              r_handle,
-                             pds_flow_trans_proto(ftlv4_cache_get_proto(i, 
+                             pds_flow_trans_proto(ftlv4_cache_get_proto(i,
                                                                 thread_index)),
                              vnet_buffer2(p0)->pds_nat_data.vnic_id,
                              true, pds_is_rx_pkt(p0),
@@ -1270,6 +1270,8 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
                 // flow update failed - so clear the flow
                 pds_flow_delete_session(session_id);
             } else {
+                // Decrement the active session count and release the session ID
+                pds_vnic_active_sessions_decrement(vnet_buffer2(p0)->pds_nat_data.vnic_id);
                 pds_session_id_dealloc(session_id);
             }
         }
