@@ -38,7 +38,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  e2e-esx-vmotion-ext:
-   commands: ["sh", "-c", "make esx-precheckin && ./run_iota_vcenter.sh --testsuite hostpin_vm_vmotion --regression --skip-sanity"]
+   commands: ["sh", "-c", "make esx-precheckin && VCENTER_VERSION=7.0 ./run_iota_vcenter.sh --testsuite hostpin_vm_vmotion --regression --skip-sanity"]
    # commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:srivatsa@pensando.io"]
    area:

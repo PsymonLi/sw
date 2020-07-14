@@ -166,8 +166,10 @@ func (n *VcenterNode) runSerialTrigger(ctx context.Context, req *iota.TriggerMsg
 		if triggerResp, err := node.TriggerWithContext(ctx, triggerInfo); err != nil ||
 			triggerResp.ApiResponse.ApiStatus != iota.APIResponseType_API_STATUS_OK {
 
-			req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
-			req.ApiResponse.ErrorMsg = fmt.Sprintf("TOPO SVC | Trigger | RunSerialTrigger Call Failed. %v %v", err, triggerResp.ApiResponse.ErrorMsg)
+			req.ApiResponse = &iota.IotaAPIResponse{
+				ApiStatus: iota.APIResponseType_API_SERVER_ERROR,
+				ErrorMsg:  fmt.Sprintf("TOPO SVC | Trigger | RunSerialTrigger Call Failed. %v %v", err, triggerResp.ApiResponse.ErrorMsg),
+			}
 			req.Commands[cidx] = triggerResp.GetCommands()[0]
 			req.Commands[cidx].Stderr = triggerResp.ApiResponse.ErrorMsg
 			req.Commands[cidx].ExitCode = 127

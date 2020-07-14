@@ -38,7 +38,7 @@ e2e-targets:
 
 
   e2e-esx-vmotion:
-   commands: ["sh", "-c", "make esx-precheckin && ./run_iota_vcenter.sh --testsuite hostpin_vm_dvs --precheckin --skip-sanity"]
+   commands: ["sh", "-c", "make esx-precheckin && VCENTER_VERSION=6.7 ./run_iota_vcenter.sh --testsuite hostpin_vm_dvs --precheckin --skip-sanity"]
    # commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ganesh@pensando.io"]
    area:
