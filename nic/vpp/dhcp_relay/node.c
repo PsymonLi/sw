@@ -568,6 +568,7 @@ pds_dhcp_relay_to_server_x1 (vlib_main_t *vm,
         *next0 = PDS_DHCP_RELAY_TO_SVR_NEXT_DROP;
         goto trace;
     }
+    vr_ip = clib_host_to_net_u32(vr_ip);
     policy = pds_dhcp_relay_policy_find(vnic_info->subnet_hw_id);
     if (PREDICT_FALSE (NULL == policy)) {
         counter[DHCP_RELAY_TO_SVR_COUNTER_NO_DHCP]++;
@@ -600,7 +601,7 @@ pds_dhcp_relay_to_server_x1 (vlib_main_t *vm,
         o = (dhcp_option_t *) (o->data + o->length);
     }
     if (!opt_54_present) {
-        u32 dst_ip = clib_host_to_net_u32(ip0->dst_address.as_u32);
+        u32 dst_ip = ip0->dst_address.as_u32;
         if ((dst_ip == 0xffffffff) || (dst_ip == vr_ip)){
             is_broadcast = 1;
         }
