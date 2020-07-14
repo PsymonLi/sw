@@ -470,15 +470,8 @@
             "block_count": "385",
             "size": "768075K",
             "max_elements": "1K",
-            "cache": "p4plus-all"
-        },
-        {
-            "name": "rule_stats_v4",
-            "kind": "opertbl",
-            "_comment": "# of policies * 1K rules per policy * 64b per counter",
-            "_comment": "385 * 1K * 8B",
-            "size": "3080K",
-            "cache": "p4plus-all"
+            "cache": "p4plus-rxdma",
+            "cache1": "p4plus-txdma"
         },
         {
             "name": "sacl_v6",
@@ -492,7 +485,16 @@
             "block_count": "12289",
             "size": "1K",
             "max_elements": "1K",
-            "cache": "p4plus-rxdma"
+            "cache": "p4plus-rxdma",
+            "cache1": "p4plus-txdma"
+        },
+        {
+            "name": "rule_stats_v4",
+            "kind": "opertbl",
+            "_comment": "# of policies * 1K rules per policy * 64b per counter",
+            "_comment": "385 * 1K * 8B",
+            "size": "3080K",
+            "cache": "p4plus-txdma"
         },
         {
             "name": "vnic_info_rxdma",
