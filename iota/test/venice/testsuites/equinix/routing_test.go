@@ -32,6 +32,10 @@ var _ = Describe("Routing Config Tests", func() {
 		}).Should(Succeed())
 	})
 	AfterEach(func() {
+		// verify cluster is in good health
+		Eventually(func() error {
+			return ts.model.VerifyClusterStatus()
+		}).Should(Succeed())
 	})
 
 	Context("Routing tests", func() {

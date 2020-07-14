@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pensando/sw/api"
@@ -23,6 +24,7 @@ import (
 	"github.com/pensando/sw/iota/test/venice/iotakit/testbed"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/shardworkers"
 )
 
 //Orchestrator Return orchestrator
@@ -38,7 +40,8 @@ const (
 // SysModel represents a objects.of the system under test
 type SysModel struct {
 	baseModel.SysModel
-	sgpolicies map[string]*objects.NetworkSecurityPolicy // security policies
+	sgpolicies        map[string]*objects.NetworkSecurityPolicy  // security policies
+	defaultSgPolicies []*objects.NetworkSecurityPolicyCollection // security policies
 }
 
 //Init init the testbed
@@ -274,6 +277,22 @@ func (sm *SysModel) SetupWorkloadsOnHost(h *objects.Host) (*objects.WorkloadColl
 
 }
 
+type workObjInterface interface {
+	GetKey() string
+}
+type cfgWorkCtx struct {
+	cfgObj workObjInterface
+	obj    interface{}
+}
+
+func (w cfgWorkCtx) GetKey() string {
+	return w.cfgObj.GetKey()
+}
+
+func (w *cfgWorkCtx) WorkFunc(ctx context.Context) error {
+	return nil
+}
+
 //attachSimInterfacesToNetworks
 func (sm *SysModel) attachSimInterfacesToNetworks(scale bool) error {
 	hosts, err := sm.ListFakeHosts()
@@ -313,30 +332,53 @@ func (sm *SysModel) attachSimInterfacesToNetworks(scale bool) error {
 		}
 
 		tenIdx := 0
+		var runErr error
+		var nwLock sync.Mutex
 		for _, h := range hosts {
-			//For now cloud has just 1 DSC
-			filter := fmt.Sprintf("spec.type=host-pf,status.dsc=%v", h.Naples.Instances[0].Dsc.Status.PrimaryMAC)
-			hostNwIntfs, err := sm.ObjClient().ListNetowrkInterfacesByFilter(filter)
-			if err != nil {
-				return err
-			}
 
-			ten := tenants[tenIdx%len(tenants)]
-			//Lets attach network host intefaces
-			for _, nwIntf := range hostNwIntfs {
-				iter := tenNetwowks[ten.Name]
-				index := iter.index % len(iter.nws)
-				nw := iter.nws[index]
-				nwIntf.Spec.AttachNetwork = nw.Name
-				nwIntf.Spec.AttachTenant = nw.Tenant
-				err := sm.ObjClient().UpdateNetworkInterface(nwIntf)
+			updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+				workCtx := userCtx.(*cfgWorkCtx)
+
+				h := workCtx.cfgObj.(*cluster.Host)
+				ten := workCtx.obj.(*cluster.Tenant)
+				//Lets attach network host intefaces
+				idClient := sm.ObjClient().GetRestClientByID(id)
+
+				//For now cloud has just 1 DSC
+				filter := fmt.Sprintf("spec.type=host-pf,status.dsc=%v", h.Spec.DSCs[0].MACAddress)
+				hostNwIntfs, err := idClient.ListNetowrkInterfacesByFilter(filter)
 				if err != nil {
-					log.Errorf("Error attaching network to interface")
+					runErr = err
 					return err
 				}
-				iter.index++
+				nwLock.Lock()
+				for _, nwIntf := range hostNwIntfs {
+					iter := tenNetwowks[ten.Name]
+					index := iter.index % len(iter.nws)
+					nw := iter.nws[index]
+					iter.index++
+					nwIntf.Spec.AttachNetwork = nw.Name
+					nwIntf.Spec.AttachTenant = nw.Tenant
+				}
+				nwLock.Unlock()
+				for _, nwIntf := range hostNwIntfs {
+					err := idClient.UpdateNetworkInterface(nwIntf)
+					if err != nil {
+						log.Errorf("Error attaching network to interface")
+						runErr = err
+						return err
+					}
+				}
+				return nil
 			}
+			ten := tenants[tenIdx%len(tenants)]
+			sm.ObjClient().RunFunctionWithID(&cfgWorkCtx{cfgObj: h.VeniceHost, obj: ten}, updateWork)
 			tenIdx++
+		}
+
+		sm.ObjClient().WaitForIdle()
+		if runErr != nil {
+			return runErr
 		}
 
 	} else {
@@ -469,6 +511,42 @@ func (sm *SysModel) modifyConfig() error {
 	for _, ipam := range cfgObjects.Ipams {
 		ipam.Spec.DHCPRelay.Servers[0].IPAddress = server
 		log.Infof("IPAM %v's DHCPServer: %v\n", ipam.Name, ipam.Spec.DHCPRelay.Servers[0].IPAddress)
+	}
+	sm.defaultSgPolicies = nil
+	//Override the default policy
+	for _, ten := range cfgObjects.Tenants {
+		if ten.Name == globals.DefaultTenant {
+			continue
+		}
+		polC := objects.NewNetworkSecurityPolicyCollection(nil, sm.ObjClient(), sm.Tb)
+		polC.Policies = nil
+		for _, pol := range cfgObjects.SgPolicies {
+			if pol.Tenant == "" || pol.Tenant == globals.DefaultTenant {
+				//Add Default allow all
+				pol.Spec.Rules = []security.SGRule{security.SGRule{
+					Action: "PERMIT",
+					ProtoPorts: []security.ProtoPort{security.ProtoPort{
+						Protocol: "any",
+					}},
+					ToIPAddresses:   []string{"any"},
+					FromIPAddresses: []string{"any"},
+				}}
+				pol.Tenant = ten.Name
+				log.Infof("added default permit to [%v.%v]", pol.Tenant, pol.Name)
+
+				polC.Policies = append(polC.Policies, &objects.NetworkSecurityPolicy{VenicePolicy: pol})
+				for _, network := range cfgObjects.Networks {
+					if network.Tenant == ten.Name {
+						log.Infof("adding Policy [%v] to [%v.%v]", pol.Name, network.Tenant, network.Name)
+						network.Spec.IngressSecurityPolicy = append(network.Spec.IngressSecurityPolicy, pol.Name)
+						network.Spec.EgressSecurityPolicy = append(network.Spec.EgressSecurityPolicy, pol.Name)
+					}
+				}
+				//1 policy per tenant
+				break
+			}
+		}
+		sm.defaultSgPolicies = append(sm.defaultSgPolicies, polC)
 	}
 
 	return nil

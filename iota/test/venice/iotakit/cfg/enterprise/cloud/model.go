@@ -85,8 +85,9 @@ func (cl *CloudCfg) PopulateConfig(params *base.ConfigParams) error {
 		cl.Cfg.NumOfVRFsPerTenant = 1
 		cl.Cfg.NumOfSubnetsPerVpc = 6
 		cl.Cfg.NumOfIPAMPsPerTenant = 1
-		cl.Cfg.NumUnderlayRoutingConfigs = 1 // Same as other AS number
-		cl.Cfg.NumUnderlayNeighbors = 1      //TOR AS nubr
+		cl.Cfg.NumUnderlayRoutingConfigs = 1                // Same as other AS number
+		cl.Cfg.NumUnderlayNeighbors = 1                     //TOR AS nubr
+		cl.Cfg.NetworkSecurityPolicyParams.NumPolicies = 50 //1 policy per tenant
 
 	} else {
 		cl.Cfg.NumOfTenants = 1

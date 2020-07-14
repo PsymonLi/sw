@@ -2,11 +2,12 @@ package vmware
 
 import (
 	"fmt"
-	"time"
 
+	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pkg/errors"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
+	"github.com/vmware/govmomi/vim25/progress"
 	"github.com/vmware/govmomi/vim25/types"
 )
 
@@ -73,6 +74,14 @@ func (vm *VM) PowerOff() error {
 	return nil
 }
 
+type vmotionSinker struct {
+	reportChan chan progress.Report
+}
+
+func (vs *vmotionSinker) Sink() chan<- progress.Report {
+	return vs.reportChan
+}
+
 // Migrate VM to destination host
 func (vm *VM) Migrate(host *Host, dref *types.ManagedObjectReference, abortTime int) error {
 
@@ -87,14 +96,27 @@ func (vm *VM) Migrate(host *Host, dref *types.ManagedObjectReference, abortTime 
 		return err
 	}
 
-	if abortTime != 0 {
-		// This VM Relocate Request came with a abortTime. sleep for abortTime
-		time.Sleep(time.Duration(abortTime) * time.Second)
-		return task.Cancel(vm.entity.Ctx())
-	}
+	vsinker := &vmotionSinker{}
+	vsinker.reportChan = make(chan progress.Report, 20)
+	go func() {
+		for {
+			select {
+			case rep, ok := <-vsinker.reportChan:
+				if !ok {
+					return
+				}
+				//After 35%, vmotion abort
+				if abortTime > 0 && rep.Percentage() > 30 {
+					log.Infof("VM %s : Vmotion Percentage complete %v, cancelling", vm.name, rep.Percentage())
+					task.Cancel(vm.entity.Ctx())
+					return
+				}
+			}
+		}
+	}()
 
-	return task.Wait(vm.entity.Ctx())
-
+	_, err = task.WaitForResult(vm.entity.Ctx(), vsinker)
+	return err
 }
 
 //ReconfigureNetwork will connect interface connected from one network to other network

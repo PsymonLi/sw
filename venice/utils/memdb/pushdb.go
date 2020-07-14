@@ -251,9 +251,9 @@ func (pObjState *pObjState) AddObjReceivers(receviers []objReceiver.Receiver) er
 		if !ok {
 			return errors.New("Invalid receiver")
 		}
-		_, err := pObjState.pushdb.FindReceiver(r.ID)
+		_, err := pObjState.pushdb.FindReceiver(r.name)
 		if err != nil {
-			return fmt.Errorf("Receiver %v not found", r.ID)
+			return fmt.Errorf("Receiver %v not found", r.name)
 		}
 
 		if !pObjState.bitMap.Test(r.bitID) {
@@ -289,9 +289,9 @@ func (pObjState *pObjState) IsReceiver(recv objReceiver.Receiver) (bool, error) 
 	if !ok {
 		return false, errors.New("Invalid receiver")
 	}
-	_, err := pObjState.pushdb.FindReceiver(r.ID)
+	_, err := pObjState.pushdb.FindReceiver(r.name)
 	if err != nil {
-		return false, fmt.Errorf("Receiver %v not found", r.ID)
+		return false, fmt.Errorf("Receiver %v not found", r.name)
 	}
 
 	if pObjState.bitMap.Test(r.bitID) {
@@ -379,9 +379,9 @@ func (pObjState *pObjState) RemoveObjReceivers(receviers []objReceiver.Receiver)
 		if !ok {
 			return errors.New("Invalid receiver")
 		}
-		_, err := md.FindReceiver(r.ID)
+		_, err := md.FindReceiver(r.name)
 		if err != nil {
-			return fmt.Errorf("Receiver %v not found", r.ID)
+			return fmt.Errorf("Receiver %v not found", r.name)
 		}
 
 		md.removeObjReceiverByBitID(pObjState, r.bitID)
@@ -429,7 +429,7 @@ func (pf *objPushFilter) AddReceiver(ID string) (objReceiver.Receiver, error) {
 		log.Error(msg)
 		return nil, fmt.Errorf(msg)
 	}
-	recv := &receiver{bitID: idBit, ID: ID}
+	recv := &receiver{bitID: idBit, name: ID}
 
 	pushFilter.bitMap.Set(idBit)
 
@@ -453,15 +453,15 @@ func (pf *objPushFilter) DeleteReceiver(recvr objReceiver.Receiver) error {
 		return fmt.Errorf("Delete receiver error : invalid receiver")
 	}
 
-	if mReceiver, ok = pushFilter.idMap[r.ID]; !ok {
-		return fmt.Errorf("Delete receiver error : %v not added  ", r.ID)
+	if mReceiver, ok = pushFilter.idMap[r.name]; !ok {
+		return fmt.Errorf("Delete receiver error : %v not added  ", r.name)
 	}
 
 	if mReceiver != r {
-		return fmt.Errorf("Delete receiver error : %v receiver don't match current entry ", r.ID)
+		return fmt.Errorf("Delete receiver error : %v receiver don't match current entry ", r.name)
 	}
 
-	delete(pushFilter.idMap, r.ID)
+	delete(pushFilter.idMap, r.name)
 	delete(pushFilter.watchMap, r.bitID)
 	pushFilter.bitMap.Clear(r.bitID)
 	return nil

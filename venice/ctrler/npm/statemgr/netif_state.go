@@ -127,12 +127,6 @@ func convertNetifObj(nodeID string, current *network.NetworkInterface, agentNeti
 	return netif
 }
 
-//GetInterfaceWatchOptions gets options
-func (sm *Statemgr) GetInterfaceWatchOptions() *api.ListWatchOptions {
-	opts := api.ListWatchOptions{}
-	return &opts
-}
-
 // OnInterfaceCreateReq gets called when agent sends create request
 func (sm *Statemgr) OnInterfaceCreateReq(nodeID string, agentNetif *netproto.Interface) error {
 
@@ -482,19 +476,8 @@ func convertNetworkInterfaceObject(ifcfg *NetworkInterfaceState) *netproto.Inter
 	}
 	agIf.Spec.Type = convertIFTypeToAgentProto(ifcfg.NetworkInterfaceState.Status.Type)
 	if ifcfg.NetworkInterfaceState.Spec.Pause != nil {
-		agIf.Spec.Pause = &netproto.PauseSpec{
-			Type:           ifcfg.NetworkInterfaceState.Spec.Pause.Type,
-			TxPauseEnabled: ifcfg.NetworkInterfaceState.Spec.Pause.TxPauseEnabled,
-			RxPauseEnabled: ifcfg.NetworkInterfaceState.Spec.Pause.RxPauseEnabled,
-		}
-		switch ifcfg.NetworkInterfaceState.Spec.Pause.Type {
-		case network.PauseType_DISABLE.String():
-			agIf.Spec.Pause.Type = netproto.PauseType_name[int32(netproto.PauseType_DISABLE)]
-		case network.PauseType_LINK.String():
-			agIf.Spec.Pause.Type = netproto.PauseType_name[int32(netproto.PauseType_LINK)]
-		case network.PauseType_PRIORITY.String():
-			agIf.Spec.Pause.Type = netproto.PauseType_name[int32(netproto.PauseType_PRIORITY)]
-		}
+		//Pause is not currently supported
+		log.Infof("Pause configuration not supported")
 	}
 	return agIf
 }

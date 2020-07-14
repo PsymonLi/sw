@@ -542,9 +542,7 @@ func (sm *Statemgr) handleSgPolicyPropTopoUpdate(update *memdb.PropagationStTopo
 					continue
 				}
 				//sm.logger.Infof("runPropagationTopoUpdater found policy: %v", policy.NetworkSecurityPolicy.GetObjectMeta())
-				policy.NetworkSecurityPolicy.Lock()
 				policy.smObjectTracker.startDSCTracking(d1)
-				policy.NetworkSecurityPolicy.Unlock()
 			}
 		}
 	}
@@ -560,9 +558,7 @@ func (sm *Statemgr) handleSgPolicyPropTopoUpdate(update *memdb.PropagationStTopo
 					continue
 				}
 				//sm.logger.Infof("runPropagationTopoUpdater found policy: %v", policy.NetworkSecurityPolicy.GetObjectMeta())
-				policy.NetworkSecurityPolicy.Lock()
 				policy.smObjectTracker.stopDSCTracking(d2)
-				policy.NetworkSecurityPolicy.Unlock()
 			}
 		}
 	}

@@ -464,24 +464,19 @@ func (entity *Entity) wipeOut(name string) error {
 }
 
 // RemoveVM removes a vm
-func (entity *Entity) RemoveVM(name string) error {
-	entity.getClientWithRLock()
-	defer entity.releaseClientRLock()
+func (entity *Entity) removeVM(name string) error {
 	return entity.wipeOut(name)
 }
 
 // DestoryVM destroys the vm
 func (entity *Entity) DestoryVM(name string) error {
-	entity.getClientWithRLock()
-	defer entity.releaseClientRLock()
-	return entity.RemoveVM(name)
+	return entity.removeVM(name)
 }
 
 // VMExists returns true if VM by the name exists
 func (entity *Entity) VMExists(name string) bool {
-
-	entity.getClientWithRLock()
-	defer entity.releaseClientRLock()
+	//entity.getClientWithRLock()
+	//defer entity.releaseClientRLock()
 	_, err := entity.Finder().VirtualMachine(entity.Ctx(), name)
 
 	return err == nil
@@ -540,8 +535,8 @@ func (entity *Entity) DeployVMOnDataStore(ds *Datastore,
 	host *object.HostSystem, name string, ncpus uint, memory uint,
 	networks []string, ovfDir string) (*VMInfo, error) {
 
-	entity.getClientWithRLock()
-	defer entity.releaseClientRLock()
+	//entity.getClientWithRLock()
+	//defer entity.releaseClientRLock()
 	rp, err := host.ResourcePool(entity.Ctx())
 	if err != nil {
 		return nil, errors.Wrap(err, "Get resource pool failed")

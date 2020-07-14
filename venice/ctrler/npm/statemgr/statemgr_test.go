@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -30,6 +31,7 @@ import (
 	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/api/labels"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	npmutils "github.com/pensando/sw/venice/ctrler/npm/utils"
 	"github.com/pensando/sw/venice/utils/featureflags"
 	memdb "github.com/pensando/sw/venice/utils/memdb"
 	"github.com/pensando/sw/venice/utils/ref"
@@ -288,9 +290,10 @@ func createMirror(stateMgr *Statemgr, tenant, mirrorName string, spanID uint32, 
 	mr := monitoring.MirrorSession{
 		TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
 		ObjectMeta: api.ObjectMeta{
-			Tenant:    tenant,
-			Namespace: "default",
-			Name:      mirrorName,
+			Tenant:       tenant,
+			Namespace:    "default",
+			Name:         mirrorName,
+			GenerationID: "1",
 		},
 		Spec: monitoring.MirrorSessionSpec{
 			SpanID:     spanID,
@@ -508,7 +511,11 @@ func createNetworkInterface(stateMgr *Statemgr, intfName string, dsc string, lab
 			},
 			IPConfig: &cluster.IPConfig{},
 		},
-		Status: network.NetworkInterfaceStatus{DSC: dsc},
+		Status: network.NetworkInterfaceStatus{DSC: dsc,
+			IFUplinkStatus: &network.NetworkInterfaceUplinkStatus{
+				LLDPNeighbor: &network.LLDPNeighbor{},
+			},
+		},
 	}
 
 	// create sg
@@ -575,19 +582,19 @@ func updateNetworkInterface(stateMgr *Statemgr, intfName string, dsc string, lab
 				Type: "UPLINK_ETH",
 			},
 		})
-
-		// create sg
-		err = stateMgr.OnInterfaceOperUpdate(dsc, &netproto.Interface{
-			TypeMeta:   api.TypeMeta{Kind: "Interface"},
-			ObjectMeta: nr.ObjectMeta,
-			Status: netproto.InterfaceStatus{
-				DSC:   dsc,
-				DSCID: dsc,
-			},
-			Spec: netproto.InterfaceSpec{
-				Type: "UPLINK_ETH",
-			},
-		}) */
+	*/
+	// create sg
+	err = stateMgr.OnInterfaceOperUpdate(dsc, &netproto.Interface{
+		TypeMeta:   api.TypeMeta{Kind: "Interface"},
+		ObjectMeta: nr.ObjectMeta,
+		Status: netproto.InterfaceStatus{
+			DSC:   dsc,
+			DSCID: dsc,
+		},
+		Spec: netproto.InterfaceSpec{
+			Type: "UPLINK_ETH",
+		},
+	})
 
 	//Give it some time to schedule
 	time.Sleep(300 * time.Millisecond)
@@ -846,6 +853,9 @@ func TestEndpointCreateDelete(t *testing.T) {
 	err = createTenant(t, stateMgr, "default")
 	AssertOk(t, err, "Error creating the tenant")
 
+	dscs := createsDSCs(stateMgr, 0, 1)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
 	list, err := stateMgr.ctrler.Network().List(context.Background(), &api.ListWatchOptions{})
 	Assert(t, len(list) == 0, fmt.Sprintf("Expected 0 networks, found %v networks", len(list)))
 
@@ -878,12 +888,17 @@ func TestEndpointCreateDelete(t *testing.T) {
 			Network:        "default",
 			HomingHostAddr: "192.168.1.1",
 			HomingHostName: "testHost",
+			NodeUUID:       dscs[0].Status.PrimaryMAC,
 		},
 	}
 
 	// find the network
-	_, err = stateMgr.FindNetwork("default", "default")
+	ns, err := stateMgr.FindNetwork("default", "default")
 	AssertOk(t, err, "Could not find the network")
+
+	ns.Network.Labels = make(map[string]string)
+
+	ns.Network.Labels[npmutils.NpmNameKey] = "Auto"
 
 	// create endpoint
 	err = stateMgr.ctrler.Endpoint().Create(&epinfo)
@@ -897,6 +912,19 @@ func TestEndpointCreateDelete(t *testing.T) {
 		}
 		return false, nil
 	}, "Endpoint not created", "1ms", "1s")
+
+	for _, dsc := range dscs {
+		stateMgr.OnEndpointOperUpdate(dsc.Name, &netproto.Endpoint{
+			ObjectMeta: epinfo.ObjectMeta,
+		})
+	}
+
+	epinfo.Status.MicroSegmentVlan = 1234
+	err = stateMgr.ctrler.Endpoint().Update(&epinfo)
+	Assert(t, (err == nil), "Update failed", epinfo)
+
+	err = stateMgr.ctrler.Endpoint().Update(&epinfo)
+	Assert(t, (err == nil), "Update failed", epinfo)
 
 	eps, err := stateMgr.FindEndpoint("default", "testEndpoint")
 	Assert(t, (err == nil), "Error finding the endpoint", epinfo)
@@ -960,6 +988,20 @@ func TestEndpointCreateDelete(t *testing.T) {
 	// verify endpoint is gone from the database
 	_, err = stateMgr.FindEndpoint("default", "testEndpoint")
 	Assert(t, (err != nil), "Deleted endpoint still found in network db", "testEndpoint")
+
+	err = stateMgr.ctrler.Endpoint().Delete(&newEP)
+	Assert(t, (err == nil), "Error deleting the endpoint", newEP)
+
+	stateMgr.cleanUnusedNetworks()
+
+	// verify network got created
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindNetwork("default", "default")
+		if err == nil {
+			return false, nil
+		}
+		return true, nil
+	}, "Network not found", "1ms", "1s")
 
 }
 
@@ -3111,6 +3153,21 @@ func TestSmartNicCreateDelete(t *testing.T) {
 	err = stateMgr.ctrler.DSCProfile().Create(&dscprof)
 	AssertOk(t, err, "Could not create the smartNic profile")
 
+	dscprof1 := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name: "testDSCProfile1",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: "HOST",
+			FeatureSet:       "SMARTNIC",
+		},
+	}
+
+	// create the smartNic
+	err = stateMgr.ctrler.DSCProfile().Create(&dscprof1)
+	AssertOk(t, err, "Could not create the smartNic profile")
+
 	// verify the profile is there
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindDSCProfile("", "testDSCProfile")
@@ -3129,13 +3186,29 @@ func TestSmartNicCreateDelete(t *testing.T) {
 			DSCProfile: "testDSCProfile",
 		},
 		Status: cluster.DistributedServiceCardStatus{
-			PrimaryMAC: "0001.0203.0405",
+			PrimaryMAC:     "0001.0203.0405",
+			AdmissionPhase: cluster.DistributedServiceCardStatus_ADMITTED.String(),
 		},
 	}
 	err = stateMgr.ctrler.DistributedServiceCard().Update(&newnic)
 	AssertOk(t, err, "Error DistributedServicesCard update failed")
 
 	stateMgr.UpdateDSCProfileStatusOnOperUpdate("testDistributedServiceCard", "default", "testDSCProfile", "1")
+
+	newnic.Spec.MgmtMode = strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String())
+	newnic.Spec.DSCProfile = "testDSCProfile1"
+	err = stateMgr.ctrler.DistributedServiceCard().Update(&newnic)
+	AssertOk(t, err, "Error DistributedServicesCard update failed")
+
+	newnic.Spec.MgmtMode = strings.ToLower(cluster.DistributedServiceCardSpec_HOST.String())
+
+	err = stateMgr.ctrler.DistributedServiceCard().Update(&newnic)
+	AssertOk(t, err, "Error DistributedServicesCard update failed")
+
+	newnic.Spec.MgmtMode = strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String())
+	newnic.Spec.DSCProfile = "testDSCProfile1"
+	err = stateMgr.ctrler.DistributedServiceCard().Update(&newnic)
+	AssertOk(t, err, "Error DistributedServicesCard update failed")
 
 	// delete the smartNic
 	err = stateMgr.ctrler.DistributedServiceCard().Delete(&snic)
@@ -4226,6 +4299,12 @@ func createsDSCs(stateMgr *Statemgr, start, end int) []*cluster.DistributedServi
 	}
 
 	return dscs
+}
+
+func updateDSCs(stateMgr *Statemgr, dscs []*cluster.DistributedServiceCard) {
+	for _, dsc := range dscs {
+		stateMgr.ctrler.DistributedServiceCard().Update(dsc)
+	}
 }
 
 func deleteDSCs(stateMgr *Statemgr, start, end int) []*cluster.DistributedServiceCard {
@@ -7576,13 +7655,15 @@ func TestWatcherWithMirrorCreateUpdateDelete(t *testing.T) {
 		watcher.evtsExp.Reset()
 		watcher.evtsRcvd.Reset()
 		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["InterfaceMirrorSession"] = 1
-		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Interface"] = 2
+		//watcher.evtsExp.evKindMap[memdb.CreateEvent]["InterfaceMirrorSession"] = 1
+		//	watcher.evtsExp.evKindMap[memdb.De]["InterfaceMirrorSession"] = 1
+		//watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Interface"] = 2
 	}
 
 	log.Infof("New collectors %v", len(otherNewCollectors))
 
 	//Add new collectors for same mirror
-	_, err = updateMirror(stateMgr, "default", "testMirror", 1, nil, nil, otherNewCollectors, labels.SelectorFromSet(labels.Set(label2)), 0)
+	_, err = updateMirror(stateMgr, "default", "testMirror", 1, nil, nil, otherNewCollectors, labels.SelectorFromSet(labels.Set(label1)), 0)
 	AssertOk(t, err, "Error creating mirror session ")
 
 	AssertEventually(t, func() (bool, interface{}) {
@@ -8842,6 +8923,221 @@ func TestWatcherWithFlowMirrorCreateDelete(t *testing.T) {
 		}
 
 	}
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+	}
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			//watcher.evtsRcvd.Reset()
+			watcher.evtsExp.evKindMap[memdb.DeleteEvent]["MirrorSession"] = 1 + i
+		}
+
+		_, err = deleteMirror(stateMgr, "default", mirrorName, nil)
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err != nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session found", "1ms", "1s")
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+	}
+
+}
+
+func TestWatcherWithFlowMirrorTrackingTest(t *testing.T) {
+	// create network state manager
+	ResetWatchMap()
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	numOfIntfs := 1
+	dscs := createsDSCs(stateMgr, 0, numOfIntfs)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	//Start watchers
+
+	watchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		watchers = append(watchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("Collector", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Interface", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("MirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+	defer stopWatchers(t, watchers)
+
+	matchRules := []monitoring.MatchRule{
+		{
+			Src: &monitoring.MatchSelector{
+				IPAddresses: []string{"192.168.100.1"},
+			},
+			Dst: &monitoring.MatchSelector{
+				IPAddresses: []string{"192.168.100.1"},
+			},
+			AppProtoSel: &monitoring.AppProtoSelector{
+				ProtoPorts: []string{"1234"},
+			},
+		},
+		{
+			AppProtoSel: &monitoring.AppProtoSelector{
+				ProtoPorts: []string{"TCP/1234"},
+			},
+		},
+	}
+
+	numOfMirrors := 8
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+		spanID := uint32(i + 1)
+		_, err = createMirror(stateMgr, "default", mirrorName, spanID, nil, matchRules, nil, nil)
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err == nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session not found", "1ms", "1s")
+
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			watcher.evtsExp.evKindMap[memdb.CreateEvent]["MirrorSession"] = 1 + i
+		}
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+
+	}
+
+	for _, dsc := range dscs {
+		dsc.Spec.DSCProfile = "insertion.enforced1"
+		dsc.Spec.Admit = true
+		dsc.Spec.MgmtMode = "network"
+		dsc.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
+	}
+
+	updateDSCs(stateMgr, dscs)
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+
+		AssertEventually(t, func() (bool, interface{}) {
+			mss, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err == nil {
+				propStatus := mss.getPropStatus()
+				if propStatus.pending == int32(numOfIntfs) {
+					log.Infof("Mirror %v pass", mss.MirrorSession.Name)
+					return true, nil
+				}
+			}
+			log.Infof("Mirror %v fail, %v", mss.MirrorSession.Name, mss.getPropStatus())
+			return false, nil
+		}, "Mirror session not found", "200ms", "10s")
+
+	}
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+		mss, _ := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+
+		for _, dsc := range dscs {
+			stateMgr.OnMirrorSessionOperUpdate(dsc.Name, &netproto.MirrorSession{
+				ObjectMeta: mss.MirrorSession.ObjectMeta,
+			})
+		}
+	}
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+
+		AssertEventually(t, func() (bool, interface{}) {
+			mss, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err == nil {
+				propStatus := mss.getPropStatus()
+				if propStatus.updated == int32(numOfIntfs) {
+					return true, nil
+				}
+			}
+			return false, nil
+		}, "Mirror session not found", "200ms", "10s")
+
+	}
+
+	for _, dsc := range dscs {
+		dsc.Spec.DSCProfile = "default"
+		dsc.Spec.Admit = true
+		dsc.Spec.MgmtMode = "network"
+		dsc.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
+	}
+
+	updateDSCs(stateMgr, dscs)
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+
+		AssertEventually(t, func() (bool, interface{}) {
+			mss, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err == nil {
+				propStatus := mss.getPropStatus()
+				if propStatus.pending == 0 {
+					return true, nil
+				}
+			}
+			return false, nil
+		}, "Mirror session not found", "1ms", "1s")
+
+	}
+
 	for _, watcher := range watchers {
 		watcher.evtsExp.Reset()
 		watcher.evtsRcvd.Reset()
@@ -10374,6 +10670,19 @@ func TestWatcherWithFlowExportCreateDelete(t *testing.T) {
 		}
 
 	}
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+		mss, _ := stateMgr.FindFlowExportPolicy("default", mirrorName)
+
+		for _, dsc := range dscs {
+			stateMgr.OnFlowExportPolicyOperUpdate(dsc.Name, &netproto.FlowExportPolicy{
+				ObjectMeta: mss.FlowExportPolicy.ObjectMeta,
+			})
+		}
+	}
+
 	for _, watcher := range watchers {
 		watcher.evtsExp.Reset()
 		watcher.evtsRcvd.Reset()
@@ -10695,4 +11004,72 @@ func TestMain(m *testing.M) {
 	useResolver = false
 	// call flag.Parse() here if TestMain uses flags
 	os.Exit(m.Run())
+}
+
+func TestWatcherWithAppsTrackingTest(t *testing.T) {
+	// create network state manager
+	ResetWatchMap()
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	numOfIntfs := 1
+	dscs := createsDSCs(stateMgr, 0, numOfIntfs)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	//Start watchers
+
+	watchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		watchers = append(watchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("Collector", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Interface", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("MirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+	defer stopWatchers(t, watchers)
+
+	apps := generateApps(0, 10)
+	err = createApps(t, stateMgr, apps)
+	AssertOk(t, err, "Error creating Apps")
+
+	err = createPoliciesWithApps(t, stateMgr, 0, 3, apps)
+	AssertOk(t, err, "Error creating security policies")
+
+	for _, dsc := range dscs {
+		dsc.Spec.DSCProfile = "insertion.enforced1"
+		dsc.Spec.Admit = true
+		dsc.Spec.MgmtMode = "network"
+		dsc.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
+	}
+
+	updateDSCs(stateMgr, dscs)
+
+	for i := 0; i < len(apps); i++ {
+
+		AssertEventually(t, func() (bool, interface{}) {
+			mss, err := stateMgr.FindApp("default", apps[i])
+			log.Infof("App %#v", mss)
+			if err == nil {
+				propStatus := mss.getPropStatus()
+				log.Infof("App Prop %#v", propStatus)
+				if propStatus.pending == int32(numOfIntfs) {
+					return true, nil
+				}
+			}
+			return false, nil
+		}, "App  not found", "200ms", "10s")
+	}
+
 }

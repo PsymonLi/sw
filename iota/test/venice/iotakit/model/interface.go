@@ -183,6 +183,8 @@ type VeniceNodeActionIntf interface {
 	GetVeniceServices() (string, error)
 	RunCommandOnVeniceNodes(vnc *objects.VeniceNodeCollection, cmd string) error
 	GetExclusiveServices() ([]string, error)
+	DisconnectVeniceAndOrchestrator() error
+	AllowVeniceAndOrchestrator() error
 }
 
 //NodeActionIntf All actions related node intf
@@ -198,6 +200,7 @@ type NodeActionIntf interface {
 	RunNaplesCommand(npc *objects.NaplesCollection, cmd string) ([]string, error)
 	RunFakeNaplesCommand(npc *objects.NaplesCollection, cmd string) ([]string, error)
 	RunFakeNaplesBackgroundCommand(npc *objects.NaplesCollection, cmd string) (interface{}, error)
+	CopyToNaples(npc *objects.NaplesCollection, files []string, dstDir string) error
 
 	StopCommands(cmdCtx interface{}) ([]string, error)
 	GetNaplesEndpoints(npc *objects.NaplesCollection) (map[string]map[string]struct {
@@ -220,6 +223,7 @@ type WorkloadActionIntf interface {
 	WorkloadsSayHelloToDataPath() error
 	VerifyWorkloadStatus(wc *objects.WorkloadCollection) error
 	VerifyWorkloadMigrationStatus(wc *objects.WorkloadCollection) error
+	VerifyWorkloadMigrationAbortStatus(wc *objects.WorkloadCollection) error
 
 	FTPGet(wpc *objects.WorkloadPairCollection) error
 	FTPGetFails(wpc *objects.WorkloadPairCollection) error
@@ -227,7 +231,7 @@ type WorkloadActionIntf interface {
 	NetcatWrapper(wpc *objects.WorkloadPairCollection, serverOpt, clientOpt string, port int, expFail bool, expClientExitCode int32, expOutput string) error
 	FuzIt(wpc *objects.WorkloadPairCollection, numConns int, proto, port string) error
 
-	MoveWorkloads(*objects.WorkloadCollection, *objects.HostCollection) error
+	MoveWorkloads(spec common.MoveWorkloadsSpec) error
 }
 
 //NewSysModel creates new model based on type
@@ -293,7 +297,7 @@ func InitSuite(topoName, paramsFile string, scale, scaleData bool) (*testbed.Tes
 		gomega.SetDefaultEventuallyTimeout(time.Minute * 30)
 		gomega.SetDefaultEventuallyPollingInterval(time.Second * 30)
 	} else {
-		gomega.SetDefaultEventuallyTimeout(time.Minute * 6)
+		gomega.SetDefaultEventuallyTimeout(time.Minute * 10)
 		gomega.SetDefaultEventuallyPollingInterval(time.Second * 10)
 	}
 

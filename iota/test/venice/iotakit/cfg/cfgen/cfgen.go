@@ -85,8 +85,8 @@ type SecurityGroupsParams struct {
 
 // MirrorSessionParams mirror session params
 type MirrorSessionParams struct {
-	NumSessionMirrors     int                      // number of mirror sessions to be configured within the system
-	MirrorSessionTemplate monitoring.MirrorSession // will match random set of workloads (those can be queried)
+	NumSessionMirrors     int                       // number of mirror sessions to be configured within the system
+	MirrorSessionTemplate *monitoring.MirrorSession // will match random set of workloads (those can be queried)
 }
 
 // FwLogPolicyParams firewall log params
@@ -152,6 +152,7 @@ type CfgItems struct {
 	Workloads           []*workload.Workload              `json:"Workloads"`
 	TenantWorkloads     []*workload.Workload              `json:"TenantWorkloads"`
 	SGPolicies          []*security.NetworkSecurityPolicy `json:"SGPolicies"`
+	Mirrors             []*monitoring.MirrorSession       `json:"MirrorSessions"`
 	Apps                []*security.App                   `json:"Apps"`
 	RouteConfig         []*network.RoutingConfig          `json:"RouteConfig"`
 	UnderlayRouteConfig []*network.RoutingConfig          `json:"UnderlayRouteConfig"`
@@ -205,6 +206,7 @@ func (cfgen *Cfgen) Do() {
 	cfgen.ConfigItems.Workloads = cfgen.genWorkloads()
 	cfgen.ConfigItems.Apps = cfgen.genApps()
 	cfgen.ConfigItems.SGPolicies = cfgen.genSGPolicies()
+	cfgen.ConfigItems.Mirrors = cfgen.genMirrors()
 	cfgen.ConfigItems.RouteConfig = cfgen.genRoutingConfig()
 	cfgen.ConfigItems.UnderlayRouteConfig = cfgen.genUnderlayRoutingConfig()
 	cfgen.ConfigItems.Tenants = cfgen.genTenants()
@@ -497,6 +499,21 @@ func (cfgen *Cfgen) genSGPolicies() []*security.NetworkSecurityPolicy {
 	}
 
 	return sgpolicies
+}
+
+func (cfgen *Cfgen) genMirrors() []*monitoring.MirrorSession {
+	mirrors := []*monitoring.MirrorSession{}
+
+	sgp := cfgen.MirrorSessionParams.MirrorSessionTemplate
+
+	sgpCtx := newIterContext()
+	for ii := 0; ii < cfgen.MirrorSessionParams.NumSessionMirrors; ii++ {
+		tSgp := sgpCtx.transform(sgp).(*monitoring.MirrorSession)
+
+		mirrors = append(mirrors, tSgp)
+	}
+
+	return mirrors
 }
 
 func (cfgen *Cfgen) genApps() []*security.App {

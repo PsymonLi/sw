@@ -141,7 +141,10 @@ func (suite testsuite) run(skipSetup, skipInstall, skipConfig, rebootOnly bool, 
 	env = append(env, "VENICE_DEV=1")
 	env = append(env, "JOB_ID=1")
 
-	cmd := []string{"go", "test", testPath, "-timeout", "360m", "-v", "-ginkgo.v", "-topo", topology, "-testbed", testbed}
+	if timeout == "" {
+		timeout = "300m"
+	}
+	cmd := []string{"go", "test", testPath, "-timeout", timeout, "-v", "-ginkgo.v", "-topo", topology, "-testbed", testbed}
 	if suite.focus != "" {
 		cmd = append(cmd, "-ginkgo.focus")
 		cmd = append(cmd, "\""+suite.focus+"\"")

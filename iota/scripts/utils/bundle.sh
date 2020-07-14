@@ -70,7 +70,7 @@ while true; do
     esac
 done
 
-naples_image="naples_fw_.tar"
+naples_image="naples_fw.tar"
 dir="sw-iris-capri"
 if [ $pipeline = "cloud" ];then
     export naples_image="naples_fw_venice.tar"
@@ -133,12 +133,12 @@ mkdir -p $WS/upgrade-bundle/bin
 mkdir -p $WS/upgrade-bundle/nic
 mkdir -p $WS/upgrade-bundle/bin/venice-install
 ln -f $targetdir/bin/venice.tgz $WS/upgrade-bundle/bin/venice.tgz
-ln -f $targetdir/nic/$naples_image $WS/upgrade-bundle/nic/naples_fw.tar
+ln -fL $targetdir/nic/$naples_image $WS/upgrade-bundle/nic/naples_fw.tar
 touch $WS/upgrade-bundle/bin/venice-install/venice_appl_os.tgz
 #bundle.py creates metadata.json for the bundle image
 $WS/tools/scripts/bundle.py -v $bundle_version  -d ${BUILD_DATE} -p "$WS/upgrade-bundle/"
 ln -f $WS/upgrade-bundle/bin/venice.tgz $WS/upgrade-bundle/venice.tgz
-ln -f $WS/upgrade-bundle/nic/naples_fw.tar $WS/upgrade-bundle/naples_fw.tar
+ln -fL $WS/upgrade-bundle/nic/naples_fw.tar $WS/upgrade-bundle/naples_fw.tar
 ln -f $WS/upgrade-bundle/bin/venice-install/venice_appl_os.tgz $WS/upgrade-bundle/venice_appl_os.tgz
 cd $WS/upgrade-bundle && tar -cf bundle.tar venice.tgz  naples_fw.tar venice_appl_os.tgz metadata.json
 cd $WS/upgrade-bundle && cat metadata.json ; ls -al; tar -tvf bundle.tar

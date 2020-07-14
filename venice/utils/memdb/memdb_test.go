@@ -282,7 +282,7 @@ func generateObjectReferences(relations []relation) {
 	}
 }
 
-func verifyObjects(t *testing.T, memdb *Memdb, watcher *Watcher, evKindMap map[EventType]map[string]int,
+func verifyObjects(t *testing.T, memdb *DBWithResolver, watcher *Watcher, evKindMap map[EventType]map[string]int,
 	duration time.Duration) error {
 
 	timedOutEvent := time.After(duration)
@@ -410,8 +410,8 @@ func TestMemdbDepAddTest_1(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 
 	// start watch on objects
 	watcher := Watcher{}
@@ -452,8 +452,8 @@ func TestMemdbDepAddTest_2(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -503,8 +503,8 @@ func TestMemdbDepAddTest_3(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -565,8 +565,8 @@ func TestMemdbDepAddTest_4(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -634,8 +634,8 @@ func TestMemdbDepAddTest_5(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -691,8 +691,8 @@ func TestMemdbDepAddTest_6(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -732,8 +732,8 @@ func TestMemdbDepDelTest_1(t *testing.T) {
 	///
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -783,8 +783,8 @@ func TestMemdbDepDelTest_2(t *testing.T) {
 	///
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -848,8 +848,8 @@ func TestMemdbDepDelTest_3(t *testing.T) {
 	///
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -924,8 +924,8 @@ func TestMemdbDepDelTest_4(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1004,8 +1004,8 @@ func TestMemdbDepDelTest_5(t *testing.T) {
 	///
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1077,8 +1077,8 @@ func TestMemdbDepDelTest_6(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1119,7 +1119,7 @@ func TestMemdbDepDelTest_6(t *testing.T) {
 func TestMemdbAddDelete(t *testing.T) {
 	// create a new memdb
 	md := NewMemdb()
-	registerKinds(md)
+	//registerKinds(&md.Memdb)
 
 	// tets object
 	obj := testObj{
@@ -1149,6 +1149,7 @@ func TestMemdbAddDelete(t *testing.T) {
 
 	// verify list works
 	objs := md.ListObjects("testObj", nil)
+	log.Infof("Objects %v", objs)
 	Assert(t, (len(objs) == 1), "List returned incorrect number of objs", objs)
 	Assert(t, (objs[0].GetObjectMeta().Name == obj.Name), "Got invalid object", objs)
 
@@ -1190,8 +1191,8 @@ func TestMemdbDepDelAddTest_1(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1251,8 +1252,8 @@ func TestMemdbDepDelAddTest_2(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1326,8 +1327,8 @@ func TestMemdbDepDelAddTest_3(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1412,8 +1413,8 @@ func TestMemdbDepDelAddTest_4(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1473,8 +1474,8 @@ func TestMemdbDepDelAddTest_5(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1535,8 +1536,8 @@ func TestMemdbDepDelAddTest_6(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1596,8 +1597,8 @@ func TestMemdbAddUpdateTest_1(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1661,8 +1662,8 @@ func TestMemdbAddUpdateTest_2(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1726,8 +1727,8 @@ func TestMemdbAddUpdateTest_3(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1798,8 +1799,8 @@ func TestMemdbAddUpdateTest_4(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1869,8 +1870,8 @@ func TestMemdbAddUpdateTest_5(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -1949,8 +1950,8 @@ func TestMemdbDelAddTest_2(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -2005,8 +2006,8 @@ func TestMemdbDelAddTest_3(t *testing.T) {
 
 	generateObjectReferences(relations)
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	// start watch on objects
 	watcher := Watcher{}
 	watcher.Channel = make(chan Event, WatchLen)
@@ -2061,8 +2062,8 @@ func TestMemdbDelAddTest_3(t *testing.T) {
 }
 func TestMemdbWatch(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 
 	// test object
 	obj := testObj{
@@ -2130,8 +2131,8 @@ func TestMemdbConcurrency(t *testing.T) {
 	watchDoneChan := make(chan Event, ((watchConcur + 1) * (objConcur + 1)))
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 
 	// test object
 	obj := testObj{
@@ -2363,8 +2364,8 @@ func TestStopWatchObjects(t *testing.T) {
 	numWatchers := 10
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 
 	// test object
 	obj := testObj{
@@ -2414,8 +2415,8 @@ func TestStopWatchObjects(t *testing.T) {
 
 func TestMarshal(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 
 	// tets object
 	obj := testObj{
@@ -2455,8 +2456,8 @@ func TestMarshal(t *testing.T) {
 
 func TestMemdbNodeState(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 
 	// tets object
 	obj := testObj{
@@ -2496,8 +2497,8 @@ func TestMemdbNodeState(t *testing.T) {
 
 func TestMemdbAddDeleteWithDep(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 
 	// tets object
 	obj := testObj{
@@ -2527,6 +2528,7 @@ func TestMemdbAddDeleteWithDep(t *testing.T) {
 
 	// verify list works
 	objs := md.ListObjects("testObj", nil)
+	log.Infof("Number of objects %v", objs)
 	Assert(t, (len(objs) == 1), "List returned incorrect number of objs", objs)
 	Assert(t, (objs[0].GetObjectMeta().Name == obj.Name), "Got invalid object", objs)
 
@@ -2549,7 +2551,7 @@ func TestMemdbAddDeleteWithDep(t *testing.T) {
 
 func TestMemdbAddDeleteReceivers(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
+	md := NewMemdbWithResolver()
 
 	recvrs := []objReceiver.Receiver{}
 
@@ -2557,7 +2559,7 @@ func TestMemdbAddDeleteReceivers(t *testing.T) {
 		id := strconv.Itoa(i)
 		recv, err := md.AddReceiver(id)
 		Assert(t, err == nil && recv != nil, "Add failed")
-		Assert(t, recv.(*receiver).ID == id, "ID mismatch")
+		Assert(t, recv.(*receiver).name == id, "ID mismatch")
 		recvrs = append(recvrs, recv)
 	}
 
@@ -2604,7 +2606,7 @@ func TestMemdbAddDeleteReceivers(t *testing.T) {
 
 func TestMemdbEnableDisableKindPushFilter(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
+	md := NewMemdbWithResolver()
 
 	md.EnableSelctivePush("a")
 
@@ -2616,7 +2618,7 @@ func TestMemdbEnableDisableKindPushFilter(t *testing.T) {
 
 func TestMemdbObjPushWatcher(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
+	md := NewMemdbWithResolver()
 	const watchConcur = maxReceivers
 	const objConcur = 200
 
@@ -2696,7 +2698,7 @@ func watcherName(i int) string {
 	return "watcher-" + strconv.Itoa(i)
 }
 
-func addReceivers(t *testing.T, md *Memdb, watchConcur int) []objReceiver.Receiver {
+func addReceivers(t *testing.T, md *DBWithResolver, watchConcur int) []objReceiver.Receiver {
 
 	receivers := make([]objReceiver.Receiver, watchConcur)
 
@@ -2724,7 +2726,7 @@ func startWatchers(t *testing.T, watchConcur int) []*watchWrapper {
 	return watchers
 }
 
-func startWatchForKinds(t *testing.T, md *Memdb, watchers []*watchWrapper, kinds []string) {
+func startWatchForKinds(t *testing.T, md *DBWithResolver, watchers []*watchWrapper, kinds []string) {
 
 	for _, watch := range watchers {
 		for _, kind := range kinds {
@@ -2736,7 +2738,7 @@ func startWatchForKinds(t *testing.T, md *Memdb, watchers []*watchWrapper, kinds
 	}
 }
 
-func stopWatchForKinds(t *testing.T, md *Memdb, watchers []*watchWrapper, kinds []string) {
+func stopWatchForKinds(t *testing.T, md *DBWithResolver, watchers []*watchWrapper, kinds []string) {
 
 	for _, watch := range watchers {
 		for _, kind := range kinds {
@@ -2768,7 +2770,7 @@ func TestMemdbObjPushWatcher_1(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
+	md := NewMemdbWithResolver()
 	//const watchConcur = maxReceivers
 	const watchConcur = 10
 	const objConcur = 1
@@ -2850,8 +2852,8 @@ func TestMemdbObjPushWatcher_2(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 100
 	const objConcur = 1
@@ -2955,8 +2957,8 @@ func TestMemdbObjPushWatcher_3(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 100
 	const objConcur = 1
@@ -3115,8 +3117,8 @@ func TestMemdbObjPushWatcher_4(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 100
 	const objConcur = 1
@@ -3272,8 +3274,8 @@ func TestMemdbObjPushWatcher_5(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 100
 	const objConcur = 1
@@ -3430,8 +3432,8 @@ func TestMemdbObjPushWatcher_6(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 100
 	const objConcur = 1
@@ -3591,8 +3593,8 @@ func TestMemdbObjPushWatcher_7(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 100
 	const objConcur = 1
@@ -3699,8 +3701,8 @@ func TestMemdbObjPushWatcher_8(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 1
 	const objConcur = 1
@@ -3811,8 +3813,8 @@ func TestMemdbObjPushWatcher_9(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 50
 	const objConcur = 1
@@ -3941,8 +3943,8 @@ func TestMemdbObjPushAndMemdbWatcher_1(t *testing.T) {
 	generateObjectReferences(relations)
 
 	// create a new memdb
-	md := NewMemdb()
-	registerKinds(md)
+	md := NewMemdbWithResolver()
+	registerKinds(&md.Memdb)
 	//const watchConcur = maxReceivers
 	const watchConcur = 1
 	const objConcur = 1
@@ -4135,7 +4137,7 @@ func getWatchOptions(dsc, kind string) api.ListWatchOptions {
 	return opts
 }
 
-func addObjects(objs []*testObj, md *Memdb) error {
+func addObjects(objs []*testObj, md *DBWithResolver) error {
 	for _, obj := range objs {
 		err := md.AddObject(obj)
 		if err != nil {
@@ -4145,7 +4147,7 @@ func addObjects(objs []*testObj, md *Memdb) error {
 	return nil
 }
 
-func delObjects(objs []*testObj, md *Memdb) error {
+func delObjects(objs []*testObj, md *DBWithResolver) error {
 	for _, obj := range objs {
 		err := md.DeleteObject(obj)
 		if err != nil {
@@ -4155,7 +4157,7 @@ func delObjects(objs []*testObj, md *Memdb) error {
 	return nil
 }
 
-func addObjects1(objs []*testObj1, md *Memdb) error {
+func addObjects1(objs []*testObj1, md *DBWithResolver) error {
 	for _, obj := range objs {
 		err := md.AddObject(obj)
 		if err != nil {
@@ -4165,7 +4167,7 @@ func addObjects1(objs []*testObj1, md *Memdb) error {
 	return nil
 }
 
-func delObjects1(objs []*testObj1, md *Memdb) error {
+func delObjects1(objs []*testObj1, md *DBWithResolver) error {
 	for _, obj := range objs {
 		err := md.DeleteObject(obj)
 		if err != nil {
@@ -4290,7 +4292,7 @@ func getWatchOptions1(dsc, kind string) api.ListWatchOptions {
 
 func TestMemdbWatchDSCAddDel(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
+	md := NewMemdbWithResolver()
 	count := 3
 	// set watch flags
 	wFlags := map[string]uint{}
@@ -4513,7 +4515,7 @@ func TestMemdbWatchDSCAddDel(t *testing.T) {
 
 func TestMemdbCtrlWatchTopo(t *testing.T) {
 	// create a new memdb
-	md := NewMemdb()
+	md := NewMemdbWithResolver()
 
 	kinds := []string{"SecurityProfile", "IPAMPolicy", "RouteTable", "Vrf", "NetworkSecurityPolicy", "Network", "RoutingConfig"}
 	// set watch flags

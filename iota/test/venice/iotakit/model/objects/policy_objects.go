@@ -93,7 +93,7 @@ func (spc *NetworkSecurityPolicyCollection) AddRuleForSubnets(srcNetworks, dstNe
 	}
 	// build the rule
 	rule := security.SGRule{
-		Action: action,
+		Action:          action,
 		FromIPAddresses: srcNetworks,
 		ToIPAddresses:   dstNetworks,
 	}
@@ -333,6 +333,25 @@ func (spc *NetworkSecurityPolicyCollection) AddRule(fromIP, toIP, port, action s
 
 	for _, pol := range spc.Policies {
 		pol.VenicePolicy.Spec.Rules = append(pol.VenicePolicy.Spec.Rules, rule)
+	}
+
+	return spc
+}
+
+// RemoveRule adds a rule to the policy
+func (spc *NetworkSecurityPolicyCollection) RemoveRule(fromIP, toIP, action string) *NetworkSecurityPolicyCollection {
+	if spc.HasError() {
+		return spc
+	}
+
+	for _, pol := range spc.Policies {
+		for i, rule := range pol.VenicePolicy.Spec.Rules {
+			if rule.FromIPAddresses[0] == fromIP && rule.ToIPAddresses[0] == toIP && rule.Action == action {
+				copy(pol.VenicePolicy.Spec.Rules[i:], pol.VenicePolicy.Spec.Rules[i+1:])
+				pol.VenicePolicy.Spec.Rules = pol.VenicePolicy.Spec.Rules[:len(pol.VenicePolicy.Spec.Rules)-1]
+				break
+			}
+		}
 	}
 
 	return spc

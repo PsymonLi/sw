@@ -159,6 +159,13 @@ func (sm *SysModel) ReloadVeniceNodes(vnc *objects.VeniceNodeCollection) error {
 	return sm.RestoreVeniceDefaults(nodes)
 }
 
+func (sm *SysModel) AllowVeniceAndOrchestrator() error {
+	return nil
+}
+func (sm *SysModel) DisconnectVeniceAndOrchestrator() error {
+	return nil
+}
+
 //DisconnectVeniceNodesFromCluster disconnect venice.Nodes from cluster.
 func (sm *SysModel) DisconnectVeniceNodesFromCluster(vnc *objects.VeniceNodeCollection, naples *objects.NaplesCollection) error {
 
@@ -502,6 +509,25 @@ func (sm *SysModel) ConnectNaples(npc *objects.NaplesCollection) error {
 	}
 
 	return nil
+}
+
+//CopyToNaples copy to naples API
+func (sm *SysModel) CopyToNaples(npc *objects.NaplesCollection, files []string, dstDir string) error {
+	return nil
+
+	if len(npc.Nodes) == 0 {
+		return nil
+	}
+
+	for _, naples := range npc.Nodes {
+		err := sm.Tb.CopyToNaples(naples.NodeName(), files, dstDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+
 }
 
 // RunNaplesCommand runs the given naples command on the collection, returns []stdout
@@ -1158,7 +1184,7 @@ func (sm *SysModel) DeleteVeniceNodes(names []string) error {
 		//Remember the cluster node if we want to create again
 		for name, vnode := range sm.VeniceNodeMap {
 			if vnode.IP() == node.Name {
-				veniceNode, _ := sm.VeniceNodes().Select("name=" + vnode.IP())
+				veniceNode, err := sm.VeniceNodes().Select("name=" + vnode.Name())
 				if err != nil {
 					log.Errorf("Error finding venice node .%v", "name="+vnode.Name())
 					return err

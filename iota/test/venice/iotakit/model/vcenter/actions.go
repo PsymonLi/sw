@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/pensando/sw/api"
@@ -18,7 +19,7 @@ import (
 	iota "github.com/pensando/sw/iota/protos/gogen"
 )
 
-const maxOpTimeout = 20 * time.Minute
+const maxOpTimeout = 40 * time.Minute
 
 func (sm *VcenterSysModel) Cleanup() error {
 	// collect all log files
@@ -35,6 +36,29 @@ func (sm *VcenterSysModel) VerifyClusterStatus() error {
 // VerifyPolicyStatus verifies SG policy status
 func (sm *VcenterSysModel) VerifyPolicyStatus(spc *objects.NetworkSecurityPolicyCollection) error {
 	return sm.SysModel.VerifyPolicyStatus(spc)
+}
+
+func (sm *VcenterSysModel) verifyOrchestration() error {
+
+	bkCtx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancelFunc()
+L:
+	for true {
+		select {
+		case <-bkCtx.Done():
+			return fmt.Errorf("Error Connecting vcenter")
+		default:
+
+			if connected, err := sm.orchestrator.Connected(); err == nil && connected {
+				break L
+			} else {
+				log.Infof("Orchestrator not connected to vcenter error : %v", err)
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	return nil
 }
 
 // VerifySystemHealth checks all aspects of system, like cluster, workload, policies etc
@@ -98,7 +122,7 @@ func (sm *VcenterSysModel) VerifySystemHealth(collectLogOnErr bool) error {
 		}
 	}
 
-	return nil
+	return sm.verifyOrchestration()
 }
 
 // VerifyWorkloadStatus verifies workload status in venice
@@ -224,14 +248,49 @@ func (sm *VcenterSysModel) VerifyWorkloadMigrationStatus(wc *objects.WorkloadCol
 	return nil
 }
 
-//MoveWorkloads not supported here
-func (sm *VcenterSysModel) MoveWorkloads(wc *objects.WorkloadCollection, hc *objects.HostCollection) error {
-
-	if len(hc.Hosts) == 0 {
-		return fmt.Errorf("Invalid number of hosts for move %v", len(hc.Hosts))
+// VerifyWorkloadMigrationAbortStatus verifies workload migration status in venice
+func (sm *VcenterSysModel) VerifyWorkloadMigrationAbortStatus(wc *objects.WorkloadCollection) error {
+	if wc.HasError() {
+		return wc.Error()
 	}
 
-	for len(wc.Workloads) == 0 {
+	// log.Infof("TODO: Workload verfiication Skipping all workload verifcations ")
+	// return nil
+	for _, wr := range wc.Workloads {
+		wsts, err := sm.GetWorkload(&wr.VeniceWorkload.ObjectMeta)
+		if err != nil {
+			log.Errorf("Could not get workload %v. Err: %v", wr.VeniceWorkload.Name, err)
+			return err
+		}
+		log.Debugf("Got workload status: %+v", wsts)
+		vwl, err := sm.GetVeniceWorkloadByDisplayName(wr.VeniceWorkload.Name)
+		if err != nil {
+			log.Errorf("Could not get workload from Venice %+v", wr.VeniceWorkload.ObjectMeta)
+			return err
+		}
+		// check the migration status
+		if vwl.Status.MigrationStatus == nil {
+			log.Infof("Got workload : %+v", vwl)
+			return fmt.Errorf("Workload %v did not migrate", wr.VeniceWorkload.Name)
+		}
+		if vwl.Status.MigrationStatus.Stage != workload.WorkloadMigrationStatus_MIGRATION_ABORT.String() {
+			return fmt.Errorf("Workload %v migration.stage is not aborted", wr.VeniceWorkload.Name)
+		}
+		if vwl.Status.MigrationStatus.Status != workload.WorkloadMigrationStatus_FAILED.String() {
+			log.Infof("Got workload : %+v", vwl)
+			return fmt.Errorf("Workload %v migration.status is not aborted", wr.VeniceWorkload.Name)
+		}
+	}
+	return nil
+}
+
+//MoveWorkloads not supported here
+func (sm *VcenterSysModel) MoveWorkloads(spec common.MoveWorkloadsSpec) error {
+	if len(spec.DstHostCollection.Hosts) == 0 {
+		return fmt.Errorf("Invalid number of hosts for move %v", len(spec.DstHostCollection.Hosts))
+	}
+
+	for len(spec.WorkloadCollection.Workloads) == 0 {
 		return fmt.Errorf("No workloads selected for move")
 	}
 
@@ -241,16 +300,18 @@ func (sm *VcenterSysModel) MoveWorkloads(wc *objects.WorkloadCollection, hc *obj
 	}
 	wMove := &iota.WorkloadMoveMsg{
 		OrchestratorNode: orch.Orchestrators[0].Name,
+		NumParallelMoves: spec.NumberOfParallelMoves,
 	}
-	for i, w := range wc.Workloads {
-		dstNodeName := hc.Hosts[0].Name()
-		if len(hc.Hosts) > i {
-			dstNodeName = hc.Hosts[i].Name()
+	for i, w := range spec.WorkloadCollection.Workloads {
+		dstNodeName := spec.DstHostCollection.Hosts[0].Name()
+		if len(spec.DstHostCollection.Hosts) > i {
+			dstNodeName = spec.DstHostCollection.Hosts[i].Name()
 		}
 		wMove.WorkloadMoves = append(wMove.WorkloadMoves, &iota.WorkloadMove{
 			WorkloadName: w.Name(),
 			DstNodeName:  dstNodeName,
 			SrcNodeName:  w.NodeName(),
+			AbortTime:    spec.Timeout,
 		})
 	}
 
@@ -266,6 +327,7 @@ func (sm *VcenterSysModel) MoveWorkloads(wc *objects.WorkloadCollection, hc *obj
 		return fmt.Errorf("Workload Move failed.. API Status: resp: %+v", moveResp.ApiResponse)
 	}
 
+	hosts := sm.Hosts()
 	for _, mv := range moveResp.WorkloadMoves {
 		if mv.ApiResponse.ApiStatus == iota.APIResponseType_API_STATUS_OK {
 			wObj, ok := sm.WorkloadsObjs[mv.WorkloadName]
@@ -273,11 +335,19 @@ func (sm *VcenterSysModel) MoveWorkloads(wc *objects.WorkloadCollection, hc *obj
 				log.Errorf("Workload moved, but not found in model %v", mv.WorkloadName)
 			} else {
 				wObj.SetNodeName(mv.DstNodeName)
+				for _, h := range hosts.Hosts {
+					if h.Name() == mv.DstNodeName {
+						wObj.SetHost(h)
+					}
+				}
 			}
+		} else {
+			err = fmt.Errorf("Workload move %v failed : %v", mv.WorkloadName, mv.ApiResponse.ErrorMsg)
+			log.Errorf("Error : %v", err)
 		}
 	}
 
-	return nil
+	return err
 }
 
 // GetFwLogObjectCount gets the object count for firewall logs under the bucket with the given name
@@ -364,4 +434,40 @@ func (sm *VcenterSysModel) RemoveNetworks(switchName string) error {
 	}
 
 	return nil
+}
+
+//TriggerDeleteAddConfig triggers link flap
+func (sm *VcenterSysModel) TriggerDeleteAddConfig(percent int) error {
+
+	err := sm.CleanupAllConfig()
+	if err != nil {
+		return err
+	}
+
+	err = sm.TeardownWorkloads(sm.Workloads())
+	if err != nil {
+		return err
+	}
+
+	return sm.SetupDefaultConfig(context.Background(), sm.Scale, sm.ScaleData)
+
+}
+
+type triggerFunc func(int) error
+
+//RunRandomTrigger runs a random trigger
+func (sm *VcenterSysModel) RunRandomTrigger(percent int) error {
+
+	triggers := []triggerFunc{
+		sm.TriggerDeleteAddConfig,
+		sm.TriggerSnapshotRestore,
+		sm.TriggerHostReboot,
+		sm.TriggerVeniceReboot,
+		sm.TriggerVenicePartition,
+		sm.TriggerLinkFlap,
+		sm.TriggerNaplesUpgrade,
+	}
+
+	index := rand.Intn(len(triggers))
+	return triggers[index](percent)
 }

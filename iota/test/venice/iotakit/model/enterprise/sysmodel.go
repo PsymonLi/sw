@@ -547,6 +547,7 @@ func (sm *SysModel) SetupDefaultCommon(ctx context.Context, scale, scaleData boo
 		return fmt.Errorf("Error in listing policies %v", err1)
 	}
 
+	sm.defaultSgPolicies = []*objects.NetworkSecurityPolicyCollection{}
 	for _, pol := range defaultSgPolicies {
 		nPolicy := &objects.NetworkSecurityPolicy{VenicePolicy: pol}
 		sm.defaultSgPolicies = append(sm.defaultSgPolicies, objects.NewNetworkSecurityPolicyCollection(nPolicy, sm.ObjClient(), sm.Tb))

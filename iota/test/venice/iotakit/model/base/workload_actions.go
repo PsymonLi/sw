@@ -14,6 +14,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	iota "github.com/pensando/sw/iota/protos/gogen"
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/iota/tools/fuz/fuze"
 	"github.com/pensando/sw/venice/utils/log"
@@ -583,6 +584,12 @@ func (sm *SysModel) VerifyWorkloadMigrationStatus(wc *objects.WorkloadCollection
 	return nil
 }
 
+// VerifyWorkloadMigrationAbortStatus verifies workload migration status in venice
+func (sm *SysModel) VerifyWorkloadMigrationAbortStatus(wc *objects.WorkloadCollection) error {
+	// only implemented in vcenter sys model
+	return nil
+}
+
 func (sm *SysModel) startFTPServer(wpc *objects.WorkloadPairCollection) error {
 
 	srvWorkloads := make(map[string]*objects.Workload)
@@ -997,6 +1004,6 @@ func (sm *SysModel) DropIcmpFlowTTLSession(wpc *objects.WorkloadPairCollection, 
 }
 
 //MoveWorkloads not supported here
-func (sm *SysModel) MoveWorkloads(*objects.WorkloadCollection, *objects.HostCollection) error {
+func (sm *SysModel) MoveWorkloads(spec common.MoveWorkloadsSpec) error {
 	return errors.New("Model does not implement workload moves")
 }

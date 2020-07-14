@@ -128,6 +128,11 @@ func (n *VcenterNode) AddWorkloads(req *iota.WorkloadMsg) (*iota.WorkloadMsg, er
 	return req, nil
 }
 
+// ReAddWorkloads readds a workload on the node
+func (n *VcenterNode) ReAddWorkloads() error {
+	return nil
+}
+
 // DeleteWorkloads adds a workload on the vcenter node
 func (n *VcenterNode) DeleteWorkloads(req *iota.WorkloadMsg) (*iota.WorkloadMsg, error) {
 
@@ -293,29 +298,56 @@ func (n *VcenterNode) MoveWorkloads(ctx context.Context, req *iota.WorkloadMoveM
 	// Add workloads
 	moveWorkloads := func(ctx context.Context) error {
 		pool, ctx := errgroup.WithContext(ctx)
+		moves := 0
 		for _, mvReq := range moveRequests {
 			mvReq := mvReq
 			pool.Go(func() error {
-				err := n.dc.LiveMigrate(mvReq.workloadName,
-					mvReq.srcHost, mvReq.dstHost, n.ClusterName, mvReq.abortTime)
+				var err error
+				var msg string
+				for i := 0; i < 3; i++ {
+					err = n.dc.LiveMigrate(mvReq.workloadName,
+						mvReq.srcHost, mvReq.dstHost, n.ClusterName, mvReq.abortTime)
+					if err != nil && mvReq.abortTime == 0 {
+						msg = fmt.Sprintf("Workload migrate Name : %v, Src : %v, Dst %v failed : %v",
+							mvReq.workloadName, mvReq.srcHost, mvReq.dstHost, err.Error())
+						log.Error(msg)
+						continue
+					}
+					break
+				}
 				if err != nil {
-					msg := fmt.Sprintf("Workload migrate Name : %v, Src : %v, Dst %v failed : %v",
+					msg = fmt.Sprintf("Workload migrate Name : %v, Src : %v, Dst %v failed after retries : %v",
 						mvReq.workloadName, mvReq.srcHost, mvReq.dstHost, err.Error())
 					log.Error(msg)
 					mvReq.err = errors.New(msg)
 					return err
 				}
-				if mvReq.vlanOverride != 0 && mvReq.abortTime != 0 { // Not continuing with vlanOverride if req was to abort
-					err := n.dc.SetVlanOverride(mvReq.switchName, mvReq.workloadName, mvReq.currVlan, mvReq.vlanOverride)
-					if err != nil {
-						msg := fmt.Sprintf("Workload migrate Name : %v, Src : %v, Dst %v vlan override set failedfailed:  %v",
-							mvReq.workloadName, mvReq.srcHost, mvReq.dstHost, err.Error())
-						log.Error(msg)
-						mvReq.err = errors.New(msg)
+				if mvReq.abortTime == 0 {
+					// Not continuing with vlanOverride if req was to abort
+					if mvReq.vlanOverride != 0 {
+						err = n.dc.SetVlanOverride(mvReq.switchName, mvReq.workloadName, mvReq.currVlan, mvReq.vlanOverride)
+						if err != nil {
+							msg := fmt.Sprintf("Workload migrate Name : %v, Src : %v, Dst %v vlan override set failedfailed:  %v",
+								mvReq.workloadName, mvReq.srcHost, mvReq.dstHost, err.Error())
+							log.Error(msg)
+							mvReq.err = errors.New(msg)
+						}
 					}
+				} else {
+					msg := fmt.Sprintf("Workload migrate Name aborted: %v, Src : %v, Dst %v ",
+						mvReq.workloadName, mvReq.srcHost, mvReq.dstHost)
+					log.Error(msg)
+					mvReq.err = errors.New(msg)
 				}
 				return err
 			})
+			moves++
+
+			if req.NumParallelMoves != 0 && moves == int(req.NumParallelMoves) {
+				pool.Wait()
+				pool, ctx = errgroup.WithContext(ctx)
+				moves = 0
+			}
 		}
 		return pool.Wait()
 	}
@@ -339,7 +371,6 @@ func (n *VcenterNode) MoveWorkloads(ctx context.Context, req *iota.WorkloadMoveM
 			wload.workloadMsg.NodeName = mvReq.dstNodeName
 			mDstNode.(*EsxNode).workloadMap.Store(mvReq.workloadName, iotaWload)
 			mSrcNode.(*EsxNode).workloadMap.Delete(mvReq.workloadName)
-
 		}
 	}
 

@@ -825,9 +825,7 @@ func (sm *Statemgr) handleNetworkPropTopoUpdate(update *memdb.PropagationStTopoU
 			}
 
 			for _, nw := range networks {
-				nw.Network.Lock()
 				nw.smObjectTracker.startDSCTracking(d1)
-				nw.Network.Unlock()
 			}
 		}
 	}
@@ -842,9 +840,7 @@ func (sm *Statemgr) handleNetworkPropTopoUpdate(update *memdb.PropagationStTopoU
 			}
 
 			for _, nw := range networks {
-				nw.Network.Lock()
 				nw.smObjectTracker.stopDSCTracking(d2)
-				nw.Network.Unlock()
 			}
 		}
 	}

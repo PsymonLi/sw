@@ -325,9 +325,7 @@ func (sm *Statemgr) handleIPAMPropTopoUpdate(update *memdb.PropagationStTopoUpda
 					sm.logger.Errorf("ipam look up failed for tenant: %s | name: %s", tenant, ii)
 					continue
 				}
-				ipam.IPAMPolicy.Lock()
 				ipam.smObjectTracker.startDSCTracking(d1)
-				ipam.IPAMPolicy.Unlock()
 			}
 		}
 	}
@@ -341,9 +339,7 @@ func (sm *Statemgr) handleIPAMPropTopoUpdate(update *memdb.PropagationStTopoUpda
 					sm.logger.Errorf("ipam look up failed for tenant: %s | name: %s", tenant, ii)
 					continue
 				}
-				ipam.IPAMPolicy.Lock()
 				ipam.smObjectTracker.stopDSCTracking(d2)
-				ipam.IPAMPolicy.Unlock()
 			}
 		}
 	}

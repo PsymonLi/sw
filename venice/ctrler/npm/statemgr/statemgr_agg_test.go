@@ -239,9 +239,9 @@ func propogationCompleteForPolicies(stateMgr *Statemgr, start, end int) error {
 			return err
 		}
 
-		for nodeID, version := range policy.smObjectTracker.nodeVersions {
-			if version != policy.NetworkSecurityPolicy.GenerationID {
-				return fmt.Errorf("Node version mimsatch for %v c : %v  e: %v", nodeID, version, policy.NetworkSecurityPolicy.GenerationID)
+		for nodeID, data := range policy.smObjectTracker.nodeVersions {
+			if data.version != policy.NetworkSecurityPolicy.GenerationID {
+				return fmt.Errorf("Node version mimsatch for %v c : %v  e: %v", nodeID, data.version, policy.NetworkSecurityPolicy.GenerationID)
 			}
 		}
 

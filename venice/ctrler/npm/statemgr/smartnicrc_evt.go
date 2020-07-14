@@ -8,6 +8,7 @@ import (
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/ref"
 )
 
 var dscMgrRc *DSCMgrRc
@@ -61,7 +62,8 @@ func (dscMgr *DSCMgrRc) OnDistributedServiceCardCreate(smartNic *ctkit.Distribut
 
 // OnDistributedServiceCardUpdate handles update event on smartnic
 func (dscMgr *DSCMgrRc) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedServiceCard, nsnic *cluster.DistributedServiceCard) error {
-	defer dscMgr.sm.sendDscUpdateNotification(UpdateEvent, &smartNic.DistributedServiceCard, nsnic)
+	copyDSC := ref.DeepCopy(&smartNic.DistributedServiceCard).(*cluster.DistributedServiceCard)
+	defer dscMgr.sm.sendDscUpdateNotification(UpdateEvent, copyDSC, nsnic)
 	log.Infof("DSC spec old: %+v | new: %+v", smartNic.Spec, nsnic.Spec)
 	oldRt := smartNic.Spec.RoutingConfig
 	newRt := nsnic.Spec.RoutingConfig

@@ -440,9 +440,7 @@ func (sm *Statemgr) handleVrfPropTopoUpdate(update *memdb.PropagationStTopoUpdat
 			}
 
 			for _, vr := range vrfs {
-				vr.VirtualRouter.Lock()
 				vr.smObjectTracker.startDSCTracking(d1)
-				vr.VirtualRouter.Unlock()
 			}
 		}
 	}
@@ -457,9 +455,7 @@ func (sm *Statemgr) handleVrfPropTopoUpdate(update *memdb.PropagationStTopoUpdat
 			}
 
 			for _, vr := range vrfs {
-				vr.VirtualRouter.Lock()
 				vr.smObjectTracker.stopDSCTracking(d2)
-				vr.VirtualRouter.Unlock()
 			}
 		}
 	}

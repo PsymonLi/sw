@@ -131,7 +131,14 @@ func (n *TestNode) TriggerWithContextLocally(ctx context.Context, in *iota.Trigg
 	} else {
 		var err error
 		for index, cmd := range in.Commands {
-			wload, _ := n.workloadMap.Load(cmd.EntityName)
+			wload, ok := n.workloadMap.Load(cmd.EntityName)
+			if !ok {
+				msg := fmt.Sprintf("Workload %v not found on node %v", cmd.EntityName, n.info.Name)
+				logger.Errorf(msg)
+				in.ApiResponse = &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR,
+					ErrorMsg: msg}
+				return in, nil
+			}
 			triggerMsg := &iota.TriggerMsg{Commands: []*iota.Command{cmd},
 				TriggerOp:   in.GetTriggerOp(),
 				TriggerMode: in.GetTriggerMode()}

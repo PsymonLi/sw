@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/pensando/sw/iota/test/venice/iotakit/model"
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/iota/test/venice/iotakit/testbed"
 	"github.com/pensando/sw/venice/utils/log"
 )
@@ -68,6 +69,27 @@ func TestIotaVcHub(t *testing.T) {
 // BeforeSuite runs before the test suite and sets up the testbed
 var _ = BeforeSuite(func() {
 
+	naplesMemPath := os.Getenv("GOPATH") + "/src/github.com/pensando/sw/iota/scripts/naples/ps_mem.py"
+
+	copyNaplesMemUtil := func() {
+		ts.model.ForEachNaples(func(nc *objects.NaplesCollection) error {
+			_, err := ts.model.RunNaplesCommand(nc,
+				"cd /data;rm -f mtrack_out.txt ps_out.txt vmotion_minfo.txt slab_out.txt; touch mtrack_out.txt ; touch ps_out.txt; touch vmotion_minfo.txt; touch slab_out.txt;cd /")
+			Expect(err).ShouldNot(HaveOccurred())
+			return nil
+		})
+	}
+
+	resetMemTrack := func() {
+		ts.model.ForEachNaples(func(nc *objects.NaplesCollection) error {
+			err := ts.model.CopyToNaples(nc, []string{naplesMemPath}, "/data")
+			Expect(err).ShouldNot(HaveOccurred())
+			return nil
+		})
+	}
+
+	copyNaplesMemUtil()
+	resetMemTrack()
 	// verify cluster, workload are in good health
 	Eventually(func() error {
 		return ts.model.VerifySystemHealth(true)

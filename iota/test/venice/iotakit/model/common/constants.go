@@ -3,6 +3,8 @@ package common
 import (
 	"fmt"
 	"os"
+
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 )
 
 //ModelType type
@@ -37,6 +39,14 @@ type NetworkSpec struct {
 	Switch string
 	Nodes  []string
 	NwType NetworkType
+}
+
+//MoveWorkloadsSpec move workloads spec
+type MoveWorkloadsSpec struct {
+	WorkloadCollection    *objects.WorkloadCollection
+	DstHostCollection     *objects.HostCollection
+	Timeout               uint32
+	NumberOfParallelMoves uint32
 }
 
 //MockVeniceURL mock venice url

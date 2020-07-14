@@ -168,6 +168,7 @@ type TestNodeInterface interface {
 	ReInitNode(ctx context.Context, name string) *iota.Node
 	GetNodeInfo() NodeInfo
 	AddWorkloads(req *iota.WorkloadMsg) (*iota.WorkloadMsg, error)
+	ReAddWorkloads() error
 	DeleteWorkloads(req *iota.WorkloadMsg) (*iota.WorkloadMsg, error)
 	GetWorkloads(name string) []*iota.Workload
 	NodeController() TestNodeInterface

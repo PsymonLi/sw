@@ -40,7 +40,7 @@ type VcenterSysModel struct {
 //GetOrchestrator returns orchestroa
 func (sm *VcenterSysModel) getOrchestrators(scale bool) (*objects.OrchestratorCollection, error) {
 	port := ""
-	if scale {
+	if scale && sm.vcenterSim != nil {
 		port = fmt.Sprintf("%v", orchSimInstanceStartPort)
 		name := fmt.Sprintf("vcsim-%s-dc", port)
 		collection := objects.NewOrchestrator(sm.ObjClient(),
@@ -205,6 +205,7 @@ func (sm *VcenterSysModel) Init(tb *testbed.TestBed, cfgType cfgModel.CfgType, s
 	}
 
 	sm.RunVerifySystemHealth = sm.VerifySystemHealth
+	sm.RandomTrigger = sm.RunRandomTrigger
 	return nil
 
 }
@@ -299,11 +300,6 @@ L:
 
 	if err := sm.setupVmotionNetwork(); err != nil {
 		return fmt.Errorf("Setting up vmotion network %v", err.Error())
-	}
-
-	//objects.NewOrchestrator(
-	if err := sm.SetupDefaultCommon(ctx, scale, scaleData); err != nil {
-		return err
 	}
 
 	//objects.NewOrchestrator(

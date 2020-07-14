@@ -455,6 +455,7 @@ func (sm *SysModel) MakeVeniceCluster(ctx context.Context) error {
 		Spec: cluster.ClusterSpec{
 			AutoAdmitDSCs: true,
 			QuorumNodes:   sm.getVeniceIPAddrs(),
+			NTPServers : []string{"pool.ntp.org"},
 		},
 	}
 

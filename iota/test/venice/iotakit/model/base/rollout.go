@@ -329,12 +329,15 @@ func (sm *SysModel) PerformImageUpload(bundleType string) error {
 	if err != nil {
 		return err
 	}
-	_, err = sm.UploadBundle(ctx, bundleType)
-	if err != nil {
-		log.Infof("Error (%+v) uploading bundle.", err)
-		return err
+	for i := 0; i < 3; i++ {
+		_, err = sm.UploadBundle(ctx, bundleType)
+		if err != nil {
+			log.Infof("Error (%+v) uploading bundle.", err)
+			continue
+		}
+		break
 	}
-	return nil
+	return err
 }
 
 // UploadBundle performs a rollout in the cluster

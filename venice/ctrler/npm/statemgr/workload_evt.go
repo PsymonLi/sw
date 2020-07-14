@@ -102,15 +102,7 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 	// find the host for the workload
 	host, err := ws.stateMgr.ctrler.Host().Find(&api.ObjectMeta{Name: w.Spec.HostName})
 	if err != nil {
-		// retry again if we cant find the host. In cases where host and workloads are created back to back,
-		// there might be slight delay before host is available
-		time.Sleep(20 * time.Millisecond)
-		host, err = ws.stateMgr.ctrler.Host().Find(&api.ObjectMeta{Name: w.Spec.HostName})
-		if err != nil {
-			//return kvstore.NewKeyNotFoundError(w.Spec.HostName, 0)
-			log.Errorf("Error finding the host %s for workload %v. Err: %v", w.Spec.HostName, w.Name, err)
-			return fmt.Errorf("Error finding the host %s for workload %v. Err: %v", w.Spec.HostName, w.Name, err)
-		}
+		return fmt.Errorf("Error finding the host %s for workload %v. Err: %v", w.Spec.HostName, w.Name, err)
 	}
 
 	// lock the host to make sure only one workload is operating on the host
@@ -303,36 +295,6 @@ func (ws *WorkloadState) isMigrating() bool {
 	return w.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_STARTED.String() || w.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_NONE.String()
 }
 
-// checkEventually checks if a condition is met repeatedly
-func (ws *WorkloadState) waitForEndpoints() error {
-	pollInterval := 100 * time.Millisecond
-	timeoutInterval := time.Second * 120
-
-	timeout := time.After(timeoutInterval)
-
-	// loop till we reach timeout interval
-	for {
-		select {
-		case <-time.After(pollInterval):
-
-			for ii := range ws.Workload.Spec.Interfaces {
-				// check if we already have the endpoint for this workload
-				name, _ := strconv.ParseMacAddr(ws.Workload.Spec.Interfaces[ii].MACAddress)
-				epName := ws.Workload.Name + "-" + name
-				_, err := ws.stateMgr.FindEndpoint(ws.Workload.Tenant, epName)
-				pending, _ := ws.stateMgr.EndpointIsPending(ws.Workload.Tenant, epName)
-				if err == nil || pending {
-					return nil
-				}
-			}
-
-		case <-timeout:
-			log.Errorf("Error finding endpoints for workload  %v", ws.Workload.Name)
-			return fmt.Errorf("Error finding endpoints for workload  %v", ws.Workload.Name)
-		}
-	}
-}
-
 // createEndpoints tries to create all endpoints for a workload
 func (ws *WorkloadState) createEndpoints(indexes []int) error {
 	var ns *NetworkState
@@ -516,6 +478,20 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 	return nil
 }
 
+//GetKey gets thekey
+func (ws *WorkloadState) GetKey() string {
+	return ws.Workload.GetKey()
+}
+
+func (ws *WorkloadState) doReconcile() error {
+
+	log.Infof("Doing reconcile of workload %v", ws.Workload.Name)
+	if err := ws.deleteEndpoints(nil); err != nil {
+		return err
+	}
+	return ws.createEndpoints(nil)
+}
+
 // deleteEndpoints deletes all endpoints for a workload
 func (ws *WorkloadState) deleteEndpoints(indexes []int) error {
 	// loop over each interface of the workload
@@ -571,9 +547,11 @@ func (ws *WorkloadState) deleteEndpoints(indexes []int) error {
 			err = ws.stateMgr.ctrler.Endpoint().Delete(&epInfo)
 			if err != nil {
 				log.Errorf("Error deleting the endpoint. Err: %v", err)
-				//Retry only if not not found
 				if !strings.Contains(strings.ToLower(err.Error()), "not found") {
-					return kvstore.NewTxnFailedError()
+					//if not found, the probably APIServer is busy or doing snapshot
+					//Add workload for reconciliation
+					log.Infof("Adding workload for reconciliation %v", ws.Workload.Name)
+					ws.stateMgr.addForReconcile(ws)
 				}
 			}
 		}
@@ -596,6 +574,7 @@ func (sm *Statemgr) FindWorkload(tenant, name string) (*WorkloadState, error) {
 //RemoveStaleEndpoints remove stale endpoints
 func (sm *Statemgr) RemoveStaleEndpoints() error {
 
+	sm.retryEPCleanup = false
 	endpoints, err := sm.ctrler.Endpoint().List(context.Background(), &api.ListWatchOptions{})
 	if err != nil {
 		log.Errorf("Failed to get endpoints. Err : %v", err)
@@ -643,6 +622,11 @@ func (sm *Statemgr) RemoveStaleEndpoints() error {
 			err := sm.ctrler.Endpoint().Delete(&epInfo)
 			if err != nil {
 				log.Errorf("Error deleting the endpoint. Err: %v", err)
+				//if not found, the probably APIServer is busy or doing snapshot
+				//need to retry
+				if !strings.Contains(strings.ToLower(err.Error()), "not found") {
+					sm.retryEPCleanup = true
+				}
 			}
 		}
 	}

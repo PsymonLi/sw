@@ -456,8 +456,6 @@ func (dc *DataCenter) Datastore(cluster, hostName string) (*Datastore, error) {
 }
 
 func (dc *DataCenter) findHost(clusterName string, hostname string) (*VHost, error) {
-	dc.getClientWithRLock()
-	defer dc.releaseClientRLock()
 	cluster, ok := dc.clusters[clusterName]
 	if !ok {
 		return nil, fmt.Errorf("Cluster %v not found to deploy", clusterName)
@@ -1694,32 +1692,37 @@ func (dc *DataCenter) getDatastoreRefForHost(hostName string) (*types.ManagedObj
 func (dc *DataCenter) LiveMigrate(vmName, srcHostName, dstHostName, clusterName string, abortTime int) error {
 
 	dc.getClientWithRLock()
-	defer dc.releaseClientRLock()
 	err := dc.setUpFinder()
 	if err != nil {
+		dc.releaseClientRLock()
 		return errors.Wrapf(err, "Error setting up datacenter")
 	}
 
 	srcHostRef, err := dc.findHost(clusterName, srcHostName)
 	if err != nil {
+		dc.releaseClientRLock()
 		return err
 	}
 
 	dstHostRef, err := dc.findHost(clusterName, dstHostName)
 	if err != nil {
+		dc.releaseClientRLock()
 		return err
 	}
 
 	vmInst, err := dc.findVM(srcHostRef.Host.hs, vmName)
 	if err != nil {
+		dc.releaseClientRLock()
 		return err
 	}
 
 	dstHostDatastoreRef, err := dc.getDatastoreRefForHost(dstHostName)
 	if err != nil {
+		dc.releaseClientRLock()
 		return err
 	}
 
+	dc.releaseClientRLock()
 	return vmInst.Migrate(&dstHostRef.Host, dstHostDatastoreRef, abortTime)
 }
 
@@ -1748,8 +1751,8 @@ func (dc *DataCenter) NewVM(name string) (*VM, error) {
 }
 
 func (dc *DataCenter) VMExists(name string) bool {
-	dc.getClientWithRLock()
-	defer dc.releaseClientRLock()
+	//dc.getClientWithRLock()
+	//defer dc.releaseClientRLock()
 
 	return dc.vc.VMExists(name)
 }

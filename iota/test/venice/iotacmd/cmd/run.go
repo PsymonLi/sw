@@ -16,6 +16,7 @@ func init() {
 	runCommand.PersistentFlags().BoolVar(&stopOnError, "stop-on-error", false, "stops on error")
 	runCommand.PersistentFlags().StringVar(&suite, "suite", "", "suite to run")
 	runCommand.PersistentFlags().StringVar(&focus, "focus", "", "Focus test")
+	runCommand.PersistentFlags().StringVar(&timeout, "timeout", "300m", "Run timeout")
 	runCommand.PersistentFlags().StringVar(&nofocus, "no-focus", "", "No Focus test")
 	runCommand.PersistentFlags().BoolVar(&randomTrigger, "random-trigger", false, "run random trigger")
 }

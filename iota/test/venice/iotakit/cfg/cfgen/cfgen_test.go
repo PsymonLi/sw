@@ -26,6 +26,7 @@ func TestCfgenPolicyGen(t *testing.T) {
 	cfg.NumOfSubnetsPerVpc = 2
 	cfg.NumOfIPAMPsPerTenant = 1
 	cfg.WorkloadParams.InterfacesPerWorkload = 2
+	cfg.MirrorSessionParams.NumSessionMirrors = 10
 
 	cfg.NumOfTenants = 50
 	cfg.NumOfVRFsPerTenant = 1
@@ -102,6 +103,13 @@ func TestCfgenPolicyGen(t *testing.T) {
 	}
 
 	for _, o := range cfg.ConfigItems.SGPolicies {
+		if j, err := json.MarshalIndent(o, "", "  "); err == nil {
+			ofile.Write(j)
+			ofile.WriteString("\n")
+		}
+	}
+
+	for _, o := range cfg.ConfigItems.Mirrors {
 		if j, err := json.MarshalIndent(o, "", "  "); err == nil {
 			ofile.Write(j)
 			ofile.WriteString("\n")

@@ -3,6 +3,7 @@ package cfgen
 import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
+	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/api/generated/workload"
@@ -15,7 +16,7 @@ var scaleCfgenParams = &Cfgen{
 	UserParams: UserParams{},
 	RoleParams: RoleParams{},
 	NetworkParams: NetworkParams{
-		NumNetworks: 8,
+		NumNetworks: 4,
 		NetworkTemplate: &network.Network{
 			TypeMeta: api.TypeMeta{Kind: "Network"},
 			ObjectMeta: api.ObjectMeta{
@@ -314,8 +315,53 @@ var scaleCfgenParams = &Cfgen{
 		},
 	},
 
-	SecurityGroupsParams:   SecurityGroupsParams{},
-	MirrorSessionParams:    MirrorSessionParams{},
+	SecurityGroupsParams: SecurityGroupsParams{},
+	MirrorSessionParams: MirrorSessionParams{
+		NumSessionMirrors: 0,
+		MirrorSessionTemplate: &monitoring.MirrorSession{
+			TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
+			ObjectMeta: api.ObjectMeta{
+				Tenant:       "default",
+				Namespace:    "default",
+				Name:         "mirror{{iter}}",
+				GenerationID: "1",
+			},
+			Spec: monitoring.MirrorSessionSpec{
+				PacketSize:    128,
+				SpanID:        998,
+				PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
+				Collectors: []monitoring.MirrorCollector{
+					{
+						Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+						ExportCfg: &monitoring.MirrorExportConfig{
+							Destination: "100.1.1.1", //This is place holder
+						},
+					},
+				},
+				MatchRules: []monitoring.MatchRule{
+					{
+						Src: &monitoring.MatchSelector{
+							IPAddresses: []string{"10.1.1.10"},
+						},
+						AppProtoSel: &monitoring.AppProtoSelector{
+							ProtoPorts: []string{"TCP/5555"},
+						},
+					},
+					{
+						Src: &monitoring.MatchSelector{
+							IPAddresses: []string{"10.2.2.20"},
+						},
+						AppProtoSel: &monitoring.AppProtoSelector{
+							ProtoPorts: []string{"UDP/5555"},
+						},
+					},
+				},
+			},
+			Status: monitoring.MirrorSessionStatus{
+				ScheduleState: "none",
+			},
+		},
+	},
 	FwLogPolicyParams:      FwLogPolicyParams{},
 	FlowExportPolicyParams: FlowExportPolicyParams{},
 }

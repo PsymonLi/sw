@@ -250,7 +250,11 @@ var _ = Describe("venice cluster tests", func() {
 			}).Should(Succeed())
 
 			//update is add and delete of the policy
-			Expect(ts.model.DefaultNetworkSecurityPolicy().Delete()).ShouldNot(HaveOccurred())
+
+			Eventually(func() error {
+				return ts.model.DefaultNetworkSecurityPolicy().Delete()
+			})
+
 			time.Sleep(30 * time.Second)
 			Expect(ts.model.DefaultNetworkSecurityPolicy().Restore()).ShouldNot(HaveOccurred())
 
@@ -288,7 +292,10 @@ var _ = Describe("venice cluster tests", func() {
 			}).Should(Succeed())
 
 			//update is add and delete of the policy
-			Expect(ts.model.DefaultNetworkSecurityPolicy().Delete()).ShouldNot(HaveOccurred())
+
+			Eventually(func() error {
+				return ts.model.DefaultNetworkSecurityPolicy().Delete()
+			})
 			time.Sleep(30 * time.Second)
 			Expect(ts.model.DefaultNetworkSecurityPolicy().Restore()).ShouldNot(HaveOccurred())
 
@@ -325,7 +332,9 @@ var _ = Describe("venice cluster tests", func() {
 			}).Should(Succeed())
 
 			//update is add and delete of the policy
-			Expect(ts.model.DefaultNetworkSecurityPolicy().Delete()).ShouldNot(HaveOccurred())
+			Eventually(func() error {
+				return ts.model.DefaultNetworkSecurityPolicy().Delete()
+			})
 			time.Sleep(30 * time.Second)
 			Expect(ts.model.DefaultNetworkSecurityPolicy().Restore()).ShouldNot(HaveOccurred())
 

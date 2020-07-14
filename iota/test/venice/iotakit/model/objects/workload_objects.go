@@ -77,6 +77,10 @@ func (w *Workload) SetNodeName(nodeName string) {
 	w.iotaWorkload.NodeName = nodeName
 }
 
+func (w *Workload) SetHost(host *Host) {
+	w.host = host
+}
+
 func (w *Workload) SetMgmtIP(ip string) {
 	w.iotaWorkload.MgmtIp = ip
 }
@@ -179,7 +183,7 @@ func NewWorkload(host *Host, w *workload.Workload, wtype iota.WorkloadType, wima
 	}
 
 	for index := range w.Spec.Interfaces {
-		if w.Spec.Interfaces[index].IpAddresses[0] != "" {
+		if len(w.Spec.Interfaces[index].IpAddresses) > 0 && w.Spec.Interfaces[index].IpAddresses[0] != "" {
 			iotaWorkload.Interfaces[index].IpPrefix = w.Spec.Interfaces[index].IpAddresses[0] + "/24" //Assuming it is /24 for now
 		}
 	}
@@ -679,6 +683,19 @@ func (wpc *WorkloadCollection) Any(num int) *WorkloadCollection {
 	return &newWpc
 }
 
+// String Prints workload string
+func (wpc *WorkloadCollection) String() string {
+
+	workloads := []string{}
+
+	for _, wl := range wpc.Workloads {
+		workloads = append(workloads, wl.Name())
+	}
+
+	return strings.Join(workloads, "-")
+
+}
+
 // MeshPairs returns full-mesh pair of workloads
 func (wc *WorkloadCollection) MeshPairs() *WorkloadPairCollection {
 	if wc.HasError() {
@@ -789,11 +806,11 @@ func (wc *WorkloadCollection) LocalPairsAcrossNetwork(workload *Workload) *Workl
 	collection := NewWorkloadPairCollection(wc.Client, wc.Testbed)
 	for i, wf := range wc.Workloads {
 		if wf.iotaWorkload.Interfaces[0].NetworkName == workload.iotaWorkload.Interfaces[0].NetworkName &&
-		wf.iotaWorkload.Interfaces[0].UplinkVlan == workload.iotaWorkload.Interfaces[0].UplinkVlan {
+			wf.iotaWorkload.Interfaces[0].UplinkVlan == workload.iotaWorkload.Interfaces[0].UplinkVlan {
 			for j, ws := range wc.Workloads {
 				if i != j && ws.iotaWorkload.NodeName == workload.iotaWorkload.NodeName &&
-				ws.iotaWorkload.Interfaces[0].UplinkVlan != workload.iotaWorkload.Interfaces[0].UplinkVlan &&
-				ws.iotaWorkload.Interfaces[0].NetworkName != workload.iotaWorkload.Interfaces[0].NetworkName {
+					ws.iotaWorkload.Interfaces[0].UplinkVlan != workload.iotaWorkload.Interfaces[0].UplinkVlan &&
+					ws.iotaWorkload.Interfaces[0].NetworkName != workload.iotaWorkload.Interfaces[0].NetworkName {
 					pair := WorkloadPair{
 						First:  wf,
 						Second: ws,
@@ -811,11 +828,11 @@ func (wc *WorkloadCollection) RemotePairsAcrossNetwork(workload *Workload) *Work
 	collection := NewWorkloadPairCollection(wc.Client, wc.Testbed)
 	for i, wf := range wc.Workloads {
 		if wf.iotaWorkload.Interfaces[0].NetworkName == workload.iotaWorkload.Interfaces[0].NetworkName &&
-		wf.iotaWorkload.Interfaces[0].UplinkVlan == workload.iotaWorkload.Interfaces[0].UplinkVlan {
+			wf.iotaWorkload.Interfaces[0].UplinkVlan == workload.iotaWorkload.Interfaces[0].UplinkVlan {
 			for j, ws := range wc.Workloads {
 				if i != j && ws.iotaWorkload.NodeName != workload.iotaWorkload.NodeName &&
-				ws.iotaWorkload.Interfaces[0].UplinkVlan != workload.iotaWorkload.Interfaces[0].UplinkVlan &&
-				ws.iotaWorkload.Interfaces[0].NetworkName != workload.iotaWorkload.Interfaces[0].NetworkName {
+					ws.iotaWorkload.Interfaces[0].UplinkVlan != workload.iotaWorkload.Interfaces[0].UplinkVlan &&
+					ws.iotaWorkload.Interfaces[0].NetworkName != workload.iotaWorkload.Interfaces[0].NetworkName {
 					pair := WorkloadPair{
 						First:  wf,
 						Second: ws,

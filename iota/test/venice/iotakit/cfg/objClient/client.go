@@ -33,6 +33,9 @@ type ObjClient interface {
 	Context() context.Context
 	Urls() []string
 
+	GetRestClientByID(int) *Client
+	RunFunctionWithID(workObj shardworkers.WorkObj, workIDFunc shardworkers.WorkIDFunc) error
+	WaitForIdle()
 	CreateHost(host *cluster.Host) error
 	ListHost() (objs []*cluster.Host, err error)
 	DeleteHost(wrkld *cluster.Host) error
@@ -59,6 +62,7 @@ type ObjClient interface {
 	UpdateNetworkInterface(intf *network.NetworkInterface) error
 	DeleteNetworkInterface(nw *network.NetworkInterface) error
 	ListNetworkLoopbackInterfaces() (objs []*network.NetworkInterface, err error)
+	ListNetworkUplinkInterfaces() (objs []*network.NetworkInterface, err error)
 
 	CreateDscProfile(dscProfile *cluster.DSCProfile) error
 	GetDscProfile(meta *api.ObjectMeta) (dscProfile *cluster.DSCProfile, err error)
@@ -73,6 +77,7 @@ type ObjClient interface {
 	CreateWorkloads(wrklds []*workload.Workload) error
 	GetWorkload(meta *api.ObjectMeta) (w *workload.Workload, err error)
 	ListWorkload() (objs []*workload.Workload, err error)
+	GetWorkloads() (objs []*workload.Workload, err error)
 	DeleteWorkloads(wrklds []*workload.Workload) error
 
 	GetEndpoint(meta *api.ObjectMeta) (ep *workload.Endpoint, err error)
@@ -176,46 +181,64 @@ type VeniceConfigStatus struct {
 type VeniceConfigPushStatus struct {
 	KindObjects struct {
 		Endpoint []struct {
-			Key         string   `json:"Key"`
-			PendingDSCs []string `json:"PendingDSCs"`
-			Updated     int      `json:"Updated"`
-			Pending     int      `json:"Pending"`
-			Version     string   `json:"Version"`
+			Key          string   `json:"Key"`
+			PendingDSCs  []string `json:"PendingDSCs"`
+			Updated      int      `json:"Updated"`
+			Pending      int      `json:"Pending"`
+			Version      string   `json:"Version"`
+			MaxPropTime  int64    `json:"MaxPropTime"`
+			MinPropTime  int64    `json:"MinPropTime"`
+			MeanPropTime int64    `json:"MeanPropTime"`
 		} `json:"Endpoint"`
 		App []struct {
-			Key         string   `json:"Key"`
-			PendingDSCs []string `json:"PendingDSCs"`
-			Updated     int      `json:"Updated"`
-			Pending     int      `json:"Pending"`
-			Version     string   `json:"Version"`
+			Key          string   `json:"Key"`
+			PendingDSCs  []string `json:"PendingDSCs"`
+			Updated      int      `json:"Updated"`
+			Pending      int      `json:"Pending"`
+			Version      string   `json:"Version"`
+			MaxPropTime  int64    `json:"MaxPropTime"`
+			MinPropTime  int64    `json:"MinPropTime"`
+			MeanPropTime int64    `json:"MeanPropTime"`
 		} `json:"App"`
 		NetworkSecurityPolicy []struct {
-			Key         string   `json:"Key"`
-			PendingDSCs []string `json:"PendingDSCs"`
-			Updated     int      `json:"Updated"`
-			Pending     int      `json:"Pending"`
-			Version     string   `json:"Version"`
+			Key          string   `json:"Key"`
+			PendingDSCs  []string `json:"PendingDSCs"`
+			Updated      int      `json:"Updated"`
+			Pending      int      `json:"Pending"`
+			Version      string   `json:"Version"`
+			MaxPropTime  int64    `json:"MaxPropTime"`
+			MinPropTime  int64    `json:"MinPropTime"`
+			MeanPropTime int64    `json:"MeanPropTime"`
 		} `json:"NetworkSecurityPolicy"`
 		NetworkInterface []struct {
-			Key         string   `json:"Key"`
-			PendingDSCs []string `json:"PendingDSCs"`
-			Updated     int      `json:"Updated"`
-			Pending     int      `json:"Pending"`
-			Version     string   `json:"Version"`
+			Key          string   `json:"Key"`
+			PendingDSCs  []string `json:"PendingDSCs"`
+			Updated      int      `json:"Updated"`
+			Pending      int      `json:"Pending"`
+			Version      string   `json:"Version"`
+			MaxPropTime  int64    `json:"MaxPropTime"`
+			MinPropTime  int64    `json:"MinPropTime"`
+			MeanPropTime int64    `json:"MeanPropTime"`
 		} `json:"NetworkInterface"`
 		FirewallProfile []struct {
-			Key         string   `json:"Key"`
-			PendingDSCs []string `json:"PendingDSCs"`
-			Updated     int      `json:"Updated"`
-			Pending     int      `json:"Pending"`
-			Version     string   `json:"Version"`
+			Key          string   `json:"Key"`
+			PendingDSCs  []string `json:"PendingDSCs"`
+			Updated      int      `json:"Updated"`
+			Pending      int      `json:"Pending"`
+			Version      string   `json:"Version"`
+			MaxPropTime  int64    `json:"MaxPropTime"`
+			MinPropTime  int64    `json:"MinPropTime"`
+			MeanPropTime int64    `json:"MeanPropTime"`
 		} `json:"FirewallProfile"`
 		MirrorSession []struct {
-			Key         string   `json:"Key"`
-			PendingDSCs []string `json:"PendingDSCs"`
-			Updated     int      `json:"Updated"`
-			Pending     int      `json:"Pending"`
-			Version     string   `json:"Version"`
+			Key          string   `json:"Key"`
+			PendingDSCs  []string `json:"PendingDSCs"`
+			Updated      int      `json:"Updated"`
+			Pending      int      `json:"Pending"`
+			Version      string   `json:"Version"`
+			MaxPropTime  int64    `json:"MaxPropTime"`
+			MinPropTime  int64    `json:"MinPropTime"`
+			MeanPropTime int64    `json:"MeanPropTime"`
 		} `json:"MirrorSession"`
 	} `json:"KindObjects"`
 }
@@ -242,6 +265,7 @@ const (
 
 // NewClient rest client
 func NewClient(ctx context.Context, urls []string) ObjClient {
+	log.Infof("init client URLs %v", urls)
 	client := &Client{ctx: ctx, urls: urls}
 	err := client.init(numWorkers)
 	if err != nil {
@@ -695,6 +719,21 @@ func (r *Client) ListNetworkLoopbackInterfaces() (objs []*network.NetworkInterfa
 	return objs, err
 }
 
+// ListNetworkUplinkInterfaces lists all uplink network interfaces
+func (r *Client) ListNetworkUplinkInterfaces() (objs []*network.NetworkInterface, err error) {
+
+	opts := api.ListWatchOptions{FieldSelector: fmt.Sprintf("spec.type=uplink-eth")}
+
+	for _, restcl := range r.restcls {
+		objs, err = restcl.NetworkV1().NetworkInterface().List(r.ctx, &opts)
+		if err == nil {
+			break
+		}
+	}
+
+	return objs, err
+}
+
 // ListNetowrkInterfacesByFilter lists by filter
 func (r *Client) ListNetowrkInterfacesByFilter(filter string) (objs []*network.NetworkInterface, err error) {
 
@@ -933,6 +972,11 @@ func (r *Client) ListWorkload() (objs []*workload.Workload, err error) {
 	}
 
 	return objs, err
+}
+
+// ListWorkload gets all workloads from venice cluster
+func (r *Client) GetWorkloads() (objs []*workload.Workload, err error) {
+	return r.ListWorkload()
 }
 
 // DeleteNetworkSecurityPolicy deletes SG policy

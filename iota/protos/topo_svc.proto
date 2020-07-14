@@ -734,6 +734,9 @@ message WorkloadMoveMsg {
 
     //Orchestrator node 
     string orchestrator_node              = 3;
+
+    // number of parallel moves
+    uint32 num_parallel_moves             = 4;
 }
 
 enum NetworkType {

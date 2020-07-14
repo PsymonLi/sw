@@ -62,6 +62,11 @@ func (n *TestNode) AddWorkloads(w *iota.WorkloadMsg) (*iota.WorkloadMsg, error) 
 	return resp, nil
 }
 
+// ReAddWorkloads readds a workload on the node
+func (n *TestNode) ReAddWorkloads() error {
+	return n.restoreLocallyManagedWorkloads()
+}
+
 var workloadTypeMap = map[iota.WorkloadType]string{
 	iota.WorkloadType_WORKLOAD_TYPE_VM: workload.WorkloadTypeVcenter,
 	//iota.WorkloadType_WORKLOAD_TYPE_VM_VCENTER: workload.WorkloadTypeVcenter,

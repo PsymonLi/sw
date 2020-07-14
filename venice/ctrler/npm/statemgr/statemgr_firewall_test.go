@@ -283,9 +283,10 @@ func createApp(s *Statemgr, name, port string) error {
 	app := security.App{
 		TypeMeta: api.TypeMeta{Kind: "App"},
 		ObjectMeta: api.ObjectMeta{
-			Tenant:    "default",
-			Namespace: "default",
-			Name:      name,
+			Tenant:       "default",
+			Namespace:    "default",
+			Name:         name,
+			GenerationID: "1",
 		},
 		Spec: security.AppSpec{
 			ProtoPorts: []security.ProtoPort{
@@ -458,12 +459,12 @@ func getPolicyVersionForNode(s *Statemgr, policyname, nodename string) (string, 
 		return "", err
 	}
 
-	version, ok := p.smObjectTracker.nodeVersions[nodename]
+	data, ok := p.smObjectTracker.nodeVersions[nodename]
 	if ok != true {
 		return "", errors.New("Smartnic not found in versions")
 	}
 
-	return version, nil
+	return data.version, nil
 }
 
 func TestSmartPolicyNodeVersions(t *testing.T) {
@@ -836,12 +837,12 @@ func getFwProfileVersionForNode(s *Statemgr, fwprofilename, nodename string) (st
 		return "", err
 	}
 
-	version, ok := p.smObjectTracker.nodeVersions[nodename]
+	data, ok := p.smObjectTracker.nodeVersions[nodename]
 	if ok != true {
 		return "", errors.New("Smartnic not found in versions")
 	}
 
-	return version, nil
+	return data.version, nil
 }
 
 func createFwProfile(s *Statemgr, name, version string) error {

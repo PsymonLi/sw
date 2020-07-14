@@ -16,7 +16,9 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/monitoring"
+	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/api/generated/security"
+	"github.com/pensando/sw/api/labels"
 	iota "github.com/pensando/sw/iota/protos/gogen"
 	Utils "github.com/pensando/sw/iota/svcs/agent/utils"
 	constants "github.com/pensando/sw/iota/svcs/common"
@@ -30,6 +32,7 @@ import (
 	modelUtils "github.com/pensando/sw/iota/test/venice/iotakit/model/utils"
 	"github.com/pensando/sw/iota/test/venice/iotakit/testbed"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/shardworkers"
 	"github.com/willf/bitset"
 )
 
@@ -105,6 +108,15 @@ func (sm *SysModel) BeforeTestCallback() {
 
 	if os.Getenv("RANDOM_TRIGGER") != "" {
 		err := sm.RandomTrigger(100)
+
+		retries := 300
+		for i := 0; i < retries; i++ {
+			if err = sm.RunVerifySystemHealth(true); err == nil {
+				return
+			}
+			time.Sleep(1 * time.Second)
+		}
+
 		if err != nil {
 			log.Errorf("")
 			fmt.Printf("%s%sRunning Random trigger failed %s\n", redColor, boldStyle, defaultStyle)
@@ -718,10 +730,16 @@ func (sm *SysModel) AssociateHosts() error {
 							}
 							//Add BM type to support upgrade
 							dsc.Labels = make(map[string]string)
-							dsc.Labels["type"] = "sim"
-							if err := sm.UpdateSmartNIC(dsc); err != nil {
+							for i := 0; i < 3; i++ {
+								dsc.Labels["type"] = "sim"
+								if err = sm.UpdateSmartNIC(dsc); err == nil {
+									break
+								}
+							}
+							if err != nil {
 								log.Infof("Error updating smart nic object %v", err)
 								return err
+
 							}
 						}
 					}
@@ -795,7 +813,7 @@ func (sm *SysModel) AssociateWorkloads() error {
 
 	skipSetup := os.Getenv("SKIP_SETUP")
 
-	cfgWorkloads, _ := sm.CfgModel.ListWorkload()
+	cfgWorkloads, _ := sm.CfgModel.GetWorkloads()
 	// if we are skipping setup we dont need to bringup the workload
 	if skipSetup != "" {
 		// first get a list of all existing.Workloads from iota
@@ -818,7 +836,7 @@ func (sm *SysModel) AssociateWorkloads() error {
 		for _, gwrk := range getResp.Workloads {
 
 			for _, wrk := range cfgWorkloads {
-				if wrk.Name == gwrk.WorkloadName {
+				if wrk.Name == gwrk.WorkloadName || wrk.Labels["io.pensando.vcenter.display-name"] == gwrk.WorkloadName {
 					wobj := &objects.Workload{}
 					wobj.SetIotaWorkload(gwrk)
 					wobj.SetIotaNodeName(gwrk.NodeName)
@@ -866,6 +884,21 @@ func getThirdPartyNic(name, mac string) *cluster.DistributedServiceCard {
 	}
 }
 
+type workObjInterface interface {
+	GetKey() string
+}
+type cfgWorkCtx struct {
+	cfgObj workObjInterface
+}
+
+func (w cfgWorkCtx) GetKey() string {
+	return w.cfgObj.GetKey()
+}
+
+func (w *cfgWorkCtx) WorkFunc(ctx context.Context) error {
+	return nil
+}
+
 func (sm *SysModel) modifyConfig() error {
 
 	log.Infof("Modifying config as per model spec")
@@ -875,6 +908,69 @@ func (sm *SysModel) modifyConfig() error {
 	for i := range cfgObjects.Workloads {
 		for j := range cfgObjects.Workloads[i].Spec.Interfaces {
 			cfgObjects.Workloads[i].Spec.Interfaces[j].Network = ""
+		}
+	}
+
+	if sm.Scale {
+		//Modify Mirror Config, half of them flow mirror and other half interface mirrors
+		veniceCollector := sm.VeniceNodes().Leader()
+		intfCollection := sm.NetworkInterfaces().Uplinks()
+		for index, ms := range cfgObjects.Mirrors {
+			for _, col := range ms.Spec.Collectors {
+				col.ExportCfg.Destination = strings.Split(veniceCollector.Nodes[0].GetTestNode().GetIotaNode().IpAddress, "/")[0]
+			}
+
+			if index >= len(cfgObjects.Mirrors)/2 {
+				ms.Spec.MatchRules = nil
+				ms.Spec.PacketFilters = nil
+			}
+		}
+		var divided [][]*network.NetworkInterface
+		groupsCnt := len(cfgObjects.Mirrors) / 2
+		chunkSize := (len(intfCollection.Interfaces)) / groupsCnt
+		for i := 0; i < len(intfCollection.Interfaces); i += chunkSize {
+			end := i + chunkSize
+
+			if end > len(intfCollection.Interfaces) {
+				end = len(intfCollection.Interfaces)
+			}
+			divided = append(divided, intfCollection.Interfaces[i:end])
+		}
+
+		intfMirrorStartIndex := len(cfgObjects.Mirrors) / 2
+		for index, div := range divided {
+			label := map[string]string{
+				"env": "production" + strconv.Itoa(index),
+			}
+			for _, intf := range div {
+
+				intf.ObjectMeta.Labels = label
+			}
+			selector := labels.SelectorFromSet(labels.Set(label))
+			cfgObjects.Mirrors[intfMirrorStartIndex+index].Spec.Interfaces = &monitoring.InterfaceMirror{
+				Selectors: []*labels.Selector{selector},
+			}
+		}
+
+		var runErr error
+		updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+			workCtx := userCtx.(*cfgWorkCtx)
+			intf := workCtx.cfgObj.(*network.NetworkInterface)
+			idClient := sm.ObjClient().GetRestClientByID(id)
+			err := idClient.UpdateNetworkInterface(intf)
+			if err != nil {
+				log.Errorf("Error attaching network to interface")
+				runErr = err
+				return err
+			}
+			return nil
+		}
+		for _, intf := range intfCollection.Interfaces {
+			sm.ObjClient().RunFunctionWithID(&cfgWorkCtx{cfgObj: intf}, updateWork)
+		}
+		sm.ObjClient().WaitForIdle()
+		if runErr != nil {
+			return runErr
 		}
 	}
 	return nil
@@ -1101,6 +1197,9 @@ func (sm *SysModel) AfterTestCommon() error {
 
 func (sm *SysModel) combineLogs() {
 
+	if sm.Scale {
+		return
+	}
 	// create a tar.gz from all log files
 	cmdStr := fmt.Sprintf("pushd %s/src/github.com/pensando/sw/iota && tar cvzf venice-iota.tgz *.log logs && mv venice-iota.tgz logs/  && popd", os.Getenv("GOPATH"))
 	cmd := exec.Command("bash", "-c", cmdStr)
@@ -1198,6 +1297,9 @@ func (sm *SysModel) ReadModel() common.ModelInfo {
 //DownloadTechsupport download techsuport
 func (sm *SysModel) DownloadTechsupport(dir string) error {
 
+	if sm.Scale {
+		return nil
+	}
 	log.Infof("Performing techsuppprt....")
 	var nodeNames []string
 

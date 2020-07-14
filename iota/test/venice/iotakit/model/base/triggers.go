@@ -33,7 +33,8 @@ func (sm *SysModel) TriggerNaplesUpgrade(percent int) error {
 		return nil
 	})
 
-	rollout, err := sm.GetRolloutObject(common.RolloutSpec{Local: true, BundleType: "upgrade-bundle"}, true)
+       rollout, err := sm.GetRolloutObject(common.RolloutSpec{Local: true, BundleType: "upgrade-bundle",
+               SkipVenice: true}, true)
 	if err != nil {
 		return err
 	}

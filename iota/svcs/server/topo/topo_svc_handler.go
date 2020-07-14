@@ -857,7 +857,9 @@ func (ts *TopologyService) ReloadNodes(ctx context.Context, req *iota.ReloadMsg)
 		for _, rnode := range rNodes {
 			node := rnode.node
 			name := rnode.name
+			log.Infof("Processing Reloading node %v , name %vv", node.GetNodeInfo().Name, name)
 			pool.Go(func() error {
+				log.Infof("Reloading node %v , name %vv", node.GetNodeInfo().Name, name)
 				return node.ReloadNode(name, !req.SkipRestore, rnode.method, rnode.useNcsi)
 			})
 		}

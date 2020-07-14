@@ -38,6 +38,7 @@ type vmESXWorkloadBase struct {
 	cluster         string
 	vm              *vmware.VM
 	agentClient     iota.IotaAgentApiClient
+	conn            *constants.GRPCClient
 	agentBinaryPath string
 }
 
@@ -120,6 +121,7 @@ func (vm *vmESXWorkloadBase) startVMAgent(args ...string) error {
 	}
 
 	vm.agentClient = iota.NewIotaAgentApiClient(c.Client)
+	vm.conn = c
 
 	req := &iota.Node{Name: vm.Name(), IpAddress: "",
 		Type: iota.PersonalityType_PERSONALITY_COMMAND_NODE,
@@ -388,9 +390,13 @@ func (vm *vmESXWorkloadBase) TearDown() {
 		//Power off VM in ESX, Deploy is expensive
 		vm.vm.PowerOff()
 		vm.vm.Destroy()
+		if vm.conn != nil && vm.conn.Client != nil {
+			vm.conn.Client.Close()
+		}
 	} else {
 		log.Errorf("VM reference nil, cannot teardown %v %p %p", vm.Name(), vm, vm.vm)
 	}
+
 }
 
 func (vm *vmVcenterWorkload) BringUp(args ...string) error {
@@ -475,8 +481,19 @@ func (vm *vmVcenterWorkload) BringUp(args ...string) error {
 	vm.RunCommand(cmd, "", 0, 0, false, true)
 
 	for _, intf := range constants.EsxDataVMInterfaces {
-		if err := Utils.DisableDhcpOnInterfaceRemote(vm.sshHandle, intf); err != nil {
-			return errors.Wrap(err, "Disabling DHCP on interface failed")
+		for i := 0; i < 3; i++ {
+			if err = Utils.DisableDhcpOnInterfaceRemote(vm.sshHandle, intf); err != nil {
+				log.Errorf("Error disabling DHCP interface %v : %v", vm.Name(), err.Error())
+				time.Sleep(1 * time.Second)
+				continue
+				//Dont't return error
+				//return errors.Wrap(err, "Disabling DHCP on interface failed")
+			}
+			break
+		}
+		if err != nil {
+			log.Errorf("Error disabling DHCP interface %v : %v, failed after retries", vm.Name(), err.Error())
+			return err
 		}
 	}
 
@@ -643,6 +660,7 @@ func (vm *vmVcenterWorkload) startVMAgent(args ...string) error {
 	}
 
 	vm.agentClient = iota.NewIotaAgentApiClient(c.Client)
+	vm.conn = c
 
 	req := &iota.Node{Name: vm.Name(), IpAddress: "",
 		Type: iota.PersonalityType_PERSONALITY_COMMAND_NODE,

@@ -10,6 +10,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/pensando/sw/api/generated/monitoring"
+
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/network"
@@ -36,6 +38,7 @@ type EntBaseCfg struct {
 	DefaultSgPolicies []*NetworkSecurityPolicy //default sg policy pushed
 	Cfg               *cfgen.Cfgen
 	scale             bool
+	params            *ConfigParams
 }
 
 //TimeTrack tracker
@@ -118,6 +121,8 @@ type CfgObjects struct {
 	SgPolicies []*security.NetworkSecurityPolicy // simulated security policies
 	Apps       []*security.App                   // simulated apps
 	Ipams      []*network.IPAMPolicy
+	Mirrors    []*monitoring.MirrorSession
+	Tenants    []*cluster.Tenant
 }
 
 //ConfigParams contoller
@@ -191,6 +196,8 @@ func (gs *EntBaseCfg) PopulateConfig(params *ConfigParams) error {
 	cfg := gs.Cfg
 	gs.scale = params.Scale
 
+	gs.params = params
+
 	//Reset config stats so that we can start fresh
 
 	if params.Scale {
@@ -201,6 +208,7 @@ func (gs *EntBaseCfg) PopulateConfig(params *ConfigParams) error {
 		cfg.WorkloadParams.WorkloadsPerHost = 32
 		cfg.WorkloadParams.InterfacesPerWorkload = params.NumberOfInterfacesPerWorkload
 		cfg.AppParams.NumApps = 1200
+		cfg.NumSessionMirrors = 8 //8 mirrors
 	} else {
 		cfg.NetworkSecurityPolicyParams.NumRulesPerPolicy = 10
 		cfg.NetworkSecurityPolicyParams.NumIPPairsPerRule = 4
@@ -501,6 +509,39 @@ func (gs *EntBaseCfg) pushConfigViaStagingBuffer() error {
 	return stagingBuf.Commit()
 }
 
+func (gs *EntBaseCfg) waitForUplinkInterfaces() error {
+
+	var intfs []*network.NetworkInterface
+	var err error
+	rClient := gs.Client
+
+	bkCtx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancelFunc()
+
+	expectedInterfaces := 2 * (len(gs.params.Dscs) + len(gs.params.FakeDscs))
+	log.Infof("Number of Expected Interfaces  %v", expectedInterfaces)
+L:
+	for true {
+		select {
+		case <-bkCtx.Done():
+			log.Errorf("Expected %v , found %v ", expectedInterfaces, len(intfs))
+			return fmt.Errorf("Error finding all uplink interfaces : %s", err)
+		default:
+			intfs, err = rClient.ListNetworkUplinkInterfaces()
+			if err != nil {
+				log.Errorf("Error querying uplink interfaces : Err: %v", err)
+				return err
+			}
+			if expectedInterfaces == len(intfs) {
+				break L
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	return nil
+}
+
 func (gs *EntBaseCfg) pushConfigViaRest() error {
 
 	cfg := gs.Cfg
@@ -517,6 +558,10 @@ func (gs *EntBaseCfg) pushConfigViaRest() error {
 			}
 		}
 		return nil
+	}
+
+	if err := gs.waitForUplinkInterfaces(); err != nil {
+		return err
 	}
 
 	if err := CreateHosts(); err != nil {
@@ -555,6 +600,19 @@ func (gs *EntBaseCfg) pushConfigViaRest() error {
 			return nil
 		}
 		if err := createSgPolicy(); err != nil {
+			return err
+		}
+	}
+
+	for _, o := range cfg.ConfigItems.Mirrors {
+		createMirror := func() error {
+			if err := rClient.CreateMirrorSession(o); err != nil {
+				log.Infof("Error creating mirror policy %v", err)
+				return fmt.Errorf("error creating mirror policy: %s", err)
+			}
+			return nil
+		}
+		if err := createMirror(); err != nil {
 			return err
 		}
 	}
@@ -1021,9 +1079,26 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 		return false, err
 	}
 
+	type kstat struct {
+		MaxPropTime  int64
+		MinPropTime  int64
+		MeanPropTime int64
+	}
+	stats := make(map[string]*kstat)
 	if len(configPushStatus.KindObjects.Endpoint) != len(eps) {
 		log.Infof("Endpoints not synced with NPM yet.")
 		return false, nil
+	}
+
+	addStat := func(kind string, min, max, mean int64) {
+		stat, ok := stats[kind]
+		if !ok {
+			stats[kind] = &kstat{}
+			stat = stats[kind]
+		}
+		stat.MinPropTime = min
+		stat.MaxPropTime = max
+		stat.MeanPropTime = mean
 	}
 
 	for _, ep := range configPushStatus.KindObjects.Endpoint {
@@ -1031,6 +1106,7 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 			log.Infof("EP %v not push to DSCs pending :%v ", ep.Key, ep.PendingDSCs)
 			return false, nil
 		}
+		addStat("Endpoint", ep.MinPropTime, ep.MaxPropTime, ep.MeanPropTime)
 	}
 
 	for _, ep := range configPushStatus.KindObjects.App {
@@ -1038,6 +1114,7 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 			log.Infof("APP %v not push to DSCs pending :%v ", ep.Key, ep.PendingDSCs)
 			return false, nil
 		}
+		addStat("App", ep.MinPropTime, ep.MaxPropTime, ep.MeanPropTime)
 	}
 
 	for _, ep := range configPushStatus.KindObjects.FirewallProfile {
@@ -1045,6 +1122,7 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 			log.Infof("FirewallProfile %v not push to DSCs pending :%v ", ep.Key, ep.PendingDSCs)
 			return false, nil
 		}
+		addStat("FirewallProfile", ep.MinPropTime, ep.MaxPropTime, ep.MeanPropTime)
 	}
 
 	for _, ep := range configPushStatus.KindObjects.MirrorSession {
@@ -1052,6 +1130,7 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 			log.Infof("MirrorSession %v not push to DSCs pending :%v ", ep.Key, ep.PendingDSCs)
 			return false, nil
 		}
+		addStat("MirrorSession", ep.MinPropTime, ep.MaxPropTime, ep.MeanPropTime)
 	}
 
 	for _, ep := range configPushStatus.KindObjects.NetworkInterface {
@@ -1059,6 +1138,7 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 			log.Infof("NetworkInterface %v not push to DSCs pending :%v ", ep.Key, ep.PendingDSCs)
 			return false, nil
 		}
+		addStat("NetworkInterface", ep.MinPropTime, ep.MaxPropTime, ep.MeanPropTime)
 	}
 
 	for _, ep := range configPushStatus.KindObjects.NetworkSecurityPolicy {
@@ -1066,6 +1146,15 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 			log.Infof("NetworkSecurityPolicy %v not push to DSCs pending :%v ", ep.Key, ep.PendingDSCs)
 			return false, nil
 		}
+		addStat("NetworkSecurityPolicy", ep.MinPropTime, ep.MaxPropTime, ep.MeanPropTime)
+	}
+
+	if gs.scale {
+		//Print Stats
+		for kind, stat := range stats {
+			log.Infof("Push Stats for : %v  Min : %v Max : %v Mean : %v", kind, stat.MinPropTime, stat.MaxPropTime, stat.MeanPropTime)
+		}
+
 	}
 
 	return true, nil
@@ -1076,18 +1165,13 @@ func (gs *EntBaseCfg) GetCfgObjects() CfgObjects {
 
 	objects := CfgObjects{}
 
-	for _, app := range gs.apps {
-		objects.Apps = append(objects.Apps, app.veniceApp)
-	}
-
 	for _, nw := range gs.subnets {
 		objects.Networks = append(objects.Networks, nw.veniceNetwork)
 	}
 
-	for _, pol := range gs.sgPolicies {
-		objects.SgPolicies = append(objects.SgPolicies, pol.VenicePolicy)
-	}
-
+	objects.Apps = gs.Cfg.ConfigItems.Apps
+	objects.SgPolicies = gs.Cfg.ConfigItems.SGPolicies
+	objects.Mirrors = gs.Cfg.ConfigItems.Mirrors
 	objects.Workloads = gs.Cfg.ConfigItems.Workloads
 	return objects
 }

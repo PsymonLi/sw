@@ -259,10 +259,10 @@ func (wp *WorkerPool) WaitForIdle() {
 
 	for true {
 		if idle, _ := wp.IsIdle(); !idle {
-			log.Infof("Waiting for worker pools to be idle.")
 			time.Sleep(1 * time.Second)
+			continue
 		}
-		log.Infof("worker pools to be idle")
+		log.Infof("Worker pool %v idle", wp.name)
 		return
 	}
 }

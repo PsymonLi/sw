@@ -361,13 +361,9 @@ func (sma *SmEndpoint) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
 	ns, err := sm.FindNetwork(epinfo.Tenant, epinfo.Status.Network)
 	if err != nil {
 		//Retry again, Create network may be lagging.
-		time.Sleep(20 * time.Millisecond)
-		ns, err = sm.FindNetwork(epinfo.Tenant, epinfo.Status.Network)
-		if err != nil {
-			//return kvstore.NewKeyNotFoundError(epinfo.Status.Network, 0)
-			log.Errorf("could not find the network %s for endpoint %+v. Err: %v", epinfo.Status.Network, epinfo.ObjectMeta, err)
-			return fmt.Errorf("could not find the network %s for endpoint %+v. Err: %v", epinfo.Status.Network, epinfo.ObjectMeta, err)
-		}
+		//return kvstore.NewKeyNotFoundError(epinfo.Status.Network, 0)
+		log.Errorf("could not find the network %s for endpoint %+v. Err: %v", epinfo.Status.Network, epinfo.ObjectMeta, err)
+		return fmt.Errorf("could not find the network %s for endpoint %+v. Err: %v", epinfo.Status.Network, epinfo.ObjectMeta, err)
 	}
 	// create a new endpoint instance
 	eps, err := NewEndpointState(epinfo, sm)

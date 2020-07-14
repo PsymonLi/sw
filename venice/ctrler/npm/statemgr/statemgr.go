@@ -32,7 +32,7 @@ var featuremgrs map[string]FeatureStateMgr
 var numberofWorkersPerKind = 8
 
 // maxUpdateChannelSize is the size of the update pending channel
-const maxUpdateChannelSize = 32768
+const maxUpdateChannelSize = 65536
 
 // updatable is an interface all updatable objects have to implement
 type updatable interface {
@@ -88,6 +88,7 @@ type Statemgr struct {
 	propogationTopoUpdate chan *memdb.PropagationStTopoUpdate // queue for updates from memdb for propagation status on a topo change
 	garbageCollector      *GarbageCollector                   // nw object garbage collector
 	initialResyncDone     bool
+	retryEPCleanup        bool
 	resyncDone            chan bool
 	reconcileObjects      map[string]reconcileIntf // objects which have to be reconciled
 	ctrler                ctkit.Controller         // controller instance
@@ -507,6 +508,11 @@ func (sm *Statemgr) PeriodicReconcile() {
 	for _, obj := range objects {
 		obj.doReconcile()
 	}
+
+	if sm.retryEPCleanup {
+		log.Infof("Retrying Cleanup of stale endpoints")
+		sm.RemoveStaleEndpoints()
+	}
 }
 
 func (sm *Statemgr) addForReconcile(obj reconcileIntf) {
@@ -899,12 +905,15 @@ type nodeStatus struct {
 }
 
 type objectStatus struct {
-	Key         string
-	PendingDSCs []string
-	Updated     int32
-	Pending     int32
-	Version     string
-	Status      string
+	Key          string
+	PendingDSCs  []string
+	Updated      int32
+	Pending      int32
+	Version      string
+	Status       string
+	MaxPropTime  int64
+	MinPropTime  int64
+	MeanPropTime int64
 }
 
 type objectConfigStatus struct {
@@ -1288,6 +1297,9 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 		objStaus.PendingDSCs = propStatus.pendingDSCs
 		objStaus.Status = propStatus.status
 		objConfigStatus.KindObjects[kind] = append(objConfigStatus.KindObjects[kind], objStaus)
+		objStaus.MinPropTime = propStatus.minTime
+		objStaus.MaxPropTime = propStatus.maxTime
+		objStaus.MeanPropTime = propStatus.meanTime
 	}
 	for _, kind := range kinds {
 		switch kind {

@@ -266,6 +266,55 @@ func inList(src string, list []string) bool {
 	return false
 }
 
+func (n *TestNode) restoreLocallyManagedWorkloads() error {
+
+	var err error
+	//This is the ugliest hack
+	//Some workload might be living in this node
+	//Point those workload to this new agent client
+	//Also bringup workloads
+	if n.workloadMap != nil {
+		n.workloadMap.Range(func(key interface{}, item interface{}) bool {
+			wload := item.(iotaWorkload)
+			if wload.workload != nil && wload.workload.GetWorkloadAgent() == n.AgentClient {
+				//Return as this is a control vm handle
+				return true
+			}
+
+			//Bring up other workloads
+			in := wload.workloadMsg
+			n.logger.Printf("Re-Setting up workload : %s", in.GetWorkloadName())
+			resp, rerr := n.setupWorkload(wload.workload, in)
+
+			if err != nil || resp.GetWorkloadStatus().GetApiStatus() != iota.APIResponseType_API_STATUS_OK {
+				logger.Errorf("Tearing down workload %v", wload.workload.Name())
+				wload.workload.TearDown()
+				if resp.GetWorkloadStatus().GetApiStatus() != iota.APIResponseType_API_STATUS_OK {
+					err = fmt.Errorf(resp.GetWorkloadStatus().GetErrorMsg())
+				} else {
+					err = rerr
+				}
+			}
+
+			for _, intf := range resp.Interfaces {
+
+				if err = wload.workload.SendArpProbe(strings.Split(intf.GetIpPrefix(), "/")[0], intf.Interface,
+					0); err != nil {
+					msg := fmt.Sprintf("Error in sending arp probe : %s", err.Error())
+					n.logger.Error(msg)
+					resp = &iota.Workload{WorkloadStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}
+					n.workloadMap.Delete(in.GetWorkloadName())
+					wload.workload.TearDown()
+				}
+			}
+
+			return true
+		})
+	}
+
+	return err
+}
+
 // ipmi control of node.
 func (n *TestNode) IpmiNodeControl(name string, restoreState bool, method string, useNcsi bool) error {
 	var agentBinary string
@@ -339,20 +388,19 @@ func (n *TestNode) IpmiNodeControl(name string, restoreState bool, method string
 		}
 	}
 
-	//This is the ugliest hack
-	//Some workload might be living in this node
-	//Point those workload to this new agent client
 	if n.workloadMap != nil {
 		n.workloadMap.Range(func(key interface{}, item interface{}) bool {
 			wload := item.(iotaWorkload)
 			if wload.workload != nil && wload.workload.GetWorkloadAgent() == oldClient {
+				//Return as this is a control vm handle
 				wload.workload.SetWorkloadAgent(n.AgentClient)
+				return true
 			}
 			return true
 		})
 	}
 
-	return nil
+	return err
 }
 
 //RestartNode Restart node
@@ -610,14 +658,13 @@ func (n *TestNode) ReloadNode(name string, restoreState bool, method string, use
 		}
 	}
 
-	//This is the ugliest hack
-	//Some workload might be living in this node
-	//Point those workload to this new agent client
 	if n.workloadMap != nil {
 		n.workloadMap.Range(func(key interface{}, item interface{}) bool {
 			wload := item.(iotaWorkload)
 			if wload.workload != nil && wload.workload.GetWorkloadAgent() == oldClient {
+				//Return as this is a control vm handle
 				wload.workload.SetWorkloadAgent(n.AgentClient)
+				return true
 			}
 			return true
 		})
@@ -631,8 +678,10 @@ func (n *VcenterNode) ReloadNode(name string, restoreState bool, method string, 
 	pool, _ := errgroup.WithContext(context.Background())
 	for _, mn := range n.managedNodes {
 		mn := mn
+		name := name
 		pool.Go(func() error {
 			if mn.GetNodeInfo().Name == name && mn.GetNodeAgent() != nil {
+				log.Infof("Reloading vcenter node %v , name %v", n.GetNodeInfo().Name, name)
 				err := n.cl.DeleteHost(mn.GetNodeInfo().IPAddress)
 				if err != nil {
 					log.Errorf("TOPO SVC |  Reload Node | Failed to disconnect host from cluster %v", err.Error())
@@ -683,6 +732,14 @@ func (n *VcenterNode) ReloadNode(name string, restoreState bool, method string, 
 					return err
 				}
 
+				err = mn.ReAddWorkloads()
+				if err != nil {
+					log.Errorf("TOPO SVC | InitTestbed  | Error re-adding workloads %v", err.Error())
+					return err
+				}
+
+			} else {
+				log.Infof("Skipping Reloading vcenter node %v , name %v", n.GetNodeInfo().Name, name)
 			}
 			return nil
 		})

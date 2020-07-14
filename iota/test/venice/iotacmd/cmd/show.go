@@ -43,6 +43,7 @@ var showWorkloadCmd = &cobra.Command{
 func initModel() {
 
 	skipSetup = true
+	suite = "dont-care"
 	readParams()
 	os.Setenv("SKIP_SETUP", "1")
 	os.Setenv("SKIP_CONFIG", "1")
@@ -90,6 +91,7 @@ func ReadModel() (common.ModelInfo, error) {
 func showInfo(cmd *cobra.Command, args []string) {
 
 	skipSetup = true
+	suite = "dont-care"
 	readParams()
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Testbed-ID", "Model", "Testbed-File", "Topology"})
