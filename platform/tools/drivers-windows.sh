@@ -37,9 +37,11 @@ TOP=$(readlink -f "$(dirname "$0")/../..")
 : ${BUILD_VM_PW:="pen123!"}
 
 # Products generated
-
 : ${GEN_DIR:="$TOP/platform/gen/drivers-windows"}
 : ${GEN_PKG:="$GEN_DIR.zip"}
+: ${GEN_CERT_VER:="1.12.0.214-E.11"}
+: ${GEN_PKG_CERT:="$GEN_DIR-cert.zip"}
+: ${GEN_PKG_CERT_INST:="$GEN_DIR-cert-installer.zip"}
 : ${GEN_PKG_UNSIGNED:="$TOP/platform/gen/drivers-windows-unsigned.zip"}
 : ${GEN_REMOTE_ARTIFACTS:="$REMOTE_DRIVERS_SRC/Pensando Solution/ArtifactsZipped"}
 : ${GEN_REMOTE_BUILDLOGS:="$REMOTE_DRIVERS_SRC/Pensando Solution/BuildLogs"}
@@ -87,4 +89,5 @@ sshpass -p $BUILD_VM_PW scp -o StrictHostKeyChecking=no -pr "$BUILD_VM_USER"@"$B
 cd "$GEN_DIR/.."
 cp "$GEN_DIR/ArtifactsZipped/Artifacts.zip" .
 mv -f Artifacts.zip "$GEN_PKG"
-
+asset-pull windows-cert-driver "$GEN_CERT_VER" "$GEN_PKG_CERT"
+asset-pull windows-cert-installer "$GEN_CERT_VER" "$GEN_PKG_CERT_INST"
