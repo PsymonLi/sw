@@ -160,7 +160,7 @@ func HandleAlerts(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClien
 
 func processAlert(nEvt *operdapi.Alert) {
 	// TODO: May need further handling if processes are restartable
-	if nEvt.GetName() == "NAPLES_SERVICE_STOPPED" {
+	if nEvt.GetName() == "DSC_SERVICE_STOPPED" {
 		svcName := strings.Split(nEvt.GetMessage(), ":")
 		UnhealthyServices = append(UnhealthyServices, svcName[1])
 	}
