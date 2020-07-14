@@ -119,11 +119,14 @@ typedef int capri_error_t;
 #define CAPRI_SRAM_WORDS_PER_BLOCK  (8)
 #define CAPRI_SRAM_ROWS             (0x1000) // 4K
 
-#define CAPRI_TCAM_BLOCK_COUNT      (8)
-#define CAPRI_TCAM_BLOCK_WIDTH      (128) // bits
-#define CAPRI_TCAM_WORD_WIDTH       (16)  // bits; is also unit of allocation.
-#define CAPRI_TCAM_WORDS_PER_BLOCK  (8)
-#define CAPRI_TCAM_ROWS             (0x400) // 1K
+#define CAPRI_TCAM_EGRESS_BLOCK_COUNT (4)
+#define CAPRI_TCAM_BLOCK_COUNT        (8)
+#define CAPRI_TCAM_BLOCK_WIDTH        (128) // bits
+#define CAPRI_TCAM_WORD_WIDTH         (16)  // bits; is also unit of allocation.
+#define CAPRI_TCAM_WORDS_PER_BLOCK    (8)
+#define CAPRI_TCAM_ROWS               (0x400) // 1K
+
+#define CAPRI_TABLE_PROFILE_COUNT     (16)
 
 typedef struct capri_sram_shadow_mem_ {
     uint8_t zones;          // Using entire memory as one zone.
@@ -152,7 +155,7 @@ typedef struct capri_tcam_shadow_mem_ {
 
 } capri_tcam_shadow_mem_t;
 
-
+static uint32_t                 g_tcam_base_offset[2];
 static capri_sram_shadow_mem_t *g_shadow_sram_p4[2];
 static capri_tcam_shadow_mem_t *g_shadow_tcam_p4[2];
 static capri_sram_shadow_mem_t *g_shadow_sram_rxdma;
@@ -744,6 +747,59 @@ capri_mpu_icache_invalidate (void)
     }
 }
 
+sdk_ret_t
+capri_set_tcam_table_offset (sysinit_dom_t domain) 
+{
+    for (int i = P4_GRESS_INGRESS; i < P4_GRESS_INVALID; i++) {
+        if (domain == SYSINIT_DOMAIN_B) {
+            g_tcam_base_offset[i] = CAPRI_TCAM_ROWS / 2;
+        } else {
+            g_tcam_base_offset[i] = 0;
+        }
+    }
+    SDK_TRACE_DEBUG("Tcam base offset ingress 0x%x, egress 0x%x, domain %s",
+                    g_tcam_base_offset[P4_GRESS_INGRESS],
+                    g_tcam_base_offset[P4_GRESS_EGRESS],
+                    SYSINIT_DOMAIN_str(domain));
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+capri_program_tcam_table_offset (int tableid, p4pd_table_dir_en gress, 
+                                 int stage, int stage_tableid)
+{
+    uint32_t saddr, eaddr;
+    uint32_t index, offset;
+    cap_top_csr_t  &cap0 = g_capri_state_pd->cap_top();
+    cap_pict_csr_t *pict_csr = NULL;
+
+    if (gress == P4_GRESS_INGRESS) {
+        pict_csr = &cap0.tsi.pict;
+        offset = CAPRI_TCAM_BLOCK_COUNT * g_tcam_base_offset[gress];
+    } else if (gress == P4_GRESS_EGRESS) {
+        pict_csr = &cap0.tse.pict;
+        offset = CAPRI_TCAM_EGRESS_BLOCK_COUNT * g_tcam_base_offset[gress];
+    } else {
+        return SDK_RET_INVALID_ARG;
+    } 
+
+    offset = offset * CAPRI_TCAM_WORDS_PER_BLOCK;
+    index = stage * CAPRI_TABLE_PROFILE_COUNT + stage_tableid;
+    pict_csr->cfg_tcam_table_profile[index].read();
+    saddr = (uint32_t)pict_csr->cfg_tcam_table_profile[index].start_addr();
+    saddr += offset;
+    eaddr = (uint32_t)pict_csr->cfg_tcam_table_profile[index].end_addr();
+    eaddr += offset;
+    pict_csr->cfg_tcam_table_profile[index].start_addr(saddr);
+    pict_csr->cfg_tcam_table_profile[index].end_addr(eaddr);
+    pict_csr->cfg_tcam_table_profile[index].write();
+
+    SDK_TRACE_DEBUG("Stage %d, table id %u, stage table id %u, "
+                    "start address 0x%x, end address 0x%x",
+                    stage, tableid, stage_tableid, saddr, eaddr);
+    return SDK_RET_OK;
+}
+
 /*
  * Reset tcam memories
  */
@@ -785,6 +841,11 @@ capri_tcam_memory_init (asic_cfg_t *capri_cfg)
     }
     sdk::lib::pal_mem_unmap(va);
 
+    // initialize tcam table offset
+    for (int i = P4_GRESS_INGRESS; i < P4_GRESS_INVALID; i++) {
+        g_tcam_base_offset[i] = 0;
+    }
+    
 #if 0
     cap_pict_zero_init_tcam(0, 0, 8);
     cap_pict_zero_init_tcam(0, 1, 4);
@@ -1539,13 +1600,24 @@ capri_table_hw_entry_read (uint32_t tableid, uint32_t index,
  *        are updated or read from when performing table write or read.
  */
 static void
-capri_tcam_entry_details_get (uint32_t index,
+capri_tcam_entry_details_get (uint32_t index, int gress,
                               int *tcam_row, int *entry_start_block,
                               int *entry_end_block, int *entry_start_word,
                               uint16_t top_left_y, uint8_t top_left_block,
                               uint16_t btm_right_y, uint8_t num_buckets,
                               uint16_t entry_width, uint32_t start_index)
 {
+    top_left_y  += g_tcam_base_offset[gress];
+    btm_right_y += g_tcam_base_offset[gress];
+    // TCAM have asymmetric block count between ingress and egress
+    if (gress == P4_GRESS_INGRESS) {
+        start_index += (CAPRI_TCAM_BLOCK_COUNT * CAPRI_TCAM_WORDS_PER_BLOCK \
+                        * g_tcam_base_offset[gress]);
+    } else {
+        start_index += (CAPRI_TCAM_EGRESS_BLOCK_COUNT * CAPRI_TCAM_WORDS_PER_BLOCK \
+                        * g_tcam_base_offset[gress]);
+    }
+    
     *tcam_row = top_left_y + (index/num_buckets);
     assert (*tcam_row <= btm_right_y);
     int tbl_col = index % num_buckets;
@@ -1595,7 +1667,7 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
 
-    capri_tcam_entry_details_get(index,
+    capri_tcam_entry_details_get(index, gress,
                                  &tcam_row, &entry_start_block,
                                  &entry_end_block, &entry_start_word,
                                  tbl_info.top_left_y,
@@ -1697,7 +1769,7 @@ capri_tcam_table_entry_read (uint32_t tableid, uint32_t index,
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
 
-    capri_tcam_entry_details_get(index,
+    capri_tcam_entry_details_get(index, gress,
                                 &tcam_row, &entry_start_block,
                                 &entry_end_block, &entry_start_word,
                                 tbl_info.top_left_y,
@@ -1770,7 +1842,7 @@ capri_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
 
-    capri_tcam_entry_details_get(index,
+    capri_tcam_entry_details_get(index, (ingress ? P4_GRESS_INGRESS : P4_GRESS_EGRESS),
                                  &tcam_row, &entry_start_block,
                                  &entry_end_block, &entry_start_word,
                                  tbl_info.top_left_y,

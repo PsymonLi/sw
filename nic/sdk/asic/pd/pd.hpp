@@ -496,6 +496,12 @@ int asicpd_hbm_table_entry_cache_invalidate(p4pd_table_cache_t cache,
                                             uint64_t entry_addr,
                                             uint16_t entry_width,
                                             mem_addr_t base_mem_pa);
+sdk_ret_t asicpd_set_tcam_table_offset(sysinit_dom_t domain);
+sdk_ret_t asicpd_set_tcam_tbl_offset(sysinit_dom_t domain);
+sdk_ret_t asicpd_program_tcam_table_offset(int tableid, p4pd_table_dir_en gress,
+                                           int stage, int stage_tableid);
+sdk_ret_t asicpd_program_tcam_tbl_offset(int tableid, p4pd_table_dir_en gress, 
+                                         int stage, int stage_tableid);
 }    // namespace pd
 }    // namespace asic
 }    // namespace sdk

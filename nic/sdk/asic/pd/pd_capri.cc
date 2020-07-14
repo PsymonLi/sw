@@ -1587,6 +1587,19 @@ asicpd_write_to_hw (bool val)
     capri_set_write_to_hw(val);
 }
 
+sdk_ret_t 
+asicpd_set_tcam_tbl_offset (sysinit_dom_t domain)
+{
+    return capri_set_tcam_table_offset(domain);
+}
+
+sdk_ret_t
+asicpd_program_tcam_tbl_offset (int tableid, p4pd_table_dir_en gress, 
+                                int stage, int stage_tableid)
+{
+    return capri_program_tcam_table_offset(tableid, gress, stage, stage_tableid);
+}
+
 }    // namespace pd
 }    // namespace asic
 }    // namespace sdk

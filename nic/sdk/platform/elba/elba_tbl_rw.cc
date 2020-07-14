@@ -11,6 +11,7 @@
 #include "platform/elba/elba_hbm_rw.hpp"
 #include "platform/elba/elba_tm_rw.hpp"
 #include "platform/elba/elba_txs_scheduler.hpp"
+#include "platform/elba/elba_state.hpp"
 #include "third-party/asic/elba/model/utils/elb_csr_py_if.h"
 #include "asic/rw/asicrw.hpp"
 #include "asic/asic.hpp"
@@ -113,11 +114,14 @@ typedef int elba_error_t;
 #define ELBA_SRAM_WORDS_PER_BLOCK  (8)
 #define ELBA_SRAM_ROWS             (0x1000) // 4K
 
+#define ELBA_TCAM_EGRESS_BLOCK_COUNT (4)
 #define ELBA_TCAM_BLOCK_COUNT      (8)
 #define ELBA_TCAM_BLOCK_WIDTH      (128) // bits
 #define ELBA_TCAM_WORD_WIDTH       (16)  // bits; is also unit of allocation.
 #define ELBA_TCAM_WORDS_PER_BLOCK  (8)
 #define ELBA_TCAM_ROWS             (0x400) // 1K
+
+#define ELBA_TABLE_PROFILE_COUNT     (16)
 
 typedef struct elba_sram_shadow_mem_ {
     uint8_t zones;          // Using entire memory as one zone.
@@ -145,7 +149,7 @@ typedef struct elba_tcam_shadow_mem_ {
 
 } elba_tcam_shadow_mem_t;
 
-
+static uint32_t                g_tcam_base_offset[2];
 static elba_sram_shadow_mem_t *g_shadow_sram_p4[2];
 static elba_tcam_shadow_mem_t *g_shadow_tcam_p4[2];
 static elba_sram_shadow_mem_t *g_shadow_sram_rxdma;
@@ -691,6 +695,62 @@ elba_mpu_icache_invalidate (void)
 {
 }
 
+sdk_ret_t
+elba_set_tcam_table_offset (sysinit_dom_t domain) 
+{
+    for (int i = P4_GRESS_INGRESS; i < P4_GRESS_INVALID; i++) {
+        if (domain == SYSINIT_DOMAIN_B) {
+            g_tcam_base_offset[i] = ELBA_TCAM_ROWS / 2;
+        } else {
+            g_tcam_base_offset[i] = 0;
+        }
+    }
+    SDK_TRACE_DEBUG("Tcam base offset ingress 0x%x, egress 0x%x, domain %s",
+                    g_tcam_base_offset[P4_GRESS_INGRESS],
+                    g_tcam_base_offset[P4_GRESS_EGRESS],
+                    SYSINIT_DOMAIN_str(domain));
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+elba_program_tcam_table_offset (int tableid, p4pd_table_dir_en gress, 
+                                int stage, int stage_tableid)
+{
+#if 0
+    uint32_t saddr, eaddr;
+    uint32_t index, offset;
+    elb_top_csr_t  &elb0 = g_elba_state_pd->elb_top();
+    elb_pict_csr_t *pict_csr = NULL;
+
+    if (gress == P4_GRESS_INGRESS) {
+        pict_csr = &elb0.tsi.pict;
+        offset = ELBA_TCAM_BLOCK_COUNT * g_tcam_base_offset[gress];
+    } else if (gress == P4_GRESS_EGRESS) {
+        pict_csr = &elb0.tse.pict;
+        offset = ELBA_TCAM_EGRESS_BLOCK_COUNT * g_tcam_base_offset[gress];
+    } else {
+        return SDK_RET_INVALID_ARG;
+    } 
+
+    offset = offset * ELBA_TCAM_WORDS_PER_BLOCK;
+    index = stage * ELBA_TABLE_PROFILE_COUNT + stage_tableid;
+    pict_csr->cfg_tcam_table_profile[index].read();
+    saddr = (uint32_t)pict_csr->cfg_tcam_table_profile[index].start_addr();
+    saddr += offset;
+    eaddr = (uint32_t)pict_csr->cfg_tcam_table_profile[index].end_addr();
+    eaddr += offset;
+    pict_csr->cfg_tcam_table_profile[index].start_addr(saddr);
+    pict_csr->cfg_tcam_table_profile[index].end_addr(eaddr);
+    pict_csr->cfg_tcam_table_profile[index].write();
+
+    SDK_TRACE_DEBUG("Stage %d, table id %u, stage table id %u, "
+                    "start address 0x%x, end address 0x%x",
+                    stage, tableid, stage_tableid, saddr, eaddr);
+#endif          
+    SDK_ASSERT(0);          
+    return SDK_RET_ERR;
+}
+
 //
 // Reset tcam memories
 //
@@ -705,6 +765,11 @@ elba_tcam_memory_init (asic_cfg_t *elba_cfg)
 
     elb_pict_zero_init_tcam(0, 0, 8);
     elb_pict_zero_init_tcam(0, 1, 4);
+
+    // initialize tcam table offset
+    for (int i = P4_GRESS_INGRESS; i < P4_GRESS_INVALID; i++) {
+        g_tcam_base_offset[i] = 0;
+    }
 }
 
 void
@@ -1289,13 +1354,24 @@ elba_table_hw_entry_read (uint32_t tableid, uint32_t index,
 //        are updated or read from when performing table write or read.
 //
 static void
-elba_tcam_entry_details_get (uint32_t index, int *tcam_row,
+elba_tcam_entry_details_get (uint32_t index, int gress, int *tcam_row,
                              int *entry_start_block, int *entry_end_block,
                              int *entry_start_word, uint16_t top_left_y,
                              uint8_t top_left_block, uint16_t btm_right_y,
                              uint8_t num_buckets, uint16_t entry_width,
                              uint32_t start_index)
 {
+    top_left_y  += g_tcam_base_offset[gress];
+    btm_right_y += g_tcam_base_offset[gress];
+    // TCAM have asymmetric block count between ingress and egress
+    if (gress == P4_GRESS_INGRESS) {
+        start_index += (ELBA_TCAM_BLOCK_COUNT * ELBA_TCAM_WORDS_PER_BLOCK \
+                        * g_tcam_base_offset[gress]);
+    } else {
+        start_index += (ELBA_TCAM_EGRESS_BLOCK_COUNT * ELBA_TCAM_WORDS_PER_BLOCK \
+                        * g_tcam_base_offset[gress]);
+    }
+
     *tcam_row = top_left_y + (index/num_buckets);
     assert (*tcam_row <= btm_right_y);
     int tbl_col = index % num_buckets;
@@ -1345,15 +1421,15 @@ elba_tcam_table_entry_write (uint32_t tableid, uint32_t index,
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
 
-    elba_tcam_entry_details_get(index,
-                                 &tcam_row, &entry_start_block,
-                                 &entry_end_block, &entry_start_word,
-                                 tbl_info.top_left_y,
-                                 tbl_info.top_left_block,
-                                 tbl_info.btm_right_y,
-                                 tbl_info.num_buckets,
-                                 tbl_info.entry_width,
-                                 tbl_info.start_index);
+    elba_tcam_entry_details_get(index, gress,
+                                &tcam_row, &entry_start_block,
+                                &entry_end_block, &entry_start_word,
+                                tbl_info.top_left_y,
+                                tbl_info.top_left_block,
+                                tbl_info.btm_right_y,
+                                tbl_info.num_buckets,
+                                tbl_info.entry_width,
+                                tbl_info.start_index);
     int tbl_col = index % tbl_info.num_buckets;
     int blk = tbl_info.top_left_block
                  + ((tbl_col * tbl_info.entry_width) /
@@ -1444,7 +1520,7 @@ elba_tcam_table_entry_read (uint32_t tableid, uint32_t index,
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
 
-    elba_tcam_entry_details_get(index,
+    elba_tcam_entry_details_get(index, gress,
                                 &tcam_row, &entry_start_block,
                                 &entry_end_block, &entry_start_word,
                                 tbl_info.top_left_y,
@@ -1507,15 +1583,15 @@ elba_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
 
-    elba_tcam_entry_details_get(index,
-                                 &tcam_row, &entry_start_block,
-                                 &entry_end_block, &entry_start_word,
-                                 tbl_info.top_left_y,
-                                 tbl_info.top_left_block,
-                                 tbl_info.btm_right_y,
-                                 tbl_info.num_buckets,
-                                 tbl_info.entry_width,
-                                 tbl_info.start_index);
+    elba_tcam_entry_details_get(index, (ingress ? P4_GRESS_INGRESS : P4_GRESS_EGRESS),
+                                &tcam_row, &entry_start_block,
+                                &entry_end_block, &entry_start_word,
+                                tbl_info.top_left_y,
+                                tbl_info.top_left_block,
+                                tbl_info.btm_right_y,
+                                tbl_info.num_buckets,
+                                tbl_info.entry_width,
+                                tbl_info.start_index);
 
     int copy_bits = tbl_info.entry_width_bits;
     uint8_t byte, to_copy;

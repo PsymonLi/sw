@@ -146,6 +146,22 @@ sdk_ret_t capri_pgm_init(void);
 sdk_ret_t capri_tbl_eng_cfg_modify(p4pd_pipeline_t pipeline,
                                    p4_tbl_eng_cfg_t *cfg, uint32_t ncfgs);
 
+/// \brief     set tcam table offset in local cache based on upgrade domain
+/// \param[in] domain hitless upgrade domain
+/// \return    SDK_RET_OK if successful otherwise
+///            appropriate error code.
+sdk_ret_t capri_set_tcam_table_offset(sysinit_dom_t domain);
+
+/// \brief     program tcam table offset in tcam table profile
+/// \param[in] tableid table id
+/// \param[in] gress direction ingress or egress
+/// \param[in] stage stage id
+/// \param[in] stage_tableid stage table id
+/// \return    SDK_RET_OK if successful otherwise
+///            appropriate error code.
+sdk_ret_t capri_program_tcam_table_offset(int tableid, p4pd_table_dir_en gress, 
+                                          int stage, int stage_tableid);
+
 } // namespace capri
 } // namespace platform
 } // namespace sdk

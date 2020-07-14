@@ -545,6 +545,56 @@ asicpd_get_hbm_region_by_address (uint64_t addr)
     return sdk::asic::asic_get_hbm_region_by_address(addr);
 }
 
+
+/// \brief     set tcam table offset in local cache based on upgrade domain
+/// \param[in] domain hitless upgrade domain
+/// \return    SDK_RET_OK if successful otherwise
+///            appropriate error code.
+sdk_ret_t
+asicpd_set_tcam_table_offset (sysinit_dom_t domain)
+{
+    return asicpd_set_tcam_tbl_offset(domain);
+}
+
+/// \brief     program tcam table offset in tcam table profile
+/// \return    SDK_RET_OK if successful otherwise
+///            appropriate error code.
+sdk_ret_t
+asicpd_program_tcam_table_offset (void) 
+{
+    uint32_t table_id;
+    p4pd_table_properties_t *tbl_ctx = NULL;
+    p4pd_error_t p4pd_err;
+    sdk_ret_t ret;
+
+    for (table_id = p4pd_tableid_min_get(); table_id < p4pd_tableid_max_get(); table_id++) {
+        p4pd_err = p4pd_table_properties_optimal_get(table_id, &tbl_ctx);
+        if (p4pd_err != P4PD_SUCCESS) {
+            SDK_TRACE_ERR("Failed to get properties for table id %u", table_id);
+            return SDK_RET_ERR;
+        }
+        // skip now if there is an overflow table.
+        // same table will be repeated again
+        if (tbl_ctx->has_oflow_table) {
+            continue;
+        }
+        if (tbl_ctx->table_type != P4_TBL_TYPE_TCAM &&
+            tbl_ctx->table_type != P4_TBL_TYPE_HASHTCAM) {
+            continue;
+        }
+        ret = asicpd_program_tcam_tbl_offset(table_id, tbl_ctx->gress, 
+                                             tbl_ctx->stage, tbl_ctx->stage_tableid);
+        if (ret != SDK_RET_OK) {
+            SDK_TRACE_ERR("Failed to program tcam offset for table name %s, "
+                          "table id %u, gress %u, stage %u, stage table id %u",
+                          tbl_ctx->tablename, table_id, tbl_ctx->gress, tbl_ctx->stage, 
+                          tbl_ctx->stage_tableid);
+            return ret;
+        }
+    }
+    return ret;
+}
+
 void
 asicpd_cleanup (void)
 {

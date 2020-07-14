@@ -1636,6 +1636,19 @@ asicpd_write_to_hw (bool val)
     elba_set_write_to_hw(val);
 }
 
+sdk_ret_t 
+asicpd_set_tcam_tbl_offset (sysinit_dom_t domain)
+{
+    return elba_set_tcam_table_offset(domain);
+}
+
+sdk_ret_t
+asicpd_program_tcam_tbl_offset (int tableid, p4pd_table_dir_en gress, 
+                                int stage, int stage_tableid)
+{
+    return elba_program_tcam_table_offset(tableid, gress, stage, stage_tableid);
+}
+
 }    // namespace pd
 }    // namespace asic
 }    // namespace sdk

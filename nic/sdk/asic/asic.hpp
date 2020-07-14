@@ -105,6 +105,7 @@ typedef struct asic_cfg_s {
     bool                        llc_cache;
     sdk::lib::device_profile_t  *device_profile;
     sdk::platform::sysinit_mode_t init_mode;
+    sdk::platform::sysinit_dom_t  init_domain;
 } asic_cfg_t;
 
 // TODO: please move this to sdk/lib/p4 later !!

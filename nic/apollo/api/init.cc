@@ -432,6 +432,7 @@ pds_init (pds_init_params_t *params)
     asic_cfg_t        asic_cfg;
     std::string       mem_str;
     sysinit_mode_t    init_mode;
+    sysinit_dom_t     init_domain;
 
     sdk::lib::device_profile_t device_profile = { 0 };
     device_profile.qos_profile = {9216, 8, 25, 27, 16, 2, {0, 24}, 2, {0, 1}};
@@ -486,9 +487,12 @@ pds_init (pds_init_params_t *params)
             return SDK_RET_ERR;
         }
         init_mode = api::g_upg_state->init_mode();
-        // set upgrade mode in asic config
-        asic_cfg.init_mode = init_mode;
+        init_domain  = api::g_upg_state->init_domain();
 
+        // set upgrade mode and domain in asic config
+        asic_cfg.init_mode = init_mode;
+        asic_cfg.init_domain  = init_domain;
+        
         // impl init
         SDK_ASSERT(impl_base::init(params, &asic_cfg) == SDK_RET_OK);
 
