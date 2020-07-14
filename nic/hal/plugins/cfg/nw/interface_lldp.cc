@@ -381,8 +381,8 @@ interface_lldp_parse_json (bool nbrs, LldpIfStatus *lldp_status,
 sdk_ret_t
 interface_lldp_status_get (uint16_t uplink_idx, intf::UplinkResponseInfo *rsp)
 {
-    int         rc;
-    static int  iter = 0;
+    int rc;
+    static uint8_t iter = 0;
     std::string lldp_status_file;
     std::string interfaces[3] = { "inb_mnic0", "inb_mnic1", "oob_mnic0" };
 
@@ -434,7 +434,7 @@ interface_lldp_status_get (uint16_t uplink_idx, intf::UplinkResponseInfo *rsp)
     interface_lldp_parse_json(0, lldp_ifstatus, lldp_status_file);
 
     // remove the json output file
-    // remove(lldp_status_file.c_str());
+    remove(lldp_status_file.c_str());
 
     return(SDK_RET_OK);
 }

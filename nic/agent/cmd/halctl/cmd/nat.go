@@ -23,9 +23,10 @@ var (
 )
 
 var natShowCmd = &cobra.Command{
-	Use:   "nat",
-	Short: "show NAT information",
-	Long:  "show NAT object information",
+	Use:         "nat",
+	Short:       "show NAT information",
+	Long:        "show NAT object information",
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 var natpoolShowCmd = &cobra.Command{
