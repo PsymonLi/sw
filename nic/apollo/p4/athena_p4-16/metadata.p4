@@ -319,8 +319,7 @@ struct csum_metadata_t {
      bit<16>     icmp_len; 
      bit<16>     udp_len; 
      bit<16>     tcp_len; 
-     bit<16>     l2_complete_len; 
-
+     bit<16>     l2_csum_len; 
 }
 
 struct parser_metadata_t {

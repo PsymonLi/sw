@@ -133,13 +133,21 @@ control egress_inter_pipe(inout cap_phv_intr_global_h intr_global,
 	if(hdr.ip_1.ipv4.isValid()) {
 	  hdr.p4_to_p4plus_classic_nic_ip.ip_sa = (bit<128>)hdr.ip_1.ipv4.srcAddr;
 	  hdr.p4_to_p4plus_classic_nic_ip.ip_da = (bit<128>)hdr.ip_1.ipv4.dstAddr;
+	  if(hdr.ctag_1.isValid()) {
+	    l2CsumEg.enable_update(hdr.ctag_1);
+	  } else {        
+	    l2CsumEg.enable_update(hdr.ip_1.ipv4);
+	  }
+	  metadata.csum.l2_csum_len = (bit<16>)intr_p4.packet_len - 14;
+	  
 	  if(hdr.l4_u.tcp.isValid()) {
 	    hdr.p4_to_p4plus_classic_nic.pkt_type = CLASSIC_NIC_PKT_TYPE_IPV4_TCP;
 	    hdr.p4_to_p4plus_classic_nic.l4_sport = hdr.l4_u.tcp.srcPort;
 	    hdr.p4_to_p4plus_classic_nic.l4_dport = hdr.l4_u.tcp.dstPort;
 	  } else {
 	    if(hdr.udp.isValid()) {
-	      hdr.p4_to_p4plus_classic_nic.pkt_type = CLASSIC_NIC_PKT_TYPE_IPV4_UDP;		    hdr.p4_to_p4plus_classic_nic.l4_sport = hdr.udp.srcPort;
+	      hdr.p4_to_p4plus_classic_nic.pkt_type = CLASSIC_NIC_PKT_TYPE_IPV4_UDP;		    
+	      hdr.p4_to_p4plus_classic_nic.l4_sport = hdr.udp.srcPort;
 	      hdr.p4_to_p4plus_classic_nic.l4_dport = hdr.udp.dstPort;
 
 	    } else {
@@ -150,7 +158,14 @@ control egress_inter_pipe(inout cap_phv_intr_global_h intr_global,
 	if(hdr.ip_1.ipv6.isValid()) {
 	  hdr.p4_to_p4plus_classic_nic_ip.ip_sa = hdr.ip_1.ipv6.srcAddr;
 	  hdr.p4_to_p4plus_classic_nic_ip.ip_da = hdr.ip_1.ipv6.dstAddr;
-	  if(hdr.l4_u.tcp.isValid()) {
+         if(hdr.ctag_1.isValid()) {
+           l2CsumEg.enable_update(hdr.ctag_1);
+         } else {        
+           l2CsumEg.enable_update(hdr.ip_1.ipv6);
+         }
+         metadata.csum.l2_csum_len = (bit<16>)intr_p4.packet_len - 14;
+	 
+	 if(hdr.l4_u.tcp.isValid()) {
 	    hdr.p4_to_p4plus_classic_nic.pkt_type = CLASSIC_NIC_PKT_TYPE_IPV6_TCP;
 	    hdr.p4_to_p4plus_classic_nic.l4_sport = hdr.l4_u.tcp.srcPort;
 	    hdr.p4_to_p4plus_classic_nic.l4_dport = hdr.l4_u.tcp.dstPort;

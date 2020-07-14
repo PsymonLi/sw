@@ -742,36 +742,54 @@ control AthenaEgressDeparser(packet_out packet,
    apply {
        //to arm
         packet.emit(hdr.capri_rxdma_intrinsic);
-	//classic nic application
-        packet.emit(hdr.p4_to_p4plus_classic_nic);	
-        packet.emit(hdr.p4_to_p4plus_classic_nic_ip);
+
+	if(hdr.capri_rxdma_intrinsic.isValid()) { 
+         packet.emit(hdr.p4_to_p4plus_classic_nic);    
+         packet.emit(hdr.p4_to_p4plus_classic_nic_ip);
+	 
+                 
+         l2CsumEg.compute_complete_checksum(hdr.ctag_1, metadata.csum.l2_csum_len);
+         l2CsumEg.compute_complete_checksum(hdr.ip_1.ipv4, metadata.csum.l2_csum_len);
+         l2CsumEg.compute_complete_checksum(hdr.ip_1.ipv6, metadata.csum.l2_csum_len);
+         
+
+         l2CsumEg.include_checksum_result(hdr.ip_1.ipv4);
+         l2CsumEg.include_checksum_result(hdr.udp);
+         l2CsumEg.include_checksum_result(hdr.l4_u.icmpv4);
+         l2CsumEg.include_checksum_result(hdr.l4_u.icmpv6);
+         l2CsumEg.include_checksum_result(hdr.l4_u.tcp);
+         l2CsumEg.include_checksum_result(hdr.l4_u.udp);
+         hdr.p4_to_p4plus_classic_nic.csum = l2CsumEg.get();
+	} else {
+
 	
-	packet.emit(hdr.egress_recirc_header);
-	packet.emit(hdr.eg_nat_u.egress_recirc_nat_header);
-
-        // Packet to uplink - "Push" header - layer 0	
-	packet.emit(hdr.ethernet_0);
-	packet.emit(hdr.ctag_0);
-
-
-	packet.emit(hdr.ipv4_0);
-	//	packet.emit(hdr.gre_0);
-	packet.emit(hdr.udp_0);
-	packet.emit(hdr.mpls_label1_0);
-	packet.emit(hdr.mpls_label2_0);
-	packet.emit(hdr.mpls_label3_0);
-        packet.emit(hdr.geneve_0);
-	packet.emit(hdr.geneve_option_srcSlotId);
-	packet.emit(hdr.geneve_option_dstSlotId);
-	packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_1);
-	packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_2);
-	packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_3);
-	packet.emit(hdr.geneve_option_origPhysicalIp);
+	  packet.emit(hdr.egress_recirc_header);
+	  packet.emit(hdr.eg_nat_u.egress_recirc_nat_header);
+	  
+	  // Packet to uplink - "Push" header - layer 0 
+	  packet.emit(hdr.ethernet_0);
+	  packet.emit(hdr.ctag_0);
+	  
+	  
+	  packet.emit(hdr.ipv4_0);
+	  //    packet.emit(hdr.gre_0);
+	  packet.emit(hdr.udp_0);
+	  packet.emit(hdr.mpls_label1_0);
+	  packet.emit(hdr.mpls_label2_0);
+	  packet.emit(hdr.mpls_label3_0);
+	  packet.emit(hdr.geneve_0);
+	  packet.emit(hdr.geneve_option_srcSlotId);
+	  packet.emit(hdr.geneve_option_dstSlotId);
+	  packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_1);
+	  packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_2);
+	  packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_3);
+	  packet.emit(hdr.geneve_option_origPhysicalIp);
+	  
+	  
+	  ipv4HdrCsumDepEg_0.update_len(hdr.ipv4_0, metadata.csum.ip_hdr_len_0);
+	  hdr.ipv4_0.hdrChecksum = ipv4HdrCsumDepEg_0.get();
+	}
 	
-
-	ipv4HdrCsumDepEg_0.update_len(hdr.ipv4_0, metadata.csum.ip_hdr_len_0);
-	hdr.ipv4_0.hdrChecksum = ipv4HdrCsumDepEg_0.get();
-
 	packet.emit(hdr.ethernet_1);
 	packet.emit(hdr.ctag_1);
 	packet.emit(hdr.ip_1.ipv4);

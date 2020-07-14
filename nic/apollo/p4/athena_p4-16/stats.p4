@@ -52,7 +52,7 @@ control p4i_statistics(inout cap_phv_intr_global_h intr_global,
 	  } else {	  
 
 	    intr_global.drop = 1;
-	    if((ipv4HdrCsum_1.get_validate_status() == 1) || (udpCsum_1.get_validate_status() == 1)) { //Checksum engine error
+            if((ipv4HdrCsum_1.validation_failed() == 1) || (udpCsum_1.validation_failed() == 1)) { //Checksum engine error
 		rx_substrate_csum_err = rx_substrate_csum_err + 1;
 	    } else {
 	      rx_user_csum_err = rx_user_csum_err + 1;	
