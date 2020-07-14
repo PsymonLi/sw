@@ -20,7 +20,7 @@ p4i_inter_pipe:
     phvwr.c1        p.p4i_i2e_binding_check_drop, FALSE
     seq             c1, k.control_metadata_redirect_to_arm, TRUE
     bcf             [c1], ingress_to_rxdma
-    seq             c1, k.control_metadata_tunneled_packet, TRUE
+    seq             c1, k.control_metadata_tunnel_terminate, TRUE
 
 ingress_to_egress:
     seq             c2, k.control_metadata_rx_packet, FALSE
@@ -79,7 +79,7 @@ ingress_to_rxdma_vlan_insert_done:
                         APULU_CPU_FLAGS_VLAN_VALID_BIT_POS
     or              r1, r1, k.ipv4_1_valid, \
                         APULU_CPU_FLAGS_IPV4_1_VALID_BIT_POS
-    bbne            k.control_metadata_tunneled_packet, TRUE, \
+    bbne            k.control_metadata_tunnel_terminate, TRUE, \
                         ingress_to_rxdma_native
     or              r1, r1, k.ipv6_1_valid, \
                         APULU_CPU_FLAGS_IPV6_1_VALID_BIT_POS

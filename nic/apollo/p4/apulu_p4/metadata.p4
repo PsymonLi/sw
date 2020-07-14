@@ -52,6 +52,7 @@ header_type control_metadata_t {
         p4e_drop_reason         : 32;
         rx_packet               : 1;
         tunneled_packet         : 1;
+        tunnel_terminate        : 1;
         flow_miss               : 1;
         force_flow_miss         : 1;
         local_mapping_miss      : 1;

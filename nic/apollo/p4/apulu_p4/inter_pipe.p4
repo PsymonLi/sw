@@ -71,7 +71,7 @@ action ingress_to_rxdma() {
                    APULU_CPU_FLAGS_IPV6_1_VALID);
         }
     }
-    if (control_metadata.tunneled_packet == TRUE) {
+    if (control_metadata.tunnel_terminate == TRUE) {
         if (ethernet_2.valid == TRUE) {
             bit_or(scratch_metadata.cpu_flags, scratch_metadata.cpu_flags,
                    APULU_CPU_FLAGS_ETH_2_VALID);
@@ -145,7 +145,7 @@ action p4i_inter_pipe() {
     if (control_metadata.redirect_to_arm == TRUE) {
         ingress_to_rxdma();
     } else {
-        if (control_metadata.tunneled_packet == TRUE) {
+        if (control_metadata.tunnel_terminate == TRUE) {
             tunnel_decap();
         }
         ingress_to_egress();

@@ -11,6 +11,7 @@ struct phv_             p;
 
 vni_info:
     bcf             [!c1], vni_miss
+    phvwr           p.control_metadata_tunneled_packet, TRUE
     sne             c1, d.vni_info_d.vnic_id, r0
     phvwr.c1        p.vnic_metadata_vnic_id, d.vni_info_d.vnic_id
     sne             c1, d.vni_info_d.bd_id, r0
@@ -21,7 +22,7 @@ vni_info:
     sne             c1, d.vni_info_d.vpc_id, r0
     phvwr.c1        p.vnic_metadata_vpc_id, d.vni_info_d.vpc_id
     cmov            r7, c1, d.vni_info_d.vpc_id, k.vnic_metadata_vpc_id
-    phvwr           p.control_metadata_tunneled_packet, TRUE
+    phvwr           p.control_metadata_tunnel_terminate, TRUE
     phvwr           p.p4i_to_arm_is_l3_vnid, d.vni_info_d.is_l3_vnid
 
     seq             c7, k.ipv4_2_valid, TRUE

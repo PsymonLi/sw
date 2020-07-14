@@ -151,8 +151,10 @@ table lif_vlan_otcam {
 /* VNI info                                                                   */
 /******************************************************************************/
 action vni_info(vnic_id, bd_id, vpc_id, is_l3_vnid) {
+    modify_field(control_metadata.tunneled_packet, TRUE);
     // on miss, drop the packet
 
+    // on hit
     if (vnic_id != 0) {
         modify_field(vnic_metadata.vnic_id, vnic_id);
     }
@@ -165,7 +167,7 @@ action vni_info(vnic_id, bd_id, vpc_id, is_l3_vnid) {
     if (vpc_id != 0) {
         modify_field(vnic_metadata.vpc_id, vpc_id);
     }
-    modify_field(control_metadata.tunneled_packet, TRUE);
+    modify_field(control_metadata.tunnel_terminate, TRUE);
     modify_field(p4i_to_arm.is_l3_vnid, is_l3_vnid);
 
     // keys for local mapping lookup
@@ -303,7 +305,7 @@ table vpc {
 /******************************************************************************/
 action ingress_bd_info(vrmac) {
     modify_field(scratch_metadata.mac, vrmac);
-    if (control_metadata.tunneled_packet == TRUE) {
+    if (control_metadata.tunnel_terminate == TRUE) {
         if (ipv4_2.valid == TRUE) {
             if ((control_metadata.l2_enabled == FALSE) or
                 (scratch_metadata.mac == ethernet_2.dstAddr)) {

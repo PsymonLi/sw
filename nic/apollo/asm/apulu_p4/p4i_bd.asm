@@ -10,7 +10,7 @@ struct phv_         p;
 %%
 
 ingress_bd_info:
-    bbeq            k.control_metadata_tunneled_packet, TRUE, tunneled_pkt
+    bbeq            k.control_metadata_tunnel_terminate, TRUE, tunneled_pkt
     seq             c1, k.control_metadata_l2_enabled, FALSE
 native_pkt:
     bbne            k.ipv4_1_valid, TRUE, ingress_bd_info_exit
