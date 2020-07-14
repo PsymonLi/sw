@@ -313,7 +313,7 @@ func classifyExports(infraAPI types.InfraAPI, existingExports, exports []netprot
 
 		if !found {
 			// Get the added collectors and allocate a session ID for each
-			collectorID = infraAPI.AllocateID(types.MirrorSessionID, 0)
+			collectorID = infraAPI.AllocateID(types.CollectorID, 0)
 			addedExports = append(addedExports, exportWalker{
 				export:      exp,
 				collectorID: collectorID,
