@@ -42,7 +42,9 @@ tot-upgrade-bundle:
 	cd ${GOPATH}/src/github.com/pensando/sw/bin/venice-install && ls -al
 	cd ../../../ && make bundle-upgrade-image
 
-rolloutrela-nightly: tot-upgrade-bundle
+rolloutrela-nightly:
+	cd ../../../ && make ws-tools && make pull-assets
+	mkdir -p ${GOPATH}/src/github.com/pensando/sw/upgrade-bundle
 	mkdir -p ${GOPATH}/src/github.com/pensando/sw/lastrel-bundle
 	asset-pull bundle_image 1.3.2-E-3 ${GOPATH}/src/github.com/pensando/sw/lastrel-bundle/bundle.tar
 	cd ${GOPATH}/src/github.com/pensando/sw/lastrel-bundle && tar -xvf bundle.tar

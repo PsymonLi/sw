@@ -179,6 +179,10 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 		},
 	}
 	clusterVersion := sm.GetClusterVersion()
+	upgradeType := "Graceful"
+	if spec.UpgradeType != "" {
+		upgradeType = spec.UpgradeType
+	}
 
 	bundleLocalFilePath := fmt.Sprintf("%s/src/github.com/pensando/sw/%s/bundle.tar", os.Getenv("GOPATH"), spec.BundleType)
 
@@ -310,7 +314,7 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 			Suspend:                   false,
 			DSCsOnly:                  spec.SkipVenice,
 			DSCMustMatchConstraint:    dscMatchContstraint,
-			UpgradeType:               "Graceful",
+			UpgradeType:               upgradeType,
 		},
 	}, nil
 

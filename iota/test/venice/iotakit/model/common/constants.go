@@ -73,6 +73,7 @@ type RolloutSpec struct {
 	SkipVenice    bool
 	Pipeline      string
 	SkipSimDSC    bool
+	UpgradeType   string
 }
 
 //ModelInfo infor about mode

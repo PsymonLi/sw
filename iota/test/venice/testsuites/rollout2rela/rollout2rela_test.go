@@ -2,6 +2,7 @@ package rollout2rela_test
 
 import (
 	"errors"
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"os"
 	"time"
 
@@ -35,7 +36,7 @@ var _ = Describe("rollout rela to tot tests", func() {
 	Context("Iota Rollout rela to tot tests", func() {
 		It("Perform rela to tot Rollout", func() {
 
-			rollout, err := ts.model.CreateRolloutObject("upgrade-bundle", "release_a_iris", "Disruptive")
+			rollout, err := ts.model.GetRolloutObject(common.RolloutSpec{BundleType: "upgrade-bundle", TargetBranch: "1.12-E", UpgradeType: "Disruptive"}, ts.scaleData)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			workloadPairs := ts.model.WorkloadPairs().WithinNetwork().Any(40)
