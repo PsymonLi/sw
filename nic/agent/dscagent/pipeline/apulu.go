@@ -1804,6 +1804,8 @@ func (a *ApuluAPI) retrieveObject(kind, key string, umToFunc func([]byte) error)
 }
 
 func (a *ApuluAPI) handleHostInterface(spec *halapi.InterfaceSpec, status *halapi.InterfaceStatus) error {
+	a.Lock()
+	defer a.Unlock()
 	// parse the uuid
 	intfID := spec.GetId()
 	uid, err := uuid.FromBytes(intfID)
@@ -1885,6 +1887,8 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.InterfaceSpec, status *halap
 var num int = 0
 
 func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.PortStatus) error {
+	a.Lock()
+	defer a.Unlock()
 	var ifType string
 
 	// parse the uuid

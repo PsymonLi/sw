@@ -2151,6 +2151,8 @@ func (i *IrisAPI) GetWatchOptions(ctx context.Context, kind string) (ret api.Lis
 
 // ############################################### Helper Methods  ###############################################
 func (i *IrisAPI) createHostInterface(uid string, spec *halapi.LifSpec, status *halapi.LifStatus) error {
+	i.Lock()
+	defer i.Unlock()
 	var ifStatus string
 	var ifAdminStatus string
 	// skip any internal lifs
@@ -2222,6 +2224,8 @@ func (i *IrisAPI) createHostInterface(uid string, spec *halapi.LifSpec, status *
 }
 
 func (i *IrisAPI) createUplinkInterface(uid string, spec *halapi.PortSpec, status *halapi.PortStatus) error {
+	i.Lock()
+	defer i.Unlock()
 	var ifType, portStatus string
 	// form the interface name
 	ifName, err := utils.GetIfName(uid, status.GetIfIndex(), spec.GetPortType().String())

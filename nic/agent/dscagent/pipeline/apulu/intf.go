@@ -213,6 +213,12 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 					updsubnet.Request[0].HostIf[index] = updsubnet.Request[0].HostIf[length-1]
 					updsubnet.Request[0].HostIf = updsubnet.Request[0].HostIf[:length-1]
 				}
+				if len(updsubnet.Request[0].HostIf) == 0 {
+					// If detach, send empty policy and ipam uuids
+					updsubnet.Request[0].IngV4SecurityPolicyId = [][]byte{}
+					updsubnet.Request[0].EgV4SecurityPolicyId = [][]byte{}
+					updsubnet.Request[0].DHCPPolicyId = [][]byte{[]byte{}}
+				}
 				// If detach, send admin-status down before subnet update
 				if strings.ToLower(intf.Spec.AdminStatus) == "up" {
 					intfReq.Request[0].AdminStatus = halapi.IfStatus_IF_STATUS_DOWN
