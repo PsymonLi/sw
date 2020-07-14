@@ -196,7 +196,6 @@ func (sw *nexus3kRest) SetTrunkVlanRange(port string, vlanRange string) error {
 func (sw *nexus3kRest) UnsetTrunkVlanRange(port string, vlanRange string) error {
 	cmds := []string{
 		"interface " + port,
-		"no channel-group",
 		"no switchport trunk allowed vlan " + vlanRange,
 	}
 	return sw.runConfigCommands(cmds)
@@ -358,29 +357,27 @@ func (sw *nexus3kRest) DoQueueConfig(queueConfig *QueueConfig) error {
 
 func (sw *nexus3kRest) SetBreakoutMode(port string) error {
 	parts := strings.Split(port, "/")
-	cmds := []string{
-		"interface breakout module 1 port " + parts[1] + " map 50g-2x",
+	_, err := sw.clt.GetGeneric("interface breakout module 1 port " + parts[1] + " map 50g-2x")
+	if err != nil {
+		log.Errorf("Failed to set breakout mode. %s", err.Error())
+		return err
 	}
-	sw.clt.Configure(cmds)
-	cmds = []string{
+	cmds := []string{
 		"interface " + parts[0] + "/" + parts[1] + "/1",
 		"fec off",
+		"mtu 9216",
 	}
-	sw.runConfigCommands(cmds)
+	sw.clt.Configure(cmds)
 	return nil
 }
 
 func (sw *nexus3kRest) UnsetBreakoutMode(port string) error {
 	parts := strings.Split(port, "/")
-	cmds := []string{
-		"interface " + parts[0] + "/" + parts[1] + "/1",
-		"no fec off",
+	_, err := sw.clt.GetGeneric("no interface breakout module 1 port " + parts[1] + " map 50g-2x")
+	if err != nil {
+		log.Errorf("Failed to unset breakout mode. %s", err.Error())
+		return err
 	}
-	sw.runConfigCommands(cmds)
-	cmds = []string{
-		"no interface breakout module 1 port " + parts[1] + " map 50g-2x",
-	}
-	sw.clt.Configure(cmds)
 	return nil
 }
 

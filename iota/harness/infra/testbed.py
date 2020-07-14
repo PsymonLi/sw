@@ -214,6 +214,7 @@ class _Testbed:
 
                             switch_ctx.username = port.SwitchUsername
                             switch_ctx.password = port.SwitchPassword
+                            switch_ctx.mtu = getattr(port, "mtu", 9216)
                             switch_ctx.ip = port.SwitchIP
                             # igmp disabled for now
                             switch_ctx.igmp_disabled = True
@@ -235,6 +236,7 @@ class _Testbed:
 
                     switch_ctx.username = nw.SwitchUsername
                     switch_ctx.password = nw.SwitchPassword
+                    switch_ctx.mtu = getattr(port, "mtu", 9216)
                     switch_ctx.ip = nw.SwitchIP
                     # igmp disabled for now
                     switch_ctx.igmp_disabled = True

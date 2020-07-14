@@ -881,8 +881,6 @@ func (sw *nexus3k) UnsetTrunkMode(port string) error {
 }
 
 func (sw *nexus3k) CheckSwitchConfiguration(port string, mode PortMode, status PortStatus, speed PortSpeed) (string, error) {
-	log.Infof("n3k_ssh.CheckSwitchConfiguration() skipped, fails on breakout")
-	return "", nil
 	speedStr := ""
 	if speed == SpeedAuto {
 		speedStr = ""
@@ -999,25 +997,23 @@ func (sw *nexus3k) SetBreakoutMode(port string) error {
 	cmds := []string{
 		"interface breakout module 1 port " + parts[1] + " map 50g-2x",
 	}
-	sw.runConfigCommands(cmds)
+	err := sw.runConfigCommands(cmds)
+	if err != nil {
+		return err
+	}
 	portStr := parts[0] + "/" + parts[1] + "/1"
 	cmds = []string{
 		"fec off",
+		"mtu 9216",
 	}
-	sw.runConfigIFCommands(portStr, cmds)
-	return nil
+	return sw.runConfigIFCommands(portStr, cmds)
 }
 
 func (sw *nexus3k) UnsetBreakoutMode(port string) error {
 	parts := strings.Split(port, "/")
-	portStr := parts[0] + "/" + parts[1] + "/1"
 	cmds := []string{
-		"no fec off",
-	}
-	sw.runConfigIFCommands(portStr, cmds)
-	cmds = []string{
 		"no interface breakout module 1 port " + parts[1] + " map 50g-2x",
 	}
-	sw.runConfigIFCommands(portStr, cmds)
+	sw.runConfigCommands(cmds)
 	return nil
 }
