@@ -48,3 +48,16 @@ modules:
         enable  : False
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV6,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+
+    - module:
+        name    : R2L_L3_INVALID_VNI
+        spec    : remote2local_vni_invalid.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+
+    - module:
+        name    : R2L_L2_INVALID_VNI
+        spec    : remote2local_vni_invalid.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False
