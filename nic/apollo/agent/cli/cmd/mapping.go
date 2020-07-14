@@ -82,7 +82,6 @@ func init() {
 	remoteMappingInternalShowCmd.Flags().StringVar(&mappingMAC, "mac", "", "Specify MAC")
 	remoteMappingInternalShowCmd.Flags().Uint32Var(&vpcID, "vpc", 0, "Specify VPC ID")
 	remoteMappingInternalShowCmd.Flags().StringVar(&mappingIP, "ip", "0", "Specify mapping IP address")
-	remoteMappingInternalShowCmd.MarkFlagRequired("type")
 
 	mappingShowCmd.AddCommand(localMappingShowCmd)
 	mappingShowCmd.AddCommand(remoteMappingShowCmd)
@@ -92,14 +91,12 @@ func init() {
 	localMappingShowCmd.Flags().StringVar(&mappingMAC, "mac", "", "Specify MAC")
 	localMappingShowCmd.Flags().StringVar(&mappingID, "uuid", "0", "Specify mapping uuid")
 	localMappingShowCmd.Flags().StringVar(&mappingType, "type", "l3", "Specify local mapping type - l2, l3")
-	localMappingShowCmd.MarkFlagRequired("type")
 	remoteMappingShowCmd.Flags().StringVar(&mappingType, "type", "l3", "Specify remote mapping type - l2, l3")
 	remoteMappingShowCmd.Flags().StringVar(&subStr, "subnet", "", "Specify Subnet uuid")
 	remoteMappingShowCmd.Flags().StringVar(&mappingMAC, "mac", "", "Specify MAC")
 	remoteMappingShowCmd.Flags().StringVar(&vpcStr, "vpc", "", "Specify VPC uuid")
 	remoteMappingShowCmd.Flags().StringVar(&mappingIP, "ip", "0", "Specify mapping IP address")
 	remoteMappingShowCmd.Flags().StringVar(&mappingID, "uuid", "0", "Specify mapping uuid")
-	remoteMappingShowCmd.MarkFlagRequired("type")
 }
 
 func localMappingInternalHandler(cmd *cobra.Command, args []string) {
@@ -259,33 +256,34 @@ func localMappingFilterCheck(resp *pds.Mapping, cmd *cobra.Command) bool {
 
 func printLocalMappingHeader() {
 	if mappingType == "l2" {
-		hdrLine := strings.Repeat("-", 266)
+		hdrLine := strings.Repeat("-", 222)
 		fmt.Println(hdrLine)
-		fmt.Printf("%-40s%-40s%-18s%-40s%-18s%-16s%-40s%-14s\n",
+		fmt.Printf("%-40s%-40s%-18s%-40s%-18s%-16s%-40s%-10s\n",
 			"ID", "SubnetID", "MAC", "VnicID", "VnicMAC", "Encap",
 			"PublicIP", "Tags")
 		fmt.Println(hdrLine)
 	} else {
-		hdrLine := strings.Repeat("-", 328)
+		hdrLine := strings.Repeat("-", 284)
 		fmt.Println(hdrLine)
-		fmt.Printf("%-40s%-40s%-40s%-40s%-40s%-18s%-16s%-40s%-14s\n",
-			"ID", "VpcID", "IPAddress", "SubnetID", "VnicID", "VnicMAC", "Encap",
-			"PublicIP", "Tags")
+		fmt.Printf("%-40s%-40s%-40s%-40s%-40s%-18s%-16s%-40s%-10s\n",
+			"ID", "VpcID", "IPAddress", "SubnetID", "VnicID", "VnicMAC",
+			"Encap", "PublicIP", "Tags")
 		fmt.Println(hdrLine)
 	}
 }
 
 func printLocalMapping(resp *pds.Mapping) {
 	spec := resp.GetSpec()
-	tags := fmt.Sprintf("%-14v", spec.GetTags())
+	tags := fmt.Sprintf("%-v", spec.GetTags())
 	tags = strings.Replace(tags, "[", "", -1)
 	tags = strings.Replace(tags, "]", "", -1)
+	tags = strings.Replace(tags, " ", ", ", -1)
 	if len(tags) == 0 {
 		tags = "-"
 	}
 	switch spec.GetMacOrIp().(type) {
 	case *pds.MappingSpec_MACKey:
-		fmt.Printf("%-40s%-40s%-18s%-40s%-18s%-16s%-40s%-14s\n",
+		fmt.Printf("%-40s%-40s%-18s%-40s%-18s%-16s%-40s%-10s\n",
 			utils.IdToStr(spec.GetId()),
 			utils.IdToStr(spec.GetMACKey().GetSubnetId()),
 			utils.MactoStr(spec.GetMACKey().GetMACAddr()),
@@ -294,7 +292,7 @@ func printLocalMapping(resp *pds.Mapping) {
 			utils.EncapToString(spec.GetEncap()),
 			utils.IPAddrToStr(spec.GetPublicIP()), tags)
 	case *pds.MappingSpec_IPKey:
-		fmt.Printf("%-40s%-40s%-40s%-40s%-40s%-18s%-16s%-40s%-14s\n",
+		fmt.Printf("%-40s%-40s%-40s%-40s%-40s%-18s%-16s%-40s%-10s\n",
 			utils.IdToStr(spec.GetId()),
 			utils.IdToStr(spec.GetIPKey().GetVPCId()),
 			utils.IPAddrToStr(spec.GetIPKey().GetIPAddr()),
@@ -423,16 +421,16 @@ func remoteMappingFilterCheck(resp *pds.Mapping, cmd *cobra.Command) bool {
 
 func printRemoteMappingHeader() {
 	if mappingType == "l2" {
-		hdrLine := strings.Repeat("-", 274)
+		hdrLine := strings.Repeat("-", 190)
 		fmt.Println(hdrLine)
-		fmt.Printf("%-40s%-40s%-18s%-8s%-18s%-16s%-40s%-14s\n",
+		fmt.Printf("%-40s%-40s%-18s%-8s%-18s%-16s%-40s%-10s\n",
 			"ID", "SubnetID", "MAC", "NhType", "VnicMAC", "Encap",
 			"PublicIP", "Tags")
 		fmt.Println(hdrLine)
 	} else {
-		hdrLine := strings.Repeat("-", 336)
+		hdrLine := strings.Repeat("-", 252)
 		fmt.Println(hdrLine)
-		fmt.Printf("%-40s%-40s%-40s%-40s%-8s%-18s%-16s%-40s%-14s\n",
+		fmt.Printf("%-40s%-40s%-40s%-40s%-8s%-18s%-16s%-40s%-10s\n",
 			"ID", "VpcID", "IPAddress", "SubnetID", "NhType", "VnicMAC",
 			"Encap", "PublicIP", "Tags")
 		fmt.Println(hdrLine)
@@ -441,12 +439,14 @@ func printRemoteMappingHeader() {
 
 func printRemoteMapping(resp *pds.Mapping) {
 	spec := resp.GetSpec()
-	tags := fmt.Sprintf("%-14v", spec.GetTags())
+	tags := fmt.Sprintf("%-v", spec.GetTags())
 	tags = strings.Replace(tags, "[", "", -1)
 	tags = strings.Replace(tags, "]", "", -1)
+	tags = strings.Replace(tags, " ", ", ", -1)
 	if len(tags) == 0 {
 		tags = "-"
 	}
+	fmt.Printf("Len of tags %d\n", len(tags))
 	var nhType string
 	switch spec.GetDstinfo().(type) {
 	case *pds.MappingSpec_TunnelId:
@@ -456,7 +456,7 @@ func printRemoteMapping(resp *pds.Mapping) {
 	}
 	switch spec.GetMacOrIp().(type) {
 	case *pds.MappingSpec_MACKey:
-		fmt.Printf("%-40s%-40s%-18s%-8s%-18s%-16s%-40s%-14s\n",
+		fmt.Printf("%-40s%-40s%-18s%-8s%-18s%-16s%-40s%-10s\n",
 			utils.IdToStr(spec.GetId()),
 			utils.IdToStr(spec.GetMACKey().GetSubnetId()),
 			utils.MactoStr(spec.GetMACKey().GetMACAddr()),
@@ -464,7 +464,7 @@ func printRemoteMapping(resp *pds.Mapping) {
 			utils.EncapToString(spec.GetEncap()),
 			utils.IPAddrToStr(spec.GetPublicIP()), tags)
 	case *pds.MappingSpec_IPKey:
-		fmt.Printf("%-40s%-40s%-40s%-40s%-8s%-18s%-16s%-40s%-14s\n",
+		fmt.Printf("%-40s%-40s%-40s%-40s%-8s%-18s%-16s%-40s%-10s\n",
 			utils.IdToStr(spec.GetId()),
 			utils.IdToStr(spec.GetIPKey().GetVPCId()),
 			utils.IPAddrToStr(spec.GetIPKey().GetIPAddr()),
