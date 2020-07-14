@@ -1177,6 +1177,14 @@ conntrack_dump(test_vparam_ref_t vparam)
                                        start_idx, count) == PDS_RET_OK;
 }
 
+bool
+resource_util_dump(test_vparam_ref_t vparam)
+{
+    const char  *fname = vparam.expected_str().c_str();
+
+    return fte_ath::fte_dump_resource_util(fname, false) == PDS_RET_OK;
+}
+
 #ifdef __x86_64__
 TEST(athena_app_gtest, sim)
 {

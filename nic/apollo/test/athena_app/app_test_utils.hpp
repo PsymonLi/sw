@@ -834,6 +834,7 @@ bool skip_fte_flow_prog_set(test::athena_app::test_vparam_ref_t vparam);
 bool flow_cache_dump(test::athena_app::test_vparam_ref_t vparam);
 bool session_info_dump(test::athena_app::test_vparam_ref_t vparam);
 bool conntrack_dump(test::athena_app::test_vparam_ref_t vparam);
+bool resource_util_dump(test::athena_app::test_vparam_ref_t vparam);
 
 bool skip_fte_flow_prog(void);
 bool skip_dpdk_init(void);

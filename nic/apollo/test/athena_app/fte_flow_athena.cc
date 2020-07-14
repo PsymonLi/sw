@@ -176,6 +176,12 @@ fte_conntrack_index_free (uint32_t conntrack_id)
     return g_conntrack_indexer->free(conntrack_id);
 }
 
+bool
+fte_is_conntrack_index_allocated (uint32_t conntrack_id)
+{
+    return g_conntrack_indexer->is_index_allocated(conntrack_id);
+}
+
 static inline uint8_t
 fte_is_conntrack_enabled (uint16_t vnic_id)
 {
@@ -269,6 +275,12 @@ sdk_ret_t
 fte_session_index_free (uint32_t sess_id)
 {
     return g_session_indexer->free(sess_id);
+}
+
+bool
+fte_is_session_index_allocated (uint32_t sess_id)
+{
+    return g_session_indexer->is_index_allocated(sess_id);
 }
 
 // NAT MAP TABLE APIs

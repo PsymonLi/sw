@@ -97,6 +97,7 @@ typedef struct {
  * Server flow stats dump request message
  */
 typedef flow_cache_dump_t   flow_stats_dump_t;
+typedef flow_cache_dump_t   resource_util_dump_t;
 
 /*
  * Server session info dump request message

@@ -41,6 +41,7 @@ int cmd_flow_stats_dump_req_check(void);
 int cmd_flow_cache_dump_req_check(void);
 int cmd_session_info_dump_req_check(void);
 int cmd_conntrack_dump_req_check(void);
+int cmd_resource_util_dump_req_check(void);
 
 #define CMD_STATUS_CHECK(status, cmd_fn)                    \
     if ((status) == 0) {                                    \

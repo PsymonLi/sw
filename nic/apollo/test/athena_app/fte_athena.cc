@@ -214,6 +214,7 @@ static FILE *g_stats_fp;
     } while (false)                                 \
 
 #define CONNTRACK_DUMP_LOG(args...)     SESSION_DUMP_LOG(args)
+#define RESOURCE_UTIL_DUMP_LOG(args...)     SESSION_DUMP_LOG(args)
 
 // Send burst of packets on an output interface 
 static inline void
@@ -938,6 +939,76 @@ fte_dump_conntrack(zmq_msg_t *rx_msg,
         ATHENA_APP_MSG_STR_TERM(req->fname);
         rsp->status = fte_dump_conntrack(req->fname, req->append,
                                          req->start_idx, req->count);
+    }
+    return (pds_ret_t)rsp->status;
+}
+
+static void
+dump_resource_util(FILE *fp,
+                   uint32_t num_conntrack_id_in_use,
+                   uint32_t num_sess_id_in_use)
+{
+    float      pct = 0.0;
+
+    pct = ((float)num_conntrack_id_in_use/PDS_CONNTRACK_ID_MAX) * 100;
+    RESOURCE_UTIL_DUMP_LOG("Conntrack resource util:\n");
+    RESOURCE_UTIL_DUMP_LOG("\tmax entries: %u in_use: %u free: %u pct_in_use: %0.10lf\n",
+                           PDS_CONNTRACK_ID_MAX, num_conntrack_id_in_use,
+                           (PDS_CONNTRACK_ID_MAX - num_conntrack_id_in_use), pct);
+
+    pct = ((float)num_sess_id_in_use/PDS_FLOW_SESSION_INFO_ID_MAX) * 100;
+    RESOURCE_UTIL_DUMP_LOG("Session info resource util:\n");
+    RESOURCE_UTIL_DUMP_LOG("\tmax entries: %u in_use: %u free: %u pct_in_use: %0.10lf\n",
+                           PDS_FLOW_SESSION_INFO_ID_MAX, num_sess_id_in_use,
+                           (PDS_FLOW_SESSION_INFO_ID_MAX - num_sess_id_in_use), pct);
+}
+
+pds_ret_t
+fte_dump_resource_util(const char *fname,
+                       bool append)
+{
+    pds_ret_t ret = PDS_RET_OK;
+    FILE *fp = nullptr;
+    uint32_t num_conntrack_id_in_use = 0;
+    uint32_t num_sess_id_in_use = 0;
+    uint32_t conntrack_id = 1;
+    uint32_t sess_id = 1;
+
+    PDS_TRACE_DEBUG("\nPrinting resource util\n");
+    ret = switch_to_file(fname, &fp, append);
+    if ((ret == PDS_RET_OK) && fp) {
+        while (conntrack_id < PDS_CONNTRACK_ID_MAX) {
+            if (fte_is_conntrack_index_allocated(conntrack_id)) {
+                num_conntrack_id_in_use++;
+            }
+            conntrack_id++;
+        }
+        while (sess_id < PDS_FLOW_SESSION_INFO_ID_MAX) {
+            if (fte_is_session_index_allocated(sess_id)) {
+                num_sess_id_in_use++;
+            }
+            sess_id++;
+        }
+        dump_resource_util(fp, num_conntrack_id_in_use, num_sess_id_in_use);
+    }
+
+    revert_from_file(fname, &fp, nullptr);
+    return (ret == PDS_RET_ENTRY_NOT_FOUND) ? PDS_RET_OK : ret;
+}
+
+pds_ret_t
+fte_dump_resource_util(zmq_msg_t *rx_msg,
+                       zmq_msg_t *tx_msg)
+{
+    test::athena_app::resource_util_dump_t *req;
+
+    SERVER_RSP_INIT(tx_msg, rsp, test::athena_app::server_rsp_t);
+    req = (test::athena_app::resource_util_dump_t *)zmq_msg_data(rx_msg);
+    rsp->status = test::athena_app::server_msg_size_check(rx_msg,
+                                                          sizeof(*req));
+    if (rsp->status == PDS_RET_OK) {
+        ATHENA_APP_MSG_STR_TERM(req->fname);
+        rsp->status = fte_dump_resource_util(req->fname, req->append);
     }
     return (pds_ret_t)rsp->status;
 }

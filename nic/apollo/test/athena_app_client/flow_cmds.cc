@@ -18,6 +18,8 @@ DEFINE_string(session_info_dump, "",
               "Dump session info table to a file on Naples");
 DEFINE_string(conntrack_dump, "",
               "Dump connection tracking table to a file on Naples");
+DEFINE_string(resource_util_dump, "",
+              "Dump resource utilization of conntrack id's and session info id's to a file on Naples");
 DEFINE_bool(append, false,
             "Append to the end of file rather than overwrite");
 
@@ -157,6 +159,36 @@ cmd_conntrack_dump_req_check(void)
         req->start_idx = FLAGS_start_idx;
         req->count = FLAGS_count;
         status = client_req_rsp(&tx_msg, cmd_conntrack_dump_rsp_check);
+    }
+    return status;
+}
+
+static int
+cmd_resource_util_dump_rsp_check(zmq_msg_t *rx_msg)
+{
+    if (server_msg_size_check(rx_msg, sizeof(server_rsp_t)) == 0) {
+        SERVER_RSP_GET(rx_msg, rsp, server_rsp_t);
+        CLIENT_LOG_INFO("Completed resource util dump to %s, status: %s\n",
+                        FLAGS_resource_util_dump.c_str(),
+                        rsp->status == 0 ? "SUCCESS" : "FAILURE");
+        return rsp->status;
+    }
+    return PDS_RET_ERR;
+}
+
+int
+cmd_resource_util_dump_req_check(void)
+{
+    int     status = 0;
+
+    if (!FLAGS_resource_util_dump.empty()) {
+        zmq_msg_t   tx_msg;
+
+        SERVER_REQ_INIT(&tx_msg, req, resource_util_dump_t);
+        SERVER_REQ_STRCPY(req->cmd.cmd_str, "resource_util_dump");
+        SERVER_REQ_STRCPY(req->fname, FLAGS_resource_util_dump.c_str());
+        req->append = FLAGS_append;
+        status = client_req_rsp(&tx_msg, cmd_resource_util_dump_rsp_check);
     }
     return status;
 }

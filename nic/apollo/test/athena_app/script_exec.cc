@@ -26,6 +26,7 @@ const static map<string,test_fn_t>  name2fn_map =
     APP_TEST_NAME2FN_MAP_ENTRY(flow_cache_dump),
     APP_TEST_NAME2FN_MAP_ENTRY(session_info_dump),
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_dump),
+    APP_TEST_NAME2FN_MAP_ENTRY(resource_util_dump),
     APP_TEST_NAME2FN_MAP_ENTRY(test_log_file_create),
     APP_TEST_NAME2FN_MAP_ENTRY(test_log_file_append),
     APP_TEST_NAME2FN_MAP_ENTRY(APP_TEST_EXIT_FN),

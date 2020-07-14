@@ -196,6 +196,7 @@ main(int argc,
     CMD_STATUS_CHECK(status, cmd_flow_cache_dump_req_check());
     CMD_STATUS_CHECK(status, cmd_session_info_dump_req_check());
     CMD_STATUS_CHECK(status, cmd_conntrack_dump_req_check());
+    CMD_STATUS_CHECK(status, cmd_resource_util_dump_req_check());
 
     client_fini();
     return status == 0 ? 0 : 1;

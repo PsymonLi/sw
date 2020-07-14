@@ -42,6 +42,8 @@ void fte_conntrack_indexer_destroy(void);
 sdk_ret_t fte_session_indexer_init(void);
 void fte_session_indexer_destroy(void);
 void fte_l2_flow_range_bmp_destroy(void);
+bool fte_is_conntrack_index_allocated (uint32_t conntrack_id);
+bool fte_is_session_index_allocated (uint32_t sess_id);
 
 sdk_ret_t fte_flow_prog(struct rte_mbuf *m);
 void fte_thread_init(unsigned int core_id);
@@ -71,6 +73,10 @@ pds_ret_t fte_dump_conntrack(const char *fname,
                              uint32_t count = 0);
 pds_ret_t fte_dump_conntrack(zmq_msg_t *rx_msg,
                              zmq_msg_t *tx_msg);
+pds_ret_t fte_dump_resource_util(const char *fname,
+                                 bool append);
+pds_ret_t fte_dump_resource_util(zmq_msg_t *rx_msg,
+                                 zmq_msg_t *tx_msg);
 
 #define MAX_LINE_SZ 128
 static inline void pkt_hex_dump_trace(const char *label, char *buf, uint16_t len)
