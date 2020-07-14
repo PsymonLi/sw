@@ -260,6 +260,9 @@ vmotion::master_thread_init(void *ctxt)
     int                master_socket;
     int                opt = true;
 
+    // Set thread detached
+    pthread_detach(pthread_self());
+
     // create master socket
     master_socket = socket(AF_INET , SOCK_STREAM , 0);
 
