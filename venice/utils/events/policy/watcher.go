@@ -132,8 +132,10 @@ func (w *Watcher) processEvents() error {
 
 // watch event policies and create required writers with the help of policy manager
 func (w *Watcher) watchEventPolicy(ctx context.Context) error {
+	watchCtx, cancelWatch := context.WithCancel(ctx)
+	defer cancelWatch()
 	eventPolicyClient := evtsmgrprotos.NewEventPolicyAPIClient(w.rpcClient.ClientConn)
-	eventPolicyStream, err := eventPolicyClient.WatchEventPolicy(ctx, &api.ObjectMeta{Name: "events/policy/watcher.go"})
+	eventPolicyStream, err := eventPolicyClient.WatchEventPolicy(watchCtx, &api.ObjectMeta{Name: "events/policy/watcher.go"})
 	if err != nil {
 		w.logger.Errorf("error watching event policy: %v", err)
 		return err
