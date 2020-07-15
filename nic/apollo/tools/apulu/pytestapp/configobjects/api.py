@@ -5,6 +5,7 @@ import pdb
 import grpc
 import enum
 import pdb
+import paramiko
 
 import types_pb2 as types_pb2
 import batch_pb2_grpc as batch_pb2_grpc
@@ -112,9 +113,12 @@ class ApolloAgentClientRequest:
 class ApolloAgentClient:
     def __init__(self, ip, port):
         self.__channel = None
+        self.__ssh_client = None
         self.__stubs = [None] * ObjectTypes.MAX
         self.__ip = ip
         self.__port = port
+        self.__ssh_connect()
+        self.__set_ip_tables()
         self.__connect()
         self.__create_stubs()
         return
@@ -137,6 +141,34 @@ class ApolloAgentClient:
             agentip = 'localhost'
         return agentip
 
+    def __ssh_connect(self):
+        username = "root"
+        password = "pen123"
+
+        try:
+            os.environ['ALLOW_GRPC_PORTS']
+        except:
+            return
+
+        # initialize the SSH client
+        self.__ssh_client = paramiko.SSHClient()
+
+        # add to known hosts
+        self.__ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            self.__ssh_client.connect(hostname=self.__get_agent_ip(), username=username, password=password)
+        except:
+            print("[!] Cannot connect to the SSH Server %s",(hostname))
+            exit()
+
+    def __set_ip_tables(self):
+        if self.__ssh_client:
+            commands = ["iptables -D tcp_inbound -p tcp -m tcp --dport 11357:11360 -j DROP", ]
+
+            # execute the commands
+            for command in commands:
+                print("="*10, command, "="*10)
+                self.__ssh_client.exec_command(command)
 
     def __connect(self):
         endpoint = "%s:%s" % (self.__get_agent_ip(), self.__get_agent_port())
