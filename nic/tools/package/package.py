@@ -95,6 +95,7 @@ if args.target == 'sim':
     elif args.pipeline == 'apulu-venice':
         files.append('nic/tools/package/pack_apulu_base.txt')
         files.append('nic/tools/package/pack_apulu_venice.txt')
+        files.append('nic/tools/package/pack_apulu_venice_sim.txt')
         tar_name = 'nic_' + arch + '_apulu_' + asic + '_' + 'venice'
         args.pipeline = 'apulu'
     elif args.pipeline == 'gft':
