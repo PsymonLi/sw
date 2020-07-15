@@ -58,14 +58,19 @@ def Verify(tc):
 
         vm_dbg_stats = vm_utils.get_dbg_vmotion_stats(tc, node)
         tot_vmotions = int(vm_dbg_stats['vMotion'])
+        # we limit dbg records to a max of 40
+        tot_vmotions = min(tot_vmotions,40)
         # 3 chunks of vMotion alloc assigned for global usage
         chunks_in_use = tot_vmotions + 3
 
-        # Subtract -3 in vMotion Init, 3 chunks of vMotion alloc will be done
         for info in vm_memtrack:
-           if 'allocs' in info and 'frees' in info:
-               if ((info['allocs'] - chunks_in_use) != info['frees']):
-                   api.Logger.info("Memleak detected in Mtrack %d %d" %(info['allocs'], info['frees']))
+          if 'allocs' in info and 'frees' in info:
+               # Subtract -3 in vMotion Init, 3 chunks of vMotion alloc will be done
+               if info['allocid'] == 90 and ((info['allocs'] - chunks_in_use) != info['frees']):
+                   api.Logger.info("Leak detected in Mtrack for id %d A %d F %d" %(info['allocid'], info['allocs'], info['frees']))
+                   tc.memleak = 1
+               elif info['allocid'] == 91:
+                   api.Logger.info("Leak detected in Mtrack for id %d A %d F %d" %(info['allocid'], info['allocs'], info['frees']))
                    tc.memleak = 1
 
         cmd_cnt += 1

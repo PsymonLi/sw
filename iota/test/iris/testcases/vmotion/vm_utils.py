@@ -488,14 +488,14 @@ def vm_process_dbg_stats(f):
 
 def get_dbg_vmotion_stats(tc, node):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    api.Trigger_AddNaplesCommand(req, node, "/nic/bin/halctl debug vmotion")
+    api.Trigger_AddNaplesCommand(req, node, "/nic/bin/halctl show vmotion")
     trig_resp = api.Trigger(req)
     term_resp = api.Trigger_TerminateAllCommands(trig_resp)
     tc.resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
     for cmd in tc.resp.commands:
         api.PrintCommandResults(cmd)
         if cmd.stdout == '':
-           api.Logger.info("hal debug vmotion returned no info")
+           api.Logger.info("halctl show vmotion returned no info")
            return None
         else:
            ret = vm_process_dbg_stats(cmd.stdout)
@@ -514,8 +514,8 @@ def check_dbg_stats(stats_before, stats_after):
 def verify_dbg_vmotion(tc, node):
     tc.cmd_cookies = []
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    cmd_cookie = "hal debug vmotion"
-    api.Trigger_AddNaplesCommand(req, node, "/nic/bin/halctl debug vmotion")
+    cmd_cookie = "hal show vmotion"
+    api.Trigger_AddNaplesCommand(req, node, "/nic/bin/halctl show vmotion")
     tc.cmd_cookies.append(cmd_cookie)
     trig_resp = api.Trigger(req)
     term_resp = api.Trigger_TerminateAllCommands(trig_resp)
@@ -746,12 +746,24 @@ def find_new_node_to_move_to(tc, wl):
 
 def get_memtrack(cmd, allocid):
     yaml_out = yaml.load_all(cmd.stdout, Loader=yaml.FullLoader)
+    ret_dict = {}
+    found    = False
     print(type(yaml_out))
+    # memtrack cmd for hal returns both hal and sdk mtrack info
+    # there is a chance that ids overlap in both components and 
+    # need logic to consider mtrack for vmotion (90 and 91) only from hal
+    # from hal 
     for data in yaml_out:
         if data is not None:
             if allocid == data['spec']['allocid']:
                 stats = data['stats']
-                return ({'allocid': allocid, 'allocs': stats['numallocs'], 'frees': stats['numfrees']})
+                ret_dict = {'allocid': allocid, 'allocs': stats['numallocs'], 'frees': stats['numfrees']}
+                found    = True
+            # collect info for vmotion mem, and return only there is an
+            # id smaller than vmotion mem id in the yaml after vmotion
+            # smaller value corresponds to sdk, confirming memtrack info
+            if found and (data['spec']['allocid'] < allocid):
+                return ret_dict
     return {}
 
 def move_back_vms(tc):
