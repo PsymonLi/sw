@@ -17,7 +17,7 @@ type Operation int
 var CloudPipelineKinds = []string{"IPAMPolicy", "App", "NetworkSecurityPolicy", "RouteTable", "Vrf", "Network", "Interface", "InterfaceMirrorSession", "Endpoint", "SecurityProfile", "RoutingConfig"}
 
 // BaseNetKinds captures all the objects needed for Transparent Basenet Profile
-var BaseNetKinds = []string{"Profile", "IPAMPolicy", "Interface", "InterfaceMirrorSession"}
+var BaseNetKinds = []string{"Profile", "Interface", "InterfaceMirrorSession"}
 
 // FlowAwareKinds catpures all the objects needed for FlowAware Profile
 var FlowAwareKinds = []string{"Profile", "IPAMPolicy", "Interface", "InterfaceMirrorSession", "MirrorSession", "FlowExportPolicy"}
