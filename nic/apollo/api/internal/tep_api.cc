@@ -8,38 +8,58 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/include/pds_tep.hpp"
+#include "nic/apollo/api/tep.hpp"
 #include "nic/apollo/api/internal/pds.hpp"
 #include "nic/apollo/api/internal/pds_tep.hpp"
 
 namespace api {
 
+// copy TEP attributes and form TEP spec
+// NOTE: skip copying nexthop information since that is what we are going to
+//       update
+static inline void
+pds_tep_spec_from_tep (pds_tep_spec_t *spec, tep_entry *tep)
+{
+    spec->key = tep->key();
+    spec->remote_ip = tep->ip();
+    memcpy(spec->mac, tep->mac(), ETH_ADDR_LEN);
+    spec->type = tep->type();
+    spec->encap = tep->encap();
+    spec->remote_svc = tep->remote_svc();
+    spec->tos = tep->tos();
+}
+
 sdk_ret_t
 pds_tep_update (pds_obj_key_t *key, nh_info_t *nh_info)
 {
     sdk_ret_t ret;
+    tep_entry *tep;
     pds_batch_ctxt_t bctxt;
-    pds_tep_info_t info = { 0 };
+    pds_tep_spec_t spec = { 0 };
     pds_batch_params_t batch_params;
 
-    // fetch the TEP entry
-    ret = pds_tep_read(key, &info);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to read TEP %s, err %u", key->str(), ret);
-        return ret;
+    tep = tep_db()->find(key);
+    if (unlikely(tep == NULL)) {
+        return SDK_RET_ENTRY_NOT_FOUND;
     }
 
+    // form the spec
+    pds_tep_spec_from_tep(&spec, tep);
+
     // update the TEP with the new nexthop information
-    info.spec.nh_type = nh_info->nh_type;
+    spec.nh_type = nh_info->nh_type;
     switch (nh_info->nh_type) {
     case PDS_NH_TYPE_UNDERLAY:
-        info.spec.nh = nh_info->nh;;
+        spec.nh = nh_info->nh;;
         break;
 
     case PDS_NH_TYPE_UNDERLAY_ECMP:
-        info.spec.nh_group = nh_info->nh_group;
+        spec.nh_group = nh_info->nh_group;
         break;
 
     case PDS_NH_TYPE_BLACKHOLE:
@@ -60,7 +80,7 @@ pds_tep_update (pds_obj_key_t *key, nh_info_t *nh_info)
     bctxt = pds_batch_start(&batch_params);
 
     // update the TEP with this new spec
-    ret = pds_tep_update(&info.spec, bctxt);
+    ret = pds_tep_update(&spec, bctxt);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to update TEP %s, err %u", key->str(), ret);
         pds_batch_destroy(bctxt);

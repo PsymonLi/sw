@@ -143,6 +143,7 @@ tep_entry::init_config(api_ctxt_t *api_ctxt) {
     } else if (nh_type_ == PDS_NH_TYPE_OVERLAY) {
         tep_ = spec->tep;
     }
+    tos_ = spec->tos;
     return SDK_RET_OK;
 }
 

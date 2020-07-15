@@ -248,6 +248,10 @@ public:
     /// \return    TEP this TEP is pointing to
     pds_obj_key_t tep(void) const { return tep_; }
 
+    /// \brief    return the ToS bits configured for this TEP
+    /// \return    ToS bits to be stamped on packets destined to this tunnel
+    uint8_t tos(void) const { return tos_; }
+
     /// \brief    return impl instance of this TEP object
     /// \return    impl instance of the TEP object
     impl_base *impl(void) { return impl_; }
@@ -285,9 +289,10 @@ private:
         pds_obj_key_t nh_;
         pds_obj_key_t nh_group_;
     };
-    ht_ctxt_t      ht_ctxt_;    ///< hash table context
-    impl_base      *impl_;      ///< impl object instance
-    friend class   tep_state;   ///< tep_state is friend of tep_entry
+    uint8_t        tos_;             /// type of service bits
+    ht_ctxt_t      ht_ctxt_;         ///< hash table context
+    impl_base      *impl_;           ///< impl object instance
+    friend class   tep_state;        ///< tep_state is friend of tep_entry
 } __PACK__;
 
 /// \@}
