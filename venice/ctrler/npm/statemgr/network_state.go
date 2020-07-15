@@ -877,21 +877,44 @@ func init() {
 	initSmNetwork()
 }
 
-// ProcessDSCEvent DSC removed or decomissioned or mode change
-func (sm *SmNetwork) ProcessDSCEvent(ev EventType, dsc *cluster.DistributedServiceCard) {
+//ProcessDSCCreate create
+func (sm *SmNetwork) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
 
-	if ev == DeleteEvent || sm.sm.dscDecommissioned(dsc) {
+	sm.dscTracking(dsc, true)
+}
 
-		nws, err := sm.sm.ListNetworks()
-		if err != nil {
-			log.Errorf("Can not list networks")
-		}
+func (sm *SmNetwork) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
 
-		for _, ns := range nws {
-			if ns.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Network", ns.Network.ObjectMeta) == true {
-				ns.smObjectTracker.stopDSCTracking(dsc.Name)
-			}
-		}
+	nws, err := sm.sm.ListNetworks()
+	if err != nil {
+		log.Errorf("Error listing networks %v", err)
+		return
 	}
 
+	for _, nw := range nws {
+		if start && sm.sm.isDscEnforcednMode(dsc) && sm.sm.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Network", nw.Network.ObjectMeta) {
+			nw.smObjectTracker.startDSCTracking(dsc.Name)
+		} else {
+			nw.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+	}
+}
+
+//ProcessDSCUpdate update
+func (sm *SmNetwork) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if sm.sm.dscDecommissioned(ndsc) {
+		sm.dscTracking(ndsc, false)
+		return
+	}
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		sm.dscTracking(ndsc, true)
+	}
+}
+
+//ProcessDSCDelete delete
+func (sm *SmNetwork) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	sm.dscTracking(dsc, false)
 }

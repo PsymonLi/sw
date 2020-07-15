@@ -162,7 +162,7 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 				return errors.Wrapf(types.ErrBoltDBStoreUpdate, "Network: %s could not unmarshal | Err: %s", nw.GetKey(), err)
 			}
 
-			updsubnet, err := convertNetworkToSubnet(infraAPI, nw, nil)
+			updsubnet, err := convertNetworkToSubnet(infraAPI, nw, nil, !attach)
 			if err != nil {
 				log.Errorf("Network: %s could not convert | Err: %s", nw.GetKey(), err)
 				return errors.Wrapf(types.ErrDatapathHandling, "Network: %s could not Convert | Err: %s", nw.GetKey(), err)

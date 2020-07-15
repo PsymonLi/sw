@@ -702,8 +702,10 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string, propUpd
 				// handled in netagent as a no-op
 				err := tn.md.sendIntfDetachEvent(obj, objKey)
 				if err != nil {
+					// in case a DSC is being decommisioned, the interface is already deleted from the DB
+					// ignore the error since the update won't be sent to the DSC, but the watch filters will
+					// still need to be updated
 					log.Errorf("sendIntfDetachEvent failed for obj: %v | key: %s | err: %v", obj.GetObjectMeta(), objKey, err)
-					return false
 				}
 
 				l := len(order)
@@ -767,11 +769,15 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string, propUpd
 
 func consolidatePropUpdate(propUpdate *PropagationStTopoUpdate) {
 	if len(propUpdate.AddDSCs) != 0 && len(propUpdate.DelDSCs) != 0 {
-		if propUpdate.AddObjects["Vrf"][0] == propUpdate.DelObjects["Vrf"][0] {
-			propUpdate.AddObjects["Vrf"] = []string{}
-			propUpdate.DelObjects["Vrf"] = []string{}
-			propUpdate.AddObjects["Network"] = []string{}
-			propUpdate.DelObjects["Network"] = []string{}
+		if v1, k1 := propUpdate.AddObjects["Vrf"]; k1 {
+			if v2, k2 := propUpdate.DelObjects["Vrf"]; k2 {
+				if v1[0] == v2[0] {
+					propUpdate.AddObjects["Vrf"] = []string{}
+					propUpdate.DelObjects["Vrf"] = []string{}
+					propUpdate.AddObjects["Network"] = []string{}
+					propUpdate.DelObjects["Network"] = []string{}
+				}
+			}
 		}
 	}
 

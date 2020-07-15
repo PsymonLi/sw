@@ -48,7 +48,7 @@ type rtImpExp struct {
 func createSubnetHandler(infraAPI types.InfraAPI, client halapi.SubnetSvcClient, interfaceClient halapi.IfSvcClient,
 	msc msTypes.EvpnSvcClient, nw netproto.Network, vpcID uint64, uplinkIDs []uint64) error {
 
-	subnetReq, err := convertNetworkToSubnet(infraAPI, nw, uplinkIDs)
+	subnetReq, err := convertNetworkToSubnet(infraAPI, nw, uplinkIDs, false)
 	if err != nil {
 		return errors.Wrapf(types.ErrBadRequest, "Subnet %s | failed to get Vrf %s | Err: %v", nw.GetKey(), nw.Spec.VrfName, err)
 	}
@@ -245,7 +245,7 @@ func createSubnetHandler(infraAPI types.InfraAPI, client halapi.SubnetSvcClient,
 
 func updateSubnetHandler(infraAPI types.InfraAPI, client halapi.SubnetSvcClient,
 	msc msTypes.EvpnSvcClient, nw netproto.Network, vpcID uint64, uplinkIDs []uint64) error {
-	subnetReq, err := convertNetworkToSubnet(infraAPI, nw, uplinkIDs)
+	subnetReq, err := convertNetworkToSubnet(infraAPI, nw, uplinkIDs, false)
 	if err != nil {
 		return errors.Wrapf(types.ErrBadRequest, "Subnet: %v Convertion failed | Err: %v", nw.GetKey(), err)
 	}
@@ -590,15 +590,16 @@ func getPolicyUuid(names []string, attached bool, nw netproto.Network, infraAPI 
 }
 
 func getIPAMUuid(infraAPI types.InfraAPI, nw netproto.Network, attached bool) ([][]byte, error) {
+	ipamuuids := [][]byte{[]byte{}}
 	if attached == false {
-		return [][]byte{[]byte{}}, nil
+		return ipamuuids, nil
 	}
 
 	ipamName := ""
 	vrf, err := validator.ValidateVrf(infraAPI, nw.Tenant, nw.Namespace, nw.Spec.VrfName)
 	if err != nil {
 		log.Errorf("Get VRF failed for %s | %s", nw.GetKind(), nw.GetKey())
-		return nil, err
+		return ipamuuids, err
 	}
 
 	if nw.Spec.IPAMPolicy != "" {
@@ -608,32 +609,30 @@ func getIPAMUuid(infraAPI types.InfraAPI, nw netproto.Network, attached bool) ([
 		ipamName = vrf.Spec.IPAMPolicy
 	}
 
-	var ipamuuids [][]byte
 	if ipamName != "" {
+		var ids [][]byte
 		policy, err := validator.ValidateIPAMPolicyExists(infraAPI, nw.Tenant, nw.Namespace, ipamName)
 		if err != nil {
 			log.Errorf("Get IPAMPolicy failed for %s | %s", nw.GetKind(), nw.GetKey())
-			return nil, err
+			return ipamuuids, err
 		}
 		for _, srv := range IPAMPolicyIDToServerIDs[policy.UUID] {
 			ipu, err := uuid.FromString(srv)
 			if err != nil {
 				log.Errorf("Parse IPAMPolicy UUID failed for %s", srv)
-				return nil, err
+				return ipamuuids, err
 			}
-			ipamuuids = append(ipamuuids, ipu.Bytes())
+			ids = append(ids, ipu.Bytes())
 		}
-		if len(IPAMPolicyIDToServerIDs[policy.UUID]) == 0 {
-			ipamuuids = [][]byte{[]byte{}}
+		if len(ids) != 0 {
+			return ids, nil
 		}
-	} else {
-		ipamuuids = [][]byte{[]byte{}}
 	}
 	return ipamuuids, nil
 
 }
 
-func convertNetworkToSubnet(infraAPI types.InfraAPI, nw netproto.Network, uplinkIDs []uint64) (*halapi.SubnetRequest, error) {
+func convertNetworkToSubnet(infraAPI types.InfraAPI, nw netproto.Network, uplinkIDs []uint64, detach bool) (*halapi.SubnetRequest, error) {
 	var v6Prefix *halapi.IPv6Prefix
 	var v4Prefix *halapi.IPv4Prefix
 	var v4VrIP uint32
@@ -701,21 +700,27 @@ func convertNetworkToSubnet(infraAPI types.InfraAPI, nw netproto.Network, uplink
 
 	if err != nil {
 		log.Errorf("get ipam uuid failed for nw: %s | err: %v", nw.GetKey(), err)
-		return nil, err
+		if detach != true {
+			return nil, err
+		}
 	}
 
 	ingPoliciesIDs, err := getPolicyUuid(nw.Spec.IngV4SecurityPolicies, attached, nw, infraAPI)
 
 	if err != nil {
 		log.Errorf("get ingress security policy uuid failed for nw: %s | err: %s", nw.GetKey(), err)
-		return nil, err
+		if detach != true {
+			return nil, err
+		}
 	}
 
 	egPoliciesIDs, err := getPolicyUuid(nw.Spec.EgV4SecurityPolicies, attached, nw, infraAPI)
 
 	if err != nil {
 		log.Errorf("get egress security policy uuid failed for nw: %s | err: %s", nw.GetKey(), err)
-		return nil, err
+		if detach != true {
+			return nil, err
+		}
 	}
 
 	return &halapi.SubnetRequest{

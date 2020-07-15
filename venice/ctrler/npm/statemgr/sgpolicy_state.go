@@ -612,9 +612,8 @@ func (sma *SmSecurityPolicy) dscTracking(dsc *cluster.DistributedServiceCard, st
 	}
 
 	for _, aps := range fwps {
-		if start {
+		if start && aps.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "NetworkSecurityPolicy", aps.NetworkSecurityPolicy.ObjectMeta) {
 			aps.smObjectTracker.startDSCTracking(dsc.Name)
-
 		} else {
 			log.Info("Stop tracking...")
 			aps.smObjectTracker.stopDSCTracking(dsc.Name)
