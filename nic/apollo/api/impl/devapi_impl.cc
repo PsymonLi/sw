@@ -54,7 +54,7 @@ devapi_impl::destroy(devapi *impl) {
     SDK_FREE(SDK_MEM_ALLOC_DEVAPI_IMPL, impl);
 }
 
-static void
+void
 lif_spec_from_info (pds_lif_spec_t *lif_spec, lif_info_t *info)
 {
     lif_spec->key = uuid_from_objid(LIF_IFINDEX(info->lif_id));

@@ -31,6 +31,7 @@ using sdk::platform::devapi;
 /// @{
 
 void host_if_spec_from_lif_info(pds_host_if_spec_t &spec, lif_info_t *info);
+void lif_spec_from_info(pds_lif_spec_t *spec, lif_info_t *info);
 
 class devapi_impl : public impl_base, public devapi {
 public:

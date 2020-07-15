@@ -129,7 +129,7 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
 
     // program the TxDMA scheduler for this LIF.
     sdk::platform::lif_info_t lif_info;
-    api::pds_host_if_spec_t if_spec;
+    pds_lif_spec_t lif_spec;
     sdk::lib::shmstore  *backup_store;
     svc_lif_pstate_t *lif_pstate;
     module_version_t  cur_version;
@@ -153,12 +153,12 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     lif_pstate->lif_id = lif_id;
 
     init_lif_info(lif_pstate, &lif_info);
-    api::impl::host_if_spec_from_lif_info(if_spec, &lif_info);
-    api::impl::lif_impl::program_tx_scheduler(&if_spec.lif);
+    api::impl::lif_spec_from_info(&lif_spec, &lif_info);
+    api::impl::lif_impl::program_tx_scheduler(&lif_spec);
 
     // update lif pstate with latest value
-    lif_pstate->tx_sched_table_offset = if_spec.lif.tx_sched_table_offset;
-    lif_pstate->tx_sched_num_table_entries = if_spec.lif.tx_sched_num_table_entries;
+    lif_pstate->tx_sched_table_offset = lif_spec.tx_sched_table_offset;
+    lif_pstate->tx_sched_num_table_entries = lif_spec.tx_sched_num_table_entries;
     return SDK_RET_OK;
 }
 
@@ -197,7 +197,7 @@ init_ipsec_lif (uint32_t lif_id)
 
     //Program the TxDMA scheduler for this LIF.
     sdk::platform::lif_info_t lif_info;
-    api::pds_host_if_spec_t if_spec;
+    pds_lif_spec_t lif_spec;
 
     memset(&lif_info, 0, sizeof(lif_info));
     strncpy(lif_info.name, "Apollo IPSEC LIF", sizeof(lif_info.name));
@@ -213,8 +213,8 @@ init_ipsec_lif (uint32_t lif_id)
     lif_info.queue_info[1].type_num = IPSEC_DECRYPT_QTYPE;
     lif_info.queue_info[1].size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
     lif_info.queue_info[1].entries = PDS_MAX_IPSEC_SA_SHIFT;
-    api::impl::host_if_spec_from_lif_info(if_spec, &lif_info);
-    api::impl::lif_impl::program_tx_scheduler(&if_spec.lif);
+    api::impl::lif_spec_from_info(&lif_spec, &lif_info);
+    api::impl::lif_impl::program_tx_scheduler(&lif_spec);
     return SDK_RET_OK;
 }
 
@@ -232,7 +232,7 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
     lifqstate_t lif_qstate;
     svc_lif_pstate_t *lif_pstate;
     sdk::platform::lif_info_t lif_info;
-    api::pds_host_if_spec_t if_spec;
+    pds_lif_spec_t lif_spec;
     std::string prog_info_file;
     sdk::platform::utils::LIFQState qstate = { 0 };
     sdk::lib::shmstore  *backup_store;
@@ -367,8 +367,8 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
         return SDK_RET_ENTRY_NOT_FOUND;
     }
     init_lif_info(lif_pstate, &lif_info);
-    api::impl::host_if_spec_from_lif_info(if_spec, &lif_info);
-    ret = api::impl::lif_impl::reserve_tx_scheduler(&if_spec.lif);
+    api::impl::lif_spec_from_info(&lif_spec, &lif_info);
+    ret = api::impl::lif_impl::reserve_tx_scheduler(&lif_spec);
     SDK_ASSERT(ret == SDK_RET_OK);
     return SDK_RET_OK;
 }
