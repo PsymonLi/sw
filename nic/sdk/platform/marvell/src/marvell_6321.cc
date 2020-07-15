@@ -218,10 +218,20 @@ marvell_switch_init (marvell_cfg_t *marvell_cfg)
     marvell_set_pvlan(MARVELL_PORT5, 3, false);
 }
 
+// \@brief      Given a HW port number return the status of that port
+// \@param[in]  hwport 0x10 - 0x16
+// \@param[out] data Status of the port
+// \@return     0 on success, -1 on failure
+int
+marvell_get_hwport_status (uint8_t hwport, uint16_t *data)
+{
+    return cpld_mdio_rd(MARVELL_PORT_STATUS_REG, data, hwport);
+}
+
 // \@brief      Given a port number return the status of that port
 // \@param[in]  port 0 - 6
-// \@param[out] data Status of the port.
-// \@return    0 on success, -1 on failure
+// \@param[out] data Status of the port
+// \@return     0 on success, -1 on failure
 int
 marvell_get_port_status (uint8_t port, uint16_t *data)
 {

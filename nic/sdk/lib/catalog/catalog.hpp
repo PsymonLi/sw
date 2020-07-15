@@ -81,11 +81,21 @@ typedef struct catalog_logical_port_s {
     uint32_t          asic_port;
 } catalog_logical_port_t;
 
+/// \brief connection types for oob ports
+typedef enum oob_connection_type_e {
+    OOB_CONNECTION_TYPE_NONE,
+    OOB_CONNECTION_TYPE_ASIC,   ///< port connected to asic
+    OOB_CONNECTION_TYPE_MTP,    ///< port connected to MTP
+    OOB_CONNECTION_TYPE_MGMT,   ///< port connected to RJ45
+    OOB_CONNECTION_TYPE_BMC     ///< port connected to BMC
+} oob_connection_type_t;
+
 typedef struct catalog_logical_oob_port_s {
     uint32_t          phy_id;
     uint32_t          hw_port;
     port_speed_t      speed;
     bool              auto_neg_enable;
+    oob_connection_type_t connection_type;
 } catalog_logical_oob_port_t;
 
 typedef struct catalog_fp_port_s {
@@ -213,6 +223,8 @@ public:
     static platform_type_t catalog_platform_type_to_platform_type(
                                             std::string platform_type);
     static bool catalog_str_to_bool(std::string val);
+    static oob_connection_type_t
+        catalog_oob_connection_type_to_connection_type(std::string val);
 
     // copp policer config
     sdk_ret_t get_child_str(std::string path, std::string& child_str);
@@ -288,6 +300,7 @@ public:
     uint32_t oob_hw_port(uint32_t logical_oob_port);
     port_speed_t oob_speed(uint32_t logical_oob_port);
     bool oob_auto_neg_enable(uint32_t logical_oob_port);
+    bool oob_mgmt_port(uint32_t logical_oob_port);
 
     // lookups based on logical port
     uint32_t num_logical_ports(void) const { return catalog_db_.num_logical_ports; }

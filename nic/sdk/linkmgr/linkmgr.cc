@@ -17,10 +17,13 @@
 #include "lib/utils/utils.hpp"
 #include "lib/shmmgr/shmmgr.hpp"
 #include "linkmgr_ctrl.hpp"
+#include "platform/marvell/marvell.hpp"
+#include "lib/runenv/runenv.h"
 
 using namespace sdk::event_thread;
 using namespace sdk::ipc;
 using namespace boost::interprocess;
+using namespace sdk::lib;
 
 #define SDK_THREAD_ID_LINKMGR_MIN SDK_IPC_ID_LINKMGR_AACS_SERVER
 #define SDK_THREAD_ID_LINKMGR_MAX SDK_IPC_ID_LINKMGR_CTRL
@@ -1493,6 +1496,9 @@ sdk_ret_t
 port_get (void *pd_p, port_args_t *args)
 {
     port      *port_p = (port *)pd_p;
+    sdk::lib::catalog *catalog = g_linkmgr_cfg.catalog;
+    uint16_t status;
+    bool up;
 
     args->port_num    = port_p->port_num();
     args->port_type   = port_p->port_type();
@@ -1528,10 +1534,28 @@ port_get (void *pd_p, port_args_t *args)
         args->link_sm = port_p->port_link_dfe_sm();
     }
 
-    // TODO send live link status until poll timer is reduced
-    // args->oper_status = port_p->oper_status();
+    // send live link status from HW
     if (port_p->port_link_status() == true) {
-        args->oper_status = port_oper_status_t::PORT_OPER_STATUS_UP;
+        // for mgmt port, check marvell phy status if NCSI feature is disabled.
+        // marvel phy status is always down if NCSI feature is enabled
+        if ((port_p->port_type() == port_type_t::PORT_TYPE_MGMT) &&
+            (runenv::is_feature_enabled(NCSI_FEATURE) != FEATURE_ENABLED)) {
+            args->oper_status = port_oper_status_t::PORT_OPER_STATUS_DOWN;
+            for (uint32_t i = 1; i <= catalog->num_logical_oob_ports(); i++) {
+                if (catalog->oob_mgmt_port(i) == true) {
+                    status = 0;
+                    sdk::marvell::marvell_get_hwport_status(
+                        catalog->oob_hw_port(i), &status);
+                    sdk::marvell::marvell_get_status_updown(status, &up);
+                    if (up == true) {
+                        args->oper_status =
+                            port_oper_status_t::PORT_OPER_STATUS_UP;
+                    }
+                }
+            }
+        } else {
+            args->oper_status = port_oper_status_t::PORT_OPER_STATUS_UP;
+        }
     } else {
         args->oper_status = port_oper_status_t::PORT_OPER_STATUS_DOWN;
     }

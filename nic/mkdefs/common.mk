@@ -34,7 +34,7 @@ export NIC_SDK_SOLIBS   := utils list slab shmmgr shmstore mmgr sdkpal sdkfru \
     hash hbmhash tcam timerfd catalog runenv device sdkplatformutils sdk${ASIC} \
     sdkp4loader sdkasicrw sdkasiccommon sdkasicpd lif_mgr sdkring sysmon sensor \
     sdkxcvrdriver pcieport pciemgrutils pciemgr pcietlp intrutils cfgspace \
-    evutils misc
+    evutils misc marvell
 
 export NIC_HAL_DLOPEN_SOLIBS := plugin_network \
                                 plugin_sfw \

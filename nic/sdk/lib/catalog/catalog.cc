@@ -267,6 +267,21 @@ catalog::populate_logical_ports(ptree &prop_tree)
     return SDK_RET_OK;
 }
 
+oob_connection_type_t
+catalog::catalog_oob_connection_type_to_connection_type(std::string val)
+{
+    if (val == "asic") {
+        return oob_connection_type_t::OOB_CONNECTION_TYPE_ASIC;
+    } else if (val == "mtp") {
+        return oob_connection_type_t::OOB_CONNECTION_TYPE_MTP;
+    } else if (val == "mgmt") {
+        return oob_connection_type_t::OOB_CONNECTION_TYPE_MGMT;
+    } else if (val == "bmc") {
+        return oob_connection_type_t::OOB_CONNECTION_TYPE_BMC;
+    }
+    return oob_connection_type_t::OOB_CONNECTION_TYPE_NONE;
+}
+
 sdk_ret_t
 catalog::populate_logical_oob_port(
                             ptree::value_type &logical_oob_port,
@@ -274,6 +289,9 @@ catalog::populate_logical_oob_port(
 {
     std::string val;
 
+    val = logical_oob_port.second.get<std::string>("connection", "");
+    logical_oob_port_p->connection_type =
+        catalog_oob_connection_type_to_connection_type(val);
     val = logical_oob_port.second.get<std::string>("phy_id", "0");
     logical_oob_port_p->phy_id = strtoul(val.c_str(), NULL, 16);
     val = logical_oob_port.second.get<std::string>("hw_port", "0");
@@ -1039,6 +1057,15 @@ catalog::oob_auto_neg_enable(uint32_t logical_oob_port) {
     catalog_logical_oob_port_t *catalog_logical_oob_port =
                                 logical_oob_port_internal(logical_oob_port);
     return catalog_logical_oob_port->auto_neg_enable;
+}
+
+bool
+catalog::oob_mgmt_port(uint32_t logical_oob_port) {
+    catalog_logical_oob_port_t *catalog_logical_oob_port =
+        logical_oob_port_internal(logical_oob_port);
+
+    return catalog_logical_oob_port->connection_type ==
+        oob_connection_type_t::OOB_CONNECTION_TYPE_MGMT;
 }
 
 serdes_info_t*
