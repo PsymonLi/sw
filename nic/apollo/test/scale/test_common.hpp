@@ -107,7 +107,7 @@ typedef struct test_params_s {
         uint32_t num_ing_policies_per_vnic;
         uint32_t num_eg_policies_per_vnic;
         uint32_t vlan_start;
-        bool tag_vnics;
+        pds_encap_type_t vnic_encap_type;
     };
     // mapping config
     struct {
@@ -380,18 +380,29 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                     test_params->num_eg_policies_per_vnic = 5;
                 }
                 tag = obj.second.get<std::string>("vlan-tagged", "");
-                if (tag.empty() || !tag.compare("true")) {
-                    test_params->tag_vnics = true;
+                test_params->vnic_encap_type = PDS_ENCAP_TYPE_NONE;
+                if (!tag.compare("true")) {
+                    test_params->vnic_encap_type = PDS_ENCAP_TYPE_DOT1Q;
                     SDK_ASSERT(obj.second.find("vlan-start") != obj.second.not_found());
                     test_params->vlan_start =
                         std::stol(obj.second.get<std::string>("vlan-start"));
-                } else if (!tag.compare("false")) {
-                    test_params->tag_vnics = false;
-                } else {
-                    printf("Unknown value %s for atrribute tagged under vnics, "
-                           "value must be true | false", tag.c_str());
+                } else if (!tag.empty() && tag.compare("false")) {
+                    printf("Unknown value %s for vlan-tagged attribute under "
+                           "vnics, value must be true | false", tag.c_str());
                     exit(1);
                 }
+                printf("vnic encap type %u\n", test_params->vnic_encap_type);
+                if (test_params->vnic_encap_type == PDS_ENCAP_TYPE_NONE) {
+                    tag = obj.second.get<std::string>("qinq-tagged", "");
+                    if (!tag.compare("true")) {
+                        test_params->vnic_encap_type = PDS_ENCAP_TYPE_QINQ;
+                    } else if (!tag.empty() && tag.compare("false")) {
+                        printf("Unknown value %s for vlan-tagged attribute under "
+                               "vnics, value must be true | false", tag.c_str());
+                        exit(1);
+                    }
+                }
+                printf("vnic encap type %u\n", test_params->vnic_encap_type);
             } else if (kind == "mappings") {
                 pfxstr = obj.second.get<std::string>("nat-prefix");
                 assert(str2ipv4pfx((char *)pfxstr.c_str(), &test_params->nat_pfx) == 0);

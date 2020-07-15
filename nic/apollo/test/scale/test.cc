@@ -714,10 +714,15 @@ create_vnics (uint32_t num_vpcs, uint32_t num_subnets,
                 pds_vnic.subnet =
                     test::int2pdsobjkey(PDS_SUBNET_ID((i - 1), num_subnets, j));
                 pds_vnic.key = test::int2pdsobjkey(vnic_key);
-                if (g_test_params.tag_vnics) {
+                if (g_test_params.vnic_encap_type == PDS_ENCAP_TYPE_DOT1Q) {
                     pds_vnic.vnic_encap.type = PDS_ENCAP_TYPE_DOT1Q;
                     pds_vnic.vnic_encap.val.vlan_tag =
                         vlan_start + vnic_key - 1;
+                } else if (g_test_params.vnic_encap_type ==
+                               PDS_ENCAP_TYPE_QINQ) {
+                    pds_vnic.vnic_encap.type = PDS_ENCAP_TYPE_QINQ;
+                    pds_vnic.vnic_encap.val.qinq.c_tag = 1;
+                    pds_vnic.vnic_encap.val.qinq.s_tag = vnic_key;
                 } else {
                     pds_vnic.vnic_encap.type = PDS_ENCAP_TYPE_NONE;
                     pds_vnic.vnic_encap.val.value = 0;

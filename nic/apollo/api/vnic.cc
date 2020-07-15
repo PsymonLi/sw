@@ -129,12 +129,22 @@ vnic_entry::init_config(api_ctxt_t *api_ctxt) {
     rx_policer_ = spec->rx_policer;
     tx_policer_ = spec->tx_policer;
     vnic_encap_ = spec->vnic_encap;
-    if (unlikely((vnic_encap_.type != PDS_ENCAP_TYPE_NONE) &&
-                 (vnic_encap_.type != PDS_ENCAP_TYPE_DOT1Q))) {
-        PDS_TRACE_ERR("Invalid encap type %u on vnic %s",
-                      vnic_encap_.type, key_.str());
-        return SDK_RET_INVALID_ARG;
+    if (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) {
+        if (unlikely((vnic_encap_.type != PDS_ENCAP_TYPE_NONE) &&
+                     (vnic_encap_.type != PDS_ENCAP_TYPE_DOT1Q))) {
+            PDS_TRACE_ERR("Invalid encap type %u on vnic %s",
+                          vnic_encap_.type, key_.str());
+            return SDK_RET_INVALID_ARG;
 
+        }
+    } else if (g_pds_state.device_oper_mode() ==
+                   PDS_DEV_OPER_MODE_BITW_SMART_SERVICE) {
+        if (unlikely(vnic_encap_.type != PDS_ENCAP_TYPE_QINQ)) {
+            PDS_TRACE_ERR("Invalid encap type %u on vnic %s",
+                          vnic_encap_.type, key_.str());
+            return SDK_RET_INVALID_ARG;
+
+        }
     }
     fabric_encap_ = spec->fabric_encap;
     switch_vnic_ = spec->switch_vnic;
