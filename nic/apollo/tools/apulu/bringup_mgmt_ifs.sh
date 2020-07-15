@@ -29,6 +29,7 @@ do
             dsc0_up=1
         fi
         echo "dsc0 interface is up"
+        iptables -t mangle -A POSTROUTING -o dsc0 -p tcp -j DSCP --set-dscp-class CS6
     fi
 
     if [ -d "/sys/class/net/dsc1" ] && [ $dsc1_up -eq 0 ] ; then
@@ -40,6 +41,7 @@ do
             dsc1_up=1
         fi
         echo "dsc1 interface is up"
+        iptables -t mangle -A POSTROUTING -o dsc1 -p tcp -j DSCP --set-dscp-class CS6
     fi
 
     if [ -d "/sys/class/net/ctrl0" ] && [ $ctrl0_up -eq 0 ] ; then

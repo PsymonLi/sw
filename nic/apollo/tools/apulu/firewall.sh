@@ -26,11 +26,14 @@ $IPT -P INPUT ACCEPT
 $IPT -P FORWARD ACCEPT
 $IPT -P OUTPUT ACCEPT
 
+
 # Flush all rules
 $IPT -F
+$IPT -t mangle -F
 
 # Erase all non-default chains
 $IPT -X
+$IPT -t mangle -X
 
 ###############################################################################
 #
