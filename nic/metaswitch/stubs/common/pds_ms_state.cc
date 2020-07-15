@@ -17,8 +17,8 @@ state_t* state_t::g_state_ = nullptr;
 std::recursive_mutex state_t::g_mtx_;
 template<> sdk::lib::slab* slab_obj_t<cookie_t>::slab_ = nullptr;
 sdk::event_thread::event_thread* state_t::routing_cfg_thr = nullptr;
-std::condition_variable state_t::upg_sync_cv;
-std::mutex state_t::upg_sync_cv_mtx;
+sdk::lib::cond_var_t state_t::upg_sync_cv;
+sdk::lib::cond_var_mutex_t state_t::upg_sync_cv_mtx;
     
 state_t::state_t(void)
 {

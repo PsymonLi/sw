@@ -31,6 +31,7 @@ extern "C"
 #include "nic/apollo/api/port.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
+#include "nic/sdk/lib/cond_var/cond_var.hpp"
 #include <mutex>
 #include <memory>
 #include <unordered_set>
@@ -185,8 +186,8 @@ public:
 
     // Hitless Upgrade Sync stage condition variable
     // to block until Routing convergence 
-    static std::condition_variable upg_sync_cv;
-    static std::mutex upg_sync_cv_mtx;
+    static sdk::lib::cond_var_t upg_sync_cv;
+    static sdk::lib::cond_var_mutex_t upg_sync_cv_mtx;
 
 private:
     static constexpr uint32_t k_max_fp_ports = 2;

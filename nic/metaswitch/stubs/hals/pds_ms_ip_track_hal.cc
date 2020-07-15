@@ -89,7 +89,7 @@ void
 ip_track_set_reachable (ip_track_obj_t* ip_track_obj, bool reachable)
 {
     {
-        std::lock_guard<std::mutex> lk (state_t::upg_sync_cv_mtx);
+        sdk::lib::cond_var_mutex_guard_t lk(&state_t::upg_sync_cv_mtx);
         ip_track_obj->set_reachable(reachable);
     }
     if (reachable) {

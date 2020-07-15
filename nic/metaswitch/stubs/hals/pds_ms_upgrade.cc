@@ -145,10 +145,10 @@ upg_ipc_start_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     upg_ipc_process_response(SDK_RET_OK, msg);
 }
 
-// Time needed from end of gRPC config replay to establish BGP peering,
-// installing nexthops in HAL and stitching all IP track objects to
+// Max wait time from end of gRPC config replay to establish BGP peering,
+// install nexthops in HAL and stitch all IP track objects to
 // their nexthop groups
-constexpr uint32_t k_upg_routing_convergence_time = 10;  // in seconds
+constexpr uint32_t k_upg_routing_convergence_time = 10000;  // in milliseconds
 
 static void
 upg_ipc_sync_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
@@ -156,11 +156,14 @@ upg_ipc_sync_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     auto params = (api::upg_ev_params_t *)(msg->data());
     PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
 
-    std::unique_lock<std::mutex> lk (state_t::upg_sync_cv_mtx);
-    auto ret = state_t::upg_sync_cv.
-        wait_for (lk,
-                  std::chrono::seconds(k_upg_routing_convergence_time),
-                  ip_track_are_all_reachable);
+    bool ret;
+    {
+        sdk::lib::cond_var_mutex_guard_t lk(&state_t::upg_sync_cv_mtx);
+        ret = state_t::upg_sync_cv.
+                wait_for(state_t::upg_sync_cv_mtx,
+                         k_upg_routing_convergence_time,
+                         ip_track_are_all_reachable);
+    }
 
     if (!ret) {
         PDS_TRACE_ERR("PDS MS Sync exiting without Routing convergence");

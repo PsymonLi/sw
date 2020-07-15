@@ -127,6 +127,7 @@ nic/build/$ARCH/$PIPELINE/lib/libpen_oper.so                      /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/liboperd_alerts.so                  /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/liboperd_alert_defs.so              /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libipseccb.so                       /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libcondvar.so                       /nic/lib/
 
 # p4/asm specific libs
 nic/build/$ARCH/$PIPELINE/bin/p4asm/                              /nic/conf/$PIPELINE/asm_bin/

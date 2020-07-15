@@ -51,4 +51,8 @@ echo "Running logger test"
 $GDB ${BUILD_DIR}/bin/logger_test --gtest_output="xml:${GEN_TEST_RESULTS_DIR}/logger_test.xml" > ${SDKDIR}/logger_test.log.txt
 [[ $? -ne 0 ]] && echo "logger_test failed!" && exit 1
 
+echo "Running cond_var test"
+$GDB ${BUILD_DIR}/bin/cond_var_test --gtest_output="xml:${GEN_TEST_RESULTS_DIR}/cond_var_test.xml" > ${SDKDIR}/cond_var_test.log.txt
+[[ $? -ne 0 ]] && echo "cond_var_test failed!" && exit 1
+
 echo "Success"
