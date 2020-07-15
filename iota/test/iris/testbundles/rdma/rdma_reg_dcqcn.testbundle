@@ -388,12 +388,12 @@ testcases:
             spec: '16'
             reload: '5'
 
-    -   name    : Show_Gid
+    -   name    : Show_Gid_Spec
         testcase: testcases.rdma.show_gid
         args    :
             type: remote_only
 
-    -   name    : Intf_Mtu
+    -   name    : Intf_Mtu_Spec
         testcase: testcases.rdma.intf_mtu
         args    :
             type: remote_only
@@ -401,7 +401,7 @@ testcases:
     #==============================
     # Multi Sge: 16x2 WQE format
     #==============================
-    -   name    : Rc_Fml_9Sge_Server
+    -   name    : Rc_Fml_9Sge_Server_Spec
         testcase: testcases.rdma.rdma_perftest
         stress  : True
         iterators :
@@ -419,7 +419,7 @@ testcases:
     #==========================================
     # 16 SGEs with size multiple of MTU and NOT
     #==========================================
-    -   name    : Rc_Fml_16Sge_Size_Pow_Of_2
+    -   name    : Rc_Fml_16Sge_Size_Pow_Of_2_Spec
         testcase: testcases.rdma.rdma_perftest
         stress  : True
         iterators :
@@ -434,7 +434,7 @@ testcases:
             enable_dcqcn : ['yes']
             command  : ['ib_send_bw', 'ib_read_bw', 'ib_write_bw']
 
-    -   name    : Rc_Bw_16Sge_Size_Not_Pow_Of_2
+    -   name    : Rc_Bw_16Sge_Size_Not_Pow_Of_2_Spec
         testcase: testcases.rdma.rdma_perftest
         stress  : True
         iterators :
