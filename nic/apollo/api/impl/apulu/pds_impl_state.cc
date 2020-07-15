@@ -53,7 +53,6 @@ pds_impl_state::init(pds_state *state) {
     impl_state_[PDS_IMPL_STATE_POLICER] = new policer_impl_state(state);
     impl_state_[PDS_IMPL_STATE_DHCP] = new dhcp_impl_state(state);
     impl_state_[PDS_IMPL_STATE_QOS] = new qos_impl_state(state);
-    impl_state_[PDS_IMPL_STATE_VPORT] = new vport_impl_state(state);
     impl_state_[PDS_IMPL_STATE_IPSEC] = new ipsec_sa_impl_state(state);
     return SDK_RET_OK;
 }

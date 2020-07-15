@@ -36,7 +36,6 @@ typedef enum impl_obj_id_e {
     IMPL_OBJ_ID_NEXTHOP_GROUP,
     IMPL_OBJ_ID_POLICER,
     IMPL_OBJ_ID_DHCP_POLICY,
-    IMPL_OBJ_ID_VPORT,
     IMPL_OBJ_ID_IPSEC_SA_ENCRYPT,
     IMPL_OBJ_ID_IPSEC_SA_DECRYPT,
 } impl_obj_id_t;

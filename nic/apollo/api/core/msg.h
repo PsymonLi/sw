@@ -21,7 +21,6 @@
 #include "nic/apollo/api/include/pds_tep.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
 #include "nic/apollo/api/include/pds_vnic.hpp"
-#include "nic/apollo/api/include/pds_vport.hpp"
 #include "nic/apollo/api/include/pds_mirror.hpp"
 #include "nic/apollo/api/include/pds_policy.hpp"
 #include "nic/apollo/api/include/pds_flow.hpp"
@@ -62,15 +61,6 @@ typedef struct pds_vnic_cfg_msg_s {
     };
     pds_vnic_status_t status;
 } pds_vnic_cfg_msg_t;
-
-/// vport configuration
-typedef struct pds_vport_cfg_msg_s {
-    union {
-        pds_obj_key_t key;
-        pds_vport_spec_t spec;
-    };
-    pds_vport_status_t status;
-} pds_vport_cfg_msg_t;
 
 /// subnet configuration
 typedef struct pds_subnet_cfg_msg_s {
@@ -168,7 +158,6 @@ typedef struct pds_cfg_msg_s {
         pds_tep_cfg_msg_t tep;
         pds_if_cfg_msg_t intf;
         pds_vnic_cfg_msg_t vnic;
-        pds_vport_cfg_msg_t vport;
         pds_mirror_session_cfg_msg_t mirror_session;
         pds_dhcp_policy_cfg_msg_t dhcp_policy;
         pds_nat_port_block_cfg_msg_t nat_port_block;

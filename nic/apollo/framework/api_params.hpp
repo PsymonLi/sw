@@ -32,7 +32,6 @@
 #include "nic/apollo/api/include/pds_policer.hpp"
 #include "nic/apollo/api/include/pds_nat.hpp"
 #include "nic/apollo/api/include/pds_dhcp.hpp"
-#include "nic/apollo/api/include/pds_vport.hpp"
 #include "nic/apollo/api/include/pds_ipsec.hpp"
 
 namespace api {
@@ -80,7 +79,6 @@ struct api_params_s {
         pds_route_spec_t              route_spec;
         pds_policy_rule_key_t         policy_rule_key;
         pds_policy_rule_spec_t        policy_rule_spec;
-        pds_vport_spec_t              vport_spec;
         pds_ipsec_sa_encrypt_spec_t   ipsec_sa_encrypt_spec;
         pds_ipsec_sa_decrypt_spec_t   ipsec_sa_decrypt_spec;
     };
