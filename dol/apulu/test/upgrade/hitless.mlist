@@ -11,8 +11,14 @@ feature:
 modules:
 
     - module:
-        name    : PACKET_TEST_PRE_UPGRADE
-        spec    : l2r_icmp_echo_reply.testspec
+        name    : PACKET_TEST_NEW_ICMP_FLOW_1_PRE_UPGRADE
+        spec    : l2r_icmp_echo_reply_existing_flow.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+
+    - module:
+        name    : PACKET_TEST_NEW_ICMP_FLOW_2_PRE_UPGRADE
+        spec    : l2r_icmp_echo_reply_new_flow.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
 
@@ -21,7 +27,16 @@ modules:
         spec    : hitless.testspec
 
     - module:
-        name    : PACKET_TEST_POST_UPGRADE
-        spec    : l2r_icmp_echo_reply.testspec
+        name    : PACKET_TEST_EXISTING_ICMP_FLOW_POST_UPGRADE
+        spec    : l2r_icmp_echo_reply_existing_flow.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+        args    :
+            # Verify the flow is not created in Domain B
+            - verify_flow_not_created : cli_dom_b.sock
+
+    - module:
+        name    : PACKET_TEST_NEW_ICMP_FLOW_3_POST_UPGRADE
+        spec    : l2r_icmp_echo_reply_new_flow.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING

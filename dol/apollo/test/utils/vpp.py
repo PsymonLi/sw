@@ -14,13 +14,17 @@ def __get_vppctl_path():
     abs_path = os.path.join(os.environ['WS_TOP'], rel_path)
     return abs_path
 
-def ExecuteVPPCommand(command):
-    vppctl=__get_vppctl_path()
+def ExecuteVPPCommand(command, args=None):
+    vppctl= __get_vppctl_path()
+    if args:
+        vppctlproc = [vppctl] + args.split() + [command]
+    else:
+        vppctlproc = [vppctl, command]
     retval = True
     output = ""
     try:
         if not utils.IsDryRun():
-            output=str(subprocess.check_output([vppctl, command], stderr=subprocess.STDOUT))
+            output=str(subprocess.check_output(vppctlproc, stderr=subprocess.STDOUT))
     except subprocess.CalledProcessError as e:
         output="Command execution failed."
         retval=False
