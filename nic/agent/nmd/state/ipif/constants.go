@@ -39,6 +39,10 @@ const (
 
 	// DHCPTimeout captures the timeout the dhcp client waits for the packets to be received
 	DHCPTimeout = time.Minute * 1
+
+	// MaxRetryDuration captures the maximum amount of time the DSC retries doing DHCP before bailing out.
+	// TODO Once we hit this case we need to enable discovery either via penctl or host reboot. This is to support CNIC deployments without PSM
+	MaxRetryDuration = time.Hour * 1
 )
 
 var (

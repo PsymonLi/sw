@@ -139,6 +139,7 @@ func (c *IPClient) DoDHCPConfig(ctx context.Context) error {
 	}
 
 	ticker := time.NewTicker(AdmissionRetryDuration)
+	terminateDHCP := time.NewTicker(MaxRetryDuration)
 	c.dhcpState.DhcpWaitGroup.Add(1)
 	go func(ctx context.Context) {
 		defer c.dhcpState.DhcpWaitGroup.Done()
@@ -146,7 +147,6 @@ func (c *IPClient) DoDHCPConfig(ctx context.Context) error {
 		if ctx.Err() != nil {
 			return
 		}
-
 		c := c
 		for {
 			select {
@@ -165,6 +165,9 @@ func (c *IPClient) DoDHCPConfig(ctx context.Context) error {
 					log.Info("DHCP was successful. Exiting the DHCP retry loop")
 					return
 				}
+			case <-terminateDHCP.C:
+				log.Infof("Terminating DHCP Reties after: %s", MaxRetryDuration.String())
+				c.dhcpState.DhcpCancel()
 			case <-ctx.Done():
 				if (c.dhcpState.PrimaryIntfClient) != nil {
 					if err := c.dhcpState.PrimaryIntfClient.Close(); err != nil {
