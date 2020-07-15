@@ -44,6 +44,7 @@ session_info:
     seq             c1, k.p4e_i2e_rx_packet, TRUE
     add.c1          r1, r1, (METER_TABLE_SIZE >> 1)
     phvwr           p.meter_metadata_meter_id, r1
+    phvwr           p.meter_metadata_meter_enabled, TRUE
 
 session_info_common:
     bbeq            k.p4e_i2e_rx_packet, FALSE, session_tx
