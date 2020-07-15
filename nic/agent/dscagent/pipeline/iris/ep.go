@@ -145,7 +145,7 @@ func deleteEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClie
 		if isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration != netproto.MigrationState_ABORT.String() {
 			log.Infof("Got Delete for incoming EP %v with migraiton status %v. Ignoring delete.", endpoint.Name, endpoint.Spec.Migration)
 			return nil
-		} else if !isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration != netproto.MigrationState_DONE.String() {
+		} else if !isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration != netproto.MigrationState_DONE.String() && endpoint.Spec.Migration != netproto.MigrationState_FROM_NON_PEN_HOST.String() {
 			log.Infof("Got delete for outgoing EP %v with migration status %v. Ignoring delete.", endpoint.Name, endpoint.Spec.Migration)
 			return nil
 		}
