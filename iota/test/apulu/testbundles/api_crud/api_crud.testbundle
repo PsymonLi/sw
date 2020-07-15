@@ -17,9 +17,9 @@ testcases:
             # objects tested with delete config.
             # TODO: nh-group
             # route object excluded from local2remote tests, because no hit
-            # tunnel, nexthop object is excluded from delete operation as config is pushed by bgp and not iota
+            # nexthop object is excluded from delete operation as config is pushed by bgp and not iota
             #objtype : [ device, vpc, subnet, vnic, tunnel, lmapping, rmapping, nexthop, interface ]
-            objtype : [ device, vpc, subnet, vnic, lmapping, rmapping ]
+            objtype : [ device, vpc, subnet, vnic, tunnel, lmapping, rmapping ]
             oper    : [ [delete] ]
 
     -   name    : Update_And_Ping
@@ -35,7 +35,7 @@ testcases:
             # TODO: nh-group
             # nexthop object is excluded from update operation as config is pushed by bgp and not iota
             #objtype : [ device, vpc, subnet, vnic, tunnel, nexthop, interface]
-            objtype : [ device, vpc, subnet, vnic, interface]
+            objtype : [ device, vpc, subnet, vnic, tunnel, interface]
             oper    : [ [update] ]
 
     -   name    : Create_Create_And_Ping
@@ -75,7 +75,7 @@ testcases:
             #ipaf   : [ ipv4, ipv6 ]
             ipaf    : [ ipv4 ]
             #objtype : [ device, vpc, subnet, vnic, nexthop, tunnel, interface, lmapping, rmapping ]
-            objtype : [ device, vpc, subnet, vnic, lmapping, rmapping ]
+            objtype : [ device, vpc, subnet, vnic, tunnel, lmapping, rmapping ]
             oper    : [ [delete, delete] ]
 
     -   name    : Update_Create_And_Ping
@@ -87,6 +87,6 @@ testcases:
             type    : nested
             #ipaf   : [ ipv4, ipv6 ]
             ipaf    : [ ipv4 ]
-            objtype : [ device, vpc, subnet, vnic, interface, lmapping, rmapping ]
+            objtype : [ device, vpc, subnet, vnic, tunnel, interface, lmapping, rmapping ]
             oper    : [ [update, create] ]
 
