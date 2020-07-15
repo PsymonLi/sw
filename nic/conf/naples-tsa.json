@@ -54,8 +54,8 @@
                                 {
                                         "Name" : "Collect Miscellaneous files from Data",
                                         "Method" : 0,
-					"Command" : "mkdir data-misc && cp /data/delphi.dat data-misc"
-				},
+                                        "Command" : "mkdir data-misc && cp /data/delphi.dat /data/pre-upgrade-logs.tar /data/post-upgrade-failed-logs.tar data-misc"
+                                },
                                 {
                                         "Name" : "Collect Sysmgr Logs",
                                         "Method" : 0,

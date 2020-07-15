@@ -148,6 +148,9 @@ wait_for_coremgr
 update_fwupgrade_state "KILLED ALL PROCESSES EXCEPT INIT"
 save_fwupgrade_state
 
+rm -rf /data/pre-upgrade-logs.tar*
+tar -cf /data/pre-upgrade-logs.tar /var/log/
+
 echo "Switching filesystem from $cur_image to $new_image"
 
 update_fwupgrade_state "MOUNTING NEW IMAGE PARTITION"

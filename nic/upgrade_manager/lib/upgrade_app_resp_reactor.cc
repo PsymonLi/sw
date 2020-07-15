@@ -81,6 +81,10 @@ delphi::error UpgAppRespReact::OnUpgAppRespDelete(delphi::objects::UpgAppRespPtr
                     }
                     UPG_LOG_DEBUG("Calling respawn_processes");
                     UPG_OBFL_TRACE("Calling respawn_processes");
+                    string cmd = "tar -cf /data/post-upgrade-failed-logs.tar /var/log/";
+                    if (system (cmd.c_str()) != 0) {
+                        UPG_LOG_INFO("Failed to collect failure logs");
+                    }
                     ctx.sysMgr->respawn_processes();
                 }
             } else {

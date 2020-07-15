@@ -85,3 +85,16 @@ func pkgVerify(pkgName string) (string, error) {
 	}
 	return execCmd(v)
 }
+
+func rmUpgTechSupportFiles() (string, error) {
+	v := &nmd.DistributedServiceCardCmdExecute{
+		Executable: "rm",
+		Opts:       strings.Join([]string{"-rf ", "/data/pre-upgrade-logs.tar"}, ""),
+	}
+	execCmd(v)
+	v = &nmd.DistributedServiceCardCmdExecute{
+		Executable: "rm",
+		Opts:       strings.Join([]string{"-rf ", "/data/post-upgrade-failed-logs.tar"}, ""),
+	}
+	return execCmd(v)
+}
