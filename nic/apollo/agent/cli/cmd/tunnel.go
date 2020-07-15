@@ -21,14 +21,22 @@ import (
 )
 
 var (
-	tunnelID string
+	tunnelID  string
+	tunnelMAC string
 )
 
 var tunnelShowCmd = &cobra.Command{
 	Use:   "tunnel",
-	Short: "show Tunnel information",
+	Short: "show tunnel information",
 	Long:  "show Tunnel object information",
 	Run:   tunnelShowCmdHandler,
+}
+
+var tunnelUpdateCmd = &cobra.Command{
+	Use:   "tunnel",
+	Short: "update tunnel information",
+	Long:  "update tunnel object information",
+	Run:   tunnelUpdateCmdHandler,
 }
 
 func init() {
@@ -36,8 +44,79 @@ func init() {
 	tunnelShowCmd.Flags().Bool("yaml", false, "Output in yaml")
 	tunnelShowCmd.Flags().Bool("summary", false, "Display number of objects")
 	tunnelShowCmd.Flags().StringVarP(&tunnelID, "id", "i", "", "Specify Tunnel ID")
+	debugUpdateCmd.AddCommand(tunnelUpdateCmd)
+	tunnelUpdateCmd.Flags().StringVarP(&tunnelID, "id", "i", "", "Specify Tunnel ID")
+	tunnelUpdateCmd.Flags().StringVar(&tunnelMAC, "mac", "", "Specify remote MAC address")
+	tunnelUpdateCmd.MarkFlagRequired("id")
+	tunnelUpdateCmd.MarkFlagRequired("mac")
 }
 
+func tunnelUpdateCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewTunnelSvcClient(c)
+
+	// Get Tunnel
+	req := &pds.TunnelGetRequest{
+		Id: [][]byte{uuid.FromStringOrNil(tunnelID).Bytes()},
+	}
+
+	// PDS call
+	respMsg, err := client.TunnelGet(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Getting Tunnel failed, err %v\n", err)
+		return
+	}
+
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+
+	for _, resp := range respMsg.Response {
+		spec := &pds.TunnelSpec{
+			Id:                    resp.GetSpec().GetId(),
+			VPCId:                 resp.GetSpec().GetVPCId(),
+			LocalIP:               resp.GetSpec().GetLocalIP(),
+			RemoteIP:              resp.GetSpec().GetRemoteIP(),
+			Type:                  resp.GetSpec().GetType(),
+			Encap:                 resp.GetSpec().GetEncap(),
+			Nat:                   resp.GetSpec().GetNat(),
+			RemoteService:         resp.GetSpec().GetRemoteService(),
+			RemoteServiceEncap:    resp.GetSpec().GetRemoteServiceEncap(),
+			RemoteServicePublicIP: resp.GetSpec().GetRemoteServicePublicIP(),
+			ToS:                   resp.GetSpec().GetToS(),
+			Nh:                    resp.GetSpec().GetNh(),
+			MACAddress:            utils.MACAddrStrToUint64(tunnelMAC),
+		}
+		updReq := &pds.TunnelRequest{
+			Request: []*pds.TunnelSpec{
+				spec,
+			},
+		}
+		updRespMsg, err := client.TunnelUpdate(context.Background(), updReq)
+		if err != nil {
+			fmt.Printf("Tunnel update failed, err %v\n", err)
+			return
+		}
+		if updRespMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+			fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
+			return
+		}
+		fmt.Printf("Tunnel update successful\n")
+	}
+}
 func tunnelShowCmdHandler(cmd *cobra.Command, args []string) {
 	// Connect to PDS
 	c, err := utils.CreateNewGRPCClient()
