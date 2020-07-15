@@ -220,6 +220,7 @@ dev_evhandler(const pciehdev_eventdata_t *evd)
 
 #ifdef IRIS
 #ifdef __aarch64__
+#if 0
 static void
 update_stats(void *arg)
 {
@@ -231,6 +232,7 @@ update_stats(void *arg)
         }
     }
 }
+#endif
 #endif
 #endif
 
@@ -273,10 +275,12 @@ server_loop(pciemgrenv_t *pme)
 
 #ifdef IRIS
 #ifdef __aarch64__
+#if 0 // disable stats to avoid spinlock deadlock in delphi
     // initialize stats timer to update stats to delphi
     static evutil_timer stats_timer;
     evutil_timer_start(EV_DEFAULT_
                        &stats_timer, update_stats, pme, 10.0, 10.0);
+#endif
 #endif
 #else
     upg_ev_init();
