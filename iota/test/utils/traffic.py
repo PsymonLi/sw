@@ -173,7 +173,7 @@ def iperfWorkloads(workload_pairs, af="ipv4", proto="tcp", packet_size=64,
     api.Trigger_TerminateAllCommands(server_resp)
     return [cmdDesc, serverCmds, clientCmds], client_resp
 
-def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0):
+def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0, max_bw=0):
     result = api.types.status.SUCCESS
     conn_timedout = 0
     control_socker_err = 0
@@ -181,9 +181,9 @@ def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0):
     serverCmds = cmd_cookies[1]
     clientCmds = cmd_cookies[2]
     for idx, cmd in enumerate(response.commands):
-        api.Logger.info("Iperf Result for %s" % (cmdDesc[idx]))
-        api.Logger.info("Iperf Server cmd %s" % (serverCmds[idx]))
-        api.Logger.info("Iperf Client cmd %s" % (clientCmds[idx]))
+        api.Logger.debug("Iperf Result for %s" % (cmdDesc[idx]))
+        api.Logger.debug("Iperf Server cmd %s" % (serverCmds[idx]))
+        api.Logger.debug("Iperf Client cmd %s" % (clientCmds[idx]))
         if cmd.exit_code != exit_code:
             api.Logger.error("Iperf client exited with error")
             api.PrintCommandResults(cmd)
@@ -202,13 +202,18 @@ def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0):
                 api.Logger.error("Iperf failed", iperf.Error(cmd.stdout))
                 result = api.types.status.FAILURE
         elif not api.GlobalOptions.dryrun:
-            tx_bw = iperf.GetSentGbps(cmd.stdout)
-            rx_bw = iperf.GetReceivedGbps(cmd.stdout)
-            api.Logger.info(f"Iperf Send Rate {tx_bw} Gbps")
-            api.Logger.info(f"Iperf Receive Rate {rx_bw} Gbps ")
+            tx_bw = iperf.GetSentMbps(cmd.stdout)
+            rx_bw = iperf.GetReceivedMbps(cmd.stdout)
+            api.Logger.debug(f"Iperf Send Rate {tx_bw} Mbps")
+            api.Logger.debug(f"Iperf Receive Rate {rx_bw} Mbps ")
+            api.Logger.debug(f"Expected Rate min:{min_bw} Mbps max:{max_bw} Mbps")
             if min_bw:
                 if float(tx_bw) < float(min_bw) or float(rx_bw) < float(min_bw):
-                    api.Logger.error("Iperf min bw not met {tx_bw} {rx_bw} {min_bw}")
+                    api.Logger.error(f"Iperf min bw not met tx:{tx_bw} rx:{rx_bw} min:{min_bw}")
+                    return api.types.status.FAILURE
+            if max_bw:
+                if float(rx_bw) > float(max_bw):
+                    api.Logger.error(f"Iperf max bw not met tx:{tx_bw} rx:{rx_bw} max:{max_bw}")
                     return api.types.status.FAILURE
 
     api.Logger.info("Iperf test successful")

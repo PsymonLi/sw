@@ -1,13 +1,67 @@
 #! /usr/bin/python3
+import pdb
 import time
 
 import iota.harness.api as api
 import iota.test.apulu.config.api as config_api
+import apollo.config.agent.api as agent_api
 import iota.test.utils.traffic as traffic_utils
 import iota.test.apulu.utils.flow as flow_utils
 from apollo.config.objects.policy import SupportedIPProtos as IPProtos
 from iota.harness.infra.glopts import GlobalOptions
 import apollo.config.objects.nat_pb as nat_pb
+from apollo.config.store import EzAccessStore
+
+class PolicerUpdateSpec:
+    def __init__(self, policer):
+        if policer.direction == 'egress':
+            self.TxPolicer = policer
+            self.RxPolicer = None
+        else:
+            self.RxPolicer = policer
+            self.TxPolicer = None
+        return
+
+def UpdatePolicer(tc, workload):
+    if not workload.IsNaples():
+        return 0
+    PolicerClient = EzAccessStore.GetConfigClient(agent_api.ObjectTypes.POLICER)
+    if tc.iterators.policertype == 'pps':
+        multiplier = tc.iterators.pktsize + 40 # pktsize is MSS
+    else:
+        multiplier = 1
+    duration = 10 # default iperf run duration
+    policer = PolicerClient.GetMatchingPolicerObject(workload.node_name, \
+            tc.iterators.direction, tc.iterators.policertype)
+    if policer:
+        spec = PolicerUpdateSpec(policer);
+        workload.vnic.Update(spec)
+        rate = (((policer.rate * duration) + policer.burst) * multiplier) / duration
+    else:
+        rate = 0
+    return rate
+
+def SetupPolicer(tc):
+    # first, reduce to exactly one pair
+    del tc.workload_pairs[1:]
+    w1, w2 = tc.workload_pairs[0]
+    # install policer on workload pair
+    rate1 = UpdatePolicer(tc, w1)
+    rate2 = UpdatePolicer(tc, w2)
+    if rate1 == 0 and rate2 == 0:
+        api.Logger.error(f"Skipping Testcase due to no {tc.iterators.direction}"\
+                          " {tc.iterators.policertype} policer rules.")
+        return False
+    # find min of the rates. rate 0 indicates no policer installed
+    if rate1 == 0:
+        tc.expected_bw = rate2
+    elif rate2 == 0:
+        tc.expected_bw = rate1
+    else:
+        tc.expected_bw = rate1 if rate1 < rate2 else rate2
+    #convert rate from bytes-per-sec to Mbps
+    tc.expected_bw = float(tc.expected_bw / 125000)
+    return True
 
 def Setup(tc):
     tc.num_streams = getattr(tc.args, "num_streams", 1)
@@ -40,6 +94,10 @@ def Setup(tc):
         api.Logger.error("Skipping Testcase due to no workload pairs.")
         return api.types.status.FAILURE
 
+    if hasattr(tc.args, 'policer'):
+        if not SetupPolicer(tc):
+            return api.types.status.FAILURE
+
     return api.types.status.SUCCESS
 
 def Trigger(tc):
@@ -53,7 +111,11 @@ def Trigger(tc):
     return api.types.status.SUCCESS
 
 def Verify(tc):
-    res = traffic_utils.verifyIPerf(tc.cmd_cookies, tc.resp, min_bw=0.5)
+    if hasattr(tc.args, 'policer'):
+        res = traffic_utils.verifyIPerf(tc.cmd_cookies, tc.resp,\
+                min_bw=(tc.expected_bw * 0.9), max_bw=(tc.expected_bw*1.1))
+    else:
+        res = traffic_utils.verifyIPerf(tc.cmd_cookies, tc.resp, min_bw=500)
     if res != api.types.status.SUCCESS:
         return res
     if tc.args.type != 'igw_only':
@@ -94,4 +156,9 @@ def Verify(tc):
     return api.types.status.SUCCESS
 
 def Teardown(tc):
+    if hasattr(tc.args, 'policer'):
+        for x,y in tc.workload_pairs:
+            if x.IsNaples(): x.vnic.RollbackUpdate()
+            if y.IsNaples(): y.vnic.RollbackUpdate()
+
     return flow_utils.clearFlowTable(tc.workload_pairs)

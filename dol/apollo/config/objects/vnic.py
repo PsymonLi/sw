@@ -248,7 +248,11 @@ class VnicObject(base.ConfigObjectBase):
         return True
 
     def SpecUpdate(self, spec):
-        utils.ReconfigPolicies(self, spec)
+        if hasattr(spec, 'RxPolicer') and hasattr(spec, 'TxPolicer'):
+            self.RxPolicer = spec.RxPolicer
+            self.TxPolicer = spec.TxPolicer
+        else:
+            utils.ReconfigPolicies(self, spec)
         self.AddToReconfigState('update')
         return
 
@@ -268,10 +272,8 @@ class VnicObject(base.ConfigObjectBase):
             self.RollbackMany(attrlist)
             utils.ModifyPolicyDependency(self, False)
         else:
-            #if self.Dot1Qenabled:
-            #    self.VlanId = self.GetPrecedent().VlanId
-            self.SourceGuard = not(self.SourceGuard)
-            logger.info(f'Rolled back attributes - SourceGuard')
+            attrlist = ["SourceGuard", "TxPolicer", "RxPolicer"]
+            self.RollbackMany(attrlist)
         return
 
     def PopulateKey(self, grpcmsg):

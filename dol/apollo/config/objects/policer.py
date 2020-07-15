@@ -143,6 +143,13 @@ class PolicerObjectClient(base.ConfigClientBase):
                 self.txpolicercount += 1
         return
 
+    def GetMatchingPolicerObject(self, node, direction, policertype):
+        for key in self.Objs[node]:
+            val = self.Objs[node][key]
+            if policertype == val.type and direction == val.direction:
+                return val
+        return None
+
     def GetPolicerObject(self, node, policerid):
         resp = self.GetObjectByKey(node, policerid)
         return resp

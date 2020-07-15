@@ -411,6 +411,27 @@ vpc:
           policytype : default
           direction  : bidir
 
+policer:
+  - id: 1
+    direction: egress
+    type: bps
+    rate:   6000000
+    burst:  6000000
+  - id: 2
+    direction: ingress
+    type: bps
+    rate:   8000000
+    burst:  8000000
+  - id: 3
+    direction: egress
+    type: pps
+    rate:   600000
+    burst:  600000
+  - id: 4
+    direction: ingress
+    type: pps
+    rate:   800000
+    burst:  800000
 
 # ECMP:
 # Object types and order of creation of objects for different kinds of ECMP.

@@ -42,6 +42,7 @@ testbundles:
         - mtu/mtu.testbundle
         - vlanoffload/vlanoffload.testbundle
         - classic/driver-features-sanity.testbundle
+        - networking/policer.testbundle
         - reboot/reboot.testbundle
         - techsupport/techsupport.testbundle
 

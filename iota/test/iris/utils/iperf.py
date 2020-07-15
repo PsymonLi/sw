@@ -200,6 +200,15 @@ def GetReceivedGbps(iperf_out):
         return ('{0:.2f}'.format(end["sum_received"]["bits_per_second"]/(1024 * 1024 * 1024)))
     return ('{0:.2f}'.format(end["sum"]["bits_per_second"]/(1024 * 1024 * 1024)))
 
+def GetReceivedMbps(iperf_out):
+    iperfJson = __get_json(iperf_out)
+    end = iperfJson.get("end", None)
+    if not end:
+        return '0'
+    if iperfJson["start"]["test_start"]["protocol"] == 'TCP':
+        return ('{0:.2f}'.format(end["sum_received"]["bits_per_second"]/(1024 * 1024)))
+    return ('{0:.2f}'.format(end["sum"]["bits_per_second"]/(1024 * 1024)))
+
 
 if __name__ == '__main__':
     out = open("/Users/sudhiaithal/Downloads/test.json", "r")
