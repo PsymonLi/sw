@@ -298,7 +298,8 @@ upg_ev_backup (upg_ev_params_t *params)
             break;
 
         case OBJ_ID_NEXTHOP:
-            ret = backup_nexthop(&info);
+            // TODO: revisit it later if its needed
+            // ret = backup_nexthop(&info);
             // update total number of nexthop objs stashed
             hdr[id].obj_count = info.backup.stashed_obj_count;
             PDS_TRACE_INFO("Stashed %u nexthop objs", hdr[id].obj_count);
@@ -428,6 +429,8 @@ upg_hitless_restore_api_objs (void)
             // will continue restoring even if something fails
             if (ret != SDK_RET_OK) {
                 PDS_TRACE_ERR("Restore for obj id %u failed, err %u", id, ret);
+                // TODO: evaluate once dev is over
+                SDK_ASSERT(0);
             }
             mem += info.size;
         }   // end while
