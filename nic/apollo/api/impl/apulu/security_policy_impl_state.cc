@@ -37,6 +37,8 @@ security_policy_impl_state::security_policy_impl_state(pds_state *state) {
     SDK_ASSERT(v6_region_addr_ != INVALID_MEM_ADDRESS);
     v6_table_size_ = state->mempartition()->block_size("sacl_v6");
     v6_max_rules_ = state->mempartition()->max_elements("sacl_v6") - 1;
+    v4_rule_stats_region_addr_ =
+        state->mempartition()->start_addr("rule_stats_v4");
 }
 
 security_policy_impl_state::~security_policy_impl_state() {

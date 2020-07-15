@@ -78,15 +78,25 @@ private:
     friend class security_policy_impl;
 
 private:
-    // datapath tables for security policy
-    rte_indexer *v4_idxr_;          ///< indexer to allocate mem block for v4 policy tables
-    rte_indexer *v6_idxr_;          ///< indexer to allocate mem block for v6 policy tables
-    mem_addr_t  v4_region_addr_;    ///< base address for v4 policy region
-    uint64_t    v4_table_size_;     ///< size of each v4 policy table
-    uint32_t    v4_max_rules_;      ///< max IPv4 rules per policy
-    mem_addr_t  v6_region_addr_;    ///< base address for v6 policy region
-    uint64_t    v6_table_size_;     ///< size of each v6 policy table
-    uint32_t    v6_max_rules_;      ///< max IPv6 rules per policy
+    /// indexer to allocate mem block for v4 policy tables
+    rte_indexer *v4_idxr_;
+    /// indexer to allocate mem block for v6 policy tables
+    rte_indexer *v6_idxr_;
+    /// base address for v4 policy region
+    mem_addr_t  v4_region_addr_;
+    /// size of each v4 policy table
+    uint64_t    v4_table_size_;
+    /// max IPv4 rules per policy
+    uint32_t    v4_max_rules_;
+    /// base address for v6 policy region
+    mem_addr_t  v6_region_addr_;
+    /// size of each v6 policy table
+    uint64_t    v6_table_size_;
+    /// max IPv6 rules per policy
+    uint32_t    v6_max_rules_;
+    /// IPv4 rule stats region based address or INVALID_MEM_ADDRESS in case
+    /// rule stats are not supported
+    mem_addr_t  v4_rule_stats_region_addr_;
 };
 
 /// \@}

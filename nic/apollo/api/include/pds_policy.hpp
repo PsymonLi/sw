@@ -139,7 +139,7 @@ struct pds_policy_spec_s {
         }
     }
     /// assignment operator
-    pds_policy_spec_t& operator= (const pds_policy_spec_t& policy) {
+    pds_policy_spec_t& operator=(const pds_policy_spec_t& policy) {
         // self-assignment guard
         if (this == &policy) {
             return *this;

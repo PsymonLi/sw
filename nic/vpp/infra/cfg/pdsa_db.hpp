@@ -21,6 +21,7 @@
         _(DHCP_POLICY, dhcp_policy)                 \
         _(NAT_PORT_BLOCK, nat_port_block)           \
         _(SECURITY_PROFILE, security_profile)       \
+        _(POLICY, policy)                           \
 
 // callback function prototype
 typedef sdk::sdk_ret_t (*pds_cfg_set_cb)(const pds_cfg_msg_t *msg);

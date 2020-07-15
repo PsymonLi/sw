@@ -159,6 +159,19 @@ policy::init_config(api_ctxt_t *api_ctxt) {
 }
 
 sdk_ret_t
+policy::populate_msg(pds_msg_t *msg, api_obj_ctxt_t *obj_ctxt) {
+    msg->cfg_msg.op = obj_ctxt->api_op;
+    msg->cfg_msg.obj_id = OBJ_ID_POLICY;
+    if (obj_ctxt->api_op == API_OP_DELETE) {
+        msg->cfg_msg.policy.key = obj_ctxt->api_params->key;
+    } else {
+        msg->cfg_msg.policy.key = obj_ctxt->api_params->policy_spec.key;
+        impl_->populate_msg(msg, this, obj_ctxt);
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 policy::init_config_(policy *policy) {
     pds_obj_key_t key = policy->key();
 

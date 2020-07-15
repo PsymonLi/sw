@@ -83,6 +83,12 @@ static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
                 {PDS_IPC_ID_ROUTING}},
         }
     },
+    // IPC peers interseted in policy object
+    { OBJ_ID_POLICY,
+        {
+            { PDS_IPC_ID_VPP, false, {}},
+        }
+    },
 };
 
 api_obj_ipc_peer_list_t&

@@ -108,6 +108,13 @@ security_policy_impl::nuke_resources(api_base *api_obj) {
 }
 
 sdk_ret_t
+security_policy_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
+                                   api_obj_ctxt_t *obj_ctxt) {
+    msg->cfg_msg.policy.status.policy_base_addr = security_policy_root_addr_;
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 security_policy_impl::program_security_policy_(pds_policy_spec_t *spec) {
     sdk_ret_t ret;
     security_profile *sec_profile;

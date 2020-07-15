@@ -288,6 +288,9 @@ vpp_config_batch::maxsize (obj_id_t obj_id) {
     case OBJ_ID_SECURITY_PROFILE:
         return PDS_MAX_SECURITY_PROFILE;
 
+    case OBJ_ID_POLICY:
+        return PDS_MAX_SECURITY_POLICY;
+
     default:
         assert(false);
     }
@@ -592,6 +595,7 @@ vpp_config_cb_registry::read (pds_cfg_get_rsp_t &msg) const {
     _(NAT_PORT_BLOCK, nat_port_block)
     _(SECURITY_PROFILE, security_profile)
     _(VNIC, vnic)
+    _(POLICY, vnic)
 
 #undef _
     default:

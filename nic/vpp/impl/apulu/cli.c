@@ -123,3 +123,10 @@ device_impl_db_dump ()
                     device->mapping_prio);
     return 0;
 }
+
+int
+policy_impl_db_dump ()
+{
+    // TODO
+    return -1;
+}

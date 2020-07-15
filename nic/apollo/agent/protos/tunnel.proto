@@ -63,7 +63,7 @@ message TunnelSpec {
     bytes         TunnelId              = 10;
     // DropNexthop is used to explicity drop traffic destined to this tunnel
     // (even when there is reachability), administratively
-    types.DropNexthop DropNexthop           = 11;
+    types.DropNexthop DropNexthop       = 11;
   }
   // MAC address of the remote IP (i.e., remote side of the tunnel)
   // NOTE: if dataplane is supposed to resolve this, set to 0

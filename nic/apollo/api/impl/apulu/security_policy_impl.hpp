@@ -66,6 +66,21 @@ public:
     /// \return    SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t release_resources(api_base *api_obj) override;
 
+    /// \brief     free h/w resources used by this object, if any
+    ///            (this API is invoked during object deletes)
+    /// \param[in] api_obj API object holding the resources
+    /// \return    SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t nuke_resources(api_base *api_obj) override;
+
+    /// \brief populate the IPC msg with object specific information
+    ///        so it can be sent to other components
+    /// \param[in] msg         IPC message to be filled in
+    /// \param[in] api_obj     api object associated with the impl instance
+    /// \param[in] obj_ctxt    transient state associated with this API
+    /// \return #SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t populate_msg(pds_msg_t *msg, api_base *api_obj,
+                                   api_obj_ctxt_t *obj_ctxt) override;
+
     /// \brief     program all h/w tables relevant to this object except
     ///            stage 0 table(s), if any
     /// \param[in] api_obj  API object holding this resource
@@ -107,12 +122,6 @@ public:
     mem_addr_t security_policy_root_addr(void) {
         return security_policy_root_addr_;
     }
-
-    /// \brief     free h/w resources used by this object, if any
-    ///            (this API is invoked during object deletes)
-    /// \param[in] api_obj API object holding the resources
-    /// \return    SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t nuke_resources(api_base *api_obj) override;
 
 private:
     /// \brief constructor

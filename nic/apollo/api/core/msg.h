@@ -25,6 +25,7 @@
 #include "nic/apollo/api/include/pds_policy.hpp"
 #include "nic/apollo/api/include/pds_flow.hpp"
 #include "nic/apollo/api/include/pds_ipsec.hpp"
+#include "nic/apollo/api/include/pds_policy.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -126,6 +127,22 @@ typedef struct pds_if_cfg_msg_s {
     pds_if_status_t status;
 } pds_if_cfg_msg_t;
 
+typedef struct pds_policy_cfg_msg_spec_s {
+    pds_obj_key_t key;
+} pds_policy_cfg_msg_spec_t;
+
+/// policy configurtation
+typedef struct pds_policy_cfg_msg_s pds_policy_cfg_msg_t;
+struct pds_policy_cfg_msg_s {
+    /// NOTE: we don't need to send full spec for CREATE and UPDATE operations
+    ///       as well
+    union {
+        pds_obj_key_t key;
+        pds_policy_cfg_msg_spec_t spec;
+    };
+    pds_policy_status_t status;
+};
+
 /// ipsec encrypt sa configurtation
 typedef struct pds_ipsec_sa_encrypt_cfg_msg_s {
     union {
@@ -145,7 +162,8 @@ typedef struct pds_ipsec_sa_decrypt_cfg_msg_s {
 } pds_ipsec_sa_decrypt_cfg_msg_t;
 
 /// configuration message structure for create/update/delete operations
-typedef struct pds_cfg_msg_s {
+typedef struct pds_cfg_msg_s pds_cfg_msg_t;
+struct pds_cfg_msg_s {
     /// API operation
     api_op_t op;
     /// API object id
@@ -158,6 +176,7 @@ typedef struct pds_cfg_msg_s {
         pds_tep_cfg_msg_t tep;
         pds_if_cfg_msg_t intf;
         pds_vnic_cfg_msg_t vnic;
+        pds_policy_cfg_msg_t policy;
         pds_mirror_session_cfg_msg_t mirror_session;
         pds_dhcp_policy_cfg_msg_t dhcp_policy;
         pds_nat_port_block_cfg_msg_t nat_port_block;
@@ -165,7 +184,7 @@ typedef struct pds_cfg_msg_s {
         pds_ipsec_sa_encrypt_cfg_msg_t ipsec_sa_encrypt;
         pds_ipsec_sa_decrypt_cfg_msg_t ipsec_sa_decrypt;
     };
-} pds_cfg_msg_t;
+};
 
 /// configuration read message structures
 /// configuration object read request message
@@ -242,12 +261,13 @@ typedef struct pds_cmd_rsp_s {
 } pds_cmd_rsp_t;
 
 /// top level PDS message structure for all types of messages
-typedef struct pds_msg_s {
+typedef struct pds_msg_s pds_msg_t;
+struct pds_msg_s {
     union {
         pds_cfg_msg_t cfg_msg;    ///< cfg msg
         pds_cmd_msg_t cmd_msg;    ///< cmd msg
     };
-} pds_msg_t;
+};
 
 /// batch of PDS messages
 typedef struct pds_msg_list_s {

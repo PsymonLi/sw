@@ -21,4 +21,6 @@ int subnet_impl_db_dump();
 
 int device_impl_db_dump();
 
+int policy_impl_db_dump();
+
 #endif    // __VPP_IMPL_APULU_CLI_H__
