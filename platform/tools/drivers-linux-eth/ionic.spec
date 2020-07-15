@@ -1,5 +1,7 @@
 %define kernel KERNEL
 %define kernel_release %(uname -r)
+%define kver %(uname -r | sed -e 's/.x86_64//')
+%define krev %(uname -r | tr - . | sed -e 's/.x86_64//')
 %define ionic_version 0.0.0
 %define dpath kernel/drivers/net/ethernet/pensando/ionic
 %define udev_file /etc/udev/rules.d/81-pensando-net.rules
@@ -13,7 +15,7 @@
 Name:		RPM
 Vendor:		Pensando Systems
 Version:	%{ionic_version}
-Release:	%{release}.%{distro}
+Release:	%{release}.%{distro}.%{krev}
 Summary:	Pensando Systems IONIC Driver
 URL:		https://pensando.io
 
@@ -21,8 +23,7 @@ Group:		System Environment/Kernel
 License:	GPLv2
 Source:		RPM-%{ionic_version}.tar.gz
 
-BuildRequires:	REQUIRES-devel = %{kernel}
-Requires:	REQUIRES = %{kernel}
+Requires:	REQUIRES = %{kver}
 
 %description
 This package provides the Pensando Systems IONIC kernel driver (ionic.ko).
@@ -77,8 +78,8 @@ if [ %{distro} == rhel8u0 -o %{distro} == rhel8u1 -o %{distro} == rhel8u2 ] ; th
 	echo 'SUBSYSTEM=="net", ENV{ID_VENDOR_ID}=="0x1dd8", NAME="$env{ID_NET_NAME_PATH}"' > %{udev_file}
 fi
 
-depmod -a
-dracut --force
+depmod -a %{kernel_release}
+dracut --force --kver %{kernel_release}
 
 %preun
 # In this pre-uninstall section, we know that ionic.ko-iver exists,
@@ -96,8 +97,16 @@ fi
 # Don't remove the udev rule we added in the broken rhel8.x so that we don't
 # lose it when the user does an "rpm -U" update.
 
-depmod -a
-dracut --force
+# If there is no ionic.ko left, but there is an ionic.ko-,
+# put it back where it can be used.
+f=/lib/modules/%{kernel_release}/%{dpath}/ionic.ko
+g=/lib/modules/%{kernel_release}/%{dpath}/ionic.ko-
+if [ ! -e ${f} -a -e ${g} ] ; then
+	mv ${g} ${f}
+fi
+
+depmod -a %{kernel_release}
+dracut --force --kver %{kernel_release}
 
 
 %changelog
