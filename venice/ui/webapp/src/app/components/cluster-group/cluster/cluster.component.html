@@ -136,8 +136,21 @@
             <td>
               <div class="cluster-details-nodes-table-cell">{{ node?.status?.quorum }}</div>
             </td>
-            <td>
-              <div class="cluster-details-nodes-table-cell">{{ phaseEnum[node.status.phase] }}</div>
+            <td class="cluster-phase_column">
+              <div class="cluster-details-nodes-table-cell" fxLayout="row"
+                   fxLayoutAlign="start center">
+                <span class="cluster-phase-name">
+                  {{ phaseEnum[node.status.phase] }}
+                </span>
+                <ng-container *ngIf="node?.status?.conditions[0].status === 'false'">
+                  <span [matTooltip]="'Node Status: Unhealthy'"
+                        class="cluster-phase-caution"></span>
+                </ng-container>
+                <ng-container *ngIf="node?.status?.conditions[0].status === 'unknown'">
+                  <span [matTooltip]="'Node Status: Unknown'"
+                        class="cluster-phase-caution"></span>
+                </ng-container>
+              </div>
             </td>
             <td *featureGuard="'enterprise'">
               <div class="cluster-details-nodes-table-cell">{{ displayCondition(node) }}</div>

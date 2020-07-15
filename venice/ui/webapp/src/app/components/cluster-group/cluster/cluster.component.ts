@@ -26,6 +26,7 @@ import { RoutingService } from '@app/services/generated/routing.service';
 import { RoutingHealth } from '@sdk/v1/models/generated/routing';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 
+
 @Component({
   selector: 'app-cluster',
   encapsulation: ViewEncapsulation.None,
@@ -175,6 +176,9 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
     const subscription = this._clusterService.WatchNode().subscribe(
       response => {
         this.nodeEventUtility.processEvents(response);
+        // For dev and debug. Use this --> this.nodes = MockDataUtil.manipulateNodesData('unhealthy', 'multiple', this.nodes);
+        // change 1st param to unknown for unknown node
+        // change 2nd param to single for 1 unhealthy node
       },
       this._controllerService.webSocketErrorHandler('Failed to get Nodes'),
     );

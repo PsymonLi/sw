@@ -98,14 +98,25 @@
           </div>
         </div>
         <div *ngIf="cardState === cardStates.READY" fxLayout="row" fxLayoutAlign="center end">
-          <div fxFlex="28%" class="top-node-label">{{ this.unhealthynodes}}</div>
+          <div fxFlex="28%" class="top-node-label"
+               [ngClass]="[ unhealthynodes ? 'systemcapacity-clickable-nodes' : '']"
+               (click)="onUnhealthyNodeClick()" [matTooltip]="setUnhealthyNodeTooltip()">
+            {{ this.unhealthynodes}}</div>
           <div fxFlex="28%" class='top-node-label'>{{ this.healthynodes}}</div>
-          <div fxFlex="28%" class='top-node-label'>{{ this.unknownnodes }}</div>
+          <div fxFlex="28%" class='top-node-label'
+               [ngClass]="[ unknownnodes ? 'systemcapacity-clickable-nodes' : '']"
+               (click)="onUnknownNodeClick()" [matTooltip]="setUnknownNodeTooltip()">
+            {{ this.unknownnodes }}</div>
         </div>
         <div *ngIf="cardState === cardStates.READY" fxLayout="row" fxLayoutAlign="center end">
-          <div fxFlex="28%" class="node-condition-type">Unhealthy</div>
+          <div fxFlex="28%" class="node-condition-type "
+               [ngClass]="[ unhealthynodes ? 'systemcapacity-clickable-nodes' : '']"
+               (click)="onUnhealthyNodeClick()" [matTooltip]="setUnhealthyNodeTooltip()">Unhealthy
+          </div>
           <div fxFlex="28%" class="node-condition-type">Healthy</div>
-          <div fxFlex="28%" class="node-condition-type">Unknown</div>
+          <div fxFlex="28%" class="node-condition-type"
+               [ngClass]="[ unknownnodes ? 'systemcapacity-clickable-nodes' : '']"
+               (click)="onUnknownNodeClick()" [matTooltip]="setUnknownNodeTooltip()">Unknown</div>
         </div>
       </div>
     </div>

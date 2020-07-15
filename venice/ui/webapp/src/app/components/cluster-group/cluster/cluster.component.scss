@@ -210,6 +210,22 @@ $table-headerheight: 55px;
   }
 }
 
+.cluster-phase_column {
+  width: 75px;
+
+  .cluster-phase-name {
+    margin-right: 5px;
+  }
+
+  .cluster-phase-caution {
+    background-color: #dd3b09;
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+}
+
 @media only screen and (max-width: 1772px) {
   .menufullopened .cluster-stats-container {
     width: 750px;

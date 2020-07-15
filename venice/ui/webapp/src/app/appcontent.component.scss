@@ -443,3 +443,31 @@
 .mat-icon.app-library-books.mat-icon.material-icons.mat-icon-no-color {
   font-size: 30px;
 }
+
+/*====== alert notification icon =====*/
+.app-notification-number {
+  background-color: #dd3b09;
+  color: #fff;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: initial;
+  position: absolute;
+  top: 1px;
+  left: 10px;
+  vertical-align: top !important;
+  text-align: center;
+  border: 1px solid;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: left;
+  padding: 1px 5px;
+  margin: auto 10px;
+  box-shadow: 0 0 0 rgba(221, 59, 9, 0.4);
+  animation: notification-number-pulse 2s infinite;
+  cursor: pointer;
+}
+
+.app-notification-number:hover {
+  animation: none;
+}

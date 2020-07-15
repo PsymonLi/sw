@@ -308,6 +308,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
                   console.error(this.getClassName() + ' bulkEditHelper() verifybulkEditBufferContent() failed ', stagingBulkEditAction, bulkeditResponse, getbufferResponse);
                   const error = new Error('Failed to verify commit buffer content');
                   this.onBulkEditFailure(error, veniceObjects, stagingBulkEditAction, successMsg, failureMsg + ' ' + error.toString());
+                  this._controllerService.publish(Eventtypes.BULKEDIT_COMPLETE, {});
                   throw error;
                 }
               })

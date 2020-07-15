@@ -16,7 +16,6 @@ import { FlipState, FlipComponent } from '@app/components/shared/flip/flip.compo
 import { NodeConditionValues } from '@app/components/cluster-group/naples';
 import {Router} from '@angular/router';
 
-
 interface BarGraphStat {
   percent: number;
   hoverText?: string;
@@ -246,6 +245,9 @@ export class SystemcapacitywidgetComponent implements OnInit, AfterViewInit, OnD
 
   subscriptions: Subscription[] = [];
 
+  unhealthyNodeNames: string[] = [];
+  unknownNodeNames: string[] = [];
+
   constructor(protected controllerService: ControllerService,
     protected clusterService: ClusterService,
     protected router: Router) {
@@ -266,15 +268,16 @@ export class SystemcapacitywidgetComponent implements OnInit, AfterViewInit, OnD
     };
     return styles;
   }
-
   getNodes() {
     this.nodeEventUtility = new HttpEventUtility<ClusterNode>(ClusterNode);
     this.nodes = this.nodeEventUtility.array;
     const subscription = this.clusterService.WatchNode().subscribe(
       response => {
         this.nodeEventUtility.processEvents(response);
+        // For dev and debug. Use this --> this.nodes = MockDataUtil.manipulateNodesData('unhealthy', 'multiple', this.nodes);
+        // change 1st param to unknown for unknown node
+        // change 2nd param to single for 1 unhealthy node
         this.getNodeConditionNumbers();
-
       },
       this.controllerService.webSocketErrorHandler('Failed to get Node')
     );
@@ -307,7 +310,7 @@ export class SystemcapacitywidgetComponent implements OnInit, AfterViewInit, OnD
         metrics: Utility.getBaseUIUrl + 'telemetry/v1/metrics'
       },
       data: {
-        nodes: this.nodes,
+        nodes: this.nodes.map( node => Utility.trimUIFields(node))  // filter out _ui fields
       },
       stats: {
         currentData: this.currentData,
@@ -431,8 +434,9 @@ export class SystemcapacitywidgetComponent implements OnInit, AfterViewInit, OnD
     chart.data.datasets[1].data = [100 - percent];
     chart.update();
   }
-
   getNodeConditionNumbers() {
+    this.unhealthyNodeNames = [];
+    this.unknownNodeNames = [];
     this.healthynodes = 0;
     this.unhealthynodes = 0;
     this.unknownnodes = 0;
@@ -441,6 +445,9 @@ export class SystemcapacitywidgetComponent implements OnInit, AfterViewInit, OnD
         this.healthynodes += 1 ;
       } else if (Utility.getNodeCondition(node) === NodeConditionValues.UNHEALTHY) {
         this.unhealthynodes += 1;
+        this.unhealthyNodeNames.push(node.meta.name);
+      } else {
+        this.unknownNodeNames.push(node.meta.name);
       }
     });
     this.unknownnodes = this.nodes.length - this.healthynodes - this.unhealthynodes;
@@ -577,5 +584,25 @@ export class SystemcapacitywidgetComponent implements OnInit, AfterViewInit, OnD
       tooltipEl.style.fontStyle = tooltip._bodyFontStyle;
       tooltipEl.style.padding = tooltip.yPadding + 'px ' + tooltip.xPadding + 'px';
     };
+  }
+  onUnhealthyNodeClick() {
+    if (this.unhealthynodes === 1) {
+      this.controllerService.navigate(['/cluster', 'cluster', this.unhealthyNodeNames[0]]);
+    } else if (this.unhealthynodes > 1) {
+      this.controllerService.navigate(['/cluster', 'cluster']);
+    }
+  }
+  setUnhealthyNodeTooltip() {
+    return `Unhealthy ${this.unhealthyNodeNames.length === 1 ? 'node' : 'nodes'}: ` + this.unhealthyNodeNames.join(',');
+  }
+  setUnknownNodeTooltip() {
+    return `Unknown ${this.unknownNodeNames.length === 1 ? 'node' : 'nodes'}: ` + this.unknownNodeNames.join(',');
+  }
+  onUnknownNodeClick() {
+    if (this.unknownnodes === 1) {
+      this.controllerService.navigate(['/cluster', 'cluster', this.unknownNodeNames[0]]);
+    } else if (this.unknownnodes > 1) {
+      this.controllerService.navigate(['/cluster', 'cluster']);
+    }
   }
 }

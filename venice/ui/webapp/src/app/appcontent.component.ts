@@ -92,6 +92,8 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
   alertWatchSubscription: Subscription;
   alerts: ReadonlyArray<MonitoringAlert> = [];
   startingAlertCount = 0;
+  // PSM backend may contain many alerts. We search to find # of open alerts. This variable controls whether to use alerts number or alert-indicator
+  isToUseSearchAlertsNumber: boolean = false;
   alertNumbers = 0;
   alertHighestSeverity: string;
   alertQuery = {};
@@ -519,12 +521,12 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
         }
       });
 
-      this.subscriptions[Eventtypes.BULKEDIT_PROGRESS] = this._controllerService.subscribe(Eventtypes.BULKEDIT_PROGRESS, (payload) => {
-        this.showBulkEditingDialog(payload);
-      });
-      this.subscriptions[Eventtypes.BULKEDIT_COMPLETE] = this._controllerService.subscribe(Eventtypes.BULKEDIT_COMPLETE, () => {
-        this.closeBulkEditingDialog();
-      });
+    this.subscriptions[Eventtypes.BULKEDIT_PROGRESS] = this._controllerService.subscribe(Eventtypes.BULKEDIT_PROGRESS, (payload) => {
+      this.showBulkEditingDialog(payload);
+    });
+    this.subscriptions[Eventtypes.BULKEDIT_COMPLETE] = this._controllerService.subscribe(Eventtypes.BULKEDIT_COMPLETE, () => {
+      this.closeBulkEditingDialog();
+    });
   }
 
   getUserObj(req: GetUserObjRequest) {
@@ -791,11 +793,15 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
         */
         const pegasusNodes = response.data.filter(module => module.status.module === 'pen-pegasus');
         const _ = Utility.getLodash();
-        const diff = _.differenceWith(pegasusNodes, this.pegasusNodes, _.isEqual);
-        if ( !(diff && diff.length > 0)) {
-          return;
-        } else {
+        if (!this.pegasusNodes) {
           this.pegasusNodes = _.cloneDeep(pegasusNodes);
+        } else {
+          const diff = _.differenceWith(pegasusNodes, this.pegasusNodes, _.isEqual);
+          if (!(diff && diff.length > 0)) {
+            return;
+          } else {
+            this.pegasusNodes = _.cloneDeep(pegasusNodes);
+          }
         }
         // find nodes that host "pen-pegasus" module
         // user routing.proto HealthStatus to figure out RR health
@@ -813,12 +819,12 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
         if (observables.length === 0) {
           return;
         }
-        if (this.routingListforkjoinSubscription ) {
+        if (this.routingListforkjoinSubscription) {
           this.routingListforkjoinSubscription.unsubscribe();
         }
         this.routingListforkjoinSubscription = forkJoin(observables).subscribe(
           (results) => {
-             const isAllOK = Utility.isForkjoinResultAllOK(results);
+            const isAllOK = Utility.isForkjoinResultAllOK(results);
             // process RRStatus    /routing/v1/node2/health return json like below
             /*
                {
@@ -847,7 +853,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
             const routinghealthlist = [];
             const errorNodes = [];
             results.forEach((r, i) => {
-              if (r.isError ) {
+              if (r.isError) {
                 errorNodes.push(r.node);
               } else {
                 const obj = new RoutingHealth(r.body);
@@ -856,7 +862,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
                 routinghealthlist.push(obj);
               }
             });
-            if (errorNodes && errorNodes.length > 0 ) {
+            if (errorNodes && errorNodes.length > 0) {
               this._controllerService.invokeErrorToaster('Failure', 'Failed to get route reflector health status from ' + errorNodes.join(' , '));
             }
             Utility.getInstance().setRoutinghealthlist(routinghealthlist);
@@ -899,18 +905,24 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
       aggregate: false,
       mode: SearchSearchRequest_mode.preview,
     });
+     // PSM may contain many alerts. We don't want to call getAlertsWatch() first which uses ListAlertCache(). It could cause backend grpc error
     this.alertGetSubscription = this.searchService.PostQuery(query).subscribe(
       resp => {
         const body = resp.body as ISearchSearchResponse;
+        console.log('getAlerts()');
         this.startingAlertCount = parseInt(body['total-hits'], 10);
-        // PSM may contain many alerts. We don't want to call getAlertsWatch which uses ListAlertCache(). It could cause grpc error
-        if (this.startingAlertCount > this.MAX_ALERT_THRESHOLD_NUMBERS) {
-          this._controllerService.invokeErrorToaster('Warning', 'There are over ' + this.MAX_ALERT_THRESHOLD_NUMBERS + ' alerts in PSM. Please go to Monitoring/Alerts page to resolve alerts', [], true, true);
+        // debug and change code here to manipulate data. e.g  ==>  this.startingAlertCount =  9999.
+        if (!isNaN(this.startingAlertCount) && this.startingAlertCount > this.MAX_ALERT_THRESHOLD_NUMBERS) {
+          this.isToUseSearchAlertsNumber = true;
+          this._controllerService.invokeWarnToaster('Warning - can not monitor alert live', 'There are ' + this.startingAlertCount + ' alerts in PSM. Please go to Alerts page to resolve alerts. Sign in again afterward.', [], true); // no buttons and sticky
+          return; // we don't want fetch alerts
+        } else if (isNaN(this.startingAlertCount)) {
+          this._controllerService.invokeInfoToaster('Info', 'There is no open alert in PSM'); // notice search finds no alert. PSM may indeed have alerts. (search and api-server are out of sync)
         } else {
           this.alertNumbers = this.startingAlertCount;
-          // Now that we have the count already in the system, we start the watch
-          this.getAlertsWatch();
         }
+        // Now that we have the count already in the system, we start the watch
+        this.getAlertsWatch();
       },
       (error) => {
         this._controllerService.invokeRESTErrorToaster('Error -  Failed to search Alerts', error);
@@ -1022,7 +1034,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     this.onToolbarIconClick(event.event, this._rightSideNavIndicator);
   }
 
-  showBulkEditingDialog(payload: BulkeditProgressPayload ) {
+  showBulkEditingDialog(payload: BulkeditProgressPayload) {
     const payloadMessage = payload.count > 0 ? `Processing bulk ${payload.method || 'request'} for ${payload.count} ${payload.kind || 'PSM'} ${payload.count === 1 ? 'object' : 'objects'}.` : '';
     this.bulkEditMessage = payloadMessage || DEFAULT_BULK_EDITING_MSG;
     this.isBulkEditing = true;

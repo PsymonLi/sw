@@ -23,6 +23,8 @@ import { Observable } from 'rxjs';
 import { RepeaterData, RepeaterItem, ValueType } from 'web-app-framework';
 import { EnumRolloutOptions, RolloutImageLabel, RolloutImageOption } from '../index';
 import { RolloutUtil } from '../RolloutUtil';
+import { UIConfigsService } from '@app/services/uiconfigs.service';
+
 
 export class RolloutOrder {
   id: string;
@@ -128,6 +130,7 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
     protected controllerService: ControllerService,
     protected clusterService: ClusterService,
     protected cd: ChangeDetectorRef,
+    protected uiconfigsService: UIConfigsService
   ) {
     super(controllerService);
   }
@@ -148,6 +151,10 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
 
 
   ngOnInit() {
+    if (this.uiconfigsService.isFeatureEnabled('cloud')) {
+      // filter out  'disruptive'
+      this.upgradetypeOptions = Utility.convertEnumToSelectItem(RolloutRolloutSpec.propInfo['upgrade-type'].enum, ['disruptive']);
+    }
     this.getNaplesLabelsKeyValues();
     // prepare for label-selector repeater
     if (!this.newRollout) {

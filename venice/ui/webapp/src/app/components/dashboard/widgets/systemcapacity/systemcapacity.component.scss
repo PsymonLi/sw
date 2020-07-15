@@ -120,3 +120,8 @@
   @include primary-font(12px, #636367);
   text-align: center;
 }
+
+.systemcapacity-clickable-nodes {
+  z-index: 11;
+  cursor: pointer;
+}

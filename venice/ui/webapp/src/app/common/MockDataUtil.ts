@@ -998,5 +998,26 @@ export class MockDataUtil {
     }
     return list;
   }
+  /**
+   * For testing unhealthy nodes (systemcapacity.component[dashboard page] & cluster-group/cluster/cluster.component )
+   * args type - "single" (for one unhealthy nodes), 'multiple' (for multiple unhealthy nodes)
+   * to be added in start of getNodeConditionNumbers
+   */
+  public static manipulateNodesData(type: string, condition: string, nodes: any) {
+    for (let i = 0; i < nodes.length; i++) {
+      if (condition === 'single') {
+        if ( i === 0) {
+          nodes[i].status.conditions[0].status = (type === 'unhealthy' ? 'false' : 'unknown');
+          continue;
+        }
+      }
+      if (condition === 'multiple') {
+        if ( (i === 1 || (i === 0)) ) {
+          nodes[i].status.conditions[0].status = (type === 'unhealthy' ? 'false' : 'unknown');
+        }
+      }
+    }
+    return nodes;
+  }
 
 }

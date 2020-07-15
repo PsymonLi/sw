@@ -442,6 +442,16 @@ export class ControllerService {
     });
   }
 
+  invokeWarnToaster(summary: string, detail: string, buttons: ToolbarButton[] = [],  sticky: boolean = false) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: summary,
+      detail: detail,
+      buttons: buttons,
+      sticky : sticky
+    });
+  }
+
   // Removes any toaster that has the same summary and detail
   // If detail is blank, will remove any toaster with the same summary
   removeToaster(summary: string, detail: string = null) {
@@ -470,6 +480,12 @@ export class ControllerService {
     if (error == null) {
       return;
     }
+
+    if ( !error.statusCode && !error.body) {
+      this.invokeErrorToaster(summary, error.toString());
+      return;
+    }
+
     if (Utility.getLodash().isObject(error) && !error['statusCode']) {
       error['statusCode'] = 0;
     }
@@ -494,10 +510,6 @@ export class ControllerService {
       return;
     }
 
-    if ( error instanceof String) {
-      this.invokeErrorToaster(summary, error.toString());
-      return;
-    }
 
     if (error.statusCode !== 0) {
       // If status code is 400, we should almost always have a body with error message

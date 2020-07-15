@@ -49,7 +49,12 @@
           <span class="app-shell-spacer"></span>
           <div class="app-shell-toolbar-icon-div">
             <ng-container *ngIf="!isUINavigationBlocked">
-              <app-alert-indication-bar *ngIf="alerts"
+              <button mat-icon-button (click)="navigate(['/monitoring', 'alertsevents']);"
+                      *ngIf="isToUseSearchAlertsNumber" [matTooltip]="'Click to go to alerts page'">
+                <mat-icon>notifications </mat-icon>
+                <span class="app-notification-number">{{startingAlertCount}}</span>
+              </button>
+              <app-alert-indication-bar *ngIf="!isToUseSearchAlertsNumber && alerts && alerts.length"
                                         (alertType)="onToolbarIconClick($event,'notifications')"
                                         [data]="alerts"></app-alert-indication-bar>
             </ng-container>
