@@ -182,21 +182,52 @@ func printTunnelSummary(count int) {
 }
 
 func printTunnelHeader() {
-	hdrLine := strings.Repeat("-", 202)
+	hdrLine := strings.Repeat("-", 227)
+	fmt.Printf("Legend\n")
+	fmt.Printf("NhType: U-NH (Underlay Nexthop), U-ECMP (Underlay ECMP), O (Overlay), D (Drop)\n")
+	fmt.Printf("Type: WL (Workload), I-DC (Inter-Datacenter), IGW (Internet Gateway), S (Service)\n")
 	fmt.Println(hdrLine)
-	fmt.Printf("%-40s%-40s%-16s%-40s%-20s%-6s\n",
-		"ID", "VpcID", "Encap", "RemoteIP", "DMAC", "HW ID")
+	fmt.Printf("%-40s%-40s%-40s%-20s%-10s%-40s%-10s%-16s%-6s%-5s\n",
+		"ID", "VpcID", "RemoteIP", "DMAC", "NhType",
+		"NhID", "Type", "Encap", "ToS", "HW ID")
 	fmt.Println(hdrLine)
 }
 
 func printTunnel(tunnel *pds.Tunnel) {
 	spec := tunnel.GetSpec()
 	encapStr := utils.EncapToString(spec.GetEncap())
-	fmt.Printf("%-40s%-40s%-16s%-40s%-20s%-6d\n",
+	tunnelType := strings.Replace(spec.GetType().String(), "TUNNEL_TYPE_", "", -1)
+	tunnelType = strings.ToLower(strings.Replace(tunnelType, "_", "-", -1))
+	nhType := "-"
+	nhID := "-"
+	switch tunnelType {
+	case "workload":
+		tunnelType = "WL"
+	case "igw":
+		tunnelType = "IGW"
+	case "inter-dc":
+		tunnelType = "I-DC"
+	case "service":
+		tunnelType = "S"
+	}
+	if spec.GetNexthopId() != nil {
+		nhType = "U-NH"
+		nhID = utils.IdToStr(spec.GetNexthopId())
+	} else if spec.GetNexthopGroupId() != nil {
+		nhType = "U-ECMP"
+		nhID = utils.IdToStr(spec.GetNexthopGroupId())
+	} else if spec.GetTunnelId() != nil {
+		nhType = "O"
+		nhID = utils.IdToStr(spec.GetTunnelId())
+	} else if spec.GetDropNexthop() != nil {
+		nhType = "D"
+	}
+	fmt.Printf("%-40s%-40s%-40s%-20s%-10s%-40s%-10s%-16s%-6d%-5d\n",
 		utils.IdToStr(spec.GetId()),
 		utils.IdToStr(spec.GetVPCId()),
-		encapStr,
 		utils.IPAddrToStr(spec.GetRemoteIP()),
 		utils.MactoStr(spec.GetMACAddress()),
-		tunnel.GetStatus().GetHwId())
+		nhType, nhID,
+		tunnelType, encapStr,
+		spec.GetToS(), tunnel.GetStatus().GetHwId())
 }

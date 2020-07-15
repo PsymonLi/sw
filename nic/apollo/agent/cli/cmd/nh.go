@@ -78,7 +78,7 @@ func nhGroupShowCmdHandler(cmd *cobra.Command, args []string) {
 				Id: uuid.FromStringOrNil(nhID).Bytes(),
 			},
 		}
-	} else if cmd != nil && cmd.Flags().Changed("type") {
+	} else {
 		if checkNhGroupTypeValid(nhType) != true {
 			fmt.Printf("Invalid nexthop group type\n")
 			return
@@ -89,9 +89,6 @@ func nhGroupShowCmdHandler(cmd *cobra.Command, args []string) {
 				Type: nhGroupTypeToPdsNhGroupType(nhType),
 			},
 		}
-	} else {
-		fmt.Printf("--type or --id argument needed\n")
-		return
 	}
 
 	// PDS call
@@ -211,6 +208,15 @@ func printNhGroup(resp *pds.NhGroup) {
 		break
 	}
 
+	if numMembers == 0 {
+		switch typeStr {
+		case "UNDERLAY":
+			fmt.Printf("%-12s%-12s%-18s\n", "-", "-", "-")
+		case "OVERLAY":
+			fmt.Printf("%-40s%-10s\n", "-", "-")
+		}
+	}
+
 	for i := 0; i < numMembers; i++ {
 		switch typeStr {
 		case "UNDERLAY":
@@ -270,7 +276,7 @@ func nhShowCmdHandler(cmd *cobra.Command, args []string) {
 				Id: uuid.FromStringOrNil(nhID).Bytes(),
 			},
 		}
-	} else if cmd != nil && cmd.Flags().Changed("type") {
+	} else {
 		if checkNhTypeValid(nhType) != true {
 			fmt.Printf("Invalid nexthop type\n")
 			return
@@ -281,9 +287,6 @@ func nhShowCmdHandler(cmd *cobra.Command, args []string) {
 				Type: nhTypeToPdsNhType(nhType),
 			},
 		}
-	} else {
-		fmt.Printf("--type or --id argument needed\n")
-		return
 	}
 
 	// PDS call
