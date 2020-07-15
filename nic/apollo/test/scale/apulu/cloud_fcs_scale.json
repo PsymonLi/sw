@@ -44,7 +44,7 @@
             "count" : "4",
             "ing-policies": "3",
             "eg-policies": "2",
-            "tagged": "false"
+            "vlan-tagged": "false"
         },
         {
             "kind" : "mappings",

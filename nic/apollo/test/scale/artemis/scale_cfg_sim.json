@@ -44,7 +44,7 @@
             "kind" : "vnic",
             "count" : "1",
             "vlan-start" : "1",
-            "tagged": "true"
+            "vlan-tagged": "true"
         },
         {
             "kind" : "mappings",

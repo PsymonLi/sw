@@ -379,7 +379,7 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                     printf("Number of egress policies per vnic must be <= 5. Set to 5\n");
                     test_params->num_eg_policies_per_vnic = 5;
                 }
-                tag = obj.second.get<std::string>("tagged", "");
+                tag = obj.second.get<std::string>("vlan-tagged", "");
                 if (tag.empty() || !tag.compare("true")) {
                     test_params->tag_vnics = true;
                     SDK_ASSERT(obj.second.find("vlan-start") != obj.second.not_found());

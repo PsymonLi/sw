@@ -34,7 +34,7 @@
             "_comment_" : "per vpc, per subnet vnic scale",
             "kind" : "vnic",
             "count" : "1",
-            "tagged": "false"
+            "vlan-tagged": "false"
         },
         {
             "kind" : "flows",
