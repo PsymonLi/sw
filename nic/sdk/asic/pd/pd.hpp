@@ -251,22 +251,8 @@ uint32_t asicpd_get_mem_size_kb(const char *reg_name);
 mpartition_region_t *asicpd_get_mem_region(char *name);
 mpartition_region_t *asicpd_get_hbm_region_by_address(uint64_t addr);
 
-uint64_t asicpd_get_p4plus_table_mpu_pc(int tableid);
 void asicpd_program_p4plus_table_mpu_pc(int tableid, int stage_tbl_id,
                                         int stage);
-void asicpd_program_p4plus_tbl_mpu_pc(int tableid, int stage_tbl_id, int stage);
-void asicpd_program_tbl_mpu_pc(int tableid, bool gress, int stage,
-                               int stage_tableid, uint64_t table_asm_err_offset,
-                               uint64_t table_asm_base);
-
-void asicpd_set_action_asm_base(int tableid, int actionid, uint64_t asm_base);
-
-void asicpd_set_action_rxdma_asm_base(int tableid, int actionid,
-                                      uint64_t asm_base);
-void asicpd_set_action_txdma_asm_base(int tableid, int actionid,
-                                      uint64_t asm_base);
-void asicpd_set_table_rxdma_asm_base(int tableid, uint64_t asm_base);
-void asicpd_set_table_txdma_asm_base(int tableid, uint64_t asm_base);
 sdk_ret_t asicpd_init(asic_cfg_t *cfg);
 sdk_ret_t asicpd_soft_init(asic_cfg_t *cfg);
 sdk_ret_t asicpd_upgrade_init(asic_cfg_t *cfg);
@@ -496,12 +482,18 @@ int asicpd_hbm_table_entry_cache_invalidate(p4pd_table_cache_t cache,
                                             uint64_t entry_addr,
                                             uint16_t entry_width,
                                             mem_addr_t base_mem_pa);
+
+/// \brief     set tcam table offset in local cache based on upgrade domain
+/// \param[in] domain hitless upgrade domain
+/// \return    SDK_RET_OK if successful otherwise
+///            appropriate error code.                                            
 sdk_ret_t asicpd_set_tcam_table_offset(sysinit_dom_t domain);
-sdk_ret_t asicpd_set_tcam_tbl_offset(sysinit_dom_t domain);
-sdk_ret_t asicpd_program_tcam_table_offset(int tableid, p4pd_table_dir_en gress,
-                                           int stage, int stage_tableid);
-sdk_ret_t asicpd_program_tcam_tbl_offset(int tableid, p4pd_table_dir_en gress, 
-                                         int stage, int stage_tableid);
+
+/// \brief     program tcam table offset in tcam table profile
+/// \return    SDK_RET_OK if successful otherwise
+///            appropriate error code.
+sdk_ret_t asicpd_program_tcam_table_offset(void);
+
 }    // namespace pd
 }    // namespace asic
 }    // namespace sdk

@@ -1,6 +1,7 @@
 // {C} Copyright 2017 Pensando Systems Inc. All rights reserved
 
 #include "asic/pd/pd.hpp"
+#include "asic/pd/asic_impl.hpp"
 #include "asic/asic.hpp"
 #include "lib/pal/pal.hpp"
 #include "asic/common/asic_mem.hpp"
@@ -87,7 +88,7 @@ asicpd_p4plus_table_mpu_base_init (p4pd_cfg_t *p4pd_cfg)
         if (ret != SDK_RET_OK) {
             continue;
         }
-        asicpd_set_table_rxdma_asm_base(i, table_rxdma_asm_base);
+        asicpd_impl_set_table_rxdma_asm_base(i, table_rxdma_asm_base);
         for (int j = 0; j < p4pd_rxdma_get_max_action_id(i); j++) {
             p4pd_rxdma_get_action_name(i, j, action_name);
             action_rxdma_asm_base = 0;
@@ -99,7 +100,7 @@ asicpd_p4plus_table_mpu_base_init (p4pd_cfg_t *p4pd_cfg)
             action_rxdma_asm_base >>= 6;
             SDK_TRACE_DEBUG("program name %s, action name %s, action pc 0x%lx",
                             progname, action_name, action_rxdma_asm_base);
-            asicpd_set_action_rxdma_asm_base(i, j, action_rxdma_asm_base);
+            asicpd_impl_set_action_rxdma_asm_base(i, j, action_rxdma_asm_base);
         }
     }
 
@@ -112,7 +113,7 @@ asicpd_p4plus_table_mpu_base_init (p4pd_cfg_t *p4pd_cfg)
         if (ret != SDK_RET_OK) {
             continue;
         }
-        asicpd_set_table_txdma_asm_base(i, table_txdma_asm_base);
+        asicpd_impl_set_table_txdma_asm_base(i, table_txdma_asm_base);
         for (int j = 0; j < p4pd_txdma_get_max_action_id(i); j++) {
             p4pd_txdma_get_action_name(i, j, action_name);
             action_txdma_asm_base = 0;
@@ -124,7 +125,7 @@ asicpd_p4plus_table_mpu_base_init (p4pd_cfg_t *p4pd_cfg)
             action_txdma_asm_base>>= 6;
             SDK_TRACE_DEBUG("program name %s, action name %s, action pc 0x%lx",
                             progname, action_name, action_txdma_asm_base);
-            asicpd_set_action_txdma_asm_base(i, j, action_txdma_asm_base);
+            asicpd_impl_set_action_txdma_asm_base(i, j, action_txdma_asm_base);
         }
     }
     return SDK_RET_OK;
@@ -139,15 +140,15 @@ asicpd_program_p4plus_table_mpu_base_pc (void)
     for (uint32_t i = p4pd_rxdma_tableid_min_get();
          i < p4pd_rxdma_tableid_max_get(); i++) {
         p4pd_global_table_properties_get(i, &tbl_info);
-        asicpd_program_p4plus_tbl_mpu_pc(i, tbl_info.stage_tableid,
-                                         tbl_info.stage);
+        asicpd_impl_program_p4plus_tbl_mpu_pc(i, tbl_info.stage_tableid,
+                                              tbl_info.stage);
     }
 
     for (uint32_t i = p4pd_txdma_tableid_min_get();
          i < p4pd_txdma_tableid_max_get(); i++) {
         p4pd_global_table_properties_get(i, &tbl_info);
-        asicpd_program_p4plus_tbl_mpu_pc(i, tbl_info.stage_tableid,
-                                         tbl_info.stage);
+        asicpd_impl_program_p4plus_tbl_mpu_pc(i, tbl_info.stage_tableid,
+                                              tbl_info.stage);
     }
     return SDK_RET_OK;
 }
@@ -178,7 +179,7 @@ asicpd_table_mpu_base_init (p4pd_cfg_t *p4pd_cfg)
             action_asm_base >>= 6;
             SDK_TRACE_DEBUG("program name %s, action name %s, action pc 0x%lx",
                             progname, action_name, action_asm_base);
-            asicpd_set_action_asm_base(i, j, action_asm_base);
+            asicpd_impl_set_action_asm_base(i, j, action_asm_base);
         }
 
         // compute error program offset for each table
@@ -209,19 +210,19 @@ asicpd_program_table_mpu_pc (void)
             // so mpu_pc shouldn't be overwritten
             continue;
         }
-        asicpd_program_tbl_mpu_pc(tbl_ctx.tableid,
-                                  (tbl_ctx.gress == P4_GRESS_INGRESS),
-                                  tbl_ctx.stage, tbl_ctx.stage_tableid,
-                                   table_asm_err_offset[i], table_asm_base[i]);
+        asicpd_impl_program_tbl_mpu_pc(tbl_ctx.tableid,
+                                       (tbl_ctx.gress == P4_GRESS_INGRESS),
+                                       tbl_ctx.stage, tbl_ctx.stage_tableid,
+                                       table_asm_err_offset[i], table_asm_base[i]);
 
         if (tbl_ctx.table_thread_count > 1) {
             for (int j = 1; j < tbl_ctx.table_thread_count; j++) {
-                asicpd_program_tbl_mpu_pc(tbl_ctx.tableid,
-                                          (tbl_ctx.gress == P4_GRESS_INGRESS),
-                                          tbl_ctx.stage,
-                                          tbl_ctx.thread_table_id[j],
-                                          table_asm_err_offset[i],
-                                          table_asm_base[i]);
+                asicpd_impl_program_tbl_mpu_pc(tbl_ctx.tableid,
+                                               (tbl_ctx.gress == P4_GRESS_INGRESS),
+                                               tbl_ctx.stage,
+                                               tbl_ctx.thread_table_id[j],
+                                               table_asm_err_offset[i],
+                                               table_asm_base[i]);
             }
         }
     }
@@ -450,7 +451,7 @@ asicpd_tbl_eng_cfg_get (p4pd_pipeline_t pipeline, p4_tbl_eng_cfg_t *cfg,
         for (uint32_t i = p4pd_rxdma_tableid_min_get();
              i < p4pd_rxdma_tableid_max_get(); i++) {
             p4pluspd_rxdma_table_properties_get(i, &tbl_ctx);
-            pc = asicpd_get_p4plus_table_mpu_pc(i);
+            pc = asicpd_impl_get_p4plus_table_mpu_pc(i);
             if (pc == 0) {
                 SDK_TRACE_INFO("pipeline rxdma, tblname %s, tableid %u, stage %u, "
                                "stage-tableid %u, skipping",
@@ -479,7 +480,7 @@ asicpd_tbl_eng_cfg_get (p4pd_pipeline_t pipeline, p4_tbl_eng_cfg_t *cfg,
         for (uint32_t i = p4pd_txdma_tableid_min_get();
              i < p4pd_txdma_tableid_max_get(); i++) {
             p4pluspd_txdma_table_properties_get(i, &tbl_ctx);
-            pc = asicpd_get_p4plus_table_mpu_pc(i);
+            pc = asicpd_impl_get_p4plus_table_mpu_pc(i);
             if (pc == 0) {
                 SDK_TRACE_INFO("pipeline txdma, tblname %s, tableid %u, stage %u, "
                                "stage-tableid %u, skipping",
@@ -545,20 +546,6 @@ asicpd_get_hbm_region_by_address (uint64_t addr)
     return sdk::asic::asic_get_hbm_region_by_address(addr);
 }
 
-
-/// \brief     set tcam table offset in local cache based on upgrade domain
-/// \param[in] domain hitless upgrade domain
-/// \return    SDK_RET_OK if successful otherwise
-///            appropriate error code.
-sdk_ret_t
-asicpd_set_tcam_table_offset (sysinit_dom_t domain)
-{
-    return asicpd_set_tcam_tbl_offset(domain);
-}
-
-/// \brief     program tcam table offset in tcam table profile
-/// \return    SDK_RET_OK if successful otherwise
-///            appropriate error code.
 sdk_ret_t
 asicpd_program_tcam_table_offset (void) 
 {
@@ -582,8 +569,8 @@ asicpd_program_tcam_table_offset (void)
             tbl_ctx->table_type != P4_TBL_TYPE_HASHTCAM) {
             continue;
         }
-        ret = asicpd_program_tcam_tbl_offset(table_id, tbl_ctx->gress, 
-                                             tbl_ctx->stage, tbl_ctx->stage_tableid);
+        ret = asicpd_impl_program_tcam_table_offset(table_id, tbl_ctx->gress, 
+                                                    tbl_ctx->stage, tbl_ctx->stage_tableid);
         if (ret != SDK_RET_OK) {
             SDK_TRACE_ERR("Failed to program tcam offset for table name %s, "
                           "table id %u, gress %u, stage %u, stage table id %u",

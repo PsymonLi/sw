@@ -15,6 +15,7 @@
 #include "platform/capri/capri_cfg.hpp"
 #include "asic/asic.hpp"
 #include "asic/pd/pd.hpp"
+#include "asic/pd/asic_impl.hpp"
 #include "asic/common/asic_state.hpp"
 #include "asic/pd/pd_internal.hpp"
 #include "lib/utils/time_profile.hpp"
@@ -738,52 +739,52 @@ asicpd_tm_q_valid (int32_t tm_q)
 }
 
 uint64_t
-asicpd_get_p4plus_table_mpu_pc (int table_id)
+asicpd_impl_get_p4plus_table_mpu_pc (int table_id)
 {
     return capri_get_p4plus_table_mpu_pc(table_id);
 }
 
 void
-asicpd_program_p4plus_tbl_mpu_pc (int tableid, int stage_tbl_id, int stage)
+asicpd_impl_program_p4plus_tbl_mpu_pc (int tableid, int stage_tbl_id, int stage)
 {
     capri_program_p4plus_table_mpu_pc(tableid, stage_tbl_id, stage);
 }
 
 void
-asicpd_program_tbl_mpu_pc (int tableid, bool gress, int stage,
-                           int stage_tableid, uint64_t table_asm_err_offset,
-                           uint64_t table_asm_base)
+asicpd_impl_program_tbl_mpu_pc (int tableid, bool gress, int stage,
+                                int stage_tableid, uint64_t table_asm_err_offset,
+                                uint64_t table_asm_base)
 {
     capri_program_table_mpu_pc(tableid, gress, stage, stage_tableid,
                                table_asm_err_offset, table_asm_base);
 }
 
 void
-asicpd_set_action_asm_base (int tableid, int actionid, uint64_t asm_base)
+asicpd_impl_set_action_asm_base (int tableid, int actionid, uint64_t asm_base)
 {
     capri_set_action_asm_base(tableid, actionid, asm_base);
 }
 
 void
-asicpd_set_action_rxdma_asm_base (int tableid, int actionid, uint64_t asm_base)
+asicpd_impl_set_action_rxdma_asm_base (int tableid, int actionid, uint64_t asm_base)
 {
     capri_set_action_rxdma_asm_base(tableid, actionid, asm_base);
 }
 
 void
-asicpd_set_action_txdma_asm_base (int tableid, int actionid, uint64_t asm_base)
+asicpd_impl_set_action_txdma_asm_base (int tableid, int actionid, uint64_t asm_base)
 {
     capri_set_action_txdma_asm_base(tableid, actionid, asm_base);
 }
 
 void
-asicpd_set_table_rxdma_asm_base (int tableid, uint64_t asm_base)
+asicpd_impl_set_table_rxdma_asm_base (int tableid, uint64_t asm_base)
 {
     capri_set_table_rxdma_asm_base(tableid, asm_base);
 }
 
 void
-asicpd_set_table_txdma_asm_base (int tableid, uint64_t asm_base)
+asicpd_impl_set_table_txdma_asm_base (int tableid, uint64_t asm_base)
 {
     capri_set_table_txdma_asm_base(tableid, asm_base);
 }
@@ -1588,14 +1589,14 @@ asicpd_write_to_hw (bool val)
 }
 
 sdk_ret_t 
-asicpd_set_tcam_tbl_offset (sysinit_dom_t domain)
+asicpd_set_tcam_table_offset (sysinit_dom_t domain)
 {
     return capri_set_tcam_table_offset(domain);
 }
 
 sdk_ret_t
-asicpd_program_tcam_tbl_offset (int tableid, p4pd_table_dir_en gress, 
-                                int stage, int stage_tableid)
+asicpd_impl_program_tcam_table_offset (int tableid, p4pd_table_dir_en gress,
+                                       int stage, int stage_tableid)
 {
     return capri_program_tcam_table_offset(tableid, gress, stage, stage_tableid);
 }
