@@ -1089,12 +1089,14 @@ fte_session_info_delete (uint32_t session_index)
 
 static sdk_ret_t
 fte_l2_flow_check_macaddr (uint16_t vnic_id, uint8_t flow_dir,
-                           l2_flows_range_info_t *flow_range,
                            struct ether_hdr *eth_hdr,
                            uint32_t *h2s_bmp_posn,
                            uint32_t *s2h_bmp_posn)
 {
+    l2_flows_range_info_t *flow_range;
     uint64_t h2s_mac = 0, s2h_mac = 0;
+
+    flow_range = &(g_flow_cache_policy[vnic_id].l2_flows_range);
 
     if (flow_dir == HOST_TO_SWITCH) {
         h2s_mac = MAC_TO_UINT64(eth_hdr->d_addr.addr_bytes);
@@ -1140,24 +1142,16 @@ static sdk_ret_t
 fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
                                 struct ether_hdr *eth_hdr,
                                 uint32_t h2s_rewrite_id,
-                                uint32_t s2h_rewrite_id)
+                                uint32_t s2h_rewrite_id,
+                                uint32_t h2s_bmp_posn,
+                                uint32_t s2h_bmp_posn)
 {
     sdk_ret_t ret = SDK_RET_OK;
     pds_l2_flow_spec_t spec_h2s;
     pds_l2_flow_spec_t spec_s2h;
     l2_flows_range_info_t *flow_range;
-    uint32_t h2s_bmp_posn = 0;
-    uint32_t s2h_bmp_posn = 0;
 
     flow_range = &(g_flow_cache_policy[vnic_id].l2_flows_range);
-    ret = fte_l2_flow_check_macaddr(vnic_id, flow_dir,
-                                    flow_range, eth_hdr,
-                                    &h2s_bmp_posn, &s2h_bmp_posn);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_DEBUG("fte_l2_flow_check_macaddr failed. "
-                        "ret: %s \n", SDK_RET_ENTRIES_str(ret));
-        return ret;
-    }
 
     memset(&spec_h2s, 0, sizeof(pds_l2_flow_spec_t));
     memset(&spec_s2h, 0, sizeof(pds_l2_flow_spec_t));
@@ -1409,6 +1403,8 @@ fte_flow_prog (struct rte_mbuf *m)
     bool     skip_flow_log = false;
     pds_egress_action_t h2s_egress_action = EGRESS_ACTION_TX_TO_SWITCH;
     pds_egress_action_t s2h_egress_action = EGRESS_ACTION_TX_TO_HOST;
+    uint32_t h2s_l2_bmp_posn = 0; // L2 Flows range bitmap position
+    uint32_t s2h_l2_bmp_posn = 0;
 
     memset(&flow_spec, 0, sizeof(pds_flow_spec_t));
     ret = fte_flow_extract_prog_args(m, &flow_spec, &flow_dir,
@@ -1422,6 +1418,18 @@ fte_flow_prog (struct rte_mbuf *m)
     // PKT Rewrite
     fte_flow_pkt_rewrite(m, flow_dir, ip_offset, vnic_id,
                          &l2_flow_eth_hdr);
+
+    if (fte_is_vnic_type_l2(vnic_id)) {
+        ret = fte_l2_flow_check_macaddr(vnic_id, flow_dir,
+                                        l2_flow_eth_hdr,
+                                        &h2s_l2_bmp_posn,
+                                        &s2h_l2_bmp_posn);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("fte_l2_flow_check_macaddr failed. "
+                            "ret: %s \n", SDK_RET_ENTRIES_str(ret));
+            return ret;
+        }
+    }
 
     if (fte_is_conntrack_enabled(vnic_id)) {
         ret = fte_conntrack_index_alloc(&conntrack_index);
@@ -1509,7 +1517,8 @@ fte_flow_prog (struct rte_mbuf *m)
 
     if (fte_is_vnic_type_l2(vnic_id)) {
         ret = fte_l2_flow_cache_entry_create(vnic_id, flow_dir,
-                    l2_flow_eth_hdr, h2s_rewrite_id, s2h_rewrite_id);
+                    l2_flow_eth_hdr, h2s_rewrite_id, s2h_rewrite_id,
+                    h2s_l2_bmp_posn, s2h_l2_bmp_posn);
         if (ret != SDK_RET_OK) {
             pds_flow_data_t flow_data;
             PDS_TRACE_DEBUG("fte_l2_flow_cache_entry_create failed. "
