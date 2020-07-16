@@ -11,9 +11,12 @@ namespace sdk {
 namespace platform {
 namespace capri {
 
-static const hbmerrcause_t hbmerrcause_table[] = {
+static const hbmerrcause_t hbmerr1bitthres_table[] = {
     {DDR_CSR_APB_CPU0_ECC_STAT_INT_ECC_1BIT_THRESH_PS0_BYTE_ADDRESS, "1BIT ECC(PS0) errors channel ="},
     {DDR_CSR_APB_CPU0_ECC_STAT_INT_ECC_1BIT_THRESH_PS1_BYTE_ADDRESS, "1BIT ECC(PS1) errors channel ="},
+};
+
+static const hbmerrcause_t hbmerrcause_table[] = {
     {DDR_CSR_APB_CPU0_CA_PAR_ERR_STAT_CA_PARITY_ERROR_PS0_BYTE_ADDRESS, "AERR ECC(PS0) errors channel ="},
     {DDR_CSR_APB_CPU0_CA_PAR_ERR_STAT_CA_PARITY_ERROR_PS1_BYTE_ADDRESS, "AERR ECC(PS1) errors channel ="},
     {DDR_CSR_APB_CPU0_MC_BASE1_STAT_WRITE_DATA_PARITY_ERROR_PS0_BYTE_ADDRESS, "DERR WR ECC(PS0) errors channel ="},
@@ -52,6 +55,20 @@ static const uint32_t master_err_reg[] = {
     NS_SOC_IP_MEMORYMAP_RBM_M_NOC_REGISTERS_BRIDGE_PX_M_6_786_AM_ERR_BYTE_ADDRESS,
     NS_SOC_IP_MEMORYMAP_RBM_M_NOC_REGISTERS_BRIDGE_SS_M_7_396_AM_ERR_BYTE_ADDRESS,
 };
+
+static void
+read_hbmerr1bitthres_table (const hbmerrcause_t *entry, uint64_t nwl_base_addr,
+                        uint8_t channel, bool logging)
+{
+    uint32_t reg_value = 0;
+    sdk::asic::asic_reg_read(nwl_base_addr + entry->offset,
+                             &reg_value, 1, true);
+    if (reg_value && logging) {
+        SDK_HMON_TRACE_ERR("Reading ECC threshold register %lx value is %u %s %u",
+                            nwl_base_addr + entry->offset, reg_value,
+                            entry->message.c_str(), channel);
+    }
+}
 
 static bool
 read_hbmerrcause_table (const hbmerrcause_t *entry, uint64_t nwl_base_addr,
@@ -231,6 +248,12 @@ capri_unravel_hbm_intrs (bool *iscattrip, bool *iseccerr, bool logging)
     {
         nwl_base_addr = CAP_NWL_ADDR(counter);
         mc_base_addr = CAP_MC_ADDR(counter);
+        for(uint32_t t_offset = 0; t_offset < ARRAY_SIZE(hbmerr1bitthres_table);
+            t_offset++)
+        {
+            read_hbmerr1bitthres_table(&hbmerr1bitthres_table[t_offset],
+                                       nwl_base_addr, counter, logging);
+        }
         for(uint32_t t_offset = 0; t_offset < ARRAY_SIZE(hbmerrcause_table);
             t_offset++)
         {
