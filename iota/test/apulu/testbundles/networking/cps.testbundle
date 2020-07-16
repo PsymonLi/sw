@@ -71,3 +71,16 @@ testcases:
                 run             : repeat
                 sleep_interval  : 20
                 terminate       : verify
+
+    -   name    : Trex_Vnic_Session_Limits
+        testcase: testcases.networking.conn_per_sec
+        stress  : False
+        args    :
+            type: remote_only
+            max_sessions: 4000
+        iterators:
+            type      : nested
+            proto     : [ udp, tcp ]
+            cps       : [ 1000 ]
+            duration  : [ 10 ]
+

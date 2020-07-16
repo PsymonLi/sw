@@ -258,6 +258,25 @@ def chooseWorkload(tc):
     tc.workload_pair = (w1, w2)
     return
 
+class SessionLimitSpec:
+    def __init__(self, max_sessions):
+        self.max_sessions = max_sessions
+
+def updateSessionLimits(tc, workload):
+    max_sessions = getattr(tc.args, 'max_sessions', 0)
+    if max_sessions is 0:
+        return True
+    if not workload.IsNaples():
+        return False
+    spec = SessionLimitSpec(max_sessions)
+    workload.vnic.Update(spec)
+    return True
+
+def rollbackSessionLimits(tc, workload):
+    if not getattr(tc.args, 'max_sessions', None):
+        return
+    workload.vnic.RollbackUpdate()
+    return
 
 def getTunables(tc):
     tunables = {}
@@ -297,6 +316,9 @@ def Setup(tc):
     UpdateSecurityProfileTimeouts(tc)
     chooseWorkload(tc)
     server, client = tc.workload_pair[0], tc.workload_pair[1]
+    if not updateSessionLimits(tc, server):
+        api.logger.error("Cannot configure session limit on non-Naples NIC")
+        return api.types.status.FAILURE
 
     if tc.skip_stats_validation:
         naples_utils.CopyMemStatsCheckTool()
@@ -448,20 +470,24 @@ def Verify(tc):
                              (server_hw_ins, server_hw_rem))
             return api.types.status.FAILURE
 
+        sess_limit = getattr(tc.args, 'max_sessions', 0)
         if tc.iterators.proto == 'tcp':
-            result = TRexIotaWrapper.validateCloudTcpStats(ct, st, int(tc.iterators.cps),
-                                           int(tc.iterators.duration),
-                                           int(client_inserts),
-                                           int(server_inserts))
-            if not tc.skip_stats_validation:
-                return result
-        elif tc.iterators.proto == 'udp':
-            result = TRexIotaWrapper.validateCloudUdpStats(ct, st, int(tc.iterators.cps),
+            result = TRexIotaWrapper.validateCloudTcpStats(ct, st,
+                                           int(tc.iterators.cps),
                                            int(tc.iterators.duration),
                                            int(client_inserts),
                                            int(server_inserts),
-                                           udp_tolerance)
-
+                                           sess_limit=int(sess_limit))
+            if not tc.skip_stats_validation:
+                return result
+        elif tc.iterators.proto == 'udp':
+            result = TRexIotaWrapper.validateCloudUdpStats(ct, st,
+                                           int(tc.iterators.cps),
+                                           int(tc.iterators.duration),
+                                           int(client_inserts),
+                                           int(server_inserts),
+                                           udp_tolerance,
+                                           sess_limit=int(sess_limit))
             # skip traffic stats validation if it's trigger test
             if not tc.skip_stats_validation:
                 return result
@@ -498,6 +524,7 @@ def cleanup(tc):
             tc.clientHandle = None
 
         if tc.serverHandle:
+            rollbackSessionLimits(tc, tc.serverHandle.workload)
             api.Logger.info("disconnect server(%s) "
                         %( tc.serverHandle.workload.workload_name))
 

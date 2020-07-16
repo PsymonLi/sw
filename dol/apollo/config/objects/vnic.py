@@ -170,7 +170,6 @@ class VnicObject(base.ConfigObjectBase):
             self.ServiceIPs.append(service_ip.replace('\\', '/'))
         self.Movable = getattr(spec, 'movable', False)
         self.DhcpEnabled = getattr(spec, 'dhcpenabled', False)
-        self.MaxSessions = getattr(spec, 'maxsessions', 0)
         self.Show()
 
         ############### CHILDREN OBJECT GENERATION
@@ -251,6 +250,8 @@ class VnicObject(base.ConfigObjectBase):
         if hasattr(spec, 'RxPolicer') and hasattr(spec, 'TxPolicer'):
             self.RxPolicer = spec.RxPolicer
             self.TxPolicer = spec.TxPolicer
+        elif hasattr(spec, 'max_sessions'):
+            self.MaxSessions = spec.max_sessions
         else:
             utils.ReconfigPolicies(self, spec)
         self.AddToReconfigState('update')
@@ -272,7 +273,7 @@ class VnicObject(base.ConfigObjectBase):
             self.RollbackMany(attrlist)
             utils.ModifyPolicyDependency(self, False)
         else:
-            attrlist = ["SourceGuard", "TxPolicer", "RxPolicer"]
+            attrlist = ["SourceGuard", "TxPolicer", "RxPolicer", "MaxSessions"]
             self.RollbackMany(attrlist)
         return
 
@@ -321,8 +322,6 @@ class VnicObject(base.ConfigObjectBase):
             spec.RxPolicerId = self.RxPolicer.UUID.GetUuid()
         if self.TxPolicer:
             spec.TxPolicerId = self.TxPolicer.UUID.GetUuid()
-        if self.MaxSessions:
-            spec.MaxSessions = self.MaxSessions
         return
 
     def ValidateSpec(self, spec):

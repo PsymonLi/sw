@@ -299,7 +299,7 @@ class TRexIotaWrapper(ASTFClient):
 
     @staticmethod
     def validateCloudTcpStats(client, server, cps, duration, client_hw_ins,
-                                server_hw_ins, tolerance=0.0):
+                                server_hw_ins, tolerance=0.0, sess_limit=0):
         # dump stats
         TRexIotaWrapper.show_tcp_stats(client, server)
         tolerance *= 1.0
@@ -308,6 +308,16 @@ class TRexIotaWrapper(ASTFClient):
         totalNumOfConn = cps * duration
         connattempt = client.get('tcps_connattempt', 0)
         clientConnDrop = client.get('tcps_conndrops', 0)
+
+        if sess_limit != 0:
+            if (server_hw_ins/2) <= sess_limit:
+                api.Logger.info("Drop connection validation pass, (server)server_inserts: %s, "
+                                "(server)sess_limit: %s"% (server_hw_ins, sess_limit))
+                return api.types.status.SUCCESS
+            else:
+                api.Logger.error("Drop connection validation failed, (server)server_inserts: %s, "
+                                 "(server)sess_limit: %s"%(server_hw_ins, sess_limit))
+                return api.types.status.FAILURE
 
         if int(connattempt) > client_hw_ins:
             api.Logger.error("Flow inserts on client-DSC (%d) is less than connects attempted:%d"%
@@ -368,7 +378,7 @@ class TRexIotaWrapper(ASTFClient):
 
     @staticmethod
     def validateCloudUdpStats(client, server, cps, duration, client_hw_ins, 
-                                server_hw_ins, tolerance=0.0):
+                                server_hw_ins, tolerance=0.0, sess_limit=0):
         # dump stats
         TRexIotaWrapper.show_udp_stats(client, server)
         tolerance *= 1.0
@@ -392,6 +402,16 @@ class TRexIotaWrapper(ASTFClient):
         if abs(totalNumOfConn - connattempt) >= (totalNumOfConn * 0.25):
             api.Logger.error("UDP connection attempted are out of expectation, expected: %s, found: %s"%
                              (totalNumOfConn, connattempt))
+
+        if sess_limit != 0:
+            if (server_hw_ins/2) <= sess_limit:
+                api.Logger.info("Drop connection validation pass, (server)server_inserts: %s, "
+                                "(server)sess_limit: %s"% (server_hw_ins, sess_limit))
+                return api.types.status.SUCCESS
+            else:
+                api.Logger.error("Drop connection validation failed, (server)server_inserts: %s, "
+                                 "(server)sess_limit: %s"%(server_hw_ins, sess_limit))
+                return api.types.status.FAILURE
 
         if serverAccepts != clientConnects :
             if (int(clientConnects) * 2) != server_hw_ins: 
