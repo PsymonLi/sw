@@ -46,7 +46,19 @@ export class EventalertpolicyComponent extends TablevieweditAbstract<IMonitoring
   exportFilename: string = 'PSM-event-alert-policies';
 
   isTabComponent = true;
-  exportMap: CustomExportMap = {};
+  exportMap: CustomExportMap = {
+    'spec.requirements': (opts): string => {
+      const resArr =  this.formatRequirements(opts.data);
+      return resArr.toString();
+    },
+    'spec.destinations': (opts): string => {
+      const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
+      if (value != null) {
+        return value.join(' ');
+      }
+      return '';
+    }
+  };
   disableTableWhenRowExpanded = true;
 
   @Input() destinations: MonitoringAlertDestination[] = [];

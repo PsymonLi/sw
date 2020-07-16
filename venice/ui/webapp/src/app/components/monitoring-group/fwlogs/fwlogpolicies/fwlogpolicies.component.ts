@@ -6,7 +6,7 @@ import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tabl
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
-import { MonitoringFwlogPolicy, IMonitoringFwlogPolicy, IApiStatus } from '@sdk/v1/models/generated/monitoring';
+import { MonitoringFwlogPolicy, IMonitoringFwlogPolicy, IApiStatus, IMonitoringExportConfig } from '@sdk/v1/models/generated/monitoring';
 import { Table } from 'primeng/table';
 import { Observable } from 'rxjs';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
@@ -62,7 +62,16 @@ export class FwlogpoliciesComponent extends TablevieweditAbstract<IMonitoringFwl
   exportMap: CustomExportMap = {
     'meta.name': (opts): string => {
       return opts.data.meta.name;
-   }
+    },
+    'spec.filter': (opts): string => {
+      const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
+      return value.join(',');
+    },
+    'spec.targets': (opts): string => {
+      const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
+      const resArr =  Utility.formatTargets(value, true);
+      return resArr.toString();
+    }
   };
 
   constructor(protected controllerService: ControllerService,
@@ -133,7 +142,7 @@ export class FwlogpoliciesComponent extends TablevieweditAbstract<IMonitoringFwl
     const column = col.field;
     switch (column) {
       case 'spec.targets':
-        return value.map(item => item.destination).join(', ');
+        return Utility.formatTargets(value);
       default:
         return Array.isArray(value) ? value.join(', ') : value;
     }

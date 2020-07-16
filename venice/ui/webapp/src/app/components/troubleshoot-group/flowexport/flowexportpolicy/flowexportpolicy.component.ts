@@ -51,7 +51,7 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
     },
     'spec.exports': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr =  this.formatTargets(value, true);
+      const resArr =  Utility.formatTargets(value, true);
       return resArr.toString();
     },
     'status.propagation-status': (opts): string => {
@@ -120,7 +120,7 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
     const column = col.field;
     switch (column) {
       case 'spec.exports':
-        return this.formatTargets(value);
+        return Utility.formatTargets(value);
       case 'status.propagation-status':
         return this.displayColumn_propagation(value, exportData._ui.pendingDSCmacnameMap, true);
       default:
@@ -135,40 +135,6 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
   displayListInColumn(list: string[]): string {
     return (list && list.length > 0) ?
         list.reduce((accum: string, item: string) => accum + item ) : '';
-  }
-
-  displayListInLinesInColumn(list: string[]): string {
-    return (list && list.length > 0) ? list.join('<br>') : '';
-  }
-
-  displayListInLinesInCvsColumn(list: string[]): string {
-    return (list && list.length > 0) ? list.join('\n') : '';
-  }
-  formatTargets(data: IMonitoringExportConfig[], isForExport: boolean = false) {
-    if (data == null) {
-      return '';
-    }
-    const retArr = [];
-    data.forEach((req) => {
-      let targetStr: string = '';
-      for (const k in req) {
-        if (req.hasOwnProperty(k) && k !== '_ui' && k !== 'credentials') {
-          if (req[k]) {
-            targetStr += '  ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' +  req[k] + ', ';
-          }
-        }
-      }
-      if (targetStr.length === 0) {
-        targetStr += '*';
-      } else {
-        targetStr = targetStr.slice(0, -2);
-      }
-      retArr.push(targetStr);
-    });
-    if (isForExport) {
-      return this.displayListInLinesInCvsColumn(retArr);
-    }
-    return this.displayListInLinesInColumn(retArr);
   }
 
   formatMatchRules(data: IMonitoringMatchRule[]) {

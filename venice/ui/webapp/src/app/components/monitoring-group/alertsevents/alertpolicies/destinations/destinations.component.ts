@@ -48,7 +48,18 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
   ];
 
   exportFilename: string = 'PSM-alert-destinations';
-  exportMap: CustomExportMap = {};
+  exportMap: CustomExportMap = {
+    'spec.syslog-export': (opts): string => {
+      const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
+      const resArr =  Utility.formatSyslogExports(value);
+      return resArr.toString();
+    },
+    'spec.syslog-export.targets': (opts): string => {
+      const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
+      const resArr =  Utility.formatTargets(value, true);
+      return resArr.toString();
+    }
+  };
   maxNewTargets: number = DestinationpolicyComponent.MAX_TARGETS_PER_POLICY;
   arrayDiffers: IterableDiffer<any>;
 
@@ -102,9 +113,9 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
     const column = col.field;
     switch (column) {
       case 'spec.syslog-export':
-        return this.formatSyslogExports(value);
+        return Utility.formatSyslogExports(value);
       case 'spec.syslog-export.targets':
-        return this.formatTargets(value);
+        return Utility.formatTargets(value);
       case 'spec.email-list':
         return JSON.stringify(value, null, 2);
       case 'spec.snmp-trap-servers':
@@ -113,51 +124,7 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }
   }
-  formatSyslogExports(data) {
-    if (data == null) {
-      return '';
-    }
-    let targetStr: string = '';
-    if (data.format) {
-      targetStr += 'Format:' +  data.format.replace('syslog-', '').toUpperCase() + ', ';
-    }
-    for (const k in data.config) {
-      if (data.config.hasOwnProperty(k) && k !== '_ui') {
-        if (data.config[k]) {
-          targetStr += k.charAt(0).toUpperCase() + k.slice(1) + ':' +  data.config[k] + ', ';
-        }
-      }
-    }
-    if (targetStr.length === 0) {
-      targetStr += '*';
-    } else {
-      targetStr = targetStr.slice(0, -2);
-    }
-    return [targetStr];
-  }
-  formatTargets(data: IMonitoringExportConfig[]) {
-    if (data == null) {
-      return '';
-    }
-    const retArr = [];
-    data.forEach((req) => {
-      let targetStr: string = '';
-      for (const k in req) {
-        if (req.hasOwnProperty(k) && k !== '_ui' && k !== 'credentials') {
-          if (req[k]) {
-            targetStr += k.charAt(0).toUpperCase() + k.slice(1) + ':' +  req[k] + ', ';
-          }
-        }
-      }
-      if (targetStr.length === 0) {
-        targetStr += '*';
-      } else {
-        targetStr = targetStr.slice(0, -2);
-      }
-      retArr.push(targetStr);
-    });
-    return retArr;
-  }
+
 
   deleteRecord(object: MonitoringAlertDestination): Observable<{ body: IMonitoringAlertDestination | IApiStatus | Error, statusCode: number }> {
     return this.monitoringService.DeleteAlertDestination(object.meta.name);

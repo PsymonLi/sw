@@ -35,12 +35,8 @@
       </ng-container>
     </ng-container>
     <ng-container *ngSwitchDefault>
-      {{displayColumn(rowData, col)}}
-    </ng-container>
-    <ng-container *ngSwitchCase="'spec.targets'">
-      <ng-container *ngFor="let target of formatTargets(rowData.spec['targets'])">
-        <span style="display: block">{{target}}</span>
-      </ng-container>
+      <div [innerHTML]="displayColumn(rowData, col)">
+      </div>
     </ng-container>
   </ng-container>
 </ng-template>

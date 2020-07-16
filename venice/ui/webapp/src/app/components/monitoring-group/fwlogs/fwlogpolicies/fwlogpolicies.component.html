@@ -35,7 +35,8 @@
 
 <ng-template #bodyTemplate let-rowData let-col="col">
   <ng-container>
-    {{displayColumn(rowData, col)}}
+    <div [innerHTML]="displayColumn(rowData, col)">
+    </div>
   </ng-container>
 </ng-template>
 
