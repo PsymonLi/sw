@@ -22,7 +22,7 @@ nic/conf/catalog_hw_P18670-001.json                               /nic/conf/
 nic/conf/catalog_hw_P18671-001.json                               /nic/conf/
 nic/conf/catalog_hw_P26967-B21.json                               /nic/conf/
 nic/conf/catalog_hw_P26968-001.json                               /nic/conf/
-nic/conf/catalog_hw_DSC1-2Q100-8V16P.json                         /nic/conf/
+nic/conf/catalog_hw_DSC1-2Q100-8F16P.json                         /nic/conf/
 nic/conf/catalog_hw_DSC1-2Q100-8V64P.json                         /nic/conf/
 
 # serdes config files
