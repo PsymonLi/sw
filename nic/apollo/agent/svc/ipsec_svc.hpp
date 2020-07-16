@@ -377,6 +377,7 @@ pds_svc_ipsec_sa_encrypt_get (const pds::IpsecSAEncryptGetRequest *proto_req,
     }
 
     for (int i = 0; i < proto_req->id_size(); i ++) {
+        memset(&info, 0, sizeof(pds_ipsec_sa_encrypt_info_t));
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
         ret = pds_ipsec_sa_encrypt_read(&key, &info);
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));

@@ -75,6 +75,7 @@ class SubnetObject(base.ConfigObjectBase):
 
         self.V4RouteTable = route.client.GetRouteV4Table(node, parent.VPCId, self.V4RouteTableId)
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
+        self.ToS = 0
         self.IPAMname = 'Dhcp1'
         self.FabricEncapType = utils.GetEncapType(getattr(spec, 'fabricencap', 'vxlan'))
         if getattr(spec, 'fabricencapvalue', None) != None:
@@ -314,6 +315,7 @@ class SubnetObject(base.ConfigObjectBase):
         if utils.IsPipelineApulu():
             for uuid in self.HostIfUuid:
                 spec.HostIf.append(uuid.GetUuid())
+        spec.ToS = self.ToS
         return
 
     def PopulateAgentJson(self):
@@ -342,10 +344,10 @@ class SubnetObject(base.ConfigObjectBase):
                         ],
                     "vxlan-vni": self.Vnid,
                     "ipam-policy": self.IPAMname,
-                    "ing-v4-sec-pol-id": [],
-                    "ing-v6-sec-pol-id": [],
-                    "eg-v4-sec-pol-id": [],
-                    "eg-v6-sec-pol-id": [],
+                    "ing-v4-sec-policies": [],
+                    "ing-v6-sec-policies": [],
+                    "eg-v4-sec-policies": [],
+                    "eg-v6-sec-policies": [],
                     "route-import-export": {
                         "address-family": "evpn",
                         "rd-auto": True,
@@ -368,16 +370,16 @@ class SubnetObject(base.ConfigObjectBase):
                 }
         for policyid in self.IngV4SecurityPolicyIds:
             if policyid == 0: continue
-            spec['spec']['ing-v4-sec-pol-id'].append(f"Policy{policyid}")
+            spec['spec']['ing-v4-sec-policies'].append(f"Policy{policyid}")
         for policyid in self.IngV6SecurityPolicyIds:
             if policyid == 0: continue
-            spec['spec']['ing-v6-sec-pol-id'].append(f"Policy{policyid}")
+            spec['spec']['ing-v6-sec-policies'].append(f"Policy{policyid}")
         for policyid in self.EgV4SecurityPolicyIds:
             if policyid == 0: continue
-            spec['spec']['eg-v4-sec-pol-id'].append(f"Policy{policyid}")
+            spec['spec']['eg-v4-sec-policies'].append(f"Policy{policyid}")
         for policyid in self.EgV6SecurityPolicyIds:
             if policyid == 0: continue
-            spec['spec']['eg-v6-sec-pol-id'].append(f"Policy{policyid}")
+            spec['spec']['eg-v6-sec-policies'].append(f"Policy{policyid}")
         return json.dumps(spec)
 
     def ValidateJSONSpec(self, spec):
@@ -403,6 +405,18 @@ class SubnetObject(base.ConfigObjectBase):
         for attr in listAttrs:
             if not utils.ValidateListAttr(getattr(objSpec, attr), getattr(spec, attr)):
                 mismatchingAttrs.append(attr)
+        if self.IpV6Valid and spec.V6Prefix != objSpec.V6Prefix:
+            mismatchingAttrs.append('V6Prefix')
+        if self.IpV6Valid and spec.IPv6VirtualRouterIP != objSpec.IPv6VirtualRouterIP:
+            mismatchingAttrs.append('IPv6VirtualRouterIP')        
+        # Currently In NetAgentMode we create multiple DHCP Relay policies
+        if  utils.IsNetAgentMode():
+            if not utils.ValidateListAttr(getattr(objspec, 'DHCPPolicyId'), getattr(spec, 'DHCPPolicyId')):
+                mismatchingAttrs.append('DHCPPolicyId')
+        else:
+            # In other modes we create a single DHCP Proxy Policy
+            if getattr(objSpec, 'DHCPPolicyId') != getattr(spec, 'DHCPPolicyId'):
+                mismatchingAttrs.append('DHCPPolicyId')
         return mismatchingAttrs
 
     def ValidateYamlSpec(self, spec):

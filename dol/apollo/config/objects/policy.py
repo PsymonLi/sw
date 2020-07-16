@@ -288,7 +288,10 @@ class L3MatchObject:
 AppIdx=1
 
 class RuleObject:
-    def __init__(self, l3match, l4match, priority=0, action=types_pb2.SECURITY_RULE_ACTION_ALLOW, stateful=False):
+    def __init__(self, node, l3match, l4match, priority=0, \
+                 action=types_pb2.SECURITY_RULE_ACTION_ALLOW, stateful=False):
+        self.Id = next(ResmgrClient[node].RuleIdAllocator)
+        self.UUID = utils.PdsUuid(self.Id, api.ObjectTypes.POLICY)
         self.Stateful = stateful
         self.L3Match = copy.deepcopy(l3match)
         self.L4Match = copy.deepcopy(l4match)
@@ -375,18 +378,18 @@ class RuleObject:
         return ret
 
     def ValidateSpec(self, spec):
+        if spec.Id != self.UUID.GetUuid():
+            return False
         if spec.Attrs.Stateful != self.Stateful:
             return False
         if spec.Attrs.Priority != self.Priority:
             return False
         if spec.Attrs.Action != self.Action:
             return False
-
         if spec.Attrs.Match.L3Match and not self.L3Match:
             return False
         if self.L3Match and not self.L3Match.ValidateSpec(spec.Attrs.Match.L3Match):
             return False
-
         if spec.Attrs.Match.L4Match and not self.L4Match:
             return False
         if self.L4Match and not self.L4Match.ValidateSpec(spec.Attrs.Match.L4Match):
@@ -396,6 +399,7 @@ class RuleObject:
 
     def PopulateSpec(self, spec):
         spec = spec.Rules.add()
+        spec.Id = self.UUID.GetUuid()
         spec.Attrs.Stateful = self.Stateful
         spec.Attrs.Priority = self.Priority
         spec.Attrs.Action = self.Action
@@ -507,7 +511,7 @@ class PolicyObject(base.ConfigObjectBase):
 
     def SpecUpdate(self, spec):
         if utils.IsReconfigInProgress(self.Node):
-            client.ModifyPolicy(spec, self)
+            client.ModifyPolicy(self.Node, spec, self)
             return
         # TODO - merge these two 
         updateAttrList = self.GetUpdateAttributes(spec)
@@ -568,7 +572,7 @@ class PolicyObject(base.ConfigObjectBase):
                 return False
         if len(spec.Rules) != len(self.rules):
             return False
-        for rrule,erule in zip(spec.Rules,self.rules):
+        for rrule,erule in zip(spec.Rules, self.rules):
             if not erule.ValidateSpec(rrule):
                 logger.error(f"Validation failed for {self.GID()}")
                 #return False
@@ -858,7 +862,7 @@ class PolicyObjectClient(base.ConfigClientBase):
         self.Objs[node].update({obj.PolicyId: obj})
         return obj.PolicyId
 
-    def Generate_Allow_All_Rules(self, spfx, dpfx, priority=RulePriority.MAX):
+    def Generate_Allow_All_Rules(self, node, spfx, dpfx, priority=RulePriority.MAX):
         rules = []
         # allow all ports
         l4AllPorts = L4MatchObject(True,\
@@ -875,10 +879,10 @@ class PolicyObjectClient(base.ConfigClientBase):
             l3match = L3MatchObject(True, proto, srcpfx=spfx, dstpfx=dpfx)
             if proto == SupportedIPProtos.ICMP:
                 for icmpl4match in icmpL4Matches:
-                    rule = RuleObject(l3match, icmpl4match, priority)
+                    rule = RuleObject(node, l3match, icmpl4match, priority)
                     rules.append(rule)
             else:
-                rule = RuleObject(l3match, l4AllPorts, priority)
+                rule = RuleObject(node, l3match, l4AllPorts, priority)
                 rules.append(rule)
         return rules
 
@@ -899,9 +903,9 @@ class PolicyObjectClient(base.ConfigClientBase):
                 pfx = utils.IPV6_DEFAULT_ROUTE
             else:
                 pfx = ipaddress.ip_network(subnetpfx[0])
-        policyobj.rules = self.Generate_Allow_All_Rules(pfx, pfx)
+        policyobj.rules = self.Generate_Allow_All_Rules(policyobj.Node, pfx, pfx)
 
-    def GetRandomRules(self, sPfx, dPfx, count):
+    def GetRandomRules(self, node, sPfx, dPfx, count):
         # TODO: randomize proto once wildcard support for ICMP is in
         proto = SupportedIPProtos.TCP
         l4AllPorts = L4MatchObject(True,
@@ -915,7 +919,7 @@ class PolicyObjectClient(base.ConfigClientBase):
             l3match = L3MatchObject(True, proto,
                                     srcpfx=utils.GetRandomPrefix(sPfx),
                                     dstpfx=utils.GetRandomPrefix(dPfx))
-            rule = RuleObject(l3match, l4AllPorts, priority)
+            rule = RuleObject(node, l3match, l4AllPorts, priority)
             rules.append(rule)
         return rules
 
@@ -928,8 +932,8 @@ class PolicyObjectClient(base.ConfigClientBase):
             pfx = utils.IPV4_DEFAULT_ROUTE
             count = Resmgr.MAX_RULES_PER_V4_POLICY
         # TODO: randomize action & priority for DOL
-        defRules = self.Generate_Allow_All_Rules(pfx, pfx)
-        randRules = self.GetRandomRules(pfx, pfx, count-len(defRules))
+        defRules = self.Generate_Allow_All_Rules(naclobj.Node, pfx, pfx)
+        randRules = self.GetRandomRules(naclobj.Node, pfx, pfx, count-len(defRules))
         return defRules + randRules
 
     def GenerateVnicPolicies(self, numPolicy, subnet, direction, is_v6=False):
@@ -988,7 +992,7 @@ class PolicyObjectClient(base.ConfigClientBase):
             subnet_policies.append(policyid)
         return subnet_policies
 
-    def GetRules(self, af, policyspec, overlaptype):
+    def GetRules(self, node, af, policyspec, overlaptype):
 
         def __get_l3_proto_from_rule(af, rulespec):
 
@@ -1259,7 +1263,8 @@ class PolicyObjectClient(base.ConfigClientBase):
                 for l3match in objs:
                     priority, prioritybase = __get_rule_priority(rulespec, prioritybase)
                     action = __get_rule_action(rulespec)
-                    rule = RuleObject(l3match, l4match, priority, action, stateful)
+                    rule = RuleObject(node, l3match, l4match, priority, \
+                                      action, stateful)
                     rules.append(rule)
             else:
                 l3match = __get_l3_rule(af, rulespec)
@@ -1268,7 +1273,7 @@ class PolicyObjectClient(base.ConfigClientBase):
                     return None
                 priority, prioritybase = __get_rule_priority(rulespec)
                 action = __get_rule_action(rulespec)
-                rule = RuleObject(l3match, l4match, priority, action, stateful)
+                rule = RuleObject(node, l3match, l4match, priority, action, stateful)
                 rules.append(rule)
         return rules
 
@@ -1296,7 +1301,7 @@ class PolicyObjectClient(base.ConfigClientBase):
 
         direction = policyspec.direction
         if self.__isV4Stack:
-            v4rules = self.GetRules(utils.IP_VERSION_4, policyspec, overlaptype)
+            v4rules = self.GetRules(node, utils.IP_VERSION_4, policyspec, overlaptype)
             if v4rules is None and policytype != "empty":
                 return
             if direction == 'bidir':
@@ -1307,7 +1312,7 @@ class PolicyObjectClient(base.ConfigClientBase):
                 policyobj = __add_v4policy(direction, v4rules, policytype, overlaptype, defaultfwaction, fwdmode)
 
         if self.__isV6Stack:
-            v6rules = self.GetRules(utils.IP_VERSION_6, policyspec, overlaptype)
+            v6rules = self.GetRules(node, utils.IP_VERSION_6, policyspec, overlaptype)
             if v6rules is None and policytype != "empty":
                 return
             if direction == 'bidir':
@@ -1333,14 +1338,14 @@ class PolicyObjectClient(base.ConfigClientBase):
         for i in range(policycount):
             list = self.AddUserSpecifiedPolicy(node, vpcid, policyspec, policyspec.policytype, None, defaultfwaction, fwdmode)
 
-    def ModifyPolicy(self, spec, obj):
+    def ModifyPolicy(self, node, spec, obj):
         obj.DefaultFWAction = getattr(spec, 'defaultfwaction', "allow")
         if self.__isV4Stack:
-            v4rules = self.GetRules(utils.IP_VERSION_4, spec, None)
+            v4rules = self.GetRules(node, utils.IP_VERSION_4, spec, None)
             obj.rules = v4rules
 
         if self.__isV6Stack:
-            v6rules = self.GetRules(utils.IP_VERSION_6, spec, None)
+            v6rules = self.GetRules(node, utils.IP_VERSION_6, spec, None)
             obj.rules = v6rules
         return
 

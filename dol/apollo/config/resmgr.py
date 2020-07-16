@@ -146,6 +146,7 @@ class Resmgr(base.ConfigObjectBase):
         self.RouteIdAllocator = iter(irange(1, 1024 * 1023))
         self.V4SecurityPolicyIdAllocator = iter(irange(1,2048))
         self.V6SecurityPolicyIdAllocator = iter(irange(10001,12048))
+        self.RuleIdAllocator = iter(irange(1, 1023 * 1023))
         self.SecurityPolicyIdAllocator = iter(irange(1,4*1024*1024))
         self.VirtualRouterMacAllocator = objects.TemplateFieldObject("macstep/00CC.0000.0001/0000.0000.0001")
         self.RemoteMappingMacAllocator = objects.TemplateFieldObject("macstep/00EE.0000.0001/0000.0000.0001")

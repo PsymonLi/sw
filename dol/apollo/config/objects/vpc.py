@@ -354,6 +354,13 @@ class VpcObject(base.ConfigObjectBase):
     def GetPdsSpecScalarAttrs(self):
         return ['Id', 'Type', 'V4RouteTableId', 'V6RouteTableId', 'VirtualRouterMac', 'FabricEncap', 'ToS']
 
+    def ValidatePdsSpecCompositeAttrs(self, objSpec, spec):
+        mismatchingAttrs = []
+
+        if not utils.ValidateRpcIPV46Prefix(self.Nat46_pfx, spec.Nat46Prefix):
+            mismatchingAttrs.append('Nat46Prefix')
+        return mismatchingAttrs
+
     def ValidateYamlSpec(self, spec):
         if utils.GetYamlSpecAttr(spec) != self.GetKey():
             return False

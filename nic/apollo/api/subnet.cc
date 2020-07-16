@@ -415,6 +415,7 @@ subnet_entry::fill_spec_(pds_subnet_spec_t *spec) {
         spec->host_if[i] = host_if_[i];
     }
     spec->v4_prefix = v4_prefix_;
+    spec->v6_prefix = v6_prefix_;
     spec->v4_vr_ip = v4_vr_ip_;
     spec->v6_vr_ip = v6_vr_ip_;
 }

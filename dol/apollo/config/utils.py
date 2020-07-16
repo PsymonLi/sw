@@ -32,6 +32,9 @@ IP_VERSION_4 = 4
 L3PROTO_MIN = 0
 L3PROTO_MAX = 256
 
+PROTO_WILDCARD_MATCH_NONE = 0
+PROTO_WILDCARD_MATCH_ANY = 256
+
 L4PORT_MIN = 0
 L4PORT_MAX = 65535
 
@@ -244,6 +247,21 @@ def ValidateRpcIPAddr(srcaddr, dstaddr):
         if dstaddr.V4Addr != int(srcaddr):
             return False
     return True
+
+def ValidateRpcIPV46Prefix(srcpfx, dstpfx):                                                                                                
+    if srcpfx is None and dstpfx.Len == 0:                                                                                                 
+        return True                                                                                                                        
+    if (srcpfx is not None and dstpfx.Len == 0) or (srcpfx is None and dstpfx.Len != 0):                                                   
+        return False                                                                                                                       
+    if dstpfx.Len != srcpfx.prefixlen:                                                                                                     
+        return False                                                                                                                       
+    if srcpfx.version == IP_VERSION_6:                                                                                                     
+        if dstpfx.Addr != srcpfx.network_address.packed:                                                                                   
+            return False                                                                                                                   
+    else:                                                                                                                                  
+       if dstpfx.Addr != int(srcpfx.network_address):                                                                                      
+           return False                                                                                                                    
+    return True         
 
 def ValidateRpcIPPrefix(srcpfx, dstpfx):
     if dstpfx.Len != srcpfx.prefixlen:
@@ -1275,7 +1293,6 @@ def GetPolicies(obj, spec, node, af, direction, generate=True):
     if not count: return []
     if generate:
         if is_subnet:
-
             policy_id = cb(node, __get_vpc_id())
             return PolicyClient.GenerateSubnetPolicies(obj, policy_id, count, direction, True if af == 'V6' else False)
         else:
