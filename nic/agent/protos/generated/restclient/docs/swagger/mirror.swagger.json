@@ -684,6 +684,13 @@
         "id": {
           "type": "string",
           "format": "uint64"
+        },
+        "mirror-session-ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          }
         }
       },
       "description": "InterfaceMirrorSessionStatus captures status."
@@ -877,6 +884,20 @@
         "id": {
           "type": "string",
           "format": "uint64"
+        },
+        "mirror-session-ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          }
+        },
+        "flow-monitor-ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          }
         }
       },
       "description": "MirrorSessionStatus captures the sg policy status."

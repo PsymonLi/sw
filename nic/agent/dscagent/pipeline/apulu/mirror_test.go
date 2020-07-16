@@ -26,7 +26,7 @@ func TestHandleMirrorSession(t *testing.T) {
 				},
 			},
 		},
-		Status: netproto.MirrorSessionStatus{MirrorSessionID: 1},
+		Status: netproto.MirrorSessionStatus{MirrorSessionIDs: []uint64{1}},
 	}
 
 	err := HandleMirrorSession(infraAPI, mirrorClient, types.Create, mirror, 65)

@@ -1521,10 +1521,6 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 
 		return
 	case types.Create:
-		// Alloc ID if ID field is empty. This will be pre-populated in case of config replays
-		if netflow.Status.FlowExportPolicyID == 0 {
-			netflow.Status.FlowExportPolicyID = i.InfraAPI.AllocateID(types.FlowExportPolicyID, 0)
-		}
 
 	case types.Update:
 		// Get to ensure that the object exists
@@ -1545,9 +1541,6 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 			//log.Infof("FlowExportPolicy: %s | Info: %s ", netflow.GetKey(), types.InfoIgnoreUpdate)
 			return nil, nil
 		}
-
-		// Reuse ID from store
-		netflow.Status.FlowExportPolicyID = existingFlowExportPolicy.Status.FlowExportPolicyID
 	case types.Delete:
 		var existingFlowExportPolicy netproto.FlowExportPolicy
 		dat, err := i.InfraAPI.Read(netflow.Kind, netflow.GetKey())

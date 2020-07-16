@@ -263,9 +263,6 @@ const (
 	// MirrorSessionID captures kind for ID allocation for MirrorSession
 	MirrorSessionID = "mirrorSessionID"
 
-	// FlowExportPolicyID captures kind for ID allocation for FlowExportPolicy
-	FlowExportPolicyID = "flowExportPolicyID"
-
 	// NetworkID captures kind for ID allocation for Network
 	NetworkID = "networkID"
 

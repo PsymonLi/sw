@@ -1149,10 +1149,6 @@ func (i *FakeAgentAPI) HandleMirrorSession(oper types.Operation, mirror netproto
 
 		return
 	case types.Create:
-		// Alloc ID if ID field is empty. This will be pre-populated in case of config replays
-		if mirror.Status.MirrorSessionID == 0 {
-			mirror.Status.MirrorSessionID = i.InfraAPI.AllocateID(types.MirrorSessionID, 0)
-		}
 		mirrorBytes, _ := mirror.Marshal()
 
 		if err := i.InfraAPI.Store(mirror.Kind, mirror.GetKey(), mirrorBytes); err != nil {
@@ -1180,9 +1176,6 @@ func (i *FakeAgentAPI) HandleMirrorSession(oper types.Operation, mirror netproto
 			//log.Infof("MirrorSession: %s | Info: %s ", mirror.GetKey(), types.InfoIgnoreUpdate)
 			return nil, nil
 		}
-
-		// Reuse ID from store
-		mirror.Status.MirrorSessionID = existingMirrorSession.Status.MirrorSessionID
 
 		mirrorBytes, _ := mirror.Marshal()
 		if err := i.InfraAPI.Store(mirror.Kind, mirror.GetKey(), mirrorBytes); err != nil {
@@ -1267,10 +1260,6 @@ func (i *FakeAgentAPI) HandleFlowExportPolicy(oper types.Operation, netflow netp
 
 		return
 	case types.Create:
-		// Alloc ID if ID field is empty. This will be pre-populated in case of config replays
-		if netflow.Status.FlowExportPolicyID == 0 {
-			netflow.Status.FlowExportPolicyID = i.InfraAPI.AllocateID(types.FlowExportPolicyID, 0)
-		}
 		netflowBytes, _ := netflow.Marshal()
 
 		if err := i.InfraAPI.Store(netflow.Kind, netflow.GetKey(), netflowBytes); err != nil {
@@ -1298,9 +1287,6 @@ func (i *FakeAgentAPI) HandleFlowExportPolicy(oper types.Operation, netflow netp
 			//log.Infof("FlowExportPolicy: %s | Info: %s ", netflow.GetKey(), types.InfoIgnoreUpdate)
 			return nil, nil
 		}
-
-		// Reuse ID from store
-		netflow.Status.FlowExportPolicyID = existingFlowExportPolicy.Status.FlowExportPolicyID
 
 		netflowBytes, _ := netflow.Marshal()
 		if err := i.InfraAPI.Store(netflow.Kind, netflow.GetKey(), netflowBytes); err != nil {

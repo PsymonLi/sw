@@ -12,6 +12,123 @@ import (
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 )
 
+func TestHandleMirrorSessionIdempotent(t *testing.T) {
+	mirror := netproto.MirrorSession{
+		TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "testMirror",
+		},
+		Spec: netproto.MirrorSessionSpec{
+			PacketSize: 128,
+			Collectors: []netproto.MirrorCollector{
+				{
+					ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
+				},
+			},
+			MatchRules: []netproto.MatchRule{
+				{
+					Src: &netproto.MatchSelector{
+						Addresses: []string{"192.168.100.103"},
+					},
+					Dst: &netproto.MatchSelector{
+						Addresses: []string{"192.168.100.101"},
+						ProtoPorts: []*netproto.ProtoPort{
+							{
+								Protocol: "tcp",
+								Port:     "120",
+							},
+							{
+								Protocol: "udp",
+								Port:     "10001-10020",
+							},
+							{
+								Protocol: "icmp",
+							},
+						},
+					},
+				},
+				{
+					Src: &netproto.MatchSelector{
+						Addresses: []string{"192.168.100.101"},
+					},
+					Dst: &netproto.MatchSelector{
+						Addresses: []string{"192.168.100.103"},
+						ProtoPorts: []*netproto.ProtoPort{
+							{
+								Protocol: "tcp",
+								Port:     "120",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	vrf := netproto.Vrf{
+		TypeMeta: api.TypeMeta{Kind: "Vrf"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "default",
+		},
+		Spec: netproto.VrfSpec{
+			VrfType: "INFRA",
+		},
+	}
+	err := HandleVrf(infraAPI, vrfClient, types.Create, vrf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var m netproto.MirrorSession
+	dat, err := infraAPI.Read(mirror.Kind, mirror.GetKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = m.Unmarshal(dat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mirrorIDs := m.Status.MirrorSessionIDs
+	flowMonitorIDs := m.Status.FlowMonitorIDs
+
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, m, 65)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m1 netproto.MirrorSession
+	dat, err = infraAPI.Read(mirror.Kind, mirror.GetKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = m1.Unmarshal(dat)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(mirrorIDs, m1.Status.MirrorSessionIDs) {
+		t.Errorf("Mirror IDs changed %v -> %v", mirrorIDs, m1.Status.MirrorSessionIDs)
+	}
+	if !reflect.DeepEqual(flowMonitorIDs, m1.Status.FlowMonitorIDs) {
+		t.Errorf("Mirror IDs changed %v -> %v", flowMonitorIDs, m1.Status.FlowMonitorIDs)
+	}
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, m1, 65)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = HandleVrf(infraAPI, vrfClient, types.Delete, vrf)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestHandleMirrorSessionUpdates(t *testing.T) {
 	mirror := netproto.MirrorSession{
 		TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
@@ -118,7 +235,7 @@ func TestHandleMirrorSession(t *testing.T) {
 				},
 			},
 		},
-		Status: netproto.MirrorSessionStatus{MirrorSessionID: 1},
+		Status: netproto.MirrorSessionStatus{MirrorSessionIDs: []uint64{1}},
 	}
 	vrf := netproto.Vrf{
 		TypeMeta: api.TypeMeta{Kind: "Vrf"},
@@ -449,7 +566,6 @@ func TestClassifyCollectors(t *testing.T) {
 }
 
 func TestClassifyMatchRules(t *testing.T) {
-	mirrorKey := "MirrorSession/TestClassifyMatchRules"
 	cases := []struct {
 		in1            []netproto.MatchRule
 		in2            []netproto.MatchRule
@@ -1186,8 +1302,7 @@ func TestClassifyMatchRules(t *testing.T) {
 		for i := 0; i < length; i++ {
 			existingIDs = append(existingIDs, infraAPI.AllocateID(types.FlowMonitorRuleID, 0))
 		}
-		mirrorSessionToFlowMonitorRuleMapping[mirrorKey] = existingIDs
-		add, del, unchange, ids := classifyMatchRules(infraAPI, actionMirror, c.in1, c.in2, mirrorKey)
+		add, del, unchange, ids := classifyMatchRules(infraAPI, c.in1, c.in2, existingIDs)
 		if len(add) != len(c.addedFlows) {
 			t.Errorf("failed len(add)=%v len(c.addedFlows)=%v", len(add), len(c.addedFlows))
 		}
@@ -1230,6 +1345,5 @@ func TestClassifyMatchRules(t *testing.T) {
 				t.Errorf("failed %v not found in %v", col.ruleIDs, existingIDs)
 			}
 		}
-		delete(mirrorSessionToFlowMonitorRuleMapping, mirrorKey)
 	}
 }

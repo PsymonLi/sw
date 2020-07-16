@@ -83,7 +83,9 @@ message ExportConfig {
 }
 
 message FlowExportPolicyStatus {
-    uint64 FlowExportPolicyID  = 1 [(gogoproto.jsontag) = "id,omitempty"];
+    uint64 FlowExportPolicyID  		= 1 [deprecated = true, (gogoproto.jsontag) = "id,omitempty"];
+    repeated uint64 ExportCollectorIDs  = 2 [(gogoproto.jsontag) = "export-collector-ids,omitempty"];
+    repeated uint64 FlowMonitorIDs    	= 3 [(gogoproto.jsontag) = "flow-monitor-ids,omitempty"];
 }
 
 

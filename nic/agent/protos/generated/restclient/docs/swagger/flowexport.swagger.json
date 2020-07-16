@@ -613,6 +613,20 @@
         "id": {
           "type": "string",
           "format": "uint64"
+        },
+        "export-collector-ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          }
+        },
+        "flow-monitor-ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          }
         }
       }
     },

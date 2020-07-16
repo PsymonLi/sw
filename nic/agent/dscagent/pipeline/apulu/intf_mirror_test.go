@@ -79,7 +79,7 @@ func TestHandleInterfaceMirrorSessions(t *testing.T) {
 				},
 			},
 		},
-		Status: netproto.InterfaceMirrorSessionStatus{MirrorSessionID: 1},
+		Status: netproto.InterfaceMirrorSessionStatus{MirrorSessionIDs: []uint64{1}},
 	}
 	// vrf := netproto.Vrf{
 	// 	TypeMeta: api.TypeMeta{Kind: "Vrf"},

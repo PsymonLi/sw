@@ -624,7 +624,7 @@ func (srv *fakeRPCServer) WatchMirrorSessions(oMeta *api.ObjectMeta, stream netp
 				},
 			},
 		},
-		Status: netproto.MirrorSessionStatus{MirrorSessionID: 1},
+		Status: netproto.MirrorSessionStatus{MirrorSessionIDs: []uint64{1}},
 	}
 
 	watchEvtList := &netproto.MirrorSessionEventList{
@@ -697,7 +697,7 @@ func (srv *fakeRPCServer) WatchFlowExportPolicy(oMeta *api.ObjectMeta, stream ne
 				},
 			},
 		},
-		Status: netproto.FlowExportPolicyStatus{FlowExportPolicyID: 1},
+		Status: netproto.FlowExportPolicyStatus{ExportCollectorIDs: []uint64{1}},
 	}
 
 	watchEvtList := &netproto.FlowExportPolicyEventList{

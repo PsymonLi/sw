@@ -12,6 +12,134 @@ import (
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 )
 
+func TestHandleFlowExportPolicyIdempotent(t *testing.T) {
+	netflow := netproto.FlowExportPolicy{
+		TypeMeta: api.TypeMeta{Kind: "Netflow"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "testNetflow1",
+		},
+		Spec: netproto.FlowExportPolicySpec{
+			Interval: "30s",
+			Exports: []netproto.ExportConfig{
+				{
+					Destination: "192.168.100.101",
+					Transport: &netproto.ProtoPort{
+						Protocol: "udp",
+						Port:     "2055",
+					},
+				},
+				{
+					Destination: "192.168.100.102",
+					Transport: &netproto.ProtoPort{
+						Protocol: "udp",
+						Port:     "2055",
+					},
+				},
+			},
+			MatchRules: []netproto.MatchRule{
+				{
+					Src: &netproto.MatchSelector{
+						Addresses: []string{"192.168.100.103"},
+					},
+					Dst: &netproto.MatchSelector{
+						Addresses: []string{"192.168.100.101"},
+						ProtoPorts: []*netproto.ProtoPort{
+							{
+								Protocol: "tcp",
+								Port:     "120",
+							},
+							{
+								Protocol: "udp",
+								Port:     "10001-10020",
+							},
+							{
+								Protocol: "icmp",
+							},
+						},
+					},
+				},
+				{
+					Src: &netproto.MatchSelector{
+						Addresses: []string{"192.168.100.101"},
+					},
+					Dst: &netproto.MatchSelector{
+						Addresses: []string{"192.168.100.103"},
+						ProtoPorts: []*netproto.ProtoPort{
+							{
+								Protocol: "tcp",
+								Port:     "120",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	vrf := netproto.Vrf{
+		TypeMeta: api.TypeMeta{Kind: "Vrf"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "default",
+		},
+		Spec: netproto.VrfSpec{
+			VrfType: "INFRA",
+		},
+	}
+	err := HandleVrf(infraAPI, vrfClient, types.Create, vrf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var m netproto.FlowExportPolicy
+	dat, err := infraAPI.Read(netflow.Kind, netflow.GetKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = m.Unmarshal(dat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	collectorIDs := m.Status.ExportCollectorIDs
+	flowMonitorIDs := m.Status.FlowMonitorIDs
+
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, m, 65)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m1 netproto.FlowExportPolicy
+	dat, err = infraAPI.Read(netflow.Kind, netflow.GetKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = m1.Unmarshal(dat)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(collectorIDs, m1.Status.ExportCollectorIDs) {
+		t.Errorf("Mirror IDs changed %v -> %v", collectorIDs, m1.Status.ExportCollectorIDs)
+	}
+	if !reflect.DeepEqual(flowMonitorIDs, m1.Status.FlowMonitorIDs) {
+		t.Errorf("Mirror IDs changed %v -> %v", flowMonitorIDs, m1.Status.FlowMonitorIDs)
+	}
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, m1, 65)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = HandleVrf(infraAPI, vrfClient, types.Delete, vrf)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestHandleNetflowCollector(t *testing.T) {
 	netflows := []netproto.FlowExportPolicy{
 		{
@@ -206,11 +334,19 @@ func TestHandleNetflowCollector(t *testing.T) {
 		if len(exports) != len(netflow.Spec.Exports) {
 			t.Fatalf("Insufficient export objects created for netflow %s | %s", netflow.GetKind(), netflow.GetKey())
 		}
-		flows, ok := netflowSessionToFlowMonitorRuleMapping[netflow.GetKey()]
-		if !ok {
+		var n netproto.FlowExportPolicy
+		dat, err := infraAPI.Read(netflow.Kind, netflow.GetKey())
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = n.Unmarshal(dat)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(n.Status.FlowMonitorIDs) == 0 {
 			t.Fatalf("Expected some match rules for netflow %s | %s", netflow.GetKind(), netflow.GetKey())
 		}
-		if len(flows) != netflowToRuleIDLen[netflow.GetKey()] {
+		if len(n.Status.FlowMonitorIDs) != netflowToRuleIDLen[netflow.GetKey()] {
 			t.Fatalf("Insufficient rule IDs created for netflow %s | %s", netflow.GetKind(), netflow.GetKey())
 		}
 	}
@@ -241,11 +377,19 @@ func TestHandleNetflowCollector(t *testing.T) {
 	if !ok || len(export) != len(netflows[0].Spec.Exports) {
 		t.Fatalf("Insufficient export objects created for netflow %s | %s", netflows[0].GetKind(), netflows[0].GetKey())
 	}
-	flows, ok := netflowSessionToFlowMonitorRuleMapping[netflows[0].GetKey()]
-	if !ok {
+	var n netproto.FlowExportPolicy
+	dat, err := infraAPI.Read(netflows[0].Kind, netflows[0].GetKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = n.Unmarshal(dat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(n.Status.FlowMonitorIDs) == 0 {
 		t.Fatalf("Expected some match rules for netflow %s | %s", netflows[0].GetKind(), netflows[0].GetKey())
 	}
-	if len(flows) != netflowToRuleIDLen[netflows[0].GetKey()] {
+	if len(n.Status.FlowMonitorIDs) != netflowToRuleIDLen[netflows[0].GetKey()] {
 		t.Fatalf("Insufficient rule IDs created for netflow %s | %s", netflows[0].GetKind(), netflows[0].GetKey())
 	}
 	// Delete the flows
@@ -680,7 +824,7 @@ func TestHandleNetflow(t *testing.T) {
 				},
 			},
 		},
-		Status: netproto.FlowExportPolicyStatus{FlowExportPolicyID: 1},
+		Status: netproto.FlowExportPolicyStatus{ExportCollectorIDs: []uint64{1}},
 	}
 
 	err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65)

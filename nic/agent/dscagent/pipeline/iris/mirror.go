@@ -29,8 +29,6 @@ type flowWalker struct {
 // MirrorDestToIDMapping maps the key for each session to keys for sessions created in HAL
 var MirrorDestToIDMapping = map[string][]uint64{}
 
-var mirrorSessionToFlowMonitorRuleMapping = map[string][]uint64{}
-
 // HandleMirrorSession handles crud operations on mirror session
 func HandleMirrorSession(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, mirror netproto.MirrorSession, vrfID uint64) error {
 	switch oper {
@@ -47,9 +45,17 @@ func HandleMirrorSession(infraAPI types.InfraAPI, telemetryClient halapi.Telemet
 
 func createMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, mirror netproto.MirrorSession, vrfID uint64) error {
 	var mirrorKeys []*halapi.MirrorSessionKeyHandle
+	var sessionIDs []uint64
 	mirrorKey := fmt.Sprintf("%s/%s", mirror.Kind, mirror.GetKey())
-	for _, c := range mirror.Spec.Collectors {
-		sessionID := infraAPI.AllocateID(types.MirrorSessionID, 0)
+	collectorIDs := mirror.Status.MirrorSessionIDs
+	useAllocator := len(collectorIDs) == 0
+	for idx, c := range mirror.Spec.Collectors {
+		var sessionID uint64
+		if useAllocator {
+			sessionID = infraAPI.AllocateID(types.MirrorSessionID, 0)
+		} else {
+			sessionID = collectorIDs[idx]
+		}
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
 		col := commonUtils.BuildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
@@ -58,19 +64,21 @@ func createMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 			return errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
 		}
 
-		// Populate the MirrorDestToIDMapping
-		MirrorDestToIDMapping[mirrorKey] = append(MirrorDestToIDMapping[mirrorKey], sessionID)
+		sessionIDs = append(sessionIDs, sessionID)
 
 		// Create MirrorSession handles
 		mirrorKeys = append(mirrorKeys, convertMirrorSessionKeyHandle(sessionID))
 	}
 
-	flows := buildFlow(mirror.Spec.MatchRules, mirrorKeys, nil, nil)
+	flows := buildFlow(mirror.Spec.MatchRules, mirrorKeys, nil, mirror.Status.FlowMonitorIDs)
 	if err := HandleMatchRules(infraAPI, telemetryClient, types.Create, actionMirror, &flows, vrfID, fmt.Sprintf("FlowMonitorRule Create Failed for %s | %s", mirror.GetKind(), mirror.GetKey())); err != nil {
 		return err
 	}
 
-	mirrorSessionToFlowMonitorRuleMapping[mirror.GetKey()] = flows.ruleIDs
+	// Populate the MirrorDestToIDMapping
+	MirrorDestToIDMapping[mirrorKey] = sessionIDs
+	mirror.Status.MirrorSessionIDs = MirrorDestToIDMapping[mirrorKey]
+	mirror.Status.FlowMonitorIDs = flows.ruleIDs
 	log.Infof("MirrorSession: %v | flowMonitorIDs: %v", mirror, flows.ruleIDs)
 	dat, _ := mirror.Marshal()
 
@@ -118,7 +126,7 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 			mirrorKeys = append(mirrorKeys, convertMirrorSessionKeyHandle(w.SessionID))
 		}
 
-		flows := buildFlow(existingMirror.Spec.MatchRules, mirrorKeys, nil, mirrorSessionToFlowMonitorRuleMapping[mirror.GetKey()])
+		flows := buildFlow(existingMirror.Spec.MatchRules, mirrorKeys, nil, existingMirror.Status.FlowMonitorIDs)
 		if err := HandleMatchRules(infraAPI, telemetryClient, types.Update, actionMirror, &flows, vrfID, fmt.Sprintf("FlowMonitorRule Update Failed for %s | %s", mirror.GetKind(), mirror.GetKey())); err != nil {
 			return err
 		}
@@ -177,8 +185,8 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 
 	// Classify match rules into added, deleted or unchanged match rules.
 	// Every venice level match rule also contains the list of corressponding expanded rule ID to HAL
-	// Also retrieve the full list of ruleIDs so the mirrorSessionToFlowMonitorRuleMapping can be updated
-	addedFlows, deletedFlows, unchangedFlows, ruleIDs := classifyMatchRules(infraAPI, actionMirror, existingMirror.Spec.MatchRules, mirror.Spec.MatchRules, mirror.GetKey())
+	// Also retrieve the full list of ruleIDs so the Status.FlowMonitorIDs can be updated
+	addedFlows, deletedFlows, unchangedFlows, ruleIDs := classifyMatchRules(infraAPI, existingMirror.Spec.MatchRules, mirror.Spec.MatchRules, existingMirror.Status.FlowMonitorIDs)
 	log.Infof("MirrorSession Flows: Added: %v", addedFlows)
 	log.Infof("MirrorSession Flows: Deleted: %v", deletedFlows)
 	log.Infof("MirrorSession Flows: unchanged: %v", unchangedFlows)
@@ -227,7 +235,8 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 	}
 
 	// Update the mappings
-	mirrorSessionToFlowMonitorRuleMapping[mirror.GetKey()] = ruleIDs
+	mirror.Status.MirrorSessionIDs = MirrorDestToIDMapping[mirrorKey]
+	mirror.Status.FlowMonitorIDs = ruleIDs
 	log.Infof("MirrorSession: %v | flowMonitorIDs: %v", mirror, ruleIDs)
 	dat, _ = mirror.Marshal()
 
@@ -239,16 +248,14 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 }
 
 func deleteMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, mirror netproto.MirrorSession, vrfID uint64) error {
-	log.Infof("MirrorSession: %v | flowMonitorIDs: %v", mirror, mirrorSessionToFlowMonitorRuleMapping[mirror.GetKey()])
-	flows := buildFlow(nil, nil, nil, mirrorSessionToFlowMonitorRuleMapping[mirror.GetKey()])
+	log.Infof("MirrorSession: %v | flowMonitorIDs: %v", mirror, mirror.Status.FlowMonitorIDs)
+	flows := buildFlow(nil, nil, nil, mirror.Status.FlowMonitorIDs)
 	if err := HandleMatchRules(infraAPI, telemetryClient, types.Delete, actionMirror, &flows, vrfID, fmt.Sprintf("FlowMonitorRule Delete Failed for %s | %s", mirror.GetKind(), mirror.GetKey())); err != nil {
 		return err
 	}
 
 	// Clean up state. This is needed because Telemetry doesn't embed rules inside of the object like NetworkSecurityPolicy.
 	// TODO Remove this hack once HAL side's telemetry code is cleaned up and DSCAgent must not maintain any internal state
-	delete(mirrorSessionToFlowMonitorRuleMapping, mirror.GetKey())
-
 	mirrorKey := fmt.Sprintf("%s/%s", mirror.Kind, mirror.GetKey())
 	sessionIDs := MirrorDestToIDMapping[mirrorKey]
 	for idx, c := range mirror.Spec.Collectors {
@@ -352,16 +359,9 @@ func expandedRules(mr netproto.MatchRule) int {
 	return len(mr.Dst.ProtoPorts)
 }
 
-func classifyMatchRules(infraAPI types.InfraAPI, action int, existingMatchRules, matchRules []netproto.MatchRule, key string) ([]flowWalker, []flowWalker, []flowWalker, []uint64) {
+func classifyMatchRules(infraAPI types.InfraAPI, existingMatchRules, matchRules []netproto.MatchRule, existingRuleIDs []uint64) ([]flowWalker, []flowWalker, []flowWalker, []uint64) {
 	var existingWalkers, addedFlows, deletedFlows, unchangedFlows []flowWalker
 	var ruleIDs []uint64
-	var existingRuleIDs []uint64
-	// get the existing rule IDs in order. Needed so that we maintain order for ruleIDs in the new match rules
-	if action == actionMirror {
-		existingRuleIDs = mirrorSessionToFlowMonitorRuleMapping[key]
-	} else {
-		existingRuleIDs = netflowSessionToFlowMonitorRuleMapping[key]
-	}
 
 	// Walk and mark all the existing match rule for delete
 	idx := 0

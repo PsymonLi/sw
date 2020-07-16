@@ -98,12 +98,15 @@ message InterfaceMirrorSessionSpec {
 
 // MirrorSessionStatus captures the sg policy status
 message MirrorSessionStatus {
-    uint64 MirrorSessionID  = 1 [(gogoproto.jsontag) = "id,omitempty"];
+    uint64 MirrorSessionID  	      = 1 [deprecated = true, (gogoproto.jsontag) = "id,omitempty"];
+    repeated uint64 MirrorSessionIDs  = 2 [(gogoproto.jsontag) = "mirror-session-ids,omitempty"];
+    repeated uint64 FlowMonitorIDs    = 3 [(gogoproto.jsontag) = "flow-monitor-ids,omitempty"];
 }
 
 // InterfaceMirrorSessionStatus captures status
 message InterfaceMirrorSessionStatus {
-    uint64 MirrorSessionID  = 1 [(gogoproto.jsontag) = "id,omitempty"];
+    uint64 MirrorSessionID  	      = 1 [deprecated = true, (gogoproto.jsontag) = "id,omitempty"];
+    repeated uint64 MirrorSessionIDs  = 2 [(gogoproto.jsontag) = "mirror-session-ids,omitempty"];
 }
 
 message MirrorSessionList {

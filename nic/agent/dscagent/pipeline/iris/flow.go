@@ -36,7 +36,7 @@ func HandleMatchRules(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryC
 }
 
 func createMatchRulesHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, action int, flowRules *Flow, vrfID uint64, format string) error {
-	flowMonitorReqMsg, flowMonitorIDs := convertFlowMonitor(action, infraAPI, flowRules.matchRules, flowRules.mirrorKeys, flowRules.collectorKeys, vrfID)
+	flowMonitorReqMsg, flowMonitorIDs := convertFlowMonitor(action, infraAPI, flowRules.matchRules, flowRules.mirrorKeys, flowRules.collectorKeys, vrfID, flowRules.ruleIDs)
 	resp, err := telemetryClient.FlowMonitorRuleCreate(context.Background(), flowMonitorReqMsg)
 	if resp != nil {
 		if err := utils.HandleErr(types.Create, resp.GetResponse()[0].GetApiStatus(), err, format); err != nil {
@@ -44,12 +44,13 @@ func createMatchRulesHandler(infraAPI types.InfraAPI, telemetryClient halapi.Tel
 		}
 	}
 
+	// Assign the newly created ruleIDs
 	flowRules.ruleIDs = flowMonitorIDs
 	return nil
 }
 
 func updateMatchRulesHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, action int, flowRules *Flow, vrfID uint64, format string) error {
-	flowMonitorReqMsg := convertFlowMonitorUpdate(action, flowRules.matchRules, flowRules.mirrorKeys, flowRules.collectorKeys, vrfID, flowRules.ruleIDs)
+	flowMonitorReqMsg, _ := convertFlowMonitor(action, infraAPI, flowRules.matchRules, flowRules.mirrorKeys, flowRules.collectorKeys, vrfID, flowRules.ruleIDs)
 	resp, err := telemetryClient.FlowMonitorRuleUpdate(context.Background(), flowMonitorReqMsg)
 	if resp != nil {
 		if err := utils.HandleErr(types.Update, resp.GetResponse()[0].GetApiStatus(), err, format); err != nil {
@@ -81,53 +82,13 @@ func deleteMatchRulesHandler(infraAPI types.InfraAPI, telemetryClient halapi.Tel
 	return nil
 }
 
-func convertFlowMonitorUpdate(action int, matchRules []netproto.MatchRule, mirrorSessionKeys []*halapi.MirrorSessionKeyHandle, collectorKeys []*halapi.CollectorKeyHandle, vrfID uint64, existingIDs []uint64) *halapi.FlowMonitorRuleRequestMsg {
-	var flowMonitorRequestMsg halapi.FlowMonitorRuleRequestMsg
-	ruleMatches := convertTelemetryRuleMatches(matchRules)
-	i := 0
-
-	for _, m := range ruleMatches {
-		var halAction *halapi.MonitorAction
-		if action == actionMirror {
-			halAction = &halapi.MonitorAction{
-				Action: []halapi.RuleAction{
-					halapi.RuleAction_MIRROR,
-				},
-				MsKeyHandle: mirrorSessionKeys,
-			}
-		} else {
-			halAction = &halapi.MonitorAction{
-				Action: []halapi.RuleAction{
-					halapi.RuleAction_COLLECT_FLOW_STATS,
-				},
-			}
-		}
-
-		ruleID := existingIDs[i]
-		i++
-		req := &halapi.FlowMonitorRuleSpec{
-			KeyOrHandle: &halapi.FlowMonitorRuleKeyHandle{
-				KeyOrHandle: &halapi.FlowMonitorRuleKeyHandle_FlowmonitorruleId{
-					FlowmonitorruleId: ruleID,
-				},
-			},
-			VrfKeyHandle:       convertVrfKeyHandle(vrfID),
-			CollectorKeyHandle: collectorKeys,
-			Action:             halAction,
-			Match:              m,
-		}
-		flowMonitorRequestMsg.Request = append(flowMonitorRequestMsg.Request, req)
-	}
-
-	return &flowMonitorRequestMsg
-}
-
-func convertFlowMonitor(action int, infraAPI types.InfraAPI, matchRules []netproto.MatchRule, mirrorSessionKeys []*halapi.MirrorSessionKeyHandle, collectorKeys []*halapi.CollectorKeyHandle, vrfID uint64) (*halapi.FlowMonitorRuleRequestMsg, []uint64) {
+func convertFlowMonitor(action int, infraAPI types.InfraAPI, matchRules []netproto.MatchRule, mirrorSessionKeys []*halapi.MirrorSessionKeyHandle, collectorKeys []*halapi.CollectorKeyHandle, vrfID uint64, existingIDs []uint64) (*halapi.FlowMonitorRuleRequestMsg, []uint64) {
 	var flowMonitorRequestMsg halapi.FlowMonitorRuleRequestMsg
 	var flowMonitorIDs []uint64
 	ruleMatches := convertTelemetryRuleMatches(matchRules)
+	useAllocator := len(existingIDs) == 0
 
-	for _, m := range ruleMatches {
+	for idx, m := range ruleMatches {
 		var halAction *halapi.MonitorAction
 		if action == actionMirror {
 			halAction = &halapi.MonitorAction{
@@ -144,7 +105,12 @@ func convertFlowMonitor(action int, infraAPI types.InfraAPI, matchRules []netpro
 			}
 		}
 
-		ruleID := infraAPI.AllocateID(types.FlowMonitorRuleID, 0)
+		var ruleID uint64
+		if useAllocator {
+			ruleID = infraAPI.AllocateID(types.FlowMonitorRuleID, 0)
+		} else {
+			ruleID = existingIDs[idx]
+		}
 		req := &halapi.FlowMonitorRuleSpec{
 			KeyOrHandle: &halapi.FlowMonitorRuleKeyHandle{
 				KeyOrHandle: &halapi.FlowMonitorRuleKeyHandle_FlowmonitorruleId{

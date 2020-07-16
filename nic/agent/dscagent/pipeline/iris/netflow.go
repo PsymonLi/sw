@@ -23,8 +23,6 @@ type exportWalker struct {
 // NetflowDestToIDMapping maps the key for each session to keys for sessions created in HAL
 var NetflowDestToIDMapping = map[string][]uint64{}
 
-var netflowSessionToFlowMonitorRuleMapping = map[string][]uint64{}
-
 // HandleFlowExportPolicy handles crud operations on netflow session
 func HandleFlowExportPolicy(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, netflow netproto.FlowExportPolicy, vrfID uint64) error {
 	switch oper {
@@ -55,11 +53,19 @@ func BuildExport(compositeKey string, collectorID uint64, netflow netproto.FlowE
 
 func createFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, netflow netproto.FlowExportPolicy, vrfID uint64) error {
 	var collectorKeys []*halapi.CollectorKeyHandle
+	var sessionIDs []uint64
 	netflowKey := fmt.Sprintf("%s/%s", netflow.Kind, netflow.GetKey())
+	collectorIDs := netflow.Status.ExportCollectorIDs
+	useAllocator := len(collectorIDs) == 0
 
 	log.Infof("Create FlowExportPolicy: [%v]", netflow)
-	for _, c := range netflow.Spec.Exports {
-		collectorID := infraAPI.AllocateID(types.CollectorID, 0)
+	for idx, c := range netflow.Spec.Exports {
+		var collectorID uint64
+		if useAllocator {
+			collectorID = infraAPI.AllocateID(types.CollectorID, 0)
+		} else {
+			collectorID = collectorIDs[idx]
+		}
 		compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 		// Create export
 		exp := BuildExport(compositeKey, collectorID, netflow, c)
@@ -68,20 +74,22 @@ func createFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 			return errors.Wrapf(types.ErrExportCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
 		}
 
-		// Populate the NetflowDestToIDMapping
-		NetflowDestToIDMapping[netflowKey] = append(NetflowDestToIDMapping[netflowKey], collectorID)
+		sessionIDs = append(sessionIDs, collectorID)
 
 		// Create Collector handles
 		collectorKeys = append(collectorKeys, convertCollectorKeyHandle(collectorID))
 	}
 
-	flows := buildFlow(netflow.Spec.MatchRules, nil, collectorKeys, nil)
+	flows := buildFlow(netflow.Spec.MatchRules, nil, collectorKeys, netflow.Status.FlowMonitorIDs)
 	if err := HandleMatchRules(infraAPI, telemetryClient, types.Create, actionCollectFlowStats, &flows, vrfID, fmt.Sprintf("FlowMonitorRule Create Failed for %s | %s", netflow.GetKind(), netflow.GetKey())); err != nil {
 		return err
 	}
 
 	log.Infof("FlowMonitoRule created for %s | %s | flowMonitorIDs: %v", netflow.GetKind(), netflow.GetKey(), flows.ruleIDs)
-	netflowSessionToFlowMonitorRuleMapping[netflow.GetKey()] = flows.ruleIDs
+	// Populate the NetflowDestToIDMapping
+	NetflowDestToIDMapping[netflowKey] = sessionIDs
+	netflow.Status.ExportCollectorIDs = NetflowDestToIDMapping[netflowKey]
+	netflow.Status.FlowMonitorIDs = flows.ruleIDs
 
 	dat, _ := netflow.Marshal()
 	if err := infraAPI.Store(netflow.Kind, netflow.GetKey(), dat); err != nil {
@@ -127,7 +135,7 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 			collectorKeys = append(collectorKeys, convertCollectorKeyHandle(w.collectorID))
 		}
 
-		flows := buildFlow(existingNetflow.Spec.MatchRules, nil, collectorKeys, netflowSessionToFlowMonitorRuleMapping[netflow.GetKey()])
+		flows := buildFlow(existingNetflow.Spec.MatchRules, nil, collectorKeys, existingNetflow.Status.FlowMonitorIDs)
 		if err := HandleMatchRules(infraAPI, telemetryClient, types.Update, actionCollectFlowStats, &flows, vrfID, fmt.Sprintf("FlowMonitorRule Update Failed for %s | %s", netflow.GetKind(), netflow.GetKey())); err != nil {
 			return err
 		}
@@ -186,8 +194,8 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 
 	// Classify match rules into added, deleted or unchanged match rules.
 	// Every venice level match rule also contains the list of corressponding expanded rule ID to HAL
-	// Also retrieve the full list of ruleIDs so the netflowSessionToFlowMonitorRuleMapping can be updated
-	addedFlows, deletedFlows, unchangedFlows, ruleIDs := classifyMatchRules(infraAPI, actionCollectFlowStats, existingNetflow.Spec.MatchRules, netflow.Spec.MatchRules, netflow.GetKey())
+	// Also retrieve the full list of ruleIDs so the Status.FlowMonitorIDs can be updated
+	addedFlows, deletedFlows, unchangedFlows, ruleIDs := classifyMatchRules(infraAPI, existingNetflow.Spec.MatchRules, netflow.Spec.MatchRules, existingNetflow.Status.FlowMonitorIDs)
 	log.Infof("FlowExportPolicy Flows: Added: %v", addedFlows)
 	log.Infof("FlowExportPolicy Flows: Deleted: %v", deletedFlows)
 	log.Infof("FlowExportPolicy Flows: unchanged: %v", unchangedFlows)
@@ -236,7 +244,8 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 	}
 
 	// Update the mappings
-	netflowSessionToFlowMonitorRuleMapping[netflow.GetKey()] = ruleIDs
+	netflow.Status.ExportCollectorIDs = NetflowDestToIDMapping[netflowKey]
+	netflow.Status.FlowMonitorIDs = ruleIDs
 	log.Infof("FlowExportPolicy: %v | flowMonitorIDs: %v", netflow, ruleIDs)
 	dat, _ = netflow.Marshal()
 
@@ -248,12 +257,11 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 }
 
 func deleteFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, netflow netproto.FlowExportPolicy, vrfID uint64) error {
-	log.Infof("FlowExportPolicy: %v | flowMonitorIDs: %v", netflow, netflowSessionToFlowMonitorRuleMapping[netflow.GetKey()])
-	flows := buildFlow(nil, nil, nil, netflowSessionToFlowMonitorRuleMapping[netflow.GetKey()])
+	log.Infof("FlowExportPolicy: %v | flowMonitorIDs: %v", netflow, netflow.Status.FlowMonitorIDs)
+	flows := buildFlow(nil, nil, nil, netflow.Status.FlowMonitorIDs)
 	if err := HandleMatchRules(infraAPI, telemetryClient, types.Delete, actionCollectFlowStats, &flows, vrfID, fmt.Sprintf("FlowMonitorRule Delete Failed for %s | %s", netflow.GetKind(), netflow.GetKey())); err != nil {
 		return err
 	}
-	delete(netflowSessionToFlowMonitorRuleMapping, netflow.GetKey())
 
 	netflowKey := fmt.Sprintf("%s/%s", netflow.Kind, netflow.GetKey())
 	collectorIDs := NetflowDestToIDMapping[netflowKey]

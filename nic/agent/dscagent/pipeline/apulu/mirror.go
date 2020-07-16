@@ -89,7 +89,7 @@ func deleteMirrorSessionHandler(infraAPI types.InfraAPI, client halapi.MirrorSvc
 func convertMirrorSession(infraAPI types.InfraAPI, mirror netproto.MirrorSession, vpcID uint64) *halapi.MirrorSessionRequest {
 	var mirrorSpecs []*halapi.MirrorSessionSpec
 	// TODO: we need to create uuid on the fly here !!
-	for _, c := range mirror.Spec.Collectors {
+	for idx, c := range mirror.Spec.Collectors {
 		m := &halapi.MirrorSessionSpec{
 			Id:      uuid.FromStringOrNil(mirror.UUID).Bytes(),
 			SnapLen: mirror.Spec.PacketSize,
@@ -99,7 +99,7 @@ func convertMirrorSession(infraAPI types.InfraAPI, mirror netproto.MirrorSession
 					Erspandst: &halapi.ERSpanSpec_DstIP{
 						DstIP: utils.ConvertIPAddresses(c.ExportCfg.Destination)[0],
 					},
-					SpanId: uint32(mirror.Status.MirrorSessionID),
+					SpanId: uint32(mirror.Status.MirrorSessionIDs[idx]),
 				},
 			},
 		}

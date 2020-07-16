@@ -1276,10 +1276,6 @@ func (a *ApuluAPI) HandleMirrorSession(oper types.Operation, mirror netproto.Mir
 
 		return
 	case types.Create:
-		// Alloc ID if ID field is empty. This will be pre-populated in case of config replays
-		if mirror.Status.MirrorSessionID == 0 {
-			mirror.Status.MirrorSessionID = a.InfraAPI.AllocateID(types.MirrorSessionID, 0)
-		}
 
 	case types.Update:
 		// Get to ensure that the object exists
@@ -1300,9 +1296,6 @@ func (a *ApuluAPI) HandleMirrorSession(oper types.Operation, mirror netproto.Mir
 			//log.Infof("MirrorSession: %s | Info: %s ", mirror.GetKey(), types.InfoIgnoreUpdate)
 			return nil, nil
 		}
-
-		// Reuse ID from store
-		mirror.Status.MirrorSessionID = existingMirrorSession.Status.MirrorSessionID
 	case types.Delete:
 		var existingMirrorSession netproto.MirrorSession
 		dat, err := a.InfraAPI.Read(mirror.Kind, mirror.GetKey())
@@ -1327,8 +1320,6 @@ func (a *ApuluAPI) HandleMirrorSession(oper types.Operation, mirror netproto.Mir
 		log.Error(err)
 		return nil, err
 	}
-	// Update Mirror session ID to be under 8. TODO remove this once HAL doesn't rely on agents to provide its hardware ID
-	mirror.Status.MirrorSessionID = mirror.Status.MirrorSessionID % types.MaxMirrorSessions
 	// Take a lock to ensure a single HAL API is active at any given point
 	err = apulu.HandleMirrorSession(a.InfraAPI, a.MirrorClient, oper, mirror, vrf.Status.VrfID)
 	if err != nil {

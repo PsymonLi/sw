@@ -31,9 +31,17 @@ func HandleInterfaceMirrorSession(infraAPI types.InfraAPI, telemetryClient halap
 }
 
 func createInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, mirror netproto.InterfaceMirrorSession, vrfID uint64) error {
+	var sessionIDs []uint64
 	mirrorKey := fmt.Sprintf("%s/%s", mirror.Kind, mirror.GetKey())
-	for _, c := range mirror.Spec.Collectors {
-		sessionID := infraAPI.AllocateID(types.MirrorSessionID, 0)
+	collectorIDs := mirror.Status.MirrorSessionIDs
+	useAllocator := len(collectorIDs) == 0
+	for idx, c := range mirror.Spec.Collectors {
+		var sessionID uint64
+		if useAllocator {
+			sessionID = infraAPI.AllocateID(types.MirrorSessionID, 0)
+		} else {
+			sessionID = collectorIDs[idx]
+		}
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
 		col := commonUtils.BuildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
@@ -42,10 +50,12 @@ func createInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 			return errors.Wrapf(types.ErrCollectorCreate, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err)
 		}
 
-		// Populate the MirrorDestToIDMapping
-		MirrorDestToIDMapping[mirrorKey] = append(MirrorDestToIDMapping[mirrorKey], sessionID)
+		sessionIDs = append(sessionIDs, sessionID)
 	}
 
+	// Populate the MirrorDestToIDMapping
+	MirrorDestToIDMapping[mirrorKey] = sessionIDs
+	mirror.Status.MirrorSessionIDs = MirrorDestToIDMapping[mirrorKey]
 	dat, _ := mirror.Marshal()
 
 	if err := infraAPI.Store(mirror.Kind, mirror.GetKey(), dat); err != nil {
@@ -197,6 +207,7 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 		}
 	}
 
+	mirror.Status.MirrorSessionIDs = MirrorDestToIDMapping[mirrorKey]
 	dat, _ = mirror.Marshal()
 
 	if err := infraAPI.Store(mirror.Kind, mirror.GetKey(), dat); err != nil {
