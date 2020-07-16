@@ -556,7 +556,7 @@ func (ct *ctrlerCtx) runOrderWatcher() {
 	ct.watchCancel[kind] = &watchCancelEntry{
 		cancelFn: cancel,
 	}
-	wg := ct.watchCancel[kind].wg
+	cancelEntry := ct.watchCancel[kind]
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "OrderWatcher")
 	for {
@@ -573,19 +573,28 @@ func (ct *ctrlerCtx) runOrderWatcher() {
 		}
 
 		logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			logger.Infof("Exiting API server watcher")
+			return
+		case <-time.After(time.Second):
+		}
 	}
 
 	// setup wait group
 	ct.waitGrp.Add(1)
-	wg.Add(1)
+	cancelEntry.wg.Add(1)
 
 	// start a goroutine
 	go func() {
-		defer wg.Done()
+		defer cancelEntry.wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Order_Watch").Inc()
 		defer ct.stats.Counter("Order_Watch").Dec()
+
+		if ctx.Err() != nil {
+			return
+		}
 
 		// loop forever
 		for {
@@ -609,7 +618,12 @@ func (ct *ctrlerCtx) runOrderWatcher() {
 					logger.Errorf("Failed to start %s watch (%s)\n", kind, werr)
 					// wait for a second and retry connecting to api server
 					apicl.Close()
-					time.Sleep(time.Second)
+					select {
+					case <-ctx.Done():
+						logger.Infof("Exiting API server watcher")
+						return
+					case <-time.After(time.Second):
+					}
 					continue
 				}
 				ct.Lock()
@@ -619,7 +633,12 @@ func (ct *ctrlerCtx) runOrderWatcher() {
 				// perform a diff with API server and local cache
 				// Sleeping to give time for other apiclient's to reconnect
 				// before calling reconnect handler
-				time.Sleep(time.Second)
+				select {
+				case <-ctx.Done():
+					logger.Infof("Exiting API server watcher")
+					return
+				case <-time.After(time.Second):
+				}
 				ct.diffOrder(apicl)
 				orderHandler.OnOrderReconnect()
 
@@ -649,7 +668,12 @@ func (ct *ctrlerCtx) runOrderWatcher() {
 			}
 
 			// wait for a second and retry connecting to api server
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				logger.Infof("Exiting API server watcher")
+				return
+			case <-time.After(time.Second):
+			}
 		}
 	}()
 }
@@ -696,11 +720,14 @@ func (ct *ctrlerCtx) StopWatchOrder(handler OrderHandler) error {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	ct.Unlock()
+
+	cancelEntry.wg.Wait() // Watcher thread may try to read the workPool entry
+
+	ct.Lock()
 	workerPool := ct.workPools[kind]
 	delete(ct.workPools, kind)
 	ct.Unlock()
-
-	cancelEntry.wg.Wait()
 
 	workerPool.Stop()
 
@@ -1629,7 +1656,7 @@ func (ct *ctrlerCtx) runBookWatcher() {
 	ct.watchCancel[kind] = &watchCancelEntry{
 		cancelFn: cancel,
 	}
-	wg := ct.watchCancel[kind].wg
+	cancelEntry := ct.watchCancel[kind]
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "BookWatcher")
 	for {
@@ -1646,19 +1673,28 @@ func (ct *ctrlerCtx) runBookWatcher() {
 		}
 
 		logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			logger.Infof("Exiting API server watcher")
+			return
+		case <-time.After(time.Second):
+		}
 	}
 
 	// setup wait group
 	ct.waitGrp.Add(1)
-	wg.Add(1)
+	cancelEntry.wg.Add(1)
 
 	// start a goroutine
 	go func() {
-		defer wg.Done()
+		defer cancelEntry.wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Book_Watch").Inc()
 		defer ct.stats.Counter("Book_Watch").Dec()
+
+		if ctx.Err() != nil {
+			return
+		}
 
 		// loop forever
 		for {
@@ -1682,7 +1718,12 @@ func (ct *ctrlerCtx) runBookWatcher() {
 					logger.Errorf("Failed to start %s watch (%s)\n", kind, werr)
 					// wait for a second and retry connecting to api server
 					apicl.Close()
-					time.Sleep(time.Second)
+					select {
+					case <-ctx.Done():
+						logger.Infof("Exiting API server watcher")
+						return
+					case <-time.After(time.Second):
+					}
 					continue
 				}
 				ct.Lock()
@@ -1692,7 +1733,12 @@ func (ct *ctrlerCtx) runBookWatcher() {
 				// perform a diff with API server and local cache
 				// Sleeping to give time for other apiclient's to reconnect
 				// before calling reconnect handler
-				time.Sleep(time.Second)
+				select {
+				case <-ctx.Done():
+					logger.Infof("Exiting API server watcher")
+					return
+				case <-time.After(time.Second):
+				}
 				ct.diffBook(apicl)
 				bookHandler.OnBookReconnect()
 
@@ -1722,7 +1768,12 @@ func (ct *ctrlerCtx) runBookWatcher() {
 			}
 
 			// wait for a second and retry connecting to api server
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				logger.Infof("Exiting API server watcher")
+				return
+			case <-time.After(time.Second):
+			}
 		}
 	}()
 }
@@ -1769,11 +1820,14 @@ func (ct *ctrlerCtx) StopWatchBook(handler BookHandler) error {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	ct.Unlock()
+
+	cancelEntry.wg.Wait() // Watcher thread may try to read the workPool entry
+
+	ct.Lock()
 	workerPool := ct.workPools[kind]
 	delete(ct.workPools, kind)
 	ct.Unlock()
-
-	cancelEntry.wg.Wait()
 
 	workerPool.Stop()
 
@@ -2645,7 +2699,7 @@ func (ct *ctrlerCtx) runPublisherWatcher() {
 	ct.watchCancel[kind] = &watchCancelEntry{
 		cancelFn: cancel,
 	}
-	wg := ct.watchCancel[kind].wg
+	cancelEntry := ct.watchCancel[kind]
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "PublisherWatcher")
 	for {
@@ -2662,19 +2716,28 @@ func (ct *ctrlerCtx) runPublisherWatcher() {
 		}
 
 		logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			logger.Infof("Exiting API server watcher")
+			return
+		case <-time.After(time.Second):
+		}
 	}
 
 	// setup wait group
 	ct.waitGrp.Add(1)
-	wg.Add(1)
+	cancelEntry.wg.Add(1)
 
 	// start a goroutine
 	go func() {
-		defer wg.Done()
+		defer cancelEntry.wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Publisher_Watch").Inc()
 		defer ct.stats.Counter("Publisher_Watch").Dec()
+
+		if ctx.Err() != nil {
+			return
+		}
 
 		// loop forever
 		for {
@@ -2698,7 +2761,12 @@ func (ct *ctrlerCtx) runPublisherWatcher() {
 					logger.Errorf("Failed to start %s watch (%s)\n", kind, werr)
 					// wait for a second and retry connecting to api server
 					apicl.Close()
-					time.Sleep(time.Second)
+					select {
+					case <-ctx.Done():
+						logger.Infof("Exiting API server watcher")
+						return
+					case <-time.After(time.Second):
+					}
 					continue
 				}
 				ct.Lock()
@@ -2708,7 +2776,12 @@ func (ct *ctrlerCtx) runPublisherWatcher() {
 				// perform a diff with API server and local cache
 				// Sleeping to give time for other apiclient's to reconnect
 				// before calling reconnect handler
-				time.Sleep(time.Second)
+				select {
+				case <-ctx.Done():
+					logger.Infof("Exiting API server watcher")
+					return
+				case <-time.After(time.Second):
+				}
 				ct.diffPublisher(apicl)
 				publisherHandler.OnPublisherReconnect()
 
@@ -2738,7 +2811,12 @@ func (ct *ctrlerCtx) runPublisherWatcher() {
 			}
 
 			// wait for a second and retry connecting to api server
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				logger.Infof("Exiting API server watcher")
+				return
+			case <-time.After(time.Second):
+			}
 		}
 	}()
 }
@@ -2785,11 +2863,14 @@ func (ct *ctrlerCtx) StopWatchPublisher(handler PublisherHandler) error {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	ct.Unlock()
+
+	cancelEntry.wg.Wait() // Watcher thread may try to read the workPool entry
+
+	ct.Lock()
 	workerPool := ct.workPools[kind]
 	delete(ct.workPools, kind)
 	ct.Unlock()
-
-	cancelEntry.wg.Wait()
 
 	workerPool.Stop()
 
@@ -3603,7 +3684,7 @@ func (ct *ctrlerCtx) runStoreWatcher() {
 	ct.watchCancel[kind] = &watchCancelEntry{
 		cancelFn: cancel,
 	}
-	wg := ct.watchCancel[kind].wg
+	cancelEntry := ct.watchCancel[kind]
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "StoreWatcher")
 	for {
@@ -3620,19 +3701,28 @@ func (ct *ctrlerCtx) runStoreWatcher() {
 		}
 
 		logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			logger.Infof("Exiting API server watcher")
+			return
+		case <-time.After(time.Second):
+		}
 	}
 
 	// setup wait group
 	ct.waitGrp.Add(1)
-	wg.Add(1)
+	cancelEntry.wg.Add(1)
 
 	// start a goroutine
 	go func() {
-		defer wg.Done()
+		defer cancelEntry.wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Store_Watch").Inc()
 		defer ct.stats.Counter("Store_Watch").Dec()
+
+		if ctx.Err() != nil {
+			return
+		}
 
 		// loop forever
 		for {
@@ -3656,7 +3746,12 @@ func (ct *ctrlerCtx) runStoreWatcher() {
 					logger.Errorf("Failed to start %s watch (%s)\n", kind, werr)
 					// wait for a second and retry connecting to api server
 					apicl.Close()
-					time.Sleep(time.Second)
+					select {
+					case <-ctx.Done():
+						logger.Infof("Exiting API server watcher")
+						return
+					case <-time.After(time.Second):
+					}
 					continue
 				}
 				ct.Lock()
@@ -3666,7 +3761,12 @@ func (ct *ctrlerCtx) runStoreWatcher() {
 				// perform a diff with API server and local cache
 				// Sleeping to give time for other apiclient's to reconnect
 				// before calling reconnect handler
-				time.Sleep(time.Second)
+				select {
+				case <-ctx.Done():
+					logger.Infof("Exiting API server watcher")
+					return
+				case <-time.After(time.Second):
+				}
 				ct.diffStore(apicl)
 				storeHandler.OnStoreReconnect()
 
@@ -3696,7 +3796,12 @@ func (ct *ctrlerCtx) runStoreWatcher() {
 			}
 
 			// wait for a second and retry connecting to api server
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				logger.Infof("Exiting API server watcher")
+				return
+			case <-time.After(time.Second):
+			}
 		}
 	}()
 }
@@ -3743,11 +3848,14 @@ func (ct *ctrlerCtx) StopWatchStore(handler StoreHandler) error {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	ct.Unlock()
+
+	cancelEntry.wg.Wait() // Watcher thread may try to read the workPool entry
+
+	ct.Lock()
 	workerPool := ct.workPools[kind]
 	delete(ct.workPools, kind)
 	ct.Unlock()
-
-	cancelEntry.wg.Wait()
 
 	workerPool.Stop()
 
@@ -4619,7 +4727,7 @@ func (ct *ctrlerCtx) runCouponWatcher() {
 	ct.watchCancel[kind] = &watchCancelEntry{
 		cancelFn: cancel,
 	}
-	wg := ct.watchCancel[kind].wg
+	cancelEntry := ct.watchCancel[kind]
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "CouponWatcher")
 	for {
@@ -4636,19 +4744,28 @@ func (ct *ctrlerCtx) runCouponWatcher() {
 		}
 
 		logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			logger.Infof("Exiting API server watcher")
+			return
+		case <-time.After(time.Second):
+		}
 	}
 
 	// setup wait group
 	ct.waitGrp.Add(1)
-	wg.Add(1)
+	cancelEntry.wg.Add(1)
 
 	// start a goroutine
 	go func() {
-		defer wg.Done()
+		defer cancelEntry.wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Coupon_Watch").Inc()
 		defer ct.stats.Counter("Coupon_Watch").Dec()
+
+		if ctx.Err() != nil {
+			return
+		}
 
 		// loop forever
 		for {
@@ -4672,7 +4789,12 @@ func (ct *ctrlerCtx) runCouponWatcher() {
 					logger.Errorf("Failed to start %s watch (%s)\n", kind, werr)
 					// wait for a second and retry connecting to api server
 					apicl.Close()
-					time.Sleep(time.Second)
+					select {
+					case <-ctx.Done():
+						logger.Infof("Exiting API server watcher")
+						return
+					case <-time.After(time.Second):
+					}
 					continue
 				}
 				ct.Lock()
@@ -4682,7 +4804,12 @@ func (ct *ctrlerCtx) runCouponWatcher() {
 				// perform a diff with API server and local cache
 				// Sleeping to give time for other apiclient's to reconnect
 				// before calling reconnect handler
-				time.Sleep(time.Second)
+				select {
+				case <-ctx.Done():
+					logger.Infof("Exiting API server watcher")
+					return
+				case <-time.After(time.Second):
+				}
 				ct.diffCoupon(apicl)
 				couponHandler.OnCouponReconnect()
 
@@ -4712,7 +4839,12 @@ func (ct *ctrlerCtx) runCouponWatcher() {
 			}
 
 			// wait for a second and retry connecting to api server
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				logger.Infof("Exiting API server watcher")
+				return
+			case <-time.After(time.Second):
+			}
 		}
 	}()
 }
@@ -4759,11 +4891,14 @@ func (ct *ctrlerCtx) StopWatchCoupon(handler CouponHandler) error {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	ct.Unlock()
+
+	cancelEntry.wg.Wait() // Watcher thread may try to read the workPool entry
+
+	ct.Lock()
 	workerPool := ct.workPools[kind]
 	delete(ct.workPools, kind)
 	ct.Unlock()
-
-	cancelEntry.wg.Wait()
 
 	workerPool.Stop()
 
@@ -5585,7 +5720,7 @@ func (ct *ctrlerCtx) runCustomerWatcher() {
 	ct.watchCancel[kind] = &watchCancelEntry{
 		cancelFn: cancel,
 	}
-	wg := ct.watchCancel[kind].wg
+	cancelEntry := ct.watchCancel[kind]
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "CustomerWatcher")
 	for {
@@ -5602,19 +5737,28 @@ func (ct *ctrlerCtx) runCustomerWatcher() {
 		}
 
 		logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			logger.Infof("Exiting API server watcher")
+			return
+		case <-time.After(time.Second):
+		}
 	}
 
 	// setup wait group
 	ct.waitGrp.Add(1)
-	wg.Add(1)
+	cancelEntry.wg.Add(1)
 
 	// start a goroutine
 	go func() {
-		defer wg.Done()
+		defer cancelEntry.wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Customer_Watch").Inc()
 		defer ct.stats.Counter("Customer_Watch").Dec()
+
+		if ctx.Err() != nil {
+			return
+		}
 
 		// loop forever
 		for {
@@ -5638,7 +5782,12 @@ func (ct *ctrlerCtx) runCustomerWatcher() {
 					logger.Errorf("Failed to start %s watch (%s)\n", kind, werr)
 					// wait for a second and retry connecting to api server
 					apicl.Close()
-					time.Sleep(time.Second)
+					select {
+					case <-ctx.Done():
+						logger.Infof("Exiting API server watcher")
+						return
+					case <-time.After(time.Second):
+					}
 					continue
 				}
 				ct.Lock()
@@ -5648,7 +5797,12 @@ func (ct *ctrlerCtx) runCustomerWatcher() {
 				// perform a diff with API server and local cache
 				// Sleeping to give time for other apiclient's to reconnect
 				// before calling reconnect handler
-				time.Sleep(time.Second)
+				select {
+				case <-ctx.Done():
+					logger.Infof("Exiting API server watcher")
+					return
+				case <-time.After(time.Second):
+				}
 				ct.diffCustomer(apicl)
 				customerHandler.OnCustomerReconnect()
 
@@ -5678,7 +5832,12 @@ func (ct *ctrlerCtx) runCustomerWatcher() {
 			}
 
 			// wait for a second and retry connecting to api server
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				logger.Infof("Exiting API server watcher")
+				return
+			case <-time.After(time.Second):
+			}
 		}
 	}()
 }
@@ -5725,11 +5884,14 @@ func (ct *ctrlerCtx) StopWatchCustomer(handler CustomerHandler) error {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	ct.Unlock()
+
+	cancelEntry.wg.Wait() // Watcher thread may try to read the workPool entry
+
+	ct.Lock()
 	workerPool := ct.workPools[kind]
 	delete(ct.workPools, kind)
 	ct.Unlock()
-
-	cancelEntry.wg.Wait()
 
 	workerPool.Stop()
 

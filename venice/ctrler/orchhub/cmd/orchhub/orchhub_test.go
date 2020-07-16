@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pensando/sw/api"
+	apierrors "github.com/pensando/sw/api/errors"
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/network"
@@ -147,7 +148,7 @@ func TestNetworksScale(t *testing.T) {
 	AssertOk(t, err, "failed to list orch configs")
 
 	orchFound := false
-	orchName := "vc7"
+	orchName := "vc-7"
 	for _, orch := range orchList {
 		logger.Infof("found orch %s", orch.Name)
 		if orch.Spec.URI == orchConfig.Spec.URI {
@@ -187,9 +188,8 @@ func TestNetworksScale(t *testing.T) {
 				Tenant:    "default",
 			},
 			Spec: network.NetworkSpec{
-				Type:       network.NetworkType_Bridged.String(),
-				IPv4Subnet: "192.40.0.0/16",
-				VlanID:     uint32(vlanid),
+				Type:   network.NetworkType_Bridged.String(),
+				VlanID: uint32(vlanid),
 				Orchestrators: []*network.OrchestratorInfo{
 					&network.OrchestratorInfo{
 						Name:      orchConfig.Name,
@@ -200,7 +200,11 @@ func TestNetworksScale(t *testing.T) {
 		}
 		logger.Infof("Create Network %s", np.Name)
 		_, err := apicl.NetworkV1().Network().Create(context.Background(), &np)
-		AssertOk(t, err, "failed to create network %s", np.Name)
+		if err != nil {
+			apiStatus := apierrors.FromError(err)
+			logger.Errorf("%+v", apiStatus)
+			AssertOk(t, err, "failed to create network %s", np.Name)
+		}
 		time.Sleep(10 * time.Millisecond)
 	}
 }

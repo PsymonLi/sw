@@ -556,7 +556,7 @@ func (ct *ctrlerCtx) runBufferWatcher() {
 	ct.watchCancel[kind] = &watchCancelEntry{
 		cancelFn: cancel,
 	}
-	wg := ct.watchCancel[kind].wg
+	cancelEntry := ct.watchCancel[kind]
 	ct.Unlock()
 	logger := ct.logger.WithContext("submodule", "BufferWatcher")
 	for {
@@ -573,19 +573,28 @@ func (ct *ctrlerCtx) runBufferWatcher() {
 		}
 
 		logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
-		time.Sleep(time.Second)
+		select {
+		case <-ctx.Done():
+			logger.Infof("Exiting API server watcher")
+			return
+		case <-time.After(time.Second):
+		}
 	}
 
 	// setup wait group
 	ct.waitGrp.Add(1)
-	wg.Add(1)
+	cancelEntry.wg.Add(1)
 
 	// start a goroutine
 	go func() {
-		defer wg.Done()
+		defer cancelEntry.wg.Done()
 		defer ct.waitGrp.Done()
 		ct.stats.Counter("Buffer_Watch").Inc()
 		defer ct.stats.Counter("Buffer_Watch").Dec()
+
+		if ctx.Err() != nil {
+			return
+		}
 
 		// loop forever
 		for {
@@ -609,7 +618,12 @@ func (ct *ctrlerCtx) runBufferWatcher() {
 					logger.Errorf("Failed to start %s watch (%s)\n", kind, werr)
 					// wait for a second and retry connecting to api server
 					apicl.Close()
-					time.Sleep(time.Second)
+					select {
+					case <-ctx.Done():
+						logger.Infof("Exiting API server watcher")
+						return
+					case <-time.After(time.Second):
+					}
 					continue
 				}
 				ct.Lock()
@@ -619,7 +633,12 @@ func (ct *ctrlerCtx) runBufferWatcher() {
 				// perform a diff with API server and local cache
 				// Sleeping to give time for other apiclient's to reconnect
 				// before calling reconnect handler
-				time.Sleep(time.Second)
+				select {
+				case <-ctx.Done():
+					logger.Infof("Exiting API server watcher")
+					return
+				case <-time.After(time.Second):
+				}
 				ct.diffBuffer(apicl)
 				bufferHandler.OnBufferReconnect()
 
@@ -649,7 +668,12 @@ func (ct *ctrlerCtx) runBufferWatcher() {
 			}
 
 			// wait for a second and retry connecting to api server
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				logger.Infof("Exiting API server watcher")
+				return
+			case <-time.After(time.Second):
+			}
 		}
 	}()
 }
@@ -696,11 +720,14 @@ func (ct *ctrlerCtx) StopWatchBuffer(handler BufferHandler) error {
 		delete(ct.watchers, kind)
 	}
 	delete(ct.watchCancel, kind)
+	ct.Unlock()
+
+	cancelEntry.wg.Wait() // Watcher thread may try to read the workPool entry
+
+	ct.Lock()
 	workerPool := ct.workPools[kind]
 	delete(ct.workPools, kind)
 	ct.Unlock()
-
-	cancelEntry.wg.Wait()
 
 	workerPool.Stop()
 

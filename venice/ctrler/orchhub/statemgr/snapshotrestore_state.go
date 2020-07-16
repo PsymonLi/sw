@@ -8,6 +8,7 @@ import (
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/venice/utils/kvstore"
+	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
@@ -28,14 +29,16 @@ func (sm *Statemgr) GetSnapshotRestoreWatchOptions() *api.ListWatchOptions {
 // OnSnapshotRestoreCreate creates a SnapshotRestore based on watch event
 func (sm *Statemgr) OnSnapshotRestoreCreate(obj *ctkit.SnapshotRestore) error {
 	sm.logger.Infof("Snapshot restore event")
-	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &obj.SnapshotRestore, Type: kvstore.Created}
+	sobj := ref.DeepCopy(obj.SnapshotRestore).(cluster.SnapshotRestore)
+	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &sobj, Type: kvstore.Created}
 	_, err := NewSnapshotRestoreState(obj, sm)
 	return err
 }
 
 // OnSnapshotRestoreUpdate handles update event
 func (sm *Statemgr) OnSnapshotRestoreUpdate(oldObj *ctkit.SnapshotRestore, newObj *cluster.SnapshotRestore) error {
-	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: newObj, Type: kvstore.Updated}
+	obj := ref.DeepCopy(*newObj).(cluster.SnapshotRestore)
+	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &obj, Type: kvstore.Updated}
 	_, err := SnapshotRestoreStateFromObj(oldObj)
 	return err
 }

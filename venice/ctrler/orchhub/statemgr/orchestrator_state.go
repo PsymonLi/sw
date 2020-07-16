@@ -8,6 +8,7 @@ import (
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/venice/utils/kvstore"
+	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
@@ -42,7 +43,9 @@ func (sm *Statemgr) OnOrchestratorCreate(w *ctkit.Orchestrator) error {
 	if err != nil {
 		return err
 	}
-	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &w.Orchestrator, Type: kvstore.Created}
+	// Send copy
+	obj := ref.DeepCopy(w.Orchestrator).(orchestration.Orchestrator)
+	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &obj, Type: kvstore.Created}
 	o, err := NewOrchestratorState(w, sm)
 	if err != nil {
 		return err
@@ -53,7 +56,8 @@ func (sm *Statemgr) OnOrchestratorCreate(w *ctkit.Orchestrator) error {
 
 // OnOrchestratorUpdate handles update event
 func (sm *Statemgr) OnOrchestratorUpdate(w *ctkit.Orchestrator, nw *orchestration.Orchestrator) error {
-	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: nw, Type: kvstore.Updated}
+	obj := ref.DeepCopy(*nw).(orchestration.Orchestrator)
+	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &obj, Type: kvstore.Updated}
 	_, err := OrchestratorStateFromObj(w)
 
 	return err
@@ -61,7 +65,8 @@ func (sm *Statemgr) OnOrchestratorUpdate(w *ctkit.Orchestrator, nw *orchestratio
 
 // OnOrchestratorDelete deletes a orchestrator
 func (sm *Statemgr) OnOrchestratorDelete(w *ctkit.Orchestrator) error {
-	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &w.Orchestrator, Type: kvstore.Deleted}
+	obj := ref.DeepCopy(w.Orchestrator).(orchestration.Orchestrator)
+	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &obj, Type: kvstore.Deleted}
 	err := sm.RemoveProbeChannel(w.Orchestrator.Name)
 	return err
 }
@@ -117,6 +122,8 @@ func (o *OrchestratorState) updateIncompatibleList() error {
 
 // AddIncompatibleDSC adds DSC MAC address to orchestrator incompatible list
 func (o *OrchestratorState) AddIncompatibleDSC(dsc string) error {
+	o.Orchestrator.Lock()
+	defer o.Orchestrator.Unlock()
 	o.Lock()
 	defer o.Unlock()
 
@@ -126,6 +133,8 @@ func (o *OrchestratorState) AddIncompatibleDSC(dsc string) error {
 
 // RemoveIncompatibleDSC removes DSC from orchestrator incompatible list
 func (o *OrchestratorState) RemoveIncompatibleDSC(dsc string) error {
+	o.Orchestrator.Lock()
+	defer o.Orchestrator.Unlock()
 	o.Lock()
 	defer o.Unlock()
 
@@ -134,6 +143,7 @@ func (o *OrchestratorState) RemoveIncompatibleDSC(dsc string) error {
 }
 
 func (o *OrchestratorState) checkAndUpdateDSCList() error {
+	// called from onOrchestratorCreate, do NOT take ctkit object lock
 	o.Lock()
 	defer o.Unlock()
 

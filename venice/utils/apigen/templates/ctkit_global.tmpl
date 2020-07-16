@@ -252,7 +252,10 @@ func (ct *ctrlerCtx) ResolvedRun(obj apiintf.CtkitObject) {
 }
 
 func (ct *ctrlerCtx) runFunction(pool string, workObj shardworkers.WorkObj, work shardworkers.WorkFunc) error {
-       return ct.workPools[pool].RunFunction(workObj, work)
+	if wp, ok := ct.workPools[pool]; ok {
+		return wp.RunFunction(workObj, work)
+	}
+	return fmt.Errorf("No worker pool entry for %s", pool)
 }
 
 
@@ -383,7 +386,10 @@ func (ct *ctrlerCtx) resolveObject(event kvstore.WatchEventType, workObj apiintf
 }
 
 func (ct *ctrlerCtx) runJob(pool string, workObj shardworkers.WorkObj) error {
-	return ct.workPools[pool].RunJob(workObj)
+	if wp, ok := ct.workPools[pool]; ok {
+		return wp.RunJob(workObj)
+	}
+	return fmt.Errorf("No worker pool entry for %s", pool)
 }
 
 func (ct *ctrlerCtx) workerPoolIdle(pool string) bool {
