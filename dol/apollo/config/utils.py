@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+import enum
 import sys
 import uuid
 import ipaddress
@@ -790,6 +791,20 @@ def GetEncapType(e):
         return types_pb2.ENCAP_TYPE_MPLSoUDP
     else:
         return types_pb2.ENCAP_TYPE_NONE
+
+def GetErspanProtocolType(t):
+    if t == 0:
+        return topo.ErspanProtocolTypes.ERSPAN_TYPE_NONE
+    elif t == 1:
+        return topo.ErspanProtocolTypes.ERSPAN_TYPE_1
+    elif t == 2:
+        return topo.ErspanProtocolTypes.ERSPAN_TYPE_2
+    elif t == 3:
+        return topo.ErspanProtocolTypes.ERSPAN_TYPE_3
+    else:
+        logger.error(f"ERROR: Invalid/Unknown Erspan Type:{t}")
+        sys.exit(1)
+        return None
 
 def GetEncapTypeString(e):
     if e == types_pb2.ENCAP_TYPE_VXLAN:

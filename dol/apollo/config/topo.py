@@ -94,6 +94,12 @@ class ObjectTypes(enum.IntEnum):
     NODE = 100
     MAX = 101
 
+class ErspanProtocolTypes(enum.IntEnum):                                                                                                  
+    ERSPAN_TYPE_NONE = 0                                                                                                                  
+    ERSPAN_TYPE_1    = 1                                                                                                                  
+    ERSPAN_TYPE_2    = 2                                                                                                                  
+    ERSPAN_TYPE_3    = 3  
+
 class ChosenFlowObjs:
     def __init__(self):
         self.select_objs = False

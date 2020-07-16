@@ -163,19 +163,13 @@ class NodeObject(base.ConfigObjectBase):
         NexthopClient.CreateObjects(node)
         TunnelClient.CreateObjects(node)
         NHGroupClient.CreateObjects(node)
+        MirrorClient.CreateObjects(node)
         VpcClient.CreateObjects(node)
         SecurityProfileClient.CreateObjects(node)
         BatchClient.Commit(node)
 
         if not utils.IsDol() and utils.IsNetAgentMode():
             SubnetClient.UpdateHostInterfaces(node)
-
-        # Start separate batch for mirror
-        # so that mapping gets programmed before mirror
-        BatchClient.Start(node)
-        MirrorClient.CreateObjects(node)
-        BatchClient.Commit(node)
-
         AlertsClient.CreateObjects(node)
         # RmappingClient.OperateObjects(node, 'Create')
         return True
