@@ -340,7 +340,7 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 	return nil
 }
 
-func startRefreshLoop(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, vrfID uint64, owner string, refreshCtx context.Context, destIP, gwIP string) {
+func startRefreshLoop(refreshCtx context.Context, infraAPI types.InfraAPI, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, vrfID uint64, owner, destIP, gwIP string) {
 	log.Infof("Starting ARP refresh loop for %s, gatewayIP:%s", destIP, gwIP)
 
 	var oldMAC string
@@ -562,8 +562,8 @@ func deleteOrUpdateLateralEP(infraAPI types.InfraAPI, intfClient halapi.Interfac
 
 	var epMac, ignoreArpKey string
 	var ipList []string
-	// getIpList populates the IPs associated with the epMac.
-	getIpList := func(key, val interface{}) bool {
+	// getIPList populates the IPs associated with the epMac.
+	getIPList := func(key, val interface{}) bool {
 		if val.(string) == epMac && key.(string) != ignoreArpKey {
 			ip := strings.Split(key.(string), "-")
 			ipList = append(ipList, ip[0])
@@ -585,7 +585,7 @@ func deleteOrUpdateLateralEP(infraAPI types.InfraAPI, intfClient halapi.Interfac
 		} else {
 			epMac = lateralEP.Spec.MacAddress
 			ignoreArpKey = irisUtils.GenerateCompositeKey(destIP, gwIP)
-			destIPToMAC.Range(getIpList)
+			destIPToMAC.Range(getIPList)
 			log.Infof("Updating endpoint: %s ipList: [%v]", lateralEP.GetKey(), ipList)
 			ep := &netproto.Endpoint{
 				TypeMeta: api.TypeMeta{Kind: "Endpoint"},
@@ -821,7 +821,7 @@ func generateLateralEP(infraAPI types.InfraAPI, intfClient halapi.InterfaceClien
 		if gwIP != "" {
 			go staticRoute(arpResolverKey, destIP, gwIP, refreshCtx)
 		}
-		go startRefreshLoop(infraAPI, intfClient, epClient, vrfID, owner, refreshCtx, destIP, gwIP)
+		go startRefreshLoop(refreshCtx, infraAPI, intfClient, epClient, vrfID, owner, destIP, gwIP)
 		// Give the routine a chance to run
 		time.Sleep(time.Second * 3)
 		return nil, nil

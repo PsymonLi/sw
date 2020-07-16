@@ -81,7 +81,7 @@ func createSubnetHandler(infraAPI types.InfraAPI, client halapi.SubnetSvcClient,
 		intfs := validator.ValidateNwAttach(infraAPI, nw.Tenant, nw.Namespace, nw.Name)
 		for _, intf := range intfs {
 			collectorMap := make(map[uint64]int)
-			err = validator.ValidateInterface(infraAPI, intf, collectorMap, MirrorKeyToSessionIdMapping)
+			err = validator.ValidateInterface(infraAPI, intf, collectorMap, MirrorKeyToSessionIDMapping)
 			if err != nil {
 				log.Error(err)
 				continue
@@ -556,7 +556,7 @@ func deleteSubnetHandler(infraAPI types.InfraAPI, client halapi.SubnetSvcClient,
 	return nil
 }
 
-func getPolicyUuid(names []string, attached bool, nw netproto.Network, infraAPI types.InfraAPI) ([]string, error) {
+func getPolicyUUID(names []string, attached bool, nw netproto.Network, infraAPI types.InfraAPI) ([]string, error) {
 	ids := []string{}
 	if attached == false {
 		return ids, nil
@@ -705,7 +705,7 @@ func convertNetworkToSubnet(infraAPI types.InfraAPI, nw netproto.Network, uplink
 		}
 	}
 
-	ingPoliciesIDs, err := getPolicyUuid(nw.Spec.IngV4SecurityPolicies, attached, nw, infraAPI)
+	ingPoliciesIDs, err := getPolicyUUID(nw.Spec.IngV4SecurityPolicies, attached, nw, infraAPI)
 
 	if err != nil {
 		log.Errorf("get ingress security policy uuid failed for nw: %s | err: %s", nw.GetKey(), err)
@@ -714,7 +714,7 @@ func convertNetworkToSubnet(infraAPI types.InfraAPI, nw netproto.Network, uplink
 		}
 	}
 
-	egPoliciesIDs, err := getPolicyUuid(nw.Spec.EgV4SecurityPolicies, attached, nw, infraAPI)
+	egPoliciesIDs, err := getPolicyUUID(nw.Spec.EgV4SecurityPolicies, attached, nw, infraAPI)
 
 	if err != nil {
 		log.Errorf("get egress security policy uuid failed for nw: %s | err: %s", nw.GetKey(), err)

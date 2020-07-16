@@ -579,9 +579,9 @@ func (c *API) WatchTechSupport() {
 		idSplit := strings.Split(req.Spec.InstanceID, "-")
 		targetID := fmt.Sprintf("%s-%s-%s-%s", req.ObjectMeta.Name, idSplit[0], "DistributedServiceCard", c.InfraAPI.GetDscName())
 		vosTarget := fmt.Sprintf("%v.tar.gz", targetID)
-		vosUri := fmt.Sprintf("/objstore/v1/downloads/tenant/default/techsupport/%v", vosTarget)
+		vosURI := fmt.Sprintf("/objstore/v1/downloads/tenant/default/techsupport/%v", vosTarget)
 		// Upload the artifact to Venice
-		log.Infof("Controller API: uploading techsupport to %s", vosUri)
+		log.Infof("Controller API: uploading techsupport to %s", vosURI)
 		if err := export.SendToVenice(c.ResolverClient, techSupportArtifact, vosTarget); err != nil {
 			log.Error(errors.Wrapf(types.ErrTechSupportVeniceExport, "Controller API: %s", err))
 			req.Status.Reason = fmt.Sprintf("%s", types.ErrTechSupportVeniceExport)
@@ -595,7 +595,7 @@ func (c *API) WatchTechSupport() {
 			log.Error(errors.Wrapf(types.ErrTechSupportArtifactCleanup, "Controller API: %s", err))
 		}
 
-		req.Status.URI = vosUri
+		req.Status.URI = vosURI
 		c.sendTechSupportUpdate(techSupportAPIHandler, &req, tsproto.TechSupportRequestStatus_Completed)
 	}
 	techSupportClient.Close()

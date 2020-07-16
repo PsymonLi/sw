@@ -144,6 +144,7 @@ func ConvertIPAddress(address string) (ipAddress *halapi.IPAddress) {
 	return
 }
 
+// HalIPToString converts IP address to string
 func HalIPToString(in *halapi.IPAddress) string {
 	if in == nil {
 		return ""
@@ -156,6 +157,7 @@ func HalIPToString(in *halapi.IPAddress) string {
 	return ""
 }
 
+// ConvertIntIPtoStr converts IP address to string
 func ConvertIntIPtoStr(in uint32) string {
 	b := make([]byte, 4)
 	binary.BigEndian.PutUint32(b, in)

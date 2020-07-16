@@ -141,7 +141,7 @@ const (
 	ErrTechSupportArtifactsMissing                       = Error("ErrTechSupportArtifactsMissing")
 	ErrTechSupportVeniceExport                           = Error("ErrTechSupportVeniceExport")
 	ErrTechSupportArtifactCleanup                        = Error("ErrTechSupportArtifactCleanup")
-	ErrNoIpForMgmtIntf                                   = Error("ErrNoIpForMgmtIntf")
+	ErrNoIPForMgmtIntf                                   = Error("ErrNoIPForMgmtIntf")
 	ErrFailedToGetMgmtLink                               = Error("ErrFailedToGetMgmtLink")
 	ErrInconsistentInterfaceDelete                       = Error("ErrInconsistentInterfaceDelete")
 	ErrAlertsGet                                         = Error("ErrAlertsGet")

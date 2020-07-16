@@ -16,6 +16,7 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 )
 
+// HandleTechSupport collects and returns the filepath of tech support artifacts
 func HandleTechSupport(client operdapi.TechSupportSvcClient, skipCores bool, instanceID string) (string, error) {
 	techSupportReq := &operdapi.TechSupportRequest{
 		Request: &operdapi.TechSupportSpec{

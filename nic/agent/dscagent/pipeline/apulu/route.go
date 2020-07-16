@@ -64,7 +64,7 @@ func HandleRouteConfig(infraAPI types.InfraAPI, client msTypes.BGPSvcClient, ope
 }
 
 // expandRoutingConfig evaluates the routing config taking into account auto-config and returns an expanded confguration
-func expandRoutingConfig(infraAPI types.InfraAPI, lbIp string, rtCfg *netproto.RoutingConfig) *netproto.RoutingConfig {
+func expandRoutingConfig(infraAPI types.InfraAPI, lbIP string, rtCfg *netproto.RoutingConfig) *netproto.RoutingConfig {
 	ret := &netproto.RoutingConfig{
 		ObjectMeta: rtCfg.ObjectMeta,
 		Spec: netproto.RoutingConfigSpec{

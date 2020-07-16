@@ -180,19 +180,19 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 					updsubnet.Request[0].HostIf = append(updsubnet.Request[0].HostIf, uid)
 				}
 				// since boltDB is not updated for the interface yet, convertNetworkToSubnet doesn't populate the polciy IDs
-				ingPolicyId, err := getPolicyUuid(nw.Spec.IngV4SecurityPolicies, true, nw, infraAPI)
+				ingPolicyID, err := getPolicyUUID(nw.Spec.IngV4SecurityPolicies, true, nw, infraAPI)
 				if err != nil {
 					log.Errorf("Network: %s could not get ingress security policy uuid | Err: %s", nw.GetKey(), err)
 					return errors.Wrapf(types.ErrDatapathHandling, "Network: %s could not get ingress security policy uuid | Err: %s", nw.GetKey(), err)
 				}
-				egPolicyId, err := getPolicyUuid(nw.Spec.EgV4SecurityPolicies, true, nw, infraAPI)
+				egPolicyID, err := getPolicyUUID(nw.Spec.EgV4SecurityPolicies, true, nw, infraAPI)
 				if err != nil {
 					log.Errorf("Network: %s could not get egress security policy uuid | Err: %s", nw.GetKey(), err)
 					return errors.Wrapf(types.ErrDatapathHandling, "Network: %s could not get egress security policy uuid | Err: %s", nw.GetKey(), err)
 				}
 
-				updsubnet.Request[0].IngV4SecurityPolicyId = utils.ConvertIDs(ingPolicyId...)
-				updsubnet.Request[0].EgV4SecurityPolicyId = utils.ConvertIDs(egPolicyId...)
+				updsubnet.Request[0].IngV4SecurityPolicyId = utils.ConvertIDs(ingPolicyID...)
+				updsubnet.Request[0].EgV4SecurityPolicyId = utils.ConvertIDs(egPolicyID...)
 
 				updsubnet.Request[0].DHCPPolicyId, err = getIPAMUuid(infraAPI, nw, true)
 				if err != nil {

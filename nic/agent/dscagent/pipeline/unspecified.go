@@ -1760,7 +1760,7 @@ func (i *FakeAgentAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardSt
 	return
 }
 
-// HandletechSupport stubbed out
+// HandleTechSupport stubbed out
 func (i *FakeAgentAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, error) {
 	return "", errors.Wrapf(types.ErrNotImplemented, "Handle Tech Support not implemented by Iris Pipeline")
 }

@@ -1320,8 +1320,8 @@ func handleInterfaceMirrorSession(i *IrisAPI, oper types.Operation, mirror netpr
 	}
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
-			log.Error(errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
-			return nil, errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
+			log.Error(errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
+			return nil, errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
@@ -1449,8 +1449,8 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 	}
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
-			log.Error(errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
-			return nil, errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
+			log.Error(errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
+			return nil, errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
@@ -1584,8 +1584,8 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 	}
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
-			log.Error(errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
-			return nil, errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
+			log.Error(errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
+			return nil, errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point

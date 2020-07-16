@@ -62,16 +62,16 @@ func (m *mockInfraAPI) GetConfig() (cfg types.DistributedServiceCardStatus) {
 func (m *mockInfraAPI) NotifyVeniceConnection() {}
 
 // UpdateIfChannel updates the intf update channel
-func (i *mockInfraAPI) UpdateIfChannel(evt types.UpdateIfEvent) {
+func (m *mockInfraAPI) UpdateIfChannel(evt types.UpdateIfEvent) {
 }
 
 // IfUpdateChannel returns a channel for propogating interface state to the netagent
-func (i *mockInfraAPI) IfUpdateChannel() chan error {
+func (m *mockInfraAPI) IfUpdateChannel() chan error {
 	return nil
 }
 
 // GetIntfUpdList returns the list of dirty interfaces (intfs with a status update)
-func (i *mockInfraAPI) GetIntfUpdList() (updList []types.UpdateIfEvent) {
+func (m *mockInfraAPI) GetIntfUpdList() (updList []types.UpdateIfEvent) {
 	return nil
 }
 
@@ -81,7 +81,7 @@ func (m *mockInfraAPI) Close() error {
 }
 
 // Purge stubbed out
-func (i *mockInfraAPI) Purge() {
+func (m *mockInfraAPI) Purge() {
 
 }
 
@@ -105,7 +105,7 @@ func TestExpandRoutingConfig(t *testing.T) {
 		},
 	}
 
-	mockApi := &mockInfraAPI{
+	mockAPI := &mockInfraAPI{
 		cfg: types.DistributedServiceCardStatus{
 			LoopbackIP:  "",
 			Controllers: []string{"10.1.1.1:9009", "10.1.1.2:9009", "11.1.1.1:9009"},
@@ -122,7 +122,7 @@ func TestExpandRoutingConfig(t *testing.T) {
 		},
 	}
 	// Base with unspecified + neighbors
-	out := expandRoutingConfig(mockApi, "0.0.0.0", &in)
+	out := expandRoutingConfig(mockAPI, "0.0.0.0", &in)
 	Assert(t, len(out.Spec.BGPConfig.Neighbors) == 2, "did not match number of neighbor %d", len(out.Spec.BGPConfig.Neighbors))
 
 	expSet := mapset.NewSetFromSlice([]interface{}{"12.1.1.2:ipv4-unicast", "12.1.2.2:ipv4-unicast"})
@@ -160,7 +160,7 @@ func TestExpandRoutingConfig(t *testing.T) {
 	}
 
 	// Base with unspecified + neighbors
-	out = expandRoutingConfig(mockApi, "0.0.0.0", &in)
+	out = expandRoutingConfig(mockAPI, "0.0.0.0", &in)
 	Assert(t, len(out.Spec.BGPConfig.Neighbors) == 5, "did not match number of neighbors", len(out.Spec.BGPConfig.Neighbors))
 
 	expSet = mapset.NewSetFromSlice([]interface{}{"12.1.1.2:ipv4-unicast", "12.1.2.2:ipv4-unicast", "10.1.1.1:l2vpn-evpn", "10.1.1.2:l2vpn-evpn", "11.1.1.1:l2vpn-evpn"})
@@ -190,7 +190,7 @@ func TestExpandRoutingConfig(t *testing.T) {
 			},
 		},
 	}
-	out = expandRoutingConfig(mockApi, "0.0.0.0", &in)
+	out = expandRoutingConfig(mockAPI, "0.0.0.0", &in)
 	Assert(t, len(out.Spec.BGPConfig.Neighbors) == 1, "did not match number of neighbors", len(out.Spec.BGPConfig.Neighbors))
 
 	expSet = mapset.NewSetFromSlice([]interface{}{"10.1.1.8:ipv4-unicast"})
@@ -234,7 +234,7 @@ func TestExpandRoutingConfig(t *testing.T) {
 			},
 		},
 	}
-	out = expandRoutingConfig(mockApi, "0.0.0.0", &in)
+	out = expandRoutingConfig(mockAPI, "0.0.0.0", &in)
 	Assert(t, len(out.Spec.BGPConfig.Neighbors) == 6, "did not match number of neighbors", len(out.Spec.BGPConfig.Neighbors))
 
 	expSet = mapset.NewSetFromSlice([]interface{}{"12.1.1.2:ipv4-unicast", "12.1.2.2:ipv4-unicast", "10.1.1.1:l2vpn-evpn", "10.1.1.2:l2vpn-evpn", "11.1.1.1:l2vpn-evpn", "10.1.1.8:l2vpn-evpn"})
@@ -247,7 +247,7 @@ func TestExpandRoutingConfig(t *testing.T) {
 	Assert(t, expSet.Equal(gotSet), "unexected set of neighbort [%v]", gotSet.String())
 
 	// With no Venice Controllers
-	mockApi.cfg.Controllers = nil
+	mockAPI.cfg.Controllers = nil
 	in = netproto.RoutingConfig{
 		Spec: netproto.RoutingConfigSpec{
 			BGPConfig: &netproto.BGPConfig{
@@ -280,7 +280,7 @@ func TestExpandRoutingConfig(t *testing.T) {
 		},
 	}
 
-	out = expandRoutingConfig(mockApi, "0.0.0.0", &in)
+	out = expandRoutingConfig(mockAPI, "0.0.0.0", &in)
 	Assert(t, len(out.Spec.BGPConfig.Neighbors) == 3, "did not match number of neighbors", len(out.Spec.BGPConfig.Neighbors))
 
 	expSet = mapset.NewSetFromSlice([]interface{}{"12.1.1.2:ipv4-unicast", "12.1.2.2:ipv4-unicast", "10.1.1.8:l2vpn-evpn"})

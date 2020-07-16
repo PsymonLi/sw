@@ -178,7 +178,7 @@ func deleteDHCPRelayHandler(infraAPI types.InfraAPI, client halapi.DHCPSvcClient
 func convertIPAMPolicyToDHCPRelay(infraAPI types.InfraAPI, serverIP string, uID, vpcID []byte) (*halapi.DHCPPolicyRequest, error) {
 	// TODO: cleanup this endianness mess !!
 	ip := net.ParseIP(serverIP).To4()
-	pdsIp := (((uint32(ip[0])*256)+uint32(ip[1]))*256+uint32(ip[2]))*256 + uint32(ip[3])
+	pdsIP := (((uint32(ip[0])*256)+uint32(ip[1]))*256+uint32(ip[2]))*256 + uint32(ip[3])
 	var loopbackPdsIP uint32
 	loopbackIP := infraAPI.GetConfig().LoopbackIP
 	if loopbackIP != "" {
@@ -195,7 +195,7 @@ func convertIPAMPolicyToDHCPRelay(infraAPI types.InfraAPI, serverIP string, uID,
 						VPCId: vpcID,
 						ServerIP: &halapi.IPAddress{
 							Af:     halapi.IPAF_IP_AF_INET,
-							V4OrV6: &halapi.IPAddress_V4Addr{V4Addr: pdsIp},
+							V4OrV6: &halapi.IPAddress_V4Addr{V4Addr: pdsIP},
 						},
 						AgentIP: &halapi.IPAddress{
 							Af:     halapi.IPAF_IP_AF_INET,

@@ -72,10 +72,10 @@ func getMetricsKeyFromMac(objval int, mac string) []byte {
 	return output
 }
 
-func queryPDSMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsSvc_MetricsGetClient, metricName string, keyId int) (resp *operdapi.MetricsGetResponse, err error) {
+func queryPDSMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsSvc_MetricsGetClient, metricName string, keyID int) (resp *operdapi.MetricsGetResponse, err error) {
 	//construct metrics request object
 	metricsRequest := &operdapi.MetricsGetRequest{}
-	metricsRequest.Key = getMetricsKeyFromMac(keyId, infraObj.GetDscName())
+	metricsRequest.Key = getMetricsKeyFromMac(keyID, infraObj.GetDscName())
 	metricsRequest.Name = metricName
 
 	//client supports bi-directional stream
@@ -131,8 +131,8 @@ func exportPDSMetrics(resp *operdapi.MetricsGetResponse, metricName string) {
 	//log.Errorf("%v - successfully exported metrics!", metricName)
 }
 
-func processMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsSvc_MetricsGetClient, metricName string, keyId int) {
-	resp, err := queryPDSMetrics(infraObj, metricsClient, metricName, keyId)
+func processMetrics(infraObj types.InfraAPI, metricsClient operdapi.MetricsSvc_MetricsGetClient, metricName string, keyID int) {
+	resp, err := queryPDSMetrics(infraObj, metricsClient, metricName, keyID)
 
 	//validate the response
 	if isValidResponse := validateMetricsResponse(metricName, resp, err); !isValidResponse {

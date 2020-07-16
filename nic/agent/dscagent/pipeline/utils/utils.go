@@ -468,23 +468,23 @@ func ConvertMAC(mac string) string {
 }
 
 // ConvertLocalToVeniceInterfaceName handles conversion from locally used interface names to venice names.
-func ConvertLocalToVeniceInterfaceName(interfaceName, dscId, dscName string) (string, bool) {
+func ConvertLocalToVeniceInterfaceName(interfaceName, dscID, dscName string) (string, bool) {
 	veniceInterfaceName := interfaceName
-	if dscId != "" && dscName != dscId &&
-		!strings.HasPrefix(interfaceName, dscId) {
+	if dscID != "" && dscName != dscID &&
+		!strings.HasPrefix(interfaceName, dscID) {
 		veniceInterfaceName = veniceInterfaceName[12:]
-		veniceInterfaceName = dscId + veniceInterfaceName
+		veniceInterfaceName = dscID + veniceInterfaceName
 		return veniceInterfaceName, true
 	}
 	return veniceInterfaceName, false
 }
 
 // ConvertVeniceToLocalInterfaceName handles conversion from venice interface names to locally used names.
-func ConvertVeniceToLocalInterfaceName(veniceInterfaceName, dscId, dscName string) (string, bool) {
+func ConvertVeniceToLocalInterfaceName(veniceInterfaceName, dscID, dscName string) (string, bool) {
 	interfaceName := veniceInterfaceName
-	if dscId != "" && dscName != dscId &&
-		strings.HasPrefix(interfaceName, dscId) {
-		interfaceName = strings.TrimPrefix(interfaceName, dscId)
+	if dscID != "" && dscName != dscID &&
+		strings.HasPrefix(interfaceName, dscID) {
+		interfaceName = strings.TrimPrefix(interfaceName, dscID)
 		dscName = strings.Join(strings.Split(dscName, "."), "")
 		interfaceName = dscName + interfaceName
 		return interfaceName, true
@@ -601,7 +601,7 @@ type CollectorWalker struct {
 	SessionID   uint64
 }
 
-// ClassifyCollector classifies mirror sessions
+// ClassifyCollectors classifies mirror sessions
 func ClassifyCollectors(infraAPI types.InfraAPI, existingCollectors, mirrorCollectors []netproto.MirrorCollector, existingSessionIDs []uint64) ([]CollectorWalker, []CollectorWalker, []CollectorWalker, []uint64) {
 	var existingWalkers, addedCollectors, deletedCollectors, unchangedCollectors []CollectorWalker
 	var sessionIDs []uint64
@@ -672,6 +672,7 @@ func CollectorsEqual(mc1, mc2 netproto.MirrorCollector) bool {
 	return true
 }
 
+// ConvertUint64ToByteArr converts uint64 to Byte arr
 func ConvertUint64ToByteArr(val uint64) []byte {
 	barr := make([]byte, 8)
 	binary.LittleEndian.PutUint64(barr, val)

@@ -205,6 +205,7 @@ func convertCollector(infraAPI types.InfraAPI, export *Export, vrfID uint64, l2S
 }
 
 // TODO Remove this once the HAL side telemetry code is cleaned up. Agents must not be sending raw packets on sockets
+
 // SendTemplate sends template packets periodically
 func SendTemplate(ctx context.Context, infraAPI types.InfraAPI, destIP net.IP, destPort int, export *Export) {
 	log.Infof("FlowExportPolicy | %s Collector: %s", types.InfoTemplateSendStart, destIP.String())

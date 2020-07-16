@@ -20,7 +20,7 @@ else
 	@${GOIMPORTS_CMD} -w ${DIRS}
 endif
 	$(info +++ revive sources)
-	@revive --formatter friendly ${GOFILES}
+	@revive --config ${GOPATH}/src/github.com/pensando/sw/revive.toml --formatter friendly ${GOFILES}
 
 build:
 	$(info +++ Netagent build)

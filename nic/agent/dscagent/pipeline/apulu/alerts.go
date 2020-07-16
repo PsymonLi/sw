@@ -27,6 +27,7 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 )
 
+// UnhealthyServices var
 var UnhealthyServices []string
 
 // helper function to convert operd alert to venice alert

@@ -211,6 +211,7 @@ func MatchRuleEqual(mr1, mr2 netproto.MatchRule) bool {
 	return true
 }
 
+// GenerateCompositeKey generates a unique key with IP, GWIP
 func GenerateCompositeKey(destIP, gwIP string) string {
 	return destIP + "-" + gwIP
 }

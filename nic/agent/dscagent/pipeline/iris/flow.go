@@ -13,7 +13,7 @@ import (
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 )
 
-// Struct to hold all MatchRule params for CRUDs
+// Flow Struct to hold all MatchRule params for CRUDs
 type Flow struct {
 	matchRules    []netproto.MatchRule
 	mirrorKeys    []*halapi.MirrorSessionKeyHandle

@@ -66,6 +66,7 @@ const (
 	AlgTFTP
 )
 
+// Mirror session direction constants
 const (
 	MirrorDirINGRESS = 1
 	MirrorDirEGRESS  = 2

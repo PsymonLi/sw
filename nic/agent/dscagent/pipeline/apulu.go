@@ -640,7 +640,7 @@ func (a *ApuluAPI) HandleInterface(oper types.Operation, intf netproto.Interface
 	}
 
 	collectorMap := make(map[uint64]int)
-	err = validator.ValidateInterface(a.InfraAPI, intf, collectorMap, apulu.MirrorKeyToSessionIdMapping)
+	err = validator.ValidateInterface(a.InfraAPI, intf, collectorMap, apulu.MirrorKeyToSessionIDMapping)
 	if err != nil {
 		log.Error(err)
 	}
@@ -1162,9 +1162,8 @@ func (a *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror net
 		if err != nil {
 			mirrors = append(mirrors, existingMirrorSession)
 			return mirrors, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	case types.List:
 		//read from BoltDB
 		var mirrorRawArr [][]byte
@@ -1206,7 +1205,7 @@ func (a *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror net
 	defer log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjEnd)
 
 	var halMirrorSessionCount int
-	for _, sessionIds := range apulu.MirrorKeyToSessionIdMapping {
+	for _, sessionIds := range apulu.MirrorKeyToSessionIDMapping {
 		halMirrorSessionCount += len(sessionIds)
 	}
 
@@ -1884,7 +1883,7 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.InterfaceSpec, status *halap
 	return nil
 }
 
-var num int = 0
+var num int
 
 func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.PortStatus) error {
 	a.Lock()
@@ -1953,10 +1952,9 @@ func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.P
 		if err != nil {
 			log.Errorf("Could not parse existing Interface object")
 			return err
-		} else {
-			i.Status.IFUplinkStatus.IPAddress = curIntf.Status.IFUplinkStatus.IPAddress
-			i.Status.IFUplinkStatus.GatewayIP = curIntf.Status.IFUplinkStatus.GatewayIP
 		}
+		i.Status.IFUplinkStatus.IPAddress = curIntf.Status.IFUplinkStatus.IPAddress
+		i.Status.IFUplinkStatus.GatewayIP = curIntf.Status.IFUplinkStatus.GatewayIP
 	}
 
 	// get interface spec to update LLDP neighbor info
@@ -2305,7 +2303,7 @@ func (a *ApuluAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardStatus
 
 func (a *ApuluAPI) updateUplinkIntfHostname(intf *netproto.Interface, obj types.DistributedServiceCardStatus) {
 	log.Infof("Pipeline API: updateUplinkIntfHostname %v (key=%v) | DSCID: %v", intf, intf.UUID, obj.DSCID)
-	intfId, err := uuid.FromString(intf.UUID)
+	intfID, err := uuid.FromString(intf.UUID)
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse netproto port uuid %v, err %v", intf.UUID, err))
 		return
@@ -2329,7 +2327,7 @@ func (a *ApuluAPI) updateUplinkIntfHostname(intf *netproto.Interface, obj types.
 			log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse pds port uuid %v, err %v", i.Spec.GetUplinkSpec().GetPortId(), err))
 			return
 		}
-		if intfId.String() != pid.String() {
+		if intfID.String() != pid.String() {
 			continue
 		}
 
@@ -2471,6 +2469,7 @@ func (a *ApuluAPI) startDynamicWatch(kinds []string) {
 	go startWatcher()
 }
 
+// StartAlertPoliciesWatch starts watcher to watch for alert/event policies & handles alerts.
 func (a *ApuluAPI) startAlertPoliciesWatch() {
 	log.Infof("Initiating alert policy watch")
 	startAlertPolicyWatcher := func() {
