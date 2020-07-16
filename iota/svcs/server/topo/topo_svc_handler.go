@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -19,6 +20,7 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 
 	iota "github.com/pensando/sw/iota/protos/gogen"
+	"github.com/pensando/sw/iota/svcs/common/jobd"
 	dataswitch "github.com/pensando/sw/iota/svcs/common/switch"
 	"github.com/pensando/sw/iota/svcs/server/topo/testbed"
 )
@@ -38,6 +40,8 @@ type testBedInfo struct {
 	id             uint32
 	nativeVlan     uint32
 	switches       []*iota.DataSwitch
+	traceID        string
+	tbCtx          *jobd.TestbedCtx
 }
 
 type FirmwareInfo struct {
@@ -97,6 +101,13 @@ func (ts *TopologyService) InstallImage(ctx context.Context, req *iota.TestBedMs
 	resp := *req
 	log.Infof("TOPO SVC | DEBUG | InstallImage. Received Request Msg: %v", req)
 	defer log.Infof("TOPO SVC | DEBUG | InstallImage Returned: %v", resp)
+
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | Testbed reservation expired")
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
+		return req, nil
+	}
 
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
@@ -234,6 +245,26 @@ func (ts *TopologyService) switchProgrammingRequired(req *iota.TestBedMsg) bool 
 	return false
 }
 
+func (ts *TopologyService) reservationExpired() bool {
+	return ts.tbInfo.tbCtx != nil && ts.tbInfo.tbCtx.IsDone()
+}
+
+func (ts *TopologyService) setupTbContext(testID string) error {
+	var err error
+
+	if ts.tbInfo.tbCtx != nil {
+		ts.tbInfo.tbCtx.Cancel()
+		ts.tbInfo.tbCtx = nil
+	}
+
+	//For now, all jobd reservations has test as prefix
+	if testID != "" && strings.Contains(testID, "test") && !strings.Contains(testID, "target") {
+		ts.tbInfo.tbCtx, err = jobd.GetJobTestContext(testID)
+	}
+
+	return err
+}
+
 // InitTestBed does initiates a test bed
 func (ts *TopologyService) InitTestBed(ctx context.Context, req *iota.TestBedMsg) (*iota.TestBedMsg, error) {
 	log.Infof("TOPO SVC | DEBUG | InitTestBed. Received Request Msg: %v", req)
@@ -241,6 +272,14 @@ func (ts *TopologyService) InitTestBed(ctx context.Context, req *iota.TestBedMsg
 	var vlans []uint32
 	var err error
 	ts.tbInfo.resp = req
+
+	ts.setupTbContext(req.TestbedInstId)
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | InitTestBed | Testbed reservation expired")
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
+		return req, nil
+	}
 
 	if err := ts.downloadImages(); err != nil {
 		log.Errorf("TOPO SVC | InitTestBed | Download images failed. Err: %v", err)
@@ -365,6 +404,13 @@ func (ts *TopologyService) InitTestBed(ctx context.Context, req *iota.TestBedMsg
 
 // GetTestBed gets testbed state
 func (ts *TopologyService) GetTestBed(ctx context.Context, req *iota.TestBedMsg) (*iota.TestBedMsg, error) {
+
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | Testbed reservation expired")
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
+		return req, nil
+	}
 
 	if ts.tbInfo.resp == nil {
 		req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
@@ -519,6 +565,14 @@ func (ts *TopologyService) CleanUpTestBed(ctx context.Context, req *iota.TestBed
 	if len(req.Username) == 0 || len(req.Password) == 0 {
 		req.ApiResponse.ApiStatus = iota.APIResponseType_API_BAD_REQUEST
 		req.ApiResponse.ErrorMsg = fmt.Sprintf("Request must include a user name and password")
+		return req, nil
+	}
+
+	ts.setupTbContext(req.TestbedInstId)
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | Testbed reservation expired")
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
 		return req, nil
 	}
 
@@ -833,6 +887,13 @@ func (ts *TopologyService) ReloadNodes(ctx context.Context, req *iota.ReloadMsg)
 	log.Infof("TOPO SVC | DEBUG | ReloadNodes. Received Request Msg: %v", req)
 	defer log.Infof("TOPO SVC | DEBUG | ReloadNodes Returned: %v", req)
 
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | Testbed reservation expired")
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
+		return req, nil
+	}
+
 	type reloadReq struct {
 		name    string
 		node    testbed.TestNodeInterface
@@ -888,6 +949,13 @@ func (ts *TopologyService) ReloadNodes(ctx context.Context, req *iota.ReloadMsg)
 func (ts *TopologyService) AddWorkloads(ctx context.Context, req *iota.WorkloadMsg) (*iota.WorkloadMsg, error) {
 	log.Infof("TOPO SVC | DEBUG | AddWorkloads. Received Request Msg: %v", req)
 	defer log.Infof("TOPO SVC | DEBUG | AddWorkloads Returned: %v", req)
+
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | Testbed reservation expired")
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
+		return req, nil
+	}
 
 	if req.WorkloadOp != iota.Op_ADD {
 		log.Errorf("TOPO SVC | AddWorkloads | AddWorkloads call failed")
@@ -1225,6 +1293,13 @@ func (ts *TopologyService) Trigger(ctx context.Context, req *iota.TriggerMsg) (*
 	log.Infof("TOPO SVC | DEBUG | Trigger. Received Request Msg: %v", req)
 	defer log.Infof("TOPO SVC | DEBUG | Trigger Returned: %v", req)
 
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | Testbed reservation expired")
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
+		return req, nil
+	}
+
 	if req.TriggerOp == iota.TriggerOp_TYPE_NONE {
 		log.Errorf("TOPO SVC | Trigger | Trigger call failed")
 		req.ApiResponse.ApiStatus = iota.APIResponseType_API_BAD_REQUEST
@@ -1257,6 +1332,13 @@ func (ts *TopologyService) CheckClusterHealth(ctx context.Context, req *iota.Nod
 
 	resp := &iota.ClusterHealthMsg{
 		ApiResponse: &iota.IotaAPIResponse{},
+	}
+
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | Testbed reservation expired")
+		resp.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		resp.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
+		return resp, nil
 	}
 
 	for name, node := range ts.ProvisionedNodes {

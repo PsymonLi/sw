@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -1632,6 +1632,7 @@ func (tb *TestBed) setupTestBed() error {
 
 	dsmap := make(map[string]*iota.DataSwitch)
 	skipSwitch := os.Getenv("SKIP_SWITCH") != ""
+	testBedMsg.TestbedInstId = tb.ID()
 	for _, node := range tb.Nodes {
 		tbn := iota.TestBedNode{
 			Type:          node.Type,

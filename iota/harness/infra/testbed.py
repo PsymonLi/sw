@@ -266,6 +266,7 @@ class _Testbed:
             if nap_sim_img:
                 msg.naples_sim_image = self.__get_full_path(nap_sim_img)
 
+        msg.testbed_inst_id = self.__tbspec.ID
         msg.username = self.__tbspec.Provision.Username
         msg.password = self.__tbspec.Provision.Password
         msg.testbed_id = getattr(self, "__tbid", 1)

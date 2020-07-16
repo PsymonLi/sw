@@ -992,6 +992,9 @@ message TestBedMsg {
 
     //reset nodes, don't install new image
     bool only_reset                     = 16;
+
+    //Testbed InstanceID
+    string testbed_inst_id              = 17;
 }
 
 message TestNodesMsg {
