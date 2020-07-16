@@ -32,6 +32,22 @@ type memClient struct {
 	store map[string]memObj
 }
 
+// PutObjectRateLimiter uploads an object to the object store
+func (m *memClient) PutObjectRateLimiter(ctx context.Context, objectName string, reader io.Reader, metaData map[string]string, rsize int, rduration time.Duration) (int64, error) {
+	defer m.Unlock()
+	m.Lock()
+	o, ok := m.store[objectName]
+	if ok {
+		o.buf.Reset()
+	} else {
+		o.buf = memBuffer{bytes.NewBuffer(nil)}
+		m.store[objectName] = o
+	}
+	o.meta = metaData
+	o.modified = time.Now()
+	return io.Copy(o.buf, reader)
+}
+
 // PutObject uploads an object to the object store
 func (m *memClient) PutObject(ctx context.Context, objectName string, reader io.Reader, metaData map[string]string) (int64, error) {
 	defer m.Unlock()

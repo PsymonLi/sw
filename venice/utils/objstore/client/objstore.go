@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pensando/sw/venice/utils/ratelimit"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -41,6 +43,9 @@ var objsLog = vlog.WithContext("pkg", "objstore")
 type objStoreBackend interface {
 	// PutObject uploads object into the object store
 	PutObject(ctx context.Context, objectName string, reader io.Reader, userMeta map[string]string) (int64, error)
+
+	// PutObjectRateLimiter uploads object into the object store
+	PutObjectRateLimiter(ctx context.Context, objectName string, reader io.Reader, userMeta map[string]string, size uint64) (int64, error)
 
 	// PutObjectOfSize uploads object of size to the object store
 	PutObjectOfSize(ctx context.Context, objectName string, reader io.Reader, size int64, userMeta map[string]string) (int64, error)
@@ -243,6 +248,32 @@ func (c *client) getObjStoreAddr() ([]string, error) {
 	}
 
 	return []string{}, fmt.Errorf("failed to get object store url from resolver")
+}
+
+// PutObjectRateLimiter uploads an object to object store
+// on connect error, this function loops through all available object store back-ends
+// PUT request header is limited to 8 KB in size.
+// Within the PUT request header, the user-defined metadata is limited to 2 KB in size.
+// The size of user-defined metadata is measured by taking the sum of the number of bytes in the
+// UTF-8 encoding of each key and value.
+func (c *client) PutObjectRateLimiter(ctx context.Context, objectName string, reader io.Reader, userMeta map[string]string, rsize int, rduration time.Duration) (int64, error) {
+
+	lreader := ratelimit.NewReader(reader, rsize, rduration)
+	for retry := 0; retry < maxRetry; retry++ {
+		n, err := c.client.PutObjectRateLimiter(ctx, objectName, lreader, userMeta, uint64(rsize))
+		if err == nil {
+			return n, err
+		}
+
+		if !strings.Contains(err.Error(), connectErr) {
+			return 0, err
+		}
+		if err := c.connect(); err != nil {
+			return 0, err
+		}
+	}
+
+	return 0, fmt.Errorf("maximum retries exceeded to upload %s", objectName)
 }
 
 // PutObject uploads an object to object store

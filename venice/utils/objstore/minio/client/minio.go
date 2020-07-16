@@ -75,6 +75,36 @@ func NewClient(url, accessID, secretKey string, tlsConfig *tls.Config, bucketNam
 	return c, nil
 }
 
+// PutObjectRateLimiter uploads an object to object store
+// metadata shouldn't be used for storing large data
+func (c *Client) PutObjectRateLimiter(ctx context.Context, objectName string, reader io.Reader, userMeta map[string]string, size uint64) (int64, error) {
+	// check bucket
+	s, err := c.client.BucketExists(c.bucketName)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get bucket details, err:%s", err)
+	}
+
+	if !s {
+		if err := c.client.MakeBucket(c.bucketName, c.location); err != nil {
+			return 0, err
+		}
+	}
+
+	// update the metadata
+	metaData := map[string]string{}
+	for k, v := range userMeta {
+		// store system meta as is
+		if strings.HasPrefix(strings.ToLower(k), amzPrefix) {
+			metaData[k] = v
+		} else {
+			metaData[amzMetaPrefix+k] = v
+		}
+	}
+
+	n, err := c.client.PutObjectWithContext(ctx, c.bucketName, objectName, reader, -1, minio.PutObjectOptions{UserMetadata: metaData, PartSize: size})
+	return n, err
+}
+
 // PutObject uploads an object to object store
 // metadata shouldn't be used for storing large data
 func (c *Client) PutObject(ctx context.Context, objectName string, reader io.Reader, userMeta map[string]string) (int64, error) {

@@ -13,6 +13,9 @@ type Client interface {
 	// PutObject uploads an object to the object store
 	PutObject(ctx context.Context, objectName string, reader io.Reader, metaData map[string]string) (int64, error)
 
+	// PutObjectRateLimiter uploads an object to the object store
+	PutObjectRateLimiter(ctx context.Context, objectName string, reader io.Reader, metaData map[string]string, rsize int, rduration time.Duration) (int64, error)
+
 	// PutObjectOfSize uploads object of "size' to object store
 	PutObjectOfSize(ctx context.Context, objectName string, reader io.Reader, size int64, metaData map[string]string) (int64, error)
 

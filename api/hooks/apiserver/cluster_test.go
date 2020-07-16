@@ -1372,6 +1372,13 @@ type fakeOclient struct {
 	puts          int
 }
 
+// PutObjectRateLimiter is a mock client implementation
+func (m *fakeOclient) PutObjectRateLimiter(ctx context.Context, objectName string, reader io.Reader, metaData map[string]string, rsize int, rduration time.Duration) (int64, error) {
+	m.puts++
+	return m.written, m.retErr
+
+}
+
 // PutObject is a mock client implementation
 func (m *fakeOclient) PutObject(ctx context.Context, objectName string, reader io.Reader, metaData map[string]string) (int64, error) {
 	m.puts++

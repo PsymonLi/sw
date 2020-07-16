@@ -50,6 +50,19 @@ func (mr *MockobjStoreBackendMockRecorder) PutObject(ctx, objectName, reader, us
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObject", reflect.TypeOf((*MockobjStoreBackend)(nil).PutObject), ctx, objectName, reader, userMeta)
 }
 
+// PutObjectRateLimiter mocks base method
+func (m *MockobjStoreBackend) PutObjectRateLimiter(ctx context.Context, objectName string, reader io.Reader, userMeta map[string]string, size uint64) (int64, error) {
+	ret := m.ctrl.Call(m, "PutObjectRateLimiter", ctx, objectName, reader, userMeta, size)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PutObjectRateLimiter indicates an expected call of PutObjectRateLimiter
+func (mr *MockobjStoreBackendMockRecorder) PutObjectRateLimiter(ctx, objectName, reader, userMeta, size interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObjectRateLimiter", reflect.TypeOf((*MockobjStoreBackend)(nil).PutObjectRateLimiter), ctx, objectName, reader, userMeta, size)
+}
+
 // PutObjectOfSize mocks base method
 func (m *MockobjStoreBackend) PutObjectOfSize(ctx context.Context, objectName string, reader io.Reader, size int64, userMeta map[string]string) (int64, error) {
 	ret := m.ctrl.Call(m, "PutObjectOfSize", ctx, objectName, reader, size, userMeta)

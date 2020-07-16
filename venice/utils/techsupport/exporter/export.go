@@ -7,8 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/pensando/sw/venice/utils/ratelimit"
-
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/objstore/client"
@@ -80,9 +78,7 @@ func SendToVenice(resolver resolver.Interface, source string, vosTarget string) 
 		"techsupport": vosTarget,
 	}
 
-	lreader := ratelimit.NewReader(f, 2*1024*1024, 100*time.Millisecond)
-
-	_, err = client.PutObject(context.Background(), vosTarget, lreader, meta)
+	_, err = client.PutObjectRateLimiter(context.Background(), vosTarget, f, meta, 6*1024*1024, 100*time.Millisecond)
 	if err != nil {
 		log.Errorf("Upload TechSupport: Could not put object [%s] to datastore (%s)", vosTarget, err)
 		return err
