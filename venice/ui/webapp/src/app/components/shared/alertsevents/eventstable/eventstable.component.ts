@@ -16,7 +16,6 @@ import { AlertsEventsSelector } from '@app/components/shared/alertsevents/alerts
 import { IApiStatus } from '@sdk/v1/models/generated/search';
 import { Animations } from '@app/animations';
 import { PrettyDatePipe } from '@app/components/shared/Pipes/PrettyDate.pipe';
-import { AdvancedSearchComponent } from '../../advanced-search/advanced-search.component';
 import { IMonitoringArchiveQuery, MonitoringArchiveRequest, MonitoringArchiveRequestStatus_status, IMonitoringCancelArchiveRequest } from '@sdk/v1/models/generated/monitoring';
 import { ExportLogsComponent } from '../../exportlogs/exportlogs.component';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
@@ -24,6 +23,7 @@ import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
+import { TimeRangeComponent } from '@app/components/shared/timerange/timerange.component';
 
 @Component({
   selector: 'app-eventstable',
@@ -32,9 +32,8 @@ import { Eventtypes } from '@app/enum/eventtypes.enum';
   animations: [Animations],
   encapsulation: ViewEncapsulation.None
 })
-export class EventstableComponent extends DataComponent implements OnInit, OnChanges, AfterViewInit, DoCheck {
-
-  @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
+export class EventstableComponent extends DataComponent implements OnInit, OnChanges, OnDestroy, DoCheck {
+  @ViewChild('timeRangeComponent') timeRangeComponent: TimeRangeComponent;
   @ViewChild('exportLogsComponent') exportLogsComponent: ExportLogsComponent;
   @ViewChild('eventsTable') eventsTable: PentableComponent;
 
@@ -57,8 +56,6 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   eventsSubscription: Subscription;
   eventSearchFormControl: FormControl = new FormControl();
   severityEnum = EventsEventAttributes_severity;
-  eventFieldSelectorOutput: any;
-  currentSearchCriteria: string = '';
   fieldFormArray = new FormArray([]);
   eventArchiveQuery: IMonitoringArchiveQuery = {};
   watchArchiveSubscription: Subscription;
@@ -68,7 +65,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   eventsLoading = false;
 
   // Holds all events
-  events: EventsEvent[] = [];
+  events: ReadonlyArray<EventsEvent> = [];
   // Contains the total number of events.
   // Count does not include debug events if show debug events is not selected
   eventsTotalCount = 0;
@@ -80,7 +77,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   // holds a subset (possibly all) of this.events
   // This are the events that will be displayed
   dataObjects: EventsEvent[] = [];
-  persistentEvents: EventsEvent[] = [];
+  dataObjectsBackup: EventsEvent[] = [];
 
   eventsPostBody: IApiListWatchOptions = { 'sort-order': ApiListWatchOptions_sort_order.none };
 
@@ -92,12 +89,12 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   // All columns are set as not sortable as it isn't currently supported
   // TODO: Support sorting columns
   cols: TableCol[] = [
-    { field: 'severity', header: 'Severity', class: '', sortable: false, width: 10 },
-    { field: 'type', header: 'Type', class: '', sortable: true, width: 8 },
-    { field: 'message', header: 'Message', class: '', sortable: false, width: 30 },
-    { field: 'object-ref', header: 'Object Ref', class: '', sortable: false, width: 10 },
+    { field: 'severity', header: 'Severity', class: '', sortable: false, width: 6 },
+    { field: 'type', header: 'Type', class: '', sortable: true, width: 15 },
+    { field: 'message', header: 'Message', class: '', sortable: false, width: 25 },
+    { field: 'object-ref', header: 'Object Ref', class: '', sortable: false, width: 18 },
     { field: 'count', header: 'Count', class: '', sortable: false, width: 5 },
-    { field: 'source', header: 'Source Node & Component', class: '', sortable: false, width: 25},
+    { field: 'source', header: 'Source Node & Component', class: '', sortable: false, width: 18},
     { field: 'meta.mod-time', header: 'Time', class: '', sortable: true, width: 12 }
   ];
 
@@ -131,10 +128,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   };
 
   selectedEvent: EventsEvent = null;
-  maxRecords: number = 4000;
-
-  startingSortField: string = 'meta.mod-time';
-  startingSortOrder: number = -1;
+  maxSearchRecords: number = 4000;
 
   displayArchPanel: boolean = false;
   archiveRequestsEventUtility: HttpEventUtility<MonitoringArchiveRequest>;
@@ -150,7 +144,6 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   requestName: string = '';
   firstElem: MonitoringArchiveRequest = null;
   advSearchCols: TableCol[] = [];
-  eventsTimeBased: EventsEvent[] = [];
 
   constructor(protected eventsService: EventsService,
     protected searchService: SearchService,
@@ -172,46 +165,36 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     this.eventsTable.selectedDataObjects = [];
   }
 
-  ngAfterViewInit() {
-    // Advanced search panel will only be shown for Alertseventspage HTML and when the user has archive permissions
-    if (this.showEventsAdvSearch) {
-      setTimeout(() => {
-        this.getAdvSearchEvents(this.startingSortField, this.startingSortOrder);
-      });
-    }
-  }
-
   ngOnInit() {
     this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
       'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
     });
     if (this.showEventsAdvSearch) {
-      this.populateFieldSelector();
       this.buildAdvSearchCols();
       this.watchArchiveObject();
-    } else {
-      this.genQueryBodies();
-      // Disabling search to reduce scope for august release
-      // Adding <any> to prevent typescript compilation from failing due to unreachable code
-      if (<any>false) {
-        // After user stops typing for 1 second, we invoke a search request to elastic
-        const subscription =
-          this.eventSearchFormControl.valueChanges.pipe(
-            debounceTime(1000),
-            distinctUntilChanged()
-          ).subscribe(
-            value => {
-              this.invokeEventsSearch();
-            }
-          );
-        this.subscriptions.push(subscription);
-      }
-
-      // If get alerts/events wasn't triggered by on change
-      if (!this.eventsSubscription) {
-        this.getEvents();
-      }
     }
+    this.genQueryBodies();
+    // Disabling search to reduce scope for august release
+    // Adding <any> to prevent typescript compilation from failing due to unreachable code
+    if (<any>false) {
+      // After user stops typing for 1 second, we invoke a search request to elastic
+      const subscription =
+        this.eventSearchFormControl.valueChanges.pipe(
+          debounceTime(1000),
+          distinctUntilChanged()
+        ).subscribe(
+          value => {
+            this.invokeEventsSearch();
+          }
+        );
+      this.subscriptions.push(subscription);
+    }
+
+    // If get alerts/events wasn't triggered by on change
+    if (!this.eventsSubscription) {
+      this.getEvents();
+    }
+
     if (this.searchedEvent) {
       this.getSearchedEvent();
     }
@@ -365,65 +348,33 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     this.displayArchPanel = true;
   }
 
-  getAdvSearchEvents(field = this.eventsTable.sortField, order = this.eventsTable.sortOrder) {
-    this.eventsLoading = true;
-    try {
-        const searchSearchRequest = this.advancedSearchComponent.getSearchRequest(field, order, 'Event', false, this.maxRecords);
-        this.advancedSearchComponent.emitArchiveQuery();
-        this._callSearchRESTAPI(searchSearchRequest);
-      } catch (error) {
-        this.controllerService.invokeErrorToaster('Input Error', error.toString());
-      }
-  }
-
-  private _callSearchRESTAPI(searchSearchRequest: SearchSearchRequest) {
-    const subscription = this.searchService.PostQuery(searchSearchRequest).subscribe(
-
-      response => {
-        const data: SearchSearchResponse = response.body as SearchSearchResponse;
-        let objects = data.entries;
-        if (!objects || objects.length === 0) {
-          this.controllerService.invokeInfoToaster('Information', 'No Events found. Please change search criteria.');
-          objects = [];
-        }
-        const entries = [];
-        for (let k = 0; k < objects.length; k++) {
-          entries.push(objects[k].object); // objects[k] is a SearchEntry object
-        }
-        this.persistentEvents = entries;
-        this.eventsLoading = false;
-        this.countOnValidation(this.combineEvents());
-      },
-      (error) => {
-        this.eventsLoading = false;
-        this.controllerService.invokeRESTErrorToaster('Failed to get events', error);
-      }
-    );
-    this.subscriptions.push(subscription);
-  }
-
-  /**
-   * This serves HTML template
-   * @param $event
-   */
-  handleFieldRepeaterData(values) {
-    this.eventFieldSelectorOutput = values;
-  }
-
-  populateFieldSelector() {
-    this.fieldFormArray = new FormArray([]);
-  }
-
   /**
    * This serves HTML API. It clear audit-event search and refresh data.
    * @param $event
    */
-  onCancelEventSearch($event) {
-    this.currentSearchCriteria = '';
-    this.currentEventSeverityFilter = null;
-    this.populateFieldSelector();
-    this.getAdvSearchEvents();
+  onCancelSearch($event) {
     this.controllerService.invokeInfoToaster('Infomation', 'Cleared search criteria, events refreshed.');
+    this.events = this.dataObjectsBackup;
+    this.setEventNumbersObject();
+    this.filterEvents();
+  }
+
+   /**
+   * Execute table search
+   * @param field
+   * @param order
+   */
+  onSearchEvents(field = this.eventsTable.sortField, order = this.eventsTable.sortOrder) {
+    this.eventsLoading = true;
+    const searchResults = this.onSearchDataObjects(field, order, 'Event', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackup, this.eventsTable.advancedSearchComponent);
+    if (searchResults && searchResults.length > 0) {
+      this.events = searchResults;
+      this.currentEventSeverityFilter = null;
+      this.setEventNumbersObject();
+      this.filterEvents();
+    } else {
+      this.eventsLoading = false;
+    }
   }
 
   getSearchedEvent() {
@@ -443,40 +394,47 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     this.selectedEvent = null;
   }
 
-  countOnValidation(data) {
-    if (data == null) {
-      return;
-    }
-    // Check that there is new data
-    if (this.events.length === data.length) {
-      // Both sets of data are empty
-      if (this.events.length === 0) {
-        return;
-      }
-    }
-    this.events = data;
+  setEventNumbersObject() {
     // Reset counters
     Object.keys(EventsEvent_severity).forEach(severity => {
       this.eventNumbers[severity] = 0;
     });
-    data.forEach(event => {
+    this.events.forEach(event => {
       this.eventNumbers[event.severity] += 1;
     });
-    this.filterEvents();
   }
 
   getEvents() {
-    if (!this.showEventsAdvSearch) {
-      if (this.eventsSubscription) {
-        this.eventsSubscription.unsubscribe();
-        this.eventsService.pollingUtility.terminatePolling(this.pollingServiceKey, true);
-      }
-      this.eventsSubscription = this.eventsService.pollEvents(this.pollingServiceKey, this.eventsPostBody).subscribe(
-        (data) => {
-          this.countOnValidation(data);
-        }
-      );
+    this.eventsLoading = true;
+    if (this.eventsSubscription) {
+      this.eventsSubscription.unsubscribe();
+      this.eventsService.pollingUtility.terminatePolling(this.pollingServiceKey, true);
     }
+    this.eventsSubscription = this.eventsService.pollEvents(this.pollingServiceKey, this.eventsPostBody).subscribe(
+      (data) => {
+        if (this.showEventsAdvSearch) {
+          this.eventsTable.clearSearch();
+        }
+        if (data == null) {
+          return;
+        }
+        // Check that there is new data
+        if (this.events.length === data.length) {
+          // Both sets of data are empty
+          if (this.events.length === 0) {
+            return;
+          }
+        }
+        this.events = data;
+        this.dataObjectsBackup = Utility.getLodash().cloneDeepWith(this.events) as EventsEvent[];
+        this.setEventNumbersObject();
+        this.filterEvents();
+      },
+      (error) => {
+        this.eventsLoading = false;
+        this.controllerService.webSocketErrorHandler('Failed to get Events');
+      }
+    );
   }
 
   /**
@@ -499,51 +457,16 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   }
 
   showDebugPressed() {
-    if (!this.showEventsAdvSearch) {
-      this.genQueryBodies();
-      this.getEvents();
-    } else {
-      this.countOnValidation(this.events);
-    }
-  }
-
-  /**
-   * Combines results based on time and advanced search
-   */
-  combineEvents(): EventsEvent[] {
-    const eventsMeta: string[] = [];
-    const resultObjects: EventsEvent[] = [];
-
-    this.persistentEvents.forEach(eve => eventsMeta.push(eve.meta.name));
-    this.eventsTimeBased.forEach(res => {
-      if (eventsMeta.includes(res.meta.name)) {
-        resultObjects.push(res);
-      }
-    });
-    return resultObjects;
+    this.filterEvents();
   }
 
   filterEvents() {
-    this.eventsLoading = true;
-    // We put the filtering into a set timeoute so that it gets pushed to the end of
-    // the micro task queue.
-    // Otherwise, the table rendering of the items happens before the user's action on the checkbox
-    // becomes visible. This allows the checkbox animation to happen immediately, and then we render
-    // the new table.
-    setTimeout(() => {
-      // checking whether to show debug events
-      if (this.showDebugEvents) {
-        this.dataObjects = this.events;
-      } else {
-        this.dataObjects = this.events.filter(item => item.severity !== EventsEvent_severity.debug);
-      }
-      this.eventsTotalCount = this.dataObjects.length;
-      if (this.currentEventSeverityFilter != null) {
-        this.dataObjects = this.dataObjects.filter(item => item.severity === this.currentEventSeverityFilter);
-      }
-
-      this.eventsLoading = false;
-    }, 0);
+    this.dataObjects = (this.showDebugEvents ? this.events : this.events.filter(item => item.severity !== EventsEvent_severity.debug)) as EventsEvent[];
+    this.eventsTotalCount = this.dataObjects.length;
+    if (this.currentEventSeverityFilter != null) {
+      this.dataObjects = this.dataObjects.filter(item => item.severity === this.currentEventSeverityFilter);
+    }
+    this.eventsLoading = false;
   }
 
   /**
@@ -559,7 +482,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     if (this.currentEventSeverityFilter == null &&
       (this.eventSearchFormControl.value == null ||
         this.eventSearchFormControl.value.trim().length === 0)) {
-      this.dataObjects = this.events;
+      this.dataObjects = this.events as EventsEvent[];
       return;
     }
 
@@ -617,35 +540,15 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   setEventsTimeRange(timeRange: TimeRange) {
     // update query and call getEvents
     setTimeout(() => {
-      this.eventsSelectedTimeRange = timeRange;
-      const start = this.eventsSelectedTimeRange.getTime().startTime.toISOString() as any;
-      const end = this.eventsSelectedTimeRange.getTime().endTime.toISOString() as any;
-      this.eventsTimeConstraints = 'meta.creation-time<' + end + ',' + 'meta.creation-time>' + start;
-      if (this.showEventsAdvSearch) {
-        this.genTimeBasedSearch();
-      } else {
+      if (this.timeRangeComponent.allowTimeRangeEvent) {
+        this.eventsSelectedTimeRange = timeRange;
+        const start = this.eventsSelectedTimeRange.getTime().startTime.toISOString() as any;
+        const end = this.eventsSelectedTimeRange.getTime().endTime.toISOString() as any;
+        this.eventsTimeConstraints = 'meta.creation-time<' + end + ',' + 'meta.creation-time>' + start;
         this.genQueryBodies();
         this.getEvents();
       }
     }, 0);
-  }
-
-  genTimeBasedSearch() {
-    this.eventsSubscription = this.eventsService.PostGetEvents({'field-selector': this.eventsTimeConstraints}).subscribe(
-      (response) => {
-        const data: EventsEventList = response.body as EventsEventList;
-        this.eventsTimeBased = [];
-        if (data.items !== undefined && data.items !== null) {
-          this.eventsTimeBased = data.items;
-        }
-        // When page is loaded, this function is called before advanced search. At that time calling combineEvents doesn't make sense
-        this.eventsTimeBased = this.persistentEvents.length !== 0 ? this.combineEvents() : this.eventsTimeBased;
-        this.countOnValidation(this.eventsTimeBased);
-      },
-      (error) => {
-        this.controllerService.invokeRESTErrorToaster('Failed to get events', error);
-      }
-    );
   }
 
   genQueryBodies() {
@@ -657,9 +560,6 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     }
     if (this.eventsTimeConstraints.length) {
       fieldSelectorOptions.push(this.eventsTimeConstraints);
-    }
-    if (!this.showDebugEvents) {
-      fieldSelectorOptions.push('severity!=debug');
     }
 
     this.eventsPostBody = {
@@ -675,11 +575,9 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   }
 
   ngOnChanges(change: SimpleChanges) {
-    if (!this.showEventsAdvSearch) {
-      if (change.selector) {
-        this.genQueryBodies();
-        this.getEvents();
-      }
+    if (change.selector) {
+      this.genQueryBodies();
+      this.getEvents();
     }
     if (change.searchedEvent && this.searchedEvent) {
       this.getSearchedEvent();

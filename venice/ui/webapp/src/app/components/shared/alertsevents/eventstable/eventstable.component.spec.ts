@@ -128,7 +128,7 @@ describe('EventstableComponent', () => {
   });
 
   it('should have events in the table', <any>fakeAsync(() => {
-    expect(eventsService.pollEvents).toHaveBeenCalledWith('alertsevents', { 'sort-order': ApiListWatchOptions_sort_order.none, 'field-selector': 'severity!=debug' });
+    expect(eventsService.pollEvents).toHaveBeenCalledWith('alertsevents', { 'sort-order': ApiListWatchOptions_sort_order.none, 'field-selector': '' });
     // Switch to the events tab
     // const tabs = fixture.debugElement.queryAll(By.css('.mat-tab-label'));
     // expect(tabs.length).toBe(2);

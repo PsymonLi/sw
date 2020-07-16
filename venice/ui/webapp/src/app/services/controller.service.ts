@@ -481,8 +481,9 @@ export class ControllerService {
       return;
     }
 
-    if ( !error.statusCode && !error.body) {
-      this.invokeErrorToaster(summary, error.toString());
+    if (!error.statusCode && !error.body) {
+      const errorMsg = Utility.getLodash().isObject(error) ? JSON.stringify(error) : error.toString();
+      this.invokeErrorToaster(summary, errorMsg);
       return;
     }
 

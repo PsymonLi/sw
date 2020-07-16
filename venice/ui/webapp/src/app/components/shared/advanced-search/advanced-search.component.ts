@@ -432,6 +432,7 @@ export class AdvancedSearchComponent implements OnInit, OnChanges {
 
     if (kind === 'AuditEvent' || kind === 'Event') {
       this.generateArchiveQuery(searchSearchRequest);
+      this.archiveQuery.emit(this.searchArchiveQuery);
     }
 
     searchSearchRequest.query.kinds = [kind];
@@ -447,10 +448,6 @@ export class AdvancedSearchComponent implements OnInit, OnChanges {
     this.searchArchiveQuery.fields = searchReq.query.fields;
     this.searchArchiveQuery.labels = searchReq.query.labels;
     this.searchArchiveQuery.texts = searchReq.query.texts;
-  }
-
-  emitArchiveQuery() {
-    this.archiveQuery.emit(this.searchArchiveQuery);
   }
 
   /**

@@ -52,6 +52,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Input() sortField: string = 'meta.mod-time';
   @Input() sortOrder: number = -1;
 
+  @Output() archiveQueryEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() operationOnMultiRecordsComplete: EventEmitter<any> = new EventEmitter<any>();
   @Output() rowClickEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() rowSelectedEmitter: EventEmitter<any> = new EventEmitter<any>();
@@ -182,6 +183,10 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       selKey.add(Utility.getObjectValueByPropertyPath(obj, this.dataKey, false));
     });
     return selKey;
+  }
+
+  getArchiveQuery(event) {
+    this.archiveQueryEmitter.emit(event);
   }
 
   isSuperset(set: any, subset: any) {
@@ -421,7 +426,9 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   }
 
   clearSearch() {
-    this.advancedSearchComponent.clearSearchForm();
+    if (this.advancedSearchComponent) {
+      this.advancedSearchComponent.clearSearchForm();
+    }
     this.controllerService.navigate([], { queryParams: null });
     this.reset();
   }

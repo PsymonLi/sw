@@ -49,10 +49,10 @@ export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest,
   }
 
   genFormattedJSON() {
-    if (this.archiveQuery.fields !== undefined && this.archiveQuery.fields !== null && this.archiveQuery.fields.requirements !== undefined && this.archiveQuery.fields.requirements !== null && this.archiveQuery.fields.requirements.length === 0 && this.archiveQuery.labels.requirements.length === 0 && this.archiveQuery.texts.length === 1 && this.archiveQuery.texts[0].text.length === 0) {
+    if ((Object.keys(this.archiveQuery).length === 0) || (this.archiveQuery.fields !== undefined && this.archiveQuery.fields !== null && this.archiveQuery.fields.requirements !== undefined && this.archiveQuery.fields.requirements !== null && this.archiveQuery.fields.requirements.length === 0 && this.archiveQuery.labels.requirements.length === 0 && this.archiveQuery.texts.length === 1 && this.archiveQuery.texts[0].text.length === 0)) {
       this.archiveQueryFormatted = 'No Query Specified!';
     } else {
-      this.archiveQueryFormatted = JSON.stringify(this.archiveQuery, null, 1);
+      this.archiveQueryFormatted = JSON.stringify(Utility.trimUIFields(this.archiveQuery), null, 1);
     }
   }
 

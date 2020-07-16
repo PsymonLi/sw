@@ -29,6 +29,7 @@
       </ng-container>
       <div *ngIf="searchable">
         <app-advanced-search #advancedSearchComponent
+                             (archiveQuery)="getArchiveQuery($event)"
                              (cancelEmitter)="onSearchCancelled()"
                              [cols]="searchCols"
                              [formArray]="searchFormArray"

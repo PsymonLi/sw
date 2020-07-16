@@ -20,7 +20,9 @@
       </div>
     </div>
   </div>
-  <app-pentable #eventsTable style="height: 100%" [bodyTemplate]="bodyTemplate"
+  <app-pentable #eventsTable style="height: 100%"
+                (archiveQueryEmitter)="getArchiveQuery($event)"
+                [bodyTemplate]="bodyTemplate"
                 [captionTemplate]="captionTemplate"
                 [columns]="cols"
                 [createTemplate]="createTemplate"
@@ -31,7 +33,13 @@
                 [loading]="eventsLoading"
                 [numRows]="25"
                 (rowClickEmitter)="selectEvent($event)"
-                [rowHeight]="36">
+                [rowHeight]="36"
+                [searchable]="showEventsAdvSearch"
+                (searchCancelledEmitter)="onCancelSearch($event)"
+                [searchCols]="advSearchCols"
+                (searchEmitter)="onSearchEvents()"
+                [searchFormArray]="fieldFormArray"
+                searchKind="Event">
   </app-pentable>
 </div>
 
@@ -85,22 +93,12 @@
                     labelStyleClass="alertsevents-checkbox-label" binary="true"
                     label="Show Debug Events"
                     [(ngModel)]="showDebugEvents" (onChange)="showDebugPressed()"></p-checkbox>
-        <app-timerange fxFlex="nogrow"
+        <app-timerange #timeRangeComponent fxFlex="nogrow"
                        [selectedTimeRange]="eventsSelectedTimeRange"
                        (timeRange)="setEventsTimeRange($event)"
                        [hiddenTimeRangeOptions]="['Previous month']"></app-timerange>
       </div>
     </app-tableheader>
-    <div *ngIf="showEventsAdvSearch" style="border-top: 1px solid #d9d9d9;">
-      <app-advanced-search #advancedSearchComponent
-                           (repeaterValues)="handleFieldRepeaterData($event)"
-                           [formArray]="fieldFormArray" [cols]="advSearchCols"
-                           (archiveQuery)="getArchiveQuery($event)"
-                           (cancelEmitter)="onCancelEventSearch($event)"
-                           (searchEmitter)="getAdvSearchEvents()"
-                           kind="Event" fxFlex="grow">
-      </app-advanced-search>
-    </div>
   </div>
 </ng-template>
 

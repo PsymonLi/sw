@@ -102,7 +102,7 @@ export class AuditeventsComponent extends TablevieweditAbstract<IAuditAuditEvent
   exportMap: CustomExportMap = {
     'client-ips': (opts) => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      return Array.isArray(opts.data) ? value.join(',') : value;
+      return Array.isArray(value) ? value.join(',') : value;
     },
   };
 
@@ -341,7 +341,6 @@ export class AuditeventsComponent extends TablevieweditAbstract<IAuditAuditEvent
     this.loading = true;
     try {
       const searchSearchRequest = this.advancedSearchComponent.getSearchRequest(field, order, 'AuditEvent', false, this.maxRecords);
-      this.advancedSearchComponent.emitArchiveQuery();
       this._callSearchRESTAPI(searchSearchRequest);
     } catch (error) {
       this.controllerService.invokeErrorToaster('Input Error', error.toString());
