@@ -3,11 +3,11 @@ package alertmgr
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
+	"net"
+	"strings"
 	"sync"
 	"testing"
-
-	uuid "github.com/satori/go.uuid"
+	"time"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
@@ -17,7 +17,6 @@ import (
 	"github.com/pensando/sw/venice/ctrler/alertmgr"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/certs"
-	"github.com/pensando/sw/venice/utils/elastic"
 	"github.com/pensando/sw/venice/utils/events"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/log"
@@ -38,20 +37,21 @@ var (
 
 // tInfo represents test info.
 type tInfo struct {
-	logger            log.Logger
-	mockResolver      *mockresolver.ResolverClient // resolver
-	alertmgr          alertmgr.Interface           // events manager to write events to elastic
-	esClient          elastic.ESClient             // elastic client to verify the results
-	elasticsearchAddr string                       // elastic address
-	elasticsearchName string                       // name of the elasticsearch server name; used to stop the server
-	elasticsearchDir  string                       // name of the directory where Elastic credentials and logs are stored
-	recorders         *recorders
-	apiServer         apiserver.Server    // venice API server
-	apiServerAddr     string              // API server address
-	signer            certs.CSRSigner     // function to sign CSRs for TLS
-	trustRoots        []*x509.Certificate // trust roots to verify TLS certs
-	apiClient         apiclient.Services
-	testName          string
+	logger          log.Logger
+	mockResolver    *mockresolver.ResolverClient // resolver
+	alertmgr        alertmgr.Interface
+	recorders       *recorders
+	apiServer       apiserver.Server    // venice API server
+	apiServerAddr   string              // API server address
+	signer          certs.CSRSigner     // function to sign CSRs for TLS
+	trustRoots      []*x509.Certificate // trust roots to verify TLS certs
+	apiClient       apiclient.Services
+	tcpListener     net.Listener
+	tcpSyslogPort   string
+	tcpSyslogCh     chan string
+	tcpSyslogDoneCh chan struct{}
+
+	testName string
 }
 
 // list of recorders belonging to the test
@@ -89,24 +89,27 @@ func (t *tInfo) setup(tst *testing.T) error {
 
 	t.recorders = &recorders{}
 
-	// start elasticsearch
-	if err = t.startElasticsearch(); err != nil {
-		t.logger.Errorf("failed to start elasticsearch, err: %v", err)
-		return err
-	}
-
-	// create elasticsearch client
-	if err = t.createElasticClient(); err != nil {
-		t.logger.Errorf("failed to create elasticsearch client, err: %v", err)
-		return err
-	}
-
 	// start API server
 	if err = t.startAPIServer(tst.Name()); err != nil {
 		t.logger.Errorf("failed to start API server, err: %v", err)
 		return err
 	}
-	t.logger.Errorf("started API server, err: %v", err)
+	t.logger.Infof("started API server, err: %v", err)
+
+	// Start TCP server for syslog.
+	ln, tcpSyslogCh, err := serviceutils.StartTCPServer(":0", 100, 0)
+	if err != nil {
+		t.logger.Errorf("failed to start tcp syslog server, err: %v", err)
+		return err
+	}
+
+	tmp := strings.Split(ln.Addr().String(), ":")
+	t.tcpListener, t.tcpSyslogCh, t.tcpSyslogPort = ln, tcpSyslogCh, tmp[len(tmp)-1]
+	t.tcpSyslogDoneCh = make(chan struct{})
+	t.logger.Infof("Started TCP syslog server at %v", t.tcpSyslogPort)
+
+	// start tcp syslog receiver
+	go t.tcpSyslogReceiver()
 
 	// start alertmgr
 	amgr, err := alertmgr.New(t.logger, t.mockResolver)
@@ -118,6 +121,7 @@ func (t *tInfo) setup(tst *testing.T) error {
 
 	// Run alertsmgr
 	go amgr.Run(nil)
+	time.Sleep(1 * time.Second)
 
 	return nil
 }
@@ -133,12 +137,6 @@ func (t *tInfo) teardown() {
 		t.apiClient = nil
 	}
 
-	if t.esClient != nil {
-		t.esClient.Close()
-	}
-
-	testutils.StopElasticsearch(t.elasticsearchName, t.elasticsearchDir)
-
 	if t.apiServer != nil {
 		t.apiServer.Stop()
 		t.apiServer = nil
@@ -151,6 +149,8 @@ func (t *tInfo) teardown() {
 		t.mockResolver.Stop()
 		t.mockResolver = nil
 	}
+	close(t.tcpSyslogDoneCh)
+	t.tcpListener.Close()
 
 	t.logger.Infof("completed test")
 }
@@ -199,27 +199,6 @@ func (t *tInfo) updateResolver(serviceName, url string) {
 	})
 }
 
-// createElasticClient helper function to create elastic client
-func (t *tInfo) createElasticClient() error {
-	var err error
-	t.esClient, err = testutils.CreateElasticClient(t.elasticsearchAddr, t.mockResolver, t.logger, t.signer, t.trustRoots)
-	return err
-}
-
-// startElasticsearch helper function to start elasticsearch
-func (t *tInfo) startElasticsearch() error {
-	var err error
-	t.elasticsearchName = uuid.NewV4().String()
-	t.elasticsearchAddr, t.elasticsearchDir, err = testutils.StartElasticsearch(t.elasticsearchName, t.elasticsearchDir, t.signer, t.trustRoots)
-	if err != nil {
-		return fmt.Errorf("failed to start elasticsearch, err: %v", err)
-	}
-
-	// add mock elastic service to mock resolver
-	t.updateResolver(globals.ElasticSearch, t.elasticsearchAddr)
-	return nil
-}
-
 // removeResolverEntry helper function to remove entry from mock resolver
 func (t *tInfo) removeResolverEntry(serviceName, url string) {
 	t.mockResolver.DeleteServiceInstance(&types.ServiceInstance{
@@ -241,5 +220,15 @@ func (r *recorders) close() {
 
 	for _, re := range r.list {
 		re.Close()
+	}
+}
+
+func (t *tInfo) tcpSyslogReceiver() {
+	for {
+		select {
+		case <-t.tcpSyslogCh:
+		case <-t.tcpSyslogDoneCh:
+			return
+		}
 	}
 }

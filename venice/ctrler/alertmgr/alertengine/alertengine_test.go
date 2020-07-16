@@ -142,13 +142,14 @@ func TestRun(t *testing.T) {
 	ae.ctx, ae.cancel = context.WithCancel(context.Background())
 
 	defer func() {
-		ae.cancel()
+		mapi.EXPECT().Close().Times(1)
+		ae.Stop()
 		time.Sleep(100 * time.Millisecond)
 		Assert(t, !ae.GetRunningStatus(), "running flag still set")
 	}()
 
 	inCh := make(chan *policyengine.PEOutput)
-	outCh, errCh, err := ae.Run(ae.ctx, nil, inCh)
+	outCh, errCh, err := ae.Run(ae.ctx, mapi, inCh)
 	time.Sleep(100 * time.Millisecond)
 
 	AssertOk(t, err, "Error running alert engine")

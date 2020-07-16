@@ -20,6 +20,7 @@ import (
 	"github.com/pensando/sw/venice/utils/kvstore"
 	mockkvs "github.com/pensando/sw/venice/utils/kvstore/mock"
 	"github.com/pensando/sw/venice/utils/log"
+	mockresolver "github.com/pensando/sw/venice/utils/resolver/mock"
 	"github.com/pensando/sw/venice/utils/runtime"
 	. "github.com/pensando/sw/venice/utils/testutils"
 	"github.com/pensando/sw/venice/utils/testutils/policygen"
@@ -30,6 +31,8 @@ var (
 	logger    = log.SetConfig(logConfig)
 	ctrl      *gomock.Controller
 	w         *watcher
+	mr        = mockresolver.New()
+	mapi      *mockapi.MockServices
 )
 
 func setup(t *testing.T) {
@@ -38,7 +41,7 @@ func setup(t *testing.T) {
 
 	// Set up watcher.
 	objdb := objectdb.New()
-	wi, err := New(objdb, tLogger)
+	wi, err := New(objdb, mr, tLogger)
 	AssertOk(t, err, "NewWatcher failed")
 	w = wi.(*watcher)
 	w.ctx, w.cancel = context.WithCancel(context.Background())
@@ -96,8 +99,7 @@ func (m *mockMonitoringV1) Watch(ctx context.Context, options *api.ListWatchOpti
 
 func createMockServices(t *testing.T) {
 	ctrl = gomock.NewController(t)
-
-	mapi := mockapi.NewMockServices(ctrl)
+	mapi = mockapi.NewMockServices(ctrl)
 	w.apiClient = mapi
 
 	groupMap := runtime.GetDefaultScheme().Kinds()
@@ -140,7 +142,7 @@ func TestWatcherStart(t *testing.T) {
 	setup(t)
 	Assert(t, w != nil, "nil watcher")
 
-	ctrl := gomock.NewController(t)
+	ctrl = gomock.NewController(t)
 	defer ctrl.Finish()
 
 	// Alert policy watcher.
@@ -155,7 +157,6 @@ func TestWatcherStart(t *testing.T) {
 	alrtEvent.EXPECT().EventChan().Return(alrtCh).Times(1)
 	alrtEvent.EXPECT().Stop().Return().Times(1)
 
-	mapi := mockapi.NewMockServices(ctrl)
 	w.apiClient = mapi
 
 	w.ctx, w.cancel = context.WithCancel(context.Background())
@@ -219,6 +220,7 @@ func TestWatcherRun(t *testing.T) {
 
 	// Create mock services.
 	createMockServices(t)
+	defer mapi.EXPECT().Close().Times(1)
 
 	// Run watcher.
 	outCh, errCh, err := w.Run(w.ctx, w.apiClient)

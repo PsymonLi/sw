@@ -194,6 +194,9 @@ func (pe *policyEngine) processWatchEvent(wEvent *kvstore.WatchEvent) (*PEOutput
 	case *monitoring.Alert:
 		// Pass to output channel.
 
+	case *monitoring.AlertDestination:
+		// Pass to output channel.
+
 	case *monitoring.AlertPolicy:
 		res := obj.(*monitoring.AlertPolicy).Spec.Resource
 		if res != "Event" {

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
+
 	"github.com/golang/mock/gomock"
 
 	"github.com/pensando/sw/api"
@@ -42,11 +44,13 @@ var (
 	mapi        *mockapi.MockServices
 	mpol        *mockAlertPolicy
 	malert      *mockAlert
+	malertDest  *mockAlertDest
 	pol         *monitoring.AlertPolicy
 	dsc         *cluster.DistributedServiceCard
 	polID       string
 	dscRef      *api.ObjectRef
 	alert       *monitoring.Alert
+	alertDest   *monitoring.AlertDestination
 	am          *mgr
 	dMon        = &mockMon{}
 )
@@ -76,7 +80,7 @@ func TestRun(t *testing.T) {
 	}
 
 	// Run alert mgr.
-	mapi.EXPECT().MonitoringV1().Return(dMon).Times(2)
+	mapi.EXPECT().MonitoringV1().Return(dMon).Times(3)
 	go am.Run(mapi)
 	time.Sleep(100 * time.Millisecond)
 	Assert(t, am.GetRunningStatus(), "running flag not set")
@@ -117,7 +121,7 @@ func TestRunWithError(t *testing.T) {
 
 	// Generate error in watcher engine.
 	mw.genError = true
-	mapi.EXPECT().MonitoringV1().Return(dMon).Times(2)
+	mapi.EXPECT().MonitoringV1().Return(dMon).Times(3)
 	go am.Run(mapi)
 	time.Sleep(100 * time.Millisecond)
 	Assert(t, !am.GetRunningStatus(), "running flag still set")
@@ -144,6 +148,10 @@ func (m *mockMon) Alert() monitoring.MonitoringV1AlertInterface {
 	return dal
 }
 
+func (m *mockMon) AlertDestination() monitoring.MonitoringV1AlertDestinationInterface {
+	return ddestPol
+}
+
 // Mock AlertPolicy type.
 type mockAP struct {
 	*mockapi.MockMonitoringV1AlertPolicyInterface
@@ -159,6 +167,15 @@ type mockAl struct {
 }
 
 func (mAl *mockAl) List(ctx context.Context, options *api.ListWatchOptions) ([]*monitoring.Alert, error) {
+	return nil, nil
+}
+
+// Mock AlertPolicy type.
+type mockAD struct {
+	*mockapi.MockMonitoringV1AlertDestinationInterface
+}
+
+func (mAD *mockAD) List(ctx context.Context, options *api.ListWatchOptions) ([]*monitoring.AlertDestination, error) {
 	return nil, nil
 }
 
@@ -215,7 +232,7 @@ type mockAlertengine struct {
 	genError bool
 }
 
-func (mae *mockAlertengine) Run(context.Context, apiservice.Services, <-chan *policyengine.PEOutput) (<-chan *monitoring.Alert, <-chan error, error) {
+func (mae *mockAlertengine) Run(context.Context, apiservice.Services, <-chan *policyengine.PEOutput) (<-chan *alertengine.AEOutput, <-chan error, error) {
 	if mae.genError {
 		return nil, nil, fmt.Errorf("error testing")
 	}
@@ -238,7 +255,7 @@ type mockExporter struct {
 	genError bool
 }
 
-func (me *mockExporter) Run(ctx context.Context, inchan <-chan *monitoring.Alert) (<-chan error, error) {
+func (me *mockExporter) Run(ctx context.Context, apiCl apiservice.Services, inchan <-chan *alertengine.AEOutput) (<-chan error, error) {
 	if me.genError {
 		return nil, fmt.Errorf("error testing")
 	}
@@ -257,6 +274,7 @@ func (me *mockExporter) GetRunningStatus() bool {
 // Variable of mock types.
 var dpol = &mockAP{}
 var dal = &mockAl{}
+var ddestPol = &mockAD{}
 var mw = &mockWatcher{}
 var mpe = &mockPolicyengine{}
 var mae = &mockAlertengine{}
@@ -272,7 +290,7 @@ func TestInit(t *testing.T) {
 
 	// Reopen alert when alert policy matches DSC object again.
 	alert.Spec.State = monitoring.AlertState_RESOLVED.String()
-	mapi.EXPECT().MonitoringV1().Return(mMonitoring).Times(3)
+	mapi.EXPECT().MonitoringV1().Return(mMonitoring).Times(5)
 	mapi.EXPECT().ClusterV1().Return(Mcluster).Times(1)
 	err := am.init()
 	AssertOk(t, err, "init() failed, err: %v", err)
@@ -322,6 +340,7 @@ func setup(t *testing.T) {
 	ctrl = gomock.NewController(t)
 	mpol = &mockAlertPolicy{mockapi.NewMockMonitoringV1AlertPolicyInterface(ctrl)}
 	malert = &mockAlert{mockapi.NewMockMonitoringV1AlertInterface(ctrl)}
+	malertDest = &mockAlertDest{mockapi.NewMockMonitoringV1AlertDestinationInterface(ctrl)}
 	mapi = mockapi.NewMockServices(ctrl)
 
 	// Create alert mgr.
@@ -330,9 +349,28 @@ func setup(t *testing.T) {
 	am = aei.(*mgr)
 	am.apiClient = mapi
 
+	// Create test alert destination policy.
+	alertDestUUID := uuid.NewV1().String()
+	alertDest = policygen.CreateAlertDestinationObj(globals.DefaultTenant, globals.DefaultNamespace, alertDestUUID,
+		&monitoring.SyslogExport{
+			Format: monitoring.MonitoringExportFormat_vname[int32(monitoring.MonitoringExportFormat_SYSLOG_BSD)],
+			Targets: []*monitoring.ExportConfig{
+				{
+					Destination: "127.0.0.1",
+					Transport:   fmt.Sprintf("udp/%s", "1234"),
+				},
+			},
+			Config: &monitoring.SyslogExportConfig{
+				Prefix:           "pen-alertmgr-exporter-test",
+				FacilityOverride: monitoring.SyslogFacility_vname[int32(monitoring.SyslogFacility_LOG_SYSLOG)],
+			},
+		})
+	alertDest.ObjectMeta.ModTime = api.Timestamp{}
+	alertDest.ObjectMeta.CreationTime = api.Timestamp{}
+
 	// Create test alert policy.
 	req := []*fields.Requirement{&fields.Requirement{Key: "status.primary-mac", Operator: "in", Values: []string{"00ae.cd00.1142"}}}
-	pol = policygen.CreateAlertPolicyObj(globals.DefaultTenant, "", CreateAlphabetString(5), "DistributedServiceCard", eventattrs.Severity_INFO, "DSC mac check", req, []string{})
+	pol = policygen.CreateAlertPolicyObj(globals.DefaultTenant, "", CreateAlphabetString(5), "DistributedServiceCard", eventattrs.Severity_INFO, "DSC mac check", req, []string{alertDestUUID})
 	polID = fmt.Sprintf("%s/%s", pol.GetName(), pol.GetUUID())
 
 	// Create test dsc object.
@@ -372,6 +410,10 @@ func (m *mockMonitoring) Alert() monitoring.MonitoringV1AlertInterface {
 	return malert
 }
 
+func (m *mockMonitoring) AlertDestination() monitoring.MonitoringV1AlertDestinationInterface {
+	return malertDest
+}
+
 // Mock AlertPolicy type.
 type mockAlertPolicy struct {
 	*mockapi.MockMonitoringV1AlertPolicyInterface
@@ -396,6 +438,27 @@ func (ma *mockAlert) Delete(ctx context.Context, objMeta *api.ObjectMeta) (*moni
 
 func (ma *mockAlert) List(ctx context.Context, options *api.ListWatchOptions) ([]*monitoring.Alert, error) {
 	return []*monitoring.Alert{alert}, nil
+}
+
+// Mock Alert Destination type.
+type mockAlertDest struct {
+	*mockapi.MockMonitoringV1AlertDestinationInterface
+}
+
+func (ma *mockAlertDest) Get(ctx context.Context, in *api.ObjectMeta) (*monitoring.AlertDestination, error) {
+	return nil, nil
+}
+
+func (ma *mockAlertDest) Update(ctx context.Context, in *monitoring.AlertDestination) (*monitoring.AlertDestination, error) {
+	return nil, nil
+}
+
+func (ma *mockAlertDest) Delete(ctx context.Context, objMeta *api.ObjectMeta) (*monitoring.AlertDestination, error) {
+	return nil, nil
+}
+
+func (ma *mockAlertDest) List(ctx context.Context, options *api.ListWatchOptions) ([]*monitoring.AlertDestination, error) {
+	return []*monitoring.AlertDestination{alertDest}, nil
 }
 
 // Mock cluster type.

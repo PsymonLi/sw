@@ -13,8 +13,13 @@ import (
 	"github.com/pensando/sw/api/errors"
 	apiservice "github.com/pensando/sw/api/generated/apiclient"
 	objectdb "github.com/pensando/sw/venice/ctrler/alertmgr/objdb"
+	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils"
+	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/resolver"
+	"github.com/pensando/sw/venice/utils/rpckit"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
@@ -43,6 +48,10 @@ type watcher struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	// API server resolver, balancer.
+	bal   balancer.Balancer
+	rslvr resolver.Interface
+
 	// AlertMgr API client.
 	apiClient apiservice.Services
 
@@ -67,9 +76,10 @@ type watcher struct {
 }
 
 // New watcher instance.
-func New(objdb objectdb.Interface, logger log.Logger) (Interface, error) {
+func New(objdb objectdb.Interface, rslvr resolver.Interface, logger log.Logger) (Interface, error) {
 	w := &watcher{
 		logger: logger,
+		rslvr:  rslvr,
 		objdb:  objdb}
 
 	logger.Infof("Created new watcher")
@@ -81,8 +91,23 @@ func (w *watcher) Run(ctx context.Context, apiClient apiservice.Services) (<-cha
 		return nil, nil, fmt.Errorf("Watcher already running")
 	}
 
+	if apiClient != nil {
+		w.apiClient = apiClient
+	} else {
+		w.bal = balancer.New(w.rslvr)
+		apiClient, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
+			clientName := fmt.Sprintf("%v%v", globals.AlertMgr, "-watcher")
+			return apiservice.NewGrpcAPIClient(clientName, globals.APIServer, w.logger, rpckit.WithBalancer(w.bal))
+		}, apiSrvWaitIntvl, maxAPISrvRetries)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to create API client for alertengine")
+		}
+		w.apiClient = apiClient.(apiservice.Services)
+	}
+
+	w.logger.Infof("alertmgr-watcher connected to API server")
 	w.ctx, w.cancel = context.WithCancel(ctx)
-	w.apiClient = apiClient
 	w.outCh = make(chan *kvstore.WatchEvent)
 	w.errCh = make(chan error, 1)
 
@@ -90,14 +115,9 @@ func (w *watcher) Run(ctx context.Context, apiClient apiservice.Services) (<-cha
 		defer w.cleanup()
 
 		err := w.createWatchers()
-		if err != nil {
-			if err != w.ctx.Err() {
-				w.errCh <- err
-			}
-			return
+		if err == nil {
+			err = w.startWatchers()
 		}
-
-		err = w.startWatchers()
 		if err != nil {
 			if err != w.ctx.Err() {
 				w.errCh <- err
@@ -255,9 +275,15 @@ func (w *watcher) stopWatchers() {
 
 func (w *watcher) cleanup() {
 	if w.running {
-		w.running = false
 		w.stopWatchers()
+		if w.apiClient != nil {
+			w.apiClient.Close()
+		}
 		close(w.errCh)
 		close(w.outCh)
+		if w.bal != nil {
+			w.bal.Close()
+		}
+		w.running = false
 	}
 }

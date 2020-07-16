@@ -17,9 +17,11 @@ import (
 	"github.com/pensando/sw/venice/ctrler/alertmgr/policyengine"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils"
+	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/resolver"
+	"github.com/pensando/sw/venice/utils/rpckit"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
@@ -47,7 +49,7 @@ const (
 type Interface interface {
 	// Run alert engine in a separate go routine until explicitly stopped.
 	// KV operations run concurrently in separate go routines; KV operations for the same alert are serialized.
-	Run(context.Context, apiservice.Services, <-chan *policyengine.PEOutput) (<-chan *monitoring.Alert, <-chan error, error)
+	Run(context.Context, apiservice.Services, <-chan *policyengine.PEOutput) (<-chan *AEOutput, <-chan error, error)
 
 	// Stop alert engine.
 	Stop()
@@ -63,7 +65,8 @@ type alertEngine struct {
 	// AlertMgr logger.
 	logger log.Logger
 
-	// AlertMgr API server resolver.
+	// API server resolver, balancer.
+	bal   balancer.Balancer
 	rslvr resolver.Interface
 
 	// Alertengine run context.
@@ -78,11 +81,10 @@ type alertEngine struct {
 
 	// Output channel.
 	// Output channel is closed when alert engine is explicitly stopped.
-	outCh chan *monitoring.Alert
+	outCh chan *AEOutput
 
 	// Error channel.
 	// AlertMgr must monitor the error channel and shutdown on error, allowing itself to be restarted.
-	// Error channel is never closed (it will be garbage collected).
 	errCh chan error
 
 	// Alert cache.
@@ -107,6 +109,12 @@ type alertEngine struct {
 	// Running status of alert engine.
 	// No mutex required as this is set and read only by the alertmgr run goroutine.
 	running bool
+}
+
+// AEOutput Alert engine output
+type AEOutput struct {
+	Policy *monitoring.AlertPolicy
+	Alert  *monitoring.Alert
 }
 
 // Alert Cache.
@@ -381,15 +389,30 @@ func New(logger log.Logger, rslvr resolver.Interface, objdb objectdb.Interface) 
 	return ae, nil
 }
 
-func (ae *alertEngine) Run(ctx context.Context, apiClient apiservice.Services, inCh <-chan *policyengine.PEOutput) (<-chan *monitoring.Alert, <-chan error, error) {
+func (ae *alertEngine) Run(ctx context.Context, apiClient apiservice.Services, inCh <-chan *policyengine.PEOutput) (<-chan *AEOutput, <-chan error, error) {
 	if ae.running {
 		return nil, nil, fmt.Errorf("alert engine already running")
 	}
 
+	if apiClient != nil {
+		ae.apiClient = apiClient
+	} else {
+		ae.bal = balancer.New(ae.rslvr)
+		apiClient, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
+			clientName := fmt.Sprintf("%v%v", globals.AlertMgr, "-alertengine")
+			return apiservice.NewGrpcAPIClient(clientName, globals.APIServer, ae.logger, rpckit.WithBalancer(ae.bal))
+		}, apiSrvWaitIntvl, maxAPISrvRetries)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to create API client for alertengine")
+		}
+		ae.apiClient = apiClient.(apiservice.Services)
+	}
+
+	ae.logger.Infof("alertmgr-alertengine connected to API server")
 	ae.ctx, ae.cancel = context.WithCancel(ctx)
-	ae.outCh = make(chan *monitoring.Alert)
+	ae.outCh = make(chan *AEOutput)
 	ae.errCh = make(chan error, 1)
-	ae.apiClient = apiClient
 
 	go func() {
 		defer ae.cleanup()
@@ -443,7 +466,6 @@ func (ae *alertEngine) processInput(peResult *policyengine.PEOutput) error {
 		return ae.processAlert(peResult)
 	case *monitoring.AlertPolicy:
 		return ae.processAlertPolicy(peResult)
-	//	TODO case *monitoring.AlertDestination:
 	default:
 		return ae.processObject(peResult)
 	}
@@ -472,7 +494,7 @@ func (ae *alertEngine) processObject(peOutput *policyengine.PEOutput) error {
 	}
 	objRef := objectRef.String()
 
-	var alertsToCreate []*monitoring.Alert
+	var alertsToCreate []AEOutput
 	var alertsToUpdate []*monitoring.Alert
 	var alertsToDelete []*monitoring.Alert
 
@@ -484,7 +506,7 @@ func (ae *alertEngine) processObject(peOutput *policyengine.PEOutput) error {
 			for _, mp := range peOutput.MatchingPolicies {
 				alert := ae.createAlert(peOutput.Object.(runtime.Object), mp)
 				ae.createAlertInCache(alert)
-				alertsToCreate = append(alertsToCreate, alert)
+				alertsToCreate = append(alertsToCreate, AEOutput{mp.Policy, alert})
 			}
 		} else {
 			// This object matched at least one policy previously.
@@ -532,7 +554,7 @@ func (ae *alertEngine) processObject(peOutput *policyengine.PEOutput) error {
 				if _, found := ae.cache.alertsByObjectAndPolicy[objRef][polID]; !found {
 					alert := ae.createAlert(peOutput.Object.(runtime.Object), mp)
 					ae.createAlertInCache(alert)
-					alertsToCreate = append(alertsToCreate, alert)
+					alertsToCreate = append(alertsToCreate, AEOutput{mp.Policy, alert})
 				}
 			}
 		}
@@ -541,24 +563,13 @@ func (ae *alertEngine) processObject(peOutput *policyengine.PEOutput) error {
 		alertsToDelete = ae.deleteAlertsInCacheByObject(objRef)
 	}
 
-	export := func(alert *monitoring.Alert) error {
-		select {
-		case <-ae.ctx.Done():
-			ae.logger.Errorf("Context cancelled, exiting")
-			return ae.ctx.Err()
-		case ae.outCh <- alert:
-			return nil
-		}
-	}
-
 	// TODO handle errors from dispatchAlert
 	dispatchAlerts := func() {
-		for _, alert := range alertsToCreate {
-			//export(alert)
-			ae.dispatchAlert(alert, AlertOpCreate)
+		for _, aeOutput := range alertsToCreate {
+			ae.export(&aeOutput)
+			ae.dispatchAlert(aeOutput.Alert, AlertOpCreate)
 		}
 		for _, alert := range alertsToUpdate {
-			export(alert)
 			ae.dispatchAlert(alert, AlertOpUpdate)
 		}
 		for _, alert := range alertsToDelete {
@@ -588,6 +599,7 @@ func (ae *alertEngine) processAlertPolicy(peOutput *policyengine.PEOutput) error
 			pol := policyengine.MatchingPolicy{Policy: peOutput.Object.(*monitoring.AlertPolicy), Reqs: peOutput.MatchingObj.Reqs}
 			alert := ae.createAlert(obj, pol)
 			ae.createAlertInCache(alert)
+			ae.export((&AEOutput{pol.Policy, alert}))
 			ae.dispatchAlert(alert, AlertOpCreate)
 		}
 
@@ -609,11 +621,17 @@ func (ae *alertEngine) processAlertPolicy(peOutput *policyengine.PEOutput) error
 func (ae *alertEngine) cleanup() {
 	if ae.running {
 		ae.wg.Wait()
-		ae.running = false
+		if ae.apiClient != nil {
+			ae.apiClient.Close()
+		}
 		ae.debounceTicker.Stop()
 		ae.gcTicker.Stop()
 		close(ae.errCh)
 		close(ae.outCh)
+		if ae.bal != nil {
+			ae.bal.Close()
+		}
+		ae.running = false
 	}
 }
 
@@ -773,5 +791,19 @@ func (ae *alertEngine) dispatchAlert(alert *monitoring.Alert, op AlertOp) {
 				}
 			}
 		}()
+	}
+}
+
+func (ae *alertEngine) export(aeOutput *AEOutput) error {
+	if ae.outCh == nil {
+		ae.logger.Errorf("Failed to export alert due to nil channel")
+		return nil
+	}
+	select {
+	case <-ae.ctx.Done():
+		ae.logger.Errorf("Context cancelled, exiting")
+		return ae.ctx.Err()
+	case ae.outCh <- aeOutput:
+		return nil
 	}
 }

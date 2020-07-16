@@ -41,7 +41,7 @@ const (
 // Interface for alertmgr.
 type Interface interface {
 	// Run alert manager in the main goroutine.
-	Run(mockAPIClient apiservice.Services)
+	Run(apiCl apiservice.Services)
 
 	// Stop alert manager.
 	Stop()
@@ -89,7 +89,7 @@ func New(logger log.Logger, rslvr resolver.Interface) (Interface, error) {
 	objdb := objectdb.New()
 
 	// Create watcher.
-	w, err := watcher.New(objdb, logger)
+	w, err := watcher.New(objdb, rslvr, logger)
 	if err != nil {
 		logger.Errorf("Failed to create watcher, err: %v", err)
 		return nil, err
@@ -110,7 +110,7 @@ func New(logger log.Logger, rslvr resolver.Interface) (Interface, error) {
 	}
 
 	// Create exporter.
-	e, err := exporter.New(logger, rslvr)
+	e, err := exporter.New(logger, rslvr, objdb)
 	if err != nil {
 		logger.Errorf("Failed to create exporter, err: %v", err)
 		return nil, err
@@ -135,9 +135,10 @@ func New(logger log.Logger, rslvr resolver.Interface) (Interface, error) {
 	return m, nil
 }
 
-func (m *mgr) Run(mockAPIClient apiservice.Services) {
+func (m *mgr) Run(apiCl apiservice.Services) {
 	inited := false
 	b := balancer.New(m.rslvr)
+	defer b.Close()
 
 	for {
 		if m.watcher.GetRunningStatus() {
@@ -156,7 +157,7 @@ func (m *mgr) Run(mockAPIClient apiservice.Services) {
 			m.exporter.Stop()
 		}
 
-		if m.apiClient != nil && m.apiClient != mockAPIClient {
+		if m.apiClient != nil && m.apiClient != apiCl {
 			m.apiClient.Close()
 		}
 
@@ -164,8 +165,8 @@ func (m *mgr) Run(mockAPIClient apiservice.Services) {
 			return
 		}
 
-		if mockAPIClient != nil {
-			m.apiClient = mockAPIClient
+		if apiCl != nil {
+			m.apiClient = apiCl
 		} else {
 			// Create API client with resolver.
 			apiClient, err := apiservice.NewGrpcAPIClient(globals.AlertMgr, globals.APIServer, m.logger, rpckit.WithBalancer(b))
@@ -177,6 +178,8 @@ func (m *mgr) Run(mockAPIClient apiservice.Services) {
 
 			m.apiClient = apiClient.(apiservice.Services)
 		}
+
+		m.logger.Infof("alertmgr connected to API server")
 
 		// Alertmgr might have just restarted.
 		// While it restarted some reference objects might have gone away, leaving some alerts invalid.
@@ -191,7 +194,7 @@ func (m *mgr) Run(mockAPIClient apiservice.Services) {
 		}
 
 		// Run watcher.
-		wOutCh, wErrCh, err := m.watcher.Run(m.ctx, m.apiClient)
+		wOutCh, wErrCh, err := m.watcher.Run(m.ctx, nil)
 		if err != nil {
 			m.logger.Warnf("Failed to run watcher, err: %v", err)
 			time.Sleep(retryDelay)
@@ -207,7 +210,7 @@ func (m *mgr) Run(mockAPIClient apiservice.Services) {
 		}
 
 		// Run alert engine.
-		aeOutCh, aeErrCh, err := m.alertEngine.Run(m.ctx, m.apiClient, peOutCh)
+		aeOutCh, aeErrCh, err := m.alertEngine.Run(m.ctx, nil, peOutCh)
 		if err != nil {
 			m.logger.Warnf("Failed to run alert engine, err: %v", err)
 			time.Sleep(retryDelay)
@@ -215,7 +218,7 @@ func (m *mgr) Run(mockAPIClient apiservice.Services) {
 		}
 
 		// Run exporter.
-		eErrCh, err := m.exporter.Run(m.ctx, aeOutCh)
+		eErrCh, err := m.exporter.Run(m.ctx, nil, aeOutCh)
 		if err != nil {
 			m.logger.Warnf("Failed to run exporter, err: %v", err)
 			time.Sleep(retryDelay)
@@ -266,7 +269,7 @@ func (m *mgr) init() error {
 		var policies []*monitoring.AlertPolicy
 
 		if m.err == nil {
-			opts := api.ListWatchOptions{FieldSelector: "spec.resource != event"} // TODO add tenant info
+			opts := api.ListWatchOptions{FieldSelector: "spec.resource != Event"} // TODO add tenant info
 			policies, m.err = m.apiClient.MonitoringV1().AlertPolicy().List(m.ctx, &opts)
 			for _, p := range policies {
 				m.err = m.objdb.Add(p)
@@ -293,6 +296,24 @@ func (m *mgr) init() error {
 				}
 			}
 			return alerts
+		}
+		return nil
+	}
+
+	// Get all alert destination policies.
+	getAlertDestPolicies := func() []*monitoring.AlertDestination {
+		var policies []*monitoring.AlertDestination
+
+		if m.err == nil {
+			opts := api.ListWatchOptions{}
+			policies, m.err = m.apiClient.MonitoringV1().AlertDestination().List(m.ctx, &opts)
+			for _, p := range policies {
+				m.err = m.objdb.Add(p)
+				if m.err != nil {
+					break
+				}
+			}
+			return policies
 		}
 		return nil
 	}
@@ -406,6 +427,8 @@ func (m *mgr) init() error {
 			}
 		}
 	}
+
+	getAlertDestPolicies()
 
 	if m.err != nil {
 		m.logger.Errorf("Failed to initialize alerts manager, err: %v", m.err)
