@@ -73,8 +73,8 @@ namespace api {
     ENTRY(PDS_STATE_LEARN,          21,            "learn")         \
     ENTRY(PDS_STATE_ROUTE,          22,            "route")         \
     ENTRY(PDS_STATE_POLICY_RULE,    23,            "policy-rule")   \
-    ENTRY(PDS_STATE_IPSEC,          25,            "ipsec-sa")      \
-    ENTRY(PDS_STATE_MAX,            26,            "max")
+    ENTRY(PDS_STATE_IPSEC,          24,            "ipsec-sa")      \
+    ENTRY(PDS_STATE_MAX,            25,            "max")
 
 SDK_DEFINE_ENUM(pds_state_t, PDS_STATE)
 SDK_DEFINE_ENUM_TO_STR(pds_state_t, PDS_STATE)
