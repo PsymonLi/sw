@@ -7,24 +7,32 @@ targets:
     area:
     sub-area:
     feature:
+    logfiles:
+      - /testcase_result_export/testsuite_integ_odd_results.json
   venice-integ-even:
     commands: [ "sh", "-c", "pwd && ls -l && cd /go/src/github.com/pensando/sw && make ci-integ-test-even" ]
     owners: ["email:venice-dev@pensando.io"]
     area:
     sub-area:
     feature:
+    logfiles:
+      - /testcase_result_export/testsuite_integ_even_results.json
   venice-odd:
     commands: [ "sh", "-c", "pwd && ls -l && cd /go/src/github.com/pensando/sw && make ut-odd" ]
     owners: ["email:venice-dev@pensando.io"]
     area:
     sub-area:
     feature:
+    logfiles:
+      - /testcase_result_export/testsuite_ut_odd_results.json
   venice-even:
     commands: [ "sh", "-c", "pwd && ls -l && cd /go/src/github.com/pensando/sw && make ut-even" ]
     owners: ["email:venice-dev@pensando.io"]
     area:
     sub-area:
     feature:
+    logfiles:
+      - /testcase_result_export/testsuite_ut_even_results.json
   venice-checks:
     commands: [ "sh", "-c", "pwd && ls -l && cd /go/src/github.com/pensando/sw && make ut-build && ./tools/scripts/check-local-files.sh" ]
     owners: ["email:venice-dev@pensando.io"]
