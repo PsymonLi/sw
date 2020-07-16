@@ -449,6 +449,7 @@ func qosClassCreateCmdHandler(cmd *cobra.Command, args []string) {
 				Type:     qosClassMapType,
 			},
 			Sched: sched,
+			NoDrop: false,
 			Pause: &halproto.QosPause{
 				XonThreshold:  qosXon,
 				XoffThreshold: qosXoff,
@@ -1281,7 +1282,7 @@ func qosClassPrintOne(resp *halproto.QosClassSpec) {
 		dscpStr = strings.Replace(dscpStr, " ", ",", -1)
 	}
 	dot1qPcpStr := "any"
-	if resp.GetClassMap().GetDot1QPcp() > 0 {
+	if strings.Contains(qosGroup, "USER") == true {
 		dot1qPcpStr = fmt.Sprintf("%d", resp.GetClassMap().GetDot1QPcp())
 	}
 	fmt.Printf("%-30s%-6d%-18s%-8d%-18s%-10s%-10s\n",
