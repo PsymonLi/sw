@@ -185,6 +185,8 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
     actiondata.qid_en = true;
     // qid starts from 0 and worker thread id from 1
     actiondata.qid = (thread_id - 1);
+    // moves are not handled for meter id
+    actiondata.meter_id = ctx->src_vnic_id;
     if (ses_track_en && !pds_is_flow_session_present(b)) {
         track_actiondata.action_u.session_track_session_track_info.iflow_tcp_state = FLOW_STATE_INIT;
         track_actiondata.action_u.session_track_session_track_info.iflow_tcp_seq_num =
