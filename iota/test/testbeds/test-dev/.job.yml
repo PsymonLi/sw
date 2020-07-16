@@ -120,7 +120,7 @@ e2e-targets:
          pvt-networks:
          - control-1
          - control-2
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -150,7 +150,7 @@ e2e-targets:
          pvt-networks:
            - control-1
            - control-2
-     - image: build-9
+     - image: build-30
        count: 1
        resources:
          servers:
@@ -250,7 +250,7 @@ e2e-targets:
    sub-area:
    feature:
    clusters:
-     - image: build-34
+     - image: build-36
        count: 1
        resources:
          servers:
@@ -272,7 +272,7 @@ e2e-targets:
    sub-area:
    feature:
    clusters:
-     - image: build-34
+     - image: build-36
        count: 2
        resources:
          servers:
@@ -294,7 +294,7 @@ e2e-targets:
    sub-area:
    feature:
    clusters:
-     - image: build-16
+     - image: build-23
        count: 2
        resources:
          servers:
@@ -316,7 +316,7 @@ e2e-targets:
    sub-area:
    feature:
    clusters:
-     - image: build-9
+     - image: build-30
        count: 1
        resources:
          servers:
@@ -338,7 +338,7 @@ e2e-targets:
    sub-area:
    feature:
    clusters:
-     - image: build-9
+     - image: build-30
        count: 2
        resources:
          servers:
@@ -444,7 +444,7 @@ e2e-targets:
    sub-area:
    feature:
    clusters:
-     - image: build-40
+     - image: build-41
        count: 2
        resources:
          servers:
