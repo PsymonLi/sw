@@ -208,10 +208,10 @@ func TestAuditLogArchive(t *testing.T) {
 		AssertEventually(t, func() (bool, interface{}) {
 			createArchiveRequests(superAdminCtx, t, ti, tests[i:i+1])
 			err = verifyArchiveRequests(superAdminCtx, t, ti, tests[i:i+1])
+			defer deleteArchiveRequests(superAdminCtx, t, ti, tests[i:i+1])
 			if err != nil {
 				return false, err
 			}
-			deleteArchiveRequests(superAdminCtx, t, ti, tests[i:i+1])
 			return true, nil
 		}, "error verifying archive requests", "3s", "30s")
 	}
