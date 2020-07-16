@@ -448,7 +448,7 @@ func qosClassCreateCmdHandler(cmd *cobra.Command, args []string) {
 				IpDscp:   dscp,
 				Type:     qosClassMapType,
 			},
-			Sched: sched,
+			Sched:  sched,
 			NoDrop: false,
 			Pause: &halproto.QosPause{
 				XonThreshold:  qosXon,
