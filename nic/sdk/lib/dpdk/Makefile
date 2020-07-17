@@ -11,13 +11,21 @@ DPDKROOT        := ${SDKDIR}/pen-dpdk/dpdk
 OUT_DIR         := ${BLD_OUT_DIR}/pen_dpdk_submake
 
 ifeq ($(ARCH), aarch64)
+    ifeq ($(ANE), y)
+        CROSS_CMD=
+        RTE_COMPILE= CONFIG_RTE_KNI_KMOD=n CONFIG_RTE_EAL_IGB_UIO=n RTE_KERNELDIR=${NICDIR}/buildroot/output/capri/linux-headers
+    else ifeq ($(ANE), s)
+        CROSS_CMD="CROSS=${TOOLCHAIN_PREFIX}-"
+        RTE_COMPILE= CONFIG_RTE_KNI_KMOD=n CONFIG_RTE_EAL_IGB_UIO=n RTE_KERNELDIR=${NICDIR}/buildroot/output/capri/linux-headers
+    else
+        CROSS_CMD="CROSS=${TOOLCHAIN_PREFIX}-"
+        RTE_COMPILE= CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=n RTE_KERNELDIR=${NICDIR}/buildroot/output/capri/linux-headers
+    endif
     export DPDK_SIM_BLD       := n
 	CONFIG_FILE=arm64-naples-linuxapp-gcc
-	CROSS_CMD="CROSS=${TOOLCHAIN_PREFIX}-"
 	CFLAGS_CMD="-isystem  ${NUMAROOT}/include -fPIC -O0 -g -fno-inline -fno-omit-frame-pointer"
 	LDFLAGS_CMD="-L${BLD_LIB_DIR} -L${NUMAROOT}/aarch64/lib -lnuma"
 	SIM_LIB=
-    RTE_COMPILE= CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=n RTE_KERNELDIR=${NICDIR}/buildroot/output/capri/linux-headers
 
 all: dpdk
 else ifeq ($(ARCH), x86_64)

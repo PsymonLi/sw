@@ -5,6 +5,7 @@
 # if there are both src and dst on the line, the dst sub directory is not the same as src
 # line starts with ! means all file/dir contain that text will be deleted
 /sw/nic/apollo/agent/athena
+###/sw/nic/apollo/agent/cli
 /sw/nic/apollo/agent/core
 /sw/nic/apollo/agent/protos
 /sw/nic/apollo/agent/svc
@@ -150,6 +151,8 @@
 /sw/nic/sdk/pen-dpdk
 /sw/nic/sdk/platform/asicerror
 /sw/nic/sdk/platform/capri
+/sw/nic/sdk/platform/capmon
+/sw/nic/sdk/platform/capview
 /sw/nic/sdk/platform/cfgspace/include
 /sw/nic/sdk/platform/cfgspace/src
 /sw/nic/sdk/platform/csr
@@ -165,6 +168,7 @@
 /sw/nic/sdk/platform/misc/src
 /sw/nic/sdk/platform/mnet/include
 /sw/nic/sdk/platform/mnet/src
+/sw/nic/sdk/platform/mputrace
 /sw/nic/sdk/platform/pal/include
 /sw/nic/sdk/platform/pal/src
 /sw/nic/sdk/platform/pciehdevices/include
@@ -230,7 +234,7 @@
 /sw/nic/utils/ftlite/*.hpp
 /sw/nic/utils/trace
 /sw/nic/vpp/flow/pdsa_hdlr.h
-# /sw/nic/vpp/flow/stats.h
+/sw/nic/vpp/flow/stats.h
 /sw/nic/vpp/infra/ipc/pdsa_hdlr.hpp
 /sw/platform/drivers/common
 /sw/platform/drivers/linux/eth/ionic
@@ -246,11 +250,14 @@
 /sw/platform/src/app/cpld/cpldapp.sh
 /sw/platform/src/app/cpld/reboot.sh
 /sw/platform/src/app/cpld/bin/*.bin
+/sw/platform/src/app/memtun
 /sw/platform/src/lib/edma
 -/sw/platform/src/lib/edma/module.mk
 /sw/platform/src/lib/eth_p4plus
 /sw/platform/src/lib/nicmgr/include
 /sw/platform/src/lib/nicmgr/src
+/sw/platform/tools/eth
+-/sw/platform/tools/eth/module_iris.mk
 /sw/vendor/github.com/gogo/protobuf/gogoproto
 -/sw/nic/apollo/agent/svc/module.mk
 -/sw/nic/hal/third-party/google/protobuf/internal/_api_implementation.so

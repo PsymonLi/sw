@@ -34,13 +34,22 @@ def copy_src(src, dst):
         sl1 = file.readlines()
     sl2 = []
     for line in sl1:
-        sl2.append(line.rstrip('\n').rstrip('/'))
+        #sl2.append(line.rstrip('\n').rstrip('/'))
+        sl2.append(line.rstrip('\n').rstrip('/').split('#')[0])
 
     for line in sl2:
+        if line.startswith('-'):
+            dst1 = dst + '/' + line[1:]
+            cmd = 'rm -rf ' + dst1
+            os.system(cmd)
+            print('R: %s' % cmd)
+            continue
+
         #if line.startswith('#') or line.startswith('-'):
         if not line.startswith('/'):
             print('N: %s' % line)
             continue
+
         if line.find(' ') == -1:
             dst1 = dst + line
             src1 = src + line
@@ -79,11 +88,13 @@ def copy_src(src, dst):
             os.system(cmd)
 
     for line in sl2:
+        '''
         if line.startswith('-'):
             dst1 = dst + '/' + line[1:]
             cmd = 'rm -rf ' + dst1
             os.system(cmd)
             print('R: %s' % cmd)
+        '''
 
         if line.startswith('!'):
             dst1 = dst + '/' + line[1:]

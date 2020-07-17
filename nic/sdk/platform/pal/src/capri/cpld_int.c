@@ -78,6 +78,7 @@ pal_write_gpios(int gpio, uint32_t data)
 #include <linux/gpio.h>
 #include <linux/spi/spidev.h>
 
+#ifndef arm_native
 struct gpiohandle_request {
         __u32 lineoffsets[GPIOHANDLES_MAX];
         __u32 flags;
@@ -89,6 +90,7 @@ struct gpiohandle_request {
 struct gpiohandle_data {
         __u8 values[GPIOHANDLES_MAX];
 };
+#endif
 
 #define GPIOHANDLE_GET_LINE_VALUES_IOCTL _IOWR(0xB4, 0x08, struct gpiohandle_data)
 #define GPIOHANDLE_SET_LINE_VALUES_IOCTL _IOWR(0xB4, 0x09, struct gpiohandle_data)

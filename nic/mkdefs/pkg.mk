@@ -24,8 +24,10 @@ else
     endif
 	cd $(NICDIR)/../ && python2 $(NICDIR)/tools/package/package.py \
 		--pipeline $(PIPELINE)$(FLAVOR) $(PKG_ARGS) $(STRIP)
-	cd $(NICDIR) && $(NICDIR)/sdk/platform/mputrace/captrace.py gen_syms \
+    ifeq ($(ANE),)
+	    cd $(NICDIR) && $(NICDIR)/sdk/platform/mputrace/captrace.py gen_syms \
 		--pipeline $(PIPELINE) --asic $(ASIC)
+    endif
 endif
 else
 	ARCH=${ARCH} ${TOPDIR}/nic/tools/upgrade_version.sh

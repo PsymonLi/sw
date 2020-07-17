@@ -2,6 +2,7 @@
 include ${MKINFRA}/common.mk
 include ${MKINFRA}/release.mk
 
+ifneq (${ANE},y) # build in non Arm Native environment (on x86_64 host, cross compile for aarch64)
 TOOLCHAIN_DIR       = /tool/toolchain/aarch64-1.1
 TOOLCHAIN_PREFIX    = ${TOOLCHAIN_DIR}/bin/aarch64-linux-gnu
 ARCH_SYS_PATHS      := ${TOOLCHAIN_DIR}/aarch64-linux-gnu/include/c++/6.4.1/aarch64-linux-gnu \
@@ -28,8 +29,13 @@ ARCH_LINKER_FLAGS   := -Wl,--dynamic-linker=/lib/ld-linux-aarch64.so.1 \
 CMD_GCC_NO_COV  := ${TOOLCHAIN_PREFIX}-gcc
 CMD_GXX_NO_COV  := ${TOOLCHAIN_PREFIX}-g++
 ifeq ($(COVERAGE),1)
-    CMD_GCC    := /home/asic/tools/eda/bullseye/bin/aarch64-linux-gnu-gcc
-    CMD_GXX    := /home/asic/tools/eda/bullseye/bin/aarch64-linux-gnu-g++
+    ifeq ($(ANE),)
+        CMD_GCC    := /home/asic/tools/eda/bullseye/bin/aarch64-linux-gnu-gcc
+        CMD_GXX    := /home/asic/tools/eda/bullseye/bin/aarch64-linux-gnu-g++
+    else
+        CMD_GCC    := ${TOOLCHAIN_PREFIX}-gcc
+        CMD_GXX    := ${TOOLCHAIN_PREFIX}-g++
+    endif
 else
     CMD_GCC    := ${TOOLCHAIN_PREFIX}-gcc
     CMD_GXX    := ${TOOLCHAIN_PREFIX}-g++
@@ -70,3 +76,43 @@ CONFIG_GTEST_EXCLUDE_FLAGS      := ${COMMON_GTEST_EXCLUDE_FLAGS}
 
 CMD_GOBIN := CGO_LDFLAGS="-L/tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/include -L/usr/src/github.com/pensando/sw/nic/build/${ARCH}/${PIPELINE}/${ASIC}/lib" \
 	CC=/tool/toolchain/aarch64-1.1/bin/aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build
+
+else # ANE=y (build in Arm Native Environment, ie on arm64 host)
+
+CMD_GCC_NO_COV := gcc
+CMD_GXX_NO_COV := g++
+
+ifeq ($(COVERAGE),1)
+    # CMD_GCC := /home/asic/tools/eda/bullseye/bin/gcc
+    # CMD_GXX := /home/asic/tools/eda/bullseye/bin/g++
+    CMD_GCC     := gcc -march=armv8-a+crc -Darm_native
+    CMD_GXX     := g++ -march=armv8-a+crc -Darm_native
+else
+    CMD_GCC     := gcc -march=armv8-a+crc -Darm_native
+    CMD_GXX     := g++ -march=armv8-a+crc -Darm_native
+endif
+
+CMD_GXX_FLAGS       := ${COMMON_GXX_FLAGS} ${RELEASE_GXX_FLAGS}
+CMD_GPP_FLAGS       := ${COMMON_GPP_FLAGS} ${RELEASE_GXX_FLAGS}
+
+CMD_AS              := as
+CMD_AR              := ar
+CMD_AR_FLAGS        := ${COMMON_AR_FLAGS} ${RELEASE_AR_FLAGS}
+
+CONFIG_ARLIB_FLAGS  := ${COMMON_ARLIB_FLAGS} ${RELEASE_ARLIB_FLAGS}
+CONFIG_SOLIB_FLAGS  := ${COMMON_SOLIB_FLAGS} ${RELEASE_SOLIB_FLAGS}
+
+CONFIG_INCS         := ${COMMON_INCS}
+CONFIG_LDPATHS      := ${COMMON_LDPATHS}
+
+# GTEST specific defines
+CONFIG_GTEST_INCS               := ${COMMON_GTEST_INCS}
+CONFIG_GTEST_LIBS               := ${COMMON_GTEST_LIBS} ${COMMON_GTEST_DIR}/make/gtest.a
+CONFIG_GTEST_WOM_LIBS           := ${COMMON_GTEST_LIBS} ${COMMON_GTEST_DIR}/make/gtest_main.a
+CONFIG_GTEST_LDPATHS            :=
+CONFIG_GTEST_FLAGS              := ${COMMON_GTEST_FLAGS}
+# For gtest, we can't use the following GCC flags.
+CONFIG_GTEST_EXCLUDE_FLAGS      := ${COMMON_GTEST_EXCLUDE_FLAGS}
+
+CMD_GOBIN           := go build 
+endif

@@ -59,6 +59,12 @@ builds:
   #   owners: ["email:murali@pensando.io"]
   #   artifacts:
   #     - /sw/customimage.tar.gz
+  build-athena-arm-native-sim:
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic/apollo/test/athena_app && mkdir -p /tmp/athena &&
+        ./gsrc.py --src /usr/src/github.com/pensando --dst /tmp/athena/src/github.com/pensando && ./build_athena /tmp/athena s"]
+    owners: ["email:jason@pensando.io"]
+    artifacts:
+      - /tmp/athena/src/github.com/pensando/sw/nic/nic.tar
   build-athena-customer-arm:
     commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && ./apollo/test/athena_app/bld_pkg_athena --arch=aarch64 --output=athena-arm"]
     owners: ["email:murali@pensando.io"]
