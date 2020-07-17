@@ -596,16 +596,16 @@ hal_logger_init (hal_cfg_t *hal_cfg)
         hal_cfg->sync_mode_logging = true;
     }
 
-    persistent_logfile = get_logfile("PERSISTENT_LOG_DIR", "hal.log",
+    persistent_logfile = get_logfile("PERSISTENT_LOG_DIR", "hal_err.log",
                                      "./hal.pers.log");
-    non_persistent_logfile = get_logfile("NON_PERSISTENT_LOG_DIR", "hal.log",
+    non_persistent_logfile = get_logfile("PERSISTENT_LOG_DIR", "hal.log",
                                          "./hal.nonpers.log");
     hal::utils::trace_init("hal", hal_cfg->control_cores_mask,
                            hal_cfg->sync_mode_logging,
                            persistent_logfile.c_str(),
                            non_persistent_logfile.c_str(),
-                           5 << 20, // 5MB
-                           9,       // 10 (9 + 1 current logging file)
+                           4 << 20, // 4 MB
+                           5,       // 5 (5 + 1 current logging file)
                            ::utils::trace_err,
                            getenv("DISABLE_LOGGING") ? (::utils::trace_none) :
                                                        (::utils::trace_debug));

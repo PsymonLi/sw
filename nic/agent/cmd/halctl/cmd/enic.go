@@ -193,7 +193,7 @@ func enicShowStatusHeader() {
 	fmt.Printf("MacVlanIdxHost:  Input prop. Mac Vlan table idx from host packets\n")
 	fmt.Printf("MacVlanIdxNet:   Input prop. Mac Vlan table idx from network packets\n")
 	fmt.Printf("NatL2SegClassic: Input prop. table idx for native l2seg. Classic mode\n")
-	fmt.Printf("L2SegMmbrInfo:   L2seg membership info for Enic. Classic mode\n")
+	fmt.Printf("L2SegMmbrInfo:   L2seg mbr info for Classic.l2seg_hdl/inp_prop_idx \n")
 	fmt.Printf("\n")
 	hdrLine := strings.Repeat("-", 109)
 	fmt.Println(hdrLine)
@@ -208,45 +208,75 @@ func enicShowStatusOneResp(resp *halproto.InterfaceGetResponse) {
 		return
 	}
 
-	fmt.Printf("%-15s%-10s%-10d%-10d%-16d%-16d%-16d",
-		fmt.Sprintf("enic-%d", resp.GetSpec().GetKeyOrHandle().GetInterfaceId()),
-		strings.ToLower(strings.Replace(resp.GetStatus().GetIfStatus().String(), "IF_STATUS_", "", -1)),
-		resp.GetStatus().GetEnicInfo().GetEnicLportId(),
-		resp.GetStatus().GetEnicInfo().GetUplinkIfHandle(),
-		resp.GetStatus().GetEnicInfo().GetSmartEnicInfo().GetInpPropMacVlanIdxHost(),
-		resp.GetStatus().GetEnicInfo().GetSmartEnicInfo().GetInpPropMacVlanIdxNet(),
-		resp.GetStatus().GetEnicInfo().GetClassicEnicInfo().GetInpPropNatL2SegClassic())
+	enicType := resp.GetSpec().GetIfEnicInfo().GetEnicType()
+	var inpPropMacVlanIdxHostStr string
+	var inpPropMacVlanIdxNetStr string
+	var inpPropNatL2segClassicStr string
+	var mbrInfoStr string
 
-	memberStr := ""
+	switch enicType {
+	case halproto.IfEnicType_IF_ENIC_TYPE_USEG:
+		fallthrough
+	case halproto.IfEnicType_IF_ENIC_TYPE_PVLAN:
+		fallthrough
+	case halproto.IfEnicType_IF_ENIC_TYPE_DIRECT:
+		fallthrough
+	case halproto.IfEnicType_IF_ENIC_TYPE_GFT:
+		inpPropMacVlanIdxHostStr = fmt.Sprint(resp.GetStatus().GetEnicInfo().GetSmartEnicInfo().GetInpPropMacVlanIdxHost())
+		inpPropMacVlanIdxNetStr = fmt.Sprint(resp.GetStatus().GetEnicInfo().GetSmartEnicInfo().GetInpPropMacVlanIdxNet())
+		inpPropNatL2segClassicStr = "-"
+		mbrInfoStr = "-"
+	case halproto.IfEnicType_IF_ENIC_TYPE_CLASSIC:
+		inpPropMacVlanIdxHostStr = "-"
+		inpPropMacVlanIdxNetStr = "-"
+		inpPropNatL2segClassicStr = fmt.Sprint(resp.GetStatus().GetEnicInfo().GetClassicEnicInfo().GetInpPropNatL2SegClassic())
+	default:
+		inpPropMacVlanIdxHostStr = "-"
+		inpPropMacVlanIdxNetStr = "-"
+		inpPropNatL2segClassicStr = "-"
+	}
+
 	first := true
 	count := 0
 	for _, member := range resp.GetStatus().GetEnicInfo().GetClassicEnicInfo().GetMembershipInfo() {
 		if first == true {
-			memberStr += fmt.Sprintf("%d/%d", member.GetL2SegmentKeyOrHandle().GetL2SegmentHandle(), member.GetInpPropIdx())
+			mbrInfoStr += fmt.Sprintf("%d/%d", member.GetL2SegmentKeyOrHandle().GetL2SegmentHandle(), member.GetInpPropIdx())
 			first = false
 		} else {
-			memberStr += fmt.Sprintf(", %d/%d", member.GetL2SegmentKeyOrHandle().GetL2SegmentHandle(), member.GetInpPropIdx())
+			mbrInfoStr += fmt.Sprintf(", %d/%d", member.GetL2SegmentKeyOrHandle().GetL2SegmentHandle(), member.GetInpPropIdx())
 		}
 		count++
 		if count == 3 {
-			count = 0
-			memberStr += fmt.Sprintf("\n%-88s", " ")
+			mbrInfoStr += " ..."
+			// count = 0
+			// memberStr += fmt.Sprintf("\n%-88s", " ")
 		}
 	}
-	memberStr += "\n"
-	fmt.Printf("%-16s", memberStr)
+	if len(mbrInfoStr) == 0 {
+		mbrInfoStr = "-"
+	}
+
+	fmt.Printf("%-15s%-10s%-10d%-10d%-16s%-16s%-16s%-16s\n",
+		fmt.Sprintf("enic-%d", resp.GetSpec().GetKeyOrHandle().GetInterfaceId()),
+		strings.ToLower(strings.Replace(resp.GetStatus().GetIfStatus().String(), "IF_STATUS_", "", -1)),
+		resp.GetStatus().GetEnicInfo().GetEnicLportId(),
+		resp.GetStatus().GetEnicInfo().GetUplinkIfHandle(),
+		inpPropMacVlanIdxHostStr, inpPropMacVlanIdxNetStr, inpPropNatL2segClassicStr,
+		mbrInfoStr)
+
 }
 
 func enicShowHeader() {
 	fmt.Printf("\n")
 	fmt.Printf("Id:     Interface ID         EType:  Enic type\n")
+	fmt.Printf("Lport:  Lport ID\n")
 	fmt.Printf("EL2seg: Enic's l2seg         Emac:   Enic's mac\n")
 	fmt.Printf("Encap:  Enic's encap         ELif:   Enic's Lif\n")
 	fmt.Printf("\n")
-	hdrLine := strings.Repeat("-", 75)
+	hdrLine := strings.Repeat("-", 85)
 	fmt.Println(hdrLine)
-	fmt.Printf("%-15s%-10s%-10s%-20s%-10s%-10s\n",
-		"Id", "EType", "EL2seg", "Emac", "Eencap", "ELif")
+	fmt.Printf("%-15s%-10s%-10s%-10s%-20s%-10s%-10s\n",
+		"Id", "EType", "Lport", "EL2seg", "Emac", "Eencap", "ELif")
 	fmt.Println(hdrLine)
 }
 
@@ -270,19 +300,21 @@ func enicShowOneResp(resp *halproto.InterfaceGetResponse) {
 		fallthrough
 	case halproto.IfEnicType_IF_ENIC_TYPE_GFT:
 		macStr := utils.MactoStr(resp.GetSpec().GetIfEnicInfo().GetEnicInfo().GetMacAddress())
-		fmt.Printf("%-10d%-20s%-10d%-10d",
+		fmt.Printf("%-10d%-10d%-20s%-10d%-10d",
+			resp.GetStatus().GetEnicInfo().GetEnicLportId(),
 			resp.GetSpec().GetIfEnicInfo().GetEnicInfo().GetL2SegmentKeyHandle().GetSegmentId(),
 			macStr,
 			resp.GetSpec().GetIfEnicInfo().GetEnicInfo().GetEncapVlanId(),
 			resp.GetSpec().GetIfEnicInfo().GetLifKeyOrHandle().GetLifId())
 	case halproto.IfEnicType_IF_ENIC_TYPE_CLASSIC:
-		fmt.Printf("%-10d%-20s%-10s%-10d",
+		fmt.Printf("%-10d%-10d%-20s%-10s%-10d",
+			resp.GetStatus().GetEnicInfo().GetEnicLportId(),
 			resp.GetSpec().GetIfEnicInfo().GetClassicEnicInfo().GetNativeL2SegmentId(),
 			"-",
 			"-",
 			resp.GetSpec().GetIfEnicInfo().GetLifKeyOrHandle().GetLifId())
 	default:
-		fmt.Printf("%-10s%-20s%-10s%-10s", "-", "-", "-", "-")
+		fmt.Printf("%-10s%-10s%-20s%-10s%-10s", "-", "-", "-", "-", "-")
 	}
 	fmt.Printf("\n")
 
