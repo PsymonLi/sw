@@ -200,11 +200,12 @@ func addDCState(t *testing.T, vchub *VCHub, dcName string) {
 			Type:  string(defs.VmwareDistributedVirtualSwitch),
 			Value: "dvs-1",
 		},
-		UsegMgr: useg,
-		Pgs:     map[string]*PenPG{},
-		pgIDMap: map[string]*PenPG{},
-		probe:   vchub.probe,
-		ports:   map[string]portEntry{},
+		UsegMgr:          useg,
+		Pgs:              map[string]*PenPG{},
+		pgIDMap:          map[string]*PenPG{},
+		probe:            vchub.probe,
+		ports:            map[string]portEntry{},
+		workloadsToWrite: map[string][]overrideReq{},
 	}
 	vchub.DcMap[dcName] = &PenDC{
 		State: vchub.State,

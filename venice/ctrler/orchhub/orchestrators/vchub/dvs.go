@@ -37,6 +37,7 @@ type PenDVS struct {
 	UsegMgr            useg.Inf
 	probe              vcprobe.ProbeInf
 	writeTaskScheduled bool
+	workloadsToWrite   map[string][]overrideReq
 	ports              map[string]portEntry
 }
 
@@ -178,15 +179,16 @@ func (d *PenDC) AddPenDVS() error {
 			return err
 		}
 		penDVS = &PenDVS{
-			State:   d.State,
-			probe:   d.probe,
-			DcName:  dcName,
-			DcID:    d.dcRef.Value,
-			DvsName: dvsName,
-			UsegMgr: useg,
-			Pgs:     map[string]*PenPG{},
-			pgIDMap: map[string]*PenPG{},
-			ports:   map[string]portEntry{},
+			State:            d.State,
+			probe:            d.probe,
+			DcName:           dcName,
+			DcID:             d.dcRef.Value,
+			DvsName:          dvsName,
+			UsegMgr:          useg,
+			Pgs:              map[string]*PenPG{},
+			pgIDMap:          map[string]*PenPG{},
+			ports:            map[string]portEntry{},
+			workloadsToWrite: map[string][]overrideReq{},
 		}
 
 		d.DvsMap[dvsName] = penDVS

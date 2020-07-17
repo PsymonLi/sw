@@ -1,8 +1,10 @@
 package vcprobe
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/object"
@@ -253,7 +255,9 @@ func (v *VCProbe) getPenDVSPorts(dcName, dvsName string, criteria *types.Distrib
 	if err != nil {
 		return nil, err
 	}
-	ret, err := dvsObj.FetchDVPorts(v.ClientCtx, criteria)
+	ctx, cancel := context.WithTimeout(v.ClientCtx, 5*time.Second)
+	defer cancel()
+	ret, err := dvsObj.FetchDVPorts(ctx, criteria)
 	if err != nil {
 		v.Log.Errorf("Can't find ports, err: %s", err)
 		return nil, err
@@ -382,7 +386,9 @@ func (v *VCProbe) UpdateDVSPortsVlan(dcName, dvsName string, portsSetting PenDVS
 			return nil, err
 		}
 
-		task, err := dvsObj.ReconfigureDVPort(v.ClientCtx, portSpecs)
+		ctx, cancel := context.WithTimeout(v.ClientCtx, 5*time.Second)
+		defer cancel()
+		task, err := dvsObj.ReconfigureDVPort(ctx, portSpecs)
 		if err != nil {
 			v.Log.Errorf("Failed at reconfig DVS ports, err: %s", err)
 			_, isEqual, err1 := getAndCheck(client)
@@ -394,7 +400,7 @@ func (v *VCProbe) UpdateDVSPortsVlan(dcName, dvsName string, portsSetting PenDVS
 			return nil, err
 		}
 
-		_, err = task.WaitForResult(v.ClientCtx, nil)
+		_, err = task.WaitForResult(ctx, nil)
 		if err != nil {
 			v.Log.Errorf("Failed at modifying DVS ports, err: %s", err)
 			_, isEqual, err1 := getAndCheck(client)

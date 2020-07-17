@@ -866,6 +866,9 @@ func (v *VCHub) setVlanOverride(wlObj *workload.Workload, forceWrite bool, withD
 	if len(overrides) == 0 {
 		return nil
 	}
+	// Scheduling before first setOverride call so that the delayed write
+	// can not override the setVMVlanOverride call
+	v.scheduleOverrideRewrite(dvs, wlObj.Name, overrides)
 
 	err := dvs.SetVMVlanOverrides(overrides, wlObj.Name, forceWrite)
 	if err != nil {
@@ -896,10 +899,7 @@ func (v *VCHub) setVlanOverride(wlObj *workload.Workload, forceWrite bool, withD
 			case v.vcReadCh <- evt:
 			}
 		}, time.Second)
-
 	}
-
-	v.scheduleOverrideRewrite(dvs)
 
 	return err
 }
@@ -913,22 +913,33 @@ func (v *VCHub) scheduleOverrideRewriteHelper(dvs *PenDVS, count int) {
 		v.Log.Infof("DVS %s no longer exists, rewrite overrides exiting..", dvsName)
 		return
 	}
-	v.Log.Infof("Rewriting overrides for dvs %s", dvsName)
 
-	v.verifyOverridesOnDVS(dvs, true)
 	count--
+
+	dvs.Lock()
+	overrides := []overrideReq{}
+	workloads := ""
+	for w, reqs := range dvs.workloadsToWrite {
+		workloads += fmt.Sprintf("%s, ", w)
+		overrides = append(overrides, reqs...)
+	}
 	if count == 0 {
-		dvs.Lock()
 		dvs.writeTaskScheduled = false
-		dvs.Unlock()
-	} else {
+		dvs.workloadsToWrite = map[string][]overrideReq{}
+	}
+	dvs.Unlock()
+
+	v.Log.Infof("Rewriting overrides for workloads %s", workloads)
+
+	dvs.SetVMVlanOverrides(overrides, "", true)
+	if count != 0 {
 		v.TimerQ.Add(func() {
 			v.scheduleOverrideRewriteHelper(dvs, count)
 		}, overrideRewriteDelay)
 	}
 }
 
-func (v *VCHub) scheduleOverrideRewrite(dvs *PenDVS) {
+func (v *VCHub) scheduleOverrideRewrite(dvs *PenDVS, workload string, overrides []overrideReq) {
 	dvs.Lock()
 	if !dvs.writeTaskScheduled {
 		v.Log.Infof("scheduling override...")
@@ -937,6 +948,7 @@ func (v *VCHub) scheduleOverrideRewrite(dvs *PenDVS) {
 			v.scheduleOverrideRewriteHelper(dvs, 1)
 		}, overrideRewriteDelay)
 	}
+	dvs.workloadsToWrite[workload] = overrides
 	dvs.Unlock()
 }
 
@@ -1504,10 +1516,6 @@ func (v *VCHub) syncHostVmkNics(penDC *PenDC, penDvs *PenDVS, dispName, hKey str
 	workloadObj := v.getVmkWorkload(penDC, wlName, hostName)
 	newNicMap := map[string]bool{}
 	interfaces := []workload.WorkloadIntfSpec{}
-	vmkNicInfo := workloadVnics{
-		ObjectMeta: *createWorkloadVnicsMeta(wlName),
-		Interfaces: map[string]*vnicEntry{},
-	}
 	for _, vmkNic := range hConfig.Network.Vnic {
 		v.Log.Infof("Processing VmkNic %s on host %s", vmkNic.Key, hKey)
 		if vmkNic.Portgroup != "" {
@@ -1536,17 +1544,25 @@ func (v *VCHub) syncHostVmkNics(penDC *PenDC, penDvs *PenDVS, dispName, hKey str
 			v.Log.Infof("No venice network for PG %s", pgKey)
 			continue
 		}
+		entry := v.getVnicInfoForWorkload(wlName, macStr)
+		if entry == nil {
+			entry = &vnicEntry{
+				IP:         []string{},
+				MacAddress: macStr,
+			}
+		}
+		entry.PG = pgKey
+		if len(entry.Port) != 0 && entry.Port != portKey {
+			// Port has changed
+			entry.portOverrideSet = false
+		}
+		entry.Port = portKey
+
 		interfaces = append(interfaces, workload.WorkloadIntfSpec{
 			MACAddress: macStr,
 			Network:    nw.Name,
 		})
-		// needed later by assignUsegs
-		vmkNicInfo.Interfaces[macStr] = &vnicEntry{
-			PG:         pgKey,
-			Port:       portKey,
-			MacAddress: macStr,
-		}
-		v.setWorkloadVnicsObject(&vmkNicInfo)
+		v.addVnicInfoForWorkload(wlName, entry)
 		v.Log.Infof("Add vmkInterface %s Port %s", vmkNic.Device, portKey)
 		newNicMap[macStr] = true
 	}
