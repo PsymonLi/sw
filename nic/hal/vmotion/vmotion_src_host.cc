@@ -558,6 +558,7 @@ vmotion::spawn_src_host_thread(int sock_fd)
     thread_ctx->tls_connection = get_tls_context()->init_ssl_connection(thread_ctx->fd, TRUE);
     if (!thread_ctx->tls_connection) {
         HAL_TRACE_ERR("vMotion SSL Connection init failed");
+        close(thread_ctx->fd);
         hal::delay_delete_to_slab(HAL_SLAB_VMOTION_THREAD_CTX, thread_ctx);
         return HAL_RET_ERR;
     }
@@ -565,6 +566,8 @@ vmotion::spawn_src_host_thread(int sock_fd)
     ret = alloc_thread_id(&tid);
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("vmotion thread id allocation fail in source host");
+        TLSConnection::destroy(thread_ctx->tls_connection);
+        close(thread_ctx->fd);
         hal::delay_delete_to_slab(HAL_SLAB_VMOTION_THREAD_CTX, thread_ctx);
         return ret;
     }
@@ -586,6 +589,10 @@ vmotion::spawn_src_host_thread(int sock_fd)
                                                  NULL);
     if (!thread_ctx->th) {
         HAL_TRACE_ERR("vmotion src host thread create failure");
+        release_thread_id(tid);
+        TLSConnection::destroy(thread_ctx->tls_connection);
+        close(thread_ctx->fd);
+        hal::delay_delete_to_slab(HAL_SLAB_VMOTION_THREAD_CTX, thread_ctx);
         return HAL_RET_ERR;
     }
 

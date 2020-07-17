@@ -224,7 +224,8 @@ vmotion::alloc_thread_id(uint32_t *tid)
     // allocate tid
     VMOTION_WLOCK
     if (vmotion_.threads_idxr->alloc(tid) != SDK_RET_OK) {
-        HAL_TRACE_ERR("unable to allocate thread id");
+        HAL_TRACE_ERR("unable to allocate thread id Size:{} Usage:{}",
+                      vmotion_.threads_idxr->size(), vmotion_.threads_idxr->usage());
         ret = HAL_RET_ERR;
     }
     VMOTION_WUNLOCK
@@ -342,6 +343,13 @@ vmotion::run_vmotion(ep_t *ep, vmotion_thread_evt_t event)
     if (event == VMOTION_EVT_EP_MV_START) {
         if (!vmn_ep) {
             vmn_ep = create_vmotion_ep(ep, VMOTION_TYPE_MIGRATE_IN);
+
+            if (!vmn_ep) {
+                // vMotion creation fails, possibly due to resources full.
+                // Create Normalization entry to make the active sessions to work. 
+                vmotion_ep_migration_normalization_cfg(ep, true, false);
+                return;
+            }
         } else {
             HAL_TRACE_ERR("vmotion ep already exists");
         }
@@ -365,6 +373,10 @@ vmotion::create_vmotion_ep(ep_t *ep, ep_vmotion_type_t type)
 {
     auto vmn_ep = vmotion_ep::factory(ep, type);
 
+    if (!vmn_ep) {
+        return NULL;
+    }
+
     VMOTION_WLOCK
     vmn_eps_.push_back(vmn_ep);
     VMOTION_WUNLOCK
@@ -375,15 +387,13 @@ vmotion::create_vmotion_ep(ep_t *ep, ep_vmotion_type_t type)
 hal_ret_t
 vmotion::delete_vmotion_ep(vmotion_ep *vmn_ep)
 {
+    // If entry exists in vmn_eps_, delete it
     VMOTION_WLOCK
     auto it = std::find(vmn_eps_.begin(), vmn_eps_.end(), vmn_ep);
-    if (it == vmn_eps_.end()) {
-        VMOTION_WUNLOCK
-        HAL_TRACE_ERR("vmotion: EP Missing in EP list");
-        return HAL_RET_ERR;
+    if (it != vmn_eps_.end()) {
+        // Delete the from the EP List
+        vmn_eps_.erase(it);
     }
-    // Delete the from the EP List
-    vmn_eps_.erase(it);
     VMOTION_WUNLOCK
 
     // Record vMotion end time
@@ -424,7 +434,7 @@ vmotion_ep::factory(ep_t *ep, ep_vmotion_type_t type)
     vmotion_ep* vmn_ep = new (mem) vmotion_ep();
 
     if (vmn_ep->init(ep, type) != HAL_RET_OK) {
-        hal::delay_delete_to_slab(HAL_SLAB_VMOTION_EP, mem);
+        vmn_ep->get_vmotion()->delete_vmotion_ep(vmn_ep);
         return NULL;
     }
     return vmn_ep;
@@ -442,6 +452,8 @@ vmotion_ep::destroy(vmotion_ep *vmn_ep)
 hal_ret_t
 vmotion_ep::init(ep_t *ep, ep_vmotion_type_t type)
 {
+    hal_ret_t ret = HAL_RET_OK;
+
     if ((type != VMOTION_TYPE_MIGRATE_IN) && (type != VMOTION_TYPE_MIGRATE_OUT)) {
         return HAL_RET_ERR;
     }
@@ -463,7 +475,7 @@ vmotion_ep::init(ep_t *ep, ep_vmotion_type_t type)
                                       (fsm_state_ctx)this,
                                       NULL);
 
-        spawn_dst_host_thread();
+        ret = spawn_dst_host_thread();
     } else {
         sm_ = new fsm_state_machine_t(get_vmotion()->get_src_host_fsm_def_func,
                                       STATE_SRC_HOST_INIT,
@@ -485,7 +497,11 @@ vmotion_ep::init(ep_t *ep, ep_vmotion_type_t type)
     // Record vMotion start time
     debug_record_time(&vmotion_ep_dbg_t::start_time);
 
-    return HAL_RET_OK;
+    if ((type == VMOTION_TYPE_MIGRATE_IN) && (ret != HAL_RET_OK)) {
+        dst_host_end_thread_crt_failure (this);
+    }
+
+    return ret;
 }
 
 // This function returns TRUE, if packet will be handled by vMotion.
@@ -714,14 +730,19 @@ vmotion::vmotion_ep_migration_normalization_cfg(ep_t *ep, bool disable, bool loc
 }
 
 hal_ret_t
-vmotion::vmotion_ep_inp_mac_vlan_pgm(ep_t *ep, bool create)
+vmotion::vmotion_ep_inp_mac_vlan_pgm(ep_t *ep, bool create, bool lock_needed)
 {
     hal_ret_t ret;
 
-    VMOTION_PD_LOCK
-    ret = endpoint_migration_inp_mac_vlan_pgm(ep, create);
-    VMOTION_PD_UNLOCK
+    if (lock_needed) {
+        VMOTION_PD_LOCK
+    }
 
+    ret = endpoint_migration_inp_mac_vlan_pgm(ep, create);
+
+    if (lock_needed) {
+        VMOTION_PD_UNLOCK
+    }
     return ret;
 }
 

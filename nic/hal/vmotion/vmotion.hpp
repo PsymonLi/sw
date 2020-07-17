@@ -209,7 +209,7 @@ public:
     static void   delay_delete_thread(sdk::event_thread::event_thread *thr);
     hal_ret_t     vmotion_ep_quiesce_program(ep_t *ep, bool entry_add);
     hal_ret_t     vmotion_ep_migration_normalization_cfg(ep_t *ep, bool disable, bool lock_needed);
-    hal_ret_t     vmotion_ep_inp_mac_vlan_pgm(ep_t *ep, bool create);
+    hal_ret_t     vmotion_ep_inp_mac_vlan_pgm(ep_t *ep, bool create, bool lock_needed);
     hal_ret_t     vmotion_ep_migration_if_update(ep_t *ep);
     int           get_master_sock(void) { return master_sock_fd_; } 
     void          set_master_sock(int sock) { master_sock_fd_ = sock; } 
@@ -269,6 +269,8 @@ typedef struct vmotion_thread_ctx_s {
 
 hal_ret_t vmotion_init(int vmotion_port);
 hal_ret_t vmotion_deinit();
+void      dst_host_end_thread_crt_failure(vmotion_ep *vmn_ep);
+
 
 } // namespace hal
 

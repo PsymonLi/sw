@@ -48,7 +48,7 @@ dst_host_end (vmotion_ep *vmn_ep)
             // In regular scenarios - this entry will be programmed regularly during ENIC create.
             // But if the ENIC is created as part of vMotion EP Create, this entry programming will
             // be skipped. In the end of vMotion, this entry will be created.
-            vmn_ep->get_vmotion()->vmotion_ep_inp_mac_vlan_pgm(ep, true);
+            vmn_ep->get_vmotion()->vmotion_ep_inp_mac_vlan_pgm(ep, true, true);
 
             // Remove EP Quiesce NACL entry
             if (VMOTION_FLAG_IS_EP_QUIESCE_ADDED(vmn_ep)) {
@@ -75,6 +75,25 @@ dst_host_end (vmotion_ep *vmn_ep)
 
     // Stop the watcher
     vmn_ep->get_event_thread()->stop();
+}
+
+void
+dst_host_end_thread_crt_failure (vmotion_ep *vmn_ep)
+{
+    auto ep = vmn_ep->get_ep();
+
+    HAL_TRACE_INFO("Dest Host end ThrdCrtFail EP:{}", vmn_ep->get_ep_handle());
+
+    if (ep) {
+        vmn_ep->get_vmotion()->vmotion_ep_inp_mac_vlan_pgm(ep, true, false);
+
+        // Send success/failure notification to Net Agent
+        endpoint_migration_status_update(ep, MigrationState::FAILED);
+
+        ep->vmotion_state = MigrationState::FAILED;
+    }
+    vmn_ep->get_vmotion()->vmotion_notify_event(vmn_ep, MigrationState::FAILED);
+    vmn_ep->get_vmotion()->incr_migration_state_stats(MigrationState::FAILED);
 }
 
 static void

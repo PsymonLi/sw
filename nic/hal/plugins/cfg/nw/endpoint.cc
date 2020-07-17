@@ -3638,7 +3638,11 @@ endpoint_migration_normalization_timer_cb(void *timer, uint32_t timer_id, void *
 
         endpoint_migration_normalization_cfg(ep, false);
 
-        ep->vmotion_state = MigrationState::SUCCESS;
+        if (!((ep->vmotion_state == MigrationState::FAILED) ||
+              (ep->vmotion_state == MigrationState::ABORTED) ||
+              (ep->vmotion_state == MigrationState::TIMEOUT))) {
+            ep->vmotion_state = MigrationState::SUCCESS;
+        }
 
         // Release write lock
         hal_handle_cfg_db_lock(false, false);
