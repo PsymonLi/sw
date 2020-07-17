@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -12,15 +13,24 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/pensando/sw/api"
+	"github.com/pensando/sw/events/generated/eventtypes"
+	"github.com/pensando/sw/venice/utils/events/recorder"
+	mockevtsrecorder "github.com/pensando/sw/venice/utils/events/recorder/mock"
+	"github.com/pensando/sw/venice/utils/log"
 	. "github.com/pensando/sw/venice/utils/testutils"
 	vosinternalprotos "github.com/pensando/sw/venice/vos/protos"
+)
+
+var (
+	logger             = log.GetNewLogger(log.GetDefaultConfig("vos-diskmonitor-test"))
+	testChannel        = make(chan interface{}, 100)
+	mockEventsRecorder = mockevtsrecorder.NewRecorder("vos-diskmonitor-test", logger)
+	_                  = recorder.Override(mockEventsRecorder)
 )
 
 type fakeDiskUpdateWatchServer struct {
 	ctx context.Context
 }
-
-var testChannel = make(chan interface{}, 100)
 
 // Send implements a mock interface
 func (f *fakeDiskUpdateWatchServer) Send(event *vosinternalprotos.DiskUpdate) error {
@@ -49,6 +59,19 @@ func (f *fakeDiskUpdateWatchServer) SendMsg(m interface{}) error { return nil }
 func (f *fakeDiskUpdateWatchServer) RecvMsg(m interface{}) error { return nil }
 
 func TestDiskUpdateOps(t *testing.T) {
+	checkEventCountHelper := func() int {
+		eventCount := 0
+		for _, ev := range mockEventsRecorder.GetEvents() {
+			if ev.EventType == eventtypes.FLOWLOGS_DISK_THRESHOLD_EXCEEDED.String() &&
+				ev.Category == "system" &&
+				ev.Severity == "critical" &&
+				strings.Contains(ev.Message, "Flow logs disk usage threshold exceeded") &&
+				strings.Contains(ev.Message, "current threshold 1.000000e-04") {
+				eventCount++
+			}
+		}
+		return eventCount
+	}
 	fb := &mockBackend{}
 	inst := &instance{}
 	inst.Init(fb)
@@ -78,11 +101,11 @@ func TestDiskUpdateOps(t *testing.T) {
 	go srv.WatchDiskThresholdUpdates(&api.ListWatchOptions{}, fw)
 
 	// Create dummy dirs and files
-	tempDir := "./default.fwlogs/data"
+	tempDir := "./default.fwlogs"
 	os.MkdirAll(tempDir, os.ModePerm)
 	exec.Command("/bin/sh", "-c", "cp * "+tempDir+"/.").Output()
 
-	tempMetaDir := "./default.meta-fwlogs/data"
+	tempMetaDir := "./default.meta-fwlogs"
 	os.MkdirAll(tempMetaDir, os.ModePerm)
 	exec.Command("/bin/sh", "-c", "cp * "+tempMetaDir+"/.").Output()
 
@@ -100,7 +123,8 @@ func TestDiskUpdateOps(t *testing.T) {
 		CombinedBuckets:          []string{"fwlogs", "meta-fwlogs"},
 	}
 	paths.Store("", c)
-	cancelFunc, err := inst.createDiskUpdateWatcher(paths, time.Second*2, []string{"./"})
+	cancelFunc, err := inst.createDiskUpdateWatcher(paths,
+		time.Second*2, []string{"./"}, time.Minute*4)
 	Assert(t, err == nil, "failed to create disk update watcher")
 
 	// Start monitor disks
@@ -116,6 +140,29 @@ func TestDiskUpdateOps(t *testing.T) {
 	Assert(t, diskUpdate.Status.UsedByNamespace != 0, "diskupdate used is 0")
 	Assert(t, ((float64(diskUpdate.Status.UsedByNamespace)/float64(diskUpdate.Status.Size_))*100) >= float64(0.0001),
 		"incorrect threshold notification")
+
+	// Verify event
+	AssertEventually(t, func() (bool, interface{}) {
+		eventCount := checkEventCountHelper()
+		return eventCount == 1, nil
+	}, "failed to find flow logs disk threshold exceeded event", "2s", "60s")
+
+	// Verify event count
+	// Sleep for 1 minute, the event count should still be the same
+	time.Sleep(time.Minute * 2)
+	eventCount := checkEventCountHelper()
+	Assert(t, eventCount == 1, "only 1 event should have got raised")
+
+	// Now wait for 1 more minite, after that event count should go up.
+	time.Sleep(time.Minute * 2)
+	eventCount = checkEventCountHelper()
+	Assert(t, eventCount == 2, "2 events should have got raised", eventCount)
+
+	// Now wait for 2 more minute, there should still be only 2 events
+	time.Sleep(time.Minute * 2)
+	eventCount = checkEventCountHelper()
+	Assert(t, eventCount == 2, "2 events should have got raised", eventCount)
+
 	cancelFunc()
 
 	// Cover dynamic threshold.
@@ -128,7 +175,8 @@ func TestDiskUpdateOps(t *testing.T) {
 		CombinedBuckets:          []string{"fwlogs"},
 	}
 	paths.Store("", c)
-	cancelFunc, err = inst.createDiskUpdateWatcher(paths, time.Second*2, []string{"./"})
+	cancelFunc, err = inst.createDiskUpdateWatcher(paths,
+		time.Second*2, []string{"./"}, time.Minute*1)
 	Assert(t, err == nil, "failed to create disk update watcher")
 	time.Sleep(time.Second * 3)
 

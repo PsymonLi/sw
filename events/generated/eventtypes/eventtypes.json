@@ -446,6 +446,11 @@
    "Desc": "DSC has detected a pcie link health warning"
   },
   {
+   "Name": "FLOWLOGS_DISK_THRESHOLD_EXCEEDED",
+   "Severity": "critical",
+   "Desc": "Flowlogs disk threshold exceeded"
+  },
+  {
    "Name": "FLOWLOGS_DROPPED",
    "Severity": "critical",
    "Desc": "Firewall flow logs have been dropped. Check the alert to get more inforamation."

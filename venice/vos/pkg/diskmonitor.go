@@ -11,6 +11,10 @@ import (
 
 	syscall "golang.org/x/sys/unix"
 
+	"github.com/pensando/sw/events/generated/eventattrs"
+	"github.com/pensando/sw/events/generated/eventtypes"
+	"github.com/pensando/sw/venice/utils"
+	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/runtime"
@@ -28,6 +32,13 @@ const (
 	// The remaining 10% we are leaving for Elastic, which may be much more then what Elastic needs, but lets not set a very
 	// high threshold for objstore, 90% is already very high.
 	objstoreThreshold = 90
+
+	diskThresholdCriticialEventMessage = "Flow logs disk usage threshold exceeded on %s, current threshold %e, partition name %s, partition size %d bytes"
+
+	flowlogsDiskThresholdCriticalEventReportingPeriod = 60 * time.Minute
+
+	// Minio (+ other components like Citadel, Elastic etc.) data partition
+	minioDataPartition = "/data"
 )
 
 // DiskMonitorConfig represents Disk monitor configuration used by Vos for monitoring disk usage
@@ -100,6 +111,7 @@ func isThresholdReached(basePath string,
 
 		for _, file := range files {
 			if file.IsDir() {
+				used += uint64(file.Size())
 				reached, tmp, err := helper(fmt.Sprintf("%s/%s", currPath, file.Name()), c, size, thresholdPercent)
 				if err != nil {
 					log.Errorf("error encountered while disk crawling %+v", err)
@@ -209,9 +221,27 @@ func (w *storeWatcher) statDisk(monitorConfig *sync.Map, paths []string) {
 					log.Errorf("unable to enqueue the event (%s)", err)
 				}
 			}
+
+			if w.shouldRaiseEvent(eventattrs.Severity_CRITICAL) {
+				descr := fmt.Sprintf(diskThresholdCriticialEventMessage, utils.GetHostname(), th, minioDataPartition, all)
+				recorder.Event(eventtypes.FLOWLOGS_DISK_THRESHOLD_EXCEEDED, descr, nil)
+			}
 		}
 		return true
 	})
+}
+
+func (w *storeWatcher) shouldRaiseEvent(eventSev eventattrs.Severity) bool {
+	switch eventSev {
+	case eventattrs.Severity_CRITICAL:
+		if time.Now().Sub(w.lastFlowlogsCriticalEventRaisedTime).Minutes() >=
+			w.flowlogsdiskThresholdCriticialEventDuration.Minutes() {
+			w.lastFlowlogsCriticalEventRaisedTime = time.Now()
+			return true
+		}
+	}
+
+	return false
 }
 
 func makeEvent(path string, all, used uint64, th float64) runtime.Object {

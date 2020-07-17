@@ -15,6 +15,7 @@ import (
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/balancer"
+	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/k8s"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/objstore/minio"
@@ -60,6 +61,13 @@ func main() {
 	logger := log.SetConfig(logConfig)
 	defer logger.Close()
 
+	// create events recorder
+	evtsRecorder, err := recorder.NewRecorder(&recorder.Config{Component: globals.Vos}, logger)
+	if err != nil {
+		log.Fatalf("failed to create events recorder, err: %v", err)
+	}
+	defer evtsRecorder.Close()
+
 	log.Infof("resolver-urls %+v", resolverURLs)
 	log.Infof("cluster-nodes %v", *clusterNodes)
 	log.Infof("starting object store with args : {%+v}", os.Args)
@@ -89,7 +97,7 @@ func main() {
 	go waitForAPIServerAndGetMinioCredsManager(resolverURLs, credsMgrChannel)
 
 	// init obj store
-	_, err := vospkg.New(ctx, *traceAPI, "",
+	_, err = vospkg.New(ctx, *traceAPI, "",
 		credsMgrChannel,
 		vospkg.WithBootupArgs(args),
 		vospkg.WithBucketDiskThresholds(vospkg.GetBucketDiskThresholds()))

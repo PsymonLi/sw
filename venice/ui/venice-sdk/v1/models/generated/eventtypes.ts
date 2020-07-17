@@ -105,6 +105,7 @@ export const categoryToEventType: { [cat: string]: string[] } = {
     'DSC_SERVICE_STARTED',
     'DSC_SERVICE_STOPPED',
     'DSC_WARN_PCIEHEALTH_EVENT',
+    'FLOWLOGS_DISK_THRESHOLD_EXCEEDED',
     'FLOWLOGS_DROPPED',
     'FLOWLOGS_RATE_LIMITED',
     'FLOWLOGS_REPORTING_ERROR',
@@ -563,6 +564,11 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "DSC_WARN_PCIEHEALTH_EVENT",
       "Severity": EventsEvent_severity.warn,
       "Desc": "DSC has detected a pcie link health warning",
+  },
+  'FLOWLOGS_DISK_THRESHOLD_EXCEEDED' : {
+      "Name": "FLOWLOGS_DISK_THRESHOLD_EXCEEDED",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "Flowlogs disk threshold exceeded",
   },
   'FLOWLOGS_DROPPED' : {
       "Name": "FLOWLOGS_DROPPED",

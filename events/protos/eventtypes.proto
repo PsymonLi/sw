@@ -491,6 +491,12 @@ enum EventTypes {
                                             (severity)          = CRITICAL,
                                             (desc)              = "Firewall flow logs are currently rate-limited. Check the alert to get more information.",
                                             (suppress_mm)       = true];
+    FLOWLOGS_DISK_THRESHOLD_EXCEEDED      = 1304 [(category)    = System,
+                                            (severity)          = CRITICAL,
+                                            (desc)              = "Flowlogs disk threshold exceeded",
+                                            (suppress_mm)       = true];
+
+
     BOND0_NO_IP		                  = 1401 [(category)    = Network,
                                            (severity)    	= CRITICAL,
                                            (desc)        	= "No IP address on bond0"];

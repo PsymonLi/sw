@@ -194,8 +194,13 @@ func (i *instance) createBucket(bucket string, lifecycle string, addWatcher bool
 	return nil
 }
 
-func (i *instance) createDiskUpdateWatcher(monitorConfig *sync.Map, monitorPeriod time.Duration, paths []string) (context.CancelFunc, error) {
-	watcher := &storeWatcher{bucket: "", client: nil, watchPrefixes: i.pfxWatcher}
+func (i *instance) createDiskUpdateWatcher(monitorConfig *sync.Map,
+	monitorPeriod time.Duration, paths []string,
+	flowlogsdiskThresholdCriticialEventDuration time.Duration) (context.CancelFunc, error) {
+	watcher := &storeWatcher{bucket: "",
+		client:        nil,
+		watchPrefixes: i.pfxWatcher,
+		flowlogsdiskThresholdCriticialEventDuration: flowlogsdiskThresholdCriticialEventDuration}
 	i.watcherMap[diskUpdateWatchPath] = watcher
 	i.wg.Add(1)
 	monitorCtx, cancelFunc := context.WithCancel(i.ctx)
@@ -337,7 +342,8 @@ func New(ctx context.Context, trace bool, testURL string, credentialsManagerChan
 		return nil, errors.Wrap(err, "failed to create buckets")
 	}
 
-	_, err = inst.createDiskUpdateWatcher(inst.bucketDiskThresholds, inst.periodicDiskMonitorTime, DiskPaths)
+	_, err = inst.createDiskUpdateWatcher(inst.bucketDiskThresholds,
+		inst.periodicDiskMonitorTime, DiskPaths, flowlogsDiskThresholdCriticalEventReportingPeriod)
 	if err != nil {
 		log.Errorf("failed to start disk watcher (%+v)", err)
 		return nil, errors.Wrap(err, "failed to start disk watcher")

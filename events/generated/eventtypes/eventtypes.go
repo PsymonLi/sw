@@ -776,6 +776,13 @@ func init() {
 		Desc:       "Firewall flow logs are currently rate-limited. Check the alert to get more information.",
 		SuppressMM: true}
 
+	eventTypes[FLOWLOGS_DISK_THRESHOLD_EXCEEDED] = &EventTypeAttributes{
+		EType:      FLOWLOGS_DISK_THRESHOLD_EXCEEDED.String(),
+		Severity:   "critical",
+		Category:   "system",
+		Desc:       "Flowlogs disk threshold exceeded",
+		SuppressMM: true}
+
 	eventTypes[BOND0_NO_IP] = &EventTypeAttributes{
 		EType:      BOND0_NO_IP.String(),
 		Severity:   "critical",

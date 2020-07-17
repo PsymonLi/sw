@@ -152,9 +152,11 @@ func (s *storeImpl) GetStoreObject(ctx context.Context, bucketName, objectName s
 func (s *storeImpl) Clear() {}
 
 type storeWatcher struct {
-	client        vos.BackendClient
-	bucket        string
-	watchPrefixes watchstream.WatchedPrefixes
+	client                                      vos.BackendClient
+	bucket                                      string
+	watchPrefixes                               watchstream.WatchedPrefixes
+	flowlogsdiskThresholdCriticialEventDuration time.Duration
+	lastFlowlogsCriticalEventRaisedTime         time.Time
 }
 
 func (w *storeWatcher) Watch(ctx context.Context, cleanupFn func()) {
