@@ -37,8 +37,8 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:   "assets-server-hq, ah",
-			Value:  asset.EndpointHQ,
-			EnvVar: "ASSETS_HOST_HQ",
+			Value:  asset.EndpointFS,
+			EnvVar: "ASSETS_HOST_FS",
 			Usage:  "host name of hq asset server. if hostname is NULL, it means not push to hq",
 		},
 		cli.StringFlag{
@@ -73,16 +73,7 @@ func action(ctx *cli.Context) error {
 		remote = append(remote, ctx.GlobalString("assets-server-colo"))
 	}
 	if ctx.GlobalString("assets-server-hq") != "NULL" {
-		assetServerHQ := ctx.GlobalString("assets-server-hq")
-		if bucket == "builds" {
-			// because builds is an NFS mount point at HQ, move one level up
-			// also use different minio server due to minio limitation
-			bucket = dirName
-			dirName = version
-			version = ""
-			assetServerHQ = "assets-hq.pensando.io:9001"
-		}
-		remote = append(remote, assetServerHQ)
+		remote = append(remote, ctx.GlobalString("assets-server-hq"))
 	}
 
 	fi, err := os.Stat(filename)
