@@ -75,7 +75,12 @@ func (h *healRoutine) run(ctx context.Context, objAPI ObjectLayer) {
 			}
 
 			// Wait and proceed if there are active requests
-			waitForLowHTTPReq(int32(globalEndpoints.NEndpoints()))
+			// Changing tolerance to a random higher number. 
+			// We have sustained http requests above then 6 (number of minio endpoints in the cluster)
+			// Old tolerance value: globalEndpoints.NEndpoints()
+			// Workaround for following Minio issue:
+			// Minio issue opened on 27th May 2020: https://github.com/minio/minio/issues/9717 
+			waitForLowHTTPReq(int32(500))
 
 			var res madmin.HealResultItem
 			var err error
