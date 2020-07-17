@@ -173,7 +173,8 @@ pds_flow_classify_get_advance_offset (vlib_buffer_t *b)
 
 always_inline void
 pds_flow_classify_x2 (vlib_buffer_t *p0, vlib_buffer_t *p1,
-                        u16 *next0, u16 *next1, u32 *counter)
+                      u16 *next0, u16 *next1, u32 *counter,
+                      bool bitw_svc)
 {
     p4_rx_cpu_hdr_t *hdr0 = vlib_buffer_get_current(p0);
     p4_rx_cpu_hdr_t *hdr1 = vlib_buffer_get_current(p1);
@@ -268,7 +269,10 @@ pds_flow_classify_x2 (vlib_buffer_t *p0, vlib_buffer_t *p1,
 }
 
 always_inline void
-pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
+pds_flow_classify_x1 (vlib_buffer_t *p,
+                      u16 *next,
+                      u32 *counter,
+                      bool bitw_svc)
 {
     p4_rx_cpu_hdr_t *hdr = vlib_buffer_get_current(p);
     u8 flag_orig;
@@ -319,6 +323,12 @@ pds_flow_handle_l2l (vlib_buffer_t *p0, u8 flow_exists,
 
 always_inline void
 pds_flow_rewrite_flags_init (void)
+{
+    return;
+}
+
+always_inline void
+pds_flow_nacl_init (void)
 {
     return;
 }

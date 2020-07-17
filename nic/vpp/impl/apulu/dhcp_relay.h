@@ -206,29 +206,7 @@ pds_dhcp_relay_fill_subnet_info(uint32_t vnic_id, uint32_t *subnet_pfx,
     return;
 }
 
-always_inline void
-pds_dhcp_relay_pipeline_init (void)
-{
-    pds_infra_api_reg_t params = {0};
-
-    params.nacl_id = NACL_DATA_ID_FLOW_MISS_DHCP_HOST;
-    params.node = format(0, "pds-dhcp-relay-host-classify");
-    params.frame_queue_index = ~0;
-    params.handoff_thread = ~0;
-    params.offset = 0;
-    params.unreg = 0;
-
-    if (0 != pds_register_nacl_id_to_node(&params)) {
-        ASSERT(0);
-    }
-
-    params.nacl_id = NACL_DATA_ID_FLOW_MISS_DHCP_UPLINK;
-    params.node = format(0, "pds-dhcp-relay-uplink-classify");
-    if (0 != pds_register_nacl_id_to_node(&params)) {
-        ASSERT(0);
-    }
-    return;
-}
+extern void pds_dhcp_relay_nacl_init(void);
 
 #ifdef __cplusplus
 }

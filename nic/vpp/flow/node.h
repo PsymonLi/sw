@@ -51,7 +51,11 @@
         _(IP4_NAT, "pds-nat44" )                                    \
         _(IP4_NAT_INVAL, "pds-nat44-inval" )                        \
         _(ICMP_VRIP, "ip4-icmp-echo-request")                       \
+        _(IP4_SVC_FLOW_PROG, "pds-svc-ip4-flow-program" )           \
+        _(IP6_SVC_FLOW_PROG, "pds-svc-ip6-flow-program" )           \
+        _(L2_SVC_FLOW_PROG, "pds-svc-l2-flow-program" )             \
         _(DROP, "pds-error-drop")                                   \
+
 
 #define foreach_flow_classify_counter                               \
         _(IP4_FLOW, "IPv4 flow packets" )                           \

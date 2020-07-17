@@ -123,6 +123,13 @@ pdsa_flow_clear_cmd (const pds_cmd_msg_t *msg, pds_cmd_rsp_t *response)
     return sdk::SDK_RET_OK;
 }
 
+static void
+pdsa_flow_device_cfg (const pds_cfg_msg_t *msg, bool del)
+{
+    pds_flow_device_cfg_change();
+    return;
+}
+
 void
 pdsa_flow_hdlr_init (void)
 {
@@ -136,4 +143,6 @@ pdsa_flow_hdlr_init (void)
     }
     pds_ipc_register_cmd_callbacks(PDS_CMD_MSG_FLOW_CLEAR,
                                    pdsa_flow_clear_cmd);
+    pds_cfg_register_notify_callback(OBJ_ID_DEVICE,
+                                     pdsa_flow_device_cfg);
 }

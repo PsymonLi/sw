@@ -20,6 +20,7 @@ pds_register_nacl_id_to_node (pds_infra_api_reg_t *params)
         return -1;
     }
 
+    nacl_id_to_node = &am->nacl_id_to_node[params->nacl_id];
     if (params->unreg) {
         goto unreg;
     }
@@ -35,23 +36,18 @@ pds_register_nacl_id_to_node (pds_infra_api_reg_t *params)
         return -1;
     }
 
-    vlib_worker_thread_barrier_sync(vm);
-    nacl_id_to_node = &am->nacl_id_to_node[params->nacl_id];
-    nacl_id_to_node->node_id =
-            vlib_node_add_next(vm, lookup_node->index,
-                               reg_node->index);
+    nacl_id_to_node->node_id = vlib_node_add_next(vm,
+                                                  lookup_node->index,
+                                                  reg_node->index);
     nacl_id_to_node->frame_queue_index = params->frame_queue_index;
     nacl_id_to_node->handoff_thread = params->handoff_thread;
     nacl_id_to_node->offset = params->offset;
-    vlib_worker_thread_barrier_release(vm);
     return 0;
 
 unreg:
     // there is no way to remove already added next node
-    vlib_worker_thread_barrier_sync(vm);
     clib_memset(nacl_id_to_node, ~0,
                 sizeof(pds_infra_nacl_handoff_t));
-    vlib_worker_thread_barrier_release(vm);
     return 0;
 }
 

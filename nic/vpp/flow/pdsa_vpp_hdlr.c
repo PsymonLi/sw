@@ -7,6 +7,8 @@
 #include "pdsa_hdlr.h"
 #include "pdsa_uds_hdlr.h"
 
+extern void pds_flow_nacl_init(void);
+
 void
 pds_flow_cfg_set (uint8_t con_track_en,
                   uint32_t tcp_syn_timeout,
@@ -37,4 +39,10 @@ pds_flow_cfg_set (uint8_t con_track_en,
         vec_elt(fm->drop_timeout, i) =
                 PDS_FLOW_SEC_TO_TIMER_TICK(flow_drop_timeout[i]);
     }
+}
+
+void
+pds_flow_device_cfg_change (void)
+{
+    pds_flow_nacl_init();
 }

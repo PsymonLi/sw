@@ -31,6 +31,8 @@ pds_dhcp4_server_add(uint8_t *id,
 
 int pds_dhcp4_server_del(uint8_t *id);
 
+void pds_dhcp4_device_config_update(void);
+
 int pds_dhcp_relay_init_cb(bool external_server);
 
 #ifdef __cplusplus

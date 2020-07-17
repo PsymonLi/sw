@@ -235,7 +235,7 @@ VLIB_REGISTER_NODE (arp_proxy_node) = {
 static clib_error_t *
 arp_proxy_init (vlib_main_t * vm)
 {
-    pds_arp_proxy_pipeline_init();
+    pds_arp_proxy_nacl_init();
     pds_mapping_table_init();
     return 0;
 }

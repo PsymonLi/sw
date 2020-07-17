@@ -988,7 +988,7 @@ pds_dhcp_relay_init (vlib_main_t *vm)
     vec_validate_init_empty(dhcp_relay_main.policy_pool_idx,
                             (2048 - 1), 0xFFFF);
 
-    pds_dhcp_relay_pipeline_init();
+    pds_dhcp_relay_nacl_init();
 
     pds_dhcp_relay_cfg_init();
 

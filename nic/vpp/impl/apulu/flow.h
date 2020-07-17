@@ -14,6 +14,7 @@
 #include <feature.h>
 #include <nic/apollo/api/impl/apulu/nacl_data.h>
 #include <vlib/vlib.h>
+#include <vppinfra/atomics.h>
 #include <vnet/vxlan/vxlan_packet.h>
 #include <nic/vpp/impl/nat.h>
 #include <nic/vpp/impl/pds_table.h>
@@ -23,7 +24,6 @@
 #include "vnic.h"
 #include "gen/p4gen/p4/include/ftl.h"
 #include "sess_helper.h"
-#include <vppinfra/atomics.h>
 #include "bd.h"
 
 #define PDS_FLOW_UPLINK0_LIF_ID     0x0
@@ -76,6 +76,8 @@ pds_session_get_max (void)
 }
 
 extern pds_flow_main_t pds_flow_main;
+
+extern void pds_flow_nacl_init(void);
 
 always_inline u16
 pds_get_cpu_flags_from_vnic (pds_impl_db_vnic_entry_t *vnic)
@@ -509,14 +511,22 @@ pds_l2l_flow_extract_nexthop_info (vlib_buffer_t *p0,
 }
 
 always_inline void
-pds_flow_extract_nexthop_info(vlib_buffer_t *p0,
-                              u8 is_ip4, u8 iflow,
-                              u16 thread_index)
+pds_flow_extract_nexthop_info (vlib_buffer_t *p0,
+                               bool is_ip4,
+                               bool iflow,
+                               bool bitw_svc,
+                               u16 thread_index)
 {
     u32 nexthop = 0;
     pds_impl_db_vnic_entry_t *vnic0;
     pds_flow_main_t *fm = &pds_flow_main;
 
+    if (bitw_svc) {
+        ftlv4_cache_set_nexthop(1, //PDS_IMPL_UPLINK_ECMP_NHGROUP_HW_ID
+                                NEXTHOP_TYPE_ECMP, 1,
+                                0, thread_index);
+        return;
+    }
     // check if drop bit is set and program nh as drop
     if (PREDICT_FALSE(PDS_FLOW_NH_DROP_GET(vnet_buffer(p0)->pds_flow_data.nexthop))) {
         nexthop = vnet_buffer(p0)->pds_flow_data.nexthop;
@@ -643,7 +653,8 @@ pds_device_asymmetric_routing (void) {
 
 always_inline void
 pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
-                             u16 flags, u16 *next, u32 *counter,
+                             u16 flags, bool bitw_svc,
+                             u16 *next, u32 *counter,
                              pds_flow_hw_ctx_t *ctx)
 {
     u16 xlate_id;
@@ -652,6 +663,26 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
     bool mapping;
 
     vnet_buffer(p)->sw_if_index[VLIB_TX] = hdr->ingress_bd_id;
+
+    if (bitw_svc) {
+        vnet_buffer(p)->pds_flow_data.egress_lkp_id = hdr->ingress_bd_id;
+        pkt_type = PDS_FLOW_BITW;
+        if (PREDICT_TRUE(BIT_ISSET(flags, VPP_CPU_FLAGS_IPV4_VALID))) {
+            *next = FLOW_CLASSIFY_NEXT_IP4_SVC_FLOW_PROG;
+            counter[FLOW_CLASSIFY_COUNTER_IP4_FLOW] += 1;
+        } else if (BIT_ISSET(flags, VPP_CPU_FLAGS_IPV6_VALID)) {
+            // drop as we dont support ipv6 yet.
+            // FLOW_CLASSIFY_NEXT_IP6_SVC_FLOW_PROG
+            *next = FLOW_CLASSIFY_NEXT_DROP;
+            counter[FLOW_CLASSIFY_COUNTER_IP6_FLOW] += 1;
+        } else {
+            // drop as we don't support l2 flows yet.
+            // FLOW_CLASSIFY_NEXT_L2_SVC_FLOW_PROG
+            *next = FLOW_CLASSIFY_NEXT_DROP;
+            counter[FLOW_CLASSIFY_COUNTER_L2_FLOW] += 1;
+        }
+        goto end;
+    }
 
     if (!hdr->rx_packet) {
         bool asym_route = pds_device_asymmetric_routing();
@@ -844,13 +875,16 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
     if (PREDICT_FALSE(NULL != ctx)) {
         pkt_type = ctx->packet_type;
     }
+
+end:
     vnet_buffer(p)->pds_flow_data.packet_type = pkt_type;
     return;
 }
 
 always_inline int
-pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib, u16 nh_hw_id,
-                     u8 is_ip4, u16 *next, u32 *counter)
+pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib,
+                     u16 nh_hw_id, u8 is_ip4,
+                     u16 *next, u32 *counter)
 {
     uint16_t bd_id, ingress_bd_id;
     uint32_t vrip = 0, ingress_vrip;
@@ -870,10 +904,10 @@ pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib, u16 nh_hw_id,
                 (vnet_buffer (vlib)->l4_hdr_offset -
                  vnet_buffer (vlib)->l3_hdr_offset));
 
-        bd_id = ((p4_rx_cpu_hdr_t *)hdr)->egress_bd_id;
+        bd_id = hdr->egress_bd_id;
         pds_impl_db_vr_ip_mac_get(bd_id, &vrip, &vrmac);
         if (dst_ip == vrip) {
-            ingress_bd_id = ((p4_rx_cpu_hdr_t *)hdr)->ingress_bd_id;
+            ingress_bd_id = hdr->ingress_bd_id;
             pds_impl_db_vr_ip_mac_get(ingress_bd_id, &ingress_vrip, &ingress_vrmac);
             eth0 = (ethernet_header_t *)((u8 *)ip40 -
                    (vnet_buffer(vlib)->l3_hdr_offset -
@@ -909,10 +943,12 @@ pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib, u16 nh_hw_id,
 always_inline void
 pds_flow_classify_no_vnic (vlib_buffer_t *p,
                            p4_rx_cpu_hdr_t *hdr,
+                           bool bitw_svc,
                            u16 *next,
                            u32 *counter)
 {
-    if (hdr->rx_packet && (hdr->flags & VPP_CPU_FLAGS_IPV4_2_VALID) &&
+    if (!bitw_svc && hdr->rx_packet &&
+        (hdr->flags & VPP_CPU_FLAGS_IPV4_2_VALID) &&
         !hdr->flow_hit) {
         /*
          * When vnic lookup fails in P4, P4/P4+ cannot do a route lookup on
@@ -1036,7 +1072,10 @@ pds_vnic_active_sessions_increment (pds_impl_db_vnic_entry_t *vnic)
 }
 
 always_inline void
-pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
+pds_flow_classify_x1 (vlib_buffer_t *p,
+                      u16 *next,
+                      u32 *counter,
+                      bool bitw_svc)
 {
     pds_flow_main_t *fm = &pds_flow_main;
     p4_rx_cpu_hdr_t *hdr = vlib_buffer_get_current(p);
@@ -1099,7 +1138,7 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
             counter[FLOW_CLASSIFY_COUNTER_QID_MISMATCH] += 1;
             return;
         }
-        if (pds_flow_packet_l2l(ctx->packet_type)) {
+        if (!bitw_svc && pds_flow_packet_l2l(ctx->packet_type)) {
             ret = pds_flow_l2l_packet_process(p, hdr, ctx,
                                               flags, next,
                                               counter);
@@ -1147,7 +1186,7 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
 
 vnic_check:
     if (PREDICT_FALSE(!vnic)) {
-        pds_flow_classify_no_vnic(p, hdr, next, counter);
+        pds_flow_classify_no_vnic(p, hdr, bitw_svc, next, counter);
         return;
     }
 
@@ -1159,7 +1198,7 @@ vnic_check:
         goto end;
     }
 
-    pds_flow_packet_type_derive(p, hdr, flags, next, counter, ctx);
+    pds_flow_packet_type_derive(p, hdr, flags, bitw_svc, next, counter, ctx);
     if (FLOW_CLASSIFY_N_NEXT != *next) {
         goto end;
     }
@@ -1188,10 +1227,11 @@ end:
 
 always_inline void
 pds_flow_classify_x2 (vlib_buffer_t *p0, vlib_buffer_t *p1,
-                      u16 *next0, u16 *next1, u32 *counter)
+                      u16 *next0, u16 *next1, u32 *counter,
+                      bool bitw_svc)
 {
-    pds_flow_classify_x1(p0, next0, counter);
-    pds_flow_classify_x1(p1, next1, counter);
+    pds_flow_classify_x1(p0, next0, counter, bitw_svc);
+    pds_flow_classify_x1(p1, next1, counter, bitw_svc);
 }
 
 always_inline void
@@ -1476,31 +1516,19 @@ pds_flow_rewrite_flags_init (void)
     rewrite_flags->rx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START);
 
+    // for BITW mode no rewrite flags required.
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_BITW);
+    rewrite_flags->tx_rewrite = rewrite_flags->rx_rewrite = 0;
     return;
 }
+
 
 always_inline void
 pds_flow_pipeline_init (vlib_main_t *vm)
 {
-    pds_infra_api_reg_t params = {0};
-    //vlib_node_t *flow;
-
-    params.nacl_id = NACL_DATA_ID_FLOW_MISS_IP4_IP6;
-    params.node = format(0, "pds-flow-classify");
-    //flow = vlib_get_node_by_name(vlib_get_main(), (u8 *) "pds-flow-classify");
-    //params.frame_queue_index = vlib_frame_queue_main_init (flow->index, 0);
-    //params.handoff_thread = 0;
-    params.frame_queue_index = ~0;
-    params.handoff_thread = ~0;
-    params.offset = 0;
-    params.unreg = 0;
-
-    if (0 != pds_register_nacl_id_to_node(&params)) {
-        ASSERT(0);
-    }
-
+    pds_flow_nacl_init();
     icmp_echo_request_register_next_node(vm, (u8 *) "pds-vnic-l2-rewrite");
-
     return;
 }
 

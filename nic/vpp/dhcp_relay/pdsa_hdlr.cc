@@ -190,6 +190,13 @@ pdsa_dhcp_subnet_cfg (const pds_cfg_msg_t *msg, bool del)
     return;
 }
 
+static void
+pdsa_dhcp_device_cfg (const pds_cfg_msg_t *msg, bool del)
+{
+    pds_dhcp4_device_config_update();
+    return;
+}
+
 void
 pds_dhcp_relay_cfg_init (void) {
     // initialize callbacks for cfg/oper messages received from pds-agent
@@ -197,4 +204,6 @@ pds_dhcp_relay_cfg_init (void) {
     pds_cfg_register_del_callback(OBJ_ID_DHCP_POLICY, pdsa_dhcp_policy_cfg_del);
 
     pds_cfg_register_notify_callback(OBJ_ID_SUBNET, pdsa_dhcp_subnet_cfg);
+    pds_cfg_register_notify_callback(OBJ_ID_DEVICE, pdsa_dhcp_device_cfg);
+
 }

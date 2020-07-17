@@ -48,7 +48,9 @@ int pds_impl_db_vpc_del(uint16_t vpc_hw_id);
 int pds_impl_db_device_set(const uint8_t *mac, const uint8_t *ip,
                            uint8_t ip4, uint8_t overlay_routing_en,
                            uint8_t symmetric_routing_en,
-                           uint16_t mapping_prio);
+                           uint16_t mapping_prio,
+                           bool host, bool bitw_switch,
+                           bool bitw_svc, bool bitw_classic);
 
 int pds_impl_db_device_del(void);
 

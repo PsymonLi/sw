@@ -168,13 +168,34 @@ pds_cfg_db_device_set_cb (const pds_cfg_msg_t *msg)
 {
     int rc;
     const pds_device_spec_t *spec = &msg->device.spec.spec;
+    bool host, bitw_switch, bitw_svc, bitw_classic;
 
+    host = bitw_switch = bitw_svc = bitw_classic = false;
+    switch (spec->dev_oper_mode) {
+        case PDS_DEV_OPER_MODE_NONE:
+        case PDS_DEV_OPER_MODE_HOST:
+            host = true;
+            break;
+        case PDS_DEV_OPER_MODE_BITW_SMART_SWITCH:
+            bitw_switch = true;
+            break;
+        case PDS_DEV_OPER_MODE_BITW_SMART_SERVICE:
+            bitw_svc = true;
+            break;
+        case PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH:
+            bitw_classic = true;
+            break;
+        default:
+            assert(0);
+            break;
+    }
     rc = pds_impl_db_device_set(msg->device.spec.spec.device_mac_addr,
                                 (const uint8_t *) &spec->device_ip_addr.addr,
                                 (spec->device_ip_addr.af == IP_AF_IPV4) ? 1:0,
                                 spec->overlay_routing_en,
                                 spec->symmetric_routing_en,
-                                spec->ip_mapping_priority);
+                                spec->ip_mapping_priority,
+                                host, bitw_switch, bitw_svc, bitw_classic);
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {

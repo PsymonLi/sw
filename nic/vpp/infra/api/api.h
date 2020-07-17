@@ -6,6 +6,7 @@
 #ifndef __VPP_INFRA_API_API_H__
 #define __VPP_INFRA_API_API_H__
 
+#include <stdbool.h>
 #include <vppinfra/clib.h>
 #include <vlib/vlib.h>
 
@@ -38,7 +39,7 @@ typedef struct pds_infra_api_reg_s {
     // packet offset to be advanced before redirecting packets.
     pds_packet_offset offset;
     // flag to indicate register or unregister. set to true if unregister.
-    u8 unreg;
+    bool unreg;
 } pds_infra_api_reg_t;
 
 typedef struct pds_infra_nacl_handoff_s {

@@ -28,6 +28,18 @@ typedef enum {
     PDS_ETH_ENCAP_DOT1AD,   // double tag
 } pds_eth_encap_type;
 
+typedef enum {
+    PDS_DEV_MODE_NONE                = 0,
+    // flow based host PCIe(tagged/untagged) <----> uplinks(encapped).
+    PDS_DEV_MODE_HOST                = 1,
+    // flow based uplink0/1(tagged/untagged) <----> uplink1/0(encapped).
+    PDS_DEV_MODE_BITW_SMART_SWITCH   = 2,
+    // flow based IP services over uplink0/1
+    PDS_DEV_MODE_BITW_SMART_SERVICE  = 3,
+    // non-flow based forwarding
+    PDS_DEV_MODE_BITW_CLASSIC_SWITCH = 4,
+} pds_device_mode;
+
 typedef struct {
     u8 obj_key[PDS_MAX_KEY_LEN];         // UUID of the vnic
     mac_addr_t mac;                      // vnic mac
@@ -67,6 +79,7 @@ typedef struct {
     u8 overlay_routing_en : 1;  // overlay Routing enabled or not
     u8 symmetric_routing_en : 1;// symmetric routing - VNI for i/rflow is same
     u16 mapping_prio;           // mapping priority, used for mappping vs route
+    pds_device_mode oper_mode;  // device operational mode - host or bitw
 } pds_impl_db_device_entry_t;
 
 #define foreach_impl_db_element                         \

@@ -9,6 +9,8 @@
 
 #define MAX_SUBNET_HW_ID 2048
 
+extern void pds_dhcp_relay_nacl_init(void);
+
 int
 pds_dhcp4_cfg_add_del_all (uint16_t subnet)
 {
@@ -163,4 +165,11 @@ pds_dhcp4_server_del (uint8_t *id)
 found:
     pool_put(dmain->server_pool, server);
     return 0;
+}
+
+void
+pds_dhcp4_device_config_update (void)
+{
+    pds_dhcp_relay_nacl_init();
+    return;
 }

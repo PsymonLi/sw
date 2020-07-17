@@ -52,6 +52,7 @@ enum FlowPacketType {
     FLOW_PKT_TYPE_N2L_ASYMMETRIC_ROUTE_SVC_NAT    = 19;
     FLOW_PKT_TYPE_N2L_SYMMETRIC_ROUTE_SVC_NAT     = 20;
     FLOW_PKT_TYPE_N2L_INTRA_VCN_ROUTE             = 21;
+    FLOW_PKT_TYPE_PDS_FLOW_BITW                   = 22;
 }
 
 // NAT or other Services

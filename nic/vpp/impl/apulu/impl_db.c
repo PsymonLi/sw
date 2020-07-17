@@ -247,7 +247,8 @@ pds_impl_db_vr_ip_get (uint16_t subnet, uint32_t *vr_ip)
 int
 pds_impl_db_device_set (const u8 *mac, const u8 *ip, u8 ip4,
                         u8 overlay_routing_en, u8 symmetric_routing_en,
-                        u16 mapping_prio)
+                        u16 mapping_prio, bool host, bool bitw_switch,
+                        bool bitw_svc, bool bitw_classic)
 {
     pds_impl_db_device_entry_t *dev = &impl_db_ctx.device;
 
@@ -259,6 +260,16 @@ pds_impl_db_device_set (const u8 *mac, const u8 *ip, u8 ip4,
         ip46_address_set_ip4(&dev->device_ip, (ip4_address_t *) ip);
     } else {
         ip46_address_set_ip6(&dev->device_ip, (ip6_address_t *) ip);
+    }
+    dev->oper_mode = PDS_DEV_MODE_NONE;
+    if (host) {
+        dev->oper_mode = PDS_DEV_MODE_HOST;
+    } else if (bitw_switch) {
+        dev->oper_mode = PDS_DEV_MODE_BITW_SMART_SWITCH;
+    } else if (bitw_svc) {
+        dev->oper_mode = PDS_DEV_MODE_BITW_SMART_SERVICE;
+    } else if (bitw_classic) {
+        dev->oper_mode = PDS_DEV_MODE_BITW_CLASSIC_SWITCH;
     }
     return 0;
 }

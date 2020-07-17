@@ -29,8 +29,6 @@ typedef enum {
     PDS_FLOW_STATE_PENDING_DELETE,
 } pds_flow_state;
 
-// packet types - Any new addition should be handled in
-// pds_packet_type_flags_build ()
 typedef enum {
     PDS_FLOW_L2L_INTRA_SUBNET = 0,
     PDS_FLOW_L2L_INTER_SUBNET,
@@ -53,6 +51,7 @@ typedef enum {
     PDS_FLOW_N2L_ASYMMETRIC_ROUTE_SVC_NAT,
     PDS_FLOW_N2L_SYMMETRIC_ROUTE_SVC_NAT,
     PDS_FLOW_N2L_INTRA_VCN_ROUTE,
+    PDS_FLOW_BITW,
     PDS_FLOW_PKT_TYPE_MAX,
 } pds_flow_pkt_type;
 
@@ -68,6 +67,7 @@ void pds_flow_cfg_set(uint8_t con_track_en,
                       uint32_t tcp_close_timeout,
                       const uint32_t *flow_idle_timeout,
                       const uint32_t *flow_drop_timeout);
+void pds_flow_device_cfg_change(void);
 
 // cli_helper.c
 int clear_all_flow_entries();
