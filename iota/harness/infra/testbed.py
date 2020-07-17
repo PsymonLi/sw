@@ -254,19 +254,19 @@ class _Testbed:
 
     def __prepare_TestBedMsg(self, ts):
         msg = topo_pb2.TestBedMsg()
-        if ts and not GlobalOptions.rerun:
-            images = ts.GetImages()
-            nap_img = getattr(images, 'naples', None)
-            if nap_img:
-                msg.naples_image = self.__get_full_path(nap_img)
-            ven_img = getattr(images, 'venice', None)
-            if ven_img:
-                msg.venice_image = self.__get_full_path(ven_img)
-            nap_sim_img = getattr(images, 'naples_sim', None)
-            if nap_sim_img:
-                msg.naples_sim_image = self.__get_full_path(nap_sim_img)
+        #if ts and not GlobalOptions.rerun:
+        #    images = ts.GetImages()
+        #    nap_img = getattr(images, 'naples', None)
+        #    if nap_img:
+        #        msg.naples_image = self.__get_full_path(nap_img)
+        #    ven_img = getattr(images, 'venice', None)
+        #    if ven_img:
+        #        msg.venice_image = self.__get_full_path(ven_img)
+        #    nap_sim_img = getattr(images, 'naples_sim', None)
+        #    if nap_sim_img:
+        #        msg.naples_sim_image = self.__get_full_path(nap_sim_img)
 
-        msg.testbed_inst_id = self.__tbspec.ID
+        msg.testbed_inst_id = getattr(self.__tbspec, "ID",  "")
         msg.username = self.__tbspec.Provision.Username
         msg.password = self.__tbspec.Provision.Password
         msg.testbed_id = getattr(self, "__tbid", 1)

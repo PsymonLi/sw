@@ -9,6 +9,9 @@ nodes:
         image: ../bin/venice.apulu.tgz
         min-instances: 3
         instances: 3
+        licenses:
+          - OverlayRouting
+          - SubnetSecurityPolicies
 
 workload: 
   esx: 

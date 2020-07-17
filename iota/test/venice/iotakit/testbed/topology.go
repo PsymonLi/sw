@@ -47,6 +47,7 @@ type Topology struct {
 	NaplesImage    string                  // naples image
 	NaplesSimImage string                  // naples sim image
 	VeniceImage    string                  // venice image
+	Licenses       []string                // venice licenses
 	Nodes          []TopoNode              // nodes in the topology
 	NumVlans       int                     // list of vlans
 	Model          ModelType               // model cfg type
@@ -66,9 +67,10 @@ type TopoMeta struct {
 			Instances int `yaml:"instances"`
 		} `yaml:"third-party"`
 		Venice struct {
-			Image        string `yaml:"image"`
-			Instances    int    `yaml:"instances"`
-			MinInstances int    `yaml:"min-instances"`
+			Image        string   `yaml:"image"`
+			Instances    int      `yaml:"instances"`
+			MinInstances int      `yaml:"min-instances"`
+			Licenses     []string `yaml:"licenses"`
 		} `yaml:"venice"`
 		NaplesSimScale struct {
 			Image            string `yaml:"image"`
@@ -200,6 +202,7 @@ func ParseTopology(fileName string) (*Topology, error) {
 			})
 		}
 		topo.VeniceImage = topoMeta.Nodes.Venice.Image
+		topo.Licenses = topoMeta.Nodes.Venice.Licenses
 	}
 
 	if topoMeta.Nodes.NaplesSimScale.Instances != 0 {

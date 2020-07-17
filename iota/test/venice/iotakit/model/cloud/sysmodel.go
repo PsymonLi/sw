@@ -63,9 +63,6 @@ func (sm *SysModel) Init(tb *testbed.TestBed, cfgType enterprise.CfgType, skipSe
 	sm.NoModeSwitchReboot = true
 	sm.NoSetupDataPathAfterSwitch = true
 
-	//Setup license for overlay routing
-	sm.Licenses = []string{"OverlayRouting", "SubnetSecurityPolicies"}
-
 	sm.sgpolicies = make(map[string]*objects.NetworkSecurityPolicy)
 	sm.CfgModel = enterprise.NewCfgModel(cfgType)
 	if sm.CfgModel == nil {
@@ -720,7 +717,7 @@ func (sm *SysModel) FindFwlogForWorkloadPairsFromElastic(tenantName,
 }
 
 // GetFwLogObjectCount gets the object count for firewall logs under the bucket with the given name
-func (sm *SysModel) GetFwLogObjectCount(tenantName string, bucketName string, naplesMac string, vrfName string,  jitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
+func (sm *SysModel) GetFwLogObjectCount(tenantName string, bucketName string, naplesMac string, vrfName string, jitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 

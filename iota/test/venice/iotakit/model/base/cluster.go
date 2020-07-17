@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/onsi/ginkgo"
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/auth"
@@ -29,7 +28,6 @@ import (
 	"github.com/pensando/sw/iota/test/venice/iotakit/testbed"
 	"github.com/pensando/sw/test/utils"
 	"github.com/pensando/sw/venice/globals"
-	"github.com/pensando/sw/venice/utils/authn/testutils"
 	authntestutils "github.com/pensando/sw/venice/utils/authn/testutils"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/netutils"
@@ -245,150 +243,6 @@ func (sm *SysModel) WaitForVeniceClusterUp(ctx context.Context) error {
 	return fmt.Errorf("Failed to connect to Venice")
 }
 
-// InitVeniceConfig initializes base configuration for venice
-func (sm *SysModel) InitVeniceConfig(ctx context.Context) error {
-	// base configs
-	/*cfgMsg := &iota.InitConfigMsg{
-		ApiResponse:    &iota.IotaAPIResponse{},
-		EntryPointType: iota.EntrypointType_VENICE_REST,
-		Endpoints:      sm.GetVeniceURL(),
-		Vlans:          sm.Tb.allocatedVlans,
-	}
-
-	// Push base configs
-	cfgClient := iota.NewConfigMgmtApiClient(sm.Tb.iotaClient.Client)
-	cfgInitResp, err := cfgClient.InitCfgService(ctx, cfgMsg)
-	if err != nil || cfgInitResp.ApiResponse.ApiStatus != iota.APIResponseType_API_STATUS_OK {
-		log.Errorf("Config service Init failed. API Status: %v , Err: %v", cfgInitResp.ApiResponse.ApiStatus, err)
-		return fmt.Errorf("Config service init failed")
-	}
-	log.Debugf("Got init config Resp: %+v", cfgInitResp)*/
-
-	log.Infof("Setting up Auth on Venice cluster...")
-
-	var err error
-	for i := 0; i < maxVeniceUpWait; i++ {
-		err = sm.SetupAuth("admin", constants.UserPassword)
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Second)
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-	}
-	if err != nil {
-		log.Errorf("Setting up Auth failed. Err: %v", err)
-		return err
-	}
-
-	log.Infof("Auth setup complete...")
-
-	// wait for venice cluster to come up
-	return sm.WaitForVeniceClusterUp(ctx)
-}
-
-// SetupLicenses setsup licesses
-func (sm *SysModel) setupLicenses(licenses []string) error {
-	// set bootstrap flag
-
-	log.Infof("Setting up licenses %v", len(licenses))
-	if len(licenses) == 0 {
-		return nil
-	}
-
-	apicl, err := apiclient.NewRestAPIClient(sm.GetVeniceURL()[0])
-	if err != nil {
-		return fmt.Errorf("cannot create rest client, err: %v", err)
-	}
-
-	features := []cluster.Feature{}
-	for _, license := range licenses {
-		log.Infof("Adding license %v", license)
-		features = append(features, cluster.Feature{FeatureKey: license})
-	}
-
-	_, err = testutils.CreateLicense(apicl, features)
-	if err != nil {
-		// 401 when auth is already bootstrapped. we are ok with that
-		if !strings.HasPrefix(err.Error(), "Status:(401)") {
-			ginkgo.Fail(fmt.Sprintf("SetAuthBootstrapFlag failed with err: %v", err))
-		}
-	}
-
-	return nil
-}
-
-// SetupAuth bootstraps default tenant, authentication policy, local user and super admin role
-func (sm *SysModel) SetupAuth(userID, password string) error {
-	// no need to setup auth in mock mode
-	if sm.Tb.IsMockMode() {
-		return nil
-	}
-
-	apicl, err := apiclient.NewRestAPIClient(sm.GetVeniceURL()[0])
-	if err != nil {
-		return fmt.Errorf("cannot create rest client, err: %v", err)
-	}
-
-	// create tenant. default roles (admin role) are created automatically when a tenant is created
-	_, err = testutils.CreateTenant(apicl, globals.DefaultTenant)
-	if err != nil {
-		// 412 is returned when tenant and default roles already exist. 401 when auth is already bootstrapped. we are ok with that
-		// already exists
-		if !strings.HasPrefix(err.Error(), "Status:(412)") && !strings.HasPrefix(err.Error(), "Status:(401)") &&
-			!strings.HasPrefix(err.Error(), "already exists") {
-			return fmt.Errorf("CreateTenant failed with err: %v", err)
-		}
-	}
-
-	// create authentication policy with local auth enabled
-	_, err = testutils.CreateAuthenticationPolicyWithOrder(apicl, &auth.Local{}, nil, nil, []string{auth.Authenticators_LOCAL.String()}, testutils.ExpiryDuration)
-	if err != nil {
-		// 409 is returned when authpolicy already exists. 401 when auth is already bootstrapped. we are ok with that
-		if !strings.HasPrefix(err.Error(), "Status:(409)") && !strings.HasPrefix(err.Error(), "Status:(401)") &&
-			!strings.HasPrefix(err.Error(), "already exists") {
-			return fmt.Errorf("CreateAuthenticationPolicy failed with err: %v", err)
-		}
-	}
-
-	// create user is only allowed after auth policy is created and local auth is enabled
-	_, err = testutils.CreateTestUser(context.TODO(), apicl, userID, password, globals.DefaultTenant)
-	if err != nil {
-		// 409 is returned when user already exists. 401 when auth is already bootstrapped. we are ok with that
-		if !strings.HasPrefix(err.Error(), "Status:(409)") && !strings.HasPrefix(err.Error(), "Status:(401)") &&
-			!strings.HasPrefix(err.Error(), "already exists") {
-			return fmt.Errorf("CreateTestUser failed with err: %v", err)
-		}
-	}
-
-	// update admin role binding
-	_, err = testutils.UpdateRoleBinding(context.TODO(), apicl, globals.AdminRoleBinding, globals.DefaultTenant, globals.AdminRole, []string{userID}, nil)
-	if err != nil {
-		// 401 when auth is already bootstrapped. we are ok with that
-		if !strings.HasPrefix(err.Error(), "Status:(401)") {
-			return fmt.Errorf("UpdateRoleBinding failed with err: %v", err)
-		}
-	}
-
-	//Setup any lines
-	err = sm.setupLicenses(sm.Licenses)
-	if err != nil {
-		return err
-	}
-
-	// set bootstrap flag
-	_, err = testutils.SetAuthBootstrapFlag(apicl)
-	if err != nil {
-		// 401 when auth is already bootstrapped. we are ok with that
-		if !strings.HasPrefix(err.Error(), "Status:(401)") {
-			ginkgo.Fail(fmt.Sprintf("SetAuthBootstrapFlag failed with err: %v", err))
-		}
-	}
-
-	return nil
-}
-
 // GetVeniceNode gets venice node state from venice cluster
 func (sm *SysModel) GetVeniceNode(name string) (n *cluster.Node, err error) {
 	ctx, err := sm.VeniceLoggedInCtx(context.TODO())
@@ -434,57 +288,6 @@ func (sm *SysModel) ListEvents(listWatchOptions *api.ListWatchOptions) (evtsapi.
 	URL := fmt.Sprintf("https://%s/events/v1/events", sm.GetVeniceURL()[0])
 	_, err = httpClient.Req("GET", URL, *listWatchOptions, &resp)
 	return resp, err
-}
-
-// MakeVeniceCluster inits the venice cluster
-func (sm *SysModel) MakeVeniceCluster(ctx context.Context) error {
-	// get CMD URL URL
-	var veniceCmdURL []string
-	for _, node := range sm.Tb.Nodes {
-		if node.Personality == iota.PersonalityType_PERSONALITY_VENICE {
-			veniceCmdURL = append(veniceCmdURL, fmt.Sprintf("%s:9001", node.NodeMgmtIP))
-		}
-	}
-
-	// cluster message to init cluster
-	clusterCfg := cluster.Cluster{
-		TypeMeta: api.TypeMeta{Kind: "Cluster"},
-		ObjectMeta: api.ObjectMeta{
-			Name: "iota-cluster",
-		},
-		Spec: cluster.ClusterSpec{
-			AutoAdmitDSCs: true,
-			QuorumNodes:   sm.getVeniceIPAddrs(),
-			NTPServers : []string{"pool.ntp.org"},
-		},
-	}
-
-	// make cluster message to be sent to API server
-	clusterStr, _ := json.Marshal(clusterCfg)
-	makeCluster := iota.MakeClusterMsg{
-		ApiResponse: &iota.IotaAPIResponse{},
-		Endpoint:    veniceCmdURL[0] + "/api/v1/cluster",
-		Config:      string(clusterStr),
-	}
-
-	log.Infof("Making Venice cluster..")
-
-	// ask iota server to make cluster
-	log.Debugf("Making cluster with params: %+v", makeCluster)
-	cfgClient := iota.NewConfigMgmtApiClient(sm.Tb.Client().Client)
-	resp, err := cfgClient.MakeCluster(ctx, &makeCluster)
-	if err != nil {
-		log.Errorf("Error initing venice cluster. Err: %v", err)
-		return err
-	}
-	if resp.ApiResponse.ApiStatus != iota.APIResponseType_API_STATUS_OK {
-		log.Errorf("Error making venice cluster: ApiResp: %+v. Err %v", resp.ApiResponse, err)
-		return fmt.Errorf("Error making venice cluster")
-	}
-	//sm.Tb.makeClustrResp = resp
-
-	// done
-	return nil
 }
 
 //RestoreVeniceDefaults restore some defaults for cluster

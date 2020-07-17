@@ -16,9 +16,6 @@ service TopologyApi {
     // InstantiateTopology is called by harness which assigns a personality to the node based on the topology.
     // This is a blocking call to the harness, The parallel instantiation across the nodes is handled internally.
 
-    // InstallImage installs the image on testbed nodes
-    rpc InstallImage (TestBedMsg) returns (TestBedMsg) {};
-
     // InitTestBed Allocate Data VLANs, copy over built artifacts and starts IOTA Agent on all the nodes
     rpc InitTestBed (TestBedMsg) returns (TestBedMsg) {};
 
@@ -123,6 +120,7 @@ message NodeMsg {
 
     //return allocated vlans when doing skip setup
     repeated uint32 allocated_vlans = 6;
+
 }
 
 // Reload msg
@@ -324,6 +322,9 @@ message Node {
     oneof overlay_configs {
         BondConfigs     bond_configs    = 20;
     }
+
+    // node install information
+    InstallInfo       install_info      =  21;
  }
 
 message ApcInfo {
@@ -463,6 +464,12 @@ message VenicePeer {
     string  ip_address  = 2;
 }
 
+message VeniceClusterInfo {
+    //license for cluster
+    repeated string licenses          = 1; 
+}
+
+
 message VeniceConfig {
 
     // Control interface to use
@@ -473,6 +480,9 @@ message VeniceConfig {
 
     // Peers to add host name entries.
     repeated VenicePeer venice_peers  = 3;
+
+    VeniceClusterInfo cluster_info    = 4;
+
 }
 
 
@@ -947,54 +957,54 @@ message TestBedMsg {
     // API Response
     IotaAPIResponse api_response        = 1;
 
-    // NAPLES tarball to copy on the remote nodes
-    string naples_sim_image             = 2;
-
-    // NAPLES tarball to copy on the remote nodes
-    string naples_image                 = 3;
-
-    // Venice tarball to copy on the remote nodes
-    string venice_image                 = 4;
-
-    // Driver sources to copy on the remote nodes
-    string driver_sources               = 5;
-
     // Allocated vlans based off of the port id
     // First one will always be native vlan
-    repeated uint32 allocated_vlans     = 6;
+    repeated uint32 allocated_vlans     = 2;
 
     // Native vlan for the testbed
-    uint32  native_vlan                 = 7;
+    uint32  native_vlan                 = 3;
 
     // List of node IP addresses
-    repeated TestBedNode nodes          = 8;
+    repeated TestBedNode nodes          = 4;
 
     // Node username
-    string username                     = 9;
+    string username                     = 5;
 
     // Node password
-    string password                     = 10;
+    string password                     = 6;
 
     // Testbed ID
-    uint32 testbed_id                   = 11;
+    uint32 testbed_id                   = 7;
 
     // DataSwitch
-    repeated DataSwitch data_switches   = 12;
+    repeated DataSwitch data_switches   = 8;
 
     // Reboot Nodes
-    bool reboot_nodes                   = 13;
+    bool reboot_nodes                   = 9;
 
     // global licenses
-    repeated License licenses           = 14;
+    repeated License licenses           = 10;
    
     // Testbed Jobc/testbed json file
-    string testbed_json_file            = 15;
+    string testbed_json_file            = 11;
 
     //reset nodes, don't install new image
-    bool only_reset                     = 16;
+    bool only_reset                     = 12;
 
     //Testbed InstanceID
-    string testbed_inst_id              = 17;
+    string testbed_inst_id              = 13;
+}
+
+message InstallInfo {
+    TestBedNode       node                   =  1;
+
+    //reset nodes, don't install new image
+    bool              only_reset             =  2;
+
+    repeated string   images                 =  3;
+
+    string            testbed_json_file      =  4;
+
 }
 
 message TestNodesMsg {

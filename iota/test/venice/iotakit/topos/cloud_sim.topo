@@ -6,6 +6,9 @@ nodes:
     venice:
         image: ../bin/venice.apulu.tgz
         instances: 1
+        licenses:
+          - OverlayRouting
+          - SubnetSecurityPolicies
 
 
 workload: 

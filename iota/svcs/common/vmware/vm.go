@@ -106,7 +106,7 @@ func (vm *VM) Migrate(host *Host, dref *types.ManagedObjectReference, abortTime 
 					return
 				}
 				//After 35%, vmotion abort
-				if abortTime > 0 && rep.Percentage() > 30 {
+				if abortTime > 0 && rep.Percentage() >= 30 {
 					log.Infof("VM %s : Vmotion Percentage complete %v, cancelling", vm.name, rep.Percentage())
 					task.Cancel(vm.entity.Ctx())
 					return

@@ -37,7 +37,7 @@ func NewNetworkCollectionsFromNetworks(client objClient.ObjClient, nws []*networ
 
 	var newNc []*NetworkCollection
 	for index := 0; index < len(nws); index++ {
-		sNet := nws[index:index+1]
+		sNet := nws[index : index+1]
 		newNc = append(newNc, NewNetworkCollectionFromNetworks(client, sNet))
 	}
 	return newNc
@@ -113,42 +113,54 @@ func (snc *NetworkCollection) Pop(num int) *NetworkCollection {
 
 // Commit writes the VPC config to venice
 func (nwc *NetworkCollection) Commit() error {
-	if nwc.HasError() {
-		return nwc.err
-	}
-	for _, nw := range nwc.subnets {
-		err := nwc.Client.CreateNetwork(nw.VeniceNetwork)
-		if err != nil {
-			err = nwc.Client.UpdateNetwork(nw.VeniceNetwork)
-
+	errs := make(chan error, len(nwc.subnets))
+	for index, nw := range nwc.subnets {
+		nw := nw
+		go func(index int) {
+			err := nwc.Client.GetRestClientByID(index).CreateNetwork(nw.VeniceNetwork)
 			if err != nil {
-				nwc.err = err
-				log.Infof("Creating/updating network failed %v", err)
-				return err
+				err = nwc.Client.GetRestClientByID(index).UpdateNetwork(nw.VeniceNetwork)
+				if err != nil {
+					log.Infof("Creating/updating network failed %v", err)
+				}
 			}
-		}
+			errs <- err
+			log.Debugf("Created/updated network : %#v", nwc.Subnets())
+		}(index)
 
-		log.Debugf("Created/updated network : %#v", nwc.Subnets())
 	}
 
-	return nil
+	for i := 0; i < len(nwc.subnets); i++ {
+		err := <-errs
+		if nwc.err == nil {
+			nwc.err = err
+		}
+	}
+
+	return nwc.err
 }
 
 // Delete deletes all networks/subnets in collection
 func (nwc *NetworkCollection) Delete() error {
-	if nwc.err != nil {
-		return nwc.err
-	}
 
 	// walk all sessions and delete them
-	for _, nw := range nwc.subnets {
-		err := nwc.Client.DeleteNetwork(nw.VeniceNetwork)
-		if err != nil {
-			return err
+	errs := make(chan error, len(nwc.subnets))
+	for index, nw := range nwc.subnets {
+		nw := nw
+		go func(index int) {
+			err := nwc.Client.GetRestClientByID(index).GetRestClientByID(index).DeleteNetwork(nw.VeniceNetwork)
+			errs <- err
+		}(index)
+	}
+
+	for i := 0; i < len(nwc.subnets); i++ {
+		err := <-errs
+		if nwc.err == nil {
+			nwc.err = err
 		}
 	}
 
-	return nil
+	return nwc.err
 }
 
 func NewNetworkCollection(client objClient.ObjClient, testbed *testbed.TestBed) *NetworkCollection {

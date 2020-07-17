@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -52,12 +53,132 @@ func (n *TestNode) setupAgent() error {
 	return nil
 }
 
+func (n *TestNode) installImage() error {
+
+	if n.info.InstallInfo == nil {
+		log.Infof("Skipping install for node %v", n.info.Name)
+		return nil
+	}
+
+	var sshCfg *ssh.ClientConfig
+	if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_ESX {
+		sshCfg = InitSSHConfig(constants.EsxDataVMUsername, constants.EsxDataVMPassword)
+	} else {
+		sshCfg = n.info.SSHCfg
+	}
+
+	if len(n.info.InstallInfo.Images) != 0 {
+		log.Infof("Copying images for node %v", n.info.Name)
+		if err := n.CopyTo(sshCfg, constants.ImageArtificatsDirectory, n.info.InstallInfo.Images); err != nil {
+			log.Errorf("TOPO SVC | InitTestBed | Failed to copy common artifacts, to TestNode: %v, at IPAddress: %v", n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress)
+			return err
+		}
+	}
+
+	if n.info.InstallInfo.Node != nil {
+		log.Infof("Doing install images for node %v", n.info.Name)
+		gopath := os.Getenv("GOPATH")
+		wsdir := gopath + "/src/github.com/pensando/sw"
+		node := n.info.InstallInfo.Node
+		cmd := fmt.Sprintf("%s/iota/scripts/boot_naples_v2.py", wsdir)
+		cmd += fmt.Sprintf(" --mnic-ip 169.254.0.1")
+		cmd += fmt.Sprintf(" --instance-name %v", node.InstanceName)
+		cmd += fmt.Sprintf(" --testbed %v", n.info.InstallInfo.TestbedJsonFile)
+		// naples_type should come from topology or testbed
+		cmd += fmt.Sprintf(" --naples capri")
+		if filepath.Base(n.info.InstallInfo.Images[0]) != "naples_fw.tar" {
+			cmd += fmt.Sprintf(" --pipeline apulu --image-build equinix")
+		}
+		cmd += fmt.Sprintf(" --mode hostpin")
+		if node.MgmtIntf != "" {
+			cmd += fmt.Sprintf(" --mgmt-intf %v", node.MgmtIntf)
+		}
+		cmd += fmt.Sprintf(" --uuid %s", node.NicUuid)
+
+		cmd += fmt.Sprintf(" --wsdir %s", wsdir)
+		cmd += fmt.Sprintf(" --image-manifest %s/images/latest.json", wsdir)
+
+		if node.NoMgmt {
+			cmd += fmt.Sprintf(" --no-mgmt")
+		}
+		if node.AutoDiscoverOnInstall {
+			cmd += fmt.Sprintf(" --auto-discover-on-install")
+		}
+		if n.info.InstallInfo.OnlyReset {
+			cmd += fmt.Sprintf(" --reset")
+		}
+
+		command := exec.Command("sh", "-c", cmd)
+		log.Infof("Running command: %s", cmd)
+
+		// open the out file for writing
+		outfile, err := os.Create(fmt.Sprintf("%s/iota/%s-firmware-upgrade.log", wsdir, node.NodeName))
+		if err != nil {
+			log.Errorf("Error creating log file. Err: %v", err)
+			return err
+		}
+		defer outfile.Close()
+		command.Stdout = outfile
+		command.Stderr = outfile
+		err = command.Start()
+		if err != nil {
+			log.Errorf("Error running command %s. Err: %v", cmd, err)
+			return err
+		}
+
+		if err := command.Wait(); err != nil {
+			log.Errorf("Error executing boot_naples_v2.py script. Err: %s", err)
+			stdout, _ := exec.Command("sh", "-c", "tail -n 100 *upgrade.log").CombinedOutput()
+			fmt.Println(stdout)
+			return err
+		}
+
+		if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_ESX {
+			if err = n.initEsxNode(); err != nil {
+				log.Errorf("TOPO SVC | Init ESX node failed after restart  %v", err.Error())
+				return err
+			}
+		}
+
+		var agentBinary string
+		if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_FREEBSD {
+			agentBinary = constants.IotaAgentBinaryPathFreebsd
+		} else {
+			agentBinary = constants.IotaAgentBinaryPathLinux
+		}
+		if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_ESX {
+			if err := n.initEsxNode(); err != nil {
+				log.Errorf("TOPO SVC | Init ESX node failed after restart  %v", err.Error())
+				return err
+			}
+		}
+		ip, _ := n.GetNodeIP()
+		log.Infof("TOPO SVC | Starting IOTA Agent on TestNode: %v, IPAddress: %v", n.Node.Name, ip)
+		sudoAgtCmd := fmt.Sprintf("sudo -E %s", constants.DstIotaAgentBinary)
+		if err = n.StartAgent(sudoAgtCmd, sshCfg); err != nil {
+			log.Errorf("TOPO SVC Failed to start agent binary: %v, on TestNode: %v, at IPAddress: %v", agentBinary, n.Node.Name, n.Node.IpAddress)
+			return err
+		}
+
+	}
+	return nil
+}
+
 // AddNode adds a node to the topology
 func (n *TestNode) AddNode() error {
 	var ip string
 	var err error
 
+	if err := n.installImage(); err != nil {
+		msg := fmt.Sprintf("Install image on node failed %v : %v", n.info.Name, err)
+		log.Error(msg)
+		n.RespNode = &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}
+		return fmt.Errorf("Install image on node failed %v : %v", n.info.Name, err)
+	}
+
 	if err := n.setupAgent(); err != nil {
+		msg := fmt.Sprintf("Agent start failed %v : %v", n.info.Name, err)
+		log.Error(msg)
 		return err
 	}
 
@@ -777,6 +898,7 @@ func (n *VcenterNode) GetWorkloads(name string) []*iota.Workload {
 func (n *TestNode) SetNodeMsg(msg *iota.Node) {
 	n.Node = msg
 	n.info.Name = msg.Name
+	n.info.InstallInfo = msg.InstallInfo
 }
 
 func (n *TestNode) SetNodeResponse(msg *iota.Node) {

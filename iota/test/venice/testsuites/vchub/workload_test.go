@@ -375,9 +375,10 @@ var _ = Describe("Vc hub workload tests", func() {
 				log.Infof("Abort Moving %v -> %v from %v", wc.String(), dst.Hosts[0].Name(), wc.Workloads[0].Host().Name())
 
 				err = ts.model.MoveWorkloads(common.MoveWorkloadsSpec{
-					DstHostCollection:  dst,
-					WorkloadCollection: wc,
-					Timeout:            30,
+					DstHostCollection:     dst,
+					WorkloadCollection:    wc,
+					Timeout:               30,
+					NumberOfParallelMoves: 2,
 				})
 
 				Expect(err != nil)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -94,116 +93,6 @@ func (ts *TopologyService) downloadImages() error {
 
 	ts.downloadedImages = true
 	return nil
-}
-
-// InstallImage recovers the Naples nodes and installs an image
-func (ts *TopologyService) InstallImage(ctx context.Context, req *iota.TestBedMsg) (*iota.TestBedMsg, error) {
-	resp := *req
-	log.Infof("TOPO SVC | DEBUG | InstallImage. Received Request Msg: %v", req)
-	defer log.Infof("TOPO SVC | DEBUG | InstallImage Returned: %v", resp)
-
-	if ts.reservationExpired() {
-		log.Errorf("TOPO SVC | Testbed reservation expired")
-		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
-		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
-		return req, nil
-	}
-
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		log.Errorf("GOPATH not defined in the environment")
-
-		err := fmt.Errorf("GOPATH not defined in the environment")
-		resp.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
-		resp.ApiResponse.ErrorMsg = err.Error()
-		return &resp, err
-	}
-	wsdir := gopath + "/src/github.com/pensando/sw"
-
-	// split updates into pools of upto 'n' each
-	for nodeIdx := 0; nodeIdx < len(req.Nodes); {
-		poolNodes := []*iota.TestBedNode{}
-		for nodeIdx < len(req.Nodes) {
-			poolNodes = append(poolNodes, req.Nodes[nodeIdx])
-			nodeIdx++
-			if len(poolNodes) >= common.MaxConcurrentNaplesToBringup {
-				break
-			}
-		}
-
-		pool, _ := errgroup.WithContext(context.Background())
-		// walk each node
-		for _, node := range poolNodes {
-			if node.Type == iota.TestBedNodeType_TESTBED_NODE_TYPE_HW {
-				cmd := fmt.Sprintf("%s/iota/scripts/boot_naples_v2.py", wsdir)
-				cmd += fmt.Sprintf(" --mnic-ip 169.254.0.1")
-				cmd += fmt.Sprintf(" --instance-name %v", node.InstanceName)
-				cmd += fmt.Sprintf(" --testbed %v", req.TestbedJsonFile)
-				// naples_type should come from topology or testbed
-				cmd += fmt.Sprintf(" --naples capri")
-				if filepath.Base(req.NaplesImage) != "naples_fw.tar" {
-					cmd += fmt.Sprintf(" --pipeline apulu --image-build equinix")
-				}
-				cmd += fmt.Sprintf(" --mode hostpin")
-				if node.MgmtIntf != "" {
-					cmd += fmt.Sprintf(" --mgmt-intf %v", node.MgmtIntf)
-				}
-				cmd += fmt.Sprintf(" --uuid %s", node.NicUuid)
-
-				cmd += fmt.Sprintf(" --wsdir %s", wsdir)
-				cmd += fmt.Sprintf(" --image-manifest %s/images/latest.json", wsdir)
-
-				if node.NoMgmt {
-					cmd += fmt.Sprintf(" --no-mgmt")
-				}
-				if node.AutoDiscoverOnInstall {
-					cmd += fmt.Sprintf(" --auto-discover-on-install")
-				}
-				if req.OnlyReset {
-					cmd += fmt.Sprintf(" --reset")
-				}
-
-				nodeName := node.NodeName
-
-				// add the command to pool to be executed in parallel
-				pool.Go(func() error {
-					command := exec.Command("sh", "-c", cmd)
-					log.Infof("Running command: %s", cmd)
-
-					// open the out file for writing
-					outfile, err := os.Create(fmt.Sprintf("%s/iota/%s-firmware-upgrade.log", wsdir, nodeName))
-					if err != nil {
-						log.Errorf("Error creating log file. Err: %v", err)
-						return err
-					}
-					defer outfile.Close()
-					command.Stdout = outfile
-					command.Stderr = outfile
-					err = command.Start()
-					if err != nil {
-						log.Errorf("Error running command %s. Err: %v", cmd, err)
-						return err
-					}
-
-					return command.Wait()
-				})
-
-			}
-		}
-
-		err := pool.Wait()
-		if err != nil {
-			log.Errorf("Error executing boot_naples_v2.py script. Err: %s", err)
-			stdout, _ := exec.Command("sh", "-c", "tail -n 100 *upgrade.log").CombinedOutput()
-			fmt.Println(stdout)
-			return nil, err
-		}
-	}
-
-	log.Infof("Recovering naples nodes complete...")
-	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
-
-	return req, nil
 }
 
 func (ts *TopologyService) switchProgrammingRequired(req *iota.TestBedMsg) bool {
@@ -361,11 +250,6 @@ func (ts *TopologyService) InitTestBed(ctx context.Context, req *iota.TestBedMsg
 			n := testbed.NewTestNode(nodeInfo)
 			ts.Nodes[node.IpAddress] = n
 
-			commonCopyArtifacts := []string{
-				ts.tbInfo.resp.VeniceImage,
-				ts.tbInfo.resp.NaplesImage,
-				ts.tbInfo.resp.NaplesSimImage,
-			}
 			if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_VCENTER {
 				n.SetDC(node.DcName)
 				n.SetSwitch(node.Switch)
@@ -373,7 +257,7 @@ func (ts *TopologyService) InitTestBed(ctx context.Context, req *iota.TestBedMsg
 
 			pool.Go(func() error {
 				n := n
-				return n.InitNode(req.RebootNodes, restoreAgentFiles, ts.SSHConfig, commonCopyArtifacts)
+				return n.InitNode(req.RebootNodes, restoreAgentFiles, ts.SSHConfig)
 			})
 		}
 		err = pool.Wait()
@@ -449,10 +333,6 @@ func (ts *TopologyService) initTestNodes(ctx context.Context, req *iota.TestNode
 		}
 		n := testbed.NewTestNode(nodeInfo)
 		ts.Nodes[node.IpAddress] = n
-		commonCopyArtifacts := []string{
-			ts.tbInfo.resp.VeniceImage,
-			ts.tbInfo.resp.NaplesImage,
-		}
 		if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_VCENTER {
 			n.SetDC(node.DcName)
 			n.SetSwitch(node.Switch)
@@ -460,7 +340,7 @@ func (ts *TopologyService) initTestNodes(ctx context.Context, req *iota.TestNode
 
 		pool.Go(func() error {
 			n := n
-			return n.InitNode(req.RebootNodes, restoreAgentFiles, ts.SSHConfig, commonCopyArtifacts)
+			return n.InitNode(req.RebootNodes, restoreAgentFiles, ts.SSHConfig)
 		})
 	}
 	if err := pool.Wait(); err != nil {
@@ -665,6 +545,13 @@ func (ts *TopologyService) CleanNodes(ctx context.Context, req *iota.TestNodesMs
 func (ts *TopologyService) AddNodes(ctx context.Context, req *iota.NodeMsg) (*iota.NodeMsg, error) {
 	log.Infof("TOPO SVC | DEBUG | AddNodes. Received Request Msg: %v", req)
 	defer log.Infof("TOPO SVC | DEBUG | AddNodes Returned: %v", req)
+
+	if ts.reservationExpired() {
+		log.Errorf("TOPO SVC | Testbed reservation expired")
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_TESTBED_EXPIRED
+		req.ApiResponse.ErrorMsg = fmt.Sprintf("Tesbed reservation expired")
+		return req, nil
+	}
 
 	if req.NodeOp != iota.Op_ADD {
 		log.Errorf("TOPO SVC | AddNodes | AddNodes call failed")
@@ -1444,15 +1331,9 @@ func (ts *TopologyService) RestoreNodes(ctx context.Context, req *iota.NodeMsg) 
 	restoreAgentFiles := true
 	// - Prepare to upload the required files from local fs to remote node
 	for _, node := range rNodes {
-		// Assumption that node is alive and reachable
-		commonCopyArtifacts := []string{
-			ts.tbInfo.resp.VeniceImage,
-			ts.tbInfo.resp.NaplesImage,
-			ts.tbInfo.resp.NaplesSimImage,
-		}
 		pool.Go(func() error {
 			node := node
-			node.InitNode(reboot, restoreAgentFiles, ts.SSHConfig, commonCopyArtifacts)
+			node.InitNode(reboot, restoreAgentFiles, ts.SSHConfig)
 			svcName := node.GetNodeInfo().Name
 
 			agentURL, err := node.GetAgentURL()

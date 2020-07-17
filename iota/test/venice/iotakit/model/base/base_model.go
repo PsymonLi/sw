@@ -59,11 +59,10 @@ type SysModel struct {
 	VeniceNodeMap              map[string]*objects.VeniceNode     // Venice nodes
 	VeniceNodesMapDisconnected map[string]*objects.VeniceNode     // Venice which are not part of cluster
 	InbandNaplesIPAddress      map[string][]string
-	AuthToken                  string   // authToken obtained after logging in
-	Licenses                   []string //enabled licenses
-	NoModeSwitchReboot         bool     // no reboot on mode switch
-	NoSetupDataPathAfterSwitch bool     // temp flag to set up datapath post naples
-	AutoDiscovery              bool     //whether discovery of venice from naples is auto
+	AuthToken                  string // authToken obtained after logging in
+	NoModeSwitchReboot         bool   // no reboot on mode switch
+	NoSetupDataPathAfterSwitch bool   // temp flag to set up datapath post naples
+	AutoDiscovery              bool   //whether discovery of venice from naples is auto
 
 	SkipSetup  bool             //to do skip setup or not
 	SkipConfig bool             //to do skip reboot or not
@@ -211,23 +210,9 @@ func (sm *SysModel) SetupConfig(ctx context.Context) error {
 
 	// make venice cluster
 	setupVenice := func(done chan error) {
-		err := sm.MakeVeniceCluster(ctx)
-		if err != nil {
-			log.Errorf("Error creating venice cluster. Err: %v", err)
-			done <- err
-			return
-		}
-
-		// setup auth and wait for venice cluster to come up
-		err = sm.InitVeniceConfig(ctx)
-		if err != nil {
-			log.Errorf("Error configuring cluster. Err: %v", err)
-			done <- err
-			return
-		}
 
 		// setup some tooling on venice nodes
-		err = sm.SetupVeniceNodes()
+		err := sm.SetupVeniceNodes()
 		if err != nil {
 			log.Errorf("Error setting up venice nodes. Err: %v", err)
 			done <- err

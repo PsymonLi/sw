@@ -56,7 +56,6 @@ func jobdGet(path string) ([]byte, error) {
 		return nil, err
 	}
 	data, _ := ioutil.ReadAll(response.Body)
-	fmt.Println(string(data))
 
 	return data, nil
 
@@ -109,7 +108,7 @@ func isTraceExpired(id string) bool {
 		log.Infof("Error finding trace %v", err.Error())
 	}
 
-	log.Infof("trace %v not expired", trace.User)
+	log.Debugf("trace %v not expired", trace.User)
 
 	return false
 }

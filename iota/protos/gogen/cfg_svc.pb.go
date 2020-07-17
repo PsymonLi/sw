@@ -41,6 +41,7 @@
 		BroadcomConfig
 		IntelConfig
 		VenicePeer
+		VeniceClusterInfo
 		VeniceConfig
 		WorkloadMsg
 		DvsInfo
@@ -67,6 +68,7 @@
 		DataSwitch
 		License
 		TestBedMsg
+		InstallInfo
 		TestNodesMsg
 		VlanConfig
 		SwitchFlapInfo

@@ -290,7 +290,7 @@ func (r *Client) Urls() []string {
 
 //GetRestClientByID get rest client by ID
 func (r *Client) GetRestClientByID(id int) *Client {
-	return r.restClientPool[id]
+	return r.restClientPool[id%numWorkers]
 }
 
 //Clients clients for operations

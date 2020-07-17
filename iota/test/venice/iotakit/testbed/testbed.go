@@ -220,6 +220,7 @@ type TestNode struct {
 	NaplesMultSimConfig iota.NaplesMultiSimConfig   // naples multiple sim specific config
 	VcenterConfig       iota.VcenterConfig          // vcenter config
 	K8sMasterConfig     iota.K8SMasterConfig        // K8s master config
+	tbNode              *iota.TestBedNode           // node info we got from iota
 	iotaNode            *iota.Node                  // node info we got from iota
 	instParams          *InstanceParams             // instance params we got from warmd.json
 	topoNode            *TopoNode                   // node info from topology
@@ -991,6 +992,7 @@ func (tb *TestBed) setupVeniceIPs(node *TestNode) error {
 						peer.IpAddress = vn.InstanceParams().SecondaryIP
 					}
 					node.VeniceConfig.VenicePeers = append(node.VeniceConfig.VenicePeers, &peer)
+
 				}
 			}
 		}
@@ -1563,6 +1565,7 @@ func (tb *TestBed) getIotaNode(node *TestNode) *iota.Node {
 				Name: node.NodeName + "_venice",
 			},
 		}
+
 	}
 
 	return &tbn
@@ -1606,9 +1609,6 @@ func (tb *TestBed) setupTestBed() error {
 
 	// Allocate VLANs
 	testBedMsg := &iota.TestBedMsg{
-		NaplesImage:     tb.Topo.NaplesImage,
-		VeniceImage:     tb.Topo.VeniceImage,
-		NaplesSimImage:  tb.Topo.NaplesSimImage,
 		Username:        tb.Params.Provision.Username, // FIXME: might be obsolete
 		Password:        tb.Params.Provision.Password, // FIXME: might be obsolete
 		ApiResponse:     &iota.IotaAPIResponse{},
@@ -1692,6 +1692,7 @@ func (tb *TestBed) setupTestBed() error {
 			tbn.Os = iota.TestBedNodeOs_TESTBED_NODE_OS_LINUX
 		}
 
+		node.tbNode = &tbn
 		testBedMsg.Nodes = append(testBedMsg.Nodes, &tbn)
 
 		// set testbed id if available
@@ -1728,33 +1729,6 @@ func (tb *TestBed) setupTestBed() error {
 	if !tb.skipSetup {
 		// first cleanup testbed as we have to clean up all vcenter related stuff
 		client.CleanUpTestBed(context.Background(), testBedMsg)
-
-		// install image if required
-		if tb.hasNaplesHW {
-			if skipInstall {
-				testBedMsg.OnlyReset = true
-				log.Infof("Resetting images on testbed. This may take 10s of minutes...")
-			} else {
-				log.Infof("Installing images on testbed. This may take 10s of minutes...")
-			}
-			//we are reinstalling, reset current mapping
-			tb.resetNaplesCache()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
-			defer cancel()
-			instResp, err := client.InstallImage(ctx, testBedMsg)
-			if err != nil {
-				nerr := fmt.Errorf("Error during installing image: %v", err)
-				log.Errorf("%v", nerr)
-				return nerr
-			}
-			if instResp.ApiResponse.ApiStatus != iota.APIResponseType_API_STATUS_OK {
-				log.Errorf("Error during installing image in InitTestBed(). ApiResponse: %+v Err: %v", instResp.ApiResponse, err)
-				return fmt.Errorf("Error during install image: %v", instResp.ApiResponse)
-			}
-
-			//Image installed, no need to reinstall on retry
-			os.Setenv("SKIP_INSTALL", "1")
-		}
 
 		// then, init testbed
 		log.Debugf("Initializing testbed with params: %+v", testBedMsg)
@@ -1814,6 +1788,7 @@ func (tb *TestBed) setupTestBed() error {
 	}
 
 	var kubeInfo *iota.K8SMasterConfig
+	clusterInfoSet := false
 	for i := 0; i < len(tb.Nodes); i++ {
 		node := tb.Nodes[i]
 		tbn := iota.Node{
@@ -1848,12 +1823,31 @@ func (tb *TestBed) setupTestBed() error {
 					K8SMasterToken: kubeInfo.K8SMasterToken,
 				}
 			}
+			if !tb.skipSetup {
+				tbn.InstallInfo = &iota.InstallInfo{
+					Images:          []string{tb.Topo.NaplesImage},
+					OnlyReset:       skipInstall,
+					TestbedJsonFile: tb.warmdJsonFile,
+					Node:            node.tbNode,
+				}
+			}
 			fallthrough
 		case iota.PersonalityType_PERSONALITY_NAPLES_SIM:
 			tbn.Image = filepath.Base(tb.Topo.NaplesImage)
 			tbn.NodeInfo = &iota.Node_NaplesConfigs{
 				NaplesConfigs: &node.NaplesConfigs,
 			}
+			if tb.Topo.NaplesSimImage != "" {
+				if tbn.InstallInfo == nil {
+					tbn.InstallInfo = &iota.InstallInfo{
+						Images: []string{tb.Topo.NaplesSimImage},
+					}
+				} else {
+					tbn.InstallInfo.Images = append(tbn.InstallInfo.Images,
+						tb.Topo.NaplesSimImage)
+				}
+			}
+
 			tbn.Entities = []*iota.Entity{
 				{
 					Type: iota.EntityType_ENTITY_TYPE_HOST,
@@ -1887,6 +1881,9 @@ func (tb *TestBed) setupTestBed() error {
 			tbn.NodeInfo = &iota.Node_NaplesMultiSimConfig{
 				NaplesMultiSimConfig: &node.NaplesMultSimConfig,
 			}
+			tbn.InstallInfo = &iota.InstallInfo{
+				Images: []string{tb.Topo.NaplesSimImage},
+			}
 			tbn.Entities = []*iota.Entity{
 				{
 					Type: iota.EntityType_ENTITY_TYPE_HOST,
@@ -1897,6 +1894,9 @@ func (tb *TestBed) setupTestBed() error {
 			tbn.Image = filepath.Base(tb.Topo.NaplesSimImage)
 			tbn.NodeInfo = &iota.Node_NaplesControlSimConfig{
 				NaplesControlSimConfig: &node.NaplesSimConfig,
+			}
+			tbn.InstallInfo = &iota.InstallInfo{
+				Images: []string{tb.Topo.NaplesSimImage},
 			}
 			tbn.Entities = []*iota.Entity{
 				{
@@ -1915,24 +1915,28 @@ func (tb *TestBed) setupTestBed() error {
 
 		case iota.PersonalityType_PERSONALITY_VENICE:
 			tbn.Image = filepath.Base(tb.Topo.VeniceImage)
-			tbn.NodeInfo = &iota.Node_VeniceConfig{
-				VeniceConfig: &node.VeniceConfig,
-			}
-			tbn.Entities = []*iota.Entity{
-				{
-					Type: iota.EntityType_ENTITY_TYPE_HOST,
-					Name: node.NodeName + "_venice",
-				},
-			}
+			fallthrough
 		case iota.PersonalityType_PERSONALITY_VENICE_BM:
 			tbn.NodeInfo = &iota.Node_VeniceConfig{
 				VeniceConfig: &node.VeniceConfig,
 			}
+
+			tbn.InstallInfo = &iota.InstallInfo{
+				Images: []string{tb.Topo.VeniceImage},
+			}
 			tbn.Entities = []*iota.Entity{
 				{
 					Type: iota.EntityType_ENTITY_TYPE_HOST,
 					Name: node.NodeName + "_venice",
 				},
+			}
+
+			if !clusterInfoSet {
+				tbn.GetVeniceConfig().ClusterInfo = &iota.VeniceClusterInfo{
+					//TODO read from topo file
+					Licenses: tb.Topo.Licenses,
+				}
+				clusterInfoSet = true
 			}
 		case iota.PersonalityType_PERSONALITY_K8S_MASTER:
 			kubeInfo = &node.K8sMasterConfig
@@ -1946,6 +1950,7 @@ func (tb *TestBed) setupTestBed() error {
 
 	if !tb.skipSetup {
 		// add all nodes
+		tb.resetNaplesCache()
 		log.Infof("Adding nodes to the testbed...")
 		log.Debugf("Adding nodes: %+v", nodes)
 		addNodeResp, err := client.AddNodes(context.Background(), nodes)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/objClient"
@@ -55,22 +54,31 @@ func (spc *NetworkSecurityPolicyCollection) Delete() error {
 	if spc == nil {
 		return nil
 	}
+
 	if spc.err != nil {
 		return spc.err
 	}
 
+	errs := make(chan error, len(spc.Policies))
 	// walk all policies and delete them
-	for _, pol := range spc.Policies {
-		err := spc.Client.DeleteNetworkSecurityPolicy(pol.VenicePolicy)
-		if err != nil {
-			return err
-		}
-		//delete(pol.sm.sgpolicies, pol.venicePolicy.Name)
+	for index, pol := range spc.Policies {
+		pol := pol
+		go func(index int) {
+			err := spc.Client.GetRestClientByID(index).DeleteNetworkSecurityPolicy(pol.VenicePolicy)
+			errs <- err
+			log.Debugf("Created policy: %#v", pol.VenicePolicy)
+		}(index)
 	}
 
-	// Added temporarily to avoid race conditions due to back-to-back delete followed by create
-	time.Sleep(10 * time.Second)
-	return nil
+	var retErr error
+	for i := 0; i < len(spc.Policies); i++ {
+		err := <-errs
+		if err == nil {
+			retErr = err
+		}
+	}
+
+	return retErr
 }
 
 // DeleteAllRules deletes all rules in the policy
@@ -372,26 +380,30 @@ func (spc *NetworkSecurityPolicyCollection) SetTenant(tenant string) error {
 
 // Commit writes the policy to venice
 func (spc *NetworkSecurityPolicyCollection) Commit() error {
-	if spc.HasError() {
-		return spc.err
-	}
 
-	for _, pol := range spc.Policies {
-		err := spc.Client.CreateNetworkSecurityPolicy(pol.VenicePolicy)
-		if err != nil {
-			// try updating it
-			err = spc.Client.UpdateNetworkSecurityPolicy(pol.VenicePolicy)
+	errs := make(chan error, len(spc.Policies))
+	for index, pol := range spc.Policies {
+		pol := pol
+		go func(index int) {
+			err := spc.Client.GetRestClientByID(index).CreateNetworkSecurityPolicy(pol.VenicePolicy)
 			if err != nil {
-				spc.err = err
-				return err
+				// try updating it
+				err = spc.Client.UpdateNetworkSecurityPolicy(pol.VenicePolicy)
 			}
-		}
+			errs <- err
 
-		log.Debugf("Created policy: %#v", pol.VenicePolicy)
+			log.Debugf("Created policy: %#v", pol.VenicePolicy)
+		}(index)
 
 	}
+	for i := 0; i < len(spc.Policies); i++ {
+		err := <-errs
+		if spc.err == nil {
+			spc.err = err
+		}
+	}
 
-	return nil
+	return spc.err
 }
 
 // Restore is a very context specific function, which restores permit any any policy

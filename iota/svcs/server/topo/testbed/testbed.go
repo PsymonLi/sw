@@ -237,7 +237,7 @@ func (n *TestNode) initEsxNode() error {
 }
 
 // InitNode initializes an iota test node. It copies over IOTA Agent binary and starts it on the remote node
-func (n *TestNode) InitNode(reboot, restoreAgentFiles bool, c *ssh.ClientConfig, commonArtifacts []string) error {
+func (n *TestNode) InitNode(reboot, restoreAgentFiles bool, c *ssh.ClientConfig) error {
 	var agentBinary string
 
 	if reboot {
@@ -279,12 +279,6 @@ func (n *TestNode) InitNode(reboot, restoreAgentFiles bool, c *ssh.ClientConfig,
 	log.Infof("TOPO SVC | InitTestBed | Running init for TestNode: %v, IPAddress: %v AgentBinary: %v", n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress, agentBinary)
 	if err := n.CopyTo(c, constants.DstIotaAgentDir, []string{agentBinary}); err != nil {
 		log.Errorf("TOPO SVC | InitTestBed | Failed to copy agent binary: %v, to TestNode: %v, at IPAddress: %v", agentBinary, n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress)
-		return err
-	}
-
-	// Copy Common Artifacts to the remote node
-	if err := n.CopyTo(c, constants.ImageArtificatsDirectory, commonArtifacts); err != nil {
-		log.Errorf("TOPO SVC | InitTestBed | Failed to copy common artifacts, to TestNode: %v, at IPAddress: %v", n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress)
 		return err
 	}
 

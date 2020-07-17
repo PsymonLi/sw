@@ -151,7 +151,7 @@ type EsxNode struct {
 
 //TestNodeInterface interface for all node operations
 type TestNodeInterface interface {
-	InitNode(reboot, restoreAgentFiles bool, c *ssh.ClientConfig, commonArtifacts []string) error
+	InitNode(reboot, restoreAgentFiles bool, c *ssh.ClientConfig) error
 	CleanUpNode(cfg *ssh.ClientConfig, reboot bool) error
 	CopyTo(cfg *ssh.ClientConfig, entity string, files []string) error
 	CopyFrom(cfg *ssh.ClientConfig, dstDir string, files []string) error
@@ -199,7 +199,6 @@ type TestNodeInterface interface {
 
 	RemoveNetworks(ctx context.Context, req *iota.NetworksMsg) (*iota.NetworksMsg, error)
 	SaveNode(cfg *ssh.ClientConfig) error
-	AgentDBGobFiles() []string
 	SavedDBGobFiles() []string
 }
 
@@ -228,6 +227,7 @@ type NodeInfo struct {
 	ManagedNodes   map[string]NodeInfo
 	License        string
 	GlobalLicenses []*iota.License
+	InstallInfo    *iota.InstallInfo
 }
 
 //NewTestNode Create a new node interface
