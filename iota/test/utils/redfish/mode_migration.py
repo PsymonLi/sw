@@ -1,8 +1,8 @@
 #! /usr/bin/python3
 import time
 import iota.harness.api as api
-from iota.harness.infra.redfish import redfish_client
-from iota.harness.infra.redfish.rest.v1 import ServerDownOrUnreachableError
+from iota.harness.thirdparty.redfish import redfish_client
+from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
 from .utils.ncsi_ops import set_ncsi_mode
 from .utils.ping import ping
 from .utils.getcfg import getcfg

@@ -6,13 +6,13 @@ import time
 import traceback
 
 import iota.harness.api as api
-from iota.harness.infra.redfish import redfish_client
-from iota.harness.infra.redfish.rest.v1 import ServerDownOrUnreachableError
-from .utils.getcfg import getcfg
-from .utils.vmedia_ops import mount_vmedia
-from .utils.vmedia_ops import eject_vmedia
-from .utils.ncsi_ops import check_set_ncsi
-from .utils.common import get_redfish_obj
+from iota.harness.thirdparty.redfish import redfish_client
+from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
+from iota.test.utils.redfish.getcfg import getcfg
+from iota.test.utils.redfish.vmedia_ops import mount_vmedia
+from iota.test.utils.redfish.vmedia_ops import eject_vmedia
+from iota.test.utils.redfish.ncsi_ops import check_set_ncsi
+from iota.test.utils.redfish.common import get_redfish_obj
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 

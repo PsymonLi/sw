@@ -6,13 +6,13 @@ import time
 import traceback
 
 import iota.harness.api as api
-from iota.harness.infra.redfish import redfish_client
-from .utils.ping import ping
-from .utils.ncsi_ops import check_set_ncsi
-from .utils.nic_ops import get_nic_mode
-from .utils.ncsi_ops import set_ncsi_mode
-from .utils.dedicated_mode_ops import set_dedicated_mode
-from .utils.common import get_redfish_obj
+from iota.harness.thirdparty.redfish import redfish_client
+from iota.test.utils.redfish.ping import ping
+from iota.test.utils.redfish.ncsi_ops import check_set_ncsi
+from iota.test.utils.redfish.nic_ops import get_nic_mode
+from iota.test.utils.redfish.ncsi_ops import set_ncsi_mode
+from iota.test.utils.redfish.dedicated_mode_ops import set_dedicated_mode
+from iota.test.utils.redfish.common import get_redfish_obj
 
 def Setup(tc):
     naples_nodes = api.GetNaplesNodes()

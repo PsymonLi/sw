@@ -1,12 +1,12 @@
 #! /usr/bin/python3
 import iota.harness.api as api
-from iota.harness.infra.redfish import redfish_client
-from iota.harness.infra.redfish.rest.v1 import ServerDownOrUnreachableError
-from iota.harness.infra.redfish.rest.v1 import InvalidCredentialsError
-from .utils.ping import ping
-from .utils.getcfg import getcfg
-from .utils.ncsi_ops import check_set_ncsi
-from .utils.ncsi_ops import check_ncsi_conn
+from iota.harness.thirdparty.redfish import redfish_client
+from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
+from iota.harness.thirdparty.redfish.rest.v1 import InvalidCredentialsError
+from iota.test.utils.redfish.ping import ping
+from iota.test.utils.redfish.getcfg import getcfg
+from iota.test.utils.redfish.ncsi_ops import check_set_ncsi
+from iota.test.utils.redfish.ncsi_ops import check_ncsi_conn
 import iota.test.iris.testcases.penctl.enable_ssh as enable_ssh
 import time
 import traceback

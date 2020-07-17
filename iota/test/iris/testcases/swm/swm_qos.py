@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 import iota.harness.api as api
-from .utils.ncsi_ops import check_set_ncsi
+from iota.test.utils.redfish.ncsi_ops import check_set_ncsi
 
 def TriggerSWMQoSConfigVerfication(req, tc):
 

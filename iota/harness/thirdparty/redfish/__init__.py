@@ -7,9 +7,9 @@
 __all__ = ['rest', 'ris', 'discovery']
 __version__ = "2.1.3"
 
-from iota.harness.infra.redfish.rest.v1 import redfish_client
-from iota.harness.infra.redfish.rest.v1 import AuthMethod
-from iota.harness.infra.redfish.discovery.discovery import discover_ssdp
+from .rest.v1 import redfish_client
+from .rest.v1 import AuthMethod
+from .discovery.discovery import discover_ssdp
 import logging
 
 def redfish_logger(file_name, log_format, log_level=logging.ERROR):

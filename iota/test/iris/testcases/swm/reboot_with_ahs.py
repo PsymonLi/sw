@@ -3,14 +3,14 @@ import traceback
 import time
 
 import iota.harness.api as api
-from iota.harness.infra.redfish import redfish_client
-from iota.harness.infra.redfish.rest.v1 import ServerDownOrUnreachableError
-from .utils.getcfg import getcfg
-from .utils.ahs import download_ahs
+from iota.harness.thirdparty.redfish import redfish_client
+from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
+from iota.test.utils.redfish.getcfg import getcfg
+from iota.test.utils.redfish.ahs import download_ahs
 from multiprocessing import Event, Process
-from .utils.ping import ping
-from .utils.ncsi_ops import check_set_ncsi
-from .utils.common import get_redfish_obj
+from iota.test.utils.redfish.ping import ping
+from iota.test.utils.redfish.ncsi_ops import check_set_ncsi
+from iota.test.utils.redfish.common import get_redfish_obj
 
 def Setup(tc):
     tc.RF = None

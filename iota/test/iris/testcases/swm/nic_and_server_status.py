@@ -3,10 +3,10 @@ import traceback
 from pprint import pprint
 
 import iota.harness.api as api
-from iota.harness.infra.redfish import redfish_client
-from iota.harness.infra.redfish.rest.v1 import ServerDownOrUnreachableError
-from .utils.getcfg import getcfg
-from .utils.ncsi_ops import check_set_ncsi
+from iota.harness.thirdparty.redfish import redfish_client
+from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
+from iota.test.utils.redfish.getcfg import getcfg
+from iota.test.utils.redfish.ncsi_ops import check_set_ncsi
 
 
 def get_nics_health(_robj):

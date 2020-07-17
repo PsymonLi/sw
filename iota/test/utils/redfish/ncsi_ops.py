@@ -6,9 +6,9 @@ import traceback
 from .ilo_ops import reset_ilo
 from .nic_ops import get_nic_obj
 from .response import validate_resp
-from iota.harness.infra.redfish import redfish_client
-from iota.harness.infra.redfish.rest.v1 import ServerDownOrUnreachableError
-from iota.harness.infra.redfish.rest.v1 import InvalidCredentialsError
+from iota.harness.thirdparty.redfish import redfish_client
+from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
+from iota.harness.thirdparty.redfish.rest.v1 import InvalidCredentialsError
 from .ping import ping
 import iota.harness.api as api
 from .common import get_redfish_obj

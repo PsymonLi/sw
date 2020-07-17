@@ -1,6 +1,6 @@
-from iota.harness.infra.redfish.rest.v1 import ServerDownOrUnreachableError
-from iota.harness.infra.redfish.rest.v1 import InvalidCredentialsError
-from iota.harness.infra.redfish import redfish_client
+from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
+from iota.harness.thirdparty.redfish.rest.v1 import InvalidCredentialsError
+from iota.harness.thirdparty.redfish import redfish_client
 import iota.harness.api as api
 
 def get_redfish_obj(cimc_info, mode="dedicated"):

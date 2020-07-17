@@ -6,17 +6,17 @@ import time
 import traceback
 
 import iota.harness.api as api
-from iota.harness.infra.redfish import redfish_client
-from .utils.ping import ping
-from .utils.ncsi_ops import check_set_ncsi
+from iota.harness.thirdparty.redfish import redfish_client
+from iota.test.utils.redfish.ping import ping
+from iota.test.utils.redfish.ncsi_ops import check_set_ncsi
 import iota.test.iris.utils.iperf as iperf
-from .utils.nic_ops import get_nic_mode
-from .utils.ncsi_ops import set_ncsi_mode
-from .utils.dedicated_mode_ops import set_dedicated_mode
-from .utils.common import get_redfish_obj
-from .utils.host import tuneLinux
-from .utils.vmedia_ops import mount_vmedia
-from .utils.vmedia_ops import eject_vmedia
+from iota.test.utils.redfish.nic_ops import get_nic_mode
+from iota.test.utils.redfish.ncsi_ops import set_ncsi_mode
+from iota.test.utils.redfish.dedicated_mode_ops import set_dedicated_mode
+from iota.test.utils.redfish.common import get_redfish_obj
+from iota.test.utils.redfish.host import tuneLinux
+from iota.test.utils.redfish.vmedia_ops import mount_vmedia
+from iota.test.utils.redfish.vmedia_ops import eject_vmedia
 
 VMEDIA_PATH = "http://package-mirror.test.pensando.io/iota/swm_test/test_vmedia_iperf.iso"
 

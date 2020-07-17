@@ -1,4 +1,4 @@
-from iota.harness.infra.redfish.rest.v1 import ServerDownOrUnreachableError
+from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
 import iota.harness.api as api
 from .response import validate_resp
 import traceback

@@ -6,7 +6,7 @@ import iota.harness.api as api
 from .ilo_ops import reset_ilo
 from .nic_ops import get_nic_obj
 from .response import validate_resp
-from iota.harness.infra.redfish import redfish_client
+from iota.harness.thirdparty.redfish import redfish_client
 from .common import get_redfish_obj
 from .ping import ping
 
