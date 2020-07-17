@@ -113,7 +113,7 @@ log::init(const char *name, uint64_t cpu_mask, log_mode_e log_mode,
     if (syslogger) {
         logger_ = spdlog::syslog_logger(name, name, LOG_PID);
     } else {
-            
+
         auto dist_sink = std::make_shared<spdlog::sinks::dist_sink_mt>();
 
         if (persistent_file_name &&
@@ -133,7 +133,6 @@ log::init(const char *name, uint64_t cpu_mask, log_mode_e log_mode,
                 trace_level_to_spdlog_level(trace_verbose));
             dist_sink->add_sink(sink_non_persist);
         }
-
         logger_ = std::make_shared<spdlog::logger>(name, dist_sink);
     }
     if (logger_) {

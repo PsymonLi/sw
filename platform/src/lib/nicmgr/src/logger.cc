@@ -53,7 +53,7 @@ init (void)
         }
     }
 
-    logdir = std::getenv("LOG_DIR");
+    logdir = std::getenv("PERSISTENT_LOG_DIR");
     if (!logdir) {
         // log in the current dir
         logfile = log_filename();

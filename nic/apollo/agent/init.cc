@@ -29,9 +29,9 @@ static sdk::event_thread::event_thread *g_svc_server_thread;
 #define TRACE_NUM_FILES                        1
 #define TRACE_FILE_SIZE                        (20 << 20)
 #define TRACE_NUM_FILES_HMON                   1
-#define TRACE_FILE_SIZE_HMON                   (5 << 20)    // 5MB
+#define TRACE_FILE_SIZE_HMON                   (2 << 20)    // 2 MB
 #define TRACE_NUM_FILES_LINK                   1
-#define TRACE_FILE_SIZE_LINK                   (4 << 20)    // 4MB
+#define TRACE_FILE_SIZE_LINK                   (2 << 20)    // 2 MB
 typedef void (*sig_handler_t)(int sig, siginfo_t *info, void *ptr);
 
 //------------------------------------------------------------------------------
@@ -244,37 +244,33 @@ logger_init (void)
 {
     std::string logfile, err_logfile;
 
-    logfile = log_file(std::getenv("LOG_DIR"), "./pds-agent.log");
+    // initialize the pdsagent logger
+    logfile = log_file(std::getenv("NON_PERSISTENT_LOG_DIR"),
+                       "./pds-agent.log");
     err_logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"), "/obfl.log");
 
     if (logfile.empty() || err_logfile.empty()) {
         return SDK_RET_ERR;
     }
-
-    // initialize the logger
     core::trace_init("agent", 0x1, true, err_logfile.c_str(), logfile.c_str(),
                      TRACE_FILE_SIZE, TRACE_NUM_FILES, utils::trace_debug);
 
-    logfile = log_file(std::getenv("LOG_DIR"), "./hmon.log");
-    err_logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"),
-                           "/hmon_err.log");
 
     // initialize the hmon and interrupts logger
-    core::hmon_trace_init("hmon", 0x1, true, err_logfile.c_str(),
+    logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"), "./hmon.log");
+    core::hmon_trace_init("hmon", 0x1, true, NULL,
                           logfile.c_str(), TRACE_FILE_SIZE_HMON,
                           TRACE_NUM_FILES_HMON, utils::trace_info);
 
-    logfile = log_file(std::getenv("LOG_DIR"), "./asicerrord_onetime.log");
-    err_logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"),
-                           "/asicerrord_onetime_err.log");
-
     // initialize the onetime interrupts logger
-    core::intr_trace_init("intr", 0x1, true, err_logfile.c_str(),
+    logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"),
+                       "./asicerrord_onetime.log");
+    core::intr_trace_init("intr", 0x1, true, NULL,
                           logfile.c_str(), TRACE_FILE_SIZE_HMON,
                           TRACE_NUM_FILES_HMON, utils::trace_info);
 
     // initialize link logger
-    logfile = log_file(std::getenv("LOG_DIR"), "./linkmgr.log");
+    logfile = log_file(std::getenv("NON_PERSISTENT_LOG_DIR"), "./linkmgr.log");
     err_logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"),
                            "/linkmgr_err.log");
     core::link_trace_init("linkmgr", 0x1, false, err_logfile.c_str(),
