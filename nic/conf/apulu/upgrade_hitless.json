@@ -61,7 +61,7 @@
             "//": "backed up data from A will be restored here",
             "svc": {
                 "event_sequence": "serial",
-                "names": [ "pdsagent", "vpp" ],
+                "names": [ "pdsagent" ],
                 "domain": "A"
             },
             "events": [

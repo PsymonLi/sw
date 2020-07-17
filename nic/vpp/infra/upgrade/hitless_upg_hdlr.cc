@@ -39,8 +39,13 @@ vpp_hitless_upg_ev_hdlr (upg_ev_params_t *params)
     case UPG_EV_PREPARE:
         // Domain 'A'
         // Bring down all interfaces and suspend workers
+        // TODO: Once we have UPG_EV_PRESYNC stage, move the
+        // commented code to that stage. To reduce traffic impact
+        // we have now moved this code to repl_state_tp_server
+#if 0
         pds_infra_set_all_intfs_status(false);
         pds_vpp_set_suspend_resume_worker_threads(1);
+#endif
         break;
 
     case UPG_EV_SYNC:

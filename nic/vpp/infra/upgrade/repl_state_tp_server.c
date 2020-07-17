@@ -10,6 +10,8 @@
 #include <vppinfra/socket.h>
 #include <vppinfra/file.h>
 #include <vlib/unix/unix.h>
+#include "infra/api/intf.h"
+#include "nic/vpp/infra/ipc/pdsa_vpp_hdlr.h"
 #include "repl_state_tp_pvt.h"
 
 static clib_socket_t repl_state_tp_server_sock;
@@ -104,6 +106,13 @@ repl_state_tp_server_accept (clib_file_t * uf)
      * to negotiate the queue name to use and know the client's capabilities
      * like number of threads etc. We will do it in phase-2.
      */
+    // Bring down all interfaces and suspend workers
+    // TODO: Once we have UPG_EV_PRESYNC stage, move the
+    // commented code to that stage.
+    pds_vpp_worker_thread_barrier();
+    pds_infra_set_all_intfs_status(0);
+    pds_vpp_set_suspend_resume_worker_threads(1);
+    pds_vpp_worker_thread_barrier_release();
     repl_state_tp_sync(REPL_STATE_OBJ_ID_SESS, sqname);
     return 0;
 }
