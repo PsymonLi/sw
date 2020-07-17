@@ -37,6 +37,8 @@ esp_ipv4_tunnel_h2n_txdma2_ipsec_encap_txdma2_initial_table:
     phvwr.c4 p.ipsec_to_stage4_is_vlan_encap, 1
     smeqb c3, d.flags, IPSEC_FLAGS_NATT_MASK, IPSEC_FLAGS_NATT_MASK 
     phvwr.c3 p.ipsec_to_stage4_is_nat_t, 1
+    phvwr p.p4plus2p4_hdr_nexthop_id, d.{nexthop_id}.hx
+    phvwr p.p4plus2p4_hdr_nexthop_type, d.nexthop_type
     CAPRI_NEXT_TABLE_READ_NO_TABLE_LKUP(0, esp_ipv4_tunnel_h2n_txdma2_ipsec_dummy)
 
     //addi r7, r0, IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N

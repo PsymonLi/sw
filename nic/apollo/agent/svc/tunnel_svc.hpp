@@ -83,6 +83,8 @@ pds_tep_api_spec_to_proto (pds::TunnelSpec *proto_spec,
         return SDK_RET_INVALID_ARG;
     }
     proto_spec->set_tos(api_spec->tos);
+    proto_spec->set_ipsecencryptsaid(api_spec->encrypt_sa.id, PDS_MAX_KEY_LEN);
+    proto_spec->set_ipsecdecryptsaid(api_spec->decrypt_sa.id, PDS_MAX_KEY_LEN);
     return SDK_RET_OK;
 }
 
@@ -129,6 +131,8 @@ pds_tep_proto_to_api_spec (pds_tep_spec_t *api_spec,
                                   proto_spec.localip());
     MAC_UINT64_TO_ADDR(api_spec->mac, proto_spec.macaddress());
     pds_obj_key_proto_to_api_spec(&api_spec->vpc, proto_spec.vpcid());
+    pds_obj_key_proto_to_api_spec(&api_spec->encrypt_sa, proto_spec.ipsecencryptsaid());
+    pds_obj_key_proto_to_api_spec(&api_spec->decrypt_sa, proto_spec.ipsecdecryptsaid());
 
     switch (proto_spec.type()) {
     case pds::TUNNEL_TYPE_IGW:

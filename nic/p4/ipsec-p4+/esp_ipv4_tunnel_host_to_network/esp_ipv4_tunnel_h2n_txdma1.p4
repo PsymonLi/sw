@@ -284,12 +284,12 @@ action ipsec_write_barco_req(pc, rsvd, cosA, cosB, cos_sel,
                              rxdma_ring_pindex, rxdma_ring_cindex,
                              barco_ring_pindex, barco_ring_cindex,
                              key_index, iv_size, icv_size, spi,
-                             esn_lo, iv, barco_enc_cmd,
-                             ipsec_cb_index,
+                             esn_lo, iv, ipsec_cb_index,
                              cb_pindex, cb_cindex, barco_pindex, barco_cindex, 
                              cb_ring_base_addr_hi, cb_ring_base_addr,
                              barco_ring_base_addr_hi, barco_ring_base_addr, 
-                             iv_salt, barco_full_count, flags)
+                             iv_salt, barco_full_count, flags,
+                             nexthop_id, nexthop_type, nexthop_pad)
 {
     IPSEC_TXDMA1_GLOBAL_SCRATCH_INIT
     IPSEC_CB_SCRATCH_WITH_PC
@@ -401,12 +401,12 @@ action ipsec_encap_txdma_initial_table(rsvd, cosA, cosB, cos_sel,
                                        rxdma_ring_pindex, rxdma_ring_cindex,
                                        barco_ring_pindex, barco_ring_cindex,
                                        key_index, iv_size, icv_size, spi,
-                                       esn_lo, iv, barco_enc_cmd,
-                                       ipsec_cb_index,
+                                       esn_lo, iv, ipsec_cb_index,
                                        cb_pindex, cb_cindex, barco_pindex, barco_cindex, 
                                        cb_ring_base_addr_hi, cb_ring_base_addr,
                                        barco_ring_base_addr_hi,  barco_ring_base_addr,
-                                       iv_salt, barco_full_count, flags)
+                                       iv_salt, barco_full_count, flags,
+                                       nexthop_id, nexthop_type, nexthop_pad)
 {
     IPSEC_CB_SCRATCH
   
@@ -416,7 +416,6 @@ action ipsec_encap_txdma_initial_table(rsvd, cosA, cosB, cos_sel,
     modify_field(p4_txdma_intr_scratch.qtype, p4_txdma_intr.qtype);
     modify_field(p4_txdma_intr_scratch.qstate_addr, p4_txdma_intr.qstate_addr);
 
-    modify_field(barco_req.command, barco_enc_cmd);
     //modify_field(barco_req.brq_iv_addr, IPSEC_CB_BASE + (IPSEC_CB_SIZE * ipsec_cb_index) + IPSEC_CB_IV_OFFSET);
     //modify_field(barco_req.key_desc_index, key_index);
     modify_field(t0_s2s.iv_size, iv_size);

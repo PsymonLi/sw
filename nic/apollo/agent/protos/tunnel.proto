@@ -87,6 +87,9 @@ message TunnelSpec {
   // header or in the Traffic Class field of IPv6 outer header, this value will
   // be written as-is (i.e., not interpreted) during encap time by the dataplane
   uint32           ToS                  = 16;
+
+  bytes            IpsecEncryptSAId     = 17;
+  bytes            IpsecDecryptSAId     = 18;
 }
 
 // operational status of the tunnel, if any

@@ -297,3 +297,12 @@ header_type p4plus_to_p4_s2_t {
         vid                     : 12;
     }
 }
+
+header_type p4plus_to_p4_header_ext_t {
+    fields {
+        pad                     : 7;
+        nexthop_valid           : 1;
+        nexthop_type            : 8;
+        nexthop_id              : 16;
+    }
+}

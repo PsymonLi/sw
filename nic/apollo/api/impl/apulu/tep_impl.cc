@@ -16,12 +16,14 @@
 #include "nic/apollo/api/tep.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/internal/pds_route.hpp"
+#include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/api/impl/apulu/tep_impl.hpp"
 #include "nic/apollo/api/impl/apulu/nexthop_impl.hpp"
 #include "nic/apollo/api/impl/apulu/nexthop_group_impl.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/apulu/svc/tunnel_svc.hpp"
 #include "nic/apollo/api/impl/apulu/svc/svc_utils.hpp"
+#include "nic/apollo/api/impl/apulu/ipsec_impl.hpp"
 
 #define PDS_NUM_NH_NO_ECMP                 1
 #define tunnel_action                      action_u.tunnel_tunnel_info
@@ -186,6 +188,61 @@ fill_p4_tep_data_from_nhgroup_ (tep_entry *tep, pds_obj_key_t *nhgroup_key,
     return SDK_RET_OK;
 }
 
+static inline sdk_ret_t
+fill_p4_tep_data_from_ipsec_sa_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key,
+                                 tunnel_actiondata_t *tep_data,
+                                 pds_obj_key_t *nhgroup_key, pds_obj_key_t *nh_key)
+{
+    sdk_ret_t ret;
+    ipsec_sa_entry *ipsec_sa;
+    ipsec_sa_impl *ipsec_impl;
+    nexthop *nh;
+    nexthop_impl *nh_impl;
+    nexthop_group *nhgroup;
+    nexthop_group_impl *nhgroup_impl;
+    uint32_t nh_idx;
+
+    ipsec_sa = ipsec_sa_encrypt_find(encrypt_sa_key);
+    if (ipsec_sa == NULL) {
+        PDS_TRACE_ERR("ipsec encrypt sa %s in TEP %s not found",
+                      encrypt_sa_key->str(), tep->key2str().c_str());
+        return SDK_RET_INVALID_ARG;
+    }
+    ipsec_impl = (ipsec_sa_impl *)ipsec_sa->impl();
+    nh_idx = ipsec_impl->nh_idx();
+    PDS_TRACE_DEBUG("Programming tep with ipsec nh %d", nh_idx);
+    PDS_IMPL_FILL_TEP_DATA_FROM_NH(tep_data, nh_idx);
+
+    if (nh_key) {
+        nh = nexthop_db()->find(nh_key);
+        if (unlikely(nh == NULL)) {
+            PDS_TRACE_ERR("nh %s in TEP %s not found",
+                          nh_key->str(), tep->key2str().c_str());
+            return SDK_RET_INVALID_ARG;
+        }
+        nh_impl = (nexthop_impl *)nh->impl();
+        PDS_TRACE_DEBUG("Programming ipsec cb hw_id %u with nh %u",
+                        ipsec_impl->hw_id(), nh_impl->hw_id());
+        ipseccb_encrypt_update_nexthop_id(ipsec_impl->hw_id(), ipsec_impl->base_pa(),
+                                          nh_impl->hw_id(), NEXTHOP_TYPE_NEXTHOP);
+    } else if (nhgroup_key) {
+        nhgroup = nexthop_group_db()->find(nhgroup_key);
+        if (unlikely(nhgroup == NULL)) {
+            PDS_TRACE_ERR("nhgroup %s in TEP %s not found",
+                          nhgroup_key->str(), tep->key2str().c_str());
+            return SDK_RET_INVALID_ARG;
+        }
+        nhgroup_impl = (nexthop_group_impl *)nhgroup->impl();
+        PDS_TRACE_DEBUG("Programming ipsec cb hw_id %u with ecmp nh %u",
+                        ipsec_impl->hw_id(), nhgroup_impl->hw_id());
+        ipseccb_encrypt_update_nexthop_id(ipsec_impl->hw_id(), ipsec_impl->base_pa(),
+                                          nhgroup_impl->hw_id(),
+                                          NEXTHOP_TYPE_ECMP);
+    }
+
+    return SDK_RET_OK;
+}
+
 sdk_ret_t
 tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
                             pds_tep_spec_t *spec,
@@ -206,14 +263,26 @@ tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
 
     switch (spec->nh_type) {
     case PDS_NH_TYPE_UNDERLAY_ECMP:
-        ret = fill_p4_tep_data_from_nhgroup_(tep, &spec->nh_group, tep_data);
+        if (!tep->ipsec_encrypt_sa().valid()) {
+            ret = fill_p4_tep_data_from_nhgroup_(tep, &spec->nh_group, tep_data);
+        } else {
+            pds_obj_key_t ipsec_sa_id = tep->ipsec_encrypt_sa();
+            ret = fill_p4_tep_data_from_ipsec_sa_(tep, &ipsec_sa_id, tep_data,
+                                                  &spec->nh_group, NULL);
+        }
         if (ret != SDK_RET_OK) {
             return ret;
         }
         break;
 
     case PDS_NH_TYPE_UNDERLAY:
-        ret = fill_p4_tep_data_from_nh_(tep, &spec->nh, tep_data);
+        if (!tep->ipsec_encrypt_sa().valid()) {
+            ret = fill_p4_tep_data_from_nh_(tep, &spec->nh, tep_data);
+        } else {
+            pds_obj_key_t ipsec_sa_id = tep->ipsec_encrypt_sa();
+            ret = fill_p4_tep_data_from_ipsec_sa_(tep, &ipsec_sa_id, tep_data,
+                                                  NULL, &spec->nh);
+        }
         if (ret != SDK_RET_OK) {
             return ret;
         }

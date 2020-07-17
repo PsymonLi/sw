@@ -60,6 +60,7 @@ header apulu_p4_to_arm_header_t p4i_to_arm;
 
 header apulu_p4_to_arm_header_t p4e_to_arm;
 header apulu_arm_to_p4_header_t arm_to_p4i;
+header p4plus_to_p4_header_ext_t p4plus_ext;
 
 // layer 00
 header ethernet_t ethernet_00;
@@ -118,6 +119,7 @@ header tcp_options_blob_t tcp_option_blob;
 
 header icmp_t icmp;
 header icmp_echo_t icmp_echo;
+header esp_t esp;
 
 /******************************************************************************
  * Parser OHI                                                                 *
@@ -190,6 +192,7 @@ parser parse_txdma_to_ingress {
     return select(p4plus_to_p4.gso_valid, p4plus_to_p4.p4plus_app_id) {
         0x10 mask 0x10 : parse_txdma_gso;
         P4PLUS_APPTYPE_CPU : parse_cpu_packet;
+        P4PLUS_APPTYPE_IPSEC : parse_p4plus_ext_header;
         default : parse_ingress_packet;
     }
 }
@@ -203,6 +206,12 @@ parser parse_txdma_gso {
 @pragma xgress ingress
 parser parse_cpu_packet {
     extract(arm_to_p4i);
+    return parse_ingress_packet;
+}
+
+@pragma xgress ingress
+parser parse_p4plus_ext_header {
+    extract(p4plus_ext);
     return parse_ingress_packet;
 }
 
@@ -262,6 +271,7 @@ parser parse_ipv4_1_split {
         IP_PROTO_ICMP mask 0x3fffff : parse_icmp;
         IP_PROTO_TCP mask 0x3fffff : parse_tcp;
         IP_PROTO_UDP mask 0x3fffff : parse_udp_1;
+        IP_PROTO_IPSEC_ESP mask 0x3fffff : parse_ipsec_esp_1;
         0x0 mask 0x3fff00 : ingress;
         default : parse_ipv4_1_fragment;
     }
@@ -330,6 +340,17 @@ parser parse_udp_1 {
         UDP_PORT_VXLAN : parse_vxlan_1;
         default : ingress;
     }
+}
+
+@pragma allow_set_meta ipsec_metadata.seq_no
+@pragma allow_set_meta ipsec_metadata.ipsec_type
+parser parse_ipsec_esp_1 {
+    extract(esp);
+    set_metadata(key_metadata.parsed_sport, latest.spi_hi);
+    set_metadata(key_metadata.parsed_dport, latest.spi_lo);
+    set_metadata(ipsec_metadata.seq_no, latest.seqNo);
+    set_metadata(ipsec_metadata.ipsec_type, IPSEC_HEADER_ESP);
+    return ingress;
 }
 
 parser parse_vxlan_1 {

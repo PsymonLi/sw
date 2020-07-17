@@ -58,14 +58,13 @@ add_ipsec_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     data.u.ipsec_encap_rxdma_initial_table_d.iv_salt = ctxt->encrypt_spec->salt;
     data.u.ipsec_encap_rxdma_initial_table_d.iv_size = IPSEC_DEF_IV_SIZE;
     data.u.ipsec_encap_rxdma_initial_table_d.icv_size = IPSEC_AES_GCM_DEF_ICV_SIZE;
-    data.u.ipsec_encap_rxdma_initial_table_d.barco_enc_cmd = IPSEC_BARCO_ENCRYPT_AES_GCM_256;
     data.u.ipsec_encap_rxdma_initial_table_d.esn_lo = 0;
     data.u.ipsec_encap_rxdma_initial_table_d.spi = htonl(ctxt->encrypt_spec->spi);
     data.u.ipsec_encap_rxdma_initial_table_d.ipsec_cb_index = htons(ctxt->hw_id);
 
-    PDS_TRACE_DEBUG("iv 0x%lx salt 0x%x iv_size %d icv_size %d barco_cmd 0x%x esn_lo %d spi %d",
+    PDS_TRACE_DEBUG("iv 0x%lx salt 0x%x iv_size %d icv_size %d esn_lo %d spi %d",
             ctxt->encrypt_spec->iv, ctxt->encrypt_spec->salt, IPSEC_DEF_IV_SIZE, IPSEC_AES_GCM_DEF_ICV_SIZE,
-            IPSEC_BARCO_ENCRYPT_AES_GCM_256, 0, ctxt->encrypt_spec->spi);
+            0, ctxt->encrypt_spec->spi);
 
     data.u.ipsec_encap_rxdma_initial_table_d.key_index = htons(ctxt->key_index);
     PDS_TRACE_DEBUG("key_index = %d", ctxt->key_index);
@@ -109,10 +108,11 @@ add_ipsec_ip_header_entry (ipseccb_ctxt_t *ctxt)
     // TODO : smac/dmac
     //memcpy(eth_ip_hdr.smac, sa->smac, ETH_ADDR_LEN);
     //memcpy(eth_ip_hdr.dmac, sa->dmac, ETH_ADDR_LEN);
-    eth_ip_hdr.dot1q_ethertype = htons(0x8100);
+    // no 
+    eth_ip_hdr.dot1q_ethertype = htons(0x0800);
     //eth_ip_hdr.vlan = htons(sa->vrf_vlan);
     //PDS_TRACE_DEBUG("vrf vlan : %d", sa->vrf_vlan);
-    eth_ip_hdr.ethertype = htons(0x800);
+    //eth_ip_hdr.ethertype = htons(0x800);
     eth_ip_hdr.version_ihl = 0x45;
     eth_ip_hdr.tos = 0;
     //p4 will update/correct this part - fixed for now.
@@ -259,6 +259,23 @@ ipseccb_encrypt_get (uint32_t hw_id, uint64_t base_pa,
     }
 
     return ret;
+}
+
+sdk_ret_t
+ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, uint64_t base_pa,
+                                   uint16_t nh_id, uint8_t nh_type)
+{
+    uint32_t data;
+    uint8_t *ptr = (uint8_t *)&data;
+
+    *(uint16_t *)ptr = nh_id;
+    ptr += 2;
+    *(uint8_t *)ptr = nh_type;
+    uint64_t addr = base_pa + IPSEC_CB_ENC_NEXTHOP_ID_OFFSET;
+    impl_base::pipeline_impl()->p4plus_write(0, addr, (uint8_t *)&data,
+                                             sizeof(uint32_t),
+                                             P4PLUS_CACHE_ACTION_NONE);
+    return SDK_RET_OK;
 }
 
 }    // namespace impl

@@ -71,6 +71,25 @@ header_type icmp_echo_t {
     }
 }
 
+header_type ah_t {
+    fields {
+        next_header : 8;
+        payload_length : 8;
+        reserved : 16;
+        spi_hi : 16;
+        spi_lo : 16;
+        seqNo : 32;
+    }
+}
+
+header_type esp_t {
+    fields {
+        spi_hi : 16;
+        spi_lo : 16;
+        seqNo  : 32;
+    }
+}
+
 header_type tcp_t {
     fields {
         srcPort : 16;

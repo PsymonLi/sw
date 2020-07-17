@@ -60,7 +60,6 @@ add_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.ipsec_cb_index = htons(ctxt->hw_id);
 
     // for now aes-decrypt-encoding hard-coded.
-    data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_enc_cmd = IPSEC_BARCO_DECRYPT_AES_GCM_256;
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.key_index = htons(ctxt->key_index);
 
     PDS_TRACE_DEBUG("key_index %d", ctxt->key_index);

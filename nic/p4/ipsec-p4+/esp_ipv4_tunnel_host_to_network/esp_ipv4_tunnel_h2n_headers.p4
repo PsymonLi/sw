@@ -56,6 +56,8 @@ header_type esp_header_t {
 }
 
 
+#define IPSEC_CB_ENC_NEXTHOP_ID_OFFSET      60
+#define IPSEC_CB_ENC_NEXTHOP_TYPE_OFFSET    62
 
 header_type ipsec_cb_metadata_t {
     fields {
@@ -69,28 +71,30 @@ header_type ipsec_cb_metadata_t {
         total                   : 4;
         pid                     : 16;
 
-        rxdma_ring_pindex : RING_INDEX_WIDTH;
-        rxdma_ring_cindex : RING_INDEX_WIDTH;
-        barco_ring_pindex : RING_INDEX_WIDTH;
-        barco_ring_cindex : RING_INDEX_WIDTH;
+        rxdma_ring_pindex       : RING_INDEX_WIDTH;
+        rxdma_ring_cindex       : RING_INDEX_WIDTH;
+        barco_ring_pindex       : RING_INDEX_WIDTH;
+        barco_ring_cindex       : RING_INDEX_WIDTH;
 
-        key_index : 16;
-        iv_size   : 8;
-        icv_size  : 8;
-        spi       : 32;
-        esn_lo    : 32;
-        iv        : 64;
-        barco_enc_cmd  : 32;
-        ipsec_cb_index : 16;
-        cb_pindex : 16;
-        cb_cindex : 16;
-        barco_pindex : 16;
-        barco_cindex : 16;
-        cb_ring_base_addr : 32;
-        barco_ring_base_addr : 32;
-        iv_salt   : 32;
-        barco_full_count : 8;
-        flags : 8;
+        key_index               : 16;
+        iv_size                 : 8;
+        icv_size                : 8;
+        spi                     : 32;
+        esn_lo                  : 32;
+        iv                      : 64;
+        ipsec_cb_index          : 16;
+        cb_pindex               : 16;
+        cb_cindex               : 16;
+        barco_pindex            : 16;
+        barco_cindex            : 16;
+        cb_ring_base_addr       : 32;
+        barco_ring_base_addr    : 32;
+        iv_salt                 : 32;
+        barco_full_count        : 8;
+        flags                   : 8;
+        nexthop_id              : 16; // IPSEC_CB_ENC_NEXTHOP_ID_OFFSET
+        nexthop_type            : 8;  // IPSEC_CB_ENC_NEXTHOP_TYPE_OFFSET
+        nexthop_pad             : 8;
     }
 }
 
@@ -113,7 +117,6 @@ header_type ipsec_cb_metadata_t {
     modify_field(ipsec_cb_scratch.spi, spi); \
     modify_field(ipsec_cb_scratch.esn_lo, esn_lo); \
     modify_field(ipsec_cb_scratch.iv, iv); \
-    modify_field(ipsec_cb_scratch.barco_enc_cmd, barco_enc_cmd); \
     modify_field(ipsec_cb_scratch.ipsec_cb_index, ipsec_cb_index); \
     modify_field(ipsec_cb_scratch.barco_full_count, barco_full_count); \
     modify_field(ipsec_cb_scratch.cb_pindex, cb_pindex); \
@@ -124,6 +127,9 @@ header_type ipsec_cb_metadata_t {
     modify_field(ipsec_cb_scratch.barco_ring_base_addr, barco_ring_base_addr); \
     modify_field(ipsec_cb_scratch.iv_salt, iv_salt); \
     modify_field(ipsec_cb_scratch.flags, flags); \          
+    modify_field(ipsec_cb_scratch.nexthop_id, nexthop_id); \
+    modify_field(ipsec_cb_scratch.nexthop_type, nexthop_type); \
+    modify_field(ipsec_cb_scratch.nexthop_pad, nexthop_pad);
 
 #define IPSEC_CB_SCRATCH_WITH_PC \
     modify_field(ipsec_cb_scratch.pc, pc); \

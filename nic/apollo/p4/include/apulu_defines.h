@@ -329,3 +329,9 @@
 #define CSUM_HDR_UDP_1                  0
 #define CSUM_HDR_UDP_2                  0
 #define CSUM_HDR_TCP                    0
+
+/*****************************************************************************/
+/* IPSEC types                                                               */
+/*****************************************************************************/
+#define IPSEC_HEADER_AH                1
+#define IPSEC_HEADER_ESP               2

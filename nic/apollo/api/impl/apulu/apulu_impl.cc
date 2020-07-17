@@ -30,6 +30,7 @@
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "gen/platform/mem_regions.hpp"
+#include "gen/p4gen/p4/include/ftl.h"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_rxdma/include/p4plus_rxdma_p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
@@ -490,7 +491,7 @@ apulu_impl::egress_drop_stats_init_(void) {
         if (p4pd_global_entry_write(P4TBL_ID_P4E_DROP_STATS, i,
                                     (uint8_t *)&key, (uint8_t *)&key_mask, &data) == P4PD_SUCCESS) {
             PDS_TRACE_ERR("Egress drop stats init failed at index %u", i);
-        } 
+        }
     }
     return SDK_RET_OK;
 }
@@ -509,7 +510,7 @@ apulu_impl::ingress_drop_stats_init_(void) {
         if (p4pd_global_entry_write(P4TBL_ID_P4I_DROP_STATS, i,
                                     (uint8_t *)&key, (uint8_t *)&key_mask, &data) == P4PD_SUCCESS) {
             PDS_TRACE_ERR("Ingress drop stats init failed at index %u", i);
-        } 
+        }
     }
     return SDK_RET_OK;
 }
@@ -920,6 +921,23 @@ apulu_impl::p4plus_table_init_(void) {
 }
 
 sdk_ret_t
+apulu_impl::program_ipsec_lif_(void) {
+    sdk_ret_t ret;
+
+    // program the LIF table.
+    // program lif_type = arm so that subnet checks are not done
+    // on this lif
+    ret = program_lif_table(APULU_IPSEC_LIF, P4_LIF_TYPE_ARM_DPDK,
+                            PDS_IMPL_RSVD_VPC_HW_ID, PDS_IMPL_RSVD_BD_HW_ID,
+                            PDS_IMPL_RSVD_VNIC_HW_ID, g_zero_mac, false, true);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to program lif table for ipsec, ret=%u", ret);
+    }
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 apulu_impl::pipeline_init(void) {
     sdk_ret_t  ret;
     p4pd_cfg_t p4pd_cfg;
@@ -965,6 +983,8 @@ apulu_impl::pipeline_init(void) {
     ret = init_service_lif(APULU_SERVICE_LIF, p4pd_cfg.cfg_path);
     SDK_ASSERT(ret == SDK_RET_OK);
     ret = init_ipsec_lif(APULU_IPSEC_LIF);
+    SDK_ASSERT(ret == SDK_RET_OK);
+    ret = program_ipsec_lif_();
     SDK_ASSERT(ret == SDK_RET_OK);
     ret = table_init_();
     SDK_ASSERT(ret == SDK_RET_OK);

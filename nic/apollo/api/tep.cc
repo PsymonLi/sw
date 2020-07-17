@@ -144,6 +144,8 @@ tep_entry::init_config(api_ctxt_t *api_ctxt) {
         tep_ = spec->tep;
     }
     tos_ = spec->tos;
+    encrypt_sa_ = spec->encrypt_sa;
+    decrypt_sa_ = spec->decrypt_sa;
     return SDK_RET_OK;
 }
 
@@ -271,6 +273,8 @@ tep_entry::reactivate_config(pds_epoch_t epoch, api_obj_ctxt_t *obj_ctxt) {
 void
 tep_entry::fill_spec_(pds_tep_spec_t *spec) {
     memcpy(&spec->key, &key_, sizeof(pds_obj_key_t));
+    memcpy(&spec->encrypt_sa, &encrypt_sa_, sizeof(pds_obj_key_t));
+    memcpy(&spec->decrypt_sa, &decrypt_sa_, sizeof(pds_obj_key_t));
     spec->type = type_;
     spec->remote_ip = remote_ip_;
     spec->remote_svc = remote_svc_;

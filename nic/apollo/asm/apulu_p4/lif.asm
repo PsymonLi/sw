@@ -10,7 +10,12 @@ struct phv_             p;
 %%
 
 lif_info:
+    bbeq            k.p4plus_ext_valid, FALSE, p4plus_ext_done
     phvwr           p.control_metadata_rx_packet, d.lif_info_d.direction
+    phvwr           p.arm_to_p4i_nexthop_valid, k.p4plus_ext_nexthop_valid
+    phvwr           p.arm_to_p4i_nexthop_type, k.p4plus_ext_nexthop_type
+    phvwr           p.arm_to_p4i_nexthop_id, k.p4plus_ext_nexthop_id
+p4plus_ext_done:
     phvwr           p.control_metadata_lif_type, d.lif_info_d.lif_type
     phvwr           p.control_metadata_learn_enabled, d.lif_info_d.learn_enabled
     phvwr           p.{vnic_metadata_bd_id,vnic_metadata_vpc_id}, \

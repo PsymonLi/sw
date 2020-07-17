@@ -22,6 +22,8 @@
 #define MAX_IPSEC_KEY_SIZE                      32
 
 #define IPSEC_CB_ENC_QSTATE_0_OFFSET            0
+#define IPSEC_CB_ENC_NEXTHOP_ID_OFFSET          60
+#define IPSEC_CB_ENC_NEXTHOP_TYPE_OFFSET        62
 #define IPSEC_CB_ENC_ETH_IP_HDR_OFFSET          64
 #define IPSEC_CB_ENC_STATS                      128
 
@@ -72,6 +74,8 @@ sdk_ret_t ipseccb_encrypt_create(uint32_t hw_id, uint64_t base_pa,
                                  pds_ipsec_sa_encrypt_spec_t *spec);
 sdk_ret_t ipseccb_encrypt_get(uint32_t hw_id, uint64_t base_pa,
                               pds_ipsec_sa_encrypt_info_t *info);
+sdk_ret_t ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, uint64_t base_pa,
+                                             uint16_t nh_id, uint8_t nh_type);
 sdk_ret_t ipseccb_decrypt_create(uint32_t hw_id, uint64_t base_pa,
                                  pds_ipsec_sa_decrypt_spec_t *spec);
 sdk_ret_t ipseccb_decrypt_get(uint32_t hw_id, uint64_t base_pa,

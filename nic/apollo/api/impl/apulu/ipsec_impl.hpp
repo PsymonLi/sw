@@ -114,6 +114,10 @@ public:
     /// \return    h/w id assigned to the ipsec sa
     uint16_t hw_id(void) const { return hw_id_; }
 
+    mem_addr_t base_pa(void) const { return base_pa_; }
+
+    uint16_t nh_idx(void) const { return nh_idx_; }
+
     /// \brief      get the key from entry in hash table context
     /// \param[in]  entry in the hash table context
     /// \return     hw id from the entry
@@ -154,6 +158,7 @@ protected:
     mem_addr_t base_pa_; ///< base physical address of cb
     uint8_t epoch_;      ///< datapath epoch of the ipsec sa
     uint32_t hw_id_;     ///< hardware id
+    uint32_t nh_idx_;    ///< nexthop index
     /// PI specific info
     struct {
         pds_obj_key_t key_;

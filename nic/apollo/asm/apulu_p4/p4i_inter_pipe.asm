@@ -30,7 +30,7 @@ ingress_to_egress:
     /*
     phvwr           p.p4i_i2e_valid, TRUE
     phvwr           p.capri_p4_intrinsic_valid, TRUE
-    bitmap          10 0000 0001
+    bitmap          100 0000 0001
     */
     phvwr.e         p.{p4i_i2e_valid, \
                         p4i_to_arm_valid, \
@@ -38,10 +38,11 @@ ingress_to_egress:
                         ingress_recirc_valid, \
                         capri_rxdma_intrinsic_valid, \
                         arm_to_p4i_valid, \
+                        p4plus_ext_valid, \
                         p4plus_to_p4_vlan_valid, \
                         p4plus_to_p4_valid, \
                         capri_txdma_intrinsic_valid, \
-                        capri_p4_intrinsic_valid}, 0x201
+                        capri_p4_intrinsic_valid}, 0x401
     phvwr.f         p.capri_intrinsic_tm_oport, TM_PORT_EGRESS
 
 ingress_to_rxdma:
@@ -50,7 +51,7 @@ ingress_to_rxdma:
     phvwr           p.p4i_to_rxdma_valid, TRUE
     phvwr           p.capri_rxdma_intrinsic_valid, TRUE
     phvwr           p.capri_p4_intrinsic_valid, TRUE
-    bitmap          11 1010 0001
+    bitmap          111 0100 0001
     */
     phvwr           p.{p4i_i2e_valid, \
                         p4i_to_arm_valid, \
@@ -58,10 +59,11 @@ ingress_to_rxdma:
                         ingress_recirc_valid, \
                         capri_rxdma_intrinsic_valid, \
                         arm_to_p4i_valid, \
+                        p4plus_ext_valid, \
                         p4plus_to_p4_vlan_valid, \
                         p4plus_to_p4_valid, \
                         capri_txdma_intrinsic_valid, \
-                        capri_p4_intrinsic_valid}, 0x3A1
+                        capri_p4_intrinsic_valid}, 0x741
 
     add             r6, r0, k.offset_metadata_payload_offset
     bbeq            k.p4plus_to_p4_insert_vlan_tag, FALSE, \
@@ -142,7 +144,7 @@ ingress_recirc:
     /*
     phvwr           p.ingress_recirc_valid, TRUE
     phvwr           p.capri_p4_intrinsic_valid, TRUE
-    bitmap          00 0100 0001
+    bitmap          000 1000 0001
     */
     phvwr.e         p.{p4i_i2e_valid, \
                         p4i_to_arm_valid, \
@@ -150,15 +152,17 @@ ingress_recirc:
                         ingress_recirc_valid, \
                         capri_rxdma_intrinsic_valid, \
                         arm_to_p4i_valid, \
+                        p4plus_ext_valid, \
                         p4plus_to_p4_vlan_valid, \
                         p4plus_to_p4_valid, \
                         capri_txdma_intrinsic_valid, \
-                        capri_p4_intrinsic_valid}, 0x041
+                        capri_p4_intrinsic_valid}, 0x081
     phvwr.f         p.capri_intrinsic_tm_oport, TM_PORT_INGRESS
 
 tunnel_decap:
     phvwr           p.{vxlan_1_valid, \
                         udp_1_valid, \
+                        esp_valid, \
                         ipv4_1_valid, \
                         ipv6_1_valid, \
                         arp_valid, \

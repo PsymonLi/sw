@@ -36,6 +36,8 @@ typedef enum pds_tep_type_e {
 typedef struct pds_tep_spec_s {
     pds_obj_key_t  key;        ///< key
     pds_obj_key_t  vpc;        ///< VPC this tunnel belongs to
+    pds_obj_key_t  encrypt_sa; ///< IPSEC encrypt sa
+    pds_obj_key_t  decrypt_sa; ///< IPSEC decrypt sa
     ip_addr_t      ip_addr;    ///< outer source IP to be used
                                ///< (unused currently)
     ip_addr_t      remote_ip;  ///< TEP IP

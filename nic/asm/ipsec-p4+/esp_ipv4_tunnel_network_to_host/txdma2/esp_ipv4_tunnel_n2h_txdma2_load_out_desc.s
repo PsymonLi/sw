@@ -1,3 +1,4 @@
+#include "nic/p4/common/defines.h"
 #include "INGRESS_p.h"
 #include "ingress.h"
 #include "ipsec_asm_defines.h"

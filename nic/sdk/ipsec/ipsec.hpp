@@ -27,8 +27,6 @@
 #define IPSEC_AES_GCM_DEF_BLOCK_SIZE    16
 #define IPSEC_AES_GCM_DEF_ICV_SIZE      16
 #define IPSEC_AES_GCM_DEF_KEY_SIZE      32
-#define IPSEC_BARCO_ENCRYPT_AES_GCM_256 0x30000000
-#define IPSEC_BARCO_DECRYPT_AES_GCM_256 0x30100000
 
 //------------------------------------------------------------------------------
 // IPSEC data structures

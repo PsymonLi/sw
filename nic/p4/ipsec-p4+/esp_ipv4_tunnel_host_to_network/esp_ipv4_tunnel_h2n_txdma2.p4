@@ -21,6 +21,7 @@
 #include "../../common-p4+/common_txdma.p4"
 #include "esp_ipv4_tunnel_h2n_headers.p4"
 #include "../ipsec_defines.h"
+#include "../ipsec_txdma_common.p4"
 
 header_type ipsec_txdma2_global_t {
     fields {
@@ -107,7 +108,7 @@ header_type ipsec_to_stage5_t {
 }
 
 @pragma pa_header_union ingress app_header
-metadata p4plus_to_p4_header_t p4plus2p4_hdr;
+metadata ipsec_p4plus_to_p4_header_t p4plus2p4_hdr;
 
 //unionize
 @pragma pa_header_union ingress common_global 
@@ -398,12 +399,12 @@ action ipsec_encap_txdma2_initial_table(rsvd, cosA, cosB, cos_sel,
                                        rxdma_ring_pindex, rxdma_ring_cindex,
                                        barco_ring_pindex, barco_ring_cindex,
                                        key_index, iv_size, icv_size, spi,
-                                       esn_lo, iv, esn_hi, barco_enc_cmd,
-                                       ipsec_cb_index, 
+                                       esn_lo, iv, esn_hi, ipsec_cb_index, 
                                        cb_pindex, cb_cindex, barco_pindex, barco_cindex, 
                                        cb_ring_base_addr_hi, cb_ring_base_addr, 
                                        barco_ring_base_addr_hi, barco_ring_base_addr,  
-                                       iv_salt, barco_full_count, flags)
+                                       iv_salt, barco_full_count, flags,
+                                       nexthop_id, nexthop_type, nexthop_pad)
 {
     IPSEC_CB_SCRATCH
 

@@ -37,7 +37,7 @@ esp_ipv4_tunnel_h2n_txdma1_ipsec_encap_txdma_initial_table:
     tblmincri.f     d.{rxdma_ring_cindex}.hx, IPSEC_PER_CB_RING_WIDTH, 1
     phvwr p.txdma1_global_ipsec_cb_addr, k.{p4_txdma_intr_qstate_addr_sbit0_ebit1...p4_txdma_intr_qstate_addr_sbit2_ebit33}
     phvwr p.ipsec_to_stage4_cb_cindex, d.{rxdma_ring_cindex}.hx
-    phvwr p.barco_req_command, d.barco_enc_cmd
+    phvwri p.barco_req_command, IPSEC_BARCO_ENCRYPT_AES_GCM_256_LE
     add r6, r0, d.{key_index}
     phvwr p.barco_req_key_desc_index, r6.wx 
     CAPRI_NEXT_TABLE_READ_NO_TABLE_LKUP(0, esp_ipv4_tunnel_h2n_txdma1_s1_dummy)

@@ -194,11 +194,21 @@ header_type capri_gso_csum_phv_loc_t {
     }
 }
 
+header_type ipsec_metadata_t {
+    fields {
+        spi_hi     : 16;
+        spi_lo     : 16;
+        seq_no     : 32;
+        ipsec_type : 2;
+    }
+}
+
 metadata key_metadata_t         key_metadata;
 metadata vnic_metadata_t        vnic_metadata;
 metadata control_metadata_t     control_metadata;
 metadata rewrite_metadata_t     rewrite_metadata;
 metadata meter_metadata_t       meter_metadata;
+metadata ipsec_metadata_t       ipsec_metadata;
 
 @pragma parser_end_offset payload_offset
 metadata offset_metadata_t      offset_metadata;

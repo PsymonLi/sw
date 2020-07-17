@@ -244,6 +244,14 @@ public:
     /// \return    nexthop group this TEP is pointing to
     pds_obj_key_t nh_group(void) const { return nh_group_; }
 
+    /// \brief    return the ipsec encrypt sa
+    /// \return    encrypt sa this TEP is using
+    pds_obj_key_t ipsec_encrypt_sa(void) const { return encrypt_sa_; }
+
+    /// \brief    return the ipsec decrypt sa
+    /// \return    decrypt sa this TEP is using
+    pds_obj_key_t ipsec_decrypt_sa(void) const { return decrypt_sa_; }
+
     /// \brief    return the TEP this TEP points to
     /// \return    TEP this TEP is pointing to
     pds_obj_key_t tep(void) const { return tep_; }
@@ -290,6 +298,8 @@ private:
         pds_obj_key_t nh_group_;
     };
     uint8_t        tos_;             /// type of service bits
+    pds_obj_key_t  encrypt_sa_;
+    pds_obj_key_t  decrypt_sa_;
     ht_ctxt_t      ht_ctxt_;         ///< hash table context
     impl_base      *impl_;           ///< impl object instance
     friend class   tep_state;        ///< tep_state is friend of tep_entry

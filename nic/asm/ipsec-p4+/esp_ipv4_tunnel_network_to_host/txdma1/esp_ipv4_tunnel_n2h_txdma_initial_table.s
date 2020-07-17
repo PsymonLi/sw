@@ -33,7 +33,7 @@ esp_ipv4_tunnel_n2h_txdma_initial_table:
     phvwr p.ipsec_to_stage1_barco_cb_ring_base_addr, d.barco_ring_base_addr
     phvwr p.ipsec_to_stage1_ipsec_cb_index, d.ipsec_cb_index
     phvwr p.txdma1_global_ipsec_cb_addr, k.{p4_txdma_intr_qstate_addr_sbit0_ebit1...p4_txdma_intr_qstate_addr_sbit2_ebit33} 
-    phvwr p.barco_req_command, d.barco_enc_cmd
+    phvwri p.barco_req_command, IPSEC_BARCO_DECRYPT_AES_GCM_256_LE
     phvwr p.t0_s2s_iv_size, d.iv_size
 
     sll r2, r2, IPSEC_CB_RING_ENTRY_SHIFT_SIZE 

@@ -21,6 +21,7 @@
 #include "esp_v4_tunnel_n2h_headers.p4"
 
 #include "../ipsec_defines.h"
+#include "../ipsec_txdma_common.p4"
 
 header_type ipsec_txdma2_global_t {
     fields {
@@ -117,7 +118,7 @@ header_type ipsec_to_stage5_t {
 
 
 @pragma pa_header_union ingress app_header
-metadata p4plus_to_p4_header_t p4plus2p4_hdr;
+metadata ipsec_p4plus_to_p4_header_t p4plus2p4_hdr;
 
 //unionize
 @pragma pa_header_union ingress common_global 

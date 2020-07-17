@@ -272,12 +272,12 @@ action ipsec_cb_tail_enqueue_input_desc2(pc, rsvd, cosA, cosB, cos_sel,
                                        rxdma_ring_pindex, rxdma_ring_cindex,
                                        barco_ring_pindex, barco_ring_cindex,
                                        key_index, iv_size, icv_size, spi,
-                                       esn_lo, iv, barco_enc_cmd,
-                                       ipsec_cb_index,
+                                       esn_lo, iv, ipsec_cb_index,
                                        cb_pindex, cb_cindex, barco_pindex, barco_cindex,
                                        cb_ring_base_addr_hi, cb_ring_base_addr,
                                        barco_ring_base_addr_hi, barco_ring_base_addr, 
-                                       iv_salt, barco_full_count, flags)
+                                       iv_salt, barco_full_count, flags,
+                                       nexthop_id, nexthop_type, nexthop_pad)
 {
     IPSEC_CB_SCRATCH_WITH_PC
     IPSEC_SCRATCH_GLOBAL
@@ -302,12 +302,12 @@ action ipsec_cb_tail_enqueue_input_desc(pc, rsvd, cosA, cosB, cos_sel,
                                        rxdma_ring_pindex, rxdma_ring_cindex,
                                        barco_ring_pindex, barco_ring_cindex,
                                        key_index, iv_size, icv_size, spi,
-                                       esn_lo, iv, barco_enc_cmd,
-                                       ipsec_cb_index,
+                                       esn_lo, iv, ipsec_cb_index,
                                        cb_pindex, cb_cindex, barco_pindex, barco_cindex,
                                        cb_ring_base_addr_hi, cb_ring_base_addr,
                                        barco_ring_base_addr_hi, barco_ring_base_addr, 
-                                       iv_salt, barco_full_count, flags)
+                                       iv_salt, barco_full_count, flags,
+                                       nexthop_id, nexthop_type, nexthop_pad)
 {
     IPSEC_CB_SCRATCH_WITH_PC
 
@@ -455,11 +455,12 @@ action ipsec_encap_rxdma_initial_table(rsvd, cosA, cosB, cos_sel,
                                        rxdma_ring_pindex, rxdma_ring_cindex, 
                                        barco_ring_pindex, barco_ring_cindex,
                                        key_index, iv_size, icv_size, spi,
-                                       esn_lo, iv, barco_enc_cmd,
-                                       ipsec_cb_index,
+                                       esn_lo, iv, ipsec_cb_index,
                                        cb_pindex, cb_cindex, barco_pindex, 
                                        barco_cindex, cb_ring_base_addr_hi, cb_ring_base_addr, 
-                                       barco_ring_base_addr_hi, barco_ring_base_addr, iv_salt, barco_full_count, flags)
+                                       barco_ring_base_addr_hi, barco_ring_base_addr, iv_salt,
+                                       barco_full_count, flags,
+                                       nexthop_id, nexthop_type, nexthop_pad)
 {
     IPSEC_CB_SCRATCH
 

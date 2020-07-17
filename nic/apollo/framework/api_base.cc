@@ -430,6 +430,18 @@ api_base::find_obj(api_ctxt_t *api_ctxt) {
     case OBJ_ID_VPC_PEER:
         return NULL;
 
+    case OBJ_ID_IPSEC_SA_ENCRYPT:
+        if (api_ctxt->api_op == API_OP_DELETE) {
+            return ipsec_sa_db()->find(&api_ctxt->api_params->key);
+        }
+        return ipsec_sa_db()->find(&api_ctxt->api_params->ipsec_sa_encrypt_spec.key);
+
+    case OBJ_ID_IPSEC_SA_DECRYPT:
+        if (api_ctxt->api_op == API_OP_DELETE) {
+            return ipsec_sa_db()->find(&api_ctxt->api_params->key);
+        }
+        return ipsec_sa_db()->find(&api_ctxt->api_params->ipsec_sa_decrypt_spec.key);
+
     default:
         PDS_TRACE_ERR("Method not implemented for obj id %u\n",
                       api_ctxt->obj_id);
@@ -532,6 +544,11 @@ api_base::find_obj(obj_id_t obj_id, void *key) {
 #if 0
         api_obj = policy_db()->find_security_profile((pds_obj_key_t *)key);
 #endif
+        break;
+
+    case OBJ_ID_IPSEC_SA_ENCRYPT:
+    case OBJ_ID_IPSEC_SA_DECRYPT:
+        api_obj = ipsec_sa_db()->find((pds_obj_key_t *)key);
         break;
 
     default:

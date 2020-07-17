@@ -24,6 +24,7 @@
 #include "nic/apollo/api/impl/apulu/ipsec_impl.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
+#include "gen/p4gen/p4/include/ftl.h"
 
 namespace api {
 namespace impl {
@@ -92,11 +93,16 @@ ipsec_sa_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
 
     switch (obj_ctxt->api_op) {
     case API_OP_CREATE:
-    case API_OP_UPDATE:
         // record the fact that resource reservation was attempted
         // NOTE: even if we partially acquire resources and fail eventually,
         //       this will ensure that proper release of resources will happen
         api_obj->set_rsvd_rsc();
+
+        // reserve nexthop index
+        ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
+        if (ret != SDK_RET_OK) {
+            goto error;
+        }
 
         if (encrypt_sa_) {
             idxr = ipsec_sa_impl_db()->ipsec_sa_encrypt_idxr();
@@ -120,12 +126,19 @@ ipsec_sa_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         PDS_TRACE_DEBUG("Alloc hw_id %u base_addr 0x%lx", hw_id_, base_pa_);
         break;
 
+    case API_OP_UPDATE:
+        // TODO
+
     default:
         break;
     }
     return SDK_RET_OK;
 
 error:
+    // release the NEXTHOP table entry
+    if (nh_idx_ != 0xFFFF) {
+        nexthop_impl_db()->nh_idxr()->free(nh_idx_);
+    }
     return ret;
 }
 
@@ -141,6 +154,11 @@ ipsec_sa_impl::release_resources(api_base *api_obj) {
         } else {
             ipsec_sa_impl_db()->ipsec_sa_decrypt_idxr()->free(hw_id_);
         }
+    }
+
+    // release the NEXTHOP table entry
+    if (nh_idx_ != 0xFFFF) {
+        nexthop_impl_db()->nh_idxr()->free(nh_idx_);
     }
     return SDK_RET_OK;
 }
@@ -185,8 +203,25 @@ ipsec_sa_encrypt_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
 sdk_ret_t
 ipsec_sa_encrypt_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     pds_ipsec_sa_encrypt_spec_t *spec;
+    nexthop_info_entry_t nexthop_info_entry;
+    sdk_ret_t ret;
 
     spec = &obj_ctxt->api_params->ipsec_sa_encrypt_spec;
+
+    // program the nexthop
+    PDS_TRACE_DEBUG("Programming ipsec nh %u", nh_idx_);
+    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
+    nexthop_info_entry.lif = APULU_IPSEC_LIF;
+    nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_IPSEC;
+    nexthop_info_entry.qtype = IPSEC_ENCRYPT_QTYPE;
+    nexthop_info_entry.qid = hw_id_;
+    ret = nexthop_info_entry.write(nh_idx_);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to program ipsec nh, ret = %u, nh_idx_ = %u",
+                      ret, nh_idx_);
+        return ret;
+    }
 
     ipseccb_encrypt_create(hw_id_, base_pa_, spec);
     return SDK_RET_OK;
