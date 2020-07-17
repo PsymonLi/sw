@@ -266,7 +266,7 @@ _process (struct rte_mbuf *m, struct lcore_conf *qconf,
     if (!skip_fte_flow_prog() &&
         (g_athena_app_mode == ATHENA_APP_MODE_CPP ||
          g_athena_app_mode == ATHENA_APP_MODE_SOFT_INIT)) {
-        if (fte_flow_prog(m) != SDK_RET_OK) {
+        if (fte_flow_prog(m, portid) != SDK_RET_OK) {
             PDS_TRACE_DEBUG("fte_flow_prog failed..\n");
             // TODO: Unsupported traffic should be dropped?
             rte_pktmbuf_free(m);
@@ -274,7 +274,11 @@ _process (struct rte_mbuf *m, struct lcore_conf *qconf,
         }
     }
 
-    dst_port = (portid ? 0 : 1);
+    if (portid == TM_PORT_UPLINK_1) {
+        dst_port = TM_PORT_UPLINK_0;
+    } else {
+        dst_port = TM_PORT_UPLINK_1;
+    }
     send_single_packet(qconf, m, dst_port);
     return;
 }

@@ -69,10 +69,6 @@ static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
 #define IPV4_ADDR_LEN 4
 #define IPV6_ADDR_LEN 16
 
-// Flow direction bitmask
-#define HOST_TO_SWITCH 0x1
-#define SWITCH_TO_HOST 0x2
-
 static rte_indexer *g_conntrack_indexer;
 static rte_indexer *g_session_indexer;
 uint32_t g_session_rewrite_index = 1;
@@ -462,7 +458,7 @@ fte_nat_csum_adj_h2s_v4 (struct ipv4_hdr *iph, uint32_t new_ipaddr)
 
 static sdk_ret_t
 fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
-                            uint8_t *dir, uint16_t *ip_off,
+                            uint8_t dir, uint16_t *ip_off,
                             uint16_t *vnic_id, uint8_t *tcp_flags)
 {
     struct ether_hdr *eth0;
@@ -561,10 +557,16 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
 
     *ip_off = ip0_offset;
     if (mpls_label) {
-        *dir = SWITCH_TO_HOST;
+        if (dir != SWITCH_TO_HOST) {
+            PDS_TRACE_DEBUG("Received encap pkt in H2S dir. \n");
+            return SDK_RET_INVALID_OP;
+        }
         *vnic_id = g_mpls_label_to_vnic[mpls_label];
     } else {
-        *dir = HOST_TO_SWITCH;
+        if (dir != HOST_TO_SWITCH) {
+            PDS_TRACE_DEBUG("Received non-encap pkt in S2H dir. \n");
+            return SDK_RET_INVALID_OP;
+        }
         *vnic_id = g_vlan_to_vnic[vlan_id];
     }
 
@@ -585,7 +587,7 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         src_ip = rte_be_to_cpu_32(ip40->src_addr);
         dst_ip = rte_be_to_cpu_32(ip40->dst_addr);
         key->key_type = KEY_TYPE_IPV4;
-        if (*dir == HOST_TO_SWITCH) {
+        if (dir == HOST_TO_SWITCH) {
             memcpy(key->ip_saddr, &src_ip, IPV4_ADDR_LEN);
             memcpy(key->ip_daddr, &dst_ip, IPV4_ADDR_LEN);
         }
@@ -609,7 +611,7 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
         protocol = ip60->proto;
 
         key->key_type = KEY_TYPE_IPV6;
-        if (*dir == HOST_TO_SWITCH) {
+        if (dir == HOST_TO_SWITCH) {
             sdk::lib::memrev(key->ip_saddr, ip60->src_addr, IPV6_ADDR_LEN);
             sdk::lib::memrev(key->ip_daddr, ip60->dst_addr, IPV6_ADDR_LEN);
         } else {
@@ -633,7 +635,7 @@ fte_flow_extract_prog_args (struct rte_mbuf *m, pds_flow_spec_t *spec,
                (protocol == IP_PROTO_UDP)) {
         sport = rte_be_to_cpu_16(tcp0->src_port);
         dport = rte_be_to_cpu_16(tcp0->dst_port);
-        if (*dir == HOST_TO_SWITCH) {
+        if (dir == HOST_TO_SWITCH) {
             key->l4.tcp_udp.sport = sport;
             key->l4.tcp_udp.dport = dport;
         } else {
@@ -1385,7 +1387,7 @@ fte_session_info_create_all(uint32_t session_id, uint32_t conntrack_id,
 }
 
 sdk_ret_t
-fte_flow_prog (struct rte_mbuf *m)
+fte_flow_prog (struct rte_mbuf *m, uint16_t portid)
 {
     sdk_ret_t ret = SDK_RET_OK;
     pds_flow_spec_t flow_spec;
@@ -1406,8 +1408,14 @@ fte_flow_prog (struct rte_mbuf *m)
     uint32_t h2s_l2_bmp_posn = 0; // L2 Flows range bitmap position
     uint32_t s2h_l2_bmp_posn = 0;
 
+    if (portid == TM_PORT_UPLINK_1) {
+        flow_dir = HOST_TO_SWITCH;
+    } else {
+        flow_dir = SWITCH_TO_HOST;
+    }
+
     memset(&flow_spec, 0, sizeof(pds_flow_spec_t));
-    ret = fte_flow_extract_prog_args(m, &flow_spec, &flow_dir,
+    ret = fte_flow_extract_prog_args(m, &flow_spec, flow_dir,
                                 &ip_offset, &vnic_id, &tcp_flags);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_flow_extract_prog_args failed. "

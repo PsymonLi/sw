@@ -45,7 +45,7 @@ void fte_l2_flow_range_bmp_destroy(void);
 bool fte_is_conntrack_index_allocated (uint32_t conntrack_id);
 bool fte_is_session_index_allocated (uint32_t sess_id);
 
-sdk_ret_t fte_flow_prog(struct rte_mbuf *m);
+sdk_ret_t fte_flow_prog(struct rte_mbuf *m, uint16_t portid);
 void fte_thread_init(unsigned int core_id);
 sdk_ret_t fte_flows_init(void);
 pds_ret_t fte_flows_aging_expiry_fn(uint32_t expiry_id,
