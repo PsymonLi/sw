@@ -61,7 +61,7 @@ IMPORTANT: This configuration is only supported for trial up to 4 DSCs
 This configuration requires the following:
 * 4 vCPU
 * 24GB RAM
-* 100GB Storage
+* 250GB Storage
         </Description>
       </Configuration>
       <Configuration ovf:id="production">
@@ -72,7 +72,7 @@ IMPORTANT: This configuration is required for production deployment up to 100 DS
 This configuration requires the following:
 * 16 vCPU
 * 64GB RAM
-* 1TB Storage
+* 250GB Storage
         </Description>
       </Configuration>
       <Configuration ovf:id="scale">
@@ -83,7 +83,7 @@ IMPORTANT: This configuration is required for production deployment up to 1000 D
 This configuration requires the following:
 * 32 vCPU
 * 128GB RAM
-* 10TB Storage
+* 250GB Storage
         </Description>
       </Configuration>
     </DeploymentOptionSection>
