@@ -35,12 +35,6 @@ message PciePortStatus {
 }
 
 message PciePortMetrics {
-    option (venice.metricInfo) = {
-        DisplayName: "PCIe port information",
-        Description: "Key index - pcie port",
-        Scope: PerPciePort
-        Tags: [ Level7 ]
-    };
     option (venice.penctlCmd) = {
         Cmd:     "port",
         ShortHelpStr: "Pcie Port Metrics information",
@@ -156,12 +150,6 @@ message PciePortMetrics {
 }
 
 message PcieMgrMetrics {
-    option (venice.metricInfo) = {
-        DisplayName: "PCIe Manager information",
-        Description: "Key index - pcie port",
-        Scope: PerPciePort
-        Tags: [ Level7 ]
-    };
     option (venice.penctlCmd) = {
         Cmd:     "pciemgr",
         ShortHelpStr: "Pcie Mgr Metrics information",

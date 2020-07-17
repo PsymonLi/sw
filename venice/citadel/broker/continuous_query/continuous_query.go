@@ -35,8 +35,6 @@ var MetricsGroupByFieldsMap = map[string][]string{
 	"MemoryMetrics":          {`"name"`, `"reporterID"`, `"tenant"`},
 	"MgmtMacMetrics":         {`"name"`, `"reporterID"`, `"tenant"`},
 	"Node":                   {`"name"`, `"reporterID"`, `"tenant"`},
-	"PcieMgrMetrics":         {`"name"`, `"reporterID"`, `"tenant"`},
-	"PciePortMetrics":        {`"name"`, `"reporterID"`, `"tenant"`},
 	"PortTemperatureMetrics": {`"name"`, `"reporterID"`, `"tenant"`},
 	"PowerMetrics":           {`"name"`, `"reporterID"`, `"tenant"`},
 	"SessionSummaryMetrics":  {`"name"`, `"reporterID"`, `"tenant"`},
