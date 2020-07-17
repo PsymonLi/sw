@@ -23,7 +23,7 @@ import (
 )
 
 // ID holds VPC ID
-var	ID        string
+var ID string
 
 var vpcShowCmd = &cobra.Command{
 	Use:   "vpc",
@@ -117,19 +117,20 @@ func printVPCSummary(count int) {
 }
 
 func printVPCHeader() {
-	hdrLine := strings.Repeat("-", 124)
+	hdrLine := strings.Repeat("-", 134)
 	fmt.Println(hdrLine)
-	fmt.Printf("%-40s%-10s%-40s%-20s%-14s\n",
-		"ID", "Type", "V4RtTblId", "VR MAC", "FabricEncap")
+	fmt.Printf("%-40s%-10s%-40s%-20s%-14s%-10s\n",
+		"ID", "Type", "V4RtTblId", "VR MAC", "FabricEncap", "ToS")
 	fmt.Println(hdrLine)
 }
 
 func printVPC(vpc *pds.VPC) {
 	spec := vpc.GetSpec()
-	fmt.Printf("%-40s%-10s%-40s%-20s%-14s\n",
+	fmt.Printf("%-40s%-10s%-40s%-20s%-14s%-10d\n",
 		utils.IdToStr(spec.GetId()),
 		strings.Replace(spec.GetType().String(), "VPC_TYPE_", "", -1),
 		utils.IdToStr(spec.GetV4RouteTableId()),
 		utils.MactoStr(spec.GetVirtualRouterMac()),
-		utils.EncapToString(spec.GetFabricEncap()))
+		utils.EncapToString(spec.GetFabricEncap()),
+		spec.GetToS())
 }
