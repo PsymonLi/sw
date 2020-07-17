@@ -15,7 +15,7 @@ host_tools 1.0.37
 pensando_firmware 1.0.27
 delphi_lib 1.0.9
 buildroot 2-4f9a34054a0a97a4f629fabcfddbecb71455e2d6
-platform_drivers 1.0.9
+platform_drivers 1.0.10
 venice_base_iso  0.0.10
 venice_web_app_framework 0.0.12
 ws_tools 0.0.1

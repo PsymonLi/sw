@@ -9,3 +9,4 @@ drivers/esxi/signed_drivers/
 goldfw
 minigoldfw
 drivers/pencap/
+drivers/pxe/signed_oprom/

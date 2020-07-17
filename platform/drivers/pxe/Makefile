@@ -2,6 +2,7 @@
 # Copyright (c) 2017-2019, Pensando Systems Inc.
 #
 TOP = ../../..
+IPXEASSETDIR = $(TOP)/platform/drivers/pxe/signed_oprom
 IPXEGENDIR = $(TOP)/platform/gen/ipxe
 EFI_PCI_IPXE = $(TOP)/platform/drivers/pxe/efi_pci.c
 EFI_SNP_HII_IPXE = $(TOP)/platform/drivers/pxe/efi_snp_hii.c
@@ -22,8 +23,17 @@ ionic-oprom: $(BLD_BIN_DIR)/ionic.efirom
 
 ionic-ipxepatch: $(IPXEGENDIR)/ionic-ipxe.patch
 
+ifeq ($(DEBUG_OPROM),1)
+OPROM_TARGET=$(IPXEMOD)/src/bin-x86_64-efi/ionic.efirom
+else
+OPROM_TARGET=$(IPXEASSETDIR)/ionic.efirom
+endif
+
 $(IPXEGENDIR):
 	mkdir -p $(IPXEGENDIR)
+
+$(BLD_BIN_DIR)/ionic.efirom: $(OPROM_TARGET)
+	cp $< $@
 
 $(IPXEGENDIR)/ionic.efi: $(IPXEMOD)/src/bin-x86_64-efi/ionic.efi $(IPXEGENDIR)
 	cp $(IPXEMOD)/src/bin-x86_64-efi/ionic.efi $@
@@ -31,15 +41,16 @@ $(IPXEGENDIR)/ionic.efi: $(IPXEMOD)/src/bin-x86_64-efi/ionic.efi $(IPXEGENDIR)
 $(IPXEGENDIR)/ionic.efidrv: $(IPXEMOD)/src/bin-x86_64-efi/ionic.efidrv $(IPXEGENDIR)
 	cp $(IPXEMOD)/src/bin-x86_64-efi/ionic.efidrv $@
 
-$(BLD_BIN_DIR)/ionic.efirom: $(IPXEMOD)/src/bin-x86_64-efi/ionic.efirom
-	cp $(IPXEMOD)/src/bin-x86_64-efi/ionic.efirom $@
-
 $(IPXEMOD)/src/bin-x86_64-efi/ionic.efi: .ipxefiles
 	make PLATFORM=efi ARCH=x86_64 SECUREBOOT=1 -C $(IPXEMOD)/src bin-x86_64-efi/ionic.efi
 #	make PLATFORM=efi ARCH=x86_64 SECUREBOOT=1 -C $(IPXEMOD)/src bin-x86_64-efi/ionic.efi DEBUG=ionic:3,ionic_main:3
 
 $(IPXEMOD)/src/bin-x86_64-efi/ionic.efirom: .ipxefiles
 	make PLATFORM=efi ARCH=x86_64 SECUREBOOT=1 -C $(IPXEMOD)/src bin-x86_64-efi/ionic.efirom
+#	make PLATFORM=efi ARCH=x86_64 SECUREBOOT=1 -C $(IPXEMOD)/src bin-x86_64-efi/ionic.efirom DEBUG=ionic:3,ionic_main:3
+
+$(IPXEMOD)/src/bin-x86_64-efi/ionic.efidrv: .ipxefiles
+	make PLATFORM=efi ARCH=x86_64 SECUREBOOT=1 -C $(IPXEMOD)/src bin-x86_64-efi/ionic.efidrv
 #	make PLATFORM=efi ARCH=x86_64 SECUREBOOT=1 -C $(IPXEMOD)/src bin-x86_64-efi/ionic.efirom DEBUG=ionic:3,ionic_main:3
 
 .ipxefiles: $(IPXEMOD) $(IONIC_SRC)
