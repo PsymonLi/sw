@@ -27,7 +27,7 @@ p4e_device_info_unicast:
 p4e_device_info_common:
     sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
     phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
-    phvwr.!c1       p.capri_intrinsic_tm_oq, k.capri_intrinsic_tm_iq
+    phvwr           p.capri_intrinsic_tm_oq, k.p4e_i2e_dst_tm_oq
     phvwr           p.{control_metadata_tcp_option_ws_valid, \
                         control_metadata_tcp_option_mss_valid}, \
                         k.{tcp_option_ws_valid,tcp_option_mss_valid}
@@ -47,6 +47,5 @@ p4e_device_info_common:
 p4e_device_info_error:
     sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
     phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
-    phvwr.!c1       p.capri_intrinsic_tm_oq, k.capri_intrinsic_tm_iq
     phvwr.e         p.capri_intrinsic_drop, 1
     phvwr.f         p.{tcp_option_eol_valid...tcp_option_generic_valid}, 0

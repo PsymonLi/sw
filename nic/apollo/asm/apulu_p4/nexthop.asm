@@ -51,7 +51,10 @@ nexthop_rewrite:
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_NEXTHOP
     phvwr.c1        p.ethernet_1_dstAddr, d.nexthop_info_d.dmaci
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_TUNNEL
-    phvwr.c1        p.ethernet_1_dstAddr, k.rewrite_metadata_tunnel_dmaci
+    phvwrpair.c1    p.ethernet_1_dstAddr[47:8], \
+                        k.rewrite_metadata_tunnel_dmaci_s0_e39, \
+                        p.ethernet_1_dstAddr[7:0], \
+                        k.rewrite_metadata_tunnel_dmaci_s40_e47
     seq             c1, r2[P4_REWRITE_SMAC_BITS], P4_REWRITE_SMAC_FROM_VRMAC
     phvwr.c1        p.ethernet_1_srcAddr, k.rewrite_metadata_vrmac
     seq             c1, r2[P4_REWRITE_VLAN_BITS], P4_REWRITE_VLAN_ENCAP
@@ -106,8 +109,7 @@ vxlan_encap:
     phvwr           p.{ethernet_0_dstAddr,ethernet_0_srcAddr}, \
                         d.{nexthop_info_d.dmaco,nexthop_info_d.smaco}
     seq             c1, r2[P4_REWRITE_VNI_BITS], P4_REWRITE_VNI_FROM_TUNNEL
-    add             r6, k.rewrite_metadata_tunnel_vni_s16_e23, \
-                        k.rewrite_metadata_tunnel_vni_s0_e15, 8
+    add             r6, r0, k.rewrite_metadata_tunnel_vni
     sne.!c1         c1, r6, r0
     cmov            r7, c1, r6, k.rewrite_metadata_vni
     or              r7, r7, 0x8, 48
@@ -193,8 +195,7 @@ nexthop_erspan_copy:
     nop.!c1.e
 vxlan_encap2:
     seq             c1, r2[P4_REWRITE_VNI_BITS], P4_REWRITE_VNI_FROM_TUNNEL
-    add             r6, k.rewrite_metadata_tunnel_vni_s16_e23, \
-                        k.rewrite_metadata_tunnel_vni_s0_e15, 8
+    add             r6, r0, k.rewrite_metadata_tunnel_vni
     sne.!c1         c1, r6, r0
     cmov            r7, c1, r6, k.rewrite_metadata_vni
     or              r7, r7, 0x8, 48

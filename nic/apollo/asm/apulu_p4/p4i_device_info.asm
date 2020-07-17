@@ -17,7 +17,7 @@ p4i_device_info:
                         k.offset_metadata_l2_1
     sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
     phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
-    phvwr.!c1       p.capri_intrinsic_tm_oq, k.capri_intrinsic_tm_iq
+    phvwr           p.control_metadata_qos_class_id, k.capri_intrinsic_tm_oq
     bbeq            k.ingress_recirc_valid, FALSE, p4i_recirc_done
     phvwr           p.capri_p4_intrinsic_packet_len, r1
 
@@ -56,7 +56,6 @@ p4i_device_ip_check:
 .align
 .assert $ < ASM_INSTRUCTION_OFFSET_MAX
 p4i_device_info_error:
-    sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
+    phvwr           p.capri_intrinsic_drop, 1
+    sne.e           c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
     phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
-    phvwr.e         p.capri_intrinsic_drop, 1
-    phvwr.!c1       p.capri_intrinsic_tm_oq, k.capri_intrinsic_tm_iq

@@ -41,9 +41,8 @@ action p4i_device_info(device_mac_addr1, device_mac_addr2,
              offset_metadata.l2_1);
     if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
         modify_field(capri_intrinsic.tm_iq, capri_intrinsic.tm_oq);
-    } else {
-        modify_field(capri_intrinsic.tm_oq, capri_intrinsic.tm_iq);
     }
+    modify_field(control_metadata.qos_class_id, capri_intrinsic.tm_oq);
 
     if (p4plus_to_p4.insert_vlan_tag == TRUE) {
         modify_field(ctag_1.vid, p4plus_to_p4_vlan.vid);
@@ -97,10 +96,8 @@ action p4e_device_info(device_ipv4_addr, device_ipv6_addr) {
 
     if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
         modify_field(capri_intrinsic.tm_iq, capri_intrinsic.tm_oq);
-    } else {
-        modify_field(capri_intrinsic.tm_oq, capri_intrinsic.tm_iq);
     }
-
+    modify_field(capri_intrinsic.tm_oq, p4e_i2e.dst_tm_oq);
 }
 
 @pragma stage 0

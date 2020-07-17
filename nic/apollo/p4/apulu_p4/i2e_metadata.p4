@@ -26,5 +26,7 @@ header_type apulu_i2e_metadata_t {
         tx_policer_id       : 10;
         copp_class          : 4;
         xlate_id            : 20;
+        pad1                : 3;
+        dst_tm_oq           : 5;
     }
 }

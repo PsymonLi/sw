@@ -89,6 +89,7 @@ header_type control_metadata_t {
         erspan_copy             : 1;
         lif_tx_stats_id         : 16;
         p4plus_app_id           : 4;
+        qos_class_id            : 5;
     }
 }
 

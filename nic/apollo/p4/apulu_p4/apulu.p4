@@ -16,6 +16,7 @@
 #include "mappings.p4"
 #include "flow.p4"
 #include "nacl.p4"
+#include "qos.p4"
 #include "mirror.p4"
 #include "session.p4"
 #include "session_track.p4"
@@ -51,6 +52,7 @@ control ingress {
     local_mapping();
     flow_lookup();
     nacl();
+    qos();
     offloads();
     ingress_stats();
     ingress_inter_pipe();
