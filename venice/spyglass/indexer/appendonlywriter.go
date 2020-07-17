@@ -112,3 +112,34 @@ func helper(ctx context.Context,
 		go wi()
 	}
 }
+
+func processBulkRequest(ctx context.Context,
+	id int, logger log.Logger, elasticClient elastic.ESClient, timeout int,
+	retryIntvl time.Duration, reqs []*elastic.BulkRequest) func() {
+	return func() {
+		failedBulkCount := 0
+		for {
+			if failedBulkCount == timeout {
+				logger.Errorf("Writer: %d elastic write failed for %d seconds. so, dropping the request", id, timeout)
+				metric.addDrop()
+				break
+			}
+
+			result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
+				return elasticClient.Bulk(ctx, reqs)
+			}, retryIntvl, indexMaxRetries)
+
+			if err != nil {
+				logger.Errorf("Writer: %d Retry again, failed to perform bulk indexing, resp: %+v err: %+v",
+					id, result, err)
+				failedBulkCount++
+				metric.addRetries(failedBulkCount)
+				continue
+			}
+
+			logger.Debugf("Writer: %d Bulk request succeeded after (%d) failures", id, failedBulkCount)
+			failedBulkCount = 0
+			break
+		}
+	}
+}

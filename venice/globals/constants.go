@@ -272,6 +272,9 @@ const (
 	// FwlogsBucketName represents the bucket name used for storing fwlogs in object store
 	FwlogsBucketName = "fwlogs"
 
+	// FwlogsMetaBucketNamee represents the bucket name used for storing fwlogs meta in object store
+	FwlogsMetaBucketName = "meta-fwlogs"
+
 	// MinioCredentialsObjectName is the name of the credentials object in kv-store which contains credentials to access minio
 	MinioCredentialsObjectName = "MinioCredentials"
 

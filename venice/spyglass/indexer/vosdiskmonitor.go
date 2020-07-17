@@ -179,28 +179,36 @@ func (vw *vosDiskWatcher) cleanupOldObjects() {
 		}
 
 		objectsFetched += num
-
 		vw.logger.Infof("disk used capacity reached, total tenants %d", len(objs))
 
 		wg := sync.WaitGroup{}
+		objectsErrd, metaObjectsErrd := 0, 0
 		erroredObjs := map[string]map[string]struct{}{}
 		for tenant, tenantObjs := range objs {
 			vw.logger.Infof("disk used capacity reached, tenant %s total objects %d", tenant, len(tenantObjs))
 			objectCh := make(chan string)
 			errorCh := vw.vosFwlogsHTTPClient.RemoveObjectsWithContext(
 				vw.ctx,
-				tenant+"."+fwlogsBucketName,
+				tenant+"."+globals.FwlogsBucketName,
 				objectCh)
+
+			metaObjectCh := make(chan string)
+			metaErrorCh := vw.vosFwlogsHTTPClient.RemoveObjectsWithContext(
+				vw.ctx,
+				tenant+"."+globals.FwlogsMetaBucketName,
+				metaObjectCh)
 
 			wg.Add(1)
 			go func() {
 				defer func() {
 					wg.Done()
 					close(objectCh)
+					close(metaObjectCh)
 				}()
 
 				for _, obj := range tenantObjs {
 					objectCh <- obj.Key
+					metaObjectCh <- obj.Key
 				}
 			}()
 
@@ -214,25 +222,48 @@ func (vw *vosDiskWatcher) cleanupOldObjects() {
 						erroredObjs[tenantName] = eObjs
 					}
 					eObjs[err.ObjectName] = struct{}{}
-					vw.logger.Debugf("error while deleting object %s, err %+v", err.ObjectName, err.Err)
+					objectsErrd++
+					vw.logger.Debugf("error while deleting object %s, bucket %s, err %+v",
+						err.ObjectName, globals.FwlogsBucketName, err.Err)
+				}
+			}(tenant)
+
+			wg.Add(1)
+			go func(tenantName string) {
+				defer wg.Done()
+				mapKey := tenantName + "." + globals.FwlogsMetaBucketName
+				for err := range metaErrorCh {
+					eObjs, ok := erroredObjs[mapKey]
+					if !ok {
+						eObjs = map[string]struct{}{}
+						erroredObjs[mapKey] = eObjs
+					}
+					eObjs[err.ObjectName] = struct{}{}
+					metaObjectsErrd++
+					vw.logger.Debugf("error while deleting object %s, bucket %s, err %+v",
+						err.ObjectName, globals.FwlogsMetaBucketName, err.Err)
 				}
 			}(tenant)
 		}
 
 		wg.Wait()
 
+		vw.logger.Infof("VosDiskMonitor: objects errd, metaObjects errd", objectsErrd, metaObjectsErrd)
+
 		// Delete the objects from elastic's index as well
 		objDeleteReqs := [][]*elastic.BulkRequest{}
 		temp := []*elastic.BulkRequest{}
 		for tenant, tenantObjs := range objs {
 			for _, obj := range tenantObjs {
-				if _, ok := erroredObjs[tenant][obj.Key]; !ok {
+				_, objNotDeleted := erroredObjs[tenant][obj.Key]
+				_, objMetaNotDeleted := erroredObjs[tenant+"."+globals.FwlogsMetaBucketName][obj.Key]
+				if !(objNotDeleted && objMetaNotDeleted) {
 					// prepare the delete request
 					request := &elastic.BulkRequest{
 						RequestType: elastic.Delete,
 						Index:       elastic.GetIndex(globals.FwLogsObjects, ""),
 						IndexType:   elastic.GetDocType(globals.FwLogsObjects),
-						ID:          getUUIDForFwlogObject("Object", tenant, fwlogsBucketName, obj.Key),
+						ID:          getUUIDForFwlogObject("Object", tenant, globals.FwlogsBucketName, obj.Key),
 						Obj:         obj, // req.object
 					}
 
@@ -254,7 +285,8 @@ func (vw *vosDiskWatcher) cleanupOldObjects() {
 			if len(reqs) != 0 {
 				vw.logger.Infof("VosDiskMonitor: Calling Bulk Delete Api reached batchsize len: %d",
 					len(reqs))
-				helper(vw.ctx, vosDiskMonitorID, vw.logger, vw.elasticClient, bulkTimeout, indexRetryIntvl, reqs, nil)
+				processBulkRequest(vw.ctx, vosDiskMonitorID, vw.logger, vw.elasticClient, bulkTimeout, indexRetryIntvl, reqs)()
+				//helper(vw.ctx, vosDiskMonitorID, vw.logger, vw.elasticClient, bulkTimeout, indexRetryIntvl, reqs, nil)
 			}
 		}
 	}
