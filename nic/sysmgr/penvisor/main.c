@@ -743,6 +743,7 @@ attach (const char *inst)
 {
     int rc;
     int pid;
+    pid_t new_pid;
     const char *pid_file;
     const mount_point_t *mounts;
     penvisor_instance_e instance;
@@ -764,8 +765,15 @@ attach (const char *inst)
 
     rc = change_ns(pid);
     if (rc == -1) {
-        fprintf(stderr, "Couldn't change namsepace to %d", pid);
+        fprintf(stderr, "Couldn't change namsepace to %d\n", pid);
         return -1;
+    }
+
+    new_pid = fork();
+    if (new_pid != 0) {
+        waitpid(new_pid, NULL, 0);
+        fprintf(stderr, "%d exited\n", new_pid);
+        exit(0);
     }
     
     rc = chroot(mounts[OVERLAY].dst);

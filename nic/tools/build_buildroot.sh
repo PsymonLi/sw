@@ -77,10 +77,38 @@ set -e
 
 pwd | grep -q "\/sw\/nic$" || { echo Please run from "sw/nic" directory; exit -1; }
 
+
+
 BUILDROOT_HASH=$1
 GIT_REMOTE_NAME="__upstream_buildroot"
 TOPDIR=$(dirname `pwd`)
 USERNAME=$(id -nu)
+
+#
+# Get the current hash and rebuild from VERSIONS
+# The format is <REBUILD>-<HASH>
+#
+CURRENT_VER=$(grep buildroot ../minio/VERSIONS | awk '{print $NF}')
+if [[ $CURRENT_VER == *"-"* ]]
+then
+    CURRENT_HASH=$(echo $CURRENT_VER | awk -F '-' '{ print $2 }')
+    CURRENT_REBUILD=$(echo $CURRENT_VER | awk -F '-' '{ print $1 }')
+else
+    CURRENT_HASH=$CURRENT_VER
+    CURRENT_REBUILD=1
+fi
+#
+# If the hash we are building is the same as it's already built
+# then just increase the rebuild number
+#
+if [[ $BUILDROOT_HASH == $CURRENT_HASH ]]
+then
+    REBUILD=$(( $CURRENT_REBUILD + 1 ))
+else
+    REBUILD=1
+fi
+
+echo Building $REBUILD-$BUILDROOT_HASH
 
 start_shell() {
     cd $TOPDIR/nic
@@ -146,7 +174,7 @@ do
 done
 
 echo 'Modifying VERSIONS'
-sed -i "s/buildroot.*/buildroot ${BUILDROOT_HASH}/" $TOPDIR/minio/VERSIONS
+sed -i "s/buildroot.*/buildroot ${REBUILD}-${BUILDROOT_HASH}/" $TOPDIR/minio/VERSIONS
 
 echo 'Uploading new Buildroot binaries to minio'
 docker_exec "cd /sw && UPLOAD=1 make create-assets"

@@ -24,7 +24,7 @@ done < $VERSIONS_FILE
 
 # BUILDROOT has special case. We check directly with minio/VERSIONS
 BUILDROOT_IS=`(cd $TOP/nic/buildroot; git rev-parse HEAD)`
-BUILDROOT_SHOULD_BE=`grep buildroot $TOP/minio/VERSIONS  | awk '{ print $NF }'`
+BUILDROOT_SHOULD_BE=`grep buildroot $TOP/minio/VERSIONS  | awk -F "[ -]" '{ print $NF }'`
 
 [[ $BUILDROOT_IS == $BUILDROOT_SHOULD_BE ]] || \
     { echo BUILDROOT $BUILDROOT_IS != $BUILDROOT_SHOULD_BE; exit -1; }
