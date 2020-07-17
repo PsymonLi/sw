@@ -43,7 +43,7 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   rolloutImages: IObjstoreObjectList;
   shouldEnableCreate: boolean = false;
 
-  rolloutsEventUtility: HttpEventUtility<RolloutRollout>;
+
   bodyicon: any = {
     margin: {
       top: '9px',
@@ -75,6 +75,8 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   tabIndex: number = 0;
 
   currentIndex: number = 0;
+
+  isFirstDataLoad: boolean = true;
 
   constructor(protected controllerService: ControllerService,
               protected cdr: ChangeDetectorRef,
@@ -111,22 +113,25 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
   }
 
   getRollouts() {
-    this.rolloutsEventUtility = new HttpEventUtility<RolloutRollout>(RolloutRollout, true);
-    this.dataObjects = this.rolloutsEventUtility.array as ReadonlyArray<RolloutRollout>;
-    const subscription = this.rolloutService.WatchRollout().subscribe(
+    const subscription = this.rolloutService.ListRolloutCache().subscribe(
       response => {
-        this.rolloutsEventUtility.processEvents(response);
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.dataObjects = response.data as ReadonlyArray<RolloutRollout>;
         this.setDefaultToolbar();
         this.splitRollouts();
       },
-      this.controllerService.webSocketErrorHandler('Failed to get Rollouts info')
+      (error) => {
+        this.controllerService.invokeErrorToaster('Error - Failed to fetch Rollouts', error);
+      }
     );
     this.subscriptions.push(subscription);
   }
 
   splitRollouts() {
-    this.pendingRollouts.length = 0;
-    this.pastRollouts.length = 0;
+    this.pendingRollouts = [];
+    this.pastRollouts = [];
     for  (let i = 0; i < this.dataObjects.length; i++) {
       if ( RolloutUtil.isRolloutPending(this.dataObjects[i]) ) {
         this.pendingRollouts.push(this.dataObjects[i]);
@@ -134,7 +139,10 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
         this.pastRollouts.push(this.dataObjects[i]);
       }
     }
-    this.tabIndex  = (this.pendingRollouts.length === 0) ? 1 : 0; // If there is no pending rollout, switch to past rollout tab
+    if (this.isFirstDataLoad) {
+       this.tabIndex  = (this.pendingRollouts.length === 0) ? 1 : 0; // If there is no pending rollout, switch to past rollout tab
+       this.isFirstDataLoad = false;
+    }
   }
 
   getRolloutImages() {
