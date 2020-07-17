@@ -11,6 +11,8 @@ PIPELINE=$2
 export CONFIG_PATH=$NICDIR/conf/
 export ZMQ_SOC_DIR='/sw/nic'
 export VPP_LOG_FILE=$NICDIR/vpp.log
+#10MB
+export VPP_LOG_FILE_SIZE=10485760
 
 ulimit -c unlimited
 

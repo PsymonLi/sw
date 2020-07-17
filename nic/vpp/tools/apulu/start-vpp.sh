@@ -4,6 +4,8 @@
 export NIC_DIR=/nic/
 export CONFIG_PATH=$NIC_DIR/conf/
 export VPP_LOG_FILE=/var/log/pensando/vpp.log
+#VPP has 2.5 MB for logs, so per file 1.25 mb = 1.25*1024*1024 bytes
+export VPP_LOG_FILE_SIZE=1310720
 
 ulimit -c unlimited
 
