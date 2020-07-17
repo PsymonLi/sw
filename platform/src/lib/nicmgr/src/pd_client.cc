@@ -901,7 +901,7 @@ PdClient::get_iq(uint8_t pcp_or_dscp, uint8_t pinned_uplink_port_num)
 #endif
 }
 
-int
+sdk_ret_t
 PdClient::eth_program_rss(uint32_t hw_lif_id, uint16_t rss_type,
                           uint8_t *rss_key, uint8_t *rss_indir,
                           uint16_t num_queues)
@@ -923,7 +923,7 @@ PdClient::eth_program_rss(uint32_t hw_lif_id, uint16_t rss_type,
                 NIC_LOG_ERR("RSS Programming indir failed error : {}"
                               "hw-lif-id : {}, index : {}, rss_indir : {}",
                               ret, hw_lif_id, index, rss_indir[index]);
-                return 1;
+                return ret;
             }
         }
     }
@@ -933,13 +933,13 @@ PdClient::eth_program_rss(uint32_t hw_lif_id, uint16_t rss_type,
         NIC_LOG_ERR("RSS Programming failed error : {} "
                       "hw-lif-id : {}, rss_type : {}",
                       ret, hw_lif_id, rss_type);
-        return 1;
+        return ret;
     }
 
     NIC_LOG_DEBUG("RSS Programming indirection table hw-lif-id {} end",
                   hw_lif_id);
 
-    return 0;
+    return ret;
 }
 
 uint64_t

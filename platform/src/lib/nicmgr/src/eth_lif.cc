@@ -725,10 +725,12 @@ EthLif::Create()
 status_code_t
 EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
 {
-    sdk_ret_t rs = SDK_RET_OK;
-    uint64_t addr;
+    sdk_ret_t       ret = SDK_RET_OK;
+    asic_db_addr_t  db_addr = { 0 };
+    uint64_t        addr;
     struct ionic_lif_init_cmd *cmd = (struct ionic_lif_init_cmd *)req;
     enum eth_lif_state pre_state;
+
     NIC_LOG_DEBUG("{}: LIF_INIT", hal_lif_info_.name);
 
     if (lif_pstate->state == LIF_STATE_CREATING) {
@@ -771,8 +773,8 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
             }
         }
         hal_lif_info_.lif_state = ConvertEthLifStateToLifState(lif_pstate->state);
-        rs = dev_api->lif_init(&hal_lif_info_);
-        if (rs != SDK_RET_OK) {
+        ret = dev_api->lif_init(&hal_lif_info_);
+        if (ret != SDK_RET_OK) {
             NIC_LOG_ERR("{}: Failed to init LIF", hal_lif_info_.name);
             return (IONIC_RC_ERROR);
         }
@@ -802,9 +804,6 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
         }
     }
 
-    int ret;
-    asic_db_addr_t db_addr = { 0 };
-
     // Reset RSS configuration
     lif_pstate->rss_type = LIF_RSS_TYPE_NONE;
     memset(lif_pstate->rss_key, 0x00, RSS_HASH_KEY_SIZE);
@@ -814,7 +813,7 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
                               lif_pstate->rss_key,
                               lif_pstate->rss_indir,
                               spec->rxq_count);
-    if (ret != 0) {
+    if (ret != SDK_RET_OK) {
         NIC_LOG_DEBUG("{}: Unable to program hw for RSS HASH", ret);
         return (IONIC_RC_ERROR);
     }
@@ -1022,7 +1021,7 @@ EthLif::FreeUpMacVlanFilters()
 status_code_t
 EthLif::Reset()
 {
-    int ret;
+    sdk_ret_t ret = SDK_RET_OK;
     uint64_t addr;
     asic_db_addr_t db_addr = { 0 };
 
@@ -1061,7 +1060,7 @@ EthLif::Reset()
                               lif_pstate->rss_key,
                               lif_pstate->rss_indir,
                               spec->rxq_count);
-    if (ret != 0) {
+    if (ret != SDK_RET_OK) {
         NIC_LOG_DEBUG("{}: Unable to program hw for RSS HASH", ret);
         return (IONIC_RC_ERROR);
     }
@@ -3209,9 +3208,10 @@ EthLif::_CmdRxFilterDel(void *req, void *req_data, void *resp, void *resp_data)
 status_code_t
 EthLif::RssConfig(void *req, void *req_data, void *resp, void *resp_data)
 {
+    bool        posted;
+    sdk_ret_t   ret = SDK_RET_OK;
     struct ionic_lif_setattr_cmd *cmd = (struct ionic_lif_setattr_cmd *)req;
     // struct ionic_lif_setattr_comp *comp = (struct ionic_lif_setattr_comp *)resp;z
-    bool posted;
 
     if (!IsLifInitialized()) {
         NIC_LOG_ERR("{}: Lif is not initialized", hal_lif_info_.name);
@@ -3263,13 +3263,12 @@ EthLif::RssConfig(void *req, void *req_data, void *resp, void *resp_data)
         }
     }
 
-    int ret;
     ret = pd->eth_program_rss(hal_lif_info_.lif_id,
                               lif_pstate->rss_type,
                               lif_pstate->rss_key,
                               lif_pstate->rss_indir,
                               spec->rxq_count);
-    if (ret != 0) {
+    if (ret != SDK_RET_OK) {
         NIC_LOG_DEBUG("{}: Unable to program hw for RSS HASH", ret);
         return (IONIC_RC_ERROR);
     }
@@ -3567,13 +3566,20 @@ EthLif::DelphiMountEventHandler(bool mounted)
 void
 EthLif::UpgradeSyncHandler(void)
 {
-    int ret;
+    sdk_ret_t   ret;
+    lif_state_t hal_lif_admin_state;
 
-    if (device_inited)
+    if (device_inited) {
+        NIC_LOG_INFO("{}: device inited in this process, No Need to sync",
+                    lif_pstate->name);
         return;
+    }
 
-    NIC_LOG_DEBUG("{}: syncing config during upgrade", lif_pstate->name);
+    NIC_LOG_INFO("{}: syncing config during upgrade", lif_pstate->name);
 
+
+    // sync only the interfaces from the process A, already up and running
+    // through the driver
     if (lif_pstate->state >= LIF_STATE_INIT) {
         hal_lif_info_.tx_sched_table_offset = lif_pstate->tx_sched_table_offset;
         hal_lif_info_.tx_sched_num_table_entries = lif_pstate->tx_sched_num_table_entries;
@@ -3584,8 +3590,40 @@ EthLif::UpgradeSyncHandler(void)
         pd->reserve_qstate((struct queue_info *)hal_lif_info_.queue_info,
                            &hal_lif_info_, 0x0);
 #endif
+        // check HAL is Up and connected
+        if (dev_api == NULL) {
+            NIC_LOG_ERR("{}: dev api not set", lif_pstate->name);
+            return;
+        }
 
-        dev_api->lif_init(&hal_lif_info_);
+        // init lif in HAL
+        ret = dev_api->lif_init(&hal_lif_info_);
+        if (ret != SDK_RET_OK) {
+            NIC_LOG_ERR("{}: Failed to init lif in HAL err: {}",
+                        hal_lif_info_.name, ret);
+            return;
+        }
+
+        // Update HAL lif state
+        ret = dev_api->lif_upd_state(hal_lif_info_.lif_id,
+                               (lif_state_t)ConvertEthLifStateToLifState(lif_pstate->state));
+        if (ret != SDK_RET_OK) {
+            NIC_LOG_ERR("{}: Failed to update lif state in HAL err: {}",
+                        hal_lif_info_.name, ret);
+        }
+
+        // Update lif name
+        ret = dev_api->lif_upd_name(hal_lif_info_.lif_id, lif_pstate->name);
+        if (ret != SDK_RET_OK) {
+            NIC_LOG_ERR("{}: Failed to update lif state in HAL err: {}",
+                        hal_lif_info_.name, ret);
+        }
+
+
+        // Update lif admin state
+        hal_lif_admin_state = lif_pstate->state == LIF_STATE_UP ?
+                    sdk::types::LIF_STATE_UP : sdk::types::LIF_STATE_DOWN;
+        UpdateHalLifAdminStatus(hal_lif_admin_state);
 
         // Program RSS table
         ret = pd->eth_program_rss(hal_lif_info_.lif_id,
@@ -3593,8 +3631,8 @@ EthLif::UpgradeSyncHandler(void)
                                   lif_pstate->rss_key,
                                   lif_pstate->rss_indir,
                                   spec->rxq_count);
-        if (ret != 0) {
-            NIC_LOG_DEBUG("{}: Unable to program hw for RSS HASH", ret);
+        if (ret != SDK_RET_OK) {
+            NIC_LOG_ERR("{}: Unable to program hw for RSS HASH", ret);
             return;
         }
     }

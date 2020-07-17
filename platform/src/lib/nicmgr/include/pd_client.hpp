@@ -101,9 +101,9 @@ public:
     int p4plus_txdma_init_tables();
     int pd_state_init();
 
-    int eth_program_rss(uint32_t hw_lif_id, uint16_t rss_type,
-                        uint8_t *rss_key, uint8_t *rss_indir,
-                        uint16_t num_queues);
+    sdk_ret_t eth_program_rss(uint32_t hw_lif_id, uint16_t rss_type,
+                              uint8_t *rss_key, uint8_t *rss_indir,
+                              uint16_t num_queues);
 
     /* RDMA routines */
     sdk_ret_t rdma_lif_init(uint32_t lif, uint32_t max_keys,
