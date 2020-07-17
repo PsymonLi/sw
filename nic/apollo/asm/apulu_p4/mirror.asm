@@ -135,12 +135,14 @@ erspan3:
     seq             c1, k.capri_intrinsic_tm_iport, TM_PORT_EGRESS
     phvwr.c1        p.erspan3_direction, 1
     phvwrpair       p.{erspan3_sgt...erspan3_hw_id}, 0, \
-                        p.{erspan3_granularity,erspan3_options}, 0x6
-    cmov            r1, c5, 40, 36
+                        p.{erspan3_granularity,erspan3_options}, 0x7
+    phvwr           p.erspan3_opt_platf_id, 0x3
+    phvwr           p.erspan3_opt_port_id, k.capri_intrinsic_lif
+    cmov            r1, c5, 48, 44
     add             r6, r5, r1
     add             r7, r7, r1
-    // 01 0110 0010 0101 or 01 0010 0010 0101
-    cmov            r1, c5, 0x1625, 0x1225
+    // 11 0110 0010 0101 or 11 0010 0010 0101
+    cmov            r1, c5, 0x3625, 0x3225
 
 erspan_common:
     phvwr           p.{erspan3_opt_valid, erspan3_valid, erspan2_valid, \

@@ -17,6 +17,7 @@
 #include "flow.p4"
 #include "nacl.p4"
 #include "qos.p4"
+#include "clock.p4"
 #include "mirror.p4"
 #include "session.p4"
 #include "session_track.p4"

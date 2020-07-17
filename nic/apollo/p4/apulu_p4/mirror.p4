@@ -140,24 +140,24 @@ action erspan(nexthop_type, nexthop_id, egress_bd_id, rewrite_flags,
     modify_field(erspan3.span_id, span_id);
     if ((erspan_type == 0) or (erspan_type == ERSPAN_TYPE_III)) {
         if (gre_seq_en == TRUE) {
-            /* ipv4 (20) + gre (4) + gre_opt (4) erspan3 (12) */
-            add(ipv4_0.totalLen, capri_p4_intrinsic.packet_len, 40);
-            add_to_field(scratch_metadata.packet_len, 40);
+            /* ipv4 (20) + gre (4) + gre_opt (4) + erspan3 (12) + opt (8) */
+            add(ipv4_0.totalLen, capri_p4_intrinsic.packet_len, 48);
+            add_to_field(scratch_metadata.packet_len, 48);
         } else {
-            /* ipv4 (20) + gre (4) + erspan3 (12) */
-            add(ipv4_0.totalLen, capri_p4_intrinsic.packet_len, 36);
-            add_to_field(scratch_metadata.packet_len, 36);
+            /* ipv4 (20) + gre (4) + erspan3 (12) + opt (8) */
+            add(ipv4_0.totalLen, capri_p4_intrinsic.packet_len, 44);
+            add_to_field(scratch_metadata.packet_len, 44);
         }
         modify_field(gre_0.proto, GRE_PROTO_ERSPAN_T3);
         add_header(erspan3);
         modify_field(erspan3.version, 2);
-        modify_field(erspan3.timestamp, 0 /* R4 */);
         modify_field(erspan3.granularity, 0x3);
         if (capri_intrinsic.tm_iport == TM_PORT_EGRESS) {
             modify_field(erspan3.direction, 1);
         }
-        // TODO
         add_header(erspan3_opt);
+        modify_field(erspan3_opt.platf_id, 0x3);
+        modify_field(erspan3_opt.port_id, capri_intrinsic.lif);
     } else {
         modify_field(gre_0.proto, GRE_PROTO_ERSPAN);
         if (erspan_type == ERSPAN_TYPE_II) {
@@ -208,4 +208,5 @@ table mirror {
 
 control mirror {
     apply(mirror);
+    apply(clock);
 }

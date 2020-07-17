@@ -123,6 +123,15 @@ class P4ToARM(Packet):
             ShortField("src_bd_id", 0),
             ShortField("route_priority", 0)]
 
+class ERSPANOpt(Packet):
+    name = "ERSPANopt"
+    fields_desc = [
+        BitField("platf_id", 0, 6),
+        BitField("reserved", 0, 12),
+        BitField("port_id",  0, 14),
+        IntField("timestamp", 0),
+    ]
+
 def dump_pkt(pkt, sname):
     print('uint8_t %s[] = {' % sname)
     for p in range(0, len(pkt), 8):
@@ -301,7 +310,8 @@ opkt = Ether(dst='00:12:34:56:78:90', src='00:AA:BB:CC:DD:EE') / \
 mpkt1 = Ether(dst='00:0E:0E:0E:0E:0E', src='00:E1:E2:E3:E4:E5') / \
         IP(dst='200.1.1.2', src='200.1.1.1', id=0, ttl=64) / \
         GRE() / \
-        ERSPAN(vlan=100, sessionid=5, d=0, gra=3) / \
+        ERSPAN(ver=2, vlan=100, sessionid=5, d=0, gra=3, o=1) / \
+        ERSPANOpt(platf_id=3, port_id=1) / \
         ipkt
 mpkt2 = Ether(dst='00:12:34:56:78:90', src='00:AA:BB:CC:DD:EE') / \
         IP(dst='12.12.1.1', src='100.101.102.103', id=0, ttl=64) / \
@@ -309,7 +319,8 @@ mpkt2 = Ether(dst='00:12:34:56:78:90', src='00:AA:BB:CC:DD:EE') / \
         Ether(dst='00:0E:0E:0E:0E:0E', src='00:E1:E2:E3:E4:E5') / \
         IP(dst='200.1.1.2', src='200.1.1.1', id=0, ttl=64) / \
         GRE() / \
-        ERSPAN(vlan=100, sessionid=1, d=0, gra=3) / \
+        ERSPAN(ver=2, vlan=100, sessionid=1, d=0, gra=3, o=1) / \
+        ERSPANOpt(platf_id=3, port_id=1) / \
         ipkt
 dump_pkt(ipkt, 'g_snd_pkt11')
 dump_pkt(opkt, 'g_rcv_pkt11')

@@ -90,6 +90,7 @@ header_type control_metadata_t {
         lif_tx_stats_id         : 16;
         p4plus_app_id           : 4;
         qos_class_id            : 5;
+        clock_id                : 1;
     }
 }
 
@@ -174,6 +175,13 @@ header_type scratch_metadata_t {
         policer_burst       : 40;
         policer_rate        : 40;
         policer_tbkt        : 40;
+
+        // clock
+        size64              : 64;
+        ticks               : 64;
+        delta               : 64;
+        current_time_in_ns  : 64;
+        pad192              : 192;
     }
 }
 
