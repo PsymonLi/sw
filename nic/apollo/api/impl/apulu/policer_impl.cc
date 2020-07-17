@@ -88,12 +88,23 @@ sdk_ret_t
 policer_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
                                 api_obj_ctxt_t *obj_ctxt) {
     uint32_t idx;
+    uint64_t rate;
     sdk_ret_t ret;
     pds_policer_spec_t *spec;
 
     switch (obj_ctxt->api_op) {
     case API_OP_CREATE:
         spec = &obj_ctxt->api_params->policer_spec;
+        if (spec->type == sdk::qos::POLICER_TYPE_PPS) {
+            rate = spec->pps;
+        }  else {
+            rate = spec->bps;
+        }
+        if (rate < PDS_IMPL_MIN_REFRESH_RATE) {
+            PDS_TRACE_ERR("policer %s pps/rate below lower limit %u",
+                          spec->key.str(), PDS_IMPL_MIN_REFRESH_RATE);
+            return SDK_RET_INVALID_ARG;
+        }
         // record the fact that resource reservation was attempted
         // NOTE: even if we partially acquire resources and fail eventually,
         //       this will ensure that proper release of resources will happen

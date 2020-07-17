@@ -179,8 +179,10 @@ policer_to_token_rate (policer_t *policer, uint64_t refresh_rate,
     rate_tokens = rate_per_sec/refresh_rate;
 
     if (rate_tokens == 0) {
-        SDK_TRACE_ERR("Policer rate %lu too low for refresh interval %luus",
-                      rate_per_sec, refresh_interval_us);
+        SDK_TRACE_ERR("Policer rate %lu too low for refresh interval %luus, "
+                      "refresh rate %lu, rate tokens %lu",
+                      rate_per_sec, refresh_interval_us, refresh_rate,
+                      rate_tokens);
         return SDK_RET_INVALID_ARG;
     }
 

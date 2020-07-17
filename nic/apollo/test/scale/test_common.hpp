@@ -391,7 +391,6 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                            "vnics, value must be true | false", tag.c_str());
                     exit(1);
                 }
-                printf("vnic encap type %u\n", test_params->vnic_encap_type);
                 if (test_params->vnic_encap_type == PDS_ENCAP_TYPE_NONE) {
                     tag = obj.second.get<std::string>("qinq-tagged", "");
                     if (!tag.compare("true")) {
@@ -402,7 +401,6 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                         exit(1);
                     }
                 }
-                printf("vnic encap type %u\n", test_params->vnic_encap_type);
             } else if (kind == "mappings") {
                 pfxstr = obj.second.get<std::string>("nat-prefix");
                 assert(str2ipv4pfx((char *)pfxstr.c_str(), &test_params->nat_pfx) == 0);

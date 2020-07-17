@@ -69,6 +69,7 @@
 
 // max policer token per interval
 #define PDS_POLICER_MAX_TOKENS_PER_INTERVAL    ((1ull << 39) -1 )
+#define PDS_IMPL_MIN_REFRESH_RATE              4000
 
 // reserve the 0th entry in the policer tables
 #define PDS_IMPL_RSVD_POLICER_HW_ID             0
