@@ -40,13 +40,15 @@ shmstore::file_init_(const char *name, size_t size, enum shm_mode_e mode) {
 
 
 void *
-shmstore::segment_init_(const char *name, size_t size, bool create) {
+shmstore::segment_init_(const char *name, size_t size, bool create,
+                        size_t alignment) {
     void *mem;
 
     // make sure the entry exist (either create/open)
     SDK_ASSERT(shmmgr_);
     try {
-        mem = (char *)shmmgr_->segment_find(name, create, create ? size : 0);
+        mem = (char *)shmmgr_->segment_find(name, create, create ? size : 0,
+                                            alignment);
         if (!mem) {
             SDK_TRACE_ERR("Failed to init shared memory segment %s for %s",
                           name, create == true ? "backup" : "restore");
@@ -82,11 +84,13 @@ shmstore::factory(void) {
 
 sdk_ret_t
 shmstore::create(const char *name, size_t size) {
+    mode_ = SHM_CREATE_ONLY;
     return file_init_(name, size, sdk::lib::SHM_CREATE_ONLY);
 }
 
 sdk_ret_t
 shmstore::open(const char *name, enum shm_mode_e mode) {
+    mode_ = mode;
     return file_init_(name, 0, mode);
 }
 
@@ -98,13 +102,26 @@ shmstore::size(void) {
 }
 
 void *
-shmstore::create_segment(const char *name, size_t size) {
-   return segment_init_(name, size, true);
+shmstore::create_segment(const char *name, size_t size,
+                         size_t alignment) {
+    return segment_init_(name, size, true, alignment);
 }
 
 void *
 shmstore::open_segment(const char *name) {
-   return segment_init_(name, 0, false);
+    return segment_init_(name, 0, false);
+}
+
+void *
+shmstore::create_or_open_segment(const char *name, size_t size,
+                                 size_t alignment) {
+    if (mode() == sdk::lib::SHM_CREATE_ONLY) {
+        SDK_TRACE_DEBUG("Creating segment %s", name);
+        return segment_init_(name, size, true, alignment);
+    } else {
+        SDK_TRACE_DEBUG("Opening segment %s", name);
+        return segment_init_(name, 0, false, alignment);
+    }
 }
 
 size_t

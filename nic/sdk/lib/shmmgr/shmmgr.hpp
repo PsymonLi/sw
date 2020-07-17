@@ -61,7 +61,8 @@ public:
     // return the pointer to the already existing segment.
     // if size is given in the latter case, it compares the allocated and the
     // requested and returns memory only if requested size <= allocated size
-    void *segment_find(const char *name, bool create, std::size_t size = 0);
+    void *segment_find(const char *name, bool create, std::size_t size = 0,
+                       std::size_t alignment = 0);
     // get size of the named segment
     std::size_t get_segment_size(const char *name);
 private:
