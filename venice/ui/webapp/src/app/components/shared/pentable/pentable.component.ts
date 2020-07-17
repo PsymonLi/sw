@@ -384,7 +384,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   }
 
   onSort() {
-    this.reset();
+    // this.reset();
   }
 
   /**
