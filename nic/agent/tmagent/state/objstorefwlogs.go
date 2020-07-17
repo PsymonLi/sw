@@ -373,7 +373,7 @@ func transmitLogs(ctx context.Context,
 		meta["logcount"] = strconv.Itoa(numLogs)
 		meta["csvversion"] = fwLogCSVVersion
 		meta["metaversion"] = fwLogMetaVersion
-		meta["creation-Time"] = time.Now().Format(time.RFC3339Nano)
+		meta["creation-Time"] = time.Now().UTC().Format(time.RFC3339Nano)
 		configuredID := fls.getConfiguredID()
 		if configuredID != "" {
 			meta["nodeid"] = configuredID
