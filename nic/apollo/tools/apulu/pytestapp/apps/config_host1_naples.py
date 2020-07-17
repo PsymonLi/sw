@@ -25,6 +25,7 @@ import os
 import time
 import sys
 import pdb
+import json
 
 # Import types and ipaddress
 
@@ -39,6 +40,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("naples_ip", help="naples ip address")
 parser.add_argument("--remote", help="remote naples ip address", default=None)
 parser.add_argument("--grpc_port", help="naples grpc port (default=11357)", default="11357", type=str)
+parser.add_argument("--testbed", help="Testbed info", default=None, type=str)
 args = parser.parse_args()
 naplesip = args.naples_ip
 remote_naplesip = args.remote
@@ -63,8 +65,45 @@ if args.remote:
 
 node_uuid=node_obj.GetNodeMac()
 
-# Device object inputs
-local_tep_ip='13.13.13.13'
+if args.testbed:
+    with open(args.testbed) as json_file:
+        data = json.load(json_file)
+        i_objects = data['Instances']
+        u_objects = i_objects[0].get('NicUnderlayIPs')
+
+        u_object = u_objects[0]
+        local_addr1 = ipaddress.IPv4Address(u_object.get('IP'))
+        peer_addr1 = ipaddress.IPv4Address(u_object.get('Nexthop'))
+        intf1_prefix = u_object.get('IP') + "/" + u_object.get('MaskLen')
+        local_asn = int(u_object.get('BGPLocalASN'))
+        remote_asn = int(u_object.get('BGPRemoteASN'))
+
+        u_object = u_objects[1]
+        local_addr2 = ipaddress.IPv4Address(u_object.get('IP'))
+        peer_addr2 = ipaddress.IPv4Address(u_object.get('Nexthop'))
+        intf2_prefix = u_object.get('IP') + "/" + u_object.get('MaskLen')
+        local_asn = int(u_object.get('BGPLocalASN'))
+        remote_asn = int(u_object.get('BGPRemoteASN'))
+
+        u_object = u_objects[2]
+        local_tep_ip = u_object.get('IP')
+        tunnel_remote_ip = u_object.get('RemoteTEP')
+else:
+    # Device object inputs
+    local_tep_ip='13.13.13.13'
+    tunnel_remote_ip='14.14.14.14'
+
+    # L3-interface (underlay) objects
+    intf1_prefix='13.1.0.1/24'
+    intf2_prefix='13.2.0.1/24'
+
+    # BGP config
+    local_asn = 100
+    remote_asn = 200
+    local_addr1 = ipaddress.IPv4Address('13.1.0.1')
+    peer_addr1 = ipaddress.IPv4Address('13.1.0.2')
+    local_addr2 = ipaddress.IPv4Address('13.2.0.1')
+    peer_addr2 = ipaddress.IPv4Address('13.2.0.2')
 
 # VPC object inputs
 vpc1_id=1
@@ -74,31 +113,20 @@ vpc2_vxlan_encap=1002
 
 # L3-interface (underlay) objects
 loopback_prefix=local_tep_ip + '/32'
-intf1_prefix='13.1.0.1/24'
-intf2_prefix='13.2.0.1/24'
 
 # BGP config
-local_asn = 100
 router_id = ipaddress.IPv4Address(local_tep_ip)
-
-local_addr1 = ipaddress.IPv4Address('13.1.0.1')
-peer_addr1 = ipaddress.IPv4Address('13.1.0.2')
 admin_state = 1
 send_comm = True
 send_ext_comm = True
 connect_retry = 5
 rrclient = False
-remote_asn = 200
 holdtime = 180
 keepalive = 60
-
-local_addr2 = ipaddress.IPv4Address('13.2.0.1')
-peer_addr2 = ipaddress.IPv4Address('13.2.0.2')
 
 # Tunnel object inputs (Underlay)
 tunnel_id=1
 tunnel_local_ip=local_tep_ip
-tunnel_remote_ip='14.14.14.14'
 tunnel_vnid=0
 
 # VCN objects
@@ -401,7 +429,6 @@ api.client.Create(api.ObjectTypes.MAPPING, [map4.GetGrpcCreateMessage()])
 api.client.Create(api.ObjectTypes.MAPPING, [map5.GetGrpcCreateMessage()])
 api.client.Create(api.ObjectTypes.MAPPING, [map6.GetGrpcCreateMessage()])
 api.client.Create(api.ObjectTypes.MAPPING, [map7.GetGrpcCreateMessage()])
-
 api.client.Create(api.ObjectTypes.SVC_MAPPING, [svc_map1.GetGrpcCreateMessage()])
 
 sys.exit(1)
