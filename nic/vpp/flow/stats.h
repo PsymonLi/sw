@@ -23,18 +23,18 @@ extern "C" {
 
 #define FLOW_STATS_SCHEMA_NAME  "FlowStatsSummary"
 
-#define foreach_datapath_assist_stats_counter                              \
-        _(TOTALPKTSRX, "Total Pkts Rx")                             \
-        _(TOTALDROPS, "Total Drops")                                \
-        _(DHCPPKTSRX, "DHCP Pkts Rx")                               \
-        _(DHCPPKTSTXTOPROXYSERVER, "DHCP Pkts Tx to Proxy Server")  \
-        _(DHCPPKTSTXTORELAYSERVER, "DHCP Pkts Tx to Relay Server")  \
-        _(DHCPPKTSTXTORELAYCLIENT, "DHCP Pkts Tx to Relay Client")  \
-        _(DHCPDROPS, "DHCP Drops")                                  \
-        _(ARPPKTSRX, "ARP Pkts Rx")                                 \
-        _(ARPREPLIESSENT, "ARP Replies Sent")                       \
-        _(ARPDROPS, "ARP Drops")                                    \
-        _(TOTALSESSIONSLEARNED, "Total Sessions Learned")           \
+#define foreach_datapath_assist_stats_counter                            \
+        _(TOTALPKTSRX, "Total Packets Received")                         \
+        _(TOTALDROPS, "Total Packets Dropped")                           \
+        _(DHCPPKTSRX, "DHCP Packets Received")                           \
+        _(DHCPPKTSTXTOPROXYSERVER, "DHCP Packets Sent to Proxy Server")  \
+        _(DHCPPKTSTXTORELAYSERVER, "DHCP Packets Sent to Relay Server")  \
+        _(DHCPPKTSTXTORELAYCLIENT, "DHCP Packets Sent to Relay Client")  \
+        _(DHCPDROPS, "DHCP Packets Dropped")                             \
+        _(ARPPKTSRX, "ARP Packets Received")                             \
+        _(ARPREPLIESSENT, "ARP Replies Sent")                            \
+        _(ARPDROPS, "ARP Drops")                                         \
+        _(TOTALSESSIONSLEARNED, "Total Sessions Learned")                \
         _(TOTALSESSIONSAGED, "Total Sessions Aged")
 
 #define DATAPATH_ASSIST_STATS_SCHEMA_NAME  "DataPathAssistStats"
@@ -86,7 +86,7 @@ void *pdsa_datapath_assist_stats_init(void);
 void pdsa_datapath_assist_stats_publish(void *, uint64_t *);
 
 // stats_collect.c
-void pds_flow_monitor_accumulate_stats (void *vm);
+void pds_flow_monitor_accumulate_stats (void *vm, uint64_t *counter);
 
 #ifdef __cplusplus
 }

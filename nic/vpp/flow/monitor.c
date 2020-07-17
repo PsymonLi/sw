@@ -58,6 +58,7 @@ flow_monitor_process (vlib_main_t * vm,
     uint32_t monitor_time = fm->monitor_interval;
     uint32_t sleep_time;
     uint32_t ses_id;
+    uint64_t counter[PDS_DATAPATH_ASSIST_STAT_MAX] = {0};
 
     while(1) {
         sleep_time = MIN(publish_time, monitor_time);
@@ -70,7 +71,11 @@ flow_monitor_process (vlib_main_t * vm,
             pdsa_flow_stats_publish(fm->flow_metrics_hdl,
                                     (uint64_t *)fm->stats.counter);
             publish_time = PDS_FLOW_STATS_PUBLISH_INTERVAL;
-            pds_flow_monitor_accumulate_stats((void *)vm);
+
+            memset(counter, 0, sizeof(counter));
+            pds_flow_monitor_accumulate_stats((void *)vm, counter);
+            pdsa_datapath_assist_stats_publish(fm->datapath_assist_metrics_hdl,
+                                               counter);
         }
 
         if (monitor_time == 0) {

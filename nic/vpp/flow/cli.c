@@ -13,6 +13,7 @@
 #include "node.h"
 #include "cli_helper.h"
 #include "pdsa_hdlr.h"
+#include "stats.h"
 
 // *INDENT-OFF*
 VLIB_PLUGIN_REGISTER () = {
@@ -1189,3 +1190,33 @@ VLIB_CLI_COMMAND (set_vpp_pds_secprofile_command, static) =
                   "[icmp-drop-timeout <timeout>] [other-drop-timeout <timeout>]",
     .function = set_vpp_pds_secprofile_command_fn,
 };
+
+static const char *
+datapath_stat_names[PDS_DATAPATH_ASSIST_STAT_MAX] = {
+#define _(s,n) n,
+    foreach_datapath_assist_stats_counter
+#undef _
+};
+
+static clib_error_t *
+show_pds_datapath_stats (vlib_main_t *vm,
+                         unformat_input_t *input,
+                         vlib_cli_command_t *cmd)
+{
+    uint64_t counter[PDS_DATAPATH_ASSIST_STAT_MAX] = {0};
+    int i;
+
+    pds_flow_monitor_accumulate_stats((void *)vm, counter);
+    for (i = 0; i < PDS_DATAPATH_ASSIST_STAT_MAX; i++) {
+        vlib_cli_output(vm, "%-35s : %lu\n", datapath_stat_names[i], counter[i]);
+    }
+    return 0;
+}
+
+VLIB_CLI_COMMAND (show_pds_stats_datapath_assist, static) =
+{
+    .path = "show pds statistics datapath-assist",
+    .short_help = "show pds statistics datapath-assist",
+    .function = show_pds_datapath_stats,
+};
+

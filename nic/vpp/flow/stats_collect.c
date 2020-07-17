@@ -133,9 +133,8 @@ accumulate_data[] = {
 };
 
 void
-pds_flow_monitor_accumulate_stats (void *vvm) {
+pds_flow_monitor_accumulate_stats (void *vvm, uint64_t *counter) {
     int i, j, k;
-    pds_flow_main_t *fm = &pds_flow_main;
     vlib_main_t *vm = (vlib_main_t *)vvm;
     vlib_main_t *stat_vm;
     vlib_node_t *n;
@@ -143,7 +142,6 @@ pds_flow_monitor_accumulate_stats (void *vvm) {
     vlib_node_t ***node_vecs = 0; // vector of vectors
     vlib_error_main_t *em;
     u32 code;
-    u64 counter[PDS_DATAPATH_ASSIST_STAT_MAX] = {0};
 
     // Barrier sync across stats scraping, otherwise, counts will be inaccurate.
     vlib_worker_thread_barrier_sync(vm);
@@ -194,8 +192,6 @@ pds_flow_monitor_accumulate_stats (void *vvm) {
             }
         }
     }
-
-    pdsa_datapath_assist_stats_publish(fm->datapath_assist_metrics_hdl, counter);
 
     for (j = 0; j < vec_len(node_vecs); j++) {
         vec_free(node_vecs[j]);
