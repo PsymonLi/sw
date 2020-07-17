@@ -35,10 +35,45 @@ var systemStatsClearCmd = &cobra.Command{
 	Run:   systemStatsClearCmdHandler,
 }
 
+var systemIngressDropStatsClearCmd = &cobra.Command{
+	Use:   "ingress-drop",
+	Short: "clear system statistics ingress-drop",
+	Long:  "clear system statistics ingress-drop",
+	Run:   systemIngressDropStatsClearCmdHandler,
+}
+
+var systemEgressDropStatsClearCmd = &cobra.Command{
+	Use:   "egress-drop",
+	Short: "clear system statistics egress-drop",
+	Long:  "clear system statistics egress-drop",
+	Run:   systemEgressDropStatsClearCmdHandler,
+}
+
+var systemLifStatsClearCmd = &cobra.Command{
+	Use:   "lif",
+	Short: "clear system statistics lif",
+	Long:  "clear system statistics lif",
+	Run:   systemLifStatsClearCmdHandler,
+}
+
+var systemPortStatsClearCmd = &cobra.Command{
+	Use:   "port",
+	Short: "clear system statistics port",
+	Long:  "clear system statistics port",
+	Run:   systemPortStatsClearCmdHandler,
+}
+
 func init() {
 	rootCmd.AddCommand(clearCmd)
 	clearCmd.AddCommand(systemClearCmd)
 	systemClearCmd.AddCommand(systemStatsClearCmd)
+	systemStatsClearCmd.AddCommand(systemIngressDropStatsClearCmd)
+	systemStatsClearCmd.AddCommand(systemEgressDropStatsClearCmd)
+	systemStatsClearCmd.AddCommand(systemLifStatsClearCmd)
+	systemStatsClearCmd.AddCommand(systemPortStatsClearCmd)
+
+	systemLifStatsClearCmd.Flags().Uint64Var(&lifID, "id", 0, "Specify lif-id")
+	systemPortStatsClearCmd.Flags().StringVar(&portNum, "port", "eth1/1", "Specify port number")
 
 	clearCmd.AddCommand(platformClearCmd)
 	platformClearCmd.AddCommand(platformHbmClearCmd)
@@ -93,6 +128,206 @@ func systemStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 			return
 		}
 	}
+}
+
+func systemIngressDropStatsClearCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	defer c.Close()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	client := halproto.NewSystemClient(c)
+
+	var empty *halproto.Empty
+
+	_, reterr := client.ClearIngressDropStats(context.Background(), empty)
+	if reterr != nil {
+		fmt.Printf("Clearing Ingress Drop Stats failed. %v\n", reterr)
+		return
+	}
+}
+
+func systemEgressDropStatsClearCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	defer c.Close()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	client := halproto.NewSystemClient(c)
+
+	var empty *halproto.Empty
+
+	_, reterr := client.ClearEgressDropStats(context.Background(), empty)
+	if reterr != nil {
+		fmt.Printf("Clearing Egress Drop Stats failed. %v\n", reterr)
+		return
+	}
+}
+
+func systemLifStatsClearCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	client := halproto.NewInterfaceClient(c)
+
+	defer c.Close()
+
+	var req *halproto.LifGetRequest
+	if cmd.Flags().Changed("id") {
+		// Get specific lif
+		req = &halproto.LifGetRequest{
+			KeyOrHandle: &halproto.LifKeyHandle{
+				KeyOrHandle: &halproto.LifKeyHandle_LifId{
+					LifId: lifID,
+				},
+			},
+		}
+	} else {
+		// Get all Lifs
+		req = &halproto.LifGetRequest{}
+	}
+
+	lifGetReqMsg := &halproto.LifGetRequestMsg{
+		Request: []*halproto.LifGetRequest{req},
+	}
+
+	// HAL call
+	respMsg, err := client.LifGet(context.Background(), lifGetReqMsg)
+	if err != nil {
+		fmt.Printf("Getting Lif failed. %v\n", err)
+		return
+	}
+
+	for _, resp := range respMsg.Response {
+		if resp.ApiStatus != halproto.ApiStatus_API_STATUS_OK {
+			fmt.Printf("LifGet Operation failed with %v error\n", resp.ApiStatus)
+			continue
+		}
+		resp.GetSpec().StatsReset = true
+		lifReqMsg := &halproto.LifRequestMsg{
+			Request: []*halproto.LifSpec{resp.GetSpec()},
+		}
+
+		updateRespMsg, err := client.LifUpdate(context.Background(), lifReqMsg)
+		if err != nil {
+			fmt.Printf("Update Lif failed. %v\n", err)
+			continue
+		}
+
+		for _, updateResp := range updateRespMsg.Response {
+			if updateResp.ApiStatus != halproto.ApiStatus_API_STATUS_OK {
+				fmt.Printf("LifUpdate Operation failed with %v error\n", updateResp.ApiStatus)
+				continue
+			}
+		}
+	}
+}
+
+func handlePortStatsClearCmd(cmd *cobra.Command, ofile *os.File) {
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	defer c.Close()
+
+	client := halproto.NewPortClient(c)
+
+	var req *halproto.PortGetRequest
+
+	if cmd != nil && cmd.Flags().Changed("port") {
+		// Get port info for specified port
+		req = &halproto.PortGetRequest{
+			KeyOrHandle: &halproto.PortKeyHandle{
+				KeyOrHandle: &halproto.PortKeyHandle_PortId{
+					PortId: portIDStrToIfIndex(portNum),
+				},
+			},
+		}
+	} else {
+		// Get all Ports
+		req = &halproto.PortGetRequest{}
+	}
+
+	portGetReqMsg := &halproto.PortGetRequestMsg{
+		Request: []*halproto.PortGetRequest{req},
+	}
+
+	// HAL call
+	respMsg, err := client.PortGet(context.Background(), portGetReqMsg)
+	if err != nil {
+		fmt.Printf("Getting Port failed. %v\n", err)
+		return
+	}
+
+	for _, resp := range respMsg.Response {
+		if resp.ApiStatus != halproto.ApiStatus_API_STATUS_OK {
+			fmt.Printf("Operation failed with %v error\n", resp.ApiStatus)
+			continue
+		}
+
+		var portSpec *halproto.PortSpec
+
+		portSpec = &halproto.PortSpec{
+			KeyOrHandle: &halproto.PortKeyHandle{
+				KeyOrHandle: &halproto.PortKeyHandle_PortId{
+					PortId: resp.GetSpec().GetKeyOrHandle().GetPortId(),
+				},
+			},
+
+			PortType:      resp.GetSpec().GetPortType(),
+			AdminState:    resp.GetSpec().GetAdminState(),
+			PortSpeed:     resp.GetSpec().GetPortSpeed(),
+			NumLanes:      resp.GetSpec().GetNumLanes(),
+			FecType:       resp.GetSpec().GetFecType(),
+			AutoNegEnable: resp.GetSpec().GetAutoNegEnable(),
+			DebounceTime:  resp.GetSpec().GetDebounceTime(),
+			Mtu:           resp.GetSpec().GetMtu(),
+			Pause:         resp.GetSpec().GetPause(),
+			TxPauseEnable: resp.GetSpec().GetTxPauseEnable(),
+			RxPauseEnable: resp.GetSpec().GetRxPauseEnable(),
+			MacStatsReset: true,
+		}
+
+		portUpdateReqMsg := &halproto.PortRequestMsg{
+			Request: []*halproto.PortSpec{portSpec},
+		}
+
+		// HAL call
+		updateRespMsg, err := client.PortUpdate(context.Background(), portUpdateReqMsg)
+		if err != nil {
+			fmt.Printf("Update Port failed. %v\n", err)
+			continue
+		}
+
+		for _, updateResp := range updateRespMsg.Response {
+			if updateResp.ApiStatus != halproto.ApiStatus_API_STATUS_OK {
+				fmt.Printf("Operation failed with %v error\n", updateResp.ApiStatus)
+				continue
+			}
+		}
+	}
+}
+
+func systemPortStatsClearCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 1 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+	handlePortStatsClearCmd(cmd, nil)
 }
 
 var platformClearCmd = &cobra.Command{
