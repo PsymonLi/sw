@@ -321,7 +321,7 @@ pds_if_api_status_to_proto (pds::InterfaceStatus *proto_status,
                             if_type_t type)
 {
     proto_status->set_ifindex(api_status->ifindex);
-    proto_status->set_operstatus(static_cast<pds::IfStatus>(api_status->state));
+    proto_status->set_operstatus(pds_admin_state_to_proto_admin_state(api_status->state));
 
     switch (type) {
     case IF_TYPE_UPLINK:
