@@ -20,7 +20,8 @@ service EpochSvc
 // Epoch get request
 message EpochGetRequest {
   option (venice.pdsaSetGlobOpts) = {
-    ActionFn: "fill_epoch_get_response"
+    ActionFn: "fill_epoch_get_response",
+    SkipMSMgmtLock: true
   };
 }
 

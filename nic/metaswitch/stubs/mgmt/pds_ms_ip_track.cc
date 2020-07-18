@@ -206,9 +206,8 @@ ip_track_add (const CPIPTrackTestCreateSpec   *req,
         pds_obj_id = OBJ_ID_MIRROR_SESSION;
     }
 
-    return pds_ms_sdk_ret_to_api_status(
-        pds_ms::configure_static_tracking_route_(objkey, destip,
-                                                 pds_obj_id, false));
+    return pds_ms_sdk_ret_to_api_status(ip_track_add(objkey, destip,
+                                                     pds_obj_id, false));
 }
 
 // API called from gRPC test
@@ -216,14 +215,10 @@ types::ApiStatus
 ip_track_del (const CPIPTrackTestDeleteSpec   *req,
 			  CPIPTrackTestResponse *resp)
 {
-    ip_addr_t destip = {0};
     pds_obj_key_t objkey;
 
     pds_obj_key_proto_to_spec(&objkey, req->pdsobjkey());
-
-    return pds_ms_sdk_ret_to_api_status(
-        pds_ms::configure_static_tracking_route_(objkey, destip,
-                                                 OBJ_ID_NONE, true));
+    return pds_ms_sdk_ret_to_api_status(ip_track_del(objkey));
 }
 
 } // End namespace

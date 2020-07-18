@@ -24,6 +24,7 @@ service CPTestSvc
 message CPL2fTestCreateSpec {
   option (venice.pdsaSetGlobOpts) = {
     ActionFn: "l2f_test_local_mac_ip_add"
+    SkipMSMgmtLock: true
   };
     bytes           SubnetId = 1;
     types.IPAddress IPAddr   = 2;
@@ -34,6 +35,7 @@ message CPL2fTestCreateSpec {
 message CPL2fTestDeleteSpec {
   option (venice.pdsaSetGlobOpts) = {
     ActionFn: "l2f_test_local_mac_ip_del"
+    SkipMSMgmtLock: true
   };
     bytes           SubnetId = 1;
     types.IPAddress IPAddr   = 2;
@@ -47,6 +49,7 @@ message CPL2fTestResponse {
 message CPIPTrackTestCreateSpec {
   option (venice.pdsaSetGlobOpts) = {
     ActionFn: "ip_track_add"
+    SkipMSMgmtLock: true
   };
     bytes           PDSObjKey = 1;
     types.IPAddress DestIP    = 2;
@@ -56,6 +59,7 @@ message CPIPTrackTestCreateSpec {
 message CPIPTrackTestDeleteSpec {
   option (venice.pdsaSetGlobOpts) = {
     ActionFn: "ip_track_del"
+    SkipMSMgmtLock: true
   };
     bytes  PDSObjKey = 1;
 }
@@ -67,6 +71,7 @@ message CPIPTrackTestResponse {
 message HitlessUpgTestEventSpec {
   option (venice.pdsaSetGlobOpts) = {
     ActionFn: "htls_upg_test_event"
+    SkipMSMgmtLock: true
   };
     bool  Start = 1;
     bool  Rollback = 2;
