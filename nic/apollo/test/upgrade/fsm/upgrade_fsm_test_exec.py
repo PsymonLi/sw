@@ -344,7 +344,7 @@ class ExecutePdsUpgradeFsmTest(object):
         execute(cmd="sleep 20", return_check=True) # TODO check for pdsupgmgr exit
         with open("/tmp/upgmgr_fsm_test/upg_status.txt", "r") as fp:
             status = fp.read()
-        if status.find("success") == 0:
+        if status.find("ok") == 0:
             return 0
         elif status.find("fail") == 0:
             return 1

@@ -50,9 +50,6 @@ if [ "${hook_type}" == "POST" ] ; then
     if [ -z "${response}" ]; then
         usage
     fi
-    if [[ "${stage}" == "UPG_STAGE_FINISH" && "${response}" == "ok" ]];then
-        echo "success" >  /tmp/upgmgr_fsm_test/upg_status.txt
-    fi
 fi
 
 if [ "${hook_type}" == "PRE" ] ; then

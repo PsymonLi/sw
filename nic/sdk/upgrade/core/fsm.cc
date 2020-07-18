@@ -209,26 +209,41 @@ send_ipc_to_next_service (void)
     }
 }
 
-void
-execute_exit_script (upg_status_t status)
+sdk_ret_t
+execute_exit_script (const char *option, upg_status_t status)
+{
+    std::string exit_script("");
+    exit_script = UPGMGR_EXIT_SCRIPT;
+    std::string mode;
+
+    if (sdk::platform::sysinit_mode_graceful(fsm_states.init_params()->upg_mode)) {
+        mode = "graceful";
+    } else {
+        mode = "hitless";
+    }
+
+    if (is_valid_script(fsm_states.init_params()->tools_dir, exit_script)) {
+        exit_script = fsm_states.init_params()->tools_dir + "/" + exit_script;
+        exit_script += std::string(option) + std::string(svc_rsp_code_name[status]);
+        exit_script += " -m " + std::string(mode);
+        if (!execute(exit_script.c_str())) {
+            UPG_TRACE_ERR("Tech support may not be generated !");
+            return SDK_RET_ERR;
+        }
+    } else {
+        LOG_INVALID_OBJ("script", exit_script.c_str());
+        return SDK_RET_ERR;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+fsm_exit (upg_status_t status)
 {
     upg_send_exit_event(fsm_states.init_params()->upg_mode);
-
-    if (UPG_STATUS_OK != status) {
-        std::string exit_script("");
-        exit_script = UPGMGR_EXIT_SCRIPT;
-
-        if (is_valid_script(fsm_states.init_params()->tools_dir, exit_script)) {
-            exit_script = fsm_states.init_params()->tools_dir + "/" + exit_script;
-            exit_script += " -r " + std::string(svc_rsp_code_name[status]);
-            if (!execute(exit_script.c_str())) {
-                UPG_TRACE_ERR("Tech support may not be generated !");
-            }
-        } else {
-            LOG_INVALID_OBJ("script", exit_script.c_str());
-        }
-    }
+    return execute_exit_script(" -r ", status);
 }
+
 
 upg_status_t
 get_exit_status (void)

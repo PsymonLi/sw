@@ -1106,6 +1106,37 @@ apulu_impl::pipeline_upgrade_graceful_init(void) {
     return pipeline_init();
 }
 
+// temporary function to flush sram tables after hitless upgrade
+// TODO : remove when the asic function is ready
+static void
+upgrade_flush_sram_table_entries (uint32_t tableid)
+{
+    char data[1024];
+    char zero[1024] = { 0 };
+    p4pd_table_properties_t prop = { 0 };
+    p4pd_error_t p4pd_ret;
+    uint32_t entry_width_bits, written = 0, width;
+
+    p4pd_global_table_properties_get(tableid, &prop);
+    width = (prop.sram_layout.entry_width_bits + 7)/8;
+    PDS_TRACE_DEBUG("Flush sram table entries, tableid %u, depth %u, width %u",
+                    tableid, prop.tabledepth, width);
+    for (uint32_t idx = 0; idx < prop.tabledepth; idx++) {
+        sdk::asic::pd::asicpd_write_to_hw(false);
+        p4pd_ret = p4pd_global_entry_read(tableid, idx, NULL, NULL, &data);
+        if (p4pd_ret != P4PD_SUCCESS) {
+            PDS_TRACE_ERR("Failed to read sram tableid %u", tableid);
+            return;
+        }
+        sdk::asic::pd::asicpd_write_to_hw(true);
+        if (memcmp(data, zero, width) != 0) {
+            p4pd_global_entry_write(tableid, idx, NULL, NULL, &data);
+            written++;
+        }
+    }
+    PDS_TRACE_DEBUG("Flushed %u sram table entries, tableid %u", written, tableid);
+}
+
 // this re-writes the common registers in the pipeline during A to B upgrade.
 // should be called in quiesced state and it should be the final
 // stage of the upgrade steps
@@ -1161,6 +1192,10 @@ apulu_impl::upgrade_switchover(void) {
                       ret);
         return ret;
     }
+
+    // TODO : remove once the asic function is ready
+    upgrade_flush_sram_table_entries(P4TBL_ID_TUNNEL);
+
     // start writing to h/w from thi point onwards
     sdk::asic::pd::asicpd_write_to_hw(true);
 

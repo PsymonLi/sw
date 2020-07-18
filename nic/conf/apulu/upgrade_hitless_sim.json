@@ -85,7 +85,8 @@
                 { "name": "svc_rsp_fail", "next_stage": "repeal" },
                 { "name": "svc_rsp_crit", "next_stage": "repeal" },
                 { "name": "svc_no_rsp",   "next_stage": "repeal" }
-            ]
+            ],
+            "post_hooks" : ["upgmgr_hitless.sh"]
         },
 
         "config_replay": {

@@ -8,33 +8,29 @@ upgmgr_parse_inputs $*
 echo "In mock/sim, starting commands for $STAGE_NAME"
 
 if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
-    upgmgr_set_upgrade_status  "in-progress"
-    echo "compat check, skipping"
+    upgmgr_clear_upgrade_status $STAGE_NAME
 
 elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
-    echo "start, skipping"
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_PREPARE" && $STAGE_TYPE == "POST" ]]; then
-    echo "prepare, skipping"
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
-    echo "pre switchover, skipping"
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_SWITCHOVER" && $STAGE_TYPE == "PRE" ]]; then
     upgmgr_set_init_mode "graceful"
-    echo "switchover, skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_READY" && $STAGE_TYPE == "POST" ]]; then
     upgmgr_clear_init_mode
-    if [[ $STAGE_STATUS == "ok" ]]; then
-        upgmgr_graceful_success
-    else
-        upgmgr_set_upgrade_status "failed"
-    fi
+    upgmgr_set_graceful_status $STAGE_STATUS
+
 else
-    echo "unknown input"
+    echo "Unknown input"
     exit 1
 fi
 
 echo "Commands for $STAGE_NAME processed successfully"
+upgmgr_update_upgrade_stage $STAGE_NAME
 exit 0

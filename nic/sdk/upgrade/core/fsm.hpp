@@ -134,9 +134,11 @@ sdk_ret_t init_interactive(fsm_init_params_t *params);
 void upg_event_handler(upg_event_msg_t *event);
 void upg_event_interactive_handler(upg_event_msg_t *event);
 sdk_ret_t upg_interactive_stage_exec(upg_stage_t stage);
-void execute_exit_script (upg_status_t status);
+sdk_ret_t execute_exit_script (const char *option, upg_status_t status);
 upg_status_t get_exit_status(void);
 ev_tstamp stage_timeout(void);
+sdk_ret_t fsm_exit(upg_status_t status);
+sdk_ret_t interactive_fsm_exit(upg_status_t status);
 
 extern struct ev_loop *loop;
 extern ev_timer timeout_watcher;

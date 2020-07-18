@@ -46,6 +46,7 @@ public:
     int recv_fd(void) { return recv_fd_; }
     struct ev_loop *loop(void) { return loop_; }
     void set_recv_fd(int fd) { recv_fd_ = fd; }
+    bool is_connected(void);
 
 private:
     union {

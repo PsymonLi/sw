@@ -7,14 +7,20 @@ function usage() {
     exit 1;
 }
 
-while getopts ":r:s" o; do
+while getopts ":r:i:m:s" o; do
     case "${o}" in
         r)
             response=${OPTARG}
             echo $response > /tmp/upgmgr_fsm_test/upg_status.txt
             ;;
+        i)
+            interactive=1
+            ;;
         s)
             exit 0;
+            ;;
+        m)
+            mode=${OPTARG}
             ;;
         *)
             usage

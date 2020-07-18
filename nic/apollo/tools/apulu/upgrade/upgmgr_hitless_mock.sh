@@ -8,37 +8,37 @@ upgmgr_parse_inputs $*
 echo "In mock/sim, starting commands for $STAGE_NAME"
 
 if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
-    upgmgr_set_upgrade_status  "in-progress"
+    upgmgr_clear_upgrade_status $STAGE_NAME
     [[ $? -ne 0 ]] && echo "Package check failed!" && exit 1
 
 elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
-    echo "start, skipping"
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_BACKUP" && $STAGE_TYPE == "POST" ]]; then
-    echo "start, skipping"
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_PREPARE" && $STAGE_TYPE == "PRE" ]]; then
     # get the next domain to be booted up
     dom=$( upgmgr_get_alt_domain  )
     echo $dom > /tmp/upgrade_start_new_instance.txt
 
+elif [[ $STAGE_NAME == "UPG_STAGE_READY" && $STAGE_TYPE == "POST" ]]; then
+    echo "Skipping"
+
 elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
-    echo "Nothing to do"
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_CONFIG_REPLAY" && $STAGE_TYPE == "PRE" ]]; then
-    echo "Nothing to do"
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_FINISH" && $STAGE_TYPE == "POST" ]]; then
-    if [[ $STAGE_STATUS == "ok" ]]; then
-        upgmgr_set_upgrade_status "success"
-    else
-        upgmgr_set_upgrade_status "failed"
-    fi
+    echo "Skipping"
 
 else
-    echo "unknown input"
+    echo "Unknown input"
     exit 1
 fi
 
 echo "Commands for $STAGE_NAME processed successfully"
+upgmgr_update_upgrade_stage $STAGE_NAME
 exit 0

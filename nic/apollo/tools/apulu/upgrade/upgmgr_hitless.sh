@@ -2,7 +2,6 @@
 # top level script which will be invoked by upgrade manager before
 # and after every stage of execution
 # the base(hw/sim) environment variable is already set during upgmgr invocation
-echo "argument -- $*"
 
 # BUILD_DIR is defined only on sim/mock mode
 if [[ ! -z $BUILD_DIR ]];then
@@ -17,7 +16,8 @@ upgmgr_parse_inputs $*
 echo "Starting commands for $STAGE_NAME"
 
 if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
-    upgmgr_set_upgrade_status  "in-progress"
+    upgmgr_clear_upgrade_status $STAGE_NAME
+    upgmgr_clear_hitless_instance_load_status
     upgmgr_setup
     upgmgr_pkgcheck "hitless"
     [[ $? -ne 0 ]] && echo "Package check failed!" && exit 1
@@ -34,37 +34,29 @@ elif [[ $STAGE_NAME == "UPG_STAGE_BACKUP" && $STAGE_TYPE == "POST" ]]; then
 
 elif [[ $STAGE_NAME == "UPG_STAGE_PREPARE" && $STAGE_TYPE == "PRE" ]]; then
     $PENVISORCTL load
+    [[ $? -ne 0 ]] && echo "Penvisor load failed!" && exit 1
+    upgmgr_set_hitless_instance_load_status
+
+elif [[ $STAGE_NAME == "UPG_STAGE_READY" && $STAGE_TYPE == "POST" ]]; then
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
-    # called on A during A to B upgrade
-    # TODO : discuss with Stavros on this. whether we should do this after
-    # switchover before unload
-    if [[ $STAGE_STATUS == "ok" ]]; then
-        echo "Pre switchover successful"
-        # $PENVISORCTL switch
-    else
-        echo "Pre switchover failed"
-    fi
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
     upgmgr_clear_init_mode
-    if [[ $STAGE_STATUS == "ok" ]]; then
-        echo "Switchover successful, Unloading the previous instance"
-        # $PENVISORCTL unload
-    else
-        echo "Switchover failed" # TODO penvisor actions
-    fi
 
 elif [[ $STAGE_NAME == "UPG_STAGE_FINISH" && $STAGE_TYPE == "POST" ]]; then
-    if [[ $STAGE_STATUS == "ok" ]]; then
-        upgmgr_set_upgrade_status "success"
-    else
-        upgmgr_set_upgrade_status "failed"
-    fi
+    echo "Skipping"
+    # not unloading the other instance here. unloading will be invoked by upgmgr
+    # exit routing where the tech-support will be invokded before exiting
+    # see upgmgr_exit.sh
 
 else
     echo "Unknown stage name given"
     exit 1
 fi
+
 echo "Commands for $STAGE_NAME processed successfully"
+upgmgr_update_upgrade_stage $STAGE_NAME
 exit 0

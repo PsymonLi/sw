@@ -2,7 +2,6 @@
 # top level script which will be invoked by upgrade manager before
 # and after every stage of execution
 # the base(hw/sim) environment variable is already set during upgmgr invocation
-echo "argument -- $*"
 
 # BUILD_DIR is defined only on sim/mock mode
 if [[ ! -z $BUILD_DIR ]];then
@@ -17,7 +16,7 @@ upgmgr_parse_inputs $*
 echo "Starting commands for $STAGE_NAME"
 
 if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
-    upgmgr_set_upgrade_status  "in-progress"
+    upgmgr_clear_upgrade_status $STAGE_NAME
     upgmgr_setup
     upgmgr_pkgcheck "graceful"
     upgmgr_clear_respawn_status
@@ -30,7 +29,7 @@ elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
     [[ $? -ne 0 ]] && echo "Firmware store failed!" && exit 1
 
 elif [[ $STAGE_NAME == "UPG_STAGE_PREPARE" && $STAGE_TYPE == "POST" ]]; then
-    echo "Skipping prepare"
+    echo "Skipping"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
     upgmgr_backup
@@ -47,11 +46,7 @@ elif [[ $STAGE_NAME == "UPG_STAGE_SWITCHOVER" && $STAGE_TYPE == "PRE" ]]; then
 elif [[ $STAGE_NAME == "UPG_STAGE_READY" && $STAGE_TYPE == "POST" ]]; then
     # post ready below is no more in use
     upgmgr_clear_init_mode
-    if [[ $STAGE_STATUS == "ok" ]]; then
-        upgmgr_graceful_success
-    else
-        upgmgr_set_upgrade_status "failed"
-    fi
+    upgmgr_set_graceful_status $STAGE_STATUS
     upgmgr_clear_respawn_status
 
 else
@@ -60,4 +55,5 @@ else
 fi
 
 echo "Commands for $STAGE_NAME processed successfully"
+upgmgr_update_upgrade_stage $STAGE_NAME
 exit 0

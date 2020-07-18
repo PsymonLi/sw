@@ -71,6 +71,22 @@ ipc_peer_ctx::init_(const char *path, uint16_t port, struct ev_loop *loop) {
     return this;
 }
 
+bool
+ipc_peer_ctx::is_connected(void) {
+    int fd = recv_fd_ >= 0 ? recv_fd_ : fd_ >= 0 ? fd_ : -1;
+    int rv;
+    char buf[1];
+
+    if (fd < 0) {
+        return false;
+    }
+    rv = recv(fd, buf, 1, MSG_PEEK | MSG_DONTWAIT);
+    if (rv == 0) {
+        return false;
+    }
+    return true;
+}
+
 ipc_peer_ctx *
 ipc_peer_ctx::factory(const char *path, uint16_t port, struct ev_loop *loop) {
     ipc_peer_ctx *ctx;

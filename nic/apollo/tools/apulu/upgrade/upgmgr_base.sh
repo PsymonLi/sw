@@ -6,21 +6,38 @@ source $PDSPKG_TOPDIR/tools/upgmgr_core_base.sh
 
 UPGRADE_STATUS_FILE='/update/pds_upg_status.txt'
 RESPAWN_IN_PROGRESS_FILE='/tmp/.respawn_in_progress'
-PENVISORCTL='penvisorctl'
+HITLESS_INSTANCE_LOAD_STATUS_FILE='/tmp/.hitless_instance_load_done'
+PENVISORCTL=$PDSPKG_TOPDIR/bin/penvisorctl
 
 function upgmgr_set_upgrade_status() {
+    pds_upg_status_ok="success"
+    pds_upg_status_fail="failed"
+    pds_upg_status_critical="critical"
+    pds_upg_status_no_response="failed"
+    pds_upg_status_reset="in-progress"
+    status=`eval echo '$'pds_upg_status_$1`
+    if [ -z $status ];then
+        status="failed"
+    fi
     time_stamp="$(date +"%Y-%m-%d %H:%M:%S")"
-    status=$1
-    echo "$time_stamp::$status" > $UPGRADE_STATUS_FILE
+    sed -i "s/\(.*\)::\(.*\):\(.*\)/$time_stamp::$status:\3/" $UPGRADE_STATUS_FILE
 }
 
-function upgmgr_check_and_update_upgrade_status() {
-    grep -ie "in-progress\|failed\|success" $UPGRADE_STATUS_FILE
-    [[ $? -ne 0 ]] && upgmgr_set_upgrade_status "failed"
+function upgmgr_update_upgrade_stage() {
+    time_stamp="$(date +"%Y-%m-%d %H:%M:%S")"
+    sed -i "s/\(.*\)::\(.*\):\(.*\)/$time_stamp::\2:$1/" $UPGRADE_STATUS_FILE
 }
 
 function upgmgr_clear_upgrade_status() {
     rm -f $UPGRADE_STATUS_FILE
+    time_stamp="$(date +"%Y-%m-%d %H:%M:%S")"
+    echo "$time_stamp::in-progress:$1" > $UPGRADE_STATUS_FILE
+}
+
+# if the status file has not created or it has an incorrect status
+function upgmgr_check_and_update_exit_status() {
+    grep -ie "in-progress\|failed\|success\|critical" $UPGRADE_STATUS_FILE
+    [[ $? -ne 0 ]] && upgmgr_set_upgrade_status "fail"
 }
 
 function upgmgr_setup() {
@@ -151,12 +168,82 @@ function upgmgr_set_respawn_status() {
     touch $RESPAWN_IN_PROGRESS_FILE
 }
 
-function upgmgr_graceful_success() {
-    if [ -e  $RESPAWN_IN_PROGRESS_FILE ];then
-        upgmgr_set_upgrade_status "failed"
-        $PDSPKG_TOPDIR/tools/bringup_mgmt_ifs.sh &> $NON_PERSISTENT_LOG_DIR/mgmt_if.log
-    else
-        upgmgr_set_upgrade_status "success"
+function upgmgr_set_graceful_status() {
+    if [[ "$1" == "ok" ]];then
+        if [ -e  $RESPAWN_IN_PROGRESS_FILE ];then
+            upgmgr_set_upgrade_status "fail"
+            $PDSPKG_TOPDIR/tools/bringup_mgmt_ifs.sh &> $NON_PERSISTENT_LOG_DIR/mgmt_if.log
+            return
+        fi
     fi
-    return 0
+    upgmgr_set_upgrade_status $1
+    return
+}
+
+function upgmgr_set_hitless_instance_load_status() {
+    touch $HITLESS_INSTANCE_LOAD_STATUS_FILE
+}
+
+function upgmgr_clear_hitless_instance_load_status() {
+    rm -f $HITLESS_INSTANCE_LOAD_STATUS_FILE
+}
+
+function upgmgr_unload_hitless_instance() {
+    # don't unload if already there is a failure as it requires
+    # a user intervention
+    grep -ie "in-progress" $UPGRADE_STATUS_FILE
+    if [[ $? -ne 0 ]]; then
+        return
+    fi
+
+    if [ -e $PENVISORCTL ];then
+        $PENVISORCTL unload
+        if [[ $? -ne 0 ]]; then
+            echo "Unload of previous instance failed!"
+            upgmgr_set_upgrade_status "critical"
+            return
+        fi
+    fi
+    upgmgr_set_upgrade_status $1
+}
+
+function upgmgr_switch_hitless_instance() {
+    if [ -e $HITLESS_INSTANCE_LOAD_STATUS_FILE ];then
+        $PENVISORCTL switch
+        if [[ $? -ne 0 ]]; then
+            echo "Switching to the new instance failed!"
+            upgmgr_set_upgrade_status "critical"
+            return
+         fi
+    fi
+}
+
+function upgmgr_exit () {
+    interactive=$1
+    status=$2
+    if [[ $3 == "hitless" ]];then
+        # hitless upgrade
+        # B will update the status for success case
+        if [[ $interactive -eq 1 && "$status" == "ok" ]];then
+            upgmgr_unload_hitless_instance $status
+        # A updates the status in failure case. otherwise it invoke switch
+        elif [ $interactive -eq 0 ];then
+            if [[ "$status" != "ok" ]];then
+                if [ -e $HITLESS_INSTANCE_LOAD_STATUS_FILE ];then
+                    upgmgr_unload_hitless_instance $status
+                else
+                    upgmgr_set_upgrade_status $status
+                fi
+            else
+                upgmgr_switch_hitless_instance
+            fi
+        fi
+        upgmgr_clear_hitless_instance_load_status
+    else
+        # graceful upgrade. success status is updated by the graceful.sh
+        # update only if there is a failure
+        if [[ "$status" != "ok" ]];then
+             upgmgr_set_upgrade_status $status
+        fi
+    fi
 }

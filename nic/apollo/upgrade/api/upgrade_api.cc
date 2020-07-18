@@ -16,8 +16,6 @@
 #include "nic/apollo/upgrade/ipc_peer/ipc_peer.hpp"
 #include "nic/apollo/upgrade/api/upgrade_api.hpp"
 
-#define UPGRADE_PEER_BRINGUP_WAIT_CNT 300 // 300 seconds considering sim
-
 static sdk::event_thread::event_thread *g_upg_event_thread;
 static std::string g_tools_dir;
 static ipc_peer_ctx *g_ipc_peer_ctx;
@@ -29,32 +27,13 @@ static upg_event_msg_t g_upg_event_msg_in;
 
 namespace api {
 
-/// \brief     fsm completion handler
-static void
-upg_fsm_exit_hdlr (upg_status_t status)
-{
-    if (g_ipc_msg_in_ptr) {
-        sdk::ipc::respond(g_ipc_msg_in_ptr, &status, sizeof(status));
-    }
-
-    if (status == UPG_STATUS_OK) {
-        UPG_TRACE_INFO("Upgrade finished successfully");
-    } else {
-        UPG_TRACE_ERR("Upgrade failed !!");
-    }
-    sdk::upg::execute_exit_script(status);
-    // this process is no more needed as the upgrade stages are done now
-    sleep(5);
-    exit(0);
-}
-
 static void
 upg_interactive_fsm_exit_hdlr (ipc_peer_ctx *ctx)
 {
     // exit only for the listener
     if (ctx->recv_fd()) {
-        sdk::upg::execute_exit_script(sdk::upg::get_exit_status());
-        // TODO look the status and decide the upgrade ok/fail
+        ipc_peer_ctx::destroy(g_ipc_peer_ctx);
+        g_ipc_peer_ctx = NULL;
         sleep(5);
         exit(0);
     }
@@ -84,10 +63,24 @@ upg_interactive_request (const void *data, const size_t size)
     }
     UPG_TRACE_DEBUG("Hitless interactive request stage %s",
                     upg_stage2str(stage));
-    ret = sdk::upg::upg_interactive_stage_exec(stage);
-    if (ret != SDK_RET_IN_PROGRESS) {
-        upg_interactive_fsm_stage_completion_hdlr(UPG_STATUS_FAIL);
+    if (stage == UPG_STAGE_FINISH) {
+        // finish identifies a successfull upgrade
+        ret = sdk::upg::interactive_fsm_exit(UPG_STATUS_OK);
+        goto exit;
+    } else if (stage == UPG_STAGE_EXIT) {
+        // exit in failure case
+        ret = sdk::upg::interactive_fsm_exit(UPG_STATUS_FAIL);
+        goto exit;
+    } else {
+        // for stage execution
+        ret = sdk::upg::upg_interactive_stage_exec(stage);
+        if (ret != SDK_RET_IN_PROGRESS) {
+            upg_interactive_fsm_stage_completion_hdlr(UPG_STATUS_FAIL);
+        }
+        return;
     }
+exit:
+    upg_interactive_fsm_exit_hdlr(g_ipc_peer_ctx);
 }
 
 /// \brief     response from B to A during hitless upgrade
@@ -108,9 +101,9 @@ upg_interactive_response (const void *data, const size_t size)
                    upg_stage2str(msg_in->stage), msg_in->rsp_status);
     // if it is a ready stage and the current response is OK, wait for
     // ready done by the controller.
-    if ((g_current_upg_stage == UPG_STAGE_CONFIG_REPLAY) &&
+    if ((msg_in->stage == UPG_STAGE_CONFIG_REPLAY) &&
         (!getenv("UPGMGR_READY_STAGE_WAIT_DISABLE"))) {
-        UPG_TRACE_INFO("Wating for config replay, timeout %u", max_wait);
+        UPG_TRACE_INFO("Waiting for config replay, timeout %u", max_wait);
         // no need to delay if the current status is fail
         if (msg_in->rsp_status == UPG_STATUS_OK) {
             while (max_wait > 0) {
@@ -135,7 +128,7 @@ static sdk_ret_t
 upg_peer_init (bool client)
 {
     sdk_ret_t ret;
-    uint32_t count = 0;
+    uint32_t max_wait;
 
     g_ipc_peer_ctx = ipc_peer_ctx::factory(NULL,
                                            PDS_IPC_PEER_TCP_PORT_UPGMGR,
@@ -153,18 +146,19 @@ upg_peer_init (bool client)
         }
         g_ipc_peer_ctx->recv_cb = upg_interactive_request;
     } else {
+        max_wait = (uint32_t)sdk::upg::stage_timeout();
         UPG_TRACE_INFO("Connecting to the peer");
-        while (count < UPGRADE_PEER_BRINGUP_WAIT_CNT) {
+        while (max_wait > 0) {
             ret = g_ipc_peer_ctx->connect();
             if (ret == SDK_RET_OK) {
                 break;
             }
-            UPG_TRACE_ERR("Peer IPC connection failed, try-count %u, ret %u",
-                          count, ret);
+            UPG_TRACE_ERR("Peer IPC connection failed, remaining tries %u, ret %u",
+                          max_wait, ret);
             sleep(1);
-            count++;
+            max_wait--;
         }
-        if (count >= UPGRADE_PEER_BRINGUP_WAIT_CNT) {
+        if (max_wait == 0) {
             goto err_exit;
         }
         g_ipc_peer_ctx->recv_cb = upg_interactive_response;
@@ -207,6 +201,46 @@ upg_event_send_to_peer_hdlr (upg_stage_t stage, std::string svc_name,
     }
       // send the stage to be executed
     g_ipc_peer_ctx->send((void *)&stage, sizeof(stage));
+}
+
+/// \brief     fsm completion handler
+static void
+upg_fsm_exit_hdlr (upg_status_t status)
+{
+    uint32_t max_wait = 60;
+
+    if (g_ipc_msg_in_ptr) {
+        sdk::ipc::respond(g_ipc_msg_in_ptr, &status, sizeof(status));
+    }
+    if (status == UPG_STATUS_OK) {
+        UPG_TRACE_INFO("Upgrade finished successfully");
+    } else {
+        UPG_TRACE_ERR("Upgrade failed !!");
+    }
+    if (g_ipc_peer_ctx) {
+        if (status == UPG_STATUS_OK) {
+            // for success A need to switch and B unload
+            sdk::upg::fsm_exit(status);
+            upg_event_send_to_peer_hdlr(UPG_STAGE_FINISH, "none", 0);
+            // for success, this instance will be removed after this. the exit
+            // status is updated by above. so no need to proceed further
+        } else {
+            // otherwise(failure) collect the logs from the new instance that would
+            // be helpful to analyze the upgrade failure. this instance will be
+            // removed during fsm exit
+            upg_event_send_to_peer_hdlr(UPG_STAGE_EXIT, "none", 0);
+            while (g_ipc_peer_ctx->is_connected() && (max_wait > 0)) {
+                sleep(1);
+                max_wait--;
+            }
+            sdk::upg::fsm_exit(status);
+        }
+    } else {
+        sdk::upg::fsm_exit(status);
+    }
+    // this process is no more needed as the upgrade stages are done now
+    sleep(5);
+    exit(0);
 }
 
 static void
@@ -280,11 +314,8 @@ upg_event_thread_init (void *ctxt)
     if (sdk::platform::sysinit_mode_graceful(mode)) {
         upg_fsm_init(mode, UPG_STAGE_READY, "none", false);
     } else if (sdk::platform::sysinit_mode_hitless(mode)) {
-#ifndef __aarch64__
-        // for simulation, all logs goes to /dev/upgradelog.
-        // adding a distinction
-        sdk::upg::g_upg_log_pfx = "peer";
-#endif
+        // upgrade logs for A and B goes to same file. adding a distinction
+        sdk::upg::g_upg_log_pfx = "domain-b";
         // spawn for a hitless upgrade
         upg_peer_init(false);
         upg_fsm_init(mode, UPG_STAGE_NONE, "none", false);

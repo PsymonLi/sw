@@ -279,12 +279,13 @@ fsm::update_stage_progress_interactive(const svc_rsp_code_t rsp) {
         fsm_states.set_prev_stage_rsp(rsp);
         fsm_states.init_params()->fsm_completion_cb(get_exit_status(rsp));
         stage_in_progress = false;
+        current_stage_ = UPG_STAGE_NONE;
     } else {
         pending_response_--;
         SDK_ASSERT(pending_response_ >= 0);
 
         if (pending_response_ == 0) {
-            fsm_states.init_params()->fsm_completion_cb(UPG_STATUS_OK);
+            current_stage_ = UPG_STAGE_NONE;
             stage_in_progress = false;
         }
     }
@@ -310,6 +311,13 @@ init_interactive (fsm_init_params_t *params)
     ev_timer_init(&timeout_watcher, timeout_cb, fsm_states.timeout(), 0.0);
     fsm_states.set_init_params(params);
     return SDK_RET_OK;
+}
+
+sdk_ret_t
+interactive_fsm_exit (upg_status_t status)
+{
+    upg_send_exit_event(fsm_states.init_params()->upg_mode);
+    return execute_exit_script(" -i ", status);
 }
 
 }
