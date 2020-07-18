@@ -54,12 +54,13 @@ func ProcessPdsUpgStatus() int {
 		return PdsUpgStatusFail
 	}
 	log.Infof("file content %v", string(data))
-	strList := strings.Split(string(data), ":")
+	strList := strings.Split(string(data), "::")
+	statusList := strings.Split(strList[len(strList)-1], ":")
 
-	if strings.TrimSuffix(strList[len(strList)-1], "\n") == "success" {
+	if strings.TrimSuffix(statusList[0], "\n") == "success" {
 		return PdsUpgStatusSuccess
 	}
-	if strings.TrimSuffix(strList[len(strList)-1], "\n") == "failed" {
+	if strings.TrimSuffix(statusList[0], "\n") == "failed" {
 		return PdsUpgStatusFail
 	}
 	return PdsUpgStatusInProcess
