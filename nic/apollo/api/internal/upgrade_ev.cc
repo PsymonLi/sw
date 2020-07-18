@@ -209,7 +209,7 @@ upg_hitless_ev_send (sdk::upg::upg_ev_params_t *params)
         ret = SDK_RET_OK;
         break;
     case UPG_EV_SYNC:
-        ret = SDK_RET_OK;
+        INVOKE_EV_THREAD_HDLR(ev, sync_hdlr, UPG_MSG_ID_SYNC);
         break;
     case UPG_EV_SWITCHOVER:
         INVOKE_EV_THREAD_HDLR(ev, switchover_hdlr, UPG_MSG_ID_SWITCHOVER);
