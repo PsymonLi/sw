@@ -270,7 +270,6 @@ region::read_(serial_t serial)
     do {
         int copy_amount = CHUNK_SIZE;
         if (serial + chunk_index >= this->region_->serial) {
-            // todo
             // Serial not created yet
             return nullptr;
         }
@@ -278,7 +277,8 @@ region::read_(serial_t serial)
         if (chunk_index == 0) {
             // spin if the chunk is currently being updated
             int spins = 0;
-            while (chunk->updating != UPDATE_READY) {
+            while ((chunk->updating != UPDATE_READY) ||
+                   (chunk->part_of < serial)) {
                 usleep(SPIN_SLEEP_MS * 1000);
                 spins += 1;
                 assert(spins < SPIN_MAX_TRIES);
@@ -295,13 +295,7 @@ region::read_(serial_t serial)
         memcpy(e->data_ + (chunk_index * CHUNK_SIZE), chunk->data, copy_amount);
 
         if (chunk->part_of != serial) {
-            if (chunk_index == 0) {
-                // todo
-                // It's not a starting serial
-            } else {
-                // todo
-                // Roll over while reading record
-            }
+            // Roll over while reading record. Do we just skip it?
             return nullptr;
         }
 
