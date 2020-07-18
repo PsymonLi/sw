@@ -13,6 +13,10 @@ UPGRADE_INIT_INSTANCE_FILE='/share/upgrade_init_instance.txt'
 ulimit -c unlimited
 
 function initial_boot_action {
+
+    mkdir -p /var/log
+    mount -t tmpfs -o size=100M tmpfs /var/log
+    
     # POST
    if [[ -f $SYSCONFIG/post_disable ]]; then
        echo "Skipping Power On Self Test (POST)"
