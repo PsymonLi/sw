@@ -2441,61 +2441,6 @@ export class Utility {
     }
     return output;
   }
-  static displayListInLinesInColumn(list: string[]): string {
-    return (list && list.length > 0) ? list.join('<br>') : '';
-  }
-  static displayListInLinesInCvsColumn(list: string[]): string {
-    return (list && list.length > 0) ? list.join('\n') : '';
-  }
-  public static formatTargets(data: any, isForExport: boolean = false) {
-    if (data == null) {
-      return '';
-    }
-    const retArr = [];
-    data.forEach((req) => {
-      let targetStr: string = '';
-      for (const k in req) {
-        if (req.hasOwnProperty(k) && k !== '_ui' && k !== 'credentials') {
-          if (req[k]) {
-            targetStr += k.charAt(0).toUpperCase() + k.slice(1) + ':' +  req[k] + ', ';
-          }
-        }
-      }
-      if (targetStr.length === 0) {
-        targetStr += '*';
-      } else {
-        targetStr = targetStr.slice(0, -2);
-      }
-      retArr.push(targetStr);
-    });
-    if (isForExport) {
-      return this.displayListInLinesInCvsColumn(retArr);
-    }
-    return this.displayListInLinesInColumn(retArr);
-  }
-  public static formatSyslogExports(data) {
-    if (data == null) {
-      return '';
-    }
-    let targetStr: string = '';
-    if (data.format) {
-      targetStr += 'Format:' +  data.format.replace('syslog-', '').toUpperCase() + ', ';
-    }
-    for (const k in data.config) {
-      if (data.config.hasOwnProperty(k) && k !== '_ui') {
-        if (data.config[k]) {
-          targetStr += k.charAt(0).toUpperCase() + k.slice(1) + ':' +  data.config[k] + ', ';
-        }
-      }
-    }
-    if (targetStr.length === 0) {
-      targetStr += '*';
-    } else {
-      targetStr = targetStr.slice(0, -2);
-    }
-    return [targetStr];
-  }
-
   setControllerService(controllerService: ControllerService) {
     this.myControllerService = controllerService;
   }

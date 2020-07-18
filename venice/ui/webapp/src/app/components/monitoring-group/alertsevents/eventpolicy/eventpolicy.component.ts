@@ -12,6 +12,7 @@ import { Observable } from 'rxjs';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
+import { SyslogUtility } from '@app/common/SyslogUtility';
 
 @Component({
   selector: 'app-eventpolicy',
@@ -58,12 +59,13 @@ export class EventpolicyComponent extends TablevieweditAbstract<IMonitoringEvent
   exportMap: CustomExportMap = {
     'spec': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr =  Utility.formatSyslogExports(value);
+      const trimmedValues = Utility.trimUIFields(value);
+      const resArr =  SyslogUtility.formatSyslogExports(trimmedValues);
       return resArr.toString();
     },
     'spec.targets': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr =  Utility.formatTargets(value, true);
+      const resArr =  SyslogUtility.formatTargets(value, true);
       return resArr.toString();
     }
   };
@@ -138,13 +140,13 @@ export class EventpolicyComponent extends TablevieweditAbstract<IMonitoringEvent
     const column = col.field;
     switch (column) {
       case 'spec':
-        return Utility.formatSyslogExports(value);
+        return SyslogUtility.formatSyslogExports(value);
       case 'spec.email-list':
         return JSON.stringify(value, null, 2);
       case 'spec.snmp-trap-servers':
         return JSON.stringify(value, null, 2);
       case 'spec.targets':
-        return Utility.formatTargets(value);
+        return SyslogUtility.formatTargets(value);
       default:
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }

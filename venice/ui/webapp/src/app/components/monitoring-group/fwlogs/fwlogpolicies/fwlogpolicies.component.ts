@@ -12,6 +12,7 @@ import { Observable } from 'rxjs';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
+import { SyslogUtility } from '@app/common/SyslogUtility';
 
 @Component({
   selector: 'app-fwlogpolicies',
@@ -65,11 +66,12 @@ export class FwlogpoliciesComponent extends TablevieweditAbstract<IMonitoringFwl
     },
     'spec.filter': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      return value.join(',');
+      const trimmedValues = Utility.trimUIFields(value);
+      return trimmedValues.join(',');
     },
     'spec.targets': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr =  Utility.formatTargets(value, true);
+      const resArr =  SyslogUtility.formatTargets(value, true);
       return resArr.toString();
     }
   };
@@ -142,7 +144,7 @@ export class FwlogpoliciesComponent extends TablevieweditAbstract<IMonitoringFwl
     const column = col.field;
     switch (column) {
       case 'spec.targets':
-        return Utility.formatTargets(value);
+        return SyslogUtility.formatTargets(value);
       default:
         return Array.isArray(value) ? value.join(', ') : value;
     }

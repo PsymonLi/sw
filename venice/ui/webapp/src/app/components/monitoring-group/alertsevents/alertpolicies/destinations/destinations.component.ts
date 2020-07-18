@@ -11,7 +11,7 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
-
+import { SyslogUtility } from '@app/common/SyslogUtility';
 
 @Component({
   selector: 'app-destinations',
@@ -40,7 +40,7 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
   cols: TableCol[] = [
     { field: 'meta.name', header: 'Policy Name', class: 'destinations-column-name', sortable: true, width: 25},
     { field: 'spec.syslog-export', header: 'Syslog Exports', class: 'destinations-column-syslog', sortable: false, width: 25 },
-    { field: 'spec.syslog-export.targets', header: 'Targets', class: 'destinations-column-syslog', sortable: false, width: 30 },
+    { field: 'spec.syslog-export.targets', header: 'Targets', class: 'destinations-column-syslog', sortable: false, width: '390px' },
     { field: 'status.total-notifications-sent', header: 'Notifications Sent', class: 'destinations-column-notifications-sent', sortable: false, width: 20 },
     // Following fields are currently not supported
     // { field: 'spec.email-list', header: 'Email List', class: 'destinationpolicy-column-email-list', sortable: true },
@@ -51,12 +51,13 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
   exportMap: CustomExportMap = {
     'spec.syslog-export': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr =  Utility.formatSyslogExports(value);
+      const trimmedValues = Utility.trimUIFields(value);
+      const resArr =  SyslogUtility.formatSyslogExports(trimmedValues);
       return resArr.toString();
     },
     'spec.syslog-export.targets': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr =  Utility.formatTargets(value, true);
+      const resArr =  SyslogUtility.formatTargets(value, true);
       return resArr.toString();
     }
   };
@@ -113,9 +114,9 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
     const column = col.field;
     switch (column) {
       case 'spec.syslog-export':
-        return Utility.formatSyslogExports(value);
+        return SyslogUtility.formatSyslogExports(value);
       case 'spec.syslog-export.targets':
-        return Utility.formatTargets(value);
+        return SyslogUtility.formatTargets(value);
       case 'spec.email-list':
         return JSON.stringify(value, null, 2);
       case 'spec.snmp-trap-servers':

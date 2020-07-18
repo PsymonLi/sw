@@ -24,6 +24,7 @@ export class SyslogComponent extends BaseComponent implements OnInit {
   @Input() showSyslogOptions: boolean = true;
   @Input() showTargets: boolean = true;
   @Input() targetTransport: String = '<protocol>/<port>';
+  @Input() gatewayLabel: String = 'Gateway';
   @Input() formatOptions: SelectItem[] = Utility.convertEnumToSelectItem(MonitoringSyslogExport.propInfo['format'].enum);
   @Input() maxTargets: number = -1;
   @Input() customizedValidator: () => boolean = null;

@@ -19,6 +19,7 @@ import { AuthService } from '@app/services/auth.service';
 import { FieldContainerComponent } from '../form/layout/fieldcontainer.component';
 import { ListContainerComponent } from '../form/layout/listcontainer.component';
 import { SyslogComponent } from './syslog.component';
+import { WidgetsModule } from 'web-app-framework';
 
 describe('SyslogComponent', () => {
   let component: SyslogComponent;
@@ -37,7 +38,8 @@ describe('SyslogComponent', () => {
         FormsModule,
         ReactiveFormsModule,
         PrimengModule,
-        NoopAnimationsModule
+        NoopAnimationsModule,
+        WidgetsModule
       ],
       providers: [
         ControllerService,

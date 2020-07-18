@@ -48,7 +48,8 @@ export class EventalertpolicyComponent extends TablevieweditAbstract<IMonitoring
   isTabComponent = true;
   exportMap: CustomExportMap = {
     'spec.requirements': (opts): string => {
-      const resArr =  this.formatRequirements(opts.data);
+      const trimmedValues = Utility.trimUIFields(opts.data);
+      const resArr =  this.formatRequirements(trimmedValues);
       return resArr.toString();
     },
     'spec.destinations': (opts): string => {

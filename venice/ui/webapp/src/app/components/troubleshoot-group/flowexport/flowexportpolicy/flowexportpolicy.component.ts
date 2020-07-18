@@ -11,6 +11,7 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
+import { SyslogUtility } from '@app/common/SyslogUtility';
 
 @Component({
   selector: 'app-flowexportpolicy',
@@ -51,7 +52,7 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
     },
     'spec.exports': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr =  Utility.formatTargets(value, true);
+      const resArr =  SyslogUtility.formatTargets(value, true);
       return resArr.toString();
     },
     'status.propagation-status': (opts): string => {
@@ -120,7 +121,7 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
     const column = col.field;
     switch (column) {
       case 'spec.exports':
-        return Utility.formatTargets(value);
+        return SyslogUtility.formatTargets(value);
       case 'status.propagation-status':
         return this.displayColumn_propagation(value, exportData._ui.pendingDSCmacnameMap, true);
       default:

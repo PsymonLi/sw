@@ -567,4 +567,10 @@ export class TableUtility {
         return 'contains';
     }
   }
+  static displayListInLinesInColumn(list: string[]): string {
+    return (list && list.length > 0) ? list.join('<br>') : '';
+  }
+  static displayListInLinesInCvsColumn(list: string[]): string {
+    return (list && list.length > 0) ? list.join('\n') : '';
+  }
 }

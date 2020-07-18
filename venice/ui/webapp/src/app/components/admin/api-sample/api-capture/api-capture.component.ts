@@ -1,11 +1,12 @@
 import { Component, OnInit, Input, OnChanges } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
-import { Utility, RestAPIRequestResponse, UrlData } from '@app/common/Utility';
+import { Utility, RestAPIRequestResponse, UrlData, Method } from '@app/common/Utility';
 import { TableCol } from '@app/components/shared/tableviewedit';
 import { TableMenuItem } from '@app/components/shared/tableheader/tableheader.component';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { Eventtypes } from '@app/enum/eventtypes.enum.js';
 import * as apiStub from '../../../../../assets/apiSample.json';
+import { UIConfigsService } from '@app/services/uiconfigs.service';
 
 @Component({
   selector: 'app-api-capture',
@@ -27,7 +28,7 @@ export class ApiCaptureComponent implements OnInit, OnChanges {
     { field: 'category', header: 'Category', width: '15%' },
     { field: 'kind', header: 'Kind', width: '20%' },
     { field: 'method', header: 'Method', width: '10%' },
-    { field: 'url', header: 'URL', width: '55%'}
+    { field: 'url', header: 'URL', width: '55%' }
   ];
 
   tableMenuItems: TableMenuItem[] = [
@@ -41,7 +42,9 @@ export class ApiCaptureComponent implements OnInit, OnChanges {
   apiDetails: ApiData[];
   headerList: TableCol[];
 
-  constructor(protected controllerService: ControllerService) { }
+  constructor(
+    protected controllerService: ControllerService,
+    protected uiconfigsService: UIConfigsService) { }
 
   ngOnChanges() {
     if (this.isLiveApiTabSelect) {
@@ -61,6 +64,14 @@ export class ApiCaptureComponent implements OnInit, OnChanges {
     });
   }
 
+  apiFilterHelper(api: RestAPIRequestResponse, method: string, index: number) {
+    if (api[method] instanceof Array) {
+      index = this.addCommentsColumn(api[method] as UrlData[], index);
+    } else {
+      api[method].id = index; // adding index as unique id for row expand
+      this.apiDetails.push(api[method] as ApiData);
+    }
+  }
 
   prepareApiSampleData() {
     this.apiDetails = [];
@@ -69,13 +80,23 @@ export class ApiCaptureComponent implements OnInit, OnChanges {
     for (const key in samples) {
       if (key) {
         const api = samples[key];
-        for (const method in samples[key]) {
-          if (api[method] instanceof Array) {
-            index = this.addCommentsColumn(api[method] as UrlData[], index);
-          } else {
-            api[method].id = index; // adding index as unique id for row expand
-            this.apiDetails.push(api[method] as ApiData);
-            index++;
+       for (const method in samples[key]) {
+          if (this.uiconfigsService.isFeatureEnabled('cloud')) {
+            if (!(Utility.UNSUPPORTED_CATEGORIES_CLOUD.includes(Utility.makeFirstLetterUppercase(samples[key][method].category)) ||
+              Utility.UNSUPPORTED_KINDS_CLOUD.includes(Utility.makeFirstLetterUppercase(samples[key][method].kind)) ||
+              ['troubleshoot', 'orchestrator'].includes(samples[key][method].category)
+              )
+            ) {
+              this.apiFilterHelper(api, method, index);
+              index ++;
+            }
+          } else if (this.uiconfigsService.isFeatureEnabled('enterprise')) {
+            if (!(Utility.UNSUPPORTED_CATEGORIES_ENTERPRISE.includes(Utility.makeFirstLetterUppercase(samples[key][method].category)) ||
+              Utility.UNSUPPORTED_KINDS_ENTERPRISE.includes(Utility.makeFirstLetterUppercase(samples[key][method].kind)))
+            ) {
+              this.apiFilterHelper(api, method, index);
+              index++;
+            }
           }
         }
       }
@@ -108,8 +129,8 @@ export class ApiCaptureComponent implements OnInit, OnChanges {
   }
 
   downloadSelectedRow(selectedRow) {
-    const isSearchURL: boolean  = (selectedRow.url.indexOf('/search/v1/query') >= 0 );
-    const fileName: string = ((this.isLiveApiTabSelect) ? 'venice-live-api-captures_' : 'venice-api-samples_') + `${(selectedRow.category).toLowerCase()}-${(selectedRow.kind).toLowerCase()}-${(selectedRow.method).toLowerCase()}` + (isSearchURL ?  '_' + selectedRow['id'] : '');
+    const isSearchURL: boolean = (selectedRow.url.indexOf('/search/v1/query') >= 0);
+    const fileName: string = ((this.isLiveApiTabSelect) ? 'venice-live-api-captures_' : 'venice-api-samples_') + `${(selectedRow.category).toLowerCase()}-${(selectedRow.kind).toLowerCase()}-${(selectedRow.method).toLowerCase()}` + (isSearchURL ? '_' + selectedRow['id'] : '');
     this.exportToJson(selectedRow, fileName);
   }
 
