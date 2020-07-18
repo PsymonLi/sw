@@ -43,6 +43,7 @@ nic/build/$ARCH/$PIPELINE/lib/libzmq.so                           /nic/lib/libzm
 /usr/lib64/libtinfo.so.5                                          /nic/lib/
 /usr/lib64/libtinfo.so.5                                          /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libtrace.so                         /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libcondvar.so                       /nic/lib/
 
 #binaries
 nic/build/$ARCH/$PIPELINE/bin/pegasus                             /nic/bin/
