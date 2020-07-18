@@ -78,6 +78,9 @@ apulu_impl_state::apulu_impl_state(pds_state *state) {
     table_params.table_id = P4TBL_ID_LIF_VLAN;
     lif_vlan_tbl_ = slhash::factory(&table_params);
     SDK_ASSERT(lif_vlan_tbl_ != NULL);
+
+    // initialize the h/w and s/w clock sync state
+    SDK_ASSERT(clock_sync_.init(state) == SDK_RET_OK);
 }
 
 apulu_impl_state::~apulu_impl_state() {

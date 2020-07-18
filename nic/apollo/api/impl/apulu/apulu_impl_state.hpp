@@ -17,12 +17,12 @@
 #include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/impl/clock/clock_sync.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 
 using sdk::table::handle_t;
 using sdk::table::slhash;
-
 
 namespace api {
 namespace impl {
@@ -76,6 +76,7 @@ private:
     rte_indexer *nat_idxr_;             ///< indexer for NAT table
     rte_indexer *dnat_idxr_;            ///< indexer for DNAT table
     slhash *lif_vlan_tbl_;              ///< (if, vlan) table
+    pds_clock_sync clock_sync_;         ///< h/w and s/w clock sync state
 };
 
 /// \@}
