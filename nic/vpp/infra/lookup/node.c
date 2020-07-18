@@ -292,7 +292,7 @@ pds_p4cpu_hdr_lookup (vlib_main_t *vm,
                       vlib_node_runtime_t *node,
                       vlib_frame_t *from_frame)
 {
-    u32 counter[P4CPU_HDR_LOOKUP_COUNTER_LAST] = {0};
+    u16 counter[P4CPU_HDR_LOOKUP_COUNTER_LAST] = {0};
     u32 n_enq = 0;
     u16 thread_ids[VLIB_FRAME_SIZE], *thread = thread_ids;
     u16 next_enqueue_pak = 0, curr_pak = 0;
@@ -317,7 +317,8 @@ pds_p4cpu_hdr_lookup (vlib_main_t *vm,
                                     &frame_queue_index0,
                                     &frame_queue_index1,
                                     thread, thread+1,
-                                    &offset0, &offset1);
+                                    &offset0, &offset1,
+                                    counter);
             pds_infra_adjust_packet_offset_x2(PDS_PACKET_BUFFER(0),
                                               PDS_PACKET_BUFFER(1),
                                               offset0, offset1);
@@ -404,7 +405,8 @@ pds_p4cpu_hdr_lookup (vlib_main_t *vm,
                                     PDS_PACKET_NEXT_NODE_PTR(0),
                                     &frame_queue_index0,
                                     thread,
-                                    &offset0);
+                                    &offset0,
+                                    counter);
             pds_infra_adjust_packet_offset_x1(PDS_PACKET_BUFFER(0),
                                               offset0);
             if (PREDICT_FALSE(thread[0] != vm->thread_index)) {
@@ -463,7 +465,7 @@ pds_p4cpu_hdr_lookup (vlib_main_t *vm,
                 curr_pak - next_enqueue_pak, 1);
         next_enqueue_pak = curr_pak;
     }
-    counter[1] = n_enq;
+    n_enq = n_enq;
 #define _(n, s) \
     vlib_node_increment_counter (vm, pds_p4cpu_hdr_lookup_node.index,   \
             P4CPU_HDR_LOOKUP_COUNTER_##n,                               \

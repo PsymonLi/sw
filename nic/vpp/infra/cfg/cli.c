@@ -88,7 +88,7 @@ device_cfg_dump (vlib_main_t *vm)
     buf_entry.vm = vm;
 
     PRINT_HEADER_LINE(163);
-    vlib_cli_output(vm, "%-16s%-20s%-16s%-12s%-30s%-16s%-10s%-33s\n",
+    vlib_cli_output(vm, "%-16s%-20s%-16s%-12s%-30s%-16s%-15s%-33s\n",
                     "IPAddr", "MACAddr", "GatewayIP", "MemProfile",
                     "DevProfile", "LearnAgeTimeout", "OperMode", "Flags");
     PRINT_HEADER_LINE(163);

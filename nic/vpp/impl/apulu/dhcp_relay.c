@@ -29,6 +29,7 @@ pds_dhcp_relay_nacl_init (void)
         return;
     }
     params.node = format(0, "pds-dhcp-relay-host-classify");
+    params.nacl_id = NACL_DATA_ID_FLOW_MISS_DHCP_HOST;
     params.frame_queue_index = ~0;
     params.handoff_thread = ~0;
     params.offset = 0;
@@ -46,4 +47,3 @@ pds_dhcp_relay_nacl_init (void)
     vec_free(params.node);
     return;
 }
-

@@ -67,7 +67,8 @@ pds_get_handoff_data_x2 (u16 nacl_id0, u16 nacl_id1,
                          u32 *frame_queue_index0, u32 *frame_queue_index1,
                          u16 *thread_id0, u16 *thread_id1,
                          pds_packet_offset *offset0,
-                         pds_packet_offset *offset1)
+                         pds_packet_offset *offset1,
+                         u16 *counter)
 {
     pds_infra_api_main_t *am = &infra_api_main;
     pds_infra_nacl_handoff_t *data0, *data1;
@@ -78,6 +79,7 @@ pds_get_handoff_data_x2 (u16 nacl_id0, u16 nacl_id1,
     if (PREDICT_TRUE(nacl_id0 == nacl_id1)) {
         if (PREDICT_FALSE(data0->node_id == 0xFFFF)) {
             *next0 = *next1 = am->drop_node_idx;
+            counter[1] += 2;
             goto done;
         }
         *next0 = *next1 = data0->node_id;
@@ -86,10 +88,12 @@ pds_get_handoff_data_x2 (u16 nacl_id0, u16 nacl_id1,
                 (data0->handoff_thread == 0xFFFF) ? thread_index :
                 data0->handoff_thread;
         *offset0 = *offset1 = data0->offset;
+        counter[0] += 2;
         goto done;
     }
     if (PREDICT_FALSE(data0->node_id == 0xFFFF)) {
         *next0 = am->drop_node_idx;
+        counter[1]++;
         goto next;
     }
     *next0 = data0->node_id;
@@ -97,11 +101,13 @@ pds_get_handoff_data_x2 (u16 nacl_id0, u16 nacl_id1,
     *thread_id0 = (data0->handoff_thread == 0xFFFF) ? thread_index :
                   data0->handoff_thread;
     *offset0 = data0->offset;
+    counter[0]++;
 
 next:
     data1 = &am->nacl_id_to_node[nacl_id1];
     if (PREDICT_FALSE(data1->node_id == 0xFFFF)) {
         *next1 = am->drop_node_idx;
+        counter[1]++;
         goto done;
     }
     *next1 = data1->node_id;
@@ -109,6 +115,7 @@ next:
     *thread_id1 = (data1->handoff_thread == 0xFFFF) ? thread_index :
                   data1->handoff_thread;
     *offset1 = data1->offset;
+    counter[0]++;
 
 done:
     return;
@@ -119,7 +126,8 @@ pds_get_handoff_data_x1 (u16 nacl_id0,
                          u16 *next0,
                          u32 *frame_queue_index0,
                          u16 *thread_id0,
-                         pds_packet_offset *offset0)
+                         pds_packet_offset *offset0,
+                         u16 *counter)
 {
     pds_infra_api_main_t *am = &infra_api_main;
     pds_infra_nacl_handoff_t *data0;
@@ -129,12 +137,14 @@ pds_get_handoff_data_x1 (u16 nacl_id0,
 
     if (PREDICT_FALSE(data0->node_id == 0xFFFF)) {
         *next0 = am->drop_node_idx;
+        counter[1]++;
         goto done;
     }
     *next0 = data0->node_id;
     *thread_id0 = (data0->handoff_thread == 0xFFFF) ? thread_index :
                   data0->handoff_thread;
     *offset0 = data0->offset;
+    counter[0]++;
 
 done:
     return;

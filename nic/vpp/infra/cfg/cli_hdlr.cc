@@ -116,7 +116,7 @@ device_cfg_entry_dump (pds_cfg_msg_t *msg, void *buf)
     char bridge_enable[7];
     char learn_enable[6];
     char oren[17];
-    char oper_mode[5];
+    char oper_mode[15];
     char flags[33];
 
     if (msg->device.spec.spec.bridging_en) {
@@ -144,16 +144,29 @@ device_cfg_entry_dump (pds_cfg_msg_t *msg, void *buf)
                 msg->device.spec.spec.memory_profile +1);
     }
 
-    if (msg->device.spec.spec.dev_oper_mode == 0) {
+    switch(msg->device.spec.spec.dev_oper_mode) {
+    case PDS_DEV_OPER_MODE_NONE:
         strcpy(oper_mode, "NONE");
-    } else if (msg->device.spec.spec.dev_oper_mode == 1) {
-        strcpy(oper_mode, "BITW");
-    } else {
+        break;
+    case PDS_DEV_OPER_MODE_HOST:
         strcpy(oper_mode, "HOST");
+        break;
+    case PDS_DEV_OPER_MODE_BITW_SMART_SWITCH:
+        strcpy(oper_mode, "BITW_SWITCH");
+        break;
+    case PDS_DEV_OPER_MODE_BITW_SMART_SERVICE:
+        strcpy(oper_mode, "BITW_SERVICE");
+        break;
+    case PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH:
+        strcpy(oper_mode, "BITW_CLASSIC");
+        break;
+    default:
+        strcpy(oper_mode, "unknown");
+        break;
     }
 
     sprintf(flags, "%s/%s/%s", bridge_enable, learn_enable, oren);
-    snprintf((char *)buf, 163, "%-16s%-20s%-16s%-12s%-30s%-16d%-10s%-33s\n",
+    snprintf((char *)buf, 163, "%-16s%-20s%-16s%-12s%-30s%-16d%-15s%-33s\n",
              ipaddr2str(&(msg->device.spec.spec.device_ip_addr)),
              macaddr2str(msg->device.spec.spec.device_mac_addr),
              ipaddr2str(&(msg->device.spec.spec.gateway_ip_addr)), "DEFAULT",

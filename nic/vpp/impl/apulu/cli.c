@@ -103,24 +103,46 @@ device_impl_db_dump ()
     vlib_main_t *vm = vlib_get_main();
     pds_impl_db_device_entry_t *device;
     ip46_address_t ip;
+    char oper_mode[15];
 
     device = &impl_db_ctx.device;
 
-    PRINT_BUF_LINE(85);
-    vlib_cli_output(vm, "%=21s%=16s%=34s%=16s", "MAC","DeviceIp",
-                    "Flags", "MappingPriority");
-    PRINT_BUF_LINE(85);
+    PRINT_BUF_LINE(105);
+    vlib_cli_output(vm, "%=21s%=16s%=34s%=16s%=15s", "MAC","DeviceIp",
+                    "Flags", "MappingPriority", "OperMode");
+    PRINT_BUF_LINE(105);
 
     ip = device->device_ip;
     ip.ip4.as_u32 = clib_net_to_host_u32(ip.ip4.as_u32);
-    vlib_cli_output(vm, "%=21U%=16U%=34s%=16d\n",
+
+    switch(device->oper_mode) {
+    case PDS_DEV_MODE_NONE:
+        strcpy(oper_mode, "NONE");
+        break;
+    case PDS_DEV_MODE_HOST:
+        strcpy(oper_mode, "HOST");
+        break;
+    case PDS_DEV_MODE_BITW_SMART_SWITCH:
+        strcpy(oper_mode, "BITW_SWITCH");
+        break;
+    case PDS_DEV_MODE_BITW_SMART_SERVICE:
+        strcpy(oper_mode, "BITW_SERVICE");
+        break;
+    case PDS_DEV_MODE_BITW_CLASSIC_SWITCH:
+        strcpy(oper_mode, "BITW_CLASSIC");
+        break;
+    default:
+        strcpy(oper_mode, "unknown");
+        break;
+    }
+    vlib_cli_output(vm, "%=21U%=16U%=34s%=16d%=15s\n",
                     format_ethernet_address, device->device_mac,
                     format_ip46_address, &ip, IP46_TYPE_ANY,
                     ((device->overlay_routing_en & device->symmetric_routing_en)
                     ? "Overlay-Route | Symmetric-Route" :
                     (device->overlay_routing_en ? "Overlay-Route" :
                     (device->symmetric_routing_en ? "Symmetric-Route" : "-"))),
-                    device->mapping_prio);
+                    device->mapping_prio, oper_mode);
     return 0;
 }
 
