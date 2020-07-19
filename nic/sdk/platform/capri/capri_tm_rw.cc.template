@@ -5179,14 +5179,6 @@ capri_tm_debug_stats_get (tm_port_t port, tm_debug_stats_t *debug_stats,
         debug_stats->buffer_stats.drop_counts[sdk::qos::BUFFER_INVALID_OUTPUT_QUEUE_DROP] = pbc_csr.sat_write_error[port].oq_range().convert_to<uint32_t>();
     }
 
-    if (reset) {
-        pbc_csr.cnt_flits[port].all(0);
-        pbc_csr.sat_write_error[port].all(0);
-
-        pbc_csr.cnt_flits[port].write();
-        pbc_csr.sat_write_error[port].write();
-    }
-
     switch(port) {
 //:: for p in range(TM_PORTS):
 //::    pinfo = port_info[p]
