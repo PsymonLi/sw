@@ -316,15 +316,19 @@ pds_svc_vpc_delete (const pds::VPCDeleteRequest *proto_req,
 
     for (int i = 0; i < proto_req->id_size(); i++) {
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
+        // always call MS VPC delete first since it could be the
+        // underlay VPC which is always hijacked to MS
         ret = pds_ms::vpc_delete(key, bctxt);
-        if (ret == SDK_RET_ENTRY_NOT_FOUND) {
-            if (core::agent_state::state()->device()->overlay_routing_en) {
-                // no need to call the pds API in overlay-routing mode
-                if (!batched_internally) {
-                    proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
-                }
-                goto end;
+        if (ret != SDK_RET_OK && 
+            core::agent_state::state()->device()->overlay_routing_en) {
+            // no need to call pds API in overlay routing mode
+            // so exit immediately on failure
+            if (!batched_internally) {
+                proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
             }
+            goto end;
+        }
+        if (ret == SDK_RET_ENTRY_NOT_FOUND) {
             // if VPC is not found in control plane then it might be a
             // tenant VPC in non overlay-routing mode
             if (!core::agent_state::state()->pds_mock_mode()) {
