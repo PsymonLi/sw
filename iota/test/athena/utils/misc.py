@@ -149,8 +149,8 @@ def get_flow_entries(node_name, vnic_id, flow, device_name):
     flow_dump_cmd += (" | grep DstIP:" + flow.dip)
 
     if flow.proto == 'ICMP':
-        type_code = (int(flow.icmp_code) << 8) | int(flow.icmp_type)
-        flow_dump_cmd += (" | grep Sport:" + str(type_code))
+        flow_dump_cmd += (" | grep Type:" + str(flow.icmp_type))
+        flow_dump_cmd += (" | grep Code:" + str(flow.icmp_code))
 
     else:
         flow_dump_cmd += (" | grep Sport:" + str(flow.sport))

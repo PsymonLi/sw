@@ -50,6 +50,7 @@
 
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/sdk/asic/asic.hpp"
+#include "nic/sdk/include/sdk/ip.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/impl/athena/ftl_pollers_client.hpp"
 #include "nic/apollo/api/include/athena/pds_flow_cache.h"
@@ -457,35 +458,71 @@ dump_single_flow(pds_flow_iter_cb_arg_t *iter_cb_arg)
     int scdry = handle.svalid() ? handle.sindex() : -1;
 
     if (key->key_type == KEY_TYPE_IPV6) {
-        CACHE_DUMP_LOG("SrcIP:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x "
-                        "DstIP:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x "
-                        "Dport:%u Sport:%u Proto:%u "
-                        "Ktype:%u VNICID:%u "
-                        "index:%u index_type:%u prmry:%d scdry:%d epoch:%u\n",
-                        key->ip_saddr[0], key->ip_saddr[1], key->ip_saddr[2], key->ip_saddr[3],
-                        key->ip_saddr[4], key->ip_saddr[5], key->ip_saddr[6], key->ip_saddr[7],
-                        key->ip_saddr[8], key->ip_saddr[9], key->ip_saddr[10], key->ip_saddr[11],
-                        key->ip_saddr[12], key->ip_saddr[13], key->ip_saddr[14], key->ip_saddr[15],
-                        key->ip_daddr[0], key->ip_daddr[1], key->ip_daddr[2], key->ip_daddr[3],
-                        key->ip_daddr[4], key->ip_daddr[5], key->ip_daddr[6], key->ip_daddr[7],
-                        key->ip_daddr[8], key->ip_daddr[9], key->ip_daddr[10], key->ip_daddr[11],
-                        key->ip_daddr[12], key->ip_daddr[13], key->ip_daddr[14], key->ip_daddr[15],
-                        key->l4.tcp_udp.dport, key->l4.tcp_udp.sport,
-                        key->ip_proto, (uint8_t)key->key_type, key->vnic_id,
-                        data->index, (uint8_t)data->index_type,
-                        prmry, scdry, handle.epoch());
+        if (key->ip_proto == IP_PROTO_ICMPV6) {
+            CACHE_DUMP_LOG("SrcIP:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x "
+                            "DstIP:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x "
+                            "Type:%u Code:%u Identifier:%u Proto:%u "
+                            "Ktype:%u VNICID:%u "
+                            "index:%u index_type:%u prmry:%d scdry:%d epoch:%u\n",
+                            key->ip_saddr[15], key->ip_saddr[14], key->ip_saddr[13], key->ip_saddr[12],
+                            key->ip_saddr[11], key->ip_saddr[10], key->ip_saddr[9], key->ip_saddr[8],
+                            key->ip_saddr[7], key->ip_saddr[6], key->ip_saddr[5], key->ip_saddr[4],
+                            key->ip_saddr[3], key->ip_saddr[2], key->ip_saddr[1], key->ip_saddr[0],
+                            key->ip_daddr[15], key->ip_daddr[14], key->ip_daddr[13], key->ip_daddr[12],
+                            key->ip_daddr[11], key->ip_daddr[10], key->ip_daddr[9], key->ip_daddr[8],
+                            key->ip_daddr[7], key->ip_daddr[6], key->ip_daddr[5], key->ip_daddr[4],
+                            key->ip_daddr[3], key->ip_daddr[2], key->ip_daddr[1], key->ip_daddr[0],
+                            key->l4.icmp.type, key->l4.icmp.code, key->l4.icmp.identifier,
+                            key->ip_proto, (uint8_t)key->key_type, key->vnic_id,
+                            data->index, (uint8_t)data->index_type,
+                            prmry, scdry, handle.epoch());
+        }
+        else {
+            CACHE_DUMP_LOG("SrcIP:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x "
+                            "DstIP:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x "
+                            "Dport:%u Sport:%u Proto:%u "
+                            "Ktype:%u VNICID:%u "
+                            "index:%u index_type:%u prmry:%d scdry:%d epoch:%u\n",
+                            key->ip_saddr[15], key->ip_saddr[14], key->ip_saddr[13], key->ip_saddr[12],
+                            key->ip_saddr[11], key->ip_saddr[10], key->ip_saddr[9], key->ip_saddr[8],
+                            key->ip_saddr[7], key->ip_saddr[6], key->ip_saddr[5], key->ip_saddr[4],
+                            key->ip_saddr[3], key->ip_saddr[2], key->ip_saddr[1], key->ip_saddr[0],
+                            key->ip_daddr[15], key->ip_daddr[14], key->ip_daddr[13], key->ip_daddr[12],
+                            key->ip_daddr[11], key->ip_daddr[10], key->ip_daddr[9], key->ip_daddr[8],
+                            key->ip_daddr[7], key->ip_daddr[6], key->ip_daddr[5], key->ip_daddr[4],
+                            key->ip_daddr[3], key->ip_daddr[2], key->ip_daddr[1], key->ip_daddr[0],
+                            key->l4.tcp_udp.dport, key->l4.tcp_udp.sport,
+                            key->ip_proto, (uint8_t)key->key_type, key->vnic_id,
+                            data->index, (uint8_t)data->index_type,
+                            prmry, scdry, handle.epoch());
+        }
     } else {
-        CACHE_DUMP_LOG("SrcIP:%d.%d.%d.%d "
-                        "DstIP:%d.%d.%d.%d "
-                        "Dport:%u Sport:%u Proto:%u "
-                        "Ktype:%u VNICID:%u "
-                        "index:%u index_type:%u prmry:%d scdry:%d epoch:%u\n",
-                        key->ip_saddr[3], key->ip_saddr[2], key->ip_saddr[1], key->ip_saddr[0],
-                        key->ip_daddr[3], key->ip_daddr[2], key->ip_daddr[1], key->ip_daddr[0],
-                        key->l4.tcp_udp.dport, key->l4.tcp_udp.sport,
-                        key->ip_proto, (uint8_t)key->key_type, key->vnic_id,
-                        data->index, (uint8_t)data->index_type,
-                        prmry, scdry, handle.epoch());
+        if (key->ip_proto == IP_PROTO_ICMP) {
+            CACHE_DUMP_LOG("SrcIP:%d.%d.%d.%d "
+                            "DstIP:%d.%d.%d.%d "
+                            "Type:%u Code:%u Identifier:%u Proto:%u "
+                            "Ktype:%u VNICID:%u "
+                            "index:%u index_type:%u prmry:%d scdry:%d epoch:%u\n",
+                            key->ip_saddr[3], key->ip_saddr[2], key->ip_saddr[1], key->ip_saddr[0],
+                            key->ip_daddr[3], key->ip_daddr[2], key->ip_daddr[1], key->ip_daddr[0],
+                            key->l4.icmp.type, key->l4.icmp.code, key->l4.icmp.identifier,
+                            key->ip_proto, (uint8_t)key->key_type, key->vnic_id,
+                            data->index, (uint8_t)data->index_type,
+                            prmry, scdry, handle.epoch());
+        }
+        else {
+            CACHE_DUMP_LOG("SrcIP:%d.%d.%d.%d "
+                            "DstIP:%d.%d.%d.%d "
+                            "Dport:%u Sport:%u Proto:%u "
+                            "Ktype:%u VNICID:%u "
+                            "index:%u index_type:%u prmry:%d scdry:%d epoch:%u\n",
+                            key->ip_saddr[3], key->ip_saddr[2], key->ip_saddr[1], key->ip_saddr[0],
+                            key->ip_daddr[3], key->ip_daddr[2], key->ip_daddr[1], key->ip_daddr[0],
+                            key->l4.tcp_udp.dport, key->l4.tcp_udp.sport,
+                            key->ip_proto, (uint8_t)key->key_type, key->vnic_id,
+                            data->index, (uint8_t)data->index_type,
+                            prmry, scdry, handle.epoch());
+        }
     }
     return;
 }

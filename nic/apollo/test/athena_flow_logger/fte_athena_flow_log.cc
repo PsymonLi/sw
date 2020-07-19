@@ -40,6 +40,7 @@ fte_ath_flow_log_cb_fn (pds_flow_log_table_iter_cb_arg_t *arg)
     char                      srcstr[INET6_ADDRSTRLEN];
     char                      dststr[INET6_ADDRSTRLEN];
     uint32_t                  src_addr = 0, dst_addr=0;
+    uint8_t                   ntohs_ip[IP6_ADDR8_LEN];
 
     if (arg == NULL) {
         PDS_TRACE_ERR("fte_ath_flow_log_cb_fn called with NULL arguments \n");
@@ -62,8 +63,10 @@ fte_ath_flow_log_cb_fn (pds_flow_log_table_iter_cb_arg_t *arg)
     }
 
     if (key->key_type == KEY_TYPE_IPV6) {
-        inet_ntop(AF_INET6, key->ip_saddr, srcstr, INET6_ADDRSTRLEN);
-        inet_ntop(AF_INET6, key->ip_daddr, dststr, INET6_ADDRSTRLEN);
+        ipv6_addr_ntoh(key->ip_saddr, ntohs_ip);
+        inet_ntop(AF_INET6, ntohs_ip, srcstr, INET6_ADDRSTRLEN);
+        ipv6_addr_ntoh(key->ip_daddr, ntohs_ip);
+        inet_ntop(AF_INET6, ntohs_ip, dststr, INET6_ADDRSTRLEN);
     } else if (key->key_type == KEY_TYPE_IPV4) {
         src_addr = ntohl(*(uint32_t *)key->ip_saddr);
         dst_addr = ntohl(*(uint32_t *)key->ip_daddr);

@@ -83,6 +83,14 @@ PDS_DEFINE_ENUM_TO_STR(pds_ret_t, PDS_RET_ENTRIES)
 
 #undef PDS_RET_ENTRIES
 
+static inline void ipv6_addr_ntoh(uint8_t *saddr, uint8_t *n_saddr)
+{
+    uint8_t *p = saddr + IP6_ADDR8_LEN - 1;
+    uint8_t *n = n_saddr;
+    for (int _x = 0; _x < IP6_ADDR8_LEN; _x++) {
+        *n++ = *p--;
+    }
+}
 
 
 

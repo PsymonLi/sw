@@ -4,6 +4,10 @@ meta:
     nics    : [ pensando ]
 
 testcases:
+    -   name    : Setup
+        testcase: testcases.networking.setup
+        enable  : True
+
     -   name    : Verify_Athena_App_Running_No_DPDK
         testcase: testcases.networking.athena_app_no_dpdk_verify
         enable  : True
