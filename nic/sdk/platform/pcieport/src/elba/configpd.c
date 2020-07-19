@@ -181,7 +181,7 @@ pcieport_set_pcie_pll_rst(pcieport_t *p, const int on)
     /* XXX ELBA-TODO  HV need pll number here or just do this for both PLLs */
     /* XXX ELBA-TODO  HV updated */
 
-    const int pll = p->port;
+    const int pll = 1; //p->port;
     u_int32_t pll_cfg[3];
 
     pal_reg_rd32w(CFG_PCIE_PLL_(pll), pll_cfg, 3);
@@ -192,9 +192,15 @@ pcieport_set_pcie_pll_rst(pcieport_t *p, const int on)
     /* set resetb and post_resetb according to input value of on */
 
     if (on) {
-        pll_cfg[2] &= ~(0x3 << 2);  /* assert post_resetb, resetb */
+        /* assert post_resetb, resetb */
+        pll_cfg[2] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_2_3_POST_RESETB_MODIFY(pll_cfg[2], 0);
+        pll_cfg[2] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_2_3_RESETB_MODIFY(pll_cfg[2], 0);
+        pll_cfg[1] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_1_3_BYP_EN_MODIFY(pll_cfg[1], 1);
     } else {
-        pll_cfg[2] |= (0x3 << 2);  /* deassert post_resetb, resetb */
+        /* deassert post_resetb, resetb */
+        pll_cfg[2] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_2_3_POST_RESETB_MODIFY(pll_cfg[2], 1);
+        pll_cfg[2] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_2_3_RESETB_MODIFY(pll_cfg[2], 1);
+        pll_cfg[1] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_1_3_BYP_EN_MODIFY(pll_cfg[1], 0);
     }
 
     pal_reg_wr32w(CFG_PCIE_PLL_(pll), pll_cfg, 3);
@@ -316,6 +322,9 @@ pcieportpd_config_host(pcieport_t *p)
             }
 
             pcieportpd_select_pcie_refclk(p->port, host_clock);
+            // Kinjal: FIXME this argument is not accurate. 
+            // We need to pass : host clock or local clock
+            pcieport_set_pcie_pll_rst(p, 0);
             pcieport_set_serdes_reset(p, 0);
             if (pcieportpd_serdes_init() < 0) {
                 return -1;
