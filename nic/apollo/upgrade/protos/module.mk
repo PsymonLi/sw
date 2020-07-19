@@ -9,6 +9,7 @@ MODULE_INCS          = /usr/local/include \
 MODULE_LDLIBS        = pthread
 MODULE_FLAGS         = -O3
 MODULE_EXCLUDE_FLAGS = -O2
-MODULE_SRCS          = $(wildcard ${BLD_PROTOGEN_DIR}/*.cc) \
+MODULE_SRCS          = $(wildcard ${BLD_PROTOGEN_DIR}/gogo.*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/upgrade.*.cc) \
                        $(wildcard ${BLD_PROTOGEN_DIR}/meta/*.cc)
 include ${MKDEFS}/post.mk

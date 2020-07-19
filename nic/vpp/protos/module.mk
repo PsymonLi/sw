@@ -9,5 +9,6 @@ MODULE_INCS          = /usr/local/include \
 #MODULE_LDLIBS        = pthread
 MODULE_FLAGS         = -O3
 MODULE_EXCLUDE_FLAGS = -O2
-MODULE_SRCS          = $(wildcard ${BLD_PROTOGEN_DIR}/*.cc)
+MODULE_SRCS          = $(wildcard ${BLD_PROTOGEN_DIR}/sess_sync.*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/nat_sync.*.cc)
 include ${MKDEFS}/post.mk

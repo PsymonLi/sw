@@ -9,5 +9,6 @@ MODULE_INCS          = /usr/local/include \
 MODULE_FLAGS         = -O3
 MODULE_EXCLUDE_FLAGS = -O2
 MODULE_PREREQS       = device.proto
-MODULE_SRCS          = ${BLD_PROTOGEN_DIR}/*.pb.cc
+MODULE_SRCS          = ${BLD_PROTOGEN_DIR}/events.*.pb.cc \
+                       ${BLD_PROTOGEN_DIR}/device.*.pb.cc
 include ${MKDEFS}/post.mk
