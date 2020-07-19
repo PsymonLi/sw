@@ -304,6 +304,10 @@ nic/build/$ARCH/$PIPELINE/bin/powerctl                              /platform/bi
 nic/build/$ARCH/$PIPELINE/bin/ncsid                                 /platform/bin/
 nic/build/$ARCH/$PIPELINE/bin/cpldmon                               /platform/bin/
 
+nic/build/$ARCH/iris/$ASIC/bin/elbtrace                             /platform/bin/
+nic/build/$ARCH/iris/$ASIC/bin/elbmon                               /platform/bin/
+
+
 # Libraries
 nic/build/$ARCH/$PIPELINE/lib/libnicmgr.so                          /platform/lib/
 nic/build/$ARCH/$PIPELINE/lib/libnicmgr_iris.so                     /platform/lib/
