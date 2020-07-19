@@ -82,6 +82,8 @@ using debug::PacketBufferResponseMsg;
 using debug::QueueCreditsGetResponse;
 using debug::SessionCtrlRequestMsg;
 using debug::SessionCtrlSpec;
+using debug::SessionCtrlResponse;
+using debug::SessionCtrlResponseMsg;
 using debug::OifListGetResponseMsg;
 using debug::OifListGetRequestMsg;
 using debug::AgingTraceUpdateRequestMsg;
@@ -122,10 +124,12 @@ public:
     Status TraceGet(ServerContext *context,
                     const Empty *req,
                     TraceResponseMsg *rsp) override;
-    
     Status SessionCtrlUpdate(ServerContext *context,
                              const SessionCtrlRequestMsg *req,
                              Empty      *rsp) override;
+    Status SessionCtrlGet(ServerContext *context,
+                          const Empty *req,
+                          SessionCtrlResponseMsg *rsp) override;
     Status GenericOpn(ServerContext *context,
                       const GenericOpnRequestMsg *req_msg,
                       GenericOpnResponseMsg *rsp_msg);

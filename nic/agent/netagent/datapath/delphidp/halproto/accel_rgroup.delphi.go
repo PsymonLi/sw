@@ -246,6 +246,8 @@ It has these top-level messages:
 	QueueCreditsGetResponse
 	SessionCtrlSpec
 	SessionCtrlRequestMsg
+	SessionCtrlResponse
+	SessionCtrlResponseMsg
 	OifListGetRequest
 	OifListGetRequestMsg
 	OifListGetResponse

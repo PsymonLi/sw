@@ -352,9 +352,20 @@ trace_get (TraceResponseMsg *rsp)
 hal_ret_t
 session_ctrl_update (SessionCtrlSpec& spec)
 {
-    for (uint32_t i = 0; i < hal::g_hal_cfg.num_data_cores; i++) {
-        fte::set_fte_max_sessions(i, spec.max_session());
+    g_hal_state->set_max_sessions(spec.max_session());
+    return HAL_RET_OK;
+}
+
+hal_ret_t
+session_ctrl_get (SessionCtrlResponseMsg *rsp)
+{
+    auto response = rsp->add_response();
+
+    if (!response) {
+        return HAL_RET_OOM;
     }
+    response->set_api_status(types::API_STATUS_OK);
+    response->set_max_session(g_hal_state->get_max_sessions());
     return HAL_RET_OK;
 }
 

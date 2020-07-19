@@ -363,6 +363,16 @@ DebugServiceImpl::TraceGet(ServerContext *context,
 }
 
 Status
+DebugServiceImpl::SessionCtrlGet(ServerContext *context,
+                                 const Empty *req,
+                                 SessionCtrlResponseMsg *rsp)
+{
+    HAL_TRACE_DEBUG("Received session-ctrl get");
+    hal::session_ctrl_get(rsp);
+    return Status::OK;
+}
+
+Status
 DebugServiceImpl::GenericOpn(ServerContext *context,
                              const GenericOpnRequestMsg *req_msg,
                              GenericOpnResponseMsg *rsp_msg)

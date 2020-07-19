@@ -494,7 +494,7 @@ validate_nwsec_create (SecurityProfileSpec& spec, SecurityProfileResponse *rsp)
     hal_ret_t       ret = HAL_RET_OK;
     // All FTE instances have same max session limit,
     // so get from one FTE instance.
-    uint64_t max_session_limit = fte::get_fte_max_sessions(0);
+    uint64_t max_session_limit = g_hal_state->get_max_sessions();
 
     // key-handle field must be set
     if (!spec.has_key_or_handle()) {
@@ -902,7 +902,7 @@ validate_nwsec_update (SecurityProfileSpec & spec, SecurityProfileResponse *rsp)
     hal_ret_t   ret = HAL_RET_OK;
     // All FTE instances have same max session limit,
     // so get from one FTE instance.
-    uint64_t max_session_limit = fte::get_fte_max_sessions(0);
+    uint64_t max_session_limit = g_hal_state->get_max_sessions();
 
     // key-handle field must be set
     if (!spec.has_key_or_handle()) {

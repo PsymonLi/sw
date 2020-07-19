@@ -65,6 +65,7 @@ service Debug {
   rpc MemoryTrim (types.Empty) returns (types.Empty) {}
   rpc QueueCreditsGet (types.Empty) returns (QueueCreditsGetResponse) {}
   rpc SessionCtrlUpdate (SessionCtrlRequestMsg) returns (types.Empty) {}    
+  rpc SessionCtrlGet (types.Empty) returns (SessionCtrlResponseMsg) {}
 
   rpc OifListGet (OifListGetRequestMsg) returns (stream OifListGetResponseMsg) {}
   rpc AgingTraceUpdate(AgingTraceUpdateRequestMsg) returns (types.Empty) {}
@@ -769,6 +770,15 @@ message SessionCtrlSpec {
 }
 message SessionCtrlRequestMsg {
   repeated SessionCtrlSpec spec = 1;
+}
+
+message SessionCtrlResponse {
+  types.ApiStatus   api_status     = 1 [(gogoproto.moretags) = "venice:api_status"];    // API status code
+  uint64            max_session    = 2;      // DSC max sessions allowed
+}
+
+message SessionCtrlResponseMsg {
+  repeated SessionCtrlResponse response = 1;
 }
 
 message OifListGetRequest {

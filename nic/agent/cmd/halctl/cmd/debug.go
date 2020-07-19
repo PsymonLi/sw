@@ -8,9 +8,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/pensando/sw/nic/agent/cmd/halctl/utils"
 	"github.com/pensando/sw/nic/agent/netagent/datapath/halproto"
@@ -206,6 +208,13 @@ var sessionCtrlDebugCmd = &cobra.Command{
 	Run:   sessionCtrlDebugCmdHandler,
 }
 
+var sessionCtrlShowCmd = &cobra.Command{
+	Use:   "session-ctrl",
+	Short: "show session-ctrl",
+	Long:  "show session-ctrl",
+	Run:   sessionCtrlShowCmdHandler,
+}
+
 var microSegCmd = &cobra.Command{
 	Use:   "mseg",
 	Short: "micro-segmentation [enable|disable]",
@@ -263,6 +272,8 @@ func init() {
 	fwDebugCmd.AddCommand(secProfDebugCmd)
 	showCmd.AddCommand(traceShowCmd)
 	showCmd.AddCommand(regShowCmd)
+	showCmd.AddCommand(sessionCtrlShowCmd)
+	sessionCtrlShowCmd.Flags().Bool("yaml", false, "Output in yaml")
 	testDebugCmd.AddCommand(testSendFinDebugCmd)
 	testDebugCmd.AddCommand(testClockSyncDebugCmd)
 	testDebugCmd.AddCommand(testFteInjectPacketCmd)
@@ -1473,6 +1484,41 @@ func sessionCtrlDebugCmdHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 	fmt.Println("Success: SessionCtrl Update successfull.")
+}
+
+func sessionCtrlShowCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	defer c.Close()
+	client := halproto.NewDebugClient(c)
+
+	var empty *halproto.Empty
+
+	// HAL call
+	respMsg, err := client.SessionCtrlGet(context.Background(), empty)
+	if err != nil {
+		fmt.Printf("Getting SessionCtrl failed. %v\n", err)
+		return
+	}
+
+	// Print Max Sessions allowed
+	for _, resp := range respMsg.Response {
+		if resp.ApiStatus != halproto.ApiStatus_API_STATUS_OK {
+			fmt.Printf("Operation failed with %v error\n", resp.ApiStatus)
+			continue
+		}
+		if cmd != nil && cmd.Flags().Changed("yaml") {
+			respType := reflect.ValueOf(resp)
+			b, _ := yaml.Marshal(respType.Interface())
+			fmt.Println(string(b))
+		} else {
+			fmt.Printf("DSC Max sessions allowed : %d\n", resp.GetMaxSession())
+		}
+	}
 }
 
 func testFteInjectPacketCmdHandler(cmd *cobra.Command, args []string) {

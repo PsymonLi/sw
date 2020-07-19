@@ -880,6 +880,24 @@ func (mr *MockDebugClientMockRecorder) SessionCtrlUpdate(ctx, in interface{}, op
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SessionCtrlUpdate", reflect.TypeOf((*MockDebugClient)(nil).SessionCtrlUpdate), varargs...)
 }
 
+// SessionCtrlGet mocks base method
+func (m *MockDebugClient) SessionCtrlGet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SessionCtrlResponseMsg, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SessionCtrlGet", varargs...)
+	ret0, _ := ret[0].(*SessionCtrlResponseMsg)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SessionCtrlGet indicates an expected call of SessionCtrlGet
+func (mr *MockDebugClientMockRecorder) SessionCtrlGet(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SessionCtrlGet", reflect.TypeOf((*MockDebugClient)(nil).SessionCtrlGet), varargs...)
+}
+
 // OifListGet mocks base method
 func (m *MockDebugClient) OifListGet(ctx context.Context, in *OifListGetRequestMsg, opts ...grpc.CallOption) (Debug_OifListGetClient, error) {
 	varargs := []interface{}{ctx, in}
@@ -1506,6 +1524,19 @@ func (m *MockDebugServer) SessionCtrlUpdate(arg0 context.Context, arg1 *SessionC
 // SessionCtrlUpdate indicates an expected call of SessionCtrlUpdate
 func (mr *MockDebugServerMockRecorder) SessionCtrlUpdate(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SessionCtrlUpdate", reflect.TypeOf((*MockDebugServer)(nil).SessionCtrlUpdate), arg0, arg1)
+}
+
+// SessionCtrlGet mocks base method
+func (m *MockDebugServer) SessionCtrlGet(arg0 context.Context, arg1 *Empty) (*SessionCtrlResponseMsg, error) {
+	ret := m.ctrl.Call(m, "SessionCtrlGet", arg0, arg1)
+	ret0, _ := ret[0].(*SessionCtrlResponseMsg)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SessionCtrlGet indicates an expected call of SessionCtrlGet
+func (mr *MockDebugServerMockRecorder) SessionCtrlGet(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SessionCtrlGet", reflect.TypeOf((*MockDebugServer)(nil).SessionCtrlGet), arg0, arg1)
 }
 
 // OifListGet mocks base method

@@ -41,6 +41,8 @@ using debug::HbmCacheResponseMsg;
 using debug::SchedulerStatsResponse;
 using debug::SessionCtrlRequestMsg;
 using debug::SessionCtrlSpec;
+using debug::SessionCtrlResponse;
+using debug::SessionCtrlResponseMsg;
 using debug::AgingTraceUpdateRequest;
 using debug::FteTraceUpdateRequest;
 
@@ -93,6 +95,7 @@ hal_ret_t trace_get(debug::TraceResponseMsg *rsp);
 hal_ret_t flush_logs (FlushLogsResponse *rsp);
 hal_ret_t thread_get (ThreadResponseMsg *rsp);
 hal_ret_t session_ctrl_update(debug::SessionCtrlSpec& spec);
+hal_ret_t session_ctrl_get(debug::SessionCtrlResponseMsg *rsp);
 
 // HBM BW
 hal_ret_t hbm_bw_get(const HbmBwGetRequest *req, HbmBwGetResponseMsg *rsp);

@@ -455,6 +455,8 @@ public:
         product_name_ = pname;
     }
 
+    uint64_t get_max_sessions(void) const { return max_sessions_; }
+    void set_max_sessions(uint64_t max_sessions) { max_sessions_ = max_sessions; }
 
 private:
     // following can come from shared memory or non-linux HBM memory
@@ -527,6 +529,7 @@ private:
     sdk::lib::dev_forwarding_mode_t forwarding_mode_;
     uint32_t                mgmt_vlan_;
     uint64_t                mgmt_if_mac_ = 0;
+    uint64_t                max_sessions_;
     uint32_t                swm_vlan_;
     hal_uplink_flood_mode_t uplink_flood_mode_;
     if_id_t                 app_redir_if_id_;
@@ -990,6 +993,10 @@ public:
         return oper_db_->set_product_name(pname);
     }
 
+    uint64_t get_max_sessions(void) const { return oper_db_->get_max_sessions(); }
+    void set_max_sessions(uint64_t max_sessions) {
+        return oper_db_->set_max_sessions(max_sessions);
+    }
 
 private:
     // following come from shared memory or non-linux HBM memory

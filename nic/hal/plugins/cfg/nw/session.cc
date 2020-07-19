@@ -2446,7 +2446,7 @@ check_and_generate_sys_max_sess_limit_event (session_t *session)
     eventtypes::EventTypes       sys_max_sess_limit_event;
     uint64_t                     max_session_limit = 0;
 
-    max_session_limit = fte::get_fte_max_sessions(session->fte_id);
+    max_session_limit = g_hal_state->get_max_sessions();
 
     if (!max_session_limit) {
         // DSC max session limit not configured, return
