@@ -241,6 +241,36 @@ marvell_get_port_status (uint8_t port, uint16_t *data)
     return rc;
 }
 
+// \@brief      clear all the counters for all ports
+// \@return    0 on success, < 0 on failure
+int
+marvell_clear_port_cntrs_all (void)
+{
+    int ret;
+
+    ret = cpld_mdio_wr(MARVELL_STAT_OPT_REG, MARVELL_STATS_OP_BUSY_CLR_ALL,
+                       MARVELL_GLOBAL1_PHY_ADDR);
+    usleep(1000);
+    return ret;
+}
+
+// \@brief      Given a port number clear all the counters for that port
+// \@param[in]  port 0 - 6
+// \@return    0 on success, < 0 on failure
+int
+marvell_clear_port_cntrs (uint8_t port)
+{
+    int ret;
+
+    port = port + 1;
+    ret = cpld_mdio_wr(MARVELL_STAT_OPT_REG,
+                       (MARVELL_STATS_OP_BUSY_CLR |
+                        port << MARVELL_STATS_OP_PORT_SHIFT),
+                       MARVELL_GLOBAL1_PHY_ADDR);
+    usleep(1000);
+    return ret;
+}
+
 static uint32_t
 marvell_get_port_cntr (uint8_t port, uint8_t counter)
 {

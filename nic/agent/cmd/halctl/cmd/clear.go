@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -63,6 +64,13 @@ var systemPortStatsClearCmd = &cobra.Command{
 	Run:   systemPortStatsClearCmdHandler,
 }
 
+var systemInternalPortStatsClearCmd = &cobra.Command{
+	Use:   "internal",
+	Short: "clear system statistics port internal",
+	Long:  "clear system statistics port internal",
+	Run:   systemInternalPortStatsClearCmdHandler,
+}
+
 func init() {
 	rootCmd.AddCommand(clearCmd)
 	clearCmd.AddCommand(systemClearCmd)
@@ -72,8 +80,10 @@ func init() {
 	systemStatsClearCmd.AddCommand(systemLifStatsClearCmd)
 	systemStatsClearCmd.AddCommand(systemPortStatsClearCmd)
 
+	systemPortStatsClearCmd.AddCommand(systemInternalPortStatsClearCmd)
+
 	systemLifStatsClearCmd.Flags().Uint64Var(&lifID, "id", 0, "Specify lif-id")
-	systemPortStatsClearCmd.Flags().StringVar(&portNum, "port", "eth1/1", "Specify port number")
+	systemPortStatsClearCmd.PersistentFlags().StringVar(&portNum, "port", "", "Specify port number. eg eth1/1 or 1 to 7 for internal ports")
 
 	clearCmd.AddCommand(platformClearCmd)
 	platformClearCmd.AddCommand(platformHbmClearCmd)
@@ -328,6 +338,53 @@ func systemPortStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 	handlePortStatsClearCmd(cmd, nil)
+}
+
+func systemInternalPortStatsClearCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 1 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	defer c.Close()
+
+	// HAL call
+	client := halproto.NewInternalClient(c)
+
+	var req *halproto.InternalPortRequest
+	var intPortNum uint64
+
+	if cmd != nil && cmd.Flags().Changed("port") {
+		intPortNum, err = strconv.ParseUint(portNum, 10, 8)
+		if (err != nil) || (intPortNum < 1) || (intPortNum > 7) {
+			fmt.Printf("Invalid argument. port number must be between 1 - 7 for internal ports\n")
+			return
+		}
+		// Get port info for specified port
+		req = &halproto.InternalPortRequest{
+			PortNumber: uint32(intPortNum),
+		}
+	} else {
+		// Get all Ports
+		req = &halproto.InternalPortRequest{}
+	}
+
+	reqMsg := &halproto.InternalPortRequestMsg{
+		Request: []*halproto.InternalPortRequest{req},
+	}
+
+	// HAL call
+	_, err = client.InternalPortStatsClear(context.Background(), reqMsg)
+	if err != nil {
+		fmt.Printf("Clearing Internal port status failed. %v\n", err)
+		return
+	}
+
 }
 
 var platformClearCmd = &cobra.Command{

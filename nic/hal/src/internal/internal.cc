@@ -296,6 +296,32 @@ internal_port_get (internal::InternalPortRequest& req,
     return HAL_RET_OK;
 }
 
+hal_ret_t
+internal_port_stats_clear (internal::InternalPortRequest& req,
+                           types::Empty* rsp)
+{
+    int     ret;
+    bool    has_port_num;
+    uint8_t port_num;
+
+    port_num = (uint8_t)req.port_number();
+    has_port_num = (port_num != 0);
+    port_num = port_num - 1;
+
+    if (has_port_num) {
+        if (port_num < MARVELL_NPORTS) {
+            ret = sdk::marvell::marvell_clear_port_cntrs(port_num);
+        } else {
+            HAL_TRACE_ERR("Port No must be between 1-7");
+            return HAL_RET_INVALID_ARG;
+        }
+    } else {
+        ret = sdk::marvell::marvell_clear_port_cntrs_all();
+    }
+    HAL_TRACE_DEBUG("internal_port_clear: returning {} ", ret);
+    return ret == 0 ? HAL_RET_OK : HAL_RET_ERR;
+}
+
 static inline
 void timeit(const std::string &msg, int count, std::function<void()> fn)
 {

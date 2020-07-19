@@ -1815,6 +1815,24 @@ func (mr *MockInternalClientMockRecorder) InternalPortGet(ctx, in interface{}, o
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InternalPortGet", reflect.TypeOf((*MockInternalClient)(nil).InternalPortGet), varargs...)
 }
 
+// InternalPortStatsClear mocks base method
+func (m *MockInternalClient) InternalPortStatsClear(ctx context.Context, in *InternalPortRequestMsg, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "InternalPortStatsClear", varargs...)
+	ret0, _ := ret[0].(*EmptyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InternalPortStatsClear indicates an expected call of InternalPortStatsClear
+func (mr *MockInternalClientMockRecorder) InternalPortStatsClear(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InternalPortStatsClear", reflect.TypeOf((*MockInternalClient)(nil).InternalPortStatsClear), varargs...)
+}
+
 // TestFteInjectPackets mocks base method
 func (m *MockInternalClient) TestFteInjectPackets(ctx context.Context, in *TestInjectFtePacketRequestMsg, opts ...grpc.CallOption) (*TestInjectFtePacketResponseMsg, error) {
 	varargs := []interface{}{ctx, in}
@@ -2595,6 +2613,19 @@ func (m *MockInternalServer) InternalPortGet(arg0 context.Context, arg1 *Interna
 // InternalPortGet indicates an expected call of InternalPortGet
 func (mr *MockInternalServerMockRecorder) InternalPortGet(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InternalPortGet", reflect.TypeOf((*MockInternalServer)(nil).InternalPortGet), arg0, arg1)
+}
+
+// InternalPortStatsClear mocks base method
+func (m *MockInternalServer) InternalPortStatsClear(arg0 context.Context, arg1 *InternalPortRequestMsg) (*EmptyResponse, error) {
+	ret := m.ctrl.Call(m, "InternalPortStatsClear", arg0, arg1)
+	ret0, _ := ret[0].(*EmptyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InternalPortStatsClear indicates an expected call of InternalPortStatsClear
+func (mr *MockInternalServerMockRecorder) InternalPortStatsClear(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InternalPortStatsClear", reflect.TypeOf((*MockInternalServer)(nil).InternalPortStatsClear), arg0, arg1)
 }
 
 // TestFteInjectPackets mocks base method

@@ -109,6 +109,9 @@ service Internal {
   // Internal (Marvell) port status
   rpc InternalPortGet (InternalPortRequestMsg) returns (InternalPortResponseMsg) {}
 
+  // Internal (Marvell) port stats clear
+  rpc InternalPortStatsClear (InternalPortRequestMsg) returns (EmptyResponse) {}
+
   // Inject Packets to FTE
   rpc TestFteInjectPackets (TestInjectFtePacketRequestMsg) returns (TestInjectFtePacketResponseMsg) {}
 }
@@ -1945,6 +1948,6 @@ message InternalPortRequest {
 }
 
 message InternalPortRequestMsg {
-    repeated InternalPortRequest  request = 1;
+    repeated InternalPortRequest request = 1;
 }
 

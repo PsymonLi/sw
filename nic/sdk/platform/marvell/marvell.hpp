@@ -130,6 +130,8 @@ marvell_get_status_flowctrl (uint16_t status, bool *fctrl)
 void marvell_switch_init(marvell_cfg_t *marvell_cfg);
 int marvell_get_port_status(uint8_t port, uint16_t *data);
 int marvell_get_hwport_status(uint8_t hw_port, uint16_t *data);
+int marvell_clear_port_cntrs_all();
+int marvell_clear_port_cntrs(uint8_t port);
 int marvell_get_port_stats(uint8_t port, marvell_port_stats_t *stats);
 
 }   // namespace marvell
