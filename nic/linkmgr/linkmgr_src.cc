@@ -1467,6 +1467,8 @@ port_metrics_update_helper (port_args_t *port_args,
 hal_ret_t
 port_metrics_update (void)
 {
+    if(getenv("ELBA_NO_PORT_MAC")) 
+          return HAL_RET_OK;
     return port_get_all(port_metrics_update_helper, NULL);
 }
 

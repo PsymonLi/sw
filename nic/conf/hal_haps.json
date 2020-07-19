@@ -1,5 +1,5 @@
 {
-  "mode": "haps",
+  "mode": "hw",
   "sw" :
   {
     "grpc_port": "50054",
