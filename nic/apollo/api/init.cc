@@ -492,7 +492,7 @@ pds_init (pds_init_params_t *params)
         // set upgrade mode and domain in asic config
         asic_cfg.init_mode = init_mode;
         asic_cfg.init_domain  = init_domain;
-        
+
         // impl init
         SDK_ASSERT(impl_base::init(params, &asic_cfg) == SDK_RET_OK);
 
@@ -527,6 +527,9 @@ pds_init (pds_init_params_t *params)
 
         // raise HAL_UP event
         sdk::ipc::broadcast(EVENT_ID_PDS_HAL_UP, NULL, 0);
+
+        // start periodic clock sync between h/w and s/w
+        impl_base::pipeline_impl()->clock_sync_start();
     } else {
         // upgrade soft init
         ret = api::upg_soft_init(params);

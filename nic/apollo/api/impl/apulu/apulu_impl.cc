@@ -20,6 +20,7 @@
 #include "nic/sdk/platform/ring/ring.hpp"
 #include "nic/sdk/platform/pal/include/pal_mem.h"
 #include "nic/sdk/asic/common/asic_common.hpp"
+#include "nic/sdk/lib/periodic/periodic.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl.hpp"
@@ -991,6 +992,7 @@ apulu_impl::pipeline_init(void) {
 
     ret = qos_impl::qos_init();
     SDK_ASSERT(ret == SDK_RET_OK);
+
     return SDK_RET_OK;
 }
 
@@ -1308,6 +1310,17 @@ apulu_impl::write_to_txdma_table(mem_addr_t addr, uint32_t tableid,
     SDK_ASSERT(ret == SDK_RET_OK);
     sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, CACHE_LINE_SIZE,
                                                   P4PLUS_CACHE_INVALIDATE_TXDMA);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+apulu_impl::clock_sync_start(void) {
+    // wait until periodic thread is ready to have us start timers
+    while (!sdk::lib::periodic_thread_is_running()) {
+        pthread_yield();
+    }
+    // start periodic clock sync timer
+    apulu_impl_db()->clock_sync_start();
     return SDK_RET_OK;
 }
 

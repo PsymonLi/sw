@@ -18,8 +18,8 @@
 #include "gen/p4gen/p4/include/p4pd.h"
 
 // TODO: move to right place
-#define PDS_TIMER_ID_CLOCK_SYNC         666
-#define PDS_TIMER_ID_CLOCK_ROLLOVER     999
+#define PDS_TIMER_ID_PERIODIC_CLOCK_SYNC 666
+#define PDS_TIMER_ID_CLOCK_ROLLOVER      999
 
 /// hardware and software clock synchronization functionality
 class pds_clock_sync {
@@ -80,6 +80,14 @@ public:
     /// \param[in] timeout_ms    timeout duration in milliseconds
     void start_rollover_timer(uint64_t timeout_ms);
 
+    /// \brief start periodic synchronization of h/w and s/w clocks
+    /// \return SDK_RET_OK if success or error code in case of failure
+    sdk_ret_t periodic_sync_start(void);
+
+    /// \brief stop periodic synchronization of h/w and s/w clocks
+    /// \return SDK_RET_OK if success or error code in case of failure
+    sdk_ret_t periodic_sync_stop(void);
+
 private:
     /// \brief
     void compute_clock_delta_cb_(void *timer, uint32_t timer_id, void *ctxt);
@@ -100,7 +108,7 @@ private:
     // h/w clock frequency
     uint64_t clock_freq_;
     // periodic timers
-    void *delta_timer_;
+    void *sync_timer_;
     void *rollover_timer_;
     double clock_adjustment_;
     // +ve or -ve delta between s/w and h/w clocks in nano seconds

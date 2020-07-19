@@ -109,6 +109,16 @@ apulu_impl_state::table_transaction_end(void) {
     return SDK_RET_OK;
 }
 
+sdk_ret_t
+apulu_impl_state::clock_sync_start(void) {
+    return clock_sync_.periodic_sync_start();
+}
+
+sdk_ret_t
+apulu_impl_state::clock_sync_stop(void) {
+    return clock_sync_.periodic_sync_stop();
+}
+
 static void
 nacl_dump_header (int fd)
 {

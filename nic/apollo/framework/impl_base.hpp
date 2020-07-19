@@ -250,10 +250,10 @@ public:
         return sdk::SDK_RET_INVALID_OP;
     }
 
-    /// \brief Return ASIC impl class instance
+    /// \brief return ASIC impl class instance
     static asic_impl_base *asic_impl(void) { return asic_impl_; }
 
-    /// \brief Return pipeline impl class instance
+    /// \brief return pipeline impl class instance
     static pipeline_impl_base *pipeline_impl(void) { return pipeline_impl_; }
 
 private:

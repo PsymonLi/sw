@@ -276,8 +276,30 @@ public:
         return SDK_RET_ERR;
     }
 
+    /// \brief      some features in the pipeline require h/w and s/w clocks to
+    ///             be in sync, and this API needs to be implemented by the
+    ///             pipeline if pipeline has such features (e.g., ERSPAN)
+    /// \return     SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t clock_sync_start(void) {
+        return SDK_RET_ERR;
+    }
+
+    /// \brief      API to write to hbm memory used by p4+
+    /// \param[in]  va        virtual address to write to
+    /// \param[in]  pa        physical address to write to
+    /// \param[in]  data      data to write
+    /// \param[in]  size      size of the data to write
+    /// \param[in]  action    cache invalidate action to perform
+    /// \return     SDK_RET_OK on success, failure status code on error
     sdk_ret_t p4plus_write(uint64_t va, uint64_t pa, uint8_t *data,
                            uint32_t size, p4plus_cache_action_t action);
+
+    /// \brief      API to read hbm memory used by p4+
+    /// \param[in]  va        virtual address to read from
+    /// \param[in]  pa        physical address to read from
+    /// \param[in]  data      buffer to copy the data to
+    /// \param[in]  size      size of the data to read
+    /// \return     SDK_RET_OK on success, failure status code on error
     sdk_ret_t p4plus_read(uint64_t va, uint64_t pa, uint8_t *data,
                           uint32_t size);
 

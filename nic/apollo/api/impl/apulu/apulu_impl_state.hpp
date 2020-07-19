@@ -59,6 +59,14 @@ public:
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t table_transaction_end(void);
 
+    /// \brief  start periodic clock sync timer
+    /// \return #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t clock_sync_start(void);
+
+    /// \brief  stop periodic clock sync timer
+    /// \return #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t clock_sync_stop(void);
+
     /// \brief accessors
     rte_indexer *nacl_idxr(void) { return nacl_idxr_; }
     rte_indexer *high_prio_nacl_idxr(void) { return high_prio_nacl_idxr_; }

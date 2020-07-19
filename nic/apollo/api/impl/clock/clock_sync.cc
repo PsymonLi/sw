@@ -34,7 +34,7 @@ pds_clock_sync::pds_clock_sync() {
     multiplier_ms_ = 0;
     multiplier_ns_ = 0;
     clock_freq_ = 0;
-    delta_timer_ = NULL;
+    sync_timer_ = NULL;
     rollover_timer_ = NULL;
     clock_adjustment_ = 0;
     delta_ns_ = 0;
@@ -109,6 +109,26 @@ pds_clock_sync::start_rollover_timer(uint64_t timeout_ms) {
 }
 
 sdk_ret_t
+pds_clock_sync::periodic_sync_start(void) {
+    sync_timer_ = sdk::lib::timer_schedule(PDS_TIMER_ID_PERIODIC_CLOCK_SYNC,
+                                           k_clock_sync_intvl_ms_,
+                                           this, compute_clock_delta_cb, true);
+    if (likely(sync_timer_)) {
+        return SDK_RET_OK;
+    }
+    return SDK_RET_ERR;
+}
+
+sdk_ret_t
+pds_clock_sync::periodic_sync_stop(void) {
+    if (likely(sync_timer_)) {
+        sdk::lib::timer_delete(sync_timer_);
+        return SDK_RET_OK;
+    }
+    return SDK_RET_ERR;
+}
+
+sdk_ret_t
 pds_clock_sync::init(pds_state *state) {
     pal_ret_t pal_ret;
     p4pd_table_properties_t tinfo;
@@ -117,13 +137,6 @@ pds_clock_sync::init(pds_state *state) {
     if (state->platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
         return SDK_RET_OK;
     }
-
-#if 0
-    // wait until the periodic thread is ready
-    while (!sdk::lib::periodic_thread_is_running()) {
-        pthread_yield();
-    }
-#endif
 
     // read the clock frequency
     clock_freq_ = sdk::asic::pd::asicpd_clock_freq_get();
@@ -151,16 +164,6 @@ pds_clock_sync::init(pds_state *state) {
     multiplier_ms_ =
         state->catalogue()->clock_get_multiplier_ms(clock_freq_);
     // initialize the clock delta
-    compute_clock_delta_cb(NULL, PDS_TIMER_ID_CLOCK_SYNC, this);
-#if 0
-    g_clock_delta_timer =
-        sdk::lib::timer_schedule(HAL_TIMER_ID_CLOCK_SYNC,            // timer_id
-                                 HAL_TIMER_ID_CLOCK_SYNC_INTVL,
-                                 (void *)0,    // ctxt
-                                 clock_delta_comp_cb, true);
-    if (!g_clock_delta_timer) {
-        return SDK_RET_ERR;
-    }
-#endif
+    compute_clock_delta_cb(NULL, PDS_TIMER_ID_PERIODIC_CLOCK_SYNC, this);
     return SDK_RET_OK;
 }
