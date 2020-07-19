@@ -52,6 +52,12 @@ public:
         return (clock_freq_ * 1000000);
     }
 
+    /// \brief return clock table entry width in p4
+    /// \return entry width in bytes
+    uint16_t entry_width(void) const {
+        return entry_width_;
+    }
+
     /// \brief return the clock sync timer duration in milliseconds
     /// \return clock sync timer duration in milliseconds
     uint64_t clock_sync_intvl_ms(void) const {
@@ -62,12 +68,6 @@ public:
     /// \return clock sync timer duration in nanoseconds
     uint64_t clock_sync_intvl_ns(void) const {
         return k_clock_sync_intvl_ns_;
-    }
-
-    /// \brief set the delta between h/w and s/w clocks in nanoseconds
-    /// \param[in] delta_ns    time delta in nanoseconds
-    void set_delta_ns(int64_t delta_ns) {
-        delta_ns_ = delta_ns;
     }
 
     /// \brief set the delta between h/w and s/w clocks in nanoseconds
@@ -89,8 +89,14 @@ public:
     sdk_ret_t periodic_sync_stop(void);
 
 private:
-    /// \brief
-    void compute_clock_delta_cb_(void *timer, uint32_t timer_id, void *ctxt);
+    /// \brief    periodic timer callback function to sync h/w and s/w clocks
+    /// \param[in] timer       opaque timer instance
+    /// \param[in] timer_id    unique timer id to identify the timer that fired
+    /// \param[in] ctxt        opaque callback context passed, this context was
+    ///                        provided to the timer wheel when timer was
+    ///                        started
+    static void compute_clock_delta_cb(void *timer, uint32_t timer_id,
+                                       void *ctxt);
 
 private:
     // p4 clock table properties
