@@ -176,6 +176,11 @@ func (v *VeniceExporter) WriteEvents(events []*evtsapi.Event) error {
 	if ok && (errStatus.Code() == codes.Unavailable || errStatus.Code() == codes.Internal) {
 		v.eventsMgr.Lock()
 		v.eventsMgr.connectionAlive = false
+		// close events manager client
+		if v.eventsMgr.rpcClient != nil {
+			v.eventsMgr.rpcClient.Close()
+			v.eventsMgr.rpcClient = nil
+		}
 		v.eventsMgr.Unlock()
 		go v.reconnect()
 	}
