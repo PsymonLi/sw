@@ -127,6 +127,7 @@ static sdk_ret_t
 port_restore_ (port *port_p)
 {
     sdk_ret_t ret;
+    in_mem_fsm_logger *sm_logger = NULL;
     uint64_t mask = 1 << (port_p->port_num() - 1);
 
     // init the bringup and debounce timers
@@ -139,7 +140,11 @@ port_restore_ (port *port_p)
     // set the source mac addr for pause frames
     // TODO required during upgrade?
     // port_p->port_mac_set_pause_src_addr(args->mac_addr);
-
+    sm_logger = in_mem_fsm_logger::factory(PORT_IN_MEM_LOGGER_CAPACITY,
+                                           sizeof(port_link_sm_t));
+    SDK_ASSERT(sm_logger);
+    port_p->set_sm_logger(sm_logger);
+    
     // init MAC stats hbm region address
     ret = port::port_mac_stats_init(port_p);
     if (ret != SDK_RET_OK) {

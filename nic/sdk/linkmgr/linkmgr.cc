@@ -23,6 +23,7 @@
 using namespace sdk::event_thread;
 using namespace sdk::ipc;
 using namespace boost::interprocess;
+using namespace sdk::utils;
 using namespace sdk::lib;
 
 #define SDK_THREAD_ID_LINKMGR_MIN SDK_IPC_ID_LINKMGR_AACS_SERVER
@@ -1121,6 +1122,7 @@ port_create (port_args_t *args)
     sdk_ret_t ret;
     void *mem;
     port *port_p;
+    in_mem_fsm_logger *sm_logger = NULL;
 
     port_init_num_lanes(args);
     if (validate_port_create (args) == false) {
@@ -1145,9 +1147,12 @@ port_create (port_args_t *args)
         return port_p;
     }
 
+    sm_logger = in_mem_fsm_logger::factory(PORT_IN_MEM_LOGGER_CAPACITY,
+                                           sizeof(port_link_sm_t));
+    SDK_ASSERT(sm_logger);
+    port_p->set_sm_logger(sm_logger);
     // init the bringup and debounce timers
     port_p->timers_init();
-
     port_p->set_port_num(args->port_num);
     port_p->set_port_type(args->port_type);
     port_p->set_port_speed(args->port_speed);

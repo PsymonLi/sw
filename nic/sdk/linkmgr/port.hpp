@@ -35,6 +35,8 @@
 #define MAX_MAC_SYNC_ICAL_TIMEOUT 5000
 #define MAX_ICAL_EYE_RETRIES      100
 
+#define PORT_IN_MEM_LOGGER_CAPACITY                64
+
 using sdk::utils::in_mem_fsm_logger;
 
 namespace sdk {
@@ -64,13 +66,13 @@ typedef struct port_header_s {
 
 class port {
 public:
-    port(size_t sm_logger_capacity=64) {
-        sm_logger_ = in_mem_fsm_logger::factory(sm_logger_capacity,
-                                                sizeof(port_link_sm_t));
+    port() {
     }
 
     ~port() {
-        in_mem_fsm_logger::destroy(sm_logger_);
+        if (sm_logger_) {
+            in_mem_fsm_logger::destroy(sm_logger_);
+        } 
     }
 
     port_oper_status_t oper_status(void) const {
@@ -225,10 +227,11 @@ public:
         report_sm_(link_sm);
     }
 
-    in_mem_fsm_logger *sm_logger(void) {
-        return this->sm_logger_;
-    }
-
+    in_mem_fsm_logger *sm_logger(void) const { return this->sm_logger_; } 
+    void set_sm_logger(in_mem_fsm_logger *sm_logger) {
+        sm_logger_ = sm_logger;
+    }     
+    
     sdk::event_thread::timer_t *link_bringup_timer(void) {
         return &this->link_bringup_timer_;
     }
