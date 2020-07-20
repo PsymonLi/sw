@@ -338,7 +338,7 @@ func (m *VirtualRouterStatus) References(tenant string, path string, resp map[st
 		uref, ok := resp[tag]
 		if !ok {
 			uref = apiintf.ReferenceObj{
-				RefType: apiintf.ReferenceType("NamedRef"),
+				RefType: apiintf.ReferenceType("WeakRef"),
 				RefKind: "RouteTable",
 			}
 		}

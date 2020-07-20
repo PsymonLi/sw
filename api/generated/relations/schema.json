@@ -131,7 +131,7 @@
   ],
   "network.VirtualRouterStatus": [
     {
-      "Type": "NamedRef",
+      "Type": "WeakRef",
       "To": "network/RouteTable",
       "Field": "RouteTable"
     }

@@ -34,7 +34,7 @@ import (
 const maxConsistentUpdateRetries = 10
 const maxOverlayOps = 4096
 const maxErrorReport = 10
-const maxRestoreCommitRetries = 3
+const maxRestoreCommitRetries = 6
 
 type dryRunMarker struct {
 	verVer int64
@@ -1516,7 +1516,11 @@ func (c *overlay) commit(ctx context.Context, verVer int64, otxn kvstore.Txn) (k
 				// give it a random sleep between 0 - 500ms
 				jitter := rand.Intn(500000)
 				time.Sleep(time.Duration(int(time.Microsecond) * jitter))
-				log.Infof("[%v] commit failed, retrying, retry %d", c.id, retries)
+				log.Errorf("[%v] commit failed, retrying, retry %d err: (%s)", c.id, retries, err)
+				if strings.Contains(err.Error(), "ResourceExhausted") {
+					maxEntries = maxEntries / 2
+					log.Errorf("Failed due to ResourceExhausted cut max entries to [%d]", maxEntries)
+				}
 				continue
 			}
 			return resp, err
@@ -1524,7 +1528,7 @@ func (c *overlay) commit(ctx context.Context, verVer int64, otxn kvstore.Txn) (k
 		break
 	}
 
-	if retries == maxConsistentUpdateRetries {
+	if retries == maxRetries {
 		// failed after max retries
 		log.Errorf("[%v/%v] failed commit after max retries", c.tenant, c.id)
 		return resp, errors.New("commit failed")

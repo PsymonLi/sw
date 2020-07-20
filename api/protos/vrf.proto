@@ -38,7 +38,7 @@ message VirtualRouterSpec {
 message VirtualRouterStatus {
     // Handle allocated in the system.
     uint64 Handle               = 1 [(gogoproto.jsontag) = "id,omitempty"];
-    string RouteTable           = 2 [(gogoproto.jsontag) = "route-table,omitempty", (venice.objRelation) = {Type: "NamedRef", To: "network/RouteTable"}];
+    string RouteTable           = 2 [(gogoproto.jsontag) = "route-table,omitempty", (venice.objRelation) = {Type: "WeakRef", To: "network/RouteTable"}];
     RouteDistinguisher RD       = 3 [(gogoproto.jsontag) = "rd,omitempty"];
     // The status of the configuration propagation to the Naples
     security.PropagationStatus PropagationStatus = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "propagation-status"];

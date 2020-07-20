@@ -60,7 +60,7 @@ var ObjRelations = map[string][]apiintf.ObjRelation{
 		{Type: "NamedRef", To: "network/IPAMPolicy", Field: "DefaultIPAMPolicy"},
 	},
 	"network.VirtualRouterStatus": []apiintf.ObjRelation{
-		{Type: "NamedRef", To: "network/RouteTable", Field: "RouteTable"},
+		{Type: "WeakRef", To: "network/RouteTable", Field: "RouteTable"},
 	},
 	"security.NetworkSecurityPolicySpec": []apiintf.ObjRelation{
 		{Type: "NamedRef", To: "security/SecurityGroup", Field: "AttachGroups"},
