@@ -28,7 +28,12 @@
 
 #define FTL_RET_CHECK_AND_GOTO(_status, _label, _msg, _args...) {\
     if (unlikely((_status) != sdk::SDK_RET_OK)) {\
-        SDK_TRACE_ERR(_msg, ##_args);\
+        if (((_status) == SDK_RET_ENTRY_EXISTS) ||\
+            ((_status) == SDK_RET_RETRY)) {\
+            SDK_TRACE_VERBOSE(_msg, ##_args);\
+        } else {\
+            SDK_TRACE_ERR(_msg, ##_args);\
+        }\
         goto _label;\
     }\
 }
