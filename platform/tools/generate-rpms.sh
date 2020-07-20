@@ -29,6 +29,7 @@ sles12sp4-build.pensando.io
 sles12sp5-build.pensando.io
 sles15-build.pensando.io
 sles15sp1-build.pensando.io
+centos78-build.pensando.io
 "
 
 if [ -z "$TOPDIR" ] ; then
