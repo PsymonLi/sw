@@ -36,7 +36,7 @@ typedef void (*port_log_fn_t)(sdk_trace_level_e trace_level,
                               const char *msg);
 
 typedef void (*xcvr_event_notify_t)(xcvr_event_info_t *xcvr_event_info);
-typedef void (*linkmgr_async_response_cb_t)(void *cookie, sdk_ret_t status);
+typedef void (*linkmgr_async_response_cb_t)(sdk_ret_t status, void *ctxt);
 
 typedef struct linkmgr_cfg_s {
     platform_type_t     platform_type;
@@ -129,7 +129,14 @@ void linkmgr_threads_stop(void);
 void linkmgr_threads_wait(void);
 void port_store_user_config(port_args_t *port_args);
 sdk_ret_t port_quiesce(void *port_p, linkmgr_async_response_cb_t response_cb,
-                       void *reponse_cookie);
+                       void *reponse_ctxt);
+
+/// \brief     invoke quiesce on all ports
+/// \param[in] response_cb callback to be invoked after quiescing
+/// \param[in] response_ctxt callback context
+/// \return    SDK_RET_OK on success, failure status code on error
+sdk_ret_t port_quiesce_all(linkmgr_async_response_cb_t response_cb,
+                           void *response_ctxt);
 sdk_ret_t linkmgr_threads_suspend(void);
 sdk_ret_t linkmgr_threads_resume(void);
 bool linkmgr_threads_suspended(void);

@@ -29,11 +29,9 @@ void xcvr_event_cb(xcvr_event_info_t *xcvr_event_info);
  */
 void port_event_cb(port_event_info_t *port_event_info);
 
-/// \brief port quiesce callback
-typedef void(*port_quiesce_async_response_cb_t)(sdk_ret_t);
-
 /// \brief port quiesce function
-sdk_ret_t port_quiesce_all(port_quiesce_async_response_cb_t);
+sdk_ret_t port_quiesce_all(sdk::linkmgr::linkmgr_async_response_cb_t,
+                           void *response_ctxt);
 
 /**
   * @brief   reset port stats

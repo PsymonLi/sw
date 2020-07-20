@@ -47,12 +47,11 @@ class linkmgr_state    *g_linkmgr_state;
 
 typedef struct port_quiesce_walk_cb_ctxt_s {
     bool err;
-    port_quiesce_async_response_cb_t response_cb;
+    linkmgr_async_response_cb_t response_cb;
+    void *response_ctxt;
     uint32_t req_count;
 } port_quiesce_walk_cb_ctxt_t;
 
-// TODO : right now port walk is multiple requests.
-// when it is a single request, can remove this variable
 static port_quiesce_walk_cb_ctxt_t g_port_quiesce_walk_ctxt;
 
 sdk::lib::thread *
@@ -1486,20 +1485,24 @@ mac_stats_update (void)
 }
 
 static void
-port_quiesce_response_cb (void *ctxt, sdk_ret_t status)
+port_quiesce_response_cb (sdk_ret_t status, void *ctxt)
 {
-    port_quiesce_walk_cb_ctxt_t *ctx = (port_quiesce_walk_cb_ctxt_t *)ctxt;
+    port_quiesce_walk_cb_ctxt_t *walk_ctxt =
+        (port_quiesce_walk_cb_ctxt_t *)ctxt;
 
     SDK_TRACE_DEBUG("[upgrade] port_quiesce_response_cb, req_count %u, "
-                    "resp_cb %p", ctx->req_count, ctx->response_cb);
-    SDK_ASSERT(ctx->req_count);
-    ctx->req_count--;
+                    "resp_cb %p", walk_ctxt->req_count, walk_ctxt->response_cb);
+
+    SDK_ASSERT(walk_ctxt->req_count);
+    walk_ctxt->req_count--;
+
     if (status != SDK_RET_OK) {
-        ctx->err = true;
+        walk_ctxt->err = true;
     }
-    if ((ctx->req_count == 0) && (ctx->response_cb)) {
-       ctx->response_cb(ctx->err ? SDK_RET_ERR : SDK_RET_OK);
-       ctx->response_cb = NULL;
+    if ((walk_ctxt->req_count == 0) && (walk_ctxt->response_cb)) {
+       walk_ctxt->response_cb(walk_ctxt->err ? SDK_RET_ERR : SDK_RET_OK,
+                              walk_ctxt->response_ctxt);
+       walk_ctxt->response_cb = NULL;
     }
 }
 
@@ -1507,7 +1510,8 @@ static void
 port_quiesce_walk_cb (port_args_t *port_args, void *ctxt, hal_ret_t hal_ret)
 {
     port_t *pi_p;
-    port_quiesce_walk_cb_ctxt_t *ctx = (port_quiesce_walk_cb_ctxt_t *)ctxt;
+    port_quiesce_walk_cb_ctxt_t *walk_ctxt =
+        (port_quiesce_walk_cb_ctxt_t *)ctxt;
     sdk_ret_t ret;
 
     if (hal_ret != HAL_RET_OK) {
@@ -1517,25 +1521,28 @@ port_quiesce_walk_cb (port_args_t *port_args, void *ctxt, hal_ret_t hal_ret)
     if (pi_p == NULL) {
         return;
     }
-    ctx->req_count++;
-    ret = sdk::linkmgr::port_quiesce(pi_p->pd_p, port_quiesce_response_cb, ctx);
+    walk_ctxt->req_count++;
+    ret = sdk::linkmgr::port_quiesce(pi_p->pd_p, port_quiesce_response_cb,
+                                     walk_ctxt);
     if (ret != SDK_RET_OK) {
-        ctx->err = true;
+        walk_ctxt->err = true;
     }
     return;
 }
 
 sdk_ret_t
-port_quiesce_all (port_quiesce_async_response_cb_t response_cb)
+port_quiesce_all (linkmgr_async_response_cb_t response_cb, void *response_ctxt)
 {
-    port_quiesce_walk_cb_ctxt_t *ctx = &g_port_quiesce_walk_ctxt;
+    port_quiesce_walk_cb_ctxt_t *walk_ctxt = &g_port_quiesce_walk_ctxt;
 
-    ctx->response_cb = response_cb;
-    ctx->err = false;
-    ctx->req_count = 0;
-    port_get_all(port_quiesce_walk_cb, ctx);
-    if (ctx->err) {
-        ctx->response_cb = NULL;
+    walk_ctxt->response_cb = response_cb;
+    walk_ctxt->response_ctxt = response_ctxt;
+    walk_ctxt->err = false;
+    walk_ctxt->req_count = 0;
+
+    port_get_all(port_quiesce_walk_cb, walk_ctxt);
+    if (walk_ctxt->err) {
+        walk_ctxt->response_cb = NULL;
         return SDK_RET_ERR;
     }
     return SDK_RET_IN_PROGRESS;

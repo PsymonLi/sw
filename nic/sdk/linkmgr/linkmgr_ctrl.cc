@@ -95,17 +95,40 @@ port_disable_req_handler (ipc_msg_ptr msg, const void *ctx)
 }
 
 static void
+port_quiesce_all_req_handler (ipc_msg_ptr msg, const void *ctx)
+{
+    uint32_t i;
+    port *port_p;
+    linkmgr_entry_data_t *data = (linkmgr_entry_data_t *)msg->data();
+    linkmgr_entry_data_t resp_data = *data;
+    sdk_ret_t ret = SDK_RET_OK;
+
+    for (i = 0; i < LINKMGR_MAX_PORTS; i++) {
+        port_p = g_linkmgr_state->port_p(i);
+        if (port_p) {
+            ret = port_p->port_quiesce();
+            if (ret != SDK_RET_OK) {
+                SDK_TRACE_ERR("Failed to quiesce port %u, ret %u",
+                              port_p->port_num(), ret);
+                break;
+            }
+        }
+    }
+    resp_data.status = ret;
+    respond(msg, &resp_data, sizeof(resp_data));
+}
+
+static void
 port_quiesce_req_handler (ipc_msg_ptr msg, const void *ctx)
 {
     linkmgr_entry_data_t *data = (linkmgr_entry_data_t *)msg->data();
     port *port_p = (port *)data->ctxt;
-    linkmgr_entry_data_t resp = *data;
+    linkmgr_entry_data_t resp_data = *data;
     sdk_ret_t ret;
 
     ret = port_p->port_quiesce();
-    // send response back to blocked caller
-    resp.status = ret;
-    respond(msg, &resp, sizeof(resp));
+    resp_data.status = ret;
+    respond(msg, &resp_data, sizeof(resp_data));
 }
 
 /// \brief  start the link poll and transceiver poll timers
@@ -372,6 +395,8 @@ linkmgr_event_thread_init (void *ctxt)
                         port_quiesce_req_handler, NULL);
     reg_request_handler(LINKMGR_OPERATION_PORT_SWITCHOVER,
                         linkmgr_ctrl_switchover, NULL);
+    reg_request_handler(LINKMGR_OPERATION_PORT_QUIESCE_ALL,
+                        port_quiesce_all_req_handler, NULL);
 }
 
 void

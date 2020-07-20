@@ -75,7 +75,7 @@ upg_ev_ready (upg_ev_params_t *params)
 }
 
 static void
-port_quiesce_response_cb (sdk_ret_t status)
+port_quiesce_all_response_cb (sdk_ret_t status, void *ctxt)
 {
     PDS_TRACE_DEBUG("Quiesced all uplink ports, status %u", status);
     // stop the learn thread
@@ -94,7 +94,7 @@ upg_ev_link_down (upg_ev_params_t *params)
     sdk_ret_t ret;
 
     PDS_TRACE_DEBUG("Quiescing down all uplink ports");
-    ret = port_quiesce_all(port_quiesce_response_cb);
+    ret = port_quiesce_all(port_quiesce_all_response_cb, NULL);
     if ((ret != SDK_RET_OK) && (ret != SDK_RET_IN_PROGRESS)) {
         PDS_TRACE_ERR("Uplink Port quiescing failed, err %u", ret);
     }

@@ -218,8 +218,8 @@ port_rsp_handler (ipc_msg_ptr msg, const void *request_cookie)
     linkmgr_entry_data_t *data = (linkmgr_entry_data_t *)msg->data();
 
     if (msg->length() && data->response_cb) {
-        SDK_TRACE_DEBUG("Responding the status, status %u", data->status);
-        data->response_cb(data->response_cookie, data->status);
+        SDK_TRACE_DEBUG("Responding status %u", data->status);
+        data->response_cb(data->status, data->response_ctxt);
     }
 }
 
@@ -227,8 +227,7 @@ port_rsp_handler (ipc_msg_ptr msg, const void *request_cookie)
 // linkmgr thread notification by other threads
 //------------------------------------------------------------------------------
 static sdk_ret_t
-linkmgr_notify (uint8_t operation, linkmgr_entry_data_t *data,
-                q_notify_mode_t mode)
+linkmgr_notify (uint8_t operation, linkmgr_entry_data_t *data)
 {
     // notify the ctrl thread about the config pending
     switch (operation) {
@@ -993,20 +992,14 @@ static sdk_ret_t
 port_enable (port *port_p)
 {
     sdk_ret_t ret;
-    linkmgr_entry_data_t data;
+    linkmgr_entry_data_t data = { 0 };
 
     // wait for linkmgr control thread to process port event
     while (!is_linkmgr_ctrl_thread_ready()) {
         pthread_yield();
     }
-
     data.ctxt  = port_p;
-    data.timer = NULL;
-    data.response_cb = NULL;
-
-    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_ENABLE, &data,
-                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
-
+    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_ENABLE, &data);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Error notifying control-thread for port enable");
     }
@@ -1019,20 +1012,14 @@ static sdk_ret_t
 port_disable (port *port_p)
 {
     sdk_ret_t ret;
-    linkmgr_entry_data_t data;
+    linkmgr_entry_data_t data = { 0 };
 
     // wait for linkmgr control thread to process port event
     while (!is_linkmgr_ctrl_thread_ready()) {
         pthread_yield();
     }
-
     data.ctxt  = port_p;
-    data.timer = NULL;
-    data.response_cb = NULL;
-
-    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_DISABLE, &data,
-                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
-
+    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_DISABLE, &data);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Error notifying control-thread for port disable");
     }
@@ -1043,27 +1030,50 @@ port_disable (port *port_p)
 // Else trigger hal-control thread to invoke method
 sdk_ret_t
 port_quiesce (void *pd_p, linkmgr_async_response_cb_t response_cb,
-              void *response_cookie)
+              void *response_ctxt)
 {
     sdk_ret_t ret;
-    linkmgr_entry_data_t data;
+    linkmgr_entry_data_t data = { 0 };
     port *port_p = (port *)pd_p;
 
     // wait for linkmgr control thread to process port event
     while (!is_linkmgr_ctrl_thread_ready()) {
         pthread_yield();
     }
-
     data.ctxt  = port_p;
-    data.timer = NULL;
     data.response_cb = response_cb;
-    data.response_cookie = response_cookie;
-
-    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_QUIESCE, &data,
-                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
-
+    data.response_ctxt = response_ctxt;
+    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_QUIESCE, &data);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Error notifying control-thread for port quiesce");
+    }
+    return ret;
+}
+
+/// \brief     invoke quiesce on all ports
+/// \param[in] response_cb callback to be invoked after quiescing
+/// \param[in] response_ctxt callback context
+/// \return    SDK_RET_OK on success, failure status code on error
+sdk_ret_t
+port_quiesce_all (linkmgr_async_response_cb_t response_cb,
+                  void *response_ctxt)
+{
+    sdk_ret_t ret;
+    linkmgr_entry_data_t data = { 0 };
+
+    if (!g_linkmgr_cfg.use_shm) {
+        SDK_TRACE_DEBUG("port quiesce all not supported for non-shm");
+        return SDK_RET_ERR;
+    }
+    // wait for linkmgr control thread to process port event
+    while (!is_linkmgr_ctrl_thread_ready()) {
+        pthread_yield();
+    }
+    data.response_cb = response_cb;
+    data.response_ctxt = response_ctxt;
+    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_QUIESCE_ALL, &data);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Error notifying control-thread for port quiesce all");
     }
     return ret;
 }
@@ -1082,8 +1092,7 @@ port_upgrade_switchover (void)
     while (!is_linkmgr_ctrl_thread_ready()) {
         pthread_yield();
     }
-    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_SWITCHOVER, &data,
-                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
+    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_SWITCHOVER, &data);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Error notifying control-thread for port switchover");
     }

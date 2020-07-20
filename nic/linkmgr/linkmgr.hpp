@@ -16,9 +16,8 @@ namespace linkmgr {
 
 using sdk::types::xcvr_state_t;
 using sdk::types::xcvr_pid_t;
+using sdk::linkmgr::linkmgr_async_response_cb_t;
 
-/// \brief port quiesce callback
-typedef void (*port_quiesce_async_response_cb_t)(sdk_ret_t);
 typedef void (*port_get_cb_t)(port_args_t *args,
                               void *ctxt,
                               hal_ret_t hal_ret_status);
@@ -37,7 +36,8 @@ void port_event_notify(port_event_info_t *port_event_info);
 void xcvr_event_notify(xcvr_event_info_t *xcvr_event_info);
 hal_ret_t port_metrics_update(void);
 hal_ret_t mac_stats_update(void);
-sdk_ret_t port_quiesce_all(port_quiesce_async_response_cb_t response_cb);
+sdk_ret_t port_quiesce_all(linkmgr_async_response_cb_t response_cb,
+                           void *response_ctxt);
 
 }    // namespace linkmgr
 

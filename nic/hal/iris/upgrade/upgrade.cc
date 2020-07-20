@@ -37,12 +37,13 @@ upgrade_handler::CompatCheckHandler(UpgCtx& upgCtx)
 }
 
 static void
-port_quiesce_response_cb (sdk_ret_t ret)
+port_quiesce_response_cb (sdk_ret_t ret, void *ctxt)
 {
     if (ret != SDK_RET_OK) {
         HAL_TRACE_DEBUG("[upgrade] Port quiesce failed, err {}", ret);
     }
-    hal::svc::send_upg_stage_status(DELPHIC_UPG_ID_HAL, ret == SDK_RET_OK? true : false);
+    hal::svc::send_upg_stage_status(DELPHIC_UPG_ID_HAL,
+                                    ret == SDK_RET_OK? true : false);
     return;
 }
 
@@ -73,7 +74,7 @@ upgrade_handler::LinkDownHandler (UpgCtx& upgCtx)
     // disable all uplink ports
     // - as part of this delphi notifications will be sent out per port
     // flush PB/TM for all uplinks
-    sdk_ret = linkmgr::port_quiesce_all(port_quiesce_response_cb);
+    sdk_ret = linkmgr::port_quiesce_all(port_quiesce_response_cb, NULL);
     if ((sdk_ret != SDK_RET_OK) && (sdk_ret != SDK_RET_IN_PROGRESS)) {
         HAL_TRACE_ERR("[upgrade]  Port quiesce failed, err {}", sdk_ret);
         rsp = HdlrResp(::upgrade::FAIL, SDK_RET_ENTRIES_str(sdk_ret));
