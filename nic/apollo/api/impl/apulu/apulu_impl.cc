@@ -864,9 +864,9 @@ apulu_impl::table_init_(void) {
 
     // program the default policy transposition scheme
     sdk::asic::pd::asicpd_program_table_constant(P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
-                                                FW_ACTION_XPOSN_GLOBAL_PRIORTY);
+                                                 FW_ACTION_XPOSN_GLOBAL_PRIORTY);
     sdk::asic::pd::asicpd_program_table_constant(P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
-                                                FW_ACTION_XPOSN_GLOBAL_PRIORTY);
+                                                 FW_ACTION_XPOSN_GLOBAL_PRIORTY);
 
     // program thread ids for nexthop table
     sdk::asic::pd::asicpd_program_table_thread_constant(P4TBL_ID_NEXTHOP, 0, 0);

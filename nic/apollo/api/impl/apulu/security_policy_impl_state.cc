@@ -11,6 +11,7 @@
 #include "nic/apollo/api/include/pds_policy.hpp"
 #include "nic/apollo/api/impl/apulu/security_policy_impl.hpp"
 #include "nic/apollo/api/impl/apulu/security_policy_impl_state.hpp"
+#include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 
 namespace api {
 namespace impl {
@@ -39,6 +40,19 @@ security_policy_impl_state::security_policy_impl_state(pds_state *state) {
     v6_max_rules_ = state->mempartition()->max_elements("sacl_v6") - 1;
     v4_rule_stats_region_addr_ =
         state->mempartition()->start_addr("rule_stats_v4");
+    if (v4_rule_stats_region_addr_ != INVALID_MEM_ADDRESS) {
+        sdk::asic::pd::asicpd_program_table_constant(
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P1_1,
+                           v4_rule_stats_region_addr_);
+        sdk::asic::pd::asicpd_program_table_constant(
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P2_1,
+                           v4_rule_stats_region_addr_);
+    } else {
+        sdk::asic::pd::asicpd_program_table_constant(
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P1_1, 0);
+        sdk::asic::pd::asicpd_program_table_constant(
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P2_1, 0);
+    }
 }
 
 security_policy_impl_state::~security_policy_impl_state() {
