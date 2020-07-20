@@ -164,8 +164,9 @@ nat_err_t nat_flow_dealloc(u32 vpc_hw_id, ip4_address_t dip, u16 dport, u8 proto
 nat_err_t nat_flow_xlate(u32 vpc_id, ip4_address_t dip, u16 dport,
                          u8 protocol, ip4_address_t sip, u16 sport,
                          ip4_address_t *pvt_ip, u16 *pvt_port);
-bool nat_flow_is_dst_valid(u32 vpc_id, ip4_address_t dip, u16 dport,
-                           u8 protocol, nat_addr_type_t nat_addr_type);
+void nat_flow_is_dst_valid(u32 vpc_id, ip4_address_t dip, u16 dport,
+                           u8 protocol, nat_addr_type_t nat_addr_type,
+                           bool *dstip_valid, bool *dstport_valid);
 nat_err_t nat_usage(u32 vpc_hw_id, u8 protocol, nat_addr_type_t nat_addr_type,
                     u32 *num_ports_total, u32 *num_ports_alloc,
                     u32 *num_flows_alloc);

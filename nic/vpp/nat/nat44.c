@@ -1133,26 +1133,30 @@ nat_flow_dealloc(u32 vpc_id, ip4_address_t dip, u16 dport, u8 protocol,
 //
 // Check if destination is part of local NAT port blocks
 //
-bool
+void
 nat_flow_is_dst_valid(u32 vpc_id, ip4_address_t dip, u16 dport,
-                      u8 protocol, nat_addr_type_t nat_addr_type)
+                      u8 protocol, nat_addr_type_t nat_addr_type,
+                      bool *dstip_valid, bool *dstport_valid)
 {
     nat_port_block_t *pb = NULL;
     nat_vpc_config_t *vpc;
     nat_proto_t nat_proto;
     nat_port_block_t *nat_pb;
 
+    *dstip_valid = false;
+    *dstport_valid = false;
+
     if (PREDICT_FALSE(vpc_id >= vec_len(nat_main.vpc_config))) {
-        return false;
+        return;
     }
     vpc = vec_elt(nat_main.vpc_config, vpc_id);
     if (PREDICT_FALSE(!vpc || vpc->num_port_blocks == 0)) {
-        return false;
+        return;
     }
 
     nat_proto = get_nat_proto_from_proto(protocol);
     if (PREDICT_FALSE(nat_proto == NAT_PROTO_UNKNOWN)) {
-        return false;
+        return;
     }
 
     clib_spinlock_lock(&vpc->lock);
@@ -1160,7 +1164,7 @@ nat_flow_is_dst_valid(u32 vpc_id, ip4_address_t dip, u16 dport,
     nat_pb = vpc->nat_pb[nat_addr_type][nat_proto - 1];
     if (PREDICT_FALSE(pool_elts(nat_pb) == 0)) {
         clib_spinlock_unlock(&vpc->lock);
-        return false;
+        return;
     }
 
     pool_foreach (pb, nat_pb,
@@ -1168,13 +1172,17 @@ nat_flow_is_dst_valid(u32 vpc_id, ip4_address_t dip, u16 dport,
         if (pb->addr.as_u32 == dip.as_u32 &&
             dport >= pb->start_port &&
             dport <= pb->end_port) {
+            *dstip_valid = true;
+            *dstport_valid = true;
             clib_spinlock_unlock(&vpc->lock);
-            return true;
+            return;
+        } else if (pb->addr.as_u32 == dip.as_u32) {
+            *dstip_valid = true;
         }
     }));
 
     clib_spinlock_unlock(&vpc->lock);
-    return false;
+    return;
 }
 
 //

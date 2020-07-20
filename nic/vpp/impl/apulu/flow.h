@@ -949,7 +949,7 @@ pds_flow_classify_no_vnic (vlib_buffer_t *p,
 {
     if (!bitw_svc && hdr->rx_packet &&
         (hdr->flags & VPP_CPU_FLAGS_IPV4_2_VALID) &&
-        !hdr->flow_hit) {
+        !hdr->flow_hit  && hdr->is_l3_vnid) {
         /*
          * When vnic lookup fails in P4, P4/P4+ cannot do a route lookup on
          * the source ip to determine route hit with NAT rule enabled. We

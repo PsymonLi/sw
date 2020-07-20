@@ -13,6 +13,7 @@
         _(ERR_DEALLOC, "NAT dealloc due to error" )         \
         _(INVALID_EXISTS, "Invalid NAT flow, PB exists" )   \
         _(INVALID, "Invalid NAT flow, PB does not exist" )  \
+        _(INVALID_DROP, "Invalid NAT flow, drop" )          \
         _(ICMP_ERR, "ICMP error packets sent to the host" ) \
 
 #define foreach_nat_next                                    \

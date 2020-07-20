@@ -227,6 +227,7 @@ nat_internal_invalidate (vlib_buffer_t *p0, u16 *next0, u32 *counter,
     u8 protocol;
     nat_addr_type_t nat_addr_type = NAT_ADDR_TYPE_INTERNET;
     u8 cidx;
+    bool dstip_valid, dstport_valid;
 
     vpc_id = vnet_buffer2(p0)->pds_nat_data.vpc_id;
     ip40 = vlib_buffer_get_current(p0);
@@ -251,10 +252,12 @@ nat_internal_invalidate (vlib_buffer_t *p0, u16 *next0, u32 *counter,
     if (pds_is_flow_napt_svc_en(p0)) {
         nat_addr_type = NAT_ADDR_TYPE_INFRA;
     }
-    if (nat_flow_is_dst_valid(vpc_id, dip, dport, protocol, nat_addr_type)) {
+    nat_flow_is_dst_valid(vpc_id, dip, dport, protocol, nat_addr_type,
+                          &dstip_valid, &dstport_valid);
+    if (dstip_valid && dstport_valid) {
         cidx = NAT_COUNTER_INVALID_EXISTS;
         *next0 = NAT_NEXT_DROP;
-    } else {
+    } else if (dstip_valid) {
         if (nat_node_main.invalidate_cb &&
             nat_node_main.invalidate_cb(p0, next0) == 0) {
                 *next0 = NAT_NEXT_IP4_LINUX_INJECT;
@@ -262,6 +265,9 @@ nat_internal_invalidate (vlib_buffer_t *p0, u16 *next0, u32 *counter,
             *next0 = NAT_NEXT_DROP;
         }
         cidx = NAT_COUNTER_INVALID;
+    } else {
+        cidx = NAT_COUNTER_INVALID_DROP;
+        *next0 = NAT_NEXT_DROP;
     }
 
     if (PREDICT_FALSE(node->flags & VLIB_NODE_FLAG_TRACE &&
