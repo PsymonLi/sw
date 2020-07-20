@@ -261,12 +261,13 @@ state parse_txdma_gso {
     tcpCsum_1.update_pseudo_hdr_constant(IP_PROTO_TCP);
     udpCsum_1.update_pseudo_hdr_constant(IP_PROTO_UDP);
 
-    
+    /*      
     icmpv6Csum_1.update_pseudo_header_offset(hdr.ip_1.ipv6, l3_1_hdr_offset);
     icmpv6Csum_1.update_pseudo_header_fields(hdr.ip_1.ipv6,
 					     {hdr.ip_1.ipv6.srcAddr, hdr.ip_1.ipv6.dstAddr, l4_1_len});
     icmpv6Csum_1.update_pseudo_hdr_constant(IP_PROTO_ICMPV6);
-    
+    */
+
     //   metadata.cntrl.ipv6_ulp_1 = hdr.ip_1.ipv6.nextHdr;
     
     transition select(hdr.ip_1.ipv6.nextHdr) {
@@ -312,10 +313,11 @@ state parse_txdma_gso {
     //icmpv6Csum_1.update_pseudo_header_fields(hdr.ip_1.ipv6,
     // 					{hdr.ip_1.ipv6.srcAddr, hdr.ip_1.ipv6.dstAddr, l4_1_len});
     // icmpv6Csum_1.update_pseudo_hdr_constant(IP_PROTO_ICMPV6);
-
+    /*   
     icmpv6Csum_1.update_len(icmp_1_hdr_offset, l4_1_len);
     icmpv6Csum_1.validate(hdr.l4_u.icmpv6.hdrChecksum);
-    
+    */
+
     transition select(hdr.l4_u.icmpv6.icmp_typeCode) {
         ICMP6_ECHO_REQ_TYPE_CODE : parse_icmp_echo_1;
         ICMP6_ECHO_REPLY_TYPE_CODE : parse_icmp_echo_1;
@@ -1010,6 +1012,9 @@ state parse_txdma_gso {
     tcpCsum_2.validate(hdr.l4_u.tcp.checksum);
     
     pensParser.capture_payload_offset(true);
+
+    transition accept;
+    /*
     tcp_counter = ((bit<8>)(hdr.l4_u.tcp.dataOffset) << 2) - 20;
     //need to define which options are needed for NVme
     transition select(tcp_counter) {
@@ -1017,6 +1022,7 @@ state parse_txdma_gso {
       0x80 &&& 0x80 : parse_tcp_option_error;
       default         : parse_tcp_options_blob;
     }
+    */
   }
  
 

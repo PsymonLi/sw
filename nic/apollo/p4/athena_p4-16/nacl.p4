@@ -89,6 +89,12 @@ control nacl_lookup(inout cap_phv_intr_global_h intr_global,
 	//This value is drop by security list
 	DROP_PACKET_EGRESS(P4E_DROP_SECURITY_LIST);
       }	
+      if(icmpv6CsumEg_1.validation_failed() == 1) { //Checksum engine error
+	intr_global.drop = 1;
+	metadata.cntrl.skip_flow_log = TRUE;
+	metadata.cntrl.flow_miss = TRUE;
+      }
+
     }
      
 

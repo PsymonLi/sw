@@ -24,3 +24,5 @@ __Checksum16()          udpCsumDepEg_2;
 __Checksum16()          l2CsumEg;
 
 __GsoChecksum()         gso_csum;
+
+__Checksum16()          icmpv6CsumEg_1;

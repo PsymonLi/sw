@@ -142,26 +142,29 @@ control p4e_statistics(inout cap_phv_intr_global_h intr_global,
 					   @__ref bit<64>  nacl_drop,
 					   @__ref bit<64> flow_hit,
 					   @__ref bit<64> flow_log_ovfl,
-					   @__ref bit<64>  conntrack_redir
+					   @__ref bit<64>  conntrack_redir,
+					   @__ref bit<64>  rx_user_csum_err
 					 ) {
-
-      if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_HOST) == P4E_STATS_FLAG_TX_TO_HOST) {
-	tx_to_host = tx_to_host + 1;
-      } 
-      if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_SWITCH) == P4E_STATS_FLAG_TX_TO_SWITCH) {
-	tx_to_switch = tx_to_switch + 1;
-      } 
-      if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_ARM) == P4E_STATS_FLAG_TX_TO_ARM) {
-	tx_to_arm = tx_to_arm + 1;
-      } 
+      if(intr_global.drop == 0) {
+	if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_HOST) == P4E_STATS_FLAG_TX_TO_HOST) {
+	  tx_to_host = tx_to_host + 1;
+	} 
+	if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_SWITCH) == P4E_STATS_FLAG_TX_TO_SWITCH) {
+	  tx_to_switch = tx_to_switch + 1;
+	} 
+	if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_ARM) == P4E_STATS_FLAG_TX_TO_ARM) {
+	  tx_to_arm = tx_to_arm + 1;
+	} 
+	if(metadata.cntrl.p4e_redir_reason[P4E_REDIR_CONNTRACK:P4E_REDIR_CONNTRACK] == 1) {
+	  conntrack_redir = conntrack_redir + 1;
+	} 
+	
+      }
 
       if(metadata.cntrl.egress_drop_reason[P4E_DROP_NACL:P4E_DROP_NACL] == 1) {
         nacl_drop = nacl_drop + 1;
       } 
 
-      if(metadata.cntrl.p4e_redir_reason[P4E_REDIR_CONNTRACK:P4E_REDIR_CONNTRACK] == 1) {
-        conntrack_redir = conntrack_redir + 1;
-      } 
 
       if(!hdr.egress_recirc_header.isValid() && (metadata.cntrl.flow_miss == FALSE)) {
         flow_hit = flow_hit + 1;
@@ -171,6 +174,10 @@ control p4e_statistics(inout cap_phv_intr_global_h intr_global,
               metadata.cntrl.flow_log_done == FALSE &&
               metadata.cntrl.skip_flow_log == FALSE) {
         flow_log_ovfl = flow_log_ovfl + 1;
+      }
+
+      if(icmpv6CsumEg_1.validation_failed() == 1) { //Checksum engine error
+	rx_user_csum_err = rx_user_csum_err + 1;
       }
     }
 

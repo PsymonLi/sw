@@ -209,6 +209,10 @@ parser AthenaEgressParser(packet_in packet,
     
     l4_1_len        =  hdr.ip_1.ipv6.payloadLen;
     
+    icmpv6CsumEg_1.update_pseudo_header_offset(hdr.ip_1.ipv6, l3_1_hdr_offset);
+    icmpv6CsumEg_1.update_pseudo_header_fields(hdr.ip_1.ipv6,
+					     {hdr.ip_1.ipv6.srcAddr, hdr.ip_1.ipv6.dstAddr, l4_1_len});
+    icmpv6CsumEg_1.update_pseudo_hdr_constant(IP_PROTO_ICMPV6);
 
     //   metadata.cntrl.ipv6_ulp_1 = hdr.ip_1.ipv6.nextHdr;
     
@@ -249,6 +253,10 @@ parser AthenaEgressParser(packet_in packet,
     packet.extract(hdr.l4_u.icmpv6);
     metadata.l4.l4_dport_1 = hdr.l4_u.icmpv6.icmp_typeCode;
     metadata.l4.icmp_valid = TRUE;
+
+    icmpv6CsumEg_1.update_len(icmp_1_hdr_offset, l4_1_len);
+    icmpv6CsumEg_1.validate(hdr.l4_u.icmpv6.hdrChecksum);
+ 
     transition select(hdr.l4_u.icmpv6.icmp_typeCode) {
         ICMP6_ECHO_REQ_TYPE_CODE : parse_icmp_echo_1;
         ICMP6_ECHO_REPLY_TYPE_CODE : parse_icmp_echo_1;
