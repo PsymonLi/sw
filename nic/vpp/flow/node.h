@@ -371,6 +371,7 @@ typedef struct pds_flow_main_s {
     void *flow_metrics_hdl;
     void *datapath_assist_metrics_hdl;
     u16 drop_nexthop;
+    u16 ecmp_nexthop;
     // packet template to send TCP keep alives
     vlib_packet_template_t tcp_keepalive_packet_template;
     u32 *delete_sessions;

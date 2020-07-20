@@ -14,6 +14,7 @@ extern "C" {
 // Prototypes
 
 uint16_t pds_nh_drop_id_get(void);
+uint16_t pds_nh_ecmp_id_get(void);
 
 #ifdef __cplusplus
 }

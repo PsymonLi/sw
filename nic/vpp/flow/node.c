@@ -1958,6 +1958,7 @@ pds_flow_init (vlib_main_t * vm)
     }
 
     fm->drop_nexthop = pds_nh_drop_id_get();
+    fm->ecmp_nexthop = pds_nh_ecmp_id_get();
 
     pdsa_flow_hdlr_init();
     pds_flow_dump_init();

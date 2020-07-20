@@ -522,9 +522,9 @@ pds_flow_extract_nexthop_info (vlib_buffer_t *p0,
     pds_flow_main_t *fm = &pds_flow_main;
 
     if (bitw_svc) {
-        ftlv4_cache_set_nexthop(1, //PDS_IMPL_UPLINK_ECMP_NHGROUP_HW_ID
-                                NEXTHOP_TYPE_ECMP, 1,
-                                0, thread_index);
+        ftlv4_cache_set_nexthop(fm->ecmp_nexthop,
+                                NEXTHOP_TYPE_ECMP,
+                                1, 0, thread_index);
         return;
     }
     // check if drop bit is set and program nh as drop

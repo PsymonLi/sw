@@ -11,3 +11,8 @@ pds_nh_drop_id_get (void)
     return PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
 }
 
+uint16_t
+pds_nh_ecmp_id_get (void)
+{
+    return PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
+}
