@@ -195,6 +195,7 @@ func (ug *defaultAuthGetter) start(name, apiServer string, rslver resolver.Inter
 		ug.name = name
 		ug.apiServer = apiServer
 		ug.resolver = rslver
+		ug.cache = memdb.NewMemdb()
 		ug.watcher.Start(ug.name, ug.apiServer, ug.resolver)
 		ctx, cancel := context.WithCancel(context.Background())
 		ug.ctx = ctx
