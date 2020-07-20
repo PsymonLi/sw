@@ -1315,6 +1315,11 @@ apulu_impl::write_to_txdma_table(mem_addr_t addr, uint32_t tableid,
 
 sdk_ret_t
 apulu_impl::clock_sync_start(void) {
+    // clock sync functionality is not needed on non-h/w platforms
+    if (g_pds_state.platform_type() !=
+            platform_type_t::PLATFORM_TYPE_HW) {
+        return SDK_RET_OK;
+    }
     // wait until periodic thread is ready to have us start timers
     while (!sdk::lib::periodic_thread_is_running()) {
         pthread_yield();
