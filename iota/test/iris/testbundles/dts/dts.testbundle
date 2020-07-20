@@ -1,0 +1,29 @@
+meta:
+    name    : dts
+    #os      : [ linux ]
+    #nics    : [ pensando, intel ]
+    targetcount : 10
+
+testcases:
+    #=======================================
+    # Init
+    #=======================================
+    -   name    : Setup_Dts
+        testcase: testcases.dts.setup_dts
+        args    :
+            type: remote_only
+
+    -   name    : Run_Dts
+        testcase: testcases.dts.run_dts
+        iterators :
+            type     : nested
+            config_file     : [unit_test_execution.cfg, fwd_execution.cfg, feature_execution.cfg, pkt_execution.cfg, pmd_execution.cfg]
+        args    :
+            type: remote_only
+            timeout: 14400
+
+    -   name    : Shutdown_Dts
+        testcase: testcases.dts.shutdown_dts
+        args    :
+            type: remote_only
+

@@ -98,6 +98,7 @@ testbundles:
 
     extended:
         # Relative paths from iota/test/iris/testbundles/
+        - dts/dts.testbundle
 
     regression:
         # Relative paths from iota/test/iris/testbundles/
