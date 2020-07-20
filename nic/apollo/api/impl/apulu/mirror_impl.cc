@@ -118,19 +118,22 @@ mirror_impl::program_rspan_(pds_epoch_t epoch,
         intf = if_entry::eth_if(intf);
         mirror_data.action_id = MIRROR_RSPAN_ID;
         mirror_data.rspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-        mirror_data.rspan_action.nexthop_id = oport = if_impl::port(intf);
+        oport = if_impl::port(intf);
         SDK_ASSERT(oport != PDS_PORT_INVALID);
+        // use the pre-reserved per uplink nexthop
+        mirror_data.rspan_action.nexthop_id = oport + 1;
         mirror_data.rspan_action.ctag = spec->rspan_spec.encap.val.vlan_tag;
         mirror_data.rspan_action.truncate_len = spec->snap_len;
         // program the nexthop entry 1st
         memset(&nh_data, 0, nh_data.entry_size());
         nh_data.set_port(oport);
         nh_data.set_vlan(spec->rspan_spec.encap.val.vlan_tag);
-        ret = nh_data.write(oport);
+        ret = nh_data.write(mirror_data.rspan_action.nexthop_id);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to program NEXTHOP table at idx %u, "
                           "RSPAN mirror session %s programming failed",
-                          oport, spec->key.str());
+                          mirror_data.rspan_action.nexthop_id,
+                          spec->key.str());
             return sdk::SDK_RET_HW_PROGRAM_ERR;
         }
     } else {

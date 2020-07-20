@@ -75,7 +75,7 @@ public:
 
     pds_svc_mapping_spec_t *find_in_service_db(pds_svc_mapping_key_t *key);
     sdk_ret_t add_to_service_db(pds_svc_mapping_key_t *key,
-                               pds_svc_mapping_spec_t *spec);
+                                pds_svc_mapping_spec_t *spec);
     sdk_ret_t service_db_walk(service_walk_cb_t cb, void *ctxt);
     bool del_from_service_db(pds_svc_mapping_key_t *key);
     slab_ptr_t service_slab(void) const { return cfg_db_->service_slab(); }
