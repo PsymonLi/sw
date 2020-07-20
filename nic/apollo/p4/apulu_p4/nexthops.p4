@@ -302,7 +302,8 @@ action ipv6_vxlan_encap2(dmac, smac) {
 }
 
 action nexthop_info(lif, qtype, qid, rx_vnic_id, vlan_strip_en, port, vlan,
-                    dmaco, smaco, dmaci, tunnel2_id, app_id, drop) {
+                    dmaco, smaco, dmaci, tunnel2_id, app_id, rewrite_flags,
+                    drop) {
     modify_field(scratch_metadata.flag, drop);
     if ((p4e_i2e.nexthop_id == 0) or (drop == TRUE)) {
         egress_drop(P4E_DROP_NEXTHOP_INVALID);
@@ -318,6 +319,11 @@ action nexthop_info(lif, qtype, qid, rx_vnic_id, vlan_strip_en, port, vlan,
     modify_field(ethernet_00.srcAddr, smaco);
     if (rewrite_metadata.tunnel_tos_override == TRUE) {
         modify_field(rewrite_metadata.tunnel_tos, rewrite_metadata.tunnel_tos2);
+    }
+
+    if (rewrite_flags != 0) {
+        // overwrite rewrite_flags if non-zero
+        modify_field(rewrite_metadata.flags, rewrite_flags);
     }
 
     if (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_MAPPING)) {

@@ -45,7 +45,9 @@ nexthop_info2:
                         d.nexthop_info_d.vlan_strip_en
 
 nexthop_rewrite:
-    or              r2, r0, k.rewrite_metadata_flags
+    sne             c1, r0, d.nexthop_info_d.rewrite_flags
+    cmov            r2, c1, d.nexthop_info_d.rewrite_flags, \
+                        k.rewrite_metadata_flags
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_MAPPING
     phvwr.c1        p.ethernet_1_dstAddr, k.rewrite_metadata_dmaci
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_NEXTHOP
@@ -96,7 +98,9 @@ nexthop2:
                         d.{nexthop_info_d.dmaco,nexthop_info_d.smaco}
     phvwr           p.rewrite_metadata_tunnel_tos, \
                         k.rewrite_metadata_tunnel_tos2
-    or              r2, r0, k.rewrite_metadata_flags
+    sne             c1, r0, d.nexthop_info_d.rewrite_flags
+    cmov            r2, c1, d.nexthop_info_d.rewrite_flags, \
+                        k.rewrite_metadata_flags
     bbeq            k.control_metadata_erspan_copy, TRUE, nexthop_erspan_copy
     add             r1, k.capri_p4_intrinsic_packet_len_s6_e13, \
                         k.capri_p4_intrinsic_packet_len_s0_e5, 8
