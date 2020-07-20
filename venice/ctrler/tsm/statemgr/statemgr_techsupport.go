@@ -19,6 +19,7 @@ import (
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
@@ -133,7 +134,14 @@ func (sm *Statemgr) updateTechSupportObjectState(state TechSupportObjectState, o
 		log.Errorf("Unknown kind: %s", kind)
 		state = nil
 	}
-	return state
+	// Create a deepcopy of the state object, for use in memdb update. This is done to avoid
+	// parallel accesses to the techsupport object embedded within the state object by rest
+	// of techsupport code and the memdb update function
+	if state != nil {
+		return ref.DeepCopy(state).(TechSupportObjectState)
+	}
+
+	return nil
 }
 
 // deleteTechSupportObjectState deletes memdb state for a TechSupport object
