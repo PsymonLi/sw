@@ -61,6 +61,14 @@
             "size": "32M"
         },
         {
+            "name": "nicmgr",
+            "size" : "32M"
+        },
+        {
+            "name": "fwupdate",
+            "size": "128K"
+        },
+        {
             "comment": "CMB region for ethernet devices",
             "_comment1": "This region is non-moveable/growable (provided all regions below are moveable)",
             "_comment2": "Allocation unit is 8 MiB",
@@ -75,18 +83,20 @@
             "cache": "p4plus-all"
         },
         {
-            "name": "nicmgr",
-            "size" : "32M"
-        },
-        {
-            "name": "fwupdate",
-            "size": "128K"
-        },
-        {
             "name": "lif_stats",
             "size": "1024K",
             "block_size": "1K",
             "reset": true,
+            "cache": "p4plus-all"
+        },
+        {
+            "name": "lif2qstate_map",
+            "size": "4K",
+            "cache": "p4plus-all"
+        },
+        {
+            "name": "ftl_dev_age_tmo",
+            "size": "1K",
             "cache": "p4plus-all"
         },
         {
@@ -95,18 +105,13 @@
             "cache": "p4plus-rxdma"
         },
         {
-            "name": "lif2qstate_map",
-            "size": "4K",
-            "cache": "p4plus-all"
+            "name": "rxdma_program",
+            "size": "1024K",
+            "cache": "p4plus-rxdma"
         },
         {
             "name": "p4_program",
             "size": "1024K"
-        },
-        {
-            "name": "rxdma_program",
-            "size": "1024K",
-            "cache": "p4plus-rxdma"
         },
         {
             "name": "txdma_program",
@@ -160,6 +165,24 @@
             "_comment": "1M * 64B"
         },
         {
+            "name": "l2_flow",
+            "size": "32M",
+            "cache": "p4ig",
+            "_comment": "1M * 32B"
+        },
+        {
+            "name": "l2_flow_ohash",
+            "size": "8M",
+            "cache": "p4ig",
+            "_comment": "256K * 32B"
+        },
+        {
+            "name": "p4i_stats",
+            "size": "64B",
+            "reset": true,
+            "cache": "p4ig"
+        },
+        {
             "name": "session_info",
             "size": "256M",
             "reset": true,
@@ -186,7 +209,7 @@
             "name": "conntrack",
             "size": "16M",
             "reset": true,
-            "cache": "p4ig",
+            "cache": "p4eg",
             "cache1": "p4plus-txdma",
             "_comment": "4M * 4B",
             "_comment1": "conntrack has 2 readers: P4 and P4+, hence 2 cache types"
@@ -194,14 +217,39 @@
         {
             "name": "config1",
             "size": "2M",
-            "cache": "p4ig",
+            "cache": "p4eg",
             "_comment": "1M * 2B"
         },
         {
             "name": "config2",
             "base_region": "config1",
             "size": "2M",
+            "cache": "p4eg",
             "_comment": "Alias of the config1 table"
+        },
+        {
+            "name": "p4e_stats",
+            "size": "64B",
+            "reset": true,
+            "cache": "p4eg"
+        },
+        {
+            "name": "flow_log_0",
+            "size": "128M",
+            "cache": "p4eg",
+            "_comment": "2M * 64B"
+        },
+        {
+            "name": "flow_log_1",
+            "size": "128M",
+            "cache": "p4eg",
+            "_comment": "2M * 64B"
+        },
+        {
+            "name": "flow_log_select",
+            "size": "128B",
+            "reset": true,
+            "cache": "p4eg"
         },
         {
             "name": "qos-hbm-fifo",
@@ -311,11 +359,6 @@
             "size": "1M"
         },
         {
-            "name": "ftl_dev_age_tmo",
-            "size": "1K",
-            "cache": "p4plus-all"
-        },
-        {
             "name": "tls_proxy_pad_table",
             "size": "1K"
         },
@@ -329,48 +372,6 @@
             "name": "port_stats",
             "size": "3K",
             "reset": true
-        },
-        {
-            "name": "p4i_stats",
-            "size": "64B",
-            "reset": true,
-            "cache": "p4ig"
-        },
-        {
-            "name": "p4e_stats",
-            "size": "64B",
-            "reset": true,
-            "cache": "p4eg"
-        },
-        {
-            "name": "l2_flow",
-            "size": "32M",
-            "cache": "p4ig",
-            "_comment": "1M * 32B"
-        },
-        {
-            "name": "l2_flow_ohash",
-            "size": "8M",
-            "cache": "p4ig",
-            "_comment": "256K * 32B"
-        },
-        {
-            "name": "flow_log_0",
-            "size": "128M",
-            "cache": "p4eg",
-            "_comment": "2M * 64B"
-        },
-        {
-            "name": "flow_log_1",
-            "size": "128M",
-            "cache": "p4eg",
-            "_comment": "2M * 64B"
-        },
-        {
-            "name": "flow_log_select",
-            "size": "128B",
-            "reset": true,
-            "cache": "p4eg"
         },
         {
             "name": "ftl_dev_g_mpu_ts",
