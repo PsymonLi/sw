@@ -26,7 +26,7 @@
 #include "nic/apollo/api/impl/lif_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl_state.hpp"
 #include "nic/apollo/api/internal/pds_if.hpp"
-#include "nic/apollo/api/upgrade_state.hpp" 
+#include "nic/apollo/api/upgrade_state.hpp"
 
 namespace api {
 namespace impl {
@@ -159,49 +159,49 @@ err:
 
 sdk_ret_t
 devapi_impl::lif_destroy(uint32_t lif_id) {
-    PDS_TRACE_VERBOSE("Not implemented");
+    PDS_TRACE_VERBOSE("Lif %u destroy not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_reset(uint32_t lif_id) {
-    PDS_TRACE_VERBOSE("Not implemented");
+    PDS_TRACE_VERBOSE("Lif %u reset not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_add_mac(uint32_t lif_id, mac_t mac) {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u add MAC not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_del_mac(uint32_t lif_id, mac_t mac) {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u delete MAC not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_add_vlan(uint32_t lif_id, vlan_t vlan) {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u add vlan not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_del_vlan(uint32_t lif_id, vlan_t vlan) {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u delete vlan not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_add_macvlan(uint32_t lif_id, mac_t mac, vlan_t vlan) {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u add macvlan not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_del_macvlan(uint32_t lif_id, mac_t mac, vlan_t vlan) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u delete macvlan not supported", lif_id);
     return SDK_RET_OK;
 }
 
@@ -209,32 +209,32 @@ sdk_ret_t
 devapi_impl::lif_upd_vlan_offload(uint32_t lif_id, bool vlan_strip,
                                   bool vlan_insert) {
     // TODO: handle vlan strip
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Lif %u vlan offload not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_upd_rx_mode(uint32_t lif_id, bool broadcast,
                              bool all_multicast, bool promiscuous) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u update Rx mode not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_upd_rx_bmode(uint32_t lif_id, bool broadcast) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u update Rx broadcast mode not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_upd_rx_mmode(uint32_t lif_id, bool all_multicast) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u update Rx multicast mode not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_upd_rx_pmode(uint32_t lif_id, bool promiscuous) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u update Rx promiscuous mode not supported", lif_id);
     return SDK_RET_OK;
 }
 
@@ -286,39 +286,39 @@ devapi_impl::lif_upd_state(uint32_t lif_id, lif_state_t state) {
 
 sdk_ret_t
 devapi_impl::lif_upd_rdma_sniff(uint32_t lif_id, bool rdma_sniff) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u update RDMA sniffer not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_upd_bcast_filter(uint32_t lif_id,
                                   lif_bcast_filter_t bcast_filter) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u update broadcast filter not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_upd_mcast_filter(uint32_t lif_id,
                                   lif_mcast_filter_t mcast_filter) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u update multicast filter not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_upd_rx_en(uint32_t lif_id, bool rx_en){
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Lif %u enable Rx not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_upd_max_tx_rate(uint32_t lif_id, uint64_t rate_in_Bps) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Lif %u update max Tx rate not supported", lif_id);
     return SDK_RET_ERR;
 }
 
 sdk_ret_t
 devapi_impl::lif_get_max_tx_rate(uint32_t lif_id, uint64_t *rate_in_Bps) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Lif %u get max Tx rate not supported", lif_id);
     return SDK_RET_ERR;
 }
 
@@ -357,57 +357,57 @@ devapi_impl::eth_dev_provider_admin_status(uint32_t lif_id) {
 
 sdk_ret_t
 devapi_impl::qos_class_get(uint8_t group, qos_class_info_t *info) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos %u get group not supported", group);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::qos_class_exist(uint8_t group) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos %u check group exist not supported", group);
     return SDK_RET_OK;
 }
 
 
 sdk_ret_t
 devapi_impl::qos_class_create(qos_class_info_t *info) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos group create not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::qos_class_update(qos_class_info_t *info) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos group update not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::qos_class_delete(uint8_t group, bool clear_stats) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos group delete not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::qos_clear_stats(uint32_t port_num, uint8_t qos_group_bitmap) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos group clear stats not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::qos_get_txtc_cos(const string &group, uint32_t uplink_port,
                               uint8_t *cos) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos group get Txtc cos not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::qos_class_set_global_pause_type(uint8_t pause_type) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos group set pause type not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::qos_reset(uint32_t group) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Qos reset not supported");
     return SDK_RET_OK;
 }
 
@@ -576,77 +576,77 @@ devapi_impl::port_set_config(if_index_t ifidx, port_config_t *config) {
 sdk_ret_t
 devapi_impl::swm_enable(void)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm enable not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_disable(void)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm disable not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_create_channel (uint32_t channel, uint32_t port_num, uint32_t lif_id)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm lif %u create channel not supported", lif_id);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_get_channels_info(std::set<channel_info_t *>* channels_info)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm get channel info not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_add_mac(mac_t mac, uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm add MAC not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_del_mac(mac_t mac, uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm delete MAC not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_add_vlan(vlan_t vlan, uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm add vlan not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_del_vlan(vlan_t vlan, uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm delete vlan not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_upd_rx_bmode(bool broadcast, uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm update Rx broadcast mode not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_upd_rx_mmode(bool all_multicast, uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm update Rx multicast mode not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_upd_rx_pmode(bool promiscuous, uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm update Rx promiscuous mode not supported");
     return SDK_RET_OK;
 }
 
@@ -654,7 +654,7 @@ sdk_ret_t
 devapi_impl::swm_upd_bcast_filter(lif_bcast_filter_t bcast_filter,
                                   uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm update broadcast filter not supported");
     return SDK_RET_OK;
 }
 
@@ -662,42 +662,42 @@ sdk_ret_t
 devapi_impl::swm_upd_mcast_filter(lif_mcast_filter_t mcast_filter,
                                   uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm update multicast filter not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_enable_tx(uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm enable Tx not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_disable_tx(uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm disable Tx not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_enable_rx(uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm enable Rx not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_disable_rx(uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm disable Rx not supported");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::swm_upd_vlan_mode(bool enable, uint32_t mode, uint32_t channel)
 {
-    PDS_TRACE_VERBOSE("Not provided");
+    PDS_TRACE_VERBOSE("Swm update vlan mode not supported");
     return SDK_RET_OK;
 }
 
