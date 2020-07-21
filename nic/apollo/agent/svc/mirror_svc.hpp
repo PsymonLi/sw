@@ -141,7 +141,8 @@ pds_mirror_session_proto_to_api_spec (pds_mirror_session_spec_t *api_spec,
         api_spec->type = PDS_MIRROR_SESSION_TYPE_RSPAN;
         api_spec->rspan_spec.encap =
             proto_encap_to_pds_encap(proto_spec.rspanspec().encap());
-        if (api_spec->rspan_spec.encap.type != PDS_ENCAP_TYPE_DOT1Q) {
+        if ((api_spec->rspan_spec.encap.type != PDS_ENCAP_TYPE_NONE) &&
+            (api_spec->rspan_spec.encap.type != PDS_ENCAP_TYPE_DOT1Q)) {
             PDS_TRACE_ERR("Invalid encap type {} in RSPAN mirror session {} "
                           "spec, only PDS_ENCAP_TYPE_DOT1Q encap type is valid",
                           api_spec->rspan_spec.encap.type, api_spec->key.id);

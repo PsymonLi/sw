@@ -74,7 +74,8 @@ message ERSpanSpec {
 message MirrorSessionSpec {
   // unique identifier of mirror policy
   bytes        Id         = 1 [(gogoproto.moretags) = "meta:mandatory,immutable"];
-  // maximum  bytes of packet to mirror
+  // maximum  bytes of packet to mirror, by default all of the packet contents
+  // are mirrored
   uint32       SnapLen    = 2;
   oneof mirrordst {
     // RSPAN configuration in case of RSPAN

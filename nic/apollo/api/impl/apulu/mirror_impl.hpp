@@ -137,6 +137,20 @@ private:
     /// \brief destructor
     ~mirror_impl() {}
 
+    /// \brief      program lif RSPAN
+    /// \param[in]  lif    destination lif instance
+    /// \param[in]  spec    mirror session configuration
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t program_lif_rspan_(lif_impl *lif,
+                                 pds_mirror_session_spec_t *spec);
+
+    /// \brief      program uplink RSPAN
+    /// \param[in]  intf    destination uplink instance
+    /// \param[in]  spec    mirror session configuration
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t program_uplink_rspan_(if_entry *intf,
+                                    pds_mirror_session_spec_t *spec);
+
     /// \brief      program RSPAN type mirror session related tables
     /// \param[in]  epoch epoch being programmed
     /// \param[in]  spec    mirror session configuration

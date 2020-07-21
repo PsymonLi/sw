@@ -14,6 +14,7 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
+#include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/internal/pds_route.hpp"
 #include "nic/apollo/api/impl/apulu/tep_impl.hpp"
@@ -103,61 +104,70 @@ mirror_impl::nuke_resources(api_base *api_obj) {
 #define erspan_action        action_u.mirror_erspan
 #define lspan_action         action_u.mirror_lspan
 sdk_ret_t
-mirror_impl::program_rspan_(pds_epoch_t epoch,
-                            pds_mirror_session_spec_t *spec) {
+mirror_impl::program_lif_rspan_(lif_impl *lif,
+                                pds_mirror_session_spec_t *spec) {
+    p4pd_error_t p4pd_ret;
+    nexthop_info_entry_t nh_data;
+    mirror_actiondata_t mirror_data = { 0 };
+
+    mirror_data.action_id = MIRROR_LSPAN_ID;
+    mirror_data.lspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    switch (lif->type()) {
+    case sdk::platform::LIF_TYPE_HOST:
+    case sdk::platform::LIF_TYPE_MNIC_OOB_MGMT:
+    case sdk::platform::LIF_TYPE_MNIC_INBAND_MGMT:
+        mirror_data.lspan_action.nexthop_id = lif->nh_idx();
+        mirror_data.lspan_action.truncate_len = spec->snap_len;
+        break;
+    default:
+        // blackhole if some other type of lif is provided
+        PDS_TRACE_ERR("Unsupported lif type %u in mirror session %s, "
+                      "blackholing mirrored traffic",
+                      lif->type(), spec->key.str());
+        mirror_data.lspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+        mirror_data.lspan_action.nexthop_id =
+            PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
+        break;
+    }
+    // program the mirror table
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_MIRROR, hw_id_, NULL, NULL,
+                                       &mirror_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program mirror session %s at idx %u",
+                      spec->key.str(), hw_id_);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+mirror_impl::program_uplink_rspan_(if_entry *intf,
+                                   pds_mirror_session_spec_t *spec) {
     sdk_ret_t ret;
-    lif_impl *lif;
-    if_entry *intf;
     uint32_t oport;
     p4pd_error_t p4pd_ret;
     nexthop_info_entry_t nh_data;
     mirror_actiondata_t mirror_data = { 0 };
 
-    intf = if_find(&spec->rspan_spec.interface);
-    if (intf) {
-        intf = if_entry::eth_if(intf);
-        mirror_data.action_id = MIRROR_RSPAN_ID;
-        mirror_data.rspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-        oport = if_impl::port(intf);
-        SDK_ASSERT(oport != PDS_PORT_INVALID);
-        // use the pre-reserved per uplink nexthop
-        mirror_data.rspan_action.nexthop_id = oport + 1;
-        mirror_data.rspan_action.ctag = spec->rspan_spec.encap.val.vlan_tag;
-        mirror_data.rspan_action.truncate_len = spec->snap_len;
-        // program the nexthop entry 1st
-        memset(&nh_data, 0, nh_data.entry_size());
-        nh_data.set_port(oport);
-        nh_data.set_vlan(spec->rspan_spec.encap.val.vlan_tag);
-        ret = nh_data.write(mirror_data.rspan_action.nexthop_id);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to program NEXTHOP table at idx %u, "
-                          "RSPAN mirror session %s programming failed",
-                          mirror_data.rspan_action.nexthop_id,
-                          spec->key.str());
-            return sdk::SDK_RET_HW_PROGRAM_ERR;
-        }
-    } else {
-        // local span case, get the lif and use its nexthop id
-        lif = lif_impl_db()->find(&spec->rspan_spec.interface);
-        mirror_data.action_id = MIRROR_LSPAN_ID;
-        mirror_data.lspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-        switch (lif->type()) {
-        case sdk::platform::LIF_TYPE_HOST:
-        case sdk::platform::LIF_TYPE_MNIC_OOB_MGMT:
-        case sdk::platform::LIF_TYPE_MNIC_INBAND_MGMT:
-            mirror_data.lspan_action.nexthop_id = lif->nh_idx();
-            mirror_data.rspan_action.truncate_len = spec->snap_len;
-            break;
-        default:
-            // blackhole if some other type of lif is provided
-            PDS_TRACE_ERR("Unsupported lif type %u in mirror session %s, "
-                          "blackholing mirrored traffic",
-                          lif->type(), spec->key.str());
-            mirror_data.lspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-            mirror_data.lspan_action.nexthop_id =
-                PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
-            break;
-        }
+    intf = if_entry::eth_if(intf);
+    mirror_data.action_id = MIRROR_RSPAN_ID;
+    mirror_data.rspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    oport = if_impl::port(intf);
+    SDK_ASSERT(oport != PDS_PORT_INVALID);
+    // use pre-reserved per uplink nexthop
+    mirror_data.rspan_action.nexthop_id = oport + 1;
+    mirror_data.rspan_action.ctag = spec->rspan_spec.encap.val.vlan_tag;
+    mirror_data.rspan_action.truncate_len = spec->snap_len;
+    // program the nexthop entry 1st
+    memset(&nh_data, 0, nh_data.entry_size());
+    nh_data.set_port(oport);
+    nh_data.set_vlan(spec->rspan_spec.encap.val.vlan_tag);
+    ret = nh_data.write(oport);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to program NEXTHOP table at idx %u, "
+                      "RSPAN mirror session %s programming failed",
+                      oport, spec->key.str());
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
     }
 
     // program the mirror table
@@ -167,6 +177,38 @@ mirror_impl::program_rspan_(pds_epoch_t epoch,
         PDS_TRACE_ERR("Failed to program mirror session %s at idx %u",
                       spec->key.str(), hw_id_);
         return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+mirror_impl::program_rspan_(pds_epoch_t epoch,
+                            pds_mirror_session_spec_t *spec) {
+    lif_impl *lif;
+    if_entry *intf;
+    if_index_t if_index;
+    pds_obj_key_t lif_key;
+
+    intf = if_find(&spec->rspan_spec.interface);
+    if (intf) {
+        if ((intf->type() == IF_TYPE_UPLINK) || (intf->type() == IF_TYPE_ETH)) {
+            return program_uplink_rspan_(intf, spec);
+        } else if (intf->type() == IF_TYPE_HOST) {
+            // local span case, where destination interface is host interface
+            if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(intf->ifindex()));
+            lif_key = uuid_from_objid(if_index);
+            lif = (lif_impl *)lif_impl_db()->find(&lif_key);
+            if (!lif) {
+                 PDS_TRACE_ERR("Failed to program rspan session %s, lif %s not "
+                               "found", spec->key.str(), lif_key.str());
+                 return SDK_RET_ENTRY_NOT_FOUND;
+            }
+            return program_lif_rspan_(lif, spec);
+        }
+    } else {
+        // local span case, get the lif and use its nexthop id
+        lif = lif_impl_db()->find(&spec->rspan_spec.interface);
+        return program_lif_rspan_(lif, spec);
     }
     return SDK_RET_OK;
 }
