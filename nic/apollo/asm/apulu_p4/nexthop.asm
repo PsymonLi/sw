@@ -59,6 +59,8 @@ nexthop_rewrite:
                         k.rewrite_metadata_tunnel_dmaci_s40_e47
     seq             c1, r2[P4_REWRITE_SMAC_BITS], P4_REWRITE_SMAC_FROM_VRMAC
     phvwr.c1        p.ethernet_1_srcAddr, k.rewrite_metadata_vrmac
+    seq             c1, r2[P4_REWRITE_SMAC_BITS], P4_REWRITE_SMAC_FROM_NEXTHOP
+    phvwr.c1        p.ethernet_1_srcAddr, d.nexthop_info_d.smaco
     seq             c1, r2[P4_REWRITE_VLAN_BITS], P4_REWRITE_VLAN_ENCAP
     bcf             [c1], vlan_encap
     seq             c1, k.ctag_1_valid, TRUE

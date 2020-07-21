@@ -338,9 +338,15 @@ action nexthop_info(lif, qtype, qid, rx_vnic_id, vlan_strip_en, port, vlan,
             }
         }
     }
+
     if (P4_REWRITE(rewrite_metadata.flags, SMAC, FROM_VRMAC)) {
         modify_field(ethernet_1.srcAddr, rewrite_metadata.vrmac);
+    } else {
+        if (P4_REWRITE(rewrite_metadata.flags, SMAC, FROM_NEXTHOP)) {
+            modify_field(ethernet_1.srcAddr, smaco);
+        }
     }
+
     if ((control_metadata.erspan_copy == TRUE) and
         (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_NEXTHOP))) {
         modify_field(ethernet_0.dstAddr, dmaco);
