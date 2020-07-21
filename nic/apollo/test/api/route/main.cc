@@ -115,6 +115,50 @@ TEST_F(route_test, route_workflow_b1) {
     batch_commit(bctxt);
 }
 
+/// \brief Route table memory leak test
+/// \ref WF_B2
+TEST_F(route_test, route_memory_leak) {
+    pds_batch_ctxt_t bctxt;
+    route_feeder feeder_1;
+    FILE *fp;
+    int fd;
+
+    fp = fopen("memory_leak_dump.txt", "w");
+    if (fp) {
+        fd = fileno(fp);
+        bctxt = batch_start();
+        sample_route_table_setup(bctxt, k_base_v4_pfx, IP_AF_IPV4,
+                                 k_num_init_routes, k_num_route_tables,
+                                 k_route_table_id);
+        batch_commit(bctxt);
+
+        // dump memory statistics
+        dprintf(fd, "Memory dump before route creation:\n");
+        memory_dump(fd);
+        for (uint32_t i = 0; i < 10; i ++) {
+            // create 1000 routes
+            feeder_1.init(k_base_v4_pfx_2, 1000, 100, k_route_table_id,
+                          PDS_NH_TYPE_OVERLAY, PDS_NAT_TYPE_NONE,
+                          false);
+            workflow_b1<route_feeder>(feeder_1);
+            // dump memory statistics
+            dprintf(fd, "Memory dump after iteration %u:\n", i + 1);
+            memory_dump(fd);
+        }
+
+        // malloc trim
+        malloc_trim(0);
+        dprintf(fd, "Memory dump after malloc trim:\n");
+        memory_dump(fd);
+
+        bctxt = batch_start();
+        sample_route_table_teardown(bctxt, k_route_table_id, k_num_route_tables);
+        batch_commit(bctxt);
+
+        fclose(fp);
+    }
+}
+
 /// \brief Route table WF_B2
 /// \ref WF_B2
 TEST_F(route_test, route_workflow_b2) {

@@ -55,7 +55,8 @@ public:
                       pds::PbStatsGetResponse *proto_rsp) override;
     Status TraceFlush(ServerContext *context, const Empty *req,
                       Empty *rsp) override;
-    Status HeapGet(ServerContext *context, const Empty *req,
+    Status HeapGet(ServerContext *context,
+                   const pds::HeapGetRequest *req,
                    pds::HeapGetResponse *rsp) override;
     Status MeterStatsGet(ServerContext *context, const pds::MeterStatsGetRequest *req,
                          pds::MeterStatsGetResponse *rsp) override;

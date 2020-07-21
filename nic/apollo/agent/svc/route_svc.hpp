@@ -734,8 +734,8 @@ pds_svc_route_delete (const pds::RouteDeleteRequest *proto_req,
     bool batched_internally = false;
     pds_batch_params_t batch_params;
 
-    if ((proto_req == NULL) || (proto_req->id_size() == 0)) {
-        proto_rsp->add_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
+    if (proto_req == NULL) {
+        proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
         return SDK_RET_INVALID_ARG;
     }
 
@@ -748,31 +748,27 @@ pds_svc_route_delete (const pds::RouteDeleteRequest *proto_req,
         if (bctxt == PDS_BATCH_CTXT_INVALID) {
             PDS_TRACE_ERR("Failed to create a new batch, route "
                           "delete failed");
-            proto_rsp->add_apistatus(types::ApiStatus::API_STATUS_ERR);
+            proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_ERR);
             return SDK_RET_ERR;
         }
         batched_internally = true;
     }
 
-    for (int i = 0; i < proto_req->id_size(); i++) {
-        pds_obj_key_proto_to_api_spec(&key.route_id, proto_req->id(i).id());
-        pds_obj_key_proto_to_api_spec(&key.route_table_id,
-                                      proto_req->id(i).routetableid());
-        ret = pds_route_delete(&key, bctxt);
-        if (!batched_internally) {
-            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
-        }
-        if (ret != SDK_RET_OK) {
-            goto end;
-        }
+    pds_obj_key_proto_to_api_spec(&key.route_id, proto_req->id().id());
+    pds_obj_key_proto_to_api_spec(&key.route_table_id,
+                                  proto_req->id().routetableid());
+    ret = pds_route_delete(&key, bctxt);
+    if (!batched_internally) {
+        proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
+    }
+    if (ret != SDK_RET_OK) {
+        goto end;
     }
 
     if (batched_internally) {
         // commit the internal batch
         ret = pds_batch_commit(bctxt);
-        for (int i = 0; i < proto_req->id_size(); i++) {
-            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
-        }
+        proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
     }
     return ret;
 
@@ -781,9 +777,7 @@ end:
     if (batched_internally) {
         // destroy the internal batch
         pds_batch_destroy(bctxt);
-        for (int i = 0; i < proto_req->id_size(); i++) {
-            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
-        }
+        proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
     }
     return ret;
 }

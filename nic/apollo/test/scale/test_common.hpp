@@ -85,6 +85,8 @@ typedef struct test_params_s {
         uint32_t num_routes;
         ip_prefix_t route_pfx;
         ip_prefix_t v6_route_pfx;
+        bool mem_leak_test;
+        uint32_t mem_leak_iter_count;
     };
     // policy config
     struct {
@@ -328,6 +330,10 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                                        &test_params->remote_svc_public_ip_pfx) == 0);
                 }
             } else if (kind == "route-table") {
+                test_params->mem_leak_test =
+                    !obj.second.get<std::string>("mem-leak-test", "false").compare("true");
+                test_params->mem_leak_iter_count =
+                    std::stol(obj.second.get<std::string>("mem-leak-iter-count", "0"));
                 test_params->num_routes = std::stol(obj.second.get<std::string>("count"));
                 pfxstr = obj.second.get<std::string>("prefix-start");
                 assert(str2ipv4pfx((char *)pfxstr.c_str(), &test_params->route_pfx) == 0);

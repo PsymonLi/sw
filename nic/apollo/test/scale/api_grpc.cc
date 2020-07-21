@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <malloc.h>
 #include "nic/apollo/agent/test/client/app.hpp"
 #include "nic/apollo/test/scale/test_common.hpp"
 
@@ -41,6 +42,24 @@ create_route_table (pds_route_table_spec_t *route_table)
                                 "Batch start failed!");
     }
     return ret;
+}
+
+sdk_ret_t
+create_route (pds_route_spec_t *route)
+{
+    return create_route_impl(route);
+}
+
+sdk_ret_t
+delete_route (pds_route_key_t *route)
+{
+    return delete_route_impl(route);
+}
+
+sdk_ret_t
+get_heap_stats (struct mallinfo *minfo)
+{
+    return get_heap_stats_impl(minfo);
 }
 
 sdk_ret_t

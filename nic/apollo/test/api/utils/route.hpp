@@ -11,6 +11,7 @@
 #include "nic/apollo/test/api/utils/api_base.hpp"
 #include "nic/apollo/test/api/utils/batch.hpp"
 #include "nic/apollo/test/api/utils/feeder.hpp"
+#include <malloc.h>
 
 namespace test {
 namespace api {
@@ -25,6 +26,26 @@ enum route_table_attrs {
     ROUTE_TABLE_ATTR_ROUTES               =  bit(1),
     ROUTE_TABLE_ATTR_PRIORITY_EN          =  bit(2),
 };
+
+static inline void
+memory_dump (int fd)
+{
+    struct mallinfo minfo = {0};
+    minfo = mallinfo();
+
+    dprintf(fd, "%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n"
+            "%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n\n",
+            "Num Bytes Arena Alloc", minfo.arena,
+            "Num Free Blocks", minfo.ordblks,
+            "Num Fast Bin Free Blocks", minfo.smblks,
+            "Num mmap Blocks Alloc", minfo.hblks,
+            "Num mmap Bytes Alloc", minfo.hblkhd,
+            "Max Bytes Alloc", minfo.usmblks,
+            "Num Fast Bin Free Bytes", minfo.fsmblks,
+            "Num Bytes Alloc", minfo.uordblks,
+            "Num Free Bytes", minfo.fordblks,
+            "Releasable Free Bytes", minfo.keepcost);
+}
 
 // Route table test feeder class
 class route_table_feeder : public feeder {

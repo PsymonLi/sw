@@ -6,6 +6,7 @@
 #include <math.h>
 #include "nic/sdk/include/sdk/table.hpp"
 #include "nic/apollo/test/flow_test/flow_test.hpp"
+#include <malloc.h>
 
 #ifndef SKIP_FLOW
 flow_test *g_flow_test_obj;
@@ -19,6 +20,33 @@ create_route_table (pds_route_table_spec_t *route_table)
     } else {
         return SDK_RET_OK;
     }
+}
+
+sdk_ret_t
+create_route (pds_route_spec_t *route)
+{
+    if (route) {
+        return pds_route_create(route);
+    } else {
+        return SDK_RET_OK;
+    }
+}
+
+sdk_ret_t
+delete_route (pds_route_key_t *route)
+{
+    if (route) {
+        return pds_route_delete(route);
+    } else {
+        return SDK_RET_OK;
+    }
+}
+
+sdk_ret_t
+get_heap_stats (struct mallinfo *minfo)
+{
+    *minfo = mallinfo();
+    return SDK_RET_OK;
 }
 
 sdk_ret_t

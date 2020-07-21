@@ -241,13 +241,13 @@ message RouteGetResponse {
 // route delete request
 message RouteDeleteRequest {
   // optional batch context, if this request is part of batch of API calls
-  types.BatchCtxt  BatchCtxt  = 1;
+  types.BatchCtxt BatchCtxt = 1;
   // list of routes to delete
-  repeated RouteId Id         = 2 [(gogoproto.moretags) = "meta:mandatory"];
+  RouteId         Id        = 2 [(gogoproto.moretags) = "meta:mandatory"];
 }
 
 // route delete response
 message RouteDeleteResponse {
   // API status code
-  repeated types.ApiStatus ApiStatus = 1;
+  types.ApiStatus ApiStatus = 1;
 }

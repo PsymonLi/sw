@@ -25,7 +25,7 @@ service DebugSvc {
   rpc PbStatsGet (types.Empty) returns (PbStatsGetResponse) {}
   rpc MemTrackGet(MemTrackGetRequest) returns (MemTrackGetResponse) {}
   rpc SlabGet(types.Empty) returns (SlabGetResponse) {}
-  rpc HeapGet(types.Empty) returns (HeapGetResponse) {}
+  rpc HeapGet(HeapGetRequest) returns (HeapGetResponse) {}
   rpc MeterStatsGet (MeterStatsGetRequest) returns (MeterStatsGetResponse) {}
   rpc SessionStatsGet (SessionStatsGetRequest) returns (SessionStatsGetResponse) {}
   rpc FteStatsGet (types.Empty) returns (FteStatsGetResponse) {}
@@ -320,6 +320,9 @@ message HeapStats {
   uint32 NumBytesAlloc        = 8;
   uint32 NumFreeBytes         = 9;
   uint32 ReleasableFreeBytes  = 10;
+}
+
+message HeapGetRequest {
 }
 
 message HeapGetResponse {

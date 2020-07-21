@@ -19,6 +19,7 @@
 #include "nic/apollo/api/include/pds_policy.hpp"
 #include "nic/apollo/api/include/pds_policer.hpp"
 #include "nic/apollo/api/include/pds_device.hpp"
+#include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/api/include/pds_route.hpp"
 #include "nic/apollo/api/include/pds_mirror.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
@@ -42,7 +43,9 @@
 #include "nic/apollo/agent/svc/device_svc.hpp"
 #include "nic/apollo/agent/svc/dhcp_svc.hpp"
 #include "nic/apollo/agent/svc/mirror_svc.hpp"
+#include "nic/apollo/agent/svc/specs.hpp"
 #include "nic/sdk/include/sdk/uds.hpp"
+#include <malloc.h>
 
 static char *g_iov_data;
 #define SVC_SERVER_SOCKET_PATH          "/var/run/pds_svc_server_sock"
@@ -50,12 +53,16 @@ static char *g_iov_data;
 #define FD_INVALID (-1)
 
 using std::string;
+using pds::RouteRequest;
+using pds::RouteDeleteRequest;
 using pds::VnicDeleteRequest;
 using pds::VPCDeleteRequest;
 using pds::VPCGetRequest;
 using pds::VPCGetResponse;
 using pds::VPCPeerRequest;
 using pds::PolicerRequest;
+using pds::HeapGetRequest;
+using pds::HeapGetResponse;
 using pds::NexthopRequest;
 using pds::NexthopRequest;
 using pds::NhGroupRequest;
@@ -134,6 +141,81 @@ create_route_table_impl (pds_route_table_spec_t *spec)
             printf("%s failed!\n", __FUNCTION__);
             return SDK_RET_ERR;
         }
+    }
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+create_route_impl (pds_route_spec_t *spec)
+{
+    sdk_ret_t              ret;
+    RouteRequest           request;
+    ServiceRequestMessage  service_req;
+    ServiceResponseMessage service_rsp;
+
+    if (spec) {
+        auto proto_spec = request.mutable_request();
+        auto any_req = service_req.mutable_configmsg();
+        pds_route_api_spec_to_proto(proto_spec, spec);
+        any_req->PackFrom(request);
+        service_req.set_configop(types::SERVICE_OP_CREATE);
+        ret = service_request_send(&service_req, &service_rsp);
+        if ((ret != SDK_RET_OK) || (service_rsp.apistatus() != types::API_STATUS_OK)) {
+            printf("%s failed!\n", __FUNCTION__);
+            return SDK_RET_ERR;
+        }
+    }
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+delete_route_impl (pds_route_key_t *route)
+{
+    sdk_ret_t              ret;
+    RouteDeleteRequest     request;
+    ServiceRequestMessage  service_req;
+    ServiceResponseMessage service_rsp;
+
+    if (route) {
+        auto id = request.mutable_id();
+        id->set_id(route->route_id.id, PDS_MAX_KEY_LEN);
+        id->set_routetableid(route->route_table_id.id, PDS_MAX_KEY_LEN);
+        auto any_req = service_req.mutable_configmsg();
+        any_req->PackFrom(request);
+        service_req.set_configop(types::SERVICE_OP_DELETE);
+        ret = service_request_send(&service_req, &service_rsp);
+        if ((ret != SDK_RET_OK) || (service_rsp.apistatus() != types::API_STATUS_OK)) {
+            printf("%s failed!\n", __FUNCTION__);
+            return SDK_RET_ERR;
+        }
+    }
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+get_heap_stats_impl (struct mallinfo *minfo)
+{
+    sdk_ret_t              ret;
+    HeapGetRequest         request;
+    HeapGetResponse        response;
+    ServiceRequestMessage  service_req;
+    ServiceResponseMessage service_rsp;
+
+    if (minfo) {
+        auto any_req = service_req.mutable_configmsg();
+        any_req->PackFrom(request);
+        service_req.set_configop(types::SERVICE_OP_READ);
+        ret = service_request_send(&service_req, &service_rsp);
+        if ((ret != SDK_RET_OK) || (service_rsp.apistatus() != types::API_STATUS_OK)) {
+            printf("%s failed!\n", __FUNCTION__);
+            return SDK_RET_ERR;
+        }
+        auto any_rsp = service_rsp.response();
+        any_rsp.UnpackTo(&response);
+        pds_heap_stats_proto_to_mallinfo(minfo, response.stats());
     }
 
     return SDK_RET_OK;

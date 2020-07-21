@@ -304,6 +304,7 @@ nic/apollo/test/scale/$PIPELINE/scale_cfg_router.json             /nic/conf/
 nic/apollo/test/scale/$PIPELINE/ibm_fcs_scale.json                /nic/conf/
 nic/apollo/test/scale/$PIPELINE/scale_cfg_bitw.json               /nic/conf/
 nic/apollo/test/scale/$PIPELINE/scale_cfg_1vpc.json               /nic/conf/
+nic/apollo/test/scale/apulu/scale_cfg_1vpc_mem_leak.json          /nic/conf/
 nic/apollo/test/scale/$PIPELINE/scale_cfg_l2l.json                /nic/conf/
 nic/apollo/test/scale/$PIPELINE/scale_cfg_stateful.json           /nic/conf/
 nic/apollo/test/scale/$PIPELINE/scale_cfg_1vpc_stateful.json      /nic/conf/

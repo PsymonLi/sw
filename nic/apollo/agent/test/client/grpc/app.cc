@@ -22,6 +22,7 @@
 #include "gen/proto/nh.grpc.pb.h"
 #include "gen/proto/policer.grpc.pb.h"
 #include "gen/proto/types.grpc.pb.h"
+#include "gen/proto/debug.grpc.pb.h"
 #include "nic/apollo/api/include/pds_tep.hpp"
 #include "nic/apollo/api/include/pds_vpc.hpp"
 #include "nic/apollo/api/include/pds_subnet.hpp"
@@ -37,6 +38,7 @@
 #include "nic/apollo/api/include/pds_meter.hpp"
 #include "nic/apollo/api/include/pds_tag.hpp"
 #include "nic/apollo/api/include/pds_nexthop.hpp"
+#include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/agent/svc/route_svc.hpp"
 #include "nic/apollo/agent/svc/mapping_svc.hpp"
 #include "nic/apollo/agent/svc/policy_svc.hpp"
@@ -54,6 +56,8 @@
 #include "nic/apollo/agent/svc/device_svc.hpp"
 #include "nic/apollo/agent/svc/dhcp_svc.hpp"
 #include "nic/apollo/agent/svc/mirror_svc.hpp"
+#include "nic/apollo/agent/svc/specs.hpp"
+#include <malloc.h>
 
 using std::string;
 using grpc::Channel;
@@ -66,6 +70,12 @@ using pds::VPCPeerResponse;
 using pds::PolicerRequest;
 using pds::PolicerResponse;
 using pds::PolicerSpec;
+using pds::RouteRequest;
+using pds::RouteResponse;
+using pds::RouteDeleteRequest;
+using pds::RouteDeleteResponse;
+using pds::HeapGetRequest;
+using pds::HeapGetResponse;
 using pds::NexthopResponse;
 using pds::NexthopSpec;
 using pds::NhGroupSpec;
@@ -94,8 +104,12 @@ std::unique_ptr<pds::PolicerSvc::Stub>           g_policer_stub_;
 std::unique_ptr<pds::IfSvc::Stub>                g_if_stub_;
 std::unique_ptr<pds::Svc::Stub>                  g_svc_mapping_stub_;
 std::unique_ptr<pds::DHCPSvc::Stub>              g_dhcp_stub_;
+std::unique_ptr<pds::DebugSvc::Stub>             g_debug_stub_;
 
 pds::RouteTableRequest         g_route_table_req;
+pds::RouteRequest              g_route_req;
+pds::RouteDeleteRequest        g_route_req_del;
+pds::HeapGetRequest            g_heap_req;
 pds::SecurityPolicyRequest     g_policy_req;
 pds::MappingRequest            g_mapping_req;
 pds::VnicRequest               g_vnic_req;
@@ -139,6 +153,66 @@ create_route_table_impl (pds_route_table_spec_t *spec)
         g_route_table_req.clear_request();
     }
 
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+create_route_impl (pds_route_spec_t *spec)
+{
+    ClientContext context;
+    RouteResponse response;
+    Status        ret_status;
+
+    if (spec) {
+        pds_route_api_spec_to_proto(g_route_req.mutable_request(), spec);
+        ret_status = g_route_table_stub_->RouteCreate(&context, g_route_req, &response);
+        if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
+            printf("%s failed!\n", __FUNCTION__);
+            return SDK_RET_ERR;
+        }
+        g_route_req.clear_request();
+    }
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+delete_route_impl (pds_route_key_t *route)
+{
+    ClientContext       context;
+    RouteDeleteResponse response;
+    Status              ret_status;
+
+    if (route) {
+        auto id = g_route_req_del.mutable_id();
+        id->set_id(route->route_id.id, PDS_MAX_KEY_LEN);
+        id->set_routetableid(route->route_table_id.id, PDS_MAX_KEY_LEN);
+        ret_status = g_route_table_stub_->RouteDelete(&context, g_route_req_del, &response);
+        if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
+            printf("%s failed!\n", __FUNCTION__);
+            return SDK_RET_ERR;
+        }
+        g_route_req_del.clear_id();
+    }
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+get_heap_stats_impl (struct mallinfo *minfo)
+{
+    ClientContext   context;
+    HeapGetResponse response;
+    Status          ret_status;
+
+    if (minfo) {
+        ret_status = g_debug_stub_->HeapGet(&context, g_heap_req, &response);
+        if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
+            printf("%s failed!\n", __FUNCTION__);
+            return SDK_RET_ERR;
+        }
+        pds_heap_stats_proto_to_mallinfo(minfo, response.stats());
+    }
     return SDK_RET_OK;
 }
 
@@ -794,6 +868,7 @@ test_app_init (void)
     g_nat_stub_ = pds::NatSvc::NewStub(channel);
     g_dhcp_stub_ = pds::DHCPSvc::NewStub(channel);
     g_svc_mapping_stub_ = pds::Svc::NewStub(channel);
+    g_debug_stub_ = pds::DebugSvc::NewStub(channel);
 
     return SDK_RET_OK;
 }

@@ -144,10 +144,9 @@ func memShowCmdHandler(cmd *cobra.Command, args []string) {
 	}
 
 	if heap == true {
-		var empty *pds.Empty
-
+		req := &pds.HeapGetRequest{}
 		fmt.Printf("Heap Memory Stats:\n")
-		resp, err := client.HeapGet(context.Background(), empty)
+		resp, err := client.HeapGet(context.Background(), req)
 		if err != nil {
 			fmt.Printf("Getting heap failed, err %v\n", err)
 		} else {

@@ -43,6 +43,7 @@ uint32_t tep_id = 0;
 #define POLICY_ID_BASE         1
 #define RULE_ID_BASE           (0x1 << 15)
 #define ROUTE_TABLE_ID_BASE    4096
+#define ROUTE_ID_BASE          1024
 #define SVC_TAG_NEXT(tag_)     ((tag_)++ % 255)
 
 //----------------------------------------------------------------------------
@@ -141,6 +142,116 @@ create_v6_route_tables (uint32_t num_teps, uint32_t num_vpcs,
                                 "create route table %s failed, ret %u",
                                 v6route_table.key.str(), rv);
     }
+    return rv;
+}
+
+static inline void
+get_and_write_heap_stats (int fd)
+{
+    struct mallinfo minfo = {0};
+
+    get_heap_stats(&minfo);
+    dprintf(fd, "%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n"
+            "%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n\n",
+            "Num Bytes Arena Alloc", minfo.arena,
+            "Num Free Blocks", minfo.ordblks,
+            "Num Fast Bin Free Blocks", minfo.smblks,
+            "Num mmap Blocks Alloc", minfo.hblks,
+            "Num mmap Bytes Alloc", minfo.hblkhd,
+            "Max Bytes Alloc", minfo.usmblks,
+            "Num Fast Bin Free Bytes", minfo.fsmblks,
+            "Num Bytes Alloc", minfo.uordblks,
+            "Num Free Bytes", minfo.fordblks,
+            "Releasable Free Bytes", minfo.keepcost);
+}
+
+/**
+ * function creates 1 route table with 10 routes and repeatedly
+ * adds and deletes 1000 routes for 50000 iterations
+ */
+sdk_ret_t
+route_table_memory_leak_test (uint32_t mem_leak_iter_count)
+{
+    uint32_t num_init_routes = 10;
+    pds_route_spec_t route;
+    pds_route_table_spec_t route_table;
+    uint32_t tep_id = TEP_ID_MYTEP + 1; // skip MyTEP and gateway IPs
+    sdk_ret_t rv;
+    FILE *fp;
+    int fd;
+
+    // create route table with 10 routes
+    route_table.route_info =
+        (route_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_ID_ROUTE_TABLE,
+                                   ROUTE_INFO_SIZE(num_init_routes));
+    route_table.route_info->af = IP_AF_IPV4;
+    route_table.route_info->num_routes = num_init_routes;
+    route_table.key = test::int2pdsobjkey(ROUTE_TABLE_ID_BASE + 1);
+    for (uint32_t j = 0; j < num_init_routes; j ++) {
+        route_table.route_info->routes[j].attrs.prefix.addr.af = IP_AF_IPV4;
+        route_table.route_info->routes[j].attrs.prefix.len = 24;
+        route_table.route_info->routes[j].attrs.prefix.addr.addr.v4_addr =
+                ((0xC << 28) | (j << 8));
+        route_table.route_info->routes[j].attrs.nh_type =
+            PDS_NH_TYPE_OVERLAY;
+        route_table.route_info->routes[j].attrs.tep =
+            test::int2pdsobjkey(tep_id);
+    }
+    rv = create_route_table(&route_table);
+    SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                            "create route table %s failed, ret %u",
+                            route_table.key.str(), rv);
+
+    fp = fopen("memory_leak_dump.txt", "w");
+    if (!fp) {
+        SDK_TRACE_ERR("create memory leak output file failed");
+        SDK_ASSERT(0);
+        return SDK_RET_ERR;
+    }
+    fd = fileno(fp);
+    get_and_write_heap_stats(fd);
+
+    // create and delete 1000 routes in a loop
+    for (uint32_t i = 0; i < mem_leak_iter_count; i ++) {
+        // create 1000 routes
+        for (uint32_t j = 0; j < 1000; j ++) {
+            route.key.route_id = test::int2pdsobjkey(ROUTE_ID_BASE + j);
+            route.key.route_table_id = route_table.key;
+            route.attrs.prefix.addr.af = IP_AF_IPV4;
+            route.attrs.prefix.len = 24;
+            route.attrs.prefix.addr.addr.v4_addr =
+                ((0xD << 28) | (j << 8));
+            route.attrs.nh_type = PDS_NH_TYPE_OVERLAY;
+            route.attrs.tep = test::int2pdsobjkey(tep_id);
+            rv = create_route(&route);
+            SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                                    "create route %s for table %s failed, ret %u",
+                                    route.key.route_id.str(),
+                                    route.key.route_table_id.str(), rv);
+        }
+        rv = create_route(NULL);
+        SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                                "create route for table %s failed, ret %u",
+                                route_table.key.str(), rv);
+        // delete 1000 routes
+        for (uint32_t j = 0; j < 1000; j ++) {
+            route.key.route_id = test::int2pdsobjkey(ROUTE_ID_BASE + j);
+            route.key.route_table_id = route_table.key;
+            rv = delete_route(&route.key);
+            SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                                    "delete route %s for table %s failed, ret %u",
+                                    route.key.route_id.str(),
+                                    route.key.route_table_id.str(), rv);
+        }
+        rv = delete_route(NULL);
+        SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                                "delete route for table %s failed, ret %u",
+                                route_table.key.str(), rv);
+
+        get_and_write_heap_stats(fd);
+    }
+
+    fclose(fp);
     return rv;
 }
 
@@ -2003,6 +2114,10 @@ delete_objects (void)
         exit(1);
     }
 
+    if (g_test_params.mem_leak_test) {
+        return SDK_RET_OK;
+    }
+
     clock_gettime(CLOCK_MONOTONIC, &start_ts);
     sdk::timestamp_to_nsecs(&start_ts, &start_ns);
 
@@ -2152,6 +2267,11 @@ create_objects (void)
         if (ret != SDK_RET_OK) {
             return ret;
         }
+    }
+
+    if (apulu() && g_test_params.mem_leak_test) {
+        // run memory leak test and return
+        return route_table_memory_leak_test(g_test_params.mem_leak_iter_count);
     }
 
     // create route tables

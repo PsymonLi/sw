@@ -101,6 +101,7 @@ typedef enum cfg_msg_e {
     CFG_MSG_IPSEC_SA_DECRYPT_CREATE,
     CFG_MSG_IPSEC_SA_DECRYPT_DELETE,
     CFG_MSG_IPSEC_SA_DECRYPT_GET,
+    CFG_MSG_HEAP_GET,
 } cfg_msg_t;
 
 typedef struct cfg_ctxt_s {

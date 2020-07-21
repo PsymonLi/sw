@@ -22,8 +22,12 @@
 #include "nic/apollo/api/include/pds_nat.hpp"
 #include "nic/apollo/api/internal/pds_mapping.hpp"
 #include "nic/apollo/test/scale/test_common.hpp"
+#include <malloc.h>
 
 sdk_ret_t create_route_table(pds_route_table_spec_t *route_table);
+sdk_ret_t create_route(pds_route_spec_t *route);
+sdk_ret_t delete_route(pds_route_key_t *route);
+sdk_ret_t get_heap_stats(struct mallinfo *minfo);
 sdk_ret_t create_svc_mapping(pds_svc_mapping_spec_t *svc_mapping);
 sdk_ret_t create_local_mapping(pds_local_mapping_spec_t *pds_local_mapping);
 sdk_ret_t create_remote_mapping(pds_remote_mapping_spec_t *pds_remote_mapping);

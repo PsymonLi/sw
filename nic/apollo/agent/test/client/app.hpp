@@ -27,8 +27,12 @@
 #include "nic/apollo/api/include/pds_service.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
 #include "nic/apollo/api/include/pds_nat.hpp"
+#include <malloc.h>
 
 sdk_ret_t create_route_table_impl(pds_route_table_spec_t *spec);
+sdk_ret_t create_route_impl(pds_route_spec_t *spec);
+sdk_ret_t delete_route_impl(pds_route_key_t *key);
+sdk_ret_t get_heap_stats_impl(struct mallinfo *minfo);
 sdk_ret_t create_policy_impl(pds_policy_spec_t *spec);
 sdk_ret_t create_local_mapping_impl(pds_local_mapping_spec_t *spec);
 sdk_ret_t create_remote_mapping_impl(pds_remote_mapping_spec_t *spec);

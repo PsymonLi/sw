@@ -12,7 +12,8 @@
 #include "nic/apollo/agent/svc/svc_cfg_msg.hpp"
 #include "gen/proto/types.pb.h"
 #include "gen/proto/session.pb.h"
-#include "gen/proto/debug.grpc.pb.h"
+#include "gen/proto/debug.pb.h"
+#include <malloc.h>
 
 //----------------------------------------------------------------------------
 // convert IP address spec in proto to ip_addr
@@ -557,6 +558,7 @@ const static std::map<std::pair<std::string, types::ServiceRequestOp>, cfg_msg_t
     {std::make_pair("pds.IpsecSADecryptRequest", types::SERVICE_OP_CREATE),        CFG_MSG_IPSEC_SA_DECRYPT_CREATE},
     {std::make_pair("pds.IpsecSADecryptDeleteRequest", types::SERVICE_OP_DELETE),  CFG_MSG_IPSEC_SA_DECRYPT_DELETE},
     {std::make_pair("pds.IpsecSADecryptGetRequest", types::SERVICE_OP_READ),       CFG_MSG_IPSEC_SA_DECRYPT_GET},
+    {std::make_pair("pds.HeapGetRequest", types::SERVICE_OP_READ),                 CFG_MSG_HEAP_GET},
 };
 
 static inline cfg_msg_t
@@ -677,6 +679,22 @@ pds_svc_req_proto_to_svc_req_ctxt (svc_req_ctxt_t *svc_req,
         cfg_ctxt = &svc_req->cfg_ctxt;
         cfg_ctxt->cfg = CFG_MSG_NONE;
     }
+}
+
+static inline void
+pds_heap_stats_proto_to_mallinfo (struct mallinfo *minfo,
+                                  const pds::HeapStats &stats)
+{
+    minfo->arena = stats.numarenabytesalloc();
+    minfo->ordblks = stats.numfreeblocks();
+    minfo->smblks = stats.numfastbinfreeblocks();
+    minfo->hblks = stats.nummmapblocksalloc();
+    minfo->hblkhd = stats.nummmapbytesalloc();
+    minfo->usmblks = stats.maxblocksalloc();
+    minfo->fsmblks = stats.numfastbinfreebytes();
+    minfo->uordblks = stats.numbytesalloc();
+    minfo->fordblks = stats.numfreebytes();
+    minfo->keepcost = stats.releasablefreebytes();
 }
 
 #endif    // __AGENT_SVC_SPECS_HPP__

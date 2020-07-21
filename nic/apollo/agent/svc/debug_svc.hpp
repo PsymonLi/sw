@@ -13,6 +13,7 @@
 
 #include "nic/apollo/agent/svc/specs.hpp"
 #include "nic/apollo/agent/svc/debug.hpp"
+#include "nic/apollo/api/internal/debug.hpp"
 #include "nic/sdk/asic/port.hpp"
 
 using sdk::asic::pd::port_queue_credit_t;
@@ -314,6 +315,53 @@ pds_datapath_assist_stats_to_proto (debug::pds_datapath_assist_stats_t *stats,
                                PDS_DATAPATH_ASSIST_STAT_TOTALSESSIONSLEARNED]);
     proto_rsp->set_numsessionsaged(stats->value[
                                    PDS_DATAPATH_ASSIST_STAT_TOTALSESSIONSAGED]);
+}
+
+static inline sdk_ret_t
+pds_svc_heap_get (pds::HeapGetResponse *rsp)
+{
+    auto stats = rsp->mutable_stats();
+
+    struct mallinfo minfo = {0};
+    minfo = mallinfo();
+
+    stats->set_numarenabytesalloc(minfo.arena);
+    stats->set_numfreeblocks(minfo.ordblks);
+    stats->set_numfastbinfreeblocks(minfo.smblks);
+    stats->set_nummmapblocksalloc(minfo.hblks);
+    stats->set_nummmapbytesalloc(minfo.hblkhd);
+    stats->set_maxblocksalloc(minfo.usmblks);
+    stats->set_numfastbinfreebytes(minfo.fsmblks);
+    stats->set_numbytesalloc(minfo.uordblks);
+    stats->set_numfreebytes(minfo.fordblks);
+    stats->set_releasablefreebytes(minfo.keepcost);
+    rsp->set_apistatus(sdk_ret_to_api_status(SDK_RET_OK));
+
+    return SDK_RET_OK;
+}
+
+static inline sdk_ret_t
+pds_svc_debug_handle_cfg (cfg_ctxt_t *ctxt, google::protobuf::Any *any_resp)
+{
+    sdk_ret_t ret;
+    google::protobuf::Any *any_req = (google::protobuf::Any *)ctxt->req;
+
+    switch (ctxt->cfg) {
+    case CFG_MSG_HEAP_GET:
+        {
+            pds::HeapGetRequest  req;
+            pds::HeapGetResponse rsp;
+
+            any_req->UnpackTo(&req);
+            ret = pds_svc_heap_get(&rsp);
+            any_resp->PackFrom(rsp);
+        }
+        break;
+    default:
+        ret = SDK_RET_INVALID_ARG;
+        break;
+    }
+    return ret;
 }
 
 #endif    //__AGENT_SVC_DEBUG_SVC_HPP__

@@ -1,0 +1,25 @@
+{
+    "_comment_" : "the order of the objects listed here should be maintained",
+    "objects" : [
+        {
+            "kind" : "device",
+            "gw-ip-addr": "1.0.0.1",
+            "ip-addr" : "1.0.0.2",
+            "mac-addr" : "0x000201000001",
+            "dual-stack": "true",
+            "encap" : "vxlan",
+            "oper-mode": "host"
+        },
+        {
+            "kind" : "tep",
+            "count" : "1024",
+            "prefix": "1.0.0.0/8"
+        },
+        {
+            "_comment_" : "routes per routing table, middle 2 octets are used to create routes",
+            "kind" : "route-table",
+            "mem-leak-test" : "true",
+            "mem-leak-iter-count": "10"
+        }
+    ]
+}
