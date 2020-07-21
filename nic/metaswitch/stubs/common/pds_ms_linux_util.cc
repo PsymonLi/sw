@@ -26,6 +26,7 @@
 
 namespace pds_ms {
 
+#if 0
 // Utility function to get MAC address for interface from Linux
 static bool
 get_linux_intf_mac_addr (const std::string& if_name, mac_addr_t& if_mac)
@@ -59,15 +60,14 @@ exit:
     freeifaddrs(ifaddr);
     return ret;
 }
-
+#endif
 bool
 get_linux_intf_params (const char* ifname,
-                       uint32_t*   lnx_ifindex,
-                       mac_addr_t& mac)
+                       uint32_t*   lnx_ifindex)
 {
     *lnx_ifindex = if_nametoindex(ifname);
     if (*lnx_ifindex == 0) return false;
-    return get_linux_intf_mac_addr(ifname, mac);
+    return true;
 }
 
 

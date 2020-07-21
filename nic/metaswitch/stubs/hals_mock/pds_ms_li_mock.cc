@@ -96,8 +96,10 @@ NBB_BYTE li_integ_subcomp_t::if_addr_del(NBB_ULONG ms_ifindex,
                                          ATG_LIPI_L3_IP_ADDR *ip_addr) {
     return ATG_OK;
 }
-NBB_BYTE li_intf_t::l3_intf_create(ms_ifindex_t ms_ifindex) {
+NBB_BYTE li_intf_t::intf_create(ms_ifindex_t ms_ifindex) {
     return ATG_OK;
+}
+void li_intf_t::intf_delete(ms_ifindex_t ms_ifindex, bool li_ip_deleted) {
 }
 
 sdk_ret_t
@@ -121,4 +123,5 @@ sdk_ret_t li_intf_update_pds_ipaddr (NBB_ULONG ms_ifindex)
 {
     return SDK_RET_OK;
 }
+
 } // End namespace

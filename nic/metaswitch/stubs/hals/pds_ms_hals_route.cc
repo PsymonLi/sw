@@ -118,7 +118,7 @@ pds_batch_ctxt_guard_t
 process_route_batch(state_t *state, const pds_obj_key_t& rttable_key,
                     std::unique_ptr<cookie_t>& cookie_uptr)
 {
-    sdk_ret_t ret;
+    sdk_ret_t ret = SDK_RET_OK;
     pds_route_table_spec_t rttbl_spec;
     pds_batch_ctxt_guard_t bctxt_guard;
 

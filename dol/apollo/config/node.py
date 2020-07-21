@@ -179,8 +179,8 @@ class NodeObject(base.ConfigObjectBase):
         logger.info("Reading objects from pds-agent for node ", node)
 
         if (EzAccessStoreClient[node].IsDeviceOverlayRoutingEnabled()):
-            logger.info("Wait 5 seconds for control-plane convergence")
-            utils.Sleep(5)
+            logger.info("Wait 15 seconds for control-plane convergence")
+            utils.Sleep(15)
         failingObjects = []
         for objtype in APIObjTypes:
             objname = objtype.name

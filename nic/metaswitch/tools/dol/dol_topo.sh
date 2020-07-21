@@ -86,7 +86,13 @@ function amx-close {
 function start-pdsagent-dut {
     echo "start pdsagent in "$CONTAINER"1"
     ret=0
-    docker exec -dit -w $1 "$CONTAINER"1 sh -c "IPC_MOCK_MODE=1 CSS_SNAPSHOT_DIR=${DOL_CFG}1 $PDSAGENT --log-dir $1" || ret=$?
+
+#   TODO: Controlplane sim testing with underlay in IPC MOCK MODE is not supported
+#         since L3 interface requires IPC. Temporarily switch to PDS_MOCK_MODE until
+#         we get it to work in IPC mode which requires full setup including VPP similar
+#         to DOL
+#    docker exec -it "$CONTAINER"1 sh -c "/sw/nic/metaswitch/tools/dol/manual_test.sh" || ret=$?
+    docker exec -dit -w $1 "$CONTAINER"1 sh -c "PDS_MOCK_MODE=1 CSS_SNAPSHOT_DIR=${DOL_CFG}1 $PDSAGENT --log-dir $1" || ret=$?
 
     if [ $ret -ne 0 ]; then
         echo "failed to start pdsagent in "$CONTAINER"1: $ret"

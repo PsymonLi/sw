@@ -106,8 +106,6 @@ static void create_intf_proto_grpc (bool lo=false, bool second=false) {
     Status              ret_status;
     pds_if_spec_t       pds_if = {0};
 
-    request.mutable_batchctxt()->set_batchcookie(1);
-
     if (lo) {
         pds_if.key = pds_ms::msidx2pdsobjkey(k_lo_if_id);
         pds_if.type = ::IF_TYPE_LOOPBACK;
@@ -143,6 +141,53 @@ static void create_intf_proto_grpc (bool lo=false, bool second=false) {
         printf("%s failed! ret_status=%d (%s) response.status=%d\n",
                 __FUNCTION__, ret_status.error_code(), ret_status.error_message().c_str(),
                 response.apistatus());
+        exit(1);
+    }
+}
+
+static inline pds_obj_key_t
+uuid_from_objid (uint32_t id, const mac_addr_t& mac)
+{
+    pds_obj_key_t key = { 0 };
+    id = 2;
+    memcpy(&key.id[0], &id, sizeof(id));
+    key.id[4] = 0x10;
+    memset(&key.id[PDS_UUID_MAGIC_BYTE_OFFSET], PDS_UUID_MAGIC_BYTE,
+           PDS_UUID_MAGIC_BYTE_LEN);
+    memcpy(&key.id[PDS_UUID_SYSTEM_MAC_OFFSET], mac, ETH_ADDR_LEN);
+    return key;
+}
+
+static void delete_intf_proto_grpc () {
+    InterfaceDeleteRequest  request;
+    InterfaceDeleteResponse response;
+    ClientContext       context;
+    Status              ret_status;
+
+    request.add_id();
+    request.set_id(0, uuid_from_objid(k_l3_if_id_2, g_system_mac_addr).id, PDS_MAX_KEY_LEN);
+
+    printf ("Pushing L3 Interface %s Delete Proto...\n",
+            uuid_from_objid(k_l3_if_id_2, g_system_mac_addr).str());
+
+    ret_status = g_if_stub_->InterfaceDelete(&context, request, &response);
+
+    printf ("Pushed L3 Interface %s Delete Proto...\n",
+            uuid_from_objid(k_l3_if_id_2, g_system_mac_addr).str());
+
+    if (!ret_status.ok()) {
+        printf("%s failed! ret_status=%d (%s) ",
+                __FUNCTION__, ret_status.error_code(), ret_status.error_message().c_str());
+        exit(1);
+    }
+    if (response.apistatus_size() == 0) {
+        printf ("%s failed! Empty response\r\n", __FUNCTION__);
+        exit(1);
+    }
+    if (response.apistatus(0) != types::API_STATUS_OK) {
+        printf("%s failed! ret_status=%d (%s) response.status=%d\n",
+                __FUNCTION__, ret_status.error_code(), ret_status.error_message().c_str(),
+                response.apistatus(0));
         exit(1);
     }
 }
@@ -805,6 +850,12 @@ int main(int argc, char** argv)
             return 0;
         } else if (!strcmp(argv[1], "amx-close")) {
             set_amx_control(false);
+            return 0;
+        } else if (!strcmp(argv[1], "del-if")) {
+            delete_intf_proto_grpc();
+            return 0;
+        } else if (!strcmp(argv[1], "create-if")) {
+            create_intf_proto_grpc(false, true);
             return 0;
         }
     }

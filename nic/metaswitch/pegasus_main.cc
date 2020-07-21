@@ -38,7 +38,7 @@ std::string g_grpc_server_addr;
 
 // Pegasus needs to implement the Interface proto for loopback interfaces.
 // Metaswitch requires RRs to have a route reachability to the
-// BGP NLRI nexthops foe the RR to accept and reflect them.
+// BGP NLRI nexthops for the RR to accept and reflect them.
 // This is achieved by creating a static default route pointing to a
 // loopback interface.
 Status
@@ -51,11 +51,9 @@ IfSvcImpl::InterfaceCreate(ServerContext *context,
     }
 
     sdk_ret_t ret;
-    pds_batch_ctxt_t bctxt;
 
     PDS_TRACE_INFO("Received gRPC Interface Request Create");
 
-    bctxt = proto_req->batchctxt().batchcookie();
     for (int i = 0; i < proto_req->request_size(); i ++) {
 
         pds_if_spec_t api_if_spec = {0};
@@ -75,7 +73,7 @@ IfSvcImpl::InterfaceCreate(ServerContext *context,
         api_spec->type = IF_TYPE_LOOPBACK;
 
         // call the metaswitch api
-        if ((ret = pds_ms::interface_create(api_spec, bctxt)) != SDK_RET_OK) {
+        if ((ret = pds_ms::interface_create(api_spec)) != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to create interface %s, err %d",
                           api_spec->key.str(), ret);
             proto_rsp->set_apistatus(pds_ms_sdk_ret_to_api_status(ret));

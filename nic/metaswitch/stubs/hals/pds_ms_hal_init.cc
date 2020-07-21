@@ -89,7 +89,7 @@ handle_port_event (core::port_event_info_t &portev)
         // before the L3 inteface spec is replayed by gRPC. Ignore
         // link events during this window. The link state will be
         // read when the L3 interface spec is received
-        if (obj != nullptr && obj->phy_port_properties().spec_init) {
+        if (obj != nullptr && obj->phy_port_properties().mgmt_spec_init) {
             worker = obj->phy_port_properties().fri_worker;
         }
     }

@@ -45,12 +45,12 @@ populate_lim_addr_spec (ip_prefix_t           *ip_prefix,
         ifipaddr->set_v4addr(ip_prefix->addr.addr.v4_addr);
     } else {
         ifipaddr->set_af(types::IP_AF_INET6);
-        ifipaddr->set_v6addr(ip_prefix->addr.addr.v6_addr.addr8, 
+        ifipaddr->set_v6addr(ip_prefix->addr.addr.v6_addr.addr8,
                              IP6_ADDR8_LEN);
     }
 }
 
-// In addition to interface uuid fecthing, this API also marks the
+// In addition to interface uuid fetching, this API also marks the
 // uuid object to be pending deleted in case of delete operation
 static interface_uuid_obj_t::info_t
 interface_uuid_fetch(const pds_obj_key_t& key, bool del_op = false)
@@ -101,7 +101,7 @@ interface_uuid_ip_prefix (const pds_obj_key_t& key, ip_prefix_t& ip_prfx,
 static types::ApiStatus
 process_interface_update (pds_if_spec_t *if_spec,
                           ms_ifindex_t ms_ifindex,
-                          NBB_LONG      row_status, 
+                          NBB_LONG      row_status,
                           bool update = false)
 {
     LimInterfaceAddrSpec lim_addr_spec;
@@ -118,10 +118,12 @@ process_interface_update (pds_if_spec_t *if_spec,
                                    lim_if_spec, row_status,
                                    PDS_MS_CTM_GRPC_CORRELATOR, FALSE);
         intf_ip_prfx = &if_spec->l3_if_info.ip_prefix;
-        if (!ip_addr_is_zero(&if_spec->l3_if_info.ip_prefix.addr)) {
+
+        if ((row_status != AMB_ROW_DESTROY) &&
+            (!ip_addr_is_zero(&intf_ip_prfx->addr))) {
             has_ip_addr = true;
-            populate_lim_addr_spec (&if_spec->l3_if_info.ip_prefix, lim_addr_spec,
-                                    LIM_IF_TYPE_ETH, 
+            populate_lim_addr_spec (&if_spec->l3_if_info.ip_prefix,
+                                    lim_addr_spec, LIM_IF_TYPE_ETH,
                                     api::objid_from_uuid(if_spec->l3_if_info.port));
         }
     } else if (if_spec->type == IF_TYPE_LOOPBACK){
@@ -131,37 +133,24 @@ process_interface_update (pds_if_spec_t *if_spec,
         pds_ms_set_liminterfacespec_amb_lim_software_if (
                                         lim_swif_spec, row_status,
                                         PDS_MS_CTM_GRPC_CORRELATOR, FALSE);
-        if (row_status != AMB_ROW_DESTROY) {
-            intf_ip_prfx = &if_spec->loopback_if_info.ip_prefix;
-            if (!ip_addr_is_zero(&if_spec->loopback_if_info.ip_prefix.addr)) {
-                has_ip_addr = true;
-                populate_lim_addr_spec (&if_spec->loopback_if_info.ip_prefix, 
-                                        lim_addr_spec, LIM_IF_TYPE_LOOPBACK,
-                                        LOOPBACK_IF_ID);
-                lim_l3_if_addr_pre_set(lim_addr_spec, row_status,
-                                       PDS_MS_CTM_GRPC_CORRELATOR, FALSE);
-            }
+        intf_ip_prfx = &if_spec->loopback_if_info.ip_prefix;
+
+        if ((row_status != AMB_ROW_DESTROY) &&
+            (!ip_addr_is_zero(&intf_ip_prfx->addr))) {
+            has_ip_addr = true;
+            populate_lim_addr_spec (&if_spec->loopback_if_info.ip_prefix,
+                                    lim_addr_spec, LIM_IF_TYPE_LOOPBACK,
+                                    LOOPBACK_IF_ID);
         }
     }
 
-    if (update) {
+    if (update || row_status == AMB_ROW_DESTROY) {
         auto ifinfo = interface_uuid_fetch(if_spec->key);
         if (!IPADDR_EQ (&ifinfo.ip_prfx.addr, &intf_ip_prfx->addr)) {
             ip_modified = true;
         }
-        if (ifinfo.eth_ifindex == 0) {
-            PDS_TRACE_INFO("Loopback interface update UUID %s MS[[0x%x]]",
-                            if_spec->key.str(),ifinfo.ms_ifindex);
 
-        } else {
-            PDS_TRACE_INFO("L3 Intf Update UUID %s Eth[0x%X] to MS[0x%X]]",
-                            if_spec->key.str(), ifinfo.eth_ifindex,
-                            ifinfo.ms_ifindex);
-        }
-
-        // if we have an existing intf ip and not same as updated
-        // interface ip, then delete the ip address. updated IP,
-        // it configured, will be added subsequently
+        // delete old ip
         if (!ip_addr_is_zero(&ifinfo.ip_prfx.addr)  && ip_modified) {
             LimInterfaceAddrSpec lim_del_addr_spec;
             LimIntfType iftype = LIM_IF_TYPE_LOOPBACK;
@@ -169,10 +158,11 @@ process_interface_update (pds_if_spec_t *if_spec,
 
             if (ifinfo.eth_ifindex) {
                 iftype = LIM_IF_TYPE_ETH;
-                ifid = api::objid_from_uuid(if_spec->l3_if_info.port);
+                ifid = ifinfo.eth_ifindex;
             }
-            PDS_TRACE_INFO("Intf %s delete old IP address %s",
-                           if_spec->key.str(), ippfx2str(&ifinfo.ip_prfx));
+            PDS_TRACE_INFO("Intf %s MS[[0x%x]] delete old IP address %s",
+                           if_spec->key.str(), ifinfo.ms_ifindex,
+                           ippfx2str(&ifinfo.ip_prfx));
 
             populate_lim_addr_spec (&ifinfo.ip_prfx, lim_del_addr_spec,
                                     iftype, ifid);
@@ -210,7 +200,6 @@ process_interface_update (pds_if_spec_t *if_spec,
             // ip address is modified. update cached ip
             interface_uuid_ip_prefix (if_spec->key, *intf_ip_prfx, false);
         }
-
     }
 
     PDS_MS_END_TXN(PDS_MS_CTM_GRPC_CORRELATOR);
@@ -245,7 +234,7 @@ l3_intf_create (const pds_if_spec_t* if_spec, ms_ifindex_t ms_ifindex,
     auto state_ctxt = pds_ms::state_t::thread_context();
     auto if_obj = state_ctxt.state()->if_store().get(ms_ifindex);
 
-    if (if_obj != nullptr && if_obj->phy_port_properties().spec_init) {
+    if (if_obj != nullptr && if_obj->phy_port_properties().mgmt_spec_init) {
         // L3 Intf created for same Eth IfIndex for which
         // the prev L3 intf delete has not yet been seen by MS LI Stub
         throw Error(std::string("Duplicate Create for existing MS Intf ")
@@ -259,7 +248,7 @@ l3_intf_create (const pds_if_spec_t* if_spec, ms_ifindex_t ms_ifindex,
         new_if_obj = new pds_ms::if_obj_t(ms_ifindex, *if_spec);
     } else {
         new_if_obj = if_obj;
-        new_if_obj->phy_port_properties().set_spec(*if_spec);
+        new_if_obj->phy_port_properties().set_mgmt_spec(*if_spec);
     }
     auto& phy_port_prop = new_if_obj->phy_port_properties();
 
@@ -267,18 +256,14 @@ l3_intf_create (const pds_if_spec_t* if_spec, ms_ifindex_t ms_ifindex,
     PDS_TRACE_INFO("Fetching Linux Ifinfo for Ifname %s", if_name.c_str());
 #ifdef SIM
     if (!get_linux_intf_params(if_name.c_str(),
-                               &phy_port_prop.lnx_ifindex,
-                               phy_port_prop.mac_addr)) {
+                               &phy_port_prop.lnx_ifindex)) {
         // On sim the docker container may not have the Linux interfaces.
         PDS_TRACE_ERR("SIM: Failed to fetch Linux Ifinfo for Ifname %s",
                       if_name.c_str());
     }
-    // Use the SMAC sent in the spec
-    MAC_ADDR_COPY(phy_port_prop.mac_addr, if_spec->l3_if_info.mac_addr);
 #else
     if (!get_linux_intf_params(if_name.c_str(),
-                               &phy_port_prop.lnx_ifindex,
-                               phy_port_prop.mac_addr)) {
+                               &phy_port_prop.lnx_ifindex)) {
         throw Error (std::string("Could not fetch Linux params (IfIndex, S-MAC) for ")
                      .append(if_name));
     }
@@ -287,13 +272,15 @@ l3_intf_create (const pds_if_spec_t* if_spec, ms_ifindex_t ms_ifindex,
     if (if_obj == nullptr) {
         state_ctxt.state()->if_store().add_upd(ms_ifindex, new_if_obj);
     } else {
+        // store already has interface - must be upgrade scenario
+        // invoke LI stub directly
         li_intf_t intf;
-        intf.l3_intf_create(ms_ifindex);
+        intf.intf_create(ms_ifindex);
     }
 }
 
 sdk_ret_t
-interface_create (pds_if_spec_t *spec, pds_batch_ctxt_t bctxt)
+interface_create (pds_if_spec_t *spec)
 {
     types::ApiStatus ret_status;
     uint32_t ms_ifindex = 0;
@@ -332,7 +319,7 @@ interface_create (pds_if_spec_t *spec, pds_batch_ctxt_t bctxt)
                              spec->key.str(), spec->type);
             return SDK_RET_OK;
         }
- 
+
         ret_status = process_interface_update (spec, ms_ifindex, AMB_ROW_ACTIVE);
         if (ret_status != types::ApiStatus::API_STATUS_OK) {
             PDS_TRACE_ERR ("Failed to process interface %s create for "
@@ -340,7 +327,7 @@ interface_create (pds_if_spec_t *spec, pds_batch_ctxt_t bctxt)
                             spec->key.str(), ms_ifindex, ret_status);
             return pds_ms_api_to_sdk_ret (ret_status);
         }
- 
+
         PDS_TRACE_DEBUG ("Intf create for UUID %s successfully processed",
                           spec->key.str());
     } catch (const Error& e) {
@@ -352,45 +339,90 @@ interface_create (pds_if_spec_t *spec, pds_batch_ctxt_t bctxt)
 }
 
 sdk_ret_t
-interface_delete (pds_obj_key_t* key, pds_batch_ctxt_t bctxt)
+interface_delete (pds_obj_key_t* key)
 {
     types::ApiStatus ret_status;
-    
+
     // lock to allow only one grpc thread processing at a time
     std::lock_guard<std::mutex> lck(pds_ms::mgmt_state_t::grpc_lock());
 
+    PDS_TRACE_INFO("Interface delete %s", key->str());
     try {
-        // Guard to release all pending UUIDs in case of any failures
+        // guard to release all pending UUIDs in case of any failures
         mgmt_uuid_guard_t uuid_guard;
 
-        // Fill MS IfIndex from UUID cache
+        // fetch MS ifindex from UUID cache
         auto ifinfo = interface_uuid_fetch(*key, true /* mark for del */);
-        if (ifinfo.eth_ifindex != 0) {
-            PDS_TRACE_ERR("Intf delete for Eth IfIndex 0x%x is not allowed",
-                          ifinfo.eth_ifindex);
-            return SDK_RET_INVALID_OP;
-        }
         auto ms_ifindex = ifinfo.ms_ifindex;
-        // For delete if_spec needs to be populated with type alone
+
+        // for delete op, process_interface_update() expects iftype alone
+        // to be populated in the if_spec
         pds_if_spec_t if_spec = {0};
-        if_spec.type = IF_TYPE_LOOPBACK;
+        if_spec.key = *key;
+        if (ifinfo.eth_ifindex != 0) {
+            PDS_TRACE_INFO("L3 Intf Delete:: UUID %s MS[0x%X]] Eth Ifindex 0x%x",
+                           key->str(), ms_ifindex, ifinfo.eth_ifindex);
+            if_spec.type = IF_TYPE_L3;
+        } else {
+            PDS_TRACE_INFO("Loopback Intf Delete:: UUID %s MS[0x%X]]",
+                           key->str(), ms_ifindex);
+            if_spec.type = IF_TYPE_LOOPBACK;
+        }
 
-        PDS_TRACE_INFO("Loopback Intf Delete:: UUID %s MS[0x%X]]",
-                       key->str(), ms_ifindex);
-
+        // mark as deleted from mgmt
+        if (if_spec.type == IF_TYPE_L3) {
+            auto state_ctxt = pds_ms::state_t::thread_context();
+            auto if_obj = state_ctxt.state()->if_store().get(ms_ifindex);
+            if_obj->phy_port_properties().mgmt_spec_init = false;
+        }
+        // delete interface in MS
         ret_status = process_interface_update(&if_spec, ms_ifindex,
                                               AMB_ROW_DESTROY);
         if (ret_status != types::ApiStatus::API_STATUS_OK) {
             PDS_TRACE_ERR ("Failed to process interface UUID %s "
-                           "MS-Interface 0x%X delete err %d", 
+                           "MS-Interface 0x%X delete err %d",
                             key->str(), ms_ifindex, ret_status);
             return pds_ms_api_to_sdk_ret (ret_status);
         }
-    
-        PDS_TRACE_DEBUG ("Intf delete for UUID %s successfully processed",
+        PDS_TRACE_DEBUG ("Intf UUID %s successfully deleted in routing stack",
                          key->str());
+
+        if (if_spec.type == IF_TYPE_L3) {
+            // MS does not invoke LI stub delete for interface delete.
+            // invoke interface clean up directly from here.
+            li_intf_t li_intf;
+            li_intf.intf_delete(ms_ifindex, false);
+
+            PDS_TRACE_DEBUG ("L3 Intf UUID %s delete completed successfully",
+                             key->str());
+        }
+
     } catch (const Error& e) {
-        PDS_TRACE_ERR ("Interface %s deletion failed %s", 
+        PDS_TRACE_ERR ("Interface %s deletion failed %s",
+                        key->str(), e.what());
+        return e.rc();
+    }
+    return SDK_RET_OK;
+}
+
+// interface delete from pds-agent svc layer
+// TODO: temporary until we stop MS hijack for loopback interface
+sdk_ret_t
+interface_delete (pds_obj_key_t* key, pds_batch_ctxt_t bctxt)
+{
+    try {
+        auto ifinfo = interface_uuid_fetch(*key);
+        if (ifinfo.eth_ifindex == 0) {
+            // if its not attached to a underlying eth intf then it has
+            // to be loopback interface since we dont store any other intf type.
+            // hijack loopback intf delete alone
+            return interface_delete(key);
+        }
+        // let other interface deletes come from API thread
+        // via CFG IPC circulate
+        return SDK_RET_ENTRY_NOT_FOUND;
+    } catch (const Error& e) {
+        PDS_TRACE_ERR ("Interface %s deletion failed %s",
                         key->str(), e.what());
         return e.rc();
     }
@@ -400,6 +432,7 @@ interface_delete (pds_obj_key_t* key, pds_batch_ctxt_t bctxt)
 static bool chk_and_upd_l3_spec_ (ms_ifindex_t ms_ifindex, pds_if_spec_t* spec)
 {
     auto state_ctxt = pds_ms::state_t::thread_context();
+
     // Check for IP address change
     auto if_obj = state_ctxt.state()->if_store().get(ms_ifindex);
     if (if_obj == nullptr) {
@@ -409,6 +442,7 @@ static bool chk_and_upd_l3_spec_ (ms_ifindex_t ms_ifindex, pds_if_spec_t* spec)
     auto& port_prop = if_obj->phy_port_properties();
     auto& old_ip_prefix = port_prop.l3_if_spec.l3_if_info.ip_prefix;
     auto& new_ip_prefix = spec->l3_if_info.ip_prefix;
+
     if (!ip_prefix_is_equal(&old_ip_prefix, &new_ip_prefix)) {
         PDS_TRACE_DEBUG("MSIfIndex 0x%x Change in IP", ms_ifindex);
         ip_change = true;
@@ -421,10 +455,10 @@ static bool chk_and_upd_l3_spec_ (ms_ifindex_t ms_ifindex, pds_if_spec_t* spec)
 }
 
 sdk_ret_t
-interface_update (pds_if_spec_t *spec, pds_batch_ctxt_t bctxt)
+interface_update (pds_if_spec_t *spec)
 {
     types::ApiStatus ret_status;
-    
+
     // lock to allow only one grpc thread processing at a time
     std::lock_guard<std::mutex> lck(pds_ms::mgmt_state_t::grpc_lock());
 
@@ -435,30 +469,25 @@ interface_update (pds_if_spec_t *spec, pds_batch_ctxt_t bctxt)
         // Fill MS IfIndex from UUID cache
         auto ifinfo = interface_uuid_fetch(spec->key);
         auto ms_ifindex = ifinfo.ms_ifindex;
-        bool ip_change = false;
 
         if (spec->type == IF_TYPE_L3) {
-            ip_change = chk_and_upd_l3_spec_(ms_ifindex, spec);
+            chk_and_upd_l3_spec_(ms_ifindex, spec);
         }
-
-        // Send the update to Metaswitch - if there is no change in 
+        // Send the update to Metaswitch - if there is no change in
         // parameters CTM will treat it as a no-op
         ret_status = process_interface_update(spec, ms_ifindex,
                                               AMB_ROW_ACTIVE, true);
         if (ret_status != types::ApiStatus::API_STATUS_OK) {
             PDS_TRACE_ERR ("Failed to process interface UUID %s "
                            "MS-Interface 0x%X "
-                           "update err %d", 
+                           "update err %d",
                             spec->key.str(), ms_ifindex, ret_status);
             return pds_ms_api_to_sdk_ret (ret_status);
-        }
-        if (ip_change) {
-            li_intf_update_pds_ipaddr(ms_ifindex);
         }
         PDS_TRACE_DEBUG ("Intf update for UUID %s successfully processed",
                           spec->key.str());
     } catch (const Error& e) {
-        PDS_TRACE_ERR ("Interface %s update failed %s", 
+        PDS_TRACE_ERR ("Interface %s update failed %s",
                         spec->key.str(), e.what());
         return e.rc();
     }

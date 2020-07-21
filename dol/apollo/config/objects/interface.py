@@ -425,7 +425,11 @@ class L3InterfaceObject(InterfaceObject):
         spec.Id = self.GetKey()
         spec.AdminStatus = interface_pb2.IF_STATUS_UP
         spec.L3IfSpec.PortId = self.Port.GetUuid()
-        spec.L3IfSpec.MACAddress = self.MacAddr.getnum()
+        # HAL automatically fetches the correct MAC on Naples from hardware
+        # device register - overwriting with topo MAC breaks decap upon rx
+        # from network
+        if utils.IsDol():
+            spec.L3IfSpec.MACAddress = self.MacAddr.getnum()
         spec.L3IfSpec.VpcId = utils.PdsUuid.GetUUIDfromId(self.VPCId, api.ObjectTypes.VPC)
         utils.GetRpcIPPrefix(self.IpPrefix, spec.L3IfSpec.Prefix)
         utils.GetRpcIfIPPrefix(self.IfIpPrefix, spec.L3IfSpec.Prefix)

@@ -45,12 +45,7 @@ NBB_BYTE li_integ_subcomp_t::port_add_update(ATG_LIPI_PORT_ADD_UPDATE* port_add_
 }
 
 NBB_BYTE li_integ_subcomp_t::port_delete(NBB_ULONG port_ifindex) {
-     try {
-        li_intf_t intf;
-        intf.handle_delete (port_ifindex);
-    } catch (Error& e) {
-        PDS_TRACE_ERR ("Interface Delete processing failed %s", e.what());
-    }
+    PDS_TRACE_DEBUG ("MS Interface %d LI delete", port_ifindex);
     // Deletes are assummed to be synchronous and always successful in MS
     return ATG_OK;
 }
@@ -201,9 +196,15 @@ NBB_BYTE li_integ_subcomp_t::if_addr_set(NBB_ULONG ms_ifindex,
                                ms_ifindex);
                 return ATG_OK;
             }
+            SDK_ASSERT(if_obj->type() == ms_iftype_t::PHYSICAL_PORT);
 
-
+            if (!if_obj->phy_port_properties().mgmt_spec_init) {
+                PDS_TRACE_DEBUG("MSIfIndex 0x%x hitless upgrade CTM snapshot"
+                                " replayed IP ignored", ms_ifindex);
+                return ATG_OK;
+            }
             auto& port_prop = if_obj->phy_port_properties();
+
             if (ip.af == AF_INET6) {
                 PDS_TRACE_DEBUG("Ignore MSIfIndex 0x%x Interface %s"
                                 " IPv6 address set request",
@@ -242,6 +243,7 @@ NBB_BYTE li_integ_subcomp_t::if_addr_del(NBB_ULONG ms_ifindex,
                                ms_ifindex);
                 return ATG_OK;
             }
+            SDK_ASSERT(if_obj->type() == ms_iftype_t::PHYSICAL_PORT);
 
             auto& port_prop = if_obj->phy_port_properties();
             if (ip.af == AF_INET6) {
@@ -257,6 +259,14 @@ NBB_BYTE li_integ_subcomp_t::if_addr_del(NBB_ULONG ms_ifindex,
                            " IP address %s delete request",
                            ms_ifindex, port_prop.l3_if_spec.key.str(), lnx_ifindex,
                            inet_ntop(ip.af, &ip.addr, buf, INET6_ADDRSTRLEN));
+
+            if (!port_prop.mgmt_spec_init) {
+                // L3 interface has been deleted in mgmt,
+                // but LI clean up would have been pending ip address delete
+                // clean-up now
+                li_intf_t li;
+                li.intf_delete(ms_ifindex, true);
+            }
         }
 
         pds_ms::config_linux_intf_ip(lnx_ifindex, ip, ip_addr->prefix_len,

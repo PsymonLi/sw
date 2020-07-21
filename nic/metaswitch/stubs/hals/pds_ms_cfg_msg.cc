@@ -5,6 +5,7 @@
 
 #include "nic/metaswitch/stubs/hals/pds_ms_cfg_msg.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_ip_track.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_interface.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/apollo/api/core/msg.h"
 #include "nic/apollo/core/trace.hpp"
@@ -89,9 +90,33 @@ pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
             obj_type = "MIRROR";
             break;
 
+        case OBJ_ID_IF:
+            if (cfg_msg->op == API_OP_DELETE) {
+                PDS_TRACE_DEBUG("CFG_MSG INTERFACE %s delete",
+                                cfg_msg->intf.key.str());
+                ret = interface_delete(&cfg_msg->intf.key);
+            } else if (cfg_msg->op == API_OP_CREATE) {
+                PDS_TRACE_DEBUG("CFG_MSG INTERFACE %s create",
+                                cfg_msg->intf.spec.key.str());
+                ret = interface_create(&cfg_msg->intf.spec);
+            } else if (cfg_msg->op == API_OP_UPDATE) {
+                PDS_TRACE_DEBUG("CFG_MSG INTERFACE %s update",
+                                cfg_msg->intf.spec.key.str());
+                ret = interface_update(&cfg_msg->intf.spec);
+            }
+            if (ret != SDK_RET_OK) {
+                // abort obj walk and return failure 
+                break;
+            }
+            // processing for interface obj complete
+            // continue with next obj
+            continue;
+
         default:
             continue;
         }
+
+        // only objects that require IP track should reach here - TEP, mirror
 
         if (op_delete) {
             PDS_TRACE_DEBUG("CFG_MSG %s %s %s delete", obj_type.c_str(),
@@ -103,13 +128,13 @@ pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
         }
 
         if (op_delete) {
-            ret = ip_track_del (*key);
+            ret = ip_track_del(*key);
             if (ret == SDK_RET_ENTRY_NOT_FOUND) {
                 // Ignore deletes for cfg objcts that we dont know about 
                 ret = SDK_RET_OK;
             }
         } else {
-            ret = ip_track_add (*key, *ip, cfg_msg->obj_id, op_update);
+            ret = ip_track_add(*key, *ip, cfg_msg->obj_id, op_update);
             if (op_update && ret == SDK_RET_ENTRY_EXISTS) {
                 // Ignore updates for existing objects
                 ret = SDK_RET_OK;
@@ -121,6 +146,8 @@ pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
                           (ip != nullptr) ? ipaddr2str(ip) : "",
                           (op_update) ? "update" : "",
                           (op_delete) ? "delete" : "create");
+            // abort obj walk and return failure 
+            break;
         }
     }
     sdk::ipc::respond(ipc_msg, (const void *)&ret, sizeof(sdk_ret_t));

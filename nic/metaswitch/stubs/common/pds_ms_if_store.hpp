@@ -38,28 +38,26 @@ public:
 
     struct phy_port_properties_t { // Uplink L3 ports
         ms_ifindex_t ifindex;
-        bool         admin_state = false;
-        mac_addr_t   mac_addr;
         uint32_t     lnx_ifindex = 0;
         void         *fri_worker = nullptr; // FRI worker context
-        bool         hal_created = false; // Intf created in HAL ?
-        bool         switchport = false;  // Switchport ?
-        bool         spec_init  = false; // ht upgrade - store obj created
-                                         // before L3 spec is received
-        pds_if_spec_t l3_if_spec;
+        bool         li_stub_init = false; // LI stub initialization done ?
+        // created and active from mgmt's POV
+        bool         mgmt_spec_init  = false;
+        pds_if_spec_t l3_if_spec;        
 
-        phy_port_properties_t(ms_ifindex_t ifi) {
-            memset (this->mac_addr, 0, ETH_ADDR_LEN);
-            ifindex = ifi;
+        phy_port_properties_t(ms_ifindex_t ifi) : ifindex(ifi) {
+            memset(&l3_if_spec, 0, sizeof(l3_if_spec));
         }
         phy_port_properties_t(ms_ifindex_t ifi, const pds_if_spec_t& if_spec) {
-            memset (this->mac_addr, 0, ETH_ADDR_LEN);
             ifindex = ifi; l3_if_spec = if_spec;
-            spec_init = true;
+            mgmt_spec_init = true;
         }
-        void set_spec(const pds_if_spec_t& if_spec) {
+        void set_mgmt_spec(const pds_if_spec_t& if_spec) {
             l3_if_spec = if_spec;
-            spec_init = true;
+            mgmt_spec_init = true;
+        }
+        bool has_ip(void) {
+            return !(ip_prefix_is_zero(&l3_if_spec.l3_if_info.ip_prefix));
         }
     };
     struct vxlan_tunnel_properties_t { // All TEPs

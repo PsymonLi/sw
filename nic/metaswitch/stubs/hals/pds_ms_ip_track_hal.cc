@@ -5,6 +5,7 @@
 #include "nic/metaswitch/stubs/common/pds_ms_defs.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/apollo/api/internal/pds_tep.hpp"
 #include "nic/apollo/api/internal/pds_mirror.hpp"
 
@@ -38,7 +39,9 @@ ip_track_reachability_change (const pds_obj_key_t& pds_obj_key,
                         pds_obj_key.str(), ipaddr2str(&destip),
                         (op_delete) ? "lost" : "change",
                         nhgroup_id);
-        api::pds_tep_update(&key, &nhinfo);
+        if (likely(!PDS_MOCK_MODE())) {
+            api::pds_tep_update(&key, &nhinfo);
+        }
         break;
     case OBJ_ID_MIRROR_SESSION:
         PDS_TRACE_DEBUG("++++ IP track UUID %s Mirror session %s"
@@ -46,7 +49,9 @@ ip_track_reachability_change (const pds_obj_key_t& pds_obj_key,
                         pds_obj_key.str(), ipaddr2str(&destip),
                         (op_delete) ? "lost" : "change",
                         nhgroup_id);
-        api::pds_mirror_session_update(&key, &nhinfo);
+        if (likely(!PDS_MOCK_MODE())) {
+            api::pds_mirror_session_update(&key, &nhinfo);
+        }
         break;
     default:
         SDK_ASSERT(0);
@@ -62,7 +67,8 @@ ip_track_reachability_delete (const pds_obj_key_t& pds_obj_key,
     auto key = pds_obj_key;
 
     // IP track object deleted
-    if (pds_obj_id == OBJ_ID_MIRROR_SESSION) {
+    if ((pds_obj_id == OBJ_ID_MIRROR_SESSION) &&
+        (likely(!PDS_MOCK_MODE()))) {
         api::pds_mirror_session_delete(&key);
     }
     return SDK_RET_OK;

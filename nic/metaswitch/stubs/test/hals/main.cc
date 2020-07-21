@@ -18,7 +18,6 @@ extern "C"
 #include "nic/metaswitch/stubs/hals/pds_ms_li.hpp"
 #include "nic/metaswitch/stubs/test/hals/test_params.hpp"
 #include "nic/metaswitch/stubs/test/hals/vxlan_test_params.hpp"
-#include "nic/metaswitch/stubs/test/hals/phy_port_test_params.hpp"
 #include "nic/metaswitch/stubs/test/hals/underlay_ecmp_test_params.hpp"
 #include "nic/metaswitch/stubs/test/hals/bd_test_params.hpp"
 #include "nic/metaswitch/stubs/test/hals/vrf_test_params.hpp"
@@ -69,51 +68,6 @@ protected:
         pds_ms_test::test_params()->test_output = nullptr;
     }
 };
-
-TEST_F(pds_ms_hals_test, phy_port_test) {
-    pds_ms_test::load_phy_port_test();
-    auto test_input = pds_ms_test::test_params()->test_input;
-    auto test_output = pds_ms_test::test_params()->test_output;
-
-    // Initialize
-    auto phy_port_input = dynamic_cast<pds_ms_test::phy_port_input_params_t*>
-                              (test_input);
-    phy_port_input->init ();
-
-    // Create
-    std::cout << "=== IF Create test ===" << std::endl;
-    test_output->expect_create();
-    test_input->trigger_create();
-    test_output->validate();
-
-    // Update
-    std::cout << "=== IF Update test ===" << std::endl;
-    test_input->modify(); // Change any field
-    test_output->expect_update();
-    test_input->trigger_update();
-    test_output->validate();
-
-    // Mock batch update failure
-    std::cout << "=== IF Spec Create failure test ===" << std::endl;
-    test_input->next();
-    test_output->expect_pds_spec_op_fail();
-    test_input->trigger_create();
-    test_output->validate();
-
-    // Mock batch commit failure
-    std::cout << "=== IF Spec Batch commit failure test ===" << std::endl;
-    test_input->next();
-    test_output->expect_pds_batch_commit_fail();
-    test_input->trigger_create();
-    test_output->validate();
-
-    // Mock async batch failure return
-    std::cout << "=== IF Spec Batch commit async failure test ===" << std::endl;
-    test_input->next();
-    test_output->expect_create_pds_async_fail();
-    test_input->trigger_create();
-    test_output->validate();
-}
 
 TEST_F(pds_ms_hals_test, vxlan_test) {
     pds_ms_test::load_vxlan_test();
