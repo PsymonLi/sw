@@ -70,7 +70,7 @@ done
 for volume in `pvdisplay | grep 'PV Name' | awk '{print $3}' | xargs`; do
     pvremove $volume -f
 done
-/usr/sbin/wipefs -a $device
+/usr/sbin/wipefs -a -f $device
 LC_ALL=C /sbin/parted --script $device mklabel gpt
 partinfo=$(LC_ALL=C /sbin/parted --script -m $device "unit MB print" |grep ^$device:)
 dev_size=$(echo $partinfo |cut -d : -f 2 |sed -e 's/MB$//')
@@ -121,7 +121,8 @@ lv_name_prefix=${vg_dev}/lv
 # loaded, we still need to make sure there is no LVM before trying to create again or
 # otherwise it will fail
 if (( `pvdisplay | grep 'PV Name' | wc -l` != 1 )); then
-    pvcreate ${device}3
+    /usr/sbin/wipefs -a -f ${device}3
+    pvcreate -ff ${device}3
 fi
 if (( `vgdisplay | grep 'VG Name' | wc -l` != 1 )); then
     vgcreate ${vg_name} ${device}3
