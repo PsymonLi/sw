@@ -400,7 +400,7 @@ func (venice *veniceNode) Init(in *iota.Node) (*iota.Node, error) {
 
 	}
 
-	if in.GetVeniceConfig().GetClusterInfo() != nil {
+	if !in.Reload && in.GetVeniceConfig().GetClusterInfo() != nil {
 		venice.licenses = in.GetVeniceConfig().GetClusterInfo().GetLicenses()
 		ctx, cancel := context.WithTimeout(context.TODO(), 30*time.Minute)
 		defer cancel()
