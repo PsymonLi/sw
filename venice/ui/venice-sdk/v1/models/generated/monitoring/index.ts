@@ -129,4 +129,5 @@ export * from './monitoring-troubleshooting-session-list.model';
 export * from './monitoring-troubleshooting-session-spec.model';
 export * from './monitoring-troubleshooting-session-status.model';
 export * from './monitoring-ts-result.model';
+export * from './monitoring-workload-mirror.model';
 export * from './search-text-requirement.model';

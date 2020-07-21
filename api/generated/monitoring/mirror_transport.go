@@ -390,3 +390,37 @@ func EncodeGrpcRespPropagationStatus(ctx context.Context, response interface{}) 
 func DecodeGrpcRespPropagationStatus(ctx context.Context, response interface{}) (interface{}, error) {
 	return response, nil
 }
+
+func encodeHTTPWorkloadMirror(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPWorkloadMirror(_ context.Context, r *http.Request) (interface{}, error) {
+	var req WorkloadMirror
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqWorkloadMirror encodes GRPC request
+func EncodeGrpcReqWorkloadMirror(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*WorkloadMirror)
+	return req, nil
+}
+
+// DecodeGrpcReqWorkloadMirror decodes GRPC request
+func DecodeGrpcReqWorkloadMirror(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*WorkloadMirror)
+	return req, nil
+}
+
+// EncodeGrpcRespWorkloadMirror encodes GRC response
+func EncodeGrpcRespWorkloadMirror(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespWorkloadMirror decodes GRPC response
+func DecodeGrpcRespWorkloadMirror(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}

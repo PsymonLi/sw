@@ -150,6 +150,8 @@ var typesMapMirror = map[string]*api.Struct{
 			"Interfaces": api.Field{Name: "Interfaces", CLITag: api.CLIInfo{ID: "interfaces", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "interfaces", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "monitoring.InterfaceMirror"},
 
 			"SpanID": api.Field{Name: "SpanID", CLITag: api.CLIInfo{ID: "span-id", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "span-id", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"Workloads": api.Field{Name: "Workloads", CLITag: api.CLIInfo{ID: "workloads", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "workloads", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "monitoring.WorkloadMirror"},
 		},
 	},
 	"monitoring.MirrorSessionStatus": &api.Struct{
@@ -182,6 +184,14 @@ var typesMapMirror = map[string]*api.Struct{
 			"Status": api.Field{Name: "Status", CLITag: api.CLIInfo{ID: "status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "status", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"PendingNaples": api.Field{Name: "PendingNaples", CLITag: api.CLIInfo{ID: "pending-dscs", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "pending-dscs", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+		},
+	},
+	"monitoring.WorkloadMirror": &api.Struct{
+		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(WorkloadMirror{}) },
+		Fields: map[string]api.Field{
+			"Direction": api.Field{Name: "Direction", CLITag: api.CLIInfo{ID: "direction", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "direction", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"Selectors": api.Field{Name: "Selectors", CLITag: api.CLIInfo{ID: "selectors", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "selectors", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "labels.Selector"},
 		},
 	},
 }

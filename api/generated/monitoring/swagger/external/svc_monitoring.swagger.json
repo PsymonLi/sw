@@ -410,6 +410,13 @@
             "format": "int64"
           },
           {
+            "name": "workloads.direction",
+            "description": "rx is towards the workload and tx is from workload.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "status.schedule-state",
             "in": "query",
             "required": false,
@@ -7151,6 +7158,13 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "workloads.direction",
+            "description": "rx is towards the workload and tx is from workload.",
+            "in": "query",
+            "required": false,
+            "type": "string"
           },
           {
             "name": "status.schedule-state",
@@ -19228,6 +19242,10 @@
           "minimum": 1,
           "maximum": 1023,
           "description": "Value should be between 1 and 1023."
+        },
+        "workloads": {
+          "$ref": "#/definitions/monitoringWorkloadMirror",
+          "description": "If specified, will pick up workloads matching the selector."
         }
       },
       "description": "MirrorSessionSpec."
@@ -20001,6 +20019,35 @@
         },
         "report-url": {
           "type": "string"
+        }
+      }
+    },
+    "monitoringWorkloadMirror": {
+      "type": "object",
+      "required": [
+        "direction"
+      ],
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": [
+            "both",
+            "tx",
+            "rx"
+          ],
+          "default": "both",
+          "x-ui-hints": {
+            "both": "Both",
+            "rx": "Rx",
+            "tx": "Tx"
+          },
+          "description": "rx is towards the workload and tx is from workload."
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/labelsSelector"
+          }
         }
       }
     },

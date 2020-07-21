@@ -72,6 +72,7 @@
 		MirrorSessionStatus
 		MirrorStartConditions
 		PropagationStatus
+		WorkloadMirror
 		AlertDestinationList
 		AlertList
 		AlertPolicyList

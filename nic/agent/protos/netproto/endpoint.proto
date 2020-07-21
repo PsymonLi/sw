@@ -74,6 +74,8 @@ message EndpointSpec {
     string Migration                        = 9 [(gogoproto.nullable) = true,
                                                  (gogoproto.jsontag) = "migration,omitempty"];
 
+    // Mirror sessions, if mirroring is enabled for this endpoint.
+    repeated string MirrorSessions = 11 [(gogoproto.jsontag) = "mirror-sessions,omitemtpy"];
 }
 
 // endpoint status

@@ -355,6 +355,9 @@ func (m *MirrorSessionSpec) Defaults(ver string) bool {
 		i := m.MatchRules[k]
 		ret = i.Defaults(ver) || ret
 	}
+	if m.Workloads != nil {
+		ret = m.Workloads.Defaults(ver) || ret
+	}
 	ret = true
 	switch ver {
 	default:
@@ -433,6 +436,33 @@ func (m *PropagationStatus) Clone(into interface{}) (interface{}, error) {
 // Default sets up the defaults for the object
 func (m *PropagationStatus) Defaults(ver string) bool {
 	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *WorkloadMirror) Clone(into interface{}) (interface{}, error) {
+	var out *WorkloadMirror
+	var ok bool
+	if into == nil {
+		out = &WorkloadMirror{}
+	} else {
+		out, ok = into.(*WorkloadMirror)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*WorkloadMirror))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *WorkloadMirror) Defaults(ver string) bool {
+	var ret bool
+	ret = true
+	switch ver {
+	default:
+		m.Direction = "both"
+	}
+	return ret
 }
 
 // Validators and Requirements
@@ -802,6 +832,19 @@ func (m *MirrorSessionSpec) Validate(ver, path string, ignoreStatus bool, ignore
 			ret = append(ret, errs...)
 		}
 	}
+
+	if m.Workloads != nil {
+		{
+			dlmtr := "."
+			if path == "" {
+				dlmtr = ""
+			}
+			npath := path + dlmtr + "Workloads"
+			if errs := m.Workloads.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+				ret = append(ret, errs...)
+			}
+		}
+	}
 	if vs, ok := validatorMapMirror["MirrorSessionSpec"][ver]; ok {
 		for _, v := range vs {
 			if err := v(path, m); err != nil {
@@ -838,6 +881,10 @@ func (m *MirrorSessionSpec) Normalize() {
 
 	for k, v := range m.PacketFilters {
 		m.PacketFilters[k] = MirrorSessionSpec_MirrorPacketFilter_normal[strings.ToLower(v)]
+	}
+
+	if m.Workloads != nil {
+		m.Workloads.Normalize()
 	}
 
 }
@@ -893,6 +940,51 @@ func (m *PropagationStatus) Validate(ver, path string, ignoreStatus bool, ignore
 }
 
 func (m *PropagationStatus) Normalize() {
+
+}
+
+func (m *WorkloadMirror) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *WorkloadMirror) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	for k, v := range m.Selectors {
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := fmt.Sprintf("%s%sSelectors[%v]", path, dlmtr, k)
+		if errs := v.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
+	if vs, ok := validatorMapMirror["WorkloadMirror"][ver]; ok {
+		for _, v := range vs {
+			if err := v(path, m); err != nil {
+				ret = append(ret, err)
+			}
+		}
+	} else if vs, ok := validatorMapMirror["WorkloadMirror"]["all"]; ok {
+		for _, v := range vs {
+			if err := v(path, m); err != nil {
+				ret = append(ret, err)
+			}
+		}
+	}
+	return ret
+}
+
+func (m *WorkloadMirror) Normalize() {
+
+	m.Direction = Direction_normal[strings.ToLower(m.Direction)]
+
+	for k, v := range m.Selectors {
+		if v != nil {
+			v.Normalize()
+			m.Selectors[k] = v
+		}
+	}
 
 }
 
@@ -1020,6 +1112,20 @@ func init() {
 				vals = append(vals, k1)
 			}
 			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"ScheduleState", vals)
+		}
+		return nil
+	})
+
+	validatorMapMirror["WorkloadMirror"] = make(map[string][]func(string, interface{}) error)
+	validatorMapMirror["WorkloadMirror"]["all"] = append(validatorMapMirror["WorkloadMirror"]["all"], func(path string, i interface{}) error {
+		m := i.(*WorkloadMirror)
+
+		if _, ok := Direction_vvalue[m.Direction]; !ok {
+			vals := []string{}
+			for k1, _ := range Direction_vvalue {
+				vals = append(vals, k1)
+			}
+			return fmt.Errorf("%v did not match allowed strings %v", path+"."+"Direction", vals)
 		}
 		return nil
 	})

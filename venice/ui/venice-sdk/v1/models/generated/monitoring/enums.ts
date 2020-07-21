@@ -226,6 +226,12 @@ export enum MonitoringTroubleshootingSessionStatus_state {
     'scheduled' = "scheduled",
 }
 
+export enum MonitoringWorkloadMirror_direction {
+    'both' = "both",
+    'tx' = "tx",
+    'rx' = "rx",
+}
+
 
 export enum ApiListWatchOptions_sort_order_uihint {
     'by-creation-time' = "By Creation Time",
@@ -365,6 +371,12 @@ export enum MonitoringTroubleshootingSessionStatus_state_uihint {
     'stopped' = "Stopped",
 }
 
+export enum MonitoringWorkloadMirror_direction_uihint {
+    'both' = "Both",
+    'rx' = "Rx",
+    'tx' = "Tx",
+}
+
 
 
 
@@ -426,6 +438,7 @@ export class AllEnums {
     MonitoringThreshold_severity = MonitoringThreshold_severity;
     MonitoringThresholds_operator = MonitoringThresholds_operator;
     MonitoringTroubleshootingSessionStatus_state = MonitoringTroubleshootingSessionStatus_state;
+    MonitoringWorkloadMirror_direction = MonitoringWorkloadMirror_direction;
 
     ApiListWatchOptions_sort_order_uihint = ApiListWatchOptions_sort_order_uihint;
     FieldsRequirement_operator_uihint = FieldsRequirement_operator_uihint;
@@ -445,4 +458,5 @@ export class AllEnums {
     MonitoringSyslogExport_format_uihint = MonitoringSyslogExport_format_uihint;
     MonitoringSyslogExportConfig_facility_override_uihint = MonitoringSyslogExportConfig_facility_override_uihint;
     MonitoringTroubleshootingSessionStatus_state_uihint = MonitoringTroubleshootingSessionStatus_state_uihint;
+    MonitoringWorkloadMirror_direction_uihint = MonitoringWorkloadMirror_direction_uihint;
 }

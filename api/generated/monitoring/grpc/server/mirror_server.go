@@ -345,6 +345,7 @@ func (s *smonitoringMirrorBackend) regMsgsFunc(l log.Logger, scheme *runtime.Sch
 		"monitoring.MirrorSessionStatus":   apisrvpkg.NewMessage("monitoring.MirrorSessionStatus"),
 		"monitoring.MirrorStartConditions": apisrvpkg.NewMessage("monitoring.MirrorStartConditions"),
 		"monitoring.PropagationStatus":     apisrvpkg.NewMessage("monitoring.PropagationStatus"),
+		"monitoring.WorkloadMirror":        apisrvpkg.NewMessage("monitoring.WorkloadMirror"),
 		// Add a message handler for ListWatch options
 		"api.ListWatchOptions": apisrvpkg.NewMessage("api.ListWatchOptions"),
 		// Add a message handler for Label options

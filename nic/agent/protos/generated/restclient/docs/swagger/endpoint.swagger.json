@@ -591,6 +591,13 @@
         "migration": {
           "type": "string",
           "description": "Migration stage as expected by VCenter."
+        },
+        "mirror-sessions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Mirror sessions, if mirroring is enabled for this endpoint."
         }
       }
     },
