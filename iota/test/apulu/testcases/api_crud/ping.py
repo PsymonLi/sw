@@ -3,7 +3,7 @@ import iota.harness.api as api
 import iota.test.apulu.config.api as config_api
 import iota.test.utils.traffic as traffic_utils
 import iota.test.apulu.utils.connectivity as conn_utils
-import pdb
+import iota.test.apulu.utils.misc as misc
 
 def __getOperations(tc_operation):
     opers = list()
@@ -52,6 +52,10 @@ def Trigger(tc):
         if res != api.types.status.SUCCESS:
             break;
 
+    # NOTE: Wait to make sure that underlay tep and nexthop updates/deletes
+    #       configs will be pushed by underlay BGP
+    misc.Sleep(3)
+
     if res == api.types.status.SUCCESS:
         tc.cmd_cookies, tc.resp = conn_utils.TriggerConnectivityTest(tc.workload_pairs, 'icmp',
                                                                      tc.iterators.ipaf, 64)
@@ -61,6 +65,7 @@ def Trigger(tc):
            and tc.is_config_deleted is False and tc.is_config_created is False:
             tc.cmd_cookies_vr, tc.resp_vr, sent_probes = conn_utils.ConnectivityVRIPTest('icmp', 'ipv4', 64,
                                                                 config_api.WORKLOAD_PAIR_SCOPE_INTRA_SUBNET)
+    api.Logger.info(f"Trigger result {res}")
     return res
 
 def Verify(tc):
@@ -101,7 +106,7 @@ def Verify(tc):
                 api.PrintCommandResults(cmd)
                 result = api.types.status.FAILURE
 
-    api.Logger.debug(f"Verify result: {result}")
+    api.Logger.info(f"Verify result: {result}")
     return result
 
 def Teardown(tc):
@@ -113,7 +118,8 @@ def Teardown(tc):
         rs = config_api.RestoreObjects('Delete', tc.selected_objs)
         if rs is False:
             api.Logger.error(f"Teardown failed to restore objs from Delete operation: {rs}")
+    misc.Sleep(3)
     tc.cmd_cookies, tc.resp = traffic_utils.pingWorkloads(tc.workload_pairs, tc.iterators.ipaf)
     rs = traffic_utils.verifyPing(tc.cmd_cookies, tc.resp)
-    api.Logger.debug(f"Teardown result: {rs}")
+    api.Logger.info(f"Teardown result: {rs}")
     return rs
