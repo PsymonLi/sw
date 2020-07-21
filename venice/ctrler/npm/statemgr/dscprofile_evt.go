@@ -318,13 +318,13 @@ func (dps *DSCProfileState) Write() error {
 	defer dps.DSCProfile.Unlock()
 	prop := &dps.DSCProfile.Status.PropagationStatus
 	newProp := dps.updatePropagationStatus(dps.DSCProfile.GenerationID, prop, dps.NodeVersions)
-	if dps.propagatationStatusDifferent(prop, newProp) {
-		dps.DSCProfile.Status.PropagationStatus = *newProp
-		err = dps.DSCProfile.Write()
-		if err != nil {
-			log.Errorf("dscProfile %s Update failed %s", dps.DSCProfile.Name, err)
-			dps.DSCProfile.Status.PropagationStatus = *prop
-		}
+	/* Not checking the difference in status as genId could be diff.We dont have genID to compare
+	 */
+	dps.DSCProfile.Status.PropagationStatus = *newProp
+	err = dps.DSCProfile.Write()
+	if err != nil {
+		log.Errorf("dscProfile %s Update failed %s", dps.DSCProfile.Name, err)
+		dps.DSCProfile.Status.PropagationStatus = *prop
 	}
 	log.Infof("dscProfile %s Evaluate status done", dps.DSCProfile.Name)
 	return err

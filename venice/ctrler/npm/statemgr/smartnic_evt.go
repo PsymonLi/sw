@@ -406,6 +406,7 @@ func (sm *Statemgr) deleteDsc(smartNic *ctkit.DistributedServiceCard) (*Distribu
 			oldProfileState.PushObj.RemoveObjReceivers([]objReceiver.Receiver{hs.recvHandle})
 		}
 		oldProfileState.DSCProfile.Unlock()
+		sm.PeriodicUpdaterPush(oldProfileState)
 
 	}
 	return hs, nil
