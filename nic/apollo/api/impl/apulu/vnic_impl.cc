@@ -1008,7 +1008,12 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
         (obj_ctxt->upd_bmap & PDS_VNIC_UPD_TX_MIRROR_SESSION) ||
         (obj_ctxt->upd_bmap & PDS_VNIC_UPD_RX_MIRROR_SESSION)) {
         // do read-modify-update of the VNIC table entry
-        p4pd_global_entry_read(P4TBL_ID_VNIC, hw_id_, NULL, NULL, &vnic_data);
+        p4pd_ret = p4pd_global_entry_read(P4TBL_ID_VNIC, hw_id_, NULL, NULL,
+                                          &vnic_data);
+        if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
+            PDS_TRACE_ERR("Failed to read VNIC table at index %u", hw_id_);
+            return sdk::SDK_RET_HW_READ_ERR;
+        }
         // take care of meter update
         if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_METER_EN) {
             vnic_data.ing_vnic_info.meter_enabled = spec->meter_en;
@@ -1060,7 +1065,7 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
         }
         p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VNIC, hw_id_,
                                            NULL, NULL, &vnic_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
+        if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
             PDS_TRACE_ERR("Failed to program vnic %s ingress VNIC table "
                           "entry at %u", spec->key.str(), hw_id_);
             return sdk::SDK_RET_HW_PROGRAM_ERR;
@@ -1068,8 +1073,12 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
     }
     // update RX_VNIC table in egress pipe if rx policer changed
     if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_RX_POLICER) {
-        p4pd_global_entry_read(P4TBL_ID_VNIC, hw_id_,
-                               NULL, NULL, &rx_vnic_data);
+        p4pd_ret = p4pd_global_entry_read(P4TBL_ID_VNIC, hw_id_,
+                                          NULL, NULL, &rx_vnic_data);
+        if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
+            PDS_TRACE_ERR("Failed to read VNIC table at index %u", hw_id_);
+            return sdk::SDK_RET_HW_READ_ERR;
+        }
         if (spec->rx_policer != k_pds_obj_key_invalid) {
             rx_policer = policer_db()->find(&spec->rx_policer);
             if (unlikely(rx_policer == NULL)) {
@@ -1085,7 +1094,7 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
         }
         p4pd_ret = p4pd_global_entry_write(P4TBL_ID_RX_VNIC, hw_id_,
                                            NULL, NULL, &rx_vnic_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
+        if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
             PDS_TRACE_ERR("Failed to program vnic %s egres RX_VNIC table "
                           "entry at %u", spec->key.str(), hw_id_);
             return sdk::SDK_RET_HW_PROGRAM_ERR;
@@ -1376,6 +1385,7 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
     p4pd_error_t p4pd_ret;
     pds_obj_key_t vpc_key;
     lif_vlan_actiondata_t lif_vlan_data;
+    vnic_actiondata_t vnic_data;
 
     spec = &obj_ctxt->api_params->vnic_spec;
     subnet = subnet_find(&spec->subnet);
@@ -1414,6 +1424,26 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
         }
     }
 #endif
+
+    if (obj_ctxt->upd_bmap & (PDS_VNIC_UPD_POLICY | PDS_VNIC_UPD_ROUTE_TABLE)) {
+        // update the epoch
+        // do read-modify-update of the VNIC table entry
+        p4pd_ret = p4pd_global_entry_read(P4TBL_ID_VNIC, hw_id_,
+                                          NULL, NULL, &vnic_data);
+        if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
+            PDS_TRACE_ERR("Failed to read VNIC table at index %u",
+                          hw_id_);
+            return sdk::SDK_RET_HW_READ_ERR;
+        }
+        vnic_data.ing_vnic_info.epoch = PDS_IMPL_VNIC_EPOCH_NEXT(epoch_);
+        p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VNIC, hw_id_,
+                                           NULL, NULL, &vnic_data);
+        if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
+            PDS_TRACE_ERR("Failed to program vnic %s ingress VNIC table "
+                          "entry at %u", vnic->key2str().c_str(), hw_id_);
+            return sdk::SDK_RET_HW_PROGRAM_ERR;
+        }
+    }
 
     // update DHCP binding, if needed
     ret = upd_dhcp_binding_(vnic, orig_vnic, subnet, spec);
@@ -1487,10 +1517,14 @@ vnic_impl::reprogram_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
         // do read-modify-update of the VNIC table entry
         p4pd_ret = p4pd_global_entry_read(P4TBL_ID_VNIC, hw_id_,
                                           NULL, NULL, &vnic_data);
+        if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
+            PDS_TRACE_ERR("Failed to read VNIC table at index %u", hw_id_);
+            return sdk::SDK_RET_HW_READ_ERR;
+        }
         vnic_data.ing_vnic_info.epoch = PDS_IMPL_VNIC_EPOCH_NEXT(epoch_);
         p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VNIC, hw_id_,
                                            NULL, NULL, &vnic_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
+        if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
             PDS_TRACE_ERR("Failed to program vnic %s ingress VNIC table "
                           "entry at %u", vnic->key2str().c_str(), hw_id_);
             return sdk::SDK_RET_HW_PROGRAM_ERR;
@@ -1520,7 +1554,7 @@ vnic_impl::fill_stats_(pds_vnic_stats_t *stats) {
     // read P4TBL_ID_VNIC_TX_STATS table
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_VNIC_TX_STATS, hw_id_, NULL,
                                       NULL, &tx_stats);
-    if (p4pd_ret != P4PD_SUCCESS) {
+    if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
         PDS_TRACE_ERR("Failed to read VNIC_TX_STATS table at index %u", hw_id_);
         return sdk::SDK_RET_HW_READ_ERR;
     }
@@ -1530,7 +1564,7 @@ vnic_impl::fill_stats_(pds_vnic_stats_t *stats) {
     // read P4TBL_ID_VNIC_RX_STATS table
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_VNIC_RX_STATS, hw_id_, NULL,
                                       NULL, &rx_stats);
-    if (p4pd_ret != P4PD_SUCCESS) {
+    if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
         PDS_TRACE_ERR("Failed to read VNIC_RX_STATS table at index %u", hw_id_);
         return sdk::SDK_RET_HW_READ_ERR;
     }
@@ -1539,7 +1573,7 @@ vnic_impl::fill_stats_(pds_vnic_stats_t *stats) {
 
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_METER_STATS, hw_id_, NULL, NULL,
                                       &meter_stats);
-    if (p4pd_ret != P4PD_SUCCESS) {
+    if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
         PDS_TRACE_ERR("Failed to read METER_STATS table entry at index %u",
                       hw_id_);
         return sdk::SDK_RET_HW_PROGRAM_ERR;
@@ -1552,7 +1586,7 @@ vnic_impl::fill_stats_(pds_vnic_stats_t *stats) {
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_METER_STATS,
                                       (METER_TABLE_SIZE >> 1) + hw_id_,
                                       NULL, NULL, &meter_stats);
-    if (p4pd_ret != P4PD_SUCCESS) {
+    if (unlikely(p4pd_ret != P4PD_SUCCESS)) {
         PDS_TRACE_ERR("Failed to read METER_STATS table entry at index %u",
                       (METER_TABLE_SIZE >> 1) + hw_id_);
         return sdk::SDK_RET_HW_PROGRAM_ERR;
