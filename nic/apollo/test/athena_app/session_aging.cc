@@ -567,7 +567,7 @@ static void
 session_aging_pollers_poll(void *user_ctx)
 {
     for (uint32_t qid = 0; qid < pollers_qcount; qid++) {
-        pds_flow_age_sw_pollers_poll(qid, user_ctx);
+        pds_flow_age_sw_pollers_poll(qid, 0, user_ctx);
     }
 }
 
@@ -620,7 +620,7 @@ session_aging_normal_tmo_set(test_vparam_ref_t vparam)
 {
     session_tolerance.normal_tmo.reset();
     session_tolerance.normal_tmo.session_tmo_set(vparam.expected_num());
-    return session_tolerance.zero_failures();
+    return session_tolerance.normal_tmo.zero_failures();
 }
 
 bool
@@ -628,7 +628,7 @@ session_aging_accel_tmo_set(test_vparam_ref_t vparam)
 {
     session_tolerance.accel_tmo.reset();
     session_tolerance.accel_tmo.session_tmo_set(vparam.expected_num());
-    return session_tolerance.zero_failures();
+    return session_tolerance.accel_tmo.zero_failures();
 }
 
 bool
@@ -654,6 +654,14 @@ session_aging_tmo_artificial_long_set(test_vparam_ref_t vparam)
 }
 
 bool
+session_aging_tmo_show(test_vparam_ref_t vparam)
+{
+    session_tolerance.normal_tmo.tmo_show();
+    session_tolerance.accel_tmo.tmo_show();
+    return true;
+}
+
+bool
 session_aging_accel_control(test_vparam_ref_t vparam)
 {
     session_tolerance.failures_clear();
@@ -665,13 +673,6 @@ bool
 session_assoc_conntrack_id_set(test_vparam_ref_t vparam)
 {
     session_tolerance.session_assoc_conntrack_id(vparam.expected_num());
-    return true;
-}
-
-bool
-session_aging_sleep(test_vparam_ref_t vparam)
-{
-    sleep(vparam.expected_num(1));
     return true;
 }
 

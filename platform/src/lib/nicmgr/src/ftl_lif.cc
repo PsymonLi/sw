@@ -663,9 +663,7 @@ FtlLif::FtlLif(FtlDev& ftl_dev,
     normal_age_access_.reset(cmb_age_tmo_addr, sizeof(age_tmo_cb_t));
     accel_age_access_.reset(cmb_age_tmo_addr + sizeof(age_tmo_cb_t),
                             sizeof(age_tmo_cb_t));
-    age_tmo_cb_init(&normal_age_tmo_cb, normal_age_access(), 0);
-    age_tmo_cb_init(&accel_age_tmo_cb, accel_age_access(),
-                    SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT);
+    age_tmo_init();
     ftl_lif_state_machine(FTL_LIF_EV_CREATE, devcmd_ctx);
 }
 
@@ -918,13 +916,11 @@ FtlLif::ftl_lif_setattr_action(ftl_lif_event_t event,
         break;
 
     case FTL_LIF_ATTR_NORMAL_AGE_TMO:
-        age_tmo_cb_set("normal", &normal_age_tmo_cb,
-                       normal_age_access(), &cmd->age_tmo);
+        normal_age_tmo_cb_set(&cmd->age_tmo);
         break;
 
     case FTL_LIF_ATTR_ACCEL_AGE_TMO:
-        age_tmo_cb_set("accelerated", &accel_age_tmo_cb,
-                       accel_age_access(), &cmd->age_tmo);
+        accel_age_tmo_cb_set(&cmd->age_accel_tmo);
         break;
 
     case FTL_LIF_ATTR_METRICS:
@@ -936,17 +932,11 @@ FtlLif::ftl_lif_setattr_action(ftl_lif_event_t event,
         break;
 
     case FTL_LIF_ATTR_FORCE_SESSION_EXPIRED_TS:
-        force_session_expired_ts_set(&normal_age_tmo_cb,
-                              normal_age_access(), cmd->force_expired_ts);
-        force_session_expired_ts_set(&accel_age_tmo_cb,
-                              accel_age_access(), cmd->force_expired_ts);
+        force_session_expired_ts_set(cmd->force_expired_ts);
         break;
 
     case FTL_LIF_ATTR_FORCE_CONNTRACK_EXPIRED_TS:
-        force_conntrack_expired_ts_set(&normal_age_tmo_cb,
-                              normal_age_access(), cmd->force_expired_ts);
-        force_conntrack_expired_ts_set(&accel_age_tmo_cb,
-                              accel_age_access(), cmd->force_expired_ts);
+        force_conntrack_expired_ts_set(cmd->force_expired_ts);
         break;
 
     default:
@@ -982,15 +972,13 @@ FtlLif::ftl_lif_getattr_action(ftl_lif_event_t event,
 
     case FTL_LIF_ATTR_NORMAL_AGE_TMO:
         if (devcmd_ctx.rsp_data) {
-            age_tmo_cb_get((lif_attr_age_tmo_t *)devcmd_ctx.rsp_data,
-                           &normal_age_tmo_cb);
+            normal_age_tmo_cb_get((lif_attr_age_tmo_t *)devcmd_ctx.rsp_data);
         }
         break;
 
     case FTL_LIF_ATTR_ACCEL_AGE_TMO:
         if (devcmd_ctx.rsp_data) {
-            age_tmo_cb_get((lif_attr_age_tmo_t *)devcmd_ctx.rsp_data,
-                           &accel_age_tmo_cb);
+            accel_age_tmo_cb_get((lif_attr_age_accel_tmo_t *)devcmd_ctx.rsp_data);
         }
         break;
 
@@ -1025,11 +1013,11 @@ FtlLif::ftl_lif_getattr_action(ftl_lif_event_t event,
         break;
 
     case FTL_LIF_ATTR_FORCE_SESSION_EXPIRED_TS:
-        cpl->force_expired_ts = normal_age_tmo_cb.force_session_expired_ts;
+        cpl->force_expired_ts = force_session_expired_ts_get();
         break;
 
     case FTL_LIF_ATTR_FORCE_CONNTRACK_EXPIRED_TS:
-        cpl->force_expired_ts = normal_age_tmo_cb.force_conntrack_expired_ts;
+        cpl->force_expired_ts = force_conntrack_expired_ts_get();
         break;
 
     default:
@@ -1424,14 +1412,13 @@ FtlLif::ftl_lif_state_machine(ftl_lif_event_t event,
 }
 
 void
-FtlLif::age_tmo_cb_init(age_tmo_cb_t *age_tmo_cb,
-                        const mem_access_t& access,
-                        uint32_t accel_scale_factor)
+FtlLif::age_tmo_init(void)
 {
-    memset(age_tmo_cb, 0, sizeof(*age_tmo_cb));
-
     if (sdk::asic::asic_is_soft_init()) {
-        access.small_read(0, (uint8_t *)age_tmo_cb, sizeof(*age_tmo_cb));
+        normal_age_access().small_read(0, (uint8_t *)&normal_age_tmo_cb,
+                                       sizeof(normal_age_tmo_cb));
+        accel_age_access().small_read(0, (uint8_t *)&accel_age_tmo_cb,
+                                      sizeof(accel_age_tmo_cb));
         return;
     }
 
@@ -1439,147 +1426,143 @@ FtlLif::age_tmo_cb_init(age_tmo_cb_t *age_tmo_cb,
      * Timeout values are stored in big endian to make it
      * convenient for MPU code to load them with bit truncation.
      */
-    if (accel_scale_factor) {
+    memset(&normal_age_tmo_cb, 0, sizeof(normal_age_tmo_cb));
+    memset(&accel_age_tmo_cb, 0, sizeof(accel_age_tmo_cb));
+
+    normal_age_tmo_cb.tcp_syn_tmo = htonl(SCANNER_TCP_SYN_TMO_DFLT);
+    normal_age_tmo_cb.tcp_est_tmo = htonl(SCANNER_TCP_EST_TMO_DFLT);
+    normal_age_tmo_cb.tcp_fin_tmo = htonl(SCANNER_TCP_FIN_TMO_DFLT);
+    normal_age_tmo_cb.tcp_timewait_tmo = htonl(SCANNER_TCP_TIMEWAIT_TMO_DFLT);
+    normal_age_tmo_cb.tcp_rst_tmo = htonl(SCANNER_TCP_RST_TMO_DFLT);
+    normal_age_tmo_cb.udp_tmo = htonl(SCANNER_UDP_TMO_DFLT);
+    normal_age_tmo_cb.udp_est_tmo = htonl(SCANNER_UDP_EST_TMO_DFLT);
+    normal_age_tmo_cb.icmp_tmo = htonl(SCANNER_ICMP_TMO_DFLT);
+    normal_age_tmo_cb.others_tmo = htonl(SCANNER_OTHERS_TMO_DFLT);
+    normal_age_tmo_cb.session_tmo = htonl(SCANNER_SESSION_TMO_DFLT);
+    accel_age_tmo_cb = normal_age_tmo_cb;
+
+    /*
+     * Default is to select normal timeouts
+     */
+    normal_age_tmo_cb.cb_select = true;
+    normal_age_tmo_cb.cb_activate = SCANNER_AGE_TMO_CB_ACTIVATE;
+    normal_age_access().small_write(0, (uint8_t *)&normal_age_tmo_cb,
+                                    sizeof(normal_age_tmo_cb));
+    normal_age_access().cache_invalidate();
 
 #define ACCEL_SCALE(tmo_val)    \
-        std::max((uint32_t)tmo_val / accel_scale_factor, (uint32_t)1)
-        
-        age_tmo_cb->tcp_syn_tmo = htonl(ACCEL_SCALE(SCANNER_TCP_SYN_TMO_DFLT));
-        age_tmo_cb->tcp_est_tmo = htonl(ACCEL_SCALE(SCANNER_TCP_EST_TMO_DFLT));
-        age_tmo_cb->tcp_fin_tmo = htonl(ACCEL_SCALE(SCANNER_TCP_FIN_TMO_DFLT));
-        age_tmo_cb->tcp_timewait_tmo = htonl(ACCEL_SCALE(SCANNER_TCP_TIMEWAIT_TMO_DFLT));
-        age_tmo_cb->tcp_rst_tmo = htonl(ACCEL_SCALE(SCANNER_TCP_RST_TMO_DFLT));
-        age_tmo_cb->udp_tmo = htonl(ACCEL_SCALE(SCANNER_UDP_TMO_DFLT));
-        age_tmo_cb->udp_est_tmo = htonl(ACCEL_SCALE(SCANNER_UDP_EST_TMO_DFLT));
-        age_tmo_cb->icmp_tmo = htonl(ACCEL_SCALE(SCANNER_ICMP_TMO_DFLT));
-        age_tmo_cb->others_tmo = htonl(ACCEL_SCALE(SCANNER_OTHERS_TMO_DFLT));
-        age_tmo_cb->session_tmo = htonl(ACCEL_SCALE(SCANNER_SESSION_TMO_DFLT));
-    } else {
-        age_tmo_cb->tcp_syn_tmo = htonl(SCANNER_TCP_SYN_TMO_DFLT);
-        age_tmo_cb->tcp_est_tmo = htonl(SCANNER_TCP_EST_TMO_DFLT);
-        age_tmo_cb->tcp_fin_tmo = htonl(SCANNER_TCP_FIN_TMO_DFLT);
-        age_tmo_cb->tcp_timewait_tmo = htonl(SCANNER_TCP_TIMEWAIT_TMO_DFLT);
-        age_tmo_cb->tcp_rst_tmo = htonl(SCANNER_TCP_RST_TMO_DFLT);
-        age_tmo_cb->udp_tmo = htonl(SCANNER_UDP_TMO_DFLT);
-        age_tmo_cb->udp_est_tmo = htonl(SCANNER_UDP_EST_TMO_DFLT);
-        age_tmo_cb->icmp_tmo = htonl(SCANNER_ICMP_TMO_DFLT);
-        age_tmo_cb->others_tmo = htonl(SCANNER_OTHERS_TMO_DFLT);
-        age_tmo_cb->session_tmo = htonl(SCANNER_SESSION_TMO_DFLT);
+    std::max((uint32_t)tmo_val / SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT, (uint32_t)1)
 
-        /*
-         * Default is to select normal timeouts
-         */
-        age_tmo_cb->cb_select = true;
-    }
+    /*
+     * Only session_tmo is eligible for accelerated aging initially.
+     */
+    accel_age_tmo_cb.session_tmo = htonl(ACCEL_SCALE(SCANNER_SESSION_TMO_DFLT));
+    accel_age_access().small_write(0, (uint8_t *)&accel_age_tmo_cb,
+                                    sizeof(accel_age_tmo_cb));
+    accel_age_access().cache_invalidate();
 
-    age_tmo_cb->cb_activate = SCANNER_AGE_TMO_CB_ACTIVATE;
-    access.small_write(0, (uint8_t *)age_tmo_cb, sizeof(*age_tmo_cb));
+    /*
+     * Generate debug logs
+     */
+    normal_age_tmo_cb_get();
+    accel_age_tmo_cb_get();
 }
 
 void
-FtlLif::age_tmo_cb_set(const char *which,
-                       age_tmo_cb_t *age_tmo_cb,
-                       const mem_access_t& access,
-                       const lif_attr_age_tmo_t *attr_age_tmo)
+FtlLif::normal_age_tmo_cb_set(const lif_attr_age_tmo_t *attr_age_tmo)
 {
-    lif_attr_age_tmo_t  scratch_tmo;
-
+    /*
+     * Timeout values are stored in big endian to make it
+     * convenient for MPU code to load them with bit truncation.
+     */
+    normal_age_tmo_cb.tcp_syn_tmo = htonl(std::min(attr_age_tmo->tcp_syn_tmo,
+                                          (uint32_t)SCANNER_TCP_SYN_TMO_MAX));
+    normal_age_tmo_cb.tcp_est_tmo = htonl(std::min(attr_age_tmo->tcp_est_tmo,
+                                          (uint32_t)SCANNER_TCP_EST_TMO_MAX));
+    normal_age_tmo_cb.tcp_fin_tmo = htonl(std::min(attr_age_tmo->tcp_fin_tmo,
+                                          (uint32_t)SCANNER_TCP_FIN_TMO_MAX));
+    normal_age_tmo_cb.tcp_timewait_tmo = htonl(std::min(attr_age_tmo->tcp_timewait_tmo,
+                                               (uint32_t)SCANNER_TCP_TIMEWAIT_TMO_MAX));
+    normal_age_tmo_cb.tcp_rst_tmo = htonl(std::min(attr_age_tmo->tcp_rst_tmo,
+                                          (uint32_t)SCANNER_TCP_RST_TMO_MAX));
+    normal_age_tmo_cb.udp_tmo = htonl(std::min(attr_age_tmo->udp_tmo,
+                                      (uint32_t)SCANNER_UDP_TMO_MAX));
+    normal_age_tmo_cb.udp_est_tmo = htonl(std::min(attr_age_tmo->udp_est_tmo,
+                                          (uint32_t)SCANNER_UDP_EST_TMO_MAX));
+    normal_age_tmo_cb.icmp_tmo = htonl(std::min(attr_age_tmo->icmp_tmo,
+                                       (uint32_t)SCANNER_ICMP_TMO_MAX));
+    normal_age_tmo_cb.others_tmo = htonl(std::min(attr_age_tmo->others_tmo,
+                                         (uint32_t)SCANNER_OTHERS_TMO_MAX));
+    normal_age_tmo_cb.session_tmo = htonl(std::min(attr_age_tmo->session_tmo,
+                                          (uint32_t)SCANNER_SESSION_TMO_MAX));
     /*
      * Age values change in CB requires the following order:
      *   deactivate, change values, activate
      * in order to ensure MPU does not pick up any partially filled values.
      */
-    age_tmo_cb->cb_activate = (age_tmo_cb_activate_t)~SCANNER_AGE_TMO_CB_ACTIVATE;
-    access.small_write(offsetof(age_tmo_cb_t, cb_activate),
-                       (uint8_t *)&age_tmo_cb->cb_activate,
-                       sizeof(age_tmo_cb->cb_activate));
-    access.cache_invalidate();
+    normal_age_tmo_cb.cb_activate = (age_tmo_cb_activate_t)~SCANNER_AGE_TMO_CB_ACTIVATE;
+    normal_age_access().small_write(offsetof(age_tmo_cb_t, cb_activate),
+                                    (uint8_t *)&normal_age_tmo_cb.cb_activate,
+                                    sizeof(normal_age_tmo_cb.cb_activate));
+    normal_age_access().cache_invalidate();
+
+    normal_age_access().small_write(0, (uint8_t *)&normal_age_tmo_cb,
+                                    sizeof(normal_age_tmo_cb));
+    normal_age_tmo_cb.cb_activate = SCANNER_AGE_TMO_CB_ACTIVATE;
+    normal_age_access().small_write(offsetof(age_tmo_cb_t, cb_activate),
+                                    (uint8_t *)&normal_age_tmo_cb.cb_activate,
+                                    sizeof(normal_age_tmo_cb.cb_activate));
+    normal_age_access().cache_invalidate();
 
     /*
-     * Timeout values are stored in big endian to make it
-     * convenient for MPU code to load them with bit truncation.
+     * Sync the non-accelerated portion to the accel_age_cb
      */
-    age_tmo_cb->tcp_syn_tmo = htonl(std::min(attr_age_tmo->tcp_syn_tmo,
-                                         (uint32_t)SCANNER_TCP_SYN_TMO_MAX));
-    age_tmo_cb->tcp_est_tmo = htonl(std::min(attr_age_tmo->tcp_est_tmo,
-                                         (uint32_t)SCANNER_TCP_EST_TMO_MAX));
-    age_tmo_cb->tcp_fin_tmo = htonl(std::min(attr_age_tmo->tcp_fin_tmo,
-                                         (uint32_t)SCANNER_TCP_FIN_TMO_MAX));
-    age_tmo_cb->tcp_timewait_tmo = htonl(std::min(attr_age_tmo->tcp_timewait_tmo,
-                                         (uint32_t)SCANNER_TCP_TIMEWAIT_TMO_MAX));
-    age_tmo_cb->tcp_rst_tmo = htonl(std::min(attr_age_tmo->tcp_rst_tmo,
-                                         (uint32_t)SCANNER_TCP_RST_TMO_MAX));
-    age_tmo_cb->udp_tmo = htonl(std::min(attr_age_tmo->udp_tmo,
-                                         (uint32_t)SCANNER_UDP_TMO_MAX));
-    age_tmo_cb->udp_est_tmo = htonl(std::min(attr_age_tmo->udp_est_tmo,
-                                         (uint32_t)SCANNER_UDP_EST_TMO_MAX));
-    age_tmo_cb->icmp_tmo = htonl(std::min(attr_age_tmo->icmp_tmo,
-                                         (uint32_t)SCANNER_ICMP_TMO_MAX));
-    age_tmo_cb->others_tmo = htonl(std::min(attr_age_tmo->others_tmo,
-                                         (uint32_t)SCANNER_OTHERS_TMO_MAX));
-    age_tmo_cb->session_tmo = htonl(std::min(attr_age_tmo->session_tmo,
-                                         (uint32_t)SCANNER_SESSION_TMO_MAX));
-    NIC_LOG_DEBUG("{}: {} inactivity timeout values change",
-                  LifNameGet(), which);
-    age_tmo_cb_get(&scratch_tmo, age_tmo_cb);
+    accel_age_tmo_cb_sync();
 
-    access.small_write(0, (uint8_t *)age_tmo_cb, sizeof(*age_tmo_cb));
+    /*
+     * Generate debug logs
+     */
+    normal_age_tmo_cb_get();
 
-    age_tmo_cb->cb_activate = SCANNER_AGE_TMO_CB_ACTIVATE;
-    access.small_write(offsetof(age_tmo_cb_t, cb_activate),
-                       (uint8_t *)&age_tmo_cb->cb_activate,
-                       sizeof(age_tmo_cb->cb_activate));
-    access.cache_invalidate();
 }
 
 void
-FtlLif::age_tmo_cb_get(lif_attr_age_tmo_t *attr_age_tmo,
-                       const age_tmo_cb_t *age_tmo_cb)
+FtlLif::normal_age_tmo_cb_get(lif_attr_age_tmo_t *attr_age_tmo)
 {
-    attr_age_tmo->tcp_syn_tmo = ntohl(age_tmo_cb->tcp_syn_tmo);
-    attr_age_tmo->tcp_est_tmo = ntohl(age_tmo_cb->tcp_est_tmo);
-    attr_age_tmo->tcp_fin_tmo = ntohl(age_tmo_cb->tcp_fin_tmo);
-    attr_age_tmo->tcp_timewait_tmo = ntohl(age_tmo_cb->tcp_timewait_tmo);
-    attr_age_tmo->tcp_rst_tmo = ntohl(age_tmo_cb->tcp_rst_tmo);
-    attr_age_tmo->udp_tmo = ntohl(age_tmo_cb->udp_tmo);
-    attr_age_tmo->udp_est_tmo = ntohl(age_tmo_cb->udp_est_tmo);
-    attr_age_tmo->icmp_tmo = ntohl(age_tmo_cb->icmp_tmo);
-    attr_age_tmo->others_tmo = ntohl(age_tmo_cb->others_tmo);
-    attr_age_tmo->session_tmo = ntohl(age_tmo_cb->session_tmo);
+    age_tmo_cb_t    age_tmo_cb = {0};
 
-    NIC_LOG_DEBUG("    tcp_syn_tmo {} tcp_est_tmo {} tcp_fin_tmo {} "
+    age_tmo_cb.tcp_syn_tmo = ntohl(normal_age_tmo_cb.tcp_syn_tmo);
+    age_tmo_cb.tcp_est_tmo = ntohl(normal_age_tmo_cb.tcp_est_tmo);
+    age_tmo_cb.tcp_fin_tmo = ntohl(normal_age_tmo_cb.tcp_fin_tmo);
+    age_tmo_cb.tcp_timewait_tmo = ntohl(normal_age_tmo_cb.tcp_timewait_tmo);
+    age_tmo_cb.tcp_rst_tmo = ntohl(normal_age_tmo_cb.tcp_rst_tmo);
+    age_tmo_cb.udp_tmo = ntohl(normal_age_tmo_cb.udp_tmo);
+    age_tmo_cb.udp_est_tmo = ntohl(normal_age_tmo_cb.udp_est_tmo);
+    age_tmo_cb.icmp_tmo = ntohl(normal_age_tmo_cb.icmp_tmo);
+    age_tmo_cb.others_tmo = ntohl(normal_age_tmo_cb.others_tmo);
+    age_tmo_cb.session_tmo = ntohl(normal_age_tmo_cb.session_tmo);
+
+    NIC_LOG_DEBUG("normal tcp_syn_tmo {} tcp_est_tmo {} tcp_fin_tmo {} "
                   "tcp_timewait_tmo {} tcp_rst_tmo {}",
-                  attr_age_tmo->tcp_syn_tmo, attr_age_tmo->tcp_est_tmo,
-                  attr_age_tmo->tcp_fin_tmo, attr_age_tmo->tcp_timewait_tmo,
-                  attr_age_tmo->tcp_rst_tmo);
+                  age_tmo_cb.tcp_syn_tmo, age_tmo_cb.tcp_est_tmo,
+                  age_tmo_cb.tcp_fin_tmo, age_tmo_cb.tcp_timewait_tmo,
+                  age_tmo_cb.tcp_rst_tmo);
     NIC_LOG_DEBUG("    udp_tmo {} udp_est_tmo {} icmp_tmo {} others_tmo {} "
-                  " session_tmo {}", attr_age_tmo->udp_tmo,
-                  attr_age_tmo->udp_est_tmo, attr_age_tmo->icmp_tmo,
-                  attr_age_tmo->others_tmo, attr_age_tmo->session_tmo);
-}
-
-void
-FtlLif::force_session_expired_ts_set(age_tmo_cb_t *age_tmo_cb,
-                                     const mem_access_t& access,
-                                     uint8_t force_expired_ts)
-{
-    age_tmo_cb->force_session_expired_ts = force_expired_ts;
-    access.small_write(offsetof(age_tmo_cb_t, force_session_expired_ts),
-                       (uint8_t *)&age_tmo_cb->force_session_expired_ts,
-                       sizeof(age_tmo_cb->force_session_expired_ts));
-    access.cache_invalidate();
-}
-
-void
-FtlLif::force_conntrack_expired_ts_set(age_tmo_cb_t *age_tmo_cb,
-                                       const mem_access_t& access,
-                                       uint8_t force_expired_ts)
-{
-    age_tmo_cb->force_conntrack_expired_ts = force_expired_ts;
-    access.small_write(offsetof(age_tmo_cb_t, force_conntrack_expired_ts),
-                       (uint8_t *)&age_tmo_cb->force_conntrack_expired_ts,
-                       sizeof(age_tmo_cb->force_conntrack_expired_ts));
-    access.cache_invalidate();
+                  " session_tmo {}", age_tmo_cb.udp_tmo,
+                  age_tmo_cb.udp_est_tmo, age_tmo_cb.icmp_tmo,
+                  age_tmo_cb.others_tmo, age_tmo_cb.session_tmo);
+    if (attr_age_tmo) {
+        attr_age_tmo->tcp_syn_tmo = age_tmo_cb.tcp_syn_tmo;
+        attr_age_tmo->tcp_est_tmo = age_tmo_cb.tcp_est_tmo;
+        attr_age_tmo->tcp_fin_tmo = age_tmo_cb.tcp_fin_tmo;
+        attr_age_tmo->tcp_timewait_tmo = age_tmo_cb.tcp_timewait_tmo;
+        attr_age_tmo->tcp_rst_tmo = age_tmo_cb.tcp_rst_tmo;
+        attr_age_tmo->udp_tmo = age_tmo_cb.udp_tmo;
+        attr_age_tmo->udp_est_tmo = age_tmo_cb.udp_est_tmo;
+        attr_age_tmo->icmp_tmo = age_tmo_cb.icmp_tmo;
+        attr_age_tmo->others_tmo = age_tmo_cb.others_tmo;
+        attr_age_tmo->session_tmo = age_tmo_cb.session_tmo;
+    }
 }
 
 ftl_status_code_t
@@ -1592,18 +1575,109 @@ FtlLif::normal_age_tmo_cb_select(void)
          */
         normal_age_tmo_cb.cb_select = true;
         normal_age_access().small_write(offsetof(age_tmo_cb_t, cb_select),
-                                  (uint8_t *)&normal_age_tmo_cb.cb_select,
-                                  sizeof(normal_age_tmo_cb.cb_select));
+                                        (uint8_t *)&normal_age_tmo_cb.cb_select,
+                                        sizeof(normal_age_tmo_cb.cb_select));
         normal_age_access().cache_invalidate();
 
         accel_age_tmo_cb.cb_select = false;
         accel_age_access().small_write(offsetof(age_tmo_cb_t, cb_select),
-                                 (uint8_t *)&accel_age_tmo_cb.cb_select,
-                                 sizeof(accel_age_tmo_cb.cb_select));
+                                       (uint8_t *)&accel_age_tmo_cb.cb_select,
+                                       sizeof(accel_age_tmo_cb.cb_select));
         accel_age_access().cache_invalidate();
     }
-
     return FTL_RC_SUCCESS;
+}
+
+void
+FtlLif::accel_age_tmo_cb_set(const lif_attr_age_accel_tmo_t *attr_age_tmo)
+{
+    accel_age_tmo_cb.session_tmo = htonl(std::min(attr_age_tmo->session_tmo,
+                                         (uint32_t)SCANNER_SESSION_TMO_MAX));
+    /*
+     * Age values change in CB requires the following order:
+     *   deactivate, change values, activate
+     * in order to ensure MPU does not pick up any partially filled values.
+     */
+    accel_age_tmo_cb.cb_activate = (age_tmo_cb_activate_t)~SCANNER_AGE_TMO_CB_ACTIVATE;
+    accel_age_access().small_write(offsetof(age_tmo_cb_t, cb_activate),
+                                   (uint8_t *)&accel_age_tmo_cb.cb_activate,
+                                   sizeof(accel_age_tmo_cb.cb_activate));
+    accel_age_access().cache_invalidate();
+
+    accel_age_access().small_write(0, (uint8_t *)&accel_age_tmo_cb,
+                                   sizeof(accel_age_tmo_cb));
+    accel_age_tmo_cb.cb_activate = SCANNER_AGE_TMO_CB_ACTIVATE;
+    accel_age_access().small_write(offsetof(age_tmo_cb_t, cb_activate),
+                                   (uint8_t *)&accel_age_tmo_cb.cb_activate,
+                                   sizeof(accel_age_tmo_cb.cb_activate));
+    accel_age_access().cache_invalidate();
+
+    /*
+     * Generate debug logs
+     */
+    accel_age_tmo_cb_get();
+}
+
+void
+FtlLif::accel_age_tmo_cb_sync(void)
+{
+    accel_age_tmo_cb.tcp_syn_tmo = normal_age_tmo_cb.tcp_syn_tmo;
+    accel_age_tmo_cb.tcp_est_tmo = normal_age_tmo_cb.tcp_est_tmo;
+    accel_age_tmo_cb.tcp_fin_tmo = normal_age_tmo_cb.tcp_fin_tmo;
+    accel_age_tmo_cb.tcp_timewait_tmo = normal_age_tmo_cb.tcp_timewait_tmo;
+    accel_age_tmo_cb.tcp_rst_tmo = normal_age_tmo_cb.tcp_rst_tmo;
+    accel_age_tmo_cb.udp_tmo = normal_age_tmo_cb.udp_tmo;
+    accel_age_tmo_cb.udp_est_tmo = normal_age_tmo_cb.udp_est_tmo;
+    accel_age_tmo_cb.icmp_tmo = normal_age_tmo_cb.icmp_tmo;
+    accel_age_tmo_cb.others_tmo = normal_age_tmo_cb.others_tmo;
+
+    accel_age_tmo_cb.cb_activate = (age_tmo_cb_activate_t)~SCANNER_AGE_TMO_CB_ACTIVATE;
+    accel_age_access().small_write(offsetof(age_tmo_cb_t, cb_activate),
+                                   (uint8_t *)&accel_age_tmo_cb.cb_activate,
+                                   sizeof(accel_age_tmo_cb.cb_activate));
+    accel_age_access().cache_invalidate();
+
+    accel_age_access().small_write(0, (uint8_t *)&accel_age_tmo_cb,
+                                   sizeof(accel_age_tmo_cb));
+    accel_age_access().small_write(offsetof(age_tmo_cb_t, cb_activate),
+                                   (uint8_t *)&accel_age_tmo_cb.cb_activate,
+                                   sizeof(accel_age_tmo_cb.cb_activate));
+    accel_age_access().cache_invalidate();
+
+    /*
+     * Generate debug logs
+     */
+    accel_age_tmo_cb_get();
+}
+
+void
+FtlLif::accel_age_tmo_cb_get(lif_attr_age_accel_tmo_t *attr_age_tmo)
+{
+    age_tmo_cb_t    age_tmo_cb = {0};
+
+    age_tmo_cb.tcp_syn_tmo = ntohl(accel_age_tmo_cb.tcp_syn_tmo);
+    age_tmo_cb.tcp_est_tmo = ntohl(accel_age_tmo_cb.tcp_est_tmo);
+    age_tmo_cb.tcp_fin_tmo = ntohl(accel_age_tmo_cb.tcp_fin_tmo);
+    age_tmo_cb.tcp_timewait_tmo = ntohl(accel_age_tmo_cb.tcp_timewait_tmo);
+    age_tmo_cb.tcp_rst_tmo = ntohl(accel_age_tmo_cb.tcp_rst_tmo);
+    age_tmo_cb.udp_tmo = ntohl(accel_age_tmo_cb.udp_tmo);
+    age_tmo_cb.udp_est_tmo = ntohl(accel_age_tmo_cb.udp_est_tmo);
+    age_tmo_cb.icmp_tmo = ntohl(accel_age_tmo_cb.icmp_tmo);
+    age_tmo_cb.others_tmo = ntohl(accel_age_tmo_cb.others_tmo);
+    age_tmo_cb.session_tmo = ntohl(accel_age_tmo_cb.session_tmo);
+
+    NIC_LOG_DEBUG("accelerated tcp_syn_tmo {} tcp_est_tmo {} tcp_fin_tmo {} "
+                  "tcp_timewait_tmo {} tcp_rst_tmo {}",
+                  age_tmo_cb.tcp_syn_tmo, age_tmo_cb.tcp_est_tmo,
+                  age_tmo_cb.tcp_fin_tmo, age_tmo_cb.tcp_timewait_tmo,
+                  age_tmo_cb.tcp_rst_tmo);
+    NIC_LOG_DEBUG("    udp_tmo {} udp_est_tmo {} icmp_tmo {} others_tmo {} "
+                  " session_tmo {}", age_tmo_cb.udp_tmo,
+                  age_tmo_cb.udp_est_tmo, age_tmo_cb.icmp_tmo,
+                  age_tmo_cb.others_tmo, age_tmo_cb.session_tmo);
+    if (attr_age_tmo) {
+        attr_age_tmo->session_tmo = age_tmo_cb.session_tmo;
+    }
 }
 
 ftl_status_code_t
@@ -1616,18 +1690,61 @@ FtlLif::accel_age_tmo_cb_select(void)
          */
         accel_age_tmo_cb.cb_select = true;
         accel_age_access().small_write(offsetof(age_tmo_cb_t, cb_select),
-                                 (uint8_t *)&accel_age_tmo_cb.cb_select,
-                                 sizeof(accel_age_tmo_cb.cb_select));
+                                       (uint8_t *)&accel_age_tmo_cb.cb_select,
+                                       sizeof(accel_age_tmo_cb.cb_select));
         accel_age_access().cache_invalidate();
 
         normal_age_tmo_cb.cb_select = false;
         normal_age_access().small_write(offsetof(age_tmo_cb_t, cb_select),
-                                  (uint8_t *)&normal_age_tmo_cb.cb_select,
-                                  sizeof(normal_age_tmo_cb.cb_select));
+                                        (uint8_t *)&normal_age_tmo_cb.cb_select,
+                                        sizeof(normal_age_tmo_cb.cb_select));
         normal_age_access().cache_invalidate();
     }
-
     return FTL_RC_SUCCESS;
+}
+
+void
+FtlLif::force_session_expired_ts_set(uint8_t force_expired_ts)
+{
+    normal_age_tmo_cb.force_session_expired_ts = force_expired_ts;
+    normal_age_access().small_write(offsetof(age_tmo_cb_t, force_session_expired_ts),
+                                    (uint8_t *)&normal_age_tmo_cb.force_session_expired_ts,
+                                    sizeof(normal_age_tmo_cb.force_session_expired_ts));
+    normal_age_access().cache_invalidate();
+
+    accel_age_tmo_cb.force_session_expired_ts = force_expired_ts;
+    accel_age_access().small_write(offsetof(age_tmo_cb_t, force_session_expired_ts),
+                                   (uint8_t *)&accel_age_tmo_cb.force_session_expired_ts,
+                                   sizeof(accel_age_tmo_cb.force_session_expired_ts));
+    accel_age_access().cache_invalidate();
+}
+
+void
+FtlLif::force_conntrack_expired_ts_set(uint8_t force_expired_ts)
+{
+    normal_age_tmo_cb.force_conntrack_expired_ts = force_expired_ts;
+    normal_age_access().small_write(offsetof(age_tmo_cb_t, force_conntrack_expired_ts),
+                                    (uint8_t *)&normal_age_tmo_cb.force_conntrack_expired_ts,
+                                    sizeof(normal_age_tmo_cb.force_conntrack_expired_ts));
+    normal_age_access().cache_invalidate();
+
+    accel_age_tmo_cb.force_conntrack_expired_ts = force_expired_ts;
+    accel_age_access().small_write(offsetof(age_tmo_cb_t, force_conntrack_expired_ts),
+                                   (uint8_t *)&accel_age_tmo_cb.force_conntrack_expired_ts,
+                                   sizeof(accel_age_tmo_cb.force_conntrack_expired_ts));
+    accel_age_access().cache_invalidate();
+}
+
+uint8_t
+FtlLif::force_session_expired_ts_get(void)
+{
+    return normal_age_tmo_cb.force_session_expired_ts;
+}
+
+uint8_t
+FtlLif::force_conntrack_expired_ts_get(void)
+{
+    return accel_age_tmo_cb.force_conntrack_expired_ts;
 }
 
 /*

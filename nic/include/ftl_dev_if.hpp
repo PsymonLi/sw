@@ -360,6 +360,7 @@ enum lif_attr {
 };
 
 typedef pds_flow_age_timeouts_t lif_attr_age_tmo_t;
+typedef pds_flow_age_accel_timeouts_t lif_attr_age_accel_tmo_t;
 
 /**
  * LIF metrics
@@ -405,6 +406,7 @@ typedef struct lif_setattr_cmd {
     union {
         char                name[FTL_DEV_IFNAMSIZ];
         lif_attr_age_tmo_t  age_tmo;
+        lif_attr_age_accel_tmo_t age_accel_tmo;
         uint8_t             force_expired_ts;
         uint8_t             rsvd[60];
     };

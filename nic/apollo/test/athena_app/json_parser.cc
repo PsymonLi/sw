@@ -26,7 +26,7 @@ uint8_t g_num_v4_flows;
 bool g_flow_age_normal_tmo_set;
 pds_flow_age_timeouts_t g_flow_age_normal_tmo;
 bool g_flow_age_accel_tmo_set;
-pds_flow_age_timeouts_t g_flow_age_accel_tmo;
+pds_flow_age_accel_timeouts_t g_flow_age_accel_tmo;
 
 static int
 str2mac(const char* mac, uint8_t *out)
@@ -97,15 +97,6 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
             std::string accel_tmo_set = flow_age_accel_tmo.get().get<std::string>("tmo_set");
             if (accel_tmo_set.compare("yes") == 0) {
                 g_flow_age_accel_tmo_set = 1;
-                g_flow_age_accel_tmo.tcp_syn_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_syn_tmo");
-                g_flow_age_accel_tmo.tcp_est_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_est_tmo");
-                g_flow_age_accel_tmo.tcp_fin_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_fin_tmo");
-                g_flow_age_accel_tmo.tcp_timewait_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_timewait_tmo");
-                g_flow_age_accel_tmo.tcp_rst_tmo = flow_age_accel_tmo.get().get<uint32_t>("tcp_rst_tmo");
-                g_flow_age_accel_tmo.icmp_tmo = flow_age_accel_tmo.get().get<uint32_t>("icmp_tmo");
-                g_flow_age_accel_tmo.udp_tmo = flow_age_accel_tmo.get().get<uint32_t>("udp_tmo");
-                g_flow_age_accel_tmo.udp_est_tmo = flow_age_accel_tmo.get().get<uint32_t>("udp_est_tmo");
-                g_flow_age_accel_tmo.others_tmo = flow_age_accel_tmo.get().get<uint32_t>("others_tmo");
                 g_flow_age_accel_tmo.session_tmo = flow_age_accel_tmo.get().get<uint32_t>("session_tmo");
             } else {
                 g_flow_age_accel_tmo_set = 0;
@@ -130,15 +121,6 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
 
         if (g_flow_age_accel_tmo_set) {
             printf("g_flow_age_accel_tmo_set: %u \n", g_flow_age_accel_tmo_set);
-            printf("tcp_syn_tmo: %u \n", g_flow_age_accel_tmo.tcp_syn_tmo);
-            printf("tcp_est_tmo: %u \n", g_flow_age_accel_tmo.tcp_est_tmo);
-            printf("tcp_fin_tmo: %u \n", g_flow_age_accel_tmo.tcp_fin_tmo);
-            printf("tcp_timewait_tmo: %u \n", g_flow_age_accel_tmo.tcp_timewait_tmo);
-            printf("tcp_rst_tmo: %u \n", g_flow_age_accel_tmo.tcp_rst_tmo);
-            printf("icmp_tmo: %u \n", g_flow_age_accel_tmo.icmp_tmo);
-            printf("udp_tmo: %u \n", g_flow_age_accel_tmo.udp_tmo);
-            printf("udp_est_tmo: %u \n", g_flow_age_accel_tmo.udp_est_tmo);
-            printf("others_tmo: %u \n", g_flow_age_accel_tmo.others_tmo);
             printf("session_tmo: %u \n", g_flow_age_accel_tmo.session_tmo);
         }
 

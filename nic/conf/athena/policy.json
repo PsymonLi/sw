@@ -16,18 +16,8 @@
     },
     "flow_age_accel_tmo": {
         "tmo_set": "no",
-        "tcp_syn_tmo": "6",
-        "tcp_est_tmo": "8640",
-        "tcp_fin_tmo": "12",
-        "tcp_timewait_tmo": "12",
-        "tcp_rst_tmo": "1",
-        "icmp_tmo": "1",
-        "udp_tmo": "3",
-        "udp_est_tmo": "18",
-        "others_tmo": "30",
         "session_tmo": "30",
-        "_comment": "tmo_set should be yes to have these values configured",
-        "_comment1": "except session_tmo all are conntrack timeout values"
+        "_comment": "tmo_set should be yes to have these values configured"
     },
     "vnic": [
         {

@@ -445,21 +445,21 @@ header_type session_info_d {
 
 header_type conntrack_info_d {
     fields {
-        valid_flag                      : 1;
         flow_type                       : 2;
         flow_state                      : 4;
         timestamp                       : 24;
+        valid_flag                      : 1;
     }
 }
 
 #define CONNTRACK_INFO_DATA                                                     \
-    valid_flag, flow_type, flow_state, timestamp                                \
+    flow_type, flow_state, timestamp, valid_flag                                \
 
 #define CONNTRACK_INFO_USE(scratch)                                             \
-    modify_field(scratch.valid_flag, valid_flag);                               \
     modify_field(scratch.flow_type, flow_type);                                 \
     modify_field(scratch.flow_state, flow_state);                               \
     modify_field(scratch.timestamp, timestamp);                                 \
+    modify_field(scratch.valid_flag, valid_flag);                               \
 
 /*
  * Common ring producer index

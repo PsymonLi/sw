@@ -320,7 +320,7 @@ fte_rx_loop (pollers_qid_vec_t *qid_vec)
     while (!fte_threads_done) {
         if (qid_vec && !ftl_pollers_client::user_will_poll()) {
             for (size_t q = 0; q < qid_vec->size(); q++) {
-                pds_flow_age_sw_pollers_poll(qid_vec->at(q), nullptr);
+                pds_flow_age_sw_pollers_poll(qid_vec->at(q), 0, nullptr);
             }
         }
         cur_tsc = rte_rdtsc();

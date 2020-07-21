@@ -519,27 +519,42 @@
                                             SESSION_KIVEC5_TCP_TIMEWAIT_TMO,    \
                                             SESSION_KIVEC5_TCP_RST_TMO,         \
                                             SESSION_KIVEC5_OTHERS_TMO)          \
-
+/*
+ * Note that .e always honors CF (if any), regardles of how the two
+ * modifiers are ordered. So unfortunately we can't use tblwr.e.c1 here
+ * because it really would get executed as tblwr.c1.e.
+ */
 #define CONNTRACK_EXPIRY_CHECK_OTHERS_FLOW_STATES_e(_exp_bit, _others_tmo)      \
-    sle.e       c1, _others_tmo, r_timestamp;                                   \
+    sle         c1, _others_tmo, r_timestamp;                                   \
+    tblwr.c1    d.flow_state, CONNTRACK_FLOW_STATE_REMOVED;                     \
     phvwri.c1   p.session_kivec0_##_exp_bit##_expired, 1;                       \
+    nop.e;                                                                      \
+    wrfence.c1;                                                                 \
     
 #define CONNTRACK_EXPIRY_CHECK_ICMP_FLOW_STATES_e(_exp_bit, _icmp_tmo)          \
-    sle.e       c1, _icmp_tmo, r_timestamp;                                     \
+    sle         c1, _icmp_tmo, r_timestamp;                                     \
+    tblwr.c1    d.flow_state, CONNTRACK_FLOW_STATE_REMOVED;                     \
     phvwri.c1   p.session_kivec0_##_exp_bit##_expired, 1;                       \
+    nop.e;                                                                      \
+    wrfence.c1;                                                                 \
     
 #define CONNTRACK_EXPIRY_CHECK_UDP_FLOW_STATES_e(_exp_bit, _udp_tmo,            \
                                                  _udp_est_tmo)                  \
     seq         c1, r_flow_state, CONNTRACK_FLOW_STATE_ESTABLISHED;             \
-    sle.c1.e    c1, _udp_est_tmo, r_timestamp;                                  \
-    phvwri.c1   p.session_kivec0_##_exp_bit##_expired, 1;                       \
-    sle.e       c1, _udp_tmo, r_timestamp;                                      \
-    phvwri.c1   p.session_kivec0_##_exp_bit##_expired, 1;                       \
+    sle.c1      c3, _udp_est_tmo, r_timestamp;                                  \
+    sle.!c1     c3, _udp_tmo, r_timestamp;                                      \
+    tblwr.c3    d.flow_state, CONNTRACK_FLOW_STATE_REMOVED;                     \
+    phvwri.c3   p.session_kivec0_##_exp_bit##_expired, 1;                       \
+    nop.e;                                                                      \
+    wrfence.c3;                                                                 \
     
 #define CONNTRACK_BRCASE_FLOW_STATE_e(_flow_state, _exp_bit, _tmo)              \
   .brcase _flow_state;                                                          \
-    sle.e       c1, _tmo, r_timestamp;                                          \
+    sle         c1, _tmo, r_timestamp;                                          \
+    tblwr.c1    d.flow_state, CONNTRACK_FLOW_STATE_REMOVED;                     \
     phvwri.c1   p.session_kivec0_##_exp_bit##_expired, 1;                       \
+    nop.e;                                                                      \
+    wrfence.c1;                                                                 \
 
 #define CONNTRACK_BRCASE_FLOW_STATE_UNUSED_e(_unused_state)                     \
   .brcase _unused_state;                                                        \
@@ -549,9 +564,6 @@
 #define CONNTRACK_EXPIRY_CHECK_TCP_FLOW_STATES_e(_exp_bit, _tcp_syn_tmo,        \
                                                  _tcp_est_tmo, _tcp_fin_tmo,    \
                                                  _tcp_wait_tmo, _tcp_rst_tmo)   \
-    seq         c1, r_flow_state, CONNTRACK_FLOW_STATE_REMOVED;                 \
-    phvwri.c1.e p.session_kivec0_##_exp_bit##_expired, 1;                       \
-    nop;                                                                        \
   .brbegin;                                                                     \
     br          r_flow_state[3:0];                                              \
     nop;                                                                        \
@@ -593,6 +605,9 @@
                                                 _tcp_syn_tmo, _tcp_est_tmo,     \
                                                 _tcp_fin_tmo, _tcp_wait_tmo,    \
                                                 _tcp_rst_tmo, _others_tmo)      \
+    seq         c1, r_flow_state, CONNTRACK_FLOW_STATE_REMOVED;                 \
+    phvwri.c1.e p.session_kivec0_##_exp_bit##_expired, 1;                       \
+    nop;                                                                        \
   .brbegin;                                                                     \
     br          r_flow_type[1:0];                                               \
     nop;                                                                        \

@@ -28,7 +28,7 @@ typedef enum pds_flow_age_expiry_type_e {
     EXPIRY_TYPE_CONNTRACK,              ///< connection tracking table entry type
 } pds_flow_age_expiry_type_t;
 
-/// \brief inactivity timeouts (in seconds) specification
+/// \brief Normal inactivity timeouts (in seconds) specification
 typedef struct pds_flow_age_timeout_s {
     uint32_t    tcp_syn_tmo;            ///< TCP SYN sent/received
     uint32_t    tcp_est_tmo;            ///< TCP established
@@ -41,6 +41,11 @@ typedef struct pds_flow_age_timeout_s {
     uint32_t    others_tmo;             ///< All others established or not established
     uint32_t    session_tmo;            ///< Session table base timeout
 } __PACK__ pds_flow_age_timeouts_t;
+
+/// \brief Accelerated inactivity timeouts (in seconds) specification
+typedef struct pds_flow_age_accel_timeouts_s {
+    uint32_t    session_tmo;            ///< Session table base timeout
+} __PACK__ pds_flow_age_accel_timeouts_t;
 
 /// \brief     Handler to process an expired session or conntrack ID
 /// \param[in] expiry_id: ID of expired session or conntrack entry
@@ -124,17 +129,24 @@ pds_ret_t pds_flow_age_sw_pollers_poll_control(bool user_will_poll,
 
 /// \brief     Submit a poll request (a burst dequeue) on a poller queue
 /// \param[in] poller_id: poller queue ID
+/// \param[in] cb_limit_multiples: limit the number of callbacks
 /// \param[in] user_ctx: pointer to user context, if any
 /// \return    #PDS_RET_OK on success, failure status code on error
 /// \remark    This function should only be called if the user intended to take
 /// \remark    responsibility for doing all polling in its own threads. The 
 /// \remark    function will submit a burst dequeue on a poller queue
-/// \remark    corresponding to poller_id. Any expired entries found will be
-/// \remark    sent to the handler function previously registered with 
-/// \remark    pds_flow_age_sw_pollers_poll_control(), or the default handler
-/// \remark    if none were registered. The argument user_ctx will also be
-/// \remark    passed on to the handler function.
+/// \remark    corresponding to poller_id. The parameter cb_limit_multiples
+/// \remark    specifies the uppper limit of callbacks to the application,
+/// \remark    in multiples of 256. In other words, cb_limit_multiples of 1
+/// \remark    equals a maximum of 256 callbacks. A cb_limit_multiples of 0
+/// \remark    leaves the maximum unspecified.
+/// \remark
+/// \remark    Applicable expired entries found will be sent to the callbback
+/// \remark    function previously registered with pds_flow_age_sw_pollers_poll_control(),
+/// \remark    or the default handler if none were registered. The argument
+/// \remark    user_ctx will also be passed on to the handler function.
 pds_ret_t pds_flow_age_sw_pollers_poll(uint32_t poller_id,
+                                       uint32_t cb_limit_multiples,
                                        void *user_ctx);
 
 /// \brief     Set normal inactivity timeout values for different types of flow
@@ -152,20 +164,20 @@ pds_ret_t pds_flow_age_normal_timeouts_set(const pds_flow_age_timeouts_t *norm_a
 /// \remark    of normal timeout values.
 pds_ret_t pds_flow_age_normal_timeouts_get(pds_flow_age_timeouts_t *norm_age_timeouts);
 
-/// \brief     Set accelerated inactivity timeout values for different types of flow
+/// \brief     Set accelerated inactivity timeout values for stateless flows
 /// \param[in] accelerated timeouts specification
 /// \return    #PDS_RET_OK on success, failure status code on error
 /// \remark    Similarly, accelerated inactivity timeouts are assigned default values at initialization
 /// \remark    time and can be changed at any time using this function (i.e., it is not necessary to
 /// \remark    stop and restart the hardware scanners when modifying accelerated timeouts).
-pds_ret_t pds_flow_age_accel_timeouts_set(const pds_flow_age_timeouts_t *accel_age_timeouts);
+pds_ret_t pds_flow_age_accel_timeouts_set(const pds_flow_age_accel_timeouts_t *accel_age_timeouts);
 
 /// \brief     Return the currently configured set of accelerated timeout values
 /// \param[out] location to hold the returned accelerated timeouts specification
 /// \return    #PDS_RET_OK on success, failure status code on error
 /// \remark    This function retrieves and returns the currently configured set
 /// \remark    of accelerated timeout values.
-pds_ret_t pds_flow_age_accel_timeouts_get(pds_flow_age_timeouts_t *accel_age_timeouts);
+pds_ret_t pds_flow_age_accel_timeouts_get(pds_flow_age_accel_timeouts_t *accel_age_timeouts);
 
 /// \brief     Select or deselect accelerated aging
 /// \param[in] True to select, false to deselect

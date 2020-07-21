@@ -12,6 +12,7 @@ session_aging_force_expired_ts false
 session_aging_accel_control false
 session_aging_tolerance_secs_set 0
 session_aging_tmo_artificial_long_set
+conntrack_aging_tmo_artificial_long_set
 
 #session with conntrack association
 session_assoc_conntrack_id_set 1
@@ -34,6 +35,7 @@ session_aging_metrics_show
 conntrack_aging_metrics_show
 session_aging_accel_control FALSE
 session_aging_tmo_factory_dflt_set
+conntrack_aging_tmo_factory_dflt_set
 session_assoc_conntrack_id_set 0
 session_aging_fini
 

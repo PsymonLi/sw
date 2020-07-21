@@ -138,9 +138,10 @@ pds_thread_init (uint32_t core_id)
 void
 pds_global_teardown ()
 {
-    if (!asic::asic_is_soft_init()) {
-        pds_flow_age_fini();
-    }
+    // pds_flow_age_fini has internal consistency check so
+    // can always be unconditionally called.
+    pds_flow_age_fini();
+
     pds_dnat_map_delete();
     pds_flow_cache_delete();
 #ifndef P4_14

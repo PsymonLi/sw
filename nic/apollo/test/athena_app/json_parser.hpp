@@ -143,7 +143,7 @@ extern uint8_t g_num_v4_flows;
 extern bool g_flow_age_normal_tmo_set;
 extern pds_flow_age_timeouts_t g_flow_age_normal_tmo;
 extern bool g_flow_age_accel_tmo_set;
-extern pds_flow_age_timeouts_t g_flow_age_accel_tmo;
+extern pds_flow_age_accel_timeouts_t g_flow_age_accel_tmo;
 
 }
 

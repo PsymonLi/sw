@@ -8,7 +8,6 @@ session_and_cache_clear_full 8388608
 
 conntrack_aging_init
 conntrack_aging_force_expired_ts false
-conntrack_aging_accel_control false
 conntrack_aging_tolerance_secs_set 0
 conntrack_aging_tmo_artificial_long_set
 
@@ -45,15 +44,10 @@ conntrack_aging_normal_tmo_set {udp unestablished 3} {UDP ESTABLISHED 3} {udp op
 conntrack_aging_normal_tmo_set {tcp unestablished 3} {TCP syn_sent 3} {TCP SYN_RECV 3} {tcp synack_sent 3} {tcp synack_recv 3} {tcp established 3} {tcp fin_sent 40} {tcp fin_recv 3} {tcp time_wait 3} {tcp rst_close 3}
 conntrack_aging_test
 
-
-#switch to accelerated aging
-conntrack_aging_accel_control true
 conntrack_populate_random {12625 188888} {udp established}
-conntrack_aging_accel_tmo_set {udp established 4}
 conntrack_aging_test
 
 conntrack_aging_metrics_show
-conntrack_aging_accel_control false
 conntrack_aging_tmo_factory_dflt_set
 conntrack_aging_fini
 

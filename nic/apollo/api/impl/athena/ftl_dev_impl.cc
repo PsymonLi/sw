@@ -91,10 +91,10 @@ qtype_queue_ctl(enum ftl_qtype qtype)
 
 static pds_ret_t dev_identify(void);
 static pds_ret_t lif_init(pds_cinit_params_t *params);
-static pds_ret_t attr_age_tmo_set(enum lif_attr attr,
-                                  const pds_flow_age_timeouts_t *attr_age_tmo);
-static pds_ret_t attr_age_tmo_get(enum lif_attr attr,
-                                  pds_flow_age_timeouts_t *attr_age_tmo);
+static pds_ret_t attr_age_tmo_set(const pds_flow_age_timeouts_t *attr_age_tmo);
+static pds_ret_t attr_age_tmo_get(pds_flow_age_timeouts_t *attr_age_tmo);
+static pds_ret_t attr_age_accel_tmo_set(const pds_flow_age_accel_timeouts_t *attr_age_tmo);
+static pds_ret_t attr_age_accel_tmo_get(pds_flow_age_accel_timeouts_t *attr_age_tmo);
 static pds_ret_t force_expired_ts_set(enum lif_attr attr,
                                       bool force_expired_ts);
 static pds_ret_t metrics_get(enum ftl_qtype qtype,
@@ -179,7 +179,7 @@ fini(void)
 {
     if (lif_init_done()) {
         scanners_stop(true);
-        if (mpu_timestamp_ctl()) {
+        if (sdk::asic::asic_is_hard_init() && mpu_timestamp_ctl()) {
             mpu_timestamp_ctl()->stop(true);
         }
         pollers_flush();
@@ -304,25 +304,25 @@ pollers_queue_empty(uint32_t qid)
 pds_ret_t
 normal_timeouts_set(const pds_flow_age_timeouts_t *age_tmo)
 {
-    return attr_age_tmo_set(FTL_LIF_ATTR_NORMAL_AGE_TMO, age_tmo);
+    return attr_age_tmo_set(age_tmo);
 }
 
 pds_ret_t
 normal_timeouts_get(pds_flow_age_timeouts_t *age_tmo)
 {
-    return attr_age_tmo_get(FTL_LIF_ATTR_NORMAL_AGE_TMO, age_tmo);
+    return attr_age_tmo_get(age_tmo);
 }
 
 pds_ret_t
-accel_timeouts_set(const pds_flow_age_timeouts_t *age_tmo)
+accel_timeouts_set(const pds_flow_age_accel_timeouts_t *age_tmo)
 {
-    return attr_age_tmo_set(FTL_LIF_ATTR_ACCEL_AGE_TMO, age_tmo);
+    return attr_age_accel_tmo_set(age_tmo);
 }
 
 pds_ret_t
-accel_timeouts_get(pds_flow_age_timeouts_t *age_tmo)
+accel_timeouts_get(pds_flow_age_accel_timeouts_t *age_tmo)
 {
-    return attr_age_tmo_get(FTL_LIF_ATTR_ACCEL_AGE_TMO, age_tmo);
+    return attr_age_accel_tmo_get(age_tmo);
 }
 
 pds_ret_t
@@ -558,25 +558,44 @@ lif_init(pds_cinit_params_t *params)
 }
 
 static pds_ret_t
-attr_age_tmo_set(enum lif_attr attr,
-                 const pds_flow_age_timeouts_t *attr_age_tmo)
+attr_age_tmo_set(const pds_flow_age_timeouts_t *attr_age_tmo)
 {
     devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
 
     devcmd.req().lif_setattr.opcode = FTL_DEVCMD_OPCODE_LIF_SETATTR;
-    devcmd.req().lif_setattr.attr = attr;
+    devcmd.req().lif_setattr.attr = FTL_LIF_ATTR_NORMAL_AGE_TMO;
     devcmd.req().lif_setattr.age_tmo = *attr_age_tmo;
     return devcmd.submit();
 }
 
 static pds_ret_t
-attr_age_tmo_get(enum lif_attr attr,
-                 pds_flow_age_timeouts_t *attr_age_tmo)
+attr_age_tmo_get(pds_flow_age_timeouts_t *attr_age_tmo)
 {
     devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
 
     devcmd.req().lif_getattr.opcode = FTL_DEVCMD_OPCODE_LIF_GETATTR;
-    devcmd.req().lif_getattr.attr = attr;
+    devcmd.req().lif_getattr.attr = FTL_LIF_ATTR_NORMAL_AGE_TMO;
+    return devcmd.submit(nullptr, (void *)attr_age_tmo);
+}
+
+static pds_ret_t
+attr_age_accel_tmo_set(const pds_flow_age_accel_timeouts_t *attr_age_tmo)
+{
+    devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+
+    devcmd.req().lif_setattr.opcode = FTL_DEVCMD_OPCODE_LIF_SETATTR;
+    devcmd.req().lif_setattr.attr = FTL_LIF_ATTR_ACCEL_AGE_TMO;
+    devcmd.req().lif_setattr.age_accel_tmo = *attr_age_tmo;
+    return devcmd.submit();
+}
+
+static pds_ret_t
+attr_age_accel_tmo_get(pds_flow_age_accel_timeouts_t *attr_age_tmo)
+{
+    devcmd_t        devcmd(ftl_lif, age_tmo_cfg_lock, age_tmo_cfg_unlock);
+
+    devcmd.req().lif_getattr.opcode = FTL_DEVCMD_OPCODE_LIF_GETATTR;
+    devcmd.req().lif_getattr.attr = FTL_LIF_ATTR_ACCEL_AGE_TMO;
     return devcmd.submit(nullptr, (void *)attr_age_tmo);
 }
 

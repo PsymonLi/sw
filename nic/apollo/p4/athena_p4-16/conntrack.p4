@@ -12,10 +12,10 @@ control conntrack_state_update(inout cap_phv_intr_global_h intr_global,
           
    
    @name(".conntrack")
-     action conntrack_a (@__ref bit<1> valid_flag,
-			   @__ref bit<2> flow_type,
+     action conntrack_a (@__ref bit<2> flow_type,
 			   @__ref bit<4> flow_state,
-			   @__ref bit<24> timestamp) {
+			   @__ref bit<24> timestamp,
+			   @__ref bit<1> valid_flag) {
      if(valid_flag == FALSE) {
        /* treat it like flow miss */
        metadata.cntrl.flow_miss = TRUE;

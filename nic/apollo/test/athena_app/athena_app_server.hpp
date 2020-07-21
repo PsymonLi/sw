@@ -157,7 +157,7 @@ athena_app_server_sock_dir(const std::string& sock_type)
 #ifdef __x86_64__
         return "/sw/nic";
 #else
-        return "/nic/etc";
+        return "/var/run";
 #endif
     }
 
@@ -193,7 +193,7 @@ athena_app_client_sock_dir(const std::string& sock_type)
     // can just assume real HW.
     
     if (sock_type == "ipc") {
-        return "/nic/etc";
+        return "/var/run";
     }
 
     // TCP client will try to connect to the address below

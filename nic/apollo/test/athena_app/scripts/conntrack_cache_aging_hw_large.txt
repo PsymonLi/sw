@@ -6,7 +6,6 @@ session_and_cache_clear_full 8388608
 
 conntrack_aging_init
 conntrack_aging_force_expired_ts false
-conntrack_aging_accel_control false
 conntrack_aging_tolerance_secs_set 0
 conntrack_aging_tmo_artificial_long_set
 
@@ -21,7 +20,6 @@ conntrack_aging_test
 flow_cache_dump /data/iota_conntrack_cache_large.log
 
 conntrack_aging_metrics_show
-conntrack_aging_accel_control false
 conntrack_aging_tmo_factory_dflt_set
 conntrack_aging_fini
 

@@ -38,7 +38,7 @@ static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
  */
 static aging_tolerance_t    ct_tolerance(EXPIRY_TYPE_CONNTRACK);
 static aging_metrics_t      conntrack_metrics(ftl_dev_if::FTL_QTYPE_SCANNER_CONNTRACK);
-static ftl_table_metrics_t  session_ftl_metrics;
+static ftl_table_metrics_t  conntrack_ftl_metrics;
 
 const aging_tolerance_t&
 ct_tolerance_get(void)
@@ -239,10 +239,10 @@ conntrack_populate_full(test_vparam_ref_t vparam)
     spec.data.flow_type = tuple_eval.flowtype(0);
     spec.data.flow_state = tuple_eval.flowstate(1);
     depth = tuple_eval.num(2) + 1;
+    depth = std::min(depth, conntrack_table_depth());
 
     ct_tolerance.reset(depth);
     if (tuple_eval.zero_failures()) {
-        depth = std::min(depth, conntrack_table_depth());
 
         for (spec.key.conntrack_id = 1;
              spec.key.conntrack_id < depth;
@@ -440,19 +440,19 @@ bool
 conntrack_aging_traffic_chkpt_start(test_vparam_ref_t vparam)
 {
     conntrack_metrics.baseline();
-    session_ftl_metrics.baseline();
+    conntrack_ftl_metrics.baseline();
     ct_tolerance.reset(UINT32_MAX);
     ct_tolerance.using_fte_indices(true);
 
     TEST_LOG_INFO("Current active FTL entries: %" PRIu64 "\n",
-                  session_ftl_metrics.num_entries());
+                  conntrack_ftl_metrics.num_entries());
     return true;
 }
 
 bool
 conntrack_aging_traffic_chkpt_end(test_vparam_ref_t vparam)
 {
-    uint64_t    actual = session_ftl_metrics.delta_num_entries();
+    uint64_t    actual = conntrack_ftl_metrics.delta_num_entries();
     uint32_t    expected = vparam.expected_num();
 
     if (expected) {
@@ -481,7 +481,7 @@ conntrack_aging_expiry_fn(uint32_t expiry_id,
             ct_tolerance.conntrack_tmo_tolerance_check(expiry_id);
             ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type,
                                           user_ctx, &handle);
-            if (ret != PDS_RET_RETRY) {
+            if (ret == PDS_RET_OK) {
                 ct_tolerance.expiry_count_inc();
                 ct_tolerance.create_id_map_find_erase(expiry_id);
                 if (handle) {
@@ -504,7 +504,7 @@ conntrack_aging_expiry_fn(uint32_t expiry_id,
         break;
     }
 
-    if ((ret != PDS_RET_OK) && (ret != PDS_RET_RETRY)) {
+    if (!CONNTRACK_DELETE_RET_VALIDATE(ret) && (ret != PDS_RET_RETRY)) {
         if (ct_tolerance.delete_errors() == 0) {
             TEST_LOG_ERR("failed flow deletion on conntrack_id %u: "
                          "ret %d\n", expiry_id, ret);
@@ -590,7 +590,7 @@ static void
 conntrack_aging_pollers_poll(void *user_ctx)
 {
     for (uint32_t qid = 0; qid < pollers_qcount; qid++) {
-        pds_flow_age_sw_pollers_poll(qid, user_ctx);
+        pds_flow_age_sw_pollers_poll(qid, 0, user_ctx);
     }
 }
 
@@ -664,39 +664,15 @@ conntrack_aging_normal_tmo_set(test_vparam_ref_t vparam)
         ct_tolerance.normal_tmo.conntrack_tmo_set(flowtype, flowstate, tmo_val);
     }
     return CONNTRACK_RET_VALIDATE(ret) && tuple_eval.zero_failures() &&
-           ct_tolerance.zero_failures();
+           ct_tolerance.normal_tmo.zero_failures();
 }
 
 bool
 conntrack_aging_accel_tmo_set(test_vparam_ref_t vparam)
 {
-    tuple_eval_t        tuple_eval;
-    pds_flow_type_t     flowtype;
-    pds_flow_state_t    flowstate;
-    uint32_t            tmo_val;
-    pds_ret_t           ret = PDS_RET_OK;
-
-    ct_tolerance.accel_tmo.reset();
-
-    /*
-     * Here we expect tuples of the form {flowtype flowstate tmo_val}
-     */
-    for (uint32_t i = 0; i < vparam.size(); i++) {
-
-        /*
-         * Here we expect tuple of the form {flowtype flowstate tmo_val}
-         */
-        tuple_eval.reset(vparam, i);
-        flowtype = tuple_eval.flowtype(0);
-        flowstate = tuple_eval.flowstate(1);
-        tmo_val = tuple_eval.num(2);
-        if (!tuple_eval.zero_failures()) {
-            break;
-        }
-        ct_tolerance.accel_tmo.conntrack_tmo_set(flowtype, flowstate, tmo_val);
-    }
-    return CONNTRACK_RET_VALIDATE(ret) && tuple_eval.zero_failures() &&
-           ct_tolerance.zero_failures();
+    TEST_LOG_ERR("Accelerated aging is applicable to stateless flows only\n"
+                 "session_aging_accel_tmo_set should be used instead\n");
+    return false;
 }
 
 bool
@@ -722,11 +698,19 @@ conntrack_aging_tmo_artificial_long_set(test_vparam_ref_t vparam)
 }
 
 bool
+conntrack_aging_tmo_show(test_vparam_ref_t vparam)
+{
+    ct_tolerance.normal_tmo.tmo_show();
+    ct_tolerance.accel_tmo.tmo_show();
+    return true;
+}
+
+bool
 conntrack_aging_accel_control(test_vparam_ref_t vparam)
 {
-    ct_tolerance.failures_clear();
-    ct_tolerance.age_accel_control(vparam.expected_bool());
-    return ct_tolerance.zero_failures();
+    TEST_LOG_ERR("Accelerated aging is applicable to stateless flows only\n"
+                 "session_aging_accel_control should be used instead\n");
+    return false;
 }
 
 bool
@@ -735,13 +719,14 @@ conntrack_aging_metrics_show(test_vparam_ref_t vparam)
     aging_metrics_t scanner_metrics(ftl_dev_if::FTL_QTYPE_SCANNER_CONNTRACK);
     aging_metrics_t poller_metrics(ftl_dev_if::FTL_QTYPE_POLLER);
     aging_metrics_t timestamp_metrics(ftl_dev_if::FTL_QTYPE_MPU_TIMESTAMP);
+    ftl_table_metrics_t ftl_metrics;
 
+    ftl_metrics.show();
     scanner_metrics.show();
     poller_metrics.show();
     timestamp_metrics.show();
     return true;
 }
-
 
 }    // namespace athena_app
 }    // namespace test

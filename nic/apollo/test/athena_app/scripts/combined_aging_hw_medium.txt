@@ -8,16 +8,10 @@ conntrack_aging_init
 session_aging_force_expired_ts false
 conntrack_aging_force_expired_ts false
 session_aging_accel_control false
-conntrack_aging_accel_control false
 session_aging_tolerance_secs_set 0
 conntrack_aging_tolerance_secs_set 0
 session_aging_tmo_artificial_long_set
-
-conntrack_aging_normal_tmo_set {ICMP unestablished 8} {icmp established 8} {others unestablished 8} {others established 8}
-conntrack_aging_normal_tmo_set {ICMP open_conn_sent 8} {icmp open_conn_recv 8} {others open_conn_sent 8} {others open_conn_recv 8}
-conntrack_aging_normal_tmo_set {udp unestablished 8} {UDP ESTABLISHED 8} {udp open_conn_sent 8} {udp open_conn_recv 8}
-conntrack_aging_normal_tmo_set {tcp unestablished 8} {TCP syn_sent 8} {TCP SYN_RECV 8} {tcp synack_sent 15} {tcp synack_recv 8} {tcp established 8} {tcp fin_sent 8} {tcp fin_recv 8} {tcp time_wait 8} {tcp rst_close 8}
-
+conntrack_aging_tmo_artificial_long_set
 
 session_populate_full 262555
 conntrack_populate_full {TCP established 232121}
@@ -41,18 +35,13 @@ session_and_cache_populate tcp {vnic 99 1} {sip 192.168.9.1 100} {dip 30.10.10.1
 session_aging_normal_tmo_set 2
 conntrack_aging_normal_tmo_set {tcp synack_sent 2}
 combined_aging_test
+session_assoc_conntrack_id_set 0
 
 #switch to accelerated aging
 session_aging_accel_control true
-conntrack_aging_accel_control true
 session_populate_random 938 892948
-conntrack_populate_random {9373 539901}
 session_aging_accel_tmo_set 3
-conntrack_aging_accel_tmo_set {ICMP unestablished 1} {icmp established 1} {others unestablished 1} {others established 1}
-conntrack_aging_accel_tmo_set {ICMP open_conn_sent 1} {icmp open_conn_recv 1} {others open_conn_sent 1} {others open_conn_recv 1}
-conntrack_aging_accel_tmo_set {udp unestablished 1} {UDP ESTABLISHED 1} {udp open_conn_sent 1} {udp open_conn_recv 1}
-conntrack_aging_accel_tmo_set {tcp unestablished 1} {TCP syn_sent 1} {TCP SYN_RECV 1} {tcp synack_sent 1} {tcp synack_recv 1} {tcp established 1} {tcp fin_sent 1} {tcp fin_recv 1} {tcp time_wait 1} {tcp rst_close 1}
-combined_aging_test
+session_aging_test
 
 flow_cache_dump /data/iota_combined_medium.log
 
@@ -60,8 +49,8 @@ session_aging_metrics_show
 conntrack_aging_metrics_show
 
 session_aging_accel_control false
-conntrack_aging_accel_control false
 session_aging_tmo_factory_dflt_set
+conntrack_aging_tmo_factory_dflt_set
 session_assoc_conntrack_id_set 0
 
 conntrack_aging_fini

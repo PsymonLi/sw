@@ -143,7 +143,7 @@ init(pds_cinit_params_t *params)
             queue = &client_queue[0];
             for (uint32_t qid = 0; qid < FTL_POLLERS_MAX_QUEUES; qid++, queue++) {
                 queue->qid = qid;
-                if (qid < pollers_qcount) {
+                if (!queue->poller_slot_data && (qid < pollers_qcount)) {
                     queue->poller_slot_data = (poller_slot_data_t *)
                            SDK_MALLOC(SDK_MEM_ALLOC_FTL_POLLER_SLOT_DATA,
                                       FTL_POLLERS_BURST_BUF_SZ);
@@ -164,7 +164,10 @@ init(pds_cinit_params_t *params)
 void
 fini(void)
 {
-    ftl_dev_impl::fini();
+    if (rte_atomic16_read(&module_inited)) {
+        ftl_dev_impl::fini();
+        rte_atomic16_clear(&module_inited);
+    }
 }
 
 uint32_t
@@ -267,6 +270,7 @@ expiry_log_set(bool enable_sense)
  */
 pds_ret_t
 poll(uint32_t qid,
+     uint32_t cb_limit_multiples,
      void *user_ctx)
 {
     client_queue_t              *queue = client_queue_get(qid);
@@ -283,7 +287,9 @@ poll(uint32_t qid,
     if (ftl_dev_impl::pollers_queue_empty(qid)) {
         return PDS_RET_OK;
     }
-    burst_count = FTL_POLLERS_BURST_COUNT;
+    burst_count = (cb_limit_multiples == 0) ||
+                  (cb_limit_multiples > FTL_POLLERS_BURST_COUNT) ?
+                  FTL_POLLERS_BURST_COUNT : cb_limit_multiples;
     ret = ftl_dev_impl::pollers_dequeue_burst(qid, queue->poller_slot_data,
                                               FTL_POLLERS_BURST_BUF_SZ,
                                               &burst_count);

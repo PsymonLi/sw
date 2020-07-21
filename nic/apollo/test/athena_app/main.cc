@@ -40,10 +40,14 @@
 
 using namespace test::athena_app;
 
+#define PDS_ATHENA_AGENT_NAME_STR              "pds-athena-agent"
+#define PDS_ATHENA_SEC_AGENT_NAME_STR          "pds-athena-sec-agent"
+
 namespace core {
 // number of trace files to keep
 #define TRACE_NUM_FILES                        4
 #define TRACE_FILE_SIZE                        (20 << 20)
+
 static inline string
 log_file (const char *logdir, const char *logfile)
 {
@@ -84,9 +88,9 @@ logger_init (void)
     std::string logfile, err_logfile;
 
     if (fte_ath::g_athena_app_mode == ATHENA_APP_MODE_SOFT_INIT)
-        logfile = log_file(std::getenv("LOG_DIR"), "/pds-athena-sec-agent.log");
+        logfile = log_file(std::getenv("LOG_DIR"), "/" PDS_ATHENA_SEC_AGENT_NAME_STR ".log");
     else
-        logfile = log_file(std::getenv("LOG_DIR"), "/pds-athena-agent.log");
+        logfile = log_file(std::getenv("LOG_DIR"), "/" PDS_ATHENA_AGENT_NAME_STR ".log");
 
     if (fte_ath::g_athena_app_mode == ATHENA_APP_MODE_SOFT_INIT)
         err_logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"), "/obfl_sec.log");
@@ -146,6 +150,47 @@ sdk::utils::time_profile::time_profile_info t_info;
 #endif
 
 static int skip_fte_flow_prog_;
+static bool fte_inited;
+static bool pds_global_inited;
+static std::string agent_pid_fname("/var/run/");
+
+static void
+program_instance_init(void)
+{
+    FILE    *fp;
+
+    if (!hw()) {
+        return;
+    }
+    agent_pid_fname.append(fte_ath::g_athena_app_mode == ATHENA_APP_MODE_SOFT_INIT ?
+                           PDS_ATHENA_SEC_AGENT_NAME_STR ".pid" :
+                           PDS_ATHENA_AGENT_NAME_STR ".pid");
+    if (access(agent_pid_fname.c_str(), R_OK) == 0) {
+        fprintf(stderr, "Another instance of this program is already running\n");
+        exit(1);
+    }
+    fp = fopen(agent_pid_fname.c_str(), "w");
+    if (!fp) {
+        fprintf(stderr, "Failed to create %s\n", agent_pid_fname.c_str());
+        exit(1);
+    }
+    fprintf(fp, "%u", getpid());
+    fclose(fp);
+}
+
+static void
+program_instance_fini(void)
+{
+    if (!hw()) {
+        return;
+    }
+    if (remove(agent_pid_fname.c_str())) {
+        if (errno != ENOENT) {
+            fprintf(stderr, "Failed to remove %s error: %s\n",
+                    agent_pid_fname.c_str(), strerror(errno));
+        }
+    }
+}
 
 bool
 skip_fte_flow_prog(void)
@@ -858,6 +903,8 @@ main (int argc, char **argv)
         }
     }
 
+    program_instance_init();
+
     // form the full path to the config directory
     cfg_path = std::string(std::getenv("CONFIG_PATH"));
     if (cfg_path.empty()) {
@@ -870,7 +917,8 @@ main (int argc, char **argv)
     file = cfg_path + "/pipeline.json";
     if (access(file.c_str(), R_OK) < 0) {
         fprintf(stderr, "pipeline.json doesn't exist or not accessible\n");
-        exit(1);
+        success = false;
+        goto done;
     }
 
     // parse pipeline.json to determine pipeline
@@ -880,14 +928,16 @@ main (int argc, char **argv)
         pipeline = pt.get<std::string>("pipeline");
     } catch (...) {
         fprintf(stderr, "pipeline.json doesn't have pipeline field\n");
-        exit(1);
+        success = false;
+        goto done;
     }
     if ((pipeline.compare("apollo") != 0) &&
         (pipeline.compare("artemis") != 0) &&
         (pipeline.compare("athena") != 0) &&
         (pipeline.compare("apulu") != 0)) {
         fprintf(stderr, "Unknown pipeline %s\n", pipeline.c_str());
-        exit(1);
+        success = false;
+        goto done;
     }
 
    // make sure the cfg file exists
@@ -895,7 +945,8 @@ main (int argc, char **argv)
     if (access(file.c_str(), R_OK) < 0) {
         fprintf(stderr, "Config file %s doesn't exist or not accessible\n",
                 file.c_str());
-        exit(1);
+        success = false;
+        goto done;
     }
 
     if (fte_ath::g_athena_app_mode != ATHENA_APP_MODE_NO_DPDK) {
@@ -912,7 +963,8 @@ main (int argc, char **argv)
                 policy_json_file.c_str()) != SDK_RET_OK) {
             fprintf(stderr, "Parsing json file:%s failed. \n",
                     policy_json_file.c_str());
-            exit(1);
+            success = false;
+            goto done;
         }
     }
 
@@ -951,8 +1003,10 @@ main (int argc, char **argv)
     ret = pds_global_init(&init_params);
     if (ret != PDS_RET_OK) {
         printf("PDS global init failed with ret %u\n", ret);
-        exit(1);
+        success = false;
+        goto done;
     }
+    pds_global_inited = true;
 
     if (!sdk::asic::asic_is_soft_init()) {
         printf("PDS hard init\n");
@@ -992,6 +1046,7 @@ main (int argc, char **argv)
 #endif
 
         fte_ath::fte_init(&init_params);
+        fte_inited = true;
     }
 
     printf("Initialization done ...\n");
@@ -1122,8 +1177,13 @@ done:
 bool
 app_test_exit(test_vparam_ref_t vparam)
 {
-    fte_ath::fte_fini();
-    pds_global_teardown();
+    if (fte_inited) {
+        fte_ath::fte_fini();
+    }
+    if (pds_global_inited) {
+        pds_global_teardown();
+    }
+    program_instance_fini();
     rte_exit(vparam.expected_bool() ? EXIT_SUCCESS : EXIT_FAILURE,
              __FUNCTION__);
     return true;

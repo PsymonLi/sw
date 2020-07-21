@@ -564,23 +564,18 @@ private:
     ftl_lif_event_t ftl_lif_accel_aging_ctl_action(ftl_lif_event_t event,
                                                    ftl_lif_devcmd_ctx_t& devcmd_ctx);
 
-    void age_tmo_cb_init(age_tmo_cb_t *age_tmo_cb,
-                         const mem_access_t& access,
-                         uint32_t accel_scale_factor);
-    void age_tmo_cb_set(const char *which,
-                        age_tmo_cb_t *age_tmo_cb,
-                        const mem_access_t& access,
-                        const lif_attr_age_tmo_t *attr_age_tmo);
-    void age_tmo_cb_get(lif_attr_age_tmo_t *attr_age_tmo,
-                        const age_tmo_cb_t *age_tmo_cb);
-    void force_session_expired_ts_set(age_tmo_cb_t *age_tmo_cb,
-                                      const mem_access_t& access,
-                                      uint8_t force_expired_ts);
-    void force_conntrack_expired_ts_set(age_tmo_cb_t *age_tmo_cb,
-                                        const mem_access_t& access,
-                                        uint8_t force_expired_ts);
+    void age_tmo_init(void);
+    void normal_age_tmo_cb_set(const lif_attr_age_tmo_t *attr_age_tmo);
+    void normal_age_tmo_cb_get(lif_attr_age_tmo_t *attr_age_tmo = nullptr);
     ftl_status_code_t normal_age_tmo_cb_select(void);
+    void accel_age_tmo_cb_set(const lif_attr_age_accel_tmo_t *attr_age_tmo);
+    void accel_age_tmo_cb_sync(void);
+    void accel_age_tmo_cb_get(lif_attr_age_accel_tmo_t *attr_age_tmo = nullptr);
     ftl_status_code_t accel_age_tmo_cb_select(void);
+    void force_session_expired_ts_set(uint8_t force_expired_ts);
+    void force_conntrack_expired_ts_set(uint8_t force_expired_ts);
+    uint8_t force_session_expired_ts_get(void);
+    uint8_t force_conntrack_expired_ts_get(void);
 
     const mem_access_t& normal_age_access(void) { return normal_age_access_; }
     const mem_access_t& accel_age_access(void) { return accel_age_access_; }

@@ -29,6 +29,8 @@ const static map<string,test_fn_t>  name2fn_map =
     APP_TEST_NAME2FN_MAP_ENTRY(resource_util_dump),
     APP_TEST_NAME2FN_MAP_ENTRY(test_log_file_create),
     APP_TEST_NAME2FN_MAP_ENTRY(test_log_file_append),
+    APP_TEST_NAME2FN_MAP_ENTRY(test_timeofday_show),
+    APP_TEST_NAME2FN_MAP_ENTRY(test_sleep),
     APP_TEST_NAME2FN_MAP_ENTRY(APP_TEST_EXIT_FN),
 };
 

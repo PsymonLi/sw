@@ -35,10 +35,10 @@ bool session_aging_normal_tmo_set(test_vparam_ref_t vparam);
 bool session_aging_accel_tmo_set(test_vparam_ref_t vparam);
 bool session_aging_tmo_factory_dflt_set(test_vparam_ref_t vparam);
 bool session_aging_tmo_artificial_long_set(test_vparam_ref_t vparam);
+bool session_aging_tmo_show(test_vparam_ref_t vparam);
 bool session_aging_accel_control(test_vparam_ref_t vparam);
 bool session_assoc_conntrack_id_set(test_vparam_ref_t vparam);
 bool session_aging_metrics_show(test_vparam_ref_t vparam);
-bool session_aging_sleep(test_vparam_ref_t vparam);
 
 #define SESSION_AGING_NAME2FN_MAP                                       \
     APP_TEST_NAME2FN_MAP_ENTRY(session_aging_init),                     \
@@ -59,10 +59,10 @@ bool session_aging_sleep(test_vparam_ref_t vparam);
     APP_TEST_NAME2FN_MAP_ENTRY(session_aging_accel_tmo_set),            \
     APP_TEST_NAME2FN_MAP_ENTRY(session_aging_tmo_factory_dflt_set),     \
     APP_TEST_NAME2FN_MAP_ENTRY(session_aging_tmo_artificial_long_set),  \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_tmo_show),                 \
     APP_TEST_NAME2FN_MAP_ENTRY(session_aging_accel_control),            \
     APP_TEST_NAME2FN_MAP_ENTRY(session_assoc_conntrack_id_set),         \
     APP_TEST_NAME2FN_MAP_ENTRY(session_aging_metrics_show),             \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_sleep),                    \
 
 
 pds_ret_t session_aging_expiry_fn(uint32_t expiry_id,

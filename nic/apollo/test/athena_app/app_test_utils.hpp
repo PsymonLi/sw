@@ -332,6 +332,7 @@ public:
 
     uint32_t fail_count(void) { return failures.total(); }
     bool zero_failures(void) { return fail_count() == 0; }
+    void tmo_show(void);
 
 private:
     void tmo_set(void);
@@ -816,6 +817,8 @@ conntrack_timestamp2secs(uint32_t conntrack_ts)
 
 bool test_log_file_create(test_vparam_ref_t vparam);
 bool test_log_file_append(test_vparam_ref_t vparam);
+bool test_timeofday_show(test_vparam_ref_t vparam);
+bool test_sleep(test_vparam_ref_t vparam);
 void test_log_file_close(void);
 
 const char *flowtype_str_get(uint32_t flowtype);

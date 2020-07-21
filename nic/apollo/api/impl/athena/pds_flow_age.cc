@@ -65,9 +65,10 @@ pds_flow_age_sw_pollers_poll_control(bool user_will_poll,
 
 pds_ret_t
 pds_flow_age_sw_pollers_poll(uint32_t poller_id,
+                             uint32_t cb_limit_multiples,
                              void *user_ctx)
 {
-    return  ftl_pollers_client::poll(poller_id, user_ctx);
+    return  ftl_pollers_client::poll(poller_id, cb_limit_multiples, user_ctx);
 }
 
 pds_ret_t
@@ -83,13 +84,13 @@ pds_flow_age_normal_timeouts_get(pds_flow_age_timeouts_t *norm_age_timeouts)
 }
 
 pds_ret_t
-pds_flow_age_accel_timeouts_set(const pds_flow_age_timeouts_t *accel_age_timeouts)
+pds_flow_age_accel_timeouts_set(const pds_flow_age_accel_timeouts_t *accel_age_timeouts)
 {
     return ftl_dev_impl::accel_timeouts_set(accel_age_timeouts);
 }
 
 pds_ret_t
-pds_flow_age_accel_timeouts_get(pds_flow_age_timeouts_t *accel_age_timeouts)
+pds_flow_age_accel_timeouts_get(pds_flow_age_accel_timeouts_t *accel_age_timeouts)
 {
     return ftl_dev_impl::accel_timeouts_get(accel_age_timeouts);
 }

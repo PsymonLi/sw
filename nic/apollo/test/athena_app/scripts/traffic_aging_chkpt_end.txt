@@ -1,13 +1,16 @@
 
-test_log_file_create /var/log/pensando/iota_traffic_aging_chkpt_end_test.log
+test_log_file_append /var/log/pensando/iota_traffic_aging_chkpt_test.log
+session_aging_tmo_show
+session_aging_metrics_show
 
-session_aging_sleep 10
+test_sleep 10
 session_and_cache_traffic_chkpt_end
 session_aging_normal_tmo_set 3
 session_aging_test
 
 flow_cache_dump /data/iota_traffic_chkpt_end.log
 
+session_aging_tmo_show
 session_aging_metrics_show
 session_aging_accel_control false
 session_aging_tmo_factory_dflt_set

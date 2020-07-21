@@ -12,7 +12,7 @@ __CMDPATH  = 'PATH=$PATH:/nic/bin/;\
 __CMDBASE  = '/nic/bin/athena_client'
 __CMDSEP  = ' '
 
-__CMD_TIMEOUT = 360
+__CMD_TIMEOUT = 600
 
 __OPTION_SCRIPT_DIR  = '--script_dir'
 __OPTION_SCRIPT_NAME = '--script_name'

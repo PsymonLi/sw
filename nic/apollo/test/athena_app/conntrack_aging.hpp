@@ -34,6 +34,7 @@ bool conntrack_aging_normal_tmo_set(test_vparam_ref_t vparam);
 bool conntrack_aging_accel_tmo_set(test_vparam_ref_t vparam);
 bool conntrack_aging_tmo_factory_dflt_set(test_vparam_ref_t vparam);
 bool conntrack_aging_tmo_artificial_long_set(test_vparam_ref_t vparam);
+bool conntrack_aging_tmo_show(test_vparam_ref_t vparam);
 bool conntrack_aging_accel_control(test_vparam_ref_t vparam);
 bool conntrack_aging_metrics_show(test_vparam_ref_t vparam);
 
@@ -55,6 +56,7 @@ bool conntrack_aging_metrics_show(test_vparam_ref_t vparam);
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_accel_tmo_set),          \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_tmo_factory_dflt_set),   \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_tmo_artificial_long_set),\
+    APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_tmo_show),               \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_accel_control),          \
     APP_TEST_NAME2FN_MAP_ENTRY(conntrack_aging_metrics_show),           \
 

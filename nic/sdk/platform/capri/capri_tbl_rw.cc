@@ -1976,6 +1976,9 @@ capri_hbm_table_entry_cache_invalidate (p4pd_table_cache_t cache,
                                         uint16_t entry_width,
                                         mem_addr_t base_mem_pa)
 {
+    if (cache == P4_TBL_CACHE_NONE) {
+        return CAPRI_OK;
+    }
     time_profile_begin(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_CACHE_INVALIDATE);
     uint64_t addr = (base_mem_pa + entry_addr);
     if (cache & (P4_TBL_CACHE_INGRESS | P4_TBL_CACHE_EGRESS)) {

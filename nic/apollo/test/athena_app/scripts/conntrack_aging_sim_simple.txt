@@ -14,9 +14,6 @@ conntrack_aging_test
 #The following inactivity configs are merely to test invoke the API.
 
 conntrack_aging_normal_tmo_set {udp unestablished 200} {tcp SYNACK_SENT 20} {TCP fin_sent 25}
-conntrack_aging_accel_tmo_set {tcp established 100} {udp unestablished 1} {tcp SYNACK_SENT 2} {TCP fin_sent 2}
-conntrack_aging_accel_control True
-conntrack_aging_accel_control false
 
 conntrack_populate_simple {127 tcp syn_recv} {911 tcp established} {323 OTHERS unestablished} {401 tcp rst_close} {5 ICMP UNESTABLISHED} {719 TCP fin_sent} {15 tcp syn_sent} {16 udp established} {320 tcp fin_recv} {321 tcp fin_sent}
 conntrack_aging_test

@@ -40,6 +40,7 @@ pds_ret_t expiry_fn_dflt(pds_flow_expiry_fn_t *ret_fn_dflt);
 pds_ret_t poll_control(bool user_will_poll,
                        pds_flow_expiry_fn_t expiry_fn);
 pds_ret_t poll(uint32_t qid,
+               uint32_t cb_limit_multiples = 0,
                void *user_ctx = nullptr);
 
 pds_ret_t force_session_expired_ts_set(bool force_expired_ts);

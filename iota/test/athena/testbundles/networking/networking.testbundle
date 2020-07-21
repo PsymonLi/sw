@@ -152,7 +152,7 @@ testcases:
         args    :
             test_dir: /nic/etc/test_scripts
             test    : conntrack_aging_chkpt_start.txt
-            log_file: /var/log/pensando/iota_conntrack_aging_chkpt_start_test.log
+            log_file: /var/log/pensando/iota_conntrack_aging_chkpt_test.log
 
     -   name    : Connection_Tracking_Test
         testcase: testcases.networking.conntrack
@@ -174,7 +174,7 @@ testcases:
             dump_file: /data/iota_conntrack_chkpt_end.log
             dump_sym: flow_type:TCP
             dump_expected_count: 0
-            log_file: /var/log/pensando/iota_conntrack_aging_chkpt_end_test.log
+            log_file: /var/log/pensando/iota_conntrack_aging_chkpt_test.log
 
     #=======================================
     # Aging Tests (without traffic)
@@ -276,7 +276,7 @@ testcases:
         args    :
             test_dir: /nic/etc/test_scripts
             test    : traffic_aging_chkpt_start.txt
-            log_file: /var/log/pensando/iota_traffic_aging_chkpt_start_test.log
+            log_file: /var/log/pensando/iota_traffic_aging_chkpt_test.log
 
     -   name    : Data_Path_Test
         testcase: testcases.networking.data_path
@@ -304,5 +304,5 @@ testcases:
             dump_file: /data/iota_traffic_chkpt_end.log
             dump_sym: SrcIP
             dump_expected_count: 0
-            log_file: /var/log/pensando/iota_traffic_aging_chkpt_end_test.log
+            log_file: /var/log/pensando/iota_traffic_aging_chkpt_test.log
 
