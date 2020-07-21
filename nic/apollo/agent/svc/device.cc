@@ -11,6 +11,7 @@
 #include "nic/apollo/api/device.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_device.hpp"
 #include "nic/sdk/platform/fru/fru.hpp"
+#include "nic/apollo/agent/core/interface.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -169,6 +170,11 @@ pds_svc_device_create (const pds::DeviceRequest *proto_req,
         }
     }
 
+    ret = core::lldp_sysname_update(api_spec->sysname);
+    if (ret != SDK_RET_OK) {
+        goto end;
+    }
+
     // update device.conf with persistent attrs
     // TODO: ideally this should be done during commit time (and we need to
     //       handle aborting/rollback here)
@@ -237,6 +243,11 @@ pds_svc_device_update (const pds::DeviceRequest *proto_req,
         // copy mutable api spec to agent copy of spec
         pds_device_state_update(core::agent_state::state()->device(),
                                 &mutable_api_spec);
+    }
+
+    ret = core::lldp_sysname_update(api_spec.sysname);
+    if (ret != SDK_RET_OK) {
+        goto end;
     }
 
     // update device.conf with persistent attrs

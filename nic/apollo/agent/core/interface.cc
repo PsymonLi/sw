@@ -623,4 +623,30 @@ lldp_config_init (void)
     return SDK_RET_OK;
 }
 
+// update LLDP config parameters
+// for now only sysName is being updated
+sdk_ret_t
+lldp_sysname_update (const char *sysname)
+{
+    char cmd[PATH_MAX];
+    int  rc;
+
+    // update system name
+    if (sysname && sysname[0] != '\0') {
+        snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli configure system hostname %s",
+                 sysname);
+    } else {
+        // if sysname is not configured, set it to the FRU mac
+        snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli configure system hostname %s",
+                 macaddr2str(api::g_pds_state.system_mac()));
+    }
+    rc = system(cmd);
+    if (rc == -1) {
+        PDS_TRACE_ERR("LLDP configure system hostname {} failed with error {}",
+                      sysname, rc);
+        return SDK_RET_ERR;
+    }
+    return SDK_RET_OK;
+}
+
 }    // namespace core

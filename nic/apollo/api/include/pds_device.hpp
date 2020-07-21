@@ -173,7 +173,10 @@ typedef struct pds_device_s {
     /// firewall action transposition scheme
     fw_policy_xposn_t      fw_action_xposn_scheme;
     /// Tx policer, if any
-    pds_obj_key_t tx_policer;
+    pds_obj_key_t          tx_policer;
+    /// systemname, if configured, will be used as system name in protocols
+    /// like LLDP etc
+    char                   sysname[PDS_MAX_SYSTEM_NAME_LEN+1];
 } __PACK__ pds_device_spec_t;
 
 /// \brief device status

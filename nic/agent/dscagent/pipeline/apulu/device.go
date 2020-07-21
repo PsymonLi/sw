@@ -15,12 +15,12 @@ import (
 )
 
 // HandleDevice handles CRUD operations on device
-func HandleDevice(oper types.Operation, client halapi.DeviceSvcClient, lbip *halapi.IPAddress) error {
+func HandleDevice(oper types.Operation, client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
 	switch oper {
 	case types.Create:
-		return createDeviceHandler(client, lbip)
+		return createDeviceHandler(client, lbip, sysName)
 	case types.Update:
-		return updateDeviceHandler(client, lbip)
+		return updateDeviceHandler(client, lbip, sysName)
 	case types.Delete:
 		return deleteDeviceHandler(client)
 	default:
@@ -28,8 +28,8 @@ func HandleDevice(oper types.Operation, client halapi.DeviceSvcClient, lbip *hal
 	}
 }
 
-func createDeviceHandler(client halapi.DeviceSvcClient, lbip *halapi.IPAddress) error {
-	deviceRequest := convertDevice(lbip)
+func createDeviceHandler(client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
+	deviceRequest := convertDevice(lbip, sysName)
 	resp, err := client.DeviceCreate(context.Background(), deviceRequest)
 	log.Infof("createDeviceHandler Response: %v. Err : %v", resp, err)
 	if err == nil {
@@ -42,8 +42,8 @@ func createDeviceHandler(client halapi.DeviceSvcClient, lbip *halapi.IPAddress) 
 	return nil
 }
 
-func updateDeviceHandler(client halapi.DeviceSvcClient, lbip *halapi.IPAddress) error {
-	deviceRequest := convertDevice(lbip)
+func updateDeviceHandler(client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
+	deviceRequest := convertDevice(lbip, sysName)
 	resp, err := client.DeviceUpdate(context.Background(), deviceRequest)
 	log.Infof("update DeviceHandler Response: %v. Err : %v", resp, err)
 	if err == nil {
@@ -67,7 +67,7 @@ func deleteDeviceHandler(client halapi.DeviceSvcClient) error {
 	return nil
 }
 
-func convertDevice(lbip *halapi.IPAddress) *halapi.DeviceRequest {
+func convertDevice(lbip *halapi.IPAddress, sysName string) *halapi.DeviceRequest {
 	return &halapi.DeviceRequest{
 		Request: &halapi.DeviceSpec{
 			DevOperMode:   halapi.DeviceOperMode_DEVICE_OPER_MODE_HOST,
@@ -85,6 +85,7 @@ func convertDevice(lbip *halapi.IPAddress) *halapi.DeviceRequest {
 			OverlayRoutingEn:    true,
 			IPAddr:              lbip,
 			FwPolicyXposnScheme: halapi.FwPolicyXposn_FW_POLICY_XPOSN_ANY_DENY,
+			SysName:             sysName,
 		},
 	}
 }

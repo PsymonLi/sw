@@ -338,6 +338,17 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
         pds_fw_policy_xposn_proto_to_api_spec(proto_spec.fwpolicyxposnscheme());
     pds_obj_key_proto_to_api_spec(&api_spec->tx_policer,
                                   proto_spec.txpolicerid());
+
+    // sysname
+    if (proto_spec.sysname().length() > PDS_MAX_SYSTEM_NAME_LEN) {
+        return SDK_RET_INVALID_ARG;
+    } else if (proto_spec.sysname().length()) {
+        memcpy(api_spec->sysname, proto_spec.sysname().c_str(),
+               proto_spec.sysname().length());
+        api_spec->sysname[proto_spec.sysname().length() + 1] = '\0';
+    } else {
+        api_spec->sysname[0] = '\0';
+    }
     return SDK_RET_OK;
 }
 

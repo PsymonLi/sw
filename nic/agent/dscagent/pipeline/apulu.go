@@ -211,6 +211,11 @@ func (a *ApuluAPI) PipelineInit() error {
 
 // HandleVeniceCoordinates initializes the pipeline when VeniceCoordinates are discovered
 func (a *ApuluAPI) HandleVeniceCoordinates(dsc types.DistributedServiceCardStatus) {
+
+	//update device to include sysname
+	log.Infof("Update device with DSCID (sysName) %v", a.InfraAPI.GetConfig().DSCID)
+	a.HandleDevice(types.Update)
+
 	// Create the Loopback interface
 	lb := netproto.Interface{
 		TypeMeta: api.TypeMeta{
@@ -293,7 +298,7 @@ func (a *ApuluAPI) HandleDevice(oper types.Operation) error {
 	if cfg.LoopbackIP != "" {
 		lbip = apuluutils.ConvertIPAddress(cfg.LoopbackIP)
 	}
-	return apulu.HandleDevice(oper, a.DeviceSvcClient, lbip)
+	return apulu.HandleDevice(oper, a.DeviceSvcClient, lbip, cfg.DSCID)
 }
 
 // HandleVrf handles CRUD Methods for Vrf Object
@@ -658,7 +663,7 @@ func (a *ApuluAPI) HandleInterface(oper types.Operation, intf netproto.Interface
 
 			if cfg.LoopbackIP != "" {
 				lbip := apuluutils.ConvertIPAddress(cfg.LoopbackIP)
-				apulu.HandleDevice(types.Update, a.DeviceSvcClient, lbip)
+				apulu.HandleDevice(types.Update, a.DeviceSvcClient, lbip, cfg.DSCID)
 			}
 			var vrf netproto.Vrf
 			vrf, err = validator.ValidateVrf(a.InfraAPI, types.DefaultTenant, types.DefaultNamespace, types.DefaulUnderlaytVrf)
@@ -2283,7 +2288,7 @@ func (a *ApuluAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardStatus
 		log.Infof("Pipeline API: handleDSCInterfaceInfo | Obj: %v", obj)
 		if len(obj.DSCInterfaceIPs) != 0 {
 			for _, intf := range obj.DSCInterfaceIPs {
-				if err := handleDSCL3Interface(a, intf, obj); err != nil {
+				if err := handleDSCL3Interface(a, intf); err != nil {
 					log.Error(err)
 				}
 			}
@@ -2292,80 +2297,8 @@ func (a *ApuluAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardStatus
 	return
 }
 
-func (a *ApuluAPI) updateUplinkIntfHostname(intf *netproto.Interface, obj types.DistributedServiceCardStatus) {
-	log.Infof("Pipeline API: updateUplinkIntfHostname %v (key=%v) | DSCID: %v", intf, intf.UUID, obj.DSCID)
-	intfID, err := uuid.FromString(intf.UUID)
-	if err != nil {
-		log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse netproto port uuid %v, err %v", intf.UUID, err))
-		return
-	}
-	intReqMsg := &halapi.InterfaceGetRequest{
-		Id: [][]byte{},
-	}
-
-	u, err := a.InterfaceClient.InterfaceGet(context.Background(), intReqMsg)
-	if err != nil {
-		log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "updateUplinkIntfHostname: could not get interface %v | err %v", intf.UUID, err))
-		return
-	}
-
-	for _, i := range u.Response {
-		if i.Spec.GetUplinkSpec() == nil {
-			continue
-		}
-		pid, err := uuid.FromBytes(i.Spec.GetUplinkSpec().GetPortId())
-		if err != nil {
-			log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse pds port uuid %v, err %v", i.Spec.GetUplinkSpec().GetPortId(), err))
-			return
-		}
-		if intfID.String() != pid.String() {
-			continue
-		}
-
-		// Found uplink interface
-		uid, err := uuid.FromBytes(i.Spec.Id)
-		if err != nil {
-			log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse pds intf uuid %v, err %v", i.Spec.Id, err))
-			return
-		}
-
-		intUpdateReq := &halapi.InterfaceRequest{
-			BatchCtxt: nil,
-			Request: []*halapi.InterfaceSpec{
-				{
-					Id:          i.Spec.Id,
-					AdminStatus: i.Spec.AdminStatus,
-					Ifinfo: &halapi.InterfaceSpec_UplinkSpec{
-						UplinkSpec: &halapi.UplinkSpec{
-							PortId: i.Spec.GetUplinkSpec().GetPortId(),
-							LldpSpec: &halapi.LldpSpec{
-								LldpIfChassisSpec: &halapi.LldpIfChassisInfo{
-									SysName: obj.DSCID,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-
-		// TODO: uplink Interface updates fail for now intentionally.
-		resp, err := a.InterfaceClient.InterfaceUpdate(context.Background(), intUpdateReq)
-		if err != nil {
-			log.Errorf("Uplink interface: %v update failed | Err: %v", uid.String(), err)
-			return
-		}
-		if resp.ApiStatus != halapi.ApiStatus_API_STATUS_OK {
-			log.Errorf("Uplink interface: %s update failed  | Status: %s", uid.String(), resp.ApiStatus)
-			return
-		}
-		log.Infof("Uplink interface: %s update | Status: %s | Resp: %v", uid.String(), resp.ApiStatus, resp.Response)
-		break
-	}
-}
-
 // handleDSCL3Interface handles configuring L3 interface on DSC interfaces
-func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP, dscStatus types.DistributedServiceCardStatus) error {
+func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP) error {
 	iDat, err := a.InfraAPI.List("Interface")
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrBadRequest, "Err: %v", types.ErrObjNotFound))
@@ -2388,8 +2321,6 @@ func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP, dscStatus types
 	}
 
 	log.Infof("Found uplink interface %v", uplinkInterface)
-	// push DSC ID (hostname) to pds-agent as Uplink interface SysName
-	//a.updateUplinkIntfHostname(uplinkInterface, dscStatus)
 
 	if uplinkInterface != nil {
 		l3uuid := uuid.NewV4().String()

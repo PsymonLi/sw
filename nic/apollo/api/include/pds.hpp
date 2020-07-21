@@ -26,6 +26,7 @@
 
 #define PDS_MAX_HOST_NAME_LEN         128
 #define PDS_MAX_DOMAIN_NAME_LEN       128
+#define PDS_MAX_SYSTEM_NAME_LEN       64
 
 // 16B keys for the objects
 #define PDS_MAX_KEY_LEN               16

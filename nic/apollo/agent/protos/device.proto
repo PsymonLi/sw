@@ -180,6 +180,9 @@ message DeviceSpec {
   // second) or PPS (packets per second) of all host interfaces put together
   // to the configured value
   bytes               TxPolicerId         = 13;
+  // SysName, if configured, will be used to advertise as system name in
+  // protocols like LLDP etc. it cannot be longer than 64 bytes
+  string              SysName             = 14;
 }
 
 // device operational status

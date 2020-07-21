@@ -119,8 +119,6 @@ message UplinkSpec {
   // Untagged ingress packets are considered as coming with this VLAN id
   // Egress packet tagged with this VLAN id are sent untagged
   uint32   NativeVlanId = 2;
-  // Lldp info for the uplink interface
-  LldpSpec LldpSpec     = 3;
 }
 
 // Uplink port-channel configuration (i.e., if interface type is
