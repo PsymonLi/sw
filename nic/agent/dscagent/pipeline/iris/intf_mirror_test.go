@@ -44,7 +44,7 @@ func TestHandleInterfaceMirrorSessionIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestHandleInterfaceMirrorSessionIdempotent(t *testing.T) {
 	}
 	mirrorIDs := m.Status.MirrorSessionIDs
 
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, m, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, m, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestHandleInterfaceMirrorSessionIdempotent(t *testing.T) {
 	if !reflect.DeepEqual(mirrorIDs, m1.Status.MirrorSessionIDs) {
 		t.Errorf("Mirror IDs changed %v -> %v", mirrorIDs, m1.Status.MirrorSessionIDs)
 	}
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, m1, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, m1, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,17 +120,17 @@ func TestHandleInterfaceMirrorSessionUpdates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	mirror.Spec.Collectors[0].ExportCfg.Destination = "192.168.100.103"
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Update, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Update, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,17 +174,17 @@ func TestHandleInterfaceMirrorSession(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, 42, mirror, 65)
+	err = HandleInterfaceMirrorSession(infraAPI, telemetryClient, intfClient, epClient, 42, mirror, 65, MgmtIP)
 	if err == nil {
 		t.Fatal("Invalid op must return a valid error.")
 	}
@@ -210,17 +210,17 @@ func TestHandleInterfaceMirrorInfraFailures(t *testing.T) {
 	}
 
 	i := newBadInfraAPI()
-	err := HandleInterfaceMirrorSession(i, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	err := HandleInterfaceMirrorSession(i, telemetryClient, intfClient, epClient, types.Create, mirror, 65, MgmtIP)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleInterfaceMirrorSession(i, telemetryClient, intfClient, epClient, types.Update, mirror, 65)
+	err = HandleInterfaceMirrorSession(i, telemetryClient, intfClient, epClient, types.Update, mirror, 65, MgmtIP)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleInterfaceMirrorSession(i, telemetryClient, intfClient, epClient, types.Delete, mirror, 65)
+	err = HandleInterfaceMirrorSession(i, telemetryClient, intfClient, epClient, types.Delete, mirror, 65, MgmtIP)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}

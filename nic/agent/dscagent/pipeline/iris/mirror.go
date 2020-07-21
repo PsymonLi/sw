@@ -30,12 +30,12 @@ type flowWalker struct {
 var MirrorDestToIDMapping = map[string][]uint64{}
 
 // HandleMirrorSession handles crud operations on mirror session
-func HandleMirrorSession(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, mirror netproto.MirrorSession, vrfID uint64) error {
+func HandleMirrorSession(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, mirror netproto.MirrorSession, vrfID uint64, mgmtIP string) error {
 	switch oper {
 	case types.Create:
-		return createMirrorSessionHandler(infraAPI, telemetryClient, intfClient, epClient, mirror, vrfID)
+		return createMirrorSessionHandler(infraAPI, telemetryClient, intfClient, epClient, mirror, vrfID, mgmtIP)
 	case types.Update:
-		return updateMirrorSessionHandler(infraAPI, telemetryClient, intfClient, epClient, mirror, vrfID)
+		return updateMirrorSessionHandler(infraAPI, telemetryClient, intfClient, epClient, mirror, vrfID, mgmtIP)
 	case types.Delete, types.Purge:
 		return deleteMirrorSessionHandler(infraAPI, telemetryClient, intfClient, epClient, mirror, vrfID)
 	default:
@@ -43,7 +43,7 @@ func HandleMirrorSession(infraAPI types.InfraAPI, telemetryClient halapi.Telemet
 	}
 }
 
-func createMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, mirror netproto.MirrorSession, vrfID uint64) error {
+func createMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, mirror netproto.MirrorSession, vrfID uint64, mgmtIP string) error {
 	var mirrorKeys []*halapi.MirrorSessionKeyHandle
 	var sessionIDs []uint64
 	mirrorKey := fmt.Sprintf("%s/%s", mirror.Kind, mirror.GetKey())
@@ -59,7 +59,7 @@ func createMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
 		col := commonUtils.BuildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
-		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Create, col, vrfID); err != nil {
+		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Create, col, vrfID, mgmtIP); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 			return errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
 		}
@@ -89,7 +89,7 @@ func createMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 	return nil
 }
 
-func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, mirror netproto.MirrorSession, vrfID uint64) error {
+func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, mirror netproto.MirrorSession, vrfID uint64, mgmtIP string) error {
 	var existingMirror netproto.MirrorSession
 	dat, err := infraAPI.Read(mirror.Kind, mirror.GetKey())
 	if err != nil {
@@ -137,7 +137,7 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 			colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 			// Delete collector to HAL
 			col := commonUtils.BuildCollector(colName, sessionID, w.Mc, existingMirror.Spec.PacketSize, existingMirror.Spec.SpanID)
-			if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Delete, col, vrfID); err != nil {
+			if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Delete, col, vrfID, mgmtIP); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorDelete, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorDelete, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
 			}
@@ -151,7 +151,7 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 			colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 			// Update collector
 			col := commonUtils.BuildCollector(colName, sessionID, w.Mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
-			if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Update, col, vrfID); err != nil {
+			if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Update, col, vrfID, mgmtIP); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorUpdate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorUpdate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
 			}
@@ -165,7 +165,7 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
 		col := commonUtils.BuildCollector(colName, sessionID, w.Mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
-		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Create, col, vrfID); err != nil {
+		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Create, col, vrfID, mgmtIP); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 			return errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
 		}
@@ -263,7 +263,7 @@ func deleteMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Delete collector to HAL
 		col := commonUtils.BuildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
-		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Delete, col, vrfID); err != nil {
+		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Delete, col, vrfID, ""); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorDelete, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 		}
 	}

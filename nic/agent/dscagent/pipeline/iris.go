@@ -1318,14 +1318,16 @@ func handleInterfaceMirrorSession(i *IrisAPI, oper types.Operation, mirror netpr
 	} else {
 		vrfID = getVrfID(mirror.Tenant, mirror.Namespace, mirror.Spec.VrfName)
 	}
+	var ip string
 	if oper == types.Create || oper == types.Update {
-		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
+		ip = utils.GetMgmtIP(iris.MgmtLink)
+		if ip == "" {
 			log.Error(errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
 			return nil, errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleInterfaceMirrorSession(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, mirror, vrfID)
+	err = iris.HandleInterfaceMirrorSession(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, mirror, vrfID, ip)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1447,14 +1449,16 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 	} else {
 		vrfID = getVrfID(mirror.Tenant, mirror.Namespace, mirror.Spec.VrfName)
 	}
+	var ip string
 	if oper == types.Create || oper == types.Update {
-		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
+		ip = utils.GetMgmtIP(iris.MgmtLink)
+		if ip == "" {
 			log.Error(errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
 			return nil, errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleMirrorSession(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, mirror, vrfID)
+	err = iris.HandleMirrorSession(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, mirror, vrfID, ip)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1575,14 +1579,16 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 	} else {
 		vrfID = getVrfID(netflow.Tenant, netflow.Namespace, netflow.Spec.VrfName)
 	}
+	var ip string
 	if oper == types.Create || oper == types.Update {
-		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
+		ip = utils.GetMgmtIP(iris.MgmtLink)
+		if ip == "" {
 			log.Error(errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
 			return nil, errors.Wrapf(types.ErrNoIPForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleFlowExportPolicy(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, netflow, vrfID)
+	err = iris.HandleFlowExportPolicy(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, netflow, vrfID, ip)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -2647,7 +2653,7 @@ func updateMgmtIP(i *IrisAPI, ip string) {
 			delete(iris.TemplateContextMap, exp.CompositeKey)
 
 			// Update the collector
-			if err := iris.HandleExport(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, types.Update, &exp, vrfID); err != nil {
+			if err := iris.HandleExport(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, types.Update, &exp, vrfID, ip); err != nil {
 				log.Error(err)
 			}
 
@@ -2660,7 +2666,7 @@ func updateMgmtIP(i *IrisAPI, ip string) {
 			} else {
 				destPort, _ = strconv.Atoi(exp.Transport.Port)
 			}
-			go iris.SendTemplate(templateCtx, i.InfraAPI, destIP, destPort, &exp)
+			go iris.SendTemplate(templateCtx, i.InfraAPI, destIP, destPort, &exp, ip)
 			iris.TemplateContextMap[exp.CompositeKey] = cancel
 		}
 	}

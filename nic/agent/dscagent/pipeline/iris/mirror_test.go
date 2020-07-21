@@ -82,7 +82,7 @@ func TestHandleMirrorSessionIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestHandleMirrorSessionIdempotent(t *testing.T) {
 	mirrorIDs := m.Status.MirrorSessionIDs
 	flowMonitorIDs := m.Status.FlowMonitorIDs
 
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, m, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, m, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestHandleMirrorSessionIdempotent(t *testing.T) {
 	if !reflect.DeepEqual(flowMonitorIDs, m1.Status.FlowMonitorIDs) {
 		t.Errorf("Mirror IDs changed %v -> %v", flowMonitorIDs, m1.Status.FlowMonitorIDs)
 	}
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, m1, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, m1, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,17 +162,17 @@ func TestHandleMirrorSessionUpdates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	mirror.Spec.Collectors[0].ExportCfg.Destination = "192.168.100.103"
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Update, mirror, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Update, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, mirror, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,17 +253,17 @@ func TestHandleMirrorSession(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Create, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, mirror, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, types.Delete, mirror, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, 42, mirror, 65)
+	err = HandleMirrorSession(infraAPI, telemetryClient, intfClient, epClient, 42, mirror, 65, MgmtIP)
 	if err == nil {
 		t.Fatal("Invalid op must return a valid error.")
 	}
@@ -289,17 +289,17 @@ func TestHandleMirrorInfraFailures(t *testing.T) {
 	}
 
 	i := newBadInfraAPI()
-	err := HandleMirrorSession(i, telemetryClient, intfClient, epClient, types.Create, mirror, 65)
+	err := HandleMirrorSession(i, telemetryClient, intfClient, epClient, types.Create, mirror, 65, MgmtIP)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleMirrorSession(i, telemetryClient, intfClient, epClient, types.Update, mirror, 65)
+	err = HandleMirrorSession(i, telemetryClient, intfClient, epClient, types.Update, mirror, 65, MgmtIP)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleMirrorSession(i, telemetryClient, intfClient, epClient, types.Delete, mirror, 65)
+	err = HandleMirrorSession(i, telemetryClient, intfClient, epClient, types.Delete, mirror, 65, MgmtIP)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}

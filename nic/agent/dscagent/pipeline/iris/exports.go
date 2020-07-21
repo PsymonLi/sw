@@ -15,7 +15,6 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/iris/utils"
-	commonUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -39,12 +38,12 @@ type Export struct {
 var TemplateContextMap = map[string]context.CancelFunc{}
 
 // HandleExport handles crud operations on Export objects
-func HandleExport(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, export *Export, vrfID uint64) error {
+func HandleExport(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, export *Export, vrfID uint64, mgmtIP string) error {
 	switch oper {
 	case types.Create:
-		return createExportHandler(infraAPI, telemetryClient, intfClient, epClient, export, vrfID)
+		return createExportHandler(infraAPI, telemetryClient, intfClient, epClient, export, vrfID, mgmtIP)
 	case types.Update:
-		return updateExportHandler(infraAPI, telemetryClient, intfClient, epClient, export, vrfID)
+		return updateExportHandler(infraAPI, telemetryClient, intfClient, epClient, export, vrfID, mgmtIP)
 	case types.Delete:
 		return deleteExportHandler(infraAPI, telemetryClient, intfClient, epClient, export, vrfID)
 	default:
@@ -52,10 +51,9 @@ func HandleExport(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClien
 	}
 }
 
-func createExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, export *Export, vrfID uint64) error {
+func createExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, export *Export, vrfID uint64, mgmtIP string) error {
 	var destPort int
 	dstIP := export.Destination
-	mgmtIP := commonUtils.GetMgmtIP(MgmtLink)
 	if err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, vrfID, export.CompositeKey, mgmtIP, dstIP, export.Gateway, false); err != nil {
 		log.Error(errors.Wrapf(types.ErrNetflowCreateLateralObjects, "ExportConfig: %s | Err: %v", export.CompositeKey, err))
 		return errors.Wrapf(types.ErrNetflowCreateLateralObjects, "ExportConfig: %s | Err: %v", export.CompositeKey, err)
@@ -63,7 +61,7 @@ func createExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.Telemet
 
 	// Create HAL Collector
 	l2SegID := getL2SegByCollectorIP(infraAPI, dstIP)
-	collectorReqMsg := convertCollector(infraAPI, export, vrfID, l2SegID)
+	collectorReqMsg := convertCollector(infraAPI, export, vrfID, l2SegID, mgmtIP)
 	resp, err := telemetryClient.CollectorCreate(context.Background(), collectorReqMsg)
 	if resp != nil {
 		if err := utils.HandleErr(types.Create, resp.GetResponse()[0].GetApiStatus(), err, fmt.Sprintf("Collector Create Failed for ExportConfig: %s", export.CompositeKey)); err != nil {
@@ -78,16 +76,16 @@ func createExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.Telemet
 	} else {
 		destPort, _ = strconv.Atoi(export.Transport.Port)
 	}
-	go SendTemplate(templateCtx, infraAPI, destIP, destPort, export)
+	go SendTemplate(templateCtx, infraAPI, destIP, destPort, export, mgmtIP)
 	TemplateContextMap[export.CompositeKey] = cancel
 	return nil
 }
 
-func updateExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, export *Export, vrfID uint64) error {
+func updateExportHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, export *Export, vrfID uint64, mgmtIP string) error {
 	// Update HAL Collector
 	dstIP := export.Destination
 	l2SegID := getL2SegByCollectorIP(infraAPI, dstIP)
-	collectorUpdateMsg := convertCollector(infraAPI, export, vrfID, l2SegID)
+	collectorUpdateMsg := convertCollector(infraAPI, export, vrfID, l2SegID, mgmtIP)
 	resp, err := telemetryClient.CollectorUpdate(context.Background(), collectorUpdateMsg)
 	if resp != nil {
 		if err := utils.HandleErr(types.Update, resp.GetResponse()[0].GetApiStatus(), err, fmt.Sprintf("Collector Update Failed for ExportConfig: %s", export.CompositeKey)); err != nil {
@@ -169,10 +167,9 @@ func getL2SegByCollectorIP(i types.InfraAPI, destIP string) (l2SegID uint64) {
 	return
 }
 
-func convertCollector(infraAPI types.InfraAPI, export *Export, vrfID uint64, l2SegID uint64) *halapi.CollectorRequestMsg {
+func convertCollector(infraAPI types.InfraAPI, export *Export, vrfID uint64, l2SegID uint64, mgmtIP string) *halapi.CollectorRequestMsg {
 	var port uint64
 	var protocol halapi.IPProtocol
-	mgmtIP := commonUtils.GetMgmtIP(MgmtLink)
 	srcIP := utils.ConvertIPAddresses(mgmtIP)[0]
 	dstIP := utils.ConvertIPAddresses(export.Destination)[0]
 	if export.Transport != nil {
@@ -207,7 +204,7 @@ func convertCollector(infraAPI types.InfraAPI, export *Export, vrfID uint64, l2S
 // TODO Remove this once the HAL side telemetry code is cleaned up. Agents must not be sending raw packets on sockets
 
 // SendTemplate sends template packets periodically
-func SendTemplate(ctx context.Context, infraAPI types.InfraAPI, destIP net.IP, destPort int, export *Export) {
+func SendTemplate(ctx context.Context, infraAPI types.InfraAPI, destIP net.IP, destPort int, export *Export, mgmtIP string) {
 	log.Infof("FlowExportPolicy | %s Collector: %s", types.InfoTemplateSendStart, destIP.String())
 	var templateTicker *time.Ticker
 	if len(export.TemplateInterval) > 0 {
@@ -235,7 +232,6 @@ func SendTemplate(ctx context.Context, infraAPI types.InfraAPI, destIP net.IP, d
 		},
 	}
 
-	mgmtIP := commonUtils.GetMgmtIP(MgmtLink)
 	conn, err := nc.ListenPacket(ctx, "udp", fmt.Sprintf("%v:%v", mgmtIP, types.IPFIXSrcPort))
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrIPFIXPacketListen, "ExportConfig: %s  | Err: %v", export.CompositeKey, err))

@@ -93,7 +93,7 @@ func TestHandleFlowExportPolicyIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65)
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestHandleFlowExportPolicyIdempotent(t *testing.T) {
 	collectorIDs := m.Status.ExportCollectorIDs
 	flowMonitorIDs := m.Status.FlowMonitorIDs
 
-	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, m, 65)
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, m, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestHandleFlowExportPolicyIdempotent(t *testing.T) {
 	if !reflect.DeepEqual(flowMonitorIDs, m1.Status.FlowMonitorIDs) {
 		t.Errorf("Mirror IDs changed %v -> %v", flowMonitorIDs, m1.Status.FlowMonitorIDs)
 	}
-	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, m1, 65)
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, m1, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -317,7 +317,7 @@ func TestHandleNetflowCollector(t *testing.T) {
 	var netflowToRuleIDLen = map[string]int{}
 	for _, netflow := range netflows {
 		ruleIDLen := 0
-		if err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65); err != nil {
+		if err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65, MgmtIP); err != nil {
 			t.Fatal(err)
 		}
 		for _, matchRule := range netflow.Spec.MatchRules {
@@ -369,7 +369,7 @@ func TestHandleNetflowCollector(t *testing.T) {
 		},
 	}
 	netflowToRuleIDLen[netflows[0].GetKey()] = netflowToRuleIDLen[netflows[0].GetKey()] + 1
-	if err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Update, netflows[0], 65); err != nil {
+	if err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Update, netflows[0], 65, MgmtIP); err != nil {
 		t.Fatal(err)
 	}
 	netflowKey := fmt.Sprintf("%s/%s", netflows[0].Kind, netflows[0].GetKey())
@@ -394,7 +394,7 @@ func TestHandleNetflowCollector(t *testing.T) {
 	}
 	// Delete the flows
 	for _, netflow := range netflows {
-		if err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, netflow, 65); err != nil {
+		if err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, netflow, 65, MgmtIP); err != nil {
 			t.Fatal(err)
 		}
 		netflowKey := fmt.Sprintf("%s/%s", netflow.Kind, netflow.GetKey())
@@ -438,7 +438,7 @@ func TestHandleNetflowUpdates(t *testing.T) {
 	if _, ok := lateralDB[internalCol1Key]; ok {
 		col2Count = len(lateralDB[internalCol1Key])
 	}
-	err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65)
+	err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -450,7 +450,7 @@ func TestHandleNetflowUpdates(t *testing.T) {
 		t.Fatalf("Collector keys not populated for 192.168.100.101. %v", lateralDB[internalColKey])
 	}
 	netflow.Spec.Exports[0].Destination = "192.168.100.103"
-	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Update, netflow, 65)
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Update, netflow, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -464,7 +464,7 @@ func TestHandleNetflowUpdates(t *testing.T) {
 	if len(lateralDB[internalCol1Key]) != col2Count+1 {
 		t.Fatalf("Collector keys not populated. %v", lateralDB[internalCol1Key])
 	}
-	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, netflow, 65)
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, netflow, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -827,12 +827,12 @@ func TestHandleNetflow(t *testing.T) {
 		Status: netproto.FlowExportPolicyStatus{ExportCollectorIDs: []uint64{1}},
 	}
 
-	err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65)
+	err := HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Create, netflow, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, netflow, 65)
+	err = HandleFlowExportPolicy(infraAPI, telemetryClient, intfClient, epClient, types.Delete, netflow, 65, MgmtIP)
 	if err != nil {
 		t.Fatal(err)
 	}

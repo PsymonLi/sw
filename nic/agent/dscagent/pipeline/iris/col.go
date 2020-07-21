@@ -17,10 +17,10 @@ import (
 )
 
 // HandleCol handles crud operations on collector
-func HandleCol(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, col commonUtils.Collector, vrfID uint64) error {
+func HandleCol(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, col commonUtils.Collector, vrfID uint64, mgmtIP string) error {
 	switch oper {
 	case types.Create:
-		return createColHandler(infraAPI, telemetryClient, intfClient, epClient, col, vrfID)
+		return createColHandler(infraAPI, telemetryClient, intfClient, epClient, col, vrfID, mgmtIP)
 	case types.Update:
 		return updateColHandler(infraAPI, telemetryClient, intfClient, epClient, col, vrfID)
 	case types.Delete:
@@ -30,8 +30,7 @@ func HandleCol(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, 
 	}
 }
 
-func createColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col commonUtils.Collector, vrfID uint64) error {
-	mgmtIP := commonUtils.GetMgmtIP(MgmtLink)
+func createColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col commonUtils.Collector, vrfID uint64, mgmtIP string) error {
 	if err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, vrfID, col.Name, mgmtIP, col.Destination, col.Gateway, true); err != nil {
 		log.Error(errors.Wrapf(types.ErrMirrorCreateLateralObjects, "Collector: %s | Err: %v", col.Name, err))
 		return errors.Wrapf(types.ErrMirrorCreateLateralObjects, "Collector: %s | Err: %v", col.Name, err)

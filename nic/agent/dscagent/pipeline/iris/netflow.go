@@ -24,12 +24,12 @@ type exportWalker struct {
 var NetflowDestToIDMapping = map[string][]uint64{}
 
 // HandleFlowExportPolicy handles crud operations on netflow session
-func HandleFlowExportPolicy(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, netflow netproto.FlowExportPolicy, vrfID uint64) error {
+func HandleFlowExportPolicy(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, netflow netproto.FlowExportPolicy, vrfID uint64, mgmtIP string) error {
 	switch oper {
 	case types.Create:
-		return createFlowExportPolicyHandler(infraAPI, telemetryClient, intfClient, epClient, netflow, vrfID)
+		return createFlowExportPolicyHandler(infraAPI, telemetryClient, intfClient, epClient, netflow, vrfID, mgmtIP)
 	case types.Update:
-		return updateFlowExportPolicyHandler(infraAPI, telemetryClient, intfClient, epClient, netflow, vrfID)
+		return updateFlowExportPolicyHandler(infraAPI, telemetryClient, intfClient, epClient, netflow, vrfID, mgmtIP)
 	case types.Delete, types.Purge:
 		return deleteFlowExportPolicyHandler(infraAPI, telemetryClient, intfClient, epClient, netflow, vrfID)
 	default:
@@ -51,7 +51,7 @@ func BuildExport(compositeKey string, collectorID uint64, netflow netproto.FlowE
 	}
 }
 
-func createFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, netflow netproto.FlowExportPolicy, vrfID uint64) error {
+func createFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, netflow netproto.FlowExportPolicy, vrfID uint64, mgmtIP string) error {
 	var collectorKeys []*halapi.CollectorKeyHandle
 	var sessionIDs []uint64
 	netflowKey := fmt.Sprintf("%s/%s", netflow.Kind, netflow.GetKey())
@@ -69,7 +69,7 @@ func createFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 		compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 		// Create export
 		exp := BuildExport(compositeKey, collectorID, netflow, c)
-		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Create, &exp, vrfID); err != nil {
+		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Create, &exp, vrfID, mgmtIP); err != nil {
 			log.Error(errors.Wrapf(types.ErrExportCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 			return errors.Wrapf(types.ErrExportCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
 		}
@@ -99,7 +99,7 @@ func createFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 	return nil
 }
 
-func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, netflow netproto.FlowExportPolicy, vrfID uint64) error {
+func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, netflow netproto.FlowExportPolicy, vrfID uint64, mgmtIP string) error {
 	var existingNetflow netproto.FlowExportPolicy
 	dat, err := infraAPI.Read(netflow.Kind, netflow.GetKey())
 	if err != nil {
@@ -146,7 +146,7 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 			compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 			// Delete collector to HAL
 			exp := BuildExport(compositeKey, collectorID, existingNetflow, w.export)
-			if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Delete, &exp, vrfID); err != nil {
+			if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Delete, &exp, vrfID, mgmtIP); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorDelete, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorDelete, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
 			}
@@ -160,7 +160,7 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 			compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 			// Update export
 			exp := BuildExport(compositeKey, collectorID, netflow, w.export)
-			if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Update, &exp, vrfID); err != nil {
+			if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Update, &exp, vrfID, mgmtIP); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorUpdate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorUpdate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
 			}
@@ -174,7 +174,7 @@ func updateFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 		compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 		// Create export
 		exp := BuildExport(compositeKey, collectorID, netflow, w.export)
-		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Create, &exp, vrfID); err != nil {
+		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Create, &exp, vrfID, mgmtIP); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 			return errors.Wrapf(types.ErrCollectorCreate, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
 		}
@@ -270,7 +270,7 @@ func deleteFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 		compositeKey := fmt.Sprintf("%s-%d", netflowKey, collectorID)
 		// Delete export
 		exp := BuildExport(compositeKey, collectorID, netflow, c)
-		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Delete, &exp, vrfID); err != nil {
+		if err := HandleExport(infraAPI, telemetryClient, intfClient, epClient, types.Delete, &exp, vrfID, ""); err != nil {
 			log.Error(errors.Wrapf(types.ErrExportDelete, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
 		}
 	}
