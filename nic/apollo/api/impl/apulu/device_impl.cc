@@ -288,8 +288,9 @@ device_impl::clear_ing_drop_stats_(void) {
         key_mask.control_metadata_p4i_drop_reason_mask =
             key.control_metadata_p4i_drop_reason;
         data.action_id = P4I_DROP_STATS_P4I_DROP_STATS_ID;
-        if (p4pd_global_entry_write(P4TBL_ID_P4I_DROP_STATS, i,
-                                    (uint8_t *)&key, (uint8_t *)&key_mask, &data) == P4PD_SUCCESS) {
+        if (p4pd_global_entry_install(P4TBL_ID_P4I_DROP_STATS, i,
+                                      (uint8_t *)&key, (uint8_t *)&key_mask,
+                                      &data) == P4PD_SUCCESS) {
             PDS_TRACE_ERR("Ingress drop stats clear failed at index %u", i);
         }
     }
@@ -306,8 +307,9 @@ device_impl::clear_egr_drop_stats_(void) {
         key_mask.control_metadata_p4e_drop_reason_mask =
             key.control_metadata_p4e_drop_reason;
         data.action_id = P4E_DROP_STATS_P4E_DROP_STATS_ID;
-        if (p4pd_global_entry_write(P4TBL_ID_P4E_DROP_STATS, i,
-                                    (uint8_t *)&key, (uint8_t *)&key_mask, &data) == P4PD_SUCCESS) {
+        if (p4pd_global_entry_install(P4TBL_ID_P4E_DROP_STATS, i,
+                                      (uint8_t *)&key, (uint8_t *)&key_mask,
+                                      &data) == P4PD_SUCCESS) {
             PDS_TRACE_ERR("Egress drop stats clear failed at index %u", i);
         }
     }
