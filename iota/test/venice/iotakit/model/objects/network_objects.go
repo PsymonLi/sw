@@ -148,7 +148,7 @@ func (nwc *NetworkCollection) Delete() error {
 	for index, nw := range nwc.subnets {
 		nw := nw
 		go func(index int) {
-			err := nwc.Client.GetRestClientByID(index).GetRestClientByID(index).DeleteNetwork(nw.VeniceNetwork)
+			err := nwc.Client.GetRestClientByID(index).DeleteNetwork(nw.VeniceNetwork)
 			errs <- err
 		}(index)
 	}
