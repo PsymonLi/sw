@@ -163,7 +163,10 @@ class UpgradeObject(base.ConfigObjectBase):
     def ValidateCfgPostUpgrade(self, spec=None):
         from apollo.config.node import client as NodeClient
         logger.info("Validate Config Post Upgrade")
-        NodeClient.Read(self.Node)
+        try:
+            NodeClient.Read(self.Node)
+        except:
+            return False
         return True
 
     def VerifyUpgradeDoneStatus(self, spec=None):

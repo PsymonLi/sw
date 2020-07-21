@@ -7,11 +7,11 @@ meta:
 testcases:
     -   name: ISSU_UPGRADE_FWONLY
         testcase    : testcases.naples_upgrade.issu_upgrade
-        disable     : True
-        ignore      : True
         stress      : False
+        ignore      : True
         iterators   :
             type    : simple
             selection : [ any ]  # upgrade all or any
         args        :
-            naples_upgr_pkg : "naples_fw.tar"
+            sleep             : 300
+            naples_upgr_pkg   : "naples_fw.tar"

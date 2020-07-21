@@ -3,6 +3,7 @@ import os
 import datetime
 import re
 import iota.harness.api as api
+from iota.test.apulu.testcases.naples_upgrade.upgrade_status import *
 
 __upg_log_path = "/obfl/upgrademgr.log"
 __upg_log_fname = "upgrademgr.log"
@@ -142,3 +143,41 @@ def VerifyUpgLog(nodes, log_dir):
             __display_upg_state_transition(node, records)
 
     return api.types.status.SUCCESS
+
+def GetPdsUpgContext(node_name):
+    if api.GlobalOptions.dryrun:
+       return None
+    req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
+    r_exp = r"(?P<ts>[\d][\d][\d][\d]-[\d][\d]-[\d][\d] [\d][\d]:[\d][\d]:[\d][\d])::(?P<status>.*):(?P<stage>.*)"
+    cmd = "cat /update/pds_upg_status.txt"
+
+    api.Trigger_AddNaplesCommand(req, node_name, cmd)
+    resp = api.Trigger(req)
+    if not resp: return None
+    cmd = resp.commands[0]
+    api.PrintCommandResults(cmd)
+    if cmd.exit_code != 0:
+        api.Logger.verbose("Failed to get the upgrade context from {node_name}")
+        return None
+
+    m = re.search(r_exp, cmd.stdout.strip())
+    if m :
+        return PdsUpgContext(m.group("ts"), m.group("status"), m.group("stage"))
+    else:
+        return None
+
+def CheckUpgradeStatus(node_name, status):
+    ctxt = GetPdsUpgContext(node_name)
+    if ctxt: 
+        api.Logger.info(f"Upgrade context {ctxt} from {node_name}")
+    else:
+        api.Logger.error(f"Failed to get upgrade context from {node_name}")
+    return True if ctxt and ctxt.status == status else False
+
+def CheckUpgradeStage(node_name, stage):
+    ctxt = GetPdsUpgContext(node_name)
+    if ctxt: 
+        api.Logger.info(f"Upgrade context {ctxt} from {node_name}")
+    else:
+        api.Logger.error(f"Failed to get upgrade context from {node_name}")
+    return True if ctxt and ctxt.stage == stage else False
