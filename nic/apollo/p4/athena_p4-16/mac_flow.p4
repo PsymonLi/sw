@@ -32,8 +32,8 @@ control mac_flow_lookup(inout cap_phv_intr_global_h intr_global,
         if (entry_valid == FALSE) {
 	    hdr.ingress_recirc_header.l2_flow_done = TRUE;
 	    hdr.p4i_to_p4e_header.l2_index = 0;
-	    hdr.p4i_to_p4e_header.flow_miss = TRUE;
-          return;
+	    metadata.cntrl.flow_miss = TRUE;
+         return;
         }
 
         if (__table_hit()) {
@@ -73,7 +73,7 @@ control mac_flow_lookup(inout cap_phv_intr_global_h intr_global,
 	  } else {
 	    hdr.ingress_recirc_header.l2_flow_done = TRUE;
 	    hdr.p4i_to_p4e_header.l2_index = 0;
-	    hdr.p4i_to_p4e_header.flow_miss = TRUE;
+            metadata.cntrl.flow_miss = TRUE;
 	  }
 	}
     }
