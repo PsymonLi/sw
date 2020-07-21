@@ -321,10 +321,9 @@ static inline sdk_ret_t
 pds_svc_heap_get (pds::HeapGetResponse *rsp)
 {
     auto stats = rsp->mutable_stats();
+    struct mallinfo minfo = { 0 };
 
-    struct mallinfo minfo = {0};
     minfo = mallinfo();
-
     stats->set_numarenabytesalloc(minfo.arena);
     stats->set_numfreeblocks(minfo.ordblks);
     stats->set_numfastbinfreeblocks(minfo.smblks);

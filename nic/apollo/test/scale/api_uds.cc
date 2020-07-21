@@ -9,8 +9,8 @@
 //----------------------------------------------------------------------------
 
 #include <iostream>
-#include <math.h>
 #include <malloc.h>
+#include <math.h>
 #include "nic/apollo/agent/test/client/app.hpp"
 #include "nic/apollo/test/scale/test_common.hpp"
 

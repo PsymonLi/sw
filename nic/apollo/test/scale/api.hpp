@@ -5,6 +5,7 @@
 #ifndef __SCALE_API_HPP_
 #define __SCALE_API_HPP_
 
+#include <malloc.h>
 #include "nic/sdk/include/sdk/table.hpp"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_tep.hpp"
@@ -22,7 +23,6 @@
 #include "nic/apollo/api/include/pds_nat.hpp"
 #include "nic/apollo/api/internal/pds_mapping.hpp"
 #include "nic/apollo/test/scale/test_common.hpp"
-#include <malloc.h>
 
 sdk_ret_t create_route_table(pds_route_table_spec_t *route_table);
 sdk_ret_t create_route(pds_route_spec_t *route);

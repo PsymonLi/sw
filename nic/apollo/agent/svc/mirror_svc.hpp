@@ -148,7 +148,8 @@ pds_mirror_session_proto_to_api_spec (pds_mirror_session_spec_t *api_spec,
                           api_spec->rspan_spec.encap.type, api_spec->key.id);
             return SDK_RET_INVALID_ARG;
         }
-        if (api_spec->rspan_spec.encap.val.vlan_tag == 0) {
+        if ((api_spec->rspan_spec.encap.type == PDS_ENCAP_TYPE_DOT1Q) &&
+            (api_spec->rspan_spec.encap.val.vlan_tag == 0)) {
             PDS_TRACE_ERR("Invalid vlan tag 0 in RSPAN mirror session {} spec",
                           api_spec->key.id);
             return SDK_RET_INVALID_ARG;

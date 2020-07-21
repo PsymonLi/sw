@@ -11,6 +11,7 @@
 #ifndef __TEST_APP_HPP__
 #define __TEST_APP_HPP__
 
+#include <malloc.h>
 #include "nic/apollo/api/include/pds_tep.hpp"
 #include "nic/apollo/api/include/pds_vpc.hpp"
 #include "nic/apollo/api/include/pds_subnet.hpp"
@@ -27,7 +28,6 @@
 #include "nic/apollo/api/include/pds_service.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
 #include "nic/apollo/api/include/pds_nat.hpp"
-#include <malloc.h>
 
 sdk_ret_t create_route_table_impl(pds_route_table_spec_t *spec);
 sdk_ret_t create_route_impl(pds_route_spec_t *spec);

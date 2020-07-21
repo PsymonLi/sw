@@ -5,6 +5,7 @@
 #ifndef __AGENT_SVC_SPECS_HPP__
 #define __AGENT_SVC_SPECS_HPP__
 
+#include <malloc.h>
 #include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/agent/trace.hpp"
@@ -13,7 +14,6 @@
 #include "gen/proto/types.pb.h"
 #include "gen/proto/session.pb.h"
 #include "gen/proto/debug.pb.h"
-#include <malloc.h>
 
 //----------------------------------------------------------------------------
 // convert IP address spec in proto to ip_addr

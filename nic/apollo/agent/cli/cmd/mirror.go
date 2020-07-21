@@ -50,27 +50,58 @@ var mirrorSessionShowStatisticsCmd = &cobra.Command{
 	Run:   mirrorSessionShowStatisticsCmdHandler,
 }
 
-var mirrorSessionDebugCmd = &cobra.Command{
+var mirrorSessionDeleteCmd = &cobra.Command{
 	Use:    "mirror",
-	Short:  "debug mirror session",
-	Long:   "debug mirror session",
+	Short:  "delete mirror session",
+	Long:   "delete mirror session",
+	Run:    mirrorSessionDeleteCmdHandler,
+	Hidden: true,
+}
+
+var mirrorSessionUpdateCmd = &cobra.Command{
+	Use:    "mirror",
+	Short:  "update mirror session",
+	Long:   "update mirror session",
+	Hidden: true,
+}
+
+var mirrorSessionCreateCmd = &cobra.Command{
+	Use:    "mirror",
+	Short:  "create mirror session",
+	Long:   "create mirror session",
 	Hidden: true,
 }
 
 var mirrorRspanSessionCreateCmd = &cobra.Command{
 	Use:     "rspan",
-	Short:   "create mirror rspan session",
-	Long:    "create mirror rspan session",
+	Short:   "create RSPAN mirror session",
+	Long:    "create RSPAN mirror session",
 	Run:     mirrorRspanSessionCreateCmdHandler,
 	PreRunE: mirrorRspanSessionCreateCmdPreRunE,
 }
 
 var mirrorErspanSessionCreateCmd = &cobra.Command{
 	Use:     "erspan",
-	Short:   "create mirror erspan session",
-	Long:    "create mirror erspan session",
+	Short:   "create ERSPAN mirror session",
+	Long:    "create ERSPAN mirror session",
 	Run:     mirrorErspanSessionCreateCmdHandler,
 	PreRunE: mirrorErspanSessionCreateCmdPreRunE,
+}
+
+var mirrorRspanSessionUpdateCmd = &cobra.Command{
+	Use:     "rspan",
+	Short:   "update RSPAN mirror session",
+	Long:    "update RSPAN mirror session",
+	Run:     mirrorRspanSessionUpdateCmdHandler,
+	PreRunE: mirrorRspanSessionUpdateCmdPreRunE,
+}
+
+var mirrorErspanSessionUpdateCmd = &cobra.Command{
+	Use:     "erspan",
+	Short:   "update ERSPAN mirror session",
+	Long:    "update ERSPAN mirror session",
+	Run:     mirrorErspanSessionUpdateCmdHandler,
+	PreRunE: mirrorErspanSessionUpdateCmdPreRunE,
 }
 
 func init() {
@@ -86,9 +117,9 @@ func init() {
 	mirrorSessionShowStatisticsCmd.Flags().StringVarP(&mirrorsessionID, "id",
 		"i", "", "Specify mirrorSession ID")
 
-	debugCreateCmd.AddCommand(mirrorSessionDebugCmd)
-	mirrorSessionDebugCmd.AddCommand(mirrorRspanSessionCreateCmd)
-	mirrorRspanSessionCreateCmd.Flags().StringVarP(&ID, "id", "i", "",
+	debugCreateCmd.AddCommand(mirrorSessionCreateCmd)
+	mirrorSessionCreateCmd.AddCommand(mirrorRspanSessionCreateCmd)
+	mirrorRspanSessionCreateCmd.Flags().StringVarP(&mirrorsessionID, "id", "i", "",
 		"Specify mirror session ID")
 	mirrorRspanSessionCreateCmd.Flags().Uint32Var(&snapLen, "snap-len", 0, "Specify snap length")
 	mirrorRspanSessionCreateCmd.Flags().StringVarP(&interfaceID, "interface", "", "",
@@ -98,13 +129,23 @@ func init() {
 	mirrorRspanSessionCreateCmd.Flags().Uint32Var(&encapVal, "encap-val", 0,
 		"Specify encap value for encap type (dot1q, qinq, mplsoudp, vxlan)")
 	mirrorRspanSessionCreateCmd.MarkFlagRequired("id")
-	mirrorRspanSessionCreateCmd.MarkFlagRequired("snap-len")
 	mirrorRspanSessionCreateCmd.MarkFlagRequired("interface")
-	mirrorRspanSessionCreateCmd.MarkFlagRequired("encap-type")
-	mirrorRspanSessionCreateCmd.MarkFlagRequired("encap-val")
 
-	mirrorSessionDebugCmd.AddCommand(mirrorErspanSessionCreateCmd)
-	mirrorErspanSessionCreateCmd.Flags().StringVarP(&ID, "id", "i", "",
+	debugUpdateCmd.AddCommand(mirrorSessionUpdateCmd)
+	mirrorSessionUpdateCmd.AddCommand(mirrorRspanSessionUpdateCmd)
+	mirrorRspanSessionUpdateCmd.Flags().StringVarP(&mirrorsessionID, "id", "i", "",
+		"Specify mirror session ID")
+	mirrorRspanSessionUpdateCmd.Flags().Uint32Var(&snapLen, "snap-len", 0, "Specify snap length")
+	mirrorRspanSessionUpdateCmd.Flags().StringVarP(&interfaceID, "interface", "", "",
+		"Specify interface (uplink interfaces and host interfaces (aka. lif) are supported)")
+	mirrorRspanSessionUpdateCmd.Flags().StringVarP(&encapType, "encap-type", "", "none",
+		"Specify encap type (dot1q, qinq, mplsoudp, vxlan)")
+	mirrorRspanSessionUpdateCmd.Flags().Uint32Var(&encapVal, "encap-val", 0,
+		"Specify encap value for encap type (dot1q, qinq, mplsoudp, vxlan)")
+	mirrorRspanSessionUpdateCmd.MarkFlagRequired("id")
+
+	mirrorSessionCreateCmd.AddCommand(mirrorErspanSessionCreateCmd)
+	mirrorErspanSessionCreateCmd.Flags().StringVarP(&mirrorsessionID, "id", "i", "",
 		"Specify mirror session ID")
 	mirrorErspanSessionCreateCmd.Flags().Uint32Var(&snapLen, "snap-len", 0, "Specify snap len")
 	mirrorErspanSessionCreateCmd.Flags().StringVarP(&erspanType, "erspan-type", "", "none",
@@ -117,12 +158,28 @@ func init() {
 	mirrorErspanSessionCreateCmd.Flags().Uint32Var(&dscp, "dscp", 0, "Specify DSCP")
 	mirrorErspanSessionCreateCmd.Flags().Uint32Var(&spanID, "span-id", 0, "Specify span ID")
 	mirrorErspanSessionCreateCmd.MarkFlagRequired("id")
-	mirrorErspanSessionCreateCmd.MarkFlagRequired("snap-len")
-	mirrorErspanSessionCreateCmd.MarkFlagRequired("interface")
-	mirrorErspanSessionCreateCmd.MarkFlagRequired("erspan-type")
 	mirrorErspanSessionCreateCmd.MarkFlagRequired("vpc-id")
 	mirrorErspanSessionCreateCmd.MarkFlagRequired("collector-type")
 	mirrorErspanSessionCreateCmd.MarkFlagRequired("collector-val")
+
+	mirrorSessionUpdateCmd.AddCommand(mirrorErspanSessionUpdateCmd)
+	mirrorErspanSessionUpdateCmd.Flags().StringVarP(&mirrorsessionID, "id", "i", "",
+		"Specify mirror session ID")
+	mirrorErspanSessionUpdateCmd.Flags().Uint32Var(&snapLen, "snap-len", 0, "Specify snap len")
+	mirrorErspanSessionUpdateCmd.Flags().StringVarP(&erspanType, "erspan-type", "", "none",
+		"Specify erspan type (type1, type2, type3)")
+	mirrorErspanSessionUpdateCmd.Flags().StringVarP(&VpcID, "vpc-id", "v", "", "Specify vpc ID")
+	mirrorErspanSessionUpdateCmd.Flags().StringVarP(&collectorType, "collector-type", "", "",
+		"Specify collector type (tunnel or ip) for ERSPAN mirror session")
+	mirrorErspanSessionUpdateCmd.Flags().StringVarP(&collectorVal, "collector-val", "", "",
+		"Specify tunnel ID (aka TEP) or destination IP for ERSPAN collector")
+	mirrorErspanSessionUpdateCmd.Flags().Uint32Var(&dscp, "dscp", 0, "Specify DSCP")
+	mirrorErspanSessionUpdateCmd.Flags().Uint32Var(&spanID, "span-id", 0, "Specify span ID")
+	mirrorErspanSessionUpdateCmd.MarkFlagRequired("id")
+
+	debugDeleteCmd.AddCommand(mirrorSessionDeleteCmd)
+	mirrorSessionDeleteCmd.Flags().StringVarP(&mirrorsessionID, "id", "i", "",
+		"Specify mirror session ID")
 }
 
 func mirrorSessionShowCmdPreRun(cmd *cobra.Command, args []string) error {
@@ -345,7 +402,7 @@ func mirrorRspanSessionCreateCmdHandler(cmd *cobra.Command, args []string) {
 	client := pds.NewMirrorSvcClient(c)
 
 	req := &pds.MirrorSessionSpec{
-		Id:      uuid.FromStringOrNil(ID).Bytes(),
+		Id:      uuid.FromStringOrNil(mirrorsessionID).Bytes(),
 		SnapLen: snapLen,
 	}
 
@@ -380,6 +437,295 @@ func mirrorRspanSessionCreateCmdHandler(cmd *cobra.Command, args []string) {
 	return
 }
 
+func mirrorErspanSessionUpdateCmdPreRunE(cmd *cobra.Command,
+	args []string) error {
+	if cmd == nil {
+		return fmt.Errorf("Invalid argument")
+	}
+	if !cmd.Flags().Changed("snap-len") &&
+		!cmd.Flags().Changed("erspan-type") &&
+		!cmd.Flags().Changed("vpc-id") &&
+		!cmd.Flags().Changed("collector-type") &&
+		!cmd.Flags().Changed("collector-val") &&
+		!cmd.Flags().Changed("dscp") &&
+		!cmd.Flags().Changed("span-id") {
+		return fmt.Errorf("Nothing to update")
+	}
+	validArgs_Collector := []string{"ip", "tunnel"}
+	if cmd.Flags().Changed("collector-type") &&
+		!checkValidArgs(collectorType, validArgs_Collector) {
+		return fmt.Errorf("Invalid argument for \"collector-type\""+
+			", please choose from [%s]",
+			strings.Join(validArgs_Collector, ", "))
+	}
+	validArgs := []string{"type1", "type2", "type3"}
+	if cmd.Flags().Changed("erspan-type") &&
+		!checkValidArgs(erspanType, validArgs) {
+		return fmt.Errorf("Invalid argument for \"erspan-type\""+
+			", please choose from [%s]", strings.Join(validArgs, ", "))
+	}
+	return nil
+}
+
+func mirrorErspanSessionUpdateCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewMirrorSvcClient(c)
+
+	var getReq *pds.MirrorSessionGetRequest
+	// Get specific Mirror Session
+	getReq = &pds.MirrorSessionGetRequest{
+		Id: [][]byte{uuid.FromStringOrNil(mirrorsessionID).Bytes()},
+	}
+
+	// PDS call
+	getRespMsg, err := client.MirrorSessionGet(context.Background(), getReq)
+	if err != nil {
+		fmt.Printf("Mirror session Get failed, err %v\n", err)
+		return
+	}
+	if getRespMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", getRespMsg.ApiStatus)
+		return
+	}
+	getResp := getRespMsg.GetResponse()
+	if getResp[0].GetSpec().GetErspanSpec() == nil {
+		fmt.Printf("Mirror session to be updated is not of type ERSPAN\n")
+		return
+	}
+
+	// construct update request
+	reqSnapLen := getResp[0].GetSpec().GetSnapLen()
+	reqType := getResp[0].GetSpec().GetErspanSpec().GetType()
+	reqVpcID := getResp[0].GetSpec().GetErspanSpec().GetVPCId()
+	reqDscp := getResp[0].GetSpec().GetErspanSpec().GetDscp()
+	reqSpanID := getResp[0].GetSpec().GetErspanSpec().GetSpanId()
+	reqDstIP := getResp[0].GetSpec().GetErspanSpec().GetDstIP()
+	reqTunnelID := getResp[0].GetSpec().GetErspanSpec().GetTunnelId()
+	if cmd.Flags().Changed("snap-len") {
+		reqSnapLen = snapLen
+	}
+	if cmd.Flags().Changed("erspan-type") {
+		reqType = utils.StringToERspanType(erspanType)
+	}
+	if cmd.Flags().Changed("vpc-id") {
+		reqVpcID = uuid.FromStringOrNil(VpcID).Bytes()
+	}
+	if cmd.Flags().Changed("collector-type") {
+		if strings.ToLower(collectorType) == "tunnel" {
+			reqDstIP = nil
+			reqTunnelID = uuid.FromStringOrNil(collectorVal).Bytes()
+		} else {
+			reqTunnelID = nil
+			reqDstIP = utils.IPAddrStrToPDSIPAddr(collectorVal)
+		}
+	}
+	if cmd.Flags().Changed("dscp") {
+		reqDscp = dscp
+	}
+	if cmd.Flags().Changed("span-id") {
+		reqSpanID = spanID
+	}
+	req := &pds.MirrorSessionSpec{
+		Id:      uuid.FromStringOrNil(mirrorsessionID).Bytes(),
+		SnapLen: reqSnapLen,
+	}
+	if reqDstIP == nil {
+		req.Mirrordst = &pds.MirrorSessionSpec_ErspanSpec{
+			ErspanSpec: &pds.ERSpanSpec{
+				Type:   reqType,
+				VPCId:  reqVpcID,
+				Dscp:   reqDscp,
+				SpanId: reqSpanID,
+				Erspandst: &pds.ERSpanSpec_TunnelId{
+					TunnelId: reqTunnelID,
+				},
+			},
+		}
+	} else {
+		req.Mirrordst = &pds.MirrorSessionSpec_ErspanSpec{
+			ErspanSpec: &pds.ERSpanSpec{
+				Type:   reqType,
+				VPCId:  reqVpcID,
+				Dscp:   reqDscp,
+				SpanId: reqSpanID,
+				Erspandst: &pds.ERSpanSpec_DstIP{
+					DstIP: reqDstIP,
+				},
+			},
+		}
+	}
+	reqMsg := &pds.MirrorSessionRequest{
+		Request: []*pds.MirrorSessionSpec{
+			req,
+		},
+	}
+
+	// PDS call
+	respMsg, err := client.MirrorSessionUpdate(context.Background(), reqMsg)
+	if err != nil {
+		fmt.Printf("Updating mirror session failed, err %v\n", err)
+		return
+	}
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Update operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+	fmt.Println("Updating mirror session succeeded")
+	return
+}
+
+func mirrorRspanSessionUpdateCmdPreRunE(cmd *cobra.Command,
+	args []string) error {
+	if cmd == nil {
+		return fmt.Errorf("Invalid argument")
+	}
+	if !cmd.Flags().Changed("snap-len") &&
+		!cmd.Flags().Changed("interface") &&
+		!cmd.Flags().Changed("encap-type") &&
+		!cmd.Flags().Changed("encap-val") {
+		return fmt.Errorf("Nothing to update")
+	}
+	if cmd.Flags().Changed("encap-type") != cmd.Flags().Changed("encap-val") {
+		return fmt.Errorf("Encap type and encap value " +
+			"both are needed for update")
+	}
+	validArgs := []string{"dot1q", "qinq", "mplsoudp", "vxlan"}
+	if cmd.Flags().Changed("encap-type") &&
+		!checkValidArgs(encapType, validArgs) {
+		return fmt.Errorf("Invalid argument for \"encap-type\""+
+			", please choose from [%s]", strings.Join(validArgs, ", "))
+	}
+	return nil
+}
+
+func mirrorRspanSessionUpdateCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewMirrorSvcClient(c)
+
+	var getReq *pds.MirrorSessionGetRequest
+	// Get specific Mirror Session
+	getReq = &pds.MirrorSessionGetRequest{
+		Id: [][]byte{uuid.FromStringOrNil(mirrorsessionID).Bytes()},
+	}
+
+	// PDS call
+	getRespMsg, err := client.MirrorSessionGet(context.Background(), getReq)
+	if err != nil {
+		fmt.Printf("Mirror session Get failed, err %v\n", err)
+		return
+	}
+	if getRespMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", getRespMsg.ApiStatus)
+		return
+	}
+	getResp := getRespMsg.GetResponse()
+	if getResp[0].GetSpec().GetRspanSpec() == nil {
+		fmt.Printf("Mirror session to be updated is not of type RSPAN\n")
+		return
+	}
+
+	// construct update message
+	reqSnapLen := getResp[0].GetSpec().GetSnapLen()
+	reqInterface := getResp[0].GetSpec().GetRspanSpec().GetInterface()
+	reqEncap := getResp[0].GetSpec().GetRspanSpec().GetEncap()
+	if cmd.Flags().Changed("snap-len") {
+		reqSnapLen = snapLen
+	}
+	if cmd.Flags().Changed("interface") {
+		reqInterface = uuid.FromStringOrNil(interfaceID).Bytes()
+	}
+	if cmd.Flags().Changed("encap-type") {
+		reqEncap.Type = utils.StringToEncapType(encapType)
+		reqEncap.Value = utils.StringToEncapVal(encapType, encapVal)
+	}
+	req := &pds.MirrorSessionSpec{
+		Id:      uuid.FromStringOrNil(mirrorsessionID).Bytes(),
+		SnapLen: reqSnapLen,
+	}
+	req.Mirrordst = &pds.MirrorSessionSpec_RspanSpec{
+		RspanSpec: &pds.RSpanSpec{
+			Interface: reqInterface,
+			Encap:     reqEncap,
+		},
+	}
+	reqMsg := &pds.MirrorSessionRequest{
+		Request: []*pds.MirrorSessionSpec{
+			req,
+		},
+	}
+
+	// PDS call
+	respMsg, err := client.MirrorSessionUpdate(context.Background(), reqMsg)
+	if err != nil {
+		fmt.Printf("Updating mirror session failed, err %v\n", err)
+		return
+	}
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Update operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+	fmt.Println("Updating mirror session succeeded")
+	return
+}
+
+func mirrorSessionDeleteCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewMirrorSvcClient(c)
+
+	req := &pds.MirrorSessionDeleteRequest{
+		Id: [][]byte{uuid.FromStringOrNil(mirrorsessionID).Bytes()},
+	}
+
+	// PDS call
+	respMsg, err := client.MirrorSessionDelete(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Deleting mirror session failed, err %v\n", err)
+		return
+	}
+	if respMsg.ApiStatus[0] != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+	fmt.Println("Deleting mirror session succeeded")
+	return
+}
+
 func mirrorErspanSessionCreateCmdHandler(cmd *cobra.Command, args []string) {
 	// Connect to PDS
 	c, err := utils.CreateNewGRPCClient()
@@ -397,7 +743,7 @@ func mirrorErspanSessionCreateCmdHandler(cmd *cobra.Command, args []string) {
 	client := pds.NewMirrorSvcClient(c)
 
 	req := &pds.MirrorSessionSpec{
-		Id:      uuid.FromStringOrNil(ID).Bytes(),
+		Id:      uuid.FromStringOrNil(mirrorsessionID).Bytes(),
 		SnapLen: snapLen,
 	}
 
@@ -465,12 +811,12 @@ func mirrorSessionShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
 
 	var req *pds.MirrorSessionGetRequest
 	if cmd != nil && cmd.Flags().Changed("id") {
-		// Get specific Mirror Session 
+		// Get specific Mirror Session
 		req = &pds.MirrorSessionGetRequest{
 			Id: [][]byte{uuid.FromStringOrNil(mirrorsessionID).Bytes()},
 		}
 	} else {
-		// Get all Mirror Sessions 
+		// Get all Mirror Sessions
 		req = &pds.MirrorSessionGetRequest{
 			Id: [][]byte{},
 		}
@@ -488,7 +834,7 @@ func mirrorSessionShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// Print Mirror Sessions 
+	// Print Mirror Sessions
 	if cmd != nil && cmd.Flags().Changed("yaml") {
 		for _, resp := range respMsg.Response {
 			respType := reflect.ValueOf(resp)

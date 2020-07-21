@@ -482,6 +482,9 @@ mirror_impl::fill_spec_(pds_mirror_session_spec_t *spec) {
         spec->erspan_spec.vlan_strip_en =
             mirror_data.erspan_action.vlan_strip_en;
         break;
+    case MIRROR_LSPAN_ID:
+        spec->snap_len = mirror_data.lspan_action.truncate_len;
+        break;
     default:
         PDS_TRACE_ERR("Unsupported mirror action id %u for session %s",
                       mirror_data.action_id, spec->key.str());
@@ -510,6 +513,7 @@ mirror_impl::fill_stats_(pds_mirror_session_stats_t *stats,
     }
     switch (mirror_data.action_id) {
     case MIRROR_RSPAN_ID:
+    case MIRROR_LSPAN_ID:
         // we support stats only for ERSPAN
         break;
     case MIRROR_ERSPAN_ID:

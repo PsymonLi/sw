@@ -3,10 +3,10 @@
 //------------------------------------------------------------------------------
 
 #include <iostream>
+#include <malloc.h>
 #include <math.h>
 #include "nic/sdk/include/sdk/table.hpp"
 #include "nic/apollo/test/flow_test/flow_test.hpp"
-#include <malloc.h>
 
 #ifndef SKIP_FLOW
 flow_test *g_flow_test_obj;

@@ -30,10 +30,17 @@ var debugUpdateCmd = &cobra.Command{
 	Long:  "debug update commands",
 }
 
+var debugDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "debug delete commands",
+	Long:  "debug delete commands",
+}
+
 func init() {
 	rootCmd.AddCommand(debugCmd)
 	impl.RegisterDebugNodes(&impl.CLIParams{GRPCPort: types.PDSGRPCDefaultPort}, debugCmd)
 
 	debugCmd.AddCommand(debugCreateCmd)
 	debugCmd.AddCommand(debugUpdateCmd)
+	debugCmd.AddCommand(debugDeleteCmd)
 }

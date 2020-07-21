@@ -22,7 +22,7 @@ message RSpanSpec {
   // interface to send RSPAN pkts on
   // NOTE: uplink interfaces and host interfaces (aka. lif) are supported
   //       currently
-  bytes       Interface = 1;
+  bytes       Interface = 1 [(gogoproto.moretags) = "meta:mandatory"];
   // RSPAN encap, only VLAN encapsulation supported here
   types.Encap Encap     = 2;
 }

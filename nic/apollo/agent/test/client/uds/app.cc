@@ -8,6 +8,7 @@
 ///
 //----------------------------------------------------------------------------
 
+#include <malloc.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 #include "nic/apollo/api/include/pds_tep.hpp"
@@ -45,7 +46,6 @@
 #include "nic/apollo/agent/svc/mirror_svc.hpp"
 #include "nic/apollo/agent/svc/specs.hpp"
 #include "nic/sdk/include/sdk/uds.hpp"
-#include <malloc.h>
 
 static char *g_iov_data;
 #define SVC_SERVER_SOCKET_PATH          "/var/run/pds_svc_server_sock"

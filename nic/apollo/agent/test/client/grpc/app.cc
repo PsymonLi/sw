@@ -4,6 +4,7 @@
 
 #define __STDC_FORMAT_MACROS
 
+#include <malloc.h>
 #include <grpc++/grpc++.h>
 #include "gen/proto/batch.grpc.pb.h"
 #include "gen/proto/gogo.grpc.pb.h"
@@ -57,7 +58,6 @@
 #include "nic/apollo/agent/svc/dhcp_svc.hpp"
 #include "nic/apollo/agent/svc/mirror_svc.hpp"
 #include "nic/apollo/agent/svc/specs.hpp"
-#include <malloc.h>
 
 using std::string;
 using grpc::Channel;

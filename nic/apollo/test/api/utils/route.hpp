@@ -6,12 +6,12 @@
 #ifndef __TEST_API_UTILS_ROUTE_TABLE_HPP__
 #define __TEST_API_UTILS_ROUTE_TABLE_HPP__
 
+#include <malloc.h>
 #include "nic/apollo/api/include/pds_route.hpp"
 #include "nic/apollo/api/include/pds_nexthop.hpp"
 #include "nic/apollo/test/api/utils/api_base.hpp"
 #include "nic/apollo/test/api/utils/batch.hpp"
 #include "nic/apollo/test/api/utils/feeder.hpp"
-#include <malloc.h>
 
 namespace test {
 namespace api {
@@ -30,9 +30,9 @@ enum route_table_attrs {
 static inline void
 memory_dump (int fd)
 {
-    struct mallinfo minfo = {0};
-    minfo = mallinfo();
+    struct mallinfo minfo = { 0 };
 
+    minfo = mallinfo();
     dprintf(fd, "%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n"
             "%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n%-24s: %u\n\n",
             "Num Bytes Arena Alloc", minfo.arena,
