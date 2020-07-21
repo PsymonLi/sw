@@ -679,13 +679,14 @@ vmotion_thread_delay_del_cb (void *timer, uint32_t timer_id, void *ctxt)
     sdk::event_thread::event_thread *thr = (sdk::event_thread::event_thread *)ctxt;
 
     HAL_TRACE_INFO("vmotion_thread_delay_del_cb thread: {}", thr->thread_id());
-    // Free up event thread memory
-    sdk::event_thread::event_thread::destroy(thr);
 
     // Free up the thread ID
     if (g_hal_state->get_vmotion()) {
         g_hal_state->get_vmotion()->release_thread_id(thr->thread_id());
     }
+
+    // Free up event thread memory
+    sdk::event_thread::event_thread::destroy(thr);
 }
 
 void
