@@ -65,6 +65,7 @@ builds:
     owners: ["email:jason@pensando.io"]
     artifacts:
       - /tmp/athena/src/github.com/pensando/sw/nic/nic.tar
+      - /tmp/athena/src/github.com/pensando/sw/nic/build/aarch64/athena/capri/out/athena_app_bin/athena_app.bin
   build-athena-customer-arm:
     commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && ./apollo/test/athena_app/bld_pkg_athena --arch=aarch64 --output=athena-arm"]
     owners: ["email:murali@pensando.io"]
