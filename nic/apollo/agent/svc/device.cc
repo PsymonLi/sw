@@ -318,17 +318,11 @@ end:
     return ret;
 }
 
-static inline void
-device_spec_fill (pds_device_spec_t *spec)
-{
-    spec->device_profile = api::g_pds_state.device_profile();
-    spec->memory_profile = api::g_pds_state.memory_profile();
-}
-
+// function to fill device info if device object not yet created
 static inline sdk_ret_t
 device_info_fill (pds_device_info_t *info)
 {
-    device_spec_fill(&info->spec);
+    api::device_entry::fill_persisted_spec(&info->spec);
     api::device_entry::fill_status(&info->status);
     return SDK_RET_OK;
 }

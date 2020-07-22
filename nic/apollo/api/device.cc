@@ -105,7 +105,6 @@ device_entry::init_config(api_ctxt_t *api_ctxt) {
     memcpy(&ip_addr_, &spec->device_ip_addr, sizeof(ip_addr_));
     memcpy(mac_addr_, spec->device_mac_addr, ETH_ADDR_LEN);
     memcpy(&gw_ip_addr_, &spec->gateway_ip_addr, sizeof(gw_ip_addr_));
-    oper_mode_ = spec->dev_oper_mode;
     bridging_en_ = spec->bridging_en;
     learn_spec_ = spec->learn_spec;
     overlay_routing_en_ = spec->overlay_routing_en;
@@ -133,8 +132,7 @@ sdk_ret_t
 device_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
     pds_device_spec_t *spec = &obj_ctxt->api_params->device_spec;
 
-    if ((oper_mode_ != spec->dev_oper_mode) ||
-        (bridging_en_ != spec->bridging_en) ||
+    if ((bridging_en_ != spec->bridging_en) ||
         (learn_spec_.learn_mode != spec->learn_spec.learn_mode) ||
         (overlay_routing_en_ != spec->overlay_routing_en)) {
         PDS_TRACE_WARN("Some of the device obj's attribute changes will take "
@@ -192,13 +190,18 @@ device_entry::activate_config(pds_epoch_t epoch, api_op_t api_op,
 }
 
 void
-device_entry::fill_spec_(pds_device_spec_t *spec) {
-    spec->gateway_ip_addr = gw_ip_addr_;
-    spec->dev_oper_mode = oper_mode_;
-    spec->learn_spec.learn_age_timeout = learn_spec_.learn_age_timeout;
+device_entry::fill_persisted_spec(pds_device_spec_t *spec) {
     spec->device_profile = api::g_pds_state.device_profile();
     spec->memory_profile = api::g_pds_state.memory_profile();
+    spec->dev_oper_mode = api::g_pds_state.device_oper_mode();
+}
+
+void
+device_entry::fill_spec_(pds_device_spec_t *spec) {
     spec->tx_policer = tx_policer_;
+    spec->gateway_ip_addr = gw_ip_addr_;
+    spec->learn_spec.learn_age_timeout = learn_spec_.learn_age_timeout;
+    fill_persisted_spec(spec);
 }
 
 void

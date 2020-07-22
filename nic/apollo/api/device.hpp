@@ -43,6 +43,10 @@ public:
     /// \param[out] status specification
     static void fill_status(pds_device_status_t *status);
 
+    /// \brief      fill the persisted attributes of the device spec
+    /// \param[out] spec specification
+    static void fill_persisted_spec(pds_device_spec_t *spec);
+
     /// \brief    clone this object and return cloned object
     /// \param[in]    api_ctxt API context carrying object related configuration
     /// \return       new object instance of current object
@@ -207,10 +211,6 @@ public:
     /// \return gateway IP address of the device
     ip_addr_t gw_ip_addr(void) const { return gw_ip_addr_; }
 
-    /// \brief  return the device's operational mode
-    /// \return operational mode of the device
-    pds_device_oper_mode_t oper_mode(void) const { return oper_mode_; }
-
     /// \brief return true if L2 bridging is enabled or else false
     /// \return    true or false based on whether bridging is enabled or not
     bool bridging_enabled(void) const { return bridging_en_; }
@@ -270,8 +270,6 @@ private:
     mac_addr_t mac_addr_;
     ///< IPv4 addres of default gw in underlay
     ip_addr_t gw_ip_addr_;
-    ///< operational mode of the device
-    pds_device_oper_mode_t oper_mode_;
     ///< true if L2 bridging is enabled
     bool bridging_en_;
     ///< MAC/IP learning configuration

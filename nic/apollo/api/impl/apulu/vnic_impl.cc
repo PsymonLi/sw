@@ -976,7 +976,7 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
                           "idx %u", spec->key.str(), nh_idx_);
             return sdk::SDK_RET_HW_READ_ERR;
         }
-        ret = program_vnic_nh_(device->oper_mode(), spec, &nh_data);
+        ret = program_vnic_nh_(g_pds_state.device_oper_mode(), spec, &nh_data);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to program NEXTHOP table at idx %u for vnic %s",
                           nh_idx_, spec->key.str());
