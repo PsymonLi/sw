@@ -56,6 +56,13 @@ pds_ret_t pds_thread_init(uint32_t core_id);
 ///            from the control core after threads are stopped
 void pds_global_teardown(void);
 
+/// \brief Nacl programming for mfr testing support
+/// \param[in] vlan_a vlan tag to match on for redirection from uplink to ARM 
+/// \param[in] vlan_b vlan tag to match on for redirection from uplink to ARM
+/// \remark Program nacls to redirect traffic with specific vlans to ARM and 
+///         program nacls to redirect other traffic from one uplink to other
+pds_ret_t pds_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b);
+
 #ifdef __cplusplus
 }
 #endif

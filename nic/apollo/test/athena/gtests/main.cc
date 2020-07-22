@@ -1853,6 +1853,9 @@ TEST(athena_gtest, sim)
 {
     sdk_ret_t           ret = SDK_RET_OK;
 
+    /* Test uplink-uplink NACL for MFR mode */
+    ASSERT_TRUE(athena_gtest_test_mfr_uplink_nacl() == SDK_RET_OK);
+    
     /* Setup all flows */
     ASSERT_TRUE((ret = setup_flows()) == SDK_RET_OK);
 
@@ -1915,7 +1918,7 @@ TEST(athena_gtest, sim)
     iterate_dump_l2_flows();
 #endif
     print_stats();
-
+    
     pds_global_teardown();
 
 }

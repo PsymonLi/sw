@@ -17,10 +17,14 @@
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 #include "nic/sdk/asic/asic.hpp"
 #include "ftl_dev_impl.hpp"
+#include "nic/apollo/api/include/athena/pds_vnic.h"
 
 using namespace sdk;
 using namespace sdk::asic;
 
+extern sdk_ret_t
+athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b);
+    
 extern "C" {
 // Function prototypes
 sdk_ret_t pds_flow_cache_create(pds_cinit_params_t *params);
@@ -121,6 +125,7 @@ pds_global_init (pds_cinit_params_t *params)
     if (ret != SDK_RET_OK) {
         return (pds_ret_t)ret;
     }
+    
     return (pds_ret_t)ret;
 }
 
@@ -149,6 +154,24 @@ pds_global_teardown ()
 #endif
     pds_teardown();
     return;
+}
+
+pds_ret_t 
+pds_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    
+    if (vlan_a >= PDS_VLAN_ID_MAX || vlan_b >= PDS_VLAN_ID_MAX) {
+        PDS_TRACE_ERR("Input vlan(s) is beyond range: vlan_a %u vlan_b %u", vlan_a, vlan_b);
+        return PDS_RET_INVALID_ARG;
+    }
+
+    ret = athena_program_mfr_nacls(vlan_a, vlan_b);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Programming mfr nacls failed with ret %u", ret);
+    }
+
+    return (pds_ret_t)ret;
 }
 
 }

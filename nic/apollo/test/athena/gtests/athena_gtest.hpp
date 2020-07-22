@@ -310,7 +310,9 @@ void
 p4pd_ipv6_dnat_insert (uint16_t vnic_id, ipv6_addr_t v6_nat_dip,
 		       ipv6_addr_t v6_orig_dip, uint16_t dnat_epoch,  bool ovfl = 0, uint8_t recirc_num = 0);
 
-
+/* MFR uplink nacl */
+sdk_ret_t
+athena_gtest_test_mfr_uplink_nacl(void);
 
 /* VLAN0 Flows */
 sdk_ret_t
