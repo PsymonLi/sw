@@ -65,7 +65,6 @@ erspan:
 
     bbne            k.ctag_s_valid, TRUE, erspan_truncate
     sne             c2, r0, r0
-    phvwr           p.erspan3_span_id, d.u.erspan_d.span_id
     phvwrpair       p.erspan3_vlan, k.ctag_s_vid, p.erspan3_cos, k.ctag_s_pcp
     bbne            d.u.erspan_d.vlan_strip_en, TRUE, erspan_ctag_no_strip
     seq             c6, d.u.erspan_d.erspan_type, ERSPAN_TYPE_II
@@ -107,6 +106,7 @@ erspan_truncate:
     phvwri.c5       p.{gre_0_C...gre_0_ver}, 0x1000
     phvwri.!c5      p.{gre_0_C...gre_0_ver}, 0
 
+    phvwr           p.erspan3_span_id, d.u.erspan_d.span_id
     seq             c1, d.u.erspan_d.erspan_type, ERSPAN_TYPE_I
     bcf             [!c1&!c6], erspan3
     phvwr           p.mirror_blob_valid, FALSE
