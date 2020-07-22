@@ -102,7 +102,7 @@ upg_interactive_response (const void *data, const size_t size)
     // if it is a ready stage and the current response is OK, wait for
     // ready done by the controller.
     if ((msg_in->stage == UPG_STAGE_CONFIG_REPLAY) &&
-        (!getenv("UPGMGR_READY_STAGE_WAIT_DISABLE"))) {
+        (!getenv("UPGMGR_CONFIG_REPLAY_WAIT_DISABLE"))) {
         UPG_TRACE_INFO("Waiting for config replay, timeout %u", max_wait);
         // no need to delay if the current status is fail
         if (msg_in->rsp_status == UPG_STATUS_OK) {

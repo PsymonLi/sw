@@ -150,11 +150,11 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     cur_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
     // create segment to backup svc lif pstate
     lif_pstate =
-        (svc_lif_pstate_t *)backup_store->create_segment(SVC_LIF_SHM_NAME,
+        (svc_lif_pstate_t *)backup_store->create_segment(SVC_LIF_PSTATE_NAME,
                                               sizeof(svc_lif_pstate_t));
     if (lif_pstate == NULL) {
         PDS_TRACE_ERR("Failed to create shmstore %s, for svc lif id %u",
-                      SVC_LIF_SHM_NAME, lif_id);
+                      SVC_LIF_PSTATE_NAME, lif_id);
         return SDK_RET_ERR;
     } else {
         new (lif_pstate) svc_lif_pstate_t();
@@ -265,13 +265,13 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
     //     else:
     //         backup_store != NULL
     SDK_ASSERT(restore_store != NULL);
-    if (cur_version.version != prev_version.version) {
+    if (cur_version.minor != prev_version.minor) {
         SDK_ASSERT(backup_store != NULL);
-        to_pstate = backup_store->create_segment(SVC_LIF_SHM_NAME,
+        to_pstate = backup_store->create_segment(SVC_LIF_PSTATE_NAME,
                                                  sizeof(svc_lif_pstate_t));
         SDK_ASSERT(to_pstate != NULL);
         new (to_pstate) svc_lif_pstate_t();
-        from_pstate = restore_store->open_segment(SVC_LIF_SHM_NAME);
+        from_pstate = restore_store->open_segment(SVC_LIF_PSTATE_NAME);
         SDK_ASSERT(from_pstate != NULL);
         // TODO: copy over data from from_pstate to to_pstate
         lif_pstate = (svc_lif_pstate_t *)to_pstate;
@@ -282,14 +282,14 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
         }
         memcpy(&lif_pstate->metadata.ver, &cur_version, sizeof(cur_version));
         PDS_TRACE_DEBUG("svc lif %s, id %u, pstate converted to version %u",
-                        SVC_LIF_SHM_NAME, lif_id, cur_version.version);
+                        SVC_LIF_PSTATE_NAME, lif_id, cur_version.version);
     } else {
         lif_pstate =
-            (svc_lif_pstate_t *)restore_store->open_segment(SVC_LIF_SHM_NAME);
+            (svc_lif_pstate_t *)restore_store->open_segment(SVC_LIF_PSTATE_NAME);
         if (lif_pstate == NULL || lif_pstate->lif_id != lif_id) {
             PDS_TRACE_ERR("Either shmstore %s open failed or lif id %u, "
                           "did not match with previous id %u",
-                          SVC_LIF_SHM_NAME, lif_id,
+                          SVC_LIF_PSTATE_NAME, lif_id,
                           (lif_pstate != NULL) ? lif_pstate->lif_id : lif_id);
             return SDK_RET_ENTRY_NOT_FOUND;
         }

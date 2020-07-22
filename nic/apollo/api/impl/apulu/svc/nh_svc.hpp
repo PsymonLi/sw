@@ -158,9 +158,13 @@ static inline sdk_ret_t
 pds_nh_group_proto_to_api_status (pds_nexthop_group_status_t *api_status,
                                   const pds::NhGroupStatus &proto_status)
 {
-    pds::NexthopStatus nh_proto_status = proto_status.members(0);
+    pds::NexthopStatus nh_proto_status;
+
     api_status->hw_id = proto_status.hwid();
-    api_status->nh_base_idx = nh_proto_status.hwid();
+    if (proto_status.members_size()) {
+        nh_proto_status = proto_status.members(0);
+        api_status->nh_base_idx = nh_proto_status.hwid();
+    }
     return SDK_RET_OK;
 }
 

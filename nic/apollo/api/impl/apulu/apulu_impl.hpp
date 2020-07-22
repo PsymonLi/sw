@@ -443,9 +443,9 @@ private:
     /// \param[in] prog p4plus program info
     void table_engine_cfg_update_(p4plus_prog_t *prog);
 
-    /// \brief  routine to initialize the p4plus table during upgrade
+    /// \brief  routine to backup the p4plus table config
     /// \return SDK_RET_OK on success, failure status code on error
-    sdk_ret_t p4plus_table_upgrade_init_(void);
+    sdk_ret_t p4plus_table_cfg_backup_(void);
 
     /// \brief  program nexthop and lif tables for ipsec lif
     /// \return SDK_RET_OK on success, failure status code on error

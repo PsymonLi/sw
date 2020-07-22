@@ -63,9 +63,11 @@ typedef struct upg_ev_hitless_s {
     /// an repeal (on B)
     ///   after restore, requires the thread to cleanup its state and go to
     ///   sofware quiesce state.
-    ///   after switchover, requires the threads to rollback and go to software
-    ///   quiesce state.
     upg_ev_hdlr_t repeal_hdlr;
+
+    /// called on B. requires the threads to undo any changes done.
+    /// similar to repeal on A
+    upg_ev_hdlr_t rollback_hdlr;
 
     /// completed the upgrade (on A / B)
     upg_ev_hdlr_t finish_hdlr;

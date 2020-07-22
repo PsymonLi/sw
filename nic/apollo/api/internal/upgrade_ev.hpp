@@ -35,8 +35,9 @@ namespace api {
     E(UPG_MSG_ID_CONFIG_REPLAY,    SDK_IPC_MSG_ID_MAX + 14, "config_replay")   \
     E(UPG_MSG_ID_SYNC,             SDK_IPC_MSG_ID_MAX + 15, "sync")            \
     E(UPG_MSG_ID_REPEAL,           SDK_IPC_MSG_ID_MAX + 16, "repeal")          \
-    E(UPG_MSG_ID_FINISH,           SDK_IPC_MSG_ID_MAX + 17, "finish")          \
-    E(UPG_MSG_ID_MAX,              SDK_IPC_MSG_ID_MAX + 18, "max-invalid")
+    E(UPG_MSG_ID_ROLLBACK,         SDK_IPC_MSG_ID_MAX + 17, "rollback")        \
+    E(UPG_MSG_ID_FINISH,           SDK_IPC_MSG_ID_MAX + 18, "finish")          \
+    E(UPG_MSG_ID_MAX,              SDK_IPC_MSG_ID_MAX + 19, "max-invalid")
 
 SDK_DEFINE_ENUM(upg_ev_msg_id_t, UPG_EV_MSG_ID_ENTRIES)
 SDK_DEFINE_ENUM_TO_STR(upg_ev_msg_id_t, UPG_EV_MSG_ID_ENTRIES)
@@ -70,6 +71,7 @@ sdk_ret_t upg_restore_api_objs(void);
 sdk_ret_t upg_hitless_restore_api_objs(void);
 sdk_ret_t upg_shmstore_create(sysinit_mode_t mode, bool vstore = false);
 sdk_ret_t upg_shmstore_open(sysinit_mode_t mode, bool vstore = false);
+sdk_ret_t threads_suspend_or_resume(bool suspend);
 
 }   // namespace api
 
@@ -85,6 +87,7 @@ using api::upg_ev_msg_id_t::UPG_MSG_ID_QUIESCE;
 using api::upg_ev_msg_id_t::UPG_MSG_ID_PRE_SWITCHOVER;
 using api::upg_ev_msg_id_t::UPG_MSG_ID_PIPELINE_QUIESCE;
 using api::upg_ev_msg_id_t::UPG_MSG_ID_SWITCHOVER;
+using api::upg_ev_msg_id_t::UPG_MSG_ID_ROLLBACK;
 using api::upg_ev_msg_id_t::UPG_MSG_ID_READY;
 using api::upg_ev_msg_id_t::UPG_MSG_ID_CONFIG_REPLAY;
 using api::upg_ev_msg_id_t::UPG_MSG_ID_SYNC;

@@ -25,8 +25,42 @@
 #include "nic/apollo/api/vpc.hpp"
 #include "nic/apollo/api/device.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
+#include "nic/apollo/api/internal/upgrade_pstate.hpp"
 
 namespace api {
+
+static upgrade_pstate_t *
+upgrade_pstate_create_or_open (bool create)
+{
+    sdk::lib::shmstore *store;
+    module_version_t curr_version;
+    module_version_t prev_version;
+    upgrade_pstate_t *upgrade_pstate;
+
+    curr_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
+    prev_version = api::g_upg_state->module_prev_version(core::PDS_THREAD_ID_API);
+
+    if (sdk::platform::sysinit_mode_default(g_upg_state->init_mode())) {
+        store = api::g_upg_state->backup_shmstore(core::PDS_THREAD_ID_API,
+                                                  true);
+        SDK_ASSERT(store != NULL);
+        if (create) {
+            upgrade_pstate = (upgrade_pstate_t *)store->create_segment(UPGRADE_PSTATE_NAME,
+                                                                       sizeof(upgrade_pstate_t));
+            new (upgrade_pstate) upgrade_pstate_t();
+        } else {
+            upgrade_pstate = (upgrade_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
+        }
+    } else {
+        store = api::g_upg_state->restore_shmstore(core::PDS_THREAD_ID_API,
+                                                   true);
+        SDK_ASSERT(store != NULL);
+        upgrade_pstate = (upgrade_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
+        // TODO : version management if previous and current versions are different
+        SDK_ASSERT(prev_version.minor == curr_version.minor);
+    }
+    return upgrade_pstate;
+}
 
 static bool
 backup_stateful_obj_cb (void *obj, void *info)
@@ -241,6 +275,12 @@ backup_mapping (upg_obj_info_t *info)
 static sdk_ret_t
 upg_ev_compat_check (upg_ev_params_t *params)
 {
+    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(true);
+
+    if (pstate == NULL) {
+        PDS_TRACE_ERR("Failed to create pstate %s", UPGRADE_PSTATE_NAME);
+        return SDK_RET_ERR;
+    }
     return SDK_RET_OK;
 }
 
@@ -344,6 +384,8 @@ upg_ev_backup (upg_ev_params_t *params)
         return SDK_RET_ERR;
     }
 
+    // save the existing configuration for rollback if there is a switchover
+    // failure
     ret = impl_base::pipeline_impl()->upgrade_backup();
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Upgrade pipeline backup failed, err %u", ret);
@@ -455,19 +497,45 @@ upg_ev_pre_switchover (upg_ev_params_t *params)
 }
 
 static sdk_ret_t
+asic_quiesce (bool enable)
+{
+    sdk_ret_t ret;
+
+    if (enable) {
+        ret = sdk::asic::pd::asicpd_quiesce_start();
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Upgrade pipeline quiesce start failed");
+        }
+        // sim it always fail, so ignore the error
+        if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
+            ret = SDK_RET_OK;
+        }
+    } else {
+        ret = sdk::asic::pd::asicpd_quiesce_stop();
+        if(ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Upgrade pipeline quiesce stop failed");
+        }
+        // sim it always fail, so ignore the error
+        if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
+            ret = SDK_RET_OK;
+        }
+    }
+    return ret;
+}
+
+static sdk_ret_t
 upg_ev_switchover (upg_ev_params_t *params)
 {
     sdk_ret_t ret, rv;
+    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(false);
 
-    ret = sdk::asic::pd::asicpd_quiesce_start();
-    if (ret != SDK_RET_OK) {
-       PDS_TRACE_ERR("Upgrade pipeline quiesce start failed");
+    if (pstate == NULL) {
+        PDS_TRACE_ERR("Failed to open pstate %s", UPGRADE_PSTATE_NAME);
+        return SDK_RET_ERR;
     }
-    // sim it always fail, so ignore the error
-    if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
-        ret = SDK_RET_OK;
-    }
+    ret = asic_quiesce(true);
     if (ret == SDK_RET_OK) {
+        pstate->switchover_done = true;
         ret = impl_base::pipeline_impl()->upgrade_switchover();
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Pipeline switchover failed, ret %u", ret);
@@ -475,19 +543,10 @@ upg_ev_switchover (upg_ev_params_t *params)
     }
     // do quiesce stop irrespective of the failure. don't want to stop the
     // pipeline and return from here
-    rv = sdk::asic::pd::asicpd_quiesce_stop();
-    if(rv != SDK_RET_OK) {
-       PDS_TRACE_ERR("Upgrade pipeline quiesce stop failed");
-       ret = ret == SDK_RET_OK ? rv : ret;
-    }
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Upgrade pipeline switchover failed, err %u", ret);
-    }
-    // sim it always fail, so ignore the error
-    if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
-        ret = SDK_RET_OK;
-    }
+    rv = asic_quiesce(false);
+    ret = ret == SDK_RET_OK ? rv : ret;
     if (ret == SDK_RET_OK) {
+        pstate->linkmgr_switchover_done = true;
         ret = sdk::linkmgr::port_upgrade_switchover();
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Port switchover failed, ret %u", ret);
@@ -511,7 +570,37 @@ upg_ev_sync (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_repeal (upg_ev_params_t *params)
 {
-   return SDK_RET_OK;
+    sdk_ret_t ret, rv;
+    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(false);
+
+    if (pstate == NULL) {
+        PDS_TRACE_ERR("Failed to open pstate %s", UPGRADE_PSTATE_NAME);
+        return SDK_RET_ERR;
+    }
+    ret = threads_suspend_or_resume(false);
+    if ((ret == SDK_RET_OK) && pstate->switchover_done) {
+        ret = asic_quiesce(true);
+        if (ret == SDK_RET_OK) {
+            ret = impl_base::pipeline_impl()->upgrade_switchover();
+            if (ret != SDK_RET_OK) {
+                PDS_TRACE_ERR("Pipeline switchover failed, ret %u", ret);
+            }
+        }
+        // do quiesce stop irrespective of the failure. don't want to stop the
+        // pipeline and return from here
+        rv = asic_quiesce(false);
+        ret = ret == SDK_RET_OK ? rv : ret;
+        if (ret == SDK_RET_OK && pstate->linkmgr_switchover_done) {
+            ret = sdk::linkmgr::port_upgrade_switchover();
+            if (ret != SDK_RET_OK) {
+                PDS_TRACE_ERR("Port switchover failed, ret %u", ret);
+            }
+        }
+    }
+    // clear of the states
+    pstate->switchover_done = false;
+    pstate->linkmgr_switchover_done = false;
+    return ret != SDK_RET_OK ? sdk_ret_t::SDK_RET_UPG_CRITICAL : ret;
 }
 
 static bool

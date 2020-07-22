@@ -83,37 +83,52 @@ upg_graceful_additional_ev_send (sdk::upg::upg_ev_params_t *params)
     }
 }
 
-static void
-upg_hitless_additional_ev_send (sdk::upg::upg_ev_params_t *params)
+sdk_ret_t
+threads_suspend_or_resume (bool suspend)
 {
-    upg_ev_msg_id_t id = g_upg_state->ev_in_progress_id();
     uint32_t wait_in_ms = 2 * 1000;    // 2 seconds
     bool status_linkmgr, status_core;
     sdk_ret_t ret;
 
+    ret = suspend ? sdk::linkmgr::linkmgr_threads_suspend():
+                    sdk::linkmgr::linkmgr_threads_resume();
+    if (ret == SDK_RET_OK) {
+        ret = suspend ? core::threads_suspend() : core::threads_resume();
+    }
+    // wait for it to be suspended/resumed
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Thread %s failed", suspend ? "suspend" : "resume");
+        return ret;
+    }
+    while (wait_in_ms > 0) {
+        status_linkmgr = suspend ? sdk::linkmgr::linkmgr_threads_suspended() :
+                                   sdk::linkmgr::linkmgr_threads_resumed();
+        status_core = suspend ? core::threads_suspended() :
+                                core::threads_resumed();
+        if (status_linkmgr && status_core) {
+            break;
+        }
+        usleep(1000);
+        wait_in_ms--;
+    }
+    if (wait_in_ms == 0) {
+        PDS_TRACE_ERR("Thread %s failed due to timeout",
+                      suspend ? "suspend" : "resume");
+        ret = sdk_ret_t::SDK_RET_TIMEOUT;
+    }
+    return ret;
+}
+
+static void
+upg_hitless_additional_ev_send (sdk::upg::upg_ev_params_t *params)
+{
+    upg_ev_msg_id_t id = g_upg_state->ev_in_progress_id();
+    sdk_ret_t ret;
+
     if (id == UPG_MSG_ID_PRE_SWITCHOVER) {
-        ret = sdk::linkmgr::linkmgr_threads_suspend();
-        if (ret == SDK_RET_OK) {
-            ret = core::threads_suspend();
-        }
-        // wait for it to be suspended
-        if (ret == SDK_RET_OK) {
-            while (wait_in_ms > 0) {
-                status_linkmgr = sdk::linkmgr::linkmgr_threads_suspended();
-                status_core = core::threads_suspended();
-                if (status_linkmgr && status_core) {
-                    break;
-                }
-                usleep(1000);
-                wait_in_ms--;
-            }
-            if (wait_in_ms == 0) {
-                PDS_TRACE_ERR("Thread suspend failed due to timeout");
-                ret = SDK_RET_ERR;
-            }
-        }
+        ret = threads_suspend_or_resume(true);
         api::g_upg_state->set_ev_more(false);
-        // api::g_upg_state->set_ev_status(ret);  // TODO
+        api::g_upg_state->set_ev_status(ret);
     } else {
         SDK_ASSERT(0);
     }
@@ -214,11 +229,17 @@ upg_hitless_ev_send (sdk::upg::upg_ev_params_t *params)
     case UPG_EV_SWITCHOVER:
         INVOKE_EV_THREAD_HDLR(ev, switchover_hdlr, UPG_MSG_ID_SWITCHOVER);
         break;
+    case UPG_EV_ROLLBACK:
+        INVOKE_EV_THREAD_HDLR(ev, rollback_hdlr, UPG_MSG_ID_ROLLBACK);
+        break;
     case UPG_EV_PRE_SWITCHOVER:
         INVOKE_EV_THREAD_HDLR(ev, pre_switchover_hdlr, UPG_MSG_ID_PRE_SWITCHOVER);
         // have additional events to send when the first operation completes
         // on all threads
         api::g_upg_state->set_ev_more(true);
+        break;
+    case UPG_EV_REPEAL:
+        INVOKE_EV_THREAD_HDLR(ev, repeal_hdlr, UPG_MSG_ID_REPEAL);
         break;
     case UPG_EV_FINISH:
         INVOKE_EV_THREAD_HDLR(ev, finish_hdlr, UPG_MSG_ID_FINISH);

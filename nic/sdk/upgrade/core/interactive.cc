@@ -165,8 +165,8 @@ upg_interactive_stage_exec (upg_stage_t stage)
     }
     stage_in_progress = true;
     fsm_states.clear_pending_svcs();
-    // todo:
     fsm_states.set_current_stage(stage);
+    fsm_states.set_prev_stage_rsp(SVC_RSP_OK);
 
     LOG_STAGE_START(fsm_states.get_event_sequence_type(),
                     svc_sequence_to_str(fsm_states.svc_sequence()).c_str(),
@@ -181,6 +181,8 @@ upg_interactive_stage_exec (upg_stage_t stage)
     fsm_states.timer_start();
     if (!execute_pre_hooks(id)) {
         fsm_states.update_stage_progress(SVC_RSP_FAIL);
+        stage_in_progress = false;
+        return SDK_RET_ERR;
     }
 
     if (fsm_states.is_discovery()) {
@@ -279,7 +281,6 @@ fsm::update_stage_progress_interactive(const svc_rsp_code_t rsp) {
         fsm_states.set_prev_stage_rsp(rsp);
         fsm_states.init_params()->fsm_completion_cb(get_exit_status(rsp));
         stage_in_progress = false;
-        current_stage_ = UPG_STAGE_NONE;
     } else {
         pending_response_--;
         SDK_ASSERT(pending_response_ >= 0);

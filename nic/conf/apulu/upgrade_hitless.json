@@ -96,10 +96,10 @@
                 "rsp_timeout": "300000ms"
             },
             "events": [
-                { "name": "svc_rsp_ok",   "next_stage": "sync" },
-                { "name": "svc_rsp_fail", "next_stage": "repeal"             },
-                { "name": "svc_rsp_crit", "next_stage": "repeal"             },
-                { "name": "svc_no_rsp",   "next_stage": "repeal"             }
+                { "name": "svc_rsp_ok",   "next_stage": "sync"     },
+                { "name": "svc_rsp_fail", "next_stage": "rollback" },
+                { "name": "svc_rsp_crit", "next_stage": "rollback" },
+                { "name": "svc_no_rsp",   "next_stage": "rollback" }
             ]
         },
 
@@ -110,9 +110,9 @@
             },
             "events": [
                 { "name": "svc_rsp_ok",   "next_stage": "pre_switchover" },
-                { "name": "svc_rsp_fail", "next_stage": "repeal"             },
-                { "name": "svc_rsp_crit", "next_stage": "repeal"             },
-                { "name": "svc_no_rsp",   "next_stage": "repeal"             }
+                { "name": "svc_rsp_fail", "next_stage": "rollback"       },
+                { "name": "svc_rsp_crit", "next_stage": "rollback"       },
+                { "name": "svc_no_rsp",   "next_stage": "rollback"       }
             ]
         },
 
@@ -123,9 +123,9 @@
             },
             "events": [
                 { "name": "svc_rsp_ok",   "next_stage": "switchover" },
-                { "name": "svc_rsp_fail", "next_stage": "repeal"     },
+                { "name": "svc_rsp_fail", "next_stage": "rollback"   },
                 { "name": "svc_rsp_crit", "next_stage": "exit"       },
-                { "name": "svc_no_rsp",   "next_stage": "repeal"     }
+                { "name": "svc_no_rsp",   "next_stage": "rollback"   }
             ],
             "post_hooks" : ["upgmgr_hitless.sh"]
         },
@@ -134,7 +134,7 @@
             "svc": {
                 "names": [ "pdsagent" ],
                 "event_sequence": "serial",
-                "rsp_timeout": "2000ms",
+                "rsp_timeout": "5000ms",
                 "domain": "B"
             },
             "events": [
@@ -150,7 +150,7 @@
             "svc": {
                 "names": [ "pdsagent" ],
                 "event_sequence": "serial",
-                "rsp_timeout": "2000ms",
+                "rsp_timeout": "5000ms",
                 "domain": "B"
             },
             "events": [
@@ -164,16 +164,15 @@
         "repeal": {
             "//": "todo: needs discussion here on sysmgr A/B",
              "svc": {
-                "names": [ "vpp", "pdsagent" ],
+                "names": [ "pdsagent", "vpp" ],
                 "event_sequence": "serial",
-                "rsp_timeout": "2000ms",
                 "domain": "A"
             },
             "events": [
-                { "name": "svc_rsp_ok",   "next_stage": "finish" },
-                { "name": "svc_rsp_fail", "next_stage": "exit"   },
-                { "name": "svc_rsp_crit", "next_stage": "exit"   },
-                { "name": "svc_no_rsp",   "next_stage": "exit"   }
+                { "name": "svc_rsp_ok",   "next_stage": "exit" },
+                { "name": "svc_rsp_fail", "next_stage": "exit" },
+                { "name": "svc_rsp_crit", "next_stage": "exit" },
+                { "name": "svc_no_rsp",   "next_stage": "exit" }
            ]
         },
 

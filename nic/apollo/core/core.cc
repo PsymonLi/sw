@@ -343,11 +343,18 @@ spawn_upgrade_thread (sdk::upg::upg_ev_params_t *params)
 static bool
 thread_stop_cb_ (sdk::lib::thread *thr, void *ctxt)
 {
+    pthread_t my_thread_id = (pthread_t)ctxt;
+
     if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+        if (thr->pthread_id() == my_thread_id) {
+            PDS_TRACE_DEBUG("Skipping thread %s from stop", thr->name());
+            goto end;
+        }
         PDS_TRACE_DEBUG("Stopping thread %s", thr->name());
         thr->stop();
     }
+end:
     // continue the walk
     return false;
 }
@@ -356,19 +363,28 @@ thread_stop_cb_ (sdk::lib::thread *thr, void *ctxt)
 void
 threads_stop (void)
 {
-    sdk::lib::thread::walk(thread_stop_cb_, NULL);
+    pthread_t my_thread_id = pthread_self();
+
+    sdk::lib::thread::walk(thread_stop_cb_, (void *)my_thread_id);
 }
 
 static bool
 thread_wait_cb_ (sdk::lib::thread *thr, void *ctxt)
 {
+    pthread_t my_thread_id = (pthread_t)ctxt;
+
     if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+        if (thr->pthread_id() == my_thread_id) {
+            PDS_TRACE_DEBUG("Skipping thread %s from exit", thr->name());
+            goto end;
+        }
         PDS_TRACE_DEBUG("Waiting for thread %s to exit", thr->name());
         thr->wait();
         // free the allocated thread
         sdk::lib::thread::destroy(thr);
     }
+end:
     // continue the walk
     return false;
 }
@@ -376,7 +392,9 @@ thread_wait_cb_ (sdk::lib::thread *thr, void *ctxt)
 void
 threads_wait (void)
 {
-    sdk::lib::thread::walk(thread_wait_cb_, NULL);
+    pthread_t my_thread_id = pthread_self();
+
+    sdk::lib::thread::walk(thread_wait_cb_, (void *)my_thread_id);
 }
 
 // suspend the threads
@@ -391,6 +409,7 @@ thread_suspend_cb_ (sdk::lib::thread *thr, void *ctxt)
         // and g_twheel num entries should be zero
         // upgrade thread never should be suspended
         if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_ROUTING) &&
             (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             PDS_TRACE_DEBUG("Suspending thread %s", thr->name());
             *ret = thr->suspend_req(NULL);
@@ -424,6 +443,7 @@ thread_resume_cb_ (sdk::lib::thread *thr, void *ctxt)
         // and g_twheel num entries should be zero
         // upgrade thread never will be suspended
         if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_ROUTING) &&
             (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             PDS_TRACE_DEBUG("Resuming thread %s", thr->name());
             *ret = thr->resume_req();
@@ -485,6 +505,7 @@ thread_suspended_cb_ (sdk::lib::thread *thr, void *ctxt)
         // TODO periodic thread. all modules should un-register their timers
         // and g_twheel num entries should be zero
         if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_ROUTING) &&
             (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             suspended = thr->suspended();
             SDK_TRACE_DEBUG("Thread %s suspended %u", thr->name(), suspended);
@@ -518,6 +539,7 @@ thread_resumed_cb_ (sdk::lib::thread *thr, void *ctxt)
         // TODO periodic thread. all modules should un-register their timers
         // and g_twheel num entries should be zero
         if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_ROUTING) &&
             (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             suspended = thr->suspended();
             SDK_TRACE_DEBUG("Thread %s resumed %u", thr->name(), !suspended);

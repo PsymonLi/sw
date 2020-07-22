@@ -13,8 +13,8 @@
 
 #include "nic/sdk/include/sdk/types.hpp"
 
-// apollo service lif upgrade store
-#define SVC_LIF_SHM_NAME "apollo_svc_lif"
+// apollo service lif persistent state
+#define SVC_LIF_PSTATE_NAME "apollo_svc_lif"
 
 typedef struct svc_lif_meta_s {
     module_version_t ver;

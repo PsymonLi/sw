@@ -1036,8 +1036,9 @@ apulu_impl::pipeline_init(void) {
 }
 
 // called on B during A to B ISSU upgrade
+// this follows a save and write scheme between init and switchover
 sdk_ret_t
-apulu_impl::p4plus_table_upgrade_init_(void) {
+apulu_impl::p4plus_table_cfg_backup_(void) {
     p4plus_prog_t prog;
     p4pd_table_properties_t tbl_ctx_apphdr;
     p4pd_table_properties_t tbl_ctx_apphdr_off;
@@ -1117,8 +1118,6 @@ apulu_impl::pipeline_upgrade_hitless_init(void) {
     // ret = sdk::asic::pd::asicpd_toeplitz_init("apulu_rxdma",
     //                      P4_P4PLUS_RXDMA_TBL_ID_ETH_RX_RSS_INDIR);
     // SDK_ASSERT(ret == SDK_RET_OK);
-    ret = p4plus_table_upgrade_init_();
-    SDK_ASSERT(ret == SDK_RET_OK);
 
     g_pds_impl_state.init(&api::g_pds_state);
     api::g_pds_state.lif_db()->impl_state_set(g_pds_impl_state.lif_impl_db());
@@ -1287,17 +1286,26 @@ apulu_impl::upgrade_backup(void) {
     p4_tbl_eng_cfg_t *cfg;
     p4plus_prog_t prog;
     uint32_t rss_tblid = P4_P4PLUS_RXDMA_TBL_ID_ETH_RX_RSS_INDIR;
+    sdk_ret_t ret;
 
     api::g_upg_state->clear_tbl_eng_cfg();
     // backup table engine config
     for (uint32_t i = 0; i < sizeof(pipe)/sizeof(uint32_t); i++) {
         table_engine_cfg_backup_(pipe[i]);
     }
+
     // backup rss table engine config
     api::g_upg_state->tbl_eng_rss_cfg(&cfg);
     sdk::asic::pd::asicpd_rss_tbl_eng_cfg_get("apulu_rxdma", rss_tblid, cfg);
 
-    // TODO : backup pc offsets for qstate
+    // backup the p4plus configuration. it follows a save and write scheme
+    ret = p4plus_table_cfg_backup_();
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("P4plus table config backup failed");
+        return ret;
+    }
+    // TODO : backup pc offsets for qstate. may not be needed with latest nicmgr
+    // changes. but need to confirm
     return SDK_RET_OK;
 }
 
