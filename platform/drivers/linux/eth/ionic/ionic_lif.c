@@ -2786,6 +2786,7 @@ err_out_free_netdev:
 int ionic_lifs_alloc(struct ionic *ionic)
 {
 	struct ionic_lif *lif;
+	u32 minfs, maxfs;
 
 	INIT_RADIX_TREE(&ionic->lifs, GFP_KERNEL);
 
@@ -2798,13 +2799,15 @@ int ionic_lifs_alloc(struct ionic *ionic)
 		ionic_lif_identify(ionic, IONIC_LIF_TYPE_CLASSIC, lif->identity);
 
 		if (is_master_lif(lif)) {
+			minfs = __le32_to_cpu(lif->identity->eth.min_frame_size);
+			maxfs = __le32_to_cpu(lif->identity->eth.max_frame_size)  - ETH_HLEN - VLAN_HLEN;
 #ifdef HAVE_NETDEVICE_MIN_MAX_MTU
 #ifdef HAVE_RHEL7_EXTENDED_MIN_MAX_MTU
-			lif->netdev->extended->min_mtu = lif->identity->eth.min_frame_size;
-			lif->netdev->extended->max_mtu = lif->identity->eth.max_frame_size - ETH_HLEN - VLAN_HLEN;
+			lif->netdev->extended->min_mtu = minfs;
+			lif->netdev->extended->max_mtu = maxfs;
 #else
-			lif->netdev->min_mtu = lif->identity->eth.min_frame_size;
-			lif->netdev->max_mtu = lif->identity->eth.max_frame_size - ETH_HLEN - VLAN_HLEN;
+			lif->netdev->min_mtu = minfs;
+			lif->netdev->max_mtu = maxfs;
 #endif /* HAVE_RHEL7_EXTENDED_MIN_MAX_MTU */
 #endif /* HAVE_NETDEVICE_MIN_MAX_MTU */
 		}
