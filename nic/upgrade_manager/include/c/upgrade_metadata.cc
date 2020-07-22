@@ -127,7 +127,7 @@ bool GetUpgCtxTablesFromMeta(string metafile,
                     UPG_LOG_DEBUG("upgrade pcie version: {}", meta.pcieVersion);
                 } else if (!strcmp(item.first.c_str(), "dev_conf_compat_version")) {
                     meta.devConfVersion = item.second.get_value<string>();
-                    UPG_LOG_DEBUG("running devconf version: {}", meta.devConfVersion);
+                    UPG_LOG_DEBUG("upgrade devconf version: {}", meta.devConfVersion);
                 } else if (!strcmp(item.first.c_str(), "build_date")) {
                     meta.buildDate = item.second.get_value<string>();
                     UPG_LOG_DEBUG("upgrade build date: {}", meta.buildDate);
