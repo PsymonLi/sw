@@ -82,19 +82,15 @@ pds_flow_delete_session (u32 ses_id)
             }
         }
 
-        pds_invalidate_handle(&session->iflow.handle);
-
         if (PREDICT_FALSE(session->nat)) {
             ftlv4_update_iflow_nat_session(table4, thread);
         }
         if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
             goto end;
         }
-        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, session->rflow.handle,
-                                                thread) != 0)) {
-            goto end;
-        }
+        pds_invalidate_handle(&session->iflow.handle);
 
+        ret = ftlv4_get_with_handle(table4, session->rflow.handle, thread);
         if (PREDICT_FALSE(ret!= 0)) {
             if (ret == FTL_RETRY)
                 goto start_close_overdue_timer;
@@ -119,15 +115,31 @@ pds_flow_delete_session (u32 ses_id)
                                    FLOW_EXPORT_REASON_DEL,
                                    session->drop);
         }
-        if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->iflow.handle) != 0)) {
-            goto end;
+        if (pds_is_valid_handle(session->iflow.handle)) {
+            //handle may already be invalid as a result of previous attempt
+            //to delete which resulted in retry failure
+            ret = ftlv6_get_with_handle(table, session->iflow.handle);
+            if (PREDICT_FALSE(ret!= 0)) {
+                if (ret == FTL_RETRY)
+                    goto start_close_overdue_timer;
+                else
+                    goto end;
+            }
         }
+
         if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
             goto end;
         }
-        if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->rflow.handle) != 0)) {
-           goto end;
+        pds_invalidate_handle(&session->iflow.handle);
+
+        ret = ftlv6_get_with_handle(table, session->rflow.handle);
+        if (PREDICT_FALSE(ret!= 0)) {
+            if (ret == FTL_RETRY)
+                goto start_close_overdue_timer;
+            else
+                goto end;
         }
+
         if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
             goto end;
         }

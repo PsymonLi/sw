@@ -965,6 +965,11 @@ ftlv4_get_handle_str (char *handle_str, uint64_t handle)
 {
     handle_t ftl_handle = (handle_t)handle;
 
+    if (!ftl_handle.valid()) {
+        sprintf(handle_str, "Invalid handle");
+        return;
+    }
+
     sprintf(handle_str, "%s : %d %s : %d %s : %d",
             "primary",
             ftl_handle.pindex(),
@@ -972,6 +977,7 @@ ftlv4_get_handle_str (char *handle_str, uint64_t handle)
             ftl_handle.svalid() ? ftl_handle.sindex() : -1,
             "epoch",
             ftl_handle.epoch());
+    return;
 }
 
 }

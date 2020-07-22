@@ -573,7 +573,7 @@ always_inline pds_flow_hw_ctx_t * pds_flow_get_session (u32 ses_id)
 
 always_inline bool pds_is_valid_handle (u64 handle)
 {
-    if (handle == 0xFFFFFFFFFFFFFFFF) {
+    if (handle == 0) {
         return false;
     }
     return true;
@@ -581,7 +581,7 @@ always_inline bool pds_is_valid_handle (u64 handle)
 
 always_inline void pds_invalidate_handle (u64 *handle)
 {
-    *handle = 0xFFFFFFFFFFFFFFFF;
+    *handle = 0;
     return;
 }
 
