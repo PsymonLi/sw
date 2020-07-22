@@ -7,6 +7,13 @@ export PLATFORM="$2"
 export IMAGE_TYPE="$3"
 export GOTRACEBACK='crash'
 
+# Elba-ism FIXME - KCM
+export PCIE_POLL_DEV=1
+export ELBA_TM_BINARY_INIT=1
+export ELBA_NO_PORT_MAC=1
+export ELBA_HAPS_NO_STATS_POLL=1
+export ELBA_FORCE_ADMIN_PORT_ALL=1
+
 export PERSISTENT_LOG_DIR='/obfl/'
 export NON_PERSISTENT_LOG_DIR='/var/log/pensando/'
 
@@ -114,7 +121,9 @@ rm -f *.log
 rm -f agent.log* /tmp/*.db
 
 if [ -z "$GOLDFW" ]; then
-    PENLOG_LOCATION=/obfl $NIC_DIR/bin/sysmgr &
+# ELBA - FIXME
+    PENLOG_LOCATION=/obfl $NIC_DIR/bin/sysmgr /nic/conf/sysmgr_gold.json &
+#    PENLOG_LOCATION=/obfl $NIC_DIR/bin/sysmgr &
 else
     PENLOG_LOCATION=/obfl $NIC_DIR/bin/sysmgr /nic/conf/sysmgr_gold.json &
 fi
