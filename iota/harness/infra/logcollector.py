@@ -17,7 +17,8 @@ import iota.harness.infra.types as types
 from iota.harness.infra.utils.logger import Logger as Logger
 from iota.harness.infra.glopts import GlobalOptions as GlobalOptions
 from multiprocessing.dummy import Pool as ThreadPool
-
+import iota.harness.infra.iota_redfish as irf
+import iota.harness.infra.topology as topology
 
 logdirs = [
     "/pensando/iota/\*.log",
@@ -29,12 +30,61 @@ logdirs = [
     "/vmfs/volumes/\*/log/vmkernel\*",  # more kernel logs
 ]
 
+def CollectBmcLogs(ip, username, password, vendor=None):
+    cimcInfo = topology.Node.CimcInfo(ip, ip, username, password)
+    rf = irf.IotaRedfish(cimcInfo, vendor)
+    try:
+        rfc = rf.GetRedfishClient()
+        oem = rf.GetOem()
+        if rf.vendor == types.vendors.CISCO:
+            if "Cisco" not in oem:
+                raise Exception("failed to find Cisco in response.obj.Oem. keys are: {0}".format(oem.keys()))
+            data = rfc.get("/redfish/v1/Chassis/1/LogServices/SEL/Entries/")
+            if "Members" not in data.obj:
+                raise Exception("failed to find Members in entries. keys are: {0}".format(data.obj.keys()))
+            return data.obj.Members
+        elif rf.vendor == types.vendors.DELL:
+            if "Dell" not in oem:
+                raise Exception("failed to find Dell in response.obj.Oem. keys are: {0}".format(oem.keys()))
+            logs = []
+            nextLink = "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog?$skip=0"
+            for i in range(1000):
+                data = rfc.get(nextLink)
+                if "Members" not in data.obj:
+                    break
+                logs.extend(data.obj.Members)
+                if "Members@odata.nextLink" not in data.obj:
+                    break
+                nextLink = data.obj['Members@odata.nextLink']
+            return logs
+        elif rf.vendor == types.vendors.HPE:
+            if "Hpe" not in oem:
+                raise Exception("failed to find Hpe in response.obj.Oem. keys are: {0}".format(oem.keys()))
+            data = rfc.get('/redfish/v1/Managers/1/LogServices/IEL/Entries/')
+            if "Members" not in data.obj:
+                raise Exception("failed to find Members in IEL entries. keys are: {0}".format(data.obj.keys()))
+            return data.obj.Members
+    finally:
+        if rf:
+            api.Logger.debug("closing redfish connection to {0}".format(ip))
+            rf.Close()
+
+def SearchBmcLogs(ip, username, password, searchString):
+    logs = CollectBmcLogs(ip, username, password)
+    #pdb.set_trace()
+    raise NotImplementedError()
+
+
 class CollectLogNode:
-    def __init__(self,name,ip,username,password):
+    def __init__(self,name,ip,username,password,
+                 cimcIp=None,cimcUsername=None,cimcPassword=None):
         self.name=name
         self.ip=ip
         self.username=username
         self.password=password
+        self.cimcIp=cimcIp
+        self.cimcUsername=cimcUsername
+        self.cimcPassword=cimcPassword
     def Name(self):
         return self.name
 
@@ -68,6 +118,14 @@ def __collect_onenode(node):
             output=traceback.format_exc()
         if output:
             Logger.debug(output)
+    try:
+        bmcLogs = CollectBmcLogs(node.cimcIp, node.cimcUsername, node.cimcPassword)
+        filename = localdir + "/node_{0}_bmc.log".format(node.cimcIp.replace("\.","_"))
+        with open(filename, "w") as outfile:
+            json.dump(bmcLogs, outfile)
+    except:
+        Logger.debug("failed to collect BMC logs for node {0}".format(node.ip))
+        Logger.debug(traceback.format_exc())
 
 def buildNodesFromTestbedFile(testbed):
     Logger.debug("building nodes from testbed file {0}".format(testbed))
@@ -83,7 +141,11 @@ def buildNodesFromTestbedFile(testbed):
                 password = data['Provision']['Password']
             for inst in data["Instances"]:
                 if inst.get("Type","") == "bm" and "NodeMgmtIP" in inst and "Name" in inst: 
-                    nodes.append(CollectLogNode(inst["Name"],inst["NodeMgmtIP"],username,password))
+                    node = CollectLogNode(inst["Name"],inst["NodeMgmtIP"],username,password)
+                    node.cimcIp = inst.get("NodeCimcIP", None)
+                    node.cimcUsername = inst.get("NodeCimcUsername", None)
+                    node.cimcPassword = inst.get("NodeCimcPassword", None)
+                    nodes.append(node)
     except:
         msg="failed to build nodes from testbed file. error was:"
         msg+=traceback.format_exc()
@@ -100,12 +162,16 @@ def CollectLogs():
                 node.username = node.__vmUser 
                 node.password = node.__vmPassword 
                 node.ip = node.__esx_ctrl_vm_ip
-                nodes.append(node)
             elif node_os in [ 'linux', 'freebsd', 'windows']:
                 node.username = node.__vmUser 
                 node.password = node.__vmPassword 
                 node.ip = node.__ip_address
-                nodes.append(node)
+            cimcInfo = node.GetCimcInfo()
+            if cimcInfo:
+                node.cimcIp = cimcInfo.GetIp()
+                node.cimcUsername = cimcInfo.GetUsername()
+                node.cimcPassword = cimcInfo.GetPassword()
+            nodes.append(node)
     except Exception as e:
         Logger.debug('topo not setup yet, gathering node info from testbed json file: %s' % str(e))
         nodes=buildNodesFromTestbedFile(GlobalOptions.testbed_json)

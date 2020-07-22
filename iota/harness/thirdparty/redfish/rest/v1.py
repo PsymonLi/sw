@@ -16,6 +16,7 @@ import base64
 import urllib
 import logging
 import inspect
+import pdb
 
 from collections import (OrderedDict)
 
@@ -920,9 +921,12 @@ class RestClientBase(object):
 
             LOGGER.info(json.loads('%s' % resp.text))
             LOGGER.info('Login returned code %s: %s', resp.status, resp.text)
-
             self.__session_key = resp.session_key
-            self.__session_location = resp.session_location
+            if resp.session_location:
+                self.__session_location = resp.session_location
+            else:
+                try: self.__session_location = resp.obj['@odata.id']
+                except: pass
 
             if not self.__session_key and resp.status not in [200, 201, 202, 204]:
                 #If your REST client has a delay for fail attempts added it here

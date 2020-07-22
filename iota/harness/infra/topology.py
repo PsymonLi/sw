@@ -25,6 +25,7 @@ import iota.harness.infra.testcase as testcase
 
 import iota.protos.pygen.topo_svc_pb2 as topo_pb2
 import iota.protos.pygen.iota_types_pb2 as types_pb2
+import iota.harness.infra.iota_redfish as irf
 
 node_log_file = GlobalOptions.logdir + "/nodes.log"
 INB_BOND_IF = 'inb_bond'
@@ -1096,6 +1097,15 @@ class Node(object):
         dev = self.__get_device(device)
         return dev.RunNaplesConsoleCmd(cmd, get_exit_code)
 
+    def IsNodeMgmtUp(self):
+        try:
+            subprocess.check_call("ping -c 5 {0}".format(self.MgmtIpAddress()), shell=True, stdout=subprocess.PIPE)
+            return True
+        except subprocess.CalledProcessError:
+            Logger.error("failed to ping node {0}".format(self.MgmtIpAddress()))
+            return False
+
+
 class Topology(object):
 
     RestartMethodAuto = ''
@@ -1180,6 +1190,39 @@ class Topology(object):
         if node == []:
             return None
         return node[0]
+
+    def PowerCycleViaRedfish(self, nodeNames):
+        try:
+            nodes = []
+            failedNodes = []
+            for name in nodeNames:
+                node = self.GetNodeByName(name)
+                if not node:
+                    raise Exception("failed to find node with name {0}".format(name))
+                if not hasattr(node, "redfish"):
+                    node.redfish = irf.IotaRedfish(node.GetCimcInfo())
+                nodes.append(node)
+            self.SaveNodes(nodeNames)
+            for node in nodes:
+                node.redfish.RedfishPowerCommand("ForceOff")
+            time.sleep(20)
+            for node in nodes:
+                node.redfish.RedfishPowerCommand("On")
+            for node in nodes:
+                for timeout in range(30):
+                    if node.IsNodeMgmtUp():
+                        break
+                    time.sleep(10)
+                else:
+                    Logger.error("node {0} failed to recover after redfish power cycle".format(node.MgmtIpAddress))
+                    failedNodes.append(node.Name())
+            self.RestoreNodes(nodeNames)
+            if failedNodes:
+                raise Exception("following nodes failed recovery after power cycle: {0}".format(failedNodes))
+        finally:
+            for node in nodes:
+                if hasattr(node, "redfish"):
+                    node.redfish.Close()
 
     def IpmiNodes(self, node_names, ipmiMethod, useNcsi=False):
         if ipmiMethod not in self.IpmiMethods:

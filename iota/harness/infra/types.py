@@ -68,6 +68,13 @@ __pipelines = [
 ]
 pipelines = utils.List2Enum(__pipelines)
 
+__vendors = [
+    'HPE',
+    'DELL',
+    'CISCO',
+]
+vendors = utils.List2Enum(__vendors)
+
 HEADER_SUMMARY = "-" * 140
 FORMAT_TESTCASE_SUMMARY = "%-15s %-70s %-32s %-7s %-8s"
 HEADER_SHORT_SUMMARY = "-" * 104
