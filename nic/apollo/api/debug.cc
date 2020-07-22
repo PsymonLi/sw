@@ -26,6 +26,17 @@ using sdk::utils::record_t;
 namespace debug {
 
 /**
+ * @brief        get clock frequency
+ * @param[out]   freq   system clock frequencies
+ * @return       #SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t
+pds_get_system_clock_frequency (pds_system_clock_freq_t *freq)
+{
+    return impl_base::asic_impl()->system_frequency(freq);
+}
+
+/**
  * @brief        set clock frequency
  * @param[in]    freq clock frequency to be set
  * @return       #SDK_RET_OK on success, failure status code on error

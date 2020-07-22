@@ -143,6 +143,7 @@ func init() {
 	showCmd.AddCommand(systemShowCmd)
 	systemShowCmd.Flags().Bool("power", false, "Show system power information")
 	systemShowCmd.Flags().Bool("temperature", false, "Show system power information")
+	systemShowCmd.Flags().Bool("frequency", false, "Show system frequency information")
 	systemShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	systemShowCmd.AddCommand(queueStatsCmd)
 	queueStatsCmd.Flags().Bool("input", false, "Show system input queue-statistics")
@@ -1180,6 +1181,7 @@ func systemShowCmdHandler(cmd *cobra.Command, args []string) {
 
 	power := false
 	temp := false
+	freq := false
 	yamlOutput := false
 
 	if len(args) > 0 {
@@ -1195,14 +1197,19 @@ func systemShowCmdHandler(cmd *cobra.Command, args []string) {
 	if cmd != nil && cmd.Flags().Changed("temperature") {
 		temp = true
 	}
+	if cmd != nil && cmd.Flags().Changed("frequency") {
+		freq = true
+	}
 	if cmd != nil && cmd.Flags().Changed("yaml") {
 		yamlOutput = true
 	}
 
 	if cmd == nil || (cmd.Flags().Changed("power") == false &&
-		cmd.Flags().Changed("temperature") == false) {
+		cmd.Flags().Changed("temperature") == false &&
+		cmd.Flags().Changed("frequency") == false) {
 		temp = true
 		power = true
+		freq = true
 	}
 
 	if power {
@@ -1211,6 +1218,36 @@ func systemShowCmdHandler(cmd *cobra.Command, args []string) {
 
 	if temp {
 		systemTemperatureShow(client, yamlOutput)
+	}
+
+	if freq {
+		systemFrequencyShow(client, yamlOutput)
+	}
+}
+
+func systemFrequencyShow(client pds.DebugSvcClient, yamlOutput bool) {
+	var empty *pds.Empty
+
+	// PDS call
+	resp, err := client.ClockFrequencyGet(context.Background(), empty)
+	if err != nil {
+		fmt.Printf("System frequency get failed, err %v\n", err)
+		return
+	}
+
+	if resp.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", resp.ApiStatus)
+		return
+	}
+
+	if yamlOutput {
+		respType := reflect.ValueOf(resp)
+		b, _ := yaml.Marshal(respType.Interface())
+		fmt.Println(string(b))
+		fmt.Println("---")
+	} else {
+		fmt.Printf("%-19s    : %-10d\n", "Clock Frequency", resp.GetClockFrequency())
+		fmt.Printf("%-19s    : %-10d\n", "ARM Clock Frequency", resp.GetArmClockFrequency())
 	}
 }
 

@@ -14,6 +14,7 @@ using grpc::ServerContext;
 using pds::DebugSvc;
 using pds::ClockFrequencyRequest;
 using pds::ClockFrequencyResponse;
+using pds::ClockFrequencyGetResponse;
 using types::Empty;
 using pds::SystemTemperatureGetResponse;
 using pds::SystemPowerGetResponse;
@@ -36,6 +37,9 @@ using pds::SlabGetResponse;
 
 class DebugSvcImpl final : public DebugSvc::Service {
 public:
+    Status ClockFrequencyGet(ServerContext *context,
+                             const Empty *req,
+                             pds::ClockFrequencyGetResponse *rsp) override;
     Status ClockFrequencyUpdate(ServerContext *context,
                                 const pds::ClockFrequencyRequest *req,
                                 pds::ClockFrequencyResponse *rsp) override;

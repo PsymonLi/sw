@@ -14,6 +14,7 @@ import "interface.proto";
 import "google/protobuf/any.proto";
 
 service DebugSvc {
+  rpc ClockFrequencyGet (types.Empty) returns (ClockFrequencyGetResponse) {}
   rpc ClockFrequencyUpdate (ClockFrequencyRequest) returns (ClockFrequencyResponse) {}
   rpc SystemTemperatureGet (types.Empty) returns (SystemTemperatureGetResponse) {}
   rpc SystemPowerGet (types.Empty) returns (SystemPowerGetResponse) {}
@@ -80,6 +81,12 @@ message ClockFrequencyRequest {
 
 message ClockFrequencyResponse {
   types.ApiStatus ApiStatus = 1;
+}
+
+message ClockFrequencyGetResponse {
+  types.ApiStatus ApiStatus         = 1;
+  uint32          ClockFrequency    = 2;
+  uint32          ArmClockFrequency = 3;
 }
 
 enum TableApiStatsType {

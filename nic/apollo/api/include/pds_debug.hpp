@@ -34,31 +34,36 @@ typedef enum pds_clock_freq_e {
     PDS_CLOCK_FREQUENCY_2200 = 6,
 } pds_clock_freq_t;
 
-typedef struct pds_system_temperature_e {
+typedef struct pds_system_clock_freq_s {
+    uint32_t clock_freq;
+    uint32_t arm_clock_freq;
+} pds_system_clock_freq_t;
+
+typedef struct pds_system_temperature_s {
     uint32_t dietemp;
     uint32_t localtemp;
     uint32_t hbmtemp;
 } pds_system_temperature_t;
 
-typedef struct pds_system_power_e {
+typedef struct pds_system_power_s {
     uint32_t pin;
     uint32_t pout1;
     uint32_t pout2;
 } pds_system_power_t;
 
-typedef struct pds_table_stats_e {
+typedef struct pds_table_stats_s {
     std::string table_name;
     sdk::table::sdk_table_api_stats_t api_stats;
     sdk::table::sdk_table_stats_t     table_stats;
 } pds_table_stats_t;
 
-typedef struct pds_pb_debug_stats_e {
+typedef struct pds_pb_debug_stats_s {
     uint32_t port;
     sdk::qos::tm_debug_stats_t stats;
     sdk::platform::capri::capri_queue_stats_t qos_queue_stats;
 } pds_pb_debug_stats_t;
 
-typedef struct pds_meter_debug_stats_e {
+typedef struct pds_meter_debug_stats_s {
     uint32_t idx;
     uint64_t rx_bytes;
     uint64_t tx_bytes;
@@ -141,6 +146,7 @@ typedef void (*session_get_cb_t) (void *ctxt);
 typedef void (*flow_get_cb_t) (ftlite::internal::ipv4_entry_t *ipv4_entry,
                                ftlite::internal::ipv6_entry_t *ipv6_entry,
                                void *ctxt);
+sdk_ret_t pds_get_system_clock_frequency(pds_system_clock_freq_t *freq);
 sdk_ret_t pds_clock_frequency_update(pds_clock_freq_t freq);
 sdk_ret_t pds_arm_clock_frequency_update(pds_clock_freq_t freq);
 sdk_ret_t pds_get_system_temperature(pds_system_temperature_t *temp);

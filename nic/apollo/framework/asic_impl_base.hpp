@@ -56,6 +56,13 @@ public:
         return SDK_RET_OK;
     }
 
+    /// \brief    get the system clock frequency
+    /// \param[out] freq    system clock frequencies
+    /// \return    SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t system_frequency(pds_system_clock_freq_t *freq) const {
+        return SDK_RET_ERR;
+    }
+
     /// \brief    set the core frequency with the given value
     /// \param[in] freq    clock frequency to set
     /// \return    SDK_RET_OK on success, failure status code on error

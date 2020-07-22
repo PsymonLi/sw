@@ -59,6 +59,13 @@ public:
                                          const intr_field_t *field) override;
 
     /**
+     * @brief      get the system clock frequency
+     * @param[out] freq     system clock frequencies
+     * @return     SDK_RET_OK on success, failure status code on error
+     */
+    virtual sdk_ret_t system_frequency(pds_system_clock_freq_t *freq) const override;
+
+    /**
      * @brief    set the core frequency with the given value
      * @return    SDK_RET_OK on success, failure status code on error
      */

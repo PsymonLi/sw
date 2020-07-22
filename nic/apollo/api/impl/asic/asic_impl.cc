@@ -146,6 +146,19 @@ asic_impl::set_frequency (pds_clock_freq_t freq)
 }
 
 /**
+ * @brief      get system clock frequency
+ * @param[out]  freq    system clock frequencies
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t
+asic_impl::system_frequency(pds_system_clock_freq_t *freq) const
+{
+    freq->clock_freq = asicpd_clock_freq_get();
+    freq->arm_clock_freq = asicpd_get_core_freq();
+    return SDK_RET_OK;
+}
+
+/**
  * @brief    set arm clock frequency
  * @return    SDK_RET_OK on success, failure status code on error
  */

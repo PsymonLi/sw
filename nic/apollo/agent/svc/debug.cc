@@ -16,6 +16,22 @@
 #include <malloc.h>
 
 Status
+DebugSvcImpl::ClockFrequencyGet(ServerContext *context,
+                                const Empty *proto_req,
+                                pds::ClockFrequencyGetResponse *proto_rsp) {
+    sdk_ret_t ret;
+    pds_system_clock_freq_t freq;
+
+    ret = debug::pds_get_system_clock_frequency(&freq);
+    if (ret == SDK_RET_OK) {
+        proto_rsp->set_clockfrequency(freq.clock_freq);
+        proto_rsp->set_armclockfrequency(freq.arm_clock_freq);
+    }
+    proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
+    return Status::OK;
+}
+
+Status
 DebugSvcImpl::ClockFrequencyUpdate(ServerContext *context,
                                    const pds::ClockFrequencyRequest *proto_req,
                                    pds::ClockFrequencyResponse *proto_rsp) {
