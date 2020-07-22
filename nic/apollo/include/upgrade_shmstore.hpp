@@ -39,11 +39,11 @@
 // pds nicmgr upgrade store for config objects
 // ----------------------------------------------------------------------------
 #define PDS_NICMGR_UPGRADE_CFG_SHMSTORE_NAME       "pds_nicmgr_upgdata"
-#define PDS_NICMGR_UPGRADE_CFG_SHMSTORE_SIZE       (30 * 1024)  // 30K
+#define PDS_NICMGR_UPGRADE_CFG_SHMSTORE_SIZE       (64 * 1024)  // 64K
 
 // pds nicmgr config objects. these will be allocated from pds nicmgr store
 #define PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_NAME   "pds_nicmgr_upgobjs"
-#define PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_SIZE   (20 * 1024)
+#define PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_SIZE   (64 * 1024)
 
 // ----------------------------------------------------------------------------
 // pds agent upgrade store for service lif operational states
@@ -55,7 +55,7 @@
 // pds nicmgr upgrade store for device and lif operational states
 // ----------------------------------------------------------------------------
 #define PDS_NICMGR_UPGRADE_OPER_SHMSTORE_NAME      "pds_nicmgr_oper_upgdata"
-#define PDS_NICMGR_UPGRADE_OPER_SHMSTORE_SIZE      (100 * 1024)  // 100K
+#define PDS_NICMGR_UPGRADE_OPER_SHMSTORE_SIZE      (256 * 1024)  // 100K
 
 // ----------------------------------------------------------------------------
 // pds linkmgr upgrade store for port operational states

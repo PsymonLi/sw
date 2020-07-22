@@ -412,6 +412,8 @@ pds_device_profile_to_string (pds_device_profile_t profile)
         return std::string("pf7");
     case PDS_DEVICE_PROFILE_8PF:
         return std::string("pf8");
+    case PDS_DEVICE_PROFILE_16PF:
+        return std::string("pf16");
     case PDS_DEVICE_PROFILE_32VF:
         return std::string("vf32");
     case PDS_DEVICE_PROFILE_DEFAULT:

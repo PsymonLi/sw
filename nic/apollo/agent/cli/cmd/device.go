@@ -45,7 +45,7 @@ func init() {
 
 	debugUpdateCmd.AddCommand(deviceUpdateCmd)
 	deviceUpdateCmd.Flags().StringVar(&memoryProfile, "memory-profile", "default", "Specify memory profile (Ex: default)")
-	deviceUpdateCmd.Flags().StringVar(&deviceProfile, "device-profile", "default", "Specify device profile (Ex: default, 2pf, 3pf, 4pf, 5pf, 6pf, 7pf and 8pf)")
+	deviceUpdateCmd.Flags().StringVar(&deviceProfile, "device-profile", "default", "Specify device profile (Ex: default, 2pf, 3pf, 4pf, 5pf, 6pf, 7pf, 8pf, 16pf)")
 	deviceUpdateCmd.Flags().Uint32Var(&deviceTimeout, "learn-age-timeout", 300, "Specify device aging timeout for learned MAC/IP in secs (Valid: 30-86400)")
 	deviceUpdateCmd.Flags().Uint32Var(&ipMappingPriority, "ip-mapping-priority", 0, "Specify IP mapping priority (Valid: 0-1023)")
 }
@@ -109,7 +109,7 @@ func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 		}
 	} else if cmd.Flags().Changed("device-profile") {
 		if isValidDeviceProfile(deviceProfile) == false {
-			fmt.Printf("Invalid device profile specified, must be one of default, 2pf, 3pf, 4pf, 5pf, 6pf, 7pf & 8pf\n")
+			fmt.Printf("Invalid device profile specified, must be one of default, 2pf, 3pf, 4pf, 5pf, 6pf, 7pf, 8pf & 16pf\n")
 			return
 		}
 		updateSpec = &pds.DeviceSpec{
@@ -228,6 +228,8 @@ func isValidDeviceProfile(str string) bool {
 		return true
 	} else if strings.Compare(str, "8pf") == 0 {
 		return true
+	} else if strings.Compare(str, "16pf") == 0 {
+		return true
 	} else if strings.Compare(str, "32vf") == 0 {
 		return true
 	}
@@ -254,6 +256,8 @@ func inputToDeviceProfile(str string) pds.DeviceProfile {
 		return pds.DeviceProfile_DEVICE_PROFILE_7PF
 	} else if strings.Compare(str, "8pf") == 0 {
 		return pds.DeviceProfile_DEVICE_PROFILE_8PF
+	} else if strings.Compare(str, "16pf") == 0 {
+		return pds.DeviceProfile_DEVICE_PROFILE_16PF
 	} else if strings.Compare(str, "32vf") == 0 {
 		return pds.DeviceProfile_DEVICE_PROFILE_32VF
 	} else {

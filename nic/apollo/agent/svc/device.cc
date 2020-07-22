@@ -52,6 +52,8 @@ device_conf_update (pds_device_spec_t *spec)
         output.put("device-profile", "7pf");
     } else if (spec->device_profile == PDS_DEVICE_PROFILE_8PF) {
         output.put("device-profile", "8pf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_16PF) {
+        output.put("device-profile", "16pf");
     } else if (spec->device_profile == PDS_DEVICE_PROFILE_32VF) {
         output.put("device-profile", "32vf");
     }
@@ -227,7 +229,7 @@ pds_svc_device_update (const pds::DeviceRequest *proto_req,
     // get spec in update request
     ret = pds_device_proto_to_api_spec(&api_spec, proto_req->request());
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Invalid device object specification, err %u", ret);
+        PDS_TRACE_ERR("Invalid device object specification, err {}", ret);
         goto end;
     }
     // copy mutable fields from update request to mutable api spec
