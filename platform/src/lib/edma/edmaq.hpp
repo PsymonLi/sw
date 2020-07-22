@@ -5,6 +5,7 @@
 #ifndef __EDMAQ_HPP__
 #define __EDMAQ_HPP__
 
+#include <chrono>
 #include <cstdint>
 #include <ev.h>
 
@@ -15,8 +16,10 @@
 using namespace sdk::lib;
 using namespace sdk::platform::utils;
 
+#define EDMAQ_COMP_POLL_US          1000 // 1 ms
 #define EDMAQ_COMP_POLL_S           (0.001) // 1 ms
 #define EDMAQ_COMP_TIMEOUT_S        (0.01)  // 10 ms
+#define EDMAQ_COMP_TIMEOUT_MS       10  // 10 ms
 #define EDMAQ_MAX_TRANSFER_SZ       (((1U << 14) - 1) & (~63U))
 
 typedef void (*edmaq_cb_t) (void *obj);
@@ -24,12 +27,14 @@ typedef void (*edmaq_cb_t) (void *obj);
 struct edmaq_ctx {
     edmaq_cb_t cb;
     void *obj;
-    ev_tstamp deadline;
+    chrono::steady_clock::time_point deadline;
 };
 
 class EdmaQ {
 public:
-    EdmaQ(
+    EdmaQ() {}
+    ~EdmaQ() {}
+    static EdmaQ *factory(
         const char *name,
         uint16_t lif,
         uint8_t qtype,

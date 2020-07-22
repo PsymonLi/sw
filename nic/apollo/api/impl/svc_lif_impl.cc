@@ -71,8 +71,8 @@ init_lif_info (svc_lif_pstate_t *lif_pstate, sdk::platform::lif_info_t *lif_info
     lif_info->tx_sched_table_offset = lif_pstate->tx_sched_table_offset;
     lif_info->tx_sched_num_table_entries = lif_pstate->tx_sched_num_table_entries;
     lif_info->queue_info[0].type_num = 0;
-    lif_info->queue_info[0].size = 1; // 64B
-    lif_info->queue_info[0].entries = 1; // 2 Queues
+    lif_info->queue_info[0].size = 1; // 1 unit = 64B
+    lif_info->queue_info[0].entries = 2; // 4 queues
 }
 
 /**
@@ -97,8 +97,8 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     qstate.lif_id = lif_id;
     qstate.hbm_address = api::g_pds_state.mempartition()->start_addr(JLIF2QSTATE_MAP_NAME);
     SDK_ASSERT(qstate.hbm_address != INVALID_MEM_ADDRESS);
-    qstate.params_in.type[0].entries = 1;
-    qstate.params_in.type[0].size = 1; // 64B
+    qstate.params_in.type[0].entries = 2; // 4 queues
+    qstate.params_in.type[0].size = 1; // 1 unit = 64B
     asicpd_qstate_push(&qstate, 0);
 
     sdk::asic::get_pc_offset(pginfo, "txdma_stage0.bin",

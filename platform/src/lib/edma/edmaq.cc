@@ -2,6 +2,8 @@
 * Copyright (c) 2019, Pensando Systems Inc.
 */
 
+#include <chrono>
+#include <iostream>
 #include "edmaq.hpp"
 #include "spdlog/spdlog.h"
 #include "nic/sdk/lib/utils/utils.hpp"
@@ -22,42 +24,36 @@
         MEM_SET(pa, 0, sz, 0); \
 }
 
-EdmaQ::EdmaQ(
+using namespace sdk;
+
+EdmaQ *EdmaQ::factory(
     const char *name,
     uint16_t lif,
     uint8_t qtype,
     uint32_t qid,
     uint64_t ring_base,
     uint64_t comp_base,
-    uint16_t ring_size, EV_P
-) :
-    name(name),
-    lif(lif),
-    qtype(qtype),
-    qid(qid),
-    ring_base(ring_base),
-    comp_base(comp_base),
-    ring_size(ring_size)
+    uint16_t ring_size, EV_P)
 {
-    this->loop = loop;
+    EdmaQ *edmaq;
 
-    SDK_TRACE_INFO("%s: edma_ring_base 0x%lx edma_comp_base 0x%lx ring_size 0x%x",
-        name, ring_base, comp_base, ring_size);
-    if (ring_size & (ring_size - 1)) {
-        SDK_TRACE_ERR("%s: Ring size has to be power of 2", name);
-        throw;
-    }
+    edmaq = (EdmaQ *)SDK_CALLOC(SDK_MEM_ALLOC_EDMAQ, sizeof(EdmaQ));
+    new (edmaq) EdmaQ();
 
-    head = 0;
-    tail = 0;
-    comp_tail = 0;
-    exp_color = 1;
-    SDK_TRACE_INFO("%s: edma_ring_base 0x%lx edma_comp_base 0x%lx",
-        name, ring_base, comp_base);
+    edmaq->loop = loop;
+    edmaq->name = name;
+    edmaq->lif = lif;
+    edmaq->qtype = qtype;
+    edmaq->qid = qid;
+    edmaq->ring_base = ring_base;
+    edmaq->comp_base = comp_base;
+    edmaq->ring_size = ring_size;
+    edmaq->pending =
+        (struct edmaq_ctx *)SDK_CALLOC(SDK_MEM_ALLOC_EDMAQ_PENDING,
+        sizeof(struct edmaq_ctx) * ring_size);
+    edmaq->init = false;
 
-    pending = (struct edmaq_ctx *)calloc(1, sizeof(struct edmaq_ctx) * ring_size);
-
-    init = false;
+    return edmaq;
 }
 
 bool
@@ -194,13 +190,12 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
         /* If the ring is full, then do a blocking wait for a completion */
         if (ring_full(head, tail, ring_size)) {
             while (!Poll()) {
-                ev_sleep(EDMAQ_COMP_POLL_S);
-                ev_now_update(EV_A);
+                usleep(EDMAQ_COMP_POLL_US);
             }
             /* Blocking wait for completion above should have made space in the ring.
                So we should not hit the following condition at all */
             if (ring_full(head, tail, ring_size)) {
-                SDK_TRACE_ERR("%s: EDMA queue full head %d tail %d", name, head, tail);
+                SDK_TRACE_INFO("%s: EDMA queue full head %d tail %d", name, head, tail);
                 return false;
             }
         }
@@ -210,7 +205,9 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
             pending[head] = *ctx;
         else
             pending[head] = {0};
-        pending[head].deadline = ev_now(EV_A) + EDMAQ_COMP_TIMEOUT_S;
+
+        pending[head].deadline = chrono::steady_clock::now() +
+            chrono::milliseconds(EDMAQ_COMP_TIMEOUT_MS);
 
         /* enqueue edma command */
         addr = ring_base + head * sizeof(struct edma_cmd_desc);
@@ -223,7 +220,6 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
         cmd.dst_addr = to + offset;
         sdk::lib::pal_mem_write(addr, (uint8_t *)&cmd, sizeof(struct edma_cmd_desc), 0);
         head = (head + 1) % ring_size;
-
         offset += transfer_sz;
         bytes_left -= transfer_sz;
     }
@@ -241,7 +237,7 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
     if (ctx == NULL) {
         Flush();
     } else {
-        if (ctx->cb)
+        if (ctx->cb && loop != NULL)
             evutil_add_prepare(EV_A_ &prepare, EdmaQ::PollCb, this);
     }
 
@@ -260,8 +256,7 @@ EdmaQ::Poll()
 {
     struct edma_comp_desc comp = {0};
     uint64_t addr = comp_base + comp_tail * sizeof(struct edma_comp_desc);
-    ev_tstamp now = ev_now(EV_A);
-    bool timeout = (pending[tail].deadline < now);
+    bool timeout =  (chrono::steady_clock::now() > pending[tail].deadline);
 
     sdk::lib::pal_mem_read(addr, (uint8_t *)&comp, sizeof(struct edma_comp_desc), 0);
     if (comp.color == exp_color || timeout) {
@@ -294,7 +289,6 @@ EdmaQ::Flush()
 {
     while (!Empty()) {
         Poll();
-        ev_sleep(EDMAQ_COMP_POLL_S);
-        ev_now_update(EV_A);
+        usleep(EDMAQ_COMP_POLL_US);
     };
 }

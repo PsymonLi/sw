@@ -106,6 +106,13 @@
 #define PDS_IMPL_SEMA_IPSEC_RX                       0
 #define PDS_IMPL_SEMA_IPSEC_TX                       2
 
+#define UPGRADE_EDMAQ_RING_SIZE                     64
+
+// apulu service lif macros
+#define APULU_SVC_LIF_QTYPE_DEFAULT                 0
+#define APULU_SVC_LIF_EDMA_QID                      2
+#define APULU_SVC_LIF_QSTATE_SIZE_BYTES             64
+
 extern mac_addr_t g_zero_mac;
 extern ip_addr_t g_zero_ip;
 
@@ -446,6 +453,7 @@ private:
 
 private:
     pipeline_cfg_t      pipeline_cfg_;
+    void                *edmaq_;
 };
 
 /// \brief helper function to program LIF table

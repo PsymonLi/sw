@@ -37,6 +37,7 @@
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 #include "nic/apollo/api/impl/apulu/qos_impl.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
+#include "platform/src/lib/edma/edmaq.hpp"
 
 extern sdk_ret_t init_service_lif(uint32_t lif_id, const char *cfg_path);
 extern sdk_ret_t init_ipsec_lif(uint32_t lif_id);
@@ -61,6 +62,39 @@ ip_addr_t g_zero_ip = { 0 };
 
 namespace api {
 namespace impl {
+
+static EdmaQ *
+edma_init (void) {
+    uint64_t size;
+    mem_addr_t ring_base, comp_base, qstate_addr;
+    EdmaQ *edmaq;
+
+    size = (sizeof(struct edma_cmd_desc) * UPGRADE_EDMAQ_RING_SIZE);
+    ring_base =
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_EDMA_NAME);
+    SDK_ASSERT(ring_base != INVALID_MEM_ADDRESS);
+
+    comp_base = ring_base + size;
+    size += (sizeof(struct edma_comp_desc) * UPGRADE_EDMAQ_RING_SIZE);
+
+    SDK_ASSERT(size <=
+        api::g_pds_state.mempartition()->size(MEM_REGION_EDMA_NAME));
+
+    edmaq = EdmaQ::factory("upgrade", APULU_SERVICE_LIF,
+                           APULU_SVC_LIF_QTYPE_DEFAULT, APULU_SVC_LIF_EDMA_QID,
+                           ring_base, comp_base, UPGRADE_EDMAQ_RING_SIZE, 0);
+
+    qstate_addr = api::g_pds_state.mempartition()->start_addr("lif2qstate_map");
+    SDK_ASSERT(qstate_addr != INVALID_MEM_ADDRESS);
+
+    qstate_addr += APULU_SVC_LIF_EDMA_QID * APULU_SVC_LIF_QSTATE_SIZE_BYTES;
+    if (!(edmaq->Init(api::g_pds_state.prog_info(), qstate_addr, 0, 0, 0))) {
+        PDS_TRACE_ERR("Failed to initialize edma queue service");
+        SDK_ASSERT(0);
+    }
+
+    return edmaq;
+}
 
 /// \defgroup PDS_PIPELINE_IMPL - pipeline wrapper implementation
 /// \ingroup PDS_PIPELINE
@@ -1102,6 +1136,11 @@ apulu_impl::pipeline_upgrade_hitless_init(void) {
 
     ret = qos_impl::qos_init();
     SDK_ASSERT(ret == SDK_RET_OK);
+
+    // init edma instance for use of upgrade to dma sram contents from
+    // shadow memory to h/w during upgrade switchover
+    edmaq_ = edma_init();
+
     return SDK_RET_OK;
 }
 

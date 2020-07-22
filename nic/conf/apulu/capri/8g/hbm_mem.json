@@ -91,6 +91,7 @@
         },
         {
             "name": "nicmgrqstate_map",
+            "align": "4K",
             "size": "32M",
             "kind": "static",
             "cache": "p4plus-all"
@@ -136,12 +137,19 @@
         {
             "name": "lif2qstate_map",
             "kind": "static",
+            "align": "4K",
             "size": "4K",
             "cache": "p4plus-all"
         },
         {
+            "name": "edma",
+            "kind": "static",
+            "size" : "4K"
+        },
+        {
             "name": "ipsec_lif2qstate_map",
             "kind": "static",
+            "align": "4K",
             "size": "8M",
             "comment": "256B * 16K * 2 sessions"
         },

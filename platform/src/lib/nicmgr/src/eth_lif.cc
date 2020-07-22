@@ -643,7 +643,7 @@ EthLif::LifQInit(bool mem_clr) {
 
     MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ETH_EDMAQ_RING_SIZE));
 
-    edmaq = new EdmaQ(hal_lif_info_.name, hal_lif_info_.lif_id,
+    edmaq = EdmaQ::factory(hal_lif_info_.name, hal_lif_info_.lif_id,
                       ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID,
                       ring_base, comp_base, ETH_EDMAQ_RING_SIZE, EV_A);
 
@@ -660,7 +660,8 @@ EthLif::LifQInit(bool mem_clr) {
         return (IONIC_RC_ENOMEM);
     }
     MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
-    edmaq_async = new EdmaQ(hal_lif_info_.name, hal_lif_info_.lif_id,
+
+    edmaq_async = EdmaQ::factory(hal_lif_info_.name, hal_lif_info_.lif_id,
                             ETH_EDMAQ_ASYNC_QTYPE, ETH_EDMAQ_ASYNC_QID,
                             ring_base, comp_base, ETH_EDMAQ_ASYNC_RING_SIZE, EV_A);
 
