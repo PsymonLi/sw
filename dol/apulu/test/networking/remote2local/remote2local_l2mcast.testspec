@@ -39,7 +39,7 @@ packets:
         encaps      : callback://networking/packets/GetHostPacketEncapFromVnic
         headers     :
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
                 prio    : 0
 
 buffers                 :

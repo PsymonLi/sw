@@ -53,7 +53,7 @@ packets:
             eth:
                 dst     : ref://testcase/config/localmapping/VNIC/MACAddr
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
                 prio    : 0
             ipv4:
                 ttl     : callback://networking/packets/GetPacketTtl/Fwdmode=R2L,ipkt=FROM_SWITCH_PKT

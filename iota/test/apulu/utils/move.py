@@ -185,7 +185,7 @@ def MoveEpMACEntry(workload, target_subnet, ep_mac_addr, ep_ip_prefixes):
         workload.parent_interface = intf_client.FindHostInterface(target_subnet.Node, target_subnet.HostIfIdx[0]).GetInterfaceName()
     workload.interface = workload.parent_interface
     workload.mac_address = vnic.MACAddr.get()
-    workload.vlan = vnic.VlanId
+    workload.vlan = vnic.VlanId()
 
     # Set workload in running state, otherwise command trigger on workload will fail.
     store.SetWorkloadRunning(workload.workload_name)

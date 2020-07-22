@@ -26,7 +26,7 @@ class Endpoint:
     def __init__(self, vnic_inst, ip_addresses):
         self.name = vnic_inst.GID()
         self.macaddr = vnic_inst.MACAddr.get()
-        self.vlan = vnic_inst.VlanId
+        self.vlan = vnic_inst.VlanId()
         self.ip_addresses = ip_addresses
         self.node_name = vnic_inst.Node
         self.has_public_ip = vnic_inst.HasPublicIp

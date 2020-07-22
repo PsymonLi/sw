@@ -72,7 +72,8 @@ node:
                 - count   : 1             # VNICs per subnet
                   public  : false
                   policy  : false         # security policy at vnic level (0 - 2)
-                  tagged  : false         # true or false (default true)
+                  vnicencap:
+                    type: none
                   lmap    :
                     - tag      : true
                       tag_type : random

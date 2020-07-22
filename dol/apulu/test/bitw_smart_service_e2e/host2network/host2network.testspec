@@ -15,8 +15,10 @@ packets:
             eth:
                 src     : ref://testcase/config/localmapping/VNIC/MACAddr
                 dst     : callback://networking/packets/GetDstMac/direction=TX
+            outerqtag:
+                vlan    : callback://networking/packets/GetVnicQTag/type=CUSTOMER
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag/type=SERVICE
             ipv4:
                 src     : ref://testcase/config/localmapping/IP
                 dst     : ref://testcase/config/remotemapping/IP

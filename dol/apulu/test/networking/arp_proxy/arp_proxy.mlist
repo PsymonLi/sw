@@ -15,14 +15,14 @@ modules:
         spec    : arp_proxy.testspec
         iterate :
             - flow : filter://FlType=MAPPING,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
 
     - module:
         name    : IPV4_ARP_PROXY_SINGLE_VLAN
         spec    : arp_proxy.testspec
         iterate :
             - flow : filter://FlType=MAPPING,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 
     - module:
         name    : IPV4_ARP_PROXY_DOUBLE_VLAN

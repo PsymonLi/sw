@@ -34,7 +34,7 @@ packets:
                 src     : ref://testcase/config/localmapping/VNIC/MACAddr
                 dst     : 00:02:00:00:00:00
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
 
     - packet:
         id          : TO_SWITCH_PKT # Expected packet to network

@@ -96,7 +96,8 @@ node:
                   ipcount : 4             # Local IP mapping per vnic
                   srcguard: true          # true or false (default false)
                   public  : false
-                  tagged  : false         # true or false (default true)
+                  vnicencap:
+                    type: none
                   rxpolicer: 1
                   txpolicer: 2
               rmap:                       # Remote IP mappings per subnet
@@ -114,19 +115,22 @@ node:
                   ipcount : 4
                   srcguard: true
                   public  : true
-                  tagged  : true
+                  vnicencap:
+                    type: dot1q
                   rxpolicer: 3
                   txpolicer: 4
                 - count   : 1             # 1 tagged VNIC
                   ipcount : 4
                   srcguard: false
                   public  : false
-                  tagged  : true
+                  vnicencap:
+                    type: dot1q
                 - count   : 1             # 1 untagged VNIC
                   ipcount : 2
                   srcguard: false
                   public  : true
-                  tagged  : false
+                  vnicencap:
+                    type: none
                   rxpolicer: 5
                   txpolicer: 6
               rmap:
@@ -144,14 +148,16 @@ node:
                   ipcount : 2
                   srcguard: false
                   public  : false
-                  tagged  : true
+                  vnicencap:
+                    type: dot1q
                   rxpolicer: 3
                   txpolicer: 4
                 - count   : 2             # 2 tagged VNICs
                   ipcount : 2
                   srcguard: false
                   public  : true
-                  tagged  : true
+                  vnicencap:
+                    type: dot1q
                   rxpolicer: 3
                   txpolicer: 4
               rmap:

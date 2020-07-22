@@ -1,17 +1,16 @@
 #! /usr/bin/python3
 import enum
-import sys
-import uuid
 import ipaddress
+import os
+import pdb
 import random
 import socket
-from scapy.layers.l2 import Dot1Q
 import time
+import uuid
 import yaml
+
 from collections import OrderedDict
-import os
-from os import environ
-import pdb
+from scapy.layers.l2 import Dot1Q
 
 import device_pb2 as device_pb2
 import types_pb2 as types_pb2
@@ -779,18 +778,8 @@ def GetTunnelTypeString(e):
         return "service"
     elif e == tunnel_pb2.TUNNEL_TYPE_NONE:
         return "None"
-    else:
-        logger.error("ERROR: Invalid/Unknown Tunnel Type: %s" % e)
-        sys.exit(1)
-        return None
-
-def GetEncapType(e):
-    if e == 'vxlan':
-        return types_pb2.ENCAP_TYPE_VXLAN
-    elif e == 'mplsoudp':
-        return types_pb2.ENCAP_TYPE_MPLSoUDP
-    else:
-        return types_pb2.ENCAP_TYPE_NONE
+    assert (0), f"ERROR: Invalid/Unknown Tunnel Type: {e}"
+    return None
 
 def GetErspanProtocolType(t):
     if t == 0:
@@ -801,22 +790,8 @@ def GetErspanProtocolType(t):
         return topo.ErspanProtocolTypes.ERSPAN_TYPE_2
     elif t == 3:
         return topo.ErspanProtocolTypes.ERSPAN_TYPE_3
-    else:
-        logger.error(f"ERROR: Invalid/Unknown Erspan Type:{t}")
-        sys.exit(1)
-        return None
-
-def GetEncapTypeString(e):
-    if e == types_pb2.ENCAP_TYPE_VXLAN:
-        return "vxlan"
-    elif e == types_pb2.ENCAP_TYPE_MPLSoUDP:
-        return "mplsoudp"
-    elif e == types_pb2.ENCAP_TYPE_NONE:
-        return "None"
-    else:
-        logger.error("ERROR: Invalid/Unknown Encap: %s" % e)
-        sys.exit(1)
-        return None
+    assert (0), f"ERROR: Invalid/Unknown Erspan Type:{t}"
+    return None
 
 def isDefaultRoute(ippfx):
     if ippfx == IPV4_DEFAULT_ROUTE or ippfx == IPV6_DEFAULT_ROUTE:
@@ -884,8 +859,7 @@ def GetRpcIPAddr(srcaddr, dstaddr):
 
 def GetRpcIPRange(addrLow, addrHigh, addrRange):
     if addrLow.version != addrHigh.version:
-        logger.error("ERROR: addrRange version mismatch: Low %s High %s" %(addrLow, addrHigh))
-        sys.exit(1)
+        assert (0), f"ERROR: addrRange version mismatch: Low {addrLow} High {addrHigh}"
     if addrLow.version == IP_VERSION_6:
         GetRpcIPAddr(addrLow, addrRange.IPv6Range.Low)
         GetRpcIPAddr(addrHigh, addrRange.IPv6Range.High)
@@ -1125,8 +1099,8 @@ def DumpTestcaseConfig(obj):
     logger.info("========== Testcase config end ==========")
     return
 
-if environ.get('PDSPKG_TOPDIR') is not None:
-    PDSPKG_TOPDIR=environ.get('PDSPKG_TOPDIR')
+if os.environ.get('PDSPKG_TOPDIR') is not None:
+    PDSPKG_TOPDIR=os.environ.get('PDSPKG_TOPDIR')
 else:
     PDSPKG_TOPDIR = os.environ['WS_TOP'] + "/nic/"
 
@@ -1285,10 +1259,8 @@ def GetPolicies(obj, spec, node, af, direction, generate=True):
         return None
 
     def __get_policies_frm_count(node, vpcid, count, cb):
-        addrfamily = 'IPV4' if 'V4' == af else 'IPV6'
-        PolicyClient = EzAccessStore.GetConfigClient(ObjectTypes.POLICY)
         policyids = []
-        for c in range(count):
+        for _ in range(count):
             id = cb(node, vpcid)
             if id:
                 policyids.append(id)

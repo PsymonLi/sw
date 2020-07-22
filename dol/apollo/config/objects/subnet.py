@@ -77,7 +77,8 @@ class SubnetObject(base.ConfigObjectBase):
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
         self.ToS = 0
         self.IPAMname = 'Dhcp1'
-        self.FabricEncapType = utils.GetEncapType(getattr(spec, 'fabricencap', 'vxlan'))
+        # TODO: Use Encap Class instead
+        self.FabricEncapType = base.Encap.GetRpcEncapType(getattr(spec, 'fabricencap', 'vxlan'))
         if getattr(spec, 'fabricencapvalue', None) != None:
             self.Vnid = spec.fabricencapvalue
         else:

@@ -49,7 +49,7 @@ class TunnelObject(base.ConfigObjectBase):
                self.LocalIPAddr = ipaddress.IPv4Address(spec.srcaddr)
            else:
                self.LocalIPAddr = self.DEVICE.IPAddr
-        self.EncapType = utils.GetEncapType('vxlan')
+        self.EncapType = base.Encap.GetRpcEncapType('vxlan')
         self.EncapValue = 0
         self.Nat = False
         self.NexthopId = 0
@@ -73,21 +73,21 @@ class TunnelObject(base.ConfigObjectBase):
             elif self.Type == tunnel_pb2.TUNNEL_TYPE_IGW:
                 self.RemoteIPAddr = next(ResmgrClient[node].TepIpAddressAllocator)
                 if self.DEVICE.IsEncapTypeMPLS():
-                    self.EncapType = utils.GetEncapType('mpls')
+                    self.EncapType = base.Encap.GetRpcEncapType('mpls')
                     self.EncapValue = next(ResmgrClient[node].IGWMplsSlotIdAllocator)
                 else:
-                    self.EncapType = utils.GetEncapType('vxlan')
+                    self.EncapType = base.Encap.GetRpcEncapType('vxlan')
                     self.EncapValue = next(ResmgrClient[node].IGWVxlanIdAllocator)
             elif self.Type == tunnel_pb2.TUNNEL_TYPE_SERVICE:
                 self.RemoteIPAddr = next(ResmgrClient[node].TepIpv6AddressAllocator)
                 if hasattr(spec, "remote") and spec.remote is True:
                     self.Remote = True
                     self.RemoteServicePublicIP = next(ResmgrClient[node].RemoteSvcTunIPv4Addr)
-                    self.RemoteServiceEncapType = utils.GetEncapType('vxlan')
+                    self.RemoteServiceEncapType = base.Encap.GetRpcEncapType('vxlan')
                     self.RemoteServiceEncap = next(ResmgrClient[node].IGWVxlanIdAllocator)
                 else:
                     self.Remote = False
-                self.EncapType = utils.GetEncapType('vxlan')
+                self.EncapType = base.Encap.GetRpcEncapType('vxlan')
                 self.EncapValue = next(ResmgrClient[node].IGWVxlanIdAllocator)
             else:
                 if utils.IsV4Stack(self.DEVICE.Stack):

@@ -15,14 +15,14 @@ modules:
         spec    : local2local.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
 
     - module:
         name    : L2L_VNIC_IPV4_TCP_QTAG
         spec    : local2local.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 
     - module:
         name    : L2L_SUBNET_IPV4_TCP_QTAG
@@ -35,12 +35,12 @@ modules:
         spec    : local2local.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
 
     - module:
         name    : L2L_VPC_IPV4_TCP_QTAG
         spec    : local2local.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 

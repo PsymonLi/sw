@@ -12,7 +12,7 @@ node:
         learning    : false
         ipaddress   : None
         gateway     : None
-        encap       : None
+        encap       : none
         tunnel      :
             - count : 1
               type  : underlay
@@ -80,25 +80,29 @@ node:
                     - id       : 1
                       keytype  : l3
                       lmacaddr : macaddr/00ae.cd00.0813
-                      lipaddr  : '3.1.0.102'
+                      lipaddr  : '9.0.0.2'
                       origin   : test-only
                   usehostif : false
                   srcguard: false
                   public  : false
-                  tagged  : true
-                  vnicencapvalue : 300
+                  vnicencap:
+                    type: qinq
+                    value:
+                      ctag: 111
+                      stag: 222
+
               rmap:
                 - id       : 1
                   count    : 1
                   keytype  : l3
                   rmacaddr : macaddr/00ae.cd00.000d
-                  ripaddr  : '9.0.0.3'
+                  ripaddr  : '9.0.0.113'
                   origin   : test-only
                 - id       : 2
                   count    : 1
                   keytype  : l3
                   rmacaddr : macaddr/00ae.cd00.000e
-                  ripaddr  : '9.0.0.103'
+                  ripaddr  : '9.0.0.114'
                   origin   : test-only
 
           policy:

@@ -73,7 +73,8 @@ node:
                   ipcount : 2             # Local IP mapping per vnic
                   public  : false
                   policy  : false         # security policy at vnic level (0 - 2)
-                  tagged  : false         # true or false (default true)
+                  vnicencap:
+                    type: none
               rmap:                       # Remote IP mappings per subnet
                 - count : 1
           routetbl:

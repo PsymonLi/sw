@@ -19,7 +19,7 @@ packets:
                 vlan    : 0
                 prio    : 0
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
             arp:
                 op      : 1 # ARP_REQ
                 hwsrc   : ref://testcase/config/localmapping/VNIC/MACAddr
@@ -38,7 +38,7 @@ packets:
                 src   : ref://testcase/config/localmapping/VNIC/SUBNET/VirtualRouterMACAddr
                 dst   : ref://testcase/config/localmapping/VNIC/MACAddr
             qtag:
-                vlan  : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
             arp:
                 op    : 2 # ARP_REPLY
                 hwsrc : ref://testcase/config/remotemapping/MACAddr

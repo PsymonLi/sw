@@ -160,7 +160,8 @@ vpc:
               vmac      : macstep/00ae.cd00.0811/0000.0000.0100
               srcguard  : false         # true or false (default false)
               public    : false
-              tagged    : false         # true or false (default true)
+              vnicencap:
+                type: none
               origin    : discovered
               remoteroutes :
                 - '2.0.0.0\16'
@@ -180,7 +181,8 @@ vpc:
               vmac      : macaddr/00ae.cd00.0b11
               srcguard  : false         # true or false (default false)
               public    : false
-              tagged    : false         # true or false (default true)
+              vnicencap:
+                type: none
               origin    : discovered
               remoteroutes :
                 - '2.0.0.0\16'

@@ -16,7 +16,7 @@ packets:
                 src     : 0a:4a:8f:17:e5:6f
                 dst     : callback://networking/packets/GetDstMac/direction=TX
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
             ipv4:
                 src     : ref://testcase/config/localmapping/IP
                 dst     : ref://testcase/config/remotemapping/IP

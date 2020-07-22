@@ -95,7 +95,8 @@ class VpcObject(base.ConfigObjectBase):
             self.PfxSel = 1
         else:
             self.PfxSel = 0
-        self.FabricEncapType = utils.GetEncapType(getattr(spec, 'fabricencap', 'vxlan'))
+        # TODO: Use Encap Class instead
+        self.FabricEncapType = base.Encap.GetRpcEncapType(getattr(spec, 'fabricencap', 'vxlan'))
         if getattr(spec, 'fabricencapvalue', None) != None:
             self.Vnid = spec.fabricencapvalue
         else:

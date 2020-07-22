@@ -883,3 +883,107 @@ class MappingClientBase(ConfigClientBase):
         tag_dict = self.v4tags[node] if af == "v4" else self.v6tags[node]
         for tag, prefixes in tag_dict.items():
             logger.info(f"{self.GetObjectType().name}{af} and value {tag} {prefixes}")
+
+class Encap():
+    def __init__(self, encapType, encapValue):
+        self.Type = encapType
+        self.Value = encapValue
+        return
+    
+    def __str__(self):
+        if self.Type == 'qinq':
+            return f"{self.Type} - cTag{self.Value[0]} sTag{self.Value[1]}"
+        return f"{self.Type} - {self.Value}"
+
+    def Update(self, offset=1):
+        if self.Type == 'qinq':
+            self.Value = [tag+offset for tag in self.Value]
+        elif self.Type in ['mplsoudp', 'dot1q', 'vxlan']:
+            self.Value += offset
+        else:
+            assert (0), f"Unsupported encap type {self.Type}"
+
+    def PopulateSpec(self, specEncap):
+        encapType = Encap.GetRpcEncapType(self.Type)
+        if encapType == types_pb2.ENCAP_TYPE_NONE:
+            return
+        specEncap.type = encapType
+        if encapType == types_pb2.ENCAP_TYPE_DOT1Q:
+            specEncap.value.VlanId = self.Value
+        elif encapType == types_pb2.ENCAP_TYPE_QINQ:
+            specEncap.value.QinQ.CTag  = self.Value[0]
+            specEncap.value.QinQ.STag  = self.Value[1]
+        elif encapType == types_pb2.ENCAP_TYPE_MPLSoUDP:
+            specEncap.value.MPLSTag  = self.Value
+        elif encapType == types_pb2.ENCAP_TYPE_VXLAN:
+            specEncap.value.Vnid  = self.Value
+        else:
+            assert (0), f"Unsupported encap type {encapType}"
+        return
+
+    def ValidateSpec(self, specEncap):
+        objSpec = types_pb2.Encap()
+        self.PopulateSpec(objSpec)
+        if objSpec != specEncap:
+            return False
+        return True
+
+    def VlanId(self):
+        return self.Value if self.Type == 'dot1q' else 0
+
+    @staticmethod
+    def ParseFromSpec(spec, attr, defEncapType='none', defEncapVal=0):
+        encapType = defEncapType
+        encapValue = defEncapVal if encapType != 'none' else 0
+        encap = getattr(spec, attr, None)
+        if not encap:
+            # use default args if nothing in spec
+            return Encap(encapType, encapValue)
+        # override default args with values from spec
+        encapType = getattr(encap, 'type', None)
+        encapValSpec = getattr(encap, 'value', None)
+        if encapType == "none":
+            encapValue = 0
+        elif encapType == "qinq":
+            cTag = getattr(encapValSpec, 'ctag', defEncapVal)
+            sTag = getattr(encapValSpec, 'stag', defEncapVal)
+            encapValue = [cTag, sTag]
+        elif encapType == "dot1q":
+            encapValue = getattr(encapValSpec, 'vlan', defEncapVal)
+        elif encapType == "mplsoudp":
+            encapValue = getattr(encapValSpec, 'tag', defEncapVal)
+        elif encapType == "vxlan":
+            encapValue = getattr(encapValSpec, 'vni', defEncapVal)
+        else:
+            assert (0), f"Invalid encaptype {encapType} in spec"
+        return Encap(encapType, encapValue)
+
+    @staticmethod
+    def GetRpcEncapType(encapType):
+        if encapType == 'none':
+            return types_pb2.ENCAP_TYPE_NONE
+        elif encapType == 'dot1q':
+            return types_pb2.ENCAP_TYPE_DOT1Q
+        elif encapType == 'qinq':
+            return types_pb2.ENCAP_TYPE_QINQ
+        elif encapType == 'mplsoudp':
+            return types_pb2.ENCAP_TYPE_MPLSoUDP
+        elif encapType == 'vxlan':
+            return types_pb2.ENCAP_TYPE_VXLAN
+        assert (0), f"ERROR: Invalid/Unknown Encap: {encapType}"
+        return None
+
+    @staticmethod
+    def GetEncapTypeString(encapType):
+        if encapType == types_pb2.ENCAP_TYPE_NONE:
+            return "none"
+        elif encapType == types_pb2.ENCAP_TYPE_DOT1Q:
+            return "dot1q"
+        elif encapType == types_pb2.ENCAP_TYPE_VXLAN:
+            return "qinq"
+        elif encapType == types_pb2.ENCAP_TYPE_MPLSoUDP:
+            return "mplsoudp"
+        elif encapType == types_pb2.ENCAP_TYPE_VXLAN:
+            return "vxlan"
+        assert (0), f"ERROR: Invalid/Unknown Encap: {encapType}"
+        return None

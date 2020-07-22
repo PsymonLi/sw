@@ -15,7 +15,7 @@ packets:
                 src   : callback://networking/learn/GetMACAddrForValidation
                 dst   : ref://testcase/config/localmapping/VNIC/SUBNET/VirtualRouterMACAddr
             qtag:
-                vlan  : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
             arp:
                 op    : 2 # ARP_REPLY
                 hwsrc : ref://testcase/config/localmapping/VNIC/MACAddr

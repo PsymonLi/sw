@@ -20,7 +20,7 @@ packets:
                 vlan    : 0
                 prio    : 0
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
             arp:
                 op      : 3 # RARP_REQ
                 hwsrc   : ref://testcase/config/localmapping/VNIC/MACAddr

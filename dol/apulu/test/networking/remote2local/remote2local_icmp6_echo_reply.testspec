@@ -49,7 +49,7 @@ packets:
             eth:
                 dst     : ref://testcase/config/localmapping/VNIC/MACAddr
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
                 prio    : 0
 
 buffers                 :

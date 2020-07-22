@@ -84,11 +84,13 @@ vpc:
             - count   : 1
               ipcount : 32
               public  : true
-              tagged  : false
+              vnicencap:
+                type: none
             - count   : 14
               ipcount : 32
               public  : true
-              tagged  : true
+              vnicencap:
+                type: dot1q
           rmap:                       # Remote IP mappings per subnet
             - count : 204 #204800
       #nat:

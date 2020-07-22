@@ -16,28 +16,28 @@ modules:
         spec    : local2remote.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
 
     - module:
         name    : L2_IPV4_TCP_QTAG
         spec    : local2remote.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 
     - module:
         name    : L3_IPV4_TCP
         spec    : local2remote.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
 
     - module:
         name    : L3_IPV4_TCP_QTAG
         spec    : local2remote.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 
     - module:
         name    : L2_IPV4_ICMP_ECHO_QTAG
@@ -82,9 +82,9 @@ modules:
             - proto: ICMP
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
 
     - module:
         name    : L2_L3_IPV4_VRIP_ICMP_QTAG
@@ -93,9 +93,9 @@ modules:
             - proto: ICMP
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 
     - module:
         name    : L2_IPV4_VRIP_TCP_QTAG

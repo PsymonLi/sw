@@ -46,7 +46,7 @@ packets:
         encaps      : callback://networking/packets/GetHostPacketEncapFromVnic
         headers     :
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
                 prio    : 0
             ipv4:
                 ttl     : callback://networking/packets/GetPacketTtl/Fwdmode=R2L,ipkt=FROM_SWITCH_PKT

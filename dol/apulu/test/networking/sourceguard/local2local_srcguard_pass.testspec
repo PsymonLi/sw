@@ -16,7 +16,7 @@ packets:
                 src     : 02:42:0c:c8:9a:1b
                 dst     : callback://networking/packets/GetDstMac/direction=TX
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
                 prio    : 0
             ipv4:
                 src     : ref://testcase/config/localmapping/IP
@@ -44,10 +44,10 @@ packets:
         encaps      : callback://networking/packets/GetHostPacketEncapFromVnic/vnic=remote
         headers     :
             eth:
-                dst     : ref://testcase/config/remotemapping/VNIC/MACAddr
+                vlan    : callback://networking/packets/GetVnicQTag/direction=RX
                 src     : callback://networking/packets/GetPacketSrcMacFromMapping/Fwdmode=L2L,IsSrcGuardTC=True
             qtag:
-                vlan    : ref://testcase/config/remotemapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag/direction=RX
                 prio    : 0
             ipv4:
                 ttl     : callback://networking/packets/GetPacketTtl/Fwdmode=L2L,ipkt=FROM_HOST_PKT

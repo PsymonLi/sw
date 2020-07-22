@@ -90,6 +90,8 @@ node:
                   ipcount : 4             # Local IP mapping per vnic
                   srcguard : false        # true or false (default false)
                   public  : true
+                  vnicencap:
+                    type: none
               rmap:                       # Remote IP mappings per subnet
                 - count : 4
           nexthop:
@@ -158,7 +160,8 @@ node:
                   ipcount : 16            # Local IP mapping per vnic
                   srcguard: false         # true or false (default false)
                   public  : false
-                  tagged  : false         # true or false (default true)
+                  vnicencap:
+                    type: none
               rmap:                       # Remote IP mappings per subnet
                 - count : 2
           nexthop:

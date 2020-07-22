@@ -15,13 +15,13 @@ modules:
         spec    : crud_workflow.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 
     # delete the subnet objects
     - module:
@@ -32,13 +32,13 @@ modules:
               operation : Delete
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 
     # mlists to run post subnet deletion
     - module:
@@ -54,13 +54,13 @@ modules:
               operation : Create
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 
     # mlists to run post subnet restore
     - module:
@@ -77,11 +77,11 @@ modules:
         spec    : crud_workflow.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dot1q
 

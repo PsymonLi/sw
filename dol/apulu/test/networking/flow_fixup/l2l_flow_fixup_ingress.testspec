@@ -15,7 +15,7 @@ packets:
                 src     : ref://testcase/config/localmapping/VNIC/MACAddr
                 dst     : callback://networking/packets/GetDstMac/direction=TX
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
             ipv4:
                 src     : ref://testcase/config/localmapping/IP
                 dst     : ref://testcase/config/remotemapping/IP
@@ -40,7 +40,7 @@ packets:
                 src     : ref://testcase/config/remotemapping/VNIC/MACAddr
                 dst     : callback://networking/packets/GetDstMac/direction=TX
             qtag:
-                vlan    : ref://testcase/config/remotemapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag/direction=RX
             ipv4:
                 src     : ref://testcase/config/remotemapping/IP
                 dst     : ref://testcase/config/localmapping/IP
@@ -69,7 +69,7 @@ packets:
                 dst     : ref://testcase/config/remotemapping/VNIC/MACAddr
                 src     : callback://networking/packets/GetPacketSrcMacFromMapping/Fwdmode=L2L
             qtag:
-                vlan    : ref://testcase/config/remotemapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag/direction=RX
                 prio    : 0
             ipv4:
                 ttl     : callback://networking/packets/GetPacketTtl/Fwdmode=L2L,ipkt=FROM_LOCAL_MAPPING_PKT
@@ -88,7 +88,7 @@ packets:
                 dst     : ref://testcase/config/localmapping/VNIC/MACAddr
                 src     : callback://networking/packets/GetPacketSrcMacFromMapping/Fwdmode=L2L
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
                 prio    : 0
             ipv4:
                 ttl     : callback://networking/packets/GetPacketTtl/Fwdmode=L2L,ipkt=FROM_REMOTE_MAPPING_PKT

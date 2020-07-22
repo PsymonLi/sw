@@ -652,12 +652,18 @@ def GetPacketEncapFromMapping(testcase, packet, args=None):
     encaps.append(__get_packet_encap_impl(testcase.config.devicecfg, testcase.config.tunnel, args))
     return encaps
 
+def encapType2Id(encapType):
+    if encapType == 'dot1q':
+        return 'ENCAP_QTAG'
+    elif encapType == 'qinq':
+        return 'ENCAP_QINQ'
+    return None
+
 def __get_host_packet_encap_impl(vnic):
-    encaps = []
-    if vnic.IsEncapTypeVLAN():
-        vlan_encap = infra_api.GetPacketTemplate('ENCAP_QTAG')
-        encaps.append(vlan_encap)
-    return encaps
+    encapId = encapType2Id(vnic.VnicEncap.Type)
+    if not encapId:
+        return []
+    return [infra_api.GetPacketTemplate(encapId)]
 
 # Encap for to/from host packet
 def GetHostPacketEncapFromVnic(testcase, packet, args=None):
@@ -1015,12 +1021,7 @@ def GetSrcMacInArpReply(testcase, packet, args):
         return testcase.config.remotemapping.MACAddr
 
 def GetEncapForARP(testcase, packet):
-    vlan_encap = None
-    if testcase.config.localmapping.VNIC.Dot1Qenabled:
-        vlan_encap = infra_api.GetPacketTemplate('ENCAP_QTAG')
-    elif testcase.config.localmapping.VNIC.QinQenabled:
-        vlan_encap = infra_api.GetPacketTemplate('ENCAP_QINQ')
-    return [vlan_encap] if vlan_encap else []
+    return __get_host_packet_encap_impl(testcase.config.localmapping.VNIC)
 
 def __get_type_val(modargs):
     return __get_module_args_value(modargs, "type")
@@ -1077,6 +1078,22 @@ def GetSrcMac(testcase, packet, args=None):
         if lobj.VNIC.SUBNET.SubnetId != robj.SUBNET.SubnetId:
             return lobj.VNIC.SUBNET.VirtualRouterMACAddr
     return lobj.VNIC.MACAddr
+
+def GetVnicQTag(tc, pkt, args=None):
+    direction = getattr(args, 'direction', None)
+    if direction == 'RX':
+        vnic = tc.config.remotemapping.VNIC
+    else:
+        vnic = tc.config.localmapping.VNIC
+    tagType = getattr(args, 'type', None)
+    if not tagType:
+        return vnic.VlanId()
+    assert (vnic.VnicEncap.Type == 'qinq'), f"Invalid qinq tag request from {vnic} with vnic encap {vnic.VnicEncap}"
+    if tagType == 'CUSTOMER':
+        return vnic.VnicEncap.Value[0]
+    if tagType == 'SERVICE':
+        return vnic.VnicEncap.Value[1]
+    assert (0), f"Invalid {tagType} tag request from {vnic} with vnic encap {vnic.VnicEncap}"
 
 def GetVNId(testcase, args=None):
     if utils.IsBridgingEnabled(testcase.config.localmapping.Node):

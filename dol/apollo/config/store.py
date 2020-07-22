@@ -2,7 +2,6 @@
 from infra.common.objects   import ObjectDatabase as ObjectDatabase
 from infra.config.store     import ConfigStore as ConfigStore
 import infra.common.defs as defs
-#import device_pb2 as device_pb2
 
 class EzAccessStore:
 # Static variables and methods

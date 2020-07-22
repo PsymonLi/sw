@@ -86,6 +86,8 @@ node:
                 - count   : 1             # VNICs per subnet
                   ipcount : 4             # Local IP mapping per vnic
                   public  : true
+                  vnicencap:
+                    type: none
               rmap:                       # Remote IP mappings per subnet
                 - count : 2
           policy:

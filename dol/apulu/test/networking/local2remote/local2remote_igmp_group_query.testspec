@@ -15,7 +15,7 @@ packets:
                 src     : ref://testcase/config/localmapping/VNIC/MACAddr
                 dst     : callback://networking/packets/GetMulticastMacFromIP
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
             ipv4:
                 src     : ref://testcase/config/localmapping/IP
                 dst     : callback://networking/packets/GetMulticastIP/direction=TX

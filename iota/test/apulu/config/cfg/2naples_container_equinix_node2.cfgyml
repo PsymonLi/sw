@@ -159,7 +159,8 @@ vpc:
               vmac      : usepfmac
               srcguard  : false         # true or false (default false)
               public    : false
-              tagged    : false         # true or false (default true)
+              vnicencap:
+                type: none
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'
@@ -181,7 +182,8 @@ vpc:
               vmac      : usepfmac
               srcguard  : false         # true or false (default false)
               public    : false
-              tagged    : false         # true or false (default true)
+              vnicencap:
+                type: none
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'
@@ -203,7 +205,8 @@ vpc:
               vmac      : usepfmac
               srcguard  : false         # true or false (default false)
               public    : false
-              tagged    : false         # true or false (default true)
+              vnicencap:
+                type: none
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'
@@ -225,7 +228,8 @@ vpc:
               vmac      : usepfmac
               srcguard  : false         # true or false (default false)
               public    : false
-              tagged    : false         # true or false (default true)
+              vnicencap:
+                type: none
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'
@@ -246,7 +250,8 @@ vpc:
               vmac      : usepfmac
               srcguard  : false         # true or false (default false)
               public    : false
-              tagged    : false         # true or false (default true)
+              vnicencap:
+                type: none
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'
@@ -267,7 +272,8 @@ vpc:
               vmac      : usepfmac
               srcguard  : false         # true or false (default false)
               public    : false
-              tagged    : false         # true or false (default true)
+              vnicencap:
+                type: none
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'

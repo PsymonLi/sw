@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+import copy
 import pdb
 
 from collections import defaultdict
@@ -81,7 +82,6 @@ class VnicObject(base.ConfigObjectBase):
         self.GID('Vnic%d'%self.VnicId)
         self.UUID = utils.PdsUuid(self.VnicId, self.ObjType)
         self.SUBNET = parent
-        #self.VPC = self.SUBNET.VPC
         self.HostIfIdx = None
         self.HostIfUuid = None
         if utils.IsDol():
@@ -110,14 +110,7 @@ class VnicObject(base.ConfigObjectBase):
                 self.MACAddr = vmac
         else:
             self.MACAddr =  Resmgr.VnicMacAllocator.get()
-        self.Dot1Qenabled = getattr(spec, 'tagged', True)
-        if self.Dot1Qenabled or utils.IsDol():
-            if (hasattr(spec, 'vnicencapvalue')):
-                self.VlanId = spec.vnicencapvalue
-            else:
-                self.VlanId = next(ResmgrClient[node].VnicVlanIdAllocator)
-        else:
-            self.VlanId = 0
+        self.VnicEncap = base.Encap.ParseFromSpec(spec, 'vnicencap', 'none', next(ResmgrClient[node].VnicVlanIdAllocator))
         self.MplsSlot = next(ResmgrClient[node].VnicMplsSlotIdAllocator)
         if utils.IsDol():
             self.Vnid = next(ResmgrClient[node].VxlanIdAllocator)
@@ -155,7 +148,6 @@ class VnicObject(base.ConfigObjectBase):
             self.EgV4SecurityPolicyIds  = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V4", "egress", False)
             self.EgV6SecurityPolicyIds  = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V6", "egress", False)
 
-        self.QinQenabled = False
         self.DeriveOperInfo(node)
         self.Mutable = True if (utils.IsUpdateSupported() and self.IsOriginFixed()) else False
         self.VnicType = getattr(spec, 'vnictype', None)
@@ -185,8 +177,9 @@ class VnicObject(base.ConfigObjectBase):
     def Show(self):
         logger.info("VNIC object:", self)
         logger.info("- %s" % repr(self))
-        logger.info("- Vlan: %s %d|Mpls:%d|Vxlan:%d|MAC:%s|SourceGuard:%s|Movable:%s"\
-        % (self.Dot1Qenabled, self.VlanId, self.MplsSlot, self.Vnid, self.MACAddr,\
+        logger.info(f"- VnicEncap: {self.VnicEncap}")
+        logger.info("- Mpls:%d|Vxlan:%d|MAC:%s|SourceGuard:%s|Movable:%s"\
+        % (self.MplsSlot, self.Vnid, self.MACAddr,\
            str(self.SourceGuard), self.Movable))
         logger.info("- RxMirror:", self.RxMirror)
         logger.info("- TxMirror:", self.TxMirror)
@@ -222,7 +215,14 @@ class VnicObject(base.ConfigObjectBase):
     def IsFilterMatch(self, selectors):
         vnicSelector = getattr(selectors, 'vnic', None)
         if vnicSelector:
-            return super().IsFilterMatch(vnicSelector.filters)
+            vnicSel = copy.deepcopy(vnicSelector)
+            key = 'VnicEncapType'
+            value = vnicSel.GetValueByKey(key)
+            result = True
+            if value != None:
+                vnicSel.filters.remove((key, value))
+                result = self.VnicEncap.Type == value
+            return result and super().IsFilterMatch(vnicSel.filters)
         return True
 
     def VerifyVnicStats(self, spec):
@@ -258,8 +258,7 @@ class VnicObject(base.ConfigObjectBase):
         return
 
     def AutoUpdate(self):
-        #if self.Dot1Qenabled:
-            #self.VlanId = next(ResmgrClient[self.Node].VnicVlanIdAllocator)
+        #self.VnicEncap.Update(1500)
         #TODO add a separate case for toggling usehostif, as the packet gets dropped
         #self.UseHostIf = not(self.UseHostIf)
         self.SourceGuard = not(self.SourceGuard)
@@ -285,11 +284,7 @@ class VnicObject(base.ConfigObjectBase):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
         spec.SubnetId = self.SUBNET.GetKey()
-        if self.Dot1Qenabled:
-            spec.VnicEncap.type = types_pb2.ENCAP_TYPE_DOT1Q
-            spec.VnicEncap.value.VlanId = self.VlanId
-        else:
-            spec.VnicEncap.type = types_pb2.ENCAP_TYPE_NONE
+        self.VnicEncap.PopulateSpec(spec.VnicEncap)
         if not utils.IsBitwSmartSvcMode(self.Node):
             spec.MACAddress = self.MACAddr.getnum()
         spec.SourceGuardEnable = self.SourceGuard
@@ -329,9 +324,7 @@ class VnicObject(base.ConfigObjectBase):
             return False
         if spec.SubnetId != self.SUBNET.UUID.GetUuid():
             return False
-        if utils.ValidateRpcEncap(types_pb2.ENCAP_TYPE_DOT1Q \
-                                  if self.Dot1Qenabled else types_pb2.ENCAP_TYPE_NONE, \
-                                  self.VlanId, spec.VnicEncap) is False:
+        if not self.VnicEncap.ValidateSpec(spec.VnicEncap):
             logger.error("vnic encap mistmatch")
             return False
         if self.UseHostIf and self.HostIfUuid:
@@ -419,8 +412,8 @@ class VnicObject(base.ConfigObjectBase):
     def GetStatus(self):
         return self.Status
 
-    def IsEncapTypeVLAN(self):
-        return self.Dot1Qenabled
+    def VlanId(self):
+        return self.VnicEncap.VlanId()
 
     def IsIgwVnic(self):
         return self.VnicType =="igw" or self.VnicType == "igw_service"
@@ -666,7 +659,7 @@ class VnicObjectClient(base.ConfigClientBase):
                         txmirror = __get_mirrors(spec, 'txmirror')
                         obj = VnicObject(node, parent, spec, rxmirror, txmirror)
                         self.Objs[node].update({obj.VnicId: obj})
-                        self.__l2mapping_objs[node].update({(obj.MACAddr.getnum(), obj.SUBNET.UUID.GetUuid(),  obj.VlanId): obj})
+                        self.__l2mapping_objs[node].update({(obj.MACAddr.getnum(), obj.SUBNET.UUID.GetUuid(), obj.VlanId()): obj})
                         utils.AddToReconfigState(obj, 'create')
                     continue
             for c in range(spec.count):
@@ -675,7 +668,7 @@ class VnicObjectClient(base.ConfigClientBase):
                 txmirror = __get_mirrors(spec, 'txmirror')
                 obj = VnicObject(node, parent, spec, rxmirror, txmirror)
                 self.Objs[node].update({obj.VnicId: obj})
-                self.__l2mapping_objs[node].update({(obj.MACAddr.getnum(), obj.SUBNET.UUID.GetUuid(),  obj.VlanId): obj})
+                self.__l2mapping_objs[node].update({(obj.MACAddr.getnum(), obj.SUBNET.UUID.GetUuid(), obj.VlanId()): obj})
         return
 
     def CreateObjects(self, node):
@@ -685,9 +678,9 @@ class VnicObjectClient(base.ConfigClientBase):
         return
 
     def ChangeMacAddr(self, vnic, mac_addr):
-        del self.__l2mapping_objs[vnic.Node][(vnic.MACAddr.getnum(), vnic.SUBNET.UUID.GetUuid(), vnic.VlanId)]
+        del self.__l2mapping_objs[vnic.Node][(vnic.MACAddr.getnum(), vnic.SUBNET.UUID.GetUuid(), vnic.VlanId())]
         self.MACAddr = mac_addr
-        self.__l2mapping_objs[vnic.Node].update({(vnic.MACAddr.getnum(), vnic.SUBNET.UUID.GetUuid(),  vnic.VlanId): vnic})
+        self.__l2mapping_objs[vnic.Node].update({(vnic.MACAddr.getnum(), vnic.SUBNET.UUID.GetUuid(), vnic.VlanId()): vnic})
 
     def ChangeSubnet(self, vnic, new_subnet):
         logger.info(f"Changing subnet for {vnic} {vnic.SUBNET} => {new_subnet}")
@@ -707,10 +700,10 @@ class VnicObjectClient(base.ConfigClientBase):
         if old_subnet.Node != new_subnet.Node:
             # Delete VNIC from old node
             del self.Objs[vnic.Node][vnic.VnicId]
-            del self.__l2mapping_objs[vnic.Node][(vnic.MACAddr.getnum(), vnic.SUBNET.UUID.GetUuid(), vnic.VlanId)]
+            del self.__l2mapping_objs[vnic.Node][(vnic.MACAddr.getnum(), vnic.SUBNET.UUID.GetUuid(), vnic.VlanId())]
             vnic.Node = new_subnet.Node
             self.Objs[vnic.Node].update({vnic.VnicId: vnic})
-            self.__l2mapping_objs[vnic.Node].update({(vnic.MACAddr.getnum(), vnic.SUBNET.UUID.GetUuid(),  vnic.VlanId): vnic})
+            self.__l2mapping_objs[vnic.Node].update({(vnic.MACAddr.getnum(), vnic.SUBNET.UUID.GetUuid(), vnic.VlanId()): vnic})
 
             # Move children to new Node
             for lmap in vnic.Children:

@@ -60,4 +60,4 @@ modules:
         spec    : remote2local_vni_invalid.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none

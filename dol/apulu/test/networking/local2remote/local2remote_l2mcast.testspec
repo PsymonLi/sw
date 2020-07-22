@@ -15,7 +15,7 @@ packets:
                 src     : ref://testcase/config/localmapping/VNIC/MACAddr
                 dst     : 01:00:5e:7f:00:01
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
             payload:
                 data    : ref://factory/payloads/id=PAYLOAD_ZERO64/data
 

@@ -16,7 +16,7 @@ packets:
                 src     : 02:42:0c:c8:9a:1b
                 dst     : callback://networking/packets/GetDstMac/direction=TX
             qtag:
-                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+                vlan    : callback://networking/packets/GetVnicQTag
                 prio    : 0
             ipv4:
                 src     : ref://testcase/config/localmapping/IP

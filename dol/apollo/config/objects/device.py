@@ -82,7 +82,8 @@ class DeviceObject(base.ConfigObjectBase):
             utils.PdsUuid.SetSystemMAC(systemMAC.getnum())
 
         self.IP = str(self.IPAddr) # For testspec
-        self.EncapType = utils.GetEncapType(spec.encap)
+        # TODO: deprecate EncapType in device
+        self.EncapType = base.Encap.GetRpcEncapType(getattr(spec, 'encap', 'none'))
         self.PolicyAnyDeny = getattr(spec, 'any-deny-policy', False)
         self.Mutable = utils.IsUpdateSupported()
         self.IPMappingPriority = getattr(spec, 'ip-mapping-priority', 0)
@@ -124,7 +125,7 @@ class DeviceObject(base.ConfigObjectBase):
 
     def __repr__(self):
         return (f"Device1|IPAddr:{self.IPAddr}|GatewayAddr:{self.GatewayAddr}|" \
-                f"MAC:{self.MACAddr.get()}|Encap:{utils.GetEncapTypeString(self.EncapType)}" \
+                f"MAC:{self.MACAddr.get()}|Encap:{base.Encap.GetEncapTypeString(self.EncapType)}" \
                 f"|OverlayRoutingEn:{self.OverlayRoutingEn}")
 
     def Show(self):

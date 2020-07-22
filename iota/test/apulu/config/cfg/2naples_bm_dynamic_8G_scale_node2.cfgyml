@@ -149,7 +149,8 @@ vpc:
             - count     : 1
               ipcount   : 32
               public    : true
-              tagged    : false
+              vnicencap:
+                type: none
               policy:
                 v4ingrpolicycount: 5
                 v4egrpolicycount : 5
@@ -160,7 +161,8 @@ vpc:
             - count     : 3
               ipcount   : 32
               public    : true
-              tagged    : true
+              vnicencap:
+                type: dot1q
               policy:
                 v4ingrpolicycount: 5
                 v4egrpolicycount : 5
@@ -171,7 +173,8 @@ vpc:
             - count     : 12
               ipcount   : 32
               public    : true
-              tagged    : true
+              vnicencap:
+                type: dot1q
               rxpolicer : 5
               txpolicer : 6
           rmap:                       # Remote IP mappings per subnet

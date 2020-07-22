@@ -28,7 +28,7 @@ modules:
         spec    : l2l_flow_fixup.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
 
     - module:
         name    : L2L_IPV4_TCP_RFLOW_ING_POLICY_CHG
@@ -36,6 +36,6 @@ modules:
         ignore  : True
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=False
+              vnic : filter://VnicEncapType=none
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
-              vnic : filter://Dot1Qenabled=True
+              vnic : filter://VnicEncapType=dotq

@@ -164,6 +164,8 @@ vpc:
           vnic:
             - id        : 1
               count     : 1             # 1 untagged VNIC
+              vnicencap:
+                type: none
               vmac      : macaddr/00ae.cd00.0811
               hostifidx : 0x80000049
               ipcount : 1             # Local IP mapping per vnic
@@ -220,7 +222,8 @@ vpc:
                   publicip : 12.12.12.12
               srcguard: false         # true or false (default false)
               public  : true
-              tagged  : false         # true or false (default true)
+              vnicencap:
+                type: none
               vnictype : "local"
               serviceips :
                     - '64.0.0.80'
@@ -241,8 +244,10 @@ vpc:
                   lipaddr  : '3.1.0.102'
               srcguard: false         # true or false (default false)
               public  : false
-              tagged  : true         # true or false (default true)
-              vnicencapvalue : 300
+              vnicencap:
+                type: dot1q
+                value:
+                  vlan: 300
               vnictype : "local"
               serviceips :
                     - '64.0.0.80'
@@ -266,7 +271,7 @@ vpc:
           v6egrpolicycount : 1
           vnic:
             - id        : 4
-              count     : 1             # 1 untagged VNIC
+              count     : 1             # 1 tagged VNIC
               vmac      : macaddr/00ae.cd00.0814
               hostifidx : 0x8000004b
               ipcount : 1             # Local IP mapping per vnic
@@ -278,8 +283,10 @@ vpc:
                   lipaddr  : '9.0.0.2'
               srcguard: false         # true or false (default false)
               public  : false
-              tagged  : true         # true or false (default true)
-              vnicencapvalue : 999
+              vnicencap:
+                type: dot1q
+                value:
+                  vlan: 999
               vnictype : "local"
               serviceips :
                     - '64.0.0.80'
@@ -288,7 +295,7 @@ vpc:
                     - '3.1.0.0\24'
                     - '64.0.0.0\24'
             - id        : 5
-              count     : 1             # 1 untagged VNIC
+              count     : 1             # 1 tagged VNIC
               vmac      : macaddr/00ae.cd00.0815
               hostifidx : 0x8000004b
               ipcount : 1             # Local IP mapping per vnic
@@ -300,8 +307,10 @@ vpc:
                   lipaddr  : '9.0.0.102'
               srcguard: false         # true or false (default false)
               public  : false
-              tagged  : true         # true or false (default true)
-              vnicencapvalue : 998
+              vnicencap:
+                type: dot1q
+                value:
+                  vlan: 998
               vnictype : "local"
               serviceips :
                     - '64.0.0.80'
@@ -393,7 +402,8 @@ vpc:
                   lipaddr  : '11.1.1.2'
               srcguard: false         # true or false (default false)
               public  : false
-              tagged  : false         # true or false (default true)
+              vnicencap:
+                type: none
       nexthop:
         - id         : 51
           type       : overlay

@@ -221,7 +221,8 @@ vpc:
                   lipaddr  : '2.1.0.17'
               srcguard: false         # true or false (default false)
               public  : false
-              tagged  : false         # true or false (default true)
+              vnicencap:
+                type: none
           rmap:                       # Remote IP mappings per subnet
             - id       : 17
               count    : 1
