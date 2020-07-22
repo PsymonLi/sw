@@ -556,7 +556,7 @@ func handleEndpoint(i *IrisAPI, oper types.Operation, endpoint netproto.Endpoint
 
 		return
 	case types.Create:
-		if i.isLocalEP(endpoint.Spec.NodeUUID) {
+		if i.isLocalEP(endpoint) {
 			endpoint.Status.EnicID = i.InfraAPI.AllocateID(types.EnicID, types.EnicOffset)
 		}
 
@@ -582,7 +582,7 @@ func handleEndpoint(i *IrisAPI, oper types.Operation, endpoint netproto.Endpoint
 		}
 
 		// Reuse ID from store
-		if i.isLocalEP(endpoint.Spec.NodeUUID) {
+		if i.isLocalEP(endpoint) {
 			endpoint.Status.EnicID = existingEndpoint.Status.EnicID
 		}
 
@@ -2422,11 +2422,21 @@ func (i *IrisAPI) createPortsAndUplinks(uid string) error {
 	return nil
 }
 
-func (i *IrisAPI) isLocalEP(nodeuuid string) bool {
-	log.Infof("Node UUID: %s | Self Node UUID: %s", nodeuuid, i.InfraAPI.GetDscName())
-	epNodeUUID, _ := net.ParseMAC(nodeuuid)
+func (i *IrisAPI) isLocalEP(endpoint netproto.Endpoint) bool {
+	log.Infof("Node UUID: %s | Self Node UUID: %s", endpoint.Spec.NodeUUID, i.InfraAPI.GetDscName())
 	selfNodeUUID, _ := net.ParseMAC(i.InfraAPI.GetDscName())
-	return epNodeUUID.String() == selfNodeUUID.String()
+	epSpecNodeUUID, _ := net.ParseMAC(endpoint.Spec.NodeUUID)
+	if epSpecNodeUUID.String() == selfNodeUUID.String() {
+		return true
+	}
+
+	// When migrating, the EP is local at both source and destination DSCs
+	if len(endpoint.Status.NodeUUID) > 0 {
+		epStatusNodeUUID, _ := net.ParseMAC(endpoint.Status.NodeUUID)
+		return epStatusNodeUUID.String() == selfNodeUUID.String()
+	}
+
+	return false
 }
 
 // HandleDSCInterfaceInfo handles configuring DSC interfaces served from the DB

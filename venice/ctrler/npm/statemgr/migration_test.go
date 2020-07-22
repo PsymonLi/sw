@@ -1124,7 +1124,7 @@ func TestMigrationProfileDowngrade(t *testing.T) {
 		}
 
 		return false, fmt.Errorf("wrong migration status [%v]  in the workload [testWorkload]", wrk.Workload.Status.MigrationStatus.Status)
-	}, "Workload not found", "1ms", "1m")
+	}, "Workload not found", "1s", "5m")
 
 	// EP move must be aborted
 	AssertEventually(t, func() (bool, interface{}) {

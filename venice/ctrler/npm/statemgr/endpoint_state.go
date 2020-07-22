@@ -459,6 +459,11 @@ func (sm *Statemgr) handleMigration(epinfo *ctkit.Endpoint, nep *workload.Endpoi
 		return eps.Write()
 	}
 
+	if nep.Status.Migration.Status == workload.EndpointMigrationStatus_ABORTED.String() {
+		log.Infof("Handle migration called for EP %v with aborted migration.", epinfo.Endpoint.Name)
+		return nil
+	}
+
 	// Start Last Sync of migration
 	if nep.Status.Migration.Status == workload.EndpointMigrationStatus_FINAL_SYNC.String() {
 
@@ -477,10 +482,6 @@ func (sm *Statemgr) handleMigration(epinfo *ctkit.Endpoint, nep *workload.Endpoi
 
 		eps.moveEP.Spec.Migration = netproto.MigrationState_DONE.String()
 		eps.stateMgr.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
-		if err := eps.Write(); err != nil {
-			log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
-		}
-
 		return nil
 	}
 
@@ -609,14 +610,13 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			return
 		}
 		eps.Endpoint.Lock()
-		defer eps.Endpoint.Unlock()
-
 		// Get WorkloadState object
 		ws, err := sm.FindWorkload(eps.Endpoint.Tenant, getWorkloadNameFromEPName(eps.Endpoint.Name))
 		if err != nil {
 			log.Errorf("Failed to get the workload state for object %v. Err : %v", eps.Endpoint.Name, err)
 			return
 		}
+		eps.Endpoint.Unlock()
 
 		if ws.Workload.Status.MigrationStatus == nil {
 			log.Errorf("Workload [%v] has no migration status.", ws.Workload.Name)
@@ -626,29 +626,33 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 		// We perform a negative check here, to avoid any race condition in setting of the Status in workload
 		// Treat force stop migration caused by DSC profile update while migration is in flight as ABORT
 		if !ws.forceStopMigration && ws.Workload.Status.MigrationStatus.Stage != workload.WorkloadMigrationStatus_MIGRATION_ABORT.String() {
+			eps.Endpoint.Lock()
 			log.Infof("Move timed out for EP %v. Sending delete EP to old DSC. Traffic flows might be affected. [%v]", eps.Endpoint.Name, oldEP.Spec.NodeUUID)
 
+			// Update the boldDB EP object in both DSCs
 			newEP.Spec.Migration = netproto.MigrationState_DONE.String()
-
-			sm.mbus.AddObjectWithReferences(epinfo.MakeKey("cluster"), &newEP, references(epinfo))
+			eps.moveEP = &newEP
+			sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
 			// FIXME replace the sleep with polling from the dataplane
 			log.Infof("waiting for dataplane to finish last sync")
 			time.Sleep(3 * time.Second)
 
+			// Send Delete to the old DSC
 			oldEP.Spec.Migration = netproto.MigrationState_NONE.String()
 			oldEP.Spec.HomingHostAddr = ""
 			eps.moveEP = &oldEP
 			sm.DeleteObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
-			//sm.mbus.UpdateObjectWithReferences(epinfo.MakeKey("cluster"), &oldEP, references(epinfo))
-			//sm.mbus.DeleteObjectWithReferences(epinfo.MakeKey("cluster"), &oldEP, references(epinfo))
 
+			// Update the memdb copy of EP
+			newEP.Status.NodeUUID = newEP.Spec.NodeUUID
 			newEP.Spec.Migration = netproto.MigrationState_NONE.String()
 			newEP.Status.NodeUUID = newEP.Spec.NodeUUID
 			newEP.Spec.HomingHostAddr = ""
 			eps.moveEP = &newEP
 			sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
+			// Fix the etcd copy of Endpoint object
 			eps.Endpoint.Status.NodeUUID = eps.Endpoint.Spec.NodeUUID
 			eps.Endpoint.Status.MicroSegmentVlan = eps.Endpoint.Spec.MicroSegmentVlan
 			eps.Endpoint.Status.Migration.Status = workload.EndpointMigrationStatus_DONE.String()
@@ -666,6 +670,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			}
 
 			log.Infof("EP [%v] migrated to [%v] after timeout.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
+			eps.Endpoint.Unlock()
 			return
 		}
 
@@ -673,13 +678,15 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 		newEP.Spec.Migration = netproto.MigrationState_ABORT.String()
 		newEP.Spec.HomingHostAddr = ""
 
+		eps.Endpoint.Lock()
 		// There can only be one object reference in the memdb for a particular object name, kind
 		// To use nimbus channel, update the existingObj in memdb to point to the desired object
 		eps.moveEP = &newEP
-		// Update the in-memory state of netagent
+
+		// Update the Endpoint object in the boltDB of both DSCs
 		sm.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
-		// Send delete to the NEW DSC
-		newEP.Status.NodeUUID = newEP.Spec.NodeUUID
+
+		// Send DELETE operation to both DSCs
 		sm.DeleteObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
 		// Clean up all the migration state in the netproto object
@@ -691,13 +698,14 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 		eps.Endpoint.Spec.HomingHostAddr = eps.Endpoint.Status.HomingHostAddr
 		eps.Endpoint.Status.Migration.Status = workload.EndpointMigrationStatus_ABORTED.String()
 
-		// Update the in-memory reference for EP to point to the OLD DSC
+		// Update the memdb reference for EP to point to the OLD DSC
 		eps.moveEP = &oldEP
-		eps.Endpoint.Spec.NodeUUID = oldEP.Spec.NodeUUID
 		sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
 		eps.moveEP = nil
-		if err := eps.Write(); err != nil {
+		eps.Endpoint.Unlock()
+		// Use Update API here, because Write only updates the Status part
+		if err := eps.stateMgr.ctrler.Endpoint().Update(&eps.Endpoint.Endpoint); err != nil {
 			log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
 		}
 		log.Infof("Migration aborted for %v", eps.Endpoint.Name)
@@ -708,8 +716,17 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 		handleDone()
 		return
 	}
+	eps, _ := EndpointStateFromObj(epinfo)
+	if eps == nil {
+		log.Errorf("Failed to get EPS object for EP %v. Cannot start migration.", epinfo)
+		return
+	}
 
-	sm.mbus.AddObjectWithReferences(epinfo.MakeKey("cluster"), &newEP, references(epinfo))
+	eps.Endpoint.Lock()
+	eps.moveEP = &newEP
+	eps.Endpoint.Unlock()
+
+	sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 	checkDataplaneMigration := time.NewTicker(defaultMigrationPollInterval)
 	for {
 		select {
@@ -720,6 +737,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			eps, _ := EndpointStateFromObj(epinfo)
 			if eps != nil {
 				eps.Endpoint.Lock()
+				eps.moveEP = &newEP
 				if eps.Endpoint.Status.Migration == nil {
 					log.Errorf("Unexpected EP [%v] migration status is nil. Exiting move.", eps.Endpoint.Name)
 					eps.moveEP = nil
@@ -739,9 +757,8 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						log.Infof("Move was successful for %v. Sending delete EP to old DSC. [%v]", eps.Endpoint.Name, oldEP.Spec.NodeUUID)
 						oldEP.Spec.Migration = netproto.MigrationState_NONE.String()
 						oldEP.Spec.HomingHostAddr = ""
-						//sm.mbus.UpdateObjectWithReferences(epinfo.MakeKey("cluster"), &oldEP, references(epinfo))
 						eps.moveEP = &oldEP
-						//sm.mbus.DeleteObjectWithReferences(epinfo.MakeKey("cluster"), &oldEP, references(epinfo))
+						sm.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 						sm.DeleteObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
 						newEP.Spec.Migration = netproto.MigrationState_NONE.String()

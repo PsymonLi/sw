@@ -99,37 +99,51 @@ func createEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClie
 }
 
 func updateEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClient, intfClient halapi.InterfaceClient, endpoint netproto.Endpoint, vrfID, networkID uint64) error {
-	if isMigrating(endpoint) && !isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration != netproto.MigrationState_DONE.String() {
-		log.Infof("Got migration message for EP %v with Migration Status %v. Ignoring.", endpoint.Spec.Migration, endpoint)
-		return nil
+	updateDataplane := true
+
+	if isMigrating(endpoint) {
+		// For an EP migrating out, skip updating dataplane during migration
+		if !isMigratingIn(endpoint, infraAPI.GetDscName()) {
+			log.Infof("Got Migration Status %v for outgoing EP %v. Skip update to dataplane.", endpoint.Spec.Migration, endpoint)
+			updateDataplane = false
+		}
+
+		// For an EP migrating in, only update dataplane if the status is DONE
+		if isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration != netproto.MigrationState_DONE.String() {
+			log.Infof("Got Migration Status %v for incoming EP %v. Skip update to dataplane.", endpoint.Spec.Migration, endpoint)
+			updateDataplane = false
+		}
 	}
 
-	updateEnic := endpoint.Status.EnicID != 0
-	// Handle interface updates for local EPs
-	if len(endpoint.Spec.Migration) > 0 && endpoint.Spec.Migration == netproto.MigrationState_START.String() {
-		log.Infof("Unexpected migration start in the update handler. Ignoring")
-		return nil
-	}
+	if updateDataplane {
+		updateEnic := endpoint.Status.EnicID != 0
+		// Handle interface updates for local EPs
+		if len(endpoint.Spec.Migration) > 0 && endpoint.Spec.Migration == netproto.MigrationState_START.String() {
+			log.Infof("Unexpected migration start in the update handler. Ignoring")
+			return nil
+		}
 
-	if updateEnic {
-		interfaceReqMsg := convertEnicInterface(endpoint.Spec.MacAddress, endpoint.Status.EnicID, networkID, endpoint.Spec.UsegVlan, false)
-		log.Infof("ENIC Msg: %v", interfaceReqMsg.String())
-		resp, err := intfClient.InterfaceUpdate(context.Background(), interfaceReqMsg)
+		if updateEnic {
+			interfaceReqMsg := convertEnicInterface(endpoint.Spec.MacAddress, endpoint.Status.EnicID, networkID, endpoint.Spec.UsegVlan, false)
+			log.Infof("ENIC Msg: %v", interfaceReqMsg.String())
+			resp, err := intfClient.InterfaceUpdate(context.Background(), interfaceReqMsg)
+			if resp != nil {
+				if err := utils.HandleErr(types.Update, resp.Response[0].ApiStatus, err, fmt.Sprintf("update Failed for ENIC Interface. ID: %d", endpoint.Status.EnicID)); err != nil {
+					return err
+				}
+			}
+		}
+
+		endpointReqMsg := convertEndpointUpdate(endpoint, infraAPI.GetConfig().MgmtIntf, vrfID, networkID)
+		log.Infof("Endpoint Msg: %v", endpointReqMsg.String())
+		resp, err := epClient.EndpointUpdate(context.Background(), endpointReqMsg)
 		if resp != nil {
-			if err := utils.HandleErr(types.Update, resp.Response[0].ApiStatus, err, fmt.Sprintf("update Failed for ENIC Interface. ID: %d", endpoint.Status.EnicID)); err != nil {
+			if err := utils.HandleErr(types.Update, resp.Response[0].ApiStatus, err, fmt.Sprintf("Update Failed for %s | %s", endpoint.GetKind(), endpoint.GetKey())); err != nil {
 				return err
 			}
 		}
 	}
 
-	endpointReqMsg := convertEndpointUpdate(endpoint, infraAPI.GetConfig().MgmtIntf, vrfID, networkID)
-	log.Infof("Endpoint Msg: %v", endpointReqMsg.String())
-	resp, err := epClient.EndpointUpdate(context.Background(), endpointReqMsg)
-	if resp != nil {
-		if err := utils.HandleErr(types.Update, resp.Response[0].ApiStatus, err, fmt.Sprintf("Update Failed for %s | %s", endpoint.GetKind(), endpoint.GetKey())); err != nil {
-			return err
-		}
-	}
 	dat, _ := endpoint.Marshal()
 
 	if err := infraAPI.Store(endpoint.Kind, endpoint.GetKey(), dat); err != nil {
