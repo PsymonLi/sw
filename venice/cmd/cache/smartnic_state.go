@@ -18,6 +18,9 @@ import (
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
+var maxDSCCreateAPIServerWriteRetries = 3
+var maxDSCUpdateAPIServerWriteRetries = 2
+
 // SmartNICState security policy state
 type SmartNICState struct {
 	*sync.RWMutex
@@ -131,9 +134,12 @@ func (sm *Statemgr) CreateSmartNIC(sn *cluster.DistributedServiceCard, writeback
 		// and have it retry
 		f := func(ctx context.Context) (interface{}, error) {
 			nic, err := sm.APIClient().DistributedServiceCard().Create(ctx, sn)
+			if err == nil {
+				sns.DistributedServiceCard = nic
+			}
 			return nic, err
 		}
-		_, err := utils.ExecuteWithRetry(f, apiServerRPCTimeout, maxAPIServerWriteRetries)
+		_, err = utils.ExecuteWithRetry(f, apiServerRPCTimeout, maxDSCCreateAPIServerWriteRetries)
 		if err != nil && !strings.Contains(strings.ToLower(err.Error()), "exists") {
 			log.Errorf("Error creating SmartNIC object %+v: %v", sn.ObjectMeta, err)
 			// if we didn't get to create the object in ApiServer, we need to remove it from local cache as well
@@ -145,7 +151,8 @@ func (sm *Statemgr) CreateSmartNIC(sn *cluster.DistributedServiceCard, writeback
 		}
 	}
 
-	log.Infof("Created SmartNIC state {%+v}, writeback: %v", sns, writeback)
+	log.Infof("CreateSmartNIC state {%+v}, writeback: %v, err: %v", sns, writeback, err)
+
 	return sns, nil
 }
 
@@ -200,7 +207,6 @@ func (sm *Statemgr) UpdateSmartNIC(updObj *cluster.DistributedServiceCard, write
 		ok := false
 		// DSCs updates are periodic and can come in a big batch after leader update,
 		// so we use lower retries number to avoid overloading ApiServer
-		maxDSCUpdateAPIServerWriteRetries := 2
 		for i := 0; i < maxDSCUpdateAPIServerWriteRetries; i++ {
 			// if forceSpec == true it's an update on admission, so we need to write even if we are not leader
 			if !sm.isLeader() && !forceSpec {
@@ -211,8 +217,25 @@ func (sm *Statemgr) UpdateSmartNIC(updObj *cluster.DistributedServiceCard, write
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), apiServerRPCTimeout)
 			if forceSpec {
-				updObj.ResourceVersion = ""
+				// if we are writing spec, we need to take into account that it might have been modified on ApiServer,
+				// and we may not have received the notification yet, so we may need to do read-modify-write
+				// The only field owned by user is Admit, everything else is owned by CMD so we will override
 				_, err = sm.APIClient().DistributedServiceCard().Update(ctx, updObj)
+				if err != nil { // apiserver only provides a generic "cannot execute" error for conflict, possibly because hooks are involved
+					log.Errorf("Error updating SmartNIC object in ApiServer: %+v, err: %v", updObj, err)
+					getObj, getErr := sm.APIClient().DistributedServiceCard().Get(ctx, &updObj.ObjectMeta)
+					if getErr == nil {
+						updObj.ObjectMeta.ResourceVersion = getObj.ObjectMeta.ResourceVersion
+						updObj.Spec.Admit = getObj.Spec.Admit
+						updObj.Spec.MgmtMode = getObj.Spec.MgmtMode
+						log.Infof("Got updated SmartNIC %+v from ApiServer: %v", getObj, getErr)
+						// Do not update local cache again here, because we may need to react to a transition
+						// (e.g. mgmtmode=network -> mgmtmode=host) and the logic that does that is in the code
+						// that process notifications from ApiServer. We will update once we get the notification.
+					} else {
+						log.Errorf("Error getting SmartNIC %s from ApiServer: %v", updObj.ObjectMeta.Name, getErr)
+					}
+				}
 			} else {
 				_, err = sm.APIClient().DistributedServiceCard().UpdateStatus(ctx, updObj)
 			}

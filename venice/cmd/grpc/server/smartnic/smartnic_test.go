@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -371,7 +372,8 @@ func verifySmartNICObj(t *testing.T, name string, exists bool, phase, host strin
 			}
 			if phase != cmd.DistributedServiceCardStatus_REJECTED.String() {
 				nicByID := cmdenv.StateMgr.GetSmartNICByID(nicState.Spec.ID)
-				if nicByID != nicState.DistributedServiceCard {
+				if nicByID.ObjectMeta.Name != nicState.DistributedServiceCard.ObjectMeta.Name ||
+					!reflect.DeepEqual(nicByID.Spec, nicState.DistributedServiceCard.Spec) {
 					log.Errorf("Got incorrect smartNIC object when getting by hostname. Expected: %+v obtained: %+v", nicState.DistributedServiceCard, nicByID)
 					return false, nil
 				}
@@ -1903,6 +1905,90 @@ func TestHostNICPairingConflicts(t *testing.T) {
 
 	// Clean up
 	err = deleteSmartNIC(api.ObjectMeta{Name: nicMAC})
+	AssertOk(t, err, "Error deleting smartnic object")
+}
+
+// TestSmartNICUpdateWithCAS checks that stateMgr properly handles the case where it needs to do
+// compare-and-swap
+func TestSmartNICUpdateWithCAS(t *testing.T) {
+	testSetup()
+	defer testTeardown()
+
+	hostName := "esx1111"
+	mac := "4444.4444.1111"
+
+	smartNICRegistrationRPCClient := grpc.NewSmartNICRegistrationClient(tInfo.rpcClient.ClientConn)
+	setClusterAutoAdmitDSCs(t, true)
+
+	r := doRegisterNIC(t, smartNICRegistrationRPCClient, mac, hostName)
+	Assert(t, r.Phase == cmd.DistributedServiceCardStatus_ADMITTED.String(),
+		fmt.Sprintf("Error in registration response. Expected phase: %s, got: %s", cmd.DistributedServiceCardStatus_PENDING.String(), r))
+	verifySmartNICObj(t, mac, true, cmd.DistributedServiceCardStatus_ADMITTED.String(), "")
+
+	// now simulate race condition when both CMD and ApiServer are trying to update the object at the same time
+	cmdNicS, err := cmdenv.StateMgr.FindSmartNIC(mac)
+	AssertOk(t, err, "Error getting smartnic from stateMgr")
+	cmdNic := cmdNicS.DistributedServiceCard
+
+	apiNic, err := getSmartNIC(api.ObjectMeta{Name: mac})
+	AssertOk(t, err, "Error getting smartnic from APIServer")
+
+	// update Spec in ApiServer
+	Assert(t, apiNic.Spec.MgmtMode == cmd.DistributedServiceCardSpec_NETWORK.String(),
+		"DSC in unexpected mgmt mode: %+v", apiNic)
+	apiNic.Spec.MgmtMode = cmd.DistributedServiceCardSpec_HOST.String()
+	updApiNic, err := tInfo.apiClient.ClusterV1().DistributedServiceCard().Update(context.Background(), apiNic)
+	AssertOk(t, err, "failed to update DSC object in ApiServer: %+v, err: %v", apiNic, err)
+
+	getRV := func(nic *cmd.DistributedServiceCard) int {
+		rv, err := strconv.Atoi(nic.ObjectMeta.ResourceVersion)
+		AssertOk(t, err, "Error parsing RV from DSC: %+v, err: %v", nic, err)
+		return rv
+	}
+
+	// ApiServer should have updated and increased RV, CMD should still be at old value
+	cmdNicRV, updApiNicRV := getRV(cmdNic), getRV(updApiNic)
+	Assert(t, updApiNicRV > 0 && cmdNicRV > 0 && updApiNicRV == cmdNicRV+1,
+		"Unexpected RV in DSC objects, ApiServer: %v, CMD: %v", updApiNic.ObjectMeta.ResourceVersion, cmdNic.ObjectMeta.ResourceVersion)
+	Assert(t, cmdNic.Spec.MgmtMode == cmd.DistributedServiceCardSpec_NETWORK.String(),
+		"DSC in unexpected mgmt mode: %+v", cmdNic)
+
+	// Now update Spec from CMD, make sure we don't override ApiServer
+	log.Infof("Doing CAS update. Old RV: %v, New RV: %v", cmdNicRV, updApiNicRV)
+	cmdNicS.Lock()
+	cmdNic.Spec.ID = "NewID"
+	err = cmdenv.StateMgr.UpdateSmartNIC(cmdNic, true, true)
+	cmdNicS.Unlock()
+	AssertOk(t, err, "Error doing CAS update: %v", err)
+
+	//Last, check that APIServer and CMD are in sync and have new values and RVs
+	f := func() (bool, interface{}) {
+		apiNic, err := getSmartNIC(api.ObjectMeta{Name: mac})
+		AssertOk(t, err, "Error getting smartnic from APIServer")
+
+		if apiNic.Spec.MgmtMode != cmd.DistributedServiceCardSpec_HOST.String() {
+			log.Errorf("DSC object in ApiServer has wrong mgmt mode. Have: %s, want: %s",
+				apiNic.Spec.MgmtMode, cmd.DistributedServiceCardSpec_HOST.String())
+			return false, nil
+		}
+
+		if apiNic.Spec.ID != "NewID" {
+			log.Errorf("DSC object in ApiServer has unexpected ID. Have: %v, want: %v", apiNic.Spec.ID, "NewID")
+			return false, nil
+		}
+
+		cmdNicS, err := cmdenv.StateMgr.FindSmartNIC(mac)
+		AssertOk(t, err, "Error getting smartnic from stateMgr")
+		cmdNic := cmdNicS.DistributedServiceCard
+		if !reflect.DeepEqual(apiNic, cmdNic) {
+			log.Errorf("DSC object in ApiServer and CMD do not match.\nApiServer: %+v\nDSC: %+v", apiNic, cmdNic)
+			return false, nil
+		}
+		return true, nil
+	}
+	AssertEventually(t, f, "Failed to verify DSC CAS Update", "200ms", "5s")
+
+	err = deleteSmartNIC(api.ObjectMeta{Name: mac})
 	AssertOk(t, err, "Error deleting smartnic object")
 }
 
