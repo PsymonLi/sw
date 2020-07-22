@@ -1,9 +1,10 @@
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { TemplatePortalDirective } from '@angular/cdk/portal';
-import { AfterViewInit, Component, HostBinding, OnDestroy, OnInit, ViewChild, ViewEncapsulation, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, HostBinding, OnDestroy, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { MatDialog } from '@angular/material';
 import { MatSidenav, MatSidenavContainer } from '@angular/material/sidenav';
 import { NavigationEnd, Router } from '@angular/router';
+import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { BaseComponent } from '@app/components/base/base.component';
 import { logout } from '@app/core';
@@ -11,7 +12,7 @@ import { AlerttableService } from '@app/services/alerttable.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { RolloutService } from '@app/services/generated/rollout.service';
 import { LogService } from '@app/services/logging/log.service';
-import { Features, UIConfigsService } from '@app/services/uiconfigs.service';
+import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { IdleWarningComponent } from '@app/widgets/idlewarning/idlewarning.component';
 import { ToolbarComponent } from '@app/widgets/toolbar/toolbar.component';
 import { DEFAULT_INTERRUPTSOURCES, Idle } from '@ng-idle/core';
@@ -20,12 +21,13 @@ import { IApiStatus, IAuthUser } from '@sdk/v1/models/generated/auth';
 import { ClusterCluster, ClusterLicense, ClusterVersion } from '@sdk/v1/models/generated/cluster';
 import { MonitoringAlert } from '@sdk/v1/models/generated/monitoring';
 import { RolloutRollout, RolloutRolloutStatus_state } from '@sdk/v1/models/generated/rollout';
+import { RoutingHealth } from '@sdk/v1/models/generated/routing';
 import { FieldsRequirement_operator, ISearchSearchResponse, SearchSearchRequest, SearchSearchRequest_mode } from '@sdk/v1/models/generated/search';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import * as moment from 'moment';
 import { ConfirmDialog } from 'primeng/primeng';
-import { Subject, Subscription, Observable, forkJoin, of } from 'rxjs';
-import { filter, map, takeUntil, catchError } from 'rxjs/operators';
+import { forkJoin, Observable, of, Subject, Subscription } from 'rxjs';
+import { catchError, filter, map, takeUntil, throttleTime } from 'rxjs/operators';
 import { SideNavItem, sideNavMenu } from './appcontent.sidenav';
 import { BulkeditProgressPayload, Utility } from './common/Utility';
 import { selectorSettings } from './components/settings-group';
@@ -33,13 +35,11 @@ import { Eventtypes } from './enum/eventtypes.enum';
 import { ControllerService } from './services/controller.service';
 import { AuthService } from './services/generated/auth.service';
 import { ClusterService } from './services/generated/cluster.service';
+import { DiagnosticsService } from './services/generated/diagnostics.service';
+import { RoutingService } from './services/generated/routing.service';
 import { SearchService } from './services/generated/search.service';
 import { WorkloadService } from './services/generated/workload.service';
 import { HelpoverlayComponent } from './widgets/helpcontent/helpoverlay.component';
-import { Animations } from '@app/animations';
-import { RoutingService } from './services/generated/routing.service';
-import { RoutingHealth } from '@sdk/v1/models/generated/routing';
-import { DiagnosticsService } from './services/generated/diagnostics.service';
 
 export interface GetUserObjRequest {
   success: (resp: { body: IAuthUser | IApiStatus | Error; statusCode: number; }) => void;
@@ -140,6 +140,8 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
   MAX_ALERT_THRESHOLD_NUMBERS: number = 5000;
   isBulkEditing: boolean = false;
   bulkEditMessage: string = DEFAULT_BULK_EDITING_MSG;
+
+  timeOutRRHealthReference: any = null;
 
   constructor(
     protected _controllerService: ControllerService,
@@ -475,6 +477,9 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
       }
     });
     Utility.getInstance().setRoutinghealthlist(null);
+    if (this.timeOutRRHealthReference ) {
+      clearTimeout(this.timeOutRRHealthReference);
+    }
     this.pegasusNodes = null;
   }
 
@@ -786,7 +791,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     if (this.modulesSubscription) {
       this.modulesSubscription.unsubscribe();
     }
-    this.modulesSubscription = this.diagnosticsService.ListModuleCache().subscribe(
+    this.modulesSubscription = this.diagnosticsService.ListModuleCache().pipe(throttleTime(5000)).subscribe(
       (response) => {
         /* module json looks like this
          {"kind":"Module","api-version":"v1","meta":{"name":"node2-pen-pegasus"},"spec":{"log-level":"info"},"status":{"node":"node2","module":"pen-pegasus","category":"venice","service":"pen-pegasus-676fcbcc64-sc97j","service-ports":[{"name":"pen-pegasus","port":179},{"name":"pen-pegasus-cxm","port":8001}]}}
@@ -804,82 +809,106 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
           }
         }
         // find nodes that host "pen-pegasus" module
-        // user routing.proto HealthStatus to figure out RR health
+        // check routing.proto HealthStatus to figure out RR health
+        // prepare and start poll nodes RR-health status
         const nodeNames = pegasusNodes.map(node => node.status.node);
-        const observables: Observable<any>[] = [];
-        nodeNames.forEach((n: string) => {
-          // build url  /routing/v1/node2/health // node2 is nodeNames[i];
-          if (!Utility.isEmpty(n)) {
-            const ob = this.routingService.GetHealthZ(n).pipe(catchError((err) => {
-              return of({ body: err.body, statusCode: err.statusCode, isError: true, node: n }); // this records which call failed in forkjoin
-            }));
-            observables.push(ob); // this.routingService.GetHealthZ(n));
-          }
-        });
-        if (observables.length === 0) {
-          return;
+        if (this.timeOutRRHealthReference) {
+          clearTimeout(this.timeOutRRHealthReference);
         }
-        if (this.routingListforkjoinSubscription) {
-          this.routingListforkjoinSubscription.unsubscribe();
-        }
-        this.routingListforkjoinSubscription = forkJoin(observables).subscribe(
-          (results) => {
-            const isAllOK = Utility.isForkjoinResultAllOK(results);
-            // process RRStatus    /routing/v1/node2/health return json like below
-            /*
-               {
-                   "kind": "",
-                   "meta": {
-                       "name": "",     <=============  no name
-                       "generation-id": "",
-                       "creation-time": "",
-                       "mod-time": ""
-                   },
-                   "spec": {},
-                   "status": {
-                       "router-id": "192.168.30.12",
-                       "internal-peers": {
-                           "configured": 2,
-                           "established": 2   <-------- this is healthy configured_# = established_#
-                       },
-                       "external-peers": {
-                           "configured": 3,
-                           "established": 0   <--------- this is not healthy configured_# != established_#
-                       },
-                       "unexpected-peers": 0
-                   }
-               }
-            */
-            const routinghealthlist = [];
-            const errorNodes = [];
-            results.forEach((r, i) => {
-              if (r.isError) {
-                errorNodes.push(r.node);
-              } else {
-                const obj = new RoutingHealth(r.body);
-                obj.meta.name = obj.meta.name ? obj.meta.name : obj.status['router-id']; // patch name
-                obj._ui = { node: nodeNames[i] };
-                routinghealthlist.push(obj);
-              }
-            });
-            if (errorNodes && errorNodes.length > 0) {
-              this._controllerService.invokeErrorToaster('Failure', 'Failed to get route reflector health status from ' + errorNodes.join(' , '));
-            }
-            Utility.getInstance().setRoutinghealthlist(routinghealthlist);
-            this._controllerService.publish(Eventtypes.RR_HEALTH_STATUS, routinghealthlist);
-          },
-          (error) => {
-            this._controllerService.invokeRESTErrorToaster('Failure', error);
-          }
-        );
-        this.subscriptions.push(this.routingListforkjoinSubscription);
-
+        this.pollNodesRRHealthStatus(nodeNames);
       },
       (error) => {
-        this._controllerService.invokeRESTErrorToaster('Error', 'Failed to fetch modules');
+        this._controllerService.invokeRESTErrorToaster('Error -Failed to fetch modules', error);
       }
     );
     this.subscriptions.push(this.modulesSubscription);
+  }
+
+  /**
+   * Establish poll to watch RR-health
+   * Per VS-2121. We get nodeNames [20.3.0.53, 20.3.0.54]. We will fetch RR-health status by uring /routing/v1/node2/health // node2 is nodeNames[i];
+   * We have to poll /routing/v1/node2/health  to update RR-health status
+   * @param nodeNames
+   */
+  pollNodesRRHealthStatus(nodeNames: string[]) {
+    const observables: Observable<any>[] = [];
+    nodeNames.forEach((n: string) => {
+      // build url  /routing/v1/node2/health // node2 is nodeNames[i];
+      if (!Utility.isEmpty(n)) {
+        const ob = this.routingService.GetHealthZ(n).pipe(catchError((err) => {
+          return of({ body: err.body, statusCode: err.statusCode, isError: true, node: n }); // this records which call failed in forkjoin
+        }));
+        observables.push(ob); // this.routingService.GetHealthZ(n));
+      }
+    });
+    if (observables.length === 0) {
+      return;
+    }
+    if (this.routingListforkjoinSubscription) {
+      this.routingListforkjoinSubscription.unsubscribe();
+    }
+    this.routingListforkjoinSubscription = forkJoin(observables).subscribe(
+      (results) => {
+        const isAllOK = Utility.isForkjoinResultAllOK(results);
+        // process RRStatus    /routing/v1/node2/health return json like below
+        /*
+           {
+               "kind": "",
+               "meta": {
+                   "name": "",     <=============  no name
+                   "generation-id": "",
+                   "creation-time": "",
+                   "mod-time": ""
+               },
+               "spec": {},
+               "status": {
+                   "router-id": "192.168.30.12",
+                   "internal-peers": {
+                       "configured": 2,
+                       "established": 2   <-------- this is healthy configured_# = established_#
+                   },
+                   "external-peers": {
+                       "configured": 3,
+                       "established": 0   <--------- this is not healthy configured_# != established_#
+                   },
+                   "unexpected-peers": 0
+               }
+           }
+        */
+        const routinghealthlist = [];
+        const errorNodes = [];
+        results.forEach((r, i) => {
+          if (r.isError) {
+            errorNodes.push(r.node);
+          } else {
+            const obj = new RoutingHealth(r.body);
+            obj.meta.name = obj.meta.name ? obj.meta.name : obj.status['router-id']; // patch name
+            obj._ui = { node: nodeNames[i] };
+            routinghealthlist.push(obj);
+          }
+        });
+        if (errorNodes && errorNodes.length > 0) {
+          if (this._currentComponent === 'DashboardComponent') {
+            // show toastor only if UI shows Dashboard
+            this._controllerService.invokeErrorToaster('Failure', 'Failed to get route reflector health status from ' + errorNodes.join(' , '));
+          } else {
+            console.error('Failed to get route reflector health status from ' + errorNodes.join(' , '));
+          }
+        }
+        Utility.getInstance().setRoutinghealthlist(routinghealthlist);
+        this._controllerService.publish(Eventtypes.RR_HEALTH_STATUS, routinghealthlist);
+      },
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Failure', error);
+      } ,
+      () => {
+        // getting RR-heath again in 30 seconds
+        this.timeOutRRHealthReference = setTimeout(() => {
+          this.pollNodesRRHealthStatus(nodeNames);
+        }, 30000);
+      }
+    );
+    this.subscriptions.push(this.routingListforkjoinSubscription);
   }
 
   /**
@@ -909,7 +938,6 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     this.alertGetSubscription = this.searchService.PostQuery(query).subscribe(
       resp => {
         const body = resp.body as ISearchSearchResponse;
-        console.log('getAlerts()');
         this.startingAlertCount = parseInt(body['total-hits'], 10);
         // debug and change code here to manipulate data. e.g  ==>  this.startingAlertCount =  9999.
         if (!isNaN(this.startingAlertCount) && this.startingAlertCount > this.MAX_ALERT_THRESHOLD_NUMBERS) {

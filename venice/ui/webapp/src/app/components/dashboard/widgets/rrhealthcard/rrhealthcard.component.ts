@@ -161,6 +161,9 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
       aggregate: false,
       mode: SearchSearchRequest_mode.preview,
     });
+    if (this.timeOutReference) {
+      clearTimeout(this.timeOutReference);
+    }
     this.pollAlerts();
   }
 
@@ -200,7 +203,9 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
     () => {
       this.lastUpdateTime = new Date().toISOString();
       this.timeOutReference = setTimeout(() => {
-        this.pollAlerts();
+        if (Utility.getInstance().getLoginUser()) {
+            this.pollAlerts();
+        }
       }, 30000);
     });
     this.subscriptions.push(this.alertSubscription);

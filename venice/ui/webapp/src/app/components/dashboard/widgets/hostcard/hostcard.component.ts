@@ -8,6 +8,7 @@ import { FlipState } from '@app/components/shared/flip/flip.component';
 import { Subscription } from 'rxjs';
 import { ClusterHost } from '@sdk/v1/models/generated/cluster';
 import { ClusterService } from '@app/services/generated/cluster.service';
+import { Utility } from '@app/common/Utility';
 
 @Component({
   selector: 'app-dsbdhosts',
@@ -87,6 +88,11 @@ export class HostCardComponent implements OnInit, OnDestroy {
         this.statData.value = this.hosts.length.toString();
         this.cardState = CardStates.READY;
       },
+      (error) => {
+        if (Utility.getInstance().getControllerService()) {
+         Utility.getInstance().getControllerService().invokeRESTErrorToaster('Fail to get hosts', error);
+        }
+      }
     );
     this.subscriptions.push(subscription);
   }
