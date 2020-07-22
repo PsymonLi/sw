@@ -103,11 +103,9 @@ static void
 pciemgr_monitor(int argc, char *argv[])
 {
     pcieevhandler pcieevh;
-    pciemgr *pciemgr = new class pciemgr("pcieutil", pcieevh, EV_DEFAULT);
+    pciemgr pciemgr("pcieutil", pcieevh, EV_DEFAULT);
     printf("Monitoring pcie events, ^C to exit...\n");
     evutil_run(EV_DEFAULT);
-    delete pciemgr;
-
 }
 
 static void
@@ -126,10 +124,9 @@ pciemgr_powermode(int argc, char *argv[])
         return;
     }
 
-    pciemgr *pciemgr = new class pciemgr("pcieutil");
-    if (pciemgr->powermode(powermode) < 0) {
+    pciemgr pciemgr("pcieutil");
+    if (pciemgr.powermode(powermode) < 0) {
         fprintf(stderr, "powermode(%d) failed\n", powermode);
-        return;
     }
 }
 

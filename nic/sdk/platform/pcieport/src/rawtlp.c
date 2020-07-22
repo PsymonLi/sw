@@ -106,7 +106,10 @@ rawtlp_send(const int port,
     }
 
  out_unlock:
-    rawtlp_unlock();
+    if (rawtlp_unlock() < 0) {
+        pciesys_logerror("rawtlp%d unlock: %s\n", port, strerror(errno));
+        if (r == 0) r = -1;
+    }
  out:
     return r;
 }

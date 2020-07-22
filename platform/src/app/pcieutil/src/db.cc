@@ -207,24 +207,24 @@ dberr_display(db_err_activity_log_entry_t *dberr, const int flags)
 #define PDB(fmt, field) \
     printf("%-*s: " fmt "\n", w, #field, dberr->field)
 
-    PDB("%ld", vld);
+    PDB("%" PRIu64, vld);
     if ((flags & DBF_QSTATE) &&
         lif_qstate_map_qinfo(qstate_addr, &qinfo)) {
-        printf("%-*s: 0x%lx (qstateaddr 0x%lx lif %d qtype %d qid %d)\n",
+        printf("%-*s: 0x%" PRIx64 " "
+               "(qstateaddr 0x%" PRIx64 " lif %d qtype %d qid %d)\n",
                w, "qstateaddr_or_qid", dberr->qstateaddr_or_qid,
-               qstate_addr,
-               qinfo.lif, qinfo.qtype, qinfo.qid);
+               qstate_addr, qinfo.lif, qinfo.qtype, qinfo.qid);
     } else {
-        PDB("0x%lx", qstateaddr_or_qid);
+        PDB("0x%" PRIx64, qstateaddr_or_qid);
     }
-    PDB("0x%lx", pid_or_lif_type);
-    PDB("%ld", cnt);
-    PDB("%ld", doorbell_merged);
-    PDB("%ld", addr_conflict);
-    PDB("%ld", tot_ring_err);
-    PDB("%ld", host_ring_err);
-    PDB("%ld", pid_fail);
-    PDB("%ld", qid_ovflow);
+    PDB("0x%" PRIx64, pid_or_lif_type);
+    PDB("%" PRIu64, cnt);
+    PDB("%" PRIu64, doorbell_merged);
+    PDB("%" PRIu64, addr_conflict);
+    PDB("%" PRIu64, tot_ring_err);
+    PDB("%" PRIu64, host_ring_err);
+    PDB("%" PRIu64, pid_fail);
+    PDB("%" PRIu64, qid_ovflow);
 }
 
 static void

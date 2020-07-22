@@ -109,7 +109,7 @@ linkpoll(int argc, char *argv[])
             polltm_us = strtoul(optarg, NULL, 0);
             break;
         case 'T': {
-            u_int32_t totaltm_sec = strtoul(optarg, NULL, 0);
+            u_int64_t totaltm_sec = strtoull(optarg, NULL, 0);
             totaltm = totaltm_sec * 1000000;
             break;
         }
