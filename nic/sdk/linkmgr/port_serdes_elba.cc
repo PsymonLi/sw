@@ -5,7 +5,6 @@
 #include "port_serdes.hpp"
 #include "linkmgr_types.hpp"
 #include "linkmgr_internal.hpp"
-#include "include/sdk/asic/elba/elb_mx_api.h"
 #ifdef ELBA
 #include "third-party/avago/build_elba/include/aapl/aapl.h"
 #else

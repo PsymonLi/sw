@@ -24,10 +24,10 @@
             "ports"     :
             [
                { "port_num" : "0", "mac_id" : "0", "mac_ch" : "0", "sbus_addr" : "0", "tm_port" : "0" },
-               { "port_num" : "2", "mac_id" : "0", "mac_ch" : "2", "sbus_addr" : "0", "tm_port" : "2" },
-               { "port_num" : "4", "mac_id" : "0", "mac_ch" : "4", "sbus_addr" : "0", "tm_port" : "1" },
-               { "port_num" : "6", "mac_id" : "0", "mac_ch" : "6", "sbus_addr" : "0", "tm_port" : "3" },
-               { "port_num" : "8", "mac_id" : "1", "mac_ch" : "0", "sbus_addr" : "0", "tm_port" : "4" }
+               { "port_num" : "1", "mac_id" : "0", "mac_ch" : "2", "sbus_addr" : "0", "tm_port" : "2" },
+               { "port_num" : "2", "mac_id" : "0", "mac_ch" : "4", "sbus_addr" : "0", "tm_port" : "1" },
+               { "port_num" : "3", "mac_id" : "0", "mac_ch" : "6", "sbus_addr" : "0", "tm_port" : "3" },
+               { "port_num" : "4", "mac_id" : "1", "mac_ch" : "0", "sbus_addr" : "0", "tm_port" : "4" }
             ]
         }
     ],
@@ -79,10 +79,10 @@
     "logical_ports"     :
     [
         {"port_num" : "1", "asic" : "0", "asic_port" : "0" },
-        {"port_num" : "3", "asic" : "0", "asic_port" : "2" },
-        {"port_num" : "5", "asic" : "0", "asic_port" : "4" },
-        {"port_num" : "7", "asic" : "0", "asic_port" : "6" },
-        {"port_num" : "9", "asic" : "0", "asic_port" : "8" }
+        {"port_num" : "3", "asic" : "0", "asic_port" : "1" },
+        {"port_num" : "5", "asic" : "0", "asic_port" : "2" },
+        {"port_num" : "7", "asic" : "0", "asic_port" : "3" },
+        {"port_num" : "9", "asic" : "0", "asic_port" : "4" }
     ],
 
     "bx" : {
