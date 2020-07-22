@@ -8,9 +8,9 @@ import iota.test.utils.naples_host as naples_host_utils
 from collections import defaultdict
 import yaml
 
-def getInterfaceVlanID(node, intf, on_naples=False):
+def getInterfaceVlanID(node, intf, on_naples=False, device_name = None):
     if on_naples:
-        vlan = naples_utils.GetVlanID(node, intf)
+        vlan = naples_utils.GetVlanID(node, intf, device_name)
     else:
         vlan = host_utils.GetVlanID(node, intf)
     if vlan == 0:
@@ -23,25 +23,25 @@ def getParentIntf(host_intf_name):
     parent_intf_name = parent_intf_name.split(".")[0]
     return parent_intf_name
 
-def GetNaplesHostInterfacesList(naples_node):
+def GetNaplesHostInterfacesList(naples_node, device_name = None):
     #GetNaplesHostInterfaces API returns only ETH_HOST interfaces
-    eth_host_intfs = list(api.GetNaplesHostInterfaces(naples_node))
+    eth_host_intfs = list(api.GetNaplesHostInterfaces(naples_node, device_name))
     #GetHostInternalMgmtInterfaces API returns only ETH_HOST_MGMT interfaces
-    eth_host_mgmt_intfs = naples_host_utils.GetHostInternalMgmtInterfaces(naples_node)
+    eth_host_mgmt_intfs = naples_host_utils.GetHostInternalMgmtInterfaces(naples_node, device_name)
     host_intf_list = eth_host_intfs + eth_host_mgmt_intfs
     return host_intf_list
 
-def getNaplesIntfMacAddrDict(naples_node):
+def getNaplesIntfMacAddrDict(naples_node, device_name = None):
     naples_intf_mac_dict = dict()
 
-    naples_intf_list = naples_host_utils.getNaplesInterfaces(naples_node)
+    naples_intf_list = naples_host_utils.getNaplesInterfaces(naples_node) # naples interface-names are common
     for intf in naples_intf_list:
-        intf_mac_addr = naples_utils.GetMACAddress(naples_node, intf)
-        naples_intf_mac_dict.update({intf: intf_mac_addr})
+        intf_mac_addr = naples_utils.GetMACAddress(naples_node, intf, device_name=device_name)
+        naples_intf_mac_dict.update({intf : intf_mac_addr})
 
     return naples_intf_mac_dict
 
-def changeIntfMacAddr(node, intf_mac_dict, on_naples=False, isRollback=False):
+def changeIntfMacAddr(node, intf_mac_dict, on_naples=False, isRollback=False, device_name = None):
     result = api.types.status.SUCCESS
     mac_offset = 200
 
@@ -57,8 +57,9 @@ def changeIntfMacAddr(node, intf_mac_dict, on_naples=False, isRollback=False):
                 # In case of FreeBSD, hitting "PS-728". Based on its resolution, will remove OS check here.
                 mac_offset += 1
             mac_addr_str = address_utils.formatMacAddr(mac_addr_int)
+
         if on_naples:
-            cmd = naples_utils.SetMACAddress(node, intf, mac_addr_str)
+            cmd = naples_utils.SetMACAddress(node, intf, mac_addr_str, device_name = device_name)
         else:
             cmd = host_utils.SetMACAddress(node, intf, mac_addr_str)
         if cmd.exit_code != 0:
@@ -67,11 +68,11 @@ def changeIntfMacAddr(node, intf_mac_dict, on_naples=False, isRollback=False):
             result = api.types.status.FAILURE
     return result
 
-def getNaplesIntfEndPoints(naples_node, naples_intf_mac_dict):
+def getNaplesIntfEndPoints(naples_node, naples_intf_mac_dict, device_name = None):
     naples_ep_set = set()
     for intf, mac_addr_str in naples_intf_mac_dict.items():
-        intf_mac_addr = naples_utils.GetMACAddress(naples_node, intf)
-        vlan = getInterfaceVlanID(naples_node, intf, True)
+        intf_mac_addr = naples_utils.GetMACAddress(naples_node, intf, device_name=device_name)
+        vlan = getInterfaceVlanID(naples_node, intf, True, device_name)
         naples_ep = (vlan, intf_mac_addr, intf)
         naples_ep_set.add(naples_ep)
 
@@ -105,21 +106,21 @@ def getWorkloadEndPoints(naples_node, wload_intf_mac_dict, wload_intf_vlan_map):
 
     return wload_ep_set
 
-def getNaplesHALEndPoints(naples_node):
+def getNaplesHALEndPoints(naples_node, device_name = None):
     hal_ep_set = set()
 
-    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "endpoint")
+    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "endpoint", device=device_name)
     if not result:
         api.Logger.critical("unknown response from Naples")
         return hal_ep_set
 
-    l2seg_vlan_dict = hal_show_utils.Getl2seg_vlan_mapping(naples_node)
+    l2seg_vlan_dict = hal_show_utils.Getl2seg_vlan_mapping(naples_node, device_name)
     api.Logger.verbose("Getl2seg_vlan_mapping: l2seg_vlan ", l2seg_vlan_dict)
 
-    ifId_lif_dict = hal_show_utils.GetIfId_lif_mapping(naples_node)
+    ifId_lif_dict = hal_show_utils.GetIfId_lif_mapping(naples_node, device_name)
     api.Logger.verbose("GetIfId_lif_mapping: if_lif ", ifId_lif_dict)
 
-    lifId_intfName_dict = hal_show_utils.GetLifId_intfName_mapping(naples_node)
+    lifId_intfName_dict = hal_show_utils.GetLifId_intfName_mapping(naples_node, device_name)
     api.Logger.verbose("GetLifId_intfName_mapping: lif_ifName ", lifId_intfName_dict)
 
     cmd = resp.commands[0]
@@ -208,9 +209,9 @@ def verifyPktFilters(intf_pktfilter_list, intf_pktfilter_dict, bc=False, mc=Fals
 
     return result
 
-def getAllIntfPktFilter(naples_node):
+def getAllIntfPktFilter(naples_node, device_name = None):
     intf_pktfilter_dict = defaultdict(list)
-    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "lif")
+    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "lif", device=device_name)
     if not result:
         api.Logger.critical("unknown response from Naples")
         return intf_pktfilter_dict, result
@@ -250,13 +251,12 @@ def getAllIntfPktFilter(naples_node):
 """
    # Return mapping of native interfaces on host and all vlans under it
 """
-def getHostIntf_vlan_map(node):
+def getHostIntf_vlan_map(node, device_name = None):
     host_intf_vlan_map = defaultdict(set)
-    for w in api.GetWorkloads():
-        if node != w.node_name: continue
+    for w in api.GetWorkloads(node, device_name):
         vlan = w.encap_vlan if w.encap_vlan else 8192
         host_intf_vlan_map[w.parent_interface].add(vlan)
-    host_intf_list = GetNaplesHostInterfacesList(node)
+    host_intf_list = GetNaplesHostInterfacesList(node, device_name)
     for intf in host_intf_list:
         vlan = getInterfaceVlanID(node, intf)
         host_intf_vlan_map[intf].add(vlan)
@@ -266,12 +266,12 @@ def getHostIntf_vlan_map(node):
    # Return mapping of native & tagged interfaces on host and
    #        their corresponding parent interface
 """
-def getHostIntf_parentIntf_map(node):
+def getHostIntf_parentIntf_map(node, device_name = None):
     host_intf_parentIntf_map = defaultdict()
-    for w in api.GetWorkloads():
+    for w in api.GetWorkloads(node, device_name):
         if node != w.node_name: continue
         host_intf_parentIntf_map[w.interface] = w.parent_interface
-    host_intf_list = GetNaplesHostInterfacesList(node)
+    host_intf_list = GetNaplesHostInterfacesList(node, device_name)
     for intf in host_intf_list:
         host_intf_parentIntf_map[intf] = intf
     return host_intf_parentIntf_map
@@ -279,28 +279,27 @@ def getHostIntf_parentIntf_map(node):
 """
    # Return set of workload interfaces on naples_node
 """
-def getNaplesWorkload_Intf(naples_node):
+def getNaplesWorkload_Intf(naples_node, device_name = None):
     wload_intf_set = set()
-    for w in api.GetWorkloads():
-        if naples_node != w.node_name: continue
+    for w in api.GetWorkloads(naples_node, device_name):
         wload_intf_set.add(w.interface)
     return wload_intf_set
 
-def getNaplesHALmcastEndPoints(naples_node):
+def getNaplesHALmcastEndPoints(naples_node, device_name = None):
     hal_mc_ep_set = set()
 
-    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "multicast")
+    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "multicast", device=device_name)
     if not result:
         api.Logger.error("unknown response from Naples")
         return hal_mc_ep_set
 
-    l2seg_vlan_dict = hal_show_utils.Getl2seg_vlan_mapping(naples_node)
+    l2seg_vlan_dict = hal_show_utils.Getl2seg_vlan_mapping(naples_node, device=device_name)
     api.Logger.verbose("Getl2seg_vlan_mapping: l2seg_vlan ", l2seg_vlan_dict)
 
-    ifId_lif_dict = hal_show_utils.GetIfId_lif_mapping(naples_node)
+    ifId_lif_dict = hal_show_utils.GetIfId_lif_mapping(naples_node, device=device_name)
     api.Logger.verbose("GetIfId_lif_mapping: ifId_lif_dict ", ifId_lif_dict)
 
-    lifId_intfName_dict = hal_show_utils.GetLifId_intfName_mapping(naples_node)
+    lifId_intfName_dict = hal_show_utils.GetLifId_intfName_mapping(naples_node, device=device_name)
     api.Logger.verbose("GetLifId_intfName_mapping: lifId_intfName_dict ", lifId_intfName_dict)
 
     cmd = resp.commands[0]
@@ -337,17 +336,17 @@ def add_mc_mac_for_all_vlans(mac_addr_str):
 
     return True
 
-def getHostIntfMcastEndPoints(naples_node):
+def getHostIntfMcastEndPoints(naples_node, device_name = None):
     host_mc_ep_set = set()
 
     #Get interface and its parent interface mapping
-    host_intf_parentIntf_map = getHostIntf_parentIntf_map(naples_node)
+    host_intf_parentIntf_map = getHostIntf_parentIntf_map(naples_node, device_name)
     #Get a map of native interface and all vlans under it
-    host_intf_vlan_map = getHostIntf_vlan_map(naples_node)
+    host_intf_vlan_map = getHostIntf_vlan_map(naples_node, device_name)
     #Get a set of all workload interfaces on our Naples node
-    wload_intf_set = getNaplesWorkload_Intf(naples_node)
+    wload_intf_set = getNaplesWorkload_Intf(naples_node, device_name)
     #Get a set of all native interfaces in host (which has naples node)
-    host_intf_set = set(GetNaplesHostInterfacesList(naples_node))
+    host_intf_set = set(GetNaplesHostInterfacesList(naples_node, device_name))
     #Final list of interfaces is union of workload interfaces and host interfaces
     host_intf_list = list(wload_intf_set.union(host_intf_set))
 
@@ -374,13 +373,13 @@ def getHostIntfMcastEndPoints(naples_node):
                 host_mc_ep_set.add(host_mc_ep)
     return host_mc_ep_set
 
-def getNaplesIntfMcastEndPoints(naples_node):
+def getNaplesIntfMcastEndPoints(naples_node, device_name = None):
     naples_mc_ep_set = set()
     # Get a list of interfaces on Naples ARM
     naples_intf_list = naples_host_utils.getNaplesInterfaces(naples_node)
     for intf in naples_intf_list:
-        vlan_id = getInterfaceVlanID(naples_node, intf, True)
-        mcastMAC_list = naples_utils.GetMcastMACAddress(naples_node, intf)
+        vlan_id = getInterfaceVlanID(naples_node, intf, True, device_name)
+        mcastMAC_list = naples_utils.GetMcastMACAddress(naples_node, intf, device_name)
         for mac in mcastMAC_list:
             # Skip for EDP (Extreme Discover Protocol) mac.
             # In linux its being shown as multicast.

@@ -166,6 +166,9 @@ class Node(object):
         def BondIntfs(self):
             return self.__bond_intfs
         
+        def MgmtIntf(self):
+            return self.__mgmt_intf
+
         def Uuid(self):
             return self.__uuid
 
@@ -221,6 +224,9 @@ class Node(object):
                         vf_list = self.__vf_intfs.get(host_intf, [])
                         vf_list.append(intf)
                         self.__vf_intfs[host_intf] = vf_list
+
+        def SetManagementIntfs(self, mgmt_intf):
+            self.__mgmt_intf = mgmt_intf
 
         def SetPorts(self, ports, speed):
             self.__ports = ports
@@ -777,7 +783,7 @@ class Node(object):
             key = device
         return self.__devices[key]
 
-    def GetDefaultDeivce(self):
+    def GetDefaultDevice(self):
         return self.__get_device(None)
 
     def UUID(self, device = None):
@@ -813,6 +819,19 @@ class Node(object):
                 iflist.extend(self.__get_device(dev).BondIntfs())
             return iflist
  
+    def MgmtInterfaces(self, device = None):
+        iflist = []
+        if device:
+            dev = self.__get_device(device)
+            if dev.MgmtIntf():
+                iflist.append(dev.MgmtIntf())
+        else:
+            for dev_name in self.GetDevices():
+                dev = self.__get_device(dev_name)
+                if dev.MgmtIntf():
+                    iflist.append(dev.MgmtIntf())
+        return iflist
+
     def VirtualFunctionInterfaces(self, device = None, parent_intf = None):
         if device:
             dev = self.__get_device(device)
@@ -1027,6 +1046,10 @@ class Node(object):
                         Logger.info("Host with SRIOV Interfaces :%s" % intfs.interfaces)
                         device.SetVirtualFuncIntfs(intfs.interfaces)
                         self.__host_intfs.extend(intfs.interfaces)
+                    elif intfs.type == topo_pb2.INTERFACE_TYPE_MGMT:
+                        Logger.info("Host with Mgmt Interfaces :%s" % intfs.interfaces)
+                        if intfs.interfaces and intfs.interfaces[0]:
+                            device.SetManagementIntfs(intfs.interfaces[0])
 
                 device.SetNicIntMgmtIP(naples_config.naples_ip_address)
                 Logger.info("Nic: %s UUID: %s" % (naples_config.name, naples_config.node_uuid))
@@ -1035,7 +1058,7 @@ class Node(object):
             if GlobalOptions.dryrun:
                 self.__host_intfs = []
             else:
-                device = self.GetDefaultDeivce()
+                device = self.GetDefaultDevice()
                 assert(device)
                 device.SetHostIntfs(resp.third_party_nic_config.host_intfs)
                 self.__host_intfs = resp.third_party_nic_config.host_intfs
@@ -1652,7 +1675,7 @@ class Topology(object):
                 for _, device in n.GetDevices().items():
                     uuid_map[device.Name()] = device.Uuid()
                 #Also set default to first
-                device = n.GetDefaultDeivce()
+                device = n.GetDefaultDevice()
                 assert(device)
                 uuid_map[n.Name()] = device.Uuid()
         return uuid_map
@@ -1669,14 +1692,17 @@ class Topology(object):
         return ips
 
     def GetNaplesHostnames(self):
-        ips = []
-        for n in self.__nodes.values():
-            if n.IsNaples():
-                ips.append(n.Name())
-        return ips
+        naples_hosts = []
+        for node_name, node in self.__nodes.items():
+            if node.IsNaples():
+                naples_hosts.append(node_name)
+        return naples_hosts
 
     def GetNaplesHostInterfaces(self, name, device_name=None):
         return self.__nodes[name].HostInterfaces(device_name)
+
+    def GetNaplesHostMgmtInterfaces(self, name, device_name=None):
+        return self.__nodes[name].MgmtInterfaces(device_name)
 
     def GetNaplesBondInterfaces(self, node_name, device_name=None):
         return self.__nodes[node_name].BondInterfaces(device_name)
@@ -1801,8 +1827,12 @@ class Topology(object):
     def GetMaxConcurrentWorkloads(self, node_name):
         return self.__nodes[node_name].GetMaxConcurrentWorkloads()
 
-    def GetNicType(self, node_name):
-        return self.__nodes[node_name].GetNicType()
+    def GetNicType(self, node_name, device_name=None):
+        devices = self.__nodes[node_name].GetDevices()
+        if device_name:
+            return devices[device_name].NicType()
+
+        return self.GetDefaultDevice(node_name).NicType()
 
     def GetNodes(self):
         return list(self.__nodes.values())
@@ -1813,8 +1843,7 @@ class Topology(object):
         if device_name:
             return devices[device_name].GetMode()
 
-        for _, device in devices.items():
-            return device.GetMode()
+        return self.GetDefaultDevice(node_name).GetMode()
 
     def SetNicMode(self, mode, node_name, device_name=None):
         node =  self.__nodes[node_name]
@@ -1836,11 +1865,11 @@ class Topology(object):
     def SetupTestBedNetwork(self):
         return store.GetTestbed().SetupTestBedNetwork()
 
-    def GetDefaultDeivce(self, node_name):
-        return self.__nodes[node_name].GetDefaultDeivce()
+    def GetDefaultDevice(self, node_name):
+        return self.__nodes[node_name].GetDefaultDevice()
     
     def GetDefaultNaples(self, node_name):
-        device = self.GetDefaultDeivce(node_name)
+        device = self.GetDefaultDevice(node_name)
         assert(device)
         return device.Name()
 

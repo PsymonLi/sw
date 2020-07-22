@@ -321,6 +321,10 @@ jobs:
     labels: ["CI-Sanity-Build", "CI-Sanity-SWM"]
   iota/test/standalone/regression/swm:
     labels: ["CI-Regression", "CI-Regression-SWM"]
+  iota/test/standalone/dualnic/linux:
+    labels: ["CI-DualNIC"]
+  iota/test/standalone/dualnic/windows:
+    labels: ["CI-DualNIC"]
   iota/test/venice/regression:
     labels: ["CI-Regression", "CI-Regression-Venice"]
   iota/test/venice/rollout/rolloutbrelm:
@@ -408,8 +412,8 @@ dependencies:
     - reference: iota/test/standalone/precheckin/esx
     - reference: iota/test/standalone/precheckin/linux
     - reference: iota/test/standalone/precheckin/windows
-    - reference: iota/test/standalone/precheckin/athena
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
+    - reference: iota/test/standalone/precheckin/athena
     - reference: iota/test/venice
     - reference: iota/test/venice/vcenter
   iota/test/apulu:

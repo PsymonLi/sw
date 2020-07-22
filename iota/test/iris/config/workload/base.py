@@ -382,6 +382,7 @@ class NodeWorkloads(object):
                 intf.interface = intfObj.HostInterface
                 intf.parent_interface = intfObj.ParentHostInterface
                 intf.interface_index = intfObj.InterfaceIndex
+                intf.device_name = device_name
                 wl_msg.workload_type = api.GetWorkloadTypeForNode(self.GetNodeName())
                 wl_msg.workload_image = api.GetWorkloadImageForNode(self.GetNodeName())
                 wl_msg.mgmt_ip = api.GetMgmtIPAddress(wl_msg.node_name)
@@ -417,6 +418,7 @@ class NodeWorkloads(object):
                     wl_msg.workload_name = self.GetNodeName() + "_" + intfObj.HostInterface + "_mv%d" % (subif_indx+1)
                 intf.parent_interface = intfObj.ParentHostInterface
                 intf.interface_index = intfObj.InterfaceIndex
+                intf.device_name = device_name
                 wl_msg.workload_type = api.GetWorkloadTypeForNode(self.GetNodeName())
                 wl_msg.workload_image = api.GetWorkloadImageForNode(self.GetNodeName())
                 wl_msg.mgmt_ip = api.GetMgmtIPAddress(wl_msg.node_name)

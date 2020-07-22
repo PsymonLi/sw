@@ -40,7 +40,6 @@ def Trigger(tc):
 
     testStatus = api.types.status.SUCCESS
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    tc.cmd_cookies = []
 
     for n in tc.nodes:
         # we use halctl until we find better, consistent way
@@ -51,7 +50,6 @@ def Trigger(tc):
             api.Trigger_AddNaplesCommand(req, n, "/nic/bin/halctl debug port --port %s --admin-state down" % naplesPortNames[np])
             api.Trigger_AddNaplesCommand(req, n, "/nic/bin/halctl debug port --port %s --admin-state up" % naplesPortNames[np])
         api.Trigger_AddNaplesCommand(req, n, "sleep %d" % waitTime, timeout=300)
-        tc.cmd_cookies.append(n)
 
     tc.resp = api.Trigger(req)
 
@@ -166,9 +164,10 @@ def Verify(tc):
     testStatus = api.types.status.SUCCESS
 
     for before_cmd, after_cmd in zip(tc.before_resp.commands, tc.after_resp.commands):
+        assert(before_cmd.node_name == after_cmd.node_name)
         beforeList = parsePortYaml(before_cmd.stdout)
         afterList = parsePortYaml(after_cmd.stdout)
-        testStatus = validateResults(tc.cmd_cookies[cookie_idx], beforeList, afterList)
+        testStatus = validateResults(before_cmd.node_name, beforeList, afterList)
         cookie_idx += 1
         if testStatus != api.types.status.SUCCESS:
             break

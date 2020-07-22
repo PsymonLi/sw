@@ -157,6 +157,7 @@ def AddNaplesWorkloads(target_node=None):
         intf.interface = wl.interface
         intf.parent_interface = wl.interface
         intf.interface_type = topo_svc.INTERFACE_TYPE_VSS
+        intf.device_name = wl.device_name
         wl_msg.workload_type  = topo_svc.WorkloadType.Value('WORKLOAD_TYPE_BARE_METAL')
     if len(req.workloads):
         resp = api.AddWorkloads(req, skip_store=True)
@@ -200,6 +201,7 @@ def __readd_classic_workloads(target_node = None):
         intf.interface_type = wl.interface_type
         intf.interface = wl.parent_interface
         intf.parent_interface = wl.parent_interface
+        intf.device_name = wl.device_name
         wl_msg.workload_type = wl.workload_type
         wl_msg.workload_image = wl.workload_image
         wl_msg.mgmt_ip = api.GetMgmtIPAddress(wl_msg.node_name)

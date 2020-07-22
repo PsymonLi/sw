@@ -17,7 +17,7 @@ def Trigger(tc):
     print("\t\t\t########################################################################")
 
     # Change mode from TRANSPARENT, FLOWAWARE => TRANSPARENT, ENFORCE
-    ret = netagent_api.switch_profile("TRANSPARENT", "ENFORCED")
+    ret = netagent_api.switch_profile(fwd_mode="TRANSPARENT", policy_mode="ENFORCED")
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to switch profile")
         return ret

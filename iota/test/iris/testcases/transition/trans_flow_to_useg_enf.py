@@ -21,7 +21,7 @@ def Trigger(tc):
     api.SetConfigNicMode("hostpin")
 
     # Change mode from TRANSPARENT, FLOWAWARE => INSERTION, ENFORCE
-    ret = netagent_api.switch_profile("INSERTION", "ENFORCED")
+    ret = netagent_api.switch_profile(fwd_mode="INSERTION", policy_mode="ENFORCED")
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to switch profile")
         return ret

@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-import iota.test.iris.utils.naples as naples
+import iota.test.utils.naples as naples
 import iota.test.utils.naples_host as host
 import iota.harness.api as api
 import iota.test.iris.utils.naples_workloads as naples_workload_utils

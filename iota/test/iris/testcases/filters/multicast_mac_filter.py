@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 import iota.harness.api as api
+from iota.harness.infra.utils import parser
 import iota.harness.infra.resmgr as resmgr
 import iota.test.iris.utils.address as address_utils
 import iota.test.iris.utils.debug as debug_utils
@@ -14,53 +15,60 @@ import yaml
 ipv4_allocator = resmgr.IpAddressStep("239.1.5.1", "0.0.0.1")
 __HPING_COUNT = 8
 
-def getAllmcastEndPointsView(naples_node):
+def getAllmcastEndPointsView(naples_node, device_name):
     # Host interface mcast endpoints
-    host_mc_ep_set = filters_utils.getHostIntfMcastEndPoints(naples_node)
+    host_mc_ep_set = filters_utils.getHostIntfMcastEndPoints(naples_node, device_name)
 
     # Naples intf mcast endpoints
-    naples_mc_ep_set = filters_utils.getNaplesIntfMcastEndPoints(naples_node)
+    naples_mc_ep_set = filters_utils.getNaplesIntfMcastEndPoints(naples_node, device_name)
 
     # HAL view of endpoints
-    hal_mc_ep_set = filters_utils.getNaplesHALmcastEndPoints(naples_node)
+    hal_mc_ep_set = filters_utils.getNaplesHALmcastEndPoints(naples_node, device_name)
 
     #Keeping them separate as it is useful for debugging in scale
     return host_mc_ep_set, naples_mc_ep_set, hal_mc_ep_set
 
 def verifyMCEndPoints(tc):
-    host_mc_ep_view = tc.host_mc_ep_set
-    naples_mc_ep_view = tc.naples_mc_ep_set
-    hal_mc_ep_view = tc.hal_mc_ep_set
+    for device_name in api.GetDeviceNames(tc.naples_node):
+        data = tc.device_data[device_name]
+        host_mc_ep_view = data.host_mc_ep_set
+        naples_mc_ep_view = data.naples_mc_ep_set
+        hal_mc_ep_view = data.hal_mc_ep_set
 
-    # HAL's view of endpoints = Union of workload + Host + Naples Intf
-    host_view = host_mc_ep_view | naples_mc_ep_view
-    return filters_utils.verifyEndpoints(host_view, hal_mc_ep_view)
+        # HAL's view of endpoints = Union of workload + Host + Naples Intf
+        host_view = host_mc_ep_view | naples_mc_ep_view
+        if not filters_utils.verifyEndpoints(host_view, hal_mc_ep_view):
+            return False
+    return True
 
 def verifyMCTrafficStats(tc):
     result = True
-    statsCount = tc.statsCount
-    preStatsCount = tc.preStatsCount
-    postStatsCount = tc.postStatsCount
 
-    for intf, mcStats in statsCount.items():
-        #MC Frame stats before trigger
-        preStats = preStatsCount[intf]
-        #MC Frame stats after trigger
-        postStats = postStatsCount[intf]
-        #Expected MC Frame stats increase because of trigger
-        expectedStats = statsCount[intf]
-        #Actual MC Frame stats increase, actualStats = postStats - preStats
-        actualStats = list(map(operator.sub, postStats, preStats))
-        api.Logger.debug("verifyMCTrafficStats info for ", intf, expectedStats, actualStats, preStats, postStats)
-        # Interested in multicast rx stats only
-        if actualStats[1] != expectedStats[1]:
-            result = False
-            api.Logger.error("verifyMCTrafficStats failed for ", intf, expectedStats, actualStats, preStats, postStats)
+    for device_name in api.GetDeviceNames(tc.naples_node):
+        data = tc.device_data[device_name]
+        statsCount = data.statsCount
+        preStatsCount = data.preStatsCount
+        postStatsCount = data.postStatsCount
+
+        for intf, mcStats in statsCount.items():
+            #MC Frame stats before trigger
+            preStats = preStatsCount[intf]
+            #MC Frame stats after trigger
+            postStats = postStatsCount[intf]
+            #Expected MC Frame stats increase because of trigger
+            expectedStats = statsCount[intf]
+            #Actual MC Frame stats increase, actualStats = postStats - preStats
+            actualStats = list(map(operator.sub, postStats, preStats))
+            api.Logger.debug("verifyMCTrafficStats info for ", intf, expectedStats, actualStats, preStats, postStats)
+            # Interested in multicast rx stats only
+            if actualStats[1] != expectedStats[1]:
+                result = False
+                api.Logger.error("verifyMCTrafficStats failed for ", intf, expectedStats, actualStats, preStats, postStats)
     return result
 
-def GetLifMCFramesTxRxStats(naples_node, lif_id):
+def GetLifMCFramesTxRxStats(naples_node, device_name, lif_id):
     args = "--id " + str(lif_id)
-    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "lif", args)
+    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "lif", device=device_name, args=args)
     mcframesok = [0, 0]
     if not result:
         api.Logger.critical("unknown response from Naples")
@@ -83,10 +91,10 @@ def GetLifMCFramesTxRxStats(naples_node, lif_id):
 
     return mcframesok
 
-def GetMCFramesTxRxStats(naples_node, statsObj, intfName2lifId_dict):
+def GetMCFramesTxRxStats(naples_node, device_name, statsObj, intfName2lifId_dict):
     for intf in statsObj.keys():
         lif_id = intfName2lifId_dict[intf]
-        statsObj[intf] = GetLifMCFramesTxRxStats(naples_node, lif_id)
+        statsObj[intf] = GetLifMCFramesTxRxStats(naples_node, device_name, lif_id)
     return
 
 def initiateMCtraffic(w1, w2, statsCount):
@@ -160,7 +168,9 @@ def triggerMCtraffic(tc):
     workload_pairs = tc.workloads
     naples_node = tc.naples_node
     #Get stats before trigger
-    GetMCFramesTxRxStats(naples_node, tc.preStatsCount, tc.intfName2lifId_dict)
+    for device_name in api.GetDeviceNames(naples_node):
+        data = tc.device_data[device_name]
+        GetMCFramesTxRxStats(naples_node, device_name, data.preStatsCount, data.intfName2lifId_dict)
 
     #num_pairs = 0
     for pair in workload_pairs:
@@ -173,11 +183,13 @@ def triggerMCtraffic(tc):
         api.Logger.verbose("workload2 : ", w2.workload_name, w2.node_name, w2.uplink_vlan, w2.interface, w2.parent_interface, w2.IsNaples())
         if w1.node_name == naples_node:
             #printMCstats(w1, w2, tc, "BeforeHPING")
-            result = initiateMCtraffic(w1, w2, tc.statsCount)
+            data = tc.device_data[w1.device_name]
+            result = initiateMCtraffic(w1, w2, data.statsCount)
             #printMCstats(w1, w2, tc, "AfterHPING")
         else:
             #printMCstats(w2, w1, tc, "BeforeHPING")
-            result = initiateMCtraffic(w2, w1, tc.statsCount)
+            data = tc.device_data[w2.device_name]
+            result = initiateMCtraffic(w2, w1, data.statsCount)
             #printMCstats(w2, w1, tc, "AfterHPING")
         if result != api.types.status.SUCCESS:
             #In case of failure, bail out immediately
@@ -186,7 +198,9 @@ def triggerMCtraffic(tc):
         #break
 
     #Get stats after trigger
-    GetMCFramesTxRxStats(naples_node, tc.postStatsCount, tc.intfName2lifId_dict)
+    for device_name in api.GetDeviceNames(naples_node):
+        data = tc.device_data[device_name]
+        GetMCFramesTxRxStats(naples_node, device_name, data.postStatsCount, data.intfName2lifId_dict)
 
     return result
 
@@ -202,8 +216,8 @@ def getinitStatsObjects(intf_list):
         postStatsCount[intf] = [0, 0]
     return statsCount, preStatsCount, postStatsCount
 
-def getStatObjects(naples_node):
-    intf_list = list(api.GetNaplesHostInterfaces(naples_node))
+def getStatObjects(naples_node, device_name):
+    intf_list = list(api.GetNaplesHostInterfaces(naples_node, device_name))
     api.Logger.verbose("getStatObjects : intf_list ", intf_list)
     return getinitStatsObjects(intf_list)
 
@@ -222,8 +236,16 @@ def Setup(tc):
         api.Logger.error("MC MAC filter : Setup -> No Naples Topology - So skipping the TC")
         return api.types.status.IGNORED
 
-    tc.intfName2lifId_dict = hal_show_utils.GetIntfName2LifId_mapping(tc.naples_node)
-    tc.statsCount, tc.preStatsCount, tc.postStatsCount = getStatObjects(tc.naples_node)
+    tc.device_data = defaultdict()
+    for device_name in api.GetDeviceNames(tc.naples_node):
+        data = parser.Dict2Object({})
+        intfName2lifId_dict = hal_show_utils.GetIntfName2LifId_mapping(tc.naples_node)
+        statsCount, preStatsCount, postStatsCount = getStatObjects(tc.naples_node, device_name)
+        setattr(data, 'intfName2lifId_dict', intfName2lifId_dict)
+        setattr(data, 'statsCount', statsCount)
+        setattr(data, 'preStatsCount', preStatsCount)
+        setattr(data, 'postStatsCount', postStatsCount)
+        tc.device_data[device_name] = data
 
     api.Logger.info("MC MAC filter : Setup final result - ", result)
     debug_utils.collect_showtech(result)
@@ -235,10 +257,15 @@ def Trigger(tc):
     if tc.skip: return api.types.status.IGNORED
 
     # Triggers done - Now build endpoint view of Host and Naples
-    tc.host_mc_ep_set, tc.naples_mc_ep_set, tc.hal_mc_ep_set = getAllmcastEndPointsView(tc.naples_node)
-    api.Logger.debug("getAllmcastEndPointsView: host_mc_ep_set ", len(tc.host_mc_ep_set), tc.host_mc_ep_set)
-    api.Logger.debug("getAllmcastEndPointsView: naples_mc_ep_set ", len(tc.naples_mc_ep_set), tc.naples_mc_ep_set)
-    api.Logger.debug("getAllmcastEndPointsView: hal_mc_ep_set ", len(tc.hal_mc_ep_set), tc.hal_mc_ep_set)
+    for device_name in api.GetDeviceNames(tc.naples_node):
+        data = tc.device_data[device_name]
+        host_mc_ep_set, naples_mc_ep_set, hal_mc_ep_set = getAllmcastEndPointsView(tc.naples_node, device_name)
+        api.Logger.debug("getAllmcastEndPointsView: host_mc_ep_set ", len(host_mc_ep_set), host_mc_ep_set)
+        api.Logger.debug("getAllmcastEndPointsView: naples_mc_ep_set ", len(naples_mc_ep_set), naples_mc_ep_set)
+        api.Logger.debug("getAllmcastEndPointsView: hal_mc_ep_set ", len(hal_mc_ep_set), hal_mc_ep_set)
+        setattr(data, 'host_mc_ep_set', host_mc_ep_set)
+        setattr(data, 'naples_mc_ep_set', naples_mc_ep_set)
+        setattr(data, 'hal_mc_ep_set', hal_mc_ep_set)
 
     # Trigger multicast Traffic
     result = triggerMCtraffic(tc)

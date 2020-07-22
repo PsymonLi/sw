@@ -244,7 +244,7 @@ def create_ep_info(tc, wl, new_node, migr_state, old_node):
     assert(len(objects) == 1)
     object                          = copy.deepcopy(objects[0])
     # delete endpoint being moved on new host, TEMP
-    agent_api.DeleteConfigObjects([object], [new_node], True)
+    agent_api.DeleteConfigObjects([object], [new_node], ignore_error=True)
 
     object.spec.node_uuid           = tc.uuidMap[new_node]
     object.spec.migration           = migr_state 
@@ -255,14 +255,14 @@ def create_ep_info(tc, wl, new_node, migr_state, old_node):
         object.status.node_uuid         = "0011.2233.4455"  # TEMP
         object.spec.homing_host_address = "169.169.169.169" # TEMP
     # this triggers endpoint on new host(naples) to setup flows
-    agent_api.PushConfigObjects([object], [new_node], True)
+    agent_api.PushConfigObjects([object], [new_node], ignore_error=True)
 
 def delete_ep_info(tc, wl, node):
     ep_filter = "meta.name=" + wl.workload_name + ";"
     objects = agent_api.QueryConfigs("Endpoint", filter=ep_filter)
     assert(len(objects) == 1)
     object = objects[0]
-    agent_api.DeleteConfigObjects([object], [node], True)
+    agent_api.DeleteConfigObjects([object], [node], ignore_error=True)
 
 def verify_sessions_old_dsc(tc, wl, node):
     sessions  = vm_utils.get_session_per_node_info(tc, wl, node)

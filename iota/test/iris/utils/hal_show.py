@@ -3,7 +3,7 @@ import iota.harness.api as api
 import iota.test.utils.naples_host as host
 import yaml
 
-def GetHALShowOutput(naples_node, show_cmd, args=None, yaml=True):
+def GetHALShowOutput(naples_node, show_cmd, device=None, args=None, yaml=True):
     #TODO -  instead of using show_cmd directly, get cmd_id and use that to retrieve the actual cmd
     cmd = '/nic/bin/halctl show ' + show_cmd
     if args is not None:
@@ -11,14 +11,14 @@ def GetHALShowOutput(naples_node, show_cmd, args=None, yaml=True):
     if yaml:
         cmd = cmd + ' --yaml'
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    api.Trigger_AddNaplesCommand(req, naples_node, cmd)
+    api.Trigger_AddNaplesCommand(req, naples_node, cmd, naples=device)
     resp = api.Trigger(req)
 
     return resp, api.IsApiResponseOk(resp)
 
-def Getl2seg_vlan_mapping(naples_node):
+def Getl2seg_vlan_mapping(naples_node, device=None):
     l2seg_vlan_dict = dict()
-    resp, result = GetHALShowOutput(naples_node, "l2seg")
+    resp, result = GetHALShowOutput(naples_node, "l2seg", device=device)
     if not result:
         api.Logger.critical("unknown response from Naples")
         return l2seg_vlan_dict
@@ -35,9 +35,9 @@ def Getl2seg_vlan_mapping(naples_node):
 
     return l2seg_vlan_dict
 
-def GetIfId_lif_mapping(naples_node):
+def GetIfId_lif_mapping(naples_node, device=None):
     ifId_lif_dict = dict()
-    resp, result = GetHALShowOutput(naples_node, "interface")
+    resp, result = GetHALShowOutput(naples_node, "interface", device=device)
     if not result:
         api.Logger.critical("unknown response from Naples")
         return ifId_lif_dict
@@ -57,9 +57,9 @@ def GetIfId_lif_mapping(naples_node):
 
     return ifId_lif_dict
 
-def GetLifId_intfName_mapping(naples_node):
+def GetLifId_intfName_mapping(naples_node, device=None):
     lifId_intfName_dict = dict()
-    resp, result = GetHALShowOutput(naples_node, "lif")
+    resp, result = GetHALShowOutput(naples_node, "lif", device=device)
     if not result:
         api.Logger.critical("unknown response from Naples")
         return lifId_intfName_dict
@@ -95,9 +95,9 @@ def GetLifId_intfName_mapping(naples_node):
 
     return lifId_intfName_dict
 
-def GetIntfName2LifId_mapping(naples_node):
+def GetIntfName2LifId_mapping(naples_node, device=None):
     intfName2lifId_dict = dict()
-    resp, result = GetHALShowOutput(naples_node, "lif")
+    resp, result = GetHALShowOutput(naples_node, "lif", device=device)
     if not result:
         api.Logger.critical("unknown response from Naples")
         return intfName2lifId_dict
@@ -133,8 +133,8 @@ def GetIntfName2LifId_mapping(naples_node):
 
     return intfName2lifId_dict
 
-def IsNaplesForwardingModeClassic(naples_node):
-    resp, result = GetHALShowOutput(naples_node, "system forwarding-mode", yaml=False)
+def IsNaplesForwardingModeClassic(naples_node, device=None):
+    resp, result = GetHALShowOutput(naples_node, "system forwarding-mode", yaml=False, device=device)
     if not result:
         api.Logger.critical("unknown response from Naples")
         return True 

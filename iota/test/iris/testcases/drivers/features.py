@@ -5,7 +5,6 @@ import iota.test.iris.utils.iperf as iperf
 import iota.test.utils.naples_host as host
 import iota.protos.pygen.topo_svc_pb2 as topo_svc_pb2
 import iota.test.iris.testcases.drivers.common as common
-import iota.test.iris.testcases.drivers.interface as interface
 import iota.test.iris.testcases.drivers.cmd_builder as cmd_builder
 import iota.test.iris.testcases.drivers.verify as verify
 import iota.test.iris.utils.naples_workloads as workloads
@@ -65,8 +64,6 @@ def Setup(tc):
     tc.node_intfs = {}
     srv,cli = _get_workloads(tc)
     tc.workloads = [srv, cli]
-    #for node in tc.nodes:
-    #    tc.node_intfs[node] = interface.GetNodeInterface(node)
 
     if getattr(tc.args, 'restart', False):
         ret = api.RestartNodes(tc.nodes)
@@ -198,5 +195,4 @@ def Verify(tc):
     return verify.driver_feature_verify(tc)
 
 def Teardown(tc):
-    #interface.RestoreIntMmgmtInterfaceConfig()
     return api.types.status.SUCCESS

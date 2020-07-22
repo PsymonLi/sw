@@ -4,6 +4,7 @@ import iota.protos.pygen.topo_svc_pb2 as topo_svc_pb2
 import iota.test.iris.testcases.penctl.penctldefs as penctldefs
 import iota.test.iris.testcases.penctl.common as common
 import iota.test.iris.testcases.drivers.interface as interface
+import iota.test.iris.utils.naples_workloads as naples_workload_api
 
 
 def Setup(tc):
@@ -12,7 +13,7 @@ def Setup(tc):
     tc.node_intfs = {}
     for node in tc.nodes:
         #return api.types.status.SUCCESS if api.GetNodeOs(node) in ["esx"] else api.types.status.FAILURE
-        tc.node_intfs[node] = interface.GetNodeInterface(node)
+        tc.node_intfs[node] = naples_workload_api.GetNodeInterface(node)
 
     ret = interface.ConfigureInterfaces(tc)
     if ret != api.types.status.SUCCESS:

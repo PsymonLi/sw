@@ -354,7 +354,7 @@ def create_ep_info(tc, wl, dest_node, migr_state, src_node):
     assert(len(objects) == 1)
     object                          = copy.deepcopy(objects[0])
     # delete endpoint being moved on new host, TEMP
-    agent_api.DeleteConfigObjects([object], [dest_node], True)
+    agent_api.DeleteConfigObjects([object], [dest_node], ignore_error=True)
 
     # sleep to let delete cleanup all sessions/handles
     time.sleep(1)
@@ -371,7 +371,7 @@ def create_ep_info(tc, wl, dest_node, migr_state, src_node):
         object.status.node_uuid         = "0011.2233.4455"  # TEMP
         object.spec.homing_host_address = "169.169.169.169" # TEMP
     # this triggers endpoint on new host(naples) to setup flows
-    agent_api.PushConfigObjects([object], [dest_node], True)
+    agent_api.PushConfigObjects([object], [dest_node], ignore_error=True)
 
 def update_ep_migr_status(tc, wl, node, migr_state):
     ep_filter = "meta.name=" + wl.workload_name + ";"
@@ -381,11 +381,11 @@ def update_ep_migr_status(tc, wl, node, migr_state):
     object                          = copy.deepcopy(objects[0])
     object.spec.migration           = migr_state 
     object.spec.node_uuid           = tc.uuidMap[node]
-    agent_api.UpdateConfigObjects([object], [node], True)
+    agent_api.UpdateConfigObjects([object], [node], ignore_error=True)
     # update to keep new node happy, only in iota 
     object.spec.migration           = None
     object.spec.node_uuid           = tc.uuidMap[node]
-    agent_api.UpdateConfigObjects([object], [node], True)
+    agent_api.UpdateConfigObjects([object], [node], ignore_error=True)
 
 
 
@@ -394,7 +394,7 @@ def delete_ep_info(tc, wl, node):
     objects = agent_api.QueryConfigs("Endpoint", filter=ep_filter)
     assert(len(objects) == 1)
     object                          = copy.deepcopy(objects[0])
-    agent_api.DeleteConfigObjects([object], [node], True)
+    agent_api.DeleteConfigObjects([object], [node], ignore_error=True)
 
 def vm_move_back(tc):
     vm_threads = [] 

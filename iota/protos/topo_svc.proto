@@ -588,6 +588,9 @@ message Interface {
      string   network_name                  = 15;
 
     uint32    interface_index               = 16;
+
+     // device hosting parent interface
+     string   device_name                   = 17;
 }
 
 message Workload {

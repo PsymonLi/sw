@@ -57,7 +57,7 @@ def __get_base_url(nic_ip):
     return "https://" + nic_ip + ":8888/"
 
 
-def __get_agent_cfg_nodes(node_names = None):
+def __get_agent_cfg_nodes(node_names = None, device_names = None):
     agent_node_names = node_names or api.GetNaplesHostnames()
     agent_cfg_nodes = []
     for node_name in agent_node_names:
@@ -65,29 +65,33 @@ def __get_agent_cfg_nodes(node_names = None):
         ip = api.GetNaplesMgmtIpAddress(node_name)
         if not ip:
             assert(0)
-        nic_ip = api.GetNicIntMgmtIP(node_name)
-        agent_cfg_nodes.append(cfg_api.NewCfgNode(node_name, ip, nic_ip))
+        if not device_names:
+            device_names = api.GetDeviceNames(node_name)
+        for device_name in device_names:
+            nic_ip = api.GetNicIntMgmtIP(node_name, device_name)
+            agent_cfg_nodes.append(cfg_api.NewCfgNode(node_name, ip, nic_ip))
     return agent_cfg_nodes
 
 
-def PushConfigObjects(objects, node_names = None, ignore_error=False):
-    agent_cfg_nodes = __get_agent_cfg_nodes(node_names)
+def PushConfigObjects(objects, node_names = None, device_names = None, ignore_error=False):
+    agent_cfg_nodes = __get_agent_cfg_nodes(node_names, device_names)
     for cfg_node in  agent_cfg_nodes:
         ret = cfg_api.PushConfigObjects(objects, cfg_node)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
-def DeleteConfigObjects(objects, node_names = None, ignore_error=False):
-    agent_cfg_nodes = __get_agent_cfg_nodes(node_names)
+
+def DeleteConfigObjects(objects, node_names = None, device_names = None, ignore_error=False):
+    agent_cfg_nodes = __get_agent_cfg_nodes(node_names, device_names)
     for cfg_node in  agent_cfg_nodes:
         ret = cfg_api.DeleteConfigObjects(objects, cfg_node)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
-def UpdateConfigObjects(objects, node_names = None, ignore_error=False):
-    agent_cfg_nodes = __get_agent_cfg_nodes(node_names)
+def UpdateConfigObjects(objects, node_names = None, device_names = None, ignore_error=False):
+    agent_cfg_nodes = __get_agent_cfg_nodes(node_names, device_names)
     for cfg_node in  agent_cfg_nodes:
         ret = cfg_api.UpdateConfigObjects(objects,cfg_node)
         if not ignore_error and ret != api.types.status.SUCCESS:
@@ -95,8 +99,8 @@ def UpdateConfigObjects(objects, node_names = None, ignore_error=False):
     return api.types.status.SUCCESS
 
 #Assuming all nodes have same, return just from one node.
-def GetConfigObjects(objects, node_names = None, ignore_error=False):
-    agent_cfg_nodes = __get_agent_cfg_nodes(node_names)
+def GetConfigObjects(objects, node_names = None, device_names = None, ignore_error=False):
+    agent_cfg_nodes = __get_agent_cfg_nodes(node_names, device_names)
     for cfg_node in  agent_cfg_nodes:
         get_objects = cfg_api.GetConfigObjects(objects, cfg_node)
         return get_objects
@@ -123,59 +127,59 @@ def CloneConfigObjects(objects):
 def PrintConfigObjects(objects):
     cfg_api.PrintConfigsObjects(objects)
 
-def AddMirrors():
-    return PushConfigObjects(cfg_api.QueryConfigs(kind='MirrorSession'))
+def AddMirrors(node_names = None, device_names = None):
+    return PushConfigObjects(cfg_api.QueryConfigs(kind='MirrorSession'), node_names, device_names)
 
-def DeleteMirrors():
-    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='MirrorSession'))
+def DeleteMirrors(node_names = None, device_names = None):
+    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='MirrorSession'), node_names, device_names)
 
-def AddNetworks():
-    return PushConfigObjects(cfg_api.QueryConfigs(kind='Network'))
+def AddNetworks(node_names = None, device_names = None):
+    return PushConfigObjects(cfg_api.QueryConfigs(kind='Network'), node_names, device_names)
 
-def DeleteNetworks():
-    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='Network'))
+def DeleteNetworks(node_names = None, device_names = None):
+    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='Network'), node_names, device_names)
 
-def AddEndpoints():
-    return PushConfigObjects(cfg_api.QueryConfigs(kind='Endpoint'))
+def AddEndpoints(node_names = None, device_names = None):
+    return PushConfigObjects(cfg_api.QueryConfigs(kind='Endpoint'), node_names, device_names)
 
-def DeleteEndpoints():
-    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='Endpoint'))
+def DeleteEndpoints(node_names = None, device_names = None):
+    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='Endpoint'), node_names, device_names)
 
-def AddSgPolicies():
-    return PushConfigObjects(cfg_api.QueryConfigs(kind='NetworkSecurityPolicy'))
+def AddSgPolicies(node_names = None, device_names = None):
+    return PushConfigObjects(cfg_api.QueryConfigs(kind='NetworkSecurityPolicy'), node_names, device_names)
 
-def DeleteSgPolicies():
-    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='NetworkSecurityPolicy'))
+def DeleteSgPolicies(node_names = None, device_names = None):
+    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='NetworkSecurityPolicy'), node_names, device_names)
 
-def AddSecurityProfiles():
-    return PushConfigObjects(cfg_api.QueryConfigs(kind='SecurityProfile'))
+def AddSecurityProfiles(node_names = None, device_names = None):
+    return PushConfigObjects(cfg_api.QueryConfigs(kind='SecurityProfile'), node_names, device_names)
 
-def DeleteSecurityProfiles():
-    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='SecurityProfile'))
+def DeleteSecurityProfiles(node_names = None, device_names = None):
+    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='SecurityProfile'), node_names, device_names)
 
-def AddApps():
-    return PushConfigObjects(cfg_api.QueryConfigs(kind='App'))
+def AddApps(node_names = None, device_names = None):
+    return PushConfigObjects(cfg_api.QueryConfigs(kind='App'), node_names, device_names)
 
-def DeleteApps():
-    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='App'))
+def DeleteApps(node_names = None, device_names = None):
+    return DeleteConfigObjects(cfg_api.QueryConfigs(kind='App'), node_names, device_names)
 
 
-def PortUp():
+def PortUp(node_names = None, device_names = None):
     port_objects = cfg_api.QueryConfigs(kind='Port')
     for obj in port_objects:
         obj.spec.admin_status = "UP"
-    UpdateConfigObjects(port_objects)
+    UpdateConfigObjects(port_objects, node_names, device_names)
 
-def PortDown():
+def PortDown(node_names = None, device_names = None):
     port_objects = cfg_api.QueryConfigs(kind='Port')
     for obj in port_objects:
         obj.spec.admin_status = "UP"
-    UpdateConfigObjects(port_objects)
+    UpdateConfigObjects(port_objects, node_names, device_names)
 
 
-def FlapPorts():
-    PortDown()
-    PortUp()
+def FlapPorts(node_names = None, device_names = None):
+    PortDown(node_names, device_names)
+    PortUp(node_names, device_names)
     return api.types.status.SUCCESS
 
 
@@ -214,13 +218,13 @@ def UpdateTestBedVlans(objects):
         api.Logger.info("Network Object: %s, Allocated Vlan = %d" % (obj.meta.name, obj.spec.vlan_id))
 
 __config_pushed = False
-def PushBaseConfig(ignore_error = True, kinds=None):
+def PushBaseConfig(node_names = None, device_names = None, ignore_error = True, kinds=None):
     api.Testbed_ResetVlanAlloc()
     vlan = api.Testbed_AllocateVlan()
     api.Logger.info("Ignoring first vlan as it is native ", vlan)
     if not kinds or 'Namespace' in kinds:
         objects = QueryConfigs(kind='Namespace')
-        ret = PushConfigObjects(objects, ignore_error=ignore_error)
+        ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'Network' in kinds:
@@ -228,103 +232,103 @@ def PushBaseConfig(ignore_error = True, kinds=None):
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
         UpdateTestBedVlans(objects)
-        ret = PushConfigObjects(objects, ignore_error=ignore_error)
+        ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'Endpoint' in kinds:
         objects = QueryConfigs(kind='Endpoint')
         UpdateNodeUuidEndpoints(objects)
-        ret = PushConfigObjects(objects, ignore_error=ignore_error)
+        ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'App' in kinds:
         objects = QueryConfigs(kind='App')
-        ret = PushConfigObjects(objects, ignore_error=ignore_error)
+        ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'NetworkSecurityPolicy' in kinds:
         objects = QueryConfigs(kind='NetworkSecurityPolicy')
-        ret = PushConfigObjects(objects, ignore_error=ignore_error)
+        ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'SecurityProfile' in kinds:
         objects = QueryConfigs(kind='SecurityProfile')
-        ret = PushConfigObjects(objects, ignore_error=ignore_error)
+        ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     # if not kinds or 'Tunnel' in kinds:
     #     objects = QueryConfigs(kind='Tunnel')
-    #     ret = PushConfigObjects(objects, ignore_error=ignore_error)
+    #     ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
     #     if not ignore_error and ret != api.types.status.SUCCESS:
     #         return api.types.status.FAILURE
     if not kinds or 'MirrorSession' in kinds:
         objects = QueryConfigs(kind='MirrorSession')
         if objects:
-            ret = PushConfigObjects(objects, ignore_error=ignore_error)
+            ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
             if not ignore_error and ret != api.types.status.SUCCESS:
                 return api.types.status.FAILURE
     #if not kinds or 'FlowExportPolicy' in kinds:
     #    objects = QueryConfigs(kind='FlowExportPolicy')
     #    if objects:
-    #        ret = PushConfigObjects(objects, ignore_error=ignore_error)
+    #        ret = PushConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
     #        if not ignore_error and ret != api.types.status.SUCCESS:
     #            return api.types.status.FAILURE
     global __config_pushed
     __config_pushed = True
     return api.types.status.SUCCESS
 
-def DeleteBaseConfig(ignore_error = True, kinds=None):
+def DeleteBaseConfig(node_names = None, device_names = None, ignore_error = True, kinds=None):
 
     if not kinds or 'SecurityProfile' in kinds:
         objects = QueryConfigs(kind='SecurityProfile')
-        ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+        ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'FlowExportPolicy' in kinds:
         objects = QueryConfigs(kind='FlowExportPolicy')
-        ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+        ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'NetworkSecurityPolicy' in kinds:
         objects = QueryConfigs(kind='NetworkSecurityPolicy')
-        ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+        ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'App' in kinds:
         objects = QueryConfigs(kind='App')
-        ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+        ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'MirrorSession' in kinds:
         objects = QueryConfigs(kind='MirrorSession')
-        ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+        ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     # if not kinds or 'Tunnel' in kinds:
     #     objects = QueryConfigs(kind='Tunnel')
-    #     ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+    #     ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
     #     if not ignore_error and ret != api.types.status.SUCCESS:
     #         return api.types.status.FAILURE
     if not kinds or 'Endpoint' in kinds:
         objects = QueryConfigs(kind='Endpoint')
-        ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+        ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'Network' in kinds:
         objects = QueryConfigs(kind='Network')
-        ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+        ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     if not kinds or 'Namespace' in kinds:
         objects = QueryConfigs(kind='Namespace')
-        ret = DeleteConfigObjects(objects, ignore_error=ignore_error)
+        ret = DeleteConfigObjects(objects, node_names, device_names, ignore_error=ignore_error)
         if not ignore_error and ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 
 __allow_all_policies = {}
-def PushAllowAllPolicy(allowAllPolicy, node_names = None, namespaces = None):
+def PushAllowAllPolicy(allowAllPolicy, node_names = None, device_names = None, namespaces = None):
     newObjects = AddOneConfig(allowAllPolicy)
     if len(newObjects) == 0:
         api.Logger.error("Adding new objects to store failed")
@@ -338,24 +342,24 @@ def PushAllowAllPolicy(allowAllPolicy, node_names = None, namespaces = None):
         for object in clone_objects:
             object.meta.namespace = ns.meta.name
         cfg_api.AddConfigObjects(clone_objects)
-        ret = PushConfigObjects(clone_objects, node_names, ignore_error=True)
+        ret = PushConfigObjects(clone_objects, node_names, device_names, ignore_error=True)
         if ret != api.types.status.SUCCESS:
             return api.types.status.FAILURE
 
         #keep it if we want to delete it as well
         __allow_all_policies[ns.meta.name] = clone_objects
 
-def DeleteAllowAllPolicy(node_names = None, namespaces = None):
+def DeleteAllowAllPolicy(node_names = None, device_names = None, namespaces = None):
 
     if not namespaces:
         nsObjects = QueryConfigs(kind='Namespace')
         namespaces = [ns.meta.name for ns in nsObjects]
 
     for ns in namespaces:
-        DeleteConfigObjects(__allow_all_policies[ns], ignore_error=True)
+        DeleteConfigObjects(__allow_all_policies[ns], node_names, device_names, ignore_error=True)
         RemoveConfigObjects(__allow_all_policies[ns])
 
-def switch_profile(fwd_mode="TRANSPARENT", policy_mode="BASENET", push=True,
+def switch_profile(node_names = None, device_names = None, fwd_mode="TRANSPARENT", policy_mode="BASENET", push=True,
                    push_base_profile=False):
     objects = QueryConfigs("Profile")
     ret = api.types.status.SUCCESS
@@ -372,7 +376,7 @@ def switch_profile(fwd_mode="TRANSPARENT", policy_mode="BASENET", push=True,
 
     if push or push_base_profile:
         if len(objects):
-            ret = PushConfigObjects(objects)
+            ret = PushConfigObjects(objects, node_names, device_names)
             if ret == api.types.status.SUCCESS:
                 if fwd_mode == "INSERTION" and policy_mode == "ENFORCED":
                     api.Logger.info("Waiting for %d sec for HAL "

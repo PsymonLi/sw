@@ -1154,6 +1154,11 @@ func (naples *naplesHwNode) initNaplesMgmtInterface(nodeOs iota.TestBedNodeOs, n
 					//return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
 				}
 			}
+			naplesConfig.HostIntfs = append(naplesConfig.HostIntfs,
+				&iota.Interfaces{
+					Type:       iota.InterfaceType_INTERFACE_TYPE_MGMT,
+					Interfaces: []string{naplesMgmtIntf},
+				})
 		}
 	} else {
 		naplesIPddress, err := naples.getNaplesMgmtIP(nodOSMap[nodeOs], naplesConfig.GetNicType(), naplesConfig.GetNicHint())

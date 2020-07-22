@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 import iota.harness.api as api
+from iota.harness.infra.utils import parser
 import iota.test.iris.utils.debug as debug_utils
 import iota.test.utils.naples_host as naples_host_utils
 import iota.test.iris.utils.hal_show as hal_show_utils
@@ -10,16 +11,16 @@ import operator
 
 __ARPING_COUNT = 8
 
-def GetNaplesEthHostInterfaces(node):
+def GetNaplesEthHostInterfaces(node, device_name):
     #Get only ETH_HOST interfaces
-    eth_host_intfs = list(api.GetNaplesHostInterfaces(node))
+    eth_host_intfs = list(api.GetNaplesHostInterfaces(node, device_name))
     api.Logger.verbose("BC MAC filter : Setup eth_host_intfs : ", eth_host_intfs)
     return eth_host_intfs
 
-def getInterfaceList(naples_node):
+def getInterfaceList(naples_node, device_name):
     intf_pktfilter_list= list()
-    naples_intf_list = naples_host_utils.getNaplesInterfaces(naples_node)
-    host_intf_list = filters_utils.GetNaplesHostInterfacesList(naples_node)
+    naples_intf_list = naples_host_utils.getNaplesInterfaces(naples_node, device_name)
+    host_intf_list = filters_utils.GetNaplesHostInterfacesList(naples_node, device_name)
 
     intf_pktfilter_list = naples_intf_list + host_intf_list
 
@@ -31,31 +32,34 @@ def getInterfaceList(naples_node):
 
 def verifyBCTrafficStats(tc):
     result = True
-    statsCount = tc.statsCount
-    preStatsCount = tc.preStatsCount
-    postStatsCount = tc.postStatsCount
 
-    for intf, bcStats in statsCount.items():
-        #BC Frame stats before trigger
-        preStats = preStatsCount[intf]
-        #BC Frame stats after trigger
-        postStats = postStatsCount[intf]
-        #Expected BC Frame stats increase because of trigger
-        expectedStats = statsCount[intf]
-        #Actual BC Frame stats increase, actualStats = postStats - preStats
-        actualStats = list(map(operator.sub, postStats, preStats))
-        api.Logger.debug("verifyBCTrafficStats info for ", intf, expectedStats, actualStats, preStats, postStats)
-        # Agent's looking for venice which is generated dhcp bcast pkts which is affecting the counts.
-        # For now failing only if interfaces received less number compared to expected
-        #if actualStats != expectedStats:
-        if all(x < y for x,y in zip(actualStats, expectedStats)):
-            result = False
-            api.Logger.error("verifyBCTrafficStats failed for ", intf, expectedStats, actualStats, preStats, postStats)
+    for device_name in api.GetDeviceNames(tc.naples_node):
+        data = tc.device_data[device_name]
+        statsCount = data.statsCount
+        preStatsCount = data.preStatsCount
+        postStatsCount = data.postStatsCount
+
+        for intf, bcStats in statsCount.items():
+            #BC Frame stats before trigger
+            preStats = preStatsCount[intf]
+            #BC Frame stats after trigger
+            postStats = postStatsCount[intf]
+            #Expected BC Frame stats increase because of trigger
+            expectedStats = statsCount[intf]
+            #Actual BC Frame stats increase, actualStats = postStats - preStats
+            actualStats = list(map(operator.sub, postStats, preStats))
+            api.Logger.debug("verifyBCTrafficStats info for ", intf, expectedStats, actualStats, preStats, postStats)
+            # Agent's looking for venice which is generated dhcp bcast pkts which is affecting the counts.
+            # For now failing only if interfaces received less number compared to expected
+            #if actualStats != expectedStats:
+            if all(x < y for x,y in zip(actualStats, expectedStats)):
+                result = False
+                api.Logger.error("verifyBCTrafficStats failed for ", intf, expectedStats, actualStats, preStats, postStats)
     return result
 
-def GetLifBCFramesTxRxStats(naples_node, lif_id):
+def GetLifBCFramesTxRxStats(naples_node, device_name, lif_id):
     args = "--id " + str(lif_id)
-    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "lif", args)
+    resp, result = hal_show_utils.GetHALShowOutput(naples_node, "lif", device=device_name, args=args)
     bcframesok = [0, 0]
     if not result:
         api.Logger.critical("unknown response from Naples")
@@ -78,45 +82,48 @@ def GetLifBCFramesTxRxStats(naples_node, lif_id):
 
     return bcframesok
 
-def GetBCFramesTxRxStats(naples_node, statsObj, intfName2lifId_dict):
+def GetBCFramesTxRxStats(naples_node, device_name, statsObj, intfName2lifId_dict):
     for intf in statsObj.keys():
         lif_id = intfName2lifId_dict[intf]
-        statsObj[intf] = GetLifBCFramesTxRxStats(naples_node, lif_id)
+        statsObj[intf] = GetLifBCFramesTxRxStats(naples_node, device_name, lif_id)
     return
 
 def triggerArping(w1, w2, tc):
-    statsCount = tc.statsCount
     arping_count = tc.arping_count
 
     if w2.node_name == tc.naples_node:
         #get ETH_HOST interface on Naple for this workload pair
         ethIntf = w2.parent_interface
+        data = tc.device_data[w2.device_name]
     else:
         ethIntf = w1.parent_interface
+        data = tc.device_data[w1.device_name]
     if (w1.encap_vlan == 0):
         #In case of untagged workload, interface being untagged,
         #all untagged interfaces will receive BC traffic. so increment for all
-        for intf in statsCount.keys():
-            txrxbcframes = statsCount[intf]
-            #increase rx by arping_count
-            txrxbcframes[1] += arping_count
-            statsCount[intf] = txrxbcframes
+        for device_name in api.GetDeviceNames(tc.naples_node):
+            data = tc.device_data[device_name]
+            for intf in data.statsCount.keys():
+                txrxbcframes = data.statsCount[intf]
+                #increase rx by arping_count
+                txrxbcframes[1] += arping_count
+                data.statsCount[intf] = txrxbcframes
     else:
         #In case of tagged workload, increment rx BC only for that parent interface
-        txrxbcframes = statsCount[ethIntf]
+        txrxbcframes = data.statsCount[ethIntf]
         #increase rx by arping_count
         txrxbcframes[1] += arping_count
-        statsCount[ethIntf] = txrxbcframes
+        data.statsCount[ethIntf] = txrxbcframes
     if w2.node_name == tc.naples_node:
         #If arping being done on naples node, then increment tx for that parent interface
-        txrxbcframes = statsCount[ethIntf]
+        txrxbcframes = data.statsCount[ethIntf]
         #increase tx by arping_count
         txrxbcframes[0] += arping_count
         #As arping being done on naples node itself, all other untagged interface
         #except this parent interface must receive BC traffic.
         #So decrease rx by arping_count as we had incremented it already above.
         txrxbcframes[1] -= arping_count
-        statsCount[ethIntf] = txrxbcframes
+        data.statsCount[ethIntf] = txrxbcframes
 
     #do arping
     if api.GetNodeOs(tc.naples_node) == "windows":
@@ -132,7 +139,9 @@ def triggerBCtraffic(tc):
     workload_pairs = tc.workloads
     naples_node = tc.naples_node
     #Get stats before trigger
-    GetBCFramesTxRxStats(naples_node, tc.preStatsCount, tc.intfName2lifId_dict)
+    for device_name in api.GetDeviceNames(naples_node):
+        data = tc.device_data[device_name]
+        GetBCFramesTxRxStats(naples_node, device_name, data.preStatsCount, data.intfName2lifId_dict)
 
     #trigger
     tc.req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
@@ -147,16 +156,18 @@ def triggerBCtraffic(tc):
     tc.resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
 
     #Get stats after trigger
-    GetBCFramesTxRxStats(naples_node, tc.postStatsCount, tc.intfName2lifId_dict)
+    for device_name in api.GetDeviceNames(naples_node):
+        data = tc.device_data[device_name]
+        GetBCFramesTxRxStats(naples_node, device_name, data.postStatsCount, data.intfName2lifId_dict)
 
     return
 
-def getStatObjects(tc):
+def getStatObjects(tc, device_name):
     statsCount = defaultdict(list)
     preStatsCount = defaultdict(list)
     postStatsCount = defaultdict(list)
-    inband_intfs = naples_host_utils.GetNaplesInbandInterfaces(tc.naples_node)
-    eth_intfs = GetNaplesEthHostInterfaces(tc.naples_node)
+    inband_intfs = naples_host_utils.GetNaplesInbandInterfaces(tc.naples_node, device_name)
+    eth_intfs = GetNaplesEthHostInterfaces(tc.naples_node, device_name)
     intf_list = inband_intfs + eth_intfs
     api.Logger.debug("getStatObjects : intf_list ", intf_list)
 
@@ -178,10 +189,19 @@ def Setup(tc):
         api.Logger.error("BC MAC filter : Setup -> No Naples Topology - So skipping the TC")
         return api.types.status.IGNORED
 
-    tc.intfName2lifId_dict = hal_show_utils.GetIntfName2LifId_mapping(tc.naples_node)
-    tc.intf_pktfilter_list = getInterfaceList(tc.naples_node)
+    tc.device_data = defaultdict()
     tc.arping_count = __ARPING_COUNT
-    tc.statsCount, tc.preStatsCount, tc.postStatsCount = getStatObjects(tc)
+    for device_name in api.GetDeviceNames(tc.naples_node):
+        data = parser.Dict2Object({})
+        intfName2lifId_dict = hal_show_utils.GetIntfName2LifId_mapping(tc.naples_node, device_name)
+        intf_pktfilter_list = getInterfaceList(tc.naples_node, device_name)
+        statsCount, preStatsCount, postStatsCount = getStatObjects(tc, device_name)
+        setattr(data, 'intfName2lifId_dict', intfName2lifId_dict)
+        setattr(data, 'intf_pktfilter_list', intf_pktfilter_list)
+        setattr(data, 'statsCount', statsCount)
+        setattr(data, 'preStatsCount', preStatsCount)
+        setattr(data, 'postStatsCount', postStatsCount)
+        tc.device_data[device_name] = data
 
     api.Logger.info("BC MAC filter : Setup final result - ", result)
     debug_utils.collect_showtech(result)
@@ -193,12 +213,15 @@ def Trigger(tc):
     if tc.skip: return api.types.status.IGNORED
 
     #get Packet Filters
-    tc.intf_pktfilter_dict, res = filters_utils.getAllIntfPktFilter(tc.naples_node)
-    if not res:
-        api.Logger.error("BC MAC filter : Trigger failed for getAllIntfPktFilter ", res)
-        result = api.types.status.FAILURE
-        debug_utils.collect_showtech(result)
-        return result
+    for device_name in api.GetDeviceNames(tc.naples_node):
+        data = tc.device_data[device_name]
+        intf_pktfilter_dict, res = filters_utils.getAllIntfPktFilter(tc.naples_node, device_name)
+        if not res:
+            api.Logger.error("BC MAC filter : Trigger failed for getAllIntfPktFilter ", res)
+            result = api.types.status.FAILURE
+            debug_utils.collect_showtech(result)
+            return result
+        setattr(data, 'intf_pktfilter_dict', intf_pktfilter_dict)
 
     if api.GetNodeOs(tc.naples_node) != "windows":
         #first, find the right arp (we rely on -W option)
@@ -238,11 +261,13 @@ def Verify(tc):
     if tc.skip: return api.types.status.IGNORED
 
     # Check if all interfaces have broadcast filter enabled on them
-    if not filters_utils.verifyPktFilters(tc.intf_pktfilter_list, tc.intf_pktfilter_dict, True):
-        api.Logger.error("BC MAC filter : Verify failed for verifyBCPktFilters ", tc.intf_pktfilter_dict)
-        result = api.types.status.FAILURE
-    else:
-        api.Logger.debug("BC MAC filter : Verify - verifyBCPktFilters SUCCESS ")
+    for device_name in api.GetDeviceNames(tc.naples_node):
+        data = tc.device_data[device_name]
+        if not filters_utils.verifyPktFilters(data.intf_pktfilter_list, data.intf_pktfilter_dict, True):
+            api.Logger.error("BC MAC filter : Verify failed for verifyBCPktFilters ", data.intf_pktfilter_dict)
+            result = api.types.status.FAILURE
+        else:
+            api.Logger.debug("BC MAC filter : Verify - verifyBCPktFilters SUCCESS ")
 
     # Check broadcast traffic stats
     if not verifyBCTrafficStats(tc):

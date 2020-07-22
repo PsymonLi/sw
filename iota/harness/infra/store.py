@@ -65,6 +65,7 @@ class Workload:
             self.interface_type = msg.interfaces[0].interface_type
             self.pinned_port = msg.interfaces[0].pinned_port
             self.uplink_vlan = msg.interfaces[0].uplink_vlan
+            self.device_name = msg.interfaces[0].device_name
             self.cpus = msg.cpus
             self.memory = msg.memory
             self.mgmt_ip = msg.mgmt_ip
@@ -83,12 +84,13 @@ class Workload:
                Logger.info("Workload %s exposed udp ports %s" % (self.workload_name, self.exposed_udp_ports))
         return
 
-    def init(self, workload_name, node_name, ip_address, interface=None):
+    def init(self, workload_name, node_name, ip_address, device_name, interface=None):
         self.workload_name = workload_name
         self.node_name = node_name
         self.interface = interface
         self.ip_address = ip_address
         self.skip_node_push = False
+        self.device_name = device_name
 
     def IsNaples(self):
         return GetTestbed().GetCurrentTestsuite().GetTopology().GetNicType(self.node_name) in ['pensando', 'naples']
@@ -128,14 +130,19 @@ def AddWorkloads(req, running=True):
 def GetWorkloadByName(wl_name):
     return __gl_workloads.get(wl_name, None)
 
-def GetWorkloads(node = None):
+def GetWorkloads(node = None, device_name = None):
     global __gl_workloads
     if node == None:
         return list(__gl_workloads.values())
     workloads = []
     for wl in  __gl_workloads.values():
         if wl.node_name == node:
-            workloads.append(wl)
+            if device_name:
+                # Filter based on device-name
+                if wl.device_name == device_name:
+                    workloads.append(wl)
+            else:
+                workloads.append(wl) # All workloads on this node
     return workloads
 
 def AddSplWorkload(type, wl):
@@ -172,7 +179,7 @@ def DeleteWorkloads(req):
         del __gl_workloads[wl.workload_name]
     return
 
-def GetLocalWorkloadPairs(naples=False):
+def GetLocalWorkloadPairs(naples=False, filter_common_parent_if = False, filter_common_device = False):
     pairs = []
     for w1 in GetWorkloads():
         for w2 in GetWorkloads():
@@ -181,6 +188,13 @@ def GetLocalWorkloadPairs(naples=False):
             if w1.node_name == w2.node_name:
                 if naples and not w1.IsNaples():
                     continue
+
+                if filter_common_device and w1.device_name != w2.device_name:
+                    continue
+
+                if filter_common_parent_if and w1.parent_interface != w2.parent_interface:
+                    continue
+
                 pairs.append((w1, w2))
     return pairs
 

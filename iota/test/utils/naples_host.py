@@ -13,26 +13,26 @@ MemStatsCheckToolHostPath = api.HOST_NAPLES_DIR + "/ps_mem.py"
 MemStatsCheckToolNaplesPath = "/tmp/ps_mem.py"
 
 # Get memory slab information in a given node
-def GetMemorySlabInNaples(node_name):
+def GetMemorySlabInNaples(node_name, device_name = None):
     mem_slab = {}
     cmd = 'sleep 3 && /nic/bin/halctl show system memory slab --yaml'
     req = api.Trigger_CreateExecuteCommandsRequest()
-    api.Trigger_AddNaplesCommand(req, node_name, cmd)
+    api.Trigger_AddNaplesCommand(req, node_name, cmd, naples=device_name)
     resp = api.Trigger(req)
 
-    cmd = resp.commands[0]
-    if cmd.stdout is None:
-        return None
+    for cmd in resp.commands:
+        if cmd.stdout is None:
+            continue
 
-    #api.Logger.info("cmd.stdout: %s" % cmd.stdout)
-    yml_loaded = yaml.load_all(cmd.stdout)
-    for yml in yml_loaded:
-        if yml is not None:
-            name = yml["spec"]["name"]
-            inuse = yml["stats"]["numelementsinuse"]
-            num_allocs = yml["stats"]["numallocs"]
-            num_frees = yml["stats"]["numfrees"]
-            mem_slab[name] = (inuse, num_allocs, num_frees)
+        #api.Logger.info("cmd.stdout: %s" % cmd.stdout)
+        yml_loaded = yaml.load_all(cmd.stdout)
+        for yml in yml_loaded:
+            if yml is not None:
+                name = "%s-%s" % (cmd.entity_name, yml["spec"]["name"])
+                inuse = yml["stats"]["numelementsinuse"]
+                num_allocs = yml["stats"]["numallocs"]
+                num_frees = yml["stats"]["numfrees"]
+                mem_slab[name] = (inuse, num_allocs, num_frees)
     return mem_slab
 
 # Check if memory slab leaks and print on a given node
@@ -163,7 +163,13 @@ def GetNaplesNodeName():
             return node, True
     return "", False
 
-def GetHostInternalMgmtInterfaces(node):
+def GetHostInternalMgmtInterfaces(node, device = None):
+    # Relay on IOTA infra to provide this information (dual-nic friendly API)
+    interface_names = api.GetNaplesHostMgmtInterfaces(node, device)
+
+    if interface_names:
+        return interface_names
+
     interface_names = []
 
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
@@ -216,36 +222,42 @@ def GetHostInternalMgmtInterfaces(node):
 
     return interface_names
 
-def GetNaplesInternalMgmtInterfaces(node):
+def GetNaplesInternalMgmtInterfaces(node, device = None):
     int_mgmt_ints = ['int_mnic0']
     return int_mgmt_ints
 
-def GetNaplesOobInterfaces(node):
+def GetNaplesOobInterfaces(node, device = None):
     oob_intfs = ['oob_mnic0']
     return oob_intfs
 
-def GetNaplesInbandInterfaces(node):
+def GetNaplesInbandInterfaces(node, device = None):
     inband_intfs = ['inb_mnic0', 'inb_mnic1']
     return inband_intfs
 
-def GetNaplesInbandBondInterfaces(node):
+def GetNaplesInbandBondInterfaces(node, device = None):
     return ['bond0']
 
-def getNaplesInterfaces(naples_node):
-    int_mgmt_intf_list = GetNaplesInternalMgmtInterfaces(naples_node)
-    oob_intf_list = GetNaplesOobInterfaces(naples_node)
-    inb_mnic_intf_list = GetNaplesInbandInterfaces(naples_node)
+def getNaplesInterfaces(naples_node, device = None):
+    int_mgmt_intf_list = GetNaplesInternalMgmtInterfaces(naples_node, device)
+    oob_intf_list = GetNaplesOobInterfaces(naples_node, device)
+    inb_mnic_intf_list = GetNaplesInbandInterfaces(naples_node, device)
 
     naples_intf_list = int_mgmt_intf_list + oob_intf_list + inb_mnic_intf_list
     return naples_intf_list
 
 
-def GetIPAddress(node, interface):
+def GetIPAddress(node, interface, device_name = None):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd = "ifconfig " + interface + "   | grep 'inet' | cut -d: -f2 |  awk '{print $1}' "
-    api.Trigger_AddNaplesCommand(req, node, cmd)
+    api.Trigger_AddNaplesCommand(req, node, cmd, naples=device_name)
     resp = api.Trigger(req)
-    return resp.commands[0].stdout.strip("\n")
+
+    ip_addr = {}
+    for cmd in resp.commands:
+        ip_addr[cmd.entity_name] = resp.commands[0].stdout.strip("\n")
+
+    return ip_addr
+
 
 
 # Load/Unload Driver are used by driver test
@@ -429,23 +441,23 @@ def runHostCmd(node, hostCmd, fail = False):
 
     return api.types.status.SUCCESS, cmd.stdout
 
-def runNaplesCmd(node, napleCmd, fail = False):
+def runNaplesCmd(node, napleCmd, fail = False, device_name = None):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    api.Trigger_AddNaplesCommand(req, node, napleCmd)
+    api.Trigger_AddNaplesCommand(req, node, napleCmd, naples=device_name)
     resp = api.Trigger(req)
     if resp is None:
         api.Logger.error("Failed to run Naples cmd: %s on host: %s"
                          %(napleCmd, node));
-        return api.types.status.FAILURE, cmd.stderr
+        return api.types.status.FAILURE
 
     for cmd in resp.commands:
         if cmd.exit_code != 0 and not fail:
             api.Logger.error("NAPLES CMD: %s failed, exit code: %d  stdout: %s stderr: %s" %
                              (napleCmd, cmd.exit_code, cmd.stdout, cmd.stderr))
             api.PrintCommandResults(cmd)
-            return api.types.status.FAILURE, cmd.stderr
+            return api.types.status.FAILURE
 
-    return api.types.status.SUCCESS, cmd.stdout
+    return api.types.status.SUCCESS 
 
 # Look for ionic error string and collect some debug data
 def checkForBsdIonicError(node):
@@ -468,7 +480,7 @@ def checkForBsdIonicError(node):
     return api.types.status.SUCCESS
 
 def checkNaplesForError(node):
-    status, out = runNaplesCmd(node, '/nic/bin/halctl show port')
+    status = runNaplesCmd(node, '/nic/bin/halctl show port')
     if status != api.types.status.SUCCESS:
         api.Logger.error("CHECK_ERR: HAL running??")
 

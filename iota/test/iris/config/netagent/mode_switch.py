@@ -89,7 +89,7 @@ def Main(step):
     if GlobalOptions.skip_setup:
         if mgmt_intf == "IN_BAND":
             restoreBondIp(mgmt_ip)
-        return netagent_api.switch_profile(fwd_mode, policy_mode, push=False)
+        return netagent_api.switch_profile(fwd_mode=fwd_mode, policy_mode=policy_mode, push=False)
 
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     for n in nodes:
@@ -111,7 +111,7 @@ def Main(step):
             return api.types.status.FAILURE
 
     api.Logger.info("Switching to profile fwd_mode: %s, policy_mode : %s"%(fwd_mode, policy_mode))
-    ret = netagent_api.switch_profile(fwd_mode, policy_mode)
+    ret = netagent_api.switch_profile(fwd_mode=fwd_mode, policy_mode=policy_mode)
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to switch profile to fwd_mode: %s, policy_mode : %s"%(fwd_mode, policy_mode))
         return ret

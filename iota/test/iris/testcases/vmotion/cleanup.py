@@ -37,7 +37,7 @@ def create_ep_info(tc, wl, new_node, migr_state, old_node):
     assert(len(objects) == 1)
     object                          = copy.deepcopy(objects[0])
     # delete endpoint being moved on new host, TEMP
-    agent_api.DeleteConfigObjects([object], [new_node], True)
+    agent_api.DeleteConfigObjects([object], [new_node], ignore_error=True)
 
     object.spec.node_uuid           = tc.uuidMap[new_node]
     object.spec.migration           = migr_state 

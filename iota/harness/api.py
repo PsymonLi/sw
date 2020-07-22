@@ -220,14 +220,14 @@ def DeleteWorkloads(req, skip_store=False):
         store.DeleteWorkloads(req)
     return resp
 
-def GetWorkloads(node = None):
-    return store.GetWorkloads(node)
+def GetWorkloads(node = None, device_name = None):
+    return store.GetWorkloads(node, device_name)
 
 def GetWorkloadByName(wl_name):
     return store.GetWorkloadByName(wl_name)
 
-def GetLocalWorkloadPairs(naples=False):
-    return store.GetLocalWorkloadPairs(naples=naples)
+def GetLocalWorkloadPairs(naples=False, filter_common_parent_if = False, filter_common_device = False):
+    return store.GetLocalWorkloadPairs(naples=naples, filter_common_parent_if = filter_common_parent_if, filter_common_device = filter_common_device)
 
 def GetRemoteWorkloadPairs():
     return store.GetRemoteWorkloadPairs()
@@ -368,6 +368,9 @@ def GetTopologyDirectory():
 
 def GetNaplesHostInterfaces(node_name, device_name=None):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNaplesHostInterfaces(node_name, device_name)
+
+def GetNaplesHostMgmtInterfaces(node_name, device_name=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNaplesHostMgmtInterfaces(node_name, device_name)
 
 def AllocateHostInterfaceForNode(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().AllocateHostInterfaceForNode(node_name)
@@ -584,14 +587,18 @@ def GetDriverVersion():
 def RunningOnSameSwitch():
     return (len(store.GetTestbed().GetCurrentTestsuite().GetTopology().Switches()) <= 1 )
 
-def GetNicType(node_name):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicType(node_name)
+def GetNicType(node_name, device_name=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicType(node_name, device_name)
 
 def GetMgmtIPAddress(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetMgmtIPAddress(node_name)
 
 def IsNaplesNode(node_name):
-    return  GetNicType(node_name) in ['pensando', 'naples']
+    devices = GetDeviceNames(node_name)
+    for device_name in devices:
+        if GetNicType(node_name, device_name) in ['pensando', 'naples']:
+            return True
+    return False
 
 def IsConfigOnly():
     return store.GetTestbed().GetCurrentTestsuite().IsConfigOnly()

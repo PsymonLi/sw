@@ -24,7 +24,7 @@ def __create_endpoint_info(tc):
             assert(len(objects) == 1) 
             obj = copy.deepcopy(objects[0]) 
             # delete endpoint being moved on new host, TEMP 
-            resp = agent_api.DeleteConfigObjects([obj], [dest_host], True)
+            resp = agent_api.DeleteConfigObjects([obj], [dest_host], ignore_error=True)
             if resp != api.types.status.SUCCESS:
                 api.Logger.error("DeleteConfigObjects failed for %s for %s" % (wl.workload_name, dest_host))
 
@@ -53,7 +53,7 @@ def __delete_endpoint_info(tc):
         ep_filter = "meta.name=" + wload.workload_name + ";"
         objects = agent_api.QueryConfigs("Endpoint", filter=ep_filter)
         assert(len(objects) == 1)
-        agent_api.DeleteConfigObjects(objects[:1], [host], True)
+        agent_api.DeleteConfigObjects(objects[:1], [host], ignore_error=True)
     return
 
 def Main(tc):
