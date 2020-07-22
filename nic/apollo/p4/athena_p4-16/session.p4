@@ -66,7 +66,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	  // hdr.p4i_to_p4e_header.index = (bit<24>)conntrack_id;
 	  // hdr.p4i_to_p4e_header.conntrack_en = TRUE;
 	}
-	
+        metadata.cntrl.flow_log_hash = hdr.p4i_to_p4e_header.index[20:0];	
 	//	if(metadata.cntrl.direction == TX_FROM_HOST) {
 	if(hdr.p4i_to_p4e_header.direction == TX_FROM_HOST) {
 	  if(metadata.cntrl.l2_vnic == FALSE) {

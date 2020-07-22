@@ -35,4 +35,4 @@
 #define CONNTRACK_TABLE_SIZE                                4194304     // 4M: used 3.6M
 
 #define P4E_REDIR_TABLE_SIZE                                2
-#define FLOW_LOG_TABLE_SIZE                                 2097152     // 2M
+#define FLOW_LOG_TABLE_SIZE                                 2097152 // 2M

@@ -16,9 +16,10 @@ control flow_log_lookup(inout cap_phv_intr_global_h intr_global,
     }
            
     @name(".flow_log_crc_0")
-      action flow_log_crc_0_a(bit<8> dummy) {
-      metadata.cntrl.flow_log_hash =  __hash_value()[20:0];
-      metadata.scratch.dummy = dummy;
+      action flow_log_crc_0_a() {
+      if (hdr.p4i_to_p4e_header.session_info_en == FALSE) {
+          metadata.cntrl.flow_log_hash =  __hash_value()[20:0];
+      }
     }
 
     /*
@@ -41,29 +42,50 @@ control flow_log_lookup(inout cap_phv_intr_global_h intr_global,
         size = 1;
         placement = HBM;
 	default_action = flow_log_select_a;
-        stage = 3;
+        stage = 2;
     }
    
 
    
     @name(".flow_log_crc_0") table flow_log_crc_0 {
         key = {
-	    metadata.flow_log_key.src           : exact;
-	    metadata.flow_log_key.dst           : exact;
-            metadata.flow_log_key.proto         : exact;
-            metadata.flow_log_key.sport         : exact;
-            metadata.flow_log_key.dport         : exact;
-            metadata.flow_log_key.vnic_id       : exact;
-            metadata.flow_log_key.ktype         : exact;
-            metadata.flow_log_key.disposition   : exact;
-            metadata.flow_log_key.salt          : exact;
+	    metadata.flow_log_key.src           : none;
+	    metadata.flow_log_key.dst           : none;
+            metadata.flow_log_key.proto         : none;
+            metadata.flow_log_key.sport         : none;
+            metadata.flow_log_key.dport         : none;
+            metadata.flow_log_key.vnic_id       : none;
+            metadata.flow_log_key.ktype         : none;
+            metadata.flow_log_key.disposition   : none;
+	    //      metadata.flow_log_key.salt          : none;
 	    
         }
         actions = {
 	  flow_log_crc_0_a;
         }
+	hash_type = CRC32;
 	stage = 3;
-	size = 4;
+        default_action = flow_log_crc_0_a;
+    }
+
+    @name(".flow_log_crc_1") table flow_log_crc_1 {
+        key = {
+	    metadata.flow_log_key.src           : none;
+	    metadata.flow_log_key.dst           : none;
+            metadata.flow_log_key.proto         : none;
+            metadata.flow_log_key.sport         : none;
+            metadata.flow_log_key.dport         : none;
+            metadata.flow_log_key.vnic_id       : none;
+            metadata.flow_log_key.ktype         : none;
+            metadata.flow_log_key.disposition   : none;
+	    //       metadata.flow_log_key.salt          : none;
+	    
+        }
+        actions = {
+	  flow_log_crc_0_a;
+        }
+	hash_type = CRC32Q;
+	stage = 2;
         default_action = flow_log_crc_0_a;
     }
 	    
@@ -203,9 +225,12 @@ control flow_log_lookup(inout cap_phv_intr_global_h intr_global,
 	
 	if(hdr.egress_recirc_header.isValid() == false) {
 	  flow_log_select.apply();
+	  flow_log_crc_0.apply();
 	}
 	
-	flow_log_crc_0.apply();
+	if(hdr.egress_recirc_header.isValid() == true) {
+	  flow_log_crc_1.apply();
+	}
 	
 	if(metadata.cntrl.flow_log_select == 0) {
 	  flow_log_0.apply();

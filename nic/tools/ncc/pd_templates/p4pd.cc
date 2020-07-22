@@ -1599,7 +1599,9 @@ hash_${table}_unpack_action_data(uint32_t tableid,
                                  ${table}_actiondata_t *actiondata)
 {
     uint16_t src_start_bit = 0, dest_start_bit = 0;
+//:: if (len(actionflddict) > 0):
     uint16_t actionfldwidth = 0;
+//:: #endif
     uint16_t actiondatalen = 0;
     uint8_t *packed_action_data;
     (void)src_start_bit;
