@@ -8,6 +8,9 @@
 ///
 //----------------------------------------------------------------------------
 
+#ifndef __QOS_IMPL_HPP__
+#define __QOS_IMPL_HPP__
+
 #include "include/sdk/base.hpp"
 #include "include/sdk/qos.hpp"
 #include "nic/sdk/platform/capri/capri_qos.hpp"
@@ -102,3 +105,5 @@ private:
 
 }    // namespace impl
 }    // namespace api
+
+#endif    // __QOS_IMPL_HPP__

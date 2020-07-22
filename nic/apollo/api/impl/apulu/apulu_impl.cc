@@ -21,28 +21,31 @@
 #include "nic/sdk/platform/pal/include/pal_mem.h"
 #include "nic/sdk/asic/common/asic_common.hpp"
 #include "nic/sdk/lib/periodic/periodic.hpp"
+#include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_mem_regions.h"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/apulu/impl_utils.hpp"
-#include "nic/apollo/api/include/pds_debug.hpp"
+#include "nic/apollo/api/impl/apulu/qos_impl.hpp"
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
+#include "nic/apollo/api/impl/apulu/qos_impl.hpp"
+#include "platform/src/lib/edma/edmaq.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/p4/include/ftl.h"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_rxdma/include/p4plus_rxdma_p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
-#include "nic/apollo/api/impl/apulu/qos_impl.hpp"
-#include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
-#include "platform/src/lib/edma/edmaq.hpp"
 
 extern sdk_ret_t init_service_lif(uint32_t lif_id, const char *cfg_path);
 extern sdk_ret_t init_ipsec_lif(uint32_t lif_id);
-extern sdk_ret_t service_lif_upgrade_verify(uint32_t lif_id, const char *cfg_path);
-extern sdk_ret_t ipsec_lif_upgrade_verify(uint32_t lif_id, const char *cfg_path);
+extern sdk_ret_t service_lif_upgrade_verify(uint32_t lif_id,
+                                            const char *cfg_path);
+extern sdk_ret_t ipsec_lif_upgrade_verify(uint32_t lif_id,
+                                          const char *cfg_path);
 
 #define MEM_REGION_RXDMA_PROGRAM_NAME "rxdma_program"
 #define MEM_REGION_TXDMA_PROGRAM_NAME "txdma_program"

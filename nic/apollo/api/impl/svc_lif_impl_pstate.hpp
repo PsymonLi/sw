@@ -13,14 +13,13 @@
 
 #include "nic/sdk/include/sdk/types.hpp"
 
-// Apollo service lif upgrade store
+// apollo service lif upgrade store
 #define SVC_LIF_SHM_NAME "apollo_svc_lif"
 
-// TODO: Maybe we declare it someplace where everybody can use
-typedef struct meta_info_s {
-    module_version_t vers;
+typedef struct svc_lif_meta_s {
+    module_version_t ver;
     uint64_t rsvd[4];
-} __PACK__ meta_info_t;
+} __PACK__ svc_lif_meta_t;
 
 /// \brief persistent state for svc lif
 /// saved in shared memory store to access after process restart.
@@ -36,8 +35,8 @@ typedef struct svc_lif_pstate_v1_s {
         tx_sched_num_table_entries = 0;
     }
 
-    /// meta data for the strucure
-    meta_info_t  metadata;
+    /// meta data for the structure
+    svc_lif_meta_t metadata;
 
     /// lif id - used as shm segment identifier
     uint32_t lif_id;

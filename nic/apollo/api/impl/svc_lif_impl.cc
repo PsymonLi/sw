@@ -18,12 +18,12 @@
 #include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/sdk/p4/loader/loader.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
+#include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/impl/apollo/apollo_impl.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/p4/include/defines.h"
-#include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "nic/apollo/api/impl/devapi_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 #include "nic/apollo/api/impl/svc_lif_impl_pstate.hpp"
@@ -95,7 +95,8 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
 
     sdk::platform::utils::LIFQState qstate = { 0 };
     qstate.lif_id = lif_id;
-    qstate.hbm_address = api::g_pds_state.mempartition()->start_addr(JLIF2QSTATE_MAP_NAME);
+    qstate.hbm_address =
+        api::g_pds_state.mempartition()->start_addr(JLIF2QSTATE_MAP_NAME);
     SDK_ASSERT(qstate.hbm_address != INVALID_MEM_ADDRESS);
     qstate.params_in.type[0].entries = 2; // 4 queues
     qstate.params_in.type[0].size = 1; // 1 unit = 64B
@@ -106,23 +107,30 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
 
     lifqstate_t lif_qstate = { 0 };
     lif_qstate.pc = pgm_offset;
-    lif_qstate.ring0_base = api::g_pds_state.mempartition()->start_addr(JRXDMA_TO_TXDMA_BUF_NAME);
+    lif_qstate.ring0_base =
+        api::g_pds_state.mempartition()->start_addr(JRXDMA_TO_TXDMA_BUF_NAME);
     SDK_ASSERT(lif_qstate.ring0_base != INVALID_MEM_ADDRESS);
-    lif_qstate.ring1_base = api::g_pds_state.mempartition()->start_addr(JRXDMA_TO_TXDMA_DESC_NAME);
+    lif_qstate.ring1_base =
+        api::g_pds_state.mempartition()->start_addr(JRXDMA_TO_TXDMA_DESC_NAME);
     SDK_ASSERT(lif_qstate.ring1_base != INVALID_MEM_ADDRESS);
-    lif_qstate.ring_size = log2((api::g_pds_state.mempartition()->size(JRXDMA_TO_TXDMA_BUF_NAME) >> 10) / 10);
+    lif_qstate.ring_size =
+        log2((api::g_pds_state.mempartition()->size(JRXDMA_TO_TXDMA_BUF_NAME) >> 10) / 10);
     lif_qstate.total_rings = 1;
     sdk::asic::write_qstate(qstate.hbm_address, (uint8_t *) &lif_qstate,
                             sizeof(lif_qstate));
 
     lifqstate_t txdma_qstate = { 0 };
     txdma_qstate.pc = pgm_offset;
-    txdma_qstate.rxdma_cindex_addr = qstate.hbm_address + offsetof(lifqstate_t, sw_cindex);
-    txdma_qstate.ring0_base = api::g_pds_state.mempartition()->start_addr(JRXDMA_TO_TXDMA_BUF_NAME);
+    txdma_qstate.rxdma_cindex_addr =
+        qstate.hbm_address + offsetof(lifqstate_t, sw_cindex);
+    txdma_qstate.ring0_base =
+        api::g_pds_state.mempartition()->start_addr(JRXDMA_TO_TXDMA_BUF_NAME);
     SDK_ASSERT(txdma_qstate.ring0_base != INVALID_MEM_ADDRESS);
-    txdma_qstate.ring1_base = api::g_pds_state.mempartition()->start_addr(JRXDMA_TO_TXDMA_DESC_NAME);
+    txdma_qstate.ring1_base =
+        api::g_pds_state.mempartition()->start_addr(JRXDMA_TO_TXDMA_DESC_NAME);
     SDK_ASSERT(txdma_qstate.ring1_base != INVALID_MEM_ADDRESS);
-    txdma_qstate.ring_size = log2((api::g_pds_state.mempartition()->size(JRXDMA_TO_TXDMA_BUF_NAME) >> 10) / 10);
+    txdma_qstate.ring_size =
+        log2((api::g_pds_state.mempartition()->size(JRXDMA_TO_TXDMA_BUF_NAME) >> 10) / 10);
     txdma_qstate.total_rings = 1;
     sdk::asic::write_qstate(qstate.hbm_address + sizeof(lifqstate_t),
                             (uint8_t *) &txdma_qstate, sizeof(txdma_qstate));
@@ -134,21 +142,23 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     svc_lif_pstate_t *lif_pstate;
     module_version_t  cur_version;
 
-    // get backup shmstore and update lif pstate later once scheduler is programmed
+    // get backup shmstore and update lif pstate later once scheduler is
+    // programmed
     backup_store = api::g_upg_state->backup_shmstore(core::PDS_THREAD_ID_API,
                                                     true);
     SDK_ASSERT(backup_store != NULL);
     cur_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
     // create segment to backup svc lif pstate
-    lif_pstate = (svc_lif_pstate_t *)backup_store->create_segment(SVC_LIF_SHM_NAME,
-                                                     sizeof(svc_lif_pstate_t));
+    lif_pstate =
+        (svc_lif_pstate_t *)backup_store->create_segment(SVC_LIF_SHM_NAME,
+                                              sizeof(svc_lif_pstate_t));
     if (lif_pstate == NULL) {
         PDS_TRACE_ERR("Failed to create shmstore %s, for svc lif id %u",
                       SVC_LIF_SHM_NAME, lif_id);
         return SDK_RET_ERR;
     } else {
         new (lif_pstate) svc_lif_pstate_t();
-        memcpy(&lif_pstate->metadata.vers, &cur_version, sizeof(cur_version));
+        memcpy(&lif_pstate->metadata.ver, &cur_version, sizeof(cur_version));
     }
     lif_pstate->lif_id = lif_id;
 
@@ -158,7 +168,8 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
 
     // update lif pstate with latest value
     lif_pstate->tx_sched_table_offset = lif_spec.tx_sched_table_offset;
-    lif_pstate->tx_sched_num_table_entries = lif_spec.tx_sched_num_table_entries;
+    lif_pstate->tx_sched_num_table_entries =
+        lif_spec.tx_sched_num_table_entries;
     return SDK_RET_OK;
 }
 
@@ -171,7 +182,8 @@ init_ipsec_lif (uint32_t lif_id)
 {
     sdk::platform::utils::LIFQState qstate = { 0 };
     qstate.lif_id = lif_id;
-    qstate.hbm_address = api::g_pds_state.mempartition()->start_addr(JIPSEC_LIF2QSTATE_MAP_NAME);
+    qstate.hbm_address =
+        api::g_pds_state.mempartition()->start_addr(JIPSEC_LIF2QSTATE_MAP_NAME);
     SDK_ASSERT(qstate.hbm_address != INVALID_MEM_ADDRESS);
     qstate.params_in.type[0].entries = PDS_MAX_IPSEC_SA_SHIFT;
     qstate.params_in.type[0].size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
@@ -227,27 +239,25 @@ sdk_ret_t
 service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
 {
     int32_t rv;
-    uint8_t pgm_offset = 0;
     sdk_ret_t ret;
     lifqstate_t lif_qstate;
-    svc_lif_pstate_t *lif_pstate;
-    sdk::platform::lif_info_t lif_info;
+    uint8_t pgm_offset = 0;
     pds_lif_spec_t lif_spec;
     std::string prog_info_file;
+    svc_lif_pstate_t *lif_pstate;
+    void *to_pstate, *from_pstate;
+    sdk::platform::lif_info_t lif_info;
+    module_version_t cur_version, prev_version;
     sdk::platform::utils::LIFQState qstate = { 0 };
-    sdk::lib::shmstore  *backup_store;
-    sdk::lib::shmstore  *restore_store;
-    module_version_t    cur_version;
-    module_version_t    prev_version;
-    void                *to_pstate;
-    void                *from_pstate;
+    sdk::lib::shmstore *backup_store, *restore_store;
 
     backup_store = api::g_upg_state->backup_shmstore(core::PDS_THREAD_ID_API,
                                                      true);
     restore_store = api::g_upg_state->restore_shmstore(core::PDS_THREAD_ID_API,
                                                        true);
     cur_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
-    prev_version = api::g_upg_state->module_prev_version(core::PDS_THREAD_ID_API);
+    prev_version =
+        api::g_upg_state->module_prev_version(core::PDS_THREAD_ID_API);
     //     hitless init:
     //     restore_store != NULL
     //     if version match:
@@ -266,19 +276,19 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
         // TODO: copy over data from from_pstate to to_pstate
         lif_pstate = (svc_lif_pstate_t *)to_pstate;
         if (lif_pstate->lif_id != lif_id) {
-            PDS_TRACE_ERR("Service lif id %u, did not match with previous version id %u",
+            PDS_TRACE_ERR("Service lif id %u version %u mismatch",
                            lif_id, lif_pstate->lif_id);
             return SDK_RET_ENTRY_NOT_FOUND;
         }
-        memcpy(&lif_pstate->metadata.vers, &cur_version,
-               sizeof(cur_version));
+        memcpy(&lif_pstate->metadata.ver, &cur_version, sizeof(cur_version));
         PDS_TRACE_DEBUG("svc lif %s, id %u, pstate converted to version %u",
                         SVC_LIF_SHM_NAME, lif_id, cur_version.version);
     } else {
-        lif_pstate = (svc_lif_pstate_t *)restore_store->open_segment(SVC_LIF_SHM_NAME);
+        lif_pstate =
+            (svc_lif_pstate_t *)restore_store->open_segment(SVC_LIF_SHM_NAME);
         if (lif_pstate == NULL || lif_pstate->lif_id != lif_id) {
-            PDS_TRACE_ERR("Either shmstore %s open failed or lif id %u, did not match"
-                          " with previous id %u",
+            PDS_TRACE_ERR("Either shmstore %s open failed or lif id %u, "
+                          "did not match with previous id %u",
                           SVC_LIF_SHM_NAME, lif_id,
                           (lif_pstate != NULL) ? lif_pstate->lif_id : lif_id);
             return SDK_RET_ENTRY_NOT_FOUND;

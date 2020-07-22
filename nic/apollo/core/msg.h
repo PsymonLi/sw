@@ -26,7 +26,6 @@ typedef enum pds_msg_type_s {
     PDS_MSG_TYPE_CFG_OBJ_GET_ALL,                 ///< config read all message
     PDS_MSG_TYPE_CMD,                             ///< miscellaneous cmd msgs
     PDS_MSG_TYPE_EVENT,                           ///< event type message
-
     PDS_MSG_TYPE_MAX
 } pds_msg_type_t;
 
