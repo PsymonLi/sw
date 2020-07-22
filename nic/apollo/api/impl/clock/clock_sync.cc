@@ -36,7 +36,6 @@ pds_clock_sync::pds_clock_sync() {
     sync_timer_ = NULL;
     rollover_timer_ = NULL;
     clock_adjustment_ = 0;
-    delta_ns_ = 0;
 }
 
 pds_clock_sync::~pds_clock_sync() {
@@ -69,9 +68,6 @@ pds_clock_sync::compute_clock_delta_cb(void *timer, uint32_t timer_id,
                                  hw_ns)/1000000L);
         }
     }
-    // update the h/w clock and s/w clock delta
-    // TODO: is this hw_ns - sw_ns?
-    clock_sync->delta_ns_ = sw_ns - hw_ns;
 
     // update p4 clock information with real time clock
     clock_gettime(CLOCK_REALTIME, &sw_ts);

@@ -117,8 +117,6 @@ private:
     void *sync_timer_;
     void *rollover_timer_;
     double clock_adjustment_;
-    // +ve or -ve delta between s/w and h/w clocks in nano seconds
-    int64_t delta_ns_;
     static uint64_t k_clock_sync_intvl_ms_;
     static uint64_t k_clock_sync_intvl_ns_;
 };

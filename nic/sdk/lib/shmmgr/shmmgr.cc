@@ -328,15 +328,16 @@ shmmgr::segment_find(const char *name, bool create, std::size_t size,
                 state->size = size;
                 return addr;
             } else {
-                SDK_TRACE_ERR("Memory alloc failed");
+                SDK_TRACE_ERR("Failed to allocate memory for segment %s",
+                              name);
                 SHMMGR_OP_NORET(destroy_ptr(state));
             }
         }
     } else {
         SDK_ASSERT(state != NULL);
-        if (size && state->size < size) {
-            SDK_TRACE_ERR("Shmmgr, find size is not valid, allocated %lu, requested %lu",
-                          state->size, size);
+        if (size && (state->size < size)) {
+            SDK_TRACE_ERR("Failed to find segment %s, allocated size %lu "
+                          "< requested size %lu", name, state->size, size);
         } else {
             addr = (void *)((uint64_t)state - state->offset);
         }
