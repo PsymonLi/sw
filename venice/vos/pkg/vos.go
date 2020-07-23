@@ -59,6 +59,8 @@ const (
 
 var (
 	maxCreateBucketRetries = 1200
+	maxSetLifecycleRetries = 1200
+
 	// DiskPaths are the data folder locations for Minio
 	DiskPaths = []string{"/disk1", "/disk2"}
 )
@@ -130,19 +132,15 @@ func (i *instance) createDefaultBuckets(client vos.BackendClient) error {
 		loop = false
 		for _, n := range objstore.Buckets_name {
 			name := "default." + strings.ToLower(n)
-			lifecycle := ""
-			if strings.Compare(strings.ToLower(n), globals.FwlogsBucketName) == 0 {
-				lifecycle = defaultFlowlogsLifecycleConfig
-			}
 
-			if err = i.createBucket(name, lifecycle, true); err != nil {
+			if err = i.createBucket(name, true); err != nil {
 				log.Errorf("create bucket [%v] failed retry [%d] (%s)", name, retryCount, err)
 				loop = true
 			}
 
 			if strings.Compare(strings.ToLower(n), globals.FwlogsBucketName) == 0 {
 				metaBucketName := "default." + "meta-" + strings.ToLower(n)
-				if err = i.createBucket(metaBucketName, lifecycle, false); err != nil {
+				if err = i.createBucket(metaBucketName, false); err != nil {
 					log.Errorf("create bucket [%v] failed retry [%d] (%s)", metaBucketName, retryCount, err)
 					loop = true
 				}
@@ -159,7 +157,7 @@ func (i *instance) createDefaultBuckets(client vos.BackendClient) error {
 	return nil
 }
 
-func (i *instance) createBucket(bucket string, lifecycle string, addWatcher bool) error {
+func (i *instance) createBucket(bucket string, addWatcher bool) error {
 	ok, err := i.client.BucketExists(strings.ToLower(bucket))
 	if err != nil {
 		return errors.Wrap(err, "client error")
@@ -185,12 +183,41 @@ func (i *instance) createBucket(bucket string, lifecycle string, addWatcher bool
 		}
 	}
 
-	if lifecycle != "" {
-		err := i.client.SetBucketLifecycleWithContext(i.ctx, bucket, lifecycle)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("SetBucketLifecycle operation[%s]", bucket))
+	return nil
+}
+
+func (i *instance) setBucketLifecycle() error {
+	var err error
+outer:
+	for _, n := range objstore.Buckets_name {
+		buckets := map[string]string{}
+		if strings.Compare(strings.ToLower(n), globals.FwlogsBucketName) == 0 {
+			buckets["default."+strings.ToLower(n)] = defaultFlowlogsLifecycleConfig
+			buckets["default."+globals.FwlogsMetaBucketName] = defaultFlowlogsLifecycleConfig
+		}
+
+		for bucket, lc := range buckets {
+			retryCount := 0
+		forever:
+			for {
+				err = i.client.SetBucketLifecycleWithContext(i.ctx, bucket, lc)
+				if err != nil {
+					retryCount++
+					log.Errorf("setBucketLifecycle [%v] failed retry [%d] (%s)", bucket, retryCount, err)
+					if retryCount >= maxSetLifecycleRetries {
+						break outer
+					}
+					continue
+				}
+				break forever
+			}
 		}
 	}
+
+	if err != nil {
+		return errors.Wrap(err, "failed after max retries")
+	}
+
 	return nil
 }
 
@@ -340,6 +367,23 @@ func New(ctx context.Context, trace bool, testURL string, credentialsManagerChan
 	if err != nil {
 		log.Errorf("failed to create buckets (%+v)", err)
 		return nil, errors.Wrap(err, "failed to create buckets")
+	}
+
+	for {
+		online, err := adminClient.IsClusterOnline(ctx)
+		if err != nil {
+			log.Errorf("minio cluster is not online yet (%+v)", err)
+			continue
+		}
+
+		if online {
+			err := inst.setBucketLifecycle()
+			if err != nil {
+				log.Errorf("failed to set bucket lifecycle (%+v)", err)
+				return nil, errors.Wrap(err, "failed to set bucket lifecycle")
+			}
+			break
+		}
 	}
 
 	_, err = inst.createDiskUpdateWatcher(inst.bucketDiskThresholds,

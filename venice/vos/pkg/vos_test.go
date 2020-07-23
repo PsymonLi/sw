@@ -294,8 +294,8 @@ func TestSetBucketLifecycle(t *testing.T) {
 	maxCreateBucketRetries = 1
 	inst := &instance{}
 	inst.Init(fb)
-	err := inst.createDefaultBuckets(fb)
-	AssertOk(t, err, "create buckets failed")
+	err := inst.setBucketLifecycle()
+	AssertOk(t, err, "setBucketLifecycle failed")
 	Assert(t, len(lcmap) == 2, "lifecycle not set for fwlogs bucket", len(lcmap))
 }
 
