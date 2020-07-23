@@ -181,7 +181,7 @@ func downloadVeniceBundle(bundleLocalFilePath string) (string, error) {
 	for b := buildNumber; b > 0; b-- {
 		version = versionPrefix + "-" + strconv.Itoa(b)
 		By(fmt.Sprintf("ts:%s Trying to download bundle.tar, version: %s", time.Now().String(), version))
-		url := fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/bundle/bundle.tar --output %s -f", version, bundleLocalFilePath)
+		url := fmt.Sprintf("http://fs2.pensando.io/builds/hourly/%s/bundle/bundle.tar --output %s -f", version, bundleLocalFilePath)
 		res := ts.tu.CommandOutputIgnoreError(nodeIP, fmt.Sprintf(`curl %s`, url))
 
 		if strings.Contains(res, "404 Not Found") || strings.Contains(res, " error: ") {

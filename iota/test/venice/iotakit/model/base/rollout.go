@@ -237,9 +237,9 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 			log.Errorf("ts:%s Trying to download bundle.tar, version: %s clusterVersion %s", time.Now().String(), version, clusterVersion)
 			var url string
 			if spec.BundleType == "apulu-bundle" {
-				url = fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/apulu-bundle/bundle.tar", version)
+				url = fmt.Sprintf("http://fs2.pensando.io/builds/hourly/%s/apulu-bundle/bundle.tar", version)
 			} else {
-				url = fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/bundle/bundle.tar", version)
+				url = fmt.Sprintf("http://fs2.pensando.io/builds/hourly/%s/bundle/bundle.tar", version)
 			}
 			jsonUrl := []string{url, "--output", bundleLocalFilePath, "-f"}
 

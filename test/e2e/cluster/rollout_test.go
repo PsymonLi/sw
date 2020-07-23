@@ -127,11 +127,11 @@ var _ = Describe("rollout object tests", func() {
 			Skip(fmt.Sprintf("Skipping upload venice image test"))
 			node := ts.tu.QuorumNodes[rand.Intn(len(ts.tu.QuorumNodes))]
 			nodeIP := ts.tu.NameToIPMap[node]
-			url := fmt.Sprintf("http://pxe.pensando.io/kickstart/veniceImageForRollout/venice.tgz --output /import/src/github.com/pensando/sw/bin/venice.upg.tgz")
+			url := fmt.Sprintf("http://fs2.pensando.io/kickstart/veniceImageForRollout/venice.tgz --output /import/src/github.com/pensando/sw/bin/venice.upg.tgz")
 			res := ts.tu.CommandOutput(nodeIP, fmt.Sprintf(`curl %s`, url))
 			By(fmt.Sprintf("ts:%s CURL image download [%s]", time.Now().String(), res))
 
-			url = fmt.Sprintf("http://pxe.pensando.io/kickstart/veniceImageForRollout/venice.json --output /import/src/github.com/pensando/sw/bin/venice.json")
+			url = fmt.Sprintf("http://fs2.pensando.io/kickstart/veniceImageForRollout/venice.json --output /import/src/github.com/pensando/sw/bin/venice.json")
 			res = ts.tu.CommandOutput(nodeIP, fmt.Sprintf(`curl %s`, url))
 			By(fmt.Sprintf("ts:%s CURL venice.json download [%s]", time.Now().String(), res))
 

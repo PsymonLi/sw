@@ -57,7 +57,7 @@ func downloadBuildArtifcat(version, targetBranch, srcFile, dstFile string) error
 	tryDownloadVersion := func(version string) error {
 
 		log.Errorf("ts:%s Trying to download src artifcat %v , version: %s", time.Now().String(), srcFile, version)
-		url := fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/%s", version, srcFile)
+		url := fmt.Sprintf("http://fs2.pensando.io/builds/hourly/%s/%s", version, srcFile)
 		jsonURL := []string{url, "--output", localFilePath, "-f"}
 
 		fmt.Println(fmt.Sprintf("curl string: %v\n", jsonURL))
