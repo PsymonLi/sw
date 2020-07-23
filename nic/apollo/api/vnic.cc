@@ -33,6 +33,8 @@ vnic_entry::vnic_entry() {
     host_if_ = k_pds_obj_key_invalid;
     meter_en_ = false;
     primary_ = false;
+    num_tx_mirror_session_ = 0;
+    num_rx_mirror_session_ = 0;
     ht_ctxt_.reset();
     impl_ = NULL;
 }

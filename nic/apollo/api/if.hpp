@@ -24,6 +24,8 @@
 // attribute update bits for interface object
 #define PDS_IF_UPD_ADMIN_STATE         0x1
 #define PDS_IF_UPD_TX_POLICER          0x2
+#define PDS_IF_UPD_TX_MIRROR_SESSION   0x4
+#define PDS_IF_UPD_RX_MIRROR_SESSION   0x8
 
 namespace api {
 
@@ -301,6 +303,32 @@ public:
     /// \return eth interface corresponding to the given interface or NULL
     static if_entry *eth_if(if_entry *intf);
 
+    /// \brief     return number of Tx mirror sessions on this interface
+    /// \return    number of Tx mirror session on the interface
+    uint8_t num_tx_mirror_session(void) const {
+        return num_tx_mirror_session_;
+    }
+
+    /// \brief          return Tx mirror session of the interface
+    /// \param[in] n    Tx mirror session number being queried
+    /// \return         Tx mirror session of the interface
+    pds_obj_key_t tx_mirror_session(uint32_t n) const {
+        return tx_mirror_session_[n];
+    }
+
+    /// \brief     return number of Rx mirror sessions on this interface
+    /// \return    number of Rx mirror session on the interface
+    uint8_t num_rx_mirror_session(void) const {
+        return num_rx_mirror_session_;
+    }
+
+    /// \brief          return Rx mirror session of the interface
+    /// \param[in] n    Rx mirror session number being queried
+    /// \return         Rx mirror session of the interface
+    pds_obj_key_t rx_mirror_session(uint32_t n) const {
+        return rx_mirror_session_[n];
+    }
+
 private:
     /// \brief constructor
     if_entry();
@@ -399,6 +427,14 @@ private:
             mac_addr_t mac_;              ///< host interface mac address
         } host_;
     } if_info_;
+    /// number of tx mirror sessions
+    uint8_t       num_tx_mirror_session_;
+    /// Tx mirror sessions
+    pds_obj_key_t tx_mirror_session_[PDS_MAX_MIRROR_SESSION];
+    /// number of Rx mirror sessions
+    uint8_t       num_rx_mirror_session_;
+    /// Rx mirror sessions
+    pds_obj_key_t rx_mirror_session_[PDS_MAX_MIRROR_SESSION];
 
     ht_ctxt_t ht_ctxt_;            ///< hash table context
     ht_ctxt_t ifindex_ht_ctxt_;    ///< hash table context

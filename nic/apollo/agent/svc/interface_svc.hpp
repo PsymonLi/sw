@@ -481,6 +481,16 @@ pds_if_proto_to_api_spec (pds_if_spec_t *api_spec,
         api_spec->type = IF_TYPE_HOST;
         pds_obj_key_proto_to_api_spec(&api_spec->host_if_info.tx_policer,
                                       proto_spec.hostifspec().txpolicer());
+        api_spec->num_tx_mirror_session = proto_spec.txmirrorsessionid_size();
+        for (uint8_t i = 0; i < api_spec->num_tx_mirror_session; i++) {
+            pds_obj_key_proto_to_api_spec(&api_spec->tx_mirror_session[i],
+                                          proto_spec.txmirrorsessionid(i));
+        }
+        api_spec->num_rx_mirror_session = proto_spec.rxmirrorsessionid_size();
+        for (uint8_t i = 0; i < api_spec->num_rx_mirror_session; i++) {
+            pds_obj_key_proto_to_api_spec(&api_spec->rx_mirror_session[i],
+                                          proto_spec.rxmirrorsessionid(i));
+        }
         break;
 
     default:

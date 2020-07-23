@@ -214,11 +214,11 @@ typedef struct pds_if_spec_s {
         pds_host_if_info_t   host_if_info;
     };
     // Tx/egress mirror session id list, if any
-    uint8_t num_tx_mirror_sessions;
-    pds_obj_key_t tx_mirror_sessions[PDS_MAX_MIRROR_SESSION];
+    uint8_t num_tx_mirror_session;
+    pds_obj_key_t tx_mirror_session[PDS_MAX_MIRROR_SESSION];
     // Rx/ingress mirror session id list, if any
-    uint8_t num_rx_mirror_sessions;
-    pds_obj_key_t rx_mirror_sessions[PDS_MAX_MIRROR_SESSION];
+    uint8_t num_rx_mirror_session;
+    pds_obj_key_t rx_mirror_session[PDS_MAX_MIRROR_SESSION];
 } __PACK__ pds_if_spec_t;
 
 /// \brief uplink interface status

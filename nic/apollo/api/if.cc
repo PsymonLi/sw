@@ -32,6 +32,8 @@ if_entry::if_entry() {
     ht_ctxt_.reset();
     memset(&if_info_, 0, sizeof(if_info_));
     ifindex_ = IFINDEX_INVALID;
+    num_tx_mirror_session_ = 0;
+    num_rx_mirror_session_ = 0;
     ifindex_ht_ctxt_.reset();
 }
 
@@ -196,6 +198,14 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
         ifindex_ =
             HOST_IFINDEX(IFINDEX_TO_IFID(api::objid_from_uuid(spec->key)));
         if_info_.host_.tx_policer_ = spec->host_if_info.tx_policer;
+        num_tx_mirror_session_ = spec->num_tx_mirror_session;
+        for (uint8_t i = 0; i < num_tx_mirror_session_; i++) {
+            tx_mirror_session_[i] = spec->tx_mirror_session[i];
+        }
+        num_rx_mirror_session_ = spec->num_rx_mirror_session;
+        for (uint8_t i = 0; i < num_rx_mirror_session_; i++) {
+            rx_mirror_session_[i] = spec->rx_mirror_session[i];
+        }
         break;
 
     case IF_TYPE_ETH:
@@ -309,6 +319,16 @@ if_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
         if (if_info_.host_.tx_policer_ != spec->host_if_info.tx_policer) {
             obj_ctxt->upd_bmap |= PDS_IF_UPD_TX_POLICER;
         }
+    }
+    if ((num_tx_mirror_session_ != spec->num_tx_mirror_session) ||
+        memcmp(tx_mirror_session_, spec->tx_mirror_session,
+               num_tx_mirror_session_ * sizeof(tx_mirror_session_[0]))) {
+        obj_ctxt->upd_bmap |= PDS_IF_UPD_TX_MIRROR_SESSION;
+    }
+    if ((num_rx_mirror_session_ != spec->num_rx_mirror_session) ||
+        memcmp(rx_mirror_session_, spec->rx_mirror_session,
+               num_rx_mirror_session_ * sizeof(rx_mirror_session_[0]))) {
+        obj_ctxt->upd_bmap |= PDS_IF_UPD_RX_MIRROR_SESSION;
     }
     PDS_TRACE_DEBUG("if %s update bmap 0x%lx", key_.str(), obj_ctxt->upd_bmap);
     return SDK_RET_OK;
