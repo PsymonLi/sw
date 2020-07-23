@@ -104,7 +104,7 @@ func TestMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 
 	err := HandleL2Segment(infraAPI, l2SegClient, types.Create, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Create failed. Err: %v", err)
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Create failed. Err: %v", err)
 
 	listNw, _ := infraAPI.List("Network")
@@ -204,7 +204,7 @@ func TestMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	Assert(t, err != nil, "Lateral tunnel obj found, when it is not expected to be created. Found: %v", objTunnel)
 
 	// Cleanup
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
@@ -249,7 +249,7 @@ func TestNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 
 	err := HandleL2Segment(infraAPI, l2SegClient, types.Create, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Create failed. Err: %v", err)
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Create failed. Err: %v", err)
 
 	listNw, _ := infraAPI.List("Network")
@@ -336,7 +336,7 @@ func TestNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	AssertOk(t, err, "Venice created endpoint must not be deleted")
 
 	// Cleanup
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
@@ -714,7 +714,7 @@ func TestTwoMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 
 	err := HandleL2Segment(infraAPI, l2SegClient, types.Create, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Create failed. Err: %v", err)
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Create failed. Err: %v", err)
 
 	listNw, _ := infraAPI.List("Network")
@@ -786,7 +786,7 @@ func TestTwoMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	dat, err = infraAPI.Read("Tunnel", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral tunnel obj found, when it is not expected to be created. Found: %v", dat)
 	// Cleanup
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
@@ -907,7 +907,7 @@ func TestTwoNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 
 	err := HandleL2Segment(infraAPI, l2SegClient, types.Create, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Create failed. Err: %v", err)
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Create failed. Err: %v", err)
 
 	listNw, _ := infraAPI.List("Network")
@@ -970,7 +970,7 @@ func TestTwoNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	dat, err = infraAPI.Read("Tunnel", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral tunnel obj found, when it is not expected to be created. Found: %v", dat)
 	// Cleanup
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)
@@ -1678,7 +1678,7 @@ func TestCreateDeleteLateralObjVeniceKnownCollectorWithTunnel(t *testing.T) {
 
 	err := HandleL2Segment(infraAPI, l2SegClient, types.Create, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Create failed. Err: %v", err)
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Create, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Create failed. Err: %v", err)
 
 	listNw, _ := infraAPI.List("Network")
@@ -1737,7 +1737,7 @@ func TestCreateDeleteLateralObjVeniceKnownCollectorWithTunnel(t *testing.T) {
 	dat, err = infraAPI.Read("Tunnel", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral tunnel obj found, when it is not expected to be created. Found: %v", dat)
 	// Cleanup
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, *knownEP, 65, 42, map[uint64]int{})
 	AssertOk(t, err, "Endpoint Delete failed. Err: %v", err)
 	err = HandleL2Segment(infraAPI, l2SegClient, types.Delete, *knownNet, 65, []uint64{120, 121, 122})
 	AssertOk(t, err, "Network Delete failed. Err: %v", err)

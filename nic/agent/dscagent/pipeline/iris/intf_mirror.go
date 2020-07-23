@@ -3,11 +3,13 @@
 package iris
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
+	"github.com/pensando/sw/nic/agent/dscagent/pipeline/iris/utils"
 	commonUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils/validator"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
@@ -112,7 +114,7 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 				log.Error(errors.Wrapf(types.ErrUnmarshal, "Interface: %s | Err: %v", intf.GetKey(), err))
 				continue
 			}
-			if !usingMirrorSession(intf, existingMirror.GetKey()) {
+			if !intfUsingMirrorSession(intf, existingMirror.GetKey()) {
 				continue
 			}
 			collectorMap := make(map[uint64]int)
@@ -173,7 +175,7 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 	// Update the mirror session key to sessionIDs mapping
 	MirrorDestToIDMapping[mirrorKey] = sessionIDs
 
-	// Update interfaces if mirror direction was changed or number of collectors changed
+	// Update interfaces and enics if mirror direction was changed or number of collectors changed
 	if dirUpdated || (len(deletedCollectors)+len(addedCollectors) != 0) {
 		data, err := infraAPI.List("Interface")
 		if err != nil {
@@ -187,7 +189,7 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 				log.Error(errors.Wrapf(types.ErrUnmarshal, "Interface: %s | Err: %v", intf.GetKey(), err))
 				continue
 			}
-			if !usingMirrorSession(intf, mirror.GetKey()) {
+			if !intfUsingMirrorSession(intf, mirror.GetKey()) {
 				continue
 			}
 			collectorMap := make(map[uint64]int)
@@ -197,12 +199,51 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 				continue
 			}
 			// Populate the mirror direction for the updated mirror session. Bolt DB still doesn't have the update
-			// so ValidateImterface would not return the updated mirror direction
+			// so ValidateInterface would not return the updated mirror direction
 			for _, id := range sessionIDs {
 				collectorMap[id] = commonUtils.MirrorDir(mirror.Spec.MirrorDirection)
 			}
 			if err := HandleInterface(infraAPI, intfClient, types.Update, intf, collectorMap); err != nil {
 				log.Error(errors.Wrapf(types.ErrInterfaceUpdateDuringInterfaceMirrorSessionUpdate, "Interface: %s | Err: %v", intf.GetKey(), err))
+			}
+		}
+
+		data, err = infraAPI.List("Endpoint")
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "Endpoint: | Err: %v", types.ErrObjNotFound))
+		}
+
+		for _, o := range data {
+			var ep netproto.Endpoint
+			err := proto.Unmarshal(o, &ep)
+			if err != nil {
+				log.Error(errors.Wrapf(types.ErrUnmarshal, "Endpoint: %s | Err: %v", ep.GetKey(), err))
+				continue
+			}
+			// Skip if no enic
+			if ep.Status.EnicID == 0 {
+				continue
+			}
+			if !epUsingMirrorSession(ep, mirror.GetKey()) {
+				continue
+			}
+			collectorMap := make(map[uint64]int)
+			network, _, err := validator.ValidateEndpoint(infraAPI, ep, collectorMap, MirrorDestToIDMapping)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			// Populate the mirror direction for the updated mirror session. Bolt DB still doesn't have the update
+			// so ValidateEndpoint would not return the updated mirror direction
+			for _, id := range sessionIDs {
+				collectorMap[id] = commonUtils.MirrorDir(mirror.Spec.MirrorDirection)
+			}
+			interfaceReqMsg := convertEnicInterface(ep.Spec.MacAddress, ep.Status.EnicID, network.Status.NetworkID, ep.Spec.UsegVlan, false, collectorMap)
+			resp, err := intfClient.InterfaceUpdate(context.Background(), interfaceReqMsg)
+			if resp != nil {
+				if err := utils.HandleErr(types.Update, resp.Response[0].ApiStatus, err, fmt.Sprintf("update Failed for ENIC Interface. ID: %d", ep.Status.EnicID)); err != nil {
+					continue
+				}
 			}
 		}
 	}
@@ -240,8 +281,17 @@ func deleteInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 	return nil
 }
 
-func usingMirrorSession(intf netproto.Interface, mirror string) bool {
+func intfUsingMirrorSession(intf netproto.Interface, mirror string) bool {
 	for _, m := range intf.Spec.MirrorSessions {
+		if m == mirror {
+			return true
+		}
+	}
+	return false
+}
+
+func epUsingMirrorSession(ep netproto.Endpoint, mirror string) bool {
+	for _, m := range ep.Spec.MirrorSessions {
 		if m == mirror {
 			return true
 		}

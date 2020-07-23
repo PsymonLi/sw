@@ -604,8 +604,9 @@ func handleEndpoint(i *IrisAPI, oper types.Operation, endpoint netproto.Endpoint
 
 	// Perform object validations
 	var vrfID, networkID uint64
+	collectorMap := make(map[uint64]int)
 	if oper != types.Purge {
-		network, vrf, err := validator.ValidateEndpoint(i.InfraAPI, endpoint)
+		network, vrf, err := validator.ValidateEndpoint(i.InfraAPI, endpoint, collectorMap, iris.MirrorDestToIDMapping)
 		if err != nil {
 			log.Error(err)
 			return nil, err
@@ -621,7 +622,7 @@ func handleEndpoint(i *IrisAPI, oper types.Operation, endpoint netproto.Endpoint
 	defer log.Infof("Endpoint: %s | Op: %s | %s", endpoint.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleEndpoint(i.InfraAPI, i.EpClient, i.IntfClient, oper, endpoint, vrfID, networkID)
+	err = iris.HandleEndpoint(i.InfraAPI, i.EpClient, i.IntfClient, oper, endpoint, vrfID, networkID, collectorMap)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1846,24 +1847,6 @@ func (i *IrisAPI) ReplayConfigs() error {
 		}
 	}
 
-	// Replay Endpoint Object
-	epKind := netproto.Endpoint{
-		TypeMeta: api.TypeMeta{Kind: "Endpoint"},
-	}
-	endpoints, _ := i.HandleEndpoint(types.List, epKind)
-	for _, ep := range endpoints {
-		log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", ep.Kind, ep.GetKey())
-		i.InfraAPI.Delete(ep.Kind, ep.GetKey())
-
-		creator, ok := ep.ObjectMeta.Labels["CreatedBy"]
-		if ok && creator == "Venice" {
-			log.Infof("Replaying persisted Network Object: %v", ep.GetKey())
-			if _, err := i.HandleEndpoint(types.Create, ep); err != nil {
-				log.Errorf("Failed to recreate Endpoint: %v. Err: %v", ep.GetKey(), err)
-			}
-		}
-	}
-
 	// Replay Tunnel Object Tunnel Replay is not needed since its not created by Venice. Uncomment this when Venice supports tunnel creations. Tunnel objects are deleted from the DB on config replay.
 	tlKind := netproto.Tunnel{
 		TypeMeta: api.TypeMeta{Kind: "Tunnel"},
@@ -1965,6 +1948,24 @@ func (i *IrisAPI) ReplayConfigs() error {
 			log.Infof("Replaying persisted FlowExportPolicy Object: %v", fe.GetKey())
 			if _, err := i.HandleFlowExportPolicy(types.Create, fe); err != nil {
 				log.Errorf("Failed to recreate FlowExportPolicy: %v. Err: %v", fe.GetKey(), err)
+			}
+		}
+	}
+
+	// Replay Endpoint Object after interface mirror session replay
+	epKind := netproto.Endpoint{
+		TypeMeta: api.TypeMeta{Kind: "Endpoint"},
+	}
+	endpoints, _ := i.HandleEndpoint(types.List, epKind)
+	for _, ep := range endpoints {
+		log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", ep.Kind, ep.GetKey())
+		i.InfraAPI.Delete(ep.Kind, ep.GetKey())
+
+		creator, ok := ep.ObjectMeta.Labels["CreatedBy"]
+		if ok && creator == "Venice" {
+			log.Infof("Replaying persisted Network Object: %v", ep.GetKey())
+			if _, err := i.HandleEndpoint(types.Create, ep); err != nil {
+				log.Errorf("Failed to recreate Endpoint: %v. Err: %v", ep.GetKey(), err)
 			}
 		}
 	}

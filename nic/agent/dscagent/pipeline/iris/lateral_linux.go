@@ -601,7 +601,7 @@ func deleteOrUpdateLateralEP(infraAPI types.InfraAPI, intfClient halapi.Interfac
 				},
 			}
 			ep.Spec.IPv4Addresses = ipList
-			if err = updateEndpointHandler(infraAPI, epClient, intfClient, *ep, vrfID, types.UntaggedCollVLAN); err != nil {
+			if err = updateEndpointHandler(infraAPI, epClient, intfClient, *ep, vrfID, types.UntaggedCollVLAN, map[uint64]int{}); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorEPUpdateFailure, "MirrorSession: %s |  Err: %v", owner, err))
 				return errors.Wrapf(types.ErrCollectorEPUpdateFailure, "MirrorSession: %s |  Err: %v", owner, err)
 			}
@@ -676,13 +676,13 @@ func createOrUpdateLateralEP(infraAPI types.InfraAPI, intfClient halapi.Interfac
 			},
 		}
 		ep.Spec.IPv4Addresses = append(ep.Spec.IPv4Addresses, destIP)
-		if err = updateEndpointHandler(infraAPI, epClient, intfClient, *ep, vrfID, types.UntaggedCollVLAN); err != nil {
+		if err = updateEndpointHandler(infraAPI, epClient, intfClient, *ep, vrfID, types.UntaggedCollVLAN, map[uint64]int{}); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorEPUpdateFailure, "MirrorSession: %s |  Err: %v", owner, err))
 			return errors.Wrapf(types.ErrCollectorEPUpdateFailure, "MirrorSession: %s |  Err: %v", owner, err)
 		}
 	} else {
 		log.Infof("Creating internal endpoint %v", ep.ObjectMeta)
-		err := createEndpointHandler(infraAPI, epClient, intfClient, *ep, vrfID, types.UntaggedCollVLAN)
+		err := createEndpointHandler(infraAPI, epClient, intfClient, *ep, vrfID, types.UntaggedCollVLAN, map[uint64]int{})
 		if err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorEPCreateFailure, "MirrorSession: %s |  Err: %v", owner, err))
 			return errors.Wrapf(types.ErrCollectorEPCreateFailure, "MirrorSession: %s |  Err: %v", owner, err)

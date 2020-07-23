@@ -31,22 +31,22 @@ func TestHandleEndpointLocal(t *testing.T) {
 		},
 	}
 
-	err := HandleEndpoint(infraAPI, epClient, intfClient, types.Create, ep, 65, 42)
+	err := HandleEndpoint(infraAPI, epClient, intfClient, types.Create, ep, 65, 42, map[uint64]int{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Update, ep, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Update, ep, 65, 42, map[uint64]int{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, ep, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, ep, 65, 42, map[uint64]int{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleEndpoint(infraAPI, epClient, intfClient, 42, ep, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, 42, ep, 65, 42, map[uint64]int{})
 	if err == nil {
 		t.Fatal("Invalid op must return a valid error.")
 	}
@@ -70,17 +70,17 @@ func TestHandleEndpointRemote(t *testing.T) {
 		},
 	}
 
-	err := HandleEndpoint(infraAPI, epClient, intfClient, types.Create, ep, 65, 42)
+	err := HandleEndpoint(infraAPI, epClient, intfClient, types.Create, ep, 65, 42, map[uint64]int{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Update, ep, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Update, ep, 65, 42, map[uint64]int{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, ep, 65, 42)
+	err = HandleEndpoint(infraAPI, epClient, intfClient, types.Delete, ep, 65, 42, map[uint64]int{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,17 +107,17 @@ func TestHandleEndpointLocalInfraFailures(t *testing.T) {
 		},
 	}
 	i := newBadInfraAPI()
-	err := HandleEndpoint(i, epClient, intfClient, types.Create, ep, 65, 42)
+	err := HandleEndpoint(i, epClient, intfClient, types.Create, ep, 65, 42, map[uint64]int{})
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleEndpoint(i, epClient, intfClient, types.Update, ep, 65, 42)
+	err = HandleEndpoint(i, epClient, intfClient, types.Update, ep, 65, 42, map[uint64]int{})
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleEndpoint(i, epClient, intfClient, types.Delete, ep, 65, 42)
+	err = HandleEndpoint(i, epClient, intfClient, types.Delete, ep, 65, 42, map[uint64]int{})
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}

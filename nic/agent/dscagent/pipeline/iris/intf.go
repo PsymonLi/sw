@@ -108,7 +108,7 @@ func deleteInterfaceHandler(infraAPI types.InfraAPI, client halapi.InterfaceClie
 	return nil
 }
 
-func convertInterface(intf netproto.Interface, spec *halapi.InterfaceSpec, collectorMap map[uint64]int) *halapi.InterfaceRequestMsg {
+func convertMirrorSessions(collectorMap map[uint64]int) ([]*halapi.MirrorSessionKeyHandle, []*halapi.MirrorSessionKeyHandle) {
 	var txMirrorSessionhandles []*halapi.MirrorSessionKeyHandle
 	var rxMirrorSessionhandles []*halapi.MirrorSessionKeyHandle
 	for k, v := range collectorMap {
@@ -119,7 +119,11 @@ func convertInterface(intf netproto.Interface, spec *halapi.InterfaceSpec, colle
 			txMirrorSessionhandles = append(txMirrorSessionhandles, convertMirrorSessionKeyHandle(k))
 		}
 	}
+	return txMirrorSessionhandles, rxMirrorSessionhandles
+}
 
+func convertInterface(intf netproto.Interface, spec *halapi.InterfaceSpec, collectorMap map[uint64]int) *halapi.InterfaceRequestMsg {
+	txMirrorSessionhandles, rxMirrorSessionhandles := convertMirrorSessions(collectorMap)
 	// Use the spec during update
 	if spec != nil {
 		spec.TxMirrorSessions = txMirrorSessionhandles

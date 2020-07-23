@@ -27,7 +27,7 @@ func ValidateApp(app netproto.App) (err error) {
 }
 
 // ValidateEndpoint performs static field validations on IP and MAC and named ref validations on network and vrf
-func ValidateEndpoint(i types.InfraAPI, endpoint netproto.Endpoint) (network netproto.Network, vrf netproto.Vrf, err error) {
+func ValidateEndpoint(i types.InfraAPI, endpoint netproto.Endpoint, collectorMap map[uint64]int, mirrorSessionMap map[string][]uint64) (network netproto.Network, vrf netproto.Vrf, err error) {
 	// Static Field  Validations
 	err = utils.ValidateIPAddresses(endpoint.Spec.IPv4Addresses...)
 	if err != nil {
@@ -42,6 +42,11 @@ func ValidateEndpoint(i types.InfraAPI, endpoint netproto.Endpoint) (network net
 	// Named reference validations
 	vrf, err = ValidateVrf(i, endpoint.Tenant, endpoint.Namespace, endpoint.Spec.VrfName)
 	if err != nil {
+		return
+	}
+
+	// InterfaceMirrorSession validations
+	if err = validateInterfaceMirrorSessions(i, endpoint.Spec.MirrorSessions, collectorMap, mirrorSessionMap); err != nil {
 		return
 	}
 

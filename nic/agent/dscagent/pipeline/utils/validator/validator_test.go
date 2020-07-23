@@ -56,7 +56,7 @@ func TestValidateEndpoint(t *testing.T) {
 	if err := infraAPI.Store(network.Kind, network.GetKey(), dat); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := ValidateEndpoint(infraAPI, endpoint); err != nil {
+	if _, _, err := ValidateEndpoint(infraAPI, endpoint, map[uint64]int{}, map[string][]uint64{}); err != nil {
 		t.Fatal(err)
 	}
 }
