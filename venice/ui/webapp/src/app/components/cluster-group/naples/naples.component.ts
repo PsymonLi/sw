@@ -88,8 +88,6 @@ export class NaplesComponent extends DataComponent implements OnInit {
   // Used for processing the stream events
   naplesEventUtility: HttpEventUtility<ClusterDistributedServiceCard>;
   naplesMap: { [napleName: string]: ClusterDistributedServiceCard };
-  searchObject: { [field: string]: any } = {};
-  conditionNaplesMap: { [condition: string]: Array<string> };
 
   fieldFormArray = new FormArray([]);
   maxSearchRecords: number = 8000;
@@ -627,12 +625,12 @@ export class NaplesComponent extends DataComponent implements OnInit {
       {
         key: { label: 'Condition', value: 'Condition' },
         operators: SearchUtil.stringOperators,
-        valueType: ValueType.multiSelect,
+        valueType: ValueType.singleSelect,
         values: [
           { label: 'Healthy', value: NaplesConditionValues.HEALTHY },
           { label: 'Unhealthy', value: NaplesConditionValues.UNHEALTHY },
           { label: 'Unknown', value: NaplesConditionValues.UNKNOWN },
-          { label: 'Empty', value: NaplesConditionValues.EMPTY },
+          { label: 'Empty', value: 'empty' },
           { label: 'Reboot Needed', value: NaplesConditionValues.REBOOT_NEEDED }
         ],
       }
@@ -645,7 +643,6 @@ export class NaplesComponent extends DataComponent implements OnInit {
    */
   _clearDSCMaps() {
     this.naplesMap = {};
-    this.conditionNaplesMap = {};
   }
 
   /**
@@ -718,27 +715,6 @@ export class NaplesComponent extends DataComponent implements OnInit {
     for (const naple of this.dataObjects) {
       this.naplesMap[naple.meta.name] = naple;
       const dscHealthCond: NaplesCondition = Utility.getNaplesConditionObject(naple);
-      // Create search object for condition
-      switch (dscHealthCond.condition.toLowerCase()) {
-        case NaplesConditionValues.HEALTHY:
-          (this.conditionNaplesMap[NaplesConditionValues.HEALTHY] || (this.conditionNaplesMap[NaplesConditionValues.HEALTHY] = [])).push(naple.meta.name);
-          break;
-        case NaplesConditionValues.UNHEALTHY:
-          (this.conditionNaplesMap[NaplesConditionValues.UNHEALTHY] || (this.conditionNaplesMap[NaplesConditionValues.UNHEALTHY] = [])).push(naple.meta.name);
-          break;
-        case NaplesConditionValues.UNKNOWN:
-          (this.conditionNaplesMap[NaplesConditionValues.UNKNOWN] || (this.conditionNaplesMap[NaplesConditionValues.UNKNOWN] = [])).push(naple.meta.name);
-          break;
-        case NaplesConditionValues.NOTADMITTED:
-          (this.conditionNaplesMap[NaplesConditionValues.NOTADMITTED] || (this.conditionNaplesMap[NaplesConditionValues.NOTADMITTED] = [])).push(naple.meta.name);
-          break;
-        case NaplesConditionValues.REBOOT_NEEDED:
-          (this.conditionNaplesMap[NaplesConditionValues.REBOOT_NEEDED] || (this.conditionNaplesMap[NaplesConditionValues.REBOOT_NEEDED] = [])).push(naple.meta.name);
-          break;
-        case NaplesConditionValues.EMPTY:
-          (this.conditionNaplesMap['empty'] || (this.conditionNaplesMap['empty'] = [])).push(naple.meta.name);
-          break;
-      }
       const uiData: DSCUiModel = {};
       uiData.associatedConditionStatus = {
         dscCondStr: dscHealthCond.condition.toLowerCase(),
@@ -747,7 +723,6 @@ export class NaplesComponent extends DataComponent implements OnInit {
       uiData.associatedWorkloads = this.getDSCWorkloads(naple);
       naple._ui = uiData;
     }
-    this.searchObject['status.conditions'] = this.conditionNaplesMap;
     this.tryGenCharts();
     // backup dataObjects
     this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
@@ -1351,45 +1326,43 @@ export class NaplesComponent extends DataComponent implements OnInit {
     const outputs: any[] = [];
     for (let i = 0; data && i < data.length; i++) {
       let found = false;
-      const conditions = data[i].status.conditions;
-      for (let k = 0; k < conditions.length; k++) {
-        // datat[i].associatedConditionStatus is  {dscCondStr: "healthy", dscNeedReboot: true}
-        const uiData: DSCUiModel = data[i]._ui;
-        const recordValueStr = uiData.associatedConditionStatus.dscCondStr;
-        const recordValueReboot = uiData.associatedConditionStatus.dscNeedReboot;
-        const searchValues = requirement.values;
-        let operator = String(requirement.operator);
-        operator = TableUtility.convertOperator(operator);
-        for (let j = 0; j < searchValues.length; j++) {
-          const searchValue = searchValues[j];
-          // special case empty string
-          if (searchValue === NaplesConditionValues.EMPTY) {
-            if (operator === 'contains' && recordValueStr === searchValue) {
-              found = true;
-            } else if (operator === 'notcontains') {
-              found = recordValueStr !== searchValue;
-            }
-          } else {
-            const activateFunc = TableUtility.filterConstraints[operator];
-            const activateFuncValue = activateFunc && activateFunc(recordValueStr, searchValue);
-
-            if (operator === 'contains' && activateFuncValue) {
-              found = true;
-            } else if (operator === 'notcontains') {
-              found = activateFuncValue;
-            }
+      // datat[i].associatedConditionStatus is  {dscCondStr: "healthy", dscNeedReboot: true}
+      const uiData: DSCUiModel = data[i]._ui;
+      const recordValueStr = uiData.associatedConditionStatus.dscCondStr;
+      const recordValueReboot = uiData.associatedConditionStatus.dscNeedReboot;
+      const searchValues = requirement.values;
+      let operator = String(requirement.operator);
+      operator = TableUtility.convertOperator(operator);
+      for (let j = 0; j < searchValues.length; j++) {
+        const searchValue = searchValues[j];
+        // special case empty string
+        if (searchValue === 'empty') {
+          if ((operator === 'contains' || operator === 'equals') && (recordValueStr === NaplesConditionValues.EMPTY || recordValueStr === NaplesConditionValues.NOTADMITTED)) {
+            found = true;
+          } else if (operator === 'notcontains' || operator === 'notEquals') {
+            found = (recordValueStr !== NaplesConditionValues.EMPTY && recordValueStr !== NaplesConditionValues.NOTADMITTED);
           }
+        } else {
+          const activateFunc = TableUtility.filterConstraints[operator];
+          const activateFuncValue = activateFunc && activateFunc(recordValueStr, searchValue);
 
-          // check reboot condition
-          if (searchValues[j] === NaplesConditionValues.REBOOT_NEEDED) {
-            if (operator === 'contains' && recordValueReboot) {
-              found = true;
-            } else if (operator === 'notcontains') {
-              found = !recordValueReboot;
-            }
+          if ((operator === 'contains' || operator === 'equals') && activateFuncValue) {
+            found = true;
+          } else if (operator === 'notcontains' || operator === 'notEquals') {
+            found = activateFuncValue;
+          }
+        }
+
+        // check reboot condition
+        if (searchValues[j] === NaplesConditionValues.REBOOT_NEEDED) {
+          if ((operator === 'contains' || operator === 'equals') && recordValueReboot) {
+            found = true;
+          } else if (operator === 'notcontains' || operator === 'notEquals') {
+            found = !recordValueReboot;
           }
         }
       }
+
       if (found) {
         outputs.push(data[i]);
       }
