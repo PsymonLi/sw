@@ -91,7 +91,6 @@ static void create_intf_proto_grpc (bool lo=false) {
     Status              ret_status;
     pds_if_spec_t       pds_if = {0};
 
-    request.mutable_batchctxt()->set_batchcookie(1);
 
     if (lo) {
         pds_if.key = pds_ms::msidx2pdsobjkey(k_lo_if_id);

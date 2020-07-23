@@ -16,11 +16,12 @@
 namespace pds_ms {
 
 static void
-populate_lim_l3_intf_cfg_spec ( LimInterfaceCfgSpec& req, uint32_t ifindex)
+populate_lim_l3_intf_cfg_spec ( LimInterfaceCfgSpec& req,
+                                uint32_t ifindex, uint32_t enable)
 {
     req.set_entityindex (PDS_MS_LIM_ENT_INDEX);
     req.set_ifindex (ifindex);
-    req.set_ifenable (AMB_TRUE);
+    req.set_ifenable (enable);
     req.set_ipv4enabled (AMB_TRISTATE_TRUE);
     req.set_ipv4fwding (AMB_TRISTATE_TRUE);
     req.set_ipv6enabled (AMB_TRISTATE_TRUE);
@@ -113,7 +114,10 @@ process_interface_update (pds_if_spec_t *if_spec,
     if (if_spec->type == IF_TYPE_L3) {
         // Create L3 interfaces
         LimInterfaceCfgSpec lim_if_spec;
-        populate_lim_l3_intf_cfg_spec (lim_if_spec, ms_ifindex);
+        uint32_t enable = (if_spec->admin_state == PDS_IF_STATE_UP) ?
+                           AMB_TRISTATE_TRUE :
+                           AMB_TRISTATE_FALSE;
+        populate_lim_l3_intf_cfg_spec (lim_if_spec, ms_ifindex, enable);
         pds_ms_set_liminterfacecfgspec_amb_lim_if_cfg (
                                    lim_if_spec, row_status,
                                    PDS_MS_CTM_GRPC_CORRELATOR, FALSE);
