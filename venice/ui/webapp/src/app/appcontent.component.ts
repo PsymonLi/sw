@@ -945,7 +945,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
           this._controllerService.invokeWarnToaster('Warning - can not monitor alert live', 'There are ' + this.startingAlertCount + ' alerts in PSM. Please go to Alerts page to resolve alerts. Sign in again afterward.', [], true); // no buttons and sticky
           return; // we don't want fetch alerts
         } else if (isNaN(this.startingAlertCount)) {
-          this._controllerService.invokeInfoToaster('Info', 'There is no open alert in PSM'); // notice search finds no alert. PSM may indeed have alerts. (search and api-server are out of sync)
+          this._controllerService.invokeInfoToaster('PSM Search', 'There is no open alert.'); // notice search finds no alert. PSM may indeed have alerts. (search and api-server are out of sync)
         } else {
           this.alertNumbers = this.startingAlertCount;
         }
