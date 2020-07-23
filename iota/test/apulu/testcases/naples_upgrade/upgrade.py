@@ -8,6 +8,7 @@ import iota.test.apulu.testcases.naples_upgrade.upgrade_utils as upgrade_utils
 import iota.test.utils.ping as ping
 import iota.test.apulu.utils.naples as naples_utils
 import iota.test.apulu.utils.misc as misc_utils
+import iota.test.apulu.utils.bgp as bgp_utils
 
 # Following come from DOL
 import upgrade_pb2 as upgrade_pb2
@@ -15,6 +16,7 @@ from apollo.config.node import client as NodeClient
 from apollo.oper.upgrade import client as UpgradeClient
 
 skip_connectivity_failure = False
+
 
 def check_pds_instance(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
@@ -29,6 +31,7 @@ def check_pds_instance(tc):
             api.Logger.error("Failed to find required number of instances")
 
     return api.types.status.SUCCESS
+
 
 def check_pds_agent_debug_data(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
@@ -45,10 +48,9 @@ def check_pds_agent_debug_data(tc):
     return api.types.status.SUCCESS
 
 
-
 def trigger_upgrade_request(tc):
     result = True
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         return result
 
     backgroun_req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
@@ -91,7 +93,7 @@ def ChooseWorkLoads(tc):
 
 def VerifyConnectivity(tc):
 
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         return api.types.status.SUCCESS
 
     # ensure connectivity with foreground ping before test
@@ -103,7 +105,7 @@ def VerifyConnectivity(tc):
 
 
 def VerifyMgmtConnectivity(tc):
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         return api.types.status.SUCCESS
 
     # ensure Mgmt Connectivity
@@ -142,7 +144,7 @@ def PacketTestSetup(tc):
     if tc.upgrade_mode != "graceful":
         tc.pktlossverif = True
 
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         return api.types.status.SUCCESS
 
     # start background ping before start of test
@@ -297,7 +299,7 @@ def checkUpgradeStatusViaConsole(tc):
 def Verify(tc):
     result = api.types.status.SUCCESS
 
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         # no upgrade done in case of dryrun
         return result
 
@@ -352,9 +354,11 @@ def Verify(tc):
         api.Logger.error("Failed in check_pds_agent_debug_data")
         result = api.types.status.FAILURE
 
-    # Todo : need to put BGP peer establishment check
-    api.Logger.info("Sleep for 60 secs for BGP session establishment")
-    misc_utils.Sleep(60)
+    # TODO: verify BGP Underlay (REMOVE WHEN PING API IS UPDATED)
+    if bgp_utils.check_underlay_bgp_peer_connectivity(
+            sleep_time=15, timeout_val=120) != api.types.status.SUCCESS:
+        api.Logger.error("Failed in underlay connectivity check")
+        #return api.types.status.FAILURE
 
     # verify connectivity
     if VerifyConnectivity(tc) != api.types.status.SUCCESS:

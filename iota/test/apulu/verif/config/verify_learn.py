@@ -2,12 +2,13 @@
 import iota.harness.api as api
 import iota.test.apulu.utils.learn as learn_utils
 import iota.test.apulu.utils.misc as misc_utils
+import iota.test.apulu.utils.bgp as bgp_utils
 
 def __verify_learning():
     api.Logger.verbose("Verifying if all VNIC and Mappings are learnt")
 
     for node in api.GetNaplesHostnames():
-        if not learn_utils.ValidateBGPOverlayNeighborship(node):
+        if not bgp_utils.ValidateBGPOverlayNeighborship(node):
             api.Logger.error("Failed in BGP Neighborship validation for node: %s" %node)
             return api.types.status.FAILURE
 
