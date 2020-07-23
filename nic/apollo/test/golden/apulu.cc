@@ -1642,8 +1642,7 @@ mirror_init (void)
     erspan_info->nexthop_type = NEXTHOP_TYPE_TUNNEL;
     erspan_info->nexthop_id = g_tunnel_id1;
     erspan_info->span_id = g_mirror_id1;
-    erspan_info->rewrite_flags =
-        (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START);
+    erspan_info->rewrite_flags = P4_SET_REWRITE(ENCAP, VXLAN);
     erspan_info->egress_bd_id = g_egress_bd_id1;
     entry_write(tbl_id, g_mirror_id1, 0, 0, &data, false, 0);
 

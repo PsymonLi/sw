@@ -326,32 +326,35 @@ action nexthop_info(lif, qtype, qid, rx_vnic_id, vlan_strip_en, port, vlan,
         modify_field(rewrite_metadata.flags, rewrite_flags);
     }
 
-    if (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_MAPPING)) {
-        modify_field(ethernet_1.dstAddr, rewrite_metadata.dmaci);
-    } else {
+    if (control_metadata.erspan_copy == TRUE) {
         if (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_NEXTHOP)) {
-            modify_field(ethernet_1.dstAddr, dmaci);
+            modify_field(ethernet_0.dstAddr, dmaco);
+        }
+        if (P4_REWRITE(rewrite_metadata.flags, SMAC, FROM_NEXTHOP)) {
+            modify_field(ethernet_0.srcAddr, smaco);
+        }
+    } else {
+        if (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_MAPPING)) {
+            modify_field(ethernet_1.dstAddr, rewrite_metadata.dmaci);
         } else {
-            if (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_TUNNEL)) {
-                modify_field(ethernet_1.dstAddr,
-                             rewrite_metadata.tunnel_dmaci);
+            if (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_NEXTHOP)) {
+                modify_field(ethernet_1.dstAddr, dmaci);
+            } else {
+                if (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_TUNNEL)) {
+                    modify_field(ethernet_1.dstAddr,
+                                 rewrite_metadata.tunnel_dmaci);
+                }
+            }
+        }
+        if (P4_REWRITE(rewrite_metadata.flags, SMAC, FROM_VRMAC)) {
+            modify_field(ethernet_1.srcAddr, rewrite_metadata.vrmac);
+        } else {
+            if (P4_REWRITE(rewrite_metadata.flags, SMAC, FROM_NEXTHOP)) {
+                modify_field(ethernet_1.srcAddr, smaco);
             }
         }
     }
 
-    if (P4_REWRITE(rewrite_metadata.flags, SMAC, FROM_VRMAC)) {
-        modify_field(ethernet_1.srcAddr, rewrite_metadata.vrmac);
-    } else {
-        if (P4_REWRITE(rewrite_metadata.flags, SMAC, FROM_NEXTHOP)) {
-            modify_field(ethernet_1.srcAddr, smaco);
-        }
-    }
-
-    if ((control_metadata.erspan_copy == TRUE) and
-        (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_NEXTHOP))) {
-        modify_field(ethernet_0.dstAddr, dmaco);
-        modify_field(ethernet_0.srcAddr, smaco);
-    }
     if (P4_REWRITE(rewrite_metadata.flags, ENCAP, VXLAN)) {
         if (control_metadata.erspan_copy == FALSE) {
             if (rewrite_metadata.ip_type == IPTYPE_IPV4) {

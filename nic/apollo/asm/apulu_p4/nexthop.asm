@@ -48,6 +48,7 @@ nexthop_rewrite:
     sne             c1, r0, d.nexthop_info_d.rewrite_flags
     cmov            r2, c1, d.nexthop_info_d.rewrite_flags, \
                         k.rewrite_metadata_flags
+    bbeq            k.control_metadata_erspan_copy, TRUE, vlan_encap2
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_MAPPING
     phvwr.c1        p.ethernet_1_dstAddr, k.rewrite_metadata_dmaci
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_NEXTHOP
@@ -73,8 +74,6 @@ vlan_decap:
     phvwr.f         p.ethernet_1_etherType, k.ctag_1_etherType
 
 vlan_encap:
-    bbeq            k.control_metadata_erspan_copy, TRUE, vlan_encap2
-    nop
     nop.c1.e
     phvwr           p.{ctag_1_pcp,ctag_1_dei,ctag_1_vid}, d.nexthop_info_d.vlan
     phvwr           p.ctag_1_valid, TRUE
@@ -84,11 +83,13 @@ vlan_encap:
     phvwr.f         p.capri_p4_intrinsic_packet_len, r1
 
 vlan_encap2:
+    seq             c1, r2[P4_REWRITE_VLAN_BITS], P4_REWRITE_VLAN_ENCAP
+    nop.!c1.e
+    add             r1, r1, 4
     phvwr           p.{ctag_0_pcp,ctag_0_dei,ctag_0_vid}, d.nexthop_info_d.vlan
     phvwr           p.ctag_0_valid, TRUE
     phvwr           p.ctag_0_etherType, k.ethernet_0_etherType
-    phvwr           p.ethernet_0_etherType, ETHERTYPE_VLAN
-    add.e           r1, r1, 4
+    phvwr.e         p.ethernet_0_etherType, ETHERTYPE_VLAN
     phvwr.f         p.capri_p4_intrinsic_packet_len, r1
 
 // thread 1 : perform vxlan rewrite
@@ -195,8 +196,9 @@ ipv6_vxlan_encap:
 
 nexthop_erspan_copy:
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_NEXTHOP
-    phvwr.c1        p.{ethernet_0_dstAddr,ethernet_0_srcAddr}, \
-                        d.{nexthop_info_d.dmaco,nexthop_info_d.smaco}
+    phvwr.c1        p.ethernet_0_dstAddr, d.nexthop_info_d.dmaco
+    seq             c1, r2[P4_REWRITE_SMAC_BITS], P4_REWRITE_SMAC_FROM_NEXTHOP
+    phvwr.c1        p.ethernet_0_srcAddr, d.nexthop_info_d.smaco
     seq             c1, r2[P4_REWRITE_ENCAP_BITS], P4_REWRITE_ENCAP_VXLAN
     nop.!c1.e
 vxlan_encap2:

@@ -184,6 +184,9 @@
 #define P4_REWRITE(a, attr, val) \
     ((((a) >> P4_REWRITE_ ## attr ## _START) & P4_REWRITE_ ## attr ## _MASK) == P4_REWRITE_ ## attr ## _ ## val)
 
+#define P4_SET_REWRITE(attr, val) \
+    ((P4_REWRITE_ ## attr ## _ ## val) << (P4_REWRITE_ ## attr ## _START))
+
 /*****************************************************************************/
 /* route result type and bit position                                        */
 /*****************************************************************************/

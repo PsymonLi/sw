@@ -263,12 +263,11 @@ mirror_impl::program_overlay_erspan_(pds_epoch_t epoch,
         spec->erspan_spec.ip_addr.addr.v4_addr;
     if (mapping->is_local()) {
         // local vnic
-        mirror_data.erspan_action.rewrite_flags =
-            P4_REWRITE_ENCAP_VXLAN;
+        mirror_data.erspan_action.rewrite_flags = P4_SET_REWRITE(ENCAP, VXLAN);
     } else {
         // remote vnic
         mirror_data.erspan_action.rewrite_flags =
-            P4_REWRITE_ENCAP_VXLAN | P4_REWRITE_VNI_DEFAULT;
+            P4_SET_REWRITE(ENCAP, VXLAN) | P4_SET_REWRITE(VNI, DEFAULT);
     }
     mapping_entry::soft_delete(mapping);
     mirror_data.erspan_action.erspan_type = spec->erspan_spec.type;
@@ -313,7 +312,9 @@ mirror_impl::program_underlay_erspan_(pds_epoch_t epoch,
             ((tep_impl *)(tep->impl()))->hw_id();
         mirror_data.erspan_action.dip = tep->ip().addr.v4_addr;
         // DMAC and SMAC both are picked from the NH this TEP resolves to
-        mirror_data.erspan_action.rewrite_flags = P4_REWRITE_DMAC_FROM_NEXTHOP;
+        mirror_data.erspan_action.rewrite_flags =
+            P4_SET_REWRITE(DMAC, FROM_NEXTHOP) |
+            P4_SET_REWRITE(SMAC, FROM_NEXTHOP);
     } else {
         SDK_ASSERT(spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_IP);
         // TODO: should we lookup for a TEP in this case first before
