@@ -162,7 +162,7 @@ mirror_impl::program_uplink_rspan_(if_entry *intf,
     memset(&nh_data, 0, nh_data.entry_size());
     nh_data.set_port(oport);
     nh_data.set_vlan(spec->rspan_spec.encap.val.vlan_tag);
-    ret = nh_data.write(oport);
+    ret = nh_data.write(mirror_data.rspan_action.nexthop_id);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table at idx %u, "
                       "RSPAN mirror session %s programming failed",
