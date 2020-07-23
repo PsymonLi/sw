@@ -24,7 +24,7 @@ def Trigger(tc):
                    (server.workload_name, server.ip_address, client.workload_name, client.ip_address)
     api.Logger.info("Starting SUNRPC test from %s" % (tc.cmd_descr))
 
-    api.Trigger_AddNaplesCommand(req, naples.node_name, naples.workload_name,
+    api.Trigger_AddNaplesCommand(req, naples.node_name,
                            "/nic/bin/halctl clear session")
     tc.cmd_cookies.append("clear session")
 

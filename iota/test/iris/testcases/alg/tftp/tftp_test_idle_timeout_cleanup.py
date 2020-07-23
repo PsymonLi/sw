@@ -28,7 +28,7 @@ def Trigger(tc):
     SetupTFTPClient(client)
 
     ## Add Naples command validation
-    api.Trigger_AddNaplesCommand(req, naples.node_name, naples.workload_name,
+    api.Trigger_AddNaplesCommand(req, naples.node_name,
                                 "/nic/bin/halctl clear session")
     tc.cmd_cookies.append("clear session")
 

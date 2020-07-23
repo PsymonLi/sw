@@ -47,7 +47,7 @@ def Trigger(tc):
     SetupFTPClient(client.node_name, client.workload_name)
     SetupFTPMediator(mediator.node_name, mediator.workload_name)
 
-    api.Trigger_AddNaplesCommand(req, naples.node_name, naples.workload_name,
+    api.Trigger_AddNaplesCommand(req, naples.node_name,
                            "/nic/bin/halctl clear session")
     tc.cmd_cookies.append("clear session")
 
