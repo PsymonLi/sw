@@ -14,9 +14,13 @@
 
 #include "asic/rw/asicrw.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
+#include "nic/hal/plugins/cfg/lif/lif.hpp"
+#include "nic/hal/plugins/cfg/nw/interface.hpp"
 
 using sys::SystemResponse;
 using sdk::lib::slab;
+
+bool    g_mpu_prog_gen_done = false;
 
 namespace hal {
 
@@ -291,6 +295,7 @@ static void
 delphi_pub_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
 {
     hal_ret_t ret;
+    sdk_ret_t sret = SDK_RET_OK;
 
     ret = linkmgr::port_metrics_update();
     if (ret != HAL_RET_OK) {
@@ -302,6 +307,34 @@ delphi_pub_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
     if (unlikely(ret != HAL_RET_OK)) {
         HAL_TRACE_ERR("Error publishing metrics, ret {}", ret);
     }
+
+    // Compute BW on lifs
+    ret = lif_compute_bw(1 /* secs */);
+
+    // The following functionality has to be done in any
+    // periodic thread. 
+    // Start
+    // Re-pick inband bond0's active link
+    bool  inb_bond_active_changed = false;
+    if (g_hal_state->inband_bond_mode() == hal::BOND_MODE_ACTIVE_BACKUP) {
+        ret = hal_if_pick_inb_bond_active(NULL, intf::IF_STATUS_DOWN,
+                                          &inb_bond_active_changed);
+        if (inb_bond_active_changed) {
+            ret = hal_if_inb_bond_active_changed(false);
+        }
+    }
+
+    // Repin inband enics, if bond mode changed
+    ret = hal_if_repin_inb_enics();
+
+   if (!g_mpu_prog_gen_done) {
+        sret = sdk::p4::p4_dump_program_info(hal::g_hal_cfg.cfg_path.c_str());
+        if (sret == SDK_RET_OK) {
+            HAL_TRACE_DEBUG("Generated mpu_prog_info");
+            g_mpu_prog_gen_done = true;
+        }
+   }
+   // End
 }
 
 static void

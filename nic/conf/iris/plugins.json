@@ -187,8 +187,7 @@
             "thread_init_func" : "accelcfg_thread_init",
             "thread_exit_func" : "accelcfg_thread_exit",
             "auto_load" : "true",
-            "deps"      : [],
-            "features"  : ["accel_rgroup"]
+            "deps"      : []
         }
     ],
 

@@ -92,7 +92,6 @@ sdk_spinlock_t          g_flow_telemetry_slock;
 flow_telemetry_state_t *g_flow_telemetry_state_age_head_p;
 flow_telemetry_state_t *g_flow_telemetry_state_age_tail_p;
 uint16_t                g_age_timer_ticks;
-bool                    g_mpu_prog_gen_done = false;
 
 //atomic state to indicate if session stats update in progress or not.
 volatile uint8_t g_session_stats_updt_locked_ = 0;
@@ -3644,41 +3643,16 @@ session_age_walk_cb (void *timer, uint32_t timer_id, void *ctxt)
     uint64_t              bucket = (uint64_t)(ctxt);
     timespec_t            ctime;
     hal_ret_t             ret = HAL_RET_OK;
-    sdk_ret_t             sret = SDK_RET_OK;
     uint8_t               fte_id = 0;
     uint32_t              num_sessions = 0, bucket_no = 0;
 #if 0
     flow_telemetry_state_t *flow_telemetry_state_p;
 #endif
-    bool                  inb_bond_active_changed = false;
 
     session_age_cb_args_t args;
     if (g_hal_state->is_age_debug_enabled()) {
         HAL_TRACE_DEBUG("session age walk cb bucket {} context {:p}", bucket, ctxt);
     }
-
-    // Re-pick inband bond0's active link
-    if (g_hal_state->inband_bond_mode() == hal::BOND_MODE_ACTIVE_BACKUP) {
-        ret = hal_if_pick_inb_bond_active(NULL, intf::IF_STATUS_DOWN,
-                                          &inb_bond_active_changed);
-        if (inb_bond_active_changed) {
-            ret = hal_if_inb_bond_active_changed(false);
-        }
-    }
-
-    // Repin inband enics, if bond mode changed
-    ret = hal_if_repin_inb_enics();
-
-    // Compute BW on lifs
-    ret = lif_compute_bw(1 /* secs */);
-
-   if (!g_mpu_prog_gen_done) {
-        sret = sdk::p4::p4_dump_program_info(hal::g_hal_cfg.cfg_path.c_str());
-        if (sret == SDK_RET_OK) {
-            HAL_TRACE_DEBUG("Generated mpu_prog_info");
-            g_mpu_prog_gen_done = true;
-        }
-   }
 
 #if 0
     // Keep track of age_timer_ticks for pps / bw calculations
