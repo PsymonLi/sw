@@ -472,6 +472,16 @@ bind_layers(SUNRPC_RCRD_MARKING, SUNRPC)
 bind_layers(SUNRPC, SUNRPC_CALL_HDR, msg_type=0)
 bind_layers(SUNRPC, SUNRPC_REPLY_HDR, msg_type=1)
 
+class ERSPAN_PlatformSpecific(Packet):
+    name = "ERSPAN_PlatformSpecific"
+    fields_desc = [
+        BitField("platf_id",    0,      6),
+        BitField("reserved",    0,      12),
+        BitField("port_id",     0,      14),
+        BitField("timestamp",   0,      32),
+    ]
+bind_layers(ERSPAN_PlatformSpecific, Ether, platf_id=3)
+
 class ERSPAN(Packet):
     name = "ERSPAN"
     fields_desc = [
@@ -492,6 +502,7 @@ class ERSPAN(Packet):
     ]
 
 bind_layers(GRE, ERSPAN, proto=0x22eb)
+bind_layers(ERSPAN, ERSPAN_PlatformSpecific, o=1)
 bind_layers(ERSPAN, Ether, ver=2)
 
 class _IpfixIpv4Fields(Packet):

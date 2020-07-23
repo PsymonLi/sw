@@ -1,0 +1,234 @@
+# Test Spec for local2remote scenarios from Host
+selectors:
+    root: ref://store/templates/id=FLOW
+    maxlimits: 1
+    # if route table has a default route,
+    # then the packet might end up going to internet gateway instead of getting dropped.
+    flow: filter://HasDefaultRoute=False
+    vnic: filter://any
+
+packets:
+    - packet:
+        id          : BASE_PKT # Base packet
+        payloadsize : ref://factory/payloads/id=PAYLOAD_ZERO64/size
+        template    : callback://networking/packets/GetPacketTemplateFromMapping/proto=TCP
+        headers     :
+            eth:
+                src     : ref://testcase/config/localmapping/VNIC/MACAddr
+                dst     : ref://testcase/config/remotemapping/MACAddr
+            ipv4:
+                src     : ref://testcase/config/localmapping/IP
+                dst     : ref://testcase/config/remotemapping/IP
+                ttl     : 64
+            ipv6:
+                src     : ref://testcase/config/localmapping/IP
+                dst     : ref://testcase/config/remotemapping/IP
+                hlim    : 64
+            tcp:
+                sport   : 100
+                dport   : 200
+            payload:
+                data    : ref://factory/payloads/id=PAYLOAD_ZERO64/data
+
+    - packet:
+        id          : FROM_HOST_PKT # Input packet
+        payloadsize : ref://factory/payloads/id=PAYLOAD_ZERO64/size
+        clone       : ref://testcase/packets/id=BASE_PKT
+        encaps      : callback://networking/packets/GetHostPacketEncapFromVnic
+        headers     :
+            eth:
+                dst     : callback://networking/packets/GetDstMac/direction=TX
+            qtag:
+                vlan    : callback://networking/packets/GetVnicQTag
+            tcp:
+                flags   : syn
+
+    - packet:
+        id          : TO_SWITCH_PKT # Expected packet
+        clone       : ref://testcase/packets/id=FROM_HOST_PKT
+        encaps      : callback://networking/packets/GetPacketEncapFromMapping
+        headers     :
+            outereth:
+                src     : callback://networking/packets/GetUplinkPortMac
+                dst     : callback://networking/packets/GetUnderlayRemoteMac
+            outeripv4:
+                src     : ref://testcase/config/devicecfg/IP
+                dst     : callback://networking/packets/GetTunnelIPFromMapping
+                ttl     : 64
+                tos     : 0
+                id      : 0
+            vxlan:
+                vni     : ref://testcase/config/remotemapping/SUBNET/Vnid
+            eth:
+                src     : callback://networking/packets/GetPacketSrcMacFromMapping/Fwdmode=L2R
+            ipv4:
+                ttl     : callback://networking/packets/GetPacketTtl/Fwdmode=L2R,ipkt=FROM_HOST_PKT
+
+    - packet:                                                                                                                                   
+        id          : RSPAN_MIRROR_PKT_TX_BASE # Expected RSPAN tx mirrored packet                                                              
+        clone       : ref://testcase/packets/id=BASE_PKT
+        encaps      : callback://mirror/packets/GetRSPANEncapFromVnic
+        headers     :                                                                                                                           
+            outerqtag:                                                                                                                          
+                vlan    : 0                                                                                                                     
+                prio    : 0                                                                                                                     
+
+    - packet:                                                                                                                                   
+        id          : RSPAN_MIRROR_PKT_TX_BASE_1 # Expected RSPAN tx mirrored packet for session 1                                              
+        clone       : ref://testcase/packets/id=RSPAN_MIRROR_PKT_TX_BASE                                                                        
+        headers     :                                                                                                                           
+            outerqtag:                                                                                                                           
+                vlan    : callback://mirror/packets/GetRSPANVlanID/direction=TX,id=1,tag=OUTER,pktid=FROM_HOST_PKT
+            qtag:
+                vlan    : callback://mirror/packets/GetRSPANVlanID/direction=TX,id=1,tag=INNER,pktid=FROM_HOST_PKT
+                prio    : callback://mirror/packets/GetRSPANPriority/pktid=FROM_HOST_PKT
+            tcp:
+                flags   : syn
+                                                                                                                                                
+    - packet:                                                                                                                                   
+        id          : RSPAN_MIRROR_PKT_TX_1 # Expected Truncated RSPAN tx mirrored packet for session 1                                         
+        payloadsize : callback://mirror/packets/GetRSPANPayloadSize/pktid=RSPAN_MIRROR_PKT_TX_BASE_1,direction=TX,id=1                          
+        template    : ref://testcase/packets/id=RAW                                                                                             
+        headers     :                                                                                                                           
+            payload :                                                                                                                           
+                data: callback://mirror/packets/GetRSPANPayload/pktid=RSPAN_MIRROR_PKT_TX_BASE_1,direction=TX,id=1 
+
+    - packet:
+        id          : ERSPAN_MIRROR_PKT_TX_BASE # Expected ERSPAN tx mirrored packet base
+        payloadsize : ref://factory/payloads/id=PAYLOAD_ZERO70/size
+        template    : ref://testcase/packets/id=RAW
+        encaps      :
+            - ref://factory/packets/id=ENCAP_ERSPAN_TYPE_3_NO_QTAG
+        headers     :
+            erspaneth:
+                src    : callback://networking/packets/GetUplinkPortMac
+                dst    : 00:00:00:00:00:00 
+            erspanqtag:
+                prio   : 0
+                vlan   : 0
+            erspanipv4:
+                tos    : 0
+                id     : 0
+            erspangre:
+            erspan:
+                sessionid : 0
+                ver       : const/2
+                d         : callback://mirror/packets/GetERSPANDirection/direction=TX
+                gra       : 0x3
+                t         : 0
+                vlan      : callback://networking/packets/GetVnicQTag
+                cos       : callback://mirror/packets/GetERSPANCos/pktid=FROM_HOST_PKT
+            erspantype3opt:
+                port_id    : 1
+            payload :
+                data    : ref://factory/payloads/id=PAYLOAD_ZERO70/data
+
+    - packet:
+        id          : ERSPAN_MIRROR_FROM_HOST_PKT_2 # Erspan Input packet
+        clone       : ref://testcase/packets/id=FROM_HOST_PKT
+        headers     :
+            eth:
+                dst    : callback://mirror/packets/GetERSPANInnerDstMac/basepktid=FROM_HOST_PKT,direction=TX,id=2
+
+    - packet:
+         id          : ERSPAN_MIRROR_PKT_TX_2 # Expected ERSPAN tx mirrored packet for session 2
+         clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
+         payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=2
+         headers     :
+             erspaneth:
+                 dst    : callback://mirror/packets/GetERSPANDstMac/direction=TX,id=2
+                 src    : callback://mirror/packets/GetERSPANSrcMac/direction=TX,id=2
+             erspanqtag:
+                 vlan   : callback://mirror/packets/GetSPANVlanID/direction=TX,id=2
+             erspanipv4:
+                 tos    : callback://mirror/packets/GetERSPANDscp/direction=TX,id=2
+                 src    : callback://mirror/packets/GetERSPANSrcIP/direction=TX,id=2
+                 dst    : callback://mirror/packets/GetERSPANDstIP/direction=TX,id=2
+             erspangre:
+                 seqnum_present : 1
+             erspan:
+                 sessionid : callback://mirror/packets/GetERSPANSessionId/direction=TX,id=2
+                 t         : callback://mirror/packets/GetERSPANTruncate/basepktid=FROM_HOST_PKT,direction=RX,id=2
+                 vlan   : callback://mirror/packets/GetERSPANVlanID/pktid=FROM_HOST_PKT,direction=TX,id=2
+             erspantype3opt:
+                # Get port-id of Lif based on vnic
+                port_id  :  callback://mirror/packets/GetERSPANType3PortID/direction=TX,id=2
+             payload :
+                 data    : callback://mirror/packets/GetERSPANPayload/basepktid=ERSPAN_MIRROR_FROM_HOST_PKT_2,direction=TX,id=2
+
+    - packet:                                                                                                                                   
+        id          : RSPAN_MIRROR_PKT_TX_BASE_4 # Expected RSPAN tx mirrored packet for session 4                                              
+        clone       : ref://testcase/packets/id=RSPAN_MIRROR_PKT_TX_BASE                                                                        
+        headers     :                                                                                                                           
+            outerqtag:                                                                                                                           
+                vlan    : callback://mirror/packets/GetRSPANVlanID/direction=TX,id=4,tag=OUTER,pktid=FROM_HOST_PKT
+            qtag:
+                vlan    : callback://mirror/packets/GetRSPANVlanID/direction=TX,id=4,tag=INNER,pktid=FROM_HOST_PKT
+                prio    : callback://mirror/packets/GetRSPANPriority/pktid=FROM_HOST_PKT
+            tcp:
+                flags   : syn
+                                                                                                                                                
+    - packet:                                                                                                                                   
+        id          : RSPAN_MIRROR_PKT_TX_4 # Expected Truncated RSPAN tx mirrored packet for session 4                                         
+        payloadsize : callback://mirror/packets/GetRSPANPayloadSize/pktid=RSPAN_MIRROR_PKT_TX_BASE_4,direction=TX,id=4                          
+        template    : ref://testcase/packets/id=RAW                                                                                             
+        headers     :                                                                                                                           
+            payload :                                                                                                                           
+                data: callback://mirror/packets/GetRSPANPayload/pktid=RSPAN_MIRROR_PKT_TX_BASE_4,direction=TX,id=4 
+
+buffers:
+    - buffer:
+        id      : BUF1
+        template: ref://factory/templates/id=ETH_BUFFER
+        fields:
+           bind : True
+           size : ref://testcase/packets/id=FROM_HOST_PKT/size
+           data : ref://testcase/packets/id=FROM_HOST_PKT/rawbytes
+
+    - buffer:
+        id              : EXP_BUF2  # Expected Empty Buffer
+        template        : ref://factory/templates/id=ETH_BUFFER
+        fields          :
+            status     : 0x0
+
+descriptors:
+    - descriptor:
+        id      : DESC1
+        template: ref://factory/templates/id=DESCR_ETH_TX
+        fields:
+            _buf  : ref://testcase/buffers/id=BUF1
+            addr  : ref://testcase/buffers/id=BUF1/addr
+            len   : ref://testcase/buffers/id=BUF1/size
+
+    - descriptor:
+        id      : DESC2 # Expected Descriptor
+        template: ref://factory/templates/id=DESCR_ETH_TX_CQ
+        fields:
+            status     : 0x0
+
+session:
+    - step:
+        trigger:
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC1
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+        expect:
+            delay    :    1
+            packets:
+                - packet:                                                                                                                       
+                    object  : callback://mirror/packets/GetExpectedPacket/direction=TX,id=1                                                     
+                    port    : callback://mirror/packets/GetSPANPortID/direction=TX,id=1     
+                - packet:                                                                                                                       
+                    object  : callback://mirror/packets/GetExpectedPacket/direction=TX,id=2                                                    
+                    port    : callback://mirror/packets/GetSPANPortID/direction=TX,id=2 
+                - packet:                                                                                                                       
+                    object  : callback://mirror/packets/GetExpectedPacket/direction=TX,id=4                                                     
+                    port    : callback://mirror/packets/GetSPANPortID/direction=TX,id=4     
+                - packet:
+                    object  : callback://networking/packets/GetExpectedPacket/ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT,direction=TX
+                    port    : callback://networking/packets/GetExpectedEgressUplinkPort
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC2
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX

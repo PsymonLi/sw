@@ -1,0 +1,9 @@
+meta:
+    id      : ERSPAN_PLATFORMSPECIFIC
+    scapy   : ERSPAN_PlatformSpecific 
+    size    : 8
+fields:
+    platf_id  : 0
+    reserved  : 0
+    port_id   : 0
+    timestamp : 0

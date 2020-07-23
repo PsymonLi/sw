@@ -1,0 +1,51 @@
+meta:
+    id      : ENCAP_ERSPAN_TYPE_3_NO_QTAG
+    callback: callback://common/pktencaps/AddPacketEncapErspanEth
+
+headers:
+    - header:
+        id      : erspaneth
+        template: ref://store/headers/id=ETHERNET
+        fields:
+            type: ethertype/0x800
+
+    - header:
+        id      : erspanipv4
+        template: ref://store/headers/id=IPV4
+        fields:
+            proto: ipproto/47
+
+    - header:
+        id      : erspangre
+        template: ref://store/headers/id=GRE
+        fields:
+            proto: const/0x22eb
+
+    - header:
+        id      : erspan
+        template: ref://store/headers/id=ERSPAN
+        fields:
+            ver     : const/2
+            vlan    : const/0
+            cos     : const/0
+            bso     : const/0
+            t       : const/0
+            sessionid   : const/112
+            timestamp   : const/0
+            sgt         : const/0
+            p           : const/0
+            ft          : const/0
+            hwid        : const/0
+            d           : const/0
+            gra         : const/0
+            o           : const/1
+
+    - header:
+        id       : erspantype3opt
+        template : ref://store/headers/id=ERSPAN_PLATFORMSPECIFIC
+        fields:
+            platf_id    : const/3
+            reserved    : const/0
+            port_id     : const/0
+            timestamp   : const/0
+            

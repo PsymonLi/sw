@@ -260,6 +260,9 @@ class NexthopObject(base.ConfigObjectBase):
             return True
         return False
 
+    def GetUnderlayMacAddr(self):
+        return self.underlayMACAddr.get()
+
 class NexthopObjectClient(base.ConfigClientBase):
     def __init__(self):
         def __isObjSupported():

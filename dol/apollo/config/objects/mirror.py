@@ -59,12 +59,12 @@ class MirrorSessionObject(base.ConfigObjectBase):
             self.UplinkIfUUID = utils.PdsUuid(self.Interface)
             self.VlanId = getattr(spec, 'vlanid', 1) 
         elif self.SpanType == "ERSPAN":
-            self.ErSpanType = utils.GetErspanProtocolType(getattr(spec, 'erspan_type', \
+            self.ErSpanType = utils.GetErspanProtocolType(getattr(spec, 'erspantype', \
                                                                   topo.ErspanProtocolTypes.ERSPAN_TYPE_NONE)) 
             self.VPCId = getattr(spec, 'vpcid', 1) 
             self.ErSpanDstType = getattr(spec, 'erspandsttype', 'tep') 
             self.TunnelId = getattr(spec, 'tunnelid') 
-            if (hasattr(spec, 'dstip')):
+            if self.ErSpanDstType == 'ip' and (hasattr(spec, 'dstip')):
                 self.DstIP = ipaddress.ip_address(getattr(spec, 'dstip'))
             else:
                 tunobj = tunnel.client.GetTunnelObject(node, self.TunnelId)

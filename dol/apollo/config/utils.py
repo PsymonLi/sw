@@ -1386,3 +1386,11 @@ def GetTagsFromMapping(Node):
     v4rtags = RmappingClient.GetRmappingV4Tags(Node)
     v6rtags = RmappingClient.GetRmappingV6Tags(Node)
     return v4ltags,v6ltags,v4rtags,v6rtags
+
+def GetClientObject(objtype):
+    return EzAccessStore.GetConfigClient(objtype)
+
+def GetConfigObjectById(objtype, id):
+    dutNode = EzAccessStore.GetDUTNode()
+    objClient = GetClientObject(objtype) 
+    return objClient.GetObjectByKey(dutNode, id)

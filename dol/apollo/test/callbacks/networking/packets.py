@@ -540,7 +540,7 @@ def __match_and_get_final_result(policies, pkt, direction, testcase):
     tc_rule = getattr(testcase.config, 'tc_rule', None)
     rules = []
     for policyid in policies:
-        policyobj = __get_config_object(ObjectTypes.POLICY, policyid)
+        policyobj = utils.GetConfigObjectById(ObjectTypes.POLICY, policyid)
         rules = sorted(policyobj.rules, key=lambda x: x.Priority)
         match_rule = None
         for rule in rules:
@@ -557,7 +557,7 @@ def __get_matching_rule(policies, pkt, direction, testcase):
     packet_tuples = __get_packet_tuples(pkt)
     rules = []
     for policyid in policies:
-        policyobj = __get_config_object(ObjectTypes.POLICY, policyid)
+        policyobj = utils.GetConfigObjectById(ObjectTypes.POLICY, policyid)
         rules.extend(policyobj.rules)
     # Get a new copy of stable sorted (based on priority) rules
     # Note: lower the value of rule.Priority higher the Priority
@@ -611,7 +611,7 @@ def GetExpectedCPSPacket(testcase, args):
         final_result = __match_and_get_final_result(policies, pkt, direction, testcase)
     else:
         match_rule = __get_matching_rule(policies, pkt, direction, testcase)
-        policyobj = __get_config_object(ObjectTypes.POLICY, policies[0])
+        policyobj = utils.GetConfigObjectById(ObjectTypes.POLICY, policies[0])
         final_result = __get_final_result(tc_rule, match_rule, testcase, policyobj)
     if final_result == types_pb2.SECURITY_RULE_ACTION_DENY:
         logger.info("GetExpectedCPSPacket: packet denied")
@@ -778,18 +778,13 @@ GetUsableICMPId.count = 10000
 def GetTunnelIPFromMapping(testcase, packet, args=None):
     return str(testcase.config.remotemapping.TUNNEL.RemoteIPAddr)
 
-def __get_config_object(objtype, id):
-    dutNode = EzAccessStore.GetDUTNode()
-    objClient = EzAccessStore.GetConfigClient(objtype)
-    return objClient.GetObjectByKey(dutNode, id)
-
 def __getTunObject(nh_type, id):
     if nh_type == "tep":
         objtype = ObjectTypes.TUNNEL
     else:
         #TODO: Handle nh, nhgroup, vpc_peer
         assert(0)
-    return __get_config_object(objtype, id)
+    return utils.GetConfigObjectById(objtype, id)
 
 def __get_matching_route(routetbl, addr):
     addr = ipaddress.ip_address(addr)

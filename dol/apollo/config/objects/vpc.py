@@ -374,6 +374,11 @@ class VpcObject(base.ConfigObjectBase):
             return True
         return False
 
+    def IsTenantVPC(self):
+        if self.Type == vpc_pb2.VPC_TYPE_TENANT:
+            return True
+        return False
+
     def IsV6Stack(self):
         return utils.IsV6Stack(self.Stack)
 

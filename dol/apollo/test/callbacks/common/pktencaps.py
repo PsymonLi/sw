@@ -51,6 +51,10 @@ def AddPacketEncapErspan(pkt, encap):
     pkt.hdrsorder = ['erspaneth', 'erspanqtag', 'erspanipv4', 'erspangre', 'erspan'] + pkt.hdrsorder
     return
 
+def AddPacketEncapErspanEth(pkt, encap):
+    pkt.hdrsorder = ['erspaneth', 'erspanipv4', 'erspangre', 'erspan', 'erspantype3opt'] + pkt.hdrsorder
+    return
+
 def AddPacketEncapGre(pkt, encap):
     pkt.hdrsorder = ['outereth', 'outeripv4', 'outergre'] + pkt.hdrsorder
     return

@@ -5,17 +5,20 @@ from scapy.layers.l2 import Dot1Q
 import apollo.config.objects.vpc as vpc
 import apollo.config.utils as utils
 import apollo.config.topo as topo
+from apollo.config.agent.api import ObjectTypes as ObjectTypes
 from apollo.config.store import EzAccessStore
+from apollo.test.callbacks.networking.packets import GetExpectedEgressUplinkPort 
 
 from infra.common.logging import logger
 import iris.test.callbacks.common.pktslicer as pktslicer
+import infra.api.api as infra_api
 
 def __get_mirror_object(testcase, args):
     vnic = testcase.config.localmapping.VNIC
     objs = vnic.RxMirrorObjs if args.direction == 'RX' else vnic.TxMirrorObjs
     return objs.get(args.id, None)
 
-def GetSPANPortID(testcase, args):
+def GetSPANPortID(testcase, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
     if not mirrorObj:
         return topo.PortTypes.NONE
@@ -23,7 +26,7 @@ def GetSPANPortID(testcase, args):
         return utils.GetPortIDfromInterface(mirrorObj.Interface)
     elif mirrorObj.SpanType == 'ERSPAN':
         # underlay vpc, return switchport
-        spanvpc = vpc.client.GetVpcObject(EzAccessStore.GetDUTNode(), mirrorObj.VPCId)
+        spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
         if spanvpc.IsUnderlayVPC():
             return topo.PortTypes.SWITCH
         # TODO: tenant vpc support post impl & p4 support
@@ -36,6 +39,35 @@ def GetSPANVlanID(testcase, packet, args=None):
     # For ERSPAN, vlan is 0
     return mirrorObj.VlanId if mirrorObj and mirrorObj.SpanType == 'RSPAN' else 0
 
+def GetRSPANVlanID(testcase, packet, args=None):                                                                                               
+    mirrorObj = __get_mirror_object(testcase, args)                                                                                           
+    vnic = testcase.config.localmapping.VNIC                                                                                              
+    if vnic.VnicEncap.Type != "dot1q":                                                                                                            
+        if mirrorObj:
+            return mirrorObj.VlanId 
+    else:                                                                                                                                 
+        if args.tag == 'OUTER' and mirrorObj:
+            return mirrorObj.VlanId
+        elif args.tag == 'INNER' and mirrorObj:
+            pkt = testcase.packets.db[args.pktid].GetScapyPacket()
+            return pkt[Dot1Q].vlan
+        else:
+            return 0
+
+def GetERSPANVlanID(testcase, packet, args=None):
+    vnic = testcase.config.localmapping.VNIC                                                                                              
+    if vnic.VnicEncap.Type == "dot1q":                                                                                                            
+        pkt = testcase.packets.db[args.pktid].GetScapyPacket()
+        return pkt[Dot1Q].vlan
+    return 0
+
+def GetRSPANPriority(testcase, packet, args=None):                                                                                               
+    vnic = testcase.config.localmapping.VNIC                                                                                              
+    if vnic.VnicEncap.Type == "dot1q":                                                                                                            
+        pkt = testcase.packets.db[args.pktid].GetScapyPacket()
+        return pkt[Dot1Q].prio
+    return 0
+
 def GetERSPANDirection(testcase, packet, args=None):
     # TODO: check 'd' value. shouldn't it be opposite?
     return 1 if args.direction == 'RX' else 0
@@ -46,24 +78,48 @@ def GetERSPANDscp(testcase, packet, args=None):
 
 def GetERSPANSessionId(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
-    return (mirrorObj.SpanID - 1) if mirrorObj and mirrorObj.SpanType == 'ERSPAN' else 0
+    return (mirrorObj.SpanID) if mirrorObj and mirrorObj.SpanType == 'ERSPAN' else 0
 
 def GetERSPANSrcIP(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
-    return str(mirrorObj.SrcIP) if mirrorObj and mirrorObj.SpanType == 'ERSPAN' else "0"
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsUnderlayVPC():
+        if mirrorObj.ErSpanDstType == 'tep':
+            spantunnel = utils.GetConfigObjectById(ObjectTypes.TUNNEL, mirrorObj.TunnelId)
+            return str(spantunnel.LocalIPAddr)
+        # Need to add to erspandsttype ip as well
+    elif spanvpc.IsTenantVPC():
+        if testcase.config.localmapping.IsV6():
+            return str(testcase.config.localmapping.VNIC.SUBNET.VirtualRouterIPAddr[0].packed)
+        else:
+            return str(testcase.config.localmapping.VNIC.SUBNET.VirtualRouterIPAddr[1])
 
 def GetERSPANDstIP(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
     return str(mirrorObj.DstIP) if mirrorObj and mirrorObj.SpanType == 'ERSPAN' else "0"
+
+def GetERSPANInnerDstMac(testcase, packet, args=None):
+    mirrorObj = __get_mirror_object(testcase, args)
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsUnderlayVPC():
+        return "00:00:00:00:00:00"
+    elif spanvpc.IsTenantVPC():
+        pkt = testcase.packets.db[args.basepktid].GetScapyPacket()
+        return pkt[Ether].dst
+    return "00:00:00:00:00:00"
 
 def GetERSPANDstMac(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
     if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
         return "00:00:00:00:00:00"
     # underlay vpc, return TEP MAC
-    spanvpc = vpc.client.GetVpcObject(EzAccessStore.GetDUTNode(), mirrorObj.VPCId)
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
     if spanvpc.IsUnderlayVPC():
-        return "00:02:0b:0a:0d:0e"
+        if mirrorObj.ErSpanDstType == 'tep':
+            spantunnel = utils.GetConfigObjectById(ObjectTypes.TUNNEL, mirrorObj.TunnelId)
+            return str(spantunnel.NEXTHOP.GetUnderlayMacAddr())
+        elif mirrorObj.ErSpanDstType == 'ip':
+            return "00:00:00:00:00:00"
     # TODO: tenant vpc support post impl & p4 support
     # tenant vpc and local mapping, return localmapping/VNIC/MACAddr
     # tenant vpc and remote mapping, return TEP MAC behind remotemapping
@@ -77,7 +133,7 @@ def GetExpectedPacket(testcase, args):
 
 def GetERSPANCos(testcase, inpkt, args):
     pkt = testcase.packets.db[args.pktid].GetScapyPacket()
-    return pkt[Dot1Q].prio
+    return pkt[Dot1Q].prio if Dot1Q in pkt else 0
 
 def __is_erspan_truncate(basepktsize, truncatelen):
     if truncatelen == 0 or (truncatelen >= (basepktsize - utils.ETHER_HDR_LEN)):
@@ -151,3 +207,41 @@ def GetRSPANPayload(testcase, inpkt, args):
     else:
         args.end = pkt.size
     return pktslicer.GetPacketSlice(testcase, pkt, args)
+
+def GetRSPANEncapFromVnic(testcase, inpkt, args=None):
+    encaps = []
+    vnic = testcase.config.localmapping.VNIC
+    encap = infra_api.GetPacketTemplate('ENCAP_QINQ') if vnic.VnicEncap.Type == "dot1q" else infra_api.GetPacketTemplate('ENCAP_QTAG')
+    encaps.append(encap)
+    return encaps
+
+def GetERSPANType3PortID(testcase, inpkt, args=None):
+    mirrorObj = __get_mirror_object(testcase, args)
+    if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
+        return topo.PortTypes.NONE
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsUnderlayVPC():
+        if args.direction == "TX":
+            lif = testcase.config.localmapping.VNIC.SUBNET.HostIf.lif                                                                                              
+            lifId = str(lif.GID())
+            # lifId is in lif74 format
+            return int(lifId[len("lif"):])
+        elif args.direction == "RX":
+            return GetExpectedEgressUplinkPort(testcase)
+    # tenant vpc and local mapping, return hostport
+    # tenant vpc and remote mapping, return switchport
+    return topo.PortTypes.NONE
+
+def GetERSPANSrcMac(testcase, inpkt, args=None):
+    mirrorObj = __get_mirror_object(testcase, args)
+    if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':
+        return "00:00:00:00:00:00"
+    # underlay vpc, return TEP MAC
+    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
+    if spanvpc.IsUnderlayVPC():
+        if mirrorObj.ErSpanDstType == 'tep':
+            spantunnel = utils.GetConfigObjectById(ObjectTypes.TUNNEL, mirrorObj.TunnelId)
+            if spantunnel.IsUnderlay():
+                nh = spantunnel.NEXTHOP
+            l3if = nh.L3Interface
+            return l3if.GetInterfaceMac().get()
