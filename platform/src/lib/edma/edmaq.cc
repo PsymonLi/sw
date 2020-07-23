@@ -33,7 +33,7 @@ EdmaQ *EdmaQ::factory(
     uint32_t qid,
     uint64_t ring_base,
     uint64_t comp_base,
-    uint16_t ring_size, EV_P)
+    uint16_t ring_size, void *sw_phv, EV_P)
 {
     EdmaQ *edmaq;
 
@@ -52,6 +52,7 @@ EdmaQ *EdmaQ::factory(
         (struct edmaq_ctx *)SDK_CALLOC(SDK_MEM_ALLOC_EDMAQ_PENDING,
         sizeof(struct edmaq_ctx) * ring_size);
     edmaq->init = false;
+    edmaq->sw_phv = sw_phv;
 
     return edmaq;
 }
@@ -163,13 +164,13 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
             struct edmaq_ctx *ctx)
 {
     uint64_t addr;
-    uint64_t db_data;
-    asic_db_addr_t db_addr = { 0 };
     auto offset = 0;
     auto chunk_sz = (size < EDMAQ_MAX_TRANSFER_SZ) ? size : EDMAQ_MAX_TRANSFER_SZ;
     auto transfer_sz = 0;
     auto bytes_left = size;
     struct edma_cmd_desc cmd = {0};
+    uint16_t head_idx = head;
+    sdk_ret_t ret;
 
     if (!init)
         return false;
@@ -188,29 +189,29 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
         };
 
         /* If the ring is full, then do a blocking wait for a completion */
-        if (ring_full(head, tail, ring_size)) {
+        if (ring_full(head_idx, tail, ring_size)) {
             while (!Poll()) {
                 usleep(EDMAQ_COMP_POLL_US);
             }
             /* Blocking wait for completion above should have made space in the ring.
                So we should not hit the following condition at all */
-            if (ring_full(head, tail, ring_size)) {
-                SDK_TRACE_INFO("%s: EDMA queue full head %d tail %d", name, head, tail);
+            if (ring_full(head_idx, tail, ring_size)) {
+                SDK_TRACE_INFO("%s: EDMA queue full head %d tail %d", name, head_idx, tail);
                 return false;
             }
         }
 
         /* If this is the last chunk then set the completion callback */
         if (bytes_left <= chunk_sz && ctx)
-            pending[head] = *ctx;
+            pending[head_idx] = *ctx;
         else
-            pending[head] = {0};
+            pending[head_idx] = {0};
 
-        pending[head].deadline = chrono::steady_clock::now() +
+        pending[head_idx].deadline = chrono::steady_clock::now() +
             chrono::milliseconds(EDMAQ_COMP_TIMEOUT_MS);
 
         /* enqueue edma command */
-        addr = ring_base + head * sizeof(struct edma_cmd_desc);
+        addr = ring_base + head_idx * sizeof(struct edma_cmd_desc);
         cmd = {0};
         cmd.opcode = opcode;
         cmd.len = transfer_sz;
@@ -219,20 +220,22 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
         cmd.dst_lif = lif;
         cmd.dst_addr = to + offset;
         sdk::lib::pal_mem_write(addr, (uint8_t *)&cmd, sizeof(struct edma_cmd_desc), 0);
-        head = (head + 1) % ring_size;
+        head_idx = (head_idx + 1) % ring_size;
         offset += transfer_sz;
         bytes_left -= transfer_sz;
     }
 
-    db_addr.lif_id = lif;
-    db_addr.q_type = qtype;
-    db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_SET,
-                                        ASIC_DB_UPD_INDEX_SET_PINDEX, false);
+    if (sw_phv)
+        ret = post_via_sw_phv(head_idx);
+    else
+        ret = post_via_db(head_idx);
 
-    PAL_barrier();
+    if (ret != SDK_RET_OK) {
+       return false;
+    }
 
-    db_data = (qid << 24) | head;
-    sdk::asic::pd::asic_ring_db(&db_addr, db_data);
+    // update head in edma object
+    head = head_idx;
 
     if (ctx == NULL) {
         Flush();
@@ -242,6 +245,44 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
     }
 
     return true;
+}
+
+sdk_ret_t
+EdmaQ::post_via_db(uint16_t index) {
+
+    asic_db_addr_t db_addr = { 0 };
+    uint64_t db_data;
+
+    db_addr.lif_id = lif;
+    db_addr.q_type = qtype;
+    db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_SET,
+                                        ASIC_DB_UPD_INDEX_SET_PINDEX, false);
+
+    PAL_barrier();
+
+    db_data = (qid << 24) | index;
+    sdk::asic::pd::asic_ring_db(&db_addr, db_data);
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+EdmaQ::post_via_sw_phv(uint16_t index) {
+    sdk_ret_t ret;
+
+    // write PI into CB
+    sdk::lib::pal_mem_write(qstate_addr + offsetof(edma_qstate_t, p_index0),
+                            (uint8_t *)&index, sizeof(uint16_t), 0);
+    sdk::asic::pd::asicpd_p4plus_invalidate_cache(qstate_addr,
+                                                  sizeof(edma_qstate_t),
+                                                  P4PLUS_CACHE_INVALIDATE_TXDMA);
+
+    PAL_barrier();
+
+    ret = sdk::asic::pd::asicpd_sw_phv_inject(sdk::asic::ASIC_SWPHV_TYPE_TXDMA,
+                                              0, 0, 1, sw_phv);
+    SDK_TRACE_INFO("sw phv inject returned %d", ret);
+    return ret;
 }
 
 void

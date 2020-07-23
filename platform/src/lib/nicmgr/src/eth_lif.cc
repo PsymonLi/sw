@@ -645,7 +645,7 @@ EthLif::LifQInit(bool mem_clr) {
 
     edmaq = EdmaQ::factory(hal_lif_info_.name, hal_lif_info_.lif_id,
                       ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID,
-                      ring_base, comp_base, ETH_EDMAQ_RING_SIZE, EV_A);
+                      ring_base, comp_base, ETH_EDMAQ_RING_SIZE, NULL, EV_A);
 
     ring_base = pd->nicmgr_mem_alloc((sizeof(struct edma_cmd_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
     if (ring_base == 0) {
@@ -663,7 +663,7 @@ EthLif::LifQInit(bool mem_clr) {
 
     edmaq_async = EdmaQ::factory(hal_lif_info_.name, hal_lif_info_.lif_id,
                             ETH_EDMAQ_ASYNC_QTYPE, ETH_EDMAQ_ASYNC_QID,
-                            ring_base, comp_base, ETH_EDMAQ_ASYNC_RING_SIZE, EV_A);
+                            ring_base, comp_base, ETH_EDMAQ_ASYNC_RING_SIZE, NULL, EV_A);
 
     // AdminQ
     adminq =

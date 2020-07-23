@@ -39,6 +39,7 @@
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_rxdma/include/p4plus_rxdma_p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
+#include "gen/p4gen/p4plus_txdma/include/ingress_phv.h"
 
 extern sdk_ret_t init_service_lif(uint32_t lif_id, const char *cfg_path);
 extern sdk_ret_t init_ipsec_lif(uint32_t lif_id);
@@ -54,6 +55,8 @@ extern sdk_ret_t ipsec_lif_upgrade_verify(uint32_t lif_id,
 
 #define RXDMA_SYMBOLS_MAX            13
 #define TXDMA_SYMBOLS_MAX            15
+
+#define APULU_PHV_SIZE               (4096 / 8)
 
 #define IPSEC_N2H_GLOBAL_STATS_OFFSET 512
 
@@ -71,6 +74,8 @@ edma_init (void) {
     uint64_t size;
     mem_addr_t ring_base, comp_base, qstate_addr;
     EdmaQ *edmaq;
+    static uint8_t sw_phv[APULU_PHV_SIZE];
+    p4plus_txdma_ingress_phv_t *phv = (p4plus_txdma_ingress_phv_t *)sw_phv;
 
     size = (sizeof(struct edma_cmd_desc) * UPGRADE_EDMAQ_RING_SIZE);
     ring_base =
@@ -83,9 +88,11 @@ edma_init (void) {
     SDK_ASSERT(size <=
         api::g_pds_state.mempartition()->size(MEM_REGION_EDMA_NAME));
 
+    phv->capri_intr_lif = APULU_SERVICE_LIF;
+    phv->capri_txdma_intr_qid = APULU_SVC_LIF_EDMA_QID;
     edmaq = EdmaQ::factory("upgrade", APULU_SERVICE_LIF,
                            APULU_SVC_LIF_QTYPE_DEFAULT, APULU_SVC_LIF_EDMA_QID,
-                           ring_base, comp_base, UPGRADE_EDMAQ_RING_SIZE, 0);
+                           ring_base, comp_base, UPGRADE_EDMAQ_RING_SIZE, &sw_phv);
 
     qstate_addr = api::g_pds_state.mempartition()->start_addr("lif2qstate_map");
     SDK_ASSERT(qstate_addr != INVALID_MEM_ADDRESS);
@@ -1141,6 +1148,9 @@ apulu_impl::pipeline_upgrade_hitless_init(void) {
 
     // init edma instance for use of upgrade to dma sram contents from
     // shadow memory to h/w during upgrade switchover
+    ret = sdk::asic::pd::asicpd_sw_phv_init();
+    SDK_ASSERT(ret == SDK_RET_OK);
+
     edmaq_ = edma_init();
 
     return SDK_RET_OK;

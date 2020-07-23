@@ -42,7 +42,8 @@ public:
         uint64_t ring_base,
         uint64_t comp_base,
         uint16_t ring_size,
-        EV_P
+        void *sw_phv = NULL,
+        EV_P = NULL
     );
 
     bool Init(sdk::platform::utils::program_info *pinfo, uint64_t qstate_ptr, uint8_t cos_sel,
@@ -71,6 +72,7 @@ private:
     uint16_t ring_size;
     uint16_t comp_tail;
     uint8_t exp_color;
+    void *sw_phv;
 
     struct edmaq_ctx *pending;
 
@@ -80,6 +82,8 @@ private:
 
     bool Empty();
     bool Poll();
+    sdk_ret_t post_via_sw_phv(uint16_t index);
+    sdk_ret_t post_via_db(uint16_t index);
 };
 
 #endif    /* __EDMAQ_HPP__ */
