@@ -604,7 +604,7 @@ jobd/dol/apulu/operd: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/apulu/bitw_smart_service_e2e
 jobd/dol/apulu/bitw_smart_service_e2e: ${JOBD_PREREQS}
-	DEVICE_OPER_MODE=bitw_smart_service ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo bitw_smart_service --feature bitw_smart_service_e2e --dry
+	DEVICE_OPER_MODE=bitw_smart_service ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo bitw_smart_service --feature bitw_smart_service_e2e
 
 .PHONY: jobd/dol/apulu/meter
 jobd/dol/apulu/meter: ${JOBD_PREREQS}
