@@ -16,6 +16,7 @@ import (
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/objstore"
 	"github.com/pensando/sw/api/generated/rollout"
+	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils"
 	"github.com/pensando/sw/venice/utils/elastic"
@@ -399,6 +400,10 @@ func (idr *Indexer) startOrderedWriter(id int) {
 					ometa.Name,
 					req.evType)
 				idr.updatePolicyCache(req.object, req.evType)
+				idr.logger.Info("dropping the attach-tenant from NetworkSecurityPolicy object to avoid mapping conflict with networkinterface.spec.attach-tenant")
+				networkPolicy := req.object.(*security.NetworkSecurityPolicy)
+				networkPolicy.Spec.AttachTenant = false
+				req.object = networkPolicy
 			case "Rollout":
 				idr.logger.Info("dropping the reason from rollout object to avoid mapping conflict with alert.status.reason")
 				rolloutObj := req.object.(*rollout.Rollout)
