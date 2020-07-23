@@ -42,7 +42,6 @@ void
 temp_event_cb (sdk::platform::sensor::system_temperature_t *temperature,
                sysmon_hbm_threshold_event_t hbm_event)
 {
-    cpld_temp_event_cb(temperature);
     delphi_temp_event_cb(temperature);
     eventrecorder_temp_event_cb(temperature, hbm_event);
 }

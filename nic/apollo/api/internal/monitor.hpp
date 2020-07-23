@@ -186,6 +186,28 @@ postdiag_event_cb (void)
         "DSC post diag failed in this boot");
 }
 
+static void
+cpld_port_status_update (void *entry, void *ctxt)
+{
+    uint32_t phy_port;
+    port_oper_status_t port_status;
+    pds_if_info_t *info = (pds_if_info_t *)entry;
+
+    port_status = info->status.port_status.link_status.oper_state;
+    phy_port = g_pds_state.catalogue()->ifindex_to_phy_port(info->status.ifindex);
+    if (info->spec.port_info.type == port_type_t::PORT_TYPE_ETH) {
+        pal_cpld_set_port_link_status(phy_port, (uint8_t)port_status);
+    }
+}
+
+void
+liveness_event_cb (void)
+{
+    // update port status
+    port_get_all(cpld_port_status_update, NULL);
+    return;
+}
+
 void
 pciehealth_event_cb (sysmon_pciehealth_severity_t sev, const char *reason)
 {

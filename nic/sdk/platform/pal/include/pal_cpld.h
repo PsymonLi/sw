@@ -109,6 +109,10 @@
 #define SYSTEM_HEALTH0_PORT0_LINK       3
 #define SYSTEM_HEALTH0_PORT1_LINK       4
 
+// CPLD Link Status
+#define PORT_LINK_DOWN     0
+#define PORT_LINK_UP       1
+
 typedef enum {
    SYSMOND_HEALTH_NOT_OK = 0,
    SYSMOND_HEALTH_OK = 1
@@ -149,8 +153,7 @@ int pal_cpld_read_flash(uint8_t *buf, uint32_t size);
 int pal_cpld_write_flash(const uint8_t *buf, uint32_t size, cpld_upgrade_status_cb_t cpld_upgrade_status_cb, void *arg);
 void pal_cpld_set_card_status(uint8_t status);
 void pal_cpld_increment_liveness(void);
-void pal_cpld_set_port0_link_status(uint8_t status);
-void pal_cpld_set_port1_link_status(uint8_t status);
+void pal_cpld_set_port_link_status(uint32_t phy_port, uint8_t status);
 void pal_power_cycle(void);
 bool pal_cpld_hwlock_enabled(void);
 int pal_write_qsfp_temp(int data, int port);

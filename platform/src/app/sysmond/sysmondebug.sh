@@ -6,9 +6,7 @@ SYSMODDUMP_LOCATION=/obfl/sysmonddumps
 mkdir -p ${SYSMODDUMP_LOCATION}
 
 # Check the current processes
-top -b -n 1 -d 1 > ${SYSMODDUMP_LOCATION}/${NOW}.txt
-
-top -m -b -n 1 -d 1 >> ${SYSMODDUMP_LOCATION}/${NOW}.txt
+top -b -n 1 -d 1 -w 256 > ${SYSMODDUMP_LOCATION}/${NOW}.txt
 
 cat /proc/meminfo >> ${SYSMODDUMP_LOCATION}/${NOW}.txt
 

@@ -19,6 +19,54 @@ int startingfrequency_1100 = 0;
 #define HBM_TEMP_LOWER_LIMIT 85
 #define HBM_TEMP_UPPER_LIMIT 95
 
+// Hystersis to control auxilary fan based on HBM temperature.
+#define AUX_FAN_TEMP_HYSTERESIS 10
+
+static void
+cpld_temp_update (sdk::platform::sensor::system_temperature_t *temperature)
+{
+    static uint32_t aux_fan_state;
+    uint32_t num_phy_ports;
+
+    pal_write_core_temp(temperature->dietemp);
+    pal_write_board_temp(temperature->localtemp);
+    pal_write_hbm_temp(temperature->hbmtemp);
+    pal_write_hbmwarning_temp(temperature->hbmwarningtemp);
+    pal_write_hbmcritical_temp(temperature->hbmcriticaltemp);
+    pal_write_hbmfatal_temp(g_sysmon_cfg.catalog->hbmtemperature_threshold());
+
+    // walk fp ports
+    num_phy_ports = g_sysmon_cfg.catalog->num_fp_ports();
+    for (uint32_t phy_port = 1; phy_port <= num_phy_ports; phy_port++) {
+        if (g_sysmon_cfg.catalog->port_type_fp(phy_port)
+            != port_type_t::PORT_TYPE_MGMT) {
+            // adding place holders for updating qsfp temperature to cpld
+            pal_write_qsfp_temp(temperature->xcvrtemp[phy_port -1].temperature,
+                                phy_port);
+            pal_write_qsfp_alarm_temp(
+                temperature->xcvrtemp[phy_port -1].alarm_temperature, phy_port);
+            pal_write_qsfp_warning_temp(
+                temperature->xcvrtemp[phy_port -1].warning_temperature,
+                phy_port);
+        }
+    }
+
+    if (g_sysmon_cfg.catalog->aux_fan()) {
+        if (aux_fan_state == 0 &&
+            temperature->hbmtemp > g_sysmon_cfg.catalog->aux_fan_threshold()) {
+            aux_fan_state = 1;
+            pal_enable_auxiliary_fan();
+        } else if ((aux_fan_state == 1) &&
+                   (temperature->hbmtemp <
+                   (g_sysmon_cfg.catalog->aux_fan_threshold()
+                   - AUX_FAN_TEMP_HYSTERESIS))) {
+            aux_fan_state = 0;
+            pal_disable_auxiliary_fan();
+        }
+    }
+    return;
+}
+
 static void
 changefrequency (uint64_t hbmtemperature)
 {
@@ -60,6 +108,7 @@ checktemperature(void)
     static int max_die_temp;
     static int max_local_temp;
     static int max_hbm_temp;
+    uint32_t num_phy_ports;
     static sysmon_hbm_threshold_event_t prev_hbmtemp_event;
     sysmon_hbm_threshold_event_t hbmtemp_event;
     sdk::platform::sensor::system_temperature_t temperature;
@@ -86,9 +135,14 @@ checktemperature(void)
             max_hbm_temp = temperature.hbmtemp;
         }
 
-        //TODO walk the ports once notification works correctly
-        sdk::platform::read_qsfp_temperature(0, &temperature.xcvrtemp[0]);
-        sdk::platform::read_qsfp_temperature(1, &temperature.xcvrtemp[1]);
+        num_phy_ports = g_sysmon_cfg.catalog->num_fp_ports();
+        for (uint32_t phy_port = 1; phy_port <= num_phy_ports; phy_port++) {
+            if (g_sysmon_cfg.catalog->port_type_fp(phy_port)
+                != port_type_t::PORT_TYPE_MGMT) {
+                sdk::platform::read_qsfp_temperature(
+                    phy_port - 1, &temperature.xcvrtemp[phy_port -1]);
+            }
+        }
 
         if (startingfrequency_1100 == 1) {
             changefrequency(temperature.hbmtemp);
@@ -114,6 +168,8 @@ checktemperature(void)
         } else {
             hbmtemp_event = SYSMON_HBM_TEMP_NONE;
         }
+        // update temperature in cpld
+        cpld_temp_update(&temperature);
         if (g_sysmon_cfg.temp_event_cb) {
             g_sysmon_cfg.temp_event_cb(&temperature, hbmtemp_event);
         }

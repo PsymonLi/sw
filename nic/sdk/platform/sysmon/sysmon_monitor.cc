@@ -63,6 +63,9 @@ checkcattrip(void)
 void
 checkliveness(void)
 {
+    // update cpld health reg0
+    pal_cpld_increment_liveness();
+
     if (g_sysmon_cfg.liveness_event_cb) {
         g_sysmon_cfg.liveness_event_cb();
     }

@@ -252,6 +252,7 @@ sysmon_init (void)
     sysmon_cfg.memory_event_cb = memory_event_cb;
     sysmon_cfg.catalog = api::g_pds_state.catalogue();
     sysmon_cfg.panic_event_cb = panic_event_cb;
+    sysmon_cfg.liveness_event_cb = liveness_event_cb;
     sysmon_cfg.postdiag_event_cb = postdiag_event_cb;
     sysmon_cfg.pciehealth_event_cb = pciehealth_event_cb;
     sysmon_cfg.memory_threshold_event_cb = filesystem_threshold_event_cb;

@@ -116,12 +116,7 @@ pal_cpld_increment_liveness(void)
 }
 
 void
-pal_cpld_set_port0_link_status(uint8_t status)
-{
-}
-
-void
-pal_cpld_set_port1_link_status(uint8_t status)
+pal_cpld_set_port_link_status(uint32_t phy_port, uint8_t status)
 {
 }
 
@@ -592,21 +587,25 @@ pal_cpld_increment_liveness(void)
 }
 
 void
-pal_cpld_set_port0_link_status(uint8_t status)
+pal_cpld_set_port_link_status (uint32_t phy_port, uint8_t status)
 {
-    if (status == 0)
-        cpld_reg_bit_reset(CPLD_REGISTER_SYSTEM_HEALTH0, SYSTEM_HEALTH0_PORT0_LINK);
-    else
-        cpld_reg_bit_set(CPLD_REGISTER_SYSTEM_HEALTH0, SYSTEM_HEALTH0_PORT0_LINK);
-}
-
-void
-pal_cpld_set_port1_link_status(uint8_t status)
-{
-    if (status == 0)
-        cpld_reg_bit_reset(CPLD_REGISTER_SYSTEM_HEALTH0, SYSTEM_HEALTH0_PORT1_LINK);
-    else
-        cpld_reg_bit_set(CPLD_REGISTER_SYSTEM_HEALTH0, SYSTEM_HEALTH0_PORT1_LINK);
+    if (phy_port == QSFP_PORT1) {
+        if (status == PORT_LINK_DOWN) {
+            cpld_reg_bit_reset(CPLD_REGISTER_SYSTEM_HEALTH0,
+                               SYSTEM_HEALTH0_PORT0_LINK);
+        } else {
+            cpld_reg_bit_set(CPLD_REGISTER_SYSTEM_HEALTH0,
+                             SYSTEM_HEALTH0_PORT0_LINK);
+        }
+    } else if (phy_port == QSFP_PORT2) {
+        if (status == PORT_LINK_DOWN) {
+            cpld_reg_bit_reset(CPLD_REGISTER_SYSTEM_HEALTH0,
+                               SYSTEM_HEALTH0_PORT1_LINK);
+        } else {
+            cpld_reg_bit_set(CPLD_REGISTER_SYSTEM_HEALTH0,
+                             SYSTEM_HEALTH0_PORT1_LINK);
+        }
+    }
 }
 
 void

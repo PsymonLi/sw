@@ -9,15 +9,13 @@ MAX_RECORDS="11"
 mkdir -p ${LOCATION}
 
 # Check CPU load
-top -b -n 1 -d 1 > ${LOCATION}/top_start.txt
-top -b -n 1 -d 1 -m >> ${LOCATION}/top_start.txt
+top -b -n 1 -d 1 -w 256 > ${LOCATION}/top_start.txt
 
 # Copy everything under `/log`
 cp -a /var/log ${LOCATION}/log
 
 # One final CPU load check
-top -b -n 1 -d 1 > ${LOCATION}/top_end.txt
-top -b -n 1 -d 1 -m >> ${LOCATION}/top_end.txt
+top -b -n 1 -d 1 -w 256 > ${LOCATION}/top_end.txt
 cat /proc/vmstat > ${LOCATION}/vm_stat.txt
 cat /proc/loadavg > ${LOCATION}/loadavg.txt
 dmesg > ${LOCATION}/dmesg.txt
