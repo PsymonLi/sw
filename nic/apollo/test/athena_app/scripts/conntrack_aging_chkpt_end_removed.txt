@@ -1,0 +1,20 @@
+
+test_log_file_append /var/log/pensando/iota_conntrack_aging_chkpt_removed_test.log
+conntrack_aging_tmo_show
+conntrack_aging_metrics_show
+
+test_timeofday_show
+
+skip_fte_flow_prog_set TRUE
+conntrack_table_clear_full 8388608
+session_and_cache_clear_full 8388608
+
+conntrack_aging_metrics_show
+conntrack_aging_tmo_factory_dflt_set
+conntrack_aging_fini
+
+session_aging_accel_control false
+session_aging_tmo_factory_dflt_set
+session_aging_fini
+
+skip_fte_flow_prog_set false

@@ -43,7 +43,7 @@ def parse_args(tc):
     tc.proto      = 'TCP'
     tc.bidir      = 'yes'
     tc.flow_type  = 'dynamic'
-    tc.flow_cnt   = 13
+    tc.flow_cnt   = 14
     tc.pkt_cnt    = 1
     tc.state      = None
 
@@ -336,7 +336,7 @@ def get_state_time_wait(tc, node, flow, pkt_gen, start_dir):
 
 def get_state_rst(tc, node, flow, pkt_gen, start_dir):
 
-    # Send packet to get state TIME WAIT
+    # Send packet to get state RST
     flags = None
 
     if start_dir == 'h2s':
@@ -363,6 +363,72 @@ def get_state_rst(tc, node, flow, pkt_gen, start_dir):
         pkt_gen.set_flags('R')
         send_pkt_s2h(tc, node, flow, pkt_gen)
 
+
+def verify_flow_miss(tc, node, flow, pkt_gen, start_dir):
+
+    # Send packet to get state REMOVED
+    flags = None
+
+    if start_dir == 'h2s':
+        # =====================
+        # h2s RST + 35s timeout
+        # =====================
+        get_state_rst(tc, node, flow, pkt_gen, 'h2s')
+
+    else:
+        # =====================
+        # s2h RST + 35s timeout
+        # =====================
+        get_state_rst(tc, node, flow, pkt_gen, 's2h')
+
+    session_id = utils.get_session_id(tc.bitw_node_name, tc.vnic_id, flow)
+    if session_id is None:
+        api.Logger.error("Error: Get session ID failed, flow is not installed")
+        return api.types.status.FAILURE
+    conntrack_id = utils.get_conntrack_id(tc.bitw_node_name, session_id)
+
+    if utils.verify_conntrack_state_by_id(tc.bitw_node_name, conntrack_id, FlowState.RST_CLOSE.value) == False:
+        return api.types.status.FAILURE
+
+    # REMOVED state would be immediately sent to poller queues for deletion
+    # Sleep 35s (Default Timeout is 60s) will get state UNESTABLISHED
+    utils.Sleep(35)
+
+    if utils.verify_conntrack_state_by_id(tc.bitw_node_name, conntrack_id, FlowState.UNESTABLISHED.value) == False:
+        return api.types.status.FAILURE
+    
+    flow_hit_count_before = utils.get_flow_hit_count(tc.bitw_node_name)
+
+    # Verify flow has aged out
+    rc, num_match_after = utils.match_dynamic_flows(tc.bitw_node_name, tc.vnic_id, flow)
+    if rc != api.types.status.SUCCESS:
+        api.Logger.error("match_dynamic_flows failed")
+        return rc
+
+    if num_match_after != 0:
+        api.Logger.error("ERROR: flow is not aged out")
+        return api.types.status.FAILURE
+
+    # Send pkts again to verify that packets are sent to ARM
+    pkt_gen.set_flags(None)
+
+    if start_dir == 'h2s':
+        send_pkt_h2s(tc, node, flow, pkt_gen)
+    else:
+        send_pkt_s2h(tc, node, flow, pkt_gen)
+
+    flow_hit_count_after = utils.get_flow_hit_count(tc.bitw_node_name)
+
+    if flow_hit_count_after < flow_hit_count_before:
+        api.Logger.error("Flow hit counter dump is wrong, check p4ctl or rerun")
+        return api.types.status.FAILURE
+
+    if flow_hit_count_after != flow_hit_count_before:
+        api.Logger.error("P4ctl shows %d pkts hit flow cache" % (flow_hit_count))
+        api.Logger.error("Pkt should be sent to ARM and flow hit count should be 0")
+        return api.types.status.FAILURE
+
+    return api.types.status.SUCCESS
 
 def Setup(tc):
 
@@ -550,6 +616,13 @@ def Trigger(tc):
                 if utils.verify_conntrack_state(tc.bitw_node_name, tc.vnic_id, flow, FlowState.SYNACK_SENT.value) == False:
                     return api.types.status.FAILURE
 
+            elif tc.state == 'REMOVED' and idx == 13:
+                api.Logger.info("Verify flow miss in REMOVED")
+                rc = verify_flow_miss(tc, node, flow, pkt_gen, 'h2s')
+                if rc != api.types.status.SUCCESS:
+                    api.Logger.error("Verify flow miss failed")
+                    return api.types.status.FAILURE
+
     return api.types.status.SUCCESS
 
 def Verify(tc):
@@ -592,4 +665,3 @@ def Verify(tc):
 def Teardown(tc):
 
     return api.types.status.SUCCESS
-

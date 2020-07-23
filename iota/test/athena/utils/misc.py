@@ -236,6 +236,18 @@ def get_conntrack_state(node, conntrack_id):
 
 # ================================
 # Return: True or False
+# Input: node, ct_id and exp_state
+# Validates the flow_state in conntrack
+# table against expected state
+# ================================
+def verify_conntrack_state_by_id(node_name, conntrack_id, exp_state):
+    flow_state = get_conntrack_state(node_name, conntrack_id)
+    api.Logger.info("flow_state: expected %s, actual %s" % (exp_state, flow_state))
+
+    return flow_state == exp_state
+
+# ================================
+# Return: True or False
 # Input: node, vnic_id and flow
 # Validates the flow_state in conntrack
 # table against expected state
@@ -248,10 +260,7 @@ def verify_conntrack_state(node_name, vnic_id, flow, exp_state):
     conntrack_id = get_conntrack_id(node_name, session_id)
     api.Logger.info("conntrack_id is %s" % conntrack_id)
 
-    flow_state = get_conntrack_state(node_name, conntrack_id)
-    api.Logger.info("flow_state: expected %s, actual %s" % (exp_state, flow_state))
-
-    return flow_state == exp_state
+    return verify_conntrack_state_by_id(node_name, conntrack_id, exp_state)
 
 # ===========================================
 # Return: List of (node, nic) pairs names for 

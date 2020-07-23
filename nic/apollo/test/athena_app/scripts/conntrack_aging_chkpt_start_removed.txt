@@ -1,0 +1,21 @@
+test_log_file_create /var/log/pensando/iota_conntrack_aging_chkpt_removed_test.log
+
+skip_fte_flow_prog_set TRUE
+conntrack_table_clear_full 8388608
+session_and_cache_clear_full 8388608
+
+conntrack_aging_init
+conntrack_aging_force_expired_ts false
+conntrack_aging_tolerance_secs_set 20
+conntrack_aging_normal_tmo_set {tcp rst_close 60}
+
+session_aging_init
+session_aging_force_expired_ts false
+session_aging_accel_control false
+session_aging_tolerance_secs_set 30
+
+test_timeofday_show
+conntrack_aging_traffic_chkpt_start
+session_and_cache_traffic_chkpt_start
+conntrack_aging_metrics_show
+skip_fte_flow_prog_set false
