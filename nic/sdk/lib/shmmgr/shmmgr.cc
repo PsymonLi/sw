@@ -316,18 +316,24 @@ shmmgr::segment_find(const char *name, bool create, std::size_t size,
         }
         SHMMGR_OP(construct<shm_segment>(name)(), state);
         if (state) {
-            if (alignment) {
-                assert((alignment & (alignment - 1)) == 0);
-                assert(alignment >= 4);
-                SHMMGR_OP(allocate_aligned(size, alignment), addr);
-            } else {
-                SHMMGR_OP(allocate(size), addr);
-            }
-            if (addr) {
-                state->offset = (uint64_t)state - (uint64_t)addr;
-                state->size = size;
-                return addr;
-            } else {
+            try {
+                if (alignment) {
+                    assert((alignment & (alignment - 1)) == 0);
+                    assert(alignment >= 4);
+                    SHMMGR_OP(allocate_aligned(size, alignment), addr);
+                } else {
+                    SHMMGR_OP(allocate(size), addr);
+                }
+                if (addr) {
+                    state->offset = (uint64_t)state - (uint64_t)addr;
+                    state->size = size;
+                    return addr;
+                } else {
+                    SDK_TRACE_ERR("Failed to allocate memory for segment %s",
+                                  name);
+                    SHMMGR_OP_NORET(destroy_ptr(state));
+                }
+            } catch (...) {
                 SDK_TRACE_ERR("Failed to allocate memory for segment %s",
                               name);
                 SHMMGR_OP_NORET(destroy_ptr(state));
