@@ -21,7 +21,7 @@ type DSCRolloutState struct {
 	*protos.DSCRollout
 	*Statemgr
 	ros    *RolloutState
-	status map[protos.DSCOp]protos.DSCOpStatus
+	Status map[protos.DSCOp]protos.DSCOpStatus
 }
 
 // CreateDSCRolloutState to create a DSCRollout Object in statemgr
@@ -36,7 +36,7 @@ func (sm *Statemgr) CreateDSCRolloutState(ro *protos.DSCRollout, ros *RolloutSta
 		DSCRollout: ro,
 		Statemgr:   sm,
 		ros:        ros,
-		status:     make(map[protos.DSCOp]protos.DSCOpStatus),
+		Status:     make(map[protos.DSCOp]protos.DSCOpStatus),
 	}
 
 	if snicStatus != nil {
@@ -69,7 +69,7 @@ func (sm *Statemgr) CreateDSCRolloutState(ro *protos.DSCRollout, ros *RolloutSta
 			Version:  ros.Rollout.Spec.Version,
 			OpStatus: opStatus,
 		}
-		sros.status[op] = st
+		sros.Status[op] = st
 
 		if snicStatus.Phase == roproto.RolloutPhase_PROGRESSING.String() {
 			sros.Spec.Ops = append(sros.Spec.Ops, protos.DSCOpSpec{Op: nextOp, Version: ros.Rollout.Spec.Version})
@@ -81,7 +81,7 @@ func (sm *Statemgr) CreateDSCRolloutState(ro *protos.DSCRollout, ros *RolloutSta
 				Version:  ros.Rollout.Spec.Version,
 				OpStatus: "success",
 			}
-			sros.status[nextOp] = stNext
+			sros.Status[nextOp] = stNext
 			log.Infof("setting SmartNIC for %v with version %v", ro.Name, ros.Rollout.Spec.Version)
 		}
 
@@ -209,7 +209,7 @@ func (snicState *DSCRolloutState) UpdateDSCRolloutStatus(newStatus *protos.DSCRo
 			continue
 		}
 
-		existingStatus := snicState.status[s.Op]
+		existingStatus := snicState.Status[s.Op]
 		if existingStatus.OpStatus == s.OpStatus {
 			log.Infof("Existing Status. so ignoring Status of %v", snicState.DSCRollout.Name)
 			continue
@@ -275,7 +275,7 @@ func (snicState *DSCRolloutState) UpdateDSCRolloutStatus(newStatus *protos.DSCRo
 				return
 			}
 		}
-		snicState.status[s.Op] = s
+		snicState.Status[s.Op] = s
 		message = s.Message
 		reason = s.OpStatus
 
@@ -298,7 +298,7 @@ func (snicState *DSCRolloutState) anyPendingOp() bool {
 	defer snicState.Mutex.Unlock()
 
 	for _, s := range snicState.Spec.Ops {
-		if st := snicState.status[s.Op]; st.OpStatus == "" {
+		if st := snicState.Status[s.Op]; st.OpStatus == "" {
 			return true
 		}
 	}

@@ -432,7 +432,7 @@ Loop:
 
 				snicROState, err := sm.GetDSCRolloutState(snicState.Tenant, snicState.Name)
 				if err == nil {
-					if st := snicROState.status[op]; st.OpStatus != "" {
+					if st := snicROState.Status[op]; st.OpStatus != "" {
 						log.Infof("smartnic %v already has status for version %s op %s status %v", snicState.Name, version, op, st.OpStatus)
 						continue
 					} else {
@@ -500,7 +500,7 @@ Loop:
 							break WaitLoop
 						}
 						if snRolloutState.Name == snicState.Name {
-							log.Infof("Got status %+v to smartNIC request for %v", snRolloutState.status, snRolloutState.Name)
+							log.Infof("Got status %+v to smartNIC request for %v", snRolloutState.Status, snRolloutState.Name)
 							if !snRolloutState.anyPendingOp() {
 								break WaitLoop
 							} else {

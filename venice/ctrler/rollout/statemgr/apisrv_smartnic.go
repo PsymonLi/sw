@@ -70,7 +70,7 @@ func (sm *Statemgr) performForceRollout(smartNIC *cluster.DistributedServiceCard
 		DSCRollout: &snicRollout,
 		Statemgr:   sm,
 		ros:        nil,
-		status:     make(map[protos.DSCOp]protos.DSCOpStatus),
+		Status:     make(map[protos.DSCOp]protos.DSCOpStatus),
 	}
 	sm.memDB.AddObject(&sros)
 	log.Infof("ForceRollout: Created smartNICRollout %#v", snicRollout.Name)

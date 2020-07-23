@@ -449,7 +449,7 @@ func checkNoPendingDSCOp(t *testing.T, stateMgr *Statemgr, node string, op proto
 		if !found {
 			return true, "op not found in spec"
 		}
-		if sro.status[op].OpStatus != "" {
+		if sro.Status[op].OpStatus != "" {
 			return true, "Status also present"
 		}
 		return false, sro
@@ -475,13 +475,13 @@ func addSmartNICResponseFilter(t *testing.T, stateMgr *Statemgr, snic string, op
 		if !found {
 			return false, "op not found in spec"
 		}
-		log.Debugf("Verify Rollout Object OpStatus %v", spew.Sdump(sro.status[op]))
-		if sro.status[op].OpStatus != "" {
+		log.Debugf("Verify Rollout Object OpStatus %v", spew.Sdump(sro.Status[op]))
+		if sro.Status[op].OpStatus != "" {
 			return false, "Status also present"
 		}
 
 		var newOpStatus []protos.DSCOpStatus
-		for _, s := range sro.status {
+		for _, s := range sro.Status {
 			newOpStatus = append(newOpStatus, s)
 		}
 		newOpStatus = append(newOpStatus, protos.DSCOpStatus{
@@ -494,7 +494,7 @@ func addSmartNICResponseFilter(t *testing.T, stateMgr *Statemgr, snic string, op
 			OpStatus: newOpStatus,
 		}
 		sro.UpdateDSCRolloutStatus(&status)
-		log.Debugf("Update Rollout Object OpStatus %v", spew.Sdump(sro.status[op]))
+		log.Debugf("Update Rollout Object OpStatus %v", spew.Sdump(sro.Status[op]))
 		return true, sro
 
 	}
