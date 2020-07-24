@@ -69,18 +69,20 @@ dpdk_sim_init(void)
         std::string dpdk_id_str(std::getenv("DPDK_SIM_APP_ID"));
         app_id = std::stoi(dpdk_id_str);
     }
-
-    /* initialize PAL */
-    err = sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_SIM);
-    SDK_ASSERT(err == sdk::lib::PAL_RET_OK);
-    if (app_id <= 1) {
-        pmem_base = DPDK_SIM_MEM_START + (app_id * DPDK_SIM_APP_MEM_SIZE);
-    } else {
-        pmem_base = DPDK_SIM_HIGH_MEM_START + ((app_id - 2) * DPDK_SIM_APP_MEM_SIZE);
-    }
-    /* clear the memory, otherwise upgrade boot breaks */
-    if (sdk::platform::sysinit_mode_graceful(mode)) {
-        dpdk_sim_mem_reset(pmem_base, DPDK_SIM_APP_MEM_SIZE);
+    
+    if (!pmem_base) {
+        /* initialize PAL */
+        err = sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_SIM);
+        SDK_ASSERT(err == sdk::lib::PAL_RET_OK);
+        if (app_id <= 1) {
+            pmem_base = DPDK_SIM_MEM_START + (app_id * DPDK_SIM_APP_MEM_SIZE);
+        } else {
+            pmem_base = DPDK_SIM_HIGH_MEM_START + ((app_id - 2) * DPDK_SIM_APP_MEM_SIZE);
+        }
+        /* clear the memory, otherwise upgrade boot breaks */
+        if (sdk::platform::sysinit_mode_graceful(mode)) {
+            dpdk_sim_mem_reset(pmem_base, DPDK_SIM_APP_MEM_SIZE);
+        }
     }
     return 0;
 }
