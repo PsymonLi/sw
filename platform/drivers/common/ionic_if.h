@@ -105,7 +105,7 @@ enum ionic_notifyq_opcode {
 };
 
 /**
- * struct cmd - General admin command format
+ * struct ionic_admin_cmd - General admin command format
  * @opcode:     Opcode for the command
  * @lif_index:  LIF index
  * @cmd_data:   Opcode-specific command bytes
@@ -169,7 +169,7 @@ struct ionic_dev_init_cmd {
 };
 
 /**
- * struct init_comp - Device init command completion
+ * struct ionic_dev_init_comp - Device init command completion
  * @status: Status of the command (enum ionic_status_code)
  */
 struct ionic_dev_init_comp {
@@ -187,7 +187,7 @@ struct ionic_dev_reset_cmd {
 };
 
 /**
- * struct reset_comp - Reset command completion
+ * struct ionic_dev_reset_comp - Reset command completion
  * @status: Status of the command (enum ionic_status_code)
  */
 struct ionic_dev_reset_comp {
@@ -1025,7 +1025,7 @@ enum ionic_eth_hw_features {
  * @type:       Queue type
  * @lif_index:  LIF index
  * @index:      Queue index
- * @oper:       Operation (enum q_control_oper)
+ * @oper:       Operation (enum ionic_q_control_oper)
  */
 struct ionic_q_control_cmd {
 	u8     opcode;
@@ -1038,7 +1038,7 @@ struct ionic_q_control_cmd {
 
 typedef struct ionic_admin_comp ionic_q_control_comp;
 
-enum q_control_oper {
+enum ionic_q_control_oper {
 	IONIC_Q_DISABLE		= 0,
 	IONIC_Q_ENABLE		= 1,
 	IONIC_Q_HANG_RESET	= 2,
@@ -1111,18 +1111,6 @@ enum ionic_xcvr_pid {
 };
 
 /**
- * enum ionic_port_type - Port types
- * @IONIC_PORT_TYPE_NONE:           Port type not configured
- * @IONIC_PORT_TYPE_ETH:            Port carries ethernet traffic (inband)
- * @IONIC_PORT_TYPE_MGMT:           Port carries mgmt traffic (out-of-band)
- */
-enum ionic_port_type {
-	IONIC_PORT_TYPE_NONE = 0,
-	IONIC_PORT_TYPE_ETH  = 1,
-	IONIC_PORT_TYPE_MGMT = 2,
-};
-
-/**
  * enum ionic_port_admin_state - Port config state
  * @IONIC_PORT_ADMIN_STATE_NONE:    Port admin state not configured
  * @IONIC_PORT_ADMIN_STATE_DOWN:    Port admin disabled
@@ -1186,7 +1174,7 @@ enum ionic_port_loopback_mode {
  * struct ionic_xcvr_status - Transceiver Status information
  * @state:    Transceiver status (enum ionic_xcvr_state)
  * @phy:      Physical connection type (enum ionic_phy_type)
- * @pid:      Transceiver link mode (enum pid)
+ * @pid:      Transceiver link mode (enum ionic_xcvr_pid)
  * @sprom:    Transceiver sprom contents
  */
 struct ionic_xcvr_status {
@@ -1200,7 +1188,7 @@ struct ionic_xcvr_status {
  * union ionic_port_config - Port configuration
  * @speed:              port speed (in Mbps)
  * @mtu:                mtu
- * @state:              port admin state (enum port_admin_state)
+ * @state:              port admin state (enum ionic_port_admin_state)
  * @an_enable:          autoneg enable
  * @fec_type:           fec type (enum ionic_port_fec_type)
  * @pause_type:         pause type (enum ionic_port_pause_type)
@@ -1661,7 +1649,6 @@ struct ionic_lif_getattr_comp {
 	__le16 comp_index;
 	union {
 		u8      state;
-		//char    name[IONIC_IFNAMSIZ];
 		__le32  mtu;
 		u8      mac[6];
 		__le64  features;
@@ -2194,7 +2181,7 @@ struct ionic_notifyq_event {
  * struct ionic_link_change_event - Link change event notification
  * @eid:		event number
  * @ecode:		event code = IONIC_EVENT_LINK_CHANGE
- * @link_status:	link up or down, with error bits (enum port_status)
+ * @link_status:	link up/down, with error bits (enum ionic_port_status)
  * @link_speed:		speed of the network link
  *
  * Sent when the network link state changes between UP and DOWN
@@ -2440,7 +2427,19 @@ struct ionic_port_pb_stats {
 	__le64 output_queue_buffer_occupancy[IONIC_QOS_TC_MAX];
 };
 
-enum port_type {
+/**
+ * enum ionic_port_type - Port types
+ * @IONIC_ETH_UNKNOWN:             Port type not configured
+ * @IONIC_ETH_HOST:                Port carries ethernet traffic (inband)
+ * @IONIC_ETH_HOST_MGMT:           Port carries mgmt traffic (out-of-band)
+ * @IONIC_ETH_MNIC_OOB_MGMT:
+ * @IONIC_ETH_MNIC_INTERNAL_MGMT:
+ * @IONIC_ETH_MNIC_INBAND_MGMT:
+ * @IONIC_ETH_MNIC_CPU:
+ * @IONIC_ETH_MNIC_LEARN:
+ * @IONIC_ETH_MNIC_CONTROL:
+ */
+enum ionic_port_type {
 	IONIC_ETH_UNKNOWN,
 	IONIC_ETH_HOST,
 	IONIC_ETH_HOST_MGMT,
@@ -2455,7 +2454,7 @@ enum port_type {
 /**
  * struct ionic_port_identity - port identity structure
  * @version:        identity structure version
- * @type:           type of port (enum port_type)
+ * @type:           type of port (enum ionic_port_type)
  * @num_lanes:      number of lanes for the port
  * @autoneg:        autoneg supported
  * @min_frame_size: minimum frame size supported

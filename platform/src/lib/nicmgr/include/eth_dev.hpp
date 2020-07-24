@@ -56,7 +56,7 @@ namespace pt = boost::property_tree;
 
 /**
  * ETH Device type
- * TODO: keep in sync with enum port_type in ionic_if.h
+ * TODO: keep in sync with enum ionic_port_type in ionic_if.h
  *       until we can rework headers to have a single definition
  */
 typedef enum EthDevType_s {
