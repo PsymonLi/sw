@@ -50,6 +50,7 @@
 #define CPLD_REV_0              0x0
 #define CPLD_REV_8              0x8
 #define CPLD_NAPLES_VOMERO_2_ID 0x1e
+#define CPLD_NAPLES_100_HPE_ID  0x1F
 
 // CPLD qsfp port number specifiers.
 #define QSFP_PORT1   1
