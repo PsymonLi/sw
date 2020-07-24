@@ -46,8 +46,28 @@
 }
 
 .archiverequests-detail-div {
-  padding: 10px;
+  padding-top: 15px;
+  padding-left: 20px;
+  padding-right: 20px;
   width: 100%;
   max-height: 250px;
   overflow: auto;
+}
+
+.archiverequests-caption {
+  min-width: 150px;
+  text-align: left;
+}
+
+.archiverequests-detail-header-title {
+  @include primary-font(16px, #676763, bold);
+}
+
+.archiverequests-detail-close {
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.archiverequests-detail-body {
+  padding-top: 5px;
 }

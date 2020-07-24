@@ -29,9 +29,6 @@ import { WidgetsModule } from 'web-app-framework';
 
 import { ArchivelogComponent } from './archivelog.component';
 import { AuthService } from '@app/services/auth.service';
-import { TestTablevieweditRBAC } from '@app/components/shared/tableviewedit/tableviewedit.component.spec';
-import { MonitoringArchiveRequest } from '@sdk/v1/models/generated/monitoring';
-import { TestingUtility } from '@app/common/TestingUtility';
 
 describe('ArchivelogComponent', () => {
   let component: ArchivelogComponent;

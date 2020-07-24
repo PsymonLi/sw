@@ -1,39 +1,36 @@
 <app-pagebody class="archiverequests" header="Archive Log Requests" [icon]="bodyicon">
-  <app-tableviewedit fxLayout="column" class="archiverequests-widget"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [expandTemplate]="expandTemplate"
-                     [enableCheckbox]="false"
-                     [tableLoading]="tableLoading"
-                     (rowClick)="onArchiveRequestsTableRowClick($event)"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
-
+  <app-pentable #archiveTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
+                [enableCheckbox]="true" [expandTemplate]="expandTemplate"
+                [exportFilename]="exportFilename" [exportMap]="exportMap" [loading]="tableLoading"
+                [numRows]="25" [receiveSelectedDataUpdate]="true"
+                (rowClickEmitter)="showArchiveQuery($event)" [rowHeight]="36"
+                (selectedObjectsUpdateEmitter)="showBulkDeleteIcon()">
+  </app-pentable>
 </app-pagebody>
 
 <ng-template #captionTemplate let-count="count">
-  <app-tableheader title="Archive Logs" [total]="count" fxFlex="auto" fxLayout="row"
-                   [tableMenuItems]="tableMenuItems" [enableColumnSelect]="false" [cols]="cols"
-                   (columnSelectChange)="onColumnSelectChange($event)" [icon]="headerIcon">
-
-    <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
-  </app-tableheader>
+  <div class="archiverequests-caption" fxLayout="column">
+    <app-tableheader title="Archive Logs" [total]="count" fxFlex="auto" fxLayout="row"
+                     [tableMenuItems]="archiveTable.tableMenuItems" [enableColumnSelect]="false"
+                     [cols]="cols"
+                     (columnSelectChange)="onColumnSelectChange($event)" [icon]="headerIcon">
+      <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
+    </app-tableheader>
+  </div>
 </ng-template>
 
 <ng-template #actionButtonsTemplate>
   <div fxFlex="none" fxLayoutAlign="start center"
        *roleGuard="'monitoringarchiverequest_delete'">
     <!-- TABLE FUNCTION ICONS HERE -->
-    <mat-icon class="global-multi-records-delete-icon"
+    <mat-icon [ngClass]="{
+                'global-multi-records-delete-icon': true,
+                'global-button-disabled': !showBulkDeleteIcon()
+              }"
               *ngIf="hasSelectedRows()"
-              [matTooltip]="'Delete selected archive log requests'"
-              (click)="onDeleteSelectedRowsForkJoin($event)">delete</mat-icon>
+              [matTooltip]="showBulkDeleteIcon() ? 'Delete selected archive log requests' : 'One or More Archive Requests are still Running'"
+              (click)="handleDelete()">delete</mat-icon>
   </div>
 
 </ng-template>
@@ -80,11 +77,6 @@
       </div>
     </ng-container>
 
-    <ng-container *ngSwitchCase="'spec.query'">
-      <div class="archiverequests-criteria">{{displayColumn(rowData, col)}}
-      </div>
-    </ng-container>
-
     <ng-container *ngSwitchDefault>
       <div [innerHTML]="displayColumn(rowData, col)">
       </div>
@@ -109,8 +101,17 @@
   </div>
 </ng-template>
 
-<ng-template #expandTemplate let-rowData let-columns="columns">
-  <div class="archiverequests-detail-div ">
-    <pre>{{displayArchiveRequest()}}</pre>
+<ng-template #expandTemplate let-rowData>
+  <div class="archiverequests-detail-div">
+    <div class="archiverequests-detail-header" fxLayout="row">
+      <span class="archiverequests-detail-header-title ui-flex" fxLayoutAlign="start center">Archive
+        Query:</span>
+      <mat-icon class="archiverequests-detail-close" [matTooltip]="'Close Archive Detail'"
+                (click)="editFormClose(rowData)">close
+      </mat-icon>
+    </div>
+    <div class="archiverequests-detail-body">
+      <pre>{{displayArchiveRequest(rowData)}}</pre>
+    </div>
   </div>
 </ng-template>

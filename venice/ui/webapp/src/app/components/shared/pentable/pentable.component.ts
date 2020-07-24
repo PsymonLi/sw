@@ -40,6 +40,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Input() exportMap: CustomExportMap = {};
   @Input() loading: boolean;
   @Input() numRows: number = 25;
+  @Input() receiveSelectedDataUpdate: boolean = false;
   @Input() resizableColumns: boolean = true;
   @Input() rowHeight: number = 0;
   @Input() scrollable: boolean = false;
@@ -59,6 +60,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Output() rowUnselectedEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() searchCancelledEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() searchEmitter: EventEmitter<any> = new EventEmitter<any>();
+  @Output() selectedObjectsUpdateEmitter: EventEmitter<any> = new EventEmitter<any>();
 
   colMouseMoveUnlisten: () => void;
   colMouseUpUnlisten: () => void;
@@ -173,8 +175,30 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     if (change.data) {
       setTimeout(() => {
         this.isPageSelected();
+        if (this.receiveSelectedDataUpdate) {
+          this.updateSelectedDataObjects();
+        }
       }, 0);
     }
+  }
+
+  updateSelectedDataObjects() {
+    if (!this.receiveSelectedDataUpdate || this.selectedDataObjects.length <= 0) {
+      return;
+    }
+    if (this.selectedDataObjects.length === this.data.length) {
+      this.selectedDataObjects = Utility.getLodash().cloneDeep(this.data);
+    } else {
+      const newSelectedDataObj: any[] = [];
+      this.data.forEach(dt => {
+        const val = Utility.getObjectValueByPropertyPath(dt, this.dataKey, false);
+        if (this.selectedDataObjectsKeySet.has(val)) {
+          newSelectedDataObj.push(dt);
+        }
+      });
+      this.selectedDataObjects = Utility.getLodash().cloneDeep(newSelectedDataObj);
+    }
+    this.selectedObjectsUpdateEmitter.emit(null);
   }
 
   genDataObjectsSetByKey(objects: any[]) {
@@ -393,8 +417,10 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   isPageSelected() {
     this.selectedDataObjectsKeySet = this.genDataObjectsSetByKey(this.selectedDataObjects);
     const pageDataObjects = this.data.slice(this.first, this.first + this.numRows);
-    // When page is loading its length can be 0
-    if (pageDataObjects.length > 0) {
+    // When dataObjects.length = 0 or page is loading, page shouldn't be selected
+    if (pageDataObjects.length === 0) {
+      this.pageSelected = false;
+    } else {
       const objKeySet = this.genDataObjectsSetByKey(pageDataObjects);
       this.pageSelected = this.isSuperset(this.selectedDataObjectsKeySet, objKeySet);
     }

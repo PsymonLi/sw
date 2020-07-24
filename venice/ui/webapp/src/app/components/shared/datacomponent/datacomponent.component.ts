@@ -236,6 +236,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
       (results) => {
         this.operationOnMultiRecordsComplete.emit(results);
         const isAllOK = Utility.isForkjoinResultAllOK(results);
+        this.clearSelectedDataObjects();
         if (isAllOK) {
           this.controllerService.invokeSuccessToaster(allSuccessSummary, msg);
           this.onInvokeAPIonMultipleRecordsSuccess();

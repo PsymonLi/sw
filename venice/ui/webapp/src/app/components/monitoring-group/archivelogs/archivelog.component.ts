@@ -1,8 +1,6 @@
-import { ChangeDetectorRef, Component, ViewEncapsulation, OnInit, OnDestroy } from '@angular/core';
+import { Component, ViewEncapsulation, OnInit, ViewChild, OnChanges } from '@angular/core';
 import { Animations } from '@app/animations';
-import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Utility } from '@app/common/Utility';
-import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
@@ -11,6 +9,9 @@ import { Observable } from 'rxjs';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { TableCol, RowClickEvent, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { Eventtypes } from '@app/enum/eventtypes.enum';
 
 
 @Component({
@@ -21,18 +22,20 @@ import { TableUtility } from '@app/components/shared/tableviewedit/tableutility'
   encapsulation: ViewEncapsulation.None
 })
 
-export class ArchivelogComponent extends TablevieweditAbstract<IMonitoringArchiveRequest, MonitoringArchiveRequest> implements OnInit, OnDestroy {
+export class ArchivelogComponent extends DataComponent implements OnInit {
   public static AL_DOWNLOAD = 'archivelogsdownload'; // Will contain URL for archive request download
-  dataObjects: ReadonlyArray<MonitoringArchiveRequest> = [];
 
-  archiverequestsEventUtility: HttpEventUtility<MonitoringArchiveRequest>;
+  @ViewChild('archiveTable') archiveTable: PentableComponent;
+
+  dataObjects: MonitoringArchiveRequest[] = [];
+  dataObjectsBackUp: MonitoringArchiveRequest[] = [];
 
   bodyicon: any = {
     margin: {
       top: '9px',
       left: '8px',
     },
-    url: '/assets/images/icons/monitoring/ic_tech_support-black.svg',   // TODO: wait for new svg file
+    url: '/assets/images/icons/monitoring/ico-arch-log-b.svg',
   };
 
   headerIcon: Icon = {
@@ -44,13 +47,12 @@ export class ArchivelogComponent extends TablevieweditAbstract<IMonitoringArchiv
   };
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'archiverequests-column-name', sortable: true, width: 15, notReorderable: true },
-    { field: 'spec.type', header: 'Log Type', class: 'archiverequests-column-log-type', sortable: true, width: 15 },
-    { field: 'meta.creation-time', header: 'Creation Time', class: 'archiverequests-column-date', sortable: true, width: '180px', notReorderable: true },
-    { field: 'spec.query.start-time', header: 'Start Time', class: 'archiverequests-column-date', sortable: true, width: '180px', notReorderable: true },
-    { field: 'spec.query.end-time', header: 'End Time', class: 'archiverequests-column-date', sortable: true, width: '180px', notReorderable: true },
-    // { field: 'spec.query', header: 'Criteria', class: 'archiverequests-column-criteria', sortable: false, width: 45 },
-    { field: 'status.status', header: 'Status', class: 'archiverequests-column-status_status', sortable: true, width: 15 }
+    { field: 'meta.name', header: 'Name', class: 'archiverequests-column-name', sortable: true, width: 12, notReorderable: true },
+    { field: 'meta.creation-time', header: 'Creation Time', class: 'archiverequests-column-date', sortable: true, width: 12, notReorderable: true },
+    { field: 'spec.type', header: 'Logs Type', class: 'archiverequests-column-log-type', sortable: true, width: 10 },
+    { field: 'spec.query.start-time', header: 'Logs From', class: 'archiverequests-column-date', sortable: true, width: 12},
+    { field: 'spec.query.end-time', header: 'Logs Till', class: 'archiverequests-column-date', sortable: true, width: 12},
+    { field: 'status.status', header: 'Status', class: 'archiverequests-column-status_status', sortable: true }
   ];
 
   exportFilename: string = 'PSM-archive-logs-requests';
@@ -59,13 +61,19 @@ export class ArchivelogComponent extends TablevieweditAbstract<IMonitoringArchiv
   isTabComponent = false;
   disableTableWhenRowExpanded = true;
   tableLoading: boolean = false;
-  archiveRequestDetail: any;
 
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
-    protected cdr: ChangeDetectorRef,
     protected monitoringService: MonitoringService) {
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
+  }
+
+  getSelectedDataObjects() {
+    return this.archiveTable.selectedDataObjects;
+  }
+
+  clearSelectedDataObjects() {
+    this.archiveTable.selectedDataObjects = [];
   }
 
   /**
@@ -76,8 +84,11 @@ export class ArchivelogComponent extends TablevieweditAbstract<IMonitoringArchiv
     return this.constructor.name;
   }
 
-  postNgInit() {
-    // setTimeout(() => {this.getArchiveRequests(); });
+  ngOnInit() {
+    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
+      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
+    });
+    this.setDefaultToolbar();
     this.getArchiveRequests();
   }
 
@@ -89,44 +100,50 @@ export class ArchivelogComponent extends TablevieweditAbstract<IMonitoringArchiv
     });
   }
 
-  ngOnDestroy() {
-    this.subscriptions.forEach((subscription) => {
-      subscription.unsubscribe();
-    });
-  }
-
   /**
-   * Watch Archive Requests
+   * List and Watch Archive Requests
    */
   getArchiveRequests() {
-    this.archiverequestsEventUtility = new HttpEventUtility<MonitoringArchiveRequest>(MonitoringArchiveRequest);
-    this.dataObjects = this.archiverequestsEventUtility.array;
-    const sub = this.monitoringService.WatchArchiveRequest().subscribe(
+    this.tableLoading = true;
+    const sub = this.monitoringService.ListArchiveRequestCache().subscribe(
       response => {
-        this.archiverequestsEventUtility.processEvents(response);
+        if (response.connIsErrorState) {
+          return;
+        }
+        const archiveRequests = response.data as MonitoringArchiveRequest[];
+        this.tableLoading = false;
+        this.dataObjects = [...archiveRequests];
+        this.dataObjectsBackUp = [...archiveRequests];
       },
       error => {
+        this.tableLoading = false;
         this._controllerService.invokeRESTErrorToaster(Utility.UPDATE_FAILED_SUMMARY, error);
       }
     );
     this.subscriptions.push(sub);
   }
 
-  displayArchiveRequest(): string {
-    return JSON.stringify(this.expandedRowData, null, 1);
+  displayArchiveRequest(rowData): string {
+    return JSON.stringify(Utility.trimUIFields(rowData.spec.query), null, 4);
   }
 
   /**
    * Handle logics when user click the row
    * @param event
    */
-  onArchiveRequestsTableRowClick(event: RowClickEvent) {
-    if (this.expandedRowData === event.rowData) {
-      // Click was on the same row
-      this.closeRowExpand();
-    } else {
-      this.closeRowExpand();
-      this.expandRowRequest(event.event, event.rowData);
+  showArchiveQuery(event: RowClickEvent) {
+    this.expandRowRequest(event.event, event.rowData);
+  }
+
+  expandRowRequest(event, rowData) {
+    if (!this.archiveTable.showRowExpand) {
+      this.archiveTable.toggleRow(rowData, event);
+    }
+  }
+
+  editFormClose(rowData) {
+    if (this.archiveTable.showRowExpand) {
+      this.archiveTable.toggleRow(rowData);
     }
   }
 
@@ -140,7 +157,7 @@ export class ArchivelogComponent extends TablevieweditAbstract<IMonitoringArchiv
       event.stopPropagation();
     }
     // Should not be able to cancel any record while we are editing
-    if (this.isRowExpanded()) {
+    if (this.archiveTable.showRowExpand) {
       return;
     }
     this.controllerService.invokeConfirm({
@@ -181,13 +198,7 @@ export class ArchivelogComponent extends TablevieweditAbstract<IMonitoringArchiv
   }
 
   displayColumn(data, col): any {
-    const column = col.field;
-    switch (column) {
-      case 'spec.query':
-        return JSON.stringify(data, null, 2);
-      default:
-        return TableUtility.displayColumn(data, col);
-    }
+    return TableUtility.displayColumn(data, col);
   }
 
   isArchiveCompleted(rowData: MonitoringArchiveRequest, col): boolean {
@@ -270,6 +281,76 @@ export class ArchivelogComponent extends TablevieweditAbstract<IMonitoringArchiv
   showDeleteIcon(rowData: MonitoringArchiveRequest): boolean {
     // when the status is null, the user shouldn't be able to perform any action (cancel/delete)
     return (rowData.status.status !== MonitoringArchiveRequestStatus_status.running && rowData.status.status !== null);
+  }
+
+  onInvokeAPIonMultipleRecordsSuccess() {
+    this.tableLoading = false;
+  }
+
+  onInvokeAPIonMultipleRecordsFailure() {
+    this.tableLoading = false;
+    this.dataObjects = Utility.getLodash().cloneDeep(this.dataObjectsBackUp);
+  }
+
+  showBulkDeleteIcon(): boolean {
+    const selected = this.getSelectedDataObjects();
+    for (const archReq of selected) {
+      if (!this.showDeleteIcon(archReq)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  deleteMultipleRecords() {
+    const selected = this.getSelectedDataObjects();
+    const observables: Observable<any>[] = [];
+    for (const archReq of selected) {
+      const sub = this.deleteRecord(archReq);
+      observables.push(sub);
+    }
+    if (observables.length > 0) {
+      const allSuccessSummary = 'Delete';
+      const partialSuccessSummary = 'Partially Delete';
+      const msg = `Deleted ${selected.length} Selected ${selected.length === 1 ? 'Record' : 'Records'}.`;
+      this.invokeAPIonMultipleRecords(observables, allSuccessSummary, partialSuccessSummary, msg);
+    }
+  }
+
+  handleDelete() {
+    const selected = this.getSelectedDataObjects();
+    if (selected.length <= 0) {
+      return;
+    }
+    this.controllerService.invokeConfirm({
+      header: `Delete ${selected.length} selected ${selected.length === 1 ? 'record' : 'records'}?`,
+      message: 'This action cannot be reversed',
+      acceptLabel: 'Delete',
+      accept: () => {
+        this.tableLoading = true;
+        this.deleteMultipleRecords();
+      }
+    });
+  }
+
+  onDeleteRecord(event, object) {
+    this.archiveTable.onDeleteRecord(
+      event,
+      object,
+      this.generateDeleteConfirmMsg(object),
+      this.generateDeleteSuccessMsg(object),
+      this.deleteRecord.bind(this)
+    );
+  }
+
+  onColumnSelectChange(event) {
+    this.archiveTable.onColumnSelectChange(event);
+  }
+
+  onDestroyHook() {
+    this._controllerService.publish(Eventtypes.COMPONENT_DESTROY, {
+      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_DESTROY
+    });
   }
 
 }
