@@ -671,7 +671,7 @@
         },
         "group-by-time": {
           "type": "string",
-          "example": "2h",
+          "example": "60s",
           "description": "GroupbyTime groups series based on the interval specified. Should be a valid time duration."
         },
         "group-by-field": {

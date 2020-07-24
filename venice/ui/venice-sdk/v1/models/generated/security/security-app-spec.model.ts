@@ -35,7 +35,7 @@ export class SecurityAppSpec extends BaseModel implements ISecurityAppSpec {
         },
         'timeout': {
             description:  `Timeout specifies for how long the connection be kept before removing the flow entry, specified in string as '200s', '5m', etc. Should be a valid time duration.`,
-            hint:  '2h',
+            hint:  '60s',
             required: false,
             type: 'string'
         },

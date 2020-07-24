@@ -30,7 +30,7 @@ export class SecuritySunrpc extends BaseModel implements ISecuritySunrpc {
         },
         'timeout': {
             description:  `Timeout for this program id. Should be a valid time duration.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },

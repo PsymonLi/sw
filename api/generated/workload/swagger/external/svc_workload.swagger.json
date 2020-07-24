@@ -4496,7 +4496,7 @@
         "migration-timeout": {
           "type": "string",
           "default": "3m",
-          "example": "2h",
+          "example": "60s",
           "description": "Should be a valid time duration."
         }
       },

@@ -644,67 +644,67 @@
         "session-idle": {
           "type": "string",
           "default": "90s",
-          "example": "2h",
+          "example": "60s",
           "description": "SessionIdle Timeout. Should be a valid time duration between 30s and 48h0m0s."
         },
         "tcp": {
           "type": "string",
           "default": "3600s",
-          "example": "2h",
+          "example": "60s",
           "description": "TCP Timeout. Should be a valid time duration between 1s and 48h0m0s."
         },
         "tcp-drop": {
           "type": "string",
           "default": "90s",
-          "example": "2h",
+          "example": "60s",
           "description": "TCP Drop Timeout. Should be a valid time duration between 1s and 5m0s."
         },
         "tcp-connection-setup": {
           "type": "string",
           "default": "30s",
-          "example": "2h",
+          "example": "60s",
           "description": "TCP Connection Setup Timeout. Should be a valid time duration between 1s and 1m0s."
         },
         "tcp-close": {
           "type": "string",
           "default": "15s",
-          "example": "2h",
+          "example": "60s",
           "description": "TCP Close timeout. Should be a valid time duration between 1s and 5m0s."
         },
         "tcp-half-close": {
           "type": "string",
           "default": "120s",
-          "example": "2h",
+          "example": "60s",
           "description": "TCP Half Close timeout. Should be a valid time duration between 1s and 48h0m0s."
         },
         "drop": {
           "type": "string",
           "default": "60s",
-          "example": "2h",
+          "example": "60s",
           "description": "Drop timeout for non tcp, udp and icmp. Should be a valid time duration between 1s and 5m0s."
         },
         "udp": {
           "type": "string",
           "default": "30s",
-          "example": "2h",
+          "example": "60s",
           "description": "UDP Timeout. Should be a valid time duration between 1s and 48h0m0s."
         },
         "udp-drop": {
           "type": "string",
           "default": "60s",
-          "example": "2h",
+          "example": "60s",
           "description": "UDP Drop Timeout. Should be a valid time duration between 1s and 48h0m0s."
         },
         "icmp": {
           "type": "string",
           "default": "6s",
-          "example": "2h",
+          "example": "60s",
           "description": "ICMP Timeout. Should be a valid time duration between 1s and 48h0m0s."
         },
         "icmp-drop": {
           "type": "string",
           "default": "60s",
-          "example": "2h",
+          "example": "60s",
           "description": "ICMP Drop Timeout. Should be a valid time duration between 1s and 5m0s."
         }
       },

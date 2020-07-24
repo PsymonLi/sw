@@ -65,77 +65,77 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
         'session-idle-timeout': {
             default: '90s',
             description:  `Session idle timeout removes/deletes the session/flow if there is inactivity; this value is superceded by any value specified in App object. Should be a valid time duration between 30s and 48h0m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'tcp-connection-setup-timeout': {
             default: '30s',
             description:  `TCP Connection Setup Timeout is the period TCP session is kept to see the response of a SYN. Should be a valid time duration between 1s and 1m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'tcp-close-timeout': {
             default: '15s',
             description:  `TCP Close Timeout is the time for which TCP session is kept after a FIN is seen. Should be a valid time duration between 1s and 5m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'tcp-half-closed-timeout': {
             default: '120s',
             description:  `TCP Half Closed Timeout is the time for which tCP session is kept when connection is half closed i.e. FIN sent by FIN_Ack not received. Should be a valid time duration between 1s and 48h0m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'tcp-drop-timeout': {
             default: '90s',
             description:  `TCP Drop Timeout is the period for which a drop entry is installed for a denied TCP flow. Should be a valid time duration between 1s and 5m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'udp-drop-timeout': {
             default: '60s',
             description:  `UDP Drop Timeout is the period for which a drop entry is installed for a denied UDP flow. Should be a valid time duration between 1s and 48h0m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'icmp-drop-timeout': {
             default: '60s',
             description:  `ICMP Drop Timeout is the period for which a drop entry is installed for a denied ICMP flow. Should be a valid time duration between 1s and 5m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'drop-timeout': {
             default: '60s',
             description:  `Drop Timeout is the period for which a drop entry is installed for a denied non tcp/udp/icmp flow. Should be a valid time duration between 1s and 5m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'tcp-timeout': {
             default: '3600s',
             description:  `Tcp Timeout is the period for which a TCP session is kept alive during inactivity. Should be a valid time duration between 1s and 48h0m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'udp-timeout': {
             default: '30s',
             description:  `Udp Timeout is the period for which a UDP session is kept alive during inactivity. Should be a valid time duration between 1s and 48h0m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'icmp-timeout': {
             default: '6s',
             description:  `Icmp Timeout is the period for which a ICMP session is kept alive during inactivity. Should be a valid time duration between 1s and 48h0m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },

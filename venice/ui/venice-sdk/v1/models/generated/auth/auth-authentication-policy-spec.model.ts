@@ -38,7 +38,7 @@ export class AuthAuthenticationPolicySpec extends BaseModel implements IAuthAuth
         'token-expiry': {
             default: '144h',
             description:  `TokenExpiry is time duration after which JWT token expires. Default is 6 days. A duration string is a sequence of decimal number and a unit suffix, such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Should be a valid time duration.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },

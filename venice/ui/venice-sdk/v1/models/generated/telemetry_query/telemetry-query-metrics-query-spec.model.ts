@@ -95,7 +95,7 @@ export class Telemetry_queryMetricsQuerySpec extends BaseModel implements ITelem
         },
         'group-by-time': {
             description:  `GroupbyTime groups series based on the interval specified. Should be a valid time duration.`,
-            hint:  '2h',
+            hint:  '60s',
             required: false,
             type: 'string'
         },

@@ -494,7 +494,7 @@ func uuidProfile(field *descriptor.Field, reg *descriptor.Registry, ver string, 
 }
 
 func durationProfile(field *descriptor.Field, reg *descriptor.Registry, ver string, args []string, prof *FieldProfile) error {
-	str := "2h"
+	str := "60s"
 	prof.Example[ver] = prof.Example[ver] + str
 	min, err := time.ParseDuration(args[0])
 	if err != nil {

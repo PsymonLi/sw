@@ -30,7 +30,7 @@ export class SecurityMsrpc extends BaseModel implements ISecurityMsrpc {
         },
         'timeout': {
             description:  `Timeout for this program id. Should be a valid time duration.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },

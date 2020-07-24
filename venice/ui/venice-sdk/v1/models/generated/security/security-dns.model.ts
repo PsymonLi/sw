@@ -55,7 +55,7 @@ export class SecurityDns extends BaseModel implements ISecurityDns {
         'query-response-timeout': {
             default: '60s',
             description:  `Timeout for DNS Query, default 60s. Should be a valid time duration.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },

@@ -44,14 +44,14 @@ export class MonitoringFlowExportPolicySpec extends BaseModel implements IMonito
         'interval': {
             default: '10s',
             description:  `Interval defines how often to push the records to an external collector The value is specified as a string format, '10s', '20m'. Should be a valid time duration between 1s and 24h0m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },
         'template-interval': {
             default: '5m',
             description:  `TemplateInterval defines how often to send ipfix templates to an external collector The value is specified as a string format, '1m', '10m'. Should be a valid time duration between 1m0s and 30m0s.`,
-            hint:  '2h',
+            hint:  '60s',
             required: true,
             type: 'string'
         },

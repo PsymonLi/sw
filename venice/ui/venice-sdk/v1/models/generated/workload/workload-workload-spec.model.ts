@@ -41,7 +41,7 @@ export class WorkloadWorkloadSpec extends BaseModel implements IWorkloadWorkload
         'migration-timeout': {
             default: '3m',
             description:  `Should be a valid time duration.`,
-            hint:  '2h',
+            hint:  '60s',
             required: false,
             type: 'string'
         },
