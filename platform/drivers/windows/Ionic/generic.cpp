@@ -2785,22 +2785,17 @@ ConfigureTxMode(IN ULONG TxMode)
 
     NTSTATUS ntStatus = STATUS_SUCCESS;
     UNICODE_STRING uniString;
-	ULONG current_mode = 0;
-
-	current_mode = (StateFlags & IONIC_STATE_VALID_TX_MODE_FLAGS);
 
     //
     // Go update the registry with the new entries
     //
 
-    if ((TxMode & IONIC_STATE_VALID_TX_MODE_FLAGS) != current_mode) {
-		current_mode = StateFlags;
-		current_mode &= ~IONIC_STATE_VALID_TX_MODE_FLAGS;
-        current_mode |= (TxMode & IONIC_STATE_VALID_TX_MODE_FLAGS);
+    if (StateFlags != TxMode) {
+        StateFlags = TxMode;
 
         RtlInitUnicodeString(&uniString, REG_STATE_FLAGS);
 
-        ntStatus = UpdateRegistryParameter(&uniString, REG_DWORD, &current_mode,
+        ntStatus = UpdateRegistryParameter(&uniString, REG_DWORD, &TxMode,
                                            sizeof(ULONG));
 
         if (!NT_SUCCESS(ntStatus)) {
@@ -2851,7 +2846,7 @@ queue_workitem(struct ionic *ionic,
     work_item->context = Context;
 
 	if( ionic != NULL) {
-	    ref_request( ionic->master_lif);
+	    lif_ref_request(ionic->master_lif);
 	}
 
     NdisQueueIoWorkItem( work_handle,
@@ -2904,7 +2899,7 @@ process_work_item(PVOID   WorkItemContext,
     NdisFreeIoWorkItem( work_handle);
 
 	if( ionic != NULL) {
-	    deref_request( ionic->master_lif, 1);
+	    lif_deref_request(ionic->master_lif, 1);
 	}
 
     return;
@@ -3232,45 +3227,60 @@ get_perfmon_stats(AdapterCB *cb, ULONG maxlen, struct _PERF_MON_CB **perfmon_sta
 }
 
 void
-ref_request(struct lif *lif)
+ref_request(struct qcq *qcq)
 {
-    if (InterlockedIncrement(&lif->outstanding_request_count) == 1) {
-        KeClearEvent( &lif->outstanding_complete_event);
+    if (InterlockedIncrement(&qcq->outstanding_request_count) == 1) {
+        KeClearEvent(&qcq->outstanding_complete_event);
     }
-
-    return;
 }
 
 void
-deref_request(struct lif *lif, LONG count)
+deref_request(struct qcq *qcq, LONG count)
 {
+    ASSERT(qcq->outstanding_request_count != 0);
 
-    ASSERT( lif->outstanding_request_count != 0);
-
-    if (InterlockedAdd(&lif->outstanding_request_count, -count) == 0) {
-        KeSetEvent( &lif->outstanding_complete_event, 0, FALSE);
+    if (InterlockedAdd(&qcq->outstanding_request_count, -count) == 0) {
+        KeSetEvent(&qcq->outstanding_complete_event, 0, FALSE);
     }
-
-    return;
 }
 
 void
-wait_on_requests(struct lif *lif)
+wait_on_requests(struct qcq *qcq)
 {
     NTSTATUS status = STATUS_SUCCESS;
     LARGE_INTEGER time_out;
 
     time_out.QuadPart = -(30 * IONIC_ONE_SEC_WAIT);
 
-    status = KeWaitForSingleObject( &lif->outstanding_complete_event,
-                                    Executive,
-                                    KernelMode,
-                                    FALSE,
-                                    &time_out);
+    status = KeWaitForSingleObject(&qcq->outstanding_complete_event,
+            Executive, KernelMode, FALSE, &time_out);
 
-    ASSERT( status == STATUS_SUCCESS);
+    ASSERT(status == STATUS_SUCCESS);
+}
 
-    return;
+void
+lif_ref_request(struct lif *lif)
+{
+    ref_request(lif->txqcqs[0].qcq);
+}
+
+void
+lif_deref_request(struct lif *lif, LONG count)
+{
+    deref_request(lif->txqcqs[0].qcq, count);
+}
+
+void
+lif_wait_on_requests(struct lif *lif)
+{
+    unsigned int i;
+
+    for (i = 0; i < lif->ntxqs; ++i) {
+        wait_on_requests(lif->txqcqs[i].qcq);
+    }
+    for (i = 0; i < lif->nrxqs; ++i) {
+        wait_on_requests(lif->rxqcqs[i].qcq);
+    }
 }
 
 #ifdef TRACK_MEMORY_BUFFER_ALLOC
@@ -3723,7 +3733,7 @@ IoctlQueueInfo(PVOID buf, ULONG inlen, ULONG outlen, PULONG outbytes)
 				  ionic->master_lif->name);
 		entry->rx_queue_cnt = ionic->master_lif->nrxqs;
 		entry->tx_queue_cnt = ionic->master_lif->ntxqs;
-		entry->tx_mode = (StateFlags & IONIC_STATE_VALID_TX_MODE_FLAGS);
+		entry->tx_mode = StateFlags;
 
 		for (unsigned int queue_cnt = 0; queue_cnt < ionic->master_lif->nrxqs; queue_cnt++) {
 

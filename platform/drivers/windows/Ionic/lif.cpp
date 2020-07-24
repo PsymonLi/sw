@@ -409,8 +409,6 @@ ionic_lif_alloc(struct ionic *ionic, unsigned int index)
     RtlInitializeBitMap(&lif->state, (PULONG)lif->state_buffer, LIF_STATE_SIZE);
     KeInitializeEvent(&lif->state_change, SynchronizationEvent, TRUE);
 
-    KeInitializeEvent(&lif->outstanding_complete_event, NotificationEvent, TRUE);
-
     lif->ionic = ionic;
     lif->index = index;
     lif->ntxq_descs = ionic->ntx_buffers;
@@ -660,6 +658,9 @@ ionic_qcq_alloc(struct lif *lif,
 
     InitializeListHead(&newqcq->txq_nb_list);
     ionic_txq_nbl_list_init(&newqcq->txq_nbl_list);
+
+    KeInitializeEvent(&newqcq->outstanding_complete_event, NotificationEvent, TRUE);
+    newqcq->outstanding_request_count = 0;
 
     newqcq->flags = flags;
 
@@ -2322,7 +2323,7 @@ ionic_lif_stop(struct lif *lif)
 
     ionic_txrx_disable(lif);
     ionic_lif_quiesce(lif);
-    wait_on_requests(lif);
+    lif_wait_on_requests(lif);
 
     ionic_reset_rxq_pkts( lif);
 

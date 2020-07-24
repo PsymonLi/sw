@@ -182,11 +182,10 @@ NTSTATUS
 //
 
 #define IONIC_STATE_FLAG_TXRX_DIFF_CORE			0x00000001
-// unused StateFlag								0x00000002
+#define IONIC_STATE_TX_DEFER_SEND				0x00000002
 #define IONIC_STATE_TX_INTERRUPT				0x00000004
 
-#define IONIC_STATE_VALID_TX_MODE_FLAGS			0x00000005
-
+// please keep the default state zero (let flags indicate nondefault state)
 #define IONIC_DEFAULT_STATE						0
 
 //

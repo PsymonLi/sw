@@ -521,8 +521,6 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
 		return;
 	}
 
-    ref_request(lif);
-
     DbgTrace((TRACE_COMPONENT_INTERRUPT, TRACE_LEVEL_VERBOSE,
          "%s Enter Adapter %p Lif %p ionic_msi_dpc_handler msg_id: 0x%08lX\n",
          __FUNCTION__, ionic, lif, message_id));
@@ -585,8 +583,6 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
 								flags);
 		}
 	}
-
-	deref_request(lif, 1);
 }
 
 VOID

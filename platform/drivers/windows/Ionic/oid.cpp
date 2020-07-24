@@ -2574,7 +2574,7 @@ OidRequest(NDIS_HANDLE MiniportAdapterContext, PNDIS_OID_REQUEST OidRequest)
     PULONG bytes_written;
     PULONG bytes_needed;
 
-	ref_request(ionic->master_lif);
+	lif_ref_request(ionic->master_lif);
 
     DbgTrace((TRACE_COMPONENT_OID, TRACE_LEVEL_VERBOSE,
               "%s Entered OidRequest() request %p Type %s Oid %08lX\n",
@@ -2697,7 +2697,7 @@ OidRequest(NDIS_HANDLE MiniportAdapterContext, PNDIS_OID_REQUEST OidRequest)
 
 exit:
 
-	deref_request(ionic->master_lif, 1);
+	lif_deref_request(ionic->master_lif, 1);
 
     return ntStatus;
 }

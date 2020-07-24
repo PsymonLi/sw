@@ -310,6 +310,9 @@ struct qcq {
     LONG outstanding_tx_count;
 #endif
 
+	LONG            outstanding_request_count;
+	KEVENT          outstanding_complete_event;
+
 	// cache aligned elements
 	CACHE_ALIGN LONG dpc_exec_cnt;
 
@@ -466,9 +469,6 @@ struct lif {
 	CACHE_ALIGN SLIST_HEADER   rx_pkts_list;
 	CACHE_ALIGN NDIS_SPIN_LOCK dbid_inuse_lock;	/* lock the dbid bit list */
 	CACHE_ALIGN NDIS_SPIN_LOCK adminq_lock;		/* lock for AdminQ operations */
-
-	LONG            outstanding_request_count;
-	KEVENT          outstanding_complete_event;
 };
 
 #define lif_to_txqcq(lif, i)	((lif)->txqcqs[i].qcq)
