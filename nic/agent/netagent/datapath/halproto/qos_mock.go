@@ -447,6 +447,24 @@ func (mr *MockQOSClientMockRecorder) CoppGet(ctx, in interface{}, opts ...interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CoppGet", reflect.TypeOf((*MockQOSClient)(nil).CoppGet), varargs...)
 }
 
+// CoppClearStats mocks base method
+func (m *MockQOSClient) CoppClearStats(ctx context.Context, in *CoppClearStatsRequestMsg, opts ...grpc.CallOption) (*EmptyResponseMsg, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CoppClearStats", varargs...)
+	ret0, _ := ret[0].(*EmptyResponseMsg)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CoppClearStats indicates an expected call of CoppClearStats
+func (mr *MockQOSClientMockRecorder) CoppClearStats(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CoppClearStats", reflect.TypeOf((*MockQOSClient)(nil).CoppClearStats), varargs...)
+}
+
 // MockQOSServer is a mock of QOSServer interface
 type MockQOSServer struct {
 	ctrl     *gomock.Controller
@@ -598,4 +616,17 @@ func (m *MockQOSServer) CoppGet(arg0 context.Context, arg1 *CoppGetRequestMsg) (
 // CoppGet indicates an expected call of CoppGet
 func (mr *MockQOSServerMockRecorder) CoppGet(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CoppGet", reflect.TypeOf((*MockQOSServer)(nil).CoppGet), arg0, arg1)
+}
+
+// CoppClearStats mocks base method
+func (m *MockQOSServer) CoppClearStats(arg0 context.Context, arg1 *CoppClearStatsRequestMsg) (*EmptyResponseMsg, error) {
+	ret := m.ctrl.Call(m, "CoppClearStats", arg0, arg1)
+	ret0, _ := ret[0].(*EmptyResponseMsg)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CoppClearStats indicates an expected call of CoppClearStats
+func (mr *MockQOSServerMockRecorder) CoppClearStats(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CoppClearStats", reflect.TypeOf((*MockQOSServer)(nil).CoppClearStats), arg0, arg1)
 }

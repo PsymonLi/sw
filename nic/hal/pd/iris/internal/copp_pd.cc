@@ -535,6 +535,82 @@ pd_copp_get (pd_func_args_t *pd_func_args)
     return ret;
 }
 
+static hal_ret_t
+copp_pd_clear_policer_stats (pd_copp_t *pd_copp)
+{
+    hal_ret_t               ret = HAL_RET_OK;
+    copp_pd_policer_stats_t stats_0 = {0};
+    mem_addr_t              stats_addr = 0;
+    sdk_ret_t               sdk_ret;
+    copp_t                  *pi_copp = pd_copp->pi_copp;
+    directmap               *copp_action_tbl = NULL;
+    copp_action_actiondata_t  d;
+    copp_action_actiondata_t  d_mask = {0};
+
+    copp_action_tbl = g_hal_state_pd->dm_table(P4TBL_ID_COPP_ACTION);
+    SDK_ASSERT_RETURN((copp_action_tbl != NULL), HAL_RET_ERR);
+
+    ret = hal_pd_stats_addr_get(P4TBL_ID_COPP_ACTION, 
+                                pd_copp->hw_policer_id, &stats_addr);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Error getting stats address for copp {} hw-id {}, ret {}",
+                      pi_copp->key, pd_copp->hw_policer_id, ret);
+        return ret;
+    }
+
+    // read the d-vector
+    sdk_ret = copp_action_tbl->retrieve(pd_copp->hw_policer_id, &d);
+    ret = hal_sdk_ret_to_hal_ret(sdk_ret);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Error reading copp action entry copp {} hw-id {}, ret {}",
+                      pi_copp->key, pd_copp->hw_policer_id, ret);
+        return ret;
+    }
+
+    // Reset copp stats field in data
+    memset(&d.action_u.copp_action_copp_action,
+           0, sizeof(d.action_u.copp_action_copp_action));
+
+    memset(&d_mask, 0xff, sizeof(copp_action_actiondata_t));
+
+    // reset the d-vector stats data
+    sdk_ret = copp_action_tbl->update(pd_copp->hw_policer_id, &d, &d_mask);
+    ret = hal_sdk_ret_to_hal_ret(sdk_ret);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Error clearing copp action entry stats for copp {} hw-id {}, ret {}",
+                      pi_copp->key, pd_copp->hw_policer_id, ret);
+        return ret;
+    }
+
+    sdk_ret = sdk::asic::asic_mem_write(stats_addr, (uint8_t *)&stats_0,
+                                        sizeof(stats_0), ASIC_WRITE_MODE_BLOCKING);
+    if (sdk_ret != SDK_RET_OK) {
+        HAL_TRACE_ERR("Error clearing stats for copp {} hw-id {}, ret {}",
+                      pi_copp->key, pd_copp->hw_policer_id, ret);
+        return ret;
+    }
+
+    HAL_TRACE_VERBOSE("Copp stat cleared for copp {} hw_id {} stats_addr {:#x} ",
+                      pi_copp->key, pd_copp->hw_policer_id, stats_addr);
+    return HAL_RET_OK;
+}
+
+// ----------------------------------------------------------------------------
+// pd copp stats clear
+// ----------------------------------------------------------------------------
+hal_ret_t
+pd_copp_clear_stats (pd_func_args_t *pd_func_args)
+{
+    hal_ret_t          ret = HAL_RET_OK;
+    pd_copp_clear_stats_args_t *args = pd_func_args->pd_copp_clear_stats;
+    copp_t             *copp = args->copp;
+    pd_copp_t          *pd_copp = (pd_copp_t *)copp->pd;
+
+    ret = copp_pd_clear_policer_stats(pd_copp);
+
+    return ret;
+}
+
 // ----------------------------------------------------------------------------
 // pd copp restore from response
 // ----------------------------------------------------------------------------

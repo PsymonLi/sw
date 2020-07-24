@@ -281,6 +281,7 @@ hal_pd_load_symbols (void)
     PD_FUNC_LOAD(PD_FUNC_ID_COPP_MAKE_CLONE, pd_copp_make_clone);
     PD_FUNC_LOAD(PD_FUNC_ID_COPP_MEM_FREE, pd_copp_mem_free);
     PD_FUNC_LOAD(PD_FUNC_ID_COPP_GET, pd_copp_get);
+    PD_FUNC_LOAD(PD_FUNC_ID_COPP_CLEAR_STATS, pd_copp_clear_stats);
 
     // acl
     PD_FUNC_LOAD(PD_FUNC_ID_ACL_CREATE, pd_acl_create);

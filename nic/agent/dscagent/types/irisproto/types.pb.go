@@ -425,6 +425,9 @@
 		CoppGetRequestMsg
 		CoppGetResponse
 		CoppGetResponseMsg
+		CoppClearStatsRequest
+		CoppClearStatsRequestMsg
+		EmptyResponseMsg
 		ApiStatsEntry
 		ApiStatsResponse
 		DropStatsEntry

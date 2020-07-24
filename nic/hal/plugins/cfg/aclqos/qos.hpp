@@ -55,6 +55,8 @@ using qos::CoppGetRequestMsg;
 using qos::CoppGetResponse;
 using qos::CoppGetResponseMsg;
 using qos::CoppStats;
+using qos::CoppClearStatsRequest;
+using qos::CoppClearStatsRequestMsg;
 using qos::QosResetRequest;
 using qos::QosResetRequestMsg;
 using qos::QosResetResponseMsg;
@@ -517,6 +519,8 @@ hal_ret_t copp_delete(qos::CoppDeleteRequest& req,
                       qos::CoppDeleteResponse *rsp);
 hal_ret_t copp_get(qos::CoppGetRequest& req,
                    qos::CoppGetResponseMsg *rsp);
+hal_ret_t coppclear_stats(qos::CoppClearStatsRequest& req,
+                          types::Empty *rsp);
 hal_ret_t copp_store_cb(void *obj, uint8_t *mem,
                         uint32_t len, uint32_t *mlen);
 uint32_t copp_restore_cb(void *obj, uint32_t len);

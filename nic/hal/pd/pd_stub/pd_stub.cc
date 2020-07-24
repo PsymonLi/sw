@@ -224,6 +224,7 @@ PD_FUNC_STUB(pd_copp_update);
 PD_FUNC_STUB(pd_copp_make_clone);
 PD_FUNC_STUB(pd_copp_mem_free);
 PD_FUNC_STUB(pd_copp_get);
+PD_FUNC_STUB(pd_copp_clear_stats);
 
 // acl pd calls
 PD_FUNC_STUB(pd_acl_create);

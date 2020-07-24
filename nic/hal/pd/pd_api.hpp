@@ -1867,6 +1867,10 @@ typedef struct pd_copp_get_args_s {
     CoppGetResponse *rsp;
 } __PACK__ pd_copp_get_args_t;
 
+typedef struct pd_copp_clear_stats_args_s {
+    copp_t *copp;
+} __PACK__ pd_copp_clear_stats_args_t;
+
 // acl
 typedef struct pd_acl_create_args_s {
     acl_t    *acl;
@@ -3446,7 +3450,8 @@ pd_nvme_cq_create_args_init (pd_nvme_cq_create_args_t *args)
     ENTRY(PD_FUNC_ID_SYSTEM_MODE_CHANGE,         358, "PD_FUNC_ID_SYSTEM_MODE_CHANGE")\
     ENTRY(PD_FUNC_ID_MIRROR_STATS_UPDATE,        359, "PD_FUNC_ID_MIRROR_STATS_UPDATE")\
     ENTRY(PD_FUNC_ID_QOS_SWM_AND_CONTROL_ADD_DEL_MAC, 360, "PD_FUNC_ID_QOS_SWM_AND_CONTROL_ADD_DEL_MAC")  \
-    ENTRY(PD_FUNC_ID_MAX,                        361, "pd_func_id_max")
+    ENTRY(PD_FUNC_ID_COPP_CLEAR_STATS,           361, "PD_FUNC_ID_COPP_CLEAR_STATS") \
+    ENTRY(PD_FUNC_ID_MAX,                        362, "pd_func_id_max")
 
 DEFINE_ENUM(pd_func_id_t, PD_FUNC_IDS)
 #undef PD_FUNC_IDS
@@ -3656,6 +3661,7 @@ typedef struct pd_func_args_s {
         PD_UNION_ARGS_FIELD(pd_copp_mem_free);
         PD_UNION_ARGS_FIELD(pd_copp_make_clone);
         PD_UNION_ARGS_FIELD(pd_copp_get);
+        PD_UNION_ARGS_FIELD(pd_copp_clear_stats);
 
         // acl pd calls
         PD_UNION_ARGS_FIELD(pd_acl_create);
@@ -4122,6 +4128,7 @@ PD_FUNCP_TYPEDEF(pd_copp_update);
 PD_FUNCP_TYPEDEF(pd_copp_mem_free);
 PD_FUNCP_TYPEDEF(pd_copp_make_clone);
 PD_FUNCP_TYPEDEF(pd_copp_get);
+PD_FUNCP_TYPEDEF(pd_copp_clear_stats);
 
 // acl pd calls
 PD_FUNCP_TYPEDEF(pd_acl_create);

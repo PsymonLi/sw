@@ -71,6 +71,13 @@ var systemInternalPortStatsClearCmd = &cobra.Command{
 	Run:   systemInternalPortStatsClearCmdHandler,
 }
 
+var systemCoppStatsClearCmd = &cobra.Command{
+	Use:   "copp",
+	Short: "clear system statistics copp",
+	Long:  "clear system statistics copp",
+	Run:   systemCoppStatsClearCmdHandler,
+}
+
 func init() {
 	rootCmd.AddCommand(clearCmd)
 	clearCmd.AddCommand(systemClearCmd)
@@ -79,11 +86,15 @@ func init() {
 	systemStatsClearCmd.AddCommand(systemEgressDropStatsClearCmd)
 	systemStatsClearCmd.AddCommand(systemLifStatsClearCmd)
 	systemStatsClearCmd.AddCommand(systemPortStatsClearCmd)
+	systemStatsClearCmd.AddCommand(systemCoppStatsClearCmd)
 
 	systemPortStatsClearCmd.AddCommand(systemInternalPortStatsClearCmd)
 
 	systemLifStatsClearCmd.Flags().Uint64Var(&lifID, "id", 0, "Specify lif-id")
 	systemPortStatsClearCmd.PersistentFlags().StringVar(&portNum, "port", "", "Specify port number. eg eth1/1 or 1 to 7 for internal ports")
+
+	systemCoppStatsClearCmd.Flags().StringVar(&coppType, "copptype", "flow-miss", "Specify copp type")
+	systemCoppStatsClearCmd.Flags().Uint64Var(&coppHandle, "handle", 0, "Specify copp handle")
 
 	clearCmd.AddCommand(platformClearCmd)
 	platformClearCmd.AddCommand(platformHbmClearCmd)
@@ -385,6 +396,62 @@ func systemInternalPortStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 
+}
+
+func systemCoppStatsClearCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	defer c.Close()
+
+	client := halproto.NewQOSClient(c)
+
+	var req *halproto.CoppClearStatsRequest
+	if cmd != nil && cmd.Flags().Changed("copptype") {
+		if isCoppTypeValid(coppType) != true {
+			fmt.Printf("Invalid argument\n")
+			return
+		}
+		// ClearStats specific copp
+		req = &halproto.CoppClearStatsRequest{
+			KeyOrHandle: &halproto.CoppKeyHandle{
+				KeyOrHandle: &halproto.CoppKeyHandle_CoppType{
+					CoppType: inputToCoppType(coppType),
+				},
+			},
+		}
+	} else if cmd != nil && cmd.Flags().Changed("handle") {
+		// ClearStats specific copp
+		req = &halproto.CoppClearStatsRequest{
+			KeyOrHandle: &halproto.CoppKeyHandle{
+				KeyOrHandle: &halproto.CoppKeyHandle_CoppHandle{
+					CoppHandle: coppHandle,
+				},
+			},
+		}
+	} else {
+		// ClearStats all copp
+		req = &halproto.CoppClearStatsRequest{}
+	}
+
+	reqMsg := &halproto.CoppClearStatsRequestMsg{
+		Request: []*halproto.CoppClearStatsRequest{req},
+	}
+
+	// HAL call
+	_, err = client.CoppClearStats(context.Background(), reqMsg)
+	if err != nil {
+		fmt.Printf("Clearing Copp Stats failed. %v\n", err)
+		return
+	}
 }
 
 var platformClearCmd = &cobra.Command{

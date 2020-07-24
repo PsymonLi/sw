@@ -25,6 +25,7 @@ service QOS {
   // Copp related APIs
   rpc CoppUpdate(CoppRequestMsg) returns (CoppResponseMsg) {}
   rpc CoppGet(CoppGetRequestMsg) returns (CoppGetResponseMsg) {}
+  rpc CoppClearStats(CoppClearStatsRequestMsg) returns (EmptyResponseMsg) {}
 
 }
 
@@ -427,3 +428,20 @@ message CoppGetResponse {
 message CoppGetResponseMsg {
   repeated CoppGetResponse response = 1;    // batched get response
 }
+
+// CoppClearStatsRequest is used to clear stats of a Copp
+message CoppClearStatsRequest {
+  // key_or_handle is Copp's unique identifier
+  kh.CoppKeyHandle key_or_handle = 1 [(gogoproto.moretags) = "venice:key"];
+}
+
+message CoppClearStatsRequestMsg {
+  repeated CoppClearStatsRequest request = 1;    // batched clear stats request
+}
+
+// Codegen forms the Request and Response messages using the package name "qos"
+// This is to calm the autogenerator
+message EmptyResponseMsg {
+  repeated types.Empty response = 1;
+}
+

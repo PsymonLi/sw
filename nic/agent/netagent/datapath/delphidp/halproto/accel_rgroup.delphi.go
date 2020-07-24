@@ -1251,6 +1251,9 @@ It has these top-level messages:
 	CoppGetRequestMsg
 	CoppGetResponse
 	CoppGetResponseMsg
+	CoppClearStatsRequest
+	CoppClearStatsRequestMsg
+	EmptyResponseMsg
 	RdmaQpSpec
 	RdmaQpRequestMsg
 	RdmaQpResponse

@@ -3199,6 +3199,63 @@ copp_get (CoppGetRequest& req, CoppGetResponseMsg *rsp)
     return HAL_RET_OK;
 }
 
+static void
+copp_process_clear_stats (copp_t *copp)
+{
+    hal_ret_t                        ret          = HAL_RET_OK;
+    pd::pd_copp_clear_stats_args_t   args         = {0};
+    pd::pd_func_args_t               pd_func_args = {0};
+
+    // PD Clear Copp Stats  
+    args.copp = copp;
+    pd_func_args.pd_copp_clear_stats = &args;
+    ret = pd::hal_pd_call(pd::PD_FUNC_ID_COPP_CLEAR_STATS, &pd_func_args);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Unable to do PD clear stats for copp : {}. ret : {}",
+                      copp->key, ret);
+    }
+}
+
+static bool
+copp_clear_stats_ht_cb (void *ht_entry, void *ctxt)
+{
+    hal_handle_id_ht_entry_t *entry = (hal_handle_id_ht_entry_t *)ht_entry;
+    copp_t                   *copp  = NULL;
+
+    copp = (copp_t *)find_copp_by_handle(entry->handle_id);
+    copp_process_clear_stats(copp);
+
+    // Always return false here, so that we walk through all hash table
+    // entries.
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// process copp clear stats request
+//------------------------------------------------------------------------------
+hal_ret_t
+coppclear_stats (CoppClearStatsRequest& req, types::Empty *rsp)
+{
+    copp_t          *copp;
+
+    if (!req.has_key_or_handle()) {
+        g_hal_state->copp_ht()->walk(copp_clear_stats_ht_cb, rsp);
+        HAL_API_STATS_INC(HAL_API_COPPCLEAR_STATS_SUCCESS);
+        return HAL_RET_OK;
+    }
+
+    auto kh = req.key_or_handle();
+    copp = find_copp_by_key_handle(kh);
+    if (!copp) {
+        HAL_API_STATS_INC(HAL_API_COPPCLEAR_STATS_FAIL);
+        return HAL_RET_COPP_NOT_FOUND;
+    }
+
+    copp_process_clear_stats(copp);
+    HAL_API_STATS_INC(HAL_API_COPPCLEAR_STATS_SUCCESS);
+    return HAL_RET_OK;
+}
+
 //------------------------------------------------------------------------------
 // validate copp delete request
 //------------------------------------------------------------------------------
