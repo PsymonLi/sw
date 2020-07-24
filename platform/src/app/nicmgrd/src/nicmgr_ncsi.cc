@@ -36,6 +36,23 @@ ncsi_ipc_vlan_filter (ncsi_ipc_msg_t *msg)
 }
 
 sdk_ret_t
+ncsid_ipc_vlan_filter (ncsi_ipc_msg_t *msg)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::vlan_filter_t *vlan_filter = &msg->vlan_filter;
+
+    NIC_LOG_DEBUG("NCSI Vlan filter: channel: {}, vlan: {}, oper: {}", 
+                  vlan_filter->channel, vlan_filter->vlan_id, msg->oper);
+    if (msg->oper == hal::NCSI_MSG_OPER_CREATE) {
+        devmgr->DevApi()->swm_add_vlan(vlan_filter->vlan_id, vlan_filter->channel);
+    } else if (msg->oper == hal::NCSI_MSG_OPER_DELETE) {
+        devmgr->DevApi()->swm_del_vlan(vlan_filter->vlan_id, vlan_filter->channel);
+    }
+
+    return ret;
+}
+
+sdk_ret_t
 ncsi_ipc_vlan_filter_get (ncsi_ipc_msg_t *msg)
 {
     sdk_ret_t ret = SDK_RET_OK;
@@ -62,6 +79,23 @@ ncsi_ipc_vlan_filter_get (ncsi_ipc_msg_t *msg)
         channels_info.erase(it++);
         DEVAPI_FREE(DEVAPI_MEM_ALLOC_SWM_CHANNEL_INFO, cinfo);
     }
+    return ret;
+}
+
+sdk_ret_t
+ncsid_ipc_mac_filter (ncsi_ipc_msg_t *msg)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::mac_filter_t *mac_filter = &msg->mac_filter;
+
+    NIC_LOG_DEBUG("NCSI Mac filter: channel: {}, vlan: {}, oper: {}", 
+                  mac_filter->channel, mac2str(mac_filter->mac_addr), msg->oper);
+    if (msg->oper == hal::NCSI_MSG_OPER_CREATE) {
+        devmgr->DevApi()->swm_add_mac(mac_filter->mac_addr, mac_filter->channel);
+    } else if (msg->oper == hal::NCSI_MSG_OPER_DELETE) {
+        devmgr->DevApi()->swm_del_mac(mac_filter->mac_addr, mac_filter->channel);
+    }
+
     return ret;
 }
 
@@ -111,6 +145,32 @@ ncsi_ipc_mac_filter_get (ncsi_ipc_msg_t *msg)
         channels_info.erase(it++);
         DEVAPI_FREE(DEVAPI_MEM_ALLOC_SWM_CHANNEL_INFO, cinfo);
     }
+    return ret;
+}
+
+sdk_ret_t
+ncsid_ipc_bcast_filter (ncsi_ipc_msg_t *msg)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    lif_bcast_filter_t bcast_filter = {0};
+    hal::bcast_filter_t *bc_filter = &msg->bcast_filter;
+
+    NIC_LOG_DEBUG("NCSI Bcast filter: channel: {}, oper: {}, arp: {}, "
+                  "dhcp_client: {}, dhcp_server: {}, netbios: {}", 
+                  bc_filter->channel, msg->oper,
+                  bc_filter->enable_arp, bc_filter->enable_dhcp_client,
+                  bc_filter->enable_dhcp_server, bc_filter->enable_netbios);
+    if (msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+        msg->oper == hal::NCSI_MSG_OPER_UPDATE) {
+        bcast_filter.arp = bc_filter->enable_arp;
+        bcast_filter.dhcp_client = bc_filter->enable_dhcp_client;
+        bcast_filter.dhcp_server = bc_filter->enable_dhcp_server;
+        bcast_filter.netbios = bc_filter->enable_netbios;
+        devmgr->DevApi()->swm_upd_bcast_filter(bcast_filter, bc_filter->channel);
+    } else if (msg->oper == hal::NCSI_MSG_OPER_DELETE) {
+        devmgr->DevApi()->swm_upd_bcast_filter(bcast_filter, bc_filter->channel);
+    }
+
     return ret;
 }
 
@@ -173,6 +233,37 @@ ncsi_ipc_bcast_filter_get (ncsi_ipc_msg_t *msg)
         channels_info.erase(it++);
         DEVAPI_FREE(DEVAPI_MEM_ALLOC_SWM_CHANNEL_INFO, cinfo);
     }
+    return ret;
+}
+
+sdk_ret_t
+ncsid_ipc_mcast_filter (ncsi_ipc_msg_t *msg)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    lif_mcast_filter_t mcast_filter = {0};
+    hal::mcast_filter_t *mc_filter = &msg->mcast_filter;
+
+    NIC_LOG_DEBUG("NCSI Mcast filter: channel: {}, oper: {}, ipv6_neigh_adv: {}, "
+                  "ipv6_router_adv: {}, dhcpv6_relay: {}, dhcpv6_mcast: {}, "
+                  "ipv6_mld: {}, ipv6_neigh_sol: {}",
+                  mc_filter->channel, msg->oper,
+                  mc_filter->enable_ipv6_neigh_adv, mc_filter->enable_ipv6_router_adv,
+                  mc_filter->enable_dhcpv6_relay, mc_filter->enable_dhcpv6_mcast,
+                  mc_filter->enable_ipv6_mld, mc_filter->enable_ipv6_neigh_sol);
+    if (msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+        msg->oper == hal::NCSI_MSG_OPER_UPDATE) {
+        mcast_filter.ipv6_neigh_adv = mc_filter->enable_ipv6_neigh_adv;
+        mcast_filter.ipv6_router_adv = mc_filter->enable_ipv6_router_adv;
+        mcast_filter.dhcpv6_relay = mc_filter->enable_dhcpv6_relay;
+        mcast_filter.dhcpv6_mcast = mc_filter->enable_dhcpv6_mcast;
+        mcast_filter.ipv6_mld = mc_filter->enable_ipv6_mld;
+        mcast_filter.ipv6_neigh_sol = mc_filter->enable_ipv6_neigh_sol;
+
+        devmgr->DevApi()->swm_upd_mcast_filter(mcast_filter, mc_filter->channel);
+    } else if (msg->oper == hal::NCSI_MSG_OPER_DELETE) {
+        devmgr->DevApi()->swm_upd_mcast_filter(mcast_filter, mc_filter->channel);
+    }
+
     return ret;
 }
 
@@ -249,6 +340,40 @@ ncsi_ipc_mcast_filter_get (ncsi_ipc_msg_t *msg)
 }
 
 sdk_ret_t
+ncsid_ipc_channel (ncsi_ipc_msg_t *msg)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::channel_state_t *ch_state = &msg->channel_state;
+
+    NIC_LOG_DEBUG("NCSI Channel config: channel: {}, oper: {}, reset: {}, tx_enable: {}, "
+                  "rx_enable: {}", ch_state->channel, msg->oper, ch_state->reset,
+                  ch_state->tx_enable, ch_state->rx_enable);
+
+    if (msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+        msg->oper == hal::NCSI_MSG_OPER_UPDATE) {
+        if (ch_state->reset) {
+             devmgr->DevApi()->swm_reset_channel(ch_state->channel);
+             goto end;
+        }
+        if (ch_state->tx_enable) {
+            devmgr->DevApi()->swm_enable_tx(ch_state->channel);
+        } else {
+            devmgr->DevApi()->swm_disable_tx(ch_state->channel);
+        }
+        if (ch_state->rx_enable) {
+            devmgr->DevApi()->swm_enable_rx(ch_state->channel);
+        } else {
+            devmgr->DevApi()->swm_disable_rx(ch_state->channel);
+        }
+    } else if (msg->oper == hal::NCSI_MSG_OPER_DELETE) {
+        NIC_LOG_ERR("Channel should never be deleted.");
+    }
+
+end:
+    return ret;
+}
+
+sdk_ret_t
 ncsi_ipc_channel (ncsi_ipc_msg_t *msg)
 {
     sdk_ret_t ret = SDK_RET_OK;
@@ -314,6 +439,20 @@ ncsi_ipc_channel_get (ncsi_ipc_msg_t *msg)
         channels_info.erase(it++);
         DEVAPI_FREE(DEVAPI_MEM_ALLOC_SWM_CHANNEL_INFO, cinfo);
     }
+    return ret;
+}
+
+sdk_ret_t
+ncsid_ipc_vlan_mode (ncsi_ipc_msg_t *msg)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::vlan_mode_t *vlan_mode = &msg->vlan_mode;
+
+    NIC_LOG_DEBUG("NCSI Vlan Mode: channel: {}, enable: {}, mode: {}",
+                  vlan_mode->channel, vlan_mode->enable, vlan_mode->mode);
+
+    devmgr->DevApi()->swm_upd_vlan_mode(vlan_mode->enable, vlan_mode->mode, 
+                                        vlan_mode->channel);
     return ret;
 }
 
@@ -443,10 +582,73 @@ ncsi_ipc_handler_cb (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 }
 
 void
+ncsid_ipc_handler_cb (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t *event = (hal::core::event_t *)msg->data();
+    ncsi_ipc_msg_t *ncsi_msg = &event->ncsi;
+
+    NIC_LOG_DEBUG("--------------  IPC from NCSID message: {}, oper: {} -------------", 
+                  ncsi_msg->msg_id, 
+                  ncsi_msg->oper);
+
+    switch(ncsi_msg->msg_id) {
+    case hal::NCSI_MSG_VLAN_FILTER:
+        if (ncsi_msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_DELETE) { 
+            ret = ncsid_ipc_vlan_filter(ncsi_msg);
+        }
+        break;
+    case hal::NCSI_MSG_MAC_FILTER:
+        if (ncsi_msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_DELETE) { 
+            ret = ncsid_ipc_mac_filter(ncsi_msg);
+        }
+        break;
+    case hal::NCSI_MSG_BCAST_FILTER:
+        if (ncsi_msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_UPDATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_DELETE) { 
+            ret = ncsid_ipc_bcast_filter(ncsi_msg);
+        }
+        break;
+    case hal::NCSI_MSG_MCAST_FILTER:
+        if (ncsi_msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_UPDATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_DELETE) { 
+            ret = ncsid_ipc_mcast_filter(ncsi_msg);
+        }
+        break;
+    case hal::NCSI_MSG_VLAN_MODE:
+        if (ncsi_msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_UPDATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_DELETE) { 
+            ret = ncsid_ipc_vlan_mode(ncsi_msg);
+        }
+        break;
+    case hal::NCSI_MSG_CHANNEL:
+        if (ncsi_msg->oper == hal::NCSI_MSG_OPER_CREATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_UPDATE ||
+            ncsi_msg->oper == hal::NCSI_MSG_OPER_DELETE) { 
+            ret = ncsid_ipc_channel(ncsi_msg);
+        }
+        break;
+    default:
+        NIC_LOG_ERR("Invalid message id");
+    }
+
+    NIC_LOG_DEBUG("Nicmgr finished processing NCSI msg: ret: {}", ret);
+}
+
+void
 nicmgr_ncsi_ipc_init (void)
 {
     sdk::ipc::reg_request_handler(event_id_t::EVENT_ID_NCSI,
                                   ncsi_ipc_handler_cb, NULL);
+
+    sdk::ipc::subscribe(event_id_t::EVENT_ID_NCSID, 
+                        ncsid_ipc_handler_cb, NULL);
+
 }
 
 } // namespace nicmgr

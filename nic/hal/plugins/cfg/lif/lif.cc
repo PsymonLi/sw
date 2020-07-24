@@ -131,7 +131,9 @@ hal_stream_lif_updates (void *timer, uint32_t timer_id, void *ctxt) {
         EventResponse   evtresponse;
 
         evtresponse.set_event_id(::event::EVENT_ID_LIF_ADD_UPDATE);
+        hal::hal_cfg_db_open(hal::CFG_OP_READ);
         lif_process_get(lif, evtresponse.mutable_lif_event());
+        hal::hal_cfg_db_close();
         stream->Write(evtresponse);
         return true;
     };

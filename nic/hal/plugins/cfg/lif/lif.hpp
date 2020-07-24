@@ -26,7 +26,7 @@
 #define LIF_NAME_LEN 32
 
 #define LIF_ID_INVALID      0xFFFFFFFF
-#define LIF_STREAM_TIMER    (250)
+#define LIF_STREAM_TIMER    (1000)
 
 using intf::LifSpec;
 using intf::LifResponse;

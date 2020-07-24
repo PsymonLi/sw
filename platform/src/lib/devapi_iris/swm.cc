@@ -531,6 +531,13 @@ devapi_swm::add_vlan(vlan_t vlan, uint32_t channel)
                         cinfo->swm_lif_id, channel);
         }
         swm_->set_vlan(vlan, cinfo);
+        if (cinfo->tx_en) {
+            NIC_LOG_DEBUG("Channel {} has tx_en. Adding respective uplink", channel);
+            ret = swm_->config_oob_uplink_vlan_(vlan, cinfo);
+            if (ret != SDK_RET_OK) {
+                NIC_LOG_ERR("Unable to config oob_uplink vlan. ret: {}", ret);
+            }
+        }
     } else {
         NIC_LOG_ERR("Unable to find the channel info. channel: {}", channel);
     }
@@ -554,13 +561,13 @@ devapi_swm::del_vlan(vlan_t vlan, uint32_t channel)
                     cinfo->swm_lif_id, channel);
     }
 
-#if 0
-    // Bringup OOB uplink with the vlan. Sets up swm_uplink => oob_uplink
-    ret = swm_->unconfig_oob_uplink_vlan_(vlan);
-    if (ret != SDK_RET_OK) {
-        NIC_LOG_ERR("Failed to del vlan {} from oob", vlan);
+    if (cinfo->tx_en) {
+        // Bringup OOB uplink with the vlan. Sets up swm_uplink => oob_uplink
+        ret = swm_->unconfig_oob_uplink_vlan_(vlan, cinfo);
+        if (ret != SDK_RET_OK) {
+            NIC_LOG_ERR("Failed to del uplink from oob vlan {}", vlan);
+        }
     }
-#endif
 
     swm_->unset_vlan(vlan, cinfo);
     return ret;
@@ -910,15 +917,23 @@ devapi_swm::enable_tx(uint32_t channel)
     sdk_ret_t ret = SDK_RET_OK;
     channel_info_t *cinfo = NULL;
 
-    if (tx_channel_ != -1) {
-        NIC_LOG_WARN("Channel {} already is tx enabled. Force enabling tx on channel: {}.",
-                    tx_channel_, channel);
-        disable_tx(tx_channel_);
+    cinfo = lookup_channel_info_(channel);
+    if (cinfo->tx_en == true) {
+        NIC_LOG_DEBUG("Tx channel {} already tx-enabled. noop", channel);
+        goto end;
     }
 
     if (tx_channel_ == (int)channel) {
-        NIC_LOG_WARN("channel {} already tx-enabled. noop", channel);
+        NIC_LOG_WARN("channel {} already tx-enabled. Should never come here", 
+                     channel);
         goto end;
+    }
+
+    if (tx_channel_ != -1) {
+        NIC_LOG_WARN("Channel {} already is tx enabled. Disabling it. i"
+                     "Force enabling tx on channel: {}.",
+                    tx_channel_, channel);
+        disable_tx(tx_channel_);
     }
 
     NIC_LOG_DEBUG("TX enable for channel: {}", channel);
@@ -942,14 +957,22 @@ devapi_swm::disable_tx(uint32_t channel)
     sdk_ret_t ret = SDK_RET_OK;
     channel_info_t *cinfo = NULL;
 
-    if (tx_channel_ == -1) {
+    cinfo = lookup_channel_info_(channel);
+    if (cinfo->tx_en == false) {
         NIC_LOG_DEBUG("Tx channel {} already disabled. noop", channel);
         goto end;
     }
 
+    if (tx_channel_ == -1) {
+        NIC_LOG_DEBUG("Tx channel {} already disabled. Should never happen", 
+                      channel);
+        goto end;
+    }
+
     if (tx_channel_ != (int)channel) {
-        NIC_LOG_ERR("Current TX Channel {}. Trying to disable: {}",
+        NIC_LOG_ERR("Current TX Channel {}. Trying to disable: {}. Should never happen",
                     tx_channel_, channel);
+        goto end;
     }
 
     NIC_LOG_DEBUG("TX disable for channel: {}", channel);

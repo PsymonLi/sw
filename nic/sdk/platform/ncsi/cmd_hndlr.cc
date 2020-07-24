@@ -440,8 +440,19 @@ int CmdHndler::SendNcsiCmdResponse(const void *buf, ssize_t sz)
 int CmdHndler::ConfigVlanFilter(uint8_t filter_idx, uint16_t vlan,
         uint32_t port, bool enable)
 {
-    ssize_t ret;
+    ssize_t ret = 0;
     VlanFilterMsg vlan_msg;
+
+    SDK_TRACE_INFO("previous installed vlan: 0x%x, new vlan: 0x%x\n", 
+                   vlan_filter_list[port][filter_idx], vlan);
+
+    if (vlan_filter_list[port][filter_idx] == vlan)
+    {
+        SDK_TRACE_INFO("VLAN id 0x%x is already installed for filter_idx: %d"
+                " Skipping filter install", vlan, filter_idx);
+
+        return ret;
+    }
 
     //Delete the previously configured vlan if its present
     if (vlan_filter_list[port][filter_idx]) {
@@ -481,10 +492,20 @@ int CmdHndler::ConfigVlanFilter(uint8_t filter_idx, uint16_t vlan,
 int CmdHndler::ConfigMacFilter(uint8_t filter_idx, const uint8_t* mac_addr,
         uint32_t port, uint8_t type, bool enable)
 {
-    ssize_t ret;
+    ssize_t ret = 0;
     MacFilterMsg mac_filter_msg;
 
-    //Delete the previously configured vlan if its present
+    if (!bcmp((uint8_t *)&mac_addr_list[port][filter_idx], mac_addr,
+                sizeof(mac_filter_msg.mac_addr)))
+    {
+        SDK_TRACE_INFO("MAC addr %02x:%02x:%02x:%02x:%02x:%02x is already "
+                       "installed for filter_idx: %d Skipping filter install",
+                       mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3],
+                       mac_addr[4], mac_addr[5], filter_idx);
+        return ret;
+    }
+
+    //Delete the previously configured mac if its present
     if (mac_addr_list[port][filter_idx]) {
         mac_filter_msg.filter_id = filter_idx;
         mac_filter_msg.port = port;
@@ -902,10 +923,12 @@ ssize_t CmdHndler::EnableChannelRx(uint8_t ncsi_chan, bool enable)
     ssize_t ret;
     struct EnableChanMsg enable_ch_msg;
 
+#if 0
     if (enable)
         EnableFilters(ncsi_chan);
     else
         DisableFilters(ncsi_chan);
+#endif
 
     enable_ch_msg.enable = enable;
     enable_ch_msg.port = ncsi_chan;
@@ -1405,10 +1428,11 @@ void CmdHndler::SetMacAddr(void *obj, const void *cmd_pkt, ssize_t cmd_sz)
 
     NCSI_CMD_BEGIN_BANNER();
 
-    SDK_TRACE_INFO("ncsi_channel: 0x%x, mac_addr: %x:%x:%x:%x:%x:%x, "
-            "mac_addr_type: 0x%x, enable: 0x%x ", cmd->cmd.NcsiHdr.channel,
-            cmd->mac[5], cmd->mac[4], cmd->mac[3], cmd->mac[2], cmd->mac[1],
-            cmd->mac[0], mac_addr_type, enable);
+    SDK_TRACE_INFO("ncsi_channel: 0x%x, mac_addr: %02x:%02x:%02x:%02x:%02x:%02x, "
+            "filter_index: 0x%x, mac_addr_type: 0x%x, enable: 0x%x ",
+            cmd->cmd.NcsiHdr.channel, cmd->mac[0], cmd->mac[1], cmd->mac[2],
+            cmd->mac[3], cmd->mac[4], cmd->mac[5], filter_idx, mac_addr_type,
+            enable);
 
     //valid mac address type are 0(Ucast) & 1(Mcast) only
     if (mac_addr_type > 1) {

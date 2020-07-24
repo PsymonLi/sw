@@ -976,6 +976,7 @@ DeviceManager::SwmInit(void) {
 static void *
 create_mnets(void *obj)
 {
+    bool oob_mnic_done = false;
     vector<struct mnet_dev_create_req_t *> *req_list;
     req_list = reinterpret_cast<vector<struct mnet_dev_create_req_t *> *>(obj);
 
@@ -990,6 +991,10 @@ create_mnets(void *obj)
             return NULL;
         }
         free(req);
+        if (!oob_mnic_done) {
+            sleep(30);
+        }
+        oob_mnic_done = true;
     }
     free(obj);
     return NULL;

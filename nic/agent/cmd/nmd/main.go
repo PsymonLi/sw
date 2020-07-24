@@ -105,7 +105,7 @@ func main() {
 
 		switch pipelineType {
 		case globals.NaplesPipelineIris:
-			waitForInterfaces(ipif.NaplesOOBInterface, ipif.NaplesInbandInterface)
+			waitForInterfaces(ipif.NaplesINB0Interface, ipif.NaplesINB1Interface, ipif.NaplesOOBInterface, ipif.NaplesInbandInterface)
 		case globals.NaplesPipelineApollo:
 			waitForInterfaces(ipif.NaplesOOBInterface, ipif.ApuluINB0Interface, ipif.ApuluINB1Interface)
 		}

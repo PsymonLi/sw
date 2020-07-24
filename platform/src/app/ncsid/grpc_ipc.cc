@@ -4,8 +4,11 @@
 
 #include "grpc_ipc.h"
 #include "delphi_ipc.h"
+#include "nic/hal/core/event_ipc.hpp"
+#include "nic/hal/plugins/cfg/ncsi/ncsi_ipc.hpp"
 
 using std::chrono::seconds;
+using std::chrono::milliseconds;
 
 #define NCSI_LINK_SPEED_10G     (0x8)
 #define NCSI_LINK_SPEED_25G     (0xA)
@@ -13,12 +16,12 @@ using std::chrono::seconds;
 #define NCSI_LINK_SPEED_50G     (0xC)
 #define NCSI_LINK_SPEED_100G     (0xD)
 
-#define HAL_GRPC_API_TIMEOUT 25
+#define HAL_GRPC_API_TIMEOUT_MSEC 10
 
 #define SET_TIMEOUT()                                                       \
-    uint8_t timeout = HAL_GRPC_API_TIMEOUT;                                 \
+    uint32_t timeout_msec = HAL_GRPC_API_TIMEOUT_MSEC;                      \
     std::chrono::system_clock::time_point deadline =                        \
-    std::chrono::system_clock::now() + seconds(timeout);                \
+    std::chrono::system_clock::now() + milliseconds(timeout_msec);          \
     context.set_deadline(deadline);
 
 #define NCSI_CREATE_API(obj_api, obj_class)                             \
@@ -33,9 +36,9 @@ using std::chrono::seconds;
         return status;                                                      \
     }
 
-#define NCSI_UPDATE_API(obj_api, obj_class)                             \
+#define NCSI_UPDATE_API(obj_api, obj_class)                                 \
     Status                                                                  \
-    grpc_ipc::obj_api ## _update (obj_class ## RequestMsg& req_msg,    \
+    grpc_ipc::obj_api ## _update (obj_class ## RequestMsg& req_msg,         \
                                        obj_class ## ResponseMsg& rsp_msg)   \
     {                                                                       \
         grpc::ClientContext         context;                                \
@@ -45,9 +48,9 @@ using std::chrono::seconds;
         return status;                                                      \
     }
 
-#define NCSI_DELETE_API(obj_api, obj_class)                             \
+#define NCSI_DELETE_API(obj_api, obj_class)                                 \
     Status                                                                  \
-    grpc_ipc::obj_api ## _delete (obj_class ## RequestMsg& req_msg,    \
+    grpc_ipc::obj_api ## _delete (obj_class ## RequestMsg& req_msg,         \
                                        obj_class ## ResponseMsg& rsp_msg)   \
     {                                                                       \
         grpc::ClientContext         context;                                \
@@ -57,18 +60,19 @@ using std::chrono::seconds;
         return status;                                                      \
     }
 
-#define NCSI_GET_API(obj_api, obj_class)                                \
+#define NCSI_GET_API(obj_api, obj_class)                                    \
     Status                                                                  \
-    grpc_ipc::obj_api ## _get (obj_class ## GetRequestMsg& req_msg,    \
+    grpc_ipc::obj_api ## _get (obj_class ## GetRequestMsg& req_msg,         \
                                     obj_class ## GetResponseMsg& rsp_msg)   \
     {                                                                       \
         grpc::ClientContext         context;                                \
         grpc::Status                status;                                 \
         SET_TIMEOUT();                                                      \
-        status = ncsi_stub_->obj_class ## Get(&context, req_msg, &rsp_msg);   \
+        status = ncsi_stub_->obj_class ## Get(&context, req_msg, &rsp_msg); \
         return status;                                                      \
     }
 
+#if 0
 NCSI_CREATE_API(vlan, VlanFilter);
 NCSI_DELETE_API(vlan, VlanFilter);
 
@@ -89,6 +93,15 @@ NCSI_GET_API(bcast_filters, BcastFilter);
 NCSI_CREATE_API(mcast_filters, McastFilter);
 NCSI_UPDATE_API(mcast_filters, McastFilter);
 NCSI_GET_API(mcast_filters, McastFilter);
+#endif
+
+typedef struct channel_info_s {
+    uint32_t channel;
+    bool rx_enable;
+    bool tx_enable;
+} channel_info_t;
+
+channel_info_t g_channel_info[2];
 
 static uint8_t *
 memrev (uint8_t *block, size_t elnum)
@@ -164,6 +177,56 @@ grpc_ipc::vlan_delete (VlanFilterRequestMsg& req_msg, VlanFilterResponseMsg& rsp
 
 #endif
 
+sdk_ret_t
+vlan_filter_create (VlanFilterRequest& req, VlanFilterResponse& rsp)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NCSID;
+
+    SDK_TRACE_INFO("ncsid -> nicmgr vlan filter create");
+    // proto_msg_dump(req);
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+
+    event.ncsi.msg_id = hal::NCSI_MSG_VLAN_FILTER;
+    event.ncsi.oper = hal::NCSI_MSG_OPER_CREATE;
+    event.ncsi.vlan_filter.id = req.id();
+    event.ncsi.vlan_filter.vlan_id = req.vlan_id();
+    event.ncsi.vlan_filter.channel = req.channel();
+
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
+    return ret;
+}
+
+sdk_ret_t
+vlan_filter_delete (VlanFilterRequest& req, VlanFilterResponse& rsp)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NCSID;
+
+    SDK_TRACE_INFO("ncsid -> nicmgr vlan filter delete");
+    // proto_msg_dump(req);
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+
+    event.ncsi.msg_id = hal::NCSI_MSG_VLAN_FILTER;
+    event.ncsi.oper = hal::NCSI_MSG_OPER_DELETE;
+    // event.ncsi.vlan_req.CopyFrom(req);
+    // event.ncsi.vlan_rsp.CopyFrom(rsp);
+    event.ncsi.vlan_filter.id = req.id();
+    event.ncsi.vlan_filter.vlan_id = req.vlan_id();
+    event.ncsi.vlan_filter.channel = req.channel();
+
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
+    return ret;
+}
+
 int grpc_ipc::PostMsg(struct VlanFilterMsg& vlan_filter)
 {
     grpc::Status status;
@@ -181,6 +244,14 @@ int grpc_ipc::PostMsg(struct VlanFilterMsg& vlan_filter)
     req->set_vlan_id(vlan_filter.vlan_id);
     req->set_channel(vlan_filter.port);
 
+    if (vlan_filter.enable) {
+        ret = vlan_filter_create(*req, rsp);
+    }
+    else {
+        ret = vlan_filter_delete(*req, rsp);
+    }
+
+#if 0
     if (vlan_filter.enable) {
         status = vlan_create(req_msg, rsp_msg);
     }
@@ -205,14 +276,44 @@ int grpc_ipc::PostMsg(struct VlanFilterMsg& vlan_filter)
             goto end;
         }
     } else {
-        SDK_TRACE_ERR("Failed to %s vlan filter for vlan_id: 0x%x. err: 0x%x err_msg: %s",
-                vlan_filter.enable ? "create":"delete",
-                vlan_filter.vlan_id, status.error_code(), status.error_message().c_str());
-        ret = SDK_RET_ERR;
+        if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+            SDK_TRACE_ERR("HAL gRPC timeout. err: 0x%x err_msg: %s. Ignore.", 
+                           status.error_code(), status.error_message().c_str());
+        } else {
+            SDK_TRACE_ERR("Failed to %s vlan filter for vlan_id: 0x%x. err: 0x%x err_msg: %s",
+                          vlan_filter.enable ? "create":"delete",
+                          vlan_filter.vlan_id, status.error_code(), status.error_message().c_str());
+            ret = SDK_RET_ERR;
+        }
         goto end;
     }
 
 end:
+#endif
+    return ret;
+}
+
+sdk_ret_t
+vlan_mode_update_ipc (VlanModeRequest& req, VlanModeResponse& rsp)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NCSID;
+
+    SDK_TRACE_INFO("ncsid -> nicmgr vlan mode update");
+    // proto_msg_dump(req);
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+
+    event.ncsi.msg_id = hal::NCSI_MSG_VLAN_MODE;
+    event.ncsi.oper = hal::NCSI_MSG_OPER_UPDATE;
+    event.ncsi.vlan_mode.enable = req.enable();
+    event.ncsi.vlan_mode.mode = req.mode();
+    event.ncsi.vlan_mode.channel = req.channel();
+
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
     return ret;
 }
 
@@ -234,8 +335,10 @@ int grpc_ipc::PostMsg(struct VlanModeMsg& vlan_mode)
     req->set_mode(vlan_mode.mode);
     req->set_channel(vlan_mode.port);
 
-    status = vlan_mode_update(req_msg, rsp_msg);
+    ret = vlan_mode_update_ipc(*req, rsp);
 
+#if 0
+    status = vlan_mode_update(req_msg, rsp_msg);
     if (status.ok()) {
         rsp = rsp_msg.response(0);
         if (rsp.api_status() == types::API_STATUS_OK) {
@@ -251,13 +354,67 @@ int grpc_ipc::PostMsg(struct VlanModeMsg& vlan_mode)
             goto end;
         }
     } else {
-        SDK_TRACE_ERR("Failed to update vlan mode: 0x%x. err: 0x%x err_msg: %s",
-                vlan_mode.mode, status.error_code(), status.error_message().c_str());
-        ret = SDK_RET_ERR;
+        if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+            SDK_TRACE_ERR("HAL gRPC timeout. err: 0x%x err_msg: %s. Ignore.", 
+                           status.error_code(), status.error_message().c_str());
+        } else {
+            SDK_TRACE_ERR("Failed to update vlan mode: 0x%x. err: 0x%x err_msg: %s",
+                          vlan_mode.mode, status.error_code(), status.error_message().c_str());
+            ret = SDK_RET_ERR;
+        }
         goto end;
     }
 
 end:
+#endif
+    return ret;
+}
+
+sdk_ret_t
+mac_filter_create_ipc (MacFilterRequest& req, MacFilterResponse& rsp)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NCSID;
+
+    SDK_TRACE_INFO("ncsid -> nicmgr mac filter create");
+    // proto_msg_dump(req);
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+
+    event.ncsi.msg_id = hal::NCSI_MSG_MAC_FILTER;
+    event.ncsi.oper = hal::NCSI_MSG_OPER_CREATE;
+    event.ncsi.mac_filter.id = req.id();
+    event.ncsi.mac_filter.mac_addr = req.mac_addr();
+    event.ncsi.mac_filter.channel = req.channel();
+
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
+    return ret;
+}
+
+sdk_ret_t
+mac_filter_delete_ipc (MacFilterRequest& req, MacFilterResponse& rsp)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NCSID;
+
+    SDK_TRACE_INFO("ncsid -> nicmgr mac filter delete");
+    // proto_msg_dump(req);
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+
+    event.ncsi.msg_id = hal::NCSI_MSG_MAC_FILTER;
+    event.ncsi.oper = hal::NCSI_MSG_OPER_DELETE;
+    event.ncsi.mac_filter.id = req.id();
+    event.ncsi.mac_filter.mac_addr = req.mac_addr();
+    event.ncsi.mac_filter.channel = req.channel();
+
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
     return ret;
 }
 
@@ -283,6 +440,12 @@ int grpc_ipc::PostMsg(struct MacFilterMsg& mac_filter)
     req->set_channel(mac_filter.port);
 
     if (mac_filter.enable) {
+        ret = mac_filter_create_ipc(*req, rsp);
+    } else {
+        ret = mac_filter_delete_ipc(*req, rsp);
+    }
+#if 0
+    if (mac_filter.enable) {
         status = mac_filter_create(req_msg, rsp_msg);
     }
     else {
@@ -306,20 +469,51 @@ int grpc_ipc::PostMsg(struct MacFilterMsg& mac_filter)
             goto end;
         }
     } else {
-        SDK_TRACE_ERR("Failed to %s mac filter for mac_addr: 0x%lx. err: 0x%x err_msg: %s",
-                mac_filter.enable ? "create":"delete", mac_addr,
-                status.error_code(), status.error_message().c_str());
-        ret = SDK_RET_ERR;
+        if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+            SDK_TRACE_ERR("HAL gRPC timeout. err: 0x%x err_msg: %s. Ignore.", 
+                           status.error_code(), status.error_message().c_str());
+        } else {
+            SDK_TRACE_ERR("Failed to %s mac filter for mac_addr: 0x%lx. err: 0x%x err_msg: %s",
+                          mac_filter.enable ? "create":"delete", mac_addr,
+                          status.error_code(), status.error_message().c_str());
+            ret = SDK_RET_ERR;
+        }
         goto end;
     }
 
 end:
+#endif
     return ret;
 }
 
 int grpc_ipc::PostMsg(struct SetLinkMsg& set_link_msg)
 {
     return 0;
+}
+
+sdk_ret_t
+channel_state_update_ipc (ChannelRequest& req, ChannelResponse& rsp)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NCSID;
+
+    SDK_TRACE_INFO("ncsid -> nicmgr channel state update");
+    // proto_msg_dump(req);
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+
+    event.ncsi.msg_id = hal::NCSI_MSG_CHANNEL;
+    event.ncsi.oper = hal::NCSI_MSG_OPER_UPDATE;
+    event.ncsi.channel_state.tx_enable = req.tx_enable();
+    event.ncsi.channel_state.rx_enable = req.rx_enable();
+    event.ncsi.channel_state.reset = req.reset();
+    event.ncsi.channel_state.channel = req.channel();
+
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
+    return ret;
 }
 
 int grpc_ipc::PostMsg(struct EnableChanMsg& enable_ch)
@@ -331,12 +525,15 @@ int grpc_ipc::PostMsg(struct EnableChanMsg& enable_ch)
 
     ChannelRequestMsg req_msg;
     ChannelResponseMsg rsp_msg;
+#if 0
     ChannelGetResponse get_rsp;
     ChannelGetRequestMsg get_req_msg;
     ChannelGetResponseMsg get_rsp_msg;
+#endif
 
     SDK_TRACE_INFO("channel enable on ncsi channel: 0x%x", 
             enable_ch.port);
+#if 0
     auto get_req = get_req_msg.add_request();
 
     get_req->set_channel(enable_ch.port);
@@ -359,12 +556,17 @@ int grpc_ipc::PostMsg(struct EnableChanMsg& enable_ch)
 
     req = req_msg.add_request();
     req->CopyFrom(get_rsp.request());
+#endif
 
-    //req->set_tx_enable(get_rsp.tx_enable());
+    req = req_msg.add_request();
+    req->set_channel(enable_ch.port);
+    req->set_tx_enable(g_channel_info[enable_ch.port].tx_enable);
     req->set_rx_enable(enable_ch.enable);
-    //req->set_reset(get_rsp.tx_enable());
-    //req->set_channel(get_rsp.tx_enable());
 
+    g_channel_info[enable_ch.port].rx_enable = enable_ch.enable;
+
+    ret = channel_state_update_ipc(*req, rsp);
+#if 0
     status = channel_state_update(req_msg, rsp_msg);
 
     if (status.ok()) {
@@ -376,13 +578,19 @@ int grpc_ipc::PostMsg(struct EnableChanMsg& enable_ch)
             goto end;
         }
     } else {
-        SDK_TRACE_ERR("Failed to update channel state. err: 0x%x err_msg: %s",
-                status.error_code(), status.error_message().c_str());
-        ret = SDK_RET_ERR;
+        if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+            SDK_TRACE_ERR("HAL gRPC timeout. err: 0x%x err_msg: %s. Ignore.", 
+                           status.error_code(), status.error_message().c_str());
+        } else {
+            SDK_TRACE_ERR("Failed to update channel state. err: 0x%x err_msg: %s",
+                          status.error_code(), status.error_message().c_str());
+            ret = SDK_RET_ERR;
+        }
         goto end;
     }
 
 end:
+#endif
     return ret;
 }
 
@@ -395,12 +603,15 @@ int grpc_ipc::PostMsg(struct ResetChanMsg& reset_ch)
 
     ChannelRequestMsg req_msg;
     ChannelResponseMsg rsp_msg;
+#if 0
     ChannelGetResponse get_rsp;
     ChannelGetRequestMsg get_req_msg;
     ChannelGetResponseMsg get_rsp_msg;
+#endif
 
     SDK_TRACE_INFO("reset channel on ncsi channel: 0x%x", 
             reset_ch.port);
+#if 0
     auto get_req = get_req_msg.add_request();
 
     get_req->set_channel(reset_ch.port);
@@ -423,9 +634,19 @@ int grpc_ipc::PostMsg(struct ResetChanMsg& reset_ch)
 
     req = req_msg.add_request();
     req->CopyFrom(get_rsp.request());
+#endif
 
+    req = req_msg.add_request();
     req->set_reset(reset_ch.reset);
+    req->set_tx_enable(g_channel_info[reset_ch.port].tx_enable);
+    req->set_rx_enable(g_channel_info[reset_ch.port].rx_enable);
 
+    g_channel_info[reset_ch.port].rx_enable = false;
+    g_channel_info[reset_ch.port].tx_enable = false;
+
+    ret = channel_state_update_ipc(*req, rsp);
+
+#if 0
     status = channel_state_update(req_msg, rsp_msg);
 
     if (status.ok()) {
@@ -437,13 +658,19 @@ int grpc_ipc::PostMsg(struct ResetChanMsg& reset_ch)
             goto end;
         }
     } else {
-        SDK_TRACE_ERR("Failed to update channel state. err: 0x%x err_msg: %s",
-                status.error_code(), status.error_message().c_str());
-        ret = SDK_RET_ERR;
+        if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+            SDK_TRACE_ERR("HAL gRPC timeout. err: 0x%x err_msg: %s. Ignore.", 
+                           status.error_code(), status.error_message().c_str());
+        } else {
+            SDK_TRACE_ERR("Failed to update channel state. err: 0x%x err_msg: %s",
+                          status.error_code(), status.error_message().c_str());
+            ret = SDK_RET_ERR;
+        }
         goto end;
     }
 
 end:
+#endif
     return ret;
 }
 
@@ -456,12 +683,15 @@ int grpc_ipc::PostMsg(struct EnableChanTxMsg& enable_ch_tx)
 
     ChannelRequestMsg req_msg;
     ChannelResponseMsg rsp_msg;
+#if 0
     ChannelGetResponse get_rsp;
     ChannelGetRequestMsg get_req_msg;
     ChannelGetResponseMsg get_rsp_msg;
+#endif
 
     SDK_TRACE_INFO("enable channel tx on ncsi channel: 0x%x", 
             enable_ch_tx.port);
+#if 0
     auto get_req = get_req_msg.add_request();
 
     get_req->set_channel(enable_ch_tx.port);
@@ -484,9 +714,17 @@ int grpc_ipc::PostMsg(struct EnableChanTxMsg& enable_ch_tx)
 
     req = req_msg.add_request();
     req->CopyFrom(get_rsp.request());
+#endif
 
+    req = req_msg.add_request();
+    req->set_channel(enable_ch_tx.port);
     req->set_tx_enable(enable_ch_tx.enable);
+    req->set_rx_enable(g_channel_info[enable_ch_tx.port].rx_enable);
 
+    g_channel_info[enable_ch_tx.port].tx_enable = enable_ch_tx.enable;
+
+    ret = channel_state_update_ipc(*req, rsp);
+#if 0
     status = channel_state_update(req_msg, rsp_msg);
 
     if (status.ok()) {
@@ -498,13 +736,46 @@ int grpc_ipc::PostMsg(struct EnableChanTxMsg& enable_ch_tx)
             goto end;
         }
     } else {
-        SDK_TRACE_ERR("Failed to update channel state. err: 0x%x err_msg: %s",
-                status.error_code(), status.error_message().c_str());
-        ret = SDK_RET_ERR;
+        if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+            SDK_TRACE_ERR("HAL gRPC timeout. err: 0x%x err_msg: %s. Ignore.", 
+                           status.error_code(), status.error_message().c_str());
+        } else {
+            SDK_TRACE_ERR("Failed to update channel state. err: 0x%x err_msg: %s",
+                          status.error_code(), status.error_message().c_str());
+            ret = SDK_RET_ERR;
+        }
         goto end;
     }
 
 end:
+#endif
+    return ret;
+}
+
+sdk_ret_t
+bcast_filters_update_ipc (BcastFilterRequest& req, BcastFilterResponse& rsp)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NCSID;
+
+    SDK_TRACE_INFO("ncsid -> nicmgr bcast filters update");
+    // proto_msg_dump(req);
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+
+    event.ncsi.msg_id = hal::NCSI_MSG_BCAST_FILTER;
+    event.ncsi.oper = hal::NCSI_MSG_OPER_UPDATE;
+
+    event.ncsi.bcast_filter.enable_arp = req.enable_arp();
+    event.ncsi.bcast_filter.enable_dhcp_client = req.enable_dhcp_client();
+    event.ncsi.bcast_filter.enable_dhcp_server = req.enable_dhcp_server();
+    event.ncsi.bcast_filter.enable_netbios = req.enable_netbios();
+    event.ncsi.bcast_filter.channel = req.channel();
+    
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
     return ret;
 }
 
@@ -517,12 +788,15 @@ int grpc_ipc::PostMsg(struct EnableBcastFilterMsg& bcast_filter)
 
     BcastFilterRequestMsg req_msg;
     BcastFilterResponseMsg rsp_msg;
+#if 0
     BcastFilterGetResponse get_rsp;
     BcastFilterGetRequestMsg get_req_msg;
     BcastFilterGetResponseMsg get_rsp_msg;
+#endif
 
     SDK_TRACE_INFO("Update Bcast filters on ncsi channel: 0x%x", 
             bcast_filter.port);
+#if 0
     auto get_req = get_req_msg.add_request();
 
     get_req->set_channel(bcast_filter.port);
@@ -545,12 +819,17 @@ int grpc_ipc::PostMsg(struct EnableBcastFilterMsg& bcast_filter)
 
     req = req_msg.add_request();
     req->CopyFrom(get_rsp.request());
+#endif
+    req = req_msg.add_request();
 
+    req->set_channel(bcast_filter.port);
     req->set_enable_arp(bcast_filter.enable_arp);
     req->set_enable_dhcp_client(bcast_filter.enable_dhcp_client);
     req->set_enable_dhcp_server(bcast_filter.enable_dhcp_server);
     req->set_enable_netbios(bcast_filter.enable_netbios);
 
+    ret = bcast_filters_update_ipc(*req, rsp);
+#if 0
     status = bcast_filters_update(req_msg, rsp_msg);
 
     if (status.ok()) {
@@ -562,13 +841,48 @@ int grpc_ipc::PostMsg(struct EnableBcastFilterMsg& bcast_filter)
             goto end;
         }
     } else {
-        SDK_TRACE_ERR("Failed to update broadcast filters. err: 0x%x err_msg: %s",
-                status.error_code(), status.error_message().c_str());
-        ret = SDK_RET_ERR;
+        if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+            SDK_TRACE_ERR("HAL gRPC timeout. err: 0x%x err_msg: %s. Ignore.", 
+                           status.error_code(), status.error_message().c_str());
+        } else {
+            SDK_TRACE_ERR("Failed to update broadcast filters. err: 0x%x err_msg: %s",
+                          status.error_code(), status.error_message().c_str());
+            ret = SDK_RET_ERR;
+        }
         goto end;
     }
 
 end:
+#endif
+    return ret;
+}
+
+sdk_ret_t
+mcast_filters_update_ipc (McastFilterRequest& req, McastFilterResponse& rsp)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NCSID;
+
+    SDK_TRACE_INFO("ncsid -> nicmgr mcast filters update");
+    // proto_msg_dump(req);
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+
+    event.ncsi.msg_id = hal::NCSI_MSG_MCAST_FILTER;
+    event.ncsi.oper = hal::NCSI_MSG_OPER_UPDATE;
+
+    event.ncsi.mcast_filter.enable_ipv6_neigh_adv = req.enable_ipv6_neigh_adv();
+    event.ncsi.mcast_filter.enable_ipv6_router_adv = req.enable_ipv6_router_adv();
+    event.ncsi.mcast_filter.enable_dhcpv6_relay = req.enable_dhcpv6_relay();
+    event.ncsi.mcast_filter.enable_dhcpv6_mcast = req.enable_dhcpv6_mcast();
+    event.ncsi.mcast_filter.enable_ipv6_mld = req.enable_ipv6_mld();
+    event.ncsi.mcast_filter.enable_ipv6_neigh_sol = req.enable_ipv6_neigh_sol();
+    event.ncsi.mcast_filter.channel = req.channel();
+
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
     return ret;
 }
 
@@ -581,12 +895,15 @@ int grpc_ipc::PostMsg(struct EnableGlobalMcastFilterMsg& mcast_filter)
 
     McastFilterRequestMsg req_msg;
     McastFilterResponseMsg rsp_msg;
+#if 0
     McastFilterGetResponse get_rsp;
     McastFilterGetRequestMsg get_req_msg;
     McastFilterGetResponseMsg get_rsp_msg;
+#endif
 
     SDK_TRACE_INFO("Update Mcast filters on ncsi channel: 0x%x", 
             mcast_filter.port);
+#if 0
     auto get_req = get_req_msg.add_request();
 
     get_req->set_channel(mcast_filter.port);
@@ -609,7 +926,10 @@ int grpc_ipc::PostMsg(struct EnableGlobalMcastFilterMsg& mcast_filter)
 
     req = req_msg.add_request();
     req->CopyFrom(get_rsp.request());
+#endif
+    req = req_msg.add_request();
 
+    req->set_channel(mcast_filter.port);
     req->set_enable_ipv6_neigh_adv(mcast_filter.enable_ipv6_neigh_adv);
     req->set_enable_ipv6_router_adv(mcast_filter.enable_ipv6_router_adv);
     req->set_enable_dhcpv6_relay(mcast_filter.enable_dhcpv6_relay);
@@ -617,6 +937,8 @@ int grpc_ipc::PostMsg(struct EnableGlobalMcastFilterMsg& mcast_filter)
     req->set_enable_ipv6_mld(mcast_filter.enable_ipv6_mld);
     req->set_enable_ipv6_neigh_sol(mcast_filter.enable_ipv6_neigh_sol);
 
+    ret = mcast_filters_update_ipc(*req, rsp);
+#if 0
     status = mcast_filters_update(req_msg, rsp_msg);
 
     if (status.ok()) {
@@ -628,13 +950,19 @@ int grpc_ipc::PostMsg(struct EnableGlobalMcastFilterMsg& mcast_filter)
             goto end;
         }
     } else {
-        SDK_TRACE_ERR("Failed to update multicast filters. err: 0x%x err_msg: %s",
-                status.error_code(), status.error_message().c_str());
-        ret = SDK_RET_ERR;
+        if (status.error_code() == grpc::DEADLINE_EXCEEDED) {
+            SDK_TRACE_ERR("HAL gRPC timeout. err: 0x%x err_msg: %s. Ignore.", 
+                           status.error_code(), status.error_message().c_str());
+        } else {
+            SDK_TRACE_ERR("Failed to update multicast filters. err: 0x%x err_msg: %s",
+                          status.error_code(), status.error_message().c_str());
+            ret = SDK_RET_ERR;
+        }
         goto end;
     }
 
 end:
+#endif
     return ret;
 }
 
