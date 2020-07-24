@@ -1,29 +1,34 @@
 <app-pagebody [icon]="bodyIcon" header="Event Policies">
-  <app-tableviewedit fxLayout="column" class="eventpolicy-widget"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [expandTemplate]="expandTemplate"
-                     [createTemplate]="createTemplate"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
+  <app-penpushtable #eventPolicyTable
+                    [actionTemplate]="actionTemplate"
+                    [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate"
+                    [columns]="cols"
+                    [createTemplate]="createTemplate"
+                    [data]="dataObjects"
+                    [enableCheckbox]="false"
+                    [expandTemplate]="expandTemplate"
+                    [rowHeight]="43"
+                    [searchable]="false"
+                    [loading]="tableLoading"
+                    [exportFilename]="exportFilename"
+                    [exportMap]="exportMap">
+  </app-penpushtable>
 </app-pagebody>
 
 <ng-template #createTemplate>
   <app-neweventpolicy (formClose)="creationFormClose()" [existingObjects]='dataObjects'
-                      fxFlex="none"></app-neweventpolicy>
+                      [maxNewTargets]="maxNewTargets" fxFlex="none">
+  </app-neweventpolicy>
 </ng-template>
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <app-tableheader title="Policies" [total]="count" [icon]="headerIcon" [enableColumnSelect]="true"
-                   fxFlex="auto" fxLayout="row" [tableMenuItems]="tableMenuItems"
-                   [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
+  <app-tableheader fxFlex="auto" fxLayout="row"
+                   [tableMenuItems]="penTable.tableMenuItems"
+                   title="Policies" [total]="dataObjects.length"
+                   [icon]="headerIcon" [enableColumnSelect]="true" [cols]="cols"
+                   (columnSelectChange)="onColumnSelectChange($event)">
   </app-tableheader>
 </ng-template>
 
@@ -53,7 +58,7 @@
 </ng-template>
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
-  <app-neweventpolicy [objectData]="rowData" [isInline]="true" (formClose)="closeRowExpand()"
-                      [maxTargets]="maxNewTargets">
+  <app-neweventpolicy [objectData]="rowData" [isInline]="true"
+                      [maxNewTargets]="maxNewTargets" (formClose)="editFormClose(rowData)">
   </app-neweventpolicy>
 </ng-template>

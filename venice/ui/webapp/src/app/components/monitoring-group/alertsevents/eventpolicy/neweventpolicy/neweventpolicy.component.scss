@@ -1,52 +1,5 @@
-@import 'src/global-mixins';
-
-$horizontal-gutter: 10px;
-$vertical-gutter: 5px;
-
-.new-eventpolicy {
-  width: 100%;
-}
-
-.neweventpolicy-span {
-  margin-top: 0px !important;
-}
-
-.neweventpolicy-container {
-  background: white;
-
-  &:hover {
-    background: white;
+.new-eventpolicy-container {
+  app-syslog {
+    margin-left: 10px;
   }
-}
-
-.neweventpolicy-content {
-  background: white;
-  min-height: 180px;
-  margin-top: 5* $vertical-gutter;
-  margin-bottom: 4* $vertical-gutter;
-  @include primary-font();
-}
-
-.neweventpolicy-text {
-  margin-top: 2*$vertical-gutter;
-  margin-left: $horizontal-gutter;
-  height: 30px;
-  @include primary-font();
-}
-
-.neweventpolicy-divider {
-  border-bottom: 1px solid #dddddd;
-}
-
-.neweventpolicy-save,
-.neweventpolicy-cancel {
-  font-size: 16px;
-  display: inline-block;
-  padding: 4px 10px;
-  line-height: 25px;
-  margin: 0px $horizontal-gutter $vertical-gutter $horizontal-gutter;
-}
-
-.neweventpolicy-buttoncontainer {
-  margin-top: 1.5 * $vertical-gutter;
 }

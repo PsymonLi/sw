@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Renderer2, SimpleChanges, TemplateRef, ViewChild, ViewEncapsulation } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Renderer2, SimpleChanges, TemplateRef, ViewChild, ViewEncapsulation, ElementRef } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -6,7 +6,6 @@ import { Table } from 'primeng/table';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
 import { ControllerService } from '@app/services/controller.service';
-import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { IApiStatus } from '@sdk/v1/models/generated/search';
 import { BaseComponent } from '@app/components/base/base.component';
 import { AdvancedSearchComponent } from '../advanced-search/advanced-search.component';
@@ -68,9 +67,9 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   expandedRowData: any;
   filter: string;
   filterSub: Subscription;
-  first: number = 0;
   hoveredRowID: string;
   rowsPerPageOptions: number[] = [10, 25, 50, 100];
+  first: number = 0;
   defaultRows: number = Math.min(...this.rowsPerPageOptions);
   pageSelected: boolean = false;
   scrollHeight: string = `100%`;
@@ -100,7 +99,10 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     {label: 'Select all', value: 'all'},
   ];
 
-  constructor(private _route: ActivatedRoute, protected controllerService: ControllerService, protected renderer: Renderer2) {
+  constructor(protected _route: ActivatedRoute,
+    protected controllerService: ControllerService,
+    protected nativeElementRef: ElementRef,
+    protected renderer: Renderer2) {
     super(controllerService);
   }
 

@@ -1,19 +1,18 @@
-import { AfterViewInit, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, ViewEncapsulation, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, OnChanges, SimpleChanges } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
-import { ToolbarButton } from '@app/models/frontend/shared/toolbar.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
-import { IApiStatus, IMonitoringAlertDestination, MonitoringAlertDestination, MonitoringAuthConfig, MonitoringPrivacyConfig, MonitoringSNMPTrapServer, MonitoringSyslogExport } from '@sdk/v1/models/generated/monitoring';
+import { IMonitoringAlertDestination, MonitoringAlertDestination, MonitoringAuthConfig, MonitoringPrivacyConfig, MonitoringSNMPTrapServer, MonitoringSyslogExport } from '@sdk/v1/models/generated/monitoring';
 import { SelectItem } from 'primeng/primeng';
-import { Observable } from 'rxjs';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
-import { SyslogComponent } from '@app/components/shared/syslog/syslog.component';
+import { SyslogComponent, ReturnObjectType } from '@app/components/shared/syslog/syslog.component';
 import { FieldselectorComponent } from '@app/components/shared/fieldselector/fieldselector.component';
-import { required } from '@sdk/v1/utils/validators';
-import { ValidatorFn, AbstractControl } from '@angular/forms';
+import { ValidatorFn } from '@angular/forms';
+import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
+import { DestinationpolicyComponent } from '../destinations.component';
 
 @Component({
   selector: 'app-newdestination',
@@ -23,16 +22,16 @@ import { ValidatorFn, AbstractControl } from '@angular/forms';
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class NewdestinationComponent extends CreationForm<IMonitoringAlertDestination, MonitoringAlertDestination> implements OnInit, AfterViewInit {
+export class NewdestinationComponent extends CreationPushForm<IMonitoringAlertDestination, MonitoringAlertDestination> implements OnInit {
   @ViewChild('syslogComponent') syslogComponent: SyslogComponent;
   @ViewChild('fieldSelector') fieldSelector: FieldselectorComponent;
 
   enableSnmpTrap: boolean = false;
+  maxTargets: number = DestinationpolicyComponent.MAX_TOTAL_TARGETS;
 
-  @Input() maxTargets: number;
+  @Input() maxNewTargets: number;
   @Input() isInline: boolean = false;
   @Input() existingObjects: MonitoringAlertDestination[] = [];
-  @Output() formClose: EventEmitter<any> = new EventEmitter();
 
   versionOptions: SelectItem[] = Utility.convertEnumToSelectItem(MonitoringSNMPTrapServer.propInfo['version'].enum);
 
@@ -45,24 +44,35 @@ export class NewdestinationComponent extends CreationForm<IMonitoringAlertDestin
   // This field should eventually come from the from group once the necessary proto changes go in
   selectedCredentialMethod = 'AUTHTYPE_USERNAMEPASSWORD';
 
-  oldButtons: ToolbarButton[] = [];
-
   constructor(
     protected _controllerService: ControllerService,
     protected _monitoringService: MonitoringService,
     protected uiconfigsService: UIConfigsService,
-    private cdr: ChangeDetectorRef
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService, MonitoringAlertDestination);
+    super(_controllerService, uiconfigsService, cdr, MonitoringAlertDestination);
+  }
+
+  postNgInit(): void {
+    if (this.isInline) {
+      this.newObject.$formGroup.get(['meta', 'name']).disable();
+      // on edit form, the maxium targets allowed is the current number of targets
+      // plus the number of new targets allowed
+      if (this.newObject.$formGroup.get(['spec', 'syslog-export']).value) {
+        const targets = this.newObject.$formGroup.get(['spec', 'syslog-export', 'targets']).value;
+        if (targets) {
+          this.maxTargets = this.maxNewTargets + targets.length;
+        }
+      }
+    } else {
+      this.maxTargets = this.maxNewTargets;
+    }
+    this.setValidators(this.newObject);
   }
 
   isFormValid(): boolean {
     if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
       this.submitButtonTooltip = 'Error: Name field is empty.';
-      return false;
-    }
-    if (this.syslogComponent && !this.syslogComponent.isSyLogFormValid().valid) {
-      this.submitButtonTooltip = this.syslogComponent.isSyLogFormValid().errorMessage;
       return false;
     }
     if (!this.isInline) {
@@ -71,6 +81,15 @@ export class NewdestinationComponent extends CreationForm<IMonitoringAlertDestin
         return false;
       }
     }
+
+    if (this.syslogComponent) {
+      const syslogFormReturnValue: ReturnObjectType = this.syslogComponent.isSyLogFormValid();
+      if (!syslogFormReturnValue.valid) {
+        this.submitButtonTooltip = syslogFormReturnValue.errorMessage;
+        return false;
+      }
+    }
+
     this.submitButtonTooltip = 'Ready to submit';
     return true;
   }
@@ -89,52 +108,10 @@ export class NewdestinationComponent extends CreationForm<IMonitoringAlertDestin
     return syslog.value.target.credentials['auth-type'];
   }
 
-  /**
-   * Sets the previously saved toolbar buttons
-   * They should have been saved in the ngOnInit when we are inline.
-   */
-  setPreviousToolbar() {
-    if (this.oldButtons != null) {
-      const currToolbar = this._controllerService.getToolbarData();
-      currToolbar.buttons = this.oldButtons;
-      this._controllerService.setToolbarData(currToolbar);
-    }
-  }
-  saveDestination() {
-    let handler: Observable<{ body: IMonitoringAlertDestination | IApiStatus | Error, statusCode: number }>;
-    const destination: IMonitoringAlertDestination = this.newObject.getFormGroupValues();
-    destination.spec['syslog-export'] = this.syslogComponent.getValues();
-    // Commenting out since backend doesn't support it currently
-    if (this.isInline) {
-      handler = this._monitoringService.UpdateAlertDestination(this.newObject.meta.name, destination);
-    } else {
-      handler = this._monitoringService.AddAlertDestination(destination);
-    }
-    handler.subscribe(
-      (response) => {
-        if (this.isInline) {
-          this._controllerService.invokeSuccessToaster(Utility.UPDATE_SUCCESS_SUMMARY, 'Updated destination ' + this.newObject.meta.name);
-        } else {
-          this._controllerService.invokeSuccessToaster(Utility.CREATE_SUCCESS_SUMMARY, 'Created destination ' + destination.meta.name);
-        }
-        this.cancelDestination();
-      },
-      (error) => {
-        if (this.isInline) {
-          this._controllerService.invokeRESTErrorToaster(Utility.UPDATE_FAILED_SUMMARY, error);
-        } else {
-          this._controllerService.invokeRESTErrorToaster(Utility.CREATE_FAILED_SUMMARY, error);
-        }
-      }
-    );
-  }
-
-  cancelDestination() {
-    if (!this.isInline) {
-      // Need to reset the toolbar that we changed
-      this.setPreviousToolbar();
-    }
-    this.formClose.emit();
+  getObjectValues(): IMonitoringAlertDestination {
+    const obj = this.newObject.getFormGroupValues();
+    obj.spec['syslog-export'] = this.syslogComponent.getValues();
+    return obj;
   }
 
   addSnmpTrapConfig() {
@@ -148,43 +125,12 @@ export class NewdestinationComponent extends CreationForm<IMonitoringAlertDestin
       snmpFormArray.removeAt(index);
     }
   }
-  getClassName(): string {
-    return this.constructor.name;
-  }
-  postNgInit(): void {
-    if (this.isInline) {
-      // disable name field
-      this.newObject.$formGroup.get(['meta', 'name']).disable();
-    }
-    this.setValidators(this.newObject);
-  }
-  postViewInit() {
-    this.cdr.detectChanges();
-  }
-  setToolbar(): void {
-    if (!this.isInline) {
-      // If it is not inline, we change the toolbar buttons, and save the old one
-      // so that we can set it back when we are done
-      const currToolbar = this._controllerService.getToolbarData();
-      this.oldButtons = currToolbar.buttons;
-      currToolbar.buttons = [
-        {
-          cssClass: 'global-button-primary eventalertpolicies-button eventalertpolicies-button-destination-SAVE',
-          text: 'CREATE DESTINATION',
-          callback: () => { this.saveDestination(); },
-          computeClass: () => this.computeFormSubmitButtonClass(),
-          genTooltip: () => this.getSubmitButtonToolTip()
-        },
-        {
-          cssClass: 'global-button-neutral eventalertpolicies-button eventalertpolicies-button-destination-CANCEL',
-          text: 'CANCEL',
-          callback: () => { this.cancelDestination(); }
-        },
-      ];
 
-      this._controllerService.setToolbarData(currToolbar);
-    }
+  setToolbar() {
+    this.setCreationButtonsToolbar('CREATE DESTINATION',
+        UIRolePermissions.monitoringalertdestination_create);
   }
+
   createObject(object: IMonitoringAlertDestination) {
     return this._monitoringService.AddAlertDestination(object);
   }

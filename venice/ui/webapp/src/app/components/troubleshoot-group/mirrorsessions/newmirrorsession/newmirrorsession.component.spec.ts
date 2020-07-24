@@ -22,6 +22,7 @@ import { LicenseService } from '@app/services/license.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { NetworkService } from '@app/services/generated/network.service';
 import { NewmirrorsessionComponent } from './newmirrorsession.component';
+import { FlexLayoutModule } from '@angular/flex-layout';
 
 describe('NewmirrorsessionComponent', () => {
   let component: NewmirrorsessionComponent;
@@ -32,6 +33,7 @@ describe('NewmirrorsessionComponent', () => {
       declarations: [ NewmirrorsessionComponent ],
       imports: [
         FormsModule,
+        FlexLayoutModule,
         ReactiveFormsModule,
         NoopAnimationsModule,
         HttpClientTestingModule,

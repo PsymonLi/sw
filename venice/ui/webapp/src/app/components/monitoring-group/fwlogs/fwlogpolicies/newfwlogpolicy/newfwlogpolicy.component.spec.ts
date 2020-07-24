@@ -87,20 +87,20 @@ describe('NewfwlogpolicyComponent', () => {
           }
         ],
         config: {
-          prefix: 'prefix',
           'facility-override': MonitoringSyslogExportConfig_facility_override.local0,
         }
       }
     };
 
-    tu.setInput('.newfwlogpolicy-name', policy.meta.name);
+    tu.setInput('.newfwlogpolicy-name input', policy.meta.name);
     tu.setSyslogData(policy.spec as any);
     component.saveObject();
     fixture.detectChanges();
     expect(spy).toHaveBeenCalled();
     const recVal = spy.calls.mostRecent().args[0];
     const expVal = TrimUIFields(new MonitoringFwlogPolicy(policy).getModelValues());
-    expect(_.isEqual(recVal, expVal)).toBeTruthy('Received: ' + recVal + ' , expected: ' + expVal);
+    expect(_.isEqual(recVal.meta, expVal.meta)).toBeTruthy('Received: ' + recVal.meta + ' , expected: ' + expVal.meta);
+    expect(_.isEqual(recVal.spec.targets, expVal.spec.targets)).toBeTruthy('Received: ' + recVal.spec.targets + ' , expected: ' + expVal.spec.targets);
   });
 
   it('should update', () => {
@@ -120,7 +120,6 @@ describe('NewfwlogpolicyComponent', () => {
           }
         ],
         config: {
-          prefix: 'prefix',
           'facility-override': MonitoringSyslogExportConfig_facility_override.local0,
         }
       }
@@ -137,6 +136,7 @@ describe('NewfwlogpolicyComponent', () => {
     expect(spy).toHaveBeenCalled();
     const recVal = spy.calls.mostRecent().args[1];
     const expVal = TrimUIFields(new MonitoringFwlogPolicy(policy).getModelValues());
-    expect(_.isEqual(recVal, expVal)).toBeTruthy('Received: ' + JSON.stringify(recVal) + ' , expected: ' + JSON.stringify(expVal));
+    expect(_.isEqual(recVal.meta, expVal.meta)).toBeTruthy('Received: ' + JSON.stringify(recVal) + ' , expected: ' + JSON.stringify(expVal));
+    expect(_.isEqual(recVal.spec.targets, expVal.spec.targets)).toBeTruthy('Received: ' + recVal.spec.targets + ' , expected: ' + expVal.spec.targets);
   });
 });

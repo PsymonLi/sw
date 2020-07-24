@@ -20,6 +20,9 @@ import { FieldContainerComponent } from '../form/layout/fieldcontainer.component
 import { ListContainerComponent } from '../form/layout/listcontainer.component';
 import { SyslogComponent } from './syslog.component';
 import { WidgetsModule } from 'web-app-framework';
+import { PsmTextBoxComponent } from '../form/inputcomponent/psmtextbox/psmtextbox.component';
+import { PsmSelectBoxComponent } from '../form/inputcomponent/psmselectbox/psmselectbox.component';
+import { PsmRadioButtonsComponent } from '../form/inputcomponent/psmradiobuttons/psmradiobuttons.component';
 
 describe('SyslogComponent', () => {
   let component: SyslogComponent;
@@ -30,6 +33,9 @@ describe('SyslogComponent', () => {
       declarations: [
         FieldContainerComponent,
         ListContainerComponent,
+        PsmTextBoxComponent,
+        PsmSelectBoxComponent,
+        PsmRadioButtonsComponent,
         SyslogComponent
       ],
       imports: [

@@ -1,26 +1,26 @@
 <app-pagebody [icon]="bodyicon" header="Networks Overview">
   <div fxFlex class="networks-table-container">
-    <app-pentable #networkTable
-                  [data]="dataObjects"
-                  [columns]="cols"
-                  [captionTemplate]="captionTemplate"
-                  [bodyTemplate]="bodyTemplate"
-                  [actionTemplate]="actionTemplate"
-                  [expandTemplate]="expandTemplate"
-                  [createTemplate]="createTemplate"
-                  [enableCheckbox]="true"
-                  [loading]="tableLoading"
-                  [numRows]="25"
-                  [rowHeight]="46"
-                  [exportFilename]="exportFilename"
-                  [exportMap]="exportMap"
-                  [searchable]="true"
-                  (searchCancelledEmitter)="onCancelSearch()"
-                  [searchCols]="advSearchCols"
-                  (searchEmitter)="onSearchNetworks()"
-                  [searchFormArray]="fieldFormArray"
-                  searchKind="Network">
-    </app-pentable>
+    <app-penpushtable #networkTable
+                      [data]="dataObjects"
+                      [columns]="cols"
+                      [captionTemplate]="captionTemplate"
+                      [bodyTemplate]="bodyTemplate"
+                      [actionTemplate]="actionTemplate"
+                      [expandTemplate]="expandTemplate"
+                      [createTemplate]="createTemplate"
+                      [enableCheckbox]="true"
+                      [loading]="tableLoading"
+                      [numRows]="25"
+                      [rowHeight]="46"
+                      [exportFilename]="exportFilename"
+                      [exportMap]="exportMap"
+                      [searchable]="true"
+                      (searchCancelledEmitter)="onCancelSearch()"
+                      [searchCols]="advSearchCols"
+                      (searchEmitter)="onSearchNetworks()"
+                      [searchFormArray]="fieldFormArray"
+                      searchKind="Network">
+    </app-penpushtable>
   </div>
 </app-pagebody>
 

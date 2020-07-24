@@ -2,7 +2,8 @@
   <div [class]="getIconSpanClasses()">*</div>
   <div [class]="getSpanClasses()">
     <p-dropdown [id]="boxId" appendTo="body" [class]="getComponentClass()"
-                [options]="allOptions" [disabled]="disabled" [matTooltip]="getTooltip()"
+                [options]="allOptions" [disabled]="disabled" [editable]="editable"
+                [matTooltip]="getTooltip()"
                 [matTooltipClass]="currentTooltipClass"
                 [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
                 (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"

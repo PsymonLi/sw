@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { DSCsNameMacMap, ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
@@ -18,6 +18,10 @@ import { SecurityApp } from '@sdk/v1/models/generated/security';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { SelectItem } from 'primeng/api';
 import { Observable } from 'rxjs';
+import { NetworkService } from '@app/services/generated/network.service';
+import { NetworkNetworkInterface } from '@sdk/v1/models/generated/network';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 interface MirrorsessionsUIModel {
   pendingDSCmacnameMap?: {[key: string]: string };
@@ -28,9 +32,13 @@ interface MirrorsessionsUIModel {
   templateUrl: './mirrorsessions.component.html',
   styleUrls: ['./mirrorsessions.component.scss'],
   animations: [Animations],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None
 })
-export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMirrorSession, MonitoringMirrorSession> implements OnInit {
+export class MirrorsessionsComponent extends DataComponent implements OnInit {
+
+  @ViewChild('mirrorSessionTable') mirrorSessionTable: PentableComponent;
+
   dataObjects: ReadonlyArray<MonitoringMirrorSession> = [];
 
   bodyicon: any = {
@@ -48,15 +56,18 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
     matIcon: 'grid_on'
   };
 
+  // Used for the table - when true there is a loading icon displayed
+  tableLoading: boolean = false;
+
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', sortable: true, width: '175px', notReorderable: true },
+    { field: 'meta.name', header: 'Name', sortable: true, width: '125px', notReorderable: true },
     { field: 'spec.span-id', header: 'ERSPAN ID', sortable: true, width: '80px' },
-    { field: 'spec.packet-size', header: 'Packet Size', sortable: true, width: '100px' },
+    { field: 'spec.packet-size', header: 'Packet Size', sortable: true, width: '80px' },
     // { field: 'spec.packet-filters', header: 'Packet Filters', sortable: false, width: 10 },
-    { field: 'spec.collectors', header: 'Collectors', sortable: false, width: '275px' },
-    { field: 'spec.match-rules', header: 'Match Rules', sortable: false, width: 30 },
-    { field: 'spec.interfaces.selectors', header: 'Uplink Interface Selectors', sortable: false, width: 20 },
-    { field: 'status.propagation-status', header: 'Propagation Status', sortable: true, width: '195px' },
+    { field: 'spec.collectors', header: 'Collectors', sortable: false, width: 100 },
+    { field: 'spec.match-rules', header: 'Match Rules', sortable: false, width: 100 },
+    { field: 'spec.interfaces.selectors', header: 'Uplink Interface Selectors', sortable: false, width: 100 },
+    { field: 'status.propagation-status', header: 'Propagation Status', sortable: true, width: 100 },
     { field: 'meta.creation-time', header: 'Creation Time', sortable: true, width: '180px', notReorderable: true },
     { field: 'meta.mod-time', header: 'Update Time', sortable: true, width: '180px', notReorderable: true },
     // { field: 'status.oper-state', header: 'OP Status', sortable: true, width: '175px' }
@@ -93,32 +104,28 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
   isTabComponent = false;
   disableTableWhenRowExpanded = true;
 
-  securityAppsEventUtility: HttpEventUtility<SecurityApp>;
   securityApps: ReadonlyArray<SecurityApp> = [];
   securityAppOptions: SelectItem[] = [];
   naplesList: ClusterDistributedServiceCard[] = [];
+  interfaces: NetworkNetworkInterface[] = [];
 
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected cdr: ChangeDetectorRef,
     protected securityService: SecurityService,
     protected clusterService: ClusterService,
+    protected networkService: NetworkService,
     protected monitoringService: MonitoringService) {
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
   }
 
-  /**
-  * Overide super's API
-  * It will return this Component name
-  */
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
-  postNgInit() {
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.mirrorSessionTable;
+    this.tableLoading = true;
     this.getMirrorSessions();
-    this.getSecurityApps();
     this.getDSCs();
+    this.getNetworkInterfaces();
   }
 
   getDSCs() {
@@ -129,11 +136,11 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
         }
         this.naplesList = response.data as ClusterDistributedServiceCard[];
         this.handleDataReady();
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(dscSubscription);
-
- }
+  }
 
   getMirrorSessions() {
     const sub = this.monitoringService.ListMirrorSessionCache().subscribe(
@@ -141,10 +148,25 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
         if (response.connIsErrorState) {
           return;
         }
+        this.tableLoading = false;
         this.dataObjects = response.data as MonitoringMirrorSession[];
         this.handleDataReady();
+        this.cdr.detectChanges();
       },
       this.controllerService.webSocketErrorHandler('Failed to get Mirror Sessions')
+    );
+    this.subscriptions.push(sub);
+  }
+
+  getNetworkInterfaces() {
+    const sub = this.networkService.ListNetworkInterfaceCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.interfaces = response.data as NetworkNetworkInterface[];
+        this.cdr.detectChanges();
+      }
     );
     this.subscriptions.push(sub);
   }
@@ -173,38 +195,24 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
     }
   }
 
-  getSecurityApps() {
-    this.securityAppsEventUtility = new HttpEventUtility<SecurityApp>(SecurityApp, false, null, true); // https://pensando.atlassian.net/browse/VS-93 we want to trim the object
-    this.securityApps = this.securityAppsEventUtility.array as ReadonlyArray<SecurityApp>;
-    const subscription = this.securityService.WatchApp().subscribe(
-      response => {
-        this.securityAppsEventUtility.processEvents(response);
-        this.securityAppOptions = this.securityApps.map(app => {
-          return {
-            label: app.meta.name,
-            value: app.meta.uuid,
-          };
-        });
-      },
-      this.controllerService.webSocketErrorHandler('Failed to get Apps')
-    );
-    this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
-  }
-
   setDefaultToolbar(): void {
     let buttons = [];
     if (this.uiconfigsService.isAuthorized(UIRolePermissions.monitoringmirrorsession_create)) {
       buttons = [{
         cssClass: 'global-button-primary mirrorsessions-toolbar-button mirrorsessions-toolbar-button-ADD',
         text: 'ADD MIRROR SESSION',
-        computeClass: () => (this.shouldEnableButtons && this.dataObjects.length < 8) ? '' : 'global-button-disabled',
-        callback: () => { this.createNewObject(); }
+        computeClass: () => this.dataObjects.length < 8 && !this.mirrorSessionTable.showRowExpand ? '' : 'global-button-disabled',
+        callback: () => { this.mirrorSessionTable.createNewObject(); }
       }];
     }
     this.controllerService.setToolbarData({
       buttons: buttons,
       breadcrumb: [{ label: 'Mirror Sessions', url: Utility.getBaseUIUrl() + 'troubleshoot/mirrorsessions' }]
     });
+  }
+
+  deleteRecord(object: MonitoringMirrorSession): Observable<{ body: IMonitoringMirrorSession | IApiStatus | Error; statusCode: number; }> {
+    return this.monitoringService.DeleteMirrorSession(object.meta.name);
   }
 
   displayColumn(data: MonitoringMirrorSession, col: TableCol): any {
@@ -328,15 +336,5 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
   displayListInColumn(list: string[]): string {
     return (list && list.length > 0) ?
         list.reduce((accum: string, item: string) => accum + ' ' + item ) : '';
-  }
-
-  deleteRecord(object: MonitoringMirrorSession): Observable<{ body: IMonitoringMirrorSession | IApiStatus | Error; statusCode: number; }> {
-    return this.monitoringService.DeleteMirrorSession(object.meta.name);
-  }
-  generateDeleteConfirmMsg(object: MonitoringMirrorSession): string {
-    return 'Are you sure that you want to delete mirror session: ' + object.meta.name + '?';
-  }
-  generateDeleteSuccessMsg(object: MonitoringMirrorSession): string {
-    return 'Deleted delete mirror session ' + object.meta.name;
   }
 }

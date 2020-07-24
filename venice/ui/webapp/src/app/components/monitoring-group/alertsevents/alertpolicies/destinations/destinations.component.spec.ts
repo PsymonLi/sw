@@ -29,7 +29,6 @@ import { LicenseService } from '@app/services/license.service';
 import { AuthService } from '@app/services/auth.service';
 import { MonitoringAlertDestination } from '@sdk/v1/models/generated/monitoring';
 
-
 describe('DestinationpolicyComponent', () => {
   let component: DestinationpolicyComponent;
   let fixture: ComponentFixture<DestinationpolicyComponent>;
@@ -71,17 +70,5 @@ describe('DestinationpolicyComponent', () => {
   it('should create', () => {
     fixture.detectChanges();
     expect(component).toBeTruthy();
-  });
-
-  describe('RBAC', () => {
-    const testHelper = new TestTablevieweditRBAC('monitoringalertdestination');
-
-    beforeEach(() => {
-      component.isActiveTab = true;
-      component.dataObjects = [new MonitoringAlertDestination()];
-      testHelper.fixture = fixture;
-    });
-
-    testHelper.runTests();
   });
 });

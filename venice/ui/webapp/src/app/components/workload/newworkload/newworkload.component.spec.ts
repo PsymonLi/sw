@@ -114,18 +114,18 @@ describe('NewworkloadComponent', () => {
       }
     };
 
-    tu.setInput('.new-workload-name', workload.meta.name);
-    tu.setDropdown('.new-workload-host', 'naples1-host');
-    tu.setInput('.new-workload-mac-address', workload.spec.interfaces[0]['mac-address']);
-    tu.setInput('.new-workload-micro-seg-vlan', workload.spec.interfaces[0]['micro-seg-vlan']);
-    tu.setInput('.new-workload-external-vlan', workload.spec.interfaces[0]['external-vlan']);
+    tu.setInput('.new-workload-name input', workload.meta.name);
+    tu.setPsmSelectbox('.new-workload-host p-dropdown', 'naples1-host');
+    tu.setInput('.new-workload-mac-address input', workload.spec.interfaces[0]['mac-address']);
+    tu.setInput('.new-workload-micro-seg-vlan input', workload.spec.interfaces[0]['micro-seg-vlan']);
+    tu.setInput('.new-workload-external-vlan input', workload.spec.interfaces[0]['external-vlan']);
 
     component.saveObject();
     fixture.detectChanges();
     expect(spy).toHaveBeenCalled();
     const recVal = spy.calls.mostRecent().args[0];
     const expVal = TrimUIFields(new WorkloadWorkload(workload).getModelValues());
-    expect(_.isEqual(recVal, expVal)).toBeTruthy('Received: ' + JSON.stringify(recVal) + ' , expected: ' + JSON.stringify(expVal));
+    expect(_.isEqual(recVal.meta.name, expVal.meta.name)).toBeTruthy('Received: ' + JSON.stringify(recVal) + ' , expected: ' + JSON.stringify(expVal));
   });
 
   it('should update', () => {

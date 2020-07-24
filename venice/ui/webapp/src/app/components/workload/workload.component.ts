@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { MatDialog } from '@angular/material';
 import { Animations } from '@app/animations';
@@ -54,7 +54,8 @@ interface WorkloadUiModel {
   templateUrl: './workload.component.html',
   styleUrls: ['./workload.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkloadComponent extends DataComponent implements OnInit {
   // Feature Flags
@@ -193,17 +194,13 @@ export class WorkloadComponent extends DataComponent implements OnInit {
    * Fetch data.
    */
   ngOnInit() {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state':
-        Eventtypes.COMPONENT_INIT
-    });
-    this.setDefaultToolbar();
+    super.ngOnInit();
+    this.penTable = this.workloadTable;
     this.buildAdvSearchCols();
     this.tableLoading = true;
     this.uiModelLoading = true;
     this.getHosts(); // prepare hostOptions needed by newworkload component.
     this.getNaples(); // get DSC cards
-    this.getSecuritygroups(); // get security groups
     this.getWorkloads(); // Once workloads are available, it will build object-maps
   }
 
@@ -217,6 +214,7 @@ export class WorkloadComponent extends DataComponent implements OnInit {
         this.hostOptions = this.hostObjects.map(x => {
           return { label: x.meta.name, value: x.meta.name };
         });
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -231,22 +229,11 @@ export class WorkloadComponent extends DataComponent implements OnInit {
         this.naples = response.data as ClusterDistributedServiceCard[];
         if (!this.tableLoading) { // some times naples data come after workload
           this.mapData();
+          this.cdr.detectChanges();
         }
       }
     );
     this.subscriptions.push(dscSubscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
-  }
-
-  getSecuritygroups() {
-    this.securitygroupsEventUtility = new HttpEventUtility<SecuritySecurityGroup>(SecuritySecurityGroup, true);
-    this.securitygroups = this.securitygroupsEventUtility.array as ReadonlyArray<SecuritySecurityGroup>;
-    const subscription = this.securityService.WatchSecurityGroup().subscribe(
-      response => {
-        this.securitygroupsEventUtility.processEvents(response);
-      },
-      this._controllerService.webSocketErrorHandler('Failed to get Security Groups info')
-    );
-    this.subscriptions.push(subscription);
   }
 
   getHostVcenterName(hostName: string): string {
@@ -390,14 +377,6 @@ export class WorkloadComponent extends DataComponent implements OnInit {
   }
 
   /**
-   * Overide super's API
-   * It will return this Component name
-   */
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
-  /**
    * Hook called by html when user mouses over a row
    */
   rowHover(rowData) {
@@ -445,15 +424,9 @@ export class WorkloadComponent extends DataComponent implements OnInit {
           return;
         }
         this.dataObjects = response.data as WorkloadWorkload[];
-        const currenttimeWatchWorkload = (new Date()).getTime();
-        const timeDiff = currenttimeWatchWorkload - this.starttimeWatchWorkload;
-        const timeOut = (timeDiff > 2 * 60 * 1000);
-        // wait up to 2 * 60 seconds, then turn off tableLoading.  Or current # of workloads has reached searchWorkloadCount.
-        if (timeOut || (this.dataObjects && this.dataObjects.length >= this.searchWorkloadCount)) {
-          this.tableLoading = false;
-        }
-
+        this.tableLoading = false;
         this.mapData(true);
+        this.cdr.detectChanges();
 
         // once we have get more workload objects than searchWorkloadCount, we reset this.searchWorkloadCount. It is need in DestroyHook()
         if (this.dataObjects.length >= this.searchWorkloadCount) {
@@ -502,7 +475,7 @@ export class WorkloadComponent extends DataComponent implements OnInit {
   }
 
   generateDeleteConfirmMsg(object: IWorkloadWorkload) {
-    return 'Are you sure you want to delete workload ' + object.meta.name;
+    return 'Are you sure you want to delete workload ' + object.meta.name + '?';
   }
 
   generateDeleteSuccessMsg(object: IWorkloadWorkload) {
@@ -759,47 +732,4 @@ export class WorkloadComponent extends DataComponent implements OnInit {
       this.onDeleteSelectedRows(event);
     }
   }
-
-  creationFormClose() {
-    this.workloadTable.creationFormClose();
-  }
-
-  editFormClose(rowData) {
-    if (this.workloadTable.showRowExpand) {
-      this.workloadTable.toggleRow(rowData);
-    }
-  }
-
-  expandRowRequest(event, rowData) {
-    if (!this.workloadTable.showRowExpand) {
-      this.workloadTable.toggleRow(rowData, event);
-    }
-  }
-
-  getSelectedDataObjects() {
-    return this.workloadTable.selectedDataObjects;
-  }
-
-  clearSelectedDataObjects() {
-    this.workloadTable.selectedDataObjects = [];
-  }
-
-
-  onColumnSelectChange(event) {
-    this.workloadTable.onColumnSelectChange(event);
-  }
-
-  onDeleteRecord(event, object) {
-    this.workloadTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this),
-      () => {
-        this.workloadTable.selectedDataObjects = [];
-      }
-    );
-  }
-
 }

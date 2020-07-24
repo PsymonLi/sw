@@ -1,84 +1,35 @@
-<div fxFlex="auto" fxLayout="column" class="psm-form">
-  <ng-container *ngTemplateOutlet="inlineButtons"></ng-container>
-  <div fxFlex="none" fxLayout="column" class="newfwlogpolicy-container"
-       fxLayoutAlign="start center" [class]="isInline? 'newfwlogpolicy-editform-inline' : ''">
-    <ng-container *ngTemplateOutlet="meta"></ng-container>
-    <!-- Limiting the size of the creation form - If it is inline, we have more room to fit in the save/cancel buttons -->
-  </div>
-</div>
-<ng-template #meta>
-  <div fxLayout="row" class="newfwlogpolicy-content">
-    <div fxFlex fxLayout="column" [formGroup]="newObject.$formGroup">
-      <div fxFlex="nogrow" fxLayout="row">
-        <div fxFlex="nogrow" fxLayout="row" formGroupName="meta" class="newfwlogpolicy-row">
-          <span fxLayoutAlign="center center" [ngClass]="{
-                            'newfwlog-general-box': true,
-                            'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
-                          }">
-            <input autocomplete="off" fxFlex="none" formControlName="name"
-                   class="newfwlogpolicy-name" appErrorTooltip
-                   spellcheck="false"
-                   type="text" pInputText appFloatLabel="Unique Policy Name...">
-          </span>
+<div fxFlex="auto" fxLayout="column" class="psm-form new-fwlogpolicy-container">
+  <app-inlinebuttons class="new-fwlogpolicy" *ngIf="isInline" [form]="this">
+  </app-inlinebuttons>
+  <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start"
+       [class]="isInline? 'new-fwlogpolicy-editform-inline' : ''">
+    <div fxLayout="row" fxLayoutAlign="center" class="psm-form-content">
+      <div fxFlex="none" fxLayout="column" [formGroup]="newObject.$formGroup">
+        <div fxFlex="nogrow" fxLayout="row" formGroupName="meta">
+          <app-psmtextbox fxFlex="275px" label="Name"
+                          class="newfwlogpolicy-name" formControlName="name">
+          </app-psmtextbox>
+          <div fxFlex="20px"></div>
+          <app-psmmultiselectbox fxFlex="275px" label="Export"
+                                 [formControl]="newObject.$formGroup.get(['spec', 'filter'])"
+                                 [options]="filterOptions" [allOption]="filterAllOption">
+          </app-psmmultiselectbox>
         </div>
-
-        <!-- Commented out because VRF is not exposed in the UI for now. -->
-        <!-- <div fxFlex="25px"></div> -->
-        <!-- Buffer, creating as a div so there are no hiccups in the animation-->
-        <!-- <div fxFlex="noshrink" fxLayout="row" [formGroup]="newObject.$formGroup.get(['spec'])">
-              <div fxFlex="nogrow" fxLayout="column">
-                <div class="newfwlogpolicy-fieldtitle" fxFlex="30px" fxLayout="row"
-                     fxLayoutAlign="start center">
-                  <span>VRF Name:</span>
-                </div>
-              </div>
-              <div fxFlex="nogrow" fxLayout="column">
-                <div fxFlex="30px" fxLayout="row" class="newfwlogpolicy-value">
-                  <input autocomplete="off" fxFlex="nogrow" appErrorTooltip formControlName="vrf-name"
-                         class="newfwlogpolicy-input"
-                         spellcheck="false" type="text" pInputText
-                         placeholder="">
-                </div>
-              </div>
-            </div>
-            <div fxFlex="25px"></div> -->
         <div fxFlex="20px"></div>
-        <app-psmmultiselectbox fxFlex="255px" label="Export"
-                               [formControl]="newObject.$formGroup.get(['spec', 'filter'])"
-                               [options]="filterOptions" [allOption]="filterAllOption">
-        </app-psmmultiselectbox>
-      </div>
-      <div fxFlex="noshrink" fxLayout="row" class="newfwlogpolicy-toggle-div" formGroupName="spec">
-        <div formGroupName="psm-target">
-          <mat-slide-toggle formControlName="enable" fxFlex='30px'
-                            class="newfwlogpolicy-input-slidetoggle">
-          </mat-slide-toggle>
+        <div fxFlex="nogrow" fxLayout="row">
+          <app-psmtoggle fxFlex="300px" label="Enable PSM Target" (change)="onToggleChange()"
+                         [formControl]="newObject.$formGroup.get(['spec', 'psm-target', 'enable'])">
+          </app-psmtoggle>
         </div>
-        <div class="newfwlogpolicy-toggle-text">Enable PSM Target
+        <div fxFlex="noshrink" fxLayout="row">
+          <app-syslog #syslogComponent fxFlex="nogrow" fxLayout="column"
+                      [isInline]="isInline" targetTransport="<TCP/UDP>/<port>"
+                      [maxTargets]="maxTargets"
+                      [showSyslogPrefix]="false"
+                      [syslogExport]="newObject.$formGroup.get(['spec']).value">
+          </app-syslog>
         </div>
-      </div>
-
-      <!-- Buffer -->
-      <div fxFlex="10px" fxLayout="column">
-      </div>
-
-      <div fxFlex="noshrink" fxLayout="row">
-        <app-syslog #syslogComponent [isInline]="isInline"
-                    [syslogFieldsetWidth]="true"
-                    [syslogRequiredOption]="!newObject.$formGroup.get(['spec', 'psm-target', 'enable']).value"
-                    [syslogExport]="newObject.$formGroup.get(['spec']).value"
-                    targetTransport="<TCP/UDP>/<port>"
-                    fxFlex="nogrow" fxLayout="column"></app-syslog>
       </div>
     </div>
   </div>
-</ng-template>
-<ng-template #inlineButtons>
-  <app-inlinebuttons class="newfwlogpolicy-buttoncontainer"
-                     *ngIf="isInline"
-                     [saveButtonClass]="computeFormSubmitButtonClass()"
-                     [saveTooltip]="getSubmitButtonToolTip()"
-                     (saveFunc)="saveObject()"
-                     (cancelFunc)="cancelObject()">
-  </app-inlinebuttons>
-</ng-template>
+</div>

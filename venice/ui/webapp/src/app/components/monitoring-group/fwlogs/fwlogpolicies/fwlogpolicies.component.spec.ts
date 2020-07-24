@@ -70,18 +70,4 @@ describe('FwlogpoliciesComponent', () => {
     fixture.detectChanges();
     expect(component).toBeTruthy();
   });
-
-  describe('RBAC', () => {
-    const testHelper = new TestTablevieweditRBAC('monitoringfwlogpolicy');
-
-    beforeEach(() => {
-      const service = TestBed.get(MonitoringService);
-      spyOn(service, 'WatchFwlogPolicy').and.returnValue(
-        TestingUtility.createWatchEventsSubject([new MonitoringFwlogPolicy()])
-      );
-      testHelper.fixture = fixture;
-    });
-
-    testHelper.runTests();
-  });
 });

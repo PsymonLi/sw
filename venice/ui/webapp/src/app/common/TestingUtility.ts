@@ -258,6 +258,28 @@ export class TestingUtility {
     this.sendClick(selectedElem);
   }
 
+  setRadioPsmButton(radioGroupCss, label) {
+    const options = this.getElemsByCss(radioGroupCss + ' .mat-radio-label-content span');
+    const selectedElem = options.find((elem) => {
+      return elem.nativeElement.textContent.includes(label);
+    });
+    expect(selectedElem).toBeTruthy('Could not find the given option: ' + label);
+    this.sendClick(selectedElem);
+  }
+
+  setPsmSelectbox(dropdownCss, label) {
+    const arrowCss = dropdownCss + ' .ui-dropdown-trigger > span';
+    const arrowElem = this.getElemByCss(arrowCss);
+    expect(arrowElem).toBeTruthy('Arrow elem was not found: ' + arrowCss);
+    this.sendClick(arrowElem);
+    const options = this.getElemsByCss(dropdownCss + ' option');
+    const selectedElem = options.find((elem) => {
+      return elem.nativeElement.textContent.includes(label);
+    });
+    expect(selectedElem).toBeTruthy('Could not find the given option: ' + label);
+    this.sendClick(selectedElem);
+  }
+
   setInput(elemCss, text) {
     this.setText(this.getElemByCss(elemCss), text);
   }
@@ -272,14 +294,16 @@ export class TestingUtility {
   }
 
   setSyslogData(data: IMonitoringSyslogExport) {
-    this.setDropdown('.syslog-override', MonitoringSyslogExportConfig_facility_override_uihint[data.config['facility-override']]);
-    this.setInput('.syslog-prefix', data.config.prefix);
+    this.setPsmSelectbox('.syslog-override', MonitoringSyslogExportConfig_facility_override_uihint[data.config['facility-override']]);
+    if (data.config.prefix) {
+      this.setInput('.syslog-prefix input', data.config.prefix);
+    }
     this.setRadioButton('.syslog-format', MonitoringEventPolicySpec_format_uihint[data.format]);
     if (data.targets.length > 1) {
       fail('currently only supports adding one syslog target');
     } else if (data.targets.length === 1) {
-      this.setInput('.syslog-destination', data.targets[0].destination);
-      this.setInput('.syslog-transport', data.targets[0].transport);
+      this.setInput('.syslog-destination input', data.targets[0].destination);
+      this.setInput('.syslog-transport input', data.targets[0].transport);
     }
   }
 

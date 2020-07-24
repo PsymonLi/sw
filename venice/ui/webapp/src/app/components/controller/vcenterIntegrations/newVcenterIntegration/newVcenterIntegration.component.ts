@@ -7,10 +7,10 @@ import { Utility } from '@app/common/Utility';
 import { ValidatorFn, AbstractControl, FormControl, ValidationErrors } from '@angular/forms';
 import { IApiStatus, OrchestrationOrchestrator, IOrchestrationOrchestrator,
   IMonitoringExternalCred, MonitoringExternalCred_auth_type } from '@sdk/v1/models/generated/orchestration';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Observable } from 'rxjs';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { SelectItem } from 'primeng/api';
+import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
 
 @Component({
   selector: 'app-newvcenter-integration',
@@ -19,7 +19,7 @@ import { SelectItem } from 'primeng/api';
   animations: [Animations],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationOrchestrator, OrchestrationOrchestrator> implements OnInit, OnChanges, AfterViewInit, OnDestroy {
+export class NewVcenterIntegrationComponent extends CreationPushForm<IOrchestrationOrchestrator, OrchestrationOrchestrator> implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   @Input() isInline: boolean = false;
   @Input() existingObjects: IOrchestrationOrchestrator[] = [];
@@ -41,9 +41,9 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
   constructor(protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected orchestrationService: OrchestrationService,
-    private cdr: ChangeDetectorRef
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService, OrchestrationOrchestrator);
+    super(_controllerService, uiconfigsService, cdr, OrchestrationOrchestrator);
   }
 
   postNgInit() {
@@ -67,12 +67,6 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
       // the value is null instead of false
       // set it to false for submit
       formGroup.get('disable-server-authentication').setValue(false);
-    }
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes.existingObjects) {
-      this.cdr.markForCheck();
     }
   }
 

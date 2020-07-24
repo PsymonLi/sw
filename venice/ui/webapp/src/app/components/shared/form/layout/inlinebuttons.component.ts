@@ -1,11 +1,9 @@
 import { Component, Input, EventEmitter, Output, ChangeDetectionStrategy } from '@angular/core';
-import { CreationForm } from '../../tableviewedit/tableviewedit.component';
 
 @Component({
   selector: 'app-inlinebuttons',
   templateUrl: './inlinebuttons.component.html',
-  styleUrls: ['./inlinebuttons.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styleUrls: ['./inlinebuttons.component.scss']
 })
 export class InlineButtonsComponent {
   @Input() saveTooltip: string;

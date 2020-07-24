@@ -70,18 +70,4 @@ describe('EventpolicyComponent', () => {
     fixture.detectChanges();
     expect(component).toBeTruthy();
   });
-
-  describe('RBAC', () => {
-    const testHelper = new TestTablevieweditRBAC('monitoringeventpolicy');
-
-    beforeEach(() => {
-      const service = TestBed.get(MonitoringService);
-      spyOn(service, 'WatchEventPolicy').and.returnValue(
-        TestingUtility.createWatchEventsSubject([new MonitoringEventPolicy()])
-      );
-      testHelper.fixture = fixture;
-    });
-
-    testHelper.runTests();
-  });
 });

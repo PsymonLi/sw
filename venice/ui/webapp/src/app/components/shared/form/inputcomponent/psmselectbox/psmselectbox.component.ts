@@ -27,6 +27,7 @@ export class PsmSelectBoxComponent extends FormInputComponent implements OnInit,
   protected defaultSpanClass: string = 'psm-form-select-box-container';
   protected defaultComponentClass: string = 'psm-form-select-box';
 
+  @Input() editable: boolean = false;
   @Input() supportClear: boolean = false;
   @Input() options: SelectItem[];
   @Input() addEmptyOption: boolean = false;
@@ -44,6 +45,14 @@ export class PsmSelectBoxComponent extends FormInputComponent implements OnInit,
 
   ngAfterViewInit() {
     super.ngAfterViewInit();
+  }
+
+  getSpanClasses(): string {
+    let clsList = super.getSpanClasses();
+    if (this.editable) {
+      clsList += ' psm-select-editable';
+    }
+    return clsList;
   }
 
   ngOnChanges(changes: SimpleChanges) {

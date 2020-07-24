@@ -1,6 +1,5 @@
 import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, OnChanges, SimpleChanges } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Animations } from '@app/animations';
 import { NetworkNetwork, INetworkNetwork, NetworkOrchestratorInfo } from '@sdk/v1/models/generated/network';
 import { NetworkService } from '@app/services/generated/network.service';
@@ -9,8 +8,8 @@ import { FormArray, ValidatorFn, FormGroup, FormControl, AbstractControl, Valida
 import { Utility } from '@app/common/Utility';
 import { OrchestrationOrchestrator } from '@sdk/v1/models/generated/orchestration';
 import { SelectItem } from 'primeng/api';
-import { minValueValidator, maxValueValidator, CustomFormControl } from '@sdk/v1/utils/validators';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
+import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
 
 @Component({
   selector: 'app-newnetwork',
@@ -20,7 +19,7 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
   animations: Animations,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNetwork> implements OnInit, OnChanges, AfterViewInit {
+export class NewnetworkComponent extends CreationPushForm<INetworkNetwork, NetworkNetwork> implements OnInit, AfterViewInit {
   @Input() vcenterOptions: SelectItem[] = [];
   @Input() vcenters: ReadonlyArray<OrchestrationOrchestrator> = [];
   @Input() existingObjects: INetworkNetwork[] = [];
@@ -40,9 +39,9 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
   constructor(protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected networkService: NetworkService,
-    private cdr: ChangeDetectorRef
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService, NetworkNetwork);
+    super(_controllerService, uiconfigsService, cdr, NetworkNetwork);
   }
 
   // merge all datacenters of the same vcenter together
@@ -103,12 +102,6 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
     const collectors = this.newObject.$formGroup.get(['spec', 'orchestrators']) as FormArray;
     if (collectors.length === 0) {
       this.addOrchestrator();
-    }
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes.existingObjects) {
-      this.cdr.markForCheck();
     }
   }
 

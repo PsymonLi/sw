@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, Input, ViewEncapsulation, DoCheck, OnInit, IterableDiffer, IterableDiffers } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, ViewEncapsulation, DoCheck, OnInit, IterableDiffer, IterableDiffers, ChangeDetectionStrategy, ViewChild, SimpleChanges, OnChanges } from '@angular/core';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
@@ -12,22 +12,31 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { SyslogUtility } from '@app/common/SyslogUtility';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 @Component({
   selector: 'app-destinations',
   templateUrl: './destinations.component.html',
   styleUrls: ['./destinations.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitoringAlertDestination, MonitoringAlertDestination> implements OnInit, DoCheck   {
-  public static MAX_TARGETS_PER_POLICY = 2;
+export class DestinationpolicyComponent extends DataComponent implements OnInit, OnChanges {
   public static MAX_TOTAL_TARGETS = 8;
+
+  @ViewChild('alertDestinationTable') alertDestinationTable: PentableComponent;
+
   @Input() dataObjects: MonitoringAlertDestination[] = [];
   @Input() eventPolices: MonitoringAlertPolicy[] = [];
 
   isTabComponent = true;
   disableTableWhenRowExpanded = true;
+  tableLoading = false;
+
+  totalTargets: number = 0;
+  maxNewTargets: number = DestinationpolicyComponent.MAX_TOTAL_TARGETS;
 
   headerIcon: Icon = {
     margin: {
@@ -61,35 +70,27 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
       return resArr.toString();
     }
   };
-  maxNewTargets: number = DestinationpolicyComponent.MAX_TARGETS_PER_POLICY;
-  arrayDiffers: IterableDiffer<any>;
-
 
   constructor(protected controllerService: ControllerService,
     protected cdr: ChangeDetectorRef,
     protected uiconfigsService: UIConfigsService,
-    protected monitoringService: MonitoringService,
-    protected _iterableDiffers: IterableDiffers
+    protected monitoringService: MonitoringService
     ) {
-    super(controllerService, cdr, uiconfigsService);
-    this.arrayDiffers = _iterableDiffers.find([]).create(HttpEventUtility.trackBy);
+    super(controllerService, uiconfigsService);
   }
 
-  postNgInit() {
-    this.maxNewTargets = this.computeTargets();
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.alertDestinationTable;
   }
 
-  ngDoCheck() {
-    const changes = this.arrayDiffers.diff(this.dataObjects);
-    if (changes) {
-      this.maxNewTargets = this.computeTargets();
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes.dataObjects) {
+      this.computeTargets();
     }
   }
-  getClassName(): string {
-    return this.constructor.name;
-  }
 
-  setDefaultToolbar() {
+  updateToolbar() {
     const currToolbar = this.controllerService.getToolbarData();
     currToolbar.buttons = [];
     if (this.uiconfigsService.isAuthorized(UIRolePermissions.monitoringalertdestination_create)) {
@@ -98,16 +99,32 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
           cssClass: 'global-button-primary destinations-button',
           text: 'ADD DESTINATION',
           genTooltip: () => this.getTooltip(),
-          computeClass: () => this.shouldEnableButtons && this.maxNewTargets > 0 ? '' : 'global-button-disabled',
-          callback: () => { this.createNewObject(); }
+          computeClass: () =>  !this.penTable.showRowExpand &&
+            this.totalTargets < DestinationpolicyComponent.MAX_TOTAL_TARGETS ?
+            '' : 'global-button-disabled',
+          callback: () => { this.penTable.createNewObject(); }
         },
       ];
     }
     this.controllerService.setToolbarData(currToolbar);
   }
+
   getTooltip(): string {
-    return this.maxNewTargets === 0 ? 'Cannot exceed 8 total targets across destination policies' : '';
+    return this.maxNewTargets === 0 ? 'Cannot exceed 8 targets across policies' : '';
   }
+
+  computeTargets() {
+    let totaltargets: number = 0;
+    for (const policy of this.dataObjects) {
+      if (policy.spec['syslog-export'].targets !== null) {
+        totaltargets += policy.spec['syslog-export'].targets.length;
+      }
+    }
+    this.totalTargets = totaltargets;
+    const remainder = DestinationpolicyComponent.MAX_TOTAL_TARGETS - totaltargets;
+    this.maxNewTargets = remainder < 0 ? 0 : remainder;
+  }
+
   displayColumn(alerteventpolicies, col): any {
     const fields = col.field.split('.');
     const value = Utility.getObjectValueByPropertyPath(alerteventpolicies, fields);
@@ -126,17 +143,8 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
     }
   }
 
-
   deleteRecord(object: MonitoringAlertDestination): Observable<{ body: IMonitoringAlertDestination | IApiStatus | Error, statusCode: number }> {
     return this.monitoringService.DeleteAlertDestination(object.meta.name);
-  }
-
-  generateDeleteConfirmMsg(object: IMonitoringAlertDestination): string {
-    return 'Are you sure you want to delete destination ' + object.meta.name;
-  }
-
-  generateDeleteSuccessMsg(object: IMonitoringAlertDestination): string {
-    return 'Deleted destination ' + object.meta.name;
   }
 
   showUpdateButtons(rowData: MonitoringAlertDestination): boolean {
@@ -150,16 +158,6 @@ export class DestinationpolicyComponent extends TablevieweditAbstract<IMonitorin
       }
     }
      return isOKtoDelete;
-  }
-  computeTargets(): number {
-    let totaltargets: number = 0;
-    for (const policy of this.dataObjects) {
-      if (policy.spec['syslog-export'].targets !== null) {
-        totaltargets += policy.spec['syslog-export'].targets.length;
-      }
-    }
-    const remainder = DestinationpolicyComponent.MAX_TOTAL_TARGETS - totaltargets;
-    return Math.min(remainder, DestinationpolicyComponent.MAX_TARGETS_PER_POLICY);
   }
 
 }

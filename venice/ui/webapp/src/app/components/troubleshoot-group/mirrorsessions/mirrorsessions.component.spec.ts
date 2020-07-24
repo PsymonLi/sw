@@ -20,10 +20,11 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
+import { NetworkService } from '@app/services/generated/network.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
-
 import { NewmirrorsessionComponent } from './newmirrorsession/newmirrorsession.component';
 import { MirrorsessionsComponent } from './mirrorsessions.component';
+import { FlexLayoutModule } from '@angular/flex-layout';
 
 describe('MirrorsessionsComponent', () => {
   let component: MirrorsessionsComponent;
@@ -34,6 +35,7 @@ describe('MirrorsessionsComponent', () => {
       declarations: [ MirrorsessionsComponent, NewmirrorsessionComponent ],
       imports: [
         FormsModule,
+        FlexLayoutModule,
         ReactiveFormsModule,
         NoopAnimationsModule,
         HttpClientTestingModule,
@@ -56,6 +58,7 @@ describe('MirrorsessionsComponent', () => {
         MessageService,
         WorkloadService,
         MonitoringService,
+        NetworkService,
         ClusterService
       ]
     })

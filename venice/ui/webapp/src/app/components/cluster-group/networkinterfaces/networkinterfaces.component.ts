@@ -10,7 +10,6 @@ import { AdvancedSearchComponent } from '@app/components/shared/advanced-search/
 import { LabelEditorMetadataModel } from '@app/components/shared/labeleditor';
 import { CustomExportMap, TableCol } from '@app/components/shared/tableviewedit';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
-import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { BrowserService } from '@app/services/generated/browser.service';
@@ -22,11 +21,11 @@ import { IApiStatus, INetworkNetworkInterface, NetworkNetworkInterface } from '@
 import { FieldsRequirement } from '@sdk/v1/models/generated/search';
 import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
 import { forkJoin, Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 import * as _ from 'lodash';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { throttleTime } from 'rxjs/operators';
 
 /**
  * NetworkinterfacesComponent is linked to DSC object.
@@ -226,7 +225,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   }
 
   watchNetworkInterfaces() {
-    const dscSubscription = this.networkService.ListNetworkInterfaceCache().subscribe(
+    const dscSubscription = this.networkService.ListNetworkInterfaceCache().pipe(throttleTime(5000)).subscribe(
       (response) => {
         if (response.connIsErrorState) {
           return;

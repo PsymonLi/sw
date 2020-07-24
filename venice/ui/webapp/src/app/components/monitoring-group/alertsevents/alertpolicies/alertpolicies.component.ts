@@ -1,36 +1,34 @@
-import { Component, OnInit, ViewEncapsulation, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, AfterViewInit } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { BaseComponent } from '@app/components/base/base.component';
 import { IMonitoringAlertDestination, IMonitoringAlertPolicy, IApiStatus, MonitoringAlertPolicy, MonitoringAlertDestination } from '@sdk/v1/models/generated/monitoring';
-import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Subscription } from 'rxjs';
 import { Utility } from '@app/common/Utility';
 import {Router} from '@angular/router';
+import { EventalertpolicyComponent } from './eventalertpolicies/eventalertpolicies.component';
+import { DestinationpolicyComponent } from './destinations/destinations.component';
 
 @Component({
   selector: 'app-alertpolicies',
   templateUrl: './alertpolicies.component.html',
   styleUrls: ['./alertpolicies.component.scss'],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AlertpoliciesComponent extends BaseComponent implements OnInit, OnDestroy {
+export class AlertpoliciesComponent extends BaseComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('eventPolicy') eventPolicyComponent: EventalertpolicyComponent;
+  @ViewChild('eventDestination') eventDestinationComponent: DestinationpolicyComponent;
+
   eventPolicies: ReadonlyArray<IMonitoringAlertPolicy> = [];
-  metricPolicies: ReadonlyArray<IMonitoringAlertPolicy> = [];
-  objectPolicies: ReadonlyArray<IMonitoringAlertPolicy> = [];
   destinations: ReadonlyArray<IMonitoringAlertDestination> = [];
-
-  eventPoliciesEventUtility: HttpEventUtility<MonitoringAlertPolicy>;
-  metricPoliciesEventUtility: HttpEventUtility<any>;
-  objectPoliciesEventUtility: HttpEventUtility<any>;
-  destinationsEventUtility: HttpEventUtility<MonitoringAlertDestination>;
-
   subscriptions: Subscription[] = [];
   selectedIndex = 0;
 
   constructor(protected _controllerService: ControllerService,
     protected _monitoringService: MonitoringService,
+    protected cdr: ChangeDetectorRef,
     protected router: Router
   ) {
     super(_controllerService);
@@ -44,7 +42,10 @@ export class AlertpoliciesComponent extends BaseComponent implements OnInit, OnD
     });
     this.getAlertPolicies();
     this.getDestinations();
-    this.updateBreadCrumb(0);
+  }
+
+  ngAfterViewInit() {
+    this.updateBreadCrumb(this.selectedIndex);
   }
 
   updateBreadCrumb(tabindex: number) {
@@ -56,6 +57,15 @@ export class AlertpoliciesComponent extends BaseComponent implements OnInit, OnD
         { label: this.getSecondCrumbLabel(tabindex), url: Utility.getBaseUIUrl() + this.getSecondCrumbUrl(tabindex) }
       ]
     });
+    if (tabindex === 0) {
+      if (this.eventPolicyComponent) {
+        this.eventPolicyComponent.updateToolbar();
+      }
+    } else {
+      if (this.eventDestinationComponent) {
+        this.eventDestinationComponent.updateToolbar();
+      }
+    }
   }
 
   getSecondCrumbLabel(tabindex: number) {
@@ -92,7 +102,6 @@ export class AlertpoliciesComponent extends BaseComponent implements OnInit, OnD
     }
   }
 
-
   /**
   * Overide super's API
   * It will return this Component name
@@ -102,46 +111,33 @@ export class AlertpoliciesComponent extends BaseComponent implements OnInit, OnD
   }
 
   getAlertPolicies() {
-    this.eventPoliciesEventUtility = new HttpEventUtility<MonitoringAlertPolicy>(MonitoringAlertPolicy, false,
-      (policy) => {
-        return policy.spec.resource === 'Event';
-      }
-    );
-    this.metricPoliciesEventUtility = new HttpEventUtility<any>(null, false,
-      (policy) => {
-        return policy.spec.resource === 'EndpointMetrics';
-      }
-    );
-    this.objectPoliciesEventUtility = new HttpEventUtility<any>(null, false,
-      (policy) => {
-        return policy.spec.resource !== 'EndpointMetrics' &&
-          policy.spec.resource !== 'Event';
-      }
-    );
-    this.eventPolicies = this.eventPoliciesEventUtility.array;
-    this.metricPolicies = this.metricPoliciesEventUtility.array;
-    this.objectPolicies = this.objectPoliciesEventUtility.array;
-    const subscription = this._monitoringService.WatchAlertPolicy().subscribe(
-      (response) => {
-        this.eventPoliciesEventUtility.processEvents(response);
-        this.metricPoliciesEventUtility.processEvents(response);
-        this.objectPoliciesEventUtility.processEvents(response);
+    const sub = this._monitoringService.ListAlertPolicyCache().subscribe(
+      response => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        const policies = response.data as MonitoringAlertPolicy[] || [];
+        this.eventPolicies = policies.filter((policy: MonitoringAlertPolicy) =>
+          policy && policy.spec.resource === 'Event');
+        this.cdr.detectChanges();
       },
-      this._controllerService.webSocketErrorHandler('Failed to get Alert Policies')
+      this._controllerService.webSocketErrorHandler('Failed to get Alert policies')
     );
-    this.subscriptions.push(subscription);
+    this.subscriptions.push(sub);
   }
 
   getDestinations() {
-    this.destinationsEventUtility = new HttpEventUtility<MonitoringAlertDestination>(MonitoringAlertDestination);
-    this.destinations = this.destinationsEventUtility.array;
-    const subscription = this._monitoringService.WatchAlertDestination().subscribe(
-      (response) => {
-        this.destinationsEventUtility.processEvents(response);
+    const sub = this._monitoringService.ListAlertDestinationCache().subscribe(
+      response => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.destinations = response.data as MonitoringAlertDestination[];
+        this.cdr.detectChanges();
       },
-      this._controllerService.webSocketErrorHandler('Failed to get Alert Destinations')
+      this._controllerService.webSocketErrorHandler('Failed to get Alert destinations')
     );
-    this.subscriptions.push(subscription);
+    this.subscriptions.push(sub);
   }
 
   ngOnDestroy() {
@@ -153,6 +149,5 @@ export class AlertpoliciesComponent extends BaseComponent implements OnInit, OnD
         Eventtypes.COMPONENT_DESTROY
     });
   }
-
 
 }

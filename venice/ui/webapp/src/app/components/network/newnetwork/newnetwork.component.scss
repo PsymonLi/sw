@@ -1,11 +1,4 @@
-@import "src/global-mixins";
-
 .new-network-orchestrators-container {
   width: cal(100% -10px);
   margin-left: 10px;
-
-  app-psmselectbox {
-    position: relative;
-    left: -10px;
-  }
 }

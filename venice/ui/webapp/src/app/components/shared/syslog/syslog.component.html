@@ -1,7 +1,7 @@
-<div fxFlex="auto" fxLayout="row" [formGroup]="syslogServerForm">
+<div fxFlex="auto" fxLayout="row" [formGroup]="syslogServerForm" class="syslog-syslog">
   <div fxFlex="nogrow" fxLayout="column">
-    <div fxFlex="auto" class="syslog-syslog" fxLayout="column" formArrayName="targets"
-         [ngStyle]="syslogFieldsetWidth?{'width': '530px'} : {'width': ''}">
+    <div fxFlex="auto" fxLayout="column" formArrayName="targets"
+         [ngStyle]="syslogFieldsetWidth ? {'width': syslogFieldsetWidth} : {'width': ''}">
       <!-- Buffer, creating as a div so there are no hiccups in the animation-->
       <app-fieldcontainer *ngIf="!showSyslogOptions" fieldTitle="EXPORT CONFIGURATION">
         <ng-container *ngTemplateOutlet="syslogOptions"></ng-container>
@@ -24,87 +24,35 @@
   <ng-template #syslogOptions>
     <div fxFlex="nogrow" fxLayout="row wrap" class="syslog-export-parent"
          [formGroup]="syslogServerForm">
-      <ng-container *ngIf="showSyslogOptions" formGroupName="config">
-        <div fxFlex="nogrow" fxLayout="column">
-          <div fxFlex="30px" fxLayout="row" class="syslog-value">
-            <p-dropdown fxFlex="nogrow" appFloatLabel="Facility Override" class="syslog-override"
-                        appErrorTooltip
-                        formControlName="facility-override" styleClass="syslog-font"
-                        [options]="syslogOverrideOptions"></p-dropdown>
-          </div>
-        </div>
-
-        <div fxFlex="nogrow" fxLayout="column" class="syslog-fieldtitle-prefix-value">
-          <div fxFlex="30px" fxLayout="row" class="syslog-value">
-            <input autocomplete="off" appErrorTooltip formControlName="prefix"
-                   appFloatLabel="Prefix" fxFlex="nogrow"
-                   class="syslog-input syslog-prefix"
-                   spellcheck="false" type="text" pInputText>
-          </div>
-        </div>
-      </ng-container>
-      <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start center">
-        <div class="syslog-fieldtitle syslog-format-container" fxFlex="nogrow" fxLayout="column"
-             fxLayoutAlign="start start">
-          <span class="syslog-format-title">Format</span>
-        </div>
-        <mat-radio-group fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start center"
-                         fxLayoutGap="10px" class="syslog-format" appErrorTooltip
-                         formControlName="format">
-          <mat-radio-button fxFlex="nogrow" color="primary" [disableRipple]="true" class=""
-                            *ngFor="let option of formatOptions"
-                            [value]="option.value">
-            {{option.label}}
-          </mat-radio-button>
-        </mat-radio-group>
-      </div>
+      <span *ngIf="showSyslogOptions" fxFlex="none" fxLayout="row" formGroupName="config">
+        <app-psmselectbox fxFlex="170px" label="Facility Override" class="syslog-override"
+                          [options]="syslogOverrideOptions" formControlName="facility-override">
+        </app-psmselectbox>
+        <div fxFlex="15px"></div>
+        <app-psmtextbox *ngIf="showSyslogPrefix" fxFlex="170px" label="Prefix"
+                        class="syslog-prefix" formControlName="prefix"></app-psmtextbox>
+        <div fxFlex="15px"></div>
+      </span>
+      <app-psmradiobuttons fxFlex="170px" formControlName="format" class="syslog-format"
+                           [options]="formatOptions" label="Format">
+      </app-psmradiobuttons>
     </div>
   </ng-template>
 
   <ng-template #syslogTargetsRow let-target="item" let-index="index">
-    <div fxFlex="10vh" fxFlex="nogrow" [formGroup]="target">
-      <div fxFlex="150px" fxLayout="row" class="syslog-value">
-        <span class="syslog-target-span" *ngIf="syslogRequiredOption" [ngClass]="{
-                        'requiredField': isFieldEmptySysLog(syslogServerForm.get(['targets', index]).value['destination'])
-                      }">
-          <input autocomplete="off" formControlName="destination" appErrorTooltip fxFlex="nogrow"
-                 class="syslog-input syslog-destination"
-                 spellcheck="false" type="text" pInputText appFloatLabel="Destination">
-        </span>
-        <span class="syslog-target-span" *ngIf="!syslogRequiredOption" [ngClass]="{
-          'requiredField': isFieldDestinationRequired(syslogServerForm.get(['targets', index]))
-        }">
-          <input autocomplete="off" formControlName="destination" appErrorTooltip fxFlex="nogrow"
-                 class="syslog-input syslog-destination"
-                 spellcheck="false" type="text" pInputText appFloatLabel="Destination">
-        </span>
-      </div>
+    <div fxFlex="none" fxLayout="row" [formGroup]="target">
+      <app-psmtextbox fxFlex="170px" label="destination" class="syslog-destination"
+                      formControlName="destination"
+                      [showRequired]="isFieldDestinationRequired(target)">
+      </app-psmtextbox>
       <div fxFlex="15px"></div>
-      <div fxFlex="150px" fxLayout="row" class="syslog-value">
-        <span>
-          <input autocomplete="off" formControlName="gateway" appErrorTooltip fxFlex="nogrow"
-                 class="syslog-input syslog-gateway"
-                 spellcheck="false" type="text" pInputText [appFloatLabel]="gatewayLabel">
-        </span>
-      </div>
+      <app-psmtextbox fxFlex="170px" [label]="gatewayLabel" formControlName="gateway">
+      </app-psmtextbox>
       <div fxFlex="15px"></div>
-      <div fxFlex="150px" fxLayout="row" class="syslog-value">
-        <span class="syslog-target-span" *ngIf="syslogRequiredOption" [ngClass]="{
-                    'requiredField': isFieldEmptySysLog(syslogServerForm.get(['targets', index]).value['transport'])
-                  }">
-          <input autocomplete="off" formControlName="transport" appErrorTooltip fxFlex="nogrow"
-                 class="syslog-input syslog-transport"
-                 spellcheck="false" type="text" pInputText appFloatLabel="Transport">
-        </span>
-        <span class="syslog-target-span" *ngIf="!syslogRequiredOption" [ngClass]="{
-          'requiredField': isFieldTransportRequired(syslogServerForm.get(['targets', index]))
-        }">
-          <input autocomplete="off" formControlName="transport" appErrorTooltip fxFlex="nogrow"
-                 class="syslog-input syslog-transport"
-                 spellcheck="false" type="text" pInputText appFloatLabel="Transport">
-        </span>
-      </div>
-      <div fxFlex="5px"></div>
+      <app-psmtextbox fxFlex="170px" label="Transport" class="syslog-transport"
+                      formControlName="transport" [showRequired]="isFieldTransportRequired(target)">
+      </app-psmtextbox>
+      <div fxFlex="10px"></div>
     </div>
   </ng-template>
 

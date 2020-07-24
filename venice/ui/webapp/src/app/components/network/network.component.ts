@@ -177,7 +177,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
         cssClass: 'global-button-primary networks-button networks-button-ADD',
         text: 'ADD NETWORK',
         computeClass: () =>  !(this.networkTable.showRowExpand) ? '' : 'global-button-disabled',
-        callback: () => { this.networkTable.createNewObject(); this.cdr.detectChanges(); }
+        callback: () => { this.networkTable.createNewObject(); }
       }];
     }
     this.controllerService.setToolbarData({
@@ -225,16 +225,14 @@ export class NetworkComponent extends DataComponent implements OnInit {
   }
 
   ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.networkTable;
     this.tableLoading = true;
     this.setDefaultToolbar();
     this.buildAdvSearchCols();
     this.getNetworks();
     this.getVcenterIntegrations();
     this.watchWorkloads();
-  }
-
-  creationFormClose() {
-    this.networkTable.creationFormClose();
   }
 
   editFormClose(rowData) {
@@ -244,29 +242,6 @@ export class NetworkComponent extends DataComponent implements OnInit {
         this.dataObjects = this.dataObjectsBackup;
       }
     }
-  }
-
-  expandRowRequest(event, rowData) {
-    if (!this.networkTable.showRowExpand) {
-      this.networkTable.toggleRow(rowData, event);
-    }
-  }
-
-  onColumnSelectChange(event) {
-    this.networkTable.onColumnSelectChange(event);
-  }
-
-  onDeleteRecord(event, object) {
-    this.networkTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this),
-      () => {
-        this.networkTable.selectedDataObjects = [];
-      }
-    );
   }
 
   buildNetworkWorkloadsMap() {
@@ -292,24 +267,6 @@ export class NetworkComponent extends DataComponent implements OnInit {
   deleteRecord(object: NetworkNetwork): Observable<{ body: INetworkNetwork | IApiStatus | Error; statusCode: number }> {
     return this.networkService.DeleteNetwork(object.meta.name);
   }
-
-  generateDeleteConfirmMsg(object: INetworkNetwork): string {
-    return 'Are you sure you want to delete network ' + object.meta.name;
-  }
-
-  generateDeleteSuccessMsg(object: INetworkNetwork): string {
-    return 'Deleted network ' + object.meta.name;
-  }
-
-  getSelectedDataObjects(): any[] {
-    return this.networkTable.selectedDataObjects;
-  }
-
-  clearSelectedDataObjects() {
-    this.networkTable.selectedDataObjects = [];
-  }
-
-  // api overrides for pentable and adv search
 
   // advance search columns
   buildAdvSearchCols() {
@@ -466,7 +423,6 @@ export class NetworkComponent extends DataComponent implements OnInit {
   }
 
   onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
-      this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackup);
+    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackup);
   }
-
 }

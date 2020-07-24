@@ -111,19 +111,9 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
     super(controllerService, uiconfigsService);
   }
 
-  clearSelectedDataObjects() {
-    this.vCenterIntegrationTable.selectedDataObjects = [];
-  }
-
-  getSelectedDataObjects() {
-    return this.vCenterIntegrationTable.selectedDataObjects;
-  }
-
   ngOnInit() {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
-    });
-    this.setDefaultToolbar();
+    super.ngOnInit();
+    this.penTable = this.vCenterIntegrationTable;
     this.tableLoading = true;
     this.getVcenterIntegrations();
     this.watchWorkloads();
@@ -175,7 +165,7 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
         cssClass: 'global-button-primary vcenter-integrations-button vcenter-integrations-button-ADD',
         text: 'ADD VCENTER',
         computeClass: () => !this.vCenterIntegrationTable.showRowExpand ? '' : 'global-button-disabled',
-        callback: () => { this.vCenterIntegrationTable.createNewObject(); this.cdr.detectChanges(); }
+        callback: () => { this.vCenterIntegrationTable.createNewObject(); }
       }];
     }
     this.controllerService.setToolbarData({
@@ -265,18 +255,6 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
     return this.orchestrationService.DeleteOrchestrator(object.meta.name);
   }
 
-  generateDeleteConfirmMsg(object: IOrchestrationOrchestrator): string {
-    return 'Are you sure you want to delete vCenter ' + object.meta.name;
-  }
-
-  generateDeleteSuccessMsg(object: IOrchestrationOrchestrator): string {
-    return 'Deleted vCenter ' + object.meta.name;
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
   buildAdvSearchCols() {
     this.advSearchCols = this.cols.filter((col: TableCol) => {
       return (col.field !== 'meta.creation-time'  && col.field !== 'status.last-transition-time'  && col.field !== 'associatedWorkloads' );
@@ -309,14 +287,6 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
     return outputs;
   }
 
-  onColumnSelectChange(event) {
-    this.vCenterIntegrationTable.onColumnSelectChange(event);
-  }
-
-  creationFormClose() {
-    this.vCenterIntegrationTable.creationFormClose();
-  }
-
   editFormClose(rowData) {
     if (this.vCenterIntegrationTable.showRowExpand) {
       this.vCenterIntegrationTable.toggleRow(rowData);
@@ -325,24 +295,4 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
       }
     }
   }
-
-  expandRowRequest(event, rowData) {
-    if (!this.vCenterIntegrationTable.showRowExpand) {
-      this.vCenterIntegrationTable.toggleRow(rowData, event);
-    }
-  }
-
-  onDeleteRecord(event, object) {
-    this.vCenterIntegrationTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this),
-      () => {
-        this.vCenterIntegrationTable.selectedDataObjects = [];
-      }
-    );
-  }
-
 }

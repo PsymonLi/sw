@@ -1,8 +1,7 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, DoCheck, IterableDiffer, IterableDiffers } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, DoCheck, IterableDiffer, IterableDiffers, ChangeDetectionStrategy, ViewChild } from '@angular/core';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Utility } from '@app/common/Utility';
-import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
@@ -13,17 +12,22 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { SyslogUtility } from '@app/common/SyslogUtility';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 @Component({
   selector: 'app-eventpolicy',
   templateUrl: './eventpolicy.component.html',
   styleUrls: ['./eventpolicy.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventpolicyComponent extends TablevieweditAbstract<IMonitoringEventPolicy, MonitoringEventPolicy> implements OnInit, DoCheck {
-  public static MAX_TARGETS_PER_POLICY = 2;
+export class EventpolicyComponent extends DataComponent implements OnInit {
   public static MAX_TOTAL_TARGETS = 8;
+
+  @ViewChild('eventPolicyTable') eventPolicyTable: PentableComponent;
+
   dataObjects: ReadonlyArray<MonitoringEventPolicy> = [];
 
   bodyIcon: Icon = {
@@ -42,8 +46,11 @@ export class EventpolicyComponent extends TablevieweditAbstract<IMonitoringEvent
     matIcon: 'grid_on'
   };
 
-  // Used for processing watch events
-  policyEventUtility: HttpEventUtility<MonitoringEventPolicy>;
+  // Used for the table - when true there is a loading icon displayed
+  tableLoading: boolean = false;
+
+  totalTargets: number = 0;
+  maxNewTargets: number = EventpolicyComponent.MAX_TOTAL_TARGETS;
 
   cols: TableCol[] = [
     { field: 'meta.name', header: 'Name', class: 'eventpolicy-column-name', sortable: true, width: 25 },
@@ -73,32 +80,35 @@ export class EventpolicyComponent extends TablevieweditAbstract<IMonitoringEvent
   isTabComponent = false;
   disableTableWhenRowExpanded = true;
 
-  maxNewTargets: number = EventpolicyComponent.MAX_TARGETS_PER_POLICY;
-  arrayDiffers: IterableDiffer<any>;
 
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected cdr: ChangeDetectorRef,
     protected monitoringService: MonitoringService,
     protected _iterableDiffers: IterableDiffers) {
-    super(controllerService, cdr, uiconfigsService);
-    this.arrayDiffers = _iterableDiffers.find([]).create(HttpEventUtility.trackBy);
+    super(controllerService, uiconfigsService);
   }
 
-  postNgInit() {
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.eventPolicyTable;
+    this.tableLoading = true;
     this.getEventPolicy();
-    this.maxNewTargets = this.computeTargets();
   }
 
-  ngDoCheck() {
-    const changes = this.arrayDiffers.diff(this.dataObjects);
-    if (changes) {
-      this.maxNewTargets = this.computeTargets();
-    }
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
+  getEventPolicy() {
+    const dscSubscription = this.monitoringService.ListEventPolicyCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.tableLoading = false;
+        this.dataObjects = response.data as MonitoringEventPolicy[];
+        this.computeTargets();
+        this.cdr.detectChanges();
+      }
+    );
+    this.subscriptions.push(dscSubscription);
   }
 
   setDefaultToolbar() {
@@ -108,30 +118,35 @@ export class EventpolicyComponent extends TablevieweditAbstract<IMonitoringEvent
         cssClass: 'global-button-primary eventpolicy-button',
         text: 'ADD EVENT POLICY',
         genTooltip: () => this.getTooltip(),
-        computeClass: () => this.shouldEnableButtons && this.maxNewTargets > 0 ? '' : 'global-button-disabled',
-        callback: () => { this.createNewObject(); }
+        computeClass: () => !this.penTable.showRowExpand &&
+          this.totalTargets < EventpolicyComponent.MAX_TOTAL_TARGETS ?
+          '' : 'global-button-disabled',
+        callback: () => { this.penTable.createNewObject(); }
       }];
     }
     this.controllerService.setToolbarData({
       buttons: buttons,
-      breadcrumb: [{ label: 'Alerts & Events', url: Utility.getBaseUIUrl() + 'monitoring/alertsevents' },
-      { label: 'Event Policy', url: Utility.getBaseUIUrl() + 'monitoring/alertsevents/eventpolicy' }
+      breadcrumb: [
+        { label: 'Alerts & Events', url: Utility.getBaseUIUrl() + 'monitoring/alertsevents' },
+        { label: 'Event Policy', url: Utility.getBaseUIUrl() + 'monitoring/alertsevents/eventpolicy' }
       ]
     });
   }
+
   getTooltip(): string {
-    return this.maxNewTargets === 0 ? 'Cannot exceed 8 total targets across event policies' : '';
+    return this.maxNewTargets === 0 ? 'Cannot exceed 8 targets across policies' : '';
   }
-  getEventPolicy() {
-    this.policyEventUtility = new HttpEventUtility<MonitoringEventPolicy>(MonitoringEventPolicy);
-    this.dataObjects = this.policyEventUtility.array;
-    const sub = this.monitoringService.WatchEventPolicy().subscribe(
-      (response) => {
-        this.policyEventUtility.processEvents(response);
-      },
-      this.controllerService.webSocketErrorHandler('Failed to get Event Policies')
-    );
-    this.subscriptions.push(sub);
+
+  computeTargets() {
+    let totaltargets: number = 0;
+    for (const policy of this.dataObjects) {
+      if (policy.spec.targets !== null) {
+        totaltargets += policy.spec.targets.length;
+      }
+    }
+    this.totalTargets = totaltargets;
+    const remainder = EventpolicyComponent.MAX_TOTAL_TARGETS - totaltargets;
+    this.maxNewTargets = remainder < 0 ? 0 : remainder;
   }
 
   displayColumn(exportData, col): any {
@@ -182,24 +197,6 @@ export class EventpolicyComponent extends TablevieweditAbstract<IMonitoringEvent
 
   deleteRecord(object: MonitoringEventPolicy): Observable<{ body: IMonitoringEventPolicy | IApiStatus | Error, statusCode: number }> {
     return this.monitoringService.DeleteEventPolicy(object.meta.name);
-  }
-
-  generateDeleteConfirmMsg(object: IMonitoringEventPolicy) {
-    return 'Are you sure you want to delete policy ' + object.meta.name;
-  }
-
-  generateDeleteSuccessMsg(object: IMonitoringEventPolicy) {
-    return 'Deleted policy ' + object.meta.name;
-  }
-  computeTargets(): number {
-    let totaltargets: number = 0;
-    for (const policy of this.dataObjects) {
-      if (policy.spec.targets !== null) {
-        totaltargets += policy.spec.targets.length;
-      }
-    }
-    const remainder = EventpolicyComponent.MAX_TOTAL_TARGETS - totaltargets;
-    return Math.min(remainder, EventpolicyComponent.MAX_TARGETS_PER_POLICY);
   }
 
 }

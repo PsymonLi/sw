@@ -1,86 +1,50 @@
 <div fxFlex="auto" fxLayout="column" class="psm-form new-flow-export-container">
-  <app-inlinebuttons class="new-workload" *ngIf="isInline"
-                     [saveButtonClass]="computeFormSubmitButtonClass()"
-                     [saveTooltip]="getSubmitButtonToolTip()"
-                     (saveFunc)="saveObject()" (cancelFunc)="cancelObject()">
+  <app-inlinebuttons class="new-workload" *ngIf="isInline" [form]="this">
   </app-inlinebuttons>
-  <div fxFlex="auto" fxLayout="row wrap"
-       [class]="isInline? 'new-flow-export-editform-inline' : ''">
-    <div fxFlex="noshrink" fxLayout="column" fxLayoutAlign="start center"
-         class="new-flow-export-row">
-      <ng-container *ngTemplateOutlet="metaSpec"></ng-container>
-      <ng-container>
-        <div class="newflow-export-policy-packet">
-          <app-syslog #syslogComponent [isInline]="isInline"
-                      [syslogExport]="syslogConfig"
-                      [formatOptions]="formatOptions"
-                      targetTransport="UDP/<port>"
-                      gatewayLabel="DSC-Gateway"
-                      [showSyslogOptions]="false"
-                      [syslogRequiredOption]="true"
-                      [syslogFieldsetWidth]="true"
-                      [maxTargets]="maxTargets" fxFlex="nogrow"
-                      fxLayout="column">
-          </app-syslog>
-        </div>
-      </ng-container>
-    </div>
-    <div fxFlex="noshrink" fxLayout="column" fxLayoutAlign="start center"
-         class="new-flow-export-row">
-      <ng-container *ngTemplateOutlet="match_rules"></ng-container>
+  <div [class]="isInline? 'new-flow-export-editform-inline' : ''">
+    <div fxFlex="auto" fxLayout="row wrap" class="psm-form-content">
+      <div fxFlex="noshrink" fxLayout="column" fxLayoutAlign="start center">
+        <ng-container *ngTemplateOutlet="metaSpec"></ng-container>
+        <div fxFlex="10px"></div>
+        <app-syslog #syslogComponent fxFlex="nogrow"
+                    [isInline]="isInline"
+                    [syslogExport]="syslogConfig"
+                    [formatOptions]="formatOptions"
+                    gatewayLabel="DSC-Gateway"
+                    [showSyslogOptions]="false"
+                    syslogFieldsetWidth="590px"
+                    [maxTargets]="maxTargets"
+                    fxLayout="column">
+        </app-syslog>
+        <div fxFlex="10px"></div>
+      </div>
+      <div fxFlex="noshrink" fxLayout="column" fxLayoutAlign="start center">
+        <ng-container *ngTemplateOutlet="match_rules"></ng-container>
+      </div>
     </div>
   </div>
 </div>
 
 <ng-template #metaSpec>
-  <div class="meta-spec-form-group">
-    <div fxFlex="191px" class="new-flow-export-policy-form"
-         [formGroup]="newObject.$formGroup.get(['meta'])">
-      <div class="new-flow-export-policy-input-group">
-        <span [ngClass]="{
-              'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
-            }">
-          <input
-                 formControlName="name"
-                 class="new-flow-export-policy-input"
-                 spellcheck="false" type="text"
-                 appFloatLabel="Unique Policy Name"
-                 pInputText
-                 appErrorTooltip>
-        </span>
-      </div>
-    </div>
-    <div class="new-flow-export-policy-form" [formGroup]="newObject.$formGroup.get(['spec'])">
-      <div class="new-flow-export-policy-input-group">
-        <span>
-          <input
-                 formControlName="interval"
-                 class="new-flow-export-policy-input"
-                 spellcheck="false" type="text"
-                 appFloatLabel="Interval"
-                 pInputText
-                 appErrorTooltip>
-        </span>
-      </div>
-
-      <div class="new-flow-export-policy-input-group">
-        <span>
-          <input
-                 formControlName="template-interval"
-                 class="new-flow-export-policy-input"
-                 spellcheck="false" type="text"
-                 appFloatLabel="Template Refresh Rate"
-                 appErrorTooltip
-                 pInputText>
-        </span>
-      </div>
-    </div>
+  <div fxFlex="none" fxLayout="row">
+    <app-psmtextbox fxFlex="190px" label="Name"
+                    [formControl]="newObject.$formGroup.get(['meta', 'name'])">
+    </app-psmtextbox>
+    <div fxFlex="15px"></div>
+    <app-psmtextbox fxFlex="190px" label="Interval"
+                    [formControl]="newObject.$formGroup.get(['spec', 'interval'])">
+    </app-psmtextbox>
+    <div fxFlex="15px"></div>
+    <app-psmtextbox fxFlex="190px" label="Template Refresh Rate"
+                    [formControl]="newObject.$formGroup.get(['spec', 'template-interval'])">
+    </app-psmtextbox>
   </div>
 </ng-template>
 
 <ng-template #match_rules>
   <div fxFlex="none" fxLayout="column">
     <div fxFlex="none" fxLayout="row">
+      <div fxFlex="10px"></div>
       <div fxFlex="none">Export Packet Rule:</div>
     </div>
     <div fxFlex="10px"></div>
@@ -94,22 +58,19 @@
 </ng-template>
 
 <ng-template #ruleTemplateEdit let-data="data" let-index="index" let-inEdit="inEdit">
-  <!-- data is MonitoringMatchRule -->
-
-  <div fxFlex="auto" fxLayout="column" fxLayoutGap="10px"
-       fxLayoutAlign="center none" class="new-export-policy-rule-template">
-    <div fxFlex="none" fxLayout="row" fxLayoutGap="40px" class="flow-export-policy-rule-row">
-      <app-psmchipsbox fxFlex="250px" [label]="'Source ' + IPS_LABEL"
+  <div fxFlex="auto" fxLayout="column" fxLayoutGap="15px">
+    <div fxFlex="none" fxLayout="row" fxLayoutGap="10px">
+      <app-psmchipsbox fxFlex="270px" [label]="'Source ' + IPS_LABEL"
                        [formControl]="data.rule.$formGroup.get(['source', 'ip-addresses'])"
                        [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
       </app-psmchipsbox>
-      <app-psmchipsbox fxFlex="250px" [label]="'Destination ' + IPS_LABEL"
+      <app-psmchipsbox fxFlex="270px" [label]="'Destination ' + IPS_LABEL"
                        [formControl]="data.rule.$formGroup.get(['destination', 'ip-addresses'])"
                        [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
       </app-psmchipsbox>
     </div>
-    <div fxFlex="none" class="flow-export-policy-rule-row">
-      <app-psmchipsbox fxFlex="250px" label="Protocol / Ports"
+    <div fxFlex="none" fxLayout="row">
+      <app-psmchipsbox fxFlex="270px" label="Protocol / Ports"
                        [formControl]="data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports'])"
                        [itemValidator]="isValidProto" [itemErrorMsg]="PROTS_ERRORMSG"
                        [toolTip]="PROTS_TOOLTIP">
@@ -119,74 +80,35 @@
 </ng-template>
 
 <ng-template #ruleTemplateView let-data="data" let-index="index" let-inEdit="inEdit">
-  <div fxFlex="auto" fxLayout="row"
-       fxLayoutAlign="start none" class="new-export-policy-rule-template">
+  <div fxFlex="auto" fxLayout="column" fxLayoutAlign="start none">
     <div fxFlex="auto" fxLayout="row" fxLayoutAlign="start start">
-      <div fxFlex="10px"></div>
-      <div fxFlex="90%" fxLayout="row wrap" fxLayoutAlign="space-between start">
-        <div fxFlex="33" fxLayout="column" fxLayouAlign="start start">
-          <div fxFlex="none" class="new-export-policy-bold">Source</div>
-          <div *ngIf="data.rule.$formGroup.get(['source', 'ip-addresses']).value.length !== 0"
-               fxFlex="none" fxLayout="row">
-            <div fxFlex="none" class="new-export-policy-bold-subtext-ipmac">IP:</div>
-            <div fxFlex="none" fxLayout="column">
-              <span *ngFor="let ip of getDataArray(data, 'source', 'ip-addresses')"
-                    class="new-export-policy-rule-content">
-                {{ip}}
-              </span>
-            </div>
-          </div>
-          <div *ngIf="data.rule.$formGroup.get(['source', 'mac-addresses']).value.length !== 0"
-               fxFlex="none" fxLayout="row">
-            <div fxFlex="none" class="new-export-policy-bold-subtext-ipmac">MAC:</div>
-            <div fxFlex="none" fxLayout="column">
-              <span *ngFor="let mac of getDataArray(data, 'source', 'mac-addresses')"
-                    class="new-export-policy-rule-content">
-                {{mac}}
-              </span>
-            </div>
-          </div>
-        </div>
+      <div fxFlex="20px"></div>
+      <div fxFlex="100%" fxLayout="row">
+        <ng-container *ngTemplateOutlet="ruleColumnTemplate; context:{title: 'Source', subtitleWidth: '40px',
+            subtitle: 'IP', list: data.rule.$formGroup.get(['source', 'ip-addresses']).value}">
+        </ng-container>
+        <ng-container
+                      *ngTemplateOutlet="ruleColumnTemplate; context:{title: 'Destination', subtitleWidth: '40px',
+            subtitle: 'IP', list: data.rule.$formGroup.get(['destination', 'ip-addresses']).value}">
+        </ng-container>
+        <ng-container
+                      *ngTemplateOutlet="ruleColumnTemplate; context:{title: 'PROTO-PORTS/APPS', subtitleWidth: '80px',
+            subtitle: 'Proto-ports', list: data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports']).value}">
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</ng-template>
 
-        <div fxFlex="33" fxLayout="column" fxLayouAlign="start start">
-          <div fxFlex="none" class="new-export-policy-bold">Destination</div>
-          <div *ngIf="data.rule.$formGroup.get(['destination', 'ip-addresses']).value.length !== 0"
-               fxFlex="none" fxLayout="row">
-            <div fxFlex="none" class="new-export-policy-bold-subtext-ipmac">IP:</div>
-            <div fxFlex="none" fxLayout="column">
-              <span *ngFor="let ip of getDataArray(data, 'destination', 'ip-addresses')"
-                    class="new-export-policy-rule-content">
-                {{ip}}
-              </span>
-            </div>
-          </div>
-          <div *ngIf="data.rule.$formGroup.get(['destination', 'mac-addresses']).value.length !== 0"
-               fxFlex="none" fxLayout="row">
-            <div fxFlex="none" class="new-export-policy-bold-subtext-ipmac">MAC:</div>
-            <div fxFlex="none" fxLayout="column">
-              <span *ngFor="let mac of getDataArray(data, 'destination', 'mac-addresses')"
-                    class="new-export-policy-rule-content">
-                {{mac}}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div fxFlex="34" fxLayout="column" fxLayouAlign="start start">
-          <div fxFlex="none" class="new-export-policy-bold">PROTO-PORTS</div>
-          <div *ngIf="data.rule.$formGroup.get(['app-protocol-selectors', 'proto-ports']).value.length !== 0"
-               fxFlex="none" fxLayout="row">
-            <div fxFlex="none" class="new-export-policy-bold-subtext-proto">Proto-ports:</div>
-            <div fxFlex="none" fxLayout="column">
-              <span *ngFor="let proto of getDataArray(data, 'app-protocol-selectors', 'proto-ports')"
-                    class="new-export-policy-rule-content">
-                {{proto}}
-              </span>
-            </div>
-          </div>
-        </div>
-
-
+<ng-template #ruleColumnTemplate let-title="title" let-subtitle="subtitle"
+             let-subtitleWidth="subtitleWidth" let-list="list">
+  <div fxFlex="1 1 100%" fxLayout="column" fxLayouAlign="start start">
+    <div fxFlex="none" class="export-policy-bold">{{title}}</div>
+    <div fxFlex="5px"></div>
+    <div *ngIf="list && list.length > 0" fxFlex="none" fxLayout="row">
+      <div fxFlex="{{subtitleWidth}}" class="export-policy-bold-subtext">{{subtitle}}:</div>
+      <div fxFlex="none" fxLayout="column">
+        <span *ngFor="let item of list" class="export-policy-rule-content">{{item}}</span>
       </div>
     </div>
   </div>

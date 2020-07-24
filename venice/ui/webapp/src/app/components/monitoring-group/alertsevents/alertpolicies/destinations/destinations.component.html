@@ -1,48 +1,44 @@
-<app-tableviewedit fxLayout="column" class="destinations-widget"
-                   [creatingMode]="creatingMode"
-                   [showRowExpand]="showRowExpand"
-                   [data]="dataObjects"
-                   [cols]="cols"
-                   [expandedRowData]="expandedRowData"
-                   [captionTemplate]="captionTemplate"
-                   [bodyTemplate]="bodyTemplate"
-                   [actionTemplate]="actionTemplate"
-                   [expandTemplate]="expandTemplate"
-                   [createTemplate]="createTemplate"
-                   (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-</app-tableviewedit>
+<app-penpushtable #alertDestinationTable
+                  [actionTemplate]="actionTemplate"
+                  [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate"
+                  [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects"
+                  [enableCheckbox]="false"
+                  [expandTemplate]="expandTemplate"
+                  [rowHeight]="43"
+                  [searchable]="false"
+                  [loading]="tableLoading"
+                  [exportFilename]="exportFilename"
+                  [exportMap]="exportMap">
+</app-penpushtable>
 
 <ng-template #createTemplate>
   <app-newdestination (formClose)="creationFormClose()" [existingObjects]='dataObjects'
-                      fxFlex="none"></app-newdestination>
+                      [maxNewTargets]="maxNewTargets" fxFlex="none">
+  </app-newdestination>
 </ng-template>
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <app-tableheader title="Destinations" [total]="count" [icon]="headerIcon" fxFlex="auto"
-                   fxLayout="row" [tableMenuItems]="tableMenuItems"
-                   [enableColumnSelect]="true" [cols]="cols"
+  <app-tableheader fxFlex="auto" fxLayout="row"
+                   [tableMenuItems]="penTable.tableMenuItems"
+                   title="Destinations" [total]="dataObjects.length"
+                   [icon]="headerIcon" [enableColumnSelect]="true" [cols]="cols"
                    (columnSelectChange)="onColumnSelectChange($event)">
-    <div class="destinations-search" fxFlex="fxFlex" fxLayoutAlign="start center">
-      <!-- Find destination by: 
-      <mat-form-field fxFlex="nogrow" floatLabel="never">
-        <input autocomplete="off" matInput placeholder="Name" (input)="destinationsTurboTable?.filterGlobal($event.target.value, 'contains')">
-      </mat-form-field> -->
-    </div>
   </app-tableheader>
 </ng-template>
 
 <ng-template #bodyTemplate let-rowData let-col="col">
   <ng-container>
-    <div [innerHTML]="displayColumn(rowData, col)">
-    </div>
+    <div [innerHTML]="displayColumn(rowData, col)"></div>
   </ng-container>
 </ng-template>
 
-
 <ng-template #expandTemplate let-rowData let-columns="columns">
-  <app-newdestination [objectData]="rowData" [isInline]="true" (formClose)="closeRowExpand()"
-                      [maxTargets]="maxNewTargets">
+  <app-newdestination [isInline]="true" [maxNewTargets]="maxNewTargets"
+                      [objectData]="rowData" (formClose)="editFormClose(rowData)">
   </app-newdestination>
 </ng-template>
 

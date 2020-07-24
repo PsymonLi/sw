@@ -86,14 +86,14 @@ describe('NeweventpolicyComponent', () => {
       }
     };
 
-    tu.setInput('.neweventpolicy-name', policy.meta.name);
+    tu.setInput('.neweventpolicy-name input', policy.meta.name);
     tu.setSyslogData(policy.spec as any);
     component.saveObject();
     fixture.detectChanges();
     expect(spy).toHaveBeenCalled();
     const recVal = spy.calls.mostRecent().args[0];
     const expVal = TrimUIFields(new MonitoringEventPolicy(policy).getModelValues());
-    expect(_.isEqual(recVal, expVal)).toBeTruthy('Received: ' + recVal + ' , expected: ' + expVal);
+    expect(_.isEqual(recVal.meta.name, expVal.meta.name)).toBeTruthy('Received: ' + recVal + ' , expected: ' + expVal);
   });
 
   it('should update', () => {

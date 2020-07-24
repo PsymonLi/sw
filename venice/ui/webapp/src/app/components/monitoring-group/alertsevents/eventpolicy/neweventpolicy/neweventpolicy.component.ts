@@ -4,11 +4,13 @@ import { FieldselectorComponent } from '@app/components/shared/fieldselector/fie
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { MonitoringEventPolicy, IMonitoringEventPolicy, IApiStatus, } from '@sdk/v1/models/generated/monitoring';
-import { SyslogComponent } from '@app/components/shared/syslog/syslog.component';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
+import { SyslogComponent, ReturnObjectType } from '@app/components/shared/syslog/syslog.component';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { Utility } from '@app/common/Utility';
 import { ValidatorFn } from '@angular/forms';
+import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
+import { EventpolicyComponent } from '../eventpolicy.component';
 
 @Component({
   selector: 'app-neweventpolicy',
@@ -18,28 +20,38 @@ import { ValidatorFn } from '@angular/forms';
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class NeweventpolicyComponent extends CreationForm<IMonitoringEventPolicy, MonitoringEventPolicy> implements OnInit, AfterViewInit {
+export class NeweventpolicyComponent extends CreationPushForm<IMonitoringEventPolicy, MonitoringEventPolicy> implements OnInit, AfterViewInit {
   @ViewChild('fieldSelector') fieldSelector: FieldselectorComponent;
   @ViewChild('syslogComponent') syslogComponent: SyslogComponent;
   @Input() existingObjects: MonitoringEventPolicy[] = [];
   @Input() isInline: boolean = false;
-  @Input() maxTargets: number;
+  @Input() maxNewTargets: number;
+
+  maxTargets: number = EventpolicyComponent.MAX_TOTAL_TARGETS;
 
   constructor(
     protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected _monitoringService: MonitoringService,
-    private cdr: ChangeDetectorRef
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService, MonitoringEventPolicy);
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
+    super(_controllerService, uiconfigsService, cdr, MonitoringEventPolicy);
   }
 
   // Empty Hook
   postNgInit() {
+    if (this.isInline) {
+      this.newObject.$formGroup.get(['meta', 'name']).disable();
+      // on edit form, the maxium targets allowed is the current number of targets
+      // plus the number of new targets allowed
+      const targets = this.newObject.$formGroup.get(['spec', 'targets']).value;
+      if (targets) {
+        this.maxTargets = this.maxNewTargets + targets.length;
+      }
+    } else {
+      this.maxTargets = this.maxNewTargets;
+
+    }
     this.setValidators(this.newObject);
   }
 
@@ -50,51 +62,39 @@ export class NeweventpolicyComponent extends CreationForm<IMonitoringEventPolicy
       return false;
     }
 
-    if (!this.syslogComponent.isSyLogFormValid()['valid']) {
-      this.submitButtonTooltip = this.syslogComponent.isSyLogFormValid()['errorMessage'];
-      return false;
-    }
     if (!this.isInline) {
       if (!this.newObject.$formGroup.get(['meta', 'name']).valid) {
         this.submitButtonTooltip = 'Eventpolicy name is invalid or not unique';
         return false;
       }
     }
+
+    if (this.syslogComponent) {
+      const syslogFormReturnValue: ReturnObjectType = this.syslogComponent.isSyLogFormValid();
+      if (!syslogFormReturnValue.valid) {
+        this.submitButtonTooltip = syslogFormReturnValue.errorMessage;
+        return false;
+      }
+    }
     this.submitButtonTooltip = 'Ready to submit';
     return true;
   }
-  postViewInit() {
-    this.cdr.detectChanges();
-  }
 
   setValidators(newMonitoringFlowExportPolicy: MonitoringEventPolicy) {
-    newMonitoringFlowExportPolicy.$formGroup.get(['meta', 'name']).setValidators([
-      this.newObject.$formGroup.get(['meta', 'name']).validator,
-      this.isNewFlowExportPolicyNameValid(this.existingObjects)]);
+    if (!this.isInline) {
+      newMonitoringFlowExportPolicy.$formGroup.get(['meta', 'name']).setValidators([
+        this.newObject.$formGroup.get(['meta', 'name']).validator,
+        this.isNewFlowExportPolicyNameValid(this.existingObjects)]);
+    }
   }
 
   isNewFlowExportPolicyNameValid(existingObjects: IMonitoringEventPolicy[]): ValidatorFn {
     return Utility.isModelNameUniqueValidator(existingObjects, 'newEvent-Policy-name');
   }
-  setToolbar() {
-    const currToolbar = this.controllerService.getToolbarData();
-    this.oldButtons = currToolbar.buttons;
-    currToolbar.buttons = [
-      {
-        cssClass: 'global-button-primary eventpolicy-button',
-        text: 'CREATE EVENT POLICY',
-        callback: () => { this.saveObject(); },
-        computeClass: () => this.computeFormSubmitButtonClass(),
-        genTooltip: () => this.getSubmitButtonToolTip()
-      },
-      {
-        cssClass: 'global-button-neutral eventpolicy-button',
-        text: 'CANCEL',
-        callback: () => { this.cancelObject(); }
-      },
-    ];
 
-    this._controllerService.setToolbarData(currToolbar);
+  setToolbar() {
+    this.setCreationButtonsToolbar('CREATE EVENT POLICY',
+      UIRolePermissions.monitoringeventpolicy_create);
   }
 
   getObjectValues(): IMonitoringEventPolicy {

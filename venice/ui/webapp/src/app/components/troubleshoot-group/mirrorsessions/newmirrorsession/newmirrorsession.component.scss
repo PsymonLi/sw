@@ -1,152 +1,29 @@
 @import 'src/global-mixins';
 
-$horizontal-gutter: 10px;
-$vertical-gutter: 5px;
-$dary-grey: #a9a9a9;
-
 .newmirrorsession-container {
-  margin: 10px;
-
-  .newmirrorsession-editform-inline {
-    margin-top: 35px;
-  }
 
   .newmirrorsession-row {
-    min-width: 625px;
+    min-width: 600px;
     margin: 0px auto;
   }
 
-  .newmirrorsession-select-panel {
-    display: none;
-  }
-
-  .newmirrorsession-radio-text {
-    @include primary-font(16px);
-  }
-
   .newmirrorsession-collectors {
-    width: 590px;
-  }
-
-  .newmirrorsession-general-inputbox,
-  .newmirrorsession-collector-inputbox {
-    height: 30px;
-
-    input {
-      height: 30px;
-      font-size: 14px;
-    }
-  }
-
-  .newmirrorsession-general-box,
-  .newmirrorsession-collector-box {
-    :first-child {
-      height: 30px;
-      font-size: 14px;
-      width: 100%;
-    }
-
-    .ui-multiselect-label-container {
-      height: 25px;
-    }
-  }
-
-  .newmirrorsession-general-box {
-    width: 250px;
-  }
-
-  .newmirrorsession-collector-box {
-    width: 137px;
-  }
-
-  .newmirrorsession-stripvlan-label {
-    color: #898989;
-    font-size: 12px;
-    position: relative;
-    top: -10px;
-    width: 55px;
-  }
-
-  .newmirrorsession-stripvlan-toggle {
-    position: relative;
-    left: -55px;
-    top: 12px;
+    width: 580px;
+    margin-left: 10px;
   }
 
   .newmirrorsession-selectors {
     width: 590px;
+    margin-left: 10px;
 
-    .newmirrorsession-interface-direction-box {
-      margin-left: 10px;
-      margin-bottom: 20px;
-
-      p-dropdown {
-        width: 170px;
-      }
-    }
-
-    .newmirrorsession-section-workloadlabels-div {
-      margin-bottom: 10px;
-
-      .newmirrorsession-interface-box {
-        width: 200px;
-      }
-
-      .newmirrorsession-interface-box.requiredField :first-child {
-        width: 100% !important;
-      }
-
-      .newmirrorsession-interface-operator-box {
-        width: 100px;
-      }
-
-      .newmirrorsession-interface-chips-box {
-        .psm-form-chips-box {
-          height: 30px !important;
-        }
-      }
-
-      .newmirrorsession-interface-selectbox {
-        height: 30px;
-        font-size: 14px;
-        width: 100%;
-
-        input {
-          height: 28px;
-        }
-
-        input:hover,
-        input:focus {
-          border: 0px !important;
-        }
-      }
-
-      .newmirrorsession-labelvalues-boxes {
-        ul {
-          width: 200px;
-          white-space: nowrap;
-          overflow: hidden !important;
-          font-size: 16px !important;
-          height: 30px !important;
-        }
-      }
-
-      p-multiselect.ng-invalid .ui-multiselect {
-        border-color: rgb(214, 214, 214) !important;
-      }
-
-      p-multiselect.ng-invalid .ui-multiselect-open {
-        border: solid 1px #6ba0e5 !important;
-        box-shadow: inset 5px 0 0 0 #6ba0e5 !important;
-      }
-
-      p-multiselect.ng-invalid .ui-multiselect-open .ui-multiselect-label {
-        box-shadow: inset 5px 0 0 0 #6ba0e5 !important;
+    .newmirrorsession-interface-chips-box {
+      .psm-form-chips-box {
+        height: 30px !important;
       }
     }
 
     .newmirrorsession-label-match-count {
-      margin: 0px 0px 10px 10px;
+      margin: 10px 0px 10px 10px;
 
       .newmirrorsession-label-match-tooltip {
         text-decoration: underline;
@@ -155,76 +32,27 @@ $dary-grey: #a9a9a9;
   }
 
   app-orderedlist {
-    width: 590px
+    width: 590px;
+    margin-left: 10px;
+
+    .newmirrorsession-bold {
+      @include primary-font(16px, #383838, 500);
+    }
+
+    .newmirrorsession-bold-subtext {
+      @include primary-font(14px, #383838, 200);
+    }
+
+    .newmirrorsession-rule-content {
+      color: #767676;
+      font-size: 14px;
+      font-weight: 400;
+    }
   }
-}
-
-.newmirrorsession-rule-app,
-.newmirrorsession-rule-target {
-  padding: 0px 10px 10px;
-}
-
-.newmirrorsession-rule-row {
-  padding-left: 10px;
-}
-
-.newmirrorsession-rule-app legend {
-  width: 60px;
-}
-
-.newmirrorsession-rule-content {
-  color: #767676;
-  font-size: 14px;
-  font-weight: 400;
-}
-
-.newmirrorsession-bold {
-  @include primary-font(16px, #383838, 500);
-}
-
-.newmirrorsession-bold-subtext-ipmac {
-  @include primary-font(14px, #383838, 200);
-  width: 40px;
-}
-
-.newmirrorsession-bold-subtext-proto {
-  @include primary-font(14px, #383838, 200);
-  width: 80px;
-}
-
-.newmirrorsession-proto-boxes,
-.newmirrorsession-rule-boxes {
-  ul {
-    width: 240px;
-    white-space: nowrap;
-    overflow: hidden !important;
-    font-size: 14px !important;
-    height: 30px !important;
-  }
-}
-
-.newmirrorsession-attach-radio {
-  margin-left: 5px;
-  margin-top: 6px;
-  @include global-mat-radio(16px);
-
-  .mat-radio-label-content {
-    @include primary-font(14px);
-    padding-top: 2px;
-  }
-}
-
-.newmirrorsession-rule-label {
-  font-size: 14px;
-  font-weight: 400;
-  color: #676763;
-}
-
-.newmirrorsession-toolbar-button {
-  padding-left: 10px;
-  padding-right: 10px;
 }
 
 .newmirrorsession-label-match-tooltip-tooltip {
   white-space: pre-line;
 }
+
+@include adjust-inlinebuttons-boundry(1150, newmirrorsession-editform-inline);

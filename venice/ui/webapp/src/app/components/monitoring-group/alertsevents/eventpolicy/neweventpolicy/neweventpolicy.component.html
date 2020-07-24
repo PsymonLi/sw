@@ -1,59 +1,23 @@
-<div fxLayout="column" class="psm-form new-eventpolicy">
-  <ng-container *ngTemplateOutlet="inlineButtons"></ng-container>
-  <div fxLayout="column" fxLayoutAlign="center center" class="neweventpolicy-container">
-    <!-- Limiting the size of the creation form - If it is inline, we have more room to fit in the save/cancel buttons -->
-    <div fxFlex="auto" fxLayout="row" [style.max-width]="isInline ? '1300px' : '1200px'"
-         fxLayoutAlign="start stretch"
-         class="neweventpolicy-content">
-      <div fxFlex fxLayout="column">
-        <div fxFlex="nogrow" fxLayout="column">
-          <div fxFlex="30px" fxLayout="row" [formGroup]="newObject.$formGroup.get('meta')"
-               class="neweventpolicy-row">
-            <span [ngClass]="{
-              'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
-            }" class="neweventpolicy-span">
-              <input autocomplete="off" fxFlex="300px" formControlName="name"
-                     class="neweventpolicy-name"
-                     appErrorTooltip
-                     spellcheck="false" type="text" pInputText
-                     appFloatLabel="Unique Policy Name...">
-            </span>
-          </div>
-          <!-- <div fxFlex="20px"></div> -->
-          <!-- Buffer, creating as a div so there are no hiccups in the animation-->
-          <div fxFlex="noshrink" fxLayout="row" class="neweventpolicy-row"></div>
-          <!-- Commenting out as it is not currently supported -->
-          <!-- <div fxFlex="nogrow" class="neweventpolicy-text">EXPORT EVENT IF:</div>
-          <app-fieldselector fxFlex="nogrow" #fieldSelector 
-                    kind="Event"
-                    [formArray]="newObject.$formGroup.get(['spec', 'selector', 'requirements'])"
-                    keyFormName="key" 
-                    operatorFormName="operator" 
-                    valueFormName="values"
-                  >
-          </app-fieldselector> -->
+<div fxLayout="column" class="psm-form new-eventpolicy-container">
+  <app-inlinebuttons class="new-eventpolicy" *ngIf="isInline" [form]="this">
+  </app-inlinebuttons>
+  <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start"
+       [class]="isInline? 'new-eventpolicy-editform-inline' : ''">
+    <div fxLayout="row" fxLayoutAlign="center" class="psm-form-content">
+      <div fxFlex="none" fxLayout="column" [formGroup]="newObject.$formGroup">
+        <div fxFlex="nogrow" fxLayout="row" formGroupName="meta">
+          <app-psmtextbox class="neweventpolicy-name" fxFlex="300px" label="Name"
+                          formControlName="name"></app-psmtextbox>
         </div>
-
-        <div fxFlex="20px" fxLayout="row"></div>
-
+        <div fxFlex="10px"></div>
         <div fxFlex="noshrink" fxLayout="row">
-          <app-syslog #syslogComponent [isInline]="isInline"
-                      [syslogExport]="newObject.$formGroup.get(['spec']).value"
+          <app-syslog #syslogComponent fxFlex="nogrow" fxLayout="column"
+                      [isInline]="isInline" [maxTargets]="maxTargets"
                       targetTransport="<TCP/UDP>/<port>"
-                      fxFlex="nogrow" fxLayout="column"
-                      [syslogRequiredOption]="true"></app-syslog>
+                      [syslogExport]="newObject.$formGroup.get(['spec']).value">
+          </app-syslog>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-<ng-template #inlineButtons>
-  <app-inlinebuttons class="new-event"
-                     *ngIf="isInline"
-                     [saveButtonClass]="computeFormSubmitButtonClass()"
-                     [saveTooltip]="getSubmitButtonToolTip()"
-                     (saveFunc)="saveObject()"
-                     (cancelFunc)="cancelObject()">
-  </app-inlinebuttons>
-</ng-template>

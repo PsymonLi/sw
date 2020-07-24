@@ -1,35 +1,32 @@
-<app-tableviewedit fxLayout="column" class="eventalertpolicies-widget"
-                   [creatingMode]="creatingMode"
-                   [showRowExpand]="showRowExpand"
-                   [data]="dataObjects"
-                   [cols]="cols"
-                   [expandedRowData]="expandedRowData"
-                   [captionTemplate]="captionTemplate"
-                   [bodyTemplate]="bodyTemplate"
-                   [actionTemplate]="actionTemplate"
-                   [expandTemplate]="expandTemplate"
-                   [createTemplate]="createTemplate"
-                   (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-</app-tableviewedit>
+<app-penpushtable #alertPolicyTable
+                  [actionTemplate]="actionTemplate"
+                  [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate"
+                  [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects"
+                  [enableCheckbox]="false"
+                  [expandTemplate]="expandTemplate"
+                  [rowHeight]="43"
+                  [searchable]="false"
+                  [loading]="tableLoading"
+                  [exportFilename]="exportFilename"
+                  [exportMap]="exportMap">
+</app-penpushtable>
 
 <ng-template #createTemplate>
   <app-neweventalertpolicy [destinations]="destinations" (formClose)="creationFormClose()"
-                           fxFlex="none"></app-neweventalertpolicy>
+                           fxFlex="none">
+  </app-neweventalertpolicy>
 </ng-template>
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <app-tableheader title="Event Alert Policies" [total]="count" fxFlex="auto" fxLayout="row"
-                   [tableMenuItems]="tableMenuItems"
-                   [icon]="headerIcon" [cols]="cols" [enableColumnSelect]="true"
+  <app-tableheader fxFlex="auto" fxLayout="row"
+                   [tableMenuItems]="penTable.tableMenuItems"
+                   title="Event Alert Policies" [total]="dataObjects.length"
+                   [icon]="headerIcon" [enableColumnSelect]="true" [cols]="cols"
                    (columnSelectChange)="onColumnSelectChange($event)">
-    <div class="eventalertpolicies-search" fxFlex="fxFlex" fxLayoutAlign="start center">
-      <!-- Lazy render currently doesn't support filtering -->
-      <!-- Find Policy by: 
-      <mat-form-field fxFlex="nogrow" floatLabel="never">
-        <input autocomplete="off" matInput placeholder="Name" (input)="table?.filterGlobal($event.target.value, 'contains')">
-      </mat-form-field> -->
-    </div>
   </app-tableheader>
 </ng-template>
 
@@ -71,5 +68,6 @@
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
   <app-neweventalertpolicy [objectData]="rowData" [destinations]="destinations" [isInline]="true"
-                           (formClose)="closeRowExpand()"></app-neweventalertpolicy>
+                           (formClose)="editFormClose(rowData)">
+  </app-neweventalertpolicy>
 </ng-template>

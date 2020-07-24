@@ -1,7 +1,6 @@
-import { Component, OnInit, ViewEncapsulation, AfterViewInit, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, AfterViewInit, Input, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges, OnChanges } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
 import { SecurityService } from '@app/services/generated/security.service';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Animations } from '@app/animations';
 import {
   IMonitoringMirrorSession, MonitoringMirrorSession,
@@ -9,7 +8,7 @@ import {
   MonitoringMirrorSessionSpec_packet_filters, LabelsRequirement
 } from '@sdk/v1/models/generated/monitoring';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
-import { AbstractControl, FormArray, ValidatorFn, ValidationErrors } from '@angular/forms';
+import { AbstractControl, FormArray, ValidatorFn, ValidationErrors, FormControl } from '@angular/forms';
 import { IPUtility } from '@app/common/IPUtility';
 import { Utility } from '@app/common/Utility';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
@@ -19,6 +18,8 @@ import { NetworkNetworkInterface, NetworkNetworkInterfaceSpec_type } from '@sdk/
 import { NetworkService } from '@app/services/generated/network.service';
 import { LabelsSelector } from '@sdk/v1/models/generated/monitoring/labels-selector.model';
 import { MonitoringInterfaceMirror } from '@sdk/v1/models/generated/monitoring/monitoring-interface-mirror.model';
+import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 export interface MatchRule {
   key: string;
@@ -39,9 +40,10 @@ const PACKET_FILTERS_ERRORMSG: string =
   animations: Animations,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSession, MonitoringMirrorSession> implements OnInit, AfterViewInit {
+export class NewmirrorsessionComponent extends CreationPushForm<IMonitoringMirrorSession, MonitoringMirrorSession> implements OnInit, OnChanges, AfterViewInit {
 
   @Input() existingObjects: MonitoringMirrorSession[] = [];
+  @Input() interfaces: NetworkNetworkInterface[] = [];
 
   MAX_COLLECTORS_ALLOWED: number = 2;
 
@@ -89,25 +91,30 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
   labelKeyOptions: SelectItem[] = [];
   labelValueOptionsMap: {key: string, values: SelectItem[]} = {} as {key: string, values: SelectItem[]};
 
-  radioSelection: string = 'rules';
+  radioSelectionCtrl: FormControl = new FormControl();
+  radioOptions: SelectItem[] = [
+    {label: 'Rules', value: 'rules'},
+    {label: ' Uplink Interfaces', value: 'labels'}
+  ];
 
   constructor(protected _controllerService: ControllerService,
     protected _monitoringService: MonitoringService,
     protected securityService: SecurityService,
     protected uiconfigsService: UIConfigsService,
     protected networkService: NetworkService,
-    private cdr: ChangeDetectorRef
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService, MonitoringMirrorSession);
+    super(_controllerService, uiconfigsService, cdr, MonitoringMirrorSession);
   }
 
-  getClassName(): string {
-    return this.constructor.name;
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes.interfaces && !Utility.isValueOrArrayEmpty(this.interfaces)) {
+      this.getNILabels();
+    }
+    super.ngOnChanges(changes);
   }
 
   postNgInit(): void {
-    this.getNILabels();
-
    // currently backend does not support any drop packets
     // UI temporarily drop those choices.
     // once they are supported, pls uncomment out the next lines
@@ -115,13 +122,11 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
       item.value === MonitoringMirrorSessionSpec_packet_filters['all-packets']
     );
 
+    this.radioSelectionCtrl.setValue('rules');
     if (this.isInline) {
-
       const interfaceObj = this.newObject.$formGroup.get(['spec', 'interfaces']).value;
       if (interfaceObj && interfaceObj.selectors && interfaceObj.selectors.length > 0) {
-        this.radioSelection = 'labels';
-      } else {
-        this.radioSelection = 'rules';
+        this.radioSelectionCtrl.setValue('labels');
       }
 
       // process match rules
@@ -144,9 +149,13 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
       }
       // disable name field
       this.newObject.$formGroup.get(['meta', 'name']).disable();
+    } else {
+      this.addFieldValidator(this.newObject.$formGroup.get(['meta', 'name']),
+          this.isMirrorsessionNameValid(this.existingObjects));
     }
 
-    this.newObject.$formGroup.get(['spec', 'packet-size']).setValidators([this.packetSizeValidator()]);
+    this.newObject.$formGroup.get(['spec', 'packet-size']).setValidators(
+        [this.packetSizeValidator()]);
 
     // due to currently backend does not support all drops, comment out next lines
     /*
@@ -175,50 +184,7 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
     }
   }
 
-  // due to currently backend does not support all drops, comment out next lines
-  /*
-  getPacketFiltersTooltip(): string {
-    const packetFiltersField: FormControl =
-      this.newObject.$formGroup.get(['spec', 'packet-filters']) as FormControl;
-    if (Utility.isEmpty(packetFiltersField.value)) {
-      return '';
-    }
-    if (!packetFiltersField.valid) {
-      return PACKET_FILTERS_ERRORMSG;
-    }
-    return '';
-  }
-  */
-
-  isSpanIDAlreadyUsed(existingObjects: IMonitoringMirrorSession[]): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      if (!control.value && control.value !== 0) {
-        return null;
-      }
-      const mirrorSpan: IMonitoringMirrorSession =
-        this.existingObjects.find((item: IMonitoringMirrorSession) =>
-          item.spec['span-id'] === control.value);
-      if (mirrorSpan && mirrorSpan.meta.name !== this.newObject.$formGroup.get(['meta', 'name']).value) {
-        return {
-          objectname: {
-            required: true,
-            message: 'ERSPAN ID must be unique, already used by ' + mirrorSpan.meta.name
-          }
-        };
-      }
-      return null;
-    };
-  }
-
   isFormValid(): boolean {
-    // vs-1021 packet-filters can be empty
-    // due to currently backend does not support all drops, comment out next lines
-    /*
-    if (!this.newObject.$formGroup.get(['spec', 'packet-filters']).valid) {
-      this.submitButtonTooltip = PACKET_FILTERS_ERRORMSG;
-      return false;
-    }
-    */
 
    if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
       this.submitButtonTooltip = 'Error: Name field is empty.';
@@ -245,7 +211,7 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
       }
     }
 
-    if (this.radioSelection === 'labels') {
+    if (this.radioSelectionCtrl.value === 'labels') {
       if (!this.getAllInterfaceSelectorsValues()) {
         this.submitButtonTooltip = 'At least one label is incomplete.';
         return false;
@@ -297,7 +263,7 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
 
   getObjectValues() {
     const currValue: IMonitoringMirrorSession = this.newObject.getFormGroupValues();
-    if (this.radioSelection === 'labels') {
+    if (this.radioSelectionCtrl.value === 'labels') {
       currValue.spec['match-rules'] = [];
       currValue.spec['packet-filters'] = [];
     } else {
@@ -312,6 +278,26 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
 
   isMirrorsessionNameValid(existingTechSupportRequest: MonitoringMirrorSession[]): ValidatorFn {
     return Utility.isModelNameUniqueValidator(existingTechSupportRequest, 'Mirror-session-name');
+  }
+
+  isSpanIDAlreadyUsed(existingObjects: IMonitoringMirrorSession[]): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value && control.value !== 0) {
+        return null;
+      }
+      const mirrorSpan: IMonitoringMirrorSession =
+        this.existingObjects.find((item: IMonitoringMirrorSession) =>
+          item.spec['span-id'] === control.value);
+      if (mirrorSpan && mirrorSpan.meta.name !== this.newObject.$formGroup.get(['meta', 'name']).value) {
+        return {
+          objectname: {
+            required: true,
+            message: 'ERSPAN ID must be unique, already used by ' + mirrorSpan.meta.name
+          }
+        };
+      }
+      return null;
+    };
   }
 
   packetFiltersValidator() {
@@ -359,27 +345,6 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
       }
       return null;
     };
-  }
-
-  setToolbar() {
-    const currToolbar = this.controllerService.getToolbarData();
-    currToolbar.buttons = [
-      {
-        cssClass: 'global-button-primary newmirrorsession-toolbar-button newmirrorsession-toolbar-SAVE',
-        text: 'CREATE MIRROR SESSION',
-        matTooltipClass: 'validation_error_tooltip',
-        callback: () => { this.saveObject(); },
-        computeClass: () => this.computeFormSubmitButtonClass(),
-        genTooltip: () => this.getSubmitButtonToolTip(),
-      },
-      {
-        cssClass: 'global-button-neutral newmirrorsession-toolbar-button newmirrorsession-toolbar-CANCEL',
-        text: 'CANCEL',
-        callback: () => { this.cancelObject(); }
-      },
-    ];
-
-    this._controllerService.setToolbarData(currToolbar);
   }
 
   addCollector() {
@@ -489,31 +454,7 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
     return Utility.isSingleOrMultiplePortValid(arr[1]);
   }
 
-  createObject(newObject: IMonitoringMirrorSession) {
-    return this._monitoringService.AddMirrorSession(newObject);
-  }
-
-  updateObject(newObject: IMonitoringMirrorSession, oldObject: IMonitoringMirrorSession) {
-    return this._monitoringService.UpdateMirrorSession(oldObject.meta.name, newObject, null, oldObject);
-  }
-
-  generateCreateSuccessMsg(object: IMonitoringMirrorSession): string {
-    return 'Created mirror session ' + object.meta.name;
-  }
-
-  generateUpdateSuccessMsg(object: IMonitoringMirrorSession): string {
-    return 'Updated mirror session ' + object.meta.name;
-  }
-
-  isShowAddCollector(): boolean {
-    const collectors = this.newObject.$formGroup.get(['spec', 'collectors']) as FormArray;
-    if (collectors.length < this.MAX_COLLECTORS_ALLOWED) {
-      return true;
-    }
-    return false;
-  }
-
-  // this function join two array and return a new araay with items appears
+  // this function join two array and return a new array with items appears
   // on both array
   joinArry(arr1: any[], arr2: any[]): any[] {
     if (arr1.length === 0) {
@@ -569,22 +510,12 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
   }
 
   getNILabels() {
-    const sub = this.networkService.ListNetworkInterfaceCache().subscribe(
-      (response) => {
-        if (response.connIsErrorState) {
-          return;
-        }
-        const allInterfaces: NetworkNetworkInterface[] = response.data as NetworkNetworkInterface[];
-        this.matchMap = new Map<string, any>();
-        this.labelKeyOptions = [];
-        this.labelValueOptionsMap = {} as {key: string, values: SelectItem[]};
-        this.allNIList = [];
-        this.buildLabelInformation(allInterfaces);
-        this.buildLabelData();
-        this.cdr.detectChanges();
-      }
-    );
-    this.subscriptions.push(sub);
+    this.matchMap = new Map<string, any>();
+    this.labelKeyOptions = [];
+    this.labelValueOptionsMap = {} as {key: string, values: SelectItem[]};
+    this.allNIList = [];
+    this.buildLabelInformation(this.interfaces);
+    this.buildLabelData();
   }
 
   buildLabelInformationFromMirrorSessions() {
@@ -685,12 +616,28 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
     return {count: matches.length, title };
   }
 
-  isValidLabelValue(name: string): boolean {
-    // put a place holder here for the future validation
-    return true;
-  }
-
   onInterfaceKeyChange(ifSelector: any) {
     ifSelector.get(['values']).setValue(null);
+  }
+
+  setToolbar() {
+    this.setCreationButtonsToolbar('CREATE MIRROR SESSION',
+        UIRolePermissions.monitoringmirrorsession_create);
+  }
+
+  createObject(newObject: IMonitoringMirrorSession) {
+    return this._monitoringService.AddMirrorSession(newObject);
+  }
+
+  updateObject(newObject: IMonitoringMirrorSession, oldObject: IMonitoringMirrorSession) {
+    return this._monitoringService.UpdateMirrorSession(oldObject.meta.name, newObject, null, oldObject);
+  }
+
+  generateCreateSuccessMsg(object: IMonitoringMirrorSession): string {
+    return 'Created mirror session ' + object.meta.name;
+  }
+
+  generateUpdateSuccessMsg(object: IMonitoringMirrorSession): string {
+    return 'Updated mirror session ' + object.meta.name;
   }
 }

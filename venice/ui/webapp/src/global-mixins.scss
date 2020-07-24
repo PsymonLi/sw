@@ -282,23 +282,11 @@
     }
   }
 
-  // adding style for multi select box when the value is invalid
-  p-multiselect.ng-invalid {
-    .ui-multiselect {
-      border-color: #e57553 !important;
-    }
-
-    .ui-multiselect-open {
-      border: solid 1px #e57553 !important;
-      box-shadow: inset 5px 0 0 0 #e57553 !important;
-
-      .ui-multiselect-label {
-        box-shadow: inset 5px 0 0 0 #e57553 !important;
-      }
-    }
-  }
-
   .ui-float-label {
+
+    &>label {
+      font-size: 14px;
+    }
 
     .cdk-focused~label,
     .ui-inputwrapper-focus~label {

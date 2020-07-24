@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, Input, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, ViewEncapsulation, ChangeDetectionStrategy, OnInit, ViewChild } from '@angular/core';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
 import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
@@ -11,6 +11,8 @@ import { Observable } from 'rxjs';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 
 @Component({
@@ -18,9 +20,13 @@ import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit'
   templateUrl: './eventalertpolicies.component.html',
   styleUrls: ['./eventalertpolicies.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventalertpolicyComponent extends TablevieweditAbstract<IMonitoringAlertPolicy, MonitoringAlertPolicy> {
+export class EventalertpolicyComponent extends DataComponent implements OnInit {
+
+  @ViewChild('alertPolicyTable') alertPolicyTable: PentableComponent;
+
   @Input() dataObjects: MonitoringAlertPolicy[] = [];
 
   headerIcon: Icon = {
@@ -46,6 +52,8 @@ export class EventalertpolicyComponent extends TablevieweditAbstract<IMonitoring
   exportFilename: string = 'PSM-event-alert-policies';
 
   isTabComponent = true;
+  tableLoading = false;
+
   exportMap: CustomExportMap = {
     'spec.requirements': (opts): string => {
       const trimmedValues = Utility.trimUIFields(opts.data);
@@ -68,17 +76,15 @@ export class EventalertpolicyComponent extends TablevieweditAbstract<IMonitoring
     protected cdr: ChangeDetectorRef,
     protected uiconfigsService: UIConfigsService,
     protected monitoringService: MonitoringService) {
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
   }
 
-  // Hook for overriding
-  postNgInit() { }
-
-  getClassName(): string {
-    return this.constructor.name;
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.alertPolicyTable;
   }
 
-  setDefaultToolbar() {
+  updateToolbar() {
     const currToolbar = this.controllerService.getToolbarData();
     currToolbar.buttons = [];
     if (this.uiconfigsService.isAuthorized(UIRolePermissions.monitoringalertpolicy_create)) {
@@ -86,8 +92,8 @@ export class EventalertpolicyComponent extends TablevieweditAbstract<IMonitoring
         {
           cssClass: 'global-button-primary eventalertpolicies-button',
           text: 'ADD ALERT POLICY',
-          computeClass: () => this.shouldEnableButtons ? '' : 'global-button-disabled',
-          callback: () => { this.createNewObject(); }
+          computeClass: () =>  !(this.penTable.showRowExpand) ? '' : 'global-button-disabled',
+          callback: () => { this.penTable.createNewObject(); }
         },
       ];
     }
@@ -147,13 +153,4 @@ export class EventalertpolicyComponent extends TablevieweditAbstract<IMonitoring
   deleteRecord(object: MonitoringAlertPolicy): Observable<{ body: IMonitoringAlertPolicy | IApiStatus | Error, statusCode: number }> {
     return this.monitoringService.DeleteAlertPolicy(object.meta.name);
   }
-
-  generateDeleteConfirmMsg(object: IMonitoringAlertPolicy) {
-    return 'Are you sure you want to delete policy ' + object.meta.name;
-  }
-
-  generateDeleteSuccessMsg(object: IMonitoringAlertPolicy) {
-    return 'Deleted policy ' + object.meta.name;
-  }
-
 }

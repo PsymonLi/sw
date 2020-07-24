@@ -73,28 +73,4 @@ describe('EventalertpolicyComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('RBAC', () => {
-    const testHelper = new TestTablevieweditRBAC('monitoringalertpolicy');
-
-    beforeEach(() => {
-      component.isActiveTab = true;
-      component.dataObjects = [new MonitoringAlertPolicy().getModelValues()];
-      testHelper.fixture = fixture;
-    });
-
-    testHelper.runTests();
-  });
-
-  describe('RBAC', () => {
-    const testHelper = new TestTablevieweditRBAC('monitoringalertpolicy');
-
-    beforeEach(() => {
-      component.isActiveTab = true;
-      component.dataObjects = [new MonitoringAlertPolicy()];
-      testHelper.fixture = fixture;
-    });
-
-    testHelper.runTests();
-  });
-
 });

@@ -1,106 +1,28 @@
 @import "src/global-mixins";
 
-$horizontal-gutter: 10px;
-$vertical-gutter: 5px;
-$dary-grey: #a9a9a9;
-
 .new-flow-export-container {
-  padding: 10px 0;
-
-  .new-flow-export-editform-inline {
-    margin-top: 35px;
-  }
-
-  .newflow-export-policy-packet {
-    .policy-required-match-rule {
-      padding: 10px 0;
-
-      .export-packet-subtext {
-        margin-top: 2px;
-        @include primary-font(12px, #b2b3b4, 300);
-      }
-    }
-  }
-
-  .new-flow-export-row {
-    padding: 10px;
-
-    .new-flow-export-policy-form {
-      flex-direction: row;
-      display: flex;
-
-      .new-flow-export-policy-input {
-        width: 160px !important;
-        height: 30px;
-      }
-
-      .new-flow-export-policy-input-group {
-        padding: 10px;
-      }
-    }
-
-    .meta-spec-form-group {
-      display: flex;
-      flex-direction: row;
-    }
-  }
-
-  .new-export-policy-rule-template {
-    cursor: pointer;
-
-    .flow-export-policy-rule-inputs {
-      justify-content: space-between;
-      padding: 0px 10px 10px;
-
-      .flow-export-policy-multiSelect {
-        width: 240px;
-      }
-    }
-
-    .flow-export-policy-rule-row {
-      padding-left: 30px;
-    }
-
-    .flow-export-policy-attach-radio {
-      margin-left: 5px;
-      margin-top: 6px;
-      @include global-mat-radio(16px);
-
-      .mat-radio-label-content {
-        @include primary-font(14px);
-        padding-top: 2px;
-      }
-    }
-
-    .new-export-policy-bold {
-      @include primary-font(16px, #383838, 500);
-    }
-
-    .newmirrnew-export-policyorsession-bold-subtext-ipmac {
-      @include primary-font(14px, #383838, 200);
-      width: 40px;
-    }
-
-    .new-export-policy-bold-subtext-proto {
-      @include primary-font(14px, #383838, 200);
-      width: 80px;
-    }
-  }
-
-  .export-policy-subtext {
-    margin-top: 2px;
-    @include primary-font(12px, #b2b3b4, 300);
-  }
-
-  .export-policy-add-rule {
-    @include primary-font(16px, #6ba0e5, 400);
-    margin-top: 5px;
-    cursor: pointer;
+  app-syslog {
+    margin-left: 10px;
   }
 
   app-orderedlist {
-    width: 95%;
-    min-width: 600px;
-    max-width: 600px;
+    width: 590px;
+    margin-left: 10px;
+
+    .export-policy-bold {
+      @include primary-font(16px, #383838, 500);
+    }
+
+    .export-policy-bold-subtext {
+      @include primary-font(14px, #383838, 200);
+    }
+
+    .export-policy-rule-content {
+      color: #767676;
+      font-size: 14px;
+      font-weight: 400;
+    }
   }
 }
+
+@include adjust-inlinebuttons-boundry(1165, new-flow-export-editform-inline);

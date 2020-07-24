@@ -1,15 +1,15 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Animations } from '@app/animations';
 import { IWorkloadWorkload, WorkloadWorkload, WorkloadWorkloadIntfSpec } from '@sdk/v1/models/generated/workload';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
-import { FormArray, ValidatorFn, AbstractControl, Validators, ValidationErrors, FormGroup } from '@angular/forms';
-import { minValueValidator, maxValueValidator } from '@sdk/v1/utils/validators';
+import { FormArray, ValidatorFn, AbstractControl, ValidationErrors, FormGroup } from '@angular/forms';
 import { SelectItem } from 'primeng/api';
 import { IPUtility } from '@app/common/IPUtility';
 import { Utility } from '@app/common/Utility';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
+import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
 
 @Component({
   selector: 'app-newworkload',
@@ -19,37 +19,29 @@ import { Utility } from '@app/common/Utility';
   animations: Animations,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, WorkloadWorkload> implements OnInit, AfterViewInit {
+export class NewworkloadComponent extends CreationPushForm<IWorkloadWorkload, WorkloadWorkload> implements OnInit, OnChanges, AfterViewInit {
 
   // Let workload.component pass in hostOptions
   @Input() hostOptions: SelectItem[] = [];
   @Input() existingObjects: IWorkloadWorkload[] = [];
-
-  @Output() editFormClose: EventEmitter<any> = new EventEmitter<any>();
 
   IPS_LABEL: string = 'IP Addresses';
   IPS_ERRORMSG: string = 'Invalid IP addresses';
   IPS_TOOLTIP: string = 'Type in a single or multiple IP addresses separated by commas.';
   MACS_LABEL: string = 'MAC Addresses';
   MACS_ERRORMSG: string = 'Invalid MAC addresses. It should be aaaa.bbbb.cccc format.';
-  validationMessage: string;
 
   constructor(protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected workloadService: WorkloadService,
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService, WorkloadWorkload);
+    super(_controllerService, uiconfigsService, cdr, WorkloadWorkload);
   }
 
-  getClassName() {
-    return this.constructor.name;
-  }
 
   // Empty Hook
   postNgInit() {
-    if (!this.isInline && this.hostOptions.length) {
-      this.hostOptions.push({label: '', value: null});
-    }
     // Add one interface if it doesn't already have one
     const interfaces = this.newObject.$formGroup.get(['spec', 'interfaces']) as FormArray;
 
@@ -62,6 +54,9 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
         }
         form.get(['ip-addresses']).setValidators([
           this.isValidIpAddresses()
+        ]);
+        form.get(['mac-address']).setValidators([
+          this.isValidMacAddress()
         ]);
       });
     }
@@ -137,12 +132,16 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
 
   // Empty Hook
   isFormValid() {
-    this.validationMessage = null;
     if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
+      this.submitButtonTooltip = 'Error: Name field is empty.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['meta', 'name']).invalid)  {
+      this.submitButtonTooltip = 'Error: Name field is invalid.';
       return false;
     }
     if (Utility.isEmpty(this.newObject.$formGroup.get(['spec', 'host-name']).value)) {
-      this.validationMessage = 'Error: Host is required.';
+      this.submitButtonTooltip = 'Error: Host is required.';
       return false;
     }
     const arr: FormArray = this.newObject.$formGroup.get(['spec', 'interfaces']) as FormArray;
@@ -150,50 +149,53 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
       const fieldValue: FormGroup = arr['controls'][i] as FormGroup;
       if ((fieldValue.controls['mac-address']).value !== null) {
         if (!(fieldValue.controls['mac-address']).valid) {
-          this.validationMessage =
+          this.submitButtonTooltip =
             'Error: Interface ' + (i + 1) + ' source MAC address is invalid.';
           return false;
         }
       } else {
-        this.validationMessage =
+        this.submitButtonTooltip =
           'Error: Interface ' + (i + 1) + ' source MAC address is empty.';
         return false;
       }
       if ((fieldValue.controls['ip-addresses']).value.length) {
         if (!(fieldValue.controls['ip-addresses']).valid) {
-          this.validationMessage =
+          this.submitButtonTooltip =
             'Error: Interface ' + (i + 1) + ' destination IP addresses are invalid.';
           return false;
         }
       }
       if ((fieldValue.controls['external-vlan']).value !== null) {
         if (!(fieldValue.controls['external-vlan']).valid) {
-          this.validationMessage =
+          this.submitButtonTooltip =
             'Error: Interface ' + (i + 1) + ' external-vlan is invalid.';
           return false;
         }
       } else {
-        this.validationMessage =
+        this.submitButtonTooltip =
           'Error: Interface ' + (i + 1) + ' external-vlan is empty.';
         return false;
       }
       if ((fieldValue.controls['micro-seg-vlan']).value !== null) {
         if (!(fieldValue.controls['micro-seg-vlan']).valid) {
-          this.validationMessage =
+          this.submitButtonTooltip =
             'Error: Interface ' + (i + 1) + ' micro-seg-vlan is invalid.';
           return false;
         }
       } else {
-        this.validationMessage =
+        this.submitButtonTooltip =
           'Error: Interface ' + (i + 1) + '  micro-seg-vlan is empty.';
         return false;
       }
     }
-    if (!this.newObject.$formGroup.valid) {
-      this.validationMessage = 'Error: form is not valid';
+    if (Utility.isValueOrArrayEmpty(arr)) {
+      this.submitButtonTooltip = 'At least one interface has to be added.';
       return false;
     }
-
+    if (!this.newObject.$formGroup.valid) {
+      this.submitButtonTooltip = 'Error: form is not valid';
+      return false;
+    }
     return true;
   }
 
@@ -222,31 +224,9 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
     return field.valid;
   }
 
-  getTooltip(): string {
-    if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
-      return 'Error: Workload name is required.';
-    }
-    return Utility.isEmpty(this.validationMessage) ? 'Ready to save new workload' : this.validationMessage;
-  }
-
   setToolbar() {
-    const currToolbar = this.controllerService.getToolbarData();
-    currToolbar.buttons = [
-      {
-        cssClass: 'global-button-primary global-button-padding',
-        text: 'CREATE WORKLOAD',
-        callback: () => { this.saveObject(); },
-        computeClass: () => this.computeButtonClass(),
-        genTooltip: () => this.getTooltip(),
-      },
-      {
-        cssClass: 'global-button-neutral global-button-padding',
-        text: 'CANCEL',
-        callback: () => { this.cancelObject(); }
-      },
-    ];
-
-    this._controllerService.setToolbarData(currToolbar);
+    this.setCreationButtonsToolbar('CREATE WORKLOAD',
+        UIRolePermissions.workloadworkload_create);
   }
 
   createObject(object: IWorkloadWorkload) {
@@ -263,15 +243,5 @@ export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, Worklo
 
   generateUpdateSuccessMsg(object: IWorkloadWorkload) {
     return 'Updated workload ' + object.meta.name;
-  }
-
-  editSaveObject() {
-    this.saveObject();
-    this.editFormClose.emit();
-  }
-
-  editCancelObject() {
-    this.cancelObject();
-    this.editFormClose.emit();
   }
 }

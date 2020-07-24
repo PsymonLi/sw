@@ -1,30 +1,31 @@
-<app-tableviewedit fxLayout="column" class="flowexportpolicy-widget"
-                   [creatingMode]="creatingMode"
-                   [showRowExpand]="showRowExpand"
-                   [data]="dataObjects"
-                   [cols]="cols"
-                   [expandedRowData]="expandedRowData"
-                   [captionTemplate]="captionTemplate"
-                   [bodyTemplate]="bodyTemplate"
-                   [actionTemplate]="actionTemplate"
-                   [expandTemplate]="expandTemplate"
-                   [createTemplate]="createTemplate"
-                   (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-</app-tableviewedit>
+<app-penpushtable #flowExportPolicyTable
+                  [actionTemplate]="actionTemplate"
+                  [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate"
+                  [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects"
+                  [enableCheckbox]="false"
+                  [expandTemplate]="expandTemplate"
+                  [loading]="tableLoading"
+                  [searchable]="false"
+                  [exportFilename]="exportFilename"
+                  [exportMap]="exportMap">
+</app-penpushtable>
 
 
 <ng-template #createTemplate>
   <app-newflowexportpolicy (formClose)="creationFormClose()" [maxTargets]="maxNewTargets"
-                           [existingObjects]='dataObjects'
-                           fxFlex="none">
+                           [existingObjects]='dataObjects' fxFlex="none">
   </app-newflowexportpolicy>
 </ng-template>
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <app-tableheader title="Flow Export Policies" [total]="count" [icon]="headerIcon" fxFlex="auto"
-                   fxLayout="row" [tableMenuItems]="tableMenuItems"
-                   [enableColumnSelect]="true" [cols]="cols"
+  <app-tableheader fxFlex="auto" fxLayout="row"
+                   [tableMenuItems]="penTable.tableMenuItems"
+                   title="Flow Export Policies" [total]="dataObjects.length"
+                   [icon]="headerIcon" [enableColumnSelect]="true" [cols]="cols"
                    (columnSelectChange)="onColumnSelectChange($event)">
   </app-tableheader>
 </ng-template>
@@ -47,9 +48,7 @@
 </ng-template>
 
 <ng-template #actionTemplate let-rowData>
-
   <div class="global-column-action-icon-container" fxLayout="row" fxLayoutGap="5px">
-
     <mat-icon *roleGuard="'monitoringflowexportpolicy_update'" matTooltip="Edit policy"
               class="global-table-action-icon flowexportpolicy-table-action-icon-edit"
               (click)="expandRowRequest($event, rowData)">edit</mat-icon>
@@ -61,6 +60,6 @@
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
   <app-newflowexportpolicy [objectData]="rowData" [isInline]="true" [maxTargets]="maxNewTargets"
-                           (formClose)="closeRowExpand()">
+                           (formClose)="editFormClose(rowData)">
   </app-newflowexportpolicy>
 </ng-template>

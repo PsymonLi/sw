@@ -1,35 +1,34 @@
 <app-pagebody [icon]="bodyIcon" header="Firewall Log Export Policies">
-  <app-tableviewedit fxLayout="column" class="fwlogpolicies-widget"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [expandTemplate]="expandTemplate"
-                     [createTemplate]="createTemplate"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
+  <app-penpushtable #fwpLogPolicyTable
+                    [actionTemplate]="actionTemplate"
+                    [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate"
+                    [columns]="cols"
+                    [createTemplate]="createTemplate"
+                    [data]="dataObjects"
+                    [enableCheckbox]="false"
+                    [expandTemplate]="expandTemplate"
+                    [rowHeight]="43"
+                    [searchable]="false"
+                    [loading]="tableLoading"
+                    [exportFilename]="exportFilename"
+                    [exportMap]="exportMap">
+  </app-penpushtable>
 </app-pagebody>
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <app-tableheader title="Firewall Log Export Policies" [total]="count" [icon]="headerIcon"
-                   fxFlex="auto"
-                   fxLayout="row" [tableMenuItems]="tableMenuItems"
-                   [enableColumnSelect]="true" [cols]="cols"
+  <app-tableheader fxFlex="auto" fxLayout="row"
+                   [tableMenuItems]="penTable.tableMenuItems"
+                   title="Firewall Log Export Policies" [total]="dataObjects.length"
+                   [icon]="headerIcon" [enableColumnSelect]="true" [cols]="cols"
                    (columnSelectChange)="onColumnSelectChange($event)">
   </app-tableheader>
 </ng-template>
 
 <ng-template #createTemplate>
-  <app-newfwlogpolicy
-                      (formClose)="creationFormClose()"
-                      [existingObjects]='dataObjects'
-                      [maxTargets]="maxNewTargets"
-                      fxFlex="none">
+  <app-newfwlogpolicy fxFlex="none" (formClose)="creationFormClose()"
+                      [existingObjects]='dataObjects' [maxNewTargets]="maxNewTargets">
   </app-newfwlogpolicy>
 </ng-template>
 
@@ -52,6 +51,7 @@
 </ng-template>
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
-  <app-newfwlogpolicy [style.width]="'100%'" [objectData]="rowData" [isInline]="true"
-                      (formClose)="closeRowExpand()" fxFlex="none"></app-newfwlogpolicy>
+  <app-newfwlogpolicy fxFlex="none" [objectData]="rowData" [isInline]="true"
+                      [maxNewTargets]="maxNewTargets" (formClose)="editFormClose(rowData)">
+  </app-newfwlogpolicy>
 </ng-template>

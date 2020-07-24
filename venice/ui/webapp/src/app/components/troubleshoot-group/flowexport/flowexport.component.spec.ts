@@ -30,6 +30,7 @@ import { TroubleshootGroupModule } from '../troubleshoot-group.module';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import { AuthService } from '@app/services/auth.service';
+import { FlexLayoutModule } from '@angular/flex-layout';
 
 
 describe('FlowexportComponent', () => {
@@ -46,6 +47,7 @@ describe('FlowexportComponent', () => {
       imports: [
         FormsModule,
         ReactiveFormsModule,
+        FlexLayoutModule,
         NoopAnimationsModule,
         SharedModule,
         HttpClientTestingModule,

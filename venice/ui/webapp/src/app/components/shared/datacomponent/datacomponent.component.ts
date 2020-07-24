@@ -13,11 +13,15 @@ import { switchMap, buffer } from 'rxjs/operators';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { BaseComponent } from '@app/components/base/base.component';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
+import { PentableComponent } from '../pentable/pentable.component';
+import { BaseModel } from '@sdk/v1/models/generated/basemodel/base-model';
 
 export abstract class DataComponent extends BaseComponent implements OnInit, OnDestroy {
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
 
   @Output() operationOnMultiRecordsComplete: EventEmitter<any> = new EventEmitter<any>();
+
+  penTable: PentableComponent;
 
   protected stagingService: StagingService;
 
@@ -25,6 +29,14 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
     protected uiconfigsService: UIConfigsService) {
     super(controllerService, uiconfigsService);
     this.setupBulkEdit();
+  }
+
+  ngOnInit() {
+    super.ngOnInit();
+    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
+      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
+    });
+    this.setDefaultToolbar();
   }
 
   getClassName(): string {
@@ -35,6 +47,8 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
     console.warn(this.getClassName() + text);
   }
 
+  setDefaultToolbar() {}
+
   /**
    * Call this from ngOnInit in derived class: tableviewedit or pentable
    */
@@ -42,12 +56,68 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
     this.stagingService = Utility.getInstance().getStagingServices();
   }
 
-  abstract getSelectedDataObjects(): any[];
-  abstract clearSelectedDataObjects();
+  clearSelectedDataObjects() {
+    if (this.penTable) {
+      this.penTable.selectedDataObjects = [];
+    }
+  }
+
+  getSelectedDataObjects() {
+    if (!this.penTable) {
+      return [];
+    }
+    return this.penTable.selectedDataObjects;
+  }
 
   hasSelectedRows(): boolean {
     return this.getSelectedDataObjects().length > 0;
   }
+
+  onColumnSelectChange(event) {
+    if (this.penTable) {
+      this.penTable.onColumnSelectChange(event);
+    }
+  }
+
+  creationFormClose() {
+    if (this.penTable) {
+      this.penTable.creationFormClose();
+    }
+  }
+
+  editFormClose(rowData) {
+    if (this.penTable && this.penTable.showRowExpand) {
+      this.penTable.toggleRow(rowData);
+    }
+  }
+
+  expandRowRequest(event, rowData) {
+    if (this.penTable && !this.penTable.showRowExpand) {
+      this.penTable.toggleRow(rowData, event);
+    }
+  }
+
+  onDeleteRecord(event, object) {
+    this.penTable.onDeleteRecord(
+      event,
+      object,
+      this.generateDeleteConfirmMsg(object),
+      this.generateDeleteSuccessMsg(object),
+      this.deleteRecord.bind(this),
+      () => {
+        this.penTable.selectedDataObjects = [];
+      }
+    );
+  }
+
+  generateDeleteConfirmMsg(object: any): string {
+    return 'Are you sure that you want to delete item: ' + object.meta.name + '?';
+  }
+  generateDeleteSuccessMsg(object: any): string {
+    return 'Deleted item ' + object.meta.name;
+  }
+
+  deleteRecord(object: any) {}
 
   commitStagingBuffer(buffername: string): Observable<any> {
     const commitBufferBody: StagingCommitAction = Utility.buildCommitBufferCommit(buffername);
@@ -386,11 +456,15 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
 
   /** override super's API */
   ngOnDestroy() {
-    this.ngOnDestroyHook();
     this.controllerService.setToolbarData({
       buttons: [],
       breadcrumb: [],
     });
+    this.controllerService.publish(Eventtypes.COMPONENT_DESTROY, {
+      'component': this.getClassName(), 'state':
+        Eventtypes.COMPONENT_DESTROY
+    });
     super.ngOnDestroy();  // call supers' API
   }
 }
+

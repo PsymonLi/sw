@@ -21,7 +21,7 @@ import { PrimengModule } from '@app/lib/primeng.module';
 import { WidgetsModule } from 'web-app-framework';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 import { SecurityService } from '@app/services/generated/security.service';
-import { Utility } from '@app/common/Utility';
+import { FlexLayoutModule } from '@angular/flex-layout';
 
 
 describe('NewflowexportComponent', () => {
@@ -35,6 +35,7 @@ describe('NewflowexportComponent', () => {
         TroubleshootGroupModule,
         SharedModule,
         ReactiveFormsModule,
+        FlexLayoutModule,
         RouterTestingModule,
         HttpClientTestingModule,
         FormsModule,

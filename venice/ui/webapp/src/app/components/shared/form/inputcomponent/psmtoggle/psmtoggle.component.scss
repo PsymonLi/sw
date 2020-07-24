@@ -4,6 +4,7 @@ $errorColor : #e57553;
   .psm-form-toggle-container {
     width: 100%;
     margin-left: 10px;
+    height: 30px;
 
     label {
       left: .25em;
@@ -14,6 +15,7 @@ $errorColor : #e57553;
     .psm-form-toggle {
       display: block;
       width: 100%;
+      height: 24px;
     }
 
   }

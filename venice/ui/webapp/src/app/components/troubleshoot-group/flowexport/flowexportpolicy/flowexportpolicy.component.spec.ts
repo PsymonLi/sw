@@ -24,7 +24,8 @@ import { LicenseService } from '@app/services/license.service';
 import { AuthService } from '@app/services/auth.service';
 import { TestTablevieweditRBAC } from '@app/components/shared/tableviewedit/tableviewedit.component.spec';
 import { MonitoringFlowExportPolicy } from '@sdk/v1/models/generated/monitoring';
-
+import { FlexLayoutModule } from '@angular/flex-layout';
+import { ClusterService } from '@app/services/generated/cluster.service';
 
 describe('FlowexportpolicyComponent', () => {
   let component: FlowexportpolicyComponent;
@@ -36,6 +37,7 @@ describe('FlowexportpolicyComponent', () => {
       imports: [
         FormsModule,
         ReactiveFormsModule,
+        FlexLayoutModule,
         NoopAnimationsModule,
         HttpClientTestingModule,
         PrimengModule,
@@ -52,6 +54,7 @@ describe('FlowexportpolicyComponent', () => {
         AuthService,
         ConfirmationService,
         LogService,
+        ClusterService,
         LogPublishersService,
         MatIconRegistry,
         MonitoringService,

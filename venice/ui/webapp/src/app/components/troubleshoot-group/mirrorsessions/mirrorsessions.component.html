@@ -1,27 +1,32 @@
 <app-pagebody class="mirrorsessions" header="Mirror Sessions" [icon]="bodyicon">
-  <app-tableviewedit fxLayout="column" style="height: 100%;" class="mirrorsessions-widget"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand" [data]="dataObjects" [cols]="cols"
-                     [virtualRowHeight]="60"
-                     [expandedRowData]="expandedRowData" [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [expandTemplate]="expandTemplate" [actionTemplate]="actionTemplate"
-                     [createTemplate]="createTemplate"
-                     [enableCheckbox]="false"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
+  <app-penpushtable #mirrorSessionTable
+                    [actionTemplate]="actionTemplate"
+                    [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate"
+                    [columns]="cols"
+                    [createTemplate]="createTemplate"
+                    [data]="dataObjects"
+                    [enableCheckbox]="false"
+                    [expandTemplate]="expandTemplate"
+                    [loading]="tableLoading"
+                    [rowHeight]="60"
+                    [searchable]="false"
+                    [exportFilename]="exportFilename"
+                    [exportMap]="exportMap">
+  </app-penpushtable>
 </app-pagebody>
 
 <ng-template #createTemplate>
   <app-newmirrorsession (formClose)="creationFormClose()" fxFlex="none"
-                        [existingObjects]='dataObjects'>
+                        [existingObjects]='dataObjects' [interfaces]="interfaces">
   </app-newmirrorsession>
 </ng-template>
 
 <ng-template #captionTemplate let-count="count">
-  <app-tableheader title="Mirror Sessions" [total]="count" fxFlex="auto" fxLayout="row"
-                   [tableMenuItems]="tableMenuItems" [enableColumnSelect]="true" [cols]="cols"
-                   (columnSelectChange)="onColumnSelectChange($event)" [icon]="headerIcon">
+  <app-tableheader fxFlex="auto" fxLayout="row" [tableMenuItems]="mirrorSessionTable.tableMenuItems"
+                   title="Mirror Sessions" [total]="dataObjects.length" [icon]="headerIcon"
+                   [enableColumnSelect]="true" [cols]="cols"
+                   (columnSelectChange)="onColumnSelectChange($event)">
   </app-tableheader>
 </ng-template>
 
@@ -66,7 +71,8 @@
 </ng-template>
 
 <ng-template #expandTemplate let-rowData let-col="col">
-  <app-newmirrorsession [objectData]="rowData" [isInline]="true" (formClose)="closeRowExpand()"
-                        fxFlex="none" [existingObjects]='dataObjects'>
+  <app-newmirrorsession [objectData]="rowData" [isInline]="true"
+                        (formClose)="editFormClose(rowData)"
+                        fxFlex="none" [existingObjects]="dataObjects" [interfaces]="interfaces">
   </app-newmirrorsession>
 </ng-template>

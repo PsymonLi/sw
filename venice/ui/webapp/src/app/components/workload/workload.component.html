@@ -11,27 +11,27 @@
       </app-workloadwidget>
     </div>
   </div>
-  <app-pentable #workloadTable
-                [actionTemplate]="actionTemplate"
-                [bodyTemplate]="bodyTemplate"
-                [captionTemplate]="captionTemplate"
-                [columns]="cols"
-                [createTemplate]="createTemplate"
-                [data]="dataObjects"
-                [enableCheckbox]="true"
-                [expandTemplate]="expandTemplate"
-                [exportFilename]="exportFilename"
-                [exportMap]="exportMap"
-                [loading]="uiModelLoading"
-                [numRows]="10"
-                [rowHeight]="95"
-                [searchable]="true"
-                (searchCancelledEmitter)="onCancelSearch()"
-                [searchCols]="advSearchCols"
-                (searchEmitter)="onSearchWorkloads()"
-                [searchFormArray]="fieldFormArray"
-                searchKind="Workload">
-  </app-pentable>
+  <app-penpushtable #workloadTable
+                    [actionTemplate]="actionTemplate"
+                    [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate"
+                    [columns]="cols"
+                    [createTemplate]="createTemplate"
+                    [data]="dataObjects"
+                    [enableCheckbox]="true"
+                    [expandTemplate]="expandTemplate"
+                    [exportFilename]="exportFilename"
+                    [exportMap]="exportMap"
+                    [loading]="uiModelLoading"
+                    [numRows]="10"
+                    [rowHeight]="95"
+                    [searchable]="true"
+                    (searchCancelledEmitter)="onCancelSearch()"
+                    [searchCols]="advSearchCols"
+                    (searchEmitter)="onSearchWorkloads()"
+                    [searchFormArray]="fieldFormArray"
+                    searchKind="Workload">
+  </app-penpushtable>
 </app-pagebody>
 
 <ng-template #captionTemplate let-count="count">
@@ -55,12 +55,10 @@
 </ng-template>
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
-  <app-newworkload [objectData]="rowData" [isInline]="true" (editFormClose)="editFormClose(rowData)"
-                   [hostOptions]="hostOptions"
-                   fxFlex="none">
+  <app-newworkload [objectData]="rowData" [isInline]="true" (formClose)="editFormClose(rowData)"
+                   [hostOptions]="hostOptions" fxFlex="none">
   </app-newworkload>
 </ng-template>
-
 
 <ng-template #bodyTemplate let-rowData let-col="col" let-hovered="hovered">
   <ng-container [ngSwitch]="col.field">

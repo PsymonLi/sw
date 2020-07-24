@@ -8,9 +8,8 @@ import {
   MonitoringMatchRule, MonitoringMirrorSessionSpec, MonitoringMirrorSessionSpec_packet_filters
 } from '@sdk/v1/models/generated/monitoring';
 import { SelectItem } from 'primeng/primeng';
-import { SyslogComponent } from '@app/components/shared/syslog/syslog.component';
+import { SyslogComponent, ReturnObjectType } from '@app/components/shared/syslog/syslog.component';
 import { Utility } from '@app/common/Utility';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ValidatorFn, AbstractControl, ValidationErrors, FormArray, FormControl } from '@angular/forms';
 import { OrderedItem } from '@app/components/shared/orderedlist/orderedlist.component';
@@ -18,6 +17,8 @@ import { IPUtility } from '@app/common/IPUtility';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { SecurityApp } from '@sdk/v1/models/generated/security';
 import { SecurityService } from '@app/services/generated/security.service';
+import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 @Component({
   selector: 'app-newflowexportpolicy',
@@ -27,7 +28,7 @@ import { SecurityService } from '@app/services/generated/security.service';
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowExportPolicy, MonitoringFlowExportPolicy> {
+export class NewflowexportpolicyComponent extends CreationPushForm<IMonitoringFlowExportPolicy, MonitoringFlowExportPolicy> {
   @ViewChild('syslogComponent') syslogComponent: SyslogComponent;
   @Input() maxTargets: number;
   @Input() existingObjects: IMonitoringFlowExportPolicy[] = [];
@@ -60,33 +61,9 @@ export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowEx
     protected uiconfigsService: UIConfigsService,
     protected _monitoringService: MonitoringService,
     protected securityService: SecurityService,
-    private cdr: ChangeDetectorRef
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService, MonitoringFlowExportPolicy);
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
-
-  getSecurityApps() {
-    this.securityAppsEventUtility = new HttpEventUtility<SecurityApp>(SecurityApp, false, null, true); // https://pensando.atlassian.net/browse/VS-93 we want to trim the object
-    this.securityApps = this.securityAppsEventUtility.array as ReadonlyArray<SecurityApp>;
-    const subscription = this.securityService.WatchApp().subscribe(
-      response => {
-        this.securityAppsEventUtility.processEvents(response);
-        this.securityAppOptions = this.securityApps.map(app => {
-          return {
-            label: app.meta.name,
-            value: app.meta.uuid,
-          };
-        });
-        this.cdr.detectChanges();
-      },
-      this._controllerService.webSocketErrorHandler('Failed to get Apps')
-    );
-    this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
+    super(_controllerService, uiconfigsService, cdr, MonitoringFlowExportPolicy);
   }
 
   postNgInit() {
@@ -124,10 +101,6 @@ export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowEx
     if (this.ExportPolicyRules.length === 0) {
       this.addRule();
     }
-  }
-
-  postViewInit() {
-    this.cdr.detectChanges();
   }
 
   addRule() {
@@ -241,8 +214,10 @@ export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowEx
         return false;
       }
     }
-    if (!this.syslogComponent.isSyLogFormValid().valid) {
-      this.submitButtonTooltip = this.syslogComponent.isSyLogFormValid().errorMessage;
+
+    const syslogFormReturnValue: ReturnObjectType = this.syslogComponent.isSyLogFormValid();
+    if (!syslogFormReturnValue.valid) {
+      this.submitButtonTooltip = syslogFormReturnValue.errorMessage;
       return false;
     }
 
@@ -291,25 +266,6 @@ export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowEx
     this.submitButtonTooltip = 'Ready to submit';
     return true;
   }
-  setToolbar() {
-    const currToolbar = this.controllerService.getToolbarData();
-    currToolbar.buttons = [
-      {
-        cssClass: 'global-button-primary flowexportpolicy-button',
-        text: 'CREATE FLOW EXPORT POLICY',
-        callback: () => { this.saveObject(); },
-        computeClass: () => this.computeFormSubmitButtonClass(),
-        genTooltip: () => this.getSubmitButtonToolTip()
-      },
-      {
-        cssClass: 'global-button-neutral flowexportpolicy-button',
-        text: 'CANCEL',
-        callback: () => { this.cancelObject(); }
-      },
-    ];
-
-    this._controllerService.setToolbarData(currToolbar);
-  }
 
   getObjectValues(): IMonitoringFlowExportPolicy {
     const obj = this.newObject.getFormGroupValues();
@@ -325,6 +281,11 @@ export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowEx
       }
     });
     return obj;
+  }
+
+  setToolbar() {
+    this.setCreationButtonsToolbar('CREATE FLOW EXPORT POLICY',
+        UIRolePermissions.monitoringflowexportpolicy_create);
   }
 
   createObject(object: IMonitoringFlowExportPolicy) {

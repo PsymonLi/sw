@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { MetricsUtility } from '@app/common/MetricsUtility';
@@ -35,6 +35,7 @@ import { WorkloadUtility, WorkloadNameInterface } from '@app/common/WorkloadUtil
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { Router } from '@angular/router';
+import { throttleTime } from 'rxjs/operators';
 
 interface ChartData {
   // macs or ids of the dsc
@@ -55,7 +56,8 @@ interface DSCUiModel {
   selector: 'app-naples',
   encapsulation: ViewEncapsulation.None,
   templateUrl: './naples.component.html',
-  styleUrls: ['./naples.component.scss']
+  styleUrls: ['./naples.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 /**
@@ -79,7 +81,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
   @ViewChild('dscTable') dscTable: PentableComponent;
 
   dataObjects: ReadonlyArray<ClusterDistributedServiceCard> = [];
-  dataObjectsBackUp: ReadonlyArray<ClusterDistributedServiceCard> = null;
+  dataObjectsBackUp: ReadonlyArray<ClusterDistributedServiceCard> = [];
   inLabelEditMode: boolean = false;
   labelEditorMetaData: LabelEditorMetadataModel;
 
@@ -221,18 +223,17 @@ export class NaplesComponent extends DataComponent implements OnInit {
     protected searchService: SearchService,
     protected workloadService: WorkloadService,
     protected router: Router,
+    protected cdr: ChangeDetectorRef,
     protected uiconfigsService: UIConfigsService
   ) {
     super(controllerService, uiconfigsService);
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
 
   deleteRecord(object: ClusterDistributedServiceCard): Observable<{ body: IClusterDistributedServiceCard | IApiStatus | Error; statusCode: number; }> {
     return this.clusterService.DeleteDistributedServiceCard(object.meta.name);
   }
+
   generateDeleteConfirmMsg(object: ClusterDistributedServiceCard): string {
     let confirmMsg = 'Are you sure you want to delete DSC ';
     if (object.spec['mgmt-mode'] === ClusterDistributedServiceCardSpec_mgmt_mode.host &&
@@ -267,16 +268,21 @@ export class NaplesComponent extends DataComponent implements OnInit {
    * getDSCTotalCount() -> will invoke watchAll()
    */
   ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.dscTable;
     this.tableLoading = true;
     this.filterColumns(); //  If backend is a Venice-for-cloud, we want to exclude some columns
     this.buildAdvSearchCols();
     this.provideCustomOptions();
     this.getTop10CardsDSCAndActiveSessions();
+    this.getDSCTotalCount();  // start retrieving data.
+  }
+
+  setDefaultToolbar() {
     this.controllerService.setToolbarData({
       buttons: [],
       breadcrumb: [{ label: 'Distributed Services Cards', url: Utility.getBaseUIUrl() + 'cluster/dscs' }]
     });
-    this.getDSCTotalCount();  // start retrieving data.
   }
 
   generateChartOptions(addSmallestUnit: boolean = false) {
@@ -503,7 +509,6 @@ export class NaplesComponent extends DataComponent implements OnInit {
     this.subscriptions.push(searchDSCTotalSubscription);
   }
 
-
   invokeWatch() {
     this.watchWorkloads();
     this.watchNaples();
@@ -533,6 +538,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
       );
     }
   }
+
   searchControlPlaneStatus (requirement: FieldsRequirement, data = this.dataObjects): any[] {
     const outputs: any[] = [];
     let isNot = false;
@@ -564,6 +570,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
           return;
         }
         this.hostObjects = response.data;
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -580,12 +587,11 @@ export class NaplesComponent extends DataComponent implements OnInit {
         }
         this.workloadList = response.data as WorkloadWorkload[];
         this.buildDSCWorkloadsMap(this.workloadList, this.dataObjects);
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(workloadSubscription);
   }
-
-
 
   /**
    * This is a key API.  It computes the DSC-Workloads map and updates each DSC's workload list
@@ -600,6 +606,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
         ((naple._ui) as DSCUiModel).associatedWorkloads = this.getDSCWorkloads(naple);
         return naple;
       });
+      this.cdr.detectChanges();
     }
   }
 
@@ -651,7 +658,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
    */
   watchNaples() {
     this._clearDSCMaps();
-    const dscSubscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
+    const dscSubscription = this.clusterService.ListDistributedServiceCardCache().pipe(throttleTime(5000)).subscribe(
       (response) => {
         if (response.connIsErrorState) {
           return;
@@ -661,6 +668,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
         if (!this.top10CardChartData || this.top10CardChartData.length === 0) {
           this.processTop10CardTelemetryData(this.top10CardTelemetryData);
         }
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -681,6 +689,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
             };
             this.dscprofileOptions.push(obj);
           });
+          this.cdr.detectChanges();
         }
       },
       this._controllerService.webSocketErrorHandler('Failed to get DSC Profile')
@@ -1402,7 +1411,6 @@ export class NaplesComponent extends DataComponent implements OnInit {
   // }
 
   onSaveProfileToDSCs() {
-
     const updatedNaples = this.dscTable.selectedDataObjects;
     if (this.selectedDSCProfiles) {
       // this.updateDSCProfilesWithForkjoin(updatedNaples);
@@ -1473,31 +1481,6 @@ export class NaplesComponent extends DataComponent implements OnInit {
   //   this.saveLabelsOperationDone = null;
   //   this.handleForkJoin(observables, summary, objectType);
   // }
-
-  onColumnSelectChange(event) {
-    this.dscTable.onColumnSelectChange(event);
-  }
-
-  onDeleteRecord(event, object) {
-    this.dscTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this),
-      () => {
-        this.dscTable.selectedDataObjects = [];
-      }
-    );
-  }
-
-  getSelectedDataObjects(): any[] {
-    return this.dscTable.selectedDataObjects;
-  }
-
-  clearSelectedDataObjects() {
-    this.dscTable.selectedDataObjects = [];
-  }
 
   showDSCControlPlaneStatusHelper(stringMsgs: string, header: string, msgHeader: string) {
      // we don't want the panel collapse when clicking on "view reasons"
