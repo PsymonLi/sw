@@ -43,6 +43,9 @@ pds_tep_update (pds_obj_key_t *key, nh_info_t *nh_info)
     pds_tep_spec_t spec = { 0 };
     pds_batch_params_t batch_params;
 
+    PDS_TRACE_VERBOSE("Rcvd TEP %s nh update, nh type %u, nh %s",
+                      key->str(), nh_info->nh_type, nh_info->nh.str());
+
     tep = tep_db()->find(key);
     if (unlikely(tep == NULL)) {
         return SDK_RET_ENTRY_NOT_FOUND;
@@ -55,7 +58,7 @@ pds_tep_update (pds_obj_key_t *key, nh_info_t *nh_info)
     spec.nh_type = nh_info->nh_type;
     switch (nh_info->nh_type) {
     case PDS_NH_TYPE_UNDERLAY:
-        spec.nh = nh_info->nh;;
+        spec.nh = nh_info->nh;
         break;
 
     case PDS_NH_TYPE_UNDERLAY_ECMP:

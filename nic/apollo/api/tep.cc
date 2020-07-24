@@ -179,6 +179,7 @@ tep_entry::cleanup_config(api_obj_ctxt_t *obj_ctxt) {
 
 sdk_ret_t
 tep_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
+    tep_entry *cloned_tep;
     pds_tep_spec_t *spec = &obj_ctxt->api_params->tep_spec;
 
     obj_ctxt->upd_bmap = 0;
@@ -205,8 +206,32 @@ tep_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
             obj_ctxt->upd_bmap |= PDS_TEP_UPD_UNDERLAY_NH;
         }
     } else {
-        // nexthop type itself has changed
-        obj_ctxt->upd_bmap |= PDS_TEP_UPD_NH_TYPE;
+        if (spec->nh_type == PDS_NH_TYPE_NONE) {
+            // update to PDS_NH_TYPE_NONE is same as no update (i.e., user
+            // wants to retain the current forwarding information), this can
+            // happen when:
+            // 1. user doesn't provide any nexthop information (i.e.,
+            //    PDS_NH_TYPE_NONE) and later
+            // 2. routing stack updates the TEP with reachability
+            //    information (thus changing the nh_type_ from
+            //    PDS_NH_TYPE_NONE to something else) and then
+            // 3. user updates some other attribute of TEP but still
+            //    providing no nexthop information
+            // in this case, nh_type_ change is detected but in reality user
+            // intention is not to update it
+            cloned_tep = (tep_entry *)obj_ctxt->cloned_obj;
+            cloned_tep->nh_type_ =  spec->nh_type = nh_type_;
+            if (nh_type_ == PDS_NH_TYPE_UNDERLAY) {
+                cloned_tep->nh_ = spec->nh = nh_;
+            } else if (nh_type_ == PDS_NH_TYPE_UNDERLAY_ECMP) {
+                cloned_tep->nh_group_ = spec->nh_group = nh_group_;
+            } else if (nh_type_ == PDS_NH_TYPE_OVERLAY) {
+                cloned_tep->tep_ = spec->tep = tep_;
+            }
+        } else {
+            // nexthop type itself has changed
+            obj_ctxt->upd_bmap |= PDS_TEP_UPD_NH_TYPE;
+        }
     }
     return SDK_RET_OK;
 }

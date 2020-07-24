@@ -245,8 +245,7 @@ fill_p4_tep_data_from_ipsec_sa_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key,
 
 sdk_ret_t
 tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
-                            pds_tep_spec_t *spec,
-                            tunnel_actiondata_t *tep_data,
+                            pds_tep_spec_t *spec, tunnel_actiondata_t *tep_data,
                             api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
     tep_entry *tep2;
@@ -258,13 +257,15 @@ tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
         !(obj_ctxt->upd_bmap & PDS_TEP_UPD_UNDERLAY_NH) &&
         !(obj_ctxt->upd_bmap & PDS_TEP_UPD_OVERLAY_NH)) {
         // update operation, but forwarding information has not changed
+        PDS_TRACE_VERBOSE("TEP NH info not updated ...");
         return SDK_RET_OK;
     }
 
     switch (spec->nh_type) {
     case PDS_NH_TYPE_UNDERLAY_ECMP:
         if (!tep->ipsec_encrypt_sa().valid()) {
-            ret = fill_p4_tep_data_from_nhgroup_(tep, &spec->nh_group, tep_data);
+            ret = fill_p4_tep_data_from_nhgroup_(tep, &spec->nh_group,
+                                                 tep_data);
         } else {
             pds_obj_key_t ipsec_sa_id = tep->ipsec_encrypt_sa();
             ret = fill_p4_tep_data_from_ipsec_sa_(tep, &ipsec_sa_id, tep_data,
@@ -334,7 +335,7 @@ tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
             if (obj_ctxt->upd_bmap & PDS_TEP_UPD_NH_TYPE) {
                 // update to PDS_NH_TYPE_NONE is same as no update (i.e., user
                 // wants to retain the current forwarding information), this can
-                // happen when
+                // happen when:
                 // 1. user doesn't provide any nexthop information (i.e.,
                 //    PDS_NH_TYPE_NONE) and later
                 // 2. routing stack updates the TEP with reachability
@@ -716,8 +717,8 @@ tep_impl::activate_update_(pds_epoch_t epoch, tep_entry *tep,
     tunnel_actiondata_t tep_data;
 
     spec = &obj_ctxt->api_params->tep_spec;
-    PDS_TRACE_DEBUG("Activating TEP %s update, h/w id1 %u",
-                    tep->key().str(), hw_id_);
+    PDS_TRACE_DEBUG("Activating TEP %s update, h/w id %u, upd bmap 0x%lx",
+                    tep->key().str(), hw_id_, obj_ctxt->upd_bmap);
     if (tep->type() == PDS_TEP_TYPE_INTER_DC) {
         // update outer tunnel in double encap case
         return program_inter_dc_tunnel_(API_OP_UPDATE, tep, orig_tep,
@@ -788,11 +789,6 @@ tep_impl::fill_spec_(pds_tep_spec_t *spec) {
         break;
     }
     sdk::lib::memrev(spec->mac, tep_data.tunnel_action.dmaci, ETH_ADDR_LEN);
-    if (tep_data.tunnel_action.num_nexthops > PDS_NUM_NH_NO_ECMP) {
-        spec->nh_type = PDS_NH_TYPE_UNDERLAY_ECMP;
-    } else if (tep_data.tunnel_action.num_nexthops == PDS_NUM_NH_NO_ECMP) {
-        spec->nh_type = PDS_NH_TYPE_UNDERLAY;
-    }
     if (tep_data.tunnel_action.vni) {
         spec->encap.type = PDS_ENCAP_TYPE_VXLAN;
         spec->encap.val.value = tep_data.tunnel_action.vni;
