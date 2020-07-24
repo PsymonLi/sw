@@ -72,7 +72,7 @@ func (vw *vosDiskWatcher) StopWatchers() {
 	}
 }
 
-func (vw *vosDiskWatcher) startVosDiskMonitorWatcher(doneCh <-chan bool, recover func()) error {
+func (vw *vosDiskWatcher) startVosDiskMonitorWatcher(doneCh <-chan bool) error {
 	outCh := make(chan *vosinternalprotos.DiskUpdate)
 	vw.wg.Add(1)
 	go func() {
@@ -112,7 +112,6 @@ func (vw *vosDiskWatcher) startVosDiskMonitorWatcher(doneCh <-chan bool, recover
 			case event, ok := <-outCh:
 				if !ok {
 					vw.logger.Info("Exiting diskupdate watcher, channel closed")
-					recover()
 					return
 				}
 				vw.handleVosDiskMonitorUpdate(event)

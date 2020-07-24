@@ -493,13 +493,7 @@ func (idr *Indexer) initializeAndStartWatchers() {
 	idr.startWatchers()
 
 	if idr.watchVos {
-		recover := func() {
-			if idr.GetRunningStatus() == IndexerRunning {
-				idr.stopWatchers()
-				idr.doneCh <- fmt.Errorf("error in vosdiskmonitor routine")
-			}
-		}
-		idr.vosDiskWtcher.startVosDiskMonitorWatcher(idr.watcherDone, recover)
+		idr.vosDiskWtcher.startVosDiskMonitorWatcher(idr.watcherDone)
 	}
 }
 

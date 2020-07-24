@@ -48,13 +48,14 @@ const (
 	cpuDivisionFactor              = 6
 	defaultFlowlogsLifecycleConfig = `<LifecycleConfiguration><Rule><ID>expire-flowlogs</ID><Prefix></Prefix><Status>Enabled</Status>` +
 		`<Expiration><Days>30</Days></Expiration></Rule></LifecycleConfiguration>`
-	periodicDiskMonitorTime = time.Minute * 30
-	metaPrefix              = "X-Amz-Meta-"
-	metaCreationTime        = "Creation-Time"
-	metaFileName            = "file"
-	metaContentType         = "content-type"
-	fwlogsBucketName        = "fwlogs"
-	diskUpdateWatchPath     = "diskupdates"
+	periodicDiskMonitorTime   = time.Minute * 30
+	metaPrefix                = "X-Amz-Meta-"
+	metaCreationTime          = "Creation-Time"
+	metaFileName              = "file"
+	metaContentType           = "content-type"
+	fwlogsBucketName          = "fwlogs"
+	diskUpdateWatchPath       = "diskupdates"
+	disableNativeMinioBrowser = true
 )
 
 var (
@@ -264,6 +265,7 @@ func New(ctx context.Context, trace bool, testURL string, credentialsManagerChan
 	}
 
 	updateGoMaxProcs()
+	disableMinioBrowser()
 
 	var credentialsManager vminio.CredentialsManager
 
@@ -425,6 +427,17 @@ func updateGoMaxProcs() {
 		log.Infof("GOMAXPROCS old value %d", oldValue)
 	}
 	log.Infof("GOMAXPROCS new value %d", runtime.GOMAXPROCS(-1))
+}
+
+func disableMinioBrowser() {
+	// Set the variable only if its not overridden in the kubespec
+	_, ok := os.LookupEnv("MINIO_BROWSER")
+	if !ok {
+		if disableNativeMinioBrowser {
+			os.Setenv("MINIO_BROWSER", "off")
+			log.Infof("disabled native minio browser: %s", os.Getenv("MINIO_BROWSER"))
+		}
+	}
 }
 
 func updateAPIThrottlingParams() {
