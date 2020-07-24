@@ -1,4 +1,4 @@
-<div fxLayout="column" fxLayoutGap="10px" *ngIf="!hideOldWidgets">
+<div class="dashboard-cards-legacy" fxLayout="column" fxLayoutGap="10px">
   <div *featureGuard="'enterprise'" fxFlex="none" fxLayout="row" fxLayoutGap="10px">
     <app-dsbdworkloads *roleGuard="{ req: ['workloadworkload_read', 'clusterhost_read']}"
                        fxFlex="none"></app-dsbdworkloads>
@@ -21,33 +21,42 @@
     <app-rrhealthcard></app-rrhealthcard>
   </div>
 </div>
-<div fxLayout="row wrap" *ngIf="hideOldWidgets">
-  <app-dsbdcard fxFlex="1 1 auto" [displayData]="naplesDisplayData"></app-dsbdcard>
-  <app-dsbdcard fxFlex="1 1 auto" class="dashboard-workload" [displayData]="workloadsDisplayData">
-  </app-dsbdcard>
-  <app-dsbdcard fxFlex="1 1 auto" class="dashboard-services " [displayData]="servicesDisplayData">
-  </app-dsbdcard>
-</div>
-<div fxLayout="row" *ngIf="hideOldWidgets">
-  <app-firewalltopten [updateInterval]="MetricsPollingFrequency"></app-firewalltopten>
-</div>
-<div fxLayout="row wrap" *ngIf="hideOldWidgets">
-  <div fxFlex="1 0 500px" *ngIf="topDscsChartOption && topDscsChartData"
-       class="detail-card detail-card-wrapper dsbd-panel-chart" fxLayout="column">
-    <div class="detail-card-border"></div>
-    <div fxLayout="row" class="detail-card-header" fxLayoutAlign="space-between">
-      <span>Top {{ topDscsChartData.labels.length }} Host Bandwidth</span>
-      <span class="dsbdcard-lastupdateTime">Last Updated: {{ lastUpdateTime | PrettyDate}}</span>
+<div class="dashboard-cards" fxLayout="row wrap" *ngIf="hideOldWidgets">
+  <app-dsbdcard [displayData]="naplesDisplayData"></app-dsbdcard>
+  <app-dsbdcard *featureGuard="'enterprise'" class="dashboard-workload"
+                [displayData]="workloadsDisplayData"></app-dsbdcard>
+  <app-dsbdcard class="dashboard-services" [displayData]="servicesDisplayData"></app-dsbdcard>
+
+  <app-toprulescard *featureGuard="'enterprise'"
+                    [title]="'TOP ALLOW RULES'" [data]="this.ruleCountLists['allow']"
+                    [dataReady]="!firewallTopTenLoading" [ruleMap]="ruleMap" [ruleAction]="'allow'">
+  </app-toprulescard>
+  <app-toprulescard *featureGuard="'enterprise'"
+                    [title]="'TOP DENY RULES'" [data]="this.ruleCountLists['deny']"
+                    [dataReady]="!firewallTopTenLoading" [ruleMap]="ruleMap" [ruleAction]="'deny'">
+  </app-toprulescard>
+  <app-toprulescard *featureGuard="'enterprise'"
+                    [title]="'TOP REJECT RULES'" [data]="this.ruleCountLists['reject']"
+                    [dataReady]="!firewallTopTenLoading" [ruleMap]="ruleMap"
+                    [ruleAction]="'reject'">
+  </app-toprulescard>
+
+  <div class="detail-card-wrapper dashboard-card-wrapper">
+    <div class="detail-card dsbd-card dsbd-panel-chart" fxLayout="column">
+      <div class="detail-card-border"></div>
+      <div class="detail-card-header" fxLayoutAlign="start center">
+        <span>Top {{ topDscsChartData?.labels?.length }} Host Bandwidth</span>
+        <span class="dsbdcard-lastupdateTime">{{ lastUpdateTime | PrettyDate}}</span>
+      </div>
+      <div class="detail-card-border"></div>
+      <div class="dsbd-panel-chart-container" fxLayout="column" fxLayoutAlign="center">
+        <p-chart *ngIf="topDscsChartOption && topDscsChartData" type="bar" [data]="topDscsChartData"
+                 [options]="topDscsChartOption">
+        </p-chart>
+      </div>
+      <div class="detail-card-border"></div>
     </div>
-    <div class="detail-card-border"></div>
-    <div class="dsbd-panel-chart-container" fxLayout="column" fxLayoutAlign="center">
-      <p-chart type="bar" [data]="topDscsChartData" [options]="topDscsChartOption">
-      </p-chart>
-    </div>
-    <div class="detail-card-border"></div>
   </div>
-  <div fxFlex="1 0 500px"></div>
-  <div fxFlex="1 0 500px"></div>
 </div>
 
 <!-- Previous dashboard -->

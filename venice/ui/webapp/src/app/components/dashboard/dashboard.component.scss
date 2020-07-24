@@ -69,7 +69,8 @@
 }
 
 .dsbd-panel-chart {
-  height: 400px;
+  height: 360px;
+  width: 470px;
 
   .dsbd-panel-chart-container {
     height: 100%;
@@ -77,7 +78,36 @@
 }
 
 .dsbdcard-lastupdateTime {
-  @include primary-font(16px);
-  margin-right: 20px;
-  line-height: 30px;
+  @include primary-font(14px, $mediumGray, 200);
+  margin-left: 10px;
+}
+
+.dashboard-cards {
+  margin-bottom: 15px;
+  margin-left: 5px;
+
+  .dsbdnaples-card,
+  .dsbdpolicyhealth-card,
+  .dsbdworkloads-card {
+    margin: 0 0 0 15px;
+    width: 470px;
+  }
+
+  .dsbdhosts-card,
+  .rrhealthcard,
+  .systemcapacity-card {
+    margin: 0 0 0 15px !important;
+  }
+
+  .basecard-container-new {
+    margin: 0;
+  }
+}
+
+.dashboard-cards-legacy {
+  margin-bottom: 30px;
+}
+
+.dashboard-card-wrapper {
+  margin-left: 15px;
 }

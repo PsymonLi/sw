@@ -3,7 +3,7 @@
      [ngClass]="gradTheme ? 'basecard-container-new' : 'basecard-container-old'"
      (mouseenter)="hasHover = true"
      (mouseleave)="hasHover = false">
-  <div [@fade] *ngIf="backgroundIcon && !gradTheme" class="basecard-background" fxLayout="row"
+  <div [@fade] *ngIf="backgroundIcon" class="basecard-background" fxLayout="row"
        [fxLayoutAlign]="backgroundIconCentered ? 'center center' : 'start center'">
     <mat-icon fxFlex="none" *ngIf="backgroundIcon.svgIcon" [style.color]="themeColor"
               [svgIcon]="backgroundIcon.svgIcon"
@@ -14,6 +14,7 @@
       {{backgroundIcon.matIcon}}
     </mat-icon>
   </div>
+  <div [ngClass]="gradTheme ? 'detail-card-border' : ''"></div>
   <div [@loaded]="cardState === cardStates.READY" class="basecard-foreground" fxLayout="column">
     <!-- Icon bar -->
     <app-dsbdwidgetheader fxFlex="45px" fxLayout="row" [title]="title" [iconFillColor]="themeColor"
@@ -30,6 +31,7 @@
     <div class="basecard-foreground-content" fxFlex="auto" fxLayout="row">
       <ng-content fxFlex="100%"></ng-content>
     </div>
+    <div [ngClass]="gradTheme ? 'detail-card-border' : ''"></div>
   </div>
   <div [@fade]
        *ngIf="cardState === cardStates.LOADING || cardState === cardStates.FAILED || cardState === cardStates.NO_DATA"

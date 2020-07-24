@@ -1,64 +1,56 @@
-<div class="detail-card-wrapper">
-  <div class="detail-card" style="min-width: 500px; max-width: 1000px; margin-left: 10px">
+<div class="detail-card-wrapper dashboard-card-wrapper">
+  <div class="detail-card dsbdcard">
     <div class="detail-card-border"></div>
 
     <!-- header -->
-    <div fxLayout="row" class="detail-card-header" fxLayoutAlign="space-between">
+    <div fxLayout="row" class="detail-card-header" fxLayoutAlign="start center">
       <span>{{ displayData.title }}</span>
-      <span class="dsbdcard-lastupdateTime" *ngIf="displayData.lastUpdateTime">Last Updated:
+      <span class="dsbdcard-lastupdateTime" *ngIf="displayData.lastUpdateTime">
         {{ displayData.lastUpdateTime | PrettyDate}}</span>
     </div>
 
     <!-- stats body -->
     <div fxLayout="row">
-      <div fxFlex="3 0 auto" fxLayout="column">
+      <div class="dsbdcard-stats" fxLayout="column">
         <div class="detail-card-border"></div>
-        <div fxFlex="1 0 auto" fxLayout="column">
-          <div class="dsbdcard-keystat">
-            <div fxLayout="row" fxLayoutAlign="start stretch">
-              <div fxLayout="column" fxFlex="0 1 auto" fxLayoutAlign="end center"
-                   class="dsbdcard-keystat-text">
-                {{ displayData.rows[0].value }}
-              </div>
-              <div fxLayout="column" fxLayoutAlign="end center" class="dsbdcard-keystat-name">
-                <!-- <div fxFlex="50"></div> -->
-                {{ displayData.rows[0].unit }}
-              </div>
+        <div fxLayout="column">
+          <div class="dsbdcard-keystat" fxLayout="row">
+            <div class="dsbdcard-keystat-text">
+              {{ displayData.rows[0].value }}
+            </div>
+            <div fxLayout="column" fxLayoutAlign="end start" class="dsbdcard-keystat-name">
+              {{ displayData.rows[0].unit }}
             </div>
           </div>
-          <div class="dsbdcard-horizontal-divider"></div>
+
           <ng-container
                         *ngTemplateOutlet="dbsdStat; context:{name: displayData.rows[1].title, value: displayData.rows[1].value, unit: displayData.rows[1].unit}">
           </ng-container>
 
-          <div class="dsbdcard-horizontal-divider"></div>
           <ng-container
                         *ngTemplateOutlet="dbsdStat; context:{name: displayData.rows[2].title, value: displayData.rows[2].value, unit: displayData.rows[2].unit}">
           </ng-container>
 
           <ng-container *ngIf="displayData.rows.length > 2">
-            <div class="dsbdcard-horizontal-divider"></div>
             <ng-container
                           *ngTemplateOutlet="dbsdStat; context:{name: displayData.rows[3].title, value: displayData.rows[3].value, unit: displayData.rows[3].unit}">
             </ng-container>
           </ng-container>
         </div>
-        <div class="detail-card-border"></div>
       </div>
 
-      <div fxFlex="0 0 auto" fxLayout="column" class="dsbdcard-vertical-divider"></div>
-
-      <div fxFlex="1 0 auto" *ngIf="displayData.alerts" class="dsbdcard-sidepanel"
+      <div *ngIf="displayData.alerts" class="dsbdcard-sidepanel"
            fxLayout="column">
         <ng-container *ngTemplateOutlet="sidePanel"> </ng-container>
       </div>
     </div>
+    <div class="detail-card-border"></div>
   </div>
 </div>
 
 <ng-template #dbsdStat let-statName="name" let-statValue="value" let-statUnit="unit">
   <div class="dsbdcard-stat">
-    <div fxLayout="row" fxLayout="start stretch">
+    <div class="dsbdcard-stat-header" fxLayout="row" fxLayout="start stretch">
       <div fxFlex="4 0 auto" fxLayout="column">
         <div fxFlex="1 1 auto"></div>
         <div class="detail-card-border"></div>
@@ -69,8 +61,8 @@
       </div>
     </div>
     <div class="dsbdcard-stat-text" fxLayout="row" fxLayoutAlign="end stretch">
-      <span class="dsbdcard-stat-text-value"> {{ statValue }}</span>
-      {{statUnit}}
+      <span class="dsbdcard-stat-text-value">{{ statValue }}</span>
+      <span *ngIf="statUnit" class="dsbdcard-stat-text-value">{{ statUnit }}</span>
     </div>
   </div>
 </ng-template>

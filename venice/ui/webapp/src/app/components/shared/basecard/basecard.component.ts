@@ -3,6 +3,7 @@ import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { Animations } from '@app/animations';
 import { OnChanges } from '@angular/core/src/metadata/lifecycle_hooks';
 import { Router } from '@angular/router';
+import { UIConfigsService } from '@app/services/uiconfigs.service';
 
 export interface Stat {
   value: any;
@@ -68,12 +69,13 @@ export class BasecardComponent implements OnInit, OnChanges {
   // custom css
   themeCss = {};
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, protected uiconfigsService: UIConfigsService) { }
 
   ngOnChanges(changes) {
   }
 
   ngOnInit() {
+    this.gradTheme = this.uiconfigsService.isFeatureEnabled('showDashboardHiddenCharts');
     this.generateThemeCss();
   }
 

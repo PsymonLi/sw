@@ -2,19 +2,21 @@
 </ng-container>
 
 <ng-template #rulescard>
-  <div fxFlex="1 0 auto" class="detail-card-wrapper toprulescard">
-    <div fxFlex="1 0 auto" fxLayout="column" class="detail-card" style="margin-left: 10px">
+  <div fxFlex="1 0 auto" class="detail-card-wrapper toprulescard dashboard-card-wrapper">
+    <div fxFlex="1 0 auto" fxLayout="column" class="detail-card">
       <div class="detail-card-border"></div>
 
       <!-- header -->
-      <div fxLayout="row" class="detail-card-header">
-        <div>{{title}}</div>
-        <div fxFlex="1 0 auto"></div>
-        <div class="toprulescard-update-time" *ngIf="updateTime">Last updated at
-          {{updateTime | PrettyDate}}</div>
-        <div fxFlex="36px" class="toprulecard-menu-button" *ngIf="menuItems.length>0"
+      <div fxLayout="row" fxLayoutAlign="space-between" class="detail-card-header">
+        <div fxLayout="row" fxLayoutAlign="start center">
+          <div>{{title}}</div>
+          <div class="toprulescard-update-time" *ngIf="updateTime">
+            {{updateTime | PrettyDate}}
+          </div>
+        </div>
+        <div fxFlex="36px" class="toprulescard-clickable" *ngIf="menuItems.length>0"
              (click)="$event.stopPropagation();" fxLayoutAlign="end center">
-          <mat-icon class="dsbd-widgetheader-morevert" [matMenuTriggerFor]="menu"
+          <mat-icon [matMenuTriggerFor]="menu"
                     aria-label="Open basic menu">
             more_vert
           </mat-icon>
@@ -87,8 +89,8 @@
 </ng-template>
 
 <ng-template #ruleLegend>
-  <div fxFlex="1 0 auto" fxLayout="row" fxLayoutGap="10px">
-    <div fxFlex="1 0 auto" fxLayout="column" fxLayoutAlign="center start">
+  <div fxFlex="1 0 auto" fxLayout="row" fxLayoutGap="5px">
+    <div class="toprulescard-legend-index" fxLayout="column">
       <div fxFlex="1 0 auto" fxLayoutAlign="start center">
         <div style="width: 15px; height: 15px"></div>
       </div>
@@ -107,58 +109,56 @@
       </ng-container>
     </div>
 
-    <div fxFlex="1 0 auto" fxLayout="column" fxLayoutAlign="center start">
-      <div fxFlex="1 0 auto" class="toprulescard-rule-text" fxLayoutAlign="start center">
-        <span style="width: 85px">Source IP(s)</span>
+    <div class="toprulescard-legend-sip" fxLayout="column">
+      <div fxFlex="1 0 auto" class="toprulescard-rule-title" fxLayoutAlign="start center">
+        <span>Source IP</span>
       </div>
       <ng-container *ngFor="let ix of [].constructor(10); let i = index">
         <div *ngIf="i < chartData.labels.length" (click)="this.rowClick(chartData.labels[i])"
              class="toprulescard-rule-text toprulescard-clickable"
              [class.active]="chartData.labels[i]===highlightedRule" fxFlex="1 0 auto"
              fxLayoutAlign="start center">
-          <span
-                style="width: 85px">{{ruleMap[chartData.labels[i]].rule["from-ip-addresses"].join(', ')}}</span>
+          <span>{{ruleMap[chartData.labels[i]].rule["from-ip-addresses"].join(', ')}}</span>
         </div>
         <div *ngIf="i >= chartData.labels.length" class="toprulescard-rule-text" fxFlex="1 0 auto"
              fxLayoutAlign="start center">
-          <span style="width: 85px">&nbsp;</span>
+          <span>&nbsp;</span>
         </div>
       </ng-container>
     </div>
 
-    <div fxFlex="1 0 auto" fxLayout="column" fxLayoutAlign="center start">
-      <div fxFlex="1 0 auto" class="toprulescard-rule-text" fxLayoutAlign="start center">
-        <span style="width: 85px">Dest IP(s)</span>
+    <div class="toprulescard-legend-dip" fxLayout="column">
+      <div fxFlex="1 0 auto" class="toprulescard-rule-title" fxLayoutAlign="start center">
+        <span>Dest IP</span>
       </div>
       <ng-container *ngFor="let ix of [].constructor(10); let i = index">
         <div *ngIf="i < chartData.labels.length" (click)="this.rowClick(chartData.labels[i])"
              class="toprulescard-rule-text toprulescard-clickable"
              [class.active]="chartData.labels[i]===highlightedRule" fxFlex="1 0 auto"
              fxLayoutAlign="start center">
-          <span
-                style="width: 85px">{{ruleMap[chartData.labels[i]].rule["to-ip-addresses"].join(', ')}}</span>
+          <span>{{ruleMap[chartData.labels[i]].rule["to-ip-addresses"].join(', ')}}</span>
         </div>
         <div *ngIf="i >= chartData.labels.length" class="toprulescard-rule-text" fxFlex="1 0 auto"
              fxLayoutAlign="start center">
-          <span style="width: 85px">&nbsp;</span>
+          <span>&nbsp;</span>
         </div>
       </ng-container>
     </div>
 
-    <div fxFlex="1 0 auto" fxLayout="column" fxLayoutAlign="center start">
-      <div fxFlex="1 0 auto" class="toprulescard-rule-text" fxLayoutAlign="start center">
-        <span style="width: 120px">Proto/Ports</span>
+    <div class="toprulescard-legend-protoports" fxLayout="column">
+      <div fxFlex="1 0 auto" class="toprulescard-rule-title" fxLayoutAlign="start center">
+        <span>Proto/Ports</span>
       </div>
       <ng-container *ngFor="let ix of [].constructor(10); let i = index">
         <div *ngIf="i < chartData.labels.length" (click)="this.rowClick(chartData.labels[i])"
              class="toprulescard-rule-text toprulescard-clickable"
              [class.active]="chartData.labels[i]===highlightedRule"
              fxLayoutAlign="start center" fxFlex="1 0 auto">
-          <span style="width: 120px">{{formatApp(ruleMap[chartData.labels[i]].rule)}}</span>
+          <span>{{formatApp(ruleMap[chartData.labels[i]].rule)}}</span>
         </div>
         <div *ngIf="i >= chartData.labels.length" class="toprulescard-rule-text"
              fxLayoutAlign="start center" fxFlex="1 0 auto">
-          <span style="width: 120px">&nbsp;</span>
+          <span>&nbsp;</span>
         </div>
       </ng-container>
     </div>

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, QueryList, ViewChildren, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, QueryList, ViewChildren, ViewEncapsulation } from '@angular/core';
 import { Utility } from '@app/common/Utility';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { DashboardWidgetData, PinnedDashboardWidgetData } from '@app/models/frontend/dashboard/dashboard.interface';
@@ -15,11 +15,15 @@ import { ClusterDistributedServiceCard, ClusterHost } from '@sdk/v1/models/gener
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { MonitoringAlert, MonitoringAlertStatus_severity } from '@sdk/v1/models/generated/monitoring';
+import { ISecurityNetworkSecurityPolicyList, ISecuritySGRule, SecurityNetworkSecurityPolicy } from '@sdk/v1/models/generated/security';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { FwlogFwLogQuery, FwlogFwLogQuery_sort_order, FwlogFwLogList } from '@sdk/v1/models/generated/fwlog';
 import { FwlogService } from '@app/services/generated/fwlog.service';
 import { interval } from 'rxjs';
+import { RuleHitCount } from './widgets/firewalltopten/TopRulesUtil';
+import { HttpEventUtility } from '@app/common/HttpEventUtility';
+import { SecurityService } from '@app/services/generated/security.service';
 
 
 /**
@@ -92,31 +96,31 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
   hideOldWidgets: boolean = false;
 
   naplesDisplayData = {
-    title: 'Naples',
+    title: 'DSC',
     lastUpdateTime: '',
     alerts: [0, 0, 0],
     rows: [
-      {title: '', value: '', unit: 'TOTAL NAPLES'},
-      {title: 'BANDWIDTH', value: '', unit: 'TX & RX'},
-      {title: 'TOTAL PACKETS', value: '', unit: 'TX & RX'},
+      {title: '', value: '', unit: 'TOTAL DSC'},
+      {title: 'BANDWIDTH (TX & RX)', value: '', unit: ''},
+      {title: 'TOTAL PACKETS (TX & RX)', value: '', unit: ''},
       {title: 'CONNECTION PER SECOND', value: '', unit: ''},
     ]
   };
 
   workloadsDisplayData = {
-    title: 'Workloads',
+    title: 'WORKLOADS',
     lastUpdateTime: '',
     alerts: [0, 0, 0],
     rows: [
-      {title: '', value: '', unit: 'VCENTER / TOTAL WORKLOADS'},
-      {title: 'BANDWIDTH', value: '', unit: 'TX & RX'},
-      {title: 'DROP PACKETS', value: '', unit: 'TX & RX'},
-      {title: 'VCENTER / TOTAL HOSTS', value: '', unit: ''},
+      {title: '', value: '', unit: 'VCENTER/TOTAL'},
+      {title: 'BANDWIDTH (TX & RX)', value: '', unit: ''},
+      {title: 'DROP PACKETS (TX & RX)', value: '', unit: ''},
+      {title: 'VCENTER/TOTAL HOSTS', value: '', unit: ''},
     ]
   };
 
   servicesDisplayData = {
-    title: 'Services',
+    title: 'SERVICES',
     lastUpdateTime: '',
     rows: [
       {title: '', value: '', unit: 'TOTAL SERVICES'},
@@ -125,6 +129,13 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
       {title: 'SESSION PROTOCOL', value: '', unit: ''},
     ]
   };
+
+  // firewall top ten
+  firewallTopTenLoading: boolean = false;
+  sgPoliciesEventUtility: HttpEventUtility<SecurityNetworkSecurityPolicy>;
+  sgPolicies: ReadonlyArray<SecurityNetworkSecurityPolicy> = [];
+  ruleMap: any = {};
+  ruleCountLists: { [key: string]: RuleHitCount[] } = {'allow': [], 'deny': [], 'reject': []};
 
   @ViewChildren('pinnedGridster') pinnedGridster: QueryList<any>;
 
@@ -135,6 +146,8 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
     private workloadService: WorkloadService,
     protected clusterService: ClusterService,
     protected fwlogService: FwlogService,
+    protected securityService: SecurityService,
+    protected cdr: ChangeDetectorRef,
   ) {
     super(_controllerService);
   }
@@ -199,6 +212,9 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
       const sub = source.subscribe( (val) => {this.getFWLogs(); });
       this.subscriptions.push(sub);
       this.getFWLogs();
+
+      // firewall top ten
+      this.getSecurityPolicies();
     }
   }
 
@@ -370,7 +386,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
             }
           });
         }
-        this.workloadsDisplayData.rows[0].value = vcenterWorkloads + ' / ' + this.workloads.length;
+        this.workloadsDisplayData.rows[0].value = vcenterWorkloads + '/' + this.workloads.length;
         this.workloadsDisplayData = { ...this.workloadsDisplayData };
       }
     );
@@ -391,7 +407,7 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
             }
           });
         }
-        this.workloadsDisplayData.rows[3].value = vcenterHosts + ' / ' + this.hosts.length;
+        this.workloadsDisplayData.rows[3].value = vcenterHosts + '/' + this.hosts.length;
         this.workloadsDisplayData = { ...this.workloadsDisplayData };
       }
     );
@@ -827,6 +843,94 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
     return false;
   }
 
+  // firewall top ten functions
 
+  getRuleMetrics() {
+    const queryList: TelemetryPollingMetricQueries = {
+      queries: [],
+      tenant: Utility.getInstance().getTenant()
+    };
+    const query: ITelemetry_queryMetricsQuerySpec = {
+      'kind': 'RuleMetrics',
+      function: Telemetry_queryMetricsQuerySpec_function.none,
+      'sort-order': Telemetry_queryMetricsQuerySpec_sort_order.descending,
+      'group-by-field': 'name',
+      'start-time': 'now() - 5m' as any,
+      'end-time': 'now()' as any,
+      fields: [],
+    };
+    queryList.queries.push({ query: query });
+    const sub = this.metricsqueryService.pollMetrics('firewallTopTen', queryList, 5 * 60000).subscribe(
+      (data: ITelemetry_queryMetricsQueryResponse) => {
+        if (data && data.results && data.results.length) {
+          this.firewallTopTenLoading = true;
+          this.cdr.detectChanges();
+          const rules = data.results[0].series;
+          const totalHitsIndex = rules[0].columns.indexOf('TotalHits');
+          this.ruleCountLists = {'allow': [], 'deny': [], 'reject': []};
+
+          rules.forEach((rule) => {
+            let totalHitCount = 0;
+            const ruleHash = rule.tags['name'];
+            rule.values.forEach((v) => {
+            totalHitCount += v[totalHitsIndex];
+            });
+            if (totalHitCount > 0 && this.ruleMap[ruleHash]) {
+              this.ruleCountLists[this.ruleMap[ruleHash].action].push(new RuleHitCount(ruleHash, totalHitCount));
+            }
+          });
+          this.firewallTopTenLoading = false;
+          this.cdr.detectChanges();
+        }
+      },
+    );
+    this.subscriptions.push(sub);
+  }
+
+  getSecurityPolicies() {
+    this.firewallTopTenLoading = true;
+    this.securityService.ListNetworkSecurityPolicy().subscribe(
+      (response) => {
+        if (response && response.body) {
+          const body: ISecurityNetworkSecurityPolicyList = response.body as ISecurityNetworkSecurityPolicyList;
+          if (body.items && body.items.length) {
+            this.buildPolicyMaps(body.items);
+            this.getRuleMetrics();
+          }
+        }
+      },
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Failed to get network security policy', error);
+      }
+    );
+    this.sgPoliciesEventUtility = new HttpEventUtility<SecurityNetworkSecurityPolicy>(SecurityNetworkSecurityPolicy);
+    this.sgPolicies = this.sgPoliciesEventUtility.array;
+    const subscription = this.securityService.WatchNetworkSecurityPolicy().subscribe(
+      response => {
+        this.sgPoliciesEventUtility.processEvents(response);
+        this.buildPolicyMaps(this.sgPolicies);
+      },
+      this._controllerService.webSocketErrorHandler('Failed to get security policies')
+    );
+    this.subscriptions.push(subscription);
+  }
+
+  buildPolicyMaps(policies) {
+    // Since we currently only support single policy, we only use rulehash for identification
+    // In future they should use policy name(or id) along with rulehash
+    this.ruleMap = {};
+    const rules = policies[0].spec.rules;
+    const ruleHashes = policies[0].status['rule-status'];
+
+    for (let ix = 0; ix < rules.length; ix++) {
+      const rule = rules[ix];
+      if (rule.action === 'permit') {
+        this.ruleMap[ruleHashes[ix]['rule-hash']] = {'ruleIndex': ix + 1, 'action': 'allow', rule: rule as ISecuritySGRule };
+      } else {
+        this.ruleMap[ruleHashes[ix]['rule-hash']] = {'ruleIndex': ix + 1, 'action': rule.action, rule: rule as ISecuritySGRule };
+      }
+
+    }
+  }
 
 }

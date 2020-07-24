@@ -1,8 +1,11 @@
 @import "src/global-mixins";
 
 .toprulescard {
-  min-width: 471px;
   min-height: 360px;
+
+  .detail-card {
+    width: 470px;
+  }
 }
 
 .toprulescard-chart {
@@ -12,17 +15,32 @@
 .toprulescard-legend-colors {
   width: 15px;
   height: 15px;
-  border: 1px solid #676763;
+  border: 1px solid $mediumGray;
 }
 
 .toprulescard-legend-colors.active {
   width: 15px;
   height: 15px;
-  border: 2px solid #676763;
+  border: 2px solid $mediumGray;
 }
 
-.toprulescard-rule-text {
-  @include primary-font(14px, #676763, 400);
+.toprulescard-legend-sip,
+.toprulescard-legend-dip {
+  width: 75px;
+}
+
+.toprulescard-legend-protoports {
+  width: 85px;
+}
+
+.toprulescard-rule-text,
+.toprulescard-rule-title {
+  @include primary-font(14px, $mediumGray, 300);
+  font-stretch: condensed;
+}
+
+.toprulescard-rule-title {
+  font-weight: 400;
 }
 
 .toprulescard-rule-text span {
@@ -36,24 +54,20 @@
 }
 
 .toprulescard-body {
-  margin: 10px;
-  width: 535px;
+  margin: 10px 10px 10px 0;
 }
 
 .toprulescard-highlighted-legend {
-  border: 1.5px solid #676763;
-}
-
-.toprulescard-rule-details {
-  width: 335px;
+  border: 1.5px solid $mediumGray;
 }
 
 .toprulescard-no-hits-text {
-  @include primary-font(18px, #676763, 400);
+  @include primary-font(18px, $mediumGray, 400);
 }
 
 .toprulescard-update-time {
-  @include primary-font(14px, #676763, 400);
+  @include primary-font(14px, $mediumGray, 300);
+  margin-left: 10px;
 }
 
 .toprulescard-clickable {

@@ -1,7 +1,7 @@
 import {  ComponentFixture, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 import { RouterTestingModule } from '@angular/router/testing';
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 
@@ -106,6 +106,7 @@ describe('DashboardComponent', () => {
         FwlogService,
         SearchService,
         SecurityService,
+        ChangeDetectorRef,
       ]
     });
       });
@@ -124,6 +125,7 @@ describe('DashboardComponent', () => {
     });
 
     it('no permission', () => {
+      spyOn(uiconfigService, 'isFeatureEnabled').and.returnValue(false);
       fixture.detectChanges();
       const cards = fixture.debugElement.queryAll(By.css('app-flip'));
       expect(cards.length).toBe(0);
