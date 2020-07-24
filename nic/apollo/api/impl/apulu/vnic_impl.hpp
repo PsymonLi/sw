@@ -267,6 +267,13 @@ private:
                                pds_vnic_spec_t *spec,
                                nexthop_info_entry_t *nh_data);
 
+    /// \brief      compute the Rx and Tx mirror session bitmaps
+    /// \param[in]   spec    configuration spec of vnic
+    /// \param[out]  rx_bmap Rx mirror session btmap
+    /// \param[out]  tx_bmap Tx mirror session bitmap
+    void compute_mirror_session_bmap_(pds_vnic_spec_t *spec,
+                                      uint8_t *rx_bmap, uint8_t *tx_bmap);
+
     /// \brief     add an entry to LOCAL_MAPPING table
     /// \param[in] epoch epoch being activated
     /// \param[in] vpc vpc of this vnic
@@ -353,6 +360,7 @@ private:
     /// \brief      fill the vnic status
     /// \param[out] status status
     void fill_status_(pds_vnic_status_t *status);
+
 private:
     // P4 datapath specific state
     uint8_t epoch_;           ///< datapath epoch of the vnic

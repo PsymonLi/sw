@@ -766,6 +766,47 @@ vnic_impl::program_vnic_nh_(pds_device_oper_mode_t oper_mode,
     return SDK_RET_OK;
 }
 
+void
+vnic_impl::compute_mirror_session_bmap_(pds_vnic_spec_t *spec,
+                                        uint8_t *rx_bmap, uint8_t *tx_bmap) {
+    if_entry *intf;
+    pds_obj_key_t key;
+    mirror_session *ms;
+
+    *rx_bmap = *tx_bmap = 0;
+    // if vnic has Rx mirror sessions, compute Rx mirror session bitmap
+    for (uint8_t i = 0; i < spec->num_rx_mirror_session; i++) {
+        ms = mirror_session_find(&spec->rx_mirror_session[i]);
+        *rx_bmap |= 1 << ((mirror_impl *)(ms->impl()))->hw_id();
+    }
+    // if correspoding host interface has Rx mirror sessions, append
+    // them to the Rx bitmap
+    intf = if_db()->find(&spec->host_if);
+    if (intf != NULL) {
+        for (uint8_t i = 0; i < intf->num_rx_mirror_session(); i++) {
+            key = intf->rx_mirror_session(i);
+            ms = mirror_session_find(&key);
+            *rx_bmap |= 1 << ((mirror_impl *)(ms->impl()))->hw_id();
+        }
+    }
+
+    // if vnic has Tx mirror sessions, compute Tx mirror session bitmap
+    for (uint8_t i = 0; i < spec->num_tx_mirror_session; i++) {
+        ms = mirror_session_find(&spec->tx_mirror_session[i]);
+        *tx_bmap |= 1 << ((mirror_impl *)(ms->impl()))->hw_id();
+    }
+    // if correspoding host interface has Tx mirror sessions, append
+    // them to the Tx bitmap
+    if (intf != NULL) {
+        for (uint8_t i = 0; i < intf->num_tx_mirror_session(); i++) {
+            key = intf->tx_mirror_session(i);
+            ms = mirror_session_find(&key);
+            *tx_bmap |= 1 << ((mirror_impl *)(ms->impl()))->hw_id();
+        }
+    }
+    return;
+}
+
 sdk_ret_t
 vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
@@ -882,12 +923,9 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     vnic_data.action_id = VNIC_VNIC_INFO_ID;
     vnic_data.ing_vnic_info.epoch = epoch_;
     vnic_data.ing_vnic_info.meter_enabled = spec->meter_en;
-    vnic_data.ing_vnic_info.rx_mirror_session =
-        compute_mirror_bitmap(spec->num_rx_mirror_session,
-                              spec->rx_mirror_session);
-    vnic_data.ing_vnic_info.tx_mirror_session =
-        compute_mirror_bitmap(spec->num_tx_mirror_session,
-                              spec->tx_mirror_session);
+    compute_mirror_session_bmap_(spec,
+                                 &vnic_data.ing_vnic_info.rx_mirror_session,
+                                 &vnic_data.ing_vnic_info.tx_mirror_session);
     vnic_data.ing_vnic_info.binding_check_enabled =
         spec->binding_checks_en ? TRUE : FALSE;
     if (tx_policer) {
@@ -1051,18 +1089,10 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
             vnic_data.ing_vnic_info.binding_check_enabled =
                 spec->binding_checks_en ? TRUE : FALSE;
         }
-        // handle Rx mirror session update, if any
-        if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_RX_MIRROR_SESSION) {
-            vnic_data.ing_vnic_info.rx_mirror_session =
-                compute_mirror_bitmap(spec->num_rx_mirror_session,
-                                      spec->rx_mirror_session);
-        }
-        // handle Tx mirror session update, if any
-        if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_TX_MIRROR_SESSION) {
-            vnic_data.ing_vnic_info.tx_mirror_session =
-                compute_mirror_bitmap(spec->num_tx_mirror_session,
-                                      spec->tx_mirror_session);
-        }
+        // compute the mirror session bitmaps
+        compute_mirror_session_bmap_(spec,
+            &vnic_data.ing_vnic_info.rx_mirror_session,
+            &vnic_data.ing_vnic_info.tx_mirror_session);
         p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VNIC, hw_id_,
                                            NULL, NULL, &vnic_data);
         if (unlikely(p4pd_ret != P4PD_SUCCESS)) {

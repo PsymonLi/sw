@@ -199,29 +199,25 @@ private:
 
     /// \brief      fill the mirror session spec
     /// \param[out] spec mirror session specification to be filled
+    /// \param[in]  mirror_data mirror session's p4 table entry
     /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t fill_spec_(pds_mirror_session_spec_t *spec);
+    sdk_ret_t fill_spec_(pds_mirror_session_spec_t *spec,
+                         mirror_actiondata_t *mirror_data);
 
     /// \brief      fill the mirror session status
     /// \param[out] status mirror session h/w status
     void fill_status_(pds_mirror_session_status_t *status);
 
     /// \brief      fill the mirror session stats
-    /// \param[out] spec mirror session stats to be filled
+    /// \param[out] stats mirror session stats to be filled
+    /// \param[in]  mirror_data mirror session's p4 table entry
     /// \return     #SDK_RET_OK on success, failure status code on error
     sdk_ret_t fill_stats_(pds_mirror_session_stats_t *stats,
-                          pds_obj_key_t *key);
+                          mirror_actiondata_t *mirror_data);
 private:
     // P4 datapath specific state
     uint16_t hw_id_;    ///< hardware id
 } __PACK__;
-
-/// \brief given mirror session key list, compute the corresponding mirror
-///        bitmap
-//. \param[in] num_sessions    number of mirror sessions
-/// \param[in] keys    list of all mirror session keys
-/// \return bitmap to program in p4 with 1 bit set per mirror session
-uint8_t compute_mirror_bitmap(uint8_t num_sessions, pds_obj_key_t *keys);
 
 /// \@}
 
