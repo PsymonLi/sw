@@ -71,10 +71,14 @@ def Trigger(tc):
         api.Logger.info("collect_dest len: {} ".format(len(export_cfg)))
         api.Logger.info("collect_wl len: {} ".format(len(collector_wl)))
         collector_info = utils.GetFlowmonCollectorsInfo(collector_wl, export_cfg)
+        utils.DumpFlowmonSessions()
         ret = utils.RunAll(tc, verif_json, 'flowmon', collector_info, is_wl_type_bm)
         result = ret['res']
         ret_count = ret['count']
         count = count + ret_count
+        if result != api.types.status.SUCCESS:
+            api.Logger.error("Failed in Traffic validation")
+            utils.DumpFlowmonSessions()
 
         agent_api.DeleteConfigObjects(newObjects)
         agent_api.RemoveConfigObjects(newObjects)

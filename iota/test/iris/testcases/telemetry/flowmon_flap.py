@@ -72,8 +72,12 @@ def Setup(tc):
 
 def Trigger(tc):
     collector_info = utils.GetFlowmonCollectorsInfo(tc.collector_wl, tc.collector_cfg)
+
+    utils.DumpFlowmonSessions()
     ret = utils.RunAll(tc, tc.verif_json, 'flowmon', collector_info, tc.IsBareMetal)
     if ret['res'] != api.types.status.SUCCESS:
+        api.Logger.error("Failed in Traffic validation")
+        utils.DumpFlowmonSessions()
         return ret['res']
 
     if tc.skip_flap:
@@ -91,8 +95,13 @@ def Trigger(tc):
         flapTask.join(tc.port_down_time)
         return ret
 
+    utils.DumpFlowmonSessions()
     # Rerun the tests
     ret = utils.RunAll(tc, tc.verif_json, 'flowmon', collector_info, tc.IsBareMetal)
+    if ret['res'] != api.types.status.SUCCESS:
+        api.Logger.error("Failed in Traffic validation")
+        utils.DumpFlowmonSessions()
+
     api.Logger.info("Waiting for switch flap thread to join..")
     flapTask.join(tc.port_down_time)
     return ret["res"]

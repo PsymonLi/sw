@@ -5,6 +5,7 @@ import time
 import re
 import pdb
 import os
+import socket
 from scapy.utils import *
 from scapy.utils import rdpcap
 from scapy.utils import wrpcap
@@ -507,6 +508,16 @@ def VerifyCmd(cmd, feature, pcap_file_name, export_cfg_port=2055, erspan_type=ER
         result =  VerifyErspanPackets(pcap_file_name, erspan_type, span_id)
     elif feature == 'flowmon':
         search_str = r'(.*)%s: UDP, length(.*)'%export_cfg_port
+        # Use UDP in search string only if the export config port
+        # is a non-standard port. For non-standard ports,
+        # getservbyport method raises exception.
+        try:
+            svc = socket.getservbyport(export_cfg_port, 'udp')
+            search_str = r'(.*).%s: (.*), length(.*)'%export_cfg_port
+            api.Logger.info(f"Standard protocol port {export_cfg_port} is used as export config port")
+        except Exception as e:
+            pass
+
         matchObj = re.search(search_str, cmd.stdout, 0)
         if matchObj is None:
             result = api.types.status.FAILURE
@@ -566,13 +577,20 @@ def RunCmd(src_wl, protocol, dest_wl, destination_ip, destination_port, collecto
 
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     api.Trigger_AddCommand(req, src_wl.node_name, src_wl.workload_name, cmd, timeout=3)
-    api.Logger.info("Running from src_wl_ip {} COMMAND {}".format(src_wl.ip_address, cmd))
 
-    trig_resp = api.Trigger(req)
-
-    api.Logger.info("Trigger resp commands")
-    for cmd in trig_resp.commands:
-        api.PrintCommandResults(cmd)
+    # retry traffic in case of any send failures
+    for retry in range(4):
+        retrigger = False
+        api.Logger.info("Running from src_wl_ip {} COMMAND {}".format(src_wl.ip_address, cmd))
+        trig_resp = api.Trigger(req)
+        api.Logger.info("Trigger resp commands")
+        for cmd in trig_resp.commands:
+            api.PrintCommandResults(cmd)
+            if cmd.exit_code != 0:
+                retrigger = True
+                api.Logger.info("Traffic failed...Retry (%s)..."%retry)
+        if not retrigger:
+            break
 
     if feature == 'flowmon':
         time.sleep(2)

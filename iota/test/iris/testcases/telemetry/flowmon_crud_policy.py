@@ -208,7 +208,7 @@ def Trigger(tc):
 
         result  = ConfigFlowmonSession(tc, num_exports_at_create, flowmon_spec_objects)
         if result != api.types.status.SUCCESS:
-            api.Logger.info("Failed in Flowmon session configuration")
+            api.Logger.error("Failed in Flowmon session configuration")
             agent_api.RemoveConfigObjects(flowmon_spec_objects)
             break
 
@@ -216,12 +216,14 @@ def Trigger(tc):
                         tc.iterators.num_flowmon_sessions, num_exports_at_create))
         utils.DumpFlowmonSessions()
         ret = InjectTestTrafficAndValidateCapture(tc, tc.iterators.num_flowmon_sessions, num_exports_at_create)
-
         result = ret['res']
         ret_count = ret['count']
         count = count + ret_count
 
-        if (result == api.types.status.SUCCESS) and (tc.iterators.num_exports > num_exports_at_create):
+        if result != api.types.status.SUCCESS:
+            api.Logger.error("Failed in Traffic validation")
+            utils.DumpFlowmonSessions()
+        elif tc.iterators.num_exports > num_exports_at_create:
             #update flowexport sessions with num_exports
             result = updateFlowmonCollectors(tc, tc.iterators.num_exports)
             if result != api.types.status.SUCCESS:
@@ -234,6 +236,9 @@ def Trigger(tc):
                 result = ret['res']
                 ret_count = ret['count']
                 count = count + ret_count
+                if result != api.types.status.SUCCESS:
+                    api.Logger.error("Failed in Traffic validation")
+                    utils.DumpFlowmonSessions()
 
         #remove all but one flowmon session and check the collectors are not deleted
         if (result == api.types.status.SUCCESS):
@@ -250,6 +255,9 @@ def Trigger(tc):
             result = ret['res']
             ret_count = ret['count']
             count = count + ret_count
+            if result != api.types.status.SUCCESS:
+                api.Logger.error("Failed in Traffic validation")
+                utils.DumpFlowmonSessions()
 
         for iteration in range(tc.iterators.num_flowmon_sessions):
             if tc.test_iterator_data[iteration]:
