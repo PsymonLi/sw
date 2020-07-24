@@ -97,6 +97,9 @@ func TestApiServerBasedCredsManager_CreateCredentials(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
+	expectedObjMeta := &api.ObjectMeta{
+		Name: globals.MinioCredentialsObjectName,
+	}
 	//happy case
 	expectedCredsObj := getValidObjectStoreCreds()
 	expectedMinioCreds := &Credentials{
@@ -105,6 +108,7 @@ func TestApiServerBasedCredsManager_CreateCredentials(t *testing.T) {
 	}
 	mockAPIClient, mockCredentialInterface := setupMocks(mockCtrl, 1)
 	mockCredentialInterface.EXPECT().Create(gomock.Any(), gomock.Any()).Return(expectedCredsObj, nil).Times(1)
+	mockCredentialInterface.EXPECT().Get(gomock.Any(), gomock.Eq(expectedObjMeta)).Return(expectedCredsObj, nil).Times(0)
 	toTest := &APIServerBasedCredsManager{apiClient: mockAPIClient, retryCount: 1, retryInterval: time.Millisecond}
 
 	actualMinioCreds, err := toTest.CreateCredentials()
@@ -122,11 +126,26 @@ func TestApiServerBasedCredsManager_CreateCredentials(t *testing.T) {
 	testutils.AssertEquals(t, expectedMinioCreds, actualMinioCreds, "credentials manager returned unexpected credentials")
 
 	//credentials already exist error is not retried
-	mockAPIClient, mockCredentialInterface = setupMocks(mockCtrl, 1)
-	mockCredentialInterface.EXPECT().Create(gomock.Any(), gomock.Any()).Return(expectedCredsObj, errors.New("AlreadyExists")).Times(1)
+	mockAPIClient, mockCredentialInterface = setupMocks(mockCtrl, 2)
+	mockCredentialInterface.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, errors.New("AlreadyExists")).Times(1)
+	mockCredentialInterface.EXPECT().Get(gomock.Any(), gomock.Eq(expectedObjMeta)).Return(expectedCredsObj, nil).Times(1)
 	toTest = &APIServerBasedCredsManager{apiClient: mockAPIClient, retryCount: 2, retryInterval: time.Millisecond}
 	actualMinioCreds, err = toTest.CreateCredentials()
 	testutil.AssertNotNil(t, actualMinioCreds)
+	testutils.AssertEquals(t, expectedMinioCreds, actualMinioCreds, "Create op returns already existing credentials")
+	testutils.AssertError(t, err, "credential creation expected to return error")
+	testutils.Assert(t, strings.Contains(err.Error(), "AlreadyExists"), "CreateCredentials failed with unexpected error")
+
+	//case with retries ending with already exists error
+	mockAPIClient, mockCredentialInterface = setupMocks(mockCtrl, 3)
+	mockCredentialInterface.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, errors.New("test error message")).Times(1)
+	mockCredentialInterface.EXPECT().Create(gomock.Any(), gomock.Any()).Return(expectedCredsObj, errors.New("AlreadyExists")).Times(1)
+	mockCredentialInterface.EXPECT().Get(gomock.Any(), gomock.Eq(expectedObjMeta)).Return(expectedCredsObj, nil).Times(1)
+	toTest = &APIServerBasedCredsManager{apiClient: mockAPIClient, retryCount: 2, retryInterval: time.Millisecond}
+
+	actualMinioCreds, err = toTest.CreateCredentials()
+	testutil.AssertNotNil(t, actualMinioCreds)
+	testutils.AssertEquals(t, expectedMinioCreds, actualMinioCreds, "Create op returns already existing credentials")
 	testutils.AssertError(t, err, "credential creation expected to return error")
 	testutils.Assert(t, strings.Contains(err.Error(), "AlreadyExists"), "CreateCredentials failed with unexpected error")
 
@@ -150,10 +169,10 @@ func TestApiServerBasedCredsManager_CreateCredentials(t *testing.T) {
 	testutils.Assert(t, strings.Contains(err.Error(), testErrorMsg), "CreateCredentials failed with unexpected error")
 }
 
-func setupMocks(mockCtrl *gomock.Controller, retryCount int) (*mock.MockClusterV1Interface, *mock.MockClusterV1CredentialsInterface) {
+func setupMocks(mockCtrl *gomock.Controller, expectedInvocationCount int) (*mock.MockClusterV1Interface, *mock.MockClusterV1CredentialsInterface) {
 	mockCredsInterface := mock.NewMockClusterV1CredentialsInterface(mockCtrl)
 	mockAPIClient := mock.NewMockClusterV1Interface(mockCtrl)
-	mockAPIClient.EXPECT().Credentials().Return(mockCredsInterface).Times(retryCount)
+	mockAPIClient.EXPECT().Credentials().Return(mockCredsInterface).Times(expectedInvocationCount)
 	return mockAPIClient, mockCredsInterface
 }
 

@@ -114,8 +114,9 @@ func (credsManager *APIServerBasedCredsManager) GetCredentials() (*Credentials, 
 
 //CreateCredentials creates minio credentials if there isn't one already existing
 func (credsManager *APIServerBasedCredsManager) CreateCredentials() (*Credentials, error) {
-	var err error
+	var err, getErr, mappingErr error
 	var createdCredentials *cluster.Credentials
+	var minioKeys *Credentials
 	credentials, err := GenerateObjectStoreCredentials()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate minio credentials object")
@@ -132,12 +133,19 @@ func (credsManager *APIServerBasedCredsManager) CreateCredentials() (*Credential
 					continue
 				}
 				log.Infof("Credentials with name: %s already exist", credentials.Name)
-			}
-			minioKeys, mappingErr := GetMinioKeys(createdCredentials)
-			if mappingErr != nil {
-				log.Errorf("Unable to extract Minio keys from Credentials object")
-				cancel()
-				return nil, errors.Wrap(mappingErr, "Unable to extract Minio keys from Credentials object")
+				minioKeys, getErr = credsManager.GetCredentials()
+				if getErr != nil {
+					log.Errorf("Unable to get existing Minio keys from api-server")
+					cancel()
+					return nil, errors.Wrap(getErr, "Unable to get existing Minio keys from api-server")
+				}
+			} else {
+				minioKeys, mappingErr = GetMinioKeys(createdCredentials)
+				if mappingErr != nil {
+					log.Errorf("Unable to extract Minio keys from Credentials object")
+					cancel()
+					return nil, errors.Wrap(mappingErr, "Unable to extract Minio keys from Credentials object")
+				}
 			}
 			cancel()
 			return minioKeys, err

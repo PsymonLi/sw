@@ -389,7 +389,7 @@ func startObjstore(tinfo *tInfo) error {
 
 	credentialMgr := minio.NewAPIServerBasedCredsManager(tinfo.apicl.ClusterV1())
 	minioKeys, err := credentialMgr.CreateCredentials()
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "AlreadyExists") {
 		log.Error("error creating credentials")
 		return err
 	}
