@@ -1476,9 +1476,9 @@ port_stats_reset (void *pd_p)
     port      *port_p = (port *)pd_p;
 
     SDK_TRACE_DEBUG("Resetting MAC stats");
-    // Put in reset 
+    // Put in reset
     ret = port_p->port_mac_stats_reset(true);
-    // Release from reset 
+    // Release from reset
     ret = port_p->port_mac_stats_reset(false);
     return ret;
 }
@@ -1579,6 +1579,12 @@ port_get (void *pd_p, port_args_t *args)
     }
 
     return SDK_RET_OK;
+}
+
+port_type_t
+port_type (void *port_p)
+{
+    return ((port *)port_p)->port_type();
 }
 
 //-----------------------------------------------------------------------------

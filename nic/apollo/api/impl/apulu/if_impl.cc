@@ -340,12 +340,16 @@ if_impl::activate_create_(pds_epoch_t epoch, if_entry *intf,
                           pds_if_spec_t *spec) {
     sdk_ret_t ret;
     uint32_t tm_port;
+    if_entry *eth_if;
     p4pd_error_t p4pd_ret;
+    port_type_t port_type;
     lif_actiondata_t lif_data = { 0 };
 
     PDS_TRACE_DEBUG("Activating if %s, type %u, admin state %u",
                     spec->key.str(), spec->type, spec->admin_state);
     if (spec->type == IF_TYPE_UPLINK) {
+        eth_if = if_entry::eth_if(intf);
+        port_type = sdk::linkmgr::port_type(eth_if->port_info());
         // program the lif id in the TM
         tm_port = if_impl::port(intf);
         PDS_TRACE_DEBUG("Creating uplink if %s, ifidx 0x%x, port %s, "
@@ -359,7 +363,8 @@ if_impl::activate_create_(pds_epoch_t epoch, if_entry *intf,
         }
         // program LIF table
         lif_data.action_id = LIF_LIF_INFO_ID;
-        if (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) {
+        if ((g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) ||
+            (port_type == port_type_t::PORT_TYPE_MGMT)) {
             // in "host" enabled mode, uplinks are uplinks
             lif_data.lif_action.direction = P4_LIF_DIR_UPLINK;
             lif_data.lif_action.lif_type = P4_LIF_TYPE_UPLINK;
