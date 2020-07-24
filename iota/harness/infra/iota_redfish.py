@@ -4,6 +4,7 @@ from iota.harness.thirdparty.redfish import redfish_client
 import iota.harness.api as api
 import iota.harness.infra.types as types
 import pdb
+import traceback
 
 class IotaRedfish(object):
 
@@ -40,7 +41,9 @@ class IotaRedfish(object):
 
     def Close(self):
         try: self.rfc.logout()
-        except: api.Logger.warn("failed redfish logout from server {0}".format(self.ip))
+        except: 
+            api.Logger.warn("failed redfish logout from server {0}".format(self.ip))
+            api.Logger.debug(traceback.format_exc())
 
     def GetRedfishClient(self):
         return self.rfc

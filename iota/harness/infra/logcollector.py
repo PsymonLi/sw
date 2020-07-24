@@ -56,14 +56,29 @@ def CollectBmcLogs(ip, username, password, vendor=None):
                 if "Members@odata.nextLink" not in data.obj:
                     break
                 nextLink = data.obj['Members@odata.nextLink']
+            nextLink = "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel?$skip=0"
+            for i in range(1000):
+                data = rfc.get(nextLink)
+                if "Members" not in data.obj:
+                    break
+                logs.extend(data.obj.Members)
+                if "Members@odata.nextLink" not in data.obj:
+                    break
+                nextLink = data.obj['Members@odata.nextLink']
             return logs
         elif rf.vendor == types.vendors.HPE:
+            logs = []
             if "Hpe" not in oem:
                 raise Exception("failed to find Hpe in response.obj.Oem. keys are: {0}".format(oem.keys()))
             data = rfc.get('/redfish/v1/Managers/1/LogServices/IEL/Entries/')
             if "Members" not in data.obj:
                 raise Exception("failed to find Members in IEL entries. keys are: {0}".format(data.obj.keys()))
-            return data.obj.Members
+            logs.extend(data.obj.Members)
+            data = rfc.get('/redfish/v1/Systems/1/LogServices/SL/Entries/')
+            if "Members" not in data.obj:
+                raise Exception("failed to find Members in IML entries. keys are: {0}".format(data.obj.keys()))
+            logs.extend(data.obj.Members)
+            return logs
     finally:
         if rf:
             api.Logger.debug("closing redfish connection to {0}".format(ip))
@@ -71,7 +86,6 @@ def CollectBmcLogs(ip, username, password, vendor=None):
 
 def SearchBmcLogs(ip, username, password, searchString):
     logs = CollectBmcLogs(ip, username, password)
-    #pdb.set_trace()
     raise NotImplementedError()
 
 
