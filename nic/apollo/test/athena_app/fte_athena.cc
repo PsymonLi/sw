@@ -1187,11 +1187,6 @@ done:
 static void
 signal_handler (int signum)
 {
-    if (signum == SIGINT || signum == SIGTERM) {
-        PDS_TRACE_DEBUG("\nSIGNAL %d received..\n",
-                        signum);
-        program_prepare_exit();
-    }
     if (signum == SIGUSR1) {
         PDS_TRACE_DEBUG("\nSIGNAL %d received..dumping flows to /data/flows\n",
                         signum);
@@ -1573,8 +1568,6 @@ fte_main (pds_cinit_params_t *init_params)
     int ret;
     sdk_ret_t sdk_ret;
 
-    signal(SIGINT, signal_handler);
-    signal(SIGTERM, signal_handler);
     signal(SIGUSR1, signal_handler);
     signal(SIGUSR2, signal_handler);
 

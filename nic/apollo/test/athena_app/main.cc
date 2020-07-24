@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <limits.h>
+#include <signal.h>
 #include <string>
 #include <iostream>
 #include <stdarg.h>
@@ -713,6 +714,15 @@ program_prepare_exit(void)
     server_poll_stop();
 }
 
+static void
+signal_handler (int signum)
+{
+    if (signum == SIGINT || signum == SIGTERM) {
+        PDS_TRACE_DEBUG("\nSIGNAL received..\n");
+        program_prepare_exit();
+    }
+}
+
 static inline void
 disable_int_mnic_csum_offload(void)
 {
@@ -1016,6 +1026,9 @@ main (int argc, char **argv)
             return ret;
         }
     }
+
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
 
     if (hw()) {
 
