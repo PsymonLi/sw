@@ -167,7 +167,7 @@ public:
 
     /// \brief          return stringified key of the object (for debugging)
     virtual string key2str(void) const override {
-        return "mrror-" + std::string(key_.str());
+        return "mirror-" + std::string(key_.str());
     }
 
     /// \brief     return the key/id of this mirror session 

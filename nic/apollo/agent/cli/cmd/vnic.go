@@ -23,7 +23,9 @@ import (
 )
 
 var (
-	vnicID string
+	vnicID     string
+	txMirrorID string
+	rxMirrorID string
 )
 
 var vnicShowCmd = &cobra.Command{
@@ -38,6 +40,14 @@ var vnicShowStatisticsCmd = &cobra.Command{
 	Short: "show vnic statistics",
 	Long:  "show vnic statistics",
 	Run:   vnicShowStatisticsCmdHandler,
+}
+
+var vnicUpdateCmd = &cobra.Command{
+	Use:     "vnic",
+	Short:   "update vnic object",
+	Long:    "update vnic object",
+	Run:     vnicUpdateCmdHandler,
+	PreRunE: vnicUpdateCmdPreRunE,
 }
 
 var vnicClearCmd = &cobra.Command{
@@ -68,6 +78,114 @@ func init() {
 	clearCmd.AddCommand(vnicClearCmd)
 	vnicClearCmd.AddCommand(vnicClearStatsCmd)
 	vnicClearStatsCmd.Flags().StringVarP(&vnicID, "id", "i", "", "Specify vnic ID")
+
+	debugUpdateCmd.AddCommand(vnicUpdateCmd)
+	vnicUpdateCmd.Flags().StringVarP(&vnicID, "id", "i", "", "Specify vnic ID")
+	vnicUpdateCmd.Flags().StringVarP(&txMirrorID, "tx-mirror-id", "t", "", "Specify TX Mirror Session IDs in comma separated list")
+	vnicUpdateCmd.Flags().StringVarP(&rxMirrorID, "rx-mirror-id", "r", "", "Specify RX Mirror Session IDs in comma separated list")
+}
+
+func vnicUpdateCmdPreRunE(cmd *cobra.Command, args []string) error {
+	if cmd == nil {
+		return fmt.Errorf("Invalid argument")
+	}
+	if !cmd.Flags().Changed("tx-mirror-id") &&
+		!cmd.Flags().Changed("rx-mirror-id") {
+		return fmt.Errorf("Nothing to update")
+	}
+	return nil
+
+}
+
+func vnicUpdateCmdHandler(cmd *cobra.Command, args []string) {
+	// connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewVnicSvcClient(c)
+	getReq := &pds.VnicGetRequest{
+		Id: [][]byte{uuid.FromStringOrNil(vnicID).Bytes()},
+	}
+
+	// PDS call
+	getRespMsg, err := client.VnicGet(context.Background(), getReq)
+	if err != nil {
+		fmt.Printf("Getting Vnic failed, err %v\n", err)
+		return
+	}
+	if getRespMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", getRespMsg.ApiStatus)
+		return
+	}
+	getResp := getRespMsg.GetResponse()
+	vnicSpec := getResp[0].GetSpec()
+	txMirror := vnicSpec.GetTxMirrorSessionId()
+	rxMirror := vnicSpec.GetRxMirrorSessionId()
+	if cmd.Flags().Changed("tx-mirror-id") {
+		ids := strings.Split(txMirrorID, ",")
+		txMirror = make([][]byte, len(ids), len(ids))
+		for i := 0; i < len(ids); i++ {
+			txMirror[i] = uuid.FromStringOrNil(ids[i]).Bytes()
+		}
+	}
+	if cmd.Flags().Changed("rx-mirror-id") {
+		ids := strings.Split(rxMirrorID, ",")
+		rxMirror = make([][]byte, len(ids), len(ids))
+		for i := 0; i < len(ids); i++ {
+			rxMirror[i] = uuid.FromStringOrNil(ids[i]).Bytes()
+		}
+	}
+	req := &pds.VnicSpec{
+		Id:                    vnicSpec.GetId(),
+		SubnetId:              vnicSpec.GetSubnetId(),
+		VnicEncap:             vnicSpec.GetVnicEncap(),
+		MACAddress:            vnicSpec.GetMACAddress(),
+		SourceGuardEnable:     vnicSpec.GetSourceGuardEnable(),
+		FabricEncap:           vnicSpec.GetFabricEncap(),
+		TxMirrorSessionId:     txMirror,
+		RxMirrorSessionId:     rxMirror,
+		SwitchVnic:            vnicSpec.GetSwitchVnic(),
+		V4MeterId:             vnicSpec.GetV4MeterId(),
+		V6MeterId:             vnicSpec.GetV6MeterId(),
+		IngV4SecurityPolicyId: vnicSpec.GetIngV4SecurityPolicyId(),
+		IngV6SecurityPolicyId: vnicSpec.GetIngV6SecurityPolicyId(),
+		EgV4SecurityPolicyId:  vnicSpec.GetEgV4SecurityPolicyId(),
+		EgV6SecurityPolicyId:  vnicSpec.GetEgV6SecurityPolicyId(),
+		HostIf:                vnicSpec.GetHostIf(),
+		TxPolicerId:           vnicSpec.GetTxPolicerId(),
+		RxPolicerId:           vnicSpec.GetRxPolicerId(),
+		Primary:               vnicSpec.GetPrimary(),
+		HostName:              vnicSpec.GetHostName(),
+		MaxSessions:           vnicSpec.GetMaxSessions(),
+		FlowLearnEn:           vnicSpec.GetFlowLearnEn(),
+		MeterEn:               vnicSpec.GetMeterEn(),
+	}
+	reqMsg := &pds.VnicRequest{
+		Request: []*pds.VnicSpec{
+			req,
+		},
+	}
+
+	// PDS call
+	respMsg, err := client.VnicUpdate(context.Background(), reqMsg)
+	if err != nil {
+		fmt.Printf("Updating Vnic failed, err %v\n", err)
+		return
+	}
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+	fmt.Printf("Updating Vnic succeeded\n")
 }
 
 func vnicClearStatsCmdHandler(cmd *cobra.Command, args []string) {
@@ -107,7 +225,6 @@ func vnicClearStatsCmdHandler(cmd *cobra.Command, args []string) {
 }
 
 func vnicShowCmdHandler(cmd *cobra.Command, args []string) {
-
 	respMsg := &pds.VnicGetResponse{}
 
 	var req *pds.VnicGetRequest
@@ -238,86 +355,88 @@ func printVnicDetail(vnic *pds.Vnic) {
 	meterEn := spec.GetMeterEn()
 	fabricEncapStr := utils.EncapToString(spec.GetFabricEncap())
 	vnicEncapStr := utils.EncapToString(spec.GetVnicEncap())
-
-	txMirrorSessionStr := "-"
-	if len(spec.GetTxMirrorSessionId()) != 0 {
-		txMirrorSessionStr = strings.Replace(strings.Trim(
-			fmt.Sprint(spec.GetTxMirrorSessionId()), "[]"), " ", ",", -1)
-	}
-
-	rxMirrorSessionStr := "-"
-	if len(spec.GetRxMirrorSessionId()) != 0 {
-		rxMirrorSessionStr = strings.Replace(strings.Trim(
-			fmt.Sprint(spec.GetRxMirrorSessionId()), "[]"), " ", ",", -1)
-	}
-
 	lifName := "-"
 	if len(spec.GetHostIf()) > 0 {
 		lifName = lifGetNameFromKey(spec.GetHostIf())
 	}
-
 	srcGuardStr := "Disabled"
 	if spec.GetSourceGuardEnable() {
 		srcGuardStr = "Enabled"
 	}
 
-	fmt.Printf("%-30s : %s\n", "Vnic ID",
+	fmt.Printf("%-30s    : %s\n", "Vnic ID",
 		utils.IdToStr(spec.GetId()))
-	fmt.Printf("%-30s : %s\n", "Subnet ID",
+	fmt.Printf("%-30s    : %s\n", "Subnet ID",
 		utils.IdToStr(spec.GetSubnetId()))
-	fmt.Printf("%-30s : %s\n", "Vnic Encap", vnicEncapStr)
-	fmt.Printf("%-30s : %s\n", "MAC address",
+	fmt.Printf("%-30s    : %s\n", "Vnic Encap", vnicEncapStr)
+	fmt.Printf("%-30s    : %s\n", "MAC address",
 		utils.MactoStr(spec.GetMACAddress()))
-	fmt.Printf("%-30s : %s\n", "Source Guard", srcGuardStr)
-	fmt.Printf("%-30s : %s\n", "Fabric Encap", fabricEncapStr)
-	fmt.Printf("%-30s : %s\n", "Rx Mirror Session", rxMirrorSessionStr)
-	fmt.Printf("%-30s : %s\n", "Tx Mirror Session", txMirrorSessionStr)
-	fmt.Printf("%-30s : %t\n", "Switch Vnic", spec.GetSwitchVnic())
-	fmt.Printf("%-30s : %s\n", "Host Interface", lifName)
-	fmt.Printf("%-30s : %s\n", "Host Name", hostName)
-	fmt.Printf("%-30s : %t\n", "Primary Vnic", isPrimary)
-	fmt.Printf("%-30s : %d\n", "Maximum Sessions", maxSessions)
-	fmt.Printf("%-30s : %t\n", "Flow Learn Enabled", flowLearn)
-	fmt.Printf("%-30s : %t\n", "Meter Enabled", meterEn)
-	fmt.Printf("%-30s : %s\n", "IPv4 Meter ID:", utils.IdToStr(v4Meter))
-	fmt.Printf("%-30s : %s\n", "IPv6 Meter ID:", utils.IdToStr(v6Meter))
-	fmt.Printf("%-30s : %s\n", "Rx Policer ID:", utils.IdToStr(rxPolicer))
-	fmt.Printf("%-30s : %s\n", "Tx Policer ID:", utils.IdToStr(txPolicer))
-	if len(ingressV4Policy) != 0 {
-		keyStr := fmt.Sprintf("%-30s : ", "Ingress IPv4 Security Group ID")
-		for i := 0; i < len(ingressV4Policy); i++ {
-			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(ingressV4Policy[i]))
+	fmt.Printf("%-30s    : %s\n", "Source Guard", srcGuardStr)
+	fmt.Printf("%-30s    : %s\n", "Fabric Encap", fabricEncapStr)
+	if len(spec.GetRxMirrorSessionId()) != 0 {
+		keyStr := fmt.Sprintf("%-30s    : ", "Rx Mirror Session")
+		for _, session := range spec.GetRxMirrorSessionId() {
+			fmt.Printf("%-36s%s\n", keyStr, utils.IdToStr(session))
 			keyStr = ""
 		}
 	} else {
-		fmt.Printf("%-30s : %s\n", "Ingress IPv4 Security Group ID", "-")
+		fmt.Printf("%-30s    : %s\n", "Rx Mirror Session", "-")
+	}
+	if len(spec.GetTxMirrorSessionId()) != 0 {
+		keyStr := fmt.Sprintf("%-30s    : ", "Tx Mirror Session")
+		for _, session := range spec.GetTxMirrorSessionId() {
+			fmt.Printf("%-36s%s\n", keyStr, utils.IdToStr(session))
+			keyStr = ""
+		}
+	} else {
+		fmt.Printf("%-30s    : %s\n", "Tx Mirror Session", "-")
+	}
+	fmt.Printf("%-30s    : %t\n", "Switch Vnic", spec.GetSwitchVnic())
+	fmt.Printf("%-30s    : %s\n", "Host Interface", lifName)
+	fmt.Printf("%-30s    : %s\n", "Host Name", hostName)
+	fmt.Printf("%-30s    : %t\n", "Primary Vnic", isPrimary)
+	fmt.Printf("%-30s    : %d\n", "Maximum Sessions", maxSessions)
+	fmt.Printf("%-30s    : %t\n", "Flow Learn Enabled", flowLearn)
+	fmt.Printf("%-30s    : %t\n", "Meter Enabled", meterEn)
+	fmt.Printf("%-30s    : %s\n", "IPv4 Meter ID:", utils.IdToStr(v4Meter))
+	fmt.Printf("%-30s    : %s\n", "IPv6 Meter ID:", utils.IdToStr(v6Meter))
+	fmt.Printf("%-30s    : %s\n", "Rx Policer ID:", utils.IdToStr(rxPolicer))
+	fmt.Printf("%-30s    : %s\n", "Tx Policer ID:", utils.IdToStr(txPolicer))
+	if len(ingressV4Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s    : ", "Ingress IPv4 Security Group ID")
+		for i := 0; i < len(ingressV4Policy); i++ {
+			fmt.Printf("%-36s%s\n", keyStr, utils.IdToStr(ingressV4Policy[i]))
+			keyStr = ""
+		}
+	} else {
+		fmt.Printf("%-30s    : %s\n", "Ingress IPv4 Security Group ID", "-")
 	}
 	if len(ingressV6Policy) != 0 {
-		keyStr := fmt.Sprintf("%-30s : ", "Ingress IPv6 Security Group ID")
+		keyStr := fmt.Sprintf("%-30s    : ", "Ingress IPv6 Security Group ID")
 		for i := 0; i < len(ingressV6Policy); i++ {
-			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(ingressV6Policy[i]))
+			fmt.Printf("%-36s%s\n", keyStr, utils.IdToStr(ingressV6Policy[i]))
 			keyStr = ""
 		}
 	} else {
-		fmt.Printf("%-30s : %s\n", "Ingress IPv6 Security Group ID", "-")
+		fmt.Printf("%-30s    : %s\n", "Ingress IPv6 Security Group ID", "-")
 	}
 	if len(egressV4Policy) != 0 {
-		keyStr := fmt.Sprintf("%-30s : ", "Egress IPv4 Security Group ID")
+		keyStr := fmt.Sprintf("%-30s    : ", "Egress IPv4 Security Group ID")
 		for i := 0; i < len(egressV4Policy); i++ {
-			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(egressV4Policy[i]))
+			fmt.Printf("%-36s%s\n", keyStr, utils.IdToStr(egressV4Policy[i]))
 			keyStr = ""
 		}
 	} else {
-		fmt.Printf("%-30s : %s\n", "Egress IPv4 Security Group ID", "-")
+		fmt.Printf("%-30s    : %s\n", "Egress IPv4 Security Group ID", "-")
 	}
 	if len(egressV6Policy) != 0 {
-		keyStr := fmt.Sprintf("%-30s : ", "Egress IPv6 Security Group ID")
+		keyStr := fmt.Sprintf("%-30s    : ", "Egress IPv6 Security Group ID")
 		for i := 0; i < len(egressV6Policy); i++ {
-			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(egressV6Policy[i]))
+			fmt.Printf("%-36s%s\n", keyStr, utils.IdToStr(egressV6Policy[i]))
 			keyStr = ""
 		}
 	} else {
-		fmt.Printf("%-30s : %s\n", "Egress IPv6 Security Group ID", "-")
+		fmt.Printf("%-30s    : %s\n", "Egress IPv6 Security Group ID", "-")
 	}
 
 	lineStr := strings.Repeat("-", 60)

@@ -446,7 +446,6 @@ func printRemoteMapping(resp *pds.Mapping) {
 	if len(tags) == 0 {
 		tags = "-"
 	}
-	fmt.Printf("Len of tags %d\n", len(tags))
 	var nhType string
 	switch spec.GetDstinfo().(type) {
 	case *pds.MappingSpec_TunnelId:
