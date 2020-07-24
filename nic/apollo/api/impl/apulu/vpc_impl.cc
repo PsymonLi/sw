@@ -155,7 +155,8 @@ vpc_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         //       this will ensure that proper release of resources will happen
         api_obj->set_rsvd_rsc();
         // if vnid is updated, reserve a handle for it in VNI table
-        if (obj_ctxt->upd_bmap & PDS_VPC_UPD_FABRIC_ENCAP) {
+        if ((obj_ctxt->upd_bmap & PDS_VPC_UPD_FABRIC_ENCAP) &&
+            (spec->fabric_encap.type != PDS_ENCAP_TYPE_NONE)) {
             ret = reserve_vni_entry_(spec->fabric_encap.val.vnid);
             if (unlikely(ret != SDK_RET_OK)) {
                 PDS_TRACE_ERR("Failed to reserve entry in VNI table for "
@@ -465,18 +466,25 @@ vpc_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
     sdk::lib::memrev(spec->vr_mac, vpc_data.vpc_info.vrmac, ETH_ADDR_LEN);
     spec->fabric_encap.val.vnid = vpc_data.vpc_info.vni;
     spec->tos = vpc_data.vpc_info.tos;
-    vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
-    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
-                                   VNI_VNI_INFO_ID, handle_t::null());
-    // read the VNI table
-    ret = vpc_impl_db()->vni_tbl()->get(&tparams);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to read VNI table for vpc %s, vnid %u, err %u",
-                      spec->key.str(), vni_key.vxlan_1_vni, ret);
-        return ret;
+
+    if ((g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) ||
+        (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
+        vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
+                                       VNI_VNI_INFO_ID, handle_t::null());
+        // read the VNI table
+        ret = vpc_impl_db()->vni_tbl()->get(&tparams);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Failed to read VNI table for vpc %s, vnid %u, err %u",
+                          spec->key.str(), vni_key.vxlan_1_vni, ret);
+            return ret;
+        }
+        status->bd_hw_id = vni_data.vni_info.bd_id;
+    } else {
+        status->bd_hw_id = bd_hw_id_;
     }
+
     status->hw_id = hw_id_;
-    status->bd_hw_id = vni_data.vni_info.bd_id;
     return SDK_RET_OK;
 }
 
