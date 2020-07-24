@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 #
 #
 # generate-rpms.sh  -  create the full set of RPMs for a Naples build.
@@ -14,7 +14,6 @@ if [ -n "$1" ] ; then
 	RELEASE=$1
 fi
 
-
 # list of live VMs for building the RPMs
 hosts="
 rhel73-build.pensando.io
@@ -22,6 +21,7 @@ rhel75-build.pensando.io
 rhel76-build.pensando.io
 rhel77-build.pensando.io
 rhel78-build.pensando.io
+centos78-build.pensando.io
 rhel80-build.pensando.io
 rhel81-build.pensando.io
 rhel82-build.pensando.io
@@ -29,7 +29,6 @@ sles12sp4-build.pensando.io
 sles12sp5-build.pensando.io
 sles15-build.pensando.io
 sles15sp1-build.pensando.io
-centos78-build.pensando.io
 "
 
 if [ -z "$TOPDIR" ] ; then
@@ -61,6 +60,8 @@ count=0
 retcode=0
 for vm in ${hosts}
 do
+	echo $(seq -s "=" 80 | sed 's/[0-9]//g')
+
 	# check for live build machines
 	echo "Ping build machine $vm"
 	ping -c 3 $vm > /dev/null
@@ -78,7 +79,7 @@ do
 	sshpass -p docker ssh -o StrictHostKeyChecking=no root@$vm "cd $TEMP/drivers-linux-eth ; ./build-rpm.sh $RELEASE" < /dev/null
 
 	# copy rpms to platform/gen
-	sshpass -p docker scp -o StrictHostKeyChecking=no root@$vm:$TEMP/drivers-linux-eth/rpmbuild/RPMS/x86_64/*.rpm $TOPDIR/platform/gen < /dev/null
+	sshpass -p docker scp -o StrictHostKeyChecking=no root@$vm:$TEMP/drivers-linux-eth/rpmbuild/RPMS/*.rpm $TOPDIR/platform/gen < /dev/null
 	sshpass -p docker scp -o StrictHostKeyChecking=no root@$vm:$TEMP/drivers-linux-eth/rpmbuild/SRPMS/*.rpm $TOPDIR/platform/gen < /dev/null
 
 	# cleanup

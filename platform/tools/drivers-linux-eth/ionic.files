@@ -1,0 +1,3 @@
+%defattr(0644, root, root, 0755)
+/lib/modules/%{kernel_version}/extra/%{kmod_name}/%{kmod_name}.ko
+%{_sysconfdir}/depmod.d/kmod-%{kmod_name}.conf

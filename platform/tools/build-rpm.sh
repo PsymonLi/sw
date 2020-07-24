@@ -23,36 +23,35 @@ then
 	temp=$(cat /etc/redhat-release | tr -dc '0-9')
 	major=${temp:0:1}
 	minor=${temp:1:4}
-
 	DISTRO="rhel${major}u${minor}"
-	KERNEL=$(uname -r | sed 's/.x86_64//')
 	REQUIRES="kernel"
-	RPM="kmod-ionic"
 elif [ -f /etc/os-release ]
 then
 	DISTRO=$(cat /etc/os-release | grep VERSION_ID | awk -F= '{print $2}' | tr -d '\"' | sed 's/\./sp/')
 	DISTRO="sles${DISTRO}"
-	KERNEL=$(uname -r | sed 's/-default/.1/')
 	REQUIRES="kernel-default"
-	RPM="ionic-kmp-default"
 fi
 
 RPMDIR=$(pwd)/rpmbuild
 
-# update spec file
-sed -i "s/ionic_version [0-9].[0-9].[0-9]/ionic_version $VERSION/" ionic.spec
-sed -i "s/RELEASE/$RELEASE/" ionic.spec
-sed -i "s/DISTRO/$DISTRO/" ionic.spec
-sed -i "s/RPM/$RPM/" ionic.spec
-sed -i "s/KERNEL/$KERNEL/" ionic.spec
-sed -i "s/REQUIRES/$REQUIRES/" ionic.spec
+KERNEL=$(uname -r)
+KDIST="$DISTRO.$(echo $KERNEL | cut -d- -f2- | rev | cut -d. -f2- | rev | tr - .)"
 
 # cleanup if needed
 rm -rf rpmbuild
 
 # package tarball and build rpm
 mkdir -p $RPMDIR/SOURCES
-tar czf $RPMDIR/SOURCES/$RPM-$VERSION.tar.gz --exclude=build-rpm.sh --exclude=ionic.spec --transform "s,^,$RPM-$VERSION/," *
+tar czf $RPMDIR/SOURCES/ionic-$VERSION.tar.gz --exclude=build-rpm.sh --exclude=ionic.spec --transform "s,^,ionic-$VERSION/," *
+cp ionic.files $RPMDIR/SOURCES/
+cp kmod-ionic.conf $RPMDIR/SOURCES/
 
-echo "Building IONIC rpm for version $VERSION release $RELEASE"
-rpmbuild -ba --define "_topdir $RPMDIR" ionic.spec
+echo "===> DISTRO $DISTRO"
+echo "===> KERNEL version $KERNEL dist $KDIST"
+echo "===> IONIC version $VERSION release $RELEASE"
+
+rpmbuild -vv -ba -D "_topdir $RPMDIR" -D "_requires $REQUIRES" \
+		-D "kmod_version $VERSION" -D "kmod_release $RELEASE" \
+		-D "distro $DISTRO" \
+		-D "kernel_version $KERNEL" -D "kernel_dist $KDIST" \
+		ionic.spec

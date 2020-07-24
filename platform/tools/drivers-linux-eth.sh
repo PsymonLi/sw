@@ -33,6 +33,8 @@ rm -rf "$GEN_DIR"
 mkdir -p "$GEN_DIR"
 
 cp   "$SCRIPTS_SRC/build.sh" "$GEN_DIR"
+cp   "$SCRIPTS_SRC/ionic.files" "$GEN_DIR"
+cp   "$SCRIPTS_SRC/kmod-ionic.conf" "$GEN_DIR"
 
 # Copy linux driver sources to gen dir
 mkdir -p "$GEN_DIR/drivers/eth/ionic"
@@ -80,6 +82,11 @@ if [ -n "$SW_VERSION" ] ; then
 else
 	VER=`git describe --tags`
 fi
+
+VERSION=$(echo $VER | cut -d- -f1 )
+RELEASE=$(echo $VER | cut -d- -f2- | tr - .)
+VER="${VERSION}-${RELEASE}"
+
 echo "Setting Linux driver version to '$VER'"
 sed -i "s/^\\(#define IONIC_DR\\w*_VER\\w*\\s\\+\"\\).*\\(\"\\)\$/\1$VER\2/" \
 	"$GEN_DIR/drivers/eth/ionic/ionic.h"
