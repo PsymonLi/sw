@@ -2062,9 +2062,11 @@ typedef struct ionic_admin_comp ionic_fw_download_comp;
  * @IONIC_FW_ACTIVATE:  Acticate firmware
  */
 enum ionic_fw_control_oper {
-	IONIC_FW_RESET		= 0,
-	IONIC_FW_INSTALL	= 1,
-	IONIC_FW_ACTIVATE	= 2,
+	IONIC_FW_RESET          = 0,
+	IONIC_FW_INSTALL        = 1,
+	IONIC_FW_ACTIVATE       = 2,
+	IONIC_FW_INSTALL_ASYNC  = 3,
+	IONIC_FW_INSTALL_STATUS = 4,
 };
 
 /**
@@ -2701,6 +2703,9 @@ union ionic_dev_cmd {
 	struct ionic_q_identify_cmd q_identify;
 	struct ionic_q_init_cmd q_init;
 	struct ionic_q_control_cmd q_control;
+
+	struct ionic_fw_download_cmd fw_download;
+	struct ionic_fw_control_cmd fw_control;
 };
 
 union ionic_dev_cmd_comp {
@@ -2734,6 +2739,9 @@ union ionic_dev_cmd_comp {
 
 	struct ionic_q_identify_comp q_identify;
 	struct ionic_q_init_comp q_init;
+
+	ionic_fw_download_comp fw_download;
+	struct ionic_fw_control_comp fw_control;
 };
 
 /**
@@ -2824,6 +2832,7 @@ union ionic_adminq_comp {
 	struct ionic_lif_setattr_comp lif_setattr;
 	struct ionic_lif_getattr_comp lif_getattr;
 	struct ionic_rx_filter_add_comp rx_filter_add;
+	ionic_fw_download_comp fw_download;
 	struct ionic_fw_control_comp fw_control;
 };
 

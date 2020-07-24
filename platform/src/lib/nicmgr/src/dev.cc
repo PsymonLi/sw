@@ -37,6 +37,7 @@
 #include "nicmgr_init.hpp"
 #include "nicmgr_utils.hpp"
 #include "pd_client.hpp"
+#include "eth_fw_update.hpp"
 
 using namespace std;
 
@@ -195,6 +196,7 @@ DeviceManager::PlatformInit(devicemgr_cfg_t *cfg) {
     if (pd == NULL) {
         throw runtime_error("Failed to Init PD Client");
     }
+    FwUpdateInit(pd);
 }
 
 void
@@ -1048,7 +1050,6 @@ DeviceManager::DeviceCreate(bool status) {
             }
         }
         if (!skip_hwinit) {
-#define NICMGRD_THREAD_ID_MNET 0
             sdk::lib::thread *mnet_thread = NULL;
             mnet_thread = sdk::lib::thread::factory(std::string("MNET_CREATE").c_str(),
                                                     NICMGRD_THREAD_ID_MNET,

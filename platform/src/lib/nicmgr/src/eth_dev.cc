@@ -34,6 +34,7 @@
 #include "nicmgr_utils.hpp"
 #include "pd_client.hpp"
 #include "rdma_dev.hpp"
+#include "eth_fw_update.hpp"
 
 extern class pciemgr *pciemgr;
 
@@ -1328,6 +1329,19 @@ Eth::os_type_to_str(unsigned int os_type)
 status_code_t
 Eth::_CmdAccessCheck(cmd_opcode_t opcode)
 {
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+
+    // CMDs to be restricted when in NW managed mode
+    if (devmgr->IsNwManaged()) {
+        switch (opcode) {
+        case IONIC_CMD_FW_DOWNLOAD:
+        case IONIC_CMD_FW_CONTROL:
+            NIC_LOG_ERR("{}: {} is not allowed in nw managed mode", spec->name,
+                        opcode_to_str(opcode));
+            return (IONIC_RC_EPERM);
+        }
+    }
+
     if (GetTrustType() == DEV_TRUSTED) {
         if (GetBusType() == BUS_TYPE_PCIE_VF) {
             switch(opcode){
@@ -1353,6 +1367,8 @@ Eth::_CmdAccessCheck(cmd_opcode_t opcode)
         /* Firmware commands */
         case IONIC_CMD_FW_DOWNLOAD:
         case IONIC_CMD_FW_CONTROL:
+            NIC_LOG_ERR("{}: {} not allowed for untrusted devices", spec->name,
+                        opcode_to_str(opcode));
             return (IONIC_RC_EPERM);
         default:
         /* The rest of the devcmd opcodes are allowed.
@@ -1477,7 +1493,12 @@ Eth::CmdHandler(void *req, void *req_data, void *resp, void *resp_data)
     case IONIC_CMD_VF_GETATTR:
         status = _CmdVFGetAttr(req, req_data, resp, resp_data);
         break;
-
+    case IONIC_CMD_FW_DOWNLOAD:
+        status = _CmdFwDownload(req, req_data, resp, resp_data);
+        break;
+    case IONIC_CMD_FW_CONTROL:
+        status = _CmdFwControl(req, req_data, resp, resp_data);
+        break;
     default:
         // FIXME: Check if this is a valid opcode
         status = CmdProxyHandler(req, req_data, resp, resp_data);
@@ -2609,6 +2630,39 @@ Eth::_CmdVFGetAttr(void *req, void *req_data, void *resp, void *resp_data)
 }
 
 status_code_t
+Eth::_CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data)
+{
+    struct ionic_fw_download_cmd *cmd = (struct ionic_fw_download_cmd *)req;
+    uint8_t *data;
+
+    NIC_LOG_INFO("DEVCMD {}: {} addr {:#x} offset {:#x} length {}", spec->name,
+                 opcode_to_str((cmd_opcode_t)cmd->opcode), cmd->addr, cmd->offset, cmd->length);
+
+    if (cmd->addr >= sizeof(ionic_dev_cmd_regs) ||
+        cmd->length >  sizeof(ionic_dev_cmd_regs) ||
+        cmd->addr + cmd->length > sizeof(ionic_dev_cmd_regs)) {
+        NIC_LOG_ERR("{}: data offset + length should not exceed %lu",
+                    spec->name, sizeof(ionic_dev_cmd_regs));
+        return (IONIC_RC_EINVAL);
+    }
+    // cmd->addr represents the offset in ionic_dev_cmd_regs where data starts
+    data = (uint8_t *)devcmd + cmd->addr;
+
+    return FwDownload(spec->name, data, cmd->offset, cmd->length);
+}
+
+status_code_t
+Eth::_CmdFwControl(void *req, void *req_data, void *resp, void *resp_data)
+{
+    struct ionic_fw_control_cmd *cmd = (struct ionic_fw_control_cmd *)req;
+
+    NIC_LOG_DEBUG("{}: DEVCMD: {} CTRL CMD: {}", spec->name,
+        opcode_to_str(cmd->opcode), fwctrl_cmd_to_str(cmd->oper));
+
+    return FwControl(spec->name, cmd->oper);
+}
+
+status_code_t
 Eth::CmdProxyHandler(void *req, void *req_data, void *resp, void *resp_data)
 {
     struct ionic_admin_cmd *cmd = (struct ionic_admin_cmd *)req;
@@ -2841,6 +2895,10 @@ Eth::PcieResetEventHandler(uint32_t rsttype)
     NIC_LOG_INFO("{}: received {}", spec->name, rsttype_str);
 
     DevcmdRegsReset();
+
+    // Cancel any fw update in progress
+    FwControl(spec->name, IONIC_FW_RESET);
+
     status = Reset();
     if (status != IONIC_RC_SUCCESS) {
         NIC_LOG_ERR("{}: {} failed", spec->name, rsttype_str);

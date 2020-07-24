@@ -305,6 +305,10 @@ private:
     status_code_t _CmdVFSetAttr(void *req, void *req_data, void *resp, void *resp_data);
     status_code_t _CmdVFGetAttr(void *req, void *req_data, void *resp, void *resp_data);
 
+    /* Firmware update cmds */
+    status_code_t _CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data);
+    status_code_t _CmdFwControl(void *req, void *req_data, void *resp, void *resp_data);
+
     void port_stats_init_(uint32_t ifindex, sdk::types::mem_addr_t stats_hbm_base_addr);
 
     // Tasks

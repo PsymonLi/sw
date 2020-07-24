@@ -33,6 +33,7 @@
 #include "logger.hpp"
 #include "pd_client.hpp"
 #include "rdma_dev.hpp"
+#include "eth_fw_update.hpp"
 
 using namespace sdk::platform::utils;
 
@@ -211,7 +212,6 @@ EthLif::Init(void)
 
     // init Queues and FW buffer memory
     LifQInit(true);
-    FwBufferInit();
 
     if (dev_api != NULL) {
         Create();
@@ -298,7 +298,6 @@ EthLif::UpgradeGracefulInit(void)
 
     // init Queues and FW buffer memory
     LifQInit(false);
-    FwBufferInit();
 
     if (dev_api != NULL) {
         Create();
@@ -412,7 +411,6 @@ EthLif::UpgradeHitlessInit(void)
 
     // init Queues and FW buffer memory
     LifQInit(false);
-    FwBufferInit();
 
     if (dev_api != NULL) {
         Create();
@@ -672,31 +670,6 @@ EthLif::LifQInit(bool mem_clr) {
                    ETH_ADMINQ_RESP_QID, ETH_ADMINQ_RESP_RING_SIZE, AdminCmdHandler, this, EV_A);
 
     return (IONIC_RC_SUCCESS);
-}
-
-void
-EthLif::FwBufferInit(void) {
-
-    // Firmware Update
-    fw_buf_addr = pd->mp_->start_addr(MEM_REGION_FWUPDATE_NAME);
-    if (fw_buf_addr == INVALID_MEM_ADDRESS || fw_buf_addr == 0) {
-        NIC_LOG_ERR("{}: Failed to locate fwupdate region base", hal_lif_info_.name);
-        throw;
-    }
-
-    fw_buf_size = pd->mp_->size(MEM_REGION_FWUPDATE_NAME);
-    if (fw_buf_size == 0) {
-        NIC_LOG_ERR("{}: Failed to locate fwupdate region size", hal_lif_info_.name);
-    };
-
-    NIC_LOG_INFO("{}: fw_buf_addr {:#x} fw_buf_size {}", hal_lif_info_.name, fw_buf_addr,
-                 fw_buf_size);
-
-    fw_buf = (uint8_t *)MEM_MAP(fw_buf_addr, fw_buf_size, 0);
-    if (fw_buf == NULL) {
-        NIC_LOG_ERR("{}: Failed to map firmware buffer", hal_lif_info_.name);
-        throw;
-    };
 }
 
 
@@ -1039,6 +1012,9 @@ EthLif::Reset()
 
     lif_pstate->state = LIF_STATE_RESETTING;
 
+    // Cancel any fw update in progress
+    FwControl(hal_lif_info_.name, IONIC_FW_RESET);
+
     // Update name to the lif-id before doing a reset
     // to avoid name collisions during re-addition of the lifs
     // TODO: Lif delete has to be called here instead of just
@@ -1203,6 +1179,18 @@ status_code_t
 EthLif::_CmdAccessCheck(cmd_opcode_t opcode)
 {
     status_code_t status = IONIC_RC_SUCCESS;
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+
+    // CMDs to be restricted when in NW managed mode
+    if (devmgr->IsNwManaged()) {
+        switch (opcode) {
+        case IONIC_CMD_FW_DOWNLOAD:
+        case IONIC_CMD_FW_CONTROL:
+            NIC_LOG_ERR("{}: {} is not allowed in nw managed mode", hal_lif_info_.name,
+                        opcode_to_str(opcode));
+            return (IONIC_RC_EPERM);
+        }
+    }
 
     if (dev->GetTrustType() == DEV_TRUSTED) {
         return status;
@@ -1211,6 +1199,8 @@ EthLif::_CmdAccessCheck(cmd_opcode_t opcode)
     switch(opcode) {
         case IONIC_CMD_FW_DOWNLOAD:
         case IONIC_CMD_FW_CONTROL:
+            NIC_LOG_ERR("{}: {} not allowed for untrusted devices", hal_lif_info_.name,
+                        opcode_to_str(opcode));
             status = IONIC_RC_EPERM;
             break;
         default:
@@ -1342,167 +1332,25 @@ status_code_t
 EthLif::_CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data)
 {
     struct ionic_fw_download_cmd *cmd = (struct ionic_fw_download_cmd *)req;
-    FILE *file;
-    int err;
-    status_code_t status = IONIC_RC_SUCCESS;
-    uint32_t transfer_off = 0, transfer_sz = 0, buf_off = 0, write_off = 0;
-    bool posted = false;
-    struct edmaq_ctx ctx = {0};
 
-    if (spec->vf_dev) {
-        NIC_LOG_ERR("{}: Firmware download not allowed on VF interface!", hal_lif_info_.name);
-        return (IONIC_RC_EPERM);
-    }
-
-    NIC_LOG_INFO("{}: {} addr {:#x} offset {:#x} length {}", hal_lif_info_.name,
+    NIC_LOG_INFO("CMD {}: {} addr {:#x} offset {:#x} length {}", hal_lif_info_.name,
                  opcode_to_str((cmd_opcode_t)cmd->opcode), cmd->addr, cmd->offset, cmd->length);
 
-    if (cmd->addr == 0) {
-        NIC_LOG_ERR("{}: Invalid chunk address {:#x}!", hal_lif_info_.name, cmd->addr);
-        return (IONIC_RC_EINVAL);
-    }
-
-    if (cmd->addr & ~BIT_MASK(52)) {
-        NIC_LOG_ERR("{}: bad addr {:#x}", hal_lif_info_.name, cmd->addr);
-        return (IONIC_RC_EINVAL);
-    }
-
-    if (cmd->offset + cmd->length > FW_MAX_SZ) {
-        NIC_LOG_ERR("{}: Invalid chunk offset {} or length {}!", hal_lif_info_.name, cmd->offset,
-                    cmd->length);
-        return (IONIC_RC_EINVAL);
-    }
-
-    /* cleanup update partition before starting download */
-    if (cmd->offset == 0) {
-        system("rm -r /update/*");
-    }
-
-    file = fopen(FW_FILEPATH, "ab+");
-    if (file == NULL) {
-        NIC_LOG_ERR("{}: Failed to open firmware file", hal_lif_info_.name);
-        status = IONIC_RC_EIO;
-        goto err_out;
-    }
-
-    /* transfer from host buffer in chunks of max size allowed by edma */
-    write_off = cmd->offset;
-    while (transfer_off < cmd->length) {
-
-        transfer_sz = min(cmd->length - transfer_off, EDMAQ_MAX_TRANSFER_SZ);
-
-        /* if the local buffer does not have enough free space, then write it to file */
-        if (buf_off + transfer_sz > fw_buf_size) {
-            err = fseek(file, write_off, SEEK_SET);
-            if (err) {
-                NIC_LOG_ERR("{}: Failed to seek offset {}, {}", hal_lif_info_.name, write_off,
-                            strerror(errno));
-                status = IONIC_RC_EIO;
-                goto err_out;
-            }
-
-            err = fwrite((const void *)fw_buf, sizeof(fw_buf[0]), buf_off, file);
-            if (err != (int)buf_off) {
-                NIC_LOG_ERR("{}: Failed to write chunk, {}", hal_lif_info_.name, strerror(errno));
-                status = IONIC_RC_EIO;
-                goto err_out;
-            }
-
-            write_off += buf_off;
-            buf_off = 0;
-        }
-
-        /* try posting an edma request */
-        posted =
-            edmaq->Post(spec->host_dev ? EDMA_OPCODE_HOST_TO_LOCAL : EDMA_OPCODE_LOCAL_TO_LOCAL,
-                        cmd->addr + transfer_off, fw_buf_addr + buf_off, transfer_sz, &ctx);
-
-        if (posted) {
-            // NIC_LOG_INFO("{}: Queued transfer offset {:#x} size {} src {:#x} dst {:#x}",
-            //     hal_lif_info_.name, transfer_off, transfer_sz,
-            //     cmd->addr + transfer_off, fw_buf_addr + transfer_off);
-            transfer_off += transfer_sz;
-            buf_off += transfer_sz;
-        } else {
-            NIC_LOG_INFO("{}: Waiting for transfers to complete ...", hal_lif_info_.name);
-            usleep(1000);
-        }
-    }
-
-    /* write the leftover data */
-    if (buf_off > 0) {
-        err = fseek(file, write_off, SEEK_SET);
-        if (err) {
-            NIC_LOG_ERR("{}: Failed to seek offset {}, {}", hal_lif_info_.name, write_off,
-                        strerror(errno));
-            status = IONIC_RC_EIO;
-            goto err_out;
-        }
-
-        err = fwrite((const void *)fw_buf, sizeof(fw_buf[0]), buf_off, file);
-        if (err != (int)buf_off) {
-            NIC_LOG_ERR("{}: Failed to write chunk, {}", hal_lif_info_.name, strerror(errno));
-            status = IONIC_RC_EIO;
-            goto err_out;
-        }
-    }
-
-err_out:
-    fclose(file);
-
-    return (status);
+    return FwDownloadEdma(hal_lif_info_.name, cmd->addr, cmd->offset, cmd->length,
+                          edmaq, spec->host_dev);
 }
+
 
 status_code_t
 EthLif::_CmdFwControl(void *req, void *req_data, void *resp, void *resp_data)
 {
     struct ionic_fw_control_cmd *cmd = (struct ionic_fw_control_cmd *)req;
-    status_code_t status = IONIC_RC_SUCCESS;
-    int err;
-    char buf[512] = {0};
 
-    if (spec->vf_dev) {
-        NIC_LOG_ERR("{}: Firmware control not allowed on VF interface!", hal_lif_info_.name);
-        return (IONIC_RC_EPERM);
-    }
+    NIC_LOG_INFO("{}: CMD: {} CTRL CMD: {}", hal_lif_info_.name,
+        opcode_to_str(cmd->opcode), fwctrl_cmd_to_str(cmd->oper));
 
-    switch (cmd->oper) {
-
-    case IONIC_FW_RESET:
-        NIC_LOG_INFO("{}: IONIC_FW_RESET", hal_lif_info_.name);
-        break;
-
-    case IONIC_FW_INSTALL:
-        NIC_LOG_INFO("{}: IONIC_FW_INSTALL starting", hal_lif_info_.name);
-        snprintf(buf, sizeof(buf), "/nic/tools/fwupdate -p %s -i all", FW_FILEPATH);
-        err = system(buf);
-        if (err) {
-            NIC_LOG_ERR("{}: Failed to install firmware", hal_lif_info_.name);
-            status = IONIC_RC_ERROR;
-        }
-        // remove(FW_FILEPATH);
-        NIC_LOG_INFO("{}: IONIC_FW_INSTALL done!", hal_lif_info_.name);
-        break;
-
-    case IONIC_FW_ACTIVATE:
-        NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE starting", hal_lif_info_.name);
-        err = system("/nic/tools/fwupdate -s altfw");
-        if (err) {
-            NIC_LOG_ERR("{}: Failed to activate firmware", hal_lif_info_.name);
-            status = IONIC_RC_ERROR;
-        }
-        NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE done!", hal_lif_info_.name);
-        break;
-
-    default:
-        NIC_LOG_ERR("{}: Unknown operation {}", hal_lif_info_.name, cmd->oper);
-        status = IONIC_RC_EOPCODE;
-        break;
-    }
-
-    return (status);
+    return FwControl(hal_lif_info_.name, cmd->oper);
 }
-
 #if 0
 status_code_t
 EthLif::_CmdHangNotify(void *req, void *req_data, void *resp, void *resp_data)

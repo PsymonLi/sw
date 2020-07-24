@@ -73,9 +73,6 @@ enum eth_hw_qtype {
 #define RXDMA_Q_QUIESCE_WAIT_S 0.001  // 1 ms
 #define RXDMA_LIF_QUIESCE_WAIT_S 0.01 // 10 ms
 
-#define FW_MAX_SZ ((900 << 20)) // 900 MiB
-#define FW_FILEPATH "/update/firmware.tar"
-
 /**
  * LIF Resource structure
  */
@@ -207,10 +204,6 @@ private:
     // EdmaQ
     uint64_t edma_buf_addr;
     uint8_t *edma_buf;
-    // Firmware
-    uint64_t fw_buf_addr;
-    uint32_t fw_buf_size;
-    uint8_t *fw_buf;
     // Features
     uint64_t features;
     // Network info
@@ -307,7 +300,6 @@ private:
     void LifConfigStatusMem(bool mem_clr);
     status_code_t LifQInit(bool mem_clr);
     void QinfoInit(void);
-    void FwBufferInit(void);
     void LifStatsInit();
     void LifStatsClear();
 

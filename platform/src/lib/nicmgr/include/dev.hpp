@@ -27,6 +27,9 @@
 #include "pd_client.hpp"
 #include "ev.h"
 
+#define NICMGRD_THREAD_ID_MNET      0
+#define NICMGRD_THREAD_ID_FW_INSTALL 1
+
 enum {
     NICMGR_MAC_DEV_CAP              = 0x1000000,
     NICMGR_MAC_DEV_MASK             = 0xffffff,
@@ -163,7 +166,7 @@ public:
     int GenerateQstateInfoJson(std::string qstate_info_file);
     void GetConfigFiles(devicemgr_cfg_t *cfg, std::string &hbm_mem_json_file,
                         std::string &device_json_file);
-
+    bool IsNwManaged() {return micro_seg_en; }
 
     // upgrade helper functions
     void SetUpgradeMode(UpgradeMode mode) { upgrade_mode = mode; }
