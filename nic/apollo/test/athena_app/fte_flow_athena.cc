@@ -41,7 +41,6 @@
 #include "nic/sdk/include/sdk/table.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/sdk/lib/table/ftl/ftl_base.hpp"
-#include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
 #include "nic/sdk/lib/bitmap/bitmap.hpp"
 #include "fte_athena.hpp"
 #include "nic/apollo/p4/include/athena_defines.h"
@@ -53,11 +52,13 @@
 #include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 #include "nic/apollo/api/include/athena/pds_dnat.h"
+#include "nic/apollo/api/include/athena/internal/pds_store.h"
 #include "gen/p4gen/p4/include/ftl.h"
 #include "athena_test.hpp"
 #include "app_test_utils.hpp"
 #include "conntrack_aging.hpp"
 #include "json_parser.hpp"
+#include "utils/fte_indexer/fte_indexer.hpp"
 
 uint32_t num_flows_added = 0;
 uint32_t attempted_flows = 0;
@@ -69,8 +70,15 @@ static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
 #define IPV4_ADDR_LEN 4
 #define IPV6_ADDR_LEN 16
 
-static rte_indexer *g_conntrack_indexer;
-static rte_indexer *g_session_indexer;
+#define IDXR_STORE_NAME          "idxr"
+#define IDXR_MOD_CONNTRACK       "conntrack"
+#define IDXR_MOD_SESSION_INFO    "session_info"
+#define IDXR_STORE_SIZE          (8 * (1 << 20))     // 8MB
+// TODO: Read from json
+#define IDXR_STATE_VERSION       (1)
+
+static fte_indexer *g_conntrack_indexer;
+static fte_indexer *g_session_indexer;
 uint32_t g_session_rewrite_index = 1;
 
 // H2S specific fields
@@ -147,11 +155,41 @@ uint8_t s2h_l2vlan_encap_hdr[] = {
     0x08, 0x00
 };
 
+static shmstore*
+fte_indexer_store_init (const char *idxr_name)
+{
+    shmstore *store;
+    bool store_create = true;
+
+    if (idxr_name == NULL) {
+        SDK_TRACE_ERR("idxr store creation failure -  name null");
+        return NULL;
+    }
+
+    if (fte_upg())
+        store_create = false;
+
+    store = pds_store_init(IDXR_STORE_NAME, idxr_name,
+                           IDXR_STATE_VERSION, IDXR_STORE_SIZE, store_create);
+    if (store == NULL) {
+        PDS_TRACE_ERR("Store creation failed for indexer %s", idxr_name);
+        return NULL;
+    }
+    return store;
+}
+
 sdk_ret_t
 fte_conntrack_indexer_init (void)
 {
-    g_conntrack_indexer = rte_indexer::factory(PDS_CONNTRACK_ID_MAX,
-                                               true, true);
+    shmstore *store;
+    char mod_name[PDS_STORE_NAME_SIZE] = IDXR_MOD_CONNTRACK;
+
+    store = fte_indexer_store_init(mod_name);
+    if (store == NULL)
+        return SDK_RET_ERR;
+
+    g_conntrack_indexer = fte_indexer::factory(PDS_CONNTRACK_ID_MAX,
+                                               true, true, store);
     if (g_conntrack_indexer == NULL) {
         PDS_TRACE_DEBUG("g_conntrack_indexer init failed.\n");
         return SDK_RET_ERR;
@@ -162,7 +200,7 @@ fte_conntrack_indexer_init (void)
 void
 fte_conntrack_indexer_destroy (void)
 {
-    rte_indexer::destroy(g_conntrack_indexer);
+    fte_indexer::destroy(g_conntrack_indexer);
 }
 
 sdk_ret_t
@@ -223,8 +261,15 @@ fte_get_egress_action (uint16_t vnic_id, uint8_t dir)
 sdk_ret_t
 fte_session_indexer_init (void)
 {
-    g_session_indexer = rte_indexer::factory(PDS_FLOW_SESSION_INFO_ID_MAX,
-                                             true, true);
+    shmstore *store;
+    char mod_name[PDS_STORE_NAME_SIZE] = IDXR_MOD_SESSION_INFO;
+
+    store = fte_indexer_store_init(mod_name);
+    if (store == NULL)
+        return SDK_RET_ERR;
+
+    g_session_indexer = fte_indexer::factory(PDS_FLOW_SESSION_INFO_ID_MAX,
+                                             true, true, store);
     if (g_session_indexer == NULL) {
         PDS_TRACE_DEBUG("g_session_indexer init failed.\n");
         return SDK_RET_ERR;
@@ -235,7 +280,7 @@ fte_session_indexer_init (void)
 void
 fte_session_indexer_destroy (void)
 {
-    rte_indexer::destroy(g_session_indexer);
+    fte_indexer::destroy(g_session_indexer);
 }
 
 static inline uint8_t

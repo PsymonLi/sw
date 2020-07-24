@@ -841,6 +841,7 @@ bool resource_util_dump(test::athena_app::test_vparam_ref_t vparam);
 
 bool skip_fte_flow_prog(void);
 bool skip_dpdk_init(void);
+bool fte_upg(void);
 void program_prepare_exit(void);
 
 #endif   // __ATHENA_APP_TEST_UTILS_HPP__

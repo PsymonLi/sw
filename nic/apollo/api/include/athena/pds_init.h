@@ -22,7 +22,7 @@ extern "C" {
 typedef enum pds_init_mode_ce {
     PDS_CINIT_MODE_NONE,            ///< invalid mode
     PDS_CINIT_MODE_COLD_START,      ///< initialize from scratch
-                                   ///< ignore any state if preserved previously
+    PDS_CINIT_MODE_POST_UPGRADE     ///< read from any state if preserved previously
 } pds_cinit_mode_t;
 
 

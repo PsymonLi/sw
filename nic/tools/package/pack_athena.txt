@@ -261,6 +261,7 @@ nic/build/$ARCH/$PIPELINE/bin/athena_cps                          /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/athena_flow_logger                  /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/athena_client                       /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pcieutil                            /nic/bin/
+nic/build/$ARCH/$PIPELINE/lib/libfte_indexer.so                   /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsvc_athena.so                    /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libpdsagentcore_athena.so           /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libpdsagent_athena.so               /nic/lib/

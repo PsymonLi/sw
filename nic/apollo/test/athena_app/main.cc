@@ -207,6 +207,14 @@ skip_dpdk_init(void)
     return (bool)skip_dpdk_init_;
 }
 
+static int fte_upg_;
+
+bool
+fte_upg (void)
+{
+    return (bool)fte_upg_;
+}
+
 void inline
 print_usage (char **argv)
 {
@@ -806,6 +814,7 @@ main (int argc, char **argv)
        { "mode",        required_argument, NULL, 'm' },
        { "policy_json", required_argument, NULL, 'j' },
        { "no-fte-flow-prog", no_argument,  &skip_fte_flow_prog_, 1 },
+       { "upgrade", no_argument, &fte_upg_, 1 },
        { "skip-dpdk-init", no_argument, &skip_dpdk_init_, 1 },
        { "help",        no_argument,       NULL, 'h' },
        { 0,             0,                 0,     0 }
@@ -983,6 +992,8 @@ main (int argc, char **argv)
 
     memset(&init_params, 0, sizeof(init_params));
     init_params.init_mode = PDS_CINIT_MODE_COLD_START;
+    if (fte_upg())
+        init_params.init_mode = PDS_CINIT_MODE_POST_UPGRADE;
     init_params.trace_cb  = (void *)core::sdk_logger;
     /*
     init_params.pipeline  = pipeline;
@@ -1054,8 +1065,10 @@ main (int argc, char **argv)
         fte_ath::g_athena_app_mode == ATHENA_APP_MODE_SOFT_INIT) {
 
 #ifndef __x86_64__
-        /* Clear tables on real H/W only */
-        p4_tables_clear();
+        if (!fte_upg()) {
+            /* Clear tables on real H/W only */
+            p4_tables_clear();
+        }
 #endif
 
         fte_ath::fte_init(&init_params);
