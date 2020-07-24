@@ -34,12 +34,23 @@ namespace impl {
 vpc_impl *
 vpc_impl::factory(pds_vpc_spec_t *spec) {
     vpc_impl *impl;
+    pds_device_oper_mode_t oper_mode;
 
-    if (spec->fabric_encap.type != PDS_ENCAP_TYPE_VXLAN) {
-        PDS_TRACE_ERR("Unknown fabric encap type %u, value %u - only VxLAN "
-                      "fabric encap is supported", spec->fabric_encap.type,
-                      spec->fabric_encap.val.value);
-        return NULL;
+    oper_mode = g_pds_state.device_oper_mode();
+    if ((oper_mode == PDS_DEV_OPER_MODE_HOST) ||
+        (oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
+        if (spec->fabric_encap.type != PDS_ENCAP_TYPE_VXLAN) {
+            PDS_TRACE_ERR("Unknown fabric encap type %u, value %u - only VxLAN "
+                          "fabric encap is supported", spec->fabric_encap.type,
+                          spec->fabric_encap.val.value);
+            return NULL;
+        }
+    } else if (oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SERVICE) {
+        if (spec->fabric_encap.type != PDS_ENCAP_TYPE_NONE) {
+            PDS_TRACE_ERR("Fabric encap must be PDS_ENCAP_TYPE_NONE in "
+                          "BITW_SMART_SERVICE mode");
+            return NULL;
+        }
     }
     impl = vpc_impl_db()->alloc();
     if (impl) {
@@ -127,12 +138,14 @@ vpc_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         bd_hw_id_ = idx;
 
         // reserve an entry in VNI table
-        ret = reserve_vni_entry_(spec->fabric_encap.val.vnid);
-        if (unlikely(ret != SDK_RET_OK)) {
-            PDS_TRACE_ERR("Failed to reserve entry in VNI table for vpc %s, "
-                          "vnid %u, err %u", spec->key.str(),
-                          spec->fabric_encap.val.vnid, ret);
-            return ret;
+        if (spec->fabric_encap.type != PDS_ENCAP_TYPE_NONE) {
+            ret = reserve_vni_entry_(spec->fabric_encap.val.vnid);
+            if (unlikely(ret != SDK_RET_OK)) {
+                PDS_TRACE_ERR("Failed to reserve entry in VNI table for vpc %s, "
+                              "vnid %u, err %u", spec->key.str(),
+                              spec->fabric_encap.val.vnid, ret);
+                return ret;
+            }
         }
         break;
 
@@ -284,7 +297,7 @@ vpc_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
 sdk_ret_t
 vpc_impl::activate_create_(pds_epoch_t epoch, vpc_entry *vpc,
                            pds_vpc_spec_t *spec) {
-    sdk_ret_t ret;
+    sdk_ret_t ret = SDK_RET_OK;
     vni_swkey_t vni_key = { 0 };
     sdk_table_api_params_t tparams;
     vni_actiondata_t vni_data = { 0 };
@@ -293,19 +306,21 @@ vpc_impl::activate_create_(pds_epoch_t epoch, vpc_entry *vpc,
                     "fabric encap (%u, %u)", spec->key.str(), hw_id_,
                     spec->type, spec->fabric_encap.type,
                     spec->fabric_encap.val.vnid);
-    // fill the key
-    vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
-    // fill the data
-    vni_data.vni_info.bd_id = bd_hw_id_;
-    vni_data.vni_info.vpc_id = hw_id_;
-    vni_data.vni_info.is_l3_vnid = TRUE;
-    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
-                                   VNI_VNI_INFO_ID, vni_hdl_);
-    // program the VNI table
-    ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Programming of VNI table failed for vpc %s, err %u",
-                      spec->key.str(), ret);
+    if (vni_hdl_.valid()) {
+        // fill the key
+        vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
+        // fill the data
+        vni_data.vni_info.bd_id = bd_hw_id_;
+        vni_data.vni_info.vpc_id = hw_id_;
+        vni_data.vni_info.is_l3_vnid = TRUE;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
+                                       VNI_VNI_INFO_ID, vni_hdl_);
+        // program the VNI table
+        ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Programming of VNI table failed for vpc %s, err %u",
+                          spec->key.str(), ret);
+        }
     }
     vpc_impl_db()->insert(hw_id_, this);
     return ret;
@@ -329,28 +344,30 @@ vpc_impl::activate_update_(pds_epoch_t epoch, vpc_entry *new_vpc,
     hw_id_ = orig_impl->hw_id_;
     bd_hw_id_ = orig_impl->bd_hw_id_;
 
-    // fill the key
-    memset(&vni_key, 0, sizeof(vni_key));
-    vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
-    // fill the data
-    memset(&vni_data, 0, sizeof(vni_data));
-    vni_data.vni_info.bd_id = bd_hw_id_;
-    vni_data.vni_info.vpc_id = hw_id_;
-    vni_data.vni_info.is_l3_vnid = TRUE;
-    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
-                                   VNI_VNI_INFO_ID, vni_hdl_);
-    if (obj_ctxt->upd_bmap & PDS_VPC_UPD_FABRIC_ENCAP) {
-        // insert new entry in the VNI table
-        ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
-    } else {
-        // update the existing VNI table entry
-        ret = vpc_impl_db()->vni_tbl()->update(&tparams);
-        vni_hdl_ = tparams.handle;
-    }
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Updating VNI table failed for vpc %s, err %u",
-                      spec->key.str(), ret);
-        return ret;
+    if (vni_hdl_.valid()) {
+        // fill the key
+        memset(&vni_key, 0, sizeof(vni_key));
+        vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
+        // fill the data
+        memset(&vni_data, 0, sizeof(vni_data));
+        vni_data.vni_info.bd_id = bd_hw_id_;
+        vni_data.vni_info.vpc_id = hw_id_;
+        vni_data.vni_info.is_l3_vnid = TRUE;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
+                                       VNI_VNI_INFO_ID, vni_hdl_);
+        if (obj_ctxt->upd_bmap & PDS_VPC_UPD_FABRIC_ENCAP) {
+            // insert new entry in the VNI table
+            ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
+        } else {
+            // update the existing VNI table entry
+            ret = vpc_impl_db()->vni_tbl()->update(&tparams);
+            vni_hdl_ = tparams.handle;
+        }
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Updating VNI table failed for vpc %s, err %u",
+                          spec->key.str(), ret);
+            return ret;
+        }
     }
 
     // update the vpc db

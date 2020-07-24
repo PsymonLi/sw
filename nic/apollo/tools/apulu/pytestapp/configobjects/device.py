@@ -7,7 +7,7 @@ import ipaddress
 import utils
 
 class DeviceObject():
-    def __init__(self, ip, gatewayip, mac, deviceopermode=device_pb2.DEVICE_OPER_MODE_HOST ):
+    def __init__(self, ip, gatewayip, mac, deviceopermode=device_pb2.DEVICE_OPER_MODE_HOST):
         self.ip = ip
         self.gatewayip = gatewayip
         self.mac = mac
