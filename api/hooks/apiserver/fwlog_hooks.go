@@ -79,12 +79,12 @@ func (r *fwlogHooks) handleCredentialUpdate(ctx context.Context, kv kvstore.Inte
 	// Map config by destination,target to index
 	curCredMap := map[string]int{}
 	for i, target := range cur.Spec.Targets {
-		key := fmt.Sprintf("%s%s", target.Destination, target.Transport)
+		key := fmt.Sprintf("%v%v%v", target.Destination, target.Transport, target.Gateway)
 		curCredMap[key] = i
 	}
 	newCredMap := map[string]int{}
 	for i, target := range new.Spec.Targets {
-		key := fmt.Sprintf("%s%s", target.Destination, target.Transport)
+		key := fmt.Sprintf("%v%v%v", target.Destination, target.Transport, target.Gateway)
 		if _, ok := newCredMap[key]; ok {
 			// Duplicate targets found in new object
 			return new, true, fmt.Errorf("duplicate targets are not allowed")

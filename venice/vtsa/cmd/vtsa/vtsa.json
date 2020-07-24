@@ -56,6 +56,11 @@
       "Command":"mkdir events && cp -r /var/lib/pensando/events/* events/"
     },
     {
+      "Name":"citadel",
+      "Method":0,
+      "Command":"mkdir citadel && wget localhost:7086/info -O citadel/cluster.txt && wget localhost:7086/dnode -O citadel/node.txt"
+    },
+    {
       "Name":"Uptime",
       "Method":0,
       "Command":"uptime"
