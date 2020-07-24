@@ -98,16 +98,6 @@ def GetERSPANDstIP(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
     return str(mirrorObj.DstIP) if mirrorObj and mirrorObj.SpanType == 'ERSPAN' else "0"
 
-def GetERSPANInnerDstMac(testcase, packet, args=None):
-    mirrorObj = __get_mirror_object(testcase, args)
-    spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
-    if spanvpc.IsUnderlayVPC():
-        return "00:00:00:00:00:00"
-    elif spanvpc.IsTenantVPC():
-        pkt = testcase.packets.db[args.basepktid].GetScapyPacket()
-        return pkt[Ether].dst
-    return "00:00:00:00:00:00"
-
 def GetERSPANDstMac(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
     if not mirrorObj or mirrorObj.SpanType != 'ERSPAN':

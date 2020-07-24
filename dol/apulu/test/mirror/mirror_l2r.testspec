@@ -124,13 +124,6 @@ packets:
                 data    : ref://factory/payloads/id=PAYLOAD_ZERO70/data
 
     - packet:
-        id          : ERSPAN_MIRROR_FROM_HOST_PKT_2 # Erspan Input packet
-        clone       : ref://testcase/packets/id=FROM_HOST_PKT
-        headers     :
-            eth:
-                dst    : callback://mirror/packets/GetERSPANInnerDstMac/basepktid=FROM_HOST_PKT,direction=TX,id=2
-
-    - packet:
          id          : ERSPAN_MIRROR_PKT_TX_2 # Expected ERSPAN tx mirrored packet for session 2
          clone       : ref://testcase/packets/id=ERSPAN_MIRROR_PKT_TX_BASE
          payloadsize : callback://mirror/packets/GetERSPANPayloadSize/basepktid=FROM_HOST_PKT,direction=TX,id=2
@@ -154,7 +147,7 @@ packets:
                 # Get port-id of Lif based on vnic
                 port_id  :  callback://mirror/packets/GetERSPANType3PortID/direction=TX,id=2
              payload :
-                 data    : callback://mirror/packets/GetERSPANPayload/basepktid=ERSPAN_MIRROR_FROM_HOST_PKT_2,direction=TX,id=2
+                 data    : callback://mirror/packets/GetERSPANPayload/basepktid=FROM_HOST_PKT,direction=TX,id=2
 
     - packet:                                                                                                                                   
         id          : RSPAN_MIRROR_PKT_TX_BASE_4 # Expected RSPAN tx mirrored packet for session 4                                              

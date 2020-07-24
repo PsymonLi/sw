@@ -183,10 +183,6 @@ jobd/dol/apollo/lpm: ${JOBD_PREREQS}
 jobd/dol/apollo/rfc: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apollo --topo rfc --feature rfc
 
-.PHONY: jobd/dol/apollo/mirror
-jobd/dol/apollo/mirror: ${JOBD_PREREQS}
-	#${NICDIR}/apollo/tools/rundol.sh --pipeline apollo --topo mirror --feature mirror
-
 .PHONY: jobd/apollo/pds_scale_test_mock
 jobd/apollo/pds_scale_test_mock: ${JOBD_PREREQS}
 	${NICDIR}/apollo/test/scale/run_scale_test_mock.sh
@@ -609,6 +605,10 @@ jobd/dol/apulu/bitw_smart_service_e2e: ${JOBD_PREREQS}
 .PHONY: jobd/dol/apulu/meter
 jobd/dol/apulu/meter: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan_meter --feature meter
+
+.PHONY: jobd/dol/apulu/mirror
+jobd/dol/apulu/mirror: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostmirror --feature mirror
 
 .PHONY: jobd/athena/gtests
 jobd/athena/gtests: ${JOBD_PREREQS}

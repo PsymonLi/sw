@@ -227,6 +227,15 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
+  apulu/dol/mirror:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/mirror"]
+    owners: ["email:gnany@pensando.io", "email:param@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
 image:
   bind_dir: "/sw"
   work_dir: "/sw/nic"
