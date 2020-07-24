@@ -58,9 +58,11 @@ func WorkloadStateFromObj(obj runtime.Object) (*WorkloadState, error) {
 			nsobj := wobj.HandlerCtx.(*WorkloadState)
 			return nsobj, nil
 		default:
+			log.Errorf("Incorrect type %#v, %#v", obj, wobj.HandlerCtx)
 			return nil, ErrIncorrectObjectType
 		}
 	default:
+		log.Errorf("Incorrect type %#v", obj)
 		return nil, ErrIncorrectObjectType
 	}
 }
@@ -201,8 +203,12 @@ func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nwrk *workload.Workload)
 func (sm *Statemgr) reconcileWorkload(w *ctkit.Workload, hst *HostState) error {
 	// find workload
 	log.Infof("Trying to reconcile workload %v", w.Name)
+	defer func() {
+		log.Infof("Finished reconcile workload %v", w.Name)
+	}()
 	ws, err := sm.FindWorkload(w.Tenant, w.Name)
 	if err != nil {
+		log.Infof("reconcileWorkload : workload %v not found", w.Name)
 		return err
 	}
 
@@ -214,7 +220,7 @@ func (sm *Statemgr) reconcileWorkload(w *ctkit.Workload, hst *HostState) error {
 		_, err := sm.FindEndpoint(w.Tenant, epName)
 		pending, _ := sm.EndpointIsPending(w.Tenant, epName)
 		if err != nil && !pending {
-			log.Infof("Crating endpoint as part of reconcile %v", w.Name)
+			log.Infof("Creating endpoint as part of reconcile %v", w.Name)
 			err = ws.createEndpoints(nil)
 			if err != nil {
 				log.Errorf("Error creating endpoints for workload. Err: %v", err)
@@ -340,7 +346,7 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 					// Create networks since all creates are idempotent
 					err = ws.createNetwork(netName, ws.Workload.Spec.Interfaces[ii].ExternalVlan)
 					if err != nil {
-						log.Errorf("Error creating network, ignoring  Err: %v", err)
+						log.Errorf("Error creating network %v, ignoring  Err: %v", netName, err)
 					}
 				}
 			} else {
@@ -355,7 +361,7 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 		// check if we already have the endpoint for this workload
 		name, _ := strconv.ParseMacAddr(ws.Workload.Spec.Interfaces[ii].MACAddress)
 		epName := ws.Workload.Name + "-" + name
-		log.Infof("Adding to create endpoint %v", epName)
+		log.Infof("Adding to create endpoint : %v", epName)
 		nodeUUID := ""
 		dscs := host.getDSCs()
 		if len(dscs) == 0 {
@@ -385,24 +391,20 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 			nodeUUID = snic.DistributedServiceCard.Name
 		}
 		*/
-
 		// check if an endpoint with this mac address already exists in this network
 		epMac := ws.Workload.Spec.Interfaces[ii].MACAddress
-		if ns != nil {
-			mep, err := ns.FindEndpointByMacAddr(epMac)
-			if err == nil && mep.Endpoint.Name != epName {
-				// we found a duplicate mac address
-				log.Errorf("Error creating endpoint %s. Macaddress %s already exists in ep %s", epName, epMac, mep.Endpoint.Name)
-				ws.Workload.Status.PropagationStatus.Status = DuplicateMacErr
-
-				// write the status back
-				ws.Workload.Write()
-				createErr = true
-				continue
-			}
-		}
-
 		// create the endpoint for the interface
+		mep, ok := ws.stateMgr.FindEndpointByMacAddr(ws.Workload.Tenant, epMac)
+		if ok && mep.Endpoint.Status.WorkloadName != ws.Workload.Name {
+			// we found a duplicate mac address
+			log.Errorf("Error creating endpoint %s. Macaddress %s already exists in ep %s", epName, epMac, mep.Endpoint.Name)
+			ws.Workload.Status.PropagationStatus.Status = DuplicateMacErr
+
+			// write the status back
+			ws.Workload.Write()
+			createErr = true
+			continue
+		}
 		epInfo := workload.Endpoint{
 			TypeMeta: api.TypeMeta{Kind: "Endpoint"},
 			ObjectMeta: api.ObjectMeta{
@@ -465,16 +467,13 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 	}
 	if !createErr {
 		// Clear propagation error message
-		go func() {
-			ws.Workload.Status.PropagationStatus.Status = ""
-			err = ws.Workload.Write()
-			if err != nil {
-				log.Errorf("failed to clear propagation status. Err : %v", err)
-			}
-		}()
+		ws.Workload.Status.PropagationStatus.Status = ""
+		err = ws.Workload.Write()
+		if err != nil {
+			log.Errorf("failed to clear propagation status. Err : %v", err)
+		}
 
 	}
-
 	return nil
 }
 
@@ -484,6 +483,8 @@ func (ws *WorkloadState) GetKey() string {
 }
 
 func (ws *WorkloadState) doReconcile() error {
+	ws.Workload.Lock()
+	defer ws.Workload.Unlock()
 
 	log.Infof("Doing reconcile of workload %v", ws.Workload.Name)
 	if err := ws.deleteEndpoints(nil); err != nil {
@@ -610,6 +611,7 @@ func (sm *Statemgr) RemoveStaleEndpoints() error {
 		workloadName := strings.Join(splitString[0:len(splitString)-1], "-")
 		macAddress := splitString[len(splitString)-1]
 		if workloadCacheEmpty || !workloadMacPresent(workloadName, macAddress) {
+			log.Infof("cleanup stale endpoint %v. Err: %v", workloadName, err)
 			// delete the endpoint in api server
 			epInfo := workload.Endpoint{
 				TypeMeta: api.TypeMeta{Kind: "Endpoint"},
@@ -621,7 +623,7 @@ func (sm *Statemgr) RemoveStaleEndpoints() error {
 			}
 			err := sm.ctrler.Endpoint().Delete(&epInfo)
 			if err != nil {
-				log.Errorf("Error deleting the endpoint. Err: %v", err)
+				log.Errorf("Error deleting the endpoint %v. Err: %v", ep.Name, err)
 				//if not found, the probably APIServer is busy or doing snapshot
 				//need to retry
 				if !strings.Contains(strings.ToLower(err.Error()), "not found") {
@@ -816,8 +818,8 @@ func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServ
 		// check if an endpoint with this mac address already exists in this network
 		epMac := ws.Workload.Spec.Interfaces[ii].MACAddress
 		if ns != nil {
-			_, err := ns.FindEndpointByMacAddr(epMac)
-			if err != nil {
+			_, ok := ws.stateMgr.FindEndpointByMacAddr(ws.Workload.Tenant, epMac)
+			if !ok {
 				log.Errorf("Failed to find endpoint with ep mac - %v", epMac)
 				//Ignore error
 				//return fmt.Errorf("failed to find ep %v", epMac)
@@ -871,7 +873,7 @@ func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServ
 			}
 
 			// update endpoint
-			err = ws.stateMgr.ctrler.Endpoint().Update(&epInfo)
+			err := ws.stateMgr.ctrler.Endpoint().Update(&epInfo)
 			if err != nil {
 				log.Errorf("Error updating endpoint. Err: %v", err)
 			}

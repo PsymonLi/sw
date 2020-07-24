@@ -199,7 +199,9 @@ func (hst *HostState) doReconcile() error {
 			wmeta := value.(api.ObjectMeta)
 			wrk, err := hst.stateMgr.FindWorkload(wmeta.Tenant, wmeta.Name)
 			if err == nil {
+				wrk.Workload.Lock()
 				hst.stateMgr.reconcileWorkload(wrk.Workload, hst)
+				wrk.Workload.Unlock()
 			} else {
 				log.Errorf("Error finding workload. Err: %v", err)
 			}

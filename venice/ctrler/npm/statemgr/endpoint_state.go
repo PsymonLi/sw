@@ -4,6 +4,7 @@ package statemgr
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -47,7 +48,7 @@ type EndpointState struct {
 	smObjectTracker
 	Endpoint        *ctkit.Endpoint                `json:"-"` // embedding endpoint object
 	groups          map[string]*SecurityGroupState // list of security groups
-	stateMgr        *Statemgr                      // state manager
+	stateMgr        *SmEndpoint
 	migrationState  MigrationStatus
 	markedForDelete bool
 	moveEP          *netproto.Endpoint
@@ -121,8 +122,7 @@ func (eps *EndpointState) AddSecurityGroup(sgs *SecurityGroupState) error {
 		return err
 	}
 
-	sm := MustGetStatemgr()
-	return sm.UpdateObjectToMbus(eps.Endpoint.MakeKey("cluster"), eps, references(eps.Endpoint))
+	return eps.stateMgr.sm.UpdateObjectToMbus(eps.Endpoint.MakeKey("cluster"), eps, references(eps.Endpoint))
 }
 
 // DelSecurityGroup removes a security group from an endpoint
@@ -143,14 +143,13 @@ func (eps *EndpointState) DelSecurityGroup(sgs *SecurityGroupState) error {
 	}
 	delete(eps.groups, sgs.SecurityGroup.Name)
 
-	sm := MustGetStatemgr()
-	return sm.UpdateObjectToMbus(eps.Endpoint.MakeKey("cluster"), eps, references(eps.Endpoint))
+	return eps.stateMgr.sm.UpdateObjectToMbus(eps.Endpoint.MakeKey("cluster"), eps, references(eps.Endpoint))
 }
 
 // attachSecurityGroups attach all security groups
 func (eps *EndpointState) attachSecurityGroups() error {
 	// get a list of security groups
-	sgs, err := eps.stateMgr.ListSecurityGroups()
+	sgs, err := eps.stateMgr.sm.ListSecurityGroups()
 	if err != nil {
 		log.Errorf("Error getting the list of security groups. Err: %v", err)
 		return err
@@ -193,12 +192,12 @@ func (eps *EndpointState) Delete() error {
 }
 
 // NewEndpointState returns a new endpoint object
-func NewEndpointState(epinfo *ctkit.Endpoint, stateMgr *Statemgr) (*EndpointState, error) {
+func NewEndpointState(epinfo *ctkit.Endpoint) (*EndpointState, error) {
 	// build the endpoint state
 	eps := EndpointState{
 		Endpoint: epinfo,
 		groups:   make(map[string]*SecurityGroupState),
-		stateMgr: stateMgr,
+		stateMgr: smgrEndpoint,
 	}
 	epinfo.HandlerCtx = &eps
 
@@ -247,11 +246,11 @@ func (eps *EndpointState) GetGenerationID() string {
 //TrackedDSCs tracked DSCs
 func (eps *EndpointState) TrackedDSCs() []string {
 
-	dscs, _ := eps.stateMgr.ListDistributedServiceCards()
+	dscs, _ := eps.stateMgr.sm.ListDistributedServiceCards()
 
 	trackedDSCs := []string{}
 	for _, dsc := range dscs {
-		if eps.stateMgr.isDscEnforcednMode(&dsc.DistributedServiceCard.DistributedServiceCard) &&
+		if eps.stateMgr.sm.isDscEnforcednMode(&dsc.DistributedServiceCard.DistributedServiceCard) &&
 			dsc.DistributedServiceCard.Status.PrimaryMAC == eps.Endpoint.Spec.NodeUUID {
 			trackedDSCs = append(trackedDSCs, dsc.DistributedServiceCard.DistributedServiceCard.Name)
 		}
@@ -366,10 +365,17 @@ func (sma *SmEndpoint) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
 		return fmt.Errorf("could not find the network %s for endpoint %+v. Err: %v", epinfo.Status.Network, epinfo.ObjectMeta, err)
 	}
 	// create a new endpoint instance
-	eps, err := NewEndpointState(epinfo, sm)
+	eps, err := NewEndpointState(epinfo)
 	if err != nil {
 		log.Errorf("Error creating endpoint state from spec{%+v}, Err: %v", epinfo, err)
 		return err
+	}
+
+	existing, ok := sma.FindEndpointByMacAddr(eps)
+	if ok && existing.Endpoint.Status.WorkloadName != eps.Endpoint.Status.WorkloadName {
+		sma.delDuplicateMacEndpoints(eps)
+		log.Errorf("Duplicate Mac Address %v for endpoint %+v, workload Added for reconcile", existing.Endpoint.Status.WorkloadName, epinfo.ObjectMeta)
+		return fmt.Errorf("Duplicate Mac Address %v for endpoint %+v", existing.Endpoint.Status.WorkloadName, epinfo.ObjectMeta)
 	}
 
 	// save the endpoint in the database
@@ -378,6 +384,7 @@ func (sma *SmEndpoint) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
 	if eps.Endpoint.Status.Migration != nil && eps.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_FROM_NON_PEN_HOST.String() {
 		return sm.handleMigration(epinfo, &eps.Endpoint.Endpoint)
 	}
+	sma.addEndpoint(eps)
 
 	err = sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 	if err != nil {
@@ -481,7 +488,7 @@ func (sm *Statemgr) handleMigration(epinfo *ctkit.Endpoint, nep *workload.Endpoi
 		}
 
 		eps.moveEP.Spec.Migration = netproto.MigrationState_DONE.String()
-		eps.stateMgr.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
+		eps.stateMgr.sm.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 		return nil
 	}
 
@@ -551,6 +558,7 @@ func (sma *SmEndpoint) OnEndpointDelete(epinfo *ctkit.Endpoint) error {
 	if err != nil {
 		log.Errorf("Error deleting the endpoint{%+v}. Err: %v", eps, err)
 	}
+	sma.deleteEndpoint(eps)
 
 	sm.DeleteObjectToMbus(epinfo.Endpoint.MakeKey("cluster"), eps, references(epinfo))
 	log.Infof("Deleted endpoint: %+v", eps)
@@ -705,7 +713,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 		eps.moveEP = nil
 		eps.Endpoint.Unlock()
 		// Use Update API here, because Write only updates the Status part
-		if err := eps.stateMgr.ctrler.Endpoint().Update(&eps.Endpoint.Endpoint); err != nil {
+		if err := eps.stateMgr.sm.ctrler.Endpoint().Update(&eps.Endpoint.Endpoint); err != nil {
 			log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
 		}
 		log.Infof("Migration aborted for %v", eps.Endpoint.Name)
@@ -842,7 +850,8 @@ var smgrEndpoint *SmEndpoint
 // SmEndpoint is statemanager struct for Fwprofile
 type SmEndpoint struct {
 	featureMgrBase
-	sm *Statemgr
+	sm        *Statemgr
+	macAddrDB *sync.Map // mac-tenant to workload
 }
 
 func initSmEndpoint() {
@@ -850,6 +859,7 @@ func initSmEndpoint() {
 	smgrEndpoint = &SmEndpoint{
 		sm: mgr,
 	}
+	smgrEndpoint.macAddrDB = new(sync.Map)
 	mgr.Register("statemgrendpoint", smgrEndpoint)
 }
 
@@ -862,6 +872,45 @@ func (sma *SmEndpoint) CompleteRegistration() {
 	//	initSmEndpoint()
 	log.Infof("Got CompleteRegistration for SmEndpoint")
 	sma.sm.SetEndpointReactor(smgrEndpoint)
+}
+
+func (eps *EndpointState) getMacKey() string {
+	key := fmt.Sprintf("%v-%v", eps.Endpoint.Tenant, eps.Endpoint.Status.MacAddress)
+	return key
+}
+
+// AddEndpoint add endpoint to macdb
+func (sma *SmEndpoint) addEndpoint(eps *EndpointState) error {
+	sma.macAddrDB.Store(eps.getMacKey(), eps)
+	return nil
+}
+
+// deleteEndpoint add endpoint to macdb
+func (sma *SmEndpoint) deleteEndpoint(eps *EndpointState) error {
+	if i, ok := sma.macAddrDB.Load(eps.getMacKey()); ok {
+		eeps := i.(*EndpointState)
+		if eeps.Endpoint.Status.WorkloadName == eps.Endpoint.Status.WorkloadName {
+			sma.macAddrDB.Delete(eps.getMacKey())
+		}
+	}
+	return nil
+}
+
+// FindEndpointByMacAddr find endpoint to macdb
+func (sma *SmEndpoint) FindEndpointByMacAddr(eps *EndpointState) (*EndpointState, bool) {
+	if eeps, ok := smgrEndpoint.macAddrDB.Load(eps.getMacKey()); ok {
+		return eeps.(*EndpointState), true
+	}
+	return nil, false
+}
+
+// FindEndpointByMacAddr find endpoint to macdb
+func (sm *Statemgr) FindEndpointByMacAddr(tenant, mac string) (*EndpointState, bool) {
+	key := fmt.Sprintf("%v-%v", tenant, mac)
+	if eps, ok := smgrEndpoint.macAddrDB.Load(key); ok {
+		return eps.(*EndpointState), true
+	}
+	return nil, false
 }
 
 func init() {
@@ -915,4 +964,15 @@ func (sma *SmEndpoint) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, nds
 //ProcessDSCDelete delete
 func (sma *SmEndpoint) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
 	sma.dscTracking(dsc, false)
+}
+
+//delDuplicateMacEndpoints workload to cleanup errored out endpoint
+func (sma *SmEndpoint) delDuplicateMacEndpoints(eps *EndpointState) error {
+	workloadName := getWorkloadNameFromEPName(eps.Endpoint.Name)
+	ws, err := sma.sm.FindWorkload(eps.Endpoint.Tenant, workloadName)
+	if err != nil {
+		log.Infof("Error finding workload :%v err : %v", workloadName, err)
+		return err
+	}
+	return ws.doReconcile()
 }

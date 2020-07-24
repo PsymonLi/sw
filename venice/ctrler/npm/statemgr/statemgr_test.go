@@ -885,6 +885,7 @@ func TestEndpointCreateDelete(t *testing.T) {
 		Spec: workload.EndpointSpec{},
 		Status: workload.EndpointStatus{
 			WorkloadName:   "testContainerName",
+			MacAddress:     "0000.1111.0001",
 			Network:        "default",
 			HomingHostAddr: "192.168.1.1",
 			HomingHostName: "testHost",
@@ -948,6 +949,7 @@ func TestEndpointCreateDelete(t *testing.T) {
 		Spec: workload.EndpointSpec{},
 		Status: workload.EndpointStatus{
 			WorkloadName:   "newContainerName",
+			MacAddress:     "0000.1111.0002",
 			Network:        "default",
 			HomingHostAddr: "192.168.1.1",
 			HomingHostName: "testHost",

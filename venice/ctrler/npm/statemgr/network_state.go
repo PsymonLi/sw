@@ -46,7 +46,6 @@ type NetworkState struct {
 	smObjectTracker
 	Network    *ctkit.Network            `json:"-"` // network object
 	endpointDB map[string]*EndpointState // endpoint database
-	macaddrDB  map[string]*EndpointState // mapping of mac address to endpoint
 	stateMgr   *Statemgr                 // pointer to network manager
 	curState   networkObjState           // maintaines the object lifecycle
 }
@@ -271,7 +270,6 @@ func (ns *NetworkState) AddEndpoint(ep *EndpointState) error {
 		return fmt.Errorf("garbage collector deleted object")
 	}
 	ns.endpointDB[ep.endpointKey()] = ep
-	ns.macaddrDB[ep.Endpoint.Status.MacAddress] = ep
 	ns.curState = networkLive
 	return nil
 }
@@ -284,7 +282,6 @@ func (ns *NetworkState) RemoveEndpoint(ep *EndpointState) error {
 		panic("Bug - Removing deleted endpoint")
 	}
 	delete(ns.endpointDB, ep.endpointKey())
-	delete(ns.macaddrDB, ep.Endpoint.Status.MacAddress)
 	if len(ns.endpointDB) == 0 && IsCleanupCandidate(ns.Network) {
 		ns.curState = networkMarkDelete
 		log.Errorf("mark for garbage collection networkstate: {%+v}", ns)
@@ -305,21 +302,6 @@ func (ns *NetworkState) FindEndpoint(epName string) (*EndpointState, bool) {
 	}
 
 	return eps, true
-}
-
-// FindEndpointByMacAddr finds an endpoint in a network by its mac address
-func (ns *NetworkState) FindEndpointByMacAddr(macaddr string) (*EndpointState, error) {
-	// lock the endpoint db
-	ns.Network.Lock()
-	defer ns.Network.Unlock()
-
-	// find the endpoint in the DB
-	eps, ok := ns.macaddrDB[macaddr]
-	if !ok {
-		return nil, fmt.Errorf("Endpoint not found")
-	}
-
-	return eps, nil
 }
 
 // ListEndpoints lists all endpoints on this network
@@ -379,7 +361,6 @@ func NewNetworkState(nw *ctkit.Network, stateMgr *Statemgr) (*NetworkState, erro
 	ns := &NetworkState{
 		Network:    nw,
 		endpointDB: make(map[string]*EndpointState),
-		macaddrDB:  make(map[string]*EndpointState),
 		stateMgr:   stateMgr,
 	}
 	nw.HandlerCtx = ns
