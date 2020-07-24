@@ -112,7 +112,7 @@ func (l *Node) unregisterNode() error {
 }
 
 // runElection runs the election thread
-func (l *Node) runElection(ctx context.Context) {
+func (l *Node) runElection(pctx context.Context) {
 	// create a kvstore client
 	kvs, err := store.New(*l.kvsConfig)
 	if err != nil {
@@ -139,12 +139,19 @@ func (l *Node) runElection(ctx context.Context) {
 		return
 	}
 
+	ctx, cancel := context.WithCancel(pctx)
 	// start the leader contest
 	elec, err := kvs.Contest(ctx, "citadel-meta-leader", l.nodeUUID, l.clusterCfg.NodeTTL)
 	if err != nil {
+		cancel()
 		log.Errorf("Error starting leader election. Err: %v", err)
 		return
 	}
+
+	defer func() {
+		cancel()
+		elec.WaitForStop()
+	}()
 
 	// loop forever waiting on the event channel
 	for {

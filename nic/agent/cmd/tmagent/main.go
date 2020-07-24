@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime/debug"
 	"time"
@@ -285,6 +286,8 @@ func main() {
 	// set Garbage collection ratio and periodically free OS memory
 	debug.SetGCPercent(20)
 	go periodicFreeMemory()
+
+	log.Infof("starting with env: %+v", os.Environ())
 
 	// wait forever
 	select {}

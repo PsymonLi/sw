@@ -357,7 +357,7 @@ func (br *Broker) sendQueryRequest(ctx context.Context, database string, qry str
 	dnclient := tproto.NewDataNodeClient(rpcClient)
 	resp, err := dnclient.ExecuteQuery(ctx, &req)
 	if err != nil {
-		br.logger.Errorf("Error during ExecuteQuery rpc call. Err: %v", err)
+		br.logger.Errorf("query [%v] failed to replica:%v(shard %v) err: %v", qry, repl.ReplicaID, repl.ShardID, err)
 		return nil, err
 	}
 
@@ -374,6 +374,7 @@ func (br *Broker) queryShard(ctx context.Context, shard *meta.Shard, database, q
 		return resp, nil
 	}
 
+	br.logger.Errorf("query [%v] to all replicas failed", qry)
 	return nil, errors.New("Query to all replicas failed")
 }
 

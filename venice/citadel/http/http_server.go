@@ -61,10 +61,11 @@ func NewHTTPServer(listenURL string, broker *broker.Broker, dn *data.DNode, dbg 
 	r.HandleFunc("/shard", hsrv.queryShardReqHandler).Methods("POST")
 	r.HandleFunc("/shard", hsrv.queryShardReqHandler).Methods("GET")
 	r.HandleFunc("/replica", hsrv.queryReplicaReqHandler).Methods("GET")
+	r.HandleFunc("/replica", hsrv.queryReplicaReqHandler).Methods("POST")
 	r.HandleFunc("/cmd", hsrv.showReqHandler).Methods("GET")
 	r.HandleFunc("/cmd", hsrv.showReqHandler).Methods("POST")
 	r.HandleFunc("/measurement", hsrv.measurementHander).Methods("DELETE")
-	r.HandleFunc("/dnode", hsrv.dnodeReqHandler).Methods("GET")
+	r.HandleFunc("/dnode", netutils.MakeHTTPHandler(netutils.RestAPIFunc(hsrv.dnodeReqHandler))).Methods("GET")
 	r.HandleFunc("/ping", hsrv.pingReqHandler).Methods("GET")
 	r.HandleFunc("/cq", netutils.MakeHTTPHandler(netutils.RestAPIFunc(hsrv.createcqReqHandler))).Methods("POST")
 	r.HandleFunc("/cq", netutils.MakeHTTPHandler(netutils.RestAPIFunc(hsrv.readcqReqHandler))).Methods("GET")
@@ -655,12 +656,12 @@ func (hsrv *HTTPServer) pingReqHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // dnodeReqHandler shows data node info
-func (hsrv *HTTPServer) dnodeReqHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+func (hsrv *HTTPServer) dnodeReqHandler(r *http.Request) (interface{}, error) {
+
 	if hsrv.dnode != nil {
-		w.Write([]byte(hsrv.dnode.String()))
+		return hsrv.dnode.Debug(), nil
 	}
+	return nil, nil
 }
 
 // healthReqHandler handles health check requests

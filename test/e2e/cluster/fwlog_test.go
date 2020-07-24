@@ -461,6 +461,7 @@ var _ = Describe("fwlog policy tests", func() {
 					"action",
 					"direction",
 					"rule-id",
+					"session-id",
 					"session-state",
 					"time",
 				}

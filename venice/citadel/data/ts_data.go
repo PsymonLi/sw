@@ -11,6 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pensando/sw/events/generated/eventtypes"
+	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils/events/recorder"
+
 	"github.com/influxdata/influxdb/models"
 	"github.com/influxdata/influxdb/query"
 	meta2 "github.com/influxdata/influxdb/services/meta"
@@ -21,6 +25,8 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/ref"
 )
+
+const queryTimeout = time.Second * 120
 
 // CreateDatabase creates a database
 func (dn *DNode) CreateDatabase(ctx context.Context, req *tproto.DatabaseReq) (*tproto.StatusResp, error) {
@@ -149,6 +155,13 @@ func (dn *DNode) PointsWrite(ctx context.Context, req *tproto.PointsWriteReq) (*
 	if err != nil {
 		dn.logger.Errorf("Error writing the points to db. Err: %v", err)
 		resp.Status = err.Error()
+
+		// generate event
+		if strings.Contains(resp.Status, "timeout") {
+			recorder.Event(eventtypes.SERVICE_UNRESPONSIVE, fmt.Sprintf("%v: write failed in %v, error: %v",
+				globals.Citadel, dn.nodeUUID, err), nil)
+		}
+
 		return &resp, err
 	}
 	dn.logger.Debugf("shard %v replica %v wrote %d points", req.ShardID, req.ReplicaID, len(points))
@@ -358,7 +371,10 @@ func (dn *DNode) ExecuteQuery(ctx context.Context, req *tproto.QueryReq) (*tprot
 	shard := val.(*TshardState)
 
 	// execute the query
-	ch, err := shard.store.ExecuteQuery(req.Query, req.Database)
+	qctx, qCancel := context.WithDeadline(ctx, time.Now().Add(queryTimeout))
+	defer qCancel()
+
+	ch, err := shard.store.ExecuteQuery(qctx, req.Query, req.Database)
 	if err != nil {
 		dn.logger.Errorf("Error executing the query %s on db %s. Err: %v", req.Query, req.Database, err)
 		return &resp, err
@@ -421,7 +437,6 @@ func (dn *DNode) ExecuteQuery(ctx context.Context, req *tproto.QueryReq) (*tprot
 	resp.ReplicaID = req.ReplicaID
 	resp.TxnID = req.TxnID
 	resp.Result = result
-
 	return &resp, nil
 }
 

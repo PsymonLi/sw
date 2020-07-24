@@ -5,7 +5,6 @@ package data
 // this file contains the datanode management code
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -570,17 +569,6 @@ func (dn *DNode) HasPendingSync() bool {
 		}
 		return true
 	})
-	dn.kshards.Range(func(key interface{}, value interface{}) bool {
-		shard := value.(*KshardState)
-		shard.syncLock.Lock()
-		defer shard.syncLock.Unlock()
-		if shard.syncPending {
-			dn.logger.Infof("Datanode %s kstore shard %d replica %d has sync pending", dn.nodeUUID, shard.shardID, shard.replicaID)
-			retVal = true
-		}
-		return true
-	})
-
 	return retVal
 }
 
@@ -753,32 +741,26 @@ func (dn *DNode) replicateFailedRequest(sb *syncBufferState) error {
 	return nil
 }
 
-// String displays data node
-func (dn *DNode) String() string {
-	dbg := map[string]string{
+// Debug get data node debug
+func (dn *DNode) Debug() map[string]interface{} {
+	ds := map[string]interface{}{
 		"node-uuid": dn.nodeUUID,
 		"node-url":  dn.nodeURL,
 		"leader":    strconv.FormatBool(dn.IsLeader()),
 		"stopped":   strconv.FormatBool(dn.IsStopped()),
 	}
 
-	rp := map[uint64]uint64{}
 	dn.tshards.Range(func(key, val interface{}) bool {
 		replID := key.(uint64)
 		tState := val.(*TshardState)
-		rp[replID] = tState.shardID
+		ds[fmt.Sprintf("replica%v", replID)] = map[string]interface{}{
+			"replicaID": replID,
+			"shardID":   tState.shardID,
+			"isPrimary": tState.isPrimary,
+			"stats":     tState.store.Stats(),
+		}
 		return true
 	})
 
-	rpj, err := json.Marshal(rp)
-	if err == nil {
-		dbg["replicas"] = string(rpj)
-	}
-
-	dbgj, err := json.Marshal(dbg)
-	if err != nil {
-		return "{}"
-	}
-
-	return string(dbgj)
+	return ds
 }

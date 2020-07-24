@@ -44,7 +44,7 @@ func (event *fwevent) syslog(vrf uint64, filter uint32) string {
 			s += ","
 		}
 		s += fmt.Sprintf("{\"time\":\"%v\",\"destaddr\":\"%v\",\"destport\":%v,\"srcaddr\":\"%v\",\"srcport\":%v,\"protocol\":\"%v\",\"action\":\"%v\","+
-			"\"direction\":\"%v\",\"rule-id\":%v,\"session-state\":\"%v\"}",
+			"\"direction\":\"%v\",\"rule-id\":%v,\"session-id\":%v,\"session-state\":\"%v\"}",
 			time.Unix(0, ev.GetTimestamp()).Format(time.RFC3339),
 			netutils.IPv4Uint32ToString(ev.GetDipv4()),
 			ev.GetDport(),
@@ -54,6 +54,7 @@ func (event *fwevent) syslog(vrf uint64, filter uint32) string {
 			strings.ToLower(strings.TrimPrefix(ev.GetFwaction().String(), "SECURITY_RULE_ACTION_")),
 			flowDirectionName[ev.GetDirection()],
 			ev.GetRuleId(),
+			ev.GetSessionId(),
 			strings.ToLower(strings.Replace(halproto.FlowLogEventType_name[int32(ev.GetFlowaction())], "LOG_EVENT_TYPE_", "", 1)))
 		num++
 	}

@@ -3,6 +3,7 @@
 package tstore
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -298,7 +299,7 @@ func (ts *Tstore) WritePointsInto(wr *coordinator.IntoWriteRequest) error {
 }
 
 // ExecuteQuery executes a query
-func (ts *Tstore) ExecuteQuery(q, database string) (<-chan *query.Result, error) {
+func (ts *Tstore) ExecuteQuery(ctx context.Context, q, database string) (<-chan *query.Result, error) {
 	// parse the query
 	pq, err := influxql.ParseQuery(q)
 	if err != nil {
@@ -310,6 +311,7 @@ func (ts *Tstore) ExecuteQuery(q, database string) (<-chan *query.Result, error)
 		Database:   database,
 		ChunkSize:  0,
 		Authorizer: &tstoreAuth{},
+		AbortCh:    ctx.Done(),
 	}, make(chan struct{}))
 
 	return ret, nil
@@ -505,4 +507,26 @@ func (ts *Tstore) GetContinuousQuery(database string) ([]meta.ContinuousQueryInf
 func (ts *Tstore) DeleteContinuousQuery(database string, cq string) error {
 	// delete it from local metadata
 	return ts.metaClient.DropContinuousQuery(database, cq)
+}
+
+// Stats gets stats
+func (ts *Tstore) Stats() map[string]interface{} {
+	s := map[string]interface{}{}
+
+	if ts.queryExecutor != nil {
+		qs := ts.queryExecutor.Statistics(nil)
+
+		if len(qs) > 0 {
+			s[qs[0].Name] = qs[0].Values
+		}
+	}
+
+	if ts.pointsWriter != nil {
+		ps := ts.pointsWriter.Statistics(nil)
+		if len(ps) > 0 {
+			s[ps[0].Name] = ps[0].Values
+		}
+	}
+
+	return s
 }

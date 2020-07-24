@@ -1013,16 +1013,11 @@ func TestDataNodeTstoreClustering(t *testing.T) {
 	ns := map[string]int{}
 	// Check debug
 	for idx := 0; idx < numNodes; idx++ {
-		s := dnodes[idx].String()
+		s := dnodes[idx].Debug()
 		Assert(t, len(s) > 0, "invalid debug data", s)
-		dbg := struct {
-			Leader string
-		}{}
-
-		err := json.Unmarshal([]byte(s), &dbg)
-		AssertOk(t, err, "failed to unmarshal")
-		t.Logf("node[%v]: leader: %v", idx, dbg.Leader)
-		ns[dbg.Leader]++
+		t.Logf("node[%v]: leader: %v", idx, s)
+		l := s["leader"].(string)
+		ns[l]++
 	}
 	Assert(t, ns["true"] == 1, "failed to find leader node")
 	Assert(t, ns["false"] == 2, "expected 2 non-leaders, got %d", ns["false"])

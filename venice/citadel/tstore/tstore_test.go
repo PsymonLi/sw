@@ -111,13 +111,16 @@ func TestTstoreBasic(t *testing.T) {
 	Assert(t, recCount == 3, "got invalid number of records", recCount)
 
 	// execute a query
-	ch, err := ts.ExecuteQuery("SELECT * FROM cpu", "db1")
+	ch, err := ts.ExecuteQuery(context.Background(), "SELECT * FROM cpu", "db1")
 	AssertOk(t, err, "Error executing the query")
 
 	rslt := ReadAllResults(ch)
 	Assert(t, len(rslt) == 1, "got invalid number of results", rslt)
 	Assert(t, len(rslt[0].Series) == 1, "got invalid number of series", rslt[0].Series)
 	Assert(t, len(rslt[0].Series[0].Values) == 2, "got invalid number of values", rslt[0].Series[0].Values)
+
+	s := ts.Stats()
+	Assert(t, len(s) == 2, "failed to get stats", s)
 
 	// delete the database
 	err = ts.DeleteDatabase("db1")
@@ -153,7 +156,7 @@ func TestTstoreBackupRetry(t *testing.T) {
 	AssertOk(t, err, "Error writing points")
 
 	// execute a query and verify the results
-	ch, err := ts.ExecuteQuery("SELECT * FROM cpu", "db1")
+	ch, err := ts.ExecuteQuery(context.Background(), "SELECT * FROM cpu", "db1")
 	AssertOk(t, err, "Error executing the query")
 	rslt := ReadAllResults(ch)
 	Assert(t, len(rslt) == 1, "got invalid number of results", rslt)
@@ -266,7 +269,7 @@ func TestTstoreWithConfig(t *testing.T) {
 	Assert(t, recCount == 3, "got invalid number of records", recCount)
 
 	// execute a query
-	ch, err := ts.ExecuteQuery("SELECT * FROM cpu", "db1")
+	ch, err := ts.ExecuteQuery(context.Background(), "SELECT * FROM cpu", "db1")
 	AssertOk(t, err, "Error executing the query")
 
 	rslt := ReadAllResults(ch)
@@ -308,7 +311,7 @@ func TestTstoreBackupRestore(t *testing.T) {
 	AssertOk(t, err, "Error writing points")
 
 	// execute a query and verify the results
-	ch, err := ts.ExecuteQuery("SELECT * FROM cpu", "db1")
+	ch, err := ts.ExecuteQuery(context.Background(), "SELECT * FROM cpu", "db1")
 	AssertOk(t, err, "Error executing the query")
 
 	rslt := ReadAllResults(ch)
@@ -355,7 +358,7 @@ func TestTstoreBackupRestore(t *testing.T) {
 	}
 
 	// execute a query on restored DB and verify the results
-	ch, err = ts2.ExecuteQuery("SELECT * FROM cpu", "db1")
+	ch, err = ts2.ExecuteQuery(context.Background(), "SELECT * FROM cpu", "db1")
 	AssertOk(t, err, "Error executing the query")
 
 	rslt = ReadAllResults(ch)
@@ -448,7 +451,7 @@ func tstoreBebchmark(t *testing.T, ts *Tstore) {
 	AssertEventually(t, func() (bool, interface{}) {
 		for iter := 0; iter < batchSize; iter++ {
 			// execute a query
-			ch, err := ts.ExecuteQuery(fmt.Sprintf("SELECT * FROM cpu%d", iter), "db1")
+			ch, err := ts.ExecuteQuery(context.Background(), fmt.Sprintf("SELECT * FROM cpu%d", iter), "db1")
 			if err != nil {
 				return false, err
 			}
@@ -470,7 +473,7 @@ func tstoreBebchmark(t *testing.T, ts *Tstore) {
 	startTime = time.Now()
 	for iter := 0; iter < batchSize; iter++ {
 		// execute a query
-		ch, err := ts.ExecuteQuery(fmt.Sprintf("SELECT * FROM cpu%d", iter), "db1")
+		ch, err := ts.ExecuteQuery(context.Background(), fmt.Sprintf("SELECT * FROM cpu%d", iter), "db1")
 		AssertOk(t, err, "Error executing the query")
 
 		rslt := ReadAllResults(ch)
@@ -576,7 +579,7 @@ func TestTstoreContinuousQuery(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 
-	ch, err := ts.ExecuteQuery("SELECT * FROM \"cqdb\".\"default\".\"average_value_five_seconds\"", "cqdb")
+	ch, err := ts.ExecuteQuery(context.Background(), "SELECT * FROM \"cqdb\".\"default\".\"average_value_five_seconds\"", "cqdb")
 	results := ReadAllResults(ch)
 	Assert(t, len(results) == 1, "Invalid number of result. Get %+v Expect %+v", len(results), 1)
 	Assert(t, len(results[0].Series) > 0, "Invalid number of data points obtained")
@@ -599,7 +602,7 @@ func TestTstoreContinuousQuery(t *testing.T) {
 	Assert(t, len(dbInfo.ContinuousQueries) == 0, "Continuous query still exist after deleting operation")
 
 	// Check previous continuous query result after deleting operation
-	ch, err = ts.ExecuteQuery("SELECT * FROM \"cqdb\".\"default\".\"average_value_five_seconds\"", "cqdb")
+	ch, err = ts.ExecuteQuery(context.Background(), "SELECT * FROM \"cqdb\".\"default\".\"average_value_five_seconds\"", "cqdb")
 	results = ReadAllResults(ch)
 	Assert(t, len(results) == 1, "Invalid number of result. Get %+v Expect %+v", len(results), 1)
 	Assert(t, len(results[0].Series[0].Values) >= 11 && len(results[0].Series[0].Values) <= 13, "Invalid number of continuous query result. Get %+v Expect 11, 12 or 13", len(results[0].Series[0].Values))
@@ -678,7 +681,7 @@ func TestTstoreContinuousQueryWithNewRetentionPolicy(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 
-	ch, err := ts.ExecuteQuery("SELECT * FROM \"cqdb\".\"new_rp\".\"average_value_five_seconds\"", "cqdb")
+	ch, err := ts.ExecuteQuery(context.Background(), "SELECT * FROM \"cqdb\".\"new_rp\".\"average_value_five_seconds\"", "cqdb")
 	results := ReadAllResults(ch)
 	Assert(t, len(results) == 1, "Invalid number of result. Get %+v Expect %+v", len(results), 1)
 	Assert(t, len(results[0].Series[0].Values) >= 11 && len(results[0].Series[0].Values) <= 13, "Invalid number of continuous query result. Get %+v Expect 11, 12 or 13", len(results[0].Series[0].Values))
