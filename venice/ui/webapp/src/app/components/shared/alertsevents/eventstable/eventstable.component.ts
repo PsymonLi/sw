@@ -412,6 +412,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     }
     this.eventsSubscription = this.eventsService.pollEvents(this.pollingServiceKey, this.eventsPostBody).subscribe(
       (data) => {
+        this.eventsLoading = false; // turn off spinning circle whenever REST call responds
         if (this.showEventsAdvSearch) {
           this.eventsTable.clearSearch();
         }
