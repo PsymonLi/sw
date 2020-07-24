@@ -10,7 +10,7 @@
 #include <cstring>
 
 #include "nic/include/adminq.h"
-#include "nic/include/edmaq.h"
+#include "nic/sdk/lib/edma/edmaq.h"
 #include "nic/include/notify.hpp"
 
 #include "nic/sdk/lib/pal/pal.hpp"

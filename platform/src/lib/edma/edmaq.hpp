@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <ev.h>
 
-#include "nic/include/edmaq.h"
+#include "nic/sdk/lib/edma/edmaq.h"
 #include "nic/sdk/platform/evutils/include/evutils.h"
 #include "nic/sdk/platform/utils/program.hpp"
 

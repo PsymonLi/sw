@@ -11,7 +11,7 @@
 #include <sstream>
 #include <sys/param.h>
 
-#include "nic/include/edmaq.h"
+#include "nic/sdk/lib/edma/edmaq.h"
 #include "nic/p4/common/defines.h"
 
 #include "nic/sdk/include/sdk/timestamp.hpp"

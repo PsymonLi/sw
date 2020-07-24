@@ -11,7 +11,7 @@
 
 #include "nic/include/eth_common.h"
 #include "nic/include/adminq.h"
-#include "nic/include/edmaq.h"
+#include "nic/sdk/lib/edma/edmaq.h"
 #include "nic/include/notify.hpp"
 
 #include "nic/sdk/asic/pd/pd.hpp"

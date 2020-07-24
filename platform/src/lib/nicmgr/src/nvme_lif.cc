@@ -21,7 +21,7 @@
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/sdk/nvme/nvme_common.h"
 #include "nic/sdk/platform/fru/fru.hpp"
-#include "nic/include/edmaq.h"
+#include "nic/sdk/lib/edma/edmaq.h"
 
 #include "logger.hpp"
 #include "nicmgr_utils.hpp"

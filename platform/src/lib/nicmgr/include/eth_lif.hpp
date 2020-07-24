@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#include "nic/include/edmaq.h"
+#include "nic/sdk/lib/edma/edmaq.h"
 #include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/platform/devapi/devapi.hpp"
 #include "pd_client.hpp"
