@@ -1914,10 +1914,18 @@ create_security_policy (uint32_t num_vpcs, uint32_t num_subnets,
                         break;
                     }
                 }
+                timespec_t start_ts, end_ts;
+                uint64_t start_ns, end_ns;
+                clock_gettime(CLOCK_MONOTONIC, &start_ts);
                 rv = create_policy(&policy);
+                clock_gettime(CLOCK_MONOTONIC, &end_ts);
+                sdk::timestamp_to_nsecs(&start_ts, &start_ns);
+                sdk::timestamp_to_nsecs(&end_ts, &end_ns);
+                std::cout << "Time to create security policy "
+                          << (end_ns - start_ns) << " nsecs" << std::endl;
                 if (rv != SDK_RET_OK) {
-                    printf("Failed to create security policy, vpc %u, subnet %u, "
-                           "err %u\n", i, j, rv);
+                    printf("Failed to create security policy, vpc %u, "
+                           "subnet %u, err %u\n", i, j, rv);
                     return rv;
                 }
             }

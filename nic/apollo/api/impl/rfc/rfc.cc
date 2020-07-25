@@ -154,7 +154,7 @@ rfc_tree_reserve_default_classid (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table)
         }
 
         class_id = rfc_table->num_classes++;
-        PDS_TRACE_DEBUG("default class id allocated is %u", class_id);
+        RFC_TRACE_DEBUG("default class id allocated is %u", class_id);
         rfc_table->cbm_table[class_id].class_id = class_id;
         rfc_table->cbm_table[class_id].cbm = cbm_new;
         rfc_table->cbm_map[cbm_new] = class_id;

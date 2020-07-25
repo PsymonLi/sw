@@ -55,7 +55,7 @@ rfc_p1_table_entry_pack (uint32_t table_idx, void *actiondata,
 {
     rfc_p1_actiondata_t    *action_data;
 
-    PDS_TRACE_VERBOSE("P1 table[0x%x] <- class id %u", table_idx, cid);
+    RFC_TRACE_DEBUG("P1 table[0x%x] <- class id %u", table_idx, cid);
     action_data = (rfc_p1_actiondata_t *)actiondata;
     switch (entry_num) {
     case 0:
@@ -236,7 +236,7 @@ rfc_p2_table_entry_pack (uint32_t table_idx, void *actiondata,
 {
     rfc_p2_actiondata_t    *action_data;
 
-    PDS_TRACE_VERBOSE("P2 table[0x%x] <- class id %u", table_idx, cid);
+    RFC_TRACE_DEBUG("P2 table[0x%x] <- class id %u", table_idx, cid);
     action_data = (rfc_p2_actiondata_t *)actiondata;
     switch (entry_num) {
         case 0:
@@ -413,7 +413,7 @@ rfc_p1_action_data_flush (mem_addr_t addr, void *actiondata)
     sdk_ret_t                        ret;
     rfc_p1_actiondata_t    *action_data;
 
-    PDS_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
+    RFC_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
     action_data = (rfc_p1_actiondata_t *)actiondata;
     ret = impl_base::pipeline_impl()->write_to_txdma_table(addr,
                                    P4_P4PLUS_TXDMA_TBL_ID_RFC_P1,
@@ -436,7 +436,7 @@ rfc_p2_action_data_flush (mem_addr_t addr, void *actiondata)
     sdk_ret_t                        ret;
     rfc_p2_actiondata_t    *action_data;
 
-    PDS_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
+    RFC_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
     action_data = (rfc_p2_actiondata_t *)actiondata;
     ret = impl_base::pipeline_impl()->write_to_txdma_table(addr,
               P4_P4PLUS_TXDMA_TBL_ID_RFC_P2,
@@ -457,7 +457,7 @@ rfc_p1_eq_class_tables_dump (rfc_ctxt_t *rfc_ctxt)
 {
     rfc_table_t    *rfc_table = &rfc_ctxt->p1_table;
 
-    PDS_TRACE_DEBUG("RFC P1 equivalence class table dump : ");
+    RFC_TRACE_DEBUG("RFC P1 equivalence class table dump : ");
     rfc_eq_class_table_dump(rfc_table);
 }
 
@@ -471,7 +471,7 @@ rfc_p2_eq_class_tables_dump (rfc_ctxt_t *rfc_ctxt)
 {
     rfc_table_t    *rfc_table = &rfc_ctxt->p2_table;
 
-    PDS_TRACE_DEBUG("RFC P2 equivalence class table dump : ");
+    RFC_TRACE_DEBUG("RFC P2 equivalence class table dump : ");
     rfc_eq_class_table_dump(rfc_table);
 }
 
@@ -535,7 +535,7 @@ rfc_p3_table_entry_pack (uint32_t table_idx, void *actiondata,
 
     action_data = (rfc_p3_actiondata_t *)actiondata;
     result &= (uint16_t)0x7FF; // Only 11 bits are valid
-    PDS_TRACE_VERBOSE("P3 table[0x%x] <- class id %u", table_idx, result);
+    RFC_TRACE_DEBUG("P3 table[0x%x] <- class id %u", table_idx, result);
     switch (entry_num) {
     case 0:
         action_data->action_u.rfc_p3_rfc_action_p3.pr00 = result>>1;
@@ -740,7 +740,7 @@ rfc_p3_action_data_flush (mem_addr_t addr, void *actiondata)
     sdk_ret_t               ret;
     rfc_p3_actiondata_t    *action_data;
 
-    PDS_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
+    RFC_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
     action_data = (rfc_p3_actiondata_t *)actiondata;
     ret = impl_base::pipeline_impl()->write_to_txdma_table(addr,
               P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
@@ -794,14 +794,14 @@ rfc_compute_p3_result (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table,
     // TODO: remove
     std::stringstream    a1ss, a2ss;
     rte_bitmap2str(cbm, a1ss, a2ss);
-    PDS_TRACE_DEBUG("a1ss %s\nbitmap %s",
+    RFC_TRACE_DEBUG("a1ss %s\nbitmap %s",
                     a1ss.str().c_str(), a2ss.str().c_str());
 
     // remember the start position of the scan
     rv = rte_bitmap_scan(cbm, &start_posn, &slab);
     if (rv == 0) {
         // no bit is set in the bitmap
-        PDS_TRACE_DEBUG("No bits set in bitmap, setting lowest priority");
+        RFC_TRACE_DEBUG("No bits set in bitmap, setting lowest priority");
         RFC_RESULT_SET_PRIORITY_BITS(result, SACL_PRIORITY_LOWEST);
         if (rfc_ctxt->policy->default_action.fw_action.action ==
                 SECURITY_RULE_ACTION_ALLOW) {
@@ -817,7 +817,7 @@ rfc_compute_p3_result (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table,
                     rte_bitmap_get_global_bit_pos(cbm->index2-1, new_posn);
                 if (priority > rfc_ctxt->policy->rules[ruleidx].attrs.priority) {
                     priority = rfc_ctxt->policy->rules[ruleidx].attrs.priority;
-                    PDS_TRACE_DEBUG("Picked high priority rule %u", ruleidx);
+                    RFC_TRACE_DEBUG("Picked high priority rule %u", ruleidx);
                     result = 0;
                     if (rfc_ctxt->policy->rules[ruleidx].attrs.fw_act ==
                             SECURITY_RULE_ACTION_ALLOW) {
@@ -829,7 +829,7 @@ rfc_compute_p3_result (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table,
                     }
                     RFC_RESULT_SET_PRIORITY_BITS(result, priority);
                 } else {
-                    PDS_TRACE_VERBOSE("rule %u priority %u < current %u"
+                    RFC_TRACE_DEBUG("rule %u priority %u < current %u"
                         ", skipping", ruleidx,
                         rfc_ctxt->policy->rules[ruleidx].attrs.priority,
                         priority);
@@ -1024,8 +1024,9 @@ rfc_compute_p3_tables (rfc_ctxt_t *rfc_ctxt, uint64_t addr_offset)
 sdk_ret_t
 rfc_build_eqtables (rfc_ctxt_t *rfc_ctxt)
 {
-    PDS_TRACE_DEBUG("Computing P1 Table. SIP|STAG:SPORT (%ub:%ub), num classes %u:%u",
-                    SACL_SIP_STAG_CLASSID_WIDTH, SACL_SPORT_CLASSID_WIDTH,
+    PDS_TRACE_DEBUG("Computing P1 table, SIP|STAG:SPORT (%ub:%ub), "
+                    "num classes %u:%u", SACL_SIP_STAG_CLASSID_WIDTH,
+                    SACL_SPORT_CLASSID_WIDTH,
                     rfc_ctxt->sip_stag_tbl.num_classes,
                     rfc_ctxt->sport_tbl.num_classes);
     rfc_compute_p1_tables(rfc_ctxt,
@@ -1033,8 +1034,9 @@ rfc_build_eqtables (rfc_ctxt_t *rfc_ctxt)
                           &rfc_ctxt->sport_tbl,
                           SACL_P1_TABLE_OFFSET);
     rfc_p1_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P2 Table. DIP|DTAG:PROTO_DPORT (%ub:%ub), num classes %u:%u",
-                    SACL_DIP_DTAG_CLASSID_WIDTH, SACL_PROTO_DPORT_CLASSID_WIDTH,
+    PDS_TRACE_DEBUG("Computing P2 table, DIP|DTAG:PROTO_DPORT (%ub:%ub), "
+                    "num classes %u:%u", SACL_DIP_DTAG_CLASSID_WIDTH,
+                    SACL_PROTO_DPORT_CLASSID_WIDTH,
                     rfc_ctxt->dip_dtag_tbl.num_classes,
                     rfc_ctxt->proto_dport_tbl.num_classes);
     rfc_compute_p2_tables(rfc_ctxt,
@@ -1042,7 +1044,7 @@ rfc_build_eqtables (rfc_ctxt_t *rfc_ctxt)
                           &rfc_ctxt->proto_dport_tbl,
                           SACL_P2_TABLE_OFFSET);
     rfc_p2_eq_class_tables_dump(rfc_ctxt);
-    PDS_TRACE_DEBUG("Computing P3 Table. P1:P2 (%ub:%ub), num classes %u:%u",
+    PDS_TRACE_DEBUG("Computing P3 table, P1:P2 (%ub:%ub), num classes %u:%u",
                     SACL_P1_CLASSID_WIDTH, SACL_P2_CLASSID_WIDTH,
                     rfc_ctxt->p1_table.num_classes,
                     rfc_ctxt->p2_table.num_classes);
