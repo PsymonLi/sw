@@ -40,7 +40,7 @@
         "aacs_connect"   : "1",
         "ip"             : "192.168.75.125",
         "port"           : "90",
-        "sbm_clk_div"    : "32"
+        "sbm_clk_div"    : "6"
     },
 
     "num_fp_ports": "3",

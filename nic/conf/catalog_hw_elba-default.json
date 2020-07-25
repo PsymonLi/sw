@@ -24,10 +24,14 @@
             "ports"     :
             [
                { "port_num" : "0", "mac_id" : "0", "mac_ch" : "0", "sbus_addr" : "0", "tm_port" : "0" },
-               { "port_num" : "1", "mac_id" : "0", "mac_ch" : "2", "sbus_addr" : "0", "tm_port" : "2" },
-               { "port_num" : "2", "mac_id" : "0", "mac_ch" : "4", "sbus_addr" : "0", "tm_port" : "1" },
-               { "port_num" : "3", "mac_id" : "0", "mac_ch" : "6", "sbus_addr" : "0", "tm_port" : "3" },
-               { "port_num" : "4", "mac_id" : "1", "mac_ch" : "0", "sbus_addr" : "0", "tm_port" : "4" }
+               { "port_num" : "1", "mac_id" : "0", "mac_ch" : "1", "sbus_addr" : "0", "tm_port" : ""  },
+               { "port_num" : "2", "mac_id" : "0", "mac_ch" : "2", "sbus_addr" : "0", "tm_port" : "2" },
+               { "port_num" : "3", "mac_id" : "0", "mac_ch" : "3", "sbus_addr" : "0", "tm_port" : ""  },
+               { "port_num" : "4", "mac_id" : "0", "mac_ch" : "4", "sbus_addr" : "0", "tm_port" : "1" },
+               { "port_num" : "5", "mac_id" : "0", "mac_ch" : "5", "sbus_addr" : "0", "tm_port" : ""  },
+               { "port_num" : "6", "mac_id" : "0", "mac_ch" : "6", "sbus_addr" : "0", "tm_port" : "3" },
+               { "port_num" : "7", "mac_id" : "0", "mac_ch" : "7", "sbus_addr" : "0", "tm_port" : ""  },
+               { "port_num" : "8", "mac_id" : "1", "mac_ch" : "0", "sbus_addr" : "0", "tm_port" : "4" }
             ]
         }
     ],
@@ -55,7 +59,7 @@
         "aacs_connect"   : "0",
         "ip"             : "",
         "port"           : "90",
-        "sbm_clk_div"    : "32"
+        "sbm_clk_div"    : "6"
     },
 
 
@@ -70,19 +74,17 @@
     "num_fp_ports": "3",
     "fp_ports" :
     [
-        { "port_num" : "1", "type" : "eth",  "num_lanes" : "4", "breakout_modes" : [ "4x25G", "4x10G", "2x50G" ] },
-        { "port_num" : "2", "type" : "eth",  "num_lanes" : "4", "breakout_modes" : [ "4x25G", "4x10G", "2x50G" ] },
-        { "port_num" : "3", "type" : "mgmt", "num_lanes" : "1", "breakout_modes" : [] }
+        { "port_num" : "1", "type" : "eth",  "speed" : "100G", "num_lanes" : "4", "fec" : "rs",   "breakout_modes" : [] },
+        { "port_num" : "2", "type" : "eth",  "speed" : "100G", "num_lanes" : "4", "fec" : "rs",   "breakout_modes" : [] },
+        { "port_num" : "3", "type" : "mgmt", "speed" : "1G",  "num_lanes"  : "1", "fec" : "none", "breakout_modes" : [] }
     ],
 
-    "num_logical_ports" : "5",
+    "num_logical_ports" : "3",
     "logical_ports"     :
     [
         {"port_num" : "1", "asic" : "0", "asic_port" : "0" },
-        {"port_num" : "3", "asic" : "0", "asic_port" : "1" },
-        {"port_num" : "5", "asic" : "0", "asic_port" : "2" },
-        {"port_num" : "7", "asic" : "0", "asic_port" : "3" },
-        {"port_num" : "9", "asic" : "0", "asic_port" : "4" }
+        {"port_num" : "5", "asic" : "0", "asic_port" : "4" },
+        {"port_num" : "9", "asic" : "0", "asic_port" : "8" }
     ],
 
     "bx" : {
