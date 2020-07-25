@@ -1010,34 +1010,54 @@ create_subnets (uint32_t vpc_id, uint32_t num_vpcs,
         pds_subnet.key =
             test::int2pdsobjkey(PDS_SUBNET_ID((vpc_id - 1), num_subnets, i));
         pds_subnet.vpc = test::int2pdsobjkey(vpc_id);
-        pds_subnet.v4_prefix = *vpc_pfx;
-        pds_subnet.v4_prefix.v4_addr =
-            (pds_subnet.v4_prefix.v4_addr) | ((i - 1) << 14);
-        pds_subnet.v4_prefix.len = 18;
-        pds_subnet.v4_vr_ip = pds_subnet.v4_prefix.v4_addr;
-        pds_subnet.v6_prefix = *v6_vpc_pfx;
-        pds_subnet.v6_prefix.addr.addr.v6_addr.addr32[3] =
-            (pds_subnet.v6_prefix.addr.addr.v6_addr.addr32[3]) | ((i - 1) << 14);
-        pds_subnet.v6_prefix.len = 96;
-        pds_subnet.v6_vr_ip = pds_subnet.v6_prefix.addr;
-        MAC_UINT64_TO_ADDR(pds_subnet.vr_mac,
-                           (uint64_t)pds_subnet.v4_vr_ip);
-        pds_subnet.v6_route_table =
-            test::int2pdsobjkey(route_table_id + (num_subnets * num_vpcs));
-        pds_subnet.v4_route_table = test::int2pdsobjkey(route_table_id++);
+
+        if (!apulu() ||
+            (g_test_params.dev_oper_mode !=
+                 PDS_DEV_OPER_MODE_BITW_SMART_SERVICE)) {
+            pds_subnet.v4_prefix = *vpc_pfx;
+            pds_subnet.v4_prefix.v4_addr =
+                (pds_subnet.v4_prefix.v4_addr) | ((i - 1) << 14);
+            pds_subnet.v4_prefix.len = 18;
+            pds_subnet.v4_vr_ip = pds_subnet.v4_prefix.v4_addr;
+            pds_subnet.v6_prefix = *v6_vpc_pfx;
+            pds_subnet.v6_prefix.addr.addr.v6_addr.addr32[3] =
+                (pds_subnet.v6_prefix.addr.addr.v6_addr.addr32[3]) |
+                ((i - 1) << 14);
+            pds_subnet.v6_prefix.len = 96;
+            pds_subnet.v6_vr_ip = pds_subnet.v6_prefix.addr;
+            MAC_UINT64_TO_ADDR(pds_subnet.vr_mac,
+                               (uint64_t)pds_subnet.v4_vr_ip);
+            pds_subnet.v6_route_table =
+                test::int2pdsobjkey(route_table_id + (num_subnets * num_vpcs));
+            pds_subnet.v4_route_table = test::int2pdsobjkey(route_table_id++);
+        }
         pds_subnet.num_egr_v4_policy = 2;
         pds_subnet.egr_v4_policy[0] = test::int2pdsobjkey(policy_id);
         pds_subnet.egr_v4_policy[1] = test::int2pdsobjkey(policy_id);
         pds_subnet.num_ing_v4_policy = 2;
-        pds_subnet.ing_v4_policy[0] = test::int2pdsobjkey(policy_id + (num_subnets * num_vpcs * num_policies));
-        pds_subnet.ing_v4_policy[1] = test::int2pdsobjkey(policy_id + (num_subnets * num_vpcs * num_policies));
+        pds_subnet.ing_v4_policy[0] =
+            test::int2pdsobjkey(policy_id +
+                                (num_subnets * num_vpcs * num_policies));
+        pds_subnet.ing_v4_policy[1] =
+            test::int2pdsobjkey(policy_id +
+                                (num_subnets * num_vpcs * num_policies));
         pds_subnet.num_egr_v6_policy = 2;
-        pds_subnet.egr_v6_policy[0] = test::int2pdsobjkey(policy_id + (num_subnets * num_vpcs * num_policies) * 2);
-        pds_subnet.egr_v6_policy[1] = test::int2pdsobjkey(policy_id + (num_subnets * num_vpcs * num_policies) * 2);
+        pds_subnet.egr_v6_policy[0] =
+            test::int2pdsobjkey(policy_id +
+                                (num_subnets * num_vpcs * num_policies) * 2);
+        pds_subnet.egr_v6_policy[1] =
+            test::int2pdsobjkey(policy_id +
+                                (num_subnets * num_vpcs * num_policies) * 2);
         pds_subnet.num_ing_v6_policy = 2;
-        pds_subnet.ing_v6_policy[0] = test::int2pdsobjkey(policy_id + (num_subnets * num_vpcs * num_policies) * 3);
-        pds_subnet.ing_v6_policy[1] = test::int2pdsobjkey(policy_id + (num_subnets * num_vpcs * num_policies) * 3);
-        if (apulu()) {
+        pds_subnet.ing_v6_policy[0] =
+            test::int2pdsobjkey(policy_id +
+                                (num_subnets * num_vpcs * num_policies) * 3);
+        pds_subnet.ing_v6_policy[1] =
+            test::int2pdsobjkey(policy_id +
+                                (num_subnets * num_vpcs * num_policies) * 3);
+        if (apulu() &&
+            (g_test_params.dev_oper_mode !=
+                 PDS_DEV_OPER_MODE_BITW_SMART_SERVICE))  {
             pds_subnet.fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
             pds_subnet.fabric_encap.val.vnid =
                 num_vpcs + (vpc_id - 1) * num_subnets + i;
@@ -1073,12 +1093,16 @@ create_vpcs (uint32_t num_vpcs, uint32_t num_policies,
         memset(&pds_vpc, 0, sizeof(pds_vpc));
         pds_vpc.type = PDS_VPC_TYPE_TENANT;
         pds_vpc.key = test::int2pdsobjkey(i);
-        pds_vpc.v4_prefix.v4_addr = ipv4_prefix->addr.addr.v4_addr & 0xFF000000;
-        pds_vpc.v4_prefix.len = 8; // fix this to /8
-        pds_vpc.v6_prefix = *ipv6_prefix;
-        pds_vpc.fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
-        pds_vpc.fabric_encap.val.vnid = i;
-        pds_vpc.nat46_prefix = *nat46_pfx;
+        if (!apulu() || (g_test_params.dev_oper_mode !=
+                         PDS_DEV_OPER_MODE_BITW_SMART_SERVICE)) {
+            pds_vpc.v4_prefix.v4_addr =
+            ipv4_prefix->addr.addr.v4_addr & 0xFF000000;
+            pds_vpc.v4_prefix.len = 8; // fix this to /8
+            pds_vpc.v6_prefix = *ipv6_prefix;
+            pds_vpc.fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
+            pds_vpc.fabric_encap.val.vnid = i;
+            pds_vpc.nat46_prefix = *nat46_pfx;
+        }
         rv = create_vpc(&pds_vpc);
         SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
                                 "create vpc %u failed, rv %u", i, rv);
@@ -1089,7 +1113,8 @@ create_vpcs (uint32_t num_vpcs, uint32_t num_policies,
         }
     }
 
-    if (artemis() || apulu()) {
+    if ((artemis() || apulu()) &&
+        (g_test_params.dev_oper_mode != PDS_DEV_OPER_MODE_BITW_SMART_SERVICE)) {
         // create infra/underlay/provider VPC
         memset(&pds_vpc, 0, sizeof(pds_vpc));
         pds_vpc.type = PDS_VPC_TYPE_UNDERLAY;
@@ -1123,7 +1148,8 @@ create_vpcs (uint32_t num_vpcs, uint32_t num_policies,
 }
 
 sdk_ret_t
-create_nat_port_blocks (uint32_t num_vpcs, uint32_t num_nat, ip_prefix_t *napt_prefix)
+create_nat_port_blocks (uint32_t num_vpcs, uint32_t num_nat,
+                        ip_prefix_t *napt_prefix)
 {
     sdk_ret_t rv;
     ip_addr_t lo_addr;
