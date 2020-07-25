@@ -63,12 +63,23 @@ namespace impl {
 subnet_impl *
 subnet_impl::factory(pds_subnet_spec_t *spec) {
     subnet_impl *impl;
+    pds_device_oper_mode_t oper_mode;
 
-    if (spec->fabric_encap.type != PDS_ENCAP_TYPE_VXLAN) {
-        PDS_TRACE_ERR("Unknown fabric encap type %u, value %u - only VxLAN "
-                      "fabric encap is supported", spec->fabric_encap.type,
-                      spec->fabric_encap.val.value);
-        return NULL;
+    oper_mode = g_pds_state.device_oper_mode();
+    if ((oper_mode == PDS_DEV_OPER_MODE_HOST) ||
+        (oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
+        if (spec->fabric_encap.type != PDS_ENCAP_TYPE_VXLAN) {
+            PDS_TRACE_ERR("Unknown fabric encap type %u, value %u - only VxLAN "
+                          "fabric encap is supported", spec->fabric_encap.type,
+                          spec->fabric_encap.val.value);
+            return NULL;
+        }
+    } else if (oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SERVICE) {
+        if (spec->fabric_encap.type != PDS_ENCAP_TYPE_NONE) {
+            PDS_TRACE_ERR("Fabric encap must be PDS_ENCAP_TYPE_NONE in "
+                          "BITW_SMART_SERVICE mode");
+            return NULL;
+        }
     }
     impl = subnet_impl_db()->alloc();
     new (impl) subnet_impl(spec);
@@ -177,9 +188,11 @@ subnet_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         hw_id_ = idx;
 
         // reserve an entry in VNI table
-        ret = reserve_vni_entry_(spec);
-        if (unlikely(ret != SDK_RET_OK)) {
-            return ret;
+        if (spec->fabric_encap.type != PDS_ENCAP_TYPE_NONE) {
+            ret = reserve_vni_entry_(spec);
+            if (unlikely(ret != SDK_RET_OK)) {
+                return ret;
+            }
         }
 
         // reserve an entry in the MAPPING table for the IPv4 VR IP, if needed
@@ -210,7 +223,8 @@ subnet_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         //       this will ensure that proper release of resources will happen
         api_obj->set_rsvd_rsc();
         // if vnid is updated, reserve a handle for it in VNI table
-        if (obj_ctxt->upd_bmap & PDS_SUBNET_UPD_FABRIC_ENCAP) {
+        if ((obj_ctxt->upd_bmap & PDS_SUBNET_UPD_FABRIC_ENCAP) &&
+            (spec->fabric_encap.type != PDS_ENCAP_TYPE_NONE)) {
             ret = reserve_vni_entry_(spec);
             if (unlikely(ret != SDK_RET_OK)) {
                 return ret;
@@ -584,10 +598,10 @@ subnet_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
 sdk_ret_t
 subnet_impl::activate_create_(pds_epoch_t epoch, subnet_entry *subnet,
                               pds_subnet_spec_t *spec) {
-    sdk_ret_t ret;
     lif_impl *lif;
     vpc_entry *vpc;
     device_entry *device;
+    sdk_ret_t ret = SDK_RET_OK;
     vni_swkey_t vni_key = { 0 };
     sdk_table_api_params_t tparams;
     vni_actiondata_t vni_data = { 0 };
@@ -601,20 +615,23 @@ subnet_impl::activate_create_(pds_epoch_t epoch, subnet_entry *subnet,
                       spec->vpc.str(), spec->key.str());
         return SDK_RET_INVALID_ARG;
     }
-    // fill the key
-    vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
-    // fill the data
-    vni_data.action_id = VNI_VNI_INFO_ID;
-    vni_data.vni_info.bd_id = hw_id_;
-    vni_data.vni_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
-    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
-                                   VNI_VNI_INFO_ID, vni_hdl_);
-    // program the VNI table
-    ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Programming of VNI table failed for subnet %s, err %u",
-                      spec->key.str(), ret);
-        return ret;
+
+    if (vni_hdl_.valid()) {
+        // fill the key
+        vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
+        // fill the data
+        vni_data.action_id = VNI_VNI_INFO_ID;
+        vni_data.vni_info.bd_id = hw_id_;
+        vni_data.vni_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
+                                       VNI_VNI_INFO_ID, vni_hdl_);
+        // program the VNI table
+        ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Programming of VNI table failed for subnet %s, err %u",
+                          spec->key.str(), ret);
+            return ret;
+        }
     }
 
     // if the subnet is enabled on host interface, update the lif table with
@@ -640,7 +657,7 @@ subnet_impl::activate_create_(pds_epoch_t epoch, subnet_entry *subnet,
 
 sdk_ret_t
 subnet_impl::activate_delete_(pds_epoch_t epoch, subnet_entry *subnet) {
-    sdk_ret_t ret;
+    sdk_ret_t ret = SDK_RET_OK;
     vni_swkey_t vni_key = { 0 };
     vni_actiondata_t vni_data = { 0 };
     sdk_table_api_params_t tparams = { 0 };
@@ -650,19 +667,22 @@ subnet_impl::activate_delete_(pds_epoch_t epoch, subnet_entry *subnet) {
     PDS_TRACE_DEBUG("Activating subnet %s delete, fabric encap (%u, %u)",
                     subnet->key().str(), subnet->fabric_encap().type,
                     subnet->fabric_encap().val.vnid);
-    // fill the key
-    vni_key.vxlan_1_vni = subnet->fabric_encap().val.vnid;
-    // fill the data
-    vni_data.vni_info.bd_id = PDS_IMPL_RSVD_BD_HW_ID;
-    vni_data.vni_info.vpc_id = PDS_IMPL_RSVD_VPC_HW_ID;
-    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
-                                   VNI_VNI_INFO_ID,
-                                   sdk::table::handle_t::null());
-    // program the VNI table
-    ret = vpc_impl_db()->vni_tbl()->update(&tparams);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Programming of VNI table failed for subnet %s, err %u",
-                      subnet->key().str(), ret);
+
+    if (vni_hdl_.valid()) {
+        // fill the key
+        vni_key.vxlan_1_vni = subnet->fabric_encap().val.vnid;
+        // fill the data
+        vni_data.vni_info.bd_id = PDS_IMPL_RSVD_BD_HW_ID;
+        vni_data.vni_info.vpc_id = PDS_IMPL_RSVD_VPC_HW_ID;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
+                                       VNI_VNI_INFO_ID,
+                                       sdk::table::handle_t::null());
+        // program the VNI table
+        ret = vpc_impl_db()->vni_tbl()->update(&tparams);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Programming of VNI table failed for subnet %s, err %u",
+                          subnet->key().str(), ret);
+        }
     }
     // reset the lif entry
     for (uint8_t i = 0; i < subnet->num_host_if(); i++) {
@@ -716,26 +736,28 @@ subnet_impl::activate_update_(pds_epoch_t epoch, subnet_entry *subnet,
     // xfer resources from original object to the cloned object
     hw_id_ = orig_impl->hw_id_;
 
-    // fill the key
-    vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
-    // fill the data
-    vni_data.action_id = VNI_VNI_INFO_ID;
-    vni_data.vni_info.bd_id = hw_id_;
-    vni_data.vni_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
-    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
-                                   VNI_VNI_INFO_ID, vni_hdl_);
-    if (obj_ctxt->upd_bmap & PDS_SUBNET_UPD_FABRIC_ENCAP) {
-        // insert new entry in the VNI table
-        ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
-    } else {
-        // update the existing VNI table entry
-        ret = vpc_impl_db()->vni_tbl()->update(&tparams);
-        vni_hdl_ = tparams.handle;
-    }
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Updating VNI table failed for subnet %s, err %u",
-                      spec->key.str(), ret);
-        return ret;
+    if (vni_hdl_.valid()) {
+        // fill the key
+        vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
+        // fill the data
+        vni_data.action_id = VNI_VNI_INFO_ID;
+        vni_data.vni_info.bd_id = hw_id_;
+        vni_data.vni_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
+                                       VNI_VNI_INFO_ID, vni_hdl_);
+        if (obj_ctxt->upd_bmap & PDS_SUBNET_UPD_FABRIC_ENCAP) {
+            // insert new entry in the VNI table
+            ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
+        } else {
+            // update the existing VNI table entry
+            ret = vpc_impl_db()->vni_tbl()->update(&tparams);
+            vni_hdl_ = tparams.handle;
+        }
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Updating VNI table failed for subnet %s, err %u",
+                          spec->key.str(), ret);
+            return ret;
+        }
     }
 
     if (obj_ctxt->upd_bmap & PDS_SUBNET_UPD_HOST_IFINDEX) {
