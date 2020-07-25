@@ -180,13 +180,13 @@ func createRoutingConfigHandler(infraAPI types.InfraAPI, client msTypes.BGPSvcCl
 	// we can have only one routing config on the NAPLES card.
 	if currentRoutingConfig != nil {
 		log.Infof("RoutingConfig: %s | Err: Create with existing routing config[%s]", rtCfg.GetKey(), currentRoutingConfig.GetKey())
-		return nil
+		return errors.Wrapf(types.ErrBadRequest, "RoutingConfig: %s | Err: Create with existing routing config[%s]", rtCfg.GetKey(), currentRoutingConfig.GetKey())
 	}
 	log.Infof("RoutingConfig: %s Begin create", rtCfg.GetKey())
 
 	if !rtCfg.Spec.BGPConfig.DSCAutoConfig {
 		log.Infof("ignoring Routing Config which is not auto-config object [%v]", rtCfg.Name)
-		return nil
+		return errors.Wrapf(types.ErrBadRequest, "ignoring Routing Config which is not auto-config object [%v]", rtCfg.Name)
 	}
 	dsccfg := infraAPI.GetConfig()
 	ctx := context.TODO()
@@ -225,16 +225,16 @@ func createRoutingConfigHandler(infraAPI types.InfraAPI, client msTypes.BGPSvcCl
 func updateRoutingConfigHandler(infraAPI types.InfraAPI, client msTypes.BGPSvcClient, rtCfg netproto.RoutingConfig) error {
 	if currentRoutingConfig == nil {
 		log.Infof("ignoring Routing Config Update [%v]", rtCfg.Name)
-		return nil
+		return errors.Wrapf(types.ErrBadRequest, "ignoring Routing Config Update [%v]", rtCfg.Name)
 	}
 	// NAPLES can have only one RoutingConfig.
 	if rtCfg.Name != currentRoutingConfig.Name {
 		log.Infof("ignoring Routing Config [%v]", rtCfg.Name)
-		return nil
+		return errors.Wrapf(types.ErrBadRequest, "ignoring Routing Config [%v]", rtCfg.Name)
 	}
 	if !rtCfg.Spec.BGPConfig.DSCAutoConfig {
 		log.Infof("ignoring Routing Config which is not auto-config object [%v]", rtCfg.Name)
-		return nil
+		return errors.Wrapf(types.ErrBadRequest, "ignoring Routing Config which is not auto-config object [%v]", rtCfg.Name)
 	}
 
 	rid := getRouterID(infraAPI)
@@ -270,12 +270,12 @@ func deleteRoutingConfigHandler(infraAPI types.InfraAPI, client msTypes.BGPSvcCl
 	// NAPLES can have only one RoutingConfig.
 	if rtCfg.Name != currentRoutingConfig.Name {
 		log.Infof("ignoring Routing Config [%v]", rtCfg.Name)
-		return nil
+		return errors.Wrapf(types.ErrBadRequest, "ignoring Routing Config [%v]", rtCfg.Name)
 	}
 
 	if !rtCfg.Spec.BGPConfig.DSCAutoConfig {
 		log.Infof("ignoring Routing Config which is not auto-config object [%v]", rtCfg.Name)
-		return nil
+		return errors.Wrapf(types.ErrBadRequest, "ignoring Routing Config which is not auto-config object [%v]", rtCfg.Name)
 	}
 
 	oldCfg := expandRoutingConfig(infraAPI, curLbIP, currentRoutingConfig)
