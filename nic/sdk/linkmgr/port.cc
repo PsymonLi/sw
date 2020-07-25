@@ -428,7 +428,7 @@ port::port_serdes_signal_detect(void)
         if (sbus_addr == 0) {
             // invalid config. fail signal detect
             signal_detect = true;
-    SDK_LINKMGR_TRACE_DEBUG("signal_detect:FALSE: sbus_addr: %d, lane: %d ", sbus_addr, lane);
+    SDK_LINKMGR_TRACE_DEBUG("signal_detect:FALSE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
             //break;
         }
         signal_detect = serdes_fns()->serdes_signal_detect(sbus_addr);
@@ -436,7 +436,7 @@ port::port_serdes_signal_detect(void)
             break;
         }
     }
-    SDK_LINKMGR_TRACE_DEBUG("signal_detect:TRUE: sbus_addr: %d lane: %d", sbus_addr, lane);
+    SDK_LINKMGR_TRACE_DEBUG("signal_detect:TRUE: sbus_addr: %x lane: %d", sbus_addr, lane);
     return signal_detect;
 }
 
@@ -454,15 +454,15 @@ port::port_serdes_rdy(void)
             // KCM serdes_rdy = false;
             // KCM break;
         }
-        SDK_LINKMGR_TRACE_DEBUG("sbus_addr: %d, lane: %d ", sbus_addr, lane);
+        SDK_LINKMGR_TRACE_DEBUG("Calling serdes_rdy : sbus_addr: %x, lane: %d ", sbus_addr, lane);
         serdes_rdy =  serdes_fns()->serdes_rdy(sbus_addr);
         if (serdes_rdy == false) {
-            SDK_LINKMGR_TRACE_DEBUG("FALSE: sbus_addr: %d, lane: %d ", sbus_addr, lane);
+            SDK_LINKMGR_TRACE_DEBUG("FALSE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
             break;
         }
     }
 
-    SDK_LINKMGR_TRACE_DEBUG("TRUE: sbus_addr: %d, lane: %d ", sbus_addr, lane);
+    SDK_LINKMGR_TRACE_DEBUG("port_serdes_rdy : TRUE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
     return serdes_rdy;
 }
 
@@ -552,16 +552,19 @@ bool
 port::port_serdes_dfe_complete(void)
 {
     uint32_t lane;
+    int      r;
     uint32_t sbus_addr;
 
     for (lane = 0; lane < num_lanes_; ++lane) {
         sbus_addr = port_sbus_addr(lane);
         if (sbus_addr == 0) {
             // invalid config. fail dfe complete
-            SDK_LINKMGR_TRACE_DEBUG("TRUE: sbus_addr: %d, lane: %d ", sbus_addr, lane);
+            SDK_LINKMGR_TRACE_DEBUG("TRUE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
             return true;
         }
-        if (serdes_fns()->serdes_dfe_status(sbus_addr) != 1) {
+        r = serdes_fns()->serdes_dfe_status(sbus_addr);
+        SDK_LINKMGR_TRACE_DEBUG("serdes_dfe_status: sbus_addr: %x, lane: %d , val: %d ", sbus_addr, lane, r);
+        if (r != 1) {
             return false;
         }
     }
@@ -1624,7 +1627,7 @@ port::port_enable(bool start_en_timer)
     set_port_link_an_sm(port_link_sm_t::PORT_LINK_SM_AN_DISABLED);
 
 	printf("port_enable:LINK_SM_PROCESS being calle:%s:%d\n", __FILE__, __LINE__);
-        SDK_TRACE_DEBUG("port_enable:LINK_SM_PROCESS called:%s:%d", __FILE__, __LINE__);
+  SDK_TRACE_DEBUG("port_enable:LINK_SM_PROCESS called:%s:%d", __FILE__, __LINE__);
     port_link_sm_process(start_en_timer);
 
     this->admin_state_ = port_admin_state_t::PORT_ADMIN_STATE_UP;
@@ -1636,7 +1639,7 @@ sdk_ret_t
 port::port_link_sm_reset (void)
 {
 	printf("port_disable:LINK_SM_PROCESS being calle:%s:%d\n", __FILE__, __LINE__);
-        SDK_TRACE_DEBUG("port_disable:LINK_SM_PROCESS called:%s:%d", __FILE__, __LINE__);
+  SDK_TRACE_DEBUG("port_disable:LINK_SM_PROCESS called:%s:%d", __FILE__, __LINE__);
     set_port_link_sm(port_link_sm_t::PORT_LINK_SM_DISABLED);
     set_port_link_dfe_sm(port_link_sm_t::PORT_LINK_SM_DFE_DISABLED);
     set_port_link_an_sm(port_link_sm_t::PORT_LINK_SM_AN_DISABLED);
@@ -2129,11 +2132,13 @@ port::port_init(linkmgr_cfg_t *cfg)
 
     SDK_ASSERT(cfg->cfg_path);
 
+    SDK_TRACE_DEBUG("port mac init Starting");
     rc = port_mac_fn_init(cfg);
     if (rc != SDK_RET_OK) {
         SDK_TRACE_ERR("port mac init failed");
     }
 
+    SDK_TRACE_DEBUG("port port_serdes_fn_init Starting");
     rc = port_serdes_fn_init(cfg->platform_type,
                              jtag_id(),
                              num_sbus_rings(),
@@ -2142,7 +2147,7 @@ port::port_init(linkmgr_cfg_t *cfg)
                              aacs_server_port(),
                              aacs_server_ip());
     if (rc != SDK_RET_OK) {
-        SDK_TRACE_ERR("port mac init failed");
+        SDK_TRACE_ERR("port serdes init failed");
     }
 
     return rc;

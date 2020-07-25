@@ -328,7 +328,8 @@ sbus_access (uint32_t sbus_addr,
           //Elba has 4 rings. MX/BX are on ring 3.
           elb_aod_sbus_reset(chip_id, sbus_id);
         } else {
-            SDK_LINKMGR_TRACE_ERR("NO-OP for ring: %d", ring_number);
+            //SDK_LINKMGR_TRACE_ERR("NO-OP for ring: %d", ring_number);
+          elb_sbus_reset(chip_id, ring_number,  sbus_id);
         }
         status = 1;
         break;
@@ -346,7 +347,8 @@ sbus_access (uint32_t sbus_addr,
           //Elba has 4 rings. MX/BX are on ring 3.
           elb_aod_sbus_write(chip_id, sbus_id, reg_addr, *sbus_data);
         } else {
-            SDK_LINKMGR_TRACE_ERR("NO-OP for ring: %d", ring_number);
+          elb_sbus_write(chip_id, ring_number, sbus_id, reg_addr, *sbus_data);
+          //SDK_LINKMGR_TRACE_ERR("NO-OP for ring: %d", ring_number);
         }
         status = 1;
         break;
@@ -356,7 +358,8 @@ sbus_access (uint32_t sbus_addr,
           //Elba has 4 rings. MX/BX are on ring 3.
           *sbus_data = elb_aod_sbus_read(chip_id, sbus_id, reg_addr);
         } else {
-            SDK_LINKMGR_TRACE_ERR("NO-OP for ring: %d", ring_number);
+          //SDK_LINKMGR_TRACE_ERR("NO-OP for ring: %d", ring_number);
+          *sbus_data = elb_sbus_read(chip_id, ring_number, sbus_id, reg_addr);
         }
 
         /*
@@ -548,7 +551,7 @@ serdes_bh_txrx_init (uint32_t sbus_addr,
   //Avago_serdes_init_mode_t  
   sc->init_mode  = (prbs == 1) ? 
     ( (int_lpbk == 1) ? Avago_serdes_init_mode_t::AVAGO_PRBS31_ILB : Avago_serdes_init_mode_t::AVAGO_PRBS31_ELB ) :
-    ( (int_lpbk == 1) ? Avago_serdes_init_mode_t::AVAGO_PRBS31_ILB : Avago_serdes_init_mode_t::AVAGO_PRBS31_ELB ) ;
+    ( (int_lpbk == 1) ? Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ILB : Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ELB ) ;
 
   sc->tx_encoding = ((serdes_info->pam4_mode==1) || (serdes_info->pam4_mode==5))? Avago_serdes_line_encoding_t::AVAGO_SERDES_PAM4 :
     Avago_serdes_line_encoding_t::AVAGO_SERDES_NRZ;
@@ -603,7 +606,10 @@ serdes_bh_txrx_init (uint32_t sbus_addr,
   //sc->tx_pll = ;
 
   //int  /**< Blackhawk Only - 0 indicates Analog Loopback, 1 indicates Digital Loopback */
-  //sc->loopback_type = 0; //if ILB what type of loopback
+  sc->loopback_type =
+    (sc->rx_osr==Bcm_serdes_osr_mode_t::BCM_SERDES_OSX1)? 0 :
+    (sc->rx_osr==Bcm_serdes_osr_mode_t::BCM_SERDES_OSX2)? 0 : 1; //Digital for fractional osr
+
 
   //int  /**< Blackhawk Only - 00: PCB traces, 01: Copper Cables, 10(2): Optics */
   sc->media_type = 
@@ -676,6 +682,8 @@ serdes_global_init_hw(uint32_t     jtag_id,
 
     Aapl_t *aapl = aapl_construct();
 
+    SDK_LINKMGR_TRACE_DEBUG("serdes_global_init_hw num_sbus_rings: %u, jtag_id: %x", num_sbus_rings, jtag_id);
+
     // set the appl init params
     aapl->communication_method = comm_method;
     aapl->jtag_idcode[0]       = jtag_id;
@@ -706,6 +714,7 @@ serdes_global_init_hw(uint32_t     jtag_id,
 
     if(aapl->return_code < 0) {
         aapl_destruct(aapl);
+        SDK_LINKMGR_TRACE_DEBUG("serdes_global_init_hw Failed to construct aap, num_sbus_rings: %u, jtag_id: %x", num_sbus_rings, jtag_id);
         return NULL;
     }
 
@@ -797,6 +806,23 @@ serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
   return ret;
 }
 
+
+bool
+serdes_rdy_hw (uint32_t sbus_addr)
+{
+    int tx_rdy = 0;
+    int rx_rdy = 0;
+
+    avago_serdes_get_tx_rx_ready(aapl, sbus_addr, &tx_rdy, &rx_rdy);
+
+    if (tx_rdy == 0 || rx_rdy == 0) {
+        return false;
+    }
+
+    return true;
+}
+
+
 bool
 serdes_signal_detect_hw (uint32_t sbus_addr)
 {
@@ -843,6 +869,9 @@ serdes_signal_detect_hw (uint32_t sbus_addr)
 
     return true;
   } else {
+    //signal ok seems to be unreliable
+    return serdes_rdy_hw(sbus_addr);
+
     int clr_before_chk = 1;
     int ret = avago_serdes_get_signal_ok(aapl, sbus_addr, clr_before_chk);
     if(ret == 0) {
@@ -854,21 +883,6 @@ serdes_signal_detect_hw (uint32_t sbus_addr)
     }
   }
   return SDK_RET_ERR;
-}
-
-bool
-serdes_rdy_hw (uint32_t sbus_addr)
-{
-    int tx_rdy = 0;
-    int rx_rdy = 0;
-
-    avago_serdes_get_tx_rx_ready(aapl, sbus_addr, &tx_rdy, &rx_rdy);
-
-    if (tx_rdy == 0 || rx_rdy == 0) {
-        return false;
-    }
-
-    return true;
 }
 
 int
@@ -900,13 +914,17 @@ serdes_sbus_reset_hw (uint32_t sbus_addr, int hard)
 int
 serdes_spico_reset_hw (uint32_t sbus_addr)
 {
+  int bh_lane = serdes_get_bh_lane(sbus_addr);
+  if(bh_lane == -1) {
     int rc = avago_spico_reset (aapl, sbus_addr);
 
     if (rc < 0) {
-        SDK_LINKMGR_TRACE_ERR("spico reset failed for sbus: %u", sbus_addr);
+        SDK_LINKMGR_TRACE_ERR("spico reset failed for sbus: %x", sbus_addr);
     }
 
     return rc;
+  }
+  return 0;
 }
 
 
@@ -942,11 +960,18 @@ serdes_bh_fw_upload_init (uint32_t sbus_addr, const char* filename)
       
     //No tx/rx_slip for bh, instead do this:
     //PRS Doc: For MX interface timing (as timed in STA), the following needs to be set: 
-    //sbus address 0x46 bit 16 to 1. BH is on 
+    //sbus address 0x46 bit16/13 to 1.  And, 0x40 bit16 to 1
+    int addr, rd_data, dd;
     bh_sbus_addr = bh_sbus_addr & 0xff;
-    uint32_t dd = elb_aod_sbus_read(0, bh_sbus_addr, 0x46);
-    dd = (dd | 0x10000);
-    elb_aod_sbus_write(0, bh_sbus_addr, 0x46, dd);
+    for(int lane=0; lane<8; lane++) {
+      for(int is_rx=0; is_rx<2; is_rx++) {
+        addr = ((is_rx)? 0x46 : 0x40) + lane*8;
+        dd   = (is_rx)? 0x12000 : 0x10000;
+        rd_data = elb_aod_sbus_read(0, bh_sbus_addr, addr);
+        rd_data = (rd_data | dd);
+        elb_aod_sbus_write(0, bh_sbus_addr, addr, rd_data);
+      }
+    }
 
     return rc;
 }
@@ -1071,7 +1096,8 @@ int
 serdes_dfe_status_hw(uint32_t sbus_addr)
 {
     //works for bh
-    return avago_serdes_dfe_wait_timeout(aapl, sbus_addr, 0);
+    return avago_serdes_dfe_wait(aapl, sbus_addr);
+    //return avago_serdes_dfe_wait_timeout(aapl, sbus_addr, 0);
 }
 
 int serdes_eye_check_hw (uint32_t sbus_addr, uint32_t *values)
@@ -1618,7 +1644,7 @@ serdes_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 
     return ret;
   } else {
-    SDK_LINKMGR_TRACE_DEBUG("serdes_cfg_hw : doing nothing ");
+    SDK_LINKMGR_TRACE_DEBUG("serdes_cfg_hw : doing nothing, sbus_addr : %x ", sbus_addr);
     return ret;
   }
   return ret;
@@ -1748,8 +1774,6 @@ port_serdes_fn_init(platform_type_t platform_type,
     serdes_fn->serdes_an_rsfec_enable_read =
                                       &serdes_an_rsfec_enable_read_default;
 
-    printf("TBD-ELBA-REBASE Skipping port_serdes_fn_init %s:%d  %d(is_haps=%d)\n", __FILE__, __LINE__, platform_type, (platform_type == platform_type_t::PLATFORM_TYPE_HW));
-    return SDK_RET_OK; // TBD-ELBA-REBASE
 
     switch (platform_type) {
     case platform_type_t::PLATFORM_TYPE_HW:
@@ -1800,6 +1824,7 @@ port_serdes_fn_init(platform_type_t platform_type,
                                           &serdes_an_rsfec_enable_read_hw;
 
         // serdes global init
+        SDK_LINKMGR_TRACE_DEBUG("port_serdes_fn_init : Calling serdes_global_init_hw num_sbus_rings: %u, jtag_id: %x", num_sbus_rings, jtag_id);
         aapl = serdes_global_init_hw(jtag_id, num_sbus_rings,
                                      aacs_server_en, aacs_connect, port, ip);
         break;

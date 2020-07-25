@@ -659,6 +659,7 @@ linkmgr_init (linkmgr_cfg_t *cfg)
 
     g_linkmgr_cfg = *cfg;
 
+    SDK_TRACE_DEBUG("linkmgr  linkmgr_init Started ");
     g_linkmgr_state = linkmgr_state::factory();
     if (NULL == g_linkmgr_state) {
         SDK_TRACE_ERR("linkmgr init failed");
@@ -666,6 +667,7 @@ linkmgr_init (linkmgr_cfg_t *cfg)
     }
 
     // initialize the port mac and serdes functions
+    SDK_TRACE_DEBUG("linkmgr  linkmgr_init calling port::port_init");
     port::port_init(cfg);
 
     if ((ret = thread_init(cfg)) != SDK_RET_OK) {
