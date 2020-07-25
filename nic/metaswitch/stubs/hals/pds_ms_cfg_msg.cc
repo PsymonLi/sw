@@ -106,7 +106,7 @@ pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
             }
             if (ret != SDK_RET_OK) {
                 // abort obj walk and return failure 
-                break;
+                goto exit;
             }
             // processing for interface obj complete
             // continue with next obj
@@ -150,6 +150,7 @@ pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
             break;
         }
     }
+exit:
     sdk::ipc::respond(ipc_msg, (const void *)&ret, sizeof(sdk_ret_t));
 }
 
