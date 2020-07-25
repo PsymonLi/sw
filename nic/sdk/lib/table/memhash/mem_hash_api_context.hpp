@@ -21,25 +21,22 @@ namespace sdk {
 namespace table {
 namespace memhash {
 
-#define HINT_SLOT_IS_INVALID(_slot) \
+#define MEM_HASH_HINT_SLOT_IS_INVALID(_slot) \
         ((_slot) == mem_hash_api_context::hint_slot::HINT_SLOT_INVALID)
-#define HINT_SLOT_IS_VALID(_slot) \
+#define MEM_HASH_HINT_SLOT_IS_VALID(_slot) \
         ((_slot) != mem_hash_api_context::hint_slot::HINT_SLOT_INVALID)
-#define HINT_SLOT_SET_INVALID(_slot) \
+#define MEM_HASH_HINT_SLOT_SET_INVALID(_slot) \
         ((_slot) = mem_hash_api_context::hint_slot::HINT_SLOT_INVALID)
-#define HINT_SLOT_IS_MORE(_slot) \
+#define MEM_HASH_HINT_SLOT_IS_MORE(_slot) \
         ((_slot) == mem_hash_api_context::hint_slot::HINT_SLOT_MORE)
-#define HINT_SLOT_SET_MORE(_slot) \
+#define MEM_HASH_HINT_SLOT_SET_MORE(_slot) \
         ((_slot) = mem_hash_api_context::hint_slot::HINT_SLOT_MORE)
-#define HINT_SLOT_IS_MATCH(_ctx) \
-        (HINT_SLOT_IS_FREE((_ctx)->hint_slot) &&\
-         HINT_SLOT_IS_MORE((_ctx)->hint_slot))
-#define HINT_IS_VALID(_hint) \
+#define MEM_HASH_HINT_IS_VALID(_hint) \
         ((_hint) != mem_hash_api_context::hint_index::HINT_INDEX_INVALID)
-#define HINT_SET_INVALID(_hint) \
+#define MEM_HASH_HINT_SET_INVALID(_hint) \
         ((_hint) = mem_hash_api_context::hint_index::HINT_INDEX_INVALID)
 
-#define PRINT_API_CTX(_name, _ctx) {\
+#define MEM_HASH_PRINT_API_CTX(_name, _ctx) {\
     MEMHASH_TRACE_VERBOSE("%s: %s, [%s]", _name, (_ctx)->idstr(), (_ctx)->metastr()); \
 }
 

@@ -333,11 +333,13 @@ action esp_v4_tunnel_n2h_txdma1_load_head_desc_int_header(in_desc, out_desc,
 }
 
 //stage 1 - table2
-action esp_v4_tunnel_n2h_load_part2(spi, new_spi)
+action esp_v4_tunnel_n2h_load_part2(spi, new_spi, last_replay_seq_no, iv_salt)
 {
     IPSEC_TXDMA1_TO_STAGE1_INIT
     modify_field(ipsec_decrypt_part2_scratch.spi, spi);
     modify_field(ipsec_decrypt_part2_scratch.new_spi, new_spi);
+    modify_field(ipsec_decrypt_part2_scratch.last_replay_seq_no, last_replay_seq_no);
+    modify_field(ipsec_decrypt_part2_scratch.iv_salt, iv_salt);
 }
 
 //stage 1 - table1

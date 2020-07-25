@@ -93,14 +93,12 @@ mapping_hit:
     phvwr.c7        p.rewrite_metadata_nexthop_type, \
                         d.mapping_info_d.nexthop_type
     phvwr           p.p4e_i2e_nexthop_id, d.mapping_info_d.nexthop_id
-    phvwrpair.e     p.vnic_metadata_egress_bd_id, \
-                        d.mapping_info_d.egress_bd_id, \
-                        p.vnic_metadata_rx_vnic_id, d.mapping_info_d.rx_vnic_id
+    phvwr           p.vnic_metadata_egress_bd_id, d.mapping_info_d.egress_bd_id
+    phvwr.e         p.vnic_metadata_rx_vnic_id, d.mapping_info_d.rx_vnic_id
     phvwr.f         p.rewrite_metadata_dmaci, d.mapping_info_d.dmaci
 mapping_hit_arm:
-    phvwrpair       p.vnic_metadata_egress_bd_id, \
-                        d.mapping_info_d.egress_bd_id, \
-                        p.vnic_metadata_rx_vnic_id, d.mapping_info_d.rx_vnic_id
+    phvwr           p.vnic_metadata_egress_bd_id, d.mapping_info_d.egress_bd_id
+    phvwr           p.vnic_metadata_rx_vnic_id, d.mapping_info_d.rx_vnic_id
     phvwr           p.p4e_to_arm_nexthop_id, k.{txdma_to_p4e_nexthop_id}.hx
     phvwr           p.p4e_to_arm_nexthop_type, k.txdma_to_p4e_nexthop_type
     phvwr.e         p.p4e_to_arm_is_local, d.mapping_info_d.is_local

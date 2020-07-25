@@ -94,16 +94,6 @@ ipsec_sa_entry::nuke_resources_(void) {
 }
 
 sdk_ret_t
-ipsec_sa_entry::init_config(api_ctxt_t *api_ctxt) {
-    pds_ipsec_sa_encrypt_spec_t *spec = &api_ctxt->api_params->ipsec_sa_encrypt_spec;
-
-    PDS_TRACE_VERBOSE("Initializing ipsec SA %s", spec->key.str());
-
-    key_ = spec->key;
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
 ipsec_sa_entry::program_create(api_obj_ctxt_t *obj_ctxt) {
     if (impl_) {
         return impl_->program_hw(this, obj_ctxt);
@@ -225,6 +215,17 @@ ipsec_sa_encrypt_entry::free(ipsec_sa_encrypt_entry *ipsec_sa_encrypt) {
 }
 
 sdk_ret_t
+ipsec_sa_encrypt_entry::init_config(api_ctxt_t *api_ctxt) {
+    pds_ipsec_sa_encrypt_spec_t *spec = &api_ctxt->api_params->ipsec_sa_encrypt_spec;
+
+    PDS_TRACE_VERBOSE("Initializing ipsec SA %s", spec->key.str());
+
+    key_ = spec->key;
+    spi_ = spec->spi;
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 ipsec_sa_encrypt_entry::populate_msg(pds_msg_t *msg, api_obj_ctxt_t *obj_ctxt) {
     msg->cfg_msg.op = obj_ctxt->api_op;
     msg->cfg_msg.obj_id = OBJ_ID_IPSEC_SA_ENCRYPT;
@@ -270,6 +271,17 @@ ipsec_sa_decrypt_entry::free(ipsec_sa_decrypt_entry *ipsec_sa_decrypt) {
     }
     ipsec_sa_decrypt->~ipsec_sa_decrypt_entry();
     ipsec_sa_db()->free(ipsec_sa_decrypt);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+ipsec_sa_decrypt_entry::init_config(api_ctxt_t *api_ctxt) {
+    pds_ipsec_sa_decrypt_spec_t *spec = &api_ctxt->api_params->ipsec_sa_decrypt_spec;
+
+    PDS_TRACE_VERBOSE("Initializing ipsec SA %s", spec->key.str());
+
+    key_ = spec->key;
+    spi_ = spec->spi;
     return SDK_RET_OK;
 }
 

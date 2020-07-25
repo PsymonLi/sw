@@ -107,6 +107,9 @@ action lif_vlan_info(vnic_id, bd_id, vpc_id) {
             }
         }
     } else {
+        if (esp.valid == TRUE) {
+            modify_field(key_metadata.ktype, KEY_TYPE_IPSEC);
+        }
         if (ipv4_1.valid == TRUE) {
             modify_field(key_metadata.local_mapping_lkp_type, KEY_TYPE_IPV4);
             modify_field(key_metadata.local_mapping_lkp_addr, ipv4_1.dstAddr);

@@ -235,9 +235,8 @@ ipv4_vxlan_encap2:
     add             r1, r1, 36
     add.!c7         r7, k.rewrite_metadata_tunnel_tos, 0x45, 8
     add.c7          r7, k.rewrite_metadata_tunnel_tos2, 0x45, 8
-    add             r7, r1[15:0], r7, 16
-    phvwr           p.{ipv4_00_version,ipv4_00_ihl,ipv4_00_diffserv,\
-                        ipv4_00_totalLen}, r7
+    phvwr           p.{ipv4_00_version,ipv4_00_ihl,ipv4_00_diffserv}, r7
+    phvwr           p.{ipv4_00_totalLen}, r1[15:0]
     or              r7, IP_PROTO_UDP, 64, 8
     phvwrpair       p.{ipv4_00_ttl,ipv4_00_protocol}, r7, \
                         p.ipv4_00_srcAddr, k.rewrite_metadata_device_ipv4_addr

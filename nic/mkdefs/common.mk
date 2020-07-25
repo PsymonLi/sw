@@ -147,7 +147,9 @@ export NIC_hello_P4PD_SOLIBS := p4pd_hello
 export NIC_athena_P4PD_SOLIBS := p4pd_athena p4pd_athena_rxdma p4pd_athena_txdma
 export NIC_apollo_PDSAPI_IMPL_SOLIBS := lpmitree_apollo rfc_apollo sensor trace memhash pdsapi_asic_impl
 export NIC_artemis_PDSAPI_IMPL_SOLIBS := lpmitree_artemis rfc_artemis sensor trace memhash pdsapi_asic_impl
-export NIC_apulu_PDSAPI_IMPL_SOLIBS := lpmitree_apulu rfc_apulu sensor trace memhash pdsapi_asic_impl rte_indexer ipseccb
+export NIC_apulu_PDSAPI_IMPL_SOLIBS := lpmitree_apulu rfc_apulu sensor trace \
+                                       memhash pdsapi_asic_impl rte_indexer \
+                                       ipseccb sdkftl
 export NIC_athena_PDSAPI_IMPL_SOLIBS := sensor trace memhash pdsapi_asic_impl
 
 

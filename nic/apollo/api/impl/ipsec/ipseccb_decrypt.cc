@@ -15,10 +15,11 @@
 #include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/core/trace.hpp"
-#include "gen/p4gen/esp_v4_tunnel_n2h_rxdma/include/esp_v4_tunnel_n2h_rxdma_p4plus_ingress.h"
-#include "gen/p4gen/esp_v4_tunnel_n2h_txdma1/include/esp_v4_tunnel_n2h_txdma1_p4plus_ingress.h"
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/api/impl/ipsec/ipseccb_internal.hpp"
+#include "gen/platform/mem_regions.hpp"
+#include "gen/p4gen/esp_v4_tunnel_n2h_rxdma/include/esp_v4_tunnel_n2h_rxdma_p4plus_ingress.h"
+#include "gen/p4gen/esp_v4_tunnel_n2h_txdma1/include/esp_v4_tunnel_n2h_txdma1_p4plus_ingress.h"
 
 namespace api {
 namespace impl {
@@ -65,7 +66,7 @@ add_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     PDS_TRACE_DEBUG("key_index %d", ctxt->key_index);
     // the below may have to use a different range for the reverse direction
 
-    ipsec_cb_ring_addr = asicpd_get_mem_addr(ASIC_HBM_REG_IPSECCB_DECRYPT);
+    ipsec_cb_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_DECRYPT_NAME);
     PDS_TRACE_DEBUG("CB ring addr 0x%lx", ipsec_cb_ring_addr);
 
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.cb_ring_base_addr =
@@ -74,7 +75,7 @@ add_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.cb_pindex = 0;
 
     ipsec_barco_ring_addr =
-        asicpd_get_mem_addr(ASIC_HBM_REG_IPSECCB_BARCO_DECRYPT);
+        asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_BARCO_DECRYPT_NAME);
     PDS_TRACE_DEBUG("Barco ring addr 0x%lx", ipsec_barco_ring_addr);
 
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_ring_base_addr = htonll(ipsec_barco_ring_addr);
@@ -98,6 +99,8 @@ add_ipsec_decrypt_part2 (ipseccb_ctxt_t *ctxt)
     sdk_ret_t ret;
 
     decrypt_part2.spi = htonl(ctxt->decrypt_spec->spi);
+    decrypt_part2.new_spi = htonl(ctxt->decrypt_spec->rekey_spi);
+    decrypt_part2.iv_salt = htonl(ctxt->decrypt_spec->salt);
     ret = impl_base::pipeline_impl()->p4plus_write(0, addr,
                                                    (uint8_t *)&decrypt_part2,
                                                    sizeof(decrypt_part2),
@@ -150,14 +153,14 @@ get_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
 static sdk_ret_t
 get_ipsec_decrypt_part2 (ipseccb_ctxt_t *ctxt)
 {
-    ipsec_decrypt_part2_t decrypt_part2;
+    tx_table_s1_t2_esp_v4_tunnel_n2h_load_part2_d decrypt_part2;
     uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_1_OFFSET;
 
     impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&decrypt_part2,
                                             sizeof(decrypt_part2));
 
     ctxt->decrypt_info->status.last_replay_seq_no = ntohl(decrypt_part2.last_replay_seq_no);
-    ctxt->decrypt_info->spec.salt = decrypt_part2.iv_salt;
+    ctxt->decrypt_info->spec.salt = ntohl(decrypt_part2.iv_salt);
     ctxt->decrypt_info->spec.spi = ntohl(decrypt_part2.spi);
     return SDK_RET_OK;
 }

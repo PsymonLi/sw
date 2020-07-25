@@ -246,6 +246,7 @@ populate_underlay_nh_info_ (pds_nexthop_spec_t *spec,
             nh_data->set_vlan(encap.val.vlan_tag);
         }
         nh_data->set_dmaco(MAC_TO_UINT64(spec->underlay_mac));
+        nh_data->set_dmaci(MAC_TO_UINT64(spec->underlay_mac));
 
         // program the src mac
         if (!is_mac_set(intf->l3_mac())) {

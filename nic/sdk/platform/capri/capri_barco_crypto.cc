@@ -108,7 +108,18 @@ capri_barco_crypto_init (platform_type_t platform)
         return ret;
     }
 
+    ret = capri_barco_crypto_init_ipsec_pad_table();
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+
     ret = capri_barco_sym_key_init();
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+
+    // setup the Barco GCM-decrypt bug workaround ring
+    ret = capri_barco_crypto_setup_dummy_ring_desc();
     if (ret != SDK_RET_OK) {
         return ret;
     }
@@ -383,6 +394,60 @@ capri_barco_crypto_init_tls_pad_table (void)
     }
     return SDK_RET_OK;
 }
+
+sdk_ret_t
+capri_barco_crypto_init_ipsec_pad_table (void)
+{
+    uint8_t ipsec_pad_bytes[CAPRI_MAX_IPSEC_PAD_SIZE];
+    uint64_t ipsec_pad_base_addr = 0;
+
+    SDK_TRACE_DEBUG("Initializing IPSec Pad Bytes table of size 0x%lx", sizeof(ipsec_pad_bytes));
+    // Increasing number pattern as per RFC 1-255
+    for (int i = 0; i < CAPRI_MAX_IPSEC_PAD_SIZE; i++) {
+        ipsec_pad_bytes[i] = i+1;
+    }
+
+    ipsec_pad_base_addr = asic_get_mem_addr(ASIC_HBM_REG_IPSEC_PAD_TABLE);
+    if (ipsec_pad_base_addr != INVALID_MEM_ADDRESS) {
+        asic_mem_write(ipsec_pad_base_addr, ipsec_pad_bytes, CAPRI_MAX_IPSEC_PAD_SIZE);
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+capri_barco_crypto_setup_dummy_ring_desc (void)
+{
+    sdk_ret_t sdk_ret = SDK_RET_OK;
+    int32_t   key_idx = -1;
+    uint8_t   key[CAPRI_BARCO_DUMMY_DEC_KEY_SZ];
+
+    // allocate key for dummy dec op
+    sdk_ret = capri_barco_sym_alloc_key(&key_idx);
+    if ((sdk_ret != SDK_RET_OK) || (key_idx < 0)) {
+        SDK_TRACE_ERR("Failed to allocate key for dummy decrypt op %u", sdk_ret);
+        return sdk_ret;
+    }
+
+    SDK_TRACE_DEBUG("Allocated key idx %u for dummy decrypt op", key_idx);
+
+    // setup key for dummy dec op
+    memset(key, 0, CAPRI_BARCO_DUMMY_DEC_KEY_SZ);
+    sdk_ret = capri_barco_setup_key(key_idx, CRYPTO_KEY_TYPE_AES128, key, CAPRI_BARCO_DUMMY_DEC_KEY_SZ);
+    if (sdk_ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to setup key for dummy decrypt op %u", sdk_ret);
+        return sdk_ret;
+    }
+    SDK_TRACE_DEBUG("Setup AES128 key at idx %u for dummy decrypt op",
+                    key_idx);
+
+    sdk_ret = capri_barco_setup_dummy_gcm1_req(key_idx);
+    if (sdk_ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to setup descriptor for dummy decrypt op %u",
+                      sdk_ret);
+    }
+    return sdk_ret;
+}
+
 
 sdk_ret_t
 capri_barco_asym_alloc_key (int32_t *key_idx)

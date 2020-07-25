@@ -103,8 +103,10 @@
 #define PDS_IMPL_CONTROL_IF_NAME                     "ctrl0"
 
 // semaphore indices
-#define PDS_IMPL_SEMA_IPSEC_RX                       0
-#define PDS_IMPL_SEMA_IPSEC_TX                       2
+#define PDS_IMPL_SEMA_IPSEC_ENC_RX                   0
+#define PDS_IMPL_SEMA_IPSEC_ENC_TX                   2
+#define PDS_IMPL_SEMA_IPSEC_DEC_RX                   4
+#define PDS_IMPL_SEMA_IPSEC_DEC_TX                   6
 
 #define UPGRADE_EDMAQ_RING_SIZE                     64
 
@@ -465,12 +467,13 @@ private:
 /// \param[in] vr_mac       VR MAC of the subnet corresponding to this lif
 /// \param[in] learn_en     enable or disable learning on this lif
 /// \param[in] init_done    true or false to inidicate whether this programming
+/// \param[in] direction    host or uplink
 ///                         is during init or not
 /// \return SDK_RET_OK on success, failure status code on error
 sdk_ret_t program_lif_table(uint16_t lif_hw_id, uint8_t lif_type,
                             uint16_t vpc_hw_id, uint16_t bd_hw_id,
                             uint16_t vnic_hw_id, mac_addr_t vr_mac,
-                            bool learn_en, bool init);
+                            bool learn_en, bool init, uint8_t direction);
 
 #define POLICER_WRITE_HW_ENTRY(hw, val)       \
 do {                                          \

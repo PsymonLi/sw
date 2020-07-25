@@ -172,7 +172,8 @@ apulu_impl::rxdma_symbols_init_(void **p4plus_symbols,
 
     symbols[i].name = IPSEC_PAGE_ADDR_RX;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX_NAME);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX_NAME) +
+        IPSEC_NMPR_RING_SIZE * IPSEC_NMPR_OBJ_SIZE;;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
@@ -257,14 +258,16 @@ apulu_impl::txdma_symbols_init_(void **p4plus_symbols,
 
     symbols[i].name = IPSEC_PAGE_ADDR_RX;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX_NAME);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX_NAME) +
+        IPSEC_NMPR_RING_SIZE * IPSEC_NMPR_OBJ_SIZE;;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 
     symbols[i].name = IPSEC_PAGE_ADDR_TX;
     symbols[i].val =
-        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_TX_NAME);
+        api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_RX_NAME) +
+        IPSEC_NMPR_RING_SIZE * IPSEC_NMPR_OBJ_SIZE;;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
@@ -460,7 +463,7 @@ void
 apulu_impl::ring_config_init(asic_cfg_t *asic_cfg) {
     int i = 0;
 
-    asic_cfg->num_rings = 2;
+    asic_cfg->num_rings = 4;
     asic_cfg->ring_meta = (sdk::platform::ring_meta_t *)SDK_CALLOC(
             SDK_MEM_ALLOC_PDS_RINGS, asic_cfg->num_rings *
             sizeof(sdk::platform::ring_meta_t));
@@ -473,7 +476,7 @@ apulu_impl::ring_config_init(asic_cfg_t *asic_cfg) {
     asic_cfg->ring_meta[i].num_slots = IPSEC_NMPR_RING_SIZE;
     asic_cfg->ring_meta[i].obj_size = IPSEC_NMPR_OBJ_SIZE;
     asic_cfg->ring_meta[i].alloc_semaphore_addr =
-        ASIC_MEM_SEM_RAW_ADDR(PDS_IMPL_SEMA_IPSEC_RX);
+        ASIC_MEM_SEM_RAW_ADDR(PDS_IMPL_SEMA_IPSEC_ENC_RX);
     asic_cfg->ring_meta[i].init_slots = true;
     i++;
 
@@ -485,7 +488,31 @@ apulu_impl::ring_config_init(asic_cfg_t *asic_cfg) {
     asic_cfg->ring_meta[i].num_slots = IPSEC_NMPR_RING_SIZE;
     asic_cfg->ring_meta[i].obj_size = IPSEC_NMPR_OBJ_SIZE;
     asic_cfg->ring_meta[i].alloc_semaphore_addr =
-        ASIC_MEM_SEM_RAW_ADDR(PDS_IMPL_SEMA_IPSEC_TX);
+        ASIC_MEM_SEM_RAW_ADDR(PDS_IMPL_SEMA_IPSEC_ENC_TX);
+    asic_cfg->ring_meta[i].init_slots = true;
+    i++;
+
+    SDK_ASSERT(i < asic_cfg->num_rings);
+    asic_cfg->ring_meta[i].ring_name = "IPSEC_DEC_RNMPR";
+    asic_cfg->ring_meta[i].is_global = true;
+    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMPR_BIG_RX_NAME;
+    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_DEC_PAGE_BIG_RX_NAME;
+    asic_cfg->ring_meta[i].num_slots = IPSEC_NMPR_RING_SIZE;
+    asic_cfg->ring_meta[i].obj_size = IPSEC_NMPR_OBJ_SIZE;
+    asic_cfg->ring_meta[i].alloc_semaphore_addr =
+        ASIC_MEM_SEM_RAW_ADDR(PDS_IMPL_SEMA_IPSEC_DEC_RX);
+    asic_cfg->ring_meta[i].init_slots = true;
+    i++;
+
+    SDK_ASSERT(i < asic_cfg->num_rings);
+    asic_cfg->ring_meta[i].ring_name = "IPSEC_ENC_TNMPR";
+    asic_cfg->ring_meta[i].is_global = true;
+    asic_cfg->ring_meta[i].hbm_reg_name = MEM_REGION_IPSEC_NMPR_BIG_TX_NAME;
+    asic_cfg->ring_meta[i].obj_hbm_reg_name = MEM_REGION_DEC_PAGE_BIG_TX_NAME;
+    asic_cfg->ring_meta[i].num_slots = IPSEC_NMPR_RING_SIZE;
+    asic_cfg->ring_meta[i].obj_size = IPSEC_NMPR_OBJ_SIZE;
+    asic_cfg->ring_meta[i].alloc_semaphore_addr =
+        ASIC_MEM_SEM_RAW_ADDR(PDS_IMPL_SEMA_IPSEC_DEC_TX);
     asic_cfg->ring_meta[i].init_slots = true;
     i++;
 }
@@ -976,7 +1003,8 @@ apulu_impl::program_ipsec_lif_(void) {
     // on this lif
     ret = program_lif_table(APULU_IPSEC_LIF, P4_LIF_TYPE_ARM_DPDK,
                             PDS_IMPL_RSVD_VPC_HW_ID, PDS_IMPL_RSVD_BD_HW_ID,
-                            PDS_IMPL_RSVD_VNIC_HW_ID, g_zero_mac, false, true);
+                            PDS_IMPL_RSVD_VNIC_HW_ID, g_zero_mac, false, true,
+                            P4_LIF_DIR_UPLINK);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program lif table for ipsec, ret=%u", ret);
     }
@@ -1544,7 +1572,7 @@ apulu_impl::handle_cmd(cmd_ctxt_t *ctxt) {
 sdk_ret_t
 program_lif_table (uint16_t lif_hw_id, uint8_t lif_type, uint16_t vpc_hw_id,
                    uint16_t bd_hw_id, uint16_t vnic_hw_id, mac_addr_t vr_mac,
-                   bool learn_en, bool init)
+                   bool learn_en, bool init, uint8_t direction)
 {
     sdk_ret_t ret;
     bool veto = true;
@@ -1564,7 +1592,7 @@ program_lif_table (uint16_t lif_hw_id, uint8_t lif_type, uint16_t vpc_hw_id,
 
     // program the LIF table
     lif_data.action_id = LIF_LIF_INFO_ID;
-    lif_data.lif_action.direction = P4_LIF_DIR_HOST;
+    lif_data.lif_action.direction = direction;
     lif_data.lif_action.lif_type = lif_type;
     lif_data.lif_action.vnic_id = vnic_hw_id;
     // for host lifs, before lif is fully initialized, it is possible that

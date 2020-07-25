@@ -39,11 +39,6 @@
 #define IPSEC_NMPR_RING_SIZE                    (1 << IPSEC_NMPR_RING_SHIFT)
 #define IPSEC_NMPR_OBJ_SIZE                     9600
 
-#define ASIC_HBM_REG_IPSECCB                    "ipsec-cb"
-#define ASIC_HBM_REG_IPSECCB_BARCO              "ipsec_cb_barco"
-#define ASIC_HBM_REG_IPSECCB_DECRYPT            "ipsec-cb-decrypt"
-#define ASIC_HBM_REG_IPSECCB_BARCO_DECRYPT      "ipsec_cb_barco_decrypt"
-
 #define IPSEC_CB_BASE                           "ipsec_cb_base"
 #define IPSEC_RNMPR_TABLE_BASE                  "hbm_ipsec_rnmpr_table_base"
 #define IPSEC_BIG_RNMPR_TABLE_BASE              "hbm_ipsec_big_rnmpr_table_base"

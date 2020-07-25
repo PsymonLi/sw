@@ -68,8 +68,6 @@ egress_to_rxdma_arm:
     phvwr           p.p4e_to_arm_src_mapping_hit, k.txdma_to_p4e_src_mapping_hit
 
 egress_to_rxdma_common:
-    phvwr           p.p4e_to_p4plus_classic_nic_l4_sport, k.key_metadata_sport
-    phvwr           p.p4e_to_p4plus_classic_nic_l4_dport, k.key_metadata_dport
     phvwr           p.p4e_to_p4plus_classic_nic_packet_len, r6
     phvwr           p.p4e_to_p4plus_classic_nic_p4plus_app_id, \
                         P4PLUS_APPTYPE_CLASSIC_NIC
@@ -222,11 +220,17 @@ p4e_app_ipsec:
                         p4e_to_arm_valid, \
                         txdma_to_p4e_valid, \
                         egress_recirc_valid}, 0x0, 0xB
-    phvwr           p.{ctag_0_valid...ethernet_0_valid}, 0
+    phvwr           p.ctag_0_valid, 0
     phvwr           p.capri_rxdma_intrinsic_valid, TRUE
     phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_start, 14
-    sub             r6, k.capri_p4_intrinsic_packet_len, 14
-    phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_end, r6
+    phvwr           p.p4e_to_p4plus_ipsec_ipsec_payload_end, k.capri_p4_intrinsic_packet_len
+    add             r4, k.key_metadata_parsed_dport, k.key_metadata_parsed_sport, 16
+    phvwr           p.p4e_to_p4plus_ipsec_spi, r4
+    phvwr           p.p4e_to_p4plus_ipsec_l4_protocol, k.ipv4_1_protocol
+    sll             r2, k.ipv4_1_ihl, 2
+    seq             c3, k.udp_1_valid, TRUE
+    add.c3          r2, r2, 8
+    phvwr           p.p4e_to_p4plus_ipsec_ip_hdr_size, r2
     phvwr.e         p.p4e_to_p4plus_ipsec_valid, TRUE
 
     phvwr.f         p.capri_rxdma_intrinsic_rx_splitter_offset, \

@@ -104,7 +104,7 @@ mem_hash_hint_table::alloc_(mem_hash_api_context *ctx) {
 //---------------------------------------------------------------------------
 sdk_ret_t
 mem_hash_hint_table::dealloc_(mem_hash_api_context *ctx) {
-    if (HINT_IS_VALID(ctx->table_index)) {
+    if (MEM_HASH_HINT_IS_VALID(ctx->table_index)) {
         indexer::status irs = indexer_->free(ctx->table_index);
         if (irs == indexer::DUPLICATE_FREE) {
             // TODO: why do we need to special case duplicate free ?
@@ -119,7 +119,7 @@ mem_hash_hint_table::dealloc_(mem_hash_api_context *ctx) {
     }
 
     // clear the hint and set write pending
-    HINT_SET_INVALID(ctx->table_index);
+    MEM_HASH_HINT_SET_INVALID(ctx->table_index);
     ctx->write_pending = true;
     return SDK_RET_OK;
 }
@@ -161,7 +161,7 @@ mem_hash_hint_table::insert_(mem_hash_api_context *pctx) {
     }
 
     // if the hint is invalid, allocate a new hint
-    if (!HINT_IS_VALID(pctx->hint)) {
+    if (!MEM_HASH_HINT_IS_VALID(pctx->hint)) {
         ret = alloc_(pctx);
         if (ret != SDK_RET_OK) {
             MEMHASH_TRACE_ERR("failed to allocate hint. ret:%d", ret);
@@ -209,7 +209,7 @@ mem_hash_hint_table::tail_(mem_hash_api_context *ctx,
     sdk_ret_t ret = SDK_RET_ENTRY_NOT_FOUND;
     mem_hash_api_context *tctx = NULL;
 
-    if (!HINT_IS_VALID(ctx->hint)) {
+    if (!MEM_HASH_HINT_IS_VALID(ctx->hint)) {
         MEMHASH_TRACE_VERBOSE("No hints, setting TAIL = EXACT.");
         *retctx = ctx;
         return SDK_RET_OK;

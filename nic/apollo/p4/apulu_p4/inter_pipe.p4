@@ -212,10 +212,6 @@ action p4e_app_classic_nic() {
     if (ctag_1.valid == TRUE) {
     }
 
-    modify_field(p4e_to_p4plus_classic_nic.l4_dport,
-                 key_metadata.dport);
-    modify_field(p4e_to_p4plus_classic_nic.l4_sport,
-                 key_metadata.sport);
     modify_field(p4e_to_p4plus_classic_nic.packet_len,
                  capri_p4_intrinsic.packet_len);
     modify_field(p4e_to_p4plus_classic_nic.p4plus_app_id,
@@ -354,6 +350,14 @@ action p4e_app_ipsec() {
     modify_field(capri_rxdma_intrinsic.rx_splitter_offset,
                  (ASICPD_GLOBAL_INTRINSIC_HDR_SZ + ASICPD_RXDMA_INTRINSIC_HDR_SZ +
                   P4PLUS_IPSEC_HDR_SZ));
+    modify_field(p4e_to_p4plus_ipsec.spi, ((key_metadata.parsed_sport << 16) |
+                 key_metadata.parsed_dport));
+    if (udp_1.valid == TRUE) {
+        modify_field(p4e_to_p4plus_ipsec.ip_hdr_size, ipv4_1.ihl << 2 + UDP_HDR_SIZE);
+    } else {
+        modify_field(p4e_to_p4plus_ipsec.ip_hdr_size, ipv4_1.ihl << 2);
+    }
+    modify_field(p4e_to_p4plus_ipsec.l4_protocol, ipv4_1.protocol);
 }
 
 @pragma stage 5

@@ -39,6 +39,10 @@ ipsec_sa_impl_state::ipsec_sa_impl_state(pds_state *state) {
                            ipsec_sa_impl::key_get,
                            sizeof(uint16_t));
     SDK_ASSERT(impl_ht_ != NULL);
+
+    // IPSEC flow table
+    sdk_table_factory_params_t factory_params = { 0 };
+    flow_tbl_ = flow_hash::factory(&factory_params);
 }
 
 ipsec_sa_impl_state::~ipsec_sa_impl_state() {

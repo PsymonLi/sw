@@ -32,10 +32,12 @@ header mirror_blob_t mirror_blob;
 header apulu_p4i_to_rxdma_header_t p4i_to_rxdma;
 header apulu_txdma_to_p4e_header_t txdma_to_p4e;
 
+@pragma synthetic_header
 @pragma pa_field_union egress p4e_to_p4plus_classic_nic.l4_sport    key_metadata.sport
 @pragma pa_field_union egress p4e_to_p4plus_classic_nic.l4_dport    key_metadata.dport
-@pragma pa_header_union egress p4e_to_p4plus_ipsec
 header p4_to_p4plus_classic_nic_header_t p4e_to_p4plus_classic_nic;
+@pragma synthetic_header
+@pragma pa_field_union egress p4e_to_p4plus_ipsec.seq_no            ipsec_metadata.seq_no
 header p4_to_p4plus_ipsec_header_t p4e_to_p4plus_ipsec;
 @pragma synthetic_header
 @pragma pa_field_union egress p4e_to_p4plus_classic_nic_ip.ip_sa    ipv6_1.srcAddr
@@ -342,8 +344,6 @@ parser parse_udp_1 {
     }
 }
 
-@pragma allow_set_meta ipsec_metadata.seq_no
-@pragma allow_set_meta ipsec_metadata.ipsec_type
 parser parse_ipsec_esp_1 {
     extract(esp);
     set_metadata(key_metadata.parsed_sport, latest.spi_hi);
@@ -607,6 +607,7 @@ parser parse_egress_ipv4_1 {
         IP_PROTO_ICMP : parse_egress_icmp;
         IP_PROTO_TCP : parse_egress_tcp;
         IP_PROTO_UDP : parse_egress_udp;
+        IP_PROTO_IPSEC_ESP : parse_egress_ipsec;
         default : ingress;
     }
 }
@@ -730,6 +731,20 @@ parser parse_egress_udp {
         UDP_PORT_GENV : parse_egress_geneve;
         default : ingress;
     }
+}
+
+@pragma xgress egress
+@pragma allow_set_meta key_metadata.parsed_sport
+@pragma allow_set_meta key_metadata.parsed_dport
+@pragma allow_set_meta ipsec_metadata.seq_no
+@pragma allow_set_meta ipsec_metadata.ipsec_type
+parser parse_egress_ipsec {
+    extract(esp);
+    set_metadata(key_metadata.parsed_sport, latest.spi_hi);
+    set_metadata(key_metadata.parsed_dport, latest.spi_lo);
+    set_metadata(ipsec_metadata.seq_no, latest.seqNo);
+    set_metadata(ipsec_metadata.ipsec_type, IPSEC_HEADER_ESP);
+    return ingress;
 }
 
 @pragma xgress egress

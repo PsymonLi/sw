@@ -115,7 +115,7 @@ ipsec_sa_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         // allocate hw id for this sa
         if ((ret = idxr->alloc(&idx)) !=
                 SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to allocate hw id for ipsec sa %s, err %u",
+            PDS_TRACE_ERR("Failed to allocate hw id for ipsec sa %s err %u",
                           spec->key.str(), ret);
             goto error;
         }
@@ -209,7 +209,7 @@ ipsec_sa_encrypt_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     spec = &obj_ctxt->api_params->ipsec_sa_encrypt_spec;
 
     // program the nexthop
-    PDS_TRACE_DEBUG("Programming ipsec nh %u", nh_idx_);
+    PDS_TRACE_DEBUG("Programming encrypt ipsec nh %u", nh_idx_);
     memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
     nexthop_info_entry.lif = APULU_IPSEC_LIF;
     nexthop_info_entry.port = TM_PORT_DMA;
@@ -218,8 +218,8 @@ ipsec_sa_encrypt_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     nexthop_info_entry.qid = hw_id_;
     ret = nexthop_info_entry.write(nh_idx_);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program ipsec nh, ret = %u, nh_idx_ = %u",
-                      ret, nh_idx_);
+        PDS_TRACE_ERR("Failed to program encrypt ipsec nh idx %u, err %u",
+                      nh_idx_, ret);
         return ret;
     }
 
@@ -298,6 +298,23 @@ ipsec_sa_decrypt_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
 sdk_ret_t
 ipsec_sa_decrypt_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     pds_ipsec_sa_decrypt_spec_t *spec;
+    nexthop_info_entry_t nexthop_info_entry;
+    sdk_ret_t ret;
+
+    // program the nexthop
+    PDS_TRACE_DEBUG("Programming decrypt ipsec nh %u", nh_idx_);
+    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
+    nexthop_info_entry.lif = APULU_IPSEC_LIF;
+    nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_IPSEC;
+    nexthop_info_entry.qtype = IPSEC_DECRYPT_QTYPE;
+    nexthop_info_entry.qid = hw_id_;
+    ret = nexthop_info_entry.write(nh_idx_);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to program decrypt ipsec nh idx %u err %u",
+                      nh_idx_, ret);
+        return ret;
+    }
 
     spec = &obj_ctxt->api_params->ipsec_sa_decrypt_spec;
 

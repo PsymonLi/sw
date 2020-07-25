@@ -23,6 +23,7 @@ typedef enum crypto_key_type_e {
 #define CAPRI_BARCO_KEY_MEM              "key-mem"
 #define CAPRI_BARCO_KEY_DESC             "key-desc-array"
 #define ASIC_HBM_REG_TLS_PROXY_PAD_TABLE "tls_proxy_pad_table"
+#define ASIC_HBM_REG_IPSEC_PAD_TABLE     "ipsec_pad_table"
 
 #define BARCO_CRYPTO_DESC_SZ                128 /* 1024 bits */
 #define BARCO_CRYPTO_DESC_ALIGN_BYTES       128
@@ -30,12 +31,15 @@ typedef enum crypto_key_type_e {
 #define BARCO_CRYPTO_KEY_DESC_SZ            16 /* 128 bits */
 #define BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES   16
 
+#define CAPRI_BARCO_DUMMY_DEC_KEY_SZ        16
+
 /* FIXME: this needs to be driven from HAL PD, but the includes do not make it to capri */
 #define CRYPTO_KEY_COUNT_MAX                (64 * 1024)
 
 #define CRYPTO_SYM_KEY_SIZE_MAX             64  /* 2 * 256 bit key */
 
 #define CAPRI_MAX_TLS_PAD_SIZE              512
+#define CAPRI_MAX_IPSEC_PAD_SIZE            256
 #define BARCO_RING_SHADOW_PI_SIZE           2
 #define BARCO_RING_SHADOW_CI_SIZE           2
 #define BARCO_RING_QSTATS_SIZE              12
@@ -87,6 +91,8 @@ sdk_ret_t capri_barco_setup_key(uint32_t key_idx, crypto_key_type_t key_type, ui
 sdk_ret_t capri_barco_read_key(uint32_t key_idx, crypto_key_type_t *key_type,
         uint8_t *key, uint32_t *key_size);
 sdk_ret_t capri_barco_crypto_init_tls_pad_table(void);
+sdk_ret_t capri_barco_crypto_init_ipsec_pad_table(void);
+sdk_ret_t capri_barco_crypto_setup_dummy_ring_desc(void);
 
 /* Barco Crypto specific definitions */
 typedef struct capri_barco_key_desc_s {

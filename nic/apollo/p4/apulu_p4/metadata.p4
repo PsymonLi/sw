@@ -12,7 +12,7 @@ header_type capri_deparser_len_t {
 
 header_type key_metadata_t {
     fields {
-        ktype           : 2;
+        ktype           : 3;
         src             : 128;
         dst             : 128;
         proto           : 8;

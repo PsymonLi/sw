@@ -13,6 +13,7 @@
 #define KEY_TYPE_IPV4                   1
 #define KEY_TYPE_IPV6                   2
 #define KEY_TYPE_MAC                    3
+#define KEY_TYPE_IPSEC                  4
 
 /*****************************************************************************/
 /* lif_vlan table lookup modes                                               */

@@ -78,7 +78,7 @@ mem_hash_table_bucket::write_(mem_hash_api_context *ctx) {
     mem_hash_p4pd_set_entry_valid(ctx, valid_);
 
     if (ctx->is_hint_valid()) {
-        if (HINT_SLOT_IS_MORE(ctx->hint_slot)) {
+        if (MEM_HASH_HINT_SLOT_IS_MORE(ctx->hint_slot)) {
             mem_hash_p4pd_set_more_hashs(ctx, 1);
             mem_hash_p4pd_set_more_hints(ctx, ctx->hint);
         } else {
@@ -243,18 +243,19 @@ mem_hash_table_bucket::compare_(mem_hash_api_context *ctx) {
     FOREACH_HINT(ctx->props->num_hints) {
         hashX = mem_hash_p4pd_get_hash(ctx, i);
         hintX = mem_hash_p4pd_get_hint(ctx, i);
-        if (hashX == ctx->hash_msbits && HINT_IS_VALID(hintX)) {
+        if (hashX == ctx->hash_msbits && MEM_HASH_HINT_IS_VALID(hintX)) {
             ctx->hint_slot = i;
             ctx->hint = hintX;
             MEMHASH_TRACE_VERBOSE("%s: Match: Hash:%x Slot:%d Hint:%d",
                             ctx->idstr(), hashX, i, hintX);
             break;
-        } else if (!HINT_IS_VALID(hintX) && HINT_SLOT_IS_INVALID(ctx->hint_slot)) {
+        } else if (!MEM_HASH_HINT_IS_VALID(hintX) &&
+                   MEM_HASH_HINT_SLOT_IS_INVALID(ctx->hint_slot)) {
             // CASE 2: save the firstfree slots
             MEMHASH_TRACE_VERBOSE("%s: FreeSlot: Hash:%x Slot:%d Hint:%d",
                             ctx->idstr(), hashX, i, hintX);
             ctx->hint_slot = i;
-            HINT_SET_INVALID(ctx->hint);
+            MEM_HASH_HINT_SET_INVALID(ctx->hint);
             // DO NOT BREAK HERE:
             // we have to match all the slots to see if any hash matches,
             // if not, then use the empty slot to create a new hint chain.
@@ -262,7 +263,7 @@ mem_hash_table_bucket::compare_(mem_hash_api_context *ctx) {
         }
     }
 
-    if (!HINT_SLOT_IS_INVALID(ctx->hint_slot)) {
+    if (!MEM_HASH_HINT_SLOT_IS_INVALID(ctx->hint_slot)) {
         // we have hit Case1 or Case2.
         return SDK_RET_COLLISION;
     }
@@ -370,14 +371,14 @@ mem_hash_table_bucket::find_first_free_hint_(mem_hash_api_context *ctx) {
 
     FOREACH_HINT(ctx->props->num_hints) {
         hintX = mem_hash_p4pd_get_hint(ctx, i);
-        if (!HINT_IS_VALID(hintX)) {
+        if (!MEM_HASH_HINT_IS_VALID(hintX)) {
             ctx->hint_slot = i;
             ctx->hint = hintX;
             break;
         }
     }
 
-    if (!HINT_SLOT_IS_INVALID(ctx->hint_slot)) {
+    if (!MEM_HASH_HINT_SLOT_IS_INVALID(ctx->hint_slot)) {
         // we have found a valid hint slot.
         MEMHASH_TRACE_VERBOSE("hint slot %d is free", ctx->hint_slot);
     } else {
@@ -385,7 +386,7 @@ mem_hash_table_bucket::find_first_free_hint_(mem_hash_api_context *ctx) {
         if (ctx->more_hashs == 0) {
             MEMHASH_TRACE_VERBOSE("more_hashs slot is free");
             ctx->hint = mem_hash_p4pd_get_more_hints(ctx);
-            HINT_SLOT_SET_MORE(ctx->hint_slot);
+            MEM_HASH_HINT_SLOT_SET_MORE(ctx->hint_slot);
         } else {
             MEMHASH_TRACE_VERBOSE("all hint slots are full");
             ret = SDK_RET_NO_RESOURCE;
@@ -409,12 +410,12 @@ mem_hash_table_bucket::find_last_hint_(mem_hash_api_context *ctx) {
     if (ctx->more_hashs) {
         // if the more bit is set, traverse that chain
         ctx->hint = mem_hash_p4pd_get_more_hints(ctx);
-        HINT_SLOT_SET_MORE(ctx->hint_slot);
+        MEM_HASH_HINT_SLOT_SET_MORE(ctx->hint_slot);
     } else {
         FOREACH_HINT_REVERSE(ctx->props->num_hints) {
             hintX = mem_hash_p4pd_get_hint(ctx, i);
             hashX = mem_hash_p4pd_get_hash(ctx, i);
-            if (HINT_IS_VALID(hintX)) {
+            if (MEM_HASH_HINT_IS_VALID(hintX)) {
                 ctx->hint_slot = i;
                 ctx->hint = hintX;
                 ctx->hash_msbits = hashX;
@@ -423,7 +424,7 @@ mem_hash_table_bucket::find_last_hint_(mem_hash_api_context *ctx) {
         }
     }
 
-    if (HINT_SLOT_IS_INVALID(ctx->hint_slot)) {
+    if (MEM_HASH_HINT_SLOT_IS_INVALID(ctx->hint_slot)) {
         MEMHASH_TRACE_VERBOSE("- No Valid Hint Found");
         return SDK_RET_ENTRY_NOT_FOUND;
     }
@@ -448,7 +449,7 @@ mem_hash_table_bucket::find_hint_(mem_hash_api_context *ctx) {
     FOREACH_HINT(ctx->props->num_hints) {
         hashX = mem_hash_p4pd_get_hash(ctx, i);
         hintX = mem_hash_p4pd_get_hint(ctx, i);
-        if (hashX == ctx->hash_msbits && HINT_IS_VALID(hintX)) {
+        if (hashX == ctx->hash_msbits && MEM_HASH_HINT_IS_VALID(hintX)) {
             ctx->hint_slot = i;
             ctx->hint = hintX;
             ctx->set_hint_match();
@@ -464,7 +465,7 @@ mem_hash_table_bucket::find_hint_(mem_hash_api_context *ctx) {
         // dont treat this as a match, then it will try to allocate a hint at
         // this level, which is not correct.
         ctx->hint = mem_hash_p4pd_get_more_hints(ctx);
-        HINT_SLOT_SET_MORE(ctx->hint_slot);
+        MEM_HASH_HINT_SLOT_SET_MORE(ctx->hint_slot);
         ctx->set_hint_match();
         return SDK_RET_OK;
     }
@@ -498,7 +499,7 @@ sdk_ret_t
 mem_hash_table_bucket::clear_hint_(mem_hash_api_context *ctx) {
     p4pd_error_t    p4pdret = P4PD_SUCCESS;
 
-    if (HINT_SLOT_IS_MORE(ctx->hint_slot)) {
+    if (MEM_HASH_HINT_SLOT_IS_MORE(ctx->hint_slot)) {
         p4pdret = mem_hash_p4pd_set_more_hints(ctx, 0);
         SDK_ASSERT(p4pdret == P4PD_SUCCESS);
         p4pdret = mem_hash_p4pd_set_more_hashs(ctx, 0);
@@ -510,7 +511,7 @@ mem_hash_table_bucket::clear_hint_(mem_hash_api_context *ctx) {
         SDK_ASSERT(p4pdret == P4PD_SUCCESS);
     }
 
-    HINT_SET_INVALID(ctx->hint);
+    MEM_HASH_HINT_SET_INVALID(ctx->hint);
     ctx->write_pending = true;
 
     return SDK_RET_OK;
@@ -618,13 +619,13 @@ mem_hash_table_bucket::move_(mem_hash_api_context *dst,
     MEMHASH_TRACE_VERBOSE("- moved key and data");
     // dst node is now dirty, set write pending
     dst->write_pending = true;
-    PRINT_API_CTX("MOVE-DST", dst);
+    MEM_HASH_PRINT_API_CTX("MOVE-DST", dst);
 
     // source bucket is now ready to be deleted
     MEMHASH_TRACE_VERBOSE("- invalidate tail node");
     sbkt->valid_ = false;
     src->write_pending = true;
-    PRINT_API_CTX("MOVE-SRC", src);
+    MEM_HASH_PRINT_API_CTX("MOVE-SRC", src);
 
     return SDK_RET_OK;
 }
@@ -641,7 +642,7 @@ mem_hash_table_bucket::delink_(mem_hash_api_context *ctx) {
     ret = clear_hint_(ctx);
     SDK_ASSERT(ret == SDK_RET_OK);
     MEMHASH_TRACE_VERBOSE("- cleared tail node hint link from parent node");
-    PRINT_API_CTX("DELINK", ctx);
+    MEM_HASH_PRINT_API_CTX("DELINK", ctx);
     return ret;
 }
 
@@ -673,9 +674,9 @@ mem_hash_table_bucket::defragment_(mem_hash_api_context *ectx,
     pctx = tctx->pctx;
     SDK_ASSERT(pctx);
 
-    PRINT_API_CTX("ECTX", ectx);
-    PRINT_API_CTX("PCTX", pctx);
-    PRINT_API_CTX("TCTX", tctx);
+    MEM_HASH_PRINT_API_CTX("ECTX", ectx);
+    MEM_HASH_PRINT_API_CTX("PCTX", pctx);
+    MEM_HASH_PRINT_API_CTX("TCTX", tctx);
 
     // STEP 2: move tctx key+data to ectx key+data
     if (ectx != tctx) {

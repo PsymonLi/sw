@@ -16,6 +16,7 @@
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "gen/p4gen/p4/include/ftl_table.hpp"
 
 using sdk::table::sdk_table_factory_params_t;
 
@@ -88,6 +89,8 @@ public:
     /// \return     SDK_RET_OK on success, failure status code on error
     sdk_ret_t remove(uint16_t hw_id);
 
+    sdk::table::ftl_base *flow_tbl(void) { return flow_tbl_; }
+
 private:
     /// h/w table indexer for ipsec sa
     rte_indexer *ipsec_sa_encrypt_idxr(void) { return ipsec_sa_encrypt_idxr_; }
@@ -104,6 +107,7 @@ private:
     /// indexer to allocate h/w ipsec sa id
     rte_indexer  *ipsec_sa_encrypt_idxr_;
     rte_indexer  *ipsec_sa_decrypt_idxr_;
+    sdk::table::ftl_base *flow_tbl_;
     ///< hash table for hw_id to ipsec sa key
     ht *impl_ht_;
 };

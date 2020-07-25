@@ -173,44 +173,26 @@
         {
              "name": "ipsec-cb",
              "kind": "static",
-             "size": "128K",
+             "size": "64K",
              "cache": "p4plus-all"
         },
         {
-             "name": "ipsec_cb_barco",
+             "name": "ipsec-cb-decrypt",
              "kind": "static",
-             "size": "8192K",
+             "size": "64K",
              "cache": "p4plus-all"
         },
         {
-             "name": "ipsec-nmdr-tx",
+             "name": "ipsec-cb-barco",
              "kind": "static",
-             "size": "128K"
+             "size": "4096K",
+             "cache": "p4plus-all"
         },
         {
-             "name": "ipsec-nmdr-rx",
+             "name": "ipsec-cb-barco-decrypt",
              "kind": "static",
-             "size": "128K"
-        },
-        {
-             "name": "ipsec-big-nmdr-tx",
-             "kind": "static",
-             "size": "128K"
-        },
-        {
-             "name": "ipsec-big-nmdr-rx",
-             "kind": "static",
-             "size": "128K"
-        },
-        {
-             "name": "nmdr-tx-gc",
-             "kind": "static",
-             "size": "128K"
-        },
-        {
-             "name": "nmdr-rx-gc",
-             "kind": "static",
-             "size": "128K"
+             "size": "4096K",
+             "cache": "p4plus-all"
         },
         {
             "name": "ipsec-nmpr-tx",
@@ -231,26 +213,6 @@
             "name": "ipsec-nmpr-big-rx",
             "kind": "static",
             "size": "10240K"
-        },
-        {
-            "name": "ipsec-descriptor-tx",
-            "kind": "static",
-            "size": "2048K"
-        },
-        {
-            "name": "ipsec-descriptor-rx",
-            "kind": "static",
-            "size": "2048K"
-        },
-        {
-            "name": "ipsec-big-descriptor-tx",
-            "kind": "static",
-            "size": "2048K"
-        },
-        {
-            "name": "ipsec-big-descriptor-rx",
-            "kind": "static",
-            "size": "2048K"
         },
         {
             "name": "enc-page-big-tx",

@@ -188,7 +188,7 @@ fill_p4_tep_data_from_nhgroup_ (tep_entry *tep, pds_obj_key_t *nhgroup_key,
     return SDK_RET_OK;
 }
 
-static inline sdk_ret_t
+static sdk_ret_t
 fill_p4_tep_data_from_ipsec_sa_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key,
                                  tunnel_actiondata_t *tep_data,
                                  pds_obj_key_t *nhgroup_key, pds_obj_key_t *nh_key)
@@ -201,6 +201,7 @@ fill_p4_tep_data_from_ipsec_sa_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key,
     nexthop_group *nhgroup;
     nexthop_group_impl *nhgroup_impl;
     uint32_t nh_idx;
+    nexthop_info_entry_t nh_data = { 0 };
 
     ipsec_sa = ipsec_sa_encrypt_find(encrypt_sa_key);
     if (ipsec_sa == NULL) {
@@ -221,6 +222,20 @@ fill_p4_tep_data_from_ipsec_sa_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key,
             return SDK_RET_INVALID_ARG;
         }
         nh_impl = (nexthop_impl *)nh->impl();
+        // set rewrite flags on nexthop
+        ret = nh_data.read(nh_impl->hw_id());
+        if (unlikely(ret != SDK_RET_OK)) {
+            PDS_TRACE_ERR("Failed to read nexthop table at %u err %u",
+                          nh_impl->hw_id(), ret);
+            return ret;
+        }
+        nh_data.set_rewrite_flags(P4_REWRITE_SMAC_FROM_NEXTHOP << P4_REWRITE_SMAC_START |
+                                  P4_REWRITE_DMAC_FROM_NEXTHOP << P4_REWRITE_DMAC_START);
+        ret = nh_data.write(nh_impl->hw_id());
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Failed to update nexthop table at %u err %u", nh_idx, ret);
+        }
+        // update nexthop in ipseccb
         PDS_TRACE_DEBUG("Programming ipsec cb hw_id %u with nh %u",
                         ipsec_impl->hw_id(), nh_impl->hw_id());
         ipseccb_encrypt_update_nexthop_id(ipsec_impl->hw_id(), ipsec_impl->base_pa(),
@@ -233,6 +248,22 @@ fill_p4_tep_data_from_ipsec_sa_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key,
             return SDK_RET_INVALID_ARG;
         }
         nhgroup_impl = (nexthop_group_impl *)nhgroup->impl();
+        // set rewrite flags on nexthop
+        for (uint32_t i = 0, nh_idx = nhgroup_impl->nh_base_hw_id();
+             i < nhgroup->num_nexthops(); nh_idx++, i++) {
+            ret = nh_data.read(nh_idx);
+            if (unlikely(ret != SDK_RET_OK)) {
+                PDS_TRACE_ERR("Failed to read nexthop table at %u err %u", nh_idx, ret);
+                return ret;
+            }
+            nh_data.set_rewrite_flags(P4_REWRITE_SMAC_FROM_NEXTHOP << P4_REWRITE_SMAC_START |
+                                      P4_REWRITE_DMAC_FROM_NEXTHOP << P4_REWRITE_DMAC_START);
+            ret = nh_data.write(nh_idx);
+            if (ret != SDK_RET_OK) {
+                PDS_TRACE_ERR("Failed to update nexthop table at %u err %u", nh_idx, ret);
+            }
+        }
+        // update nexthop in ipseccb
         PDS_TRACE_DEBUG("Programming ipsec cb hw_id %u with ecmp nh %u",
                         ipsec_impl->hw_id(), nhgroup_impl->hw_id());
         ipseccb_encrypt_update_nexthop_id(ipsec_impl->hw_id(), ipsec_impl->base_pa(),
@@ -241,6 +272,60 @@ fill_p4_tep_data_from_ipsec_sa_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key,
     }
 
     return SDK_RET_OK;
+}
+
+static sdk_ret_t
+program_ipsec_flow_table_ (tep_entry *tep, pds_obj_key_t *decrypt_sa_key)
+{
+    sdk_table_api_params_t params = { 0 };
+    flow_hash_entry_t entry;
+    ipsec_sa_entry *ipsec_sa;
+    ipsec_sa_impl *ipsec_impl;
+    device_entry *device = device_find();
+    sdk_ret_t ret;
+    uint8_t ip_bytes16[16];
+    ipv4_addr_t ip_u32;
+
+    entry.clear_key_data();
+
+    ipsec_sa = ipsec_sa_encrypt_find(decrypt_sa_key);
+    if (ipsec_sa == NULL) {
+        PDS_TRACE_ERR("ipsec decrypt sa %s in TEP %s not found",
+                      decrypt_sa_key->str(), tep->key2str().c_str());
+        return SDK_RET_INVALID_ARG;
+    }
+    ipsec_impl = (ipsec_sa_impl *)ipsec_sa->impl();
+
+    entry.entry_valid = 1;
+    entry.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    entry.nexthop_id = ipsec_impl->nh_idx();
+    entry.nexthop_valid = 1;
+    entry.session_index = 0x1fffff;
+
+    memset(ip_bytes16, 0, sizeof(ip_bytes16));
+
+    ip_u32 = device->ip_addr().addr.v4_addr;
+    memcpy(&ip_bytes16[0], &ip_u32, sizeof(uint32_t));
+    entry.set_key_metadata_dst(ip_bytes16);
+
+    ip_u32 = tep->ip().addr.v4_addr;
+    memcpy(&ip_bytes16[0], &ip_u32, sizeof(uint32_t));
+    entry.set_key_metadata_src(ip_bytes16);
+    entry.set_key_metadata_proto(IP_PROTO_IPSEC_ESP);
+    entry.set_key_metadata_dport(ipsec_sa->spi() & 0xffff);
+    entry.set_key_metadata_sport((ipsec_sa->spi() >> 16) & 0xffff);
+    entry.set_key_metadata_ktype(KEY_TYPE_IPSEC);
+
+    PDS_TRACE_DEBUG("insert flow sip %s dip %s spi 0x%x",
+                  ipaddr2str(&tep->ip()), ipaddr2str(&device->ip_addr()),
+                  ipsec_sa->spi());
+
+    params.entry = &entry;
+    ret = ipsec_sa_impl_db()->flow_tbl()->insert(&params);
+    PDS_TRACE_DEBUG("Program ipsec decrypt flow with ipsec nh %u, ret = %u",
+                    ipsec_impl->nh_idx(), ret);
+
+    return ret;
 }
 
 sdk_ret_t
@@ -286,6 +371,10 @@ tep_impl::fill_tep_nh_info_(api_op_t api_op, tep_entry *tep,
         }
         if (ret != SDK_RET_OK) {
             return ret;
+        }
+        if (tep->ipsec_decrypt_sa().valid()) {
+            pds_obj_key_t ipsec_sa_id = tep->ipsec_decrypt_sa();
+            ret = program_ipsec_flow_table_(tep, &ipsec_sa_id);
         }
         break;
 

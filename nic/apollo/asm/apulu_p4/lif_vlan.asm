@@ -53,6 +53,8 @@ lif_vlan_local_mapping_key_tx_arp:
     phvwr           p.key_metadata_local_mapping_lkp_id, r7
 
 lif_vlan_local_mapping_key_rx:
+    seq             c1, k.esp_valid, 1
+    phvwr.c1        p.key_metadata_ktype, KEY_TYPE_IPSEC
     bcf             [!c7], lif_vlan_local_mapping_key_rx_non_ipv4
     phvwr.c7        p.key_metadata_local_mapping_lkp_type, KEY_TYPE_IPV4
     phvwr           p.key_metadata_local_mapping_lkp_addr, k.ipv4_1_dstAddr

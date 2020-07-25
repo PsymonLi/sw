@@ -56,11 +56,6 @@ public:
     /// \return         SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t release_resources(void) override;
 
-    /// \brief          initialize ipsec sa entry with the given config
-    /// \param[in]      api_ctxt API context carrying the configuration
-    /// \return         SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t init_config(api_ctxt_t *api_ctxt) override;
-
     /// \brief          program all h/w tables relevant to this object except
     ///                 stage 0 table(s), if any
     /// \param[in]      obj_ctxt    transient state associated with this API
@@ -156,6 +151,10 @@ public:
     /// \return    key/id of the ipsec sa object
     pds_obj_key_t key(void) const { return key_; }
 
+    /// \brief     return the spi of this object
+    /// \return    spi of the ipsec sa object
+    uint32_t spi(void) const { return spi_; }
+
     /// \brief    free h/w resources used by this object, if any
     ///           (this API is invoked during object deletes)
     /// \return    SDK_RET_OK on success, failure status code on error
@@ -168,6 +167,8 @@ protected:
     ~ipsec_sa_entry();
 
     pds_obj_key_t key_;               ///< ipsec sa key
+
+    uint32_t spi_;                    ///< ipsec spi
 
     /// operational state
     bool encrypt_sa_;                 ///< true if encrypt sa
@@ -193,6 +194,11 @@ public:
     /// \param[out]     info pointer to the info object
     /// \return         SDK_RET_OK on success, failure status code on error
     sdk_ret_t read(pds_ipsec_sa_encrypt_info_t *info);
+
+    /// \brief          initialize ipsec sa entry with the given config
+    /// \param[in]      api_ctxt API context carrying the configuration
+    /// \return         SDK_RET_OK on success, failure status code on error
+    sdk_ret_t init_config(api_ctxt_t *api_ctxt);
 
     /// \brief populate the IPC msg with object specific information
     ///        so it can be sent to other components
@@ -234,6 +240,11 @@ public:
     /// \param[out]     info pointer to the info object
     /// \return         SDK_RET_OK on success, failure status code on error
     sdk_ret_t read(pds_ipsec_sa_decrypt_info_t *info);
+
+    /// \brief          initialize ipsec sa entry with the given config
+    /// \param[in]      api_ctxt API context carrying the configuration
+    /// \return         SDK_RET_OK on success, failure status code on error
+    sdk_ret_t init_config(api_ctxt_t *api_ctxt);
 
     /// \brief populate the IPC msg with object specific information
     ///        so it can be sent to other components

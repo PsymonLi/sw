@@ -389,7 +389,7 @@ lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
     // program the LIF table
     ret = program_lif_table(id_, P4_LIF_TYPE_ARM_MGMT, PDS_IMPL_RSVD_VPC_HW_ID,
                             PDS_IMPL_RSVD_BD_HW_ID, idx, g_zero_mac,
-                            false, true);
+                            false, true, P4_LIF_DIR_HOST);
     if (ret != SDK_RET_OK) {
         goto error;
     }
@@ -571,7 +571,7 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     // program the LIF table
     ret = program_lif_table(id_, P4_LIF_TYPE_ARM_MGMT, PDS_IMPL_RSVD_VPC_HW_ID,
                             PDS_IMPL_RSVD_BD_HW_ID, idx, g_zero_mac,
-                            false, true);
+                            false, true, P4_LIF_DIR_HOST);
     if (ret != SDK_RET_OK) {
         goto error;
     }
@@ -885,7 +885,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     // program the LIF table
     ret = program_lif_table(id_, P4_LIF_TYPE_ARM_DPDK, PDS_IMPL_RSVD_VPC_HW_ID,
                             PDS_IMPL_RSVD_BD_HW_ID, idx, g_zero_mac,
-                            false, true);
+                            false, true, P4_LIF_DIR_HOST);
     if (ret != SDK_RET_OK) {
         goto error;
     }
@@ -1045,7 +1045,7 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     // program the LIF table entry for host mgmt lif
     ret = program_lif_table(host_mgmt_lif->id(), P4_LIF_TYPE_HOST_MGMT,
                             PDS_IMPL_RSVD_VPC_HW_ID, PDS_IMPL_RSVD_BD_HW_ID,
-                            idx, g_zero_mac, false, true);
+                            idx, g_zero_mac, false, true, P4_LIF_DIR_HOST);
     if (ret != SDK_RET_OK) {
         goto error;
     }
@@ -1053,7 +1053,7 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     // program the LIF table entry for host mgmt lif
     ret = program_lif_table(int_mgmt_lif->id(), P4_LIF_TYPE_HOST_MGMT,
                             PDS_IMPL_RSVD_VPC_HW_ID, PDS_IMPL_RSVD_BD_HW_ID,
-                            idx + 1, g_zero_mac, false, true);
+                            idx + 1, g_zero_mac, false, true, P4_LIF_DIR_HOST);
     if (ret != SDK_RET_OK) {
         goto error;
     }
@@ -1085,7 +1085,7 @@ lif_impl::create_host_lif_(pds_lif_spec_t *spec) {
     // program the LIF table
     ret = program_lif_table(id_, P4_LIF_TYPE_HOST, PDS_IMPL_RSVD_VPC_HW_ID,
                             PDS_IMPL_RSVD_BD_HW_ID, vnic_hw_id_,
-                            g_zero_mac, false, true);
+                            g_zero_mac, false, true, P4_LIF_DIR_HOST);
     if (unlikely(ret != SDK_RET_OK)) {
         goto error;
     }
@@ -1352,7 +1352,8 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     // program the LIF table
     ret = program_lif_table(id_, P4_LIF_TYPE_ARM_LEARN,
                             PDS_IMPL_RSVD_VPC_HW_ID, PDS_IMPL_RSVD_BD_HW_ID,
-                            PDS_IMPL_RSVD_VNIC_HW_ID, g_zero_mac, false, true);
+                            PDS_IMPL_RSVD_VNIC_HW_ID, g_zero_mac, false, true,
+                            P4_LIF_DIR_HOST);
     if (ret != SDK_RET_OK) {
         goto error;
     }
