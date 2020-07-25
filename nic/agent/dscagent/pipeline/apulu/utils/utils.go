@@ -207,3 +207,8 @@ func RTToBytes(r *netproto.RouteDistinguisher) []byte {
 	}
 	return ret
 }
+
+// GetL3InterfaceName gives the name for an uplink interface
+func GetL3InterfaceName(name string) string {
+	return netproto.InterfaceSpec_L3.String() + "-" + name
+}

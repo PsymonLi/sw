@@ -270,6 +270,8 @@ func (a *ApuluAPI) HandleVeniceCoordinates(dsc types.DistributedServiceCardStatu
 	}
 	// inject loopback so venice can be updated
 	dat, _ := lb.Marshal()
+	a.Lock()
+	defer a.Unlock()
 	if err := a.InfraAPI.Store(lb.Kind, lb.GetKey(), dat); err != nil {
 		log.Error(errors.Wrapf(types.ErrBoltDBStoreCreate, "Uplink: %s | Uplink: %v", lb.GetKey(), err))
 		return
@@ -2299,20 +2301,15 @@ func (a *ApuluAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardStatus
 
 // handleDSCL3Interface handles configuring L3 interface on DSC interfaces
 func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP) error {
-	iDat, err := a.InfraAPI.List("Interface")
+	ifs := netproto.Interface{TypeMeta: api.TypeMeta{Kind: "Interface"}}
+	intfs, err := a.HandleInterface(types.List, ifs)
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrBadRequest, "Err: %v", types.ErrObjNotFound))
 		return err
 	}
 
 	var uplinkInterface *netproto.Interface
-	for _, o := range iDat {
-		var intf netproto.Interface
-		err = intf.Unmarshal(o)
-		if err != nil {
-			log.Error(errors.Wrapf(types.ErrUnmarshal, "Interface: %s | Err: %v", intf.GetKey(), err))
-			continue
-		}
+	for _, intf := range intfs {
 		if intf.Spec.Type == netproto.InterfaceSpec_UPLINK_ETH.String() &&
 			intf.Status.IFUplinkStatus.PortID == uint32(obj.IfID)+1 {
 			uplinkInterface = &intf
@@ -2331,7 +2328,7 @@ func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP) error {
 			ObjectMeta: api.ObjectMeta{
 				Tenant:    "default",
 				Namespace: "default",
-				Name:      uplinkInterface.Name,
+				Name:      apuluutils.GetL3InterfaceName(uplinkInterface.Name),
 				UUID:      l3uuid,
 			},
 			Spec: netproto.InterfaceSpec{
@@ -2361,6 +2358,8 @@ func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP) error {
 		uplinkInterface.Status.IFUplinkStatus.IPAddress = obj.IPAddress
 		uplinkInterface.Status.IFUplinkStatus.GatewayIP = obj.GatewayIP
 		dat, _ := uplinkInterface.Marshal()
+		a.Lock()
+		defer a.Unlock()
 		if err := a.InfraAPI.Store(uplinkInterface.Kind, uplinkInterface.GetKey(), dat); err != nil {
 			log.Error(errors.Wrapf(types.ErrBoltDBStoreUpdate, "Port: %s | Port: %v", uplinkInterface.GetKey(), err))
 			return err
