@@ -60,7 +60,7 @@ var (
 
 	// DeadInterval is default dead time interval, after
 	// which NIC health status is declared UNKNOWN by CMD
-	DeadInterval = 120 * time.Second
+	DeadInterval = 180 * time.Second
 
 	// Max time to complete the entire registration sequence,
 	// after which the server will cancel the request.
