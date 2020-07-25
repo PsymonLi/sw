@@ -736,7 +736,7 @@ subnet_impl::activate_update_(pds_epoch_t epoch, subnet_entry *subnet,
     // xfer resources from original object to the cloned object
     hw_id_ = orig_impl->hw_id_;
 
-    if (vni_hdl_.valid()) {
+    if (obj_ctxt->upd_bmap & PDS_SUBNET_UPD_FABRIC_ENCAP) {
         // fill the key
         vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
         // fill the data
@@ -745,19 +745,16 @@ subnet_impl::activate_update_(pds_epoch_t epoch, subnet_entry *subnet,
         vni_data.vni_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
         PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                        VNI_VNI_INFO_ID, vni_hdl_);
-        if (obj_ctxt->upd_bmap & PDS_SUBNET_UPD_FABRIC_ENCAP) {
-            // insert new entry in the VNI table
-            ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
-        } else {
-            // update the existing VNI table entry
-            ret = vpc_impl_db()->vni_tbl()->update(&tparams);
-            vni_hdl_ = tparams.handle;
-        }
+        // insert new entry in the VNI table
+        ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Updating VNI table failed for subnet %s, err %u",
-                          spec->key.str(), ret);
+            PDS_TRACE_ERR("New VNI table entry insert failed, "
+                          "subnet %s, err %u", spec->key.str(), ret);
             return ret;
         }
+    } else {
+        // transfer the resource
+        vni_hdl_ = orig_impl->vni_hdl_;
     }
 
     if (obj_ctxt->upd_bmap & PDS_SUBNET_UPD_HOST_IFINDEX) {

@@ -208,8 +208,6 @@ vpc_impl::nuke_resources(api_base *api_obj) {
     }
 
     if (vni_hdl_.valid()) {
-        PDS_TRACE_DEBUG("Nuking VNI table entry for vpc %s",
-                        vpc->key2str().c_str());
         vni_key.vxlan_1_vni = vpc->fabric_encap().val.vnid;
         PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, NULL,
                                        VNI_VNI_INFO_ID, vni_hdl_);
@@ -346,7 +344,6 @@ vpc_impl::activate_update_(pds_epoch_t epoch, vpc_entry *new_vpc,
     // xfer resources from original object to the cloned object
     hw_id_ = orig_impl->hw_id_;
     bd_hw_id_ = orig_impl->bd_hw_id_;
-
 
     if (obj_ctxt->upd_bmap & PDS_VPC_UPD_FABRIC_ENCAP) {
         // fill the key
