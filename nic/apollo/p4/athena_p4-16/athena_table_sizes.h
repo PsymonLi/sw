@@ -24,10 +24,12 @@
 #define VLAN_VNIC_MAP_TABLE_SIZE                            4096
 //#define MPLS_LABEL_VNIC_MAP_TABLE_SIZE                      1048576
 //FIXME: To workaround the NCC limitation to upgrade the key size from 20b to 24b, bumping up the table size
-#define MPLS_LABEL_VNIC_MAP_TABLE_SIZE                      16777216
+#define MPLS_LABEL_VNIC_MAP_TABLE_SIZE                      1048576
 //#define MPLS_LABEL_VNIC_MAP_TABLE_SIZE                      1048576
 
 #define SESSION_TABLE_SIZE                                  4194304 // 4M
+
+#define CONFIG_TABLE_SIZE                                   1048576 // 1M
 
 #define POLICER_BW1_SIZE                                    2048
 #define POLICER_BW2_SIZE                                    2048

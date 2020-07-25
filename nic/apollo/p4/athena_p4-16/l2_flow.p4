@@ -97,7 +97,7 @@ control l2_flow_lookup(inout cap_phv_intr_global_h intr_global,
         actions = {
             l2_flow_hash;
         }
-	  size = FLOW_OHASH_TABLE_SIZE;
+	  size = L2_FLOW_OHASH_TABLE_SIZE;
         default_action = l2_flow_hash;
         stage = 4;
         placement = HBM;
@@ -118,7 +118,7 @@ control l2_flow_lookup(inout cap_phv_intr_global_h intr_global,
         actions = {
             l2_flow_hash;
         }
-        size = FLOW_TABLE_SIZE;
+        size = L2_FLOW_TABLE_SIZE;
         placement = HBM;
         default_action = l2_flow_hash;
         stage = 3;

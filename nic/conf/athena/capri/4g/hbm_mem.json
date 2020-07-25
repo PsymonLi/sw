@@ -136,9 +136,9 @@
         },
         {
             "name": "mpls_label_to_vnic",
-            "size": "32M",
+            "size": "2M",
             "cache": "p4ig",
-            "_comment": "16M * 2B"
+            "_comment": "1M * 2B"
         },
         {
             "name": "dnat",
@@ -148,7 +148,7 @@
         },
         {
             "name": "dnat_ohash",
-            "size": "256M",
+            "size": "256K",
             "cache": "p4ig",
             "_comment": "4K * 64B"
         },
@@ -160,9 +160,9 @@
         },
         {
             "name": "flow_ohash",
-            "size": "64M",
+            "size": "128M",
             "cache": "p4ig",
-            "_comment": "1M * 64B"
+            "_comment": "2M * 64B"
         },
         {
             "name": "l2_flow",
@@ -231,15 +231,15 @@
         },
         {
             "name": "flow_log_0",
-            "size": "128M",
+            "size": "256M",
             "cache": "p4eg",
-            "_comment": "2M * 64B"
+            "_comment": "4M * 64B"
         },
         {
             "name": "flow_log_1",
-            "size": "128M",
+            "size": "256M",
             "cache": "p4eg",
-            "_comment": "2M * 64B"
+            "_comment": "4M * 64B"
         },
         {
             "name": "flow_log_select",
@@ -372,6 +372,16 @@
         {
             "name": "ftl_dev_g_mpu_ts",
             "size": "64B"
+        },
+        {
+            "name": "stats_placeholder",
+            "size": "1M",
+            "_comment" : "Reservation for stats pool"
+        },
+        {
+            "name": "ipsec_buffers_placeholder",
+            "size": "100M",
+            "_comment" : "Reservation for IPSec input and output buffers in HBM"
         }
     ]
 }

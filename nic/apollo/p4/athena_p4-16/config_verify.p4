@@ -37,7 +37,7 @@ control config_verify(inout cap_phv_intr_global_h intr_global,
         actions = {
             config1_epoch_verify;
         }
-        size = SESSION_TABLE_SIZE;
+        size = CONFIG_TABLE_SIZE;
         placement = HBM;
         default_action = config1_epoch_verify;
         stage = 1;
@@ -51,7 +51,7 @@ control config_verify(inout cap_phv_intr_global_h intr_global,
         actions = {
             config2_epoch_verify;
         }
-        size = SESSION_TABLE_SIZE;
+        size = CONFIG_TABLE_SIZE;
         placement = HBM;
         default_action = config2_epoch_verify;
         stage = 1;
