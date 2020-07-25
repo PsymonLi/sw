@@ -208,6 +208,8 @@ vpc_impl::nuke_resources(api_base *api_obj) {
     }
 
     if (vni_hdl_.valid()) {
+        PDS_TRACE_DEBUG("Nuking VNI table entry for vpc %s",
+                        vpc->key2str().c_str());
         vni_key.vxlan_1_vni = vpc->fabric_encap().val.vnid;
         PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, NULL,
                                        VNI_VNI_INFO_ID, vni_hdl_);
@@ -345,7 +347,8 @@ vpc_impl::activate_update_(pds_epoch_t epoch, vpc_entry *new_vpc,
     hw_id_ = orig_impl->hw_id_;
     bd_hw_id_ = orig_impl->bd_hw_id_;
 
-    if (vni_hdl_.valid()) {
+
+    if (obj_ctxt->upd_bmap & PDS_VPC_UPD_FABRIC_ENCAP) {
         // fill the key
         memset(&vni_key, 0, sizeof(vni_key));
         vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
@@ -356,19 +359,16 @@ vpc_impl::activate_update_(pds_epoch_t epoch, vpc_entry *new_vpc,
         vni_data.vni_info.is_l3_vnid = TRUE;
         PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                        VNI_VNI_INFO_ID, vni_hdl_);
-        if (obj_ctxt->upd_bmap & PDS_VPC_UPD_FABRIC_ENCAP) {
-            // insert new entry in the VNI table
-            ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
-        } else {
-            // update the existing VNI table entry
-            ret = vpc_impl_db()->vni_tbl()->update(&tparams);
-            vni_hdl_ = tparams.handle;
-        }
+        // insert new entry in the VNI table
+        ret = vpc_impl_db()->vni_tbl()->insert(&tparams);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Updating VNI table failed for vpc %s, err %u",
+            PDS_TRACE_ERR("New VNI table entry insert failed, vpc %s, err %u",
                           spec->key.str(), ret);
             return ret;
         }
+    } else {
+        // transfer the resource
+        vni_hdl_ = orig_impl->vni_hdl_;
     }
 
     // update the vpc db

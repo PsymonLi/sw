@@ -1713,8 +1713,10 @@ sdk_ret_t
 port::set_bringup_duration(void)
 {
     if (this->oper_status_ == port_oper_status_t::PORT_OPER_STATUS_UP) {
-        this->bringup_duration_ = sdk::timestamp_diff(&this->last_up_ts_, &this->last_down_ts_);
-        SDK_LINKMGR_TRACE_DEBUG("port: %u Link down count %d last bringup duration: %lus.%luns\n", port_num(),
+        this->bringup_duration_ = sdk::timestamp_diff(&this->last_up_ts_,
+                                                      &this->last_down_ts_);
+        SDK_LINKMGR_TRACE_DEBUG("port: %u Link down count %d last bringup "
+                                "duration: %lus.%luns", port_num(),
                                 num_link_down(),
                                 this->bringup_duration_.tv_sec,
                                 this->bringup_duration_.tv_nsec);
