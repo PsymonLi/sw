@@ -59,6 +59,7 @@ testbundles:
         - sysmon/interrupts.testbundle
         - cpld/cpldupgrade.testbundle
         - hpe_ilo/hpe_ilo.testbundle
+        - linktest/linktest.testbundle
 
     sanity:
         # Relative paths from iota/test/iris/testbundles/
