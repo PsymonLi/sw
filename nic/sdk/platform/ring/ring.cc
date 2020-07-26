@@ -47,7 +47,7 @@ ring::init(ring_meta_t *meta, mpartition *mpartition) {
         obj_base_addr_ = mpartition_->start_addr(meta_.obj_hbm_reg_name.c_str());
         SDK_ASSERT(obj_base_addr_ != INVALID_MEM_ADDRESS);
     }
-    
+
     reg_size = mpartition_->size(meta_.hbm_reg_name.c_str());
     required_size = meta_.num_slots * meta_.slot_size_in_bytes *
         meta_.ring_types_in_region * meta_.max_rings;
@@ -85,7 +85,7 @@ ring::init(ring_meta_t *meta, mpartition *mpartition) {
         uint32_t val32;
 
         // Set CI = ring size
-        SDK_TRACE_DEBUG("Setting ring semaphore ci to %d", meta_.num_slots);
+        SDK_TRACE_VERBOSE("Setting ring semaphore ci to %d", meta_.num_slots);
         val32 = meta_.num_slots;
         asic_reg_write(meta_.alloc_semaphore_addr +
                 ASIC_SEM_INC_NOT_FULL_CI_OFFSET, &val32);
@@ -96,11 +96,11 @@ ring::init(ring_meta_t *meta, mpartition *mpartition) {
 
         sem_addr_ = meta_.alloc_semaphore_addr;
     }
-   
+
     ring_size_shift_ = log2(meta_.num_slots);
     slot_addr_ = base_addr_;
     slot_size_ = meta_.slot_size_in_bytes ;
-     
+
     if  (is_cpu_zero_copy_enabled()) {
         virt_base_addr_= (uint64_t)sdk::lib::pal_mem_map(base_addr_,
                                            meta_.num_slots *

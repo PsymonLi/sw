@@ -17,7 +17,7 @@ namespace sdk {
 namespace asic {
 
 
-static mpartition* 
+static mpartition*
 get_mem_partition (void)
 {
     return g_asic_state->mempartition();
@@ -69,8 +69,8 @@ asic_reset_mem_region (mpartition_region_t *reg)
 {
     mem_addr_t va, pa;
 
-    SDK_TRACE_DEBUG("Resetting %s memory region of size %lu",
-                    reg->mem_reg_name, reg->size);
+    SDK_TRACE_VERBOSE("Resetting %s memory region of size %lu",
+                      reg->mem_reg_name, reg->size);
     pa = get_mem_partition()->addr(reg->start_offset);
     va = (mem_addr_t)sdk::lib::pal_mem_map(pa, reg->size);
     if (va) {
@@ -86,7 +86,7 @@ asic_reset_mem_region (mpartition_region_t *reg)
             rem -= sizeof(zeros);
         }
     }
-    SDK_TRACE_DEBUG("Resetting %s memory region done", reg->mem_reg_name);
+    SDK_TRACE_VERBOSE("Resetting %s memory region done", reg->mem_reg_name);
 }
 
 
@@ -117,4 +117,4 @@ asic_reset_hbm_regions (asic_cfg_t *asic_cfg)
 }
 
 }    // asic
-}    // sdk 
+}    // sdk

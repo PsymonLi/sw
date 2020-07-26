@@ -38,7 +38,7 @@ asic_load_config (char *config_dir)
             continue;
         }
 
-        SDK_TRACE_DEBUG("Processing config file %s", file->d_name);
+        SDK_TRACE_VERBOSE("Processing config file %s", file->d_name);
         cfg_fname = std::string(config_dir) + "/" + std::string(file->d_name);
         fd = open(cfg_fname.c_str(), O_RDONLY);
         if (fd == -1) {
@@ -116,5 +116,5 @@ asic_verify_config (char *config_dir)
     return ret;
 }
 
-}     // namespace asic 
-}     // namespace sdk 
+}     // namespace asic
+}     // namespace sdk
