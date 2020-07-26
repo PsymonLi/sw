@@ -502,16 +502,16 @@ uint32_t elb_mx_an_get_hcd(int chip_id, int inst_id, int ch);
 int elb_mx_an_get_25g_fcfec(int chip_id, int inst_id, int ch);
 int elb_mx_an_get_25g_rsfec(int chip_id, int inst_id, int ch);
 
-void cap_bx_set_glbl_mode(int chip_id, int inst_id, int value);
-void cap_bx_apb_write(int chip_id, int inst_id, int addr, int data);
-void cap_bx_set_tx_rx_enable(int chip_id, int inst_id, int value);
-void cap_bx_set_mtu(int chip_id , int inst_id, int max_value, int jabber_value);
-void cap_bx_set_ch_enable(int chip_id, int inst_id, int value);
-void cap_bx_set_soft_reset(int chip_id, int inst_id, int value);
-int cap_bx_check_sync(int chip_id, int inst_id);
-void cap_bx_mac_stat(int chip_id, int inst_id, int ch, int short_report,
+void elb_bx_set_glbl_mode(int chip_id, int inst_id, int value);
+void elb_bx_apb_write(int chip_id, int inst_id, int addr, int data);
+void elb_bx_set_tx_rx_enable(int chip_id, int inst_id, int value);
+void elb_bx_set_mtu(int chip_id , int inst_id, int max_value, int jabber_value);
+void elb_bx_set_ch_enable(int chip_id, int inst_id, int value);
+void elb_bx_set_soft_reset(int chip_id, int inst_id, int value);
+int elb_bx_check_sync(int chip_id, int inst_id);
+void elb_bx_mac_stat(int chip_id, int inst_id, int ch, int short_report,
                      uint64_t *stats_data);
-int cap_bx_tx_drain(int chip_id, int inst_id, int mac_ch, bool drain);
-void cap_bx_stats_reset(int chip_id, int inst_id, int ch, int value);
+int elb_bx_tx_drain(int chip_id, int inst_id, int mac_ch, bool drain);
+void elb_bx_stats_reset(int chip_id, int inst_id, int ch, int value);
 
 #endif

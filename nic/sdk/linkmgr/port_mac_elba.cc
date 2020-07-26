@@ -848,7 +848,8 @@ mac_mgmt_cfg_hw (mac_info_t *mac_info)
 {
     int          chip_id       = 0;
     int          mac_ch_en     = 0;
-    uint32_t     inst_id       = 0; // bx inst is 0
+    uint32_t     inst_id       = 0;
+    uint32_t     bx_inst       = 1;
     uint32_t     start_lane    = mac_info->mac_ch;
     uint32_t     bx_api_speed  = 0;
     port_speed_t port_speed    = (port_speed_t) mac_info->speed;
@@ -901,22 +902,22 @@ mac_mgmt_cfg_hw (mac_info_t *mac_info)
 
     if (bx_init[inst_id] == 0) {
         // global mode
-        cap_bx_set_glbl_mode(chip_id, inst_id, bx[inst_id].glbl_mode);
+        elb_bx_set_glbl_mode(chip_id, bx_inst, bx[inst_id].glbl_mode);
 
         // MAC Rx Configuration: bit4: Promiscuous Mode (1: disable MAC address check)
-        cap_bx_apb_write(chip_id, inst_id, 0x2102, 0x10);
+        elb_bx_apb_write(chip_id, bx_inst, 0x2102, 0x10);
 
         // FIFO Control 1: 16'b0_000010_01000_0100;
-        cap_bx_apb_write(chip_id, inst_id, 0x3f01, 0x484);
+        elb_bx_apb_write(chip_id, bx_inst, 0x3f01, 0x484);
 
         // channel mode
-        cap_bx_apb_write(chip_id, inst_id, 0x4010, bx[inst_id].ch_mode[start_lane]);
+        elb_bx_apb_write(chip_id, bx_inst, 0x4010, bx[inst_id].ch_mode[start_lane]);
 
         // mtu
-        cap_bx_set_mtu(chip_id, inst_id, mac_info->mtu, mac_info->mtu + 1);
+        elb_bx_set_mtu(chip_id, bx_inst, mac_info->mtu, mac_info->mtu + 1);
 
         // channel enable
-        cap_bx_set_ch_enable(chip_id, inst_id, mac_ch_en);
+        elb_bx_set_ch_enable(chip_id, bx_inst, mac_ch_en);
 
         bx_init[inst_id] |= mac_ch_en;
         SDK_LINKMGR_TRACE_DEBUG("mac_inst: %d, mac_ch: %d, bx_init: 0x%x",
@@ -932,7 +933,7 @@ mac_mgmt_enable_hw (uint32_t port_num, uint32_t speed,
 {
     uint32_t chip_id    = 0;
     int      value      = 0;
-    uint32_t inst_id    = 0;
+    uint32_t bx_inst    = 1;
     uint32_t start_lane = 0;
     uint32_t max_lanes  = start_lane + num_lanes;
 
@@ -943,7 +944,7 @@ mac_mgmt_enable_hw (uint32_t port_num, uint32_t speed,
     }
 
     for (uint32_t lane = start_lane; lane < max_lanes; lane++) {
-        cap_bx_set_ch_enable(chip_id, inst_id, value);
+        elb_bx_set_ch_enable(chip_id, bx_inst, value);
     }
 
     return 0;
@@ -955,7 +956,7 @@ mac_mgmt_soft_reset_hw (uint32_t port_num, uint32_t speed,
 {
     uint32_t chip_id    = 0;
     int      value      = 0;
-    uint32_t inst_id    = 0;
+    uint32_t bx_inst    = 1;
     uint32_t start_lane = 0;
     uint32_t max_lanes  = start_lane + 1;
 
@@ -966,7 +967,7 @@ mac_mgmt_soft_reset_hw (uint32_t port_num, uint32_t speed,
     }
 
     for (uint32_t lane = start_lane; lane < max_lanes; lane++) {
-        cap_bx_set_soft_reset(chip_id, inst_id, value);
+        elb_bx_set_soft_reset(chip_id, bx_inst, value);
     }
 
     return 0;
@@ -988,9 +989,9 @@ static bool
 mac_mgmt_sync_get_hw (uint32_t port_num)
 {
     uint32_t chip_id    = 0;
-    uint32_t inst_id    = 0;
+    uint32_t bx_inst    = 1;
 
-    return cap_bx_check_sync(chip_id, inst_id) == 1;
+    return elb_bx_check_sync(chip_id, bx_inst) == 1;
 }
 
 static int
@@ -1003,7 +1004,8 @@ static int
 mac_mgmt_stats_get_hw (uint32_t mac_inst, uint32_t mac_ch,
                        uint64_t *stats_data)
 {
-    cap_bx_mac_stat(0 /*chip_id*/, 0 /* bx_inst */, mac_ch, 0, stats_data);
+    int bx_inst = 1;
+    elb_bx_mac_stat(0 /*chip_id*/, bx_inst, mac_ch, 0, stats_data);
     return 0;
 }
 
@@ -1020,7 +1022,8 @@ mac_mgmt_deinit_hw (uint32_t mac_inst, uint32_t mac_ch)
 static int
 mac_mgmt_tx_drain_hw (uint32_t mac_inst, uint32_t mac_ch, bool drain)
 {
-    cap_bx_tx_drain(0, 0, mac_ch, drain);
+    int bx_inst = 1;
+    elb_bx_tx_drain(0, bx_inst, mac_ch, drain);
     return 0;
 }
 
@@ -1028,11 +1031,12 @@ static int
 mac_mgmt_stats_reset_hw (uint32_t mac_inst, uint32_t mac_ch, bool reset)
 {
     int chip_id = 0;
+    int bx_inst = 1;
 
     if (reset == true) {
-        cap_bx_stats_reset(chip_id, 0, mac_ch, 1);
+        elb_bx_stats_reset(chip_id, bx_inst, mac_ch, 1);
     } else {
-        cap_bx_stats_reset(chip_id, 0, mac_ch, 0);
+        elb_bx_stats_reset(chip_id, bx_inst, mac_ch, 0);
     }
     return 0;
 }
