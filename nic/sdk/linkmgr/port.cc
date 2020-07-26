@@ -428,7 +428,7 @@ port::port_serdes_signal_detect(void)
         if (sbus_addr == 0) {
             // invalid config. fail signal detect
             signal_detect = true;
-    SDK_LINKMGR_TRACE_DEBUG("signal_detect:FALSE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
+            SDK_LINKMGR_TRACE_DEBUG("signal_detect:FALSE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
             //break;
         }
         signal_detect = serdes_fns()->serdes_signal_detect(sbus_addr);
@@ -436,7 +436,7 @@ port::port_serdes_signal_detect(void)
             break;
         }
     }
-    SDK_LINKMGR_TRACE_DEBUG("signal_detect:TRUE: sbus_addr: %x lane: %d", sbus_addr, lane);
+    SDK_LINKMGR_TRACE_DEBUG("signal_detect:%0d: sbus_addr: %x lane: %d", signal_detect, sbus_addr, lane);
     return signal_detect;
 }
 

@@ -17,7 +17,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x80308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -40,7 +40,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x80308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -63,7 +63,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x80308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -86,7 +86,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x80308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -109,7 +109,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x80308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -132,7 +132,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x80308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -155,7 +155,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x80308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -178,7 +178,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x80308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -201,7 +201,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x90308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -224,7 +224,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x90308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -247,7 +247,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x90308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -270,7 +270,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x90308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -293,7 +293,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x90308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -316,7 +316,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x90308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -339,7 +339,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x90308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -362,7 +362,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x90308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -385,7 +385,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xa0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -408,7 +408,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xa0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -431,7 +431,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xa0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -454,7 +454,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xa0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -477,7 +477,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xa0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -500,7 +500,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xa0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -523,7 +523,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xa0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -546,7 +546,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xa0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -569,7 +569,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xb0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -592,7 +592,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xb0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -615,7 +615,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xb0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -638,7 +638,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xb0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -661,7 +661,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xb0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -684,7 +684,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xb0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -707,7 +707,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xb0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -730,7 +730,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xb0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -753,7 +753,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xc0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -776,7 +776,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xc0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -799,7 +799,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xc0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -822,7 +822,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xc0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -845,7 +845,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xc0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -868,7 +868,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xc0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -891,7 +891,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xc0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -914,7 +914,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xc0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -937,7 +937,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xd0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -960,7 +960,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xd0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -983,7 +983,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xd0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1006,7 +1006,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xd0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -1029,7 +1029,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xd0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -1052,7 +1052,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xd0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1075,7 +1075,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xd0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1098,7 +1098,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xd0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -1121,7 +1121,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xe0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -1144,7 +1144,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xe0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1167,7 +1167,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xe0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1190,7 +1190,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xe0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -1213,7 +1213,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xe0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -1236,7 +1236,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xe0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1259,7 +1259,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xe0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1282,7 +1282,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xe0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -1305,7 +1305,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xf0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -1328,7 +1328,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xf0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1351,7 +1351,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xf0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1374,7 +1374,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0xf0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -1397,7 +1397,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xf0308", 
         "speed": "50G", 
-        "speed_divider": "170", 
+        "sbus_divider": "170", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "80"
@@ -1420,7 +1420,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xf0308", 
         "speed": "25G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1443,7 +1443,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xf0308", 
         "speed": "20G", 
-        "speed_divider": "132", 
+        "sbus_divider": "132", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "40"
@@ -1466,7 +1466,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0xf0308", 
         "speed": "10G", 
-        "speed_divider": "165", 
+        "sbus_divider": "165", 
         "tx_pol": "0", 
         "tx_slip_value": "", 
         "width": "20"
@@ -1489,7 +1489,7 @@
         "rx_termination": "1", 
         "sbus_addr": "0x305", 
         "speed": "1G", 
-        "speed_divider": "8", 
+        "sbus_divider": "8", 
         "tx_pol": "0", 
         "tx_slip_value": "0x8004", 
         "width": "10"
@@ -1512,7 +1512,7 @@
         "rx_termination": "2", 
         "sbus_addr": "0x305", 
         "speed": "1G", 
-        "speed_divider": "8", 
+        "sbus_divider": "8", 
         "tx_pol": "0", 
         "tx_slip_value": "0x8004", 
         "width": "10"
