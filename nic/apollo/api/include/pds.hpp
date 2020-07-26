@@ -127,8 +127,8 @@ typedef enum pds_encap_type_e {
 
 /// \brief QinQ tag values
 typedef struct pds_qinq_encap_s {
-    uint16_t c_tag;    ///< customer VLAN tag
     uint16_t s_tag;    ///< service VLAN tag
+    uint16_t c_tag;    ///< customer VLAN tag
 } pds_qinq_encap_t;
 
 /// \brief encapsulation values
