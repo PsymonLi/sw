@@ -10,6 +10,8 @@
 #include <vppinfra/socket.h>
 #include <vppinfra/file.h>
 #include <vlib/unix/unix.h>
+#include <vlib/threads.h>
+#include "nic/vpp/infra/ipc/pdsa_vpp_hdlr.h"
 #include "repl_state_tp_pvt.h"
 
 static clib_socket_t repl_state_tp_client_sock;
@@ -70,6 +72,7 @@ repl_state_tp_client_init()
     clib_socket_t *s = &repl_state_tp_client_sock;
     clib_error_t *error = 0;
     clib_file_t clib_file = { 0 };
+    vlib_thread_main_t *tm = &vlib_thread_main;
 
     memset(s, '\0', sizeof(*s));
     s->config = VPP_UIPC_REPL_SOCKET_FILE;
@@ -102,7 +105,21 @@ repl_state_tp_client_init()
      * to negotiate the queue name to use and advertise our capabilities
      * like number of threads etc. We will do it in phase-2
      */
+
+    // Make worker threads wait. pds_vpp_worker_thread_barrier() has already
+    // been called from vpp_upg_ev_hdlr().
+    pds_vpp_set_suspend_resume_worker_threads(1);
+    pds_vpp_worker_thread_barrier_release();
+
+    vlib_set_main_thread_affinity(PDS_VPP_RESTORE_CORE);
+
     repl_state_tp_restore(REPL_STATE_OBJ_ID_SESS, sqname);
+
+    vlib_set_main_thread_affinity(tm->main_lcore);
+
+    // Wakeup worker threads
+    pds_vpp_worker_thread_barrier();
+    pds_vpp_set_suspend_resume_worker_threads(0);
 
     // Close the client socket and cleanup resources
     close_sock();

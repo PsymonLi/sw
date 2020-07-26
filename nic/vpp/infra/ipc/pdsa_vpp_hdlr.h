@@ -11,6 +11,10 @@
 extern "C" {
 #endif
 
+#define PDS_VPP_THREAD_SLEEP_INTERVAL (100 * 1000) // Sleep for 100ms
+#define PDS_VPP_SYNC_CORE (2)
+#define PDS_VPP_RESTORE_CORE (3)
+
 // function prototypes
 int pds_vpp_ipc_init(void);
 void pds_vpp_worker_thread_barrier(void);

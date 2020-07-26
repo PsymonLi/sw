@@ -10,6 +10,7 @@
 #include <vppinfra/socket.h>
 #include <vppinfra/file.h>
 #include <vlib/unix/unix.h>
+#include <vlib/threads.h>
 #include "infra/api/intf.h"
 #include "nic/vpp/infra/ipc/pdsa_vpp_hdlr.h"
 #include "repl_state_tp_pvt.h"
@@ -86,6 +87,8 @@ repl_state_tp_server_accept (clib_file_t * uf)
     clib_error_t *error;
     clib_socket_t *client = &repl_state_tp_client_sock;
     clib_file_t clib_file = { 0 };
+    vlib_thread_main_t *tm = &vlib_thread_main;
+
 
     memset(client, '\0', sizeof(*client));
     error = clib_socket_accept(s, client);
@@ -111,9 +114,16 @@ repl_state_tp_server_accept (clib_file_t * uf)
     // commented code to that stage.
     pds_vpp_worker_thread_barrier();
     pds_infra_set_all_intfs_status(0);
+    // Make worker threads wait
     pds_vpp_set_suspend_resume_worker_threads(1);
     pds_vpp_worker_thread_barrier_release();
+
+    vlib_set_main_thread_affinity(PDS_VPP_SYNC_CORE);
+
     repl_state_tp_sync(REPL_STATE_OBJ_ID_SESS, sqname);
+
+    vlib_set_main_thread_affinity(tm->main_lcore);
+
     return 0;
 }
 

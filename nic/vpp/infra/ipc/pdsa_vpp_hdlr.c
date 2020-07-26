@@ -24,6 +24,15 @@ pds_vpp_worker_thread_barrier_release () {
     vlib_worker_thread_barrier_release(vlib_get_main());
 }
 
+// This function is registered with VPP to be called in worker loop
+// when the worker threads are suspended. Currently we sleep here
+// for 100ms in every iteration to reduce the cpu contention.
+static void
+pds_vpp_suspend_workers_cb (u32 thread)
+{
+    usleep(PDS_VPP_THREAD_SLEEP_INTERVAL);
+}
+
 void
 pds_vpp_set_suspend_resume_worker_threads (int suspend) {
     vlib_set_suspend_resume_worker_threads(suspend);
@@ -94,5 +103,7 @@ pds_vpp_ipc_init (void)
     ipc_log_notice("IPC request handler registered");
 
     pds_ipc_init();
+
+    vlib_set_suspend_thread_cb(pds_vpp_suspend_workers_cb);
     return 0;
 }
