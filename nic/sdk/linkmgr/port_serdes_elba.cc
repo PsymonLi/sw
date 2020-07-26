@@ -725,18 +725,16 @@ int
 serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 {
   int ret = 0;
+  uint32_t divider   = serdes_info->sbus_divider;
+  uint32_t width     = serdes_info->width;
+  uint8_t  tx_invert = serdes_info->tx_pol;
+  uint8_t  rx_invert = serdes_info->rx_pol;
+
+  SDK_LINKMGR_TRACE_DEBUG("serdes_basic_cfg_hw : sbus_addr: %x, divider: %u, width: %u, "
+      "tx_invert: %u, rx_invert:%u", sbus_addr, divider, width, tx_invert, rx_invert);
+
   int bh_lane = serdes_get_bh_lane (sbus_addr);
   if(bh_lane == -1) {
-    uint32_t divider   = serdes_info->sbus_divider;
-    uint32_t width     = serdes_info->width;
-    uint8_t  tx_invert = serdes_info->tx_pol;
-    uint8_t  rx_invert = serdes_info->rx_pol;
-
-    SDK_LINKMGR_TRACE_DEBUG("sbus_addr: %u, divider: %u, width: %u, "
-                            "tx_invert: %u, rx_invert:%u",
-                            sbus_addr, divider, width,
-                            tx_invert, rx_invert);
-
     Avago_serdes_init_config_t *cfg = avago_serdes_init_config_construct(aapl);
     if (NULL == cfg) {
         SDK_LINKMGR_TRACE_ERR("Failed to construct avago config");
@@ -745,6 +743,7 @@ serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 
     // cfg->init_mode = Avago_serdes_init_mode_t::AVAGO_INIT_ONLY;
     cfg->init_mode = Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ELB;
+    cfg->init_mode = Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ILB;
 
     // divider and width
     cfg->tx_divider = divider;
@@ -869,8 +868,23 @@ serdes_signal_detect_hw (uint32_t sbus_addr)
 
     return true;
   } else {
-    //signal ok seems to be unreliable
-    return serdes_rdy_hw(sbus_addr);
+
+    //signal ok seems to be unreliable on bh, checking with brcm
+    //we can used pmd_rx_lock as a criteria instead.
+    int  r = blackhawk_serdes_get_pmd_rx_lock(aapl, sbus_addr);
+    if( r == -1 ) {
+      SDK_LINKMGR_TRACE_ERR("Signal loss, cmd failed, on sbus: 0x%x, ", sbus_addr);
+      return false;
+    } else if( r == 1 ) {
+      return true;
+    } else {
+      SDK_LINKMGR_TRACE_ERR("Signal not detected on sbus: 0x%x, ", sbus_addr);
+      return false;
+    }
+
+
+    //option2 use serdes ready itself
+    //return serdes_rdy_hw(sbus_addr);
 
     int clr_before_chk = 1;
     int ret = avago_serdes_get_signal_ok(aapl, sbus_addr, clr_before_chk);
@@ -1601,7 +1615,7 @@ serdes_invert_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
     avago_serdes_set_rx_invert(aapl, sbus_addr, rx_invert);
     return 0;
   } else {
-    SDK_LINKMGR_TRACE_DEBUG("Bypassing serdes_invert_cfg_hw for bh. sbus_addr: 0x%x", sbus_addr);
+    //SDK_LINKMGR_TRACE_DEBUG("Bypassing serdes_invert_cfg_hw for bh. sbus_addr: 0x%x", sbus_addr);
   }
   return ret;
 }
@@ -1644,7 +1658,7 @@ serdes_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 
     return ret;
   } else {
-    SDK_LINKMGR_TRACE_DEBUG("serdes_cfg_hw : doing nothing, sbus_addr : %x ", sbus_addr);
+    //SDK_LINKMGR_TRACE_DEBUG("serdes_cfg_hw : doing nothing, sbus_addr : %x ", sbus_addr);
     return ret;
   }
   return ret;
@@ -1671,12 +1685,14 @@ serdes_firmware_upload_hw (void)
     std::string cfg_file2 = std::string(g_linkmgr_cfg.cfg_path) + "/fw/" + g_linkmgr_cfg.catalog->serdes_fw2_file();
     int bh_lane, ret;
 
+    for (uint32_t xx = 0; xx < 2; xx++ ) {
     for (uint32_t asic_port = 0; asic_port < prt_cnt; ++asic_port) {
         sbus_addr = g_linkmgr_cfg.catalog->sbus_addr_asic_port(asic_num, asic_port);
         SDK_TRACE_DEBUG("serdes_firmware_upload_hw asic_port:%0d sbus_addr:0x%x", asic_port, sbus_addr);
         if (sbus_addr == 0) {
           continue;
         }
+        if(xx==1) { sbus_addr = 0x305; }
         bh_lane = serdes_get_bh_lane(sbus_addr);
         if(bh_lane == -1) {
           ret = serdes_spico_upload_hw(sbus_addr, cfg_file.c_str());
@@ -1714,6 +1730,8 @@ serdes_firmware_upload_hw (void)
         SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
             sbus_addr,
             serdes_spico_crc_hw(sbus_addr));
+        if(xx==1) { break; }
+    }
     }
 
     return ( (err)? -1 : 0 ) ;
