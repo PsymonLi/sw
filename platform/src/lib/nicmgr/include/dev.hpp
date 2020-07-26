@@ -144,7 +144,7 @@ public:
 
     // event handlers
     void HalEventHandler(bool is_up);
-    int HandleUpgradeEvent(UpgradeEvent event);
+    sdk_ret_t HandleUpgradeEvent(UpgradeEvent event);
     void UpgradeGracefulHalEventHandler(bool is_up);
     void UpgradeHitlessHalEventHandler(bool is_up);
     void LinkEventHandler(port_status_t *evd);
@@ -174,7 +174,7 @@ public:
     UpgradeState GetUpgradeState();
     bool UpgradeCompatCheck();
     void SetFwStatus(uint8_t fw_status);
-    void ServiceControl(bool start);
+    sdk_ret_t ServiceControl(bool start);
 
     // device list
     std::vector<struct EthDevInfo *> GetEthDevStateInfo();
@@ -251,7 +251,7 @@ private:
     // upgrade helper functions
     bool IsDataPathQuiesced(void);
     bool CheckAllDevsDisabled(void);
-    int SendDeviceReset(void);
+    sdk_ret_t SendDeviceReset(void);
 
     // heartbeat events
     timespec_t hb_last;

@@ -418,49 +418,76 @@ EthLif::UpgradeHitlessInit(void)
 
 }
 
-void
+/// This function is called in the hitless upgrade context. This function
+/// always executes completely without exiting inbetween even if any error
+sdk_ret_t
 EthLif::ServiceControl(bool start)
 {
-    bool lif_inited = (lif_pstate->state >= LIF_STATE_INIT);
-    uint64_t addr;
+    uint64_t    addr;
+    sdk_ret_t   ret = SDK_RET_OK;
+    bool lif_inited = IsLifInitialized();
+
+    NIC_LOG_INFO("{}: Lif service control - {} lif inited: {} started",
+                  hal_lif_info_.name, start ? "start" : "stop", lif_inited);
+
+    if (!lif_inited) {
+        NIC_LOG_INFO("{}: skipping Lif service control",hal_lif_info_.name);
+        goto end;
+    }
 
     if (start) {
-        if (lif_inited) {
-            admin_cosA = 1;
-            admin_cosB = 1;
+        admin_cosA = 1;
+        admin_cosB = 1;
 
-            // Start stats timer
-            ev_timer_start(EV_A_ & stats_timer);
+        // Start stats timer
+        ev_timer_start(EV_A_ & stats_timer);
 
-            // Initialize EDMA service
-            addr = pd->lm_->get_lif_qstate_addr(hal_lif_info_.lif_id, ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID);
-            if (addr < 0) {
-                NIC_LOG_ERR("{}: Failed to get qstate address for edma queue", hal_lif_info_.name);
-            }
-            if (!edmaq->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
-                NIC_LOG_ERR("{}: Failed to initialize EdmaQ service",
-                            hal_lif_info_.name);
-            }
+        addr = pd->lm_->get_lif_qstate_addr(hal_lif_info_.lif_id,
+                                            ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID);
+        if (addr < 0) {
+            NIC_LOG_ERR("{}: Failed to get qstate address for edma queue",
+                        hal_lif_info_.name);
+            ret = SDK_RET_ENTRY_NOT_FOUND;
+        }
 
-            addr = pd->lm_->get_lif_qstate_addr(hal_lif_info_.lif_id, ETH_EDMAQ_ASYNC_QTYPE, ETH_EDMAQ_ASYNC_QID);
-            if (addr < 0) {
-                NIC_LOG_ERR("{}: Failed to get qstate address for edma async queue", hal_lif_info_.name);
-            }
-            if (!edmaq_async->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
-                NIC_LOG_ERR("{}: Failed to initialize EdmaQ Async service",
-                            hal_lif_info_.name);
-            }
+        // Initialize EDMA service
+        if (!edmaq->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
+            NIC_LOG_ERR("{}: Failed to initialize EdmaQ service",
+                        hal_lif_info_.name);
+            ret = SDK_RET_ERR;
+        }
 
-            // Initialize ADMINQ service
-            if (!adminq->Init(0, admin_cosA, admin_cosB)) {
-                NIC_LOG_ERR("{}: Failed to initialize AdminQ service",
-                            hal_lif_info_.name);
-            }
+        addr = pd->lm_->get_lif_qstate_addr(hal_lif_info_.lif_id,
+                                            ETH_EDMAQ_ASYNC_QTYPE,
+                                            ETH_EDMAQ_ASYNC_QID);
+        if (addr < 0) {
+            NIC_LOG_ERR("{}: Failed to get edma async qstate address",
+                        hal_lif_info_.name);
+            ret = SDK_RET_ENTRY_NOT_FOUND;
+        }
+
+        // Initialize EDMA async queue
+        if (!edmaq_async->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
+            NIC_LOG_ERR("{}: Failed to initialize EdmaQ Async service",
+                        hal_lif_info_.name);
+            ret = SDK_RET_ERR;
+        }
+
+        // Initialize ADMINQ service
+        if (!adminq->Init(0, admin_cosA, admin_cosB)) {
+            NIC_LOG_ERR("{}: Failed to initialize AdminQ service",
+                        hal_lif_info_.name);
+            ret = SDK_RET_ERR;
         }
     } else {
         adminq->PollStop();
         ev_timer_stop(EV_A_ & stats_timer);
     }
+
+end:
+    NIC_LOG_INFO("{}: Lif service control - {} lif inited: {} completed",
+                  hal_lif_info_.name, start ? "start" : "stop", lif_inited);
+    return ret;
 }
 
 
@@ -3412,20 +3439,19 @@ EthLif::DelphiMountEventHandler(bool mounted)
     }
 }
 
-void
+sdk_ret_t
 EthLif::UpgradeSyncHandler(void)
 {
-    sdk_ret_t   ret;
+    sdk_ret_t   ret = SDK_RET_OK;
     lif_state_t hal_lif_admin_state;
 
     if (device_inited) {
         NIC_LOG_INFO("{}: device inited in this process, No Need to sync",
                     lif_pstate->name);
-        return;
+        return ret;
     }
 
-    NIC_LOG_INFO("{}: syncing config during upgrade", lif_pstate->name);
-
+    NIC_LOG_INFO("{}: upgrade sync config started", lif_pstate->name);
 
     // sync only the interfaces from the process A, already up and running
     // through the driver
@@ -3442,7 +3468,7 @@ EthLif::UpgradeSyncHandler(void)
         // check HAL is Up and connected
         if (dev_api == NULL) {
             NIC_LOG_ERR("{}: dev api not set", lif_pstate->name);
-            return;
+            goto end;
         }
 
         // init lif in HAL
@@ -3450,7 +3476,7 @@ EthLif::UpgradeSyncHandler(void)
         if (ret != SDK_RET_OK) {
             NIC_LOG_ERR("{}: Failed to init lif in HAL err: {}",
                         hal_lif_info_.name, ret);
-            return;
+            goto end;
         }
 
         // Update HAL lif state
@@ -3482,20 +3508,28 @@ EthLif::UpgradeSyncHandler(void)
                                   spec->rxq_count);
         if (ret != SDK_RET_OK) {
             NIC_LOG_ERR("{}: Unable to program hw for RSS HASH", ret);
-            return;
+            goto end;
         }
     }
 
-    return;
+end:
+    NIC_LOG_INFO("{}: upgrade sync config completed", lif_pstate->name);
+    return ret;
 }
 
-void
+/// This function is called in the hitless upgrade context. This function
+/// always executes completely without exiting inbetween even if any error
+sdk_ret_t
 EthLif::UpdateQStatus(bool enable)
 {
-    status_code_t st;
+    sdk_ret_t       ret = SDK_RET_OK;
+    status_code_t   st;
 
     if (lif_pstate->state < LIF_STATE_INIT)
-        return;
+        return ret;
+
+    NIC_LOG_INFO("{}: update queue status - {} started",
+                 hal_lif_info_.name, enable ? "enable" : "disable");
 
     // queue control for adminq
     for (uint32_t i = 0; i < spec->adminq_count; i++) {
@@ -3503,6 +3537,7 @@ EthLif::UpdateQStatus(bool enable)
         if (st != IONIC_RC_SUCCESS) {
             NIC_LOG_ERR("{}: Admin Queue control failed ctrl: {} adminq cnt: {}, qid: {}",
                 hal_lif_info_.name, enable, spec->adminq_count, i);
+            ret = SDK_RET_ERR;
         }
         if (!enable) {
             adminq->Flush();
@@ -3515,6 +3550,7 @@ EthLif::UpdateQStatus(bool enable)
         if (st != IONIC_RC_SUCCESS) {
             NIC_LOG_ERR("{}: Edma Queue control failed ctrl: {} eq cnt : {}, qid: {}",
                 hal_lif_info_.name, enable, spec->eq_count, i);
+            ret = SDK_RET_ERR;
         }
 
         if(!enable) {
@@ -3528,10 +3564,12 @@ EthLif::UpdateQStatus(bool enable)
         if (st != IONIC_RC_SUCCESS) {
             NIC_LOG_ERR("{}: notify Queue control failed ctrl: {}",
                 hal_lif_info_.name, enable);
+            ret = SDK_RET_ERR;
         }
     }
 
-    return;
+    NIC_LOG_INFO("{}: update queue status completed", hal_lif_info_.name);
+    return ret;
 }
 
 void
@@ -3652,8 +3690,9 @@ EthLif::XcvrEventHandler(port_status_t *evd)
     // FIXME: Wait for completion
 }
 
-void
-EthLif::SendDeviceReset(void) {
+sdk_ret_t
+EthLif::SendDeviceReset(void)
+{
     uint64_t addr;
     uint64_t db_data;
     asic_db_addr_t db_addr = { 0 };
@@ -3661,7 +3700,7 @@ EthLif::SendDeviceReset(void) {
     if (!IsLifInitialized()) {
         NIC_LOG_WARN("{}: state: {} Cannot send RESET event when lif is not initialized!",
                      hal_lif_info_.name, lif_state_to_str(lif_pstate->state));
-        return;
+        return SDK_RET_OK;
     }
 
     // Update local lif status
@@ -3682,7 +3721,7 @@ EthLif::SendDeviceReset(void) {
     }
 
     if (notify_enabled == 0) {
-        return;
+        return SDK_RET_OK;
     }
 
     // Send the link event notification
@@ -3714,6 +3753,8 @@ EthLif::SendDeviceReset(void) {
     NIC_LOG_INFO("{}: {} + {} => {}", hal_lif_info_.name,
                  lif_state_to_str(lif_pstate->state), "RESET",
                  lif_state_to_str(lif_pstate->state));
+
+    return SDK_RET_OK;
 }
 
 void

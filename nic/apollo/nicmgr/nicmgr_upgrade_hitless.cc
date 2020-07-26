@@ -84,7 +84,7 @@ upg_ev_switchover (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_repeal (upg_ev_params_t *params)
 {
-    return SDK_RET_OK;
+    return nicmgr_send_ipc(params);
 }
 
 sdk_ret_t
@@ -104,7 +104,6 @@ nicmgr_upg_hitless_init (void)
     ev_hdlr.repeal_hdlr = upg_ev_repeal;
     ev_hdlr.switchover_hdlr = upg_ev_switchover;
     ev_hdlr.pre_switchover_hdlr = upg_ev_pre_switchover;
-    ev_hdlr.repeal_hdlr = upg_ev_repeal;
 
     // register for upgrade events
     api::upg_ev_thread_hdlr_register(ev_hdlr);

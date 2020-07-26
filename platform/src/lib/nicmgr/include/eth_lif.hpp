@@ -114,14 +114,14 @@ class EthLif
     void LifEventHandler(port_status_t *evd);
     void XcvrEventHandler(port_status_t *evd);
     void DelphiMountEventHandler(bool mounted);
-    void SendDeviceReset(void);
+    sdk_ret_t SendDeviceReset(void);
     void HalEventHandler(bool status);
 
     void SetHalClient(devapi *dev_api);
 
-    void UpgradeSyncHandler(void);
-    void UpdateQStatus(bool enable);
-    void ServiceControl(bool start);
+    sdk_ret_t UpgradeSyncHandler(void);
+    sdk_ret_t UpdateQStatus(bool enable);
+    sdk_ret_t ServiceControl(bool start);
 
     bool IsLifQuiesced();
 

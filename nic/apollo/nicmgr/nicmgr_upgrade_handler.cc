@@ -440,6 +440,33 @@ nicmgr_upg_ev_switchover_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 
     return nicmgr_upg_process_response(ret, info);
 }
+
+static void
+nicmgr_upg_ev_repeal_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    upg_ev_info_s *info = new upg_ev_info_t();
+    sdk_ret_t ret = SDK_RET_OK;
+
+    PDS_TRACE_DEBUG("Upgrade nicmgr IPC request repeal");
+    info->msg_in = msg;
+    ret = nicmgr::upg::upg_repeal_handler(info);
+
+    return nicmgr_upg_process_response(ret, info);
+}
+
+static void __attribute__ ((unused))
+nicmgr_upg_ev_rollback_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    upg_ev_info_s *info = new upg_ev_info_t();
+    sdk_ret_t ret = SDK_RET_OK;
+
+    PDS_TRACE_DEBUG("Upgrade nicmgr IPC request rollback");
+    info->msg_in = msg;
+    ret = nicmgr::upg::upg_rollback_handler(info);
+
+    return nicmgr_upg_process_response(ret, info);
+}
+
 sdk_ret_t
 nicmgr_upg_init (void)
 {
@@ -460,6 +487,8 @@ nicmgr_upg_init (void)
                                   nicmgr_upg_ev_pre_switchover_hdlr, NULL);
     sdk::ipc::reg_request_handler(UPG_MSG_ID_SWITCHOVER,
                                   nicmgr_upg_ev_switchover_hdlr, NULL);
+    sdk::ipc::reg_request_handler(UPG_MSG_ID_REPEAL,
+                                  nicmgr_upg_ev_repeal_hdlr, NULL);
 
     // register the async handlers to nicmgr library
     nicmgr::upg::upg_ev_init(nicmgr_device_reset_status_cb,

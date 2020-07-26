@@ -167,10 +167,10 @@ public:
 
     void LinkEventHandler(port_status_t *evd);
     void XcvrEventHandler(port_status_t *evd);
-    void QuiesceEventHandler(bool quiesce);
-    void UpgradeSyncHandler(void);
-    void UpdateQStatus (bool enable);
-    void ServiceControl(bool start);
+    sdk_ret_t QuiesceEventHandler(bool quiesce);
+    sdk_ret_t UpgradeSyncHandler(void);
+    sdk_ret_t UpdateQStatus(bool enable);
+    sdk_ret_t ServiceControl(bool start);
     void HalEventHandler(bool status);
     void DelphiMountEventHandler(bool mounted);
     status_code_t Reset();
@@ -193,7 +193,7 @@ public:
     bool IsPlatformIonicDev();
     EthLif* GetLif(uint16_t lif_id);
 
-    int SendDeviceReset(void);
+    sdk_ret_t SendDeviceReset(void);
     void GetEthDevInfo(struct EthDevInfo *dev_info);
     static std::string eth_type_to_str(EthDevType type);
     static EthDevType str_to_eth_type(std::string const &s);

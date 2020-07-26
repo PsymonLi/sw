@@ -302,7 +302,7 @@ DeviceManager::GetConfigFiles(devicemgr_cfg_t *cfg, string &hbm_mem_json_file,
 #else
     std::string mem_profile;
 
-    mem_profile = (cfg->memory_profile.empty() || 
+    mem_profile = (cfg->memory_profile.empty() ||
                   (cfg->memory_profile.compare("default") == 0)) ? "" : cfg->memory_profile;
     hbm_mem_json_file = sdk::lib::get_mpart_file_path(hal_cfg_dir, cfg->pipeline,
                                                       cfg->catalog, mem_profile,
@@ -1248,7 +1248,7 @@ DeviceManager::HeartbeatCheck()
     }
 }
 
-void
+sdk_ret_t
 DeviceManager::ServiceControl(bool start)
 {
     if (start) {
@@ -1256,6 +1256,8 @@ DeviceManager::ServiceControl(bool start)
     } else {
         HeartbeatStop();
     }
+
+    return SDK_RET_OK;
 }
 
 
@@ -1342,9 +1344,12 @@ upgrade_event_to_str(UpgradeEvent event)
     }
 }
 
-int
+sdk_ret_t
 DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
 {
+    sdk_ret_t ret = SDK_RET_OK;
+    sdk_ret_t result = SDK_RET_OK;
+
     NIC_LOG_DEBUG(upgrade_event_to_str(event));
 
     switch (event) {
@@ -1353,7 +1358,10 @@ DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
                 Device *dev = it->second;
                 if (dev->GetType() == ETH) {
                     Eth *eth_dev = (Eth *) dev;
-                    eth_dev->QuiesceEventHandler(true);
+                    ret = eth_dev->QuiesceEventHandler(true);
+                    if (ret != SDK_RET_OK) {
+                        result = ret;
+                    }
                 }
             }
             break;
@@ -1362,7 +1370,10 @@ DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
                 Device *dev = it->second;
                 if (dev->GetType() == ETH) {
                     Eth *eth_dev = (Eth *) dev;
-                    eth_dev->UpdateQStatus(true);
+                    ret = eth_dev->UpdateQStatus(true);
+                    if (ret != SDK_RET_OK) {
+                        result = ret;
+                    }
                 }
             }
             break;
@@ -1371,17 +1382,26 @@ DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
                 Device *dev = it->second;
                 if (dev->GetType() == ETH) {
                     Eth *eth_dev = (Eth *) dev;
-                    eth_dev->UpdateQStatus(false);
+                    ret = eth_dev->UpdateQStatus(false);
+                    if (ret != SDK_RET_OK) {
+                        result = ret;
+                    }
                 }
             }
             break;
         case UPG_EVENT_SERVICE_START:
-            ServiceControl(true);
+            ret = ServiceControl(true);
+            if (ret != SDK_RET_OK) {
+                result = ret;
+            }
             for (auto it = devices.begin(); it != devices.end(); it++) {
                 Device *dev = it->second;
                 if (dev->GetType() == ETH) {
                     Eth *eth_dev = (Eth *) dev;
-                    eth_dev->ServiceControl(true);
+                    ret = eth_dev->ServiceControl(true);
+                    if (ret != SDK_RET_OK) {
+                        result = ret;
+                    }
                 }
             }
             break;
@@ -1391,7 +1411,10 @@ DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
                 Device *dev = it->second;
                 if (dev->GetType() == ETH) {
                     Eth *eth_dev = (Eth *) dev;
-                    eth_dev->ServiceControl(false);
+                    ret = eth_dev->ServiceControl(false);
+                    if (ret != SDK_RET_OK) {
+                        result = ret;
+                    }
                 }
             }
             break;
@@ -1400,7 +1423,10 @@ DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
                 Device *dev = it->second;
                 if (dev->GetType() == ETH) {
                     Eth *eth_dev = (Eth *) dev;
-                    eth_dev->UpgradeSyncHandler();
+                    ret = eth_dev->UpgradeSyncHandler();
+                    if (ret != SDK_RET_OK) {
+                        result = ret;
+                    }
                 }
             }
             break;
@@ -1411,13 +1437,17 @@ DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
                     upgrade_state_to_str(upg_state));
                 break;
             }
-            SendDeviceReset();
+            ret = SendDeviceReset();
+            if (ret != SDK_RET_OK) {
+                result = ret;
+            }
             break;
         default:
+            result = SDK_RET_ERR;
             break;
     }
 
-    return 0;
+    return result;
 }
 
 bool
@@ -1456,17 +1486,24 @@ DeviceManager::CheckAllDevsDisabled()
     return is_allDevReset;
 }
 
-int
-DeviceManager::SendDeviceReset(void) {
+sdk_ret_t
+DeviceManager::SendDeviceReset(void)
+{
+    sdk_ret_t result = SDK_RET_OK;
+
     for (auto it = devices.begin(); it != devices.end(); it++) {
+        sdk_ret_t ret;
         Device *dev = it->second;
         if (dev->GetType() == ETH) {
             Eth *eth_dev = (Eth *) dev;
-            eth_dev->SendDeviceReset();
+            ret = eth_dev->SendDeviceReset();
+            if (ret != SDK_RET_OK) {
+                result = ret;
+            }
         }
     }
 
-    return 0;
+    return result;
 }
 
 

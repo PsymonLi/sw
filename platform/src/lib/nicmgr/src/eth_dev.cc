@@ -512,9 +512,11 @@ Eth::UpgradeHitlessInit(struct eth_devspec *spec)
     PortStatusMem(false);
 }
 
-void
+sdk_ret_t
 Eth::ServiceControl(bool start)
 {
+    sdk_ret_t result = SDK_RET_OK;
+
     if (start) {
         DevcmdRegInit();
         DevcmdInit();
@@ -525,9 +527,15 @@ Eth::ServiceControl(bool start)
     }
 
     for (auto it = lif_map.cbegin(); it != lif_map.cend(); it++) {
+        sdk_ret_t ret;
         EthLif *eth_lif = it->second;
-        eth_lif->ServiceControl(start);
+        ret = eth_lif->ServiceControl(start);
+        if (ret != SDK_RET_OK) {
+            result = ret;
+        }
     }
+
+    return result;
 }
 
 void
@@ -2831,27 +2839,43 @@ Eth::XcvrEventHandler(port_status_t *evd)
     }
 }
 
-void
+sdk_ret_t
 Eth::UpdateQStatus(bool enable)
 {
-    NIC_LOG_DEBUG("Eth Device QControl Handler");
+    sdk_ret_t result = SDK_RET_OK;
+
+    NIC_LOG_DEBUG("{}: Eth Device QControl Handler", spec->name);
     for (auto it = lif_map.cbegin(); it != lif_map.cend(); it++) {
+        sdk_ret_t ret;
         EthLif *eth_lif = it->second;
-        eth_lif->UpdateQStatus(enable);
+        ret = eth_lif->UpdateQStatus(enable);
+        if (ret != SDK_RET_OK) {
+            result = ret;
+        }
     }
+
+    return result;
 }
 
-void
+sdk_ret_t
 Eth::UpgradeSyncHandler(void)
 {
-    NIC_LOG_DEBUG("Eth Device upgrade sync Handler");
+    sdk_ret_t result = SDK_RET_OK;
+
+    NIC_LOG_DEBUG("{}: Eth Device upgrade sync Handler", spec->name);
     for (auto it = lif_map.cbegin(); it != lif_map.cend(); it++) {
+        sdk_ret_t ret;
         EthLif *eth_lif = it->second;
-        eth_lif->UpgradeSyncHandler();
+        ret = eth_lif->UpgradeSyncHandler();
+        if (ret != SDK_RET_OK) {
+            result = ret;
+        }
     }
+
+    return result;
 }
 
-void
+sdk_ret_t
 Eth::QuiesceEventHandler(bool quiesce)
 {
     port_status_t port_status = {0};
@@ -2861,14 +2885,17 @@ Eth::QuiesceEventHandler(bool quiesce)
     if (spec->uplink_port_num != 0 ||
         spec->eth_type == ETH_HOST ||
         spec->eth_type == ETH_MNIC_INBAND_MGMT) {
-        return;
+        NIC_LOG_INFO("{}: Skipping upgrade link event handler, Since linkmgr"
+                     "will generate the event", spec->name);
+        return SDK_RET_OK;
     }
 
     port_status.id = 0;
     port_status.speed = IONIC_SPEED_1G;
     port_status.status = quiesce ? IONIC_PORT_OPER_STATUS_DOWN : IONIC_PORT_OPER_STATUS_UP;
-
     LinkEventHandler(&port_status);
+
+    return SDK_RET_OK;
 }
 
 void
@@ -3020,20 +3047,26 @@ Eth::IsPlatformIonicDev()
     }
 }
 
-int
-Eth::SendDeviceReset(void) {
-    EthLif *eth_lif;
+sdk_ret_t
+Eth::SendDeviceReset(void)
+{
+    sdk_ret_t   result = SDK_RET_OK;
+    EthLif      *eth_lif;
 
     // set device in upgrade process
     this->is_device_upgrade = true;
 
     for (auto it = lif_map.cbegin(); it != lif_map.cend(); it++) {
+        sdk_ret_t ret;
         eth_lif = it->second;
-        NIC_LOG_DEBUG("{}: sending device Reset", spec->name);
-        eth_lif->SendDeviceReset();
+        NIC_LOG_INFO("{}: sending device Reset", spec->name);
+        ret = eth_lif->SendDeviceReset();
+        if (ret != SDK_RET_OK) {
+            result = ret;
+        }
     }
 
-    return 0;
+    return result;
 }
 
 int
