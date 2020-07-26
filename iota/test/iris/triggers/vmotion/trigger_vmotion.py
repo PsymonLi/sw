@@ -43,6 +43,34 @@ def __create_endpoint_info(tc):
     api.Logger.debug("Completed endpoint info creation at NewHome")
     return
 
+def __update_endpoint_info(tc):
+    for dest_host, workloads in tc.vmotion_cntxt.MoveRequest.items():
+        api.Logger.debug("Creating endpoint info at %s for workloads being moved" % dest_host)
+        if not api.IsNaplesNode(dest_host):
+            continue 
+        for wl in workloads:
+            api.Logger.debug("Updating ep-info for %s" % wl.workload_name)
+            ep_filter = "meta.name=" + wl.workload_name + ";" 
+            objects = agent_api.QueryConfigs("Endpoint", filter=ep_filter) 
+            assert(len(objects) == 1) 
+            obj = copy.deepcopy(objects[0]) 
+            # update to indicate completion of vmotion
+            obj.spec.migration           = "DONE"
+            obj.spec.node_uuid           = tc.vmotion_cntxt.UUIDMap[dest_host]
+            resp = agent_api.UpdateConfigObjects([obj], [dest_host], True)
+            if resp != api.types.status.SUCCESS:
+                api.Logger.error("Update migr status done failed for %s for %s" % (wl.workload_name, dest_host))
+
+            # update to keep new node happy, only in iota 
+            obj.spec.migration           = None
+            obj.spec.node_uuid           = tc.vmotion_cntxt.UUIDMap[dest_host]
+            resp = agent_api.UpdateConfigObjects([obj], [dest_host], True)
+            if resp != api.types.status.SUCCESS:
+                api.Logger.error("Update migr state to None failed for %s for %s" % (wl.workload_name, dest_host))
+    api.Logger.debug("Completed endpoint update at NewHome")
+    return
+
+
 def __delete_endpoint_info(tc):
     api.Logger.debug("Deleting endpoint info from CurrentHome of moved workloads")
     for wload, host in tc.vmotion_cntxt.CurrentHome.items():
@@ -87,6 +115,7 @@ def Main(tc):
             api.Logger.error("Vmotion failed for TC: %s" % tc.Name()) 
             
         cfg_thread.join()
+        __update_endpoint_info(tc)
 
         if tc.vmotion_resp == api.types.status.SUCCESS: 
             __delete_endpoint_info(tc)
