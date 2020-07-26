@@ -20,7 +20,7 @@
         {
             "name"      : "elba",
             "num"       : "0",
-            "max_ports" : "5",
+            "max_ports" : "9",
             "ports"     :
             [
                { "port_num" : "0", "mac_id" : "0", "mac_ch" : "0", "sbus_addr" : "0", "tm_port" : "0" },

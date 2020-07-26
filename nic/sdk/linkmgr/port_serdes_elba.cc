@@ -743,7 +743,6 @@ serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 
     // cfg->init_mode = Avago_serdes_init_mode_t::AVAGO_INIT_ONLY;
     cfg->init_mode = Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ELB;
-    cfg->init_mode = Avago_serdes_init_mode_t::AVAGO_CORE_DATA_ILB;
 
     // divider and width
     cfg->tx_divider = divider;
@@ -941,19 +940,18 @@ serdes_spico_reset_hw (uint32_t sbus_addr)
   return 0;
 }
 
-
-int
+static int
 serdes_spico_upload_hw (uint32_t sbus_addr, const char* filename)
 {
     int rc;
     int run_ram_bist = 1;
-    SDK_LINKMGR_TRACE_DEBUG ("serdes_spico_upload_hw sbus_addr 0x%x filename:%s", sbus_addr, filename); 
-    rc = avago_spico_upload_file(aapl, sbus_addr, run_ram_bist, filename);
 
+    SDK_LINKMGR_TRACE_DEBUG ("spico upload sbus_addr 0x%x filename %s",
+                             sbus_addr, filename); 
+    rc = avago_spico_upload_file(aapl, sbus_addr, run_ram_bist, filename);
     if (rc < 0) {
         SDK_LINKMGR_TRACE_ERR("spico upload failed for sbus: %x", sbus_addr);
     }
-
     return rc;
 }
 
@@ -1674,7 +1672,7 @@ serdes_aacs_start_hw(int port)
 int
 serdes_firmware_upload_hw (void)
 {
-    uint32_t sbus_addr, err=0;
+    uint32_t sbus_addr, err = 0;
     int exp_build_id  = g_linkmgr_cfg.catalog->serdes_build_id();
     int exp_rev_id    = g_linkmgr_cfg.catalog->serdes_rev_id();
     int exp_build_id2 = g_linkmgr_cfg.catalog->serdes_build_id2();
@@ -1685,21 +1683,20 @@ serdes_firmware_upload_hw (void)
     std::string cfg_file2 = std::string(g_linkmgr_cfg.cfg_path) + "/fw/" + g_linkmgr_cfg.catalog->serdes_fw2_file();
     int bh_lane, ret;
 
-    for (uint32_t xx = 0; xx < 2; xx++ ) {
     for (uint32_t asic_port = 0; asic_port < prt_cnt; ++asic_port) {
         sbus_addr = g_linkmgr_cfg.catalog->sbus_addr_asic_port(asic_num, asic_port);
-        SDK_TRACE_DEBUG("serdes_firmware_upload_hw asic_port:%0d sbus_addr:0x%x", asic_port, sbus_addr);
+        SDK_TRACE_DEBUG("serdes_firmware_upload_hw asic_port %0d "
+                        " sbus_addr 0x%x", asic_port, sbus_addr);
         if (sbus_addr == 0) {
           continue;
         }
-        if(xx==1) { sbus_addr = 0x305; }
         bh_lane = serdes_get_bh_lane(sbus_addr);
-        if(bh_lane == -1) {
+        if (bh_lane == -1) {
           ret = serdes_spico_upload_hw(sbus_addr, cfg_file.c_str());
-          if(ret!=0) err = 1;
+          if (ret != 0) err = 1;
         } else if (bh_lane == 0 ) {
           ret = serdes_bh_fw_upload_init(sbus_addr, cfg_file2.c_str());
-          if(ret!=0) err = 1;
+          if (ret != 0) err = 1;
         }
 
         int build_id = serdes_get_build_id_hw(sbus_addr);
@@ -1730,8 +1727,6 @@ serdes_firmware_upload_hw (void)
         SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
             sbus_addr,
             serdes_spico_crc_hw(sbus_addr));
-        if(xx==1) { break; }
-    }
     }
 
     return ( (err)? -1 : 0 ) ;
