@@ -1,2 +1,4 @@
 # run every 5 mins
 */5 * * * * /nic/tools/run_cron.sh > /dev/null 2>&1
+# check for routing log rotation every 1 min and zip/stash if found
+*/1 * * * * /nic/tools/run_cron_routing.sh > /dev/null 2>&1

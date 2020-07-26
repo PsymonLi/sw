@@ -293,6 +293,7 @@ nic/metaswitch/config/nbase.ini                                   /nic/conf/
 # cronjobs
 nic/conf/$PIPELINE/crontabs/root                                  /nic/conf/$PIPELINE/crontabs/
 nic/apollo/tools/run_cron.sh                                      /nic/tools/
+nic/apollo/tools/run_cron_routing.sh                              /nic/tools/
 
 # test binaries and libraries
 # TODO: these need to be cleanedup
