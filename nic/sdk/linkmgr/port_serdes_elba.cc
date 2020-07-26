@@ -721,6 +721,7 @@ serdes_global_init_hw(uint32_t     jtag_id,
     return aapl;
 }
 
+//extern int serdes_an_init_hw (uint32_t sbus_addr, serdes_info_t *serdes_info);
 int
 serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
 {
@@ -801,6 +802,13 @@ serdes_basic_cfg_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
     int rr = serdes_bh_txrx_init(sbus_addr, is_rx, prbs, int_lpbk, lnk_training, serdes_info);
     if(rr != 0) ret = -1;
   }
+
+  //hack for checking bh in 1G
+  //if(sbus_addr==0x80308) {
+  //  SDK_LINKMGR_TRACE_DEBUG("Hack CALL : serdes_an_init_hw 0x90308");
+  //  serdes_an_init_hw(0x90308, serdes_info);
+  //}
+
   return ret;
 }
 
@@ -1431,6 +1439,8 @@ serdes_an_hcd_cfg2_hw (uint32_t sbus_addr, uint32_t *sbus_addr_arr, uint32_t an_
   xx->post2 = 0;
   xx->post3 = 0;
 
+  SDK_LINKMGR_TRACE_DEBUG("serdes_an_hcd_cfg2_hw : Starting sbus_addr: %x", sbus_addr);
+
 
   switch (an_hcd) {
     case 0x08: /* 100GBASE-KR4 */
@@ -1514,10 +1524,15 @@ serdes_an_hcd_cfg2_hw (uint32_t sbus_addr, uint32_t *sbus_addr_arr, uint32_t an_
       return -1;
   }
 
+  SDK_LINKMGR_TRACE_DEBUG("serdes_an_hcd_cfg2_hw : sbus_addr: %x "
+      " pam4_mode:%0d osr:%0d sbus_divider:%0d width:%0d num_lanes:%0d", 
+      sbus_addr, xx->pam4_mode, xx->osr, xx->sbus_divider, xx->width, num_lanes);
+
   // construct AAPL addr_list
   uint32_t addr, is_rx=0, prbs=0, int_lpbk=0, lnk_training=1, ret=0;
   for (int i = 0; i < num_lanes; ++i) {
     addr = sbus_addr_arr[i];
+    SDK_LINKMGR_TRACE_DEBUG("serdes_an_hcd_cfg2_hw : lane: %0d sbus_addr: %x", i, sbus_addr);
     int r1 = serdes_bh_txrx_init(addr, is_rx, prbs, int_lpbk, lnk_training, xx);
     is_rx = 1;
     int r2 = serdes_bh_txrx_init(addr, is_rx, prbs, int_lpbk, lnk_training, xx);
