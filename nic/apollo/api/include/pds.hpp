@@ -159,7 +159,8 @@ pds_encap2str (const pds_encap_t *encap)
         snprintf(buf, 20, "Dot1q/%u", encap->val.value);
         break;
     case PDS_ENCAP_TYPE_QINQ:
-        snprintf(buf, 20, "QinQ/%u", encap->val.value);
+        snprintf(buf, 20, "QinQ/(%u, %u)", encap->val.qinq.s_tag,
+                 encap->val.qinq.c_tag);
         break;
     case PDS_ENCAP_TYPE_MPLSoUDP:
         snprintf(buf, 20, "MPLSoUDP/%u", encap->val.value);

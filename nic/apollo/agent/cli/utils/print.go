@@ -128,6 +128,10 @@ func EncapToString(encap *pds.Encap) string {
 	switch encapType {
 	case pds.EncapType_ENCAP_TYPE_DOT1Q:
 		encapStr += fmt.Sprintf("/%d", encap.GetValue().GetVlanId())
+	case pds.EncapType_ENCAP_TYPE_QINQ:
+		encapStr += fmt.Sprintf("/(%d, %d)",
+			encap.GetValue().GetQinQ().GetSTag(),
+			encap.GetValue().GetQinQ().GetCTag())
 	case pds.EncapType_ENCAP_TYPE_MPLSoUDP:
 		encapStr += fmt.Sprintf("/%d", encap.GetValue().GetMPLSTag())
 	case pds.EncapType_ENCAP_TYPE_VXLAN:
