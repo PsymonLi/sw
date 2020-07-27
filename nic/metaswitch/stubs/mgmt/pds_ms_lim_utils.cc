@@ -138,7 +138,7 @@ pds_ms_fill_amb_lim_ent (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
 
     if (data->row_status != AMB_ROW_DESTROY) {
         // Enable IF status change traps by default
-        data->if_status_traps = AMB_TRUE;
+        data->if_status_traps = AMB_FALSE;
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_LIM_ENT_IF_STATUS_TRAPS);
     }
 
