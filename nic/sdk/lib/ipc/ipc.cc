@@ -207,6 +207,9 @@ ipc_service::~ipc_service() {
     if (this->eventfd_ != -1) {
         close(this->eventfd_);
     }
+    if (this->receive_eventfd_ != -1) {
+        close(this->receive_eventfd_);
+    }
 }
 
 ipc_service::ipc_service() : ipc_service(IPC_MAX_ID + 1) {};
