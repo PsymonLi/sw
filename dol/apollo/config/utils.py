@@ -1352,6 +1352,8 @@ def ModifyPolicyDependency(obj, delete):
     return
 
 def ReconfigPolicies(obj, spec):
+    if not hasattr(spec, 'v4ingrpolicycount') and not hasattr(spec, 'v4egrpolicycount'):
+        return
     ModifyPolicyDependency(obj, True)
     obj.IngV4SecurityPolicyIds = GetPolicies(obj, spec, obj.Node, \
                                     "V4", "ingress", False)

@@ -65,8 +65,8 @@ class RouteObject():
                 self.SNatAction = topo.NatActionTypes.NAPT_SERVICE
 
     def __repr__(self):
-        return "RouteID: %s |ip:%s|priority:%d|type:%s"\
-                % (self.UUID, self.ipaddr, self.Priority, self.NextHopType)
+        return "RouteID: %s |ip:%s|priority:%d|type:%s|MeterEn:%s"\
+                % (self.UUID, self.ipaddr, self.Priority, self.NextHopType, self.MeterEn)
 
     def Show(self):
         logger.info("  - Route object:", self)
@@ -170,6 +170,7 @@ class RouteObject():
 class RouteTableObject(base.ConfigObjectBase):
     def __init__(self, node, parent, af, routes, routetype, tunobj, vpcpeerid, spec):
         super().__init__(api.ObjectTypes.ROUTE, node)
+        self.Class = RouteTableObject
         if hasattr(spec, 'origin'):
             self.SetOrigin(spec.origin)
         elif (EzAccessStoreClient[node].IsDeviceOverlayRoutingEnabled()):
@@ -252,7 +253,8 @@ class RouteTableObject(base.ConfigObjectBase):
         self.routes = copy.deepcopy(clone.routes)
         return clone
 
-    def UpdateAttributes(self, spec):
+    def AutoUpdate(self):
+        super().AutoUpdate()
         ipaddr = utils.GetNextSubnet(self.routes.get(list(self.routes)[-1]).ipaddr)
         for route in self.routes.values():
             ipaddr = utils.GetNextSubnet(ipaddr)
@@ -263,10 +265,6 @@ class RouteTableObject(base.ConfigObjectBase):
                 else:
                     nh = nexthop.client.GetV6Nexthop(self.Node, self.VPCId)
                 route.NexthopId = nh.NexthopId
-        return
-
-    def RollbackAttributes(self):
-        self.routes = self.GetPrecedent().routes
         return
 
     def PopulateKey(self, grpcmsg):
@@ -480,6 +478,32 @@ class RouteTableObject(base.ConfigObjectBase):
         utils.DumpTestcaseConfig(obj)
         return
 
+    def UpdateMeterEn(obj, attr=None, spec=None):
+        routes = []
+        if obj.MeterEn:
+            for r in obj.routes.values():
+                if r.MeterEn:
+                    routes.append(r)
+        base.ConfigObjectBase.UpdateScalarAttr(obj, 'meteren', spec)
+        if obj.MeterEn:
+            r = random.choice(list(obj.routes.values()))
+            r.MeterEn = True
+        if not obj.MeterEn and len(routes):
+            for r in routes:
+                r.MeterEn = False
+        return
+
+    AttrAlias = {
+        # aliasing to access object's attribute from yaml attribute name
+        'meteren' : 'MeterEn',
+    }
+
+    UpdateAttrFn = {
+        'meteren' : UpdateMeterEn,
+    }
+
+    MutableAttrs = ['meteren', 'routes']
+
 class RouteObjectClient(base.ConfigClientBase):
     def __init__(self):
         def __isObjSupported():
@@ -565,7 +589,8 @@ class RouteObjectClient(base.ConfigClientBase):
                 logger.info("Filling NexthopGroup%d in RouteTable%d" % \
                     (robj.NhGroup.Id, robj.RouteTblId))
 
-    def GenerateObjects(self, node, parent, vpc_spec_obj, vpcpeerid):
+    def GenerateObjects(self, node, parent, vpc_spec_obj):
+        vpcpeerid = parent.GetVPCPeerId()
         if not self.__supported:
             return
 
@@ -776,6 +801,16 @@ class RouteObjectClient(base.ConfigClientBase):
             return nat, teptype
 
         for routetbl_spec_obj in vpc_spec_obj.routetbl:
+            if utils.IsReconfigInProgress(node):
+                id = getattr(routetbl_spec_obj, 'id', None)
+                if id:
+                    obj = self.GetRouteTableObject(node, id)
+                    if obj:
+                        obj.ObjUpdate(routetbl_spec_obj)
+                else:
+                    for obj in list(self.Objs[node].values()):
+                        obj.ObjUpdate(routetbl_spec_obj)
+                continue
             routetbltype = routetbl_spec_obj.type
             routetype = routetbl_spec_obj.routetype
             nat, teptype = __get_nat_teptype_from_spec(routetbl_spec_obj)

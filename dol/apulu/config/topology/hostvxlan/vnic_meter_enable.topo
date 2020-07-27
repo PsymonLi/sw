@@ -1,0 +1,9 @@
+node :
+  - id : 1
+
+    vpc : 
+      - id : 2
+        subnet:
+          - id : 1
+            vnic :
+              - meteren : true

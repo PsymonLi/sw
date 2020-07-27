@@ -64,11 +64,12 @@ class VnicStats(base.StatsObjectBase):
         else:
             self.RxPackets += 1
             self.RxBytes += sz
-        return;
+        return
 
 class VnicObject(base.ConfigObjectBase):
     def __init__(self, node, parent, spec, rxmirror, txmirror):
         super().__init__(api.ObjectTypes.VNIC, node)
+        self.Class = VnicObject
         parent.AddChild(self)
         if hasattr(spec, 'origin'):
             self.SetOrigin(spec.origin)
@@ -254,25 +255,25 @@ class VnicObject(base.ConfigObjectBase):
             self.MaxSessions = spec.max_sessions
         else:
             utils.ReconfigPolicies(self, spec)
-        self.AddToReconfigState('update')
+        super().SpecUpdate(spec)
         return
 
     def AutoUpdate(self):
         #self.VnicEncap.Update(1500)
         #TODO add a separate case for toggling usehostif, as the packet gets dropped
         #self.UseHostIf = not(self.UseHostIf)
-        self.SourceGuard = not(self.SourceGuard)
-        logger.info(f'Updated attributes - SourceGuard')
+        super().AutoUpdate()
+        logger.info(f'Updated attributes - {self.Class.MutableAttrs}')
         return
 
     def RollbackAttributes(self):
         if utils.IsReconfigInProgress(self.Node):
             utils.ModifyPolicyDependency(self, True)
-            attrlist = ["IngV4SecurityPolicyIds", "EgV4SecurityPolicyIds"]
+            attrlist = ["IngV4SecurityPolicyIds", "EgV4SecurityPolicyIds", "MeterEn"]
             self.RollbackMany(attrlist)
             utils.ModifyPolicyDependency(self, False)
         else:
-            attrlist = ["SourceGuard", "TxPolicer", "RxPolicer", "MaxSessions"]
+            attrlist = ["SourceGuard", "TxPolicer", "RxPolicer", "MaxSessions", "MeterEn"]
             self.RollbackMany(attrlist)
         return
 
@@ -560,6 +561,18 @@ class VnicObject(base.ConfigObjectBase):
         self.CommitUpdate()
         return
 
+    AttrAlias = {
+        'meteren' : 'MeterEn',
+        'srcguard' : 'SourceGuard',
+    }
+
+    UpdateAttrFn = {
+        'meteren' : base.ConfigObjectBase.UpdateScalarAttr,
+        'srcguard' : base.ConfigObjectBase.UpdateScalarAttr,
+    }
+
+    MutableAttrs = ['meteren', 'srcguard']
+
 class VnicObjectClient(base.ConfigClientBase):
     def __init__(self):
         super().__init__(api.ObjectTypes.VNIC, Resmgr.MAX_VNIC)
@@ -641,16 +654,16 @@ class VnicObjectClient(base.ConfigClientBase):
         if getattr(subnet_spec, 'vnic', None) == None:
             return
 
-        def __get_mirrors(vnicspec, attr):
-            vnicmirror = getattr(vnicspec, attr, None)
+        def __get_mirrors(spec, attr):
+            vnicmirror = getattr(spec, attr, None)
             ms = [mirrorspec.msid for mirrorspec in vnicmirror or []]
             return ms
 
         for spec in subnet_spec.vnic:
-            id = getattr(spec, 'id', None)
-            if id:
-                obj = self.GetVnicObject(node, id)
-                if utils.IsReconfigInProgress(node):
+            if utils.IsReconfigInProgress(node):
+                id = getattr(spec, 'id', None)
+                if id:
+                    obj = self.GetVnicObject(node, id)
                     if obj:
                         obj.ObjUpdate(spec)
                     else:
@@ -661,7 +674,10 @@ class VnicObjectClient(base.ConfigClientBase):
                         self.Objs[node].update({obj.VnicId: obj})
                         self.__l2mapping_objs[node].update({(obj.MACAddr.getnum(), obj.SUBNET.UUID.GetUuid(), obj.VlanId()): obj})
                         utils.AddToReconfigState(obj, 'create')
-                    continue
+                else:
+                    for obj in list(self.Objs[node].values()):
+                        obj.ObjUpdate(spec)
+                continue
             for c in range(spec.count):
                 # Alternate src dst validations
                 rxmirror = __get_mirrors(spec, 'rxmirror')

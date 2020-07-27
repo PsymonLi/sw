@@ -272,6 +272,32 @@ class ConfigObjectBase(base.ConfigObjectBase):
     def GetMutableAttributes(self):
         self.__unimplemented()
 
+    def UpdateScalarAttr(obj, attr, spec=None):
+        objAttr = obj.Class.AttrAlias[attr]
+        value = getattr(obj, objAttr)
+        if not spec or not hasattr(spec, attr):
+            if type(value) is bool:
+                setattr(obj, objAttr, not(value))
+            elif type(value) is int:
+                setattr(obj, objAttr, value+1)
+        else:
+            setattr(obj, objAttr, getattr(spec, attr))
+        return
+
+    def SpecUpdate(self, spec):
+        for attr in vars(spec):
+            if attr in self.Class.UpdateAttrFn:
+                self.Class.UpdateAttrFn[attr](self, attr, spec)
+            else:
+                logger.error(f"update for {attr} in obj {self} missing")
+        self.AddToReconfigState('update')
+        return
+
+    def AutoUpdate(self):
+        for attr in self.Class.MutableAttrs:
+            self.Class.UpdateAttrFn[attr](self, attr)
+        return
+
     def UpdateAttributes(self, spec):
         if spec:
             self.SpecUpdate(spec)
@@ -306,6 +332,12 @@ class ConfigObjectBase(base.ConfigObjectBase):
     def Update(self, spec=None):
         self.ObjUpdate(spec)
         return self.ProcessUpdate()
+
+    def RollbackAttributes(self):
+        for attr in self.Class.MutableAttrs:
+            objAttr = self.Class.AttrAlias[attr] if attr in self.Class.AttrAlias else attr
+            setattr(self, objAttr, getattr(self.Precedent, objAttr))
+        return
 
     def RollbackUpdate(self, spec=None):
         self.PrepareRollbackUpdate(spec)
@@ -766,7 +798,7 @@ class ConfigClientBase(base.ConfigClientBase):
                 obj.Update(spec)
                 #obj.AddToReconfigState('update')
         return
-    
+
 class MappingObjectBase(ConfigObjectBase):
     def __init__(self, objtype, node):
         super().__init__(objtype, node)

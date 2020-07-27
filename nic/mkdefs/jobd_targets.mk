@@ -604,7 +604,7 @@ jobd/dol/apulu/bitw_smart_service_e2e: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/apulu/meter
 jobd/dol/apulu/meter: ${JOBD_PREREQS}
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan_meter --feature meter
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature meter
 
 .PHONY: jobd/dol/apulu/mirror
 jobd/dol/apulu/mirror: ${JOBD_PREREQS}

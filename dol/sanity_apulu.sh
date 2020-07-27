@@ -62,7 +62,7 @@ DryRunSanity hostvxlan_ex policy SUB="scale_policy_subnet_vnic"
 DryRunSanity hostvxlan_ex policy SUB="scale_tag"
 DryRunSanity hostvxlan_ex_anydeny policy SUB="multi_policy"
 
-DryRunSanity hostvxlan_meter networking SUB="meter"
+DryRunSanity hostvxlan meter
 
 # mirror jobs
 DryRunSanity hostmirror mirror SUB="tx_mirror" 

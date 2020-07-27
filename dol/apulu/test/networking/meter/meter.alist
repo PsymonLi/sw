@@ -1,0 +1,20 @@
+# .alist(args list) - list of args;
+# modules in the mlist will be repeated for each arg
+
+args :
+
+    # 1
+    # meter enable
+    - topos:
+        - vnic_meter_enable.topo
+        - route_meter_enable.topo
+
+    # 2
+    # enable only in vnic
+    - topos:
+        - vnic_meter_enable.topo
+
+    # 3
+    # enable only in routetbl
+    - topos:
+        - route_meter_enable.topo

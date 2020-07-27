@@ -113,6 +113,13 @@ class VpcObject(base.ConfigObjectBase):
         self.__ip_subnet_prefix_pool[1] = {}
         return
 
+    def GetVPCPeerId(self):
+        if (self.__index + 1) == self.__count:
+            vpc_peerid = self.VPCId - self.__count + 1
+        else:
+            vpc_peerid = self.VPCId + 1
+        return vpc_peerid
+
     def GenerateChildren(self, spec):
         ############### CHILDREN OBJECT GENERATION
         node = self.Node
@@ -139,15 +146,10 @@ class VpcObject(base.ConfigObjectBase):
         if hasattr(spec, 'dhcppolicy'):
             DHCPProxyClient.GenerateObjects(node, self, spec)
         if hasattr(spec, 'routetbl'):
-            # find peer vpcid
-            if (self.__index + 1) == self.__count:
-                vpc_peerid = self.VPCId - self.__count + 1
-            else:
-                vpc_peerid = self.VPCId + 1
             # For underlay-vpc, the route-table is implicitly created, so our
             # routetable object create is not needed (will fail with exists error).
             if spec.type != 'underlay':
-                route.client.GenerateObjects(node, self, spec, vpc_peerid)
+                route.client.GenerateObjects(node, self, spec)
         meter.client.GenerateObjects(node, self, spec)
         self.V4RouteTableId = route.client.GetRouteV4TableId(node, self.VPCId)
         self.V6RouteTableId = route.client.GetRouteV6TableId(node, self.VPCId)
@@ -257,6 +259,8 @@ class VpcObject(base.ConfigObjectBase):
             policy.client.GenerateObjects(self.Node, self, spec)
         if hasattr(spec, 'subnet'):
             subnet.client.GenerateObjects(self.Node, self, spec)
+        if hasattr(spec, 'routetbl'):
+            route.client.GenerateObjects(self.Node, self, spec)
         return
 
     def AutoUpdate(self):

@@ -6,13 +6,25 @@ feature:
     module      : meter
     runorder    : 1300
     enable      : True
-    ignore      : True
+    ignore      : False
+    argslist    : meter.alist
 
 modules:
-    - module:
-        name : METER_L2N
-        mlist : local2igw.mlist
 
     - module:
-        name : METER_N2L
-        mlist : igw2local.mlist
+        name    : METER_TC_START
+        spec    : load_topo.testspec
+
+    - module:
+        name    : METER_L2N
+        mlist   : local2igw.mlist
+        ignore  : True
+
+    - module:
+        name    : METER_N2L
+        mlist   : igw2local.mlist
+        ignore  : True
+
+    - module:
+        name    : METER_TC_TEARDOWN
+        spec    : teardown_topo.testspec

@@ -1,0 +1,7 @@
+node :
+  - id : 1
+
+    vpc : 
+      - id : 2
+        routetbl:
+          - meteren : true
