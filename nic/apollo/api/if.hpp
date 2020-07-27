@@ -426,7 +426,11 @@ private:
             char name_[SDK_MAX_NAME_LEN]; ///< host interface name
             mac_addr_t mac_;              ///< host interface mac address
         } host_;
+        struct {
+            ip_prefix_t ip_pfx_;       ///< loopback interface IP prefix
+        } loopback_;
     } if_info_;
+
     /// number of tx mirror sessions
     uint8_t       num_tx_mirror_session_;
     /// Tx mirror sessions

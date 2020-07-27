@@ -212,6 +212,10 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
         ifindex_ = api::objid_from_uuid(key_);
         break;
 
+    case IF_TYPE_LOOPBACK:
+        if_info_.loopback_.ip_pfx_ = spec->loopback_if_info.ip_prefix;
+        break;
+
     case IF_TYPE_NONE:
         break;
 
@@ -278,7 +282,7 @@ if_entry::cleanup_config(api_obj_ctxt_t *obj_ctxt) {
 
 bool
 if_entry::circulate(api_obj_ctxt_t *obj_ctxt) {
-    if (type_ == IF_TYPE_L3) {
+    if ((type_ == IF_TYPE_L3) || (type_ == IF_TYPE_LOOPBACK)) {
         return true;
     }
     return false;
@@ -476,6 +480,9 @@ if_entry::fill_spec_(pds_if_spec_t *spec, port_args_t *port_args) {
         spec->l3_if_info.encap = if_info_.l3_.encap_;
         memcpy(spec->l3_if_info.mac_addr, if_info_.l3_.mac_,
                ETH_ADDR_LEN);
+        break;
+    case IF_TYPE_LOOPBACK:
+        spec->loopback_if_info.ip_prefix = if_info_.loopback_.ip_pfx_;
         break;
     case IF_TYPE_CONTROL:
         spec->control_if_info.ip_prefix = if_info_.control_.ip_pfx_;
