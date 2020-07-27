@@ -71,6 +71,10 @@ def craft_pkt(_types, _dicts):
                 pkt = pkt/IP(src = _dict['sip'],
                              dst = _dict['dip'],
                              id = 0)
+            if 'flags' in _dict.keys():
+                pkt.getlayer('IP').flags = _dict['flags']
+            if 'ttl' in _dict.keys():
+                pkt.getlayer('IP').ttl = _dict['ttl']
 
         elif _type == "UDP":
             if 'sport' not in _dict.keys() or \
@@ -392,7 +396,8 @@ class Pktgen():
 
             # append outer IP
             types.append("IP")
-            ip = {'sip' : outer_sip, 'dip' : outer_dip}
+            ttl_ = 255 if encap_info['type'] == 'mplsoudp' else 32
+            ip = {'sip' : outer_sip, 'dip' : outer_dip, 'flags' : 2, 'ttl' : ttl_}
             dicts.append(ip)
 
             # append outer UDP
@@ -416,8 +421,8 @@ class Pktgen():
                 # append GENEVE options
                 types.append("GENEVE")
                 # some of these fields are hard-coded for now
-                option1 = (0x21 << (5 * 8)) | (0x1 << (4 * 8)) | int(src_slot_id)
-                option2 = (0x22 << (5 * 8)) | (0x1 << (4 * 8)) | int(dst_slot_id)
+                option1 = (0x107 << (6 * 8)) | (0x21 << (5 * 8)) | (0x1 << (4 * 8)) | int(src_slot_id)
+                option2 = (0x107 << (6 * 8)) | (0x22 << (5 * 8)) | (0x1 << (4 * 8)) | int(dst_slot_id)
                 options = (option1 << (8 * 8)) | option2
                 geneve = {'vni' : vni, 'options' : options.to_bytes(16, byteorder="big")}
                 dicts.append(geneve)

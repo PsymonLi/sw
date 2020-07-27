@@ -559,14 +559,33 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
      
    }
 
-   @name(".session_rewrite_encap_ip") 
-     action session_rewrite_encap_ip(SESSION_REWRITE_ENCAP_IP_FIELDS) {
+   @name(".session_rewrite_encap_ip_mplsoudp") 
+     action session_rewrite_encap_ip_mplsoudp(SESSION_REWRITE_ENCAP_IP_FIELDS) {
 
      hdr.ipv4_0.setValid();
      hdr.ipv4_0.version = 4;
      hdr.ipv4_0.ihl = 5;
      hdr.ipv4_0.totalLen = tot_len;
-     hdr.ipv4_0.ttl = 64;
+     hdr.ipv4_0.flags = 0x2;
+     hdr.ipv4_0.ttl = 255;
+     hdr.ipv4_0.protocol = ip_proto;
+     hdr.ipv4_0.srcAddr = ipv4_sa;
+     hdr.ipv4_0.dstAddr = ipv4_da;
+
+     metadata.csum.ip_hdr_len_0        = PKT_IPV4_HDRLEN_0;
+     ipv4HdrCsumDepEg_0.enable_update();
+     
+   }
+
+   @name(".session_rewrite_encap_ip_geneve") 
+     action session_rewrite_encap_ip_geneve(SESSION_REWRITE_ENCAP_IP_FIELDS) {
+
+     hdr.ipv4_0.setValid();
+     hdr.ipv4_0.version = 4;
+     hdr.ipv4_0.ihl = 5;
+     hdr.ipv4_0.totalLen = tot_len;
+     hdr.ipv4_0.flags = 0x2;
+     hdr.ipv4_0.ttl = 32;
      hdr.ipv4_0.protocol = ip_proto;
      hdr.ipv4_0.srcAddr = ipv4_sa;
      hdr.ipv4_0.dstAddr = ipv4_da;
@@ -650,7 +669,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	   hdr.udp_0.srcPort = udp_sport;
 	 }
 	 hdr.udp_0.dstPort = 0x19EB;
-	 session_rewrite_encap_ip(ipv4_sa, ipv4_da,IP_PROTO_UDP, hdr.ipv4_0.totalLen);
+	 session_rewrite_encap_ip_mplsoudp(ipv4_sa, ipv4_da,IP_PROTO_UDP, hdr.ipv4_0.totalLen);
    }
 
    @name(".session_rewrite_encap_geneve") 
@@ -780,7 +799,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	hdr.udp_0.srcPort = udp_sport;
       }   
       hdr.udp_0.dstPort = 0x17C1;
-      session_rewrite_encap_ip(ipv4_sa, ipv4_da,IP_PROTO_UDP, hdr.ipv4_0.totalLen);
+      session_rewrite_encap_ip_geneve(ipv4_sa, ipv4_da,IP_PROTO_UDP, hdr.ipv4_0.totalLen);
    }
 
    @name(".session_rewrite_encap_error")

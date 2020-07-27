@@ -121,9 +121,20 @@ uint8_t h2s_l2vlan_encap_hdr[] = {
 };
 
 // Note: Total length & Checksum to be updated accordingly
-uint8_t h2s_ip_encap_hdr[] = {
-    0x45, 0x00, 0x00, 0x74, 0x00, 0x00, 0x00, 0x00,
-    0x40, 0x11, 0xA2, 0xA0, 0x04, 0x03, 0x02, 0x01,
+// Requirement for Geneve encap
+//  - DF bit set
+//  - TTL 32
+uint8_t h2s_ip_encap_hdr_geneve[] = {
+    0x45, 0x00, 0x00, 0x74, 0x00, 0x00, 0x40, 0x00,
+    0x20, 0x11, 0xA2, 0xA0, 0x04, 0x03, 0x02, 0x01,
+    0x01, 0x02, 0x03, 0x04
+};
+// Requirement for MPLSoUDP encap
+//  - DF bit set
+//  - TTL 255
+uint8_t h2s_ip_encap_hdr_mplsoudp[] = {
+    0x45, 0x00, 0x00, 0x74, 0x00, 0x00, 0x40, 0x00,
+    0xff, 0x11, 0xA2, 0xA0, 0x04, 0x03, 0x02, 0x01,
     0x01, 0x02, 0x03, 0x04
 };
 
@@ -145,8 +156,8 @@ uint8_t h2s_geneve_encap_hdr[] = {
 
 // Geneve Options: src_slot_id & dst_slot_id
 uint8_t h2s_geneve_options[] = {
-    0x00, 0x00, 0x21, 0x01, 0x00, 0x11, 0x22, 0x33,
-    0x00, 0x00, 0x22, 0x01, 0x00, 0x01, 0x23, 0x4A
+    0x01, 0x07, 0x21, 0x01, 0x00, 0x11, 0x22, 0x33,
+    0x01, 0x07, 0x22, 0x01, 0x00, 0x01, 0x23, 0x4A
 };
 
 uint8_t s2h_l2vlan_encap_hdr[] = {
@@ -810,7 +821,7 @@ fte_flow_h2s_rewrite_geneve (struct rte_mbuf *m,
     }
 
     mbuf_prepend_len = (l2_encap_hdr_len +
-                        sizeof(h2s_ip_encap_hdr) +
+                        sizeof(h2s_ip_encap_hdr_geneve) +
                         sizeof(h2s_udp_encap_hdr) +
                         sizeof(h2s_geneve_encap_hdr) +
                         sizeof(h2s_geneve_options));
@@ -832,20 +843,20 @@ fte_flow_h2s_rewrite_geneve (struct rte_mbuf *m,
     }
     pkt_start += l2_encap_hdr_len;
 
-    memcpy(pkt_start, h2s_ip_encap_hdr, sizeof(h2s_ip_encap_hdr));
+    memcpy(pkt_start, h2s_ip_encap_hdr_geneve, sizeof(h2s_ip_encap_hdr_geneve));
     ip4h = (struct ipv4_hdr *)pkt_start;
     ip_tot_len = (m->pkt_len - l2_encap_hdr_len);
     ip4h->total_length = rte_cpu_to_be_16(ip_tot_len);
     ip4h->src_addr = rte_cpu_to_be_32(rewrite_underlay->substrate_sip);
     ip4h->dst_addr = rte_cpu_to_be_32(rewrite_underlay->substrate_dip);
-    pkt_start += sizeof(h2s_ip_encap_hdr);
+    pkt_start += sizeof(h2s_ip_encap_hdr_geneve);
 
     memcpy(pkt_start, h2s_udp_encap_hdr, sizeof(h2s_udp_encap_hdr));
     udph = (struct udp_hdr *)pkt_start;
     udph->src_port = idx++;
     udph->dst_port = rte_cpu_to_be_16(0x17C1);
     udp_len = (m->pkt_len - (l2_encap_hdr_len +
-               sizeof(h2s_ip_encap_hdr)));
+               sizeof(h2s_ip_encap_hdr_geneve)));
     udph->dgram_len = rte_cpu_to_be_16(udp_len);
     pkt_start += sizeof(h2s_udp_encap_hdr);
 
@@ -904,7 +915,7 @@ fte_flow_h2s_rewrite_mplsoudp (struct rte_mbuf *m, uint16_t ip_offset, uint16_t 
     }
 
     total_encap_len = (l2_encap_hdr_len +
-                        sizeof(h2s_ip_encap_hdr) + 
+                        sizeof(h2s_ip_encap_hdr_mplsoudp) + 
                         sizeof(h2s_udp_encap_hdr) +
                         sizeof(h2s_mpls_encap_hdrs));
 
@@ -924,13 +935,13 @@ fte_flow_h2s_rewrite_mplsoudp (struct rte_mbuf *m, uint16_t ip_offset, uint16_t 
     }
     pkt_start += l2_encap_hdr_len;
 
-    memcpy(pkt_start, h2s_ip_encap_hdr, sizeof(h2s_ip_encap_hdr));
+    memcpy(pkt_start, h2s_ip_encap_hdr_mplsoudp, sizeof(h2s_ip_encap_hdr_mplsoudp));
     ip4h = (struct ipv4_hdr *)pkt_start;
     ip_tot_len = (m->pkt_len - l2_encap_hdr_len);
     ip4h->total_length = rte_cpu_to_be_16(ip_tot_len);
     ip4h->src_addr = rte_cpu_to_be_32(rewrite_underlay->substrate_sip);
     ip4h->dst_addr = rte_cpu_to_be_32(rewrite_underlay->substrate_dip);
-    pkt_start += sizeof(h2s_ip_encap_hdr);
+    pkt_start += sizeof(h2s_ip_encap_hdr_mplsoudp);
   
     /*Temporary fix to change values of UDP SPORT */ 
     h2s_udp_encap_hdr[1] = idx++;
@@ -938,7 +949,7 @@ fte_flow_h2s_rewrite_mplsoudp (struct rte_mbuf *m, uint16_t ip_offset, uint16_t 
     memcpy(pkt_start, h2s_udp_encap_hdr, sizeof(h2s_udp_encap_hdr));
     udph = (struct udp_hdr *)pkt_start;
     udp_len = (m->pkt_len - (l2_encap_hdr_len +
-               sizeof(h2s_ip_encap_hdr)));
+               sizeof(h2s_ip_encap_hdr_mplsoudp)));
     udph->dgram_len = rte_cpu_to_be_16(udp_len); 
     pkt_start += sizeof(h2s_udp_encap_hdr);
 
