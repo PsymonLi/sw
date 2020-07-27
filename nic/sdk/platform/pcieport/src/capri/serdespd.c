@@ -62,13 +62,14 @@ pciesd_poll_interrupt_in_progress(const uint16_t want)
     return inprog;
 }
 
-void
+int
 pciesd_core_interrupt(const uint16_t lanemask,
                       const uint16_t code,
                       const uint16_t data,
                       laneinfo_t *dataout)
 {
     const uint32_t codedata = ((uint32_t)data << 16) | code;
+    uint16_t inprog;
 
     /* set up interrupt code/data */
     for (int i = 0; i < 16; i++) {
@@ -83,16 +84,26 @@ pciesd_core_interrupt(const uint16_t lanemask,
     pal_reg_wr32(PP_(CFG_PP_PCSD_INTERRUPT_REQUEST, 0), lanemask);
 
     /* wait for interrupt-in-progress */
-    pciesd_poll_interrupt_in_progress(lanemask);
+    inprog = pciesd_poll_interrupt_in_progress(lanemask);
+    if (inprog != lanemask) {
+        memset(dataout->w, 0xff, sizeof(dataout->w));
+        return -1;
+    }
 
     /* clear interrupt request */
     pal_reg_wr32(PP_(CFG_PP_PCSD_INTERRUPT_REQUEST, 0), 0);
 
     /* wait for interrupt-complete */
-    pciesd_poll_interrupt_in_progress(0);
+    inprog = pciesd_poll_interrupt_in_progress(0);
+    if (inprog != 0) {
+        memset(dataout->w, 0xff, sizeof(dataout->w));
+        return -1;
+    }
 
     /* read interrupt response data */
     pal_reg_rd32w(PP_(STA_PP_PCSD_INTERRUPT_DATA_OUT, 0), dataout->w, 8);
+
+    return 0;
 }
 
 static void
@@ -129,11 +140,15 @@ pcieport_serdes_crc_check(const uint16_t lanemask)
 {
     laneinfo_t result;
     uint16_t lanepass;
-    int i;
+    int i, r;
 
     pciesys_sbus_lock();
-    pciesd_core_interrupt(lanemask, 0x3c, 0, &result);
+    r = pciesd_core_interrupt(lanemask, 0x3c, 0, &result);
     pciesys_sbus_unlock();
+
+    if (r < 0) {
+        return 0; /* indicate no lanes passed */
+    }
 
     lanepass = 0;
     for (i = 0; i < 16; i++) {

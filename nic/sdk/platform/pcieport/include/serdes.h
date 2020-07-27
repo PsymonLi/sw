@@ -18,10 +18,10 @@ typedef union laneinfo_u {
 } laneinfo_t;
 
 uint16_t pciesd_lanes_ready(const uint16_t lanemask);
-void pciesd_core_interrupt(const uint16_t lanemask,
-                           const uint16_t code,
-                           const uint16_t data,
-                           laneinfo_t *dataout);
+int pciesd_core_interrupt(const uint16_t lanemask,
+                          const uint16_t code,
+                          const uint16_t data,
+                          laneinfo_t *dataout);
 
 unsigned int pciesd_sbus_rd(const unsigned int addr,
                             const unsigned int reg);

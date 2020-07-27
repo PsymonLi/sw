@@ -313,23 +313,17 @@ pcieport_handle_mac_intr(pcieport_t *p)
 static void
 pcieport_poweron(pcieport_t *p)
 {
-    const int maxtries = 3;
-    int r, tries;
-
 #ifdef __aarch64__
     pciesys_loginfo("port%d: poweron\n", p->port);
 #endif
 
-    r = -1;
-    for (tries = 0; tries < maxtries && r < 0; tries++) {
-        r = pcieport_config_powerup(p);
-    }
-    if (r < 0) {
-        pcieport_fault(p, "poweron config failed: %d", r);
-    } else if (tries > 1) {
-        pciesys_logwarn("port%d: poweron config success on try %d\n",
-                        p->port, tries);
-        p->stats.poweron_retries++;
+    if (pcieport_config_powerup(p) < 0) {
+        /*
+         * Trigger fault for logging and health warning,
+         * then powerdown to reset (and clear FAULT).
+         */
+        pcieport_fault(p, "poweron config failed");
+        pcieport_powerdown(p->port);
     }
 }
 
@@ -407,11 +401,15 @@ pcieport_handle_pp_intr(pcieport_t *p)
      * Ack and process any error intrs.
      * We don't want to ack any port intrs that are not for our port.
      * We'll process them when/if we process the other port(s).
+     *
+     * We'll ignore any of these error intrs if PCIEPORTST_OFF.
+     * We might get errors while OFF on SWM cards when the pcie refclk
+     * goes off and the serdes spico processors get unpredictable.
      */
     pp_intreg_errs = int_pp & (PP_INTREGF_(PPSD_SBE) |
                                PP_INTREGF_(PPSD_DBE) |
                                PP_INTREGF_(SBUS_ERR));
-    if (pp_intreg_errs) {
+    if (pp_intreg_errs && p->state > PCIEPORTST_OFF) {
         if (pp_intreg_errs & (PP_INTREGF_(PPSD_SBE) |
                               PP_INTREGF_(PPSD_DBE))) {
             pcieport_handle_ppsd_ints(pp_intreg_errs);

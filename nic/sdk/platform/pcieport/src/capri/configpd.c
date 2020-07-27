@@ -202,7 +202,7 @@ pcieport_mac_unreset(pcieport_t *p)
 {
     u_int16_t phystatus;
     int perstn;
-    const int maxpolls = 2000; /* 2 seconds */
+    const int maxpolls = 500; /* 500 ms */
     int polls = 0;
 
     do {
