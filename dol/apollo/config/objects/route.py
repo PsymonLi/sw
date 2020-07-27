@@ -69,18 +69,40 @@ class RouteObject():
                 % (self.UUID, self.ipaddr, self.Priority, self.NextHopType, self.MeterEn)
 
     def Show(self):
-        logger.info("  - Route object:", self)
+        logger.info(f"  - Route object: {self}")
         nh = self.NextHopType
         if self.NextHopType == "vpcpeer":
-            nh = "vpc %d" % (self.PeerVPCId)
+            nh = f"{self.PeerVPCId}"
         elif self.NextHopType == "tep":
-            nh = "tunnel %d" % (self.TunnelId)
+            nh = f"{self.TunnelId}"
         elif self.NextHopType == "nh":
-            nh = "nh %d" % (self.NexthopId)
+            nh = f"{self.NexthopId}"
         elif self.NextHopType == "nhg":
-            nh = "nhg %d" % (self.NexthopGroupId)
-        logger.info("     NH info: %s" % (nh))
-        logger.info("     SNAT action %s" % (self.SNatAction.name))
+            nh = f"{self.NexthopGroupId}"
+        logger.info(f"     NH info: {nh}")
+        logger.info(f"     SNAT action {self.SNatAction.name}")
+
+    @staticmethod
+    def ShowTableHeader():
+        logger.info(f'  | {"ID":7} | {"UUID":37} | {"ip":18} | '\
+                    f'{"prio":4} | {"NH Type":7} | {"NH Info":7} | {"SNAT Action":12} | {"MeterEn" :7} |')
+        logger.info(f'  | {"-" * 122}')
+
+    def ShowTableFmt(self):
+        nh = self.NextHopType
+        if self.NextHopType == "vpcpeer":
+            nh = f"{self.PeerVPCId}"
+        elif self.NextHopType == "tep":
+            nh = f"{self.TunnelId}"
+        elif self.NextHopType == "nh":
+            nh = f"{self.NexthopId}"
+        elif self.NextHopType == "nhg":
+            nh = f"{self.NexthopGroupId}"
+        uuid = f"{self.UUID}"
+        uuid = uuid.split(" UUID:")
+        ipaddr = f"{self.ipaddr}"
+        logger.info(f'  | {uuid[0].split("ID:")[1]:>7} | {uuid[1]:37} | {ipaddr:18} | '\
+                    f'{self.Priority:4} | {self.NextHopType:7} | {nh:>7} | {self.SNatAction.name:12} | {str(self.MeterEn):7} |')
 
     def PopulateNh(self, spec, route):
         if self.NextHopType == "vpcpeer":
@@ -240,8 +262,10 @@ class RouteTableObject(base.ConfigObjectBase):
             logger.info("- TEP: None")
             logger.info("- NexthopGroup%d" % (self.NhGroup.Id))
         logger.info(f"- MeterEn:{self.MeterEn}")
+        logger.info(f"- Routes :")
+        RouteObject.ShowTableHeader()
         for route in self.routes.values():
-            route.Show()
+            route.ShowTableFmt()
         return
 
     def IsFilterMatch(self, selectors):
