@@ -64,7 +64,7 @@ spawn_grpc_svc_thread (void)
             grpc_svc_thread_exit, NULL,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            true);
+            THREAD_YIELD_ENABLE);
 
     SDK_ASSERT_TRACE_RETURN((g_grpc_svc_thread != NULL), SDK_RET_ERR,
                             "grpc svc thread create failure");

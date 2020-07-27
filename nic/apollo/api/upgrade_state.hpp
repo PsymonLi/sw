@@ -16,10 +16,10 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
-#include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
+#include "nic/apollo/api/internal/upgrade.hpp"
 
 namespace api {
 
@@ -43,7 +43,6 @@ typedef struct ev_in_progress_state_s {
     /// in progress params
     sdk::upg::upg_ev_params_t params;
 } ev_in_progress_state_t;
-
 
 /// \defgroup PDS_UPGRADE PDS Upgrade
 /// \ingroup  UPGRADE_STATE
@@ -130,24 +129,30 @@ public:
     /// \brief get backup/restore status
     bool backup_status(void) { return backup_status_; }
     /// \brief upgrade store instance
-    void insert_backup_shmstore(uint32_t id, bool vstore,
-                                sdk::lib::shmstore *store);
-    sdk::lib::shmstore *backup_shmstore(uint32_t id, bool vstore);
-    void insert_restore_shmstore(uint32_t id, bool vstore,
-                                sdk::lib::shmstore *store);
-    sdk::lib::shmstore *restore_shmstore(uint32_t id, bool vstore);
+    void insert_backup_shmstore(pds_shmstore_id_t id,
+                                sdk::lib::shmstore *store) {
+        SDK_ASSERT(!backup_shmstore_[id]);
+        backup_shmstore_[id] = store;
+    }
+    sdk::lib::shmstore *backup_shmstore(pds_shmstore_id_t id) {
+        return backup_shmstore_[id];
+    }
+    void insert_restore_shmstore(pds_shmstore_id_t id,
+                                 sdk::lib::shmstore *store) {
+        SDK_ASSERT(!restore_shmstore_[id]);
+        restore_shmstore_[id] = store;
+    }
+    sdk::lib::shmstore *restore_shmstore(pds_shmstore_id_t id) {
+        return restore_shmstore_[id];
+    }
     /// \brief module versions, indexed using module id
-    void insert_module_version(uint32_t id, module_version_t &version) {
-        module_version_map_.insert(std::make_pair(id, version));
+    void insert_module_version(uint32_t id, module_version_conf_t conf,
+                               module_version_pair_t &version) {
+        module_version_map_[conf].insert(std::make_pair(id, version));
     }
-    module_version_t module_version(uint32_t id) const {
-        return module_version_map_.at(id);
-    }
-    void insert_module_prev_version(uint32_t id, module_version_t &version) {
-        module_prev_version_map_.insert(std::make_pair(id, version));
-    }
-    module_version_t module_prev_version(uint32_t id) const {
-        return module_prev_version_map_.at(id);
+    module_version_pair_t module_version(uint32_t id,
+                                         module_version_conf_t conf) const {
+        return module_version_map_[conf].at(id);
     }
 
 private:
@@ -173,13 +178,11 @@ private:
     /// backup status
     bool backup_status_;
     /// upgrade object store. indexed using a unique id and store type
-    std::unordered_map<uint32_t, sdk::lib::shmstore *>
-        backup_shmstore_[UPGRADE_SHMSTORE_TYPE_MAX];
-    std::unordered_map<uint32_t, sdk::lib::shmstore *>
-        restore_shmstore_[UPGRADE_SHMSTORE_TYPE_MAX];
+    sdk::lib::shmstore *backup_shmstore_[PDS_SHMSTORE_ID_MAX];
+    sdk::lib::shmstore *restore_shmstore_[PDS_SHMSTORE_ID_MAX];
     /// module versions indexed using a unique id
-    std::unordered_map<uint32_t, module_version_t> module_version_map_;
-    std::unordered_map<uint32_t, module_version_t> module_prev_version_map_;
+    std::unordered_map<uint32_t, module_version_pair_t>
+        module_version_map_[MODULE_VERSION_CONF_MAX];
 private:
     void init_(pds_init_params_t *params);
 };

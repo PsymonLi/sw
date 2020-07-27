@@ -169,13 +169,13 @@ exit2 (void *ctx)
 TEST_F (event_thread_test, basic_functionality) {
     this->t1 = event::event_thread::factory(
         "t1", THREAD_T1, THREAD_ROLE_CONTROL, 0x0, init1, exit1, msg1, 0,
-        SCHED_OTHER, true);
+        SCHED_OTHER, THREAD_YIELD_ENABLE);
     this->t2 = event::event_thread::factory(
         "t2", THREAD_T2, THREAD_ROLE_CONTROL, 0x0, init2, exit2, msg2, 0,
-        SCHED_OTHER, true);
+        SCHED_OTHER, THREAD_YIELD_ENABLE);
     this->t3 = event::event_thread::factory(
         "t3", THREAD_T3, THREAD_ROLE_CONTROL, 0x0, init3, NULL, NULL, 0,
-        SCHED_OTHER, true);
+        SCHED_OTHER, THREAD_YIELD_ENABLE);
     
     this->t1->start(this);
     sleep(1); // make sure t1 is up
@@ -268,7 +268,7 @@ sync_resp_callback(sdk::ipc::ipc_msg_ptr msg, const void *cookie,
 TEST_F (event_thread_test, ipc_functionality) {
     event::event_thread *t4 = event::event_thread::factory(
         "t4", THREAD_T4, THREAD_ROLE_CONTROL, 0x0, init_ipc_server, NULL, NULL,
-        0, SCHED_OTHER, true);
+        0, SCHED_OTHER, THREAD_YIELD_ENABLE);
     t4->start(NULL);
 
     //
@@ -283,7 +283,7 @@ TEST_F (event_thread_test, ipc_functionality) {
     //
     event::event_thread *t5 = event::event_thread::factory(
         "t5", THREAD_T5, THREAD_ROLE_CONTROL, 0x0, init_ipc_client, NULL, NULL,
-        0, SCHED_OTHER, true);
+        0, SCHED_OTHER, THREAD_YIELD_ENABLE);
     t5->start(this);
     sleep(2);
     

@@ -457,7 +457,7 @@ main (int argc, char **argv)
             0x0, &pds_ms::pds_ms_thread_init,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            false);
+            THREAD_FLAGS_NONE);
     SDK_ASSERT_TRACE_RETURN((g_routing_thread != NULL), SDK_RET_ERR,
                             "Routing thread create failure");
     g_routing_thread->start(g_routing_thread);

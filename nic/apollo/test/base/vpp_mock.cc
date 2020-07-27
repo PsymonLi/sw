@@ -39,8 +39,7 @@ vpp_thread_create (void)
         "vpp", PDS_IPC_ID_VPP, THREAD_ROLE_CONTROL, 0x0,
         vpp_init_func, NULL, NULL,
         sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-        sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-        NULL);
+        sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL));
     SDK_ASSERT(vpp != NULL);
     vpp->start(vpp);
 

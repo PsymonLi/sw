@@ -344,7 +344,7 @@ upg_init (upg_init_params_t *params)
 
     g_tools_dir = params->tools_dir;
 
-    // spawn periodic thread that does background tasks
+    // spawn upgrademgr fsm handler thread
     g_upg_event_thread =
         sdk::event_thread::event_thread::factory(
             "upg", SDK_IPC_ID_UPGMGR,
@@ -352,7 +352,7 @@ upg_init (upg_init_params_t *params)
             api::upg_event_thread_exit, NULL, // message
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            true);
+            (THREAD_YIELD_ENABLE | THREAD_SUSPEND_DISABLE));
 
     if (!g_upg_event_thread) {
         UPG_TRACE_ERR("Upgrade event server thread create failure");

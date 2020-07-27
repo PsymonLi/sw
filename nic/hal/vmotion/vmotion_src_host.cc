@@ -586,7 +586,7 @@ vmotion::spawn_src_host_thread(int sock_fd)
                                                  src_host_thread_rcv_event,  // Thread Event CB
                                                  sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
                                                  sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-                                                 NULL);
+                                                 THREAD_FLAGS_NONE);
     if (!thread_ctx->th) {
         HAL_TRACE_ERR("vmotion src host thread create failure");
         release_thread_id(tid);
