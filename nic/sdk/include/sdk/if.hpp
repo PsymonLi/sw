@@ -18,14 +18,13 @@ typedef enum sdk_if_type_e {
     IF_TYPE_ETH        = 1,
     IF_TYPE_ETH_PC     = 2,
     IF_TYPE_TUNNEL     = 3,
-    IF_TYPE_MGMT       = 4,
-    IF_TYPE_UPLINK     = 5,
-    IF_TYPE_UPLINK_PC  = 6,
-    IF_TYPE_L3         = 7,
-    IF_TYPE_LIF        = 8,
-    IF_TYPE_LOOPBACK   = 9,
-    IF_TYPE_CONTROL    = 10,
-    IF_TYPE_HOST       = 11,
+    IF_TYPE_UPLINK     = 4,
+    IF_TYPE_UPLINK_PC  = 5,
+    IF_TYPE_L3         = 6,
+    IF_TYPE_LIF        = 7,
+    IF_TYPE_LOOPBACK   = 8,
+    IF_TYPE_CONTROL    = 9,
+    IF_TYPE_HOST       = 10,
 } if_type_t;
 
 typedef uint32_t if_index_t;     ///< interface index
@@ -112,8 +111,6 @@ ifindex_to_type_str (uint32_t ifindex) {
 		return "EthPC";
 	case IF_TYPE_TUNNEL:
 		return "Tunnel";
-	case IF_TYPE_MGMT:
-		return "Mgmt";
 	case IF_TYPE_UPLINK:
 		return "Uplink";
 	case IF_TYPE_UPLINK_PC:

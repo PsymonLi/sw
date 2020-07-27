@@ -151,7 +151,7 @@ vpc:
           count            : 1
           v4prefixlen      : 24
           v4prefix         : '2.1.0.0\24'
-          hostifidx        : 0x80000049
+          hostifidx        : 0x70000049
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 202
           v4routerip       : '2.1.0.1'
@@ -167,7 +167,7 @@ vpc:
               vnicencap:
                 type: none
               vmac      : macaddr/00ae.cd00.0811
-              hostifidx : 0x80000049
+              hostifidx : 0x70000049
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 1
@@ -196,7 +196,7 @@ vpc:
           count            : 1
           v4prefixlen      : 24
           v4prefix         : '3.1.0.0\24'
-          hostifidx        : 0x8000004a
+          hostifidx        : 0x7000004a
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 302
           v4routerip       : '3.1.0.1'
@@ -210,7 +210,7 @@ vpc:
             - id        : 2
               count     : 1             # 1 untagged VNIC
               vmac      : macaddr/00ae.cd00.0812
-              hostifidx : 0x8000004a
+              hostifidx : 0x7000004a
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 2
@@ -234,7 +234,7 @@ vpc:
             - id        : 3
               count     : 1
               vmac      : macaddr/00ae.cd00.0813
-              hostifidx : 0x8000004b
+              hostifidx : 0x7000004b
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 3
@@ -259,7 +259,7 @@ vpc:
           count            : 1
           v4prefixlen      : 24
           v4prefix         : '9.0.0.0\24'
-          hostifidx        : 0x8000004b
+          hostifidx        : 0x7000004b
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 902
           v4routerip       : '9.0.0.1'
@@ -273,7 +273,7 @@ vpc:
             - id        : 4
               count     : 1             # 1 tagged VNIC
               vmac      : macaddr/00ae.cd00.0814
-              hostifidx : 0x8000004b
+              hostifidx : 0x7000004b
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 4
@@ -297,7 +297,7 @@ vpc:
             - id        : 5
               count     : 1             # 1 tagged VNIC
               vmac      : macaddr/00ae.cd00.0815
-              hostifidx : 0x8000004b
+              hostifidx : 0x7000004b
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 5
@@ -379,7 +379,7 @@ vpc:
           count            : 1
           v4prefixlen      : 10
           v4prefix         : '11.0.0.0\8'
-          hostifidx        : 0x80000046
+          hostifidx        : 0x70000046
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 12
           v4routerip       : '11.1.1.1'
@@ -392,7 +392,7 @@ vpc:
             - id        : 51
               count     : 1             # 1 untagged VNIC
               vmac      : macaddr/feff.0b01.0102
-              hostifidx : 0x80000046
+              hostifidx : 0x70000046
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 51

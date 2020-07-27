@@ -12,13 +12,14 @@ class InterfaceTypes(enum.IntEnum):
     ETH = 1
     ETH_PC = 2
     TUNNEL = 3
-    MGMT = 4
-    UPLINK = 5
-    UPLINKPC = 6
-    L3 = 7
-    LIF = 8
-    LOOPBACK = 9
-    CONTROL = 10
+    UPLINK = 4
+    UPLINKPC = 5
+    L3 = 6
+    LIF = 7
+    LOOPBACK = 8
+    CONTROL = 9
+    HOST = 10
+    MGMT = 11
 
 class Ports(enum.IntEnum):
     HOST=0
@@ -95,11 +96,11 @@ class ObjectTypes(enum.IntEnum):
     NODE = 100
     MAX = 101
 
-class ErspanProtocolTypes(enum.IntEnum):                                                                                                  
-    ERSPAN_TYPE_NONE = 0                                                                                                                  
-    ERSPAN_TYPE_1    = 1                                                                                                                  
-    ERSPAN_TYPE_2    = 2                                                                                                                  
-    ERSPAN_TYPE_3    = 3  
+class ErspanProtocolTypes(enum.IntEnum):
+    ERSPAN_TYPE_NONE = 0
+    ERSPAN_TYPE_1    = 1
+    ERSPAN_TYPE_2    = 2
+    ERSPAN_TYPE_3    = 3
 
 class ChosenFlowObjs:
     def __init__(self):

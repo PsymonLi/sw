@@ -29,11 +29,11 @@ const (
 	ifTypeEth         = 1
 	ifTypeEthPC       = 2
 	ifTypeTunnel      = 3
-	ifTypeUplink      = 5
-	ifTypeL3          = 7
-	ifTypeLif         = 8
-	ifTypeLoopback    = 9
-	ifTypeHost        = 11
+	ifTypeUplink      = 4
+	ifTypeL3          = 6
+	ifTypeLif         = 7
+	ifTypeLoopback    = 8
+	ifTypeHost        = 10
 	ifTypeShift       = 28
 	ifSlotShift       = 24
 	ifParentPortShift = 16
