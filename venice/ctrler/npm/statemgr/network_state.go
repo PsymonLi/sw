@@ -441,7 +441,9 @@ func (sm *Statemgr) listNetworksByTenant(tenant string) ([]*NetworkState, error)
 	for _, obj := range objs {
 		nso, err := NetworkStateFromObj(obj)
 		if err != nil {
-			return networks, err
+			//when npm reboots, the state might not be present yet and this will return an error
+			log.Errorf("NetworkStateFromObj returned error: %v for obj: %v | tenant: %s", err, obj.GetObjectKind(), tenant)
+			continue
 		}
 
 		if nso.Network.Tenant == tenant {
@@ -455,7 +457,7 @@ func (sm *Statemgr) listNetworksByTenant(tenant string) ([]*NetworkState, error)
 //GetNetworkWatchOptions gets options
 func (sm *SmNetwork) GetNetworkWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
-	opts.FieldChangeSelector = []string{"Spec"}
+	opts.FieldChangeSelector = []string{"Spec", "ObjectMeta.GenerationID"}
 	return &opts
 }
 

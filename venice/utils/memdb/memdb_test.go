@@ -28,7 +28,7 @@ import (
 type testObj struct {
 	api.TypeMeta
 	api.ObjectMeta
-	field     string
+	Field     string
 	depMap    map[string]*apiintf.ReferenceObj
 	revDepMap map[string]*apiintf.ReferenceObj
 }
@@ -1128,7 +1128,7 @@ func TestMemdbAddDelete(t *testing.T) {
 			Tenant: "tenant",
 			Name:   "testName",
 		},
-		field: "testField",
+		Field: "testField",
 	}
 
 	// add an object
@@ -1142,7 +1142,7 @@ func TestMemdbAddDelete(t *testing.T) {
 	switch tp := fobj.(type) {
 	case *testObj:
 		tobj := fobj.(*testObj)
-		Assert(t, (tobj.field == obj.field), "Got invalid object", tobj)
+		Assert(t, (tobj.Field == obj.Field), "Got invalid object", tobj)
 	default:
 		t.Fatalf("Found object of invalid type: %v", tp)
 	}
@@ -1175,7 +1175,7 @@ func verifyObjField(t *testing.T, fobj Object, fieldVal string) {
 	switch tp := fobj.(type) {
 	case *testObj:
 		tobj := fobj.(*testObj)
-		Assert(t, (tobj.field == fieldVal), "Got invalid object", tobj)
+		Assert(t, (tobj.Field == fieldVal), "Got invalid object", tobj)
 	default:
 		t.Fatalf("Found object of invalid type: %v", tp)
 	}
@@ -2072,7 +2072,7 @@ func TestMemdbWatch(t *testing.T) {
 			Tenant: "tenant",
 			Name:   "testName",
 		},
-		field: "testField",
+		Field: "testField",
 	}
 
 	// start watch on objects
@@ -2100,7 +2100,7 @@ func TestMemdbWatch(t *testing.T) {
 
 	// update the object
 	newObj := obj
-	newObj.field = "updatedField"
+	newObj.Field = "updatedField"
 	err = md.UpdateObject(&newObj)
 	AssertOk(t, err, "Error updating object")
 
@@ -2141,7 +2141,7 @@ func TestMemdbConcurrency(t *testing.T) {
 			Tenant: "tenant",
 			Name:   "testName",
 		},
-		field: "testField",
+		Field: "testField",
 	}
 
 	// setup concurrent watches
@@ -2374,7 +2374,7 @@ func TestStopWatchObjects(t *testing.T) {
 			Tenant: "tenant",
 			Name:   "testName",
 		},
-		field: "testField",
+		Field: "testField",
 	}
 
 	// setup watchers
@@ -2425,7 +2425,7 @@ func TestMarshal(t *testing.T) {
 			Tenant: "tenant",
 			Name:   "testName",
 		},
-		field: "testField",
+		Field: "testField",
 	}
 
 	// add an object
@@ -2466,7 +2466,7 @@ func TestMemdbNodeState(t *testing.T) {
 			Tenant: "tenant",
 			Name:   "testName",
 		},
-		field: "testField",
+		Field: "testField",
 	}
 
 	// add an object
@@ -2507,7 +2507,7 @@ func TestMemdbAddDeleteWithDep(t *testing.T) {
 			Tenant: "tenant",
 			Name:   "testName",
 		},
-		field: "testField",
+		Field: "testField",
 	}
 
 	// add an object
@@ -2521,7 +2521,7 @@ func TestMemdbAddDeleteWithDep(t *testing.T) {
 	switch tp := fobj.(type) {
 	case *testObj:
 		tobj := fobj.(*testObj)
-		Assert(t, (tobj.field == obj.field), "Got invalid object", tobj)
+		Assert(t, (tobj.Field == obj.Field), "Got invalid object", tobj)
 	default:
 		t.Fatalf("Found object of invalid type: %v", tp)
 	}

@@ -214,9 +214,9 @@ func (tr *topoRefCnt) getWatchOptions(dsc, kind string) (api.ListWatchOptions, b
 
 func (tr *topoRefCnt) dump() {
 	for k, r := range tr.refs {
-		log.Infof("Refcnts for: %s", k)
+		log.Debugf("Refcnts for: %s", k)
 		for k1, r1 := range r {
-			log.Infof("   %s | %d", k1, r1)
+			log.Debugf("   %s | %d", k1, r1)
 		}
 	}
 }
@@ -523,13 +523,18 @@ func (tn *topoNode) addNode(obj Object, objKey string, propUpdate *PropagationSt
 		}
 		tn.topo[key] = newTopoRefs()
 	case "Vrf":
+		exists := false
+		var topoRefs *topoRefs
 		key := memdbKey(obj.GetObjectMeta())
 		if _, ok := tn.topo[key]; ok {
-			// already exists
-			return false
+			exists = true
 		}
 		vr := obj.(*netproto.Vrf)
-		topoRefs := newTopoRefs()
+		if exists == true {
+			topoRefs = tn.topo[key]
+		} else {
+			topoRefs = newTopoRefs()
+		}
 		if vr.Spec.IPAMPolicy != "" {
 			topoRefs.refs["IPAMPolicy"] = []string{vr.Spec.IPAMPolicy}
 		}
@@ -580,12 +585,18 @@ func (tn *topoNode) addNode(obj Object, objKey string, propUpdate *PropagationSt
 			}
 		}
 	case "Network":
+		exists := false
+		var topoRefs *topoRefs
 		key := memdbKey(obj.GetObjectMeta())
 		if _, ok := tn.topo[key]; ok {
-			return false
+			exists = true
 		}
 		nw := obj.(*netproto.Network)
-		topoRefs := newTopoRefs()
+		if exists == true {
+			topoRefs = tn.topo[key]
+		} else {
+			topoRefs = newTopoRefs()
+		}
 		if nw.Spec.IPAMPolicy != "" {
 			topoRefs.refs["IPAMPolicy"] = []string{nw.Spec.IPAMPolicy}
 		}
@@ -676,7 +687,7 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string, propUpd
 
 			k1 := getKey(tenant, obj.GetObjectMeta().Namespace, nwIf.Spec.Network)
 			// clear the back reference
-			tn.tm.delObjBackref(k1, "Network", "", kind)
+			tn.tm.delObjBackref(k1, "Network", objKey, kind)
 
 			dsc := nwIf.Status.DSC
 			// decrement the refcnt
@@ -1264,12 +1275,12 @@ func (tn *topoNode) dump() string {
 	ret := ""
 
 	for kind, node := range tn.topo {
-		log.Infof("  Object key: %s", kind)
+		log.Debugf("  Object key: %s", kind)
 		for key, ref := range node.refs {
-			log.Infof("    Ref key: %s | refs %v", key, ref)
+			log.Debugf("    Ref key: %s | refs %v", key, ref)
 		}
 		for k, bref := range node.backRefs {
-			log.Infof("    BackRef key: %s | refs %v", k, bref)
+			log.Debugf("    BackRef key: %s | refs %v", k, bref)
 		}
 	}
 	return ret
@@ -1277,13 +1288,13 @@ func (tn *topoNode) dump() string {
 
 func (tm *topoMgr) dump() string {
 	ret := ""
-	log.Info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	log.Debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 	for kind, obj := range tm.topology {
-		log.Infof("Topology for kind: %s", kind)
+		log.Debugf("Topology for kind: %s", kind)
 		obj.dump()
 	}
-	log.Info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	log.Debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 	return ret
 }

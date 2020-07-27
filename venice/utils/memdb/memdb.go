@@ -16,6 +16,7 @@ import (
 	apiintf "github.com/pensando/sw/api/interfaces"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/memdb/objReceiver"
+	"github.com/pensando/sw/venice/utils/ref"
 
 	"github.com/willf/bitset"
 
@@ -272,6 +273,13 @@ type topoMgrInterface interface {
 
 func sendToWatcher(ev Event, watcher *Watcher) error {
 	//fmt.Printf("Sending obj evemt %v %v\n", ev, obj.GetObjectMeta().GetKey())
+	n := ref.DeepCopy(ev.Obj)
+	newObj, ok := n.(Object)
+	if !ok {
+		log.Errorf("sendToWatcher: assert to type Object failed for: %v", n)
+	} else {
+		ev.Obj = newObj
+	}
 	select {
 	case watcher.Channel <- ev:
 	default:

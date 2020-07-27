@@ -411,7 +411,9 @@ func (sm *Statemgr) listVrfsByTenant(tenant string) ([]*VirtualRouterState, erro
 	for _, obj := range objs {
 		vro, err := VirtualRouterStateFromObj(obj)
 		if err != nil {
-			return vrfs, err
+			//when npm reboots, the state might not be present yet and this will return an error
+			log.Errorf("VirtualRouterStateFromObj returned error: %v for obj: %v | tenant: %s", err, obj.GetObjectKind(), tenant)
+			continue
 		}
 
 		if vro.VirtualRouter.Tenant == tenant {
