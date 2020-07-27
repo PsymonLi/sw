@@ -36,6 +36,7 @@ MODULE_ARLIBS	= \
 	delphiutils \
 	devapi_iris \
 	device \
+	lldp \
 	directmap \
 	dropstatsproto \
 	event_thread \

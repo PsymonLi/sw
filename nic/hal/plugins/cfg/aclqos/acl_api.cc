@@ -43,7 +43,7 @@ acl_get_priority(acl_t *pi_acl)
 // Acl API: Install LLDP entry
 // ----------------------------------------------------------------------------
 hal_ret_t
-acl_install_inband_lldp (if_t *inband_if, if_t *uplink_if) 
+acl_install_lldp (if_t *inband_if, if_t *uplink_if) 
 {
     hal_ret_t        ret;
     AclSpec          spec;
@@ -56,8 +56,12 @@ acl_install_inband_lldp (if_t *inband_if, if_t *uplink_if)
 
     if_idx = uplink_if_get_idx(uplink_if);
 
-    acl_id = ACL_INBAND_LLDP_ID + if_idx;
-    priority = ACL_INBAND_LLDP_PRIORITY;
+    if (enicif_is_inband(inband_if)) {
+        acl_id = ACL_INBAND_LLDP_ID + if_idx;
+    } else {
+        acl_id = ACL_HOST_LLDP_ID + if_idx;
+    }
+    priority = ACL_LLDP_PRIORITY;
 
     match = spec.mutable_match();
     action = spec.mutable_action();
@@ -73,12 +77,12 @@ acl_install_inband_lldp (if_t *inband_if, if_t *uplink_if)
     match->mutable_eth_selector()->set_eth_type(ETH_TYPE_LLDP);
     match->mutable_eth_selector()->set_eth_type_mask(0xffff);
 
-    HAL_TRACE_DEBUG("Installing ACL for inband lldp inband_if:{} -> uplink:{}",
+    HAL_TRACE_DEBUG("Installing ACL for lldp if:{} -> uplink:{}",
                     inband_if->if_id, uplink_if->if_id);
     ret = hal::acl_create(spec, &rsp);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Unable to install inband lldp "
-                      "inband_if -> uplink. err: {}", ret);
+        HAL_TRACE_ERR("Unable to install lldp "
+                      "if -> uplink. err: {}", ret);
     }
 
     return ret;
@@ -88,7 +92,7 @@ acl_install_inband_lldp (if_t *inband_if, if_t *uplink_if)
 // Acl API: UnInstall LLDP entry
 // ----------------------------------------------------------------------------
 hal_ret_t
-acl_uninstall_inband_lldp (if_t *inband_if, if_t *uplink_if)
+acl_uninstall_lldp (if_t *inband_if, if_t *uplink_if)
 {
     hal_ret_t           ret;
     AclDeleteRequest    req;
@@ -98,9 +102,13 @@ acl_uninstall_inband_lldp (if_t *inband_if, if_t *uplink_if)
 
     if_idx = uplink_if_get_idx(uplink_if);
 
-    acl_id = ACL_INBAND_LLDP_ID + if_idx;
+    if (enicif_is_inband(inband_if)) {
+        acl_id = ACL_INBAND_LLDP_ID + if_idx;
+    } else {
+        acl_id = ACL_HOST_LLDP_ID + if_idx;
+    }
     req.mutable_key_or_handle()->set_acl_id(acl_id);
-    HAL_TRACE_DEBUG("UnInstalling ACL for inband lldp inband_if:{} -> uplink:{}",
+    HAL_TRACE_DEBUG("UnInstalling ACL for lldp if:{} -> uplink:{}",
                     inband_if->if_id, uplink_if->if_id);
     ret = hal::acl_delete(req, &rsp);
     if (ret == HAL_RET_ACL_NOT_FOUND) {
@@ -109,8 +117,8 @@ acl_uninstall_inband_lldp (if_t *inband_if, if_t *uplink_if)
         ret = HAL_RET_OK;
     }
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Unable to uninstall inband lldp "
-                      "inband_if -> uplink. err: {}", ret);
+        HAL_TRACE_ERR("Unable to uninstall lldp "
+                      "if -> uplink. err: {}", ret);
     }
 
     return ret;

@@ -66,7 +66,8 @@ namespace hal {
 #define ACL_QUIESCE_ENTRY_ID             4
 #define ACL_EPLEARN_ENTRY_ID_BEGIN       5
 #define ACL_EPLEARN_ENTRY_ID_END         10
-#define ACL_INBAND_LLDP_ID               11
+#define ACL_HOST_LLDP_ID                 11
+#define ACL_INBAND_LLDP_ID               ACL_HOST_LLDP_ID + 2
 #define ACL_NCSI_OOB_REDIRECT_ID1        ACL_INBAND_LLDP_ID + 2
 #define ACL_NCSI_OOB_REDIRECT_ID2        ACL_NCSI_OOB_REDIRECT_ID1 + 1
 #define ACL_NCSI_OOB_REDIRECT_ID3        ACL_NCSI_OOB_REDIRECT_ID2 + 1
@@ -99,7 +100,7 @@ namespace hal {
 #define ACL_SNAKE_TEST_PRIORITY_BEGIN          12
 #define ACL_SNAKE_TEST_PRIORITY_END            26
 #define ACL_RDMA_SNIFFER_PRIORITY              27
-#define ACL_INBAND_LLDP_PRIORITY               28
+#define ACL_LLDP_PRIORITY                      28
 #define ACL_NCSI_OOB_REDIRECT_PRIORITY         29
 #define ACL_NCSI_OOB_BCAST_DROP_PRIORITY       30
 #define ACL_NCSI_BCAST_ARP_PRIORITY            31

@@ -113,6 +113,7 @@
 /sw/nic/sdk/lib/kvstore
 /sw/nic/sdk/lib/lfq
 /sw/nic/sdk/lib/list
+/sw/nic/sdk/lib/lldp
 /sw/nic/sdk/lib/logger
 /sw/nic/sdk/lib/metrics
 /sw/nic/sdk/lib/mmgr

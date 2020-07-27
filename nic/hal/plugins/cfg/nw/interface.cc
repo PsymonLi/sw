@@ -4637,7 +4637,8 @@ if_delete_del_cb (cfg_op_ctxt_t *cfg_ctxt)
         }
     }
 
-    if (lif && lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT) {
+    if (lif && (lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT ||
+                lif->type == types::LIF_TYPE_HOST)) {
         ret = if_enic_install_lldp_nacls(intf, lif, false);
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Unable to install ncsi nacls. err: {}", ret);
@@ -5093,9 +5094,9 @@ if_enic_install_lldp_nacls (if_t *enic_if, lif_t *lif, bool install)
     // Take read lock
     hal_handle_cfg_db_lock(true, true);
     if (install) {
-        ret = acl_install_inband_lldp(enic_if, uplink_if);
+        ret = acl_install_lldp(enic_if, uplink_if);
     } else {
-        ret = acl_uninstall_inband_lldp(enic_if, uplink_if);
+        ret = acl_uninstall_lldp(enic_if, uplink_if);
     }
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Unable to {} inband lldp. err {}", 
@@ -5171,7 +5172,8 @@ if_handle_lif_update (pd::pd_if_lif_update_args_t *args)
 
     // Install inband lldp entries
     if (args->state_changed && args->state == intf::LIF_STATE_INIT && 
-        args->lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT) {
+        (args->lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT ||
+         args->lif->type == types::LIF_TYPE_HOST)) {
         ret = if_enic_install_lldp_nacls(args->intf, args->lif, true);
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Unable to install inband lldp nacls. err: {}", 

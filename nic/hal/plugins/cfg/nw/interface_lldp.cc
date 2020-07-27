@@ -11,6 +11,7 @@
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "nic/hal/plugins/cfg/nw/interface_lldp.hpp"
 #include "nic/sdk/platform/fru/fru.hpp"
+#include "nic/sdk/lib/lldp/lldp.hpp"
 #include "gen/proto/interface.pb.h"
 #include "nic/sdk/lib/runenv/runenv.h"
 #include "nic/sdk/platform/ncsi/ncsi_mgr.h"
@@ -115,6 +116,7 @@ get_lldpcli_show_cmd (std::string intf, bool nbrs, std::string status_file)
     return std::string(cmd);
 }
 
+#if 0
 static sdk_ret_t
 interface_lldp_parse_json (bool nbrs, LldpIfStatus *lldp_status,
                            std::string lldp_status_file)
@@ -376,157 +378,199 @@ interface_lldp_parse_json (bool nbrs, LldpIfStatus *lldp_status,
     }
     return SDK_RET_OK;
 }
+#endif
+
+static inline intf::LldpProtoMode
+lldpmode_to_proto_lldpmode (sdk::lib::if_lldp_mode_t mode)
+{
+    switch (mode) {
+    case LLDP_MODE_LLDP:
+        return intf::LLDP_MODE_LLDP;
+    case LLDP_MODE_CDPV1:
+        return intf::LLDP_MODE_CDPV1;
+    case LLDP_MODE_CDPV2:
+        return intf::LLDP_MODE_CDPV2;
+    case LLDP_MODE_EDP:
+        return intf::LLDP_MODE_EDP;
+    case LLDP_MODE_FDP:
+        return intf::LLDP_MODE_FDP;
+    case LLDP_MODE_SONMP:
+        return intf::LLDP_MODE_SONMP;
+    default:
+        return intf::LLDP_MODE_NONE;
+    }
+}
+
+static inline intf::LldpIdType
+lldpidtype_to_proto_lldpidtype (if_lldp_idtype_t idtype)
+{
+    switch (idtype) {
+    case LLDPID_SUBTYPE_IFNAME:
+        return intf::LLDPID_SUBTYPE_IFNAME;
+    case LLDPID_SUBTYPE_IFALIAS:
+        return intf::LLDPID_SUBTYPE_IFALIAS;
+    case LLDPID_SUBTYPE_LOCAL:
+        return intf::LLDPID_SUBTYPE_LOCAL;
+    case LLDPID_SUBTYPE_MAC:
+        return intf::LLDPID_SUBTYPE_MAC;
+    case LLDPID_SUBTYPE_IP:
+        return intf::LLDPID_SUBTYPE_IP;
+    case LLDPID_SUBTYPE_PORT:
+        return intf::LLDPID_SUBTYPE_PORT;
+    case LLDPID_SUBTYPE_CHASSIS:
+        return intf::LLDPID_SUBTYPE_CHASSIS;
+    default:
+        return intf::LLDPID_SUBTYPE_NONE;
+    }
+}
+
+static inline intf::LldpCapType
+lldpcaptype_to_proto_lldpcaptype (if_lldp_captype_t captype)
+{
+    switch (captype) {
+    case LLDP_CAPTYPE_REPEATER:
+        return intf::LLDP_CAPTYPE_REPEATER;
+    case LLDP_CAPTYPE_BRIDGE:
+        return intf::LLDP_CAPTYPE_BRIDGE;
+    case LLDP_CAPTYPE_ROUTER:
+        return intf::LLDP_CAPTYPE_ROUTER;
+    case LLDP_CAPTYPE_WLAN:
+        return intf::LLDP_CAPTYPE_WLAN;
+    case LLDP_CAPTYPE_TELEPHONE:
+        return intf::LLDP_CAPTYPE_TELEPHONE;
+    case LLDP_CAPTYPE_DOCSIS:
+        return intf::LLDP_CAPTYPE_DOCSIS;
+    case LLDP_CAPTYPE_STATION:
+        return intf::LLDP_CAPTYPE_STATION;
+    default:
+        return intf::LLDP_CAPTYPE_OTHER;
+    }
+}
+
+static inline void
+if_lldp_status_to_proto (intf::UplinkResponseInfo *rsp, if_lldp_status_t *api_lldp_status)
+{
+    auto lldp_rsp = rsp->mutable_lldpstatus();
+
+
+    // fill in the lldp local interface status
+    auto lldpifstatus = lldp_rsp->mutable_lldpifstatus();
+    lldpifstatus->set_ifname(api_lldp_status->local_if_status.if_name);
+    lldpifstatus->set_routerid(api_lldp_status->local_if_status.router_id);
+    lldpifstatus->set_proto(lldpmode_to_proto_lldpmode(api_lldp_status->local_if_status.mode));
+    lldpifstatus->set_age((api_lldp_status->local_if_status.age.length() > 0) ? 
+                          api_lldp_status->local_if_status.age.c_str() : "");
+    auto lldpchstatus = lldpifstatus->mutable_lldpifchassisstatus();
+    lldpchstatus->set_sysname(api_lldp_status->local_if_status.chassis_status.sysname);
+    lldpchstatus->set_sysdescr(api_lldp_status->local_if_status.chassis_status.sysdescr);
+    ipv4_addr_to_spec(lldpchstatus->mutable_mgmtip(),
+                      &api_lldp_status->local_if_status.chassis_status.mgmt_ip);
+    auto lldpchidstatus = lldpchstatus->mutable_chassisid();
+    lldpchidstatus->set_type(
+        lldpidtype_to_proto_lldpidtype(api_lldp_status->local_if_status.chassis_status.chassis_id.type));
+    lldpchidstatus->set_value((char *)api_lldp_status->local_if_status.chassis_status.chassis_id.value);
+    for (int i = 0; i < api_lldp_status->local_if_status.chassis_status.num_caps; i++) {
+        auto lldpchcap = lldpchstatus->add_capability();
+        lldpchcap->set_captype(
+            lldpcaptype_to_proto_lldpcaptype(api_lldp_status->local_if_status.chassis_status.chassis_cap_info[i].cap_type));
+        lldpchcap->set_capenabled(api_lldp_status->local_if_status.chassis_status.chassis_cap_info[i].cap_enabled);
+    }
+    auto lldpportstatus = lldpifstatus->mutable_lldpifportstatus();
+    auto lldppidstatus = lldpportstatus->mutable_portid();
+    lldppidstatus->set_type(lldpidtype_to_proto_lldpidtype(api_lldp_status->local_if_status.port_status.port_id.type));
+    lldppidstatus->set_value((char *)api_lldp_status->local_if_status.port_status.port_id.value);
+    lldpportstatus->set_portdescr(api_lldp_status->local_if_status.port_status.port_descr);
+    lldpportstatus->set_ttl(api_lldp_status->local_if_status.port_status.ttl);
+
+    for (int i = 0; i < api_lldp_status->local_if_status.unknown_tlv_status.num_tlvs; i++) {
+        auto lldp_unknown_tlv = lldpifstatus->add_lldpunknowntlvstatus();
+        lldp_unknown_tlv->set_oui((char *)api_lldp_status->local_if_status.unknown_tlv_status.tlvs[i].oui);
+        lldp_unknown_tlv->set_subtype(api_lldp_status->local_if_status.unknown_tlv_status.tlvs[i].subtype);
+        lldp_unknown_tlv->set_len(api_lldp_status->local_if_status.unknown_tlv_status.tlvs[i].len);
+        lldp_unknown_tlv->set_value((char *)api_lldp_status->local_if_status.unknown_tlv_status.tlvs[i].value);
+    }
+
+    // fill in the lldp neighbor status
+    auto lldpnbrstatus = lldp_rsp->mutable_lldpnbrstatus();
+    lldpnbrstatus->set_ifname(api_lldp_status->neighbor_status.if_name);
+    lldpnbrstatus->set_routerid(api_lldp_status->neighbor_status.router_id);
+    lldpnbrstatus->set_proto(lldpmode_to_proto_lldpmode(api_lldp_status->neighbor_status.mode));
+    lldpnbrstatus->set_age((api_lldp_status->neighbor_status.age.length() > 0) ?
+                           api_lldp_status->neighbor_status.age.c_str() : "");
+    lldpchstatus = lldpnbrstatus->mutable_lldpifchassisstatus();
+    lldpchstatus->set_sysname(api_lldp_status->neighbor_status.chassis_status.sysname);
+    lldpchstatus->set_sysdescr(api_lldp_status->neighbor_status.chassis_status.sysdescr);
+    ipv4_addr_to_spec(lldpchstatus->mutable_mgmtip(),
+                      &api_lldp_status->neighbor_status.chassis_status.mgmt_ip);
+    lldpchidstatus = lldpchstatus->mutable_chassisid();
+    lldpchidstatus->set_type(
+        lldpidtype_to_proto_lldpidtype(api_lldp_status->neighbor_status.chassis_status.chassis_id.type));
+    lldpchidstatus->set_value((char *)api_lldp_status->neighbor_status.chassis_status.chassis_id.value);
+    for (int i = 0; i < api_lldp_status->neighbor_status.chassis_status.num_caps; i++) {
+        auto lldpchcap = lldpchstatus->add_capability();
+        lldpchcap->set_captype(
+            lldpcaptype_to_proto_lldpcaptype(api_lldp_status->neighbor_status.chassis_status.chassis_cap_info[i].cap_type));
+        lldpchcap->set_capenabled(api_lldp_status->neighbor_status.chassis_status.chassis_cap_info[i].cap_enabled);
+    }
+    lldpportstatus = lldpnbrstatus->mutable_lldpifportstatus();
+    lldppidstatus = lldpportstatus->mutable_portid();
+    lldppidstatus->set_type(lldpidtype_to_proto_lldpidtype(api_lldp_status->neighbor_status.port_status.port_id.type));
+    lldppidstatus->set_value((char *)api_lldp_status->neighbor_status.port_status.port_id.value);
+    lldpportstatus->set_portdescr(api_lldp_status->neighbor_status.port_status.port_descr);
+    lldpportstatus->set_ttl(api_lldp_status->neighbor_status.port_status.ttl);
+
+    for (int i = 0; i < api_lldp_status->neighbor_status.unknown_tlv_status.num_tlvs; i++) {
+        auto lldp_unknown_tlv = lldpnbrstatus->add_lldpunknowntlvstatus();
+        lldp_unknown_tlv->set_oui((char *)api_lldp_status->neighbor_status.unknown_tlv_status.tlvs[i].oui);
+        lldp_unknown_tlv->set_subtype(api_lldp_status->neighbor_status.unknown_tlv_status.tlvs[i].subtype);
+        lldp_unknown_tlv->set_len(api_lldp_status->neighbor_status.unknown_tlv_status.tlvs[i].len);
+        lldp_unknown_tlv->set_value((char *)api_lldp_status->neighbor_status.unknown_tlv_status.tlvs[i].value);
+    }
+
+}
 
 // get the LLDP neighbor and local-interface status for given uplink lif
 sdk_ret_t
 interface_lldp_status_get (uint16_t uplink_idx, intf::UplinkResponseInfo *rsp)
 {
-    int rc;
-    static uint8_t iter = 0;
-    std::string lldp_status_file;
+    sdk_ret_t ret = SDK_RET_OK;
+    if_lldp_status_t lldp_status;
     std::string interfaces[3] = { "inb_mnic0", "inb_mnic1", "oob_mnic0" };
 
     if (!is_platform_type_hw()) {
         return SDK_RET_OK;
     }
     
-    HAL_TRACE_DEBUG("Getting lldp for if_idx: {}", uplink_idx);
-
     // LLDP is supported only on uplinks and OOB.
     if (uplink_idx > 2) {
         return SDK_RET_OK;
     }
 
-    auto lldp_status = rsp->mutable_lldpstatus();
+    memset(&lldp_status, 0, sizeof(if_lldp_status_t));
 
-    // create a new file for output json for every get call, in order to
-    // support concurrency
-    lldp_status_file = "/tmp/" + std::to_string(iter++) + "_lldp_status.json";
-
-    // get the LLDP neighbor info in json format 
-    std::string lldpcmd1 = get_lldpcli_show_cmd(interfaces[uplink_idx], 1, lldp_status_file);
-    HAL_TRACE_DEBUG("lldp neighbor cmd: {}", lldpcmd1);
-    rc = system(lldpcmd1.c_str());
-    if (rc == -1) {
-        HAL_TRACE_ERR("lldp show command for neighbors failed for {} with error {}",
-                      interfaces[uplink_idx].c_str(), rc);
-        remove(lldp_status_file.c_str());
-        return SDK_RET_ERR;
+    ret = sdk::lib::if_lldp_status_get(interfaces[uplink_idx], &lldp_status);
+    if (ret != SDK_RET_OK) {
+        HAL_TRACE_ERR("Unable to get lldp status for if: {}. ret: {}", 
+                      uplink_idx, ret);
+        goto end;
     }
 
-    auto lldp_nbr_ifstatus = lldp_status->mutable_lldpnbrstatus();
-    // parse the LLDP nbr status output json file and populate lldp status
-    interface_lldp_parse_json(1, lldp_nbr_ifstatus, lldp_status_file);
-
-    // get the LLDP local if info in json format 
-    std::string lldpcmd2 = get_lldpcli_show_cmd(interfaces[uplink_idx], 0, lldp_status_file);
-    HAL_TRACE_DEBUG("lldp neighbor cmd: {}", lldpcmd2);
-    rc = system(lldpcmd2.c_str());
-    if (rc == -1) {
-        HAL_TRACE_ERR("lldp show command for interface failed for {} with error {}",
-                      interfaces[uplink_idx].c_str(), rc);
-        remove(lldp_status_file.c_str());
-        return SDK_RET_ERR;
+    if (strlen(lldp_status.local_if_status.if_name) != 0) {
+        // Populate proto
+        if_lldp_status_to_proto(rsp, &lldp_status);
     }
 
-    auto lldp_ifstatus = lldp_status->mutable_lldpifstatus();
-    // parse the LLDP local if status output json file and populate lldp status
-    interface_lldp_parse_json(0, lldp_ifstatus, lldp_status_file);
-
-    // remove the json output file
-    remove(lldp_status_file.c_str());
-
-    return(SDK_RET_OK);
-}
-
-static sdk_ret_t
-lldp_stats_parse_json (LldpIfStats *lldp_stats,
-                       std::string lldp_stats_file)
-{
-    pt::ptree json_pt;
-    string    str;
-
-    // parse the lldp stats output json file
-    if (access(lldp_stats_file.c_str(), R_OK) < 0) {
-        HAL_TRACE_ERR("{} doesn't exist or not accessible\n", lldp_stats_file.c_str());
-        return SDK_RET_ERR;
-    }
-    try {
-        std::ifstream json_cfg(lldp_stats_file.c_str());
-        read_json(json_cfg, json_pt);
-    } catch (std::exception const& e) {
-        std::cerr << e.what() << std::endl;
-        HAL_TRACE_VERBOSE("Error parsing lldp stats json");
-        return SDK_RET_ERR;
-    }
-
-    try {
-        BOOST_FOREACH (pt::ptree::value_type &lldp,
-                       json_pt.get_child("lldp")) {
-            BOOST_FOREACH (pt::ptree::value_type &iface,
-                           lldp.second.get_child("interface")) {
-                str = iface.second.get<std::string>("name", "");
-                if (str.empty()) {
-                    HAL_TRACE_ERR("  No interface entry");
-                }
-
-                BOOST_FOREACH (pt::ptree::value_type &tx,
-                               iface.second.get_child("tx")) {
-                    lldp_stats->set_txcount(tx.second.get<uint32_t>("tx"));
-                }
-
-                BOOST_FOREACH (pt::ptree::value_type &rx,
-                               iface.second.get_child("rx")) {
-                    lldp_stats->set_rxcount(rx.second.get<uint32_t>("rx"));
-                }
-
-                BOOST_FOREACH (pt::ptree::value_type &rx_discarded,
-                               iface.second.get_child("rx_discarded_cnt")) {
-                    lldp_stats->set_rxdiscarded(rx_discarded.second.get<uint32_t>("rx_discarded_cnt"));
-                }
-
-                BOOST_FOREACH (pt::ptree::value_type &rx_unrecognized,
-                               iface.second.get_child("rx_unrecognized_cnt")) {
-                    lldp_stats->set_rxunrecognized(
-                        rx_unrecognized.second.get<uint32_t>("rx_unrecognized_cnt"));
-                }
-
-                BOOST_FOREACH (pt::ptree::value_type &ageout,
-                               iface.second.get_child("ageout_cnt")) {
-                    lldp_stats->set_ageoutcount(
-                        ageout.second.get<uint32_t>("ageout_cnt"));
-                }
-
-                BOOST_FOREACH (pt::ptree::value_type &insert,
-                               iface.second.get_child("insert_cnt")) {
-                    lldp_stats->set_insertcount(
-                        insert.second.get<uint32_t>("insert_cnt"));
-                }
-
-                BOOST_FOREACH (pt::ptree::value_type &delete_cnt,
-                               iface.second.get_child("delete_cnt")) {
-                    lldp_stats->set_deletecount(
-                        delete_cnt.second.get<uint32_t>("delete_cnt"));
-                }
-            }
-        }
-    } catch (std::exception const& e) {
-        std::cerr << e.what() << std::endl;
-        HAL_TRACE_VERBOSE("Error reading lldp stats json");
-        return SDK_RET_ERR;
-    }
-    return SDK_RET_OK;
+end:
+    return ret;
 }
 
 // get the LLDP interface stats
 sdk_ret_t
 interface_lldp_stats_get (uint16_t uplink_idx, LldpIfStats *lldp_stats)
 {
-    int         rc;
-    static int  iter = 0;
-    std::string stats_file;
+    sdk_ret_t ret = SDK_RET_OK;
     std::string interfaces[3] = { "inb_mnic0", "inb_mnic1", "oob_mnic0" };
-    char        cmd[PATH_MAX];
+    if_lldp_stats_t api_lldp_stats;
 
     if (!is_platform_type_hw()) {
         return SDK_RET_OK;
@@ -537,27 +581,25 @@ interface_lldp_stats_get (uint16_t uplink_idx, LldpIfStats *lldp_stats)
         return SDK_RET_OK;
     }
 
-    // create a new file for output json for every get call, in order to
-    // support concurrency
-    stats_file = "/tmp/" + std::to_string(iter++) + "_lldp_stats.json";
+    memset(&api_lldp_stats, 0, sizeof(if_lldp_stats_t));
 
-    // get the LLDP stats in json format
-    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show statistics ports %s -f json0 > %s; sync;",
-             interfaces[uplink_idx].c_str(), stats_file.c_str());
-    std::string lldpcmd = std::string(cmd);
-    rc = system(lldpcmd.c_str());
-    if (rc == -1) {
-        HAL_TRACE_ERR("lldp stats command failed for {} with error {}",
-                      interfaces[uplink_idx].c_str(), rc);
-        remove(stats_file.c_str());
-        return SDK_RET_ERR;
+    ret = if_lldp_stats_get(interfaces[uplink_idx], &api_lldp_stats);
+    if (ret != SDK_RET_OK) {
+        HAL_TRACE_ERR("Failed to get LLDP stats. ret: {}", ret);
+        goto end;
     }
 
-    // parse the LLDP stats output json file and populate lldp stats
-    lldp_stats_parse_json(lldp_stats, stats_file);
+    // fill the stats
+    lldp_stats->set_txcount(api_lldp_stats.tx_count);
+    lldp_stats->set_rxcount(api_lldp_stats.rx_count);
+    lldp_stats->set_rxdiscarded(api_lldp_stats.rx_discarded);
+    lldp_stats->set_rxunrecognized(api_lldp_stats.rx_unrecognized);
+    lldp_stats->set_ageoutcount(api_lldp_stats.ageout_count);
+    lldp_stats->set_insertcount(api_lldp_stats.insert_count);
+    lldp_stats->set_deletecount(api_lldp_stats.delete_count);
 
-    remove(stats_file.c_str());
-    return SDK_RET_OK;
+end:
+    return ret;
 }
 
 
