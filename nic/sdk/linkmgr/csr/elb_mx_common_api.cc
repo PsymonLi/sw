@@ -21,7 +21,7 @@
 // Statistic, Status, Interrupt descriptions used to display in api functions
 // 1st column is a 5-bit bit bitmap where each bit indicates type of the counter such as error count or pause count. 
 // Meaning of the bits is documented in mx_mac_stat_type_t. A counter may belong to more than 1 type.
-string elb_mx_mac_stat_info[MAX_MAC_STATS*3] = {
+string elb_mx_mac_stat_info[ELB_MAX_MAC_STATS*3] = {
 "1", "32", 	"FramesXmitOK",					// 0
 "1", "33",	"FramesXmitAll",				// 1
 "3", "34",	"FramesXmitErr",				// 2
@@ -1124,7 +1124,7 @@ elb_mx_read_stats(int chip_id, int inst_id, int ch, int index, bool clear_on_rea
 void
 elb_mx_mac_stat(int chip_id, int inst_id, int ch, uint64_t *stats_data)  // For software
 {
-   for (int i = 0; i < MAX_MAC_STATS; i++) {
+   for (int i = 0; i < ELB_MAX_MAC_STATS; i++) {
       uint64_t data = elb_mx_read_stats(chip_id, inst_id, ch, i);
       if (stats_data != NULL) {
           if (elb_mx_mac_stat_info[i*3+1].compare("NEW") != 0) {
@@ -1167,7 +1167,7 @@ elb_mx_get_mac_stat(int chip_id, int inst_id, int ch, int stat_type, bool skip_z
    }
 
    bool all_stats_zero = true;
-   for (int i = 0; i < MAX_MAC_STATS; i++) {
+   for (int i = 0; i < ELB_MAX_MAC_STATS; i++) {
       bool match = ((1 << stat_type) & stoi(elb_mx_mac_stat_info[i*3+0])) != 0;
       if (match) {
          uint64_t data = elb_mx_read_stats(chip_id, inst_id, ch, i);

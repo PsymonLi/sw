@@ -4,7 +4,8 @@
 #define MAX_CHANNEL    8
 #define MAX_PORT       5
 #define MAX_MAC        1
-#define MAX_MAC_STATS  110
+#define MAX_MAC_STATS  89
+#define ELB_MAX_MAC_STATS  110
 
 typedef enum {
    ELB_MX_MAC_CHMODE_ADDR0			= 0x0000,
