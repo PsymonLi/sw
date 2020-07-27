@@ -46,7 +46,7 @@ vmotion_send_msg (VmotionMessage& msg, SSL *ssl)
     HAL_TRACE_INFO("vmotion msg send. msg_len: {} Sent: {}", msg_len, byte_count);
 end:
     HAL_FREE(HAL_MEM_ALLOC_VMOTION_BUFFER, pkt);
-    free(coded_output);
+    delete coded_output;
 
     return ret;
 }

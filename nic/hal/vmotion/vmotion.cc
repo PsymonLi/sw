@@ -7,6 +7,7 @@
 #include "nic/include/hal_mem.hpp"
 #include "nic/hal/core/core.hpp"
 #include "nic/hal/iris/delphi/delphi_events.hpp"
+#include <malloc.h>
 
 namespace hal {
 
@@ -403,6 +404,10 @@ vmotion::delete_vmotion_ep(vmotion_ep *vmn_ep)
 
     // Destroy EP
     vmotion_ep::destroy(vmn_ep);
+
+    // Malloc holds lot of free memory.  By trimming the memory the memory is released back
+    // used this in cases where we free memory in large blocks
+    malloc_trim(0);
 
     return HAL_RET_OK;
 }
