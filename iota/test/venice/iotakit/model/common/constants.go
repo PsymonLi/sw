@@ -93,3 +93,10 @@ type ModelInfo struct {
 	TopoFile    string
 	TestbedFile string
 }
+
+//Command output result
+type CommandResp struct {
+	EntityName string
+	NodeName   string
+	Stdout     string
+}

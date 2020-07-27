@@ -17,184 +17,352 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+func getUniqueMac(i int) string {
+	bytes := make([]byte, 3)
+	for j := 2; j >= 0; j-- {
+		bytes[j] = (byte)(i % 255)
+		i = i / 255
+	}
+	return fmt.Sprintf("0001.01%02x.%02x%02x", bytes[0], bytes[1], bytes[2])
+}
+
 var _ = Describe("VPC", func() {
+	var (
+		defaultTenants []string
+		dscCount       int32
+	)
+
 	BeforeEach(func() {
 		// verify cluster is in good health
 		Eventually(func() error {
 			return ts.model.VerifyClusterStatus()
 		}).Should(Succeed())
+
+		if len(defaultTenants) == 0 {
+			tenantList, err := ts.model.ConfigClient().ListTenant()
+			Expect(err).ShouldNot(HaveOccurred())
+			for _, t := range tenantList {
+				if t.GetName() != "default" {
+					defaultTenants = append(defaultTenants, t.GetName())
+				}
+			}
+		}
+
+		dscCount = int32(len(ts.model.Naples().Nodes) + len(ts.model.Naples().FakeNodes))
 	})
 	AfterEach(func() {
 	})
 
 	Context("VPC tests", func() {
 		It("Add & delete VPC two times", func() {
-			vpcAddDel()
-			vpcAddDel()
+			vpcAddDel(defaultTenants, dscCount)
+			vpcAddDel(defaultTenants, dscCount)
 		})
 
 		It("Multiple VPCs per Tenant", func() {
-			tenantName, err := defaultTenantName()
-			Expect(err).ShouldNot(HaveOccurred())
-			log.Infof("Tenant name : %s", tenantName)
-			//Create VPC
-			vpcName1 := "testVPC1"
-			vpc1 := ts.model.NewVPC(tenantName, vpcName1, "0001.0102.0202", 700, "")
-			Expect(vpc1.Commit()).Should(Succeed())
+			var newVpcList []*objects.VpcObjCollection
+			rmacCtr := 1
+			for i, tenantName := range defaultTenants {
+				log.Infof("%v Tenant : %v", i, tenantName)
+				//Create VPC
+				vpcName1 := "testVPC1"
+				vpc1 := ts.model.NewVPC(tenantName, vpcName1, getUniqueMac(rmacCtr), uint32(700+i), "")
+				Expect(vpc1.Commit()).Should(Succeed())
+				newVpcList = append(newVpcList, vpc1)
+				rmacCtr += 1
+				//Create 2nd VPC
+				vpcName2 := "testVPC2"
+				vpc2 := ts.model.NewVPC(tenantName, vpcName2, getUniqueMac(rmacCtr), uint32(1400+i), "")
+				Expect(vpc2.Commit()).Should(Succeed())
 
-			//Create 2nd VPC
-			vpcName2 := "testVPC2"
-			vpc2 := ts.model.NewVPC(tenantName, vpcName2, "0001.0103.0303", 701, "")
-			Expect(vpc2.Commit()).Should(Succeed())
+				newVpcList = append(newVpcList, vpc2)
+				rmacCtr += 1
 
-			//Validate using Get command
-			veniceVpc, err := ts.model.GetVPC(vpcName1, tenantName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(veniceVpc.Obj.Name == vpcName1).Should(BeTrue())
+				//Validate using Get command
+				veniceVpc, err := ts.model.GetVPC(vpcName1, tenantName)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(veniceVpc.Obj.Name == vpcName1).Should(BeTrue())
 
-			uuid := veniceVpc.Obj.GetUUID()
-			log.Infof("VPC %s UUID %s", vpcName1, uuid)
+				//Verify for 2nd vpc
+				veniceVpc, err = ts.model.GetVPC(vpcName2, tenantName)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(veniceVpc.Obj.Name == vpcName2).Should(BeTrue())
 
-			//Verify for 2nd vpc
-			veniceVpc, err = ts.model.GetVPC(vpcName2, tenantName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(veniceVpc.Obj.Name == vpcName2).Should(BeTrue())
+				//check propagation status
+				Eventually(func() error {
+					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+						ts.model.Testbed())
+					Expect(err).ShouldNot(HaveOccurred())
+					return vpcc.VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			//Verify state in Naples
-			uuid = veniceVpc.Obj.GetUUID()
-			log.Infof("VPC %s UUID %s", vpcName2, uuid)
+				if *scaleFlag {
+					continue
+				}
 
-			allVpcs, err := getVpcCollection(tenantName)
-			Expect(err).ShouldNot(HaveOccurred())
+				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+					ts.model.Testbed())
+				Expect(err).ShouldNot(HaveOccurred())
+				verifyNetAgentVpcState(vpcc)
+				verifyPDSVpcState(vpcc)
 
-			verifyNetAgentVpcState(allVpcs)
-			verifyPDSVpcState(allVpcs)
+			}
 
 			//Delete VPC
-			Expect(vpc1.Delete()).Should(Succeed())
-			Expect(vpc2.Delete()).Should(Succeed())
+			for _, vpc := range newVpcList {
+				//Delete previously added VPC
+				Expect(vpc.Delete()).Should(Succeed())
+			}
 
-			allVpcs, err = getVpcCollection(tenantName)
-			Expect(err).ShouldNot(HaveOccurred())
+			for _, tenantName := range defaultTenants {
+				//check propagation status
+				Eventually(func() error {
+					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+						ts.model.Testbed())
+					Expect(err).ShouldNot(HaveOccurred())
+					return vpcc.VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			verifyNetAgentVpcState(allVpcs)
-			verifyPDSVpcState(allVpcs)
+				if *scaleFlag {
+					continue
+				}
+
+				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+					ts.model.Testbed())
+				Expect(err).ShouldNot(HaveOccurred())
+				verifyNetAgentVpcState(vpcc)
+				verifyPDSVpcState(vpcc)
+
+			}
 		})
 
 		It("Update router mac for VPC", func() {
-			//Get existing tenant and network
-			nwc, err := getNetworkCollection()
-			Expect(err).ShouldNot(HaveOccurred())
-			nwc = nwc.Any(1)
-			nw := nwc.Subnets()[0]
-			log.Infof("Network : %+v", nw)
 
-			vpcName := nw.VeniceNetwork.Spec.GetVirtualRouter()
-			tenantName := nw.VeniceNetwork.Tenant
-			log.Infof("VPC %s Tenant %s", vpcName, tenantName)
-			vpc, err := ts.model.GetVPC(vpcName, tenantName)
-			Expect(err).ShouldNot(HaveOccurred())
 			voc := objects.NewVPCCollection(ts.model.ConfigClient(), ts.model.Testbed())
-			voc.AddVPC(vpc)
 
-			uuid := vpc.Obj.GetUUID()
-			log.Infof("VPC object UUID %s", uuid)
+			var savedRmac []string
 
-			oldRmac := vpc.Obj.Spec.GetRouterMACAddress()
-			newRmac := "0001.0108.0809"
+			for i, tenantName := range defaultTenants {
+				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+					ts.model.Testbed())
 
-			vpc.UpdateRMAC(newRmac)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(len(vpcc.Objs)).ShouldNot(BeZero())
+
+				//pick first non-default vpc
+				vpcName := vpcc.Objs[0].Obj.GetName()
+				log.Infof("VPC %s Tenant %s", vpcName, tenantName)
+				vpc, err := ts.model.GetVPC(vpcName, tenantName)
+				Expect(err).ShouldNot(HaveOccurred())
+				voc.AddVPC(vpc)
+
+				oldRmac := vpc.Obj.Spec.GetRouterMACAddress()
+				savedRmac = append(savedRmac, oldRmac)
+
+				newRmac := getUniqueMac(i + 1)
+
+				vpc.UpdateRMAC(newRmac)
+
+				log.Infof("Old rmac %s new rmac %s", oldRmac, newRmac)
+			}
+
 			Expect(voc.Update()).Should(Succeed())
 
-			log.Infof("Old rmac %s new rmac %s", oldRmac, newRmac)
+			//veniceVpc, err := ts.model.GetVPC(vpcName, tenantName)
+			//Expect(err).ShouldNot(HaveOccurred())
+			//Expect(veniceVpc.Obj.Spec.RouterMACAddress == newRmac).Should(BeTrue())
 
-			veniceVpc, err := ts.model.GetVPC(vpcName, tenantName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(veniceVpc.Obj.Spec.RouterMACAddress == newRmac).Should(BeTrue())
+			for _, tenantName := range defaultTenants {
+				//check propagation status
+				Eventually(func() error {
+					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+						ts.model.Testbed())
+					Expect(err).ShouldNot(HaveOccurred())
+					return vpcc.VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			//Verify state in Naples
-			verifyNetAgentVpcState(voc)
-			verifyPDSVpcState(voc)
+				if *scaleFlag {
+					continue
+				}
 
-			vpc.UpdateRMAC(oldRmac)
+				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+					ts.model.Testbed())
+				Expect(err).ShouldNot(HaveOccurred())
+				verifyNetAgentVpcState(vpcc)
+				verifyPDSVpcState(vpcc)
+			}
+
+			for i, v := range voc.Objs {
+				//Revert to old mac
+				v.UpdateRMAC(savedRmac[i])
+			}
 			Expect(voc.Update()).Should(Succeed())
 
-			verifyNetAgentVpcState(voc)
-			verifyPDSVpcState(voc)
+			for _, tenantName := range defaultTenants {
+				//check propagation status
+				Eventually(func() error {
+					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+						ts.model.Testbed())
+					Expect(err).ShouldNot(HaveOccurred())
+					return vpcc.VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
+
+				if *scaleFlag {
+					continue
+				}
+
+				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+					ts.model.Testbed())
+				Expect(err).ShouldNot(HaveOccurred())
+				verifyNetAgentVpcState(vpcc)
+				verifyPDSVpcState(vpcc)
+			}
 		})
 
 		It("Change VPC RT & verify config", func() {
-			//Get existing tenant and network
-			nwc, err := getNetworkCollection()
-			Expect(err).ShouldNot(HaveOccurred())
-			nwc = nwc.Any(1)
-			nw := nwc.Subnets()[0]
-			log.Infof("Network : %+v", nw)
 
-			vpcName := nw.VeniceNetwork.Spec.GetVirtualRouter()
-			vpc, err := ts.model.GetVPC(vpcName, nw.VeniceNetwork.Tenant)
-			Expect(err).ShouldNot(HaveOccurred())
 			voc := objects.NewVPCCollection(ts.model.ConfigClient(), ts.model.Testbed())
-			voc.AddVPC(vpc)
-
-			uuid := vpc.Obj.GetUUID()
-			log.Infof("VPC object UUID %s", uuid)
-
-			//Change its RT and update to api server
-			exportRTs := vpc.Obj.Spec.RouteImportExport.ExportRTs
-			importRTs := vpc.Obj.Spec.RouteImportExport.ImportRTs
-			//Update RT value
 			offset := uint32(10)
-			exportRTs[0].AssignedValue += offset
-			importRTs[0].AssignedValue += offset
-			log.Infof("Export RT new assigned value %v", exportRTs[0].AssignedValue)
-			log.Infof("Import RT new assigned value %v", importRTs[0].AssignedValue)
+
+			for _, tenantName := range defaultTenants {
+				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+					ts.model.Testbed())
+
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(len(vpcc.Objs)).ShouldNot(BeZero())
+				//pick first VPC
+				vpcName := vpcc.Objs[0].Obj.GetName()
+				log.Infof("VPC %s Tenant %s", vpcName, tenantName)
+				vpc, err := ts.model.GetVPC(vpcName, tenantName)
+				Expect(err).ShouldNot(HaveOccurred())
+				voc.AddVPC(vpc)
+
+				//Change its RT and update to api server
+				exportRTs := vpc.Obj.Spec.RouteImportExport.ExportRTs
+				importRTs := vpc.Obj.Spec.RouteImportExport.ImportRTs
+				//Update RT value
+				exportRTs[0].AssignedValue += offset
+				importRTs[0].AssignedValue += offset
+				log.Infof("Export RT new assigned value %v", exportRTs[0].AssignedValue)
+				log.Infof("Import RT new assigned value %v", importRTs[0].AssignedValue)
+			}
+
 			Expect(voc.Update()).Should(Succeed())
 
-			verifyNetAgentVpcState(voc)
-			verifyPDSVpcState(voc)
+			for _, tenantName := range defaultTenants {
+				//check propagation status
+				Eventually(func() error {
+					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+						ts.model.Testbed())
+					Expect(err).ShouldNot(HaveOccurred())
+					return vpcc.VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			//Restore RT value
-			exportRTs[0].AssignedValue -= offset
-			importRTs[0].AssignedValue -= offset
+				if *scaleFlag {
+					continue
+				}
+
+				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+					ts.model.Testbed())
+				Expect(err).ShouldNot(HaveOccurred())
+				verifyNetAgentVpcState(vpcc)
+				verifyPDSVpcState(vpcc)
+			}
+
+			for _, v := range voc.Objs {
+				//Restore RT value
+				exportRTs := v.Obj.Spec.RouteImportExport.ExportRTs
+				importRTs := v.Obj.Spec.RouteImportExport.ImportRTs
+
+				exportRTs[0].AssignedValue -= offset
+				importRTs[0].AssignedValue -= offset
+			}
+
 			Expect(voc.Update()).Should(Succeed())
 
-			verifyNetAgentVpcState(voc)
-			verifyPDSVpcState(voc)
+			for _, tenantName := range defaultTenants {
+				//check propagation status
+				Eventually(func() error {
+					vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+						ts.model.Testbed())
+					Expect(err).ShouldNot(HaveOccurred())
+					return vpcc.VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
+
+				if *scaleFlag {
+					continue
+				}
+
+				vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+					ts.model.Testbed())
+				Expect(err).ShouldNot(HaveOccurred())
+				verifyNetAgentVpcState(vpcc)
+				verifyPDSVpcState(vpcc)
+			}
+
 		})
 	})
 })
 
-func vpcAddDel() {
-	tenantName := "customer0"
+func vpcAddDel(tenants []string, dscCount int32) {
 
-	//Create VPC
 	vpcName := "testVPC"
-	vpc := ts.model.NewVPC(tenantName, vpcName, "0001.0102.0202", 700, "")
-	Expect(vpc.Commit()).Should(Succeed())
 
-	//Validate using Get command
-	veniceVpc, err := ts.model.GetVPC(vpcName, tenantName)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(veniceVpc.Obj.Name == vpcName).Should(BeTrue())
+	var newVpcList []*objects.VpcObjCollection
 
-	vpcuuid := veniceVpc.Obj.GetUUID()
-	log.Infof("UUID %s", vpcuuid)
+	for i, tenantName := range tenants {
+		vpc := ts.model.NewVPC(tenantName, vpcName, getUniqueMac(i+1), uint32(700+i), "")
+		Expect(vpc.Commit()).Should(Succeed())
 
-	allVpcs, err := getVpcCollection(tenantName)
-	Expect(err).ShouldNot(HaveOccurred())
+		newVpcList = append(newVpcList, vpc)
 
-	verifyNetAgentVpcState(allVpcs)
-	verifyPDSVpcState(allVpcs)
+		//Validate using Get command
+		veniceVpc, err := ts.model.GetVPC(vpcName, tenantName)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(veniceVpc.Obj.Name == vpcName).Should(BeTrue())
 
-	//Delete VPC
-	Expect(vpc.Delete()).Should(Succeed())
+		//check propagation status
+		Eventually(func() error {
+			vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+				ts.model.Testbed())
+			Expect(err).ShouldNot(HaveOccurred())
+			return vpcc.VerifyPropagationStatus(dscCount)
+		}).Should(Succeed())
 
-	allVpcs, err = getVpcCollection(tenantName)
-	Expect(err).ShouldNot(HaveOccurred())
+		if *scaleFlag {
+			continue
+		}
+		vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+			ts.model.Testbed())
+		Expect(err).ShouldNot(HaveOccurred())
+		verifyNetAgentVpcState(vpcc)
+		verifyPDSVpcState(vpcc)
+	}
 
-	verifyNetAgentVpcState(allVpcs)
-	verifyPDSVpcState(allVpcs)
+	for _, vpc := range newVpcList {
+		//Delete previously added VPC
+		Expect(vpc.Delete()).Should(Succeed())
+	}
+
+	for _, tenantName := range tenants {
+		//check propagation status
+		Eventually(func() error {
+			vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+				ts.model.Testbed())
+			Expect(err).ShouldNot(HaveOccurred())
+			return vpcc.VerifyPropagationStatus(dscCount)
+		}).Should(Succeed())
+
+		if *scaleFlag {
+			continue
+		}
+
+		vpcc, err := objects.TenantVPCCollection(tenantName, ts.model.ConfigClient(),
+			ts.model.Testbed())
+		Expect(err).ShouldNot(HaveOccurred())
+		verifyNetAgentVpcState(vpcc)
+		verifyPDSVpcState(vpcc)
+	}
 }
 
 func defaultTenantName() (string, error) {

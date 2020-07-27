@@ -18,7 +18,8 @@ type NetworkParams struct {
 
 // Networks returns a list of subnets
 func (sm *SysModel) Networks(tenant string) *objects.NetworkCollection {
-	snc := objects.NetworkCollection{}
+	snc := objects.NetworkCollection{CollectionCommon: objects.CollectionCommon{
+		Client: sm.ConfigClient(), Testbed: sm.Testbed()}}
 	nws, err := sm.CfgModel.ListNetwork(tenant)
 	if err != nil {
 		log.Errorf("Error listing networks %v", err)

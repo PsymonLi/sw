@@ -9,7 +9,6 @@ import (
 	mapset "github.com/deckarep/golang-set"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	iota "github.com/pensando/sw/iota/protos/gogen"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/base"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -123,12 +122,15 @@ var _ = Describe("Interface tests", func() {
 
 			var nodes *objects.NaplesCollection
 			var nodeName string
-			if ts.tb.HasNaplesSim() {
-				nodes = ts.model.Naples().AnyFakeNodes(1)
+			tenantNaples, err := ts.model.Naples().SelectByTenant(tenantName)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			if len(tenantNaples.FakeNodes) > 0 {
+				nodes = tenantNaples.AnyFakeNodes(1)
 				Expect(nodes.Refresh()).Should(Succeed())
 				nodeName = nodes.FakeNodes[0].Instances[0].Dsc.GetName()
 			} else {
-				nodes = ts.model.Naples().Any(1)
+				nodes = tenantNaples.Any(1)
 				Expect(nodes.Refresh()).Should(Succeed())
 				nodeName = nodes.Nodes[0].Instances[0].Dsc.GetName()
 			}
@@ -162,14 +164,14 @@ var _ = Describe("Interface tests", func() {
 			verifyNaplesStateForTenant(nodes, tenantName, false)
 
 			//Verify vpc and subnet for that tenant exist in other nodes
-			otherNodes := ts.model.Naples().Difference(nodes)
+			otherNodes := tenantNaples.Difference(nodes)
 
 			verifyNaplesStateForTenant(otherNodes, tenantName, true)
 
 			//re-attach subnets to intfs
 			Expect(savedPfc.Commit()).Should(Succeed())
 			//verify venice and naples state match for vpc & subnets on all nodes
-			verifyNaplesStateForTenant(ts.model.Naples(), tenantName, true)
+			verifyNaplesStateForTenant(tenantNaples, tenantName, true)
 		})
 
 		It("Change host intf attachments", func() {
@@ -178,11 +180,14 @@ var _ = Describe("Interface tests", func() {
 
 			var nodes *objects.NaplesCollection
 			var nodeName string
-			if ts.tb.HasNaplesSim() {
-				nodes = ts.model.Naples().AnyFakeNodes(1)
+			tenantNaples, err := ts.model.Naples().SelectByTenant(tenantName)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			if len(tenantNaples.FakeNodes) > 0 {
+				nodes = tenantNaples.AnyFakeNodes(1)
 				nodeName = nodes.FakeNodes[0].Instances[0].Dsc.GetName()
 			} else {
-				nodes = ts.model.Naples().Any(1)
+				nodes = tenantNaples.Any(1)
 				nodeName = nodes.Nodes[0].Instances[0].Dsc.GetName()
 			}
 
@@ -237,14 +242,14 @@ var _ = Describe("Interface tests", func() {
 			verifyNaplesStateForTenant(nodes, newTenantName, true)
 
 			//verify n/w & vpc don't exist in other nodes
-			otherNodes := ts.model.Naples().Difference(nodes)
+			otherNodes := tenantNaples.Difference(nodes)
 
 			verifyNaplesStateForTenant(otherNodes, newTenantName, false)
 
 			//re-attach pre-existing subnets to intfs
 			Expect(savedPfc.Commit()).Should(Succeed())
 			//verify venice and naples state match for vpc & subnets on all nodes
-			verifyNaplesStateForTenant(ts.model.Naples(), tenantName, true)
+			verifyNaplesStateForTenant(tenantNaples, tenantName, true)
 
 			//Revert all config from venice
 			Expect(nwc.Delete()).Should(Succeed())
@@ -378,7 +383,7 @@ func verifyNaplesStateForTenant(naples *objects.NaplesCollection, tenant string,
 	var nodes []*objects.Naples
 	var isHWNode bool
 
-	if ts.tb.HasNaplesSim() {
+	if len(naples.FakeNodes) > 0 {
 		nodes = naples.FakeNodes
 		isHWNode = false
 	} else {
@@ -477,13 +482,12 @@ func verifyNetAgentIntf(intf *objects.NetworkInterfaceCollection) error {
 
 	if !ts.tb.HasNaplesHW() {
 		return ts.model.ForEachFakeNaples(func(nc *objects.NaplesCollection) error {
-			cmdOut, err := ts.model.RunFakeNaplesBackgroundCommand(nc,
+			cmdResp, err := ts.model.ExecFakeNaplesCommand(nc,
 				"curl localhost:9007/api/interfaces/")
 			if err != nil {
 				return err
 			}
 
-			cmdResp, _ := cmdOut.([]*iota.Command)
 			for _, cmdLine := range cmdResp {
 				intfData := []netproto.Interface{}
 				err := json.Unmarshal([]byte(cmdLine.Stdout), &intfData)
@@ -536,13 +540,11 @@ func verifyPDSAgentIntf(intf *objects.NetworkInterfaceCollection) error {
 
 	if !ts.tb.HasNaplesHW() {
 		return ts.model.ForEachFakeNaples(func(nc *objects.NaplesCollection) error {
-			cmdOut, err := ts.model.RunFakeNaplesBackgroundCommand(nc,
+			cmdResp, err := ts.model.ExecFakeNaplesCommand(nc,
 				"/naples/nic/bin/pdsctl show bgp --detail")
 			if err != nil {
 				return err
 			}
-
-			cmdResp, _ := cmdOut.([]*iota.Command)
 
 			for _, cmdLine := range cmdResp {
 				for _, i := range intf.Interfaces {

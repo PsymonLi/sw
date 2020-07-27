@@ -200,6 +200,7 @@ type NodeActionIntf interface {
 	RunNaplesCommand(npc *objects.NaplesCollection, cmd string) ([]string, error)
 	RunFakeNaplesCommand(npc *objects.NaplesCollection, cmd string) ([]string, error)
 	RunFakeNaplesBackgroundCommand(npc *objects.NaplesCollection, cmd string) (interface{}, error)
+	ExecFakeNaplesCommand(npc *objects.NaplesCollection, cmd string) ([]*common.CommandResp, error)
 	CopyToNaples(npc *objects.NaplesCollection, files []string, dstDir string) error
 
 	StopCommands(cmdCtx interface{}) ([]string, error)

@@ -305,3 +305,31 @@ func DefaultNetworkCollection(client objClient.ObjClient) (*NetworkCollection, e
 	nwc := NewNetworkCollectionFromNetworks(client, nws_vpc)
 	return nwc, nil
 }
+
+// verifies status for propagation of network objects to DSCs
+func (nwc *NetworkCollection) VerifyPropagationStatus(dscCount int32) error {
+	if nwc.HasError() {
+		return nwc.Error()
+	}
+	if len(nwc.subnets) == 0 {
+		return nil
+	}
+
+	for _, nw := range nwc.subnets {
+		propStatus := nw.VeniceNetwork.Status.GetPropagationStatus()
+		objMeta := nw.VeniceNetwork.GetObjectMeta()
+		if propStatus.GenerationID != objMeta.GenerationID {
+			log.Warnf("Propagation generation id did not match: Meta: %+v, PropagationStatus: %+v",
+				objMeta, propStatus)
+			return fmt.Errorf("Propagation generation id did not match")
+		}
+		if (nw.VeniceNetwork.Status.PropagationStatus.Updated != dscCount) ||
+			(nw.VeniceNetwork.Status.PropagationStatus.Pending != 0) {
+			log.Warnf("Propagation status incorrect: Expected updates: %+v, PropagationStatus: %+v",
+				dscCount, nw.VeniceNetwork.Status.PropagationStatus)
+			return fmt.Errorf("Propagation status was incorrect")
+		}
+	}
+
+	return nil
+}

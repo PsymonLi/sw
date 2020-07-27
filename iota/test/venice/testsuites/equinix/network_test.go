@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,189 +18,253 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-var savedTenant, savedNetwork string
+var (
+	savedNetwork = make(map[string]string)
+)
 
 var _ = Describe("Network", func() {
-
-	var startTime time.Time
+	var (
+		defaultTenants []string
+		dscCount       int32
+	)
 
 	BeforeEach(func() {
-		startTime = time.Now().UTC()
 		// verify cluster is in good health
 		Eventually(func() error {
 			return ts.model.VerifyClusterStatus()
 		}).Should(Succeed())
+
+		if len(defaultTenants) == 0 {
+			tenantList, err := ts.model.ConfigClient().ListTenant()
+			Expect(err).ShouldNot(HaveOccurred())
+
+			for _, t := range tenantList {
+				if t.GetName() != "default" {
+					defaultTenants = append(defaultTenants, t.GetName())
+				}
+			}
+		}
+
+		dscCount = int32(len(ts.model.Naples().Nodes) + len(ts.model.Naples().FakeNodes))
 	})
 	AfterEach(func() {
-		Expect(ts.model.ServiceStoppedEvents(startTime, ts.model.Naples()).Len(0))
 	})
 
 	Context("Network tests", func() {
 		It("Add a subnet & verify config", func() {
-			tenantName, err := defaultTenantName()
-			Expect(err).ShouldNot(HaveOccurred())
-			log.Infof("Tenant name : %s", tenantName)
+			nwIfs := make([]*objects.NetworkInterfaceCollection, len(defaultTenants))
+			var (
+				vpcs     []*objects.VpcObjCollection
+				networks []*objects.NetworkCollection
+			)
 
-			//Create VPC config
-			vpcName := "testVPC"
-			vpcVni := uint32(700)
-			vpc := ts.model.NewVPC(tenantName, vpcName, "0001.0102.0202", vpcVni, "")
-			Expect(vpc.Commit()).Should(Succeed())
+			nwNames := make([]string, len(defaultTenants))
 
-			//Validate using Get command
-			veniceVpc, err := ts.model.GetVPC(vpcName, tenantName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(veniceVpc.Obj.Name == vpcName).Should(BeTrue())
+			for i, tenantName := range defaultTenants {
+				iStr := strconv.Itoa(i)
 
-			//Create a subnet
-			nwName := "testNetwork"
-			nwVni := 0x80000 | vpcVni
-			log.Infof("NW Vni %v", nwVni)
-			nwp := &base.NetworkParams{
-				nwName,
-				"10.1.2.0/24",
-				"10.1.2.1",
-				nwVni,
-				vpcName,
-				tenantName,
+				//Create VPC config
+				vpcName := "testVPC" + iStr
+				vpcVni := uint32(700 + i)
+
+				vpc := ts.model.NewVPC(tenantName, vpcName, getUniqueMac(i+1), vpcVni, "")
+				Expect(vpc.Commit()).Should(Succeed())
+
+				vpcs = append(vpcs, vpc)
+
+				//Validate using Get command
+				veniceVpc, err := ts.model.GetVPC(vpcName, tenantName)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(veniceVpc.Obj.Name == vpcName).Should(BeTrue())
+
+				//Create a subnet
+				nwNames[i] = "testNetwork" + iStr
+				nwVni := 0x80000 | vpcVni
+				log.Infof("NW Vni %v", nwVni)
+				nwp := &base.NetworkParams{
+					nwNames[i],
+					fmt.Sprintf("10.1.%v.0/24", i),
+					fmt.Sprintf("10.1.%v.1", i),
+					nwVni,
+					vpcName,
+					tenantName,
+				}
+				nwc := ts.model.NewNetwork(nwp)
+				Expect(nwc.Commit()).Should(Succeed())
+
+				networks = append(networks, nwc)
+
+				//Verify network config in Venice
+				nw, err := ts.model.GetNetwork(tenantName, nwNames[i])
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(nw.VeniceNetwork.Name == nwNames[i]).Should(BeTrue())
+
+				// get all host nw interfaces
+				nwIfs[i] = AttachNwInterfaceToSubnet(tenantName, nwNames[i])
 			}
-			nwc := ts.model.NewNetwork(nwp)
-			Expect(nwc.Commit()).Should(Succeed())
 
-			//Verify network config in Venice
-			nw, err := ts.model.GetNetwork(tenantName, nwName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(nw.VeniceNetwork.Name == nwName).Should(BeTrue())
+			for _, tenantName := range defaultTenants {
+				//Verify propagation status
+				Eventually(func() error {
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			// get all host nw interfaces
-			nwIfs := AttachNwInterfaceToSubnet(tenantName, nwName)
-			uuid := nw.VeniceNetwork.GetUUID()
-			log.Infof("Network object UUID %s", uuid)
+				if *scaleFlag {
+					continue
+				}
+				nwList := ts.model.Networks(tenantName)
+				verifyNetAgentNwState(nwList)
+				verifyPDSNwState(nwList)
+			}
 
-			//Verify state in Naples
-			nwList := ts.model.Networks(tenantName)
-			verifyNetAgentNwState(nwList)
-			verifyPDSNwState(nwList)
+			for i, tenantName := range defaultTenants {
+				// detach the interface to the subnet
+				DetachNwInterfaceFromSubnet(tenantName, nwNames[i], nwIfs[i])
+				Expect(networks[i].Delete()).Should(Succeed())
+				Expect(vpcs[i].Delete()).Should(Succeed())
+			}
 
-			// detach the interface to the subnet
-			DetachNwInterfaceFromSubnet(tenantName, nwName, nwIfs)
-			Expect(nwc.Delete()).Should(Succeed())
-			Expect(vpc.Delete()).Should(Succeed())
+			for _, tenantName := range defaultTenants {
+				//Verify propagation status
+				Eventually(func() error {
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			//Verify state in Naples
-			nwList = ts.model.Networks(tenantName)
-			verifyNetAgentNwState(nwList)
-			verifyPDSNwState(nwList)
+				if *scaleFlag {
+					continue
+				}
+				nwList := ts.model.Networks(tenantName)
+				verifyNetAgentNwState(nwList)
+				verifyPDSNwState(nwList)
+			}
 		})
 
-		It("Change subnet prefix & verify config", func() {
-			tenantName, err := defaultTenantName()
-			Expect(err).ShouldNot(HaveOccurred())
-			log.Infof("Tenant name : %s", tenantName)
+		It("Change subnet prefix len & verify config", func() {
+			nwcc := make([]*objects.NetworkCollection, len(defaultTenants))
 
-			//Create VPC config
-			vpcName := "testVPC"
-			vpcVni := uint32(700)
-			vpc := ts.model.NewVPC(tenantName, vpcName, "0001.0102.0202", vpcVni, "")
-			Expect(vpc.Commit()).Should(Succeed())
+			oldPrefix := make([][]string, len(defaultTenants))
 
-			//Create a subnet
-			nwName := "testNetwork"
-			nwVni := 0x80000 | vpcVni
-			log.Infof("NW Vni %v", nwVni)
-			nwp := &base.NetworkParams{
-				nwName,
-				"10.100.2.0/24",
-				"10.100.2.1",
-				nwVni,
-				vpcName,
-				tenantName,
+			for i, tenantName := range defaultTenants {
+				//Get a network from default config and modify its prefix len
+				nwcc[i] = ts.model.Networks(tenantName)
+
+				oldPrefix[i] = make([]string, len(nwcc[i].Subnets()))
+
+				for j, nw := range nwcc[i].Subnets() {
+					oldPrefix[i][j] = nw.VeniceNetwork.Spec.IPv4Subnet
+
+					ip := strings.Split(oldPrefix[i][j], "/")
+					//Get IP addr without the prefix length
+					ipPrefix := strings.Split(ip[0], ".")
+
+					//default config has prefix len 16
+					newPrefix := fmt.Sprintf("%v.%v.%v.0/24", ipPrefix[0], ipPrefix[1], ipPrefix[2])
+
+					log.Infof("New prefix %v old prefix %v", newPrefix, oldPrefix[i][j])
+
+					nw.UpdateIPv4Subnet(newPrefix)
+				}
+
+				Expect(nwcc[i].Commit()).Should(Succeed())
 			}
-			nwc := ts.model.NewNetwork(nwp)
-			Expect(nwc.Commit()).Should(Succeed())
 
-			//Verify network config in Venice
-			nw, err := ts.model.GetNetwork(tenantName, nwName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(nw.VeniceNetwork.Name == nwName).Should(BeTrue())
+			for _, tenantName := range defaultTenants {
+				//Verify propagation status
+				Eventually(func() error {
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			uuid := nw.VeniceNetwork.GetUUID()
-			log.Infof("Network object UUID %s", uuid)
+				if *scaleFlag {
+					continue
+				}
+				nwList := ts.model.Networks(tenantName)
+				verifyNetAgentNwState(nwList)
+				verifyPDSNwState(nwList)
+			}
 
-			// get all host nw interfaces
-			nwIfs := AttachNwInterfaceToSubnet(tenantName, nwName)
+			//Revert to original
+			for i, nwc := range nwcc {
+				for j, nw := range nwc.Subnets() {
+					nw.UpdateIPv4Subnet(oldPrefix[i][j])
+				}
+				Expect(nwc.Commit()).Should(Succeed())
+			}
 
-			newPrefix := "10.100.0.0/16"
-			snc := nwc.Subnets()
-			snc[0].UpdateIPv4Subnet(newPrefix)
-			log.Infof("Updating nw prefix from %s to %s", nwp.Ip, newPrefix)
-			Expect(nwc.Commit()).Should(Succeed())
+			for _, tenantName := range defaultTenants {
+				//Verify propagation status
+				Eventually(func() error {
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			nw, err = ts.model.GetNetwork(tenantName, nwName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(nw.VeniceNetwork.Spec.GetIPv4Subnet() == newPrefix).Should(BeTrue())
-
-			nwList := ts.model.Networks(tenantName)
-
-			verifyNetAgentNwState(nwList)
-			verifyPDSNwState(nwList)
-
-			// detach the interface to the subnet
-			DetachNwInterfaceFromSubnet(tenantName, nwName, nwIfs)
-			Expect(nwc.Delete()).Should(Succeed())
-			Expect(vpc.Delete()).Should(Succeed())
-
-			nwList = ts.model.Networks(tenantName)
-			verifyNetAgentNwState(nwList)
-			verifyPDSNwState(nwList)
+				if *scaleFlag {
+					continue
+				}
+				nwList := ts.model.Networks(tenantName)
+				verifyNetAgentNwState(nwList)
+				verifyPDSNwState(nwList)
+			}
 		})
 
 		It("Change Gateway IP & verify config", func() {
-			//Get existing tenant and network
-			nwc, err := getNetworkCollection()
-			Expect(err).ShouldNot(HaveOccurred())
 
-			nwc = nwc.Any(1)
-			nw := nwc.Subnets()[0]
+			nwcc := make([]*objects.NetworkCollection, len(defaultTenants))
 
-			log.Infof("Network : %+v", nw)
-			tenantName := nw.VeniceNetwork.Tenant
-			nwName := nw.VeniceNetwork.Name
+			oldGw := make([][]string, len(defaultTenants))
 
-			//update Gateway IP
-			snc := nwc.Subnets()
-			oldGw := snc[0].VeniceNetwork.Spec.GetIPv4Gateway()
+			for i, tenantName := range defaultTenants {
+				//Get a network from default config and modify its prefix len
+				nwcc[i] = ts.model.Networks(tenantName)
 
-			ipBytes := strings.Split(oldGw, ".")
-			//lastByte, _ := strconv.Atoi(ipBytes[3])
-			newGw := fmt.Sprintf("%s.%s.%s.250", ipBytes[0], ipBytes[1], ipBytes[2])
-			//newGw := fmt.Sprintf("%s.%s.%s.%v", ipBytes[0], ipBytes[1], ipBytes[2],
-			//	(lastByte+)%256)
+				oldGw[i] = make([]string, len(nwcc[i].Subnets()))
 
-			snc[0].UpdateIPv4Gateway(newGw)
-			log.Infof("Gateway IP change from %s to %s", oldGw, newGw)
-			Expect(nwc.Commit()).Should(Succeed())
+				for j, nw := range nwcc[i].Subnets() {
+					oldGw[i][j] = nw.VeniceNetwork.Spec.GetIPv4Gateway()
 
-			nw, err = ts.model.GetNetwork(tenantName, nwName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(nw.VeniceNetwork.Spec.GetIPv4Gateway() == newGw).Should(BeTrue())
+					ipBytes := strings.Split(oldGw[i][j], ".")
+					newGw := fmt.Sprintf("%s.%s.%s.250", ipBytes[0], ipBytes[1], ipBytes[2])
 
-			nwList := ts.model.Networks(tenantName)
-			verifyNetAgentNwState(nwList)
-			verifyPDSNwState(nwList)
+					nw.UpdateIPv4Gateway(newGw)
+					log.Infof("Gateway IP change from %s to %s", oldGw[i][j], newGw)
+				}
+
+				Expect(nwcc[i].Commit()).Should(Succeed())
+			}
+
+			for _, tenantName := range defaultTenants {
+				//Verify propagation status
+				Eventually(func() error {
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
+
+				if *scaleFlag {
+					continue
+				}
+				nwList := ts.model.Networks(tenantName)
+				verifyNetAgentNwState(nwList)
+				verifyPDSNwState(nwList)
+			}
 
 			//Revert to original
-			snc[0].UpdateIPv4Gateway(oldGw)
-			log.Infof("Gateway IP change from %s to %s", newGw, oldGw)
-			Expect(nwc.Commit()).Should(Succeed())
+			for i, nwc := range nwcc {
+				for j, nw := range nwc.Subnets() {
+					nw.UpdateIPv4Gateway(oldGw[i][j])
+				}
+				Expect(nwc.Commit()).Should(Succeed())
+			}
 
-			nw, err = ts.model.GetNetwork(tenantName, nwName)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(nw.VeniceNetwork.Spec.GetIPv4Gateway() == oldGw).Should(BeTrue())
+			for _, tenantName := range defaultTenants {
+				//Verify propagation status
+				Eventually(func() error {
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
 
-			nwList = ts.model.Networks(tenantName)
-			verifyNetAgentNwState(nwList)
-			verifyPDSNwState(nwList)
+				if *scaleFlag {
+					continue
+				}
+				nwList := ts.model.Networks(tenantName)
+				verifyNetAgentNwState(nwList)
+				verifyPDSNwState(nwList)
+			}
 		})
 
 		It("Change Vni & verify it's not allowed", func() {
@@ -264,47 +328,83 @@ var _ = Describe("Network", func() {
 		})
 
 		It("Change RT & verify config", func() {
-			//Get existing tenant and network
-			nwc, err := getNetworkCollection()
-			Expect(err).ShouldNot(HaveOccurred())
-
-			nwc = nwc.Any(1)
-			nw := nwc.Subnets()[0]
-
-			tenantName := nw.VeniceNetwork.Tenant
-			nwName := nw.VeniceNetwork.Name
-
-			uuid := nw.VeniceNetwork.GetUUID()
-			log.Infof("Network object UUID %s", uuid)
-
-			//Change its RT and commit
-			exportRTs := nw.VeniceNetwork.Spec.RouteImportExport.ExportRTs
-			importRTs := nw.VeniceNetwork.Spec.RouteImportExport.ImportRTs
-
-			//Update RT value
 			offset := uint32(10)
-			exportRTs[0].AssignedValue += offset
-			importRTs[0].AssignedValue += offset
-			log.Infof("Export RT new assigned value %v", exportRTs[0].AssignedValue)
-			log.Infof("Import RT new assigned value %v", importRTs[0].AssignedValue)
-			Expect(nwc.Commit()).Should(Succeed())
 
-			nwVenice, err := ts.model.GetNetwork(tenantName, nwName)
-			Expect(err).ShouldNot(HaveOccurred())
-			exportAssignedVal := nwVenice.VeniceNetwork.Spec.RouteImportExport.ExportRTs[0].GetAssignedValue()
-			importAssignedVal := nwVenice.VeniceNetwork.Spec.RouteImportExport.ImportRTs[0].GetAssignedValue()
-			Expect(exportAssignedVal == exportRTs[0].AssignedValue).Should(BeTrue())
-			Expect(importAssignedVal == importRTs[0].AssignedValue).Should(BeTrue())
+			for _, tenantName := range defaultTenants {
+				nwc := ts.model.Networks(tenantName)
 
-			verifyNetAgentNwState(nwc)
-			verifyPDSNwState(nwc)
+				type rtVal struct {
+					exportRtval, importRtVal uint32
+				}
+				newRtVal := make(map[string]rtVal)
+				for _, nw := range nwc.Subnets() {
+					exportRTs := nw.VeniceNetwork.Spec.RouteImportExport.ExportRTs
+					importRTs := nw.VeniceNetwork.Spec.RouteImportExport.ImportRTs
+					//Update RT value
+					exportRTs[0].AssignedValue += offset
+					importRTs[0].AssignedValue += offset
+					newRtVal[nw.VeniceNetwork.GetName()] = rtVal{exportRtval: exportRTs[0].AssignedValue,
+						importRtVal: importRTs[0].AssignedValue}
+				}
 
-			//Restore RT value
-			exportRTs[0].AssignedValue -= offset
-			importRTs[0].AssignedValue -= offset
-			Expect(nwc.Commit()).Should(Succeed())
-			verifyNetAgentNwState(nwc)
-			verifyPDSNwState(nwc)
+				Expect(nwc.Commit()).Should(Succeed())
+
+				if *scaleFlag {
+					continue
+				}
+
+				nwc = ts.model.Networks(tenantName)
+				for _, nw := range nwc.Subnets() {
+					exportAssignedVal := nw.VeniceNetwork.Spec.RouteImportExport.ExportRTs[0].GetAssignedValue()
+					importAssignedVal := nw.VeniceNetwork.Spec.RouteImportExport.ImportRTs[0].GetAssignedValue()
+
+					nwName := nw.VeniceNetwork.GetName()
+
+					Expect(newRtVal).Should(HaveKeyWithValue(nwName, rtVal{exportRtval: exportAssignedVal,
+						importRtVal: importAssignedVal}))
+				}
+			}
+
+			//Verify propagation status
+			for _, tenantName := range defaultTenants {
+				//Verify propagation status
+				Eventually(func() error {
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
+
+				if *scaleFlag {
+					continue
+				}
+				nwList := ts.model.Networks(tenantName)
+				verifyNetAgentNwState(nwList)
+				verifyPDSNwState(nwList)
+			}
+
+			for _, tenantName := range defaultTenants {
+				nwc := ts.model.Networks(tenantName)
+				for _, nw := range nwc.Subnets() {
+					//Restore RT value
+					exportRTs := nw.VeniceNetwork.Spec.RouteImportExport.ExportRTs
+					importRTs := nw.VeniceNetwork.Spec.RouteImportExport.ImportRTs
+					exportRTs[0].AssignedValue -= offset
+					importRTs[0].AssignedValue -= offset
+				}
+				Expect(nwc.Commit()).Should(Succeed())
+			}
+
+			for _, tenantName := range defaultTenants {
+				//Verify propagation status
+				Eventually(func() error {
+					return ts.model.Networks(tenantName).VerifyPropagationStatus(dscCount)
+				}).Should(Succeed())
+
+				if *scaleFlag {
+					continue
+				}
+				nwList := ts.model.Networks(tenantName)
+				verifyNetAgentNwState(nwList)
+				verifyPDSNwState(nwList)
+			}
 		})
 
 	})
@@ -312,20 +412,21 @@ var _ = Describe("Network", func() {
 
 func AttachNwInterfaceToSubnet(tenant, nw string) *objects.NetworkInterfaceCollection {
 	// get all host nw interfaces
-	filter := fmt.Sprintf("spec.type=host-pf")
-	nwIfs, err := ts.model.ListNetworkInterfacesByFilter(filter)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(nwIfs).ShouldNot(BeNil())
-	Expect(len(nwIfs.Interfaces) != 0).Should(BeTrue())
+	//filter := fmt.Sprintf("spec.type=host-pf")
+	//nwIfs, err := ts.model.ListNetworkInterfacesByFilter(filter)
+	nwIfs, err := objects.GetAllPFNetworkInterfacesForTenant(tenant,
+		ts.model.ConfigClient(), ts.model.Testbed())
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+	ExpectWithOffset(1, nwIfs).ShouldNot(BeNil())
+	ExpectWithOffset(1, len(nwIfs.Interfaces) != 0).Should(BeTrue())
 
 	//First save existing network to revert to
-	savedNetwork = nwIfs.Interfaces[0].Spec.AttachNetwork
-	savedTenant = nwIfs.Interfaces[0].Spec.AttachTenant
+	savedNetwork[tenant] = nwIfs.Interfaces[0].Spec.AttachNetwork
 	// attach the first interface to the subnet
 	nwIfs.Interfaces[0].Spec.AttachNetwork = nw
-	nwIfs.Interfaces[0].Spec.AttachTenant = tenant
-	log.Infof("Updating nwif: %s | spec: %v | status: %v", nwIfs.Interfaces[0].Name, nwIfs.Interfaces[0].Spec, nwIfs.Interfaces[0].Status)
-	Expect(nwIfs.Commit()).Should(Succeed())
+	log.Infof("Updating nwif: %s | spec: %v | status: %v",
+		nwIfs.Interfaces[0].Name, nwIfs.Interfaces[0].Spec, nwIfs.Interfaces[0].Status)
+	ExpectWithOffset(1, nwIfs.Commit()).Should(Succeed())
 	return nwIfs
 }
 
@@ -333,8 +434,7 @@ func DetachNwInterfaceFromSubnet(tenant, nw string, nwIfs *objects.NetworkInterf
 
 	for _, n := range nwIfs.Interfaces {
 		if n.Spec.AttachNetwork == nw && n.Spec.AttachTenant == tenant {
-			n.Spec.AttachNetwork = savedNetwork
-			n.Spec.AttachTenant = savedTenant
+			n.Spec.AttachNetwork = savedNetwork[tenant]
 			break
 		}
 	}

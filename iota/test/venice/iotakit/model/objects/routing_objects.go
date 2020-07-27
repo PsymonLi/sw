@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"fmt"
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/objClient"
@@ -134,4 +135,17 @@ func (rcc *RoutingConfigCollection) SetPasswordOnRR(passwd string) {
 		}
 	}
 
+}
+
+// Returns routing config for DSC
+func (rcc *RoutingConfigCollection) GetNaplesRtgCfg() (*RoutingConfig, error) {
+
+	//Check for global DSC autoconfig to be true
+	for _, r := range rcc.RoutingObjs {
+		if r.RoutingObj.Spec.BGPConfig.GetDSCAutoConfig() {
+			return r, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Naples routing config not found")
 }

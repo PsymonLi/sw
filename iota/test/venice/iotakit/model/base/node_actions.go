@@ -634,6 +634,36 @@ func (sm *SysModel) RunFakeNaplesCommand(npc *objects.NaplesCollection, cmd stri
 	return stdout, nil
 }
 
+// ExecFakeNaplesCommand runs the given fake naples command on the collection, returns []*iotamodel.command
+func (sm *SysModel) ExecFakeNaplesCommand(npc *objects.NaplesCollection, cmd string) ([]*common.CommandResp, error) {
+	var cmdOut []*common.CommandResp
+
+	trig := sm.Tb.NewTrigger()
+
+	for _, naples := range npc.FakeNodes {
+		trig.AddCommand(cmd, naples.Name(), naples.NodeName())
+	}
+
+	// run the trigger
+	resp, err := trig.RunParallel()
+	if err != nil {
+		log.Errorf("Error running command, Err: %v", err)
+		return nil, fmt.Errorf("Error running command, Err: %v", err)
+	}
+
+	for _, cmdResp := range resp {
+		if cmdResp.ExitCode != 0 {
+			log.Errorf("command failed. %+v", cmdResp)
+			return nil, fmt.Errorf("command failed. exit code %v, Out: %v, StdErr: %v", cmdResp.ExitCode, cmdResp.Stdout, cmdResp.Stderr)
+		}
+
+		cmdOut = append(cmdOut, &common.CommandResp{cmdResp.GetEntityName(),
+			cmdResp.GetNodeName(), cmdResp.Stdout})
+	}
+
+	return cmdOut, nil
+}
+
 // PortFlap flaps the one of the port from each naples on the collection
 func (sm *SysModel) PortFlap(npc *objects.NaplesCollection) error {
 

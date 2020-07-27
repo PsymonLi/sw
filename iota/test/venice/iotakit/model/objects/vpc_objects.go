@@ -176,3 +176,28 @@ func TenantVPCCollection(tenant string, client objClient.ObjClient, tb *testbed.
 
 	return nil, fmt.Errorf("No tenant VPC on %s", tenant)
 }
+
+// verifies status for propagation of VPC objects to DSCs
+func (vpcc *VpcObjCollection) VerifyPropagationStatus(dscCount int32) error {
+	if vpcc.HasError() {
+		return vpcc.Error()
+	}
+	if len(vpcc.Objs) == 0 {
+		return nil
+	}
+
+	for _, v := range vpcc.Objs {
+		if v.Obj.Status.PropagationStatus.GenerationID != v.Obj.ObjectMeta.GenerationID {
+			log.Warnf("Propagation generation id did not match: Meta: %+v, PropagationStatus: %+v",
+				v.Obj.ObjectMeta, v.Obj.Status.PropagationStatus)
+			return fmt.Errorf("Propagation generation id did not match")
+		}
+		if (v.Obj.Status.PropagationStatus.Updated != dscCount) || (v.Obj.Status.PropagationStatus.Pending != 0) {
+			log.Warnf("Propagation status incorrect: Expected updates: %+v, PropagationStatus: %+v",
+				dscCount, v.Obj.Status.PropagationStatus)
+			return fmt.Errorf("Propagation status was incorrect")
+		}
+	}
+
+	return nil
+}

@@ -12,7 +12,6 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/network"
-	iota "github.com/pensando/sw/iota/protos/gogen"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -99,9 +98,8 @@ var _ = Describe("Routing Config Tests", func() {
 			// fetch routing config from Fake Naples
 			ts.model.ForEachFakeNaples(func(nc *objects.NaplesCollection) error {
 				cmd := "curl localhost:9007/api/routingconfigs/"
-				cmdOut, err := ts.model.RunFakeNaplesBackgroundCommand(nc, cmd)
+				cmdResp, err := ts.model.ExecFakeNaplesCommand(nc, cmd)
 				Expect(err).ShouldNot(HaveOccurred())
-				cmdResp, _ := cmdOut.([]*iota.Command)
 				for _, cmdLine := range cmdResp {
 					RoutingData := []netproto.RoutingConfig{}
 					err = json.Unmarshal([]byte(cmdLine.Stdout), &RoutingData)
@@ -174,7 +172,6 @@ var _ = Describe("Routing Config Tests", func() {
 			for _, v := range rcc.RoutingObjs {
 				if v.RoutingObj.Spec.BGPConfig.DSCAutoConfig == false {
 					nbrs := v.RoutingObj.Spec.BGPConfig.GetNeighbors()
-					log.Infof("1. %v", nbrs)
 					newNbr := &network.BGPNeighbor{
 						Shutdown:              false,
 						IPAddress:             "22.1.1.50",
@@ -186,7 +183,6 @@ var _ = Describe("Routing Config Tests", func() {
 					}
 					nbrs = append(nbrs, newNbr)
 					v.RoutingObj.Spec.BGPConfig.Neighbors = nbrs
-					break
 				}
 			}
 
@@ -200,8 +196,6 @@ var _ = Describe("Routing Config Tests", func() {
 				if v.RoutingObj.Spec.BGPConfig.DSCAutoConfig == false {
 					nbrs := v.RoutingObj.Spec.BGPConfig.GetNeighbors()
 					v.RoutingObj.Spec.BGPConfig.Neighbors = nbrs[:len(nbrs)-1]
-					log.Infof("%+v", v)
-					break
 				}
 			}
 			Expect(rcc.Commit()).Should(Succeed())
@@ -232,7 +226,6 @@ var _ = Describe("Routing Config Tests", func() {
 					}
 					nbrs = append(nbrs, newNbr)
 					v.RoutingObj.Spec.BGPConfig.Neighbors = nbrs
-					break
 				}
 			}
 
@@ -247,8 +240,6 @@ var _ = Describe("Routing Config Tests", func() {
 				if v.RoutingObj.Spec.BGPConfig.DSCAutoConfig == false {
 					nbrs := v.RoutingObj.Spec.BGPConfig.GetNeighbors()
 					v.RoutingObj.Spec.BGPConfig.Neighbors = nbrs[:len(nbrs)-1]
-					log.Infof("%+v", v)
-					break
 				}
 			}
 			Expect(rcc.Commit()).Should(Succeed())
@@ -428,59 +419,68 @@ var _ = Describe("Routing Config Tests", func() {
 		It("Naples: Change routing config association", func() {
 			cfgClient := ts.model.ConfigClient()
 
-			var dsc *cluster.DistributedServiceCard
-
-			if ts.tb.HasNaplesSim() {
-				naples := ts.model.Naples().AnyFakeNodes(1)
-				Expect(naples.Refresh()).Should(Succeed())
-				dsc = naples.FakeNodes[0].Instances[0].Dsc
-			} else {
-				naples := ts.model.Naples().Any(1)
-				Expect(naples.Refresh()).Should(Succeed())
-				dsc = naples.Nodes[0].Instances[0].Dsc
-			}
-
-			savedRtgCfgName := dsc.Spec.RoutingConfig
-
-			log.Infof("DSC %s routing config %s", dsc.GetName(), savedRtgCfgName)
-			rcfg, err := cfgClient.GetRoutingConfig(dsc.Spec.RoutingConfig)
+			//Get naples routing config
+			rcc, err := ts.model.ListRoutingConfig()
 			Expect(err).ShouldNot(HaveOccurred())
 
+			naplesCfg, err := rcc.GetNaplesRtgCfg()
+			Expect(err).ShouldNot(HaveOccurred())
+
+			savedRtgCfgName := naplesCfg.RoutingObj.GetName()
+
 			newRtgCfg := &network.RoutingConfig{}
-			_, err = rcfg.Clone(newRtgCfg)
+			_, err = naplesCfg.RoutingObj.Clone(newRtgCfg)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			newRtgCfgName := "testNaplesNodeCfg"
-
 			newRtgCfg.Name = newRtgCfgName
-
 			newRtgCfg.Spec.BGPConfig.Holdtime = uint32(210)
 			newRtgCfg.Spec.BGPConfig.KeepaliveInterval = uint32(70)
-
 			Expect(cfgClient.CreateRoutingConfig(newRtgCfg)).Should(Succeed())
 
-			log.Infof("Changing DSC node %s rtg config from %s to %s", dsc.GetName(),
-				savedRtgCfgName, newRtgCfgName)
+			dscList := getDSCs(ts.model.Naples())
 
-			//Associate newly created cfg to node
-			dsc.Spec.RoutingConfig = newRtgCfgName
-			err = cfgClient.UpdateSmartNIC(dsc)
-			Expect(err).ShouldNot(HaveOccurred())
+			for _, dsc := range dscList {
+				log.Infof("Changing DSC node %s rtg config from %s to %s", dsc.GetName(),
+					savedRtgCfgName, newRtgCfgName)
+
+				//Associate newly created cfg to node
+				dsc.Spec.RoutingConfig = newRtgCfgName
+				err = cfgClient.UpdateSmartNIC(dsc)
+				Expect(err).ShouldNot(HaveOccurred())
+			}
 
 			//Verify overlay is formed
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
 			verifyRRState(PEER_ESTABLISHED)
 
 			//Restore original state
-			dsc.Spec.RoutingConfig = savedRtgCfgName
-			err = cfgClient.UpdateSmartNIC(dsc)
-			Expect(err).ShouldNot(HaveOccurred())
+			for _, dsc := range dscList {
+				dsc.Spec.RoutingConfig = savedRtgCfgName
+				err = cfgClient.UpdateSmartNIC(dsc)
+				Expect(err).ShouldNot(HaveOccurred())
+			}
 
 			//Delete new added routing config
 			Expect(cfgClient.DeleteRoutingConfig(newRtgCfg)).Should(Succeed())
 		})
 	})
 })
+
+func getDSCs(naples *objects.NaplesCollection) []*cluster.DistributedServiceCard {
+	var dsc []*cluster.DistributedServiceCard
+
+	ExpectWithOffset(1, naples.Refresh()).Should(Succeed())
+
+	for _, node := range naples.FakeNodes {
+		dsc = append(dsc, node.Instances[0].Dsc)
+	}
+	for _, node := range naples.Nodes {
+		dsc = append(dsc, node.Instances[0].Dsc)
+	}
+
+	return dsc
+}
 
 func verifyTimerInVenice(ka uint32, ht uint32) error {
 	//Get updated venice info
@@ -927,7 +927,6 @@ func verifyRRState(overlayState string) {
 		expected := getExpectedRRState(r, overlayState)
 
 		EventuallyWithOffset(1, func() *pdsConfigCmp {
-			nodeName := pegContainer.Node.ClusterNode.GetName()
 			log.Infof("Cluster node %s: trying to match RR state...", nodeName)
 			//get RR rtg config template
 			return getRRState(pegContainerCollection, pegContainer, "/bin/rtrctl")
