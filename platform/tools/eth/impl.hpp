@@ -29,7 +29,7 @@ typedef struct {
 bool get_lif_qstate(uint16_t lif, queue_info_t qinfo[QTYPE_MAX]);
 std::string cfg_path();
 std::string mpart_cfg_path();
-void qinfo(uint16_t lif);
+int qinfo(uint16_t lif);
 void *memrev(void *block, size_t elnum);
 uint8_t *parse_byte_array(char **argv, uint32_t size);
 void mem_rd(uint64_t addr, uint32_t size);
@@ -58,6 +58,9 @@ void eth_stats_reset(uint16_t lif);
 void eth_port_config(uint64_t addr);
 void eth_port_status(uint64_t addr);
 void eth_lif_status(uint64_t addr);
+void eth_dbginfo(uint16_t lif);
+void eth_rss(uint16_t lif);
+void eth_rss_debug(uint16_t lif, uint8_t enable);
 
 // rdma
 void rdma_qstate(uint16_t lif, uint8_t qtype, uint32_t qid);

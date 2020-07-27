@@ -854,3 +854,52 @@ eth_lif_status(uint64_t addr)
 
     free(buf);
 }
+
+void
+eth_rss(uint16_t lif)
+{
+    printf("\n");
+    p4pd_common_p4plus_rxdma_rss_params_table_entry_show(lif);
+    p4pd_common_p4plus_rxdma_rss_indir_table_entry_show(lif);
+    printf("\n");
+}
+
+void
+eth_rss_debug(uint16_t lif, uint8_t enable)
+{
+    p4pd_common_p4plus_rxdma_rss_params_table_entry_add(lif, enable);
+    printf("\n");
+    p4pd_common_p4plus_rxdma_rss_params_table_entry_show(lif);
+    p4pd_common_p4plus_rxdma_rss_indir_table_entry_show(lif);
+    printf("\n");
+}
+
+void
+eth_dbginfo(uint16_t lif)
+{
+    queue_info_t qinfo[QTYPE_MAX] = {0};
+
+    if (!get_lif_qstate(lif, qinfo)) {
+        printf("Failed to get qinfo for lif %u\n", lif);
+        return;
+    }
+
+    printf("\nLIF: %d\n", lif);
+
+    eth_rss(lif);
+
+    eth_stats(lif);
+
+    for (uint8_t qtype = 0; qtype < QTYPE_MAX; qtype++) {
+        if (qinfo[qtype].size == 0)
+            continue;
+
+        printf("\nLIF: %d, QTYPE: %d\n", lif, qtype);
+        eth_qpoll(lif, qtype);
+
+        for (uint32_t qid = 0; qid < qinfo[qtype].length; qid++) {
+            printf("\nLIF: %d, QTYPE: %d, QID: %d\n", lif, qtype, qid);
+            eth_qstate(lif, qtype, qid);
+        }
+    }
+}

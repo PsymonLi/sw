@@ -31,6 +31,7 @@ usage()
     printf("   eqstate        <addr>\n");
     printf("   qdump          <lif> <qtype> <qid> <ring>\n");
     printf("   debug          <lif> <qtype> <qid> <enable>\n");
+    printf("   dbginfo        <lif>\n");
     printf("   nvme_qstate    <lif> <qtype> <qid>\n");
     printf("   rdma_qstate    <lif> <qtype> <qid>\n");
     printf("   rdma_kte       <lif>\n");
@@ -71,7 +72,7 @@ main(int argc, char **argv)
             usage();
         }
         uint16_t lif = std::strtoul(argv[2], NULL, 0);
-        qinfo(lif);
+        exit(qinfo(lif));
     } else if (strcmp(argv[1], "qstate") == 0) {
         if (argc != 5) {
             usage();
@@ -274,22 +275,21 @@ main(int argc, char **argv)
         if (argc != 3) {
             usage();
         }
-        uint16_t lif_id = strtoul(argv[2], NULL, 0);
-        printf("\n");
-        p4pd_common_p4plus_rxdma_rss_params_table_entry_show(lif_id);
-        p4pd_common_p4plus_rxdma_rss_indir_table_entry_show(lif_id);
-        printf("\n");
+        uint16_t lif = strtoul(argv[2], NULL, 0);
+        eth_rss(lif);
     } else if (strcmp(argv[1], "rss_debug") == 0) {
         if (argc != 4) {
             usage();
         }
-        uint16_t lif_id = strtoul(argv[2], NULL, 0);
+        uint16_t lif = strtoul(argv[2], NULL, 0);
         uint8_t enable = std::strtoul(argv[3], NULL, 0);
-        p4pd_common_p4plus_rxdma_rss_params_table_entry_add(lif_id, enable);
-        printf("\n");
-        p4pd_common_p4plus_rxdma_rss_params_table_entry_show(lif_id);
-        p4pd_common_p4plus_rxdma_rss_indir_table_entry_show(lif_id);
-        printf("\n");
+        eth_rss_debug(lif, enable);
+    } else if (strcmp(argv[1], "dbginfo") == 0) {
+        if (argc != 3) {
+            usage();
+        }
+        uint16_t lif = std::strtoul(argv[2], NULL, 0);
+        eth_dbginfo(lif);
     } else {
         usage();
     }

@@ -243,6 +243,11 @@
                                 {       "Name" : "Routing table",
                                         "Method": 0,
                                         "Command": "route -n"
+                                },
+                                {
+                                        "Name" : "Eth techsupport",
+                                        "Method": 0,
+                                        "Command": "/nic/tools/eth_techsupport.sh"
                                 }
 			],
 

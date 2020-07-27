@@ -171,20 +171,22 @@ mpart_cfg_path (void)
                                         catalog, profile_name, platform_type_t::PLATFORM_TYPE_HW);
 }
 
-void
+int
 qinfo (uint16_t lif)
 {
     queue_info_t qinfo[QTYPE_MAX] = {0};
 
     if (!get_lif_qstate(lif, qinfo)) {
         printf("Failed to get qinfo for lif %u\n", lif);
-        return;
+        return -1;
     }
 
     for (int qtype = 0; qtype < 8; qtype++) {
-        printf("qtype: %d    base: %12lx    size: %6u    count: %6u\n", qtype,
+        printf("qtype: %d, base: %12lx, size: %6u, count: %6u\n", qtype,
                 qinfo[qtype].base, qinfo[qtype].size, qinfo[qtype].length);
     }
+
+    return 0;
 }
 
 uint8_t *
