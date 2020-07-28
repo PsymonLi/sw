@@ -53,7 +53,7 @@ message RouteAttrs {
   // priority of the route class this route belongs to
   // NOTE: ClassPriority attribute is used only when PriorityEn is set to true
   //       on the corresponding routing table
-  uint32              ClassPriority  = 2 [(gogoproto.moretags) = "meta:range:0-63"];
+  uint32              ClassPriority  = 2 [(gogoproto.moretags) = "meta:range:0-31"];
   // priority of the route within the class
   // NOTE:
   // 1. lower the numerical value, higher the priority in the datapath

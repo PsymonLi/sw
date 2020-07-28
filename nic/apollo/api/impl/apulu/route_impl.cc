@@ -307,7 +307,7 @@ route_table_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
     for (uint32_t i = 0; i < spec->route_info->num_routes; i++) {
         route_spec = &spec->route_info->routes[i];
         if ((spec->route_info->priority_en) &&
-            ((route_spec->attrs.class_priority > 63) ||
+            ((route_spec->attrs.class_priority > 31) ||
              (route_spec->attrs.priority > 1023))) {
             PDS_TRACE_ERR("route table %s has route %s with invalid class "
                           "priority %u or priority %u", spec->key.str(),
