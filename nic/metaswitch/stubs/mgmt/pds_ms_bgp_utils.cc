@@ -8,6 +8,7 @@
 #include "nic/metaswitch/stubs/pds_ms_stubs_init.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
 #include "qb0mib.h"
 
 using namespace pds_ms;
@@ -584,7 +585,7 @@ bgp_peer_pre_set(BGPPeerSpec &req, NBB_LONG row_status,
     }
 
     if (row_status == AMB_ROW_ACTIVE && !op_update &&
-        !mgmt_state_t::thread_context().state()->is_graceful_restart()) {
+        !mgmt_state_t::thread_context().state()->is_upg_ht_in_progress()) {
         // Disable AFs for newly created Peer. User has to enable (create) address
         // families as per the peer connectivity
         BGPPeerAfSpec peer_af_spec;
@@ -998,6 +999,17 @@ bgp_rm_ent_set_fill_func (BGPSpec        &req,
 
         v_amb_bgp_rm_ent->admin_status = req.state();
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_ADMIN_STATUS);
+
+        if (mgmt_state_t::thread_context().state()->is_upg_ht_in_progress()) {
+            PDS_TRACE_DEBUG("hitless upgrade BGP graceful restart");
+            v_amb_bgp_rm_ent->do_graceful_restart = AMB_TRUE;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_DO_GR_RESTART);
+
+            // delay in triggering best-path calc when restarting gracefully,
+            // to wait for all config-restored peers to become established
+            v_amb_bgp_rm_ent->select_defer_time = k_bgp_gr_best_path_time;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_SELECT_DFR_TIME);
+        }
     }
 }
 
@@ -1143,12 +1155,6 @@ pds_ms_fill_amb_bgp_rm (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
             PDS_TRACE_INFO("BGP GR full support detected");
         }
 #endif
-
-        if (mgmt_state_t::thread_context().state()->is_graceful_restart()) {
-            PDS_TRACE_DEBUG("Hitless restart");
-            data->do_graceful_restart = AMB_TRUE;
-            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_DO_GR_RESTART);
-        }
     }
 
     NBB_TRC_EXIT();

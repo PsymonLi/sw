@@ -68,7 +68,7 @@ bool li_intf_t::fetch_store_info_(pds_ms::state_t* state) {
     // unless this is being restored from the CTM snapshot during upgrade
     if (unlikely(store_info_.phy_port_if_obj == nullptr)) {
 
-        if (mgmt_state_t::thread_context().state()->is_graceful_restart()) {
+        if (mgmt_state_t::thread_context().state()->is_upg_ht_in_progress()) {
             auto new_if_obj = new pds_ms::if_obj_t(ips_info_.ifindex);
 
             // this is from the CTM snapshot replay, but we dont have

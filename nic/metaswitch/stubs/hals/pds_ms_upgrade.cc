@@ -6,6 +6,7 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_stub_api.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/apollo/core/core.hpp"
@@ -145,11 +146,6 @@ upg_ipc_start_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     upg_ipc_process_response(SDK_RET_OK, msg);
 }
 
-// Max wait time from end of gRPC config replay to establish BGP peering,
-// install nexthops in HAL and stitch all IP track objects to
-// their nexthop groups
-constexpr uint32_t k_upg_routing_convergence_time = 10000;  // in milliseconds
-
 static void
 upg_ipc_sync_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 {
@@ -161,7 +157,7 @@ upg_ipc_sync_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
         sdk::lib::cond_var_mutex_guard_t lk(&state_t::upg_sync_cv_mtx);
         ret = state_t::upg_sync_cv.
                 wait_for(state_t::upg_sync_cv_mtx,
-                         k_upg_routing_convergence_time,
+                         k_upg_routing_convergence_time * TIME_MSECS_PER_SEC,
                          ip_track_are_all_reachable);
     }
 

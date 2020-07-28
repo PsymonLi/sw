@@ -126,6 +126,8 @@ if [ $HITLESS_UPG == 1 ]; then
     docker exec -it -e CONFIG_PATH="$DOL_CFG"1 "$CONTAINER"1 sh -c "$CLIENTAPP htupg-start"
     echo "Check Domain A datapath not disturbed"
     sleep 5
+    # Simulate 1 BGP Peer fail during upgrade
+    # docker exec -it -e CONFIG_PATH="$DOL_CFG"2  "$CONTAINER"2 sh -c "$CLIENTAPP bgp-upeer-del 2" || ret=$?
     echo "Kill Domain A pdsagent"
     docker exec -it "$CONTAINER"1 sh -c "pkill pdsagent"
     sleep 2

@@ -180,9 +180,10 @@ nbase_init ()
     sm_create_parms.css_hardware_location = 1;
     sm_create_parms.css_entity_index = 1;
     sm_create_parms.css_management_source = ATG_YES;
-    if (mgmt_state_t::thread_context().state()->is_graceful_restart()) {
+    if (mgmt_state_t::thread_context().state()->is_upg_ht_mode()) {
         PDS_TRACE_INFO("CTM snapshot replay");
         sm_create_parms.initiate_start_of_day_replay = ATG_YES;
+        mgmt_state_t::thread_context().state()->set_upg_ht_restart();
     } else {
         sm_create_parms.initiate_start_of_day_replay = ATG_NO;
     }

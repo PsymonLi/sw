@@ -217,11 +217,19 @@ public:
     bool is_amx_open() {return amx_open_;}
     void set_amx_open(bool open) {amx_open_ = open;}
 
-    // Should we advertise BGP Graceful restart capaility
+    // should we advertise BGP Graceful restart capaility
     static bool bgp_gr_supported();
-    bool is_graceful_restart();
-    void set_upg_ht_start();
-    void set_upg_ht_repeal();
+    // is hitless upgrade (graceful restart) in progress
+    bool is_upg_ht_mode(void);
+    bool is_upg_ht_in_progress(void);
+    void set_upg_ht_start(void);
+    void set_upg_ht_repeal(void);
+    void set_upg_ht_restart(void) {
+        upg_ht_b_starting_up_ = true;
+    }
+    void set_upg_ht_sync(void) {
+        upg_ht_b_starting_up_ = false;
+    }
 
 private:
     static mgmt_state_t* g_state_;
@@ -250,7 +258,8 @@ private:
     std::unordered_map<pds_vnid_id_t, mgmt_obj_t> vni_store_; 
     bool route_map_created_ = false;
     bool amx_open_ = false;
-    bool upg_ht_start_ = false;
+    bool upg_ht_a_going_down_ = false;
+    bool upg_ht_b_starting_up_ = false;
     // gRPC lock for hitless upgrade
     std::unique_lock<std::mutex> upg_ht_grpc_lock_;
 

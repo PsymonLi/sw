@@ -15,8 +15,8 @@ pds_ms_li_stub_create (pds_ms_config_t& conf);
 
 void pds_ms_stubs_create ()
 {
-    if (pds_ms::mgmt_state_t::thread_context().state()->is_graceful_restart()) {
-        PDS_TRACE_INFO ("Skip Metaswitch components init - Graceful Restart mode");
+    if (pds_ms::mgmt_state_t::thread_context().state()->is_upg_ht_mode()) {
+        PDS_TRACE_INFO ("hitless upgrade skip MS components init");
         // Stubs initialization transaction is successful
         // We can now signal that the nbase thread is ready
         PDS_TRACE_INFO("Nbase thread is ready");
@@ -78,8 +78,8 @@ void pds_ms_stubs_create ()
 
 void pds_ms_hals_stub_init()
 {
-    if (mgmt_state_t::thread_context().state()->is_graceful_restart()) {
-        PDS_TRACE_INFO ("Skip Metaswitch HAL stub init - Graceful Restart mode");
+    if (mgmt_state_t::thread_context().state()->is_upg_ht_mode()) {
+        PDS_TRACE_INFO ("hitless upgrade skip MS HAL stub init");
         return;
     }
     // Local variables
