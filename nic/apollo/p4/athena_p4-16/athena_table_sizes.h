@@ -29,10 +29,11 @@
 
 #define SESSION_TABLE_SIZE                                  4194304 // 4M
 
-#define CONFIG_TABLE_SIZE                                   1048576 // 1M
+#define POLICER_BW1_SIZE                                    2560
+#define POLICER_BW2_SIZE                                    2560
+#define POLICER_PPS_SIZE                                    512  //VNIC#
 
-#define POLICER_BW1_SIZE                                    2048
-#define POLICER_BW2_SIZE                                    2048
+#define CONFIG_TABLE_SIZE                                   1048576 // 1M
 
 #define CONNTRACK_TABLE_SIZE                                4194304     // 4M: used 3.6M
 

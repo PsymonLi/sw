@@ -181,6 +181,8 @@ struct control_metadata_t {
 	bit <1> mirroring_valid;
 	bit <6> mirroring_session;
  
+        /* Ingress policers */
+        bit <1> skip_pps_policer;
     }
 
 

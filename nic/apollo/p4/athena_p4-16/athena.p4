@@ -69,6 +69,7 @@ control AthenaIngressPipeline(inout cap_phv_intr_global_h intr_global,
       key_init.apply(intr_global, intr_p4, hdr, metadata);
       dnat_lookup.apply(intr_global, intr_p4, hdr, metadata);
       offloads.apply(intr_global, intr_p4, hdr, metadata);
+      ingress_policers.apply(intr_global, intr_p4, hdr, metadata);
       mac_flow_lookup.apply(intr_global, intr_p4, hdr, metadata);
       flow_lookup.apply(intr_global, intr_p4, hdr, metadata);
       ingress_inter_pipe.apply(intr_global, intr_p4, hdr, metadata);
@@ -87,7 +88,7 @@ control AthenaEgressPipeline(inout cap_phv_intr_global_h intr_global,
       config_verify.apply(intr_global, intr_p4, hdr, metadata);
       egress_key_init.apply(intr_global, intr_p4, hdr, metadata);
       nacl_lookup.apply(intr_global, intr_p4, hdr, metadata);
-     // policers.apply(intr_global, intr_p4, hdr, metadata);
+      policers.apply(intr_global, intr_p4, hdr, metadata);
       flow_log_lookup.apply(intr_global, intr_p4, hdr, metadata);
       update_checksums.apply(intr_global, intr_p4, hdr, metadata);
       egress_inter_pipe.apply(intr_global, intr_p4, hdr, metadata);

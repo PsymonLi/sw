@@ -17,6 +17,7 @@ fi
 run_gtest vlan_to_vnic
 run_gtest mpls_label_to_vnic
 run_gtest conntrack
+#run_gtest policer
 run_gtest epoch
 run_gtest dnat
 run_gtest flow_cache
