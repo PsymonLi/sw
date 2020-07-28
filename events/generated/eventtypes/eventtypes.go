@@ -780,7 +780,7 @@ func init() {
 		EType:      FLOWLOGS_DISK_THRESHOLD_EXCEEDED.String(),
 		Severity:   "critical",
 		Category:   "system",
-		Desc:       "Flowlogs disk threshold exceeded",
+		Desc:       "PSM has detected that flow log usage has exceeded the allocated disk space. System will automatically reclaim space by purging older flow records, no user action is needed. Flow logs require a minimum /data partition size of 250G. Out of this space, 230G is reserved and the remainder is allocated to flow logs",
 		SuppressMM: true}
 
 	eventTypes[BOND0_NO_IP] = &EventTypeAttributes{

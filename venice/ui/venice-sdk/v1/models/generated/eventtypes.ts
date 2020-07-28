@@ -568,7 +568,7 @@ export const eventTypes: { [name: string]: EventType } = {
   'FLOWLOGS_DISK_THRESHOLD_EXCEEDED' : {
       "Name": "FLOWLOGS_DISK_THRESHOLD_EXCEEDED",
       "Severity": EventsEvent_severity.critical,
-      "Desc": "Flowlogs disk threshold exceeded",
+      "Desc": "PSM has detected that flow log usage has exceeded the allocated disk space. System will automatically reclaim space by purging older flow records, no user action is needed. Flow logs require a minimum /data partition size of 250G. Out of this space, 230G is reserved and the remainder is allocated to flow logs",
   },
   'FLOWLOGS_DROPPED' : {
       "Name": "FLOWLOGS_DROPPED",

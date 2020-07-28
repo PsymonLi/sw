@@ -493,7 +493,7 @@ enum EventTypes {
                                             (suppress_mm)       = true];
     FLOWLOGS_DISK_THRESHOLD_EXCEEDED      = 1304 [(category)    = System,
                                             (severity)          = CRITICAL,
-                                            (desc)              = "Flowlogs disk threshold exceeded",
+                                            (desc)              = "PSM has detected that flow log usage has exceeded the allocated disk space. System will automatically reclaim space by purging older flow records, no user action is needed. Flow logs require a minimum /data partition size of 250G. Out of this space, 230G is reserved and the remainder is allocated to flow logs",
                                             (suppress_mm)       = true];
 
 
