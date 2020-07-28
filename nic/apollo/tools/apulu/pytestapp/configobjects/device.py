@@ -7,11 +7,14 @@ import ipaddress
 import utils
 
 class DeviceObject():
-    def __init__(self, ip, gatewayip, mac, deviceopermode=device_pb2.DEVICE_OPER_MODE_HOST):
+    def __init__(self, ip, gatewayip, mac,
+                 deviceopermode=device_pb2.DEVICE_OPER_MODE_HOST,
+                 deviceprofile=device_pb2.DEVICE_PROFILE_DEFAULT):
         self.ip = ip
         self.gatewayip = gatewayip
         self.mac = mac
         self.deviceopermode = deviceopermode
+        self.deviceprofile = deviceprofile
         return
 
     def GetGrpcCreateMessage(self):
@@ -22,8 +25,7 @@ class DeviceObject():
             grpcmsg.Request.GatewayIP.Af = types_pb2.IP_AF_INET
             grpcmsg.Request.GatewayIP.V4Addr = int(self.gatewayip)
         grpcmsg.Request.DevOperMode = self.deviceopermode
+        grpcmsg.Request.DeviceProfile = self.deviceprofile
         if self.mac:
             grpcmsg.Request.MACAddr = utils.getmac2num(self.mac)
         return grpcmsg
-
-

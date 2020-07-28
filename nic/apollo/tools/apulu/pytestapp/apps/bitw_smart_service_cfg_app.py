@@ -68,7 +68,7 @@ def config_node1():
                                      None, None,
                                      device_pb2.DEVICE_OPER_MODE_BITW_SMART_SERVICE)
     # create security profile object
-    security_profile = policy.SecurityProfileObject(1, 60, 60, 30)
+    security_profile = policy.SecurityProfileObject(1, 300, 300, 300)
 
     # create vpc1
     vpc1_id = 100
