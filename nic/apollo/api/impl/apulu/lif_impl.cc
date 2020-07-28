@@ -1328,12 +1328,14 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     key.control_metadata_learn_enabled = 1;
     key.control_metadata_lif_type = P4_LIF_TYPE_HOST;
     key.control_metadata_local_mapping_miss = 1;
+    key.arm_to_p4i_learning_done = 0;
     key.control_metadata_tunneled_packet = 0;
     mask.key_metadata_entry_valid_mask = ~0;
     mask.control_metadata_rx_packet_mask = ~0;
     mask.control_metadata_learn_enabled_mask = ~0;
     mask.control_metadata_lif_type_mask = ~0;
     mask.control_metadata_local_mapping_miss_mask = ~0;
+    mask.arm_to_p4i_learning_done_mask = ~0;
     mask.control_metadata_tunneled_packet_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
