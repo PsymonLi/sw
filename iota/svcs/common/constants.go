@@ -43,6 +43,9 @@ const (
 	// SSHPort captures the port where SSH is running
 	SSHPort = 22
 
+	// TBOfflineErrorCode error code for tb offline
+	TBOfflineErrorCode = 10
+
 	// DstIotaAgentDir captures the top level dir where all the agent copies happen
 	DstIotaAgentDir = "/pensando/iota"
 

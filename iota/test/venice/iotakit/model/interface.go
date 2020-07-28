@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/reporter"
@@ -10,6 +11,7 @@ import (
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/rollout"
 
+	Constants "github.com/pensando/sw/iota/svcs/common"
 	cfgModel "github.com/pensando/sw/iota/test/venice/iotakit/cfg/enterprise"
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/objClient"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/base"
@@ -304,6 +306,8 @@ func InitSuite(topoName, paramsFile string, scale, scaleData bool) (*testbed.Tes
 
 	tb, err := testbed.NewTestBed(topoName, paramsFile)
 	if err != nil {
+		//Take Testbed offline if any issue with setting up testbed
+		os.Exit(Constants.TBOfflineErrorCode)
 		return nil, nil, err
 	}
 

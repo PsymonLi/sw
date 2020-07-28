@@ -974,7 +974,7 @@ func (tb *TestBed) setupVeniceIPs(node *TestNode) error {
 					vn.Personality == iota.PersonalityType_PERSONALITY_VENICE_BM {
 					peer := iota.VenicePeer{
 						HostName:  vn.NodeName,
-						IpAddress: vn.VeniceConfig.ControlIp, // in Sim setups venice-naples use control network
+						IpAddress: vn.NodeMgmtIP,
 					}
 					node.VeniceConfig.VenicePeers = append(node.VeniceConfig.VenicePeers, &peer)
 				}

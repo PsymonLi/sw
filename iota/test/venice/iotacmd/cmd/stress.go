@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	Constants "github.com/pensando/sw/iota/svcs/common"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -182,6 +183,11 @@ func (suite testsuite) run(skipSetup, skipInstall, skipConfig, rebootOnly bool, 
 		suite.successCnt++
 		fmt.Printf("%v\n", stdoutStderr)
 		msg := fmt.Sprintf("Error running suite  : %v\n", suite.name)
+
+		//Return
+		if exitCode == Constants.TBOfflineErrorCode {
+			os.Exit(exitCode)
+		}
 		return errors.New(msg)
 	}
 	fmt.Printf("Success running suite  : %v\n", suite.name)
