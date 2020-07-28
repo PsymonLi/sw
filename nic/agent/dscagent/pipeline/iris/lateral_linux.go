@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	refreshDuration      = time.Duration(time.Minute * 1)
+	refreshDuration      = time.Duration(time.Minute * 5)
 	arpResolutionTimeout = time.Duration(time.Second * 3)
 	staticRouteTimeout   = time.Duration(time.Second)
 )
