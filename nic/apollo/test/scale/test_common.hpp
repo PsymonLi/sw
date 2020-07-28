@@ -282,13 +282,13 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                 str = obj.second.get<std::string>("oper-mode", "");
                 if (str.empty() || !str.compare("host")) {
                     test_params->dev_oper_mode = PDS_DEV_OPER_MODE_HOST;
-                } else if (!str.compare("bitw_smart_switch")) {
+                } else if (!str.compare("bitw-smart-switch")) {
                     test_params->dev_oper_mode =
                         PDS_DEV_OPER_MODE_BITW_SMART_SWITCH;
-                } else if (!str.compare("bitw_smart_service")) {
+                } else if (!str.compare("bitw-smart-service")) {
                     test_params->dev_oper_mode =
                         PDS_DEV_OPER_MODE_BITW_SMART_SERVICE;
-                } else if (!str.compare("bitw_classic_switch")) {
+                } else if (!str.compare("bitw-classic-switch")) {
                     test_params->dev_oper_mode =
                         PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
                 } else {

@@ -60,16 +60,17 @@ typedef enum pds_device_oper_mode_e {
 } pds_device_oper_mode_t;
 
 typedef enum pds_device_profile_e {
-    PDS_DEVICE_PROFILE_DEFAULT = 0,
-    PDS_DEVICE_PROFILE_2PF     = 1,
-    PDS_DEVICE_PROFILE_3PF     = 2,
-    PDS_DEVICE_PROFILE_4PF     = 3,
-    PDS_DEVICE_PROFILE_5PF     = 4,
-    PDS_DEVICE_PROFILE_6PF     = 5,
-    PDS_DEVICE_PROFILE_7PF     = 6,
-    PDS_DEVICE_PROFILE_8PF     = 7,
-    PDS_DEVICE_PROFILE_16PF    = 8,
-    PDS_DEVICE_PROFILE_32VF    = 9,
+    PDS_DEVICE_PROFILE_DEFAULT            = 0,
+    PDS_DEVICE_PROFILE_2PF                = 1,
+    PDS_DEVICE_PROFILE_3PF                = 2,
+    PDS_DEVICE_PROFILE_4PF                = 3,
+    PDS_DEVICE_PROFILE_5PF                = 4,
+    PDS_DEVICE_PROFILE_6PF                = 5,
+    PDS_DEVICE_PROFILE_7PF                = 6,
+    PDS_DEVICE_PROFILE_8PF                = 7,
+    PDS_DEVICE_PROFILE_16PF               = 8,
+    PDS_DEVICE_PROFILE_32VF               = 9,
+    PDS_DEVICE_PROFILE_BITW_SMART_SERVICE = 10,
 } pds_device_profile_t;
 
 typedef enum pds_memory_profile_e {

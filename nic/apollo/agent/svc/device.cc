@@ -56,6 +56,8 @@ device_conf_update (pds_device_spec_t *spec)
         output.put("device-profile", "16pf");
     } else if (spec->device_profile == PDS_DEVICE_PROFILE_32VF) {
         output.put("device-profile", "32vf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_BITW_SMART_SERVICE) {
+        output.put("device-profile", "bitw-smart-service");
     }
 
     // update the memory profile
@@ -72,13 +74,13 @@ device_conf_update (pds_device_spec_t *spec)
         output.put("oper-mode", "host");
     } else if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH) {
         // bump-in-the-wire smart switch mode
-        output.put("oper-mode", "bitw_smart_switch");
+        output.put("oper-mode", "bitw-smart-switch");
     } else if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SERVICE) {
         // bump-in-the-wire smart service mode
-        output.put("oper-mode", "bitw_smart_service");
+        output.put("oper-mode", "bitw-smart-service");
     } else if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH) {
         // bump-in-the-wire classic switch mode
-        output.put("oper-mode", "bitw_classic_switch");
+        output.put("oper-mode", "bitw-classic-switch");
     }
 
     // set the port admin state

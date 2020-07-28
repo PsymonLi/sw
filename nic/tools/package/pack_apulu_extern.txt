@@ -12,6 +12,7 @@ nic/conf/$PIPELINE/device-pf8.json                                /nic/conf/
 nic/conf/$PIPELINE/device-pf8.json                                /nic/conf/device.json
 nic/conf/$PIPELINE/device-pf16.json                               /nic/conf/
 nic/conf/$PIPELINE/device_vfs.json                                /nic/conf/
+nic/conf/$PIPELINE/device-bitw-smart-service.json                 /nic/conf/
 
 # metrics schema
 nic/operd/metrics/cloud/lif_metrics.json                          /nic/conf/

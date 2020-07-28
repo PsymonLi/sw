@@ -27,17 +27,18 @@ enum MemoryProfile {
 }
 
 enum DeviceProfile {
-  DEVICE_PROFILE_DEFAULT = 0;
-  DEVICE_PROFILE_2PF     = 1;
-  DEVICE_PROFILE_3PF     = 2;
-  DEVICE_PROFILE_4PF     = 3;
-  DEVICE_PROFILE_5PF     = 4;
-  DEVICE_PROFILE_6PF     = 5;
-  DEVICE_PROFILE_7PF     = 6;
-  DEVICE_PROFILE_8PF     = 7;
-  DEVICE_PROFILE_16PF    = 8;
-  DEVICE_PROFILE_32PF    = 9;
-  DEVICE_PROFILE_32VF    = 10;
+  DEVICE_PROFILE_DEFAULT            = 0;
+  DEVICE_PROFILE_2PF                = 1;
+  DEVICE_PROFILE_3PF                = 2;
+  DEVICE_PROFILE_4PF                = 3;
+  DEVICE_PROFILE_5PF                = 4;
+  DEVICE_PROFILE_6PF                = 5;
+  DEVICE_PROFILE_7PF                = 6;
+  DEVICE_PROFILE_8PF                = 7;
+  DEVICE_PROFILE_16PF               = 8;
+  DEVICE_PROFILE_32PF               = 9;
+  DEVICE_PROFILE_32VF               = 10;
+  DEVICE_PROFILE_BITW_SMART_SERVICE = 11;
 }
 
 // operational mode of the device

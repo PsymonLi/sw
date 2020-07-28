@@ -417,6 +417,8 @@ pds_device_profile_to_string (pds_device_profile_t profile)
         return std::string("pf16");
     case PDS_DEVICE_PROFILE_32VF:
         return std::string("vf32");
+    case PDS_DEVICE_PROFILE_BITW_SMART_SERVICE:
+        return std::string("bitw-smart-service");
     case PDS_DEVICE_PROFILE_DEFAULT:
     default:
         return std::string("");
@@ -468,6 +470,7 @@ pds_init (pds_init_params_t *params)
     api::g_pds_state.set_memory_profile(params->memory_profile);
     api::g_pds_state.set_memory_profile_string(
                          pds_memory_profile_to_string(params->memory_profile));
+    PDS_TRACE_DEBUG("params->device_profile %u", params->device_profile);
     api::g_pds_state.set_device_profile_string(
                          pds_device_profile_to_string(params->device_profile));
     api::g_pds_state.set_device_oper_mode(params->device_oper_mode);
@@ -490,7 +493,7 @@ pds_init (pds_init_params_t *params)
             return SDK_RET_ERR;
         }
         init_mode = api::g_upg_state->init_mode();
-        init_domain  = api::g_upg_state->init_domain();
+        init_domain = api::g_upg_state->init_domain();
 
         // set upgrade mode and domain in asic config
         asic_cfg.init_mode = init_mode;

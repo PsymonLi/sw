@@ -8,7 +8,7 @@
             "mac-addr" : "0x000201000001",
             "dual-stack": "false",
             "encap": "vxlan",
-            "oper-mode": "bitw_smart_service"
+            "oper-mode": "bitw-smart-service"
         },
         {
             "kind" : "tep",

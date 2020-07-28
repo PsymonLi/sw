@@ -90,11 +90,11 @@ pds_test_base::SetUpTestCase(test_case_params_t& params)
     init_params.pipeline  = ::pipeline_get();
     init_params.cfg_file  = std::string(params.cfg_file);
     init_params.memory_profile = PDS_MEMORY_PROFILE_DEFAULT;
-    if (params.oper_mode == "bitw_smart_switch") {
+    if (params.oper_mode == "bitw-smart-switch") {
         init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SWITCH;
-    } else if (params.oper_mode == "bitw_smart_service") {
+    } else if (params.oper_mode == "bitw-smart-service") {
         init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SERVICE;
-    } else if (params.oper_mode == "bitw_classic_switch") {
+    } else if (params.oper_mode == "bitw-classic-switch") {
         init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
     } else {
         // let pipeline pick its default behavior
