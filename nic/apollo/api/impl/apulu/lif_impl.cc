@@ -523,9 +523,11 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     intf = (if_impl *)if_db()->find(&if_index)->impl();
     key.key_metadata_entry_valid = 1;
     key.capri_intrinsic_lif = intf->hw_id();
+    key.control_metadata_lif_type = P4_LIF_TYPE_UPLINK;
+    key.control_metadata_tunneled_packet = 0;
     mask.key_metadata_entry_valid_mask = ~0;
     mask.capri_intrinsic_lif_mask = ~0;
-    key.control_metadata_tunneled_packet = 0;
+    mask.control_metadata_lif_type_mask = ~0;
     mask.control_metadata_tunneled_packet_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
