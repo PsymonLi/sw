@@ -229,8 +229,10 @@ private:
 
     /// \brief      populate info with hardware information
     /// \param[out] info information
+    /// \param[out] upgrade information
     /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t fill_info_(pds_nexthop_group_info_t *info);
+    sdk_ret_t fill_info_(pds_nexthop_group_info_t *info,
+                         upg_obj_info_t *upg_info = NULL);
 
 private:
     ///< hardware id of this nexthop group

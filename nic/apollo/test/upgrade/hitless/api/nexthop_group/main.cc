@@ -11,6 +11,7 @@
 #include "nic/apollo/test/api/utils/if.hpp"
 #include "nic/apollo/test/api/utils/nexthop.hpp"
 #include "nic/apollo/test/api/utils/nexthop_group.hpp"
+#include "nic/apollo/test/api/utils/tep.hpp"
 #include "nic/apollo/test/api/utils/workflow.hpp"
 
 namespace test {
@@ -41,6 +42,7 @@ nh_group_upg_setup (void)
 {
     pds_batch_ctxt_t bctxt = batch_start();
     sample_if_setup(bctxt);
+    sample_tep_setup(bctxt);
     sample_underlay_nexthop_setup(bctxt);
     batch_commit(bctxt);
 }
@@ -50,6 +52,7 @@ nh_group_upg_teardown (void)
 {
     pds_batch_ctxt_t bctxt = batch_start();
     sample_underlay_nexthop_teardown(bctxt);
+    sample_tep_teardown(bctxt);
     sample_if_teardown(bctxt);
     batch_commit(bctxt);
 }
@@ -70,7 +73,7 @@ TEST_F(nh_group_upg_test, nh_group_upg_workflow_u1) {
     // setup precursor
     nh_group_upg_setup();
     // setup nh group
-    feeder1.init(PDS_NHGROUP_TYPE_UNDERLAY_ECMP, PDS_MAX_ECMP_NEXTHOP,
+    feeder1.init(PDS_NHGROUP_TYPE_OVERLAY_ECMP, PDS_MAX_OVERLAY_ECMP_TEP,
                  int2pdsobjkey(1), 10, 1);
     // backup
     workflow_u1_s1<nexthop_group_feeder>(feeder1);

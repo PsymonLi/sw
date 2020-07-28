@@ -369,7 +369,8 @@ nexthop_group_impl::fill_spec_(pds_nexthop_group_spec_t *spec,
 }
 
 sdk_ret_t
-nexthop_group_impl::fill_info_(pds_nexthop_group_info_t *info) {
+nexthop_group_impl::fill_info_(pds_nexthop_group_info_t *info,
+                               upg_obj_info_t *upg_info) {
     p4pd_error_t p4pd_ret;
     ecmp_actiondata_t ecmp_data;
 
@@ -384,6 +385,9 @@ nexthop_group_impl::fill_info_(pds_nexthop_group_info_t *info) {
     fill_spec_(&info->spec, &ecmp_data);
     fill_status_(&info->status, &ecmp_data, &info->spec);
 
+    if (upg_info && (info->spec.type == PDS_NHGROUP_TYPE_UNDERLAY_ECMP)) {
+        upg_info->skipped = 1;
+    }
     return SDK_RET_OK;
 }
 
@@ -410,7 +414,7 @@ nexthop_group_impl::backup(obj_info_t *info, upg_obj_info_t *upg_info) {
     tlv = (upg_obj_tlv_t *)upg_info->mem;
     nh_group_info = (pds_nexthop_group_info_t *)info;
 
-    ret = fill_info_(nh_group_info);
+    ret = fill_info_(nh_group_info, upg_info);
     if (unlikely(ret != SDK_RET_OK)) {
         return ret;
     }
