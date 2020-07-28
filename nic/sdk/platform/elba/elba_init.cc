@@ -408,11 +408,11 @@ elba_stg_eth_pll_init (asic_cfg_t *cfg)
     SDK_TRACE_DEBUG("Initializing ETH PLL, frequency: %d", cfg->catalog->eth_clock_freq());
     if(getenv("ELBA_SKIP_PLL_INIT") == NULL){
 	pll_ret = elb_soc_stg_pll_init(0,0,cfg->catalog->p4_clock_freq());
-	if(pll_ret == ELB_PLL_INCORRECT_FREQ) {	
+	if(pll_ret == ELB_PLL_INCORRECT_FREQ) {
             SDK_TRACE_ERR("Unsupported P4/STG frequency %d", cfg->catalog->p4_clock_freq());
 	    ret = SDK_RET_ERR;
 	}
-	if(pll_ret == ELB_PLL_LOCK_FAILED) {	
+	if(pll_ret == ELB_PLL_LOCK_FAILED) {
             SDK_TRACE_ERR("PLL P4/STG @ frequency %d did not lock", cfg->catalog->p4_clock_freq());
 	    ret = SDK_RET_ERR;
 	}
@@ -421,11 +421,11 @@ elba_stg_eth_pll_init (asic_cfg_t *cfg)
 	}
 
 	pll_ret = elb_mm_eth_pll_init(0,0,cfg->catalog->eth_clock_freq());
-	if(pll_ret == ELB_PLL_INCORRECT_FREQ) {	
+	if(pll_ret == ELB_PLL_INCORRECT_FREQ) {
             SDK_TRACE_ERR("Unsupported ethernet PLL frequency %d", cfg->catalog->eth_clock_freq());
 	    ret = SDK_RET_ERR;
 	}
-	if(pll_ret == ELB_PLL_LOCK_FAILED) {	
+	if(pll_ret == ELB_PLL_LOCK_FAILED) {
             SDK_TRACE_ERR("PLL ethernet PLL @ frequency %d did not lock", cfg->catalog->eth_clock_freq());
 	    ret = SDK_RET_ERR;
 	}
@@ -454,6 +454,11 @@ elba_init (asic_cfg_t *cfg)
 
     SDK_ASSERT_TRACE_RETURN((cfg != NULL), SDK_RET_INVALID_ARG, "Invalid cfg");
     SDK_TRACE_DEBUG("Initializing Elba");
+
+    ret = elba_stg_eth_pll_init(cfg);
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                            "elba_stg_eth_pll_init failure, err : %d", ret);
+
 
     ret = elba_state_pd_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
@@ -507,10 +512,6 @@ elba_init (asic_cfg_t *cfg)
                                 "PXB/PCIE init failure, err : %d", ret);
     }
 
-    ret = elba_stg_eth_pll_init(cfg);
-    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "elba_stg_eth_pll_init failure, err : %d", ret);
-    
 
     if(tm_binary_init) {
       SDK_TRACE_DEBUG("Elba TM Binary Init ");
