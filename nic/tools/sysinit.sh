@@ -10,9 +10,6 @@ export GOTRACEBACK='crash'
 # Elba-ism FIXME - KCM
 export PCIE_POLL_DEV=1
 export ELBA_TM_BINARY_INIT=1
-export ELBA_NO_PORT_MAC=1
-export ELBA_HAPS_NO_STATS_POLL=1
-export ELBA_FORCE_ADMIN_PORT_ALL=1
 
 export PERSISTENT_LOG_DIR='/obfl/'
 export NON_PERSISTENT_LOG_DIR='/var/log/pensando/'
