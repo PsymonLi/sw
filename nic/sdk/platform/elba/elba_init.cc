@@ -15,6 +15,7 @@
 #include "platform/elba/elba_common.hpp"
 #include "platform/elba/elba_hbm_rw.hpp"
 #include "platform/elba/elba_tbl_rw.hpp"
+#include "platform/elba/csrint/csr_init.hpp"
 
 #include "third-party/asic/elba/verif/apis/elb_npv_sw_api.h"
 #include "third-party/asic/elba/verif/apis/elb_dpa_sw_api.h"
@@ -455,6 +456,7 @@ elba_init (asic_cfg_t *cfg)
     SDK_ASSERT_TRACE_RETURN((cfg != NULL), SDK_RET_INVALID_ARG, "Invalid cfg");
     SDK_TRACE_DEBUG("Initializing Elba");
 
+    csr_init();
     ret = elba_stg_eth_pll_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "elba_stg_eth_pll_init failure, err : %d", ret);

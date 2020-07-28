@@ -1000,7 +1000,6 @@ elba_p4plus_table_rw_init (void)
 {
     // in HAL init sequence, p4pd_init() needs to be called before this
     elba_p4plus_shadow_init();
-    csr_init();
 
     return (SDK_RET_OK);
 }
