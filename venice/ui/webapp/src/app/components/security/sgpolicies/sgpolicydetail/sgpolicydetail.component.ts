@@ -27,6 +27,9 @@ import { TableviewAbstract, TablevieweditHTMLComponent } from '@app/components/s
 import { Observable } from 'rxjs';
 import { IApiStatus } from '@sdk/v1/models/generated/monitoring';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { TableMenuItem } from '@app/components/shared/tableheader/tableheader.component';
 
 /**
  * Component for displaying a security policy and providing IP searching
@@ -90,9 +93,8 @@ interface RuleHitEntry {
   encapsulation: ViewEncapsulation.None,
   animations: [Animations]
 })
-export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkSecurityPolicy, SecurityNetworkSecurityPolicy> implements OnInit, OnDestroy, AfterViewInit {
-  @ViewChild('tableEditComponent') tableViewComponent: TablevieweditHTMLComponent;
-  viewInitComplete: boolean = false;
+export class SgpolicydetailComponent extends DataComponent implements OnInit, OnDestroy {
+  @ViewChild('sgPolicyDetailTable') sgPolicyDetailTable: PentableComponent;
   searchPolicyInvoked: boolean = false;  // avoid loop caused by invokeSearchPolicy
   subscriptions = [];
   macToNameMap: { [key: string]: string } = {};
@@ -107,7 +109,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     { field: 'ruleNum', header: 'Number', class: 'sgpolicy-rule-number', width: 4 },
     { field: 'sourceIPs', header: 'Source IPs', class: 'sgpolicy-source-ip', width: 22 },
     { field: 'destIPs', header: 'Destination IPs', class: 'sgpolicy-dest-ip', width: 22 },
-    { field: 'action', header: 'Action', class: 'sgpolicy-action', width: 24 },
+    { field: 'action', header: 'Action', class: 'sgpolicy-action', width: 8 },
     { field: 'protocolPort', header: 'Protocol / Application', class: 'sgpolicy-port', width: 20 },
     { field: 'TotalHits', header: 'Total Connection Hits', class: 'sgpolicy-rule-stat', width: 10 },
   ];
@@ -237,7 +239,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   display: boolean = false;
   showReorder: boolean = false;
   reorderToIndex: number = 0;
-
+  shouldEnableButtons: boolean;
 
 
   constructor(protected _controllerService: ControllerService,
@@ -249,11 +251,10 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     protected cdr: ChangeDetectorRef,
     protected metricsqueryService: MetricsqueryService,
   ) {
-    super(_controllerService, cdr, uiconfigsService);
+    super(_controllerService, uiconfigsService);
   }
 
-  postNgInit() {
-    this.initializeData();
+  ngOnInit() {
     this._route.paramMap.subscribe(params => {
       const id = params.get('id');
       this.selectedPolicyId = id;
@@ -273,7 +274,6 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
       buttons = [{
         cssClass: 'global-button-primary sgpolicy-toolbar-button sgpolicy-toolbar-button-ADD',
         text: 'ADD RULE',
-        computeClass: () => (this.shouldEnableButtons) ? '' : 'global-button-disabled',
         callback: () => { this.onCreate(); }
       }];
     }
@@ -455,8 +455,6 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     this.searchErrorMessage = '';
     if (this.selectedRuleIndex != null) {
       this.selectedRuleIndex = null;
-      // scroll back to top
-      this.tableViewComponent.lazyRenderWrapper.resetTableView();
     }
     this.updateRulesByPolicy();
     this.currentSearch = null;
@@ -526,14 +524,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
       port: port
     };
     this.loading = true;
-    // If we are displaying old data, we force update to new data
-    if (this.tableViewComponent.lazyRenderWrapper.hasUpdate) {
-      // Current search is set to be the new data
-      // When on data update fires from resetting the table view,
-      // We will call this function again with the provided search.
-      this.tableViewComponent.lazyRenderWrapper.resetTableView();
-      return;
-    }
+
     this.searchSubscription = this.searchService.PostPolicyQuery(req).subscribe(
       (data) => {
         const body = data.body as ISearchPolicySearchResponse;
@@ -561,10 +552,6 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
       },
     );
 
-  }
-
-  ngAfterViewInit() {
-    this.viewInitComplete = true;
   }
 
 
@@ -848,8 +835,8 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
    * the below sections are for the action icons added to the rule tables
    */
   isAnythingSelected() {
-    if (this.tableContainer) {
-      if (this.tableContainer.selectedDataObjects.length) {
+    if (this.sgPolicyDetailTable) {
+      if (this.getSelectedDataObjects().length) {
         return true;
       }
     }
@@ -857,8 +844,8 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   }
 
   isOneSelected() {
-    if (this.tableContainer) {
-      if (this.tableContainer.selectedDataObjects.length === 1) {
+    if (this.sgPolicyDetailTable) {
+      if (this.getSelectedDataObjects().length === 1) {
         return true;
       }
     }
@@ -871,7 +858,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     // when the number box and reorder icon is hidden
     // need to reset the reorderToIndex otherwise once the
     // box and icon shows again, the reorder icon will be eneabled
-    const selectedObjs = this.tableContainer.selectedDataObjects;
+    const selectedObjs = this.getSelectedDataObjects();
     if (selectedObjs.length !== 1) {
       this.reorderToIndex = 0;
     }
@@ -880,7 +867,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   resetMapsAndSelection() {
     this.newRuleIndex = -1;
     this.ruleEditableMap = {};
-    this.tableContainer.selectedDataObjects = [];
+    this.clearSelectedDataObjects();
     this.showReorder = false;
     this.reorderToIndex = 0;
   }
@@ -910,7 +897,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   onUpdate() {
     const editrules: Array<SecuritySGRule> = [];
     this.editObject = new SecurityNetworkSecurityPolicy(this.selectedPolicy);
-    this.tableContainer.selectedDataObjects.forEach((ruleObj, index) => {
+    this.getSelectedDataObjects().forEach((ruleObj, index) => {
       editrules.push(ruleObj.rule);
     });
     this.editObject.spec.rules = editrules;
@@ -934,7 +921,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   }
 
   onReorder() {
-    const selectedObjs = this.tableContainer.selectedDataObjects;
+    const selectedObjs = this.getSelectedDataObjects();
     if (selectedObjs.length === 1 && this.reorderToIndex > 0) {
       const policy1 = this.selectedPolicy.getFormGroupValues();
       const curIdx: number = selectedObjs[0].order;
@@ -950,7 +937,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   }
 
   onDelete() {
-    const selectedObjs = this.tableContainer.selectedDataObjects;
+    const selectedObjs = this.getSelectedDataObjects();
     if (selectedObjs && selectedObjs.length > 0) {
       const length = selectedObjs.length;
       const msg = `Are you sure you want to delete ${length > 1 ? 'these' : 'this'} \
@@ -1024,5 +1011,21 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
 
   updateObject(newObject: ISecurityNetworkSecurityPolicy, oldObject: ISecurityNetworkSecurityPolicy) {
     return this.securityService.UpdateNetworkSecurityPolicy(oldObject.meta.name, newObject, null, oldObject);
+  }
+
+  getSelectedDataObjects() {
+    return this.sgPolicyDetailTable.selectedDataObjects;
+  }
+
+  clearSelectedDataObjects() {
+    this.sgPolicyDetailTable.selectedDataObjects = [];
+  }
+
+  onColumnSelectChange(event) {
+    this.sgPolicyDetailTable.onColumnSelectChange(event);
+  }
+
+  creationFormClose() {
+    this.sgPolicyDetailTable.creationFormClose();
   }
 }

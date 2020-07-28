@@ -89,6 +89,7 @@ describe('SgpoliciesComponent', () => {
     sgPolicyObserver = TestingUtility.createDataCacheSubject([
       new SecurityNetworkSecurityPolicy(policy1)
     ]);
+
     spyOn(securityService, 'ListNetworkSecurityPolicyCache').and.returnValue(
       sgPolicyObserver
     );
@@ -98,8 +99,9 @@ describe('SgpoliciesComponent', () => {
   });
 
   it('should list the policies in the table', () => {
-    const tableElem = fixture.debugElement.query(By.css('.ui-table-scrollable-body-table tbody'));
-    testingUtility.verifyTable([policy1], component.cols, tableElem, {});
+    TestingUtility.setAllPermissions();
+    const tableElem = fixture.debugElement.query(By.css('.ui-table-wrapper tbody'));
+    TestingUtility.verifyTable([policy1], component.cols, tableElem, {}, 'editdelete', false);
 
     // Watch events
     const eventsCreate = [
@@ -113,7 +115,7 @@ describe('SgpoliciesComponent', () => {
     ], eventsCreate);
     sgPolicyObserver.next(objCreate);
     fixture.detectChanges();
-    testingUtility.verifyTable([policy2, policy1], component.cols, tableElem, {});
+    TestingUtility.verifyTable([policy2, policy1], component.cols, tableElem, {}, 'editdelete', false);
 
     // -------- //
 
@@ -128,7 +130,7 @@ describe('SgpoliciesComponent', () => {
     ], eventsDelete);
     sgPolicyObserver.next(objDelete);
     fixture.detectChanges();
-    testingUtility.verifyTable([policy2], component.cols, tableElem, {});
+    TestingUtility.verifyTable([policy2], component.cols, tableElem, {}, 'editdelete', false);
 
   });
 });

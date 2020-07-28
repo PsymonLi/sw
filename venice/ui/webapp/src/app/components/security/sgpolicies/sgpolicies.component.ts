@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Utility } from '@app/common/Utility';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
@@ -6,13 +6,15 @@ import { ControllerService } from '@app/services/controller.service';
 import { SecurityService } from '@app/services/generated/security.service';
 import { UIConfigsService, Features } from '@app/services/uiconfigs.service';
 import { SecurityNetworkSecurityPolicy, ISecurityNetworkSecurityPolicy, IApiStatus, ISecurityNetworkSecurityPolicyList, SecurityApp, SecuritySecurityGroup } from '@sdk/v1/models/generated/security';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { SelectItem } from 'primeng/api';
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import { WorkloadService } from '@app/services/generated/workload.service';
+import { PentableComponent } from '../../shared/pentable/pentable.component';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 
 @Component({
   selector: 'app-sgpolicies',
@@ -20,7 +22,8 @@ import { WorkloadService } from '@app/services/generated/workload.service';
   styleUrls: ['./sgpolicies.component.scss'],
   encapsulation: ViewEncapsulation.None
 })
-export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkSecurityPolicy, SecurityNetworkSecurityPolicy> implements OnInit, OnDestroy {
+export class SgpoliciesComponent extends DataComponent implements OnInit, OnDestroy {
+  @ViewChild('securityPoliciesTable') securityPoliciesTable: PentableComponent;
   isTabComponent: boolean = false;
   disableTableWhenRowExpanded: boolean = true;
   dataObjects: ReadonlyArray<SecurityNetworkSecurityPolicy> = [];
@@ -67,18 +70,21 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
     },
     matIcon: 'grid_on'
   };
+  shouldEnableButtons: boolean;
 
-  constructor(protected _controllerService: ControllerService,
+  constructor(
+    protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected securityService: SecurityService,
     protected workloadService: WorkloadService,
     protected cdr: ChangeDetectorRef,
   ) {
-    super(_controllerService, cdr, uiconfigsService);
+    super(_controllerService, uiconfigsService);
     this.shouldEnableButtons = false;
   }
 
-  postNgInit() {
+  ngOnInit() {
+    this.setDefaultToolbar();
     this.getSecurityPolicies();
     this.getSecurityApps();
     // this.getWorkloads();
@@ -92,7 +98,7 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
         cssClass: 'global-button-primary global-button-padding',
         text: 'ADD POLICY',
         computeClass: () => this.shouldEnableButtons ? '' : 'global-button-disabled',
-        callback: () => { this.createNewObject(); },
+        callback: () => { this.securityPoliciesTable.createNewObject(); },
         genTooltip: () => this.getTooltip(),
       }];
     }
@@ -135,7 +141,7 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
         }
       },
       (error) => {
-        this.controllerService.invokeRESTErrorToaster('Failed to get network security policy', error);
+        this._controllerService.invokeRESTErrorToaster('Failed to get network security policy', error);
       }
     );
     this.sgPoliciesEventUtility = new HttpEventUtility<SecurityNetworkSecurityPolicy>(SecurityNetworkSecurityPolicy);
@@ -167,7 +173,9 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
           };
         });
       },
-      this.controllerService.webSocketErrorHandler('Failed to get apps')
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Failed to get apps', error);
+        }
     );
     this.subscriptions.push(sub);
   }
@@ -186,7 +194,9 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
           };
         });
       },
-      this.controllerService.webSocketErrorHandler('Failed to get security policy groups')
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Failed to get network security policy', error);
+        }
     );
     this.subscriptions.push(sub);
   }
@@ -201,7 +211,9 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
         this.workloads = response.data as WorkloadWorkload[];
         this.buildIPMap();
       },
-      this.controllerService.webSocketErrorHandler('Failed to get workloads')
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Failed to get workloads', error);
+        }
     );
     this.subscriptions.push(workloadSubscription);
   }
@@ -233,6 +245,10 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
     }
   }
 
+  creationFormClose() {
+    this.securityPoliciesTable.creationFormClose();
+  }
+
   deleteRecord(object: SecurityNetworkSecurityPolicy): Observable<{ body: ISecurityNetworkSecurityPolicy | IApiStatus | Error, statusCode: number }> {
     return this.securityService.DeleteNetworkSecurityPolicy(object.meta.name);
   }
@@ -261,7 +277,29 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
   }
 
   onEditPolicy($event , policy: ISecurityNetworkSecurityPolicy) {
-    // The path is => /security/sgpolicies/dp-security-policy
-    this.controllerService.navigate(['/security', 'sgpolicies', policy.meta.name]);
+    // The path is => /security/sgpolicies/dp-security-policyÍ
+    this._controllerService.navigate(['/security', 'sgpolicies', policy.meta.name]);
   }
+
+  getSelectedDataObjects() {
+    return this.securityPoliciesTable.selectedDataObjects;
+  }
+
+  clearSelectedDataObjects() {
+    this.securityPoliciesTable.selectedDataObjects = [];
+  }
+
+  onDeleteRecord(event, object) {
+    this.securityPoliciesTable.onDeleteRecord(
+      event,
+      object,
+      this.generateDeleteConfirmMsg(object),
+      this.generateDeleteSuccessMsg(object),
+      this.deleteRecord.bind(this),
+      () => {
+        this.clearSelectedDataObjects();
+      }
+    );
+  }
+
 }

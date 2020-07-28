@@ -1,9 +1,7 @@
 <app-pagebody [icon]="bodyicon" header="Security Policy">
   <!-- Since we are manually calculating table dimensions, whenever this panel changes
         state we need to recalculate the table -->
-  <mat-expansion-panel fxFlex="none" class="global-mat-expansion-panel" [expanded]="true"
-                       (closed)="tableViewComponent?.lazyRenderWrapper?.resizeTable(501)"
-                       (opened)="tableViewComponent?.lazyRenderWrapper?.resizeTable(501)">
+  <mat-expansion-panel fxFlex="none" class="global-mat-expansion-panel" [expanded]="true">
     <mat-expansion-panel-header class="sgpolicy-expansionpanel-header">
       <mat-panel-title class="sgpolicy-summary-panel-header">
         Security Policy Details
@@ -91,23 +89,22 @@
 </app-pagebody>
 
 <ng-template #DataTable>
-  <app-tableviewedit #tableEditComponent fxLayout="column" class="sgpolicy-widget"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     [tableLoading]="loading"
-                     [disableTableWhenRowExpanded]="disableTableWhenRowExpanded"
-                     [runDoCheck]="false"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)"
-                     [enableCheckbox]="true"
-                     [dataKey]="'order'"
-                     (rowSelectedEmitter)="checkboxClicked($event)"
-                     (rowUnselectedEmitter)="checkboxClicked($event)">
-  </app-tableviewedit>
+  <app-pentable #sgPolicyDetailTable
+                class="sgpolicy-widget"
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [data]="dataObjects"
+                [enableCheckbox]="true"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
+                [loading]="loading"
+                [rowHeight]="46"
+                [dataKey]="'order'"
+                (rowSelectedEmitter)="checkboxClicked($event)"
+                (rowUnselectedEmitter)="checkboxClicked($event)">
+  </app-pentable>
 </ng-template>
 
 <!-- TABLE HEADER -->
@@ -118,8 +115,9 @@
         <app-tableheader fxFlex="none"
                          title="{{searchPolicyInvoked ? 'Matching Policy Rules' : 'Policy Rules'}}"
                          [total]="count" [icon]="policyIcon" [enableColumnSelect]="true"
-                         [icon]="tableIcon" [cols]="cols" [tableMenuItems]="tableMenuItems"
-                         (columnSelectChange)="onColumnSelectChange($event)">
+                         [icon]="tableIcon" [cols]="cols"
+                         [tableMenuItems]="(!loading && sgPolicyDetailTable) ? sgPolicyDetailTable.tableMenuItems : []"
+                         (columnSelectChange)="sgPolicyDetailTable.onColumnSelectChange($event)">
           <div class="sgpolicy-search-ip" fxFlex="fxFlex" fxLayoutAlign="start center">
             Search:
             <div fxflex="nogrow" fxlayout="row" class="sgpolicydetail-value">

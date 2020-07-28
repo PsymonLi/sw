@@ -3,7 +3,7 @@ import { DebugElement, Component, Directive, Input, NO_ERRORS_SCHEMA } from '@an
 /**-----
  Angular imports
  ------------------*/
-import {  ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatIconRegistry } from '@angular/material';
@@ -85,8 +85,8 @@ function resetSearchInputs(src: DebugElement, dest: DebugElement, app: DebugElem
 
 class MockActivatedRoute extends ActivatedRoute {
   policyId = 'policy1';
-  paramObserver = new BehaviorSubject<any>({id: this.policyId});
-  snapshot: any = {url: ['security', 'sgpolicies', 'policy1']};
+  paramObserver = new BehaviorSubject<any>({ id: this.policyId });
+  snapshot: any = { url: ['security', 'sgpolicies', 'policy1'] };
 
   constructor() {
     super();
@@ -95,7 +95,7 @@ class MockActivatedRoute extends ActivatedRoute {
 
   setPolicyId(id) {
     this.policyId = id;
-    this.paramObserver.next({id: this.policyId});
+    this.paramObserver.next({ id: this.policyId });
   }
 }
 
@@ -116,13 +116,13 @@ describe('SgpolicydetailComponent', () => {
    * first field index
    */
   function verifyTable(data: any[], columns: any[]) {
-    const tableElem = fixture.debugElement.query(By.css('.ui-table-scrollable-body-table tbody'));
+    const tableElem = fixture.debugElement.query(By.css('.ui-table-wrapper tbody'));
     const rows = tableElem.queryAll(By.css('tr'));
     expect(rows.length).toBe(data.length, 'Data did not match number of entries in the table');
     rows.forEach((row, rowIndex) => {
       const rowData = data[rowIndex];
       row.children.forEach((field, fieldIndex) => {
-        if (fieldIndex === 0 ) {
+        if (fieldIndex === 0) {
           return 0;
         }
         if (fieldIndex === 1) {
@@ -173,7 +173,7 @@ describe('SgpolicydetailComponent', () => {
   function verifyServiceCalls(policyName) {
     expect(sgPolicyWatchSpy).toHaveBeenCalled();
     const calledObj = sgPolicyWatchSpy.calls.mostRecent().args[0];
-    expect(_.isEqual({'field-selector': 'meta.name=' + policyName}, calledObj)).toBeTruthy('Incorrect selector for ' + policyName);
+    expect(_.isEqual({ 'field-selector': 'meta.name=' + policyName }, calledObj)).toBeTruthy('Incorrect selector for ' + policyName);
 
     expect(sgPolicyGetSpy).toHaveBeenCalled();
     expect(sgPolicyGetSpy).toHaveBeenCalledWith(policyName);
@@ -285,7 +285,8 @@ describe('SgpolicydetailComponent', () => {
       ],
       schemas: [NO_ERRORS_SCHEMA],
     });
-      });
+  });
+
 
   beforeEach(() => {
     fixture = TestBed.createComponent(SgpolicydetailComponent);
@@ -500,10 +501,10 @@ describe('SgpolicydetailComponent', () => {
     const service = TestBed.get(SearchService);
     const querySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
       new BehaviorSubject<any>({
-          body: {
-            status: 'MISS'
-          }
+        body: {
+          status: 'MISS'
         }
+      }
       ));
 
     // No inputs have text, so search and clear buttons are undefined
@@ -565,10 +566,10 @@ describe('SgpolicydetailComponent', () => {
     const service = TestBed.get(SearchService);
     const querySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
       new BehaviorSubject<any>({
-          body: {
-            status: 'MISS'
-          }
+        body: {
+          status: 'MISS'
         }
+      }
       ));
 
     // No inputs have text, so search and clear buttons are undefined
