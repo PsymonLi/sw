@@ -30,7 +30,7 @@ run_gtest svc_mapping
 run_gtest ftl
 run_gtest dhcp_relay
 run_gtest scale LOG="/dev/null" CFG=" -i ${CUR_DIR}/../../scale/${PIPELINE}/scale_cfg.json "
-run_gtest scale LOG="/dev/null" CFG=" -i ${CUR_DIR}/../../scale/${PIPELINE}/scale_cfg_bitw_smart_service.json -o bitw_smart_service "
+run_gtest scale LOG="/dev/null" CFG=" -i ${CUR_DIR}/../../scale/${PIPELINE}/scale_cfg_bitw_smart_service.json -o bitw-smart-service "
 
 # end of script
 clean_exit
