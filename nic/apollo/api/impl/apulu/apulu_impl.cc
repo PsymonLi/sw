@@ -999,9 +999,11 @@ apulu_impl::program_ipsec_lif_(void) {
     sdk_ret_t ret;
 
     // program the LIF table.
-    // program lif_type = arm so that subnet checks are not done
-    // on this lif
-    ret = program_lif_table(APULU_IPSEC_LIF, P4_LIF_TYPE_ARM_DPDK,
+    // program lif_type, direction = uplink so that on decrypt side it looks as
+    // if packet came on uplink for packet decap and forwarding to work. On
+    // encap/encrypt side, the direction is not used since output port is
+    // driven by nexthop in p4plus to p4 header.
+    ret = program_lif_table(APULU_IPSEC_LIF, P4_LIF_TYPE_UPLINK,
                             PDS_IMPL_RSVD_VPC_HW_ID, PDS_IMPL_RSVD_BD_HW_ID,
                             PDS_IMPL_RSVD_VNIC_HW_ID, g_zero_mac, false, true,
                             P4_LIF_DIR_UPLINK);

@@ -529,6 +529,8 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     mask.capri_intrinsic_lif_mask = ~0;
     mask.control_metadata_lif_type_mask = ~0;
     mask.control_metadata_tunneled_packet_mask = ~0;
+    key.control_metadata_flow_miss = 1;
+    mask.control_metadata_flow_miss_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_action.nexthop_id = nh_idx_;

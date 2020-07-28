@@ -232,12 +232,16 @@
 
 #define IPSEC_TXDMA2_APP_HEADER_START CAPRI_PHV_START_OFFSET(p4_txdma_intr_qid)
 #ifdef APULU
-#define IPSEC_TXDMA2_APP_HEADER_END   CAPRI_PHV_END_OFFSET(p4plus2p4_hdr_nexthop_id)
+#define IPSEC_TXDMA2_APP_HEADER_END   CAPRI_PHV_END_OFFSET(p4plus2p4_hdr_rewrite_flags)
 #else
 #define IPSEC_TXDMA2_APP_HEADER_END   CAPRI_PHV_END_OFFSET(p4plus2p4_hdr_vlan_tag)
 #endif
 
+#ifdef IRIS
 #define IPSEC_TXDMA2_VRF_VLAN_HEADER_START CAPRI_PHV_START_OFFSET(ipsec_to_stage4_dot1q_etype)
+#else
+#define IPSEC_TXDMA2_VRF_VLAN_HEADER_START CAPRI_PHV_START_OFFSET(ipsec_to_stage4_ip_etype)
+#endif
 #define IPSEC_TXDMA2_VRF_VLAN_HEADER_END   CAPRI_PHV_END_OFFSET(ipsec_to_stage4_ip_etype)
 
 #define H2N_RXDMA_IPSEC_DMA_COMMANDS_OFFSET (CAPRI_PHV_START_OFFSET(dma_cmd_pkt2mem_dma_cmd_type) / 16) 

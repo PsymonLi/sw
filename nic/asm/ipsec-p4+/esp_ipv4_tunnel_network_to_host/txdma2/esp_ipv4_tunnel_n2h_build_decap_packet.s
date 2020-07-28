@@ -21,10 +21,8 @@ esp_v4_tunnel_n2h_txdma2_build_decap_packet:
     // take only MAC addresses, etype will come from next DMA command based on v4 or v6
     sub r1, k.ipsec_to_stage4_headroom, 2
     phvwr  p.eth_hdr_dma_cmd_size, r1 
-#ifdef IRIS
-    // Vlan Header
+    // vlan/etype Header
     phvwri p.{vrf_vlan_hdr_dma_cmd_phv_end_addr...vrf_vlan_hdr_dma_cmd_type}, ((IPSEC_TXDMA2_VRF_VLAN_HEADER_END << 17) | (IPSEC_TXDMA2_VRF_VLAN_HEADER_START << 7) | CAPRI_DMA_COMMAND_PHV_TO_PKT)
-#endif
     // Decrypted payload 
     add r4, k.t0_s2s_out_page_addr, ESP_FIXED_HDR_SIZE
     blti  r4, ASIC_HBM_BASE, esp_v4_tunnel_n2h_txdma2_build_decap_packet_illegal_dma_out_page

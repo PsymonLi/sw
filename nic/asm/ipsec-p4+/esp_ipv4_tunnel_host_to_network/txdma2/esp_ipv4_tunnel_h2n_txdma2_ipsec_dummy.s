@@ -2,6 +2,9 @@
 #include "ingress.h"
 #include "ipsec_asm_defines.h"
 #include "nic/p4/common/defines.h"
+#ifdef APULU
+#include "nic/apollo/p4/include/apulu_defines.h"
+#endif
 
 struct tx_table_s1_t0_k k;
 struct phv_ p;
@@ -12,7 +15,12 @@ struct phv_ p;
 esp_ipv4_tunnel_h2n_txdma2_ipsec_dummy:
     phvwri p.p4plus2p4_hdr_p4plus_app_id, P4PLUS_APPTYPE_IPSEC
     phvwri p.p4plus2p4_hdr_flags, P4PLUS_TO_P4_FLAGS_UPDATE_IP_LEN
+#ifdef APULU
     phvwri p.p4plus2p4_hdr_nexthop_valid, 1
+    phvwri p.p4plus2p4_hdr_rewrite_flags, \
+             (P4_REWRITE_SMAC_FROM_NEXTHOP << P4_REWRITE_SMAC_START | \
+              P4_REWRITE_DMAC_FROM_NEXTHOP << P4_REWRITE_DMAC_START)
+#endif
     phvwri p.p4_txdma_intr_dma_cmd_ptr, H2N_TXDMA2_DMA_COMMANDS_OFFSET
     phvwri p.ip_hdr_dma_cmd_type, CAPRI_DMA_COMMAND_MEM_TO_PKT
     phvwri p.ip_hdr_dma_cmd_cache, 1

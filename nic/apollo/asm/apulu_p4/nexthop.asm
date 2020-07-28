@@ -272,9 +272,9 @@ ipv6_vxlan_encap2:
     add.c7          r7, k.rewrite_metadata_tunnel_tos2, 0x6, 8
     phvwr           p.{ipv6_00_version,ipv6_00_trafficClass}, r7
     phvwr           p.ipv6_00_srcAddr, k.rewrite_metadata_device_ipv6_addr
-    phvwr           p.{ipv6_00_nextHdr,ipv6_00_hopLimit}, \
-                        (IP_PROTO_UDP << 8) | 64
-    phvwr           p.ipv6_00_payloadLen, r1
+    phvwr           p.ipv6_00_hopLimit, 64
+    add             r7, IP_PROTO_UDP, r1, 8
+    phvwr           p.{ipv6_00_payloadLen,ipv6_00_nextHdr}, r7
     or              r7, k.p4e_i2e_entropy_hash, 0xC000
     or              r7, UDP_PORT_VXLAN, r7, 16
     phvwr           p.{udp_00_srcPort,udp_00_dstPort}, r7

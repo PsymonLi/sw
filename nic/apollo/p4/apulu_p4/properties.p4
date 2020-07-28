@@ -7,6 +7,7 @@ action lif_info(direction, lif_type, vnic_id, bd_id, vpc_id, learn_enabled,
         modify_field(arm_to_p4i.nexthop_id, p4plus_ext.nexthop_id);
         modify_field(arm_to_p4i.nexthop_valid, p4plus_ext.nexthop_valid);
         modify_field(arm_to_p4i.nexthop_type, p4plus_ext.nexthop_type);
+        modify_field(p4i_i2e.rewrite_flags, p4plus_ext.rewrite_flags);
     }
     modify_field(control_metadata.rx_packet, direction);
     modify_field(p4i_i2e.rx_packet, direction);

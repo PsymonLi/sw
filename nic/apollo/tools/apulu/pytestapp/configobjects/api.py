@@ -24,6 +24,7 @@ import dhcp_pb2_grpc as dhcp_pb2_grpc
 import nat_pb2_grpc as nat_pb2_grpc
 import bgp_pb2_grpc as bgp_pb2_grpc
 import service_pb2_grpc as service_pb2_grpc
+import ipsec_pb2_grpc as ipsec_pb2_grpc
 
 import logging
 console = logging.StreamHandler()
@@ -69,7 +70,9 @@ class ObjectTypes(enum.IntEnum):
     SECURITY_PROFILE = 20
     ROUTETABLE = 21
     NHGROUP = 22
-    MAX = 23
+    IPSEC_ENCRYPT_SA = 23
+    IPSEC_DECRYPT_SA = 24
+    MAX = 25
 
 class ClientStub:
     def __init__(self, stubclass, channel, rpc_prefix):
@@ -222,6 +225,10 @@ class ApolloAgentClient:
                                                    self.__channel, 'BGPPeerAf')
         self.__stubs[ObjectTypes.SVC_MAPPING] = ClientStub(service_pb2_grpc.SvcStub,
                                                    self.__channel, 'SvcMapping')
+        self.__stubs[ObjectTypes.IPSEC_ENCRYPT_SA] = ClientStub(ipsec_pb2_grpc.IpsecSvcStub,
+                                                   self.__channel, 'IpsecSAEncrypt')
+        self.__stubs[ObjectTypes.IPSEC_DECRYPT_SA] = ClientStub(ipsec_pb2_grpc.IpsecSvcStub,
+                                                   self.__channel, 'IpsecSADecrypt')
         return
 
     def Create(self, objtype, objs):

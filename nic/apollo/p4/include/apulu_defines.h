@@ -286,7 +286,7 @@
 /* Header sizes                                                              */
 /*****************************************************************************/
 #define APULU_P4I_TO_RXDMA_HDR_SZ       52
-#define APULU_I2E_HDR_SZ                44
+#define APULU_I2E_HDR_SZ                46
 #define APULU_P4_TO_ARM_HDR_SZ          56
 #define APULU_ARM_TO_P4_HDR_SZ          11
 

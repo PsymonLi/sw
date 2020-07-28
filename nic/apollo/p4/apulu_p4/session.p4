@@ -96,6 +96,9 @@ action session_info(tx_rewrite_flags, tx_xlate_id, tx_xlate_id2,
             modify_field(control_metadata.apply_nat2, TRUE);
         }
     }
+    if (p4e_i2e.rewrite_flags != 0) {
+        modify_field(rewrite_metadata.flags, p4e_i2e.rewrite_flags);
+    }
 }
 
 @pragma stage 0

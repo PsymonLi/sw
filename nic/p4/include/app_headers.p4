@@ -304,5 +304,6 @@ header_type p4plus_to_p4_header_ext_t {
         nexthop_valid           : 1;
         nexthop_type            : 8;
         nexthop_id              : 16;
+        rewrite_flags           : 16;
     }
 }

@@ -27,7 +27,8 @@ session_info:
     phvwr           p.control_metadata_update_checksum, \
                         k.p4e_i2e_update_checksum
 
-    seq             c1, k.p4e_i2e_session_id, -1
+    addi            r1, r0, SESSION_TABLE_SIZE - 1
+    seq             c1, k.p4e_i2e_session_id, r1
     seq.!c1         c1, k.p4e_to_arm_valid, TRUE
     b.c1            session_redirect
     bbeq.!c1        d.session_info_d.drop, TRUE, session_info_drop
@@ -91,6 +92,8 @@ session_stats:
     memwr.dx        r6, r7
 
 session_redirect:
+    sne             c1, r0, k.p4e_i2e_rewrite_flags
+    phvwr.c1        p.rewrite_metadata_flags, k.p4e_i2e_rewrite_flags
     seq             c1, d.session_info_d.qid_en, TRUE
     nop.!c1.e
     phvwr.c1.e      p.p4e_to_p4plus_classic_nic_rss_override, TRUE

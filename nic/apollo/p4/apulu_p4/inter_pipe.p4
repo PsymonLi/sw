@@ -352,6 +352,8 @@ action p4e_app_ipsec() {
                   P4PLUS_IPSEC_HDR_SZ));
     modify_field(p4e_to_p4plus_ipsec.spi, ((key_metadata.parsed_sport << 16) |
                  key_metadata.parsed_dport));
+    // dummy code to force PHV allocation
+    modify_field(ipsec_metadata.seq_no, 1);
     if (udp_1.valid == TRUE) {
         modify_field(p4e_to_p4plus_ipsec.ip_hdr_size, ipv4_1.ihl << 2 + UDP_HDR_SIZE);
     } else {

@@ -28,5 +28,6 @@ header_type apulu_i2e_metadata_t {
         xlate_id            : 20;
         pad1                : 3;
         dst_tm_oq           : 5;
+        rewrite_flags       : 16;
     }
 }

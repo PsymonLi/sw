@@ -5,11 +5,12 @@ import tunnel_pb2 as tunnel_pb2
 import types_pb2 as types_pb2
 import ipaddress
 import utils
+import ipsec
 import api
 
 class TunnelObject():
 
-    def __init__(self, id, vpcid, localip, remoteip, macaddr, tunneltype, encaptype, vnid, nhid=None):
+    def __init__(self, id, vpcid, localip, remoteip, macaddr, tunneltype, encaptype, vnid, nhid=None, ipsec_enc_id=None, ipsec_dec_id=None):
         self.id        = id
         self.uuid      = utils.PdsUuid(self.id, objtype=api.ObjectTypes.TUNNEL)
         self.vpcid     = vpcid
@@ -20,9 +21,11 @@ class TunnelObject():
         else:
             self.macaddr = None
         self.tunneltype = tunneltype
-        self.encaptype = encaptype
-        self.vnid      = vnid
-        self.nhid      = nhid
+        self.encaptype  = encaptype
+        self.vnid       = vnid
+        self.nhid       = nhid
+        self.encrypt_id = ipsec_enc_id
+        self.decrypt_id = ipsec_dec_id
         return
 
     def GetGrpcCreateMessage(self):
@@ -42,5 +45,9 @@ class TunnelObject():
             spec.MACAddress = self.macaddr
         if self.nhid:
             spec.NexthopId = utils.PdsUuid.GetUUIDfromId(self.nhid)
+        if self.encrypt_id:
+            spec.IpsecEncryptSAId = utils.PdsUuid.GetUUIDfromId(self.encrypt_id)
+        if self.decrypt_id:
+            spec.IpsecDecryptSAId = utils.PdsUuid.GetUUIDfromId(self.decrypt_id)
 
         return grpcmsg

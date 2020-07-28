@@ -15,6 +15,7 @@ lif_info:
     phvwr           p.arm_to_p4i_nexthop_valid, k.p4plus_ext_nexthop_valid
     phvwr           p.arm_to_p4i_nexthop_type, k.p4plus_ext_nexthop_type
     phvwr           p.arm_to_p4i_nexthop_id, k.p4plus_ext_nexthop_id
+    phvwr           p.p4i_i2e_rewrite_flags, k.p4plus_ext_rewrite_flags;
 p4plus_ext_done:
     phvwr           p.control_metadata_lif_type, d.lif_info_d.lif_type
     phvwr           p.control_metadata_learn_enabled, d.lif_info_d.learn_enabled

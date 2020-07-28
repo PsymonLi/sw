@@ -147,8 +147,9 @@ tunnel2_ipv6_encap:
     phvwr           p.{ipv6_00_version,ipv6_00_trafficClass}, r1
     phvwr           p.ipv6_00_srcAddr, k.rewrite_metadata_device_ipv6_addr
     phvwr           p.ipv6_00_dstAddr, d.tunnel2_info_d.dipo
-    phvwr           p.{ipv6_00_nextHdr,ipv6_00_hopLimit}, (IP_PROTO_UDP << 8)|64
-    phvwr           p.ipv6_00_payloadLen, r7
+    phvwr           p.ipv6_00_hopLimit, 64
+    add             r6, IP_PROTO_UDP, r6, 8
+    phvwr           p.{ipv6_00_payloadLen, ipv6_00_nextHdr}, r6
     add             r6, r0, ETHERTYPE_IPV6
 
     // udp header

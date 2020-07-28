@@ -32,6 +32,8 @@ pds_tep_spec_from_tep (pds_tep_spec_t *spec, tep_entry *tep)
     spec->encap = tep->encap();
     spec->remote_svc = tep->remote_svc();
     spec->tos = tep->tos();
+    spec->encrypt_sa = tep->ipsec_encrypt_sa();
+    spec->decrypt_sa = tep->ipsec_decrypt_sa();
 }
 
 sdk_ret_t

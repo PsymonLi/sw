@@ -29,6 +29,6 @@ header_type ipsec_p4plus_to_p4_header_t {
         nexthop_valid           : 1;
         nexthop_type            : 8;
         nexthop_id              : 16;
-        nexthop_pad             : 8;
+        rewrite_flags           : 16;
     }
 }
