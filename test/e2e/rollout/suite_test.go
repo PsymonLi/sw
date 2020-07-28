@@ -37,6 +37,18 @@ const (
 	wildCardAudience       = "*"
 )
 
+func addFakeInterface(nodeName, intfName, ip string) {
+	// netagent expects bond0 to be available and with an assigned IP
+	st := ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s ip link add link oob_mnic0 name %s type dummy", nodeName, intfName))
+	Expect(st).Should(Equal(""))
+	time.Sleep(time.Second)
+	st = ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s ifconfig %s %s netmask 255.255.255.0", nodeName, intfName, ip))
+	Expect(st).Should(Equal(""))
+	// remove route to avoid interference with oob_mnic0 // FIXME remove hardcoded network
+	st = ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s route del -net 192.168.30.0 netmask 255.255.255.0 dev %s", nodeName, intfName))
+	Expect(st).Should(Equal(""))
+}
+
 func TestE2ETest(t *testing.T) {
 	if os.Getenv("E2E_TEST") == "" {
 		return
@@ -107,15 +119,10 @@ var _ = BeforeSuite(func() {
 			time.Sleep(time.Second)
 			st = ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s route add default gw %v oob_mnic0", nodeName, gw.String()))
 			Expect(st).Should(Equal(""))
-			// netagent expects bond0 to be available and with an assigned IP
-			st = ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s ip link add link oob_mnic0 name bond0 type dummy", nodeName))
-			Expect(st).Should(Equal(""))
-			time.Sleep(time.Second)
-			st = ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s ifconfig bond0 %s netmask 255.255.255.0", nodeName, agIP.String()))
-			Expect(st).Should(Equal(""))
-			// remove route to avoid interference with oob_mnic0 // FIXME remove hardcoded network
-			st = ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s route del -net 192.168.30.0 netmask 255.255.255.0 dev bond0", nodeName))
-			Expect(st).Should(Equal(""))
+
+			for _, intfName := range []string{"bond0", "inb_mnic0", "inb_mnic1"} {
+				addFakeInterface(ts.tu.NaplesNodes[idx], intfName, agIP.String())
+			}
 
 			agURL := agIP.String() + ":" + globals.AgentProxyPort
 			By(fmt.Sprintf("ts:%s connecting to netagent [%s]", time.Now().String(), agURL))
