@@ -18,6 +18,7 @@ export LUA_PATH="${SNORT_EXPORT_DIR}/lua/?.lua;;"
 export SNORT_DAQ_PATH=${SNORT_EXPORT_DIR}/x86_64/lib/
 export HAL_CONFIG_PATH=${TOPDIR}/conf
 export DISABLE_AGING=1
+export ELBA_SKIP_PLL_INIT=1
 
 PRELOADS=${BUILD_DIR}/lib/libp4pd_mock.so
 HBMHASH_PRELOADS=${BUILD_DIR}/lib/libhbmhashp4pd_mock.so

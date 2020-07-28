@@ -78,6 +78,7 @@ os.environ["PKG_CONFIG_PATH"] = "/usr/local/lib/pkgconfig"
 #Path and executables
 bin_dir = nic_dir + '/build/x86_64/iris/' + asic + '/bin/'
 if asic == 'elba':
+    os.environ["ELBA_SKIP_PLL_INIT"] = "1"
     model_name = "elb_model"
 else:
     model_name = "cap_model"
