@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Animations } from '@app/animations';
@@ -22,10 +22,9 @@ import { FieldsRequirement } from '@sdk/v1/models/generated/search';
 import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
 import { forkJoin, Observable } from 'rxjs';
 import * as _ from 'lodash';
-import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
-import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { throttleTime } from 'rxjs/operators';
+import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
 
 /**
  * NetworkinterfacesComponent is linked to DSC object.
@@ -56,12 +55,13 @@ interface NetworkInterfaceUiModel {
   templateUrl: './networkinterfaces.component.html',
   styleUrls: ['./networkinterfaces.component.scss'],
   animations: [Animations],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None
 })
 export class NetworkinterfacesComponent extends DataComponent implements OnInit {
 
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
-  @ViewChild('networkInterfaceTable') networkInterfaceTable: PentableComponent;
+  @ViewChild('networkInterfaceTable') networkInterfaceTable: PenPushTableComponent;
 
   maxSearchRecords: number = 8000;
 
@@ -90,11 +90,11 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   };
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'networkinterfaces-column-name', sortable: true, width: '150px', notReorderable: true },
-    { field: 'status.dsc', header: 'DSC', class: ' networkinterfaces-column-dsc', sortable: true, width: '180px' },
-    { field: 'spec.attach-tenant', header: 'Attach Tenant', class: ' networkinterfaces-column-tenant', sortable: true, width: '150px' },
-    { field: 'spec.attach-network', header: 'Attach Network', class: ' networkinterfaces-column-network', sortable: true, width: '150px' },
-    { field: 'status.if-host-status.mac-address', header: 'Mac Address', class: ' networkinterfaces-column-mac', sortable: true, width: '150px' },
+    { field: 'meta.name', header: 'Name', class: 'networkinterfaces-column-name', sortable: true, width: 100, notReorderable: true },
+    { field: 'status.dsc', header: 'DSC', class: ' networkinterfaces-column-dsc', sortable: true, width: 100 },
+    { field: 'spec.attach-tenant', header: 'Attach Tenant', class: ' networkinterfaces-column-tenant', sortable: true, width: 100 },
+    { field: 'spec.attach-network', header: 'Attach Network', class: ' networkinterfaces-column-network', sortable: true, width: 100 },
+    { field: 'status.if-host-status.mac-address', header: 'Mac Address', class: ' networkinterfaces-column-mac', sortable: true, width: 100 },
     { field: 'status.if-uplink-status.ip-config.ip-address', header: 'IP Address', class: ' networkinterfaces-column-IP', sortable: true, width: '100px' },
     { field: 'status', header: 'Admin/Op Status', class: ' networkinterfaces-column-opstatus', sortable: true, width: '125px' },
     { field: 'spec.type', header: 'Type', class: ' networkinterfaces-column-type', sortable: true, width: '100px' },
@@ -127,7 +127,6 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   advSearchCols: TableCol[] = [];
   fieldFormArray = new FormArray([]);
 
-
   constructor(protected controllerService: ControllerService,
     protected clusterService: ClusterService,
     protected uiConfigsService: UIConfigsService,
@@ -139,21 +138,6 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     super(controllerService, uiConfigsService);
   }
 
-  clearSelectedDataObjects() {
-    this.networkInterfaceTable.selectedDataObjects = [];
-  }
-
-  getSelectedDataObjects() {
-    return this.networkInterfaceTable.selectedDataObjects;
-  }
-  /**
-  * Overide super's API
-  * It will return this Component name
-  */
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
   filterColumns() {
     this.cols = this.cols.filter((col: TableCol) => {
       return !((this.uiconfigsService.isFeatureEnabled('enterprise') && (col.field === 'spec.attach-tenant' || col.field === 'spec.attach-network' || col.field === 'status.if-uplink-status.ip-config.ip-address')));
@@ -161,21 +145,15 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   }
 
   ngOnInit() {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
-    });
-    this._route.queryParams.subscribe(params => {
-      if (params.hasOwnProperty('interface')) {
-        // alerttab selected
-        this.getSearchedNetworkInterface(params['interface']);
-      }
-    });
+    super.ngOnInit();
+    this.penTable = this.networkInterfaceTable;
     this.tableLoading = true;
+    this.watchURL();
     this.filterColumns();
-    this.setDefaultToolbar();
     this.watchNetworkInterfaces();
     this.watchNaples();
     this.buildAdvSearchCols();
+    this.cdr.detectChanges();
   }
 
   setDefaultToolbar() {
@@ -186,14 +164,29 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     });
   }
 
+  watchURL() {
+    const subs = this._route.queryParams.subscribe(params => {
+      if (params.hasOwnProperty('interface')) {
+        // alerttab selected
+        this.getSearchedNetworkInterface(params['interface']);
+      }
+    });
+    this.subscriptions.push(subs);
+  }
+
   getSearchedNetworkInterface(interfacename) {
     const subscription = this.networkService.GetNetworkInterface(interfacename).subscribe(
       response => {
         const networkinterface = response.body as NetworkNetworkInterface;
         this.selectedNetworkInterface = new NetworkNetworkInterface(networkinterface);
         this.updateSelectedNetworkInterface();
+        this.cdr.detectChanges();
       },
-      this._controllerService.webSocketErrorHandler('Failed to get Network interface ' + interfacename)
+      error => {
+        this._controllerService.webSocketErrorHandler('Failed to get Network interface ' + interfacename);
+        this.selectedNetworkInterface = null;
+        this.cdr.detectChanges();
+      }
     );
     this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
   }
@@ -209,6 +202,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
         this._myDSCnameToMacMap = ObjectsRelationsUtility.buildDSCsNameMacMap(this.naplesList);
         this.handleDataReady(!this.naplesInit);
         this.naplesInit = true;
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -233,6 +227,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
         this.dataObjects = response.data;
         this.handleDataReady(true);
         this.tableLoading = false;
+        this.cdr.detectChanges();
       },
       (error) => {
         this.tableLoading = false;
@@ -244,14 +239,22 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
 
   handleDataReady(updateBackUp?: boolean) {
     // When naplesList and networkinterfaces list are ready, build networkinterface-dsc map.
-      this.dataObjects.forEach((networkNetworkInterface: NetworkNetworkInterface) => {
-        this.updateOneNetworkInterface(networkNetworkInterface);
-      });
-      this.updateSelectedNetworkInterface();
-      this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjects);
-      if (updateBackUp) {
-        this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
+    let foundSelectedInterface = false;
+    this.dataObjects.forEach((networkNetworkInterface: NetworkNetworkInterface) => {
+      this.updateOneNetworkInterface(networkNetworkInterface);
+      if (!foundSelectedInterface && this.selectedNetworkInterface &&
+        this.selectedNetworkInterface.meta.name === networkNetworkInterface.meta.name) {
+        foundSelectedInterface = true;
+        this.selectedNetworkInterface = networkNetworkInterface;
       }
+    });
+    if (!foundSelectedInterface) {
+      this.selectedNetworkInterface = null;
+    }
+    this.dataObjects = [...this.dataObjects];
+    if (updateBackUp) {
+      this.dataObjectsBackUp = [...this.dataObjects];
+    }
   }
 
   updateSelectedNetworkInterface() {
@@ -294,14 +297,6 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
 
   showDeleteIcon(): boolean {
     return true;
-  }
-
-  generateDeleteConfirmMsg(object: INetworkNetworkInterface) {
-    return 'Are you sure to delete network interface: ' + object.meta.name;
-  }
-
-  generateDeleteSuccessMsg(object: INetworkNetworkInterface) {
-    return 'Deleted network interface ' + object.meta.name;
   }
 
   deleteRecord(object: NetworkNetworkInterface): Observable<{ body: INetworkNetworkInterface | IApiStatus | Error; statusCode: number; }> {
@@ -446,8 +441,9 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   // advance search APIs
   onCancelSearch() {
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
-    this.dataObjects = this.dataObjectsBackUp;
+    this.dataObjects = [...this.dataObjectsBackUp];
     this.handleDataReady();
+    this.cdr.detectChanges();
   }
 
   /**
@@ -460,6 +456,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     if (searchResults && searchResults.length > 0) {
       this.dataObjects = [];
       this.dataObjects = searchResults;
+      this.cdr.detectChanges();
     }
   }
 
@@ -486,16 +483,6 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
       return Utility.getNaplesCondition(this._myDSCmacToObjectMap[napleId]);
     }
     return null;
-  }
-
-  expandRowRequest(event, rowData) {
-    if (!this.networkInterfaceTable.showRowExpand) {
-      this.networkInterfaceTable.toggleRow(rowData, event);
-    }
-  }
-
-  onColumnSelectChange(event) {
-    this.networkInterfaceTable.onColumnSelectChange(event);
   }
 
 }

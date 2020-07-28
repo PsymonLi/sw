@@ -1,44 +1,49 @@
 <app-pagebody [icon]="bodyicon" header="Hosts Overview">
   <div fxFlex class="hosts-table-container">
-    <app-pentable #hostTable
-                  [actionTemplate]="actionTemplate"
-                  [bodyTemplate]="bodyTemplate"
-                  [captionTemplate]="captionTemplate"
-                  [columns]="cols"
-                  [createTemplate]="createTemplate"
-                  [data]="dataObjects"
-                  [enableCheckbox]="true"
-                  [expandTemplate]="expandTemplate"
-                  [loading]="tableLoading"
-                  [rowHeight]="46"
-                  [searchable]="true"
-                  [searchFormArray]="fieldFormArray"
-                  [searchCols]="advSearchCols"
-                  (searchEmitter)="onSearchHosts()"
-                  (searchCancelledEmitter)="onCancelSearch($event)"
-                  searchKind="Host"
-                  [exportFilename]="exportFilename"
-                  [exportMap]="exportMap">
-    </app-pentable>
+    <app-penpushtable #hostTable
+                      [actionTemplate]="actionTemplate"
+                      [bodyTemplate]="bodyTemplate"
+                      [captionTemplate]="captionTemplate"
+                      [columns]="cols"
+                      [createTemplate]="createTemplate"
+                      [data]="dataObjects"
+                      [enableCheckbox]="true"
+                      [expandTemplate]="expandTemplate"
+                      [loading]="tableLoading"
+                      [rowHeight]="46"
+                      [searchable]="true"
+                      [searchFormArray]="fieldFormArray"
+                      [searchCols]="advSearchCols"
+                      (searchEmitter)="onSearchHosts()"
+                      (searchCancelledEmitter)="onCancelSearch($event)"
+                      searchKind="Host"
+                      [exportFilename]="exportFilename"
+                      [exportMap]="exportMap">
+    </app-penpushtable>
   </div>
 </app-pagebody>
 
 <ng-template #actionButtonsTemplate>
   <div class="hosts-action-template" fxLayout="row">
-    <div *ngIf="dataObjects.length !== dataObjectsBackUp.length"
-         class="hosts-table-header-title-append">
-      <span matTooltip="Total workloads">
-        | System has ({{ dataObjectsBackUp.length }})
-      </span>
+    <div fxFlex="1 0 50%">
+      <div *ngIf="dataObjects.length !== dataObjectsBackUp.length"
+           class="hosts-table-header-title-append">
+        <span matTooltip="Total workloads">
+          | System has ({{ dataObjectsBackUp.length }})
+        </span>
+      </div>
     </div>
 
     <!-- TABLE FUNCTION ICONS HERE -->
-    <div *roleGuard="'clusterhost_delete'">
-      <mat-icon class="global-multi-records-delete-icon"
-                *ngIf="areSelectedRowsDeletable()"
-                [matTooltip]="'Delete selected hosts'"
-                (click)="onDeleteSelectedRows($event)">delete
-      </mat-icon>
+    <div *roleGuard="'clusterhost_delete'" fxFlex="1 0 50%">
+      <div *ngIf="dataObjects.length > 0" fxFlex="none" fxLayoutAlign="start center">
+        <mat-icon class="global-multi-records-delete-icon"
+                  *ngIf="areSelectedRowsDeletable()"
+                  [matTooltip]="'Delete selected hosts'"
+                  (click)="onDeleteSelectedRows($event)">
+          delete
+        </mat-icon>
+      </div>
     </div>
   </div>
 

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
@@ -12,10 +12,8 @@ import { ClusterDistributedServiceCard, ClusterDSCProfile, IApiStatus, IClusterD
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { Observable } from 'rxjs';
 import { PercentPipe } from '@angular/common';
-import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { Eventtypes } from '@app/enum/eventtypes.enum';
-
+import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
 
 interface DSCMacName {
   mac: string;
@@ -47,10 +45,11 @@ interface DSCProfileUiModel {
   templateUrl: './dscprofiles.component.html',
   styleUrls: ['./dscprofiles.component.scss'],
   animations: [Animations],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None
 })
 export class DscprofilesComponent extends DataComponent implements OnInit {
-  @ViewChild('dscProfilesTable') dscProfilesTable: PentableComponent;
+  @ViewChild('dscProfilesTable') dscProfilesTable: PenPushTableComponent;
 
   DEFAULT_DSCPROFILE = 'default';
 
@@ -140,14 +139,6 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
     super(_controllerService, uiconfigsService);
   }
 
-  clearSelectedDataObjects() {
-    this.dscProfilesTable.selectedDataObjects = [];
-  }
-
-  getSelectedDataObjects() {
-    return this.dscProfilesTable.selectedDataObjects;
-  }
-
   setDefaultToolbar() {
     let buttons = [];
     if (this.uiconfigsService.isAuthorized(UIRolePermissions.clusterdscprofile_create)) {
@@ -167,18 +158,22 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
   }
 
   ngOnInit() {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
-    });
-    this._route.queryParams.subscribe(params => {
+    super.ngOnInit();
+    this.penTable = this.dscProfilesTable;
+    this.tableLoading = true;
+    this.watchURL();
+    this.watchDSCProfiles();
+    this.watchNaples();
+  }
+
+  watchURL() {
+    const subs = this._route.queryParams.subscribe(params => {
       if (params.hasOwnProperty('dscprofile')) {
         // alerttab selected
         this.getSearchedDSCProfile(params['dscprofile']);
       }
     });
-    this.setDefaultToolbar();
-    this.watchDSCProfiles();
-    this.watchNaples();
+    this.subscriptions.push(subs);
   }
 
   getSearchedDSCProfile(interfacename) {
@@ -187,14 +182,19 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
         const dscprofile = response.body as ClusterDSCProfile;
         this.selectedDSCProfile = new ClusterDSCProfile(dscprofile);
         this.updateSelectedDSCProfile();
+        this.cdr.detectChanges();
       },
-      this._controllerService.webSocketErrorHandler('Failed to get Network interface ' + interfacename)
+      error => {
+        this._controllerService.webSocketErrorHandler('Failed to get Network interface ' + interfacename);
+        this.selectedDSCProfile = null;
+        this.cdr.detectChanges();
+      }
     );
     this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
   }
 
   updateSelectedDSCProfile() {
-    this.processOneDSCProfile(this.selectedDSCProfile );
+    this.processOneDSCProfile(this.selectedDSCProfile);
   }
 
   /**
@@ -206,8 +206,10 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
         if (response.connIsErrorState) {
           return;
         }
+        this.tableLoading = false;
         this.dataObjects  = response.data;
         this.handleDataReady(); // process DSCProfile. Note: At this this moment, this.selectedObj may not be available
+        this.cdr.detectChanges();
       },
       this._controllerService.webSocketErrorHandler('Failed to get DSC Profile')
     );
@@ -226,6 +228,7 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
           this.macToNameMap[dsc.meta.name] = dsc.spec.id;
         }
         this.handleDataReady();
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -243,9 +246,7 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
         }
         this.processOneDSCProfile(dscProfile);
       }
-      if (matchSelectedDSCProfile) {
-        this.updateSelectedDSCProfile(); // update selected-profile VS-2010
-      } else {
+      if (!matchSelectedDSCProfile) {
         this.selectedDSCProfile = null;   // dismiss detail-panel
       }
       this.dataObjects = [...this.dataObjects] ;  // tell angular to refresh references.
@@ -323,10 +324,6 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
     return this.macToNameMap[mac];
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
   deleteRecord(object: ClusterDSCProfile): Observable<{ body: IClusterDSCProfile | IApiStatus | Error, statusCode: number; }> {
     return this.clusterService.DeleteDSCProfile(object.meta.name);
   }
@@ -335,16 +332,6 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
   }
   generateDeleteSuccessMsg(object: ClusterDSCProfile): string {
     return 'Deleted DSC Profile ' + object.meta.name;
-  }
-
-  onDeleteRecord(event, object) {
-    this.dscProfilesTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this)
-    );
   }
 
   areSelectedRowsDeletable(): boolean {
@@ -437,33 +424,16 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
         this.selectedDSCProfile = event.rowData;
       }
     }
+    this.cdr.detectChanges();
   }
 
   closeDetails() {
     this.selectedDSCProfile = null;
+    this.cdr.detectChanges();
   }
 
   viewPendingNaplesList() {
     this.viewPendingNaples = !this.viewPendingNaples;
   }
 
-  expandRowRequest(event, rowData) {
-    if (!this.dscProfilesTable.showRowExpand) {
-      this.dscProfilesTable.toggleRow(rowData, event);
-    }
-  }
-
-  editFormClose(rowData) {
-    if (this.dscProfilesTable.showRowExpand) {
-      this.dscProfilesTable.toggleRow(rowData);
-    }
-  }
-
-  creationFormClose() {
-    this.dscProfilesTable.creationFormClose();
-  }
-
-  onColumnSelectChange(event) {
-    this.dscProfilesTable.onColumnSelectChange(event);
-  }
 }

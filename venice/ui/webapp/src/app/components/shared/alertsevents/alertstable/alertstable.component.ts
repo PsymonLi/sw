@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild, SimpleChanges, OnChanges, OnDestroy, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, SimpleChanges, OnChanges, OnDestroy, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { MonitoringAlert, MonitoringAlertSpec_state, MonitoringAlertStatus_severity, MonitoringAlertSpec_state_uihint } from '@sdk/v1/models/generated/monitoring';
 import { EventsEventAttributes_severity } from '@sdk/v1/models/generated/events';
 import { TimeRange } from '@app/components/shared/timerange/utility';
@@ -15,20 +15,19 @@ import { Observable, forkJoin, throwError, Subscription } from 'rxjs';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { AlertsEventsSelector } from '@app/components/shared/alertsevents/alertsevents.component';
 import { Animations } from '@app/animations';
-import { PrettyDatePipe } from '@app/components/shared/Pipes/PrettyDate.pipe';
 import { TimeRangeComponent } from '@app/components/shared/timerange/timerange.component';
 import { ValidationErrors, FormArray } from '@angular/forms';
 import { IStagingBulkEditAction, IBulkeditBulkEditItem } from '@sdk/v1/models/generated/staging';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { Eventtypes } from '@app/enum/eventtypes.enum';
 
 @Component({
   selector: 'app-alertstable',
   templateUrl: './alertstable.component.html',
   styleUrls: ['./alertstable.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AlertstableComponent extends DataComponent implements OnInit, OnChanges {
   @ViewChild('timeRangeComponent') timeRangeComponent: TimeRangeComponent;
@@ -69,7 +68,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
   severityEnum: any = EventsEventAttributes_severity;
 
   cols: TableCol[] = [
-    { field: 'meta.mod-time', header: 'Modification Time', class: 'alertsevents-column-date', sortable: true, width: 15 },
+    { field: 'meta.mod-time', header: 'Modification Time', class: 'alertsevents-column-date', sortable: true, width: '180px' },
     { field: 'meta.creation-time', header: 'Creation Time', class: 'alertsevents-column-date', sortable: true, width: 15 },
     { field: 'status.severity', header: 'Severity', class: 'alertsevents-column-severity', sortable: false, width: 8 },
     { field: 'status.message', header: 'Message', class: 'alertsevents-column-message', sortable: false, width: 25 },
@@ -118,15 +117,15 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     protected _alerttableService: AlerttableService,
     protected uiconfigsService: UIConfigsService,
     protected searchService: SearchService,
+    protected cdr: ChangeDetectorRef,
     protected monitoringService: MonitoringService,
   ) {
     super(_controllerService, uiconfigsService);
   }
 
   ngOnInit() {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
-    });
+    super.ngOnInit();
+    this.penTable = this.alertsTable;
     this.alertUpdatable = this.uiconfigsService.isAuthorized(UIRolePermissions.monitoringalert_update);
     if (this.showAlertsAdvSearch) {
       this.buildAdvSearchCols();
@@ -150,15 +149,6 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       { field: 'status.source.node-name', header: 'Source Node', kind: 'Alert' },
       { field: 'status.source.component', header: 'Source Component', kind: 'Alert' }
     );
-  }
-
-
-  getSelectedDataObjects() {
-    return this.alertsTable.selectedDataObjects;
-  }
-
-  clearSelectedDataObjects() {
-    this.alertsTable.selectedDataObjects = [];
   }
 
   clearAlertNumbersObject() {
@@ -201,6 +191,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     this.dataObjects = [];
     this.dataObjectsBackUp = [];
     this.alertsLoading = true;
+    this.cdr.detectChanges();
     this.alertsEventUtility = new HttpEventUtility<MonitoringAlert>(MonitoringAlert);
     this.alerts = this.alertsEventUtility.array;
     if (this.alertSubscription) {
@@ -208,16 +199,18 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     }
     this.alertSubscription = this.monitoringService.WatchAlert(this.alertQuery).subscribe(
       response => {
+        this.alertsLoading = false;
         if (this.showAlertsAdvSearch) {
           this.alertsTable.clearSearch();
         }
         this.alertsEventUtility.processEvents(response);
-        this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.alerts) as MonitoringAlert[];
+        this.dataObjectsBackUp = [...this.alerts];
         this.setAlertNumbersObject();
         this.filterAlerts();
       },
       (error) => {
         this.alertsLoading = false;
+        this.cdr.detectChanges();
         this._controllerService.webSocketErrorHandler('Failed to get Alert');
       }
     );
@@ -228,6 +221,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
           this.alertsTable.clearSearch();
         }
         this.alertsLoading = false;
+        this.cdr.detectChanges();
       }
     }, 5000);
   }
@@ -267,6 +261,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       return this.selectedStateFilters.includes(MonitoringAlertSpec_state_uihint[item.spec.state]);
     });
     this.alertsLoading = false;
+    this.cdr.detectChanges();
   }
 
   /**
@@ -293,7 +288,6 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     return this.showBatchIconHelper(MonitoringAlertSpec_state.open, true);
   }
 
-
   invokeUpdateAlerts(newState: MonitoringAlertSpec_state, summary: string, successMsg: string) {
    // this.updateAlertOneByOne(newState, summary, msg);
    const failureMsg: string = 'Failed to update alerts';
@@ -312,16 +306,19 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     const stagingBulkEditAction = this.buildBulkEditUpdateAlertsPayload(alerts, newState);
     this.alertsLoading = true;
     this.bulkEditHelper(alerts, stagingBulkEditAction, successMsg, failureMsg);
+    this.cdr.detectChanges();
   }
 
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
     this.alertsLoading = false;
     this.invokeTimeRangeValidator();
+    this.cdr.detectChanges();
   }
 
   onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
     this.alertsLoading = false;
-    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    this.dataObjects = [...this.dataObjectsBackUp];
+    this.cdr.detectChanges();
   }
 
   buildBulkEditUpdateAlertsPayload(updateAlerts: MonitoringAlert[], newState: MonitoringAlertSpec_state, buffername: string = ''): IStagingBulkEditAction {
@@ -421,16 +418,19 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
   updateAlertState(alert: MonitoringAlert, newState: MonitoringAlertSpec_state, summary: string, msg: string) {
     // Create copy so that when we modify it doesn't change the view
     this.alertsLoading = true;
+    this.cdr.detectChanges();
     const observable = this.buildUpdateAlertStateObservable(alert, newState);
     const subscription = observable.subscribe(
       response => {
         this._controllerService.invokeSuccessToaster(summary, msg);
         this.alertsLoading = false;
         this.invokeTimeRangeValidator(); // Gets new time and update table accordingly. Avoids using Stale Time Query
+        this.cdr.detectChanges();
       },
       () => {
         this.alertsLoading = false;
         this._controllerService.restErrorHandler(summary + ' Failed');
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(subscription);
@@ -545,13 +545,6 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     }
   }
 
-  OnDestroyHook() {
-    if (this.alertSubscription != null) {
-      this.alertSubscription.unsubscribe();
-    }
-  }
-
-
   onCancelSearch() {
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
     this.alerts = this.dataObjectsBackUp;
@@ -566,6 +559,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
    */
   onSearchAlerts(field = this.alertsTable.sortField, order = this.alertsTable.sortOrder) {
     this.alertsLoading = true;
+    this.cdr.detectChanges();
     const searchResults = this.onSearchDataObjects(field, order, 'Alert', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackUp, this.alertsTable.advancedSearchComponent);
     if (searchResults && searchResults.length > 0) {
       this.alerts = searchResults;
@@ -573,6 +567,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       this.filterAlerts();
     } else {
       this.alertsLoading = false;
+      this.cdr.detectChanges();
     }
   }
 

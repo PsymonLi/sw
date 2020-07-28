@@ -1,23 +1,23 @@
 <app-pagebody class="networkinterfaces" header="Network Interfaces" [icon]="bodyicon">
-  <app-pentable #networkInterfaceTable
-                [actionTemplate]="actionTemplate"
-                [bodyTemplate]="bodyTemplate"
-                [captionTemplate]="captionTemplate"
-                [columns]="cols"
-                [data]="dataObjects"
-                [enableCheckbox]="true"
-                [exportFilename]="exportFilename"
-                [exportMap]="exportMap"
-                [loading]="tableLoading"
-                (rowClickEmitter)="selectNetworkInterface($event)"
-                [rowHeight]="36"
-                [searchable]="true"
-                (searchCancelledEmitter)="onCancelSearch()"
-                [searchCols]="advSearchCols"
-                (searchEmitter)="onSearchNetworkInterfaces()"
-                [searchFormArray]="fieldFormArray"
-                searchKind="NetworkInterface">
-  </app-pentable>
+  <app-penpushtable #networkInterfaceTable
+                    [actionTemplate]="actionTemplate"
+                    [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate"
+                    [columns]="cols"
+                    [data]="dataObjects"
+                    [enableCheckbox]="true"
+                    [exportFilename]="exportFilename"
+                    [exportMap]="exportMap"
+                    [loading]="tableLoading"
+                    (rowClickEmitter)="selectNetworkInterface($event)"
+                    [rowHeight]="36"
+                    [searchable]="true"
+                    (searchCancelledEmitter)="onCancelSearch()"
+                    [searchCols]="advSearchCols"
+                    (searchEmitter)="onSearchNetworkInterfaces()"
+                    [searchFormArray]="fieldFormArray"
+                    searchKind="NetworkInterface">
+  </app-penpushtable>
 </app-pagebody>
 
 <ng-template #captionTemplate let-count="count">

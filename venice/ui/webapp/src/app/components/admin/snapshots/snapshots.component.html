@@ -36,23 +36,23 @@
     </div>
   </mat-expansion-panel>
 
-  <app-pentable #snapshotsTable
-                dataKey="meta.name"
-                [actionTemplate]="actionTemplate"
-                [bodyTemplate]="bodyTemplate"
-                [captionTemplate]="captionTemplate"
-                [createTemplate]="createTemplate"
-                [expandTemplate]="expandTemplate"
-                [columns]="cols"
-                [data]="dataObjects"
-                [enableCheckbox]="true"
-                [loading]="tableLoading"
-                [rowHeight]="46"
-                [exportFilename]="exportFilename"
-                [exportMap]="exportMap"
-                [loading]="tableLoading">
-
-  </app-pentable>
+  <app-penpushtable #snapshotsTable
+                    dataKey="meta.name"
+                    [actionTemplate]="actionTemplate"
+                    [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate"
+                    [createTemplate]="createTemplate"
+                    [expandTemplate]="expandTemplate"
+                    [columns]="cols"
+                    [data]="dataObjects"
+                    [enableCheckbox]="true"
+                    [loading]="tableLoading"
+                    [rowHeight]="46"
+                    [searchable]="false"
+                    [exportFilename]="exportFilename"
+                    [exportMap]="exportMap"
+                    [loading]="tableLoading">
+  </app-penpushtable>
 </app-pagebody>
 
 
@@ -131,20 +131,19 @@
 </ng-template>
 
 <ng-template #createTemplate>
-  <div class="snapshots-save-panel-header">
-    Snapshot Configuration
-  </div>
-  <div [formGroup]="saveConfigForm" class="snapshots-save-content"
-       fxLayout="row wrap" fxLayoutAlign="start center" fxLayoutGap="15px">
-    <div [class]="'snapshots-save-label ' + (saveConfigForm.get(['meta', 'name']).invalid ? 'snapshots-save-label-invalid' : '')"
-         matTooltip="Optional, leave blank to use default timestamp format.">
-      Name:
-    </div>
-    <div formGroupName="meta" class="snapshots-save-name-input">
-      <input autocomplete="off" formControlName="name"
-             class="snapshots-save-name-input"
-             placeholder="Configuration Name..." pInputText
-             appErrorTooltip spellcheck="false" type="text">
+  <div fxFlex="auto" fxLayout="column" class="psm-form">
+    <div class="psm-form-content">
+      <div class="snapshots-save-panel-header">
+        Snapshot Configuration
+      </div>
+      <div [formGroup]="saveConfigForm" fxLayout="row">
+        <div formGroupName="meta">
+          <app-psmtextbox fxFlex="300px" label="Configuration Name"
+                          class="snapshots-save-content" formControlName="name"
+                          hintTooltip="Optional, leave blank to use default timestamp format.">
+          </app-psmtextbox>
+        </div>
+      </div>
     </div>
   </div>
 </ng-template>

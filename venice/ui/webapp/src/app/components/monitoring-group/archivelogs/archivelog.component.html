@@ -1,18 +1,19 @@
 <app-pagebody class="archiverequests" header="Archive Log Requests" [icon]="bodyicon">
-  <app-pentable #archiveTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
-                [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
-                [enableCheckbox]="true" [expandTemplate]="expandTemplate"
-                [exportFilename]="exportFilename" [exportMap]="exportMap" [loading]="tableLoading"
-                [numRows]="25" [receiveSelectedDataUpdate]="true"
-                (rowClickEmitter)="showArchiveQuery($event)" [rowHeight]="36"
-                (selectedObjectsUpdateEmitter)="showBulkDeleteIcon()">
-  </app-pentable>
+  <app-penpushtable #archiveTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
+                    [enableCheckbox]="true" [expandTemplate]="expandTemplate"
+                    [exportFilename]="exportFilename" [exportMap]="exportMap"
+                    [loading]="tableLoading"
+                    [numRows]="25" [receiveSelectedDataUpdate]="true"
+                    (rowClickEmitter)="showArchiveQuery($event)" [rowHeight]="36"
+                    (selectedObjectsUpdateEmitter)="showBulkDeleteIcon()">
+  </app-penpushtable>
 </app-pagebody>
 
 <ng-template #captionTemplate let-count="count">
   <div class="archiverequests-caption" fxLayout="column">
     <app-tableheader title="Archive Logs" [total]="count" fxFlex="auto" fxLayout="row"
-                     [tableMenuItems]="archiveTable.tableMenuItems" [enableColumnSelect]="false"
+                     [tableMenuItems]="archiveTable.tableMenuItems" [enableColumnSelect]="true"
                      [cols]="cols"
                      (columnSelectChange)="onColumnSelectChange($event)" [icon]="headerIcon">
       <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
@@ -37,6 +38,9 @@
 
 <ng-template #bodyTemplate let-rowData let-col="col">
   <ng-container [ngSwitch]="col.field">
+    <ng-container *ngSwitchCase="'meta.mod-time'">
+      {{rowData.meta['mod-time'] | PrettyDate }}
+    </ng-container>
     <ng-container *ngSwitchCase="'meta.creation-time'">
       {{rowData.meta['creation-time'] | PrettyDate }}
     </ng-container>

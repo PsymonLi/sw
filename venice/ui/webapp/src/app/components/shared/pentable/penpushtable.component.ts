@@ -17,7 +17,7 @@ import { Utility } from '@app/common/Utility';
     changeDetection: ChangeDetectionStrategy.OnPush,
     animations: [Animations]
 })
-export class PenPushTableComponent extends PentableComponent {
+export class PenPushTableComponent extends PentableComponent implements OnChanges {
 
   constructor(protected _route: ActivatedRoute,
       protected cdr: ChangeDetectorRef,
@@ -29,7 +29,7 @@ export class PenPushTableComponent extends PentableComponent {
 
   createNewObject() {
     super.createNewObject();
-    this.cdr.detectChanges();
+    this.refreshGui();
     // scroll to top if user click cerate button
     if (this.nativeElementRef && this.nativeElementRef.nativeElement) {
       const domElemnt = this.nativeElementRef.nativeElement;
@@ -37,6 +37,77 @@ export class PenPushTableComponent extends PentableComponent {
         domElemnt.parentNode.parentNode.scrollTop = 0;
       }
     }
+  }
+
+  ngOnChanges(change: SimpleChanges) {
+    if (this.searchable && !this.filterSub) {
+      this.filterSub = this._route.queryParams.subscribe(params => {
+        if (params.hasOwnProperty('filter')) {
+          this.filter = params['filter'];
+        } else {
+          this.filter = null;
+        }
+      });
+      this.subscriptions.push(this.filterSub);
+    }
+
+    if (this.searchable && this.filter) {
+      // if there is a "filter" query param:
+      // - wait until data finishes loading (component init)
+      // - if data has been updated, emit search results for parent to update filtered list
+      const loadingCompleted = change.loading && change.loading.previousValue && !change.loading.currentValue;
+      let dataChanged = false;
+      if (change.data && !this.loading) {
+        const _ = Utility.getLodash();
+        const sortFieldArr = this.sortField.split('.');
+        const prevDataSorted = _.sortBy(change.data.previousValue, data => _.get(data, sortFieldArr));
+        const currDataSorted = _.sortBy(change.data.currentValue, data => _.get(data, sortFieldArr));
+        dataChanged = prevDataSorted.length !== currDataSorted.length || currDataSorted.some((data, idx) => {
+          const prevData = prevDataSorted[idx];
+          if (data && data.meta && prevData && prevData.meta) {
+            return data.meta.uuid !== prevData.meta.uuid;
+          }
+          return false;
+        });
+      }
+
+      if (loadingCompleted || dataChanged) {
+        // emit search based on query params after current cycle
+        setTimeout(() => {
+          if (!this.searchInitialized) {
+            this.advancedSearchComponent.search = this.filter;
+            this.advancedSearchComponent.generalSearch = this.filter;
+            this.searchInitialized = true;
+          }
+          // if search text does not match filter, user is editing. clear out filter and let data update naturally.
+          // TODO: implement checking filter value in advanced search component after adding support for advanced search fields in pentable.
+          if (this.searchInitialized && this.getSearchText() !== this.filter) {
+            this.controllerService.navigate([], {
+              queryParams: {
+                filter: null,
+              },
+            });
+            return;
+          }
+          this.searchEmitter.emit(null);
+        }, 0);
+        this.reset();
+      }
+    }
+
+    if (change.data) {
+      setTimeout(() => {
+        this.isPageSelected();
+        this.refreshGui();
+        if (this.receiveSelectedDataUpdate) {
+          this.updateSelectedDataObjects();
+        }
+      }, 0);
+    }
+  }
+
+  refreshGui() {
+    this.cdr.detectChanges();
   }
 }
 

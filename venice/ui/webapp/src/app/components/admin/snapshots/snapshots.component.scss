@@ -24,24 +24,11 @@
   font-family: "Fira Sans Condensed";
   font-size: 20px;
   font-weight: normal;
-  padding: 12px 24px;
+  padding: 0px 24px;
 }
 
 .snapshots-save-content {
-  padding: 12px 24px 24px;
-}
-
-.snapshots-save-label {
-  width: 40px;
-}
-
-.snapshots-save-label-invalid {
-  color: #cd0a0a;
-}
-
-.snapshots-save-name-input {
-  height: 30px;
-  min-width: 300px;
+  padding: 10px 12px;
 }
 
 .snapshot-table-row-action-restore {

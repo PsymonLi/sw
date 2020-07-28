@@ -1,10 +1,9 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { FormControl, FormGroup, ValidatorFn, ValidationErrors, AbstractControl } from '@angular/forms';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
-import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
@@ -12,15 +11,13 @@ import { ClusterService } from '@app/services/generated/cluster.service';
 import { ObjstoreService } from '@app/services/generated/objstore.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ClusterConfigurationSnapshotRequest, ClusterSnapshotRestore, IApiStatus, IClusterConfigurationSnapshotRequest, IClusterSnapshotRestore, IClusterConfigurationSnapshot, ClusterConfigurationSnapshot } from '@sdk/v1/models/generated/cluster';
-import { IObjstoreObject, IObjstoreObjectList, ObjstoreObject } from '@sdk/v1/models/generated/objstore';
+import { IObjstoreObjectList, ObjstoreObject } from '@sdk/v1/models/generated/objstore';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { maxLengthValidator, patternValidator } from '@sdk/v1/utils/validators';
 import { Observable } from 'rxjs';
 import { AUTH_KEY } from '@app/core';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { AdvancedSearchComponent } from '@app/components/shared/advanced-search/advanced-search.component';
-import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
-import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
+import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
 
 /**
  * This component let user run CRUD operations on snapshot configurations.
@@ -36,6 +33,7 @@ import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
   templateUrl: './snapshots.component.html',
   styleUrls: ['./snapshots.component.scss'],
   animations: [Animations],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None
 })
 export class SnapshotsComponent extends DataComponent implements OnInit {
@@ -43,7 +41,7 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
   public static SNAPSHOT_NAMESPACES: string = 'snapshots';
   public static SNAPSHOT_RESTORE_METANAME: string = 'SnapshotRestore';
 
-  @ViewChild('snapshotsTable') snapshotsTable: PentableComponent;
+  @ViewChild('snapshotsTable') snapshotsTable: PenPushTableComponent;
 
   dataObjects: ReadonlyArray<ObjstoreObject> = [];
   dataObjectsBackUp: ReadonlyArray<ObjstoreObject> = [];
@@ -75,9 +73,9 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
   };
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'snapshots-column-name', sortable: true, width: 45, notReorderable: true },
+    { field: 'meta.name', header: 'Name', class: 'snapshots-column-name', sortable: true, width: 300, notReorderable: true },
     { field: 'meta.mod-time', header: 'Time', class: 'snapshots-column-date', sortable: true, width: '200px', notReorderable: true },
-    { field: 'status.size', header: 'File Size', class: ' snapshots-column-filesize', sortable: true, width: 15 }
+    { field: 'status.size', header: 'File Size', class: ' snapshots-column-filesize', sortable: true, width: 100 }
   ];
 
   exportFilename: string = 'PSM-configuration-snapshots';
@@ -89,14 +87,7 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
   shouldEnable_refresh_button: boolean = true;
   exportMap: CustomExportMap = {};
 
-  saveConfigForm: FormGroup = new FormGroup({
-    meta: new FormGroup({
-      name: new FormControl('', [
-        maxLengthValidator(50),  // VS-1415, per agreement with backend. set max length to be 50
-        patternValidator('^[\\w\\-]*$', 'Only alphanumeric, -, or _ characters are allowed.'),
-      ]),
-    })
-  });
+  saveConfigForm: FormGroup;
   savingConfig: boolean = false;
 
   deletedSnapshots: string[] = [];
@@ -110,15 +101,54 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
     super(controllerService, uiconfigsService);
   }
 
-  ngOnInit(): void {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
-    });
-
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.snapshotsTable;
     this.tableLoading = true;
-    this.setDefaultToolbar();
+    this.createForm();
     this.checkAndMakeSnapshotPolicy();
     this.getSnapshots();
+  }
+
+  createForm() {
+    this.saveConfigForm = new FormGroup({
+      meta: new FormGroup({
+        name: new FormControl('', [
+          maxLengthValidator(50),  // VS-1415, per agreement with backend. set max length to be 50
+          patternValidator('^[\\w\\-]*$', 'Only alphanumeric, -, or _ characters are allowed.'),
+          this.isNameDuplicated()
+        ]),
+      })
+    });
+  }
+
+  isNameDuplicated(): ValidatorFn {
+    // checks if name field is valid
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (this.isNameAlreadyExist(control.value)) {
+        return {
+          objectname: {
+            required: true,
+            message: 'Name is required and must be unique.'
+          }
+        };
+      }
+      return null;
+    };
+  }
+
+  isNameAlreadyExist(name: string): boolean {
+    const modelobjects = this.dataObjects;
+    if (!modelobjects) {
+      return false;
+    }
+    for (let i = 0; i < modelobjects.length; i++) {
+      const tsrObj = modelobjects[i];
+      if (tsrObj.meta.name === name) {
+        return true;
+      }
+    }
+    return false;
   }
 
   setDefaultToolbar() {
@@ -135,7 +165,7 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
         const saveButton = {
           cssClass: 'global-button-primary snapshots-toolbar-button snapshots-toolbar-button-ADD',
           text: 'SAVE A CONFIG SNAPSHOT',
-          computeClass: () => this.shouldEnable_takesnapshot_button ? '' : 'global-button-disabled',
+          computeClass: () => this.shouldEnable_takesnapshot_button && !this.savingConfig ? '' : 'global-button-disabled',
           callback: () => {
             this.setToolbarSaveSnapshots();
             this.snapshotsTable.createNewObject();
@@ -155,7 +185,6 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
     this.getSnapshots();
   }
 
-
   /**
    * Set toolbar buttons when form is open for "save a config snapshot"
    */
@@ -172,7 +201,7 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
         cssClass: 'global-button-neutral snapshots-toolbar-button snapshots-toolbar-button-CANCEL',
         text: 'CANCEL',
         callback: () => { this.closeSaveConfigSnapshot(); },
-        computeClass: () => this.computeSaveBtnClass()
+        computeClass: () => ''
       },
     ];
 
@@ -190,7 +219,8 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
   closeSaveConfigSnapshot() {
     this.setDefaultToolbar();
     this.creationFormClose();
-    this.saveConfigForm.reset();
+    this.createForm();
+    this.snapshotsTable.refreshGui();
   }
 
   /**
@@ -208,11 +238,9 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
 
   saveConfigSnapshot() {
     this.savingConfig = true;
-    this.saveConfigForm.disable();
     const clusterConfigurationSnapshotRequest: IClusterConfigurationSnapshotRequest = new ClusterConfigurationSnapshotRequest(this.saveConfigForm.value);
     this.clusterService.Save(clusterConfigurationSnapshotRequest).subscribe(
       () => {
-        this.closeSaveConfigSnapshot();
         this.controllerService.invokeSuccessToaster('Success.', 'Saved configuration snapshot.');
         this.refresh();
       },
@@ -221,9 +249,9 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
       },
       () => {
         this.savingConfig = false;
-        this.saveConfigForm.enable();
       }
     );
+    this.closeSaveConfigSnapshot();
   }
 
   processSnapshotImages(response: any) {
@@ -231,17 +259,15 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
     snapshotImages = (response) ? response.body as IObjstoreObjectList : snapshotImages;
     if (snapshotImages && snapshotImages.items) {
       const entries = [];
-      const allentries = [];
       snapshotImages.items.forEach((snapshotImage: ObjstoreObject) => {
         snapshotImage[SnapshotsComponent.SNAPSHOT_UI_FIELD_DOWNLOADURL] = this.buildSnapshotImageDownloadURLHelper(snapshotImage.meta.name);
         entries.push(snapshotImage);
       });
-      this.dataObjects = (entries.length > 0) ? entries : [];
       this.dataObjectsBackUp = (entries.length > 0) ? entries : [];
-    } else {
-      this.dataObjects = []; // it possible that server has no snapshot images.
     }
-    this.dataObjects = [...this.dataObjects];
+    // if table row records won't be updated for bul editing, then we
+    // do not need to do deep clone.
+    this.dataObjects = [...this.dataObjectsBackUp];
   }
 
   /**
@@ -304,17 +330,20 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
     this.subscriptions.push(sub);
   }
 
-
   getSnapshots() {
     this.tableLoading = true;
+    this.cdr.detectChanges();
     const sub = this.objstoreService.ListObject(SnapshotsComponent.SNAPSHOT_NAMESPACES).subscribe(
       (response) => {
+        this.deletedSnapshots = [];
         this.processSnapshotImages(response);
         this.tableLoading = false;
+        this.cdr.detectChanges();
       },
       () => {
         this.tableLoading = false;
         this.controllerService.restErrorHandler('Failed to fetch snapshot images.');
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(sub);
@@ -324,13 +353,16 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
     return this.objstoreService.DeleteObject(SnapshotsComponent.SNAPSHOT_NAMESPACES, object.meta.name);
   }
 
+  postDeleteAction() {
+    this.refresh();
+  }
+
   generateDeleteConfirmMsg(object: ObjstoreObject): string {
     return 'Are you sure you want to delete cluster configuration snapshot: ' + object.meta.name;
 
   }
   generateDeleteSuccessMsg(object: ObjstoreObject): string {
     return 'Deleted cluster configuration snapshot ' + object.meta.name ;
-
   }
 
   /**
@@ -350,7 +382,6 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
         return TableUtility.displayColumn(data, col);
     }
   }
-
 
   invokeRestore(rowData: ObjstoreObject) {
     const clusterSnapshotRestore: IClusterSnapshotRestore = new ClusterSnapshotRestore();
@@ -484,57 +515,6 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
   }
 
   /**
-   * This API serves in html template
-   * VS-1788 - previously deleted rows may still in table. Don't show the delete icon if the selected row is in deletedSnapshots
-   */
-  showMultiDeleteButton(): boolean {
-    if (!this.hasSelectedRows()) {
-      return false;
-    } else {
-      const found = this.getSelectedDataObjects().find( snapshot => this.deletedSnapshots.includes(snapshot.meta.name));
-      return (!found);
-    }
-  }
-
-  /**
-   * Override super's API to filter selected rows
-   */
-  getObjetsForDeleteSelectedRowsForkJoin(): any[] {
-    let mySelectedRows = this.getSelectedDataObjects();
-    mySelectedRows = mySelectedRows.filter( snapshot => !this.deletedSnapshots.includes(snapshot.meta.name));
-    return mySelectedRows;
-  }
-
-  /**
-   * Override super's api to advise user to wait for completion of table refresh.
-   * @param selectedDataObjects
-   */
-  buildMessageForDeleteSelectedRowsForkJoin(selectedDataObjects: any[]): string {
-    return `Deleted ${selectedDataObjects.length} selected ${selectedDataObjects.length === 1 ? 'record' : 'records'}. Please wait for table refresh and click "New Data" if it appears.`;
-  }
-
-   /**
-  * Overrides callback function
-  * Due to VS-1788, after a delete operation, table may still show deleted rows
-  * We stored deleted reccords information in deletedSnapshots
-  * Refesh table, clear selected objects and call this.refresh()
-  *
-  * It is a bit hacky.  Wait until we convert snapshot page to use pagination
-  *
-  */
-  onInvokeAPIonMultipleRecordsSuccess () {
-    this.tableLoading = true;  // block access
-    const selectedSnapshotsNames = this.getSelectedDataObjects().map((selectedSnapshot) => selectedSnapshot.meta.name);
-    this.deletedSnapshots = [...selectedSnapshotsNames];
-    this.dataObjects = this.dataObjects.filter( snapshot => !this.deletedSnapshots.includes(snapshot.meta.name));
-    this.dataObjects = Utility.getLodash().cloneDeep(this.dataObjects);
-    this.clearSelectedDataObjects();  // we have to clear table selected objects after deleting records
-    setTimeout(() => {this.refresh(); } , 3000); // wait for table re-render
-  }
-
-  onInvokeAPIonMultipleRecordsFailure() {}
-
-  /**
   * This API serves html template
   */
   onFileRemove($event) {
@@ -551,65 +531,24 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
       this.fileUploadProgress = (progress > this.fileUploadProgress) ? progress : this.fileUploadProgress;
     }
   }
-  /** File upload API  END */
 
-
-  onColumnSelectChange(event) {
-    this.snapshotsTable.onColumnSelectChange(event);
-  }
-
-  editFormClose(rowData) {
-    if (this.snapshotsTable.showRowExpand) {
-      this.snapshotsTable.toggleRow(rowData);
+  /**
+   * This API serves in html template
+   * VS-1788 - previously deleted rows may still in table. Don't show the delete icon if the selected row is in deletedSnapshots
+   */
+  showMultiDeleteButton(): boolean {
+    if (!this.hasSelectedRows()) {
+      return false;
     }
-  }
-
-  expandRowRequest(event, rowData) {
-    if (!this.snapshotsTable.showRowExpand) {
-      this.snapshotsTable.toggleRow(rowData, event);
-    }
-  }
-
-  onDeleteRecord(event, object) {
-    this.snapshotsTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this),
-      () => {
-        this.clearSelectedDataObjects();
-        this.refresh();
-      }
-    );
-  }
-
-  clearSelectedDataObjects() {
-    this.snapshotsTable.selectedDataObjects = [];
-  }
-
-  getSelectedDataObjects() {
-    return this.snapshotsTable.selectedDataObjects;
-  }
-
-  creationFormClose() {
-    this.snapshotsTable.creationFormClose();
-  }
-
-  onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
-    this.tableLoading = false;
-  }
-
-  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
-    this.tableLoading = false;
-    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    const found = this.getSelectedDataObjects().find( snapshot => this.deletedSnapshots.includes(snapshot.meta.name));
+    return (!found);
   }
 
   deleteMultipleRecords() {
     const selected = this.getSelectedDataObjects();
     const observables: Observable<any>[] = [];
     for (const snapshot of selected) {
-      const sub = this.objstoreService.DeleteObject(SnapshotsComponent.SNAPSHOT_NAMESPACES, snapshot.meta.name);
+      const sub = this.deleteRecord(snapshot);
       observables.push(sub);
     }
     if (observables.length > 0) {
@@ -628,12 +567,22 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
       accept: () => {
         this.tableLoading = true;
         this.deleteMultipleRecords();
+        const selectedSnapshotsNames = this.getSelectedDataObjects().map((selectedSnapshot) => selectedSnapshot.meta.name);
+        this.deletedSnapshots = [...selectedSnapshotsNames];
+        this.dataObjects = this.dataObjects.filter( snapshot => !this.deletedSnapshots.includes(snapshot.meta.name));
+        this.clearSelectedDataObjects();  // we have to clear table selected objects after deleting records
+        this.cdr.detectChanges();
       }
     });
   }
-  onDestroyHook() {
-    this._controllerService.publish(Eventtypes.COMPONENT_DESTROY, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_DESTROY
-    });
+
+  onInvokeAPIonMultipleRecordsSuccess () {
+    this.refresh();
+  }
+
+  onInvokeAPIonMultipleRecordsFailure() {
+    this.deletedSnapshots = [];
+    this.dataObjects = [...this.dataObjectsBackUp];
+    this.cdr.detectChanges();
   }
 }

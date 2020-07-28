@@ -1,8 +1,7 @@
-import { ChangeDetectorRef, Component, ViewEncapsulation, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ViewEncapsulation, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Utility } from '@app/common/Utility';
-import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
@@ -11,26 +10,25 @@ import { Observable } from 'rxjs';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
-import { TableCol, RowClickEvent, CustomExportMap } from '@app/components/shared/tableviewedit';
+import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
 import { ClusterDistributedServiceCard, ClusterNode } from '@sdk/v1/models/generated/cluster';
-import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
-
-
+import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
 
 @Component({
   selector: 'app-techsupport',
   templateUrl: './techsupport.component.html',
   styleUrls: ['./techsupport.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
+
 export class TechsupportComponent extends DataComponent implements OnInit {
   public static TS_DOWNLOAD = 'techsupportdownload';
-  @ViewChild('techsupportTable') techsupportTable: PentableComponent;
+  @ViewChild('techsupportTable') techsupportTable: PenPushTableComponent;
 
   dataObjects: MonitoringTechSupportRequest[] = [];
   dataObjectsBackUp: MonitoringTechSupportRequest[] = [];
@@ -53,10 +51,11 @@ export class TechsupportComponent extends DataComponent implements OnInit {
   };
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'techsupportrequests-column-name', sortable: true, width: 15, notReorderable: true },
+    { field: 'meta.name', header: 'Name', class: 'techsupportrequests-column-name', sortable: true, width: '170px', notReorderable: true },
+    { field: 'meta.mod-time', header: 'Modification Time', class: 'techsupportrequests-column-date', sortable: true, width: '180px', notReorderable: true  },
     { field: 'meta.creation-time', header: 'Creation Time', class: 'techsupportrequests-column-date', sortable: true, width: '180px', notReorderable: true },
-    { field: 'spec.node-selector', header: 'Selected Nodes', class: ' techsupportrequests-column-node_selector', sortable: false, width: 45 },
-    { field: 'status.status', header: 'Status', class: ' techsupportrequests-column-status_status', sortable: true, width: 15 }
+    { field: 'spec.node-selector', header: 'Selected Nodes', class: 'techsupportrequests-column-node_selector', sortable: false, width: 150 },
+    { field: 'status.status', header: 'Status', class: 'techsupportrequests-column-status_status', sortable: true, width: 100 }
   ];
 
   exportFilename: string = 'PSM-tech-support-requests';
@@ -81,27 +80,10 @@ export class TechsupportComponent extends DataComponent implements OnInit {
     super(controllerService, uiconfigsService);
   }
 
-  clearSelectedDataObjects() {
-    this.techsupportTable.selectedDataObjects = [];
-  }
-
-  getSelectedDataObjects() {
-    return this.techsupportTable.selectedDataObjects;
-  }
-
-  /**
-  * Overide super's API
-  * It will return this Component name
-  */
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
   ngOnInit() {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
-    });
-    this.setDefaultToolbar();
+    super.ngOnInit();
+    this.penTable = this.techsupportTable;
+    this.tableLoading = true;
     this.getTechSupportRequests();
     this.getNaples();
     this.getNodes();
@@ -116,7 +98,8 @@ export class TechsupportComponent extends DataComponent implements OnInit {
         if (response.connIsErrorState) {
           return;
         }
-        this.naples  = response.data;
+        this.naples = response.data;
+        this.cdr.detectChanges();
       },
       this._controllerService.webSocketErrorHandler('Failed to get DSCs')
     );
@@ -130,6 +113,7 @@ export class TechsupportComponent extends DataComponent implements OnInit {
           return;
         }
         this.nodes  = response.data;
+        this.cdr.detectChanges();
       },
       this._controllerService.webSocketErrorHandler('Failed to get nodes')
     );
@@ -169,8 +153,9 @@ export class TechsupportComponent extends DataComponent implements OnInit {
         }
         const techSupportRequests = response.data as MonitoringTechSupportRequest[];
         this.tableLoading = false;
-        this.dataObjects = Utility.getLodash().cloneDeepWith(techSupportRequests);
-        this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(techSupportRequests);
+        this.dataObjectsBackUp = [...techSupportRequests];
+        this.dataObjects = [...this.dataObjectsBackUp];
+        this.cdr.detectChanges();
       },
       () => {
         this.tableLoading = false;
@@ -223,7 +208,6 @@ export class TechsupportComponent extends DataComponent implements OnInit {
     }
     return false;
   }
-
 
   displayTimeOutMessage(rowData: MonitoringTechSupportRequest): string {
     const nodes = rowData.status['ctrlr-node-results'];
@@ -429,23 +413,18 @@ export class TechsupportComponent extends DataComponent implements OnInit {
     return labelselectors.join(',');
   }
 
+  onDeleteConfirm() {
+    this.tableLoading = true;
+  }
+
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
     this.tableLoading = false;
   }
 
   onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
     this.tableLoading = false;
-    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
-  }
-
-  onDeleteRecord(event, object) {
-    this.techsupportTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this)
-    );
+    this.dataObjects = [...this.dataObjectsBackUp];
+    this.cdr.detectChanges();
   }
 
   deleteRecord(object: MonitoringTechSupportRequest): Observable<{ body: IMonitoringTechSupportRequest | IApiStatus | Error, statusCode: number }> {
@@ -458,6 +437,16 @@ export class TechsupportComponent extends DataComponent implements OnInit {
 
   generateDeleteSuccessMsg(object: IMonitoringTechSupportRequest) {
     return 'Deleted tech-support-request ' + object.meta.name;
+  }
+
+  showBulkDeleteIcon() {
+    const selected = this.getSelectedDataObjects();
+    for (const tsReq of selected) {
+      if (!this.showDeleteIcon(tsReq)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -483,24 +472,6 @@ export class TechsupportComponent extends DataComponent implements OnInit {
         // When a primeng alert is created, it tries to "focus" on a button, not adding a button returns an error.
         // So we create a button but hide it later.
       }
-    });
-  }
-
-  creationFormClose() {
-    this.techsupportTable.creationFormClose();
-  }
-
-  onColumnSelectChange(event) {
-    this.techsupportTable.onColumnSelectChange(event);
-  }
-
-  onDeleteConfirm() {
-    this.tableLoading = true;
-  }
-
-  onDestroyHook() {
-    this._controllerService.publish(Eventtypes.COMPONENT_DESTROY, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_DESTROY
     });
   }
 }

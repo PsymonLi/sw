@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ViewEncapsulation, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewEncapsulation, OnDestroy, AfterViewInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
@@ -23,13 +23,11 @@ import { MetricsUtility } from '@app/common/MetricsUtility';
 import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { Animations } from '@app/animations';
-import { TableviewAbstract, TablevieweditHTMLComponent } from '@app/components/shared/tableviewedit/tableviewedit.component';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { IApiStatus } from '@sdk/v1/models/generated/monitoring';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
-import { TableMenuItem } from '@app/components/shared/tableheader/tableheader.component';
+import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
 
 /**
  * Component for displaying a security policy and providing IP searching
@@ -91,10 +89,11 @@ interface RuleHitEntry {
   templateUrl: './sgpolicydetail.component.html',
   styleUrls: ['./sgpolicydetail.component.scss'],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [Animations]
 })
 export class SgpolicydetailComponent extends DataComponent implements OnInit, OnDestroy {
-  @ViewChild('sgPolicyDetailTable') sgPolicyDetailTable: PentableComponent;
+  @ViewChild('sgPolicyDetailTable') sgPolicyDetailTable: PenPushTableComponent;
   searchPolicyInvoked: boolean = false;  // avoid loop caused by invokeSearchPolicy
   subscriptions = [];
   macToNameMap: { [key: string]: string } = {};
@@ -183,6 +182,8 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
   // subscription for elastic search queries
   searchSubscription;
 
+  routerSubscription: Subscription;
+
   // Whether we show a deletion overlay
   showDeletionScreen: boolean;
 
@@ -255,7 +256,8 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
   }
 
   ngOnInit() {
-    this._route.paramMap.subscribe(params => {
+    super.ngOnInit();
+    this.routerSubscription = this._route.paramMap.subscribe(params => {
       const id = params.get('id');
       this.selectedPolicyId = id;
       this.initializeData();
@@ -314,6 +316,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.enableFormControls();
     this.getNaples();
     this.getSecurityApps();
+    this.penTable = this.sgPolicyDetailTable;
   }
 
   getSecurityApps() {
@@ -329,6 +332,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
             value: item.meta.name
           };
         });
+        this.cdr.detectChanges();
       },
       this.controllerService.webSocketErrorHandler('Failed to get apps')
     );
@@ -349,6 +353,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
             this.macToNameMap[smartnic.meta.name] = smartnic.spec.id;
           }
         }
+        this.cdr.detectChanges();
       },
       (error) => {
         this._controllerService.invokeRESTErrorToaster('Error', 'Failed to get DSCs info');
@@ -375,12 +380,14 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.sourceIpFormControl.disable();
     this.destIpFormControl.disable();
     this.portFormControl.disable();
+    this.cdr.detectChanges();
   }
 
   enableFormControls() {
     this.sourceIpFormControl.enable();
     this.destIpFormControl.enable();
     this.portFormControl.enable();
+    this.cdr.detectChanges();
   }
 
   keyUpInput(event) {
@@ -399,6 +406,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
 
     if (event.keyCode === SearchUtil.EVENT_KEY_ENTER) {
       this.invokePolicySearch();
+      this.cdr.detectChanges();
     } else if (this.currentSearch != null) {
       // If the keystroke changed the search fields
       // to be different than the current search
@@ -429,10 +437,12 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.ruleCount = this.dataObjects.length;
     if (this.searchPolicyInvoked) {
       this.searchPolicyInvoked = false;
+      this.cdr.detectChanges();
       return;
     }
     if (this.currentSearch != null) {
       this.invokePolicySearch(this.currentSearch.sourceIP, this.currentSearch.destIP, this.currentSearch.port);
+      this.cdr.detectChanges();
     }
   }
 
@@ -459,6 +469,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.updateRulesByPolicy();
     this.currentSearch = null;
     this.searchPolicyInvoked = false;
+    this.cdr.detectChanges();
   }
 
   invokePolicySearch(sourceIP = null, destIP = null, port: string = null) {
@@ -524,6 +535,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       port: port
     };
     this.loading = true;
+    this.cdr.detectChanges();
 
     this.searchSubscription = this.searchService.PostPolicyQuery(req).subscribe(
       (data) => {
@@ -545,10 +557,12 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
           this.dataObjects = [];
         }
         this.loading = false;
+        this.cdr.detectChanges();
       },
       (error) => {
         this.loading = false;
         this._controllerService.invokeRESTErrorToaster('Policy search failed', error);
+        this.cdr.detectChanges();
       },
     );
 
@@ -559,23 +573,15 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
    * Component is about to exit
    */
   ngOnDestroy() {
-    // publish event that AppComponent is about to be destroyed
-    this._controllerService.publish(Eventtypes.COMPONENT_DESTROY, { 'component': 'sgpolicydetailComponent', 'state': Eventtypes.COMPONENT_DESTROY });
-    this.subscriptions.forEach(subscription => {
-      subscription.unsubscribe();
-    });
     if (this.searchSubscription != null) {
       this.searchSubscription.unsubscribe();
     }
+    if (this.routerSubscription != null) {
+      this.routerSubscription.unsubscribe();
+    }
+    super.ngOnDestroy();
   }
 
-  /**
-   * Overide super's API
-   * It will return this Component name
-   */
-  getClassName(): string {
-    return this.constructor.name;
-  }
 
   updateRulesByPolicy() {
     this.dataObjects = this.addOrderRanking(this.selectedPolicy.spec.rules);
@@ -583,6 +589,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
 
   getSGPoliciesDetail() {
     this.loading = true;
+    this.cdr.detectChanges();
     // We perform a get as well as a watch so that we can know if the object the user is
     // looking for exists or not.
     const getSubscription = this.securityService.GetNetworkSecurityPolicy(this.selectedPolicyId).subscribe(
@@ -599,6 +606,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       },
       () => {
         this.loading = false;
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(getSubscription);
@@ -649,6 +657,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       this._controllerService.webSocketErrorHandler('Failed to get SG Policy'),
       () => {
         this.loading = false;
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(subscription);
@@ -725,6 +734,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
               this.ruleMetricsTooltip[ruleHash] = this.createRuleTooltip(ruleHits);
             });
           });
+          this.cdr.detectChanges();
         }
       },
     );
@@ -862,6 +872,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     if (selectedObjs.length !== 1) {
       this.reorderToIndex = 0;
     }
+    this.cdr.detectChanges();
   }
 
   resetMapsAndSelection() {
@@ -870,6 +881,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.clearSelectedDataObjects();
     this.showReorder = false;
     this.reorderToIndex = 0;
+    this.cdr.detectChanges();
   }
 
   reorderKeyUp(event) {
@@ -884,6 +896,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       event.preventDefault();
     }
     this.reorderToIndex = event.target.value;
+    this.cdr.detectChanges();
   }
 
   isReorderReady() {
@@ -892,6 +905,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
 
   onClose() {
     this.display = false;
+    this.cdr.detectChanges();
   }
 
   onUpdate() {
@@ -902,6 +916,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     });
     this.editObject.spec.rules = editrules;
     this.display = true;
+    this.cdr.detectChanges();
   }
 
   onAdd(rowData, isBefore: boolean = false) {
@@ -913,6 +928,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.editObject = new SecurityNetworkSecurityPolicy(this.selectedPolicy);
     this.editObject.spec.rules = [];
     this.display = true;
+    this.cdr.detectChanges();
   }
 
   onCreate() {
@@ -934,6 +950,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       policy1.spec.rules.splice(insertIndex, 0, arrDeletedItems[0]);
       this.updatePolicy(policy1);
     }
+    this.cdr.detectChanges();
   }
 
   onDelete() {
@@ -1000,10 +1017,12 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
           this.controllerService.invokeSuccessToaster(Utility.UPDATE_SUCCESS_SUMMARY, 'Successfully updated policy.');
           // this.cancelObject();
           this.resetMapsAndSelection();
+          this.cdr.detectChanges();
         },
         (error) => {
           this.controllerService.invokeRESTErrorToaster(Utility.CREATE_FAILED_SUMMARY, error);
           this.resetMapsAndSelection();
+          this.cdr.detectChanges();
         }
       );
     }
@@ -1011,21 +1030,5 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
 
   updateObject(newObject: ISecurityNetworkSecurityPolicy, oldObject: ISecurityNetworkSecurityPolicy) {
     return this.securityService.UpdateNetworkSecurityPolicy(oldObject.meta.name, newObject, null, oldObject);
-  }
-
-  getSelectedDataObjects() {
-    return this.sgPolicyDetailTable.selectedDataObjects;
-  }
-
-  clearSelectedDataObjects() {
-    this.sgPolicyDetailTable.selectedDataObjects = [];
-  }
-
-  onColumnSelectChange(event) {
-    this.sgPolicyDetailTable.onColumnSelectChange(event);
-  }
-
-  creationFormClose() {
-    this.sgPolicyDetailTable.creationFormClose();
   }
 }

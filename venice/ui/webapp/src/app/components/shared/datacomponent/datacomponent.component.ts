@@ -104,11 +104,11 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
       this.generateDeleteConfirmMsg(object),
       this.generateDeleteSuccessMsg(object),
       this.deleteRecord.bind(this),
-      () => {
-        this.penTable.selectedDataObjects = [];
-      }
+      this.postDeleteAction.bind(this)
     );
   }
+
+  postDeleteAction() {}
 
   generateDeleteConfirmMsg(object: any): string {
     return 'Are you sure that you want to delete item: ' + object.meta.name + '?';

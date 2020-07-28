@@ -196,7 +196,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
       case 'spec.vlan-id':
         return value ? value : 0;
       case 'meta.labels':
-            return this.formatLabels(rowData.meta.labels);
+        return this.formatLabels(rowData.meta.labels);
       default:
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }
@@ -228,7 +228,6 @@ export class NetworkComponent extends DataComponent implements OnInit {
     super.ngOnInit();
     this.penTable = this.networkTable;
     this.tableLoading = true;
-    this.setDefaultToolbar();
     this.buildAdvSearchCols();
     this.getNetworks();
     this.getVcenterIntegrations();

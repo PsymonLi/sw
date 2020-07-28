@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ChangeDetectorRef, SimpleChanges, OnChanges, OnDestroy, ViewEncapsulation, ViewChild, IterableDiffer, IterableDiffers, AfterViewInit, DoCheck } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectorRef, SimpleChanges, OnChanges, OnDestroy, ViewEncapsulation, ViewChild, IterableDiffer, IterableDiffers, AfterViewInit, DoCheck, ChangeDetectionStrategy } from '@angular/core';
 import { Observable, forkJoin, throwError, Subscription } from 'rxjs';
 import { EventsEvent_severity, EventsEventAttributes_severity, IApiListWatchOptions, IEventsEvent, EventsEvent, ApiListWatchOptions_sort_order, EventsEventList } from '@sdk/v1/models/generated/events';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
@@ -15,27 +15,26 @@ import { debounceTime, distinctUntilChanged, switchMap, first } from 'rxjs/opera
 import { AlertsEventsSelector } from '@app/components/shared/alertsevents/alertsevents.component';
 import { IApiStatus } from '@sdk/v1/models/generated/search';
 import { Animations } from '@app/animations';
-import { PrettyDatePipe } from '@app/components/shared/Pipes/PrettyDate.pipe';
 import { IMonitoringArchiveQuery, MonitoringArchiveRequest, MonitoringArchiveRequestStatus_status, IMonitoringCancelArchiveRequest } from '@sdk/v1/models/generated/monitoring';
 import { ExportLogsComponent } from '../../exportlogs/exportlogs.component';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
-import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { TimeRangeComponent } from '@app/components/shared/timerange/timerange.component';
+import { PenPushTableComponent } from '../../pentable/penpushtable.component';
 
 @Component({
   selector: 'app-eventstable',
   templateUrl: './eventstable.component.html',
   styleUrls: ['./eventstable.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EventstableComponent extends DataComponent implements OnInit, OnChanges, OnDestroy, DoCheck {
   @ViewChild('timeRangeComponent') timeRangeComponent: TimeRangeComponent;
   @ViewChild('exportLogsComponent') exportLogsComponent: ExportLogsComponent;
-  @ViewChild('eventsTable') eventsTable: PentableComponent;
+  @ViewChild('eventsTable') eventsTable: PenPushTableComponent;
 
   isTabComponent: boolean = false;
   disableTableWhenRowExpanded: boolean = false;
@@ -89,13 +88,13 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   // All columns are set as not sortable as it isn't currently supported
   // TODO: Support sorting columns
   cols: TableCol[] = [
-    { field: 'severity', header: 'Severity', class: '', sortable: false, width: 6 },
-    { field: 'type', header: 'Type', class: '', sortable: true, width: 15 },
-    { field: 'message', header: 'Message', class: '', sortable: false, width: 25 },
-    { field: 'object-ref', header: 'Object Ref', class: '', sortable: false, width: 18 },
-    { field: 'count', header: 'Count', class: '', sortable: false, width: 5 },
-    { field: 'source', header: 'Source Node & Component', class: '', sortable: false, width: 18},
-    { field: 'meta.mod-time', header: 'Time', class: '', sortable: true, width: 12 }
+    { field: 'severity', header: 'Severity', class: '', sortable: false, width: '100px' },
+    { field: 'type', header: 'Type', class: '', sortable: true, width: '200px' },
+    { field: 'message', header: 'Message', class: '', sortable: false, width: 180 },
+    { field: 'object-ref', header: 'Object Ref', class: '', sortable: false, width: '150px' },
+    { field: 'count', header: 'Count', class: '', sortable: false, width: '50px' },
+    { field: 'source', header: 'Source Node & Component', class: '', sortable: false, width: 100},
+    { field: 'meta.mod-time', header: 'Time', class: '', sortable: true, width: '180px' }
   ];
 
   // Will hold mapping from severity types to counts
@@ -150,25 +149,17 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     protected uiconfigsService: UIConfigsService,
     protected monitoringService: MonitoringService,
     protected controllerService: ControllerService,
+    protected cdr: ChangeDetectorRef,
     protected iterableDiffers: IterableDiffers
     ) {
-      super(controllerService, uiconfigsService);
-      this.arrayDiffers = iterableDiffers.find([]).create(HttpEventUtility.trackBy);
-     }
-
-
-  getSelectedDataObjects() {
-    return this.eventsTable.selectedDataObjects;
-  }
-
-  clearSelectedDataObjects() {
-    this.eventsTable.selectedDataObjects = [];
+    super(controllerService, uiconfigsService);
+    this.arrayDiffers = iterableDiffers.find([]).create(HttpEventUtility.trackBy);
   }
 
   ngOnInit() {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
-    });
+    super.ngOnInit();
+    this.penTable = this.eventsTable;
+
     if (this.showEventsAdvSearch) {
       this.buildAdvSearchCols();
       this.watchArchiveObject();
@@ -223,6 +214,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       const changes = this.arrayDiffers.diff(this.exportedArchiveRequests);
       if (changes) {
         this.handleArchiveLogChange();
+        this.cdr.detectChanges();
       }
     }
   }
@@ -334,6 +326,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
           this.enableExport = false;
           this.displayArchPanel = true;
         }
+        this.cdr.detectChanges();
       },
       this.controllerService.webSocketErrorHandler('Failed to get Event Archive Requests')
     );
@@ -354,7 +347,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
    */
   onCancelSearch($event) {
     this.controllerService.invokeInfoToaster('Infomation', 'Cleared search criteria, events refreshed.');
-    this.events = this.dataObjectsBackup;
+    this.events = [...this.dataObjectsBackup];
     this.setEventNumbersObject();
     this.filterEvents();
   }
@@ -366,6 +359,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
    */
   onSearchEvents(field = this.eventsTable.sortField, order = this.eventsTable.sortOrder) {
     this.eventsLoading = true;
+    this.cdr.detectChanges();
     const searchResults = this.onSearchDataObjects(field, order, 'Event', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackup, this.eventsTable.advancedSearchComponent);
     if (searchResults && searchResults.length > 0) {
       this.events = searchResults;
@@ -374,6 +368,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       this.filterEvents();
     } else {
       this.eventsLoading = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -406,6 +401,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
 
   getEvents() {
     this.eventsLoading = true;
+    this.cdr.detectChanges();
     if (this.eventsSubscription) {
       this.eventsSubscription.unsubscribe();
       this.eventsService.pollingUtility.terminatePolling(this.pollingServiceKey, true);
@@ -417,12 +413,14 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
           this.eventsTable.clearSearch();
         }
         if (data == null) {
+          this.cdr.detectChanges();
           return;
         }
         // Check that there is new data
         if (this.events.length === data.length) {
           // Both sets of data are empty
           if (this.events.length === 0) {
+            this.cdr.detectChanges();
             return;
           }
         }
@@ -434,8 +432,10 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       (error) => {
         this.eventsLoading = false;
         this.controllerService.webSocketErrorHandler('Failed to get Events');
+        this.cdr.detectChanges();
       }
     );
+    this.subscriptions.push(this.eventsSubscription);
   }
 
   /**
@@ -448,7 +448,6 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     } else {
       this.currentEventSeverityFilter = severityType;
     }
-    this.filterEvents();
     // Disabling search to reduce scope for august release
     // Adding <any> to prevent typescript compilation from failing due to unreachable code
     if (<any>false) {
@@ -468,6 +467,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       this.dataObjects = this.dataObjects.filter(item => item.severity === this.currentEventSeverityFilter);
     }
     this.eventsLoading = false;
+    this.cdr.detectChanges();
   }
 
   /**
@@ -484,10 +484,12 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       (this.eventSearchFormControl.value == null ||
         this.eventSearchFormControl.value.trim().length === 0)) {
       this.dataObjects = this.events as EventsEvent[];
+      this.cdr.detectChanges();
       return;
     }
 
     this.eventsLoading = true;
+    this.cdr.detectChanges();
     const body = new SearchSearchRequest();
     body['max-results'] = 100;
     body.query.kinds = ['Event'];
@@ -531,9 +533,12 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
         }
         this.eventsLoading = false;
         this.dataObjects = [...this.dataObjects]; // VS-1576. Force table re-render
+        this.cdr.detectChanges();
       },
       (error) => {
          this.controllerService.invokeRESTErrorToaster('Error', error);
+         this.eventsLoading = false;
+         this.filterEvents();
       }
     );
   }
@@ -597,10 +602,6 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     } else {
       this.selectedEvent = $event.rowData;
     }
-  }
-
-  creationFormClose() {
-    this.eventsTable.creationFormClose();
   }
 
   getObjectRefField(eve: EventsEvent): string {

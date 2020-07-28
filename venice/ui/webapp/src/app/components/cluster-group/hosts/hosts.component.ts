@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { Animations } from '@app/animations';
 import { DSCsNameMacMap, HostWorkloadTuple, ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
@@ -13,7 +13,6 @@ import { SearchService } from '@app/services/generated/search.service';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { Utility } from '@common/Utility';
-import { TablevieweditAbstract } from '@components/shared/tableviewedit/tableviewedit.component';
 import { ClusterDistributedServiceCard, ClusterDistributedServiceCardID, IApiStatus } from '@sdk/v1/models/generated/cluster';
 import { ClusterHost, IClusterHost } from '@sdk/v1/models/generated/cluster/cluster-host.model';
 import { FieldsRequirement } from '@sdk/v1/models/generated/search';
@@ -21,10 +20,8 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import * as _ from 'lodash';
 import { Observable, Subscription } from 'rxjs';
-import { WorkloadUtility, WorkloadNameInterface } from '@app/common/WorkloadUtility';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
-
+import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
 
 export enum BuildHostWorkloadMapSourceType {
   init = 'init',
@@ -75,11 +72,12 @@ interface HostUiModel {
   encapsulation: ViewEncapsulation.None,
   templateUrl: './hosts.component.html',
   styleUrls: ['./hosts.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [Animations]
 })
-export class HostsComponent extends DataComponent implements OnInit {
 
-  @ViewChild('hostTable') hostTable: PentableComponent;
+export class HostsComponent extends DataComponent implements OnInit {
+  @ViewChild('hostTable') hostTable: PenPushTableComponent;
   maxSearchRecords: number = 8000;
 
   bodyicon: Icon = {
@@ -161,10 +159,10 @@ export class HostsComponent extends DataComponent implements OnInit {
     private workloadService: WorkloadService,
     protected uiconfigsService: UIConfigsService,
     protected controllerService: ControllerService,
+    protected cdr: ChangeDetectorRef,
     protected searchService: SearchService) {
     super(controllerService, uiconfigsService);
   }
-
 
   /**
    * This API build host[i] -> workloads[] map
@@ -195,16 +193,15 @@ export class HostsComponent extends DataComponent implements OnInit {
      * This will protect backup list from corruption when dataObjects !== dataObjectsBackUp (e.g. searching, etc)
      */
     if (updateBackUp) {
-      this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
+      this.dataObjectsBackUp = [...this.dataObjects];
     }
   }
 
   getHostWorkloads(host: ClusterHost): WorkloadWorkload[] {
     if (this.hostWorkloadsTuple[host.meta.name]) {
       return this.hostWorkloadsTuple[host.meta.name].workloads;
-    } else {
-      return [];
     }
+    return [];
   }
 
   filterColumns () {
@@ -236,9 +233,7 @@ export class HostsComponent extends DataComponent implements OnInit {
   }
 
   setDefaultToolbar() {
-
     let buttons = [];
-
     if (this.uiconfigsService.isAuthorized(UIRolePermissions.clusterhost_create)) {
       buttons = [{
         cssClass: 'global-button-primary host-button newhost-button-ADD',
@@ -253,7 +248,6 @@ export class HostsComponent extends DataComponent implements OnInit {
       breadcrumb: [{ label: 'Hosts', url: Utility.getBaseUIUrl() + 'cluster/hosts' }]
     });
   }
-
 
   /**
    * Find the DSC and compute whether DSC is admitted
@@ -319,7 +313,8 @@ export class HostsComponent extends DataComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.setDefaultToolbar();
+    super.ngOnInit();
+    this.penTable = this.hostTable;
     this.buildAdvSearchCols();
     this.filterColumns(); // If backend is a Venice-for-cloud, we want to exclude some columns
     this.getRecords();
@@ -354,6 +349,7 @@ export class HostsComponent extends DataComponent implements OnInit {
    */
   getRecords() {
     this.tableLoading = true;
+    this.cdr.detectChanges();
 
     const workloadSubscription = this.workloadService.ListWorkloadCache().subscribe(
       (response) => {
@@ -364,10 +360,12 @@ export class HostsComponent extends DataComponent implements OnInit {
         this.handleDataReady(!this.workloadInit);
         this.workloadInit = true;
         this.tableLoading = this.isTableLoading();
+        this.cdr.detectChanges();
       },
       (error) => {
         this.workloadInit = true;
         this.tableLoading = this.isTableLoading();
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(workloadSubscription);
@@ -381,10 +379,12 @@ export class HostsComponent extends DataComponent implements OnInit {
         this.handleDataReady(!this.naplesInit);
         this.naplesInit = true;
         this.tableLoading = this.isTableLoading();
+        this.cdr.detectChanges();
       },
       (error) => {
         this.naplesInit = true;
         this.tableLoading = this.isTableLoading();
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -421,10 +421,12 @@ export class HostsComponent extends DataComponent implements OnInit {
         }
 
         this.tableLoading = this.isTableLoading();
+        this.cdr.detectChanges();
       },
       (error) => {
         this.dataObjectsInit = true;
         this.tableLoading = this.isTableLoading();
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -437,23 +439,12 @@ export class HostsComponent extends DataComponent implements OnInit {
     return this.clusterService.DeleteHost(object.meta.name);
   }
 
-  generateDeleteConfirmMsg(object: IClusterHost): string {
-    return 'Are you sure you want to delete host ' + object.meta.name;
-  }
-
-  generateDeleteSuccessMsg(object: IClusterHost): string {
-    return 'Deleted host ' + object.meta.name;
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
   // advance search APIs
   onCancelSearch($event) {
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
-    this.dataObjects = this.dataObjectsBackUp;
+    this.dataObjects = [...this.dataObjectsBackUp];
     this.handleDataReady();
+    this.cdr.detectChanges();
   }
 
   /**
@@ -466,6 +457,7 @@ export class HostsComponent extends DataComponent implements OnInit {
     if (searchResults && searchResults.length > 0) {
       this.dataObjects = [];
       this.dataObjects = searchResults;
+      this.cdr.detectChanges();
     }
   }
 
@@ -550,46 +542,4 @@ export class HostsComponent extends DataComponent implements OnInit {
     });
     return (list.length === 0);
   }
-
-  getSelectedDataObjects(): any[] {
-    return this.hostTable.selectedDataObjects;
-  }
-
-  clearSelectedDataObjects() {
-    this.hostTable.selectedDataObjects = [];
-  }
-
-  onColumnSelectChange(event) {
-    this.hostTable.onColumnSelectChange(event);
-  }
-
-  creationFormClose() {
-    this.hostTable.creationFormClose();
-  }
-
-  editFormClose(rowData) {
-    if (this.hostTable.showRowExpand) {
-      this.hostTable.toggleRow(rowData);
-    }
-  }
-
-  expandRowRequest(event, rowData) {
-    if (!this.hostTable.showRowExpand) {
-      this.hostTable.toggleRow(rowData, event);
-    }
-  }
-
-  onDeleteRecord(event, object) {
-    this.hostTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this),
-      () => {
-        this.hostTable.selectedDataObjects = [];
-      }
-    );
-  }
-
 }

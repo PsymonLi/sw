@@ -1,11 +1,14 @@
 <app-pagebody class="techsupportrequests" header="Tech Support Requests" [icon]="bodyicon">
-  <app-pentable class="techsupportrequests-widget" #techsupportTable
-                [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
-                [captionTemplate]="captionTemplate"
-                [columns]="cols" [createTemplate]="createTemplate" [data]="dataObjects"
-                [enableCheckbox]="true" [expandTemplate]="expandTemplate"
-                [exportFilename]="exportFilename" [exportMap]="exportMap" [loading]="tableLoading"
-                [numRows]="25" [rowHeight]="36"></app-pentable>
+  <app-penpushtable class="techsupportrequests-widget" #techsupportTable
+                    [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                    [captionTemplate]="captionTemplate"
+                    [columns]="cols" [createTemplate]="createTemplate" [data]="dataObjects"
+                    [enableCheckbox]="true" [expandTemplate]="expandTemplate"
+                    [exportFilename]="exportFilename" [exportMap]="exportMap"
+                    [loading]="tableLoading"
+                    [numRows]="25" [receiveSelectedDataUpdate]="true" [rowHeight]="36"
+                    (selectedObjectsUpdateEmitter)="showBulkDeleteIcon()">
+  </app-penpushtable>
 </app-pagebody>
 
 <ng-template #createTemplate>
@@ -18,7 +21,7 @@
 <ng-template #captionTemplate let-count="count">
   <div class="techsupport-caption" fxLayout="column">
     <app-tableheader title="Tech Supports" [total]="count" fxFlex="auto" fxLayout="row"
-                     [tableMenuItems]="techsupportTable.tableMenuItems" [enableColumnSelect]="false"
+                     [tableMenuItems]="techsupportTable.tableMenuItems" [enableColumnSelect]="true"
                      [cols]="cols"
                      (columnSelectChange)="onColumnSelectChange($event)" [icon]="headerIcon">
       <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
@@ -30,9 +33,12 @@
   <div fxFlex="none" fxLayoutAlign="start center"
        *roleGuard="'monitoringtechsupportrequest_delete'">
     <!-- TABLE FUNCTION ICONS HERE -->
-    <mat-icon class="global-multi-records-delete-icon"
+    <mat-icon [ngClass]="{
+                'global-multi-records-delete-icon': true,
+                'global-button-disabled': !showBulkDeleteIcon()
+              }"
               *ngIf="hasSelectedRows()"
-              [matTooltip]="'Delete selected tech support requests'"
+              [matTooltip]="showBulkDeleteIcon() ? 'Delete selected tech support requests' : 'One or More Tech-Support Requests are still Running'"
               (click)="onDeleteSelectedRows($event)">delete</mat-icon>
   </div>
 
@@ -40,6 +46,9 @@
 
 <ng-template #bodyTemplate let-rowData let-col="col">
   <ng-container [ngSwitch]="col.field">
+    <ng-container *ngSwitchCase="'meta.mod-time'">
+      {{rowData.meta['mod-time'] | PrettyDate }}
+    </ng-container>
     <ng-container *ngSwitchCase="'meta.creation-time'">
       {{rowData.meta['creation-time'] | PrettyDate }}
     </ng-container>

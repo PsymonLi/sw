@@ -129,13 +129,13 @@
             </div>
           </div>
           <div class="detail-card-border"></div>
-          <app-pentable #labelTable
-                        [bodyTemplate]="labelBodyTemplate"
-                        [columns]="labelColumns"
-                        [data]="labelData"
-                        [dataKey]="'key'"
-                        [loading]="loading">
-          </app-pentable>
+          <app-penpushtable #labelTable
+                            [bodyTemplate]="labelBodyTemplate"
+                            [columns]="labelColumns"
+                            [data]="labelData"
+                            [dataKey]="'key'"
+                            [loading]="loading">
+          </app-penpushtable>
         </div>
       </div>
       <div class="detail-card-border"></div>
@@ -150,13 +150,13 @@
       <div class="detail-card-header">INTERFACES</div>
       <div class="detail-card-border"></div>
       <ng-container *ngIf="!loading">
-        <app-pentable #interfaceTable
-                      [bodyTemplate]="interfaceBodyTemplate"
-                      [columns]="interfaceColumns"
-                      [data]="selectedObj?.spec.interfaces || []"
-                      [dataKey]="'mac-address'"
-                      [loading]="loading">
-        </app-pentable>
+        <app-penpushtable #interfaceTable
+                          [bodyTemplate]="interfaceBodyTemplate"
+                          [columns]="interfaceColumns"
+                          [data]="selectedObj?.spec.interfaces || []"
+                          [dataKey]="'mac-address'"
+                          [loading]="loading">
+        </app-penpushtable>
         <div class="detail-card-border"></div>
       </ng-container>
     </div>

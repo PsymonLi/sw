@@ -1,4 +1,4 @@
-import { Component, ViewEncapsulation, OnInit, ViewChild, OnChanges } from '@angular/core';
+import { Component, ViewEncapsulation, OnInit, ViewChild, OnChanges, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
@@ -9,23 +9,22 @@ import { Observable } from 'rxjs';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { TableCol, RowClickEvent, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
-import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { Eventtypes } from '@app/enum/eventtypes.enum';
-
+import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
 
 @Component({
   selector: 'app-archivelog',
   templateUrl: './archivelog.component.html',
   styleUrls: ['./archivelog.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ArchivelogComponent extends DataComponent implements OnInit {
   public static AL_DOWNLOAD = 'archivelogsdownload'; // Will contain URL for archive request download
 
-  @ViewChild('archiveTable') archiveTable: PentableComponent;
+  @ViewChild('archiveTable') archiveTable: PenPushTableComponent;
 
   dataObjects: MonitoringArchiveRequest[] = [];
   dataObjectsBackUp: MonitoringArchiveRequest[] = [];
@@ -47,12 +46,13 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
   };
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'archiverequests-column-name', sortable: true, width: 12, notReorderable: true },
-    { field: 'meta.creation-time', header: 'Creation Time', class: 'archiverequests-column-date', sortable: true, width: 12, notReorderable: true },
-    { field: 'spec.type', header: 'Logs Type', class: 'archiverequests-column-log-type', sortable: true, width: 10 },
-    { field: 'spec.query.start-time', header: 'Logs From', class: 'archiverequests-column-date', sortable: true, width: 12},
-    { field: 'spec.query.end-time', header: 'Logs Till', class: 'archiverequests-column-date', sortable: true, width: 12},
-    { field: 'status.status', header: 'Status', class: 'archiverequests-column-status_status', sortable: true }
+    { field: 'meta.name', header: 'Name', class: 'archiverequests-column-name', sortable: true, width: 100, notReorderable: true },
+    { field: 'meta.mod-time', header: 'Modification Time', class: 'archiverequests-column-date', sortable: true, width: '180px', notReorderable: true  },
+    { field: 'meta.creation-time', header: 'Creation Time', class: 'archiverequests-column-date', sortable: true, width: '180px', notReorderable: true },
+    { field: 'spec.type', header: 'Logs Type', class: 'archiverequests-column-log-type', sortable: true, width: 100 },
+    { field: 'spec.query.start-time', header: 'Logs From', class: 'archiverequests-column-date', sortable: true, width: 100},
+    { field: 'spec.query.end-time', header: 'Logs Till', class: 'archiverequests-column-date', sortable: true, width: 100},
+    { field: 'status.status', header: 'Status', class: 'archiverequests-column-status_status', sortable: true , width: 100}
   ];
 
   exportFilename: string = 'PSM-archive-logs-requests';
@@ -64,31 +64,14 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
 
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
+    protected cdr: ChangeDetectorRef,
     protected monitoringService: MonitoringService) {
     super(controllerService, uiconfigsService);
   }
 
-  getSelectedDataObjects() {
-    return this.archiveTable.selectedDataObjects;
-  }
-
-  clearSelectedDataObjects() {
-    this.archiveTable.selectedDataObjects = [];
-  }
-
-  /**
-  * Overide super's API
-  * It will return this Component name
-  */
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
   ngOnInit() {
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
-    });
-    this.setDefaultToolbar();
+    super.ngOnInit();
+    this.penTable = this.archiveTable;
     this.getArchiveRequests();
   }
 
@@ -105,6 +88,7 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
    */
   getArchiveRequests() {
     this.tableLoading = true;
+    this.cdr.detectChanges();
     const sub = this.monitoringService.ListArchiveRequestCache().subscribe(
       response => {
         if (response.connIsErrorState) {
@@ -112,8 +96,9 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
         }
         const archiveRequests = response.data as MonitoringArchiveRequest[];
         this.tableLoading = false;
-        this.dataObjects = [...archiveRequests];
         this.dataObjectsBackUp = [...archiveRequests];
+        this.dataObjects = [...this.dataObjectsBackUp];
+        this.cdr.detectChanges();
       },
       error => {
         this.tableLoading = false;
@@ -133,18 +118,6 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
    */
   showArchiveQuery(event: RowClickEvent) {
     this.expandRowRequest(event.event, event.rowData);
-  }
-
-  expandRowRequest(event, rowData) {
-    if (!this.archiveTable.showRowExpand) {
-      this.archiveTable.toggleRow(rowData, event);
-    }
-  }
-
-  editFormClose(rowData) {
-    if (this.archiveTable.showRowExpand) {
-      this.archiveTable.toggleRow(rowData);
-    }
   }
 
   /**
@@ -289,7 +262,8 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
 
   onInvokeAPIonMultipleRecordsFailure() {
     this.tableLoading = false;
-    this.dataObjects = Utility.getLodash().cloneDeep(this.dataObjectsBackUp);
+    this.dataObjects = [...this.dataObjectsBackUp];
+    this.cdr.detectChanges();
   }
 
   showBulkDeleteIcon(): boolean {
@@ -332,25 +306,4 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
       }
     });
   }
-
-  onDeleteRecord(event, object) {
-    this.archiveTable.onDeleteRecord(
-      event,
-      object,
-      this.generateDeleteConfirmMsg(object),
-      this.generateDeleteSuccessMsg(object),
-      this.deleteRecord.bind(this)
-    );
-  }
-
-  onColumnSelectChange(event) {
-    this.archiveTable.onColumnSelectChange(event);
-  }
-
-  onDestroyHook() {
-    this._controllerService.publish(Eventtypes.COMPONENT_DESTROY, {
-      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_DESTROY
-    });
-  }
-
 }
