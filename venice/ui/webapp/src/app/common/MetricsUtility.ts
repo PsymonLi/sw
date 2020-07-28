@@ -190,8 +190,15 @@ export class MetricsUtility {
 
   // Since we are averaging over 5 min buckets, we always query from the last 5 min window increment
   public static timeSeriesQueryUpdate(queryBody: ITelemetry_queryMetricsQuerySpec) {
-    queryBody['start-time'] = queryBody['end-time'];
-    queryBody['end-time'] = Utility.roundDownTime(5).toISOString() as any;
+    const saveEndTime  = queryBody['end-time'];
+    const newEndTime =  Utility.roundDownTime(5).toISOString() as any;
+    // We don't want to have queryBody['start-time'] ===  queryBody['end-time']. It will make metrics query return no data
+    if (saveEndTime === newEndTime) {
+      return;
+    }
+    queryBody['start-time'] = saveEndTime;
+    queryBody['end-time'] = newEndTime;
+    return;
   }
 
   // window is the time in minutes from the current time of points that should be dropped
