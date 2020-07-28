@@ -12,8 +12,8 @@
 #include "nic/sdk/upgrade/core/utils.hpp"
 #include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/sdk/upgrade/core/logger.hpp"
-#include "nic/apollo/upgrade/svc/upgrade.hpp"
-#include "nic/apollo/upgrade/api/upgrade_api.hpp"
+#include "nic/apollo/upgrade/upgmgr/svc/upgrade.hpp"
+#include "nic/apollo/upgrade/upgmgr/api/upgrade_api.hpp"
 
 using grpc::Server;
 using grpc::ServerBuilder;

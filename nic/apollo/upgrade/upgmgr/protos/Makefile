@@ -1,5 +1,5 @@
-TOP_DIR = ../../../..
-UPG_PROTO_DIR = ${TOP_DIR}/nic/apollo/upgrade/protos
+TOP_DIR = ../../../../..
+UPG_PROTO_DIR = ${TOP_DIR}/nic/apollo/upgrade/upgmgr/protos
 UPG_PROTO_FILE = upgrade.proto
 GEN_DIR = ${TOP_DIR}/nic/apollo/agent/gen/pds
 LD_LIBRARY_PATH=$(TOP_DIR)/nic/hal/third-party/google/x86_64/lib/

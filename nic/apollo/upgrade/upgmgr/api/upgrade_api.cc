@@ -13,8 +13,8 @@
 #include "nic/sdk/upgrade/core/fsm.hpp"
 #include "nic/sdk/upgrade/core/utils.hpp"
 #include "nic/sdk/upgrade/include/ev.hpp"
-#include "nic/apollo/upgrade/ipc_peer/ipc_peer.hpp"
-#include "nic/apollo/upgrade/api/upgrade_api.hpp"
+#include "nic/apollo/upgrade/upgmgr/ipc_peer/ipc_peer.hpp"
+#include "nic/apollo/upgrade/upgmgr/api/upgrade_api.hpp"
 
 static sdk::event_thread::event_thread *g_upg_event_thread;
 static std::string g_tools_dir;

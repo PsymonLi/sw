@@ -7,8 +7,8 @@
 #include "nic/sdk/include/sdk/platform.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/upgrade/core/logger.hpp"
-#include "nic/apollo/upgrade/svc/upgrade.hpp"
-#include "nic/apollo/upgrade/api/upgrade_api.hpp"
+#include "nic/apollo/upgrade/upgmgr/svc/upgrade.hpp"
+#include "nic/apollo/upgrade/upgmgr/api/upgrade_api.hpp"
 
 // callbacks from upgrade processing thread
 static void
