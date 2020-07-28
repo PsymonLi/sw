@@ -5,6 +5,7 @@
 #include "nic/include/hal_mem.hpp"
 #include "nic/include/base.hpp"
 #include "nic/sdk/lib/utils/mtrack.hpp"
+#include "nic/sdk/include/sdk/if.hpp"
 #include "lib/slab/slab.hpp"
 
 using hal::hal_slab_t;
@@ -17,9 +18,9 @@ using sdk::utils::mtrack_info_t;
 #define PORT_NUM_2 0x11020001
 #define PORT_NUM_3 0x11030001
 
-#define UPLINK_IF_INDEX1 0x51010001
-#define UPLINK_IF_INDEX2 0x51020001
-#define UPLINK_IF_INDEX3 0x51030001
+#define UPLINK_IF_INDEX1 (0x01010001 | (IF_TYPE_UPLINK << IF_TYPE_SHIFT))
+#define UPLINK_IF_INDEX2 (0x01020001 | (IF_TYPE_UPLINK << IF_TYPE_SHIFT))
+#define UPLINK_IF_INDEX3 (0x01030001 | (IF_TYPE_UPLINK << IF_TYPE_SHIFT))
 
 #define LOGICAL_PORT_NUM_1 1
 #define LOGICAL_PORT_NUM_2 5

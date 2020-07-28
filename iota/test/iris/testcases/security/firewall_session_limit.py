@@ -73,6 +73,12 @@ def VerifySessionEvents(tc):
     if len(lines) != len(fields):
         api.Logger.error("Incorrect events len encountered : %d expected %d" %
                 (len(lines), len(fields)))
+        # dump last 10 events for debug purpose
+        cmd = "show events --json | tail -10 "
+        common.AddPenctlCommand(req, tc.wc_server.node_name, cmd)
+        resp = api.Trigger(req)
+        cmd_resp = resp.commands[0]
+        api.PrintCommandResults(cmd_resp)
         return api.types.status.FAILURE
     for i in range(len(lines)):
         if fields[i] not in lines[i]:
