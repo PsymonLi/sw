@@ -76,13 +76,13 @@ char const * g_eal_args[] = {"fte",
 #define MAX_TX_QUEUE_PER_PORT 16
 #define MAX_RX_QUEUE_PER_PORT 128
 
-#ifdef __aarch64__ 
+#ifdef __aarch64__
 #define MEMPOOL_CACHE_SIZE 512
 #else
 #define MEMPOOL_CACHE_SIZE 256
 #endif
 
-#ifdef __aarch64__ 
+#ifdef __aarch64__
 #define MAX_PKT_BURST 64
 #else
 #define MAX_PKT_BURST 32
@@ -93,7 +93,7 @@ char const * g_eal_args[] = {"fte",
 
 #define FTE_MAX_CORES 4 // Max Cores
 #define FTE_MAX_TXDSCR 256 // Max TX Descriptors
-#ifdef __aarch64__ 
+#ifdef __aarch64__
 #define FTE_MAX_RXDSCR 2048 // Max RX Descriptors
 #else
 #define FTE_MAX_RXDSCR 256 // Max RX Descriptors
@@ -116,7 +116,7 @@ static uint16_t nb_txd = FTE_MAX_TXDSCR;
 #ifndef SIM
 static uint16_t nsegs = ( MAX_ETH_RX_LEN + RTE_MBUF_ATHENA_DATAROOM - 1) / RTE_MBUF_ATHENA_DATAROOM;
 #else
-static uint16_t nsegs = ( ETHER_MAX_LEN + RTE_MBUF_DEFAULT_DATAROOM - 1) / RTE_MBUF_DEFAULT_DATAROOM;
+static uint16_t nsegs = ( RTE_ETHER_MAX_LEN + RTE_MBUF_DEFAULT_DATAROOM - 1) / RTE_MBUF_DEFAULT_DATAROOM;
 #endif
 
 
@@ -217,7 +217,7 @@ static FILE *g_stats_fp;
 #define CONNTRACK_DUMP_LOG(args...)     SESSION_DUMP_LOG(args)
 #define RESOURCE_UTIL_DUMP_LOG(args...)     SESSION_DUMP_LOG(args)
 
-// Send burst of packets on an output interface 
+// Send burst of packets on an output interface
 static inline void
 send_burst (struct lcore_conf *qconf, uint16_t n, uint16_t port)
 {
@@ -238,7 +238,7 @@ send_burst (struct lcore_conf *qconf, uint16_t n, uint16_t port)
     return;
 }
 
-// Enqueue a single packet, and send burst if queue is filled 
+// Enqueue a single packet, and send burst if queue is filled
 static inline void
 send_single_packet (struct lcore_conf *qconf,
                     struct rte_mbuf *m, uint16_t port)
@@ -367,7 +367,7 @@ fte_rx_loop (pollers_qid_vec_t *qid_vec)
                 auto m = pkts_burst[i];
 #ifdef DEBUG
                 pkt_hex_dump_trace("PKT:",
-                        rte_pktmbuf_mtod(m, char*), 
+                        rte_pktmbuf_mtod(m, char*),
                         rte_pktmbuf_pkt_len(m));
 #endif
                 if ((i+1) < nb_rx) {
@@ -375,7 +375,7 @@ fte_rx_loop (pollers_qid_vec_t *qid_vec)
                     uint8_t *d2 = rte_pktmbuf_mtod(m2, uint8_t*);
                     for (int i = 0; i < FTE_PREFETCH_NLINES; i++) {
                         rte_prefetch0(d2+i*64);
-                    }    
+                    }
                 }
                 _process(m, qconf, portid);
 #ifdef DEBUG
@@ -402,7 +402,7 @@ fte_launch_one_lcore (__attribute__((unused)) void *dummy)
     }
 
     lcore_idx = rte_atomic32_add_return(&pollers_lcore_idx, 1);
-    qid_vec = lcore_idx < FTE_MAX_CORES ? 
+    qid_vec = lcore_idx < FTE_MAX_CORES ?
               &pollers_qid_conf[lcore_idx] : nullptr;
     PDS_TRACE_DEBUG("Launching fte_rx_loop on core_id %u(#%d) with %d "
                     "poller queues", lcore_id, lcore_idx,
@@ -814,7 +814,7 @@ dump_session_info(FILE *fp,
     const pds_flow_session_flow_data_t *h2s = &info->spec.data.host_to_switch_flow_info;
     const pds_flow_session_flow_data_t *s2h = &info->spec.data.switch_to_host_flow_info;
     uint64_t handle64 = 0;
- 
+
     pds_flow_session_ctx_get(key->session_info_id, &handle64);
     sdk::table::handle_t handle(handle64);
     int prmry = handle.pvalid() ? handle.pindex() : -1;
@@ -1056,9 +1056,9 @@ fte_dump_resource_util(zmq_msg_t *rx_msg,
 
 void
 calc_print_time_delta(struct timeval *end,
-                      struct timeval *start, 
+                      struct timeval *start,
                       uint16_t    port)
-{   
+{
     uint64_t end_us = ((uint64_t)end->tv_sec * USEC_PER_SEC) +
                       (uint64_t)end->tv_usec;
     uint64_t start_us = ((uint64_t)start->tv_sec * USEC_PER_SEC) +
@@ -1067,7 +1067,7 @@ calc_print_time_delta(struct timeval *end,
     if (end_us > start_us) {
         end_us -= start_us;
         PDS_TRACE_DEBUG("\n Port %d, Last Flow proc - First flow Rcvd %lu.%lu"
-                        "(clear on read) \n", port, 
+                        "(clear on read) \n", port,
                        end_us/USEC_PER_SEC, end_us%USEC_PER_SEC);
     }
     end->tv_sec = 0;
@@ -1142,19 +1142,19 @@ fte_dump_flow_stats(zmq_msg_t *rx_msg,
     nb_ports = rte_eth_dev_count_avail();
     STATS_DUMP_LOG("\n Printing Interface Stats \n");
     for (uint16_t i = 0; i <nb_ports ; i++) {
-        calc_print_time_delta(&etime[i], &stime[i], i);                 
+        calc_print_time_delta(&etime[i], &stime[i], i);
         ret = rte_eth_stats_get(i, &stats);
         if (ret == 0) {
             STATS_DUMP_LOG("\n Port %d: I/O/IE/OE/IM/RNB: "
                             "%lu/%lu/%lu/%lu/%lu/%lu \n",
-                   i, stats.ipackets, stats.opackets, 
-                   stats.ierrors, stats.oerrors, 
+                   i, stats.ipackets, stats.opackets,
+                   stats.ierrors, stats.oerrors,
                    stats.imissed, stats.rx_nombuf);
             nb_rx_queue = get_port_n_rx_queues(i);
             for (uint16_t j = 0; j < nb_rx_queue; j ++) {
                 STATS_DUMP_LOG("\n Port %d, Queue %d: "
                                "I/O/ERRORS: %lu/%lu/%lu \n",
-                   i, j, stats.q_ipackets[j], stats.q_opackets[j], 
+                   i, j, stats.q_ipackets[j], stats.q_opackets[j],
                    stats.q_errors[j]);
             }
         }
@@ -1268,7 +1268,7 @@ check_port_config (void)
 }
 
 // Number of mbufs needed.
-// Taking into account memory for rx and tx hardware rings, 
+// Taking into account memory for rx and tx hardware rings,
 // cache per lcore and mtable per port per lcore.
 // RTE_MAX is used to ensure that NB_MBUF never goes below a minimum
 // value of 8192
@@ -1298,7 +1298,7 @@ init_mem (unsigned nb_mbuf)
         }
 
         if (socketid >= NB_SOCKETS) {
-            rte_exit(EXIT_FAILURE, 
+            rte_exit(EXIT_FAILURE,
                      "Socket %d of lcore %u is out of range %d\n",
                      socketid, lcore_id, NB_SOCKETS);
         }
@@ -1381,7 +1381,7 @@ init_rx_queues (void)
 static void
 check_all_ports_link_status (void)
 {
-#define CHECK_INTERVAL 100 // 100ms 
+#define CHECK_INTERVAL 100 // 100ms
 #define MAX_CHECK_TIME 90 // 9s (90 * 100ms) in total
     uint16_t portid;
     uint8_t count, all_ports_up, print_flag = 0;
@@ -1467,7 +1467,7 @@ _init_port (void)
 #ifndef SIM
         local_port_conf.rxmode.max_rx_pkt_len = MAX_ETH_RX_LEN;
 #else
-        local_port_conf.rxmode.max_rx_pkt_len = ETHER_MAX_LEN;
+        local_port_conf.rxmode.max_rx_pkt_len = RTE_ETHER_MAX_LEN;
 #endif
         local_port_conf.rxmode.split_hdr_size = 0;
         local_port_conf.rxmode.offloads = DEV_RX_OFFLOAD_CHECKSUM;
@@ -1483,7 +1483,7 @@ _init_port (void)
                      "Cannot configure device: err=%d, port=%d\n",
                      ret, portid);
         }
-       
+
 #ifndef SIM
         ret = rte_eth_dev_set_mtu(portid, JUMBO_FRAME_LEN);
         if (ret < 0) {
@@ -1492,7 +1492,7 @@ _init_port (void)
                      ret, portid);
         }
 #endif
- 
+
         ret = rte_eth_dev_adjust_nb_rx_tx_desc(portid, &nb_rxd,
                                                &nb_txd);
         if (ret < 0) {
@@ -1572,7 +1572,7 @@ fte_main (pds_cinit_params_t *init_params)
     signal(SIGUSR2, signal_handler);
 
     if (skip_dpdk_init())
-        goto skip_dpdk; 
+        goto skip_dpdk;
 
     // init EAL
     ret = rte_eal_init(NELEMS(g_eal_args), (char**)g_eal_args);
@@ -1612,7 +1612,7 @@ fte_main (pds_cinit_params_t *init_params)
     // launch per-lcore init on every slave lcore
     fte_threads_started = true;
     rte_eal_mp_remote_launch(fte_launch_one_lcore, NULL, fte_call_master_type);
-   
+
 skip_dpdk:
     flows_fp_init(&g_flows_fp);
     return ret;

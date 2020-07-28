@@ -16,6 +16,26 @@
 #include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 
+#include <rte_version.h>
+
+#if RTE_VERSION < RTE_VERSION_NUM(19, 8, 0, 0)
+#define rte_ether_hdr           ether_hdr
+#define rte_vlan_hdr            vlan_hdr
+#define rte_mpls_hdr            mpls_hdr
+#define rte_icmp_hdr            icmp_hdr
+#define rte_ipv4_hdr            ipv4_hdr
+#define rte_ipv6_hdr            ipv6_hdr
+#define rte_tcp_hdr             tcp_hdr
+#define rte_udp_hdr             udp_hdr
+#define RTE_IPV4_HDR_IHL_MASK   IPV4_HDR_IHL_MASK
+#define RTE_IPV4_IHL_MULTIPLIER IPV4_IHL_MULTIPLIER
+#define RTE_ETHER_TYPE_VLAN     ETHER_TYPE_VLAN
+#define RTE_ETHER_TYPE_IPV4     ETHER_TYPE_IPv4
+#define RTE_ETHER_TYPE_IPV6     ETHER_TYPE_IPv6
+#define RTE_ETHER_ADDR_LEN      ETHER_ADDR_LEN
+#define RTE_ETHER_MAX_LEN       ETHER_MAX_LEN
+#endif
+
 typedef struct pds_flow_stats_t pds_flow_stats_t;
 
 namespace fte_ath {
