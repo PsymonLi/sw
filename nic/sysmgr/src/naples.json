@@ -252,5 +252,21 @@
          "flags": ["save_stdout_on_crash"],
          "timeout": 0.0,
          "cpu-affinity": "0xD"
+     },
+     {
+         "name": "mctpd",
+         "command": "/platform/bin/mctpd i2c /dev/mctp",
+         "dependencies": [],
+         "flags": ["restartable", "save_stdout_on_crash"],
+         "timeout": 0.0,
+         "cpu-affinity": "0xD"
+     },
+     {
+         "name": "pldmd",
+         "command": "/platform/bin/pldmd i2c /dev/pldm",
+         "dependencies": [],
+         "flags": ["restartable", "save_stdout_on_crash"],
+         "timeout": 0.0,
+         "cpu-affinity": "0xD"
      }
 ]
