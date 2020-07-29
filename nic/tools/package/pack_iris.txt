@@ -218,6 +218,7 @@ nic/sdk/third-party/avago/fw/serdes.0x1087_244D.rom                 /nic/conf/fw
 nic/sdk/third-party/avago/fw/serdes.0x1094_244D.rom                 /nic/conf/fw/
 nic/sdk/third-party/avago/fw/serdes.0x10A4_1045.rom                 /nic/conf/fw/
 nic/sdk/third-party/avago/fw/blackhawk7_v1l8p2_ucode_image_D004_09_0x61C8.h   /nic/conf/fw/
+nic/sdk/third-party/avago/fw/blackhawk7_v2l8p2_ucode_image_D005_06_0xD090.h   /nic/conf/fw/
 nic/e2etests/go/agent/configs/golden                                /nic/conf/
 
 # CLI
