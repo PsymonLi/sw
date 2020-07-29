@@ -482,7 +482,7 @@ int main(int argc, char **argv) {
     std::string cfg_path = std::string(std::getenv("CONFIG_PATH"));
     std::string mpart_json;
     sdk::lib::catalog *catalog;
-    
+
     catalog = sdk::lib::catalog::factory(cfg_path, "/catalog_4g.json", platform_type_t::PLATFORM_TYPE_SIM);
     mpart_json = sdk::lib::get_mpart_file_path(cfg_path, "iris", catalog, "",
                                                platform_type_t::PLATFORM_TYPE_SIM);
@@ -497,8 +497,8 @@ int main(int argc, char **argv) {
                            NULL,
                            TRACE_FILE_SIZE_DEFAULT,
                            TRACE_NUM_FILES_DEFAULT,
-                           ::utils::trace_debug,
-                           ::utils::trace_none);
+                           sdk::types::trace_debug,
+                           sdk::types::trace_none);
 
     HAL_TRACE_DEBUG("Starting Main ... ");
 

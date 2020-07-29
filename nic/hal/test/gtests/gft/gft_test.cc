@@ -1476,7 +1476,7 @@ TEST_F(gft_test, test1) {
         catalog = sdk::lib::catalog::factory(cfg.cfg_path, "");
     }
     ASSERT_TRUE(catalog != NULL);
-    mpart_json = sdk::lib::get_mpart_file_path(cfg.cfg_path, "gft", 
+    mpart_json = sdk::lib::get_mpart_file_path(cfg.cfg_path, "gft",
                                                catalog, "", platform);
     cfg.catalog = catalog;
     cfg.mempartition = sdk::platform::utils::mpartition::factory(mpart_json.c_str());
@@ -1498,7 +1498,7 @@ TEST_F(gft_test, test1) {
 
     hal::utils::trace_init("hal", 0, true, "hal.log", NULL,
                            TRACE_FILE_SIZE_DEFAULT, TRACE_NUM_FILES_DEFAULT,
-                           ::utils::trace_debug, ::utils::trace_none);
+                           sdk::types::trace_debug, sdk::types::trace_none);
     ret = sdk::lib::pal_init(platform);
     ASSERT_TRUE(ret == 0);
 

@@ -212,11 +212,18 @@ subnet_entry::init_config(api_ctxt_t *api_ctxt) {
     num_host_if_ = spec->num_host_if;
     for (uint8_t i = 0; i < num_host_if_; i++) {
         host_if_[i] = spec->host_if[i];
-        if (unlikely(lif_db()->find(&host_if_[i]) == NULL)) {
+        if_entry *intf = if_db()->find(&host_if_[i]);
+        if (intf == NULL) {
             PDS_TRACE_ERR("host if %s not found, subnet %s init failed",
                           spec->host_if[i].str(), spec->key.str());
             return SDK_RET_INVALID_ARG;
         }
+        if (intf->type() != IF_TYPE_HOST) {
+            PDS_TRACE_ERR("subnet %s deployed on inteface %s of incorrect "
+                          "type %u", spec->key.str(), spec->host_if[i].str(),
+                          intf->type());
+            return SDK_RET_INVALID_ARG;
+        }   
     }
     return SDK_RET_OK;
 }

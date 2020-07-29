@@ -1,6 +1,7 @@
 #include "nic/include/base.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/plugins/cfg/nw/session.hpp"
 #include "nic/include/fte.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
@@ -74,7 +75,7 @@ ipsec_cfg_pol_dump (ipsec::IpsecRuleSpec& spec)
 {
     std::string pol_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)
         return;
 
     google::protobuf::util::MessageToJsonString(spec, &pol_str);
@@ -398,7 +399,7 @@ ipsec_find_policy_by_key_or_handle (const IpsecRuleKeyHandle& kh)
 
         key.pol_id = kh.rule_key().ipsec_rule_id();
         key.vrf_id = kh.rule_key().vrf_key_or_handle().vrf_id();
-        
+
         return (ipsec_cfg_pol_t *) g_hal_state->ipsec_policy_ht()->lookup((void *)&key);
     } else {
         return ipsec_find_policy_by_handle(kh.rule_handle());
@@ -439,7 +440,7 @@ ipsec_rule_get (IpsecRuleGetRequest& req, IpsecRuleGetResponseMsg *rsp)
 
     auto kh = req.key_or_handle();
     auto response = rsp->add_response();
-    if ((pol = ipsec_cfg_pol_key_or_handle_lookup(kh)) == NULL) { 
+    if ((pol = ipsec_cfg_pol_key_or_handle_lookup(kh)) == NULL) {
         response->set_api_status(types::API_STATUS_NOT_FOUND);
         HAL_API_STATS_INC(HAL_API_IPSEC_RULE_GET_FAIL);
         return HAL_RET_IPSEC_RULE_NOT_FOUND;
@@ -614,8 +615,8 @@ ipsec_cfg_rule_spec_build (ipsec_cfg_rule_t *rule, ipsec::IpsecRuleMatchSpec *sp
         spec->mutable_sa_action()->mutable_dec_handle()->set_cb_id(rule->action.sa_action_dec_handle);
     }
 
-    HAL_TRACE_DEBUG("action type {} enc_handle {} dec_handle {} vrf-id {}", 
-                    rule->action.sa_action, rule->action.sa_action_enc_handle, 
+    HAL_TRACE_DEBUG("action type {} enc_handle {} dec_handle {} vrf-id {}",
+                    rule->action.sa_action, rule->action.sa_action_enc_handle,
                     rule->action.sa_action_dec_handle, rule->action.vrf);
 
     if ((ret = rule_match_spec_build(

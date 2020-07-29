@@ -4,6 +4,7 @@
 #include "fte_ctx.hpp"
 #include "fte_impl.hpp"
 #include "fte_flow.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/plugins/cfg/nw/session.hpp"
 #include "nic/hal/plugins/cfg/nw/vrf.hpp"
 #include "lib/list/list.hpp"
@@ -134,7 +135,7 @@ ctx_t::init_flows(flow_t iflow[], flow_t rflow[])
         return ret;
     }
 
-    if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) {
+    if (unlikely(hal::utils::hal_trace_level() >= sdk::types::trace_debug)) {
         HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: extracted flow key {}", key_);
     }
 
@@ -171,9 +172,9 @@ ctx_t::init_flows(flow_t iflow[], flow_t rflow[])
             ret = create_session();
 
             // TBD if session limits needs to be applied for
-            // transparent policy-enforced, then we need to 
-            // get the limits from a default profile 
-            if (likely(!protobuf_request() && hal::g_hal_state->is_policy_enforced())) { 
+            // transparent policy-enforced, then we need to
+            // get the limits from a default profile
+            if (likely(!protobuf_request() && hal::g_hal_state->is_policy_enforced())) {
                 // check for flood protection limits
                 ret = apply_session_limit();
                 if (ret != HAL_RET_OK) {
@@ -238,7 +239,7 @@ ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pk
 {
     hal_ret_t ret;
 
-    if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) {
+    if (unlikely(hal::utils::hal_trace_level() >= sdk::types::trace_debug)) {
         HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: rxpkt{} cpu_rxhdr={}",
                             copied_pkt ? "(copy)" : "", hex_str((uint8_t*)cpu_rxhdr, sizeof(*cpu_rxhdr)));
 

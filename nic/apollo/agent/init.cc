@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <iostream>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/agent/trace.hpp"
@@ -260,21 +261,21 @@ logger_init (void)
         return SDK_RET_ERR;
     }
     core::trace_init("agent", 0x1, true, err_logfile.c_str(), logfile.c_str(),
-                     TRACE_FILE_SIZE, TRACE_NUM_FILES, utils::trace_debug);
+                     TRACE_FILE_SIZE, TRACE_NUM_FILES, sdk::types::trace_debug);
 
 
     // initialize the hmon and interrupts logger
     logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"), "./hmon.log");
     core::hmon_trace_init("hmon", 0x1, true, NULL,
                           logfile.c_str(), TRACE_FILE_SIZE_HMON,
-                          TRACE_NUM_FILES_HMON, utils::trace_info);
+                          TRACE_NUM_FILES_HMON, sdk::types::trace_info);
 
     // initialize the onetime interrupts logger
     logfile = log_file(std::getenv("PERSISTENT_LOG_DIR"),
                        "./asicerrord_onetime.log");
     core::intr_trace_init("intr", 0x1, true, NULL,
                           logfile.c_str(), TRACE_FILE_SIZE_HMON,
-                          TRACE_NUM_FILES_HMON, utils::trace_info);
+                          TRACE_NUM_FILES_HMON, sdk::types::trace_info);
 
     // initialize link logger
     logfile = log_file(std::getenv("NON_PERSISTENT_LOG_DIR"), "./linkmgr.log");
@@ -282,7 +283,7 @@ logger_init (void)
                            "/linkmgr_err.log");
     core::link_trace_init("linkmgr", 0x1, false, err_logfile.c_str(),
                           logfile.c_str(), TRACE_FILE_SIZE_LINK,
-                          TRACE_NUM_FILES_LINK, utils::trace_debug);
+                          TRACE_NUM_FILES_LINK, sdk::types::trace_debug);
     return SDK_RET_OK;
 }
 

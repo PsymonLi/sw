@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/test/utils/hal_test_utils.hpp"
 #include "nic/hal/test/utils/hal_base_test.hpp"
 #include "nic/fte/fte_ctx.hpp"
@@ -317,7 +318,7 @@ ipsec_sa_encrypt_test_spec_dump (IpsecSAEncryptGetResponseMsg& rsp)
 {
     std::string    ipsec_sa_encrypt_cfg_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
 
@@ -332,7 +333,7 @@ ipsec_sa_decrypt_test_spec_dump (IpsecSADecryptGetResponseMsg& rsp)
 {
     std::string    ipsec_sa_decrypt_cfg_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
 
@@ -502,7 +503,7 @@ ipsec_test_pol_key_spec_build (ipsec_test_pol_t *pol, kh::IpsecRuleKeyHandle *sp
 {
     if (pol->hal_hdl != HAL_HANDLE_INVALID) {
         spec->set_rule_handle(pol->hal_hdl);
-    } else {  
+    } else {
         if (pol->vrf_id != -1) {
             spec->mutable_rule_key()->mutable_vrf_key_or_handle()->
                 set_vrf_id(pol->vrf_id);
@@ -583,7 +584,7 @@ ipsec_test_ipaddressobj_spec_extract (const types::IPAddressObj& spec,
                                     ipvx_range_t *ip_range)
 {
     ASSERT_TRUE(spec.negate() == false);
-    ipsec_test_spec_to_ipvx_range(spec.address().range(), ip_range); 
+    ipsec_test_spec_to_ipvx_range(spec.address().range(), ip_range);
 }
 
 static inline void
@@ -805,7 +806,7 @@ ipsec_test_wf_crgd_ipsec_pol_with_unknown_data (Oper oper, UnknownData ud)
             ASSERT_TRUE(ret == HAL_RET_VRF_NOT_FOUND);
         else
             ASSERT_TRUE(ret == HAL_RET_INVALID_ARG);
-        ASSERT_TRUE(rsp.status().handle() == 
+        ASSERT_TRUE(rsp.status().handle() ==
                     HAL_HANDLE_INVALID);
         break;
     }

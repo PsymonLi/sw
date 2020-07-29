@@ -1,5 +1,6 @@
 // {C} Copyright 2017 Pensando Systems Inc. All rights reserved
 
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/plugins/cfg/nw/interface.hpp"
 #include "nic/hal/plugins/cfg/nw/endpoint.hpp"
 #include "nic/hal/plugins/cfg/nw/session.hpp"
@@ -112,7 +113,7 @@ ipsec_sa_encrypt_test_spec_dump (IpsecSAEncryptGetResponseMsg& rsp)
 {
     std::string    ipsec_sa_encrypt_cfg_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
 
@@ -127,7 +128,7 @@ ipsec_sa_decrypt_test_spec_dump (IpsecSADecryptGetResponseMsg& rsp)
 {
     std::string    ipsec_sa_decrypt_cfg_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
 

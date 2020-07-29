@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <iostream>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
@@ -233,7 +234,7 @@ logger_init (void)
 
     // initialize the logger
     core::trace_init("pegasus", 0x1, true, err_logfile.c_str(), logfile.c_str(),
-                     TRACE_FILE_SIZE, TRACE_NUM_FILES, utils::trace_debug);
+                     TRACE_FILE_SIZE, TRACE_NUM_FILES, sdk::types::trace_debug);
 
     return SDK_RET_OK;
 }

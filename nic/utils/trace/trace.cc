@@ -13,24 +13,24 @@ uint64_t    g_logger_cpu_mask = 0;
 
 // logger class methods
 spdlog::level::level_enum
-log::trace_level_to_spdlog_level(trace_level_e level) {
+log::trace_level_to_spdlog_level(sdk::types::trace_level_e level) {
     switch (level) {
-    case trace_none:
+    case sdk::types::trace_none:
         return spdlog::level::off;
 
-    case trace_err:
+    case sdk::types::trace_err:
         return spdlog::level::err;
 
-    case trace_warn:
+    case sdk::types::trace_warn:
         return spdlog::level::warn;
 
-    case trace_info:
+    case sdk::types::trace_info:
         return spdlog::level::info;
 
-    case trace_debug:
+    case sdk::types::trace_debug:
         return spdlog::level::debug;
 
-    case trace_verbose:
+    case sdk::types::trace_verbose:
         return spdlog::level::trace;
 
     default:
@@ -39,27 +39,27 @@ log::trace_level_to_spdlog_level(trace_level_e level) {
 }
 
 spdlog::level::level_enum
-log::syslog_level_to_spdlog_level(syslog_level_e level) {
+log::syslog_level_to_spdlog_level(sdk::types::syslog_level_e level) {
     switch (level) {
-    case log_none:
+    case sdk::types::log_none:
         return spdlog::level::off;
 
-    case log_alert:
-    case log_emerg:
-    case log_crit:
+    case sdk::types::log_alert:
+    case sdk::types::log_emerg:
+    case sdk::types::log_crit:
         return spdlog::level::critical;
 
-    case log_err:
+    case sdk::types::log_err:
         return spdlog::level::err;
 
-    case log_warn:
+    case sdk::types::log_warn:
         return spdlog::level::warn;
 
-    case log_notice:
-    case log_info:
+    case sdk::types::log_notice:
+    case sdk::types::log_info:
         return spdlog::level::info;
 
-    case log_debug:
+    case sdk::types::log_debug:
         return spdlog::level::debug;
 
     default:
@@ -106,7 +106,7 @@ log::init(const char *name, uint64_t cpu_mask, log_mode_e log_mode,
     syslogger_ = syslogger;
     trace_level_ = non_persistent_trace_level;
     log_level_ = syslog_level;
-    if (log_mode == log_mode_async) {
+    if (log_mode == sdk::types::log_mode_async) {
         spdlog::set_async_mode(k_async_qsize_, k_async_overflow_policy_,
                                worker_thread_cb, k_flush_intvl_ms_, NULL);
     }
@@ -130,7 +130,7 @@ log::init(const char *name, uint64_t cpu_mask, log_mode_e log_mode,
             auto sink_non_persist = std::make_shared<spdlog::sinks::rotating_file_sink_mt>
                 (non_persistent_file_name, file_size, max_files);
             sink_non_persist->set_level(
-                trace_level_to_spdlog_level(trace_verbose));
+                trace_level_to_spdlog_level(sdk::types::trace_verbose));
             dist_sink->add_sink(sink_non_persist);
         }
         logger_ = std::make_shared<spdlog::logger>(name, dist_sink);

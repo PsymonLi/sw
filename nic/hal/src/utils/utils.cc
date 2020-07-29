@@ -3,6 +3,7 @@
 //-----------------------------------------------------------------------------
 
 #include <google/protobuf/util/json_util.h>
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "nic/hal/src/utils/utils.hpp"
@@ -400,9 +401,9 @@ hal_api_trace (const char *trace, trace_level_e trace_level)
 
     if (!trace) return;
 
-    if (trace_level == ::utils::trace_debug) {
+    if (trace_level == sdk::types::trace_debug) {
         HAL_TRACE_DEBUG("{}{}{}", prefix_str, trace, prefix_str);
-    }else if (trace_level == ::utils::trace_info) {
+    }else if (trace_level == sdk::types::trace_info) {
         HAL_TRACE_INFO("{}{}{}", prefix_str, trace, prefix_str);
     }
 
@@ -818,9 +819,9 @@ proto_msg_dump (Message& msg, trace_level_e trace_level)
         return;
     }
     google::protobuf::util::MessageToJsonString(msg, &msg_str);
-    if (trace_level == ::utils::trace_debug) {
+    if (trace_level == sdk::types::trace_debug) {
         HAL_TRACE_DEBUG("{}", msg_str.c_str());
-    }else if (trace_level == ::utils::trace_info) {
+    }else if (trace_level == sdk::types::trace_info) {
         HAL_TRACE_INFO("{}", msg_str.c_str());
     }
 }

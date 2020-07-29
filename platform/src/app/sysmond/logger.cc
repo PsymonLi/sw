@@ -3,6 +3,7 @@
  */
 #include "logger.h"
 #include "LogMsg.h"
+#include "nic/sdk/include/sdk/types.hpp"
 
 ::utils::log *g_trace_logger;
 ::utils::log *g_asicerr_trace_logger;
@@ -87,27 +88,27 @@ initializeLogger (void)
     LogMsg::Instance().get()->setMaxErrCount(0);
     if (!initDone) {
         g_trace_logger = ::utils::log::factory("sysmond", 0x0,
-                                        ::utils::log_mode_sync, false,
+                                        sdk::types::log_mode_sync, false,
                                         OBFL_LOG_FILENAME, LOG_FILENAME,
                                         LOG_MAX_FILESIZE, LOG_MAX_FILES,
-                                        ::utils::trace_err,
-                                        ::utils::trace_debug,
-                                        ::utils::log_none);
+                                        sdk::types::trace_err,
+                                        sdk::types::trace_debug,
+                                        sdk::types::log_none);
         g_asicerr_trace_logger = ::utils::log::factory("asicerrord", 0x0,
-                                        ::utils::log_mode_sync, false,
+                                        sdk::types::log_mode_sync, false,
                                         ASICERR_OBFL_LOG_FILENAME, ASICERR_LOG_FILENAME,
                                         LOG_MAX_FILESIZE,
-                                        LOG_MAX_FILES, ::utils::trace_err,
-                                        ::utils::trace_debug,
-                                        ::utils::log_none);
+                                        LOG_MAX_FILES, sdk::types::trace_err,
+                                        sdk::types::trace_debug,
+                                        sdk::types::log_none);
         g_asicerr_onetime_trace_logger = ::utils::log::factory(
                                         "asicerrord_onetime", 0x0,
-                                        ::utils::log_mode_sync, false,
+                                        sdk::types::log_mode_sync, false,
                                         ASICERR_OBFL_LOG_ONETIME_FILENAME, NULL,
                                         LOG_MAX_FILESIZE,
-                                        LOG_MAX_FILES, ::utils::trace_err,
-                                        ::utils::trace_debug,
-                                        ::utils::log_none);
+                                        LOG_MAX_FILES, sdk::types::trace_err,
+                                        sdk::types::trace_debug,
+                                        sdk::types::log_none);
         initDone = true;
     }
 }

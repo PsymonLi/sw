@@ -127,11 +127,11 @@ class InterfaceTypes(enum.IntEnum):
     ETH = 1
     ETH_PC = 2
     TUNNEL = 3
-    MGMT = 4
-    UPLINK = 5
-    UPLINKPC = 6
-    L3 = 7
-    LIF = 8
+    UPLINK = 4
+    UPLINKPC = 5
+    L3 = 6
+    LIF = 7
+    HOST = 10
 
 def PortToEthIfIdx(port):
     ifidx = InterfaceTypes.ETH << 28
@@ -142,3 +142,9 @@ def PortToEthIfIdx(port):
 
 def GetIPProtoByName(protoname):
     return socket.getprotobyname(protoname)
+
+def LifIfIdx2HostIfIdx(ifidx):
+    idx = ifidx & ~(0xf << 28)
+    host_ifidx = InterfaceTypes.HOST << 28
+    host_ifidx = host_ifidx | idx
+    return host_ifidx

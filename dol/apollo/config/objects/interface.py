@@ -547,8 +547,8 @@ class InterfaceObjectClient(base.ConfigClientBase):
             lif_status = lif_yaml['status']
             intf_type = lif_spec['type']
             spec = InterfaceSpec_()
-            spec.iid = lif_status['ifindex']
-            spec.uuid = utils.PdsUuid(lif_spec['id'])
+            spec.iid = utils.LifIfIndex2HostIfIndex(lif_status['ifindex'])
+            spec.uuid = utils.PdsUuid(spec.iid)
             spec.ifname = lif_status['name']
             spec.macaddress = objects.MacAddressBase(integer=lif_spec['macaddress'])
             spec.origin = 'implicitly-created'

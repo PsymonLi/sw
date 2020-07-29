@@ -15,6 +15,7 @@
 #include <iostream>
 #include <stdarg.h>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/apollo/agent/athena/trace.hpp"
 #include "nic/apollo/api/include/athena/pds_init.h"
 #include "fte_athena_flow_log.hpp"
@@ -73,7 +74,7 @@ logger_init (void)
 
     // initialize the logger
     core::trace_init("agent", 0x1, true, err_logfile.c_str(), logfile.c_str(),
-                     TRACE_FILE_SIZE, TRACE_NUM_FILES, utils::trace_debug);
+                     TRACE_FILE_SIZE, TRACE_NUM_FILES, sdk::types::trace_debug);
 
     return SDK_RET_OK;
 }

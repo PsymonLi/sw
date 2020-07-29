@@ -1,6 +1,7 @@
 #include "nic/include/base.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/plugins/cfg/nw/session.hpp"
 #include "nic/include/fte.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
@@ -85,7 +86,7 @@ ipsec_sa_encrypt_spec_dump (IpsecSAEncrypt& spec)
 {
     std::string    ipsec_sa_encrypt_cfg_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
 
@@ -127,7 +128,7 @@ ipsec_saencrypt_create (IpsecSAEncrypt& spec, IpsecSAEncryptResponse *rsp)
         HAL_TRACE_DEBUG("vrf success id = {} ", vrf->vrf_id);
     } else {
         HAL_TRACE_ERR("Vrf not found for vrf-id {}", spec.tep_vrf().vrf_id());
-        return HAL_RET_VRF_ID_INVALID; 
+        return HAL_RET_VRF_ID_INVALID;
     }
 
     if (spec.key_or_handle().cb_id() > HAL_MAX_IPSEC_SUPP_SA) {
@@ -248,7 +249,7 @@ ipsec_saencrypt_update (IpsecSAEncrypt& spec, IpsecSAEncryptResponse *rsp)
         HAL_TRACE_DEBUG("vrf success id = {}", ipsec->vrf);
     } else {
         HAL_TRACE_ERR("Vrf not found for vrf-id {}", spec.tep_vrf().vrf_id());
-        return HAL_RET_VRF_ID_INVALID; 
+        return HAL_RET_VRF_ID_INVALID;
     }
 
 
@@ -414,7 +415,7 @@ ipsec_saencrypt_delete (ipsec::IpsecSAEncryptDeleteRequest& req, ipsec::IpsecSAE
 }
 
 hal_ret_t
-ipsec_global_statistics_get (ipsec::IpsecGlobalStatisticsGetRequest& req, 
+ipsec_global_statistics_get (ipsec::IpsecGlobalStatisticsGetRequest& req,
                              ipsec::IpsecGlobalStatisticsGetResponseMsg *resp)
 {
     hal_ret_t              ret = HAL_RET_OK;
@@ -424,7 +425,7 @@ ipsec_global_statistics_get (ipsec::IpsecGlobalStatisticsGetRequest& req,
     ipsec_global_stats_cb_t stats_cb;
 
     pd::pd_func_args_t pd_func_args = {0};
-    pd::pd_ipsec_global_stats_get_args_t pd_ipsec_stats_get_args;  
+    pd::pd_ipsec_global_stats_get_args_t pd_ipsec_stats_get_args;
 
     auto clear_on_read = req.clear_on_read();
     pd_ipsec_stats_get_args.clear_on_read = clear_on_read;
@@ -470,7 +471,7 @@ ipsec_global_statistics_get (ipsec::IpsecGlobalStatisticsGetRequest& req,
     rsp->mutable_spec()->set_encrypt_txdma1_barco_ring_full_errors(stats_cb.encrypt_txdma1_barco_ring_full_errors);
     rsp->mutable_spec()->set_encrypt_rxdma_cb_ring_full_errors(stats_cb.encrypt_rxdma_cb_ring_full_errors);
     rsp->mutable_spec()->set_encrypt_txdma2_barco_req_errors(stats_cb.encrypt_txdma2_barco_req_errors);
-    
+
     rsp->mutable_spec()->set_decrypt_input_desc_errors(stats_cb.decrypt_input_desc_errors);
     rsp->mutable_spec()->set_decrypt_output_desc_errors(stats_cb.decrypt_output_desc_errors);
     rsp->mutable_spec()->set_decrypt_cb_ring_base_errors(stats_cb.decrypt_cb_ring_base_errors);

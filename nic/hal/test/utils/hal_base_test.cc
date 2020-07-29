@@ -12,6 +12,7 @@ ServerBuilder *server_builder = NULL;
 std::unique_ptr<Server> server;
 std::string g_grpc_server_addr;
 
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/svc/debug_svc.hpp"
 #include "nic/hal/svc/table_svc.hpp"
 #include "nic/hal/svc/event_svc.hpp"
@@ -144,7 +145,7 @@ hal_initialize (bool disable_fte, const char c_file[], string vmotion_port, bool
 
     // set catalog to use
     hal::g_hal_cfg.catalog_file = "/catalog_4g.json";
-    
+
     // disabling async logging
     hal::g_hal_cfg.sync_mode_logging = true;
 
@@ -192,7 +193,7 @@ hal_initialize (bool disable_fte, const char c_file[], string vmotion_port, bool
 
     hal::utils::trace_init("hal", 0, true, "hal.log", NULL,
             TRACE_FILE_SIZE_DEFAULT, TRACE_NUM_FILES_DEFAULT,
-            ::utils::trace_debug, ::utils::trace_debug);
+            sdk::types::trace_debug, sdk::types::trace_debug);
 
     printf("HAL Initialized\n");
 }

@@ -107,7 +107,8 @@ pds_host_if_create (pds_host_if_spec_t *spec)
     static uint64_t block_size =
         g_pds_state.mempartition()->block_size(MEM_REGION_LIF_STATS_NAME);
 
-    if (lif_spec->type == sdk::platform::LIF_TYPE_HOST) {
+    if ((lif_spec->type == sdk::platform::LIF_TYPE_HOST) ||
+        (lif_spec->type == sdk::platform::LIF_TYPE_CONTROL)){
         // convert to if spec and create
         if_spec_from_host_if_spec(&if_spec, spec);
         ret = pds_host_if_create(&if_spec);

@@ -27,15 +27,15 @@ utils::log *g_intr_trace_logger;
 void
 trace_init (const char *name, uint64_t cores_mask, bool sync_mode,
             const char *err_file, const char *trace_file, size_t file_size,
-            size_t num_files, utils::trace_level_e trace_level)
+            size_t num_files, sdk::types::trace_level_e trace_level)
 {
     if ((name == NULL) || (trace_file == NULL)) {
         return;
     }
     g_trace_logger = utils::log::factory(name, cores_mask,
-                    sync_mode ? utils::log_mode_sync : utils::log_mode_async,
+                    sync_mode ? sdk::types::log_mode_sync : sdk::types::log_mode_async,
                     false, err_file, trace_file, file_size, num_files,
-                    utils::trace_err, trace_level, utils::log_none);
+                    sdk::types::trace_err, trace_level, sdk::types::log_none);
 }
 
 //------------------------------------------------------------------------------
@@ -44,16 +44,16 @@ trace_init (const char *name, uint64_t cores_mask, bool sync_mode,
 void
 link_trace_init (const char *name, uint64_t cores_mask, bool sync_mode,
                  const char *err_file, const char *trace_file, size_t file_size,
-                 size_t num_files, utils::trace_level_e trace_level)
+                 size_t num_files, sdk::types::trace_level_e trace_level)
 {
     if ((name == NULL) || (trace_file == NULL)) {
         return;
     }
     g_link_trace_logger =
         utils::log::factory(name, cores_mask,
-            sync_mode? utils::log_mode_sync : utils::log_mode_async,
+            sync_mode? sdk::types::log_mode_sync : sdk::types::log_mode_async,
             false, err_file, trace_file, file_size, num_files,
-            utils::trace_err, trace_level, utils::log_none);
+            sdk::types::trace_err, trace_level, sdk::types::log_none);
 }
 
 //------------------------------------------------------------------------------
@@ -62,16 +62,16 @@ link_trace_init (const char *name, uint64_t cores_mask, bool sync_mode,
 void
 hmon_trace_init (const char *name, uint64_t cores_mask, bool sync_mode,
                  const char *err_file, const char *trace_file, size_t file_size,
-                 size_t num_files, utils::trace_level_e trace_level)
+                 size_t num_files, sdk::types::trace_level_e trace_level)
 {
     if ((name == NULL) || (trace_file == NULL)) {
         return;
     }
     g_hmon_trace_logger =
         utils::log::factory(name, cores_mask,
-            sync_mode? utils::log_mode_sync : utils::log_mode_async,
+            sync_mode? sdk::types::log_mode_sync : sdk::types::log_mode_async,
             false, err_file, trace_file, file_size, num_files,
-            utils::trace_err, trace_level, utils::log_none);
+            sdk::types::trace_err, trace_level, sdk::types::log_none);
 }
 
 //------------------------------------------------------------------------------
@@ -80,16 +80,16 @@ hmon_trace_init (const char *name, uint64_t cores_mask, bool sync_mode,
 void
 intr_trace_init (const char *name, uint64_t cores_mask, bool sync_mode,
                  const char *err_file, const char *trace_file, size_t file_size,
-                 size_t num_files, utils::trace_level_e trace_level)
+                 size_t num_files, sdk::types::trace_level_e trace_level)
 {
     if ((name == NULL) || (trace_file == NULL)) {
         return;
     }
     g_intr_trace_logger =
         utils::log::factory(name, cores_mask,
-            sync_mode ? utils::log_mode_sync : utils::log_mode_async,
+            sync_mode ? sdk::types::log_mode_sync : sdk::types::log_mode_async,
             false, err_file, trace_file, file_size, num_files,
-            utils::trace_err, trace_level, utils::log_none);
+            sdk::types::trace_err, trace_level, sdk::types::log_none);
 }
 
 //------------------------------------------------------------------------------

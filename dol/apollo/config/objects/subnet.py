@@ -88,7 +88,7 @@ class SubnetObject(base.ConfigObjectBase):
         if utils.IsDol():
             self.HostIf = InterfaceClient.GetHostInterface(node)
             if self.HostIf:
-                self.HostIfIdx.append(utils.LifId2LifIfIndex(self.HostIf.lif.id))
+                self.HostIfIdx.append(utils.LifId2HostIfIndex(self.HostIf.lif.id))
             node_uuid = None
         else:
             self.HostIf = None
@@ -96,13 +96,13 @@ class SubnetObject(base.ConfigObjectBase):
             if hostifidx:
                 if isinstance(hostifidx, list):
                     for ifidx in hostifidx:
-                        self.HostIfIdx.append(int(ifidx))
+                        self.HostIfIdx.append(utils.LifIfIndex2HostIfIndex(int(ifidx)))
                 else:
                     self.HostIfIdx.append(int(hostifidx))
             elif getattr(spec, 'vnic', None):
                 hostifidx = InterfaceClient.GetHostInterface(node)
                 if hostifidx:
-                    self.HostIfIdx.append(hostifidx)
+                    self.HostIfIdx.append(utils.LifIfIndex2HostIfIndex(hostifidx))
             node_uuid = EzAccessStoreClient[node].GetNodeUuid(node)
         self.HostIfUuid = []
         for ifidx in self.HostIfIdx:
@@ -147,7 +147,7 @@ class SubnetObject(base.ConfigObjectBase):
         def __get_uuid_str():
             uuid = "["
             for each in self.HostIfUuid:
-                uuid += f'{each.GetUuid()}, ' 
+                uuid += f'{each.GetUuid()}, '
             uuid += "]"
             return uuid
 
@@ -164,9 +164,9 @@ class SubnetObject(base.ConfigObjectBase):
         hostif = self.HostIf
         if hostif:
             lif = hostif.lif
-            lififindex = hex(utils.LifId2LifIfIndex(lif.id))
+            hostifindex = hex(utils.LifId2HostIfIndex(lif.id))
             logger.info("- HostInterface:%s|%s|%s" %\
-                (hostif.GetInterfaceName(), lif.GID(), lififindex))
+                (hostif.GetInterfaceName(), lif.GID(), hostifindex))
         logger.info('- HostIfIdx:%s' % (self.HostIfIdx))
         if self.HostIfUuid:
             logger.info(f"- HostIf: {__get_uuid_str()}")
@@ -256,7 +256,7 @@ class SubnetObject(base.ConfigObjectBase):
             hostIf = InterfaceClient.GetHostInterface(self.Node)
             if hostIf != None:
                 self.HostIf = hostIf
-                self.HostIfIdx = [utils.LifId2LifIfIndex(self.HostIf.lif.id)]
+                self.HostIfIdx = [utils.LifId2HostIfIndex(self.HostIf.lif.id)]
                 self.HostIfUuid = [utils.PdsUuid(self.HostIfIdx[0])] if self.HostIfIdx[0] else []
         self.V4RouteTableId = 0
         # remove self from dependee list of those policies before updating it
@@ -409,7 +409,7 @@ class SubnetObject(base.ConfigObjectBase):
         if self.IpV6Valid and spec.V6Prefix != objSpec.V6Prefix:
             mismatchingAttrs.append('V6Prefix')
         if self.IpV6Valid and spec.IPv6VirtualRouterIP != objSpec.IPv6VirtualRouterIP:
-            mismatchingAttrs.append('IPv6VirtualRouterIP')        
+            mismatchingAttrs.append('IPv6VirtualRouterIP')
         # Currently In NetAgentMode we create multiple DHCP Relay policies
         if  utils.IsNetAgentMode():
             if not utils.ValidateListAttr(getattr(objspec, 'DHCPPolicyId'), getattr(spec, 'DHCPPolicyId')):

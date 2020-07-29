@@ -5,6 +5,7 @@
 #include "nic/include/base.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "gen/hal/include/hal_api_stats.hpp"
 #include "nic/hal/plugins/sfw/cfg/nwsec.hpp"
@@ -689,7 +690,7 @@ security_profile_spec_dump (SecurityProfileSpec& spec)
     hal_ret_t           ret = HAL_RET_OK;
     fmt::MemoryWriter   buf;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return HAL_RET_OK;
     }
 
@@ -1886,7 +1887,7 @@ security_flow_gate_get(nwsec::SecurityFlowGateGetRequest&      req,
 {
     hal_ret_t ret = HAL_RET_OK;
 
-    ret = hal::plugins::alg_utils::walk_expected_flow(req, res);        
+    ret = hal::plugins::alg_utils::walk_expected_flow(req, res);
     if (ret != HAL_RET_OK) {
         HAL_API_STATS_INC(HAL_API_SECURITY_FLOW_GATE_GET_FAIL);
         return HAL_RET_INVALID_ARG;

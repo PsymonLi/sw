@@ -222,7 +222,9 @@ func ifShowCmdPreRun(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("type") && !validateIfTypeStr(ifType) {
 		return fmt.Errorf("Invalid argument for \"type\", please choose from [host, l3, uplink, control]\n")
 	}
-	if !cmd.Flags().Changed("id") && !cmd.Flags().Changed("type") {
+	if !cmd.Flags().Changed("id") &&
+		!cmd.Flags().Changed("type") &&
+		!cmd.Flags().Changed("summary") {
 		return fmt.Errorf("Required flag(s) \"type\" or \"id\" have/has not been set\n")
 	}
 	return nil
@@ -383,10 +385,10 @@ func printIfSummary(count [pds.IfType_IF_TYPE_HOST + 1]int) {
 		x := pds.IfType(i)
 		ifStr := strings.ToLower(strings.Replace(strings.Replace(x.String(), "IF_TYPE_", "", -1), "_", "-", -1))
 		keyStr := fmt.Sprintf("Number of %s interfaces ", ifStr)
-		fmt.Printf("%-24s: %d\n", keyStr, count[i])
+		fmt.Printf("%-32s    : %d\n", keyStr, count[i])
 		total += count[i]
 	}
-	fmt.Printf("%-24s: %d\n", "Total number of interfaces ", total)
+	fmt.Printf("%-32s    : %d\n", "Total number of interfaces ", total)
 }
 
 func printIfHeader(str string) {
@@ -654,6 +656,38 @@ func lldpShowInterfacesCmdHandler(cmd *cobra.Command, args []string) {
 
 func lldpShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
 	lldpShowCmdHandler(cmd, args, lldpCmdTypeStats)
+}
+
+func hostIfGetNameFromKey(key []byte) string {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		return "-"
+	}
+	defer c.Close()
+
+	invalidUuid := make([]byte, 16)
+	if bytes.Equal(key, invalidUuid) {
+		return "-"
+	}
+
+	req := &pds.InterfaceGetRequest{
+		Id: [][]byte{key},
+	}
+
+	client := pds.NewIfSvcClient(c)
+	respMsg, err := client.InterfaceGet(context.Background(), req)
+	if err != nil {
+		return "-"
+	}
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		return "-"
+	}
+	resp := respMsg.Response[0]
+	if resp.GetStatus().GetHostIfStatus() == nil {
+		return "-"
+	}
+	return resp.GetStatus().GetHostIfStatus().GetName()
 }
 
 func lifGetNameFromKey(key []byte) string {

@@ -133,7 +133,7 @@ tunnel_vnid=0
 vcn_vnic_id = 100
 vcn_subnet_id = 100
 vcn_subnet_pfx='11.0.0.0/8'
-vcn_host_if_idx=node_obj.GetVcnIntfIfIndex()
+vcn_host_if_idx=node_obj.GetVcnHostIfIndex()
 vcn_intf_prefix='11.1.1.2/8'
 vcn_intf_ip=ipaddress.IPv4Address('11.1.1.2')
 vcn_v4_router_ip=ipaddress.IPv4Address('11.1.1.1')
@@ -149,7 +149,7 @@ vcn_route_table_id=100
 # PXE attributes
 pxe_vnic_id = 99
 # The host_if_idx is an encoding for PF
-pxe_host_if_idx='0x80000049'
+pxe_host_if_idx='0xa0000049'
 if use_device_macs:
     pxe_local_vnic_mac=node_obj.GetIntfMacByIfIndex(pxe_host_if_idx)
     if not pxe_local_vnic_mac:
@@ -168,8 +168,8 @@ subnet1_virt_router_mac='00:55:01:00:00:01'
 subnet1_gw_ip_addr=ipaddress.IPv4Address('2.1.0.1')
 
 # VNIC and mapping (local and remote) table objects
-subnet1_host_if_idx='0x8000004a'
-subnet1_remote_host_if_idx='0x8000004a'
+subnet1_host_if_idx='0xa000004a'
+subnet1_remote_host_if_idx='0xa000004a'
 if use_device_macs:
     subnet1_local_vnic_mac=node_obj.GetIntfMacByIfIndex(subnet1_host_if_idx)
     if not subnet1_local_vnic_mac:
@@ -196,8 +196,8 @@ subnet2_v4_router_ip=ipaddress.IPv4Address('3.1.0.1')
 subnet2_virt_router_mac='00:55:02:00:00:01'
 
 # VNIC and mapping (local and remote) table objects
-subnet2_host_if_idx='0x8000004b'
-subnet2_remote_host_if_idx='0x8000004b'
+subnet2_host_if_idx='0xa000004b'
+subnet2_remote_host_if_idx='0xa000004b'
 if use_device_macs:
     subnet2_local_vnic_mac=node_obj.GetIntfMacByIfIndex(subnet2_host_if_idx)
     if not subnet2_local_vnic_mac:
@@ -228,8 +228,8 @@ subnet3_v4_router_ip=ipaddress.IPv4Address('9.0.0.1')
 subnet3_virt_router_mac='00:55:03:00:00:01'
 
 # VNIC and mapping (local and remote) table objects
-subnet3_host_if_idx='0x8000004c'
-subnet3_remote_host_if_idx='0x8000004c'
+subnet3_host_if_idx='0xa000004c'
+subnet3_remote_host_if_idx='0xa000004c'
 if use_device_macs:
     subnet3_local_vnic_mac=node_obj.GetIntfMacByIfIndex(subnet3_host_if_idx)
     if not subnet3_local_vnic_mac:

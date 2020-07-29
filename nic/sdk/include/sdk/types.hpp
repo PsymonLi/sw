@@ -15,6 +15,32 @@
 namespace sdk {
 namespace types {
 
+enum log_mode_e {
+    log_mode_sync     = 0,     // write logs in the context of the caller thread
+    log_mode_async    = 1,    // write logs/traces in the context of a backend thread
+};
+
+enum trace_level_e {
+    trace_none     = 0,        // traces disabled completely
+    trace_err      = 1,
+    trace_warn     = 2,
+    trace_info     = 3,
+    trace_debug    = 4,
+    trace_verbose  = 5,
+};
+
+enum syslog_level_e {
+    log_none      = 0,
+    log_emerg     = 1,
+    log_alert     = 2,
+    log_crit      = 3,
+    log_err       = 4,
+    log_warn      = 5,
+    log_notice    = 6,
+    log_info      = 7,
+    log_debug     = 8,
+};
+
 typedef uint64_t    mem_addr_t;
 
 typedef enum monitor_type_e {

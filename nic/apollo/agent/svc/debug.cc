@@ -3,6 +3,7 @@
 // -----------------------------------------------------------------------------
 
 #include "nic/sdk/include/sdk/table.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/platform/marvell/marvell.hpp"
@@ -122,26 +123,26 @@ DebugSvcImpl::SystemPowerGet(ServerContext *context, const Empty *proto_req,
 Status
 DebugSvcImpl::TraceUpdate(ServerContext *context, const pds::TraceRequest *proto_req,
                           pds::TraceResponse *proto_rsp) {
-    utils::trace_level_e trace_level;
+    sdk::types::trace_level_e trace_level;
 
     switch (proto_req->trace_level()) {
     case pds::TRACE_LEVEL_NONE:
-        trace_level = utils::trace_none;
+        trace_level = sdk::types::trace_none;
         break;
     case pds::TRACE_LEVEL_DEBUG:
-        trace_level = utils::trace_debug;
+        trace_level = sdk::types::trace_debug;
         break;
     case pds::TRACE_LEVEL_ERROR:
-        trace_level = utils::trace_err;
+        trace_level = sdk::types::trace_err;
         break;
     case pds::TRACE_LEVEL_WARN:
-        trace_level = utils::trace_warn;
+        trace_level = sdk::types::trace_warn;
         break;
     case pds::TRACE_LEVEL_INFO:
-        trace_level = utils::trace_info;
+        trace_level = sdk::types::trace_info;
         break;
     case pds::TRACE_LEVEL_VERBOSE:
-        trace_level = utils::trace_verbose;
+        trace_level = sdk::types::trace_verbose;
         break;
     default:
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);

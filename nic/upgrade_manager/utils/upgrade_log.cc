@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/upgrade_manager/utils/upgrade_log.hpp"
 
 namespace upgrade {
@@ -17,12 +18,12 @@ void initializeLogger() {
     static bool initDone = false;
     if (!initDone && exists("/nic/tools/fwupdate")) {
         upgrade_obfl_trace_logger = ::utils::log::factory("upgrade_obfl", 0x0,
-                                        ::utils::log_mode_sync, false,
+                                        sdk::types::log_mode_sync, false,
                                         OBFL_LOG_FILENAME, NULL,
                                         OBFL_LOG_MAX_FILESIZE,
-                                        LOG_MAX_FILES, ::utils::trace_debug,
-                                        ::utils::trace_debug,
-                                        ::utils::log_none);
+                                        LOG_MAX_FILES, sdk::types::trace_debug,
+                                        sdk::types::trace_debug,
+                                        sdk::types::log_none);
 	UPG_OBFL_TRACE("Monitoring Upgrade Manager");
         initDone = true;
     }

@@ -4,6 +4,7 @@
 
 #include <google/protobuf/util/json_util.h>
 #include "nic/include/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "gen/hal/include/hal_api_stats.hpp"
@@ -98,7 +99,7 @@ ep_init (ep_t *ep)
     SDK_SPINLOCK_INIT(&ep->slock, PTHREAD_PROCESS_SHARED);
 
     sdk::lib::dllist_reset(&ep->ip_list_head);
-    ep->session_list_head = (dllist_ctxt_t *)HAL_CALLOC(HAL_MEM_ALLOC_DLLIST, 
+    ep->session_list_head = (dllist_ctxt_t *)HAL_CALLOC(HAL_MEM_ALLOC_DLLIST,
                sizeof(dllist_ctxt_t)*HAL_MAX_DATA_THREAD);
     for (uint8_t idx=0; idx<HAL_MAX_DATA_THREAD; idx++)
         sdk::lib::dllist_reset(&ep->session_list_head[idx]);
@@ -377,7 +378,7 @@ endpoint_dump (EndpointSpec& spec)
 {
     std::string    ep_cfg;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug) {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug) {
         return;
     }
     google::protobuf::util::MessageToJsonString(spec, &ep_cfg);
@@ -459,7 +460,7 @@ validate_endpoint_create (EndpointSpec& spec, EndpointResponse *rsp)
 //-----------------------------------------------------------------------------
 // Installs mac TCAM entries for QoS traffic separation
 // - Assumptions:
-//   - Inband: 
+//   - Inband:
 //     - EPs are only created with untag l2seg.
 //     - In bond, the bond's mac is created on both uplinks. Each uplink
 //       will have only one EP with bond's mac.
@@ -474,11 +475,11 @@ validate_endpoint_create (EndpointSpec& spec, EndpointResponse *rsp)
 //    - First of either (num_inband_eps + num_swm_eps):
 //      - Install Control queues
 //    - First of num_swm_eps:
-//      - Install SWM queues 
+//      - Install SWM queues
 //    - Last of either (num_inband_eps + num_swm_eps):
 //      - Remove Control queues
 //    - Last of num_swm_eps:
-//      - Remove SWM queues 
+//      - Remove SWM queues
 //  - per uplink num_swm_eps:
 //    - First of swm ep on uplink
 //      - Install swm mac in TCAM
@@ -497,7 +498,7 @@ endpoint_install_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
             ret = qos_swm_control_queue_init(true, true);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to program Control Qos queues mac: {}, "
-                              "uplink: {}. ret: {}", 
+                              "uplink: {}. ret: {}",
                               macaddr2str(ep->l2_key.mac_addr),
                               uplink_if->uplink_port_num,
                               ret);
@@ -510,7 +511,7 @@ endpoint_install_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
             ret = qos_swm_control_queue_init(true, false);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to program SWM Qos queues mac: {}, "
-                              "uplink: {}. ret: {}", 
+                              "uplink: {}. ret: {}",
                               macaddr2str(ep->l2_key.mac_addr),
                               uplink_if->uplink_port_num,
                               ret);
@@ -527,7 +528,7 @@ endpoint_install_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
                                               MAC_TO_UINT64(ep->l2_key.mac_addr),
                                               true);
             if (ret != HAL_RET_OK) {
-                HAL_TRACE_ERR("Failed to program SWM Qos TCAM mac: {}, uplink: {}. ret: {}", 
+                HAL_TRACE_ERR("Failed to program SWM Qos TCAM mac: {}, uplink: {}. ret: {}",
                               macaddr2str(ep->l2_key.mac_addr),
                               uplink_if->uplink_port_num,
                               ret);
@@ -546,7 +547,7 @@ endpoint_install_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
             ret = qos_swm_control_queue_init(false, true);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to program Control Qos queues mac: {}, "
-                              "uplink: {}. ret: {}", 
+                              "uplink: {}. ret: {}",
                               macaddr2str(ep->l2_key.mac_addr),
                               uplink_if->uplink_port_num,
                               ret);
@@ -561,7 +562,7 @@ endpoint_install_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
                                           MAC_TO_UINT64(ep->l2_key.mac_addr),
                                           true);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("Failed to program Inband Qos TCAM mac: {}, uplink: {}. ret: {}", 
+            HAL_TRACE_ERR("Failed to program Inband Qos TCAM mac: {}, uplink: {}. ret: {}",
                           macaddr2str(ep->l2_key.mac_addr),
                           uplink_if->uplink_port_num,
                           ret);
@@ -595,7 +596,7 @@ endpoint_uninstall_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
             ret = qos_swm_control_queue_deinit(false, true);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to deprogram Control Qos queues mac: {}, "
-                              "uplink: {}. ret: {}", 
+                              "uplink: {}. ret: {}",
                               macaddr2str(ep->l2_key.mac_addr),
                               uplink_if->uplink_port_num,
                               ret);
@@ -608,7 +609,7 @@ endpoint_uninstall_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
             ret = qos_swm_control_queue_deinit(true, false);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to deprogram SWM Qos queues mac: {}, "
-                              "uplink: {}. ret: {}", 
+                              "uplink: {}. ret: {}",
                               macaddr2str(ep->l2_key.mac_addr),
                               uplink_if->uplink_port_num,
                               ret);
@@ -626,7 +627,7 @@ endpoint_uninstall_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
                                               false);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to deprogram SWM Qos TCAM mac: {}, uplink: {}. "
-                              "ret: {}", 
+                              "ret: {}",
                               macaddr2str(ep->l2_key.mac_addr),
                               uplink_if->uplink_port_num,
                               ret);
@@ -645,7 +646,7 @@ endpoint_uninstall_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
             ret = qos_swm_control_queue_deinit(false, true);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to deprogram Control Qos queues mac: {}, "
-                              "uplink: {}. ret: {}", 
+                              "uplink: {}. ret: {}",
                               macaddr2str(ep->l2_key.mac_addr),
                               uplink_if->uplink_port_num,
                               ret);
@@ -660,7 +661,7 @@ endpoint_uninstall_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
                                           MAC_TO_UINT64(ep->l2_key.mac_addr),
                                           false);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("Failed to deprogram Inband Qos TCAM mac: {}, uplink: {}. ret: {}", 
+            HAL_TRACE_ERR("Failed to deprogram Inband Qos TCAM mac: {}, uplink: {}. ret: {}",
                           macaddr2str(ep->l2_key.mac_addr),
                           uplink_if->uplink_port_num,
                           ret);
@@ -698,7 +699,7 @@ endpoint_update_tunnel_if (dllist_ctxt_t *list_head, ep_t *ep, bool add)
 
     dllist_for_each(lnode, list_head) {
         pi_ip_entry = dllist_entry(lnode, ep_ip_entry_t, ep_ip_lentry);
-        HAL_TRACE_DEBUG("For IP {}, updating tunnels", 
+        HAL_TRACE_DEBUG("For IP {}, updating tunnels",
                         ipaddr2str(&(pi_ip_entry->ip_addr)));
         ret = tunnel_if_rtep_ep_change(&pi_ip_entry->ip_addr,
                                        add ? ep : NULL);
@@ -722,7 +723,7 @@ endpoint_update_collector (dllist_ctxt_t *list_head, ep_t *ep, bool add)
 
     dllist_for_each(lnode, list_head) {
         pi_ip_entry = dllist_entry(lnode, ep_ip_entry_t, ep_ip_lentry);
-        HAL_TRACE_DEBUG("For IP {}, updating collectors", 
+        HAL_TRACE_DEBUG("For IP {}, updating collectors",
                         ipaddr2str(&(pi_ip_entry->ip_addr)));
         ret = collector_ep_update(&pi_ip_entry->ip_addr,
                                   add ? ep : NULL);
@@ -774,7 +775,7 @@ endpoint_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
     }
 
     // Create qos for SWM EP
-    if (app_ctxt->hal_if->if_type == intf::IF_TYPE_ENIC && 
+    if (app_ctxt->hal_if->if_type == intf::IF_TYPE_ENIC &&
         (enicif_is_swm(app_ctxt->hal_if) || enicif_is_inband(app_ctxt->hal_if))) {
 
         ret = if_enicif_get_pinned_if(app_ctxt->hal_if, &uplink_if);
@@ -1114,7 +1115,7 @@ ep_get_pinned_uplink(ep_t *ep)
     hal_ret_t   ret     = HAL_RET_OK;
     if_t        *hal_if = NULL;
     if_t        *uplink_if = NULL;
-    
+
     if (ep == NULL) {
         HAL_TRACE_ERR("EP is NULL");
         goto end;
@@ -1125,7 +1126,7 @@ ep_get_pinned_uplink(ep_t *ep)
                         ep_l2_key_to_str(ep));
         goto end;
     }
-    
+
     hal_if = find_if_by_handle(ep->if_handle);
     if (hal_if == NULL) {
         HAL_TRACE_ERR("Interface {} not found for if handle", ep->if_handle);
@@ -1297,10 +1298,10 @@ endpoint_create (EndpointSpec& spec, EndpointResponse *rsp)
     cfg_op_ctxt_t                   cfg_ctxt = { 0 };
     L2SegmentKeyHandle              l2seg_key_handle;
 
-    hal_api_trace(" API Begin: Endpoint create ", ::utils::trace_info);
+    hal_api_trace(" API Begin: Endpoint create ", sdk::types::trace_info);
 
     // dump incoming request
-    proto_msg_dump(spec, ::utils::trace_info);
+    proto_msg_dump(spec, sdk::types::trace_info);
 
     ret = validate_endpoint_create(spec, rsp);
     if (ret != HAL_RET_OK) {
@@ -2334,10 +2335,10 @@ endpoint_update (EndpointUpdateRequest& req, EndpointResponse *rsp)
     dhl_entry_t             dhl_entry     = { 0 };
     ep_update_app_ctxt_t    app_ctxt      = { 0 };
 
-    hal_api_trace(" API Begin: Endpoint update ", ::utils::trace_info);
+    hal_api_trace(" API Begin: Endpoint update ", sdk::types::trace_info);
 
     // dump incoming request
-    proto_msg_dump(req, ::utils::trace_info);
+    proto_msg_dump(req, sdk::types::trace_info);
 
     ret = validate_endpoint_update_spec(req, rsp);
     if (ret != HAL_RET_OK) {
@@ -2550,7 +2551,7 @@ endpoint_delete_del_cb (cfg_op_ctxt_t *cfg_ctxt)
     }
 
     hal_if = find_if_by_handle(ep->if_handle);
-    if (hal_if && hal_if->if_type == intf::IF_TYPE_ENIC && 
+    if (hal_if && hal_if->if_type == intf::IF_TYPE_ENIC &&
         (enicif_is_swm(hal_if) || enicif_is_inband(hal_if))) {
         ret = if_enicif_get_pinned_if(hal_if, &uplink_if);
         if (ret != HAL_RET_OK) {
@@ -2629,7 +2630,7 @@ ep_session_delete_cb(void *timer, uint32_t timer_id, void *ctxt)
                 // Then don't do anything. This can happen in a scenario - this session was
                 // earlier part of the EP (that is getting deleted). When EP is deleted,
                 // this session delete function will be called after a delay (250ms),  in that
-                // time, this session's SEP/DEP handle could get updated to some other EP 
+                // time, this session's SEP/DEP handle could get updated to some other EP
                 // handle (in a vMotion scenario), then dont touch the session.
                 op = SESSION_DEL_OP_NONE;
             }
@@ -2654,7 +2655,7 @@ ep_session_delete_cb(void *timer, uint32_t timer_id, void *ctxt)
                     count   = 0;
                     ep_updt = (ep_session_upd_args_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPD_LIST,
                                                                   sizeof(ep_session_upd_args_t));
-                } 
+                }
             } else if (op == SESSION_DEL_OP_DEL) {
                 if (fte::session_delete_async(session, true) != HAL_RET_OK) {
                     HAL_TRACE_ERR("Couldnt delete session with handle: {}", entry->handle_id);
@@ -2791,10 +2792,10 @@ endpoint_delete (EndpointDeleteRequest& req,
     cfg_op_ctxt_t    cfg_ctxt = { 0 };
     dhl_entry_t      dhl_entry = { 0 };
 
-    hal_api_trace(" API Begin: Endpoint delete ", ::utils::trace_info);
+    hal_api_trace(" API Begin: Endpoint delete ", sdk::types::trace_info);
 
     // dump proto message
-    proto_msg_dump(req, ::utils::trace_info);
+    proto_msg_dump(req, sdk::types::trace_info);
 
     // validate the request message
     ret = validate_endpoint_delete_req(req, rsp);
@@ -2973,7 +2974,7 @@ ep_handle_ipsg_change_cb (void *ht_entry, void *ctxt)
 }
 
 ep_t *
-find_ep_by_mac (mac_addr_t mac) 
+find_ep_by_mac (mac_addr_t mac)
 {
     struct ep_get_t {
         mac_addr_t mac;
@@ -2989,7 +2990,7 @@ find_ep_by_mac (mac_addr_t mac)
             ep_ctx->ep = tmp_ep;
             return true;
         }
-      
+
         return false;
     };
 
@@ -3119,7 +3120,7 @@ ep_add_session (ep_t *ep, session_t *session, bool ep_create)
 
     ep_lock(ep, __FILENAME__, __LINE__, __func__);
     if (ep_create) {
-        hal_handle_id_list_entry_t *curr_entry; 
+        hal_handle_id_list_entry_t *curr_entry;
         dllist_ctxt_t              *curr      = NULL;
         dllist_ctxt_t              *ins_after = &ep->session_list_head[session->fte_id];
 
@@ -3549,8 +3550,8 @@ ep_quiesce(ep_t *ep, bool entry_add)
     return ret;
 }
 
-bool 
-endpoint_is_remote(ep_t *ep) 
+bool
+endpoint_is_remote(ep_t *ep)
 {
     return (ep && (ep->ep_flags & EP_FLAGS_REMOTE));
 }
@@ -3739,7 +3740,7 @@ endpoint_migration_done (ep_t *ep, MigrationState mig_state)
         if (mig_state == MigrationState::SUCCESS) {
             endpoint_vmotion_sessions_update(ep, false);
         } else {
-            // Migration failed in Destination host, so just reset sync_session bit alone 
+            // Migration failed in Destination host, so just reset sync_session bit alone
             endpoint_vmotion_sessions_update(ep, true);
         }
     }

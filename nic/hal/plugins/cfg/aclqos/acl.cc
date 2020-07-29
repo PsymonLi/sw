@@ -4,6 +4,7 @@
 
 #include "nic/include/base.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "gen/hal/include/hal_api_stats.hpp"
@@ -136,7 +137,7 @@ acl_spec_dump (AclSpec& spec)
     std::string buf;
     google::protobuf::util::JsonPrintOptions options;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return HAL_RET_OK;
     }
 
@@ -1003,8 +1004,8 @@ extract_match_spec (acl_match_spec_t *ms,
         goto end;
     }
 
-    ms->int_key.ep_learn_en = sel.internal_key().ep_learn_en();    
-    ms->int_mask.ep_learn_en = sel.internal_mask().ep_learn_en();    
+    ms->int_key.ep_learn_en = sel.internal_key().ep_learn_en();
+    ms->int_mask.ep_learn_en = sel.internal_mask().ep_learn_en();
 
 #ifdef ACL_DOL_TEST_ONLY
     // Key of internal fields for use only with DOL/testing infra

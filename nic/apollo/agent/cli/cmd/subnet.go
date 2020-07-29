@@ -124,14 +124,14 @@ func printSubnetDetail(subnet *pds.Subnet) {
 	egressV6Policy := spec.GetEgV6SecurityPolicyId()
 	dhcpPolicy := spec.GetDHCPPolicyId()
 	hostIf := spec.GetHostIf()
-	lifName := "-"
+	ifName := "-"
 
 	if len(hostIf) != 0 {
-		lifName = ""
+		ifName = ""
 		for i := 0; i < len(hostIf); i++ {
-			lifName += lifGetNameFromKey(hostIf[i])
+			ifName += hostIfGetNameFromKey(hostIf[i])
 			if i != len(hostIf)-1 {
-				lifName += ", "
+				ifName += ", "
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func printSubnetDetail(subnet *pds.Subnet) {
 	} else {
 		fmt.Printf("%-30s : %s\n", "DHCP Policy Id", "-")
 	}
-	fmt.Printf("%-30s : %s\n", "Host Interface", lifName)
+	fmt.Printf("%-30s : %s\n", "Host Interface", ifName)
 	fmt.Printf("%-30s : %d\n", "Type of Service", spec.GetToS())
 	lineStr := strings.Repeat("-", 70)
 	fmt.Println(lineStr)

@@ -27,6 +27,7 @@
 #include "nic/include/fte.hpp"
 #include "nic/linkmgr/linkmgr_utils.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "gen/proto/types.pb.h"
 #include "nic/hal/src/internal/cpulif.hpp"
 #include "nic/sdk/lib/utils/port_utils.hpp"
@@ -82,7 +83,7 @@ hal_stream_port_status_update (port_event_info_t port_event) {
                         linkmgr::sdk_port_oper_st_to_port_oper_st_spec(port_event->oper_status));
         return true;
     };
-    g_hal_state->event_mgr()->notify_event(::event::EVENT_ID_PORT_STATE, 
+    g_hal_state->event_mgr()->notify_event(::event::EVENT_ID_PORT_STATE,
                                            (void *)&port_event, walk_cb);
 
     return HAL_RET_OK;
@@ -645,19 +646,19 @@ if_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
             TNNL_ENC_TYPE::IF_TUNNEL_ENCAP_TYPE_GRE) {
             // Update mirror sessions to point to tunnel's rw_idx
             ret = mirror_session_change(&hal_if->gre_dest,
-                                        true, hal_if, 
+                                        true, hal_if,
                                         false, NULL,
                                         false, NULL);
 
         }
     }
 
-    // We dont want to send pkts to lif before init. 
-    if (hal_if->if_type == intf::IF_TYPE_ENIC && 
+    // We dont want to send pkts to lif before init.
+    if (hal_if->if_type == intf::IF_TYPE_ENIC &&
         hal_if->enic_type == intf::IF_ENIC_TYPE_CLASSIC) {
         lif = find_lif_by_handle(hal_if->lif_handle);
         // Install NCSI nacls for oob enic
-        if (lif && lif->state == intf::LIF_STATE_INIT && 
+        if (lif && lif->state == intf::LIF_STATE_INIT &&
             lif->type == types::LIF_TYPE_MNIC_OOB_MANAGEMENT) {
             ret = if_enic_install_ncsi_nacls(hal_if, lif);
             if (ret != HAL_RET_OK) {
@@ -665,11 +666,11 @@ if_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
                 goto end;
             }
         }
-        if (lif && lif->state == intf::LIF_STATE_INIT && 
+        if (lif && lif->state == intf::LIF_STATE_INIT &&
             lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT) {
             ret = if_enic_install_lldp_nacls(hal_if, lif, true);
             if (ret != HAL_RET_OK) {
-                HAL_TRACE_ERR("Unable to install inband lldp nacls. err: {}", 
+                HAL_TRACE_ERR("Unable to install inband lldp nacls. err: {}",
                               ret);
                 goto end;
             }
@@ -740,7 +741,7 @@ enicif_update_inb_enics (void)
                 ret = pd::hal_pd_call(pd::PD_FUNC_ID_IF_INP_PROP_PGM,
                                       &pd_func_args);
                 if (ret != HAL_RET_OK) {
-                    HAL_TRACE_ERR("Failed to pgm inp prop: if: {} err: {}", 
+                    HAL_TRACE_ERR("Failed to pgm inp prop: if: {} err: {}",
                                   hal_if->if_id, ret);
                 }
             }
@@ -765,7 +766,7 @@ if_pick_uplink_oper_up (void)
         if_t *hal_if = NULL;
 
         hal_if = (if_t *)hal_handle_get_obj(entry->handle_id);
-        if (hal_if->if_type == intf::IF_TYPE_UPLINK && 
+        if (hal_if->if_type == intf::IF_TYPE_UPLINK &&
             !hal_if->is_oob_management) {
             if (hal_if->if_op_status == intf::IF_STATUS_UP) {
                 ctx->hal_if = hal_if;
@@ -850,7 +851,7 @@ enicif_classic_update_l2seg_oiflist(if_t *hal_if, l2seg_t *l2seg,
 
     if (lif_upd->pkt_filter_bcast_changed) {
         ret = l2seg_update_oiflist_oif(l2seg, hal_if, lif_upd->receive_broadcast, false,
-                                       true, false, false); 
+                                       true, false, false);
 #if 0
         oif_t                       oif = {};
         oif.intf = hal_if;
@@ -870,9 +871,9 @@ enicif_classic_update_l2seg_oiflist(if_t *hal_if, l2seg_t *l2seg,
     }
 
     if (lif_upd->pkt_filter_allmc_changed) {
-        ret = l2seg_update_oiflist_oif(l2seg, hal_if, lif_upd->receive_all_multicast, 
+        ret = l2seg_update_oiflist_oif(l2seg, hal_if, lif_upd->receive_all_multicast,
                                        false,
-                                       false, true, false); 
+                                       false, true, false);
 #if 0
         if (lif_upd->receive_all_multicast) {
             ret = oif_list_add_oif(l2seg_get_mcast_oif_list(l2seg), &oif);
@@ -889,9 +890,9 @@ enicif_classic_update_l2seg_oiflist(if_t *hal_if, l2seg_t *l2seg,
     }
 
     if (lif_upd->pkt_filter_prom_changed) {
-        ret = l2seg_update_oiflist_oif(l2seg, hal_if, lif_upd->receive_promiscous, 
+        ret = l2seg_update_oiflist_oif(l2seg, hal_if, lif_upd->receive_promiscous,
                                        false,
-                                       false, false, true); 
+                                       false, false, true);
 #if 0
         if (lif_upd->receive_promiscous) {
             ret = oif_list_add_oif(l2seg_get_prmsc_oif_list(l2seg), &oif);
@@ -955,8 +956,8 @@ if_update_oif_lists (if_t *hal_if, bool add)
             if (l2seg) {
 
                 ret = l2seg_update_oiflist_oif(l2seg, hal_if, add,
-                                               false, 
-                                               true,    // BC 
+                                               false,
+                                               true,    // BC
                                                true,    // MC
                                                false);  // Prom
 #if 0
@@ -1119,7 +1120,7 @@ end:
 }
 
 static bool
-has_if_mirror_sessions_changed (if_t *hal_if, if_mirror_info_t *mirror_spec, 
+has_if_mirror_sessions_changed (if_t *hal_if, if_mirror_info_t *mirror_spec,
                                 uplink_erspan_direction_t dir)
 {
     if (dir == UPLINK_ERSPAN_DIRECTION_EGRESS) {
@@ -1150,7 +1151,7 @@ has_if_mirror_sessions_changed (if_t *hal_if, if_mirror_info_t *mirror_spec,
 }
 
 static hal_ret_t
-program_lif_omap_table_in_hw (if_t *hal_if) 
+program_lif_omap_table_in_hw (if_t *hal_if)
 {
     pd::pd_func_args_t                 pd_func_args = {0};
     pd::pd_uplink_erspan_enable_args_t uplink_erspan_args = {0};
@@ -1203,7 +1204,7 @@ deprogram_lif_omap_table_in_hw (if_t *hal_if)
     ret = pd::hal_pd_call(pd::PD_FUNC_ID_UPLINK_ERSPAN_DISABLE,
                           &pd_func_args);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("HW-Table De-Programming failed for UPLINK-ERSPAN {}", 
+        HAL_TRACE_ERR("HW-Table De-Programming failed for UPLINK-ERSPAN {}",
                       ret);
     } else {
         HAL_TRACE_DEBUG("HW-Table De-Programming succeeded for UPLINK-ERSPAN");
@@ -1222,7 +1223,7 @@ if_update_mirror_sessions (if_t *hal_if, if_mirror_info_t *mirror_spec)
 
     // For now, handle for UPLINK ERSPAN & WL ERSPAN
 #if 0
-    if (hal_if->if_type != intf::IF_TYPE_UPLINK && 
+    if (hal_if->if_type != intf::IF_TYPE_UPLINK &&
         !(hal_if->if_type == intf::IF_TYPE_ENIC &&
           hal_if->enic_type == intf::IF_ENIC_TYPE_USEG))
 #endif
@@ -1287,7 +1288,7 @@ if_update_mirror_sessions (if_t *hal_if, if_mirror_info_t *mirror_spec)
     if (rx_mirror_sessions_update) {
         hal_if->direction = UPLINK_ERSPAN_DIRECTION_INGRESS;
         if (mirror_spec->rx_sessions_count) {
-            ret = program_lif_omap_table_in_hw(hal_if); 
+            ret = program_lif_omap_table_in_hw(hal_if);
             if (ret != HAL_RET_OK)
                 goto error;
         }
@@ -1596,8 +1597,8 @@ interface_create (InterfaceSpec& spec, InterfaceResponse *rsp)
     if_mirror_info_t            mirror_spec;
     hal_handle_t                pinned_uplink_handle = HAL_HANDLE_INVALID;
 
-    hal_api_trace(" API Begin: Interface create ", ::utils::trace_info);
-    proto_msg_dump(spec, ::utils::trace_info);
+    hal_api_trace(" API Begin: Interface create ", sdk::types::trace_info);
+    proto_msg_dump(spec, sdk::types::trace_info);
 
     // do basic validations on interface
     ret = validate_interface_create(spec, rsp);
@@ -1912,12 +1913,12 @@ enic_if_update_check_for_change (InterfaceSpec& spec, if_t *hal_if,
 
         // Check for mirror sessions change
         mirror_session_id_t mirr_hw_id;
-        if ((uint8_t)spec.txmirrorsessions_size() != 
+        if ((uint8_t)spec.txmirrorsessions_size() !=
             count_set_bits(hal_if->programmed_tx_session_id_bitmap)) {
             app_ctxt->tx_mirr_change = true;
         }
         for (int i = 0; i < spec.txmirrorsessions_size(); i++) {
-            if (hal_if->tx_mirror_session_id[i] != 
+            if (hal_if->tx_mirror_session_id[i] !=
                 spec.txmirrorsessions(i).mirrorsession_id()) {
                 app_ctxt->tx_mirr_change = true;
             }
@@ -1940,12 +1941,12 @@ enic_if_update_check_for_change (InterfaceSpec& spec, if_t *hal_if,
                             app_ctxt->tx_mirr_bmap);
         }
         // RX Mirror
-        if ((uint8_t)spec.rxmirrorsessions_size() != 
+        if ((uint8_t)spec.rxmirrorsessions_size() !=
             count_set_bits(hal_if->programmed_rx_session_id_bitmap)) {
             app_ctxt->rx_mirr_change = true;
         }
         for (int i = 0; i < spec.rxmirrorsessions_size(); i++) {
-            if (hal_if->rx_mirror_session_id[i] != 
+            if (hal_if->rx_mirror_session_id[i] !=
                 spec.rxmirrorsessions(i).mirrorsession_id()) {
                 app_ctxt->rx_mirr_change = true;
             }
@@ -2933,11 +2934,11 @@ enic_update_lif (if_t *hal_if,
     app_ctxt.lif_change = true;
     app_ctxt.lif_handle = new_lif ? new_lif->hal_handle : HAL_HANDLE_INVALID;
     /*
-     * Populated in if_update_upd_cb. 
+     * Populated in if_update_upd_cb.
      * Lif update from nicmgr and Learn in FTE thread.
      * Both took read locks and FTE thread got lif pointer.
-     * Both released read locks in hal_handle_upd_obj but gRPC got 
-     * write lock. The new lif in fte thread is obsolete. 
+     * Both released read locks in hal_handle_upd_obj but gRPC got
+     * write lock. The new lif in fte thread is obsolete.
      * So passing lif handle in app_ctxt so that FTE thread will
      * get new lif.
      */
@@ -2991,8 +2992,8 @@ interface_update (InterfaceSpec& spec, InterfaceResponse *rsp)
     if_mirror_info_t            mirror_spec;
     bool                        has_changed = false;
 
-    hal_api_trace(" API Begin: Interface update ", ::utils::trace_info);
-    proto_msg_dump(spec, ::utils::trace_info);
+    hal_api_trace(" API Begin: Interface update ", sdk::types::trace_info);
+    proto_msg_dump(spec, sdk::types::trace_info);
 
     // validate the request message
     ret = validate_if_update(spec, rsp);
@@ -3147,7 +3148,7 @@ if_process_get (if_t *hal_if, InterfaceGetResponse *rsp)
         rsp->mutable_status()->mutable_uplink_info()->
             set_hw_port_num(hal_if->uplink_port_num);
         rsp->mutable_status()->set_if_status(hal_if->if_op_status);
-        interface_lldp_status_get(uplink_if_get_idx(hal_if), 
+        interface_lldp_status_get(uplink_if_get_idx(hal_if),
                                   rsp->mutable_status()->mutable_uplink_info());
         interface_lldp_stats_get(uplink_if_get_idx(hal_if),
                                  rsp->mutable_stats()->
@@ -3547,7 +3548,7 @@ cpu_if_create (const InterfaceSpec& spec, if_t *hal_if)
     }
 
     lif = find_lif_by_handle(hal_if->lif_handle);
-    HAL_TRACE_DEBUG("if_id : {} lif_id : {}, allow_rx: {}", 
+    HAL_TRACE_DEBUG("if_id : {} lif_id : {}, allow_rx: {}",
                     hal_if->if_id, lif->lif_id, hal_if->allow_rx);
 
     return ret;
@@ -4180,7 +4181,7 @@ tunnel_if_rtep_ep_change (ip_addr_t *ip, ep_t *ep)
 
         ret = tunnel_if_update_rtep_ep(hal_if, ep);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("Unable to update EP of tunnel if: {}", 
+            HAL_TRACE_ERR("Unable to update EP of tunnel if: {}",
                           hal_if->if_id);
             goto end;
         }
@@ -4589,7 +4590,7 @@ if_delete_del_cb (cfg_op_ctxt_t *cfg_ctxt)
 
     HAL_TRACE_DEBUG("delete del cb {}", intf->if_id);
 
-    if (intf->if_type == intf::IF_TYPE_ENIC && 
+    if (intf->if_type == intf::IF_TYPE_ENIC &&
         intf->enic_type == intf::IF_ENIC_TYPE_CLASSIC) {
         lif = find_lif_by_handle(intf->lif_handle);
     }
@@ -4851,8 +4852,8 @@ interface_delete (InterfaceDeleteRequest& req, InterfaceDeleteResponse *rsp)
     dhl_entry_t                 dhl_entry = { 0 };
     const InterfaceKeyHandle    &kh = req.key_or_handle();
 
-    hal_api_trace(" API Begin: Interface delete ", ::utils::trace_info);
-    proto_msg_dump(req, ::utils::trace_info);
+    hal_api_trace(" API Begin: Interface delete ", sdk::types::trace_info);
+    proto_msg_dump(req, sdk::types::trace_info);
 
     // validate the request message
     ret = validate_if_delete_req(req, rsp);
@@ -4894,7 +4895,7 @@ interface_delete (InterfaceDeleteRequest& req, InterfaceDeleteResponse *rsp)
                              if_delete_cleanup_cb);
 
     // Delete MirrorSessions config, as needed
-    if (ret == HAL_RET_OK && (hal_if->mirror_cfg.tx_sessions_count || 
+    if (ret == HAL_RET_OK && (hal_if->mirror_cfg.tx_sessions_count ||
                               hal_if->mirror_cfg.rx_sessions_count)) {
         if_mirror_info_t mirror_spec;
 
@@ -5099,7 +5100,7 @@ if_enic_install_lldp_nacls (if_t *enic_if, lif_t *lif, bool install)
         ret = acl_uninstall_lldp(enic_if, uplink_if);
     }
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Unable to {} inband lldp. err {}", 
+        HAL_TRACE_ERR("Unable to {} inband lldp. err {}",
                       ret, install ? "install" : "uninstall");
         goto end;
     }
@@ -5152,10 +5153,10 @@ if_handle_lif_update (pd::pd_if_lif_update_args_t *args)
         return HAL_RET_INVALID_ARG;
     }
 
-    HAL_TRACE_DEBUG("Processing lif update for if_id : {}", 
+    HAL_TRACE_DEBUG("Processing lif update for if_id : {}",
                     args->intf->if_id);
 
-    if (args->state_changed && args->state == intf::LIF_STATE_INIT && 
+    if (args->state_changed && args->state == intf::LIF_STATE_INIT &&
         args->lif->type == types::LIF_TYPE_MNIC_OOB_MANAGEMENT) {
         ret = if_enic_install_ncsi_nacls(args->intf, args->lif);
         if (ret != HAL_RET_OK) {
@@ -5171,12 +5172,12 @@ if_handle_lif_update (pd::pd_if_lif_update_args_t *args)
     }
 
     // Install inband lldp entries
-    if (args->state_changed && args->state == intf::LIF_STATE_INIT && 
+    if (args->state_changed && args->state == intf::LIF_STATE_INIT &&
         (args->lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT ||
          args->lif->type == types::LIF_TYPE_HOST)) {
         ret = if_enic_install_lldp_nacls(args->intf, args->lif, true);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("Unable to install inband lldp nacls. err: {}", 
+            HAL_TRACE_ERR("Unable to install inband lldp nacls. err: {}",
                           ret);
             goto end;
         }
@@ -5943,7 +5944,7 @@ port_event_cb (port_event_info_t *port_event_info)
                              false);
 }
 
-static hal_ret_t 
+static hal_ret_t
 port_trigger_admin_state (port_args_t *port_args,
                           port_admin_state_t admin_state)
 {
@@ -5959,7 +5960,7 @@ port_trigger_admin_state (port_args_t *port_args,
     // update the port params
     ret = linkmgr::port_update(port_args);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("port_update failed for {}", 
+        HAL_TRACE_ERR("port_update failed for {}",
                       port_args->port_num);
     }
 
@@ -5969,7 +5970,7 @@ port_trigger_admin_state (port_args_t *port_args,
 }
 
 hal_ret_t
-port_update_type_admin_state (port_type_t port_type, 
+port_update_type_admin_state (port_type_t port_type,
                               port_admin_state_t admin_state)
 {
     uint32_t fp_port;
@@ -6004,7 +6005,7 @@ port_update_type_admin_state (port_type_t port_type,
         }
 
         HAL_TRACE_DEBUG("Port: {}. Update admin state: {}",
-                        eth_ifindex_to_str(ifindex), 
+                        eth_ifindex_to_str(ifindex),
                         sdk::lib::port_admin_state_enum_to_uint(admin_state));
         ret = port_trigger_admin_state(&port_args, admin_state);
         if (ret != HAL_RET_OK) {
@@ -6176,18 +6177,18 @@ if_port_oper_state_process_event (uint32_t fp_port_num, port_event_t event)
 
     if (!ctxt.hal_if->is_oob_management) {
         if (g_hal_state->inband_bond_mode() == hal::BOND_MODE_RR) {
-            ret = hal_if_pick_inb_bond_active(ctxt.hal_if, new_status, 
+            ret = hal_if_pick_inb_bond_active(ctxt.hal_if, new_status,
                                               &inb_bond_active_changed);
             if (inb_bond_active_changed) {
                 ret = hal_if_inb_bond_active_changed(true);
             }
         }
     }
-    
+
 end:
     // Release write lock
     g_hal_state->cfg_db()->wunlock();
-    
+
     return ret;
 }
 
@@ -6221,7 +6222,7 @@ hal_ret_t
 hal_if_repin_mirror_sessions (void)
 {
     hal_ret_t ret = HAL_RET_OK;
-    
+
     ret = telemetry_mirror_session_handle_repin();
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("telemetry_mirror_session_handle_repin failed! ret: {}", ret);
@@ -6245,7 +6246,7 @@ hal_if_pick_inb_bond_active (if_t *hal_if, IfStatus new_status, bool *changed)
                 // NULL -> IF
                 *changed = true;
                 new_if = hal_if;
-            } else if ((old_if->if_id != hal_if->if_id) && 
+            } else if ((old_if->if_id != hal_if->if_id) &&
                 (uplink_if_get_idx(hal_if) == 0)) {
                 // Uplink 0 came up
                 *changed = true;
@@ -6271,7 +6272,7 @@ hal_if_pick_inb_bond_active (if_t *hal_if, IfStatus new_status, bool *changed)
         HAL_TRACE_DEBUG("Inband bond's active uplink change: {} => {}",
                         old_if ? if_keyhandle_to_str(old_if) : "NULL",
                         new_if ? if_keyhandle_to_str(new_if) : "NULL");
-        g_hal_state->set_inb_bond_active_uplink(new_if ? 
+        g_hal_state->set_inb_bond_active_uplink(new_if ?
                                                 new_if->hal_handle : HAL_HANDLE_INVALID);
     }
 
@@ -6848,7 +6849,7 @@ if_to_str (if_t *hal_if)
         case intf::IF_TYPE_UPLINK:
         case intf::IF_TYPE_UPLINK_PC:
         case intf::IF_TYPE_TUNNEL:
-            snprintf(buf, 50, "%s", 
+            snprintf(buf, 50, "%s",
                      eth_ifindex_to_str(hal_if->if_id).c_str());
             break;
         default:

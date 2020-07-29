@@ -6,6 +6,7 @@
 #define __TELEMETRY_HPP__
 
 #include <google/protobuf/util/json_util.h>
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/include/pd.hpp"
 #include "nic/hal/plugins/cfg/nw/interface.hpp"
 #include "nic/hal/plugins/cfg/nw/interface_api.hpp"
@@ -360,7 +361,7 @@ dropmonrule_spec_dump (DropMonitorRuleSpec& spec)
 {
     std::string    cfg;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug) {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug) {
         return;
     }
     google::protobuf::util::MessageToJsonString(spec, &cfg);
@@ -373,7 +374,7 @@ telemetry_active_bond_get_cb (void *ht_entry, void *ctxt)
 {
     hal_handle_id_ht_entry_t *entry = (hal_handle_id_ht_entry_t *)ht_entry;
     if_t                     *hal_if = NULL;
-    telemetry_active_port_get_cb_ctxt_t *tctxt = 
+    telemetry_active_port_get_cb_ctxt_t *tctxt =
                 (telemetry_active_port_get_cb_ctxt_t *) ctxt;
 
     hal_if = (if_t *) hal_handle_get_obj(entry->handle_id);
@@ -420,7 +421,7 @@ static inline if_t *
 telemetry_get_active_bond_uplink (void)
 {
     telemetry_active_port_get_cb_ctxt_t ctxt = {0};
-    
+
     g_hal_state->if_id_ht()->walk(telemetry_active_bond_get_cb, &ctxt);
     return ctxt.hal_if;
 }
@@ -430,7 +431,7 @@ telemetry_active_port_get_cb (void *ht_entry, void *ctxt)
 {
     hal_handle_id_ht_entry_t *entry = (hal_handle_id_ht_entry_t *)ht_entry;
     if_t                     *hal_if = NULL;
-    telemetry_active_port_get_cb_ctxt_t *tctxt = 
+    telemetry_active_port_get_cb_ctxt_t *tctxt =
                 (telemetry_active_port_get_cb_ctxt_t *) ctxt;
 
     hal_if = (if_t *) hal_handle_get_obj(entry->handle_id);
@@ -451,7 +452,7 @@ static inline if_t *
 telemetry_get_active_uplink (void)
 {
     telemetry_active_port_get_cb_ctxt_t ctxt = {0};
-    
+
     g_hal_state->if_id_ht()->walk(telemetry_active_port_get_cb, &ctxt);
     return ctxt.hal_if;
 }
@@ -463,7 +464,7 @@ hal_ret_t mirror_session_get(MirrorSessionGetRequest &req, MirrorSessionGetRespo
 hal_ret_t mirror_session_get_hw_id(mirror_session_id_t sw_id, mirror_session_id_t *hw_id);
 hal_ret_t telemetry_mirror_session_handle_repin();
 #if 0
-hal_ret_t mirror_session_if_change(ip_addr_t *ip, bool tunnel_if_change, 
+hal_ret_t mirror_session_if_change(ip_addr_t *ip, bool tunnel_if_change,
                                    if_t *tunnel_if, bool dest_if_change,
                                    if_t *dest_if, bool rtep_ep_change,
                                    bool rtep_ep_exists);
@@ -499,7 +500,7 @@ uint32_t mirror_session_key_size(void);
 if_t * mirror_erspan_get_tunnel_if(mirror_session_t *session);
 ep_t *mirror_erspan_get_remote_ep(mirror_session_t *session);
 if_t *telemetry_mirror_pick_dest_if(void);
-hal_ret_t populate_mirror_session_from_spec(mirror_session_t *session, 
+hal_ret_t populate_mirror_session_from_spec(mirror_session_t *session,
                                             MirrorSessionSpec &spec);
 hal_ret_t populate_collector_from_spec(collector_config_t &cfg,
                                        CollectorSpec &spec);

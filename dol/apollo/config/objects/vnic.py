@@ -91,7 +91,7 @@ class VnicObject(base.ConfigObjectBase):
             node_uuid = EzAccessStoreClient[node].GetNodeUuid(node)
             hostifidx = getattr(spec, 'hostifidx', None)
             if hostifidx:
-                self.HostIfIdx = int(hostifidx)
+                self.HostIfIdx = utils.LifIfIndex2HostIfIndex(int(hostifidx))
             elif len(parent.HostIfIdx) != 0:
                 self.HostIfIdx = parent.HostIfIdx[0]
         if self.HostIfIdx:

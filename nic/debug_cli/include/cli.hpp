@@ -60,11 +60,11 @@ sdk_ret_t
 cli_logger_init (void)
 {
     g_trace_logger = ::utils::log::factory("p4ctl", 0x0,
-            ::utils::log_mode_sync, false,
+            sdk::types::log_mode_sync, false,
             NULL, LOG_FILENAME, LOG_MAX_FILESIZE,
-            LOG_MAX_FILES, ::utils::trace_debug,
-            ::utils::trace_debug,
-            ::utils::log_none);
+            LOG_MAX_FILES, sdk::types::trace_debug,
+            sdk::types::trace_debug,
+            sdk::types::log_none);
 
     sdk::lib::logger::init(cli_sdk_logger);
 

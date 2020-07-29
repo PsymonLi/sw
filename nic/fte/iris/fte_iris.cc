@@ -10,6 +10,7 @@
 #include "nic/asm/cpu-p4plus/include/cpu-defines.h"
 #include "nic/hal/plugins/app_redir/app_redir_ctx.hpp"
 #include "nic/sdk/platform/capri/capri_tm_rw.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 
 #define LOG_SIZE(ev) ev.ByteSizeLong()
 #define TYPE_TO_LG_SZ(type, sz_) {                                    \
@@ -201,7 +202,7 @@ ctx_t::lookup_flow_objs (void)
             l2seg_args.l2seg = sl2seg_;
             pd_func_args.pd_l2seg_get_flow_lkupid = &l2seg_args;
             hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_L2SEG_GET_FLOW_LKPID, &pd_func_args);
-            rkey_.lkpvrf = key_.lkpvrf = l2seg_args.hwid; 
+            rkey_.lkpvrf = key_.lkpvrf = l2seg_args.hwid;
         }
 
         dep_handle_ = (dep_)?dep_->hal_handle:0;
@@ -396,7 +397,7 @@ ctx_t::create_session()
         rdirection_ = (dep_ && (dep_->ep_flags & EP_FLAGS_LOCAL)) ?
             hal::FLOW_DIR_FROM_DMA : hal::FLOW_DIR_FROM_UPLINK;
         // HACK Alert! For flow-aware mode there is no way
-        // for FTE to tell where the EP is located. Reverse the 
+        // for FTE to tell where the EP is located. Reverse the
         // direction until P4 has a way to notify this
         if (hal::g_hal_state->is_flow_aware()) {
             rdirection_ = (direction_ == hal::FLOW_DIR_FROM_UPLINK)?\
@@ -640,7 +641,7 @@ ctx_t::update_flow_table()
             session_args.update_iflow = false;
         }
 
-        if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) {
+        if (unlikely(hal::utils::hal_trace_level() >= sdk::types::trace_debug)) {
             HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte::update_flow_table: iflow.{} key={} lkp_inst={} "
                             "lkp_vrf={} action={} smac_rw={} dmac-rw={} "
                             "ttl_dec={} mcast={} lport={} qid_en={} qtype={} qid={} rw_act={} "
@@ -727,13 +728,13 @@ ctx_t::update_flow_table()
             hal::pd::pd_func_args_t  pd_func_args = {0};
             hal::pd::pd_l2seg_get_flow_lkupid_args_t args;
 
-            args.l2seg = dl2seg_;    
-            pd_func_args.pd_l2seg_get_flow_lkupid = &args;    
-            hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_L2SEG_GET_FLOW_LKPID, (hal::pd::pd_func_args_t*)&pd_func_args);    
-            rflow_cfg.key.lkpvrf = rkey_.lkpvrf = args.hwid;    
+            args.l2seg = dl2seg_;
+            pd_func_args.pd_l2seg_get_flow_lkupid = &args;
+            hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_L2SEG_GET_FLOW_LKPID, (hal::pd::pd_func_args_t*)&pd_func_args);
+            rflow_cfg.key.lkpvrf = rkey_.lkpvrf = args.hwid;
         }
 
-        if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) {
+        if (unlikely(hal::utils::hal_trace_level() >= sdk::types::trace_debug)) {
             HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte::update_flow_table: rflow.{} key={} lkp_inst={} "
                             "lkp_vrf={} action={} smac_rw={} dmac-rw={} "
                             "ttl_dec={} mcast={} lport={} qid_en={} qtype={} qid={} rw_act={} "
@@ -820,16 +821,16 @@ ctx_t::update_flow_table()
 
 end:
     // Dont log when we hit an error
-    if ((key_.flow_type == hal::FLOW_TYPE_V4) && 
+    if ((key_.flow_type == hal::FLOW_TYPE_V4) &&
         (ret == HAL_RET_OK) && ((session_exists == false) || (update_type == "delete"))) {
-      
+
         // Compute CPS
         if (session_exists == false) {
             fte_inst_compute_cps();
         }
 
         if (!ipc_logging_disable()) {
- 
+
             /* Add flow logging only for initiator flows */
             uint8_t istage = 0;
             add_flow_logging(key_, session_handle, &iflow_log_[istage], direction_);
@@ -1000,7 +1001,7 @@ ctx_t::queue_txpkt(uint8_t *pkt, size_t pkt_len,
     txpkt_info_t *pkt_info;
     hal::pd::pd_func_args_t pd_func_args = {0};
 
-    if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_verbose)) {
+    if (unlikely(hal::utils::hal_trace_level() >= sdk::types::trace_verbose)) {
         HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: txpkt len={} pkt={}", pkt_len, hex_str(pkt, (pkt_len >=128)?128:pkt_len));
     }
 
@@ -1015,12 +1016,12 @@ ctx_t::queue_txpkt(uint8_t *pkt, size_t pkt_len,
     } else {
         pkt_info->cpu_header.src_lif = cpu_rxhdr_->src_lif;
         // change lif/vlan for uplink pkts
-        // - Vxlan: P4 terminates vxlan and doesn't send outer headers to FTE. 
+        // - Vxlan: P4 terminates vxlan and doesn't send outer headers to FTE.
         //          So FTE can inject the same packet.
         // - IPsec Decrypt: FTE injected packets are coming back to FTE because
         //                  of flow miss. Even for this packets we re-inject
         //                  with cpu vlan.
-        if ((cpu_rxhdr_->lkp_dir == hal::FLOW_DIR_FROM_UPLINK) && 
+        if ((cpu_rxhdr_->lkp_dir == hal::FLOW_DIR_FROM_UPLINK) &&
             (use_vrf_ || is_proxy_enabled() || tunnel_terminated() ||
              pkt_info->cpu_header.src_lif == HAL_LIF_CPU)) {
             HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: setting defaults for uplink -> host direction");
@@ -1064,7 +1065,7 @@ ctx_t::queue_txpkt(uint8_t *pkt, size_t pkt_len,
     pkt_info->wring_type = wring_type;
     pkt_info->cb = cb;
 
-    if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_verbose)) {
+    if (unlikely(hal::utils::hal_trace_level() >= sdk::types::trace_verbose)) {
         HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: feature={} queued txpkt lkp_inst={} src_lif={} vlan={} "
                           "dest_lifq={} ring={} wring={} pkt={:p} len={}",
                           feature_name_,
@@ -1234,8 +1235,8 @@ ctx_t::apply_session_limit(void)
     uint8_t                      id = fte_id();
     int8_t                       tcp_flags;
     const fte::cpu_rxhdr_t      *cpurxhdr = cpu_rxhdr();
-  
-    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Security profile handle: {}", 
+
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Security profile handle: {}",
                           hal::g_hal_state->customer_default_security_profile_hdl());
     // check for flood protection limits
     switch (key_.flow_type) {

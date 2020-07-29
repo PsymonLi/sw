@@ -24,6 +24,7 @@
 #include "nic/hal/pd/iris/internal/p4plus_pd_api.h"
 #include "nic/sdk/lib/table/sldirectmap/sldirectmap.hpp"
 #include "nic/sdk/include/sdk/table.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 
 using sdk::table::sdk_table_api_params_t;
@@ -583,7 +584,7 @@ p4pd_add_upd_flow_info_table_entry (pd_session_create_args_t *args, pd_flow_t *f
                d.action_u.flow_info_flow_info.start_timestamp,
                sizeof(d.action_u.flow_info_flow_info.start_timestamp));
         HAL_TRACE_VERBOSE("Writing flow info start timestamp {} to flow index {} action id {}"\
-                        " read clock{}", args->clock, clock, 
+                        " read clock{}", args->clock, clock,
                         flow_pd->assoc_hw_id, d.action_id);
         params.handle.pindex(flow_pd->assoc_hw_id);
         params.actiondata = &d;
@@ -823,7 +824,7 @@ p4pd_add_upd_flow_hash_table_entry (flow_key_t *flow_key,
     key.export_en = export_en;
     key.entry_valid = true;
 
-    if (hal::utils::hal_trace_level() >= ::utils::trace_verbose) {
+    if (hal::utils::hal_trace_level() >= sdk::types::trace_verbose) {
         fmt::MemoryWriter src_buf, dst_buf;
         for (uint32_t i = 0; i < 16; i++) {
             src_buf.write("{:#x} ", key.flow_lkp_metadata_lkp_src[i]);
@@ -873,7 +874,7 @@ p4pd_del_flow_hash_table_entry (flow_key_t *flow_key,
 
     p4pd_fill_flow_hash_key(flow_key, lkp_inst, key);
 
-    if (hal::utils::hal_trace_level() >= ::utils::trace_verbose) {
+    if (hal::utils::hal_trace_level() >= sdk::types::trace_verbose) {
         fmt::MemoryWriter src_buf, dst_buf;
         for (uint32_t i = 0; i < 16; i++) {
             src_buf.write("{:#x} ", key.flow_lkp_metadata_lkp_src[i]);

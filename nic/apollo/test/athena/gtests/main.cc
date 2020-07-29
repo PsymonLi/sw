@@ -20,6 +20,7 @@
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/include/pds_device.hpp"
 #include "nic/sdk/model_sim/include/lib_model_client.h"
@@ -102,7 +103,7 @@ logger_init (void)
 
     // initialize the logger
     core::trace_init("agent", 0x1, true, err_logfile.c_str(), logfile.c_str(),
-                     TRACE_FILE_SIZE, TRACE_NUM_FILES, utils::trace_verbose);
+                     TRACE_FILE_SIZE, TRACE_NUM_FILES, sdk::types::trace_verbose);
 
     return SDK_RET_OK;
 }
@@ -146,17 +147,17 @@ sdk_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
 
 //#define str ( name ) #name
 const char* conntrack_flow_state_enum [] = {
-  "UNESTABLISHED", 
-  "SYN_SENT", 
-  "SYN_RECV ", 
-  "SYNACK_SENT", 
-  "SYNACK_RECV", 
-  "ESTABLISHED", 
-  "FIN_SENT", 
-  "FIN_RECV", 
-  "TIME_WAIT", 
-  "RST_CLOSE", 
-  "REMOVED" 
+  "UNESTABLISHED",
+  "SYN_SENT",
+  "SYN_RECV ",
+  "SYNACK_SENT",
+  "SYNACK_RECV",
+  "ESTABLISHED",
+  "FIN_SENT",
+  "FIN_RECV",
+  "TIME_WAIT",
+  "RST_CLOSE",
+  "REMOVED"
 };
 
 pds_ret_t
@@ -191,7 +192,7 @@ sdk_ret_t send_packet(const char *out_pkt_descr, uint8_t *out_pkt, uint16_t out_
     memcpy(opkt.data(), out_pkt, out_pkt_len);
 
     printf("Sending Packet of len %d B on port: %d\n", out_pkt_len, out_port);
-     
+
     //dump_pkt(ipkt);
 
     step_network_pkt(opkt, out_port);
@@ -206,7 +207,7 @@ sdk_ret_t send_packet(const char *out_pkt_descr, uint8_t *out_pkt, uint16_t out_
      return SDK_RET_ERR;
 
     }
-     
+
     if (in_pkt && in_pkt_len) {
         epkt.resize(in_pkt_len);
         memcpy(epkt.data(), in_pkt, in_pkt_len);
@@ -267,7 +268,7 @@ sdk_ret_t send_packet_wmask(const char *out_pkt_descr, uint8_t *out_pkt, uint16_
     memcpy(opkt.data(), out_pkt, out_pkt_len);
 
     printf("Sending Packet of len %d B on port: %d\n", out_pkt_len, out_port);
-     
+
     //dump_pkt(ipkt);
 
     step_network_pkt(opkt, out_port);
@@ -442,7 +443,7 @@ p4pd_ipv4_flow_insert (uint16_t vnic_id, ipv4_addr_t v4_addr_sip, ipv4_addr_t v4
 		    FLOW_OHASH_TABLE_SIZE);
 	printf("Insert key in flow_ohash force recirculation: %u writing flow_ohash_entry %u to pint to entry %u\n", i, hint,hint_nxt);
 
-      }	
+      }
 
       // ohash table with result
       hint = hint_nxt;
@@ -463,7 +464,7 @@ p4pd_ipv4_flow_insert (uint16_t vnic_id, ipv4_addr_t v4_addr_sip, ipv4_addr_t v4
 		  FLOW_OHASH_TABLE_SIZE);
       printf("Insert key in flow_hash_table writing flow_ohash_entry %u\n", hint);
       printf("g_flow_ohash_index %u\n", g_flow_ohash_index);
-      
+
     } else {
       entry_write(P4TBL_ID_FLOW, 0, &key, NULL, &data, true,
 		  FLOW_TABLE_SIZE);
@@ -523,7 +524,7 @@ p4pd_ipv6_flow_insert (uint16_t vnic_id, ipv6_addr_t v6_addr_sip, ipv6_addr_t v6
 		    FLOW_OHASH_TABLE_SIZE);
 	printf("Insert key in flow_ohash force recirculation: %u writing flow_ohash_entry %u to pint to entry %u\n", i, hint,hint_nxt);
 
-      }	
+      }
 
       // ohash table with result
       hint = hint_nxt;
@@ -544,7 +545,7 @@ p4pd_ipv6_flow_insert (uint16_t vnic_id, ipv6_addr_t v6_addr_sip, ipv6_addr_t v6
 		  FLOW_OHASH_TABLE_SIZE);
       printf("Insert key in flow_hash_table writing flow_ohash_entry %u\n", hint);
       printf("g_flow_ohash_index %u\n", g_flow_ohash_index);
-      
+
     } else {
       entry_write(P4TBL_ID_FLOW, 0, &key, NULL, &data, true,
 		  FLOW_TABLE_SIZE);
@@ -571,7 +572,7 @@ p4pd_l2_flow_insert (uint16_t vnic_id, mac_addr_t *dmac,  uint32_t index, bool o
     sdk::lib::memrev(key.key_metadata_dmac, (uint8_t*)dmac, sizeof(mac_addr_t));
     for(int i =0; i<sizeof(mac_addr_t); i++) {
       printf("dmac[%u]=0x%x ,",i,key.key_metadata_dmac[i]);
-    } 
+    }
     printf("\n");
 
     l2_flow_l2_hash_info->entry_valid = 1;
@@ -601,7 +602,7 @@ p4pd_l2_flow_insert (uint16_t vnic_id, mac_addr_t *dmac,  uint32_t index, bool o
 		    L2_FLOW_OHASH_TABLE_SIZE);
 	printf("Insert key in l2_flow_ohash force recirculation: %u writing l2_flow_ohash_entry %u to pint to entry %u\n", i, hint,hint_nxt);
 
-      }	
+      }
 
       // ohash table with result
       hint = hint_nxt;
@@ -616,7 +617,7 @@ p4pd_l2_flow_insert (uint16_t vnic_id, mac_addr_t *dmac,  uint32_t index, bool o
 		  L2_FLOW_OHASH_TABLE_SIZE);
       printf("Insert key in l2_flow_hash_table writing l2_flow_ohash_entry %u\n", hint);
       printf("g_l2_flow_ohash_index %u\n", g_l2_flow_ohash_index);
-      
+
     } else {
       entry_write(P4TBL_ID_L2_FLOW, 0, &key, NULL, &data, true,
 		  L2_FLOW_TABLE_SIZE);
@@ -672,7 +673,7 @@ p4pd_ipv4_dnat_insert (uint16_t vnic_id, ipv4_addr_t v4_nat_dip,
 		    DNAT_OHASH_TABLE_SIZE);
 	printf("Insert key in dnat_ohash force recirculation: %u writing dnat_ohash_entry %u to pint to entry %u\n", i, hint,hint_nxt);
 
-      }	
+      }
 
       // ohash table with result
       hint = hint_nxt;
@@ -691,7 +692,7 @@ p4pd_ipv4_dnat_insert (uint16_t vnic_id, ipv4_addr_t v4_nat_dip,
 		  DNAT_OHASH_TABLE_SIZE);
       printf("Insert key in dnat_hash_table writing dnat_ohash_entry %u\n", hint);
       printf("g_dnat_ohash_index %u\n", g_dnat_ohash_index);
-      
+
     } else {
       entry_write(P4TBL_ID_DNAT, 0, &key, NULL, &data, true,
 		  DNAT_TABLE_SIZE);
@@ -747,7 +748,7 @@ p4pd_ipv6_dnat_insert (uint16_t vnic_id, ipv6_addr_t v6_nat_dip,
 		    DNAT_OHASH_TABLE_SIZE);
 	printf("Insert key in dnat_ohash force recirculation: %u writing dnat_ohash_entry %u to pint to entry %u\n", i, hint,hint_nxt);
 
-      }	
+      }
 
       // ohash table with result
       hint = hint_nxt;
@@ -766,7 +767,7 @@ p4pd_ipv6_dnat_insert (uint16_t vnic_id, ipv6_addr_t v6_nat_dip,
 		  DNAT_OHASH_TABLE_SIZE);
       printf("Insert key in dnat_hash_table writing dnat_ohash_entry %u\n", hint);
       printf("g_dnat_ohash_index %u\n", g_dnat_ohash_index);
-      
+
     } else {
       entry_write(P4TBL_ID_DNAT, 0, &key, NULL, &data, true,
 		  DNAT_TABLE_SIZE);
@@ -802,7 +803,7 @@ uint32_t    g_conntrack_id_v4_others = 0;
 sdk_ret_t
 create_s2h_session_rewrite(uint32_t session_rewrite_id,
         mac_addr_t *ep_dmac, mac_addr_t *ep_smac, uint16_t vnic_vlan)
-{ 
+{
     sdk_ret_t                                   ret = SDK_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -834,7 +835,7 @@ create_s2h_session_rewrite_nat_ipv4(uint32_t session_rewrite_id,
         mac_addr_t *ep_dmac, mac_addr_t *ep_smac, uint16_t vnic_vlan,
         pds_flow_session_rewrite_nat_type_t nat_type,
 	ipv4_addr_t ipv4_addr, pds_vnic_type_t vnic_type)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -855,11 +856,11 @@ create_s2h_session_rewrite_nat_ipv4(uint32_t session_rewrite_id,
       spec.data.u.l2_encap.insert_vlan_tag = TRUE;
       spec.data.u.l2_encap.vlan_id = vnic_vlan;
     }
-    
+
 #ifndef P4_14
     else {
       spec.data.encap_type = ENCAP_TYPE_INSERT_CTAG;
-      spec.data.u.insert_ctag.vlan_id = vnic_vlan;      
+      spec.data.u.insert_ctag.vlan_id = vnic_vlan;
     }
 #endif
     ret = pds_flow_session_rewrite_create(&spec);
@@ -875,7 +876,7 @@ create_s2h_session_rewrite_nat_ipv6(uint32_t session_rewrite_id,
         mac_addr_t *ep_dmac, mac_addr_t *ep_smac, uint16_t vnic_vlan,
         pds_flow_session_rewrite_nat_type_t nat_type,
 	ipv6_addr_t *ipv6_addr, pds_vnic_type_t vnic_type)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -897,11 +898,11 @@ create_s2h_session_rewrite_nat_ipv6(uint32_t session_rewrite_id,
       sdk::lib::memrev(spec.data.u.l2_encap.smac, (uint8_t*)ep_smac, sizeof(mac_addr_t));
       spec.data.u.l2_encap.insert_vlan_tag = TRUE;
       spec.data.u.l2_encap.vlan_id = vnic_vlan;
-    } 
+    }
 #ifndef P4_14
     else {
       spec.data.encap_type = ENCAP_TYPE_INSERT_CTAG;
-      spec.data.u.insert_ctag.vlan_id = vnic_vlan;      
+      spec.data.u.insert_ctag.vlan_id = vnic_vlan;
     }
 #endif
 
@@ -919,7 +920,7 @@ create_h2s_session_rewrite_mplsoudp(uint32_t session_rewrite_id,
         uint16_t substrate_vlan,
         uint32_t substrate_sip, uint32_t substrate_dip,
 				    uint32_t mpls1_label, uint32_t mpls2_label, uint16_t substrate_udp_sport, uint8_t insert_vlan_tag)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -961,7 +962,7 @@ create_h2s_session_rewrite_mplsoudp_nat_ipv4(uint32_t session_rewrite_id,
         uint32_t mpls1_label, uint32_t mpls2_label,
         pds_flow_session_rewrite_nat_type_t nat_type,
 	ipv4_addr_t ipv4_addr, uint16_t substrate_udp_sport)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -1004,7 +1005,7 @@ create_h2s_session_rewrite_mplsoudp_nat_ipv6(uint32_t session_rewrite_id,
         uint32_t mpls1_label, uint32_t mpls2_label,
         pds_flow_session_rewrite_nat_type_t nat_type,
 	ipv6_addr_t *ipv6_addr, uint16_t substrate_udp_sport)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -1053,7 +1054,7 @@ create_h2s_session_rewrite_geneve(uint32_t session_rewrite_id,
 	uint16_t sg_id2, uint16_t sg_id3,
         uint16_t sg_id4, uint16_t sg_id5,
         uint16_t sg_id6, uint32_t originator_physical_ip, uint16_t substrate_udp_sport, uint8_t insert_vlan_tag)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -1104,10 +1105,10 @@ create_h2s_session_rewrite_geneve_nat_ipv4(uint32_t session_rewrite_id,
 	uint32_t destination_slot_id, uint16_t sg_id1,
 	uint16_t sg_id2, uint16_t sg_id3,
         uint16_t sg_id4, uint16_t sg_id5,
-	uint16_t sg_id6, uint32_t originator_physical_ip,      
+	uint16_t sg_id6, uint32_t originator_physical_ip,
         pds_flow_session_rewrite_nat_type_t nat_type,
         ipv4_addr_t ipv4_addr, uint16_t substrate_udp_sport)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -1159,10 +1160,10 @@ create_h2s_session_rewrite_geneve_nat_ipv6(uint32_t session_rewrite_id,
 	uint32_t destination_slot_id, uint16_t sg_id1,
 	uint16_t sg_id2, uint16_t sg_id3,
         uint16_t sg_id4, uint16_t sg_id5,
-	uint16_t sg_id6, uint32_t originator_physical_ip,      
+	uint16_t sg_id6, uint32_t originator_physical_ip,
         pds_flow_session_rewrite_nat_type_t nat_type,
         ipv6_addr_t *ipv6_addr, uint16_t substrate_udp_sport)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -1210,7 +1211,7 @@ create_h2s_session_rewrite_geneve_nat_ipv6(uint32_t session_rewrite_id,
 sdk_ret_t
 create_s2h_session_rewrite_insert_ctag(uint32_t session_rewrite_id,
         uint16_t vlan)
-{ 
+{
     pds_ret_t                                   ret = PDS_RET_OK;
     pds_flow_session_rewrite_spec_t             spec;
 
@@ -1225,7 +1226,7 @@ create_s2h_session_rewrite_insert_ctag(uint32_t session_rewrite_id,
 
     spec.data.encap_type = ENCAP_TYPE_INSERT_CTAG;
     spec.data.u.insert_ctag.vlan_id = vlan;
- 
+
     ret = pds_flow_session_rewrite_create(&spec);
     if (ret != PDS_RET_OK) {
         printf("Failed to program session rewrite h2s info : %u\n", ret);
@@ -1342,15 +1343,15 @@ update_session_info_all(uint32_t session_id, uint32_t conntrack_id,
 
     key.session_info_id = session_id;
     key.direction = (SWITCH_TO_HOST | HOST_TO_SWITCH);
- 
+
     pds_flow_session_info_read( &key, &info);
-    
+
     if (ret != PDS_RET_OK) {
         printf("Failed to read session s2h info : %u\n", ret);
 	return (sdk_ret_t)ret;
 
     }
-    
+
     spec.key = key;
     spec.data = info.spec.data;
 
@@ -1429,13 +1430,13 @@ update_session_info_conntrack(uint32_t session_id, uint32_t conntrack_id,
     key.direction = (SWITCH_TO_HOST | HOST_TO_SWITCH);
 
     pds_flow_session_info_read( &key, &info);
-    
+
     if (ret != PDS_RET_OK) {
         printf("Failed to read session s2h info : %u\n", ret);
 	return (sdk_ret_t)ret;
 
     }
-    
+
     spec.key = key;
     spec.data = info.spec.data;
 
@@ -1514,23 +1515,23 @@ compare_conntrack(uint32_t conntrack_id, pds_flow_type_t e_flow_type, pds_flow_s
     }
 
     printf("conntrack: entry %u: flow_type=%u, flow_state=%u\n", conntrack_id, r_flow_type, r_flow_state);
-    
+
     //   s_flow_state = conntrack_flow_state_enum[r_flow_state];
     //printf "conntrack: %s\n", s_flow_state.c_str());
 
     if(e_flow_type != r_flow_type) {
-      printf("conntrack: entry %u: r_flow_type=%u, does not match e_flow_type=%u\n", conntrack_id, r_flow_type, e_flow_type); 
+      printf("conntrack: entry %u: r_flow_type=%u, does not match e_flow_type=%u\n", conntrack_id, r_flow_type, e_flow_type);
       return SDK_RET_ERR;
     }
 
     if(e_flow_state != r_flow_state) {
-      printf("conntrack: entry %u: r_flow_state=%u, does not match e_flow_state=%u\n", conntrack_id, r_flow_state, e_flow_state); 
+      printf("conntrack: entry %u: r_flow_state=%u, does not match e_flow_state=%u\n", conntrack_id, r_flow_state, e_flow_state);
       return SDK_RET_ERR;
     }
 
     return ret;
 }
-                            
+
 sdk_ret_t
 vlan_to_vnic_map(uint16_t vlan_id, uint16_t vnic_id, pds_vnic_type_t vnic_type)
 {
@@ -1575,7 +1576,7 @@ mpls_label_to_vnic_map(uint32_t mpls_label, uint16_t vnic_id, pds_vnic_type_t vn
 
 
 sdk_ret_t
-create_dnat_map_ipv4(uint16_t vnic_id, ipv4_addr_t v4_nat_dip, 
+create_dnat_map_ipv4(uint16_t vnic_id, ipv4_addr_t v4_nat_dip,
         ipv4_addr_t v4_orig_dip, uint16_t dnat_epoch)
 {
     pds_dnat_mapping_spec_t         spec;
@@ -1594,7 +1595,7 @@ create_dnat_map_ipv4(uint16_t vnic_id, ipv4_addr_t v4_nat_dip,
 }
 
 sdk_ret_t
-create_dnat_map_ipv6(uint16_t vnic_id, ipv6_addr_t *v6_nat_dip, 
+create_dnat_map_ipv6(uint16_t vnic_id, ipv6_addr_t *v6_nat_dip,
         ipv6_addr_t *v6_orig_dip, uint16_t dnat_epoch)
 {
     pds_dnat_mapping_spec_t         spec;
@@ -1630,7 +1631,7 @@ setup_flows(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
-    
+
     ret = athena_gtest_setup_flows_tcp();
     if (ret != SDK_RET_OK) {
         return ret;
@@ -1651,12 +1652,12 @@ setup_flows(void)
         return ret;
     }
 #ifndef P4_14
-   
+
     ret = athena_gtest_setup_flows_udp_udpsrcport();
     if (ret != SDK_RET_OK) {
         return ret;
     }
-    
+
     ret = athena_gtest_setup_l2_flows_udp();
     if (ret != SDK_RET_OK) {
         return ret;
@@ -1681,7 +1682,7 @@ setup_flows(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
-    
+
    ret = athena_gtest_setup_l2_flows_udp_udpsrcport();
     if (ret != SDK_RET_OK) {
         return ret;
@@ -1736,7 +1737,7 @@ setup_flows(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
-    
+
 #endif
     return ret;
 }
@@ -1855,7 +1856,7 @@ TEST(athena_gtest, sim)
 
     /* Test uplink-uplink NACL for MFR mode */
     ASSERT_TRUE(athena_gtest_test_mfr_uplink_nacl() == SDK_RET_OK);
-    
+
     /* Setup all flows */
     ASSERT_TRUE((ret = setup_flows()) == SDK_RET_OK);
 
@@ -1880,10 +1881,10 @@ TEST(athena_gtest, sim)
 
     /* UDP Flow with UDP SRCPORT tests */
     ASSERT_TRUE(athena_gtest_test_flows_udp_udpsrcport() == SDK_RET_OK);
-   
+
     /* L2 UDP Flow tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_udp() == SDK_RET_OK);
-    
+
     /* L2 TCP Flow tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_tcp() == SDK_RET_OK);
 
@@ -1899,14 +1900,14 @@ TEST(athena_gtest, sim)
 
     /* L2 UDP Flow with UDP SRCPORT tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_udp_udpsrcport() == SDK_RET_OK);
- 
+
    /* L2 TCP Flow with Geneve Encap */
     ASSERT_TRUE(athena_gtest_test_l2_flows_geneve_encap() == SDK_RET_OK);
 
-    
+
    /* L2 TCP Flow with Geneve Encap for Conntrack */
     ASSERT_TRUE(athena_gtest_test_l2_flows_conntrack_tcp() == SDK_RET_OK);
-    
+
     ASSERT_TRUE(athena_gtest_test_flow_log(0) == SDK_RET_OK);
 
     ASSERT_TRUE((athena_gtest_test_flow_log(1)) == SDK_RET_OK);
@@ -1918,7 +1919,7 @@ TEST(athena_gtest, sim)
     iterate_dump_l2_flows();
 #endif
     print_stats();
-    
+
     pds_global_teardown();
 
 }

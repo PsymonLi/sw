@@ -3,6 +3,7 @@
 //-----------------------------------------------------------------------------
 
 #include "nic/include/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/utils/mtrack.hpp"
 #include "nic/hal/src/debug/debug.hpp"
 #include "lib/slab/slab.hpp"
@@ -292,22 +293,22 @@ hal_ret_t
 trace_update (TraceSpec& spec, TraceResponse *rsp)
 {
     if (spec.trace_level() == debug::TRACE_LEVEL_ERROR) {
-        utils::trace_update(::utils::trace_err);
+        utils::trace_update(sdk::types::trace_err);
         rsp->set_trace_level(debug::TRACE_LEVEL_ERROR);
     } else if (spec.trace_level() == debug::TRACE_LEVEL_WARNING) {
-        utils::trace_update(::utils::trace_warn);
+        utils::trace_update(sdk::types::trace_warn);
         rsp->set_trace_level(debug::TRACE_LEVEL_WARNING);
     } else if (spec.trace_level() == debug::TRACE_LEVEL_INFO) {
-        utils::trace_update(::utils::trace_info);
+        utils::trace_update(sdk::types::trace_info);
         rsp->set_trace_level(debug::TRACE_LEVEL_INFO);
     } else if (spec.trace_level() == debug::TRACE_LEVEL_DEBUG) {
-        utils::trace_update(::utils::trace_debug);
+        utils::trace_update(sdk::types::trace_debug);
         rsp->set_trace_level(debug::TRACE_LEVEL_DEBUG);
     } else if (spec.trace_level() == debug::TRACE_LEVEL_VERBOSE) {
-        utils::trace_update(::utils::trace_verbose);
+        utils::trace_update(sdk::types::trace_verbose);
         rsp->set_trace_level(debug::TRACE_LEVEL_VERBOSE);
     } else {
-        utils::trace_update(::utils::trace_none);
+        utils::trace_update(sdk::types::trace_none);
         rsp->set_trace_level(debug::TRACE_LEVEL_NONE);
     }
     rsp->set_api_status(types::API_STATUS_OK);
@@ -327,15 +328,15 @@ trace_get (TraceResponseMsg *rsp)
     }
     if (utils::g_trace_logger) {
         response->set_api_status(types::API_STATUS_OK);
-        if (utils::g_trace_logger->trace_level() == ::utils::trace_err) {
+        if (utils::g_trace_logger->trace_level() == sdk::types::trace_err) {
             response->set_trace_level(debug::TRACE_LEVEL_ERROR);
-        } else if (utils::g_trace_logger->trace_level() == ::utils::trace_warn) {
+        } else if (utils::g_trace_logger->trace_level() == sdk::types::trace_warn) {
             response->set_trace_level(debug::TRACE_LEVEL_WARNING);
-        } else if (utils::g_trace_logger->trace_level() == ::utils::trace_info) {
+        } else if (utils::g_trace_logger->trace_level() == sdk::types::trace_info) {
             response->set_trace_level(debug::TRACE_LEVEL_INFO);
-        } else if (utils::g_trace_logger->trace_level() == ::utils::trace_debug) {
+        } else if (utils::g_trace_logger->trace_level() == sdk::types::trace_debug) {
             response->set_trace_level(debug::TRACE_LEVEL_DEBUG);
-        } else if (utils::g_trace_logger->trace_level() == ::utils::trace_verbose) {
+        } else if (utils::g_trace_logger->trace_level() == sdk::types::trace_verbose) {
             response->set_trace_level(debug::TRACE_LEVEL_VERBOSE);
         } else {
             response->set_trace_level(debug::TRACE_LEVEL_NONE);
@@ -1065,7 +1066,7 @@ span_threshold_update (uint32_t span_threshold)
     return ret;
 }
 
-hal_ret_t 
+hal_ret_t
 aging_trace_update (debug::AgingTraceUpdateRequest& req)
 {
     g_hal_state->set_age_debug_enable(req.aging_trace_enable());

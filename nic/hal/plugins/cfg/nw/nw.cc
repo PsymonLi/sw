@@ -6,6 +6,7 @@
 #include "nic/include/base.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "gen/hal/include/hal_api_stats.hpp"
 #include "nic/hal/src/utils/utils.hpp"
@@ -124,7 +125,7 @@ network_dump (NetworkSpec& spec)
 {
     std::string    nw_cfg;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug) {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug) {
         return;
     }
     google::protobuf::util::MessageToJsonString(spec, &nw_cfg);

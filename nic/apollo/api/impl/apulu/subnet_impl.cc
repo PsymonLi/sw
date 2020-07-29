@@ -17,6 +17,7 @@
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/core/msg.h"
 #include "nic/apollo/api/subnet.hpp"
+#include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/impl/apulu/subnet_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vpc_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vnic_impl.hpp"
@@ -600,8 +601,10 @@ subnet_impl::activate_create_(pds_epoch_t epoch, subnet_entry *subnet,
                               pds_subnet_spec_t *spec) {
     lif_impl *lif;
     vpc_entry *vpc;
+    if_index_t if_index;
     device_entry *device;
     sdk_ret_t ret = SDK_RET_OK;
+    pds_obj_key_t lif_key;
     vni_swkey_t vni_key = { 0 };
     sdk_table_api_params_t tparams;
     vni_actiondata_t vni_data = { 0 };
@@ -638,7 +641,16 @@ subnet_impl::activate_create_(pds_epoch_t epoch, subnet_entry *subnet,
     // subnet and vpc ids appropriately
     if (spec->num_host_if) {
         for (uint8_t i = 0; i < spec->num_host_if; i++) {
-            lif = lif_impl_db()->find(&spec->host_if[i]);
+            if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(
+                                       objid_from_uuid(spec->host_if[i])));
+            lif_key = uuid_from_objid(if_index);
+            lif = lif_impl_db()->find(&lif_key);
+            if (!lif) {
+                PDS_TRACE_ERR("Failed to update host if %u, %s on subnet %s "
+                              "create, lif not found", i, spec->host_if[i].str(),
+                              spec->key.str());
+                continue;
+            }
             ret = program_lif_table(lif->id(), P4_LIF_TYPE_HOST,
                                     ((vpc_impl *)vpc->impl())->hw_id(),
                                     hw_id_, lif->vnic_hw_id(),
@@ -646,7 +658,7 @@ subnet_impl::activate_create_(pds_epoch_t epoch, subnet_entry *subnet,
                                     device_find()->learning_enabled(), false,
                                     P4_LIF_DIR_HOST);
             if (ret != SDK_RET_OK) {
-                PDS_TRACE_ERR("Failed to update lif# %u, %s on subnet %s "
+                PDS_TRACE_ERR("Failed to update host if %u, %s on subnet %s "
                               "create, err %u", i, spec->host_if[i].str(),
                               spec->key.str(), ret);
             }
@@ -659,6 +671,8 @@ subnet_impl::activate_create_(pds_epoch_t epoch, subnet_entry *subnet,
 sdk_ret_t
 subnet_impl::activate_delete_(pds_epoch_t epoch, subnet_entry *subnet) {
     sdk_ret_t ret = SDK_RET_OK;
+    if_index_t if_index;
+    pds_obj_key_t lif_key;
     vni_swkey_t vni_key = { 0 };
     vni_actiondata_t vni_data = { 0 };
     sdk_table_api_params_t tparams = { 0 };
@@ -687,8 +701,10 @@ subnet_impl::activate_delete_(pds_epoch_t epoch, subnet_entry *subnet) {
     }
     // reset the lif entry
     for (uint8_t i = 0; i < subnet->num_host_if(); i++) {
-        host_if = subnet->host_if(i);
-        lif = lif_impl_db()->find(&host_if);
+        if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(
+                                   objid_from_uuid(subnet->host_if(i))));
+        lif_key = uuid_from_objid(if_index);
+        lif = lif_impl_db()->find(&lif_key);
         if (lif) {
             ret = program_lif_table(lif->id(), P4_LIF_TYPE_HOST,
                                     PDS_IMPL_RSVD_VPC_HW_ID,
@@ -696,12 +712,12 @@ subnet_impl::activate_delete_(pds_epoch_t epoch, subnet_entry *subnet) {
                                     lif->vnic_hw_id(), g_zero_mac,
                                     false, false, P4_LIF_DIR_HOST);
             if (ret != SDK_RET_OK) {
-                PDS_TRACE_ERR("Failed to update lif %s on subnet %s"
-                              " delete, err %u", host_if.str(),
+                PDS_TRACE_ERR("Failed to update host if %s on subnet %s"
+                              " delete, err %u", subnet->host_if(i).str(),
                               subnet->key().str(), ret);
             } else {
-                PDS_TRACE_VERBOSE("Updated lif %s on subnet %s delete",
-                                  host_if.str(), subnet->key().str());
+                PDS_TRACE_VERBOSE("Updated host if %s on subnet %s delete",
+                                  subnet->host_if(i).str(), subnet->key().str());
             }
         }
     }
@@ -716,6 +732,7 @@ subnet_impl::activate_update_(pds_epoch_t epoch, subnet_entry *subnet,
     sdk_ret_t ret;
     lif_impl *lif;
     vpc_entry *vpc;
+    if_index_t if_index;
     pds_obj_key_t lif_key;
     pds_subnet_spec_t *spec;
     vni_swkey_t vni_key = { 0 };
@@ -766,21 +783,24 @@ subnet_impl::activate_update_(pds_epoch_t epoch, subnet_entry *subnet,
         //       momentary drop !!! we can optimize this later by doing mxn walk
         // cleanup previous lif to this subnet association
         for (uint8_t i = 0; i < orig_subnet->num_host_if(); i++) {
-            lif_key = orig_subnet->host_if(i);
+            if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(objid_from_uuid(orig_subnet->host_if(i))));
+            lif_key = uuid_from_objid(if_index);
             lif = lif_impl_db()->find(&lif_key);
             ret = program_lif_table(lif->id(), P4_LIF_TYPE_HOST,
                                     PDS_IMPL_RSVD_VPC_HW_ID,
                                     PDS_IMPL_RSVD_BD_HW_ID, lif->vnic_hw_id(),
                                     g_zero_mac, false, false, P4_LIF_DIR_HOST);
             if (ret != SDK_RET_OK) {
-                PDS_TRACE_ERR("Failed to reset lif %s on subnet %s update, "
-                              "err %u", lif_key.str(), spec->key.str(), ret);
+                PDS_TRACE_ERR("Failed to reset host if %s on subnet %s update, "
+                              "err %u", orig_subnet->host_if(i).str(), spec->key.str(), ret);
                 return ret;
             }
         }
         // reprogram new associations
         for (uint8_t i = 0; i < spec->num_host_if; i++) {
-            lif = lif_impl_db()->find(&spec->host_if[i]);
+            if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(objid_from_uuid(spec->host_if[i])));
+            lif_key = uuid_from_objid(if_index);
+            lif = lif_impl_db()->find(&lif_key);
             ret = program_lif_table(lif->id(), P4_LIF_TYPE_HOST,
                                     ((vpc_impl *)vpc->impl())->hw_id(),
                                     hw_id_, lif->vnic_hw_id(),
@@ -788,7 +808,7 @@ subnet_impl::activate_update_(pds_epoch_t epoch, subnet_entry *subnet,
                                     device_find()->learning_enabled(), false,
                                     P4_LIF_DIR_HOST);
             if (ret != SDK_RET_OK) {
-                PDS_TRACE_ERR("Failed to update lif %s table entry on "
+                PDS_TRACE_ERR("Failed to update host if %s table entry on "
                               "subnet %s update, err %u",
                               spec->host_if[i].str(), spec->key.str(), ret);
                 return ret;

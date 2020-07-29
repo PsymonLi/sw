@@ -9,6 +9,7 @@
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "gen/hal/include/hal_api_stats.hpp"
 #include "nic/hal/plugins/cfg/nw/vrf.hpp"
@@ -638,7 +639,7 @@ nat_pool_delete_req_dump (NatPoolDeleteRequest& req)
 {
     std::string    del_req;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
     google::protobuf::util::MessageToJsonString(req, &del_req);
@@ -1084,7 +1085,7 @@ nat_mapping_spec_dump (NatMappingSpec& spec)
 {
     std::string    nat_mapping_cfg;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
 
@@ -1435,7 +1436,7 @@ nat_mapping_delete_req_dump (NatMappingDeleteRequest& req)
 {
     std::string    del_req;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
     google::protobuf::util::MessageToJsonString(req, &del_req);

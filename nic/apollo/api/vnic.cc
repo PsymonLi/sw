@@ -196,7 +196,8 @@ vnic_entry::init_config(api_ctxt_t *api_ctxt) {
     }
     host_if_ = spec->host_if;
     if (host_if_ != k_pds_obj_key_invalid) {
-        if (unlikely(lif_db()->find(&host_if_) == NULL)) {
+        if_entry *intf = if_db()->find(&host_if_);
+        if (unlikely((intf == NULL) || (intf->type() != IF_TYPE_HOST))) {
             PDS_TRACE_ERR("host if %s not found, vnic %s init failed",
                           spec->host_if.str(), spec->key.str());
             return SDK_RET_INVALID_ARG;

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/json_parser.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/include/base.hpp"
 #include "nic/hal/hal.hpp"
@@ -54,8 +55,8 @@ linkmgr_initialize (const char c_file[])
                            sdk::lib::thread::control_cores_mask(),
                            true, "linkmgr_gtest.log", NULL,
                            TRACE_FILE_SIZE_DEFAULT, TRACE_NUM_FILES_DEFAULT,
-                           ::utils::trace_debug,
-                           ::utils::trace_none);
+                           sdk::types::trace_debug,
+                           sdk::types::trace_none);
     sdk::lib::logger::init(sdk_trace_cb);
 
     sdk::lib::thread::control_cores_mask_set(0x1);

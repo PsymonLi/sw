@@ -5,6 +5,7 @@
 #include <iostream>
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/json_parser.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/hal/core/core.hpp"
 #include "nic/hal/core/plugins.hpp"
@@ -607,9 +608,9 @@ hal_logger_init (hal_cfg_t *hal_cfg)
                            non_persistent_logfile.c_str(),
                            4 << 20, // 4 MB
                            5,       // 5 (5 + 1 current logging file)
-                           ::utils::trace_err,
-                           getenv("DISABLE_LOGGING") ? (::utils::trace_none) :
-                                                       (::utils::trace_debug));
+                           sdk::types::trace_err,
+                           getenv("DISABLE_LOGGING") ? (sdk::types::trace_none) :
+                                                       (sdk::types::trace_debug));
 
     // link logger
     persistent_logfile = get_logfile("PERSISTENT_LOG_DIR", "linkmgr_err.log",
@@ -622,9 +623,9 @@ hal_logger_init (hal_cfg_t *hal_cfg)
                                 non_persistent_logfile.c_str(),
                                 4 << 20, // 4MB
                                 1,       // 1 file
-                                ::utils::trace_err,
-                                getenv("DISABLE_LOGGING") ? (::utils::trace_none) :
-                                                       (::utils::trace_debug));
+                                sdk::types::trace_err,
+                                getenv("DISABLE_LOGGING") ? (sdk::types::trace_none) :
+                                                       (sdk::types::trace_debug));
     return HAL_RET_OK;
 }
 

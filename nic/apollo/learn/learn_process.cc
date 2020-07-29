@@ -158,7 +158,7 @@ process_l2l_move_mac (learn_ctxt_t *ctxt)
     spec.fabric_encap.type = PDS_ENCAP_TYPE_NONE;
     spec.vnic_encap = impl->encap;
     MAC_ADDR_COPY(spec.mac_addr, ctxt->mac_key.mac_addr);
-    spec.host_if = api::uuid_from_objid(LIF_IFINDEX(impl->lif));
+    spec.host_if = api::uuid_from_objid(HOST_IFINDEX(impl->lif));
 
     PDS_TRACE_DEBUG("Updating VNIC %s for EP %s", spec.key.str(), ctxt->str());
     return vnic_update(ctxt, &spec);

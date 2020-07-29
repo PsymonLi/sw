@@ -21,6 +21,7 @@
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/asic/port.hpp"
 #include "nic/apollo/agent/athena/trace.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
@@ -104,7 +105,7 @@ logger_init (void)
 
     // initialize the logger
     core::trace_init("agent", 0x1, true, err_logfile.c_str(), logfile.c_str(),
-                     TRACE_FILE_SIZE, TRACE_NUM_FILES, utils::trace_debug);
+                     TRACE_FILE_SIZE, TRACE_NUM_FILES, sdk::types::trace_debug);
 
     return SDK_RET_OK;
 }
@@ -542,7 +543,7 @@ static uint8_t g_snd_pkt_l2_ipv4_udp_s2h[] = {
 
 /*
  * Host to Switch UDP L2 flow: Packet to be sent
- * L2 flow is same as g_snd_pkt_l2_ipv4_udp_h2s but 
+ * L2 flow is same as g_snd_pkt_l2_ipv4_udp_h2s but
  * L3 flow is different
  */
 static uint8_t g_snd_pkt_l2_ipv4_udp_h2s_1[] = {
@@ -777,7 +778,7 @@ void
 p4_tables_clear(void)
 {
     pds_ret_t    ret;
-    
+
     PROFILE_CLEAR_TABLE(pds_flow_cache_table_clear);
     PROFILE_CLEAR_TABLE(pds_l2_flow_cache_table_clear);
     PROFILE_CLEAR_TABLE(pds_dnat_map_table_clear);
@@ -1180,7 +1181,7 @@ main (int argc, char **argv)
     recv_packet();
 #endif /* __x86_64__ */
 
-    if (hw() && 
+    if (hw() &&
         ((fte_ath::g_athena_app_mode == ATHENA_APP_MODE_CPP) ||
          (fte_ath::g_athena_app_mode == ATHENA_APP_MODE_SOFT_INIT)) &&
         (server_init() == PDS_RET_OK)) {

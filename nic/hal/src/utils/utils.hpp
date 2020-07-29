@@ -9,12 +9,13 @@
 #include "nic/include/base.hpp"
 #include "nic/utils/block_list/block_list.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/lib/hal_handle.hpp"
 
 #include "gen/proto/types.pb.h"
 
 using types::ApiStatus;
-using utils::trace_level_e;
+using sdk::types::trace_level_e;
 using hal::utils::block_list;
 using google::protobuf::Message;
 
@@ -45,7 +46,7 @@ bool ip_addr_check_equal(ip_addr_t *ipaddr1, ip_addr_t *ipaddr2);
 bool ip_addr_in_ip_pfx(ip_addr_t *ipaddr, ip_prefix_t *ip_pfx);
 ApiStatus hal_prepare_rsp(hal_ret_t ret);
 void hal_api_trace(const char *trace,
-                   trace_level_e trace_level = ::utils::trace_debug);
+                   trace_level_e trace_level = sdk::types::trace_debug);
 
 
 // handle list specific APIs
@@ -85,7 +86,7 @@ hal_find_changed_lists (block_list *exist_list,                         // _IN
                         bool *has_changed);                              // _OUT
 
 void proto_msg_dump (Message& msg,
-                     trace_level_e trace_level = ::utils::trace_debug);
+                     trace_level_e trace_level = sdk::types::trace_debug);
 
 }    // namespace hal
 

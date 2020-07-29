@@ -73,6 +73,15 @@ def LifId2LifIfIndex(lifid):
 def LifIfindex2LifId(lififindex):
     return (lififindex & LIF_IF_LIF_ID_MASK)
 
+def LifId2HostIfIndex(lifid):
+    return ((topo.InterfaceTypes.HOST << IF_TYPE_SHIFT) | (lifid))
+
+def HostIfindex2LifId(hostifindex):
+    return (hostifindex & LIF_IF_LIF_ID_MASK)
+
+def LifIfIndex2HostIfIndex(lififindex):
+    return LifId2HostIfIndex(LifIfindex2LifId(lififindex))
+
 PENSANDO_NIC_MAC = 0x022222111111
 PDS_UUID_MAGIC_BYTE_VAL = 0x4242
 PDS_UUID_BYTE_ORDER = "little"
@@ -248,20 +257,20 @@ def ValidateRpcIPAddr(srcaddr, dstaddr):
             return False
     return True
 
-def ValidateRpcIPV46Prefix(srcpfx, dstpfx):                                                                                                
-    if srcpfx is None and dstpfx.Len == 0:                                                                                                 
-        return True                                                                                                                        
-    if (srcpfx is not None and dstpfx.Len == 0) or (srcpfx is None and dstpfx.Len != 0):                                                   
-        return False                                                                                                                       
-    if dstpfx.Len != srcpfx.prefixlen:                                                                                                     
-        return False                                                                                                                       
-    if srcpfx.version == IP_VERSION_6:                                                                                                     
-        if dstpfx.Addr != srcpfx.network_address.packed:                                                                                   
-            return False                                                                                                                   
-    else:                                                                                                                                  
-       if dstpfx.Addr != int(srcpfx.network_address):                                                                                      
-           return False                                                                                                                    
-    return True         
+def ValidateRpcIPV46Prefix(srcpfx, dstpfx):
+    if srcpfx is None and dstpfx.Len == 0:
+        return True
+    if (srcpfx is not None and dstpfx.Len == 0) or (srcpfx is None and dstpfx.Len != 0):
+        return False
+    if dstpfx.Len != srcpfx.prefixlen:
+        return False
+    if srcpfx.version == IP_VERSION_6:
+        if dstpfx.Addr != srcpfx.network_address.packed:
+            return False
+    else:
+       if dstpfx.Addr != int(srcpfx.network_address):
+           return False
+    return True
 
 def ValidateRpcIPPrefix(srcpfx, dstpfx):
     if dstpfx.Len != srcpfx.prefixlen:
@@ -1394,5 +1403,5 @@ def GetClientObject(objtype):
 
 def GetConfigObjectById(objtype, id):
     dutNode = EzAccessStore.GetDUTNode()
-    objClient = GetClientObject(objtype) 
+    objClient = GetClientObject(objtype)
     return objClient.GetObjectByKey(dutNode, id)

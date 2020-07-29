@@ -321,16 +321,16 @@ func printVnic(vnic *pds.Vnic) {
 	spec := vnic.GetSpec()
 	fabricEncapStr := utils.EncapToString(spec.GetFabricEncap())
 	vnicEncapStr := utils.EncapToString(spec.GetVnicEncap())
-	lifName := "-"
+	ifName := "-"
 	if len(spec.GetHostIf()) > 0 {
-		lifName = lifGetNameFromKey(spec.GetHostIf())
+		ifName = hostIfGetNameFromKey(spec.GetHostIf())
 	}
 
 	fmt.Printf("%-40s%-40s%-14s%-20s%-10t%-14s%-11t%-10s\n",
 		utils.IdToStr(spec.GetId()),
 		utils.IdToStr(spec.GetSubnetId()), vnicEncapStr,
 		utils.MactoStr(spec.GetMACAddress()), spec.GetSourceGuardEnable(),
-		fabricEncapStr, spec.GetSwitchVnic(), lifName)
+		fabricEncapStr, spec.GetSwitchVnic(), ifName)
 }
 
 func printVnicDetail(vnic *pds.Vnic) {
@@ -355,9 +355,9 @@ func printVnicDetail(vnic *pds.Vnic) {
 	meterEn := spec.GetMeterEn()
 	fabricEncapStr := utils.EncapToString(spec.GetFabricEncap())
 	vnicEncapStr := utils.EncapToString(spec.GetVnicEncap())
-	lifName := "-"
+	ifName := "-"
 	if len(spec.GetHostIf()) > 0 {
-		lifName = lifGetNameFromKey(spec.GetHostIf())
+		ifName = hostIfGetNameFromKey(spec.GetHostIf())
 	}
 	srcGuardStr := "Disabled"
 	if spec.GetSourceGuardEnable() {
@@ -392,7 +392,7 @@ func printVnicDetail(vnic *pds.Vnic) {
 		fmt.Printf("%-30s    : %s\n", "Tx Mirror Session", "-")
 	}
 	fmt.Printf("%-30s    : %t\n", "Switch Vnic", spec.GetSwitchVnic())
-	fmt.Printf("%-30s    : %s\n", "Host Interface", lifName)
+	fmt.Printf("%-30s    : %s\n", "Host Interface", ifName)
 	fmt.Printf("%-30s    : %s\n", "Host Name", hostName)
 	fmt.Printf("%-30s    : %t\n", "Primary Vnic", isPrimary)
 	fmt.Printf("%-30s    : %d\n", "Maximum Sessions", maxSessions)

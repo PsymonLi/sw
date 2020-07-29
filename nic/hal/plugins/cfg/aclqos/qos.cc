@@ -8,6 +8,7 @@
 #include "gen/hal/include/hal_api_stats.hpp"
 #include "nic/hal/plugins/cfg/aclqos/qos.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #ifdef ELBA
 #include "nic/sdk/platform/elba/elba_tm_utils.hpp"
 #define ASIC_QUEUES_PER_PORT ELBA_QUEUES_PER_PORT
@@ -712,7 +713,7 @@ qos_class_spec_dump (QosClassSpec& spec)
     std::string buf;
     google::protobuf::util::JsonPrintOptions options;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return HAL_RET_OK;
     }
 
@@ -1802,7 +1803,7 @@ qosclear_stats (QosClearStatsRequest& req, QosClearStatsResponse *rsp)
     args.qos_group_bitmap = req.qos_group_bitmap();
 
     HAL_TRACE_DEBUG("Clearing stats for port {} qos group bitmap : {}", args.port_num, args.qos_group_bitmap);
-    
+
     pd_func_args.pd_qos_clear_stats = &args;
     ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_CLEAR_STATS, &pd_func_args);
     if (ret == HAL_RET_OK) {
@@ -1853,8 +1854,8 @@ qos_reset (qos::QosResetRequest& req, qos::QosResetResponseMsg *rsp)
     HAL_TRACE_DEBUG("API Begin: qos_reset");
 
     // loop through all valid user-defined qos-groups and delete them
-    for ( ; ( (kh_qos_group >= kh::USER_DEFINED_1) && 
-              (kh_qos_group <= kh::USER_DEFINED_6) ); 
+    for ( ; ( (kh_qos_group >= kh::USER_DEFINED_1) &&
+              (kh_qos_group <= kh::USER_DEFINED_6) );
             kh_qos_group = qos_get_next_user_defined_kh_qos_group(kh_qos_group)) {
 
         qos_group = qos_spec_qos_group_to_qos_group(kh_qos_group);
@@ -1872,7 +1873,7 @@ qos_reset (qos::QosResetRequest& req, qos::QosResetResponseMsg *rsp)
         HAL_TRACE_DEBUG("deleting qos_class {} handle {}",
                         qos_class->key, qos_class->hal_handle);
 
-        // TODO : should this validate be done? 
+        // TODO : should this validate be done?
         // validate if there no objects referring this qos-class
         ret = validate_qos_class_delete(qos_class);
         if (ret != HAL_RET_OK) {
@@ -1886,7 +1887,7 @@ qos_reset (qos::QosResetRequest& req, qos::QosResetResponseMsg *rsp)
         pd_func_args.pd_qos_class_reset_stats = &args;
         ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_CLASS_RESET_STATS, &pd_func_args);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("clear stats failed for qos_class {}, err : {}",  
+            HAL_TRACE_ERR("clear stats failed for qos_class {}, err : {}",
                           qos_class->key, ret);
         }
 
@@ -1917,7 +1918,7 @@ qos_reset (qos::QosResetRequest& req, qos::QosResetResponseMsg *rsp)
         g_pause_type = qos::QOS_PAUSE_TYPE_LINK_LEVEL;
 
         pd::pd_qos_class_set_global_pause_type_init(&pd_qos_class_args);
-        pd_qos_class_args.pause_type = 
+        pd_qos_class_args.pause_type =
                                 qos_pause_type_spec_to_pause_type(g_pause_type);
         pd_func_args.pd_qos_class_set_global_pause_type = &pd_qos_class_args;
         ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_CLASS_SET_GLOBAL_PAUSE_TYPE,
@@ -2519,7 +2520,7 @@ copp_spec_dump (CoppSpec& spec)
     std::string buf;
     google::protobuf::util::JsonPrintOptions options;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return HAL_RET_OK;
     }
 
@@ -3206,7 +3207,7 @@ copp_process_clear_stats (copp_t *copp)
     pd::pd_copp_clear_stats_args_t   args         = {0};
     pd::pd_func_args_t               pd_func_args = {0};
 
-    // PD Clear Copp Stats  
+    // PD Clear Copp Stats
     args.copp = copp;
     pd_func_args.pd_copp_clear_stats = &args;
     ret = pd::hal_pd_call(pd::PD_FUNC_ID_COPP_CLEAR_STATS, &pd_func_args);

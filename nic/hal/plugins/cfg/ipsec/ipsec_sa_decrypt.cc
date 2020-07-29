@@ -1,6 +1,7 @@
 #include "nic/include/base.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/plugins/cfg/nw/session.hpp"
 #include "nic/include/fte.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
@@ -58,7 +59,7 @@ ipsec_sa_decrypt_spec_dump (IpsecSADecrypt& spec)
 {
     std::string    ipsec_sa_decrypt_cfg_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)  {
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)  {
         return;
     }
 
@@ -386,7 +387,7 @@ ipsec_sadecrypt_delete (ipsec::IpsecSADecryptDeleteRequest& req, ipsec::IpsecSAD
 
     // fill stats of this IPSEC CB
     rsp->set_api_status(types::API_STATUS_OK);
-     
+
     del_ipsec_sa_from_db(ipsec);
     ipsec_sa_free(ipsec);
     return HAL_RET_OK;

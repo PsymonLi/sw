@@ -397,11 +397,16 @@ sdk_ret_t
 vnic_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
                         api_obj_ctxt_t *obj_ctxt) {
     lif_impl *lif;
+    if_index_t if_index;
+    pds_obj_key_t lif_key;
 
     msg->cfg_msg.vnic.status.hw_id = hw_id_;
     msg->cfg_msg.vnic.status.nh_hw_id = nh_idx_;
     // populate lif id, if vnic has host intf association
-    lif = lif_impl_db()->find(&msg->cfg_msg.vnic.spec.host_if);
+    if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(
+                   objid_from_uuid(msg->cfg_msg.vnic.spec.host_if)));
+    lif_key = uuid_from_objid(if_index);
+    lif = lif_impl_db()->find(&lif_key);
     if (lif) {
         msg->cfg_msg.vnic.status.host_if_hw_id = lif->id();
     }
@@ -700,11 +705,15 @@ vnic_impl::program_vnic_nh_(pds_device_oper_mode_t oper_mode,
                             nexthop_info_entry_t *nh_data) {
     lif_impl *lif;
     sdk_ret_t ret;
+    if_index_t if_index;
+    pds_obj_key_t lif_key;
 
     // program the nexthop table
     switch (oper_mode) {
     case PDS_DEV_OPER_MODE_HOST:
-        lif = lif_impl_db()->find(&spec->host_if);
+        if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(objid_from_uuid(spec->host_if)));
+        lif_key = uuid_from_objid(if_index);
+        lif = lif_impl_db()->find(&lif_key);
         if (lif) {
             nh_data->set_lif(lif->id());
             nh_data->set_drop(FALSE);

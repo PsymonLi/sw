@@ -1,6 +1,7 @@
 #include "nic/include/base.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/hal/plugins/cfg/nw/session.hpp"
 #include "nic/include/fte.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
@@ -74,7 +75,7 @@ tcp_proxy_cfg_pol_dump (tcp_proxy::TcpProxyRuleSpec& spec)
 {
     std::string pol_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)
         return;
 
     google::protobuf::util::MessageToJsonString(spec, &pol_str);
@@ -88,7 +89,7 @@ tcp_proxy_cfg_pol_get_dump (tcp_proxy::TcpProxyRuleSpec& spec)
 {
     std::string pol_str;
 
-    if (hal::utils::hal_trace_level() < ::utils::trace_debug)
+    if (hal::utils::hal_trace_level() < sdk::types::trace_debug)
         return;
 
     google::protobuf::util::MessageToJsonString(spec, &pol_str);
@@ -411,7 +412,7 @@ tcp_proxy_find_policy_by_key_or_handle (const TcpProxyRuleKeyHandle& kh)
 
         key.pol_id = kh.rule_key().tcp_proxy_rule_id();
         key.vrf_id = kh.rule_key().vrf_key_or_handle().vrf_id();
-        
+
         return (tcp_proxy_cfg_pol_t *) g_hal_state->tcp_proxy_policy_ht()->lookup((void *)&key);
     } else {
         return tcp_proxy_find_policy_by_handle(kh.rule_handle());
@@ -431,7 +432,7 @@ tcp_proxy_policy_get_ht_cb (void *ht_entry, void *ctxt)
 
     HAL_TRACE_DEBUG("handle id {}", entry->handle_id);
     pol = (tcp_proxy_cfg_pol_t *)hal_handle_get_obj(entry->handle_id);
-    if (pol) { 
+    if (pol) {
         HAL_TRACE_DEBUG("pol hal handle id {}", pol->hal_hdl);
     }
     tcp_proxy_cfg_pol_spec_build(pol, response->mutable_spec());
@@ -459,7 +460,7 @@ tcp_proxy_rule_get (TcpProxyRuleGetRequest& req, TcpProxyRuleGetResponseMsg *rsp
    HAL_TRACE_DEBUG("Entered here");
     auto kh = req.key_or_handle();
     auto response = rsp->add_response();
-    if ((pol = tcp_proxy_cfg_pol_key_or_handle_lookup(kh)) == NULL) { 
+    if ((pol = tcp_proxy_cfg_pol_key_or_handle_lookup(kh)) == NULL) {
         response->set_api_status(types::API_STATUS_NOT_FOUND);
         HAL_API_STATS_INC(HAL_API_TCP_PROXY_RULE_GET_FAIL);
         return HAL_RET_TCP_PROXY_RULE_NOT_FOUND;
@@ -595,7 +596,7 @@ tcp_proxy_cfg_pol_create_oper_handle (tcp_proxy_cfg_pol_t *pol)
     // save the hal handle and add policy to databases
     pol->hal_hdl = hal_hdl;
     HAL_TRACE_DEBUG("hal_hdl {}", hal_hdl);
-    
+
     if ((ret = tcp_proxy_cfg_pol_create_db_handle(pol)) != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed here");
         return ret;
@@ -638,7 +639,7 @@ tcp_proxy_cfg_rule_spec_build (tcp_proxy_cfg_rule_t *rule, tcp_proxy::TcpProxyRu
 
     spec->mutable_tcp_proxy_action()->set_tcp_proxy_action_type(rule->action.tcp_proxy_action);
 
-    HAL_TRACE_DEBUG("action type {} vrf-id {}", 
+    HAL_TRACE_DEBUG("action type {} vrf-id {}",
                     rule->action.tcp_proxy_action, rule->action.vrf);
 
     if ((ret = rule_match_spec_build(

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <stdio.h>
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/table/hbmhash/hbm_hash.hpp"
 #include "nic/sdk/lib/table/hbmhash/hbm_hash_entry.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
@@ -1728,8 +1729,8 @@ int main(int argc, char **argv) {
                            NULL,
                            TRACE_FILE_SIZE_DEFAULT,
                            TRACE_NUM_FILES_DEFAULT,
-                           ::utils::trace_debug,
-                           ::utils::trace_none);
+                           sdk::types::trace_debug,
+                           sdk::types::trace_none);
 
     hal_sdk_init();
 

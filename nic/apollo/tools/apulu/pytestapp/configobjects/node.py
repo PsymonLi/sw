@@ -25,11 +25,12 @@ class NodeObject():
         for resp in objs[0].Response:
             if resp.Spec.Type == types_pb2.LIF_TYPE_CONTROL:
                 self.vcn_intf_mac_address = utils.getnum2mac(resp.Spec.MacAddress)
-                self.vcn_intf_if_index = hex(resp.Status.IfIndex)
+                self.vcn_intf_if_index = hex(utils.LifIfIdx2HostIfIdx(resp.Status.IfIndex))
             elif resp.Spec.Type == types_pb2.LIF_TYPE_HOST:
+                host_ifidx = hex(utils.LifIfIdx2HostIfIdx(resp.Status.IfIndex))
                 self.intf_mac_address[resp.Status.Name] = utils.getnum2mac(resp.Spec.MacAddress)
-                self.intf_mac_address_by_if_index[hex(resp.Status.IfIndex)] = utils.getnum2mac(resp.Spec.MacAddress)
-                self.intf_if_index[resp.Status.Name] = hex(resp.Status.IfIndex)
+                self.intf_mac_address_by_if_index[host_ifidx] = utils.getnum2mac(resp.Spec.MacAddress)
+                self.intf_if_index[resp.Status.Name] = host_ifidx
         return
 
     def GetNodeMac(self):
@@ -38,7 +39,7 @@ class NodeObject():
     def GetVcnIntfMac(self):
         return self.vcn_intf_mac_address
 
-    def GetVcnIntfIfIndex(self):
+    def GetVcnHostIfIndex(self):
         return self.vcn_intf_if_index
 
     def GetIntfMac(self, intf_name):

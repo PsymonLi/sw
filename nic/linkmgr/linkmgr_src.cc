@@ -24,6 +24,7 @@
 #include "nic/sdk/platform/fru/fru.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/include/hal_cfg_db.hpp"
 #include "nic/hal/src/stats/stats.hpp"
 
@@ -171,15 +172,15 @@ linkmgr_logger_init (void)
     logger =
         ::utils::log::factory("linkmgr",
                               sdk::lib::thread::control_cores_mask(),
-                              ::utils::log_mode_async,
+                              sdk::types::log_mode_async,
                               false,
                               persistent.c_str(),
                               non_persistent.c_str(),
                               5 << 20, // size(5MB)
                               1 /* number of files */,
-                              ::utils::trace_err,   /* for persistent */
-                              ::utils::trace_debug, /* for non-persistent */
-                              ::utils::log_none);
+                              sdk::types::trace_err,   /* for persistent */
+                              sdk::types::trace_debug, /* for non-persistent */
+                              sdk::types::log_none);
     SDK_ASSERT(logger != NULL);
 
     return logger;

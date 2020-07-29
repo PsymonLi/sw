@@ -4,6 +4,7 @@
 
 #define SPDLOG_ENABLE_SYSLOG    1
 
+#include "nic/sdk/include/sdk/types.hpp"
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/spdlog.h>
@@ -61,31 +62,9 @@ using logger = spdlog::logger;
 
 namespace utils {
 
-enum log_mode_e {
-    log_mode_sync     = 0,     // write logs in the context of the caller thread
-    log_mode_async    = 1,    // write logs/traces in the context of a backend thread
-};
-
-enum trace_level_e {
-    trace_none     = 0,        // traces disabled completely
-    trace_err      = 1,
-    trace_warn     = 2,
-    trace_info     = 3,
-    trace_debug    = 4,
-    trace_verbose  = 5,
-};
-
-enum syslog_level_e {
-    log_none      = 0,
-    log_emerg     = 1,
-    log_alert     = 2,
-    log_crit      = 3,
-    log_err       = 4,
-    log_warn      = 5,
-    log_notice    = 6,
-    log_info      = 7,
-    log_debug     = 8,
-};
+using sdk::types::log_mode_e;
+using sdk::types::trace_level_e;
+using sdk::types::syslog_level_e;
 
 #define TRACE_FILE_SIZE_DEFAULT        (10 << 20)     // 10 MB trace file by default
 #define TRACE_NUM_FILES_DEFAULT        1              // 1 file by default
@@ -100,9 +79,9 @@ public:
                         const char *non_persistent_trace_file_name,
                         size_t file_size = TRACE_FILE_SIZE_DEFAULT,
                         size_t max_files = TRACE_NUM_FILES_DEFAULT,
-                        trace_level_e persistent_trace_level = trace_err,
-                        trace_level_e non_persistent_trace_level = trace_err,
-                        syslog_level_e syslog_level = log_notice,
+                        trace_level_e persistent_trace_level = sdk::types::trace_err,
+                        trace_level_e non_persistent_trace_level = sdk::types::trace_err,
+                        syslog_level_e syslog_level = sdk::types::log_notice,
                         bool truncate = true);
     static void destroy(log *logger_obj);
     void set_trace_level(trace_level_e level);
