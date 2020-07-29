@@ -955,18 +955,24 @@ subnet_impl::fill_spec_(pds_subnet_spec_t *spec) {
         PDS_TRACE_ERR("Failed to read BD table at index %u", hw_id_);
         return sdk::SDK_RET_HW_READ_ERR;
     }
-    spec->fabric_encap.val.vnid = bd_data.p4e_bd_info.vni;
     sdk::lib::memrev(spec->vr_mac, bd_data.p4e_bd_info.vrmac, ETH_ADDR_LEN);
     spec->tos = bd_data.p4e_bd_info.tos;
-    vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
-    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
-                                   VNI_VNI_INFO_ID, handle_t::null());
-    // read the VNI table
-    ret = vpc_impl_db()->vni_tbl()->get(&tparams);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to read VNI table for vnid %u, err %u",
-                      bd_data.p4e_bd_info.vni, ret);
-        return sdk::SDK_RET_HW_READ_ERR;
+
+    if ((g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) ||
+        (g_pds_state.device_oper_mode() ==
+             PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
+        spec->fabric_encap.val.vnid = bd_data.p4e_bd_info.vni;
+        spec->fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
+        vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
+                                       VNI_VNI_INFO_ID, handle_t::null());
+        // read the VNI table
+        ret = vpc_impl_db()->vni_tbl()->get(&tparams);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Failed to read VNI table for vnid %u, err %u",
+                          bd_data.p4e_bd_info.vni, ret);
+            return ret;
+        }
     }
     return SDK_RET_OK;
 }

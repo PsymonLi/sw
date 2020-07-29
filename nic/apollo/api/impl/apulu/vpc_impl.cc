@@ -465,15 +465,16 @@ vpc_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
     spec->tos = vpc_data.vpc_info.tos;
 
     if ((g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) ||
-        (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
+        (g_pds_state.device_oper_mode() ==
+             PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
         vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
         PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                        VNI_VNI_INFO_ID, handle_t::null());
         // read the VNI table
         ret = vpc_impl_db()->vni_tbl()->get(&tparams);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to read VNI table for vpc %s, vnid %u, err %u",
-                          spec->key.str(), vni_key.vxlan_1_vni, ret);
+            PDS_TRACE_ERR("Failed to read VNI table for vpc %s, vnid %u, "
+                          "err %u", spec->key.str(), vni_key.vxlan_1_vni, ret);
             return ret;
         }
         status->bd_hw_id = vni_data.vni_info.bd_id;
@@ -486,7 +487,7 @@ vpc_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
 }
 
 sdk_ret_t
-vpc_impl::fill_status_(upg_obj_info_t *upg_info,  pds_vpc_status_t *vpc_status) {
+vpc_impl::fill_status_(upg_obj_info_t *upg_info, pds_vpc_status_t *vpc_status) {
     vpc_status->hw_id = hw_id_;
     return SDK_RET_OK;
 }

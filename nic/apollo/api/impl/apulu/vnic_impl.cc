@@ -48,6 +48,7 @@
 // compute next vnic epoch given current epoch
 #define PDS_IMPL_VNIC_EPOCH_NEXT(epoch)    ((++(epoch)) & 0xFF)
 
+// NOTE: by default p4 is in APULU_LIF_VLAN_MODE_VLAN mode
 #define PDS_IMPL_FILL_LIF_VLAN_KEY(key_, encap_)                   \
 {                                                                  \
     memset((key_), 0, sizeof(*(key_)));                            \

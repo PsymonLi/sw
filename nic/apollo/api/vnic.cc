@@ -141,7 +141,8 @@ vnic_entry::init_config(api_ctxt_t *api_ctxt) {
         }
     } else if (g_pds_state.device_oper_mode() ==
                    PDS_DEV_OPER_MODE_BITW_SMART_SERVICE) {
-        if (unlikely(vnic_encap_.type != PDS_ENCAP_TYPE_QINQ)) {
+        if (unlikely((vnic_encap_.type != PDS_ENCAP_TYPE_QINQ) &&
+                     (vnic_encap_.type != PDS_ENCAP_TYPE_DOT1Q))) {
             PDS_TRACE_ERR("Invalid encap type %u on vnic %s",
                           vnic_encap_.type, key_.str());
             return SDK_RET_INVALID_ARG;

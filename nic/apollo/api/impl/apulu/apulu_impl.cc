@@ -1597,6 +1597,7 @@ program_lif_table (uint16_t lif_hw_id, uint8_t lif_type, uint16_t vpc_hw_id,
     lif_data.lif_action.direction = direction;
     lif_data.lif_action.lif_type = lif_type;
     lif_data.lif_action.vnic_id = vnic_hw_id;
+    lif_data.lif_action.lif_vlan_mode = APULU_LIF_VLAN_MODE_VLAN;
     // for host lifs, before lif is fully initialized, it is possible that
     // PF to subnet association happened and in that case we shouldn't
     // override the config
