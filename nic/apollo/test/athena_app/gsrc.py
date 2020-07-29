@@ -34,13 +34,20 @@ def copy_src(src, dst):
         sl1 = file.readlines()
     sl2 = []
     for line in sl1:
-        #sl2.append(line.rstrip('\n').rstrip('/'))
-        sl2.append(line.rstrip('\n').rstrip('/').split('#')[0])
+        #sl2.append(line.rstrip('\n').rstrip('/').split('#')[0])
+        sl2.append(line.rstrip('\n').split('#')[0])
 
     for line in sl2:
         if line.startswith('-'):
             dst1 = dst + '/' + line[1:]
             cmd = 'rm -rf ' + dst1
+            os.system(cmd)
+            print('R: %s' % cmd)
+            continue
+
+        if line.startswith('!'):
+            dst1 = dst + '/' + line[1:]
+            cmd = 'rm -rf ' + '`find ' + dst + '/sw' + ' -name ' + line[1:] + '`'
             os.system(cmd)
             print('R: %s' % cmd)
             continue
@@ -58,10 +65,12 @@ def copy_src(src, dst):
             if line.split()[0].startswith('/tool/toolchain'):
                 src1 = line.split()[0]
             else:
-                src1 = src + line
-            copy(src1, dst1)
-            print("T: %s" % line)
-            continue
+                src1 = src + line.split()[0]
+
+            if '*' not in line:
+                print("T: %s" % line)
+                copy(src1, dst1)
+                continue
 
         if '*' not in line:
             if os.path.exists(dst1):
@@ -79,28 +88,40 @@ def copy_src(src, dst):
         else:
             # if not os.path.isdir(os.path.dirname(os.path.abspath(dst1))):
             #    os.makedirs(os.path.dirname(os.path.abspath(dst1)))
-            if not os.path.isdir(os.path.dirname(dst1)):
-                os.makedirs(os.path.dirname(dst1))
-                print("C: %s" % os.path.dirname(line))
-            cmd = 'cp -ar ' + src1 + ' ' + os.path.dirname(os.path.abspath(dst1))
+            if dst1[-1] == '/':
+                if not os.path.isdir(dst1):
+                    print("C: %s" % dst1)
+                    os.makedirs(dst1)
+                cmd = 'cp -ar ' + src1 + ' ' + os.path.abspath(dst1)
+            else:
+                if not os.path.isdir(os.path.dirname(dst1)):
+                    print("C: %s" % os.path.dirname(dst1))
+                    os.makedirs(os.path.dirname(dst1))
+                cmd = 'cp -ar ' + src1 + ' ' + os.path.dirname(os.path.abspath(dst1))
             # print("* %s" % line)
             print("* %s" % cmd)
             os.system(cmd)
+    cmd = 'cd ' + src + '/sw; git rev-parse HEAD > ' + dst + '/sw/git_hash'
+    print(cmd)
+    os.system(cmd)
+    cmd = 'cd ' + src + '/sw; git describe --tags > ' + dst + '/sw/git_tag'
+    print(cmd)
+    os.system(cmd)
 
+    '''
     for line in sl2:
-        '''
         if line.startswith('-'):
             dst1 = dst + '/' + line[1:]
             cmd = 'rm -rf ' + dst1
             os.system(cmd)
             print('R: %s' % cmd)
-        '''
 
         if line.startswith('!'):
             dst1 = dst + '/' + line[1:]
             cmd = 'rm -rf ' + '`find ' + dst + '/sw' + ' -name ' + line[1:] + '`'
             os.system(cmd)
             print('R: %s' % cmd)
+    '''
 
 def copy_mod(dst):
     with open('/usr/src/github.com/pensando/sw/nic/apollo/test/athena_app/Makefile', 'r') as file:

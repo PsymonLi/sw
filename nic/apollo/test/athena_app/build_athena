@@ -4,16 +4,4 @@ TTOP=$1
 ANE_TYPE=$2
 export GOPATH=$TTOP
 cd $TTOP/src/github.com/pensando/sw/nic
-ANE=$ANE_TYPE make PIPELINE=athena ARCH=aarch64 libev.export
-ANE=$ANE_TYPE make PIPELINE=athena ARCH=aarch64 libnuma.export
-ANE=$ANE_TYPE make PIPELINE=athena ARCH=aarch64 dhcp_server_pkg.export
-ANE=$ANE_TYPE make PIPELINE=athena ARCH=aarch64 openssl.export
-ANE=$ANE_TYPE make PIPELINE=athena ARCH=aarch64 capri.export
-ANE=$ANE_TYPE make PIPELINE=athena ARCH=aarch64 sknobs_libs.export
-ANE=$ANE_TYPE make PIPELINE=athena ARCH=aarch64 avago.export
-cp -ar sdk/third-party/asic/capri/model/capsim-master/gen/aarch64/lib/libmpuobj.so build/aarch64/athena/capri/lib/
-cp -ar sdk/third-party/asic/capri/model/capsim-master/gen/aarch64/lib/libisa.so build/aarch64/athena/capri/lib/
-cp -ar sdk/third-party/asic/capri/model/capsim-master/gen/aarch64/lib/libcapisa.so build/aarch64/athena/capri/lib/
-cp -ar sdk/third-party/libJudy.so build/aarch64/athena/capri/lib
-cp -ar sdk/third-party/libzmq.so build/aarch64/athena/capri/lib
 ANE=$ANE_TYPE COVERAGE=1 make PIPELINE=athena ARCH=aarch64 PLATFORM=hw

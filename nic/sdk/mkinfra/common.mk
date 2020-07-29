@@ -53,7 +53,13 @@ COMMON_INCS__           := ${TOPDIR} ${SDKDIR} ${BLD_ARCH_DIR} ${THIRD_PARTY_INC
 COMMON_INCS             := $(addprefix -I,${COMMON_INCS__})
 
 RPATH_PREFIX            := -Wl,-rpath,
-COMMON_LDPATHS__        := ${BLD_LIB_DIR}
+ifeq ($(ANE),)
+    COMMON_LDPATHS__        := ${BLD_LIB_DIR}
+else
+	export LD_PATH_ANE_OTHER ?= ${TOPDIR}/lib/other
+	export LD_PATH_ANE_PEN   ?= ${TOPDIR}/lib/pen
+    COMMON_LDPATHS__         := ${BLD_LIB_DIR} ${LD_PATH_ANE_OTHER} ${LD_PATH_ANE_PEN}
+endif
 COMMON_LDPATHS          := $(addprefix -L,${COMMON_LDPATHS__}) \
                            $(addprefix ${RPATH_PREFIX},${COMMON_LDPATHS__})
 
