@@ -11,6 +11,9 @@ using namespace boost::interprocess;
 #define TO_SHM(x)          ((managed_shared_memory *)(x))
 #define TO_FILE_MAP_SHM(x) ((managed_mapped_file *)(x))
 
+// current version of shmmgr
+#define SHMMGR_VERSION (0x0101)
+
 namespace sdk {
 namespace lib {
 
@@ -21,6 +24,12 @@ public:
     uint64_t offset;
     // size of the allocated memory
     std::size_t size;
+    // shm_segment structure version
+    uint16_t version;
+    // segment label, identifies the data content
+    uint16_t label;
+    // reserved for future use
+    uint32_t rsvd[5];
 };
 
 #define SHMMGR_OP(op, res) {                                        \
@@ -295,7 +304,7 @@ shmmgr::mmgr(void) const
 
 void *
 shmmgr::segment_find(const char *name, bool create, std::size_t size,
-                     std::size_t alignment) {
+                     uint16_t label, std::size_t alignment) {
     std::pair<shm_segment*, std::size_t> res;
     shm_segment* state;
     void *addr = NULL;
@@ -325,8 +334,11 @@ shmmgr::segment_find(const char *name, bool create, std::size_t size,
                     SHMMGR_OP(allocate(size), addr);
                 }
                 if (addr) {
+                    memset(state, 0, sizeof(shm_segment));
                     state->offset = (uint64_t)state - (uint64_t)addr;
                     state->size = size;
+                    state->version  = SHMMGR_VERSION;
+                    state->label = label;
                     return addr;
                 } else {
                     SDK_TRACE_ERR("Failed to allocate memory for segment %s",
@@ -336,7 +348,6 @@ shmmgr::segment_find(const char *name, bool create, std::size_t size,
             } catch (...) {
                 SDK_TRACE_ERR("Failed to allocate memory for segment %s",
                               name);
-                SHMMGR_OP_NORET(destroy_ptr(state));
             }
         }
     } else {
@@ -362,6 +373,34 @@ shmmgr::get_segment_size(const char *name) {
         return 0;
     }
     return state->size;
+}
+
+template <typename T>
+void shmmgr::iterate(T *mmgr, void *ctxt, shmmgr_seg_walk_cb_t cb) {
+    typename T::const_named_iterator curr;
+    typename T::const_named_iterator end;
+
+    for (curr = mmgr->named_begin(), end = mmgr->named_end();
+         curr != end ; ++curr) {
+        const shm_segment *seg = (const shm_segment*)curr->value();
+        void *addr = (void *)((uint64_t)seg - seg->offset);
+        cb(ctxt, curr->name(), seg->size, addr, seg->label);
+    };
+};
+
+
+void
+shmmgr::segment_walk(void *ctxt, shmmgr_seg_walk_cb_t cb) {
+
+    if (mapped_file_) {
+        iterate<managed_mapped_file>(TO_FILE_MAP_SHM(mmgr_), ctxt, cb);
+    } else {
+        if (fixed_) {
+            iterate<fixed_managed_shared_memory>(TO_FM_SHM(mmgr_), ctxt, cb);
+        } else {
+            iterate<managed_shared_memory>(TO_SHM(mmgr_), ctxt, cb);
+        }
+    }
 }
 
 }    // namespace lib

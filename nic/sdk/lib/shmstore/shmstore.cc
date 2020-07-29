@@ -38,10 +38,9 @@ shmstore::file_init_(const char *name, size_t size, enum shm_mode_e mode) {
     return SDK_RET_OK;
 }
 
-
 void *
 shmstore::segment_init_(const char *name, size_t size, bool create,
-                        size_t alignment) {
+                        uint16_t label, size_t alignment) {
     void *mem;
     const char *op = create == true ? "create" : "open";
 
@@ -49,7 +48,7 @@ shmstore::segment_init_(const char *name, size_t size, bool create,
     SDK_ASSERT(shmmgr_);
     try {
         mem = (char *)shmmgr_->segment_find(name, create, create ? size : 0,
-                                            alignment);
+                                            label, alignment);
         if (!mem) {
             SDK_TRACE_ERR("Failed to %s shmstore segment %s, size %lu,"
                          " alignment %lu", op, name, size, alignment);
@@ -105,23 +104,23 @@ shmstore::size(void) {
 }
 
 void *
-shmstore::create_segment(const char *name, size_t size,
+shmstore::create_segment(const char *name, size_t size, uint16_t label,
                          size_t alignment) {
-    return segment_init_(name, size, true, alignment);
+    return segment_init_(name, size, true, label, alignment);
 }
 
 void *
 shmstore::open_segment(const char *name) {
-    return segment_init_(name, 0, false);
+    return segment_init_(name, 0, 0, false);
 }
 
 void *
-shmstore::create_or_open_segment(const char *name, size_t size,
+shmstore::create_or_open_segment(const char *name, size_t size, uint16_t label,
                                  size_t alignment) {
     if (mode() == sdk::lib::SHM_CREATE_ONLY) {
-        return segment_init_(name, size, true, alignment);
+        return segment_init_(name, size, true, label, alignment);
     } else {
-        return segment_init_(name, 0, false, alignment);
+        return segment_init_(name, 0, false, label, alignment);
     }
 }
 
@@ -130,6 +129,11 @@ shmstore::segment_size(const char *name) {
     // make sure the entry exist (either create/open)
     SDK_ASSERT(shmmgr_ != NULL);
     return  shmmgr_->get_segment_size(name);
+}
+    
+void
+shmstore::segment_walk(void *ctxt, shmstore_seg_walk_cb_t cb) {
+    shmmgr_->segment_walk(ctxt, cb);
 }
 
 }    // namespace lib

@@ -18,6 +18,11 @@ enum shm_mode_e {
 
 #define SHMSEG_NAME_MAX_LEN    16
 
+// segment walk callback function
+typedef void (*shmmgr_seg_walk_cb_t)(void *ctx, const char *name,
+                                     std::size_t size, void *addr,
+                                     uint16_t label);
+
 //------------------------------------------------------------------------------
 // shmmgr is the shared memory and it expected to be instantiated once
 // on each core in process/core's private heap memory, this will manage all the
@@ -62,9 +67,13 @@ public:
     // if size is given in the latter case, it compares the allocated and the
     // requested and returns memory only if requested size <= allocated size
     void *segment_find(const char *name, bool create, std::size_t size = 0,
-                       std::size_t alignment = 0);
+                       uint16_t label = 0, std::size_t alignment = 0);
     // get size of the named segment
     std::size_t get_segment_size(const char *name);
+
+    // segment walk (iterate through all segments)
+    void segment_walk(void *ctxt, shmmgr_seg_walk_cb_t cb);
+
 private:
     char    name_[SHMSEG_NAME_MAX_LEN];
     void    *mmgr_;
@@ -76,6 +85,9 @@ private:
     ~shmmgr();
     bool init(const char *name, const std::size_t size,
               shm_mode_e mode, void *baseaddr);
+
+    template< typename T>
+    void iterate(T *mmgr, void *ctx, shmmgr_seg_walk_cb_t cb);
 };
 
 }    // namespace lib

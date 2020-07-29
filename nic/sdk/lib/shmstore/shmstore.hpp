@@ -19,6 +19,9 @@
 namespace sdk {
 namespace lib {
 
+// segment walk callback function
+typedef shmmgr_seg_walk_cb_t shmstore_seg_walk_cb_t;
+
 class shmstore {
 public:
     /// \brief factory method to create a store instance
@@ -53,9 +56,10 @@ public:
     ///        cannot create segments on opened store.
     /// \param[in] name segment name
     /// \param[in] size segment size
+    /// \param[in] segment label, identifies the data content
     /// \param[in] alignment segment alignment
     /// \return valid segment pointer, null on failure
-    void *create_segment(const char *name, size_t size,
+    void *create_segment(const char *name, size_t size, uint16_t label = 0,
                          size_t alignment = 0);
 
     /// \brief open a segment in the given in store
@@ -67,15 +71,22 @@ public:
     ///        cannot create segments on opened store.
     /// \param[in] name segment name
     /// \param[in] size segment size, valid for create case only
+    /// \param[in] segment label, identifies the data content
     /// \param[in] alignment segment alignment, valid for create case only
     /// \return valid segment pointer, null on failure
-    void *create_or_open_segment(const char *name, size_t size,
+    void *create_or_open_segment(const char *name, size_t size, uint16_t label = 0,
                                  size_t alignment = 0);
 
     /// \brief get segment size
     /// \param[in] name segment name
     /// \return size of segment
     size_t segment_size(const char *name);
+
+    /// \brief walk through all named segments in the store
+    /// \param[in] callback context
+    /// \param[in] callback function
+    /// \return None
+    void segment_walk(void *ctxt, shmstore_seg_walk_cb_t cb);
 
 private:
     /// store mode
@@ -85,7 +96,7 @@ private:
 private:
     sdk_ret_t file_init_(const char *name, size_t size, enum shm_mode_e mode);
     void *segment_init_(const char *name, size_t size, bool create,
-                        size_t alignment = 0);
+                        uint16_t label, size_t alignment = 0);
 };
 
 }    // namespace lib
