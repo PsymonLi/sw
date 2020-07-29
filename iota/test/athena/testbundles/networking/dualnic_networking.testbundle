@@ -91,6 +91,45 @@ testcases:
         args    :
             pkt_cnt   : 10
 
+    #========================================
+    #  Connection Tracking Tests
+    #========================================
+
+    -   name    : Conntrack_Aging_Chkpt_Start
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : conntrack_aging_chkpt_start.txt
+            log_file: /var/log/pensando/iota_conntrack_aging_chkpt_test.log
+
+    -   name    : Connection_Tracking_Test
+        testcase: testcases.networking.e2e_data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L3']
+            nat       : ['no']
+            pyld_size : [64]
+            iptype    : ['v4']
+            proto     : ['TCP']
+            stateful  : ['yes']
+        args    :
+            duration  : 30
+
+    -   name    : Conntrack_Aging_Chkpt_End
+        testcase: testcases.networking.aging
+        enable  : True
+        ignore  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : conntrack_aging_chkpt_end.txt
+            stdout_file: /data/iota_conntrack_chkpt_start.log
+            dump_file: /data/iota_conntrack_chkpt_end.log
+            dump_sym: flow_type:TCP
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_conntrack_aging_chkpt_test.log
+
     #=======================================
     # Aging Tests (without traffic)
     #=======================================

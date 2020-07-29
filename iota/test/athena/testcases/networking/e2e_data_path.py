@@ -3,6 +3,7 @@
 import json 
 import re
 import time
+
 import iota.harness.api as api
 import iota.harness.infra.store as store
 import iota.test.athena.utils.misc as utils
@@ -10,6 +11,7 @@ import iota.test.iris.utils.iperf as iperf
 import iota.test.athena.testcases.networking.config.flow_gen as flow_gen 
 import iota.test.athena.utils.athena_app as athena_app_utils
 from collections import defaultdict
+from enum import Enum
 
 ICMP_TYPE_ECHO_REQ = '8'
 ICMP_CODE_ECHO_REQ = '0'
@@ -17,6 +19,23 @@ ICMP_TYPE_ECHO_REPLY = '0'
 ICMP_CODE_ECHO_REPLY = '0'
 PING_INTVL = 0.1   # secs
 PING_TIMEOUT = 3   # secs 
+
+
+class FlowState(Enum):
+    UNESTABLISHED = 0       # Connection unestablished
+    SYN_SENT = 1            # TCP SYN sent
+    SYN_RECV = 2            # TCP SYN received
+    SYNACK_SENT = 3         # TCP SYN ACK sent
+    SYNACK_RECV = 4         # TCP SYN ACK received
+    ESTABLISHED = 5         # Established
+    FIN_SENT = 6            # FIN Sent
+    FIN_RECV = 7            # FIN received
+    TIME_WAIT = 8           # Wait
+    RST_CLOSE = 9           # RST close
+    REMOVED = 10            # Connection removed
+    OPEN_CONN_SENT = 11     # TCP OPEN, UDP, ICMP, OTHERS unestablished H2S
+    OPEN_CONN_RECV = 12     # TCP_OPEN, UDP, ICMP, OTHERS unestablished S2H
+
 
 def parse_args(tc):
     #==============================================================
@@ -26,7 +45,9 @@ def parse_args(tc):
     tc.nat        = 'no'
     tc.pyld_size  = 64
     tc.iptype     = 'v4'
+    tc.stateful   = False
     tc.pkt_cnt    = 2
+    tc.duration   = None
     tc.proto      = 'ICMP'
 
     #==============================================================
@@ -47,8 +68,15 @@ def parse_args(tc):
     if hasattr(tc.iterators, 'proto'):
         tc.proto = tc.iterators.proto
 
+    if hasattr(tc.iterators, 'stateful') and \
+               tc.iterators.stateful == 'yes':
+            tc.stateful = True
+
     if hasattr(tc.args, 'pkt_cnt'):
         tc.pkt_cnt = tc.args.pkt_cnt
+
+    if hasattr(tc.args, 'duration'):
+        tc.duration = tc.args.duration
 
     api.Logger.info('vnic_type: {}, nat: {}, pyld_size: {} '
             'pkt_cnt: {}, iptype: {}, proto: {}'.format(tc.vnic_type, tc.nat, 
@@ -319,18 +347,28 @@ def iperf_test(tc):
     tc.flow_hit_cnt_after = {}
     tc.flow_match_before = {}
     tc.flow_match_after = {}
+    tc.conntrack_state = {}
+
+    tc.is_ct_test = False
+    if tc.duration is not None and tc.stateful:
+        tc.is_ct_test = True
+        api.Logger.info("Start Connection Tracking e2e iPerf Test")
 
     wl_nodes = [pair[0] for pair in tc.wl_node_nic_pairs]
     node1, node2 = wl_nodes[0], wl_nodes[1]
     node1_ath_nic = tc.athena_node_nic_pairs[0][1]
     node2_ath_nic = tc.athena_node_nic_pairs[1][1]
+    tc.node_info = {'node1': node1, 'node2': node2,
+                    'node1_ath_nic': node1_ath_nic,
+                    'node2_ath_nic': node2_ath_nic}
 
     # cl_node => client node
-    for cl_node in wl_nodes: 
+    for cl_node in wl_nodes:
         tc.flow_hit_cnt_before[cl_node] = []
         tc.flow_hit_cnt_after[cl_node] = []
         tc.flow_match_before[cl_node] = []
         tc.flow_match_after[cl_node] = []
+        tc.conntrack_state[cl_node] = []
 
         sintf, dintf, smac, dmac, sip, dip = _get_client_server_info(
                                                             cl_node, tc)    
@@ -386,10 +424,16 @@ def iperf_test(tc):
                                         pktsize = tc.pyld_size,
                                         packet_count = tc.pkt_cnt)
         else:
-            clientCmd = iperf.ClientCmd(dip, dport, jsonOut = True,
-                                        client_ip = sip, client_port = sport,
-                                        pktsize = tc.pyld_size,
-                                        packet_count = tc.pkt_cnt)
+            if tc.is_ct_test:
+                clientCmd = iperf.ClientCmd(dip, dport, jsonOut = True,
+                                            client_ip = sip, client_port = sport,
+                                            pktsize = tc.pyld_size,
+                                            time = tc.duration)
+            else:
+                clientCmd = iperf.ClientCmd(dip, dport, jsonOut = True,
+                                            client_ip = sip, client_port = sport,
+                                            pktsize = tc.pyld_size,
+                                            packet_count = tc.pkt_cnt)
 
         tc.serverCmds.append(serverCmd)
         tc.clientCmds.append(clientCmd)
@@ -402,13 +446,18 @@ def iperf_test(tc):
                                 background = True)
 
         api.Trigger_AddCommand(clientReq, client_wl.node_name, 
-                                client_wl.workload_name, clientCmd)
+                                client_wl.workload_name, clientCmd,
+                                background = True)
 
         server_resp = api.Trigger(serverReq)
         # sleep for bg iperf servers to be started
         time.sleep(3)
 
         tc.iperf_client_resp.append(api.Trigger(clientReq))
+
+        if tc.is_ct_test:
+            iperf_ct_test(tc, cl_node, flow_n1, flow_n2)
+
         api.Trigger_TerminateAllCommands(server_resp)
 
         # check if flow installed on both athena nics after sending traffic
@@ -417,6 +466,35 @@ def iperf_test(tc):
             return rc
 
     return (api.types.status.SUCCESS)
+
+
+def iperf_ct_test(tc, cl_node, flow_n1, flow_n2):
+    # let client establish the connection
+    utils.Sleep(1)
+
+    node1 = tc.node_info['node1']
+    node2 = tc.node_info['node2']
+    node1_ath_nic = tc.node_info['node1_ath_nic']
+    node2_ath_nic = tc.node_info['node2_ath_nic']
+
+    for node, nic, vnic_id, flow in [
+            (node1, node1_ath_nic, tc.node1_vnic_id, flow_n1),
+            (node2, node2_ath_nic, tc.node2_vnic_id, flow_n2)]:
+        rc = utils.verify_conntrack_state(node, vnic_id, flow, FlowState.ESTABLISHED.value, nic)
+        tc.conntrack_state[cl_node].append((node, "ESTABLISHED", rc))
+
+    utils.Sleep(tc.duration)
+
+    for node, nic, vnic_id, flow in [
+            (node1, node1_ath_nic, tc.node1_vnic_id, flow_n1),
+            (node2, node2_ath_nic, tc.node2_vnic_id, flow_n2)]:
+        rc = utils.verify_conntrack_state(node, vnic_id, flow, FlowState.RST_CLOSE.value, nic)
+        tc.conntrack_state[cl_node].append((node, "RST_CLOSE", rc))
+        if node == cl_node:
+            rc = utils.verify_conntrack_state(node, vnic_id, flow, FlowState.TIME_WAIT.value, nic, 'client')
+        else:
+            rc = utils.verify_conntrack_state(node, vnic_id, flow, FlowState.TIME_WAIT.value, nic, 'server')
+        tc.conntrack_state[cl_node].append((node, "TIME_WAIT", rc))
 
 
 def iperf_resp_verify(tc):
@@ -471,6 +549,12 @@ def iperf_resp_verify(tc):
                             "node2 athena nic:" % (tc.proto, cl_node))
             flow.Display()
             return api.types.status.FAILURE 
+        
+        for node, state, rc in tc.conntrack_state[cl_node]:
+            if not rc:
+                api.Logger.error("For %s, state verification failed for state %s"
+                                % (node, state))
+                return api.types.status.FAILURE
     
     return api.types.status.SUCCESS
 
@@ -503,8 +587,8 @@ def Setup(tc):
     with open(api.GetTestsuiteAttr("node2_dp_policy_json_path")) as fd:
         node2_plcy_obj = json.load(fd)
 
-    node1_vnic_idx = utils.get_vnic_pos(node1_plcy_obj, tc.vnic_type, tc.nat)
-    node2_vnic_idx = utils.get_vnic_pos(node2_plcy_obj, tc.vnic_type, tc.nat)
+    node1_vnic_idx = utils.get_vnic_pos(node1_plcy_obj, tc.vnic_type, tc.nat, _stateful=tc.stateful)
+    node2_vnic_idx = utils.get_vnic_pos(node2_plcy_obj, tc.vnic_type, tc.nat, _stateful=tc.stateful)
 
     api.Logger.info('node1 vnic idx %d, node2 vnic idx %d' % (
                     node1_vnic_idx, node2_vnic_idx))
@@ -518,8 +602,8 @@ def Setup(tc):
                                     # tc.wl[1] should be node2 wl 
 
     # fetch vnic_id for flow verification later
-    tc.node1_vnic_id = utils.get_vnic_id(node1_plcy_obj, tc.vnic_type, tc.nat) 
-    tc.node2_vnic_id = utils.get_vnic_id(node2_plcy_obj, tc.vnic_type, tc.nat) 
+    tc.node1_vnic_id = utils.get_vnic_id(node1_plcy_obj, tc.vnic_type, tc.nat, _stateful=tc.stateful) 
+    tc.node2_vnic_id = utils.get_vnic_id(node2_plcy_obj, tc.vnic_type, tc.nat, _stateful=tc.stateful) 
 
     return api.types.status.SUCCESS
 

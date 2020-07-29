@@ -56,7 +56,7 @@ def get_vnic(plcy_obj, _vnic_type, _nat, _stateful = False, _skip_flow_log = Fal
 # the given policy handle
 # Gets vnic object based on vnic_type and nat
 # ===================================================
-def get_vnic_pos(plcy_obj, _vnic_type, _nat):
+def get_vnic_pos(plcy_obj, _vnic_type, _nat, _stateful = False):
 
     vnics = plcy_obj['vnic']
 
@@ -66,6 +66,8 @@ def get_vnic_pos(plcy_obj, _vnic_type, _nat):
 
         if vnic_type == _vnic_type and \
            nat == _nat:
+            if _stateful and not is_stateful_vnic(vnic):
+               continue
             return pos
 
     raise Exception("Matching vnic not found")
@@ -123,7 +125,7 @@ def get_flow_hit_count(node_name, device_name=None):
 # grep sip/dip/sport/dport/vnic/proto
 # from flow info
 # ========================================
-def get_flow_entries(node_name, vnic_id, flow, device_name):
+def get_flow_entries(node_name, vnic_id, flow, device_name, iperf_ctl):
 
     # Dump all flow entries from flow cache
     req = api.Trigger_CreateExecuteCommandsRequest()
@@ -153,8 +155,20 @@ def get_flow_entries(node_name, vnic_id, flow, device_name):
         flow_dump_cmd += (" | grep Code:" + str(flow.icmp_code))
 
     else:
-        flow_dump_cmd += (" | grep Sport:" + str(flow.sport))
-        flow_dump_cmd += (" | grep Dport:" + str(flow.dport))
+        if iperf_ctl:
+            # For iperf control flow, client will choose an additional random port as sport
+            if iperf_ctl == 'client':
+                flow_dump_cmd += (" | grep -v Sport:" + str(flow.sport))
+                flow_dump_cmd += (" | grep Dport:" + str(flow.dport))
+            elif iperf_ctl == 'server':
+                flow_dump_cmd += (" | grep Sport:" + str(flow.sport))
+                flow_dump_cmd += (" | grep -v Dport:" + str(flow.dport))
+            else:
+                api.Logger.error("Undefined iperf_ctl type, please choose from client/server")
+                return (api.types.status.FAILURE, None)
+        else:
+            flow_dump_cmd += (" | grep Sport:" + str(flow.sport))
+            flow_dump_cmd += (" | grep Dport:" + str(flow.dport))
 
     api.Trigger_AddNaplesCommand(flow_dump_req, node_name, flow_dump_cmd,
                                 device_name)
@@ -168,7 +182,7 @@ def get_flow_entries(node_name, vnic_id, flow, device_name):
 # ============================================================
 def match_dynamic_flows(node_name, vnic_id, flow, device_name=None):
 
-    rc, flow_dump_req = get_flow_entries(node_name, vnic_id, flow, device_name)
+    rc, flow_dump_req = get_flow_entries(node_name, vnic_id, flow, device_name, False)
     if rc != api.types.status.SUCCESS:
         return (rc, 0)
     flow_dump_resp = api.Trigger(flow_dump_req)
@@ -176,6 +190,7 @@ def match_dynamic_flows(node_name, vnic_id, flow, device_name=None):
     num_matching_ent = 0
     for cmd in flow_dump_resp.commands:
         if 'grep' in cmd.command and cmd.stdout is not None:
+            api.PrintCommandResults(cmd)
             num_matching_ent = len(cmd.stdout.splitlines())
 
     api.Logger.info('Number of matching flow entries = %d' % num_matching_ent)
@@ -186,9 +201,9 @@ def match_dynamic_flows(node_name, vnic_id, flow, device_name=None):
 # Return: session id of the flow
 # grep index from flow info
 # ================================
-def get_session_id(node_name, vnic_id, flow, device_name=None):
+def get_session_id(node_name, vnic_id, flow, device_name=None, iperf_ctl=False):
 
-    rc, flow_dump_req = get_flow_entries(node_name, vnic_id, flow, device_name)
+    rc, flow_dump_req = get_flow_entries(node_name, vnic_id, flow, device_name, iperf_ctl)
     if rc != api.types.status.SUCCESS:
         return None
     flow_dump_resp = api.Trigger(flow_dump_req)
@@ -213,9 +228,9 @@ def get_session_id(node_name, vnic_id, flow, device_name=None):
 # Input: session id in str decimal
 # return conntrack id in str decimal
 # ================================
-def get_conntrack_id(node, session_id):
+def get_conntrack_id(node, session_id, device_name=None):
     param =  "session_info_index " + session_id
-    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "session_info", param)
+    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "session_info", param, True, device_name)
     pattern = "(conntrack_id : )(\w*)"
     mo = re.search(pattern,output_lines)
 
@@ -225,9 +240,9 @@ def get_conntrack_id(node, session_id):
 # Input: conntrack_id in str decimal
 # Print conntrack table 
 # ================================
-def get_conntrack_state(node, conntrack_id):
+def get_conntrack_state(node, conntrack_id, device_name=None):
     param =  "conntrack_index " + conntrack_id
-    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "conntrack", param)
+    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "conntrack", param, True, device_name)
 
     pattern = "(flow_state : )(\w*)"
     mo = re.search(pattern, output_lines)
@@ -240,8 +255,8 @@ def get_conntrack_state(node, conntrack_id):
 # Validates the flow_state in conntrack
 # table against expected state
 # ================================
-def verify_conntrack_state_by_id(node_name, conntrack_id, exp_state):
-    flow_state = get_conntrack_state(node_name, conntrack_id)
+def verify_conntrack_state_by_id(node_name, conntrack_id, exp_state, device_name=None):
+    flow_state = get_conntrack_state(node_name, conntrack_id, device_name)
     api.Logger.info("flow_state: expected %s, actual %s" % (exp_state, flow_state))
 
     return flow_state == exp_state
@@ -252,15 +267,39 @@ def verify_conntrack_state_by_id(node_name, conntrack_id, exp_state):
 # Validates the flow_state in conntrack
 # table against expected state
 # ================================
-def verify_conntrack_state(node_name, vnic_id, flow, exp_state):
-    session_id = get_session_id(node_name, vnic_id, flow)
+def verify_conntrack_state(node_name, vnic_id, flow, exp_state, device_name=None, iperf_ctl=False):
+    # If validate iperf control flow, set iperf_ctl = server/client
+    session_id = get_session_id(node_name, vnic_id, flow, device_name, iperf_ctl)
     if session_id is None:
         api.Logger.error("Error: Get session ID failed, flow is not installed")
         return False
-    conntrack_id = get_conntrack_id(node_name, session_id)
+
+    conntrack_id = get_conntrack_id(node_name, session_id, device_name)
     api.Logger.info("conntrack_id is %s" % conntrack_id)
 
     return verify_conntrack_state_by_id(node_name, conntrack_id, exp_state)
+
+# =================================
+# Input: node, vnic_id flow and nic
+# Dump conntrack table entries
+# ================================
+def dump_conntrack_table(node_name, vnic_id, flow, device_name=None):
+    # Dump all flow entries from flow cache
+    req = api.Trigger_CreateExecuteCommandsRequest()
+    api.Trigger_AddNaplesCommand(req, node_name, "export PATH=$PATH:/nic/lib && "
+            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib && "
+            "/nic/bin/athena_client --conntrack_dump /data/iota_conntrack.log",
+            device_name)
+    api.Trigger_AddNaplesCommand(req, node_name, "cat /data/iota_conntrack.log",
+            device_name)
+
+    resp = api.Trigger(req)
+    for cmd in resp.commands:
+        api.PrintCommandResults(cmd)
+        if cmd.exit_code != 0:
+            api.Logger.error("Error: Dump conntrack through athena_client failed")
+            return (api.types.status.FAILURE, None)
+
 
 # ===========================================
 # Return: List of (node, nic) pairs names for 

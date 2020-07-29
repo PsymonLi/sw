@@ -154,7 +154,7 @@ testcases:
             test    : conntrack_aging_chkpt_start.txt
             log_file: /var/log/pensando/iota_conntrack_aging_chkpt_test.log
 
-    -   name    : Connection_Tracking_Test
+    -   name    : Connection_Tracking_Pre_Test
         testcase: testcases.networking.conntrack
         enable  : True
         ignore  : True
@@ -192,7 +192,7 @@ testcases:
             test    : conntrack_aging_chkpt_start_removed.txt
             log_file: /var/log/pensando/iota_conntrack_aging_chkpt_removed_test.log
 
-    -   name    : Connection_Tracking_Removed_State
+    -   name    : Connection_Tracking_Removed_State_Pre_Test
         testcase: testcases.networking.conntrack
         enable  : True
         ignore  : True
