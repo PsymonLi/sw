@@ -267,8 +267,8 @@ ionic_device_list_remove(vmk_Name device_name,                    // IN
  *
  *  Parameters:
  *     device_name       - IN (a key that represents the name of the device)
- *     device_list       - IN/OUT (device list pointer)
- *     data              - IN (driver priv data)
+ *     device_list       - IN (device list pointer)
+ *     data              - OUT (driver priv data)
  *
  *
  *  Results:
@@ -282,8 +282,8 @@ ionic_device_list_remove(vmk_Name device_name,                    // IN
 
 VMK_ReturnStatus
 ionic_device_list_get(vmk_Name device_name,                       // IN
-                      struct ionic_device_list *device_list,      // IN/OUT
-                      vmk_AddrCookie data)                        // IN
+                      struct ionic_device_list *device_list,      // IN
+                      vmk_AddrCookie data)                        // OUT
 {
         VMK_ReturnStatus status;
 

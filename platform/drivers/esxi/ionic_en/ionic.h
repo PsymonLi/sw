@@ -33,6 +33,7 @@
 #include "ionic_txrx.h"
 #include "ionic_en_mq.h"
 #include "ionic_api.h"
+#include "ionic_en_mgmt_interface.h"
 
 #define IONIC_DRV_NAME        "ionic_en"
 #define DRV_DESCRIPTION       "Pensando Ethernet NIC Driver"
@@ -148,6 +149,7 @@ struct ionic_driver {
         vmk_Driver                    drv_handle;
         vmk_LogComponent              log_component;
         struct ionic_device_list      uplink_dev_list;        
+        vmk_MgmtHandle                mgmt_handle;
 };
 
 struct ionic_en_priv_data {

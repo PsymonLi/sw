@@ -228,5 +228,10 @@ ionic_lif_set_uplink_info(struct lif *lif);
 VMK_ReturnStatus
 ionic_lif_quiesce(struct lif *lif);
 
+VMK_ReturnStatus
+ionic_firmware_update(struct ionic_en_priv_data *priv_data,
+                      const char *fw_data,
+                      vmk_uint64 fw_sz,
+                      const char *fw_name);
 #endif /* _IONIC_LIF_H_ */
 

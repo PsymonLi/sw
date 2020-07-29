@@ -66,6 +66,7 @@ module_def = {
                         "ionic_rx_filter.c",
                         "ionic_txrx.c",
                         "ionic_en_mq.c",
+                        "ionic_en_mgmt.c",
                         "../common/ionic_memory.c",
                         "../common/ionic_locks.c",
                         "../common/ionic_pci.c",
@@ -77,6 +78,7 @@ module_def = {
                         "../common/ionic_interrupt.c",
                         "../common/ionic_logical_dev_register.c",
                         "../common/ionic_device_list.c",
+                        "../common/ionic_en_mgmt_interface.c",
                      ],
     "includes"       : [
                          "../common/include",
