@@ -73,7 +73,7 @@ testbundles:
         - networking/connectivity.testbundle
         - flowlog/flowlog.testbundle
         - networking/cps.testbundle
-        - networking/upgrade.testbundle
+        #- networking/upgrade.testbundle
         - networking/telemetry.testbundle
         - linktest/linktest.testbundle
         - firewall/policy.testbundle
@@ -112,7 +112,7 @@ testbundles:
             - networking/networking.testbundle
             - flowlog/flowlog.testbundle
             - networking/cps.testbundle
-            - networking/upgrade.testbundle
+            #- networking/upgrade.testbundle
             - linktest/linktest.testbundle
             - firewall/policy.testbundle
             - aging/aging.testbundle

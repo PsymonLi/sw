@@ -148,4 +148,5 @@ def Verify(tc):
     return result
 
 def Teardown(tc):
+    addPktFltrRuleOnEp(tc, False)
     return api.types.status.SUCCESS

@@ -3264,6 +3264,7 @@ hal_has_session_aged (session_t *session, uint64_t ctime_ns,
         (tcp_session && session->conn_track_en &&
          session_state_p->iflow_state.state >= session::FLOW_TCP_STATE_BIDIR_FIN_RCVD &&
          session_state_p->iflow_state.state != session->iflow->state)) {
+        session->iflow->state = session_state_p->iflow_state.state;
         // session hasn't aged yet, move on
         retval = SESSION_AGED_IFLOW;
     }
@@ -3279,6 +3280,7 @@ hal_has_session_aged (session_t *session, uint64_t ctime_ns,
             (tcp_session && session->conn_track_en &&
              session_state_p->rflow_state.state >= session::FLOW_TCP_STATE_BIDIR_FIN_RCVD &&
              session_state_p->rflow_state.state != session->rflow->state)) {
+            session->rflow->state = session_state_p->rflow_state.state;
             // responder flow seems to be active still
             if (retval == SESSION_AGED_IFLOW)
                 retval = SESSION_AGED_BOTH;
@@ -4712,18 +4714,20 @@ session_handle_upgrade (void)
 {
     sdk::lib::thread *curr_thread = hal::hal_get_current_thread();
 
+    // We are going through upgrade dont process
+    // any flow-miss 
+    fte::fte_set_quiesce(0 /* FTE ID */, true);
+
     struct session_upgrade_data_t {
         dllist_ctxt_t session_list;
         dllist_ctxt_t fin_list;
         session_upgrade_data_t () {
-            dllist_reset(&session_list);
             dllist_reset(&fin_list);
         }
     } ctxt;
     auto walk_func = [](void *entry, void *ctxt) {
         hal::session_t             *session = (session_t *)entry;
         session_upgrade_data_t     *session_data = (session_upgrade_data_t *) ctxt;
-        dllist_ctxt_t              *list_head =     &session_data->session_list;
         dllist_ctxt_t              *fin_list_head = &session_data->fin_list;
         ep_t                       *sep = NULL, *dep = NULL;
         bool                        src_is_local = false, dst_is_local = false;
@@ -4764,28 +4768,19 @@ session_handle_upgrade (void)
             dllist_add(fin_list_head, &finargs->dllist_ctxt);
         }
 
-        // Add the sessions to the list to send a delete
-
-        hal_handle_id_list_entry_t *list_entry = (hal_handle_id_list_entry_t *)g_hal_state->
-                hal_handle_id_list_entry_slab()->alloc();
-
-        if (list_entry == NULL) {
-            HAL_TRACE_ERR("Out of memory - skipping delete session {}", session->hal_handle);
-            return false;
-        }
-
-        list_entry->handle_id = session->hal_handle;
-        dllist_add(list_head, &list_entry->dllist_ctxt);
-
         return false;
     };
 
     HAL_TRACE_DEBUG("calling walk func");
-    g_hal_state->session_hal_handle_ht()->walk_safe(walk_func, &ctxt);
-    curr_thread->punch_heartbeat();
-    session_send_fin_list(&ctxt.fin_list, true);
-    curr_thread->punch_heartbeat();
-    session_send_delete_list(&ctxt.session_list);
+
+    // On Disruptive upgrade, notify the applications
+    // about the sessions going down. Sessions dont have
+    // to be deleted as we do P4 table init on bring up
+    if (g_hal_state->is_microseg_enabled()) {
+        g_hal_state->session_hal_handle_ht()->walk_safe(walk_func, &ctxt);
+        curr_thread->punch_heartbeat();
+        session_send_fin_list(&ctxt.fin_list, true);
+    }
 
 
     return HAL_RET_OK;

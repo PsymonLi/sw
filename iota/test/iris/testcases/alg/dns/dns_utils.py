@@ -52,6 +52,8 @@ def SetupDNSServer(server, stop=False):
                            "sudo systemctl stop named")
         api.Trigger_AddCommand(req, node, workload,
                            "sudo systemctl disable named")
+        api.Trigger_AddCommand(req, node, workload,
+                           "sudo mv /etc/resolv.conf.back /etc/resolv.conf")
     else:
         zonefile = dir_path + '/' + "example.com.zone"
         api.Logger.info("fullpath %s" % (zonefile))
@@ -64,6 +66,8 @@ def SetupDNSServer(server, stop=False):
         if resp is None:
             return None
 
+        api.Trigger_AddCommand(req, node, workload,
+                           "sudo mv /etc/resolv.conf /etc/resolv.conf.back")    
         api.Trigger_AddCommand(req, node, workload,
                            "yes | sudo cp dnsdir/named.conf /etc/")
         api.Trigger_AddCommand(req, node, workload,
