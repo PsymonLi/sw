@@ -50,7 +50,7 @@ testbundles:
     precheckin:
         - networking/connectivity.testbundle
         - networking/lif_telemetry_windows_precheckin.testbundle
-        #- filters/filters.testbundle
+        #- filters/filters-windows.testbundle
         #- subifs/subifs-precheckin.testbundle
         - rx_mode/rx_mode.testbundle
         #- classic/driver-features-sanity.testbundle
@@ -66,7 +66,7 @@ testbundles:
         - classic/ionic_config.testbundle
         #- networking/connectivity.testbundle
         - linktest/linktest.testbundle
-        - filters/filters.testbundle
+        - filters/filters-windows.testbundle
         - mtu/mtu.testbundle
         - networking/lif_telemetry_windows.testbundle
         #- subifs/subifs.testbundle
@@ -108,7 +108,7 @@ testbundles:
         common:
             # Relative paths from iota/test/iris/testbundles/
             - networking/connectivity.testbundle
-            - filters/filters.testbundle
+            - filters/filters-windows.testbundle
             - mtu/mtu.testbundle
             - rx_mode/rx_mode.testbundle
             - tso/tso.testbundle
