@@ -31,12 +31,6 @@ class IpsecEncryptSAObject(base.ConfigObjectBase):
         self.UUID = utils.PdsUuid(self.Id, self.ObjType)
         self.VPC = parent
         self.DEVICE = device
-        self.LocalIPAddr = utils.GetNodeLoopbackIp(node)
-        if not self.LocalIPAddr:
-           if (hasattr(spec, 'srcaddr')):
-               self.LocalIPAddr = ipaddress.IPv4Address(spec.srcaddr)
-           else:
-               self.LocalIPAddr = self.DEVICE.IPAddr
         self.RemoteIPAddr = utils.GetNodeLoopbackRemoteTEP(node)
         if not self.RemoteIPAddr:
             if getattr(spec, 'dstaddr', None) != None:
@@ -55,8 +49,6 @@ class IpsecEncryptSAObject(base.ConfigObjectBase):
     def Show(self):
         logger.info("IPSEC Encrypt SA:", self)
         logger.info("- Protocol:%s" % self.Protocol)
-        logger.info("- LocalIp:%s" % self.LocalIPAddr)
-        logger.info("- RemoteIp:%s" % self.RemoteIPAddr)
         logger.info("- Spi:%s" % self.Spi)
         logger.info("- Salt:%s" % self.Salt)
         logger.info("- Iv:%s" % self.Iv)
@@ -67,14 +59,11 @@ class IpsecEncryptSAObject(base.ConfigObjectBase):
     def PopulateSpec(self, grpcmsg):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
-        spec.VPCId = self.VPC.GetKey()
         spec.Protocol = self.Protocol
         spec.AuthenticationAlgorithm = self.AuthAlgo
         spec.AuthenticationKey.Key = self.AuthKey
         spec.EncryptionAlgorithm = self.EncAlgo
         spec.EncryptionKey.Key = self.EncKey
-        utils.GetRpcIPAddr(self.LocalIPAddr, spec.LocalGatewayIp)
-        utils.GetRpcIPAddr(self.RemoteIPAddr, spec.RemoteGatewayIp)
         spec.Spi = self.Spi
         spec.Salt = self.Salt
         spec.Iv = self.Iv
@@ -83,8 +72,6 @@ class IpsecEncryptSAObject(base.ConfigObjectBase):
         if spec.Id != self.GetKey():
             return False
         if spec.Protocol != self.Protocol:
-            return False
-        if spec.VpcId != self.VPC.GetKey():
             return False
         return True
 
@@ -135,7 +122,6 @@ class IpsecDecryptSAObject(base.ConfigObjectBase):
     def PopulateSpec(self, grpcmsg):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
-        spec.VPCId = self.VPC.GetKey()
         spec.Protocol = self.Protocol
         spec.AuthenticationAlgorithm = self.AuthAlgo
         spec.AuthenticationKey.Key = self.AuthKey
@@ -148,8 +134,6 @@ class IpsecDecryptSAObject(base.ConfigObjectBase):
         if spec.Id != self.GetKey():
             return False
         if spec.Protocol != self.Protocol:
-            return False
-        if spec.VpcId != self.VPC.GetKey():
             return False
         return True
 

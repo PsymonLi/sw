@@ -159,10 +159,6 @@ pds_ipsec_sa_encrypt_proto_to_api_spec (pds_ipsec_sa_encrypt_spec_t *api_spec,
     memcpy(api_spec->auth_key, proto_spec.authenticationkey().key().data(),
            MIN(proto_spec.authenticationkey().key().length(),
                sizeof(api_spec->auth_key)));
-    ipaddr_proto_spec_to_api_spec(&api_spec->local_gateway_ip,
-                                  proto_spec.localgatewayip());
-    ipaddr_proto_spec_to_api_spec(&api_spec->remote_gateway_ip,
-                                  proto_spec.remotegatewayip());
     api_spec->spi = proto_spec.spi();
     api_spec->nat_traversal_port = proto_spec.nattraversalport();
     api_spec->salt = proto_spec.salt();
@@ -175,7 +171,6 @@ pds_ipsec_sa_encrypt_api_spec_to_proto (pds::IpsecSAEncryptSpec *proto_spec,
                                         const pds_ipsec_sa_encrypt_spec_t *api_spec)
 {
     proto_spec->set_id(api_spec->key.id, PDS_MAX_KEY_LEN);
-    proto_spec->set_vpcid(api_spec->vpc.id, PDS_MAX_KEY_LEN);
     proto_spec->set_protocol(
             pds_ipsec_protocol_api_spec_to_proto(api_spec->protocol));
     proto_spec->set_authenticationalgorithm(
@@ -186,10 +181,6 @@ pds_ipsec_sa_encrypt_api_spec_to_proto (pds::IpsecSAEncryptSpec *proto_spec,
             pds_encryption_algorithm_api_spec_to_proto(api_spec->encryption_algo));
     proto_spec->mutable_encryptionkey()->set_key(api_spec->encrypt_key,
                                                  PDS_MAX_IPSEC_KEY_SIZE);
-    ipaddr_api_spec_to_proto_spec(proto_spec->mutable_localgatewayip(),
-                                  &api_spec->local_gateway_ip);
-    ipaddr_api_spec_to_proto_spec(proto_spec->mutable_remotegatewayip(),
-                                  &api_spec->remote_gateway_ip);
     proto_spec->set_spi(api_spec->spi);
     proto_spec->set_nattraversalport(api_spec->nat_traversal_port);
     proto_spec->set_salt(api_spec->salt);
@@ -395,7 +386,6 @@ pds_ipsec_sa_decrypt_proto_to_api_spec (pds_ipsec_sa_decrypt_spec_t *api_spec,
                                         const pds::IpsecSADecryptSpec &proto_spec)
 {
     pds_obj_key_proto_to_api_spec(&api_spec->key, proto_spec.id());
-    pds_obj_key_proto_to_api_spec(&api_spec->vpc, proto_spec.vpcid());
     api_spec->protocol = pds_ipsec_protocol_proto_to_api_spec(proto_spec.protocol());
     api_spec->decryption_algo = pds_encryption_algorithm_proto_to_api_spec(
                                     proto_spec.decryptionalgorithm());

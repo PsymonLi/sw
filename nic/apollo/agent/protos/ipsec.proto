@@ -65,30 +65,24 @@ message SymmetricKey {
 message IpsecSAEncryptSpec {
   // unique identifier of SA
   bytes                          Id                      = 1 [(gogoproto.moretags) = "meta:mandatory"];
-  // virtual private cloud this sa belongs to
-  bytes                          VPCId                   = 2 [(gogoproto.moretags) = "meta:immutable"];
   // ESP or AH
-  IpsecProtocol                  Protocol                = 3;
+  IpsecProtocol                  Protocol                = 2;
   // authentication algorithm
-  AuthenticationAlgorithm        AuthenticationAlgorithm = 4;
+  AuthenticationAlgorithm        AuthenticationAlgorithm = 3;
   // authenticaion key
-  SymmetricKey                   AuthenticationKey       = 5;
+  SymmetricKey                   AuthenticationKey       = 4;
   // encryption algorithm
-  EncryptionAlgorithm            EncryptionAlgorithm     = 6;
+  EncryptionAlgorithm            EncryptionAlgorithm     = 5;
   // encryption key
-  SymmetricKey                   EncryptionKey           = 7;
-  // local VPN GW IP, helps derive local MAC as well
-  types.IPAddress                LocalGatewayIp          = 8;
-  // remote VPN GW IP, derive remote MAC using ARP database
-  types.IPAddress                RemoteGatewayIp         = 9;
+  SymmetricKey                   EncryptionKey           = 6;
   // security parameters index
-  uint32                         Spi                     = 10;
+  uint32                         Spi                     = 7;
   // NAT-T port, if non-zero - NAT-T header is added.
-  uint32                         NatTraversalPort        = 11;
+  uint32                         NatTraversalPort        = 8;
   // Initial Random number - 32 bits (need to be same on peer)
-  uint32                         Salt                    = 12;
+  uint32                         Salt                    = 9;
   // Initial Random number that goes in packet - can be assigned from top or generated locally
-  uint64                         Iv                      = 13;
+  uint64                         Iv                      = 10;
 }
 // operational status of IPSec Encrypt SA, if any
 message IpsecSAEncryptStatus {
@@ -155,30 +149,28 @@ message IpsecSAEncryptDeleteResponse {
 message IpsecSADecryptSpec {
   // unique identifier of SA
   bytes                          Id                      = 1 [(gogoproto.moretags) = "meta:mandatory"];
-  // virtual private cloud this sa belongs to
-  bytes                          VPCId                   = 2 [(gogoproto.moretags) = "meta:immutable"];
   // ESP or AH
-  IpsecProtocol                  Protocol                = 3;
+  IpsecProtocol                  Protocol                = 2;
   // authentication algorithm
-  AuthenticationAlgorithm        AuthenticationAlgorithm = 4;
+  AuthenticationAlgorithm        AuthenticationAlgorithm = 3;
   // authenticaion key
-  SymmetricKey                   AuthenticationKey       = 5;
+  SymmetricKey                   AuthenticationKey       = 4;
   // encryption algorithm
-  EncryptionAlgorithm            DecryptionAlgorithm     = 6;
+  EncryptionAlgorithm            DecryptionAlgorithm     = 5;
   // encryption algorithm
-  EncryptionAlgorithm            RekeyDecAlgorithm       = 7;
+  EncryptionAlgorithm            RekeyDecAlgorithm       = 6;
   // encryption key
-  SymmetricKey                   DecryptionKey           = 8;
+  SymmetricKey                   DecryptionKey           = 7;
   // authentication key
-  SymmetricKey                   RekeyAuthenticationKey  = 9;
+  SymmetricKey                   RekeyAuthenticationKey  = 8;
   // encryption key
-  SymmetricKey                   RekeyDecryptionKey      = 10;
+  SymmetricKey                   RekeyDecryptionKey      = 9;
   // security parameters index
-  uint32                         Spi                     = 11;
+  uint32                         Spi                     = 10;
   // valid when rekey is active, part of update
-  uint32                         RekeySpi                = 12;
+  uint32                         RekeySpi                = 11;
   // initial Random number - 32 bits (need to be same on peer)
-  uint32                         Salt                    = 13;
+  uint32                         Salt                    = 12;
 }
 
 // operational status of IPSec Decrypt SA, if any

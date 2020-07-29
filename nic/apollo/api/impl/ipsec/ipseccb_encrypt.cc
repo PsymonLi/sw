@@ -106,14 +106,7 @@ add_ipsec_ip_header_entry (ipseccb_ctxt_t *ctxt)
     uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_ETH_IP_HDR_OFFSET;
 
     // v4 only for now
-    // TODO : smac/dmac
-    //memcpy(eth_ip_hdr.smac, sa->smac, ETH_ADDR_LEN);
-    //memcpy(eth_ip_hdr.dmac, sa->dmac, ETH_ADDR_LEN);
-    // no 
     eth_ip_hdr.dot1q_ethertype = htons(0x0800);
-    //eth_ip_hdr.vlan = htons(sa->vrf_vlan);
-    //PDS_TRACE_DEBUG("vrf vlan : %d", sa->vrf_vlan);
-    //eth_ip_hdr.ethertype = htons(0x800);
     eth_ip_hdr.version_ihl = 0x45;
     eth_ip_hdr.tos = 0;
     //p4 will update/correct this part - fixed for now.
@@ -121,10 +114,8 @@ add_ipsec_ip_header_entry (ipseccb_ctxt_t *ctxt)
     eth_ip_hdr.id = 0;
     eth_ip_hdr.frag_off = 0;
     eth_ip_hdr.ttl = 255;
-    eth_ip_hdr.protocol = 50; // ESP - will hash define it.
+    eth_ip_hdr.protocol = IP_PROTO_IPSEC_ESP;
     eth_ip_hdr.check = 0; // P4 to fill the right checksum
-    eth_ip_hdr.saddr = htonl(ctxt->encrypt_spec->local_gateway_ip.addr.v4_addr);
-    eth_ip_hdr.daddr = htonl(ctxt->encrypt_spec->remote_gateway_ip.addr.v4_addr);
     PDS_TRACE_DEBUG("Tunnel SIP 0x%x tunnel DIP 0x%x", eth_ip_hdr.saddr,
                     eth_ip_hdr.daddr);
 
@@ -179,12 +170,6 @@ get_ipsec_ip_header_entry (ipseccb_ctxt_t *ctxt)
 
     impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&data,
                                             sizeof(data));
-
-    ctxt->encrypt_info->spec.local_gateway_ip.addr.v4_addr = ntohl(data.u.eth_ip4_hdr.saddr);
-    ctxt->encrypt_info->spec.remote_gateway_ip.addr.v4_addr = ntohl(data.u.eth_ip4_hdr.daddr);
-
-    PDS_TRACE_DEBUG("SIP 0x%x DIP 0x%x", ctxt->encrypt_info->spec.local_gateway_ip.addr.v4_addr,
-                    ctxt->encrypt_info->spec.remote_gateway_ip.addr.v4_addr);
 
     return SDK_RET_OK;
 }
@@ -275,6 +260,29 @@ ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, uint64_t base_pa,
     uint64_t addr = base_pa + IPSEC_CB_ENC_NEXTHOP_ID_OFFSET;
     impl_base::pipeline_impl()->p4plus_write(0, addr, (uint8_t *)&data,
                                              sizeof(uint32_t),
+                                             P4PLUS_CACHE_ACTION_NONE);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+ipseccb_encrypt_update_tunnel_ip (uint32_t hw_id, uint64_t base_pa,
+                                  ip_addr_t local_ip, ip_addr_t remote_ip)
+{
+    uint8_t data[CACHE_LINE_SIZE];
+    ipsec_eth_ip4_hdr_t *eth_ip_hdr = (ipsec_eth_ip4_hdr_t *)data;
+    uint64_t addr = base_pa + IPSEC_CB_ENC_ETH_IP_HDR_OFFSET;
+
+    impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&data,
+                                            sizeof(data));
+
+    eth_ip_hdr->saddr = htonl(local_ip.addr.v4_addr);
+    eth_ip_hdr->daddr = htonl(remote_ip.addr.v4_addr);
+    PDS_TRACE_DEBUG("Tunnel SIP 0x%x tunnel DIP 0x%x", eth_ip_hdr->saddr,
+                    eth_ip_hdr->daddr);
+
+    PDS_TRACE_DEBUG("Programming at addr 0x%lx", addr);
+    impl_base::pipeline_impl()->p4plus_write(0, addr, (uint8_t *)&data,
+                                             sizeof(data),
                                              P4PLUS_CACHE_ACTION_NONE);
     return SDK_RET_OK;
 }

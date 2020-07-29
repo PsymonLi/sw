@@ -57,14 +57,11 @@ typedef enum pds_auth_algo_e {
 /// \brief IPSec encrypt SA specification
 typedef struct pds_ipsec_sa_encrypt_spec_s {
     pds_obj_key_t           key;
-    pds_obj_key_t           vpc;
     pds_ipsec_protocol_t    protocol;
     pds_encryption_algo_t   encryption_algo;
     pds_auth_algo_t         auth_algo;
     uint8_t                 encrypt_key[PDS_MAX_IPSEC_KEY_SIZE];
     uint8_t                 auth_key[PDS_MAX_IPSEC_KEY_SIZE];
-    ip_addr_t               local_gateway_ip;
-    ip_addr_t               remote_gateway_ip;
     uint32_t                spi;
     uint32_t                nat_traversal_port;
     uint32_t                salt;
@@ -98,7 +95,6 @@ typedef struct pds_ipsec_sa_encrypt_info_s {
 /// \brief IPSec decrypt SA specification
 typedef struct pds_ipsec_sa_decrypt_spec_s {
     pds_obj_key_t           key;
-    pds_obj_key_t           vpc;
     pds_ipsec_protocol_t    protocol;
     pds_encryption_algo_t   decryption_algo;
     pds_encryption_algo_t   rekey_decryption_algo;

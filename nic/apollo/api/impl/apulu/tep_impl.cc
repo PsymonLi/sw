@@ -261,7 +261,7 @@ program_ipsec_flow_table_ (tep_entry *tep, pds_obj_key_t *decrypt_sa_key)
 
     entry.clear_key_data();
 
-    ipsec_sa = ipsec_sa_encrypt_find(decrypt_sa_key);
+    ipsec_sa = ipsec_sa_decrypt_find(decrypt_sa_key);
     if (ipsec_sa == NULL) {
         PDS_TRACE_ERR("ipsec decrypt sa %s in TEP %s not found",
                       decrypt_sa_key->str(), tep->key2str().c_str());
@@ -299,6 +299,28 @@ program_ipsec_flow_table_ (tep_entry *tep, pds_obj_key_t *decrypt_sa_key)
                     ipsec_impl->nh_idx(), ret);
 
     return ret;
+}
+
+static sdk_ret_t
+program_ipsec_tunnel_ip_ (tep_entry *tep, pds_obj_key_t *encrypt_sa_key)
+{
+    sdk_table_api_params_t params = { 0 };
+    ipsec_sa_entry *ipsec_sa;
+    ipsec_sa_impl *ipsec_impl;
+    device_entry *device = device_find();
+
+    ipsec_sa = ipsec_sa_encrypt_find(encrypt_sa_key);
+    if (ipsec_sa == NULL) {
+        PDS_TRACE_ERR("ipsec encrypt sa %s in TEP %s not found",
+                      encrypt_sa_key->str(), tep->key2str().c_str());
+        return SDK_RET_INVALID_ARG;
+    }
+    ipsec_impl = (ipsec_sa_impl *)ipsec_sa->impl();
+
+    ipseccb_encrypt_update_tunnel_ip(ipsec_impl->hw_id(), ipsec_impl->base_pa(),
+                                     device->ip_addr(), tep->ip());
+
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
@@ -433,6 +455,10 @@ tep_impl::program_tunnel_(api_op_t api_op, tep_entry *tep, pds_tep_spec_t *spec,
             if (ret != SDK_RET_OK) {
                 return ret;
             }
+        }
+        if (tep->ipsec_encrypt_sa().valid()) {
+            pds_obj_key_t ipsec_sa_id = tep->ipsec_encrypt_sa();
+            program_ipsec_tunnel_ip_(tep, &ipsec_sa_id);
         }
     } else {
         // do read-modify-write

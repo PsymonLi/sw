@@ -9,12 +9,10 @@ import api
 
 class IpsecEncryptSAObject():
 
-    def __init__(self, id, vpcid, localip, remoteip, key, spi, salt, iv):
+    def __init__(self, id, vpcid, key, spi, salt, iv):
         self.id        = id
         self.uuid      = utils.PdsUuid(self.id)
         self.vpcid     = vpcid
-        self.localip   = ipaddress.IPv4Address(localip)
-        self.remoteip  = ipaddress.IPv4Address(remoteip)
         self.protocol  = ipsec_pb2.IPSEC_PROTOCOL_ESP
         self.authalgo  = ipsec_pb2.AUTHENTICATION_ALGORITHM_AES_GCM
         self.authkey   = key
@@ -30,10 +28,6 @@ class IpsecEncryptSAObject():
         spec = grpcmsg.Request.add()
         spec.Id = self.uuid.GetUuid()
         spec.VPCId = utils.PdsUuid.GetUUIDfromId(self.vpcid)
-        spec.LocalGatewayIp.Af = types_pb2.IP_AF_INET
-        spec.LocalGatewayIp.V4Addr = int(self.localip)
-        spec.RemoteGatewayIp.Af = types_pb2.IP_AF_INET
-        spec.RemoteGatewayIp.V4Addr = int(self.remoteip)
         spec.Protocol = self.protocol
         spec.AuthenticationAlgorithm = self.authalgo
         spec.AuthenticationKey.Key = self.authkey
