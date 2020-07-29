@@ -58,7 +58,7 @@ learn_state::lif_init_(void) {
     while (!uio_device_ready()) {
         if (count >= UIO_DEV_SCAN_MAX_RETRY) {
             PDS_TRACE_ERR("UIO device not created, asserting!!");
-            SDK_ASSERT(0);
+            //SDK_ASSERT(0);
         }
         if (0 == (count % 30)) {
             PDS_TRACE_INFO("UIO device not created yet, retry count %d", count);
