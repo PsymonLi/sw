@@ -86,7 +86,7 @@ lif_impl::lif_impl(pds_lif_spec_t *spec) {
     tx_sched_offset_ = INVALID_INDEXER_INDEX;
     state_ = sdk::types::LIF_STATE_NONE;
     admin_state_ = sdk::types::LIF_STATE_NONE;
-    init_done_ = false;
+    create_done_ = false;
     ht_ctxt_.reset();
     id_ht_ctxt_.reset();
 }
@@ -902,23 +902,6 @@ error:
     return ret;
 }
 
-typedef struct lif_internal_mgmt_ctx_s {
-    lif_impl **lif;
-    lif_type_t type;
-} __PACK__ lif_internal_mgmt_ctx_t;
-
-static bool
-lif_internal_mgmt_cb_ (void *api_obj, void *ctxt) {
-    lif_impl *lif = (lif_impl *)api_obj;
-    lif_internal_mgmt_ctx_t *cb_ctx = (lif_internal_mgmt_ctx_t *)ctxt;
-
-    if (lif->type() == cb_ctx->type) {
-        *cb_ctx->lif = lif;
-        return true;
-    }
-    return false;
-}
-
 sdk_ret_t
 lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     sdk_ret_t ret;
@@ -928,7 +911,6 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     nacl_swkey_mask_t mask = { 0 };
     nacl_actiondata_t data =  { 0 };
     static uint32_t hmlif = 0, imlif = 0;
-    lif_internal_mgmt_ctx_t cb_ctx = { 0 };
     lif_impl *host_mgmt_lif = NULL, *int_mgmt_lif = NULL;
     nexthop_info_entry_t nexthop_info_entry;
 
@@ -938,23 +920,22 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
         host_mgmt_lif = this;
         int_mgmt_lif =
             lif_impl_db()->find(sdk::platform::LIF_TYPE_MNIC_INTERNAL_MGMT);
+        if ((int_mgmt_lif == NULL) || (int_mgmt_lif->create_done_ == false)) {
+            // other lif is not ready yet
+            return SDK_RET_OK;
+        }
     } else if (spec->type == sdk::platform::LIF_TYPE_MNIC_INTERNAL_MGMT) {
         strncpy(name_, spec->name, sizeof(name_));
         PDS_TRACE_DEBUG("Creating internal mgmt. lif %s", name_);
         int_mgmt_lif = this;
         host_mgmt_lif = lif_impl_db()->find(sdk::platform::LIF_TYPE_HOST_MGMT);
+        if ((host_mgmt_lif == NULL) || (host_mgmt_lif->create_done_ == false)) {
+            // other lif is not ready yet
+            return SDK_RET_OK;
+        }
     }
-    if (!(host_mgmt_lif && int_mgmt_lif &&
-          host_mgmt_lif->init_done_ && int_mgmt_lif->init_done_)) {
-        // we will program when both lifs are available and initialized properly
-        return SDK_RET_OK;
-    }
-
     PDS_TRACE_DEBUG("Programming NACLs for internal management");
-    // TOOD: fix this once block indexer starts working
-    // allocate required nexthops
-    //ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_, 2);
-    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
+    ret = nexthop_impl_db()->nh_idxr()->alloc_block(&nh_idx_, 2);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to allocate nexthop entries for internal mgmt. "
                       "lifs %u, %u, err %u", host_mgmt_lif->id(),
@@ -979,13 +960,16 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     // program NACL for host mgmt lif to internal mgmt lif traffic
     key.key_metadata_entry_valid = 1;
     key.capri_intrinsic_lif = host_mgmt_lif->id();
+    key.control_metadata_lif_type = P4_LIF_TYPE_HOST_MGMT;
     mask.key_metadata_entry_valid_mask = ~0;
     mask.capri_intrinsic_lif_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_action.nexthop_id = nh_idx_;
-    SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
-    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL,
+                                  PDS_IMPL_NACL_BLOCK_INTERNAL_MGMT_MIN,
+                                  &key, &mask, &data);
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to install NACL redirect entry for host mgmt "
                       "lif %u to internal mgmt lif %u traffic",
@@ -994,26 +978,16 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
         goto error;
     }
 
-    // TOOD: fix this once block indexer starts working
-    // allocate required nexthops
-    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to allocate nexthop entries for internal mgmt. "
-                      "lifs %u, %u, err %u", host_mgmt_lif->id(),
-                      int_mgmt_lif->id(), ret);
-        return ret;
-    }
-
     // program the nexthop for internal mgmt. lif to host mgmt. lif traffic
     nexthop_info_entry.lif = host_mgmt_lif->id();
     nexthop_info_entry.port = TM_PORT_DMA;
     nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
-    ret = nexthop_info_entry.write(nh_idx_);
+    ret = nexthop_info_entry.write(nh_idx_ + 1);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for internal mgmt. "
                       "lif %u to host mgmt. lif %u traffic at idx %u",
                       int_mgmt_lif->id(), host_mgmt_lif->id(),
-                      nh_idx_); //nh_idx_ + 1);
+                      nh_idx_ + 1);
         ret = sdk::SDK_RET_HW_PROGRAM_ERR;
         goto error;
     }
@@ -1024,13 +998,16 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     memset(&data, 0, sizeof(data));
     key.key_metadata_entry_valid = 1;
     key.capri_intrinsic_lif = int_mgmt_lif->id();
+    key.control_metadata_lif_type = P4_LIF_TYPE_HOST_MGMT;
     mask.key_metadata_entry_valid_mask = ~0;
     mask.capri_intrinsic_lif_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_action.nexthop_id = nh_idx_; //nh_idx_ + 1;
-    SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
-    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
+    data.nacl_redirect_action.nexthop_id = nh_idx_ + 1;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL,
+                                  PDS_IMPL_NACL_BLOCK_INTERNAL_MGMT_MIN + 1,
+                                  &key, &mask, &data);
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to install NACL redirect entry for internal mgmt "
                       "lif %u to host mgmt lif %u traffic, err %u",
@@ -1456,7 +1433,7 @@ lif_impl::create(pds_lif_spec_t *spec) {
         return SDK_RET_INVALID_ARG;
     }
     if (ret == SDK_RET_OK) {
-        init_done_ = true;
+        create_done_ = true;
     }
     return ret;
 }

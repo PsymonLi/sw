@@ -45,7 +45,7 @@ lif_impl::lif_impl(pds_lif_spec_t *spec) {
     type_ = spec->type;
     memcpy(mac_, spec->mac, ETH_ADDR_LEN);
     ifindex_ = LIF_IFINDEX(id_);
-    init_done_ = false;
+    create_done_ = false;
     nh_idx_ = 0xFFFFFFFF;
     vnic_hw_id_ = 0xFFFF;
     ht_ctxt_.reset();
@@ -320,7 +320,7 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     lif_impl_db()->walk(lif_internal_mgmt_cb_, &cb_ctx);
 
     if (!(host_mgmt_lif && mnic_int_mgmt_lif &&
-          host_mgmt_lif->init_done_ && mnic_int_mgmt_lif->init_done_)) {
+          host_mgmt_lif->create_done_ && mnic_int_mgmt_lif->create_done_)) {
         // we will program when both lifs are available and initialized properly
         // to avoid inserting same entry twice
         return SDK_RET_OK;
@@ -403,7 +403,7 @@ lif_impl::create_p2p_mnic_(pds_lif_spec_t *spec) {
     lif_impl_db()->walk(lif_p2p_cb_, &cb_ctx);
 
     if (!(this_p2p_lif && peer_p2p_lif &&
-          this_p2p_lif->init_done_ && peer_p2p_lif->init_done_)) {
+          this_p2p_lif->create_done_ && peer_p2p_lif->create_done_)) {
         // we will program when both lifs are available and initialized properly
         // to avoid inserting same entry twice
         return SDK_RET_OK;
@@ -467,19 +467,19 @@ lif_impl::create(pds_lif_spec_t *spec) {
         break;
     case sdk::platform::LIF_TYPE_HOST_MGMT:
     case sdk::platform::LIF_TYPE_MNIC_INTERNAL_MGMT:
-        init_done_ = true;
+        create_done_ = true;
         ret = create_internal_mgmt_mnic_(spec);
         if (ret != SDK_RET_OK) {
-            init_done_ = false;
+            create_done_ = false;
         }
         break;
     case sdk::platform::LIF_TYPE_SERVICE:
         break;
     case sdk::platform::LIF_TYPE_P2P:
-        init_done_ = true;
+        create_done_ = true;
         ret = create_p2p_mnic_(spec);
         if (ret != SDK_RET_OK) {
-            init_done_ = false;
+            create_done_ = false;
         }
         break;
     default:
@@ -522,7 +522,7 @@ lif_datapath_mnic_cb_(void *api_obj, void *ctxt) {
 
 sdk_ret_t
 athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b) {
-    
+
     sdk_ret_t ret = SDK_RET_OK;
     api::impl::lif_datapath_mnic_ctx_t cb_ctx = {0};
     api::impl::lif_impl *dp_mnic0 = NULL, *dp_mnic1 = NULL;
@@ -540,9 +540,9 @@ athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b) {
     cb_ctx.lif_1 = &dp_mnic1;
 
     api::impl::lif_impl_db()->walk(api::impl::lif_datapath_mnic_cb_, &cb_ctx);
-   
+
     if(dp_mnic0 == NULL || dp_mnic1 == NULL) {
-        PDS_TRACE_ERR("Failed to fetch dp mnic info: dp_mnic0 0x%p, dp_mnic1 0x%p", 
+        PDS_TRACE_ERR("Failed to fetch dp mnic info: dp_mnic0 0x%p, dp_mnic1 0x%p",
                         dp_mnic0, dp_mnic1);
         return SDK_RET_OK;
     }
@@ -553,24 +553,24 @@ athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b) {
     pinned_if_idx_mnic1 = dp_mnic1->pinned_ifindex();
 
     PDS_TRACE_DEBUG("data path mnic lif info: dp_mnic0 lif %u uplink 0x%x, "
-                    "dp_mnic1 lif %u uplink 0x%x", mnic0_id, 
-                    pinned_if_idx_mnic0, mnic1_id, 
+                    "dp_mnic1 lif %u uplink 0x%x", mnic0_id,
+                    pinned_if_idx_mnic0, mnic1_id,
                     pinned_if_idx_mnic1);
-    
+
     //NACLs to redirect traffic with specific vlans to ARM
     hw_lif_a = sdk::lib::catalog::ifindex_to_logical_port(pinned_if_idx_mnic0);
     hw_lif_b = sdk::lib::catalog::ifindex_to_logical_port(pinned_if_idx_mnic1);
-   
+
     key.capri_intrinsic_lif = hw_lif_a;
     mask.capri_intrinsic_lif_mask = 0xFFFF;
-    
+
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.redir_type = PACKET_ACTION_REDIR_RXDMA;
     data.nacl_redirect_action.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     data.nacl_redirect_action.oport = TM_PORT_DMA;
     data.nacl_redirect_action.lif = mnic0_id;
-    
-    for (int idx = 0; idx != vlans.size(); ++idx) {      
+
+    for (int idx = 0; idx != vlans.size(); ++idx) {
         key.vlan = vlans[idx];
         mask.vlan_mask = 0xFFFF;
 
@@ -580,27 +580,27 @@ athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b) {
         ret = api::impl::athena_impl_db()->nacl_tbl()->insert(&tparams);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to program vlan redirect NACL for uplink "
-                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_a, 
+                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_a,
                     mnic0_id, vlans[idx], ret);
             return ret;
 
         } else {
             PDS_TRACE_DEBUG("Vlan redirect nacl programmed for uplink "
-                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_a, 
+                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_a,
                     mnic0_id, vlans[idx], ret);
         }
     }
 
     key.capri_intrinsic_lif = hw_lif_b;
     mask.capri_intrinsic_lif_mask = 0xFFFF;
-    
+
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.redir_type = PACKET_ACTION_REDIR_RXDMA;
     data.nacl_redirect_action.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     data.nacl_redirect_action.oport = TM_PORT_DMA;
     data.nacl_redirect_action.lif = mnic1_id;
-    
-    for (int idx = 0; idx != vlans.size(); ++idx) {      
+
+    for (int idx = 0; idx != vlans.size(); ++idx) {
         key.vlan = vlans[idx];
         mask.vlan_mask = 0xFFFF;
 
@@ -610,13 +610,13 @@ athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b) {
         ret = api::impl::athena_impl_db()->nacl_tbl()->insert(&tparams);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to program vlan redirect NACL for uplink "
-                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_b, 
+                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_b,
                     mnic1_id, vlans[idx], ret);
             return ret;
 
         } else {
             PDS_TRACE_DEBUG("Vlan redirect nacl programmed for uplink "
-                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_b, 
+                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_b,
                     mnic1_id, vlans[idx], ret);
         }
     }
@@ -626,11 +626,11 @@ athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b) {
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
 
-    hw_oport_a = 
+    hw_oport_a =
         api::g_pds_state.catalogue()->ifindex_to_tm_port(pinned_if_idx_mnic0);
-    hw_oport_b = 
+    hw_oport_b =
         api::g_pds_state.catalogue()->ifindex_to_tm_port(pinned_if_idx_mnic1);
-    
+
     key.capri_intrinsic_lif = hw_lif_a;
     mask.capri_intrinsic_lif_mask = 0xFFFF;
 
@@ -672,7 +672,7 @@ athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b) {
         PDS_TRACE_DEBUG("Nacl programmed to redirect traffic from uplink "
                 "lif %u to uplink lif %u\n", hw_lif_b, hw_lif_a);
     }
-    
+
     return SDK_RET_OK;
 }
 
@@ -696,9 +696,9 @@ athena_unprogram_mfr_vlan_rdt_nacls(uint16_t vlan_a, uint16_t vlan_b) {
     cb_ctx.lif_1 = &dp_mnic1;
 
     api::impl::lif_impl_db()->walk(api::impl::lif_datapath_mnic_cb_, &cb_ctx);
-   
+
     if(dp_mnic0 == NULL || dp_mnic1 == NULL) {
-        PDS_TRACE_ERR("Failed to fetch dp mnic info: dp_mnic0 0x%p, dp_mnic1 0x%p", 
+        PDS_TRACE_ERR("Failed to fetch dp mnic info: dp_mnic0 0x%p, dp_mnic1 0x%p",
                         dp_mnic0, dp_mnic1);
         return SDK_RET_OK;
     }
@@ -709,24 +709,24 @@ athena_unprogram_mfr_vlan_rdt_nacls(uint16_t vlan_a, uint16_t vlan_b) {
     pinned_if_idx_mnic1 = dp_mnic1->pinned_ifindex();
 
     PDS_TRACE_DEBUG("data path mnic lif info: dp_mnic0 lif %u uplink 0x%x, "
-                    "dp_mnic1 lif %u uplink 0x%x", mnic0_id, 
-                    pinned_if_idx_mnic0, mnic1_id, 
+                    "dp_mnic1 lif %u uplink 0x%x", mnic0_id,
+                    pinned_if_idx_mnic0, mnic1_id,
                     pinned_if_idx_mnic1);
-    
+
     //Remove NACLs that redirect traffic with specific vlans to ARM
     hw_lif_a = sdk::lib::catalog::ifindex_to_logical_port(pinned_if_idx_mnic0);
     hw_lif_b = sdk::lib::catalog::ifindex_to_logical_port(pinned_if_idx_mnic1);
-   
+
     key.capri_intrinsic_lif = hw_lif_a;
     mask.capri_intrinsic_lif_mask = 0xFFFF;
-    
+
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.redir_type = PACKET_ACTION_REDIR_RXDMA;
     data.nacl_redirect_action.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     data.nacl_redirect_action.oport = TM_PORT_DMA;
     data.nacl_redirect_action.lif = mnic0_id;
-    
-    for (int idx = 0; idx != vlans.size(); ++idx) {      
+
+    for (int idx = 0; idx != vlans.size(); ++idx) {
         key.vlan = vlans[idx];
         mask.vlan_mask = 0xFFFF;
 
@@ -736,27 +736,27 @@ athena_unprogram_mfr_vlan_rdt_nacls(uint16_t vlan_a, uint16_t vlan_b) {
         ret = api::impl::athena_impl_db()->nacl_tbl()->remove(&tparams);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to remove vlan redirect NACL for uplink "
-                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_a, 
+                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_a,
                     mnic0_id, vlans[idx], ret);
             return ret;
 
         } else {
             PDS_TRACE_DEBUG("Vlan redirect nacl removed for uplink "
-                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_a, 
+                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_a,
                     mnic0_id, vlans[idx], ret);
         }
     }
 
     key.capri_intrinsic_lif = hw_lif_b;
     mask.capri_intrinsic_lif_mask = 0xFFFF;
-    
+
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.redir_type = PACKET_ACTION_REDIR_RXDMA;
     data.nacl_redirect_action.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     data.nacl_redirect_action.oport = TM_PORT_DMA;
     data.nacl_redirect_action.lif = mnic1_id;
-    
-    for (int idx = 0; idx != vlans.size(); ++idx) {      
+
+    for (int idx = 0; idx != vlans.size(); ++idx) {
         key.vlan = vlans[idx];
         mask.vlan_mask = 0xFFFF;
 
@@ -766,13 +766,13 @@ athena_unprogram_mfr_vlan_rdt_nacls(uint16_t vlan_a, uint16_t vlan_b) {
         ret = api::impl::athena_impl_db()->nacl_tbl()->remove(&tparams);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to remove vlan redirect NACL for uplink "
-                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_b, 
+                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_b,
                     mnic1_id, vlans[idx], ret);
             return ret;
 
         } else {
             PDS_TRACE_DEBUG("Vlan redirect nacl removed for uplink "
-                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_b, 
+                    "lif %u to mnic lif %u vlan %u, err 0x%x\n", hw_lif_b,
                     mnic1_id, vlans[idx], ret);
         }
     }
@@ -781,8 +781,8 @@ athena_unprogram_mfr_vlan_rdt_nacls(uint16_t vlan_a, uint16_t vlan_b) {
 }
 
 sdk_ret_t
-athena_unprogram_mfr_up2up_nacls() 
-{    
+athena_unprogram_mfr_up2up_nacls()
+{
     sdk_ret_t ret = SDK_RET_OK;
     api::impl::lif_datapath_mnic_ctx_t cb_ctx = {0};
     api::impl::lif_impl *dp_mnic0 = NULL, *dp_mnic1 = NULL;
@@ -799,9 +799,9 @@ athena_unprogram_mfr_up2up_nacls()
     cb_ctx.lif_1 = &dp_mnic1;
 
     api::impl::lif_impl_db()->walk(api::impl::lif_datapath_mnic_cb_, &cb_ctx);
-   
+
     if(dp_mnic0 == NULL || dp_mnic1 == NULL) {
-        PDS_TRACE_ERR("Failed to fetch dp mnic info: dp_mnic0 0x%p, dp_mnic1 0x%p", 
+        PDS_TRACE_ERR("Failed to fetch dp mnic info: dp_mnic0 0x%p, dp_mnic1 0x%p",
                         dp_mnic0, dp_mnic1);
         return SDK_RET_OK;
     }
@@ -812,19 +812,19 @@ athena_unprogram_mfr_up2up_nacls()
     pinned_if_idx_mnic1 = dp_mnic1->pinned_ifindex();
 
     PDS_TRACE_DEBUG("data path mnic lif info: dp_mnic0 lif %u uplink 0x%x, "
-                    "dp_mnic1 lif %u uplink 0x%x", mnic0_id, 
-                    pinned_if_idx_mnic0, mnic1_id, 
+                    "dp_mnic1 lif %u uplink 0x%x", mnic0_id,
+                    pinned_if_idx_mnic0, mnic1_id,
                     pinned_if_idx_mnic1);
-    
+
     //Remove NACLs that redirect traffic between uplinks
     hw_lif_a = sdk::lib::catalog::ifindex_to_logical_port(pinned_if_idx_mnic0);
     hw_lif_b = sdk::lib::catalog::ifindex_to_logical_port(pinned_if_idx_mnic1);
-   
-    hw_oport_a = 
+
+    hw_oport_a =
         api::g_pds_state.catalogue()->ifindex_to_tm_port(pinned_if_idx_mnic0);
-    hw_oport_b = 
+    hw_oport_b =
         api::g_pds_state.catalogue()->ifindex_to_tm_port(pinned_if_idx_mnic1);
-    
+
     key.capri_intrinsic_lif = hw_lif_a;
     mask.capri_intrinsic_lif_mask = 0xFFFF;
 
@@ -866,6 +866,6 @@ athena_unprogram_mfr_up2up_nacls()
         PDS_TRACE_DEBUG("Nacl to redirect traffic from uplink "
                 "lif %u to uplink lif %u removed\n", hw_lif_b, hw_lif_a);
     }
-    
+
     return SDK_RET_OK;
 }

@@ -96,7 +96,9 @@
 #define PDS_IMPL_NACL_BLOCK_GLOBAL_MAX               39
 #define PDS_IMPL_NACL_BLOCK_LEARN_MIN                40
 #define PDS_IMPL_NACL_BLOCK_LEARN_MAX                47
-#define PDS_IMPL_NACL_BLOCK_GENERIC_MIN              48
+#define PDS_IMPL_NACL_BLOCK_INTERNAL_MGMT_MIN        48
+#define PDS_IMPL_NACL_BLOCK_INTERNAL_MGMT_MAX        49
+#define PDS_IMPL_NACL_BLOCK_GENERIC_MIN              50
 
 // Inband control interface name
 #define PDS_IMPL_CONTROL_NAMESPACE                   "vcn"

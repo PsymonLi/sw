@@ -175,7 +175,7 @@ public:
 
     /// \brief     return if initializtion of lifis done or not
     /// \return    true if lif initialization is done
-    bool init_done(void) const { return init_done_; }
+    bool create_done(void) const { return create_done_; }
 
     /// \brief    retrieve tx scheduler offset and number of entries from this lif
     /// \retrun   true if it is valid, false otherwise
@@ -263,7 +263,7 @@ private:
     uint16_t         vnic_hw_id_;     ///< vnic hw id
     lif_state_t      admin_state_;    ///< admin state
     lif_state_t      state_;          ///< operational state
-    bool             init_done_;      ///< TRUE if lif init is done
+    bool             create_done_;    ///< TRUE if lif create is done
     ht_ctxt_t        ht_ctxt_;        ///< hash table context
     ht_ctxt_t        id_ht_ctxt_;     ///< id based hash table context
     /// lif_impl_state is friend of lif_impl

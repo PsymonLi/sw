@@ -48,7 +48,7 @@ lif_impl::lif_impl(pds_lif_spec_t *spec) {
     type_ = spec->type;
     memcpy(mac_, spec->mac, ETH_ADDR_LEN);
     ifindex_ = LIF_IFINDEX(id_);
-    init_done_ = false;
+    create_done_ = false;
     ht_ctxt_.reset();
     id_ht_ctxt_.reset();
 }
@@ -303,7 +303,7 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     lif_impl_db()->walk(lif_internal_mgmt_cb_, &cb_ctx);
 
     if (!(host_mgmt_lif && mnic_int_mgmt_lif &&
-          host_mgmt_lif->init_done_ && mnic_int_mgmt_lif->init_done_)) {
+          host_mgmt_lif->create_done_ && mnic_int_mgmt_lif->create_done_)) {
         // we will program when both lifs are available and initialized properly
         return SDK_RET_OK;
     }
@@ -364,10 +364,10 @@ lif_impl::create(pds_lif_spec_t *spec) {
         break;
     case sdk::platform::LIF_TYPE_HOST_MGMT:
     case sdk::platform::LIF_TYPE_MNIC_INTERNAL_MGMT:
-        init_done_ = true;
+        create_done_ = true;
         ret = create_internal_mgmt_mnic_(spec);
         if (ret != SDK_RET_OK) {
-            init_done_ = false;
+            create_done_ = false;
         }
         break;
     default:
