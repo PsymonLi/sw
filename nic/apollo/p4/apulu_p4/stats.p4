@@ -9,6 +9,7 @@ action vnic_tx_stats(out_packets, out_bytes) {
     }
     add(scratch_metadata.in_packets, out_packets, 1);
     add(scratch_metadata.in_bytes, out_bytes, capri_p4_intrinsic.packet_len);
+    modify_field(capri_intrinsic.tm_span_session, p4i_i2e.mirror_session);
 }
 
 @pragma stage 5

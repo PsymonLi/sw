@@ -121,7 +121,9 @@ erspan1:
 
 erspan2:
     phvwr           p.erspan2_version, 0x1
-    phvwr           p.erspan2_port_id, k.capri_intrinsic_lif
+    seq             c1, k.p4e_i2e_valid, TRUE
+    phvwr.c1        p.erspan2_port_id, k.p4e_i2e_src_lif
+    phvwr.!c1       p.erspan2_port_id, k.capri_intrinsic_lif
     cmov            r1, c5, 36, 32
     add             r6, r5, r1
     add             r7, r7, r1
@@ -137,7 +139,9 @@ erspan3:
     phvwrpair       p.{erspan3_sgt...erspan3_hw_id}, 0, \
                         p.{erspan3_granularity,erspan3_options}, 0x7
     phvwr           p.erspan3_opt_platf_id, 0x3
-    phvwr           p.erspan3_opt_port_id, k.capri_intrinsic_lif
+    seq             c1, k.p4e_i2e_valid, TRUE
+    phvwr.c1        p.erspan3_opt_port_id, k.p4e_i2e_src_lif
+    phvwr.!c1       p.erspan3_opt_port_id, k.capri_intrinsic_lif
     cmov            r1, c5, 48, 44
     add             r6, r5, r1
     add             r7, r7, r1

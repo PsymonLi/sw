@@ -10,6 +10,9 @@ struct phv_     p;
 %%
 
 vnic_info:
+    seq             c7, k.control_metadata_rx_packet, TRUE
+    phvwr.c7        p.p4i_i2e_mirror_session, d.vnic_info_d.rx_mirror_session
+    phvwr.!c7       p.p4i_i2e_mirror_session, d.vnic_info_d.tx_mirror_session
     phvwr           p.control_metadata_binding_check_enabled, \
                         d.vnic_info_d.binding_check_enabled
     phvwr           p.p4i_to_arm_epoch, d.vnic_info_d.epoch
@@ -18,11 +21,8 @@ vnic_info:
     sne.c1          c1, k.control_metadata_flow_epoch, d.vnic_info_d.epoch
     phvwr.c1.e      p.control_metadata_flow_done, FALSE
     phvwr.c1        p.ingress_recirc_defunct_flow, TRUE
-    seq             c1, k.control_metadata_rx_packet, TRUE
-    phvwr.c1        p.p4i_i2e_mirror_session, d.vnic_info_d.rx_mirror_session
-    phvwr.!c1       p.p4i_i2e_tx_policer_id, d.vnic_info_d.tx_policer_id
     phvwr.e         p.p4i_i2e_meter_enabled, d.vnic_info_d.meter_enabled
-    phvwr.!c1       p.p4i_i2e_mirror_session, d.vnic_info_d.tx_mirror_session
+    phvwr.!c7       p.p4i_i2e_tx_policer_id, d.vnic_info_d.tx_policer_id
 
 /*****************************************************************************/
 /* error function                                                            */

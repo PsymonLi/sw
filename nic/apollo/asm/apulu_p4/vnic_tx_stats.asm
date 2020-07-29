@@ -14,7 +14,8 @@ vnic_tx_stats:
     seq.!c1         c1, k.ingress_recirc_valid, TRUE
     seq.!c1         c1, k.arm_to_p4i_valid, TRUE
     tbladd.c1.e.f   d.vnic_tx_stats_d.out_packets, 0
-    tbladd.!c1.e    d.vnic_tx_stats_d.out_packets, 1
+    phvwr.!c1       p.capri_intrinsic_tm_span_session, k.p4i_i2e_mirror_session
+    tbladd.e        d.vnic_tx_stats_d.out_packets, 1
     tbladd.f        d.vnic_tx_stats_d.out_bytes, k.capri_p4_intrinsic_packet_len
 
 /*****************************************************************************/

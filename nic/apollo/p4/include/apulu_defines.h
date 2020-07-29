@@ -289,8 +289,14 @@
 #define APULU_I2E_HDR_SZ                46
 #define APULU_P4_TO_ARM_HDR_SZ          56
 #define APULU_ARM_TO_P4_HDR_SZ          11
+#define APULU_INGRESS_RECIRC_HDR_SZ      9
 
-#define APULU_INGRESS_MIRROR_BLOB_SZ    (APULU_I2E_HDR_SZ)
+#define APULU_INGRESS_I2E_MIRROR_BLOB_SZ    (APULU_I2E_HDR_SZ)
+#define APULU_INGRESS_I2I_MIRROR_BLOB_SZ    (APULU_INGRESS_RECIRC_HDR_SZ)
+#define APULU_INGRESS_I2R_MIRROR_BLOB_SZ    (APULU_P4_TO_ARM_HDR_SZ + \
+                                             APULU_P4I_TO_RXDMA_HDR_SZ + \
+                                             CAPRI_RXDMA_INTRINSIC_HDR_SZ - \
+                                             CAPRI_P4_INTRINSIC_HDR_SZ)
 
 #define PKTQ_PAGE_SIZE                  10240
 

@@ -13,9 +13,6 @@ action tunnel_decap() {
 }
 
 action ingress_to_egress() {
-    if (control_metadata.rx_packet == FALSE) {
-        modify_field(capri_intrinsic.tm_span_session, p4i_i2e.mirror_session);
-    }
     add_header(capri_p4_intrinsic);
     add_header(p4i_i2e);
     remove_header(capri_txdma_intrinsic);
@@ -124,7 +121,6 @@ action ingress_recirc() {
     remove_header(capri_txdma_intrinsic);
     remove_header(p4plus_to_p4);
     remove_header(p4plus_to_p4_vlan);
-    modify_field(capri_intrinsic.tm_span_session, 0);
     modify_field(capri_intrinsic.tm_oport, TM_PORT_INGRESS);
 }
 

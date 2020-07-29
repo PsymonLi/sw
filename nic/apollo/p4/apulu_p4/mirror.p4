@@ -157,7 +157,11 @@ action erspan(nexthop_type, nexthop_id, egress_bd_id, rewrite_flags,
         }
         add_header(erspan3_opt);
         modify_field(erspan3_opt.platf_id, 0x3);
-        modify_field(erspan3_opt.port_id, capri_intrinsic.lif);
+        if (p4e_i2e.valid == TRUE) {
+            modify_field(erspan3_opt.port_id, p4e_i2e.src_lif);
+        } else {
+            modify_field(erspan3_opt.port_id, capri_intrinsic.lif);
+        }
     } else {
         modify_field(gre_0.proto, GRE_PROTO_ERSPAN);
         if (erspan_type == ERSPAN_TYPE_II) {
@@ -172,7 +176,11 @@ action erspan(nexthop_type, nexthop_id, egress_bd_id, rewrite_flags,
             }
             add_header(erspan2);
             modify_field(erspan2.version, 1);
-            modify_field(erspan2.port_id, capri_intrinsic.lif);
+            if (p4e_i2e.valid == TRUE) {
+                modify_field(erspan3_opt.port_id, p4e_i2e.src_lif);
+            } else {
+                modify_field(erspan2.port_id, capri_intrinsic.lif);
+            }
         } else {
             /* ipv4 (20) + gre (4) */
             add(ipv4_0.totalLen, capri_p4_intrinsic.packet_len, 24);

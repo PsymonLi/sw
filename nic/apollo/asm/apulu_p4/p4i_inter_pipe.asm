@@ -23,8 +23,6 @@ p4i_inter_pipe:
     seq             c1, k.control_metadata_tunnel_terminate, TRUE
 
 ingress_to_egress:
-    seq             c2, k.control_metadata_rx_packet, FALSE
-    phvwr.c2        p.capri_intrinsic_tm_span_session, k.p4i_i2e_mirror_session
     balcf           r7, [c1], tunnel_decap
     add             r6, r0, k.capri_p4_intrinsic_packet_len
     /*
@@ -140,7 +138,6 @@ ingress_to_rxdma2:
                          APULU_P4I_TO_RXDMA_HDR_SZ)
 
 ingress_recirc:
-    phvwr           p.capri_intrinsic_tm_span_session, r0
     /*
     phvwr           p.ingress_recirc_valid, TRUE
     phvwr           p.capri_p4_intrinsic_valid, TRUE

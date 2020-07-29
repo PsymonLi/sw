@@ -163,6 +163,7 @@ uint32_t g_sip11 = 0x0B0B010B;
 uint16_t g_vnic_id11 = 0x20B;
 uint8_t  g_mirror_id1 = 1;
 uint8_t  g_mirror_id2 = 5;
+uint8_t  g_mirror_id3 = 7;
 uint64_t g_erspan_dmac1 = 0x000E0E0E0E0EULL;
 uint64_t g_erspan_smac1 = 0x00E1E2E3E4E5ULL;
 uint32_t g_erspan_dip1 = 0xC8010102;
@@ -1622,6 +1623,7 @@ vnic_init (void)
     entry_write(tbl_id, g_vnic_id11, 0, 0, &data, false, 0);
 
     memset(&data, 0, sizeof(data));
+    vnic_info->tx_mirror_session = (1 << g_mirror_id3);
     vnic_info->epoch = EPOCH + 1;
     entry_write(tbl_id, g_vnic_id12, 0, 0, &data, false, 0);
 }
@@ -1631,6 +1633,7 @@ mirror_init (void)
 {
     mirror_actiondata_t data;
     mirror_erspan_t *erspan_info = &data.action_u.mirror_erspan;
+    mirror_lspan_t *lspan_info = &data.action_u.mirror_lspan;
     uint16_t tbl_id = P4TBL_ID_MIRROR;
 
     memset(&data, 0, sizeof(data));
@@ -1656,6 +1659,12 @@ mirror_init (void)
     erspan_info->nexthop_id = g_nexthop_id2;
     erspan_info->span_id = g_mirror_id2;
     entry_write(tbl_id, g_mirror_id2, 0, 0, &data, false, 0);
+
+    memset(&data, 0, sizeof(data));
+    data.action_id = MIRROR_LSPAN_ID;
+    lspan_info->nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    lspan_info->nexthop_id = g_nexthop_id1;
+    entry_write(tbl_id, g_mirror_id3, 0, 0, &data, false, 0);
 }
 
 class apulu_test : public ::testing::Test {
@@ -2074,6 +2083,9 @@ TEST_F(apulu_test, test1)
             testcase_begin(tcid, i + 1);
             step_network_pkt(ipkt, TM_PORT_UPLINK_0);
             if (!getenv("SKIP_VERIFY")) {
+                get_next_pkt(opkt, port, cos);
+                EXPECT_TRUE(opkt == ipkt);
+                EXPECT_TRUE(port == TM_PORT_UPLINK_1);
                 get_next_pkt(opkt, port, cos);
                 EXPECT_TRUE(is_equal_arm_pkt(opkt, epkt));
                 EXPECT_TRUE(port == TM_PORT_UPLINK_1);
