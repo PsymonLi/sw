@@ -691,6 +691,7 @@ DebugServiceImpl::OifListGet(ServerContext *context,
      if (nreqs == 0) {
          HAL_TRACE_DEBUG("Rcvd oifl Get All Request");
          hal::oiflist_get_all_stream(writer);
+         hal::hal_cfg_db_close();
          return Status::OK;
      }
 

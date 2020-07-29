@@ -33,10 +33,11 @@ var (
 )
 
 var sessionShowCmd = &cobra.Command{
-	Use:   "session",
-	Short: "show session information",
-	Long:  "show session object information",
-	Run:   sessionShowCmdHandler,
+	Use:         "session",
+	Short:       "show session information",
+	Long:        "show session object information",
+	Run:         sessionShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 var sessionClearCmd = &cobra.Command{

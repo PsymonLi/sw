@@ -24,9 +24,10 @@ var (
 )
 
 var tableShowCmd = &cobra.Command{
-	Use:   "table",
-	Short: "show table info/dump",
-	Long:  "show table info/dump",
+	Use:         "table",
+	Short:       "show table info/dump",
+	Long:        "show table info/dump",
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 var tableInfoShowCmd = &cobra.Command{

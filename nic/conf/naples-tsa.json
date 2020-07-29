@@ -66,16 +66,6 @@
                                         "Method" : 0,
                                         "Command" : "mkdir obfl-logs && cp /obfl/* obfl-logs/"
                                 },
-                                {
-                                        "Name" : "HBM Bandwidth",
-                                        "Method" : 0,
-                                        "Command" : "/nic/bin/halctl show platform hbm bandwidth"
-                                },
-                                {
-                                        "Name" : "LLC Stats",
-                                        "Method" : 0,
-                                        "Command" : "/nic/bin/halctl show platform hbm llc-stats"
-                                },
 				{
                                         "Name" : "Show Halctl Techsupport",
                                         "Method" : 0,
@@ -150,16 +140,6 @@
                                         "Name" : "Show Venice DSC Object as seen by NMD",
                                         "Method" : 0,
                                         "Command" : "curl localhost:9008/api/v1/naples/info/ | jq ."
-                                },
-                                {
-                                        "Name" : "Show Session Count",
-                                        "Method" : 0,
-                                        "Command" : "/nic/bin/halctl show session | wc -l"
-                                },
-                                {
-                                        "Name" : "Show Nwsec Policy Count",
-                                        "Method" : 0,
-                                        "Command" : "/nic/bin/halctl show nwsec policy | grep \"Rule Id\" | wc -l"
                                 },
 				{
                                         "Name" : "NaplesStatus Delphi Object",

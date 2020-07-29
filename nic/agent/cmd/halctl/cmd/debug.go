@@ -97,10 +97,11 @@ var regDebugCmd = &cobra.Command{
 }
 
 var regShowCmd = &cobra.Command{
-	Use:   "register",
-	Short: "show register data",
-	Long:  "show register data",
-	Run:   regShowCmdHandler,
+	Use:         "register",
+	Short:       "show register data",
+	Long:        "show register data",
+	Run:         regShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 var traceDebugCmd = &cobra.Command{
@@ -111,10 +112,11 @@ var traceDebugCmd = &cobra.Command{
 }
 
 var traceShowCmd = &cobra.Command{
-	Use:   "trace",
-	Short: "show trace level",
-	Long:  "show trace level",
-	Run:   traceShowCmdHandler,
+	Use:         "trace",
+	Short:       "show trace level",
+	Long:        "show trace level",
+	Run:         traceShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 var flushLogsDebugCmd = &cobra.Command{

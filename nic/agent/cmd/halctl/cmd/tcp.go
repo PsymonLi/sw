@@ -27,10 +27,11 @@ var (
 )
 
 var tcpProxyShowCmd = &cobra.Command{
-	Use:   "tcp-proxy",
-	Short: "show tcp-proxy information",
-	Long:  "show tcp-proxy information",
-	Run:   tcpProxyShowCmdHandler,
+	Use:         "tcp-proxy",
+	Short:       "show tcp-proxy information",
+	Long:        "show tcp-proxy information",
+	Run:         tcpProxyShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 var tcpProxySessionShowCmd = &cobra.Command{

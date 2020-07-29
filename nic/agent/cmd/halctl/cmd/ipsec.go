@@ -24,26 +24,29 @@ var (
 
 //IpsecEncryptShowCmd show command for encrypt
 var IpsecEncryptShowCmd = &cobra.Command{
-	Use:   "ipsec-encrypt",
-	Short: "show ipsec-encrypt information",
-	Long:  "show ipsec-encrypt information",
-	Run:   ipsecEncryptShowCmdHandler,
+	Use:         "ipsec-encrypt",
+	Short:       "show ipsec-encrypt information",
+	Long:        "show ipsec-encrypt information",
+	Run:         ipsecEncryptShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 //IpsecDecryptShowCmd Decrypt show command
 var IpsecDecryptShowCmd = &cobra.Command{
-	Use:   "ipsec-decrypt",
-	Short: "show ipsec-decrypt information",
-	Long:  "show ipsec-decrypt information",
-	Run:   ipsecDecryptShowCmdHandler,
+	Use:         "ipsec-decrypt",
+	Short:       "show ipsec-decrypt information",
+	Long:        "show ipsec-decrypt information",
+	Run:         ipsecDecryptShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 //IpsecGlobalStatisticsShowCmd Global Stats show command
 var IpsecGlobalStatisticsShowCmd = &cobra.Command{
-	Use:   "ipsec-global-stats",
-	Short: "show ipsec-global-stats",
-	Long:  "show ipsec-global-stats",
-	Run:   ipsecGlobalStatisticsShowCmdHandler,
+	Use:         "ipsec-global-stats",
+	Short:       "show ipsec-global-stats",
+	Long:        "show ipsec-global-stats",
+	Run:         ipsecGlobalStatisticsShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 func init() {

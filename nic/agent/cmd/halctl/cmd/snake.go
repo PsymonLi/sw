@@ -22,10 +22,11 @@ var (
 )
 
 var snakeTestShowCmd = &cobra.Command{
-	Use:   "snake-test",
-	Short: "shows snake test",
-	Long:  "shows snake test",
-	Run:   snakeTestShowCmdHandler,
+	Use:         "snake-test",
+	Short:       "shows snake test",
+	Long:        "shows snake test",
+	Run:         snakeTestShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 var snakeTestCmd = &cobra.Command{

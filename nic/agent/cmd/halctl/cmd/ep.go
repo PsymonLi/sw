@@ -47,10 +47,11 @@ var epShowStatusCmd = &cobra.Command{
 }
 
 var filterShowCmd = &cobra.Command{
-	Use:   "filter",
-	Short: "show filter object information",
-	Long:  "show filter object information",
-	Run:   filterShowCmdHandler,
+	Use:         "filter",
+	Short:       "show filter object information",
+	Long:        "show filter object information",
+	Run:         filterShowCmdHandler,
+	Annotations: map[string]string{"techsupport": "false"},
 }
 
 func init() {
