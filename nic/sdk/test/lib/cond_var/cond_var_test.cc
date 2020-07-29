@@ -33,7 +33,7 @@ simple_wait_signal_thread_main (void)
     std::cout << "signal cond var when pred is true" << std::endl;
     {
         // acquire mutex before changing predicate condition
-        sdk::lib::cond_var_mutex_guard_t lg(&g_cv_mtx);
+        sdk::lib::cond_var_mutex_guard_t lg(g_cv_mtx);
         g_simple_wait_pred = true;
     }
     g_cv_monotonic.notify_all();
@@ -54,7 +54,7 @@ TEST(cond_var, simple_wait) {
     try {
         {
             // acquire mutex before blocking for condition
-            sdk::lib::cond_var_mutex_guard_t lg(&g_cv_mtx);
+            sdk::lib::cond_var_mutex_guard_t lg(g_cv_mtx);
             // wait until predicate becomes true
             g_cv_monotonic.wait(g_cv_mtx, simple_wait_pred_chk);
         }   // exit context to release mutex
@@ -78,7 +78,7 @@ batching_thread_main (int count)
         std::cout << "pushed "<< g_batch_queue.size() << " items" << std::endl;
         {
             // acquire mutex before changing predicate condition
-            sdk::lib::cond_var_mutex_guard_t lg(&g_cv_mtx);
+            sdk::lib::cond_var_mutex_guard_t lg(g_cv_mtx);
             g_batch_queue.push_back(++i);
         }
         g_cv_monotonic.notify_one();
@@ -102,7 +102,7 @@ TEST(cond_var, batching_predicate_test) {
         bool ret;
         {
             // acquire mutex before blocking for condition
-            sdk::lib::cond_var_mutex_guard_t lg(&g_cv_mtx);
+            sdk::lib::cond_var_mutex_guard_t lg(g_cv_mtx);
             // allow sufficient time to reach max batch size
             int interval = (k_max_batch_sz + 5) * k_freq;
             // wait until either batch size exceeds limit or timer expires
@@ -136,7 +136,7 @@ TEST(cond_var, batching_timeout_test) {
         bool ret;
         {
             // acquire mutex before blocking for condition
-            sdk::lib::cond_var_mutex_guard_t lg(&g_cv_mtx);
+            sdk::lib::cond_var_mutex_guard_t lg(g_cv_mtx);
             // set interval to less than time taken to reach max batching size
             int interval = (k_max_batch_sz / 2) * k_freq;
             // wait until either batch size exceeds limit or timer expires

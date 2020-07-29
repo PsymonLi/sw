@@ -154,7 +154,7 @@ upg_ipc_sync_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 
     bool ret;
     {
-        sdk::lib::cond_var_mutex_guard_t lk(&state_t::upg_sync_cv_mtx);
+        sdk::lib::cond_var_mutex_guard_t lk(state_t::upg_sync_cv_mtx);
         ret = state_t::upg_sync_cv.
                 wait_for(state_t::upg_sync_cv_mtx,
                          k_upg_routing_convergence_time * TIME_MSECS_PER_SEC,

@@ -10,12 +10,13 @@
 namespace pds_ms {
 
 hal_wait_state_t* hal_wait_state_t::g_state_ = nullptr;
-std::mutex hal_wait_state_t::g_mtx_;
-std::condition_variable hal_wait_state_t::g_cv_;
+sdk::lib::cond_var_mutex_t hal_wait_state_t::g_mtx_;
+sdk::lib::cond_var_t hal_wait_state_t::g_cv_;
 
-void hal_wait_state_t::wait(std::function<bool()> pred) {
-    std::unique_lock<std::mutex> l (hal_wait_state_t::g_mtx_);
-    if (!hal_wait_state_t::g_cv_.wait_for(l, std::chrono::seconds(60), pred)) {
+void hal_wait_state_t::wait(const std::function<bool()>& pred) {
+    sdk::lib::cond_var_mutex_guard_t l(hal_wait_state_t::g_mtx_);
+    if (!hal_wait_state_t::g_cv_.wait_for(hal_wait_state_t::g_mtx_,
+                                          60 * TIME_MSECS_PER_SEC, pred)) {
         PDS_TRACE_ERR("gRPC HAL wait timed out");
     }
 }
@@ -25,7 +26,7 @@ void hal_wait_state_t::notify (void) {
 }
 
 void hal_wait_state_t::add_vrf_id(uint32_t vrf_id) {
-    std::unique_lock<std::mutex> l (g_mtx_);
+    sdk::lib::cond_var_mutex_guard_t l(g_mtx_);
     PDS_TRACE_DEBUG("Create VRF ID %d", vrf_id);
     hal_wait_state_t::g_state_->vrf_id_store_.insert(vrf_id); 
 }
@@ -38,7 +39,7 @@ bool hal_wait_state_t::has_vrf_id_non_reentrant_(uint32_t vrf_id) {
 void hal_wait_state_t::del_vrf_id(uint32_t vrf_id) {
     uint32_t found = 0;
     {
-        std::unique_lock<std::mutex> l (g_mtx_);
+        sdk::lib::cond_var_mutex_guard_t l(g_mtx_);
         PDS_TRACE_DEBUG("Delete VRF ID %d", vrf_id);
         found = hal_wait_state_t::g_state_->vrf_id_store_.erase(vrf_id);
     }
@@ -48,7 +49,7 @@ void hal_wait_state_t::del_vrf_id(uint32_t vrf_id) {
 }
 
 void hal_wait_state_t::add_bd_id(ms_bd_id_t bd_id) {
-    std::unique_lock<std::mutex> l (g_mtx_);
+    sdk::lib::cond_var_mutex_guard_t l(g_mtx_);
     PDS_TRACE_DEBUG("Create BD ID %d", bd_id);
     hal_wait_state_t::g_state_->bd_id_store_.insert(bd_id); 
 }
@@ -61,7 +62,7 @@ bool hal_wait_state_t::has_bd_id_non_reentrant_(ms_bd_id_t bd_id) {
 void hal_wait_state_t::del_bd_id(ms_bd_id_t bd_id) {
     uint32_t found = 0;
     {
-        std::unique_lock<std::mutex> l (g_mtx_);
+        sdk::lib::cond_var_mutex_guard_t l(g_mtx_);
         PDS_TRACE_DEBUG("Delete BD ID %d", bd_id);
         found = hal_wait_state_t::g_state_->bd_id_store_.erase(bd_id);
     }

@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <system_error>
 #include <functional>
+#include <mutex>
 
 //------------------------------------------------------------------------
 // GCC implementation for C++ std::condition_variable does not use
@@ -29,7 +30,6 @@
 namespace sdk {
 namespace lib {
 
-class cond_var_mutex_guard_t;
 class cond_var_t;
 
 // mutex to be used with the sdk condition variable
@@ -51,23 +51,8 @@ private:
     pthread_mutex_t mtx_;
 };
 
-// RAII guard for the mutex
-class cond_var_mutex_guard_t {
-public:
-     // locks the underlying mutex on construction
-     cond_var_mutex_guard_t(cond_var_mutex_t* cond_var_mutex)
-         : mtx_ (cond_var_mutex) {
-         mtx_->lock();
-     }
-     // releases the underlying mutex before going out of scope
-     ~cond_var_mutex_guard_t(void) {
-         if (mtx_ != nullptr) {
-             mtx_->unlock();
-         }
-     }
-private:
-     cond_var_mutex_t* mtx_ = nullptr;
-};
+// RAII guard for mutex
+using cond_var_mutex_guard_t = std::lock_guard<cond_var_mutex_t>;
 
 // condition variable with monotonic timed wait
 class cond_var_t {
