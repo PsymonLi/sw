@@ -1837,7 +1837,7 @@ func TestFailedARPResolutionRetry(t *testing.T) {
 	MgmtLink = mgmtLink
 
 	// Wait for next loop to run
-	time.Sleep(time.Second * 70)
+	time.Sleep(refreshDuration + (time.Second * 10))
 	dmac, ok := destIPToMAC.Load(irisUtils.GenerateCompositeKey(destIPOutSideSubnet, ""))
 	if ok {
 		Assert(t, dmac != "", "Arp Not resolved ")
