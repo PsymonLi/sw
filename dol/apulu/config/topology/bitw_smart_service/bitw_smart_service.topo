@@ -38,6 +38,8 @@ node:
         - stack : ipv4
           count : 1
           type  : underlay
+          fabricencap : none
+          fabricencapvalue : 0
           nexthop:
             - type   : underlay
               count  : 2
@@ -63,6 +65,8 @@ node:
         - stack : ipv4
           count : 1
           type  : tenant
+          fabricencap : none
+          fabricencapvalue : 0
           subnet:
             - count            : 1
               v4prefixlen      : 24
@@ -71,6 +75,8 @@ node:
               vroutermac       : macaddr/0055.0100.0003
               v4ingrpolicycount: 1
               v4egrpolicycount : 1
+              fabricencap : none
+              fabricencapvalue : 0
               vnic:
                 - id        : 1
                   count     : 1

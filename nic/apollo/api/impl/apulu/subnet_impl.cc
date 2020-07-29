@@ -956,7 +956,6 @@ subnet_impl::fill_spec_(pds_subnet_spec_t *spec) {
         return sdk::SDK_RET_HW_READ_ERR;
     }
     spec->fabric_encap.val.vnid = bd_data.p4e_bd_info.vni;
-    spec->fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
     sdk::lib::memrev(spec->vr_mac, bd_data.p4e_bd_info.vrmac, ETH_ADDR_LEN);
     spec->tos = bd_data.p4e_bd_info.tos;
     vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
