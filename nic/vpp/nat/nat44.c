@@ -827,6 +827,11 @@ nat_flow_alloc_inline(u32 vpc_id, ip4_address_t dip, u16 dport,
     }
 
     num_ports = pb->end_port - pb->start_port + 1;
+    if (num_ports == pb->ports_in_use) {
+        // When all ports in port block are used up, don't bother to walk the
+        // list of ports to see if we can reuse any of them
+        return NAT_ERR_NO_RESOURCE;
+    }
 
     if (pb->ref_count == NULL) {
         // No ports allocated
