@@ -384,7 +384,7 @@ try_again:
 		done = ionic_dev_cmd_done(idev);
 		if (done)
 			break;
-		msleep(5);
+		usleep_range(100, 200);
 		hb = ionic_heartbeat_check(ionic);
 	} while (!done && !hb && time_before(jiffies, max_wait));
 	duration = jiffies - start_time;
@@ -410,7 +410,7 @@ try_again:
 	err = ionic_dev_cmd_status(&ionic->idev);
 	if (err) {
 		if (err == IONIC_RC_EAGAIN && !time_after(jiffies, max_wait)) {
-			dev_err(ionic->dev, "DEV_CMD %s (%d) error, %s (%d) retrying...\n",
+			dev_err(ionic->dev, "DEV_CMD %s (%d), %s (%d) retrying...\n",
 				ionic_opcode_to_str(opcode), opcode,
 				ionic_error_to_str(err), err);
 

@@ -61,6 +61,7 @@ cp "$DRIVERS_SRC/eth/ionic/ionic.h" \
    "$DRIVERS_SRC/eth/ionic/ionic_stats.h" \
    "$DRIVERS_SRC/eth/ionic/ionic_txrx.c" \
    "$DRIVERS_SRC/eth/ionic/ionic_txrx.h" \
+   "$DRIVERS_SRC/eth/ionic/ionic_fw.c" \
    "$DRIVERS_SRC/eth/ionic/kcompat.c" \
    "$DRIVERS_SRC/eth/ionic/kcompat.h" \
    "$DRIVERS_SRC/eth/ionic/kcompat_overflow.h" \
