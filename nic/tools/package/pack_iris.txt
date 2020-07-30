@@ -10,11 +10,11 @@ nic/conf/iris/$ASIC/4g/hbm_mem_base.json                            /nic/conf/ir
 nic/conf/iris/$ASIC/4g/hbm_mem_storage.json                         /nic/conf/iris/4g/
 nic/conf/iris/$ASIC/4g/hbm_mem_sriov.json                           /nic/conf/iris/4g/
 nic/conf/iris/$ASIC/4g/hbm_classic_mem.json                         /nic/conf/iris/4g/
-nic/conf/iris/$ASIC/4g/hbm_mem.json                                 /nic/conf/iris/8g/
-nic/conf/iris/$ASIC/4g/hbm_mem_base.json                            /nic/conf/iris/8g/
-nic/conf/iris/$ASIC/4g/hbm_mem_storage.json                         /nic/conf/iris/8g/
-nic/conf/iris/$ASIC/4g/hbm_mem_sriov.json                           /nic/conf/iris/8g/
-nic/conf/iris/$ASIC/4g/hbm_classic_mem.json                         /nic/conf/iris/8g/
+nic/conf/iris/$ASIC/8g/hbm_mem.json                                 /nic/conf/iris/8g/
+nic/conf/iris/$ASIC/8g/hbm_mem_base.json                            /nic/conf/iris/8g/
+nic/conf/iris/$ASIC/8g/hbm_mem_storage.json                         /nic/conf/iris/8g/
+nic/conf/iris/$ASIC/8g/hbm_mem_sriov.json                           /nic/conf/iris/8g/
+nic/conf/iris/$ASIC/8g/hbm_classic_mem.json                         /nic/conf/iris/8g/
 nic/conf/iris/pipeline.json                                         /nic/conf/
 nic/conf/iris/operd-regions.json                                    /nic/conf/
 nic/conf/iris/operd.json                                            /nic/conf/
