@@ -342,8 +342,7 @@ func (ctx *securitygroupCtx) WorkFunc(context context.Context) error {
 		err = securitygroupHandler.OnSecurityGroupUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -1327,8 +1326,7 @@ func (ctx *networksecuritypolicyCtx) WorkFunc(context context.Context) error {
 		err = networksecuritypolicyHandler.OnNetworkSecurityPolicyUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -2312,8 +2310,7 @@ func (ctx *appCtx) WorkFunc(context context.Context) error {
 		err = appHandler.OnAppUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -3297,8 +3294,7 @@ func (ctx *firewallprofileCtx) WorkFunc(context context.Context) error {
 		err = firewallprofileHandler.OnFirewallProfileUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -4282,8 +4278,7 @@ func (ctx *certificateCtx) WorkFunc(context context.Context) error {
 		err = certificateHandler.OnCertificateUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -5267,8 +5262,7 @@ func (ctx *trafficencryptionpolicyCtx) WorkFunc(context context.Context) error {
 		err = trafficencryptionpolicyHandler.OnTrafficEncryptionPolicyUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()

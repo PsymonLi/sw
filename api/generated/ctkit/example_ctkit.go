@@ -342,8 +342,7 @@ func (ctx *orderCtx) WorkFunc(context context.Context) error {
 		err = orderHandler.OnOrderUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -1442,8 +1441,7 @@ func (ctx *bookCtx) WorkFunc(context context.Context) error {
 		err = bookHandler.OnBookUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -2485,8 +2483,7 @@ func (ctx *publisherCtx) WorkFunc(context context.Context) error {
 		err = publisherHandler.OnPublisherUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -3470,8 +3467,7 @@ func (ctx *storeCtx) WorkFunc(context context.Context) error {
 		err = storeHandler.OnStoreUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -4513,8 +4509,7 @@ func (ctx *couponCtx) WorkFunc(context context.Context) error {
 		err = couponHandler.OnCouponUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -5502,8 +5497,7 @@ func (ctx *customerCtx) WorkFunc(context context.Context) error {
 		err = customerHandler.OnCustomerUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()

@@ -608,8 +608,16 @@ func (ts *TopologyService) AddNodes(ctx context.Context, req *iota.NodeMsg) (*io
 	if err != nil {
 		log.Errorf("TOPO SVC | AddNodes |AddNodes Call Failed. %v", err)
 		req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
-	} else {
-		req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
+		for idx, node := range newNodes {
+			if !node.IsOrchesratorNode() {
+				req.Nodes[idx] = node.GetNodeMsg(ctx, node.GetNodeInfo().Name)
+				if req.Nodes[idx].GetNodeStatus().ApiStatus != iota.APIResponseType_API_STATUS_OK {
+					req.ApiResponse.ErrorMsg = "Node :" + req.Nodes[idx].GetName() + " : " + req.Nodes[idx].GetNodeStatus().ErrorMsg + "\n"
+					req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
+				}
+			}
+		}
+		return req, nil
 	}
 
 	//Associate nodes to orchestrator

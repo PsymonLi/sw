@@ -85,13 +85,23 @@ func (vs *vmotionSinker) Sink() chan<- progress.Report {
 // Migrate VM to destination host
 func (vm *VM) Migrate(host *Host, dref *types.ManagedObjectReference, abortTime int) error {
 
+	var err error
+	var task *object.Task
 	href := host.hs.Reference()
 	config := types.VirtualMachineRelocateSpec{
 		Datastore: dref,
 		Host:      &href,
 	}
-	task, err := vm.vm.Relocate(vm.entity.Ctx(), config,
-		types.VirtualMachineMovePriorityDefaultPriority)
+
+	if abortTime == 0 {
+		task, err = vm.vm.Relocate(vm.entity.Ctx(), config,
+			types.VirtualMachineMovePriorityDefaultPriority)
+
+	} else {
+		task, err = vm.vm.Relocate(vm.entity.Ctx(), config,
+			types.VirtualMachineMovePriorityLowPriority)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -152,7 +162,8 @@ func (vm *VM) ReconfigureNetwork(currNW string, newNW string, maxReconfigs int) 
 	}
 
 	reconfigs := 0
-	for _, d := range devList.SelectByType((*types.VirtualEthernetCard)(nil)) {
+	devices := devList.SelectByType((*types.VirtualEthernetCard)(nil))
+	for _, d := range devices {
 		veth := d.GetVirtualDevice()
 
 		switch nw := nwRef.(type) {
@@ -179,6 +190,10 @@ func (vm *VM) ReconfigureNetwork(currNW string, newNW string, maxReconfigs int) 
 					VirtualDeviceBackingInfo: types.VirtualDeviceBackingInfo{},
 					DeviceName:               newNW,
 				},
+			}
+			veth.Connectable = &types.VirtualDeviceConnectInfo{
+				StartConnected: true,
+				Connected:      true,
 			}
 		case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
 			switch a := veth.Backing.(type) {
@@ -212,6 +227,34 @@ func (vm *VM) ReconfigureNetwork(currNW string, newNW string, maxReconfigs int) 
 		}
 
 		fmt.Println("Configuring network...", newNW)
+		task, err = vm.vm.Reconfigure(vm.entity.Ctx(),
+			types.VirtualMachineConfigSpec{DeviceChange: []types.BaseVirtualDeviceConfigSpec{&types.VirtualDeviceConfigSpec{Operation: types.VirtualDeviceConfigSpecOperationEdit, Device: d}}})
+		if err != nil {
+			return err
+		}
+		if err := task.Wait(vm.entity.Ctx()); err != nil {
+			return errors.Wrap(err, "Reconfiguring to network failed")
+		}
+
+		veth.Connectable = &types.VirtualDeviceConnectInfo{
+			StartConnected: false,
+			Connected:      false,
+		}
+
+		task, err = vm.vm.Reconfigure(vm.entity.Ctx(),
+			types.VirtualMachineConfigSpec{DeviceChange: []types.BaseVirtualDeviceConfigSpec{&types.VirtualDeviceConfigSpec{Operation: types.VirtualDeviceConfigSpecOperationEdit, Device: d}}})
+		if err != nil {
+			return err
+		}
+		if err := task.Wait(vm.entity.Ctx()); err != nil {
+			return errors.Wrap(err, "Reconfiguring to network failed")
+		}
+
+		veth.Connectable = &types.VirtualDeviceConnectInfo{
+			StartConnected: true,
+			Connected:      true,
+		}
+
 		task, err = vm.vm.Reconfigure(vm.entity.Ctx(),
 			types.VirtualMachineConfigSpec{DeviceChange: []types.BaseVirtualDeviceConfigSpec{&types.VirtualDeviceConfigSpec{Operation: types.VirtualDeviceConfigSpecOperationEdit, Device: d}}})
 		if err != nil {

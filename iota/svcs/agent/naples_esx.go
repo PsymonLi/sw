@@ -39,6 +39,7 @@ type esxHwNode struct {
 	esxHostEntityKey string
 	host             *vmware.Host
 	imagesMap        map[string]string
+	dataSwitchName   string
 }
 
 type esxNaplesHwNode struct {
@@ -161,8 +162,8 @@ func (node *esxHwNode) AddWorkloads(in *iota.WorkloadMsg) (*iota.WorkloadMsg, er
 
 		node.logger.Printf("Setting up workload : %s", in.GetWorkloadName())
 		//This should come from workload msg
-		switchName := Common.EsxIotaDataSwitch + "-" + strconv.Itoa(0)
-		iotaWload.workload.SetSwitch(switchName)
+
+		iotaWload.workload.SetSwitch(node.dataSwitchName)
 		resp, err := node.setupWorkload(iotaWload.workload, in)
 
 		if err != nil || resp.GetWorkloadStatus().GetApiStatus() != iota.APIResponseType_API_STATUS_OK {
@@ -415,6 +416,18 @@ func (node *esxHwNode) createNaplesMgmtSwitch(inst int, hint string) error {
 
 }
 
+func (node *esxHwNode) removeNaplesMgmtSwitch(inst int, hint string) error {
+
+	mgmtNetwork := getMgmtNetwork(inst)
+	nws := []vmware.NWSpec{{Name: mgmtNetwork, Vlan: 0}}
+	node.host.RemoveNetworks(nws)
+
+	vsname := Common.EsxIotaNaplesMgmtSwitch
+	vsspec := vmware.VswitchSpec{Name: vsname}
+
+	return node.host.RemoveVswitch(vsspec)
+}
+
 func (node *esxHwNode) createNaplesDataSwitch(index int, nicType, hint string) error {
 
 	naplesDataIntfs, err := node.getDataIntfs(nicType, hint)
@@ -480,6 +493,14 @@ func (node *esxHwNode) setUpNaplesMgmtIP(hint string) (string, error) {
 	}
 
 	node.logger.Infof("Setting complete for naples Mgmt IP, point to %v , set to %v", naplesIP, intfIP)
+
+	cmd = []string{"ping", "-c", "5", naplesIP}
+	if retCode, stdout, err := Utils.Run(cmd, 0, false, true, nil); retCode != 0 {
+		msg := fmt.Sprintf("Ping failed of naples mgmt IP %v, %v", naplesIP, stdout)
+		node.logger.Errorf(msg)
+		return "", errors.Wrap(err, msg)
+	}
+
 	return naplesIP, nil
 }
 
@@ -493,13 +514,25 @@ func (node *esxHwNode) ctrlVMName() string {
 
 func (node *esxHwNode) setUpNaplesMgmtNetwork(inst int, hint string) error {
 
-	if err := node.createNaplesMgmtSwitch(inst, hint); err != nil {
-		return errors.Wrap(err, "Failed to create naples mgmt switch")
-	}
-
 	ctrlVM, err := node.host.NewVM(node.ctrlVMName())
 	if err != nil {
 		return errors.Wrap(err, "Failed to find control VM")
+	}
+
+	//First disconnect VM from mgmt network
+	nws, _ := node.host.ListNetworks()
+	for _, nw := range nws {
+		if strings.Contains(nw.Name, Common.EsxNaplesMgmtNetwork) {
+			ctrlVM.ReconfigureNetwork(nw.Name, Common.EsxDefaultNetwork, 0)
+		}
+	}
+
+	err = node.removeNaplesMgmtSwitch(inst, hint)
+	//May not be created
+	node.logger.Errorf("Error deleting mgmt switch %v", err)
+
+	if err := node.createNaplesMgmtSwitch(inst, hint); err != nil {
+		return errors.Wrap(err, "Failed to create naples mgmt switch")
 	}
 
 	mgmtNetwork := getMgmtNetwork(inst)
@@ -555,15 +588,25 @@ func (node *esxHwNode) addNaplesEntity(in *iota.Node) error {
 			for inst, naplesCfg := range in.GetNaplesConfigs().GetConfigs() {
 				if naplesCfg.Name == entityEntry.Name {
 
-					if !in.Reload {
-						if err := node.setUpNaplesMgmtNetwork(inst, naplesCfg.NicHint); err != nil {
+					if !naplesCfg.NoMgmt {
+						for i := 0; i < 5; i++ {
+							err = node.initHostConnect()
+							if err != nil {
+								continue
+							}
+							if err = node.setUpNaplesMgmtNetwork(inst, naplesCfg.NicHint); err != nil {
+								continue
+							}
+							if ip, err = node.setUpNaplesMgmtIP(naplesCfg.NicHint); err != nil {
+								continue
+							}
+							break
+						}
+						if err != nil {
 							return err
 						}
-					}
-					if ip, err = node.setUpNaplesMgmtIP(naplesCfg.NicHint); err != nil {
-						return err
-					}
 
+					}
 					if naplesCfg.NaplesIpAddress == "" || strings.HasPrefix(naplesCfg.NaplesIpAddress, "169.254") {
 						//Send the IP back in case it is different
 						naplesCfg.NaplesIpAddress = ip
@@ -572,7 +615,6 @@ func (node *esxHwNode) addNaplesEntity(in *iota.Node) error {
 						//Set the second IP as back door
 						naplesCfg.NaplesSecondaryIpAddress = ip
 					}
-
 				}
 			}
 
@@ -650,7 +692,7 @@ func (naples *esxNaplesHwNode) Init(in *iota.Node) (*iota.Node, error) {
 	}
 
 	for index, naplesConfig := range in.GetNaplesConfigs().GetConfigs() {
-		if !in.Reload {
+		if !in.Reload && !naplesConfig.NoSwitchShare {
 			err = naples.createNaplesDataSwitch(index, naplesConfig.GetNicType(), naplesConfig.GetNicHint())
 			if err != nil {
 				msg := "failed to create naples data switch"
@@ -658,6 +700,10 @@ func (naples *esxNaplesHwNode) Init(in *iota.Node) (*iota.Node, error) {
 				return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
 			}
 
+		}
+		if !naplesConfig.NoSwitchShare {
+			//Hack for now , have to clean up for dual or more naples
+			naples.dataSwitchName = Common.EsxIotaDataSwitch + "-" + strconv.Itoa(0)
 		}
 
 		nodeUUID, err := naples.getHwUUID(naples.naplesEntityKey[index])
@@ -748,6 +794,24 @@ func (thirdParty *esxThirdPartyDvsHwNode) Init(in *iota.Node) (*iota.Node, error
 }
 
 // Init initalize node type
+func (node *esxHwNode) initHostConnect() error {
+
+	if node.host != nil {
+		node.host.Close()
+		node.host = nil
+	}
+	host, err := vmware.NewHost(context.Background(), node.hostIP, node.hostUsername, node.hostPassword)
+	if err != nil {
+		msg := "Cannot connect to ESX Host"
+		node.logger.Error(msg)
+		return fmt.Errorf(msg)
+	}
+
+	node.host = host
+	return nil
+}
+
+// Init initalize node type
 func (node *esxHwNode) Init(in *iota.Node) (*iota.Node, error) {
 
 	node.init(in)
@@ -758,14 +822,10 @@ func (node *esxHwNode) Init(in *iota.Node) (*iota.Node, error) {
 	node.hostPassword = in.GetEsxConfig().GetPassword()
 	node.imagesMap = make(map[string]string)
 
-	host, err := vmware.NewHost(context.Background(), node.hostIP, node.hostUsername, node.hostPassword)
+	err := node.initHostConnect()
 	if err != nil {
-		msg := "Cannot connect to ESX Host"
-		node.logger.Error(msg)
-		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
+		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: err.Error()}}, err
 	}
-
-	node.host = host
 
 	if err = node.addNodeEntities(in); err != nil {
 		msg := fmt.Sprintf("Adding node entities failed : %s", err.Error())

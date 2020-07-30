@@ -12,6 +12,7 @@ import (
 	iota "github.com/pensando/sw/iota/protos/gogen"
 	Cmd "github.com/pensando/sw/iota/svcs/agent/command"
 	Utils "github.com/pensando/sw/iota/svcs/agent/utils"
+	"github.com/pensando/sw/iota/svcs/common"
 	constants "github.com/pensando/sw/iota/svcs/common"
 	"github.com/pensando/sw/iota/svcs/common/copier"
 	"github.com/pensando/sw/iota/svcs/common/runner"
@@ -266,9 +267,20 @@ func (vm *vmESXWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 	host := vm.host
 	vm.vm, _ = host.NewVM(vm.vmName)
 
-	vsspec := vmware.VswitchSpec{Name: vm.Switch()}
-
+	vsspec := vmware.VswitchSpec{Name: vm.Switch(), Mtu: common.MaxMtuSize}
 	nwName := constants.EsxDataNWPrefix + strconv.Itoa(spec.PrimaryVlan)
+	if vm.Switch() == "" {
+		//Switch not set , we have to create
+		vsname := constants.EsxIotaDataSwitch + "-" + spec.Parent
+		vsspec = vmware.VswitchSpec{Name: vsname, Pnics: []string{spec.Parent}, Mtu: common.MaxMtuSize}
+		//try to add switch, may be created already
+		err := host.AddVswitch(vsspec)
+		if err != nil {
+			//Just log the error
+			vm.logger.Errorf(err.Error())
+		}
+		nwName = vsname + "-" + constants.EsxDataNWPrefix + strconv.Itoa(spec.PrimaryVlan)
+	}
 
 	nws := []vmware.NWSpec{{Name: nwName, Vlan: int32(spec.PrimaryVlan)}}
 	if err := vm.host.AddNetworks(nws, vsspec); err != nil {

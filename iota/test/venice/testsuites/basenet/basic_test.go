@@ -3,6 +3,7 @@ package basenet_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pensando/sw/iota/test/venice/iotakit/model"
@@ -405,6 +406,80 @@ var _ = Describe("Basnet Sanity", func() {
 					return ts.model.PingPairs(ts.model.WorkloadPairs().WithinNetwork())
 				}).Should(Succeed())
 
+			}
+		})
+
+		It("Config Snapshot/Restore after decommission", func() {
+			for i := 0; i < int(ts.stress); i++ {
+
+				//Make sure flow aware mirroing works
+				veniceCollector := ts.model.VeniceNodes().Leader()
+				// add permit rules for workload pairs
+				workloadPairs := ts.model.WorkloadPairs().WithinNetwork().Any(1)
+				msc := ts.model.NewMirrorSession("test-mirror").AddRulesForWorkloadPairs(workloadPairs, "icmp")
+				msc.AddVeniceCollector(veniceCollector, "udp/4545", 0)
+				Expect(msc.Commit()).Should(Succeed())
+
+				Eventually(func() error {
+					return verifyNoDatapathCollection(workloadPairs, veniceCollector)
+				}).Should(Succeed())
+
+				Expect(ts.model.Naples().SetDscProfile(dscFlowawareProfile)).Should(Succeed())
+				//Ping should succeed
+				Eventually(func() error {
+					return ts.model.PingPairs(ts.model.WorkloadPairs().WithinNetwork())
+				}).Should(Succeed())
+
+				Eventually(func() error {
+					return verifyDatapathCollection(workloadPairs, veniceCollector)
+				}).Should(Succeed())
+
+				Expect(ts.model.VeniceNodeCreateSnapshotConfig(ts.model.VeniceNodes())).Should(Succeed())
+				ss, err := ts.model.VeniceNodeTakeSnapshot(ts.model.VeniceNodes())
+				Expect(err).ShouldNot(HaveOccurred())
+				snapShotName := string(ss[strings.LastIndex(ss, "/")+1:])
+
+				Expect(ts.model.Naples().Decommission()).Should(Succeed())
+				Eventually(func() error {
+					return ts.model.Naples().IsNotAdmitted()
+				}).Should(Succeed())
+
+				Eventually(func() error {
+					return ts.model.Naples().Delete()
+				}).Should(Succeed())
+
+				Eventually(func() error {
+					return ts.model.ReloadHosts(ts.model.Hosts())
+				}).Should(Succeed())
+
+				Eventually(func() error {
+					return ts.model.Naples().IsAdmitted()
+				}).Should(Succeed())
+
+				Eventually(func() error {
+					return verifyNoDatapathCollection(workloadPairs, veniceCollector)
+				}).Should(Succeed())
+
+				ts.model.VeniceNodeRestoreConfig(ts.model.VeniceNodes(), snapShotName)
+				//Ping should succeed
+				Eventually(func() error {
+					return ts.model.PingPairs(ts.model.WorkloadPairs().WithinNetwork())
+				}).Should(Succeed())
+
+				Eventually(func() error {
+					return verifyDatapathCollection(workloadPairs, veniceCollector)
+				}).Should(Succeed())
+
+				Expect(ts.model.Naples().ResetProfile()).Should(Succeed())
+
+				//Ping should work as expected
+				Eventually(func() error {
+					return ts.model.PingPairs(ts.model.WorkloadPairs().WithinNetwork())
+				}).Should(Succeed())
+
+				Eventually(func() error {
+					return verifyNoDatapathCollection(workloadPairs, veniceCollector)
+				}).Should(Succeed())
 			}
 		})
 

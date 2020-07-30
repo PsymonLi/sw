@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/pensando/sw/api/generated/cluster"
+	"github.com/pensando/sw/venice/globals"
 )
 
 func TestCfgenPolicyGen(t *testing.T) {
@@ -34,6 +35,17 @@ func TestCfgenPolicyGen(t *testing.T) {
 	cfg.NumOfIPAMPsPerTenant = 1
 	cfg.NumUnderlayRoutingConfigs = 1 // Same as other AS number
 	cfg.NumUnderlayNeighbors = 1      //TOR AS nubr
+
+	cfg.NumOfTenants = 50
+	cfg.NumOfVRFsPerTenant = 1
+	cfg.NumOfSubnetsPerVpc = 50
+	cfg.NumOfIPAMPsPerTenant = 1
+	cfg.NumUnderlayRoutingConfigs = 1                   // Same as other AS number
+	cfg.NumUnderlayNeighbors = 1                        //TOR AS nubr
+	cfg.NetworkSecurityPolicyParams.NumPolicies = 10000 // 200 Policy Per tenant. Each Subnet, 2 ingress, 2 egress
+	cfg.NetworkSecurityPolicyParams.NumRulesPerPolicy = 128
+	cfg.NetworkSecurityPolicyParams.NumIPPairsPerRule = 1
+	cfg.NetworkSecurityPolicyParams.NumAppsPerRules = 1
 
 	// create smartnic macs from a template
 	smartnics := []*cluster.DistributedServiceCard{}
@@ -70,6 +82,33 @@ func TestCfgenPolicyGen(t *testing.T) {
 		panic(err)
 	}
 
+	for _, network := range cfg.ConfigItems.Networks {
+		network.Spec.IngressSecurityPolicy = []string{}
+		network.Spec.EgressSecurityPolicy = []string{}
+	}
+
+	for tenIDx, ten := range cfg.ConfigItems.Tenants {
+		if ten.Name == globals.DefaultTenant {
+			continue
+		}
+
+		nwIDx := 0
+		for _, network := range cfg.ConfigItems.Subnets {
+			if network.Tenant == ten.Name {
+				for i := 0; i < 4; i++ {
+					pol := cfg.ConfigItems.SGPolicies[tenIDx*len(cfg.ConfigItems.Tenants)*(4)+nwIDx*4+i]
+					pol.Tenant = ten.Name
+					fmt.Printf("Ten name %v %v %v\n", pol.Name, pol.Tenant, tenIDx*len(cfg.ConfigItems.Tenants)*(4)+nwIDx*4+i)
+					if i%2 == 0 {
+						network.Spec.IngressSecurityPolicy = append(network.Spec.IngressSecurityPolicy, pol.Name)
+					} else {
+						network.Spec.EgressSecurityPolicy = append(network.Spec.EgressSecurityPolicy, pol.Name)
+					}
+				}
+				nwIDx++
+			}
+		}
+	}
 	for _, o := range cfg.ConfigItems.Networks {
 		if j, err := json.MarshalIndent(o, "", "  "); err == nil {
 			ofile.Write(j)

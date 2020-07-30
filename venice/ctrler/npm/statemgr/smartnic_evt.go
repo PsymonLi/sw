@@ -534,7 +534,8 @@ func (sm *Statemgr) ListDistributedServiceCards() ([]*DistributedServiceCardStat
 	for _, obj := range objs {
 		dsc, err := DistributedServiceCardStateFromObj(obj)
 		if err != nil {
-			return dscs, err
+			log.Errorf("Error finding DSC %v", err)
+			continue
 		}
 
 		dscs = append(dscs, dsc)

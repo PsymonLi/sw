@@ -363,6 +363,7 @@ func NewNetworkState(nw *ctkit.Network, stateMgr *Statemgr) (*NetworkState, erro
 		endpointDB: make(map[string]*EndpointState),
 		stateMgr:   stateMgr,
 	}
+	ns.smObjectTracker.init(ns)
 	nw.HandlerCtx = ns
 
 	// mark gateway addr as used
@@ -385,7 +386,6 @@ func NewNetworkState(nw *ctkit.Network, stateMgr *Statemgr) (*NetworkState, erro
 		return nil, err
 	}
 
-	ns.smObjectTracker.init(ns)
 	return ns, nil
 }
 

@@ -275,6 +275,9 @@ func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyCreate(obj *ctkit.Flow
 
 	log.Infof("Creating flow export policy : %+v", obj)
 
+	smm.sm.dscRWLock.RLock()
+	defer smm.sm.dscRWLock.RUnlock()
+
 	fes, err := NewFlowExportPolicyState(obj, smm.sm)
 	if err != nil {
 		log.Errorf("Error flow export policy r %+v. Err: %v", obj, err)
@@ -290,6 +293,8 @@ func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyUpdate(obj *ctkit.Flow
 
 	log.Infof("Got flow export update for %#v", newObj.ObjectMeta)
 
+	smm.sm.dscRWLock.RLock()
+	defer smm.sm.dscRWLock.RUnlock()
 	// see if anything changed
 	_, ok := ref.ObjDiff(obj.FlowExportPolicy.Spec, newObj.Spec)
 	if (obj.FlowExportPolicy.GenerationID == newObj.GenerationID) && !ok {

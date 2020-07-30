@@ -135,6 +135,8 @@ const (
 	EsxDefaultNetworkVlan        = 4093
 	EsxVMNetworkVlan             = 4092
 
+	MaxMtuSize = 9000
+
 	InbandVlanStart = 3700
 	InbandVlanEnd   = 3799
 

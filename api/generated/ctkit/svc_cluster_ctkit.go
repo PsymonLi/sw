@@ -346,8 +346,7 @@ func (ctx *clusterCtx) WorkFunc(context context.Context) error {
 		err = clusterHandler.OnClusterUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -1450,8 +1449,7 @@ func (ctx *nodeCtx) WorkFunc(context context.Context) error {
 		err = nodeHandler.OnNodeUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -2435,8 +2433,7 @@ func (ctx *hostCtx) WorkFunc(context context.Context) error {
 		err = hostHandler.OnHostUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -3420,8 +3417,7 @@ func (ctx *distributedservicecardCtx) WorkFunc(context context.Context) error {
 		err = distributedservicecardHandler.OnDistributedServiceCardUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -4405,8 +4401,7 @@ func (ctx *tenantCtx) WorkFunc(context context.Context) error {
 		err = tenantHandler.OnTenantUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -5390,8 +5385,7 @@ func (ctx *versionCtx) WorkFunc(context context.Context) error {
 		err = versionHandler.OnVersionUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -6375,8 +6369,7 @@ func (ctx *configurationsnapshotCtx) WorkFunc(context context.Context) error {
 		err = configurationsnapshotHandler.OnConfigurationSnapshotUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -7418,8 +7411,7 @@ func (ctx *snapshotrestoreCtx) WorkFunc(context context.Context) error {
 		err = snapshotrestoreHandler.OnSnapshotRestoreUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -8461,8 +8453,7 @@ func (ctx *licenseCtx) WorkFunc(context context.Context) error {
 		err = licenseHandler.OnLicenseUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -9446,8 +9437,7 @@ func (ctx *dscprofileCtx) WorkFunc(context context.Context) error {
 		err = dscprofileHandler.OnDSCProfileUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -10435,8 +10425,7 @@ func (ctx *credentialsCtx) WorkFunc(context context.Context) error {
 		err = credentialsHandler.OnCredentialsUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()

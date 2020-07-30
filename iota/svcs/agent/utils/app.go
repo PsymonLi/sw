@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/pensando/sw/venice/utils/log"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -158,10 +159,69 @@ func (ns *NS) Reset() {
 //AttachInterface attach interface to name space
 func (ns *NS) AttachInterface(intfName string, newName string) error {
 	intf := NewInterface(intfName, 0, "")
+	log.Infof("Moving interface %v %v", intfName, ns.Name)
+
+	macAddrCmd := "cat /sys/class/net/" + intfName + "/address"
+
+	_, macAddr, err := Run(strings.Split(macAddrCmd, " "), 0, false, false, nil)
+	if err != nil {
+		return errors.Wrap(err, macAddr)
+	}
+	macAddr = strings.TrimSuffix(macAddr, "\n")
+
 	cmdArgs := []string{"ip", "link", "set", "dev", intfName, "netns", ns.Name}
 	_, stdout, err := Run(cmdArgs, 0, false, false, nil)
 	if err != nil {
 		return errors.Wrap(err, stdout)
+	}
+
+	log.Infof("Moved interface %v %v", intfName, ns.Name)
+	time.Sleep(1 * time.Second)
+	//After interface move, name might have changed. Find the new name based on mac
+	interfaceLs := "ls /sys/class/net/"
+	interfaces, err := ns.RunCommand(strings.Split(interfaceLs, " "), 0, false)
+	if err != nil {
+		return errors.Wrap(err, macAddr)
+	}
+	nsIntfName := ""
+	intfs := strings.Split(strings.TrimSuffix(interfaces, "\n"), "\n")
+	i := 0
+	for _, intf := range intfs {
+		if intf != "" {
+			intfs[i] = intf
+			i++
+		}
+	}
+	intfs = intfs[:i]
+	if len(intfs) == 0 {
+		nsIntfName = intfName
+	} else {
+		for _, intf := range intfs {
+			if intf == "" {
+				continue
+			}
+			intf := strings.TrimSuffix(intf, "\n")
+			macAddrCmd := "cat /sys/class/net/" + intf + "/address"
+			nsMacAddr, err := ns.RunCommand(strings.Split(macAddrCmd, " "), 0, false)
+			if err != nil {
+				return errors.Wrap(err, macAddr)
+			}
+			nsMacAddr = strings.TrimSuffix(nsMacAddr, "\n")
+			if nsMacAddr == macAddr {
+				nsIntfName = intf
+				break
+			}
+		}
+	}
+
+	if nsIntfName == "" {
+		return fmt.Errorf("Interface not found in name space %v", intfName)
+	}
+
+	if nsIntfName != intfName {
+		//Interface name has changed, renameg
+		newName = intfName
+		intfName = nsIntfName
 	}
 
 	if newName != "" {

@@ -346,8 +346,7 @@ func (ctx *userCtx) WorkFunc(context context.Context) error {
 		err = userHandler.OnUserUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -1511,8 +1510,7 @@ func (ctx *authenticationpolicyCtx) WorkFunc(context context.Context) error {
 		err = authenticationpolicyHandler.OnAuthenticationPolicyUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -2672,8 +2670,7 @@ func (ctx *roleCtx) WorkFunc(context context.Context) error {
 		err = roleHandler.OnRoleUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -3657,8 +3654,7 @@ func (ctx *rolebindingCtx) WorkFunc(context context.Context) error {
 		err = rolebindingHandler.OnRoleBindingUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()
@@ -4642,8 +4638,7 @@ func (ctx *userpreferenceCtx) WorkFunc(context context.Context) error {
 		err = userpreferenceHandler.OnUserPreferenceUpdate(ctx.obj, &p)
 		ctx.obj.Unlock()
 		if err != nil {
-			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
-			ctx.SetEvent(kvstore.Deleted)
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
 		}
 	case kvstore.Deleted:
 		ctx.obj.Lock()

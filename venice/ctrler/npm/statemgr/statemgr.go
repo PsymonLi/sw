@@ -94,6 +94,7 @@ type Statemgr struct {
 	ctrler                ctkit.Controller         // controller instance
 	topics                Topics                   // message bus topics
 	networkKindLock       sync.Mutex               // lock on entire network kind, take when any changes are done to any network
+	dscRWLock             sync.RWMutex             //RW lock for DSC update processsing
 	logger                log.Logger
 	WatchFilterFlags      map[string]uint
 	aggKinds              []ctkit.AggKind
@@ -822,6 +823,7 @@ func runPeriodicUpdater(queue chan updatable) {
 
 // runDscObjectNotification process
 func runDscUpdateNotification(queue chan dscUpdateObj) {
+	sm := MustGetStatemgr()
 	for {
 		select {
 		case obj, ok := <-queue:
@@ -830,6 +832,7 @@ func runDscUpdateNotification(queue chan dscUpdateObj) {
 				return
 			}
 
+			sm.dscRWLock.Lock()
 			log.Infof("Processing dsc update notificatiion event %v : %v", obj.ev, obj.dsc.Status.PrimaryMAC)
 			for feature, svc := range featuremgrs {
 				if feature != "statemgr" {
@@ -846,6 +849,7 @@ func runDscUpdateNotification(queue chan dscUpdateObj) {
 					}
 				}
 			}
+			sm.dscRWLock.Unlock()
 			log.Infof("Done Processing dsc update notificatiion event %v : %v", obj.ev, obj.dsc.Status.PrimaryMAC)
 		}
 	}
@@ -1325,6 +1329,18 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 				eps[i].App.Lock()
 				addObjectStatus(kind, eps[i])
 				eps[i].App.Unlock()
+			}
+
+		case "Network":
+			eps, err := sm.ListNetworks()
+			if err != nil {
+				log.Errorf("Error querying Networks %v", err)
+				return fmt.Errorf("Error querying Networks %v", err)
+			}
+			for i := range eps {
+				eps[i].Network.Lock()
+				addObjectStatus(kind, eps[i])
+				eps[i].Network.Unlock()
 			}
 		case "FirewallProfile":
 			eps, err := sm.ListFirewallProfiles()

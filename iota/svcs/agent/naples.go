@@ -1160,13 +1160,6 @@ func (naples *naplesHwNode) initNaplesMgmtInterface(nodeOs iota.TestBedNodeOs, n
 					Interfaces: []string{naplesMgmtIntf},
 				})
 		}
-	} else {
-		naplesIPddress, err := naples.getNaplesMgmtIP(nodOSMap[nodeOs], naplesConfig.GetNicType(), naplesConfig.GetNicHint())
-		if err != nil {
-			msg := fmt.Sprintf("Error in reading naples mgmt IP address : %s", err.Error())
-			naples.logger.Error(msg)
-		}
-		naplesConfig.NaplesSecondaryIpAddress = naplesIPddress
 	}
 
 	return nil

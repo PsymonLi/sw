@@ -964,6 +964,9 @@ class Node(object):
                     #Enable this with Brad's PR
                     naples_config.nic_hint = device.GetMac()
                     naples_config.naples_mode = GetNaplesOperationMode(device.GetMode())
+                    if GlobalOptions.pipeline in [ "apulu" ]:
+                        naples_config.no_mgmt = True
+                        naples_config.no_switch_share = True
 
                     if device.GetNicIntMgmtIP() == "N/A" or self.IsNaplesCloudPipeline():
                         naples_config.naples_ip_address = device.GetNicMgmtIP()

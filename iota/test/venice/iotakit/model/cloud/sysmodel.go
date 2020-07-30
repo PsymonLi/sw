@@ -490,7 +490,18 @@ func (sm *SysModel) modifyConfig() error {
 
 	log.Infof("Modifying config as per model spec")
 	cfgObjects := sm.GetCfgObjects()
+	numOfIngressPolicyPerNetwork := 2
+	numOfEgressPolicyPerNetwork := 2
+	numPolciesPerNetwork := numOfIngressPolicyPerNetwork + numOfEgressPolicyPerNetwork
 
+	if sm.Scale {
+		numOfPoliciesReqd := len(cfgObjects.Networks) * (numPolciesPerNetwork)
+		if len(cfgObjects.SgPolicies) < numOfPoliciesReqd {
+			msg := fmt.Sprintf("Polcies generated %v not sufficient to fit all networks  %v", len(cfgObjects.SgPolicies), numOfPoliciesReqd)
+			log.Errorf(msg)
+			return fmt.Errorf(msg)
+		}
+	}
 	if os.Getenv("DYNAMIC_IP") != "" {
 		// Workloads to get IP dynamically. reset static IP
 		for _, workload := range cfgObjects.Workloads {
@@ -511,39 +522,65 @@ func (sm *SysModel) modifyConfig() error {
 	}
 	sm.defaultSgPolicies = nil
 	//Override the default policy
-	for _, ten := range cfgObjects.Tenants {
+
+	for _, network := range cfgObjects.Networks {
+		network.Spec.IngressSecurityPolicy = []string{}
+		network.Spec.EgressSecurityPolicy = []string{}
+	}
+
+	for tenIDx, ten := range cfgObjects.Tenants {
 		if ten.Name == globals.DefaultTenant {
 			continue
 		}
-		polC := objects.NewNetworkSecurityPolicyCollection(nil, sm.ObjClient(), sm.Tb)
-		polC.Policies = nil
-		for _, pol := range cfgObjects.SgPolicies {
-			if pol.Tenant == "" || pol.Tenant == globals.DefaultTenant {
-				//Add Default allow all
-				pol.Spec.Rules = []security.SGRule{security.SGRule{
-					Action: "PERMIT",
-					ProtoPorts: []security.ProtoPort{security.ProtoPort{
-						Protocol: "any",
-					}},
-					ToIPAddresses:   []string{"any"},
-					FromIPAddresses: []string{"any"},
-				}}
-				pol.Tenant = ten.Name
-				log.Infof("added default permit to [%v.%v]", pol.Tenant, pol.Name)
 
-				polC.Policies = append(polC.Policies, &objects.NetworkSecurityPolicy{VenicePolicy: pol})
-				for _, network := range cfgObjects.Networks {
-					if network.Tenant == ten.Name {
-						log.Infof("adding Policy [%v] to [%v.%v]", pol.Name, network.Tenant, network.Name)
-						network.Spec.IngressSecurityPolicy = append(network.Spec.IngressSecurityPolicy, pol.Name)
-						network.Spec.EgressSecurityPolicy = append(network.Spec.EgressSecurityPolicy, pol.Name)
+		if sm.Scale {
+			nwIDx := 0
+			for _, network := range cfgObjects.Networks {
+				if network.Tenant == ten.Name {
+					for i := 0; i < numPolciesPerNetwork; i++ {
+						pol := cfgObjects.SgPolicies[tenIDx*len(cfgObjects.Tenants)*(numPolciesPerNetwork)+nwIDx*(numPolciesPerNetwork)+i]
+						pol.Tenant = ten.Name
+						if i%2 == 0 {
+							network.Spec.IngressSecurityPolicy = append(network.Spec.IngressSecurityPolicy, pol.Name)
+						} else {
+							network.Spec.EgressSecurityPolicy = append(network.Spec.EgressSecurityPolicy, pol.Name)
+						}
 					}
+					nwIDx++
 				}
-				//1 policy per tenant
-				break
 			}
+		} else {
+
+			polC := objects.NewNetworkSecurityPolicyCollection(nil, sm.ObjClient(), sm.Tb)
+			polC.Policies = nil
+			for _, pol := range cfgObjects.SgPolicies {
+				if pol.Tenant == "" || pol.Tenant == globals.DefaultTenant {
+					//Add Default allow all
+					pol.Spec.Rules = []security.SGRule{security.SGRule{
+						Action: "PERMIT",
+						ProtoPorts: []security.ProtoPort{security.ProtoPort{
+							Protocol: "any",
+						}},
+						ToIPAddresses:   []string{"any"},
+						FromIPAddresses: []string{"any"},
+					}}
+					pol.Tenant = ten.Name
+					log.Infof("added default permit to [%v.%v]", pol.Tenant, pol.Name)
+
+					polC.Policies = append(polC.Policies, &objects.NetworkSecurityPolicy{VenicePolicy: pol})
+					for _, network := range cfgObjects.Networks {
+						if network.Tenant == ten.Name {
+							log.Infof("adding Policy [%v] to [%v.%v]", pol.Name, network.Tenant, network.Name)
+							network.Spec.IngressSecurityPolicy = append(network.Spec.IngressSecurityPolicy, pol.Name)
+							network.Spec.EgressSecurityPolicy = append(network.Spec.EgressSecurityPolicy, pol.Name)
+						}
+					}
+					//1 policy per tenant
+					break
+				}
+			}
+			sm.defaultSgPolicies = append(sm.defaultSgPolicies, polC)
 		}
-		sm.defaultSgPolicies = append(sm.defaultSgPolicies, polC)
 	}
 
 	return nil
@@ -619,6 +656,10 @@ func (sm *SysModel) InitConfig(scale, scaleData bool) error {
 			return err
 		}
 
+		if sm.Scale {
+			//Sleep for sometime to make sure config shows up at npm
+			time.Sleep(3 * time.Minute)
+		}
 		ok, err := sm.IsConfigPushComplete()
 		if !ok || err != nil {
 			return err

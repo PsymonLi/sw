@@ -45,7 +45,8 @@ func RestartIOTAAgent() {
 	stubMode := false
 	StopIOTAAgent()
 	time.Sleep(1 * time.Second)
-	go StartIOTAAgent(&stubMode)
+	restore := ""
+	go StartIOTAAgent(&stubMode, &restore)
 	time.Sleep(1 * time.Second)
 	c, err := common.CreateNewGRPCClient("test-client", IOTAAgentListenURL, 0)
 	if err != nil {
@@ -60,7 +61,8 @@ func TestMain(m *testing.M) {
 		stubMode := false
 		Utils.Run = stubRunCmd
 		Utils.GetContainer = stubGetContainer
-		StartIOTAAgent(&stubMode)
+		restore := ""
+		StartIOTAAgent(&stubMode, &restore)
 	}()
 
 	// Ensure the service is up

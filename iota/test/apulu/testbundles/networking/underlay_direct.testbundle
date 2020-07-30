@@ -1,6 +1,6 @@
 meta:
     name    : underlay_direct
-    os      : [ linux ]
+    os      : [ linux, esx ]
     nicmode : classic
     nics    : [ pensando ]
 

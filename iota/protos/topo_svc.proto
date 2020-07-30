@@ -176,6 +176,7 @@ enum PersonalityType {
     PERSONALITY_K8S_MASTER              = 18;
 
     PERSONALITY_NAPLES_BOND             = 19;
+
 }
 
 enum EntityType {
@@ -423,6 +424,12 @@ message NaplesConfig {
     NaplesOperationMode naples_mode     = 14;
     // k8s master info
     K8sMasterConfig kubeInfo    = 15;
+
+    // if not internal mgmt
+    bool     no_mgmt = 16;
+
+    // set to true if workloads should not share switch
+    bool     no_switch_share = 17;
 }
 
 message NaplesConfigs {

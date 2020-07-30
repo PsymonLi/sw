@@ -141,8 +141,8 @@ func NewRoutingConfigState(routecfg *ctkit.RoutingConfig, sma *SmRoute) (*Routin
 		RoutingConfig: routecfg,
 		stateMgr:      sma.sm,
 	}
-	routecfg.HandlerCtx = rtcfg
 	rtcfg.smObjectTracker.init(rtcfg)
+	routecfg.HandlerCtx = rtcfg
 	return rtcfg, nil
 }
 
@@ -271,7 +271,6 @@ func (sm *Statemgr) OnRoutingConfigDeleteReq(nodeID string, objinfo *netproto.Ro
 
 // OnRoutingConfigOperUpdate gets called when policy updates arrive from agents
 func (sm *Statemgr) OnRoutingConfigOperUpdate(nodeID string, objinfo *netproto.RoutingConfig) error {
-	log.Errorf("OnRoutingConfigOperUpdate: rtcfg operupdate for: nodeid: %s | objinfo: %v", nodeID, objinfo)
 	sm.UpdateRoutingConfigStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
 	return nil
 }

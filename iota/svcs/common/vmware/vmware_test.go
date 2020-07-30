@@ -1102,13 +1102,42 @@ func Test_vcenter_migration(t *testing.T) {
 */
 func Test_ovf_deploy(t *testing.T) {
 
-	host, err := NewHost(context.Background(), "tb29-host1.pensando.io", "root", "pen123!")
+	host, err := NewHost(context.Background(), "10.8.100.2", "root", "Pen0trl!")
 
 	TestUtils.Assert(t, err == nil, "Connected to host")
 	TestUtils.Assert(t, host != nil, "Host context set")
 
-	hostVM, err3 := host.NewVM("node1-ep4")
+	hostVM, err3 := host.NewVM("iota-control-vm-10.8.100.2")
 	TestUtils.Assert(t, hostVM != nil && err3 == nil, "VM FOND")
+
+	nws, _ := host.ListNetworks()
+	for _, nw := range nws {
+		if strings.Contains(nw.Name, "iota-naples-mgmt") {
+			hostVM.ReconfigureNetwork(nw.Name, "iota-def-network", 0)
+		}
+	}
+
+	news := []NWSpec{{Name: "iota-naples-mgmt-0", Vlan: 0}}
+	host.RemoveNetworks(news)
+
+	vsname := "iota-naples-mgmt-switch"
+	vsspec := VswitchSpec{Name: vsname}
+
+	host.RemoveVswitch(vsspec)
+
+	vsspec = VswitchSpec{Name: vsname, Pnics: []string{"vmnic4"}}
+
+	err = host.AddVswitch(vsspec)
+	TestUtils.Assert(t, err == nil, "Connected to host")
+
+	news = []NWSpec{{Name: "iota-naples-mgmt-network-0", Vlan: 0}}
+
+	err = host.AddNetworks(news, vsspec)
+
+	TestUtils.Assert(t, err == nil, "Connected to host")
+
+	err = hostVM.ReconfigureNetwork("iota-def-network", "iota-naples-mgmt-network-0", 0)
+	TestUtils.Assert(t, err == nil, "Connected to host")
 
 	/*
 		vc, err := NewVcenter(context.Background(), "192.168.69.120", "administrator@vsphere.local", "N0isystem$")

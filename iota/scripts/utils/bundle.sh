@@ -70,7 +70,8 @@ while true; do
     esac
 done
 
-naples_image="naples_fw.tar"
+naples_image="dsc_fw_$version.tar"
+naples_dst_image="naples_fw.tar"
 dir="sw-iris-capri"
 if [ $pipeline = "cloud" ];then
     export naples_image="naples_fw_venice.tar"
@@ -98,7 +99,7 @@ if [ $pull -eq 1 ];then
 	cd $targetdir
 
 	mkdir -p $targetdir/nic
-	$BUILD_UTIL $branch  $version --src-file $dir/sw/nic/$naples_image  --dst-file $targetdir/nic/$naples_image
+	$BUILD_UTIL $branch  $version --src-file $dir/sw/nic/$naples_image  --dst-file $targetdir/nic/$naples_dst_image
 	$BUILD_UTIL $branch  $version --src-file $dir/sw/nic/host.tar  --dst-file $targetdir/nic/host.tar
 
 	mkdir -p platform/gen

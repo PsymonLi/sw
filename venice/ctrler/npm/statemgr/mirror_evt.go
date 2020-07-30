@@ -545,8 +545,8 @@ func NewMirroSessionState(mirror *ctkit.MirrorSession, stateMgr *SmMirrorSession
 		MirrorSession: mirror,
 		stateMgr:      stateMgr,
 	}
-	mirror.HandlerCtx = ms
 	ms.init(ms)
+	mirror.HandlerCtx = ms
 
 	return ms, nil
 }
@@ -581,6 +581,10 @@ func (smm *SmMirrorSessionInterface) pushDeleteMirrorSession(mss *MirrorSessionS
 func (smm *SmMirrorSessionInterface) OnMirrorSessionCreate(obj *ctkit.MirrorSession) error {
 	smm.Lock()
 	defer smm.Unlock()
+
+	smm.sm.dscRWLock.RLock()
+	defer smm.sm.dscRWLock.RUnlock()
+
 	log.Infof("Got mirror session create : %+v", obj)
 	// see if we already have the session
 	ms, err := smm.FindMirrorSession(obj.Tenant, obj.Name)
@@ -969,6 +973,10 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionUpdate(mirror *ctkit.MirrorS
 	}
 	smm.Lock()
 	defer smm.Unlock()
+
+	smm.sm.dscRWLock.RLock()
+	defer smm.sm.dscRWLock.RUnlock()
+
 	log.Infof("Processing mirror update for %#v", nmirror)
 
 	ms, err := MirrorSessionStateFromObj(mirror)
@@ -1159,6 +1167,9 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionDelete(obj *ctkit.MirrorSess
 	log.Infof("Got mirror delete for %#v", obj.ObjectMeta)
 	smm.Lock()
 	defer smm.Unlock()
+	smm.sm.dscRWLock.RLock()
+	defer smm.sm.dscRWLock.RUnlock()
+
 	ms, err := smm.sm.FindMirrorSession(obj.ObjectMeta.Tenant, obj.ObjectMeta.Name)
 	if err != nil {
 		log.Errorf("Error finding mirror object for delete %v", err)
@@ -1325,12 +1336,9 @@ func (smm *SmMirrorSessionInterface) dscTracking(dsc *cluster.DistributedService
 	}
 
 	for _, aps := range fwps {
-
-		aps.MirrorSession.Lock()
 		//Interface based mirroring is pushed to respective naples selectively.
 		// and are tracked when receiver is added, whihc triggers interface add mirror update
 		if !aps.isFlowBasedMirroring() {
-			aps.MirrorSession.Unlock()
 			continue
 		}
 
@@ -1340,7 +1348,6 @@ func (smm *SmMirrorSessionInterface) dscTracking(dsc *cluster.DistributedService
 		} else {
 			aps.smObjectTracker.stopDSCTracking(dsc.Name)
 		}
-		aps.MirrorSession.Unlock()
 	}
 }
 

@@ -163,7 +163,6 @@ func (sgp *SgpolicyState) Write() error {
 		Updated:       propStatus.updated,
 		Status:        propStatus.status,
 	}
-
 	//Do write only if changed
 	if sgp.stateMgr.propgatationStatusDifferent(prop, newProp) {
 		sgp.NetworkSecurityPolicy.Status.RuleStatus = make([]security.SGRuleStatus, len(sgp.ruleStats))
@@ -187,6 +186,7 @@ func (sgp *SgpolicyState) Delete() error {
 	//	err := sg.DeletePolicy(sgp)
 	//	if err != nil {
 	//		log.Errorf("Error deleting policy %s from sg %s. Err: %v", sgp.NetworkSecurityPolicy.Name, sg.SecurityGroup.Name, err)
+
 	//	}
 	//}
 
@@ -299,8 +299,8 @@ func NewSgpolicyState(sgp *ctkit.NetworkSecurityPolicy, stateMgr *Statemgr) (*Sg
 		NetworkSecurityPolicy: sgp,
 		stateMgr:              stateMgr,
 	}
-	sgp.HandlerCtx = &sgps
 	sgps.smObjectTracker.init(&sgps)
+	sgp.HandlerCtx = &sgps
 
 	return &sgps, nil
 }
@@ -376,6 +376,8 @@ func (sma *SmSecurityPolicy) OnNetworkSecurityPolicyCreate(sgp *ctkit.NetworkSec
 		log.Errorf("Error creating new sg policy state. Err: %v", err)
 		return err
 	}
+	// clear propagation status on create as well, as restore might have old state.
+	sgps.NetworkSecurityPolicy.Status.PropagationStatus = security.PropagationStatus{}
 
 	// in case of errors, write status back
 	defer func() {

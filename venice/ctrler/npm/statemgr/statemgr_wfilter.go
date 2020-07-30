@@ -44,7 +44,6 @@ func (sm *Statemgr) GetAgentWatchFilter(ctx context.Context, kind string, opts *
 
 	// if for this kind, the watch filters are controller based, just return
 	if sm.WatchFilterFlags[objKind]&memdb.ControllerWatchFilter == memdb.ControllerWatchFilter {
-		sm.logger.Info("GetAgentWatchFilter: controller based filter")
 		return filters
 	}
 

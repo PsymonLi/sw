@@ -403,8 +403,8 @@ func NewNetworkInterfaceState(intf *ctkit.NetworkInterface, sma *SmNetworkInterf
 	ifcfg := &NetworkInterfaceState{
 		NetworkInterfaceState: intf,
 	}
-	intf.HandlerCtx = ifcfg
 	ifcfg.smObjectTracker.init(ifcfg)
+	intf.HandlerCtx = ifcfg
 	return ifcfg, nil
 }
 

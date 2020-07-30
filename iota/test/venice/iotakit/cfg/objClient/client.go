@@ -51,6 +51,7 @@ type ObjClient interface {
 	ListNetworkSecurityPolicy() (objs []*security.NetworkSecurityPolicy, err error)
 	DeleteNetworkSecurityPolicy(sgp *security.NetworkSecurityPolicy) error
 	UpdateNetworkSecurityPolicy(sgp *security.NetworkSecurityPolicy) error
+	ListTenantNetworkSecurityPolicy(tenant string) (objs []*security.NetworkSecurityPolicy, err error)
 
 	CreateFwlogPolicy(flp *monitoring.FwlogPolicy) error
 	UpdateFwlogPolicy(flp *monitoring.FwlogPolicy) error
@@ -240,6 +241,13 @@ type VeniceConfigPushStatus struct {
 			MinPropTime  int64    `json:"MinPropTime"`
 			MeanPropTime int64    `json:"MeanPropTime"`
 		} `json:"MirrorSession"`
+		Network []struct {
+			Key         string   `json:"Key"`
+			PendingDSCs []string `json:"PendingDSCs"`
+			Updated     int      `json:"Updated"`
+			Pending     int      `json:"Pending"`
+			Version     string   `json:"Version"`
+		} `json:"Network"`
 	} `json:"KindObjects"`
 }
 
@@ -679,6 +687,20 @@ func (r *Client) ListHost() (objs []*cluster.Host, err error) {
 // ListNetworkSecurityPolicy gets all SGPolicies from venice cluster
 func (r *Client) ListNetworkSecurityPolicy() (objs []*security.NetworkSecurityPolicy, err error) {
 	opts := api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: globals.DefaultTenant}}
+
+	for _, restcl := range r.restcls {
+		objs, err = restcl.SecurityV1().NetworkSecurityPolicy().List(r.ctx, &opts)
+		if err == nil {
+			break
+		}
+	}
+
+	return objs, err
+}
+
+// ListTenantNetworkSecurityPolicy gets all SGPolicies from venice cluster
+func (r *Client) ListTenantNetworkSecurityPolicy(tenant string) (objs []*security.NetworkSecurityPolicy, err error) {
+	opts := api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: tenant}}
 
 	for _, restcl := range r.restcls {
 		objs, err = restcl.SecurityV1().NetworkSecurityPolicy().List(r.ctx, &opts)

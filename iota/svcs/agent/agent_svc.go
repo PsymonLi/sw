@@ -85,7 +85,7 @@ func (s *iotaNode) Destroy(iotanode *iota.Node) (*iota.Node, error) {
 var IOTAAgentListenURL = fmt.Sprintf(":%d", common.IotaAgentPort)
 
 // StartIOTAAgent starts IOTA Agent
-func StartIOTAAgent(stubMode *bool) {
+func StartIOTAAgent(stubMode *bool, restore *string) {
 	agentSvc, err := common.CreateNewGRPCServer("IOTA Agent", IOTAAgentListenURL, common.GrpcMaxMsgSize)
 	if err != nil {
 		log.Errorf("Could not start IOTA Agent. Err: %v", err)
@@ -94,13 +94,18 @@ func StartIOTAAgent(stubMode *bool) {
 	if !*stubMode {
 		agentHandler := NewAgentService()
 		iota.RegisterIotaAgentApiServer(agentSvc.Srv, agentHandler)
+		if *restore != "" {
+			agentHandler.restore(*restore)
+		}
 	} else {
 		agentHandler := NewAgentStubService()
 		iota.RegisterIotaAgentApiServer(agentSvc.Srv, agentHandler)
 	}
 
 	agentService = agentSvc
+
 	agentSvc.Start()
+
 }
 
 // StopIOTAAgent stops the agent

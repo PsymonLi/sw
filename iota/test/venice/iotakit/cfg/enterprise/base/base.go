@@ -511,6 +511,10 @@ func (gs *EntBaseCfg) pushConfigViaStagingBuffer() error {
 
 func (gs *EntBaseCfg) waitForUplinkInterfaces() error {
 
+	//Release A does not have interfaces
+	if os.Getenv("RELEASE_A") != "" {
+		return nil
+	}
 	var intfs []*network.NetworkInterface
 	var err error
 	rClient := gs.Client
@@ -756,18 +760,24 @@ func (gs *EntBaseCfg) PushConfig() error {
 
 	configPushCheck := func(done chan error) {
 		startTime := time.Now()
-		iter := 1
-		for ; iter <= 1500; iter++ {
+		bkCtx, cancelFunc := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancelFunc()
+		for true {
 			//Check every second
-			time.Sleep(time.Second * time.Duration(iter))
-			complete, err := gs.IsConfigPushComplete()
-			if complete && err == nil {
-				cfgPushTime.Config = TimeTrack(startTime, "Config Push").String()
-				done <- nil
+			select {
+			case <-bkCtx.Done():
+				done <- fmt.Errorf("Config push incomplete")
 				return
+			default:
+				complete, err := gs.IsConfigPushComplete()
+				if complete && err == nil {
+					cfgPushTime.Config = TimeTrack(startTime, "Config Push").String()
+					done <- nil
+					return
+				}
+				time.Sleep(time.Second * 2)
 			}
 		}
-		done <- fmt.Errorf("Config push incomplete")
 	}
 
 	var err error
@@ -793,7 +803,6 @@ func (gs *EntBaseCfg) PushConfig() error {
 		for _, o := range gs.Cfg.ConfigItems.SGPolicies {
 			// verify that sgpolicy object has reached all naples
 			startTime := time.Now()
-			iter := 1
 
 			totalDscs := 0
 			for _, dsc := range gs.Dscs {
@@ -801,22 +810,30 @@ func (gs *EntBaseCfg) PushConfig() error {
 			}
 			totalDscs += len(gs.FakeDscs)
 
-			for ; iter <= 2000; iter++ {
-				time.Sleep(time.Second * time.Duration(iter))
-				retSgp, err := rClient.GetNetworkSecurityPolicy(&o.ObjectMeta)
-				if err != nil {
-					done <- fmt.Errorf("error getting back policy %s %v", o.ObjectMeta.Name, err.Error())
+			bkCtx, cancelFunc := context.WithTimeout(context.Background(), 30*time.Minute)
+			defer cancelFunc()
+			for true {
+				select {
+				case <-bkCtx.Done():
+					done <- fmt.Errorf("unable to update policy '%s' on all naples %+v",
+						o.ObjectMeta.Name, o.Status.PropagationStatus)
 					return
-				} else if retSgp.Status.PropagationStatus.Updated == int32(totalDscs) {
-					duration := TimeTrack(startTime, "Sg Policy Push").String()
-					cfgPushTime.Object.SgPolicy = duration
-					done <- nil
-					return
+				default:
+					retSgp, err := rClient.GetNetworkSecurityPolicy(&o.ObjectMeta)
+					if err != nil {
+						done <- fmt.Errorf("error getting back policy %s %v", o.ObjectMeta.Name, err.Error())
+						return
+					} else if retSgp.Status.PropagationStatus.Updated == int32(totalDscs) {
+						duration := TimeTrack(startTime, "Sg Policy Push").String()
+						cfgPushTime.Object.SgPolicy = duration
+						done <- nil
+						return
+					}
+					log.Warnf("Propagation stats did not match for policy %v. %+v %v", o.ObjectMeta.Name, retSgp.Status.PropagationStatus, totalDscs)
+					time.Sleep(time.Second * 2)
 				}
-				log.Warnf("Propagation stats did not match for policy %v. %+v %v", o.ObjectMeta.Name, retSgp.Status.PropagationStatus, totalDscs)
 			}
-			done <- fmt.Errorf("unable to update policy '%s' on all naples %+v",
-				o.ObjectMeta.Name, o.Status.PropagationStatus)
+
 		}
 	}
 	doneChan := make(chan error, 2)
@@ -826,7 +843,7 @@ func (gs *EntBaseCfg) PushConfig() error {
 	for i := 0; i < 2; i++ {
 		retErr := <-doneChan
 		if retErr != nil {
-			err = retErr
+			return retErr
 		}
 	}
 

@@ -38,6 +38,7 @@ type NWSpec struct {
 type VswitchSpec struct {
 	Name  string
 	Pnics []string
+	Mtu   int32
 }
 
 // PortGroupSpec specifies a portgroup
@@ -292,6 +293,10 @@ func (h *Host) AddVswitch(vspec VswitchSpec) error {
 
 	spec := &types.HostVirtualSwitchSpec{
 		NumPorts: 128, // default, but required!
+	}
+
+	if vspec.Mtu > 0 {
+		spec.Mtu = vspec.Mtu
 	}
 	if len(vspec.Pnics) > 0 {
 		spec.Bridge = &types.HostVirtualSwitchBondBridge{

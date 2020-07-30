@@ -195,6 +195,29 @@ func (agent *Service) reloadWorkloads(ctx context.Context, req *iota.Node) error
 	return nil
 }
 
+func (agent *Service) restore(name string) error {
+
+	var node = new(iota.Node)
+	rawmsg := []byte{}
+	err := readGob(common.DstIotaDBDir+"/"+gobFile(name), &rawmsg)
+	if err != nil {
+		msg := fmt.Sprintf("reload node of type failed : %v", err.Error())
+		agent.logger.Error(msg)
+		return fmt.Errorf(msg)
+	}
+
+	node.Reload = true
+	node.Unmarshal(rawmsg)
+	if resp, err := agent.AddNode(context.Background(), node); err != nil || resp.GetNodeStatus().ApiStatus != iota.APIResponseType_API_STATUS_OK {
+		msg := fmt.Sprintf("reload node of type  failed : %v", err.Error())
+		agent.logger.Error(msg)
+		return fmt.Errorf(msg)
+	}
+
+	return nil
+
+}
+
 // ReloadNode saves and loads node personality
 func (agent *Service) ReloadNode(ctx context.Context, req *iota.Node) (*iota.Node, error) {
 

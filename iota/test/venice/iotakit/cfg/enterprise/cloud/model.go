@@ -11,6 +11,7 @@ import (
 
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/cfgen"
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/enterprise/base"
@@ -30,6 +31,7 @@ type CloudCfg struct {
 
 	params *base.ConfigParams
 	Cfg    *cfgen.Cfgen
+	scale  bool
 }
 
 func NewCloudCfg() *CloudCfg {
@@ -79,15 +81,19 @@ func (cl *CloudCfg) PopulateConfig(params *base.ConfigParams) error {
 
 	cl.Cfg.NumRoutingConfigs = len(params.VeniceNodes)
 	cl.Cfg.NumNeighbors = 2 //+ len(params.Dscs) //2 Ecx and from 3rd, naples
+	cl.scale = params.Scale
 
 	if params.Scale {
 		cl.Cfg.NumOfTenants = 50
 		cl.Cfg.NumOfVRFsPerTenant = 1
-		cl.Cfg.NumOfSubnetsPerVpc = 6
+		cl.Cfg.NumOfSubnetsPerVpc = 50
 		cl.Cfg.NumOfIPAMPsPerTenant = 1
-		cl.Cfg.NumUnderlayRoutingConfigs = 1                // Same as other AS number
-		cl.Cfg.NumUnderlayNeighbors = 1                     //TOR AS nubr
-		cl.Cfg.NetworkSecurityPolicyParams.NumPolicies = 50 //1 policy per tenant
+		cl.Cfg.NumUnderlayRoutingConfigs = 1                   // Same as other AS number
+		cl.Cfg.NumUnderlayNeighbors = 1                        //TOR AS nubr
+		cl.Cfg.NetworkSecurityPolicyParams.NumPolicies = 10000 // 200 Policy Per tenant. Each Subnet, 2 ingress, 2 egress
+		cl.Cfg.NetworkSecurityPolicyParams.NumRulesPerPolicy = 128
+		cl.Cfg.NetworkSecurityPolicyParams.NumIPPairsPerRule = 1
+		cl.Cfg.NetworkSecurityPolicyParams.NumAppsPerRules = 1
 
 	} else {
 		cl.Cfg.NumOfTenants = 1
@@ -96,12 +102,12 @@ func (cl *CloudCfg) PopulateConfig(params *base.ConfigParams) error {
 		cl.Cfg.NumOfIPAMPsPerTenant = 1
 		cl.Cfg.NumUnderlayRoutingConfigs = 1 // Same as other AS number
 		cl.Cfg.NumUnderlayNeighbors = 1      //TOR AS nubr
+		cl.Cfg.NetworkSecurityPolicyParams.NumRulesPerPolicy = 10
+		cl.Cfg.NetworkSecurityPolicyParams.NumIPPairsPerRule = 4
+		cl.Cfg.NetworkSecurityPolicyParams.NumAppsPerRules = 3
 	}
 	cl.Cfg.InterfacesPerWorkload = params.NumberOfInterfacesPerWorkload
 
-	cl.Cfg.NetworkSecurityPolicyParams.NumRulesPerPolicy = 10
-	cl.Cfg.NetworkSecurityPolicyParams.NumIPPairsPerRule = 4
-	cl.Cfg.NetworkSecurityPolicyParams.NumAppsPerRules = 3
 	cl.Cfg.AppParams.NumApps = 4
 
 	smartnics := [][]*cluster.DistributedServiceCard{}
@@ -137,9 +143,61 @@ func (cl *CloudCfg) PopulateConfig(params *base.ConfigParams) error {
 }
 
 //IsConfigPushComplete checks whether config push is complete.
-func (cl *CloudCfg) IsConfigPushComplete() (bool, error) {
+func (cl *CloudCfg) configPushComplete() (bool, error) {
+
+	var configPushStatus objClient.VeniceConfigPushStatus
+	var rawData objClient.VeniceRawData
+
+	if cl.Cfg == nil {
+		//config not pushed
+		return true, nil
+	}
+	rClient := cl.Client
+
+	err := rClient.PullConfigPushStatus([]string{"NetworkInterface",
+		"NetworkSecurityPolicy", "Network"}, &rawData)
+	if err != nil {
+		log.Infof("Config  Failed %v", err)
+		return false, err
+	}
+
+	err = json.Unmarshal([]byte(rawData.Diagnostics.String), &configPushStatus)
+	if err != nil {
+		log.Infof("Config unmarshalling Failed, ignoring as format may not be supported %v", err)
+		return true, nil
+	}
+
+	for _, ep := range configPushStatus.KindObjects.Network {
+		if len(ep.PendingDSCs) != 0 || (cl.scale && ep.Updated == 0) {
+			log.Infof("Network %v not push to DSCs pending :%v, updated/pending %v/%v ", ep.Key, ep.PendingDSCs,
+				ep.Updated, ep.Pending)
+			return false, nil
+		}
+	}
+
+	for _, ep := range configPushStatus.KindObjects.NetworkInterface {
+		if len(ep.PendingDSCs) != 0 || (cl.scale && ep.Updated == 0) {
+			log.Infof("NetworkInterface %v not push to DSCs pending :%v, updated/pending %v/%v ", ep.Key, ep.PendingDSCs,
+				ep.Updated, ep.Pending)
+			return false, nil
+		}
+	}
+
+	for _, ep := range configPushStatus.KindObjects.NetworkSecurityPolicy {
+		if len(ep.PendingDSCs) != 0 || (cl.scale && ep.Updated == 0) {
+			log.Infof("NetworkSecurityPolicy %v not push to DSCs pending :%v, updated/pending %v/%v ", ep.Key, ep.PendingDSCs,
+				ep.Updated, ep.Pending)
+			return false, nil
+		}
+	}
 
 	return true, nil
+}
+
+//IsConfigPushComplete checks whether config push is complete.
+func (cl *CloudCfg) IsConfigPushComplete() (bool, error) {
+
+	return cl.configPushComplete()
 }
 
 type workObjInterface interface {
@@ -276,54 +334,96 @@ func (cl *CloudCfg) CleanupAllConfig() error {
 		if ten.Name == globals.DefaultTenant {
 			continue
 		}
-		networks, err := rClient.ListNetwork(ten.Name)
-		if err != nil {
-			log.Errorf("err: %s", err)
-			return err
-		}
 
-		for _, config := range networks {
-			err := rClient.DeleteNetwork(config)
+		updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+			workCtx := userCtx.(*cfgWorkCtx)
+			ten := workCtx.cfgObj.(*cluster.Tenant)
+			rClient := rClient.GetRestClientByID(id)
+			networks, err := rClient.ListNetwork(ten.Name)
+			if err != nil {
+				log.Errorf("err: %s", err)
+				runErr = err
+				return err
+			}
+
+			for _, config := range networks {
+				err := rClient.DeleteNetwork(config)
+				if err != nil {
+					log.Errorf("err: %s", err)
+					runErr = err
+					return err
+				}
+			}
+
+			// get and delete VPC config
+			vpcs, err := rClient.ListVPC(ten.Name)
+			if err != nil {
+				log.Errorf("err: %s", err)
+				runErr = err
+				return err
+			}
+
+			// get and delete IPAM config
+			for _, vpc := range vpcs {
+				err := rClient.DeleteVPC(vpc)
+				if err != nil {
+					log.Errorf("err: %s", err)
+					runErr = err
+					return err
+				}
+			}
+
+			// get and delete SecurityPolicy config
+			nsps, err := rClient.ListTenantNetworkSecurityPolicy(ten.Name)
+			if err != nil {
+				log.Errorf("err: %s", err)
+				runErr = err
+				return err
+			}
+			for _, config := range nsps {
+				err := rClient.DeleteNetworkSecurityPolicy(config)
+				if err != nil {
+					log.Errorf("err: %s", err)
+					runErr = err
+					return err
+				}
+			}
+
+			// get and delete IPAM config
+			ipams, err := rClient.ListIPAMPolicy(ten.Name)
 			if err != nil {
 				log.Errorf("err: %s", err)
 				return err
 			}
-		}
+			for _, config := range ipams {
+				err := rClient.DeleteIPAMPolicy(config)
+				if err != nil {
+					log.Errorf("err: %s", err)
+					runErr = err
+					return err
+				}
+			}
 
-		// get and delete VPC config
-		vpcs, err := rClient.ListVPC(ten.Name)
-		if err != nil {
-			log.Errorf("err: %s", err)
-			return err
-		}
-
-		for _, vpc := range vpcs {
-			err := rClient.DeleteVPC(vpc)
+			err = rClient.DeleteTenant(ten)
 			if err != nil {
 				log.Errorf("err: %s", err)
+				runErr = err
 				return err
 			}
-		}
-
-		// get and delete IPAM config
-		ipams, err := rClient.ListIPAMPolicy(ten.Name)
-		if err != nil {
-			log.Errorf("err: %s", err)
-			return err
-		}
-		for _, config := range ipams {
-			err := rClient.DeleteIPAMPolicy(config)
 			if err != nil {
 				log.Errorf("err: %s", err)
+				runErr = err
 				return err
 			}
+			return nil
 		}
+		ten := ten
+		rClient.RunFunctionWithID(&cfgWorkCtx{cfgObj: ten}, updateWork)
+	}
 
-		err = rClient.DeleteTenant(ten)
-		if err != nil {
-			log.Errorf("err: %s", err)
-			return err
-		}
+	rClient.WaitForIdle()
+	if runErr != nil {
+		return runErr
 	}
 
 	for _, obj := range veniceHosts {
@@ -515,6 +615,23 @@ func (cl *CloudCfg) pushConfigViaRest() error {
 		}
 	}
 
+	dscs, err := rClient.ListSmartNIC()
+	if err != nil {
+		log.Errorf("err: %s", err)
+		return err
+	}
+
+	for _, dsc := range dscs {
+		if dsc.Spec.RoutingConfig == "" {
+			log.Errorf("DSC not updated with RR config %v", dsc.Name)
+			err = fmt.Errorf("DSC not updated with RR config %v", dsc.Name)
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+
 	for index, r := range cl.Cfg.ConfigItems.RouteConfig {
 		node := cl.params.VeniceNodes[index]
 
@@ -525,7 +642,7 @@ func (cl *CloudCfg) pushConfigViaRest() error {
 			for i := 2; i < len(r.Spec.BGPConfig.Neighbors); i++ {
 				neigh := r.Spec.BGPConfig.Neighbors[i]
 				//Assuming only 1 DSC per host
-				neigh.IPAddress = strings.Split(dscs[i-2][0].Status.IPConfig.IPAddress, "/")[0]
+				neigh.IPAddress = strincl.Split(dscs[i-2][0].Status.IPConfig.IPAddress, "/")[0]
 			}
 		*/
 
@@ -570,12 +687,51 @@ func (cl *CloudCfg) pushConfigViaRest() error {
 		}
 	}
 
-	for _, sub := range cl.Cfg.ConfigItems.Subnets {
-		err := rClient.CreateNetwork(sub)
-		if err != nil {
-			log.Errorf("Error creating subnet %+v. Err: %v", sub, err)
-			return err
+	var runErr error
+	for _, pol := range cl.Cfg.ConfigItems.SGPolicies {
+		updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+			workCtx := userCtx.(*cfgWorkCtx)
+			dsc := workCtx.cfgObj.(*security.NetworkSecurityPolicy)
+			idClient := rClient.GetRestClientByID(id)
+			err := idClient.CreateNetworkSecurityPolicy(dsc)
+			if err != nil {
+				log.Errorf("err: %s", err)
+				runErr = err
+				return err
+			}
+			return nil
 		}
+		pol := pol
+		rClient.RunFunctionWithID(&cfgWorkCtx{cfgObj: pol}, updateWork)
+
+	}
+
+	rClient.WaitForIdle()
+	if runErr != nil {
+		return runErr
+	}
+
+	for _, sub := range cl.Cfg.ConfigItems.Subnets {
+		updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+			workCtx := userCtx.(*cfgWorkCtx)
+			dsc := workCtx.cfgObj.(*network.Network)
+			idClient := rClient.GetRestClientByID(id)
+			err := idClient.CreateNetwork(dsc)
+			if err != nil {
+				log.Errorf("err: %s", err)
+				runErr = err
+				return err
+			}
+			return nil
+		}
+		sub := sub
+		rClient.RunFunctionWithID(&cfgWorkCtx{cfgObj: sub}, updateWork)
+
+	}
+
+	rClient.WaitForIdle()
+	if runErr != nil {
+		return runErr
 	}
 
 	return nil

@@ -144,8 +144,8 @@ func NewVirtualRouterState(vir *ctkit.VirtualRouter, sm *Statemgr) (*VirtualRout
 		VirtualRouter: vir,
 		stateMgr:      sm,
 	}
-	vir.HandlerCtx = vr
 	vr.smObjectTracker.init(vr)
+	vir.HandlerCtx = vr
 	return vr, nil
 }
 

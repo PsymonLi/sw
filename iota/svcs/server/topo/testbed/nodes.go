@@ -200,14 +200,21 @@ func (n *TestNode) AddNode() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	resp, err := n.AgentClient.AddNode(ctx, n.Node)
-	n.RespNode = resp
 	log.Infof("TOPO SVC | DEBUG | AddNode Agent . Received Response Msg: %v", resp)
 
 	if err != nil {
-		log.Errorf("Adding node %v failed. Err: %v", n.info.Name, err)
+		msg := fmt.Sprintf("Adding node %v failed. Err: %v", n.info.Name, err)
+		log.Errorf(msg)
+		n.RespNode = n.Node
+		n.RespNode.NodeStatus = &iota.IotaAPIResponse{
+			ApiStatus: iota.APIResponseType_API_SERVER_ERROR,
+			ErrorMsg:  msg,
+		}
+		n.SetNodeResponse(resp)
 		return err
 	}
 
+	n.RespNode = resp
 	if resp.NodeStatus.ApiStatus != iota.APIResponseType_API_STATUS_OK {
 		log.Errorf("Adding node %v failed. Agent Returned non ok status: %v", n.info.Name, resp.NodeStatus.ApiStatus)
 		return fmt.Errorf("adding node %v failed. Agent Returned non ok status: %v", n.info.Name, resp.NodeStatus.ApiStatus)
@@ -503,9 +510,12 @@ func (n *TestNode) IpmiNodeControl(name string, restoreState bool, method string
 	if restoreState {
 		resp, err := n.AgentClient.ReloadNode(ctx, n.Node)
 		log.Infof("TOPO SVC | IpmiNodeControl | IpmiNodeControl Agent . Received Response Msg: %v", resp)
-		if err != nil {
-			log.Errorf("ipmi control of node %v failed. Err: %v", n.Node.Name, err)
-			return err
+		if err != nil || resp.NodeStatus.ApiStatus != iota.APIResponseType_API_STATUS_OK {
+			msg := fmt.Sprintf("Reload node %v failed. Err: %v", n.Node.Name, err)
+			if resp.NodeStatus != nil {
+				msg = fmt.Sprintf("Reload node %v failed. Err: %v, %v", n.Node.Name, err, resp.NodeStatus.ErrorMsg)
+			}
+			return fmt.Errorf(msg)
 		}
 	}
 
@@ -773,9 +783,12 @@ func (n *TestNode) ReloadNode(name string, restoreState bool, method string, use
 	if restoreState {
 		resp, err := n.AgentClient.ReloadNode(ctx, n.Node)
 		log.Infof("TOPO SVC | ReloadNode | ReloadNode Agent . Received Response Msg: %v", resp)
-		if err != nil {
-			log.Errorf("Reload node %v failed. Err: %v", n.Node.Name, err)
-			return err
+		if err != nil || resp.NodeStatus.ApiStatus != iota.APIResponseType_API_STATUS_OK {
+			msg := fmt.Sprintf("Reload node %v failed. Err: %v", n.Node.Name, err)
+			if resp.NodeStatus != nil {
+				msg = fmt.Sprintf("Reload node %v failed. Err: %v, %v", n.Node.Name, err, resp.NodeStatus.ErrorMsg)
+			}
+			return fmt.Errorf(msg)
 		}
 	}
 

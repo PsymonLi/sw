@@ -124,8 +124,8 @@ func NewIPAMPolicyState(policy *ctkit.IPAMPolicy, sma *SmIPAM) (*IPAMState, erro
 		IPAMPolicy: policy,
 		stateMgr:   sma.sm,
 	}
-	policy.HandlerCtx = ipam
 	ipam.smObjectTracker.init(ipam)
+	policy.HandlerCtx = ipam
 	return ipam, nil
 }
 
