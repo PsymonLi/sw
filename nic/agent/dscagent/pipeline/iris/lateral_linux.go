@@ -29,7 +29,7 @@ import (
 const (
 	refreshDuration      = time.Duration(time.Minute * 5)
 	arpResolutionTimeout = time.Duration(time.Second * 3)
-	staticRouteTimeout   = time.Duration(time.Second)
+	staticRouteTimeout   = time.Duration(time.Second * 5)
 )
 
 var lateralDB = map[string][]string{}
@@ -791,6 +791,16 @@ func generateLateralEP(infraAPI types.InfraAPI, intfClient halapi.InterfaceClien
 		doneCache[arpResolverKey] = done
 
 		staticRoute := func(arpResolverKey, destIP, gwIP string, refreshCtx context.Context) {
+			_, dest, _ := net.ParseCIDR(destIP + "/32")
+			route := &netlink.Route{
+				Dst: dest,
+				Gw:  net.ParseIP(gwIP),
+			}
+			if err := netlink.RouteAdd(route); err != nil {
+				log.Errorf("Failed to configure static route %v. Err: %v", route, err)
+			} else {
+				log.Infof("Installed route for %v via %s", dest, gwIP)
+			}
 			ticker := time.NewTicker(staticRouteTimeout)
 			for {
 				select {
@@ -798,23 +808,28 @@ func generateLateralEP(infraAPI types.InfraAPI, intfClient halapi.InterfaceClien
 					// Attempt installing route only if the ARP refresh loop is active
 					_, ok := doneCache[arpResolverKey]
 					if ok {
-						_, dest, _ := net.ParseCIDR(destIP + "/32")
-						route := &netlink.Route{
-							Dst: dest,
-							Gw:  net.ParseIP(gwIP),
-						}
-						if err := netlink.RouteAdd(route); err != nil {
-							log.Errorf("Failed to configure static route %v. Err: %v", route, err)
+						// If we don't have a handle to bond0, do not attempt to install routes
+						if MgmtLink == nil || MgmtLink.Attrs() == nil {
 							continue
 						}
-						log.Infof("Installed route for %v via %s", dest, gwIP)
+
+						if routes, err := netlink.RouteGet(net.ParseIP(destIP)); err == nil {
+							if len(routes) != 0 && (routes[0].LinkIndex == MgmtLink.Attrs().Index) {
+								continue
+							}
+						}
+
+						if err := netlink.RouteAdd(route); err == nil {
+							log.Infof("Installed route for %v via %s", dest, gwIP)
+						}
 					} else {
 						log.Infof("ARP refresh loop cancelled, cancelling static route installation loop for IP: %v gw: %v", destIP, gwIP)
+						return
 					}
 				case <-refreshCtx.Done():
 					log.Infof("Cancelling ARP static route installation loop for IP: %v gw: %v", destIP, gwIP)
+					return
 				}
-				return
 			}
 		}
 
