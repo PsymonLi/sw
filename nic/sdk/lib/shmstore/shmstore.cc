@@ -55,12 +55,14 @@ shmstore::segment_init_(const char *name, size_t size, bool create,
             return NULL;
         }
     } catch (...) {
-        SDK_TRACE_ERR("Failed to %s shmstore segment %s, size %lu, alignment %lu",
-                      op, name, size, alignment);
+        SDK_TRACE_ERR("Failed to %s shmstore segment %s, size %lu,"
+                      " label %u, alignment %lu",
+                      op, name, size, label, alignment);
         return NULL;
     }
-    SDK_TRACE_DEBUG("shmstore segment %s done for %s, size %lu, alignment %lu",
-                    op, name, size, alignment);
+    SDK_TRACE_DEBUG("shmstore segment %s done for %s, size %lu," 
+                    " label %u, alignment %lu",
+                    op, name, size, label, alignment);
     return mem;
 }
 
