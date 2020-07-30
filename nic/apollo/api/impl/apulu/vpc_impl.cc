@@ -391,19 +391,21 @@ vpc_impl::activate_delete_(pds_epoch_t epoch, vpc_entry *vpc) {
     PDS_TRACE_DEBUG("Activating vpc %s delete, type %u, fabric encap (%u, %u)",
                     vpc->key().str(), vpc->type(), vpc->fabric_encap().type,
                     vpc->fabric_encap().val.vnid);
-    // fill the key
-    vni_key.vxlan_1_vni = vpc->fabric_encap().val.vnid;
-    // fill the data
-    vni_data.vni_info.bd_id = PDS_IMPL_RSVD_BD_HW_ID;
-    vni_data.vni_info.vpc_id = PDS_IMPL_RSVD_VPC_HW_ID;
-    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
-                                   VNI_VNI_INFO_ID,
-                                   sdk::table::handle_t::null());
-    // program the VNI table
-    ret = vpc_impl_db()->vni_tbl()->update(&tparams);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Programming of VNI table failed for vpc %s, err %u",
-                      vpc->key().str(), ret);
+    if (vni_hdl_.valid()) {
+        // fill the key
+        vni_key.vxlan_1_vni = vpc->fabric_encap().val.vnid;
+        // fill the data
+        vni_data.vni_info.bd_id = PDS_IMPL_RSVD_BD_HW_ID;
+        vni_data.vni_info.vpc_id = PDS_IMPL_RSVD_VPC_HW_ID;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
+                                       VNI_VNI_INFO_ID,
+                                       sdk::table::handle_t::null());
+        // program the VNI table
+        ret = vpc_impl_db()->vni_tbl()->update(&tparams);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Programming of VNI table failed for vpc %s, err %u",
+                          vpc->key().str(), ret);
+        }
     }
     vpc_impl_db()->remove(hw_id_);
     return ret;
