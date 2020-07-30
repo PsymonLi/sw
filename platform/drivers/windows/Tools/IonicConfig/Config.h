@@ -1,7 +1,8 @@
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
-#include "windows.h"
+#define BOOST_USE_WINDOWS_H
+//#include "windows.h"
 #include <boost/process.hpp>
 
 #include <boost/algorithm/string.hpp>
@@ -9,6 +10,8 @@
 #include <boost/program_options/cmdline.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include <boost/interprocess/file_mapping.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 
 #include <codecvt>
 #include <iomanip>
@@ -171,6 +174,7 @@ command CmdRegKeys();
 command CmdInfo();
 command CmdQueueInfo();
 command CmdCollectDbgInfo();
+command CmdFwUpdate();
 //TODO command CmdOidStats();
 //TODO command CmdFwcmdStats();
 

@@ -118,7 +118,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;IONIC_VERSIONINFO_EXTENSION=$(IonicConfigVersionExt);IONIC_MAJOR_TOOL_VERSION=$(IonicConfigVerMaj);IONIC_MINOR_TOOL_VERSION=$(IonicConfigVerMin);IONIC_SP_TOOL_VERSION=$(IonicConfigVerSP);IONIC_BUILD_TOOL_VERSION=$(IonicConfigVerBuild);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_BOOST_LIB_FILE_MAPPING;USE_FWCTRL_DEVICE;WIN32;_DEBUG;_CONSOLE;IONIC_VERSIONINFO_EXTENSION=$(IonicConfigVersionExt);IONIC_MAJOR_TOOL_VERSION=$(IonicConfigVerMaj);IONIC_MINOR_TOOL_VERSION=$(IonicConfigVerMin);IONIC_SP_TOOL_VERSION=$(IonicConfigVerSP);IONIC_BUILD_TOOL_VERSION=$(IonicConfigVerBuild);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -132,7 +132,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;IONIC_VERSIONINFO_EXTENSION=$(IonicConfigVersionExt);IONIC_MAJOR_TOOL_VERSION=$(IonicConfigVerMaj);IONIC_MINOR_TOOL_VERSION=$(IonicConfigVerMin);IONIC_SP_TOOL_VERSION=$(IonicConfigVerSP);IONIC_BUILD_TOOL_VERSION=$(IonicConfigVerBuild);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_BOOST_LIB_FILE_MAPPING;USE_FWCTRL_DEVICE;_DEBUG;_CONSOLE;IONIC_VERSIONINFO_EXTENSION=$(IonicConfigVersionExt);IONIC_MAJOR_TOOL_VERSION=$(IonicConfigVerMaj);IONIC_MINOR_TOOL_VERSION=$(IonicConfigVerMin);IONIC_SP_TOOL_VERSION=$(IonicConfigVerSP);IONIC_BUILD_TOOL_VERSION=$(IonicConfigVerBuild);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\..\CommonInc;$(ProgramW6432)\boost\boost_1_72_0</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -152,7 +152,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;IONIC_VERSIONINFO_EXTENSION=$(IonicConfigVersionExt);IONIC_MAJOR_TOOL_VERSION=$(IonicConfigVerMaj);IONIC_MINOR_TOOL_VERSION=$(IonicConfigVerMin);IONIC_SP_TOOL_VERSION=$(IonicConfigVerSP);IONIC_BUILD_TOOL_VERSION=$(IonicConfigVerBuild);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_BOOST_LIB_FILE_MAPPING;USE_FWCTRL_DEVICE;WIN32;NDEBUG;_CONSOLE;IONIC_VERSIONINFO_EXTENSION=$(IonicConfigVersionExt);IONIC_MAJOR_TOOL_VERSION=$(IonicConfigVerMaj);IONIC_MINOR_TOOL_VERSION=$(IonicConfigVerMin);IONIC_SP_TOOL_VERSION=$(IonicConfigVerSP);IONIC_BUILD_TOOL_VERSION=$(IonicConfigVerBuild);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -170,7 +170,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;IONIC_VERSIONINFO_EXTENSION=$(IonicConfigVersionExt);IONIC_MAJOR_TOOL_VERSION=$(IonicConfigVerMaj);IONIC_MINOR_TOOL_VERSION=$(IonicConfigVerMin);IONIC_SP_TOOL_VERSION=$(IonicConfigVerSP);IONIC_BUILD_TOOL_VERSION=$(IonicConfigVerBuild);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_BOOST_LIB_FILE_MAPPING;USE_FWCTRL_DEVICE;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;IONIC_VERSIONINFO_EXTENSION=$(IonicConfigVersionExt);IONIC_MAJOR_TOOL_VERSION=$(IonicConfigVerMaj);IONIC_MINOR_TOOL_VERSION=$(IonicConfigVerMin);IONIC_SP_TOOL_VERSION=$(IonicConfigVerSP);IONIC_BUILD_TOOL_VERSION=$(IonicConfigVerBuild);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\..\CommonInc;$(ProgramW6432)\boost\boost_1_72_0</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>

@@ -2110,6 +2110,9 @@ union dev_cmd {
 
 	struct q_identify_cmd q_identify;
 	struct q_init_cmd q_init;
+
+	struct fw_download_cmd fwdownload;
+	struct fw_control_cmd fwcontrol;
 };
 
 union dev_cmd_comp {

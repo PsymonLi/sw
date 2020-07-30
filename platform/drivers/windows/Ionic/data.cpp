@@ -73,4 +73,6 @@ ULONG TraceCounter = 0;
 ULONG TraceBufferLength = 0;
 
 PTraceLogMsg TraceMsgFnc = NULL;
+
+ULONG FwDownloadMode = 0;
 };

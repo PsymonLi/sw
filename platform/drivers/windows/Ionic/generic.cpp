@@ -2296,6 +2296,16 @@ ReadConfigParams()
     }
 #endif
 
+    NdisInitUnicodeString(&uniValue, REG_FW_DOWNLOAD_MODE);
+
+    FwDownloadMode = FW_DOWNLOAD_DEVCMD;
+    NdisReadConfiguration(&ndisStatus, &pConfigParam, hConfig, &uniValue,
+        NdisParameterInteger);
+
+    if (ndisStatus == NDIS_STATUS_SUCCESS) {
+        FwDownloadMode = pConfigParam->ParameterData.IntegerData;
+    }
+
     ndisStatus = NDIS_STATUS_SUCCESS;
 
 cleanup:
@@ -3651,6 +3661,12 @@ IoctlAdapterInfo(PVOID buf, ULONG inlen, ULONG outlen, PULONG outbytes)
 
 		entry->vendor_id = ionic->pci_config.VendorID;
 		entry->product_id = ionic->pci_config.DeviceID;
+		entry->sub_vendor_id = ionic->pci_config.u.type0.SubVendorID;
+		entry->sub_system_id = ionic->pci_config.u.type0.SubSystemID;
+        entry->revision_id = ionic->pci_config.RevisionID;
+        NdisMoveMemory(entry->perm_mac_addr, ionic->perm_addr, sizeof(entry->perm_mac_addr));
+        NdisMoveMemory(entry->config_mac_addr, ionic->config_addr, sizeof(entry->config_mac_addr));
+        strncpy_s(entry->drv_version, sizeof(entry->drv_version), IonicVersionInfo.VerString, _TRUNCATE);
 
 		entry->hw_state = (ULONG)ionic->hardware_status;
 

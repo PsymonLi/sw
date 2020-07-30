@@ -302,6 +302,10 @@ ionic_init(struct ionic *ionic)
 
     NDIS_INIT_MUTEX(&ionic->LinkCheckMutex);
     InitWorkerThread(&ionic->LinkCheckWorker);
+#ifdef FW_UPDATE_ASYNC
+    InitWorkerThread(&ionic->FwUpdateData.FwUpdateThread);
+#endif
+    KeInitializeSemaphore(&ionic->FwUpdateData.FwUpdateSemaphore, 1, 1);
 
     if (ionic->tx_frag_pool_count != 0) {
 

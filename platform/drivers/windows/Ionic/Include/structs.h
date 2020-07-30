@@ -643,6 +643,8 @@ struct ionic {
 
     NDIS_STRING     name;
 
+	USHORT			nameIdx;
+
 	WCHAR			device_location[ IONIC_DEV_LOC_LEN];
 
 	ULONG			Flags;
@@ -661,6 +663,12 @@ struct ionic {
 	NDIS_HANDLE		WatchDogTimer;
 	NDIS_MUTEX      LinkCheckMutex;
 	IONIC_WORKER_THREAD LinkCheckWorker;
+
+	FW_UPDATE_DATA	FwUpdateData;
+
+	NDIS_HANDLE		FwUpdateControlHandle;
+
+	PDEVICE_OBJECT	FwUpdateCntrlDevObj;
 
 	ULONG			sgl_size_in_bytes;
 	ULONG			max_sgl_elements;

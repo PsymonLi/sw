@@ -80,9 +80,13 @@ NTSTATUS
 #define REG_TRACE_FLAGS					L"TraceFlags"
 #define REG_TRACE_BUFFER_LENGTH			L"TraceBufferLength"
 #define REG_STATE_FLAGS					L"StateFlags"
+#define REG_FW_DOWNLOAD_MODE			L"FwDownloadMode"
 
 #define IONIC_LINKNAME_STRING             L"\\DosDevices\\IonicControl"
 #define IONIC_NTDEVICE_STRING             L"\\Device\\IonicCntrlDev"
+
+#define FWUPDATE_CTRLDEV_LINKNAME		L"\\DosDevices\\Global\\IonicMnicCtrl"
+#define FWUPDATE_CTRLDEV_DEVICENAME		L"\\Device\\IonicMnicCtrl"
 
 #define IONIC_DEVCMD_WAIT_TIME_SEC	5
 #define IONIC_ADMINQ_WAIT_TIME_SEC	5

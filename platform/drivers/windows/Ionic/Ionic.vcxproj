@@ -206,6 +206,8 @@
     <ClCompile Include="hardware.cpp" />
     <ClCompile Include="init.cpp" />
     <ClCompile Include="IonicEventLog.cpp" />
+    <ClCompile Include="IonicFwUpdate.cpp" />
+    <ClCompile Include="IonicFwUpdateControl.cpp" />
     <ClCompile Include="IonicWorkerThread.cpp" />
     <ClCompile Include="lif.cpp" />
     <ClCompile Include="notifq.cpp" />
@@ -239,6 +241,8 @@
     <ClInclude Include="include\registry.h" />
     <ClInclude Include="Include\structs.h" />
     <ClInclude Include="Include\version.h" />
+    <ClInclude Include="IonicFwUpdate.h" />
+    <ClInclude Include="IonicFwUpdateControl.h" />
     <ClInclude Include="IonicWorkerThread.h" />
   </ItemGroup>
   <ItemGroup>

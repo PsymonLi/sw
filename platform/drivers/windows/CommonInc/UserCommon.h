@@ -5,6 +5,7 @@
 #include "ionic_stats.h"
 
 #define IONIC_LINKNAME_STRING_USER      L"\\??\\IonicControl"
+#define FWUPDATE_CTRLDEV_USERMODE       L"\\\\.\\Global\\IonicMnicCtrl"
 
 #define ADAPTER_NAME_MAX_SZ             64
 
@@ -28,6 +29,10 @@
 #define IOCTL_IONIC_PORT_SET            CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1010b, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_IONIC_GET_ADAPTER_INFO	CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1010c, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_IONIC_GET_QUEUE_INFO		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1010d, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_IONIC_FWUPDATE			CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1010e, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
+
+// IO Control codes fwctrl
+#define IOCTL_IONIC_FWCTRLUPDATE		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x10200, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
 
 #define IONIC_DEV_LOC_LEN					50
 
@@ -79,6 +84,7 @@ typedef struct _ADAPTER_CB {
 #define TRACE_COMPONENT_RSC 					0x00080000
 #define TRACE_COMPONENT_WORKER_THREAD 			0x00100000
 #define TRACE_COMPONENT_QUEUE_INIT				0x00200000
+#define TRACE_COMPONENT_IOCTL					0x00400000
 
 typedef struct _DEBUG_TRACE_CONFIG_CB
 {
@@ -239,6 +245,7 @@ typedef struct _SET_BUDGET_CB {
 
 #define IONIC_DEVINFO_FWVERS_BUFLEN 32
 #define IONIC_DEVINFO_SERIAL_BUFLEN 32
+#define IONIC_DEVINFO_DRVVER_BUFLEN 32
 
 struct _ADAPTER_INFO {
 
@@ -258,13 +265,25 @@ struct _ADAPTER_INFO {
 
 	USHORT			product_id;
 
+	USHORT			sub_vendor_id;
+
+	USHORT			sub_system_id;
+
+	UCHAR			revision_id;
+
 	UCHAR			asic_type;
 	
 	UCHAR			asic_rev;
 
+	UCHAR			perm_mac_addr[6];
+
+	UCHAR			config_mac_addr[6];
+
 	char			fw_version[IONIC_DEVINFO_FWVERS_BUFLEN + 1];
 
 	char			serial_num[IONIC_DEVINFO_SERIAL_BUFLEN + 1];
+
+	char			drv_version[IONIC_DEVINFO_DRVVER_BUFLEN + 1];
 };
 
 struct _ADAPTER_INFO_HDR {
@@ -338,3 +357,12 @@ typedef struct _LIF_STATS_RESP_CB {
     DWORD                   lif_index;
     struct lif_stats        stats;
 } LifStatsRespCB;
+
+typedef struct _FW_DOWNLOAD_CB {
+	WCHAR       AdapterName[ADAPTER_NAME_MAX_SZ];
+	ULONG       Flags;
+#define FWDOWNLOAD_FLAG_ADMINQ 1
+} FwDownloadCB;
+
+#define FW_DOWNLOAD_DEVCMD		0
+#define FW_DOWNLOAD_ADMINQ		1

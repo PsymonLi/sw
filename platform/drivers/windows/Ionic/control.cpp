@@ -247,16 +247,23 @@ DeviceIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
         break;
     }
 
+    case IOCTL_IONIC_FWUPDATE: {
+        ntStatus = IoctlFwUpdate(Irp, &ulInfoLen);
+        break;
+    }
+
     default: {
         ntStatus = STATUS_INVALID_PARAMETER;
         break;
     }
     }
 
-    Irp->IoStatus.Status = ntStatus;
-    Irp->IoStatus.Information = ulInfoLen;
+    if (STATUS_PENDING != ntStatus) {
+        Irp->IoStatus.Status = ntStatus;
+        Irp->IoStatus.Information = ulInfoLen;
 
-    IoCompleteRequest(Irp, IO_NO_INCREMENT);
+        IoCompleteRequest(Irp, IO_NO_INCREMENT);
+    }
 
     return ntStatus;
 }

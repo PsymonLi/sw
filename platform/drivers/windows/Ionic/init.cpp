@@ -21,6 +21,34 @@ VOID DbgTraceIonicVersionInfo(PIONIC_VERSION_INFO pVerInfo)
     }
 }
 
+ULONG mywcstoul(PWCHAR StrNum) {
+    ULONG Num = 0;
+
+    if (StrNum) {
+        int i = 0;
+        while ((L'0' <= StrNum[i]) && (StrNum[i] <= L'9')) {
+            Num = (Num * 10) + (StrNum[i] - L'0');
+            i++;
+        }
+    }
+
+    return Num;
+}
+
+VOID GetNameIdxFromName(struct ionic* adapter) {
+    PWCHAR NameIdx = NULL;
+
+    if (adapter->name.Buffer) {
+        NameIdx = wcsstr(adapter->name.Buffer, L"#");
+    }
+    if (NULL == NameIdx) {
+        NameIdx = L"#1";
+    }
+    NameIdx += 1;
+
+    adapter->nameIdx = (USHORT)mywcstoul(NameIdx);
+}
+
 VOID InitIonicVersionInfo(PIONIC_VERSION_INFO pVersionInfo)
 {
     int i;
@@ -448,6 +476,7 @@ InitializeEx(NDIS_HANDLE AdapterHandle,
         EvLogError("Failed to retrieve adapter name.");
         goto exit;
     }
+    GetNameIdxFromName(adapter);
 
     //
     // Map the bars over
@@ -642,6 +671,8 @@ InitializeEx(NDIS_HANDLE AdapterHandle,
     adapter->hardware_status = NdisHardwareStatusReady;
 
     ionic_indicate_status(adapter, NDIS_STATUS_MEDIA_DISCONNECT, 0, 0);
+
+    FwCtrlDevRegister(adapter);
 
     goto exit;
 

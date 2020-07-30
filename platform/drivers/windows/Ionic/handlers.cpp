@@ -46,14 +46,24 @@ HaltEx(NDIS_HANDLE MiniportAdapterContext, NDIS_HALT_ACTION HaltAction)
 
     if (ionic != NULL) {
 
+        EvLogInformational("%wZ - adapter is halting.", ionic->name);
+
         PAGED_CODE();
         NDIS_WAIT_FOR_MUTEX(&AdapterListLock);
         RemoveEntryList(&ionic->list_entry);
         NDIS_RELEASE_MUTEX(&AdapterListLock);
 
-        EvLogInformational("%wZ - adapter is halting.", ionic->name);
+#ifdef FW_UPDATE_ASYNC
+        StopWorkerThread(&ionic->FwUpdateData.FwUpdateThread);
+#endif
+        // wait for any fw update currently in progress
+        KeWaitForSingleObject(&ionic->FwUpdateData.FwUpdateSemaphore, Executive, KernelMode, FALSE, NULL);
 
-        ionic->hardware_status = NdisHardwareStatusClosing;        
+        ionic->hardware_status = NdisHardwareStatusClosing;
+
+        KeReleaseSemaphore(&ionic->FwUpdateData.FwUpdateSemaphore, IO_NO_INCREMENT, 1, FALSE);
+
+        FwCtrlDevUnregister(ionic);
 
         StopWorkerThread(&ionic->LinkCheckWorker);
 

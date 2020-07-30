@@ -4,6 +4,7 @@
 #include "EvtLogHelper.h"
 #include "WMIhelper.h"
 
+
 int
 _cdecl
 wmain(int argc, wchar_t* argv[])
@@ -30,6 +31,7 @@ wmain(int argc, wchar_t* argv[])
     info.cmds.push_back(CmdInfo());
     info.cmds.push_back(CmdQueueInfo());
     info.cmds.push_back(CmdCollectDbgInfo());
+    info.cmds.push_back(CmdFwUpdate());
     //info.cmds.push_back(CmdOidStats());
     //info.cmds.push_back(CmdFwcmdStats());
 
@@ -949,15 +951,25 @@ DumpAdapterInfo(void *info_buffer, ULONG Size)
 		printf("\tInterface Index: %S\n", index);
 		printf("\tVendor Id: %04lX\n", info->vendor_id);
 		printf("\tProduct Id: %04lX\n", info->product_id);
-		printf("\tLocation: %S\n", info->device_location);
+
+        printf("\tSubVendor Id: %04lX\n", info->sub_vendor_id);
+        printf("\tSubSytem Id: %04lX\n", info->sub_system_id);
+        printf("\tRevision Id: %04lX\n", info->revision_id);
+
+        printf("\tLocation: %S\n", info->device_location);
 		printf("\tASIC Type: %d\n", info->asic_type);
 		printf("\tASIC Rev: %d\n", info->asic_rev);
 		printf("\tFW Version: %s\n", info->fw_version);
 		printf("\tSerial Num: %s\n", info->serial_num);
+        printf("\tDriver Ver: %s\n", info->drv_version);
 		printf("\tHW State: %s\n", hw_state_to_str(info->hw_state));
 		printf("\tLink State: %s\n", link_state_to_str(info->link_state));
 		printf("\tMtu: %d\n", info->Mtu);
 		printf("\tSpeed: %lldGbps\n", info->Speed/1000000000);
+
+        printf("\tPermanent MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", info->perm_mac_addr[0], info->perm_mac_addr[1], info->perm_mac_addr[2], info->perm_mac_addr[3], info->perm_mac_addr[4], info->perm_mac_addr[5]);
+        printf("\tConfig MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", info->config_mac_addr[0], info->config_mac_addr[1], info->config_mac_addr[2], info->config_mac_addr[3], info->config_mac_addr[4], info->config_mac_addr[5]);
+
         DisplayInterface(info->name);
 		printf("\n");
 
@@ -1122,15 +1134,14 @@ DryRunIoctl(DWORD dwIoControlCode,
     return ERROR_SUCCESS;
 }
 
-DWORD
-DoIoctl(DWORD dwIoControlCode,
-        LPVOID lpInBuffer,
-        DWORD nInBufferSize,
-        LPVOID lpOutBuffer,
-        DWORD nOutBufferSize,
-        PDWORD pnBytesReturned,
-        bool dryrun)
-{
+DWORD DoIoctlEx(LPCWSTR lpFileName,
+                DWORD dwIoControlCode,
+                LPVOID lpInBuffer,
+                DWORD nInBufferSize,
+                LPVOID lpOutBuffer,
+                DWORD nOutBufferSize,
+                PDWORD pnBytesReturned,
+                bool dryrun) {
     DWORD nBytesReturned;
     HANDLE hDevice = NULL;
     DWORD dwError = ERROR_SUCCESS;
@@ -1143,7 +1154,7 @@ DoIoctl(DWORD dwIoControlCode,
                            nOutBufferSize);
     }
 
-    hDevice = CreateFile(IONIC_LINKNAME_STRING_USER,
+    hDevice = CreateFile(lpFileName,
                          GENERIC_READ | GENERIC_WRITE,
                          0,
                          NULL,
@@ -1178,6 +1189,25 @@ DoIoctl(DWORD dwIoControlCode,
     CloseHandle(hDevice);
 
     return dwError;
+}
+
+DWORD
+DoIoctl(DWORD dwIoControlCode,
+        LPVOID lpInBuffer,
+        DWORD nInBufferSize,
+        LPVOID lpOutBuffer,
+        DWORD nOutBufferSize,
+        PDWORD pnBytesReturned,
+        bool dryrun)
+{
+    return DoIoctlEx(IONIC_LINKNAME_STRING_USER,
+                     dwIoControlCode,
+                     lpInBuffer,
+                     nInBufferSize,
+                     lpOutBuffer,
+                     nOutBufferSize,
+                     pnBytesReturned,
+                     dryrun );
 }
 
 //
@@ -2079,6 +2109,8 @@ CmdInfoRun(command_info& info)
         cb.Skip += DumpAdapterInfo(pBuffer, BytesReturned);
     } while (error == ERROR_MORE_DATA);
 
+    free(pBuffer);
+
     return info.status;
 }
 
@@ -2252,6 +2284,295 @@ CmdCollectDbgInfo()
 
     cmd.opts = CmdCollectDbgInfoOpts;
     cmd.run = CmdCollectDbgInfoRun;
+
+    return cmd;
+}
+
+//
+// -CmdFwUpdate
+//
+
+static
+po::options_description
+CmdFwUpdateInfoOpts(bool hidden)
+{
+    po::options_description opts("IonicConfig.exe [-h] FwUpdate [options ...]");
+    
+    OptAddDevName(opts);
+
+    opts.add_options()
+        ("FileName,f", optype_string()->required(), "Firmware binary file name.")
+        ("Mode,m", optype_string()->default_value("devcmd"), "Set download mode (devcmd|adminq)");
+
+    return opts;
+}
+
+#ifdef USE_FWCTRL_DEVICE
+
+typedef struct _ADAPTER_INFO_HDR    ADAPTER_INFO_HDR, *PADAPTER_INFO_HDR;
+typedef struct _ADAPTER_INFO        ADAPTER_INFO, *PADAPTER_INFO;
+
+static
+int
+CmdFwUpdateInfoRun(command_info& info)
+{
+    DWORD error = ERROR_SUCCESS;
+    DWORD cbBytes = 0;
+    AdapterCB cb = {};
+    ULONG fwDownloadMode = FW_DOWNLOAD_DEVCMD;
+    PVOID pBuffer = NULL;
+    DWORD Size = sizeof(ADAPTER_INFO_HDR) + sizeof(ADAPTER_INFO);
+    PADAPTER_INFO_HDR pHeader = NULL;
+    PADAPTER_INFO pAdapterInfo = (PADAPTER_INFO)(pHeader + 1);
+    WCHAR wszDeviceName[64];
+
+    OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), true);
+
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+
+    std::cout << "Getting adapter info...";
+
+    pBuffer = malloc(Size);
+    if (NULL == pBuffer) {
+        info.status = 1;
+        goto exit;
+    }
+    memset(pBuffer, 0, Size);
+    cbBytes = 0;
+    error = DoIoctl(IOCTL_IONIC_GET_ADAPTER_INFO, &cb, sizeof(cb), pBuffer, Size, &cbBytes, info.dryrun);
+    if (error != ERROR_SUCCESS) {
+        info.status = 1;
+        goto exit;
+    }
+    pHeader = (PADAPTER_INFO_HDR)pBuffer;
+    if (pHeader->count != 1) {
+        info.status = 1;
+        goto exit;
+    }
+    pAdapterInfo = (PADAPTER_INFO)(pHeader + 1);
+    
+    std::cout << " Done." << std::endl;
+
+    if (info.vm.count("FileName")) {
+        const std::string& FwFileName = opval_string(info.vm, "FileName");
+
+        if (info.vm.count("Mode")) {
+            const std::string& fwDownloadMode = opval_string(info.vm, "Mode");
+
+            if (boost::iequals(fwDownloadMode, "adminq")) {
+                cb.Flags |= FWDOWNLOAD_FLAG_ADMINQ;
+            }
+        }
+        std::cout << "Reading firmware binary file...";
+
+#ifdef USE_BOOST_LIB_FILE_MAPPING
+        const boost::interprocess::mode_t mode = boost::interprocess::read_only;
+        boost::interprocess::file_mapping fm(FwFileName.c_str(), mode);
+        boost::interprocess::mapped_region region(fm, mode, 0, 0);
+
+        PVOID pFwBuf = region.get_address();
+        DWORD FwBufLen = (DWORD)region.get_size();
+
+        std::cout << " Done." << std::endl;
+        std::cout << "FileName: " << FwFileName << " size: " << FwBufLen << " address: " << pFwBuf << std::endl;
+
+        cbBytes = 0;
+        PUCHAR pMAC = (PUCHAR)&pAdapterInfo->perm_mac_addr[0];
+
+        _snwprintf_s(wszDeviceName, 64, _TRUNCATE, L"%ws-%02x-%02x-%02x-%02x-%02x-%02x", FWUPDATE_CTRLDEV_USERMODE, pMAC[0], pMAC[1], pMAC[2], pMAC[3], pMAC[4], pMAC[5]);
+        
+        std::cout << "Updating firmware. Please wait...";
+        error = DoIoctlEx(wszDeviceName, IOCTL_IONIC_FWCTRLUPDATE, &fwDownloadMode, sizeof(fwDownloadMode), pFwBuf, FwBufLen, &cbBytes, info.dryrun);
+        if (error != ERROR_SUCCESS) {
+            info.status = 1;
+            goto exit;
+        }
+        std::cout << " Done." << std::endl;
+#else // ! USE_BOOST_LIB_FILE_MAPPING
+        LARGE_INTEGER FileSize = { 0 };
+        HANDLE file = CreateFileA(FwFileName.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+        if (file == INVALID_HANDLE_VALUE) {
+            error = GetLastError();
+            std::cout << "couldn't open file " << FwFileName.c_str() << " Err: " << error << std::endl;
+            info.status = 1;
+            goto exit;
+        };
+        if ((!GetFileSizeEx(file, &FileSize)) || (0LL == FileSize.QuadPart)) {
+            error = GetLastError();
+            std::cout << "couldn't get file size for file " << FwFileName.c_str() << " Err: " << error << std::endl;
+            CloseHandle(file);
+            info.status = 1;
+            goto exit;
+        }
+
+        HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
+        if (NULL == mapping) {
+            error = GetLastError();
+            std::cout << "couldn't map file " << FwFileName.c_str() << " Err: " << error << std::endl;
+            CloseHandle(file);
+            info.status = 1;
+            goto exit;
+        };
+
+        DWORD FwBufLen = (DWORD)FileSize.QuadPart;
+        PVOID pFwBuf = MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
+        if (NULL == pFwBuf) {
+            error = GetLastError();
+            std::cout << "couldn't map view of file " << FwFileName.c_str() << " Err: " << error << std::endl;
+            CloseHandle(file);
+            CloseHandle(mapping);
+            info.status = 1;
+            goto exit;
+        }
+
+        std::cout << " Done." << std::endl;
+        std::cout << "FileName: " << FwFileName << " size: " << FwBufLen << " address: " << pFwBuf << std::endl;
+
+        cbBytes = 0;
+        PUCHAR pMAC = (PUCHAR)&pAdapterInfo->perm_mac_addr[0];
+
+        _snwprintf_s(wszDeviceName, 64, _TRUNCATE, L"%ws-%02x-%02x-%02x-%02x-%02x-%02x", FWUPDATE_CTRLDEV_USERMODE, pMAC[0], pMAC[1], pMAC[2], pMAC[3], pMAC[4], pMAC[5]);
+
+        std::cout << "Updating firmware. Please wait...";
+        error = DoIoctlEx(wszDeviceName, IOCTL_IONIC_FWCTRLUPDATE, &fwDownloadMode, sizeof(fwDownloadMode), pFwBuf, FwBufLen, &cbBytes, info.dryrun);
+        if (error != ERROR_SUCCESS) {
+            info.status = 1;
+        }
+        std::cout << " Done." << std::endl;
+
+        UnmapViewOfFile(pFwBuf);
+        CloseHandle(mapping);
+        CloseHandle(file);
+#endif // ! USE_BOOST_LIB_FILE_MAPPING
+
+    }
+
+exit:
+    if (pBuffer) {
+        free(pBuffer);
+    }
+    if (info.status) {
+        std::cout << " Failure!" << std::endl;
+        std::cout << "Failed to update firmware." << std::endl;
+    }
+    else {
+        std::cout << "Firmware updated successfully." << std::endl;
+    }
+
+    return info.status;
+
+}
+
+#else // ! USE_FWCTRL_DEVICE
+static
+int
+CmdFwUpdateInfoRun(command_info& info)
+{
+    DWORD error = ERROR_SUCCESS;
+    DWORD bytesRead = 0;
+    FwDownloadCB cb = {0};
+
+    OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
+
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+
+    if (info.vm.count("FileName")) {
+        const std::string& FwFileName = opval_string(info.vm, "FileName");
+        
+        if (info.vm.count("Mode")) {
+            const std::string& fwDownloadMode = opval_string(info.vm, "Mode");
+
+            if (boost::iequals(fwDownloadMode, "adminq")) {
+                cb.Flags |= FWDOWNLOAD_FLAG_ADMINQ;
+            }
+        }
+#ifdef USE_BOOST_LIB_FILE_MAPPING
+        const boost::interprocess::mode_t mode = boost::interprocess::read_only;
+        boost::interprocess::file_mapping fm(FwFileName.c_str(), mode);
+        boost::interprocess::mapped_region region(fm, mode, 0, 0);
+
+        PVOID pFwBuf = region.get_address();
+        DWORD FwBufLen = (DWORD)region.get_size();
+
+        std::cout << "FileName: " << FwFileName << " size: " << FwBufLen << " address: " << pFwBuf << std::endl;
+        
+        error = DoIoctl(IOCTL_IONIC_FWUPDATE, &cb, sizeof(cb), pFwBuf, FwBufLen, &bytesRead, info.dryrun);
+        if (error != ERROR_SUCCESS) {
+            info.status = 1;
+        }
+#else // ! USE_BOOST_LIB_FILE_MAPPING
+        LARGE_INTEGER FileSize = { 0 };
+        HANDLE file = CreateFileA(FwFileName.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+        if (file == INVALID_HANDLE_VALUE) { 
+            error = GetLastError();
+            std::cout << "couldn't open file " << FwFileName.c_str() << " Err: " << error << std::endl; 
+            info.status = 1;
+            goto exit;
+        };
+        if ((!GetFileSizeEx(file, &FileSize)) || (0LL == FileSize.QuadPart)) {
+            error = GetLastError();
+            std::cout << "couldn't get file size for file " << FwFileName.c_str() << " Err: " << error << std::endl; 
+            CloseHandle(file);
+            info.status = 1;
+            goto exit;
+        }
+
+        HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
+        if (NULL == mapping) {
+            error = GetLastError();
+            std::cout << "couldn't map file " << FwFileName.c_str() << " Err: " << error << std::endl; 
+            CloseHandle(file);
+            info.status = 1;
+            goto exit;
+        };
+
+        DWORD FwBufLen = (DWORD)FileSize.QuadPart;
+        PVOID pFwBuf = MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
+        if (NULL == pFwBuf) {
+            error = GetLastError();
+            std::cout << "couldn't map view of file " << FwFileName.c_str() << " Err: " << error << std::endl; 
+            CloseHandle(file);
+            CloseHandle(mapping);
+            info.status = 1;
+            goto exit;
+        }
+
+        std::cout << "FileName: " << FwFileName << " size: " << FwBufLen << " address: " << pFwBuf << std::endl;
+
+        error = DoIoctl(IOCTL_IONIC_FWUPDATE, &cb, sizeof(cb), pFwBuf, FwBufLen, &bytesRead, info.dryrun);
+        if (error != ERROR_SUCCESS) {
+            info.status = 1;
+        }
+
+        UnmapViewOfFile(pFwBuf);
+        CloseHandle(mapping);
+        CloseHandle(file);
+#endif // ! USE_BOOST_LIB_FILE_MAPPING
+
+    }
+
+exit:
+    return info.status;
+
+}
+#endif // ! USE_FWCTRL_DEVICE
+
+command
+CmdFwUpdate()
+{
+    command cmd;
+
+    cmd.name = "FwUpdate";
+    cmd.desc = "Perform a firmware update on a Pensando DSC card.";
+
+    cmd.opts = CmdFwUpdateInfoOpts;
+    cmd.run = CmdFwUpdateInfoRun;
 
     return cmd;
 }

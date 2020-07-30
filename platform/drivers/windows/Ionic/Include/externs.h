@@ -63,3 +63,5 @@ extern LONG				perfmon_counter_cnt;
 extern ULONG			DriverFlags;
 
 extern OSVERSIONINFOEXW	IonicOSVersion;
+
+extern ULONG            FwDownloadMode;

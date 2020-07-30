@@ -20,6 +20,10 @@ extern "C"
 
 #include "IonicWorkerThread.h"
 
+#include "IonicFwUpdate.h"
+
+#include "IonicFwUpdateControl.h"
+
 #ifndef NO_EXTERNS
 #include "externs.h"
 #endif
@@ -143,6 +147,12 @@ void ionic_dev_cmd_lif_identify(struct ionic_dev *idev, u8 type, u8 ver);
 void ionic_dev_cmd_lif_init(struct ionic_dev *idev, u16 lif_index,
 			    dma_addr_t info_pa);
 
+void ionic_dev_cmd_fw_download(struct ionic_dev* idev, u32 offset, u64 addr, u32 length);
+
+void ionic_dev_cmd_fw_install(struct ionic_dev* idev);
+
+void ionic_dev_cmd_fw_activate(struct ionic_dev* idev, u8 slot);
+
 void ionic_dev_cmd_comp(struct ionic_dev *idev, union dev_cmd_comp *comp);
 
 void ionic_q_post(struct queue *q, bool ring_doorbell, desc_cb cb,
@@ -156,6 +166,8 @@ NDIS_STATUS
 ionic_adminq_post(struct lif *lif, struct ionic_admin_ctx *ctx);
 
 NDIS_STATUS ionic_adminq_post_wait(struct lif *lif, struct ionic_admin_ctx *ctx);
+
+NDIS_STATUS ionic_adminq_post_wait_timeout(struct lif *lif, struct ionic_admin_ctx *ctx, unsigned int timeout_seconds);
 
 void ionic_dev_cmd_lif_reset(struct ionic_dev *idev, u16 lif_index);
 

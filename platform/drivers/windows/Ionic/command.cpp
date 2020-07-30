@@ -247,6 +247,39 @@ ionic_dev_cmd_port_init(struct ionic_dev *idev)
 }
 
 void
+ionic_dev_cmd_fw_download(struct ionic_dev* idev, u32 offset, u64 addr, u32 length)
+{
+    union dev_cmd cmd = { 0 };
+    cmd.fwdownload.opcode = CMD_OPCODE_FW_DOWNLOAD;
+    cmd.fwdownload.offset = offset;
+    cmd.fwdownload.addr = addr;
+    cmd.fwdownload.length = length;
+
+    ionic_dev_cmd_go(idev, &cmd);
+}
+
+void
+ionic_dev_cmd_fw_install(struct ionic_dev* idev)
+{
+    union dev_cmd cmd = { 0 };
+    cmd.fwcontrol.opcode = CMD_OPCODE_FW_CONTROL;
+    cmd.fwcontrol.oper = IONIC_FW_INSTALL;
+
+    ionic_dev_cmd_go(idev, &cmd);
+}
+
+void
+ionic_dev_cmd_fw_activate(struct ionic_dev* idev, u8 slot)
+{
+    union dev_cmd cmd = { 0 };
+    cmd.fwcontrol.opcode = CMD_OPCODE_FW_CONTROL;
+    cmd.fwcontrol.oper = IONIC_FW_ACTIVATE;
+    cmd.fwcontrol.slot = slot;
+
+    ionic_dev_cmd_go(idev, &cmd);
+}
+
+void
 ionic_dev_cmd_port_state(struct ionic_dev *idev, u8 state)
 {
     union dev_cmd cmd = {0};
@@ -458,8 +491,7 @@ ionic_adminq_check_err(struct lif *lif,
     return status;
 }
 
-NDIS_STATUS
-ionic_adminq_post_wait(struct lif *lif, struct ionic_admin_ctx *ctx)
+NDIS_STATUS ionic_adminq_post_wait_timeout(struct lif* lif, struct ionic_admin_ctx* ctx, unsigned int timeout_seconds)
 {
     unsigned long remaining = 0;
     const char *name;
@@ -480,7 +512,7 @@ ionic_adminq_post_wait(struct lif *lif, struct ionic_admin_ctx *ctx)
         return status;
     }
 
-    if (!NdisWaitEvent(&ctx->CompEvent, IONIC_ADMINQ_WAIT_TIME_SEC * HZ_1MS)) {
+    if (!NdisWaitEvent(&ctx->CompEvent, timeout_seconds * HZ_1MS)) {
         DbgTrace((TRACE_COMPONENT_COMMAND, TRACE_LEVEL_ERROR,
                   "%s Timed out waiting on comp event\n", __FUNCTION__));
         remaining = 0;
@@ -501,6 +533,12 @@ ionic_adminq_post_wait(struct lif *lif, struct ionic_admin_ctx *ctx)
 exit:
 
     return status;
+}
+
+NDIS_STATUS
+ionic_adminq_post_wait(struct lif *lif, struct ionic_admin_ctx *ctx)
+{
+    return ionic_adminq_post_wait_timeout(lif, ctx, IONIC_ADMINQ_WAIT_TIME_SEC);
 }
 
 void
