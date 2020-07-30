@@ -3,7 +3,7 @@
         "name": "agent",
         "command": "/sw/nic/apollo/tools/apulu/start-agent-sim.sh",
         "env": {
-            "DEVICE_OPER_MODE": "bitw_smart_service"
+            "DEVICE_OPER_MODE": "bitw-smart-service"
         },
         "dependencies": [],
         "flags": ["save_stdout_on_crash"],
