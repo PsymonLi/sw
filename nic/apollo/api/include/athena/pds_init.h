@@ -37,7 +37,6 @@ typedef struct pds_cinit_params_s {
     pid_t                      flow_age_pid;   ///< designated process to do flow aging
 } pds_cinit_params_t;
 
-
 /// \brief     Global init
 //  \param[in] params pds init parameters
 /// \return    #PDS_RET_OK on success, failure status code on error
@@ -56,12 +55,25 @@ pds_ret_t pds_thread_init(uint32_t core_id);
 ///            from the control core after threads are stopped
 void pds_global_teardown(void);
 
-/// \brief Nacl programming for mfr testing support
-/// \param[in] vlan_a vlan tag to match on for redirection from uplink to ARM 
-/// \param[in] vlan_b vlan tag to match on for redirection from uplink to ARM
-/// \remark Program nacls to redirect traffic with specific vlans to ARM and 
-///         program nacls to redirect other traffic from one uplink to other
-pds_ret_t pds_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b);
+/// \brief Mfg mode parameters 
+#define PDS_MFG_TEST_NUM_VLANS 2
+
+typedef struct pds_mfg_mode_params_s {
+    uint16_t vlans[PDS_MFG_TEST_NUM_VLANS];
+} pds_mfg_mode_params_t;
+
+/// \brief      Setup operations for mfg mode 
+/// \param[in]  params parameters for setup of mfg mode
+/// \return     #PDS_RET_OK on success, failure status code on error 
+/// \remark     This currently programs the NACLs needed to setup forwarding 
+///             for mfg mode testing
+pds_ret_t pds_mfg_mode_setup(pds_mfg_mode_params_t *params);
+
+/// \brief      Teardown operations for mfg mode 
+/// \param[in]  params parameters for teardown of mfg mode
+/// \return     #PDS_RET_OK on success, failure status code on error 
+/// \remark     params passed to this call should be identical to the setup call
+pds_ret_t pds_mfg_mode_teardown(pds_mfg_mode_params_t *params);
 
 #ifdef __cplusplus
 }

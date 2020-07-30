@@ -18,13 +18,11 @@
 #include "nic/sdk/asic/asic.hpp"
 #include "ftl_dev_impl.hpp"
 #include "nic/apollo/api/include/athena/pds_vnic.h"
+#include "nic/apollo/api/include/athena/internal/mfg_mode.hpp"
 
 using namespace sdk;
 using namespace sdk::asic;
 
-extern sdk_ret_t
-athena_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b);
-    
 extern "C" {
 // Function prototypes
 sdk_ret_t pds_flow_cache_create(pds_cinit_params_t *params);
@@ -157,18 +155,50 @@ pds_global_teardown ()
 }
 
 pds_ret_t 
-pds_program_mfr_nacls(uint16_t vlan_a, uint16_t vlan_b)
+pds_mfg_mode_setup(pds_mfg_mode_params_t *params)
 {
     sdk_ret_t ret = SDK_RET_OK;
     
-    if (vlan_a >= PDS_VLAN_ID_MAX || vlan_b >= PDS_VLAN_ID_MAX) {
-        PDS_TRACE_ERR("Input vlan(s) is beyond range: vlan_a %u vlan_b %u", vlan_a, vlan_b);
+    if(params == NULL) {
+        PDS_TRACE_ERR("params arg is null");
         return PDS_RET_INVALID_ARG;
+    }    
+
+    for(uint16_t idx = 0; idx < PDS_MFG_TEST_NUM_VLANS; ++idx) {
+        if (params->vlans[idx] >= PDS_VLAN_ID_MAX) {
+            PDS_TRACE_ERR("input vlan %u at index %u is beyond range", params->vlans[idx], idx);
+            return PDS_RET_INVALID_ARG;
+        }
     }
 
-    ret = athena_program_mfr_nacls(vlan_a, vlan_b);
+    ret = athena_program_mfg_mode_nacls(params);
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Programming mfr nacls failed with ret %u", ret);
+        PDS_TRACE_ERR("Programming mfr mode nacls failed with ret %u", ret);
+    }
+
+    return (pds_ret_t)ret;
+}
+
+pds_ret_t 
+pds_mfg_mode_teardown(pds_mfg_mode_params_t *params)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    
+    if(params == NULL) {
+        PDS_TRACE_ERR("params arg is null");
+        return PDS_RET_INVALID_ARG;
+    }    
+
+    for(uint16_t idx = 0; idx < PDS_MFG_TEST_NUM_VLANS; ++idx) {
+        if (params->vlans[idx] >= PDS_VLAN_ID_MAX) {
+            PDS_TRACE_ERR("input vlan %u at index %u is beyond range", params->vlans[idx], idx);
+            return PDS_RET_INVALID_ARG;
+        }
+    }
+
+    ret = athena_unprogram_mfg_mode_nacls(params);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Unprogramming mfr mode nacls failed with ret %u", ret);
     }
 
     return (pds_ret_t)ret;

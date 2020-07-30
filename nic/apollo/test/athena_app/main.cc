@@ -155,6 +155,16 @@ static int skip_fte_flow_prog_;
 static bool fte_inited;
 static bool pds_global_inited;
 static std::string agent_pid_fname("/var/run/");
+static int mfg_mode_;
+
+#define MFG_MODE_VLAN_A         1000
+#define MFG_MODE_VLAN_B         2000
+
+bool
+is_mfg_mode(void)
+{
+    return (bool)mfg_mode_;
+}
 
 static void
 program_instance_init(void)
@@ -221,7 +231,8 @@ print_usage (char **argv)
 {
     fprintf(stdout, "Usage : %s -c|--config <cfg.json> "
             "[ -m | --mode { l2-fwd | no-dpdk | gtest | soft-init } ] "
-            "[ -j | --policy_json </abs-path/policy.json> ] \n", argv[0]);
+            "[ -j | --policy_json </abs-path/policy.json> ] \n"
+            "[ --vlans <comma-separated list> ] e.g. --vlans 100,200\n", argv[0]);
 }
 #ifdef __x86_64__
 void dump_pkt(std::vector<uint8_t> &pkt)
@@ -805,6 +816,9 @@ main (int argc, char **argv)
 #ifdef __x86_64__
     int          gtest_ret;
 #endif
+    pds_mfg_mode_params_t params = { 0 };
+    std::stringstream ss;
+    std::vector<uint16_t> vlans;
 
     struct option longopts[] = {
        { "config",      required_argument, NULL, 'c' },
@@ -817,6 +831,8 @@ main (int argc, char **argv)
        { "no-fte-flow-prog", no_argument,  &skip_fte_flow_prog_, 1 },
        { "upgrade", no_argument, &fte_upg_, 1 },
        { "skip-dpdk-init", no_argument, &skip_dpdk_init_, 1 },
+       { "mfg-mode",    no_argument,       &mfg_mode_, 1 },
+       { "vlans",       required_argument, NULL, 'v' },
        { "help",        no_argument,       NULL, 'h' },
        { 0,             0,                 0,     0 }
     };
@@ -896,6 +912,32 @@ main (int argc, char **argv)
                 policy_json_file = std::string(optarg);
             } else {
                 fprintf(stderr, "policy json file is not specified\n");
+                print_usage(argv);
+                exit(1);
+            }
+            break;
+
+        case 'v':
+            if (optarg) {
+                ss << std::string(optarg);
+                while(ss.good()) {
+                    std::string vlan_s;
+                    uint16_t vlan;
+
+                    try {
+                        getline(ss, vlan_s, ',');
+                        vlan = std::stoi(vlan_s);
+                    } catch (std::exception const& e) {
+                        std::cerr << e.what() << std::endl;
+                        std::cerr << "Failed to extract vlans from value of "
+                                    "option --vlans" << std::endl;
+                        print_usage(argv);
+                        exit(1);
+                    }
+                    vlans.push_back(vlan);    
+                }            
+            } else {
+                fprintf(stderr, "vlan values are not specified\n");
                 print_usage(argv);
                 exit(1);
             }
@@ -1029,6 +1071,27 @@ main (int argc, char **argv)
         goto done;
     }
     pds_global_inited = true;
+
+    //Check if mfg mode NACLs need to be programmed 
+    if (fte_ath::g_athena_app_mode == ATHENA_APP_MODE_NO_DPDK && is_mfg_mode()) {
+        params.vlans[0] = MFG_MODE_VLAN_A;
+        params.vlans[1] = MFG_MODE_VLAN_B;
+        
+        if (!vlans.empty()) {
+            for(int idx = 0; idx < std::min((int)vlans.size(), PDS_MFG_TEST_NUM_VLANS); ++idx) {
+                params.vlans[idx] = vlans[idx]; 
+            }
+        } 
+        
+        ret = pds_mfg_mode_setup(&params); 
+        if(ret != PDS_RET_OK) {
+            fprintf(stderr, "Failed to program mfg mode NACLs, ret %u", ret); 
+            success = false;
+            goto done;
+        }
+       
+        printf("Programmed mfg mode NACLs\n");
+    }
 
     if (!sdk::asic::asic_is_soft_init()) {
         printf("PDS hard init\n");

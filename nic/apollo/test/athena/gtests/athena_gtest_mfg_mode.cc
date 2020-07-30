@@ -12,12 +12,6 @@
 
 #include "athena_gtest.hpp"
 
-extern sdk_ret_t
-athena_unprogram_mfr_vlan_rdt_nacls(uint16_t vlan_a, uint16_t vlan_b);
-
-extern sdk_ret_t 
-athena_unprogram_mfr_up2up_nacls();
-
 /* Functionality of Uplink-Uplink NACL (traffic coming on one uplink 
  * is redirected to another) is only verified in gtest. Packets not
  * tagged with mfr vlans should be redirected between uplinks and 
@@ -152,9 +146,13 @@ athena_gtest_test_mfr_uplink_nacl(void)
     uint8_t tx_port, rx_port;
     pds_ret_t pds_ret = PDS_RET_OK;
     uint16_t vlans[2] = {MFR_TEST_VLAN_A, MFR_TEST_VLAN_B};
+    pds_mfg_mode_params_t params;
+
+    params.vlans[0] = MFR_TEST_VLAN_A;
+    params.vlans[1] = MFR_TEST_VLAN_B;
 
     //Set up the NACLs
-    pds_ret = pds_program_mfr_nacls(vlans[0], vlans[1]);
+    pds_ret = pds_mfg_mode_setup(&params);
     if (pds_ret != PDS_RET_OK) {
         printf("[%s] Failed to program mfr nacls, ret %u", __func__, pds_ret); 
         ret = (sdk_ret_t) pds_ret;
@@ -285,15 +283,11 @@ athena_gtest_test_mfr_uplink_nacl(void)
     }
 
 cleanup:
-    ret2 = athena_unprogram_mfr_vlan_rdt_nacls(vlans[0], vlans[1]);
-    if(ret2 != SDK_RET_OK) {
-        printf("[%s] Failed to unprogram mfr vlan rdt nacls, ret %u", __func__, ret2);
-    } 
-
-    ret2 = athena_unprogram_mfr_up2up_nacls();
-    if(ret2 != SDK_RET_OK) {
-        printf("[%s] Failed to unprogram mfr uplink-uplink nacls, ret %u", __func__, ret2);
-    } 
+    pds_ret = pds_mfg_mode_teardown(&params);
+    if (pds_ret != PDS_RET_OK) {
+        printf("[%s] Failed to unprogram mfr nacls, ret %u", __func__, pds_ret); 
+        ret = (sdk_ret_t) pds_ret;
+    }
 
     return ret;
 }
