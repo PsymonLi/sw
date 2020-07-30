@@ -88,7 +88,8 @@ header_type apulu_p4_to_arm_header_t {
         defunct_flow            : 1;
         local_mapping_ip_type   : 2;
         src_mapping_hit         : 1;
-        pad                     : 4;
+        meter_en                : 1;
+        pad                     : 3;
 
         epoch                   : 8;
         sw_meta                 : 32;

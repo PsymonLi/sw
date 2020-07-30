@@ -69,7 +69,8 @@ typedef struct p4_rx_cpu_hdr_s {
     union {
         uint8_t flags2;
         struct {
-            uint8_t  pad                    : 4;
+            uint8_t  pad                    : 3;
+            uint8_t  meter_en               : 1;
             uint8_t  src_mapping_hit        : 1;
             uint8_t  local_mapping_ip_type  : 2;
             uint8_t  defunct_flow           : 1;

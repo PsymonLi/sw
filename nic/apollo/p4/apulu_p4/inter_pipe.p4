@@ -185,6 +185,7 @@ action p4e_app_classic_nic() {
         modify_field(p4e_to_arm.route_priority, txdma_to_p4e.route_priority);
         modify_field(p4e_to_arm.src_bd_id, txdma_to_p4e.src_bd_id);
         modify_field(p4e_to_arm.src_mapping_hit, txdma_to_p4e.src_mapping_hit);
+        modify_field(p4e_to_arm.meter_en, txdma_to_p4e.meter_en);
     } else {
         if (control_metadata.rx_packet == TRUE) {
             modify_field(capri_intrinsic.tm_span_session,

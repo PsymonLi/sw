@@ -66,6 +66,7 @@ egress_to_rxdma_arm:
     phvwr           p.p4e_to_arm_route_priority, k.{txdma_to_p4e_route_priority}.hx
     phvwr           p.p4e_to_arm_src_bd_id, k.{txdma_to_p4e_src_bd_id}.hx
     phvwr           p.p4e_to_arm_src_mapping_hit, k.txdma_to_p4e_src_mapping_hit
+    phvwr           p.p4e_to_arm_meter_en, k.txdma_to_p4e_meter_en
 
 egress_to_rxdma_common:
     phvwr           p.p4e_to_p4plus_classic_nic_packet_len, r6
