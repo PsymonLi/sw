@@ -1,18 +1,18 @@
 <div class="alertsevents-events-table">
-  <app-penpushtable #alertsTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
-                    [dataKey]="'meta.name'" [enableCheckbox]="true"
-                    [exportFilename]="exportFilename" [exportMap]="exportMap"
-                    [loading]="alertsLoading"
-                    [numRows]="25"
-                    (rowClickEmitter)="selectAlert($event)" [rowHeight]="36"
-                    [searchable]="showAlertsAdvSearch"
-                    (searchCancelledEmitter)="onCancelSearch()"
-                    [searchCols]="advSearchCols"
-                    (searchEmitter)="onSearchAlerts()"
-                    [searchFormArray]="fieldFormArray"
-                    searchKind="Alert">
-  </app-penpushtable>
+  <app-pentable #alertsTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
+                [dataKey]="'meta.name'" [enableCheckbox]="true"
+                [exportFilename]="exportFilename" [exportMap]="exportMap"
+                [loading]="alertsLoading"
+                [numRows]="25"
+                (rowClickEmitter)="selectAlert($event)" [rowHeight]="36"
+                [searchable]="showAlertsAdvSearch"
+                (searchCancelledEmitter)="onCancelSearch()"
+                [searchCols]="advSearchCols"
+                (searchEmitter)="onSearchAlerts()"
+                [searchFormArray]="fieldFormArray"
+                searchKind="Alert">
+  </app-pentable>
 </div>
 
 <ng-template #actionTemplate let-rowData>

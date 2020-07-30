@@ -1,13 +1,13 @@
 <app-pagebody class="archiverequests" header="Archive Log Requests" [icon]="bodyicon">
-  <app-penpushtable #archiveTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
-                    [enableCheckbox]="true" [expandTemplate]="expandTemplate"
-                    [exportFilename]="exportFilename" [exportMap]="exportMap"
-                    [loading]="tableLoading"
-                    [numRows]="25" [receiveSelectedDataUpdate]="true"
-                    (rowClickEmitter)="showArchiveQuery($event)" [rowHeight]="36"
-                    (selectedObjectsUpdateEmitter)="showBulkDeleteIcon()">
-  </app-penpushtable>
+  <app-pentable #archiveTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
+                [enableCheckbox]="true" [expandTemplate]="expandTemplate"
+                [exportFilename]="exportFilename" [exportMap]="exportMap"
+                [loading]="tableLoading"
+                [numRows]="25" [receiveSelectedDataUpdate]="true"
+                (rowClickEmitter)="showArchiveQuery($event)" [rowHeight]="36"
+                (selectedObjectsUpdateEmitter)="showBulkDeleteIcon()">
+  </app-pentable>
 </app-pagebody>
 
 <ng-template #captionTemplate let-count="count">

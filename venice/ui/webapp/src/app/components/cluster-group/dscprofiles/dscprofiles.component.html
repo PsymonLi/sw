@@ -1,15 +1,15 @@
 <app-pagebody [icon]="bodyicon" header="DSC Profiles Overview" class="dscprofiles">
   <div class="dscprofiles-table-container ui-flex">
-    <app-penpushtable #dscProfilesTable
-                      [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
-                      [captionTemplate]="captionTemplate" [columns]="cols"
-                      [createTemplate]="createTemplate"
-                      [data]="dataObjects" [enableCheckbox]="true" [expandTemplate]="expandTemplate"
-                      [exportFilename]="exportFilename" [exportMap]="exportMap"
-                      [loading]="tableLoading"
-                      [numRows]="25"
-                      (rowClickEmitter)="selectDSCProfile($event)" [rowHeight]="50">
-    </app-penpushtable>
+    <app-pentable #dscProfilesTable
+                  [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate" [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects" [enableCheckbox]="true" [expandTemplate]="expandTemplate"
+                  [exportFilename]="exportFilename" [exportMap]="exportMap"
+                  [loading]="tableLoading"
+                  [numRows]="25"
+                  (rowClickEmitter)="selectDSCProfile($event)" [rowHeight]="50">
+    </app-pentable>
   </div>
 </app-pagebody>
 

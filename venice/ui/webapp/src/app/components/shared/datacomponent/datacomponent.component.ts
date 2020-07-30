@@ -5,7 +5,7 @@ import { ControllerService } from '@app/services/controller.service';
 import { LocalSearchRequest, AdvancedSearchComponent } from '@app/components/shared/advanced-search/advanced-search.component';
 import { FieldsRequirement, IApiAny, SearchTextRequirement } from '@sdk/v1/models/generated/search';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
-import { Output, EventEmitter, ViewChild, OnInit, OnDestroy } from '@angular/core';
+import { Output, EventEmitter, ViewChild, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { TableCol } from '@app/components/shared/tableviewedit';
 import { StagingService } from '@app/services/generated/staging.service';
 import { StagingCommitAction, StagingBuffer, IBulkeditBulkEditItem, IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
@@ -24,6 +24,8 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
   penTable: PentableComponent;
 
   protected stagingService: StagingService;
+
+  protected destroyed = false;
 
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService) {
@@ -45,6 +47,12 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
 
   debug(text: string = ' is rendering ......') {
     console.warn(this.getClassName() + text);
+  }
+
+  refreshGui(cdr: ChangeDetectorRef) {
+    if (!this.destroyed) {
+      cdr.detectChanges();
+    }
   }
 
   setDefaultToolbar() {}
@@ -456,6 +464,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
 
   /** override super's API */
   ngOnDestroy() {
+    this.destroyed = true;
     this.controllerService.setToolbarData({
       buttons: [],
       breadcrumb: [],

@@ -298,6 +298,6 @@ export class RolloutsComponent extends TablevieweditAbstract <IRolloutRollout, R
     if (this.tabIndex === 0) {
       return super.getSelectedDataObjects();
     }
-    return (this.tabIndex === 1 && this.pastRolloutTable && this.pastRolloutTable.table.selection) ? this.pastRolloutTable.table.selection : [];
+    return (this.tabIndex === 1 && this.pastRolloutTable && this.pastRolloutTable.selectedDataObjects) ? this.pastRolloutTable.selectedDataObjects : [];
   }
 }

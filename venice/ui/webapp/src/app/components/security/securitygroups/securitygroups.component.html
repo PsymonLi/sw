@@ -1,41 +1,32 @@
 <app-pagebody [icon]="bodyicon" header="Security Groups Overview">
   <div fxFlex class="securitygroups-table-container">
-    <ng-container *ngTemplateOutlet="DataTable"></ng-container>
+    <app-pentable #securityPolicyGroupTable
+                  [actionTemplate]="actionTemplate"
+                  [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate"
+                  [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects"
+                  [enableCheckbox]="false"
+                  [expandTemplate]="expandTemplate"
+                  [loading]="tableLoading"
+                  [rowHeight]="42"
+                  [searchable]="false"
+                  [exportFilename]="exportFilename"
+                  [exportMap]="exportMap">
+    </app-pentable>
   </div>
 </app-pagebody>
-<ng-template #DataTable>
-  <app-tableviewedit fxLayout="column" style="height: 100%;"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [expandTemplate]="expandTemplate"
-                     [createTemplate]="createTemplate"
-                     [enableCheckbox]="true"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
-</ng-template>
 
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <app-tableheader title="Security Groups" [total]="dataObjects.length" [enableColumnSelect]="true"
-                   fxFlex="auto"
-                   fxLayout="row"
-                   [icon]="headerIcon" [cols]="cols" [tableMenuItems]="tableMenuItems"
+  <app-tableheader fxFlex="auto" fxLayout="row"
+                   [tableMenuItems]="securityPolicyGroupTable.tableMenuItems"
+                   title="Security Groups" [total]="dataObjects.length" [icon]="headerIcon"
+                   [enableColumnSelect]="true" [cols]="cols"
                    (columnSelectChange)="onColumnSelectChange($event)">
   </app-tableheader>
-  <div fxFlex="none" fxLayoutAlign="start center">
-    <!-- TABLE FUNCTION ICONS HERE -->
-    <mat-icon class="global-multi-records-delete-icon"
-              *ngIf="hasSelectedRows()"
-              [matTooltip]="'Delete selected security groups'"
-              (click)="onDeleteSelectedRows($event)">delete</mat-icon>
-  </div>
 </ng-template>
 
 <ng-template #createTemplate>
@@ -89,5 +80,5 @@
 <ng-template #expandTemplate let-rowData let-columns="columns">
   <app-newsecuritygroup [style.width]="'100%'" [objectData]="rowData" [isInline]="true"
                         [workloads]="workloads"
-                        (formClose)="closeRowExpand()" fxFlex="none"></app-newsecuritygroup>
+                        (formClose)="editFormClose(rowData)" fxFlex="none"></app-newsecuritygroup>
 </ng-template>

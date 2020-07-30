@@ -151,7 +151,7 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
         if (!this.vCenterIntegrationTable.isDisabled()) {
           this.dataObjects = [...this.dataObjectsBackUp];
         }
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       this.controllerService.webSocketErrorHandler('Failed to get vCenters')
     );
@@ -203,7 +203,7 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
         if (!this.vCenterIntegrationTable.isDisabled()) {
           this.dataObjects = [...this.dataObjectsBackUp];
         }
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(workloadSubscription);
@@ -224,7 +224,7 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
       });
       if (!this.vCenterIntegrationTable.isShowRowExpand()) {
         this.dataObjects = this.dataObjectsBackUp;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     }
   }
@@ -246,7 +246,7 @@ export class VcenterIntegrationsComponent extends DataComponent implements OnIni
       });
       if (!this.vCenterIntegrationTable.isShowRowExpand()) {
         this.dataObjects = this.dataObjectsBackUp;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     }
   }

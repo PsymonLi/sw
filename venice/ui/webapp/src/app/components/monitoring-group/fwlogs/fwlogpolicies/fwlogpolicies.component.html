@@ -1,19 +1,19 @@
 <app-pagebody [icon]="bodyIcon" header="Firewall Log Export Policies">
-  <app-penpushtable #fwpLogPolicyTable
-                    [actionTemplate]="actionTemplate"
-                    [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate"
-                    [columns]="cols"
-                    [createTemplate]="createTemplate"
-                    [data]="dataObjects"
-                    [enableCheckbox]="false"
-                    [expandTemplate]="expandTemplate"
-                    [rowHeight]="43"
-                    [searchable]="false"
-                    [loading]="tableLoading"
-                    [exportFilename]="exportFilename"
-                    [exportMap]="exportMap">
-  </app-penpushtable>
+  <app-pentable #fwpLogPolicyTable
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [createTemplate]="createTemplate"
+                [data]="dataObjects"
+                [enableCheckbox]="false"
+                [expandTemplate]="expandTemplate"
+                [rowHeight]="43"
+                [searchable]="false"
+                [loading]="tableLoading"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap">
+  </app-pentable>
 </app-pagebody>
 
 <!-- TABLE HEADER -->

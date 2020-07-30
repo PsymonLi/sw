@@ -15,7 +15,7 @@ import { TableUtility } from '@app/components/shared/tableviewedit/tableutility'
 import { ClusterDistributedServiceCard, ClusterNode } from '@sdk/v1/models/generated/cluster';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
-import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 @Component({
   selector: 'app-techsupport',
@@ -28,7 +28,7 @@ import { PenPushTableComponent } from '@app/components/shared/pentable/penpushta
 
 export class TechsupportComponent extends DataComponent implements OnInit {
   public static TS_DOWNLOAD = 'techsupportdownload';
-  @ViewChild('techsupportTable') techsupportTable: PenPushTableComponent;
+  @ViewChild('techsupportTable') techsupportTable: PentableComponent;
 
   dataObjects: MonitoringTechSupportRequest[] = [];
   dataObjectsBackUp: MonitoringTechSupportRequest[] = [];
@@ -99,7 +99,7 @@ export class TechsupportComponent extends DataComponent implements OnInit {
           return;
         }
         this.naples = response.data;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get DSCs')
     );
@@ -113,7 +113,7 @@ export class TechsupportComponent extends DataComponent implements OnInit {
           return;
         }
         this.nodes  = response.data;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get nodes')
     );
@@ -155,7 +155,7 @@ export class TechsupportComponent extends DataComponent implements OnInit {
         this.tableLoading = false;
         this.dataObjectsBackUp = [...techSupportRequests];
         this.dataObjects = [...this.dataObjectsBackUp];
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       () => {
         this.tableLoading = false;
@@ -424,7 +424,7 @@ export class TechsupportComponent extends DataComponent implements OnInit {
   onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
     this.tableLoading = false;
     this.dataObjects = [...this.dataObjectsBackUp];
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   deleteRecord(object: MonitoringTechSupportRequest): Observable<{ body: IMonitoringTechSupportRequest | IApiStatus | Error, statusCode: number }> {

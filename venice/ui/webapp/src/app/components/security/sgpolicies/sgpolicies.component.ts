@@ -13,7 +13,7 @@ import { SelectItem } from 'primeng/api';
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 @Component({
   selector: 'app-sgpolicies',
@@ -24,7 +24,7 @@ import { PenPushTableComponent } from '@app/components/shared/pentable/penpushta
 })
 
 export class SgpoliciesComponent extends DataComponent implements OnInit, OnDestroy {
-  @ViewChild('securityPoliciesTable') securityPoliciesTable: PenPushTableComponent;
+  @ViewChild('securityPoliciesTable') securityPoliciesTable: PentableComponent;
   isTabComponent: boolean = false;
   disableTableWhenRowExpanded: boolean = true;
   dataObjects: ReadonlyArray<SecurityNetworkSecurityPolicy> = [];
@@ -116,7 +116,7 @@ export class SgpoliciesComponent extends DataComponent implements OnInit, OnDest
 
   getSecurityPolicies() {
     this.tableLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     this.securityService.ListNetworkSecurityPolicyCache().subscribe(
       (response) => {
         if (response.connIsErrorState) {
@@ -125,12 +125,12 @@ export class SgpoliciesComponent extends DataComponent implements OnInit, OnDest
         this.dataObjects = response.data as ReadonlyArray<SecurityNetworkSecurityPolicy> ;
         this.tableLoading = false;
         this.shouldEnableButtons = (this.dataObjects.length === 0);
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this.tableLoading = false;
         this.controllerService.invokeRESTErrorToaster('Failed to get network security policies', error);
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
   }
@@ -148,7 +148,7 @@ export class SgpoliciesComponent extends DataComponent implements OnInit, OnDest
             value: item.meta.name
           };
         });
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this._controllerService.invokeRESTErrorToaster('Failed to get apps', error);
@@ -170,7 +170,7 @@ export class SgpoliciesComponent extends DataComponent implements OnInit, OnDest
             value: item.meta.name
           };
         });
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this._controllerService.invokeRESTErrorToaster('Failed to get network security policy', error);
@@ -188,7 +188,7 @@ export class SgpoliciesComponent extends DataComponent implements OnInit, OnDest
         }
         this.workloads = response.data as WorkloadWorkload[];
         this.buildIPMap();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this._controllerService.invokeRESTErrorToaster('Failed to get workloads', error);

@@ -1,25 +1,25 @@
 <app-pagebody [icon]="bodyicon" header="Hosts Overview">
   <div fxFlex class="hosts-table-container">
-    <app-penpushtable #hostTable
-                      [actionTemplate]="actionTemplate"
-                      [bodyTemplate]="bodyTemplate"
-                      [captionTemplate]="captionTemplate"
-                      [columns]="cols"
-                      [createTemplate]="createTemplate"
-                      [data]="dataObjects"
-                      [enableCheckbox]="true"
-                      [expandTemplate]="expandTemplate"
-                      [loading]="tableLoading"
-                      [rowHeight]="46"
-                      [searchable]="true"
-                      [searchFormArray]="fieldFormArray"
-                      [searchCols]="advSearchCols"
-                      (searchEmitter)="onSearchHosts()"
-                      (searchCancelledEmitter)="onCancelSearch($event)"
-                      searchKind="Host"
-                      [exportFilename]="exportFilename"
-                      [exportMap]="exportMap">
-    </app-penpushtable>
+    <app-pentable #hostTable
+                  [actionTemplate]="actionTemplate"
+                  [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate"
+                  [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects"
+                  [enableCheckbox]="true"
+                  [expandTemplate]="expandTemplate"
+                  [loading]="tableLoading"
+                  [rowHeight]="46"
+                  [searchable]="true"
+                  [searchFormArray]="fieldFormArray"
+                  [searchCols]="advSearchCols"
+                  (searchEmitter)="onSearchHosts()"
+                  (searchCancelledEmitter)="onCancelSearch($event)"
+                  searchKind="Host"
+                  [exportFilename]="exportFilename"
+                  [exportMap]="exportMap">
+    </app-pentable>
   </div>
 </app-pagebody>
 

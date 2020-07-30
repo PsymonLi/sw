@@ -221,13 +221,14 @@ export class MetricsUtility {
       });
       currData.series[0].values = _.cloneDeep(filteredValues);
     }
-
     // Checking if there is new data
     if (MetricsUtility.resultHasData(newData)) {
       const data = newData.series[0].values;
       if (MetricsUtility.resultHasData(currData)) {
         // Push on the new data
         currData.series[0].values.push(...data);
+        // After appending newly arrived data to time-series array, we must take out duplicated values.
+        currData.series[0].values = _.uniq(currData.series[0].values);
       } else {
         return newData;
       }

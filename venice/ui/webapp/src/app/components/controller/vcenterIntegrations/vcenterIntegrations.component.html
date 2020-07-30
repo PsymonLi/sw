@@ -1,26 +1,26 @@
 <app-pagebody [icon]="bodyicon" header="vCenter Overview">
   <div fxFlex class="vcenter-integrations-table-container">
-    <app-penpushtable #vCenterIntegrationTable
-                      [actionTemplate]="actionTemplate"
-                      [bodyTemplate]="bodyTemplate"
-                      [captionTemplate]="captionTemplate"
-                      [columns]="cols"
-                      [createTemplate]="createTemplate"
-                      [data]="dataObjects"
-                      [enableCheckbox]="false"
-                      [expandTemplate]="expandTemplate"
-                      [loading]="tableLoading"
-                      [rowHeight]="46"
-                      [searchable]="true"
-                      [searchFormArray]="fieldFormArray"
-                      [searchCols]="advSearchCols"
-                      (searchEmitter)="onSearchvCenterIntegrations()"
-                      (searchCancelledEmitter)="onCancelSearch($event)"
-                      searchKind="Orchestrator"
-                      [exportFilename]="exportFilename"
-                      [exportMap]="exportMap">
+    <app-pentable #vCenterIntegrationTable
+                  [actionTemplate]="actionTemplate"
+                  [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate"
+                  [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects"
+                  [enableCheckbox]="false"
+                  [expandTemplate]="expandTemplate"
+                  [loading]="tableLoading"
+                  [rowHeight]="46"
+                  [searchable]="true"
+                  [searchFormArray]="fieldFormArray"
+                  [searchCols]="advSearchCols"
+                  (searchEmitter)="onSearchvCenterIntegrations()"
+                  (searchCancelledEmitter)="onCancelSearch($event)"
+                  searchKind="Orchestrator"
+                  [exportFilename]="exportFilename"
+                  [exportMap]="exportMap">
 
-    </app-penpushtable>
+    </app-pentable>
   </div>
 </app-pagebody>
 

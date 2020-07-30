@@ -570,7 +570,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
           return;
         }
         this.hostObjects = response.data;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -587,7 +587,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
         }
         this.workloadList = response.data as WorkloadWorkload[];
         this.buildDSCWorkloadsMap(this.workloadList, this.dataObjects);
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(workloadSubscription);
@@ -606,7 +606,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
         ((naple._ui) as DSCUiModel).associatedWorkloads = this.getDSCWorkloads(naple);
         return naple;
       });
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
     }
   }
 
@@ -668,7 +668,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
         if (!this.top10CardChartData || this.top10CardChartData.length === 0) {
           this.processTop10CardTelemetryData(this.top10CardTelemetryData);
         }
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -689,7 +689,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
             };
             this.dscprofileOptions.push(obj);
           });
-          this.cdr.detectChanges();
+          this.refreshGui(this.cdr);
         }
       },
       this._controllerService.webSocketErrorHandler('Failed to get DSC Profile')

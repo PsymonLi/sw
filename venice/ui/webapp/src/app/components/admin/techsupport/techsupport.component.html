@@ -1,14 +1,14 @@
 <app-pagebody class="techsupportrequests" header="Tech Support Requests" [icon]="bodyicon">
-  <app-penpushtable class="techsupportrequests-widget" #techsupportTable
-                    [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate"
-                    [columns]="cols" [createTemplate]="createTemplate" [data]="dataObjects"
-                    [enableCheckbox]="true" [expandTemplate]="expandTemplate"
-                    [exportFilename]="exportFilename" [exportMap]="exportMap"
-                    [loading]="tableLoading"
-                    [numRows]="25" [receiveSelectedDataUpdate]="true" [rowHeight]="36"
-                    (selectedObjectsUpdateEmitter)="showBulkDeleteIcon()">
-  </app-penpushtable>
+  <app-pentable class="techsupportrequests-widget" #techsupportTable
+                [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols" [createTemplate]="createTemplate" [data]="dataObjects"
+                [enableCheckbox]="true" [expandTemplate]="expandTemplate"
+                [exportFilename]="exportFilename" [exportMap]="exportMap"
+                [loading]="tableLoading"
+                [numRows]="25" [receiveSelectedDataUpdate]="true" [rowHeight]="36"
+                (selectedObjectsUpdateEmitter)="showBulkDeleteIcon()">
+  </app-pentable>
 </app-pagebody>
 
 <ng-template #createTemplate>

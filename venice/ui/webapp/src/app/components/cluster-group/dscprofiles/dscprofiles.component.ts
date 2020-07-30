@@ -13,7 +13,7 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
 import { Observable } from 'rxjs';
 import { PercentPipe } from '@angular/common';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 interface DSCMacName {
   mac: string;
@@ -49,7 +49,7 @@ interface DSCProfileUiModel {
   encapsulation: ViewEncapsulation.None
 })
 export class DscprofilesComponent extends DataComponent implements OnInit {
-  @ViewChild('dscProfilesTable') dscProfilesTable: PenPushTableComponent;
+  @ViewChild('dscProfilesTable') dscProfilesTable: PentableComponent;
 
   DEFAULT_DSCPROFILE = 'default';
 
@@ -182,12 +182,12 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
         const dscprofile = response.body as ClusterDSCProfile;
         this.selectedDSCProfile = new ClusterDSCProfile(dscprofile);
         this.updateSelectedDSCProfile();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       error => {
         this._controllerService.webSocketErrorHandler('Failed to get Network interface ' + interfacename);
         this.selectedDSCProfile = null;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
@@ -209,7 +209,7 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
         this.tableLoading = false;
         this.dataObjects  = response.data;
         this.handleDataReady(); // process DSCProfile. Note: At this this moment, this.selectedObj may not be available
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get DSC Profile')
     );
@@ -228,7 +228,7 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
           this.macToNameMap[dsc.meta.name] = dsc.spec.id;
         }
         this.handleDataReady();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -424,12 +424,12 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
         this.selectedDSCProfile = event.rowData;
       }
     }
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   closeDetails() {
     this.selectedDSCProfile = null;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   viewPendingNaplesList() {

@@ -10,7 +10,7 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { TableCol, RowClickEvent, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 @Component({
   selector: 'app-archivelog',
@@ -24,7 +24,7 @@ import { PenPushTableComponent } from '@app/components/shared/pentable/penpushta
 export class ArchivelogComponent extends DataComponent implements OnInit {
   public static AL_DOWNLOAD = 'archivelogsdownload'; // Will contain URL for archive request download
 
-  @ViewChild('archiveTable') archiveTable: PenPushTableComponent;
+  @ViewChild('archiveTable') archiveTable: PentableComponent;
 
   dataObjects: MonitoringArchiveRequest[] = [];
   dataObjectsBackUp: MonitoringArchiveRequest[] = [];
@@ -88,7 +88,7 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
    */
   getArchiveRequests() {
     this.tableLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     const sub = this.monitoringService.ListArchiveRequestCache().subscribe(
       response => {
         if (response.connIsErrorState) {
@@ -98,7 +98,7 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
         this.tableLoading = false;
         this.dataObjectsBackUp = [...archiveRequests];
         this.dataObjects = [...this.dataObjectsBackUp];
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       error => {
         this.tableLoading = false;
@@ -263,7 +263,7 @@ export class ArchivelogComponent extends DataComponent implements OnInit {
   onInvokeAPIonMultipleRecordsFailure() {
     this.tableLoading = false;
     this.dataObjects = [...this.dataObjectsBackUp];
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   showBulkDeleteIcon(): boolean {

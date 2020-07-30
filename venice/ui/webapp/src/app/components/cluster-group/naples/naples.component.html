@@ -36,19 +36,19 @@
     </div>
   </div>
   <div class="naples-card-table">
-    <app-penpushtable #dscTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
-                      [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
-                      [enableCheckbox]="true"
-                      [exportFilename]="exportFilename" [exportMap]="exportMap"
-                      [loading]="tableLoading"
-                      [rowHeight]="46"
-                      [searchable]="true" (searchCancelledEmitter)="onCancelSearch($event)"
-                      [searchCols]="advSearchCols"
-                      (searchEmitter)="onSearchDSCs()" [searchFormArray]="fieldFormArray"
-                      searchKind="DistributedServiceCard"
-                      [searchCustomQueryOptions]="customQueryOptions"
-                      [searchMultiSelectFields]="multiSelectFields">
-    </app-penpushtable>
+    <app-pentable #dscTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
+                  [enableCheckbox]="true"
+                  [exportFilename]="exportFilename" [exportMap]="exportMap"
+                  [loading]="tableLoading"
+                  [rowHeight]="46"
+                  [searchable]="true" (searchCancelledEmitter)="onCancelSearch($event)"
+                  [searchCols]="advSearchCols"
+                  (searchEmitter)="onSearchDSCs()" [searchFormArray]="fieldFormArray"
+                  searchKind="DistributedServiceCard"
+                  [searchCustomQueryOptions]="customQueryOptions"
+                  [searchMultiSelectFields]="multiSelectFields">
+    </app-pentable>
   </div>
 </app-pagebody>
 

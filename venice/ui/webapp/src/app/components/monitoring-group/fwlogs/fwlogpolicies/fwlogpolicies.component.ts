@@ -101,7 +101,7 @@ export class FwlogpoliciesComponent extends DataComponent implements OnInit {
         this.tableLoading = false;
         this.dataObjects = response.data as MonitoringFwlogPolicy[];
         this.computeTargets();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);

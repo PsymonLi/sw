@@ -11,27 +11,27 @@
       </app-workloadwidget>
     </div>
   </div>
-  <app-penpushtable #workloadTable
-                    [actionTemplate]="actionTemplate"
-                    [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate"
-                    [columns]="cols"
-                    [createTemplate]="createTemplate"
-                    [data]="dataObjects"
-                    [enableCheckbox]="true"
-                    [expandTemplate]="expandTemplate"
-                    [exportFilename]="exportFilename"
-                    [exportMap]="exportMap"
-                    [loading]="uiModelLoading"
-                    [numRows]="10"
-                    [rowHeight]="95"
-                    [searchable]="true"
-                    (searchCancelledEmitter)="onCancelSearch()"
-                    [searchCols]="advSearchCols"
-                    (searchEmitter)="onSearchWorkloads()"
-                    [searchFormArray]="fieldFormArray"
-                    searchKind="Workload">
-  </app-penpushtable>
+  <app-pentable #workloadTable
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [createTemplate]="createTemplate"
+                [data]="dataObjects"
+                [enableCheckbox]="true"
+                [expandTemplate]="expandTemplate"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
+                [loading]="uiModelLoading"
+                [numRows]="10"
+                [rowHeight]="95"
+                [searchable]="true"
+                (searchCancelledEmitter)="onCancelSearch()"
+                [searchCols]="advSearchCols"
+                (searchEmitter)="onSearchWorkloads()"
+                [searchFormArray]="fieldFormArray"
+                searchKind="Workload">
+  </app-pentable>
 </app-pagebody>
 
 <ng-template #captionTemplate let-count="count">

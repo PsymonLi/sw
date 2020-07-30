@@ -27,7 +27,7 @@ import { Observable, Subscription } from 'rxjs';
 import { IApiStatus } from '@sdk/v1/models/generated/monitoring';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 /**
  * Component for displaying a security policy and providing IP searching
@@ -93,7 +93,7 @@ interface RuleHitEntry {
   animations: [Animations]
 })
 export class SgpolicydetailComponent extends DataComponent implements OnInit, OnDestroy {
-  @ViewChild('sgPolicyDetailTable') sgPolicyDetailTable: PenPushTableComponent;
+  @ViewChild('sgPolicyDetailTable') sgPolicyDetailTable: PentableComponent;
   searchPolicyInvoked: boolean = false;  // avoid loop caused by invokeSearchPolicy
   subscriptions = [];
   macToNameMap: { [key: string]: string } = {};
@@ -332,7 +332,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
             value: item.meta.name
           };
         });
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       this.controllerService.webSocketErrorHandler('Failed to get apps')
     );
@@ -353,7 +353,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
             this.macToNameMap[smartnic.meta.name] = smartnic.spec.id;
           }
         }
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this._controllerService.invokeRESTErrorToaster('Error', 'Failed to get DSCs info');
@@ -380,14 +380,14 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.sourceIpFormControl.disable();
     this.destIpFormControl.disable();
     this.portFormControl.disable();
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   enableFormControls() {
     this.sourceIpFormControl.enable();
     this.destIpFormControl.enable();
     this.portFormControl.enable();
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   keyUpInput(event) {
@@ -406,7 +406,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
 
     if (event.keyCode === SearchUtil.EVENT_KEY_ENTER) {
       this.invokePolicySearch();
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
     } else if (this.currentSearch != null) {
       // If the keystroke changed the search fields
       // to be different than the current search
@@ -437,12 +437,12 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.ruleCount = this.dataObjects.length;
     if (this.searchPolicyInvoked) {
       this.searchPolicyInvoked = false;
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
       return;
     }
     if (this.currentSearch != null) {
       this.invokePolicySearch(this.currentSearch.sourceIP, this.currentSearch.destIP, this.currentSearch.port);
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
     }
   }
 
@@ -469,7 +469,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.updateRulesByPolicy();
     this.currentSearch = null;
     this.searchPolicyInvoked = false;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   invokePolicySearch(sourceIP = null, destIP = null, port: string = null) {
@@ -535,7 +535,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       port: port
     };
     this.loading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
 
     this.searchSubscription = this.searchService.PostPolicyQuery(req).subscribe(
       (data) => {
@@ -557,12 +557,12 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
           this.dataObjects = [];
         }
         this.loading = false;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this.loading = false;
         this._controllerService.invokeRESTErrorToaster('Policy search failed', error);
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
     );
 
@@ -589,7 +589,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
 
   getSGPoliciesDetail() {
     this.loading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     // We perform a get as well as a watch so that we can know if the object the user is
     // looking for exists or not.
     const getSubscription = this.securityService.GetNetworkSecurityPolicy(this.selectedPolicyId).subscribe(
@@ -606,7 +606,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       },
       () => {
         this.loading = false;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(getSubscription);
@@ -657,7 +657,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       this._controllerService.webSocketErrorHandler('Failed to get SG Policy'),
       () => {
         this.loading = false;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(subscription);
@@ -734,7 +734,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
               this.ruleMetricsTooltip[ruleHash] = this.createRuleTooltip(ruleHits);
             });
           });
-          this.cdr.detectChanges();
+          this.refreshGui(this.cdr);
         }
       },
     );
@@ -872,7 +872,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     if (selectedObjs.length !== 1) {
       this.reorderToIndex = 0;
     }
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   resetMapsAndSelection() {
@@ -881,7 +881,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.clearSelectedDataObjects();
     this.showReorder = false;
     this.reorderToIndex = 0;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   reorderKeyUp(event) {
@@ -896,7 +896,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       event.preventDefault();
     }
     this.reorderToIndex = event.target.value;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   isReorderReady() {
@@ -905,7 +905,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
 
   onClose() {
     this.display = false;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   onUpdate() {
@@ -916,7 +916,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     });
     this.editObject.spec.rules = editrules;
     this.display = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   onAdd(rowData, isBefore: boolean = false) {
@@ -928,7 +928,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
     this.editObject = new SecurityNetworkSecurityPolicy(this.selectedPolicy);
     this.editObject.spec.rules = [];
     this.display = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   onCreate() {
@@ -950,7 +950,7 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
       policy1.spec.rules.splice(insertIndex, 0, arrDeletedItems[0]);
       this.updatePolicy(policy1);
     }
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   onDelete() {
@@ -1017,12 +1017,12 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
           this.controllerService.invokeSuccessToaster(Utility.UPDATE_SUCCESS_SUMMARY, 'Successfully updated policy.');
           // this.cancelObject();
           this.resetMapsAndSelection();
-          this.cdr.detectChanges();
+          this.refreshGui(this.cdr);
         },
         (error) => {
           this.controllerService.invokeRESTErrorToaster(Utility.CREATE_FAILED_SUMMARY, error);
           this.resetMapsAndSelection();
-          this.cdr.detectChanges();
+          this.refreshGui(this.cdr);
         }
       );
     }

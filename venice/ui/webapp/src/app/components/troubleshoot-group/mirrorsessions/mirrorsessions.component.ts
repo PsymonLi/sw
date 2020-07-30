@@ -136,7 +136,7 @@ export class MirrorsessionsComponent extends DataComponent implements OnInit {
         }
         this.naplesList = response.data as ClusterDistributedServiceCard[];
         this.handleDataReady();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -151,7 +151,7 @@ export class MirrorsessionsComponent extends DataComponent implements OnInit {
         this.tableLoading = false;
         this.dataObjects = response.data as MonitoringMirrorSession[];
         this.handleDataReady();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       this.controllerService.webSocketErrorHandler('Failed to get Mirror Sessions')
     );
@@ -165,7 +165,7 @@ export class MirrorsessionsComponent extends DataComponent implements OnInit {
           return;
         }
         this.interfaces = response.data as NetworkNetworkInterface[];
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(sub);

@@ -1,18 +1,18 @@
-<app-penpushtable #alertPolicyTable
-                  [actionTemplate]="actionTemplate"
-                  [bodyTemplate]="bodyTemplate"
-                  [captionTemplate]="captionTemplate"
-                  [columns]="cols"
-                  [createTemplate]="createTemplate"
-                  [data]="dataObjects"
-                  [enableCheckbox]="false"
-                  [expandTemplate]="expandTemplate"
-                  [rowHeight]="43"
-                  [searchable]="false"
-                  [loading]="tableLoading"
-                  [exportFilename]="exportFilename"
-                  [exportMap]="exportMap">
-</app-penpushtable>
+<app-pentable #alertPolicyTable
+              [actionTemplate]="actionTemplate"
+              [bodyTemplate]="bodyTemplate"
+              [captionTemplate]="captionTemplate"
+              [columns]="cols"
+              [createTemplate]="createTemplate"
+              [data]="dataObjects"
+              [enableCheckbox]="false"
+              [expandTemplate]="expandTemplate"
+              [rowHeight]="43"
+              [searchable]="false"
+              [loading]="tableLoading"
+              [exportFilename]="exportFilename"
+              [exportMap]="exportMap">
+</app-pentable>
 
 <ng-template #createTemplate>
   <app-neweventalertpolicy [destinations]="destinations" (formClose)="creationFormClose()"

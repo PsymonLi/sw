@@ -20,27 +20,27 @@
       </div>
     </div>
   </div>
-  <app-penpushtable #eventsTable style="height: 100%"
-                    (archiveQueryEmitter)="getArchiveQuery($event)"
-                    [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate"
-                    [columns]="cols"
-                    [createTemplate]="createTemplate"
-                    [data]="dataObjects"
-                    [dataKey]="'meta.name'"
-                    [exportFilename]="exportFilename"
-                    [exportMap]="exportMap"
-                    [loading]="eventsLoading"
-                    [numRows]="25"
-                    (rowClickEmitter)="selectEvent($event)"
-                    [rowHeight]="36"
-                    [searchable]="showEventsAdvSearch"
-                    (searchCancelledEmitter)="onCancelSearch($event)"
-                    [searchCols]="advSearchCols"
-                    (searchEmitter)="onSearchEvents()"
-                    [searchFormArray]="fieldFormArray"
-                    searchKind="Event">
-  </app-penpushtable>
+  <app-pentable #eventsTable style="height: 100%"
+                (archiveQueryEmitter)="getArchiveQuery($event)"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [createTemplate]="createTemplate"
+                [data]="dataObjects"
+                [dataKey]="'meta.name'"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
+                [loading]="eventsLoading"
+                [numRows]="25"
+                (rowClickEmitter)="selectEvent($event)"
+                [rowHeight]="36"
+                [searchable]="showEventsAdvSearch"
+                (searchCancelledEmitter)="onCancelSearch($event)"
+                [searchCols]="advSearchCols"
+                (searchEmitter)="onSearchEvents()"
+                [searchFormArray]="fieldFormArray"
+                searchKind="Event">
+  </app-pentable>
 </div>
 
 <ng-template #captionTemplate>

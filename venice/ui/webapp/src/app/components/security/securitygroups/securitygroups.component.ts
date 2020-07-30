@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ChangeDetectionStrategy, ViewChild } from '@angular/core';
 import { Animations } from '@app/animations';
 import { ObjectsRelationsUtility, SecuritygroupWorkloadPolicyTuple } from '@app/common/ObjectsRelationsUtility';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
@@ -9,25 +9,27 @@ import { WorkloadService } from '@app/services/generated/workload.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { HttpEventUtility } from '@common/HttpEventUtility';
 import { Utility } from '@common/Utility';
-import { TablevieweditAbstract } from '@components/shared/tableviewedit/tableviewedit.component';
 import { ILabelsSelector } from '@sdk/v1/models/generated/monitoring/labels-selector.model';
 import { IApiStatus } from '@sdk/v1/models/generated/security';
 import { ISecuritySecurityGroup, SecuritySecurityGroup } from '@sdk/v1/models/generated/security/security-security-group.model';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import { Observable, Subscription } from 'rxjs';
-
-
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 @Component({
   selector: 'app-securitygroups',
   templateUrl: './securitygroups.component.html',
   styleUrls: ['./securitygroups.component.scss'],
   animations: [Animations],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
 })
-export class SecuritygroupsComponent extends TablevieweditAbstract<ISecuritySecurityGroup, SecuritySecurityGroup> implements OnInit {
+export class SecuritygroupsComponent extends DataComponent implements OnInit {
   public static SECURITYGROUP_FIELD_WORKLOADS: string = 'securityworkloads';
+
+  @ViewChild('securityPolicyGroupTable') securityPolicyGroupTable: PentableComponent;
 
   bodyicon: Icon = {
     margin: {
@@ -54,14 +56,17 @@ export class SecuritygroupsComponent extends TablevieweditAbstract<ISecuritySecu
   isTabComponent: boolean = false;
   disableTableWhenRowExpanded: boolean = true;
 
+  // Used for the table - when true there is a loading icon displayed
+  tableLoading: boolean = false;
+
   cols: TableCol[] = [
-    {field: 'meta.name', header: 'Name', class: 'securitygroups-column-securitygroups-name', sortable: true, width: 10},
-    {field: 'meta.mod-time', header: 'Modification Time', class: 'securitygroups-column-date', sortable: true, width: 15},
-    {field: 'meta.creation-time', header: 'Creation Time', class: 'securitygroups-column-date', sortable: true, width: 15},
-    {field: 'spec.workload-selector', header: 'Workload Selectors', class: 'securitygroups-column-workload-selector', sortable: true, width: 15},
-    {field: 'workloads', header: 'Associated Workloads', class: 'securitygroups-column-workloads', sortable: false, width: 15},
-    {field: 'spec.service-labels', header: 'Services Lables', class: 'securitygroups-column-service-labels', sortable: true, width: 10},
-    {field: 'spec.match-prefixes', header: 'Match Prefixes', class: 'securitygroups-column-match-prefixes', sortable: true, width: 10},
+    {field: 'meta.name', header: 'Name', class: 'securitygroups-column-securitygroups-name', sortable: true, width: 100},
+    {field: 'meta.mod-time', header: 'Modification Time', class: 'securitygroups-column-date', sortable: true, width: 150},
+    {field: 'meta.creation-time', header: 'Creation Time', class: 'securitygroups-column-date', sortable: true, width: 150},
+    {field: 'spec.workload-selector', header: 'Workload Selectors', class: 'securitygroups-column-workload-selector', sortable: true, width: 150},
+    {field: 'workloads', header: 'Associated Workloads', class: 'securitygroups-column-workloads', sortable: false, width: 150},
+    {field: 'spec.service-labels', header: 'Services Lables', class: 'securitygroups-column-service-labels', sortable: true, width: 100},
+    {field: 'spec.match-prefixes', header: 'Match Prefixes', class: 'securitygroups-column-match-prefixes', sortable: true, width: 100},
   ];
 
   securitygroupsEventUtility: HttpEventUtility<SecuritySecurityGroup>;
@@ -76,17 +81,15 @@ export class SecuritygroupsComponent extends TablevieweditAbstract<ISecuritySecu
     private workloadService: WorkloadService,
     protected uiconfigsService: UIConfigsService,
     protected controllerService: ControllerService) {
-        super(controllerService, cdr, uiconfigsService);
+        super(controllerService, uiconfigsService);
   }
 
-  postNgInit(): void {
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.securityPolicyGroupTable;
+    this.tableLoading = true;
     this.getWorkloads();
     this.getSecuritygroups();
-  }
-
-
-  getClassName(): string {
-    return this.constructor.name;
   }
 
   setDefaultToolbar() {
@@ -97,7 +100,8 @@ export class SecuritygroupsComponent extends TablevieweditAbstract<ISecuritySecu
       buttons = [{
         cssClass: 'global-button-primary securitygroups-button securitygroups-button-ADD',
         text: 'ADD SECURITY GROUP',
-        callback: () => { this.createNewObject(); }
+        computeClass: () => !this.securityPolicyGroupTable.showRowExpand ? '' : 'global-button-disabled',
+        callback: () => { this.securityPolicyGroupTable.createNewObject(); }
       }];
     }
 
@@ -123,9 +127,11 @@ export class SecuritygroupsComponent extends TablevieweditAbstract<ISecuritySecu
     this.dataObjects = this.securitygroupsEventUtility.array as ReadonlyArray<SecuritySecurityGroup>;
     const subscription = this.securityService.WatchSecurityGroup().subscribe(
       response => {
+        this.tableLoading = false;
         this.securitygroupsEventUtility.processEvents(response);
         this.securitygroupWorkloadPolicyTuple = ObjectsRelationsUtility.buildSecuitygroupWorkloadPolicyMap(this.dataObjects, this.workloads, [] );
         this.buildSecuritygroupWorkloadUIField();
+        this.refreshGui(this.cdr);
       },
       this.controllerService.webSocketErrorHandler('Failed to get Security Groups info')
     );
@@ -173,6 +179,7 @@ export class SecuritygroupsComponent extends TablevieweditAbstract<ISecuritySecu
     const subscription = this.workloadService.WatchWorkload().subscribe(
       (response) => {
         this.workloadEventUtility.processEvents(response);
+        this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get Workloads')
     );

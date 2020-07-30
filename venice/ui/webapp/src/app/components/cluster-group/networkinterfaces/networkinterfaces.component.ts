@@ -24,7 +24,7 @@ import { forkJoin, Observable } from 'rxjs';
 import * as _ from 'lodash';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { throttleTime } from 'rxjs/operators';
-import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 /**
  * NetworkinterfacesComponent is linked to DSC object.
@@ -61,7 +61,7 @@ interface NetworkInterfaceUiModel {
 export class NetworkinterfacesComponent extends DataComponent implements OnInit {
 
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
-  @ViewChild('networkInterfaceTable') networkInterfaceTable: PenPushTableComponent;
+  @ViewChild('networkInterfaceTable') networkInterfaceTable: PentableComponent;
 
   maxSearchRecords: number = 8000;
 
@@ -153,7 +153,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     this.watchNetworkInterfaces();
     this.watchNaples();
     this.buildAdvSearchCols();
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   setDefaultToolbar() {
@@ -180,12 +180,12 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
         const networkinterface = response.body as NetworkNetworkInterface;
         this.selectedNetworkInterface = new NetworkNetworkInterface(networkinterface);
         this.updateSelectedNetworkInterface();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       error => {
         this._controllerService.webSocketErrorHandler('Failed to get Network interface ' + interfacename);
         this.selectedNetworkInterface = null;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
@@ -202,7 +202,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
         this._myDSCnameToMacMap = ObjectsRelationsUtility.buildDSCsNameMacMap(this.naplesList);
         this.handleDataReady(!this.naplesInit);
         this.naplesInit = true;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -227,7 +227,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
         this.dataObjects = response.data;
         this.handleDataReady(true);
         this.tableLoading = false;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this.tableLoading = false;
@@ -443,7 +443,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
     this.dataObjects = [...this.dataObjectsBackUp];
     this.handleDataReady();
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   /**
@@ -456,7 +456,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     if (searchResults && searchResults.length > 0) {
       this.dataObjects = [];
       this.dataObjects = searchResults;
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
     }
   }
 

@@ -147,7 +147,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
             value: vcenter.meta.name
           };
         });
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       this.controllerService.webSocketErrorHandler('Failed to get vCenters')
     );
@@ -258,7 +258,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
       }
       if (!this.networkTable.isShowRowExpand()) {
         this.dataObjects = this.dataObjectsBackup;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     }
   }

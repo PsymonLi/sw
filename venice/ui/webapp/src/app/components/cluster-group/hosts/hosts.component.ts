@@ -21,7 +21,7 @@ import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import * as _ from 'lodash';
 import { Observable, Subscription } from 'rxjs';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 export enum BuildHostWorkloadMapSourceType {
   init = 'init',
@@ -77,7 +77,7 @@ interface HostUiModel {
 })
 
 export class HostsComponent extends DataComponent implements OnInit {
-  @ViewChild('hostTable') hostTable: PenPushTableComponent;
+  @ViewChild('hostTable') hostTable: PentableComponent;
   maxSearchRecords: number = 8000;
 
   bodyicon: Icon = {
@@ -349,7 +349,7 @@ export class HostsComponent extends DataComponent implements OnInit {
    */
   getRecords() {
     this.tableLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
 
     const workloadSubscription = this.workloadService.ListWorkloadCache().subscribe(
       (response) => {
@@ -360,12 +360,12 @@ export class HostsComponent extends DataComponent implements OnInit {
         this.handleDataReady(!this.workloadInit);
         this.workloadInit = true;
         this.tableLoading = this.isTableLoading();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this.workloadInit = true;
         this.tableLoading = this.isTableLoading();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(workloadSubscription);
@@ -379,12 +379,12 @@ export class HostsComponent extends DataComponent implements OnInit {
         this.handleDataReady(!this.naplesInit);
         this.naplesInit = true;
         this.tableLoading = this.isTableLoading();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this.naplesInit = true;
         this.tableLoading = this.isTableLoading();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -421,12 +421,12 @@ export class HostsComponent extends DataComponent implements OnInit {
         }
 
         this.tableLoading = this.isTableLoading();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
         this.dataObjectsInit = true;
         this.tableLoading = this.isTableLoading();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -444,7 +444,7 @@ export class HostsComponent extends DataComponent implements OnInit {
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
     this.dataObjects = [...this.dataObjectsBackUp];
     this.handleDataReady();
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   /**
@@ -457,7 +457,7 @@ export class HostsComponent extends DataComponent implements OnInit {
     if (searchResults && searchResults.length > 0) {
       this.dataObjects = [];
       this.dataObjects = searchResults;
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
     }
   }
 

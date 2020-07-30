@@ -382,13 +382,15 @@ export class SystemcapacitywidgetComponent implements OnInit, AfterViewInit, OnD
           const lastItem = data1[data1.length - 1];
           const secondToLastItem = data1[data1.length - 2];
           const currentRate = lastItem.y - secondToLastItem.y;
-
-          this.networkGraphStat.currentValue.value = Utility.formatBytes(currentRate, 2, 3);
-          if (data1.length >= 3) {
-            const thirdToLastItem = data1[data1.length - 3];
-            const previousRate = secondToLastItem.y - thirdToLastItem.y;
-            this.networkGraphStat.currentValue.arrowDirection = MetricsUtility.getStatArrowDirection(previousRate, currentRate);
-          }
+          // It is possible that data1 has duplicated records, it will show 0 byte. We procedd only if currentRate > 0
+          if (currentRate > 0) {
+              this.networkGraphStat.currentValue.value = Utility.formatBytes(currentRate, 2, 3);
+              if (data1.length >= 3) {
+                const thirdToLastItem = data1[data1.length - 3];
+                const previousRate = secondToLastItem.y - thirdToLastItem.y;
+                this.networkGraphStat.currentValue.arrowDirection = MetricsUtility.getStatArrowDirection(previousRate, currentRate);
+              }
+           }
         }
       }
 

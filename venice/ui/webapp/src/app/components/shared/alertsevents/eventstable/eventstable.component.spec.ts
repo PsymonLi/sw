@@ -127,7 +127,6 @@ describe('EventstableComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  /*
   it('should have events in the table', <any>fakeAsync(() => {
     expect(eventsService.pollEvents).toHaveBeenCalledWith('alertsevents', { 'sort-order': ApiListWatchOptions_sort_order.none, 'field-selector': '' });
     // Switch to the events tab
@@ -135,6 +134,8 @@ describe('EventstableComponent', () => {
     // expect(tabs.length).toBe(2);
     // tabs[1].nativeElement.click();
     // tabs[1].children[0].nativeElement.click();
+    fixture.detectChanges();
+    tick(20000);
     fixture.detectChanges();
     fixture.whenRenderingDone().then(() => {
       // Table should be blank right now
@@ -154,12 +155,14 @@ describe('EventstableComponent', () => {
 
       // Table has one event
       observer.next(poll1);
+      fixture.detectChanges();
 
       // Checking that the table entry is there
       tableBody = eventsContainer.query(By.css('.ui-table-wrapper tbody'));
       fixture.whenRenderingDone().then(() => {
         // Allows rendering for the setTimeout(.., 0) we have
         setTimeout(() => {
+          fixture.detectChanges();
           expect(tableBody.children.length).toBe(1);
           const caseMap = {
             'severity': (field, rowData, rowIndex) => {
@@ -183,12 +186,11 @@ describe('EventstableComponent', () => {
             }
           };
           TestingUtility.verifyTable(poll1, component.cols, tableBody, caseMap);
-        }, 5000);
+        }, 0);
       });
     });
     discardPeriodicTasks();
     flush();
     fixture.destroy();
   }));
-  */
 });

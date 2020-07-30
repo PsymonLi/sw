@@ -21,7 +21,7 @@ import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { TimeRangeComponent } from '@app/components/shared/timerange/timerange.component';
-import { PenPushTableComponent } from '../../pentable/penpushtable.component';
+import { PentableComponent } from '../../pentable/pentable.component';
 
 @Component({
   selector: 'app-eventstable',
@@ -34,7 +34,7 @@ import { PenPushTableComponent } from '../../pentable/penpushtable.component';
 export class EventstableComponent extends DataComponent implements OnInit, OnChanges, OnDestroy, DoCheck {
   @ViewChild('timeRangeComponent') timeRangeComponent: TimeRangeComponent;
   @ViewChild('exportLogsComponent') exportLogsComponent: ExportLogsComponent;
-  @ViewChild('eventsTable') eventsTable: PenPushTableComponent;
+  @ViewChild('eventsTable') eventsTable: PentableComponent;
 
   isTabComponent: boolean = false;
   disableTableWhenRowExpanded: boolean = false;
@@ -214,7 +214,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       const changes = this.arrayDiffers.diff(this.exportedArchiveRequests);
       if (changes) {
         this.handleArchiveLogChange();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     }
   }
@@ -326,7 +326,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
           this.enableExport = false;
           this.displayArchPanel = true;
         }
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       this.controllerService.webSocketErrorHandler('Failed to get Event Archive Requests')
     );
@@ -359,7 +359,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
    */
   onSearchEvents(field = this.eventsTable.sortField, order = this.eventsTable.sortOrder) {
     this.eventsLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     const searchResults = this.onSearchDataObjects(field, order, 'Event', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackup, this.eventsTable.advancedSearchComponent);
     if (searchResults && searchResults.length > 0) {
       this.events = searchResults;
@@ -368,7 +368,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       this.filterEvents();
     } else {
       this.eventsLoading = false;
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
     }
   }
 
@@ -401,7 +401,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
 
   getEvents() {
     this.eventsLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     if (this.eventsSubscription) {
       this.eventsSubscription.unsubscribe();
       this.eventsService.pollingUtility.terminatePolling(this.pollingServiceKey, true);
@@ -413,14 +413,14 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
           this.eventsTable.clearSearch();
         }
         if (data == null) {
-          this.cdr.detectChanges();
+          this.refreshGui(this.cdr);
           return;
         }
         // Check that there is new data
         if (this.events.length === data.length) {
           // Both sets of data are empty
           if (this.events.length === 0) {
-            this.cdr.detectChanges();
+            this.refreshGui(this.cdr);
             return;
           }
         }
@@ -432,7 +432,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       (error) => {
         this.eventsLoading = false;
         this.controllerService.webSocketErrorHandler('Failed to get Events');
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(this.eventsSubscription);
@@ -467,7 +467,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       this.dataObjects = this.dataObjects.filter(item => item.severity === this.currentEventSeverityFilter);
     }
     this.eventsLoading = false;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   /**
@@ -484,12 +484,12 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       (this.eventSearchFormControl.value == null ||
         this.eventSearchFormControl.value.trim().length === 0)) {
       this.dataObjects = this.events as EventsEvent[];
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
       return;
     }
 
     this.eventsLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     const body = new SearchSearchRequest();
     body['max-results'] = 100;
     body.query.kinds = ['Event'];
@@ -533,12 +533,12 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
         }
         this.eventsLoading = false;
         this.dataObjects = [...this.dataObjects]; // VS-1576. Force table re-render
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       (error) => {
-         this.controllerService.invokeRESTErrorToaster('Error', error);
-         this.eventsLoading = false;
-         this.filterEvents();
+        this.controllerService.invokeRESTErrorToaster('Error', error);
+        this.eventsLoading = false;
+        this.filterEvents();
       }
     );
   }

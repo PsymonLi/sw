@@ -139,7 +139,7 @@ export class FlowexportpolicyComponent extends DataComponent implements OnInit {
         }
         this.naplesList = response.data as ClusterDistributedServiceCard[];
         this.handleDataReady();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -154,7 +154,7 @@ export class FlowexportpolicyComponent extends DataComponent implements OnInit {
         this.tableLoading = false;
         this.dataObjects = response.data as MonitoringFlowExportPolicy[];
         this.handleDataReady();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);

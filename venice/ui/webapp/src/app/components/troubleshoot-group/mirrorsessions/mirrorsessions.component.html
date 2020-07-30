@@ -1,19 +1,19 @@
 <app-pagebody class="mirrorsessions" header="Mirror Sessions" [icon]="bodyicon">
-  <app-penpushtable #mirrorSessionTable
-                    [actionTemplate]="actionTemplate"
-                    [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate"
-                    [columns]="cols"
-                    [createTemplate]="createTemplate"
-                    [data]="dataObjects"
-                    [enableCheckbox]="false"
-                    [expandTemplate]="expandTemplate"
-                    [loading]="tableLoading"
-                    [rowHeight]="60"
-                    [searchable]="false"
-                    [exportFilename]="exportFilename"
-                    [exportMap]="exportMap">
-  </app-penpushtable>
+  <app-pentable #mirrorSessionTable
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [createTemplate]="createTemplate"
+                [data]="dataObjects"
+                [enableCheckbox]="false"
+                [expandTemplate]="expandTemplate"
+                [loading]="tableLoading"
+                [rowHeight]="60"
+                [searchable]="false"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap">
+  </app-pentable>
 </app-pagebody>
 
 <ng-template #createTemplate>

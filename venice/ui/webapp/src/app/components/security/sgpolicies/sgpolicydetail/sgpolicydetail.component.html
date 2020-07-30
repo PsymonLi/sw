@@ -89,22 +89,22 @@
 </app-pagebody>
 
 <ng-template #DataTable>
-  <app-penpushtable #sgPolicyDetailTable
-                    class="sgpolicy-widget"
-                    [actionTemplate]="actionTemplate"
-                    [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate"
-                    [columns]="cols"
-                    [data]="dataObjects"
-                    [enableCheckbox]="true"
-                    [exportFilename]="exportFilename"
-                    [exportMap]="exportMap"
-                    [loading]="loading"
-                    [rowHeight]="46"
-                    [dataKey]="'order'"
-                    (rowSelectedEmitter)="checkboxClicked($event)"
-                    (rowUnselectedEmitter)="checkboxClicked($event)">
-  </app-penpushtable>
+  <app-pentable #sgPolicyDetailTable
+                class="sgpolicy-widget"
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [data]="dataObjects"
+                [enableCheckbox]="true"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
+                [loading]="loading"
+                [rowHeight]="46"
+                [dataKey]="'order'"
+                (rowSelectedEmitter)="checkboxClicked($event)"
+                (rowUnselectedEmitter)="checkboxClicked($event)">
+  </app-pentable>
 </ng-template>
 
 <!-- TABLE HEADER -->

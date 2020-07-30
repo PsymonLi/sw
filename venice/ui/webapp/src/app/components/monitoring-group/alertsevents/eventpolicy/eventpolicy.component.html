@@ -1,19 +1,19 @@
 <app-pagebody [icon]="bodyIcon" header="Event Policies">
-  <app-penpushtable #eventPolicyTable
-                    [actionTemplate]="actionTemplate"
-                    [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate"
-                    [columns]="cols"
-                    [createTemplate]="createTemplate"
-                    [data]="dataObjects"
-                    [enableCheckbox]="false"
-                    [expandTemplate]="expandTemplate"
-                    [rowHeight]="43"
-                    [searchable]="false"
-                    [loading]="tableLoading"
-                    [exportFilename]="exportFilename"
-                    [exportMap]="exportMap">
-  </app-penpushtable>
+  <app-pentable #eventPolicyTable
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [createTemplate]="createTemplate"
+                [data]="dataObjects"
+                [enableCheckbox]="false"
+                [expandTemplate]="expandTemplate"
+                [rowHeight]="43"
+                [searchable]="false"
+                [loading]="tableLoading"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap">
+  </app-pentable>
 </app-pagebody>
 
 <ng-template #createTemplate>

@@ -214,7 +214,7 @@ export class WorkloadComponent extends DataComponent implements OnInit {
         this.hostOptions = this.hostObjects.map(x => {
           return { label: x.meta.name, value: x.meta.name };
         });
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -229,7 +229,7 @@ export class WorkloadComponent extends DataComponent implements OnInit {
         this.naples = response.data as ClusterDistributedServiceCard[];
         if (!this.tableLoading) { // some times naples data come after workload
           this.mapData();
-          this.cdr.detectChanges();
+          this.refreshGui(this.cdr);
         }
       }
     );
@@ -426,7 +426,7 @@ export class WorkloadComponent extends DataComponent implements OnInit {
         this.dataObjects = response.data as WorkloadWorkload[];
         this.tableLoading = false;
         this.mapData(true);
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
 
         // once we have get more workload objects than searchWorkloadCount, we reset this.searchWorkloadCount. It is need in DestroyHook()
         if (this.dataObjects.length >= this.searchWorkloadCount) {

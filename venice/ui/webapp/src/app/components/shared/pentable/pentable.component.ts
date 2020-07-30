@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Renderer2, SimpleChanges, TemplateRef, ViewChild, ViewEncapsulation, ElementRef } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, Renderer2, SimpleChanges, TemplateRef, ViewChild, ViewEncapsulation, ElementRef, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -20,6 +20,7 @@ import { SelectItem } from 'primeng/api';
     templateUrl: './pentable.component.html',
     styleUrls: ['./pentable.component.scss'],
     encapsulation: ViewEncapsulation.None,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     animations: [Animations]
 })
 export class PentableComponent extends BaseComponent implements AfterViewInit, OnChanges, OnDestroy, OnInit {
@@ -99,7 +100,10 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     {label: 'Select all', value: 'all'},
   ];
 
+  private destroyed = false;
+
   constructor(protected _route: ActivatedRoute,
+    protected cdr: ChangeDetectorRef,
     protected controllerService: ControllerService,
     protected nativeElementRef: ElementRef,
     protected renderer: Renderer2) {
@@ -108,6 +112,12 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
 
   debug(text: string = 'Pen table is rendering ......') {
     console.warn(text);
+  }
+
+  refreshGui() {
+    if (!this.destroyed) {
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnInit() {
@@ -177,6 +187,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     if (change.data) {
       setTimeout(() => {
         this.isPageSelected();
+        this.refreshGui();
         if (this.receiveSelectedDataUpdate) {
           this.updateSelectedDataObjects();
         }
@@ -245,6 +256,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     this.subscriptions.forEach(sub => {
       sub.unsubscribe();
     });
+    this.destroyed = true;
   }
 
   reset() {
@@ -256,6 +268,14 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     if (!this.showRowExpand) {
       this.creatingMode = true;
       this.setPaginatorDisabled(true);
+    }
+    this.refreshGui();
+    // scroll to top if user click cerate button
+    if (this.nativeElementRef && this.nativeElementRef.nativeElement) {
+      const domElemnt = this.nativeElementRef.nativeElement;
+      if (domElemnt.parentNode && domElemnt.parentNode.parentNode) {
+        domElemnt.parentNode.parentNode.scrollTop = 0;
+      }
     }
   }
 

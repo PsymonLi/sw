@@ -105,7 +105,7 @@ export class EventpolicyComponent extends DataComponent implements OnInit {
         this.tableLoading = false;
         this.dataObjects = response.data as MonitoringEventPolicy[];
         this.computeTargets();
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(dscSubscription);

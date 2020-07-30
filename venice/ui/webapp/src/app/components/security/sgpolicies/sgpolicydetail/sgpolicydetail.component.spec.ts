@@ -468,322 +468,313 @@ describe('SgpolicydetailComponent', () => {
 
   });
 
-  /*
   it('should reset table contents if search input are all empty', () => {
-    setTimeout(()=> {
-      fixture.detectChanges();
-      const updateRulesByPolicySpy = spyOn(component, 'updateRulesByPolicy').and.callThrough();
-      const sourceIPInput = getSourceIpInput();
-      const destIPInput = getDestIpInput();
-      const portInput = getPortInput();
-      resetSearchInputs(sourceIPInput, destIPInput, portInput, testingUtility);
-      testingUtility.sendEnterKeyup(sourceIPInput);
+    fixture.detectChanges();
+    const updateRulesByPolicySpy = spyOn(component, 'updateRulesByPolicy').and.callThrough();
+    const sourceIPInput = getSourceIpInput();
+    const destIPInput = getDestIpInput();
+    const portInput = getPortInput();
+    resetSearchInputs(sourceIPInput, destIPInput, portInput, testingUtility);
+    testingUtility.sendEnterKeyup(sourceIPInput);
 
-      expect(component.updateRulesByPolicy).toHaveBeenCalled();
-    },20000);
+    expect(component.updateRulesByPolicy).toHaveBeenCalled();
   });
 
   it('should reset table contents when click clear search button', () => {
-    setTimeout(()=> {
-      fixture.detectChanges();
-      const updateRulesByPolicySpy = spyOn(component, 'updateRulesByPolicy').and.callThrough();
-      const sourceIPInput = getSourceIpInput();
-      const destIPInput = getDestIpInput();
-      const portInput = getPortInput();
+    fixture.detectChanges();
+    const updateRulesByPolicySpy = spyOn(component, 'updateRulesByPolicy').and.callThrough();
+    const sourceIPInput = getSourceIpInput();
+    const destIPInput = getDestIpInput();
+    const portInput = getPortInput();
 
-      testingUtility.setText(sourceIPInput, '192');
-      const searchButton = getSearchButton();
-      const searchClearButton = getSearchClearButton();
-      testingUtility.sendClick(searchClearButton);
+    testingUtility.setText(sourceIPInput, '192');
+    const searchButton = getSearchButton();
+    const searchClearButton = getSearchClearButton();
+    testingUtility.sendClick(searchClearButton);
 
-      expect(component.updateRulesByPolicy).toHaveBeenCalled();
-    },20000);
+    expect(component.updateRulesByPolicy).toHaveBeenCalled();
   });
 
   it('should show search/cancel buttons when either src ip, dest ip or app is not empty', () => {
-    setTimeout(()=> {
-      fixture.detectChanges();
-      const invokePolicySearchSpy = spyOn(component, 'invokePolicySearch').and.callThrough();
-      const service = TestBed.get(SearchService);
-      const querySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
-        new BehaviorSubject<any>({
-          body: {
-            status: 'MISS'
-          }
+    fixture.detectChanges();
+    const invokePolicySearchSpy = spyOn(component, 'invokePolicySearch').and.callThrough();
+    const service = TestBed.get(SearchService);
+    const querySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
+      new BehaviorSubject<any>({
+        body: {
+          status: 'MISS'
         }
-        ));
+      }
+      ));
 
-      // No inputs have text, so search and clear buttons are undefined
-      // There should be no error message
-      let searchButton = getSearchButton();
-      let searchClearButton = getSearchClearButton();
-      const errorMessageDiv = getSearchErrorDiv();
-      expect(searchButton).toBeNull();
-      expect(searchClearButton).toBeNull();
-      expect(errorMessageDiv).toBeNull();
+    // No inputs have text, so search and clear buttons are undefined
+    // There should be no error message
+    let searchButton = getSearchButton();
+    let searchClearButton = getSearchClearButton();
+    const errorMessageDiv = getSearchErrorDiv();
+    expect(searchButton).toBeNull();
+    expect(searchClearButton).toBeNull();
+    expect(errorMessageDiv).toBeNull();
 
-      // search inputs
-      const sourceIPInput = getSourceIpInput();
-      const destIPInput = getDestIpInput();
-      const portInput = getPortInput();
+    // search inputs
+    const sourceIPInput = getSourceIpInput();
+    const destIPInput = getDestIpInput();
+    const portInput = getPortInput();
 
-      // ---------------------------
-      // Putting in text into source IP
-      testingUtility.setText(sourceIPInput, '192');
+    // ---------------------------
+    // Putting in text into source IP
+    testingUtility.setText(sourceIPInput, '192');
 
-      // The search and cancel buttons should appear
-      searchButton = getSearchButton();
-      searchClearButton = getSearchClearButton();
-      expect(searchButton).toBeTruthy();
-      expect(searchClearButton).toBeTruthy();
+    // The search and cancel buttons should appear
+    searchButton = getSearchButton();
+    searchClearButton = getSearchClearButton();
+    expect(searchButton).toBeTruthy();
+    expect(searchClearButton).toBeTruthy();
 
-      resetSearchInputs(sourceIPInput, destIPInput, portInput, testingUtility);
+    resetSearchInputs(sourceIPInput, destIPInput, portInput, testingUtility);
 
-      // ---------------------------
-      // Putting in text into dest IP
-      testingUtility.setText(destIPInput, '192');
+    // ---------------------------
+    // Putting in text into dest IP
+    testingUtility.setText(destIPInput, '192');
 
-      // The search and cancel buttons should appear
-      searchButton = getSearchButton();
-      searchClearButton = getSearchClearButton();
-      expect(searchButton).toBeTruthy();
-      expect(searchClearButton).toBeTruthy();
+    // The search and cancel buttons should appear
+    searchButton = getSearchButton();
+    searchClearButton = getSearchClearButton();
+    expect(searchButton).toBeTruthy();
+    expect(searchClearButton).toBeTruthy();
 
-      resetSearchInputs(sourceIPInput, destIPInput, portInput, testingUtility);
+    resetSearchInputs(sourceIPInput, destIPInput, portInput, testingUtility);
 
-      // ---------------------------
-      // Putting in text into port
-      testingUtility.setText(portInput, '80');
+    // ---------------------------
+    // Putting in text into port
+    testingUtility.setText(portInput, '80');
 
-      // The search and cancel buttons should appear
-      searchButton = getSearchButton();
-      searchClearButton = getSearchClearButton();
-      expect(searchButton).toBeTruthy();
-      expect(searchClearButton).toBeTruthy();
+    // The search and cancel buttons should appear
+    searchButton = getSearchButton();
+    searchClearButton = getSearchClearButton();
+    expect(searchButton).toBeTruthy();
+    expect(searchClearButton).toBeTruthy();
 
-      resetSearchInputs(sourceIPInput, destIPInput, portInput, testingUtility);
-    },20000);
+    resetSearchInputs(sourceIPInput, destIPInput, portInput, testingUtility);
+
   });
 
   it('should show search/cancel buttons when there is input and error message when input searched is not a valid IP', () => {
-    setTimeout(()=> {
-      fixture.detectChanges();
+    fixture.detectChanges();
 
-      const invokePolicySearchSpy = spyOn(component, 'invokePolicySearch').and.callThrough();
-      const service = TestBed.get(SearchService);
-      const querySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
-        new BehaviorSubject<any>({
-          body: {
-            status: 'MISS'
-          }
+    const invokePolicySearchSpy = spyOn(component, 'invokePolicySearch').and.callThrough();
+    const service = TestBed.get(SearchService);
+    const querySpy = spyOn(service, 'PostPolicyQuery').and.returnValue(
+      new BehaviorSubject<any>({
+        body: {
+          status: 'MISS'
         }
-        ));
+      }
+      ));
 
-      // No inputs have text, so search and clear buttons are undefined
-      // There should be no error message
-      let searchButton = getSearchButton();
-      let searchClearButton = getSearchClearButton();
-      let errorMessageDiv = getSearchErrorDiv();
-      expect(searchButton).toBeNull();
-      expect(searchClearButton).toBeNull();
-      expect(errorMessageDiv).toBeNull();
+    // No inputs have text, so search and clear buttons are undefined
+    // There should be no error message
+    let searchButton = getSearchButton();
+    let searchClearButton = getSearchClearButton();
+    let errorMessageDiv = getSearchErrorDiv();
+    expect(searchButton).toBeNull();
+    expect(searchClearButton).toBeNull();
+    expect(errorMessageDiv).toBeNull();
 
-      // Putting in text into source IP
-      const sourceIPInput = getSourceIpInput();
-      const portInput = getPortInput();
-      testingUtility.setText(sourceIPInput, '192');
-      // The search and cancel buttons should appear
-      searchButton = getSearchButton();
-      searchClearButton = getSearchClearButton();
-      expect(searchButton).toBeTruthy();
-      expect(searchClearButton).toBeTruthy();
-      // Putting in text into dest IP
-      const destIPInput = getDestIpInput();
-      testingUtility.setText(destIPInput, '10.1.1.1');
-      // The search and cancel buttons should appear
-      searchButton = getSearchButton();
-      searchClearButton = getSearchClearButton();
-      expect(searchButton).toBeTruthy();
-      expect(searchClearButton).toBeTruthy();
-      // Click the search button should invoke a search
-      testingUtility.sendClick(searchButton);
-      expect(component.invokePolicySearch).toHaveBeenCalled();
-      expect(service.PostPolicyQuery).toHaveBeenCalledTimes(0);
-      // There should be an invalid IP message
-      errorMessageDiv = getSearchErrorDiv();
-      expect(errorMessageDiv).toBeTruthy();
-      expect(errorMessageDiv.children[1].nativeElement.textContent).toContain('Invalid IP');
-      // Typing again should remove the message if the content is different
-      testingUtility.setText(sourceIPInput, '192');
-      errorMessageDiv = getSearchErrorDiv();
-      expect(errorMessageDiv).toBeTruthy();
-      testingUtility.setText(sourceIPInput, '192.10');
-      // Listens for key up, so we trigger one with a random keyCode
-      sourceIPInput.triggerEventHandler('keyup', { keyCode: 20 });
-      fixture.detectChanges();
-      errorMessageDiv = getSearchErrorDiv();
-      expect(errorMessageDiv).toBeNull();
-      // Clicking clear button should empty out the results, but not reset the scroll
-      // since we don't have a match
-      // TODO: Find a way to check scroll
-      testingUtility.sendClick(searchClearButton);
-      expect(sourceIPInput.nativeElement.value).toBe('');
+    // Putting in text into source IP
+    const sourceIPInput = getSourceIpInput();
+    const portInput = getPortInput();
+    testingUtility.setText(sourceIPInput, '192');
+    // The search and cancel buttons should appear
+    searchButton = getSearchButton();
+    searchClearButton = getSearchClearButton();
+    expect(searchButton).toBeTruthy();
+    expect(searchClearButton).toBeTruthy();
+    // Putting in text into dest IP
+    const destIPInput = getDestIpInput();
+    testingUtility.setText(destIPInput, '10.1.1.1');
+    // The search and cancel buttons should appear
+    searchButton = getSearchButton();
+    searchClearButton = getSearchClearButton();
+    expect(searchButton).toBeTruthy();
+    expect(searchClearButton).toBeTruthy();
+    // Click the search button should invoke a search
+    testingUtility.sendClick(searchButton);
+    expect(component.invokePolicySearch).toHaveBeenCalled();
+    expect(service.PostPolicyQuery).toHaveBeenCalledTimes(0);
+    // There should be an invalid IP message
+    errorMessageDiv = getSearchErrorDiv();
+    expect(errorMessageDiv).toBeTruthy();
+    expect(errorMessageDiv.children[1].nativeElement.textContent).toContain('Invalid IP');
+    // Typing again should remove the message if the content is different
+    testingUtility.setText(sourceIPInput, '192');
+    errorMessageDiv = getSearchErrorDiv();
+    expect(errorMessageDiv).toBeTruthy();
+    testingUtility.setText(sourceIPInput, '192.10');
+    // Listens for key up, so we trigger one with a random keyCode
+    sourceIPInput.triggerEventHandler('keyup', { keyCode: 20 });
+    fixture.detectChanges();
+    errorMessageDiv = getSearchErrorDiv();
+    expect(errorMessageDiv).toBeNull();
+    // Clicking clear button should empty out the results, but not reset the scroll
+    // since we don't have a match
+    // TODO: Find a way to check scroll
+    testingUtility.sendClick(searchClearButton);
+    expect(sourceIPInput.nativeElement.value).toBe('');
 
-      // allow port only search
-      testingUtility.setText(sourceIPInput, '');
-      testingUtility.setText(portInput, 'tcp/88');
-      searchButton = getSearchButton();
-      expect(searchButton).toBeTruthy();
-    },20000);
+    // allow port only search
+    testingUtility.setText(sourceIPInput, '');
+    testingUtility.setText(portInput, 'tcp/88');
+    searchButton = getSearchButton();
+    expect(searchButton).toBeTruthy();
   });
 
   it('should display missing policy overlay and deleted policy overlay', () => {
-    setTimeout(()=> {
-      // change param id
-      const mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
-      mockActivatedRoute.setPolicyId('policy2');
-      const policyWatchObserver = new ReplaySubject();
-      const policyGetObserver = new Observable((observable) => {
-        observable.error({ body: null, statusCode: 400 });
-      });
-      sgPolicyWatchSpy.and.returnValue(
-        policyWatchObserver
-      );
-      sgPolicyGetSpy.and.returnValue(
-        policyGetObserver
-      );
+    // change param id
+    const mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
+    mockActivatedRoute.setPolicyId('policy2');
+    const policyWatchObserver = new ReplaySubject();
+    const policyGetObserver = new Observable((observable) => {
+      observable.error({ body: null, statusCode: 400 });
+    });
+    sgPolicyWatchSpy.and.returnValue(
+      policyWatchObserver
+    );
+    sgPolicyGetSpy.and.returnValue(
+      policyGetObserver
+    );
 
-      fixture.detectChanges();
-      verifyMeta('', '', '');
-      verifyServiceCalls('policy2');
+    fixture.detectChanges();
+    verifyMeta('', '', '');
+    verifyServiceCalls('policy2');
 
-      // View should now be of missing overlay, and data should be cleared
-      verifyTable([], component.cols);
-      expect(getOverlay()).toBeTruthy();
-      expect(getMissingPolicyIcon()).toBeTruthy();
-      expect(getOverlayText().nativeElement.textContent).toContain('policy2 does not exist');
-      let buttons = getOverlayButtons();
-      expect(buttons.length).toBe(2);
-      expect(buttons[0].nativeElement.textContent).toContain('POLICIES');
-      expect(buttons[1].nativeElement.textContent).toContain('HOMEPAGE');
-      // Form controls should be disabled
-      expect(getSourceIpInput().nativeElement.disabled).toBeTruthy();
-      expect(getDestIpInput().nativeElement.disabled).toBeTruthy();
-      expect(getPortInput().nativeElement.disabled).toBeTruthy();
+    // View should now be of missing overlay, and data should be cleared
+    verifyTable([], component.cols);
+    expect(getOverlay()).toBeTruthy();
+    expect(getMissingPolicyIcon()).toBeTruthy();
+    expect(getOverlayText().nativeElement.textContent).toContain('policy2 does not exist');
+    let buttons = getOverlayButtons();
+    expect(buttons.length).toBe(2);
+    expect(buttons[0].nativeElement.textContent).toContain('POLICIES');
+    expect(buttons[1].nativeElement.textContent).toContain('HOMEPAGE');
+    // Form controls should be disabled
+    expect(getSourceIpInput().nativeElement.disabled).toBeTruthy();
+    expect(getDestIpInput().nativeElement.disabled).toBeTruthy();
+    expect(getPortInput().nativeElement.disabled).toBeTruthy();
 
-      // Add object
-      policyWatchObserver.next({
+    // Add object
+    policyWatchObserver.next({
+      events: [
+        {
+          type: 'Created',
+          object: sgPolicy2
+        }
+      ]
+    });
+
+    fixture.detectChanges();
+    // overlay should be gone
+    expect(getOverlay()).toBeNull();
+    verifyMeta(sgPolicy2.meta.name, sgPolicy2.meta['creation-time'], sgPolicy2.meta['mod-time']);
+    verifyTable(sgPolicy2.spec.rules, component.cols);
+    // Form controls should be enabled
+    expect(getSourceIpInput().nativeElement.disabled).toBeFalsy();
+    expect(getDestIpInput().nativeElement.disabled).toBeFalsy();
+    expect(getPortInput().nativeElement.disabled).toBeFalsy();
+
+    // Delete policy
+    policyWatchObserver.next({
+      events: [
+        {
+          type: 'Deleted',
+          object: sgPolicy2
+        }
+      ]
+    });
+
+    fixture.detectChanges();
+
+    expect(getOverlay()).toBeTruthy();
+    expect(getDeletedPolicyIcon()).toBeTruthy();
+    expect(getOverlayText().nativeElement.textContent).toContain('policy2 has been deleted');
+    buttons = getOverlayButtons();
+    expect(buttons.length).toBe(2);
+    expect(buttons[0].nativeElement.textContent).toContain('POLICIES');
+    expect(buttons[1].nativeElement.textContent).toContain('HOMEPAGE');
+    // Form controls should be disabled
+    expect(getSourceIpInput().nativeElement.disabled).toBeTruthy();
+    expect(getDestIpInput().nativeElement.disabled).toBeTruthy();
+    expect(getPortInput().nativeElement.disabled).toBeTruthy();
+
+    // Clicking homepage button
+    spyOn(component, 'routeToHomepage');
+    testingUtility.sendClick(buttons[1]);
+    expect(component.routeToHomepage).toHaveBeenCalled();
+
+    // find DebugElements with an attached RouterLinkStubDirective
+    const linkDes = fixture.debugElement
+      .queryAll(By.directive(RouterLinkStubDirective));
+
+    // get attached link directive instances
+    // using each DebugElement's injector
+    const routerLinks = linkDes.map(de => de.injector.get(RouterLinkStubDirective));
+    expect(routerLinks.length).toBe(1, 'should have 1 routerLinks');
+    expect(routerLinks[0].linkParams).toBe('../');
+
+    testingUtility.sendClick(buttons[0]);
+    expect(routerLinks[0].navigatedTo).toBe('../');
+
+  });
+
+
+  it('should rerender when user navigates to same page with different id and use field selectors', () => {
+    fixture.detectChanges();
+    verifyMeta(sgPolicy1.meta.name, sgPolicy1.meta['creation-time'], sgPolicy1.meta['mod-time']);
+    verifyServiceCalls('policy1');
+
+    // change param id
+    let mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
+    sgPolicyWatchSpy.and.returnValue(
+      new BehaviorSubject({
         events: [
           {
             type: 'Created',
             object: sgPolicy2
           }
         ]
-      });
-
-      fixture.detectChanges();
-      // overlay should be gone
-      expect(getOverlay()).toBeNull();
-      verifyMeta(sgPolicy2.meta.name, sgPolicy2.meta['creation-time'], sgPolicy2.meta['mod-time']);
-      verifyTable(sgPolicy2.spec.rules, component.cols);
-      // Form controls should be enabled
-      expect(getSourceIpInput().nativeElement.disabled).toBeFalsy();
-      expect(getDestIpInput().nativeElement.disabled).toBeFalsy();
-      expect(getPortInput().nativeElement.disabled).toBeFalsy();
-
-      // Delete policy
-      policyWatchObserver.next({
-        events: [
-          {
-            type: 'Deleted',
-            object: sgPolicy2
-          }
-        ]
-      });
-
-      fixture.detectChanges();
-
-      expect(getOverlay()).toBeTruthy();
-      expect(getDeletedPolicyIcon()).toBeTruthy();
-      expect(getOverlayText().nativeElement.textContent).toContain('policy2 has been deleted');
-      buttons = getOverlayButtons();
-      expect(buttons.length).toBe(2);
-      expect(buttons[0].nativeElement.textContent).toContain('POLICIES');
-      expect(buttons[1].nativeElement.textContent).toContain('HOMEPAGE');
-      // Form controls should be disabled
-      expect(getSourceIpInput().nativeElement.disabled).toBeTruthy();
-      expect(getDestIpInput().nativeElement.disabled).toBeTruthy();
-      expect(getPortInput().nativeElement.disabled).toBeTruthy();
-
-      // Clicking homepage button
-      spyOn(component, 'routeToHomepage');
-      testingUtility.sendClick(buttons[1]);
-      expect(component.routeToHomepage).toHaveBeenCalled();
-
-      // find DebugElements with an attached RouterLinkStubDirective
-      const linkDes = fixture.debugElement
-        .queryAll(By.directive(RouterLinkStubDirective));
-
-      // get attached link directive instances
-      // using each DebugElement's injector
-      const routerLinks = linkDes.map(de => de.injector.get(RouterLinkStubDirective));
-      expect(routerLinks.length).toBe(1, 'should have 1 routerLinks');
-      expect(routerLinks[0].linkParams).toBe('../');
-
-      testingUtility.sendClick(buttons[0]);
-      expect(routerLinks[0].navigatedTo).toBe('../');
-    },20000);
-  });
-
-  it('should rerender when user navigates to same page with different id and use field selectors', () => {
-    setTimeout(()=> {
-      fixture.detectChanges();
-      verifyMeta(sgPolicy1.meta.name, sgPolicy1.meta['creation-time'], sgPolicy1.meta['mod-time']);
-      verifyServiceCalls('policy1');
-
-      // change param id
-      let mockActivatedRoute: MockActivatedRoute = TestBed.get(ActivatedRoute);
-      sgPolicyWatchSpy.and.returnValue(
-        new BehaviorSubject({
-          events: [
-            {
-              type: 'Created',
-              object: sgPolicy2
-            }
-          ]
-        })
-      );
-      mockActivatedRoute.setPolicyId('policy2');
+      })
+    );
+    mockActivatedRoute.setPolicyId('policy2');
 
 
-      // View should now be of policy2
-      fixture.detectChanges();
-      verifyMeta(sgPolicy2.meta.name, sgPolicy2.meta['creation-time'], sgPolicy2.meta['mod-time']);
-      verifyServiceCalls('policy2');
-      verifyTable(sgPolicy2.spec.rules, component.cols);
+    // View should now be of policy2
+    fixture.detectChanges();
+    verifyMeta(sgPolicy2.meta.name, sgPolicy2.meta['creation-time'], sgPolicy2.meta['mod-time']);
+    verifyServiceCalls('policy2');
+    verifyTable(sgPolicy2.spec.rules, component.cols);
 
-      // change param id
-      const policyWatchObserver = new ReplaySubject();
-      const policyGetObserver = new Observable((observable) => {
-        observable.error({ body: null, statusCode: 400 });
-      });
-      sgPolicyWatchSpy.and.returnValue(
-        policyWatchObserver
-      );
-      sgPolicyGetSpy.and.returnValue(
-        policyGetObserver
-      );
-      mockActivatedRoute = TestBed.get(ActivatedRoute);
-      mockActivatedRoute.setPolicyId('policy3');
+    // change param id
+    const policyWatchObserver = new ReplaySubject();
+    const policyGetObserver = new Observable((observable) => {
+      observable.error({ body: null, statusCode: 400 });
+    });
+    sgPolicyWatchSpy.and.returnValue(
+      policyWatchObserver
+    );
+    sgPolicyGetSpy.and.returnValue(
+      policyGetObserver
+    );
+    mockActivatedRoute = TestBed.get(ActivatedRoute);
+    mockActivatedRoute.setPolicyId('policy3');
 
-      verifyServiceCalls('policy3');
+    verifyServiceCalls('policy3');
 
-      // View should now be of missing overlay, and data should be cleared
-      fixture.detectChanges();
-      verifyMeta('', '', '');
-      verifyTable([], component.cols);
-      expect(getOverlay()).toBeTruthy();
-    },20000);
+    // View should now be of missing overlay, and data should be cleared
+    fixture.detectChanges();
+    verifyMeta('', '', '');
+    verifyTable([], component.cols);
+    expect(getOverlay()).toBeTruthy();
+
   });
 
   it('should fetch rule metrics', () => {
@@ -822,15 +813,13 @@ describe('SgpolicydetailComponent', () => {
     const spy = spyOn(service, 'pollMetrics').and.returnValue(
       new BehaviorSubject<any>(data)
     );
-    setTimeout(()=> {
-      fixture.detectChanges();
-      expect(spy).toHaveBeenCalled();
-      expect(component.ruleMetrics['hash1']).toBeTruthy();
-      expect(component.ruleMetrics['hash1']['UdpHits']).toBe(19);
-      expect(component.ruleMetrics['hash1']['EspHits']).toBe(2);
-      expect(component.ruleMetrics['hash1']['IcmpHits']).toBe(2);
-    },20000);
+    fixture.detectChanges();
+    expect(spy).toHaveBeenCalled();
+    expect(component.ruleMetrics['hash1']).toBeTruthy();
+    expect(component.ruleMetrics['hash1']['UdpHits']).toBe(19);
+    expect(component.ruleMetrics['hash1']['EspHits']).toBe(2);
+    expect(component.ruleMetrics['hash1']['IcmpHits']).toBe(2);
   });
-  */
+
 
 });

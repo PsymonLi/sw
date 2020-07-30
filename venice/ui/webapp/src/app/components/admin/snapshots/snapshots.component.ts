@@ -17,7 +17,7 @@ import { maxLengthValidator, patternValidator } from '@sdk/v1/utils/validators';
 import { Observable } from 'rxjs';
 import { AUTH_KEY } from '@app/core';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { PenPushTableComponent } from '@app/components/shared/pentable/penpushtable.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 /**
  * This component let user run CRUD operations on snapshot configurations.
@@ -41,7 +41,7 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
   public static SNAPSHOT_NAMESPACES: string = 'snapshots';
   public static SNAPSHOT_RESTORE_METANAME: string = 'SnapshotRestore';
 
-  @ViewChild('snapshotsTable') snapshotsTable: PenPushTableComponent;
+  @ViewChild('snapshotsTable') snapshotsTable: PentableComponent;
 
   dataObjects: ReadonlyArray<ObjstoreObject> = [];
   dataObjectsBackUp: ReadonlyArray<ObjstoreObject> = [];
@@ -332,18 +332,18 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
 
   getSnapshots() {
     this.tableLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     const sub = this.objstoreService.ListObject(SnapshotsComponent.SNAPSHOT_NAMESPACES).subscribe(
       (response) => {
         this.deletedSnapshots = [];
         this.processSnapshotImages(response);
         this.tableLoading = false;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       () => {
         this.tableLoading = false;
         this.controllerService.restErrorHandler('Failed to fetch snapshot images.');
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(sub);
@@ -571,7 +571,7 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
         this.deletedSnapshots = [...selectedSnapshotsNames];
         this.dataObjects = this.dataObjects.filter( snapshot => !this.deletedSnapshots.includes(snapshot.meta.name));
         this.clearSelectedDataObjects();  // we have to clear table selected objects after deleting records
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     });
   }
@@ -583,6 +583,6 @@ export class SnapshotsComponent extends DataComponent implements OnInit {
   onInvokeAPIonMultipleRecordsFailure() {
     this.deletedSnapshots = [];
     this.dataObjects = [...this.dataObjectsBackUp];
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 }

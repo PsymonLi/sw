@@ -191,7 +191,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     this.dataObjects = [];
     this.dataObjectsBackUp = [];
     this.alertsLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     this.alertsEventUtility = new HttpEventUtility<MonitoringAlert>(MonitoringAlert);
     this.alerts = this.alertsEventUtility.array;
     if (this.alertSubscription) {
@@ -210,7 +210,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       },
       (error) => {
         this.alertsLoading = false;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
         this._controllerService.webSocketErrorHandler('Failed to get Alert');
       }
     );
@@ -221,7 +221,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
           this.alertsTable.clearSearch();
         }
         this.alertsLoading = false;
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     }, 5000);
   }
@@ -261,7 +261,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       return this.selectedStateFilters.includes(MonitoringAlertSpec_state_uihint[item.spec.state]);
     });
     this.alertsLoading = false;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   /**
@@ -306,19 +306,19 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     const stagingBulkEditAction = this.buildBulkEditUpdateAlertsPayload(alerts, newState);
     this.alertsLoading = true;
     this.bulkEditHelper(alerts, stagingBulkEditAction, successMsg, failureMsg);
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
     this.alertsLoading = false;
     this.invokeTimeRangeValidator();
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
     this.alertsLoading = false;
     this.dataObjects = [...this.dataObjectsBackUp];
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
   }
 
   buildBulkEditUpdateAlertsPayload(updateAlerts: MonitoringAlert[], newState: MonitoringAlertSpec_state, buffername: string = ''): IStagingBulkEditAction {
@@ -418,19 +418,19 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
   updateAlertState(alert: MonitoringAlert, newState: MonitoringAlertSpec_state, summary: string, msg: string) {
     // Create copy so that when we modify it doesn't change the view
     this.alertsLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     const observable = this.buildUpdateAlertStateObservable(alert, newState);
     const subscription = observable.subscribe(
       response => {
         this._controllerService.invokeSuccessToaster(summary, msg);
         this.alertsLoading = false;
         this.invokeTimeRangeValidator(); // Gets new time and update table accordingly. Avoids using Stale Time Query
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       },
       () => {
         this.alertsLoading = false;
         this._controllerService.restErrorHandler(summary + ' Failed');
-        this.cdr.detectChanges();
+        this.refreshGui(this.cdr);
       }
     );
     this.subscriptions.push(subscription);
@@ -559,7 +559,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
    */
   onSearchAlerts(field = this.alertsTable.sortField, order = this.alertsTable.sortOrder) {
     this.alertsLoading = true;
-    this.cdr.detectChanges();
+    this.refreshGui(this.cdr);
     const searchResults = this.onSearchDataObjects(field, order, 'Alert', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackUp, this.alertsTable.advancedSearchComponent);
     if (searchResults && searchResults.length > 0) {
       this.alerts = searchResults;
@@ -567,7 +567,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       this.filterAlerts();
     } else {
       this.alertsLoading = false;
-      this.cdr.detectChanges();
+      this.refreshGui(this.cdr);
     }
   }
 

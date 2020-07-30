@@ -36,23 +36,23 @@
     </div>
   </mat-expansion-panel>
 
-  <app-penpushtable #snapshotsTable
-                    dataKey="meta.name"
-                    [actionTemplate]="actionTemplate"
-                    [bodyTemplate]="bodyTemplate"
-                    [captionTemplate]="captionTemplate"
-                    [createTemplate]="createTemplate"
-                    [expandTemplate]="expandTemplate"
-                    [columns]="cols"
-                    [data]="dataObjects"
-                    [enableCheckbox]="true"
-                    [loading]="tableLoading"
-                    [rowHeight]="46"
-                    [searchable]="false"
-                    [exportFilename]="exportFilename"
-                    [exportMap]="exportMap"
-                    [loading]="tableLoading">
-  </app-penpushtable>
+  <app-pentable #snapshotsTable
+                dataKey="meta.name"
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [createTemplate]="createTemplate"
+                [expandTemplate]="expandTemplate"
+                [columns]="cols"
+                [data]="dataObjects"
+                [enableCheckbox]="true"
+                [loading]="tableLoading"
+                [rowHeight]="46"
+                [searchable]="false"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
+                [loading]="tableLoading">
+  </app-pentable>
 </app-pagebody>
 
 
