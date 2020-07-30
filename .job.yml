@@ -301,13 +301,13 @@ jobs:
     labels: ["compat-server-reboot"]
   iota/test/standalone/compat/compat-server/ubuntu18043-reboot:
     labels: ["compat-server-reboot"]
-  iota/test/standalone/compat/compat-server/esx6.7-reboot-uefi: 
+  iota/test/standalone/compat/compat-server/esx6.7-reboot-uefi:
     labels: ["compat-server-reboot-uefi"]
-  iota/test/standalone/compat/compat-server/rhel7u5-reboot-uefi: 
+  iota/test/standalone/compat/compat-server/rhel7u5-reboot-uefi:
     labels: ["compat-server-reboot-uefi"]
   iota/test/standalone/compat/compat-server/rhel7u8-reboot-uefi:
     labels: ["compat-server-reboot-uefi"]
-  iota/test/standalone/compat/compat-server/sles12sp5-reboot-uefi: 
+  iota/test/standalone/compat/compat-server/sles12sp5-reboot-uefi:
     labels: ["compat-server-reboot-uefi"]
   iota/test/standalone/compat/compat-server/sles15sp1-reboot-uefi/:
     labels: ["compat-server-reboot-uefi"]
@@ -349,6 +349,8 @@ jobs:
     labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   platform/drivers/linux:
     labels: ["CI-Sanity-Build"]
+  platform/penutil:
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   platform/src/app/pciemgrd:
     labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   storage/offload:

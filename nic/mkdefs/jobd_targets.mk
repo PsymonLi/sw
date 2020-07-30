@@ -423,6 +423,10 @@ jobd/gtests/platform: ${JOBD_PREREQS}
 	./run.py ${COVERAGE_OPTS} --nicmgr_gtest --classic
 	./run.py ${COVERAGE_OPTS} --nicmgr_gtest
 
+.PHONY: jobd/gtests/platform/penutil
+jobd/gtests/platform/penutil: ${JOBD_PREREQS}
+	${MAKE} -j1 -C ${TOPDIR}/platform/penutil
+
 .PHONY: jobd/gtests-valgrind
 jobd/gtests-valgrind: ${JOBD_PREREQS}
 	${NICDIR}/tools/run_gtests_valgrind.sh ${COVERAGE_OPTS}

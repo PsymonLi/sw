@@ -87,7 +87,7 @@ package-ipxe:
 	make PLATFORM=efi ARCH=x86_64 -C ${TOPDIR}/platform/drivers/pxe ionic-ipxepatch
 
 .PHONY: package-drivers
-package-drivers: package-ionic package-storage-offload package-freebsd package-esx package-ipxe package-windows
+package-drivers: package-ionic package-storage-offload package-freebsd package-esx package-ipxe package-windows package-penutil
 
 .PHONY: package-freebsd
 package-freebsd:
@@ -98,6 +98,17 @@ package-freebsd:
 package-windows:
 	@echo "Building Windows IONIC driver package."
 	${TOPDIR}/platform/tools/drivers-windows.sh
+
+.PHONY: package-penutil
+package-penutil:
+	@echo "Building penutil for Linux"
+	make -C ${TOPDIR}/platform/penutil penutil
+	@echo "Building penutil for Windows"
+#	${TOPDIR}/platform/tools/penutil-windows.sh
+	@echo "Building penutil for ESX"
+#	${TOPDIR}/platform/tools/penutil-esx.sh
+	@echo "Creating penutil package for Linux, Windows and ESX"
+#	${TOPDIR}/platform/tools/penutil-package.sh
 
 .PHONY: release
 release: ${PKG_PREREQS}
