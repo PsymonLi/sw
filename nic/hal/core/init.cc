@@ -468,7 +468,7 @@ hal_sdk_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
     char       logbuf[1024];
     va_list    args;
 
-    if ((int)hal_trace_level() >= (int)tracel_level)  {
+    if (hal_mod_trace_enabled(mod_id, tracel_level)) {
         va_start(args, format);
         vsnprintf(logbuf, sizeof(logbuf), format, args);
         switch (tracel_level) {

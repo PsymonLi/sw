@@ -93,6 +93,26 @@ hal_mod_trace_enabled (int mod_id)
     return (g_hal_mod_trace_en_bits & (0x1 << mod_id));
 }
 
+static inline bool
+hal_mod_trace_enabled (uint32_t mod_id, sdk_trace_level_e trace_level)
+{
+    ::utils::trace_level_e  mod_trace_level;
+
+    switch (mod_id) {
+    case sdk_mod_id_t::SDK_MOD_ID_LINK:
+        mod_trace_level = hal_link_trace_level();
+        break;
+    default:
+        mod_trace_level = hal_trace_level();
+        break;
+    }
+
+    if ((int)mod_trace_level >= (int)trace_level)  {
+        return true;
+    }
+    return false;
+}
+
 }    // utils
 }    // hal
 
@@ -101,6 +121,7 @@ using hal::utils::hal_link_logger;
 using hal::utils::hal_syslogger;
 using hal::utils::hal_trace_level;
 using hal::utils::hal_link_trace_level;
+using hal::utils::hal_mod_trace_enabled;
 
 //------------------------------------------------------------------------------
 // HAL syslog macros
