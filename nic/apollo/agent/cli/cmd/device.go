@@ -18,10 +18,10 @@ import (
 )
 
 var (
-	memoryProfile     string
-	deviceProfile     string
-	deviceTimeout     uint32
-	ipMappingPriority uint32
+	memoryProfile          string
+	deviceProfile          string
+	deviceTimeout          uint32
+	ipMappingClassPriority uint32
 )
 
 var deviceShowCmd = &cobra.Command{
@@ -46,7 +46,7 @@ func init() {
 	deviceUpdateCmd.Flags().StringVar(&memoryProfile, "memory-profile", "default", "Specify memory profile (Ex: default)")
 	deviceUpdateCmd.Flags().StringVar(&deviceProfile, "device-profile", "default", "Specify device profile (Ex: default, 2pf, 3pf, 4pf, 5pf, 6pf, 7pf, 8pf, 16pf, bitw-smart-service)")
 	deviceUpdateCmd.Flags().Uint32Var(&deviceTimeout, "learn-age-timeout", 300, "Specify device aging timeout for learned MAC/IP in secs (Valid: 30-86400)")
-	deviceUpdateCmd.Flags().Uint32Var(&ipMappingPriority, "ip-mapping-priority", 0, "Specify IP mapping priority (Valid: 0-1023)")
+	deviceUpdateCmd.Flags().Uint32Var(&ipMappingClassPriority, "ip-mapping-class-priority", 0, "Specify IP mapping class priority (Valid: 0-31)")
 }
 
 func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
@@ -66,7 +66,7 @@ func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 	if cmd.Flags().Changed("memory-profile") == false &&
 		cmd.Flags().Changed("device-profile") == false &&
 		cmd.Flags().Changed("learn-age-timeout") == false &&
-		cmd.Flags().Changed("ip-mapping-priority") == false {
+		cmd.Flags().Changed("ip-mapping-class-priority") == false {
 		fmt.Printf("No arguments specified, refer to help string\n")
 		cmd.Help()
 		return
@@ -91,15 +91,15 @@ func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			return
 		}
 		updateSpec = &pds.DeviceSpec{
-			IPAddr:            spec.GetIPAddr(),
-			MACAddr:           spec.GetMACAddr(),
-			GatewayIP:         spec.GetGatewayIP(),
-			IPMappingPriority: spec.GetIPMappingPriority(),
-			DevOperMode:       spec.GetDevOperMode(),
-			BridgingEn:        spec.GetBridgingEn(),
-			OverlayRoutingEn:  spec.GetOverlayRoutingEn(),
-			DeviceProfile:     spec.GetDeviceProfile(),
-			MemoryProfile:     inputToMemoryProfile(memoryProfile),
+			IPAddr:                 spec.GetIPAddr(),
+			MACAddr:                spec.GetMACAddr(),
+			GatewayIP:              spec.GetGatewayIP(),
+			IPMappingClassPriority: spec.GetIPMappingClassPriority(),
+			DevOperMode:            spec.GetDevOperMode(),
+			BridgingEn:             spec.GetBridgingEn(),
+			OverlayRoutingEn:       spec.GetOverlayRoutingEn(),
+			DeviceProfile:          spec.GetDeviceProfile(),
+			MemoryProfile:          inputToMemoryProfile(memoryProfile),
 			LearnSpec: &pds.LearnSpec{
 				LearnMode:       spec.GetLearnSpec().GetLearnMode(),
 				LearnAgeTimeout: spec.GetLearnSpec().GetLearnAgeTimeout(),
@@ -112,15 +112,15 @@ func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			return
 		}
 		updateSpec = &pds.DeviceSpec{
-			IPAddr:            spec.GetIPAddr(),
-			MACAddr:           spec.GetMACAddr(),
-			GatewayIP:         spec.GetGatewayIP(),
-			IPMappingPriority: spec.GetIPMappingPriority(),
-			DevOperMode:       spec.GetDevOperMode(),
-			BridgingEn:        spec.GetBridgingEn(),
-			OverlayRoutingEn:  spec.GetOverlayRoutingEn(),
-			MemoryProfile:     spec.GetMemoryProfile(),
-			DeviceProfile:     inputToDeviceProfile(deviceProfile),
+			IPAddr:                 spec.GetIPAddr(),
+			MACAddr:                spec.GetMACAddr(),
+			GatewayIP:              spec.GetGatewayIP(),
+			IPMappingClassPriority: spec.GetIPMappingClassPriority(),
+			DevOperMode:            spec.GetDevOperMode(),
+			BridgingEn:             spec.GetBridgingEn(),
+			OverlayRoutingEn:       spec.GetOverlayRoutingEn(),
+			MemoryProfile:          spec.GetMemoryProfile(),
+			DeviceProfile:          inputToDeviceProfile(deviceProfile),
 			LearnSpec: &pds.LearnSpec{
 				LearnMode:       spec.GetLearnSpec().GetLearnMode(),
 				LearnAgeTimeout: spec.GetLearnSpec().GetLearnAgeTimeout(),
@@ -133,36 +133,36 @@ func deviceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			return
 		}
 		updateSpec = &pds.DeviceSpec{
-			IPAddr:            spec.GetIPAddr(),
-			MACAddr:           spec.GetMACAddr(),
-			GatewayIP:         spec.GetGatewayIP(),
-			IPMappingPriority: spec.GetIPMappingPriority(),
-			DevOperMode:       spec.GetDevOperMode(),
-			BridgingEn:        spec.GetBridgingEn(),
-			OverlayRoutingEn:  spec.GetOverlayRoutingEn(),
-			MemoryProfile:     spec.GetMemoryProfile(),
-			DeviceProfile:     spec.GetDeviceProfile(),
+			IPAddr:                 spec.GetIPAddr(),
+			MACAddr:                spec.GetMACAddr(),
+			GatewayIP:              spec.GetGatewayIP(),
+			IPMappingClassPriority: spec.GetIPMappingClassPriority(),
+			DevOperMode:            spec.GetDevOperMode(),
+			BridgingEn:             spec.GetBridgingEn(),
+			OverlayRoutingEn:       spec.GetOverlayRoutingEn(),
+			MemoryProfile:          spec.GetMemoryProfile(),
+			DeviceProfile:          spec.GetDeviceProfile(),
 			LearnSpec: &pds.LearnSpec{
 				LearnMode:       spec.GetLearnSpec().GetLearnMode(),
 				LearnAgeTimeout: deviceTimeout,
 				LearnSource:     spec.GetLearnSpec().GetLearnSource(),
 			},
 		}
-	} else if cmd.Flags().Changed("ip-mapping-priority") {
-		if ipMappingPriority > 1023 {
-			fmt.Printf("Invalid IP mapping priority specified, valid range 0-1023")
+	} else if cmd.Flags().Changed("ip-mapping-class-priority") {
+		if ipMappingClassPriority > 31 {
+			fmt.Printf("Invalid IP mapping class priority specified, valid range 0-31")
 			return
 		}
 		updateSpec = &pds.DeviceSpec{
-			IPAddr:            spec.GetIPAddr(),
-			MACAddr:           spec.GetMACAddr(),
-			GatewayIP:         spec.GetGatewayIP(),
-			IPMappingPriority: ipMappingPriority,
-			DevOperMode:       spec.GetDevOperMode(),
-			BridgingEn:        spec.GetBridgingEn(),
-			OverlayRoutingEn:  spec.GetOverlayRoutingEn(),
-			MemoryProfile:     spec.GetMemoryProfile(),
-			DeviceProfile:     spec.GetDeviceProfile(),
+			IPAddr:                 spec.GetIPAddr(),
+			MACAddr:                spec.GetMACAddr(),
+			GatewayIP:              spec.GetGatewayIP(),
+			IPMappingClassPriority: ipMappingClassPriority,
+			DevOperMode:            spec.GetDevOperMode(),
+			BridgingEn:             spec.GetBridgingEn(),
+			OverlayRoutingEn:       spec.GetOverlayRoutingEn(),
+			MemoryProfile:          spec.GetMemoryProfile(),
+			DeviceProfile:          spec.GetDeviceProfile(),
 			LearnSpec: &pds.LearnSpec{
 				LearnMode:       spec.GetLearnSpec().GetLearnMode(),
 				LearnAgeTimeout: spec.GetLearnSpec().GetLearnAgeTimeout(),
@@ -320,31 +320,30 @@ func printDevice(resp *pds.DeviceGetResponse) {
 		fmt.Println("-")
 		return
 	}
-	fmt.Printf("%-30s : %s\n", "IP Address", utils.IPAddrToStr(spec.GetIPAddr()))
-	fmt.Printf("%-30s : %s\n", "MAC Address", utils.MactoStr(spec.GetMACAddr()))
-	fmt.Printf("%-30s : %s\n", "Gateway IP", utils.IPAddrToStr(spec.GetGatewayIP()))
-	fmt.Printf("%-30s : %s\n", "Memory Profile",
+	fmt.Printf("%-36s : %s\n", "IP Address", utils.IPAddrToStr(spec.GetIPAddr()))
+	fmt.Printf("%-36s : %s\n", "MAC Address", utils.MactoStr(spec.GetMACAddr()))
+	fmt.Printf("%-36s : %s\n", "Gateway IP", utils.IPAddrToStr(spec.GetGatewayIP()))
+	fmt.Printf("%-36s : %s\n", "Memory Profile",
 		strings.ToLower(strings.Replace(spec.GetMemoryProfile().String(),
 			"MEMORY_PROFILE_", "", -1)))
-	fmt.Printf("%-30s : %s\n", "Device Profile",
+	fmt.Printf("%-36s : %s\n", "Device Profile",
 		strings.ToLower(strings.Replace(strings.Replace(spec.GetDeviceProfile().String(),
 			"DEVICE_PROFILE_", "", -1), "_", "-", -1)))
-	fmt.Printf("%-30s : %t\n", "Bridging Enabled", spec.GetBridgingEn())
-	fmt.Printf("%-30s : %s\n", "Learn Mode",
+	fmt.Printf("%-36s : %t\n", "Bridging Enabled", spec.GetBridgingEn())
+	fmt.Printf("%-36s : %s\n", "Learn Mode",
 		strings.ToLower(strings.Replace(spec.GetLearnSpec().GetLearnMode().String(),
 			"LEARN_MODE_", "", -1)))
-	fmt.Printf("%-30s : %d\n", "Learn Age Timeout", spec.GetLearnSpec().GetLearnAgeTimeout())
-	fmt.Printf("%-30s : %d\n", "IP Mapping Priority", spec.GetIPMappingPriority())
-	fmt.Printf("%-30s : %s\n", "Operational Mode",
+	fmt.Printf("%-36s : %d\n", "Learn Age Timeout", spec.GetLearnSpec().GetLearnAgeTimeout())
+	fmt.Printf("%-36s : %d\n", "IP Mapping Class Priority", spec.GetIPMappingClassPriority())
+	fmt.Printf("%-36s : %s\n", "Operational Mode",
 		strings.ToLower(strings.Replace(strings.Replace(spec.GetDevOperMode().String(),
 			"DEVICE_OPER_MODE_", "", -1), "_", "-", -1)))
-	fmt.Printf("%-30s : %t\n", "Overlay Routing Enabled", spec.GetOverlayRoutingEn())
-	fmt.Printf("%-30s : %s\n", "FRU MAC Address", utils.MactoStr(status.GetSystemMACAddress()))
-	fmt.Printf("%-30s : %dG\n", "Memory", status.GetMemory())
-	fmt.Printf("%-30s : %s\n", "Manufacturing Date", status.GetManufacturingDate())
-	fmt.Printf("%-30s : %s\n", "Product Name", status.GetProductName())
-	fmt.Printf("%-30s : %s\n", "Serial Number", status.GetSerialNumber())
-	fmt.Printf("%-30s : %s\n", "Part Number", status.GetSku())
-	fmt.Printf("%-30s : %d\n", "IP Mapping Priority", spec.GetIPMappingPriority())
-	fmt.Printf("%-30s : %s\n", "Tx Policer", utils.IdToStr(spec.GetTxPolicerId()))
+	fmt.Printf("%-36s : %t\n", "Overlay Routing Enabled", spec.GetOverlayRoutingEn())
+	fmt.Printf("%-36s : %s\n", "Tx Policer", utils.IdToStr(spec.GetTxPolicerId()))
+	fmt.Printf("%-36s : %s\n", "FRU MAC Address", utils.MactoStr(status.GetSystemMACAddress()))
+	fmt.Printf("%-36s : %dG\n", "Memory", status.GetMemory())
+	fmt.Printf("%-36s : %s\n", "Manufacturing Date", status.GetManufacturingDate())
+	fmt.Printf("%-36s : %s\n", "Product Name", status.GetProductName())
+	fmt.Printf("%-36s : %s\n", "Serial Number", status.GetSerialNumber())
+	fmt.Printf("%-36s : %s\n", "Part Number", status.GetSku())
 }

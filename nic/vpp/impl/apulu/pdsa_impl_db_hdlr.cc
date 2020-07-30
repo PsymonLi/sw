@@ -194,7 +194,7 @@ pds_cfg_db_device_set_cb (const pds_cfg_msg_t *msg)
                                 (spec->device_ip_addr.af == IP_AF_IPV4) ? 1:0,
                                 spec->overlay_routing_en,
                                 spec->symmetric_routing_en,
-                                spec->ip_mapping_priority,
+                                spec->ip_mapping_class_priority,
                                 host, bitw_switch, bitw_svc, bitw_classic);
     if (rc == 0) {
         return sdk::SDK_RET_OK;

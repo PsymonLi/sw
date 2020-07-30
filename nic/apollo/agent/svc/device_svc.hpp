@@ -161,7 +161,7 @@ pds_device_api_spec_to_proto (pds::DeviceSpec *proto_spec,
         proto_spec->set_memoryprofile(pds::MEMORY_PROFILE_DEFAULT);
         break;
     }
-    proto_spec->set_ipmappingpriority(api_spec->ip_mapping_priority);
+    proto_spec->set_ipmappingclasspriority(api_spec->ip_mapping_class_priority);
     proto_spec->set_fwpolicyxposnscheme(
                     pds_fw_policy_xposn_api_spec_to_proto(
                         api_spec->fw_action_xposn_scheme));
@@ -343,8 +343,8 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
         api_spec->memory_profile = PDS_MEMORY_PROFILE_DEFAULT;
         break;
     }
-    // valid priority range is 0-1023
-    api_spec->ip_mapping_priority = proto_spec.ipmappingpriority() & 0x3FF;
+    // valid priority range is 0-31
+    api_spec->ip_mapping_class_priority = proto_spec.ipmappingclasspriority() & 0x1F;
     api_spec->fw_action_xposn_scheme =
         pds_fw_policy_xposn_proto_to_api_spec(proto_spec.fwpolicyxposnscheme());
     pds_obj_key_proto_to_api_spec(&api_spec->tx_policer,

@@ -156,22 +156,21 @@ typedef struct pds_device_s {
     pds_memory_profile_t   memory_profile;
     /// device operational mode
     pds_device_oper_mode_t dev_oper_mode;
-    /// priority of IP mapping entries (this priority, if configured, will be
-    /// used to break the tie in case both LPM/prefix and a mapping entry are
-    /// hit in the datapath (i.e., /32 IP mapping entry is also in some LPM
-    ///prefix)
+    /// priority class of IP mapping entries, is used to break the tie in case
+    /// both LPM/prefix and a mapping entry are hit in the datapath (i.e., /32
+    /// IP mapping entry is also in some LPM prefix) for the same packet.
     /// NOTE:
-    /// 1. by default IP mapping always takes precedence over LPM hit and
-    ///    default value of this attribute is 0 (lower the numerical value,
-    ///    the higher the priority, hence 0 is the highest priority)
-    /// 2. valid priority value range is 0 (highest) to 1023 (lowest)
-    /// 3. if mapping and route are both hit and both have same priority,
+    /// 1. by default IP mapping always takes precedence over LPM hit as the
+    ///    default value of this attribute is 0 (and lower the numerical value,
+    ///    higher the priority, hence 0 is the highest priority)
+    /// 2. valid priority value range is 0 to 31
+    /// 3. if mapping and route are both hit and both have same class priority,
     ///    mapping result will take precedence over route (even if it is /32
     ///    route)
     /// 4. if the value of this attribute is updated on the fly, it will not
     ///    affect the flows/sessions that are already created, but it will take
     ///    affect only on the new sessions/flows created after such an update
-    uint16_t               ip_mapping_priority;
+    uint16_t               ip_mapping_class_priority;
     /// firewall action transposition scheme
     fw_policy_xposn_t      fw_action_xposn_scheme;
     /// Tx policer, if any

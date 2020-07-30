@@ -28,9 +28,6 @@ using pds::MeterStatsGetRequest;
 using pds::MeterStatsGetResponse;
 using pds::SessionStatsGetRequest;
 using pds::SessionStatsGetResponse;
-using pds::FteStatsGetResponse;
-using pds::FteStatsClearRequest;
-using pds::FteStatsGetResponse;
 using pds::QueueCreditsGetResponse;
 using pds::AacsRequest;
 using pds::SlabGetResponse;
@@ -66,10 +63,6 @@ public:
                          pds::MeterStatsGetResponse *rsp) override;
     Status SessionStatsGet(ServerContext *context, const pds::SessionStatsGetRequest *req,
                            pds::SessionStatsGetResponse *rsp) override;
-    Status FteStatsGet(ServerContext *context, const Empty *req,
-                       pds::FteStatsGetResponse *rsp) override;
-    Status FteStatsClear(ServerContext *context, const pds::FteStatsClearRequest *req,
-                         pds::FteStatsClearResponse *rsp) override;
     Status MemoryTrim(ServerContext *context, const Empty *req,
                       Empty *rsp) override;
     Status QueueCreditsGet(ServerContext *context, const Empty *req,

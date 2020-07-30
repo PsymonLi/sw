@@ -124,51 +124,50 @@ message LearnSpec {
 
 message DeviceSpec {
   // local IP address in the underlay (i.e. MyTEP IP or local TEP IP)
-  types.IPAddress     IPAddr              = 1;
+  types.IPAddress     IPAddr                 = 1;
   // system MAC (NAPLES's system MAC will be used if not provided)
-  uint64              MACAddr             = 2;
+  uint64              MACAddr                = 2;
   // IP address of the gateway in the underlay
-  types.IPAddress     GatewayIP           = 3;
+  types.IPAddress     GatewayIP              = 3;
   // operational mode of the device
   // NOTE: when operational mode is modified, it will take affect only after
   //       next reboot of NAPLES/DSC
-  DeviceOperMode      DevOperMode         = 4 [(gogoproto.moretags) = "meta:mandatory, persisted"];
+  DeviceOperMode      DevOperMode            = 4 [(gogoproto.moretags) = "meta:mandatory, persisted"];
   // Memory Profile (only MEMORY_PROFILE_DEFAULT is supported)
   // NOTE: when a device profile is changed, it will take affect after next
   // reboot of NAPLES/DSC
-  MemoryProfile       MemoryProfile       = 5 [(gogoproto.moretags) = "meta:mandatory,persisted"];
+  MemoryProfile       MemoryProfile          = 5 [(gogoproto.moretags) = "meta:mandatory,persisted"];
   // Device Profile
-  DeviceProfile       DeviceProfile       = 6 [(gogoproto.moretags) = "meta:mandatory,persisted"];
+  DeviceProfile       DeviceProfile          = 6 [(gogoproto.moretags) = "meta:mandatory,persisted"];
   // if BridgingEn is true, L2 functionality based on MAC addresses kicks in
   // NOTE: when operational mode is modified, it will take affect only after
   //       next reboot of NAPLES/DSC
-  bool                BridgingEn          = 7 [(gogoproto.moretags) = "meta:mandatory"];
+  bool                BridgingEn             = 7 [(gogoproto.moretags) = "meta:mandatory"];
   // MAC/IP learning controls
   // NOTE: if LearnSpec is not configured learning is disabled by default
-  LearnSpec           LearnSpec           = 8;
-  // priority of IP mapping entries (this priority, if configured, will be
-  // used to break the tie in case both LPM/prefix and a mapping entry are
-  // hit in the datapath (i.e., /32 IP mapping entry is also in some LPM
-  // prefix)
+  LearnSpec           LearnSpec              = 8;
+  // priority class of IP mapping entries, is used to break the tie in case
+  // both LPM/prefix and a mapping entry are hit in the datapath (i.e., /32 IP
+  // mapping entry is also in some LPM prefix) for the same packet.
   // NOTE:
-  // 1. by default IP mapping always takes precedence over LPM hit and
-  //    default value of this attribute is 0 (lower the numerical value,
-  //    the higher the priority, hence 0 is the highest priority)
-  // 2. valid priority value range is 0 to 1023
-  // 3. if mapping and route are both hit and both have same priority,
+  // 1. by default IP mapping always takes precedence over LPM hit as the
+  //    default value of this attribute is 0 (and lower the numerical value,
+  //    higher the priority, hence 0 is the highest priority)
+  // 2. valid priority value range is 0 to 31
+  // 3. if mapping and route are both hit and both have same class priority,
   //    mapping result will take precedence over route (even if it is /32 route)
   // 4. if the value of this attribute is updated on the fly, it will not
   //    affect the flows/sessions that are already created, but it will take
   //    affect only on the new sessions/flows created after such an update
-  uint32              IPMappingPriority   = 9 [(gogoproto.moretags) = "meta:range:0-1023"];
+  uint32              IPMappingClassPriority = 9 [(gogoproto.moretags) = "meta:range:0-31,default=0"];
   // firewall (if enabled) action transposition logic dictates how the policy
   // lookup results are processed when multiple security policies are applied
   // on a packet
-  types.FwPolicyXposn FwPolicyXposnScheme = 10 [(gogoproto.moretags) = "meta:default=FW_POLICY_XPOSN_GLOBAL_PRIORITY"];
+  types.FwPolicyXposn FwPolicyXposnScheme    = 10 [(gogoproto.moretags) = "meta:default=FW_POLICY_XPOSN_GLOBAL_PRIORITY"];
   // enable the control plane stack for overlay routing
   // NOTE: when OverlayRoutingEn is modified, it will take affect only after
   //       next reboot of NAPLES/DSC
-  bool                OverlayRoutingEn    = 11 [(gogoproto.moretags) = "meta:mandatory"];
+  bool                OverlayRoutingEn       = 11 [(gogoproto.moretags) = "meta:mandatory"];
   // when SymmetricRoutingEn is set to true, outgoing inter-subnet (encapped)
   // traffic carries VPC's VxLAN vnid and incoming inter-subnet (encapped)
   // traffic is expected to come with VPC's VxLAN vnid. If SymmetricRoutingEn is
@@ -178,14 +177,14 @@ message DeviceSpec {
   // NOTE: if the value of this attribute is updated on the fly, it will not
   //       affect the flows/sessions that are already created, but it will take
   //       affect only on the new sessions/flows created after such an update
-  bool                SymmetricRoutingEn  = 12 [(gogoproto.moretags) = "meta:default=false"];
+  bool                SymmetricRoutingEn     = 12 [(gogoproto.moretags) = "meta:default=false"];
   // TxPolicerId, if configured, will rate limit the Tx bandwidth (bytes per
   // second) or PPS (packets per second) of all host interfaces put together
   // to the configured value
-  bytes               TxPolicerId         = 13;
+  bytes               TxPolicerId            = 13;
   // SysName, if configured, will be used to advertise as system name in
   // protocols like LLDP etc. it cannot be longer than 64 bytes
-  string              SysName             = 14;
+  string              SysName                = 14;
 }
 
 // device operational status

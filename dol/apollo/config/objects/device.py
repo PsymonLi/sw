@@ -86,7 +86,7 @@ class DeviceObject(base.ConfigObjectBase):
         self.EncapType = base.Encap.GetRpcEncapType(getattr(spec, 'encap', 'none'))
         self.PolicyAnyDeny = getattr(spec, 'any-deny-policy', False)
         self.Mutable = utils.IsUpdateSupported()
-        self.IPMappingPriority = getattr(spec, 'ip-mapping-priority', 0)
+        self.IPMappingClassPriority = getattr(spec, 'ip-mapping-class-priority', 0)
         self.LearnSpec = LearnSpec(getattr(spec, 'learn-mode', None), \
                                    getattr(spec, 'learn-agetimeout', 300), \
                                    getattr(spec, 'learn-dhcp-enable', True), \
@@ -152,7 +152,7 @@ class DeviceObject(base.ConfigObjectBase):
         spec.DevOperMode = utils.GetRpcDeviceMode(self.Mode)
         spec.BridgingEn = self.BridgingEnabled
         spec.OverlayRoutingEn = self.OverlayRoutingEn
-        spec.IPMappingPriority = self.IPMappingPriority
+        spec.IPMappingClassPriority = self.IPMappingClassPriority
         spec.LearnSpec.LearnMode = self.LearnSpec.LearnMode
         spec.LearnSpec.LearnAgeTimeout = self.LearnSpec.LearnAgeTimeout
         spec.LearnSpec.LearnSource.ArpLearnEn = self.LearnSpec.LearnSource.ArpLearnEn
@@ -165,7 +165,7 @@ class DeviceObject(base.ConfigObjectBase):
         return
 
     def GetPdsSpecScalarAttrs(self):
-        return ['IPAddr', 'GatewayIP', 'DevOperMode', 'MemoryProfile', 'DeviceProfile', 'BridgingEn', 'IPMappingPriority', 'FwPolicyXposnScheme', 'OverlayRoutingEn', 'SymmetricRoutingEn']
+        return ['IPAddr', 'GatewayIP', 'DevOperMode', 'MemoryProfile', 'DeviceProfile', 'BridgingEn', 'IPMappingClassPriority', 'FwPolicyXposnScheme', 'OverlayRoutingEn', 'SymmetricRoutingEn']
 
     def ValidatePdsSpecCompositeAttrs(self, objSpec, spec):
         mismatchingAttrs = []

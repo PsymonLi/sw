@@ -279,30 +279,6 @@ pds_session_stats_get (debug::session_stats_get_cb_t cb, uint32_t lowidx,
 }
 
 sdk_ret_t
-pds_fte_api_stats_get (void)
-{
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-pds_fte_table_stats_get (void)
-{
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-pds_fte_api_stats_clear (void)
-{
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-pds_fte_table_stats_clear (void)
-{
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
 pds_session_get (debug::session_get_cb_t cb, void *ctxt)
 {
     return impl_base::pipeline_impl()->session(cb, ctxt);

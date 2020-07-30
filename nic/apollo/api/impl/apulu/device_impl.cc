@@ -133,7 +133,7 @@ program_device (pds_device_spec_t *spec)
 
     // program priority of the mapping lookup results as table constant
     sdk::asic::pd::asicpd_program_table_constant(P4TBL_ID_MAPPING,
-                                                 spec->ip_mapping_priority);
+                       spec->ip_mapping_class_priority);
     // program the policy transposition scheme
     if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_GLOBAL_PRIORITY) {
         sdk::asic::pd::asicpd_program_table_constant(
@@ -257,7 +257,7 @@ device_impl::fill_spec_(pds_device_spec_t *spec) {
 
     // fill the priority of the mapping lookup results from table constant
     sdk::asic::pd::asicpd_read_table_constant(P4TBL_ID_MAPPING, &tc);
-    spec->ip_mapping_priority = tc;
+    spec->ip_mapping_class_priority = tc;
 
     // fill the policy transposition scheme configured
     sdk::asic::pd::asicpd_read_table_constant(P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,

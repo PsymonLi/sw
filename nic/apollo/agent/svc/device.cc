@@ -104,7 +104,7 @@ pds_device_state_update (pds_device_spec_t *curr, pds_device_spec_t *spec)
     curr->learn_spec = spec->learn_spec;
     curr->overlay_routing_en = spec->overlay_routing_en;
     curr->symmetric_routing_en = spec->symmetric_routing_en;
-    curr->ip_mapping_priority = spec->ip_mapping_priority;
+    curr->ip_mapping_class_priority = spec->ip_mapping_class_priority;
     curr->fw_action_xposn_scheme = spec->fw_action_xposn_scheme;
     curr->tx_policer = spec->tx_policer;
 }
@@ -118,7 +118,7 @@ pds_device_copy_mutable_attrs (pds_device_spec_t *new_spec,
     MAC_ADDR_COPY(new_spec->device_mac_addr, spec->device_mac_addr);
     new_spec->gateway_ip_addr = spec->gateway_ip_addr;
     new_spec->learn_spec = spec->learn_spec;
-    new_spec->ip_mapping_priority = spec->ip_mapping_priority;
+    new_spec->ip_mapping_class_priority = spec->ip_mapping_class_priority;
     new_spec->fw_action_xposn_scheme = spec->fw_action_xposn_scheme;
     new_spec->tx_policer = spec->tx_policer;
 }
