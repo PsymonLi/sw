@@ -55,11 +55,9 @@ class LocalMappingObject(base.MappingObjectBase):
         else:
             self.AddrFamily = 'IPV4'
             if getattr(spec, 'lipaddr', None) != None:
-                logger.info("LocalMapping Object assigned IP address:%s" % spec.lipaddr)
                 self.IPAddr = ipaddress.IPv4Address(spec.lipaddr)
             else:
                 self.IPAddr = parent.SUBNET.AllocIPv4Address()
-                logger.info("LocalMapping Object generated IP address:%s" %(str(self.IPAddr)))
             if not self.PublicIPAddr and self.__is_public:
                 self.PublicIPAddr = next(ResmgrClient[node].PublicIpAddressAllocator)
             if parent.SUBNET.V4RouteTable:

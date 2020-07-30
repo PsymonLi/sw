@@ -129,7 +129,7 @@ node:
               rmap:                       # Remote IP mappings per subnet
                 - count : 4
             - count     : 1
-              v4prefixlen : 28
+              v4prefixlen : 26
               v6prefixlen : 96
               tos : 10
               vnic:
@@ -158,7 +158,7 @@ node:
               rmap:
                 - count : 3
             - count     : 1
-              v4prefixlen : 28
+              v4prefixlen : 26
               v6prefixlen : 96
               v4ingrpolicycount: 1        # default 0
               v4egrpolicycount : 1        # default 0

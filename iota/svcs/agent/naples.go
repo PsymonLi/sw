@@ -39,7 +39,7 @@ const (
 	naplesPciDevicePrefix   = "Device"
 	bareMetalWorkloadName   = "bareMetalWorkload"
 	intelPciDevicePrefix    = "Ethernet"
-	maxStdoutSize           = 1024 * 1024 * 2
+	maxStdoutSize           = 1024 * 1024 * 10
 	naplesStatusURL         = "http://localhost:9008/api/v1/naples/"
 	naplesSimBaseMacFile    = Common.DstIotaDBDir + "/sim-base-mac.ini"
 )

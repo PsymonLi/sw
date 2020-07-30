@@ -265,8 +265,8 @@ class SubnetObject(base.ConfigObjectBase):
         self.EgV4SecurityPolicyIds = [PolicyClient.GetEgV4SecurityPolicyId(self.Node, self.VPC.VPCId)]
         utils.ModifyPolicyDependency(self, False)
         if self.IpV6Valid:
-            self.VirtualRouterIPAddr[0] += 100
-        self.VirtualRouterIPAddr[1] += 100
+            self.VirtualRouterIPAddr[0] = self.AllocIPv6Address()
+        self.VirtualRouterIPAddr[1] = self.AllocIPv4Address()
         self.IPAMname = None
         return
 
