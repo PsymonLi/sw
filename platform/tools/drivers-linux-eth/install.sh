@@ -64,7 +64,7 @@ else
 fi
 
 cd ${BASE_DIR}/drivers/linux
-RPMFILE=`ls ${rpm}-*.${distro}.x86_64.rpm`
+RPMFILE=`ls ${rpm}-*.${distro}.*.x86_64.rpm`
 
 rpm -ihv $RPMFILE
 modprobe ionic
