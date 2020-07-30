@@ -240,7 +240,7 @@ hal_init (void)
         NULL, // event callbak
         sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
         sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-        (THREAD_YIELD_ENABLE | THREAD_SYNC_IPC_ENABLE));
+        true /* can yield */, true /* sync ipc */);
 
     state_t::routing_cfg_thr->start(nullptr);
     return true;

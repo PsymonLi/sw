@@ -336,7 +336,7 @@ spawn_svc_server_thread (void)
             core::svc_server_thread_exit, NULL, // message
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            (THREAD_YIELD_ENABLE | THREAD_SYNC_IPC_ENABLE));
+            true, true);
     SDK_ASSERT_TRACE_RETURN((g_svc_server_thread != NULL), SDK_RET_ERR,
                             "Service server thread create failure");
     g_svc_server_thread->register_suspend_cb(svc_server_thread_suspend_cb,
@@ -397,7 +397,7 @@ agent_init (std::string cfg_file, std::string memory_profile,
                                   0x0, sdk::lib::thread::dummy_entry_func,
                                   sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
                                   sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-                                  THREAD_YIELD_ENABLE);
+                                  true);
     if (!thread) {
         PDS_TRACE_ERR("Agent thread creation failed");
         ret = SDK_RET_ERR;

@@ -160,7 +160,7 @@ hal_nicmgr_init (hal_cfg_t *hal_cfg)
             NULL,  // thread event callback
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            THREAD_FLAGS_NONE);
+            NULL);
     SDK_ASSERT_TRACE_RETURN((nicmgr_thread != NULL), HAL_RET_ERR,
                             "Failed to spawn nicmgr thread");
     nicmgr_thread->start(nicmgr_thread);

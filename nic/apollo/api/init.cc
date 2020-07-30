@@ -105,14 +105,7 @@ linkmgr_init (catalog *catalog, const char *cfg_path)
     linkmgr_cfg_t cfg;
     marvell_cfg_t marvell_cfg;
     uint32_t thread_id = SDK_IPC_ID_LINKMGR_CTRL;
-    module_version_conf_t version_conf;
-    module_version_t curr_version, prev_version;
-    sysinit_mode_t init_mode = g_upg_state->init_mode();
-    version_conf = sdk::platform::sysinit_mode_hitless(init_mode) ?
-                        api::MODULE_VERSION_HITLESS : api::MODULE_VERSION_GRACEFUL;
 
-    std::tie(curr_version, prev_version) = g_upg_state->module_version(
-                                                thread_id, version_conf);
     // initialize the marvell switch
     memset(&marvell_cfg, 0, sizeof(marvell_cfg_t));
     marvell_cfg.catalog = catalog;
@@ -128,10 +121,17 @@ linkmgr_init (catalog *catalog, const char *cfg_path)
     cfg.admin_state = port_admin_state_t::PORT_ADMIN_STATE_UP;
     cfg.mempartition = g_pds_state.mempartition();
     cfg.use_shm = true;
-    cfg.curr_version = curr_version;
-    cfg.prev_version = prev_version;
-    cfg.backup_store = g_upg_state->backup_shmstore(PDS_LINKMGR_OPER_SHMSTORE_ID);
-    cfg.restore_store = g_upg_state->restore_shmstore(PDS_LINKMGR_OPER_SHMSTORE_ID);
+    if (g_upg_state) {
+        cfg.backup_store = g_upg_state->backup_shmstore(thread_id, true);
+        cfg.restore_store = g_upg_state->restore_shmstore(thread_id, true);
+        cfg.curr_version = g_upg_state->module_version(thread_id);
+        cfg.prev_version = g_upg_state->module_prev_version(thread_id);
+    } else {
+        cfg.backup_store = NULL;
+        cfg.restore_store = NULL;
+        cfg.curr_version.version = 0;
+        cfg.prev_version.version = 0;
+    }
 
     // initialize the linkmgr
     sdk::linkmgr::linkmgr_init(&cfg);

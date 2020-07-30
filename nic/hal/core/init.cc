@@ -217,12 +217,11 @@ hal_thread_create (const char *name, uint32_t thread_id,
                    sdk::lib::thread_entry_func_t entry_func,
                    uint32_t thread_prio, int sched_policy, void *data)
 {
-    uint32_t flags = (thread_role == sdk::lib::THREAD_ROLE_CONTROL) ?
-                          THREAD_YIELD_ENABLE : 0x0;
-
     sdk::lib::thread *thread =
         sdk::lib::thread::factory(name, thread_id, thread_role, cores_mask,
-                                  entry_func, thread_prio, sched_policy, flags);
+                                  entry_func, thread_prio, sched_policy,
+                                  (thread_role == sdk::lib::THREAD_ROLE_DATA) ?
+                                       false : true);
     if (thread) {
         thread->set_data(data);
     }

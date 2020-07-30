@@ -185,7 +185,7 @@ hal_initialize (bool disable_fte, const char c_file[], string vmotion_port, bool
                                       grpc_server_run,
                                       sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
                                       sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-                                      THREAD_YIELD_ENABLE);
+                                      true);
         grpc_thread->start(grpc_thread);
     }
 

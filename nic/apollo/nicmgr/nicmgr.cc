@@ -51,13 +51,10 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
     uint32_t thread_id = core::PDS_THREAD_ID_NICMGR;
     sdk::event_thread::event_thread *curr_thread;
     devicemgr_cfg_t cfg;
-    api::module_version_conf_t version_conf;
     init_mode = api::g_upg_state ?
         api::g_upg_state->init_mode() : sysinit_mode_t::SYSINIT_MODE_DEFAULT;
     bool init_pci = sdk::platform::sysinit_mode_default(init_mode) &&
                     sdk::asic::asic_is_hard_init();
-    version_conf = sdk::platform::sysinit_mode_hitless(init_mode) ?
-                        api::MODULE_VERSION_HITLESS : api::MODULE_VERSION_GRACEFUL;
 
     // get pds state
     state = (pds_state *)sdk::lib::thread::current_thread()->data();
@@ -91,10 +88,10 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
     cfg.memory_profile = state->memory_profile_string();
     cfg.device_profile = state->device_profile_string();
     cfg.catalog = state->catalogue();
-    cfg.backup_store = api::g_upg_state->backup_shmstore(api::PDS_NICMGR_OPER_SHMSTORE_ID);
-    cfg.restore_store = api::g_upg_state->restore_shmstore(api::PDS_NICMGR_OPER_SHMSTORE_ID);
-    std::tie(cfg.curr_version, cfg.prev_version) = api::g_upg_state->module_version(
-                                                      thread_id, version_conf);
+    cfg.backup_store = api::g_upg_state->backup_shmstore(thread_id, true);
+    cfg.restore_store = api::g_upg_state->restore_shmstore(thread_id, true);
+    cfg.curr_version = api::g_upg_state->module_version(thread_id);
+    cfg.prev_version = api::g_upg_state->module_prev_version(thread_id);
 
     // initialize the linkmgr
     cfg.EV_A = curr_thread->ev_loop();

@@ -11,8 +11,8 @@
 #ifndef __UPGRADE_SHMSTORE_HPP__
 #define __UPGRADE_SHMSTORE_HPP__
 
-// every segment consumes an additional 512 bytes in shmmgr
-#define SHMMGR_SEGMENT_META_SIZE                    512
+// two types of stores, persistent and volatile
+#define UPGRADE_SHMSTORE_TYPE_MAX   2
 
 // ----------------------------------------------------------------------------
 // upgrade persistent store directory
@@ -23,7 +23,7 @@
 // upgrade volatile store directory.
 // ----------------------------------------------------------------------------
 #define PDS_UPGRADE_SHMSTORE_VPATH_GRACEFUL      "/dev/shm"
-#define PDS_UPGRADE_SHMSTORE_VPATH_HITLESS       "/share"
+#define PDS_UPGRADE_SHMSTORE_VPATH_HITLESS      "/share"
 
 // ----------------------------------------------------------------------------
 // pds agent upgrade store for config objects
@@ -31,11 +31,20 @@
 #define PDS_AGENT_UPGRADE_CFG_SHMSTORE_NAME         "pds_agent_upgdata"
 #define PDS_AGENT_UPGRADE_CFG_SHMSTORE_SIZE         (1 * 1024 * 1024)  // 1MB
 
+// pds agent config objects. these will be allocated from pds agent store
+// every segment consumes an additional 512 bytes. reserving 2K now
+#define PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME    "pds_agent_upgobjs"
+#define PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_SIZE    ((1 * 1024 * 1024) - 2048)
+
 // ----------------------------------------------------------------------------
 // pds nicmgr upgrade store for config objects
 // ----------------------------------------------------------------------------
 #define PDS_NICMGR_UPGRADE_CFG_SHMSTORE_NAME       "pds_nicmgr_upgdata"
 #define PDS_NICMGR_UPGRADE_CFG_SHMSTORE_SIZE       (32 * 1024)  // 32K
+
+// pds nicmgr config objects. these will be allocated from pds nicmgr store
+#define PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_NAME   "pds_nicmgr_upgobjs"
+#define PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_SIZE   ((32 * 1024) - 2048)
 
 // ----------------------------------------------------------------------------
 // pds agent upgrade store for service lif operational states

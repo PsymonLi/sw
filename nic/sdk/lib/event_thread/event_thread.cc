@@ -181,7 +181,7 @@ event_thread::factory(const char *name, uint32_t thread_id,
                       sdk::lib::thread_role_t thread_role, uint64_t cores_mask,
                       loop_init_func_t init_func, loop_exit_func_t exit_func,
                       message_cb message_cb, uint32_t prio,
-                      int sched_policy, uint32_t flags) {
+                      int sched_policy, bool can_yield, bool sync_ipc) {
     int          rv;
     void         *mem;
     event_thread *new_thread;
@@ -194,7 +194,7 @@ event_thread::factory(const char *name, uint32_t thread_id,
     new_thread = new (mem) event_thread();
     rv = new_thread->init(name, thread_id, thread_role, cores_mask,
                           init_func, exit_func, message_cb, prio,
-                          sched_policy, flags);
+                          sched_policy, can_yield, sync_ipc);
     if (rv < 0) {
         new_thread->~event_thread();
         SDK_FREE(SDK_MEM_ALLOC_LIB_EVENT_THREAD, new_thread);
@@ -218,7 +218,7 @@ event_thread::init(const char *name, uint32_t thread_id,
                    sdk::lib::thread_role_t thread_role, uint64_t cores_mask,
                    loop_init_func_t init_func, loop_exit_func_t exit_func,
                    message_cb message_cb, uint32_t prio, int sched_policy,
-                   uint32_t flags) {
+                   bool can_yield, bool sync_ipc) {
     int rc;
 
     if (thread_id > MAX_THREAD_ID) {
@@ -227,7 +227,7 @@ event_thread::init(const char *name, uint32_t thread_id,
     assert(g_event_thread_table[thread_id] == NULL);
 
     rc = thread::init(name, thread_id, thread_role, cores_mask,
-                      &event_thread_entry_, prio, sched_policy, flags);
+                      &event_thread_entry_, prio, sched_policy, can_yield);
     if (rc < 0) {
         return rc;
     }
@@ -241,6 +241,7 @@ event_thread::init(const char *name, uint32_t thread_id,
     this->exit_func_ = exit_func;
     this->message_cb_ = message_cb;
     this->user_ctx_ = NULL;
+    this->sync_ipc_ = sync_ipc;
     // The async watcher is for getting messages from different threads
     this->async_watcher_.data = this;
     ev_async_init(&this->async_watcher_, event_thread::async_callback_);
@@ -458,7 +459,7 @@ event_thread::run_(void) {
     infra_fns->timer_del = delete_ipc_timer_watcher;
     infra_fns->timer_del_ctx = this;
 
-    if (this->sync_ipc()) {
+    if (this->sync_ipc_) {
         sdk::ipc::ipc_init_sync(this->thread_id(), std::move(infra_fns));
     } else {
         sdk::ipc::ipc_init_async(this->thread_id(), std::move(infra_fns));

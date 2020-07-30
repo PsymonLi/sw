@@ -140,15 +140,14 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     pds_lif_spec_t lif_spec;
     sdk::lib::shmstore  *backup_store;
     svc_lif_pstate_t *lif_pstate;
-    module_version_t  cur_version, prev_version;
+    module_version_t  cur_version;
 
     // get backup shmstore and update lif pstate later once scheduler is
     // programmed
-    backup_store = api::g_upg_state->backup_shmstore(api::PDS_AGENT_OPER_SHMSTORE_ID);
+    backup_store = api::g_upg_state->backup_shmstore(core::PDS_THREAD_ID_API,
+                                                    true);
     SDK_ASSERT(backup_store != NULL);
-    std::tie(cur_version, prev_version) = api::g_upg_state->module_version(
-                                             core::PDS_THREAD_ID_API,
-                                             api::MODULE_VERSION_HITLESS);
+    cur_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
     // create segment to backup svc lif pstate
     lif_pstate =
         (svc_lif_pstate_t *)backup_store->create_segment(SVC_LIF_PSTATE_NAME,
@@ -252,11 +251,13 @@ service_lif_upgrade_verify (uint32_t lif_id, const char *cfg_path)
     sdk::platform::utils::LIFQState qstate = { 0 };
     sdk::lib::shmstore *backup_store, *restore_store;
 
-    backup_store = api::g_upg_state->backup_shmstore(api::PDS_AGENT_OPER_SHMSTORE_ID);
-    restore_store = api::g_upg_state->restore_shmstore(api::PDS_AGENT_OPER_SHMSTORE_ID);
-    std::tie(cur_version, prev_version) = api::g_upg_state->module_version(
-                                              core::PDS_THREAD_ID_API,
-                                              api::MODULE_VERSION_HITLESS);
+    backup_store = api::g_upg_state->backup_shmstore(core::PDS_THREAD_ID_API,
+                                                     true);
+    restore_store = api::g_upg_state->restore_shmstore(core::PDS_THREAD_ID_API,
+                                                       true);
+    cur_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
+    prev_version =
+        api::g_upg_state->module_prev_version(core::PDS_THREAD_ID_API);
     //     hitless init:
     //     restore_store != NULL
     //     if version match:

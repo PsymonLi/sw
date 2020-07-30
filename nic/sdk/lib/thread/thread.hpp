@@ -24,13 +24,6 @@ typedef enum thread_role_e {
     THREAD_ROLE_DATA
 } thread_role_t;
 
-// thread flags
-typedef enum thread_flags_e {
-    THREAD_FLAGS_NONE      = 0,
-    THREAD_YIELD_ENABLE    = (1 << 0),
-    THREAD_SUSPEND_DISABLE = (1 << 1),
-} thread_flags_t;
-
 //------------------------------------------------------------------------------
 // thread entry function
 //------------------------------------------------------------------------------
@@ -125,8 +118,7 @@ public:
     static thread *factory(const char *name, uint32_t thread_id,
                            thread_role_t thread_role, uint64_t cores_mask,
                            thread_entry_func_t entry_func,
-                           uint32_t prio, int sched_policy,
-                           uint32_t flags = THREAD_FLAGS_NONE);
+                           uint32_t prio, int sched_policy, bool can_yield);
     static void destroy(thread *th);
     static thread *find(uint32_t thread_id);
     static void *dummy_entry_func(void *ctxt) { return NULL; }
@@ -142,7 +134,7 @@ public:
     pthread_t pthread_id(void) const { return pthread_id_; }
     void punch_heartbeat(void);    // punch heart-beat
     timespec_t heartbeat_ts(void) const { return hb_ts_; }
-    bool can_yield(void) const { return (flags_ & THREAD_YIELD_ENABLE); }
+    bool can_yield(void) const { return can_yield_; }
     bool is_running(void) const { return running_; }
     void set_running(bool running) { running_ = running; }
     bool ready(void) const { return ready_; }
@@ -219,8 +211,6 @@ public:
     // invoked from the target thread context
     void check_and_suspend(void);
     bool suspended(void) { return suspended_; }
-    bool skip_suspend(void) { return (flags_ & THREAD_SUSPEND_DISABLE); }
-    uint32_t flags(void) { return flags_; }
 
 private:
     char                          name_[SDK_MAX_THREAD_NAME_LEN];
@@ -228,6 +218,7 @@ private:
     thread_entry_func_t           entry_func_;
     uint32_t                      prio_;
     int                           sched_policy_;
+    bool                          can_yield_;
     void                          *data_;
     pthread_t                     pthread_id_;
     bool                          running_;
@@ -248,7 +239,6 @@ private:
     pthread_cond_t                suspend_cond_;
     pthread_mutex_t               suspend_cond_lock_;
     void                          *suspend_cb_arg_;
-    uint32_t                      flags_; // see thread_flags_t
 
 protected:
     static thread_store_t         g_thread_store_;
@@ -257,7 +247,7 @@ protected:
     virtual int init(const char *name, uint32_t thread_id,
         thread_role_t thread_role, uint64_t cores_mask,
         thread_entry_func_t entry_func,
-        uint32_t prio, int sched_policy, uint32_t flags);
+        uint32_t prio, int sched_policy, bool can_yield);
     bool suspend_;
     thread() {};
     ~thread();
@@ -271,8 +261,5 @@ private:
 }    // namespace sdk
 
 using sdk::lib::thread;
-using sdk::lib::thread_flags_t::THREAD_FLAGS_NONE;
-using sdk::lib::thread_flags_t::THREAD_YIELD_ENABLE;
-using sdk::lib::thread_flags_t::THREAD_SUSPEND_DISABLE;
 
 #endif    // __SDK_THREAD_HPP__

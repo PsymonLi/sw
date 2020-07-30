@@ -26,6 +26,9 @@ using namespace boost::interprocess;
 using namespace sdk::utils;
 using namespace sdk::lib;
 
+#define SDK_THREAD_ID_LINKMGR_MIN SDK_IPC_ID_LINKMGR_AACS_SERVER
+#define SDK_THREAD_ID_LINKMGR_MAX SDK_IPC_ID_LINKMGR_CTRL
+
 namespace sdk {
 namespace linkmgr {
 
@@ -260,7 +263,7 @@ thread_init (linkmgr_cfg_t *cfg)
             linkmgr_event_handler,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            thread_flags_t::THREAD_YIELD_ENABLE);
+            true);
     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                             "linkmgr-ctrl thread create failure");
     new_thread->start(new_thread);

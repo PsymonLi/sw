@@ -3,6 +3,7 @@
 //
 //----------------------------------------------------------------------------
 
+#include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/core/trace.hpp"
@@ -20,9 +21,6 @@ extern DeviceManager *g_devmgr;
 namespace nicmgr {
 
 using api::upg_obj_stash_meta_t;
-
-// pds nicmgr config objects. these will be allocated from pds nicmgr store
-#define PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_NAME   "pds_nicmgr_upgobjs"
 
 // ...WARNING.. these ids should be preserved across releases.
 // so don't modify it. only append.
@@ -263,8 +261,9 @@ backup_objs (sysinit_mode_t mode)
     upg_obj_stash_meta_t *meta;
     sdk_ret_t ret = SDK_RET_OK;
 
-    ctx = api::upg_shmstore_objctx_create(api::PDS_NICMGR_CFG_SHMSTORE_ID,
-                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_NAME);
+    ctx = api::upg_shmstore_objctx_create(core::PDS_THREAD_ID_NICMGR,
+                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_NAME,
+                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_SIZE);
     SDK_ASSERT(ctx);
     meta = (upg_obj_stash_meta_t *)ctx->mem();
 
@@ -317,7 +316,7 @@ restore_objs (void)
 
     PDS_TRACE_DEBUG("Retrieving saved objects");
 
-    ctx = api::upg_shmstore_objctx_open(api::PDS_NICMGR_CFG_SHMSTORE_ID,
+    ctx = api::upg_shmstore_objctx_open(core::PDS_THREAD_ID_NICMGR,
                                         PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_NAME);
     SDK_ASSERT(ctx);
 

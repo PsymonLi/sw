@@ -31,7 +31,7 @@ int
 thread::init(const char *name, uint32_t thread_id,
              thread_role_t thread_role, uint64_t cores_mask,
              thread_entry_func_t entry_func, uint32_t prio,
-             int sched_policy, uint32_t flags)
+             int sched_policy, bool can_yield)
 {
     if (!name || !entry_func) {
         return -1;
@@ -46,7 +46,7 @@ thread::init(const char *name, uint32_t thread_id,
     entry_func_ = entry_func;
     prio_ = prio;
     sched_policy_ = sched_policy;
-    flags_ = flags;
+    can_yield_ = can_yield;
     cores_mask_ = cores_mask;
     thread_role_ = thread_role;
     pthread_id_ = 0;
@@ -110,7 +110,7 @@ thread *
 thread::factory(const char *name, uint32_t thread_id,
                 thread_role_t thread_role, uint64_t cores_mask,
                 thread_entry_func_t entry_func, uint32_t prio,
-                int sched_policy, uint32_t flags)
+                int sched_policy, bool can_yield)
 {
     int       rv;
     void      *mem;
@@ -122,7 +122,7 @@ thread::factory(const char *name, uint32_t thread_id,
     }
     new_thread = new (mem) thread();
     rv = new_thread->init(name, thread_id, thread_role, cores_mask,
-                          entry_func, prio, sched_policy, flags);
+                          entry_func, prio, sched_policy, can_yield);
     if (rv < 0) {
         new_thread->~thread();
         SDK_FREE(SDK_MEM_ALLOC_LIB_THREAD, new_thread);

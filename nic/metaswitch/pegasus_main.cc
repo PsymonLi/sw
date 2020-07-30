@@ -177,7 +177,7 @@ spawn_nbase_thread (void)
             0x0, &pds_ms_nbase_thread_init,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            0x0);
+            false);
 
     SDK_ASSERT_TRACE_RETURN((g_nbase_thread != NULL), SDK_RET_ERR,
                             "n-base thread create failure");

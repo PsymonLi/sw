@@ -139,16 +139,15 @@ thread_create (const char *name, uint32_t thread_id,
                sdk::lib::thread_role_t thread_role,
                uint64_t cores_mask,
                sdk::lib::thread_entry_func_t entry_func,
-               uint32_t thread_prio, int sched_policy, void *data,
-               uint32_t flags)
+               uint32_t thread_prio, int sched_policy, void *data)
 {
     static sdk::lib::thread * new_thread;
 
-    flags |= (thread_role == sdk::lib::THREAD_ROLE_CONTROL) ?
-                THREAD_YIELD_ENABLE : 0x0;
     new_thread =
         sdk::lib::thread::factory(name, thread_id, thread_role, cores_mask,
-                                  entry_func, thread_prio, sched_policy, flags);
+                                  entry_func, thread_prio, sched_policy,
+                                  (thread_role == sdk::lib::THREAD_ROLE_DATA) ?
+                                       false : true);
     if (new_thread) {
         new_thread->set_data(data);
     }
@@ -162,9 +161,6 @@ spawn_periodic_thread (pds_state *state)
     sdk::lib::thread    *new_thread;
 
     // spawn periodic thread that does background tasks
-    // disabling suspend.
-    // TODO : all modules should un-register their timers and g_twheel num
-    // entries should be zero
     new_thread =
         thread_create(std::string("periodic").c_str(),
             PDS_THREAD_ID_PERIODIC,
@@ -173,7 +169,7 @@ spawn_periodic_thread (pds_state *state)
             periodic_thread_start,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            NULL, THREAD_SUSPEND_DISABLE);
+            NULL);
     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                             "Periodic thread create failure");
     new_thread->start(new_thread);
@@ -194,7 +190,7 @@ spawn_pciemgr_thread (pds_state *state)
                 pdspciemgr::pciemgrapi::pciemgr_thread_start,
                 sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
                 sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-                NULL, THREAD_FLAGS_NONE);
+                NULL);
         SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                                 "pciemgr thread create failure");
         new_thread->start(new_thread);
@@ -219,7 +215,7 @@ spawn_nicmgr_thread (pds_state *state)
                 nicmgr::nicmgrapi::nicmgr_event_handler,
                 sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
                 sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-                (THREAD_YIELD_ENABLE | THREAD_SYNC_IPC_ENABLE));
+                true, true);
         SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                                 "nicmgr thread create failure");
         new_thread->set_data(state);
@@ -258,7 +254,7 @@ spawn_api_thread (pds_state *state)
             api::api_thread_event_cb,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            THREAD_YIELD_ENABLE);
+            true);
      SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                              "cfg thread create failure");
      new_thread->set_data(state);
@@ -288,7 +284,7 @@ spawn_learn_thread (pds_state *state)
             learn::learn_thread_event_cb,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            (THREAD_YIELD_ENABLE | THREAD_SYNC_IPC_ENABLE));
+            true, true);
     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                             "learn thread create failure");
     new_thread->start(new_thread);
@@ -308,7 +304,7 @@ spawn_routing_thread (pds_state *state)
             pds_ms::pds_ms_thread_init,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            state, THREAD_SUSPEND_DISABLE);
+            state);
     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                             "Routing thread create failure");
     new_thread->start(new_thread);
@@ -336,7 +332,7 @@ spawn_upgrade_thread (sdk::upg::upg_ev_params_t *params)
             api::upgrade_thread_event_cb,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            (THREAD_YIELD_ENABLE | THREAD_SUSPEND_DISABLE));
+            true);
      SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                              "upgrade thread create failure");
      new_thread->set_data(params);
@@ -409,7 +405,12 @@ thread_suspend_cb_ (sdk::lib::thread *thr, void *ctxt)
 
     if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
-        if (!thr->skip_suspend()) {
+        // TODO periodic thread. all modules should un-register their timers
+        // and g_twheel num entries should be zero
+        // upgrade thread never should be suspended
+        if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_ROUTING) &&
+            (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             PDS_TRACE_DEBUG("Suspending thread %s", thr->name());
             *ret = thr->suspend_req(NULL);
             if (*ret != SDK_RET_OK) {
@@ -438,7 +439,12 @@ thread_resume_cb_ (sdk::lib::thread *thr, void *ctxt)
 
     if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
-        if (!thr->skip_suspend()) {
+        // TODO periodic thread. all modules should un-register their timers
+        // and g_twheel num entries should be zero
+        // upgrade thread never will be suspended
+        if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_ROUTING) &&
+            (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             PDS_TRACE_DEBUG("Resuming thread %s", thr->name());
             *ret = thr->resume_req();
             if (*ret != SDK_RET_OK) {
@@ -496,7 +502,11 @@ thread_suspended_cb_ (sdk::lib::thread *thr, void *ctxt)
 
     if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
-        if (!thr->skip_suspend()) {
+        // TODO periodic thread. all modules should un-register their timers
+        // and g_twheel num entries should be zero
+        if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_ROUTING) &&
+            (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             suspended = thr->suspended();
             SDK_TRACE_DEBUG("Thread %s suspended %u", thr->name(), suspended);
             if (!suspended) {
@@ -526,7 +536,11 @@ thread_resumed_cb_ (sdk::lib::thread *thr, void *ctxt)
 
     if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
-        if (!thr->skip_suspend()) {
+        // TODO periodic thread. all modules should un-register their timers
+        // and g_twheel num entries should be zero
+        if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_ROUTING) &&
+            (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             suspended = thr->suspended();
             SDK_TRACE_DEBUG("Thread %s resumed %u", thr->name(), !suspended);
             if (suspended) {   // still in suspended state

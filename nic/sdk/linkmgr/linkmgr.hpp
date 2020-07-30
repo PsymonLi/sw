@@ -160,11 +160,6 @@ port_args_init (port_args_t *args)
     memset(args, 0, sizeof(port_args_t));
 }
 
-#define SDK_THREAD_ID_LINKMGR_MIN SDK_IPC_ID_LINKMGR_AACS_SERVER
-#define SDK_THREAD_ID_LINKMGR_MAX SDK_IPC_ID_LINKMGR_CTRL
-#define SDK_THREAD_ID_LINKMGR_CTRL SDK_IPC_ID_LINKMGR_CTRL
-
-
 }    // namespace linkmgr
 }    // namespace sdk
 
