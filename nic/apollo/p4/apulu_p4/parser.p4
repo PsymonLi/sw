@@ -519,55 +519,66 @@ parser parse_egress {
 
 @pragma xgress egress
 @pragma allow_set_meta control_metadata.span_copy
-parser parse_egress_span_copy {
+parser parse_ingress_span_copy {
     set_metadata(control_metadata.span_copy, 1);
+    return select(capri_intrinsic.tm_oport) {
+        TM_PORT_INGRESS : parse_p4i_to_p4i_span_copy;
+        TM_PORT_EGRESS : parse_p4i_to_p4e_span_copy;
+        TM_PORT_DMA : parse_p4i_to_rxd_span_copy;
+        default : parse_ethernet_span_copy;
+    }
+}
+
+@pragma xgress egress
+parser parse_p4i_to_p4e_span_copy {
+    set_metadata(parser_metadata.mirror_blob_len,
+                 APULU_P4I_TO_P4E_MIRROR_BLOB_SZ);
+    return parse_span_copy_blob;
+}
+
+@pragma xgress egress
+parser parse_p4i_to_p4i_span_copy {
+    set_metadata(parser_metadata.mirror_blob_len,
+                 APULU_P4I_TO_P4I_MIRROR_BLOB_SZ);
+    return parse_span_copy_blob;
+}
+
+@pragma xgress egress
+parser parse_p4i_to_rxd_span_copy {
+    set_metadata(parser_metadata.mirror_blob_len,
+                 APULU_P4I_TO_RXD_MIRROR_BLOB_SZ);
+    return parse_p4i_to_rxd_span_copy2;
+}
+
+@pragma xgress egress
+parser parse_p4i_to_rxd_span_copy2 {
+    set_metadata(parser_metadata.mirror_blob_len,
+                 parser_metadata.mirror_blob_len + 0);
+    extract(mirror_blob);
+    return parse_p4i_to_rxd_span_copy3;
+}
+
+@pragma xgress egress
+parser parse_p4i_to_rxd_span_copy3 {
+    extract(p4e_i2e);
     return parse_ethernet_span_copy;
 }
 
 @pragma xgress egress
 @pragma allow_set_meta control_metadata.span_copy
-parser parse_ingress_span_copy {
+parser parse_egress_span_copy {
     set_metadata(control_metadata.span_copy, 1);
     return select(capri_intrinsic.tm_oport) {
-        TM_PORT_INGRESS : parse_ingress_i2i_span_copy;
-        TM_PORT_EGRESS : parse_ingress_i2e_span_copy;
-        TM_PORT_DMA : parse_ingress_i2r_span_copy;
+        TM_PORT_DMA : parse_p4e_to_rxd_span_copy;
+        default : parse_ethernet_span_copy;
     }
 }
 
 @pragma xgress egress
-parser parse_ingress_i2e_span_copy {
+parser parse_p4e_to_rxd_span_copy {
     set_metadata(parser_metadata.mirror_blob_len,
-                 APULU_INGRESS_I2E_MIRROR_BLOB_SZ);
+                 APULU_P4E_TO_RXD_MIRROR_BLOB_SZ);
     return parse_span_copy_blob;
-}
-
-@pragma xgress egress
-parser parse_ingress_i2i_span_copy {
-    set_metadata(parser_metadata.mirror_blob_len,
-                 APULU_INGRESS_I2I_MIRROR_BLOB_SZ);
-    return parse_span_copy_blob;
-}
-
-@pragma xgress egress
-parser parse_ingress_i2r_span_copy {
-    set_metadata(parser_metadata.mirror_blob_len,
-                 APULU_INGRESS_I2R_MIRROR_BLOB_SZ);
-    return parse_ingress_i2r_span_copy2;
-}
-
-@pragma xgress egress
-parser parse_ingress_i2r_span_copy2 {
-    set_metadata(parser_metadata.mirror_blob_len,
-                 parser_metadata.mirror_blob_len + 0);
-    extract(mirror_blob);
-    return parse_ingress_i2r_span_copy3;
-}
-
-@pragma xgress egress
-parser parse_ingress_i2r_span_copy3 {
-    extract(p4e_i2e);
-    return parse_ethernet_span_copy;
 }
 
 @pragma xgress egress
