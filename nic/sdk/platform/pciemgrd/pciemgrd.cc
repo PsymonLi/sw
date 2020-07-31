@@ -569,42 +569,6 @@ parse_linkspec(const char *s, u_int8_t *genp, u_int8_t *widthp)
     return 1;
 }
 
-#ifdef VPD_HAS_SYSINFO
-#include "platform/capri/csrint/csr_init.hpp"
-
-typedef struct pciemgrd_sysinfo_s {
-    unsigned int cclk_mhz;
-    unsigned int vin_mv;
-    unsigned int vdd_mv;
-    unsigned int vcpu_mv;
-    unsigned int pin_uw;
-} pciemgrd_sysinfo_t;
-
-static int
-pciemgrd_get_sysinfo(pciemgrd_sysinfo_t *sysinfo)
-{
-    memset(sysinfo, 0, sizeof(*sysinfo));
-
-    // XXX fix cap_top_s... crash
-    // sdk::platform::capri::csr_init();
-    //sysinfo->cclk = cap_top_sbus_get_core_freq(0, 0);
-
-    system_voltage_t voltages = { 0 };
-    read_voltages(&voltages);
-
-    sysinfo->vin_mv = voltages.vin;
-    sysinfo->vdd_mv = voltages.vout1;
-    sysinfo->vcpu_mv = voltages.vout2;
-
-    system_power_t powers = { 0 };
-    read_powers(&powers);
-
-    sysinfo->pin_uw = powers.pin;
-
-    return 0;
-}
-#endif
-
 static void
 pciemgrd_sbus_lock(void)
 {
@@ -659,52 +623,6 @@ pciemgrd_vpd_params(pciemgrenv_t *pme)
     boost::property_tree::read_json("/nic/etc/VERSION.json", ver);
     S(fwvers, ver.get<std::string>("sw.version").c_str());
 
-#ifdef VPD_HAS_SYSINFO
-    char misc[PCIEMGR_STRSZ], *mp = misc;
-    int misc_left = PCIEMGR_STRSZ;
-#define MISC_APPEND(fmt, val) \
-    do { \
-        int n; \
-        n = snprintf(mp, misc_left, "%s" fmt, mp == misc ? "" : ",", val); \
-        if (n >= 0 && n < misc_left) { \
-            misc_left -= n;            \
-            mp += n;                   \
-        }                              \
-    } while (0)
-
-    //
-    // XXX
-    // Many of these vary over time, but we're taking a snapshot
-    // and encoding into VPD.  Maybe these are not right for VPD.
-    // (Or maybe we periodically update VPD with current values?)
-    // Leaving this out for now until we get more clarity on what
-    // should be included in the "misc" section.
-    // XXX
-    //
-
-    pciemgrd_sysinfo_t sysinfo;
-    pciemgrd_get_sysinfo(&sysinfo);
-
-    if (sysinfo.cclk_mhz) {
-        MISC_APPEND("cclk=%uMHz", sysinfo.cclk_mhz);
-    }
-    if (sysinfo.vin_mv) {
-        MISC_APPEND("vin=%.0fV", sysinfo.vin_mv / 1000.0);
-    }
-    if (sysinfo.vdd_mv) {
-        MISC_APPEND("vdd=%umV", sysinfo.vdd_mv);
-    }
-    if (sysinfo.vcpu_mv) {
-        MISC_APPEND("vcpu=%umV", sysinfo.vcpu_mv);
-    }
-    if (sysinfo.pin_uw) {
-        MISC_APPEND("pin=%.0fW", sysinfo.pin_uw / 1000000.0);
-    }
-#undef MISC_APPEND
-
-    S(misc, misc);
-#endif
-
 #else
 
     S(id, "SIM NAPLES");
@@ -714,7 +632,7 @@ pciemgrd_vpd_params(pciemgrenv_t *pme)
     S(engdate, "SIM-2013-08-29");
     S(pcarev, "SIM-PCA-X1");
     S(misc, "SIM 1000GHz,0.0001pW");
-    S(fwvers, "SIM 1.2.3.4");
+    S(fwvers, "1.2.3.4-SIM");
 #endif
 #undef S
 }
@@ -792,6 +710,20 @@ portmap_init_from_catalog(pciemgrenv_t *pme)
     pme->params.long_lived = catalog->pcie_long_lived() && swm_alom_present();
     pme->params.clock_freq = catalog->pcie_clock_freq();
 
+    const char *vpdfmt = catalog->pcie_vpd_format().c_str();
+    pme->params.vpd_format = pciemgr_vpd_format_from_str(vpdfmt);
+
+    // vpd_format specified but unrecognized
+    if (vpdfmt && *vpdfmt && pme->params.vpd_format == VPD_FORMAT_NONE) {
+        pciesys_logerror("catalog vpd_format \"%s\" unknown\n", vpdfmt);
+        assert(0);
+        return -1;
+    }
+    // default to "hpe" format if none specified
+    if (pme->params.vpd_format == VPD_FORMAT_NONE) {
+        pme->params.vpd_format = VPD_FORMAT_HPE;
+    }
+
     int nportspecs = catalog->pcie_nportspecs();
     for (int i = 0; i < nportspecs; i++) {
         pcieport_spec_t ps = { 0 };
@@ -815,6 +747,10 @@ portmap_init_from_catalog(pciemgrenv_t *pme)
     pme->params.vendorid = PCI_VENDOR_ID_PENSANDO;
     pme->params.subvendorid = PCI_VENDOR_ID_PENSANDO;
     pme->params.subdeviceid = PCI_SUBDEVICE_ID_PENSANDO_NAPLES100_4GB;
+    // default to "hpe" format if none specified
+    if (pme->params.vpd_format == VPD_FORMAT_NONE) {
+        pme->params.vpd_format = VPD_FORMAT_HPE;
+    }
 
     pcieport_spec_t ps = { 0 };
     ps.host  = 0;

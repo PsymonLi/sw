@@ -781,6 +781,25 @@ cmd_powerdown(int argc, char *argv[])
 }
 
 static void
+cmd_vpd_format(int argc, char *argv[])
+{
+    if (argc != 2) {
+        fprintf(stderr, "vpd_format <pensando|hpe|dell>\n");
+        return;
+    }
+
+    pciemgr_vpd_format_t vpd_format;
+    vpd_format = pciemgr_vpd_format_from_str(argv[1]);
+    if (vpd_format == VPD_FORMAT_NONE) {
+        fprintf(stderr, "vpd_format unknown: %s\n", argv[1]);
+        return;
+    }
+
+    pciemgr_params_t *params = pciehcfg_get_params();
+    params->vpd_format = vpd_format;
+}
+
+static void
 cmd_run(int argc, char *argv[])
 {
     pciemgrenv_t *pme = pciemgrenv_get();
@@ -848,6 +867,7 @@ static cmd_t cmdtab[] = {
     CMDENT(exit, "exit program", ""),
     CMDENT(quit, "exit program", ""),
     CMDENT(upgrade_save, "upgrade save state", ""),
+    CMDENT(vpd_format, "set vpd format", ""),
     { NULL, NULL }
 };
 

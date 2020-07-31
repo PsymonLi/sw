@@ -605,6 +605,9 @@ catalog::populate_pcie(ptree &pt)
         s = pciept.get<std::string>("clock_freq", "0");
         catalog_db_.pcie_clock_freq = strtoul(s.c_str(), NULL, 0);
 
+        s = pciept.get<std::string>("vpd_format", "");
+        catalog_db_.pcie_vpd_format = s;
+
         for (ptree::value_type &v : pciept.get_child("portspecs")) {
             if (nportspecs < MAX_PCIE_PORTSPECS) {
                 catalog_pcie_portspec_t *hp;

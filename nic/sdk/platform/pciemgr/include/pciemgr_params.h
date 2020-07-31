@@ -5,12 +5,29 @@
 #ifndef __PCIEMGR_PARAMS_H__
 #define __PCIEMGR_PARAMS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+} /* close to calm emacs autoindent */
+#endif
+#endif
+
 typedef enum pciemgr_initmode_e {
     INITMODE_NONE = 0,          /* uninitialized init mode */
     INHERIT_ONLY,               /* passive clients: pcieutil, debug, etc */
     INHERIT_OK,                 /* pciemgrd restart */
     FORCE_INIT,                 /* pciemgrd must init */
 } pciemgr_initmode_t;
+
+typedef enum pciemgr_vpd_format_e {
+    VPD_FORMAT_NONE,            /* uninitialized vpd format */
+    VPD_FORMAT_PENSANDO,        /* Pensando native vpd format */
+    VPD_FORMAT_HPE,             /* HPE vpd format */
+    VPD_FORMAT_DELL,            /* Dell vpd format */
+} pciemgr_vpd_format_t;
+
+pciemgr_vpd_format_t
+pciemgr_vpd_format_from_str(const char *s);
 
 #define PCIEMGR_STRSZ   80      /* size of vpd string params */
 
@@ -33,6 +50,7 @@ typedef struct pciemgr_params_s {
     u_int32_t strict_crs:1;     /* enable crs=1 at open */
     u_int32_t restart:1;        /* restarting */
     u_int32_t single_pnd:1;     /* single pending mode */
+    pciemgr_vpd_format_t vpd_format; /* vpd format style */
     char id       [PCIEMGR_STRSZ]; /* product id */
     char partnum  [PCIEMGR_STRSZ]; /* part number */
     char serialnum[PCIEMGR_STRSZ]; /* serial number */
@@ -43,5 +61,9 @@ typedef struct pciemgr_params_s {
     char mac      [PCIEMGR_STRSZ]; /* factory mac address */
     char fwvers   [PCIEMGR_STRSZ]; /* fw version */
 } pciemgr_params_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __PCIEMGR_PARAMS_H__ */

@@ -1,0 +1,5 @@
+vpd_format dell
+add eth -L 4
+finalize
+dbg pciehw pmt -c
+exit

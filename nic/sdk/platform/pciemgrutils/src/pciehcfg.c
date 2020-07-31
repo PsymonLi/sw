@@ -575,11 +575,178 @@ pciehcfg_add_vpd(pciehcfg_t *pcfg, const char *key, const char *val)
     vpdtab_add(vpdtab, key, val);
 }
 
-void
-pciehcfg_add_standard_vpd(pciehcfg_t *pcfg)
-{
-    pciemgr_params_t *params = pciehcfg_get_params();
+/*****************************************************************
+ * Implement HPE VPD as documented in
+ *
+ *     Common Requirements Appendix C
+ *     HP BCS VPD Mezzanine Card Adapter
+ *     Requirements
+ *     Version 1.7
+ */
 
+/* HPE specified vendor-specific keys V0-V9 */
+#define HPE_VPD_KEY_MISC        "V0"    /* freq, power, etc */
+#define HPE_VPD_KEY_UEFIVERS    "V1"    /* uefi driver version a.b.c.d */
+#define HPE_VPD_KEY_MFGDATE     "V2"    /* mfg date code yyww */
+#define HPE_VPD_KEY_FWVERS      "V3"    /* rom fw version a.b.c.d */
+#define HPE_VPD_KEY_MAC         "V4"    /* mac address */
+#define HPE_VPD_KEY_PCAREV      "V5"    /* pca revision info  */
+#define HPE_VPD_KEY_PXEVERS     "V6"    /* pxe version a.b.c.d */
+/* VA-VJ available for OEM Vendor use */
+/* VK-VZ reserved for HPE future use */
+/* Yx reserved for HPE future use */
+/* YA asset tag (optional) */
+
+static void
+pciehcfg_add_vpd_hpe(pciehcfg_t *pcfg, const pciemgr_params_t *params)
+{
+    if (params->id[0] != '\0') {
+        pciehcfg_add_vpd_id(pcfg, params->id);
+    }
+
+#define S(key, field) \
+    if (params->field[0] != '\0') \
+        pciehcfg_add_vpd(pcfg, key, params->field);
+
+    /* HPE VPD spec says "PN" first */
+    S("PN", partnum);
+    S("SN", serialnum);
+    S("EC", engdate);
+    S(HPE_VPD_KEY_MFGDATE, mfgdate);
+    S(HPE_VPD_KEY_PCAREV, pcarev);
+    S(HPE_VPD_KEY_MISC, misc);
+    S(HPE_VPD_KEY_FWVERS, fwvers);
+#undef S
+}
+
+static void
+pciehcfg_add_macaddr_vpd_hpe(pciehcfg_t *pcfg,
+                             const pciemgr_params_t *params,
+                             const u_int64_t macaddr)
+{
+    if (macaddr) {
+        char macstr[16];
+        snprintf(macstr, sizeof(macstr), "%012" PRIx64, macaddr);
+        pciehcfg_add_vpd(pcfg, HPE_VPD_KEY_MAC, macstr);
+    }
+}
+
+/*****************************************************************
+ * Implements Dell VPD contents as specified in
+ *
+ *     Dell Specific PCI Device VPD Data Content Requirements
+ *     Revision A04-01
+ */
+
+/*
+ * Dell specified vendor-specific keys
+ * Dell is flexible, use any vendor-specific keys V0-V9,VA-VZ.
+ * Dell uses the "Dell Subtype Keyword" (DSK) to find the key.
+ */
+/* pensando keys */
+#define DELL_VPD_KEY_FWV        "V3"    /* FW Version - V3 matches HPE */
+#define DELL_VPD_KEY_MAC        "V4"    /* MAC address - V4 matches HPE */
+/* Dell keys */
+#define DELL_VPD_KEY_DSV        "VA"    /* Dell Signature and Version */
+#define DELL_VPD_KEY_NMV        "VB"    /* NaMe of Vendor */
+#define DELL_VPD_KEY_FFV        "VC"    /* Family Firmware Version (NIC) */
+#define DELL_VPD_KEY_DTI        "VD"    /* Device Type Identifier (NIC) */
+#define DELL_VPD_KEY_NPY        "VE"    /* Number of PhYsical ports (NIC) */
+#define DELL_VPD_KEY_PMT        "VF"    /* Physical Media Type */
+#define DELL_VPD_KEY_DCM        "VG"    /* Device Capability Mapping */
+
+static char *
+dsk_concat(const char *dsk, const char *val)
+{
+    static char buf[80];
+
+    assert(strlen(dsk) + strlen(val) < sizeof(buf) - 1);
+    snprintf(buf, sizeof(buf), "%s%s", dsk, val);
+    return buf;
+}
+
+/*
+ * DSK - Dell Subtype Keyword
+ * prepend DSK to the value string.
+ */
+static void
+vpd_dell_dsk(pciehcfg_t *pcfg,
+             const char *key, const char *dsk, const char *val)
+{
+    pciehcfg_add_vpd(pcfg, key, dsk_concat(dsk, val));
+}
+
+static void
+vpd_dell_ffv_vers(pciehcfg_t *pcfg,
+                  const unsigned int maj,
+                  const unsigned int min,
+                  const unsigned int bld,
+                  const unsigned int sub)
+{
+    char ffv[16];
+
+    if (maj < 100 && min < 100) {
+        if (bld < 100) {
+            if (sub < 100) {
+                snprintf(ffv, sizeof(ffv),
+                         "%02u.%02u.%02u.%02u", maj, min, bld, sub);
+            } else {
+                snprintf(ffv, sizeof(ffv),
+                         "%02u.%02u.%02u", maj, min, bld);
+            }
+        } else {
+            snprintf(ffv, sizeof(ffv),
+                     "%02u.%02u", maj, min);
+        }
+        vpd_dell_dsk(pcfg, DELL_VPD_KEY_FFV, "FFV", ffv);
+    } else {
+        pciesys_logwarn("vpd_dell_ffv_vers encode failed %u %u %u %u\n",
+                        maj, min, bld, sub);
+    }
+}
+
+/*
+ * Dell Family Firmware Version
+ *
+ * Major.Minor.Build.Sub-build (Build, Sub-build optional)
+ * Each part is exactly 2 digits, 0-padded
+ */
+static void
+vpd_dell_ffv(pciehcfg_t *pcfg, const pciemgr_params_t *params)
+{
+    unsigned int maj, min, bld, sub, n;
+
+    n = sscanf(params->fwvers, "%u.%u.%u-%u", &maj, &min, &bld, &sub);
+    if (n == 4) {
+        vpd_dell_ffv_vers(pcfg, maj, min, bld, sub);
+        return;
+    }
+    n = sscanf(params->fwvers, "%u.%u.%u.%u", &maj, &min, &bld, &sub);
+    if (n == 4) {
+        vpd_dell_ffv_vers(pcfg, maj, min, bld, sub);
+        return;
+    }
+    n = sscanf(params->fwvers, "%u.%u.%u-%*c-%u", &maj, &min, &bld, &sub);
+    if (n == 4) {
+        vpd_dell_ffv_vers(pcfg, maj, min, bld, sub);
+        return;
+    }
+    n = sscanf(params->fwvers, "%u.%u.%u", &maj, &min, &bld);
+    if (n == 3) {
+        vpd_dell_ffv_vers(pcfg, maj, min, bld, 100);
+        return;
+    }
+    n = sscanf(params->fwvers, "%u.%u", &maj, &min);
+    if (n == 2) {
+        vpd_dell_ffv_vers(pcfg, maj, min, 100, 100);
+        return;
+    }
+    pciesys_logwarn("vpd_dell_ffv encode failed %s\n", params->fwvers);
+}
+
+static void
+pciehcfg_add_vpd_dell(pciehcfg_t *pcfg, const pciemgr_params_t *params)
+{
     if (params->id[0] != '\0') {
         pciehcfg_add_vpd_id(pcfg, params->id);
     }
@@ -591,21 +758,72 @@ pciehcfg_add_standard_vpd(pciehcfg_t *pcfg)
     S("PN", partnum);
     S("SN", serialnum);
     S("EC", engdate);
-    S(VPD_KEY_MFGDATE, mfgdate);
-    S(VPD_KEY_PCAREV, pcarev);
-    S(VPD_KEY_MISC, misc);
-    S(VPD_KEY_MAC, mac);
-    S(VPD_KEY_FWVERS, fwvers);
+    S(DELL_VPD_KEY_FWV, fwvers);
 #undef S
+
+    pciehcfg_add_vpd(pcfg, "MN", "1028"); /* Dell Vendor Id */
+
+    vpd_dell_dsk(pcfg, DELL_VPD_KEY_DSV, "DSV", "1028VPDR.VER2.2");
+    vpd_dell_dsk(pcfg, DELL_VPD_KEY_NMV, "NMV", "Pensando Systems");
+}
+
+static void
+pciehcfg_add_macaddr_vpd_dell(pciehcfg_t *pcfg,
+                              const pciemgr_params_t *params,
+                              const u_int64_t macaddr)
+{
+    if (macaddr) {
+        char macstr[16];
+        snprintf(macstr, sizeof(macstr), "%012" PRIx64, macaddr);
+        pciehcfg_add_vpd(pcfg, DELL_VPD_KEY_MAC, macstr);
+    }
+
+    /*
+     * macaddr comes from our network devices, and
+     * Dell gets this additional info for network devices.
+     */
+    vpd_dell_ffv(pcfg, params);
+    vpd_dell_dsk(pcfg, DELL_VPD_KEY_DTI, "DTI", "NIC");
+    vpd_dell_dsk(pcfg, DELL_VPD_KEY_NPY, "NPY", "2");
+    vpd_dell_dsk(pcfg, DELL_VPD_KEY_PMT, "PMT", "D"); /* SFF Cage */
+    vpd_dell_dsk(pcfg, DELL_VPD_KEY_DCM, "DCM", "1001FFFFFF2001FFFFFF");
+}
+
+void
+pciehcfg_add_standard_vpd(pciehcfg_t *pcfg)
+{
+    const pciemgr_params_t *params = pciehcfg_get_params();
+    const pciemgr_vpd_format_t vpd_format = params->vpd_format;
+
+    switch (vpd_format) {
+    case VPD_FORMAT_DELL:
+        pciehcfg_add_vpd_dell(pcfg, params);
+        break;
+    case VPD_FORMAT_HPE:
+        pciehcfg_add_vpd_hpe(pcfg, params);
+        break;
+    default:
+        pciesys_logwarn("vpd: unknown vpd_format %d\n", vpd_format);
+        break;
+    }
 }
 
 void
 pciehcfg_add_macaddr_vpd(pciehcfg_t *pcfg, const u_int64_t macaddr)
 {
-    if (macaddr) {
-        char macstr[16];
-        snprintf(macstr, sizeof(macstr), "%012" PRIx64, macaddr);
-        pciehcfg_add_vpd(pcfg, VPD_KEY_MAC, macstr);
+    const pciemgr_params_t *params = pciehcfg_get_params();
+    const pciemgr_vpd_format_t vpd_format = params->vpd_format;
+
+    switch (vpd_format) {
+    case VPD_FORMAT_DELL:
+        pciehcfg_add_macaddr_vpd_dell(pcfg, params, macaddr);
+        break;
+    case VPD_FORMAT_HPE:
+        pciehcfg_add_macaddr_vpd_hpe(pcfg, params, macaddr);
+        break;
+    default:
+        pciesys_logwarn("macaddr_vpd: unknown vpd_format %d\n", vpd_format);
+        break;
     }
 }
 

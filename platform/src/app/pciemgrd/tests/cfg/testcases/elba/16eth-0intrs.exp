@@ -87,10 +87,10 @@ idx  id typ p:bb:dd.f bdfmsk p:bdflim  rw cfgreg vfst romsk address     flags
 			[PN] Part number: SIM-123456-78
 			[SN] Serial number: SIM12345678
 			[EC] Engineering changes: SIM-2013-08-29
-			[V2] Vendor specific: SIM-2013-08-29
-			[V5] Vendor specific: SIM-PCA-X1
 			[V0] Vendor specific: SIM 1000GHz,0.0001pW
-			[V3] Vendor specific: SIM 1.2.3.4
+			[V2] Vendor specific: SIM-2013-08-29
+			[V3] Vendor specific: 1.2.3.4-SIM
+			[V5] Vendor specific: SIM-PCA-X1
 			[RV] Reserved: checksum good, 0 byte(s) reserved
 		End
 	Capabilities: [100 v2] Advanced Error Reporting
@@ -402,10 +402,10 @@ ff0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 			[PN] Part number: SIM-123456-78
 			[SN] Serial number: SIM12345678
 			[EC] Engineering changes: SIM-2013-08-29
-			[V2] Vendor specific: SIM-2013-08-29
-			[V5] Vendor specific: SIM-PCA-X1
 			[V0] Vendor specific: SIM 1000GHz,0.0001pW
-			[V3] Vendor specific: SIM 1.2.3.4
+			[V2] Vendor specific: SIM-2013-08-29
+			[V3] Vendor specific: 1.2.3.4-SIM
+			[V5] Vendor specific: SIM-PCA-X1
 			[RV] Reserved: checksum good, 0 byte(s) reserved
 		End
 	Capabilities: [100 v2] Advanced Error Reporting
@@ -714,11 +714,11 @@ ff0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 			[PN] Part number: SIM-123456-78
 			[SN] Serial number: SIM12345678
 			[EC] Engineering changes: SIM-2013-08-29
-			[V2] Vendor specific: SIM-2013-08-29
-			[V5] Vendor specific: SIM-PCA-X1
 			[V0] Vendor specific: SIM 1000GHz,0.0001pW
-			[V3] Vendor specific: SIM 1.2.3.4
+			[V2] Vendor specific: SIM-2013-08-29
+			[V3] Vendor specific: 1.2.3.4-SIM
 			[V4] Vendor specific: 001122334455
+			[V5] Vendor specific: SIM-PCA-X1
 			[RV] Reserved: checksum good, 0 byte(s) reserved
 		End
 	Capabilities: [100 v2] Advanced Error Reporting

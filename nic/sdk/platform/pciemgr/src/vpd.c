@@ -14,7 +14,7 @@
 #include "platform/misc/include/misc.h"
 #include "platform/pciemgrutils/include/pciesys.h"
 #include "platform/pciemgrutils/include/pciehcfg_impl.h"
-#include "platform/pciemgr/include/pciehw.h"
+#include "platform/pciemgr/include/pciemgr.h"
 #include "pciehw_impl.h"
 
 /*
@@ -178,18 +178,55 @@ vpdtab_to_vpddata(const vpd_table_t *vpdtab, uint8_t *vpddata)
     return total;
 }
 
+static int
+vpdent_cmp(const void *a1, const void *a2)
+{
+    const vpd_entry_t *e1 = (vpd_entry_t *)a1;
+    const vpd_entry_t *e2 = (vpd_entry_t *)a2;
+
+    return strcmp(e1->key, e2->key);
+}
+
+/*
+ * The Vx entries are added in the order they are needed
+ * but we want the Vx entries to end up in alphabetical order.
+ * Find the Vx entries and sort them by name.
+ *
+ *     [PN] Part number: 68-0003-02 01
+ *     [SN] Serial number: FLM18480030
+ *     [EC] Engineering changes: 0
+ *  ==>[V2] Vendor specific: 1544572800
+ *     [V3] Vendor specific: 1.13.0-113-117-g892279e-dirty
+ *     [V4] Vendor specific: 00aecd001440
+ */
+static void
+vpdtab_sort(vpd_table_t *vpdtab)
+{
+    int firstv, ventries;
+
+    for (firstv = 0; firstv < vpdtab->nentries; firstv++) {
+        if (vpdtab->entry[firstv].key[0] == 'V') {
+            break;
+        }
+    }
+    ventries = vpdtab->nentries - firstv;
+    qsort(&vpdtab->entry[firstv], ventries, sizeof(vpd_entry_t), vpdent_cmp);
+}
+
 /*
  * Compile the information in vpdtab into the format accessed
  * by the PCI-SIG VPD capability.
  */
 void
-pciehw_vpd_finalize(pciehwdev_t *phwdev, const vpd_table_t *vpdtab)
+pciehw_vpd_finalize(pciehwdev_t *phwdev, vpd_table_t *vpdtab)
 {
     uint8_t *vpddata;
     size_t n;
 
     vpddata = pciehw_vpd_getdata(phwdev);
     memset(vpddata, 0, PCIEHW_VPDSZ);
+
+    vpdtab_sort(vpdtab);
 
     /*
      * Determine size to be sure the data fits in vpddata.
@@ -230,6 +267,23 @@ pciehw_vpd_write(pciehwdev_t *phwdev,
                  const uint16_t addr, const uint32_t data)
 {
     /* No writeable vpd data (yet). a*/
+}
+
+pciemgr_vpd_format_t
+pciemgr_vpd_format_from_str(const char *s)
+{
+    if (s) {
+        if (strcmp(s, "pensando") == 0) {
+            return VPD_FORMAT_PENSANDO;
+        }
+        if (strcmp(s, "hpe") == 0) {
+            return VPD_FORMAT_HPE;
+        }
+        if (strcmp(s, "dell") == 0) {
+            return VPD_FORMAT_DELL;
+        }
+    }
+    return VPD_FORMAT_NONE;
 }
 
 /******************************************************************

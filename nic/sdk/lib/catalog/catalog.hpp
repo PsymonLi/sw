@@ -179,6 +179,7 @@ typedef struct catalog_s {
     uint16_t                   pcie_subdeviceid;                      // pcie subdevice id
     uint8_t                    pcie_long_lived;                       // aux powered swm card
     uint32_t                   pcie_clock_freq;                       // core clock freq
+    std::string                pcie_vpd_format;                       // VPD format
     uint32_t                   pcie_nportspecs;                       // pcie number of portspecs[]
     catalog_pcie_portspec_t    pcie_portspecs[MAX_PCIE_PORTSPECS];    // pcie port info
 
@@ -341,6 +342,7 @@ public:
     uint8_t      pcie_long_lived(void) { return catalog_db_.pcie_long_lived; }
     uint32_t     pcie_clock_freq(void) { return catalog_db_.pcie_clock_freq; }
     uint32_t     pcie_nportspecs(void) { return catalog_db_.pcie_nportspecs; }
+    std::string  pcie_vpd_format(void) { return catalog_db_.pcie_vpd_format; }
     uint8_t      pcie_host(uint32_t idx)
                         { return catalog_db_.pcie_portspecs[idx].host; }
     uint8_t      pcie_port(uint32_t idx)
