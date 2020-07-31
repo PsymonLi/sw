@@ -20,7 +20,7 @@ namespace pt = boost::property_tree;
 
 class Eth;
 class AdminQ;
-class EdmaQ;
+class edma_q;
 typedef uint8_t status_code_t;
 typedef uint16_t cmd_opcode_t;
 
@@ -222,8 +222,8 @@ private:
 
     // Services
     AdminQ *adminq;
-    EdmaQ *edmaq;
-    EdmaQ *edmaq_async;
+    edma_q *edmaq;
+    edma_q *edmaq_async;
 
     /* AdminQ Commands */
     static void AdminCmdHandler(void *obj,

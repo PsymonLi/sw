@@ -146,7 +146,7 @@ FwFlushBuffer(string dev_name, bool close)
 }
 
 status_code_t
-FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length, EdmaQ *edmaq, bool host_dev)
+FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length, edma_q *edmaq, bool host_dev)
 {
     status_code_t status = IONIC_RC_SUCCESS;
     uint32_t transfer_off = 0, transfer_sz = 0;
@@ -200,7 +200,7 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
         /* if the local buffer does not have enough free space, then flush it to fw_file */
         if (fw_buf_off + transfer_sz > fw_buf_size) {
             /* wait for pending edma transfers to complete before writing to file */
-            edmaq->Flush();
+            edmaq->flush();
             status = FwFlushBuffer(dev_name, false);
             if (status != IONIC_RC_SUCCESS) {
                 goto err;
@@ -208,7 +208,7 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
         }
 
         posted =
-            edmaq->Post(host_dev ? EDMA_OPCODE_HOST_TO_LOCAL : EDMA_OPCODE_LOCAL_TO_LOCAL,
+            edmaq->post(host_dev ? EDMA_OPCODE_HOST_TO_LOCAL : EDMA_OPCODE_LOCAL_TO_LOCAL,
                         addr + transfer_off, fw_buf_addr + fw_buf_off, transfer_sz, &ctx);
         if (posted) {
             NIC_LOG_INFO("{}: Queued transfer offset {:#x} size {} src {:#x} dst {:#x}",
@@ -228,7 +228,7 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
     }
 
     /* Make sure that edmaq transfers are done before returning */
-    edmaq->Flush();
+    edmaq->flush();
 
 err:
     if (status != IONIC_RC_SUCCESS)

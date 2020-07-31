@@ -451,7 +451,7 @@ EthLif::ServiceControl(bool start)
         }
 
         // Initialize EDMA service
-        if (!edmaq->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
+        if (!edmaq->init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
             NIC_LOG_ERR("{}: Failed to initialize EdmaQ service",
                         hal_lif_info_.name);
             ret = SDK_RET_ERR;
@@ -467,7 +467,7 @@ EthLif::ServiceControl(bool start)
         }
 
         // Initialize EDMA async queue
-        if (!edmaq_async->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
+        if (!edmaq_async->init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
             NIC_LOG_ERR("{}: Failed to initialize EdmaQ Async service",
                         hal_lif_info_.name);
             ret = SDK_RET_ERR;
@@ -668,7 +668,7 @@ EthLif::LifQInit(bool mem_clr) {
 
     MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ETH_EDMAQ_RING_SIZE));
 
-    edmaq = EdmaQ::factory(hal_lif_info_.name, hal_lif_info_.lif_id,
+    edmaq = edma_q::factory(hal_lif_info_.name, hal_lif_info_.lif_id,
                       ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID,
                       ring_base, comp_base, ETH_EDMAQ_RING_SIZE, NULL, EV_A);
 
@@ -686,7 +686,7 @@ EthLif::LifQInit(bool mem_clr) {
     }
     MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
 
-    edmaq_async = EdmaQ::factory(hal_lif_info_.name, hal_lif_info_.lif_id,
+    edmaq_async = edma_q::factory(hal_lif_info_.name, hal_lif_info_.lif_id,
                             ETH_EDMAQ_ASYNC_QTYPE, ETH_EDMAQ_ASYNC_QID,
                             ring_base, comp_base, ETH_EDMAQ_ASYNC_RING_SIZE, NULL, EV_A);
 
@@ -893,7 +893,7 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
         NIC_LOG_ERR("{}: Failed to get qstate address for edma queue", hal_lif_info_.name);
         return (IONIC_RC_ERROR);
     }
-    if (!edmaq->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
+    if (!edmaq->init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
         NIC_LOG_ERR("{}: Failed to initialize EdmaQ service", hal_lif_info_.name);
         return (IONIC_RC_ERROR);
     }
@@ -903,7 +903,7 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
         NIC_LOG_ERR("{}: Failed to get qstate address for edma async queue", hal_lif_info_.name);
         return (IONIC_RC_ERROR);
     }
-    if (!edmaq_async->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
+    if (!edmaq_async->init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
         NIC_LOG_ERR("{}: Failed to initialize EdmaQ Async service", hal_lif_info_.name);
         return (IONIC_RC_ERROR);
     }
@@ -1135,8 +1135,8 @@ EthLif::Reset()
     }
 
     // Reset EDMA service
-    edmaq->Reset();
-    edmaq_async->Reset();
+    edmaq->reset();
+    edmaq_async->reset();
 
     // Reset NotifyQ service
     notify_enabled = 0;
@@ -1177,14 +1177,14 @@ bool
 EthLif::EdmaProxy(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
                   struct edmaq_ctx *ctx)
 {
-    return edmaq->Post(opcode, from, to, size, ctx);
+    return edmaq->post(opcode, from, to, size, ctx);
 }
 
 bool
 EthLif::EdmaAsyncProxy(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
                        struct edmaq_ctx *ctx)
 {
-    return edmaq_async->Post(opcode, from, to, size, ctx);
+    return edmaq_async->post(opcode, from, to, size, ctx);
 }
 
 void
@@ -3098,7 +3098,7 @@ EthLif::RssConfig(void *req, void *req_data, void *resp, void *resp_data)
     memcpy(lif_pstate->rss_key, cmd->rss.key, IONIC_RSS_HASH_KEY_SIZE);
 
     // Get indirection table from host
-    posted = edmaq->Post(spec->host_dev ? EDMA_OPCODE_HOST_TO_LOCAL : EDMA_OPCODE_LOCAL_TO_LOCAL,
+    posted = edmaq->post(spec->host_dev ? EDMA_OPCODE_HOST_TO_LOCAL : EDMA_OPCODE_LOCAL_TO_LOCAL,
                          cmd->rss.addr, edma_buf_addr, RSS_IND_TBL_SIZE, NULL);
 
     if (!posted) {
@@ -3554,7 +3554,7 @@ EthLif::UpdateQStatus(bool enable)
         }
 
         if(!enable) {
-            edmaq->Flush();
+            edmaq->flush();
         }
     }
 
@@ -3715,7 +3715,7 @@ EthLif::SendDeviceReset(void)
 
     // Update host lif status
     if (lif_pstate->host_lif_status_addr != 0) {
-        edmaq->Post(spec->host_dev ? EDMA_OPCODE_LOCAL_TO_HOST : EDMA_OPCODE_LOCAL_TO_LOCAL,
+        edmaq->post(spec->host_dev ? EDMA_OPCODE_LOCAL_TO_HOST : EDMA_OPCODE_LOCAL_TO_LOCAL,
                     lif_status_addr, lif_pstate->host_lif_status_addr,
                     sizeof(struct ionic_lif_status), NULL);
     }
@@ -3796,14 +3796,14 @@ EthLif::StatsUpdate(EV_P_ ev_timer *w, int events)
 
     if (eth->lif_stats_addr != 0) {
         if (eth->lif_pstate->host_lif_stats_addr != 0) {
-            eth->edmaq->Post(opcode,
+            eth->edmaq->post(opcode,
                              eth->lif_stats_addr,
                              eth->lif_pstate->host_lif_stats_addr,
                              sizeof(struct ionic_lif_stats),
                              &ctx);
         }
         if (eth->pf_lif_stats_addr != 0) {
-            eth->edmaq_async->Post(opcode,
+            eth->edmaq_async->post(opcode,
                                    eth->lif_stats_addr,
                                    eth->pf_lif_stats_addr,
                                    sizeof(struct ionic_lif_stats),
@@ -4011,7 +4011,7 @@ EthLif::SetLifLinkState()
 
     // Update host lif status
     if (lif_pstate->host_lif_status_addr != 0) {
-        edmaq->Post(
+        edmaq->post(
             spec->host_dev ? EDMA_OPCODE_LOCAL_TO_HOST : EDMA_OPCODE_LOCAL_TO_LOCAL,
             lif_status_addr,
             lif_pstate->host_lif_status_addr,

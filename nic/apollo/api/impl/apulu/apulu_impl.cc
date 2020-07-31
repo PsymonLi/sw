@@ -22,6 +22,7 @@
 #include "nic/sdk/asic/common/asic_common.hpp"
 #include "nic/sdk/lib/periodic/periodic.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
+#include "nic/sdk/lib/edma/edmaq.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
@@ -32,7 +33,6 @@
 #include "nic/apollo/api/impl/apulu/qos_impl.hpp"
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/api/impl/apulu/qos_impl.hpp"
-#include "platform/src/lib/edma/edmaq.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/p4/include/ftl.h"
@@ -69,11 +69,11 @@ ip_addr_t g_zero_ip = { 0 };
 namespace api {
 namespace impl {
 
-static EdmaQ *
+static edma_q *
 edma_init (void) {
     uint64_t size;
     mem_addr_t ring_base, comp_base, qstate_addr;
-    EdmaQ *edmaq;
+    edma_q *edmaq;
     static uint8_t sw_phv[APULU_PHV_SIZE];
     p4plus_txdma_ingress_phv_t *phv = (p4plus_txdma_ingress_phv_t *)sw_phv;
 
@@ -90,7 +90,7 @@ edma_init (void) {
 
     phv->capri_intr_lif = APULU_SERVICE_LIF;
     phv->capri_txdma_intr_qid = APULU_SVC_LIF_EDMA_QID;
-    edmaq = EdmaQ::factory("upgrade", APULU_SERVICE_LIF,
+    edmaq = edma_q::factory("upgrade", APULU_SERVICE_LIF,
                            APULU_SVC_LIF_QTYPE_DEFAULT, APULU_SVC_LIF_EDMA_QID,
                            ring_base, comp_base, UPGRADE_EDMAQ_RING_SIZE, &sw_phv);
 
@@ -98,7 +98,7 @@ edma_init (void) {
     SDK_ASSERT(qstate_addr != INVALID_MEM_ADDRESS);
 
     qstate_addr += APULU_SVC_LIF_EDMA_QID * APULU_SVC_LIF_QSTATE_SIZE_BYTES;
-    if (!(edmaq->Init(api::g_pds_state.prog_info(), qstate_addr, 0, 0, 0))) {
+    if (!(edmaq->init(api::g_pds_state.prog_info(), qstate_addr, 0, 0, 0))) {
         PDS_TRACE_ERR("Failed to initialize edma queue service");
         SDK_ASSERT(0);
     }

@@ -5,7 +5,7 @@ MODULE_PREREQS  := common_p4plus_rxdma.p4bin common_p4plus_txdma.p4bin hal.memrg
 MODULE_TARGET   := libnicmgr.lib
 MODULE_PIPELINE := iris gft
 MODULE_INCS     := ${MODULE_SRC_DIR}/../include \
-                   ${MODULE_SRC_DIR}/../../edma \
+                   ${TOPDIR}/nic/sdk/lib/edma \
                    ${BLD_PROTOGEN_DIR}/
 MODULE_SRCS     := $(shell find ${MODULE_SRC_DIR} -type f -name '*.cc' \
                    ! -name 'ftl*' \

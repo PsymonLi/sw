@@ -80,7 +80,7 @@ copy_files() {
     pack_apollo+='platform/src/lib/pciemgr_if platform/drivers platform/drivers/common platform/src/lib/nicmgr '
     pack_apollo+='platform/src/lib/eth_p4plus '
     pack_apollo+='platform/src/lib/rdmamgr_apollo '
-    pack_apollo+='platform/src/lib/edma '
+    pack_apollo+='nic/sdk/lib/edma '
 
     protobuf=" "
     metaswitch=" "
@@ -212,7 +212,7 @@ save_files() {
     platform_inc+='nicmgr/include/ftl_lif.hpp eth_p4plus/eth_p4pd.hpp nicmgr/include/nicmgr_shm.hpp '
     platform_inc+='nicmgr/include/eth_pstate.hpp nicmgr/include/eth_if.h nicmgr/include/eth_utils.hpp '
     if [ "$pipeline" != "athena" ];then
-        platform_inc+='edma/edmaq.hpp '
+        platform_inc+='nic/sdk/lib/edma/edmaq.hpp '
     fi
     platform_drivers_inc+='common/ionic_if.h '
 

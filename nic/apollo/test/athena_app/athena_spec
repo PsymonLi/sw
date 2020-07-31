@@ -105,6 +105,7 @@
 /sw/nic/sdk/lib/dpdk
 /sw/nic/sdk/lib/dpdk/sim
 /sw/nic/sdk/lib/edma
+-/sw/nic/sdk/edma/module.mk
 /sw/nic/sdk/lib/eventmgr
 /sw/nic/sdk/lib/event_thread
 /sw/nic/sdk/lib/ht
@@ -272,8 +273,6 @@
 /sw/platform/src/app/sysmond/sysmondebug.sh
 /sw/platform/src/app/cpld
 /sw/platform/src/app/memtun
-/sw/platform/src/lib/edma
--/sw/platform/src/lib/edma/module.mk
 /sw/platform/src/lib/eth_p4plus
 /sw/platform/src/lib/nicmgr/include
 /sw/platform/src/lib/nicmgr/src
