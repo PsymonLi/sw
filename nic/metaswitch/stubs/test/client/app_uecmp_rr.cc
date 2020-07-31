@@ -495,7 +495,7 @@ static void create_l2f_test_mac_ip_proto_grpc (bool second=false) {
         mac_addr[4] -= 7;
     }
     proto_spec->set_macaddr (mac_addr, 6);
-    proto_spec->set_ifid (g_test_conf_.lif_if_index);
+    proto_spec->set_ifid (g_test_conf_.host_if_index);
 
     printf ("Simulating EVPN MAC/IP learn...\n");
     ret_status = g_cp_test_stub_->CPL2fTestCreate(&context, request, &response);
@@ -733,9 +733,9 @@ static void create_subnet_proto_grpc (bool second=false) {
     v4_prefix->set_addr (g_test_conf_.local_gwip_addr[0]);
     }
     if (g_node_id == 2) {
-    // TODO: Host IfIndex needs to refer to an actual LIF Index in HAL
+    // TODO: Host IfIndex needs to refer to an actual ifindex in HAL
     //       Else failure in non-mock PDS mode.
-    proto_spec->add_hostif(test::uuid_from_objid(g_test_conf_.lif_if_index).id,
+    proto_spec->add_hostif(test::uuid_from_objid(g_test_conf_.host_if_index).id,
                            PDS_MAX_KEY_LEN);
     proto_spec->add_hostif(test::uuid_from_objid(2).id,
                            PDS_MAX_KEY_LEN);
@@ -772,7 +772,7 @@ static void upd_subnet_hostif_proto_grpc (std::vector<uint32_t>& hostifs) {
     v4_prefix->set_addr (g_test_conf_.local_gwip_addr[0]);
     if (g_node_id == 2) {
         for (auto hostif:hostifs) {
-            // TODO: Host IfIndex needs to refer to an actual LIF Index in HAL
+            // TODO: Host IfIndex needs to refer to an actual ifindex in HAL
             //       Else failure in non-mock PDS mode.
             proto_spec->add_hostif(test::uuid_from_objid(hostif).id,
                                    PDS_MAX_KEY_LEN);
@@ -810,9 +810,9 @@ static void upd_subnet_if_proto_grpc (bool del = false) {
     v4_prefix->set_addr (g_test_conf_.local_gwip_addr[0]);
 
     if (g_node_id == 2 && !del) {
-    // TODO: Host IfIndex needs to refer to an actual LIF Index in HAL
+    // TODO: Host IfIndex needs to refer to an actual ifindex in HAL
     //       Else failure in non-mock PDS mode.
-    proto_spec->add_hostif(test::uuid_from_objid(g_test_conf_.lif_if_index).id,
+    proto_spec->add_hostif(test::uuid_from_objid(g_test_conf_.host_if_index).id,
                            PDS_MAX_KEY_LEN);
     }
     proto_spec->set_virtualroutermac((uint64_t)0x001122334455);

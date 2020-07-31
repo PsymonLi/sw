@@ -58,9 +58,9 @@ public:
     void trigger_update(void) override {
         if (test_if_bind) {
             pds_ms::l2f_bd_t  bd;
-            auto lifindex =  api::objid_from_uuid(subnet_spec.host_if[0]);
+            auto host_ifindex =  api::objid_from_uuid(subnet_spec.host_if[0]);
             auto ms_ifindex =
-                pds_ms::pds_to_ms_ifindex(lifindex, IF_TYPE_LIF);
+                pds_ms::pds_to_ms_ifindex(host_ifindex, IF_TYPE_HOST);
             bd.handle_add_if(bd_id, ms_ifindex);
             prev_if_bind = ms_ifindex;
             test_if_bind = false;

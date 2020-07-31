@@ -58,8 +58,8 @@ lim_intf_addr_fill_func (LimInterfaceAddrSpec&   req,
         case LIM_IF_TYPE_ETH:
             if_index = pds_to_ms_ifindex (if_id, IF_TYPE_ETH);
             break;
-        case LIM_IF_TYPE_LIF:
-            if_index = pds_to_ms_ifindex (if_id, IF_TYPE_LIF);
+        case LIM_IF_TYPE_HOST:
+            if_index = pds_to_ms_ifindex (if_id, IF_TYPE_HOST);
             break;
         case LIM_IF_TYPE_LOOPBACK:
             if_index = pds_to_ms_ifindex(if_id, IF_TYPE_LOOPBACK);
@@ -92,7 +92,7 @@ lim_sw_intf_fill_func (LimInterfaceSpec&    req,
     AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_LIM_SOFTWIF_ENT_IX);
 
     // Set SW interface type
-    if (if_type == LIM_IF_TYPE_LIF) {
+    if (if_type == LIM_IF_TYPE_HOST) {
         ms_if_subtype = AMB_LIM_SOFTWIF_DUMMY;
     } else if (if_type == LIM_IF_TYPE_LOOPBACK) {
         ms_if_subtype = AMB_LIM_SOFTWIF_LOOPBACK;

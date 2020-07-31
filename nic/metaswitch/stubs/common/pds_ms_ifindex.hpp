@@ -27,7 +27,7 @@ uint32_t ms_to_pds_eth_ifindex(uint32_t ms_ifindex);
 NBB_LONG ms_to_lnx_ifindex(NBB_LONG ms_ifindex, NBB_ULONG location);
 NBB_LONG lnx_to_ms_ifindex(NBB_LONG lnx_ifindex, NBB_ULONG location);
 
-static constexpr uint32_t k_ms_lif_if_base =
+static constexpr uint32_t k_ms_host_if_base =
     (lim::IfIndexBase::SOFTWARE_IF_INDEX_BASE |
      (AMB_LIM_SOFTWIF_DUMMY << lim::IfIndexBase::SOFTWIF_BASE_BIT_SHIFT) |
      lim::IfIndexBase::LIM_ALLOCATED_INDEX_BASE);
@@ -47,12 +47,12 @@ static inline uint32_t pds_to_ms_ifindex(uint32_t pds_ifindex, uint32_t if_type)
         // PDS IfIndex from the MS IfIndex.
         return pds_ifindex & ~((IF_TYPE_MASK << IF_TYPE_SHIFT) | 
                 (ETH_IF_SLOT_MASK << ETH_IF_SLOT_SHIFT));
-    } else if (if_type == IF_TYPE_LIF) {
-        return (k_ms_lif_if_base + LIF_IFINDEX_TO_LIF_ID(pds_ifindex));
+    } else if (if_type == IF_TYPE_HOST) {
+        return (k_ms_host_if_base + HOST_IFINDEX_TO_IF_ID(pds_ifindex));
     } else if (if_type == IF_TYPE_LOOPBACK) {
         return (k_ms_loopback_if_base + pds_ifindex);
     }
-    // Return the pds_ifindex if it is not Eth or Lif
+    // Return the pds_ifindex if it is not Eth or Host ifindex
     return pds_ifindex;
 }
  
@@ -67,8 +67,8 @@ static inline uint32_t bd_id_to_ms_ifindex (uint32_t bd_id) {
 uint32_t pds_port_to_ms_ifindex_and_ifname(uint32_t port, std::string* ifname);
 
 static inline uint32_t ms_ifindex_to_pds_type (uint32_t ms_ifindex) {
-    if ((ms_ifindex & k_ms_sw_if_mask) == k_ms_lif_if_base) {
-        return IF_TYPE_LIF;
+    if ((ms_ifindex & k_ms_sw_if_mask) == k_ms_host_if_base) {
+        return IF_TYPE_HOST;
     }
     if ((ms_ifindex & k_ms_sw_if_mask) == k_ms_loopback_if_base) {
         return IF_TYPE_LOOPBACK;
@@ -78,7 +78,7 @@ static inline uint32_t ms_ifindex_to_pds_type (uint32_t ms_ifindex) {
         // eg - VXLAN tunnel, IRB etc
         return IF_TYPE_NONE;
     }
-    // We only create UplinkL3 and LIF interfaces in Metaswitch
+    // We only create Uplink L3 and HostIf interfaces in Metaswitch
     // Assumptions: 
     // Eth Uplinks have parent port ID set in the 17th bit
     // And this 24-bit hardware index is passed directly to MS

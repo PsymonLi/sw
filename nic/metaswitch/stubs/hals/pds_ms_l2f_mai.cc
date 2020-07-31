@@ -81,9 +81,9 @@ end:
 
 void
 l2f_local_mac_ip_add (const pds_obj_key_t& subnet_key, const ip_addr_t& ip,
-                      mac_addr_t mac, if_index_t lif_ifindex)
+                      mac_addr_t mac, if_index_t host_ifindex)
 {
-    ms_ifindex_t ms_lif_index = pds_to_ms_ifindex(lif_ifindex, IF_TYPE_LIF);
+    ms_ifindex_t ms_if_index = pds_to_ms_ifindex(host_ifindex, IF_TYPE_HOST);
     ms_bd_id_t bd_id;
 
     { // Enter Mgmt thread context
@@ -105,16 +105,15 @@ l2f_local_mac_ip_add (const pds_obj_key_t& subnet_key, const ip_addr_t& ip,
 
     bool has_ip = false;
     if (ip_addr_is_zero(&ip)) {
-        PDS_TRACE_DEBUG("Advertise MAC learn for Subnet %s BD %d MAC %s LIF 0x%x MS-LIF 0x%x",
-                        subnet_key.str(), bd_id, macaddr2str(mac), lif_ifindex, ms_lif_index);
+        PDS_TRACE_DEBUG("Advertise MAC learn for Subnet %s BD %d MAC %s HostIf 0x%x MS-IF 0x%x",
+                        subnet_key.str(), bd_id, macaddr2str(mac), host_ifindex, ms_if_index);
     } else {
         PDS_TRACE_DEBUG("Advertise IP-MAC learn for Subnet %s BD %d IP %s MAC %s"
-                        " LIF 0x%x MS-LIF 0x%x",
+                        " HostIf 0x%x MS-IF 0x%x",
                         subnet_key.str(), bd_id, ipaddr2str(&ip), macaddr2str(mac),
-                        lif_ifindex, ms_lif_index);
+                        host_ifindex, ms_if_index);
         has_ip = true;
     }
-
 
     if (has_ip) {
         // Could be a L2L move - first delete any prev MAC for this IP.
@@ -134,7 +133,7 @@ l2f_local_mac_ip_add (const pds_obj_key_t& subnet_key, const ip_addr_t& ip,
     memcpy(mac_ip_id.mac_address, mac, ETH_ADDR_LEN);
 
     // Notify MAC only first
-    auto ret = l2f::l2f_cc_is_mac_add_update(&mac_ip_id, ms_lif_index);
+    auto ret = l2f::l2f_cc_is_mac_add_update(&mac_ip_id, ms_if_index);
     if (ret != ATG_OK) {
         PDS_TRACE_ERR("Adding local MAC to MS failed for BD %d MAC %s",
                       bd_id, macaddr2str(mac));
@@ -143,7 +142,7 @@ l2f_local_mac_ip_add (const pds_obj_key_t& subnet_key, const ip_addr_t& ip,
     if (!ip_addr_is_zero(&ip)) {
         // Then Notify IP along with MAC
         pds_ms::pds_to_ms_ipaddr(ip, &mac_ip_id.ip_address);
-        ret = l2f::l2f_cc_is_mac_add_update(&mac_ip_id, ms_lif_index);
+        ret = l2f::l2f_cc_is_mac_add_update(&mac_ip_id, ms_if_index);
         if (ret != ATG_OK) {
             PDS_TRACE_ERR("Adding local IP-MAC to MS failed for BD %d IP %s MAC %s",
                           bd_id, ipaddr2str(&ip), macaddr2str(mac));

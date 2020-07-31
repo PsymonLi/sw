@@ -107,8 +107,8 @@ parse_json_config (test_config_t *conf, uint8_t node) {
     conf->eth_if_index      = strtol (value.c_str(),NULL, 0);
     value                   = pt.get <std::string>("eth-if-index-2");
     conf->eth_if_index_2    = strtol (value.c_str(),NULL, 0);
-    value                   = pt.get <std::string>("lif-if-index");
-    conf->lif_if_index      = strtol (value.c_str(),NULL, 0);
+    value                   = pt.get <std::string>("host-if-index");
+    conf->host_if_index      = strtol (value.c_str(),NULL, 0);
     value                   = pt.get <std::string>("local.as");
     conf->local_asn         = strtol (value.c_str(),NULL, 0);
     value                   = pt.get <std::string>("remote.as");

@@ -38,7 +38,7 @@
 //    control plane state machine and should NOT be modified in a
 //    direct Fastpath update to HAL
 //         i) VNI
-//        ii) HostIfIndex - LIF bind/unbind to subnet
+//        ii) HostIfIndex - HostIF bind/unbind to subnet
 //
 // b) Owned by PDS HAL (Fastpath update to HAL) -
 //    Fields that have dependencies to/from non-controlplane PDS HAL objects.
@@ -120,8 +120,8 @@ static void
 populate_lim_soft_if_spec (LimInterfaceSpec& req,
                            if_index_t        host_ifindex)
 {
-    req.set_ifid (LIF_IFINDEX_TO_LIF_ID(host_ifindex));
-    req.set_iftype (LIM_IF_TYPE_LIF);
+    req.set_ifid (HOST_IFINDEX_TO_IF_ID(host_ifindex));
+    req.set_iftype (LIM_IF_TYPE_HOST);
 }
 
 static void config_evpn_bd_if_bind (const pds_subnet_spec_t* subnet_spec,
@@ -130,20 +130,20 @@ static void config_evpn_bd_if_bind (const pds_subnet_spec_t* subnet_spec,
                                     NBB_LONG  row_status,
                                     NBB_ULONG correlator)
 {
-    // Get PDS LIF IfIndex of the PF
-    auto lif_ifindex = api::objid_from_uuid(host_if);
-    // Derive MS IfIndex from PDS LIF IfIndex
-    auto ms_ifindex = pds_to_ms_ifindex(lif_ifindex, IF_TYPE_LIF);
+    // Get PDS HostIf IfIndex of the PF
+    auto host_ifindex = api::objid_from_uuid(host_if);
+    // Derive MS IfIndex from PDS HostIf IfIndex
+    auto ms_ifindex = pds_to_ms_ifindex(host_ifindex, IF_TYPE_HOST);
 
     bool del_if = (row_status == AMB_ROW_DESTROY);
     PDS_TRACE_DEBUG("%s Subnet %s BD %d HostIf %s PDSIfIndex 0x%x"
                     " MSIfIndex 0x%x",
                     (del_if) ? "Detach" : "Attach",
                     subnet_spec->key.str(), bd_id, host_if.str(),
-                    lif_ifindex, ms_ifindex);
+                    host_ifindex, ms_ifindex);
 
     LimInterfaceSpec lim_swif_spec;
-    populate_lim_soft_if_spec (lim_swif_spec, lif_ifindex);
+    populate_lim_soft_if_spec (lim_swif_spec, host_ifindex);
     pds_ms_set_liminterfacespec_amb_lim_software_if(lim_swif_spec,
                                                     row_status,
                                                     correlator,

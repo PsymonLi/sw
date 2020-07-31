@@ -74,7 +74,7 @@ message LimInterfaceCfgSpec {
 enum LimIntfType {
   LIM_IF_TYPE_NONE     = 0;
   LIM_IF_TYPE_ETH      = 1;
-  LIM_IF_TYPE_LIF      = 2;
+  LIM_IF_TYPE_HOST     = 2;
   LIM_IF_TYPE_LOOPBACK = 3;
   LIM_IF_TYPE_IRB      = 4;
 };

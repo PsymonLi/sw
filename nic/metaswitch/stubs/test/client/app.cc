@@ -209,7 +209,7 @@ static void create_l2f_test_mac_ip_proto_grpc () {
     ipaddr->set_v4addr(g_test_conf_.local_mai_ip[0][0]);
     char mac_addr[] = {0x00,0x12,0x23,0x45,0x67,0x8};
     proto_spec->set_macaddr (mac_addr, 6);
-    proto_spec->set_ifid (g_test_conf_.lif_if_index);
+    proto_spec->set_ifid (g_test_conf_.host_if_index);
 
     printf ("Simulating EVPN MAC/IP learn...\n");
     ret_status = g_cp_test_stub_->CPL2fTestCreate(&context, request, &response);
@@ -419,9 +419,9 @@ static void create_subnet_proto_grpc () {
     auto proto_encap = proto_spec->mutable_fabricencap();
     proto_encap->set_type(types::ENCAP_TYPE_VXLAN);
     proto_encap->mutable_value()->set_vnid(g_test_conf_.vni[0]);
-    // TODO: Host IfIndex needs to refer to an actual LIF Index in HAL
+    // TODO: Host IfIndex needs to refer to an actual ifindex in HAL
     //       Else failure in non-mock PDS mode.
-    //proto_spec->set_hostif(test::uuid_from_objid(g_test_conf_.lif_if_index).id,
+    //proto_spec->set_hostif(test::uuid_from_objid(g_test_conf_.host_if_index).id,
     //                       PDS_MAX_KEY_LEN);
     proto_spec->set_ipv4virtualrouterip(g_test_conf_.local_gwip_addr[0]);
     proto_spec->set_virtualroutermac((uint64_t)0x001122334455);

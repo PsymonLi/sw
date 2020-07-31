@@ -143,7 +143,7 @@ NBB_BYTE li_integ_subcomp_t::irb_delete(NBB_ULONG irb_ifindex) {
 }
 
 //--------------------------------------------------
-// Software interface (Loopback and Dummy LIFs)
+// Software interface (Loopback and Dummy Host ifs)
 //-------------------------------------------------
 NBB_BYTE li_integ_subcomp_t::softwif_add_update(ATG_LIPI_SOFTWIF_ADD_UPDATE* swif_add_upd_ips) {
     PDS_TRACE_INFO("Loopback interface create IfIndex 0x%x Ifname %s SwType %u",

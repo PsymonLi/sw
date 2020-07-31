@@ -27,7 +27,7 @@ extern NBB_ULONG l2f_proc_id;
 // Subnet Create -
 // a) MS Mgmt Stub initiator receives Subnet create Proto.
 // b) It creates Subnet store obj holding the received Subnet Spec.
-// c) MS Mgmt Stub creates BD, LIF SotfwIf, AC Bind and IRB MIB entries.
+// c) MS Mgmt Stub creates BD, HostIF SotfwIf, AC Bind and IRB MIB entries.
 // d) MS control-plane asynchronously calls L2F Stub with BD create.
 //    MS Mgmt Stub returns without waiting for BD Stub call invocation.
 //    So further updates on the same Subnet are to be expected.
@@ -54,7 +54,7 @@ extern NBB_ULONG l2f_proc_id;
 //    from HAL. BD store object is removed if HAL indicates creation failure.
 //
 // Subnet delete - Reverse of create
-// a) PDS MS Mgmt Stub deletes BD, IRB, LIF SoftwIf and AC Bind
+// a) PDS MS Mgmt Stub deletes BD, IRB, HostIF SoftwIf and AC Bind
 //    MIB table entries.
 // b) PDS MS Mgmt Stub deletes Subnet obj holding cached Subnet Spec from Store.
 // c) MS calls L2F Stub with BD delete if no prev IPS response pending after
@@ -426,8 +426,8 @@ void l2f_bd_t::handle_delete(NBB_ULONG bd_id) {
 void l2f_bd_t::handle_add_if(NBB_ULONG bd_id, ms_ifindex_t ifindex) {
     subnet_batches_t  pds_bctxt_guard;
     ips_info_.bd_id = bd_id;
-    if (ms_ifindex_to_pds_type(ifindex) != IF_TYPE_LIF) {
-        PDS_TRACE_VERBOSE("Ignore Non-LIF interface 0x%x bind to BD %d",
+    if (ms_ifindex_to_pds_type(ifindex) != IF_TYPE_HOST) {
+        PDS_TRACE_VERBOSE("Ignore Non-HostIF interface 0x%x bind to BD %d",
                           ifindex, bd_id);
         return;
     }

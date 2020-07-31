@@ -14,7 +14,6 @@ namespace pds_ms {
 template<> sdk::lib::slab* slab_obj_t<if_obj_t>::slab_ = nullptr;
 
 // Phy + Loopback = 3
-// LIFS = 1/8th Subnets = 8
 // IRBs = 1/8th Subnets = 8
 // VXLAN Tunnels = 1/10 Teps = 100
 // VXLAN Ports = 1/10 Teps * 5 VNIs per Tep = 500

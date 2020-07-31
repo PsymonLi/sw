@@ -131,14 +131,14 @@ public:
         return slabs_[slab_id]->num_in_use();
     }
     uint32_t lnx_ifindex(uint32_t pds_ifindex) {
-        // Check that we are not passed a LIF by mistake
+        // Check that we are not passed a wrong ifindex by mistake
         SDK_ASSERT (IFINDEX_TO_IFTYPE(pds_ifindex) == IF_TYPE_L3);
         uint32_t port = ETH_IFINDEX_TO_PARENT_PORT(pds_ifindex);
         SDK_ASSERT(port <= k_max_fp_ports);
         return lnx_ifindex_table_[port-1];
     }
     void set_lnx_ifindex(uint32_t pds_ifindex, uint32_t lnx_ifindex) {
-        // Check that we are not passed a LIF by mistake
+        // Check that we are not passed a wrong ifindex by mistake
         SDK_ASSERT (IFINDEX_TO_IFTYPE(pds_ifindex) == IF_TYPE_L3);
         uint32_t port = ETH_IFINDEX_TO_PARENT_PORT(pds_ifindex);
         SDK_ASSERT(port <= k_max_fp_ports);

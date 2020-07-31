@@ -54,7 +54,7 @@ public:
     NBB_BYTE irb_delete(NBB_ULONG irb_ifindex);
 
     //--------------------------------------------------
-    // Software interface (Loopback and Dummy LIFs)
+    // Software interface (Loopback and Dummy Host ifs)
     //-------------------------------------------------
     NBB_BYTE softwif_add_update(ATG_LIPI_SOFTWIF_ADD_UPDATE* softwif_add_upd_ips);
     NBB_BYTE softwif_delete(NBB_ULONG softwif_ifindex, 

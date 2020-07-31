@@ -28,7 +28,7 @@
     },
     "eth-if-index" : "0x11010001",
     "eth-if-index-2" : "0x11020001",
-    "lif-if-index" : "0x7",
+    "host-if-index" : "0x7",
     "vni"          : "80001",
     "vni1"          : "80003",
     "route"        : {

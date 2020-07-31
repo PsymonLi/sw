@@ -73,8 +73,8 @@ public:
        subnet_spec.fabric_encap.val.vnid += 100;
    }
    void add_if_bind(void) {
-       if_index_t lif_ifindex = LIF_IFINDEX(1);
-       subnet_spec.host_if[0] = api::uuid_from_objid(lif_ifindex);
+       if_index_t host_ifindex = HOST_IFINDEX(1);
+       subnet_spec.host_if[0] = api::uuid_from_objid(host_ifindex);
        test_if_bind = true;
    }
    void del_if_bind(void) {
