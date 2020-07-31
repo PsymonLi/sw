@@ -105,8 +105,9 @@ message SyncShardMsg {
 
 // information about the chunk we are syncing
 message ChunkInfo {
-    uint64 ChunkID = 1;  // local chunk id
-    string Database = 2; // database associated with this chunk
+    uint64 ChunkID         = 1; // local chunk id
+    string Database        = 2; // database associated with this chunk
+    string RetentionPolicy = 3; // rp associated with this chunk
 }
 
 // information about the shard we are syncing

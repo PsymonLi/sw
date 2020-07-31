@@ -220,8 +220,9 @@ func (ts *Tstore) GetShardInfo(sinfo *tproto.SyncShardInfoMsg) error {
 	shards := ts.tsdb.Shards(ts.tsdb.ShardIDs())
 	for _, shard := range shards {
 		chunkInfo := tproto.ChunkInfo{
-			ChunkID:  shard.ID(),
-			Database: shard.Database(),
+			ChunkID:         shard.ID(),
+			Database:        shard.Database(),
+			RetentionPolicy: shard.RetentionPolicy(),
 		}
 		sinfo.Chunks = append(sinfo.Chunks, &chunkInfo)
 	}
@@ -248,7 +249,14 @@ func (ts *Tstore) RestoreShardInfo(sinfo *tproto.SyncShardInfoMsg) error {
 
 	// recreate all the shards
 	for _, chunk := range sinfo.Chunks {
-		err = ts.tsdb.CreateShard(chunk.Database, "default", chunk.ChunkID, true)
+		rp := "default"
+		if chunk.RetentionPolicy != "" {
+			rp = chunk.RetentionPolicy
+		}
+
+		log.Infof("restore chunk %+v", chunk)
+
+		err = ts.tsdb.CreateShard(chunk.Database, rp, chunk.ChunkID, true)
 		if err != nil {
 			log.Errorf("Error creating shard %d for db %s. Err: %v", chunk.ChunkID, chunk.Database, err)
 			return err
