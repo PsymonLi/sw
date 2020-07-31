@@ -65,6 +65,7 @@ type API struct {
 	policyWatcher  *policy.Watcher
 	evtsRPCServer  *rpcserver.RPCServer
 	agentRPCServer *rpckit.RPCServer
+	netifWorker    sync.Mutex // Lock to serialize access to NpmClient.ClientConn
 }
 
 // RestServer implements REST APIs
@@ -227,9 +228,8 @@ func (c *API) HandleVeniceCoordinates(obj types.DistributedServiceCardStatus) er
 // Start starts watchers for a given kind. Calls to start are idempotent
 func (c *API) Start(kinds []string) error {
 	// Clean up older go-routines. This makes calls to Start idempotent
-	log.Infof("Controller API acquiring lock for kind: %v", c.kinds)
+	log.Infof("Controller API acquiring lock for kind: %v", kinds)
 	c.Lock()
-	c.kinds = kinds
 	if err := c.Stop(); err != nil {
 		log.Error(errors.Wrapf(types.ErrControllerWatcherStop, "Controller API: %s", err))
 	}
@@ -237,6 +237,7 @@ func (c *API) Start(kinds []string) error {
 	// Start a new watch context
 	c.WatchCtx, c.cancelWatcher = context.WithCancel(context.Background())
 
+	c.kinds = kinds
 	c.Add(1)
 	c.Unlock()
 	go func() {
@@ -332,7 +333,6 @@ func (c *API) start(ctx context.Context) error {
 
 		c.closeConnections()
 		time.Sleep(types.ControllerWaitDelay)
-
 	}
 }
 
@@ -603,7 +603,8 @@ func (c *API) WatchTechSupport() {
 
 // closeConnections close connections
 func (c *API) closeConnections() {
-
+	c.netifWorker.Lock()
+	defer c.netifWorker.Unlock()
 	if c.npmClient != nil {
 		if err := c.npmClient.Close(); err != nil {
 			log.Error(errors.Wrapf(types.ErrNPMWatcherClose, "Controller API: %s", err))
@@ -670,10 +671,16 @@ func (c *API) netIfWorker(ctx context.Context) {
 				intfs[0].Status.DSCID = c.InfraAPI.GetConfig().DSCID
 				intfs[0].Status.DSC = c.InfraAPI.GetDscName()
 				log.Infof("CREATE interface: [%+v]", intfs[0])
-				if resp, err := ifClient.CreateInterface(ctx, &intfs[0]); err != nil {
-					log.Errorf("create interface [%v] failed (%s)", resp, err)
-					c.InfraAPI.UpdateIfChannel(evt)
+				// We can race with Stop's closeConnections. Take a lock to make sure we drain the interface
+				// updates without sending any message to NPM.
+				c.netifWorker.Lock()
+				if c.npmClient != nil && c.npmClient.ClientConn != nil {
+					if resp, err := ifClient.CreateInterface(ctx, &intfs[0]); err != nil {
+						log.Errorf("create interface [%v] failed (%s)", resp, err)
+						c.InfraAPI.UpdateIfChannel(evt)
+					}
 				}
+				c.netifWorker.Unlock()
 			}
 		}
 	}
