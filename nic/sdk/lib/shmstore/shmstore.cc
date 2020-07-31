@@ -27,14 +27,14 @@ shmstore::file_init_(const char *name, size_t size, enum shm_mode_e mode) {
         }
         shmmgr_ = shmmgr::factory(name, size, mode, NULL);
         if (shmmgr_ == NULL) {
-            SDK_TRACE_ERR("Upgrade shared mem %s failed for %s", op, name);
+            SDK_TRACE_ERR("shmstore %s failed for %s", op, name);
             return SDK_RET_ERR;
         }
     } catch (...) {
-        SDK_TRACE_ERR("Upgrade shared mem %s failed for %s", op, name);
+        SDK_TRACE_ERR("shmstore %s failed for %s", op, name);
         return SDK_RET_ERR;
     }
-    SDK_TRACE_DEBUG("Upgrade shared mem %s done for %s", op, name);
+    SDK_TRACE_DEBUG("shmstore %s done for %s", op, name);
     return SDK_RET_OK;
 }
 
@@ -42,6 +42,7 @@ void *
 shmstore::segment_init_(const char *name, size_t size, bool create,
                         uint16_t label, size_t alignment) {
     void *mem;
+    const char *op = create == true ? "create" : "open";
 
     // make sure the entry exist (either create/open)
     SDK_ASSERT(shmmgr_);
@@ -49,15 +50,19 @@ shmstore::segment_init_(const char *name, size_t size, bool create,
         mem = (char *)shmmgr_->segment_find(name, create, create ? size : 0,
                                             label, alignment);
         if (!mem) {
-            SDK_TRACE_ERR("Failed to init shared memory segment %s for %s",
-                          name, create == true ? "backup" : "restore");
+            SDK_TRACE_ERR("Failed to %s shmstore segment %s, size %lu,"
+                         " alignment %lu", op, name, size, alignment);
             return NULL;
         }
     } catch (...) {
-        SDK_TRACE_ERR("Failed to init shared memory segment %s for %s",
-                      name, create == true ? "backup" : "restore");
+        SDK_TRACE_ERR("Failed to %s shmstore segment %s, size %lu,"
+                      " label %u, alignment %lu",
+                      op, name, size, label, alignment);
         return NULL;
     }
+    SDK_TRACE_DEBUG("shmstore segment %s done for %s, size %lu," 
+                    " label %u, alignment %lu",
+                    op, name, size, label, alignment);
     return mem;
 }
 
@@ -74,7 +79,7 @@ shmstore::factory(void) {
 
     mem = SDK_CALLOC(SDK_MEM_ALLOC_UPGRADE, sizeof(shmstore));
     if (!mem) {
-        SDK_TRACE_ERR("Upgrade object store alloc failed");
+        SDK_TRACE_ERR("shmstore factory create failed");
         return NULL;
     }
     store = new (mem) shmstore();
@@ -115,11 +120,9 @@ void *
 shmstore::create_or_open_segment(const char *name, size_t size, uint16_t label,
                                  size_t alignment) {
     if (mode() == sdk::lib::SHM_CREATE_ONLY) {
-        SDK_TRACE_DEBUG("Creating segment %s", name);
-        return segment_init_(name, size, true, alignment);
+        return segment_init_(name, size, true, label, alignment);
     } else {
-        SDK_TRACE_DEBUG("Opening segment %s", name);
-        return segment_init_(name, 0, false, alignment);
+        return segment_init_(name, 0, false, label, alignment);
     }
 }
 

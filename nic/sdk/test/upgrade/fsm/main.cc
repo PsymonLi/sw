@@ -205,7 +205,7 @@ spawn_svc_thread (void)
             exit, NULL,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            true);
+            THREAD_YIELD_ENABLE);
 
     g_svc_server_thread->start(g_svc_server_thread);
 

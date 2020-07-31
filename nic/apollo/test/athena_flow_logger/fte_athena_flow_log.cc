@@ -201,7 +201,7 @@ fte_athena_spawn_flow_log_thread (int numSeconds,
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),                                         
             sdk::lib::thread::sched_policy_by_role(
                                  sdk::lib::THREAD_ROLE_CONTROL),                                     
-            true, true);                                                                                               
+            (THREAD_YIELD_ENABLE | THREAD_SYNC_IPC_ENABLE));                                                                                               
     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,                                                         
                             "learn thread create failure");                                                            
     thread_ctx.logdir = logdir;

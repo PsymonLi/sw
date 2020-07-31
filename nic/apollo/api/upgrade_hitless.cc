@@ -29,6 +29,9 @@
 
 namespace api {
 
+// pds agent config objects. these will be allocated from pds agent store
+#define PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME    "pds_agent_upgobjs"
+
 static upgrade_pstate_t *
 upgrade_pstate_create_or_open (bool create)
 {
@@ -37,12 +40,11 @@ upgrade_pstate_create_or_open (bool create)
     module_version_t prev_version;
     upgrade_pstate_t *upgrade_pstate;
 
-    curr_version = api::g_upg_state->module_version(core::PDS_THREAD_ID_API);
-    prev_version = api::g_upg_state->module_prev_version(core::PDS_THREAD_ID_API);
-
+    std::tie(curr_version, prev_version) = api::g_upg_state->module_version(
+                                              core::PDS_THREAD_ID_API,
+                                              MODULE_VERSION_HITLESS);
     if (sdk::platform::sysinit_mode_default(g_upg_state->init_mode())) {
-        store = api::g_upg_state->backup_shmstore(core::PDS_THREAD_ID_API,
-                                                  true);
+        store = api::g_upg_state->backup_shmstore(PDS_AGENT_OPER_SHMSTORE_ID);
         SDK_ASSERT(store != NULL);
         if (create) {
             upgrade_pstate = (upgrade_pstate_t *)store->create_segment(UPGRADE_PSTATE_NAME,
@@ -52,8 +54,7 @@ upgrade_pstate_create_or_open (bool create)
             upgrade_pstate = (upgrade_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
         }
     } else {
-        store = api::g_upg_state->restore_shmstore(core::PDS_THREAD_ID_API,
-                                                   true);
+        store = api::g_upg_state->restore_shmstore(PDS_AGENT_OPER_SHMSTORE_ID);
         SDK_ASSERT(store != NULL);
         upgrade_pstate = (upgrade_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
         // TODO : version management if previous and current versions are different
@@ -303,9 +304,8 @@ upg_ev_backup (upg_ev_params_t *params)
     upg_obj_stash_meta_t *hdr;
     upg_ctxt *ctx;
 
-    ctx = upg_shmstore_objctx_create(core::PDS_THREAD_ID_API,
-                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME,
-                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_SIZE);
+    ctx = upg_shmstore_objctx_create(PDS_AGENT_CFG_SHMSTORE_ID,
+                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME);
     SDK_ASSERT(ctx);
     // set the backup status to true. will set to false if there is a failure
     g_upg_state->set_backup_status(true);
@@ -449,7 +449,7 @@ upg_hitless_restore_api_objs (void)
     upg_obj_info_t info;
     upg_ctxt *ctx;
 
-    ctx = upg_shmstore_objctx_open(core::PDS_THREAD_ID_API,
+    ctx = upg_shmstore_objctx_open(PDS_AGENT_CFG_SHMSTORE_ID,
                                    PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME);
     SDK_ASSERT(ctx);
     hdr = (upg_obj_stash_meta_t *)ctx->mem();

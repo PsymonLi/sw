@@ -13,6 +13,7 @@
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
+#include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/api/internal/upgrade_ctxt.hpp"
 
 namespace api {
@@ -57,16 +58,18 @@ upg_ctxt::destroy(upg_ctxt *uctxt) {
 }
 
 upg_ctxt *
-upg_shmstore_objctx_create (uint32_t thread_id, const char *obj_name,
-                            size_t obj_size)
+upg_shmstore_objctx_create (pds_shmstore_id_t id, const char *obj_name)
 {
     upg_ctxt *ctx;
     void *mem;
     sdk::lib::shmstore *store;
+    size_t obj_size;
 
     ctx = upg_ctxt::factory();
-    store = api::g_upg_state->backup_shmstore(thread_id, false);
+    store = api::g_upg_state->backup_shmstore(id);
     SDK_ASSERT(store);
+    // reserving meta for 4 segments max. currently there is only 1
+    obj_size = store->size() - (SHMMGR_SEGMENT_META_SIZE * 4);
     mem = store->create_segment(obj_name, obj_size);
     if (!mem) {
         PDS_TRACE_ERR("Upgrade segment allocation for object %s failed",
@@ -78,7 +81,7 @@ upg_shmstore_objctx_create (uint32_t thread_id, const char *obj_name,
 }
 
 upg_ctxt *
-upg_shmstore_objctx_open (uint32_t thread_id, const char *obj_name)
+upg_shmstore_objctx_open (pds_shmstore_id_t id, const char *obj_name)
 {
     upg_ctxt *ctx;
     size_t size;
@@ -86,7 +89,7 @@ upg_shmstore_objctx_open (uint32_t thread_id, const char *obj_name)
     sdk::lib::shmstore *store;
 
     ctx = upg_ctxt::factory();
-    store = api::g_upg_state->restore_shmstore(thread_id, false);
+    store = api::g_upg_state->restore_shmstore(id);
     SDK_ASSERT(store);
     mem = store->open_segment(obj_name);
     if (!mem) {

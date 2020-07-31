@@ -13,6 +13,7 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/upgrade/include/ev.hpp"
+#include "nic/apollo/api/internal/upgrade.hpp"
 
 namespace api {
 
@@ -94,10 +95,8 @@ typedef struct upg_obj_info_s {
     upg_ctxt *ctx;                  ///< upgrade context
 } upg_obj_info_t;
 
-
-upg_ctxt *upg_shmstore_objctx_create(uint32_t thread_id, const char *obj_name,
-                                     size_t obj_size);
-upg_ctxt *upg_shmstore_objctx_open(uint32_t thread_id, const char *obj_name);
+upg_ctxt *upg_shmstore_objctx_create(pds_shmstore_id_t id, const char *obj_name);
+upg_ctxt *upg_shmstore_objctx_open(pds_shmstore_id_t id, const char *obj_name);
 
 }    // namespace api
 #endif    // __API_INTERNAL_UPGRADE_HPP__

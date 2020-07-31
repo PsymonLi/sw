@@ -129,7 +129,7 @@ vmotion::init(uint32_t max_threads, uint32_t vmotion_port)
                                                  NULL,  // Thread Event CB
                                                  sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
                                                  sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-                                                 NULL);
+                                                 THREAD_FLAGS_NONE);
 
     // Start the master thread
     vmotion_.vmotion_master->start(this);
