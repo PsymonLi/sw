@@ -21,7 +21,10 @@ import (
 const (
 	opStatusSkipped = "skipped"
 	opStatusSuccess = "success"
+	numServiceDelta = 2
 )
+
+var numRunParallel int
 
 // ==== helper routines
 
@@ -474,8 +477,8 @@ Loop:
 
 				// Wait for response from  the NIC
 				// Change the preUpgradeTimeout based on scale
-				if ros.Spec.MaxParallel > 10 {
-					naplesTimeoutSeconds := int(ros.Spec.MaxParallel/10) * dSCTimeoutSeconds
+				if numRunParallel > 25 {
+					naplesTimeoutSeconds := 2 * dSCTimeoutSeconds
 					preUpgradeTimeout = time.Duration(naplesTimeoutSeconds) * time.Second
 				}
 				timer := time.NewTimer(preUpgradeTimeout)
@@ -581,13 +584,15 @@ func (ros *RolloutState) issueDSCOpLinear(snStates []*SmartNICState, op protos.D
 	sm := ros.Statemgr
 
 	numParallel := ros.Spec.MaxParallel
-	if numParallel == 0 {
+	if ros.Spec.MaxParallel == 0 {
 		numParallel = defaultNumParallel
 	}
 
+	numRunParallel = min(int(numParallel), len(snStates))
+
 	workCh := make(chan *SmartNICState, 10000)
 
-	for i := uint32(0); i < numParallel; i++ {
+	for i := 0; i < numRunParallel; i++ {
 		sm.smartNICWG.Add(1)
 		go sm.smartNICWorkers(workCh, &sm.smartNICWG, ros, op)
 	}
@@ -649,6 +654,7 @@ func (ros *RolloutState) issueDSCOpExponential(snStates []*SmartNICState, op pro
 		if numParallel != 0 { // user limited max parallelism to this
 			curParallel = min(curParallel, numParallel)
 		}
+		numRunParallel = curParallel
 		sm.smartNICWG.Wait()
 	}
 
@@ -693,12 +699,14 @@ func (ros *RolloutState) computeProgressDelta() {
 
 	numVenice := 0
 	numNaples := 0
+	numService := 0
 	if !ros.Spec.DSCsOnly {
 		nodeStates, err := ros.Statemgr.ListNodes()
 		if err != nil {
 			log.Infof("Failed to get venice nodes")
 		}
 		numVenice = len(nodeStates)
+		numService = numServiceDelta
 	}
 
 	snStates, err := ros.Statemgr.ListSmartNICs()
@@ -715,7 +723,7 @@ func (ros *RolloutState) computeProgressDelta() {
 		numNaples += int(ros.numSkipped) //include the skipped ones
 	}
 
-	ros.completionDelta = float32(100 / float32(2*numVenice+2*numNaples+2))
+	ros.completionDelta = float32(100 / float32(2*numVenice+numNaples+numService))
 	log.Infof("Completion Delta %+v NumNaples %v NumVenice %+v", ros.completionDelta, numNaples, numVenice)
 }
 
