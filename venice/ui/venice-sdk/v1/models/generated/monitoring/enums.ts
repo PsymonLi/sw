@@ -79,13 +79,6 @@ export enum MonitoringEventPolicySpec_format {
     'syslog-rfc5424' = "syslog-rfc5424",
 }
 
-export enum MonitoringExternalCred_auth_type {
-    'none' = "none",
-    'username-password' = "username-password",
-    'token' = "token",
-    'certs' = "certs",
-}
-
 export enum MonitoringFlowExportPolicySpec_format {
     'ipfix' = "ipfix",
 }
@@ -275,13 +268,6 @@ export enum MonitoringEventPolicySpec_format_uihint {
     'syslog-rfc5424' = "RFC5424",
 }
 
-export enum MonitoringExternalCred_auth_type_uihint {
-    'certs' = "Certs",
-    'none' = "None",
-    'token' = "Token",
-    'username-password' = "Username/Password",
-}
-
 export enum MonitoringFwlogPolicySpec_format_uihint {
     'syslog-bsd' = "BSD",
     'syslog-rfc5424' = "RFC5424",
@@ -418,7 +404,6 @@ export class AllEnums {
     MonitoringArchiveRequestStatus_status = MonitoringArchiveRequestStatus_status;
     MonitoringAuthConfig_algo = MonitoringAuthConfig_algo;
     MonitoringEventPolicySpec_format = MonitoringEventPolicySpec_format;
-    MonitoringExternalCred_auth_type = MonitoringExternalCred_auth_type;
     MonitoringFlowExportPolicySpec_format = MonitoringFlowExportPolicySpec_format;
     MonitoringFwlogPolicySpec_format = MonitoringFwlogPolicySpec_format;
     MonitoringFwlogPolicySpec_filter = MonitoringFwlogPolicySpec_filter;
@@ -446,7 +431,6 @@ export class AllEnums {
     MonitoringAlertSpec_state_uihint = MonitoringAlertSpec_state_uihint;
     MonitoringArchiveRequestSpec_type_uihint = MonitoringArchiveRequestSpec_type_uihint;
     MonitoringEventPolicySpec_format_uihint = MonitoringEventPolicySpec_format_uihint;
-    MonitoringExternalCred_auth_type_uihint = MonitoringExternalCred_auth_type_uihint;
     MonitoringFwlogPolicySpec_format_uihint = MonitoringFwlogPolicySpec_format_uihint;
     MonitoringFwlogPolicySpec_filter_uihint = MonitoringFwlogPolicySpec_filter_uihint;
     MonitoringInterfaceMirror_direction_uihint = MonitoringInterfaceMirror_direction_uihint;

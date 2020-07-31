@@ -85,6 +85,40 @@ func DecodeGrpcRespExportConfig(ctx context.Context, response interface{}) (inte
 	return response, nil
 }
 
+func encodeHTTPExportConfigWithCred(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPExportConfigWithCred(_ context.Context, r *http.Request) (interface{}, error) {
+	var req ExportConfigWithCred
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqExportConfigWithCred encodes GRPC request
+func EncodeGrpcReqExportConfigWithCred(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*ExportConfigWithCred)
+	return req, nil
+}
+
+// DecodeGrpcReqExportConfigWithCred decodes GRPC request
+func DecodeGrpcReqExportConfigWithCred(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*ExportConfigWithCred)
+	return req, nil
+}
+
+// EncodeGrpcRespExportConfigWithCred encodes GRC response
+func EncodeGrpcRespExportConfigWithCred(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespExportConfigWithCred decodes GRPC response
+func DecodeGrpcRespExportConfigWithCred(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
 func encodeHTTPExternalCred(ctx context.Context, req *http.Request, request interface{}) error {
 	return encodeHTTPRequest(ctx, req, request)
 }

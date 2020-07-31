@@ -239,6 +239,28 @@ func (m *ExportConfig) Clone(into interface{}) (interface{}, error) {
 // Default sets up the defaults for the object
 func (m *ExportConfig) Defaults(ver string) bool {
 	var ret bool
+	return ret
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *ExportConfigWithCred) Clone(into interface{}) (interface{}, error) {
+	var out *ExportConfigWithCred
+	var ok bool
+	if into == nil {
+		out = &ExportConfigWithCred{}
+	} else {
+		out, ok = into.(*ExportConfigWithCred)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*ExportConfigWithCred))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *ExportConfigWithCred) Defaults(ver string) bool {
+	var ret bool
 	if m.Credentials != nil {
 		ret = m.Credentials.Defaults(ver) || ret
 	}
@@ -417,19 +439,6 @@ func (m *ExportConfig) References(tenant string, path string, resp map[string]ap
 
 func (m *ExportConfig) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
 	var ret []error
-
-	if m.Credentials != nil {
-		{
-			dlmtr := "."
-			if path == "" {
-				dlmtr = ""
-			}
-			npath := path + dlmtr + "Credentials"
-			if errs := m.Credentials.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
-				ret = append(ret, errs...)
-			}
-		}
-	}
 	if vs, ok := validatorMapExport["ExportConfig"][ver]; ok {
 		for _, v := range vs {
 			if err := v(path, m); err != nil {
@@ -447,6 +456,45 @@ func (m *ExportConfig) Validate(ver, path string, ignoreStatus bool, ignoreSpec 
 }
 
 func (m *ExportConfig) Normalize() {
+
+}
+
+func (m *ExportConfigWithCred) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *ExportConfigWithCred) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+
+	if m.Credentials != nil {
+		{
+			dlmtr := "."
+			if path == "" {
+				dlmtr = ""
+			}
+			npath := path + dlmtr + "Credentials"
+			if errs := m.Credentials.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+				ret = append(ret, errs...)
+			}
+		}
+	}
+	if vs, ok := validatorMapExport["ExportConfigWithCred"][ver]; ok {
+		for _, v := range vs {
+			if err := v(path, m); err != nil {
+				ret = append(ret, err)
+			}
+		}
+	} else if vs, ok := validatorMapExport["ExportConfigWithCred"]["all"]; ok {
+		for _, v := range vs {
+			if err := v(path, m); err != nil {
+				ret = append(ret, err)
+			}
+		}
+	}
+	return ret
+}
+
+func (m *ExportConfigWithCred) Normalize() {
 
 	if m.Credentials != nil {
 		m.Credentials.Normalize()
@@ -615,7 +663,7 @@ func (m *SyslogExportConfig) Normalize() {
 
 // Transformers
 
-func (m *ExportConfig) ApplyStorageTransformer(ctx context.Context, toStorage bool) error {
+func (m *ExportConfigWithCred) ApplyStorageTransformer(ctx context.Context, toStorage bool) error {
 
 	if m.Credentials != nil {
 		if err := m.Credentials.ApplyStorageTransformer(ctx, toStorage); err != nil {
@@ -626,7 +674,7 @@ func (m *ExportConfig) ApplyStorageTransformer(ctx context.Context, toStorage bo
 	return nil
 }
 
-func (m *ExportConfig) EraseSecrets() {
+func (m *ExportConfigWithCred) EraseSecrets() {
 
 	if m.Credentials != nil {
 		m.Credentials.EraseSecrets()
@@ -693,6 +741,32 @@ func init() {
 
 	validatorMapExport["ExportConfig"]["all"] = append(validatorMapExport["ExportConfig"]["all"], func(path string, i interface{}) error {
 		m := i.(*ExportConfig)
+		if err := validators.EmptyOr(validators.ProtoPort, m.Transport, nil); err != nil {
+			return fmt.Errorf("%v failed validation: %s", path+"."+"Transport", err.Error())
+		}
+		return nil
+	})
+
+	validatorMapExport["ExportConfigWithCred"] = make(map[string][]func(string, interface{}) error)
+
+	validatorMapExport["ExportConfigWithCred"]["all"] = append(validatorMapExport["ExportConfigWithCred"]["all"], func(path string, i interface{}) error {
+		m := i.(*ExportConfigWithCred)
+		if err := validators.IPv4(m.Destination); err != nil {
+			return fmt.Errorf("%v failed validation: %s", path+"."+"Destination", err.Error())
+		}
+		return nil
+	})
+
+	validatorMapExport["ExportConfigWithCred"]["all"] = append(validatorMapExport["ExportConfigWithCred"]["all"], func(path string, i interface{}) error {
+		m := i.(*ExportConfigWithCred)
+		if err := validators.EmptyOr(validators.IPv4, m.Gateway, nil); err != nil {
+			return fmt.Errorf("%v failed validation: %s", path+"."+"Gateway", err.Error())
+		}
+		return nil
+	})
+
+	validatorMapExport["ExportConfigWithCred"]["all"] = append(validatorMapExport["ExportConfigWithCred"]["all"], func(path string, i interface{}) error {
+		m := i.(*ExportConfigWithCred)
 		if err := validators.EmptyOr(validators.ProtoPort, m.Transport, nil); err != nil {
 			return fmt.Errorf("%v failed validation: %s", path+"."+"Transport", err.Error())
 		}

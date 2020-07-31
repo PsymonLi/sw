@@ -82,7 +82,6 @@ export * from './monitoring-event-policy-list.model';
 export * from './monitoring-event-policy-spec.model';
 export * from './monitoring-event-policy-status.model';
 export * from './monitoring-export-config.model';
-export * from './monitoring-external-cred.model';
 export * from './monitoring-flow-export-policy.model';
 export * from './monitoring-flow-export-policy-list.model';
 export * from './monitoring-flow-export-policy-spec.model';

@@ -63,6 +63,7 @@
       <div fxFlex="30px" class="syslog-fieldtitle">CREDENTIALS</div>
       <div fxFlex="auto" fxLayout="row">
 
+        <!-- 2029-07-17 backend disable syslogCredentialOptions. comment out this block
         <mat-radio-group fxFlex="nogrow" fxLayout="column" fxLayoutGap="5px"
                          class="syslog-fieldtitle syslog-credential-radio" appErrorTooltip
                          formControlName="auth-type">
@@ -71,7 +72,7 @@
                             [value]="option.value">
             {{option.label}}
           </mat-radio-button>
-        </mat-radio-group>
+        </mat-radio-group> -->
 
         <!-- we use getSelectedCredentialMethod(syslog) to control switch on displaying auth-type UI -->
         <div fxFlex="auto" fxLayout="row" [ngSwitch]="getSelectedCredentialMethod(index)">

@@ -31,6 +31,16 @@ var typesMapExport = map[string]*api.Struct{
 			"Gateway": api.Field{Name: "Gateway", CLITag: api.CLIInfo{ID: "gateway", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "gateway", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"Transport": api.Field{Name: "Transport", CLITag: api.CLIInfo{ID: "transport", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "transport", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+		},
+	},
+	"monitoring.ExportConfigWithCred": &api.Struct{
+		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(ExportConfigWithCred{}) },
+		Fields: map[string]api.Field{
+			"Destination": api.Field{Name: "Destination", CLITag: api.CLIInfo{ID: "destination", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "destination", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"Gateway": api.Field{Name: "Gateway", CLITag: api.CLIInfo{ID: "gateway", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "gateway", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"Transport": api.Field{Name: "Transport", CLITag: api.CLIInfo{ID: "transport", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "transport", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"Credentials": api.Field{Name: "Credentials", CLITag: api.CLIInfo{ID: "credentials", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "credentials", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "monitoring.ExternalCred"},
 		},

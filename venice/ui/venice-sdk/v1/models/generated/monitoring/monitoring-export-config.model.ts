@@ -7,13 +7,11 @@ import { Validators, FormControl, FormGroup, FormArray, ValidatorFn } from '@ang
 import { minValueValidator, maxValueValidator, minLengthValidator, maxLengthValidator, required, enumValidator, patternValidator, CustomFormControl, CustomFormGroup } from '../../../utils/validators';
 import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
-import { MonitoringExternalCred, IMonitoringExternalCred } from './monitoring-external-cred.model';
 
 export interface IMonitoringExportConfig {
     'destination': string;
     'gateway'?: string;
     'transport'?: string;
-    'credentials'?: IMonitoringExternalCred;
     '_ui'?: any;
 }
 
@@ -27,8 +25,6 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
     'gateway': string = null;
     /** Protocol and Port number where an external collector is gathering the data example "UDP/2055". Should be a valid layer 3 or layer 4 protocol and port/type (only support UDP currently). */
     'transport': string = null;
-    /** Credentials provide secure access to the collector. */
-    'credentials': MonitoringExternalCred = null;
     public static propInfo: { [prop in keyof IMonitoringExportConfig]: PropInfoItem } = {
         'destination': {
             description:  `IP address of the collector/entity to which the data is to be exported. Should be a valid IPv4 address.`,
@@ -47,11 +43,6 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
             hint:  'udp/1234',
             required: false,
             type: 'string'
-        },
-        'credentials': {
-            description:  `Credentials provide secure access to the collector.`,
-            required: false,
-            type: 'object'
         },
     }
 
@@ -77,7 +68,6 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
     */
     constructor(values?: any, setDefaults:boolean = true) {
         super();
-        this['credentials'] = new MonitoringExternalCred();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -111,11 +101,6 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
         } else {
             this['transport'] = null
         }
-        if (values) {
-            this['credentials'].setValues(values['credentials'], fillDefaults);
-        } else {
-            this['credentials'].setValues(null, fillDefaults);
-        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -126,12 +111,6 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
                 'destination': CustomFormControl(new FormControl(this['destination'], [required, ]), MonitoringExportConfig.propInfo['destination']),
                 'gateway': CustomFormControl(new FormControl(this['gateway']), MonitoringExportConfig.propInfo['gateway']),
                 'transport': CustomFormControl(new FormControl(this['transport']), MonitoringExportConfig.propInfo['transport']),
-                'credentials': CustomFormGroup(this['credentials'].$formGroup, MonitoringExportConfig.propInfo['credentials'].required),
-            });
-            // We force recalculation of controls under a form group
-            Object.keys((this._formGroup.get('credentials') as FormGroup).controls).forEach(field => {
-                const control = this._formGroup.get('credentials').get(field);
-                control.updateValueAndValidity();
             });
         }
         return this._formGroup;
@@ -146,7 +125,6 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
             this._formGroup.controls['destination'].setValue(this['destination']);
             this._formGroup.controls['gateway'].setValue(this['gateway']);
             this._formGroup.controls['transport'].setValue(this['transport']);
-            this['credentials'].setFormGroupValuesToBeModelValues();
         }
     }
 }

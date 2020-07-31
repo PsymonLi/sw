@@ -56,6 +56,7 @@
 		EventPolicyStatus
 		AuthConfig
 		ExportConfig
+		ExportConfigWithCred
 		ExternalCred
 		PSMExportTarget
 		PrivacyConfig

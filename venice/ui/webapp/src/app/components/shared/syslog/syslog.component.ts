@@ -2,7 +2,7 @@ import { Component, OnInit, Input, ViewEncapsulation, ViewChild } from '@angular
 import { Animations } from '@app/animations';
 import { SelectItem } from 'primeng/primeng';
 import { Utility } from '@app/common/Utility';
-import { MonitoringSyslogExport, MonitoringExternalCred, IMonitoringSyslogExport, MonitoringExportConfig, MonitoringSyslogExportConfig } from '@sdk/v1/models/generated/monitoring';
+import { MonitoringSyslogExport,  IMonitoringSyslogExport, MonitoringExportConfig, MonitoringSyslogExportConfig } from '@sdk/v1/models/generated/monitoring';
 import { FormArray, FormGroup, AbstractControl, ValidatorFn, ValidationErrors } from '@angular/forms';
 import { BaseComponent } from '@app/components/base/base.component';
 import { ControllerService } from '@app/services/controller.service';
@@ -39,7 +39,7 @@ export class SyslogComponent extends BaseComponent implements OnInit {
 
   syslogOverrideOptions: SelectItem[] = Utility.convertEnumToSelectItem(MonitoringSyslogExportConfig.propInfo['facility-override'].enum);
 
-  syslogCredentialOptions: SelectItem[] = Utility.convertEnumToSelectItem(MonitoringExternalCred.propInfo['auth-type'].enum);
+  // 20200712 backend disabled this field. syslogCredentialOptions: SelectItem[] = Utility.convertEnumToSelectItem(MonitoringExternalCred.propInfo['auth-type'].enum);
 
   targets: any;
 

@@ -7,7 +7,6 @@ Input file: auditpolicy.proto
 package monitoring
 
 import (
-	"context"
 	"errors"
 	fmt "fmt"
 	"strings"
@@ -331,79 +330,6 @@ func (m *SyslogAuditor) Normalize() {
 }
 
 // Transformers
-
-func (m *AuditPolicy) ApplyStorageTransformer(ctx context.Context, toStorage bool) error {
-	if err := m.Spec.ApplyStorageTransformer(ctx, toStorage); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *AuditPolicy) EraseSecrets() {
-	m.Spec.EraseSecrets()
-
-	return
-}
-
-type storageAuditPolicyTransformer struct{}
-
-var StorageAuditPolicyTransformer storageAuditPolicyTransformer
-
-func (st *storageAuditPolicyTransformer) TransformFromStorage(ctx context.Context, i interface{}) (interface{}, error) {
-	r := i.(AuditPolicy)
-	err := r.ApplyStorageTransformer(ctx, false)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-func (st *storageAuditPolicyTransformer) TransformToStorage(ctx context.Context, i interface{}) (interface{}, error) {
-	r := i.(AuditPolicy)
-	err := r.ApplyStorageTransformer(ctx, true)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
-func (m *AuditPolicySpec) ApplyStorageTransformer(ctx context.Context, toStorage bool) error {
-
-	if m.Syslog != nil {
-		if err := m.Syslog.ApplyStorageTransformer(ctx, toStorage); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (m *AuditPolicySpec) EraseSecrets() {
-
-	if m.Syslog != nil {
-		m.Syslog.EraseSecrets()
-	}
-
-	return
-}
-
-func (m *SyslogAuditor) ApplyStorageTransformer(ctx context.Context, toStorage bool) error {
-	for i, v := range m.Targets {
-		c := *v
-		if err := c.ApplyStorageTransformer(ctx, toStorage); err != nil {
-			return err
-		}
-		m.Targets[i] = &c
-	}
-	return nil
-}
-
-func (m *SyslogAuditor) EraseSecrets() {
-	for _, v := range m.Targets {
-		v.EraseSecrets()
-	}
-	return
-}
 
 func init() {
 	scheme := runtime.GetDefaultScheme()
