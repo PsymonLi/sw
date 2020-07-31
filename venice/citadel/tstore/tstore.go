@@ -179,7 +179,7 @@ func (ts *Tstore) CreateDatabase(database string, spec *meta.RetentionPolicySpec
 			ShardGroupDuration: &sgd, // will be normalized by influxdb
 		}
 
-		log.Infof("update [%v] retention to %v", ts.dbPath, rpu.Duration)
+		log.Infof("update [%v] retention policy %v to %v", ts.dbPath, spec.Name, rpu.Duration)
 		if err := ts.metaClient.UpdateRetentionPolicy(database, spec.Name, rpu, true); err != nil {
 			return fmt.Errorf("failed to update retention policy %v", err)
 		}

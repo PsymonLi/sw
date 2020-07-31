@@ -609,7 +609,7 @@ var k8sModules = map[string]protos.Module{
 							},
 						},
 						InitialDelaySeconds: 120,
-						PeriodSeconds:       30,
+						PeriodSeconds:       10,
 					},
 				},
 			},

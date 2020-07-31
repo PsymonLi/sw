@@ -124,6 +124,7 @@ func (dn *DNode) SyncShardReq(ctx context.Context, req *tproto.SyncShardMsg) (*t
 	var resp tproto.StatusResp
 	var store StoreAPI
 	var lock *sync.Mutex
+	var resetSyncPending func()
 
 	dn.logger.Infof("%s Received SyncShardReq req %+v", dn.nodeUUID, req)
 
@@ -145,6 +146,12 @@ func (dn *DNode) SyncShardReq(ctx context.Context, req *tproto.SyncShardMsg) (*t
 			return &resp, errors.New("Non-primary received shard sync req")
 		}
 
+		resetSyncPending = func() {
+			log.Infof("clearing sync pending in shard %v(replica: %v)", shard.shardID, shard.replicaID)
+			shard.syncPending = false
+		}
+
+		shard.syncPending = true
 		store = shard.store
 		lock = &shard.syncLock
 
@@ -165,6 +172,12 @@ func (dn *DNode) SyncShardReq(ctx context.Context, req *tproto.SyncShardMsg) (*t
 			dn.logger.Errorf("Non-primary received shard sync request. Shard: %+v", shard)
 			return &resp, errors.New("Non-primary received shard sync req")
 		}
+
+		resetSyncPending = func() {
+			shard.syncPending = false
+		}
+
+		shard.syncPending = true
 		store = shard.kstore
 		lock = &shard.syncLock
 
@@ -178,6 +191,8 @@ func (dn *DNode) SyncShardReq(ctx context.Context, req *tproto.SyncShardMsg) (*t
 
 	// copy data in background
 	go func() {
+		defer resetSyncPending()
+
 		for i := 0; i < dn.clusterCfg.MaxSyncRetry; i++ {
 			if err := dn.syncShard(context.Background(), req, store, lock); err == nil {
 				return
@@ -230,7 +245,7 @@ func (dn *DNode) syncShard(ctx context.Context, req *tproto.SyncShardMsg, store 
 	}
 
 	// walk thru all chunks and send them over the stream
-	for _, chunkInfo := range sinfo.Chunks {
+	for i, chunkInfo := range sinfo.Chunks {
 		// send stream of sync messages
 		stream, err := dnclient.SyncData(ctx)
 		if err != nil {
@@ -254,7 +269,7 @@ func (dn *DNode) syncShard(ctx context.Context, req *tproto.SyncShardMsg, store 
 			return err
 		}
 
-		dn.logger.Infof("Sync complete for replica %d", req.SrcReplicaID)
+		dn.logger.Infof("Sync complete for chunk-id %v(%v/%v) replica %d shard %v", chunkInfo.ChunkID, i+1, len(sinfo.Chunks), req.SrcReplicaID, req.ShardID)
 
 		// close the stream
 		_, err = stream.CloseAndRecv()

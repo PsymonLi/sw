@@ -895,6 +895,13 @@ func upgradeDaemonSet(client k8sclient.Interface, module *protos.Module) error {
 	dsConfig := createDaemonSetObject(module)
 	var retval error
 	restartSuccessful := false
+
+	if module.Name == globals.Citadel {
+		dsConfig.Spec.MinReadySeconds = 60
+	}
+
+	log.Infof("Name %v MinReadySeconds %v", module.Name, dsConfig.Spec.MinReadySeconds)
+
 	for numTries := 0; numTries < 5; numTries++ {
 		d, err := client.ExtensionsV1beta1().DaemonSets(defaultNS).Update(dsConfig)
 		if err == nil {
