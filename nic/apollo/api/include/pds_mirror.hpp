@@ -19,7 +19,9 @@
 /// \defgroup PDS_MIRROR    mirror session APIs
 /// @{
 
-#define PDS_MAX_MIRROR_SESSION    8   ///< Maximum mirror sessions
+#define PDS_MAX_MIRROR_SESSION    8   ///< maximum mirror sessions
+/// minimum snap length for mirrored packets
+#define PDS_MIRROR_SESSION_MIN_SNAP_LEN    64
 
 /// \brief    RSPAN configuration
 typedef struct pds_rspan_spec_s {

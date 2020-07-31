@@ -117,6 +117,12 @@ mirror_session::init_config(api_ctxt_t *api_ctxt) {
     pds_mirror_session_spec_t *spec;
 
     spec = &api_ctxt->api_params->mirror_session_spec;
+    if (spec->snap_len && (spec->snap_len < PDS_MIRROR_SESSION_MIN_SNAP_LEN)) {
+        PDS_TRACE_ERR("Failed to initialize mirror session %s, snap len %u is "
+                      "less than minimum length %u", spec->key.str(),
+                      spec->snap_len, PDS_MIRROR_SESSION_MIN_SNAP_LEN);
+        return SDK_RET_INVALID_ARG;
+    }
     switch (spec->type) {
     case PDS_MIRROR_SESSION_TYPE_ERSPAN:
         vpc = vpc_find(&spec->erspan_spec.vpc);

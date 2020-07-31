@@ -67,7 +67,9 @@ pds_mirror_session_api_spec_to_proto (pds::MirrorSessionSpec *proto_spec,
     case PDS_MIRROR_SESSION_TYPE_ERSPAN:
         {
             pds::ERSpanSpec *proto_erspan = proto_spec->mutable_erspanspec();
-            proto_erspan->set_type(pds_mirror_erspan_type_api_spec_to_proto(api_spec->erspan_spec.type));
+            proto_erspan->set_type(
+                              pds_mirror_erspan_type_api_spec_to_proto(
+                                  api_spec->erspan_spec.type));
             proto_erspan->set_vpcid(api_spec->erspan_spec.vpc.id,
                                     PDS_MAX_KEY_LEN);
             switch (api_spec->erspan_spec.dst_type) {

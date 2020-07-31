@@ -76,7 +76,12 @@ message MirrorSessionSpec {
   bytes        Id         = 1 [(gogoproto.moretags) = "meta:mandatory,immutable"];
   // maximum  bytes of packet to mirror, by default all of the packet contents
   // are mirrored
-  uint32       SnapLen    = 2;
+  // NOTE:
+  // 1. if SnapLen is not set or configured as 0, all of the packet contents
+  //    are mirrored (to the extent that can be carried with any encapsulations
+  //    included)
+  // 2. if SnapLen is non-zero, minimum length acceptable is 64
+  uint32       SnapLen    = 2 [(gogoproto.moretags) = "meta:range:0,64-*"];
   oneof mirrordst {
     // RSPAN configuration in case of RSPAN
     RSpanSpec  RspanSpec  = 3;
