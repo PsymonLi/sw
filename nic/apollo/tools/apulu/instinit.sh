@@ -12,11 +12,13 @@ UPGRADE_INIT_INSTANCE_FILE='/share/upgrade_init_instance.txt'
 
 ulimit -c unlimited
 
+function local_mounts {
+    mkdir -p /var/log
+    mount -t tmpfs -o size=100M tmpfs /var/log    
+}
+
 function initial_boot_action {
 
-    mkdir -p /var/log
-    mount -t tmpfs -o size=100M tmpfs /var/log
-    
     # POST
    if [[ -f $SYSCONFIG/post_disable ]]; then
        echo "Skipping Power On Self Test (POST)"
@@ -127,6 +129,7 @@ function start_ssh {
 
 if [ "$1" = "init" ]
 then
+    local_mounts
     initial_boot_action
     load_drivers
     setup_hugepages "1"
@@ -137,6 +140,7 @@ then
     start_ssh
 elif [ "$1" = "standby" ]
 then
+    local_mounts
     setup_hugepages "0"
     setup_upgrade_domain
     start_sysmgr
