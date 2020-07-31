@@ -3,9 +3,9 @@
 include ${MKDEFS}/pre.mk
 MODULE_TARGET   := nmd.gobin
 ifeq ($(PIPELINE), iris)
-MODULE_PREREQS  := agent_halproto.submake nmd_halproto.submake nmd_delphi.submake agent_delphidp.submake
+MODULE_PREREQS  := agent_halproto.submake nmd_halproto.submake nmd_delphi.submake agent_delphidp.submake netproto_nimbus.submake
 else
-MODULE_PREREQS  := nmd_delphi.submake sysmgr_delphidp.submake upg.submake agent_pdsupgproto.submake
+MODULE_PREREQS  := nmd_delphi.submake sysmgr_delphidp.submake upg.submake agent_pdsupgproto.submake netproto_nimbus.submake
 endif
 MODULE_PIPELINE := iris apulu
 MODULE_FLAGS    := -tags ${PIPELINE} -ldflags="-s -w"

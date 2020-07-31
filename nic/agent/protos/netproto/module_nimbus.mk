@@ -2,7 +2,7 @@
 
 include ${MKDEFS}/pre.mk
 MODULE_TARGET   = netproto_nimbus.submake
-MODULE_PIPELINE = iris
+MODULE_PIPELINE = iris apulu
 MODULE_DEPS     := ${NICDIR}/agent/protos/netproto/app.proto            \
                    ${NICDIR}/agent/protos/netproto/agg_watch.proto      \
                    ${NICDIR}/agent/protos/netproto/endpoint.proto       \
