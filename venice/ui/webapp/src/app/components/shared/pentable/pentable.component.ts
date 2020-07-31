@@ -381,6 +381,8 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
         const sub = deleteAction(object).subscribe(
           (response) => {
             this.controllerService.invokeSuccessToaster(Utility.DELETE_SUCCESS_SUMMARY, successMsg);
+            const _ = Utility.getLodash();
+            this.selectedDataObjects = this.selectedDataObjects.filter(selected => _.get(selected, this.dataKey) !== _.get(object, this.dataKey));
             if (postDeleteAction) {
               postDeleteAction();
             }
