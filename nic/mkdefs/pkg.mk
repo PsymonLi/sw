@@ -87,7 +87,7 @@ package-ipxe:
 	make PLATFORM=efi ARCH=x86_64 -C ${TOPDIR}/platform/drivers/pxe ionic-ipxepatch
 
 .PHONY: package-drivers
-package-drivers: package-ionic package-storage-offload package-freebsd package-esx package-ipxe package-windows package-penutil
+package-drivers: package-ionic package-storage-offload package-freebsd package-esx package-ipxe package-windows
 
 .PHONY: package-freebsd
 package-freebsd:
