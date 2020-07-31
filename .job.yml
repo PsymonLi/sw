@@ -327,10 +327,6 @@ jobs:
     labels: ["CI-DualNIC"]
   iota/test/venice/regression:
     labels: ["CI-Regression", "CI-Regression-Venice"]
-  iota/test/venice/rollout/rolloutbrelm:
-    labels: ["CI-Sanity-Build", "CI-Sanity-VeniceRollout"]
-  iota/test/venice/rollout/apulu2apulu:
-    labels: ["CI-Sanity-Build", "CI-Sanity-VeniceRolloutApulu"]
   iota/test/venice/sim:
     labels: ["CI-Sim-UnitTest-Ent"]
   nic:
