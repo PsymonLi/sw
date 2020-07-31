@@ -172,14 +172,9 @@ def CollectLogs():
     nodes=[]
     try: 
         for node in store.GetTopology().GetNodes():
-            if node.GetNodeOs() == "esx":
-                node.username = node.__vmUser 
-                node.password = node.__vmPassword 
-                node.ip = node.__esx_ctrl_vm_ip
-            elif node_os in [ 'linux', 'freebsd', 'windows']:
-                node.username = node.__vmUser 
-                node.password = node.__vmPassword 
-                node.ip = node.__ip_address
+            node.username = node.MgmtUserName()
+            node.password = node.MgmtPassword()
+            node.ip = node.MgmtIpAddress()
             cimcInfo = node.GetCimcInfo()
             if cimcInfo:
                 node.cimcIp = cimcInfo.GetIp()

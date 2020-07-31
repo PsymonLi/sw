@@ -37,15 +37,21 @@ def GetNaplesUptime(node, device=None):
 
 def GetOOBMnicIP(node_name, device=None):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    cmd = "ifconfig oob_mnic0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'"
+    cmd = "ifconfig oob_mnic0 | grep 'inet addr' | cut -d: -f2 | awk '{print \$1}'"
     api.Trigger_AddNaplesCommand(req, node_name, cmd, naples=device)
     resp = api.Trigger(req)
     if not resp:
         api.Logger.error("Failed to run cmd to get oob_mnic IP")
         return None
-    cmd = resp.commands.pop()
-    if cmd.exit_code != 0:
-        api.PrintCommandResults(cmd)
-        return None
 
-    return cmd.stdout
+    oob_ip_list = []
+    for cmd in resp.commands:
+        if cmd.exit_code != 0:
+            api.PrintCommandResults(cmd)
+        else:
+            ip = cmd.stdout.rstrip()
+            api.SetNicMgmtIP(node_name, cmd.entity_name, ip)
+            api.Logger.info("Updated oob_mnic0 ip-address of node: %s device: %s ip: %s" % (node_name, cmd.entity_name, ip))
+            oob_ip_list.append(ip)
+
+    return oob_ip_list[0] # return first entity by default

@@ -443,6 +443,9 @@ def GetNodeOs(node_name):
 def GetNicMgmtIP(node_name, device=None):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicMgmtIP(node_name, device)
 
+def SetNicMgmtIP(node_name, device, ip):
+    store.GetTestbed().GetCurrentTestsuite().GetTopology().SetNicMgmtIP(node_name, device, ip)
+
 def GetNicConsoleIP(node_name, device=None):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicConsoleIP(node_name, device)
 

@@ -39,7 +39,7 @@ def __create_endpoint_info(tc):
                 obj.spec.homing_host_address = "169.169.169.169" # TEMP
 
             # this triggers endpoint on new host(naples) to setup flows
-            agent_api.PushConfigObjects([obj], [dest_host], True)
+            agent_api.PushConfigObjects([obj], [dest_host], ignore_error=True)
     api.Logger.debug("Completed endpoint info creation at NewHome")
     return
 
@@ -57,14 +57,14 @@ def __update_endpoint_info(tc):
             # update to indicate completion of vmotion
             obj.spec.migration           = "DONE"
             obj.spec.node_uuid           = tc.vmotion_cntxt.UUIDMap[dest_host]
-            resp = agent_api.UpdateConfigObjects([obj], [dest_host], True)
+            resp = agent_api.UpdateConfigObjects([obj], [dest_host], ignore_error=True)
             if resp != api.types.status.SUCCESS:
                 api.Logger.error("Update migr status done failed for %s for %s" % (wl.workload_name, dest_host))
 
             # update to keep new node happy, only in iota 
             obj.spec.migration           = None
             obj.spec.node_uuid           = tc.vmotion_cntxt.UUIDMap[dest_host]
-            resp = agent_api.UpdateConfigObjects([obj], [dest_host], True)
+            resp = agent_api.UpdateConfigObjects([obj], [dest_host], ignore_error=True)
             if resp != api.types.status.SUCCESS:
                 api.Logger.error("Update migr state to None failed for %s for %s" % (wl.workload_name, dest_host))
     api.Logger.debug("Completed endpoint update at NewHome")

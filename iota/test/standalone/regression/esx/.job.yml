@@ -52,7 +52,6 @@ e2e-targets:
        count: 2
        resources:
          servers:
-           - type: hpe
            - type: server-a
          nic-type: naples
    provision:

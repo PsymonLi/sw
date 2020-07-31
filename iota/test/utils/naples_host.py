@@ -165,10 +165,10 @@ def GetNaplesNodeName():
 
 def GetHostInternalMgmtInterfaces(node, device = None):
     # Relay on IOTA infra to provide this information (dual-nic friendly API)
-    interface_names = api.GetNaplesHostMgmtInterfaces(node, device)
-
-    if interface_names:
-        return interface_names
+    if api.IsNaplesNode(node):
+        interface_names = api.GetNaplesHostMgmtInterfaces(node, device)
+        if interface_names:
+            return interface_names
 
     interface_names = []
 

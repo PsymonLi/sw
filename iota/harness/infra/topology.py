@@ -694,6 +694,10 @@ class Node(object):
         dev = self.__get_device(device)
         return dev.GetNicMgmtIP()
 
+    def SetNicMgmtIP(self, device, ip):
+        dev = self.__get_device(device)
+        dev.SetNicMgmtIP(ip)
+
     def GetNicIntMgmtIP(self, device = None):
         dev = self.__get_device(device)
         return dev.GetNicIntMgmtIP()
@@ -861,6 +865,12 @@ class Node(object):
         if self.__os== 'esx':
             return self.__esx_ctrl_vm_ip
         return self.__ip_address
+
+    def MgmtUserName(self):
+        return self.__vmUser
+
+    def MgmtPassword(self):
+        return self.__vmPassword
 
     def EsxHostIpAddress(self):
         if self.__os == 'esx':
@@ -1796,6 +1806,9 @@ class Topology(object):
 
     def GetNicMgmtIP(self, node_name, device = None):
         return self.__nodes[node_name].GetNicMgmtIP(device)
+
+    def SetNicMgmtIP(self, node_name, device, ip):
+        self.__nodes[node_name].SetNicMgmtIP(device, ip)
 
     def GetNicIntMgmtIP(self, node_name, device = None):
         return self.__nodes[node_name].GetNicIntMgmtIP(device)
