@@ -9,6 +9,7 @@
 #include "nic/delphi/sdk/delphi_sdk.hpp"
 
 #include "gen/proto/nicmgr/nicmgr.delphi.hpp"
+#include "gen/proto/naples_status.delphi.hpp"
 
 
 namespace dobj = delphi::objects;
@@ -34,6 +35,19 @@ delphi::SdkPtr nicmgr_delphic_sdk(void);
 
 // initialize Delphi client service
 Status nicmgr_delphic_init(delphi::SdkPtr sdk);
+
+class dsc_status_handler : public dobj::DistributedServiceCardStatusReactor {
+    public:
+        dsc_status_handler(delphi::SdkPtr sdk) {
+            this->sdk_ = sdk;
+        }
+        virtual error OnDistributedServiceCardStatusCreate(dobj::DistributedServiceCardStatusPtr dsc);
+        virtual error OnDistributedServiceCardStatusUpdate(dobj::DistributedServiceCardStatusPtr dsc);
+    private:
+        delphi::SdkPtr    sdk_;
+};
+typedef std::shared_ptr<dsc_status_handler> dsc_status_handler_ptr_t;
+Status init_dsc_status_handler(delphi::SdkPtr sdk);
 
 }    // namespace svc
 }    // namespace hal

@@ -2,7 +2,7 @@
 
 include ${MKDEFS}/pre.mk
 MODULE_TARGET   = libnaplesstatusproto.lib
-MODULE_PIPELINE = iris
+MODULE_PIPELINE = iris gft
 MODULE_INCS     = /usr/local/include \
                   ${TOPDIR}/nic/hal/third-party/google/include \
                   ${TOPDIR}/hal/third-party/grpc/include

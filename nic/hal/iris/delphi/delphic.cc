@@ -85,7 +85,6 @@ delphi_client::delphi_client(delphi::SdkPtr &sdk)
 
     // mount interface status objects
     delphi::objects::InterfaceStatus::Mount(sdk, delphi::ReadWriteMode);
-
 }
 
 // OnMountComplete gets called when all the objects are mounted

@@ -132,12 +132,29 @@ micro_seg_event_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 }
 
 static void
+dsc_status_event_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    hal::core::event_t *event = (hal::core::event_t *)msg->data();
+    hal::core::dsc_status_t *status = &event->dsc_status;
+
+    NIC_LOG_DEBUG("DSC status update: mode: {}:{}", 
+                  DistributedServiceCardStatus_Mode_Name(status->mode),
+                  status->mode);
+
+    // TODO: Nicmgr handling
+}
+
+static void
 register_for_events (void)
 {
     // register for hal up and port events
     sdk::ipc::subscribe(event_id_t::EVENT_ID_PORT_STATUS, port_event_handler, NULL);
     sdk::ipc::subscribe(event_id_t::EVENT_ID_XCVR_STATUS, xcvr_event_handler, NULL);
     sdk::ipc::subscribe(event_id_t::EVENT_ID_HAL_UP, hal_up_event_handler, NULL);
+
+    // dsc status event
+    sdk::ipc::subscribe(event_id_t::EVENT_ID_NICMGR_DSC_STATUS, 
+                        dsc_status_event_handler, NULL);
 
     // Blocking events
     sdk::ipc::reg_request_handler(event_id_t::EVENT_ID_MICRO_SEG,

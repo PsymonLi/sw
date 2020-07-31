@@ -2,7 +2,7 @@
 
 include ${MKDEFS}/pre.mk
 MODULE_TARGET       = naples_status.proto
-MODULE_PIPELINE     = iris
+MODULE_PIPELINE     = iris gft
 MODULE_GEN_TYPES    = CC PY DELPHI GOMETRICS
 MODULE_INCS         = ${MODULE_DIR} \
                       ${TOPDIR}/nic \

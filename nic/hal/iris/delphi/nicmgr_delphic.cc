@@ -21,6 +21,7 @@ namespace hal {
 namespace svc {
 
 shared_ptr<NicMgrDelphic> g_nicmgr_delphic;
+dsc_status_handler_ptr_t g_dsc_status_handler;
 
 using grpc::Status;
 using delphi::error;
@@ -202,6 +203,61 @@ void init_eth_objects(delphi::SdkPtr sdk) {
     delphi::objects::UplinkInfo::Mount(sdk, delphi::ReadWriteMode);
 }
 
+// init dsc status handler to handle managed modes
+Status
+init_dsc_status_handler (delphi::SdkPtr sdk) 
+{
+    g_dsc_status_handler = std::make_shared<dsc_status_handler>(sdk);
+
+    dobj::DistributedServiceCardStatus::Mount(sdk, delphi::ReadMode);
+    dobj::DistributedServiceCardStatus::Watch(sdk, g_dsc_status_handler);
+
+    return Status::OK;
+}
+
+static sdk_ret_t
+dsc_status_broadcast (dobj::DistributedServiceCardStatusPtr& dsc)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    hal::core::event_t event;
+    hal::core::event_id_t event_id = event_id_t::EVENT_ID_NICMGR_DSC_STATUS;
+
+    HAL_TRACE_DEBUG("hal(delphi_thread) -> nicmgr_thread mode: {}",
+                   DistributedServiceCardStatus_Mode_Name(dsc->distributedservicecardmode()));
+
+    memset(&event, 0, sizeof(event));
+    event.event_id = event_id;
+    event.dsc_status.mode = dsc->distributedservicecardmode();
+
+    sdk::ipc::broadcast(event_id, &event, sizeof(event));
+
+    return ret;
+}
+
+// on create, callback
+error 
+dsc_status_handler::
+OnDistributedServiceCardStatusCreate(dobj::DistributedServiceCardStatusPtr dsc) 
+{
+    HAL_TRACE_DEBUG("Rcvd OnDistributedServiceCardStatusCreate: mode: {}:{}", 
+                    DistributedServiceCardStatus_Mode_Name(dsc->distributedservicecardmode()),
+                    dsc->distributedservicecardmode());
+    dsc_status_broadcast(dsc);
+    return error::OK();
+}
+
+// on update, callback
+error 
+dsc_status_handler::
+OnDistributedServiceCardStatusUpdate(dobj::DistributedServiceCardStatusPtr dsc)
+{
+    HAL_TRACE_DEBUG("Rcvd OnDistributedServiceCardStatusUpdate: mode: {}:{}", 
+                    DistributedServiceCardStatus_Mode_Name(dsc->distributedservicecardmode()),
+                    dsc->distributedservicecardmode());
+    dsc_status_broadcast(dsc);
+    return error::OK();
+}
+
 // init Nicmgr in Delphic Thread
 Status
 nicmgr_delphic_init (delphi::SdkPtr sdk) {
@@ -209,6 +265,8 @@ nicmgr_delphic_init (delphi::SdkPtr sdk) {
     HAL_TRACE_DEBUG("Delphi: Entering nicmgr delphi init...");
 
     init_eth_objects(sdk);
+
+    init_dsc_status_handler(sdk);
 
     HAL_TRACE_DEBUG("Delphi: init nicmgr delphis...");
     // subscribe for events from nicmgr thread
