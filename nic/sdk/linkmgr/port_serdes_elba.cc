@@ -7,6 +7,7 @@
 #include "linkmgr_internal.hpp"
 #ifdef ELBA
 #include "third-party/avago/build_elba/include/aapl/aapl.h"
+#include "third-party/avago/build_elba/include/aapl/blackhawk7_v2l8p2_field_access.h"
 #else
 #include "third-party/avago/build_capri/include/aapl/aapl.h"
 #endif
@@ -1418,8 +1419,51 @@ serdes_an_rsfec_enable_read_hw (uint32_t sbus_addr)
 
 int serdes_an_core_status_hw (uint32_t sbus_addr)
 {
-    SDK_LINKMGR_TRACE_ERR("serdes_an_core_status_hw to be done by elba mx. sbus_addr: 0x%x", sbus_addr);
-    return -1;
+
+  //o_core_status is the hw-pins out of D6 serdes to the ASIC core.
+  //Page 154 SerDes16_Spec_15.pdf
+  //   bit[0] : LT Failure
+  //   bit[1] : LT Inprogress
+  //   bit[2] : LT Rx trained and ready
+  //   bit[3] : Not related to LT. port.cc expects 0
+  //   bit[4] : LT Signal Detect
+  //   bit[5] : Not related to LT. port.cc expects 1
+
+  int o_core_status = 0x1;  //link failure
+
+  int bh_lane = serdes_get_bh_lane (sbus_addr);
+  if(bh_lane == -1) {
+    return avago_serdes_mem_rd(aapl, sbus_addr, AVAGO_LSB_DIRECT, 0x27);
+  } else {
+    srds_access_t sa_space, *sa__ = &sa_space;
+    if (avago_addr_to_srds_access_struct(aapl, sa__, sbus_addr)<0) {
+      SDK_LINKMGR_TRACE_ERR("serdes_an_core_status_hw : avago_addr_to_srds_access_struct failed. sbus_addr: 0x%x", sbus_addr);
+      return o_core_status;
+    }
+
+    err_code_t srds_err_code = ERR_CODE_NONE;
+    int linktrn_signal_detect = blackhawk7_v2l8p2_acc_rde_field_u8(sa__, 0xd096,14,15, &srds_err_code);
+    int linktrn_ieee_training_failure = blackhawk7_v2l8p2_acc_rde_field_u8(sa__, 0x0097,12,15, &srds_err_code);
+    int linktrn_ieee_training_status = blackhawk7_v2l8p2_acc_rde_field_u8(sa__, 0x0097,13,15, &srds_err_code);
+    int linktrn_ieee_receiver_status = blackhawk7_v2l8p2_acc_rde_field_u8(sa__, 0x0097,15,15, &srds_err_code);
+
+    o_core_status = 0x20;
+    o_core_status = o_core_status | ((linktrn_ieee_training_failure & 0x1) << 0); //bit[0] : LT Failure
+    o_core_status = o_core_status | ((linktrn_ieee_training_status  & 0x1) << 1); //bit[1] : LT Inprogress
+    o_core_status = o_core_status | ((linktrn_ieee_receiver_status  & 0x1) << 2); //bit[2] : LT Rx trained and ready
+    o_core_status = o_core_status | ((linktrn_signal_detect         & 0x1) << 4); //bit[4] : LT Signal Detect
+
+    SDK_LINKMGR_TRACE_DEBUG("serdes_an_core_status_hw : sbus_addr: %x"
+         " training_failure:%0d"
+         " training_complete:%0d"
+         " training_pass:%0d"
+         " training_signal_detect:%0d"
+         , sbus_addr, linktrn_ieee_training_failure, linktrn_ieee_training_status, 
+         linktrn_ieee_receiver_status,linktrn_signal_detect);
+
+    return o_core_status;
+  }
+  return o_core_status;
 }
 
 int

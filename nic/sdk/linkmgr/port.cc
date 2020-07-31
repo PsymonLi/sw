@@ -428,7 +428,7 @@ port::port_serdes_signal_detect(void)
         if (sbus_addr == 0) {
             // invalid config. fail signal detect
             signal_detect = true;
-            SDK_LINKMGR_TRACE_DEBUG("signal_detect:FALSE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
+            SDK_LINKMGR_TRACE_ERR("signal_detect:FALSE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
             //break;
         }
         signal_detect = serdes_fns()->serdes_signal_detect(sbus_addr);
@@ -450,9 +450,9 @@ port::port_serdes_rdy(void)
     for (lane = 0; lane < num_lanes_; ++lane) {
         sbus_addr = port_sbus_addr(lane);
         if (sbus_addr == 0) {
-            // invalid config. fail serdes rdy
-            // KCM serdes_rdy = false;
-            // KCM break;
+          SDK_LINKMGR_TRACE_ERR("exiting.. port_serdes_rdy : sbus_addr: %x, lane: %d ", sbus_addr, lane);
+          serdes_rdy = false;
+          break;
         }
         SDK_LINKMGR_TRACE_DEBUG("Calling serdes_rdy : sbus_addr: %x, lane: %d ", sbus_addr, lane);
         serdes_rdy =  serdes_fns()->serdes_rdy(sbus_addr);
@@ -559,8 +559,8 @@ port::port_serdes_dfe_complete(void)
         sbus_addr = port_sbus_addr(lane);
         if (sbus_addr == 0) {
             // invalid config. fail dfe complete
-            SDK_LINKMGR_TRACE_DEBUG("TRUE: sbus_addr: %x, lane: %d ", sbus_addr, lane);
-            return true;
+            SDK_LINKMGR_TRACE_ERR("exiting port_serdes_dfe_complete : sbus_addr: %x, lane: %d ", sbus_addr, lane);
+            return false;
         }
         r = serdes_fns()->serdes_dfe_status(sbus_addr);
         SDK_LINKMGR_TRACE_DEBUG("serdes_dfe_status: sbus_addr: %x, lane: %d , val: %d ", sbus_addr, lane, r);
@@ -657,6 +657,15 @@ port::port_serdes_an_link_train_check (void)
             sbus_addr = port_sbus_addr(lane);
 
             o_core_status = serdes_fns()->serdes_an_core_status(sbus_addr);
+
+            //o_core_status is the hw-pins out of D6 serdes to the ASIC core.
+            //Page 154 SerDes16_Spec_15.pdf
+            //   bit[0] : LT Failure
+            //   bit[1] : LT Inprogress
+            //   bit[2] : LT Rx trained and ready
+            //   bit[3] : Not related to LT. port.cc expects 0
+            //   bit[4] : LT Signal Detect
+            //   bit[5] : Not related to LT. port.cc expects 1
 
             if ( (o_core_status & 0x2) == 0x0) {    // training completed
                 if (o_core_status != 0x34) {        // training not yet passed
@@ -1950,8 +1959,6 @@ port::port_mac_stats_init(void)
     if (this->port_stats_base_addr_ == INVALID_MEM_ADDRESS) {
         return SDK_RET_ERR;
     }
-    //SDK_TRACE_DEBUG("port %u stats_init, port_stats_base_addr_ = 0x%llx",
-     //               this->port_num_, this->port_stats_base_addr_);
     return SDK_RET_OK;
 }
 
