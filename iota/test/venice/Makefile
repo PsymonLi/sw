@@ -14,7 +14,7 @@ venice-e2e:
 	../../bin/iota_cmd run --suite firewall --topo default 
 	../../bin/iota_cmd run --suite monitor --skip-setup
 	../../bin/iota_cmd run --suite techsupport --skip-setup
-	../../bin/iota_cmd run --suite mirror --skip-setup
+	../../bin/iota_cmd run --suite mirror --skip-setup  --no-focus "Interface mirror tests"
 	#../../bin/iota_cmd run --suite rollout --topo default --skip-setup
 	#../../bin/iota_cmd run --suite cluster --topo default --skip-setup
 upgrade:
@@ -133,6 +133,8 @@ venice-e2e-basenet:
 	../../bin/iota_cmd run --suite basenet --topo basenet
 	../../bin/iota_cmd run --suite mirror --skip-setup --focus "Interface mirror tests"
 
+venice-e2e-basenet-upgrade: venice-e2e-basenet upgrade
+
 venice-e2e-cloud:
 	cd ../../../ && make ws-tools && make pull-assets && tar -zxf /sw/naples_fw_all_apulu.tgz -C .
 	ln -s /sw/bin/venice.tgz /go/src/github.com/pensando/sw/bin/venice.tgz
@@ -155,4 +157,4 @@ venice-kube-e2e-basenet:
 	#First run mirror suite in basenet
 	../../bin/iota_cmd run --suite basenet --topo k8s
 
-all: venice-e2e upgrade
+all: venice-e2e

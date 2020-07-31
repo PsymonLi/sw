@@ -53,7 +53,7 @@ e2e-targets:
           VcenterLicense: YN69K-6YK5J-78X8T-0M3RH-0T12H
   # baremetal + linux (transparent basenet)
  e2e-venice-2naples-basenet:
-   commands: ["make", "-C", "iota/test/venice", "venice-e2e-basenet"]
+   commands: ["make", "-C", "iota/test/venice", "venice-e2e-basenet-upgrade"]
    # commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:venice-dev@pensando.io"]
    area:

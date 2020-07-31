@@ -737,6 +737,13 @@ func (cl *CloudCfg) pushConfigViaRest() error {
 	return nil
 }
 
+//TimeTrack tracker
+func TimeTrack(start time.Time, name string) time.Duration {
+	elapsed := time.Since(start)
+	log.Infof("%s took %s\n", name, elapsed)
+	return elapsed
+}
+
 //PushConfig populate configuration
 func (cl *CloudCfg) PushConfig() error {
 

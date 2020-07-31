@@ -656,20 +656,18 @@ func (sm *SysModel) InitConfig(scale, scaleData bool) error {
 			return err
 		}
 
-		if sm.Scale {
-			//Sleep for sometime to make sure config shows up at npm
-			time.Sleep(3 * time.Minute)
-		}
-		ok, err := sm.IsConfigPushComplete()
-		if !ok || err != nil {
-			return err
-		}
-
 	} else {
 		log.Info("Skipping config")
 	}
 
 	return nil
+}
+
+//TimeTrack tracker
+func TimeTrack(start time.Time, name string) time.Duration {
+	elapsed := time.Since(start)
+	log.Infof("%s took %s\n", name, elapsed)
+	return elapsed
 }
 
 // SetupDefaultConfig sets up a default config for the system
@@ -702,6 +700,32 @@ func (sm *SysModel) SetupDefaultConfig(ctx context.Context, scale, scaleData boo
 	if err != nil {
 		return err
 	}
+
+	startTime := time.Now()
+
+	if sm.Scale {
+		//Sleep for sometime to make sure config shows up at npm
+		time.Sleep(3 * time.Minute)
+	}
+
+	bkCtx, cancelFunc := context.WithTimeout(context.Background(), 45*time.Minute)
+	defer cancelFunc()
+L:
+	for true {
+		//Check every second
+		select {
+		case <-bkCtx.Done():
+			return fmt.Errorf("Config push failed")
+		default:
+			complete, err := sm.IsConfigPushComplete()
+			if complete && err == nil {
+				TimeTrack(startTime, "Config Push")
+				break L
+			}
+			time.Sleep(time.Second * 2)
+		}
+	}
+
 	//Setup any default objects
 	return sm.SetupWorkloads(scale)
 }

@@ -290,7 +290,7 @@ var _ = Describe("Flow mirror tests", func() {
 	})
 
 	Context("Flow Mirror tests : scale", func() {
-		It("Mirror packets to collector and check TCPDUMP at scale", func() {
+		It("tags:regression=true Mirror packets to collector and check TCPDUMP at scale", func() {
 			if ts.tb.HasNaplesSim() {
 				Skip("Disabling on naples sim till traffic issue is debugged")
 			}

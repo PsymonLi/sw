@@ -127,7 +127,7 @@ var _ = Describe("firewall whitelist tests", func() {
 		})
 	})
 	Context("basic whitelist tests", func() {
-		It("Should be able to update policy and verify it takes effect", func() {
+		It("tags:regression=true Should be able to update policy and verify it takes effect", func() {
 			const maxRules = 5000
 			const numIter = 10
 			startPort := 2000

@@ -443,6 +443,7 @@ func (n *VcenterNode) AssocaiateIndependentNode(node TestNodeInterface) error {
 //AddNetworks add network
 func (n *VcenterNode) AddNetworks(ctx context.Context, networkMsg *iota.NetworksMsg) (*iota.NetworksMsg, error) {
 
+	var err error
 	networkMsg.ApiResponse = &iota.IotaAPIResponse{
 		ApiStatus: iota.APIResponseType_API_STATUS_OK,
 	}
@@ -489,7 +490,13 @@ func (n *VcenterNode) AddNetworks(ctx context.Context, networkMsg *iota.Networks
 						nwSpec.MacAddress = nw.MacAddress
 					}
 					log.Infof("Add vmk IP addr %v, %v on node %v", nwSpec.IPAddress, nwSpec.Subnet, nw.Node)
-					err := n.dc.AddKernelNic(nw.Cluster, mn.GetNodeInfo().IPAddress, nwSpec)
+					for i := 0; i < 5; i++ {
+						err = n.dc.AddKernelNic(nw.Cluster, mn.GetNodeInfo().IPAddress, nwSpec)
+						if err == nil {
+							break
+						}
+						time.Sleep(1 * time.Second)
+					}
 					if err != nil {
 						networkMsg.ApiResponse.ErrorMsg = errors.Wrap(err, "Error adding vmotion pg").Error()
 						networkMsg.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
