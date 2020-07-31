@@ -1,7 +1,7 @@
 # {C} Copyright 2018 Pensando Systems Inc. All rights reserved
 
 include ${MKDEFS}/pre.mk
-MODULE_TARGET   = netproto_delphidp.submake
+MODULE_TARGET   = netproto_nimbus.submake
 MODULE_PIPELINE = iris
 MODULE_DEPS     := ${NICDIR}/agent/protos/netproto/app.proto            \
                    ${NICDIR}/agent/protos/netproto/agg_watch.proto      \

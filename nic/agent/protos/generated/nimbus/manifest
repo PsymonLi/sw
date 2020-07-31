@@ -5,7 +5,6 @@ FlowExportPolicy FlowExportPolicyApiV2 V2
 IPAMPolicy IPAMPolicyApiV1 V1 
 Interface InterfaceApiV1 V1 
 InterfaceMirrorSession InterfaceMirrorSessionApiV1 V1 
-MirrorSession MirrorSessionApiV2 V2 
 Network NetworkApiV1 V1 
 NetworkSecurityPolicy NetworkSecurityPolicyApiV1 V1 
 Profile ProfileApiV1 V1 
@@ -18,7 +17,6 @@ Endpoint EndpointApiV1 V1
 FlowExportPolicy FlowExportPolicyApiV2 V2 
 IPAMPolicy IPAMPolicyApiV1 V1 
 Interface InterfaceApiV1 V1 
-InterfaceMirrorSession InterfaceMirrorSessionApiV1 V1 
 MirrorSession MirrorSessionApiV2 V2 
 Network NetworkApiV1 V1 
 NetworkSecurityPolicy NetworkSecurityPolicyApiV1 V1 

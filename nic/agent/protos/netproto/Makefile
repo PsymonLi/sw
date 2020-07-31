@@ -1,6 +1,7 @@
 OutDir := ${GOPATH}/src/github.com/pensando/sw/nic/agent/protos/generated/restapi/netagent
 NimbusDir := ${GOPATH}/src/github.com/pensando/sw/nic/agent/protos/generated/nimbus
 RestClientDir := ${GOPATH}/src/github.com/pensando/sw/nic/agent/protos/generated/restclient
+NimbusManifest := ${GOPATH}/src/github.com/pensando/sw/nic/agent/protos/generated/nimbus/manifest
 
 # all the sources for which .pb.go is generated
 SRC := app.proto agg_watch.proto endpoint.proto  flowexport.proto interface.proto ipam.proto match.proto mirror.proto namespace.proto network.proto port.proto profile.proto route.proto sgpolicy.proto secprofile.proto tenant.proto tunnel.proto types.proto vrf.proto
@@ -15,11 +16,12 @@ FILTER_OUT_SWAGGER := qos.proto copp.proto
 SRC1 :=  $(filter-out ${FILTER_OUT_API}, ${SRC})
 SRC2 :=  $(filter-out ${FILTER_OUT_SWAGGER}, ${SRC1})
 
+
 DEST := $(SRC:%.proto=%.pb.go) $(SRC1:%.proto=$(OutDir)/%_api.go) $(SRC1:%.proto=$(RestClientDir)/%_client.go) $(SRC2:%.proto=$(RestClientDir)/docs/swagger/%.swagger.json)
 NIMBUS_DEST := $(NIMBUS_SRC:%.proto=$(NimbusDir)/%_mserver.go)
 DELPHI_SRC := $(NIMBUS_SRC:%.proto=./delphi/%.proto)
 
-default: ${DEST} nimbus delphi-gen
+default: gen-clean ${DEST} nimbus delphi-gen
 
 app.pb.% endpoint.pb.% flowexport.pb.% interface.pb.% ipam.pb.% match.pb.% mirror.pb.% namespace.pb.% network.pb.% port.pb.% secprofile.pb.% sgpolicy.pb.% tenant.pb.% tunnel.pb.% types.pb.% vrf.pb.%:  ${SRC}
 	protoc -I. -I../../../../vendor -I${GOPATH}/src -I../../../../vendor/github.com/pensando/grpc-gateway/third_party -I../../../../vendor/github.com/pensando/grpc-gateway/third_party/googleapis \
@@ -78,6 +80,7 @@ delphi-gen: ${DELPHI_SRC}
 	goimports -w ../generated/delphi/netproto/delphi/*.go
 
 gen-clean:
+	rm -f ${NimbusManifest} && touch ${NimbusManifest}
 	rm -f ${DEST}
 	rm -f ${NIMBUS_DEST}
 	rm -f *schema.go
