@@ -84,7 +84,11 @@ error MessangerServer::HandleMsg(int sock, MessagePtr msg) {
 
 // SocketClosed handles socket closed callback
 error MessangerServer::SocketClosed(int sock) {
-    return this->handler->HandleSocketClosed(sock);
+    error err = this->handler->HandleSocketClosed(sock);
+
+    this->srv->Close(sock);
+    
+    return err;
 }
 
 // handleMountReq handles a mount request message

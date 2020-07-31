@@ -22,6 +22,7 @@ public:
     error       Listen(int lis_port);
     void        Accept(ev::io &watcher, int revents);
     error       Send(int sock, MessagePtr msg);
+    void        Close(int sock);
     vector<int> ListSockets();
     error       Stop();
 private:

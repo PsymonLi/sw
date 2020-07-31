@@ -24,6 +24,7 @@ public:
     virtual error Listen(int lis_port) = 0;
     virtual error Send(int sock, MessagePtr msg) = 0;
     virtual vector<int> ListSockets() = 0;
+    virtual void Close(int sock) = 0;
     virtual error Stop() = 0;
 };
 typedef std::shared_ptr<TransportServer> TransportServerPtr;

@@ -116,6 +116,13 @@ vector<int> TcpServer::ListSockets() {
     return list;
 }
 
+void TcpServer::Close(int sock) {
+    SockReceiverUptr &rcvr = this->receivers[sock];
+    rcvr->Stop();
+    close(sock);
+    this->receivers.erase(sock);
+}
+
 error TcpServer::Stop() {
     // close all connected sockets
     for(map<int, SockReceiverUptr>::iterator i=receivers.begin(); i!=receivers.end(); ++i) {
