@@ -5,7 +5,7 @@
 
 #include "nic/operd/daemon/operd_impl.hpp"
 
-void impl_svc_init (void)
+void
+impl_svc_init (syslog_config_cb syslog_cb)
 {
-    return;
 }

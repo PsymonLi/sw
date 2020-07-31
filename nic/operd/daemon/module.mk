@@ -8,14 +8,16 @@ MODULE_LDLIBS   = rt pthread dl
 MODULE_ARLIBS   =
 ALL_CC_FILES    = $(wildcard ${MODULE_SRC_DIR}/*.cc)
 ALL_TEST_FILES  = $(wildcard ${MODULE_SRC_DIR}/*_test.cc)
-MODULE_SRCS     = $(filter-out $(ALL_TEST_FILES), $(ALL_CC_FILES))
+SRC_FILES       = $(filter-out $(ALL_TEST_FILES), $(ALL_CC_FILES))
 ifneq ($(PIPELINE), apulu)
-MODULE_SRCS     += $(wildcard ${MODULE_SRC_DIR}/impl/stub/*.cc)
+SRC_FILES       += $(wildcard ${MODULE_SRC_DIR}/impl/stub/*.cc)
 else
-MODULE_SRCS     += $(wildcard ${MODULE_SRC_DIR}/impl/${PIPELINE}/*.cc)
+SRC_FILES       += $(wildcard ${MODULE_SRC_DIR}/impl/${PIPELINE}/*.cc)
 MODULE_SOLIBS   += operdproto operdsvc event_thread thread logger utils \
                    sdkeventmgr list slab shmmgr ht sdkpal
 MODULE_LDLIBS   += ${NIC_THIRDPARTY_GOOGLE_LDLIBS} ${NIC_COMMON_LDLIBS}
 MODULE_INCS     = ${MODULE_GEN_DIR}
 endif
+TEST_FILES      = $(wildcard ${MODULE_SRC_DIR}/*_test.cc)
+MODULE_SRCS     = $(filter-out $(TEST_FILES), $(SRC_FILES))
 include ${MKDEFS}/post.mk

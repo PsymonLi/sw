@@ -4,6 +4,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <list>
 #include <map>
 #include <memory>
 #include <signal.h>
@@ -12,13 +13,13 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "lib/operd/operd.hpp"
-#include "lib/operd/decoder.h"
-
 #include "binary.hpp"
+#include "lib/operd/decoder.h"
+#include "lib/operd/operd.hpp"
+#include "operd_impl.hpp"
 #include "output.hpp"
 #include "rotated_file.hpp"
-#include "operd_impl.hpp"
+#include "syslog.hpp"
 
 namespace pt = boost::property_tree;
 
@@ -26,6 +27,7 @@ const int SLEEP_DURATION = 250000;
 const int DECODER_BUFFER = 2048;
 
 std::map<uint8_t, decoder_fn> g_decoders;
+std::map<std::string, std::list<syslog_ptr> > g_syslogs;
 
 class library : public output {
 public:
@@ -278,6 +280,17 @@ parse_output (pt::ptree obj)
 
         return rotated_file::factory(path, (uint8_t)level, max_size,
                                      max_files);
+    } else if (type == "syslog") {
+        std::string config_name = obj.get<std::string>("config-name");
+        if (config_name == "") {
+            fprintf(stderr, "output needs config-name property\n");
+            return nullptr;
+        }
+        syslog_ptr slg = syslog::factory(nullptr);
+
+        g_syslogs[config_name].push_back(slg);
+        
+        return slg;
     } else {
         fprintf(stderr, "output type not supported: %s\n", type.c_str());
         return nullptr;
@@ -396,6 +409,27 @@ update_coredump_filter (void)
     close(fd);
 }
 
+
+static int
+syslog_config (std::string config_name, std::string remote_address,
+               uint16_t remote_port, bool bsd_style, uint32_t facility,
+               std::string hostname, std::string app_name,
+               std::string proc_id)
+{
+    if (facility > 23) {
+        return -1;
+    }
+    syslog_endpoint_ptr endpoint = syslog_endpoint::factory(
+        remote_address, remote_port, bsd_style, facility,
+        hostname, app_name, proc_id);
+
+    for (auto slg: g_syslogs[config_name]) {
+        slg->set_endpoint(endpoint);
+    }
+    
+    return 0;
+}
+
 int
 main (int argc, const char *argv[])
 {
@@ -425,7 +459,7 @@ main (int argc, const char *argv[])
         decoders = load_decoders(argv[2]);
     }
     
-    impl_svc_init();
+    impl_svc_init(syslog_config);
     fprintf(stdout, "operd spinning forever\n");
 
     while (true) {

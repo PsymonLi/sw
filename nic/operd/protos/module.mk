@@ -16,5 +16,6 @@ MODULE_SRCS          = $(wildcard ${BLD_PROTOGEN_DIR}/gogo.*.cc) \
                        $(wildcard ${BLD_PROTOGEN_DIR}/alerts.*.cc) \
                        $(wildcard ${BLD_PROTOGEN_DIR}/oper.*.cc) \
                        $(wildcard ${BLD_PROTOGEN_DIR}/techsupport.*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/syslog.*.cc) \
                        $(wildcard ${BLD_PROTOGEN_DIR}/meta/*.cc)
 include ${MKDEFS}/post.mk

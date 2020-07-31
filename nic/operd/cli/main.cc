@@ -11,6 +11,7 @@ struct cmd_handler_ {
 static struct cmd_handler_ g_cmd_handlers[] = {
     {"dump", dump},
     {"level", level},
+    {"syslog", syslog},
 };
 
 static int g_cmd_handlers_len =

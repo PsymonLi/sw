@@ -1,0 +1,9 @@
+[
+    {
+        "output": {
+            "type": "syslog",
+            "config-name": "syslog"
+        },
+        "input": ["syslog"]
+    }
+]

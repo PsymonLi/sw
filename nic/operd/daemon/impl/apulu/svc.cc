@@ -11,8 +11,10 @@
 #include "nic/apollo/include/globals.hpp"
 #include "nic/operd/daemon/operd_impl.hpp"
 #include "nic/operd/daemon/svc/techsupport.hpp"
+#include "nic/operd/daemon/svc/syslog.hpp"
 
 static sdk::event_thread::event_thread *g_grpc_svc_thread;
+static syslog_config_cb g_syslog_cb;
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -22,6 +24,7 @@ grpc_svc_init (void)
 {
     ServerBuilder *server_builder;
     TechSupportSvcImpl techsupport_svc;
+    SyslogSvcImpl syslog_svc(g_syslog_cb);
     std::string grpc_server_addr;
 
     // do gRPC initialization
@@ -36,6 +39,7 @@ grpc_svc_init (void)
 
     // register for the oper services
     server_builder->RegisterService(&techsupport_svc);
+    server_builder->RegisterService(&syslog_svc);
 
     fprintf(stdout, "operd server listening on ... %s\n",
             grpc_server_addr.c_str());
@@ -50,11 +54,10 @@ void grpc_svc_thread_init (void *ctxt)
 
 void grpc_svc_thread_exit (void *ctxt)
 {
-    return;
 }
 
 static sdk_ret_t
-spawn_grpc_svc_thread (void)
+spawn_grpc_svc_thread ()
 {
     // spawn grpc server which handles oper stuff like techsupport
     g_grpc_svc_thread =
@@ -73,7 +76,8 @@ spawn_grpc_svc_thread (void)
     return SDK_RET_OK;
 }
 
-void impl_svc_init (void)
+void impl_svc_init (syslog_config_cb syslog_cb)
 {
+    g_syslog_cb = syslog_cb;
     spawn_grpc_svc_thread();
 }
