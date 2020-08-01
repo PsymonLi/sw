@@ -26,3 +26,4 @@ nic/apollo/tools/$PIPELINE/bringup_mgmt_ifs_venice.sh             /nic/tools/bri
 
 # test apps
 nic/build/$ARCH/$PIPELINE/bin/alerts_gen                          /nic/bin/
+nic/build/$ARCH/$PIPELINE/bin/flowlog_gen                         /nic/bin/
