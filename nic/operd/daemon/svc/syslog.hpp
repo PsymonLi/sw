@@ -13,15 +13,25 @@ using grpc::ServerContext;
 using operd::SyslogSvc;
 using operd::SyslogConfigRequest;
 using operd::SyslogConfigResponse;
+using operd::SyslogDeleteRequest;
 
 class SyslogSvcImpl final : public SyslogSvc::Service {
 public:
-    SyslogSvcImpl(syslog_config_cb syslog_cb);
-    Status SetSyslogConfig(ServerContext* context,
-                           const SyslogConfigRequest *req,
-                           SyslogConfigResponse* rsp) override;
+    SyslogSvcImpl(syslog_cbs_t *syslog_cb);
+    Status SyslogConfigCreate(ServerContext* context,
+                              const SyslogConfigRequest *req,
+                              SyslogConfigResponse* rsp) override;
+    Status SyslogConfigUpdate(ServerContext* context,
+                              const SyslogConfigRequest *req,
+                              SyslogConfigResponse* rsp) override;
+    Status SyslogConfigDelete(ServerContext* context,
+                              const SyslogDeleteRequest *req,
+                              SyslogConfigResponse* rsp) override;
 private:
-    syslog_config_cb syslog_cb_;
+    Status SyslogConfigSet(ServerContext* context,
+                           const SyslogConfigRequest *req,
+                           SyslogConfigResponse* rsp);
+    syslog_cbs_t *syslog_cbs_;
 };
 
 #endif // __OPERD_SVC_SYSLOG_HPP__

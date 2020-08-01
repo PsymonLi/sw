@@ -14,7 +14,7 @@
 #include "nic/operd/daemon/svc/syslog.hpp"
 
 static sdk::event_thread::event_thread *g_grpc_svc_thread;
-static syslog_config_cb g_syslog_cb;
+static syslog_cbs_t *g_syslog_cbs;
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -24,7 +24,7 @@ grpc_svc_init (void)
 {
     ServerBuilder *server_builder;
     TechSupportSvcImpl techsupport_svc;
-    SyslogSvcImpl syslog_svc(g_syslog_cb);
+    SyslogSvcImpl syslog_svc(g_syslog_cbs);
     std::string grpc_server_addr;
 
     // do gRPC initialization
@@ -76,8 +76,8 @@ spawn_grpc_svc_thread ()
     return SDK_RET_OK;
 }
 
-void impl_svc_init (syslog_config_cb syslog_cb)
+void impl_svc_init (syslog_cbs_t *syslog_cbs)
 {
-    g_syslog_cb = syslog_cb;
+    g_syslog_cbs = syslog_cbs;
     spawn_grpc_svc_thread();
 }

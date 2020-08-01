@@ -46,6 +46,37 @@ private:
 };
 typedef std::shared_ptr<library> library_ptr;
 
+
+static int
+syslog_config_set (std::string config_name, std::string remote_address,
+                   uint16_t remote_port, bool bsd_style, uint32_t facility,
+                   std::string hostname, std::string app_name,
+                   std::string proc_id)
+{
+    if (facility > 23) {
+        return -1;
+    }
+    syslog_endpoint_ptr endpoint = syslog_endpoint::factory(
+        remote_address, remote_port, bsd_style, facility,
+        hostname, app_name, proc_id);
+
+    for (auto slg: g_syslogs[config_name]) {
+        slg->set_endpoint(endpoint);
+    }
+    
+    return 0;
+}
+
+static int
+syslog_config_clear (std::string config_name)
+{
+    for (auto slg: g_syslogs[config_name]) {
+        slg->set_endpoint(nullptr);
+    }
+    
+    return 0;
+}
+
 class input {
 public:
     input(std::string name);
@@ -409,33 +440,16 @@ update_coredump_filter (void)
     close(fd);
 }
 
-
-static int
-syslog_config (std::string config_name, std::string remote_address,
-               uint16_t remote_port, bool bsd_style, uint32_t facility,
-               std::string hostname, std::string app_name,
-               std::string proc_id)
-{
-    if (facility > 23) {
-        return -1;
-    }
-    syslog_endpoint_ptr endpoint = syslog_endpoint::factory(
-        remote_address, remote_port, bsd_style, facility,
-        hostname, app_name, proc_id);
-
-    for (auto slg: g_syslogs[config_name]) {
-        slg->set_endpoint(endpoint);
-    }
-    
-    return 0;
-}
-
 int
 main (int argc, const char *argv[])
 {
     std::map<std::string, input_ptr> inputs;
     std::map<uint8_t, decoder_fn> decoders;
     std::string config;
+    syslog_cbs_t syslog_cbs = {
+        .set = syslog_config_set,
+        .clear = syslog_config_clear,
+    };
 
     // TODO: Fix system cmd & uncomment this
     // signal(SIGCHLD, sigchld_handler);
@@ -459,7 +473,7 @@ main (int argc, const char *argv[])
         decoders = load_decoders(argv[2]);
     }
     
-    impl_svc_init(syslog_config);
+    impl_svc_init(&syslog_cbs);
     fprintf(stdout, "operd spinning forever\n");
 
     while (true) {

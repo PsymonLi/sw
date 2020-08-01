@@ -16,7 +16,9 @@ import "meta/meta.proto";
 import "types.proto";
 
 service SyslogSvc {
-  rpc SetSyslogConfig (SyslogConfigRequest) returns (SyslogConfigResponse) {}
+  rpc SyslogConfigCreate (SyslogConfigRequest) returns (SyslogConfigResponse) {}
+  rpc SyslogConfigUpdate (SyslogConfigRequest) returns (SyslogConfigResponse) {}
+  rpc SyslogConfigDelete (SyslogDeleteRequest) returns (SyslogConfigResponse) {}
 }
 
 enum SyslogProtocol {
@@ -37,6 +39,10 @@ message SyslogConfig {
 
 message SyslogConfigRequest {
   SyslogConfig Config = 1;
+}
+
+message SyslogDeleteRequest {
+  string ConfigName = 1;
 }
 
 message SyslogConfigResponse {

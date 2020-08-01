@@ -6,6 +6,6 @@
 #include "nic/operd/daemon/operd_impl.hpp"
 
 void
-impl_svc_init (syslog_config_cb syslog_cb)
+impl_svc_init (syslog_cbs_t *syslog_cbs)
 {
 }

@@ -40,7 +40,8 @@ syslog (int argc, const char *argv[])
     cfg->set_appname("operd");
     cfg->set_procid("-");
 
-    grpc::Status status = stub->SetSyslogConfig(&context, request, &response);
+    grpc::Status status = stub->SyslogConfigCreate(
+        &context, request, &response);
 
     if (status.ok()) {
         printf("configuration successful\n");
