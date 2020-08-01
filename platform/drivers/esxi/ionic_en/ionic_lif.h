@@ -232,6 +232,7 @@ VMK_ReturnStatus
 ionic_firmware_update(struct ionic_en_priv_data *priv_data,
                       const char *fw_data,
                       vmk_uint64 fw_sz,
-                      const char *fw_name);
+                      const char *fw_name,
+                      vmk_Bool is_adminq_based);
 #endif /* _IONIC_LIF_H_ */
 

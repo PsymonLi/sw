@@ -41,21 +41,16 @@ vmk_MgmtCallbackInfo ionic_en_mgmt_cbs[IONIC_EN_MGMT_INTERFACE_CB_NUM] = {
                 .location = VMK_MGMT_CALLBACK_KERNEL,
                 .callback = ionic_en_mgmt_inf_flush_fw_cb,
                 .synchronous = 1,
-                .numParms = 4,
+                .numParms = 1,
                 .parmSizes = {
-                                 sizeof(vmk_uint64),
-                                 sizeof(vmk_uint64),
-                                 sizeof(vmk_uint64),
-                                 sizeof(vmk_uint64),
+                                 sizeof(ionic_en_fw_flush_params),
                              },
                 .parmTypes = {
-                                 VMK_MGMT_PARMTYPE_IN,
-                                 VMK_MGMT_PARMTYPE_IN,
-                                 VMK_MGMT_PARMTYPE_IN,
                                  VMK_MGMT_PARMTYPE_IN,
                              },
                 .callbackId = IONIC_EN_MGMT_INTERFACE_CB_FLASH_FW,
         },
+
 };
 
 vmk_MgmtApiSignature ionic_en_mgmt_sig = {

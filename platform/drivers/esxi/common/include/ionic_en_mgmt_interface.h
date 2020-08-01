@@ -36,6 +36,15 @@ typedef enum ionic_en_mgmt_interface_cbs {
 #define IONIC_EN_FW_TYPE_MAX_LEN                 256
 #define IONIC_EN_FW_FILE_NAME_MAX_LEN           1024
 
+typedef struct ionic_en_fw_flush_params {
+        vmk_uint64 fw_img_name_addr;
+        vmk_uint64 fw_img_data_addr;
+        vmk_uint64 fw_img_size;
+        vmk_uint64 uplink_name_addr;
+        vmk_Bool is_adminq_based;
+} __attribute__((__packed__)) ionic_en_fw_flush_params;
+
+
 typedef struct ionic_en_adapter_info {
         char adapter_branding_name[IONIC_EN_ADPT_BRANDING_NAME_MAX_LEN];
         vmk_Name ethernet_interface_name;
@@ -78,10 +87,7 @@ ionic_en_mgmt_inf_get_adpt_info_cb(vmk_MgmtCookies *cookies,
 VMK_ReturnStatus
 ionic_en_mgmt_inf_flush_fw_cb(vmk_MgmtCookies *cookies,
                               vmk_MgmtEnvelope *envelope,
-                              vmk_uint64 *fw_img_name_addr,
-                              vmk_uint64 *fw_img_data_addr,
-                              vmk_uint64 *fw_img_size,
-                              vmk_uint64 *uplink_name_addr);
+                              ionic_en_fw_flush_params *fw_flush_params);
 
 #else
 #define ionic_en_mgmt_inf_count_num_dsc_cb              NULL

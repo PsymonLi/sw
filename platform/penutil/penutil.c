@@ -147,10 +147,23 @@ main (int argc,  char **argv)
 		exit(1);
 	}
 
+#ifdef __ESXI__
+        error = ionic_platform_init();
+        if (error) {
+                fprintf(stderr, "Failed to initialize platform for OS: %s "
+                        " (rcUser=0x%x)\n", SPP_BUILD_OS, error);
+                exit(1);
+        }
+#endif
+
 	if (update)
 		ionic_test_update(log_file, path_of_fw, discovery_file, test_multi);
 	else
 		ionic_test_discovery(log_file, path_of_fw, discovery_file);
+
+#ifdef __ESXI__
+        ionic_platform_cleanup();
+#endif
 
 	return (0);
 }

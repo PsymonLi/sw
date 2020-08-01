@@ -368,11 +368,14 @@ ionic_dev_cmd_check_error(struct ionic *ionic)
                 case IONIC_RC_ENOENT:
                         status = VMK_OK;
                         break;
+                case IONIC_RC_EAGAIN:
+                        status = VMK_NOT_READY;
+                        break;
                 default:
                         status = VMK_FAILURE;
         }
 
-        if (status != VMK_OK) {
+        if (status == VMK_FAILURE) {
                 do {
                         status = ionic_heartbeat_check(ionic);
                         if (status == VMK_STATUS_PENDING) {
@@ -395,15 +398,15 @@ ionic_dev_cmd_check_error(struct ionic *ionic)
 static VMK_ReturnStatus
 ionic_dev_cmd_wait(struct ionic *ionic, unsigned long max_wait)
 {
-        VMK_ReturnStatus status;
+        VMK_ReturnStatus status = VMK_OK;
         struct ionic_dev *idev = &ionic->en_dev.idev;
         unsigned long time;
         int done;
 
-
         /* Wait for dev cmd to complete...but no more than max_wait
          */
         time = vmk_GetTimerCycles() + max_wait;
+not_compl:
         do {
 
                 done = ionic_dev_cmd_done(idev);
@@ -416,7 +419,7 @@ ionic_dev_cmd_wait(struct ionic *ionic, unsigned long max_wait)
                 }
 #endif
                 if (done) {
-                        return VMK_OK;
+                        break;
                 }
 
                 status = vmk_WorldSleep(50);
@@ -428,10 +431,28 @@ ionic_dev_cmd_wait(struct ionic *ionic, unsigned long max_wait)
 
         } while (IONIC_TIME_AFTER(time, vmk_GetTimerCycles()));
 
+        status = ionic_dev_cmd_check_error(ionic);
+        if (status == VMK_NOT_READY && IONIC_TIME_AFTER(time, vmk_GetTimerCycles())) {
+                /* Sleep 1s */
+                status = vmk_WorldSleep(1000 * 1000);
+                if (status != VMK_OK) {
+                        ionic_en_err("vmk_WorldSleep() returns: %s",
+                                  vmk_StatusToString(status));
+                        return status;
+                }
+
+                ionic_writel_raw(0, (vmk_VA)&idev->dev_cmd_regs->done);
+                ionic_writel_raw(1, (vmk_VA)&idev->dev_cmd_regs->doorbell);
+                goto not_compl;              
+        }
+
+
 #ifdef IONIC_DEBUG
-        ionic_en_err("DEVCMD timeout after %ld secs\n", max_wait / HZ);
+        if (status != VMK_OK) {
+                ionic_en_err("DEVCMD timeout after %ld secs\n", max_wait / HZ);
+        }
 #endif
-        return VMK_TIMEOUT;
+        return status;
 }
 
 
@@ -458,7 +479,6 @@ retry:
                 return status;
         }
 
-        status = ionic_dev_cmd_check_error(ionic);
         if (status == VMK_RETRY && is_retry == VMK_FALSE) {
                 ionic_en_info("FW is still alive, try one more time");
                 is_retry = VMK_TRUE;

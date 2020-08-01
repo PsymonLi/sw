@@ -13,8 +13,8 @@
 #define SPP_BUILD_OS "Linux"
 #elif __FreeBSD__
 #define SPP_BUILD_OS "FreeBSD"
-#else /* ! __linux__ */
-#define SPP_BUILD_OS "ESX"
+#elif __ESXI__
+#define SPP_BUILD_OS "ESXI"
 #endif /* __linux__ */
 
 #ifndef DSC_SPP_VERSION

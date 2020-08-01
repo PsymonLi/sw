@@ -249,7 +249,7 @@ void ionic_dev_cmd_port_identify(struct ionic_dev *idev)
                 .port_init.index = idev->port_index,
         };
 
-         ionic_dev_cmd_go(idev, &cmd);
+        ionic_dev_cmd_go(idev, &cmd);
 }
 
 void ionic_dev_cmd_port_init(struct ionic_dev *idev)

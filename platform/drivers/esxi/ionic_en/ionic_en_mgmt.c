@@ -103,6 +103,7 @@ ionic_hash_table_get_adpt_info_iterator(vmk_HashTable hash_table,
 }
 
 
+
 VMK_ReturnStatus
 ionic_en_mgmt_inf_get_adpt_info_cb(vmk_MgmtCookies *cookies,
                                    vmk_MgmtEnvelope *envelope,
@@ -126,14 +127,10 @@ ionic_en_mgmt_inf_get_adpt_info_cb(vmk_MgmtCookies *cookies,
         return VMK_OK;
 }
 
-
 VMK_ReturnStatus
 ionic_en_mgmt_inf_flush_fw_cb(vmk_MgmtCookies *cookies,
                               vmk_MgmtEnvelope *envelope,
-                              vmk_uint64 *fw_img_name_addr,
-                              vmk_uint64 *fw_img_data_addr,
-                              vmk_uint64 *fw_img_size,
-                              vmk_uint64 *uplink_name_addr)
+                              ionic_en_fw_flush_params *fw_flush_params)
 {
         VMK_ReturnStatus status;
         vmk_Name uplink_name;
@@ -141,10 +138,10 @@ ionic_en_mgmt_inf_flush_fw_cb(vmk_MgmtCookies *cookies,
         char *buf;
         struct ionic_en_priv_data *priv_data = NULL;
         
-        fw_img_name = (char *)(*fw_img_name_addr);
-        buf = (char *)(*fw_img_data_addr);
+        fw_img_name = (char *)(fw_flush_params->fw_img_name_addr);
+        buf = (char *)(fw_flush_params->fw_img_data_addr);
 
-        vmk_StringCopy(uplink_name.string, (char *)(*uplink_name_addr), 7);
+        vmk_StringCopy(uplink_name.string, (char *)(fw_flush_params->uplink_name_addr), 7);
 
         ionic_device_list_get(uplink_name,
                               &ionic_driver.uplink_dev_list,
@@ -152,8 +149,9 @@ ionic_en_mgmt_inf_flush_fw_cb(vmk_MgmtCookies *cookies,
 
         status = ionic_firmware_update(priv_data,
                                        buf,
-                                       *fw_img_size,
-                                       fw_img_name);
+                                       fw_flush_params->fw_img_size,
+                                       fw_img_name,
+                                       fw_flush_params->is_adminq_based);
         if (status != VMK_OK) {
                 ionic_en_err("ionic_firmware_update() failed, status: %s",
                              vmk_StatusToString(status));

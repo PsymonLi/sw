@@ -2884,7 +2884,6 @@ intr_alloc_err:
 }
 
 
-
 void
 ionic_lifs_size_undo(struct ionic_en_priv_data *priv_data)
 {
@@ -2900,10 +2899,10 @@ ionic_lifs_size_undo(struct ionic_en_priv_data *priv_data)
 }
 
 static VMK_ReturnStatus
-ionic_firmware_download(struct lif *lif,
-                        vmk_IOA addr,
-                        vmk_uint32 offset,
-                        vmk_uint32 length)
+ionic_firmware_download_adminq(struct lif *lif,
+                               vmk_IOA addr,
+                               vmk_uint32 offset,
+                               vmk_uint32 length)
 {
         VMK_ReturnStatus status;
         struct ionic_admin_ctx ctx = {
@@ -2936,18 +2935,68 @@ ionic_firmware_download(struct lif *lif,
         }
 
         return status;
-       
+}
+
+
+static void
+ionic_firmware_download_devcmd(struct lif *lif,
+                               vmk_IOA addr,
+                               vmk_uint32 offset,
+                               vmk_uint32 length)
+{
+        union ionic_dev_cmd cmd = {
+                .fw_download.opcode = IONIC_CMD_FW_DOWNLOAD,
+                .fw_download.offset = offset,
+                .fw_download.addr = addr,
+                .fw_download.length = length
+        };
+
+        ionic_dev_cmd_go(&(lif->ionic->en_dev.idev), &cmd);
 }
 
 static VMK_ReturnStatus
-ionic_firmware_install(struct lif *lif,
-                       vmk_uint8 *slot)
+ionic_firmware_download(struct lif *lif,
+                        vmk_IOA addr,
+                        vmk_uint32 offset,
+                        vmk_uint32 length,
+                        vmk_Bool is_adminq_based)
+{
+        VMK_ReturnStatus status;
+        if (is_adminq_based) {
+                status = ionic_firmware_download_adminq(lif,
+                                                        addr,
+                                                        offset,
+                                                        length);
+        } else {
+                vmk_MutexLock(lif->ionic->dev_cmd_lock);
+                ionic_firmware_download_devcmd(lif,
+                                               vmk_offsetof(union ionic_dev_cmd_regs, data),
+                                               offset,
+                                               length);
+                status = ionic_dev_cmd_wait_check(lif->ionic, HZ * devcmd_timeout);
+                vmk_MutexUnlock(lif->ionic->dev_cmd_lock);
+                /* Add some delay between each fw download devcmd */
+                vmk_WorldSleep(100);
+        }
+
+        if (status != VMK_OK) {
+                ionic_en_err("FW download based on %s failed, status: %s",
+                             is_adminq_based? "adminq" : "devcmd", vmk_StatusToString(status));
+        }
+
+        return status;
+}
+
+
+static VMK_ReturnStatus
+ionic_firmware_install_adminq(struct lif *lif,
+                              vmk_uint8 *slot)
 {
         VMK_ReturnStatus status;
         struct ionic_admin_ctx ctx = {
                 .cmd.fw_control = {
                         .opcode = IONIC_CMD_FW_CONTROL,
-                        .oper = IONIC_FW_INSTALL
+                        .oper = IONIC_FW_INSTALL_ASYNC
                 }
         };
 
@@ -2972,14 +3021,125 @@ ionic_firmware_install(struct lif *lif,
                 return status;
         }
 
-
         *slot = ctx.comp.fw_control.slot;
         return status;
 }
 
+
+static void
+ionic_firmware_install_devcmd(struct lif *lif)
+{
+        union ionic_dev_cmd cmd = {
+                .fw_control.opcode = IONIC_CMD_FW_CONTROL,
+                .fw_control.oper = IONIC_FW_INSTALL_ASYNC
+        };
+
+        ionic_dev_cmd_go(&(lif->ionic->en_dev.idev), &cmd);
+}
+
+
 static VMK_ReturnStatus
-ionic_firmware_activate(struct lif *lif,
-                        vmk_uint8 slot)
+ionic_firmware_install(struct lif *lif,
+                       vmk_uint8 *slot,
+                       vmk_Bool is_adminq_based)
+{
+        VMK_ReturnStatus status;
+        union ionic_dev_cmd_comp comp;
+
+        if (is_adminq_based) {
+                status = ionic_firmware_install_adminq(lif,
+                                                       slot);
+        } else {
+                vmk_MutexLock(lif->ionic->dev_cmd_lock);
+                ionic_firmware_install_devcmd(lif);
+                status = ionic_dev_cmd_wait_check(lif->ionic, HZ * devcmd_timeout * 30);
+                ionic_dev_cmd_comp(&(lif->ionic->en_dev.idev), &comp);
+                *slot = comp.fw_control.slot;
+                vmk_MutexUnlock(lif->ionic->dev_cmd_lock);
+        }
+
+        if (status != VMK_OK) {
+                ionic_en_err("FW install based on %s failed, status: %s",
+                             is_adminq_based? "adminq" : "devcmd", vmk_StatusToString(status));
+        }
+
+        return status;
+}
+
+
+static VMK_ReturnStatus
+ionic_firmware_install_status_check_adminq(struct lif *lif)
+{
+        VMK_ReturnStatus status;
+        struct ionic_admin_ctx ctx = {
+                .cmd.fw_control = {
+                        .opcode = IONIC_CMD_FW_CONTROL,
+                        .oper = IONIC_FW_INSTALL_STATUS,
+                }
+        };
+
+        status = ionic_completion_create(ionic_driver.module_id,
+                                         ionic_driver.heap_id,
+                                         ionic_driver.lock_domain,
+                                         "ionic_admin_ctx.work",
+                                         &ctx.work);
+        if (status != VMK_OK) {
+                ionic_en_err("ionic_completion_create() failed, status: %s",
+                          vmk_StatusToString(status));
+                return status;
+        }
+
+        ionic_completion_init(&ctx.work);
+
+        status = ionic_adminq_post_wait(lif, &ctx);
+        ionic_completion_destroy(&ctx.work);
+        if (status != VMK_OK) { 
+                ionic_en_err("ionic_adminq_post_wait() failed, status: %s",
+                             vmk_StatusToString(status));
+        }
+
+        return status;
+}
+
+
+static void
+ionic_firmware_install_status_check_devcmd(struct lif *lif)
+{
+        union ionic_dev_cmd cmd = {
+                .fw_control.opcode = IONIC_CMD_FW_CONTROL,
+                .fw_control.oper = IONIC_FW_INSTALL_STATUS
+        };
+
+        ionic_dev_cmd_go(&(lif->ionic->en_dev.idev), &cmd);
+}
+
+
+static VMK_ReturnStatus
+ionic_firmware_install_status_check(struct lif *lif,
+                                    vmk_Bool is_adminq_based)
+{
+        VMK_ReturnStatus status;
+        if (is_adminq_based) {
+                status = ionic_firmware_install_status_check_adminq(lif);
+        } else {
+                vmk_MutexLock(lif->ionic->dev_cmd_lock);
+                ionic_firmware_install_status_check_devcmd(lif);
+                status = ionic_dev_cmd_wait_check(lif->ionic, HZ * devcmd_timeout * 30);
+                vmk_MutexUnlock(lif->ionic->dev_cmd_lock);
+        }
+
+        if (status != VMK_OK) {
+                ionic_en_err("FW status check based on %s failed, status: %s",
+                             is_adminq_based? "adminq" : "devcmd", vmk_StatusToString(status));
+        }
+
+        return status;
+}
+
+
+static VMK_ReturnStatus
+ionic_firmware_activate_adminq(struct lif *lif,
+                               vmk_uint8 slot)
 {
         VMK_ReturnStatus status;
         struct ionic_admin_ctx ctx = {
@@ -3013,35 +3173,82 @@ ionic_firmware_activate(struct lif *lif,
         return status;
 }
 
+
+static void
+ionic_firmware_activate_devcmd(struct lif *lif,
+                               vmk_uint8 slot)
+{
+        union ionic_dev_cmd cmd = {
+                .fw_control.opcode = IONIC_CMD_FW_CONTROL,
+                .fw_control.oper = IONIC_FW_ACTIVATE,
+                .fw_control.slot = slot
+        };
+
+        ionic_dev_cmd_go(&(lif->ionic->en_dev.idev), &cmd);
+}
+
+
+static VMK_ReturnStatus
+ionic_firmware_activate(struct lif *lif,
+                        vmk_uint8 slot,
+                        vmk_Bool is_adminq_based)
+{
+        VMK_ReturnStatus status;
+        if (is_adminq_based) {
+                status = ionic_firmware_activate_adminq(lif,
+                                                        slot);
+        } else {
+                vmk_MutexLock(lif->ionic->dev_cmd_lock);
+                ionic_firmware_activate_devcmd(lif,
+                                               slot);
+                status = ionic_dev_cmd_wait_check(lif->ionic, HZ * devcmd_timeout * 6);
+                vmk_MutexUnlock(lif->ionic->dev_cmd_lock);
+        }
+
+
+        if (status != VMK_OK) {
+                ionic_en_err("FW active based on %s failed, status: %s",
+                             is_adminq_based? "adminq" : "devcmd", vmk_StatusToString(status));
+        }
+
+        return status;
+}
+
+
 VMK_ReturnStatus
 ionic_firmware_update(struct ionic_en_priv_data *priv_data,
                       const char *fw_data,
                       vmk_uint64 fw_sz,
-                      const char *fw_name)
+                      const char *fw_name,
+                      vmk_Bool is_adminq_based)
 {
         VMK_ReturnStatus status;
         struct lif *lif;       
         vmk_uint32 buf_sz, copy_sz, offset;
         vmk_IOA buf_pa;
-        vmk_uint8 fw_slot;
+        vmk_uint8 fw_slot = 0;
         void *buf;
 
         lif = VMK_LIST_ENTRY(vmk_ListFirst(&priv_data->ionic.lifs),
                              struct lif, list);
- 
-        /* Transfer 1MB at a time. */
-        buf_sz = (1 << 20);
 
-        /* Allocate DMA'ble buffer for sending firmware to card */
-        buf = ionic_dma_zalloc_align(ionic_driver.heap_id,
-                                     priv_data->dma_engine_coherent,
-                                     buf_sz,
-                                     VMK_PAGE_SIZE,
-                                     &buf_pa);
-        if (!buf) {
-                ionic_en_err("ionic_dma_zalloc_align() failed, "
-                             "status: VMK_NO_MEMORY");
-                return VMK_NO_MEMORY;
+        if (is_adminq_based) {
+                /* Transfer 10MB at a time. */
+                buf_sz = 10 * (1 << 20);
+                /* Allocate DMA'ble buffer for sending firmware to card */
+                buf = ionic_dma_zalloc_align(ionic_driver.heap_id,
+                                             priv_data->dma_engine_coherent,
+                                             buf_sz,
+                                             VMK_PAGE_SIZE,
+                                             &buf_pa);
+                if (!buf) {
+                        ionic_en_err("ionic_dma_zalloc_align() failed, "
+                                     "status: VMK_NO_MEMORY");
+                        return VMK_NO_MEMORY;
+                }
+        } else {
+                buf_sz = sizeof(lif->ionic->en_dev.idev.dev_cmd_regs->data);
+                buf = &lif->ionic->en_dev.idev.dev_cmd_regs->data;
         }
 
         ionic_en_info("Downloading firmware %s to DSC via uplink: %s",
@@ -3056,7 +3263,8 @@ ionic_firmware_update(struct ionic_en_priv_data *priv_data,
                 status = ionic_firmware_download(lif,
                                                  buf_pa,
                                                  offset,
-                                                 copy_sz);
+                                                 copy_sz,
+                                                 is_adminq_based);
                 if (status != VMK_OK) {
                         ionic_en_err("FW download failed at offset 0x%x: status: %s",
                                      offset, vmk_StatusToString(status));
@@ -3066,25 +3274,39 @@ ionic_firmware_update(struct ionic_en_priv_data *priv_data,
         }
 
         ionic_en_info("Verifying and installing firmware %s", fw_name);
-        status = ionic_firmware_install(lif, &fw_slot);
+        status = ionic_firmware_install(lif,
+                                        &fw_slot,
+                                        is_adminq_based);
         if (status != VMK_OK) {
                 ionic_en_err("FW install failed, status: %s", vmk_StatusToString(status));
                 goto out;
         }
 
+        ionic_en_info("Checking firmware status...");
+        status = ionic_firmware_install_status_check(lif,
+                                                     is_adminq_based);
+        if (status != VMK_OK) {
+                ionic_en_err("FW status check failed, status: %s", vmk_StatusToString(status));
+                goto out;
+        }
+
         ionic_en_info("Activating firmware %s", fw_name);
-        status = ionic_firmware_activate(lif, fw_slot);
+        status = ionic_firmware_activate(lif,
+                                         fw_slot,
+                                         is_adminq_based);
         if (status != VMK_OK) {
                 ionic_en_err("FW activation failed, status: %s", vmk_StatusToString(status));
         }
 
         ionic_en_info("FW upgrade completed! Reboot is required");
 out:
-        ionic_dma_free(ionic_driver.heap_id,
-                       priv_data->dma_engine_coherent,
-                       buf_sz,
-                       buf,
-                       buf_pa);
+        if (is_adminq_based) {
+                ionic_dma_free(ionic_driver.heap_id,
+                               priv_data->dma_engine_coherent,
+                               buf_sz,
+                               buf,
+                               buf_pa);
+        }
 
         return status;
 }
