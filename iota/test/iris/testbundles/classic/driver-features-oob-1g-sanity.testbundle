@@ -5,6 +5,13 @@ meta:
     targetcount : 1418
 
 testcases:
+    -   name     : Oob1G_Marvell_Access
+        testcase : testcases.linktest.marvell_access
+        disable  : False
+        ignore   : False
+        args     :
+            test-type : oob-1g
+
     -   name    : Oob1G_TX_CHECKSUM
         testcase: testcases.drivers.features
         disable : False

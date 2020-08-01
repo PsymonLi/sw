@@ -1,0 +1,10 @@
+meta:
+    name : marvell
+    os   : [ linux, esx ]
+    nics : [ pensando ]
+
+testcases:
+    -   name     : Marvell_Access
+        testcase : testcases.linktest.marvell_access
+        disable  : False
+        ignore   : False
