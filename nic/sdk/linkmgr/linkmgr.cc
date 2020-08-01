@@ -1148,8 +1148,11 @@ port_create (port_args_t *args)
         port_p = new (mem) port();
     }
 
+    // this is used to walk the ports during quiescing (in A)
+    // and during switchover (in B)
+    g_linkmgr_state->set_port_p(args->port_num - 1, port_p);
+
     if (g_linkmgr_state->port_restore_state()) {
-        g_linkmgr_state->set_port_p(args->port_num - 1, port_p);
         return port_p;
     }
 
