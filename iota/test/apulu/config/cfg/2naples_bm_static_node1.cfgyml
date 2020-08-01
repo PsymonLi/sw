@@ -174,7 +174,7 @@ vpc:
                   count    : 1
                   keytype  : l3
                   lmacaddr : macaddr/00ae.cd00.0811
-                  lipaddr  : '2.1.0.2'
+                  lipaddr  : '2.1.0.102'
               srcguard: false         # true or false (default false)
               public  : false
               tagged  : false         # true or false (default true)
@@ -190,7 +190,7 @@ vpc:
               count    : 1
               keytype  : l3
               rmacaddr : macaddr/00ae.cd00.000a
-              ripaddr  : '2.1.0.3'
+              ripaddr  : '2.1.0.103'
               tunnelid : 1
         - id               : 2
           count            : 1
@@ -217,7 +217,7 @@ vpc:
                   count    : 1
                   keytype  : l3
                   lmacaddr : macaddr/00ae.cd00.0812
-                  lipaddr  : '3.1.0.2'
+                  lipaddr  : '3.1.0.102'
                   public   : true
                   publicip : 12.12.12.12
               srcguard: false         # true or false (default false)
@@ -241,7 +241,7 @@ vpc:
                   count    : 1
                   keytype  : l3
                   lmacaddr : macaddr/00ae.cd00.0813
-                  lipaddr  : '3.1.0.102'
+                  lipaddr  : '3.1.0.202'
               srcguard: false         # true or false (default false)
               public  : false
               vnicencap:
@@ -280,7 +280,7 @@ vpc:
                   count    : 1
                   keytype  : l3
                   lmacaddr : macaddr/00ae.cd00.0814
-                  lipaddr  : '9.0.0.2'
+                  lipaddr  : '9.0.0.102'
               srcguard: false         # true or false (default false)
               public  : false
               vnicencap:
@@ -304,7 +304,7 @@ vpc:
                   count    : 1
                   keytype  : l3
                   lmacaddr : macaddr/00ae.cd00.0815
-                  lipaddr  : '9.0.0.102'
+                  lipaddr  : '9.0.0.202'
               srcguard: false         # true or false (default false)
               public  : false
               vnicencap:
@@ -323,13 +323,13 @@ vpc:
               count    : 1
               keytype  : l3
               rmacaddr : macaddr/00ae.cd00.000d
-              ripaddr  : '9.0.0.3'
+              ripaddr  : '9.0.0.103'
               tunnelid : 1
             - id       : 4
               count    : 1
               keytype  : l3
               rmacaddr : macaddr/00ae.cd00.000e
-              ripaddr  : '9.0.0.103'
+              ripaddr  : '9.0.0.203'
               tunnelid : 1
       nexthop:
         - id         : 3
@@ -340,11 +340,11 @@ vpc:
              - type: specific
                routetype: disjoint
                servicenatprefix: '64.0.0.80\32'
-               dnatip: 10.0.200.2
+               dnatip: 10.0.200.102
                v4routes:
-                   - '64.0.0.2\32'
+                   - '64.0.0.102\32'
                    - '64.0.0.80\32' # service NAT IP
-                   - '10.0.200.2\32' # dnat ip needs a route entry
+                   - '10.0.200.102\32' # dnat ip needs a route entry
                teptype : underlay
                nat:
                  level : route
@@ -371,7 +371,7 @@ vpc:
         - iid           : 51
           iftype        : control
           ifadminstatus : UP
-          ipprefix      : '11.1.1.2\24'
+          ipprefix      : '11.1.1.102\24'
           gateway       : '11.1.1.1'
           macaddress    : macaddr/feff.0b01.0102
       subnet:
@@ -399,7 +399,7 @@ vpc:
                   count    : 1
                   keytype  : l3
                   lmacaddr : macaddr/feff.0b01.0102
-                  lipaddr  : '11.1.1.2'
+                  lipaddr  : '11.1.1.102'
               srcguard: false         # true or false (default false)
               public  : false
               vnicencap:

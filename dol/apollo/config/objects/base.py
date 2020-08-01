@@ -304,8 +304,6 @@ class ConfigObjectBase(base.ConfigObjectBase):
             #self.AddToReconfigState('update')
         else:
             self.AutoUpdate()
-        logger.info("Object Updated")
-        self.Show()
         return
 
     # update the python object
@@ -315,6 +313,7 @@ class ConfigObjectBase(base.ConfigObjectBase):
                 logger.info("%s object updated already" % self)
             else:
                 logger.info("Updating obj %s" % self)
+                self.Show()
                 if clone:
                     clone = self.CopyObject()
                     clone.Precedent = None

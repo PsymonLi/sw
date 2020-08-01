@@ -144,13 +144,6 @@ class SubnetObject(base.ConfigObjectBase):
                (self.UUID, self.VPC.UUID, self.PfxSel, self.VirtualRouterMACAddr.get())
 
     def Show(self):
-        def __get_uuid_str():
-            uuid = "["
-            for each in self.HostIfUuid:
-                uuid += f'{each.GetUuid()}, '
-            uuid += "]"
-            return uuid
-
         logger.info("SUBNET object:", self)
         logger.info("- %s" % repr(self))
         logger.info("- Prefix %s VNI %d" % (self.IPPrefix, self.Vnid))
@@ -169,7 +162,6 @@ class SubnetObject(base.ConfigObjectBase):
                 (hostif.GetInterfaceName(), lif.GID(), hostifindex))
         logger.info('- HostIfIdx:%s' % (self.HostIfIdx))
         if self.HostIfUuid:
-            logger.info(f"- HostIf: {__get_uuid_str()}")
             logger.info("- HostIf:%s" % self.HostIfUuid)
         self.Status.Show()
         return

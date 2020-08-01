@@ -134,6 +134,8 @@ class PdsUuid:
             assert 0, f"{type(value)} is NOT supported for PdsUuid class"
         self.UuidStr = PdsUuid.GetUuidString(self.Uuid)
 
+    def __repr__(self):
+        return self.UuidStr
 
     def __str__(self):
         return f"ID:{self.Id} UUID:{self.UuidStr}"
