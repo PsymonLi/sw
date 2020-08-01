@@ -259,6 +259,8 @@ message BGPPeerSpec {
   bytes            Password     = 12 [(venice.pdsaFields) = {Field: "password"}];
   // TTL
   uint32           TTL          = 13 [(venice.pdsaFields) = {Field: "ttl"}];
+  // IdleHoldTime in seconds
+  uint32           IdleHoldTime = 14 [(venice.pdsaFields) = {Field: "config_idle_hold"}];
 }
 
 // BGP peer status

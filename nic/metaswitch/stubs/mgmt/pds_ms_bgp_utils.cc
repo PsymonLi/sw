@@ -913,6 +913,10 @@ bgp_peer_set_fill_func (BGPPeerSpec& req,
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_PEER_MIN_RT_ADVERT);
         v_amb_bgp_peer->min_route_withdraw_interval = 0;
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_PEER_MIN_RT_WDRW);
+        if (req.idleholdtime() == 0) {
+            v_amb_bgp_peer->config_idle_hold = 15;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_PER_CFG_IDLE_HOLD);
+        }
     }
 }
 

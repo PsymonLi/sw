@@ -256,7 +256,7 @@ func (m *ServiceHandlers) configurePeer(nic *snicT, deleteOp bool) {
 			State:        pdstypes.AdminState_ADMIN_STATE_ENABLE,
 			SendComm:     true,
 			SendExtComm:  true,
-			ConnectRetry: 5,
+			ConnectRetry: 60,
 			KeepAlive:    keepalive,
 			HoldTime:     holdtime,
 			RRClient:     pdstypes.BGPPeerRRClient_BGP_PEER_RR_CLIENT,

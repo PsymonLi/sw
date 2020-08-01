@@ -460,7 +460,7 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 								KeepAlive:    n.keepalive,
 								HoldTime:     n.holdtime,
 								TTL:          n.multihop,
-								ConnectRetry: 5,
+								ConnectRetry: 60,
 								Password:     []byte(n.password),
 							}
 							// Add Afs
@@ -544,7 +544,7 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 					KeepAlive:    n.keepalive,
 					HoldTime:     n.holdtime,
 					TTL:          n.multihop,
-					ConnectRetry: 5,
+					ConnectRetry: 60,
 					// TODO add Holdtime and Keepalive
 					Password: []byte(n.password),
 				})
