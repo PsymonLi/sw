@@ -28,7 +28,7 @@ TEST (IonicSppTest, End2End1Thread)
 {
 	std::string fw_path = "./fw_pacakge";
 	std::string dis_file = ".gtest_discovery.xml";
-	std::string log_file = ".gtest_spp.log";
+	std::string log_file = std::tmpnam(nullptr);;
 	int ret;
 
 	ret = ionic_test_discovery(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
