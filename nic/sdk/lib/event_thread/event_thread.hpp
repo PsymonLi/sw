@@ -11,7 +11,6 @@
 
 #include "lib/thread/thread.hpp"
 #include "lib/ipc/ipc.hpp"
-#include "lib/lfq/lfq.hpp"
 
 #define EVENT_READ  0x1
 #define EVENT_WRITE 0x2

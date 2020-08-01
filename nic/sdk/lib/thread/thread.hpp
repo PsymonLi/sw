@@ -204,8 +204,6 @@ public:
         return lfq_->dequeue();
     }
 
-    lfq *lfqueue(void) { return lfq_; }
-
     void register_suspend_cb(thread_suspend_cb_t suspend_cb,
                              thread_resume_cb_t resume_cb, void *arg) {
         suspend_cb_ = suspend_cb;

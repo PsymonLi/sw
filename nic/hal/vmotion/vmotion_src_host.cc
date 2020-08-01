@@ -167,7 +167,6 @@ vmotion_src_host_fsm_def::proc_sync_begin(fsm_state_ctx ctx, fsm_event_data data
         VmotionMessage  msg_rsp;
         if (copy_session_info(&msg_rsp, rsp, &cur_sessions, &sess_count) != true) {
             HAL_TRACE_ERR("unable to copy resp message");
-            msg_rsp.mutable_sync()->Clear();
             ret = false;
             goto end;
         }
@@ -183,14 +182,12 @@ vmotion_src_host_fsm_def::proc_sync_begin(fsm_state_ctx ctx, fsm_event_data data
             vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::sync_sess_cnt, sess_count); 
 
             cur_sessions += sess_count;
-            msg_rsp.mutable_sync()->Clear();
         }
     } while (sess_count == VMOTION_MAX_SESS_PER_MSG);
 
     vmn_ep->throw_event(EVT_SYNC_DONE, NULL);
 
 end:
-    rsp->Clear();
     delete rsp;
     return ret;
 }
@@ -260,7 +257,6 @@ vmotion_src_host_fsm_def::proc_term_sync_req(fsm_state_ctx ctx, fsm_event_data d
             msg_rsp.set_type(VMOTION_MSG_TYPE_TERM_SYNC);
             if (vmotion_send_msg(msg_rsp, vmn_ep->get_ssl()) != HAL_RET_OK) {
                 HAL_TRACE_ERR("vmotion unable to send sync message");
-                msg_rsp.mutable_sync()->Clear();
                 ret = false;
                 goto end;
             }
@@ -269,14 +265,12 @@ vmotion_src_host_fsm_def::proc_term_sync_req(fsm_state_ctx ctx, fsm_event_data d
             vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::term_sync_sess_cnt, sess_count); 
 
             cur_sessions += sess_count;
-            msg_rsp.mutable_sync()->Clear();
         }
     } while(sess_count ==  VMOTION_MAX_SESS_PER_MSG);
 
     vmn_ep->throw_event(EVT_TERM_SYNC_DONE, NULL);
 
 end:
-    rsp->Clear();
     delete rsp;
     return ret;
 }
@@ -455,9 +449,6 @@ static void
 src_host_thread_init (void *ctxt)
 {
     vmotion_thread_ctx_t *thread_ctx = (vmotion_thread_ctx_t *)ctxt;
-
-    // Set thread detached
-    pthread_detach(pthread_self());
 
     thread_ctx->io.ctx = ctxt;
 

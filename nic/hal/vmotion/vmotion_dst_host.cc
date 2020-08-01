@@ -505,9 +505,6 @@ dst_host_thread_init (void *ctx)
 {
     vmotion_ep     *vmn_ep = (vmotion_ep *)ctx;
 
-    // Set thread detached
-    pthread_detach(pthread_self());
-
     vmn_ep->dst_host_init();
 }
 

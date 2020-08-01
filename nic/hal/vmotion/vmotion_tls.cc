@@ -52,7 +52,6 @@ TLSConnection::factory(TLSContext *context, SSL_CTX *ctx, int sock, bool is_serv
     auto conn = new (mem) TLSConnection();
 
     if (conn->init(context, ctx, sock, is_server) != HAL_RET_OK) {
-        HAL_FREE(HAL_MEM_ALLOC_VMOTION, mem);
         return NULL;
     }
     return conn;
