@@ -99,6 +99,7 @@ xcvr_get (int port, xcvr_event_info_t *xcvr_event_info)
     xcvr_event_info->pid          = xcvr_pid(port);
     xcvr_event_info->cable_type   = cable_type(port);
     xcvr_event_info->port_an_args = xcvr_get_an_args(port);
+    xcvr_event_info->type = xcvr_type(port);
 
     xcvr_sprom_get (port, xcvr_event_info->xcvr_sprom);
 
@@ -434,6 +435,16 @@ xcvr_mem_size (void)
     return sizeof(upg_obj_meta_t) + (sizeof(xcvr_t) * XCVR_MAX_PORTS);
 }
 
+sdk_ret_t
+xcvr_read_dom (int port, uint8_t *data)
+{
+    if ((xcvr_type(port) == xcvr_type_t::XCVR_TYPE_QSFP) ||
+        (xcvr_type(port) == xcvr_type_t::XCVR_TYPE_QSFP28)) {
+        return qsfp_read_dom(port, data);
+    } else {
+        return sfp_read_dom(port, data);
+    }
+}
 
 } // namespace platform
 } // namespace sdk

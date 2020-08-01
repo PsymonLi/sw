@@ -297,9 +297,10 @@ delphi_pub_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
     hal_ret_t ret;
     sdk_ret_t sret = SDK_RET_OK;
 
-    ret = linkmgr::port_metrics_update();
+    // update port stats and send xcvr dom event
+    ret = linkmgr::port_periodic_update();
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Error in updating port metrics, ret {}", ret);
+        HAL_TRACE_ERR("Error in updating port metrics/dom, ret {}", ret);
     }
 
     // Publish mirror stats to delphi

@@ -30,6 +30,7 @@ typedef enum event_id_e {
     EVENT_ID_NCSID              = 11,
     EVENT_ID_NICMGR_DELPHIC     = 12,
     EVENT_ID_NICMGR_DSC_STATUS  = 13,   // HAL's delphi thread -> nicmgr thread
+    EVENT_ID_XCVR_DOM_STATUS    = 14,
 } event_id_t;
 
 // port event specific information
@@ -46,6 +47,7 @@ typedef struct xcvr_event_info_s {
     xcvr_state_t     state;
     xcvr_pid_t       pid;
     cable_type_t     cable_type;
+    xcvr_type_t      type;
     uint8_t          sprom[XCVR_SPROM_SIZE];
 } xcvr_event_info_t;
 

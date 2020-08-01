@@ -12,7 +12,6 @@ namespace platform {
 using sdk::lib::pal_ret_t;
 using sdk::lib::qsfp_page_t;
 
-#define MAX_XCVR_ACCESS_RETRIES 5
 
 sdk_ret_t
 qsfp_read_page (int port, qsfp_page_t pgno, int offset,
@@ -370,6 +369,22 @@ read_qsfp_temperature(int port, qsfp_temperature_t *qsfp_temp_data)
     qsfp_temp_data->alarm_temperature = alarm_temperature;
 
     return SDK_RET_OK;
+}
+
+sdk_ret_t
+qsfp_read_dom (int port, uint8_t *data)
+{
+    sdk_ret_t ret;
+    uint32_t bytes_to_read = XCVR_SPROM_READ_SIZE;
+
+    ret = qsfp_read_page(port, qsfp_page_t::QSFP_PAGE_LOW, 0x0, bytes_to_read,
+                         data);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+    ret = qsfp_read_page(port, qsfp_page_t::QSFP_PAGE_HIGH3, 0x0,
+                         bytes_to_read, data + bytes_to_read);
+    return ret;
 }
 
 } // namespace platform

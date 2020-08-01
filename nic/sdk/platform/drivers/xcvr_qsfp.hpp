@@ -39,6 +39,14 @@ sdk_ret_t qsfp_read_temp_high_alarm(int port, int *data);
 sdk_ret_t qsfp_read_temp_high_warning(int port, int *data);
 sdk_ret_t read_qsfp_temperature(int port, qsfp_temperature_t *data);
 
+/// \brief      reads the DOM info for QSFP
+///             reads 128 bytes from lower page 0x00 and
+///             128 bytes from upper page 0x03
+/// \param[in]  port transceiver port
+/// \param[out] data pointer to buffer to fill DOM info
+/// \return     SDK_RET_OK on success, failure status code on error
+sdk_ret_t qsfp_read_dom(int port, uint8_t *data);
+
 } // namespace platform
 } // namespace sdk
 

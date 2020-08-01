@@ -9,7 +9,7 @@ namespace linkmgr {
 namespace ipc {
 
 void port_event_notify (port_event_info_t *port_event_info);
-void xcvr_event_notify (xcvr_event_info_t *xcvr_event_info);
+void xcvr_event_notify (xcvr_event_info_t *xcvr_event_info, bool dom);
 
 }    // namespace ipc
 }    // namespace linkmgr

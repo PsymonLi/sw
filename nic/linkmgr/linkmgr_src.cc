@@ -219,7 +219,7 @@ xcvr_event_port_get_ht_cb (void *ht_entry, void *ctxt)
                                     port->port_num);
 
     // notify outside
-    linkmgr::ipc::xcvr_event_notify(xcvr_event_info);
+    linkmgr::ipc::xcvr_event_notify(xcvr_event_info, false);
 
     return false;
 }
@@ -507,7 +507,7 @@ port_create_commit_cb (cfg_op_ctxt_t *cfg_ctxt)
         xcvr_event_info.port_num = sdk::lib::catalog::logical_port_to_ifindex(
                                        pi_p->port_num);
 
-        linkmgr::ipc::xcvr_event_notify(&xcvr_event_info);
+        linkmgr::ipc::xcvr_event_notify(&xcvr_event_info, false);
     }
 
     return ret;
@@ -1444,12 +1444,14 @@ port_uplink_metrics_update (uint32_t port_num, port_args_t *port_args, delphi::o
 }
 
 static void
-port_metrics_update_helper (port_args_t *port_args,
-                            void        *ctxt,
-                            hal_ret_t   hal_ret)
+port_periodic_update_helper (port_args_t *port_args,
+                             void        *ctxt,
+                             hal_ret_t   hal_ret)
 {
     port_t *pi_p   = NULL;
     delphi::objects::MacMetricsPtr mac_metrics_old;
+    int phy_port;
+    xcvr_event_info_t xcvr_event_info = { 0 };
 
     if (hal_ret != HAL_RET_OK) {
         return;
@@ -1459,8 +1461,11 @@ port_metrics_update_helper (port_args_t *port_args,
     if (pi_p == NULL) {
         return;
     }
+
+    // blink port status LED based on traffic
     port_led_blink(pi_p->port_num, port_args, mac_metrics_old);
 
+    // update port metrics to delphi
     if (port_args->port_type == port_type_t::PORT_TYPE_MGMT) {
         port_mgmt_metrics_update (pi_p->port_num, port_args);
     } else {
@@ -1471,12 +1476,26 @@ port_metrics_update_helper (port_args_t *port_args,
         // release memory
         delphi::objects::MacMetrics::Release(mac_metrics_old);
     }
+
+    // send xcvr dom event
+    phy_port = sdk::lib::catalog::logical_port_to_phy_port(pi_p->port_num);
+    if (port_args->port_type != port_type_t::PORT_TYPE_MGMT) {
+        // update the front panel port number with ifindex
+        xcvr_event_info.port_num = sdk::lib::catalog::logical_port_to_ifindex(
+                                        pi_p->port_num);
+        // populate the event info
+        sdk::platform::xcvr_get(phy_port - 1, &xcvr_event_info);
+        // read dom info
+        sdk::platform::xcvr_read_dom(phy_port - 1, xcvr_event_info.xcvr_sprom);
+        // notify outside
+        linkmgr::ipc::xcvr_event_notify(&xcvr_event_info, true);
+    }
 }
 
 hal_ret_t
-port_metrics_update (void)
+port_periodic_update (void)
 {
-    return port_get_all(port_metrics_update_helper, NULL);
+    return port_get_all(port_periodic_update_helper, NULL);
 }
 
 hal_ret_t

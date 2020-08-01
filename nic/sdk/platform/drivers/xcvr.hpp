@@ -6,6 +6,8 @@
 #include <cstring>
 #include "include/sdk/types.hpp"
 #include "linkmgr/linkmgr.hpp"
+#include "lib/pal/pal.hpp"
+#include "xcvr_utils.hpp"
 
 namespace sdk {
 namespace platform {
@@ -423,6 +425,15 @@ xcvr_vendor_revision (uint32_t phy_port, const uint8_t *xcvr_sprom)
 /// \return size of the transceiver info for all transceiver ports including
 ///         meta info
 uint64_t xcvr_mem_size(void);
+
+/// \brief      reads the DOM info for SFP/QSFP
+///             For SFP, reads 256 bytes from 0xA2(0x51) I2C address
+///             For qsfp reads 128 bytes from lower page 0x00 and
+///             128 bytes from upper page 0x03
+/// \param[in]  port transceiver port
+/// \param[out] data pointer to buffer to fill DOM info
+/// \return     SDK_RET_OK on success, failure status code on error
+sdk_ret_t xcvr_read_dom(int port, uint8_t *data);
 
 } // namespace platform
 } // namespace sdk

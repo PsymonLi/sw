@@ -14,11 +14,12 @@ void
 port_event_notify (port_event_info_t *port_event_info)
 {
     hal::core::event_t event;
+    uint32_t logical_port = port_event_info->logical_port;
+    uint32_t ifindex = sdk::lib::catalog::logical_port_to_ifindex(logical_port);
+
     port_event_t port_event = port_event_info->event;
     port_speed_t port_speed = port_event_info->speed;
     port_fec_type_t fec_type = port_event_info->fec_type;
-    uint32_t logical_port = port_event_info->logical_port;
-    uint32_t ifindex = sdk::lib::catalog::logical_port_to_ifindex(logical_port);
 
     sdk::linkmgr::port_set_leds(logical_port, port_event);
 
@@ -35,27 +36,31 @@ port_event_notify (port_event_info_t *port_event_info)
 }
 
 static void
-send_xcvr_event (xcvr_event_info_t *xcvr_event_info)
+send_xcvr_event (xcvr_event_info_t *xcvr_event_info, bool dom)
 {
     hal::core::event_t event;
+
     memset(&event, 0, sizeof(event));
     event.xcvr.id = xcvr_event_info->port_num;
     event.xcvr.state = xcvr_event_info->state;
     event.xcvr.pid = xcvr_event_info->pid;
+    event.xcvr.type = xcvr_event_info->type;
     event.xcvr.cable_type = xcvr_event_info->cable_type;
     memcpy(event.xcvr.sprom, xcvr_event_info->xcvr_sprom, XCVR_SPROM_SIZE);
-    sdk::ipc::broadcast(event_id_t::EVENT_ID_XCVR_STATUS, &event, sizeof(event));
+    if (dom) {
+        sdk::ipc::broadcast(event_id_t::EVENT_ID_XCVR_DOM_STATUS, &event,
+                            sizeof(event));
+    } else {
+        sdk::ipc::broadcast(event_id_t::EVENT_ID_XCVR_STATUS, &event,
+                            sizeof(event));
+    }
 }
 
 void
-xcvr_event_notify (xcvr_event_info_t *xcvr_event_info)
+xcvr_event_notify (xcvr_event_info_t *xcvr_event_info, bool dom)
 {
-    uint32_t     port_num = xcvr_event_info->port_num;
-    xcvr_state_t state    = xcvr_event_info->state;
-    xcvr_pid_t   pid      = xcvr_event_info->pid;
-
-    HAL_TRACE_DEBUG("Xcvr {}; port: {}, pid: {}", sdk::types::xcvrStateToStr(state), port_num, pid);
-    send_xcvr_event(xcvr_event_info);
+    send_xcvr_event(xcvr_event_info, dom);
 }
+
 }    // namespace ipc
 }    // namespace linkmgr

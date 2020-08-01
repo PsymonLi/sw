@@ -254,6 +254,25 @@ sfp_sprom_parse (int port, uint8_t *data)
     return SDK_RET_OK;
 }
 
+/// \brief      reads the DOM info for SFP
+///             reads 256 bytes from 0xA2(0x51) I2C address
+/// \param[in]  port transceiver port
+/// \param[out] data pointer to buffer to fill DOM info
+/// \return     SDK_RET_OK on success, failure status code on error
+static inline sdk_ret_t
+sfp_read_dom (int port, uint8_t *data)
+{
+    pal_ret_t ret;
+
+    ret = sdk::lib::qsfp_dom_read(data, XCVR_SPROM_SIZE, 0x0,
+                                  MAX_XCVR_ACCESS_RETRIES,
+                                  port + 1);
+    if (ret == sdk::lib::PAL_RET_NOK) {
+        return SDK_RET_ERR;
+    }
+    return SDK_RET_OK;
+}
+
 } // namespace sdk
 } // namespace platform
 
