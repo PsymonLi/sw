@@ -44,6 +44,7 @@ type RolloutState struct {
 	completionDelta       float32
 	completionSum         float32
 	numRetries            uint32
+	pendingVenice         string
 }
 
 func (sm *Statemgr) handleRolloutEvent(et kvstore.WatchEventType, ro *roproto.Rollout) {
@@ -311,11 +312,7 @@ func (ros *RolloutState) startRolloutTimer() {
 		}
 		if ros.currentState == fsmstPreCheckingVenice {
 			phase := roproto.RolloutPhase_FAIL
-			for _, curStatus := range ros.Status.ControllerNodesStatus {
-				if curStatus.Phase == roproto.RolloutPhase_PRE_CHECK.String() {
-					ros.setVenicePhase(curStatus.Name, "", "Timeout waiting for status from Venice", phase)
-				}
-			}
+			ros.setVenicePhase(ros.pendingVenice, "", "Timeout waiting for status from Venice", phase)
 			ros.eventChan <- fsmEvOneVenicePreUpgFail
 		}
 		if ros.currentState == fsmstRollingOutService {

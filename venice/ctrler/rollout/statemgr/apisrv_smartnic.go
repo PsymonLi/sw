@@ -80,7 +80,7 @@ func (sm *Statemgr) performForceRollout(smartNIC *cluster.DistributedServiceCard
 func (sm *Statemgr) handleSmartNICEvent(et kvstore.WatchEventType, smartNIC *cluster.DistributedServiceCard) {
 	switch et {
 	case kvstore.Created:
-		log.Infof("(Create) SetSmartNICState - {%+v}\n", smartNIC)
+		log.Infof("(Create) SetSmartNICState - {%+v}\n", smartNIC.Name)
 
 		err := sm.SetSmartNICState(smartNIC)
 		if err != nil {
@@ -93,7 +93,7 @@ func (sm *Statemgr) handleSmartNICEvent(et kvstore.WatchEventType, smartNIC *clu
 			return
 		}
 	case kvstore.Updated:
-		log.Infof("(Update)SetSmartNICState - {%+v}\n", smartNIC)
+		log.Infof("(Update)SetSmartNICState - {%+v}\n", smartNIC.Name)
 		err := sm.SetSmartNICState(smartNIC)
 		if err != nil {
 			log.Errorf("Error SetSmartNICState SmartNIC {%+v}. Err: %v", smartNIC, err)

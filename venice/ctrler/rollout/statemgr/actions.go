@@ -187,6 +187,9 @@ func (ros *RolloutState) getVenicePendingPreCheckIssue() []string {
 		}
 	}
 	log.Infof("Rollout on pendingVenices %+v and issuedVenices %+v", pendingVenice, issuedVenices)
+	if len(pendingVenice) > 0 {
+		ros.pendingVenice = pendingVenice[0]
+	}
 	return pendingVenice
 }
 

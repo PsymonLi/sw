@@ -279,21 +279,6 @@ func (r *rolloutMgr) handleServiceRollout(ro *rolloutproto.ServiceRollout) {
 			opStatus = append(opStatus, existingStatus)
 		}
 	}
-	if r.serviceStatusWriter != nil && needtoUpdateStatus {
-		s := rolloutproto.ServiceRolloutStatusUpdate{
-			ObjectMeta: ro.ObjectMeta,
-			Status: rolloutproto.ServiceRolloutStatus{
-				OpStatus: opStatus,
-			},
-		}
-		//Wait long enough for citadel to sync-data
-		log.Infof(" Waiting long enough(4mins) for services to sync data")
-		if skipWait == false {
-			time.Sleep(serviceSyncDelaySeconds)
-		}
-		log.Infof(" Writing service rollout status :%#v ", s)
-		r.serviceStatusWriter.WriteServiceStatus(context.TODO(), &s)
-	}
 
 	log.Infof(" Cluster version Info %v", clusterVersion)
 	c, _ := gogotypes.TimestampProto(time.Now())
@@ -324,6 +309,22 @@ func (r *rolloutMgr) handleServiceRollout(ro *rolloutproto.ServiceRollout) {
 		if err != nil {
 			log.Errorf("Failed to update ClusterVersion to objectStore %+v", err)
 		}
+	}
+
+	if r.serviceStatusWriter != nil && needtoUpdateStatus {
+		s := rolloutproto.ServiceRolloutStatusUpdate{
+			ObjectMeta: ro.ObjectMeta,
+			Status: rolloutproto.ServiceRolloutStatus{
+				OpStatus: opStatus,
+			},
+		}
+		//Wait long enough for citadel to sync-data
+		log.Infof(" Waiting long enough(4mins) for services to sync data")
+		if skipWait == false {
+			time.Sleep(serviceSyncDelaySeconds)
+		}
+		log.Infof(" Writing service rollout status :%#v ", s)
+		r.serviceStatusWriter.WriteServiceStatus(context.TODO(), &s)
 	}
 }
 
