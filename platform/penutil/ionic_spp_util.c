@@ -7,8 +7,11 @@
 #ifdef DSC_SPP_CHECK_MANIFEST
 #include <libtar.h>
 #endif
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 #include <pthread.h>
+#else
+#include <Windows.h>
+#include <process.h>
 #endif
 #include <stdio.h>
 #include <stdint.h>
@@ -36,14 +39,23 @@
  * List of Naples device for firmware update and the number of
  * devices. This will include only Naples mgmt interfaces.
  */
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 struct ionic ionic_devs[IONIC_DEVS_MAX];
 int ionic_count;
+#ifdef __cplusplus
+}
+#endif
+
 /* Verbose level */
-int ionic_verbose_level;
+int ionic_verbose_level = 0;
 /* For test, allow to override the device Id. */
-uint16_t ionic_devid;
+uint16_t ionic_devid = PCI_DEVICE_ID_PENSANDO_IONIC_ETH_MGMT;
 /* Mode flag to select devcmd(0)/adminQ(non-zero) for firmware update. */
-int ionic_fw_update_type;
+int ionic_fw_update_type = 0;
 
 int
 ionic_init(FILE *fstream)
@@ -206,7 +218,7 @@ ionic_encode_fw_version(const char *fw_vers, uint32_t *major, uint32_t *minor, u
 	if (fw_vers == NULL)
 		return (EINVAL);
 
-#ifdef DSC_SPP_WIN
+#ifdef _WIN32
 	string = _strdup(fw_vers);
 #else
 	string = strdup(fw_vers);
@@ -454,7 +466,7 @@ ionic_find_version_from_tar(FILE *fstream, struct ionic *ionic, char *tar_file, 
 /*
  * Functions for penutil and GTEST
  */
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 void *
 ionic_test_flash_thread(void *arg)
 {
@@ -466,6 +478,20 @@ ionic_test_flash_thread(void *arg)
 	fprintf(stderr, "Flash update status: " PRIxWS "\n", dsc_text_for_error_code(error));
 	pthread_exit(NULL);
 }
+#else
+unsigned __stdcall ionic_test_flash_thread(void* arg)
+{
+	struct ionic* ionic = (struct ionic*)arg;
+	int error;
+	spp_char_t w_fw_file[256];
+
+	W_SNPRINTF(w_fw_file, sizeof(w_fw_file), PRIxHS, ionic->fwFile);
+	error = dsc_do_full_flash_PCI(w_fw_file, true, ionic->domain, ionic->bus, ionic->dev, ionic->func);
+	fprintf(stderr, "Flash update, SPP status: " PRIxWS "\n", dsc_text_for_error_code(error));
+
+	_endthreadex(0);
+	return 0;
+}
 #endif
 
 static int
@@ -473,33 +499,49 @@ ionic_test_flash(void)
 {
 	struct ionic *ionic;
 	int i, error = 0;
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 	pthread_t thr[IONIC_DEVS_MAX];
 #else
-	spp_char_t w_fw_file[256];
+	HANDLE thr[IONIC_DEVS_MAX];
+	unsigned int ThreadId = 0;
+	DWORD WaitStatus;
 #endif
 
 	fprintf(stderr, "Starting flash update, will take few mins\n");
 	for (i = 0; i < ionic_count; i++) {
 		ionic = &ionic_devs[i];
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 		error = pthread_create(&thr[i], NULL, ionic_test_flash_thread, ionic);
 		if (error) {
 			perror("pthread_create");
 			return (error);
 		}
 #else
-		W_SNPRINTF(w_fw_file, sizeof(w_fw_file), PRIxHS, ionic->fwFile);
-		error = dsc_do_full_flash_PCI(w_fw_file, true, ionic->domain, ionic->bus, ionic->dev, ionic->func);
-		fprintf(stderr, "Flash update, SPP status: " PRIxWS "\n", dsc_text_for_error_code(error));
+		thr[i] = (HANDLE)_beginthreadex(NULL, 0, &ionic_test_flash_thread, ionic, 0, &ThreadId);
+		if (0 == thr[i]) {
+			error = GetLastError();
+			fprintf(stderr, "Failed to create flash thread. Err: %u\n", error);
+			break;
+		}
 #endif
 	}
 
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 	for (i = 0; i < ionic_count; i++) {
 		error = pthread_join(thr[i], NULL);
 		if (error)
 			perror("pthread_join");
+	}
+#else
+	WaitStatus = WaitForMultipleObjects(ionic_count, thr[i], TRUE, INFINITE);
+	if (WAIT_OBJECT_0 == WaitStatus) {
+		for (i = 0; i < ionic_count; i++) {
+			CloseHandle(thr[i]);
+		}
+	}
+	else {
+		error = GetLastError();
+		fprintf(stderr, "Failed to wait for flash thread. Err: %u\n", error);
 	}
 #endif
 

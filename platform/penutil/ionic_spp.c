@@ -9,11 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string.h>
-#ifndef DSC_SPP_WIN
 #include <time.h>
+#ifndef _WIN32
 #include <sys/time.h>
-#else
-# include <windows.h>
 #endif
 
 #include <libxml/parser.h>
@@ -34,6 +32,9 @@ static char dsc_log_file[HPE_SPP_PATH_MAX_LEN];
  * Convert SPP error code to error string.
  */
 spp_char_t *
+#ifdef _WIN32
+__stdcall
+#endif
 dsc_text_for_error_code(uint32_t err_code)
 {
 
@@ -76,24 +77,18 @@ dsc_text_for_error_code(uint32_t err_code)
 }
 
 int
+#ifdef _WIN32
+__stdcall
+#endif
 dsc_get_debug_info(spp_char_t *log_file)
 {
 	FILE *fstream;
 	char buffer[256];
 	int error;
-#ifndef DSC_SPP_WIN
 	time_t t;
-#else
-	SYSTEMTIME lt = { 0 };
-#endif
 
-#ifndef DSC_SPP_WIN
 	t = time(NULL);
 	strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtime(&t));
-#else
-	GetLocalTime(&lt);
-	snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d", lt.wYear, lt.wMonth, lt.wDay, lt.wHour, lt.wMinute, lt.wSecond);
-#endif
 
 	snprintf(dsc_log_file, sizeof(dsc_log_file), PRIxWS, log_file);
 	fstream = fopen(dsc_log_file, "a");
@@ -121,6 +116,9 @@ dsc_get_debug_info(spp_char_t *log_file)
  * Return: 0,1,3,4,6,8-11
  */
 int
+#ifdef _WIN32
+__stdcall
+#endif
 dsc_get_adapter_info(ven_adapter_info *ionic_info, int *count, spp_char_t *firmware_file_path)
 {
 	struct ionic *ionic;
@@ -175,6 +173,9 @@ err_out:
 }
 
 int
+#ifdef _WIN32
+__stdcall
+#endif
 dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uint8_t  bus, uint8_t dev,
 	uint8_t func)
 {
@@ -183,8 +184,10 @@ dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uin
 	int i, error, secs;
 	char fw_file[256];
 	char *intfName, *sugg;
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 	struct timeval start, end;
+#else
+	clock_t start, end;
 #endif
 
 	fstream = fopen(dsc_log_file, "a");
@@ -222,16 +225,19 @@ dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uin
 				error = HPE_SPP_FW_VER_SAME;
 				continue;
 			}
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 			gettimeofday(&start, NULL);
+#else
+			start = clock();
 #endif
 			error = ionic_flash_firmware(fstream, ionic, fw_file);
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 			gettimeofday(&end, NULL);
 
 			secs = end.tv_sec - start.tv_sec;
 #else
-			secs = 0; //XXX
+			end = clock();
+			secs = (end-start)/CLOCKS_PER_SEC;
 #endif
 			if (error) {
 				ionic_print_error(fstream, intfName, "Firmware update failed after: %d"
@@ -260,6 +266,9 @@ err_out:
  * Return HPE_SPP_FW_VER_LATEST(3) as suggested by HPE team
  */
 int
+#ifdef _WIN32
+__stdcall
+#endif
 dsc_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType fwType,
 	uint16_t domain, uint8_t bus, uint8_t dev, uint8_t func)
 {
@@ -289,6 +298,9 @@ dsc_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType fwType,
  * Main function to create discovery xml file.
  */
 int
+#ifdef _WIN32
+__stdcall
+#endif
 dsc_do_discovery_with_files(spp_char_t *discovery_file, spp_char_t *firmware_file_path)
 {
 	xmlDocPtr doc;
@@ -382,6 +394,9 @@ err_out:
  * HPE SPP API call for flash update.
  */
 int
+#ifdef _WIN32
+__stdcall
+#endif
 dsc_do_flash_with_file(spp_char_t *discovery_file, spp_char_t *firmware_file_path)
 {
 	FILE *fstream;

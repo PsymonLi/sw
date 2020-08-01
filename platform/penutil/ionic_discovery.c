@@ -9,11 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string.h>
-#ifndef DSC_SPP_WIN
 #include <time.h>
+#ifndef _WIN32
 #include <sys/time.h>
-#else
-# include <windows.h>
 #endif
 
 #include <libxml/parser.h>

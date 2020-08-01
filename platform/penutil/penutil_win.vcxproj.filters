@@ -15,19 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ionic_spp_util.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ionic_win.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="penutil.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ionic_spp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ionic_discovery.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,11 +29,5 @@
     <ClInclude Include="ionic_spp_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ionic_discovery.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
 </Project>

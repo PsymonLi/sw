@@ -29,7 +29,7 @@ int ionic_find_version_from_tar(FILE *fstream, char *tar_file, const char *find_
 
 int ionic_test_discovery(const char *log_file, const char *fw_path, const char *discovery_file);
 int ionic_test_update(const char *log_file, const char *fw_path, const char *discovery_file, bool test_multi);
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 void * ionic_test_flash_thread(void *arg);
 #endif
 #ifdef __cplusplus

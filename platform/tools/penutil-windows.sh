@@ -13,10 +13,13 @@ TOP=$(readlink -f "$(dirname "$0")/../..")
 # Sources for generation
 : ${TEMP_BUILDDIR:="penutil-$(uuidgen)"}
 : ${DRIVERS_SRC:="$TOP/platform/penutil"}
-: ${REMOTE_DRIVERS_SRC:="C:/Builds/$TEMP_BUILDDIR"}
+: ${COMMONINC_SRC:="$TOP/platform/drivers/windows/CommonInc"}
+: ${REMOTE_DRIVERS_SRC:="C:/Builds/$TEMP_BUILDDIR/platform"}
 : ${REMOTE_DRIVERS_SRCSTR:="\"$REMOTE_DRIVERS_SRC"\"}
-: ${REMOTE_DRIVERS_BUILDSCRIPT:="$REMOTE_DRIVERS_SRC/BuildScript/PenCtlBuild.ps1"}
-: ${REMOTE_DRIVERS_SOLUTION:="$REMOTE_DRIVERS_SRC/penutil_win.sln"}
+: ${REMOTE_COMMONINC_SRC:="C:/Builds/$TEMP_BUILDDIR/platform/drivers/windows"}
+: ${REMOTE_COMMONINC_SRCSTR:="\"$REMOTE_COMMONINC_SRC"\"}
+: ${REMOTE_DRIVERS_BUILDSCRIPT:="$REMOTE_DRIVERS_SRC/penutil/PenUtilBuild.ps1"}
+: ${REMOTE_DRIVERS_SOLUTION:="$REMOTE_DRIVERS_SRC/penutil/penutil_win.sln"}
 : ${REMOTE_DRIVERS_SOLSTR:="\"$REMOTE_DRIVERS_SOLUTION"\"}
 : ${BUILD_VM_NAME:="192.168.66.35"}
 : ${BUILD_VM_USER:="Administrator"}
@@ -25,12 +28,8 @@ TOP=$(readlink -f "$(dirname "$0")/../..")
 # Products generated
 : ${GEN_DIR:="$TOP/platform/gen/penutil-windows"}
 : ${GEN_PKG:="$GEN_DIR.zip"}
-: ${GEN_CERT_VER:="1.12.0.214-E.11"}
-: ${GEN_PKG_CERT:="$GEN_DIR-cert.zip"}
-: ${GEN_PKG_CERT_INST:="$GEN_DIR-cert-installer.zip"}
-: ${GEN_PKG_UNSIGNED:="$TOP/platform/gen/penutil-windows-unsigned.zip"}
-: ${GEN_REMOTE_ARTIFACTS:="$REMOTE_DRIVERS_SRC/Pensando Solution/ArtifactsZipped"}
-: ${GEN_REMOTE_BUILDLOGS:="$REMOTE_DRIVERS_SRC/Pensando Solution/BuildLogs"}
+: ${GEN_REMOTE_ARTIFACTS:="$REMOTE_DRIVERS_SRC/penutil/ArtifactsZipped"}
+: ${GEN_REMOTE_BUILDLOGS:="$REMOTE_DRIVERS_SRC/penutil/BuildLogs"}
 : ${GEN_REMOTE_ARTIFACTS_STR:="\"$GEN_REMOTE_ARTIFACTS"\"}
 : ${GEN_REMOTE_BUILDLOGS_STR:="\"$GEN_REMOTE_BUILDLOGS"\"}
 
@@ -51,7 +50,10 @@ fi
 sshpass -p $BUILD_VM_PW ssh -o StrictHostKeyChecking=no "$BUILD_VM_USER"@"$BUILD_VM_NAME" "rmdir " "$REMOTE_DRIVERS_SRCSTR" "/s /q"
 
 # Copy source code to the remote build source folder.
+sshpass -p $BUILD_VM_PW ssh -o StrictHostKeyChecking=no "$BUILD_VM_USER"@"$BUILD_VM_NAME" "mkdir " "$REMOTE_DRIVERS_SRCSTR" 
 sshpass -p $BUILD_VM_PW scp -o StrictHostKeyChecking=no -pr "$DRIVERS_SRC" "$BUILD_VM_USER"@"$BUILD_VM_NAME":"$REMOTE_DRIVERS_SRC"
+sshpass -p $BUILD_VM_PW ssh -o StrictHostKeyChecking=no "$BUILD_VM_USER"@"$BUILD_VM_NAME" "mkdir " "$REMOTE_COMMONINC_SRCSTR" 
+sshpass -p $BUILD_VM_PW scp -o StrictHostKeyChecking=no -pr "$COMMONINC_SRC" "$BUILD_VM_USER"@"$BUILD_VM_NAME":"$REMOTE_COMMONINC_SRC"
 
 # Start remote Build script
 if [ -z "$VER" ] ; then

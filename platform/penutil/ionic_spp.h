@@ -7,7 +7,7 @@
 #define IONIC_SPP_H
 
 /* SPP build OS for discovery file. */
-#ifdef DSC_SPP_WIN
+#ifdef _WIN32
 #define SPP_BUILD_OS "Windows"
 #elif __linux__
 #define SPP_BUILD_OS "Linux"
@@ -26,7 +26,7 @@
 #define IONIC_SPP_FW_TYPE	"nvm"
 #define IONIC_SPP_FW_TYPE_FILE	"nvmFile"
 
-#ifdef DSC_SPP_WIN
+#ifdef _WIN32
 typedef wchar_t	spp_char_t;
 
 /* Add "L" for wide string */
@@ -143,15 +143,49 @@ nvm
 #ifdef __cplusplus
 extern "C" {
 #endif
-int dsc_do_discovery_with_files(spp_char_t *discover_file_xml, spp_char_t *firmware_file_path);
-int dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain,
-uint8_t  bus, uint8_t dev, uint8_t func);
-int dsc_do_flash_with_file(spp_char_t *dsicover_file_xml, spp_char_t *firmware_file_path);
-int dsc_get_adapter_info(ven_adapter_info *adp, int *nEntries, spp_char_t *fimware_file_path);
-spp_char_t *dsc_text_for_error_code(uint32_t erro_code);
-int dsc_get_debug_info(spp_char_t *log_file);
-int dsc_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType firmware_type,
-uint16_t domain, uint8_t bus, uint8_t dev, uint8_t func);
+
+int 
+#ifdef _WIN32
+__stdcall
+#endif
+dsc_do_discovery_with_files(spp_char_t *discover_file_xml, spp_char_t *firmware_file_path);
+
+int 
+#ifdef _WIN32
+__stdcall
+#endif
+dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain,uint8_t  bus, uint8_t dev, uint8_t func);
+
+int 
+#ifdef _WIN32
+__stdcall
+#endif
+dsc_do_flash_with_file(spp_char_t *dsicover_file_xml, spp_char_t *firmware_file_path);
+
+int 
+#ifdef _WIN32
+__stdcall
+#endif
+dsc_get_adapter_info(ven_adapter_info *adp, int *nEntries, spp_char_t *fimware_file_path);
+
+spp_char_t *
+#ifdef _WIN32
+__stdcall
+#endif
+dsc_text_for_error_code(uint32_t erro_code);
+
+int 
+#ifdef _WIN32
+__stdcall
+#endif
+dsc_get_debug_info(spp_char_t *log_file);
+
+int 
+#ifdef _WIN32
+__stdcall
+#endif
+dsc_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType firmware_type,uint16_t domain, uint8_t bus, uint8_t dev, uint8_t func);
+
 #ifdef __cplusplus
 }
 #endif

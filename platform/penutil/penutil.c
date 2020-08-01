@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 #include <getopt.h>
 #include <pthread.h>
 #endif
@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 #include "ionic_spp.h"
@@ -24,8 +24,8 @@ static void
 print_usage (char **argv)
 {
 
-#ifdef DSC_SPP_WIN
-	fprintf(stdout, "Usage : %s <update/discovery> <Firmware image directory> <log file> <Discovery file> [<fw type - devcmd(0)/adminQ(1)>] \n",
+#ifdef _WIN32
+	fprintf(stdout, "Usage : %s <update/discovery> <Firmware image directory> <log file> <Discovery file> <Update Type> <DevId> <Verbose>\n",
 		argv[0]);
 #else
 	fprintf(stdout, "Usage : %s\n"
@@ -42,7 +42,7 @@ main (int argc,  char **argv)
 {
 	char *log_file = NULL, *path_of_fw = NULL, *discovery_file = NULL;
 	bool update = false, test_multi = false;
-#ifndef DSC_SPP_WIN
+#ifndef _WIN32
 	int error;
 	struct option longopts[] = {
 		{ "discovery_file", 	required_argument, 	NULL, 'd'},
@@ -129,10 +129,17 @@ main (int argc,  char **argv)
 	path_of_fw = argv[2];
 	log_file = argv[3];
 	discovery_file = argv[4];
-	if (argv[5])
+	if (argv[5]) {
 		ionic_fw_update_type = strtoul(argv[5], NULL, 0);
-	if (argv[6])
-		ionic_devid = (uint16_t)strtoul(argv[6], NULL, 0);
+	}
+	if (argv[6]) {
+		ionic_devid = strtoul(argv[6], NULL, 0);
+	}
+	if (argv[7]) {
+		ionic_verbose_level = strtoul(argv[6], NULL, 0);
+	}
+	//why test_multi?
+	test_multi = true;
 #endif
 
 	if (log_file == NULL || discovery_file == NULL || path_of_fw == NULL) {

@@ -31,7 +31,7 @@
  */
 #define NAPLES_FW_UPDATE_MAX_TIME_SECS		"1800"
 
-#ifdef DSC_SPP_WIN
+#ifdef _WIN32
 #define ionic_print_debug(fs, intf, fmt, ...)  do {				\
 		if (ionic_verbose_level)					\
 			fprintf(fs, "DEBUG[%s:%d](%s)" fmt,			\
@@ -122,12 +122,19 @@ struct ionic {
 #endif
 };
 
-
+#if defined (_USRDLL) || ! defined (_WIN32) 
 extern struct ionic ionic_devs[];
 extern int ionic_count;
 extern uint16_t ionic_devid;
 extern int ionic_verbose_level;
 extern int ionic_fw_update_type;
+#else
+__declspec(dllimport) struct ionic ionic_devs[];
+__declspec(dllimport) int ionic_count;
+__declspec(dllimport) uint16_t ionic_devid;
+__declspec(dllimport) int ionic_verbose_level;
+__declspec(dllimport) int ionic_fw_update_type;
+#endif
 
 /*
  * DSC OS 3 APIs.
