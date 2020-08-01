@@ -1,22 +1,33 @@
 
 from ctypes import *
+import _ctypes
 from pprint import pformat
 import os.path
+from enum import Enum
+from collections import defaultdict
+from common import get_bits, get_bit
 
-def libcapisa_so_load():
+###################
+##### MPU Trace 
+###################
+
+def libelbisa_so_load():
     # so_container path will be used if customers run captrace in a container
-    so_container_path = "/sw/nic/sdk/third-party/asic/captrace/x86_64/libcapisa.so"
-    so_rel_path = "/../../third-party/asic/captrace/x86_64/libcapisa.so"
-    if os.path.exists(so_container_path):
-        libcapisa = cdll.LoadLibrary(so_container_path)
+    so_container_path_elb = "/sw/nic/sdk/third-party/asic/ip/verif/pensim/gen/x86_64/lib/libcelbisa.so"
+    so_rel_path_elb = "/../../third-party/asic/ip/verif/pensim/gen/x86_64/lib/libcelbisa.so"
+
+    if os.path.exists(so_container_path_elb):
+        libelbisa = cdll.LoadLibrary(so_container_path_elb)
     else:
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        so_path = dir_path + so_rel_path
-        libcapisa = cdll.LoadLibrary(so_path)
-    return libcapisa
+        so_path_elb = dir_path + so_rel_path_elb
+        libelbisa = cdll.LoadLibrary(so_path_elb)
 
-libcapisa = libcapisa_so_load()
-libcapisa.c_libcapisa_init()
+    return libelbisa
+
+libelbisa = libelbisa_so_load()
+
+libelbisa.c_libelbisa_init()
 
 def to_dict(obj):
     if isinstance(obj, Array):
@@ -41,31 +52,30 @@ class MpuTraceHeader(BigEndianStructure):
         ("stg", c_uint64, 5),       # sge = 0-5, sgi = 6-11, txdma = 16-23, rxdma = 23-31
         ("mpu", c_uint64, 2),
 
-        ("__pad1", c_uint64, 16),
-        ("phv_timestamp_capture", c_uint64, 32),
-        ("__pad2", c_uint64, 2),
+        ("phv_timestamp_capture", c_uint64, 48),
+        ("__pad1", c_uint64, 2),
         ("pkt_size", c_uint64, 14),
 
         ("mpu_processing_table_addr", c_uint64),
 
-        ("__pad3", c_uint64, 1),
-        ("entry_pc", c_uint64, 28),
-        ("__pad4", c_uint64, 3),
+        ("__pad2", c_uint64, 1),
+        ("entry_pc", c_uint64, 31),
         ("hash", c_uint64, 32),
 
         ("mpu_processing_table_latency", c_uint64, 16),
         ("mpu_processing_table_id", c_uint64, 4),
-        ("mpu_processing_pkt_id_next", c_uint64, 8),
+
+        ("sdp_pkt_id", c_uint64, 8),
         ("ring_nonempty", c_uint64, 8),
         ("table_hit", c_uint64, 1),
         ("table_error", c_uint64, 1),
         ("phv_error", c_uint64, 1),
-        ("__pad5", c_uint64, 9),
-        ("__pad6", c_uint64, 16),
+        ("__pad3", c_uint64, 9),
+        ("__pad4", c_uint64, 16),
 
-        ("__pad7", c_uint64),
+        ("__pad5", c_uint64),
 
-        ("__pad8", c_uint64),
+        ("__pad6", c_uint64),
 
         ("trace_debug_generation", c_uint64, 1),
         ("trace_table_and_key", c_uint64, 1),
@@ -85,46 +95,76 @@ class MpuTraceKD(BigEndianStructure):
 class MpuTraceInstructionEntry(BigEndianStructure):
     _pack_ = 1
     _fields_ = [
-        ("table_valid_bytes_next", c_uint64),
-
+        ("end_DS", c_uint64, 1),
+        ("predicate", c_uint64, 1),
+        ("pc", c_uint64, 34),
+        ("C", c_uint64, 7),
+        ("c_result", c_uint64, 1),
+        ("__pad0", c_uint64, 3),
+        ("dual_issue", c_uint64, 1),
         ("inst_count", c_uint64, 16),
-        ("mpu_processing_pkt_id_next", c_uint64, 8),
-        ("ex_c_vector", c_uint64, 7),
-        ("final_id", c_uint64, 1),
-        ("ex_predicate", c_uint64, 1),
-        ("ex_pc", c_uint64, 31),
+        ("rsrcB", c_uint64),
+        ("alu_result", c_uint64),
+        ("opcode", c_uint64),
 
-        ("ex_inst", c_uint64),
-        ("alu_src1", c_uint64),
-        ("alu_src2", c_uint64),
-        ("alu_src3", c_uint64),
-        ("debug_rdst", c_uint64),
+        ("tsrc_src2b", c_uint64),
+        ("src1b", c_uint64),
 
+        ("__pad1", c_uint64, 48),
+        ("__pad2", c_uint64, 13),
+        ("inst_sel", c_uint64, 2),
+        ("exception_level", c_uint64, 1),
         ("trace_debug_generation", c_uint64, 1),
-        ("__pad0", c_uint64, 15),
+        ("__pad3", c_uint64, 7),
+        ("sdp_pkt_id", c_uint64, 8),
         ("timestamp", c_uint64, 48)
     ]
 
+class PIPELINE(Enum):
+    SXDMA_XG  = 4
+    TXDMA_PCT = 3
+    RXDMA_PCR = 2
+    PGEG_SGE  = 1
+    PGIG_SGI  = 0
 
 class TraceFileHeader(LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
-        ("pipeline_type", c_uint8),
-        ("stage_id", c_uint32),
-        ("mpu", c_uint32),
+        ("pipeline_num", c_uint8),
+        ("stage_num", c_uint32),
+        ("mpu_num", c_uint32),
         ("enable", c_uint8),
         ("trace_enable", c_uint8),
         ("phv_debug", c_uint8),
         ("phv_error", c_uint8),
-        ("watch_pc", c_uint64),
         ("trace_addr", c_uint64),
         ("table_key", c_uint8),
         ("instructions", c_uint8),
         ("wrap", c_uint8),
         ("reset", c_uint8),
         ("trace_size", c_uint32),
-        ("__pad", c_int8 * 27)
-    ]
+        ("wpc_trace", c_uint8),
+        ("wpc_count", c_uint8),
+        ("wpc_intr", c_uint8),
+        ("wpc_stop", c_uint8),
+        ("wpc_exception", c_uint8),
+        ("wpc_addr_lo", c_uint64),
+        ("wpc_addr_hi", c_uint64),
+        ("wdata_rtrace", c_uint8),
+        ("wdata_wtrace", c_uint8),
+        ("wdata_rintr", c_uint8),
+        ("wdata_wintr", c_uint8),
+        ("wdata_rstop", c_uint8),
+        ("wdata_wstop", c_uint8),
+        ("wdata_rexception", c_uint8),
+        ("wdata_wexception", c_uint8),
+        ("wdata_addr_lo", c_uint64),
+        ("wdata_addr_hi", c_uint64),
+        ("debug_index", c_uint32),
+        ("debug_generation", c_uint8),
+        ("__pad", c_int8 * 49)
+]
+        
 
 
 def decode_mpu_trace_file(bytez):
@@ -139,6 +179,15 @@ def decode_mpu_trace_file(bytez):
         fhdr = TraceFileHeader.from_buffer_copy(bytez[s: s + sizeof(TraceFileHeader)])
         # print(ctypes_pformat(fhdr))
         s += sizeof(TraceFileHeader)
+
+        #print(sizeof(TraceFileHeader))
+        #print("\n>>> Trace config HDR : 0x{:0128x}\n".format(int.from_bytes(fhdr, byteorder='big')))
+        #for fld in (fhdr._fields_):
+        #    if not fld[0].startswith('_'):
+        #        if fld[0].startswith('pipeline'):
+        #            print("{:50} {:#x} ({})".format(fld[0], getattr(fhdr, fld[0]), PIPELINE(getattr(fhdr, fld[0])).name))
+        #        else:
+        #            print("{:50} {:#x}".format(fld[0], getattr(fhdr, fld[0])))
 
         assert(fhdr.trace_size != 0)
         # Read Trace
@@ -160,11 +209,12 @@ def decode_mpu_trace_kd(bytez):
             break
     else:
         # Empty trace
+        #print("\n Empty trace \n")
         return
 
     # print(','.join(hex(x) for x in bytez[:64]))
 
-    # print("Found magic at offset ", i)
+    #print("Found magic at offset ", i)
     from collections import deque
     bytez = deque(bytez)
     bytez.rotate(-i)
@@ -207,7 +257,7 @@ def decode_mpu_trace_kd(bytez):
                     # with the header entry.
                     if (ent.timestamp >= thdr.timestamp and
                         thdr.trace_debug_generation == ent.trace_debug_generation and
-                        thdr.mpu_processing_pkt_id_next == ent.mpu_processing_pkt_id_next):
+                        thdr.sdp_pkt_id == ent.sdp_pkt_id):
                         instructions.append(ent)
                     s += sizeof(MpuTraceInstructionEntry)
 
@@ -232,9 +282,8 @@ def decode_mpu_trace_kd(bytez):
         if s != len(bytez):
             raise ValueError("Invalid Trace!")
 
-
 def decode_instruction(pc, opcode):
-    out = libcapisa.c_libcapisa_dasm(c_uint64(pc), c_uint64(opcode))
+    out = libelbisa.c_libelb_dasm(c_uint64(pc), c_uint64(opcode))
     s = c_char_p(out).value.decode('utf-8')
-    libcapisa.c_libcapisa_freemem(out)
+    libelbisa.c_libelb_dasm_free(out)
     return s

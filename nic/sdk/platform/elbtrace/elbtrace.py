@@ -3,58 +3,80 @@
 import os
 import re
 import argparse
+from enum import Enum
 from trace import decode_mpu_trace_file, decode_instruction, MpuTraceHeader
+from dmatrace import decode_dma_trace_file
+from sdptrace import decode_sdp_trace_file
 from syms import *
 from itertools import product
 from common import get_bits, reverse_bytes
 from collections import defaultdict
 
 
-parser = argparse.ArgumentParser(prog='captrace')
+parser = argparse.ArgumentParser(prog='elbtrace')
 
 subparsers = parser.add_subparsers(dest='command')
 
 syms_parser = subparsers.add_parser('gen_syms', help='Generate symbol file for pipeline type mentioned with --pipeline')
-syms_parser.add_argument('--pipeline', help='Pipeline type - apollo, artemis, iris, apulu etc.,')
-syms_parser.add_argument('--sym_file', default='captrace.syms', help='Symbol file')
+syms_parser.add_argument('--sym_file', default='elbtrace.syms', help='Output symbol filepath')
+syms_parser.add_argument('--pipeline', help='Pipeline',
+    default='iris',
+    choices=['iris', 'apollo', 'apulu', 'artemis', 'athena', 'gft'])
+syms_parser.add_argument('--asic', help='Asic',
+    default='elba',
+    choices=['capri', 'elba'])
 
 phv_parser = subparsers.add_parser('phv', help='Parse P-vector')
 phv_parser.add_argument('program', help='Program name')
 phv_parser.add_argument('vec', type=lambda x: int(x, 16), help='P-vector')
 phv_parser.add_argument('--swizzle', action="store_true")
-phv_parser.add_argument('--sym', default='captrace.syms', help="Symbol file")
+phv_parser.add_argument('--sym', default='elbtrace.syms', help="Symbol file")
 phv_parser.add_argument('--load', default='mpu_prog_info.json', help="Loader file")
 
 key_parser = subparsers.add_parser('key', help='Parse K-vector')
 key_parser.add_argument('program', help='Program name')
 key_parser.add_argument('vec', type=lambda x: int(x, 16), help='K-vector')
-key_parser.add_argument('--sym', default='captrace.syms', help="Symbol file")
+key_parser.add_argument('--sym', default='elbtrace.syms', help="Symbol file")
 key_parser.add_argument('--load', default='mpu_prog_info.json', help="Loader file")
 
 data_parser = subparsers.add_parser('data', help='Parse D-vector')
 data_parser.add_argument('program', help='Program name')
 data_parser.add_argument('vec', type=lambda x: int(x, 16), help='D-vector')
 data_parser.add_argument('--swizzle', action="store_true")
-data_parser.add_argument('--sym', default='captrace.syms', help="Symbol file")
+data_parser.add_argument('--sym', default='elbtrace.syms', help="Symbol file")
 data_parser.add_argument('--load', default='mpu_prog_info.json', help="Loader file")
 
-file_parser = subparsers.add_parser('decode', help='Parse Trace file')
-file_parser.add_argument('file', help='Trace file path')
-file_parser.add_argument('--sym', default='captrace.syms', help="Symbol file")
-file_parser.add_argument('--load', default='mpu_prog_info.json', help="Loader file")
-file_parser.add_argument('--fltr', nargs='+', default=list(), help='Header filters')
+m_file_parser = subparsers.add_parser('decode_mpu', help='Parse MPU Trace file')
+m_file_parser.add_argument('mpu_file', help='MPU Trace file path')
+m_file_parser.add_argument('--decode_sdp', help="Parse SDP Trace file")
+m_file_parser.add_argument('--sym', default='elbtrace.syms', help="Symbol file")
+m_file_parser.add_argument('--load', default='mpu_prog_info.json', help="Loader file")
+m_file_parser.add_argument('--fltr', nargs='+', default=list(), help='Header filters')
+
+s_file_parser = subparsers.add_parser('decode_sdp', help='Parse SDP Trace file')
+s_file_parser.add_argument('sdp_file', help='SDP Trace file path')
+s_file_parser.add_argument('--sort', default="", help='Sort by fieldname')
+
+d_file_parser = subparsers.add_parser('decode_dma', help='Parse DMA Trace file')
+d_file_parser.add_argument('dma_file', help='DMA Trace file path')
+d_file_parser.add_argument('--print', default="def", help='short, all, def',
+                           choices=['short', 'all', 'def'])
+d_file_parser.add_argument('--sort', default="", help='Sort by fieldname')
 
 args = parser.parse_args()
 
+class INST_SEL(Enum):
+    ALU    = 3
+    PHVWR  = 2
+    LD_ST  = 1
+    BRANCH = 0
+
 if args.command == "gen_syms":
-    if args.pipeline is not None:
-        if args.pipeline == "apollo" or args.pipeline == "iris" or args.pipeline == "gft" or args.pipeline == "artemis" or args.pipeline == "apulu" or args.pipeline == "athena":
-            sym_dir = 'build/aarch64/%s/out/' % args.pipeline
-            create_symbol_file(sym_dir, sym_file=args.sym_file)
-        else:
-            print('Pipeline %s is incorrect. Please use iris|apollo|artemis|apulu|gft.' % args.pipeline)
+    sym_dir = 'build/aarch64/{}/{}/out/'.format(args.pipeline, args.asic)
+    if os.path.exists(sym_dir):
+        create_symbol_file(sym_dir, sym_file=args.sym_file)
     else:
-        print('Please provide a pipeline name, either iris|apollo|artemis|apulu|gft with --pipeline option')
+        raise IOError('Build directory does not exist! {}'.format(sym_dir))
 elif args.command == "phv":
     if args.sym:
         load_symbol_file(args.sym)
@@ -107,7 +129,7 @@ elif args.command == "data":
     pgm = get_program_by_name(args.program)
     for name, fld in sorted(pgm["d_struct"].items(), key=lambda f: (f[1]["end"], f[1]["name"])):
         print("{:50}\td[{:3d}:{:3d}]\t{:#x}".format(fld["name"], fld["end"], fld["start"], get_bits(dvec, fld["start"], fld["end"])))
-elif args.command == "decode":
+elif args.command == "decode_mpu":
     if args.sym:
         load_symbol_file(args.sym)
     else:
@@ -118,13 +140,44 @@ elif args.command == "decode":
     else:
         create_loader_db()
 
-    def hdr_sort_key(hdr):
-        return hdr.mpu_processing_pkt_id_next, hdr.stg, hdr.timestamp
 
-    with open(args.file, "rb") as f:
+    def print_trace(sdp_trace):
+    
+        print("printing sdp_trace")
+        for ts in sdp_trace:
+            print("timestamp is {}".format(hex(ts)))
+            print("timestamp is {}".format(ts))
+            #print(sdp_trace[ts])
+            print("individual fields")
+            for entry in sdp_trace[ts]:
+                print("entry")
+                #print(entry)
+                for key in (entry):
+                    print("{:50} {:#x}".format(key, entry[key]))
+        return
+
+
+
+    if args.decode_sdp:
+        print("decode_sdp detected")
+        sort_type=""
+        k = open(args.decode_sdp, "rb")
+        sdp_list = decode_sdp_trace_file(k.read(), sort_type, 0)
+        #print("sdp_list")
+        #print(sdp_list)
+        #print_trace(sdp_list)
+        #print(sdp_list[1918281453])
+        #print_trace(sdp_list)
+####
+    def hdr_sort_key(hdr):
+        return hdr.sdp_pkt_id, hdr.stg, hdr.timestamp
+
+
+    with open(args.mpu_file, "rb") as f:
 
         trace = defaultdict(list)
-
+        
+        j = 0x0
         # Decode and filter the trace
         for fhdr, hdr, key, data, instructions in decode_mpu_trace_file(f.read()):
 
@@ -135,6 +188,7 @@ elif args.command == "decode":
             # Save trace entry
             trace[hdr.phv_timestamp_capture].append((fhdr, hdr, key, data, instructions))
 
+
         # Print the trace
         for ts in sorted(trace):
 
@@ -142,7 +196,35 @@ elif args.command == "decode":
             print("=== PHV ===")
             print()
 
+            stg_phv = defaultdict(list)
+            #check if ts entry is available in sdp_list
+            if ts in sdp_list:
+                #print("Timestamp match found")
+                for entry in sdp_list[ts]:
+                    #print("entry")
+                    #for key in (entry):
+                        #print("{:50} {:#x}".format(key, entry[key]))
+                    #create per stage entries
+                    stg_num = entry["stage_num"]
+                    #print(stg_num)
+                    stg_phv[stg_num].append(entry["sdp_phv"])
+                    #print(entry["sdp_phv"])
+                #del sdp_list[ts]
+
             for fhdr, hdr, key, data, instructions in sorted(trace[ts], key=lambda x: hdr_sort_key(x[1])):
+                
+                if hdr.stg in stg_phv:
+                    print("=== STG PHV ===")
+                    print("Stage Num: {}".format(hdr.stg))
+                    #print(stg_phv[hdr.stg])
+                    for entry in stg_phv[hdr.stg]:
+                        for name, val in decode_phv(hdr.entry_pc << 6, entry):
+                            print("{:50} {:#x}".format(name, val))
+                        print("")
+                    #delete per-stage entries after printing to avoid printing again
+                    del stg_phv[hdr.stg]
+                #print(stg_phv)
+
 
                 # Header
                 print("\n>>> HDR : 0x{:0128x}\n".format(int.from_bytes(hdr, byteorder='big')))
@@ -158,6 +240,7 @@ elif args.command == "decode":
                 print("\n>>> PROGRAM : pc 0x{:010x} program '{:}' label '{:}'\n".format(
                     hdr.entry_pc << 6, pgm, label))
                 prev_time = hdr.timestamp
+
 
                 if key:
                     # Decode key
@@ -175,8 +258,8 @@ elif args.command == "decode":
                     end = max([x.timestamp for x in instructions])
 
                     for instr in instructions:
-                        instr_pgm = get_program(instr.ex_pc << 3)
-                        instr_label = get_label(instr.ex_pc << 3)
+                        instr_pgm = get_program(instr.pc << 3)
+                        instr_label = get_label(instr.pc << 3)
 
                         # Did the program or label change?
                         if instr_pgm != pgm or instr_label != label:
@@ -184,32 +267,32 @@ elif args.command == "decode":
                             pgm = instr_pgm
                             label = instr_label
                             print("\n>>> BRANCH : pc 0x{:010x} program '{:}' label '{:}'\n".format
-                                  (instr.ex_pc << 3, pgm["name"], label["name"]))
+                                  (instr.pc << 3, pgm["name"], label["name"]))
                             # Did the program change?
                             if pgm_changed:
                                 # Decode key
                                 print("\n>>> KEY : 0x{:0128x}\n".format(key))
-                                for name, val in decode_key(instr.ex_pc << 3, key):
+                                for name, val in decode_key(instr.pc << 3, key):
                                     print("{:50} {:#x}".format(name, val))
                                 # Decode data
                                 print("\n>>> DATA : 0x{:0128x}\n".format(data))
-                                for name, val in decode_data(instr.ex_pc << 3, data):
+                                for name, val in decode_data(instr.pc << 3, data):
                                     print("{:50} {:#x}".format(name, val))
 
                         instr_info = "[{:3d}]: {:3d}: {:+3d}: {:09x}: {:016x}  {:}".format(
                             instr.inst_count,
                             instr.timestamp - hdr.timestamp,
                             instr.timestamp - prev_time,
-                            instr.ex_pc << 3,
-                            instr.ex_inst,
-                            "X" if instr.ex_predicate == 0 else " ")
+                            instr.pc << 3,
+                            instr.opcode,
+                            "X" if instr.predicate == 0 else " ")
 
-                        instr_txt = decode_instruction(instr.ex_pc << 3, instr.ex_inst)
+                        instr_txt = decode_instruction(instr.pc << 3, instr.opcode)
                         instr_variants = {instr_txt}
 
-                        p_xfrm = get_phv_field_names(instr.ex_pc << 3, instr_txt)
-                        k_xfrm = get_key_field_names(instr.ex_pc << 3, instr_txt)
-                        d_xfrm = get_data_field_names(instr.ex_pc << 3, instr_txt)
+                        p_xfrm = get_phv_field_names(instr.pc << 3, instr_txt)
+                        k_xfrm = get_key_field_names(instr.pc << 3, instr_txt)
+                        d_xfrm = get_data_field_names(instr.pc << 3, instr_txt)
 
                         d_xfrms = product(*(d_xfrm[x] for x in d_xfrm))
                         k_xfrms = product(*(k_xfrm[x] for x in k_xfrm))
@@ -231,13 +314,55 @@ elif args.command == "decode":
                                 instr_inst,
                             ))
 
-                        print("# ALU(0x{:x}, 0x{:x}, 0x{:x}) = 0x{:x}".format(
-                            instr.alu_src1,
-                            instr.alu_src2,
-                            instr.alu_src3,
-                            instr.debug_rdst,
-                        ))
+                        print("{}:".format(INST_SEL(instr.inst_sel).name))
+                        if (INST_SEL(instr.inst_sel).name == "ALU"):
+                            print("rsrcB      \t\t alu_result \t\t tsrc_src2b \t\t src1b") 
+                        elif (INST_SEL(instr.inst_sel).name == "BRANCH"):
+                            print("rsrc       \t\t rdst       \t\t -- \t\t\t --") 
+                        elif (INST_SEL(instr.inst_sel).name == "PHVWR"):
+                            print("phvwr_data \t\t phvwr_mask \t\t -- \t\t\t --") 
+                        elif (INST_SEL(instr.inst_sel).name == "LD_ST"):
+                            print("ld_addr    \t\t ld_data    \t\t -- \t\t\t --") 
 
+                        print("0x{:<15x} \t 0x{:<15x} \t 0x{:<15x} \t 0x{:<15x}".format(
+                            instr.rsrcB,
+                            instr.alu_result,
+                            instr.tsrc_src2b,
+                            instr.src1b,
+                        ))
+                        
+                        print()
+                        print("=== MPU Instruction Header === ")
+                        for fld in (instr._fields_):
+                            if not fld[0].startswith('_'):
+                                print("{:50} {:#x}".format(fld[0], getattr(instr, fld[0])))
                         print()
 
                         prev_time = instr.timestamp
+        
+elif args.command == "decode_dma":
+
+    with open(args.dma_file, "rb") as f:
+
+        trace = defaultdict(list)
+        print_type = args.print
+        sort_type = args.sort
+
+        decode_dma_trace_file(f.read(), print_type, sort_type)
+
+        print("decode_dma done")
+
+elif args.command == "decode_sdp":
+
+    with open(args.sdp_file, "rb") as f:
+
+        trace = defaultdict(list)
+        sort_type = args.sort
+
+        sdp_list = decode_sdp_trace_file(f.read(), sort_type, 1)
+        #print_sdp(sdp_list, sort_type)
+
+        print("decode_sdp done")
+
+
+

@@ -1,15 +1,7 @@
-# ELBTRACE
-
-Usage: elbtrace  [-p <profile>] 
-                 <command> [<args>]
+# MPUTRACE
 
 elbtrace is a tool to enable tracing on each Match Processing Unit (MPU) using
 the independent trace facility provided by the ASIC.
-
--p profile 
-    This optional argument provides feature memory profile to load 
-    e.g. base, router, storage etc. In absence of this option default memory profile
-    is loaded.
 
 elbtrace supports the following operations
 config <cfg.json>
@@ -49,7 +41,7 @@ enabled for that MPU until the end of the current program is reached.
 ## Usage :
 1. Conf:
 ```
-    # elbtrace conf /tmp/elbtrace_cfg.json
+    # elbtrace conf_mpu /tmp/elbtrace_cfg.json
 ```
 
 
@@ -248,12 +240,12 @@ Following is a sample config.json file for reference -
 
 
 2. show
-    'elbtrace show'
+    'elbtrace show_mpu'
     This will show the state of each MPU with tracing enable.
 
     For eg.,
 ```
-    # elbtrace show
+    # elbtrace show_mpu
 
      pipeline      stage        mpu     enable       wrap      reset      trace  phv_debug  phv_error   watch_pc   table_kd      instr trace_addr trace_nent   trace_sz
          1          0          0          1          1          0          0          0          0 0x00000000          1          1 0x13e690000       1024      65536
@@ -264,22 +256,22 @@ Following is a sample config.json file for reference -
 ```
 
 3. reset
-    'elbtrace reset'
+    'elbtrace reset_mpu'
     This will reset the tracing registers for all MPUs.
 ```
-    # elbtrace reset
+    # elbtrace reset_mpu
 ```
 
 4. dump
-    'elbtrace dump <file path>'
+    'elbtrace dump_mpu <file path>'
     This will dump the contents from HBM (High Bandwidth Memory) into the
     specified file. The file needs to be copied out and decoded to get
     the actual instructions executed by the MPUs.
 ```
-    # elbtrace dump /tmp/elbtrace.bin
+    # elbtrace dump_mpu /tmp/mpu.bin
 
-    # ls -l /tmp/elbtrace.bin
-    -rw-r--r--    1 root     root       7347200 Jan  5 06:03 /tmp/elbtrace.bin
+    # ls -l /tmp/mpu.bin
+    -rw-r--r--    1 root     root       7347200 Jan  5 06:03 /tmp/mpu.bin
 ```
 
 ## Steps to decode the dump file in the container -
@@ -287,15 +279,15 @@ Following is a sample config.json file for reference -
         - the dump file from 'elbtrace dump' command
         - /nic/conf/gen/mpu_prog_info.json file from the naples device
     2 Generate elbtrace.syms symbol file in container (from /sw/nic dir).
-        - sdk/platform/elbtrace/elbtrace.py gen_syms --pipeline=<pipeline>
+        - sdk/platform/mputrace/elbtrace.py gen_syms --pipeline=<pipeline>
             - <pipeline> can be iris or apollo or artemis or gft
         - this will generate elbtrace.syms in nic/
     2 Run elbtrace.py script on the binary with mpu_prog_info.conf and
       elbtrace.syms files
         To decode the trace dump file
-            sdk/platform/elbtrace/elbtrace.py decode elbtrace.bin --load=mpu_prog_info.json --sym=elbtrace.syms
+            sdk/platform/elbtrace/elbtrace.py decode_mpu mpu.bin --load=mpu_prog_info.json --sym=elbtrace.syms
         To track packet with PHV timestamp “0x1c07a80c” across stages
-            sdk/platform/elbtrace/elbtrace.py decode elbtrace.bin --fltr phv_timestamp_capture=0x1c07a80c --load=mpu_prog_info.json --sym=elbtrace.syms > pkt1c07.log
+            sdk/platform/mputrace/elbtrace.py decode_mpu mpu.bin --fltr phv_timestamp_capture=0x1c07a80c --load=mpu_prog_info.json --sym=elbtrace.syms > pkt1c07.log
         To dump info about the packet
             grep -e pipeline -e stage -e PROGRAM -e BRANCH -e table_hit pkt1c07.log
 
@@ -305,6 +297,6 @@ Following is a sample config.json file for reference -
     enable the trace options provided, collect the logs, decode and filter them.
     The decoded output is collected in nic/ dir.
     Usage:
-        - sdk/platform/elbtrace/elbtrace_collect.py --mgmt <naples mgmt ip> --rxdma
+        - sdk/platform/mputrace/elbtrace_collect.py --mgmt <naples mgmt ip> --rxdma
         or
-        - sdk/platform/elbtrace/elbtrace_collect.py --host <host ip> --rxdma
+        - sdk/platform/mputrace/elbtrace_collect.py --host <host ip> --rxdma

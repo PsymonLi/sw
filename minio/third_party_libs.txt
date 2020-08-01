@@ -3,7 +3,11 @@ nic/sdk/third-party/boost/*
 nic/sdk/third-party/avago/fw/*
 nic/sdk/third-party/avago/aapl-2.6.6/build/*
 nic/sdk/third-party/avago/aapl-2.7/build/*
-nic/sdk/third-party/avago/build
+nic/sdk/third-party/avago/aapl-3.1.5/build/*
+nic/sdk/third-party/avago/aapl-3.1.6/build/*
+nic/sdk/third-party/avago/capri
+nic/sdk/third-party/avago/elba
+nic/sdk/third-party/avago/module.mk
 
 nic/hal/third-party/grpc/*
 nic/hal/third-party/google/*
