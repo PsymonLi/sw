@@ -342,8 +342,8 @@ testcases:
         args    :
             test_dir: /nic/etc/test_scripts
             test    : traffic_aging_chkpt_end.txt
-            dump_file: /data/iota_traffic_chkpt_end.log
-            dump_sym: SrcIP
-            dump_expected_count: 0
+    #        dump_file: /data/iota_traffic_chkpt_end.log
+    #        dump_sym: SrcIP
+    #        dump_expected_count: 0
             log_file: /var/log/pensando/iota_traffic_aging_chkpt_test.log
 

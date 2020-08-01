@@ -6,13 +6,6 @@
 #include "nic/p4/ftl_dev/include/ftl_dev_shared.h"
 #include "nic/sdk/asic/pd/db.hpp"
 
-#ifndef USEC_PER_SEC
-#define USEC_PER_SEC    1000000L
-#endif
-#ifndef MSEC_PER_SEC
-#define MSEC_PER_SEC    1000L
-#endif
-
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x)   (sizeof(x) / sizeof((x)[0]))
 #endif
@@ -109,6 +102,9 @@ typedef enum {
     FTL_LIF_ST_QUEUES_PRE_INIT,
     FTL_LIF_ST_QUEUES_INIT_TRANSITION,
     FTL_LIF_ST_QUEUES_STOPPING,
+    FTL_LIF_ST_SCANNERS_QUIESCE,
+    FTL_LIF_ST_TIMERS_QUIESCE,
+    FTL_LIF_ST_QUEUES_STOPPED,
     FTL_LIF_ST_QUEUES_STARTED,
     FTL_LIF_ST_MAX,
 
@@ -124,6 +120,9 @@ typedef enum {
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_ST_QUEUES_PRE_INIT),            \
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_ST_QUEUES_INIT_TRANSITION),     \
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_ST_QUEUES_STOPPING),            \
+    FTL_DEV_INDEX_STRINGIFY(FTL_LIF_ST_SCANNERS_QUIESCE),           \
+    FTL_DEV_INDEX_STRINGIFY(FTL_LIF_ST_TIMERS_QUIESCE),             \
+    FTL_DEV_INDEX_STRINGIFY(FTL_LIF_ST_QUEUES_STOPPED),             \
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_ST_QUEUES_STARTED),             \
 
 typedef enum {
@@ -140,6 +139,7 @@ typedef enum {
     FTL_LIF_EV_RESET_DESTROY,
     FTL_LIF_EV_PRE_INIT,
     FTL_LIF_EV_SCANNERS_QUIESCE,
+    FTL_LIF_EV_TIMERS_QUIESCE,
     FTL_LIF_EV_POLLERS_INIT,
     FTL_LIF_EV_SCANNERS_INIT,
     FTL_LIF_EV_SCANNERS_START,
@@ -170,6 +170,7 @@ typedef enum {
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_EV_RESET_DESTROY),              \
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_EV_PRE_INIT),                   \
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_EV_SCANNERS_QUIESCE),           \
+    FTL_DEV_INDEX_STRINGIFY(FTL_LIF_EV_TIMERS_QUIESCE),             \
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_EV_POLLERS_INIT),               \
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_EV_SCANNERS_INIT),              \
     FTL_DEV_INDEX_STRINGIFY(FTL_LIF_EV_SCANNERS_START),             \
@@ -427,7 +428,8 @@ public:
         state(FTL_LIF_ST_INITIAL),
         enter_state(FTL_LIF_ST_INITIAL),
         reset(0),
-        reset_destroy(0)
+        reset_destroy(0),
+        scanners_stopping(0)
     {
     }
 
@@ -435,7 +437,8 @@ public:
     ftl_lif_state_t         enter_state;
     ftl_timestamp_t         ts;
     uint32_t                reset               : 1,
-                            reset_destroy       : 1;
+                            reset_destroy       : 1,
+                            scanners_stopping   : 1;
 };
 
 /**
@@ -484,6 +487,9 @@ public:
     static ftl_lif_state_event_t lif_queues_pre_init_ev_table[];
     static ftl_lif_state_event_t lif_queues_init_transition_ev_table[];
     static ftl_lif_state_event_t lif_queues_stopping_ev_table[];
+    static ftl_lif_state_event_t lif_scanners_quiesce_ev_table[];
+    static ftl_lif_state_event_t lif_timers_quiesce_ev_table[];
+    static ftl_lif_state_event_t lif_queues_stopped_ev_table[];
     static ftl_lif_state_event_t lif_queues_started_ev_table[];
 
 private:
@@ -519,6 +525,8 @@ private:
                                         ftl_lif_devcmd_ctx_t& devcmd_ctx);
     ftl_lif_event_t ftl_lif_null_no_log_action(ftl_lif_event_t event,
                                                ftl_lif_devcmd_ctx_t& devcmd_ctx);
+    ftl_lif_event_t ftl_lif_same_event_action(ftl_lif_event_t event,
+                                              ftl_lif_devcmd_ctx_t& devcmd_ctx);
     ftl_lif_event_t ftl_lif_eagain_action(ftl_lif_event_t event,
                                           ftl_lif_devcmd_ctx_t& devcmd_ctx);
     ftl_lif_event_t ftl_lif_reject_action(ftl_lif_event_t event,
@@ -553,8 +561,12 @@ private:
                                                          ftl_lif_devcmd_ctx_t& devcmd_ctx);
     ftl_lif_event_t ftl_lif_scanners_stop_action(ftl_lif_event_t event,
                                                  ftl_lif_devcmd_ctx_t& devcmd_ctx);
+    ftl_lif_event_t ftl_lif_scanners_stop_complete_action(ftl_lif_event_t event,
+                                                          ftl_lif_devcmd_ctx_t& devcmd_ctx);
     ftl_lif_event_t ftl_lif_scanners_quiesce_action(ftl_lif_event_t event,
                                                     ftl_lif_devcmd_ctx_t& devcmd_ctx);
+    ftl_lif_event_t ftl_lif_timers_quiesce_action(ftl_lif_event_t event,
+                                                  ftl_lif_devcmd_ctx_t& devcmd_ctx);
     ftl_lif_event_t ftl_lif_mpu_timestamp_init_action(ftl_lif_event_t event,
                                                       ftl_lif_devcmd_ctx_t& devcmd_ctx);
     ftl_lif_event_t ftl_lif_mpu_timestamp_start_action(ftl_lif_event_t event,
@@ -576,6 +588,7 @@ private:
     void force_conntrack_expired_ts_set(uint8_t force_expired_ts);
     uint8_t force_session_expired_ts_get(void);
     uint8_t force_conntrack_expired_ts_get(void);
+    uint64_t timers_quiesce_time_us(void);
 
     const mem_access_t& normal_age_access(void) { return normal_age_access_; }
     const mem_access_t& accel_age_access(void) { return accel_age_access_; }

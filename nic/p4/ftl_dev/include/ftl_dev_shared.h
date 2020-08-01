@@ -3,6 +3,16 @@
 
 #include "nic/hal/pd/pd.hpp"
 
+#ifndef USEC_PER_SEC
+#define USEC_PER_SEC    1000000L
+#endif
+#ifndef USEC_PER_MSEC
+#define USEC_PER_MSEC   1000L
+#endif
+#ifndef MSEC_PER_SEC
+#define MSEC_PER_SEC    1000L
+#endif
+
 /*
  * HBM regions
  */
@@ -196,6 +206,7 @@
 
 #define SCANNER_POLLER_QFULL_REPOST_TIMER       ASIC_MEM_FAST_TIMER_START
 #define SCANNER_POLLER_QFULL_REPOST_TICKS       100  // 100 x 1.2us
+#define SCANNER_POLLER_QFULL_REPOST_US          120
 
 /*
  * scanner reschedule time upon range_full but when no non-empty expiry maps
@@ -204,7 +215,9 @@
  * 0.5 sec or less.
  */
 #define SCANNER_RANGE_EMPTY_RESCHED_TIMER       ASIC_MEM_SLOW_TIMER_START
-#define SCANNER_RANGE_EMPTY_RESCHED_TICKS       50   // 50 x 1.2ms
+#define SCANNER_RANGE_EMPTY_RESCHED_TICKS       30   // 30 x 1.2ms
+#define SCANNER_RANGE_EMPTY_RESCHED_MS          36
+#define SCANNER_RANGE_EMPTY_RESCHED_US          (SCANNER_RANGE_EMPTY_RESCHED_MS * USEC_PER_MSEC)
 
 /*
  * Timestamp is in clock ticks with clock speed of 833Mhz (Capri), or

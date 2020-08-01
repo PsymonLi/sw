@@ -1243,7 +1243,7 @@ devcmd_t::submit_with_retry(void *req_data,
         if ((ret != PDS_RET_RETRY) || ts.time_expiry_check()) {
             break;
         }
-        usleep(10000);
+        usleep(1000);
     }
 
     if (!pre_locked && spinlock_leave) {

@@ -23,9 +23,14 @@
 #include "pd_client.hpp"
 
 /*
- * Amount of time to wait for scanner queues to be quiesced
+ * Max amount of time to wait for scanner queues to be quiesced.
+ * Queues are monitored and should always complete quiescing
+ * in much less time.
+ *
+ * Note: timers quiesce time is excluded here as it is handled from
+ * a separate FSM action, where the max wait time will be computed.
  */
-#define FTL_LIF_SCANNERS_QUIESCE_TIME_US            (5 * USEC_PER_SEC)
+#define FTL_LIF_SCANNERS_QUIESCE_TIME_US            (50 * USEC_PER_MSEC)
 
 static uint64_t                 hw_coreclk_freq;
 static double                   hw_ns_per_tick;
@@ -220,11 +225,11 @@ ftl_lif_state_event_t           FtlLif::lif_queues_reset_ev_table[] = {
     {
         FTL_LIF_EV_SCANNERS_QUIESCE,
         &FtlLif::ftl_lif_scanners_quiesce_action,
-        FTL_LIF_ST_SAME,
+        FTL_LIF_ST_SCANNERS_QUIESCE,
     },
     {
         FTL_LIF_EV_QUEUES_STOP_COMPLETE,
-        &FtlLif::ftl_lif_null_action,
+        &FtlLif::ftl_lif_scanners_stop_complete_action,
         FTL_LIF_ST_QUEUES_PRE_INIT,
     },
     {
@@ -408,17 +413,17 @@ ftl_lif_state_event_t           FtlLif::lif_queues_stopping_ev_table[] = {
     {
         FTL_LIF_EV_SCANNERS_STOP,
         &FtlLif::ftl_lif_scanners_quiesce_action,
-        FTL_LIF_ST_SAME,
+        FTL_LIF_ST_SCANNERS_QUIESCE,
     },
     {
         FTL_LIF_EV_SCANNERS_QUIESCE,
         &FtlLif::ftl_lif_scanners_quiesce_action,
-        FTL_LIF_ST_SAME,
+        FTL_LIF_ST_SCANNERS_QUIESCE,
     },
     {
         FTL_LIF_EV_QUEUES_STOP_COMPLETE,
-        &FtlLif::ftl_lif_null_action,
-        FTL_LIF_ST_QUEUES_INIT_TRANSITION,
+        &FtlLif::ftl_lif_scanners_stop_complete_action,
+        FTL_LIF_ST_QUEUES_STOPPED,
     },
     {
         FTL_LIF_EV_SCANNERS_START_SINGLE,
@@ -447,6 +452,186 @@ ftl_lif_state_event_t           FtlLif::lif_queues_stopping_ev_table[] = {
     },
     {
         FTL_LIF_EV_NULL
+    },
+};
+
+ftl_lif_state_event_t           FtlLif::lif_scanners_quiesce_ev_table[] = {
+    {
+        FTL_LIF_EV_ANY,
+        &FtlLif::ftl_lif_reject_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_RESET,
+        &FtlLif::ftl_lif_null_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_RESET_DESTROY,
+        &FtlLif::ftl_lif_null_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_DESTROY,
+        &FtlLif::ftl_lif_null_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_SETATTR,
+        &FtlLif::ftl_lif_setattr_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_GETATTR,
+        &FtlLif::ftl_lif_getattr_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_ACCEL_AGING_CONTROL,
+        &FtlLif::ftl_lif_accel_aging_ctl_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_SCANNERS_STOP,
+        &FtlLif::ftl_lif_scanners_quiesce_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_TIMERS_QUIESCE,
+        &FtlLif::ftl_lif_timers_quiesce_action,
+        FTL_LIF_ST_TIMERS_QUIESCE,
+    },
+    {
+        FTL_LIF_EV_QUEUES_STOP_COMPLETE,
+        &FtlLif::ftl_lif_scanners_stop_complete_action,
+        FTL_LIF_ST_QUEUES_STOPPED,
+    },
+    {
+        FTL_LIF_EV_SCANNERS_START_SINGLE,
+        &FtlLif::ftl_lif_null_no_log_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_MPU_TIMESTAMP_START,
+        &FtlLif::ftl_lif_mpu_timestamp_start_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_MPU_TIMESTAMP_STOP,
+        &FtlLif::ftl_lif_mpu_timestamp_stop_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_POLLERS_DEQ_BURST,
+        &FtlLif::ftl_lif_pollers_deq_burst_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_POLLERS_FLUSH,
+        &FtlLif::ftl_lif_pollers_flush_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_NULL
+    },
+};
+
+ftl_lif_state_event_t           FtlLif::lif_timers_quiesce_ev_table[] = {
+    {
+        FTL_LIF_EV_ANY,
+        &FtlLif::ftl_lif_reject_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_RESET,
+        &FtlLif::ftl_lif_null_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_RESET_DESTROY,
+        &FtlLif::ftl_lif_null_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_DESTROY,
+        &FtlLif::ftl_lif_null_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_SETATTR,
+        &FtlLif::ftl_lif_setattr_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_GETATTR,
+        &FtlLif::ftl_lif_getattr_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_ACCEL_AGING_CONTROL,
+        &FtlLif::ftl_lif_accel_aging_ctl_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_SCANNERS_STOP,
+        &FtlLif::ftl_lif_timers_quiesce_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_QUEUES_STOP_COMPLETE,
+        &FtlLif::ftl_lif_scanners_stop_complete_action,
+        FTL_LIF_ST_QUEUES_STOPPED,
+    },
+    {
+        FTL_LIF_EV_SCANNERS_START_SINGLE,
+        &FtlLif::ftl_lif_null_no_log_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_MPU_TIMESTAMP_START,
+        &FtlLif::ftl_lif_mpu_timestamp_start_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_MPU_TIMESTAMP_STOP,
+        &FtlLif::ftl_lif_mpu_timestamp_stop_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_POLLERS_DEQ_BURST,
+        &FtlLif::ftl_lif_pollers_deq_burst_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_POLLERS_FLUSH,
+        &FtlLif::ftl_lif_pollers_flush_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_NULL
+    },
+};
+
+ftl_lif_state_event_t           FtlLif::lif_queues_stopped_ev_table[] = {
+    {
+        FTL_LIF_EV_ANY,
+        &FtlLif::ftl_lif_same_event_action,
+        FTL_LIF_ST_QUEUES_INIT_TRANSITION,
+    },
+    {
+        FTL_LIF_EV_RESET,
+        &FtlLif::ftl_lif_null_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_RESET_DESTROY,
+        &FtlLif::ftl_lif_null_action,
+        FTL_LIF_ST_SAME,
+    },
+    {
+        FTL_LIF_EV_DESTROY,
+        &FtlLif::ftl_lif_destroy_action,
+        FTL_LIF_ST_SAME,
     },
 };
 
@@ -535,6 +720,9 @@ static ftl_lif_state_event_t  *lif_fsm_table[FTL_LIF_ST_MAX] = {
     [FTL_LIF_ST_QUEUES_PRE_INIT]        = FtlLif::lif_queues_pre_init_ev_table,
     [FTL_LIF_ST_QUEUES_INIT_TRANSITION] = FtlLif::lif_queues_init_transition_ev_table,
     [FTL_LIF_ST_QUEUES_STOPPING]        = FtlLif::lif_queues_stopping_ev_table,
+    [FTL_LIF_ST_SCANNERS_QUIESCE]       = FtlLif::lif_scanners_quiesce_ev_table,
+    [FTL_LIF_ST_TIMERS_QUIESCE]         = FtlLif::lif_timers_quiesce_ev_table,
+    [FTL_LIF_ST_QUEUES_STOPPED]         = FtlLif::lif_queues_stopped_ev_table,
     [FTL_LIF_ST_QUEUES_STARTED]         = FtlLif::lif_queues_started_ev_table,
 };
 
@@ -729,11 +917,28 @@ FtlLif::CmdHandler(ftl_devcmd_t *req,
         ftl_lif_state_machine(FTL_LIF_EV_ACCEL_AGING_CONTROL, devcmd_ctx);
         break;
 
+    case FTL_DEVCMD_OPCODE_LIF_RESET:
+    case FTL_DEVCMD_OPCODE_SCANNERS_STOP:
+
+        if (fsm_ctx.reset || fsm_ctx.scanners_stopping) {
+
+            /*
+             * Part of a series of retryable commands for which the initial
+             * command has already been logged.
+             */
+            goto opcode_map;
+        }
+
+        /*
+         * Fall through!!!
+         */
+
     default:
         NIC_LOG_DEBUG("{}: Handling cmd: {}", LifNameGet(),
                       ftl_dev_opcode_str(req->cmd.opcode));
         log_cpl = true;
 
+    opcode_map:
         auto iter = opcode2event_map.find(req->cmd.opcode);
         if (iter != opcode2event_map.end()) {
             event = iter->second;
@@ -786,6 +991,14 @@ FtlLif::ftl_lif_null_no_log_action(ftl_lif_event_t event,
 {
     devcmd_ctx.status = FTL_RC_SUCCESS;
     return FTL_LIF_EV_NULL;
+}
+
+ftl_lif_event_t
+FtlLif::ftl_lif_same_event_action(ftl_lif_event_t event,
+                                  ftl_lif_devcmd_ctx_t& devcmd_ctx)
+{
+    devcmd_ctx.status = FTL_RC_SUCCESS;
+    return event;
 }
 
 ftl_lif_event_t
@@ -1081,6 +1294,7 @@ FtlLif::ftl_lif_init_action(ftl_lif_event_t event,
 
     fsm_ctx.reset = false;
     fsm_ctx.reset_destroy = false;
+    fsm_ctx.scanners_stopping = false;
 
     if (sdk::asic::asic_is_hard_init()) {
         FTL_LIF_DEVAPI_CHECK(FTL_RC_ERROR, FTL_LIF_EV_NULL);
@@ -1241,6 +1455,7 @@ FtlLif::ftl_lif_scanners_stop_action(ftl_lif_event_t event,
     ftl_status_code_t           conntrack_status;
 
     FTL_LIF_FSM_LOG();
+    fsm_ctx.scanners_stopping = true;
     session_status = session_scanners_ctl.stop();
     conntrack_status = conntrack_scanners_ctl.stop();
 
@@ -1254,8 +1469,17 @@ FtlLif::ftl_lif_scanners_stop_action(ftl_lif_event_t event,
         devcmd_ctx.status = FTL_RC_EAGAIN;
         return FTL_LIF_EV_SCANNERS_QUIESCE;
     }
-
     return FTL_LIF_EV_QUEUES_STOP_COMPLETE;
+}
+
+ftl_lif_event_t
+FtlLif::ftl_lif_scanners_stop_complete_action(ftl_lif_event_t event,
+                                              ftl_lif_devcmd_ctx_t& devcmd_ctx)
+{
+    FTL_LIF_FSM_LOG();
+    fsm_ctx.scanners_stopping = false;
+    devcmd_ctx.status = FTL_RC_SUCCESS;
+    return FTL_LIF_EV_NULL;
 }
 
 ftl_lif_event_t
@@ -1267,10 +1491,9 @@ FtlLif::ftl_lif_scanners_quiesce_action(ftl_lif_event_t event,
     FTL_LIF_FSM_VERBOSE_LOG();
 
     devcmd_ctx.status = FTL_RC_EAGAIN;
-    if (session_scanners_ctl.quiesce()      &&
-        conntrack_scanners_ctl.quiesce()    &&
-        mpu_timestamp_ctl.quiesce()         &&
-        sdk::asic::pd::asicpd_scheduler_timer_all_complete()) {
+    if (session_scanners_ctl.quiesce()   &&
+        conntrack_scanners_ctl.quiesce() &&
+        (!sdk::asic::asic_is_hard_init() || mpu_timestamp_ctl.quiesce())) {
         quiesce_complete = true;
     }
 
@@ -1289,10 +1512,26 @@ FtlLif::ftl_lif_scanners_quiesce_action(ftl_lif_event_t event,
         pollers_ctl.stop();
         session_scanners_ctl.quiesce_idle();
         conntrack_scanners_ctl.quiesce_idle();
-        mpu_timestamp_ctl.quiesce_idle();
-        return FTL_LIF_EV_QUEUES_STOP_COMPLETE;
+        if (sdk::asic::asic_is_hard_init()) {
+            mpu_timestamp_ctl.quiesce_idle();
+        }
+
+        fsm_ctx.ts.time_expiry_set(timers_quiesce_time_us());
+        return FTL_LIF_EV_TIMERS_QUIESCE;
     }
 
+    return FTL_LIF_EV_NULL;
+}
+
+ftl_lif_event_t
+FtlLif::ftl_lif_timers_quiesce_action(ftl_lif_event_t event,
+                                      ftl_lif_devcmd_ctx_t& devcmd_ctx)
+{
+    FTL_LIF_FSM_VERBOSE_LOG();
+    devcmd_ctx.status = FTL_RC_EAGAIN;
+    if (fsm_ctx.ts.time_expiry_check()) {
+        return FTL_LIF_EV_QUEUES_STOP_COMPLETE;
+    }
     return FTL_LIF_EV_NULL;
 }
 
@@ -1776,6 +2015,14 @@ FtlLif::queue_empty(enum ftl_qtype qtype,
     }
 
     return true;
+}
+
+uint64_t
+FtlLif::timers_quiesce_time_us(void)
+{
+    uint64_t max_us = std::max((uint64_t)spec->session_burst_resched_time_us,
+                               (uint64_t)SCANNER_POLLER_QFULL_REPOST_US);
+    return std::max(max_us, (uint64_t)SCANNER_RANGE_EMPTY_RESCHED_US);
 }
 
 /*
