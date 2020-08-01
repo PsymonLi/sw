@@ -4,6 +4,7 @@ import re
 import traceback
 import iota.harness.api as api
 import iota.test.utils.timout_wrapper as timeout_wrapper
+import iota.test.utils.traffic as traffic
 import iota.test.apulu.config.api as config_api
 import iota.test.apulu.config.del_iptable_rule as iptable_rule
 import iota.test.apulu.testcases.naples_upgrade.upgrade_utils as upgrade_utils
@@ -159,9 +160,6 @@ def PacketTestSetup(tc):
     # if tc.upgrade_mode == "hitless":
     #     tc.pktlossverif = True
 
-    if api.IsDryrun():
-        return api.types.status.SUCCESS
-
     # start background ping before start of test
     if ping.TestPing(tc, 'user_input', "ipv4", tc.pktsize, interval=tc.interval, \
             count=tc.count, pktlossverif=tc.pktlossverif, \
@@ -169,7 +167,11 @@ def PacketTestSetup(tc):
         api.Logger.error("Failed in triggering background Ping during Setup")
         tc.skip = True
         return api.types.status.FAILURE
-
+    if tc.iperf:
+        out = traffic.iperfWorkloads(tc.workload_pairs, time=tc.duration, \
+                                    num_of_streams=32, sleep_time=30, \
+                                    packet_size=None, background=True)
+        tc.cmd_desc, tc.server_resp, tc.client_resp = out[0], out[1], out[2]
     return api.types.status.SUCCESS
 
 @timeout_wrapper.timeout(seconds=300)
@@ -233,6 +235,7 @@ def Setup(tc):
     tc.allowed_down_time = getattr(tc.args, "allowed_down_time", 0)
     tc.pkg_name = getattr(tc.args, "naples_upgr_pkg", "naples_fw.tar")
     tc.node_selection = tc.iterators.selection
+    tc.iperf = getattr(tc.args, "iperf", False)
     if tc.node_selection not in ["any", "all"]:
         api.Logger.error("Incorrect Node selection option {} specified. Use 'any' or 'all'".format(tc.node_selection))
         tc.skip = True
@@ -335,8 +338,7 @@ def Verify(tc):
     sshd_restart_wait = 20 #sec
     result = api.types.status.SUCCESS
     if api.IsDryrun():
-        return result
-    
+        return result        
     # Let sshd start in new domain
     api.Logger.info(f"Waiting {sshd_restart_wait} sec for sshd to restart in new Domain...")
     misc_utils.Sleep(sshd_restart_wait)
@@ -348,7 +350,10 @@ def Verify(tc):
     
     # validate the configuration
     result = hitless_upgrade_validate_config(tc) 
-
+    if result != api.types.status.SUCCESS:
+        api.Logger.info("Ignoring the configuration validation failure")
+        result = api.types.status.SUCCESS
+    
     # verify mgmt connectivity
     if VerifyMgmtConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Mgmt Connectivity Check after Upgrade .")
@@ -410,14 +415,22 @@ def Verify(tc):
                     #result = api.types.status.FAILURE
             else:
                 api.Logger.info("No Packet Loss Found during UPGRADE Test")
-
+    
+    # Terminate the iperf in backaground
+    if tc.iperf:
+        tc.client_term_resp = api.Trigger_TerminateAllCommands(tc.client_resp)
+        api.Trigger_TerminateAllCommands(tc.server_resp)
+        tc.client_aggr_resp = api.Trigger_AggregateCommandsResponse(tc.client_resp, tc.client_term_resp)
+        traffic.verifyIPerf(tc.cmd_desc, tc.client_aggr_resp)
+    
     if upgrade_utils.VerifyUpgLog(tc.nodes, tc.GetLogsDir()):
         api.Logger.error("Failed to verify the upgrademgr logs...")
 
+    nodes = ",".join(tc.nodes)
     if result == api.types.status.SUCCESS:
-        api.Logger.info(f"Upgrade: Completed Successfully for {tc.nodes}")
+        api.Logger.info(f"Upgrade: Completed Successfully for {nodes}")
     else:
-        api.Logger.info(f"Upgrade: Failed for {tc.nodes}")
+        api.Logger.error(f"Upgrade: Failed for {nodes}")
     return result
 
 def Teardown(tc):

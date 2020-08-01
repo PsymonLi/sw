@@ -15,7 +15,7 @@ image_manifest:
     naples      : capri
 
 setup:
-    topology : test/apulu/topologies/classic_baremetal/classic_baremetal.topology
+    topology : test/apulu/topologies/classic_baremetal/container_centos.topology
     config   :
         - step : verif.config.verify_oob
         - step : config.set_max_mtu
@@ -27,6 +27,9 @@ setup:
                 node2 : 2naples_bm_static_node2.cfgyml
         - step : config.bringup_workloads
         - step : config.add_routes
+        - step : utils.naples_upgrade.install
+          args :
+             naples_upgr_pkgs : ["naples_fw.tar"]  
 
 common:
     verifs:
@@ -40,6 +43,7 @@ testbundles:
     sanity:
         # Relative paths from iota/test/apulu/testbundles/
         - firewall/normalization.testbundle
+        - naples_upgrade/issu_upgrade.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

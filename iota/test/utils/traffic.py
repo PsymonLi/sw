@@ -120,7 +120,7 @@ def verifyPing(cmd_cookies, response, exit_code=0):
     return result
 
 def iperfWorkloads(workload_pairs, af="ipv4", proto="tcp", packet_size=64,
-        bandwidth="100G", time=1, num_of_streams=None, sleep_time=30):
+        bandwidth="100G", time=1, num_of_streams=None, sleep_time=30, background=False):
     serverCmds = []
     clientCmds = []
     cmdDesc = []
@@ -163,15 +163,20 @@ def iperfWorkloads(workload_pairs, af="ipv4", proto="tcp", packet_size=64,
         cmdDesc.append(cmd_cookie)
 
         api.Trigger_AddCommand(serverReq, server.node_name, server.workload_name, serverCmd, background = True)
-        api.Trigger_AddCommand(clientReq, client.node_name, client.workload_name, clientCmd)
+        api.Trigger_AddCommand(clientReq, client.node_name, client.workload_name, clientCmd, background = background)
 
     server_resp = api.Trigger(serverReq)
     #Sleep for some time as bg may not have been started.
+    api.Logger.info(f"Waiting {sleep_time} sec to start iperf server in background")
     __sleep(sleep_time)
     client_resp = api.Trigger(clientReq)
     __sleep(3)
-    api.Trigger_TerminateAllCommands(server_resp)
-    return [cmdDesc, serverCmds, clientCmds], client_resp
+    
+    if background:
+        return [cmdDesc, serverCmds, clientCmds], server_resp, client_resp
+    else:
+        api.Trigger_TerminateAllCommands(server_resp)
+        return [cmdDesc, serverCmds, clientCmds], client_resp
 
 def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0, max_bw=0):
     result = api.types.status.SUCCESS

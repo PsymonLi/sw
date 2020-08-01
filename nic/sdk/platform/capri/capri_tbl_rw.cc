@@ -5,6 +5,7 @@
  * Mahesh Shirshyad (Pensando Systems)
  */
 #include <map>
+#include <rte_bitmap.h>
 #include "asic/common/asic_common.hpp"
 #include "lib/p4/p4_api.hpp"
 #include "lib/pal/pal.hpp"
@@ -147,7 +148,7 @@ typedef struct capri_tcam_shadow_mem_ {
     uint8_t zones;          // Using entire memory as one zone.
                             // TBD: carve into multiple zones
                             // to reduce access/update contention
-
+    struct rte_bitmap *dirty_block_map; // tracks dirty tcam blocks
     //pthread_mutex_t mutex; // TBD: when its decided to make HAL thread safe
 
     uint16_t mem_x[CAPRI_TCAM_ROWS][CAPRI_TCAM_BLOCK_COUNT][CAPRI_TCAM_WORDS_PER_BLOCK];
@@ -861,6 +862,10 @@ capri_table_rw_cleanup (void)
         }
         g_shadow_sram_p4[i] = NULL;
         if (g_shadow_tcam_p4[i]) {
+            if (g_shadow_tcam_p4[i]->dirty_block_map) {
+                free(g_shadow_tcam_p4[i]->dirty_block_map);
+                g_shadow_tcam_p4[i]->dirty_block_map = NULL;                
+            }
             CAPRI_FREE(g_shadow_tcam_p4[i]);
         }
         g_shadow_tcam_p4[i] = NULL;
@@ -870,12 +875,26 @@ capri_table_rw_cleanup (void)
 static int
 capri_p4_shadow_init (void)
 {
+    uint32_t bit_size = 0;
+    uint32_t mem_size = 0;
+
     for (int i = P4_GRESS_INGRESS; i <= P4_GRESS_EGRESS; i++) {
         g_shadow_sram_p4[i] = (capri_sram_shadow_mem_t*)
                 CAPRI_CALLOC(1, sizeof(capri_sram_shadow_mem_t));
         g_shadow_tcam_p4[i] = (capri_tcam_shadow_mem_t*)
                 CAPRI_CALLOC(1, sizeof(capri_tcam_shadow_mem_t));
-        if (!g_shadow_sram_p4[i] || !g_shadow_tcam_p4[i]) {
+        
+        // initialize the tcam block dirty map
+        bit_size = CAPRI_TCAM_ROWS * ((i == P4_GRESS_INGRESS) 
+                                         ? CAPRI_TCAM_BLOCK_COUNT 
+                                         : CAPRI_TCAM_EGRESS_BLOCK_COUNT);
+        mem_size = rte_bitmap_get_memory_footprint(bit_size);
+        posix_memalign((void **)&g_shadow_tcam_p4[i]->dirty_block_map,
+                       CACHE_LINE_SIZE, mem_size);
+        g_shadow_tcam_p4[i]->dirty_block_map = rte_bitmap_init(bit_size, 
+                  (uint8_t *) g_shadow_tcam_p4[i]->dirty_block_map, mem_size);
+        if (unlikely(!g_shadow_sram_p4[i] || !g_shadow_tcam_p4[i] ||
+                     !g_shadow_tcam_p4[i]->dirty_block_map)) {
             // TODO: Log error/trace
             capri_table_rw_cleanup();
             return CAPRI_FAIL;
@@ -1120,8 +1139,6 @@ capri_get_action_id (uint32_t tableid, uint8_t actionpc)
     return (0xff);
 }
 
-
-
 static void
 capri_sram_entry_details_get (uint32_t index,
                               int *sram_row, int *entry_start_block,
@@ -1205,60 +1222,49 @@ capri_flush_sram_shadow_mem (void)  {
 static sdk_ret_t
 capri_flush_tcam_shadow (p4pd_table_dir_en gress)
 {
-    asic_cfg_t *capri_cfg = g_capri_state_pd->cfg();
-
-    if (!capri_cfg ||
-        ((capri_cfg->platform != platform_type_t::PLATFORM_TYPE_HAPS) &&
-        (capri_cfg->platform != platform_type_t::PLATFORM_TYPE_HW))) {
-        return SDK_RET_OK;
-    }
-
     // Get actual width in 32-bit words
-    int32_t  width = (CAP_PICT_CSR_DHS_TCAM_XY_WIDTH + 31) >> 5;
+    uint32_t word_width = (CAP_PICT_CSR_DHS_TCAM_XY_WIDTH + 31) >> 5;
+    uint32_t byte_width = word_width * 4;
     uint64_t pa = 0;
-    void    *va = 0;
-
-    uint32_t data[width] = {0};
-    // TODO. change to write only valid shadow entries.
-    // maintain meta for valid shadow entries during the upgrade time period and use that meta to write only valid entries.
-    data[width-1] = 0xFFFFFFFF;
-
+    void    *va = NULL;
     uint32_t num_blocks_in_stage = 0;
+    uint32_t bytes_in_a_block = (CAPRI_TCAM_BLOCK_WIDTH / 8);
+    uint8_t tcam_block_data[byte_width] = { 0 };
+    uint8_t *tcam_block_data_x = NULL;
+    uint8_t *tcam_block_data_y = NULL;
+
     if (gress == P4_GRESS_INGRESS) {
         pa = CAP_ADDR_BASE_TSI_PICT_OFFSET + offsetof(Cap_pict_csr, dhs_tcam_xy);
-        num_blocks_in_stage = 8;
-
+        num_blocks_in_stage = CAPRI_TCAM_BLOCK_COUNT;
     } else if (gress == P4_GRESS_EGRESS) {
         pa = CAP_ADDR_BASE_TSE_PICT_OFFSET + offsetof(Cap_pict_csr, dhs_tcam_xy);
-        num_blocks_in_stage = 4;
+        num_blocks_in_stage = CAPRI_TCAM_EGRESS_BLOCK_COUNT;
     } else {
         return SDK_RET_ERR;
     }
 
-    if ((CAPRI_TCAM_BLOCK_WIDTH - 1) != (2*CAPRI_TCAM_BLOCK_WIDTH)) {
-        SDK_TRACE_ERR("CAP_PICT_CSR_DHS_TCAM_XY_WIDTH(%d) is not twice of "
-                      "CAPRI_TCAM_BLOCK_WIDTH(%d)...bailing out...!!!",
-                      CAP_PICT_CSR_DHS_TCAM_XY_WIDTH, CAPRI_TCAM_BLOCK_WIDTH);
-        return SDK_RET_ERR;
-    }
     va = sdk::lib::pal_mem_map(pa, CAPRI_TCAM_ROWS * num_blocks_in_stage);
-
-    uint32_t bytes_in_a_block = (CAPRI_TCAM_BLOCK_WIDTH / 8);
-    for (uint32_t blk = 0; blk < num_blocks_in_stage; blk++) {
-        for (uint32_t tcam_row = 0; tcam_row < CAPRI_TCAM_ROWS; tcam_row++) {
-
-            uint8_t *tcam_block_data_x = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_x[tcam_row][blk]);
-            memcpy((uint8_t *) data, tcam_block_data_x, bytes_in_a_block);
-
-            uint8_t *tcam_block_data_y = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_y[tcam_row][blk]);
-            memcpy((((uint8_t *) data) + bytes_in_a_block), tcam_block_data_y, bytes_in_a_block);
-
-            sdk::lib::pal_reg_write(pa, data, width);
+    for (uint32_t blk = 0; blk < num_blocks_in_stage; blk++) {    
+        for (uint32_t tcam_row = 0; tcam_row < CAPRI_TCAM_ROWS; tcam_row++) {    
+            uint32_t block_num = (blk * CAPRI_TCAM_ROWS) + tcam_row; 
+            if (!rte_bitmap_get(g_shadow_tcam_p4[gress]->dirty_block_map, block_num)) {
+                pa += sizeof(Cap_pict_csr_dhs_tcam_xy_entry);
+                continue;
+            }            
+            tcam_block_data_x = (uint8_t *) (g_shadow_tcam_p4[gress]->mem_x[tcam_row][blk]);
+            tcam_block_data_y = (uint8_t *) (g_shadow_tcam_p4[gress]->mem_y[tcam_row][blk]);
+            // copy X and Y in reverse order
+            for (int p = 15; p >= 0; p--) {
+                tcam_block_data[p] = *tcam_block_data_x; tcam_block_data_x++;
+                tcam_block_data[p + bytes_in_a_block] = *tcam_block_data_y; tcam_block_data_y++;                            
+            }
+            // set valid bit
+            tcam_block_data[byte_width - 1] = 0x1;
+            sdk::lib::pal_reg_write(pa, (uint32_t *)tcam_block_data, word_width);
             pa += sizeof(Cap_pict_csr_dhs_tcam_xy_entry);
         }
     }
     sdk::lib::pal_mem_unmap(va);
-
     return SDK_RET_OK;
 }
 
@@ -1666,6 +1672,7 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
      */
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
+    rte_bitmap *dirty_map = g_shadow_tcam_p4[gress]->dirty_block_map;
 
     capri_tcam_entry_details_get(index, gress,
                                  &tcam_row, &entry_start_block,
@@ -1685,11 +1692,12 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
     uint16_t *_trit_x = (uint16_t*)trit_x;
     uint16_t *_trit_y = (uint16_t*)trit_y;
     for (int j = 0; j < tbl_info.entry_width; j++) {
+        rte_bitmap_set(dirty_map, (CAPRI_TCAM_ROWS * block) + tcam_row);
         if (copy_bits >= 16) {
             g_shadow_tcam_p4[gress]->mem_x[tcam_row]
-                [block % CAPRI_TCAM_BLOCK_COUNT][entry_start_word] = *_trit_x;
+                            [block][entry_start_word] = *_trit_x;
             g_shadow_tcam_p4[gress]->mem_y[tcam_row]
-                [block % CAPRI_TCAM_BLOCK_COUNT][entry_start_word] = *_trit_y;
+                            [block][entry_start_word] = *_trit_y;
             _trit_x++;
             _trit_y++;
             copy_bits -= 16;
@@ -1699,14 +1707,15 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
             // do not match remaining bits from end of entry bits to next 16b
             // aligned word
             g_shadow_tcam_p4[gress]->mem_x[tcam_row]
-                [block % CAPRI_TCAM_BLOCK_COUNT][entry_start_word] = 0;
+                            [block][entry_start_word] = 0;
             g_shadow_tcam_p4[gress]->mem_y[tcam_row]
-                [block % CAPRI_TCAM_BLOCK_COUNT][entry_start_word] = 0;
+                            [block][entry_start_word] = 0;
         }
         entry_start_word++;
         if (entry_start_word % CAPRI_TCAM_WORDS_PER_BLOCK == 0) {
             // crossed over to next block
             block++;
+            block = block % CAPRI_TCAM_BLOCK_COUNT;
             entry_start_word = 0;
         }
     }
@@ -1715,47 +1724,31 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
         return (CAPRI_OK);
     }
 
-    cap_top_csr_t & cap0 = g_capri_state_pd->cap_top();
-    // Push to HW/Capri from entry_start_block to block
     pu_cpp_int<128> tcam_block_data_x;
     pu_cpp_int<128> tcam_block_data_y;
     uint8_t temp_x[16];
     uint8_t temp_y[16];
+    uint8_t *sx;
+    uint8_t *sy;
+    cap_top_csr_t &cap0 = g_capri_state_pd->cap_top();
+    cap_pict_csr_t &pict_csr = (gress == P4_GRESS_INGRESS) ? cap0.tsi.pict : cap0.tse.pict;
+
     for (int i = entry_start_block; i <= entry_end_block;
          i += CAPRI_TCAM_ROWS, blk++) {
-        uint8_t *s = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_x[tcam_row][blk]);
+        sx = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_x[tcam_row][blk]);
+        sy = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_y[tcam_row][blk]);
         for (int p = 15; p >= 0; p--) {
-            temp_x[p] = *s; s++;
+            temp_x[p] = *sx; sx++;
+            temp_y[p] = *sy; sy++;
         }
-        s = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_y[tcam_row][blk]);
-        for (int p = 15; p >= 0; p--) {
-            temp_y[p] = *s; s++;
-        }
-        if (ingress) {
-            cap_pict_csr_t & pict_csr = cap0.tsi.pict;
-            tcam_block_data_x = 0;
-            tcam_block_data_y = 0;
-            cpp_int_helper::s_cpp_int_from_array(tcam_block_data_x,
-                                                 0, 15, temp_x);
-            cpp_int_helper::s_cpp_int_from_array(tcam_block_data_y,
-                                                 0, 15, temp_y);
-            pict_csr.dhs_tcam_xy.entry[i].x((pu_cpp_int<128>)tcam_block_data_x);
-            pict_csr.dhs_tcam_xy.entry[i].y((pu_cpp_int<128>)tcam_block_data_y);
-            pict_csr.dhs_tcam_xy.entry[i].valid(1);
-            pict_csr.dhs_tcam_xy.entry[i].write();
-        } else {
-            cap_pict_csr_t & pict_csr = cap0.tse.pict;
-            tcam_block_data_x = 0;
-            tcam_block_data_y = 0;
-            cpp_int_helper::s_cpp_int_from_array(tcam_block_data_x,
-                                                 0, 15, temp_x);
-            cpp_int_helper::s_cpp_int_from_array(tcam_block_data_y,
-                                                 0, 15, temp_y);
-            pict_csr.dhs_tcam_xy.entry[i].x((pu_cpp_int<128>)tcam_block_data_x);
-            pict_csr.dhs_tcam_xy.entry[i].y((pu_cpp_int<128>)tcam_block_data_y);
-            pict_csr.dhs_tcam_xy.entry[i].valid(1);
-            pict_csr.dhs_tcam_xy.entry[i].write();
-        }
+        tcam_block_data_x = 0;
+        tcam_block_data_y = 0;
+        cpp_int_helper::s_cpp_int_from_array(tcam_block_data_x, 0, 15, temp_x);
+        cpp_int_helper::s_cpp_int_from_array(tcam_block_data_y, 0, 15, temp_y);
+        pict_csr.dhs_tcam_xy.entry[i].x((pu_cpp_int<128>)tcam_block_data_x);
+        pict_csr.dhs_tcam_xy.entry[i].y((pu_cpp_int<128>)tcam_block_data_y);
+        pict_csr.dhs_tcam_xy.entry[i].valid(1);
+        pict_csr.dhs_tcam_xy.entry[i].write();
     }
     return CAPRI_OK;
 }
