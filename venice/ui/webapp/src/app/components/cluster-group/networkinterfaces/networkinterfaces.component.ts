@@ -17,7 +17,7 @@ import { ClusterService } from '@app/services/generated/cluster.service';
 import { NetworkService } from '@app/services/generated/network.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
-import { IApiStatus, INetworkNetworkInterface, NetworkNetworkInterface } from '@sdk/v1/models/generated/network';
+import { IApiStatus, INetworkNetworkInterface, NetworkNetworkInterface, NetworkNetworkInterfaceSpec_type, NetworkLLDPNeighbor, ClusterIPConfig } from '@sdk/v1/models/generated/network';
 import { FieldsRequirement } from '@sdk/v1/models/generated/search';
 import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
 import { forkJoin, Observable } from 'rxjs';
@@ -483,6 +483,25 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
       return Utility.getNaplesCondition(this._myDSCmacToObjectMap[napleId]);
     }
     return null;
+  }
+
+  expandRowRequest(event, rowData) {
+    if (!this.networkInterfaceTable.showRowExpand) {
+      this.networkInterfaceTable.toggleRow(rowData, event);
+    }
+  }
+
+  onColumnSelectChange(event) {
+    this.networkInterfaceTable.onColumnSelectChange(event);
+  }
+
+  hasUplinkIpConfig() {
+    if (this.selectedNetworkInterface && this.selectedNetworkInterface.spec.type === NetworkNetworkInterfaceSpec_type['uplink-eth']) {
+      if (!(this.selectedNetworkInterface.status['if-uplink-status']['ip-config']['ip-address'] === null) || !(this.selectedNetworkInterface.status['if-uplink-status']['lldp-neighbor']['chassis-id'] === null)) {
+        return true;
+      }
+    }
+    return false;
   }
 
 }

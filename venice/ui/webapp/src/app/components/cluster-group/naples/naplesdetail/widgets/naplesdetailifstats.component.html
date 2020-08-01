@@ -1,13 +1,110 @@
 <div fxFlex="100%" fxLayout="column" fxLayoutAlign="start flex-end">
   <div class="detail-card-header-actions">
-    <div class="naplesdetail-interface-detail-openicon" title="expand"
+    <div class="naplesdetail-interface-detail-icon naplesdetail-interface-detail-openicon"
+         title="expand"
          (click)="expandInterfaceTable()"></div>
   </div>
-  <div fxLayout="column" class="naplesdetail-interface-detail" *ngIf="getStats() as ifs">
+  <div fxLayout="column" class="naplesdetail-interface-detail" *ngIf="getStats()">
     <div class="detail-card-border"></div>
-    <div class="naplesdetail-interface-detail-portName">{{ ifs.shortname }}</div>
+    <div class="naplesdetail-interface-detail-portName" fxLayout="row"
+         fxLayoutAlign="space-between center">
+      <span>{{ ifs.shortname }}</span>
+      <ng-container *featureGuard="'cloud'">
+        <div fxLayout="row" fxLayoutAlign="space-between center">
+          <button class="naplesdetail-interface-detail-btn" *ngIf="uplinkNetworkInterface"
+                  [class.active]="tabMode === 'uplinkip'" [matTooltip]="'IP Configs'"
+                  [disableRipple]="true" (click)="showUplinkIPConfig()" mat-icon-button>
+            <div
+                 class="naplesdetail-interface-detail-icon naplesdetail-interface-detail-uplink-icon">
+            </div>
+          </button>
+          <button class="naplesdetail-interface-detail-btn" *ngIf="uplinkNetworkInterface"
+                  (click)="showUplinkLldpNeighbour()" [class.active]="tabMode === 'lldp'"
+                  [matTooltip]="'LLDP Neighbor'" [disableRipple]="true" mat-icon-button>
+            <div class="naplesdetail-interface-detail-icon naplesdetail-interface-detail-lldpicon">
+            </div>
+          </button>
+          <button class="naplesdetail-interface-detail-btn" [class.active]="tabMode === 'status'"
+                  [matTooltip]="'Status'" (click)="showStatusTab()" [disableRipple]="true"
+                  mat-icon-button>
+            <div
+                 class="naplesdetail-interface-detail-icon naplesdetail-interface-detail-status-icon">
+            </div>
+          </button>
+        </div>
+      </ng-container>
+    </div>
+
     <div class="detail-card-border"></div>
     <div fxFlex="5px"></div>
+    <ng-container [ngSwitch]="tabMode">
+      <ng-container *ngSwitchCase="'status'">
+        <ng-container *ngTemplateOutlet="statusContent"></ng-container>
+      </ng-container>
+      <ng-container>
+        <ng-container *ngSwitchCase="'uplinkip'">
+          <div>
+            <div fxLayout="row" class="naplesdetail-interface-detail-uplinkrow">
+              <div class="naplesdetail-interface-detail-uplinkrow-label">IP Address</div>
+              <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-uplinkrow-value">
+                {{ uplinkNetworkInterface.status['if-uplink-status']['ip-config']["ip-address"] }}
+              </div>
+            </div>
+            <div fxLayout="row" class="naplesdetail-interface-detail-uplinkrow">
+              <div class="naplesdetail-interface-detail-uplinkrow-label">Default Gateway</div>
+              <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-uplinkrow-value">
+                {{ uplinkNetworkInterface.status['if-uplink-status']['ip-config']["default-gw"] }}
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-container *ngSwitchCase="'lldp'">
+          <div>
+            <div fxLayout="row" class="naplesdetail-interface-detail-uplinkrow">
+              <div class="naplesdetail-interface-detail-uplinkrow-label">Chassis ID</div>
+              <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-uplinkrow-value">
+                {{ uplinkNetworkInterface.status['if-uplink-status']['lldp-neighbor']["chassis-id"] }}
+              </div>
+            </div>
+            <div fxLayout="row" class="naplesdetail-interface-detail-uplinkrow">
+              <div class="naplesdetail-interface-detail-uplinkrow-label">System Name</div>
+              <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-uplinkrow-value">
+                {{ uplinkNetworkInterface.status['if-uplink-status']['lldp-neighbor']["sys-name"] }}
+              </div>
+            </div>
+            <div fxLayout="row" class="naplesdetail-interface-detail-uplinkrow">
+              <div class="naplesdetail-interface-detail-uplinkrow-label">System Description</div>
+              <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-uplinkrow-value">
+                {{ uplinkNetworkInterface.status['if-uplink-status']['lldp-neighbor']["sys-description"] }}
+              </div>
+            </div>
+            <div fxLayout="row" class="naplesdetail-interface-detail-uplinkrow">
+              <div class="naplesdetail-interface-detail-uplinkrow-label">Port ID</div>
+              <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-uplinkrow-value">
+                {{ uplinkNetworkInterface.status['if-uplink-status']['lldp-neighbor']["port-id"] }}
+              </div>
+            </div>
+            <div fxLayout="row" class="naplesdetail-interface-detail-uplinkrow">
+              <div class="naplesdetail-interface-detail-uplinkrow-label">Port Description</div>
+              <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-uplinkrow-value">
+                {{ uplinkNetworkInterface.status['if-uplink-status']['lldp-neighbor']["port-description"] }}
+              </div>
+            </div>
+            <div fxLayout="row" class="naplesdetail-interface-detail-uplinkrow">
+              <div class="naplesdetail-interface-detail-uplinkrow-label">Mgmt Address</div>
+              <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-uplinkrow-value">
+                {{ uplinkNetworkInterface.status['if-uplink-status']['lldp-neighbor']["mgmt-address"] }}
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+    </ng-container>
+  </div>
+</div>
+
+<ng-template #statusContent>
+  <div fxLayout="column" *ngIf="getStats()">
     <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
       <div class="naplesdetail-interface-detail-statsrow-label">Status</div>
       <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
@@ -102,4 +199,4 @@
         {{ displayStatsCount(ifs.stats.txDrop2) }}</div>
     </div>
   </div>
-</div>
+</ng-template>

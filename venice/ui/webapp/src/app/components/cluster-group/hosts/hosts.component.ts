@@ -19,9 +19,11 @@ import { FieldsRequirement } from '@sdk/v1/models/generated/search';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import * as _ from 'lodash';
-import { Observable, Subscription } from 'rxjs';
+import { forkJoin, Observable, Subscription } from 'rxjs';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
+import { LabelEditorMetadataModel } from '@app/components/shared/labeleditor';
 
 export enum BuildHostWorkloadMapSourceType {
   init = 'init',
@@ -109,6 +111,10 @@ export class HostsComponent extends DataComponent implements OnInit {
 
   // Used for the table - when true there is a loading icon displayed
   tableLoading: boolean = false;
+  labelLoading: boolean = false;
+  labelEditorMetaData: LabelEditorMetadataModel;
+  inLabelEditMode: boolean = false;
+  saveLabelsOperationDone: boolean;
 
   // Used to check if vcenter has already been added to advanced search, to prevent multiple additions
   vcenterAddedToAdvSearch: boolean = false;
@@ -118,6 +124,7 @@ export class HostsComponent extends DataComponent implements OnInit {
     { field: 'spec.dscs', header: 'Distributed Services Cards', class: 'hosts-column-dscs', sortable: false, width: '200px' },
     { field: 'workloads', header: 'Associated Workloads', class: 'hosts-column-workloads', sortable: false, width: 100 },
     { field: 'meta.mod-time', header: 'Modification Time', class: 'hosts-column-date', sortable: true, width: '175px' },
+    { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
     { field: 'meta.creation-time', header: 'Creation Time', class: 'hosts-column-date', sortable: true, width: '175px' },
   ];
 
@@ -142,6 +149,9 @@ export class HostsComponent extends DataComponent implements OnInit {
     },
     'spec.dscs': (opts): string => {
       return opts.data._ui.processedSmartNics.map(psn => (psn.text) ? (psn.text) : psn.mac).join(', ');
+    },
+    'meta.labels': (opts): string => {
+      return this.formatLabels(opts.data.meta.labels);
     }
   };
 
@@ -265,6 +275,8 @@ export class HostsComponent extends DataComponent implements OnInit {
     const value = Utility.getObjectValueByPropertyPath(rowData, fields);
     const column = col.field;
     switch (column) {
+      case 'meta.labels':
+        return this.formatLabels(value);
       default:
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }
@@ -541,5 +553,88 @@ export class HostsComponent extends DataComponent implements OnInit {
       return uiData.processedWorkloads && uiData.processedWorkloads.length > 0;
     });
     return (list.length === 0);
+  }
+
+  updateWithForkjoin(clusterHosts: ClusterHost[]) {
+    const observables: Observable<any>[] = [];
+    for (const clusterHostObj of clusterHosts) {
+      const name = clusterHostObj.meta.name;
+      const sub = this.clusterService.UpdateHost(name, clusterHostObj);
+      observables.push(sub);
+    }
+
+    const summary = 'Host update';
+    const objectType = 'Host';
+    this.handleForkJoin(observables, summary, objectType);
+  }
+
+  onInvokeAPIonMultipleRecordsSuccess() {
+    this.inLabelEditMode = false;
+    this.labelLoading = false;
+    this.tableLoading = false;
+  }
+  editLabels() {
+    this.labelEditorMetaData = {
+      title: 'Editing Host objects',
+      keysEditable: true,
+      valuesEditable: true,
+      propsDeletable: true,
+      extendable: true,
+      save: true,
+      cancel: true,
+    };
+
+    if (!this.inLabelEditMode) {
+      this.inLabelEditMode = true;
+    }
+  }
+
+  handleEditSave(updatedHosts: ClusterHost[]) {
+    this.updateHostLabelsWithBulkEdit(updatedHosts);  // USE this for bulkedit when backend is ready
+ }
+
+ updateHostLabelsWithBulkEdit(updatedHosts: ClusterHost[]) {
+  const successMsg: string = 'updated ' + updatedHosts.length + ' Host labels ';
+  const failureMsg: string = 'Failed to udpate Host labels';
+  const stagingBulkEditAction = this.buildBulkEditLabelsPayload(updatedHosts);
+  this.saveLabelsOperationDone = null;
+  this.bulkEditHelper(updatedHosts, stagingBulkEditAction, successMsg, failureMsg);
+}
+  onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
+    this.onInvokeAPIonMultipleRecordsSuccess();
+  }
+
+  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
+    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    this.labelLoading = false;
+    this.tableLoading = false;
+  }
+
+  private handleForkJoin(observables: Observable<any>[], summary: string, objectType: string) {
+    forkJoin(observables).subscribe((results: any[]) => {
+      let successCount: number = 0;
+      let failCount: number = 0;
+      const errors: string[] = [];
+      for (let i = 0; i < results.length; i++) {
+        if (results[i]['statusCode'] === 200) {
+          successCount += 1;
+        } else {
+          failCount += 1;
+          errors.push(results[i].body.message);
+        }
+      }
+      if (successCount > 0) {
+        const msg = 'Successfully updated ' + successCount.toString() + ' ' + objectType + '.';
+        this._controllerService.invokeSuccessToaster(summary, msg);
+        this.onInvokeAPIonMultipleRecordsSuccess();
+      }
+      if (failCount > 0) {
+        this._controllerService.invokeRESTErrorToaster(summary, errors.join('\n'));
+      }
+    },
+      this._controllerService.restErrorHandler(summary + ' Failed'));
+  }
+  handleEditCancel($event) {
+    this.inLabelEditMode = false;
   }
 }

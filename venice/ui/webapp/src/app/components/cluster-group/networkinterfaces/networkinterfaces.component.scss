@@ -61,3 +61,20 @@
 .networknetworkinterface-dsc-condition-unhealthy {
   background-color: #dd3b09;
 }
+
+.networknetworkinterface-detail-system-description {
+  padding-right: 10px;
+  text-align: left;
+}
+
+.networknetworkinterface-detail-uplink-header {
+  margin: 10px 0 5px;
+  font-size: 16px;
+  font-weight: normal;
+}
+
+.networknetworkinterface-detail-uplink-info {
+  .networknetworkinterface-detail-key {
+    font-weight: 500;
+  }
+}

@@ -33,7 +33,25 @@
         </span>
       </div>
     </div>
-
+    <ng-container>
+      <div *roleGuard="'clusterhost_update'" fxFlex="1 0 50%">
+        <div *ngIf="hasSelectedRows()" fxFlex="none" fxLayoutAlign="start center">
+          <!-- TABLE FUNCTION ICONS HERE -->
+          <mat-icon class="global-multi-records-delete-icon"
+                    (click)="editLabels()"
+                    [matTooltip]="'Edit labels of selected cluster hosts'">
+            label
+          </mat-icon>
+          <app-labeleditor (cancelEmitter)="handleEditCancel($event)"
+                           (saveEmitter)="handleEditSave($event)"
+                           [inLabelEditMode]="inLabelEditMode"
+                           [metadata]="labelEditorMetaData"
+                           [nameKey]="'meta.name'"
+                           [objects]="getSelectedDataObjects()">
+          </app-labeleditor>
+        </div>
+      </div>
+    </ng-container>
     <!-- TABLE FUNCTION ICONS HERE -->
     <div *roleGuard="'clusterhost_delete'" fxFlex="1 0 50%">
       <div *ngIf="dataObjects.length > 0" fxFlex="none" fxLayoutAlign="start center">
@@ -46,6 +64,7 @@
       </div>
     </div>
   </div>
+
 
 </ng-template>
 

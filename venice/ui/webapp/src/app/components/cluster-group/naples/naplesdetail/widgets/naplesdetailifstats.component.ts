@@ -1,6 +1,8 @@
-import { Component, OnInit, ViewEncapsulation, Input, EventEmitter, Output } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, Input, EventEmitter, Output, ChangeDetectorRef, AfterContentChecked, OnChanges, SimpleChanges } from '@angular/core';
 import { InterfaceStats } from '../naplesdetail.component';
 import { Utility } from '@app/common/Utility';
+import { NetworkNetworkInterface, NetworkNetworkInterfaceSpec_type } from '@sdk/v1/models/generated/network';
+import { ViewRef_ } from '@angular/core/src/view';
 
 @Component({
   selector: 'app-naplesdetail-ifstats',
@@ -8,23 +10,33 @@ import { Utility } from '@app/common/Utility';
   styleUrls: ['naplesdetailifstats.component.scss'],
   encapsulation: ViewEncapsulation.None
 })
-export class NaplesdetailIfstatsComponent implements OnInit {
+export class NaplesdetailIfstatsComponent implements OnInit, AfterContentChecked , OnChanges {
   @Input() interfaceStats: InterfaceStats[];
+  @Input() networkInterfaces: NetworkNetworkInterface[];
   @Input() mouseOverInterface: string = '';
-
   @Output() collapseExpandClickEmit: EventEmitter<string> = new EventEmitter();
 
-  constructor() { }
+  tabMode: string = 'status';
+  ifs: InterfaceStats = null;
+  uplinkNetworkInterface: NetworkNetworkInterface = null;
+
+  constructor(private cdr: ChangeDetectorRef) {
+   }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.mouseOverInterface) {
+       this.getUplinkIpConfig();
+    }
+  }
 
   ngOnInit() {
   }
 
   getStats() {
-    let ifs: InterfaceStats = null;
     if (this.interfaceStats && this.mouseOverInterface) {
-      ifs = this.interfaceStats.find(item => item.ifname === this.mouseOverInterface);
+      this.ifs = this.interfaceStats.find(item => item.ifname === this.mouseOverInterface);
     }
-    return ifs;
+    return this.ifs;
   }
 
   expandInterfaceTable() {
@@ -57,5 +69,39 @@ export class NaplesdetailIfstatsComponent implements OnInit {
 
     return count.toString();
   }
-}
 
+  getUplinkIpConfig(): NetworkNetworkInterface {
+    let networkInterface = null;
+    if (this.networkInterfaces && this.mouseOverInterface) {
+      networkInterface = this.networkInterfaces.find(item => item.meta.name === this.mouseOverInterface);
+      if (networkInterface && networkInterface.spec.type === NetworkNetworkInterfaceSpec_type['uplink-eth']) {
+        if (!(networkInterface.status['if-uplink-status']['ip-config']['ip-address'] === null) || !(networkInterface.status['if-uplink-status']['lldp-neighbor']['chassis-id'] === null)) {
+          this.uplinkNetworkInterface = networkInterface;
+          return networkInterface;
+        }
+      } else {
+        networkInterface = null;
+      }
+    }
+    this.showStatusTab();
+    this.uplinkNetworkInterface = networkInterface;
+    return networkInterface;
+  }
+
+  showUplinkIPConfig() {
+    if (this.uplinkNetworkInterface) {
+      this.tabMode = 'uplinkip';
+    }
+  }
+  showUplinkLldpNeighbour() {
+    if (this.uplinkNetworkInterface) {
+      this.tabMode = 'lldp';
+    }
+  }
+  showStatusTab() {
+    this.tabMode = 'status';
+  }
+  ngAfterContentChecked(): void {
+    this.cdr.detectChanges();
+  }
+}

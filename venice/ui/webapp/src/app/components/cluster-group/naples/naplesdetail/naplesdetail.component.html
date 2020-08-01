@@ -431,6 +431,7 @@
           <app-naplesdetail-ifstats *ngIf="networkInterfaces && networkInterfaces.length > 0"
                                     fxFlex="nogrow"
                                     fxLayout="row" [interfaceStats]="interfaceStats"
+                                    [networkInterfaces]="networkInterfaces"
                                     [mouseOverInterface]="mouseOverInterface"
                                     (collapseExpandClickEmit)="onCollapseExpandClick($event)"
                                     class="naplesdetail-interface-detail-container">

@@ -25,7 +25,7 @@ import { DSCWorkloadsTuple, ObjectsRelationsUtility } from '@app/common/ObjectsR
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { NetworkService } from '@app/services/generated/network.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
-import { NetworkNetworkInterface, INetworkNetworkInterfaceList, NetworkNetworkInterfaceSpec_type } from '@sdk/v1/models/generated/network';
+import { NetworkNetworkInterface, INetworkNetworkInterfaceList, NetworkNetworkInterfaceSpec_type, ClusterIPConfig, NetworkLLDPNeighbor } from '@sdk/v1/models/generated/network';
 import { SearchService } from '@app/services/generated/search.service';
 import { SearchSearchRequest, IFieldsSelector } from '@sdk/v1/models/generated/search';
 import { BrowserService } from '@app/services/generated/browser.service';
@@ -1183,20 +1183,19 @@ export class NaplesdetailComponent extends BaseComponent implements OnInit, OnDe
     });
  }
 
- onShowDSCControlPlaneStatus($event, rowData: ClusterDistributedServiceCard  | Readonly<ClusterDistributedServiceCard>) {
-   if (!rowData.status['control-plane-status']) {
-     return;
-   }
-   const reasons = this.getJSONStringList(rowData.status['control-plane-status']);
-   const dscName = (rowData.spec.id) ? rowData.spec.id : rowData.meta.name;
-   this.showDSCControlPlaneStatusHelper(reasons, 'Control Plane Status - ' + dscName, 'Peers') ;
+  onShowDSCControlPlaneStatus($event, rowData: ClusterDistributedServiceCard  | Readonly<ClusterDistributedServiceCard>) {
+    if (!rowData.status['control-plane-status']) {
+      return;
+    }
+    const reasons = this.getJSONStringList(rowData.status['control-plane-status']);
+    const dscName = (rowData.spec.id) ? rowData.spec.id : rowData.meta.name;
+    this.showDSCControlPlaneStatusHelper(reasons, 'Control Plane Status - ' + dscName, 'Peers') ;
 
- }
+  }
 
- onShowControlPlaneStatusPeer($event, rowData: ClusterDistributedServiceCard | Readonly<ClusterDistributedServiceCard>, w) {
-   const reasons = this.getJSONStringList(w);
-   const dscName = (rowData.spec.id) ? rowData.spec.id : rowData.meta.name;
-   this.showDSCControlPlaneStatusHelper(reasons, 'Control Plane Status Peer - ' + dscName, 'Configuration') ;
- }
-
+  onShowControlPlaneStatusPeer($event, rowData: ClusterDistributedServiceCard | Readonly<ClusterDistributedServiceCard>, w) {
+    const reasons = this.getJSONStringList(w);
+    const dscName = (rowData.spec.id) ? rowData.spec.id : rowData.meta.name;
+    this.showDSCControlPlaneStatusHelper(reasons, 'Control Plane Status Peer - ' + dscName, 'Configuration') ;
+  }
 }

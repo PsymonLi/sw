@@ -50,25 +50,23 @@
         </span>
       </div>
     </div>
-    <ng-container *featureGuard="'enterprise'">
-      <div *roleGuard="'networknetworkinterface_update'" fxFlex="1 0 50%">
-        <div *ngIf="hasSelectedRows()" fxFlex="none" fxLayoutAlign="start center">
-          <!-- TABLE FUNCTION ICONS HERE -->
-          <mat-icon class="global-multi-records-delete-icon"
-                    (click)="editLabels()"
-                    [matTooltip]="'Edit labels of selected network interfaces'">
-            label
-          </mat-icon>
-          <app-labeleditor (cancelEmitter)="handleEditCancel($event)"
-                           (saveEmitter)="handleEditSave($event)"
-                           [inLabelEditMode]="inLabelEditMode"
-                           [metadata]="labelEditorMetaData"
-                           [nameKey]="'meta.name'"
-                           [objects]="getSelectedDataObjects()">
-          </app-labeleditor>
-        </div>
+    <div *roleGuard="'networknetworkinterface_update'" fxFlex="1 0 50%">
+      <div *ngIf="hasSelectedRows()" fxFlex="none" fxLayoutAlign="start center">
+        <!-- TABLE FUNCTION ICONS HERE -->
+        <mat-icon class="global-multi-records-delete-icon"
+                  (click)="editLabels()"
+                  [matTooltip]="'Edit labels of selected network interfaces'">
+          label
+        </mat-icon>
+        <app-labeleditor (cancelEmitter)="handleEditCancel($event)"
+                         (saveEmitter)="handleEditSave($event)"
+                         [inLabelEditMode]="inLabelEditMode"
+                         [metadata]="labelEditorMetaData"
+                         [nameKey]="'meta.name'"
+                         [objects]="getSelectedDataObjects()">
+        </app-labeleditor>
       </div>
-    </ng-container>
+    </div>
   </div>
 </ng-template>
 
@@ -194,6 +192,7 @@
                class="networknetworkinterface-detail-key ui-flex">Type:</a>
             <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
               {{this.selectedNetworkInterface.spec.type}}
+
             </a>
           </div>
         </div>
@@ -261,8 +260,108 @@
           </div>
         </div>
       </div>
-
-
+      <ng-container *featureGuard="'cloud'">
+        <div class="ui-flex networknetworkinterface-detail-uplink-info" fxLayout="column">
+          <ng-container *ngIf="hasUplinkIpConfig()">
+            <div class="networknetworkinterface-detail-header networknetworkinterface-detail-uplink-header ui-flex"
+                 fxLayout="row">
+              <a class="ui-flex" fxLayoutAlign="start center">Up Link Configuration:</a>
+            </div>
+            <div class="ui-flex" fxLayout="row">
+              <div class="ui-flex" fxLayout="column">
+                <div fxLayout="row">
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-key ui-flex">IP Address:</a>
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-value ui-flex">
+                    {{this.selectedNetworkInterface.status['if-uplink-status']['ip-config']['ip-address']}}
+                  </a>
+                </div>
+              </div>
+              <div class="ui-flex" fxLayout="column">
+                <div fxLayout="row">
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-key ui-flex">Default Gateway:</a>
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-value ui-flex">
+                    {{this.selectedNetworkInterface.status['if-uplink-status']['ip-config']['default-gw']}}
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="ui-flex" fxLayout="row">
+              <div class="ui-flex" fxLayout="column">
+                <div fxLayout="row">
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-key ui-flex">Chassis ID:</a>
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-value ui-flex">
+                    {{this.selectedNetworkInterface.status['if-uplink-status']['lldp-neighbor']['chassis-id']}}
+                  </a>
+                </div>
+              </div>
+              <div class="ui-flex" fxLayout="column">
+                <div fxLayout="row">
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-key ui-flex">Port ID:</a>
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-value ui-flex">
+                    {{this.selectedNetworkInterface.status['if-uplink-status']['lldp-neighbor']['port-id']}}
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="ui-flex" fxLayout="row">
+              <div class="ui-flex" fxLayout="column">
+                <div fxLayout="row">
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-key ui-flex">System Name:</a>
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-value ui-flex">
+                    {{this.selectedNetworkInterface.status['if-uplink-status']['lldp-neighbor']['sys-name']}}
+                  </a>
+                </div>
+              </div>
+              <div class="ui-flex" fxLayout="column">
+                <div fxLayout="row">
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-key ui-flex">Port Description:</a>
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-value ui-flex">
+                    {{this.selectedNetworkInterface.status['if-uplink-status']['lldp-neighbor']['port-description']}}
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="ui-flex" fxLayout="row">
+              <div class="ui-flex" fxLayout="column">
+                <div fxLayout="row">
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-key ui-flex">System Description:</a>
+                  <div class="ui-flex" fxLayoutAlign="start ">
+                    <a fxLayoutAlign="start "
+                       class="networknetworkinterface-detail-value ui-flex networknetworkinterface-detail-system-description">
+                      <span class="">
+                        {{this.selectedNetworkInterface.status['if-uplink-status']['lldp-neighbor']['sys-description']}}
+                      </span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div class="ui-flex" fxLayout="column">
+                <div fxLayout="row">
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-key ui-flex">Management Address:</a>
+                  <a fxLayoutAlign="start center"
+                     class="networknetworkinterface-detail-value ui-flex">
+                    {{this.selectedNetworkInterface.status['if-uplink-status']['lldp-neighbor']['mgmt-address']}}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
     </div>
   </div>
 </ng-template>

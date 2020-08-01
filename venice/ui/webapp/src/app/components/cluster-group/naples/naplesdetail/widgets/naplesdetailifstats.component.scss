@@ -6,13 +6,59 @@
   height: 345px;
   width: 190px;
 
-  .naplesdetail-interface-detail-openicon {
+  .naplesdetail-interface-detail-icon {
     width: 23px;
     height: 13px;
-    background: url("/assets/images/icons/icon-expand-menu.svg") center center no-repeat;
-    background-size: contain;
     opacity: 0.6;
     cursor: pointer;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  .naplesdetail-interface-detail-uplink-icon {
+    background: url("/assets/images/icons/ico-ip.svg") center center no-repeat;
+    background-size: contain;
+  }
+
+  .naplesdetail-interface-detail-lldpicon {
+    background: url("/assets/images/icons/ico-lldp.svg") center center no-repeat;
+    background-size: contain;
+  }
+
+  .naplesdetail-interface-detail-status-icon {
+    background: url("/assets/images/icons/ico-status.svg") center center no-repeat;
+    background-size: contain;
+  }
+
+  .naplesdetail-interface-detail-openicon {
+    background: url("/assets/images/icons/icon-expand-menu.svg") center center no-repeat;
+    background-size: contain;
+  }
+
+  .naplesdetail-interface-detail-btn {
+    width: 25px;
+    height: 25px;
+    border-radius: 5px;
+    z-index: 1;
+    filter: invert(16%) sepia(90%) saturate(3015%) hue-rotate(215deg) brightness(83%) contrast(95%);
+
+    .naplesdetail-interface-detail-icon {
+      width: 25px;
+      height: 25px;
+    }
+  }
+
+  .naplesdetail-interface-detail-btn:focus {
+    outline: 0px auto transparent;
+  }
+
+  .naplesdetail-interface-detail-btn:hover {
+    filter: invert(22%) sepia(7%) saturate(224%) hue-rotate(182deg) brightness(94%) contrast(87%);
+  }
+
+  .naplesdetail-interface-detail-btn.active {
+    filter: none;
+
   }
 
   .naplesdetail-interface-detail {
@@ -80,6 +126,37 @@
 
       .naplesdetail-interface-detail-statsrow-subvalue {
         font-size: 12px;
+      }
+    }
+
+    .naplesdetail-interface-detail-uplinkrow {
+      width: 100%;
+      opacity: 1;
+      padding-bottom: 3px;
+      padding-left: 3px;
+
+
+      .naplesdetail-interface-detail-uplinkrow-label {
+        width: 85px;
+        padding-left: 5px;
+        font-size: 14px;
+        font-weight: 300;
+        font-stretch: condensed;
+        font-style: normal;
+        line-height: normal;
+        letter-spacing: normal;
+        color: rgb(103, 103, 99);
+      }
+
+      .naplesdetail-interface-detail-uplinkrow-value {
+        font-weight: normal;
+        font-stretch: condensed;
+        font-style: normal;
+        line-height: normal;
+        letter-spacing: normal;
+        color: #6ba0e5;
+        font-size: 14px;
+        width: 93px;
       }
     }
   }
