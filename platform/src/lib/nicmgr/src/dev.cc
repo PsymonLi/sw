@@ -143,6 +143,11 @@ DeviceManager::DeviceManager(devicemgr_cfg_t *cfg)
     memcpy(&this->curr_version, &cfg->curr_version, sizeof(cfg->curr_version));
     memcpy(&this->prev_version, &cfg->prev_version, sizeof(cfg->prev_version));
     this->thread = NULL;
+    if (cfg->pipeline == "iris") {
+        this->is_host_managed = true;
+    } else {
+        this->is_host_managed = false;
+    }
 }
 
 void
@@ -1198,6 +1203,19 @@ DeviceManager::XcvrEventHandler(port_status_t *evd)
             Eth *eth_dev = (Eth *)dev;
             eth_dev->XcvrEventHandler(evd);
         }
+    }
+}
+
+void
+DeviceManager::DscStatusUpdateHandler(sdk::platform::dsc_mode_status_t *status)
+{
+    if (status->mode == sdk::platform::DSC_MODE_HOST_MANAGED)
+    {
+        NIC_LOG_INFO("DSC MODE: HOST MANAGED");
+        is_host_managed = true;
+    } else {
+        NIC_LOG_INFO("DSC MODE: VENICE MANAGED");
+        is_host_managed = false;
     }
 }
 

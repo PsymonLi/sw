@@ -135,13 +135,20 @@ static void
 dsc_status_event_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 {
     hal::core::event_t *event = (hal::core::event_t *)msg->data();
-    hal::core::dsc_status_t *status = &event->dsc_status;
+    sdk::platform::dsc_mode_status_t status;
 
-    NIC_LOG_DEBUG("DSC status update: mode: {}:{}", 
-                  DistributedServiceCardStatus_Mode_Name(status->mode),
-                  status->mode);
+    NIC_LOG_DEBUG("IPC, DSC status update: mode: {}:{}",
+                  DistributedServiceCardStatus_Mode_Name(event->dsc_status.mode),
+                  event->dsc_status.mode);
 
-    // TODO: Nicmgr handling
+    // Nicmgr handling
+    if (event->dsc_status.mode == nmd::DistributedServiceCardStatus_Mode_NONE ||
+        event->dsc_status.mode == nmd::DistributedServiceCardStatus_Mode_HOST_MANAGED) {
+        status.mode = sdk::platform::DSC_MODE_HOST_MANAGED;
+    } else {
+        status.mode = sdk::platform::DSC_MODE_VENICE_MANAGED;
+    }
+    devmgr->DscStatusUpdateHandler(&status);
 }
 
 static void
@@ -153,7 +160,7 @@ register_for_events (void)
     sdk::ipc::subscribe(event_id_t::EVENT_ID_HAL_UP, hal_up_event_handler, NULL);
 
     // dsc status event
-    sdk::ipc::subscribe(event_id_t::EVENT_ID_NICMGR_DSC_STATUS, 
+    sdk::ipc::subscribe(event_id_t::EVENT_ID_NICMGR_DSC_STATUS,
                         dsc_status_event_handler, NULL);
 
     // Blocking events

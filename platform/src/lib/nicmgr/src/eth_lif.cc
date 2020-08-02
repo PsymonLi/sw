@@ -1209,7 +1209,7 @@ EthLif::_CmdAccessCheck(cmd_opcode_t opcode)
     DeviceManager *devmgr = DeviceManager::GetInstance();
 
     // CMDs to be restricted when in NW managed mode
-    if (devmgr->IsNwManaged()) {
+    if (!devmgr->IsHostManaged()) {
         switch (opcode) {
         case IONIC_CMD_FW_DOWNLOAD:
         case IONIC_CMD_FW_CONTROL:

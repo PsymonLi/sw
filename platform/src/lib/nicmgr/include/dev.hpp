@@ -153,6 +153,7 @@ public:
     void DelphiMountEventHandler(bool mounted);
     void DeviceResetEventHandler();
     void SystemSpecEventHandler(bool micro_seg_en);
+    void DscStatusUpdateHandler(sdk::platform::dsc_mode_status_t *status);
 
     // set/get devapi
     void SetHalClient(devapi *dev_api);
@@ -166,7 +167,7 @@ public:
     int GenerateQstateInfoJson(std::string qstate_info_file);
     void GetConfigFiles(devicemgr_cfg_t *cfg, std::string &hbm_mem_json_file,
                         std::string &device_json_file);
-    bool IsNwManaged() {return micro_seg_en; }
+    bool IsHostManaged() {return is_host_managed; }
 
     // upgrade helper functions
     void SetUpgradeMode(UpgradeMode mode) { upgrade_mode = mode; }
@@ -216,6 +217,7 @@ private:
     sdk::platform::platform_type_t platform;
     sdk::lib::dev_forwarding_mode_t fwd_mode;
     bool micro_seg_en;
+    bool is_host_managed;
     std::string device_json_file;
     std::string hbm_mem_json_file;
     std::string cfg_path;
