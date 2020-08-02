@@ -80,6 +80,7 @@ mctp_pktbuf_alloc(struct mctp_binding *binding, size_t len)
 
     /* todo: pools */
     buf = __mctp_alloc(sizeof(*buf) + size);
+    memset(buf, 0, sizeof(*buf) + size);
 
     buf->size = size;
     buf->start = binding->pkt_pad;
@@ -557,7 +558,6 @@ mctp_message_tx_on_bus(struct mctp *mctp, struct mctp_bus *bus, mctp_eid_t src,
                 payload_len + sizeof(*hdr));
         hdr = mctp_pktbuf_hdr(pkt);
 
-        // TODO tags
         hdr->ver = bus->binding->version & 0xf;
         hdr->dest = dest;
         hdr->src = src;
