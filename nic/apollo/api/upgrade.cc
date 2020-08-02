@@ -8,12 +8,12 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/include/pds_event.hpp"
-#include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/port.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
+#include "nic/apollo/upgrade/shmstore/api.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
 
 namespace api {
@@ -24,9 +24,9 @@ module_name (uint32_t thread_id)
     std::string module;
 
     switch (thread_id) {
-    case core::PDS_THREAD_ID_NICMGR: return "nicmgr";
-    case SDK_THREAD_ID_LINKMGR_CTRL: return "linkmgr";
-    case core::PDS_THREAD_ID_API: return "pdsagent";
+    case core::PDS_THREAD_ID_NICMGR:  return "nicmgr";
+    case SDK_THREAD_ID_LINKMGR_CTRL:  return "linkmgr";
+    case core::PDS_THREAD_ID_API:     return "pdsagent";
     default :
         PDS_TRACE_ERR("Invalid module version request, thread %u", thread_id);
         break;
@@ -56,11 +56,11 @@ read_modules_version (sysinit_mode_t init_mode)
 
     // if it is graceful/hitless boot, decode the previous version
     if (!sdk::platform::sysinit_mode_graceful(init_mode)) {
-        full_path = std::string(PDS_UPGRADE_SHMSTORE_PPATH) +
+        full_path = upg_shmstore_persistent_path() +
                         "/upgrade_cc_graceful_version.json";
         // TODO graceful_store_prev_db = store_cfg_parse(full_path);
     } else if (!sdk::platform::sysinit_mode_hitless(init_mode)) {
-        full_path = std::string(PDS_UPGRADE_SHMSTORE_VPATH_HITLESS) +
+        full_path = upg_shmstore_volatile_path_hitless() +
                         "/upgrade_cc_hitless_version.json";
         // TODO hitless_store_prev_db = store_cfg_parse(full_path);
     }
@@ -87,13 +87,13 @@ upg_shmstore_name (const char *name, module_version_t version, bool vstore)
             std::to_string(version.minor);
     }
     if (vstore) {
-        if (stat(PDS_UPGRADE_SHMSTORE_VPATH_HITLESS, &st) == 0) {
-            return std::string(PDS_UPGRADE_SHMSTORE_VPATH_HITLESS) + "/" + fname;
+        if (stat(upg_shmstore_volatile_path_hitless().c_str(), &st) == 0) {
+            return upg_shmstore_volatile_path_hitless() + "/" + fname;
         } else {
-            return std::string(PDS_UPGRADE_SHMSTORE_VPATH_GRACEFUL) + "/" + fname;
+            return upg_shmstore_volatile_path_graceful() + "/" + fname;
         }
     } else {
-        return std::string(PDS_UPGRADE_SHMSTORE_PPATH) + "/" + fname;
+        return upg_shmstore_persistent_path() + "/" + fname;
     }
 }
 
@@ -154,8 +154,8 @@ upg_shmstore_create (sysinit_mode_t mode, bool vstore)
     if (sdk::platform::sysinit_mode_hitless(mode)) {
         // agent config store
         ret = upg_shmstore_create_(PDS_AGENT_CFG_SHMSTORE_ID,
-                                   PDS_AGENT_UPGRADE_CFG_SHMSTORE_NAME,
-                                   PDS_AGENT_UPGRADE_CFG_SHMSTORE_SIZE,
+                                   upg_cfg_shmstore_name("pdsagent").c_str(),
+                                   upg_cfg_shmstore_size("pdsagent"),
                                    version, vstore);
         if (ret != SDK_RET_OK) {
             return ret;
@@ -163,8 +163,8 @@ upg_shmstore_create (sysinit_mode_t mode, bool vstore)
     }
     // nicmgr config store
     ret = upg_shmstore_create_(PDS_NICMGR_CFG_SHMSTORE_ID,
-                               PDS_NICMGR_UPGRADE_CFG_SHMSTORE_NAME,
-                               PDS_NICMGR_UPGRADE_CFG_SHMSTORE_SIZE,
+                               upg_cfg_shmstore_name("nicmgr").c_str(),
+                               upg_cfg_shmstore_size("nicmgr"),
                                version, vstore);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -188,7 +188,7 @@ upg_shmstore_open (sysinit_mode_t mode, bool vstore)
     if (sdk::platform::sysinit_mode_hitless(mode)) {
         // agent config store
         ret = upg_shmstore_open_(PDS_AGENT_CFG_SHMSTORE_ID,
-                                 PDS_AGENT_UPGRADE_CFG_SHMSTORE_NAME,
+                                 upg_cfg_shmstore_name("pdsagent").c_str(),
                                  version, vstore);
         if (ret != SDK_RET_OK) {
             return ret;
@@ -196,7 +196,7 @@ upg_shmstore_open (sysinit_mode_t mode, bool vstore)
     }
     // nicmgr config store
     ret = upg_shmstore_open_(PDS_NICMGR_CFG_SHMSTORE_ID,
-                             PDS_NICMGR_UPGRADE_CFG_SHMSTORE_NAME,
+                             upg_cfg_shmstore_name("nicmgr").c_str(),
                              version, vstore);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -256,8 +256,8 @@ linkmgr_shmstore_create (sysinit_mode_t mode)
 {
     return upg_oper_shmstore_create(SDK_THREAD_ID_LINKMGR_CTRL,
                                     PDS_LINKMGR_OPER_SHMSTORE_ID,
-                                    PDS_LINKMGR_UPGRADE_OPER_SHMSTORE_NAME,
-                                    PDS_LINKMGR_UPGRADE_OPER_SHMSTORE_SIZE, mode);
+                                    upg_oper_shmstore_name("linkmgr").c_str(),
+                                    upg_oper_shmstore_size("linkmgr"), mode);
 }
 
 sdk_ret_t
@@ -265,8 +265,8 @@ nicmgr_shmstore_create (sysinit_mode_t mode)
 {
     return upg_oper_shmstore_create(core::PDS_THREAD_ID_NICMGR,
                                     PDS_NICMGR_OPER_SHMSTORE_ID,
-                                    PDS_NICMGR_UPGRADE_OPER_SHMSTORE_NAME,
-                                    PDS_NICMGR_UPGRADE_OPER_SHMSTORE_SIZE, mode);
+                                    upg_oper_shmstore_name("nicmgr").c_str(),
+                                    upg_oper_shmstore_size("nicmgr"), mode);
 }
 
 sdk_ret_t
@@ -274,8 +274,8 @@ api_shmstore_create (sysinit_mode_t mode)
 {
     return upg_oper_shmstore_create(core::PDS_THREAD_ID_API,
                                     PDS_AGENT_OPER_SHMSTORE_ID,
-                                    PDS_AGENT_UPGRADE_OPER_SHMSTORE_NAME,
-                                    PDS_AGENT_UPGRADE_OPER_SHMSTORE_SIZE, mode);
+                                    upg_oper_shmstore_name("pdsagent").c_str(),
+                                    upg_oper_shmstore_size("pdsagent"), mode);
 }
 
 sdk_ret_t
@@ -310,7 +310,7 @@ upg_init (pds_init_params_t *params)
     // offset the memory regions based on the regions in use
     if (sdk::platform::sysinit_mode_hitless(mode)) {
         ret = g_pds_state.mempartition()->upgrade_hitless_offset_regions(
-            PDS_UPGRADE_SHMSTORE_VPATH_HITLESS, false);
+            upg_shmstore_volatile_path_hitless().c_str(), false);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Upgrade hitless memory offset failed");
             return ret;
@@ -393,7 +393,7 @@ upg_soft_init (pds_init_params_t *params)
     if (sdk::platform::sysinit_mode_hitless(mode)) {
         // offset the memory regions based on the regions in use
         ret = g_pds_state.mempartition()->upgrade_hitless_offset_regions(
-            PDS_UPGRADE_SHMSTORE_VPATH_HITLESS, false);
+            upg_shmstore_volatile_path_hitless().c_str(), false);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Upgrade hitless memory offset failed");
             return ret;

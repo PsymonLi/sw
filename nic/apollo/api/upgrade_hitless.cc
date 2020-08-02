@@ -7,7 +7,6 @@
 #include "nic/sdk/asic/pd/scheduler.hpp"
 #include "nic/sdk/linkmgr/linkmgr.hpp"
 #include "nic/sdk/asic/common/asic_mem.hpp"
-#include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/framework/api_base.hpp"
@@ -26,6 +25,7 @@
 #include "nic/apollo/api/device.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 #include "nic/apollo/api/internal/upgrade_pstate.hpp"
+#include "nic/apollo/upgrade/shmstore/api.hpp"
 
 namespace api {
 
@@ -291,7 +291,7 @@ upg_ev_start (upg_ev_params_t *params)
     // below file is used by B to offsets its mem regions during
     // A to B hitless upgrade
     api::g_pds_state.mempartition()->dump_regions_info(
-                                         PDS_UPGRADE_SHMSTORE_VPATH_HITLESS);
+        upg_shmstore_volatile_path_hitless().c_str());
     return SDK_RET_OK;
 }
 
