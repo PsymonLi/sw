@@ -67,5 +67,7 @@ DryRunSanity hostvxlan meter
 # mirror jobs
 DryRunSanity hostmirror mirror SUB="tx_mirror" 
 
+DryRunSanity ipsec ipsec
+
 # end of script
 clean_exit

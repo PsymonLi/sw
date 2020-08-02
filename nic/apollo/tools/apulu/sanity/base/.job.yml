@@ -236,6 +236,15 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
+  apulu/dol/ipsec:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/ipsec"]
+    owners: ["email:vsampath@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
 image:
   bind_dir: "/sw"
   work_dir: "/sw/nic"

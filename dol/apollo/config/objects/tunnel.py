@@ -13,6 +13,7 @@ from apollo.config.agent.api import ObjectTypes as ObjectTypes
 import apollo.config.utils as utils
 import apollo.config.topo as topo
 import apollo.config.objects.base as base
+import apollo.config.objects.ipsec as ipsec
 
 import tunnel_pb2 as tunnel_pb2
 import types_pb2 as types_pb2
@@ -58,6 +59,8 @@ class TunnelObject(base.ConfigObjectBase):
         self.NEXTHOPGROUP = None
         self.validateFound = False
         self.ToS = getattr(spec, 'tos', 0)
+        self.IPSEC_ENCRYPT_SA = None
+        self.IPSEC_DECRYPT_SA = None
 
         if (hasattr(spec, 'nat')):
             self.Nat = spec.nat
@@ -213,6 +216,10 @@ class TunnelObject(base.ConfigObjectBase):
                 spec.NexthopId = utils.PdsUuid.GetUUIDfromId(self.NexthopId, ObjectTypes.NEXTHOP)
             elif self.IsUnderlayEcmp():
                 spec.NexthopGroupId = utils.PdsUuid.GetUUIDfromId(self.NexthopGroupId, ObjectTypes.NEXTHOPGROUP)
+        if self.IPSEC_ENCRYPT_SA:
+            spec.IpsecEncryptSAId = self.IPSEC_ENCRYPT_SA.GetKey()
+        if self.IPSEC_DECRYPT_SA:
+            spec.IpsecDecryptSAId = self.IPSEC_DECRYPT_SA.GetKey()
         return
 
     def ValidateSpecDiscovered(self, spec):
@@ -383,6 +390,17 @@ class TunnelObjectClient(base.ConfigClientBase):
                 tun.NexthopGroupId = nhGroupObj.Id
                 logger.info("Linking %s - %s" % (tun, nhGroupObj))
                 nhGroupObj.AddDependent(tun)
+        return
+
+    def FillIpsecObjects(self, node):
+        logger.info("Filling ipsec groups")
+        for tun in self.Objects(node):
+            if ResmgrClient[node].IpsecEncryptSAAllocator:
+                tun.IPSEC_ENCRYPT_SA = ResmgrClient[node].IpsecEncryptSAAllocator.rrnext()
+                logger.info("Linking %s - %s" % (tun, tun.IPSEC_ENCRYPT_SA))
+            if ResmgrClient[node].IpsecDecryptSAAllocator:
+                tun.IPSEC_DECRYPT_SA = ResmgrClient[node].IpsecDecryptSAAllocator.rrnext()
+                logger.info("Linking %s - %s" % (tun, tun.IPSEC_DECRYPT_SA))
         return
 
     def AddObjToDict(self, obj):

@@ -1,0 +1,18 @@
+# Feature networking Modules List for Local to Remote scenario
+feature:
+    id          : ipsec
+    package     : test.networking
+    module      : networking
+    runorder    : 100
+    enable      : True
+    ignore      : False
+
+modules:
+    # L2 switching based on MAC filtering
+    # L2 switching within same subnet
+    - module:
+        name    : L2_IPV4_TCP
+        spec    : ipsec_local2remote.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=none

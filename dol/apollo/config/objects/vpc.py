@@ -136,9 +136,6 @@ class VpcObject(base.ConfigObjectBase):
             NhGroupClient.GenerateObjects(node, self, spec)
         if hasattr(spec, 'tunnel'):
             tunnel.client.GenerateObjects(node, EzAccessStoreClient[node].GetDevice(), spec.tunnel)
-        if hasattr(spec, 'ipsec'):
-            ipsec.encrypt_client.GenerateObjects(node, EzAccessStoreClient[node].GetDevice(), self, spec.ipsec)
-            ipsec.decrypt_client.GenerateObjects(node, EzAccessStoreClient[node].GetDevice(), self, spec.ipsec)
         if hasattr(spec, 'tagtbl'):
             tag.client.GenerateObjects(node, self, spec)
         if hasattr(spec, 'policy'):
@@ -486,11 +483,14 @@ class VpcObjectClient(base.ConfigClientBase):
         if utils.IsPipelineApulu():
             # Associate Nexthop objects
             if utils.IsReconfigInProgress(node): return
+            ipsec.encrypt_client.AssociateObjects(node)
+            ipsec.decrypt_client.AssociateObjects(node)
             NhGroupClient.CreateAllocator(node)
             NhClient.AssociateObjects(node)
             NhGroupClient.AssociateObjects(node)
             tunnel.client.FillUnderlayNhGroups(node)
             route.client.FillNhGroups(node)
+            tunnel.client.FillIpsecObjects(node)
         return
 
     def CreateObjects(self, node):
@@ -499,8 +499,6 @@ class VpcObjectClient(base.ConfigClientBase):
 
         # netagent requires route table before vpc
         super().CreateObjects(node)
-        ipsec.encrypt_client.CreateObjects(node)
-        ipsec.decrypt_client.CreateObjects(node)
         DHCPRelayClient.CreateObjects(node)
         DHCPProxyClient.CreateObjects(node)
         tag.client.CreateObjects(node)

@@ -26,6 +26,8 @@ class EzAccessStore:
         self.tunnels = ObjectDatabase()
         self.nexthops = ObjectDatabase()
         self.nexthopgroups = ObjectDatabase()
+        self.ipsec_encrypt_objs = ObjectDatabase()
+        self.ipsec_decrypt_objs = ObjectDatabase()
         self.device = None
         self.underlay_vpc = None
         self.hostport = None
@@ -53,6 +55,18 @@ class EzAccessStore:
         if defs.TEST_TYPE == "IOTA":
             self.nexthopgroups.db.clear()
         return self.nexthopgroups.SetAll(objs)
+
+    def SetIpsecEncryptSA(self, objs):
+        if len(objs) == 0: return
+        if defs.TEST_TYPE == "IOTA":
+            self.ipsec_encrypt_objs.db.clear()
+        return self.ipsec_encrypt_objs.SetAll(objs)
+
+    def SetIpsecDecryptSA(self, objs):
+        if len(objs) == 0: return
+        if defs.TEST_TYPE == "IOTA":
+            self.ipsec_decrypt_objs.db.clear()
+        return self.ipsec_encrypt_objs.SetAll(objs)
 
     def SetDevice(self,obj):
         self.device = obj
@@ -211,6 +225,18 @@ class EzAccessStore:
         for nhg in self.nexthopgroups.GetAllInList():
             if nhg.IsOverlay() and nhg.DualEcmp: nhgs.append(nhg)
         return nhgs
+
+    def GetIpsecEncryptSAs(self):
+        encrypt_sas = []
+        for obj in self.ipsec_encrypt_objs.GetAllInList():
+            encrypt_sas.append(obj)
+        return encrypt_sas
+
+    def GetIpsecDecryptSAs(self):
+        decrypt_sas = []
+        for obj in self.ipsec_decrypt_objs.GetAllInList():
+            decrypt_sas.append(obj)
+        return decrypt_sas
 
     @staticmethod
     def SetTestbedSpec(tbspec):

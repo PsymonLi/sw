@@ -516,6 +516,10 @@ jobd/apulu/metaswitch_store_test: ${JOBD_PREREQS}
 jobd/dol/apulu/vxlan: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature networking
 
+.PHONY: jobd/dol/apulu/ipsec
+jobd/dol/apulu/ipsec: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo ipsec --feature ipsec
+
 .PHONY: jobd/dol/apulu/upgrade
 jobd/dol/apulu/upgrade: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature upgrade --memory 8G

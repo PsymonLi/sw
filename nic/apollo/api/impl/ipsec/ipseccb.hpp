@@ -65,18 +65,18 @@ namespace impl {
 //------------------------------------------------------------------------------
 // API
 //------------------------------------------------------------------------------
-sdk_ret_t ipseccb_encrypt_create(uint32_t hw_id, uint64_t base_pa,
+sdk_ret_t ipseccb_encrypt_create(uint32_t hw_id, mem_addr_t base_pa,
                                  pds_ipsec_sa_encrypt_spec_t *spec);
-sdk_ret_t ipseccb_encrypt_get(uint32_t hw_id, uint64_t base_pa,
+sdk_ret_t ipseccb_encrypt_get(uint32_t hw_id, mem_addr_t base_pa,
                               pds_ipsec_sa_encrypt_info_t *info);
-sdk_ret_t ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, uint64_t base_pa,
+sdk_ret_t ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, mem_addr_t base_pa,
                                              uint16_t nh_id, uint8_t nh_type);
-sdk_ret_t ipseccb_encrypt_update_tunnel_ip (uint32_t hw_id, uint64_t base_pa,
+sdk_ret_t ipseccb_encrypt_update_tunnel_ip (uint32_t hw_id, mem_addr_t base_pa,
                                             ip_addr_t local_ip,
                                             ip_addr_t remote_ip);
-sdk_ret_t ipseccb_decrypt_create(uint32_t hw_id, uint64_t base_pa,
+sdk_ret_t ipseccb_decrypt_create(uint32_t hw_id, mem_addr_t base_pa,
                                  pds_ipsec_sa_decrypt_spec_t *spec);
-sdk_ret_t ipseccb_decrypt_get(uint32_t hw_id, uint64_t base_pa,
+sdk_ret_t ipseccb_decrypt_get(uint32_t hw_id, mem_addr_t base_pa,
                               pds_ipsec_sa_decrypt_info_t *info);
 
 }    // namespace impl

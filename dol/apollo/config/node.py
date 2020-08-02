@@ -33,6 +33,8 @@ from apollo.config.objects.dhcprelay import client as DHCPRelayClient
 from apollo.config.objects.dhcpproxy import client as DHCPProxyClient
 from apollo.config.objects.nat_pb import client as NATPbClient
 from apollo.config.objects.policer import client as PolicerClient
+from apollo.config.objects.ipsec import encrypt_client as IpsecEncryptClient
+from apollo.config.objects.ipsec import decrypt_client as IpsecDecryptClient
 from apollo.config.objects.metaswitch.bgp import client as BGPClient
 from apollo.config.objects.metaswitch.bgp_peer import client as BGPPeerClient
 from apollo.config.objects.metaswitch.bgp_peeraf import client as BGPPeerAfClient
@@ -161,6 +163,8 @@ class NodeObject(base.ConfigObjectBase):
             BatchClient.Start(node)
         InterfaceClient.CreateObjects(node)
         NexthopClient.CreateObjects(node)
+        IpsecEncryptClient.CreateObjects(node)
+        IpsecDecryptClient.CreateObjects(node)
         TunnelClient.CreateObjects(node)
         NHGroupClient.CreateObjects(node)
         MirrorClient.CreateObjects(node)

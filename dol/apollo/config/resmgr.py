@@ -219,6 +219,8 @@ class Resmgr(base.ConfigObjectBase):
         self.UnderlayNhGroupAllocator = None
         self.DualEcmpNhGroupAllocator = None
         self.DhcpRelayAllocator = None
+        self.IpsecEncryptSAAllocator = None
+        self.IpsecDecryptSAAllocator = None
         self.DeviceMacAllocator = objects.TemplateFieldObject("macstep/0002.0100.0000/0000.0000.0001")
         self.NumVnicPolicyAllocator = utils.rrobiniter(range(Resmgr.MAX_POLICY_PER_VNIC+1))
         self.UnderlayNumNexthopsAllocator = utils.rrobiniter(range(1, Resmgr.MAX_UNDERLAY_NHS+1))
@@ -389,6 +391,16 @@ class Resmgr(base.ConfigObjectBase):
         objs = EzAccessStoreClient[self.Node].GetDhcpProxyObjects()
         if len(objs) != 0:
             self.DhcpProxyAllocator = utils.rrobiniter(objs)
+
+    def CreateIpsecEncryptSAAllocator(self):
+        objs = EzAccessStoreClient[self.Node].GetIpsecEncryptSAs()
+        if len(objs) != 0:
+            self.IpsecEncryptSAAllocator = utils.rrobiniter(objs)
+
+    def CreateIpsecDecryptSAAllocator(self):
+        objs = EzAccessStoreClient[self.Node].GetIpsecDecryptSAs()
+        if len(objs) != 0:
+            self.IpsecDecryptSAAllocator = utils.rrobiniter(objs)
 
     # Create subnets from base prefix
     # - base is a prefix in the form of '10.0.0.0/16'

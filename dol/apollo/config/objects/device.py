@@ -13,6 +13,7 @@ import apollo.config.agent.api as api
 import apollo.config.objects.base as base
 import apollo.config.objects.tunnel as tunnel
 import apollo.config.utils as utils
+import apollo.config.objects.ipsec as ipsec
 
 import device_pb2 as device_pb2
 import types_pb2 as types_pb2
@@ -98,6 +99,9 @@ class DeviceObject(base.ConfigObjectBase):
         self.__spec = spec
         self.DeriveOperInfo()
         self.Show()
+        if hasattr(spec, 'ipsec'):
+            ipsec.encrypt_client.GenerateObjects(node, self, None, spec.ipsec)
+            ipsec.decrypt_client.GenerateObjects(node, self, None, spec.ipsec)
         if (hasattr(spec, 'tunnel')):
             tunnel.client.GenerateObjects(node, self, spec.tunnel)
         return

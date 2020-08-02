@@ -43,10 +43,10 @@ static sdk_ret_t
 add_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
 {
     common_p4plus_stage0_app_header_table_d data = { 0 };
-    uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_0_OFFSET;
+    mem_addr_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_0_OFFSET;
     sdk_ret_t ret;
-    uint64_t ipsec_cb_ring_addr;
-    uint64_t ipsec_barco_ring_addr;
+    mem_addr_t ipsec_cb_ring_addr;
+    mem_addr_t ipsec_barco_ring_addr;
     uint8_t pc_offset = 0;
 
     ret = get_ipsec_decrypt_rx_stage0_prog_addr(&pc_offset);
@@ -95,7 +95,7 @@ static sdk_ret_t
 add_ipsec_decrypt_part2 (ipseccb_ctxt_t *ctxt)
 {
     tx_table_s1_t2_esp_v4_tunnel_n2h_load_part2_d decrypt_part2;
-    uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_1_OFFSET;
+    mem_addr_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_1_OFFSET;
     sdk_ret_t ret;
 
     decrypt_part2.spi = htonl(ctxt->decrypt_spec->spi);
@@ -123,8 +123,8 @@ static sdk_ret_t
 get_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
 {
     common_p4plus_stage0_app_header_table_d data;
-    uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_0_OFFSET;
-    uint64_t ipsec_cb_ring_addr, ipsec_barco_ring_addr;
+    mem_addr_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_0_OFFSET;
+    mem_addr_t ipsec_cb_ring_addr, ipsec_barco_ring_addr;
     uint16_t cb_cindex, cb_pindex;
     uint16_t barco_cindex, barco_pindex;
 
@@ -154,7 +154,7 @@ static sdk_ret_t
 get_ipsec_decrypt_part2 (ipseccb_ctxt_t *ctxt)
 {
     tx_table_s1_t2_esp_v4_tunnel_n2h_load_part2_d decrypt_part2;
-    uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_1_OFFSET;
+    mem_addr_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_1_OFFSET;
 
     impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&decrypt_part2,
                                             sizeof(decrypt_part2));
@@ -178,7 +178,7 @@ get_ipsec_decrypt_entry (ipseccb_ctxt_t *ctxt)
 
 
 sdk_ret_t
-ipseccb_decrypt_create (uint32_t hw_id, uint64_t base_pa,
+ipseccb_decrypt_create (uint32_t hw_id, mem_addr_t base_pa,
                         pds_ipsec_sa_decrypt_spec_t *spec)
 {
     sdk_ret_t ret;
@@ -221,7 +221,7 @@ cleanup:
 }
 
 sdk_ret_t
-ipseccb_decrypt_get (uint32_t hw_id, uint64_t base_pa,
+ipseccb_decrypt_get (uint32_t hw_id, mem_addr_t base_pa,
                      pds_ipsec_sa_decrypt_info_t *info)
 {
     sdk_ret_t ret;

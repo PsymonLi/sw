@@ -42,10 +42,10 @@ static sdk_ret_t
 add_ipsec_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
 {
     common_p4plus_stage0_app_header_table_d data = { 0 };
-    uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_QSTATE_0_OFFSET;
+    mem_addr_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_QSTATE_0_OFFSET;
     sdk_ret_t ret;
-    uint64_t ipsec_cb_ring_addr;
-    uint64_t ipsec_barco_ring_addr;
+    mem_addr_t ipsec_cb_ring_addr;
+    mem_addr_t ipsec_barco_ring_addr;
     uint8_t pc_offset = 0;
 
     ret = get_ipsec_rx_stage0_prog_addr(&pc_offset);
@@ -103,7 +103,7 @@ add_ipsec_ip_header_entry (ipseccb_ctxt_t *ctxt)
     ipsec_eth_ip4_hdr_t eth_ip_hdr = { 0 };
     uint8_t data[CACHE_LINE_SIZE];
     sdk_ret_t ret = SDK_RET_OK;
-    uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_ETH_IP_HDR_OFFSET;
+    mem_addr_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_ETH_IP_HDR_OFFSET;
 
     // v4 only for now
     eth_ip_hdr.dot1q_ethertype = htons(0x0800);
@@ -142,8 +142,8 @@ static sdk_ret_t
 get_ipsec_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
 {
     common_p4plus_stage0_app_header_table_d data;
-    uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_QSTATE_0_OFFSET;
-    uint64_t ipsec_cb_ring_addr, ipsec_barco_ring_addr;
+    mem_addr_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_QSTATE_0_OFFSET;
+    mem_addr_t ipsec_cb_ring_addr, ipsec_barco_ring_addr;
 
     impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&data,
                                             sizeof(data));
@@ -166,7 +166,7 @@ static sdk_ret_t
 get_ipsec_ip_header_entry (ipseccb_ctxt_t *ctxt)
 {
     ipsec_qstate_addr_part2_t data;
-    uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_ETH_IP_HDR_OFFSET;
+    mem_addr_t addr = ctxt->cb_base_pa + IPSEC_CB_ENC_ETH_IP_HDR_OFFSET;
 
     impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&data,
                                             sizeof(data));
@@ -186,7 +186,7 @@ get_ipsec_encrypt_entry (ipseccb_ctxt_t *ctxt)
 }
 
 sdk_ret_t
-ipseccb_encrypt_create (uint32_t hw_id, uint64_t base_pa,
+ipseccb_encrypt_create (uint32_t hw_id, mem_addr_t base_pa,
                         pds_ipsec_sa_encrypt_spec_t *spec)
 {
     sdk_ret_t ret;
@@ -229,7 +229,7 @@ cleanup:
 }
 
 sdk_ret_t
-ipseccb_encrypt_get (uint32_t hw_id, uint64_t base_pa,
+ipseccb_encrypt_get (uint32_t hw_id, mem_addr_t base_pa,
                      pds_ipsec_sa_encrypt_info_t *info)
 {
     sdk_ret_t ret;
@@ -248,7 +248,7 @@ ipseccb_encrypt_get (uint32_t hw_id, uint64_t base_pa,
 }
 
 sdk_ret_t
-ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, uint64_t base_pa,
+ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, mem_addr_t base_pa,
                                    uint16_t nh_id, uint8_t nh_type)
 {
     uint32_t data;
@@ -257,7 +257,7 @@ ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, uint64_t base_pa,
     *(uint16_t *)ptr = nh_id;
     ptr += 2;
     *(uint8_t *)ptr = nh_type;
-    uint64_t addr = base_pa + IPSEC_CB_ENC_NEXTHOP_ID_OFFSET;
+    mem_addr_t addr = base_pa + IPSEC_CB_ENC_NEXTHOP_ID_OFFSET;
     impl_base::pipeline_impl()->p4plus_write(0, addr, (uint8_t *)&data,
                                              sizeof(uint32_t),
                                              P4PLUS_CACHE_ACTION_NONE);
@@ -265,12 +265,12 @@ ipseccb_encrypt_update_nexthop_id (uint32_t hw_id, uint64_t base_pa,
 }
 
 sdk_ret_t
-ipseccb_encrypt_update_tunnel_ip (uint32_t hw_id, uint64_t base_pa,
+ipseccb_encrypt_update_tunnel_ip (uint32_t hw_id, mem_addr_t base_pa,
                                   ip_addr_t local_ip, ip_addr_t remote_ip)
 {
     uint8_t data[CACHE_LINE_SIZE];
     ipsec_eth_ip4_hdr_t *eth_ip_hdr = (ipsec_eth_ip4_hdr_t *)data;
-    uint64_t addr = base_pa + IPSEC_CB_ENC_ETH_IP_HDR_OFFSET;
+    mem_addr_t addr = base_pa + IPSEC_CB_ENC_ETH_IP_HDR_OFFSET;
 
     impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&data,
                                             sizeof(data));
