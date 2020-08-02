@@ -189,7 +189,8 @@ def Trigger(tc):
                 tc.error = True
                 return api.types.status.FAILURE
 
-            ret = agent_api.PushConfigObjects(colObjects, [tc.naples.node_name])
+            ret = agent_api.PushConfigObjects(colObjects, 
+                            [tc.naples.node_name], [tc.naples_device_name])
             if ret != api.types.status.SUCCESS:
                 api.Logger.error("Unable to push collector objects")
                 tc.error = True
@@ -203,15 +204,16 @@ def Trigger(tc):
         ret = eutils.generateLifInterfaceConfig(tc, ifObjects, colObjects)
         if ret != api.types.status.SUCCESS:
             agent_api.DeleteConfigObjects(tc.lif_collector_objects,
-                                         [tc.naples.node_name])
+                      [tc.naples.node_name], [tc.naples_device_name])
             api.Logger.error("Unable to identify Uplink/LIF Interfaces")
             tc.error = True
             return api.types.status.FAILURE
 
-        ret = agent_api.UpdateConfigObjects(ifObjects, [tc.naples.node_name])
+        ret = agent_api.UpdateConfigObjects(ifObjects, 
+                        [tc.naples.node_name], [tc.naples_device_name])
         if ret != api.types.status.SUCCESS:
             agent_api.DeleteConfigObjects(tc.lif_collector_objects,
-                                         [tc.naples.node_name])
+                      [tc.naples.node_name], [tc.naples_device_name])
             api.Logger.error("Unable to update interface objects")
             tc.error = True
             return api.types.status.FAILURE
@@ -290,10 +292,10 @@ def Trigger(tc):
         eutils.deGenerateLifInterfaceConfig(tc, tc.interface_objects, 
                                             tc.lif_collector_objects)
         agent_api.UpdateConfigObjects(tc.interface_objects, 
-                                     [tc.naples.node_name])
+                  [tc.naples.node_name], [tc.naples_device_name])
 
         agent_api.DeleteConfigObjects(tc.lif_collector_objects, 
-                                     [tc.naples.node_name])
+                  [tc.naples.node_name], [tc.naples_device_name])
 
         #
         # Make sure that Mirror-config has been removed

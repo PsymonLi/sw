@@ -64,8 +64,9 @@ def add_command(req, host, cmd, bg):
 #
 # Add a Command in the context of Naples
 #
-def add_naples_command(req, naples, cmd):
-    api.Trigger_AddNaplesCommand(req, naples.node_name, cmd)
+def add_naples_command(req, naples, cmd, naples_device_name):
+    api.Trigger_AddNaplesCommand(req, naples.node_name, cmd,
+                                 naples_device_name)
 
 #
 # Get a list of all the workloads in both the nodes
@@ -83,6 +84,7 @@ def establishWorkloads(tc):
 #
 def establishNaplesWorkload(tc):
     tc.naples = None
+    tc.naples_device_name = None
     for wl in tc.workloads:
         if wl.IsNaples():
             if tc.iterators.vlan == 'tag' and wl.uplink_vlan != 0:
@@ -99,6 +101,10 @@ def establishNaplesWorkload(tc):
     ip_mask = (0 - (1 << (32 - int(tc.naples.ip_prefix.split('/')[1]))))
     tc.naples_ip_prefix = int(ipaddress.ip_address(tc.naples.ip_address)) &\
                           ip_mask
+
+    for n in api.GetDeviceNames(tc.naples.node_name):
+        tc.naples_device_name = n
+        break
 
     return api.types.status.SUCCESS
 
@@ -573,6 +579,7 @@ def generateLifCollectorConfigForMultiMirrorSession(tc, colObjects):
             tmp = copy.deepcopy(colObjects[0])
             colObjects.append(tmp)
         colObjects[c].meta.name = "lif-collector-{}".format(c)
+
         colObjects[c].spec.span_id = (tc.iterators.pktsize*(c+1)) - 1
         colObjects[c].spec.packet_size = tc.iterators.pktsize
         if tc.iterators.direction == 'ingress':
@@ -628,7 +635,7 @@ def getIfNames(tc, ifObjects):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd = "/usr/bin/curl localhost:9007/api/interfaces/ | jq . |\
            grep name | grep uplink"
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     trig_resp = api.Trigger(req)
     for cmd in trig_resp.commands:
@@ -683,7 +690,7 @@ def deGenerateLifInterfaceConfig(tc, ifObjects, colObjects):
 # Superimpose template-mirror-config with Workload-IP-attributes
 #
 def generateMirrorConfig(tc, policy_json, newObjects):
-    i = 0
+    s = 0
     for obj in newObjects:
         for i in range(0, len(obj.spec.match_rules)):
             if (i % 2) == 0:
@@ -706,7 +713,7 @@ def generateMirrorConfig(tc, policy_json, newObjects):
                     obj.spec.match_rules[i].source.addresses[0] = \
                                             tc.naples_peer.ip_address
 
-        obj.spec.span_id = (tc.iterators.pktsize*(i+1)) - 1
+        obj.spec.span_id = (tc.iterators.pktsize*(s+1)) - 1
         obj.spec.packet_size = tc.iterators.pktsize
         for c in range(0, len(tc.flow_collector)):
             idx = tc.flow_collector_idx[c]
@@ -722,7 +729,7 @@ def generateMirrorConfig(tc, policy_json, newObjects):
                 obj.spec.collectors[c].type = 'erspan_type_3'
             obj.spec.collectors[c].strip_vlan_hdr = tc.collector_vlan_strip[idx]
 
-        i += 1
+        s += 1
 
     verif_json = utils.GetVerifJsonFromPolicyJson(policy_json)
     api.Logger.info("VERIFY JSON FILE {}".format(verif_json))
@@ -844,7 +851,7 @@ def establishForwardingSetup(tc):
     # Start with a clean slate by clearing all sessions/flows
     #
     cmd = "/nic/bin/halctl clear session"
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
@@ -960,42 +967,42 @@ def triggerTrafficInHostPinModeOrFreeBSD(tc):
 def showSessionAndP4TablesForDebug(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd = "/nic/bin/halctl show session"
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show session --yaml | grep mirrorsession: |\
            grep -v 0"
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show session --yaml | grep flowexportenablebitmap |\
            grep -v 0"
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {} | \
            grep mirror_session_id | grep -v 0x0"\
            .format(tc.lif_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {} | \
            grep mirror_session_id | grep -v 0x0"\
            .format(tc.omap_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {} | \
            grep mirror_session_id | grep -v 0x0"\
            .format(tc.flow_info_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = '/nic/bin/halctl show table dump --table-id {} | \
            grep export_en | grep -v _en=0'.format(tc.flow_hash_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {}"\
            .format(tc.mirror_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {}"\
            .format(tc.tunnel_rewrite_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
@@ -1008,36 +1015,36 @@ def showP4TablesForValidation(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd = "/nic/bin/halctl show session --yaml | grep mirrorsession: |\
            grep -v 0"
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show session --yaml | grep flowexportenablebitmap |\
            grep -v 0"
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {} | \
            grep mirror_session_id | grep -v 0x0".format(tc.lif_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {} | \
            grep irror_session_id | grep -v 0x0".format(tc.omap_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {} | \
            grep rror_session_id | grep -v 0x0"\
            .format(tc.flow_info_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = '/nic/bin/halctl show table dump --table-id {} | \
            grep export_en | grep -v _en=0'.format(tc.flow_hash_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {} | \
            grep MIRROR_ERSPAN_MIRROR_ID".format(tc.mirror_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     cmd = "/nic/bin/halctl show table dump --table-id {} | \
            grep ip_da".format(tc.tunnel_rewrite_table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     resp_cleanup = api.Trigger(req)
 
@@ -1431,7 +1438,7 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
         #
         if tc.protocol == 'udp' or tc.protocol == 'udp-mixed' or\
            tc.protocol == 'all':
-            if tc.collector_udp_pkts[c] != tc.udp_erspan_pkts_expected:
+            if tc.collector_udp_pkts[c] < tc.udp_erspan_pkts_expected:
                 api.Logger.error(\
                 "ERROR UDP: [IGNORE] {} {} ERSPAN packets to {}"\
                 .format(tc.collector_udp_pkts[c],
@@ -1446,7 +1453,7 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
         #
         if tc.protocol == 'icmp' or tc.protocol == 'udp-mixed' or\
            tc.protocol == 'all':
-            if tc.collector_icmp_pkts[c] != tc.icmp_erspan_pkts_expected:
+            if tc.collector_icmp_pkts[c] < tc.icmp_erspan_pkts_expected:
                 api.Logger.error(\
                 "ERROR ICMP: [IGNORE] {} {} ERSPAN packets to {}"\
                 .format(tc.collector_icmp_pkts[c],
@@ -1681,7 +1688,7 @@ def validateIpFixPackets(tc):
 def dumpP4TableForDebug(tc, table_id):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd = "/nic/bin/halctl show table dump --table-id {}".format(table_id)
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
@@ -1690,7 +1697,7 @@ def dumpP4TableForDebug(tc, table_id):
 def dumpSessionTableForDebug(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd = "/nic/bin/halctl show session --yaml"
-    add_naples_command(req, tc.naples, cmd)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
@@ -1766,7 +1773,7 @@ def validateConfigCleanup(tc):
 def retrieveTableIds(tc):
     reqt = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd = '/nic/bin/halctl show table info'
-    add_naples_command(reqt, tc.naples, cmd)
+    add_naples_command(reqt, tc.naples, cmd, tc.naples_device_name)
 
     trig_respt = api.Trigger(reqt)
     for cmd in trig_respt.commands:

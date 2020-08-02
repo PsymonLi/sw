@@ -179,7 +179,8 @@ def Trigger(tc):
             #
             # Push FlowMon Config to Naples
             #
-            ret = agent_api.PushConfigObjects(newObjects, [tc.naples.node_name])
+            ret = agent_api.PushConfigObjects(newObjects, 
+                            [tc.naples.node_name], [tc.naples_device_name])
             if ret != api.types.status.SUCCESS:
                 api.Logger.error("Unable to push flowmon objects")
                 tc.error = True
@@ -252,7 +253,8 @@ def Trigger(tc):
                               resp_tcpdump_flowmon, term_resp_tcpdump_flowmon)
 
             # Delete the objects
-            agent_api.DeleteConfigObjects(newObjects, [tc.naples.node_name])
+            agent_api.DeleteConfigObjects(newObjects, 
+                      [tc.naples.node_name], [tc.naples_device_name])
 
             #
             # Make sure that Mirror-config has been removed

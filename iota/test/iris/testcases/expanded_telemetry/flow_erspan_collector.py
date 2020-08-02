@@ -185,7 +185,8 @@ def Trigger(tc):
             #
             # Push Mirror Config to Naples
             #
-            ret = agent_api.PushConfigObjects(newObjects, [tc.naples.node_name])
+            ret = agent_api.PushConfigObjects(newObjects, 
+                            [tc.naples.node_name], [tc.naples_device_name])
             if ret != api.types.status.SUCCESS:
                 api.Logger.error("Unable to push mirror objects")
                 tc.error = True
@@ -251,7 +252,8 @@ def Trigger(tc):
                               resp_tcpdump_erspan, term_resp_tcpdump_erspan)
 
             # Delete the objects
-            agent_api.DeleteConfigObjects(newObjects, [tc.naples.node_name])
+            agent_api.DeleteConfigObjects(newObjects, 
+                      [tc.naples.node_name], [tc.naples_device_name])
 
             #
             # Make sure that Mirror-config has been removed
