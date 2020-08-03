@@ -8,6 +8,8 @@
 
 #define ARRAY_SIZE(x)		(sizeof(x) / sizeof((x)[0]))
 
+#define SIZE_1MB(x)		(x / (1024 * 1024))
+
 /* Sizeof of field f in type t */
 #define sizeof_field(t, f)	sizeof(((t *)0)->f)
 

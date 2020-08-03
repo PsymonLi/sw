@@ -320,7 +320,10 @@ ionic_desc_name(struct ionic *ionic, char *desc, int len)
 	for (i = 0; i < ARRAY_SIZE(table); i++) {
 		if (table[i].subDevId == ionic->subDevId) {
 			/*  Format <VENDOR_NAME>_<TYPE>_1GB_NIC */
-			snprintf(desc, len, "PEN_DSC_%s_%s_NIC", ionic->asicType, table[i].desc);
+			if (ionic->asicType[0])
+				snprintf(desc, len, "PEN_DSC_%s_%s_NIC", ionic->asicType, table[i].desc);
+			else
+				snprintf(desc, len, "PEN_DSC_%s_NIC", table[i].desc);
 			return (0);
 		}
 	}

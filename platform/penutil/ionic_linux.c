@@ -269,7 +269,8 @@ ionic_linux_copy_fw_file(FILE *fstream, const char *intfName, const char *src, c
 		count += fwrite(&buffer, 1, 1, f2);
 	}
 
-	ionic_print_info(fstream, intfName, "Copied Src: %s Dest: %s size: %ldbytes\n", src, dest, count);
+	ionic_print_info(fstream, intfName, "Copied Src: %s Dest: %s size: %ld MB\n",
+		src, dest, SIZE_1MB(count));
 	fflush(f2);
 	fclose(f2);
 

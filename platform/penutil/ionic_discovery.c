@@ -446,6 +446,24 @@ ionic_parse_dis_device(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 				xmlFree(value);
 			}
 		}
+		if (xmlStrcasecmp(node->name, (const xmlChar *)"macaddress") == 0) {
+			value = (char *)xmlGetProp(node, BAD_CAST "value");
+			if (value) {
+				strncpy(ionic->macAddr, value, sizeof(ionic->macAddr));
+				ionic_print_debug(fstream, intfName, "%s: %s\n",
+					node->name, value);
+				xmlFree(value);
+			}
+		}
+		if (xmlStrcasecmp(node->name, (const xmlChar *)"slotnumber") == 0) {
+			value = (char *)xmlGetProp(node, BAD_CAST "value");
+			if (value) {
+				strncpy(ionic->slotInfo, value, sizeof(ionic->slotInfo));
+				ionic_print_debug(fstream, intfName, "%s: %s\n",
+					node->name, value);
+				xmlFree(value);
+			}
+		}
 		if (xmlStrcasecmp(node->name, (const xmlChar *)"fw_item") == 0) {
 			child = node->children;
 			if (child) {
