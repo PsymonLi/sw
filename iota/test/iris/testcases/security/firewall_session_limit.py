@@ -53,14 +53,40 @@ def SetTrafficGeneratorCommand(tc, req):
             tc.wc_server.workload_name, cmd, background = True)
     tc.cmd_cookies.append(cmd_cookie)
 
+def GetPenctlEventsCount(tc):
+    req = api.Trigger_CreateExecuteCommandsRequest()
+    cmd = "show events --json | wc -l"
+    common.AddPenctlCommand(req, tc.wc_server.node_name, cmd)
+    resp = api.Trigger(req)
+    cmd_resp = resp.commands[0]
+    api.PrintCommandResults(cmd_resp)
+    if cmd_resp.exit_code != 0:
+        return api.types.status.FAILURE
+
+    curr_event_count = cmd_resp.stdout.strip("\n")
+    api.Logger.info("Event count : %s "%curr_event_count)
+    try:
+        curr_event_count = int(curr_event_count)
+    except Exception as e:
+        api.Logger.info(" Failed in retrieving the active event count")
+        curr_event_count = 0
+    return curr_event_count
+
+
 def VerifySessionEvents(tc):
     cmd_cookie = "show events"
     fields = ["APPROACH", "REACHED"]
 
+    curr_event_count = GetPenctlEventsCount(tc)
+    new_event_count = (curr_event_count - tc.event_count_at_start)
+    api.Logger.info(" Event count at end : %s, New event count: %s"%(curr_event_count, new_event_count))
+
     req = api.Trigger_CreateExecuteCommandsRequest()
-    # show events gives out one blank line we are interested in latest two
-    # events hence the -(2+1) tail command
-    cmd = "show events --json | tail -3 | grep %s" % (tc.grep_str)
+    # show events gives out one blank line, we are interested in latest events
+    # hence use atleast (2+1) for tail command
+    if new_event_count < 3:
+        new_event_count = 3
+    cmd = "show events --json | tail -%s | grep %s" % (new_event_count, tc.grep_str)
     common.AddPenctlCommand(req, tc.wc_server.node_name, cmd)
     resp = api.Trigger(req)
     cmd_resp = resp.commands[0]
@@ -108,6 +134,7 @@ def Setup(tc):
 
 def Trigger(tc):
     tc.cmd_cookies = []
+    tc.event_count_at_start = GetPenctlEventsCount(tc)
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd_cookie = "%s(%s) --> %s(%s)" %\
                 (tc.wc_server.workload_name, tc.wc_server.ip_address,
