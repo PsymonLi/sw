@@ -561,9 +561,104 @@ upg_ev_config_replay (upg_ev_params_t *params)
     return SDK_RET_OK;
 }
 
+static bool
+walk_stale_api_obj_cb (void *obj, void *info)
+{
+    upg_obj_info_t *upg_info = (upg_obj_info_t *)info;
+
+    if (!obj) {
+        return false;
+    }
+
+    // TODO: if we restored the object but it was never replayed
+    // dump all such keys for an obj
+    if (((api_base *)obj)->in_restore_list()) {
+        PDS_TRACE_ERR("obj id %u, key %s was not replayed", upg_info->obj_id,
+                       ((api_base *)obj)->key2str().c_str());
+        upg_info->backup.stashed_obj_count++;
+    }
+    return false;   // continue the walk
+}
+
+static void
+restore_stale_obj_check (uint32_t obj_id, upg_obj_info_t *info)
+{
+    switch (obj_id) {
+    case OBJ_ID_NEXTHOP_GROUP:
+        ht *nh_group_ht;
+        nh_group_ht = nexthop_group_db()->nh_group_ht();
+        nh_group_ht->walk(walk_stale_api_obj_cb, (void *)info);
+        break;
+
+    case OBJ_ID_MAPPING:
+        ht *mapping_ht;
+        mapping_ht = mapping_db()->mapping_ht();
+        mapping_ht->walk(walk_stale_api_obj_cb, (void *)info);
+        break;
+
+    case OBJ_ID_NEXTHOP:
+        ht *nexthop_ht;
+        nexthop_ht = nexthop_db()->nh_ht();
+        nexthop_ht->walk(walk_stale_api_obj_cb, (void *)info);
+        break;
+
+    case OBJ_ID_TEP:
+        ht *tep_ht;
+        tep_ht = tep_db()->tep_ht();
+        tep_ht->walk(walk_stale_api_obj_cb, (void *)info);
+        break;
+
+    case OBJ_ID_VNIC:
+        ht *vnic_ht;
+        vnic_ht = vnic_db()->vnic_ht();
+        vnic_ht->walk(walk_stale_api_obj_cb, (void *)info);
+        break;
+
+    case OBJ_ID_VPC:
+        ht *vpc_ht;
+        vpc_ht = vpc_db()->vpc_ht();
+        vpc_ht->walk(walk_stale_api_obj_cb, (void *)info);
+        break;
+
+    case OBJ_ID_DEVICE:
+        device_db()->walk(walk_stale_api_obj_cb, (void *)info);
+        break;
+
+    default:
+        PDS_TRACE_ERR("obj id %u is not being checked for stale obj presence",
+                      info->obj_id);
+        break;
+    }
+}
+
 static sdk_ret_t
 upg_ev_sync (upg_ev_params_t *params)
 {
+    uint32_t id;
+    upg_ctxt *ctx;
+    upg_obj_stash_meta_t *hdr;
+    upg_obj_info_t info;
+
+    ctx = upg_shmstore_objctx_open(PDS_AGENT_CFG_SHMSTORE_ID,
+                                   PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME);
+    SDK_ASSERT(ctx);
+    hdr = (upg_obj_stash_meta_t *)ctx->mem();
+
+    for (id = (uint32_t )OBJ_ID_NONE + 1; id < OBJ_ID_MAX; id++) {
+        if (hdr[id].obj_count) {
+            memset(&info, 0, sizeof(upg_obj_info_t));
+            info.obj_id = id;
+            // detect and assert for objs which were restored but never replayed
+            PDS_TRACE_ERR("check obj id %u for stale objs, total %u were stashed",
+                          id, hdr[id].obj_count);
+            restore_stale_obj_check(id, &info);
+            if (info.backup.stashed_obj_count) {
+                PDS_TRACE_ERR("obj id %u, has %u stale objs", id,
+                              info.backup.stashed_obj_count);
+                SDK_ASSERT(0);
+            }
+        }
+    }
     return SDK_RET_OK;
 }
 
