@@ -90,6 +90,15 @@ endif
 endif
 endif
 
+DVER = $(shell echo $$SW_VERSION)
+ifeq ($(DVER),)
+  DVER = $(shell git describe --tags 2>/dev/null)
+  ifeq ($(DVER),)
+    DVER = "0.0.0"
+  endif
+endif
+KCFLAGS += -Ddrv_ver=\\\"$(DVER)\\\"
+
 KOPT += KCFLAGS="$(KCFLAGS)"
 
 all: $(ALL)

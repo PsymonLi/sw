@@ -89,7 +89,7 @@ RELEASE=$(echo $VER | cut -d- -f2- | tr - .)
 VER="${VERSION}-${RELEASE}"
 
 echo "Setting Linux driver version to '$VER'"
-sed -i "s/^\\(#define IONIC_DR\\w*_VER\\w*\\s\\+\"\\).*\\(\"\\)\$/\1$VER\2/" \
+sed -i "s/^\\(#define IONIC_DRV_VERSION\\s\\+\\).*\$/\1\\\"$VER\\\"/" \
 	"$GEN_DIR/drivers/eth/ionic/ionic.h"
 
 # Generate tarball of the prepared package

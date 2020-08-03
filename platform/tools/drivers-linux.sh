@@ -133,8 +133,9 @@ else
 	VER=`git describe --tags`
 fi
 sed -i "s/^\\(#define DR\\w*_VER\\w*\\s\\+\"\\).*\\(\"\\)\$/\1$VER\2/" \
-	"$GEN_DIR/drivers/eth/ionic/ionic.h"                           \
 	"$GEN_DIR/drivers/rdma/drv/ionic/ionic_ibdev.c"
+sed -i "s/^\\(#define IONIC_DRV_VERSION\\s\\+\\).*\$/\1\\\"$VER\\\"/" \
+	"$GEN_DIR/drivers/eth/ionic/ionic.h"
 
 # Generate tarball of the prepared package
 cd "$GEN_DIR/.."
