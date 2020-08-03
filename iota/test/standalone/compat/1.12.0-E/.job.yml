@@ -10,36 +10,10 @@ queue_name: baremetal
 e2e-targets:
   # baremetal + baremetal Esx test cases
   e2e-esx-bm-regression-compat-dr:
-    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --skip-sanity --compat --driver-version 1.12.0-E-52"]
+    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --skip-sanity --compat --driver-version 1.8.0-E-48 --compat-version 1.12.0-E-52"]
     owners: ["email:srivatsa@pensando.io"]
     area: ESX-Compat
-    sub-area: Driver-1.12.0-E-52
-    feature: Firmware-master
-    max-duration: 9h
-    build-dependencies:
-      - build-iris-arm
-      - build-iota
-    clusters:
-      - image: build-10
-        count: 2
-        resources:
-          servers:
-            - type: server-a
-          nic-type: naples
-    provision:
-      username: vm
-      password: vm
-      vars:
-        BmOs: esx
-        VmOs: linux
-        EsxUsername: root
-        EsxPassword: Pen0trl!
-
-  e2e-esx-bm-regression-compat-fw:
-    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --skip-sanity --compat --fw-version 1.12.0-E-52"]
-    owners: ["email:srivatsa@pensando.io"]
-    area: ESX-Compat
-    sub-area: Driver-master
+    sub-area: Driver-1.8.0-E-48
     feature: Firmware-1.12.0-E-52
     max-duration: 9h
     build-dependencies:
@@ -61,12 +35,38 @@ e2e-targets:
         EsxUsername: root
         EsxPassword: Pen0trl!
 
+  e2e-esx-bm-regression-compat-fw:
+    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --skip-sanity --compat --fw-version 1.8.0-E-48 --driver-version 1.12.0-E-52"]
+    owners: ["email:srivatsa@pensando.io"]
+    area: ESX-Compat
+    sub-area: Driver-1.12.0-E-52
+    feature: Firmware-1.8.0-E-48
+    max-duration: 9h
+    build-dependencies:
+      - build-iris-arm
+      - build-iota
+    clusters:
+      - image: build-10
+        count: 2
+        resources:
+          servers:
+            - type: server-a
+          nic-type: naples
+    provision:
+      username: vm
+      password: vm
+      vars:
+        BmOs: esx
+        VmOs: linux
+        EsxUsername: root
+        EsxPassword: Pen0trl!
+
   e2e-linux-bm-regression-eth-compat-dr:
-    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.12.0-E-52"]
+    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.8.0-E-48 --fw-version 1.12.0-E-52"]
     owners: ["email:srivatsa@pensando.io"]
     area: Linux-Compat
-    sub-area: Driver-1.12.0-E-52 
-    feature: Firmware-master
+    sub-area: Driver-1.8.0-E-48 
+    feature: Firmware-1.12.0-E-52
     max-duration: 10h
     build-dependencies:
       - build-iris-arm
@@ -90,11 +90,11 @@ e2e-targets:
         EsxPassword: Pen0trl!
 
   e2e-linux-bm-regression-eth-compat-fw:
-    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --fw-version 1.12.0-E-52"]
+    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --fw-version 1.8.0-E-48 --driver-version 1.12.0-E-52"]
     owners: ["email:srivatsa@pensando.io"]
     area: Linux-Compat
-    sub-area: Driver-master
-    feature: Firmware-1.12.0-E-52
+    sub-area: Driver-1.12.0-E-52
+    feature: Firmware-1.8.0-E-48
     max-duration: 10h
     build-dependencies:
       - build-iris-arm
@@ -118,11 +118,11 @@ e2e-targets:
       EsxPassword: Pen0trl!
 
   e2e-freebsd-bm-regression-eth-compat-dr:
-    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.12.0-E-52"]
+    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.8.0-E-48 --fw-version 1.12.0-E-52"]
     owners: ["email:srivatsa@pensando.io"]
     area: FreeBSD-Compat
-    sub-area: Driver-1.12.0-E-52
-    feature: Firmware-master
+    sub-area: Driver-1.8.0-E-48
+    feature: Firmware-1.12.0-E-52
     max-duration: 8h
     build-dependencies:
       - build-iris-arm
@@ -147,11 +147,11 @@ e2e-targets:
         EsxPassword: Pen0trl!
 
   e2e-freebsd-bm-regression-eth-compat-fw:
-    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --fw-version 1.12.0-E-52"]
+    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --fw-version 1.8.0-E-48 --driver-version 1.12.0-E-52"]
     owners: ["email:srivatsa@pensando.io"]
     area: FreeBSD-Compat
-    sub-area: Driver-master
-    feature: Firmware-1.12.0-E-52
+    sub-area: Driver-1.12.0-E-52
+    feature: Firmware-1.8.0-E-48
     max-duration: 8h
     build-dependencies:
       - build-iris-arm
@@ -176,11 +176,11 @@ e2e-targets:
         EsxPassword: Pen0trl!
 
   e2e-windows-bm-regression-eth-compat-dr:
-    commands: ["sh", "-c", "make windows && ./run_iota.sh --testsuite transparent_basenet_windows --skip-sanity --compat --driver-version 1.12.0-E-52"]
+    commands: ["sh", "-c", "make windows && ./run_iota.sh --testsuite transparent_basenet_windows --skip-sanity --compat --driver-version 1.8.0-E-48 --fw-version 1.12.0-E-52"]
     owners: ["email:srivatsa@pensando.io"]
     area: Windows-Compat
-    sub-area: Driver-1.12.0-E-52
-    feature: Firmware-master
+    sub-area: Driver-1.8.0-E-48
+    feature: Firmware-1.12.0-E-52
     max-duration: 13h
     build-dependencies:
       - build-iota
@@ -203,11 +203,11 @@ e2e-targets:
 
 
   e2e-windows-bm-regression-eth-compat-fw:
-    commands: ["sh", "-c", "make windows && ./run_iota.sh --testsuite transparent_basenet_windows --skip-sanity --compat --fw-version 1.12.0-E-52"]
+    commands: ["sh", "-c", "make windows && ./run_iota.sh --testsuite transparent_basenet_windows --skip-sanity --compat --fw-version 1.8.0-E-48 --driver-version 1.12.0-E-52"]
     owners: ["email:tony@pensando.io"]
     area: Windows-Compat
-    sub-area: Driver-master
-    feature: Firmware-1.12.0-E-52
+    sub-area: Driver-1.12.0-E-52
+    feature: Firmware-1.8.0-E-48
     max-duration: 13h
     build-dependencies:
       - build-iota

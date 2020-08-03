@@ -238,7 +238,7 @@ jobs:
   iota/test/standalone/regression/linux-rdma:
     labels: ["CI-Weekly", "CI-Regression-LinuxRDMA"]
   iota/test/standalone/compat/tot:
-    labels: ["CI-Regression"]
+    labels: ["CI-Regression", "CI-Compat-Regression"]
   iota/test/standalone/regression/windows:
     labels: ["CI-Regression", "CI-Regression-Windows"]
   iota/test/standalone/regression/linkmgr:

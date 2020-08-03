@@ -7,7 +7,7 @@
       "Images": [
         {
           "OSRelease": "0.0.0",
-          "drivers_pkg": "images/1.8.0-E-48/drivers-linux-eth.tar.xz",
+          "drivers_pkg": "images/1.12.0-E-52/drivers-linux-eth.tar.xz",
           "gold_drv_latest_pkg": "platform/hosttools/x86_64/linux/goldfw/latest/drivers-linux-eth.tar.xz",
           "gold_drv_old_pkg": "platform/hosttools/x86_64/linux/goldfw/old/drivers-linux-eth.tar.xz",
           "pkg_file_type": "SrcBundle"
@@ -19,7 +19,7 @@
       "Images": [
         {
           "OSRelease": "0.0.0",
-          "drivers_pkg": "images/1.8.0-E-48/drivers-freebsd-eth.tar.xz",
+          "drivers_pkg": "images/1.12.0-E-52/drivers-freebsd-eth.tar.xz",
           "gold_drv_latest_pkg": "platform/hosttools/x86_64/freebsd/goldfw/latest/drivers-freebsd-eth.tar.xz",
           "gold_drv_old_pkg": "platform/hosttools/x86_64/freebsd/goldfw/old/drivers-freebsd-eth.tar.xz",
           "pkg_file_type": "SrcBundle"
@@ -30,8 +30,22 @@
       "OS": "esx",
       "Images": [
         {
+          "OSRelease": "6.5.0",
+          "drivers_pkg": "images/1.12.0-E-52/ionic-en-1.12-1OEM.650.0.0.4598673.x86_64.vib",
+          "gold_drv_latest_pkg": "platform/hosttools/x86_64/esx/goldfw/latest/drivers-esx-eth.tar.xz",
+          "gold_drv_old_pkg": "platform/hosttools/x86_64/esx/goldfw/old/drivers-esx-eth.tar.xz",
+          "pkg_file_type": "VIB"
+        },
+        {
           "OSRelease": "6.7.0",
-          "drivers_pkg": "images/1.8.0-E-48/ionic-en-1.8-1OEM.670.0.0.8169922.x86_64.vib",
+          "drivers_pkg": "images/1.12.0-E-52/ionic-en-1.12-1OEM.670.0.0.8169922.x86_64.vib",
+          "gold_drv_latest_pkg": "platform/hosttools/x86_64/esx/goldfw/latest/drivers-esx-eth.tar.xz",
+          "gold_drv_old_pkg": "platform/hosttools/x86_64/esx/goldfw/old/drivers-esx-eth.tar.xz",
+          "pkg_file_type": "VIB"
+        },
+        {
+          "OSRelease": "7.0.0",
+          "drivers_pkg": "images/1.12.0-E-52/ionic-en-1.12-1OEM.700.1.0.15843807.x86_64.vib",
           "gold_drv_latest_pkg": "platform/hosttools/x86_64/esx/goldfw/latest/drivers-esx-eth.tar.xz",
           "gold_drv_old_pkg": "platform/hosttools/x86_64/esx/goldfw/old/drivers-esx-eth.tar.xz",
           "pkg_file_type": "VIB"
@@ -43,7 +57,7 @@
       "Images": [
         {
           "OSRelease": "0.0.0",
-          "drivers_pkg": "images/1.8.0-E-48/drivers-windows.zip",
+          "drivers_pkg": "images/1.12.0-E-52/drivers-windows.zip",
           "gold_drv_latest_pkg": "platform/hosttools/x86_64/windows/goldfw/latest/drivers-windows.zip",
           "gold_drv_old_pkg": "platform/hosttools/x86_64/windows/goldfw/old/drivers-windows.zip",
           "pkg_file_type": "SrcBundle"
@@ -57,7 +71,7 @@
       "Images": [
         {
           "tag": "iris",
-          "image": "images/1.8.0-E-48/naples_fw.tar"
+          "image": "images/1.12.0-E-52/naples_fw.tar"
         },
         {
           "tag": "goldfw",
