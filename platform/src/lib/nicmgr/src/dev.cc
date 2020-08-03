@@ -270,6 +270,12 @@ DeviceManager::HeartbeatStop() {
     }
 }
 
+void
+DeviceManager::HiiInit()
+{
+    this->hii = new HII(dev_api);
+}
+
 DeviceManager::~DeviceManager()
 {
     NIC_LOG_INFO("Destroying DeviceManager");
@@ -279,6 +285,10 @@ DeviceManager::~DeviceManager()
 
     // Delete devices
     DeleteDevices();
+
+    // Delete HII config
+    if (this->hii)
+        delete this->hii;
 }
 
 void
@@ -881,6 +891,7 @@ DeviceManager::HalEventHandler(bool status)
         UplinkInit();
         SwmInit();
         DeviceCreate(status);
+        HiiInit();
     }
 
     return;
@@ -897,6 +908,7 @@ DeviceManager::UpgradeGracefulHalEventHandler(bool status)
         UplinkInit();
         SwmInit();
         DeviceCreate(status);
+        HiiInit();
     }
 
     return;
@@ -911,6 +923,7 @@ DeviceManager::UpgradeHitlessHalEventHandler(bool status) {
         init_done = true;
         DevApiClientInit();
         DeviceCreate(status);
+        HiiInit();
     }
 
     return;

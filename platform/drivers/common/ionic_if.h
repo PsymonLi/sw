@@ -8,6 +8,12 @@
 #define IONIC_DEV_INFO_VERSION			1
 #define IONIC_IFNAMSIZ				16
 
+#define IONIC_SIZE_CHECK(type, N, X)		enum ionic_static_assert_enum_##X \
+		{ ionic_static_assert_##X = (N) / (sizeof(type X) == (N)) }
+#define IONIC_CHECK_CMD_LENGTH(X)		IONIC_SIZE_CHECK(struct, 64, X)
+#define IONIC_CHECK_COMP_LENGTH(X)  		IONIC_SIZE_CHECK(struct, 16, X)
+#define IONIC_CHECK_CMD_DATA_LENGTH(X)      	IONIC_SIZE_CHECK(union, 1912, X)
+
 /**
  * enum ionic_cmd_opcode - Device commands
  */
@@ -53,6 +59,13 @@ enum ionic_cmd_opcode {
 	/* SR/IOV commands */
 	IONIC_CMD_VF_GETATTR			= 60,
 	IONIC_CMD_VF_SETATTR			= 61,
+
+	/* UEFI HII commands */
+	IONIC_CMD_HII_IDENTIFY			= 235,
+	IONIC_CMD_HII_GETATTR			= 236,
+	IONIC_CMD_HII_SETATTR			= 237,
+	IONIC_CMD_HII_INIT			= 238,
+	IONIC_CMD_HII_RESET			= 239,
 
 	/* QoS commands */
 	IONIC_CMD_QOS_CLASS_IDENTIFY		= 240,
@@ -2161,6 +2174,213 @@ struct ionic_rdma_queue_cmd {
 };
 
 /******************************************************************
+ ******************* HII Commands *********************************
+ ******************************************************************/
+#define IONIC_HII_IDENTITY_VERSION	1
+
+/**
+ * struct ionic_hii_identify_cmd - HII identify command
+ * @opcode:  opcode
+ * @ver:     Highest version of identify supported by driver
+ */
+struct ionic_hii_identify_cmd {
+	u8 opcode;
+	u8 ver;
+	u8 rsvd[62];
+};
+
+IONIC_CHECK_CMD_LENGTH(ionic_hii_identify_cmd);
+
+/**
+ * struct ionic_hii_identify_comp - HII identify command completion
+ * @status: Status of the command (enum ionic_status_code)
+ * @ver:    Version of identify returned by device
+ */
+struct ionic_hii_identify_comp {
+	u8 status;
+	u8 ver;
+	u8 rsvd[14];
+};
+
+IONIC_CHECK_COMP_LENGTH(ionic_hii_identify_comp);
+
+/**
+ * enum ionic_hii_capabilities - Bitmap of HII capabilities
+ * @IONIC_HII_CAPABILITY_NCSI:   NCSI is supported
+ */
+enum ionic_hii_capabilities {
+	IONIC_HII_CAPABILITY_NCSI = 0,
+};
+
+/**
+ * union ionic_hii_dev_identity - HII identity information
+ * @ver:    		HII Identify version
+ * @oob_en:    		Enable out of band management
+ * @uid_led_on:		Turn on the UID led
+ * @vlan_en:   		Enable pxe vlan
+ * @vlan:		Vlan id used for pxe
+ * @capabilities:	Bitmap of capabilities supported by nic
+ */
+union ionic_hii_dev_identity {
+	struct {
+		u8	ver;
+		u8     	oob_en;
+		u8     	uid_led_on;
+		u8     	vlan_en;
+		__le16 	vlan;
+		__le32 	capabilities;
+	};
+	__le32 words[478];
+};
+
+IONIC_CHECK_CMD_DATA_LENGTH(ionic_hii_dev_identity);
+
+/**
+ * struct ionic_hii_init_cmd - HII initialization command
+ * @opcode:		opcode
+ * @oob_en:		Enable out of band management
+ * @uid_led_on:		Turn on the UID led
+ * @vlan_en:		Enable pxe vlan
+ * @vlan:		Vlan id used for pxe
+ */
+struct ionic_hii_init_cmd {
+	u8     opcode;
+	u8     oob_en;
+	u8     uid_led_on;
+	u8     vlan_en;
+	__le16 vlan;
+	u8     rsvd[58];
+};
+
+IONIC_CHECK_CMD_LENGTH(ionic_hii_init_cmd);
+
+/**
+ * struct ionic_hii_init_comp - HII initialization command completion
+ * @status: 	Status of the command (enum ionic_status_code)
+ */
+struct ionic_hii_init_comp {
+	u8 status;
+	u8 rsvd[15];
+};
+
+IONIC_CHECK_COMP_LENGTH(ionic_hii_init_comp);
+
+/**
+ * enum ionic_hii_attr - List of HII attributes
+ * @IONIC_HII_ATTR_OOB_EN:      HII OOB enable atrribute
+ * @IONIC_HII_ATTR_UID_LED:   	HII set UID led atrribute
+ * @IONIC_HII_ATTR_VLAN:        HII PXE vlan atrribute
+ */
+enum ionic_hii_attr {
+	IONIC_HII_ATTR_OOB_EN	= 0,
+	IONIC_HII_ATTR_UID_LED	= 1,
+	IONIC_HII_ATTR_VLAN	= 2,
+};
+
+/**
+ * struct ionic_hii_setattr_cmd - Set hii attributes on the NIC
+ * @opcode:         Opcode
+ * @attr:           Atrribute type (enum ionic_hii_attr)
+ * @oob_en:         Enable out of band management
+ * @uid_led_on:    Turn on the UID led
+ * @vlan:           VLAN attributes
+ *                  @enable:    Enable pxe vlan
+ *                  @id:        Pxe vlan id
+ */
+struct ionic_hii_setattr_cmd {
+	u8     opcode;
+	u8     attr;
+	union {
+		u8     oob_en;
+		u8     uid_led_on;
+		struct {
+			u8     enable;
+			u8     rsvd;
+			__le16 id;
+		} vlan;
+		u8      rsvd2[62];
+	};
+};
+
+IONIC_CHECK_CMD_LENGTH(ionic_hii_setattr_cmd);
+
+/**
+ * struct ionic_hii_setattr_comp - Hii set attr command completion
+ * @status:     Status of the command (enum ionic_status_code)
+ * @color:      Color bit
+ */
+struct ionic_hii_setattr_comp {
+	u8     status;
+	u8     rsvd[14];
+	u8     color;
+};
+
+IONIC_CHECK_COMP_LENGTH(ionic_hii_setattr_comp);
+
+/**
+ * struct ionic_hii_getattr_cmd - Get hii attributes from the NIC
+ * @opcode:     Opcode
+ * @attr:       Attribute type (enum ionic_hii_attr)
+ */
+struct ionic_hii_getattr_cmd {
+	u8     opcode;
+	u8     attr;
+	u8     rsvd[62];
+};
+
+IONIC_CHECK_CMD_LENGTH(ionic_hii_getattr_cmd);
+
+/**
+ * struct ionic_hii_getattr_comp - Hii get attr command completion
+ * @status:         Status of the command (enum ionic_status_code)
+ * @oob_en:         Enable out of band management
+ * @uid_led_on:    Turn on the UID led
+ * @vlan:           VLAN attributes:
+ *                  @enable:    Enable pxe vlan
+ *                  @id:        Pxe vlan id
+ * @color:          Color bit
+ */
+struct ionic_hii_getattr_comp {
+	u8     status;
+	u8     rsvd[3];
+	union {
+		u8     oob_en;
+		u8     uid_led_on;
+		struct {
+			u8     enable;
+			u8     rsvd2;
+			__le16 id;
+		} vlan;
+		u8      rsvd3[11];
+	} __attribute__((packed));
+	u8     color;
+};
+
+IONIC_CHECK_COMP_LENGTH(ionic_hii_getattr_comp);
+
+/**
+ * struct ionic_hii_reset_cmd - HII configuration reset command
+ * @opcode:    opcode
+ */
+struct ionic_hii_reset_cmd {
+	u8 opcode;
+	u8 rsvd[63];
+};
+
+IONIC_CHECK_CMD_LENGTH(ionic_hii_reset_cmd);
+
+/**
+ * struct ionic_hii_reset_comp - HII reset command completion
+ * @status: Status of the command (enum ionic_status_code)
+ */
+struct ionic_hii_reset_comp {
+	u8 status;
+	u8 rsvd[15];
+};
+
+IONIC_CHECK_COMP_LENGTH(ionic_hii_reset_comp);
+
+/******************************************************************
  ******************* Notify Events ********************************
  ******************************************************************/
 
@@ -2706,6 +2926,12 @@ union ionic_dev_cmd {
 
 	struct ionic_fw_download_cmd fw_download;
 	struct ionic_fw_control_cmd fw_control;
+
+	struct ionic_hii_identify_cmd hii_identify;
+	struct ionic_hii_init_cmd hii_init;
+	struct ionic_hii_setattr_cmd hii_setattr;
+	struct ionic_hii_getattr_cmd hii_getattr;
+	struct ionic_hii_reset_cmd hii_reset;
 };
 
 union ionic_dev_cmd_comp {
@@ -2742,6 +2968,12 @@ union ionic_dev_cmd_comp {
 
 	ionic_fw_download_comp fw_download;
 	struct ionic_fw_control_comp fw_control;
+
+	struct ionic_hii_identify_comp hii_identify;
+	struct ionic_hii_init_comp hii_init;
+	struct ionic_hii_setattr_comp hii_setattr;
+	struct ionic_hii_getattr_comp hii_getattr;
+	struct ionic_hii_reset_comp hii_reset;
 };
 
 /**

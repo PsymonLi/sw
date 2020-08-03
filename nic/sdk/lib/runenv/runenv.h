@@ -29,6 +29,7 @@ typedef enum
 class runenv {
 public:
     static feature_query_ret_e is_feature_enabled(feature_e feature);
+    static feature_query_ret_e is_feature_capable(feature_e feature);
 private:
     static catalog *catalog_db;
 };

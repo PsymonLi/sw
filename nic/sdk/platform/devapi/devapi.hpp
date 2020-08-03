@@ -189,6 +189,9 @@ public:
         return SDK_RET_INVALID_OP;
     }
 
+    // HII functions
+    virtual sdk_ret_t hii_set_uid_led(bool led_on) = 0;
+
 protected:
     devapi() {}
     virtual ~devapi() {}

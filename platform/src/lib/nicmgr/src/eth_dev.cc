@@ -1275,7 +1275,7 @@ devcmd_done:
     ts_diff = sdk::timestamp_diff(&end_ts, &start_ts);
     NIC_LOG_DEBUG("DevCmd Time taken: {}s.{}ns", ts_diff.tv_sec, ts_diff.tv_nsec);
     if (ts_diff.tv_sec >= DEVCMD_TIMEOUT) {
-        NIC_LOG_ERR("Fatal Error: Devmd took more than {}secs", DEVCMD_TIMEOUT);
+        NIC_LOG_WARN("Warning: Devmd took more than {}secs", DEVCMD_TIMEOUT);
     }
     NIC_HEADER_TRACE("Devcmd End");
 }
@@ -1308,6 +1308,11 @@ Eth::opcode_to_str(cmd_opcode_t opcode)
         CASE(IONIC_CMD_FW_CONTROL);
         CASE(IONIC_CMD_VF_GETATTR);
         CASE(IONIC_CMD_VF_SETATTR);
+        CASE(IONIC_CMD_HII_IDENTIFY);
+        CASE(IONIC_CMD_HII_INIT);
+        CASE(IONIC_CMD_HII_SETATTR);
+        CASE(IONIC_CMD_HII_GETATTR);
+        CASE(IONIC_CMD_HII_RESET);
         default:
             return EthLif::opcode_to_str(opcode);
     }
@@ -1501,12 +1506,36 @@ Eth::CmdHandler(void *req, void *req_data, void *resp, void *resp_data)
     case IONIC_CMD_VF_GETATTR:
         status = _CmdVFGetAttr(req, req_data, resp, resp_data);
         break;
+
+    /* Firmware Update commands */
     case IONIC_CMD_FW_DOWNLOAD:
         status = _CmdFwDownload(req, req_data, resp, resp_data);
         break;
     case IONIC_CMD_FW_CONTROL:
         status = _CmdFwControl(req, req_data, resp, resp_data);
         break;
+
+    /* UEFI HII commands */
+    case IONIC_CMD_HII_IDENTIFY:
+        status = _CmdHiiIdentify(req, req_data, resp, resp_data);
+        break;
+
+    case IONIC_CMD_HII_INIT:
+        status = _CmdHiiInit(req, req_data, resp, resp_data);
+        break;
+
+    case IONIC_CMD_HII_SETATTR:
+        status = _CmdHiiSetAttr(req, req_data, resp, resp_data);
+        break;
+
+    case IONIC_CMD_HII_GETATTR:
+        status = _CmdHiiGetAttr(req, req_data, resp, resp_data);
+        break;
+
+    case IONIC_CMD_HII_RESET:
+        status = _CmdHiiReset(req, req_data, resp, resp_data);
+        break;
+
     default:
         // FIXME: Check if this is a valid opcode
         status = CmdProxyHandler(req, req_data, resp, resp_data);
@@ -2649,7 +2678,7 @@ Eth::_CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data)
     if (cmd->addr >= sizeof(ionic_dev_cmd_regs) ||
         cmd->length >  sizeof(ionic_dev_cmd_regs) ||
         cmd->addr + cmd->length > sizeof(ionic_dev_cmd_regs)) {
-        NIC_LOG_ERR("{}: data offset + length should not exceed %lu",
+        NIC_LOG_ERR("{}: data offset + length should not exceed {}",
                     spec->name, sizeof(ionic_dev_cmd_regs));
         return (IONIC_RC_EINVAL);
     }
@@ -2692,6 +2721,126 @@ Eth::CmdProxyHandler(void *req, void *req_data, void *resp, void *resp_data)
     eth_lif = it->second;
 
     return eth_lif->CmdProxyHandler(req, req_data, resp, resp_data);
+}
+
+status_code_t
+Eth::_CmdHiiIdentify(void *req, void *req_data, void *resp, void *resp_data)
+{
+    struct ionic_hii_identify_cmd *cmd = (struct ionic_hii_identify_cmd *)req;
+    union ionic_hii_dev_identity *ident = (union ionic_hii_dev_identity *)resp_data;
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    HII *hii = devmgr->GetHiiInstance();
+
+    NIC_LOG_INFO("{}: {} ver: {}", spec->name, opcode_to_str(cmd->opcode), cmd->ver);
+    memset(ident, 0, sizeof(*ident));
+    ident->ver = IONIC_HII_IDENTITY_VERSION;
+    ident->oob_en = hii->GetOobEn();
+    ident->uid_led_on = hii->GetLedStatus();
+    ident->vlan_en = hii->GetVlanEn(spec->name);
+    ident->vlan = hii->GetVlan(spec->name);
+    ident->capabilities = hii->GetCapabilities();
+    NIC_LOG_DEBUG("{}: ver: {} oob_en: {} uid_led_on: {} vlan_en: {} vlan: {} capabilities: {}",
+                  spec->name, ident->ver, ident->oob_en, ident->uid_led_on, ident->vlan_en,
+                  ident->vlan, ident->capabilities);
+
+    return (IONIC_RC_SUCCESS);
+}
+
+status_code_t
+Eth::_CmdHiiInit(void *req, void *req_data, void *resp, void *resp_data)
+{
+    struct ionic_hii_init_cmd *cmd = (struct ionic_hii_init_cmd *)req;
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    HII *hii = devmgr->GetHiiInstance();
+
+    NIC_LOG_INFO("{}: {} oob_en: {} uid_led_on: {} vlan_en: {} vlan: {}", spec->name,
+                 opcode_to_str(cmd->opcode), cmd->oob_en, cmd->uid_led_on, cmd->vlan_en,
+                 cmd->vlan);
+    hii->SetOobEn(cmd->oob_en);
+    hii->SetLedStatus(cmd->uid_led_on);
+    hii->SetVlanEn(spec->name, cmd->vlan_en);
+    hii->SetVlan(spec->name, cmd->vlan);
+
+    return (IONIC_RC_SUCCESS);
+}
+
+status_code_t
+Eth::_CmdHiiSetAttr(void *req, void *req_data, void *resp, void *resp_data)
+{
+    struct ionic_hii_setattr_cmd *cmd = (struct ionic_hii_setattr_cmd *)req;
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    HII *hii = devmgr->GetHiiInstance();
+    status_code_t status = IONIC_RC_SUCCESS;
+
+    NIC_LOG_INFO("{}: {} attr: {}", spec->name,
+                 opcode_to_str(cmd->opcode), hii_attr_to_str(cmd->attr));
+    switch (cmd->attr) {
+    case IONIC_HII_ATTR_OOB_EN:
+        NIC_LOG_DEBUG("{}: Setting HII oob_en {}", spec->name, cmd->oob_en);
+        hii->SetOobEn(cmd->oob_en);
+        break;
+    case IONIC_HII_ATTR_UID_LED:
+        NIC_LOG_DEBUG("{}: Setting HII UID led {}", spec->name, cmd->uid_led_on ? "On" : "Off");
+        if (hii->SetLedStatus(cmd->uid_led_on) != SDK_RET_OK) {
+            status = IONIC_RC_ERROR;
+        }
+        break;
+    case IONIC_HII_ATTR_VLAN:
+        NIC_LOG_DEBUG("{}: Setting HII vlan_en {} vlan {}", spec->name, cmd->vlan.enable, cmd->vlan.id);
+        hii->SetVlanEn(spec->name, cmd->vlan.enable);
+        hii->SetVlan(spec->name, cmd->vlan.id);
+        break;
+    default:
+        NIC_LOG_ERR("{}: Unknown attribute: {}", spec->name, cmd->attr);
+        status = IONIC_RC_EINVAL;
+        break;
+    }
+
+    return status;
+}
+
+status_code_t
+Eth::_CmdHiiGetAttr(void *req, void *req_data, void *resp, void *resp_data)
+{
+    struct ionic_hii_getattr_cmd *cmd = (struct ionic_hii_getattr_cmd *)req;
+    struct ionic_hii_getattr_comp *comp = (struct ionic_hii_getattr_comp *)resp;
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    HII *hii = devmgr->GetHiiInstance();
+    status_code_t status = IONIC_RC_SUCCESS;
+
+    NIC_LOG_INFO("{}: {} attr: {}", spec->name,
+                 opcode_to_str(cmd->opcode), hii_attr_to_str(cmd->attr));
+    memset(comp, 0, sizeof(*comp));
+    switch (cmd->attr) {
+    case IONIC_HII_ATTR_OOB_EN:
+        comp->oob_en = hii->GetOobEn();
+        break;
+    case IONIC_HII_ATTR_UID_LED:
+        comp->uid_led_on = hii->GetLedStatus();
+        break;
+    case IONIC_HII_ATTR_VLAN:
+        comp->vlan.enable = hii->GetVlanEn(spec->name);
+        comp->vlan.id = hii->GetVlan(spec->name);
+        break;
+    default:
+        NIC_LOG_ERR("{}: Unknown attribute: {}", spec->name, cmd->attr);
+        status = IONIC_RC_EINVAL;
+        break;
+    }
+
+    return status;
+}
+
+status_code_t
+Eth::_CmdHiiReset(void *req, void *req_data, void *resp, void *resp_data)
+{
+    struct ionic_hii_reset_cmd *cmd = (struct ionic_hii_reset_cmd *)req;
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    HII *hii = devmgr->GetHiiInstance();
+
+    NIC_LOG_INFO("{}: {}", spec->name, opcode_to_str(cmd->opcode));
+    hii->Reset();
+    return (IONIC_RC_SUCCESS);
 }
 
 /*

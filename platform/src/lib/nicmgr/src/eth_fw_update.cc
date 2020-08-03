@@ -392,7 +392,7 @@ FwInstall(string dev_name, bool is_async)
     if (status != IONIC_RC_SUCCESS)
         FwInstallReset(FW_UPDATE_DEV_NONE);
 
-    return (IONIC_RC_SUCCESS);
+    return status;
 }
 
 status_code_t

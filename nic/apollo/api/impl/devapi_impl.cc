@@ -729,5 +729,12 @@ devapi_impl::lif_get_cos_bmp(lif_info_t *info) {
     return cos_bmp;
 }
 
+sdk_ret_t
+devapi_impl::hii_set_uid_led(bool led_on)
+{
+    PDS_TRACE_VERBOSE("Setting UID led not supported");
+    return SDK_RET_OK;
+}
+
 }    // namespace impl
 }    // namespace api

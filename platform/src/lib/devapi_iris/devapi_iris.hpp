@@ -146,6 +146,9 @@ public:
     void dec_num_int_mgmt_mnics(void);
     uint32_t num_int_mgmt_mnics(void) { return num_int_mgmt_mnics_; }
 
+    // HII functions
+    sdk_ret_t hii_set_uid_led(bool led_on);
+
 private:
     devapi_iris() {
         SDK_SPINLOCK_INIT(&slock_, PTHREAD_PROCESS_PRIVATE);

@@ -26,6 +26,7 @@
 #include "device.hpp"
 #include "pd_client.hpp"
 #include "ev.h"
+#include "hii.hpp"
 
 #define NICMGRD_THREAD_ID_MNET      0
 #define NICMGRD_THREAD_ID_FW_INSTALL 1
@@ -200,6 +201,9 @@ public:
     module_version_t getCurrMetaVersion(void) { return curr_version; }
     module_version_t getPrevMetaVersion(void) { return prev_version; }
 
+    // HII
+    HII *GetHiiInstance() { return hii; }
+
 private:
     static DeviceManager *instance;
 
@@ -235,6 +239,7 @@ private:
     module_version_t curr_version;      // curent version
     module_version_t prev_version;      // previous version info passed from hal,
                                         // valid only in upgrade scenarios
+    HII *hii = NULL;
 
     // init helper functions
     void PlatformInit(devicemgr_cfg_t *cfg);
@@ -268,6 +273,9 @@ private:
     static void HeartbeatEventHandler(EV_P_ ev_timer *w, int events);
     static void HeartbeatEvPrepareCB(EV_P_ ev_prepare *w, int events);
     static void HeartbeatEvCheckCB(EV_P_ ev_check *w, int events);
+
+    // HII
+    void HiiInit();
 };
 
 #endif /* __DEV_HPP__ */

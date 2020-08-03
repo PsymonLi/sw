@@ -133,6 +133,9 @@ public:
         return VXLAN_ENCAP_LEN;
     }
 
+    // HII functions
+    virtual sdk_ret_t hii_set_uid_led(bool led_on) override;
+
 private:
     devapi_impl() {}
     ~devapi_impl() {}

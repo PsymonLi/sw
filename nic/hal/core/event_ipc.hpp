@@ -10,6 +10,7 @@
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/hal/plugins/cfg/ncsi/ncsi_ipc.hpp"
 #include "gen/proto/naples_status.pb.h"
+#include "platform/src/lib/nicmgr/include/hii_ipc.hpp"
 
 namespace hal {
 namespace core {
@@ -31,6 +32,7 @@ typedef enum event_id_e {
     EVENT_ID_NICMGR_DELPHIC     = 12,
     EVENT_ID_NICMGR_DSC_STATUS  = 13,   // HAL's delphi thread -> nicmgr thread
     EVENT_ID_XCVR_DOM_STATUS    = 14,
+    EVENT_ID_HII                = 15,
 } event_id_t;
 
 // port event specific information
@@ -70,6 +72,7 @@ typedef struct event_s {
         micro_seg_info_t    mseg;
         ncsi_ipc_msg_t      ncsi;
         dsc_status_t        dsc_status;
+        hii_event_info_t    hii;
     };
 } event_t;
 

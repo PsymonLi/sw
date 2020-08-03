@@ -309,6 +309,13 @@ private:
     status_code_t _CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data);
     status_code_t _CmdFwControl(void *req, void *req_data, void *resp, void *resp_data);
 
+    /* UEFI HII commands */
+    status_code_t _CmdHiiIdentify(void *req, void *req_data, void *resp, void *resp_data);
+    status_code_t _CmdHiiInit(void *req, void *req_data, void *resp, void *resp_data);
+    status_code_t _CmdHiiSetAttr(void *req, void *req_data, void *resp, void *resp_data);
+    status_code_t _CmdHiiGetAttr(void *req, void *req_data, void *resp, void *resp_data);
+    status_code_t _CmdHiiReset(void *req, void *req_data, void *resp, void *resp_data);
+
     void port_stats_init_(uint32_t ifindex, sdk::types::mem_addr_t stats_hbm_base_addr);
 
     // Tasks
