@@ -85,8 +85,8 @@ $(DSC_SPP_LIB): $(OBJFILES)
 lib: $(DSC_SPP_LIB)
 
 # Utility based on SPP interfaces.
-penutil: $(BUILD_DIR)/penutil.o
-	$(CXX) -o $(BUILD_DIR)/$@ $^ -L$(LIB_DIR) -ldscspp
+penutil: $(BUILD_DIR)/penutil.o $(DSC_SPP_LIB)
+	$(CXX) -o $(BUILD_DIR)/$@ $(BUILD_DIR)/penutil.o -L$(LIB_DIR) -ldscspp
 
 # Gtest for SPP interfaces.
 ionic_spp_test: $(SOURCE_DIR)/ionic_spp_test.cc $(SOURCE_DIR)/ionic_spp_util_test.cc

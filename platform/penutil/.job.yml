@@ -8,6 +8,8 @@ targets:
     area:
     sub-area:
     feature:
+    build-dependencies:
+    - build-iris-arm
 image:
   bind_dir: "/sw"
   work_dir: "/sw/platform"
