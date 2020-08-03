@@ -372,7 +372,7 @@ jobs:
   platform/drivers/linux:
     labels: ["CI-Sanity-Build"]
   platform/penutil:
-    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
+    labels: ["CI-Sanity-Build"]
   platform/src/app/pciemgrd:
     labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   storage/offload:
