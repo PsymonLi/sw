@@ -408,6 +408,7 @@ class TestcaseBackgroundTrigger:
             if self.__terminate == exec_stage:
                 if self.IsTaskRunning():
                     self.__task_inst.cancel()
+                    self.__task_inst.join(0) # Terminate task/thread
         return types.status.SUCCESS
 
     def IsTaskRunning(self):
@@ -756,6 +757,9 @@ class Testcase:
                 trigger_result = loader.RunCallback(self.__tc, 'Trigger', True, iter_data)
                 if trigger_result != types.status.SUCCESS:
                     result = trigger_result
+
+                for task_name, bt in self.__background_tasks.items():
+                    bt_stop_result = bt.StopTask('after_trigger')
 
                 verify_result = loader.RunCallback(self.__tc, 'Verify', True, iter_data)
                 if verify_result != types.status.SUCCESS:
