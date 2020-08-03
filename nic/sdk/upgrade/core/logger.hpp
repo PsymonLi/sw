@@ -70,10 +70,6 @@ extern const char *g_upg_log_pfx;
     }                                                                          \
 }
 
-#define UPG_TRACE_VERBOSE(fmt, ...)                                       \
-{                                                                         \
-}
-
 #define LOG_STAGE_STARTED(stage)                                               \
     UPG_TRACE_INFO("Started stage execution %s", stage);
 

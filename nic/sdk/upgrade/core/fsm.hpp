@@ -57,6 +57,7 @@ public:
         size_ = 0;
         timeout_ = DEFAULT_SVC_RSP_TIMEOUT;
         prev_stage_rsp_ = SVC_RSP_OK;
+        stage_response_ = SVC_RSP_OK;
         is_pre_hooks_done_ = false;
         is_post_hooks_done_ = false;
         domain_ = IPC_SVC_DOM_ID_A;
@@ -82,9 +83,15 @@ public:
     svc_sequence_list svc_sequence(void) const { return svc_sequence_; }
     bool has_next_svc(void) const { return pending_response_ > 0; }
     svc_rsp_code_t prev_stage_rsp(void) const { return prev_stage_rsp_; }
-    void set_prev_stage_rsp(svc_rsp_code_t rsp) { prev_stage_rsp_ = rsp; }
+    void set_prev_stage_rsp(svc_rsp_code_t rsp);
+    void set_stage_response(svc_rsp_code_t rsp);
+    svc_rsp_code_t stage_response(void) const { return stage_response_; };
+    void reset_stage_response(svc_rsp_code_t rsp = SVC_RSP_OK) {
+        stage_response_ = rsp;
+    };
     void set_current_stage(const upg_stage_t id);
-    void update_stage_progress(const svc_rsp_code_t rsp);
+    void update_stage_progress(const svc_rsp_code_t rsp,
+                               bool check_pending_rsp=true);
     void update_stage_progress_interactive(const svc_rsp_code_t rsp);
     bool is_serial_event_sequence(void) const;
     bool is_parallel_event_sequence(void) const;
@@ -124,6 +131,7 @@ private:
     ev_tstamp timeout_;
     fsm_init_params_t init_params_;
     svc_rsp_code_t prev_stage_rsp_;
+    svc_rsp_code_t stage_response_;
     bool is_pre_hooks_done_;
     bool is_post_hooks_done_;
     ipc_svc_dom_id_t domain_;

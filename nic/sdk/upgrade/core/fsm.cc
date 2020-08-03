@@ -144,6 +144,15 @@ invoke_hooks (upg_stage_t stage_id, hook_execution_t hook_type,
             break;
         }
     }
+
+    if (result == false) {
+        if (hook_type == PRE_STAGE) {
+            fsm_states.update_stage_progress(SVC_RSP_FAIL, false);
+        } else {
+           fsm_states.set_stage_response(SVC_RSP_FAIL);
+           fsm_states.set_prev_stage_rsp(SVC_RSP_FAIL);
+        }
+    }
     return result;
 }
 
@@ -293,9 +302,7 @@ move_to_nextstage (void)
 
     std::string name(upg_stage2str(fsm_states.current_stage()));
     if (fsm_states.is_discovery()) {
-        dump(fsm_states);
         if (!execute_pre_hooks(id)) {
-            fsm_states.update_stage_progress(SVC_RSP_FAIL);
             move_to_nextstage();
         }
 
@@ -304,9 +311,7 @@ move_to_nextstage (void)
         fsm_states.timer_start();
         send_discovery_event(domain, id);
     } else if (fsm_states.is_serial_event_sequence()) {
-        dump(fsm_states);
         if (!execute_pre_hooks(id)) {
-            fsm_states.update_stage_progress(SVC_RSP_FAIL);
             move_to_nextstage();
         }
 
@@ -317,10 +322,8 @@ move_to_nextstage (void)
             SDK_ASSERT(0);
         }
     } else if (fsm_states.is_parallel_event_sequence()) {
-        dump(fsm_states);
 
         if (!execute_pre_hooks(id)) {
-            fsm_states.update_stage_progress(SVC_RSP_FAIL);
             move_to_nextstage();
         }
 
@@ -367,12 +370,11 @@ upg_event_handler (upg_event_msg_t *event)
                 fsm_states.init_params()->fsm_completion_cb(status);
                 SDK_ASSERT(0);
             } else {
-                if (!execute_pre_hooks(id)) {
-                    fsm_states.update_stage_progress(SVC_RSP_FAIL);
-                }
+                execute_pre_hooks(id);
                 move_to_nextstage();
             }
         } else if (fsm_states.is_serial_event_sequence() &&
+                   (SVC_RSP_OK == fsm_states.stage_response()) &&
                    (fsm_states.current_stage() != fsm_states.start_stage())) {
             send_ipc_to_next_service();
         } else { }
@@ -425,6 +427,7 @@ fsm::set_current_stage(const upg_stage_t stage_id) {
     timeout_ = stage.svc_rsp_timeout();
     timeout_ = double(timeout_ * 1.0) / 1000;
     domain_ = stage.domain();
+    stage_response_ = SVC_RSP_OK;
 
     if (domain_ == IPC_SVC_DOM_ID_B &&
         fsm_states.init_params()->upg_event_fwd_cb) {
@@ -475,10 +478,77 @@ fsm::update_stage_progress_internal_(void) {
 }
 
 void
-fsm::update_stage_progress(const svc_rsp_code_t rsp) {
+fsm::set_prev_stage_rsp(const svc_rsp_code_t rsp) {
+    // SVC_RSP_CRIT > SVC_RSP_FAIL > SVC_RSP_NONE > SVC_RSP_OK
+    if (prev_stage_rsp_ == SVC_RSP_CRIT) {
+       // noting to do , Already critical
+       return;
+    }
+
+    if (prev_stage_rsp_ == SVC_RSP_OK || rsp == SVC_RSP_CRIT ||
+        (prev_stage_rsp_ == SVC_RSP_NONE && rsp == SVC_RSP_FAIL)) {
+       prev_stage_rsp_ = rsp;
+    }
+
+    // else :  prev_stage_rsp_ will carry the response
+}
+
+void
+fsm::set_stage_response(const svc_rsp_code_t rsp) {
+    if (stage_response_ == SVC_RSP_CRIT) {
+       return;
+    }
+
+    if (stage_response_ == SVC_RSP_OK || rsp == SVC_RSP_CRIT ||
+        (stage_response_ == SVC_RSP_NONE && rsp == SVC_RSP_FAIL)) {
+       stage_response_ = rsp;
+    }
+}
+
+static bool
+is_satge_transition_required (const svc_rsp_code_t rsp)
+{
+    // Check if it is OK to move to the next stage
+    if (fsm_states.is_parallel_event_sequence()) {
+        // For Parallel event sequence:
+        // 1. If there was no failure from any of the svcs and no more svc rsp
+        //    pending, we can move to next stage
+        // 2. If at least one svc responded non-OK then it is OK to move to the
+        //    next stage on timeout of the current stage.
+        if ((fsm_states.pending_response() == 0) &&
+            ((SVC_RSP_OK == fsm_states.stage_response()) ||
+             ((SVC_RSP_OK != fsm_states.stage_response()) && (rsp == SVC_RSP_NONE)))) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        // For serial event sequence :
+        // 1. If svc responded non-OK then it is Ok to move to the next stage on
+        //    timeout of the current svc rsp, no need to process rest of the
+        //    svcs
+        // 2. All svc responded OK and there is no pending rsp
+        if (((SVC_RSP_OK != fsm_states.stage_response()) && (rsp == SVC_RSP_NONE)) ||
+           ((SVC_RSP_OK == fsm_states.stage_response()) && (fsm_states.pending_response() == 0))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+void
+fsm::update_stage_progress(const svc_rsp_code_t rsp, bool check_pending_rsp) {
+
+    SDK_ASSERT(pending_response_ >= 0);
+
+    if (check_pending_rsp && (rsp != SVC_RSP_NONE || (rsp == SVC_RSP_NONE &&
+                               (fsm_states.domain() == IPC_SVC_DOM_ID_B)))) {
+        pending_response_--;
+    }
+
     if (rsp != SVC_RSP_OK) {
         switch (rsp) {
-        // prev_stage_rsp_ will carry the response
         case SVC_RSP_FAIL:
             UPG_TRACE_ERR("Got failure response in stage %s",
                           upg_stage2str(current_stage_));
@@ -491,39 +561,34 @@ fsm::update_stage_progress(const svc_rsp_code_t rsp) {
             if (fsm_states.domain() == IPC_SVC_DOM_ID_B) {
                 UPG_TRACE_ERR("Timer expired, no service response across ipc domain");
             } else {
-                std::string svcs = fsm_states.pending_svcs();
-                UPG_TRACE_ERR("Timer expired, no service response from %s",
-                              svcs.c_str());
+                if (!fsm_states.is_empty_pending_svcs()) {
+                    std::string svcs = fsm_states.pending_svcs();
+                        UPG_TRACE_ERR("Timer expired, no service response from %s",
+                                      svcs.c_str());
+                        // Stage timeout but still there are pending responses
+                        // Now, no business with pending_response_ in this stage
+                        pending_response_ = 0;
+                } else {
+                    // All responded but there was at least svc failure
+                    UPG_TRACE_ERR("Timer expired on stage failure !");
+                }
             }
             break;
         default:
             break;
         }
-        execute_post_hooks(current_stage_, rsp);
-        current_stage_ = lookup_stage_transition(current_stage_, rsp);
-        update_stage_progress_internal_();
-        prev_stage_rsp_ = rsp;
-    } else {
-        pending_response_--;
-
-        SDK_ASSERT(pending_response_ >= 0);
-        if (pending_response_ == 0) {
-
-            SDK_ASSERT(pending_response_ >= 0);
-
-            if (!execute_post_hooks(current_stage_, rsp)) {
-                prev_stage_rsp_ = SVC_RSP_FAIL;
-                current_stage_ = lookup_stage_transition(current_stage_,
-                                                         SVC_RSP_FAIL );
-            } else {
-                current_stage_ = lookup_stage_transition(current_stage_, rsp);
-            }
-
-            update_stage_progress_internal_();
-            prev_stage_rsp_ = (prev_stage_rsp_ == SVC_RSP_OK) ?
-                SVC_RSP_OK : prev_stage_rsp_;
-        }
     }
+
+    set_stage_response(rsp);
+    set_prev_stage_rsp(rsp);
+
+    if (is_satge_transition_required(rsp)) {
+        execute_post_hooks(current_stage_, stage_response());
+        current_stage_ = lookup_stage_transition(current_stage_, stage_response());
+        update_stage_progress_internal_();
+        reset_stage_response();
+    }
+
 }
 
 bool
@@ -788,7 +853,6 @@ init_fsm_stages (pt::ptree& tree)
         UPG_TRACE_ERR("Failed to read fsm stages from "
                       "upgrade spec %s", ex.what());
     }
-    dump(fsm_stages);
     return ret;
 }
 
@@ -860,7 +924,6 @@ init_fsm (fsm_init_params_t *params)
     fsm_states.set_init_params(params);
     LOG_STAGE_STARTED(upg_stage2str(fsm_states.current_stage()));
     if (!execute_pre_hooks(fsm_states.current_stage())) {
-        fsm_states.update_stage_progress(SVC_RSP_FAIL);
         LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
         return SDK_RET_ERR;
     }

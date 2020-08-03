@@ -180,7 +180,7 @@ upg_interactive_stage_exec (upg_stage_t stage)
     fsm_states.timer_stop();
     fsm_states.timer_start();
     if (!execute_pre_hooks(id)) {
-        fsm_states.update_stage_progress(SVC_RSP_FAIL);
+        fsm_states.update_stage_progress(SVC_RSP_FAIL, false);
         stage_in_progress = false;
         return SDK_RET_ERR;
     }
@@ -236,7 +236,7 @@ upg_event_interactive_handler (upg_event_msg_t *event)
 
         fsm_states.update_stage_progress_interactive(svc_rsp_code
                                                      (event->rsp_status));
-        fsm_states.timer_stop();
+        //fsm_states.timer_stop();
         if (fsm_states.is_current_stage_over(event->stage)) {
             if (!execute_post_hooks(id, svc_rsp_code(event->rsp_status))) {
                 fsm_states.set_prev_stage_rsp(SVC_RSP_FAIL);
@@ -251,6 +251,7 @@ upg_event_interactive_handler (upg_event_msg_t *event)
             }
             stage_in_progress = false;
         } else if (stage_in_progress && fsm_states.is_serial_event_sequence() &&
+                   (SVC_RSP_OK == fsm_states.stage_response()) &&
                    fsm_states.has_next_svc()) {
             send_ipc_to_next_service();
         }
@@ -268,19 +269,30 @@ fsm::update_stage_progress_interactive(const svc_rsp_code_t rsp) {
         case SVC_RSP_CRIT:
             UPG_TRACE_ERR("Got critical service response in stage %s",
                           upg_stage2str(current_stage_));
+
             break;
         case SVC_RSP_NONE:
-            UPG_TRACE_ERR("Timer expired, no service response so far"
-                          " in stage %s",upg_stage2str(current_stage_));
+             if (!is_empty_pending_svcs()) {
+                 UPG_TRACE_ERR("Timer expired, no service response so far"
+                               " in stage %s",upg_stage2str(current_stage_));
+                 pending_response_ = 0;
+             }
             break;
         default:
             break;
         }
-        execute_post_hooks(current_stage_, rsp);
-        fsm_states.timer_stop();
-        fsm_states.set_prev_stage_rsp(rsp);
-        fsm_states.init_params()->fsm_completion_cb(get_exit_status(rsp));
-        stage_in_progress = false;
+
+        set_stage_response(rsp);
+        set_prev_stage_rsp(rsp);
+        pending_response_--;
+
+        if (pending_response_ == 0) {
+            execute_post_hooks(current_stage_, stage_response());
+            timer_stop();
+            init_params()->fsm_completion_cb(get_exit_status(rsp));
+            stage_in_progress = false;
+            current_stage_ = UPG_STAGE_NONE;
+        }
     } else {
         pending_response_--;
         SDK_ASSERT(pending_response_ >= 0);

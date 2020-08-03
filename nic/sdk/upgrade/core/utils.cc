@@ -65,7 +65,7 @@ script_to_str(const upg_scripts& scripts)
 void
 dump (const fsm& fsm)
 {
-    UPG_TRACE_VERBOSE("Runtime state : \n"
+    UPG_TRACE_INFO("Runtime state : \n"
                       "\tstart stage   : %s\n"
                       "\tcurrent stage : %s\n"
                       "\tend stage     : %s\n"
@@ -92,13 +92,13 @@ dump (const upg_scripts& scripts)
         str += x.path() + ", ";
     }
 
-    UPG_TRACE_VERBOSE("%s", str.c_str());
+    UPG_TRACE_INFO("%s", str.c_str());
 }
 
     void
 dump (upg_stage& stage)
 {
-    UPG_TRACE_VERBOSE("\t upg stage :"
+    UPG_TRACE_INFO("\t upg stage :"
                       "\n\t\t svc rsp timeout: %f ms"
                       "\n\t\t svc sequence   : %s"
                       "\n\t\t event sequence : %s"
@@ -117,7 +117,7 @@ void
 dump (upg_stages_map& stages)
 {
     std::string str = "upg stages map : ";
-    UPG_TRACE_VERBOSE("%s", str.c_str());
+    UPG_TRACE_INFO("%s", str.c_str());
     for (auto x: stages) {
         dump(x.second);
     }
@@ -132,7 +132,7 @@ dump (const upg_svc_map& svcs)
         str += x.name() + "(ipd id :";
         str += std::to_string(x.ipc_id()) + "), "  ;
     }
-    UPG_TRACE_VERBOSE("%s", str.c_str());
+    UPG_TRACE_INFO("%s", str.c_str());
 }
 
 void
@@ -142,7 +142,7 @@ dump (const svc_sequence_list& svcs)
     for (auto x: svcs) {
         str += x + ", ";
     }
-    UPG_TRACE_VERBOSE("%s", str.c_str());
+    UPG_TRACE_INFO("%s", str.c_str());
 }
 
 void
@@ -153,7 +153,7 @@ dump (const stage_map& tran)
         str += "[ " + element.first;
         str += " ->" + std::to_string(element.second) + "], ";
     }
-    UPG_TRACE_VERBOSE("%s", str.c_str());
+    UPG_TRACE_INFO("%s", str.c_str());
 }
 
 void
