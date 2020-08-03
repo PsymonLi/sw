@@ -43,7 +43,7 @@
 /sw/nic/apollo/tools/setup_env_hw.sh
 /sw/nic/tools/start-nmd.sh
 /sw/nic/apollo/tools/store_agent_log.sh
-/sw/nic/apollo/upgrade/shmstore
+/sw/nic/apollo/upgrade/api
 /sw/nic/asm/adminq
 /sw/nic/asm/common-p4+/include
 /sw/nic/asm/eth

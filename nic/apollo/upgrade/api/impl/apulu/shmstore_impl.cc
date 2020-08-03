@@ -3,7 +3,7 @@
 //
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/upgrade/shmstore/api.hpp"
+#include "nic/apollo/upgrade/api/include/shmstore.hpp"
 
 namespace api {
 

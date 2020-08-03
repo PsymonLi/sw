@@ -14,7 +14,7 @@
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/internal/upgrade_ctxt.hpp"
-#include "nic/apollo/upgrade/shmstore/api.hpp"
+#include "nic/apollo/upgrade/api/include/shmstore.hpp"
 
 namespace api {
 

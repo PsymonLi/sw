@@ -13,7 +13,7 @@
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/port.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
-#include "nic/apollo/upgrade/shmstore/api.hpp"
+#include "nic/apollo/upgrade/api/include/shmstore.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
 
 namespace api {

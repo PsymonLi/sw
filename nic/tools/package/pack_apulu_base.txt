@@ -352,7 +352,7 @@ nic/build/$ARCH/$PIPELINE/lib/libpdsupgsvc.so                     /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libpdsupgproto.so                   /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libipc_peer.so                      /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libshmstore.so                      /nic/lib/
-nic/build/$ARCH/$PIPELINE/lib/libupgshmstore.so                   /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libpdsupgapi.so                     /nic/lib/
 nic/build/$ARCH/$PIPELINE/gen/upgrade_graceful.json               /nic/conf/gen/
 nic/build/$ARCH/$PIPELINE/gen/upgrade_hitless.json                /nic/conf/gen/
 nic/sdk/upgrade/core/upgmgr_core_base.sh                          /nic/tools/
@@ -371,7 +371,7 @@ nic/build/$ARCH/$PIPELINE/bin/pdsupgmgr                           /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pdsupgclient                        /nic/bin/
 nic/conf/$PIPELINE/upgrade_cc_hitless_version.json                /nic/upgrade/etc/
 nic/conf/$PIPELINE/upgrade_cc_graceful_version.json               /nic/upgrade/etc/
-nic/build/$ARCH/$PIPELINE/lib/libpdsupgapi.so                     /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libpdsupgmgrapi.so                  /nic/lib/
 
 # diag binaries
 nic/build/$ARCH/$PIPELINE/bin/diag_test                           /nic/bin/

@@ -8,8 +8,8 @@
 ///
 //----------------------------------------------------------------------------
 
-#ifndef __UPGRADE_SHMSTORE_API_HPP__
-#define __UPGRADE_SHMSTORE_API_HPP__
+#ifndef __UPGRADE_API_INCLUDE_SHMSTORE_HPP__
+#define __UPGRADE_API_INCLUDE_SHMSTORE_HPP__
 
 #include <string>
 
@@ -29,4 +29,4 @@ int upg_oper_shmstore_size(std::string module_name);
 
 }    // namespace api
 
-#endif    // __UPGRADE_SHMSTORE_API_HPP__
+#endif    // __UPGRADE_API_INCLUDE_SHMSTORE_HPP__

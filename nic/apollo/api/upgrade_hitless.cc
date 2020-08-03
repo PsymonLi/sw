@@ -25,7 +25,7 @@
 #include "nic/apollo/api/device.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 #include "nic/apollo/api/internal/upgrade_pstate.hpp"
-#include "nic/apollo/upgrade/shmstore/api.hpp"
+#include "nic/apollo/upgrade/api/include/shmstore.hpp"
 
 namespace api {
 
