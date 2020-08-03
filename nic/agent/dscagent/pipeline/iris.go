@@ -18,9 +18,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	protoTypes "github.com/gogo/protobuf/types"
 	"github.com/mdlayher/arp"
-	"github.com/pkg/errors"
-
 	"github.com/pensando/netlink"
+	"github.com/pkg/errors"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/common"
@@ -37,6 +36,8 @@ import (
 	"github.com/pensando/sw/venice/utils/events"
 	"github.com/pensando/sw/venice/utils/log"
 )
+
+const collectorInterface = "bond0"
 
 var knownUplinks = map[uint64]string{}
 var vrfIDs = map[string]uint64{}
@@ -1855,14 +1856,6 @@ func (i *IrisAPI) ReplayConfigs() error {
 	for _, tl := range tunnels {
 		log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", tl.Kind, tl.GetKey())
 		i.InfraAPI.Delete(tl.Kind, tl.GetKey())
-
-		//	creator, ok := ep.ObjectMeta.Labels["CreatedBy"]
-		//	if ok && creator == "Venice" {
-		//		log.Infof("Replaying persisted Tunnel Object: %v", tl.GetKey())
-		//		if _, err := i.HandleTunnel(types.Create, tl); err != nil {
-		//			log.Errorf("Failed to recreate Tunnel: %v. Err: %v", tl.GetKey(), err)
-		//		}
-		//	}
 	}
 
 	// Replay NetworkSecurityPolicy Object
@@ -1898,59 +1891,86 @@ func (i *IrisAPI) ReplayConfigs() error {
 		}
 	}
 
-	// Replay InterfaceMirrorSession Object
-	intfMirrorKind := netproto.InterfaceMirrorSession{
-		TypeMeta: api.TypeMeta{Kind: "InterfaceMirrorSession"},
-	}
-	intfMirrors, _ := i.HandleInterfaceMirrorSession(types.List, intfMirrorKind)
-	for _, intfMirror := range intfMirrors {
-		log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", intfMirror.Kind, intfMirror.GetKey())
-		i.InfraAPI.Delete(intfMirror.Kind, intfMirror.GetKey())
+	go func() {
+		// Check for interface IP
+		ticker := time.NewTicker(time.Second * 30)
+		timeout := time.NewTicker(time.Minute * 5)
+		for {
+			select {
+			case <-ticker.C:
+				// Check for bond0 being available and having a valid IP.
+				link, err := netlink.LinkByName(collectorInterface)
+				if err != nil {
+					log.Errorf("Waiting for bond0 to be created. Err: %v", err)
+					continue
+				}
 
-		creator, ok := intfMirror.ObjectMeta.Labels["CreatedBy"]
-		if ok && creator == "Venice" {
-			log.Infof("Replaying persisted InterfaceMirrorSession Object: %v", intfMirror.GetKey())
-			if _, err := i.HandleInterfaceMirrorSession(types.Create, intfMirror); err != nil {
-				log.Errorf("Failed to recreate InterfaceMirrorSession: %v. Err: %v", intfMirror.GetKey(), err)
+				addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
+				if err != nil || len(addrs) == 0 {
+					log.Errorf("Waiting for bond0 to be get a valid IP. Addresses: %v | Err: %v", addrs, err)
+					continue
+				}
+
+				// Replay InterfaceMirrorSession Object
+				intfMirrorKind := netproto.InterfaceMirrorSession{
+					TypeMeta: api.TypeMeta{Kind: "InterfaceMirrorSession"},
+				}
+				intfMirrors, _ := i.HandleInterfaceMirrorSession(types.List, intfMirrorKind)
+				for _, intfMirror := range intfMirrors {
+					log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", intfMirror.Kind, intfMirror.GetKey())
+					i.InfraAPI.Delete(intfMirror.Kind, intfMirror.GetKey())
+
+					creator, ok := intfMirror.ObjectMeta.Labels["CreatedBy"]
+					if ok && creator == "Venice" {
+						log.Infof("Replaying persisted InterfaceMirrorSession Object: %v", intfMirror.GetKey())
+						if _, err := i.HandleInterfaceMirrorSession(types.Create, intfMirror); err != nil {
+							log.Errorf("Failed to recreate InterfaceMirrorSession: %v. Err: %v", intfMirror.GetKey(), err)
+						}
+					}
+				}
+
+				// Replay MirrorSession Object
+				mrKind := netproto.MirrorSession{
+					TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
+				}
+				mirrors, _ := i.HandleMirrorSession(types.List, mrKind)
+				for _, mr := range mirrors {
+					log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", mr.Kind, mr.GetKey())
+					i.InfraAPI.Delete(mr.Kind, mr.GetKey())
+
+					creator, ok := mr.ObjectMeta.Labels["CreatedBy"]
+					if ok && creator == "Venice" {
+						log.Infof("Replaying persisted MirrorSession Object: %v", mr.GetKey())
+						if _, err := i.HandleMirrorSession(types.Create, mr); err != nil {
+							log.Errorf("Failed to recreate MirrorSession: %v. Err: %v", mr.GetKey(), err)
+						}
+					}
+				}
+
+				// Replay Flowexport policies
+				feKind := netproto.FlowExportPolicy{
+					TypeMeta: api.TypeMeta{Kind: "FlowExportPolicy"},
+				}
+				fepolicies, _ := i.HandleFlowExportPolicy(types.List, feKind)
+				for _, fe := range fepolicies {
+					log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", fe.Kind, fe.GetKey())
+					i.InfraAPI.Delete(fe.Kind, fe.GetKey())
+
+					creator, ok := fe.ObjectMeta.Labels["CreatedBy"]
+					if ok && creator == "Venice" {
+						log.Infof("Replaying persisted FlowExportPolicy Object: %v", fe.GetKey())
+						if _, err := i.HandleFlowExportPolicy(types.Create, fe); err != nil {
+							log.Errorf("Failed to recreate FlowExportPolicy: %v. Err: %v", fe.GetKey(), err)
+						}
+					}
+				}
+				return
+			case <-timeout.C:
+				log.Error("bond0 IP was not present after 5m")
+				return
 			}
 		}
-	}
-
-	// Replay MirrorSession Object
-	mrKind := netproto.MirrorSession{
-		TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
-	}
-	mirrors, _ := i.HandleMirrorSession(types.List, mrKind)
-	for _, mr := range mirrors {
-		log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", mr.Kind, mr.GetKey())
-		i.InfraAPI.Delete(mr.Kind, mr.GetKey())
-
-		creator, ok := mr.ObjectMeta.Labels["CreatedBy"]
-		if ok && creator == "Venice" {
-			log.Infof("Replaying persisted MirrorSession Object: %v", mr.GetKey())
-			if _, err := i.HandleMirrorSession(types.Create, mr); err != nil {
-				log.Errorf("Failed to recreate MirrorSession: %v. Err: %v", mr.GetKey(), err)
-			}
-		}
-	}
-
-	// Replay Flowexport policies
-	feKind := netproto.FlowExportPolicy{
-		TypeMeta: api.TypeMeta{Kind: "FlowExportPolicy"},
-	}
-	fepolicies, _ := i.HandleFlowExportPolicy(types.List, feKind)
-	for _, fe := range fepolicies {
-		log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", fe.Kind, fe.GetKey())
-		i.InfraAPI.Delete(fe.Kind, fe.GetKey())
-
-		creator, ok := fe.ObjectMeta.Labels["CreatedBy"]
-		if ok && creator == "Venice" {
-			log.Infof("Replaying persisted FlowExportPolicy Object: %v", fe.GetKey())
-			if _, err := i.HandleFlowExportPolicy(types.Create, fe); err != nil {
-				log.Errorf("Failed to recreate FlowExportPolicy: %v. Err: %v", fe.GetKey(), err)
-			}
-		}
-	}
+	}()
 
 	// Replay Endpoint Object after interface mirror session replay
 	epKind := netproto.Endpoint{
