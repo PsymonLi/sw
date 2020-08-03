@@ -27,6 +27,18 @@ handle_pds_cmd (cmd_ctxt_t *ctxt)
             flow_cb(ctxt->sock_fd, ctxt->io_fd, ctxt->args.flow_dump.summary);
         }
         break;
+    case CMD_MSG_NAT_FLOW_DUMP:
+        flow_cb = vpp_uds_callbacks[VPP_UDS_NAT_FLOW_DUMP];
+        if (flow_cb) {
+            flow_cb(ctxt->sock_fd, ctxt->io_fd, ctxt->args.flow_dump.summary);
+        }
+        break;
+    case CMD_MSG_NAT_GLOBAL_STATS:
+        flow_cb = vpp_uds_callbacks[VPP_UDS_NAT_GLOBAL_STATS];
+        if (flow_cb) {
+            flow_cb(ctxt->sock_fd, ctxt->io_fd, ctxt->args.flow_dump.summary);
+        }
+        break;
     default:
         // Nothing to do
         break;

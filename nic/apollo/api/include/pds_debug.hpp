@@ -127,6 +127,8 @@ typedef enum cmd_msg_e {
     CMD_MSG_STORE_STATS_DUMP,
     CMD_MSG_NACL_DUMP,
     CMD_MSG_PORT_FSM_DUMP,
+    CMD_MSG_NAT_FLOW_DUMP,
+    CMD_MSG_NAT_GLOBAL_STATS,
 } cmd_msg_t;
 
 typedef struct cmd_ctxt_s {

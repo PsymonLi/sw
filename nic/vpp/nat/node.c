@@ -11,6 +11,7 @@
 #include "nat_utils.h"
 #include <mapping.h>
 #include <p4_cpu_hdr_utils.h>
+#include "pdsa_uds_hdlr.h"
 
 // *INDENT-OFF*
 VLIB_PLUGIN_REGISTER () = {
@@ -515,6 +516,7 @@ vpp_nat_init (vlib_main_t * vm)
     pds_nat_cfg_init();
     nat_init();
     nat_sync_init();
+    pds_nat_uds_init();
     return 0;
 }
 

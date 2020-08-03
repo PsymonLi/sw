@@ -451,6 +451,10 @@ pds_proto_cmd_to_api_cmd (pds::Command proto_cmd)
         return CMD_MSG_STORE_STATS_DUMP;
     case pds::CMD_PORT_FSM_DUMP:
         return CMD_MSG_PORT_FSM_DUMP;
+    case pds::CMD_NAT_FLOW_DUMP:
+        return CMD_MSG_NAT_FLOW_DUMP;
+    case pds::CMD_NAT_GLOBAL_STATS:
+        return CMD_MSG_NAT_GLOBAL_STATS;
     default:
         return CMD_MSG_NONE;
     }

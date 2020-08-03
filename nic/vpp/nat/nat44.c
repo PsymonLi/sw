@@ -1280,6 +1280,13 @@ nat_hw_usage(u32 *total_hw_indices, u32 *total_alloc_indices)
     return NAT_ERR_OK;
 }
 
+void
+nat_get_global_stats(nat_global_stats_t *stats)
+{
+    stats->hw_index_total = PDS_MAX_DYNAMIC_NAT;
+    stats->hw_index_alloc = nat_main.num_hw_indices_allocated;
+}
+
 uint16_t
 nat_pb_count() {
     uint16_t count = 0;

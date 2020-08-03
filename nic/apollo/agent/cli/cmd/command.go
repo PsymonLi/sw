@@ -131,7 +131,9 @@ func HandleSvcReqCommandMsg(cmd pds.Command,
 	}
 
 	socket := CmdSocket
-	if cmd == pds.Command_CMD_FLOW_DUMP {
+	if cmd == pds.Command_CMD_FLOW_DUMP ||
+		cmd == pds.Command_CMD_NAT_FLOW_DUMP ||
+		cmd == pds.Command_CMD_NAT_GLOBAL_STATS {
 		socket = vppUdsPath
 	}
 

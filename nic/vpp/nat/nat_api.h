@@ -84,6 +84,11 @@ typedef struct nat44_sync_info_ {
     nat_addr_type_t nat_addr_type;
 } nat44_sync_info_t;
 
+typedef struct nat_global_stats_ {
+    uint32_t hw_index_total;
+    uint32_t hw_index_alloc;
+} nat_global_stats_t;
+
 
 typedef void *(*nat_flow_iter_cb_t)(void *ctxt, uint32_t vpc_id,
                                     nat_flow_key_t *key, uint64_t val);
@@ -111,6 +116,7 @@ nat_hw_index_t nat_get_tx_hw_index_pub_ip_port(uint32_t vpc_id,
 void nat_sync_start(void);
 void nat_sync_stop(void);
 nat_err_t nat_sync_restore(nat44_sync_info_t *sync);
+void nat_get_global_stats(nat_global_stats_t *stats);
 
 #ifdef __cplusplus
 nat_err_t nat_port_block_add(const uint8_t key[PDS_MAX_KEY_LEN],

@@ -34,6 +34,20 @@ var natShowCmd = &cobra.Command{
 	Run:   natShowCmdHandler,
 }
 
+var natFlowShowCmd = &cobra.Command{
+	Use:   "flow",
+	Short: "show NAT flow information",
+	Long:  "show NAT flow object information",
+	Run:   natFlowShowCmdHandler,
+}
+
+var natGlobalStatsShowCmd = &cobra.Command{
+	Use:   "statistics",
+	Short: "show NAT statistics",
+	Long:  "show NAT statistics",
+	Run:   natGlobalStatsShowCmdHandler,
+}
+
 var (
 	// ID holds NAT PB ID
 	natPbId string
@@ -44,6 +58,9 @@ func init() {
 	natShowCmd.Flags().StringVarP(&natPbId, "id", "i", "", "Specify NAT Port Block ID")
 	natShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	natShowCmd.Flags().Bool("summary", false, "Display number of objects")
+
+	natShowCmd.AddCommand(natFlowShowCmd)
+	natShowCmd.AddCommand(natGlobalStatsShowCmd)
 }
 
 func natShowCmdHandler(cmd *cobra.Command, args []string) {
@@ -161,3 +178,36 @@ func (natPb myNatPortBlock) HandleObject(data *types.Any) (done bool) {
 	done = false
 	return
 }
+
+func natFlowShowCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	cmdResp, err := HandleSvcReqCommandMsg(pds.Command_CMD_NAT_FLOW_DUMP, nil)
+	if err != nil {
+		fmt.Printf("Command failed with %v error\n", err)
+		return
+	}
+	if cmdResp.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Command failed with %v error\n", cmdResp.ApiStatus)
+	}
+}
+
+func natGlobalStatsShowCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	cmdResp, err := HandleSvcReqCommandMsg(pds.Command_CMD_NAT_GLOBAL_STATS, nil)
+	if err != nil {
+		fmt.Printf("Command failed with %v error\n", err)
+		return
+	}
+	if cmdResp.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Command failed with %v error\n", cmdResp.ApiStatus)
+	}
+}
+
