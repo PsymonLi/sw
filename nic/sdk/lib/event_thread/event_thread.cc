@@ -207,6 +207,7 @@ event_thread::factory(const char *name, uint32_t thread_id,
 void
 event_thread::destroy(event_thread *thread)
 {
+    sdk::lib::lfq::destroy(thread->lfqueue());
     g_thread_store_.remove(thread->thread_id());
     thread->~event_thread();
     SDK_FREE(SDK_MEM_ALLOC_LIB_EVENT_THREAD, thread);
