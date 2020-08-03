@@ -684,16 +684,39 @@ static void ionic_get_channels(struct net_device *netdev,
 
 	/* report maximum channels */
 	ch->max_combined = lif->ionic->ntxqs_per_lif;
+	if (!ionic_use_eqs(lif)) {
+		ch->max_rx = lif->ionic->ntxqs_per_lif / 2;
+		ch->max_tx = lif->ionic->ntxqs_per_lif / 2;
+	}
 
 	/* report current channels */
-	ch->combined_count = lif->nxqs;
+	if (test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state)) {
+		ch->rx_count = lif->nxqs;
+		ch->tx_count = lif->nxqs;
+	} else {
+		ch->combined_count = lif->nxqs;
+	}
 }
 
 static void ionic_set_queuecount(struct ionic_lif *lif, void *arg)
 {
 	struct ethtool_channels *ch = arg;
 
-	lif->nxqs = ch->combined_count;
+	if (ch->combined_count) {
+		lif->nxqs = ch->combined_count;
+		if (test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state)) {
+			clear_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
+			lif->tx_coalesce_usecs = lif->rx_coalesce_usecs;
+			lif->tx_coalesce_hw = lif->rx_coalesce_hw;
+			netdev_info(lif->netdev, "Sharing queue interrupts\n");
+		}
+	} else {
+		lif->nxqs = ch->rx_count;
+		if (!test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state)) {
+			set_bit(IONIC_LIF_F_SPLIT_INTR, lif->state);
+			netdev_info(lif->netdev, "Splitting queue interrupts\n");
+		}
+	}
 }
 
 static int ionic_set_channels(struct net_device *netdev,
@@ -702,22 +725,66 @@ static int ionic_set_channels(struct net_device *netdev,
 	struct ionic_lif *lif = netdev_priv(netdev);
 	int max_cnt;
 
-	if (!ch->combined_count || ch->other_count ||
-	    ch->rx_count || ch->tx_count)
+	/* Valid cases
+	 *  Combined (default):
+	 *    rx_count == tx_count: 0
+	 *    combined_count: 1..lif->ionic->ntxqs_per_lif
+	 *    other_count: 0
+	 *  Split:
+	 *    rx_count == tx_count: 1..lif->ionic->ntxqs_per_lif / 2
+	 *    combined_count: 0
+	 *    other_count: 0
+	 */
+	if (ch->other_count) {
+		netdev_info(netdev, "We don't use other queues\n");
 		return -EINVAL;
+	}
+
+	if (ch->rx_count != ch->tx_count) {
+		netdev_info(netdev, "The rx and tx count must be equal\n");
+		return -EINVAL;
+	}
+
+	if (ionic_use_eqs(lif) && ch->rx_count) {
+		netdev_info(netdev, "Separate rx and tx count not available when using EventQueues\n");
+		return -EINVAL;
+	}
+
+	if (!(ch->combined_count || ch->rx_count)) {
+		netdev_info(netdev, "Please specify either combined or rx and tx\n");
+		return -EINVAL;
+	}
+
+	if (ch->combined_count && ch->rx_count) {
+		netdev_info(netdev, "Use either combined or rx and tx, not both\n");
+		return -EINVAL;
+	}
 
 	max_cnt = lif->ionic->ntxqs_per_lif;
-	if (test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state))
+	if (ch->combined_count) {
+		if (ch->combined_count > max_cnt)
+			return -EINVAL;
+
+		if (!test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state) &&
+		    (ch->combined_count == lif->nxqs))
+			return 0;
+
+		if (lif->nxqs != ch->combined_count)
+			netdev_info(netdev, "Changing queue count from %d to %d\n",
+				    lif->nxqs, ch->combined_count);
+	} else {
 		max_cnt /= 2;
+		if (ch->rx_count > max_cnt)
+			return -EINVAL;
 
-	if (ch->combined_count > max_cnt)
-		return -EINVAL;
+		if (test_bit(IONIC_LIF_F_SPLIT_INTR, lif->state) &&
+		    (ch->rx_count == lif->nxqs))
+			return 0;
 
-	if (ch->combined_count == lif->nxqs)
-		return 0;
-
-	netdev_info(netdev, "Changing queue count from %d to %d\n",
-		    lif->nxqs, ch->combined_count);
+		if (lif->nxqs != ch->rx_count)
+			netdev_info(netdev, "Changing queue count from %d to %d\n",
+				    lif->nxqs, ch->rx_count);
+	}
 
 	return ionic_reset_queues(lif, ionic_set_queuecount, ch);
 }
