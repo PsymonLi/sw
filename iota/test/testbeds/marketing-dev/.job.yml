@@ -24,7 +24,7 @@ e2e-targets:
          pvt-networks:
          - control-1
          - control-2
-     - image: build-10
+     - image: build-9
        count: 1
        resources:
          servers:
@@ -54,7 +54,7 @@ e2e-targets:
          pvt-networks:
          - control-1
          - control-2
-     - image: build-10
+     - image: build-9
        count: 1
        resources:
          servers:
@@ -84,7 +84,7 @@ e2e-targets:
          pvt-networks:
          - control-1
          - control-2
-     - image: build-10
+     - image: build-9
        count: 2
        resources:
          servers:
@@ -98,8 +98,8 @@ e2e-targets:
           EsxUsername: root
           EsxPassword: Pen0trl!
 
- # single instance of RHEL 8.0 with 1 Venice instance
- rhel80WithVenice:
+ # single instance of RHEL 8.2 with 1 Venice instance
+ rhel82WithVenice:
    commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ci-status@pensando.io"]
    area:
@@ -114,7 +114,7 @@ e2e-targets:
          pvt-networks:
          - control-1
          - control-2
-     - image: build-34
+     - image: build-36
        count: 1
        resources:
          servers:
@@ -134,7 +134,7 @@ e2e-targets:
    sub-area:
    feature:
    clusters:
-     - image: build-10
+     - image: build-9
        count: 1
        resources:
          servers:
@@ -156,7 +156,7 @@ e2e-targets:
    sub-area:
    feature:
    clusters:
-     - image: build-10
+     - image: build-9
        count: 2
        resources:
          servers:
@@ -170,15 +170,15 @@ e2e-targets:
           EsxUsername: root
           EsxPassword: Pen0trl!
 
- # single instance of RHEL 8.0
- rhel80:
+ # single instance of RHEL 8.2
+ rhel82:
    commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ci-status@pensando.io"]
    area:
    sub-area:
    feature:
    clusters:
-     - image: build-34
+     - image: build-36
        count: 1
        resources:
          servers:
@@ -190,15 +190,15 @@ e2e-targets:
        vars:
           BmOs: linux
 
- # two bare-metal instances of RHEL 8.0
- 2rhel80:
+ # two bare-metal instances of RHEL 8.2
+ 2rhel82:
    commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ci-status@pensando.io"]
    area:
    sub-area:
    feature:
    clusters:
-     - image: build-34
+     - image: build-36
        count: 2
        resources:
          servers:

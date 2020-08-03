@@ -31,28 +31,28 @@ e2e-targets:
 #       vars:
 #          BmOs: linux
 #
-# ucs220.cascade:
-#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
-#   owners: ["email:dbarsky@pensando.io"]
-#   area:
-#   sub-area:
-#   feature:
-#   max-duration: 72h
-#   build-dependencies:
-#     - build-iris-arm
-#     - build-iota
-#   clusters:
-#     - image: build-70
-#       count: 1
-#       resources:
-#         servers:
-#         - type: compat-ucs-c220-M5
-#         nic-type: naples
-#   provision:
-#       username: vm
-#       password: vm
-#       vars:
-#          BmOs: linux
+ ucs220_cascade:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 72h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-70
+       count: 1
+       resources:
+         servers:
+         - type: compat-ucs-c220-M5
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
        
  Dell_R6525:
    commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
@@ -129,56 +129,56 @@ e2e-targets:
           EsxUsername: root
           EsxPassword: Pen0trl!
 
-# Dell_R740:
-#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
-#   owners: ["email:dbarsky@pensando.io"]
-#   area:
-#   sub-area:
-#   feature:
-#   max-duration: 72h
-#   build-dependencies:
-#     - build-iris-arm
-#     - build-iota
-#   clusters:
-#     - image: build-71
-#       count: 1
-#       resources:
-#         servers:
-#         - type: compat-dell-r740
-#         nic-type: naples
-#   provision:
-#       username: vm
-#       password: vm
-#       vars:
-#          BmOs: esx
-#          EsxUsername: root
-#          EsxPassword: Pen0trl!
-#
-# Dell_R640:
-#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
-#   owners: ["email:dbarsky@pensando.io"]
-#   area:
-#   sub-area:
-#   feature:
-#   max-duration: 72h
-#   build-dependencies:
-#     - build-iris-arm
-#     - build-iota
-#   clusters:
-#     - image: build-71
-#       count: 1
-#       resources:
-#         servers:
-#         - type: compat-dell-r640
-#         nic-type: naples
-#   provision:
-#       username: vm
-#       password: vm
-#       vars:
-#          BmOs: esx
-#          EsxUsername: root
-#          EsxPassword: Pen0trl!
-#
+ Dell_R740:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 72h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-71
+       count: 1
+       resources:
+         servers:
+         - type: compat-dell-r740
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ Dell_R640:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 72h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-71
+       count: 1
+       resources:
+         servers:
+         - type: compat-dell-r640
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
  Hpe_DL325:
    commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init"]
    owners: ["email:dbarsky@pensando.io"]

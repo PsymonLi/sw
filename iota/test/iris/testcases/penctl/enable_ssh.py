@@ -24,9 +24,10 @@ def Main(step):
     resp = api.Trigger(req)
 
     for cmd in resp.commands:
-        api.PrintCommandResults(cmd)
         if cmd.exit_code != 0:
+            api.PrintCommandResults(cmd)
             return api.types.status.FAILURE
+    api.Logger.info ("DSC ssh is enabled")
 
     for n in api.GetNaplesHostnames():
         uuid = GetNaplesUUID(n)

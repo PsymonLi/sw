@@ -301,16 +301,42 @@ jobs:
     labels: ["compat-server-reboot"]
   iota/test/standalone/compat/compat-server/ubuntu18043-reboot:
     labels: ["compat-server-reboot"]
-  iota/test/standalone/compat/compat-server/esx6.7-reboot-uefi:
-    labels: ["compat-server-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/esx6.5-reboot-uefi:
+    labels: ["compat-other-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/windows2019-reboot-uefi:
+    labels: ["compat-other-reboot-uefi"]
   iota/test/standalone/compat/compat-server/rhel7u5-reboot-uefi:
-    labels: ["compat-server-reboot-uefi"]
+    labels: ["compat-rhel-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel7u6-reboot-uefi:
+    labels: ["compat-rhel-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel7u7-reboot-uefi:
+    labels: ["compat-rhel-reboot-uefi"]
   iota/test/standalone/compat/compat-server/rhel7u8-reboot-uefi:
-    labels: ["compat-server-reboot-uefi"]
+    labels: ["compat-rhel-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel7u9-reboot-uefi:
+    labels: ["compat-rhel-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel8-reboot-uefi:
+    labels: ["compat-rhel-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel8u1-reboot-uefi:
+    labels: ["compat-rhel-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel8u2-reboot-uefi:
+    labels: ["compat-rhel-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel8u3-reboot-uefi:
+    labels: ["compat-rhel-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/sles12sp4-reboot-uefi:
+    labels: ["compat-sles-reboot-uefi"]
   iota/test/standalone/compat/compat-server/sles12sp5-reboot-uefi:
-    labels: ["compat-server-reboot-uefi"]
+    labels: ["compat-sles-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/sles15-reboot-uefi/:
+    labels: ["compat-sles-reboot-uefi"]
   iota/test/standalone/compat/compat-server/sles15sp1-reboot-uefi/:
-    labels: ["compat-server-reboot-uefi"]
+    labels: ["compat-sles-reboot-uefi"]
+#  iota/test/standalone/compat/compat-server/sles15sp2-reboot-uefi/:
+#    labels: ["compat-sles-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/ubuntu18043-reboot-uefi/:
+    labels: ["compat-other-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/ubuntu2004-reboot-uefi/:
+    labels: ["compat-other-reboot-uefi"]
   iota/test/standalone/os_coverage/linux:
     label: ["CI-Weekly"]
   iota/test/standalone/os_coverage_apulu/linux:

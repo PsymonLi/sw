@@ -3,6 +3,8 @@ import subprocess
 import socket
 import iota.harness.api as api
 from iota.harness.infra.exceptions import *
+import iota.test.iris.testcases.penctl.install as install_penctl
+import iota.test.iris.testcases.penctl.enable_ssh as enable_ssh
 import iota.test.iris.config.workload.api as wl_api
 
 
@@ -47,9 +49,9 @@ def Trigger(tc):
 
     cimc_info = tc.test_node.GetCimcInfo()
 
-    tc.cimc_ip_address = cimc_info.GetIp()
-    tc.cimc_username = cimc_info.GetUsername()
-    tc.cimc_password = cimc_info.GetPassword()
+    cimc_ip_address = cimc_info.GetIp()
+    cimc_username = cimc_info.GetUsername()
+    cimc_password = cimc_info.GetPassword()
 
     host_ipaddr = api.GetMgmtIPAddress(tc.test_node_name)
 
@@ -73,13 +75,13 @@ def Trigger(tc):
         # Boot from PXE to intall an OS
         api.Logger.info(f"Starting PXE Install Loop # {install} on {tc.test_node_name}")
         cmd = "ipmitool -I lanplus -H %s -U %s -P %s chassis bootdev pxe options=efiboot" %\
-              (tc.cimc_ip_address, tc.cimc_username, tc.cimc_password)
+              (cimc_ip_address, cimc_username, cimc_password)
         subprocess.check_call(cmd, shell=True)
         time.sleep(5)
 
         # reboot server
         cmd = "ipmitool -I lanplus -H %s -U %s -P %s chassis power cycle" %\
-              (tc.cimc_ip_address, tc.cimc_username, tc.cimc_password)
+              (cimc_ip_address, cimc_username, cimc_password)
         subprocess.check_call(cmd, shell=True)
         time.sleep(180)
 
@@ -91,13 +93,13 @@ def Trigger(tc):
         # Boot from HDD to run the test
         api.Logger.info(f"Setting Boot Order to HDD and rebooting {tc.test_node_name}")
         cmd = "ipmitool -I lanplus -H %s -U %s -P %s chassis bootdev disk options=efiboot" %\
-              (tc.cimc_ip_address, tc.cimc_username, tc.cimc_password)
+              (cimc_ip_address, cimc_username, cimc_password)
         subprocess.check_call(cmd, shell=True)
         time.sleep(5)
 
         #reboot server
         cmd = "ipmitool -I lanplus -H %s -U %s -P %s chassis power cycle" %\
-              (tc.cimc_ip_address, tc.cimc_username, tc.cimc_password)
+              (cimc_ip_address, cimc_username, cimc_password)
         subprocess.check_call(cmd, shell=True)
 
         api.Logger.info(f"Waiting for host to come up: {host_ipaddr}")
@@ -117,7 +119,7 @@ def Trigger(tc):
             api.Logger.error(f"Failed to restore agent state after PXE install")
             raise OfflineTestbedException
         api.Logger.info(f"PXE install iteration #{install} - SUCCESS")
-        wl_api.ReAddWorkloads(tc.test_node)
+        wl_api.ReAddWorkloads(tc.test_node_name)
 
         # check touched file is not present, to ensure this is a new OS instance
         req = api.Trigger_CreateExecuteCommandsRequest()
@@ -154,5 +156,14 @@ def Trigger(tc):
     return api.types.status.SUCCESS
 
 def Verify(tc):
+
+    if install_penctl.Main(None) != api.types.status.SUCCESS:
+        api.Logger.info("Installing PenCtl failed after pxe install")
+        return api.types.status.FAILURE
+
+
+    if enable_ssh.Main(None) != api.types.status.SUCCESS:
+        api.Logger.info("Enabling SSH failed after pxe install")
+        return api.types.status.FAILURE
 
     return api.types.status.SUCCESS

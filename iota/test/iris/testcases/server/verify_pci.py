@@ -71,7 +71,7 @@ def uptime(node):
         return
 
     cmd = resp.commands.pop()
-    api.Logger.info(f"{node} uptime: {cmd.stdout}")
+    api.Logger.info(f"    {node} uptime: {cmd.stdout}")
     return
 
 def verify_errors_lspci(node, os_type):
@@ -87,7 +87,7 @@ def verify_errors_lspci(node, os_type):
         api.Logger.error("Errors on PCIe root port/bridge")
         return api.types.status.CRITICAL
 
-    api.Logger.info("No errors on PCIe root port/bridge")
+    api.Logger.info("    No errors on PCIe root port/bridge")
     return  api.types.status.SUCCESS
 
 def checkpcirootbridge(node):

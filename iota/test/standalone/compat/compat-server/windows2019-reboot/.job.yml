@@ -31,7 +31,7 @@ e2e-targets:
 #       vars:
 #          BmOs: windows
 #
-# ucs220.cascade:
+# ucs220_cascade:
 #   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
 #   owners: ["email:dbarsky@pensando.io"]
 #   area:

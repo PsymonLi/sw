@@ -5,7 +5,7 @@ os_version=`awk -F= '$1=="VERSION_ID" { print $2 ;}' /etc/os-release | sed -e 's
 
 if [ "$1" = "register" ]; then
 	# register and add repos
-	/usr/sbin/subscription-manager register --username rhel@pensando.io --password N0isystem$ --auto-attach
+	/usr/sbin/subscription-manager register --username rhel@pensando.io --password N0isystem$
 	/usr/sbin/subscription-manager attach --pool=8a85f99c707807c80170843dd71c7775
 	
 	# for RHEL 7	

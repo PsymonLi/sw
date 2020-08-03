@@ -34,7 +34,7 @@ testbundles:
     sanity:
         # Relative paths from iota/test/iris/testbundles/
         - server_compatibility/compatibility.testbundle
-        - pciefuzzing/pciefuzzing.testbundle 
+#        - pciefuzzing/pciefuzzing.testbundle 
 
 teardown:
         # N/A

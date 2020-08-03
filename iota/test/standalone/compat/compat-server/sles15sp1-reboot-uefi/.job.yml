@@ -19,7 +19,7 @@ e2e-targets:
 #     - build-iris-arm
 #     - build-iota
 #   clusters:
-#     - image: build-68
+#     - image: build-76
 #       count: 1
 #       resources:
 #         servers:
@@ -31,29 +31,29 @@ e2e-targets:
 #       vars:
 #          BmOs: linux
 #
-# ucs220.cascade:
-#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
-#   owners: ["email:dbarsky@pensando.io"]
-#   area:
-#   sub-area:
-#   feature:
-#   max-duration: 72h
-#   build-dependencies:
-#     - build-iris-arm
-#     - build-iota
-#   clusters:
-#     - image: build-68
-#       count: 1
-#       resources:
-#         servers:
-#         - type: compat-ucs-c220-M5
-#         nic-type: naples
-#   provision:
-#       username: vm
-#       password: vm
-#       vars:
-#          BmOs: linux
-       
+ ucs220_cascade:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 72h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-76
+       count: 1
+       resources:
+         servers:
+         - type: compat-ucs-c220-M5
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+      
  Dell_R6525:
    commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
    owners: ["email:dbarsky@pensando.io"]
@@ -65,7 +65,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-69
+     - image: build-77
        count: 1
        resources:
          servers:
@@ -88,7 +88,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-69
+     - image: build-77
        count: 1
        resources:
          servers:
@@ -114,7 +114,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-69
+     - image: build-77
        count: 1
        resources:
          servers:
@@ -126,52 +126,52 @@ e2e-targets:
        vars:
           BmOs: linux
 
-# Dell_R740:
-#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
-#   owners: ["email:dbarsky@pensando.io"]
-#   area:
-#   sub-area:
-#   feature:
-#   max-duration: 72h
-#   build-dependencies:
-#     - build-iris-arm
-#     - build-iota
-#   clusters:
-#     - image: build-69
-#       count: 1
-#       resources:
-#         servers:
-#         - type: compat-dell-r740
-#         nic-type: naples
-#   provision:
-#       username: vm
-#       password: vm
-#       vars:
-#          BmOs: linux
-#
-# Dell_R640:
-#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
-#   owners: ["email:dbarsky@pensando.io"]
-#   area:
-#   sub-area:
-#   feature:
-#   max-duration: 72h
-#   build-dependencies:
-#     - build-iris-arm
-#     - build-iota
-#   clusters:
-#     - image: build-69
-#       count: 1
-#       resources:
-#         servers:
-#         - type: compat-dell-r640
-#         nic-type: naples
-#   provision:
-#       username: vm
-#       password: vm
-#       vars:
-#          BmOs: linux
-#
+ Dell_R740:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 72h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-77
+       count: 1
+       resources:
+         servers:
+         - type: compat-dell-r740
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+
+ Dell_R640:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 72h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-77
+       count: 1
+       resources:
+         servers:
+         - type: compat-dell-r640
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+
  Hpe_DL325:
    commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
    owners: ["email:dbarsky@pensando.io"]
@@ -183,7 +183,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-68
+     - image: build-76
        count: 1
        resources:
          servers:
@@ -206,7 +206,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-68
+     - image: build-76
        count: 1
        resources:
          servers:
@@ -229,7 +229,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-68
+     - image: build-76
        count: 1
        resources:
          servers:

@@ -31,7 +31,7 @@ e2e-targets:
 #       vars:
 #          BmOs: linux
 #
-# ucs220.cascade:
+# ucs220_cascade:
 #   commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite compatibility --skip-switch-init --compat --fw-version pcie_compat"]
 #   owners: ["email:brads@pensando.io"]
 #   area:

@@ -21,7 +21,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-10
+     - image: build-9
        count: 2
        resources:
          # server-type could be server-a or server-d
@@ -48,7 +48,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-10
+     - image: build-9
        count: 2
        resources:
          servers:

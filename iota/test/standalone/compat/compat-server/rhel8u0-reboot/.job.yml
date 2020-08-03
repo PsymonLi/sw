@@ -19,7 +19,7 @@ e2e-targets:
 #     - build-iris-arm
 #     - build-iota
 #   clusters:
-#     - image: build-13
+#     - image: build-34
 #       count: 1
 #       resources:
 #         servers:
@@ -31,7 +31,7 @@ e2e-targets:
 #       vars:
 #          BmOs: linux
 #
-# ucs220.cascade:
+# ucs220_cascade:
 #   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init"]
 #   owners: ["email:dbarsky@pensando.io"]
 #   area:
@@ -42,7 +42,7 @@ e2e-targets:
 #     - build-iris-arm
 #     - build-iota
 #   clusters:
-#     - image: build-13
+#     - image: build-34
 #       count: 1
 #       resources:
 #         servers:
@@ -65,7 +65,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -88,7 +88,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -114,7 +114,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -137,7 +137,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -160,7 +160,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -183,7 +183,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -206,7 +206,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -229,7 +229,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:

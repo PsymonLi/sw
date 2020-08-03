@@ -38,9 +38,7 @@ e2e-targets:
           EsxUsername: root
           EsxPassword: Pen0trl!
 
-
-
- e2e-linux-bm-eth-RHEL75:
+ e2e-linux-bm-eth-ubuntu20:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
    #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
    owners: ["email:dbarsky@pensando.io"]
@@ -52,7 +50,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-32
+     - image: build-16
        count: 2
        resources:
          servers:
@@ -80,66 +78,11 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-33
-       count: 2
-       resources:
-         servers:
-           - type: server-a
-           - type: hpe
-         nic-type: naples
-   provision:
-       username: vm
-       password: vm
-       vars:
-          BmOs: linux
-          VmOs: linux
-          EsxUsername: root
-          EsxPassword: Pen0trl!
-
- e2e-linux-bm-eth-RHEL76:
-   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
-   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
-   owners: ["email:dbarsky@pensando.io"]
-   area:
-   sub-area:
-   feature:
-   max-duration: 24h
-   build-dependencies:
-     - build-iris-arm
-     - build-iota
-   clusters:
-     - image: build-9
-       count: 2
-       resources:
-         servers:
-           - type: server-a
-           - type: hpe
-         nic-type: naples
-   provision:
-       username: vm
-       password: vm
-       vars:
-          BmOs: linux
-          VmOs: linux
-          EsxUsername: root
-          EsxPassword: Pen0trl!
-
- e2e-linux-bm-eth-RHEL77:
-   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
-   owners: ["email:dbarsky@pensando.io"]
-   area:
-   sub-area:
-   feature:
-   max-duration: 24h
-   build-dependencies:
-     - build-iris-arm
-     - build-iota
-   clusters:
      - image: build-28
        count: 2
        resources:
          servers:
-           - type: server-a
+           - type: server-d
            - type: hpe
          nic-type: naples
    provision:
@@ -150,8 +93,8 @@ e2e-targets:
           VmOs: linux
           EsxUsername: root
           EsxPassword: Pen0trl!
-
- e2e-linux-bm-eth-RHEL78:
+ 
+ e2e-linux-bm-eth-RHEL75:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
    #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
    owners: ["email:dbarsky@pensando.io"]
@@ -179,6 +122,118 @@ e2e-targets:
           EsxUsername: root
           EsxPassword: Pen0trl!
 
+
+ e2e-linux-bm-eth-RHEL76:
+   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-30
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL77:
+   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-31
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL78:
+   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-32
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL79:
+   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-33
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
  e2e-linux-bm-eth-RHEL80:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
    owners: ["email:dbarsky@pensando.io"]
@@ -190,7 +245,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-13
+     - image: build-34
        count: 2
        resources:
          servers:
@@ -217,7 +272,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-27
+     - image: build-35
        count: 2
        resources:
          servers:
@@ -244,7 +299,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-34
+     - image: build-36
        count: 2
        resources:
          servers:
@@ -259,6 +314,33 @@ e2e-targets:
           VmOs: linux
           EsxUsername: root
           EsxPassword: Pen0trl!
+
+# e2e-linux-bm-eth-RHEL83:
+#   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
+#   owners: ["email:dbarsky@pensando.io"]
+#   area:
+#   sub-area:
+#   feature:
+#   max-duration: 24h
+#   build-dependencies:
+#     - build-iris-arm
+#     - build-iota
+#   clusters:
+#     - image: build-37
+#       count: 2
+#       resources:
+#         servers:
+#           - type: server-a
+#           - type: hpe
+#         nic-type: naples
+#   provision:
+#       username: vm
+#       password: vm
+#       vars:
+#          BmOs: linux
+#          VmOs: linux
+#          EsxUsername: root
+#          EsxPassword: Pen0trl!
 
  e2e-linux-bm-eth-SLES12SP4:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
@@ -325,7 +407,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-15
+     - image: build-22
        count: 2
        resources:
          servers:
@@ -352,7 +434,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-16
+     - image: build-23
        count: 2
        resources:
          servers:

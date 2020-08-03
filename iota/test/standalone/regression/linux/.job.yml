@@ -20,7 +20,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-29
+     - image: build-32
        count: 2
        resources:
          servers:
@@ -44,7 +44,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-34
+     - image: build-36
        count: 2
        resources:
          servers:
