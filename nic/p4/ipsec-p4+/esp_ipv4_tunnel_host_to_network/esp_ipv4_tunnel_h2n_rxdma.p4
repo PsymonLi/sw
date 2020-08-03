@@ -380,7 +380,7 @@ action update_input_desc_aol (addr0, offset0, length0,
     modify_field(common_te0_phv.table_pc, 0); 
     modify_field(common_te0_phv.table_raw_table_size, 6);
     modify_field(common_te0_phv.table_lock_en, 0);
-    modify_field(common_te0_phv.table_addr, (ipsec_global.ipsec_cb_index * IPSEC_CB_SIZE) + IPSEC_CB_BASE);
+    modify_field(common_te0_phv.table_addr, 0);
 
     IPSEC_SCRATCH_GLOBAL
     IPSEC_SCRATCH_T0_S2S

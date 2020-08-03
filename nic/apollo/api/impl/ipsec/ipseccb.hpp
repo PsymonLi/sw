@@ -32,14 +32,13 @@
 
 #define IPSEC_DEFAULT_RING_SIZE                 8
 #define IPSEC_PER_CB_RING_SIZE                  256
-#define IPSEC_BARCO_RING_SIZE                   512
+#define IPSEC_BARCO_RING_SIZE                   256
 #define IPSEC_BARCO_SLOT_ELEM_SIZE              16
 
-#define IPSEC_NMPR_RING_SHIFT                   12
-#define IPSEC_NMPR_RING_SIZE                    (1 << IPSEC_NMPR_RING_SHIFT)
-#define IPSEC_NMPR_OBJ_SIZE                     9600
+#define IPSEC_NMDPR_RING_SHIFT                  11
+#define IPSEC_NMDPR_RING_SIZE                   (1 << IPSEC_NMDPR_RING_SHIFT)
+#define IPSEC_NMDPR_OBJ_SIZE                    9600
 
-#define IPSEC_CB_BASE                           "ipsec_cb_base"
 #define IPSEC_RNMPR_TABLE_BASE                  "hbm_ipsec_rnmpr_table_base"
 #define IPSEC_BIG_RNMPR_TABLE_BASE              "hbm_ipsec_big_rnmpr_table_base"
 #define IPSEC_TNMPR_TABLE_BASE                  "hbm_ipsec_tnmpr_table_base"

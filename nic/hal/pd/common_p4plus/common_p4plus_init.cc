@@ -17,7 +17,7 @@ namespace pd {
 
 #define IPSEC_N2H_GLOBAL_STATS_OFFSET 512
 
-#define P4PLUS_SYMBOLS_MAX 87
+#define P4PLUS_SYMBOLS_MAX 86
 
 uint32_t
 common_p4plus_symbols_init (void **p4plus_symbols, platform_type_t platform_type)
@@ -71,10 +71,6 @@ common_p4plus_symbols_init (void **p4plus_symbols, platform_type_t platform_type
 
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N;
     symbols[i].val = asicpd_get_mem_addr(ASIC_HBM_REG_IPSEC_GLOBAL_DROP_STATS);
-    i++;
-
-    symbols[i].name = IPSEC_CB_BASE;
-    symbols[i].val = asicpd_get_mem_addr(ASIC_HBM_REG_IPSECCB);
     i++;
 
     symbols[i].name = IPSEC_RNMPR_TABLE_BASE;

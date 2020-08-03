@@ -24,7 +24,6 @@
 #define IPSEC_BARCO_RECORD_RING_SW_CI_ADDR_OFFSET_H2N 48
 #define IPSEC_BARCO_RECORD_RING_SW_CI_ADDR_OFFSET_N2H 48
 
-#define IPSEC_CB_BASE ipsec_cb_base
 #define IPSEC_PAD_BYTES_HBM_TABLE_BASE ipsec_pad_table_base
 #define IPSEC_IP_HDR_BASE ipsec_ip_hdr_base
 

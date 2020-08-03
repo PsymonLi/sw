@@ -1,4 +1,3 @@
-#define IPSEC_CB_BASE 0xaaaaaaaa
 #define IPSEC_CB_SIZE 4096 
 
 #define IPSEC_CB_SHIFT_SIZE 6

@@ -160,68 +160,76 @@
               "size": "2K"
         },
         {
-             "name": "ipsec-cb",
+             "name": "ipsec-cb-encrypt",
              "kind": "static",
-             "size": "64K",
+             "size": "32M",
+             "comment": "8 * 256 * 16K",
              "cache": "p4plus-all"
         },
         {
              "name": "ipsec-cb-decrypt",
              "kind": "static",
-             "size": "64K",
+             "size": "32M",
+             "comment": "8 * 256 * 16K",
              "cache": "p4plus-all"
         },
         {
-             "name": "ipsec-cb-barco",
+             "name": "ipsec-cb-barco-encrypt",
              "kind": "static",
-             "size": "4096K",
+             "size": "32M",
+             "comment": "8 * 256 * 16K",
              "cache": "p4plus-all"
         },
         {
              "name": "ipsec-cb-barco-decrypt",
              "kind": "static",
-             "size": "4096K",
+             "size": "32M",
+             "comment": "8 * 256 * 16K",
              "cache": "p4plus-all"
         },
         {
-             "name": "ipsec-nmpr-tx",
+             "name": "ipsec-nmdpr-encrypt-tx",
              "kind": "static",
-             "size": "128K"
+             "comment": "8 * 2K",
+             "size": "16K"
         },
         {
-            "name": "ipsec-nmpr-rx",
+            "name": "ipsec-nmdpr-encrypt-rx",
             "kind": "static",
-            "size": "1024K"
+             "comment": "8 * 2K",
+             "size": "16K"
         },
         {
-            "name": "ipsec-nmpr-big-tx",
+            "name": "ipsec-nmdpr-decrypt-tx",
             "kind": "static",
-            "size": "10240K"
+             "comment": "8 * 2K",
+             "size": "16K"
         },
         {
-            "name": "ipsec-nmpr-big-rx",
+            "name": "ipsec-nmdpr-decrypt-rx",
             "kind": "static",
-            "size": "10240K"
+             "comment": "8 * 2K",
+             "size": "16K"
         },
         {
             "name": "enc-page-big-tx",
             "kind": "static",
-            "size": "40960K"
+            "size": "19200K"
         },
         {
             "name": "enc-page-big-rx",
             "kind": "static",
-            "size": "40960K"
+            "size": "19200K"
         },
         {
             "name": "dec-page-big-tx",
             "kind": "static",
-            "size": "40960K"
+            "size": "19200K"
         },
         {
             "name": "dec-page-big-rx",
             "kind": "static",
-            "size": "40960K"
+            "size": "19200K"
         },
         {
             "name": "key-mem",

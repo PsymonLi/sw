@@ -172,7 +172,6 @@ namespace hal  {
 #define IPSEC_DEC_NMDR_PI       "ipsec_dec_nmdr_pi"
 #define IPSEC_DEC_NMDR_CI       "ipsec_dec_nmdr_ci"
 
-#define IPSEC_CB_BASE "ipsec_cb_base"
 #define IPSEC_PAD_BYTES_HBM_TABLE_BASE "ipsec_pad_table_base"
 #define IPSEC_IP_HDR_BASE "ipsec_ip_hdr_base"
 #define IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N "ipsec_global_drop_h2n_counters"

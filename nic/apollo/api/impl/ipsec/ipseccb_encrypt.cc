@@ -70,7 +70,7 @@ add_ipsec_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     data.u.ipsec_encap_rxdma_initial_table_d.key_index = htons(ctxt->key_index);
     PDS_TRACE_DEBUG("key_index = %d", ctxt->key_index);
 
-    ipsec_cb_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_NAME) +
+    ipsec_cb_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_ENCRYPT_NAME) +
                          ctxt->hw_id * IPSEC_DEFAULT_RING_SIZE * IPSEC_PER_CB_RING_SIZE;
     PDS_TRACE_DEBUG("CB ring addr 0x%lx", ipsec_cb_ring_addr);
 
@@ -78,7 +78,7 @@ add_ipsec_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     data.u.ipsec_encap_rxdma_initial_table_d.cb_cindex = 0;
     data.u.ipsec_encap_rxdma_initial_table_d.cb_pindex = 0;
 
-    ipsec_barco_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_BARCO_NAME) +
+    ipsec_barco_ring_addr = asicpd_get_mem_addr(MEM_REGION_IPSEC_CB_BARCO_ENCRYPT_NAME) +
                             ctxt->hw_id * IPSEC_BARCO_SLOT_ELEM_SIZE *
                             IPSEC_BARCO_RING_SIZE;
     PDS_TRACE_DEBUG("Barco ring addr 0x%lx", ipsec_barco_ring_addr);
