@@ -70,6 +70,25 @@ class L4MatchObject:
         else:
             logger.info("    No L4Match")
 
+    @staticmethod
+    def GetTableHeaderStr():
+        return f'{"SrcPortRange":13} | {"DstPortRange":13} | {"IcmpTyp":7} | {"Cod":3} |'
+
+    def GetTableStr(self):
+        if self.valid:
+            if self.SportLow != None and self.SportHigh != None:
+                SrcPorts = f'{self.SportLow} - {self.SportHigh}'
+            else:
+                SrcPorts = f'None'
+            if self.DportLow != None and self.DportHigh != None:
+                DstPorts  = f'{self.DportLow} - {self.DportHigh}'
+            else:
+                DstPorts = f'None'
+            TableStr  = f'{SrcPorts:13} | {DstPorts:13} | {self.IcmpType:7} | {self.IcmpCode:3} |'
+        else:
+            TableStr  = f'{"No L4Match":^45} |'
+        return TableStr
+
     def ValidateSpec(self, spec=None):
         default = lambda x,y: True
         def __validate_ports(l4match, spec):
@@ -163,10 +182,11 @@ class L3MatchObject:
         self.SrcTag = srctag
         self.DstTag = dsttag
 
-    def Show(self):
-        def __get_tag_id(tagObj):
-            return tagObj.TagId if tagObj else None
+    @staticmethod
+    def __get_tag_id(tagObj):
+        return tagObj.TagId if tagObj else None
 
+    def Show(self):
         if self.valid:
             logger.info("    Proto:%s(%d)"\
                         %(utils.GetIPProtoName(self.Proto), self.Proto))
@@ -180,13 +200,55 @@ class L3MatchObject:
                         %(self.DstIPLow, self.DstIPHigh))
             if utils.IsPipelineArtemis():
                 logger.info("    SrcTag:%s DstTag:%s"\
-                            %(__get_tag_id(self.SrcTag), \
-                            __get_tag_id(self.DstTag)))
+                            %(self.__get_tag_id(self.SrcTag), \
+                            self.__get_tag_id(self.DstTag)))
             elif utils.IsPipelineApulu():
                 logger.info("    SrcTag:%s DstTag:%s" \
                             %(self.SrcTag, self.DstTag))
         else:
             logger.info("    No L3Match")
+
+    @staticmethod
+    def GetTableHeaderStr():
+        return f'{"Proto":8} | {"SrcTyp":6} | {"DstTyp":6} | {"Src":33} | {"Dst":33} |'
+
+    def GetTableStr(self):
+        if self.valid:
+            if utils.IsPipelineArtemis():
+                SrcTag = f'{self.__get_tag_id(self.SrcTag)}'
+                DstTag = f'{self.__get_tag_id(self.DstTag)}'
+            elif utils.IsPipelineApulu():
+                SrcTag = f'{self.SrcTag}'
+                DstTag = f'{self.DstTag}'
+            if self.SrcType == topo.L3MatchType.NONE:
+                SrcType = f'NONE'
+                Src = f'None'
+            elif self.SrcType == topo.L3MatchType.PFX:
+                SrcType = f'PREFIX'
+                Src = f'{self.SrcPrefix}'
+            elif self.SrcType == topo.L3MatchType.PFXRANGE:
+                SrcType = f'RANGE'
+                Src = f'{self.SrcIPLow} - {self.SrcIPHigh}'
+            elif self.SrcType == topo.L3MatchType.TAG:
+                SrcType = f'TAG'
+                Src = SrcTag
+            if self.DstType == topo.L3MatchType.NONE:
+                DstType = f'NONE'
+                Dst = f'None'
+            elif self.DstType == topo.L3MatchType.PFX:
+                DstType = f'PREFIX'
+                Dst = f'{self.DstPrefix}'
+            elif self.DstType == topo.L3MatchType.PFXRANGE:
+                DstType = f'RANGE'
+                Dst = f'{self.DstIPLow} - {self.DstIPHigh}'
+            elif self.DstType == topo.L3MatchType.TAG:
+                DstType = f'TAG'
+                Dst = DstTag
+            TableRowStr = f'{f"{utils.GetIPProtoName(self.Proto)}({self.Proto})":8} | {SrcType:6} | '\
+                          f'{DstType:6} | {Src:33} | {Dst:33} |'
+        else:
+            TableRowStr = f'{"No L3Match":^98} |'
+        return TableRowStr
 
     def ValidateSpec(self, spec):
         def __validate_src_range(l3match, spec):
@@ -299,16 +361,30 @@ class RuleObject:
         self.Action = action
         self.AppName = ''
 
-    def Show(self):
-        def __get_action_str(action):
-            if action == types_pb2.SECURITY_RULE_ACTION_ALLOW:
-                return "allow"
-            return "deny"
+    @staticmethod
+    def __get_action_str(action):
+        if action == types_pb2.SECURITY_RULE_ACTION_ALLOW:
+            return "allow"
+        return "deny"
 
+    def Show(self):
         logger.info(" -- Stateful:%s Priority:%d Action:%s"\
-                    %(self.Stateful, self.Priority, __get_action_str(self.Action)))
+                    %(self.Stateful, self.Priority, self.__get_action_str(self.Action)))
         self.L3Match.Show()
         self.L4Match.Show()
+
+    @staticmethod
+    def ShowTableHeader():
+        L3Header = L3MatchObject.GetTableHeaderStr()
+        L4Header = L4MatchObject.GetTableHeaderStr()
+        logger.info(f' | {"Statef":6} | {"Prio":4} | {"Act":5} | {L3Header} {L4Header}')
+        logger.info(f' |{"-" * 173}')
+
+    def ShowTableFmt(self):
+        L3MatchRow = self.L3Match.GetTableStr()
+        L4MatchRow = self.L4Match.GetTableStr()
+        ActionStr  = self.__get_action_str(self.Action)
+        logger.info(f' | {f"{self.Stateful}":6} | {self.Priority:4} | {ActionStr:5} | {L3MatchRow} {L4MatchRow}')
 
     def CreateAppObject(self, node):
         global AppIdx
@@ -462,8 +538,10 @@ class PolicyObject(base.ConfigObjectBase):
         logger.info("- OverlapType:%s" % self.OverlapType)
         logger.info("- DefaultFwAction:%s" % self.DefaultFWAction)
         logger.info("- Number of rules:%d" % len(self.rules))
+        logger.info(f"- Rules :")
+        RuleObject.ShowTableHeader()
         for rule in self.rules:
-            rule.Show()
+            rule.ShowTableFmt()
         return
 
     def IsFilterMatch(self, selectors):
