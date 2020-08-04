@@ -41,6 +41,8 @@ security_policy_impl_state::security_policy_impl_state(pds_state *state) {
     v4_rule_stats_region_addr_ =
         state->mempartition()->start_addr("rule_stats_v4");
     if (v4_rule_stats_region_addr_ != INVALID_MEM_ADDRESS) {
+        v4_rule_stats_table_size_ =
+            state->mempartition()->block_size("rule_stats_v4");
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_RFC_P1_1,
                            v4_rule_stats_region_addr_);
@@ -48,6 +50,7 @@ security_policy_impl_state::security_policy_impl_state(pds_state *state) {
                            P4_P4PLUS_TXDMA_TBL_ID_RFC_P2_1,
                            v4_rule_stats_region_addr_);
     } else {
+        v4_rule_stats_table_size_ = 0;
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_RFC_P1_1, 0);
         sdk::asic::pd::asicpd_program_table_constant(

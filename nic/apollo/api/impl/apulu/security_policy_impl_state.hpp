@@ -15,6 +15,9 @@
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 
+// number of bytes per rule for rule stats
+#define PDS_IMPL_SECURITY_POLICY_RULE_STATS_RECORD_SIZE    8
+
 namespace api {
 namespace impl {
 
@@ -55,14 +58,30 @@ public:
 
     /// \brief  return policy region's base/start address in memory
     /// \param[in] af    address family of the policy
+    /// \return memory address of the security policy region
     mem_addr_t security_policy_region_addr(uint8_t af) const {
         return (af == IP_AF_IPV4) ? v4_region_addr_ : v6_region_addr_;
     }
 
     /// \brief return security policy table's size
     /// \param[in] af    address family of the policy
+    /// \return size of memory set aside for each security policy
     uint64_t security_policy_table_size(uint8_t af) const {
         return (af == IP_AF_IPV4) ? v4_table_size_ : v6_table_size_;
+    }
+
+    /// \brief return rule stats region's base/start address in memory
+    /// \param[in] af    address family of the policy
+    mem_addr_t rule_stats_region_addr(uint8_t af) const {
+        return (af == IP_AF_IPV4) ?
+            v4_rule_stats_region_addr_ : INVALID_MEM_ADDRESS;
+    }
+
+    /// \brief return security policy's rule stats block size
+    /// \param[in] af    address family of the policy
+    /// \return size of the rule stats memory set aside for each security policy
+    uint16_t rule_stats_table_size(uint8_t af) const {
+        return (af == IP_AF_IPV4) ? v4_rule_stats_table_size_ : 0;
     }
 
     /// \brief return max rules per security policy
@@ -85,18 +104,20 @@ private:
     /// base address for v4 policy region
     mem_addr_t  v4_region_addr_;
     /// size of each v4 policy table
-    uint64_t    v4_table_size_;
+    uint32_t    v4_table_size_;
     /// max IPv4 rules per policy
     uint32_t    v4_max_rules_;
     /// base address for v6 policy region
     mem_addr_t  v6_region_addr_;
     /// size of each v6 policy table
-    uint64_t    v6_table_size_;
+    uint32_t    v6_table_size_;
     /// max IPv6 rules per policy
     uint32_t    v6_max_rules_;
     /// IPv4 rule stats region based address or INVALID_MEM_ADDRESS in case
     /// rule stats are not supported
     mem_addr_t  v4_rule_stats_region_addr_;
+    /// size of each policy's rule stats block size
+    uint32_t    v4_rule_stats_table_size_;
 };
 
 /// \@}

@@ -12,13 +12,12 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/platform/sensor/sensor.hpp"
 #include "nic/sdk/asic/port.hpp"
+#include "nic/sdk/platform/sysmon/sysmon.hpp"
+#include "nic/sdk/platform/asicerror/interrupts.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/asic/asic_impl.hpp"
 #include "nic/apollo/p4/include/artemis_table_sizes.h"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/sdk/platform/sysmon/sysmon.hpp"
-#include "nic/sdk/platform/asicerror/interrupts.hpp"
 
 using namespace sdk;
 using namespace sdk::asic::pd;
@@ -37,8 +36,7 @@ namespace impl {
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::init_ (void)
-{
+asic_impl::init_(void) {
     return SDK_RET_OK;
 }
 
@@ -48,8 +46,7 @@ asic_impl::init_ (void)
  * @return    new instance of asic asic impl or NULL, in case of error
  */
 asic_impl *
-asic_impl::factory (asic_cfg_t *asic_cfg)
-{
+asic_impl::factory(asic_cfg_t *asic_cfg) {
     asic_impl    *impl;
 
     impl = (asic_impl *)SDK_CALLOC(SDK_MEM_ALLOC_PDS_ASIC_IMPL,
@@ -64,8 +61,7 @@ asic_impl::factory (asic_cfg_t *asic_cfg)
 }
 
 void
-asic_impl::destroy (asic_impl *impl)
-{
+asic_impl::destroy(asic_impl *impl) {
     asicpd_cleanup();
     sdk::lib::pal_teardown(impl->asic_cfg_.platform);
 }
@@ -76,8 +72,7 @@ asic_impl::destroy (asic_impl *impl)
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::asic_init (asic_cfg_t *asic_cfg)
-{
+asic_impl::asic_init(asic_cfg_t *asic_cfg) {
     sdk::lib::pal_ret_t    pal_ret;
     sdk_ret_t              ret;
 
@@ -103,8 +98,7 @@ asic_impl::asic_init (asic_cfg_t *asic_cfg)
 }
 
 static inline pd_adjust_perf_index_t
-pds_clock_frequency_to_perf_id (pds_clock_freq_t freq)
-{
+pds_clock_frequency_to_perf_id(pds_clock_freq_t freq) {
     switch (freq) {
     case PDS_CLOCK_FREQUENCY_833:
         return PD_PERF_ID0;
@@ -132,8 +126,7 @@ pds_clock_frequency_to_perf_id (pds_clock_freq_t freq)
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::set_frequency (pds_clock_freq_t freq)
-{
+asic_impl::set_frequency(pds_clock_freq_t freq) {
     sdk_ret_t ret;
     pd_adjust_perf_index_t perf_id;
 
@@ -151,8 +144,7 @@ asic_impl::set_frequency (pds_clock_freq_t freq)
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::system_frequency(pds_system_clock_freq_t *freq) const
-{
+asic_impl::system_frequency(pds_system_clock_freq_t *freq) const {
     freq->clock_freq = asicpd_clock_freq_get();
     freq->arm_clock_freq = asicpd_get_core_freq();
     return SDK_RET_OK;
@@ -163,8 +155,7 @@ asic_impl::system_frequency(pds_system_clock_freq_t *freq) const
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::set_arm_frequency (pds_clock_freq_t freq)
-{
+asic_impl::set_arm_frequency(pds_clock_freq_t freq) {
     if (freq == PDS_CLOCK_FREQUENCY_2200) {
         PDS_TRACE_DEBUG("Setting ARM CPU freq to 2.2Ghz");
         asicpd_set_margin_by_value("arm", 950);
@@ -182,8 +173,7 @@ asic_impl::set_arm_frequency (pds_clock_freq_t freq)
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::get_system_temperature (pds_system_temperature_t *temp)
-{
+asic_impl::get_system_temperature(pds_system_temperature_t *temp) {
     int rv;
     sdk::platform::sensor::system_temperature_t temperature;
 
@@ -205,8 +195,7 @@ asic_impl::get_system_temperature (pds_system_temperature_t *temp)
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::get_system_power (pds_system_power_t *pow)
-{
+asic_impl::get_system_power(pds_system_power_t *pow) {
     int rv;
     sdk::platform::sensor::system_power_t power;
 
@@ -228,8 +217,7 @@ asic_impl::get_system_power (pds_system_power_t *pow)
  * @return    SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::llc_setup (sdk::asic::pd::llc_counters_t *llc_args)
-{
+asic_impl::llc_setup(sdk::asic::pd::llc_counters_t *llc_args) {
     return asicpd_llc_setup(llc_args);
 }
 
@@ -238,8 +226,7 @@ asic_impl::llc_setup (sdk::asic::pd::llc_counters_t *llc_args)
  * @return      SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::llc_get (sdk::asic::pd::llc_counters_t *llc_args)
-{
+asic_impl::llc_get(sdk::asic::pd::llc_counters_t *llc_args) {
     return asicpd_llc_get(llc_args);
 }
 
@@ -250,8 +237,7 @@ asic_impl::llc_get (sdk::asic::pd::llc_counters_t *llc_args)
  * @return      SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::pb_stats (debug::pb_stats_get_cb_t cb, void *ctxt)
-{
+asic_impl::pb_stats(debug::pb_stats_get_cb_t cb, void *ctxt) {
     sdk_ret_t ret;
     pds_pb_debug_stats_t pb_stats = {0};
     tm_debug_stats_t tm_debug_stats;
@@ -278,8 +264,7 @@ asic_impl::pb_stats (debug::pb_stats_get_cb_t cb, void *ctxt)
  * @return   SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
-asic_impl::monitor (monitor_type_t monitor_type)
-{
+asic_impl::monitor(monitor_type_t monitor_type) {
     if (monitor_type == monitor_type_t::MONITOR_TYPE_SYSTEM) {
         sysmon_monitor();
     } else if (monitor_type == monitor_type_t::MONITOR_TYPE_INTERRUPTS) {
@@ -291,8 +276,7 @@ asic_impl::monitor (monitor_type_t monitor_type)
 /// \brief  process the interrupts
 /// \return SDK_RET_OK on success, failure status code on error
 sdk_ret_t
-asic_impl::process_interrupts (const intr_reg_t *reg, const intr_field_t *field)
-{
+asic_impl::process_interrupts(const intr_reg_t *reg, const intr_field_t *field) {
     bool iscattrip = false;
     bool iseccerr = false;
 

@@ -13,11 +13,12 @@
 #include "asic/rw/asicrw.hpp"
 #include "asic/common/asic_state.hpp"
 
+uint8_t zero_kb[1024] = { 0 };
+
 namespace sdk {
 namespace asic {
 
-
-static mpartition*
+static mpartition *
 get_mem_partition (void)
 {
     return g_asic_state->mempartition();
@@ -49,7 +50,7 @@ asic_get_mem_addr (const char *reg_name)
 uint32_t
 asic_get_mem_size_kb (const char *reg_name)
 {
-    return (get_mem_partition()->size(reg_name) >> 10 );
+    return (get_mem_partition()->size(reg_name) >> 10);
 }
 
 mpartition_region_t *
@@ -65,27 +66,36 @@ asic_get_hbm_region_by_address (uint64_t addr)
 }
 
 void
+asic_mem_reset (mem_addr_t pa, uint64_t size)
+{
+    uint64_t rem;
+    mem_addr_t va;
+
+    va = (mem_addr_t)sdk::lib::pal_mem_map(pa, size);
+    if (va) {
+        memset((void *)va, 0, size);
+        sdk::lib::pal_mem_unmap((void *)va);
+    } else {
+        rem = size;
+        while (rem > 0) {
+            sdk::asic::asic_mem_write(pa, zero_kb,
+                                      (rem > sizeof(zero_kb)) ?
+                                          sizeof(zero_kb) : rem);
+            pa += sizeof(zero_kb);
+            rem -= sizeof(zero_kb);
+        }
+    }
+}
+
+void
 asic_reset_mem_region (mpartition_region_t *reg)
 {
-    mem_addr_t va, pa;
+    mem_addr_t pa;
 
     SDK_TRACE_VERBOSE("Resetting %s memory region of size %lu",
                       reg->mem_reg_name, reg->size);
     pa = get_mem_partition()->addr(reg->start_offset);
-    va = (mem_addr_t)sdk::lib::pal_mem_map(pa, reg->size);
-    if (va) {
-        memset((void *)va, 0, reg->size);
-        sdk::lib::pal_mem_unmap((void *)va);
-    } else {
-        uint8_t zeros[1024] = {0};
-        int64_t rem = reg->size;
-        while (rem > 0) {
-            sdk::asic::asic_mem_write(pa, zeros, (uint64_t)rem > sizeof(zeros) ?
-                                      sizeof(zeros) : rem);
-            pa += sizeof(zeros);
-            rem -= sizeof(zeros);
-        }
-    }
+    asic_mem_reset(pa, reg->size);
     SDK_TRACE_VERBOSE("Resetting %s memory region done", reg->mem_reg_name);
 }
 

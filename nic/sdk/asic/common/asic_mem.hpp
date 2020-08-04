@@ -16,6 +16,8 @@
 #include "include/sdk/types.hpp"
 #include "asic/rw/asicrw.hpp"
 
+extern uint8_t zero_kb[1024];
+
 namespace sdk  {
 namespace asic {
 
@@ -26,6 +28,7 @@ void asic_reset_hbm_regions(asic_cfg_t *asic_cfg);
 mem_addr_t asic_get_mem_offset(const char *reg_name);
 mem_addr_t asic_get_mem_addr(const char *reg_name);
 uint32_t asic_get_mem_size_kb(const char *reg_name);
+void asic_mem_reset(mem_addr_t pa, uint64_t size);
 void asic_reset_mem_region(mpartition_region_t *region);
 
 }    // namespace asic

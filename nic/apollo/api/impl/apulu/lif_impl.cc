@@ -1356,7 +1356,7 @@ lif_impl::create_control_lif_(pds_lif_spec_t *spec) {
     nexthop_info_entry_t nexthop_info_entry;
 
     strncpy(name_, spec->name, sizeof(name_));
-    PDS_TRACE_DEBUG("Creating contro lif %s", name_);
+    PDS_TRACE_DEBUG("Creating control lif %s", name_);
 
     // allocate vnic h/w id for this lif
     if ((ret = vnic_impl_db()->vnic_idxr()->alloc(&idx)) != SDK_RET_OK) {

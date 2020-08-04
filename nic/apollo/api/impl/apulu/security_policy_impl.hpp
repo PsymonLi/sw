@@ -132,6 +132,10 @@ private:
     /// \brief  destructor
     ~security_policy_impl() {}
 
+    /// \brief reset the rule stats memory of the policy
+    /// \param[in] af    address family
+    void reset_rule_stats_(uint8_t af);
+
     /// \brief helper routine to compile the rules from the API to h/w
     ///        friendly form before the RFC tables are computed
     /// \param[in] spec    policy configuration

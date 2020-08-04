@@ -8,6 +8,7 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/sdk/asic/common/asic_mem.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
@@ -26,7 +27,7 @@ namespace impl {
 
 security_policy_impl *
 security_policy_impl::factory(pds_policy_spec_t *spec) {
-    security_policy_impl    *impl;
+    security_policy_impl *impl;
 
     if (spec->rule_info->num_rules >
             security_policy_impl_db()->max_rules(spec->rule_info->af)) {
@@ -114,6 +115,32 @@ security_policy_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
     return SDK_RET_OK;
 }
 
+void
+security_policy_impl::reset_rule_stats_(uint8_t af) {
+    uint32_t policy_block_id;
+    mem_addr_t rule_stats_block_addr, va;
+
+    // if rule stats feature is not supported, bail out
+    if (security_policy_impl_db()->rule_stats_region_addr(af) ==
+            INVALID_MEM_ADDRESS) {
+        return;
+    }
+
+    // compute the policy block index within policy region for this policy
+    policy_block_id =
+        (security_policy_root_addr_ -
+             security_policy_impl_db()->security_policy_region_addr(af))/
+                 security_policy_impl_db()->security_policy_table_size(af);
+    // compute the rule stats block base address for this policy
+    rule_stats_block_addr =
+        security_policy_impl_db()->rule_stats_region_addr(af) +
+            (security_policy_impl_db()->rule_stats_table_size(af) *
+                 policy_block_id);
+    // reset the corresponding memory
+    sdk::asic::asic_mem_reset(rule_stats_block_addr,
+                   security_policy_impl_db()->rule_stats_table_size(af));
+}
+
 sdk_ret_t
 security_policy_impl::program_security_policy_(pds_policy_spec_t *spec) {
     sdk_ret_t ret;
@@ -151,6 +178,8 @@ security_policy_impl::program_security_policy_(pds_policy_spec_t *spec) {
         PDS_TRACE_ERR("Failed to build RFC policy %s table, err %u",
                       spec->key.str(), ret);
     }
+    // reset the rule stats memory block of this policy
+    reset_rule_stats_(spec->rule_info->af);
     return ret;
 }
 

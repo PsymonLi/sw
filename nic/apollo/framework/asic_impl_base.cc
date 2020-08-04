@@ -39,7 +39,7 @@ asic_impl_base::destroy (asic_impl_base *impl)
     switch (impl->asic_type_) {
     case asic_type_t::SDK_ASIC_TYPE_CAPRI:
     case asic_type_t::SDK_ASIC_TYPE_ELBA:
-        return asic_impl::destroy(static_cast<asic_impl*>(impl));
+        return asic_impl::destroy(static_cast<asic_impl *>(impl));
     default:
         break;
     }
