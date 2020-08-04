@@ -1,8 +1,10 @@
 // {C} Copyright 2018 Pensando Systems Inc. All rights reserved
 
 #include "asic/asic.hpp"
+#include "asic/pd/pd.hpp"
 #include "platform/capri/capri_quiesce.hpp"
 #include "platform/capri/capri_state.hpp"
+#include "platform/capri/capri_p4.hpp"
 #include "third-party/asic/capri/model/cap_top/cap_top_csr.h"
 #include "third-party/asic/capri/verif/apis/cap_quiesce_api.h"
 #include "third-party/asic/capri/model/cap_ptd/cap_ptd_csr.h"
@@ -261,6 +263,50 @@ capri_quiesce_init (void)
     top_csr.txs.txs.cfg_sch.read();
 
     return ret;
+}
+
+// right now for hitless upgrade, pb-init happens only once by default bringup.
+// this is to reduce the hitless duration to minimum and also during B bringup,
+// A is still active and packets are going on.
+//
+// oq credits are configured only once. so need to save the initial configured
+// values and use it further for quiesce checks
+void
+capri_quiesce_queue_credits_read (p4pd_pipeline_t pipe,
+                                  sdk::asic::pd::port_queue_credit_t *credit)
+{
+    SDK_ASSERT(credit->num_queues >= MAX_PORT10_FLOW_CTRL_ENTRIES);
+    for (uint32_t i = 0; i < credit->num_queues; i++) {
+        credit->queues[i].oq = i;
+        if (pipe == P4_PIPELINE_INGRESS) {
+            credit->queues[i].credit = port_11_ref_credits[i];
+        } else if (pipe == P4_PIPELINE_EGRESS) {
+            credit->queues[i].credit = port_10_ref_credits[i];
+        } else {
+            SDK_ASSERT(0);
+        }
+    }
+    credit->num_queues = MAX_PORT10_FLOW_CTRL_ENTRIES;
+}
+
+// restore the initial configured values
+void
+capri_quiesce_queue_credits_restore (p4pd_pipeline_t pipe,
+                                     sdk::asic::pd::port_queue_credit_t *credit)
+{
+    uint32_t oq;
+
+    SDK_ASSERT(credit->num_queues == MAX_PORT10_FLOW_CTRL_ENTRIES);
+    for (uint32_t i = 0; i < credit->num_queues; i++) {
+        oq = credit->queues[i].oq;
+        if (pipe == P4_PIPELINE_INGRESS) {
+            port_11_ref_credits[oq] = credit->queues[i].credit;
+        } else if (pipe == P4_PIPELINE_EGRESS) {
+            port_10_ref_credits[oq] = credit->queues[i].credit;
+        } else {
+            SDK_ASSERT(0);
+        }
+    }
 }
 
 } // namespace capri

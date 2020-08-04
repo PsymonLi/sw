@@ -47,6 +47,12 @@ typedef enum module_version_conf_e {
     MODULE_VERSION_CONF_MAX
 } module_version_conf_t;
 
+// pstate header info. common for pds pstates
+typedef struct pstate_meta_info_s {
+    module_version_t vers;
+    uint64_t rsvd[4];
+} __PACK__ pstate_meta_info_t;
+
 }    // namespace api
 
 #endif    // __INTERNAL_UPGRADE_HPP__

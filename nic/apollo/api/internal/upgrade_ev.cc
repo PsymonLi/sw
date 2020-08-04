@@ -220,6 +220,9 @@ upg_hitless_ev_send (sdk::upg::upg_ev_params_t *params)
         INVOKE_EV_THREAD_HDLR(ev, backup_hdlr, UPG_MSG_ID_BACKUP);
         ret = SDK_RET_OK;
         break;
+    case UPG_EV_READY:
+        INVOKE_EV_THREAD_HDLR(ev, ready_hdlr, UPG_MSG_ID_READY);
+        break;
     case UPG_EV_CONFIG_REPLAY:
         ret = SDK_RET_OK;
         break;

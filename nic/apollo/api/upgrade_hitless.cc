@@ -32,7 +32,60 @@ namespace api {
 // pds agent config objects. these will be allocated from pds agent store
 #define PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME    "pds_agent_upgobjs"
 
-static upgrade_pstate_t *
+static void
+asic_quiesce_queue_credit_read (bool ingress, upgrade_pstate_t *pstate)
+{
+    sdk::asic::pd::port_queue_credit_t credit;
+    sdk::asic::pd::queue_credit_t oqs[64];
+    uint32_t oq;
+    uint32_t max_index = sizeof(pstate->port_ingress_oq_credits) / sizeof(uint32_t);
+    p4pd_pipeline_t pipe = ingress ? P4_PIPELINE_INGRESS : P4_PIPELINE_EGRESS;
+
+    credit.num_queues = 64;
+    credit.queues = oqs;
+
+    sdk::asic::pd::asicpd_quiesce_queue_credits_read(pipe, &credit);
+    SDK_ASSERT(credit.num_queues <= max_index);
+    for (uint32_t i = 0; i < credit.num_queues; i++) {
+        oq = credit.queues[i].oq;
+        SDK_ASSERT(oq < max_index);
+        if (ingress) {
+            pstate->port_ingress_oq_credits[oq] = credit.queues[i].credit;
+        } else {
+            pstate->port_egress_oq_credits[oq] = credit.queues[i].credit;
+        }
+    }
+    if (ingress) {
+        pstate->port_ingress_num_oqs = credit.num_queues;
+    } else {
+        pstate->port_egress_num_oqs = credit.num_queues;
+    }
+}
+
+static void
+asic_quiesce_queue_credit_restore (bool ingress, upgrade_pstate_t *pstate)
+{
+    sdk::asic::pd::port_queue_credit_t credit;
+    sdk::asic::pd::queue_credit_t oqs[64];
+    p4pd_pipeline_t pipe = ingress ? P4_PIPELINE_INGRESS : P4_PIPELINE_EGRESS;
+
+    credit.queues = oqs;
+    credit.num_queues = ingress ? pstate->port_ingress_num_oqs :
+                                  pstate->port_egress_num_oqs;
+    SDK_ASSERT(credit.num_queues <= (sizeof(oqs) /
+                                     sizeof(sdk::asic::pd::queue_credit_t)));
+    for (uint32_t i = 0; i < credit.num_queues; i++) {
+        credit.queues[i].oq = i;
+        if (ingress) {
+             credit.queues[i].credit = pstate->port_ingress_oq_credits[i];
+        } else {
+             credit.queues[i].credit = pstate->port_egress_oq_credits[i];
+        }
+    }
+    sdk::asic::pd::asicpd_quiesce_queue_credits_restore(pipe, &credit);
+}
+
+upgrade_pstate_t *
 upgrade_pstate_create_or_open (bool create)
 {
     sdk::lib::shmstore *store;
@@ -50,6 +103,9 @@ upgrade_pstate_create_or_open (bool create)
             upgrade_pstate = (upgrade_pstate_t *)store->create_segment(UPGRADE_PSTATE_NAME,
                                                                        sizeof(upgrade_pstate_t));
             new (upgrade_pstate) upgrade_pstate_t();
+            // read the port queue credits
+            asic_quiesce_queue_credit_read(true, upgrade_pstate);
+            asic_quiesce_queue_credit_read(false, upgrade_pstate);
         } else {
             upgrade_pstate = (upgrade_pstate_t *)store->open_segment(UPGRADE_PSTATE_NAME);
         }
@@ -487,6 +543,15 @@ upg_hitless_restore_api_objs (void)
 static sdk_ret_t
 upg_ev_ready (upg_ev_params_t *params)
 {
+    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(false);
+
+    if (pstate == NULL) {
+        PDS_TRACE_ERR("Failed to open pstate %s", UPGRADE_PSTATE_NAME);
+        return SDK_RET_ERR;
+    }
+    asic_quiesce_queue_credit_restore(true, pstate);
+    asic_quiesce_queue_credit_restore(false, pstate);
+    g_upg_state->set_pstate(pstate);
     return SDK_RET_OK;
 }
 
@@ -527,12 +592,8 @@ static sdk_ret_t
 upg_ev_switchover (upg_ev_params_t *params)
 {
     sdk_ret_t ret, rv;
-    upgrade_pstate_t *pstate = upgrade_pstate_create_or_open(false);
+    upgrade_pstate_t *pstate = g_upg_state->pstate();
 
-    if (pstate == NULL) {
-        PDS_TRACE_ERR("Failed to open pstate %s", UPGRADE_PSTATE_NAME);
-        return SDK_RET_ERR;
-    }
     ret = asic_quiesce(true);
     if (ret == SDK_RET_OK) {
         pstate->switchover_done = true;

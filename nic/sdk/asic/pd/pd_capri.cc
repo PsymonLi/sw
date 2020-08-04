@@ -684,6 +684,20 @@ queue_credits_get (queue_credits_get_cb_t cb, void *ctxt)
     return capri_queue_credits_get(cb, ctxt);
 }
 
+void
+asicpd_quiesce_queue_credits_read (p4pd_pipeline_t pipe,
+                                   port_queue_credit_t *credit)
+{
+    capri_quiesce_queue_credits_read(pipe, credit);
+}
+
+void
+asicpd_quiesce_queue_credits_restore (p4pd_pipeline_t pipe,
+                                      port_queue_credit_t *credit)
+{
+    capri_quiesce_queue_credits_restore(pipe, credit);
+}
+
 // called during upgrade in quiesced state
 sdk_ret_t
 asicpd_tbl_eng_cfg_modify (p4pd_pipeline_t pipeline, p4_tbl_eng_cfg_t *cfg,

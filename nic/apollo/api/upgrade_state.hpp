@@ -20,6 +20,7 @@
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/apollo/api/internal/upgrade.hpp"
+#include "nic/apollo/api/internal/upgrade_pstate.hpp"
 
 namespace api {
 
@@ -154,6 +155,8 @@ public:
                                          module_version_conf_t conf) const {
         return module_version_map_[conf].at(id);
     }
+    upgrade_pstate_t *pstate(void) { return pstate_; }
+    void set_pstate(upgrade_pstate_t *pstate) { pstate_ = pstate; }
 
 private:
     /// lif qstate mpu program offset map
@@ -183,6 +186,8 @@ private:
     /// module versions indexed using a unique id
     std::unordered_map<uint32_t, module_version_pair_t>
         module_version_map_[MODULE_VERSION_CONF_MAX];
+    /// states shared b/w A and B during hitless upgrade
+    upgrade_pstate_t *pstate_;
 private:
     void init_(pds_init_params_t *params);
 };

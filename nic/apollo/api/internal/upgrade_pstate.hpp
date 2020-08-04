@@ -12,14 +12,14 @@
 #define __UPGRADE_PSTATE_HPP__
 
 #include "nic/sdk/include/sdk/types.hpp"
+#include "nic/apollo/api/internal/upgrade.hpp"
+
+namespace api {
 
 #define UPGRADE_PSTATE_NAME "upgrade_pstate"
 
-// TODO: Maybe we declare it someplace where everybody can use
-typedef struct meta_info_s {
-    module_version_t vers;
-    uint64_t rsvd[4];
-} __PACK__ meta_info_t;
+// maximum output queues per port
+#define MAX_OQS_PER_PORT 32
 
 /// \brief persistent state for pds parameters
 /// saved in shared memory store to access after process restart.
@@ -31,10 +31,12 @@ typedef struct upgrade_pstate_v1_s {
         metadata =  { 0 };
         switchover_done = false;
         linkmgr_switchover_done = false;
+        memset(port_ingress_oq_credits, 0, sizeof(port_ingress_oq_credits));
+        memset(port_egress_oq_credits, 0, sizeof(port_egress_oq_credits));
     }
 
     /// meta data for the strucure
-    meta_info_t  metadata;
+    pstate_meta_info_t  metadata;
 
     /// A to know whether switchover has been done by B or not
     bool switchover_done;
@@ -42,11 +44,22 @@ typedef struct upgrade_pstate_v1_s {
     /// A to know whether linkmgr switchover has been done by B or not
     bool linkmgr_switchover_done;
 
+    /// during hitless upgrade, port credits are never modified. so need to
+    /// carry forward.
+    /// TODO : check with asic team, whether should we modify this to new values
+    /// after quiescing if there is a change in credit values b/w A and B
+    uint32_t port_ingress_oq_credits[MAX_OQS_PER_PORT];
+    uint32_t port_egress_oq_credits[MAX_OQS_PER_PORT];
+    uint32_t port_ingress_num_oqs;
+    uint32_t port_egress_num_oqs;
+
 } __PACK__ upgrade_pstate_v1_t;
 
 /// \brief typdefs for persistent state
 /// these typedefs should always be latest version so no need to changes inside
 /// code for every version bump.
 typedef upgrade_pstate_v1_t upgrade_pstate_t;
+
+}   // namespace api
 
 #endif    // __UPGRADE_PSTATE_HPP__
