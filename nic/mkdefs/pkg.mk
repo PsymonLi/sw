@@ -100,7 +100,7 @@ package-windows:
 	${TOPDIR}/platform/tools/drivers-windows.sh
 
 .PHONY: package-penutil
-package-penutil:
+package-penutil: package-esx package-windows
 	@echo "Building penutil for Linux"
 	make -C ${TOPDIR}/platform/penutil BUILD_DIR=$(TOPDIR)/platform/gen/penutil-linux/ penutil
 	@echo "Building penutil for Windows"
