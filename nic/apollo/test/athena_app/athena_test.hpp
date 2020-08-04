@@ -21,6 +21,9 @@ sdk_ret_t
 fte_session_index_free (uint32_t sess_id);
 
 sdk_ret_t
+fte_conntrack_index_free (uint32_t conntrack_id);
+
+sdk_ret_t
 fte_vlan_to_vnic_map (uint16_t vlan_id, uint16_t vnic_id);
 
 sdk_ret_t

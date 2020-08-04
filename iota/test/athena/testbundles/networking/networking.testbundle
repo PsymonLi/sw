@@ -347,3 +347,6 @@ testcases:
     #        dump_expected_count: 0
             log_file: /var/log/pensando/iota_traffic_aging_chkpt_test.log
 
+    -   name    : Resource_Check
+        testcase: testcases.networking.resource_check
+        enable  : True

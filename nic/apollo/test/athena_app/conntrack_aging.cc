@@ -83,6 +83,7 @@ conntrack_table_clear_full(test_vparam_ref_t vparam)
         if (!CONNTRACK_DELETE_RET_VALIDATE(ret)) {
             break;
         }
+        fte_ath::fte_conntrack_index_free(key.conntrack_id);
         pds_conntrack_ctx_clr(key.conntrack_id);
     }
     TEST_LOG_INFO("Cleared %u conntrack entries: ret %d\n",
@@ -484,6 +485,9 @@ conntrack_aging_expiry_fn(uint32_t expiry_id,
             if (ret == PDS_RET_OK) {
                 ct_tolerance.expiry_count_inc();
                 ct_tolerance.create_id_map_find_erase(expiry_id);
+                if (ct_tolerance.using_fte_indices()) {
+                    fte_ath::fte_conntrack_index_free(expiry_id);
+                }
                 if (handle) {
                     inter_poll_params_t inter_poll;
                     inter_poll.skip_expiry_fn = true;
