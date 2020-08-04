@@ -1683,6 +1683,7 @@ vnic_impl::reset_stats(void) {
     p4pd_error_t p4pd_ret;
     vnic_rx_stats_actiondata_t vnic_rx_stats_data = { 0 };
     vnic_tx_stats_actiondata_t vnic_tx_stats_data = { 0 };
+    meter_stats_actiondata_t meter_stats_data = { 0 };
 
     // reset tx stats table for this vnic
     vnic_tx_stats_data.action_id = VNIC_TX_STATS_VNIC_TX_STATS_ID;
@@ -1691,12 +1692,25 @@ vnic_impl::reset_stats(void) {
                                        &vnic_tx_stats_data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
-    // initialize rx stats tables for this vnic
+    // reset rx stats tables for this vnic
     vnic_rx_stats_data.action_id = VNIC_RX_STATS_VNIC_RX_STATS_ID;
     p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VNIC_RX_STATS,
                                        hw_id_, NULL, NULL,
                                        &vnic_rx_stats_data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    // reset meter stats for this vnic
+    meter_stats_data.action_id = METER_STATS_METER_STATS_ID;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_METER_STATS,
+                                       hw_id_, NULL, NULL,
+                                       &meter_stats_data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+    meter_stats_data.action_id = METER_STATS_METER_STATS_ID;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_METER_STATS,
+                                       (METER_TABLE_SIZE >> 1) + hw_id_,
+                                       NULL, NULL, &meter_stats_data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
     return SDK_RET_OK;
 }
 
