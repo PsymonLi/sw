@@ -14,7 +14,7 @@ parser.add_argument('--esx-bld-vm-username', dest='esx_bld_vm_username',
 parser.add_argument('--esx-bld-vm-password', dest='esx_bld_vm_password',
                     default="vmware", help='esx build vm password')
 parser.add_argument('--esx-bld-vm', dest='esx_bld_vm',
-                    default="esx-6.7-vib.pensando.io", help='esx build vm')
+                    default="esxi-67-builder.pensando.io", help='esx build vm')
 
 parser.add_argument('--drivers-pkg', dest='drivers_pkg',
                     default=None, help='Esx Source Driver Package.')
@@ -27,8 +27,8 @@ GlobalOptions = parser.parse_args()
 if GlobalOptions.vib_version == '67':
     # Will be changed to -67 once we have IOTA change for ESXi version
     vib_ver_str = ""
-    ddk_str = "nativeddk-6.*"
-    GlobalOptions.esx_bld_vm = "esx-6.7-vib.pensando.io"
+    ddk_str = "nativeddk-6.7.0-8169922"
+    GlobalOptions.esx_bld_vm = "esxi-67-builder.pensando.io"
 elif GlobalOptions.vib_version == '65':
     vib_ver_str = "-65"
     ddk_str = "nativeddk-6.*"
@@ -36,8 +36,7 @@ elif GlobalOptions.vib_version == '65':
 elif GlobalOptions.vib_version == '70':
     vib_ver_str = "-70"
     ddk_str = "nativeddk-7.0.0-15843807"
-    GlobalOptions.esx_bld_vm = "esx-7.0-vib.pensando.io"
-    GlobalOptions.esx_bld_vm_password = "docker"
+    GlobalOptions.esx_bld_vm = "esxi-70-builder.pensando.io"
 else:
     print ("Unknown version of vib that requested to be generated %s" % GlobalOptions.vib_version)
     sys.exit(1)
@@ -84,7 +83,6 @@ if len(stdout) == 0:
     sys.exit(1)
 #Pick the first one.
 dst_dir = stdout[0].strip("\n") + "/src/" + dst_pkg_base_name + "_dir"
-
 bld_vm_run("rm -rf " + dst_dir + " && mkdir -p " + dst_dir + " && sync ")
 # Copy the driver package
 bld_vm_copyin(GlobalOptions.drivers_pkg, dest_dir = dst_dir)
@@ -97,6 +95,12 @@ if exit_status != 0:
 _, stderr, exit_status  = bld_vm_run("cd " + dst_dir + "/drivers-esx-eth" + vib_ver_str + " && ./build.sh " + GlobalOptions.vib_version)
 if exit_status != 0:
     print ("Driver build failed ", ''.join(stderr))
+    bld_vm_run("rm -rf " + dst_dir)
+    sys.exit(1)
+
+_, stderr, exit_status  = bld_vm_run("cd " + dst_dir + "/drivers-esx-eth" + vib_ver_str + " && ./build_penutil.sh " + GlobalOptions.vib_version)
+if exit_status != 0:
+    print ("Penutil build failed ", ''.join(stderr))
     bld_vm_run("rm -rf " + dst_dir)
     sys.exit(1)
 

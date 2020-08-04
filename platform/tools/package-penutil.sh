@@ -7,6 +7,8 @@ TOP=$(readlink -f "$(dirname "$0")/../..")
 : ${FIRMWARE_PACKAGE:="$PENUTIL_DIR/fw_package"}
 : ${PLAT_GEN_DIR:="$TOP/platform/gen"}
 : ${LINUX_PACKAGE:="$PLAT_GEN_DIR/penutil-linux"}
+: ${ESXI67_PACKAGE:="$PLAT_GEN_DIR/esxi_rel_drop_6.7"}
+: ${ESXI70_PACKAGE:="$PLAT_GEN_DIR/esxi_rel_drop_7.0"}
 
 # Products generated
 : ${GEN_DIR:="$PLAT_GEN_DIR/dsc-hpe-spp"}
@@ -30,6 +32,8 @@ rsync -r --delete --delete-excluded --copy-links \
 
 cp $TOP/nic/naples_fw.tar $FW_GEN_DIR/
 cp $PLAT_GEN_DIR/penutil-windows.zip $GEN_DIR/
+mv $ESXI67_PACKAGE/*penutil*.* $GEN_DIR/
+mv $ESXI70_PACKAGE/*penutil*.* $GEN_DIR/
 
 rsync -r --delete --delete-excluded --copy-links \
   --exclude="*.o" \

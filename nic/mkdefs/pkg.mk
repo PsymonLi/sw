@@ -106,7 +106,7 @@ package-penutil:
 	@echo "Building penutil for Windows"
 	${TOPDIR}/platform/tools/penutil-windows.sh
 	@echo "Building penutil for ESX"
-#	${TOPDIR}/platform/tools/penutil-esx.sh
+	# penutil for ESXi is built during the driver build, we don't do duplicated work here
 	@echo "Creating penutil package for Linux, Windows and ESX"
 	${TOPDIR}/platform/tools/package-penutil.sh
 

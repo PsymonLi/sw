@@ -37,7 +37,7 @@ DESC_VENDOR=Pensando_Systems
 DESC_SUMMARY=Host utility to perform firmware upgrade
 DESC_DESCRIPTION=Userworld Tool to communicate with a VMKAPI driver module
 DESC_URLS=descriptor-urls-esxi.xml
-DESC_DEPENDS=descriptor-depends-esxi67.xml
+DESC_DEPENDS=descriptor-depends-esxi70.xml
 DESC_CONFLICTS=
 DESC_REPLACES=
 DESC_PROVIDES=
@@ -60,11 +60,19 @@ DEV_SIGNING_PREFIX=vmpartner
 BULL_KBURL=http://www.pensando.io
 BULL_PLATFORMS=
 BULL_VENDOR_CODE=PEN
+BULL_CNS_NAME=$(BULL_VENDOR_CODE)-$(UWTOOL)
+BULL_CNS_STRING=$(DESC_DESCRIPTION)
+BULL_CVS_VERSION=1.0-0.0.0001
+BULL_CVS_STRING=1.0 - Build 0001
 
-DESC_ESX_VERSION=6.7.0
+DESC_ESX_VERSION=7.0.0
+
 DEV_VIB_BASENAME ?= $(BULL_VENDOR_CODE)-ESX-$(DESC_ESX_VERSION)-$(UWTOOL)-$(UWTOOL_VERSION)
 
 DESC_NAME=$(shell echo $(BULL_VENDOR_CODE)-ESX-$(DESC_ESX_VERSION)-$(UWTOOL) | tr A-Z a-z)
+DESC_PAYLOAD_NAME=$(UWTOOL)
+
+COMPONENT_BASENAME=VMW-esx-$(DESC_ESX_VERSION)-$(BULL_CNS_NAME)-$(BULL_CVS_VERSION)
 
 ################################################################
 # Set build configuration options here.
@@ -159,14 +167,13 @@ DEV_NEED_VMKMGMT = 1
 
 ################################################################
 # Nothing beyond this point should require modification.
-
-DEVKIT_SUFFIX = 6.7.0-0.0.8169922
+DEVKIT_SUFFIX = 7.0.0-1.0.15843807
 IMPORT_DEVKIT = $(shell /bin/rpm -q --qf '%{INSTPREFIXES}\n' $(1)-$(DEVKIT_SUFFIX))
 
 HEXDK_BASE := $(call IMPORT_DEVKIT,vmware-esx-hexdk-devtools)
 VMW_DRIVER_DEVKIT_BASE := $(call IMPORT_DEVKIT,vmware-esx-nativeddk-devtools)
 
-VMKAPI_LOCATION = $(VMW_DRIVER_DEVKIT_BASE)/src/bora/vmkernel/include/vmkapi/v2_5_0_0
+VMKAPI_LOCATION = $(VMW_DRIVER_DEVKIT_BASE)/src/bora/vmkernel/include/vmkapi/v2_6_0_0
 SIGGEN_HELPER = $(VMW_DRIVER_DEVKIT_BASE)/tools/sigGenHelper.py
 
 # Only need to evaluate once (aka use ":=").
@@ -176,8 +183,8 @@ AUTOSIG_DIR := .autosig_files
 COMMON_MGMT_INFRASTRUCTURE_DIR := $(VMW_DRIVER_DEVKIT_BASE)/src/partners/samples/common-mgmt-infrastructure
 SCRATCH_DIR := $(BUILD_DIR)/scratch
 VIB_DIR := $(BUILD_DIR)/vib
-BUNDLE_DIR := $(BUILD_DIR)/bundle
-STAGE_DIR := $(BUILD_DIR)/stage
+BUNDLE_DIR := $(BUILD_DIR)/component
+STAGE_DIR = $(BUILD_DIR)/payloads/$(DESC_PAYLOAD_NAME)
 TARGET_XML_DIR := /usr/lib/vmware/esxcli/ext
 
 VIB_DESCRIPTOR_XML := $(SCRATCH_DIR)/descriptor.xml
@@ -192,39 +199,55 @@ LINKED_UWTOOL = $(BINARIES_DIR)/$(UWTOOL)
 INSTALL_DIR = $(TARGET_PREFIX)/bin
 UWTOOL_DIR = $(STAGE_DIR)/$(INSTALL_DIR)
 STAGE_XML_DIR = $(STAGE_DIR)$(TARGET_XML_DIR)
-VIB_BULLETIN_ID = $(BULL_VENDOR_CODE)-esx-$(DESC_ESX_VERSION)-$(UWTOOL)-$(UWTOOL_VERSION)
+
+# Bulletin ID is generated using name, version from
+# componentNameSpec and componentVersionSpec respectively.
+# Component version is the full version in the format
+# <component version>OEM.<xyz.u.p.buildnumber>
+# e.g.,  1.2.3.1-1OEM.700.1.0.15440197
+VIB_BULLETIN_ID = $(BULL_CNS_NAME)_$(BULL_CVS_VERSION)
 
 #
 # Check paths
 #
 
 ifeq ($(wildcard $(HEXDK_BASE)/samples/common/userworld-tool.inc),)
-$(error Host-Extensions devkit build 8169922 required but not installed.)
+$(error Host-Extensions devkit build 15843807 required but not installed.)
 endif
 
 ifeq ($(wildcard $(VMKAPI_LOCATION)/vmkapi.h),)
-$(error VMKAPI DDK devkit build 8169922 required but not installed.)
+$(error VMKAPI DDK devkit build 15843807 required but not installed.)
 endif
 
 include $(HEXDK_BASE)/samples/common/userworld-tool.inc
 
-CAYMAN_ESX_TOOLCHAIN_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_esx_toolchain-34b52da77344ab2f5cd0bd80f7dfd85b911a5ce3-toolchain)
-export GOBUILD_CAYMAN_ESX_TOOLCHAIN_ROOT = $(CAYMAN_ESX_TOOLCHAIN_DIR)
-CAYMAN_ESX_GLIBC_2_17_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_esx_glibc_2_17-780e3316a131e543d4f78b2fecaaf3c21f4527f4-toolchain)
+CAYMAN_ESX_GDB_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_esx_gdb-1af75dbb095cc2348c35c6708c8b326ac1661974-toolchain)
+export GOBUILD_CAYMAN_ESX_GDB_ROOT = $(CAYMAN_ESX_GDB_DIR)
+CAYMAN_ESX_TOOLCHAIN_GCC6_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_esx_toolchain_gcc6-20292133d8d6444deefa46c286c3f74ec52badc8-toolchain)
+export GOBUILD_CAYMAN_ESX_TOOLCHAIN_GCC6_ROOT = $(CAYMAN_ESX_TOOLCHAIN_GCC6_DIR)
+CAYMAN_ESX_NCURSES_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_esx_ncurses-9bf45330b538505c6325906c08c4ecf834184b5c-toolchain)
+export GOBUILD_CAYMAN_ESX_NCURSES_ROOT = $(CAYMAN_ESX_NCURSES_DIR)
+CAYMAN_OPENSSL_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_openssl-2b7d6d4e6da992981ab86f5fb2d0b8e0e0669415-toolchain)
+export GOBUILD_CAYMAN_OPENSSL_ROOT = $(CAYMAN_OPENSSL_DIR)
+CAYMAN_ZLIB_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_zlib-fbdaece556721172724d895bd2acdf5ff3b6df16-toolchain)
+export GOBUILD_CAYMAN_ZLIB_ROOT = $(CAYMAN_ZLIB_DIR)
+CAYMAN_ESX_GLIBC_2_17_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_esx_glibc_2_17-8da846cdfffa1ce0a450d82e5d60140c753ab937-toolchain)
 export GOBUILD_CAYMAN_ESX_GLIBC_2_17_ROOT = $(CAYMAN_ESX_GLIBC_2_17_DIR)
-VMW_COMPONENTS = cayman_esx_toolchain cayman_esx_glibc_2_17
-VMW_COMPONENT_DIRS = $(CAYMAN_ESX_TOOLCHAIN_DIR) $(CAYMAN_ESX_GLIBC_2_17_DIR)
+CAYMAN_PYTHON_DIR = $(shell /bin/rpm -q --qf "%{instprefixes}\n" vmware-esx-cayman_python-99788ba0a9e40ea80ae7b05efb941377abfb31e4-toolchain)
+export GOBUILD_CAYMAN_PYTHON_ROOT = $(CAYMAN_PYTHON_DIR)
+VMW_COMPONENTS = cayman_esx_gdb cayman_esx_toolchain_gcc6 cayman_esx_ncurses cayman_openssl cayman_zlib cayman_esx_glibc_2_17 cayman_python
+VMW_COMPONENT_DIRS = $(CAYMAN_ESX_GDB_DIR) $(CAYMAN_ESX_TOOLCHAIN_GCC6_DIR) $(CAYMAN_ESX_NCURSES_DIR) $(CAYMAN_OPENSSL_DIR) $(CAYMAN_ZLIB_DIR) $(CAYMAN_ESX_GLIBC_2_17_DIR) $(CAYMAN_PYTHON_DIR)
 
 AWK = /build/toolchain/lin32/gawk-3.1.6/bin/awk
 ECHO = /build/toolchain/lin32/coreutils-5.97/bin/echo
-MAKE = /build/toolchain/lin32/make-3.81/bin/make
+MAKE = /build/toolchain/lin64/make-3.81/bin/make
 MV = /build/toolchain/lin32/coreutils-5.97/bin/mv
 RM = /build/toolchain/lin32/coreutils-5.97/bin/rm
 SED = /build/toolchain/lin32/sed-4.1.5/bin/sed
-TR = /build/toolchain/lin32/coreutils-8.6/bin/tr
+TR = /build/toolchain/lin32/coreutils-5.97/bin/tr
 
-VMW_uw64_beta_CPPBIN = $(CAYMAN_ESX_TOOLCHAIN_DIR)/usr/bin/x86_64-vmk-linux-gnu-cpp
-VMW_uw64_release_CPPBIN = $(CAYMAN_ESX_TOOLCHAIN_DIR)/usr/bin/x86_64-vmk-linux-gnu-cpp
+VMW_uw64_beta_CPPBIN = $(CAYMAN_ESX_TOOLCHAIN_GCC6_DIR)/usr/bin/x86_64-vmk-linux-gnu-cpp
+VMW_uw64_release_CPPBIN = $(CAYMAN_ESX_TOOLCHAIN_GCC6_DIR)/usr/bin/x86_64-vmk-linux-gnu-cpp
 
 VMW_EXTRA_DEFS += -I$(DEV_COMMON_DIR) \
 	-DVMK_DEVKIT_HAS_API_VMKAPI_BASE \
@@ -298,3 +321,4 @@ build-dirs:
 clean:
 	$(RM) -rf $(BUILD_DIR) $(SCRATCH_DIR) $(STAGE_DIR) $(VIB_DIR) core \
 	   $(BINARIES_DIR) $(AUTOSIG_DIR)
+

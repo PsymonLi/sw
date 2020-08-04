@@ -30,7 +30,7 @@ else:
 
 # By looking into the name of vib file to figure out the driver name and version
 def get_drv_name_ver():
-    cmd = "ls %s/%s/drivers/esxi/ionic_en/build/vib" % (GlobalOptions.rel_drop_dir, untar_dir_name)
+    cmd = "ls %s/%s/platform/drivers/esxi/ionic_en/build/vib" % (GlobalOptions.rel_drop_dir, untar_dir_name)
     print(cmd)
     result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     # vib_name will be something like ionic-en-1.4-1OEM.650.0.0.4598673.x86_64.vib, we just want to get ionic-en-1.4
@@ -39,21 +39,21 @@ def get_drv_name_ver():
 
 def get_offline_bundle():
     # Rename offline-bundle.zip
-    cmd = "mv %s/drivers/esxi/ionic_en/build/bundle/offline-bundle.zip %s.zip" % (untar_dir_name, bundle_name)
+    cmd = "mv %s/platform/drivers/esxi/ionic_en/build/bundle/offline-bundle.zip %s.zip" % (untar_dir_name, bundle_name)
     print(cmd)
     ret = os.system(cmd)
     assert(ret == 0)
     return 0
 
 def get_doc():
-    cmd = "mkdir -p %s/doc && mv %s/drivers/esxi/README.md %s/doc" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
+    cmd = "mkdir -p %s/doc && mv %s/platform/drivers/esxi/README.md %s/doc" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
     print(cmd)
     ret = os.system(cmd)
     assert(ret == 0)
     return 0
 
 def copy_vib():
-    cmd = "mv %s/%s/drivers/esxi/ionic_en/build/vib/*.vib %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
+    cmd = "mv %s/%s/platform/drivers/esxi/ionic_en/build/vib/*.vib %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
     print(cmd)
     ret = os.system(cmd)
     assert(ret == 0)
@@ -61,28 +61,49 @@ def copy_vib():
 
 # Only needed for vSphere 7.0
 def copy_component():
-    cmd = "mv %s/%s/drivers/esxi/ionic_en/build/component/VMW*.zip %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
+    cmd = "mv %s/%s/platform/drivers/esxi/ionic_en/build/component/VMW*.zip %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
     print(cmd)
     ret = os.system(cmd)
     assert(ret == 0)
     return 0
 
 def get_pencli():
-    cmd = "mv %s/%s/drivers/esxi/esx-pencli.pyc %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
+    cmd = "mv %s/%s/platform/drivers/esxi/esx-pencli.pyc %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
     print(cmd)
     ret = os.system(cmd)
     assert(ret == 0)
     return 0
 
 def get_bulletin_xml():
-    cmd = "mv %s/%s/drivers/esxi/ionic_en/build/bulletin.xml %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
+    cmd = "mv %s/%s/platform/drivers/esxi/ionic_en/build/bulletin.xml %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
     print(cmd)
     ret = os.system(cmd)
     assert(ret == 0)
     return 0
 
+def get_penutil_vib():
+    cmd = "mv %s/%s/platform/penutil/build/vib/*.vib %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
+    print(cmd)
+    ret = os.system(cmd)
+    assert(ret == 0)
+    return 0
+ 
+def get_penutil_bundle():
+    cmd = "mv %s/%s/platform/penutil/build/bundle/PEN-*.zip %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
+    print(cmd)
+    ret = os.system(cmd)
+    assert(ret == 0)
+    return 0
+ 
+def get_penutil_component():
+    cmd = "mv %s/%s/platform/penutil/build/component/*.zip %s" % (GlobalOptions.rel_drop_dir, untar_dir_name, GlobalOptions.rel_drop_dir)
+    print(cmd)
+    ret = os.system(cmd)
+    assert(ret == 0)
+    return 0
+  
 def del_untar_dir():
-    cmd = "rm %s/%s -rf" % (GlobalOptions.rel_drop_dir, untar_dir_name)
+    cmd = "rm %s/%s/platform/ -rf" % (GlobalOptions.rel_drop_dir, untar_dir_name)
     print(cmd)
     ret = os.system(cmd)
     assert(ret == 0)
@@ -93,7 +114,7 @@ if GlobalOptions.drop_version == "65" or GlobalOptions.drop_version == "67":
     drv_name_ver = get_drv_name_ver()
     bundle_name += drv_name_ver + "-offline_bundle"
     get_offline_bundle()
-    
+
 copy_vib()
 
 # Only needed for vSphere 7.0
@@ -103,5 +124,13 @@ if GlobalOptions.drop_version == "70":
 get_doc()
 get_pencli()
 get_bulletin_xml()
+
+if GlobalOptions.drop_version == "67":
+    get_penutil_vib()
+    get_penutil_bundle()
+if GlobalOptions.drop_version == "70":
+    get_penutil_vib()
+    get_penutil_component()
+
 del_untar_dir()
 

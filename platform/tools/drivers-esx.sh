@@ -27,9 +27,7 @@ TOP=$(readlink -f "$(dirname "$0")/../..")
 : ${SCRIPTS_SRC:="$TOP/platform/tools/drivers-esx"}
 : ${VIB_GEN:="$TOP/platform/tools/gen_esx_vib.py"}
 : ${REL_DROP_GEN:="$TOP/platform/tools/gen_esx_rel_drop.py"}
-: ${VIB:="$TOP/platform/drivers/esxi/vib/"}
-: ${DRIVERS_SRC:="$TOP/platform/drivers/"}
-: ${ESXI_VIB_SRC:="$TOP/platform/drivers/"}
+: ${ESXI_VIB_SRC:="$TOP/platform/"}
 
 # Products generated
 # This has to be updated once ESX version is built
@@ -81,7 +79,18 @@ rsync -r --delete --delete-excluded --copy-links \
   --exclude="windows/" \
   --exclude="pxe/" \
   --exclude="rdma/" \
-  "$ESXI_VIB_SRC/" "$GEN_DIR/drivers"
+  --exclude="pencap/" \
+  --exclude="gen/" \
+  --exclude="tools/" \
+  --exclude="doc/" \
+  --exclude="goldfw/" \
+  --exclude="hosttools/" \
+  --exclude="make/" \
+  --exclude="src/" \
+  --exclude=".*" \
+  --exclude="*.sh" \
+  --exclude="*.rb" \
+  "$ESXI_VIB_SRC/" "$GEN_DIR/platform"
 
 # Set version string
 if [ -n "$SW_VERSION" ] ; then
