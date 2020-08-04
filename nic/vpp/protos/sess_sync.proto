@@ -75,7 +75,7 @@ message SessInfo {
     uint32         IpProtocol                 = 6;
     uint32         SrcVnicId                  = 7;
     uint32         DstVnicId                  = 8;
-    bool           TwiceNAT                   = 9;
+    bool           IsNAPT                     = 9;
     bool           IsLocalToLocal             = 10;
     bool           IsMissHit                  = 11;
     bool           IsFlowDrop                 = 12;
@@ -110,5 +110,10 @@ message SessInfo {
     uint64         ResponderFlowSrcMac        = 41;
     uint64         ResponderFlowDstMac        = 42;
     uint32         ResponderFlowEtherType     = 43;
+    uint32         RxSrcXlateId               = 44;
+    uint32         TxSrcXlateId               = 45;
+    uint32         RxDstXlateId               = 46;
+    uint32         TxDstXlateId               = 47;
+    bool           IsNAT                      = 48;
 }
 

@@ -161,6 +161,7 @@ typedef struct pds_nat_main_s {
     nat_vpc_config_t **vpc_config;
     u8 proto_map[255];
     u8 nat_proto_map[NAT_PROTO_NUM + 1];
+    u64 sync_stats[NAT_SYNC_STATS_MAX];
 } pds_nat_main_t;
 
 static pds_nat_main_t nat_main;
@@ -1453,6 +1454,12 @@ nat_sync_stop(void)
     clib_spinlock_unlock(&nat_main.lock);
 }
 
+void
+nat_sync_stats_incr(nat_sync_stats_t stat)
+{
+    nat_main.sync_stats[stat]++;
+}
+
 nat_err_t
 nat_sync_restore(nat44_sync_info_t *sync)
 {
@@ -1549,3 +1556,24 @@ nat_sync_restore(nat44_sync_info_t *sync)
 
     return NAT_ERR_OK;
 }
+
+static clib_error_t *
+nat_cli_show_sync_stats(vlib_main_t *vm,
+                        unformat_input_t *input,
+                        vlib_cli_command_t *cmd)
+{
+    vlib_cli_output(vm, "NAT flow sync statistics\n");
+    vlib_cli_output(vm, "========================\n");
+    vlib_cli_output(vm, "%-40s: %lu", "NAT flow encode",
+                    nat_main.sync_stats[NAT_SYNC_STATS_ENCODE]);
+    vlib_cli_output(vm, "%-40s: %lu", "NAT flow decode",
+                    nat_main.sync_stats[NAT_SYNC_STATS_DECODE]);
+    return 0;
+}
+
+VLIB_CLI_COMMAND(nat_cli_show_nat_sync_stats_command, static) =
+{
+    .path = "show nat sync",
+    .short_help = "show nat sync",
+    .function = nat_cli_show_sync_stats,
+};

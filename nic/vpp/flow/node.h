@@ -272,8 +272,9 @@ typedef CLIB_PACKED(struct pds_flow_hw_ctx_s {
     u8 packet_type : 5; // pds_flow_pkt_type
     u8 iflow_rx : 1; // true if iflow is towards the host
     u8 monitor_seen : 1; // 1 if monitor process has seen flow
+    u8 napt : 1;
     u8 nat : 1;
-    u8 padding_2;
+    u8 padding_2 : 7;
     u16 drop : 1;
     // this will hold whats programmed in session table as in l2l cases drop bit
     // would hold result of first policy evaluation only.
@@ -647,7 +648,7 @@ always_inline void pds_session_set_data(u32 ses_id, u64 i_handle, u64 r_handle,
                                         uint16_t vnic_id, bool v4,
                                         bool host_origin, u8 packet_type,
                                         bool drop, u8 thread_id,
-                                        bool napt)
+                                        bool napt, bool nat)
 {
     pds_flow_main_t *fm = &pds_flow_main;
 
@@ -662,7 +663,8 @@ always_inline void pds_session_set_data(u32 ses_id, u64 i_handle, u64 r_handle,
     data->src_vnic_id = vnic_id;
     data->iflow_rx = host_origin;
     data->packet_type = packet_type;
-    data->nat = napt;
+    data->napt = napt;
+    data->nat = nat;
     data->drop = drop;
     data->thread_id = thread_id;
     //pds_flow_prog_unlock();

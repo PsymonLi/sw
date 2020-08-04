@@ -1627,12 +1627,18 @@ pds_program_cached_sessions(void)
         ctx->packet_type = flow_pkt_type;
         ctx->iflow_rx = sess->iflow_rx;
         ctx->monitor_seen = 0;
+        ctx->napt = sess->napt;
         ctx->nat = sess->nat;
         ctx->drop = sess->drop;
         ctx->src_vnic_id = sess->src_vnic_id;
         ctx->dst_vnic_id = sess->dst_vnic_id;
 
-        // FIXME: Need to fill Nat related fields in actiondata
+        // Fill NAT related fields in actiondata
+        actiondata.rx_xlate_id = sess->rx_xlate_id;
+        actiondata.tx_xlate_id = sess->tx_xlate_id;
+        actiondata.rx_xlate_id2 = sess->rx_xlate_id2;
+        actiondata.tx_xlate_id2 = sess->tx_xlate_id2;
+
         pds_session_get_rewrite_flags(session_index, ctx->packet_type,
                                       &tx_rewrite_flags, &rx_rewrite_flags);
         actiondata.tx_rewrite_flags = tx_rewrite_flags;

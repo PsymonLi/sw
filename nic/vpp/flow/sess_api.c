@@ -82,7 +82,7 @@ pds_flow_delete_session (u32 ses_id)
             }
         }
 
-        if (PREDICT_FALSE(session->nat)) {
+        if (PREDICT_FALSE(session->napt)) {
             ftlv4_update_iflow_nat_session(table4, thread);
         }
         if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
@@ -98,13 +98,13 @@ pds_flow_delete_session (u32 ses_id)
                 goto end;
         }
 
-        if (PREDICT_FALSE(session->nat)) {
+        if (PREDICT_FALSE(session->napt)) {
             ftlv4_update_rflow_nat_session(table4, thread);
         }
         if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
             goto end;
         }
-        if (PREDICT_FALSE(session->nat)) {
+        if (PREDICT_FALSE(session->napt)) {
             u32 vpc_id = pds_vnic_vpc_id_get(session->src_vnic_id);
             ftlv4_remove_nat_session(vpc_id, table4, thread);
         }

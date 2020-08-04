@@ -121,6 +121,7 @@ repl_state_tp_server_accept (clib_file_t * uf)
     vlib_set_main_thread_affinity(PDS_VPP_SYNC_CORE);
 
     repl_state_tp_sync(REPL_STATE_OBJ_ID_SESS, sqname);
+    repl_state_tp_sync(REPL_STATE_OBJ_ID_NAT, sqname);
 
     vlib_set_main_thread_affinity(tm->main_lcore);
 

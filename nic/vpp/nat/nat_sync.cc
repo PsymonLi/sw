@@ -131,6 +131,7 @@ nat_session_send_cb(uint8_t *data, uint8_t *len, void *opaq)
     sync.nat_addr_type = nat_addr_type;
 
     pds_nat44_encode_one_session(data, len, &sync);
+    nat_sync_stats_incr(NAT_SYNC_STATS_ENCODE);
 
     return false;
 }
@@ -180,6 +181,7 @@ nat_recv_cb (const uint8_t *data, const uint8_t len, void *opaq)
     nat44_sync_info_t sync;
 
     pds_nat44_decode_one_session(data, len, &sync);
+    nat_sync_stats_incr(NAT_SYNC_STATS_DECODE);
 
     nat_sync_restore(&sync);
     

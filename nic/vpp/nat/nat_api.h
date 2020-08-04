@@ -60,6 +60,13 @@ typedef enum {
     NAT_PROTO_NUM = 3
 } nat_proto_t;
 
+typedef enum {
+    NAT_SYNC_STATS_ENCODE = 0,
+    NAT_SYNC_STATS_DECODE = 1,
+    NAT_SYNC_STATS_MAX = 2
+} nat_sync_stats_t;
+
+
 typedef struct nat_flow_key_s {
     uint32_t dip;
     uint32_t sip;
@@ -115,6 +122,7 @@ nat_hw_index_t nat_get_tx_hw_index_pub_ip_port(uint32_t vpc_id,
 
 void nat_sync_start(void);
 void nat_sync_stop(void);
+void nat_sync_stats_incr(nat_sync_stats_t stat);
 nat_err_t nat_sync_restore(nat44_sync_info_t *sync);
 void nat_get_global_stats(nat_global_stats_t *stats);
 

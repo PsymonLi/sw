@@ -72,6 +72,7 @@ pds_sess_v4_sync_cb (uint8_t *data, uint8_t *len, void *opaq)
     sess.rflow_handle = hw_ctx->rflow.handle;
     sess.packet_type = pds_encode_flow_pkt_type(hw_ctx->packet_type);
     sess.iflow_rx = hw_ctx->iflow_rx;
+    sess.napt = hw_ctx->napt;
     sess.nat = hw_ctx->nat;
     sess.drop = hw_ctx->drop;
     sess.src_vnic_id = hw_ctx->src_vnic_id;

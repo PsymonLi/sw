@@ -5,6 +5,7 @@
 #include <ftl_wrapper.h>
 #include <nh.h>
 #include <nic/apollo/p4/include/defines.h>
+#include <sess.h>
 #include "sess_restore.h"
 
 bool
@@ -73,8 +74,6 @@ pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
     ftlv4_cache_set_hash_log(0, 0, thread_index);
     ftlv4_cache_advance_count(1, thread_index);
 
-    // FIXME: fill NAT related fields
-
     sess->id = info.id();
     sess->proto = info.ipprotocol();
     sess->v4 = true;
@@ -85,6 +84,21 @@ pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
     sess->drop = info.isflowdrop();
     sess->src_vnic_id = info.srcvnicid();
     sess->dst_vnic_id = info.dstvnicid();
+    sess->napt = info.isnapt();
+    sess->nat = info.isnat();
+
+    // Fill NAT related fields
+    if (sess->nat) {
+        sess->rx_xlate_id = info.rxsrcxlateid();
+        sess->tx_xlate_id = info.txsrcxlateid();
+        sess->rx_xlate_id2 = info.rxdstxlateid();
+        sess->tx_xlate_id2 = info.txdstxlateid();
+    } else {
+        sess->rx_xlate_id = 0;
+        sess->tx_xlate_id = 0;
+        sess->rx_xlate_id2 = 0;
+        sess->tx_xlate_id2 = 0;
+    }
 
     return true;
 }
@@ -95,9 +109,15 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
 {
     static thread_local ::sess_sync::SessInfo info;
     v4_flow_entry iflow, rflow;
+    session_info_t session_entry;
 
     // reset all internal state
     info.Clear();
+
+    // Read the session entry for xlate indices
+    if (sess->nat) {
+        pds_session_get_info(sess->id, &session_entry);
+    }
 
     // Read the iflow and rflow entries
     ftlv4_get_flow_entry((ftlv4 *)sess->flow_table, sess->iflow_handle,
@@ -113,7 +133,8 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
     info.set_isflowdrop(sess->drop);
     info.set_srcvnicid(sess->src_vnic_id);
     info.set_dstvnicid(sess->dst_vnic_id);
-    // don't encode NAT related fields
+    info.set_isnapt(sess->napt);
+    info.set_isnat(sess->nat);
 
     // initiator flow attributes - client to server
     info.set_ingressbd(iflow.key_metadata_flow_lkp_id);
@@ -142,7 +163,13 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
     info.set_responderflowpriority(rflow.priority);
     info.set_responderflowepoch(rflow.epoch);
 
-    // FIXME: fill NAT related fields
+    // Fill NAT related fields
+    if (sess->nat) {
+        info.set_rxsrcxlateid(session_entry.rx_xlate_id);
+        info.set_txsrcxlateid(session_entry.tx_xlate_id);
+        info.set_rxdstxlateid(session_entry.rx_xlate_id2);
+        info.set_txdstxlateid(session_entry.tx_xlate_id2);
+    }
 
     // Encode the protobuf into the passed buffer
     size_t req_sz = info.ByteSizeLong();

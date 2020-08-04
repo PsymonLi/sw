@@ -23,10 +23,18 @@ typedef struct sess_info_ {
     uint32_t flow_state : 3;
     uint32_t packet_type : 5;
     uint32_t iflow_rx : 1;
-    uint32_t nat : 1;
+    uint32_t napt : 1;
     uint32_t drop : 1;
     uint32_t src_vnic_id : 10;
     uint32_t dst_vnic_id : 10;
+
+    uint32_t nat : 1;
+    uint32_t pad : 31;
+
+    uint32_t rx_xlate_id;
+    uint32_t tx_xlate_id;
+    uint32_t rx_xlate_id2;
+    uint32_t tx_xlate_id2;
 
     uint64_t iflow_handle;
     uint64_t rflow_handle;

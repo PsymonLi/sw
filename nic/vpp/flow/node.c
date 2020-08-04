@@ -1221,6 +1221,7 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next,
     pds_flow_main_t *fm = &pds_flow_main;
     uint8_t ctr_idx;
     uint64_t ses_ctr[FLOW_TYPE_COUNTER_MAX] = {0};
+    bool is_nat;
 
     for (i = 0; i < size; i+=2) {
         p0 = b[i/2];
@@ -1248,6 +1249,7 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next,
             // don't increment ctr if session is already present
             ses_ctr[ftlv4_cache_get_counter_index(i, thread_index)]++;
         }
+        is_nat = vnet_buffer2(p0)->pds_nat_data.xlate_idx ? true : false;
         pds_session_set_data(session_id, i_handle,
                              r_handle,
                              pds_flow_trans_proto(ftlv4_cache_get_proto(i,
@@ -1256,7 +1258,8 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next,
                              true, pds_is_rx_pkt(p0),
                              vnet_buffer(p0)->pds_flow_data.packet_type,
                              pds_is_flow_drop(p0),
-                             thread_index, pds_is_flow_napt_en(p0));
+                             thread_index, pds_is_flow_napt_en(p0),
+                             is_nat);
         counter[FLOW_PROG_COUNTER_FLOW_SUCCESS]++;
         next[i/2] = pds_flow_prog_get_next_node();
         ftlv4_cache_log_session(i, i+1, FLOW_EXPORT_REASON_ADD, thread_index);
@@ -1344,7 +1347,7 @@ pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next,
                              false, pds_is_rx_pkt(p0),
                              vnet_buffer(p0)->pds_flow_data.packet_type,
                              pds_is_flow_drop(p0),
-                             thread_index, pds_is_flow_napt_en(p0));
+                             thread_index, pds_is_flow_napt_en(p0), false);
         counter[FLOW_PROG_COUNTER_FLOW_SUCCESS]++;
         next[i/2] = pds_flow_prog_get_next_node();
         ftlv6_cache_log_session(i, i+1, FLOW_EXPORT_REASON_ADD);

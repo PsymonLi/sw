@@ -114,6 +114,7 @@ repl_state_tp_client_init()
     vlib_set_main_thread_affinity(PDS_VPP_RESTORE_CORE);
 
     repl_state_tp_restore(REPL_STATE_OBJ_ID_SESS, sqname);
+    repl_state_tp_restore(REPL_STATE_OBJ_ID_NAT, sqname);
 
     vlib_set_main_thread_affinity(tm->main_lcore);
 
