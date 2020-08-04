@@ -172,9 +172,9 @@ nic/build/$ARCH/$PIPELINE/bin/pdsctl                              /nic/bin/
 # system level tools and binaries
 nic/tools/sysupdate.sh                                            /nic/tools/
 nic/tools/copy_ssh_pub_keys.sh                                    /nic/tools/
-nic/apollo/tools/$PIPELINE/sysinit.sh                             /nic/tools/
-nic/apollo/tools/$PIPELINE/syskill.sh                             /nic/tools/
-nic/apollo/tools/$PIPELINE/bringup_mgmt_ifs.sh                    /nic/tools/
+nic/apollo/athena/tools/sysinit.sh                                /nic/tools/
+nic/apollo/athena/tools/syskill.sh                                /nic/tools/
+nic/apollo/athena/tools/bringup_mgmt_ifs.sh                       /nic/tools/
 nic/tools/sysreset.sh                                             /nic/tools/
 nic/tools/fwupdate                                                /nic/tools/
 nic/tools/serial_console.sh                                       /nic/tools/
@@ -192,7 +192,7 @@ platform/src/app/cpld/bin/*.bin                                   /nic/etc/cpld/
 nic/build/$ARCH/$PIPELINE/bin/cpldapp                             /nic/bin/
 
 # Test scripts
-nic/apollo/test/athena_app/scripts/*                              /nic/etc/test_scripts/
+nic/apollo/athena/apps/athena_app/scripts/*                       /nic/etc/test_scripts/
 
 # include boot0.bin in the package
 nic/build/$ARCH/$PIPELINE/out/boot0_submake/boot0.bin             /boot0/
@@ -248,13 +248,13 @@ nic/conf/captrace/sample-conf.json                                /nic/conf/capt
 nic/build/$ARCH/$PIPELINE/bin/fd_send                             /nic/conf/
 
 # agent specific files
-nic/apollo/tools/athena/start-agent-stub.sh                       /nic/tools/
-nic/apollo/tools/athena/start-agent.sh                            /nic/tools/
-nic/apollo/tools/athena/start-sec-agent.sh                        /nic/tools/
-nic/apollo/tools/athena/start-sec-agent-iota.sh                   /nic/tools/
-nic/apollo/tools/athena/start-agent-skip-dpdk.sh                  /nic/tools/
-nic/apollo/tools/athena/start-flow-logger.sh                      /nic/tools/
-nic/apollo/tools/athena/start-flow-logger-iota.sh                 /nic/tools/
+nic/apollo/athena/tools/start-agent-stub.sh                       /nic/tools/
+nic/apollo/athena/tools/start-agent.sh                            /nic/tools/
+nic/apollo/athena/tools/start-sec-agent.sh                        /nic/tools/
+nic/apollo/athena/tools/start-sec-agent-iota.sh                   /nic/tools/
+nic/apollo/athena/tools/start-agent-skip-dpdk.sh                  /nic/tools/
+nic/apollo/athena/tools/start-flow-logger.sh                      /nic/tools/
+nic/apollo/athena/tools/start-flow-logger-iota.sh                 /nic/tools/
 nic/apollo/tools/start-nmd.sh                                     /nic/tools/
 nic/apollo/tools/store_agent_log.sh                               /nic/tools/
 nic/build/$ARCH/$PIPELINE/lib/libtrace.so                         /nic/lib/

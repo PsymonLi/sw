@@ -1,0 +1,335 @@
+# Line starts with # will be treated as comment and ignored
+# Anything after # in a line is ignored
+# Blank line is ignored
+# Line starts with - means that directory or file will be deleted
+# If there is only src on the line, the dst sub directory is the same as src
+# If there are both src and dst on the line, the dst sub directory is not the same as src
+# If dst ends with /, means copy into that directory
+# Line starts with ! means all file/dir name contain that text will be deleted
+/sw/nic/apollo/athena/agent
+/sw/nic/apollo/athena/tools
+/sw/nic/apollo/athena/apps/athena_app
+-/sw/nic/apollo/athena/apps/athena_app/Makefile
+#/sw/nic/apollo/agent/cli
+/sw/nic/apollo/agent/core
+/sw/nic/apollo/agent/protos
+/sw/nic/apollo/agent/svc
+/sw/nic/apollo/agent/trace.hpp
+/sw/nic/apollo/agent/init.hpp
+/sw/nic/apollo/api
+-/sw/nic/apollo/api/impl/apollo
+/sw/nic/apollo/api/impl/apollo/apollo_impl.hpp
+-/sw/nic/apollo/api/impl/apulu
+-/sw/nic/apollo/api/impl/artemis
+-/sw/nic/apollo/api/impl/lpm
+-/sw/nic/apollo/api/impl/rfc
+/sw/nic/apollo/asm/athena_rxdma
+/sw/nic/apollo/asm/athena_txdma
+/sw/nic/apollo/core
+/sw/nic/apollo/framework
+/sw/nic/apollo/include
+/sw/nic/apollo/learn
+/sw/nic/apollo/nicmgr
+/sw/nic/apollo/p4/athena_p4
+/sw/nic/apollo/p4/athena_p4-16
+/sw/nic/apollo/p4/athena_rxdma
+/sw/nic/apollo/p4/athena_txdma
+/sw/nic/apollo/p4/include
+/sw/nic/apollo/pciemgr
+/sw/nic/apollo/test/api/utils/base.hpp
+/sw/nic/apollo/test/base/utils.hpp
+/sw/nic/apollo/test/base/base.hpp
+/sw/nic/apollo/tools/run_cron.sh
+/sw/nic/apollo/tools/setup_env_hw.sh
+/sw/nic/tools/start-nmd.sh
+/sw/nic/apollo/tools/store_agent_log.sh
+/sw/nic/apollo/upgrade/api
+/sw/nic/asm/adminq
+/sw/nic/asm/common-p4+/include
+/sw/nic/asm/eth
+/sw/nic/asm/edma
+/sw/nic/asm/ftl_dev
+/sw/nic/asm/ipsec-p4+
+/sw/nic/asm/notify
+/sw/nic/conf/athena
+/sw/nic/conf/init_bins
+/sw/nic/conf/catalog_hw_68-*
+/sw/nic/conf/catalog_hw_P*
+/sw/nic/conf/captrace
+/sw/nic/conf/profiles/qos_profile_default.json
+/sw/nic/conf/serdes_68-*
+/sw/nic/hal/hal_trace.hpp
+/sw/nic/hal/module_memrgns.mk
+/sw/nic/hal/pd/hal_pd_error.hpp
+/sw/nic/hal/pd/*.hpp
+/sw/nic/hal/third-party/google
+/sw/nic/hal/third-party/judy/aarch64/lib/*.so* /sw/lib/other/
+/sw/nic/third-party/gflags/aarch64/lib
+#/sw/nic/sdk/third-party/googletest-release-1.8.0/googletest/include/gtest/gtest.h
+/sw/nic/sdk/third-party/googletest-release-1.8.0/googletest/include/gtest/
+/sw/nic/hal/third-party/grpc
+/sw/nic/hal/third-party/openssl/include/openssl
+/sw/nic/hal/third-party/spdlog/include/spdlog
+/sw/nic/include
+/sw/nic/make
+/sw/nic/Makefile
+/sw/nic/metaswitch/pre.mk
+/sw/nic/metaswitch/stubs/mgmt/*.hpp
+/sw/nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp
+/sw/nic/metaswitch/stubs/pds_ms_stubs_init.hpp
+/sw/nic/metaswitch/stubs/test/pdsmock
+/sw/nic/mkdefs
+/sw/nic/operd/alerts
+/sw/nic/operd/metrics/cloud
+/sw/nic/p4/adminq
+/sw/nic/p4/common
+/sw/nic/p4/common-p4+
+/sw/nic/p4/edma
+/sw/nic/p4/eth
+/sw/nic/p4/ftl_dev
+/sw/nic/p4/ipsec-p4+
+/sw/nic/p4/notify
+/sw/nic/p4-hlir
+/sw/nic/p4/include
+/sw/nic/proto/hal
+/sw/nic/sdk/asic/asic.hpp
+/sw/nic/sdk/asic/common
+/sw/nic/sdk/asic/pd
+/sw/nic/sdk/asic/port.hpp
+/sw/nic/sdk/asic/rw
+/sw/nic/sdk/include
+/sw/nic/sdk/ipsec/ipsec.hpp
+/sw/nic/sdk/lib/bitmap
+/sw/nic/sdk/lib/bm_allocator
+/sw/nic/sdk/lib/catalog
+/sw/nic/sdk/lib/device
+/sw/nic/sdk/lib/dpdk
+/sw/nic/sdk/lib/dpdk/sim
+/sw/nic/sdk/lib/edma
+-/sw/nic/sdk/edma/module.mk
+/sw/nic/sdk/lib/eventmgr
+/sw/nic/sdk/lib/event_thread
+/sw/nic/sdk/lib/ht
+/sw/nic/sdk/lib/indexer
+/sw/nic/sdk/lib/ipc
+/sw/nic/sdk/lib/kvstore
+/sw/nic/sdk/lib/lfq
+/sw/nic/sdk/lib/list
+/sw/nic/sdk/lib/lldp
+/sw/nic/sdk/lib/logger
+/sw/nic/sdk/lib/metrics
+/sw/nic/sdk/lib/mmgr
+/sw/nic/sdk/lib/operd
+/sw/nic/sdk/lib/p4
+/sw/nic/sdk/lib/pal
+/sw/nic/sdk/lib/periodic
+/sw/nic/sdk/lib/rte_indexer
+/sw/nic/sdk/lib/runenv
+/sw/nic/sdk/lib/shmmgr
+#/sw/nic/sdk/lib/shmstore/shmstore.hpp
+/sw/nic/sdk/lib/shmstore
+/sw/nic/sdk/lib/slab
+/sw/nic/sdk/lib/table/common
+/sw/nic/sdk/lib/table/directmap
+/sw/nic/sdk/lib/table/ftl
+/sw/nic/sdk/lib/table/hash
+/sw/nic/sdk/lib/table/hbmhash
+/sw/nic/sdk/lib/table/memhash
+/sw/nic/sdk/lib/table/memhash/test/p4pd_mock
+/sw/nic/sdk/lib/table/sldirectmap
+/sw/nic/sdk/lib/table/slhash
+/sw/nic/sdk/lib/table/sltcam
+/sw/nic/sdk/lib/table/tcam
+/sw/nic/sdk/lib/thread
+/sw/nic/sdk/lib/timerfd
+/sw/nic/sdk/lib/twheel
+/sw/nic/sdk/lib/utils
+/sw/nic/sdk/linkmgr
+/sw/nic/sdk/Makefile
+/sw/nic/sdk/mkdefs
+/sw/nic/sdk/mkinfra
+/sw/nic/sdk/model_sim/include
+/sw/nic/sdk/model_sim/src/client
+/sw/nic/sdk/nvme
+/sw/nic/sdk/p4/loader
+/sw/nic/sdk/pen-dpdk
+/sw/nic/sdk/platform/asicerror
+/sw/nic/sdk/platform/capri
+/sw/nic/sdk/platform/capmon
+/sw/nic/sdk/platform/capview
+/sw/nic/sdk/platform/cfgspace/include
+/sw/nic/sdk/platform/cfgspace/src
+/sw/nic/sdk/platform/csr
+/sw/nic/sdk/platform/devapi
+/sw/nic/sdk/platform/drivers
+/sw/nic/sdk/platform/evutils/include
+/sw/nic/sdk/platform/evutils/src
+/sw/nic/sdk/platform/fru
+/sw/nic/sdk/platform/intrutils/include
+/sw/nic/sdk/platform/intrutils/src
+/sw/nic/sdk/platform/marvell
+/sw/nic/sdk/platform/misc/include
+/sw/nic/sdk/platform/misc/src
+/sw/nic/sdk/platform/mnet/include
+/sw/nic/sdk/platform/mnet/src
+/sw/nic/sdk/platform/mputrace
+/sw/nic/sdk/platform/pal/include
+/sw/nic/sdk/platform/pal/src
+/sw/nic/sdk/platform/pciehdevices/include
+/sw/nic/sdk/platform/pciehdevices/src
+/sw/nic/sdk/platform/pciemgrd
+/sw/nic/sdk/platform/pciemgr_if/include
+/sw/nic/sdk/platform/pciemgr_if/src
+/sw/nic/sdk/platform/pciemgr/include
+/sw/nic/sdk/platform/pciemgr/src
+/sw/nic/sdk/platform/pciemgrutils/include
+/sw/nic/sdk/platform/pciemgrutils/src
+/sw/nic/sdk/platform/pcieport/include
+/sw/nic/sdk/platform/pcieport/src
+/sw/nic/sdk/platform/pcietlp/include
+/sw/nic/sdk/platform/pcietlp/src
+/sw/nic/sdk/platform/rdmamgr
+/sw/nic/sdk/platform/ring
+/sw/nic/sdk/platform/sensor
+/sw/nic/sdk/platform/sysmon
+/sw/nic/sdk/platform/utils
+/sw/nic/sdk/storage
+/sw/nic/sdk/third-party/asic
+/sw/nic/sdk/third-party/asic/aarch64/lib/*.so /sw/lib/pen/
+-/sw/nic/sdk/third-party/asic/aarch64
+-/sw/nic/sdk/third-party/asic/module.mk
+/sw/nic/sdk/third-party/asic/capri/model/capsim-master/gen/aarch64/lib/*.so /sw/lib/pen/
+-/sw/nic/sdk/third-party/asic/capri/model/capsim-master/gen/aarch64/lib
+/sw/nic/sdk/third-party/avago/capri
+/sw/nic/sdk/third-party/avago/capri/aarch64/lib/aapl/C/libAAPL.so* /sw/lib/pen/
+-/sw/nic/sdk/third-party/avago/capri/aarch64
+-/sw/nic/sdk/third-party/avago/module.mk
+/sw/nic/sdk/third-party/avago/aapl-2.7/build/aarch64/bin/aapl
+/sw/nic/sdk/third-party/avago/fw/serdes.0x1087_244D.rom
+/sw/nic/sdk/third-party/avago/fw/serdes.0x1094_244D.rom
+/sw/nic/sdk/third-party/boost/include/boost
+/sw/nic/sdk/third-party/dhcp-server-pkg/aarch64/lib/*.so* /sw/lib/other/
+/sw/nic/sdk/third-party/dpdk/v18.11/lib
+/sw/nic/sdk/third-party/edit/aarch64/*.so /sw/lib/other/
+/sw/nic/sdk/third-party/edit/include
+/sw/nic/sdk/third-party/gmp/aarch64/*.so* /sw/lib/other/
+/sw/nic/sdk/third-party/gmp/include
+/sw/nic/sdk/third-party/libev/aarch64/lib/*.so* /sw/lib/other/
+/sw/nic/sdk/third-party/libev/include
+/sw/nic/sdk/third-party/liblmdb/aarch64/lib/*.so* /sw/lib/other/
+/sw/nic/sdk/third-party/liblmdb/include
+/sw/nic/sdk/third-party/libnuma/aarch64/lib/*.so* /sw/lib/other/
+/sw/nic/sdk/third-party/libz/aarch64/lib/*.so* /sw/lib/other/
+/sw/nic/sdk/third-party/libz/include
+/sw/nic/sdk/third-party/ncurses/aarch64/libncurses.so /sw/lib/other/
+/sw/nic/sdk/third-party/ncurses/include
+#/sw/nic/sdk/third-party/openssl
+/sw/nic/sdk/third-party/openssl/aarch64/lib/*.so* /sw/lib/other/
+/sw/nic/sdk/third-party/openssl/aarch64/lib/engines-1.1/*.so /sw/lib/other/
+/sw/nic/sdk/third-party/openssl/include
+#/sw/nic/sdk/third-party/sknobs
+/sw/nic/sdk/third-party/sknobs/aarch64/lib/libsknobs.so /sw/lib/pen/
+/sw/nic/sdk/third-party/zmq/include
+/sw/nic/sdk/third-party/zmq/aarch64/lib/*.so* /sw/lib/other/
+/sw/nic/sdk/tools
+-/sw/nic/sdk/tools/arm_compiler
+/sw/nic/sdk/upgrade/ev
+/sw/nic/sdk/upgrade/include
+/sw/nic/sysmgr/src/athena/pipeline.json
+/sw/nic/tools/copy_ssh_pub_keys.sh
+/sw/nic/tools/sysreset.sh
+/sw/nic/tools/fwupdate
+/sw/nic/tools/gen_version.py
+/sw/nic/tools/serial_console.sh
+/sw/nic/tools/bflog_sync.sh
+/sw/nic/tools/pcie_hostdn.sh
+/sw/nic/tools/pcie_healthlog.sh
+/sw/nic/tools/postinstall.sh
+/sw/nic/tools/hal
+/sw/nic/tools/ncc
+/sw/nic/tools/package/pack_athena.txt
+/sw/nic/tools/package/pack_debug.txt
+/sw/nic/tools/package/pack_host.txt
+/sw/nic/tools/package/pack_test_utils.txt
+/sw/nic/tools/package/package.py
+/sw/nic/tools/sorrento
+/sw/nic/tools/sysupdate.sh
+/sw/nic/tools/upgrade_version.sh
+/sw/nic/utils/events/recorder
+/sw/nic/utils/ftlite/*.hpp
+/sw/nic/utils/trace
+/sw/nic/vpp/flow/pdsa_hdlr.h
+/sw/nic/vpp/flow/stats.h
+/sw/nic/vpp/infra/ipc/pdsa_hdlr.hpp
+/sw/platform/drivers/common
+/sw/platform/drivers/linux/eth/ionic
+-/sw/platform/drivers/linux/eth/ionic/README
+-/sw/platform/drivers/linux/eth/ionic/tests
+-/sw/platform/drivers/linux/eth/ionic/utils
+/sw/platform/drivers/linux/Makefile
+/sw/platform/drivers/linux/mnet
+/sw/platform/drivers/linux/mnet_uio_pdrv_genirq
+/sw/platform/drivers/linux/linux_ver.mk
+#/sw/platform/drivers/linux/README.md
+/sw/platform/src/app/sysmond/sysmondebug.sh
+/sw/platform/src/app/cpld
+/sw/platform/src/app/memtun
+/sw/platform/src/lib/eth_p4plus
+/sw/platform/src/lib/nicmgr/include
+/sw/platform/src/lib/nicmgr/src
+/sw/platform/tools/eth
+-/sw/platform/tools/eth/module_iris.mk
+/sw/vendor/github.com/gogo/protobuf/gogoproto
+-/sw/nic/apollo/agent/svc/module.mk
+-/sw/nic/hal/third-party/google/protobuf/internal/_api_implementation.so
+-/sw/nic/hal/third-party/google/protobuf/pyext/_message.so
+# -/sw/nic/hal/third-party/google/x86_64
+-/sw/nic/make/Makefile-ARCH-x86_64.inc
+-/sw/nic/sdk/include/sdk/asic/elba
+-/sw/nic/sdk/mkinfra/config_x86_64.mk
+-/sw/nic/sdk/pen-dpdk/dpdk-19.02-rc3/config/defconfig_x86_64-native-bsdapp-clang
+-/sw/nic/sdk/pen-dpdk/dpdk-19.02-rc3/config/defconfig_x86_64-native-bsdapp-gcc
+-/sw/nic/sdk/pen-dpdk/dpdk-19.02-rc3/config/defconfig_x86_64-native-linuxapp-clang
+-/sw/nic/sdk/pen-dpdk/dpdk-19.02-rc3/config/defconfig_x86_64-native-linuxapp-gcc
+-/sw/nic/sdk/pen-dpdk/dpdk-19.02-rc3/config/defconfig_x86_64-native-linuxapp-icc
+-/sw/nic/sdk/pen-dpdk/dpdk-19.02-rc3/mk/arch/x86_64
+-/sw/nic/sdk/platform/asicerror/elba
+-/sw/nic/sdk/platform/intrutils/src/elba
+-/sw/nic/sdk/platform/pal/src/elba
+-/sw/nic/sdk/platform/pcieport/include/elba
+-/sw/nic/sdk/platform/pcieport/src/elba
+-/sw/nic/sdk/third-party/asic/aarch64/lib/libsdkelba*
+-/sw/nic/sdk/third-party/asic/capri/model/capsim-master/gen/x86_64
+-/sw/nic/sdk/third-party/asic/captrace/x86_64
+-/sw/nic/sdk/third-party/asic/elba
+# -/sw/nic/sdk/third-party/asic/ip/verif/pensim/gen/aarch64/lib/libelb*
+# -/sw/nic/sdk/third-party/asic/ip/verif/pensim/gen/aarch64/lib
+-/sw/nic/sdk/third-party/asic/ip/verif/pensim/gen
+-/sw/nic/sdk/third-party/asic/ip/verif/pensim/src/app/elb*
+-/sw/nic/sdk/third-party/asic/ip/verif/pensim/src/lib/libelb*
+-/sw/nic/sdk/third-party/asic/ip/verif/pensim/src/make/Makefile-ARCH-x86_64.inc
+-/sw/nic/sdk/third-party/asic/ip/verif/pensim/gen/x86_64
+-/sw/nic/sdk/third-party/asic/x86_64
+-/sw/nic/sdk/third-party/avago/capri/x86_64
+-/sw/nic/sdk/third-party/boost/include/boost/context/detail/fcontext_x86_64_win.hpp
+-/sw/nic/sdk/third-party/boost/include/boost/context/detail/fcontext_x86_64.hpp
+# -/sw/nic/sdk/third-party/dhcp-server-pkg/aarch64/lib/*.so.*
+-/sw/nic/sdk/third-party/dhcp-server-pkg/x86_64
+-/sw/nic/sdk/third-party/edit/x86_64
+-/sw/nic/sdk/third-party/libev/x86_64
+-/sw/nic/sdk/third-party/liblmdb/x86_64
+-/sw/nic/sdk/third-party/libnuma/x86_64
+# -/sw/nic/sdk/third-party/openssl/aarch64/lib/*.so.*
+-/sw/nic/sdk/third-party/openssl/x86_64
+-/sw/nic/sdk/third-party/sknobs/x86_64
+!*elba*
+!.git*
+# The lib also in buildroot
+# cp /sw/nic/buildroot/output/capri/target/usr/lib/libedit.so /sw/nic/build/aarch64/athena/capri/lib
+# cp /sw/nic/buildroot/output/capri/target/usr/lib/libncurses.so /sw/nic/build/aarch64/athena/capri/lib
+# The special nuts, luckily they are opensource
+# cp /tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/libzmq.so ../nic/build/aarch64/athena/capri/lib
+# cp /tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/aarch64-linux-gnu/libJudy.so ../nic/build/aarch64/athena/capri/lib
+# /tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/libzmq.so /sw/lib/other/
+# /tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/aarch64-linux-gnu/libJudy.so /sw/lib/other/
+
