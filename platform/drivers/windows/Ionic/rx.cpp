@@ -421,7 +421,8 @@ _ionic_do_rsc(struct qcq *qcq,
     struct ethhdr_vlan *eth = NULL, *last_eth = NULL;
     char *buf = NULL, *last_buf = NULL;
     ULONG off = 0, eth_hlen = 0, ip_hlen = 0, tcp_hlen = 0;
-    ULONG shorten = 0, lengthen = 0;
+    ULONG ip_len = 0, last_ip_len = 0;
+    ULONG shorten = 0, lengthen = 0, payload = 0;
     PMDL mdl = NULL, last_mdl = NULL;
 
     // likely same flow, hint to prefetch headers
@@ -443,6 +444,7 @@ _ionic_do_rsc(struct qcq *qcq,
         NDIS_GET_NET_BUFFER_LIST_VLAN_ID(last_nbl)) {
         DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
             "%s rsc not same vlan\n", __FUNCTION__));
+        ++rx_stats->rsc_collide;
         return IONIC_RSC_COLLIDE;
     }
 
@@ -455,6 +457,7 @@ _ionic_do_rsc(struct qcq *qcq,
     if (memcmp(buf, last_buf, 12)) {
         DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
             "%s rsc not same ether addr\n", __FUNCTION__));
+        ++rx_stats->rsc_collide;
         return IONIC_RSC_COLLIDE;
     }
 
@@ -468,12 +471,12 @@ _ionic_do_rsc(struct qcq *qcq,
         ipv6 = (struct ipv6hdr *)(buf + off);
         last_ipv6 = (struct ipv6hdr*)(last_buf + off);
     } else if (eth->h_proto == ETH_P_8021Q_LE && last_eth->h_proto == ETH_P_8021Q_LE &&
-               eth->vh_proto == ETH_P_IPv4_LE && eth->vh_proto == ETH_P_IPv4_LE) {
+               eth->vh_proto == ETH_P_IPv4_LE && last_eth->vh_proto == ETH_P_IPv4_LE) {
         off += VLAN_ETH_HLEN;
         ipv4 = (struct ipv4hdr*)(buf + off);
         last_ipv4 = (struct ipv4hdr*)(last_buf + off);
     } else if (eth->h_proto == ETH_P_8021Q_LE && last_eth->h_proto == ETH_P_8021Q_LE &&
-               eth->vh_proto == ETH_P_IPv6_LE && eth->vh_proto == ETH_P_IPv6_LE) {
+               eth->vh_proto == ETH_P_IPv6_LE && last_eth->vh_proto == ETH_P_IPv6_LE) {
         off += VLAN_ETH_HLEN;
         ipv6 = (struct ipv6hdr*)(buf + off);
         last_ipv6 = (struct ipv6hdr*)(last_buf + off);
@@ -487,7 +490,6 @@ _ionic_do_rsc(struct qcq *qcq,
 
     // compare ip headers, resolve tcp headers
     if (ipv4) {
-        ULONG ipv4_hlen = 4 * ipv4->ihl;
         NDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO csum_info;
         csum_info.Value = NET_BUFFER_LIST_INFO(nbl, TcpIpChecksumNetBufferListInfo);
         // if IPv4 checksum offload was not enabled, we have to verify it here before reporting
@@ -498,7 +500,9 @@ _ionic_do_rsc(struct qcq *qcq,
             }
         }
 
-        if (ipv4_hlen < 20) {
+        // ipv4 header length
+        ip_hlen = 4 * ipv4->ihl;
+        if (ip_hlen < 20) {
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
                 "%s rsc ipv4 invalid ihl %ul\n", __FUNCTION__, ipv4->ihl));
             return IONIC_RSC_IGNORE;
@@ -509,58 +513,107 @@ _ionic_do_rsc(struct qcq *qcq,
                 "%s rsc ipv4 not proto tcp\n", __FUNCTION__));
             return IONIC_RSC_IGNORE;
         }
+        // src dest addr, options
+        if (memcmp(buf + off + 12, last_buf + off + 12, ip_hlen - 12)) {
+            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+                "%s rsc ipv4 not same addr, options\n", __FUNCTION__));
+            ++rx_stats->rsc_collide;
+            return IONIC_RSC_COLLIDE;
+        }
         // ver, ihl, dscp, ecn
         if (memcmp(buf + off, last_buf + off, 2)) {
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
                 "%s rsc ipv4 not same ver, ihl, dscp, ecn\n", __FUNCTION__));
-            return IONIC_RSC_COLLIDE;
+            // Most likely is the same flow but different ecn bits, so replace it.
+            return IONIC_RSC_REPLACE;
         }
-        // src dest addr, options
-        if (memcmp(buf + off + 12, last_buf + off + 12, ipv4_hlen - 12)) {
+
+        // validate ip length fields
+        ip_len = ntohs(ipv4->tot_len);
+        if (NET_BUFFER_DATA_LENGTH(nb) - ip_len - eth_hlen > 64) {
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-                "%s rsc ipv4 not same addr, options\n", __FUNCTION__));
-            return IONIC_RSC_COLLIDE;
+                "%s bogus nb ipv4 len %lu packet len %lu\n",
+                __FUNCTION__, ip_len, NET_BUFFER_DATA_LENGTH(nb)));
+            return IONIC_RSC_REPLACE;
         }
-        // resolve tcp header
-        off += ipv4_hlen;
-        tcp = (struct tcphdr *)(buf + off);
-        last_tcp = (struct tcphdr*)(last_buf + off);
+        last_ip_len = ntohs(last_ipv4->tot_len);
+        if (NET_BUFFER_DATA_LENGTH(last_nb) - last_ip_len - eth_hlen > 64) {
+            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+                "%s bogus nb ipv4 len %lu packet len %lu\n",
+                __FUNCTION__, last_ip_len, NET_BUFFER_DATA_LENGTH(last_nb)));
+            return IONIC_RSC_REPLACE;
+        }
+
+        // truncate any padding after the ip length, when merging the next packet
+        shorten = NET_BUFFER_DATA_LENGTH(last_nb) - last_ip_len - eth_hlen;
+        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+            "%s first packet pad length %lu ipv4 len %lu packet len %lu\n",
+            __FUNCTION__, shorten, last_ip_len, NET_BUFFER_DATA_LENGTH(last_nb)));
+
+        // ip payload length of the current packet
+        payload = ip_len - ip_hlen;
     } else if (ipv6) {
+        // header len is 40 bytes, with no extension headers
+        ip_hlen = 40;
+
         // next header is tcp (not supporting ipv6 extension headers)
         if (ipv6->nexthdr != IPPROTO_TCP || last_ipv6->nexthdr != IPPROTO_TCP) {
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
                 "%s rsc ipv6 not nexthdr tcp\n", __FUNCTION__));
             return IONIC_RSC_IGNORE;
         }
-        // ver, tc, flow
-        if (memcmp(buf + off, last_buf + off, 4)) {
-            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-                "%s rsc ipv6 not same ver, tc, flow\n", __FUNCTION__));
-            return IONIC_RSC_COLLIDE;
-        }
         // src dest addr, extension headers
         if (memcmp(buf + off + 8, last_buf + off + 8, 32)) {
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
                 "%s rsc ipv6 not same addr\n", __FUNCTION__));
+            ++rx_stats->rsc_collide;
             return IONIC_RSC_COLLIDE;
         }
-        // resolve tcp header
-        off += 40;
-        tcp = (struct tcphdr*)(buf + off);
-        last_tcp = (struct tcphdr*)(last_buf + off);
+        // ver, tc, flow
+        if (memcmp(buf + off, last_buf + off, 4)) {
+            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+                "%s rsc ipv6 not same ver, tc, flow\n", __FUNCTION__));
+            return IONIC_RSC_REPLACE;
+        }
+
+        // validate ip length fields
+        ip_len = ntohs(ipv6->payload_len);
+        if (NET_BUFFER_DATA_LENGTH(nb) - ip_len - ip_hlen - eth_hlen > 64) {
+            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+                "%s bogus nb ipv6 len %lu packet len %lu\n",
+                __FUNCTION__, ip_len, NET_BUFFER_DATA_LENGTH(nb)));
+            return IONIC_RSC_REPLACE;
+        }
+        last_ip_len = ntohs(last_ipv6->payload_len);
+        if (NET_BUFFER_DATA_LENGTH(last_nb) - last_ip_len - ip_hlen - eth_hlen > 64) {
+            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+                "%s bogus nb ipv6 len %lu packet len %lu\n",
+                __FUNCTION__, last_ip_len, NET_BUFFER_DATA_LENGTH(last_nb)));
+            return IONIC_RSC_REPLACE;
+        }
+
+        // truncate any padding after the ip length, when merging the next packet
+        shorten = NET_BUFFER_DATA_LENGTH(last_nb) - last_ip_len - ip_hlen - eth_hlen;
+        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+            "%s first packet pad length %lu\n", __FUNCTION__, shorten));
+
+        // ip payload length of the current packet
+        payload = ip_len;
     } else {
         DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
             "%s rsc not ipv4 or ipv6 BUG\n", __FUNCTION__));
         return IONIC_RSC_IGNORE;
     }
 
-    ip_hlen = off - eth_hlen;
+    // resolve tcp header
+    off += ip_hlen;
+    tcp = (struct tcphdr*)(buf + off);
+    last_tcp = (struct tcphdr*)(last_buf + off);
 
-    // no options, nothing urgent
-    if (tcp->doff != 5 || last_tcp->doff != 5 ||
-        tcp->urg || tcp->urg_ptr || last_tcp->urg || last_tcp->urg_ptr) {
+    // no options
+    if (TCP_DOFF(tcp->flags) != 5 || TCP_DOFF(last_tcp->flags) != 5) {
         DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-            "%s rsc tcp options or urgent\n", __FUNCTION__));
+            "%s rsc tcp options\n", __FUNCTION__));
         return IONIC_RSC_IGNORE;
     }
 
@@ -568,16 +621,57 @@ _ionic_do_rsc(struct qcq *qcq,
     if (memcmp(buf + off, last_buf + off, 4)) {
         DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
             "%s rsc tcp not same ports\n", __FUNCTION__));
+        ++rx_stats->rsc_collide;
         return IONIC_RSC_COLLIDE;
     }
 
+    // these tcp flags must be unset (and ACK must be set)
+    if (((tcp->flags ^ TCP_FLAGS_ACK_LE) & (TCP_FLAGS_RSC_UNSET_LE | TCP_FLAGS_ACK_LE)) != 0) {
+        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+            "%s rsc exception tcp flags exception\n", __FUNCTION__));
+        return IONIC_RSC_REPLACE;
+    }
+    if (((last_tcp->flags ^ TCP_FLAGS_ACK_LE) & (TCP_FLAGS_RSC_UNSET_LE | TCP_FLAGS_ACK_LE)) != 0) {
+        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+            "%s rsc exception tcp flags exception\n", __FUNCTION__));
+        return IONIC_RSC_REPLACE;
+    }
+
+    // these tcp flags must be the same
+    if ((tcp->flags & TCP_FLAGS_RSC_SAME_LE) != (last_tcp->flags & TCP_FLAGS_RSC_SAME_LE)) {
+        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+            "%s rsc exception tcp flags changed\n", __FUNCTION__));
+        return IONIC_RSC_REPLACE;
+    }
+    // and the window must be the same
+    if (tcp->window != last_tcp->window) {
+        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+            "%s rsc exception tcp flags changed\n", __FUNCTION__));
+        return IONIC_RSC_REPLACE;
+    }
+
+    // the tcp header is exactly 20 bytes without options
     off += 20;
     tcp_hlen = 20;
+    // the merged packet will be lengthened by the remainder
+    lengthen = NET_BUFFER_DATA_LENGTH(nb) - off;
+
+    // tcp payload length of the current packet
+    payload -= tcp_hlen;
 
     // next in seq
-    if (ntohl(tcp->seq) != ntohl(last_tcp->seq) + NET_BUFFER_DATA_LENGTH(last_nb) - off) {
+    if (ntohl(tcp->seq) != ntohl(last_tcp->seq) + NET_BUFFER_DATA_LENGTH(last_nb) - off - shorten) {
         DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
             "%s rsc tcp not same seq\n", __FUNCTION__));
+        ++rx_stats->rsc_badseq;
+        return IONIC_RSC_REPLACE;
+    }
+
+    // not a duplicate ack
+    if (ntohl(tcp->ack_seq) == ntohl(last_tcp->ack_seq) && payload == 0) {
+        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+            "%s rsc tcp dup ack\n", __FUNCTION__));
+        ++rx_stats->rsc_dupack;
         return IONIC_RSC_REPLACE;
     }
 
@@ -585,6 +679,7 @@ _ionic_do_rsc(struct qcq *qcq,
     if (ntohl(tcp->ack_seq) - ntohl(last_tcp->ack_seq) >= 0x80000000ul) {
         DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
             "%s rsc tcp invalid ack\n", __FUNCTION__));
+        ++rx_stats->rsc_badack;
         return IONIC_RSC_REPLACE;
     }
 
@@ -592,15 +687,39 @@ _ionic_do_rsc(struct qcq *qcq,
     if (NET_BUFFER_DATA_LENGTH(last_nb) + NET_BUFFER_DATA_LENGTH(nb) >= 0xffff) {
         DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
             "%s rsc max packets already coalesced\n", __FUNCTION__));
+        ++rx_stats->rsc_iplen;
         return IONIC_RSC_REPLACE;
     }
 
-    lengthen = NET_BUFFER_DATA_LENGTH(nb) - off;
+    // XXX: some special cases could be merged, but are avoided for simplicity:
+    //
+    // If the packet to merge doesn't have a payload, then it is simple and
+    // sufficient to only update the packet header.
+    //
+    // If the packet to merge does have a payload, then to avoid changing the
+    // start offset of mdl buffers, bytes are copied from the end of the prior
+    // packet, overwriting the header of the packet to be merged.
+    //
+    // We would need to maintain:
+    //   - ByteCount >= off + shorten:
+    //        The source must have enough bytes to shortened and then copied.
+    //   - In the first mdl, the resulting ByteCount must still be >= off:
+    //        The entire packet header must still be present in the first mdl,
+    //        after shortening and copying bytes to the second mdl.
+    //
+    // For simplicity, treat any last_mdl as if it is the first mdl.  For mdl
+    // other than the first, requiring additional bytes also assures that we
+    // don't end up with a mdl with zero bytes after shortening it.
+    //
+    if (payload != 0 && last_mdl->ByteCount < off + off + shorten) {
+        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+            "%s rsc special case avoided\n", __FUNCTION__));
+        ++rx_stats->rsc_special;
+        return IONIC_RSC_REPLACE;
+    }
 
     // validate and update the IP length field
     if (last_ipv4) {
-        ULONG ipv4_len = 0, last_ipv4_len = 0;
-
         if (NET_BUFFER_LIST_COALESCED_SEG_COUNT(last_nbl) == 0) {
             NDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO csum_info;
             csum_info.Value = NET_BUFFER_LIST_INFO(last_nbl, TcpIpChecksumNetBufferListInfo);
@@ -612,57 +731,13 @@ _ionic_do_rsc(struct qcq *qcq,
                 }
             }
         }
-        ipv4_len = ntohs(ipv4->tot_len);
-        if (NET_BUFFER_DATA_LENGTH(nb) - ipv4_len - eth_hlen > 64) {
-            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-                "%s bogus nb ipv4 len %lu packet len %lu\n",
-                __FUNCTION__, ipv4_len, NET_BUFFER_DATA_LENGTH(nb)));
-            return IONIC_RSC_REPLACE;
-        }
-
-        last_ipv4_len = ntohs(last_ipv4->tot_len);
-        if (NET_BUFFER_DATA_LENGTH(last_nb) - last_ipv4_len - eth_hlen > 64) {
-            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-                "%s bogus nb ipv4 len %lu packet len %lu\n",
-                __FUNCTION__, last_ipv4_len, NET_BUFFER_DATA_LENGTH(last_nb)));
-            return IONIC_RSC_REPLACE;
-        }
-
-        // truncate any padding in the first packet
-        shorten = NET_BUFFER_DATA_LENGTH(last_nb) - last_ipv4_len - eth_hlen;
-        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-            "%s first packet pad length %lu ipv4 len %lu packet len %lu\n",
-            __FUNCTION__, shorten, last_ipv4_len, NET_BUFFER_DATA_LENGTH(last_nb)));
 
         // update ip len with payload to be added
-        last_ipv4->tot_len = htons(last_ipv4_len + ipv4_len - ip_hlen - tcp_hlen);
+        last_ipv4->tot_len = htons(last_ip_len + payload);
     }
     else if (last_ipv6) {
-        ULONG ipv6_len = 0, last_ipv6_len = 0;
-
-        ipv6_len = ntohs(ipv6->payload_len);
-        if (NET_BUFFER_DATA_LENGTH(nb) - ipv6_len - ip_hlen - eth_hlen > 64) {
-            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-                "%s bogus nb ipv6 len %lu packet len %lu\n",
-                __FUNCTION__, ipv6_len, NET_BUFFER_DATA_LENGTH(nb)));
-            return IONIC_RSC_REPLACE;
-        }
-
-        last_ipv6_len = ntohs(last_ipv6->payload_len);
-        if (NET_BUFFER_DATA_LENGTH(last_nb) - last_ipv6_len - ip_hlen - eth_hlen > 64) {
-            DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-                "%s bogus nb ipv6 len %lu packet len %lu\n",
-                __FUNCTION__, last_ipv6_len, NET_BUFFER_DATA_LENGTH(last_nb)));
-            return IONIC_RSC_REPLACE;
-        }
-
-        // truncate any padding in the first packet
-        shorten = NET_BUFFER_DATA_LENGTH(last_nb) - last_ipv6_len - ip_hlen - eth_hlen;
-        DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
-            "%s first packet pad length %lu\n", __FUNCTION__, shorten));
-
         // update ip len with payload to be added
-        last_ipv6->payload_len = htons(last_ipv6_len + ipv6_len - tcp_hlen);
+        last_ipv6->payload_len = htons(last_ip_len + payload);
     }
 
     // YES we will RSC these packets...
@@ -690,8 +765,8 @@ _ionic_do_rsc(struct qcq *qcq,
     ++rx_stats->rsc_packets;
     ++NET_BUFFER_LIST_COALESCED_SEG_COUNT(last_nbl);
 
-    last_tcp->ack = tcp->ack;
- 
+    last_tcp->ack_seq = tcp->ack_seq;
+    last_tcp->flags |= tcp->flags;
 
     pkt = *(struct rxq_pkt**)NET_BUFFER_MINIPORT_RESERVED(nb);
     last_pkt = *(struct rxq_pkt**)NET_BUFFER_MINIPORT_RESERVED(last_nb);
@@ -699,6 +774,11 @@ _ionic_do_rsc(struct qcq *qcq,
     // remember to return rsc'd pkts to the pool
     pkt->rsc_next = last_pkt->rsc_next;
     last_pkt->rsc_next = pkt;
+
+    // if there is no payload, then header update is sufficient
+    if (payload == 0) {
+        return IONIC_RSC_MERGE;
+    }
 
     // append to mdl chain
     if (last_pkt->rsc_last_mdl) {
@@ -734,6 +814,7 @@ _ionic_do_rsc(struct qcq *qcq,
 #else
     // copy end of first packet overwriting header of second packet
 
+    // XXX: some special cases could be merged, but those are avoided above.
     last_mdl->ByteCount -= off;
     memcpy(mdl->StartVa, (char*)last_mdl->StartVa + last_mdl->ByteCount, off);
 

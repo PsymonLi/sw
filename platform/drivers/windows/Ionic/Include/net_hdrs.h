@@ -118,20 +118,41 @@ struct tcphdr {
     u16   dest;
     u32   seq;
     u32   ack_seq;
-    u16   res1 : 4,
-        doff : 4,
-        fin : 1,
-        syn : 1,
-        rst : 1,
-        psh : 1,
-        ack : 1,
-        urg : 1,
-        ece : 1,
-        cwr : 1;
+    u16   flags;
     u16   window;
     u16   check;
     u16   urg_ptr;
 };
+#define TCP_FLAGS_DOFF_LE   0x00f0
+#define TCP_FLAGS_RSVD_LE   0x000e
+#define TCP_FLAGS_NS_LE     0x0001
+#define TCP_FLAGS_CWR_LE    0x8000
+#define TCP_FLAGS_ECE_LE    0x4000
+#define TCP_FLAGS_URG_LE    0x2000
+#define TCP_FLAGS_ACK_LE    0x1000
+#define TCP_FLAGS_PSH_LE    0x0800
+#define TCP_FLAGS_RST_LE    0x0400
+#define TCP_FLAGS_SYN_LE    0x0200
+#define TCP_FLAGS_FIN_LE    0x0100
+
+// These flags must be unset for packets to be merged in rsc
+#define TCP_FLAGS_RSC_UNSET_LE ( \
+        TCP_FLAGS_RSVD_LE      | \
+        TCP_FLAGS_RST_LE       | \
+        TCP_FLAGS_SYN_LE       | \
+        TCP_FLAGS_FIN_LE       | \
+        TCP_FLAGS_URG_LE       )
+
+// These flags must be the same for packets to be merged in rsc
+// Also, the congestion window must be the same.
+#define TCP_FLAGS_RSC_SAME_LE ( \
+        TCP_FLAGS_DOFF_LE     | \
+        TCP_FLAGS_NS_LE       | \
+        TCP_FLAGS_CWR_LE      | \
+        TCP_FLAGS_ECE_LE      )
+
+#define TCP_SHIFT_DOFF_LE   4
+#define TCP_DOFF(flags)     (((flags) & TCP_FLAGS_DOFF_LE) >> TCP_SHIFT_DOFF_LE)
 
 #define IPPROTO_UDP			0x11
 #define IPPROTO_TCP         6

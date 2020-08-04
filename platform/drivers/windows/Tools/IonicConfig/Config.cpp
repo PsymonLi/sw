@@ -313,6 +313,12 @@ DumpRxRingStats(const char *id, struct dev_rx_ring_stats *rx_stats, std::ostream
     _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_packets:\t%I64u\n", id, rx_stats->rsc_packets); outfile << TempBuf;
     _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_events:\t%I64u\n", id, rx_stats->rsc_events); outfile << TempBuf;
     _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_aborts:\t%I64u\n", id, rx_stats->rsc_aborts); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_collide:\t%I64u\n", id, rx_stats->rsc_collide); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_badseq:\t%I64u\n", id, rx_stats->rsc_badseq); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_badack:\t%I64u\n", id, rx_stats->rsc_badack); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_dupack:\t%I64u\n", id, rx_stats->rsc_dupack); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_iplen:\t%I64u\n", id, rx_stats->rsc_iplen); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_special:\t%I64u\n", id, rx_stats->rsc_special); outfile << TempBuf;
 }
 
 DWORD
@@ -396,6 +402,12 @@ DumpDevStats(void *Stats, bool per_queue, std::ostream& outfile)
                 rx_total.rsc_packets += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_packets;
                 rx_total.rsc_events += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_events;
                 rx_total.rsc_aborts += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_aborts;
+                rx_total.rsc_collide += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_collide;
+                rx_total.rsc_badseq += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_badseq;
+                rx_total.rsc_badack += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_badack;
+                rx_total.rsc_dupack += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_dupack;
+                rx_total.rsc_iplen += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_iplen;
+                rx_total.rsc_special += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_special;
             }
             id[0] = 0;
             DumpRxRingStats(id, &rx_total, outfile);

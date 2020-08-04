@@ -147,10 +147,19 @@ struct dev_rx_ring_stats {
 	__le64		csum_tcp_bad;
 	__le64		vlan_stripped;
 
-        __le64          rsc_bytes;
-        __le64          rsc_packets;
-        __le64          rsc_events;
-        __le64          rsc_aborts;
+	// standard rsc counters
+	__le64		rsc_bytes;
+	__le64		rsc_packets;
+	__le64		rsc_events;
+	__le64		rsc_aborts;
+
+	// extra debug rsc counters
+	__le64		rsc_collide;
+	__le64		rsc_badseq;
+	__le64		rsc_badack;
+	__le64		rsc_dupack;
+	__le64		rsc_iplen;
+	__le64		rsc_special;
 
     // stats for perfmon interface
     __le32      pool_packet_count;
