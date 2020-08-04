@@ -44,7 +44,7 @@ var typesMapSmartnic = map[string]*api.Struct{
 	"cluster.DSCControlPlaneStatus": &api.Struct{
 		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(DSCControlPlaneStatus{}) },
 		Fields: map[string]api.Field{
-			"BGPStatus": api.Field{Name: "BGPStatus", CLITag: api.CLIInfo{ID: "bgp-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "bgp-status", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "cluster.PeerStatus"},
+			"BGPStatus": api.Field{Name: "BGPStatus", CLITag: api.CLIInfo{ID: "bgp-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "bgp-status", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "cluster.PeerStatus"},
 		},
 	},
 	"cluster.DSCInfo": &api.Struct{
@@ -194,7 +194,7 @@ var typesMapSmartnic = map[string]*api.Struct{
 
 			"VersionMismatch": api.Field{Name: "VersionMismatch", CLITag: api.CLIInfo{ID: "version-mismatch", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "version-mismatch", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_BOOL"},
 
-			"ControlPlaneStatus": api.Field{Name: "ControlPlaneStatus", CLITag: api.CLIInfo{ID: "control-plane-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "control-plane-status", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "cluster.DSCControlPlaneStatus"},
+			"ControlPlaneStatus": api.Field{Name: "ControlPlaneStatus", CLITag: api.CLIInfo{ID: "control-plane-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "control-plane-status", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "cluster.DSCControlPlaneStatus"},
 
 			"IsConnectedToPSM": api.Field{Name: "IsConnectedToPSM", CLITag: api.CLIInfo{ID: "is-connected-to-psm", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "is-connected-to-psm", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_BOOL"},
 

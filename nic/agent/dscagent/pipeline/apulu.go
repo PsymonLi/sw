@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -2413,12 +2414,18 @@ func (a *ApuluAPI) startAlertPoliciesWatch() {
 	go startAlertPolicyWatcher()
 }
 
+type byBGPPeerIP []cluster.PeerStatus
+
+func (a byBGPPeerIP) Len() int           { return len(a) }
+func (a byBGPPeerIP) Less(i, j int) bool { return a[i].PeerAddress < a[j].PeerAddress }
+func (a byBGPPeerIP) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
 // GetDSCAgentStatus returns the current agent status
 func (a *ApuluAPI) GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus) {
 	req := &halapi.BGPPeerGetRequest{}
 	respMsg, err := a.RoutingClient.BGPPeerGet(context.Background(), req)
 	peerTracker := make(map[string]*cluster.PeerStatus)
-	peers := make([]*cluster.PeerStatus, 0)
+	peers := make([]cluster.PeerStatus, 0)
 	if err == nil && respMsg.ApiStatus == halapi.ApiStatus_API_STATUS_OK {
 		for _, peer := range respMsg.Response {
 			peerStatus := &cluster.PeerStatus{
@@ -2426,7 +2433,6 @@ func (a *ApuluAPI) GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus) {
 				State:       peer.Status.Status.String(),
 				RemoteASN:   peer.Spec.RemoteASN,
 			}
-			peers = append(peers, peerStatus)
 			peerTracker[apuluutils.HalIPToString(peer.Spec.PeerAddr)] = peerStatus
 		}
 	}
@@ -2441,7 +2447,13 @@ func (a *ApuluAPI) GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus) {
 		}
 	}
 
-	status.ControlPlaneStatus = &cluster.DSCControlPlaneStatus{BGPStatus: peers}
+	for _, peer := range peerTracker {
+		sort.Strings(peer.AddressFamilies)
+		peers = append(peers, *peer)
+	}
+
+	sort.Sort(byBGPPeerIP(peers))
+	status.ControlPlaneStatus = cluster.DSCControlPlaneStatus{BGPStatus: peers}
 	status.IsConnectedToVenice = a.InfraAPI.GetConfig().IsConnectedToVenice
 	status.UnhealthyServices = apulu.UnhealthyServices
 }

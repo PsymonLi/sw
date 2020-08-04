@@ -59,9 +59,12 @@ func (p *Pipeline) RunDelphiClient(agent state.Agent) interface{} {
 func (p *Pipeline) GetSysmgrSystemStatus() (string, string) {
 	status := cmd.ConditionStatus_TRUE.String()
 	reason := ""
-	if p.Agent.Nmd.AgentStatus == nil || len(p.Agent.Nmd.AgentStatus.UnhealthyServices) != 0 {
-		status = cmd.ConditionStatus_FALSE.String()
-		reason = "Unhealthy Services"
+	if p.Agent.Nmd != nil {
+		if p.Agent.Nmd.AgentStatus == nil ||
+			(p.Agent.Nmd.AgentStatus.UnhealthyServices != nil && len(p.Agent.Nmd.AgentStatus.UnhealthyServices) != 0) {
+			status = cmd.ConditionStatus_FALSE.String()
+			reason = "Unhealthy Services"
+		}
 	}
 	return status, reason
 }

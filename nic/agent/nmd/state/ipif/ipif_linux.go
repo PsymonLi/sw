@@ -338,7 +338,7 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 
 	d.Hostname = string(opts[dhcp4.OptionHostName])
 
-	renewCtx, renewCancel := context.WithCancel(d.DhcpCtx)
+	renewCtx, renewCancel := context.WithCancel(context.Background())
 	if d.RenewCancel != nil {
 		log.Info("Clearing existing dhcp go routines")
 		d.RenewCancel()
@@ -355,7 +355,7 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 
 	// Start renewal routine
 	// Kick off a renewal process.
-	d.DhcpWaitGroup.Add(1)
+	//d.DhcpWaitGroup.Add(1)
 	go d.startRenewLoop(d.AckPacket, mgmtLink)
 	// Set NMDIPConfig here and then call static assignments
 	log.Infof("YIADDR: %s", d.IPNet.IP.String())
@@ -438,8 +438,8 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 
 func (d *DHCPState) startRenewLoop(ackPacket dhcp4.Packet, mgmtLink netlink.Link) {
 	log.Infof("Starting DHCP renewal loop for interface: %v", mgmtLink.Attrs().Name)
-	defer d.DhcpWaitGroup.Done()
-	ticker := time.NewTicker(d.LeaseDuration)
+	//defer d.DhcpWaitGroup.Done()
+	ticker := time.NewTicker(d.LeaseDuration / 2)
 	for {
 		select {
 		case <-ticker.C:
@@ -447,9 +447,13 @@ func (d *DHCPState) startRenewLoop(ackPacket dhcp4.Packet, mgmtLink netlink.Link
 			if d.PrimaryIntfClient == nil {
 				continue
 			}
-			_, newAck, err := d.PrimaryIntfClient.Renew(ackPacket)
+			renewOk, newAck, err := d.PrimaryIntfClient.Renew(ackPacket)
 			if err != nil {
 				log.Infof("Failed to get the new Ack Packet.  Err: %v | Retrying...", err)
+			} else if !renewOk {
+				log.Infof("Failed to renew the existing IP address. Received DHCP NAK: %v", newAck)
+				//TODO: Handle DHCP IP address change
+				return
 			} else {
 				log.Infof("Renewed Ack Packet: %v. ", newAck)
 				if err := d.updateDHCPState(newAck, mgmtLink); err != nil {

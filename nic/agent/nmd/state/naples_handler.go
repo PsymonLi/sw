@@ -21,6 +21,7 @@ import (
 	"github.com/pensando/sw/nic/agent/nmd/cmdif"
 	"github.com/pensando/sw/nic/agent/nmd/state/ipif"
 	"github.com/pensando/sw/nic/agent/nmd/utils"
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/nmd"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/certs"
@@ -963,10 +964,13 @@ func (n *NMD) SendNICUpdates() error {
 				continue
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
+			var agentStatus *dscagentproto.DSCAgentStatus
+			if n.agentClient != nil {
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
 
-			agentStatus, _ := n.agentClient.GetAgentStatus(ctx, &api.Empty{})
+				agentStatus, _ = n.agentClient.GetAgentStatus(ctx, &api.Empty{})
+			}
 			n.AgentStatus = agentStatus
 
 			// TODO : Get status from platform and fill nic Status

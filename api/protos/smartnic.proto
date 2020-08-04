@@ -183,7 +183,8 @@ message DistributedServiceCardStatus {
     bool VersionMismatch             = 12 [(gogoproto.jsontag) = "version-mismatch,omitempty"];
 
     // DSC Control Plane Status
-    DSCControlPlaneStatus ControlPlaneStatus    = 13 [(gogoproto.jsontag) = "control-plane-status,omitempty"];
+    DSCControlPlaneStatus ControlPlaneStatus    = 13 [(gogoproto.nullable) = false,
+							(gogoproto.jsontag) = "control-plane-status,omitempty"];
 
     // IsConnectedToPSM is set to true if connected to PSM
     bool IsConnectedToPSM		= 14 [(gogoproto.jsontag) = "is-connected-to-psm,omitempty"];
@@ -272,7 +273,8 @@ message BiosInfo {
 
 message DSCControlPlaneStatus {
     // BGPStatus contains the list of BGP peers and their status
-    repeated PeerStatus BGPStatus   = 1 [(gogoproto.jsontag) = "bgp-status,omitempty"];
+    repeated PeerStatus BGPStatus   = 1 [(gogoproto.nullable) = false,
+					(gogoproto.jsontag) = "bgp-status,omitempty"];
 }
 
 message PeerStatus {
