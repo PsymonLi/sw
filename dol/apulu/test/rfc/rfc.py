@@ -11,6 +11,10 @@ def TestCaseSetup(tc):
     tc.AddIgnorePacketField('UDP', 'sport')
     tc.AddIgnorePacketField('UDP', 'chksum')
     tc.AddIgnorePacketField('TCP', 'chksum')
+    tc.AddIgnorePacketField('ICMP', 'chksum')
+    tc.AddIgnorePacketField('ICMP', 'ts_ori')
+    tc.AddIgnorePacketField('ICMP', 'ts_rx')
+    tc.AddIgnorePacketField('ICMP', 'ts_tx')
     return True
 
 def TestCaseTeardown(tc):
