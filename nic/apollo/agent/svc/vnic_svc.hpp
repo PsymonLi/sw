@@ -71,6 +71,7 @@ pds_vnic_api_spec_to_proto (pds::VnicSpec *proto_spec,
     proto_spec->set_maxsessions(api_spec->max_sessions);
     proto_spec->set_flowlearnen(api_spec->flow_learn_en);
     proto_spec->set_meteren(api_spec->meter_en);
+    proto_spec->set_publicmacaddress(MAC_TO_UINT64(api_spec->public_mac_addr));
 }
 
 // populate proto buf status from vnic API status
@@ -204,6 +205,8 @@ pds_vnic_proto_to_api_spec (pds_vnic_spec_t *api_spec,
     api_spec->max_sessions = proto_spec.maxsessions();
     api_spec->flow_learn_en = proto_spec.flowlearnen();
     api_spec->meter_en = proto_spec.meteren();
+    MAC_UINT64_TO_ADDR(api_spec->public_mac_addr,
+                       proto_spec.publicmacaddress());
     return SDK_RET_OK;
 }
 

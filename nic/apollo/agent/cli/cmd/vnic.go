@@ -371,6 +371,8 @@ func printVnicDetail(vnic *pds.Vnic) {
 	fmt.Printf("%-30s    : %s\n", "Vnic Encap", vnicEncapStr)
 	fmt.Printf("%-30s    : %s\n", "MAC address",
 		utils.MactoStr(spec.GetMACAddress()))
+	fmt.Printf("%-30s    : %s\n", "Public MAC address",
+		utils.MactoStr(spec.GetPublicMACAddress()))
 	fmt.Printf("%-30s    : %s\n", "Source Guard", srcGuardStr)
 	fmt.Printf("%-30s    : %s\n", "Fabric Encap", fabricEncapStr)
 	if len(spec.GetRxMirrorSessionId()) != 0 {

@@ -83,6 +83,14 @@ typedef struct pds_vnic_spec_s {
     /// metering enabled, such traffic is accounted (bytes & packets)
     /// against the vnic
     bool     meter_en;
+   /// public_mac_addr, if set, is used to translate the vnic's MAC address;
+   /// in the Tx direction, when vnic sends traffic with its overlay/private MAC
+   /// (mac_addr attribute in this object) as source MAC, it gets NAT-ed to
+   /// public_mac_addr before the packet is put on the wire (or delivered
+   /// locally to another vnic on same DSC) and in the Rx direction when traffic
+   /// is received with destination as public_mac_addr, it gets translated to
+   /// vnic's private MAC address before the packet is delivered to the vnic
+    mac_addr_t public_mac_addr;
 } __PACK__ pds_vnic_spec_t;
 
 /// \brief vnic status

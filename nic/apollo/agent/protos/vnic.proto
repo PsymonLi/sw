@@ -90,6 +90,14 @@ message VnicSpec {
   // if MeterEn is true, when traffic from a vnic hits a route with metering
   // enabled, such traffic is accounted (bytes & packets) against the vnic
   bool            MeterEn               = 23;
+  // PublicMAC, if set, is used to translate the vnic's MAC address;
+  // in the Tx direction, when vnic sends traffic with its private MAC
+  // (MACAddress attribute in this object) as source MAC, it gets NAT-ed to
+  // PublicMACAddress before the packet is put on the wire (or delivered locally
+  // to another vnic on same DSC) and in the Rx direction when traffic is
+  // received with destination as PublicMACAddress, it gets translated to
+  // vnic's private MAC address before the packet is delivered to the vnic
+  uint64          PublicMACAddress      = 24;
 }
 
 // operational status of Vnic, if any
