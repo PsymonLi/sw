@@ -52,6 +52,7 @@ KSRC ?= /lib/modules/$(shell uname -r)/build
 ETH_KOPT += CONFIG_IONIC=m
 ETH_KOPT += CONFIG_IONIC_MNIC=_
 ETH_KOPT += CONFIG_MNET=_
+ETH_KOPT += CONFIG_MNET_UIO_PDRV_GENIRQ=_
 
 KCFLAGS = -Werror
 
