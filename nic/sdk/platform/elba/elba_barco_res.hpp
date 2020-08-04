@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba barco resource headers
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_BARCO_RES_HPP__
 #define __ELBA_BARCO_RES_HPP__

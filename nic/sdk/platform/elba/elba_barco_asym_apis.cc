@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba barco asym APIs
+///
+//----------------------------------------------------------------------------
 
 #include "platform/elba/elba_barco_crypto.hpp"
 #include "platform/elba/elba_barco_res.hpp"

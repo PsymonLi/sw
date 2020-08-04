@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba barco sym APIs
+///
+//----------------------------------------------------------------------------
 
 #include <arpa/inet.h>
 #include "include/sdk/crypto_apis.hpp"

@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba barco crypto handling
+///
+//----------------------------------------------------------------------------
 
 #include <unistd.h>
 #include <string>

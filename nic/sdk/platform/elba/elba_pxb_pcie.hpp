@@ -1,4 +1,12 @@
-//// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba PXB PCIE headers
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_PXB_PCIE_HPP__
 #define __ELBA_PXB_PCIE_HPP__

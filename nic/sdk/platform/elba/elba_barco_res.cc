@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba barco resource handling
+///
+//----------------------------------------------------------------------------
 
 #include "platform/elba/elba_barco_res.hpp"
 #include "platform/utils/mpartition.hpp"

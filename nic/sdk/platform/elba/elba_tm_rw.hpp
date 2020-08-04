@@ -1,8 +1,12 @@
-// {C} Copyright 2018 Pensando Systems Inc. All rights reserved
-/*
- * elba_tm_rw.hpp
- * Vasanth Kumar (Pensando Systems)
- */
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba TM headers
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_TM_RW_HPP__
 #define __ELBA_TM_RW_HPP__

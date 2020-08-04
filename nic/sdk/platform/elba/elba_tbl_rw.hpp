@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba table read/write headers
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_TBL_RW_HPP__
 #define __ELBA_TBL_RW_HPP__
@@ -205,6 +213,8 @@ void elba_program_table_mpu_pc(int tableid, bool gress, int stage,
                                uint64_t elba_table_asm_base);
 
 sdk_ret_t elba_toeplitz_init(const char *handle, int stage, int stage_tableid);
+
+int elba_p4plus_table_init(p4plus_prog_t *prog, platform_type_t platform_type);
 
 sdk_ret_t elba_p4plus_table_init(platform_type_t platform_type,
                                  int stage_apphdr, int stage_tableid_apphdr,

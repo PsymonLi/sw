@@ -1,4 +1,13 @@
-// {C} Copyright 2019 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba initialization
+///
+//----------------------------------------------------------------------------
+
 #include <boost/algorithm/string/predicate.hpp>
 #include "asic/asic.hpp"
 #include "asic/common/asic_init.hpp"
@@ -15,6 +24,7 @@
 #include "platform/elba/elba_common.hpp"
 #include "platform/elba/elba_hbm_rw.hpp"
 #include "platform/elba/elba_tbl_rw.hpp"
+#include "platform/elba/csrint/csr_init.hpp"
 
 #include "third-party/asic/elba/verif/apis/elb_npv_sw_api.h"
 #include "third-party/asic/elba/verif/apis/elb_dpa_sw_api.h"
@@ -32,6 +42,8 @@
 #include "third-party/asic/elba/model/elb_prd/elb_prd_csr.h"
 #include "third-party/asic/elba/model/utils/elb_csr_py_if.h"
 #include "third-party/asic/elba/verif/apis/elb_txs_sw_api.h"
+#include "third-party/asic/elba/model/elb_sema/elb_sema_csr_define.h"
+#include "third-party/asic/elba/verif/apis/elb_ms_sw_api.h"
 
 using namespace sdk::asic;
 
@@ -85,7 +97,7 @@ elba_timer_hbm_init (void)
     uint64_t timer_key_hbm_addr;
     uint64_t zero_data[8] = { 0 };
 
-    timer_key_hbm_base_addr = get_mem_addr(MEM_REGION_TIMERS_NAME);
+    timer_key_hbm_base_addr = elba_get_mem_addr(MEM_REGION_TIMERS_NAME);
     SDK_TRACE_DEBUG("HBM timer key base addr %lx", timer_key_hbm_base_addr);
     timer_key_hbm_addr = timer_key_hbm_base_addr;
     while (timer_key_hbm_addr < timer_key_hbm_base_addr +
@@ -186,7 +198,7 @@ elba_psp_init(void)
     pr_psp_csr.cfg_qstate_map_rsp.addr_shift_enable(0);
     pr_psp_csr.cfg_qstate_map_rsp.addr_shift_value(0);
     pr_psp_csr.cfg_qstate_map_rsp.write();
-    SDK_TRACE_DEBUG("Disabled Qstate address shift for Elba");
+    SDK_TRACE_DEBUG("Disabled Qstate address shift for elba");
 
     return SDK_RET_OK;
 }
@@ -204,7 +216,7 @@ elba_npv_init(void)
     pt_npv_csr.cfg_qstate_map_rsp.addr_shift_enable(0);
     pt_npv_csr.cfg_qstate_map_rsp.addr_shift_value(0);
     pt_npv_csr.cfg_qstate_map_rsp.write();
-    SDK_TRACE_DEBUG("Disabled Qstate address shift for Elba");
+    SDK_TRACE_DEBUG("Disabled Qstate address shift for elba");
 
     return SDK_RET_OK;
 }
@@ -219,7 +231,29 @@ elba_sxdma_psp_init(void)
     pt_npv_csr.cfg_qstate_map_rsp.addr_shift_enable(0);
     pt_npv_csr.cfg_qstate_map_rsp.addr_shift_value(0);
     pt_npv_csr.cfg_qstate_map_rsp.write();
-    SDK_TRACE_DEBUG("Disabled Qstate address shift for Elba sxdma");
+    SDK_TRACE_DEBUG("Disabled Qstate address shift for elba sxdma");
+
+    return SDK_RET_OK;
+}
+
+static sdk_ret_t
+elba_sema_init (void)
+{
+    elb_top_csr_t &cap0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    elb_sema_csr_t &sema_csr = cap0.sema.sema;
+
+    sema_csr.csr_intr.dowstream_enable(0);
+    sema_csr.csr_intr.write();
+    sema_csr.semaphore_raw.entry[ELB_SEMA_CSR_SEMAPHORE_RAW_ENTRY_ARRAY_INDEX_MAX].all(0);
+    sema_csr.semaphore_raw.entry[ELB_SEMA_CSR_SEMAPHORE_RAW_ENTRY_ARRAY_INDEX_MAX].write();
+
+    sema_csr.sema_err.intreg.read();
+    if (sema_csr.sema_err.intreg.all() > 0) {
+        sema_csr.sema_err.intreg.write();
+    }
+
+    enable_all_interrupts(&sema_csr);
+    SDK_TRACE_DEBUG("Initialize sema_raw memory last entry manually.");
 
     return SDK_RET_OK;
 }
@@ -228,7 +262,7 @@ static sdk_ret_t
 elba_repl_init (asic_cfg_t *cfg)
 {
 #ifdef MEM_REGION_MCAST_REPL_NAME
-    uint64_t hbm_repl_table_offset = get_mem_offset(MEM_REGION_MCAST_REPL_NAME);
+    uint64_t hbm_repl_table_offset = elba_get_mem_offset(MEM_REGION_MCAST_REPL_NAME);
     if (hbm_repl_table_offset != INVALID_MEM_ADDRESS) {
         elba_tm_repl_table_base_addr_set(hbm_repl_table_offset /
                                          SDK_ASIC_REPL_ENTRY_WIDTH);
@@ -401,6 +435,45 @@ elba_block_init (asic_cfg_t *cfg)
     return ret;
 }
 
+static sdk_ret_t
+elba_stg_eth_pll_init (asic_cfg_t *cfg)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    int pll_ret = ELB_PLL_SUCCESS;
+
+    SDK_TRACE_DEBUG("Initializing STG PLL, frequency %u", cfg->catalog->p4_clock_freq());
+    SDK_TRACE_DEBUG("Initializing ETH PLL, frequency %u", cfg->catalog->eth_clock_freq());
+
+    if (getenv("ELBA_SKIP_PLL_INIT") != NULL) {
+        return ret;
+    }
+
+    pll_ret = elb_soc_stg_pll_init(0, 0, cfg->catalog->p4_clock_freq());
+
+    if (pll_ret == ELB_PLL_SUCCESS) {
+        SDK_TRACE_DEBUG("STG PLL, frequency %u locked", cfg->catalog->p4_clock_freq());
+    } else if (pll_ret == ELB_PLL_INCORRECT_FREQ) {
+        SDK_TRACE_ERR("Unsupported P4/STG frequency %u", cfg->catalog->p4_clock_freq());
+        ret = SDK_RET_ERR;
+    } else if (pll_ret == ELB_PLL_LOCK_FAILED) {
+        SDK_TRACE_ERR("PLL P4/STG @ frequency %u did not lock", cfg->catalog->p4_clock_freq());
+        ret = SDK_RET_ERR;
+    }
+
+    pll_ret = elb_mm_eth_pll_init(0, 0, cfg->catalog->eth_clock_freq());
+
+    if (pll_ret == ELB_PLL_SUCCESS) {
+        SDK_TRACE_DEBUG("ethernet PLL, frequency %u locked", cfg->catalog->eth_clock_freq());
+    } else if (pll_ret == ELB_PLL_INCORRECT_FREQ) {
+        SDK_TRACE_ERR("Unsupported ethernet PLL frequency %u", cfg->catalog->eth_clock_freq());
+        ret = SDK_RET_ERR;
+    } else if (pll_ret == ELB_PLL_LOCK_FAILED) {
+        SDK_TRACE_ERR("PLL ethernet PLL @ frequency %u did not lock", cfg->catalog->eth_clock_freq());
+        ret = SDK_RET_ERR;
+    }
+    return ret;
+}
+
 //------------------------------------------------------------------------------
 // perform all the ELBA specific initialization
 // - link all the P4 programs, by resolving symbols, labels etc.
@@ -418,40 +491,45 @@ elba_init (asic_cfg_t *cfg)
     char *tm_binary_init = getenv("ELBA_TM_BINARY_INIT");
 
     SDK_ASSERT_TRACE_RETURN((cfg != NULL), SDK_RET_INVALID_ARG, "Invalid cfg");
-    SDK_TRACE_DEBUG("Initializing Elba");
+    SDK_TRACE_DEBUG("Initializing elba");
+
+    csr_init();
+    ret = elba_stg_eth_pll_init(cfg);
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                            "elba eth PLL init failure, err %u", ret);
 
     ret = elba_state_pd_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "elba_state_pd_init failure, err : %d", ret);
+                            "elba state PD instance init failure, err %u", ret);
 
     ret = elba_table_rw_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "elba_table_rw_init failure, err : %d", ret);
+                            "elba table rw init failure, err %u", ret);
 
     ret = sdk::asic::asic_hbm_regions_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba HBM region init failure, err : %d", ret);
+                            "elba HBM region init failure, err %u", ret);
 
     ret = elba_timer_hbm_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba HBM timer init failure, err : %d", ret);
+                            "elba HBM timer init failure, err %u", ret);
 
     ret = elba_block_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba block region init failure, err : %d", ret);
+                            "elba block region init failure, err %u", ret);
 
     ret = elba_cache_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba cache init failure, err : %d", ret);
+                            "elba cache init failure, err %u", ret);
 
     // do asic init before overwriting with the default configs
     ret = elba_tm_asic_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba TM ASIC init failure, err : %d", ret);
+                            "elba TM ASIC init failure, err %u", ret);
 
     ret = elba_txs_scheduler_init(cfg->admin_cos, cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                             "Elba scheduler init failure, err : %d", ret);
+                            "elba scheduler init failure, err %u", ret);
 
     // Init the LIF/QOS-GROUP/Scheduler tabels for default: 512 LIFS,
     // 8 COSs, each map to unique QGroup with 2K QIDs
@@ -460,7 +538,7 @@ elba_init (asic_cfg_t *cfg)
     elb_txs_cfg_sch_qgrp_tab(0, 0, 512, 0xff, 1, 4,
                              sizeof(sxdma_lifs)/sizeof(sxdma_lifs[0]),
                              sxdma_lifs);
-    SDK_TRACE_DEBUG("Elba scheduler init Done");
+    SDK_TRACE_DEBUG("elba scheduler init Done");
 #endif
 
     // Call PXB/PCIE init only in MODEL and RTL simulation
@@ -469,40 +547,40 @@ elba_init (asic_cfg_t *cfg)
         cfg->platform == platform_type_t::PLATFORM_TYPE_RTL) {
         ret = elba_pxb_pcie_init();
         SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                                "PXB/PCIE init failure, err : %d", ret);
+                                "PXB/PCIE init failure, err %u", ret);
     }
 
-    if(tm_binary_init) {
-      SDK_TRACE_DEBUG("Elba TM Binary Init ");
-      ret = elba_default_config_init(cfg);
-      SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba default config init failure, err: %d", ret);
+    if (tm_binary_init) {
+        SDK_TRACE_DEBUG("elba TM Binary Init ");
+        ret = elba_default_config_init(cfg);
+        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                "elba default config init failure, err %u", ret);
 
     } /* else */ {
-      SDK_TRACE_DEBUG("Elba TM Real Init ");
-      ret = elba_tm_init(cfg->catalog,
-                       &cfg->device_profile->qos_profile);
-      SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba TM init failure, err : %d", ret);
+        SDK_TRACE_DEBUG("elba TM Real Init ");
+        ret = elba_tm_init(cfg->catalog,
+                &cfg->device_profile->qos_profile);
+        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                "elba TM init failure, err %u", ret);
 #if 0
-      /* TBD-ELBA-REBASE */
-      ret = elba_pf_init();
-      SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-        "Error intializing pbc ret %d", ret);
+        /* TBD-ELBA-REBASE */
+        ret = elba_pf_init();
+        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                "Error intializing pbc err %u", ret);
 
-      ret = elba_tm_port_program_uplink_byte_count();
-      SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba TM port program defaults, err : %d", ret);
+        ret = elba_tm_port_program_uplink_byte_count();
+        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                "elba TM port program defaults, err %u", ret);
 #endif
     }
     ret = elba_repl_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba replication init failure, err : %d", ret);
+                            "elba replication init failure, err %u", ret);
 
-    if(cfg->platform != platform_type_t::PLATFORM_TYPE_HAPS) {
-      ret = elba_barco_crypto_init(cfg->platform);
-      SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba barco crypto init failure, err : %d", ret);
+    if (cfg->platform != platform_type_t::PLATFORM_TYPE_HAPS) {
+        ret = elba_barco_crypto_init(cfg->platform);
+        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                                "elba barco crypto init failure, err %u", ret);
     }
 
 #if 0
@@ -516,30 +594,34 @@ elba_init (asic_cfg_t *cfg)
 
     ret = elba_quiesce_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba quiesce init failure, err : %d", ret);
+                            "elba quiesce init failure, err %u", ret);
 
     ret = elba_prd_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba PRD init failure, err : %d", ret);
+                            "elba PRD init failure, err %u", ret);
     ret = elba_psp_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba PSP init failure, err : %d", ret);
+                            "elba PSP init failure, err %u", ret);
 
     ret = elba_npv_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba NPV init failure, err : %d", ret);
+                            "elba NPV init failure, err %u", ret);
 
     ret = elba_sxdma_psp_init();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba sxdma psp init failure, err : %d", ret);
+                            "elba sxdma psp init failure, err %u", ret);
+
+    ret = elba_sema_init();
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                            "elba sema init failure, err %u", ret);
 
     ret = elba_te_enable_capri_mode();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                 "Elba enable capri mode failure, err : %d", ret);
+                            "elba enable capri mode failure, err %u", ret);
 
     ret = elba_ipsec_inline_enable();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                 "Elba enable ipsec_inline failure, err : %d", ret);
+                            "elba enable ipsec_inline failure, err %u", ret);
 
 #if 0   /* TBD-ELBA-REBASE: */
 #ifndef ELEKTRA
@@ -550,7 +632,7 @@ elba_init (asic_cfg_t *cfg)
         ret = SDK_RET_OK;
     }
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                 "Elba Barco initialization failure, err : %d", ret);
+                            "elba Barco initialization failure, err %u", ret);
 #endif
 #endif
 
@@ -591,6 +673,6 @@ elba_host_dbaddr (void)
     return ELB_WA_CSR_DHS_HOST_DOORBELL_BYTE_ADDRESS;
 }
 
-} // namespace elba
-} // namespace platform
-} // namespace sdk
+}   // namespace elba
+}   // namespace platform
+}   // namespace sdk

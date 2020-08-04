@@ -27,26 +27,26 @@ elba_soft_init (asic_cfg_t *cfg)
     bool         asm_write_to_mem = false;
 
     SDK_ASSERT_TRACE_RETURN((cfg != NULL), SDK_RET_INVALID_ARG, "Invalid cfg");
-    SDK_TRACE_DEBUG("Initializing Elba");
+    SDK_TRACE_DEBUG("Initializing elba");
 
     ret = sdk::platform::elba::elba_state_pd_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "elba_state_pd_init failure, err : %d", ret);
+                            "elba_state_pd_init failure, err %u", ret);
 
     ret = elba_table_rw_soft_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "elba_tbl_rw_init failure, err : %d", ret);
+                            "elba_tbl_rw_init failure, err %u", ret);
 
     // just populate the program info. don't write to the memory
     ret = sdk::asic::asic_asm_init(cfg, asm_write_to_mem);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba ASM init failure, err : %d", ret);
+                            "elba ASM init failure, err %u", ret);
     // initialize the profiles for elba register accesses by
     // other modules (link manager).
     ret = elba_tm_soft_init(cfg->catalog,
                              &cfg->device_profile->qos_profile);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                            "Elba TM Slave init failure, err : %d", ret);
+                            "elba TM Slave init failure, err %u", ret);
 
     if (cfg->completion_func) {
         cfg->completion_func(sdk::SDK_STATUS_ASIC_INIT_DONE);

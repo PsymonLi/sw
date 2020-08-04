@@ -1,3 +1,13 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// FIPS asym API's
+///
+//----------------------------------------------------------------------------
+
 #include <openssl/ssl.h>
 #include <openssl/rsa.h>
 #include <openssl/bn.h>

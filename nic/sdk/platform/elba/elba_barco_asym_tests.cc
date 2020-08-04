@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba barco asym tests
+///
+//----------------------------------------------------------------------------
 
 #include "include/sdk/base.hpp"
 #include "platform/elba/elba_barco_asym_apis.hpp"

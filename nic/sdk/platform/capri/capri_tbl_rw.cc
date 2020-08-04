@@ -1913,7 +1913,7 @@ capri_hbm_table_entry_write (uint32_t tableid, uint32_t index,
 {
     mem_addr_t entry_start_addr, addr;
 
-    time_profile_begin(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_WRITE);
+    time_profile_begin(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_WRITE);
     assert((entry_size >> 3) <= entry_width);
     assert(index < tbl_info->tabledepth);
     entry_start_addr = (index * entry_width);
@@ -1932,7 +1932,7 @@ capri_hbm_table_entry_write (uint32_t tableid, uint32_t index,
             entry_start_addr;
         sdk::asic::asic_mem_write(addr, hwentry, (entry_size >> 3));
     }
-    time_profile_end(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_WRITE);
+    time_profile_end(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_WRITE);
     return CAPRI_OK;
 }
 
@@ -1972,7 +1972,7 @@ capri_hbm_table_entry_cache_invalidate (p4pd_table_cache_t cache,
     if (cache == P4_TBL_CACHE_NONE) {
         return CAPRI_OK;
     }
-    time_profile_begin(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_CACHE_INVALIDATE);
+    time_profile_begin(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_CACHE_INVALIDATE);
     uint64_t addr = (base_mem_pa + entry_addr);
     if (cache & (P4_TBL_CACHE_INGRESS | P4_TBL_CACHE_EGRESS)) {
         p4_invalidate_cache(addr, entry_width, cache);
@@ -1991,7 +1991,7 @@ capri_hbm_table_entry_cache_invalidate (p4pd_table_cache_t cache,
     } else {
         SDK_ASSERT(cache);
     }
-    time_profile_end(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_CACHE_INVALIDATE);
+    time_profile_end(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_CACHE_INVALIDATE);
     return CAPRI_OK;
 }
 

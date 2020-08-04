@@ -1,4 +1,12 @@
-// {C} Copyright 2018 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba hbm handling
+///
+//----------------------------------------------------------------------------
 
 #include <unistd.h>
 #include <iostream>
@@ -23,59 +31,33 @@ namespace elba {
 
 static uint32_t elba_freq = 0;
 
-static inline sdk_ret_t
-elb_nx_block_write (uint32_t chip, uint64_t addr, int size,
-                    uint32_t *data_in , bool no_zero_time, uint32_t flags)
-{
-    return sdk::asic::asic_reg_write(addr, data_in, 1,
-                                        ASIC_WRITE_MODE_BLOCKING);
-}
-
-static inline uint32_t
-elb_nx_block_read (uint32_t chip, uint64_t addr, int size,
-                   bool no_zero_time, uint32_t flags)
-{
-    uint32_t data = 0x0;
-    if (sdk::asic::asic_reg_read(addr, &data, 1, false /*read_thru*/) !=
-                                 SDK_RET_OK) {
-        SDK_TRACE_ERR("NX read failed. addr: %lx", addr);
-    }
-
-    return data;
-}
-
 unsigned int
-elb_nx_read_pb_axi_cnt (int rd)
-{ // 1=>rd , 0=> wr
-    return 0;   /* TBD-ELBA-REBASE: TOT diverged?? */
-}
-
-mem_addr_t
-get_mem_base (void)
+elba_nx_read_pb_axi_cnt (int rd)
 {
-    return g_elba_state_pd->mempartition()->base();
+    // 1=>rd , 0=> wr
+    return 0;
 }
 
 mem_addr_t
-get_mem_offset (const char *reg_name)
+elba_get_mem_offset (const char *reg_name)
 {
     return g_elba_state_pd->mempartition()->start_offset(reg_name);
 }
 
 mem_addr_t
-get_mem_addr (const char *reg_name)
+elba_get_mem_addr (const char *reg_name)
 {
     return g_elba_state_pd->mempartition()->start_addr(reg_name);
 }
 
 uint32_t
-get_mem_size_kb (const char *reg_name)
+elba_get_mem_size_kb (const char *reg_name)
 {
     return (g_elba_state_pd->mempartition()->size(reg_name) >> 10 );
 }
 
 mpartition_region_t *
-get_hbm_region (char *reg_name)
+elba_get_hbm_region (char *reg_name)
 {
     return g_elba_state_pd->mempartition()->region(reg_name);
 }
@@ -147,30 +129,31 @@ sdk_ret_t
 elba_hbm_cache_program_region (mpartition_region_t *reg, uint32_t inst_id,
                                uint32_t filter_idx, bool slave, bool master)
 {
-    if(getenv("NO_INVF_FILTER"))
-        return SDK_RET_OK;
+    if (!getenv("NO_INVF_FILTER")) {
+        elb_pics_csr_t & pics_csr = ELB_BLK_REG_MODEL_ACCESS(elb_pics_csr_t, 0,
+                inst_id);
+        pics_csr.p4invf.filter_addr_lo.data[filter_idx].read();
+        // 28 MSB bits only
+        pics_csr.p4invf.filter_addr_lo.data[filter_idx].value(
+                g_elba_state_pd->mempartition()->addr(reg->start_offset) >> 6);
+        pics_csr.p4invf.filter_addr_lo.data[filter_idx].write();
 
-   if(!getenv("NO_INVF_FILTER")) {
-    elb_pics_csr_t & pics_csr = ELB_BLK_REG_MODEL_ACCESS(elb_pics_csr_t, 0, inst_id);
-    pics_csr.p4invf.filter_addr_lo.data[filter_idx].read();
-    pics_csr.p4invf.filter_addr_lo.data[filter_idx].value(g_elba_state_pd->mempartition()->addr(reg->start_offset) >> 6); //28 MSB bits only
-    pics_csr.p4invf.filter_addr_lo.data[filter_idx].write();
+        pics_csr.p4invf.filter_addr_hi.data[filter_idx].read();
+        pics_csr.p4invf.filter_addr_hi.data[filter_idx].value((
+                    g_elba_state_pd->mempartition()->addr(reg->start_offset) +
+                    (reg->size)) >> 6);
+        pics_csr.p4invf.filter_addr_hi.data[filter_idx].write();
+        pics_csr.p4invf.filter_addr_ctl.value[filter_idx].read();
+        pics_csr.p4invf.filter_addr_ctl.value[filter_idx].valid(1);
+        pics_csr.p4invf.filter_addr_ctl.value[filter_idx].inval_send(1);
+        pics_csr.p4invf.filter_addr_ctl.value[filter_idx].inval_receive(1);
+        pics_csr.p4invf.filter_addr_ctl.value[filter_idx].use_cache(1);
+        pics_csr.p4invf.filter_addr_ctl.value[filter_idx].read_access(1);
+        pics_csr.p4invf.filter_addr_ctl.value[filter_idx].write_access(1);
+        pics_csr.p4invf.filter_addr_ctl.value[filter_idx].write();
+    }
 
-    pics_csr.p4invf.filter_addr_hi.data[filter_idx].read();
-    pics_csr.p4invf.filter_addr_hi.data[filter_idx].value((g_elba_state_pd->mempartition()->addr(reg->start_offset) +
-                                                 (reg->size)) >> 6);
-    pics_csr.p4invf.filter_addr_hi.data[filter_idx].write();
-    pics_csr.p4invf.filter_addr_ctl.value[filter_idx].read();
-    pics_csr.p4invf.filter_addr_ctl.value[filter_idx].valid(1);
-    pics_csr.p4invf.filter_addr_ctl.value[filter_idx].inval_send(1);
-    pics_csr.p4invf.filter_addr_ctl.value[filter_idx].inval_receive(1);
-    pics_csr.p4invf.filter_addr_ctl.value[filter_idx].use_cache(1);
-    pics_csr.p4invf.filter_addr_ctl.value[filter_idx].read_access(1);
-    pics_csr.p4invf.filter_addr_ctl.value[filter_idx].write_access(1);
-    pics_csr.p4invf.filter_addr_ctl.value[filter_idx].write();
-   }
-
-   return SDK_RET_OK;
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
@@ -506,7 +489,7 @@ elba_hbm_bw (uint32_t samples, uint32_t u_sleep, bool ms_pcie,
         hbm_bw->type = asic_block_t::ASIC_BLOCK_PACKET_BUFFER;
         hbm_bw->clk_diff = clk_diff;
         rd_cnt = elba_pb_axi_read_cnt();
-        wr_cnt = elb_nx_read_pb_axi_cnt(0);
+        wr_cnt = elba_nx_read_pb_axi_cnt(0);
 
         // avoid arithmetic exceptions
         if (cycle_per_nsec != 0) {

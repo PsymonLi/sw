@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba quiesce headers
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_QUIESCE_HPP__
 #define __ELBA_QUIESCE_HPP__

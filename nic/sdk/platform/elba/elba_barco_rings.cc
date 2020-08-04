@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba barco rings handling
+///
+//----------------------------------------------------------------------------
 
 #include "gen/proto/types.pb.h"
 #include "platform/elba/elba_barco_rings.hpp"
@@ -358,7 +366,7 @@ elba_barco_ring_common_init (elba_barco_ring_t *barco_ring)
     uint64_t                            ring_base = 0;
     uint32_t                            ring_size = 0;
 
-    ring_base = get_mem_addr(barco_ring->hbm_region);
+    ring_base = elba_get_mem_addr(barco_ring->hbm_region);
     if (ring_base == INVALID_MEM_ADDRESS) {
         SDK_TRACE_ERR("Failed to retrieve Barco Ring memory region for %s",
                       barco_ring->ring_name);
@@ -371,7 +379,7 @@ elba_barco_ring_common_init (elba_barco_ring_t *barco_ring)
         return SDK_RET_ERR;
     }
 
-    ring_size = get_mem_size_kb(barco_ring->hbm_region) * 1024;
+    ring_size = elba_get_mem_size_kb(barco_ring->hbm_region) * 1024;
     if (ring_size < (uint32_t)(barco_ring->ring_size * barco_ring->descriptor_size)) {
         SDK_TRACE_ERR("Not enough memory for Barco Ring memory region %s",
                       barco_ring->ring_name);
@@ -558,13 +566,13 @@ elba_barco_xts0_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = get_mem_addr(key_desc_array);
+    key_array_base = elba_get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
     /* Sanity check that we have enough memory to support the keys scale needed */
     assert(key_array_key_count >= CRYPTO_KEY_COUNT_MAX);
@@ -664,13 +672,13 @@ elba_barco_xts1_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = get_mem_addr(key_desc_array);
+    key_array_base = elba_get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
     /* Sanity check that we have enough memory to support the keys scale needed */
     assert(key_array_key_count >= CRYPTO_KEY_COUNT_MAX);
@@ -770,13 +778,13 @@ elba_barco_mpp0_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = get_mem_addr(key_desc_array);
+    key_array_base = elba_get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
 
     mpse.dhs_crypto_ctl.mpp0_key_array_base_w0.fld(key_array_base & 0xffffffff);
@@ -956,13 +964,13 @@ elba_barco_mpp1_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = get_mem_addr(key_desc_array);
+    key_array_base = elba_get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
 
     mpse.dhs_crypto_ctl.mpp1_key_array_base_w0.fld(key_array_base & 0xffffffff);
@@ -1052,13 +1060,13 @@ elba_barco_mpp2_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = get_mem_addr(key_desc_array);
+    key_array_base = elba_get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
 
     mpse.dhs_crypto_ctl.mpp2_key_array_base_w0.fld(key_array_base & 0xffffffff);
@@ -1148,13 +1156,13 @@ elba_barco_mpp3_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = get_mem_addr(key_desc_array);
+    key_array_base = elba_get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
 
     mpse.dhs_crypto_ctl.mpp3_key_array_base_w0.fld(key_array_base & 0xffffffff);
@@ -1244,13 +1252,13 @@ elba_barco_sym0_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = get_mem_addr(key_desc_array);
+    key_array_base = elba_get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
     /* Sanity check that we have enough memory to support the keys scale needed */
     assert(key_array_key_count >= CRYPTO_KEY_COUNT_MAX);
@@ -1425,13 +1433,13 @@ elba_barco_sym1_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = get_mem_addr(key_desc_array);
+    key_array_base = elba_get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
     /* Sanity check that we have enough memory to support the keys scale needed */
     assert(key_array_key_count >= CRYPTO_KEY_COUNT_MAX);

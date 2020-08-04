@@ -78,6 +78,7 @@ os.environ["PKG_CONFIG_PATH"] = "/usr/local/lib/pkgconfig"
 #Path and executables
 bin_dir = nic_dir + '/build/x86_64/iris/' + asic + '/bin/'
 if asic == 'elba':
+    os.environ["ELBA_SKIP_PLL_INIT"] = "1"
     model_name = "elb_model"
 else:
     model_name = "cap_model"
@@ -170,20 +171,19 @@ def run_rtl(args):
     if args.test_suf:
         model_log = nic_dir + "/logs_%s/model.log" % args.test_suf
     log = open(model_log, "w")
-    asic_src = os.getcwd() + "/asic"
-    os.environ["ASIC_SRC"] = asic_src
-    os.environ["LD_LIBRARY_PATH"] = ".:../libs:/usr/local/lib:/usr/local/lib64:" + os.getcwd() + "/asic/capri/model/capsim-gen/lib:/home/asic/bin/tools/lib64"
-    os.environ["PATH"] = os.getcwd() + "/asic/common/tools/bin" + ":" + os.environ["PATH"]
 
-    if args.port_mode == 'nomac':
-        model_test = "core_basic_dol_2x100_ahbm"
-    elif args.port_mode == '2x100':
-        model_test = "core_basic_dol_2x100"
-    elif args.port_mode == '8x25':
-        model_test = "core_basic_dol_8x25"
+    if asic == 'elba':
+        model_test = "core_basic_dol_ddr_no_mx"
     else:
-        print "Unknown port_mode", args.port_mode
-        sys.exit(1)
+        if args.port_mode == 'nomac':
+            model_test = "core_basic_dol_2x100_ahbm"
+        elif args.port_mode == '2x100':
+            model_test = "core_basic_dol_2x100"
+        elif args.port_mode == '8x25':
+            model_test = "core_basic_dol_8x25"
+        else:
+            print "Unknown port_mode", args.port_mode
+            sys.exit(1)
 
     coverage_opts = []
     if args.rtl_coverage:
@@ -197,15 +197,12 @@ def run_rtl(args):
         flow_stat_tbl_base += 0x4
     if not args.skipverify:
         one_pkt_mode = "+dol_one_pkt_mode=1 +save_rtl_pkts=1"
-    model_cmd = [ 'runtest', '-ngrid', '-test', model_test, '-run_args', ' %s  +flow_stat_tbl_base=%s +dol_poll_time=5 +dump_axi +pcie_all_lif_valid=1 +UVM_VERBOSITY=UVM_MEDIUM +fill_pattern=0 +te_dbg +plog=info +mem_verbose +verbose +PLOG_MAX_QUIT_COUNT=100 +top_sb/initial_timeout_ns=60000 %s ' % (one_pkt_mode, flow_stat_tbl_base, args.runtest_runargs) ] + coverage_opts
-    if args.noverilog:
-        model_cmd = model_cmd + ['-ro']
+    model_cmd = [ os.getcwd() + '/asic_gen/' + asic + '/verif/top/env/sim/runtest.sh', ' %s  +flow_stat_tbl_base=%s +dol_poll_time=5 +dump_axi +pcie_all_lif_valid=1 +UVM_VERBOSITY=UVM_MEDIUM +fill_pattern=0 +te_dbg +plog=info +mem_verbose +verbose +PLOG_MAX_QUIT_COUNT=100 +top_sb/initial_timeout_ns=60000 %s ' % (one_pkt_mode, flow_stat_tbl_base, args.runtest_runargs) ] + coverage_opts
     if not args.no_asic_dump:
-        model_cmd = model_cmd + [ '-ucli', 'ucli_core' ]
-    if args.test_suf:
-        model_cmd = model_cmd + ['-test_suf', args.test_suf ]
-    print os.getcwd() + "/asic/capri/verif/top/env"
-    p = Popen(model_cmd, stdout=log, stderr=log, cwd = os.getcwd() + "/asic/capri/verif/top/env")
+        model_cmd = model_cmd + [ '+vpd' ]
+    os.system("mkdir -p " + model_test)
+    p = Popen(model_cmd, stdout=log, stderr=log, cwd = os.getcwd() + '/' + model_test)
+
     print "* Starting ASIC rtl: pid (" + str(p.pid) + ")"
     print "- Log file: " + model_log + "\n"
 
@@ -414,7 +411,7 @@ def run_hal(args):
     global hal_log
     global bin_dir
     jsonfile = 'hal.json'
-    if args.rtl:
+    if args.rtl and (asic != 'elba'):
         jsonfile = 'hal_rtl.json'
     if args.gft:
         bin_dir = nic_dir + '/build/x86_64/gft/' + asic + '/bin/'

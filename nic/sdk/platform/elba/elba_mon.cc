@@ -1,4 +1,13 @@
-// {C} Copyright 2019 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elbamon APIs
+///
+//----------------------------------------------------------------------------
+
 
 /*
  * elba_mon.cc
@@ -72,6 +81,6 @@ elba_set_half_clock (int chip_id, int inst_id)
     return ;
 }
 
-} // namespace elba
-} // namespace platform
-} // namespace sdk
+}   // namespace elba
+}   // namespace platform
+}   // namespace sdk

@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba table Read/Write API's
+///
+//----------------------------------------------------------------------------
 
 #include <map>
 #include "asic/common/asic_common.hpp"
@@ -6,6 +14,7 @@
 #include "lib/p4/p4_api.hpp"
 #include "lib/pal/pal.hpp"
 #include "platform/pal/include/pal.h"
+#include "lib/utils/time_profile.hpp"
 #include "platform/elba/elba_tbl_rw.hpp"
 #include "platform/elba/csrint/csr_init.hpp"
 #include "platform/elba/elba_hbm_rw.hpp"
@@ -53,28 +62,28 @@ static uint32_t *csr_cache_inval_rxdma_va;
 
 typedef int elba_error_t;
 
-//  Design decisions + Table Update Flow:
+// design decisions + table update flow:
 //
-//  Maintain Shadow memory for SRAM and TCAM Units.
+// maintain shadow memory for SRAM and TCAM units.
 //
-//   1.  Shadow memory maintained in ARM memory will be mirror representation
-//       of how elba TCAM/SRAM addressing is done. This implies
-//       uint8_t ram_row[10 blocks * 16 bytes]. 4k such rows will be created.
+// 1.  Shadow memory maintained in ARM memory will be mirror representation
+//     of how elba TCAM/SRAM addressing is done. This implies
+//     uint8_t ram_row[10 blocks * 16 bytes]. 4k such rows will be created.
 //
-//   2.  To start with there will be single lock to protect updates to shadow
-//       memory (if HAL updates can come from multiple threads)
-//       To improve update performance and avoid lock contention, 4K rows
-//       can be divided into zones and one lock per zone can be maintained.
+// 2.  To start with there will be single lock to protect updates to shadow
+//     memory (if HAL updates can come from multiple threads)
+//     To improve update performance and avoid lock contention, 4K rows
+//     can be divided into zones and one lock per zone can be maintained.
 //
-//   3. Using table property API provided by p4pd_api, start block, start
-//      row, and number of buckets (number of table entries within
-//      a single row) are obtained.
+// 3. Using table property API provided by p4pd_api, start block, start
+//    row, and number of buckets (number of table entries within
+//    a single row) are obtained.
 //
-//   4. Using index (at which table entry need to be written to or read from)
-//      row#, one or more blocks#, and start word# in first block,
-//      end word# in last block are computed.
+// 4. Using index (at which table entry need to be written to or read from)
+//    row#, one or more blocks#, and start word# in first block,
+//    end word# in last block are computed.
 //
-//   5. Read + modify of the relevant blocks and push those blocks to Capri
+// 5. Read + modify of the relevant blocks and push those blocks to Capri
 //
 //
 
@@ -124,13 +133,13 @@ typedef int elba_error_t;
 #define ELBA_TABLE_PROFILE_COUNT     (16)
 
 typedef struct elba_sram_shadow_mem_ {
-    uint8_t zones;          // Using entire memory as one zone.
+    uint8_t zones;          // using entire memory as one zone.
                             // TBD: carve into multiple zones
                             // to reduce access/update contention
 
     //pthread_mutex_t mutex; // TBD: when its decided to make HAL thread safe
 
-    // Since writes/read access to SRAM are in done in units of block
+    // since writes/read access to SRAM are in done in units of block
     // a three dim array is maintained
     // Since word width is 16bits, uint16_t is used. A table entry starts at 16b
     // boundary
@@ -139,7 +148,7 @@ typedef struct elba_sram_shadow_mem_ {
 } elba_sram_shadow_mem_t;
 
 typedef struct elba_tcam_shadow_mem_ {
-    uint8_t zones;          // Using entire memory as one zone.
+    uint8_t zones;          // using entire memory as one zone.
                             // TBD: carve into multiple zones
                             // to reduce access/update contention
 
@@ -176,7 +185,7 @@ get_sram_shadow_for_table (uint32_t tableid, int gress)
 // HBM base address in System memory map; Cached once at the init time
 static uint64_t hbm_mem_base_addr;
 
-// Store action pc for every action of the table.
+// store action pc for every action of the table.
 static uint64_t elba_action_asm_base[P4TBL_ID_MAX][P4TBL_MAX_ACTIONS];
 static uint64_t elba_action_rxdma_asm_base[P4TBL_ID_MAX][P4TBL_MAX_ACTIONS];
 static uint64_t elba_action_txdma_asm_base[P4TBL_ID_MAX][P4TBL_MAX_ACTIONS];
@@ -195,7 +204,7 @@ elba_program_table_mpu_pc (int tableid, bool ingress, int stage,
                            uint64_t elba_table_asm_err_offset,
                            uint64_t elba_table_asm_base)
 {
-    // Program table base address into elba TE
+    // program table base address into elba TE
     elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     assert(stage_tableid < 16);
     SDK_TRACE_DEBUG("====Stage: %d Tbl_id: %u, Stg_Tbl_id %u, Tbl base: 0x%lx Err pc: 0x%lx==",
@@ -203,14 +212,14 @@ elba_program_table_mpu_pc (int tableid, bool ingress, int stage,
                     elba_table_asm_base, elba_table_asm_err_offset);
     if (ingress) {
         elb_te_csr_t &te_csr = elb0.sgi.te[stage];
-        // Push to HW/Capri from entry_start_block to block
+        // push to HW/Capri from entry_start_block to block
         te_csr.cfg_table_property[stage_tableid].read();
         te_csr.cfg_table_property[stage_tableid]
                 .mpu_pc(((elba_table_asm_base) >> 6));
         te_csr.cfg_table_property[stage_tableid].write();
     } else {
         elb_te_csr_t &te_csr = elb0.sge.te[stage];
-        // Push to HW/Capri from entry_start_block to block
+        // push to HW/Capri from entry_start_block to block
         te_csr.cfg_table_property[stage_tableid].read();
         te_csr.cfg_table_property[stage_tableid]
                 .mpu_pc(((elba_table_asm_base) >> 6));
@@ -240,7 +249,7 @@ elba_program_hbm_table_base_addr (int tableid, int stage_tableid,
     }
 
     assert(stage_tableid < 16);
-    start_offset = get_mem_addr(tablename);
+    start_offset = elba_get_mem_addr(tablename);
     SDK_TRACE_DEBUG("===HBM Tbl Name: %s, Stage: %d, StageTblID: %u, "
                     "Addr: 0x%lx}===",
                     tablename, stage, stage_tableid, start_offset);
@@ -248,7 +257,7 @@ elba_program_hbm_table_base_addr (int tableid, int stage_tableid,
         return;
     }
 
-    // Program table base address into elba TE
+    // program table base address into elba TE
     elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     if (pipe == P4_PIPELINE_INGRESS) {
         elb_te_csr_t &te_csr = elb0.sgi.te[stage];
@@ -328,6 +337,10 @@ elba_get_p4plus_table_mpu_pc (int tableid)
     return 0;
 }
 
+#define ELBA_P4PLUS_STAGE0_QSTATE_OFFSET_0               0
+#define ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_0            0
+#define ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_64           64
+
 static void
 elba_program_p4plus_table_mpu_pc_args (int tbl_id, elb_te_csr_t *te_csr,
                                        uint64_t pc, uint32_t offset)
@@ -340,10 +353,10 @@ elba_program_p4plus_table_mpu_pc_args (int tbl_id, elb_te_csr_t *te_csr,
 }
 
 #define ELBA_P4PLUS_HANDLE         "p4plus"
-#define ELBA_P4PLUS_RXDMA_PROG		"rxdma_stage0.bin"
-#define ELBA_P4PLUS_RXDMA_EXT_PROG	"rxdma_stage0_ext.bin"
-#define ELBA_P4PLUS_TXDMA_PROG		"txdma_stage0.bin"
-#define ELBA_P4PLUS_TXDMA_EXT_PROG	"txdma_stage0_ext.bin"
+#define ELBA_P4PLUS_RXDMA_PROG      "rxdma_stage0.bin"
+#define ELBA_P4PLUS_RXDMA_EXT_PROG  "rxdma_stage0_ext.bin"
+#define ELBA_P4PLUS_TXDMA_PROG      "txdma_stage0.bin"
+#define ELBA_P4PLUS_TXDMA_EXT_PROG  "txdma_stage0_ext.bin"
 
 void
 elba_program_p4plus_sram_table_mpu_pc (int tableid, int stage_tbl_id,
@@ -381,6 +394,57 @@ elba_program_p4plus_sram_table_mpu_pc (int tableid, int stage_tbl_id,
     te_csr->cfg_table_property[stage_tbl_id].write();
 }
 
+int
+elba_p4plus_table_init (p4plus_prog_t *prog, platform_type_t platform_type)
+{
+    elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    elb_te_csr_t *te_csr = NULL;
+    uint64_t elba_action_p4plus_asm_base;
+
+    if (!prog || (prog->pipe != P4_PIPELINE_RXDMA &&
+                  prog->pipe != P4_PIPELINE_TXDMA)) {
+        return ELBA_FAIL;
+    }
+
+    if (sdk::p4::p4_program_to_base_addr(prog->control,
+                                         (char *)prog->prog_name,
+                                         &elba_action_p4plus_asm_base) != 0) {
+        SDK_TRACE_DEBUG("Could not resolve handle %s program %s",
+                        prog->control, prog->prog_name);
+        return ELBA_FAIL;
+    }
+    SDK_TRACE_DEBUG("Resolved handle %s program %s to PC 0x%lx",
+                    prog->control, prog->prog_name,
+                    elba_action_p4plus_asm_base);
+
+    if (prog->pipe == P4_PIPELINE_RXDMA) {
+        // program app-header table config @(stage, stage_tableid) with the PC
+        te_csr = &elb0.pcr.te[prog->stageid];
+        elba_program_p4plus_table_mpu_pc_args(prog->stage_tableid, te_csr,
+                                               elba_action_p4plus_asm_base,
+                                               ELBA_P4PLUS_STAGE0_QSTATE_OFFSET_0);
+#ifdef IRIS
+        // program app-header offset 64 table config @(stage, stage_tableid) with the same PC as above
+        elba_program_p4plus_table_mpu_pc_args(prog->stage_tableid_off, te_csr,
+                                               elba_action_p4plus_asm_base,
+                                               ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_64);
+#endif
+    } else {
+        // program table config @(stage, stage_tableid) with the PC
+        te_csr = &elb0.pct.te[prog->stageid];
+        elba_program_p4plus_table_mpu_pc_args(prog->stage_tableid, te_csr,
+                                               elba_action_p4plus_asm_base, 0);
+        if ((prog->stageid == 0) &&
+            (platform_type != platform_type_t::PLATFORM_TYPE_SIM)) {
+            // TODO: this should 16 as we can process 16 packets per doorbell.
+            te_csr->cfg_table_property[prog->stage_tableid].max_bypass_cnt(0x10);
+            te_csr->cfg_table_property[prog->stage_tableid].write();
+        }
+    }
+
+    return ELBA_OK ;
+}
+
 sdk_ret_t
 elba_p4plus_table_init (platform_type_t platform_type,
                         int stage_apphdr, int stage_tableid_apphdr,
@@ -395,7 +459,7 @@ elba_p4plus_table_init (platform_type_t platform_type,
     elb_te_csr_t *te_csr = NULL;
     uint64_t elba_action_p4plus_asm_base;
 
-    // Resolve the p4plus rxdma stage 0 program to its action pc
+    // resolve the p4plus rxdma stage 0 program to its action pc
     if (sdk::p4::p4_program_to_base_addr((char *) ELBA_P4PLUS_HANDLE,
                                    (char *) ELBA_P4PLUS_RXDMA_PROG,
                                    &elba_action_p4plus_asm_base) != 0) {
@@ -409,14 +473,14 @@ elba_p4plus_table_init (platform_type_t platform_type,
                     (char *) ELBA_P4PLUS_RXDMA_PROG,
                     elba_action_p4plus_asm_base);
 
-    // Program app-header table config @(stage, stage_tableid) with the PC
+    // program app-header table config @(stage, stage_tableid) with the PC
     te_csr = &elb0.pcr.te[stage_apphdr];
     elba_program_p4plus_table_mpu_pc_args(
             stage_tableid_apphdr, te_csr,
             elba_action_p4plus_asm_base,
             ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_0);
 
-    // Program app-header offset 64 table config @(stage, stage_tableid)
+    // program app-header offset 64 table config @(stage, stage_tableid)
     // with the same PC as above
     elba_program_p4plus_table_mpu_pc_args(
             stage_tableid_apphdr_off, te_csr,
@@ -424,7 +488,7 @@ elba_p4plus_table_init (platform_type_t platform_type,
             ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_64);
 
 
-    // Resolve the p4plus rxdma stage 0 "ext" program to its action pc
+    // resolve the p4plus rxdma stage 0 "ext" program to its action pc
     if (sdk::p4::p4_program_to_base_addr((char *) ELBA_P4PLUS_HANDLE,
                                    (char *) ELBA_P4PLUS_RXDMA_EXT_PROG,
                                    &elba_action_p4plus_asm_base) != 0) {
@@ -438,21 +502,21 @@ elba_p4plus_table_init (platform_type_t platform_type,
                     (char *) ELBA_P4PLUS_RXDMA_EXT_PROG,
                     elba_action_p4plus_asm_base);
 
-    // Program app-header table config @(stage, stage_tableid) with the PC
+    // program app-header table config @(stage, stage_tableid) with the PC
     te_csr = &elb0.pcr.te[stage_apphdr_ext];
     elba_program_p4plus_table_mpu_pc_args(
             stage_tableid_apphdr_ext, te_csr,
             elba_action_p4plus_asm_base,
             ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_0);
 
-    // Program app-header offset 64 table config @(stage, stage_tableid)
+    // program app-header offset 64 table config @(stage, stage_tableid)
     // with the same PC as above
     elba_program_p4plus_table_mpu_pc_args(
             stage_tableid_apphdr_ext_off, te_csr,
             elba_action_p4plus_asm_base,
             ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_64);
 
-    // Resolve the p4plus txdma stage 0 program to its action pc
+    // resolve the p4plus txdma stage 0 program to its action pc
     if (sdk::p4::p4_program_to_base_addr((char *) ELBA_P4PLUS_HANDLE,
                                    (char *) ELBA_P4PLUS_TXDMA_PROG,
                                    &elba_action_p4plus_asm_base) != 0) {
@@ -466,7 +530,7 @@ elba_p4plus_table_init (platform_type_t platform_type,
                     (char *) ELBA_P4PLUS_TXDMA_PROG,
                     elba_action_p4plus_asm_base);
 
-    // Program table config @(stage, stage_tableid) with the PC
+    // program table config @(stage, stage_tableid) with the PC
     te_csr = &elb0.pct.te[stage_txdma_act];
     elba_program_p4plus_table_mpu_pc_args(
             stage_tableid_txdma_act, te_csr,
@@ -474,12 +538,12 @@ elba_p4plus_table_init (platform_type_t platform_type,
 
     if ((stage_txdma_act == 0) &&
         (platform_type != platform_type_t::PLATFORM_TYPE_SIM)) {
-        // TODO: This should 16 as we can process 16 packets per doorbell.
+        // TODO: rhis should 16 as we can process 16 packets per doorbell.
         te_csr->cfg_table_property[stage_tableid_txdma_act].max_bypass_cnt(0x10);
         te_csr->cfg_table_property[stage_tableid_txdma_act].write();
     }
 
-    // Resolve the p4plus txdma stage 0 "ext" program to its action pc
+    // resolve the p4plus txdma stage 0 "ext" program to its action pc
     if (sdk::p4::p4_program_to_base_addr((char *) ELBA_P4PLUS_HANDLE,
                                    (char *) ELBA_P4PLUS_TXDMA_EXT_PROG,
                                    &elba_action_p4plus_asm_base) != 0) {
@@ -493,7 +557,7 @@ elba_p4plus_table_init (platform_type_t platform_type,
                     (char *) ELBA_P4PLUS_TXDMA_EXT_PROG,
                     elba_action_p4plus_asm_base);
 
-    // Program table config @(stage, stage_tableid) with the PC
+    // program table config @(stage, stage_tableid) with the PC
     te_csr = &elb0.pct.te[stage_txdma_act_ext];
     elba_program_p4plus_table_mpu_pc_args(
             stage_tableid_txdma_act_ext, te_csr,
@@ -501,12 +565,12 @@ elba_p4plus_table_init (platform_type_t platform_type,
 
     if ((stage_txdma_act_ext == 0) &&
         (platform_type != platform_type_t::PLATFORM_TYPE_SIM)) {
-        // TODO: This should 16 as we can process 16 packets per doorbell.
+        // TODO: rhis should 16 as we can process 16 packets per doorbell.
         te_csr->cfg_table_property[stage_tableid_txdma_act_ext].max_bypass_cnt(0x10);
         te_csr->cfg_table_property[stage_tableid_txdma_act_ext].write();
     }
 
-    // Resolve the p4plus sxdma stage 0 program to its action pc
+    // resolve the p4plus sxdma stage 0 program to its action pc
     if (sdk::p4::p4_program_to_base_addr((char *) ELBA_P4PLUS_HANDLE,
                                    (char *) ELBA_P4PLUS_TXDMA_PROG,
                                    &elba_action_p4plus_asm_base) != 0) {
@@ -520,14 +584,14 @@ elba_p4plus_table_init (platform_type_t platform_type,
                     (char *) ELBA_P4PLUS_TXDMA_PROG,
                     elba_action_p4plus_asm_base);
 
-    // Program table config @(stage, stage_tableid) with the PC
+    // program table config @(stage, stage_tableid) with the PC
     te_csr = &elb0.xg.te[stage_sxdma_act];
     elba_program_p4plus_table_mpu_pc_args(stage_tableid_sxdma_act, te_csr,
                                           elba_action_p4plus_asm_base, 0);
 
     if ((stage_sxdma_act == 0) &&
         (platform_type != platform_type_t::PLATFORM_TYPE_SIM)) {
-        // TODO: This should 16 as we can process 16 packets per doorbell.
+        // TODO: this should 16 as we can process 16 packets per doorbell.
         te_csr->cfg_table_property[stage_tableid_sxdma_act].max_bypass_cnt(0x10);
         te_csr->cfg_table_property[stage_tableid_sxdma_act].write();
     }
@@ -560,7 +624,7 @@ elba_timer_init_helper (uint32_t key_lines)
     elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     elb_txs_csr_t *txs_csr = &elb0.txs.txs;
 
-    timer_key_hbm_base_addr = get_mem_addr(MEM_REGION_TIMERS_NAME);
+    timer_key_hbm_base_addr = elba_get_mem_addr(MEM_REGION_TIMERS_NAME);
 
     txs_csr->cfg_timer_static.read();
     SDK_TRACE_DEBUG("hbm_base %lx",
@@ -622,6 +686,30 @@ static inline bool
 p4plus_invalidate_cache_aligned (uint64_t addr, uint32_t size_in_bytes,
                                  p4plus_cache_action_t action)
 {
+    assert ((addr & ~CACHE_LINE_SIZE_MASK) == addr);
+
+    while ((int)size_in_bytes > 0) {
+        uint32_t claddr = (addr >> CACHE_LINE_SIZE_SHIFT) << 1;
+        if (action & p4plus_cache_action_t::P4PLUS_CACHE_INVALIDATE_RXDMA) {
+            if (csr_cache_inval_rxdma_va) {
+                *csr_cache_inval_rxdma_va = claddr;
+            } else {
+                sdk::lib::pal_reg_write(CSR_CACHE_INVAL_RXDMA_REG_ADDR,
+                                        &claddr, 1);
+            }
+        }
+        if (action & p4plus_cache_action_t::P4PLUS_CACHE_INVALIDATE_TXDMA) {
+            if (csr_cache_inval_txdma_va) {
+                *csr_cache_inval_txdma_va = claddr;
+            } else {
+                sdk::lib::pal_reg_write(CSR_CACHE_INVAL_TXDMA_REG_ADDR,
+                                        &claddr, 1);
+            }
+        }
+        size_in_bytes -= CACHE_LINE_SIZE;
+        addr += CACHE_LINE_SIZE;
+    }
+
     return true;
 }
 
@@ -646,6 +734,20 @@ p4plus_invalidate_cache (uint64_t addr, uint32_t size_in_bytes,
 bool
 p4plus_invalidate_cache_all (p4plus_cache_action_t action)
 {
+    uint32_t val = 1;
+
+    if (action & p4plus_cache_action_t::P4PLUS_CACHE_INVALIDATE_RXDMA ||
+        action & p4plus_cache_action_t::P4PLUS_CACHE_INVALIDATE_BOTH) {
+        sdk::lib::pal_reg_write(CSR_CACHE_INVAL_RXDMA_REG_ADDR,
+                                &val, 1);
+    }
+
+    if (action & p4plus_cache_action_t::P4PLUS_CACHE_INVALIDATE_TXDMA ||
+        action & p4plus_cache_action_t::P4PLUS_CACHE_INVALIDATE_BOTH) {
+        sdk::lib::pal_reg_write(CSR_CACHE_INVAL_TXDMA_REG_ADDR,
+                                &val, 1);
+    }
+
     return true;
 }
 
@@ -653,7 +755,27 @@ void
 p4_invalidate_cache (uint64_t addr, uint32_t size_in_bytes,
                      p4pd_table_cache_t cache)
 {
-    //@@TODO - implement for elba
+    while ((int)size_in_bytes > 0) {
+        uint32_t claddr = (addr >> CACHE_LINE_SIZE_SHIFT) << 1;
+        if (cache & P4_TBL_CACHE_INGRESS) {
+            if (csr_cache_inval_ingress_va) {
+                *csr_cache_inval_ingress_va = claddr;
+            } else {
+                sdk::lib::pal_reg_write(CSR_CACHE_INVAL_INGRESS_REG_ADDR,
+                                        &claddr, 1);
+            }
+        }
+        if (cache & P4_TBL_CACHE_EGRESS) {
+            if (csr_cache_inval_egress_va) {
+                *csr_cache_inval_egress_va = claddr;
+            } else {
+                sdk::lib::pal_reg_write(CSR_CACHE_INVAL_EGRESS_REG_ADDR,
+                                        &claddr, 1);
+            }
+        }
+        size_in_bytes -= CACHE_LINE_SIZE;
+        addr += CACHE_LINE_SIZE;
+    }
 }
 
 void
@@ -667,11 +789,11 @@ elba_deparser_init (p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp)
                       ing_dp, egr_dp);
         return;
     }
-    // Ingress deparser is indexed with 1
+    // ingress deparser is indexed with 1
     elb0.dpr.dpr[1].cfg_global_2.read();
     elb0.dpr.dpr[1].cfg_global_2.increment_recirc_cnt_en(ing_dp->increment_recirc_cnt_en);
     elb0.dpr.dpr[1].cfg_global_2.drop_max_recirc_cnt(ing_dp->drop_max_recirc_cnt);
-    // Drop after 4 recircs
+    // drop after 4 recircs
     elb0.dpr.dpr[1].cfg_global_2.max_recirc_cnt(ing_dp->max_recirc_cnt);
     elb0.dpr.dpr[1].cfg_global_2.recirc_oport(ing_dp->recirc_oport);
     elb0.dpr.dpr[1].cfg_global_2.clear_recirc_bit_en(ing_dp->clear_recirc_bit_en);
@@ -679,7 +801,7 @@ elba_deparser_init (p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp)
     recirc_rw_bm |= 1<<egr_dp->recirc_oport;
     elb0.dpr.dpr[1].cfg_global_2.recirc_rw_bm(recirc_rw_bm);
     elb0.dpr.dpr[1].cfg_global_2.write();
-    // Egress deparser is indexed with 0
+    // egress deparser is indexed with 0
     elb0.dpr.dpr[0].cfg_global_2.read();
     elb0.dpr.dpr[0].cfg_global_2.increment_recirc_cnt_en(egr_dp->increment_recirc_cnt_en);
     elb0.dpr.dpr[0].cfg_global_2.max_recirc_cnt(egr_dp->max_recirc_cnt);
@@ -691,8 +813,46 @@ elba_deparser_init (p4_deparser_cfg_t *ing_dp, p4_deparser_cfg_t *egr_dp)
 }
 
 static void
-elba_mpu_icache_invalidate (void)
+elba_mpu_icache_dcache_invalidate (void)
 {
+    int i;
+    elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+
+    if (getenv("ELBA_NO_MPU_INIT"))  {
+        SDK_TRACE_DEBUG("Skipping MPU INIT");
+        return;
+    }
+    for (i = 0; i < ELBA_P4_NUM_STAGES; i++) {
+          elb0.sgi.stg[i].icache.icache.all(1);
+          elb0.sgi.stg[i].icache.icache.write();
+          elb0.sge.stg[i].icache.icache.all(1);
+          elb0.sge.stg[i].icache.icache.write();
+
+          elb0.sgi.stg[i].dcache.dcache.all(1);
+          elb0.sgi.stg[i].dcache.dcache.write();
+          elb0.sge.stg[i].dcache.dcache.all(1);
+          elb0.sge.stg[i].dcache.dcache.write();
+    }
+
+    for (i = 0; i < ELBA_P4PLUS_NUM_STAGES; i++) {
+        elb0.pcr.stg[i].icache.icache.all(1);
+        elb0.pcr.stg[i].icache.icache.write();
+        elb0.pct.stg[i].icache.icache.all(1);
+        elb0.pct.stg[i].icache.icache.write();
+
+        elb0.pcr.stg[i].dcache.dcache.all(1);
+        elb0.pcr.stg[i].dcache.dcache.write();
+        elb0.pct.stg[i].dcache.dcache.all(1);
+        elb0.pct.stg[i].dcache.dcache.write();
+    }
+
+    for (i = 0; i < ELBA_P4PLUS_SXDMA_NUM_STAGES; i++) {
+          elb0.xg.stg[i].icache.icache.all(1);
+          elb0.xg.stg[i].icache.icache.write();
+
+          elb0.xg.stg[i].dcache.dcache.all(1);
+          elb0.xg.stg[i].dcache.dcache.write();
+    }
 }
 
 sdk_ret_t
@@ -751,27 +911,6 @@ elba_program_tcam_table_offset (int tableid, p4pd_table_dir_en gress,
     return SDK_RET_ERR;
 }
 
-//
-// Reset tcam memories
-//
-static void
-elba_tcam_memory_init (asic_cfg_t *elba_cfg)
-{
-    if (!elba_cfg ||
-        ((elba_cfg->platform != platform_type_t::PLATFORM_TYPE_HAPS) &&
-        (elba_cfg->platform != platform_type_t::PLATFORM_TYPE_HW))) {
-        return;
-    }
-
-    elb_pict_zero_init_tcam(0, 0, 8);
-    elb_pict_zero_init_tcam(0, 1, 4);
-
-    // initialize tcam table offset
-    for (int i = P4_GRESS_INGRESS; i < P4_GRESS_INVALID; i++) {
-        g_tcam_base_offset[i] = 0;
-    }
-}
-
 void
 elba_table_rw_cleanup (void)
 {
@@ -796,11 +935,11 @@ elba_p4_shadow_init (void)
         g_shadow_tcam_p4[i] = (elba_tcam_shadow_mem_t*)
                 ELBA_CALLOC(1, sizeof(elba_tcam_shadow_mem_t));
         if (!g_shadow_sram_p4[i] || !g_shadow_tcam_p4[i]) {
-            // TODO: Log error/trace
+            // TODO: log error/trace
             elba_table_rw_cleanup();
             return SDK_RET_ERR;
         }
-        // Initialize shadow tcam to match all ones. This makes all entries
+        // initialize shadow tcam to match all ones. This makes all entries
         // to be treated as inactive
         memset(g_shadow_tcam_p4[i]->mem_x, 0xFF,
                sizeof(g_shadow_tcam_p4[i]->mem_x));
@@ -853,7 +992,7 @@ elba_p4plus_shadow_init (void)
         (elba_sram_shadow_mem_t*)ELBA_CALLOC(1, sizeof(elba_sram_shadow_mem_t));
 
     if (!g_shadow_sram_rxdma || !g_shadow_sram_txdma) {
-        // TODO: Log error/trace
+        // TODO: log error/trace
         elba_p4plus_table_rw_cleanup();
         return SDK_RET_ERR;
     }
@@ -884,7 +1023,7 @@ sdk_ret_t
 elba_table_rw_soft_init (asic_cfg_t *elba_cfg)
 {
     int ret;
-    /* Initialize the CSR cache invalidate memories */
+    // initialize the CSR cache invalidate memories
     elba_table_csr_cache_inval_init();
 
     ret = elba_p4_shadow_init();
@@ -903,11 +1042,11 @@ sdk_ret_t
 elba_table_rw_init (asic_cfg_t *elba_cfg)
 {
     sdk_ret_t ret;
-    // Before making this call, it is expected that
+    // before making this call, it is expected that
     // in HAL init sequence, p4pd_init() needs to be called before this
-    // Create shadow memory and init to zero
+    // create shadow memory and init to zero
 
-    /* Initialize the CSR cache invalidate memories */
+    // initialize the CSR cache invalidate memories
     elba_table_csr_cache_inval_init();
 
     ret = elba_p4_shadow_init();
@@ -920,17 +1059,14 @@ elba_table_rw_init (asic_cfg_t *elba_cfg)
         return ret;
     }
 
-    // Initialize stage id registers for p4p
+    // initialize stage id registers for p4p
     elba_p4p_stage_id_init();
 
-    hbm_mem_base_addr = get_mem_addr(MEM_REGION_P4_PROGRAM_NAME);
+    hbm_mem_base_addr = elba_get_mem_addr(MEM_REGION_P4_PROGRAM_NAME);
 
-    elba_mpu_icache_invalidate();
+    elba_mpu_icache_dcache_invalidate();
 
-    // Initialize tcam memories
-    elba_tcam_memory_init(elba_cfg);
-
-    // Initialize sram memories
+    // initialize sram memories
     elba_sram_memory_init(elba_cfg);
 
     return SDK_RET_OK;
@@ -941,7 +1077,6 @@ elba_p4plus_table_rw_init (void)
 {
     // in HAL init sequence, p4pd_init() needs to be called before this
     elba_p4plus_shadow_init();
-    csr_init();
 
     return (SDK_RET_OK);
 }
@@ -1011,8 +1146,8 @@ elba_sram_entry_details_get (uint32_t index,
 
     *entry_start_word = (top_left_x + (tbl_col * entry_width))
                         % ELBA_SRAM_WORDS_PER_BLOCK;
-    // Elba 16b word within a 128b block is numbered from right to left.
-    //*entry_start_word = (ELBA_SRAM_WORDS_PER_BLOCK - 1) - *entry_start_word;
+    // elba 16b word within a 128b block is numbered from right to left.
+    // *entry_start_word = (ELBA_SRAM_WORDS_PER_BLOCK - 1) - *entry_start_word;
 
     *entry_start_block = (top_left_block * ELBA_SRAM_ROWS)
                          + ((((tbl_col * entry_width) + top_left_x)
@@ -1082,8 +1217,8 @@ elba_table_entry_write (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
     //    as before.
     //
 
-    // Assuming a table entry is contained within a SRAM row...
-    // Entry cannot be wider than entire row (10 x 128bits)
+    // assuming a table entry is contained within a SRAM row...
+    // entry cannot be wider than entire row (10 x 128bits)
 
     int sram_row, entry_start_block, entry_end_block;
     int entry_start_word;
@@ -1091,9 +1226,9 @@ elba_table_entry_write (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
 
     shadow_sram = get_sram_shadow_for_table(tableid, gress);
 
-    // In case of overflow TCAM, SRAM associated with the table
+    // in case of overflow TCAM, SRAM associated with the table
     // is folded along with its parent's hash table.
-    // Change index to parent table size + index
+    // change index to parent table size + index
     if (is_oflow_table) {
         index += ofl_parent_tbl_depth;
     }
@@ -1116,7 +1251,7 @@ elba_table_entry_write (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
     uint16_t *_hwentry = (uint16_t*)hwentry;
 
     if (hwentry_mask) {
-        // If mask is specified, it should encompass the entire macros currently
+        // if mask is specified, it should encompass the entire macros currently
         if ((entry_start_word != 0) ||
             (tbl_info.entry_width % ELBA_SRAM_WORDS_PER_BLOCK)) {
             SDK_TRACE_ERR("Masked write with entry_start_word %u and width %u "
@@ -1138,20 +1273,20 @@ elba_table_entry_write (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
         entry_start_word++;
         if (entry_start_word % ELBA_SRAM_WORDS_PER_BLOCK == 0) {
             // crossed over to next block
-            //block += ELBA_SRAM_ROWS;
+            // block += ELBA_SRAM_ROWS;
             block++;
             entry_start_word = 0;
         }
     }
 
     elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
-    // Push to HW/Capri from entry_start_block to block
+    // push to HW/Capri from entry_start_block to block
     pu_cpp_int<128> sram_block_data;
     pu_cpp_int<128> sram_block_datamask;
     uint8_t temp[16], tempmask[16];
     for (int i = entry_start_block;
          i <= entry_end_block; i += ELBA_SRAM_ROWS, blk++) {
-        //all shadow_sram->mem[sram_row][i] to be pushed to elba..
+        // all shadow_sram->mem[sram_row][i] to be pushed to elba..
         uint8_t *s = (uint8_t*)(shadow_sram->mem[sram_row][blk]);
         for (int p = 15; p >= 0; p--) {
             temp[p] = *s; s++;
@@ -1198,15 +1333,15 @@ elba_table_entry_read (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
                         p4_table_mem_layout_t &tbl_info, int gress,
                         bool is_oflow_table, uint32_t ofl_parent_tbl_depth)
 {
-    //
-    // Unswizzing of the bytes into readable format is
+    // unswizzing of the bytes into readable format is
     // expected to be done by caller of the API.
-    //
+
     int sram_row, entry_start_block, entry_end_block;
     int entry_start_word;
-    // In case of overflow TCAM, SRAM associated with the table
+
+    // in case of overflow TCAM, SRAM associated with the table
     // is folded along with its parent's hash table.
-    // Change index to parent table size + index
+    // change index to parent table size + index
     if (is_oflow_table) {
         index += ofl_parent_tbl_depth;
     }
@@ -1268,15 +1403,14 @@ elba_table_hw_entry_read (uint32_t tableid, uint32_t index,
                           bool is_oflow_table, bool ingress,
                           uint32_t ofl_parent_tbl_depth)
 {
-    //
-    // Unswizzing of the bytes into readable format is
+    // unswizzing of the bytes into readable format is
     // expected to be done by caller of the API.
-    //
     int sram_row, entry_start_block, entry_end_block;
     int entry_start_word;
-    // In case of overflow TCAM, SRAM associated with the table
+
+    // in case of overflow TCAM, SRAM associated with the table
     // is folded along with its parent's hash table.
-    // Change index to parent table size + index
+    // change index to parent table size + index
     if (is_oflow_table) {
         index += ofl_parent_tbl_depth;
     }
@@ -1376,15 +1510,14 @@ elba_tcam_entry_details_get (uint32_t index, int gress, int *tcam_row,
     assert (*tcam_row <= btm_right_y);
     int tbl_col = index % num_buckets;
 
-    // entry_width is in units of TCAM word  -- 16b */
-    // Since every tcam table entry occupies one TCAM block */
-    *entry_start_word = start_index % ELBA_TCAM_WORDS_PER_BLOCK;
-    // Capri 16b word within a 128b block is numbered from right to left.*/
+    // entry_width is in units of TCAM word  -- 16b
+    // since every tcam table entry occupies one TCAM block
+    // capri 16b word within a 128b block is numbered from right to left.
     // *entry_start_word = (ELBA_TCAM_WORDS_PER_BLOCK - 1) - *entry_start_word;
+    *entry_start_word = start_index % ELBA_TCAM_WORDS_PER_BLOCK;
 
     // Start block will be column away from top-left because in case of
     // tcam, atmost one entry/column of table can occupy a TCAM block.
-    //
     *entry_start_block = ((top_left_block + tbl_col) * ELBA_TCAM_ROWS)
                          + top_left_y
                          + (index/num_buckets);
@@ -1401,7 +1534,7 @@ elba_tcam_table_entry_write (uint32_t tableid, uint32_t index,
                              int gress, bool ingress)
 {
     // 1. When a Memory line is shared by multiple tables, only tableid's
-    //     table entry bits need to be modified in the memory line.
+    //    table entry bits need to be modified in the memory line.
     //    1. read Shadow memory line (entire 64bits)
     //    2. clear out bits that corresponds to table
     // 2. Argument trit_x contains key byte stream that is already in format
@@ -1466,7 +1599,7 @@ elba_tcam_table_entry_write (uint32_t tableid, uint32_t index,
     }
 
     elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
-    // Push to HW/Capri from entry_start_block to block
+    // push to HW/Capri from entry_start_block to block
     pu_cpp_int<128> tcam_block_data_x;
     pu_cpp_int<128> tcam_block_data_y;
     uint8_t temp_x[16];
@@ -1599,7 +1732,7 @@ elba_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
     uint8_t *_trit_y = (uint8_t*)trit_y;
 
     elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
-    // Push to HW/Capri from entry_start_block to block
+    // push to HW/Capri from entry_start_block to block
     cpp_int tcam_block_data_x;
     cpp_int tcam_block_data_y;
     uint8_t temp_x[16];
@@ -1659,13 +1792,15 @@ elba_hbm_table_entry_write (uint32_t tableid, uint32_t index, uint8_t *hwentry,
                             uint16_t entry_size, uint16_t entry_width,
                             p4pd_table_properties_t *tbl_info)
 {
+    time_profile_begin(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_WRITE);
     assert((entry_size >> 3) <= entry_width);
     assert(index < tbl_info->tabledepth);
     uint64_t entry_start_addr = (index * entry_width);
 
-    sdk::asic::asic_mem_write(get_mem_addr(tbl_info->tablename) +
+    sdk::asic::asic_mem_write(elba_get_mem_addr(tbl_info->tablename) +
                               entry_start_addr, hwentry, (entry_size >> 3));
 
+    time_profile_end(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_WRITE);
     return SDK_RET_OK;
 }
 
@@ -1675,7 +1810,31 @@ elba_hbm_table_entry_cache_invalidate (p4pd_table_cache_t cache,
                                        uint16_t entry_width,
                                        mem_addr_t base_mem_pa)
 {
-    return SDK_RET_INVALID_OP;  /* TBD-ELBA-REBASE: revisit */
+    time_profile_begin(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_CACHE_INVALIDATE);
+    uint64_t addr = (base_mem_pa + entry_addr);
+
+    if (cache & (P4_TBL_CACHE_INGRESS | P4_TBL_CACHE_EGRESS)) {
+        p4_invalidate_cache(addr, entry_width, cache);
+    }
+
+    // allow cache to be set for both P4 (above) and P4+ (below)
+    if ((cache & P4_TBL_CACHE_TXDMA_RXDMA) == P4_TBL_CACHE_TXDMA_RXDMA) {
+        p4plus_invalidate_cache(addr, entry_width,
+                                P4PLUS_CACHE_INVALIDATE_BOTH);
+    } else if (cache & P4_TBL_CACHE_TXDMA) {
+        p4plus_invalidate_cache(addr, entry_width,
+                                P4PLUS_CACHE_INVALIDATE_TXDMA);
+    } else if (cache & P4_TBL_CACHE_RXDMA) {
+        p4plus_invalidate_cache(addr, entry_width,
+                                P4PLUS_CACHE_INVALIDATE_RXDMA);
+    } else {
+        SDK_TRACE_ERR("elba: Not implemented for cache: %u... addr=0x%lx, "
+                      "width=%d, base_mem_pa=0x%lx", cache,
+                      entry_addr, entry_width, base_mem_pa);
+        SDK_ASSERT(cache);
+    }
+    time_profile_end(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_CACHE_INVALIDATE);
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
@@ -1687,7 +1846,7 @@ elba_hbm_table_entry_read (uint32_t tableid, uint32_t index, uint8_t *hwentry,
     assert(index < tbl_info.tabledepth);
     uint64_t entry_start_addr = (index * tbl_info.entry_width);
 
-    sdk::asic::asic_mem_read(get_mem_addr(tbl_info.tablename) +
+    sdk::asic::asic_mem_read(elba_get_mem_addr(tbl_info.tablename) +
                              entry_start_addr,
                              hwentry, tbl_info.entry_width);
     *entry_size = tbl_info.entry_width;
@@ -1831,35 +1990,83 @@ asic_csr_list_get (string path, int level)
 }
 
 sdk_ret_t
-elba_te_enable_capri_mode(void)
+elba_te_enable_capri_mode (void)
 {
-    elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     unsigned int stage;
+    unsigned int tab;
+    elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+
+    // do not change mpu mask if not MPU_MASK set
+    // needs CFG and platform
+    int mpu = (getenv("MPU_MASK") ? atoi(getenv("MPU_MASK")) : 0x0);
+    if (mpu) {
+        SDK_TRACE_DEBUG("Overriding mpu_vec HAPS_MPU %d", mpu);
+    }
+
     // setting capri mode for all stages in RxDMA pipeline
-    for (stage = 0; stage < ELBA_P4PLUS_NUM_STAGES; stage++)
-    {
+    for (stage = 0; stage < ELBA_P4PLUS_NUM_STAGES; stage++) {
         elb_te_csr_t  &te_csr = elb0.pcr.te[stage];
         te_csr.cfg_global.read();
         te_csr.cfg_global.capri_mode(1);
         te_csr.cfg_global.write();
+        for (tab = 0; tab < 16; tab++) {
+            if (mpu) {
+                te_csr.cfg_table_property[tab].read();
+                te_csr.cfg_table_property[tab].mpu_vec(mpu);
+                te_csr.cfg_table_property[tab].write();
+            }
+        }
     }
+
     // setting capri mode for all stages in TxDMA pipeline
-    for (stage = 0; stage < ELBA_P4PLUS_NUM_STAGES; stage++)
-    {
+    for (stage = 0; stage < ELBA_P4PLUS_NUM_STAGES; stage++) {
         elb_te_csr_t  &te_csr = elb0.pct.te[stage];
         te_csr.cfg_global.read();
         te_csr.cfg_global.capri_mode(1);
         te_csr.cfg_global.write();
+        for (tab = 0; tab < 16; tab++) {
+            if (mpu) {
+                te_csr.cfg_table_property[tab].read();
+                te_csr.cfg_table_property[tab].mpu_vec(mpu);
+                te_csr.cfg_table_property[tab].write();
+            }
+        }
     }
     // setting capri mode for all stages in SxDMA pipeline
-    for (stage = 0; stage < ELBA_P4PLUS_SXDMA_NUM_STAGES; stage++)
-    {
+    for (stage = 0; stage < ELBA_P4PLUS_SXDMA_NUM_STAGES; stage++) {
         elb_te_csr_t  &te_csr = elb0.xg.te[stage];
         te_csr.cfg_global.read();
         te_csr.cfg_global.capri_mode(1);
         te_csr.cfg_global.write();
+        for (tab = 0; tab < 16; tab++) {
+            if (mpu) {
+                te_csr.cfg_table_property[tab].read();
+                te_csr.cfg_table_property[tab].mpu_vec(mpu);
+                te_csr.cfg_table_property[tab].write();
+            }
+        }
     }
-    SDK_TRACE_DEBUG("Elba: Enabled capri mode in TE");
+    for (stage = 0; stage < ELBA_P4_NUM_STAGES; stage++) {
+        elb_te_csr_t  &te_csr = elb0.sge.te[stage];
+        for (tab = 0; tab < 16; tab++) {
+            if (mpu) {
+                te_csr.cfg_table_property[tab].read();
+                te_csr.cfg_table_property[tab].mpu_vec(mpu);
+                te_csr.cfg_table_property[tab].write();
+            }
+        }
+    }
+    for (stage = 0; stage < ELBA_P4_NUM_STAGES; stage++) {
+        elb_te_csr_t  &te_csr = elb0.sgi.te[stage];
+        for (tab = 0; tab < 16; tab++) {
+            if (mpu) {
+                te_csr.cfg_table_property[tab].read();
+                te_csr.cfg_table_property[tab].mpu_vec(mpu);
+                te_csr.cfg_table_property[tab].write();
+            }
+        }
+    }
+    SDK_TRACE_DEBUG("elba: Enabled capri mode in TE");
 
     return SDK_RET_OK;
 }
@@ -2081,10 +2288,8 @@ elba_ipsec_inline_enable (void)
 {
     elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
 
-    //
     // is[0] is P4-Egress and is[1] is P4-Ingress crypto module
-    // Currently, Inline-ipsec module (ELB-IS) is enabled only in P4I.
-    //
+    // currently, inline-ipsec module (ELB-IS) is enabled only in P4I.
     elb_is_csr_t &is_csr = elb0.is.is[1];
 
     is_csr.cfg_glb.read();

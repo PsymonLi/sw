@@ -149,7 +149,10 @@ typedef enum port_breakout_mode_e {
     BREAKOUT_MODE_NONE,
     BREAKOUT_MODE_4x25G,
     BREAKOUT_MODE_4x10G,
-    BREAKOUT_MODE_2x50G
+    BREAKOUT_MODE_2x50G,
+    BREAKOUT_MODE_4x50G,
+    BREAKOUT_MODE_4x100G,
+    BREAKOUT_MODE_2x200G
 } port_breakout_mode_t;
 
 typedef enum q_notify_mode_e {
@@ -165,7 +168,9 @@ enum class port_speed_t {
     PORT_SPEED_40G     = 4,
     PORT_SPEED_50G     = 5,
     PORT_SPEED_100G    = 6,
-    PORT_SPEED_MAX     = 7,
+    PORT_SPEED_200G    = 7,
+    PORT_SPEED_400G    = 8,
+    PORT_SPEED_MAX     = 9
 };
 
 enum class port_type_t {

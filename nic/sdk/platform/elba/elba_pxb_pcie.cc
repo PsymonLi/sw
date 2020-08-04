@@ -1,6 +1,12 @@
-////-----------------------------------------------------------------------------
-//// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
-////-----------------------------------------------------------------------------
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba PXB PCIE handling
+///
+//----------------------------------------------------------------------------
 
 #include "include/sdk/base.hpp"
 #include "platform/elba/elba_pxb_pcie.hpp"

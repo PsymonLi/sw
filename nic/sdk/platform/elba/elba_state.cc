@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba state instance initializations
+///
+//----------------------------------------------------------------------------
 
 #include "include/sdk/base.hpp"
 #include "platform/elba/csrint/csr_init.hpp"

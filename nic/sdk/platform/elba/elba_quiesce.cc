@@ -1,5 +1,12 @@
-//// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
-
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba quiesce API's
+///
+//----------------------------------------------------------------------------
 
 #include "platform/elba/elba_quiesce.hpp"
 #include "third-party/asic/elba/model/elb_top/elb_top_csr.h"

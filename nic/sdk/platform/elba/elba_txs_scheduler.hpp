@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba TX scheduler definitions
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_TXS_SCHEDULER_HPP__
 #define __ELBA_TXS_SCHEDULER_HPP__

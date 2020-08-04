@@ -204,18 +204,18 @@ flow_test_time_profile_print() {
            time_profile_total(sdk::utils::time_profile::ASICPD_HBM_TABLE_ENTRY_WRITE));
     printf("%-42s = %012ld\n", "- ASICPD_HBM_TABLE_ENTRY_WRITE",
            time_profile_total(sdk::utils::time_profile::ASICPD_HBM_TABLE_ENTRY_WRITE) -
-           time_profile_total(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_WRITE) -
-           time_profile_total(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_CACHE_INVALIDATE));
-    printf("%-42s = %012ld\n", " - CAPRI_HBM_TABLE_ENTRY_WRITE",
-           time_profile_total(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_WRITE) -
+           time_profile_total(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_WRITE) -
+           time_profile_total(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_CACHE_INVALIDATE));
+    printf("%-42s = %012ld\n", " - ASIC_HBM_TABLE_ENTRY_WRITE",
+           time_profile_total(sdk::utils::time_profile::APRI_HBM_TABLE_ENTRY_WRITE) -
            time_profile_total(sdk::utils::time_profile::ASIC_MEM_WRITE));
     printf("%-42s = %012ld\n", "   - ASIC_MEM_WRITE",
            time_profile_total(sdk::utils::time_profile::ASIC_MEM_WRITE) -
            time_profile_total(sdk::utils::time_profile::PAL_MEM_WR));
     printf("%-42s = %012ld\n", "     - PAL_MEM_WR",
            time_profile_total(sdk::utils::time_profile::PAL_MEM_WR));
-    printf("%-42s = %012ld\n", " - CAPRI_HBM_TABLE_ENTRY_CACHE_INVALIDATE",
-           time_profile_total(sdk::utils::time_profile::CAPRI_HBM_TABLE_ENTRY_CACHE_INVALIDATE));
+    printf("%-42s = %012ld\n", " - ASIC_HBM_TABLE_ENTRY_CACHE_INVALIDATE",
+           time_profile_total(sdk::utils::time_profile::ASIC_HBM_TABLE_ENTRY_CACHE_INVALIDATE));
     printf("%-42s = %012ld\n", "PAL_REG_WRITE",
            time_profile_total(sdk::utils::time_profile::PAL_REG_WRITE));
     //printf("%-42s = %012ld\n", "PAL_REG_READ",

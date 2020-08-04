@@ -49,8 +49,8 @@ extern bool time_profile_enable;
         __handler(PAL_REG_READ) \
         __handler(P4PD_ENTRY_INSTALL) \
         __handler(ASICPD_HBM_TABLE_ENTRY_WRITE) \
-        __handler(CAPRI_HBM_TABLE_ENTRY_WRITE) \
-        __handler(CAPRI_HBM_TABLE_ENTRY_CACHE_INVALIDATE) \
+        __handler(ASIC_HBM_TABLE_ENTRY_WRITE) \
+        __handler(ASIC_HBM_TABLE_ENTRY_CACHE_INVALIDATE) \
         __handler(ASIC_MEM_WRITE) \
         __handler(PAL_MEM_WR) \
         __handler(PAL_REG_WRITE) \

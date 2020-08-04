@@ -68,6 +68,8 @@ catalog::populate_asic(ptree::value_type &asic, catalog_asic_t *asic_p)
 {
     if (asic.second.get<std::string>("name", "") ==  "capri") {
         asic_p->type = asic_type_t::SDK_ASIC_TYPE_CAPRI;
+    } else if (asic.second.get<std::string>("name", "") ==  "elba") {
+        asic_p->type = asic_type_t::SDK_ASIC_TYPE_ELBA;
     } else {
         asic_p->type = asic_type_t::SDK_ASIC_TYPE_NONE;
     }
@@ -116,6 +118,8 @@ catalog::catalog_speed_to_port_speed(std::string speed)
         return port_speed_t::PORT_SPEED_50G;
     } else if (speed == "100G") {
         return port_speed_t::PORT_SPEED_100G;
+    } else if (speed == "200G") {
+        return port_speed_t::PORT_SPEED_200G;
     }
 
     return port_speed_t::PORT_SPEED_NONE;
@@ -174,6 +178,12 @@ catalog::parse_breakout_mode(std::string breakout_mode)
         return port_breakout_mode_t::BREAKOUT_MODE_4x10G;
     } else if (breakout_mode == "2x50G") {
         return port_breakout_mode_t::BREAKOUT_MODE_2x50G;
+    } else if (breakout_mode == "4x50G") {
+        return port_breakout_mode_t::BREAKOUT_MODE_4x50G;
+    } else if (breakout_mode == "4x100G") {
+        return port_breakout_mode_t::BREAKOUT_MODE_4x100G;
+    } else if (breakout_mode == "2x200G") {
+        return port_breakout_mode_t::BREAKOUT_MODE_2x200G;
     }
 
     return port_breakout_mode_t::BREAKOUT_MODE_NONE;
@@ -467,6 +477,8 @@ catalog::populate_clock_info (ptree &prop_tree)
              num_freq += 1;
           }
     }
+    catalog_db_.p4_clock_freq = prop_tree.get<uint32_t>("p4_clock_freq", 1137);
+    catalog_db_.eth_clock_freq = prop_tree.get<uint32_t>("eth_clock_freq", 800);
 
     return SDK_RET_OK;
 }
@@ -474,6 +486,14 @@ catalog::populate_clock_info (ptree &prop_tree)
 uint32_t
 catalog::serdes_index_get(uint32_t sbus_addr)
 {
+    uint8_t ll  = (sbus_addr & 0xf0000) >> 16;
+
+    if (ll != 0) {
+        return (ll - 8);
+    }
+    if (sbus_addr > 0xff) {
+        return 8;
+    }
     if (sbus_addr < SERDES_SBUS_START) {
         return sbus_addr;
     }
@@ -498,7 +518,11 @@ catalog::parse_serdes(ptree &prop_tree)
 
         uint32_t mac_id      = serdes.second.get<uint32_t>("mac_id", 0);
         uint32_t mac_ch      = serdes.second.get<uint32_t>("mac_ch", 0);
-        uint32_t sbus_addr   = serdes.second.get<uint32_t>("sbus_addr", 0);
+
+        // sbus address can be hex
+        std::string s_addr   = serdes.second.get<std::string>("sbus_addr", "0x0");
+        uint32_t sbus_addr   = ((s_addr.find("0x") != std::string::npos) || (s_addr.find("0X") != std::string::npos)) ?
+                               std::stoul(s_addr, nullptr, 16) : std::stoul(s_addr, nullptr, 10);
         uint32_t serdes_lane = 0;
         uint8_t  cable_type  = 0;
         uint32_t port_speed  = 0;
@@ -656,15 +680,27 @@ catalog::populate_serdes(char *dir_name, ptree &prop_tree)
                         prop_tree.get<std::string>("serdes.fw", "");
 
     std::string serdes_build_id =
-                        prop_tree.get<std::string>("serdes.build_id", "");
+                    prop_tree.get<std::string>("serdes.build_id", "");
     catalog_db_.serdes_build_id = strtoul(serdes_build_id.c_str(), NULL, 16);
 
     std::string serdes_rev_id =
-                        prop_tree.get<std::string>("serdes.rev_id", "");
+                    prop_tree.get<std::string>("serdes.rev_id", "");
     catalog_db_.serdes_rev_id = strtoul(serdes_rev_id.c_str(), NULL, 16);
 
+    catalog_db_.serdes_fw2_file =
+                        prop_tree.get<std::string>("serdes.fw2", "");
+
+    std::string serdes_build_id2 =
+                    prop_tree.get<std::string>("serdes.build_id2", "");
+    catalog_db_.serdes_build_id2 = strtoul(serdes_build_id2.c_str(), NULL, 16);
+
+    std::string serdes_rev_id2 =
+                    prop_tree.get<std::string>("serdes.rev_id2", "");
+
+    catalog_db_.serdes_rev_id2 = strtoul(serdes_rev_id2.c_str(), NULL, 16);
+
     std::string serdes_file =
-                        prop_tree.get<std::string>("serdes.serdes_file", "");
+                    prop_tree.get<std::string>("serdes.serdes_file", "");
 
     serdes_file = std::string(dir_name) + "/" + serdes_file;
 
@@ -1071,6 +1107,8 @@ catalog::oob_mgmt_port(uint32_t logical_oob_port) {
         oob_connection_type_t::OOB_CONNECTION_TYPE_MGMT;
 }
 
+// TODO: to get the serdes_info we could have used mac_id and mac_chnl instead of serdes_index.
+// using serdes_index requires us to know sbus_addr allocation which could vary chip2chip
 serdes_info_t*
 catalog::serdes_info_get(uint32_t sbus_addr,
                          uint32_t port_speed,

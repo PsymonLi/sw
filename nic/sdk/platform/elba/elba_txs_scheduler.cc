@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba tx scheduler handling
+///
+//----------------------------------------------------------------------------
 
 #include "platform/elba/elba_txs_scheduler.hpp"
 #include "asic/common/asic_common.hpp"

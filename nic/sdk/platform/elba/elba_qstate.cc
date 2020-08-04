@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba qstate handling
+///
+//----------------------------------------------------------------------------
 
 #include "platform/elba/elba_state.hpp"
 #include "platform/elba/elba_qstate.hpp"

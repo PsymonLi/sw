@@ -1,4 +1,12 @@
-// {C} Copyright 2018 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba state instance definitions
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_STATE_HPP__
 #define __ELBA_STATE_HPP__

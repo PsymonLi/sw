@@ -1,4 +1,12 @@
-// {C} Copyright 2017 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba P4 headers
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_P4_HPP__
 #define __ELBA_P4_HPP__

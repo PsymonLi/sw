@@ -1,3 +1,13 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba barco sym tests
+///
+//----------------------------------------------------------------------------
+
 #include "include/sdk/base.hpp"
 #include "include/sdk/crypto_apis.hpp"
 #include "platform/elba/elba_barco_asym_apis.hpp"

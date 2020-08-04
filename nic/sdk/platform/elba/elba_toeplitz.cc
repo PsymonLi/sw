@@ -1,4 +1,12 @@
-// {C} Copyright 2018 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba toeplitz handling
+///
+//----------------------------------------------------------------------------
 
 #include "platform/elba/elba_tbl_rw.hpp"
 #include "platform/elba/elba_hbm_rw.hpp"
@@ -92,7 +100,7 @@ elba_rss_table_config_ex (uint32_t stage, uint32_t stage_tableid,
     tbl_id = stage_tableid;
 
 #ifdef MEM_REGION_RSS_INDIR_TABLE_NAME
-    tbl_base = get_mem_addr(MEM_REGION_RSS_INDIR_TABLE_NAME);
+    tbl_base = elba_get_mem_addr(MEM_REGION_RSS_INDIR_TABLE_NAME);
     SDK_ASSERT(tbl_base != INVALID_MEM_ADDRESS);
 #else
     SDK_ASSERT(0);

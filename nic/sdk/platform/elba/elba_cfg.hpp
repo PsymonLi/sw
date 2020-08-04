@@ -1,4 +1,12 @@
-// {C} Copyright 2017 Pensando Systems Inc. All rights reserved
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba config API headers
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_CFG_HPP__
 #define __ELBA_CFG_HPP__
@@ -13,9 +21,9 @@ namespace sdk {
 namespace platform {
 namespace elba {
 
-sdk_ret_t elba_init (asic_cfg_t *cfg);
-sdk_ret_t elba_cache_init (asic_cfg_t *cfg);
-sdk_ret_t elba_soft_init (asic_cfg_t *cfg);
+sdk_ret_t elba_init(asic_cfg_t *cfg);
+sdk_ret_t elba_cache_init(asic_cfg_t *cfg);
+sdk_ret_t elba_soft_init(asic_cfg_t *cfg);
 sdk_ret_t elba_load_config(char *pathname);
 sdk_ret_t elba_verify_config(char *config_dir);
 

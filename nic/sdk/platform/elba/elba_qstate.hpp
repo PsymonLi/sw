@@ -1,4 +1,12 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// elba queue state headers
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ELBA_QSTATE_HPP__
 #define __ELBA_QSTATE_HPP__
