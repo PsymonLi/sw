@@ -9,51 +9,56 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include <boost/property_tree/json_parser.hpp>
 #include "third-party/asic/elba/model/utils/elb_csr_py_if.h"
 #include "platform/utils/mpart_rsvd.hpp"
+#include "platform/utils/mpartition.hpp"
 #include "platform/elba/csrint/csr_init.hpp"
 #include "platform/csr/asicrw_if.hpp"
 #include "platform/elbtrace/elbtrace.hpp"
 #include "lib/pal/pal.hpp"
+#include "lib/utils/path_utils.hpp"
+
+#define roundup(x, y) ((((x) + ((y)-1)) / (y)) * (y)) /* to any y */
 
 namespace sdk {
 namespace platform {
 
-#define roundup(x, y) ((((x) + ((y)-1)) / (y)) * (y)) /* to any y */
-  //Neel. todo: Below todo comment is from capri. check what needs to be done for Elba
-// TODO. Need to read it from memory or file. Temporary fix for SDK compilation
-#define MREGION_MPU_TRACE_ADDR                                                 \
-    (MREGION_BASE_ADDR + MREGION_MPU_TRACE_START_OFFSET)
-  //#define TRACE_END (MREGION_MPU_TRACE_ADDR + MREGION_MPU_TRACE_SIZE) //todo: req SW to make it deeper for SDP and DMA
-
-#define REGION_SPLIT  (MREGION_MPU_TRACE_SIZE/4)
-#define MPU_TRACE_SIZE (REGION_SPLIT)
-#define SDP_PHV_TRACE_SIZE (REGION_SPLIT)
-#define SDP_CTL_TRACE_SIZE (REGION_SPLIT)
-#define DMA_TRACE_SIZE (REGION_SPLIT)
-
-#define TRACE_BASE roundup(MREGION_MPU_TRACE_ADDR, 4096)
-#define TRACE_END (MREGION_MPU_TRACE_ADDR + MPU_TRACE_SIZE)
-
-  //Neel. todo: what shd be the base address for sdp and dma?
-#define SDPTRACE_PHV_BASE roundup(TRACE_END+1, 4096)   //todo
-#define SDPTRACE_PHV_END (SDPTRACE_PHV_BASE + SDP_PHV_TRACE_SIZE - 4096) //todo
-#define SDPTRACE_CTL_BASE roundup(SDPTRACE_PHV_END+1, 4096)   //todo
-#define SDPTRACE_CTL_END (SDPTRACE_CTL_BASE + SDP_CTL_TRACE_SIZE - 4096) //todo
-#define DMATRACE_BASE    roundup(SDPTRACE_CTL_END+1, 4096) //todo
-#define DMATRACE_END     (DMATRACE_BASE + DMA_TRACE_SIZE - 4096) //todo
-
 // Placeholder for the global state in mputrace app
-mputrace_global_state_t g_state = {};
+elbtrace_global_state_t g_state = { };
+
+}    //    end namespace platform
+}    //    end namespace sdk
+
+using namespace sdk::platform;
 
 void
 usage (char *argv[])
 {
-    std::cerr << "Usage: " << std::endl
-              << "       " << argv[0] << " conf <cfg_file>" << std::endl
-              << "       " << argv[0] << " dump <out_file>" << std::endl
-              << "       " << argv[0] << " show" << std::endl
-              << "       " << argv[0] << " reset" << std::endl;
+    std::cerr << "Usage: " << "elbtrace" << " [-p <profile>] \n"
+              << "       " << "        " << " <command> [<args>]\n\n"
+              << "-p profile\n"
+              << "    This optional argument provides feature memory profile to load\n"
+              << "    e.g. base, router, storage etc. In absence of this option default\n"
+              << "    memory profile is loaded.\n\n"
+              << "elbtrace is a tool to enable tracing on Match Processing Unit (MPU), \n"
+              <<" SDP and DMA using the independent trace facility provided by the ASIC.\n\n"
+              << "elbtrace supports following commands: \n"
+              << "    conf_mpu <cfg_file>   Enables tracing for MPUs specified by file\n"
+              << "    dump_mpu <out_file>   Collects trace logs for MPU in specified binary file\n"
+              << "    show_mpu              Displays the content of trace register for enabled MPUs\n"
+              << "    reset_mpu             Clears the contents of trace registers of all the MPUs and "
+              << "stops the tracing\n"
+              << "    conf_sdp <cfg_file>   Enables tracing for SDPs specified by file\n"
+              << "    dump_sdp <out_file>   Collects trace logs for SDP in specified binary file\n"
+              << "    show_sdp              Displays the content of trace register for enabled SDPs\n"
+              << "    reset_sdp             Clears the contents of trace registers of all the SDPs and "
+              << "stops the tracing\n"
+              << "    conf_dma <cfg_file>   Enables tracing for DMAs specified by file\n"
+              << "    dump_dma <out_file>   Collects trace logs for DMA in specified binary file\n"
+              << "    show_dma              Displays the content of trace register for enabled DMAs\n"
+              << "    reset_dma             Clears the contents of trace registers of all the DMAs and "
+              << "stops the tracing\n";
 }
 
 static inline int
@@ -67,21 +72,36 @@ mputrace_error (char *argv[])
 static inline void
 elbtrace_init(void)
 {
-#ifdef __x86_64__
-    assert(sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_SIM) ==
-           sdk::lib::PAL_RET_OK);
-#elif __aarch64__
-    assert(sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_HW) ==
-           sdk::lib::PAL_RET_OK);
-#endif
+    std::string                mpart_file;
+    utils::mpartition          *mpartition = NULL;
+    sdk::lib::catalog          *catalog;
+    uint32_t                   region_split_size;
 
-    sdk::platform::elba::csr_init();
+    assert(sdk::lib::pal_init(g_state.platform_type) == sdk::lib::PAL_RET_OK);
+    catalog = sdk::lib::catalog::factory(g_state.cfg_path, "",
+                                         g_state.platform_type);
+    mpart_file = sdk::lib::get_mpart_file_path(g_state.cfg_path, g_state.pipeline,
+                                               catalog, g_state.profile,
+                                               g_state.platform_type);
+    mpartition = utils::mpartition::factory(mpart_file.c_str());
+    assert(mpartition);
+    region_split_size = mpartition->size("mpu-trace") / 4;
+    g_state.mputrace_base = roundup(mpartition->start_addr("mpu-trace"), 4096);
+    g_state.mputrace_end = g_state.mputrace_base + region_split_size;
+    g_state.sdptrace_phv_base = roundup(g_state.mputrace_end + 1, 4096);
+    g_state.sdptrace_phv_end  = g_state.sdptrace_phv_base + region_split_size - 4096;
+    g_state.sdptrace_ctl_base = roundup(g_state.sdptrace_phv_end + 1, 4096);
+    g_state.sdptrace_ctl_end  = g_state.sdptrace_ctl_base + region_split_size - 4096;
+    g_state.dmatrace_base = roundup(g_state.sdptrace_ctl_end + 1, 4096);
+    g_state.dmatrace_end  = g_state.dmatrace_base + region_split_size - 4096;
+    elba::csr_init();
 }
 
 static int
-mputrace_handle_options (int argc, char *argv[])
+elbtrace_handle_options (int argc, char *argv[])
 {
     int ret = 0;
+    string oper_str = std::string((const char *)argv[1]);
     std::map<std::string, int> oper = {
         {"conf_mpu", MPUTRACE_CONFIG},
         {"dump_mpu", MPUTRACE_DUMP},
@@ -97,55 +117,41 @@ mputrace_handle_options (int argc, char *argv[])
         {"show_dma",  DMATRACE_SHOW},
     };
 
-    g_state.trace_base = TRACE_BASE;
-    g_state.trace_end = TRACE_END;
-    g_state.sdptrace_phv_base = SDPTRACE_PHV_BASE;
-    g_state.sdptrace_phv_end  = SDPTRACE_PHV_END;
-    g_state.sdptrace_ctl_base = SDPTRACE_CTL_BASE;
-    g_state.sdptrace_ctl_end  = SDPTRACE_CTL_END;
-    g_state.dmatrace_base = DMATRACE_BASE;
-    g_state.dmatrace_end  = DMATRACE_END;
-    switch (oper[std::string((const char *)argv[1])]) {
+    switch (oper[oper_str]) {
     case MPUTRACE_CONFIG: 
     case SDPTRACE_CONFIG:
     case DMATRACE_CONFIG:
-        if (argc < MPUTRACE_MAX_ARG) {
+        if (argc < ELBTRACE_MAX_ARG) {
             std::cerr << "Specify config filename" << std::endl;
             usage(argv);
             exit(EXIT_FAILURE);
             break;
         }
         elbtrace_init();
-	if (oper[std::string((const char *)argv[1])] == MPUTRACE_CONFIG) {
-	  elbtrace_cfg(argv[2], "mpu");
-	}
-	else if (oper[std::string((const char *)argv[1])] == SDPTRACE_CONFIG) {
-	  cout << "configuring SDP now" << endl;
-	  elbtrace_cfg(argv[2], "sdp");
-	}
-	else if (oper[std::string((const char *)argv[1])] == DMATRACE_CONFIG) {
-	  elbtrace_cfg(argv[2], "dma");
-	}
-
+        if (oper[oper_str] == MPUTRACE_CONFIG) {
+            elbtrace_cfg(argv[2], "mpu");
+        } else if (oper[oper_str] == SDPTRACE_CONFIG) {
+            elbtrace_cfg(argv[2], "sdp");
+        } else if (oper[oper_str] == DMATRACE_CONFIG) {
+            elbtrace_cfg(argv[2], "dma");
+        }
         break;
     case MPUTRACE_DUMP:
     case SDPTRACE_DUMP:
     case DMATRACE_DUMP:
-        if (argc < MPUTRACE_MAX_ARG) {
+        if (argc < ELBTRACE_MAX_ARG) {
             std::cerr << "Specify dump filename" << std::endl;
             usage(argv);
             exit(EXIT_FAILURE);
         }
         elbtrace_init();
-	if (oper[std::string((const char *)argv[1])] == MPUTRACE_DUMP) {
-	  elbtrace_dump(argv[2], "mpu");
-	}
-	else if (oper[std::string((const char *)argv[1])] == SDPTRACE_DUMP) {
-	  elbtrace_dump(argv[2], "sdp");
-	}
-	else if (oper[std::string((const char *)argv[1])] == DMATRACE_DUMP) {
-	  elbtrace_dump(argv[2], "dma");
-	}
+        if (oper[oper_str] == MPUTRACE_DUMP) {
+            elbtrace_dump(argv[2], "mpu");
+        } else if (oper[oper_str] == SDPTRACE_DUMP) {
+            elbtrace_dump(argv[2], "sdp");
+        } else if (oper[oper_str] == DMATRACE_DUMP) {
+            elbtrace_dump(argv[2], "dma");
+        }
         break;
     case MPUTRACE_RESET:
         elbtrace_init();
@@ -161,25 +167,25 @@ mputrace_handle_options (int argc, char *argv[])
         break;
     case MPUTRACE_SHOW:
 
-      //      cout << "MREGION_MPU_TRACE_ADDR  " << hex << MREGION_MPU_TRACE_ADDR << endl;
-      // cout << "MREGION_BASE_ADDR 	        "   << hex << MREGION_BASE_ADDR 	     << endl;
-      //cout << "MREGION_MPU_TRACE_START_OFFSET  " << hex << MREGION_MPU_TRACE_START_OFFSET << endl;
-      //cout << "MREGION_MPU_TRACE_SIZE  " << hex << MREGION_MPU_TRACE_SIZE << endl;
+        //cout << "MREGION_MPU_TRACE_ADDR          " << hex << MREGION_MPU_TRACE_ADDR << endl;
+        //cout << "MREGION_BASE_ADDR 	           " << hex << MREGION_BASE_ADDR << endl;
+        //cout << "MREGION_MPU_TRACE_START_OFFSET  " << hex << MREGION_MPU_TRACE_START_OFFSET << endl;
+        //cout << "MREGION_MPU_TRACE_SIZE          " << hex << MREGION_MPU_TRACE_SIZE << endl;
 
-      // cout << "REGION_SPLIT     " << hex << REGION_SPLIT   << endl;
-      //cout << "MPU_TRACE_SIZE   " << hex << MPU_TRACE_SIZE  << endl;
-      //cout << "SDP_PHV_TRACE_SIZE   " << hex << SDP_PHV_TRACE_SIZE  << endl;
-      //cout << "SDP_CTL_TRACE_SIZE   " << hex << SDP_CTL_TRACE_SIZE  << endl;
-      //cout << "DMA_TRACE_SIZE   " << hex << DMA_TRACE_SIZE  << "\n" <<  endl;
+        //cout << "REGION_SPLIT         " << hex << REGION_SPLIT << endl;
+        //cout << "MPU_TRACE_SIZE       " << hex << MPU_TRACE_SIZE << endl;
+        //cout << "SDP_PHV_TRACE_SIZE   " << hex << SDP_PHV_TRACE_SIZE << endl;
+        //cout << "SDP_CTL_TRACE_SIZE   " << hex << SDP_CTL_TRACE_SIZE << endl;
+        //cout << "DMA_TRACE_SIZE       " << hex << DMA_TRACE_SIZE << endl << endl;
 
-      //cout << " MPUTRACE_BASE	   " << hex << TRACE_BASE		     << endl;
-      //cout << " MPUTRACE_END       " << hex << TRACE_END                      << endl;
-      //cout << " SDPTRACE_PHV_BASE  " << hex << SDPTRACE_PHV_BASE  << endl;
-      //cout << " SDPTRACE_PHV_END   " << hex << SDPTRACE_PHV_END   << endl;
-      //cout << " SDPTRACE_CTL_BASE  " << hex << SDPTRACE_CTL_BASE  << endl;
-      //cout << " SDPTRACE_CTL_END   " << hex << SDPTRACE_CTL_END   << endl;
-      //cout << " DMATRACE_BASE      " << hex << DMATRACE_BASE      << endl;
-      //cout << " DMATRACE_END       " << hex << DMATRACE_END       << endl;
+        //cout << "MPUTRACE_BASE	  " << hex << TRACE_BASE	     << endl;
+        //cout << "MPUTRACE_END       " << hex << TRACE_END          << endl;
+        //cout << "SDPTRACE_PHV_BASE  " << hex << SDPTRACE_PHV_BASE  << endl;
+        //cout << "SDPTRACE_PHV_END   " << hex << SDPTRACE_PHV_END   << endl;
+        //cout << "SDPTRACE_CTL_BASE  " << hex << SDPTRACE_CTL_BASE  << endl;
+        //cout << "SDPTRACE_CTL_END   " << hex << SDPTRACE_CTL_END   << endl;
+        //cout << "DMATRACE_BASE      " << hex << DMATRACE_BASE      << endl;
+        //cout << "DMATRACE_END       " << hex << DMATRACE_END       << endl;
 
         elbtrace_init();
         mputrace_show();
@@ -198,21 +204,72 @@ mputrace_handle_options (int argc, char *argv[])
     return ret;
 }
 
-}    //    end namespace platform
-}    //    end namespace sdk
+static inline void
+get_profile (int *argc, char **argv)
+{
+    int new_argc = 0;
+    int i = 0;
+
+    while (i < *argc) {
+        if (strcmp(argv[i], "-p") == 0) {
+            if (unlikely(++i >= *argc)) {
+                fprintf(stderr, "Missing argument for \"-p\" \n");
+                usage(argv);
+                exit(EXIT_FAILURE);
+            }
+            g_state.profile = std::string(argv[i]);
+            cout << "Profile: " << g_state.profile << std::endl;
+        } else {
+            // skip the profile argument
+            argv[new_argc] = argv[i];
+            new_argc++;
+        }
+        i++;
+    }
+    *argc = new_argc;
+}
+
+static int
+logger_trace_cb (uint32_t mod_id, sdk_trace_level_e trace_level,
+                 const char *fmt, ...)
+{
+    char       logbuf[1024];
+    va_list    args;
+
+    if (trace_level > g_state.trace_level) {
+        return 0;
+    }
+    va_start(args, fmt);
+    vsnprintf(logbuf, sizeof(logbuf), fmt, args);
+    return printf("%s\n", logbuf);
+}
+
+static inline void
+get_pipeline (void)
+{
+    std::string pipeline_file;
+    boost::property_tree::ptree pt;
+
+    pipeline_file = sdk::lib::get_pipeline_file_path(g_state.cfg_path);
+    std::ifstream json_cfg(pipeline_file.c_str());
+    read_json(json_cfg, pt);
+    g_state.pipeline = pt.get<std::string>("pipeline");
+}
 
 int
 main (int argc, char *argv[])
 {
     int ret = 0;
 
-    //    sdk::platform::pal_init("foo");
-    if (argc < MPUTRACE_MAX_ARG - 1) {
-        sdk::platform::usage(argv);
+    if (argc < ELBTRACE_MAX_ARG - 1) {
+        usage(argv);
         exit(EXIT_FAILURE);
     }
-
-    ret = sdk::platform::mputrace_handle_options(argc, argv);
-
-    return ret;
+    g_state.platform_type = platform_type_t::PLATFORM_TYPE_HW;
+    g_state.cfg_path = sdk::lib::get_config_path(g_state.platform_type);
+    g_state.trace_level = sdk::lib::sdk_trace_level_e::SDK_TRACE_LEVEL_ERR;
+    sdk::lib::logger::init(logger_trace_cb);
+    get_profile(&argc, argv);
+    get_pipeline();
+    return elbtrace_handle_options(argc, argv);
 }

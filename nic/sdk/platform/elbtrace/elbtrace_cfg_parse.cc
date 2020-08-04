@@ -560,79 +560,74 @@ dmatrace_json_cfg_inst_parse (ptree &pt, dmatrace_cfg_inst_t *cfg_inst)
     //cout << "capture_all "    <<  cfg_inst->ctrl.capture_all	  << endl;
     //cout << "axi_err_enable " <<  cfg_inst->ctrl.axi_err_enable   << endl;
     //cout << "dma_cfg_inst_parse end \n" << endl;
-    
-
-
-
 }
 
 // Read each pipeline object from the json file
 void
-elbtrace_json_cfg_inst_program (ptree &pt, std::string mod_name)
+elbtrace_json_cfg_inst_program(ptree &pt, std::string mod_name)
 {
-
-  
     mputrace_cfg_inst_t cfg_inst;
     sdptrace_cfg_inst_t cfg_inst_sdp;
     dmatrace_cfg_inst_t cfg_inst_dma;
 
     if (mod_name == "mpu") {
-      mputrace_json_cfg_inst_parse(pt, &cfg_inst);
-      
-      for (int p = 0; p < PIPE_CNT; p++) {
-        if (elbtrace_is_match(mputrace_pipeline_str_get(p),
-                              cfg_inst.pipeline_str)) {
-	  for (int s = 0; s <= max_stages[p]; s++) {
-	    if (elbtrace_is_match(std::to_string(s), cfg_inst.stage_str)) {
-	      for (int m = 0; m < MPUTRACE_MAX_MPU; m++) {
-		if (elbtrace_is_match(std::to_string(m),
-				      cfg_inst.mpu_str)) {
-		  mputrace_cfg_trace(p, s, m, &cfg_inst);
-		}
-	      }
-	    }
-	  }
-        }
-      }
-    }
-    else if (mod_name == "sdp") {
-      //      cout << "before sdptrace_json_cfg_inst_parse" << endl;
-      sdptrace_json_cfg_inst_parse(pt, &cfg_inst_sdp);
-      
-      for (int p = 0; p < PIPE_CNT; p++) {
-        if (elbtrace_is_match(mputrace_pipeline_str_get(p),
-                              cfg_inst_sdp.pipeline_str)) {
-	  for (int s = 0; s <= max_stages[p]; s++) {
-	    if (elbtrace_is_match(std::to_string(s), cfg_inst_sdp.stage_str)) {
-	      //	      cout << "before sdptrace_cfg_trace" << endl;
-	      sdptrace_cfg_trace(p, s, &cfg_inst_sdp);
-	    }
-	  }
-        }
-      }
-    }
-    else if (mod_name == "dma") {
-      dmatrace_json_cfg_inst_parse(pt, &cfg_inst_dma);
-      //cout << "json_cfg_inst_program" << endl;
-      
-      for (int p = 0; p < DMA_PIPE_CNT; p++) {
-	//cout << "json_cfg_inst_program pipe " << p << endl;
-	
-	//cout << "pipeline str is " << cfg_inst_dma.pipeline_str << endl;
-	//cout << "pipeline str get is " << dmatrace_pipeline_str_get(p) << endl;
-        if (elbtrace_is_match(dmatrace_pipeline_str_get(p),
-                              cfg_inst_dma.pipeline_str)) {
-	  //cout << "json_cfg_inst_program inside if " << endl;
-	  dmatrace_cfg_trace(p, &cfg_inst_dma);
-	  //cout << "json_cfg_inst_program end if " << endl;
-        }
-      }
-    }
+        mputrace_json_cfg_inst_parse(pt, &cfg_inst);
 
+        for (int p = 0; p < PIPE_CNT; p++) {
+            if (elbtrace_is_match(mputrace_pipeline_str_get(p),
+                                  cfg_inst.pipeline_str)) {
+                for (int s = 0; s <= max_stages[p]; s++) {
+                    if (elbtrace_is_match(std::to_string(s),
+                                          cfg_inst.stage_str)) {
+                        for (int m = 0; m < ELBTRACE_MAX_MPU; m++) {
+                            if (elbtrace_is_match(std::to_string(m),
+                                                  cfg_inst.mpu_str)) {
+                                mputrace_cfg_trace(p, s, m, &cfg_inst);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else if (mod_name == "sdp") {
+        //      cout << "before sdptrace_json_cfg_inst_parse" << endl;
+        sdptrace_json_cfg_inst_parse(pt, &cfg_inst_sdp);
+
+        for (int p = 0; p < PIPE_CNT; p++) {
+            if (elbtrace_is_match(mputrace_pipeline_str_get(p),
+                                  cfg_inst_sdp.pipeline_str)) {
+                for (int s = 0; s <= max_stages[p]; s++) {
+                    if (elbtrace_is_match(std::to_string(s),
+                                          cfg_inst_sdp.stage_str)) {
+                        //	      cout << "before sdptrace_cfg_trace" <<
+                        //endl;
+                        sdptrace_cfg_trace(p, s, &cfg_inst_sdp);
+                    }
+                }
+            }
+        }
+    } else if (mod_name == "dma") {
+        dmatrace_json_cfg_inst_parse(pt, &cfg_inst_dma);
+        // cout << "json_cfg_inst_program" << endl;
+
+        for (int p = 0; p < DMA_PIPE_CNT; p++) {
+            // cout << "json_cfg_inst_program pipe " << p << endl;
+
+            // cout << "pipeline str is " << cfg_inst_dma.pipeline_str << endl;
+            // cout << "pipeline str get is " << dmatrace_pipeline_str_get(p) <<
+            // endl;
+            if (elbtrace_is_match(dmatrace_pipeline_str_get(p),
+                                  cfg_inst_dma.pipeline_str)) {
+                // cout << "json_cfg_inst_program inside if " << endl;
+                dmatrace_cfg_trace(p, &cfg_inst_dma);
+                // cout << "json_cfg_inst_program end if " << endl;
+            }
+        }
+    }
 }
 
 static inline void
-elbtrace_json_parse_and_program (const char *cfg_file, std::string mod_name)
+elbtrace_json_parse_and_program(const char *cfg_file, std::string mod_name)
 {
     ptree pt, iter;
     ptree::iterator pos;
@@ -649,37 +644,31 @@ elbtrace_json_parse_and_program (const char *cfg_file, std::string mod_name)
     iter = pos->second;
     for (pos = iter.begin(); pos != iter.end();) {
         if (strcmp(pos->first.data(), "") == 0) {
-	  elbtrace_json_cfg_inst_program(pos->second, mod_name);
+            elbtrace_json_cfg_inst_program(pos->second, mod_name);
         }
         ++pos;
     }
 }
 
 void
-elbtrace_cfg (const char *cfg_file, std::string mod_name)
+elbtrace_cfg(const char *cfg_file, std::string mod_name)
 {
+    if (!((mod_name == "mpu") || (mod_name == "sdp") || (mod_name == "dma"))) {
+        cout << "Module name did not match mpu, sdp or dma. Incorrect argument."
+             << endl;
+        return;
+    }
 
-  if ( !((mod_name == "mpu") || 
-	 (mod_name == "sdp") || 
-	 (mod_name == "dma")) ) {
-	 cout << "Module name did not match mpu, sdp or dma. Incorrect argument." << endl;
-       }
-  else {
-     if (mod_name == "mpu") {
-      cout << "Initiating MPU config from file " << cfg_file << endl;
-     }
-     else if (mod_name == "sdp") {
-       cout << "Initiating SDP config from file " << cfg_file << endl;
-     }
-     else if (mod_name == "dma") {
-       cout << "Initiating DMA config from file " << cfg_file << endl;
-     }
-     elbtrace_json_parse_and_program(cfg_file, mod_name);
-     cout << "'elbtrace conf " << cfg_file << "' success!" << endl;
-  }
-  
+    if (mod_name == "mpu") {
+        cout << "Initiating MPU config from file " << cfg_file << endl;
+    } else if (mod_name == "sdp") {
+        cout << "Initiating SDP config from file " << cfg_file << endl;
+    } else if (mod_name == "dma") {
+        cout << "Initiating DMA config from file " << cfg_file << endl;
+    }
+
+    elbtrace_json_parse_and_program(cfg_file, mod_name);
+    cout << "'elbtrace conf " << cfg_file << "' success!" << endl;
 }
-  
-         
 }    // end namespace platform
 }    // end namespace sdk

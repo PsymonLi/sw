@@ -1,7 +1,16 @@
-# MPUTRACE
+# ELBTRACE
+
+Usage: elbtrace  [-p <profile>] 
+                 <command> [<args>]
 
 elbtrace is a tool to enable tracing on each Match Processing Unit (MPU) using
 the independent trace facility provided by the ASIC.
+
+-p profile 
+    This optional argument provides feature memory profile to load 
+    e.g. base, router, storage etc. In absence of this option default memory profile
+    is loaded.
+
 
 elbtrace supports the following operations
 config <cfg.json>
@@ -277,9 +286,9 @@ Following is a sample config.json file for reference -
 ## Steps to decode the dump file in the container -
     1 Copy the following files into the container
         - the dump file from 'elbtrace dump' command
-        - /nic/conf/gen/mpu_prog_info.json file from the naples device
+        - /nic/conf/gen/mpu_prog_info.json file from the elba_based device
     2 Generate elbtrace.syms symbol file in container (from /sw/nic dir).
-        - sdk/platform/mputrace/elbtrace.py gen_syms --pipeline=<pipeline>
+        - sdk/platform/elbtrace/elbtrace.py gen_syms --pipeline=<pipeline>
             - <pipeline> can be iris or apollo or artemis or gft
         - this will generate elbtrace.syms in nic/
     2 Run elbtrace.py script on the binary with mpu_prog_info.conf and
@@ -287,7 +296,7 @@ Following is a sample config.json file for reference -
         To decode the trace dump file
             sdk/platform/elbtrace/elbtrace.py decode_mpu mpu.bin --load=mpu_prog_info.json --sym=elbtrace.syms
         To track packet with PHV timestamp “0x1c07a80c” across stages
-            sdk/platform/mputrace/elbtrace.py decode_mpu mpu.bin --fltr phv_timestamp_capture=0x1c07a80c --load=mpu_prog_info.json --sym=elbtrace.syms > pkt1c07.log
+            sdk/platform/elbtrace/elbtrace.py decode_mpu mpu.bin --fltr phv_timestamp_capture=0x1c07a80c --load=mpu_prog_info.json --sym=elbtrace.syms > pkt1c07.log
         To dump info about the packet
             grep -e pipeline -e stage -e PROGRAM -e BRANCH -e table_hit pkt1c07.log
 
@@ -297,6 +306,6 @@ Following is a sample config.json file for reference -
     enable the trace options provided, collect the logs, decode and filter them.
     The decoded output is collected in nic/ dir.
     Usage:
-        - sdk/platform/mputrace/elbtrace_collect.py --mgmt <naples mgmt ip> --rxdma
+        - sdk/platform/elbtrace/elbtrace_collect.py --mgmt <naples mgmt ip> --rxdma
         or
-        - sdk/platform/mputrace/elbtrace_collect.py --host <host ip> --rxdma
+        - sdk/platform/elbtrace/elbtrace_collect.py --host <host ip> --rxdma
