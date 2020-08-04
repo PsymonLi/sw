@@ -1065,14 +1065,13 @@ DeviceManager::DeviceCreate(bool status) {
         }
         if (!skip_hwinit) {
             sdk::lib::thread *mnet_thread = NULL;
-            mnet_thread = sdk::lib::thread::factory(std::string("MNET_CREATE").c_str(),
+            mnet_thread = sdk::lib::thread::factory("MNET_CREATE",
                                                     NICMGRD_THREAD_ID_MNET,
                                                     sdk::lib::THREAD_ROLE_CONTROL,
                                                     0xD,
                                                     create_mnets,
-                                                    sched_get_priority_max(SCHED_FIFO),
-                                                    SCHED_FIFO,
-                                                    false); // yield
+                                                    sched_get_priority_max(SCHED_OTHER),
+                                                    SCHED_OTHER);
             if (mnet_thread == NULL) {
                 NIC_LOG_ERR("Unable to start mnet creation thread. Exiting!!");
                 return;

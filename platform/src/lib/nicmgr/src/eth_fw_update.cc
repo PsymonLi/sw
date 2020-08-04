@@ -354,14 +354,13 @@ FwInstall(string dev_name, bool is_async)
         struct fw_install_args *args = new fw_install_args();
         args->dev_name = dev_name;
         args->seq_no = fw_install_seq;
-        fw_install_thread = sdk::lib::thread::factory(std::string("FW_INSTALL").c_str(),
+        fw_install_thread = sdk::lib::thread::factory("FW_INSTALL",
                                                       NICMGRD_THREAD_ID_FW_INSTALL,
                                                       sdk::lib::THREAD_ROLE_CONTROL,
                                                       0xD,
                                                       FwInstallAsync,
                                                       sched_get_priority_min(SCHED_OTHER),
-                                                      SCHED_OTHER,
-                                                      false);
+                                                      SCHED_OTHER);
         if (fw_install_thread == NULL) {
                 NIC_LOG_ERR("{}: Failed to instantiate fw install thread", dev_name);
                 status = IONIC_RC_ERROR;
