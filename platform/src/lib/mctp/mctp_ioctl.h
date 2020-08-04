@@ -20,14 +20,25 @@ struct mctp_statistics {
     uint32_t mctp_vendor_pci_msg;
     uint32_t mctp_vendor_iana_msg;
 
-    /* mctp message sizes */
-    uint32_t mctp_pkt_64b;
-    uint32_t mctp_pkt_65b_127b;
-    uint32_t mctp_pkt_128b_255b;
-    uint32_t mctp_pkt_256b_511b;
+    /* mctp rx */
+    uint32_t mctp_rx_pkts;
+    uint32_t mctp_rx_bytes;
+    uint32_t mctp_rx_msg_64b;
+    uint32_t mctp_rx_msg_65b_128b;
+    uint32_t mctp_rx_msg_129b_192b;
+    uint32_t mctp_rx_msg_193b_256b;
+    uint32_t mctp_rx_msg_257b_512b;
+    uint32_t mctp_rx_msg_over_512b;
 
-    /* mctp shared tx kfifo */
+    /* mctp tx */
+    uint32_t mctp_tx_pkts;
     uint32_t mctp_tx_bytes;
+    uint32_t mctp_tx_msg_64b;
+    uint32_t mctp_tx_msg_65b_128b;
+    uint32_t mctp_tx_msg_129b_192b;
+    uint32_t mctp_tx_msg_193b_256b;
+    uint32_t mctp_tx_msg_257b_512b;
+    uint32_t mctp_tx_msg_over_512b;
     uint32_t mctp_txfifo_max_bytes;
     uint32_t mctp_txfifo_full_reset;
     uint32_t mctp_txfifo_error_reset;

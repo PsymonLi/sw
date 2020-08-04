@@ -46,14 +46,25 @@ get_info(int fd)
     printf("mctp_vendor_pci_msg: %u\n", stats.mctp_vendor_pci_msg);
     printf("mctp_vendor_iana_msg: %u\n", stats.mctp_vendor_iana_msg);
 
-    printf("\n# mctp message sizes\n");
-    printf("mctp_pkt_64b: %u\n", stats.mctp_pkt_64b);
-    printf("mctp_pkt_65b_127b: %u\n", stats.mctp_pkt_65b_127b);
-    printf("mctp_pkt_128b_255b: %u\n", stats.mctp_pkt_128b_255b);
-    printf("mctp_pkt_256b_511b: %u\n", stats.mctp_pkt_256b_511b);
+    printf("\n# mctp rx\n");
+    printf("mctp_rx_pkts: %u\n", stats.mctp_rx_pkts);
+    printf("mctp_rx_bytes: %u\n", stats.mctp_rx_bytes);
+    printf("mctp_rx_msg_64b: %u\n", stats.mctp_rx_msg_64b);
+    printf("mctp_rx_msg_65b_128b: %u\n", stats.mctp_rx_msg_65b_128b);
+    printf("mctp_rx_msg_129b_192b: %u\n", stats.mctp_rx_msg_129b_192b);
+    printf("mctp_rx_msg_193b_256b: %u\n", stats.mctp_rx_msg_193b_256b);
+    printf("mctp_rx_msg_257b_512b: %u\n", stats.mctp_rx_msg_257b_512b);
+    printf("mctp_rx_msg_over_512b: %u\n", stats.mctp_rx_msg_over_512b);
 
-    printf("\n# mctp shared tx kfifo\n");
+    printf("\n# mctp tx\n");
+    printf("mctp_tx_pkts: %u\n", stats.mctp_tx_pkts);
     printf("mctp_tx_bytes: %u\n", stats.mctp_tx_bytes);
+    printf("mctp_tx_msg_64b: %u\n", stats.mctp_tx_msg_64b);
+    printf("mctp_tx_msg_65b_128b: %u\n", stats.mctp_tx_msg_65b_128b);
+    printf("mctp_tx_msg_129b_192b: %u\n", stats.mctp_tx_msg_129b_192b);
+    printf("mctp_tx_msg_193b_256b: %u\n", stats.mctp_tx_msg_193b_256b);
+    printf("mctp_tx_msg_257b_512b: %u\n", stats.mctp_tx_msg_257b_512b);
+    printf("mctp_tx_msg_over_512b: %u\n", stats.mctp_tx_msg_over_512b);
     printf("mctp_txfifo_max_bytes: %u\n", stats.mctp_txfifo_max_bytes);
     printf("mctp_txfifo_full_reset: %u\n", stats.mctp_txfifo_full_reset);
     printf("mctp_txfifo_error_reset: %u\n", stats.mctp_txfifo_error_reset);
