@@ -164,6 +164,53 @@ int ionic_dev_cmd_identify(struct ionic_dev *idev, u16 ver,
 	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
 }
 
+int ionic_dev_cmd_hii_identify(struct ionic_dev *idev, unsigned long max_seconds)
+{
+	union ionic_dev_cmd cmd = {
+		.hii_identify.opcode = IONIC_CMD_HII_IDENTIFY,
+		.hii_identify.ver = 1,
+	};
+
+	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
+}
+
+int ionic_dev_cmd_system_led(struct ionic_dev *idev, unsigned long max_seconds,
+		     bool uid_led_status)
+{
+	union ionic_dev_cmd cmd = {
+		.hii_setattr.opcode = IONIC_CMD_HII_SETATTR,
+		.hii_setattr.attr = IONIC_HII_ATTR_UID_LED,
+		.hii_setattr.uid_led_on = uid_led_status,
+	};
+
+	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
+}
+
+int ionic_dev_cmd_oob_en(struct ionic_dev *idev, unsigned long max_seconds,
+		     bool oob_en)
+{
+	union ionic_dev_cmd cmd = {
+		.hii_setattr.opcode = IONIC_CMD_HII_SETATTR,
+		.hii_setattr.attr = IONIC_HII_ATTR_OOB_EN,
+		.hii_setattr.oob_en = oob_en,
+	};
+
+	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
+}
+
+int ionic_dev_cmd_vlan_setattr(struct ionic_dev *idev, unsigned long max_seconds,
+		     u32 vlan_id, bool vlan_en)
+{
+	union ionic_dev_cmd cmd = {
+		.hii_setattr.opcode = IONIC_CMD_HII_SETATTR,
+		.hii_setattr.attr = IONIC_HII_ATTR_VLAN,
+		.hii_setattr.vlan.id = vlan_id,
+		.hii_setattr.vlan.enable = vlan_en,
+	};
+
+	return ionic_dev_cmd_go(idev, &cmd, max_seconds);
+}
+
 char *ionic_dev_asic_name(u8 asic_type)
 {
 	switch (asic_type) {
@@ -1093,6 +1140,133 @@ static int ionic_lif_station_mac_addr(struct lif *lif, struct net_device *netdev
 }
 
 /**
+ * Sets the rx_filter hw feature
+ * */
+static int ionic_set_hw_features(struct lif *lif, u32 features)
+{
+	int err;
+	struct ionic_admin_ctx ctx = {
+		.cmd.lif_setattr = {
+			.opcode = IONIC_CMD_LIF_SETATTR,
+			.index = lif->index,
+			.attr = IONIC_LIF_ATTR_FEATURES,
+			.features = features,
+		},
+	};
+
+	err = ionic_adminq_post_wait(lif, &ctx);
+	if (err) {
+		return err;
+	}
+
+	if ((ctx.cmd.lif_setattr.features & ctx.comp.lif_setattr.features)
+		& IONIC_ETH_HW_VLAN_RX_FILTER) {
+		DBG2("RX VLAN Filter set as HW feature\n");
+	}
+	return 0;
+}
+
+/**
+ * Remove previous vlan id.
+ * */
+static int ionic_remove_vlan(struct lif *lif, u32 vlan_filter_id)
+{
+	int err;
+	struct ionic_admin_ctx ctx = {
+		.cmd.rx_filter_del = {
+			.opcode = IONIC_CMD_RX_FILTER_DEL,
+			.filter_id = vlan_filter_id,
+		},
+	};
+
+	err = ionic_adminq_post_wait(lif, &ctx);
+	return err;
+}
+
+/**
+ * Adding new vlan id.
+ * */
+static int ionic_add_vlan(struct ionic_dev *idev, struct lif *lif, u32 vlan_id,
+			     bool vlan_en)
+{
+	int err;
+	if (lif->vlan_en == vlan_en && lif->vlan_id == vlan_id) {
+		DBG2("Vlan mode and id has not changed\n");
+		return 0;
+	}
+
+	// remove previously vlan id
+	err = ionic_remove_vlan(lif, lif->vlan_filter_id);
+	if (err) {
+		DBG2("failed to remove filter id: %d, warning: %d\n",
+			lif->vlan_filter_id, err);
+	}
+
+	err = ionic_dev_cmd_vlan_setattr(idev, devcmd_timeout, vlan_id, vlan_en);
+	if (err) {
+		DBG2("Failed to set vlan attribute\n");
+		return err;
+	}
+
+	if (vlan_en == 1) {
+		struct ionic_admin_ctx ctx = {
+			.cmd.rx_filter_add = {
+				.opcode = IONIC_CMD_RX_FILTER_ADD,
+				.match = IONIC_RX_FILTER_MATCH_VLAN,
+				.vlan.vlan = vlan_id,
+			},
+		};
+
+		err = ionic_adminq_post_wait(lif, &ctx);
+		if (err) {
+			DBG2("failed to add VLAN: %d (filter id: %d), error: %d\n",
+				vlan_id, ctx.comp.rx_filter_add.filter_id, err);
+			return err;
+		}
+		lif->vlan_en = vlan_en;
+		lif->vlan_id = vlan_id;
+		lif->vlan_filter_id = ctx.comp.rx_filter_add.filter_id;
+	}
+	return 0;
+}
+
+/**
+ * Get the HII settings from naples
+ * */
+static int ionic_hii_identify(struct ionic_dev *idev, struct lif *lif)
+{
+	int err;
+	unsigned int i;
+	unsigned int nwords;
+	struct ionic_hii_identify_comp hii_comp;
+	union ionic_hii_dev_identity hii_ident;
+
+	err = ionic_dev_cmd_hii_identify(idev, devcmd_timeout);
+	if (err) {
+		DBG2("Failed identifying the hii settings\n");
+		return err;
+	}
+	ionic_dev_cmd_comp(idev, &hii_comp);
+	if (hii_comp.status != 0) {
+		DBG2("HII_IDENTIFY_ERR: status: %d\n", hii_comp.status);
+		return -EFAULT;
+	}
+	nwords = MIN(ARRAY_SIZE(hii_ident.words), ARRAY_SIZE(idev->dev_cmd->data));
+	for (i = 0; i < nwords; i++)
+		hii_ident.words[i] = readl(&idev->dev_cmd->data[i]);
+
+	DBG2("HII_DEFAULT_VALUE: oob_en: %d blink_led %d vlan: %d vlan_en %d\n",
+			hii_ident.oob_en, hii_ident.uid_led_on, hii_ident.vlan,
+			hii_ident.vlan_en);
+	lif->oob_en = hii_ident.oob_en;
+	lif->uid_led_on = hii_ident.uid_led_on;
+	lif->ncsi_cap = hii_ident.capabilities & (1 << IONIC_HII_CAPABILITY_NCSI);
+	ionic_add_vlan(idev, lif, hii_ident.vlan, hii_ident.vlan_en);
+	ionic_dev_cmd_oob_en(idev, devcmd_timeout, hii_ident.oob_en);
+	return 0;
+}
+
+/**
  * Initialize the lif
  * 1. Initialize all the queues.
  * 2. Get the MAC address.
@@ -1137,6 +1311,18 @@ int ionic_lif_init(struct net_device *netdev)
 	err = ionic_lif_station_mac_addr(lif, netdev);
 	if (err) {
 		DBG2("%s ::lif station mac addr failed\n", __FUNCTION__);
+		goto err_reset_lif;
+	}
+
+	err = ionic_set_hw_features(lif, IONIC_ETH_HW_VLAN_RX_FILTER);
+	if (err) {
+		// ignoring the error as this is not fatal at this point.
+		DBG2("%s ::lif setting hw features failed\n", __FUNCTION__);
+	}
+
+	err = ionic_hii_identify(idev, lif);
+	if (err) {
+		DBG2("%s ::lif getting hii settings failed\n", __FUNCTION__);
 		goto err_reset_lif;
 	}
 //	netdev->max_pkt_len = IONIC_MAX_MTU;
@@ -1415,4 +1601,55 @@ void ionic_poll_tx(struct net_device *netdev)
 		comp = txcq->info->cq_desc;
 
 	}
+}
+
+/**
+ * Set System LED callback for HII page.
+ * */
+int ionic_set_system_led_cb(struct net_device *netdev, bool uid_led_status)
+{
+	struct ionic *ionic = netdev->priv;
+	int err;
+
+	err = ionic_dev_cmd_system_led(&ionic->idev, devcmd_timeout, uid_led_status);
+	if (err) {
+		DBG2("Failed blinking the led\n");
+		return err;
+	}
+
+	return 0;
+}
+
+/**
+ * Add VLAN ID HII Page.
+ * */
+int ionic_add_vlan_cb(struct net_device *netdev, u32 vlan_id, bool vlan_en)
+{
+	struct ionic *ionic = netdev->priv;
+	int err;
+
+	err = ionic_add_vlan(&ionic->idev, ionic->lif, vlan_id, vlan_en);
+	if (err) {
+		DBG2("Failed to set vlan\n");
+		return err;
+	}
+
+	return 0;
+}
+
+/**
+ * OOB Enable HII Callback.
+ * */
+int ionic_oob_en_cb(struct net_device *netdev, bool oob_en)
+{
+	struct ionic *ionic = netdev->priv;
+	int err;
+
+	err = ionic_dev_cmd_oob_en(&ionic->idev, devcmd_timeout, oob_en);
+	if (err) {
+		DBG2("Failed to enable oob\n");
+		return err;
+	}
+
+	return 0;
 }

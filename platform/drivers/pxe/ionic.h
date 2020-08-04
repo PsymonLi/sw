@@ -217,6 +217,12 @@ struct lif
 	struct io_buffer *rx_iobuf[NRXQ_DESC];
 	struct io_buffer *tx_iobuf[NTXQ_DESC];
 
+	u32 vlan_filter_id;
+	u32 vlan_id;
+	bool oob_en;
+	bool vlan_en;
+	bool uid_led_on;
+	bool ncsi_cap;
 	u32 info_sz;
 	struct ionic_lif_info *info;
 	dma_addr_t info_pa;
@@ -302,4 +308,8 @@ int ionic_dev_cmd_lif_reset(struct ionic_dev *idev, u32 index,
 			    unsigned long max_seconds);
 int ionic_lif_reset(struct ionic *ionic);
 
+// HII callback functions
+int ionic_add_vlan_cb(struct net_device *netdev, u32 vlan_id, bool vlan_en);
+int ionic_set_system_led_cb(struct net_device *netdev, bool uid_led_status);
+int ionic_oob_en_cb(struct net_device *netdev, bool oob_en);
 #endif /* _IONIC_H */

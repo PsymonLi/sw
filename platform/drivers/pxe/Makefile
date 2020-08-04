@@ -4,8 +4,9 @@
 TOP = ../../..
 IPXEASSETDIR = $(TOP)/platform/drivers/pxe/signed_oprom
 IPXEGENDIR = $(TOP)/platform/gen/ipxe
-EFI_PCI_IPXE = $(TOP)/platform/drivers/pxe/efi_pci.c
-EFI_SNP_HII_IPXE = $(TOP)/platform/drivers/pxe/efi_snp_hii.c
+EFI_CONFIG_IPXE = $(TOP)/platform/drivers/pxe/general.h
+EFI_IPXE_INCLUDE = $(TOP)/platform/drivers/pxe/hii_strings/include/*
+EFI_IPXE_INTERFACE = $(TOP)/platform/drivers/pxe/hii_strings/interface/*
 IONIC_IPXE = $(wildcard $(TOP)/platform/drivers/pxe/ionic*.c) $(wildcard $(TOP)/platform/drivers/pxe/ionic.h) $(TOP)/nic/sdk/platform/drivers/ionic_base.h
 IONIC_COMMON = $(wildcard $(TOP)/platform/drivers/common/*.h)
 IONIC_SRC = $(IONIC_IPXE) $(IONIC_COMMON)
@@ -24,9 +25,9 @@ ionic-oprom: $(BLD_BIN_DIR)/ionic.efirom
 ionic-ipxepatch: $(IPXEGENDIR)/ionic-ipxe.patch
 
 ifeq ($(DEBUG_OPROM),1)
-OPROM_TARGET=$(IPXEMOD)/src/bin-x86_64-efi/ionic.efirom
-else
 OPROM_TARGET=$(IPXEASSETDIR)/ionic.efirom
+else
+OPROM_TARGET=$(IPXEMOD)/src/bin-x86_64-efi/ionic.efirom
 endif
 
 $(IPXEGENDIR):
@@ -55,8 +56,9 @@ $(IPXEMOD)/src/bin-x86_64-efi/ionic.efidrv: .ipxefiles
 
 .ipxefiles: $(IPXEMOD) $(IONIC_SRC)
 	cp $(IONIC_SRC) $(IPXEMOD)/src/drivers/net/
-	cp $(EFI_PCI_IPXE) $(IPXEMOD)/src/interface/efi/
-	cp $(EFI_SNP_HII_IPXE) $(IPXEMOD)/src/interface/efi/efi_snp_hii.c
+	cp $(EFI_CONFIG_IPXE) $(IPXEMOD)/src/config/local/general.h
+	cp -r $(EFI_IPXE_INCLUDE) $(IPXEMOD)/src/include/.
+	cp -r $(EFI_IPXE_INTERFACE) $(IPXEMOD)/src/interface/.
 	touch $@
 
 $(IPXEMOD):
