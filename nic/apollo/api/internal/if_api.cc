@@ -10,7 +10,6 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
-#include "nic/sdk/lib/metrics/metrics.hpp"
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/framework/api_ctxt.hpp"
@@ -24,7 +23,6 @@
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl_state.hpp"
-#include "gen/platform/mem_regions.hpp"
 
 namespace api {
 
@@ -81,7 +79,7 @@ pds_host_if_create (pds_if_spec_t *spec)
     return SDK_RET_OOM;
 }
 
-static inline sdk_ret_t
+sdk_ret_t
 pds_host_if_delete (pds_obj_key_t *key)
 {
     api::api_ctxt_t *api_ctxt;
@@ -100,47 +98,18 @@ pds_host_if_create (pds_host_if_spec_t *spec)
     sdk_ret_t ret;
     api::if_entry *intf;
     pds_if_spec_t if_spec;
-    api::impl::lif_impl *lif;
-    pds_lif_spec_t *lif_spec = &spec->lif;
-    static mem_addr_t lif_stats_base_addr =
-        g_pds_state.mempartition()->start_addr(MEM_REGION_LIF_STATS_NAME);
-    static uint64_t block_size =
-        g_pds_state.mempartition()->block_size(MEM_REGION_LIF_STATS_NAME);
 
-    if ((lif_spec->type == sdk::platform::LIF_TYPE_HOST) ||
-        (lif_spec->type == sdk::platform::LIF_TYPE_CONTROL)){
-        // convert to if spec and create
-        if_spec_from_host_if_spec(&if_spec, spec);
-        ret = pds_host_if_create(&if_spec);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Host interface %s create failed, ret %u", spec->key.str(), ret);
-            return ret;
-        }
-        intf = if_db()->find(&if_spec.key);
-        intf->set_host_if_name(spec->name);
-        intf->set_host_if_mac(spec->mac);
+    // convert to if spec and create
+    if_spec_from_host_if_spec(&if_spec, spec);
+    ret = pds_host_if_create(&if_spec);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Host interface %s create failed, err %u", spec->key.str(), ret);
+        return ret;
     }
+    intf = if_db()->find(&if_spec.key);
+    intf->set_host_if_name(spec->name);
+    intf->set_host_if_mac(spec->mac);
 
-    // allocate lif impl
-    lif = api::impl::lif_impl::factory(lif_spec);
-    if (unlikely(lif == NULL)) {
-        if (lif_spec->type == sdk::platform::LIF_TYPE_HOST) {
-            pds_host_if_delete(&if_spec.key);
-        }
-        return sdk::SDK_RET_OOM;
-    }
-
-    // insert lif impl in lif_impl_state
-    api::impl::lif_impl_db()->insert(lif);
-    PDS_TRACE_DEBUG("Inserted lif %u %s %u %s",
-                    lif_spec->id, lif_spec->name, lif_spec->type,
-                    macaddr2str(lif_spec->mac));
-
-    // register for lif metrics
-    sdk::metrics::row_address(g_pds_state.hostif_metrics_handle(),
-                              *(sdk::metrics::key_t *)spec->key.id,
-                              (void *)(lif_stats_base_addr +
-                              (lif_spec->id * block_size)));
     return SDK_RET_OK;
 }
 

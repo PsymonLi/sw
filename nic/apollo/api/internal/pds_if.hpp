@@ -35,6 +35,12 @@ typedef struct pds_host_if_spec_s {
 /// \remark     valid host interface spec should be passed
 sdk_ret_t pds_host_if_create(_In_ pds_host_if_spec_t *spec);
 
+/// \brief      delete host interface
+/// \param[in]  key  host interface key
+/// \return     #SDK_RET_OK on success, failure status code on error
+/// \remark     valid host interface key should be passed
+sdk_ret_t pds_host_if_delete(_In_ pds_obj_key_t *key);
+
 /// \brief      initialize host interface
 /// \param[in]  key  host interface key
 /// \return     #SDK_RET_OK on success, failure status code on error

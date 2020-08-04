@@ -14,6 +14,7 @@
 #include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
+#include "nic/sdk/lib/metrics/metrics.hpp"
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
 // TODO: replace this with asic pd
@@ -27,6 +28,7 @@
 #include "nic/apollo/api/impl/lif_impl_state.hpp"
 #include "nic/apollo/api/internal/pds_if.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
+#include "gen/platform/mem_regions.hpp"
 
 namespace api {
 namespace impl {
@@ -87,10 +89,47 @@ host_if_spec_from_lif_info (pds_host_if_spec_t &spec, lif_info_t *info)
 
 sdk_ret_t
 devapi_impl::lif_create(lif_info_t *info) {
-    pds_host_if_spec_t spec;
+    sdk_ret_t ret;
+    pds_host_if_spec_t if_spec;
+    pds_lif_spec_t lif_spec;
+    api::impl::lif_impl *lif;
+    static mem_addr_t lif_stats_base_addr =
+        g_pds_state.mempartition()->start_addr(MEM_REGION_LIF_STATS_NAME);
+    static uint64_t block_size =
+        g_pds_state.mempartition()->block_size(MEM_REGION_LIF_STATS_NAME);
 
-    host_if_spec_from_lif_info(spec, info);
-    return pds_host_if_create(&spec);
+    // get lif spec from lif info
+    lif_spec_from_info(&lif_spec, info);
+
+    // allocate lif impl
+    lif = api::impl::lif_impl::factory(&lif_spec);
+    if (unlikely(lif == NULL)) {
+        return sdk::SDK_RET_OOM;
+    }
+
+    // insert lif impl in lif_impl_state
+    api::impl::lif_impl_db()->insert(lif);
+    PDS_TRACE_DEBUG("Inserted lif %u %s %u %s",
+                    lif_spec.id, lif_spec.name, lif_spec.type,
+                    macaddr2str(lif_spec.mac));
+
+    // register for lif metrics
+    sdk::metrics::row_address(g_pds_state.hostif_metrics_handle(),
+                              *(sdk::metrics::key_t *)lif_spec.key.id,
+                              (void *)(lif_stats_base_addr +
+                              (lif_spec.id * block_size)));
+
+    // host if create for host lifs and ctrl lifs
+    if ((info->type == sdk::platform::LIF_TYPE_HOST) ||
+        (info->type == sdk::platform::LIF_TYPE_CONTROL)) {
+        host_if_spec_from_lif_info(if_spec, info);
+        ret = pds_host_if_create(&if_spec);
+        if (ret != SDK_RET_OK) {
+            return ret;
+        }
+    }
+
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
