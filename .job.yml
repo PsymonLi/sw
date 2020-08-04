@@ -243,7 +243,7 @@ jobs:
     labels: ["CI-Regression", "CI-Regression-Windows"]
   iota/test/standalone/regression/linkmgr:
     labels: ["CI-Regression", "CI-Regression-Linkmgr"]
-  iota/test/standalone/compat/compat-server/esx6.7:
+  iota/test/standalone/compat/compat-server/esx6_7:
     labels: ["compat-server"]
   iota/test/standalone/compat/compat-server/windows2019:
     labels: ["compat-server"]
@@ -271,9 +271,9 @@ jobs:
     labels: ["compat-server"]
   iota/test/standalone/compat/compat-server/ubuntu18043:
     labels: ["compat-server"]
-  iota/test/standalone/compat/compat-server/esx6.7-reboot:
+  iota/test/standalone/compat/compat-server/esx6_7-reboot:
     labels: ["compat-server-reboot"]
-  iota/test/standalone/compat/compat-server/esx6.5-reboot:
+  iota/test/standalone/compat/compat-server/esx6_5-reboot:
     labels: ["compat-server-reboot"]
   iota/test/standalone/compat/compat-server/windows2019-reboot:
     labels: ["compat-server-reboot"]
@@ -301,7 +301,7 @@ jobs:
     labels: ["compat-server-reboot"]
   iota/test/standalone/compat/compat-server/ubuntu18043-reboot:
     labels: ["compat-server-reboot"]
-  iota/test/standalone/compat/compat-server/esx6.5-reboot-uefi:
+  iota/test/standalone/compat/compat-server/esx6_5-reboot-uefi:
     labels: ["compat-other-reboot-uefi"]
   iota/test/standalone/compat/compat-server/windows2019-reboot-uefi:
     labels: ["compat-other-reboot-uefi"]
