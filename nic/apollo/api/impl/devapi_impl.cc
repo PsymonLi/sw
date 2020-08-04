@@ -113,12 +113,6 @@ devapi_impl::lif_create(lif_info_t *info) {
                     lif_spec.id, lif_spec.name, lif_spec.type,
                     macaddr2str(lif_spec.mac));
 
-    // register for lif metrics
-    sdk::metrics::row_address(g_pds_state.hostif_metrics_handle(),
-                              *(sdk::metrics::key_t *)lif_spec.key.id,
-                              (void *)(lif_stats_base_addr +
-                              (lif_spec.id * block_size)));
-
     // host if create for host lifs and ctrl lifs
     if ((info->type == sdk::platform::LIF_TYPE_HOST) ||
         (info->type == sdk::platform::LIF_TYPE_CONTROL)) {
@@ -127,6 +121,17 @@ devapi_impl::lif_create(lif_info_t *info) {
         if (ret != SDK_RET_OK) {
             return ret;
         }
+        // register for lif metrics
+        sdk::metrics::row_address(g_pds_state.hostif_metrics_handle(),
+                                  *(sdk::metrics::key_t *)if_spec.key.id,
+                                  (void *)(lif_stats_base_addr +
+                                               (lif_spec.id * block_size)));
+    } else {
+        // register for lif metrics
+        sdk::metrics::row_address(g_pds_state.hostif_metrics_handle(),
+                                  *(sdk::metrics::key_t *)lif_spec.key.id,
+                                  (void *)(lif_stats_base_addr +
+                                               (lif_spec.id * block_size)));
     }
 
     return SDK_RET_OK;
