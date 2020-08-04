@@ -96,6 +96,7 @@ pds_vnic_api_stats_to_proto (pds::VnicStats *proto_stats,
     proto_stats->set_metertxpackets(api_stats->meter_tx_pkts);
     proto_stats->set_meterrxbytes(api_stats->meter_rx_bytes);
     proto_stats->set_meterrxpackets(api_stats->meter_rx_pkts);
+    proto_stats->set_activesessions(api_stats->active_sessions);
 }
 
 // populate proto buf from vnic API info

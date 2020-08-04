@@ -881,7 +881,7 @@ end:
     return;
 }
 
-always_inline int
+always_inline bool
 pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib,
                      u16 nh_hw_id, u8 is_ip4,
                      u16 *next, u32 *counter)
@@ -915,7 +915,7 @@ pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib,
             if (clib_memcmp(eth0->dst_address, ingress_vrmac, ETH_ADDR_LEN) != 0) {
                 *next = FLOW_CLASSIFY_NEXT_DROP;
                 counter[FLOW_CLASSIFY_COUNTER_VRIP_MAC_MISMATCH] += 1;
-                return 0;
+                return true;
             }
             if (protocol == IP_PROTOCOL_ICMP) {
                 if (PREDICT_TRUE(icmp0->type == ICMP4_echo_request)) {
@@ -926,18 +926,18 @@ pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib,
                         vnet_buffer(vlib)->sw_if_index[VLIB_RX];
                     *next = FLOW_CLASSIFY_NEXT_ICMP_VRIP;
                     counter[FLOW_CLASSIFY_COUNTER_ICMP_VRIP] += 1;
-                    return 0;
+                    return true;
                 }
             }
             *next = FLOW_CLASSIFY_NEXT_DROP;
             counter[FLOW_CLASSIFY_COUNTER_VRIP_DROP] += 1;
-            return 0;
+            return true;
         }
     } else {
         // IPv6 not supported
-        return -1;
+        return false;
     }
-    return -1;
+    return false;
 }
 
 always_inline void
@@ -1191,24 +1191,20 @@ vnic_check:
     }
 
     vlib_buffer_advance(p, pds_flow_classify_get_advance_offset(p, flag_orig));
-    if (PREDICT_FALSE(!pds_is_flow_session_present(p) &&
-                      (pds_vnic_active_sessions_increment(vnic) == false))) {
-        *next = FLOW_CLASSIFY_NEXT_DROP;
-        counter[FLOW_CLASSIFY_COUNTER_MAX_EXCEEDED] += 1;
-        goto end;
-    }
-
     pds_flow_packet_type_derive(p, hdr, flags, bitw_svc, next, counter, ctx);
     if (FLOW_CLASSIFY_N_NEXT != *next) {
         goto end;
     }
 
     if ((flags == VPP_CPU_FLAGS_IPV4_1_VALID)) {
-        if (pds_flow_vr_ip_ping(hdr, p, vnic->nh_hw_id,
-                                true, next, counter)) {
-            *next = FLOW_CLASSIFY_NEXT_IP4_FLOW_PROG;
-            counter[FLOW_CLASSIFY_COUNTER_IP4_FLOW] += 1;
+        if (PREDICT_FALSE((true ==
+            pds_flow_vr_ip_ping(hdr, p, vnic->nh_hw_id,
+                                true, next, counter)))) {
+            // skip incrementing vnic session count
+            goto end;
         }
+        *next = FLOW_CLASSIFY_NEXT_IP4_FLOW_PROG;
+        counter[FLOW_CLASSIFY_COUNTER_IP4_FLOW] += 1;
     } else if (BIT_ISSET(flags, VPP_CPU_FLAGS_IPV4_2_VALID)) {
         *next = FLOW_CLASSIFY_NEXT_IP4_TUN_FLOW_PROG;
         counter[FLOW_CLASSIFY_COUNTER_IP4_TUN_FLOW] += 1;
@@ -1216,9 +1212,17 @@ vnic_check:
                VPP_CPU_FLAGS_IPV6_VALID))) {
         *next = FLOW_CLASSIFY_NEXT_DROP;
         counter[FLOW_CLASSIFY_COUNTER_IP6_FLOW] += 1;
+        goto end;
     } else {
         *next = FLOW_CLASSIFY_NEXT_DROP;
         counter[FLOW_CLASSIFY_COUNTER_L2_FLOW] += 1;
+        goto end;
+    }
+    if (PREDICT_FALSE(!pds_is_flow_session_present(p) &&
+                      (pds_vnic_active_sessions_increment(vnic) == false))) {
+        *next = FLOW_CLASSIFY_NEXT_DROP;
+        counter[FLOW_CLASSIFY_COUNTER_MAX_EXCEEDED] += 1;
+        goto end;
     }
 
 end:
