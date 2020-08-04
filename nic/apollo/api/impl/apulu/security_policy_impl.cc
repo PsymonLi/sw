@@ -179,7 +179,7 @@ security_policy_impl::program_security_policy_(pds_policy_spec_t *spec) {
                       spec->key.str(), ret);
     }
     // reset the rule stats memory block of this policy
-    reset_rule_stats_(spec->rule_info->af);
+    //reset_rule_stats_(spec->rule_info->af);
     return ret;
 }
 
