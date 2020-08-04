@@ -8,8 +8,6 @@
 #include "eth_if.h"
 #include "logger.hpp"
 
-#define HII_DEFAULT_DEV_NAME    "DEFAULT"
-
 std::string
 hii_attr_to_str (int attr)
 {
@@ -25,18 +23,43 @@ hii_attr_to_str (int attr)
 HII::HII(devapi *dev_api)
 {
     this->dev_api = dev_api;
-    this->oob_en = false;
-    this->uid_led_on = false;
-    InitCapabilities();
-    InitDevConfig();
+    _InitConfig();
+    _InitCapabilities();
 }
 
 HII::~HII()
 {
+
 }
 
 void
-HII::InitCapabilities()
+HII::_InitConfig()
+{
+    NIC_LOG_DEBUG("HII: Reading config");
+
+    // UID led config is not persistent, so setting default
+    uid_led_on = DEFAULT_UID_LED_STATE;
+
+    try {
+        std::ifstream hii_json_cfg(HII_CFG_FILE);
+        boost::property_tree::read_json(hii_json_cfg, cfg);
+    } catch (...) {
+        NIC_LOG_DEBUG("HII: CFG file not found, using defaults");
+        _SetDefaultConfig();
+    }
+}
+
+void
+HII::_SetDefaultConfig()
+{
+    cfg.clear();
+
+    // UID led config is not persistent, so setting default
+    uid_led_on = DEFAULT_UID_LED_STATE;
+}
+
+void
+HII::_InitCapabilities()
 {
     bool ncsi_cap;
 
@@ -46,36 +69,43 @@ HII::InitCapabilities()
 }
 
 void
-HII::InitDevConfig()
+HII::Reset()
 {
-    hii_dev_cfg_t *dcfg;
+    std::remove(HII_CFG_FILE.c_str());
+    _SetDefaultConfig();
+}
 
-    for (int i = 0; i < 2; i++) {
-        std::string dev_name = "eth" + std::to_string(i);
-        dcfg = new hii_dev_cfg_t {};
-        dcfg->vlan_en = true;
-        dcfg->vlan = 10;
-        dev_cfgs[dev_name] = dcfg;
+sdk_ret_t
+HII::_Flush()
+{
+    try {
+        boost::property_tree::write_json(HII_CFG_FILE, cfg);
+        return (SDK_RET_OK);
+    } catch (...) {
+        NIC_LOG_ERR("Failed to flush config");
+        return (SDK_RET_ERR);
     }
 }
 
-void
-HII::Reset()
+bool
+HII::GetLedStatus()
 {
-    oob_en = false;
-    uid_led_on = false;
-    InitDevConfig();
+    return uid_led_on;
 }
 
 sdk_ret_t
 HII::SetLedStatus(bool uid_led_on)
 {
+    if (this->uid_led_on == uid_led_on) {
+        NIC_LOG_INFO("HII: NOP, uid led is already: {}", uid_led_on ? "On" : "Off");
+        return (SDK_RET_OK);
+    }
     if (!dev_api) {
         NIC_LOG_ERR("HII: Uninitialized devapi, cannot set led");
         return (SDK_RET_ERR);
     }
     if (dev_api->hii_set_uid_led(uid_led_on) != SDK_RET_OK) {
-        NIC_LOG_ERR("HII: Failed to set led status: {}", uid_led_on ? "On" : "Off");
+        NIC_LOG_ERR("HII: Failed to set uid led state: {}", uid_led_on ? "On" : "Off");
         return (SDK_RET_ERR);
     }
     this->uid_led_on = uid_led_on;
@@ -83,46 +113,60 @@ HII::SetLedStatus(bool uid_led_on)
     return (SDK_RET_OK);
 }
 
-hii_dev_cfg_t *
-HII::GetDevCfg(string dev_name)
-{
-    auto it = dev_cfgs.find(dev_name);
-
-    if (it != dev_cfgs.end()) {
-        return it->second;
-    } else {
-        return dev_cfgs[HII_DEFAULT_DEV_NAME];
-    }
-}
-
 bool
 HII::GetVlanEn(string dev_name)
 {
-    hii_dev_cfg_t *dcfg = GetDevCfg(dev_name);
+    std::string path;
 
-    return dcfg->vlan_en;
-}
-
-void
-HII::SetVlanEn(string dev_name, bool vlan_en)
-{
-    hii_dev_cfg_t *dcfg = GetDevCfg(dev_name);
-
-    dcfg->vlan_en = vlan_en;
+    path = "device_cfg." + dev_name + ".vlan_en";
+    return cfg.get<bool>(path, DEFAULT_VLAN_EN);
 }
 
 uint16_t
 HII::GetVlan(string dev_name)
 {
-    hii_dev_cfg_t *dcfg = GetDevCfg(dev_name);
+    std::string path;
 
-    return dcfg->vlan;
+    path = "device_cfg." + dev_name + ".vlan";
+    return cfg.get<uint16_t>(path, DEFAULT_VLAN);
 }
 
-void
-HII::SetVlan(string dev_name, uint16_t vlan)
+sdk_ret_t
+HII::SetVlanCfg(string dev_name, bool vlan_en, uint16_t vlan)
 {
-    hii_dev_cfg_t *dcfg = GetDevCfg(dev_name);
+    std::string path;
 
-    dcfg->vlan = vlan;
+    path = "device_cfg." + dev_name + ".vlan_en";
+    cfg.put(path, vlan_en);
+
+    path = "device_cfg." + dev_name + ".vlan";
+    cfg.put(path, vlan);
+
+    if (_Flush() != SDK_RET_OK) {
+        NIC_LOG_ERR("HII: Unable to save dev: {} vlan_en: {} vlan: {}", dev_name,
+                    vlan_en, vlan);
+        return SDK_RET_ERR;
+    }
+    return SDK_RET_OK;
+}
+
+bool
+HII::GetOobEn()
+{
+    std::string path = "oob_en";
+
+    return cfg.get<bool>(path, DEFAULT_OOB_EN);
+}
+
+sdk_ret_t
+HII::SetOobEn(bool oob_en)
+{
+    std::string path = "oob_en";
+
+    cfg.put(path, oob_en);
+    if (_Flush() != SDK_RET_OK) {
+        NIC_LOG_ERR("HII: Unable to save oob_en: {}", oob_en ? "True" : "False");
+        return SDK_RET_ERR;
+    }
+    return SDK_RET_OK;
 }

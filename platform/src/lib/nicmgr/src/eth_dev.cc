@@ -2756,10 +2756,12 @@ Eth::_CmdHiiInit(void *req, void *req_data, void *resp, void *resp_data)
     NIC_LOG_INFO("{}: {} oob_en: {} uid_led_on: {} vlan_en: {} vlan: {}", spec->name,
                  opcode_to_str(cmd->opcode), cmd->oob_en, cmd->uid_led_on, cmd->vlan_en,
                  cmd->vlan);
-    hii->SetOobEn(cmd->oob_en);
-    hii->SetLedStatus(cmd->uid_led_on);
-    hii->SetVlanEn(spec->name, cmd->vlan_en);
-    hii->SetVlan(spec->name, cmd->vlan);
+    if (hii->SetOobEn(cmd->oob_en) != SDK_RET_OK ||
+        hii->SetLedStatus(cmd->uid_led_on) != SDK_RET_OK ||
+        hii->SetVlanCfg(spec->name, cmd->vlan_en, cmd->vlan) != SDK_RET_OK)
+    {
+        return (IONIC_RC_ERROR);
+    }
 
     return (IONIC_RC_SUCCESS);
 }
@@ -2777,7 +2779,9 @@ Eth::_CmdHiiSetAttr(void *req, void *req_data, void *resp, void *resp_data)
     switch (cmd->attr) {
     case IONIC_HII_ATTR_OOB_EN:
         NIC_LOG_DEBUG("{}: Setting HII oob_en {}", spec->name, cmd->oob_en);
-        hii->SetOobEn(cmd->oob_en);
+        if (hii->SetOobEn(cmd->oob_en) != SDK_RET_OK) {
+            status = IONIC_RC_ERROR;
+        }
         break;
     case IONIC_HII_ATTR_UID_LED:
         NIC_LOG_DEBUG("{}: Setting HII UID led {}", spec->name, cmd->uid_led_on ? "On" : "Off");
@@ -2787,8 +2791,9 @@ Eth::_CmdHiiSetAttr(void *req, void *req_data, void *resp, void *resp_data)
         break;
     case IONIC_HII_ATTR_VLAN:
         NIC_LOG_DEBUG("{}: Setting HII vlan_en {} vlan {}", spec->name, cmd->vlan.enable, cmd->vlan.id);
-        hii->SetVlanEn(spec->name, cmd->vlan.enable);
-        hii->SetVlan(spec->name, cmd->vlan.id);
+        if (hii->SetVlanCfg(spec->name, cmd->vlan.enable, cmd->vlan.id) != SDK_RET_OK) {
+            status = IONIC_RC_ERROR;
+        }
         break;
     default:
         NIC_LOG_ERR("{}: Unknown attribute: {}", spec->name, cmd->attr);

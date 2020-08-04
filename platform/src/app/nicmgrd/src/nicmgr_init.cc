@@ -248,6 +248,7 @@ dev_init:
     register_for_events();
 
     cfg.platform_type = platform;
+    cfg.pipeline = "";
     cfg.cfg_path = cfg_path;
     cfg.device_conf_file = device_file;
     cfg.fwd_mode = fwd_mode;

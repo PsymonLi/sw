@@ -143,11 +143,7 @@ DeviceManager::DeviceManager(devicemgr_cfg_t *cfg)
     memcpy(&this->curr_version, &cfg->curr_version, sizeof(cfg->curr_version));
     memcpy(&this->prev_version, &cfg->prev_version, sizeof(cfg->prev_version));
     this->thread = NULL;
-    if (cfg->pipeline == "iris") {
-        this->is_host_managed = true;
-    } else {
-        this->is_host_managed = false;
-    }
+    this->is_host_managed = true;
 }
 
 void
