@@ -249,6 +249,7 @@ type dscWatcherDBInterface interface {
 	getDSCWatchers(kind string) []chan Event
 	clearWatchOptions(kind string) []FilterFn
 	getFilterFns(kind string) []FilterFn
+	getWatcherInfo() map[string]*DSCWatcherInfo
 	dump() string
 }
 
@@ -267,6 +268,8 @@ type topoMgrInterface interface {
 	addRefCnt(dsc, kind, tenant, name string)
 	delRefCnt(dsc, kind, tenant, name string)
 	dump() string
+	getTopoInfo() map[string]topoInterface
+	getRefCntInfo() map[string]map[string]int
 	Lock()
 	Unlock()
 }
@@ -1556,4 +1559,58 @@ func (md *Memdb) GetDBWatchers(kind string) (*DBWatchers, error) {
 // SetPropagationStatusChannel sets the propagationupdate channel to send updates to npm
 func (md *Memdb) SetPropagationStatusChannel(c chan *PropagationStTopoUpdate) {
 	md.propagationStCh = c
+}
+
+// GetCtrlrWatcherDb is used to dump the ctrl watcher DB
+func (md *Memdb) GetCtrlrWatcherDb() map[string]map[string]api.ListWatchOptions {
+	md.wFilterDSCLock.Lock()
+	defer md.wFilterDSCLock.Unlock()
+	ret := map[string]map[string]api.ListWatchOptions{}
+
+	for dsc, info := range md.dscWatcherInfo {
+		i := info.getWatcherInfo()
+		m := map[string]api.ListWatchOptions{}
+		for x, y := range i {
+			w := y.watchOptions
+			m[x] = w
+		}
+		ret[dsc] = m
+	}
+	return ret
+}
+
+// Refs is the topology references
+type Refs struct {
+	ForwardRef  map[string][]string
+	BackwardRef map[string][]string
+}
+
+// GetTopoDb is used to dump the topology
+func (md *Memdb) GetTopoDb() map[string]map[string]Refs {
+	ret := map[string]map[string]Refs{}
+	info := md.topoHandler.getTopoInfo()
+
+	for k, i := range info {
+		ret1 := map[string]Refs{}
+		r := i.getInfo()
+		for x, y := range r {
+			rr := Refs{}
+			rr.ForwardRef = make(map[string][]string)
+			rr.BackwardRef = make(map[string][]string)
+			for a, b := range y.refs {
+				rr.ForwardRef[a] = b
+			}
+			for c, d := range y.backRefs {
+				rr.BackwardRef[c] = d
+			}
+			ret1[x] = rr
+		}
+		ret[k] = ret1
+	}
+	return ret
+}
+
+// GetTopoRefCnts is used to dump topolgy reference counts
+func (md *Memdb) GetTopoRefCnts() map[string]map[string]int {
+	return md.topoHandler.getRefCntInfo()
 }

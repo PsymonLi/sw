@@ -324,6 +324,32 @@ func (d *diagHandler) HandleRequest(ctx context.Context, req *diagapi.Diagnostic
 			ret.Content = fmt.Sprintf("profile not found")
 		}
 
+	case "ctrlr-watch-db":
+		x := d.mserver.GetCtrlrWatcherDb()
+		str, err := json.Marshal(x)
+		if err != nil {
+			ret.Content = fmt.Sprintf("marshall returned error (%s)", err)
+		} else {
+			ret.Content = strings.Replace(string(str), "\\\"", "\"", -1)
+		}
+
+	case "ctrlr-topology":
+		x := d.mserver.GetTopoDb()
+		str, err := json.Marshal(x)
+		if err != nil {
+			ret.Content = fmt.Sprintf("marshall returned error (%s)", err)
+		} else {
+			ret.Content = strings.Replace(string(str), "\\\"", "\"", -1)
+		}
+
+	case "topo-refcnts":
+		x := d.mserver.GetTopoRefCnts()
+		str, err := json.Marshal(x)
+		if err != nil {
+			ret.Content = fmt.Sprintf("marshall returned error (%s)", err)
+		} else {
+			ret.Content = strings.Replace(string(str), "\\\"", "\"", -1)
+		}
 	default:
 		ret.Content = fmt.Sprintf("Unknown action [%v]. valid actions (list-objects, dump-nimbus-db)", action)
 	}

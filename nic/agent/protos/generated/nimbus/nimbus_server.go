@@ -204,6 +204,21 @@ func (ms *MbusServer) SetPropagationStatusChannel(c chan *memdb.PropagationStTop
 	ms.memDB.SetPropagationStatusChannel(c)
 }
 
+// GetCtrlrWatcherDb gets the controller watch db
+func (ms *MbusServer) GetCtrlrWatcherDb() map[string]map[string]api.ListWatchOptions {
+	return ms.memDB.GetCtrlrWatcherDb()
+}
+
+// GetTopoDb gets the controller topology db
+func (ms *MbusServer) GetTopoDb() map[string]map[string]memdb.Refs {
+	return ms.memDB.GetTopoDb()
+}
+
+// GetTopoRefCnts gets the topology reference db
+func (ms *MbusServer) GetTopoRefCnts() map[string]map[string]int {
+	return ms.memDB.GetTopoRefCnts()
+}
+
 // NewMbusServer creates a new instance of message bus server
 func NewMbusServer(svcName string, grpcServer *rpckit.RPCServer) *MbusServer {
 	mbusServer := MbusServer{

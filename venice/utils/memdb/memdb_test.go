@@ -5572,4 +5572,33 @@ func TestMemdbCtrlWatchNwUpdate(t *testing.T) {
 	}
 
 	md.topoHandler.handleUpdateEvent(nil, nwIf4, nwIf4.GetObjectMeta().GetKey())
+
+	i := md.GetCtrlrWatcherDb()
+	fmt.Printf("Info is: %+v\n\n\n", i)
+	str, err := json.Marshal(i)
+	if err == nil {
+		fmt.Printf("Json is: %s\n", strings.Replace(string(str), "\\\"", "\"", -1))
+	} else {
+		fmt.Println("json marshall failed: ", err)
+	}
+
+	fmt.Println()
+	i1 := md.GetTopoDb()
+	fmt.Printf("topo is: %+v\n\n\n", i1)
+	str1, err := json.Marshal(i1)
+	if err == nil {
+		fmt.Printf("TOPO Json is: %s\n", strings.Replace(string(str1), "\\\"", "\"", -1))
+	} else {
+		fmt.Println("topo json marshall failed: ", err)
+	}
+
+	fmt.Println()
+	i2 := md.GetTopoRefCnts()
+	fmt.Printf("refcnts is: %+v\n\n\n", i2)
+	str2, err := json.Marshal(i2)
+	if err == nil {
+		fmt.Printf("recnt Json is: %s\n", strings.Replace(string(str2), "\\\"", "\"", -1))
+	} else {
+		fmt.Println("refcnt json marshall failed: ", err)
+	}
 }

@@ -41,6 +41,7 @@ type topoInterface interface {
 	delBackRef(key, ref, refKind string)
 	getRefs(key string) *topoRefs
 	dump() string
+	getInfo() map[string]*topoRefs
 }
 
 type refCntInterface interface {
@@ -48,6 +49,7 @@ type refCntInterface interface {
 	delRefCnt(dsc, kind, tenant, name string)
 	getRefCnt(dsc, kind, tenant, name string) int
 	getWatchOptions(dsc, kind string) (api.ListWatchOptions, bool)
+	getInfo() map[string]map[string]int
 	dump()
 }
 
@@ -535,6 +537,22 @@ func (tn *topoNode) addNode(obj Object, objKey string, propUpdate *PropagationSt
 		} else {
 			topoRefs = newTopoRefs()
 		}
+
+		if exists == true {
+			currIPAM := ""
+			if len(topoRefs.refs["IPAMPolicy"]) != 0 {
+				currIPAM = topoRefs.refs["IPAMPolicy"][0]
+			}
+			if currIPAM != vr.Spec.IPAMPolicy {
+				//trigger an update
+				oldObj := &netproto.Vrf{}
+				oldObj.ObjectMeta = vr.ObjectMeta
+				oldObj.Spec.IPAMPolicy = currIPAM
+				log.Infof("Treating vrf add as an update newObj: %v | oldObj: %v", vr, oldObj)
+				return tn.updateNode(oldObj, obj, objKey, propUpdate)
+			}
+		}
+
 		if vr.Spec.IPAMPolicy != "" {
 			topoRefs.refs["IPAMPolicy"] = []string{vr.Spec.IPAMPolicy}
 		}
@@ -1430,14 +1448,16 @@ func (tm *topoMgr) handleObjectDelete(old, new Object, key string) (bool, *Propa
 
 func (tm *topoMgr) handleVrfCreate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	kind := new.GetObjectKind()
+	topoUpdated := false
+	update := newPropUpdate()
 	if node, ok := tm.topology[kind]; ok {
-		node.addNode(new, key, newPropUpdate())
+		topoUpdated = node.addNode(new, key, update)
 	} else {
 		node := tm.newTopoNode()
-		node.addNode(new, key, newPropUpdate())
+		topoUpdated = node.addNode(new, key, update)
 		tm.topology[kind] = node
 	}
-	return false, nil
+	return topoUpdated, update
 }
 
 func (tm *topoMgr) handleVrfUpdate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
@@ -1754,4 +1774,26 @@ func (md *Memdb) IsObjectValidForDSC(dsc, kind string, ometa api.ObjectMeta) boo
 		return true
 	}
 	return false
+}
+
+func (tm *topoMgr) getTopoInfo() map[string]topoInterface {
+	tm.Lock()
+	defer tm.Unlock()
+	return tm.topology
+}
+
+func (tn *topoNode) getInfo() map[string]*topoRefs {
+	tn.tm.Lock()
+	defer tn.tm.Unlock()
+	return tn.topo
+}
+
+func (tm *topoMgr) getRefCntInfo() map[string]map[string]int {
+	tm.Lock()
+	defer tm.Unlock()
+	return tm.refCounts.getInfo()
+}
+
+func (tr *topoRefCnt) getInfo() map[string]map[string]int {
+	return tr.refs
 }

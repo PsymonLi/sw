@@ -501,6 +501,8 @@ func (fs *watcherFilterSet) delWatcherFromWFilterGroup(watchOptions api.ListWatc
 
 func (fs *watcherFilterSet) watchEvent(ev Event) {
 	log.Infof("Received event: %+v | kind: %s", ev, ev.Obj.GetObjectKind())
+	fs.lock.RLock()
+	defer fs.lock.RUnlock()
 	for _, grp := range fs.filterGrp {
 		for _, flt := range grp.filters {
 			if !flt(ev.Obj, nil) {
@@ -551,5 +553,8 @@ func (md *Memdb) sendReconcileEvent(dsc, kind string, old, new []FilterFn) {
 			sendToWatcher(ev, ww)
 		}
 	}
+}
 
+func (wdb *dscWatcherDB) getWatcherInfo() map[string]*DSCWatcherInfo {
+	return wdb.watcherInfo
 }
