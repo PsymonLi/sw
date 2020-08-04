@@ -120,7 +120,7 @@ func checkMetricsFields() {
 	Expect(err).Should(BeNil())
 
 	for _, k := range types.DscMetricsList {
-		if k == "IPv4FlowDropMetrics" {
+		if k == "IPv4FlowDropMetrics" || k == "RuleMetrics" {
 			continue
 		}
 
