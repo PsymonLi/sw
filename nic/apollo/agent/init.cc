@@ -157,6 +157,7 @@ init_pds (std::string cfg_file, std::string memory_profile,
     memset(&init_params, 0, sizeof(init_params));
     init_params.init_mode = PDS_INIT_MODE_COLD_START;
     init_params.trace_cb  = sdk_logger;
+    init_params.trace_level  = sdk::types::trace_debug;
     init_params.pipeline  = pipeline;
     init_params.cfg_file  = cfg_file;
     init_params.memory_profile = PDS_MEMORY_PROFILE_DEFAULT;

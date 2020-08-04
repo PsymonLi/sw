@@ -9,6 +9,7 @@
 #include <string>
 #include "include/sdk/platform.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/lpm/lpm.hpp"
 #include "nic/apollo/api/impl/rfc/rfc.hpp"
 #include "nic/apollo/api/impl/rfc/rfc_priv.hpp"
@@ -22,6 +23,9 @@ rfc_policy_rule_dump (policy_t *policy, uint32_t rule_num)
     rule_t    *rule = &policy->rules[rule_num];
     string    rule_str = "";
 
+    if (!pds_trace(sdk::types::trace_debug)) {
+        return;
+    }
     rule_str += std::to_string(rule_num) + ". ";
     rule_str += (policy->af == IP_AF_IPV4) ? "v4, " : "v6, ";
     rule_str += rule->attrs.stateful ? "stateful : " : "stateless : ";
@@ -154,7 +158,7 @@ rfc_tree_reserve_default_classid (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table)
         }
 
         class_id = rfc_table->num_classes++;
-        RFC_TRACE_DEBUG("default class id allocated is %u", class_id);
+        PDS_TRACE_VERBOSE("default class id allocated is %u", class_id);
         rfc_table->cbm_table[class_id].class_id = class_id;
         rfc_table->cbm_table[class_id].cbm = cbm_new;
         rfc_table->cbm_map[cbm_new] = class_id;

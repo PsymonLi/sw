@@ -121,7 +121,7 @@ trace_deinit (void)
 // change trace level
 //------------------------------------------------------------------------------
 void
-trace_update (utils::trace_level_e trace_level)
+trace_update (sdk::types::trace_level_e trace_level)
 {
     g_trace_logger->set_trace_level(trace_level);
     g_link_trace_logger->set_trace_level(trace_level);

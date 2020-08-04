@@ -35,7 +35,7 @@ trace_level (void)
     return sdk::types::trace_none;
 }
 
-void trace_update(utils::trace_level_e trace_level);
+void trace_update(sdk::types::trace_level_e trace_level);
 void flush_logs(void);
 
 }    // namespace core

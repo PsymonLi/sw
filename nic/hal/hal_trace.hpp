@@ -28,7 +28,7 @@ void link_trace_init(const char *name, uint64_t cpu_mask, bool sync_mode,
                      sdk::types::trace_level_e persistent_trace_level,
                      sdk::types::trace_level_e non_persistent_trace_level);
 void link_trace_deinit(void);
-void trace_update(::utils::trace_level_e trace_level);
+void trace_update(sdk::types::trace_level_e trace_level);
 void hal_mod_trace_update(uint32_t mod_id, bool enable);
 
 // wrapper APIs to get logger and syslogger
@@ -96,7 +96,7 @@ hal_mod_trace_enabled (int mod_id)
 static inline bool
 hal_mod_trace_enabled (uint32_t mod_id, sdk_trace_level_e trace_level)
 {
-    ::utils::trace_level_e  mod_trace_level;
+    sdk::types::trace_level_e  mod_trace_level;
 
     switch (mod_id) {
     case sdk_mod_id_t::SDK_MOD_ID_LINK:

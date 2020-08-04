@@ -466,6 +466,7 @@ pds_init (pds_init_params_t *params)
     }
 
     // set global params
+    api::g_pds_state.set_trace_level(params->trace_level);
     api::g_pds_state.set_device_profile(params->device_profile);
     api::g_pds_state.set_memory_profile(params->memory_profile);
     api::g_pds_state.set_memory_profile_string(

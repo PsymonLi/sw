@@ -11,6 +11,7 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/impl/lpm/lpm.hpp"
 #include "nic/apollo/api/impl/rfc/rfc_tree.hpp"
+#include "nic/apollo/api/pds_state.hpp"
 
 namespace rfc {
 
@@ -46,42 +47,45 @@ rfc_itree_dump (rfc_tree_t *rfc_tree, itree_type_t tree_type)
 
     PDS_TRACE_DEBUG("No. of interval nodes in itree %u",
                     rfc_tree->num_intervals);
+    if (!pds_trace(sdk::types::trace_verbose)) {
+        return;
+    }
     for (uint32_t i = 0; i < rfc_tree->num_intervals; i++) {
         inode = &itable->nodes[i];
         if ((tree_type == ITREE_TYPE_IPV4_SIP_ACL) ||
             (tree_type == ITREE_TYPE_IPV6_SIP_ACL)) {
-            RFC_TRACE_DEBUG("inode %u, SIP %s, classid %u, rule# %u, start %s",
-                            i, ipaddr2str(&inode->ipaddr), inode->rfc.class_id,
-                            inode->rfc.rule_no,
-                            inode->rfc.start ? "true" : "false");
+            PDS_TRACE_VERBOSE("inode %u, SIP %s, classid %u, rule# %u, start %s",
+                              i, ipaddr2str(&inode->ipaddr), inode->rfc.class_id,
+                              inode->rfc.rule_no,
+                              inode->rfc.start ? "true" : "false");
         } else if ((tree_type == ITREE_TYPE_IPV4_DIP_ACL) ||
                    (tree_type == ITREE_TYPE_IPV6_DIP_ACL)) {
-            RFC_TRACE_DEBUG("inode %u, DIP %s, classid %u, rule# %u, start %s",
-                            i, ipaddr2str(&inode->ipaddr), inode->rfc.class_id,
-                            inode->rfc.rule_no,
-                            inode->rfc.start ? "true" : "false");
+            PDS_TRACE_VERBOSE("inode %u, DIP %s, classid %u, rule# %u, start %s",
+                              i, ipaddr2str(&inode->ipaddr), inode->rfc.class_id,
+                              inode->rfc.rule_no,
+                              inode->rfc.start ? "true" : "false");
         } else if (tree_type == ITREE_TYPE_PORT) {
-            RFC_TRACE_DEBUG("inode %u, port %u, classid %u, rule# %u, start %s",
-                            i, inode->port, inode->rfc.class_id,
-                            inode->rfc.rule_no,
-                            inode->rfc.start ? "true" : "false");
+            PDS_TRACE_VERBOSE("inode %u, port %u, classid %u, rule# %u, start %s",
+                              i, inode->port, inode->rfc.class_id,
+                              inode->rfc.rule_no,
+                              inode->rfc.start ? "true" : "false");
         } else if (tree_type == ITREE_TYPE_PROTO_PORT) {
-            RFC_TRACE_DEBUG("inode %u, proto %u, port %u, classid %u, "
-                            "rule# %u, start %s", i,
-                            (inode->key32 >> 24) & 0xFF,
-                            inode->key32 & 0xFFFFFF, inode->rfc.class_id,
-                            inode->rfc.rule_no,
-                            inode->rfc.start ? "true" : "false");
+            PDS_TRACE_VERBOSE("inode %u, proto %u, port %u, classid %u, "
+                              "rule# %u, start %s", i,
+                              (inode->key32 >> 24) & 0xFF,
+                              inode->key32 & 0xFFFFFF, inode->rfc.class_id,
+                              inode->rfc.rule_no,
+                              inode->rfc.start ? "true" : "false");
         } else if (tree_type == ITREE_TYPE_STAG) {
-            RFC_TRACE_DEBUG("inode %u, stag %u, classid %u, rule# %u, start %s",
-                            i, inode->key32, inode->rfc.class_id,
-                            inode->rfc.rule_no,
-                            inode->rfc.start ? "true" : "false");
+            PDS_TRACE_VERBOSE("inode %u, stag %u, classid %u, rule# %u, start %s",
+                              i, inode->key32, inode->rfc.class_id,
+                              inode->rfc.rule_no,
+                              inode->rfc.start ? "true" : "false");
         } else if (tree_type == ITREE_TYPE_DTAG) {
-            RFC_TRACE_DEBUG("inode %u, dtag %u, classid %u, rule# %u, start %s",
-                            i, inode->key32, inode->rfc.class_id,
-                            inode->rfc.rule_no,
-                            inode->rfc.start ? "true" : "false");
+            PDS_TRACE_VERBOSE("inode %u, dtag %u, classid %u, rule# %u, start %s",
+                              i, inode->key32, inode->rfc.class_id,
+                              inode->rfc.rule_no,
+                              inode->rfc.start ? "true" : "false");
         }
     }
 }
@@ -92,11 +96,14 @@ rfc_eq_class_table_dump (rfc_table_t *rfc_table)
     std::stringstream    a1ss, a2ss;
 
     PDS_TRACE_DEBUG("Number of equivalence classes %u", rfc_table->num_classes);
+    if (!pds_trace(sdk::types::trace_verbose)) {
+        return;
+    }
     for (uint32_t i = 0; i < rfc_table->num_classes; i++) {
         rte_bitmap2str(rfc_table->cbm_table[i].cbm, a1ss, a2ss);
-        RFC_TRACE_DEBUG("class id %u, a1ss %s\na2ss %s",
-                        rfc_table->cbm_table[i].class_id,
-                        a1ss.str().c_str(), a2ss.str().c_str());
+        PDS_TRACE_VERBOSE("class id %u, a1ss %s\na2ss %s",
+                          rfc_table->cbm_table[i].class_id,
+                          a1ss.str().c_str(), a2ss.str().c_str());
         a1ss.clear();
         a1ss.str("");
         a2ss.clear();

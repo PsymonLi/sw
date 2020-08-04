@@ -363,4 +363,16 @@ pds_slab_get (api::state_walk_cb_t cb, void *ctxt)
     return SDK_RET_OK;
 }
 
+/**
+ * @brief   set trace level
+ * @param[in]   trace_level    trace level to be set
+ * @return   SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t
+pds_set_trace_level (sdk::types::trace_level_e trace_level)
+{
+    api::g_pds_state.set_trace_level(trace_level);
+    return SDK_RET_OK;
+}
+
 }    // namespace debug

@@ -171,6 +171,8 @@ sdk_ret_t pds_fte_table_stats_clear(void);
 sdk_ret_t pds_slab_get(api::state_walk_cb_t cb, void *ctxt);
 sdk_ret_t dump_interrupts(int fd);
 sdk_ret_t clear_interrupts(int fd);
+sdk_ret_t pds_set_trace_level(sdk::types::trace_level_e trace_level);
+
 /**
  * @brief    start aacs server
  * @param[in]    aacs_server_port     AACS server port

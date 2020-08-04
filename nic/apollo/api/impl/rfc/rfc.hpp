@@ -13,8 +13,6 @@
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/apollo/api/include/pds_policy.hpp"
 
-#define RFC_TRACE_DEBUG    PDS_TRACE_VERBOSE
-
 namespace rfc {
 
 /**< policy is list of rules */

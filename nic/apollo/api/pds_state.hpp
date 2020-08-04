@@ -11,6 +11,7 @@
 
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/json_parser.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/slab/slab.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/platform/utils/mpartition.hpp"
@@ -107,6 +108,10 @@ public:
     string pipeline(void) const { return pipeline_; }
     void set_catalog(catalog *catalog) { catalog_ = catalog; }
     catalog *catalogue(void) const { return catalog_; }
+    void set_trace_level(sdk::types::trace_level_e trace_level) {
+        trace_level_ = trace_level;
+    }
+    sdk::types::trace_level_e trace_level(void) const { return trace_level_; }
     void set_mempartition(mpartition *mpartition) { mpartition_ = mpartition; }
     mpartition *mempartition(void) const { return mpartition_; }
     void set_mempartition_cfg(string mpart_cfg) { mpart_cfg_ = mpart_cfg; }
@@ -277,42 +282,43 @@ private:
     sdk_ret_t parse_firmware_version_file_();
 
 private:
-    string                  cfg_path_;
-    string                  pipeline_;
-    string                  mpart_cfg_;
-    catalog                 *catalog_;
-    mpartition              *mpartition_;
-    platform_type_t         platform_type_;
-    pds_memory_profile_t    memory_profile_;
-    pds_device_profile_t    device_profile_;
-    pds_device_oper_mode_t  device_oper_mode_;
-    pds_if_state_t          default_pf_state_;
-    string                  memory_profile_str_;
-    string                  device_profile_str_;
-    string                  firmware_version_str_;
-    string                  firmware_description_str_;
-    string                  firmware_build_time_str_;
+    string                    cfg_path_;
+    string                    pipeline_;
+    string                    mpart_cfg_;
+    catalog                   *catalog_;
+    sdk::types::trace_level_e trace_level_;
+    mpartition                *mpartition_;
+    platform_type_t           platform_type_;
+    pds_memory_profile_t      memory_profile_;
+    pds_device_profile_t      device_profile_;
+    pds_device_oper_mode_t    device_oper_mode_;
+    pds_if_state_t            default_pf_state_;
+    string                    memory_profile_str_;
+    string                    device_profile_str_;
+    string                    firmware_version_str_;
+    string                    firmware_description_str_;
+    string                    firmware_build_time_str_;
     // TODO: remove this after we phase out apollo/artemis tests
-    bool                    ipc_mock_;
-    program_info            *pginfo_;
-    lif_qstate_t            *ipsec_lif_qstate_;
-    uint64_t                control_cores_mask_;
-    uint16_t                num_control_cores_;
-    uint64_t                data_cores_mask_;
-    uint16_t                num_data_cores_;
-    state_base              *state_[PDS_STATE_MAX];
-    pds_event_cb_t          event_cb_;
-    mac_addr_t              system_mac_;
-    string                  product_name_;
-    sdk::lib::kvstore       *kvstore_;
+    bool                      ipc_mock_;
+    program_info              *pginfo_;
+    lif_qstate_t              *ipsec_lif_qstate_;
+    uint64_t                  control_cores_mask_;
+    uint16_t                  num_control_cores_;
+    uint64_t                  data_cores_mask_;
+    uint16_t                  num_data_cores_;
+    state_base                *state_[PDS_STATE_MAX];
+    pds_event_cb_t            event_cb_;
+    mac_addr_t                system_mac_;
+    string                    product_name_;
+    sdk::lib::kvstore         *kvstore_;
     // handles for the metrics
-    void                    *port_metrics_hndl_;
-    void                    *mgmt_port_metrics_hndl_;
-    void                    *hostif_metrics_hndl_;
-    void                    *memory_metrics_hndl_;
-    void                    *power_metrics_hndl_;
-    void                    *asic_temperature_metrics_hndl_;
-    void                    *port_temperature_metrics_hndl_;
+    void                      *port_metrics_hndl_;
+    void                      *mgmt_port_metrics_hndl_;
+    void                      *hostif_metrics_hndl_;
+    void                      *memory_metrics_hndl_;
+    void                      *power_metrics_hndl_;
+    void                      *asic_temperature_metrics_hndl_;
+    void                      *port_temperature_metrics_hndl_;
 };
 extern pds_state g_pds_state;
 
@@ -464,6 +470,16 @@ static inline ipsec_sa_state *
 ipsec_sa_db (void)
 {
     return api::g_pds_state.ipsec_sa_db();
+}
+
+static bool inline
+pds_trace (sdk::types::trace_level_e trace_level)
+{
+    if (api::g_pds_state.trace_level() >= trace_level) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 #endif    // __PDS_STATE_HPP__

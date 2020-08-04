@@ -12,6 +12,7 @@
 #define __INCLUDE_API_PDS_INIT_HPP__
 
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_event.hpp"
@@ -47,6 +48,7 @@ typedef struct pds_init_params_s {
                                                 ///< are picked by the software
     pds_if_state_t            default_pf_state; ///< default state of PF (up/down)
     pds_event_cb_t            event_cb;         ///< callback registered for events
+    sdk::types::trace_level_e trace_level;      ///< log trace level
 } pds_init_params_t;
 
 

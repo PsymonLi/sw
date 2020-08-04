@@ -151,6 +151,7 @@ DebugSvcImpl::TraceUpdate(ServerContext *context, const pds::TraceRequest *proto
     }
 
     core::trace_update(trace_level);
+    debug::pds_set_trace_level(trace_level);
     proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_OK);
     proto_rsp->set_tracelevel(proto_req->trace_level());
     return Status::OK;
