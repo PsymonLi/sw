@@ -6,7 +6,7 @@
 
 
 driverName          = "ionic_en"
-driverVersion       = "1.12"
+driverVersion       = "1.13"
 driverSummary       = "Pensando Systems Native Ethernet Driver"
 driverDescription   = "Pensando Systems Native Ethernet Driver"
 vendorName          = "Pensando Systems"
