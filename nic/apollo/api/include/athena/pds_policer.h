@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 /// \brief Maximum table index for per VNIC pps policer
-#define PDS_POLICER_PPS_ID_MAX                 (512)
+#define PDS_VNIC_POLICER_PPS_ID_MAX            (512)
 
 /// \brief Maximum table index for VNIC-VNIC and VNIC-GW BW policers
 #define PDS_POLICER_BANDWIDTH_ID_MAX           (2560)

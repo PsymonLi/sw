@@ -206,7 +206,7 @@ pds_policer_bw2_delete(pds_policer_key_t *key)
 pds_ret_t
 pds_vnic_policer_pps_create(pds_policer_spec_t *spec)
 {
-    uint16_t                    policer_id = PDS_POLICER_PPS_ID_MAX;
+    uint16_t                    policer_id = PDS_VNIC_POLICER_PPS_ID_MAX;
     sdk::qos::policer_t         pol = { sdk::qos::POLICER_TYPE_PPS, spec->data.rate, spec->data.burst };
     sdk::qos::policer_t         *policer = &pol;
 
@@ -215,7 +215,7 @@ pds_vnic_policer_pps_create(pds_policer_spec_t *spec)
         return PDS_RET_INVALID_ARG;
     }
     policer_id = spec->key.policer_id;
-    if (policer_id == 0 || policer_id >= PDS_POLICER_PPS_ID_MAX) {
+    if (policer_id == 0 || policer_id >= PDS_VNIC_POLICER_PPS_ID_MAX) {
         PDS_TRACE_ERR("policer id %u is beyond range", policer_id);
         return PDS_RET_INVALID_ARG;
     }
@@ -233,7 +233,7 @@ pds_vnic_policer_pps_read(pds_policer_key_t *key,
                           pds_policer_info_t *info)
 {
     p4pd_error_t                p4pd_ret = P4PD_SUCCESS;
-    uint16_t                    policer_id = PDS_POLICER_PPS_ID_MAX;
+    uint16_t                    policer_id = PDS_VNIC_POLICER_PPS_ID_MAX;
 
     if (!key || !info) {
         PDS_TRACE_ERR("key/info is null");
@@ -241,7 +241,7 @@ pds_vnic_policer_pps_read(pds_policer_key_t *key,
     }
 
     policer_id = key->policer_id;
-    if (policer_id == 0 || policer_id >= PDS_POLICER_PPS_ID_MAX) {
+    if (policer_id == 0 || policer_id >= PDS_VNIC_POLICER_PPS_ID_MAX) {
         PDS_TRACE_ERR("policer id %u is beyond range", policer_id);
         return PDS_RET_INVALID_ARG;
     }
@@ -263,7 +263,7 @@ pds_vnic_policer_pps_update(pds_policer_spec_t *spec)
 pds_ret_t
 pds_vnic_policer_pps_delete(pds_policer_key_t *key)
 {
-    uint16_t                    policer_id = PDS_POLICER_PPS_ID_MAX;
+    uint16_t                    policer_id = PDS_VNIC_POLICER_PPS_ID_MAX;
     sdk::qos::policer_t         pol = { sdk::qos::POLICER_TYPE_PPS, 0, 0 };
     sdk::qos::policer_t         *policer = &pol;
 
@@ -272,7 +272,7 @@ pds_vnic_policer_pps_delete(pds_policer_key_t *key)
         return PDS_RET_INVALID_ARG;
     }
     policer_id = key->policer_id;
-    if (policer_id == 0 || policer_id >= PDS_POLICER_PPS_ID_MAX) {
+    if (policer_id == 0 || policer_id >= PDS_VNIC_POLICER_PPS_ID_MAX) {
         PDS_TRACE_ERR("policer id %u is beyond range", policer_id);
         return PDS_RET_INVALID_ARG;
     }

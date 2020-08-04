@@ -102,7 +102,7 @@ create_helper(uint32_t index,
     pds_ret_t rs;
     for (Types t=Types::POLICER_BW1; t != Types::POLICER_TYPE_MAX; t=(Types)(t+1)) {
 
-        if (t == POLICER_PPS && index >= PDS_POLICER_PPS_ID_MAX) {
+        if (t == POLICER_PPS && index >= PDS_VNIC_POLICER_PPS_ID_MAX) {
             continue;
         }
         setup_func(t);
@@ -129,7 +129,7 @@ delete_helper(uint32_t index,
     pds_ret_t rs;
     for (Types t=Types::POLICER_BW1; t != Types::POLICER_TYPE_MAX; t=(Types)(t+1)) {
 
-        if (t == POLICER_PPS && index >= PDS_POLICER_PPS_ID_MAX) {
+        if (t == POLICER_PPS && index >= PDS_VNIC_POLICER_PPS_ID_MAX) {
             continue;
         }
         setup_func(t);
@@ -155,7 +155,7 @@ update_helper(uint32_t index,
     pds_ret_t rs;
     for (Types t=Types::POLICER_BW1; t != Types::POLICER_TYPE_MAX; t=(Types)(t+1)) {
 
-        if (t == POLICER_PPS && index >= PDS_POLICER_PPS_ID_MAX) {
+        if (t == POLICER_PPS && index >= PDS_VNIC_POLICER_PPS_ID_MAX) {
             continue;
         }
         setup_func(t);
@@ -181,7 +181,7 @@ read_helper(uint32_t index,
     pds_ret_t rs;
     for (Types t=Types::POLICER_BW1; t != Types::POLICER_TYPE_MAX; t=(Types)(t+1)) {
 
-        if (t == POLICER_PPS && index >= PDS_POLICER_PPS_ID_MAX) {
+        if (t == POLICER_PPS && index >= PDS_VNIC_POLICER_PPS_ID_MAX) {
             continue;
         }
         setup_func(t);
