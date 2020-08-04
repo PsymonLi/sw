@@ -68,7 +68,7 @@ asic_get_hbm_region_by_address (uint64_t addr)
 void
 asic_mem_reset (mem_addr_t pa, uint64_t size)
 {
-    uint64_t rem;
+    int64_t rem;
     mem_addr_t va;
 
     va = (mem_addr_t)sdk::lib::pal_mem_map(pa, size);
@@ -79,7 +79,7 @@ asic_mem_reset (mem_addr_t pa, uint64_t size)
         rem = size;
         while (rem > 0) {
             sdk::asic::asic_mem_write(pa, zero_kb,
-                                      (rem > sizeof(zero_kb)) ?
+                                      ((uint64_t)rem > sizeof(zero_kb)) ?
                                           sizeof(zero_kb) : rem);
             pa += sizeof(zero_kb);
             rem -= sizeof(zero_kb);
