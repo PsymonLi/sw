@@ -36,6 +36,7 @@ import { NetworkNetworkInterface } from './network';
 import { NetworkIPAMPolicy } from './network';
 import { NetworkRoutingConfig } from './network';
 import { NetworkRouteTable } from './network';
+import { NetworkVirtualRouterPeeringGroup } from './network';
 import { ObjstoreBucket } from './objstore';
 import { ObjstoreObject } from './objstore';
 import { OrchestrationOrchestrator } from './orchestration';
@@ -258,6 +259,11 @@ export const CategoryMapping: CatMap  = {
     },
     "RouteTable" : {
       instance: new NetworkRouteTable(),
+      scopes: [ 'tenant', ] ,
+      actions:  [] ,
+    },
+    "VirtualRouterPeeringGroup" : {
+      instance: new NetworkVirtualRouterPeeringGroup(),
       scopes: [ 'tenant', ] ,
       actions:  [] ,
     },

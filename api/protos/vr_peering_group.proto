@@ -1,0 +1,63 @@
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved.
+
+syntax = "proto3";
+// Service name
+package network;
+
+// Mandatory imports.
+import "google/api/annotations.proto";
+import public "github.com/pensando/sw/venice/utils/apigen/annotations/includes.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github.com/pensando/sw/api/meta.proto";
+
+import "vrf.proto";
+import "sgpolicy.proto";
+
+message VirtualRouterPeeringSpec {
+    string VirtualRouter              = 1 [(gogoproto.jsontag) = "virtual-router,omitempty",
+                                           (venice.objRelation) = {Type: "NamedRef", To: "network/VirtualRouter"}];
+    // List of destination prefixes located in this Virtual Router exposed as
+    // reachable from any other Virtual Router participating in this peering group
+    repeated string IPv4Prefix        = 2 [(gogoproto.nullable) = false,
+                                           (gogoproto.jsontag) = "ipv4-prefix,omitempty",
+                                           (venice.check) = "CIDR()"];
+}
+
+message VirtualRouterPeeringGroupSpec {
+    repeated VirtualRouterPeeringSpec Items  = 1 [(gogoproto.nullable) = false,
+                                                  (gogoproto.jsontag) = "items,omitempty"];
+}
+
+message VirtualRouterPeeringRoute  {
+    string IPv4Prefix             = 1 [(gogoproto.jsontag) = "ipv4-prefix,omitempty",
+                                       (venice.check) = "CIDR()"];
+    // Destination VirtualRouter this prefix is reachable on
+    string DestVirtualRouter      = 2 [(gogoproto.jsontag) = "dest-virtual-router,omitempty",
+                                       (venice.objRelation) = {Type: "WeakRef", To: "network/VirtualRouter"}];
+}
+
+message VirtualRouterPeeringRouteTable {
+    repeated VirtualRouterPeeringRoute Routes  = 1 [(gogoproto.nullable) = false,
+                                                    (gogoproto.jsontag) = "routes,omitempty"];
+}
+
+message VirtualRouterPeeringGroupStatus {
+    // The status of the configuration propagation to the DSC
+    security.PropagationStatus PropagationStatus            = 1 [(gogoproto.nullable) = false,
+                                                                 (gogoproto.jsontag) = "propagation-status"];
+    // VirtualRouter -> Route table derived from the prefixes exposed by other VirtualRouters in this peering group
+    map<string, VirtualRouterPeeringRouteTable> RouteTables = 2 [(gogoproto.nullable) = true,
+                                                                 (gogoproto.jsontag) = "route-tables,omitempty"];
+}
+
+message VirtualRouterPeeringGroup {
+    option (venice.objectPrefix)           = {Collection: "virtual-router-peering-groups", Path: "/{O.Tenant}"};
+
+    api.TypeMeta T                         = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false,
+                                                (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta O                       = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false,
+                                                (gogoproto.jsontag) = "meta,omitempty"];
+
+    VirtualRouterPeeringGroupSpec Spec     = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec,omitempty"];
+    VirtualRouterPeeringGroupStatus Status = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status,omitempty"];
+}

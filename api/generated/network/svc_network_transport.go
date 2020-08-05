@@ -25,54 +25,60 @@ var _ api.ObjectMeta
 type grpcServerNetworkV1 struct {
 	Endpoints EndpointsNetworkV1Server
 
-	AutoAddIPAMPolicyHdlr          grpctransport.Handler
-	AutoAddLbPolicyHdlr            grpctransport.Handler
-	AutoAddNetworkHdlr             grpctransport.Handler
-	AutoAddNetworkInterfaceHdlr    grpctransport.Handler
-	AutoAddRouteTableHdlr          grpctransport.Handler
-	AutoAddRoutingConfigHdlr       grpctransport.Handler
-	AutoAddServiceHdlr             grpctransport.Handler
-	AutoAddVirtualRouterHdlr       grpctransport.Handler
-	AutoDeleteIPAMPolicyHdlr       grpctransport.Handler
-	AutoDeleteLbPolicyHdlr         grpctransport.Handler
-	AutoDeleteNetworkHdlr          grpctransport.Handler
-	AutoDeleteNetworkInterfaceHdlr grpctransport.Handler
-	AutoDeleteRouteTableHdlr       grpctransport.Handler
-	AutoDeleteRoutingConfigHdlr    grpctransport.Handler
-	AutoDeleteServiceHdlr          grpctransport.Handler
-	AutoDeleteVirtualRouterHdlr    grpctransport.Handler
-	AutoGetIPAMPolicyHdlr          grpctransport.Handler
-	AutoGetLbPolicyHdlr            grpctransport.Handler
-	AutoGetNetworkHdlr             grpctransport.Handler
-	AutoGetNetworkInterfaceHdlr    grpctransport.Handler
-	AutoGetRouteTableHdlr          grpctransport.Handler
-	AutoGetRoutingConfigHdlr       grpctransport.Handler
-	AutoGetServiceHdlr             grpctransport.Handler
-	AutoGetVirtualRouterHdlr       grpctransport.Handler
-	AutoLabelIPAMPolicyHdlr        grpctransport.Handler
-	AutoLabelLbPolicyHdlr          grpctransport.Handler
-	AutoLabelNetworkHdlr           grpctransport.Handler
-	AutoLabelNetworkInterfaceHdlr  grpctransport.Handler
-	AutoLabelRouteTableHdlr        grpctransport.Handler
-	AutoLabelRoutingConfigHdlr     grpctransport.Handler
-	AutoLabelServiceHdlr           grpctransport.Handler
-	AutoLabelVirtualRouterHdlr     grpctransport.Handler
-	AutoListIPAMPolicyHdlr         grpctransport.Handler
-	AutoListLbPolicyHdlr           grpctransport.Handler
-	AutoListNetworkHdlr            grpctransport.Handler
-	AutoListNetworkInterfaceHdlr   grpctransport.Handler
-	AutoListRouteTableHdlr         grpctransport.Handler
-	AutoListRoutingConfigHdlr      grpctransport.Handler
-	AutoListServiceHdlr            grpctransport.Handler
-	AutoListVirtualRouterHdlr      grpctransport.Handler
-	AutoUpdateIPAMPolicyHdlr       grpctransport.Handler
-	AutoUpdateLbPolicyHdlr         grpctransport.Handler
-	AutoUpdateNetworkHdlr          grpctransport.Handler
-	AutoUpdateNetworkInterfaceHdlr grpctransport.Handler
-	AutoUpdateRouteTableHdlr       grpctransport.Handler
-	AutoUpdateRoutingConfigHdlr    grpctransport.Handler
-	AutoUpdateServiceHdlr          grpctransport.Handler
-	AutoUpdateVirtualRouterHdlr    grpctransport.Handler
+	AutoAddIPAMPolicyHdlr                   grpctransport.Handler
+	AutoAddLbPolicyHdlr                     grpctransport.Handler
+	AutoAddNetworkHdlr                      grpctransport.Handler
+	AutoAddNetworkInterfaceHdlr             grpctransport.Handler
+	AutoAddRouteTableHdlr                   grpctransport.Handler
+	AutoAddRoutingConfigHdlr                grpctransport.Handler
+	AutoAddServiceHdlr                      grpctransport.Handler
+	AutoAddVirtualRouterHdlr                grpctransport.Handler
+	AutoAddVirtualRouterPeeringGroupHdlr    grpctransport.Handler
+	AutoDeleteIPAMPolicyHdlr                grpctransport.Handler
+	AutoDeleteLbPolicyHdlr                  grpctransport.Handler
+	AutoDeleteNetworkHdlr                   grpctransport.Handler
+	AutoDeleteNetworkInterfaceHdlr          grpctransport.Handler
+	AutoDeleteRouteTableHdlr                grpctransport.Handler
+	AutoDeleteRoutingConfigHdlr             grpctransport.Handler
+	AutoDeleteServiceHdlr                   grpctransport.Handler
+	AutoDeleteVirtualRouterHdlr             grpctransport.Handler
+	AutoDeleteVirtualRouterPeeringGroupHdlr grpctransport.Handler
+	AutoGetIPAMPolicyHdlr                   grpctransport.Handler
+	AutoGetLbPolicyHdlr                     grpctransport.Handler
+	AutoGetNetworkHdlr                      grpctransport.Handler
+	AutoGetNetworkInterfaceHdlr             grpctransport.Handler
+	AutoGetRouteTableHdlr                   grpctransport.Handler
+	AutoGetRoutingConfigHdlr                grpctransport.Handler
+	AutoGetServiceHdlr                      grpctransport.Handler
+	AutoGetVirtualRouterHdlr                grpctransport.Handler
+	AutoGetVirtualRouterPeeringGroupHdlr    grpctransport.Handler
+	AutoLabelIPAMPolicyHdlr                 grpctransport.Handler
+	AutoLabelLbPolicyHdlr                   grpctransport.Handler
+	AutoLabelNetworkHdlr                    grpctransport.Handler
+	AutoLabelNetworkInterfaceHdlr           grpctransport.Handler
+	AutoLabelRouteTableHdlr                 grpctransport.Handler
+	AutoLabelRoutingConfigHdlr              grpctransport.Handler
+	AutoLabelServiceHdlr                    grpctransport.Handler
+	AutoLabelVirtualRouterHdlr              grpctransport.Handler
+	AutoLabelVirtualRouterPeeringGroupHdlr  grpctransport.Handler
+	AutoListIPAMPolicyHdlr                  grpctransport.Handler
+	AutoListLbPolicyHdlr                    grpctransport.Handler
+	AutoListNetworkHdlr                     grpctransport.Handler
+	AutoListNetworkInterfaceHdlr            grpctransport.Handler
+	AutoListRouteTableHdlr                  grpctransport.Handler
+	AutoListRoutingConfigHdlr               grpctransport.Handler
+	AutoListServiceHdlr                     grpctransport.Handler
+	AutoListVirtualRouterHdlr               grpctransport.Handler
+	AutoListVirtualRouterPeeringGroupHdlr   grpctransport.Handler
+	AutoUpdateIPAMPolicyHdlr                grpctransport.Handler
+	AutoUpdateLbPolicyHdlr                  grpctransport.Handler
+	AutoUpdateNetworkHdlr                   grpctransport.Handler
+	AutoUpdateNetworkInterfaceHdlr          grpctransport.Handler
+	AutoUpdateRouteTableHdlr                grpctransport.Handler
+	AutoUpdateRoutingConfigHdlr             grpctransport.Handler
+	AutoUpdateServiceHdlr                   grpctransport.Handler
+	AutoUpdateVirtualRouterHdlr             grpctransport.Handler
+	AutoUpdateVirtualRouterPeeringGroupHdlr grpctransport.Handler
 }
 
 // MakeGRPCServerNetworkV1 creates a GRPC server for NetworkV1 service
@@ -135,6 +141,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoAddVirtualRouter", logger)))...,
 		),
 
+		AutoAddVirtualRouterPeeringGroupHdlr: grpctransport.NewServer(
+			endpoints.AutoAddVirtualRouterPeeringGroupEndpoint,
+			DecodeGrpcReqVirtualRouterPeeringGroup,
+			EncodeGrpcRespVirtualRouterPeeringGroup,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoAddVirtualRouterPeeringGroup", logger)))...,
+		),
+
 		AutoDeleteIPAMPolicyHdlr: grpctransport.NewServer(
 			endpoints.AutoDeleteIPAMPolicyEndpoint,
 			DecodeGrpcReqIPAMPolicy,
@@ -189,6 +202,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			DecodeGrpcReqVirtualRouter,
 			EncodeGrpcRespVirtualRouter,
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoDeleteVirtualRouter", logger)))...,
+		),
+
+		AutoDeleteVirtualRouterPeeringGroupHdlr: grpctransport.NewServer(
+			endpoints.AutoDeleteVirtualRouterPeeringGroupEndpoint,
+			DecodeGrpcReqVirtualRouterPeeringGroup,
+			EncodeGrpcRespVirtualRouterPeeringGroup,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoDeleteVirtualRouterPeeringGroup", logger)))...,
 		),
 
 		AutoGetIPAMPolicyHdlr: grpctransport.NewServer(
@@ -247,6 +267,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoGetVirtualRouter", logger)))...,
 		),
 
+		AutoGetVirtualRouterPeeringGroupHdlr: grpctransport.NewServer(
+			endpoints.AutoGetVirtualRouterPeeringGroupEndpoint,
+			DecodeGrpcReqVirtualRouterPeeringGroup,
+			EncodeGrpcRespVirtualRouterPeeringGroup,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoGetVirtualRouterPeeringGroup", logger)))...,
+		),
+
 		AutoLabelIPAMPolicyHdlr: grpctransport.NewServer(
 			endpoints.AutoLabelIPAMPolicyEndpoint,
 			DecodeGrpcReqLabel,
@@ -301,6 +328,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			DecodeGrpcReqLabel,
 			EncodeGrpcRespVirtualRouter,
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoLabelVirtualRouter", logger)))...,
+		),
+
+		AutoLabelVirtualRouterPeeringGroupHdlr: grpctransport.NewServer(
+			endpoints.AutoLabelVirtualRouterPeeringGroupEndpoint,
+			DecodeGrpcReqLabel,
+			EncodeGrpcRespVirtualRouterPeeringGroup,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoLabelVirtualRouterPeeringGroup", logger)))...,
 		),
 
 		AutoListIPAMPolicyHdlr: grpctransport.NewServer(
@@ -359,6 +393,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoListVirtualRouter", logger)))...,
 		),
 
+		AutoListVirtualRouterPeeringGroupHdlr: grpctransport.NewServer(
+			endpoints.AutoListVirtualRouterPeeringGroupEndpoint,
+			DecodeGrpcReqListWatchOptions,
+			EncodeGrpcRespVirtualRouterPeeringGroupList,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoListVirtualRouterPeeringGroup", logger)))...,
+		),
+
 		AutoUpdateIPAMPolicyHdlr: grpctransport.NewServer(
 			endpoints.AutoUpdateIPAMPolicyEndpoint,
 			DecodeGrpcReqIPAMPolicy,
@@ -413,6 +454,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			DecodeGrpcReqVirtualRouter,
 			EncodeGrpcRespVirtualRouter,
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoUpdateVirtualRouter", logger)))...,
+		),
+
+		AutoUpdateVirtualRouterPeeringGroupHdlr: grpctransport.NewServer(
+			endpoints.AutoUpdateVirtualRouterPeeringGroupEndpoint,
+			DecodeGrpcReqVirtualRouterPeeringGroup,
+			EncodeGrpcRespVirtualRouterPeeringGroup,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoUpdateVirtualRouterPeeringGroup", logger)))...,
 		),
 	}
 }
@@ -561,6 +609,24 @@ func decodeHTTPrespNetworkV1AutoAddVirtualRouter(_ context.Context, r *http.Resp
 	return &resp, err
 }
 
+func (s *grpcServerNetworkV1) AutoAddVirtualRouterPeeringGroup(ctx oldcontext.Context, req *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error) {
+	_, resp, err := s.AutoAddVirtualRouterPeeringGroupHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoAddVirtualRouterPeeringGroup).V
+	return &r, resp.(respNetworkV1AutoAddVirtualRouterPeeringGroup).Err
+}
+
+func decodeHTTPrespNetworkV1AutoAddVirtualRouterPeeringGroup(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp VirtualRouterPeeringGroup
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
 func (s *grpcServerNetworkV1) AutoDeleteIPAMPolicy(ctx oldcontext.Context, req *IPAMPolicy) (*IPAMPolicy, error) {
 	_, resp, err := s.AutoDeleteIPAMPolicyHdlr.ServeGRPC(ctx, req)
 	if err != nil {
@@ -701,6 +767,24 @@ func decodeHTTPrespNetworkV1AutoDeleteVirtualRouter(_ context.Context, r *http.R
 		return nil, errorDecoder(r)
 	}
 	var resp VirtualRouter
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
+func (s *grpcServerNetworkV1) AutoDeleteVirtualRouterPeeringGroup(ctx oldcontext.Context, req *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error) {
+	_, resp, err := s.AutoDeleteVirtualRouterPeeringGroupHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoDeleteVirtualRouterPeeringGroup).V
+	return &r, resp.(respNetworkV1AutoDeleteVirtualRouterPeeringGroup).Err
+}
+
+func decodeHTTPrespNetworkV1AutoDeleteVirtualRouterPeeringGroup(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp VirtualRouterPeeringGroup
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return &resp, err
 }
@@ -849,6 +933,24 @@ func decodeHTTPrespNetworkV1AutoGetVirtualRouter(_ context.Context, r *http.Resp
 	return &resp, err
 }
 
+func (s *grpcServerNetworkV1) AutoGetVirtualRouterPeeringGroup(ctx oldcontext.Context, req *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error) {
+	_, resp, err := s.AutoGetVirtualRouterPeeringGroupHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoGetVirtualRouterPeeringGroup).V
+	return &r, resp.(respNetworkV1AutoGetVirtualRouterPeeringGroup).Err
+}
+
+func decodeHTTPrespNetworkV1AutoGetVirtualRouterPeeringGroup(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp VirtualRouterPeeringGroup
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
 func (s *grpcServerNetworkV1) AutoLabelIPAMPolicy(ctx oldcontext.Context, req *api.Label) (*IPAMPolicy, error) {
 	_, resp, err := s.AutoLabelIPAMPolicyHdlr.ServeGRPC(ctx, req)
 	if err != nil {
@@ -989,6 +1091,24 @@ func decodeHTTPrespNetworkV1AutoLabelVirtualRouter(_ context.Context, r *http.Re
 		return nil, errorDecoder(r)
 	}
 	var resp VirtualRouter
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
+func (s *grpcServerNetworkV1) AutoLabelVirtualRouterPeeringGroup(ctx oldcontext.Context, req *api.Label) (*VirtualRouterPeeringGroup, error) {
+	_, resp, err := s.AutoLabelVirtualRouterPeeringGroupHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoLabelVirtualRouterPeeringGroup).V
+	return &r, resp.(respNetworkV1AutoLabelVirtualRouterPeeringGroup).Err
+}
+
+func decodeHTTPrespNetworkV1AutoLabelVirtualRouterPeeringGroup(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp VirtualRouterPeeringGroup
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return &resp, err
 }
@@ -1137,6 +1257,24 @@ func decodeHTTPrespNetworkV1AutoListVirtualRouter(_ context.Context, r *http.Res
 	return &resp, err
 }
 
+func (s *grpcServerNetworkV1) AutoListVirtualRouterPeeringGroup(ctx oldcontext.Context, req *api.ListWatchOptions) (*VirtualRouterPeeringGroupList, error) {
+	_, resp, err := s.AutoListVirtualRouterPeeringGroupHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoListVirtualRouterPeeringGroup).V
+	return &r, resp.(respNetworkV1AutoListVirtualRouterPeeringGroup).Err
+}
+
+func decodeHTTPrespNetworkV1AutoListVirtualRouterPeeringGroup(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp VirtualRouterPeeringGroupList
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
 func (s *grpcServerNetworkV1) AutoUpdateIPAMPolicy(ctx oldcontext.Context, req *IPAMPolicy) (*IPAMPolicy, error) {
 	_, resp, err := s.AutoUpdateIPAMPolicyHdlr.ServeGRPC(ctx, req)
 	if err != nil {
@@ -1281,6 +1419,24 @@ func decodeHTTPrespNetworkV1AutoUpdateVirtualRouter(_ context.Context, r *http.R
 	return &resp, err
 }
 
+func (s *grpcServerNetworkV1) AutoUpdateVirtualRouterPeeringGroup(ctx oldcontext.Context, req *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error) {
+	_, resp, err := s.AutoUpdateVirtualRouterPeeringGroupHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoUpdateVirtualRouterPeeringGroup).V
+	return &r, resp.(respNetworkV1AutoUpdateVirtualRouterPeeringGroup).Err
+}
+
+func decodeHTTPrespNetworkV1AutoUpdateVirtualRouterPeeringGroup(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp VirtualRouterPeeringGroup
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
 func (s *grpcServerNetworkV1) AutoWatchSvcNetworkV1(in *api.AggWatchOptions, stream NetworkV1_AutoWatchSvcNetworkV1Server) error {
 	return s.Endpoints.AutoWatchSvcNetworkV1(in, stream)
 }
@@ -1315,6 +1471,10 @@ func (s *grpcServerNetworkV1) AutoWatchRoutingConfig(in *api.ListWatchOptions, s
 
 func (s *grpcServerNetworkV1) AutoWatchRouteTable(in *api.ListWatchOptions, stream NetworkV1_AutoWatchRouteTableServer) error {
 	return s.Endpoints.AutoWatchRouteTable(in, stream)
+}
+
+func (s *grpcServerNetworkV1) AutoWatchVirtualRouterPeeringGroup(in *api.ListWatchOptions, stream NetworkV1_AutoWatchVirtualRouterPeeringGroupServer) error {
+	return s.Endpoints.AutoWatchVirtualRouterPeeringGroup(in, stream)
 }
 
 func encodeHTTPIPAMPolicyList(ctx context.Context, req *http.Request, request interface{}) error {
@@ -1586,5 +1746,39 @@ func EncodeGrpcRespVirtualRouterList(ctx context.Context, response interface{}) 
 
 // DecodeGrpcRespVirtualRouterList decodes the GRPC response
 func DecodeGrpcRespVirtualRouterList(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+func encodeHTTPVirtualRouterPeeringGroupList(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPVirtualRouterPeeringGroupList(_ context.Context, r *http.Request) (interface{}, error) {
+	var req VirtualRouterPeeringGroupList
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqVirtualRouterPeeringGroupList encodes GRPC request
+func EncodeGrpcReqVirtualRouterPeeringGroupList(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*VirtualRouterPeeringGroupList)
+	return req, nil
+}
+
+// DecodeGrpcReqVirtualRouterPeeringGroupList decodes GRPC request
+func DecodeGrpcReqVirtualRouterPeeringGroupList(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*VirtualRouterPeeringGroupList)
+	return req, nil
+}
+
+// EncodeGrpcRespVirtualRouterPeeringGroupList endodes the GRPC response
+func EncodeGrpcRespVirtualRouterPeeringGroupList(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespVirtualRouterPeeringGroupList decodes the GRPC response
+func DecodeGrpcRespVirtualRouterPeeringGroupList(ctx context.Context, response interface{}) (interface{}, error) {
 	return response, nil
 }

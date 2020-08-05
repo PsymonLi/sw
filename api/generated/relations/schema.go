@@ -56,6 +56,12 @@ var ObjRelations = map[string][]apiintf.ObjRelation{
 	"network.Route": []apiintf.ObjRelation{
 		{Type: "WeakRef", To: "network/VirtualRouter", Field: "TargetVirtualRouter"},
 	},
+	"network.VirtualRouterPeeringRoute": []apiintf.ObjRelation{
+		{Type: "WeakRef", To: "network/VirtualRouter", Field: "DestVirtualRouter"},
+	},
+	"network.VirtualRouterPeeringSpec": []apiintf.ObjRelation{
+		{Type: "NamedRef", To: "network/VirtualRouter", Field: "VirtualRouter"},
+	},
 	"network.VirtualRouterSpec": []apiintf.ObjRelation{
 		{Type: "NamedRef", To: "network/IPAMPolicy", Field: "DefaultIPAMPolicy"},
 	},

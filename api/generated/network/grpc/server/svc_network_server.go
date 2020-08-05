@@ -50,77 +50,85 @@ type eNetworkV1Endpoints struct {
 	Svc                     snetworkSvc_networkBackend
 	fnAutoWatchSvcNetworkV1 func(in *api.AggWatchOptions, stream grpc.ServerStream, svcprefix string) error
 
-	fnAutoAddIPAMPolicy          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoAddLbPolicy            func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoAddNetwork             func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoAddNetworkInterface    func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoAddRouteTable          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoAddRoutingConfig       func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoAddService             func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoAddVirtualRouter       func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoDeleteIPAMPolicy       func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoDeleteLbPolicy         func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoDeleteNetwork          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoDeleteNetworkInterface func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoDeleteRouteTable       func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoDeleteRoutingConfig    func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoDeleteService          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoDeleteVirtualRouter    func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoGetIPAMPolicy          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoGetLbPolicy            func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoGetNetwork             func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoGetNetworkInterface    func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoGetRouteTable          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoGetRoutingConfig       func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoGetService             func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoGetVirtualRouter       func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoLabelIPAMPolicy        func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoLabelLbPolicy          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoLabelNetwork           func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoLabelNetworkInterface  func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoLabelRouteTable        func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoLabelRoutingConfig     func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoLabelService           func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoLabelVirtualRouter     func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoListIPAMPolicy         func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoListLbPolicy           func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoListNetwork            func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoListNetworkInterface   func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoListRouteTable         func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoListRoutingConfig      func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoListService            func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoListVirtualRouter      func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoUpdateIPAMPolicy       func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoUpdateLbPolicy         func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoUpdateNetwork          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoUpdateNetworkInterface func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoUpdateRouteTable       func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoUpdateRoutingConfig    func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoUpdateService          func(ctx context.Context, t interface{}) (interface{}, error)
-	fnAutoUpdateVirtualRouter    func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddIPAMPolicy                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddLbPolicy                     func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddNetwork                      func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddNetworkInterface             func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddRouteTable                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddRoutingConfig                func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddService                      func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddVirtualRouter                func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddVirtualRouterPeeringGroup    func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteIPAMPolicy                func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteLbPolicy                  func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteNetwork                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteNetworkInterface          func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteRouteTable                func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteRoutingConfig             func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteService                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteVirtualRouter             func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeleteVirtualRouterPeeringGroup func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetIPAMPolicy                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetLbPolicy                     func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetNetwork                      func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetNetworkInterface             func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetRouteTable                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetRoutingConfig                func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetService                      func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetVirtualRouter                func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetVirtualRouterPeeringGroup    func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelIPAMPolicy                 func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelLbPolicy                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelNetwork                    func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelNetworkInterface           func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelRouteTable                 func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelRoutingConfig              func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelService                    func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelVirtualRouter              func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelVirtualRouterPeeringGroup  func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListIPAMPolicy                  func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListLbPolicy                    func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListNetwork                     func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListNetworkInterface            func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListRouteTable                  func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListRoutingConfig               func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListService                     func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListVirtualRouter               func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListVirtualRouterPeeringGroup   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateIPAMPolicy                func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateLbPolicy                  func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateNetwork                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateNetworkInterface          func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateRouteTable                func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateRoutingConfig             func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateService                   func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateVirtualRouter             func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdateVirtualRouterPeeringGroup func(ctx context.Context, t interface{}) (interface{}, error)
 
-	fnAutoWatchNetwork          func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
-	fnAutoWatchService          func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
-	fnAutoWatchLbPolicy         func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
-	fnAutoWatchVirtualRouter    func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
-	fnAutoWatchNetworkInterface func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
-	fnAutoWatchIPAMPolicy       func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
-	fnAutoWatchRoutingConfig    func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
-	fnAutoWatchRouteTable       func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchNetwork                   func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchService                   func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchLbPolicy                  func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchVirtualRouter             func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchNetworkInterface          func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchIPAMPolicy                func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchRoutingConfig             func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchRouteTable                func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchVirtualRouterPeeringGroup func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
 }
 
 func (s *snetworkSvc_networkBackend) regMsgsFunc(l log.Logger, scheme *runtime.Scheme) {
 	l.Infof("registering message for snetworkSvc_networkBackend")
 	s.Messages = map[string]apiserver.Message{
 
-		"network.AutoMsgIPAMPolicyWatchHelper":       apisrvpkg.NewMessage("network.AutoMsgIPAMPolicyWatchHelper"),
-		"network.AutoMsgLbPolicyWatchHelper":         apisrvpkg.NewMessage("network.AutoMsgLbPolicyWatchHelper"),
-		"network.AutoMsgNetworkInterfaceWatchHelper": apisrvpkg.NewMessage("network.AutoMsgNetworkInterfaceWatchHelper"),
-		"network.AutoMsgNetworkWatchHelper":          apisrvpkg.NewMessage("network.AutoMsgNetworkWatchHelper"),
-		"network.AutoMsgRouteTableWatchHelper":       apisrvpkg.NewMessage("network.AutoMsgRouteTableWatchHelper"),
-		"network.AutoMsgRoutingConfigWatchHelper":    apisrvpkg.NewMessage("network.AutoMsgRoutingConfigWatchHelper"),
-		"network.AutoMsgServiceWatchHelper":          apisrvpkg.NewMessage("network.AutoMsgServiceWatchHelper"),
-		"network.AutoMsgVirtualRouterWatchHelper":    apisrvpkg.NewMessage("network.AutoMsgVirtualRouterWatchHelper"),
+		"network.AutoMsgIPAMPolicyWatchHelper":                apisrvpkg.NewMessage("network.AutoMsgIPAMPolicyWatchHelper"),
+		"network.AutoMsgLbPolicyWatchHelper":                  apisrvpkg.NewMessage("network.AutoMsgLbPolicyWatchHelper"),
+		"network.AutoMsgNetworkInterfaceWatchHelper":          apisrvpkg.NewMessage("network.AutoMsgNetworkInterfaceWatchHelper"),
+		"network.AutoMsgNetworkWatchHelper":                   apisrvpkg.NewMessage("network.AutoMsgNetworkWatchHelper"),
+		"network.AutoMsgRouteTableWatchHelper":                apisrvpkg.NewMessage("network.AutoMsgRouteTableWatchHelper"),
+		"network.AutoMsgRoutingConfigWatchHelper":             apisrvpkg.NewMessage("network.AutoMsgRoutingConfigWatchHelper"),
+		"network.AutoMsgServiceWatchHelper":                   apisrvpkg.NewMessage("network.AutoMsgServiceWatchHelper"),
+		"network.AutoMsgVirtualRouterPeeringGroupWatchHelper": apisrvpkg.NewMessage("network.AutoMsgVirtualRouterPeeringGroupWatchHelper"),
+		"network.AutoMsgVirtualRouterWatchHelper":             apisrvpkg.NewMessage("network.AutoMsgVirtualRouterWatchHelper"),
 		"network.IPAMPolicyList": apisrvpkg.NewMessage("network.IPAMPolicyList").WithKvListFunc(func(ctx context.Context, kvs kvstore.Interface, options *api.ListWatchOptions, prefix string) (interface{}, error) {
 
 			into := network.IPAMPolicyList{}
@@ -369,6 +377,38 @@ func (s *snetworkSvc_networkBackend) regMsgsFunc(l log.Logger, scheme *runtime.S
 			r := i.(network.VirtualRouterList)
 			return &r
 		}),
+		"network.VirtualRouterPeeringGroupList": apisrvpkg.NewMessage("network.VirtualRouterPeeringGroupList").WithKvListFunc(func(ctx context.Context, kvs kvstore.Interface, options *api.ListWatchOptions, prefix string) (interface{}, error) {
+
+			into := network.VirtualRouterPeeringGroupList{}
+			into.Kind = "VirtualRouterPeeringGroupList"
+			r := network.VirtualRouterPeeringGroup{}
+			r.ObjectMeta = options.ObjectMeta
+			key := r.MakeKey(prefix)
+
+			if options.Tenant == "" {
+				if strings.HasSuffix(key, "//") {
+					key = key[:len(key)-1]
+				}
+			}
+
+			ctx = apiutils.SetVar(ctx, "ObjKind", "network.VirtualRouterPeeringGroup")
+			err := kvs.ListFiltered(ctx, key, &into, *options)
+			if err != nil {
+				l.ErrorLog("msg", "Object ListFiltered failed", "key", key, "err", err)
+				return nil, err
+			}
+			return into, nil
+		}).WithSelfLinkWriter(func(path, ver, prefix string, i interface{}) (interface{}, error) {
+			r := i.(network.VirtualRouterPeeringGroupList)
+			r.APIVersion = ver
+			for i := range r.Items {
+				r.Items[i].SelfLink = r.Items[i].MakeURI("configs", ver, prefix)
+			}
+			return r, nil
+		}).WithGetRuntimeObject(func(i interface{}) runtime.Object {
+			r := i.(network.VirtualRouterPeeringGroupList)
+			return &r
+		}),
 		// Add a message handler for ListWatch options
 		"api.ListWatchOptions": apisrvpkg.NewMessage("api.ListWatchOptions"),
 		// Add a message handler for Label options
@@ -454,6 +494,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtualrouters/", in.Name), nil
 		}).HandleInvocation
 
+		s.endpointsNetworkV1.fnAutoAddVirtualRouterPeeringGroup = srv.AddMethod("AutoAddVirtualRouterPeeringGroup",
+			apisrvpkg.NewMethod(srv, pkgMessages["network.VirtualRouterPeeringGroup"], pkgMessages["network.VirtualRouterPeeringGroup"], "network", "AutoAddVirtualRouterPeeringGroup")).WithOper(apiintf.CreateOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(network.VirtualRouterPeeringGroup)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtual-router-peering-groups/", in.Name), nil
+		}).HandleInvocation
+
 		s.endpointsNetworkV1.fnAutoDeleteIPAMPolicy = srv.AddMethod("AutoDeleteIPAMPolicy",
 			apisrvpkg.NewMethod(srv, pkgMessages["network.IPAMPolicy"], pkgMessages["network.IPAMPolicy"], "network", "AutoDeleteIPAMPolicy")).WithOper(apiintf.DeleteOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
 			in, ok := i.(network.IPAMPolicy)
@@ -508,6 +557,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 				return "", fmt.Errorf("wrong type")
 			}
 			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtualrouters/", in.Name), nil
+		}).HandleInvocation
+
+		s.endpointsNetworkV1.fnAutoDeleteVirtualRouterPeeringGroup = srv.AddMethod("AutoDeleteVirtualRouterPeeringGroup",
+			apisrvpkg.NewMethod(srv, pkgMessages["network.VirtualRouterPeeringGroup"], pkgMessages["network.VirtualRouterPeeringGroup"], "network", "AutoDeleteVirtualRouterPeeringGroup")).WithOper(apiintf.DeleteOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(network.VirtualRouterPeeringGroup)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtual-router-peering-groups/", in.Name), nil
 		}).HandleInvocation
 
 		s.endpointsNetworkV1.fnAutoGetIPAMPolicy = srv.AddMethod("AutoGetIPAMPolicy",
@@ -572,6 +630,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 				return "", fmt.Errorf("wrong type")
 			}
 			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtualrouters/", in.Name), nil
+		}).HandleInvocation
+
+		s.endpointsNetworkV1.fnAutoGetVirtualRouterPeeringGroup = srv.AddMethod("AutoGetVirtualRouterPeeringGroup",
+			apisrvpkg.NewMethod(srv, pkgMessages["network.VirtualRouterPeeringGroup"], pkgMessages["network.VirtualRouterPeeringGroup"], "network", "AutoGetVirtualRouterPeeringGroup")).WithOper(apiintf.GetOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(network.VirtualRouterPeeringGroup)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtual-router-peering-groups/", in.Name), nil
 		}).HandleInvocation
 
 		s.endpointsNetworkV1.fnAutoLabelIPAMPolicy = srv.AddMethod("AutoLabelIPAMPolicy",
@@ -818,6 +885,38 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 			return cur, nil
 		}).HandleInvocation
 
+		s.endpointsNetworkV1.fnAutoLabelVirtualRouterPeeringGroup = srv.AddMethod("AutoLabelVirtualRouterPeeringGroup",
+			apisrvpkg.NewMethod(srv, pkgMessages["api.Label"], pkgMessages["network.VirtualRouterPeeringGroup"], "network", "AutoLabelVirtualRouterPeeringGroup")).WithOper(apiintf.LabelOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(api.Label)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtual-router-peering-groups/", in.Name), nil
+		}).WithMethDbKey(func(i interface{}, prefix string) (string, error) {
+			new := network.VirtualRouterPeeringGroup{}
+			if i == nil {
+				return new.MakeKey(prefix), nil
+			}
+			in, ok := i.(api.Label)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			new.ObjectMeta = in.ObjectMeta
+			return new.MakeKey(prefix), nil
+		}).WithResponseWriter(func(ctx context.Context, kvs kvstore.Interface, prefix string, in, old, resp interface{}, oper apiintf.APIOperType) (interface{}, error) {
+			label, ok := resp.(api.Label)
+			if !ok {
+				return "", fmt.Errorf("Expected type to be api.Label")
+			}
+			cur := network.VirtualRouterPeeringGroup{}
+			cur.ObjectMeta = label.ObjectMeta
+			key := cur.MakeKey(prefix)
+			if err := kvs.Get(ctx, key, &cur); err != nil {
+				return nil, err
+			}
+			return cur, nil
+		}).HandleInvocation
+
 		s.endpointsNetworkV1.fnAutoListIPAMPolicy = srv.AddMethod("AutoListIPAMPolicy",
 			apisrvpkg.NewMethod(srv, pkgMessages["api.ListWatchOptions"], pkgMessages["network.IPAMPolicyList"], "network", "AutoListIPAMPolicy")).WithOper(apiintf.ListOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
 			in, ok := i.(api.ListWatchOptions)
@@ -882,6 +981,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtualrouters/", in.Name), nil
 		}).HandleInvocation
 
+		s.endpointsNetworkV1.fnAutoListVirtualRouterPeeringGroup = srv.AddMethod("AutoListVirtualRouterPeeringGroup",
+			apisrvpkg.NewMethod(srv, pkgMessages["api.ListWatchOptions"], pkgMessages["network.VirtualRouterPeeringGroupList"], "network", "AutoListVirtualRouterPeeringGroup")).WithOper(apiintf.ListOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(api.ListWatchOptions)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtual-router-peering-groups/", in.Name), nil
+		}).HandleInvocation
+
 		s.endpointsNetworkV1.fnAutoUpdateIPAMPolicy = srv.AddMethod("AutoUpdateIPAMPolicy",
 			apisrvpkg.NewMethod(srv, pkgMessages["network.IPAMPolicy"], pkgMessages["network.IPAMPolicy"], "network", "AutoUpdateIPAMPolicy")).WithOper(apiintf.UpdateOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
 			in, ok := i.(network.IPAMPolicy)
@@ -942,6 +1050,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtualrouters/", in.Name), nil
 		}).HandleInvocation
 
+		s.endpointsNetworkV1.fnAutoUpdateVirtualRouterPeeringGroup = srv.AddMethod("AutoUpdateVirtualRouterPeeringGroup",
+			apisrvpkg.NewMethod(srv, pkgMessages["network.VirtualRouterPeeringGroup"], pkgMessages["network.VirtualRouterPeeringGroup"], "network", "AutoUpdateVirtualRouterPeeringGroup")).WithOper(apiintf.UpdateOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(network.VirtualRouterPeeringGroup)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/virtual-router-peering-groups/", in.Name), nil
+		}).HandleInvocation
+
 		s.endpointsNetworkV1.fnAutoWatchNetwork = pkgMessages["network.Network"].WatchFromKv
 
 		s.endpointsNetworkV1.fnAutoWatchService = pkgMessages["network.Service"].WatchFromKv
@@ -958,6 +1075,8 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 
 		s.endpointsNetworkV1.fnAutoWatchRouteTable = pkgMessages["network.RouteTable"].WatchFromKv
 
+		s.endpointsNetworkV1.fnAutoWatchVirtualRouterPeeringGroup = pkgMessages["network.VirtualRouterPeeringGroup"].WatchFromKv
+
 		s.Services = map[string]apiserver.Service{
 			"network.NetworkV1": srv,
 		}
@@ -965,7 +1084,7 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 		endpoints := network.MakeNetworkV1ServerEndpoints(s.endpointsNetworkV1, logger)
 		server := network.MakeGRPCServerNetworkV1(ctx, endpoints, logger)
 		network.RegisterNetworkV1Server(grpcserver.GrpcServer, server)
-		svcObjs := []string{"Network", "Service", "LbPolicy", "VirtualRouter", "NetworkInterface", "IPAMPolicy", "RoutingConfig", "RouteTable"}
+		svcObjs := []string{"Network", "Service", "LbPolicy", "VirtualRouter", "NetworkInterface", "IPAMPolicy", "RoutingConfig", "RouteTable", "VirtualRouterPeeringGroup"}
 		fieldhooks.RegisterImmutableFieldsServiceHooks("network", "NetworkV1", svcObjs)
 	}
 }
@@ -1831,6 +1950,109 @@ func (s *snetworkSvc_networkBackend) regWatchersFunc(ctx context.Context, logger
 			}
 		})
 
+		pkgMessages["network.VirtualRouterPeeringGroup"].WithKvWatchFunc(func(l log.Logger, options *api.ListWatchOptions, kvs kvstore.Interface, stream interface{}, txfn func(from, to string, i interface{}) (interface{}, error), version, svcprefix string) error {
+			o := network.VirtualRouterPeeringGroup{}
+			key := o.MakeKey(svcprefix)
+			if strings.HasSuffix(key, "//") {
+				key = strings.TrimSuffix(key, "/")
+			}
+			if strings.HasSuffix(key, "//Singleton") {
+				key = strings.TrimSuffix(key, "/Singleton")
+			}
+			wstream := stream.(network.NetworkV1_AutoWatchVirtualRouterPeeringGroupServer)
+			nctx, cancel := context.WithCancel(wstream.Context())
+			defer cancel()
+			id := fmt.Sprintf("%s-%x", ctxutils.GetPeerID(nctx), &key)
+
+			nctx = ctxutils.SetContextID(nctx, id)
+			if kvs == nil {
+				return fmt.Errorf("Nil KVS")
+			}
+			nctx = apiutils.SetVar(nctx, "ObjKind", "network.VirtualRouterPeeringGroup")
+			l.InfoLog("msg", "KVWatcher starting watch", "WatcherID", id, "object", "network.VirtualRouterPeeringGroup")
+			watcher, err := kvs.WatchFiltered(nctx, key, *options)
+			if err != nil {
+				l.ErrorLog("msg", "error starting Watch on KV", "err", err, "WatcherID", id, "bbject", "network.VirtualRouterPeeringGroup")
+				return err
+			}
+			timer := time.NewTimer(apiserver.DefaultWatchHoldInterval)
+			if !timer.Stop() {
+				<-timer.C
+			}
+			running := false
+			events := &network.AutoMsgVirtualRouterPeeringGroupWatchHelper{}
+			sendToStream := func() error {
+				l.DebugLog("msg", "writing to stream", "len", len(events.Events))
+				if err := wstream.Send(events); err != nil {
+					l.ErrorLog("msg", "Stream send error'ed for Order", "err", err, "WatcherID", id, "bbject", "network.VirtualRouterPeeringGroup")
+					return err
+				}
+				events = &network.AutoMsgVirtualRouterPeeringGroupWatchHelper{}
+				return nil
+			}
+			defer l.InfoLog("msg", "exiting watcher", "service", "network.VirtualRouterPeeringGroup")
+			for {
+				select {
+				case ev, ok := <-watcher.EventChan():
+					if !ok {
+						l.ErrorLog("msg", "Channel closed for Watcher", "WatcherID", id, "bbject", "network.VirtualRouterPeeringGroup")
+						return nil
+					}
+					evin, ok := ev.Object.(*network.VirtualRouterPeeringGroup)
+					if !ok {
+						status, ok := ev.Object.(*api.Status)
+						if !ok {
+							return errors.New("unknown error")
+						}
+						return fmt.Errorf("%v:(%s) %s", status.Code, status.Result, status.Message)
+					}
+					// XXX-TODO(sanjayt): Avoid a copy and update selflink at enqueue.
+					cin, err := evin.Clone(nil)
+					if err != nil {
+						return fmt.Errorf("unable to clone object (%s)", err)
+					}
+					in := cin.(*network.VirtualRouterPeeringGroup)
+					in.SelfLink = in.MakeURI(globals.ConfigURIPrefix, "v1", "network")
+
+					strEvent := &network.AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent{
+						Type:   string(ev.Type),
+						Object: in,
+					}
+					l.DebugLog("msg", "received VirtualRouterPeeringGroup watch event from KV", "type", ev.Type)
+					if version != in.APIVersion {
+						i, err := txfn(in.APIVersion, version, in)
+						if err != nil {
+							l.ErrorLog("msg", "Failed to transform message", "type", "VirtualRouterPeeringGroup", "fromver", in.APIVersion, "tover", version, "WatcherID", id, "bbject", "network.VirtualRouterPeeringGroup")
+							break
+						}
+						strEvent.Object = i.(*network.VirtualRouterPeeringGroup)
+					}
+					events.Events = append(events.Events, strEvent)
+					if !running {
+						running = true
+						timer.Reset(apiserver.DefaultWatchHoldInterval)
+					}
+					if len(events.Events) >= apiserver.DefaultWatchBatchSize {
+						if err = sendToStream(); err != nil {
+							return err
+						}
+						if !timer.Stop() {
+							<-timer.C
+						}
+						timer.Reset(apiserver.DefaultWatchHoldInterval)
+					}
+				case <-timer.C:
+					running = false
+					if err = sendToStream(); err != nil {
+						return err
+					}
+				case <-nctx.Done():
+					l.DebugLog("msg", "Context cancelled for Watcher", "WatcherID", id, "bbject", "network.VirtualRouterPeeringGroup")
+					return wstream.Context().Err()
+				}
+			}
+		})
+
 	}
 
 }
@@ -1914,6 +2136,14 @@ func (e *eNetworkV1Endpoints) AutoAddVirtualRouter(ctx context.Context, t networ
 	return network.VirtualRouter{}, err
 
 }
+func (e *eNetworkV1Endpoints) AutoAddVirtualRouterPeeringGroup(ctx context.Context, t network.VirtualRouterPeeringGroup) (network.VirtualRouterPeeringGroup, error) {
+	r, err := e.fnAutoAddVirtualRouterPeeringGroup(ctx, t)
+	if err == nil {
+		return r.(network.VirtualRouterPeeringGroup), err
+	}
+	return network.VirtualRouterPeeringGroup{}, err
+
+}
 func (e *eNetworkV1Endpoints) AutoDeleteIPAMPolicy(ctx context.Context, t network.IPAMPolicy) (network.IPAMPolicy, error) {
 	r, err := e.fnAutoDeleteIPAMPolicy(ctx, t)
 	if err == nil {
@@ -1976,6 +2206,14 @@ func (e *eNetworkV1Endpoints) AutoDeleteVirtualRouter(ctx context.Context, t net
 		return r.(network.VirtualRouter), err
 	}
 	return network.VirtualRouter{}, err
+
+}
+func (e *eNetworkV1Endpoints) AutoDeleteVirtualRouterPeeringGroup(ctx context.Context, t network.VirtualRouterPeeringGroup) (network.VirtualRouterPeeringGroup, error) {
+	r, err := e.fnAutoDeleteVirtualRouterPeeringGroup(ctx, t)
+	if err == nil {
+		return r.(network.VirtualRouterPeeringGroup), err
+	}
+	return network.VirtualRouterPeeringGroup{}, err
 
 }
 func (e *eNetworkV1Endpoints) AutoGetIPAMPolicy(ctx context.Context, t network.IPAMPolicy) (network.IPAMPolicy, error) {
@@ -2042,6 +2280,14 @@ func (e *eNetworkV1Endpoints) AutoGetVirtualRouter(ctx context.Context, t networ
 	return network.VirtualRouter{}, err
 
 }
+func (e *eNetworkV1Endpoints) AutoGetVirtualRouterPeeringGroup(ctx context.Context, t network.VirtualRouterPeeringGroup) (network.VirtualRouterPeeringGroup, error) {
+	r, err := e.fnAutoGetVirtualRouterPeeringGroup(ctx, t)
+	if err == nil {
+		return r.(network.VirtualRouterPeeringGroup), err
+	}
+	return network.VirtualRouterPeeringGroup{}, err
+
+}
 func (e *eNetworkV1Endpoints) AutoLabelIPAMPolicy(ctx context.Context, t api.Label) (network.IPAMPolicy, error) {
 	r, err := e.fnAutoLabelIPAMPolicy(ctx, t)
 	if err == nil {
@@ -2104,6 +2350,14 @@ func (e *eNetworkV1Endpoints) AutoLabelVirtualRouter(ctx context.Context, t api.
 		return r.(network.VirtualRouter), err
 	}
 	return network.VirtualRouter{}, err
+
+}
+func (e *eNetworkV1Endpoints) AutoLabelVirtualRouterPeeringGroup(ctx context.Context, t api.Label) (network.VirtualRouterPeeringGroup, error) {
+	r, err := e.fnAutoLabelVirtualRouterPeeringGroup(ctx, t)
+	if err == nil {
+		return r.(network.VirtualRouterPeeringGroup), err
+	}
+	return network.VirtualRouterPeeringGroup{}, err
 
 }
 func (e *eNetworkV1Endpoints) AutoListIPAMPolicy(ctx context.Context, t api.ListWatchOptions) (network.IPAMPolicyList, error) {
@@ -2170,6 +2424,14 @@ func (e *eNetworkV1Endpoints) AutoListVirtualRouter(ctx context.Context, t api.L
 	return network.VirtualRouterList{}, err
 
 }
+func (e *eNetworkV1Endpoints) AutoListVirtualRouterPeeringGroup(ctx context.Context, t api.ListWatchOptions) (network.VirtualRouterPeeringGroupList, error) {
+	r, err := e.fnAutoListVirtualRouterPeeringGroup(ctx, t)
+	if err == nil {
+		return r.(network.VirtualRouterPeeringGroupList), err
+	}
+	return network.VirtualRouterPeeringGroupList{}, err
+
+}
 func (e *eNetworkV1Endpoints) AutoUpdateIPAMPolicy(ctx context.Context, t network.IPAMPolicy) (network.IPAMPolicy, error) {
 	r, err := e.fnAutoUpdateIPAMPolicy(ctx, t)
 	if err == nil {
@@ -2234,6 +2496,14 @@ func (e *eNetworkV1Endpoints) AutoUpdateVirtualRouter(ctx context.Context, t net
 	return network.VirtualRouter{}, err
 
 }
+func (e *eNetworkV1Endpoints) AutoUpdateVirtualRouterPeeringGroup(ctx context.Context, t network.VirtualRouterPeeringGroup) (network.VirtualRouterPeeringGroup, error) {
+	r, err := e.fnAutoUpdateVirtualRouterPeeringGroup(ctx, t)
+	if err == nil {
+		return r.(network.VirtualRouterPeeringGroup), err
+	}
+	return network.VirtualRouterPeeringGroup{}, err
+
+}
 
 func (e *eNetworkV1Endpoints) AutoWatchNetwork(in *api.ListWatchOptions, stream network.NetworkV1_AutoWatchNetworkServer) error {
 	return e.fnAutoWatchNetwork(in, stream, "network")
@@ -2258,6 +2528,9 @@ func (e *eNetworkV1Endpoints) AutoWatchRoutingConfig(in *api.ListWatchOptions, s
 }
 func (e *eNetworkV1Endpoints) AutoWatchRouteTable(in *api.ListWatchOptions, stream network.NetworkV1_AutoWatchRouteTableServer) error {
 	return e.fnAutoWatchRouteTable(in, stream, "network")
+}
+func (e *eNetworkV1Endpoints) AutoWatchVirtualRouterPeeringGroup(in *api.ListWatchOptions, stream network.NetworkV1_AutoWatchVirtualRouterPeeringGroupServer) error {
+	return e.fnAutoWatchVirtualRouterPeeringGroup(in, stream, "network")
 }
 func (e *eNetworkV1Endpoints) AutoWatchSvcNetworkV1(in *api.AggWatchOptions, stream network.NetworkV1_AutoWatchSvcNetworkV1Server) error {
 	return e.fnAutoWatchSvcNetworkV1(in, stream, "")

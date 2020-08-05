@@ -631,7 +631,8 @@
           "NetworkInterface",
           "IPAMPolicy",
           "RoutingConfig",
-          "RouteTable"
+          "RouteTable",
+          "VirtualRouterPeeringGroup"
         ],
         "Properties": {
           "IPAMPolicy": {
@@ -729,12 +730,28 @@
               "label"
             ],
             "URI": "/configs/network/v1/virtualrouters"
+          },
+          "VirtualRouterPeeringGroup": {
+            "Scopes": [
+              "tenant"
+            ],
+            "RestMethods": [
+              "post",
+              "put",
+              "delete",
+              "get",
+              "list",
+              "watch",
+              "label"
+            ],
+            "URI": "/configs/network/v1/virtual-router-peering-groups"
           }
         }
       }
     },
     "Files": [
       "svc_network.proto",
+      "vr_peering_group.proto",
       "vrf.proto"
     ]
   },

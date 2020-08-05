@@ -122,6 +122,20 @@
       "Field": "TargetVirtualRouter"
     }
   ],
+  "network.VirtualRouterPeeringRoute": [
+    {
+      "Type": "WeakRef",
+      "To": "network/VirtualRouter",
+      "Field": "DestVirtualRouter"
+    }
+  ],
+  "network.VirtualRouterPeeringSpec": [
+    {
+      "Type": "NamedRef",
+      "To": "network/VirtualRouter",
+      "Field": "VirtualRouter"
+    }
+  ],
   "network.VirtualRouterSpec": [
     {
       "Type": "NamedRef",

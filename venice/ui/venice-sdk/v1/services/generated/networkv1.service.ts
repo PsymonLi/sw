@@ -4,7 +4,7 @@ import { Observable } from '../../../../webapp/node_modules/rxjs';
 import { Injectable } from '../../../../webapp/node_modules/@angular/core';
 import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/utility';
 
-import { INetworkIPAMPolicyList,NetworkIPAMPolicyList,IApiStatus,ApiStatus,INetworkIPAMPolicy,NetworkIPAMPolicy,ApiLabel,IApiLabel,INetworkNetworkInterfaceList,NetworkNetworkInterfaceList,INetworkNetworkInterface,NetworkNetworkInterface,INetworkNetworkList,NetworkNetworkList,INetworkNetwork,NetworkNetwork,INetworkRouteTableList,NetworkRouteTableList,INetworkRouteTable,NetworkRouteTable,INetworkRoutingConfigList,NetworkRoutingConfigList,INetworkRoutingConfig,NetworkRoutingConfig,INetworkVirtualRouterList,NetworkVirtualRouterList,INetworkVirtualRouter,NetworkVirtualRouter,INetworkAutoMsgIPAMPolicyWatchHelper,NetworkAutoMsgIPAMPolicyWatchHelper,INetworkAutoMsgNetworkInterfaceWatchHelper,NetworkAutoMsgNetworkInterfaceWatchHelper,INetworkAutoMsgNetworkWatchHelper,NetworkAutoMsgNetworkWatchHelper,INetworkAutoMsgRouteTableWatchHelper,NetworkAutoMsgRouteTableWatchHelper,INetworkAutoMsgRoutingConfigWatchHelper,NetworkAutoMsgRoutingConfigWatchHelper,INetworkAutoMsgVirtualRouterWatchHelper,NetworkAutoMsgVirtualRouterWatchHelper } from '../../models/generated/network';
+import { INetworkIPAMPolicyList,NetworkIPAMPolicyList,IApiStatus,ApiStatus,INetworkIPAMPolicy,NetworkIPAMPolicy,ApiLabel,IApiLabel,INetworkNetworkInterfaceList,NetworkNetworkInterfaceList,INetworkNetworkInterface,NetworkNetworkInterface,INetworkNetworkList,NetworkNetworkList,INetworkNetwork,NetworkNetwork,INetworkRouteTableList,NetworkRouteTableList,INetworkRouteTable,NetworkRouteTable,INetworkRoutingConfigList,NetworkRoutingConfigList,INetworkRoutingConfig,NetworkRoutingConfig,INetworkVirtualRouterPeeringGroupList,NetworkVirtualRouterPeeringGroupList,INetworkVirtualRouterPeeringGroup,NetworkVirtualRouterPeeringGroup,INetworkVirtualRouterList,NetworkVirtualRouterList,INetworkVirtualRouter,NetworkVirtualRouter,INetworkAutoMsgIPAMPolicyWatchHelper,NetworkAutoMsgIPAMPolicyWatchHelper,INetworkAutoMsgNetworkInterfaceWatchHelper,NetworkAutoMsgNetworkInterfaceWatchHelper,INetworkAutoMsgNetworkWatchHelper,NetworkAutoMsgNetworkWatchHelper,INetworkAutoMsgRouteTableWatchHelper,NetworkAutoMsgRouteTableWatchHelper,INetworkAutoMsgRoutingConfigWatchHelper,NetworkAutoMsgRoutingConfigWatchHelper,INetworkAutoMsgVirtualRouterPeeringGroupWatchHelper,NetworkAutoMsgVirtualRouterPeeringGroupWatchHelper,INetworkAutoMsgVirtualRouterWatchHelper,NetworkAutoMsgVirtualRouterWatchHelper } from '../../models/generated/network';
 
 @Injectable()
 export class Networkv1Service extends AbstractService {
@@ -25,6 +25,7 @@ export class Networkv1Service extends AbstractService {
     'NetworkIPAMPolicy': 100,
     'NetworkNetwork': 100,
     'NetworkRouteTable': 100,
+    'NetworkVirtualRouterPeeringGroup': 100,
     'NetworkVirtualRouter': 100,
   }
 
@@ -705,6 +706,118 @@ export class Networkv1Service extends AbstractService {
     return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkRouteTable | IApiStatus | Error, statusCode: number}>;
   }
   
+  /** List VirtualRouterPeeringGroup objects */
+  public ListVirtualRouterPeeringGroup(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkVirtualRouterPeeringGroupList | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    const opts = {
+      eventID: 'ListVirtualRouterPeeringGroup',
+      objType: 'NetworkVirtualRouterPeeringGroupList',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkVirtualRouterPeeringGroupList | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Create VirtualRouterPeeringGroup object */
+  public AddVirtualRouterPeeringGroup(body: INetworkVirtualRouterPeeringGroup, stagingID: string = "", trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    const opts = {
+      eventID: 'AddVirtualRouterPeeringGroup',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new NetworkVirtualRouterPeeringGroup(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Get VirtualRouterPeeringGroup object */
+  public GetVirtualRouterPeeringGroup(O_Name, queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups/{O.Name}';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'GetVirtualRouterPeeringGroup',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Delete VirtualRouterPeeringGroup object */
+  public DeleteVirtualRouterPeeringGroup(O_Name, stagingID: string = ""):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups/{O.Name}';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'DeleteVirtualRouterPeeringGroup',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXDeleteCall(url, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Update VirtualRouterPeeringGroup object */
+  public UpdateVirtualRouterPeeringGroup(O_Name, body: INetworkVirtualRouterPeeringGroup, stagingID: string = "", previousVal: INetworkVirtualRouterPeeringGroup = null, trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups/{O.Name}';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'UpdateVirtualRouterPeeringGroup',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new NetworkVirtualRouterPeeringGroup(body), previousVal, trimDefaults)
+    }
+    return this.invokeAJAXPutCall(url, body, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Label VirtualRouterPeeringGroup object */
+  public LabelVirtualRouterPeeringGroup(O_Name, body: IApiLabel, stagingID: string = "", trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups/{O.Name}/label';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'LabelVirtualRouterPeeringGroup',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new ApiLabel(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
   /** List VirtualRouter objects */
   public ListVirtualRouter(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkVirtualRouterList | IApiStatus | Error, statusCode: number}> {
     let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/virtualrouters';
@@ -815,6 +928,112 @@ export class Networkv1Service extends AbstractService {
       body = TrimDefaultsAndEmptyFields(body, new ApiLabel(body), null, trimDefaults)
     }
     return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkVirtualRouter | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** List VirtualRouterPeeringGroup objects */
+  public ListVirtualRouterPeeringGroup_1(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkVirtualRouterPeeringGroupList | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/virtual-router-peering-groups';
+    const opts = {
+      eventID: 'ListVirtualRouterPeeringGroup_1',
+      objType: 'NetworkVirtualRouterPeeringGroupList',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkVirtualRouterPeeringGroupList | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Create VirtualRouterPeeringGroup object */
+  public AddVirtualRouterPeeringGroup_1(body: INetworkVirtualRouterPeeringGroup, stagingID: string = "", trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/virtual-router-peering-groups';
+    const opts = {
+      eventID: 'AddVirtualRouterPeeringGroup_1',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new NetworkVirtualRouterPeeringGroup(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Get VirtualRouterPeeringGroup object */
+  public GetVirtualRouterPeeringGroup_1(O_Name, queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/virtual-router-peering-groups/{O.Name}';
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'GetVirtualRouterPeeringGroup_1',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Delete VirtualRouterPeeringGroup object */
+  public DeleteVirtualRouterPeeringGroup_1(O_Name, stagingID: string = ""):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/virtual-router-peering-groups/{O.Name}';
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'DeleteVirtualRouterPeeringGroup_1',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXDeleteCall(url, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Update VirtualRouterPeeringGroup object */
+  public UpdateVirtualRouterPeeringGroup_1(O_Name, body: INetworkVirtualRouterPeeringGroup, stagingID: string = "", previousVal: INetworkVirtualRouterPeeringGroup = null, trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/virtual-router-peering-groups/{O.Name}';
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'UpdateVirtualRouterPeeringGroup_1',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new NetworkVirtualRouterPeeringGroup(body), previousVal, trimDefaults)
+    }
+    return this.invokeAJAXPutCall(url, body, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Label VirtualRouterPeeringGroup object */
+  public LabelVirtualRouterPeeringGroup_1(O_Name, body: IApiLabel, stagingID: string = "", trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/virtual-router-peering-groups/{O.Name}/label';
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'LabelVirtualRouterPeeringGroup_1',
+      objType: 'NetworkVirtualRouterPeeringGroup',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new ApiLabel(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkVirtualRouterPeeringGroup | IApiStatus | Error, statusCode: number}>;
   }
   
   /** List VirtualRouter objects */
@@ -1046,6 +1265,22 @@ export class Networkv1Service extends AbstractService {
     return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkAutoMsgRouteTableWatchHelper | IApiStatus | Error, statusCode: number}>;
   }
   
+  /** Watch VirtualRouterPeeringGroup objects. Supports WebSockets or HTTP long poll */
+  public WatchVirtualRouterPeeringGroup(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkAutoMsgVirtualRouterPeeringGroupWatchHelper | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/watch/tenant/{O.Tenant}/virtual-router-peering-groups';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    const opts = {
+      eventID: 'WatchVirtualRouterPeeringGroup',
+      objType: 'NetworkAutoMsgVirtualRouterPeeringGroupWatchHelper',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkAutoMsgVirtualRouterPeeringGroupWatchHelper | IApiStatus | Error, statusCode: number}>;
+  }
+  
   /** Watch VirtualRouter objects. Supports WebSockets or HTTP long poll */
   public WatchVirtualRouter(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkAutoMsgVirtualRouterWatchHelper | IApiStatus | Error, statusCode: number}> {
     let url = this['baseUrlAndPort'] + '/configs/network/v1/watch/tenant/{O.Tenant}/virtualrouters';
@@ -1060,6 +1295,21 @@ export class Networkv1Service extends AbstractService {
       opts.isStaging = true;
     }
     return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkAutoMsgVirtualRouterWatchHelper | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Watch VirtualRouterPeeringGroup objects. Supports WebSockets or HTTP long poll */
+  public WatchVirtualRouterPeeringGroup_1(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkAutoMsgVirtualRouterPeeringGroupWatchHelper | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/watch/virtual-router-peering-groups';
+    const opts = {
+      eventID: 'WatchVirtualRouterPeeringGroup_1',
+      objType: 'NetworkAutoMsgVirtualRouterPeeringGroupWatchHelper',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkAutoMsgVirtualRouterPeeringGroupWatchHelper | IApiStatus | Error, statusCode: number}>;
   }
   
   /** Watch VirtualRouter objects. Supports WebSockets or HTTP long poll */
@@ -1115,6 +1365,14 @@ export class Networkv1Service extends AbstractService {
 
   public ListRouteTableCache(): Observable<ServerEvent<NetworkRouteTable>> {
     return this.getFromDataCache(`NetworkRouteTable`, () => { return this.createListRouteTableCache() });
+  }
+  
+  protected createListVirtualRouterPeeringGroupCache(): Observable<ServerEvent<NetworkVirtualRouterPeeringGroup>> {
+    return this.createDataCache<NetworkVirtualRouterPeeringGroup>(NetworkVirtualRouterPeeringGroup, `NetworkVirtualRouterPeeringGroup`, () => this.ListVirtualRouterPeeringGroup(), (body: any) => this.WatchVirtualRouterPeeringGroup(body), this.bufferDelayMap);
+  }
+
+  public ListVirtualRouterPeeringGroupCache(): Observable<ServerEvent<NetworkVirtualRouterPeeringGroup>> {
+    return this.getFromDataCache(`NetworkVirtualRouterPeeringGroup`, () => { return this.createListVirtualRouterPeeringGroupCache() });
   }
   
   protected createListVirtualRouterCache(): Observable<ServerEvent<NetworkVirtualRouter>> {

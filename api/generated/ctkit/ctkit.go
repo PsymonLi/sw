@@ -189,63 +189,64 @@ type Controller interface {
 	RegisterDiagnosticsHandler(rpcMethod, query string, handler diag.Handler) // registers diagnostics query handler
 	AggWatch() AggWatchAPI
 
-	User() UserAPI                                       // return User API interface
-	AuthenticationPolicy() AuthenticationPolicyAPI       // return AuthenticationPolicy API interface
-	Role() RoleAPI                                       // return Role API interface
-	RoleBinding() RoleBindingAPI                         // return RoleBinding API interface
-	UserPreference() UserPreferenceAPI                   // return UserPreference API interface
-	Order() OrderAPI                                     // return Order API interface
-	Book() BookAPI                                       // return Book API interface
-	Publisher() PublisherAPI                             // return Publisher API interface
-	Store() StoreAPI                                     // return Store API interface
-	Coupon() CouponAPI                                   // return Coupon API interface
-	Customer() CustomerAPI                               // return Customer API interface
-	Cluster() ClusterAPI                                 // return Cluster API interface
-	Node() NodeAPI                                       // return Node API interface
-	Host() HostAPI                                       // return Host API interface
-	DistributedServiceCard() DistributedServiceCardAPI   // return DistributedServiceCard API interface
-	Tenant() TenantAPI                                   // return Tenant API interface
-	Version() VersionAPI                                 // return Version API interface
-	ConfigurationSnapshot() ConfigurationSnapshotAPI     // return ConfigurationSnapshot API interface
-	SnapshotRestore() SnapshotRestoreAPI                 // return SnapshotRestore API interface
-	License() LicenseAPI                                 // return License API interface
-	DSCProfile() DSCProfileAPI                           // return DSCProfile API interface
-	Credentials() CredentialsAPI                         // return Credentials API interface
-	Module() ModuleAPI                                   // return Module API interface
-	EventPolicy() EventPolicyAPI                         // return EventPolicy API interface
-	FwlogPolicy() FwlogPolicyAPI                         // return FwlogPolicy API interface
-	FlowExportPolicy() FlowExportPolicyAPI               // return FlowExportPolicy API interface
-	Alert() AlertAPI                                     // return Alert API interface
-	AlertPolicy() AlertPolicyAPI                         // return AlertPolicy API interface
-	StatsAlertPolicy() StatsAlertPolicyAPI               // return StatsAlertPolicy API interface
-	AlertDestination() AlertDestinationAPI               // return AlertDestination API interface
-	MirrorSession() MirrorSessionAPI                     // return MirrorSession API interface
-	TroubleshootingSession() TroubleshootingSessionAPI   // return TroubleshootingSession API interface
-	TechSupportRequest() TechSupportRequestAPI           // return TechSupportRequest API interface
-	ArchiveRequest() ArchiveRequestAPI                   // return ArchiveRequest API interface
-	AuditPolicy() AuditPolicyAPI                         // return AuditPolicy API interface
-	Network() NetworkAPI                                 // return Network API interface
-	Service() ServiceAPI                                 // return Service API interface
-	LbPolicy() LbPolicyAPI                               // return LbPolicy API interface
-	VirtualRouter() VirtualRouterAPI                     // return VirtualRouter API interface
-	NetworkInterface() NetworkInterfaceAPI               // return NetworkInterface API interface
-	IPAMPolicy() IPAMPolicyAPI                           // return IPAMPolicy API interface
-	RoutingConfig() RoutingConfigAPI                     // return RoutingConfig API interface
-	RouteTable() RouteTableAPI                           // return RouteTable API interface
-	Bucket() BucketAPI                                   // return Bucket API interface
-	Object() ObjectAPI                                   // return Object API interface
-	Orchestrator() OrchestratorAPI                       // return Orchestrator API interface
-	Rollout() RolloutAPI                                 // return Rollout API interface
-	RolloutAction() RolloutActionAPI                     // return RolloutAction API interface
-	SecurityGroup() SecurityGroupAPI                     // return SecurityGroup API interface
-	NetworkSecurityPolicy() NetworkSecurityPolicyAPI     // return NetworkSecurityPolicy API interface
-	App() AppAPI                                         // return App API interface
-	FirewallProfile() FirewallProfileAPI                 // return FirewallProfile API interface
-	Certificate() CertificateAPI                         // return Certificate API interface
-	TrafficEncryptionPolicy() TrafficEncryptionPolicyAPI // return TrafficEncryptionPolicy API interface
-	Buffer() BufferAPI                                   // return Buffer API interface
-	Endpoint() EndpointAPI                               // return Endpoint API interface
-	Workload() WorkloadAPI                               // return Workload API interface
+	User() UserAPI                                           // return User API interface
+	AuthenticationPolicy() AuthenticationPolicyAPI           // return AuthenticationPolicy API interface
+	Role() RoleAPI                                           // return Role API interface
+	RoleBinding() RoleBindingAPI                             // return RoleBinding API interface
+	UserPreference() UserPreferenceAPI                       // return UserPreference API interface
+	Order() OrderAPI                                         // return Order API interface
+	Book() BookAPI                                           // return Book API interface
+	Publisher() PublisherAPI                                 // return Publisher API interface
+	Store() StoreAPI                                         // return Store API interface
+	Coupon() CouponAPI                                       // return Coupon API interface
+	Customer() CustomerAPI                                   // return Customer API interface
+	Cluster() ClusterAPI                                     // return Cluster API interface
+	Node() NodeAPI                                           // return Node API interface
+	Host() HostAPI                                           // return Host API interface
+	DistributedServiceCard() DistributedServiceCardAPI       // return DistributedServiceCard API interface
+	Tenant() TenantAPI                                       // return Tenant API interface
+	Version() VersionAPI                                     // return Version API interface
+	ConfigurationSnapshot() ConfigurationSnapshotAPI         // return ConfigurationSnapshot API interface
+	SnapshotRestore() SnapshotRestoreAPI                     // return SnapshotRestore API interface
+	License() LicenseAPI                                     // return License API interface
+	DSCProfile() DSCProfileAPI                               // return DSCProfile API interface
+	Credentials() CredentialsAPI                             // return Credentials API interface
+	Module() ModuleAPI                                       // return Module API interface
+	EventPolicy() EventPolicyAPI                             // return EventPolicy API interface
+	FwlogPolicy() FwlogPolicyAPI                             // return FwlogPolicy API interface
+	FlowExportPolicy() FlowExportPolicyAPI                   // return FlowExportPolicy API interface
+	Alert() AlertAPI                                         // return Alert API interface
+	AlertPolicy() AlertPolicyAPI                             // return AlertPolicy API interface
+	StatsAlertPolicy() StatsAlertPolicyAPI                   // return StatsAlertPolicy API interface
+	AlertDestination() AlertDestinationAPI                   // return AlertDestination API interface
+	MirrorSession() MirrorSessionAPI                         // return MirrorSession API interface
+	TroubleshootingSession() TroubleshootingSessionAPI       // return TroubleshootingSession API interface
+	TechSupportRequest() TechSupportRequestAPI               // return TechSupportRequest API interface
+	ArchiveRequest() ArchiveRequestAPI                       // return ArchiveRequest API interface
+	AuditPolicy() AuditPolicyAPI                             // return AuditPolicy API interface
+	Network() NetworkAPI                                     // return Network API interface
+	Service() ServiceAPI                                     // return Service API interface
+	LbPolicy() LbPolicyAPI                                   // return LbPolicy API interface
+	VirtualRouter() VirtualRouterAPI                         // return VirtualRouter API interface
+	NetworkInterface() NetworkInterfaceAPI                   // return NetworkInterface API interface
+	IPAMPolicy() IPAMPolicyAPI                               // return IPAMPolicy API interface
+	RoutingConfig() RoutingConfigAPI                         // return RoutingConfig API interface
+	RouteTable() RouteTableAPI                               // return RouteTable API interface
+	VirtualRouterPeeringGroup() VirtualRouterPeeringGroupAPI // return VirtualRouterPeeringGroup API interface
+	Bucket() BucketAPI                                       // return Bucket API interface
+	Object() ObjectAPI                                       // return Object API interface
+	Orchestrator() OrchestratorAPI                           // return Orchestrator API interface
+	Rollout() RolloutAPI                                     // return Rollout API interface
+	RolloutAction() RolloutActionAPI                         // return RolloutAction API interface
+	SecurityGroup() SecurityGroupAPI                         // return SecurityGroup API interface
+	NetworkSecurityPolicy() NetworkSecurityPolicyAPI         // return NetworkSecurityPolicy API interface
+	App() AppAPI                                             // return App API interface
+	FirewallProfile() FirewallProfileAPI                     // return FirewallProfile API interface
+	Certificate() CertificateAPI                             // return Certificate API interface
+	TrafficEncryptionPolicy() TrafficEncryptionPolicyAPI     // return TrafficEncryptionPolicy API interface
+	Buffer() BufferAPI                                       // return Buffer API interface
+	Endpoint() EndpointAPI                                   // return Endpoint API interface
+	Workload() WorkloadAPI                                   // return Workload API interface
 }
 
 type CtrlerSpec struct {
@@ -630,6 +631,9 @@ func (ct *ctrlerCtx) sweepObjects(kind string, watchTS time.Time) {
 			case "RouteTable":
 				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*RouteTable).RouteTable)}
 				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleRouteTableEventParallel})
+			case "VirtualRouterPeeringGroup":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*VirtualRouterPeeringGroup).VirtualRouterPeeringGroup)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleVirtualRouterPeeringGroupEventParallel})
 			case "Bucket":
 				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Bucket).Bucket)}
 				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleBucketEventParallel})
@@ -838,6 +842,9 @@ func (ct *ctrlerCtx) FindObject(kind string, ometa *api.ObjectMeta) (runtime.Obj
 	case "RouteTable":
 		obj := routetableAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
+	case "VirtualRouterPeeringGroup":
+		obj := virtualrouterpeeringgroupAPI{}
+		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "Bucket":
 		obj := bucketAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
@@ -1021,6 +1028,9 @@ func (ct *ctrlerCtx) IsPending(kind string, ometa *api.ObjectMeta) (bool, error)
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "RouteTable":
 		obj := routetableAPI{}
+		key = obj.getFullKey(ometa.Tenant, ometa.Name)
+	case "VirtualRouterPeeringGroup":
+		obj := virtualrouterpeeringgroupAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "Bucket":
 		obj := bucketAPI{}
@@ -1487,6 +1497,9 @@ func (agg *aggwatchAPI) runLoop(wopts *api.AggWatchOptions, reactor AggWatchReac
 						case "RouteTable":
 							wopts.ResourceVersion = ev.Object.(*network.RouteTable).GetResourceVersion()
 							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleRouteTableEventParallel}
+						case "VirtualRouterPeeringGroup":
+							wopts.ResourceVersion = ev.Object.(*network.VirtualRouterPeeringGroup).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleVirtualRouterPeeringGroupEventParallel}
 						case "Bucket":
 							wopts.ResourceVersion = ev.Object.(*objstore.Bucket).GetResourceVersion()
 							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleBucketEventParallel}
@@ -1865,6 +1878,13 @@ func (agg *aggwatchAPI) Start(reactor AggWatchReactor, kinds []AggKind) error {
 			} else {
 				wopts.WatchOptions = append(wopts.WatchOptions,
 					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetRouteTableWatchOptions()})
+			}
+		case "VirtualRouterPeeringGroup":
+			if reactor, ok := kind.Reactor.(VirtualRouterPeeringGroupHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "VirtualRouterPeeringGroup")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetVirtualRouterPeeringGroupWatchOptions()})
 			}
 		case "Bucket":
 			if reactor, ok := kind.Reactor.(BucketHandler); !ok {

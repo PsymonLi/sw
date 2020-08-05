@@ -50,4 +50,5 @@
 | UserPreference | /configs/auth/v1/user-preferences |
 | Version | /configs/cluster/v1/version |
 | VirtualRouter | /configs/network/v1/virtualrouters |
+| VirtualRouterPeeringGroup | /configs/network/v1/virtual-router-peering-groups |
 | Workload | /configs/workload/v1/workloads |

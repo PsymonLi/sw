@@ -106,6 +106,16 @@ func (m *VirtualRouterList) MakeURI(ver, prefix string) string {
 }
 
 // MakeKey generates a KV store key for the object
+func (m *VirtualRouterPeeringGroupList) MakeKey(prefix string) string {
+	obj := VirtualRouterPeeringGroup{}
+	return obj.MakeKey(prefix)
+}
+
+func (m *VirtualRouterPeeringGroupList) MakeURI(ver, prefix string) string {
+	return fmt.Sprint("/", globals.ConfigURIPrefix, "/", prefix, "/", ver)
+}
+
+// MakeKey generates a KV store key for the object
 func (m *AutoMsgIPAMPolicyWatchHelper) MakeKey(prefix string) string {
 	obj := IPAMPolicy{}
 	return obj.MakeKey(prefix)
@@ -144,6 +154,12 @@ func (m *AutoMsgRoutingConfigWatchHelper) MakeKey(prefix string) string {
 // MakeKey generates a KV store key for the object
 func (m *AutoMsgServiceWatchHelper) MakeKey(prefix string) string {
 	obj := Service{}
+	return obj.MakeKey(prefix)
+}
+
+// MakeKey generates a KV store key for the object
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper) MakeKey(prefix string) string {
+	obj := VirtualRouterPeeringGroup{}
 	return obj.MakeKey(prefix)
 }
 
@@ -448,6 +464,48 @@ func (m *AutoMsgServiceWatchHelper_WatchEvent) Defaults(ver string) bool {
 }
 
 // Clone clones the object into into or creates one of into is nil
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper) Clone(into interface{}) (interface{}, error) {
+	var out *AutoMsgVirtualRouterPeeringGroupWatchHelper
+	var ok bool
+	if into == nil {
+		out = &AutoMsgVirtualRouterPeeringGroupWatchHelper{}
+	} else {
+		out, ok = into.(*AutoMsgVirtualRouterPeeringGroupWatchHelper)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*AutoMsgVirtualRouterPeeringGroupWatchHelper))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent) Clone(into interface{}) (interface{}, error) {
+	var out *AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent
+	var ok bool
+	if into == nil {
+		out = &AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent{}
+	} else {
+		out, ok = into.(*AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
 func (m *AutoMsgVirtualRouterWatchHelper) Clone(into interface{}) (interface{}, error) {
 	var out *AutoMsgVirtualRouterWatchHelper
 	var ok bool
@@ -654,6 +712,27 @@ func (m *VirtualRouterList) Clone(into interface{}) (interface{}, error) {
 
 // Default sets up the defaults for the object
 func (m *VirtualRouterList) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *VirtualRouterPeeringGroupList) Clone(into interface{}) (interface{}, error) {
+	var out *VirtualRouterPeeringGroupList
+	var ok bool
+	if into == nil {
+		out = &VirtualRouterPeeringGroupList{}
+	} else {
+		out, ok = into.(*VirtualRouterPeeringGroupList)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*VirtualRouterPeeringGroupList))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *VirtualRouterPeeringGroupList) Defaults(ver string) bool {
 	return false
 }
 
@@ -1187,6 +1266,93 @@ func (m *AutoMsgServiceWatchHelper_WatchEvent) Normalize() {
 
 }
 
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+	{
+
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		tag := path + dlmtr + "events"
+
+		for _, v := range m.Events {
+			if v != nil {
+				v.References(tenant, tag, resp)
+			}
+		}
+	}
+}
+
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	for k, v := range m.Events {
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := fmt.Sprintf("%s%sEvents[%v]", path, dlmtr, k)
+		if errs := v.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
+	return ret
+}
+
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper) Normalize() {
+
+	for k, v := range m.Events {
+		if v != nil {
+			v.Normalize()
+			m.Events[k] = v
+		}
+	}
+
+}
+
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+	{
+
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		tag := path + dlmtr + "object"
+
+		if m.Object != nil {
+			m.Object.References(tenant, tag, resp)
+		}
+
+	}
+}
+
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+
+	if m.Object != nil {
+		{
+			dlmtr := "."
+			if path == "" {
+				dlmtr = ""
+			}
+			npath := path + dlmtr + "Object"
+			if errs := m.Object.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+				ret = append(ret, errs...)
+			}
+		}
+	}
+	return ret
+}
+
+func (m *AutoMsgVirtualRouterPeeringGroupWatchHelper_WatchEvent) Normalize() {
+
+	if m.Object != nil {
+		m.Object.Normalize()
+	}
+
+}
+
 func (m *AutoMsgVirtualRouterWatchHelper) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
 
 	{
@@ -1574,6 +1740,50 @@ func (m *VirtualRouterList) Validate(ver, path string, ignoreStatus bool, ignore
 }
 
 func (m *VirtualRouterList) Normalize() {
+
+	for k, v := range m.Items {
+		if v != nil {
+			v.Normalize()
+			m.Items[k] = v
+		}
+	}
+
+}
+
+func (m *VirtualRouterPeeringGroupList) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+	{
+
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		tag := path + dlmtr + "items"
+
+		for _, v := range m.Items {
+			if v != nil {
+				v.References(tenant, tag, resp)
+			}
+		}
+	}
+}
+
+func (m *VirtualRouterPeeringGroupList) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	for k, v := range m.Items {
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := fmt.Sprintf("%s%sItems[%v]", path, dlmtr, k)
+		if errs := v.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
+	return ret
+}
+
+func (m *VirtualRouterPeeringGroupList) Normalize() {
 
 	for k, v := range m.Items {
 		if v != nil {

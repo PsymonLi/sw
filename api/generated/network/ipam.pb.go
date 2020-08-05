@@ -12,6 +12,7 @@
 		route.proto
 		service.proto
 		svc_network.proto
+		vr_peering_group.proto
 		vrf.proto
 
 	It has these top-level messages:
@@ -61,6 +62,7 @@
 		AutoMsgRouteTableWatchHelper
 		AutoMsgRoutingConfigWatchHelper
 		AutoMsgServiceWatchHelper
+		AutoMsgVirtualRouterPeeringGroupWatchHelper
 		AutoMsgVirtualRouterWatchHelper
 		IPAMPolicyList
 		LbPolicyList
@@ -70,6 +72,13 @@
 		RoutingConfigList
 		ServiceList
 		VirtualRouterList
+		VirtualRouterPeeringGroupList
+		VirtualRouterPeeringGroup
+		VirtualRouterPeeringGroupSpec
+		VirtualRouterPeeringGroupStatus
+		VirtualRouterPeeringRoute
+		VirtualRouterPeeringRouteTable
+		VirtualRouterPeeringSpec
 		VirtualRouter
 		VirtualRouterSpec
 		VirtualRouterStatus

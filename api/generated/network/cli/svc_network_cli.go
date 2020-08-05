@@ -503,6 +503,95 @@ func restPutRouteTable(hostname, token string, obj interface{}) error {
 	return fmt.Errorf("put operation not supported for RouteTable object")
 }
 
+func restGetVirtualRouterPeeringGroup(hostname, tenant, token string, obj interface{}) error {
+
+	restcl, err := apiclient.NewRestAPIClient(hostname)
+	if err != nil {
+		return fmt.Errorf("cannot create REST client")
+	}
+	defer restcl.Close()
+	loginCtx := loginctx.NewContextWithAuthzHeader(context.Background(), "Bearer "+token)
+
+	if v, ok := obj.(*network.VirtualRouterPeeringGroup); ok {
+		nv, err := restcl.NetworkV1().VirtualRouterPeeringGroup().Get(loginCtx, &v.ObjectMeta)
+		if err != nil {
+			return err
+		}
+		*v = *nv
+	}
+
+	if v, ok := obj.(*network.VirtualRouterPeeringGroupList); ok {
+		opts := api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: tenant}}
+		nv, err := restcl.NetworkV1().VirtualRouterPeeringGroup().List(loginCtx, &opts)
+		if err != nil {
+			return err
+		}
+		v.Items = nv
+	}
+	return nil
+
+}
+
+func restDeleteVirtualRouterPeeringGroup(hostname, token string, obj interface{}) error {
+
+	restcl, err := apiclient.NewRestAPIClient(hostname)
+	if err != nil {
+		return fmt.Errorf("cannot create REST client")
+	}
+	defer restcl.Close()
+	loginCtx := loginctx.NewContextWithAuthzHeader(context.Background(), "Bearer "+token)
+
+	if v, ok := obj.(*network.VirtualRouterPeeringGroup); ok {
+		nv, err := restcl.NetworkV1().VirtualRouterPeeringGroup().Delete(loginCtx, &v.ObjectMeta)
+		if err != nil {
+			return err
+		}
+		*v = *nv
+	}
+	return nil
+
+}
+
+func restPostVirtualRouterPeeringGroup(hostname, token string, obj interface{}) error {
+
+	restcl, err := apiclient.NewRestAPIClient(hostname)
+	if err != nil {
+		return fmt.Errorf("cannot create REST client")
+	}
+	defer restcl.Close()
+	loginCtx := loginctx.NewContextWithAuthzHeader(context.Background(), "Bearer "+token)
+
+	if v, ok := obj.(*network.VirtualRouterPeeringGroup); ok {
+		nv, err := restcl.NetworkV1().VirtualRouterPeeringGroup().Create(loginCtx, v)
+		if err != nil {
+			return err
+		}
+		*v = *nv
+	}
+	return nil
+
+}
+
+func restPutVirtualRouterPeeringGroup(hostname, token string, obj interface{}) error {
+
+	restcl, err := apiclient.NewRestAPIClient(hostname)
+	if err != nil {
+		return fmt.Errorf("cannot create REST client")
+	}
+	defer restcl.Close()
+	loginCtx := loginctx.NewContextWithAuthzHeader(context.Background(), "Bearer "+token)
+
+	if v, ok := obj.(*network.VirtualRouterPeeringGroup); ok {
+		nv, err := restcl.NetworkV1().VirtualRouterPeeringGroup().Update(loginCtx, v)
+		if err != nil {
+			return err
+		}
+		*v = *nv
+	}
+	return nil
+
+}
+
 func init() {
 	cl := gen.GetInfo()
 	if cl == nil {
@@ -533,5 +622,10 @@ func init() {
 	cl.AddRestGetFunc("network.RoutingConfig", "v1", restGetRoutingConfig)
 
 	cl.AddRestGetFunc("network.RouteTable", "v1", restGetRouteTable)
+
+	cl.AddRestPostFunc("network.VirtualRouterPeeringGroup", "v1", restPostVirtualRouterPeeringGroup)
+	cl.AddRestDeleteFunc("network.VirtualRouterPeeringGroup", "v1", restDeleteVirtualRouterPeeringGroup)
+	cl.AddRestPutFunc("network.VirtualRouterPeeringGroup", "v1", restPutVirtualRouterPeeringGroup)
+	cl.AddRestGetFunc("network.VirtualRouterPeeringGroup", "v1", restGetVirtualRouterPeeringGroup)
 
 }

@@ -7907,3 +7907,987 @@ func (ct *ctrlerCtx) RouteTable() RouteTableAPI {
 	}
 	return ct.apiInfMap[kind].(*routetableAPI)
 }
+
+// VirtualRouterPeeringGroup is a wrapper object that implements additional functionality
+type VirtualRouterPeeringGroup struct {
+	sync.Mutex
+	network.VirtualRouterPeeringGroup
+	HandlerCtx interface{} // additional state handlers can store
+	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *VirtualRouterPeeringGroup) SetInternal() {
+	obj.internal = true
+}
+
+func (obj *VirtualRouterPeeringGroup) Write() error {
+	// if there is no API server to connect to, we are done
+	if (obj.ctrler == nil) || (obj.ctrler.resolver == nil) || obj.ctrler.apisrvURL == "" {
+		return nil
+	}
+
+	apicl, err := obj.ctrler.apiClient()
+	if err != nil {
+		obj.ctrler.logger.Errorf("Error creating API server clent. Err: %v", err)
+		return err
+	}
+
+	obj.ctrler.stats.Counter("VirtualRouterPeeringGroup_Writes").Inc()
+
+	// write to api server
+	if obj.ObjectMeta.ResourceVersion != "" {
+		// update it
+		for i := 0; i < maxApisrvWriteRetry; i++ {
+			_, err = apicl.NetworkV1().VirtualRouterPeeringGroup().UpdateStatus(context.Background(), &obj.VirtualRouterPeeringGroup)
+			if err == nil {
+				break
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+	} else {
+		//  create
+		_, err = apicl.NetworkV1().VirtualRouterPeeringGroup().Create(context.Background(), &obj.VirtualRouterPeeringGroup)
+	}
+
+	return nil
+}
+
+// VirtualRouterPeeringGroupHandler is the event handler for VirtualRouterPeeringGroup object
+type VirtualRouterPeeringGroupHandler interface {
+	OnVirtualRouterPeeringGroupCreate(obj *VirtualRouterPeeringGroup) error
+	OnVirtualRouterPeeringGroupUpdate(oldObj *VirtualRouterPeeringGroup, newObj *network.VirtualRouterPeeringGroup) error
+	OnVirtualRouterPeeringGroupDelete(obj *VirtualRouterPeeringGroup) error
+	GetVirtualRouterPeeringGroupWatchOptions() *api.ListWatchOptions
+	OnVirtualRouterPeeringGroupReconnect()
+}
+
+// OnVirtualRouterPeeringGroupCreate is a dummy handler used in init if no one registers the handler
+func (ctrler CtrlDefReactor) OnVirtualRouterPeeringGroupCreate(obj *VirtualRouterPeeringGroup) error {
+	log.Info("OnVirtualRouterPeeringGroupCreate is not implemented")
+	return nil
+}
+
+// OnVirtualRouterPeeringGroupUpdate is a dummy handler used in init if no one registers the handler
+func (ctrler CtrlDefReactor) OnVirtualRouterPeeringGroupUpdate(oldObj *VirtualRouterPeeringGroup, newObj *network.VirtualRouterPeeringGroup) error {
+	log.Info("OnVirtualRouterPeeringGroupUpdate is not implemented")
+	return nil
+}
+
+// OnVirtualRouterPeeringGroupDelete is a dummy handler used in init if no one registers the handler
+func (ctrler CtrlDefReactor) OnVirtualRouterPeeringGroupDelete(obj *VirtualRouterPeeringGroup) error {
+	log.Info("OnVirtualRouterPeeringGroupDelete is not implemented")
+	return nil
+}
+
+// GetVirtualRouterPeeringGroupWatchOptions is a dummy handler used in init if no one registers the handler
+func (ctrler CtrlDefReactor) GetVirtualRouterPeeringGroupWatchOptions() *api.ListWatchOptions {
+	log.Info("GetVirtualRouterPeeringGroupWatchOptions is not implemented")
+	opts := &api.ListWatchOptions{}
+	return opts
+}
+
+// OnVirtualRouterPeeringGroupReconnect is a dummy handler used in init if no one registers the handler
+func (ctrler CtrlDefReactor) OnVirtualRouterPeeringGroupReconnect() {
+	log.Info("OnVirtualRouterPeeringGroupReconnect is not implemented")
+	return
+}
+
+// handleVirtualRouterPeeringGroupEvent handles VirtualRouterPeeringGroup events from watcher
+func (ct *ctrlerCtx) handleVirtualRouterPeeringGroupEvent(evt *kvstore.WatchEvent) error {
+
+	if ct.objResolver == nil {
+		return ct.handleVirtualRouterPeeringGroupEventNoResolver(evt)
+	}
+
+	switch tp := evt.Object.(type) {
+	case *network.VirtualRouterPeeringGroup:
+		eobj := evt.Object.(*network.VirtualRouterPeeringGroup)
+		kind := "VirtualRouterPeeringGroup"
+
+		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
+
+		ctx := &virtualrouterpeeringgroupCtx{event: evt.Type,
+			obj: &VirtualRouterPeeringGroup{VirtualRouterPeeringGroup: *eobj, ctrler: ct}}
+
+		var err error
+		switch evt.Type {
+		case kvstore.Created:
+			err = ct.processAdd(ctx)
+		case kvstore.Updated:
+			err = ct.processUpdate(ctx)
+		case kvstore.Deleted:
+			err = ct.processDelete(ctx)
+		}
+		return err
+	default:
+		ct.logger.Fatalf("API watcher Found object of invalid type: %v on VirtualRouterPeeringGroup watch channel", tp)
+	}
+
+	return nil
+}
+
+// handleVirtualRouterPeeringGroupEventNoResolver handles VirtualRouterPeeringGroup events from watcher
+func (ct *ctrlerCtx) handleVirtualRouterPeeringGroupEventNoResolver(evt *kvstore.WatchEvent) error {
+	switch tp := evt.Object.(type) {
+	case *network.VirtualRouterPeeringGroup:
+		eobj := evt.Object.(*network.VirtualRouterPeeringGroup)
+		kind := "VirtualRouterPeeringGroup"
+
+		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
+
+		ct.Lock()
+		handler, ok := ct.handlers[kind]
+		ct.Unlock()
+		if !ok {
+			ct.logger.Fatalf("Cant find the handler for %s", kind)
+		}
+		virtualrouterpeeringgroupHandler := handler.(VirtualRouterPeeringGroupHandler)
+		// handle based on event type
+		ctrlCtx := &virtualrouterpeeringgroupCtx{event: evt.Type, obj: &VirtualRouterPeeringGroup{VirtualRouterPeeringGroup: *eobj, ctrler: ct}}
+		switch evt.Type {
+		case kvstore.Created:
+			fallthrough
+		case kvstore.Updated:
+			fobj, err := ct.getObject(kind, ctrlCtx.GetKey())
+			if err != nil {
+				ct.addObject(ctrlCtx)
+				ct.stats.Counter("VirtualRouterPeeringGroup_Created_Events").Inc()
+
+				// call the event handler
+				ctrlCtx.Lock()
+				err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupCreate(ctrlCtx.obj)
+				ctrlCtx.Unlock()
+				if err != nil {
+					ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctrlCtx.obj.GetObjectMeta(), err)
+					ct.delObject(kind, ctrlCtx.GetKey())
+					return err
+				}
+			} else {
+				fResVer, fErr := strconv.ParseInt(fobj.GetResourceVersion(), 10, 64)
+				eResVer, eErr := strconv.ParseInt(eobj.GetResourceVersion(), 10, 64)
+				if ct.resolver != nil && fErr == nil && eErr == nil && fResVer >= eResVer {
+					// Event already processed.
+					ct.logger.Infof("Skipping update due to old resource version")
+					return nil
+				}
+				ctrlCtx := fobj.(*virtualrouterpeeringgroupCtx)
+				ct.stats.Counter("VirtualRouterPeeringGroup_Updated_Events").Inc()
+				ctrlCtx.Lock()
+				p := network.VirtualRouterPeeringGroup{Spec: eobj.Spec,
+					ObjectMeta: eobj.ObjectMeta,
+					TypeMeta:   eobj.TypeMeta,
+					Status:     eobj.Status}
+
+				err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupUpdate(ctrlCtx.obj, &p)
+				ctrlCtx.obj.VirtualRouterPeeringGroup = *eobj
+				ctrlCtx.Unlock()
+				if err != nil {
+					ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctrlCtx.obj.GetObjectMeta(), err)
+					return err
+				}
+
+			}
+		case kvstore.Deleted:
+			ctrlCtx := &virtualrouterpeeringgroupCtx{event: evt.Type, obj: &VirtualRouterPeeringGroup{VirtualRouterPeeringGroup: *eobj, ctrler: ct}}
+			fobj, err := ct.findObject(kind, ctrlCtx.GetKey())
+			if err != nil {
+				ct.logger.Errorf("Object %s/%s not found durng delete. Err: %v", kind, eobj.GetKey(), err)
+				return err
+			}
+
+			obj := fobj.(*VirtualRouterPeeringGroup)
+			ct.stats.Counter("VirtualRouterPeeringGroup_Deleted_Events").Inc()
+			obj.Lock()
+			err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupDelete(obj)
+			obj.Unlock()
+			if err != nil {
+				ct.logger.Errorf("Error deleting %s: %+v. Err: %v", kind, obj.GetObjectMeta(), err)
+			}
+			ct.delObject(kind, ctrlCtx.GetKey())
+			return nil
+
+		}
+	default:
+		ct.logger.Fatalf("API watcher Found object of invalid type: %v on VirtualRouterPeeringGroup watch channel", tp)
+	}
+
+	return nil
+}
+
+type virtualrouterpeeringgroupCtx struct {
+	ctkitBaseCtx
+	event kvstore.WatchEventType
+	obj   *VirtualRouterPeeringGroup //
+	//   newObj     *network.VirtualRouterPeeringGroup //update
+	newObj *virtualrouterpeeringgroupCtx //update
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) References() map[string]apiintf.ReferenceObj {
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) GetKey() string {
+	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) IsInternal() bool {
+	return ctx.obj.internal
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) GetKind() string {
+	return ctx.obj.GetKind()
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) GetResourceVersion() string {
+	return ctx.obj.GetResourceVersion()
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) SetEvent(event kvstore.WatchEventType) {
+	ctx.event = event
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) SetNewObj(newObj apiintf.CtkitObject) {
+	if newObj == nil {
+		ctx.newObj = nil
+	} else {
+		ctx.newObj = newObj.(*virtualrouterpeeringgroupCtx)
+		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
+	}
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) GetNewObj() apiintf.CtkitObject {
+	return ctx.newObj
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) Copy(obj apiintf.CtkitObject) {
+	ctx.obj.VirtualRouterPeeringGroup = obj.(*virtualrouterpeeringgroupCtx).obj.VirtualRouterPeeringGroup
+	ctx.SetWatchTs(obj.GetWatchTs())
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) Lock() {
+	ctx.obj.Lock()
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) Unlock() {
+	ctx.obj.Unlock()
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) GetObjectMeta() *api.ObjectMeta {
+	return ctx.obj.GetObjectMeta()
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) RuntimeObject() runtime.Object {
+	var v interface{}
+	v = ctx.obj
+	return v.(runtime.Object)
+}
+
+func (ctx *virtualrouterpeeringgroupCtx) WorkFunc(context context.Context) error {
+	var err error
+	evt := ctx.event
+	ct := ctx.obj.ctrler
+	kind := "VirtualRouterPeeringGroup"
+	ct.Lock()
+	handler, ok := ct.handlers[kind]
+	ct.Unlock()
+	if !ok {
+		ct.logger.Fatalf("Cant find the handler for %s", kind)
+	}
+	virtualrouterpeeringgroupHandler := handler.(VirtualRouterPeeringGroupHandler)
+	switch evt {
+	case kvstore.Created:
+		ctx.obj.Lock()
+		err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupCreate(ctx.obj)
+		ctx.obj.Unlock()
+		if err != nil {
+			ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
+			ctx.SetEvent(kvstore.Deleted)
+		}
+	case kvstore.Updated:
+		ct.stats.Counter("VirtualRouterPeeringGroup_Updated_Events").Inc()
+		ctx.obj.Lock()
+		p := network.VirtualRouterPeeringGroup{Spec: ctx.newObj.obj.Spec,
+			ObjectMeta: ctx.newObj.obj.ObjectMeta,
+			TypeMeta:   ctx.newObj.obj.TypeMeta,
+			Status:     ctx.newObj.obj.Status}
+		err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupUpdate(ctx.obj, &p)
+		ctx.obj.Unlock()
+		if err != nil {
+			ct.logger.Errorf("Error updating %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
+		}
+	case kvstore.Deleted:
+		ctx.obj.Lock()
+		err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupDelete(ctx.obj)
+		ctx.obj.Unlock()
+		if err != nil {
+			ct.logger.Errorf("Error deleting %s %+v. Err: %v", kind, ctx.obj.GetObjectMeta(), err)
+		}
+	}
+	ct.resolveObject(ctx.event, ctx)
+	return nil
+}
+
+// handleVirtualRouterPeeringGroupEventParallel handles VirtualRouterPeeringGroup events from watcher
+func (ct *ctrlerCtx) handleVirtualRouterPeeringGroupEventParallel(evt *kvstore.WatchEvent) error {
+
+	if ct.objResolver == nil {
+		return ct.handleVirtualRouterPeeringGroupEventParallelWithNoResolver(evt)
+	}
+
+	switch tp := evt.Object.(type) {
+	case *network.VirtualRouterPeeringGroup:
+		eobj := evt.Object.(*network.VirtualRouterPeeringGroup)
+		kind := "VirtualRouterPeeringGroup"
+
+		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
+
+		ctx := &virtualrouterpeeringgroupCtx{event: evt.Type, obj: &VirtualRouterPeeringGroup{VirtualRouterPeeringGroup: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
+
+		var err error
+		switch evt.Type {
+		case kvstore.Created:
+			err = ct.processAdd(ctx)
+		case kvstore.Updated:
+			err = ct.processUpdate(ctx)
+		case kvstore.Deleted:
+			err = ct.processDelete(ctx)
+		}
+		return err
+	default:
+		ct.logger.Fatalf("API watcher Found object of invalid type: %v on VirtualRouterPeeringGroup watch channel", tp)
+	}
+
+	return nil
+}
+
+// handleVirtualRouterPeeringGroupEventParallel handles VirtualRouterPeeringGroup events from watcher
+func (ct *ctrlerCtx) handleVirtualRouterPeeringGroupEventParallelWithNoResolver(evt *kvstore.WatchEvent) error {
+	switch tp := evt.Object.(type) {
+	case *network.VirtualRouterPeeringGroup:
+		eobj := evt.Object.(*network.VirtualRouterPeeringGroup)
+		kind := "VirtualRouterPeeringGroup"
+
+		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
+
+		ct.Lock()
+		handler, ok := ct.handlers[kind]
+		ct.Unlock()
+		if !ok {
+			ct.logger.Fatalf("Cant find the handler for %s", kind)
+		}
+		virtualrouterpeeringgroupHandler := handler.(VirtualRouterPeeringGroupHandler)
+		// handle based on event type
+		switch evt.Type {
+		case kvstore.Created:
+			fallthrough
+		case kvstore.Updated:
+			workFunc := func(ctx context.Context, ctrlCtx shardworkers.WorkObj) error {
+				var err error
+				workCtx := ctrlCtx.(*virtualrouterpeeringgroupCtx)
+				eobj := workCtx.obj
+				fobj, err := ct.getObject(kind, workCtx.GetKey())
+				if err != nil {
+					ct.addObject(workCtx)
+					ct.stats.Counter("VirtualRouterPeeringGroup_Created_Events").Inc()
+					eobj.Lock()
+					err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupCreate(eobj)
+					eobj.Unlock()
+					if err != nil {
+						ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, eobj.GetObjectMeta(), err)
+						ct.delObject(kind, workCtx.GetKey())
+					}
+				} else {
+					workCtx = fobj.(*virtualrouterpeeringgroupCtx)
+					obj := workCtx.obj
+					ct.stats.Counter("VirtualRouterPeeringGroup_Updated_Events").Inc()
+					obj.Lock()
+					p := network.VirtualRouterPeeringGroup{Spec: eobj.Spec,
+						ObjectMeta: eobj.ObjectMeta,
+						TypeMeta:   eobj.TypeMeta,
+						Status:     eobj.Status}
+
+					err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupUpdate(obj, &p)
+					if err != nil {
+						ct.logger.Errorf("Error creating %s %+v. Err: %v", kind, obj.GetObjectMeta(), err)
+					} else {
+						workCtx.obj.VirtualRouterPeeringGroup = p
+					}
+					obj.Unlock()
+				}
+				workCtx.SetWatchTs(evt.WatchTS)
+				return err
+			}
+			ctrlCtx := &virtualrouterpeeringgroupCtx{event: evt.Type, obj: &VirtualRouterPeeringGroup{VirtualRouterPeeringGroup: *eobj, ctrler: ct}}
+			ct.runFunction("VirtualRouterPeeringGroup", ctrlCtx, workFunc)
+		case kvstore.Deleted:
+			workFunc := func(ctx context.Context, ctrlCtx shardworkers.WorkObj) error {
+				var err error
+				workCtx := ctrlCtx.(*virtualrouterpeeringgroupCtx)
+				eobj := workCtx.obj
+				fobj, err := ct.findObject(kind, workCtx.GetKey())
+				if err != nil {
+					ct.logger.Errorf("Object %s/%s not found durng delete. Err: %v", kind, eobj.GetKey(), err)
+					return err
+				}
+				obj := fobj.(*VirtualRouterPeeringGroup)
+				ct.stats.Counter("VirtualRouterPeeringGroup_Deleted_Events").Inc()
+				obj.Lock()
+				err = virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupDelete(obj)
+				obj.Unlock()
+				if err != nil {
+					ct.logger.Errorf("Error deleting %s: %+v. Err: %v", kind, obj.GetObjectMeta(), err)
+				}
+				ct.delObject(kind, workCtx.GetKey())
+				return nil
+			}
+			ctrlCtx := &virtualrouterpeeringgroupCtx{event: evt.Type, obj: &VirtualRouterPeeringGroup{VirtualRouterPeeringGroup: *eobj, ctrler: ct}}
+			ct.runFunction("VirtualRouterPeeringGroup", ctrlCtx, workFunc)
+		}
+	default:
+		ct.logger.Fatalf("API watcher Found object of invalid type: %v on VirtualRouterPeeringGroup watch channel", tp)
+	}
+
+	return nil
+}
+
+// diffVirtualRouterPeeringGroup does a diff of VirtualRouterPeeringGroup objects between local cache and API server
+func (ct *ctrlerCtx) diffVirtualRouterPeeringGroup(apicl apiclient.Services) {
+	opts := api.ListWatchOptions{}
+
+	// get a list of all objects from API server
+	objlist, err := apicl.NetworkV1().VirtualRouterPeeringGroup().List(context.Background(), &opts)
+	if err != nil {
+		ct.logger.Errorf("Error getting a list of objects. Err: %v", err)
+		return
+	}
+
+	ct.logger.Infof("diffVirtualRouterPeeringGroup(): VirtualRouterPeeringGroupList returned %d objects", len(objlist))
+
+	// build an object map
+	objmap := make(map[string]*network.VirtualRouterPeeringGroup)
+	for _, obj := range objlist {
+		objmap[obj.GetKey()] = obj
+	}
+
+	list, err := ct.VirtualRouterPeeringGroup().List(context.Background(), &opts)
+	if err != nil && !strings.Contains(err.Error(), "not found in local cache") {
+		ct.logger.Infof("Failed to get a list of objects. Err: %s", err)
+		return
+	}
+
+	// if an object is in our local cache and not in API server, trigger delete for it
+	for _, obj := range list {
+		_, ok := objmap[obj.GetKey()]
+		if !ok {
+			ct.logger.Infof("diffVirtualRouterPeeringGroup(): Deleting existing object %#v since its not in apiserver", obj.GetKey())
+			evt := kvstore.WatchEvent{
+				Type:   kvstore.Deleted,
+				Key:    obj.GetKey(),
+				Object: &obj.VirtualRouterPeeringGroup,
+			}
+			ct.handleVirtualRouterPeeringGroupEvent(&evt)
+		}
+	}
+
+	// trigger create event for all others
+	for _, obj := range objlist {
+		ct.logger.Infof("diffVirtualRouterPeeringGroup(): Adding object %#v", obj.GetKey())
+		evt := kvstore.WatchEvent{
+			Type:   kvstore.Created,
+			Key:    obj.GetKey(),
+			Object: obj,
+		}
+		ct.handleVirtualRouterPeeringGroupEvent(&evt)
+	}
+}
+
+func (ct *ctrlerCtx) runVirtualRouterPeeringGroupWatcher() {
+	kind := "VirtualRouterPeeringGroup"
+
+	ct.Lock()
+	handler, ok := ct.handlers[kind]
+	ct.Unlock()
+	if !ok {
+		ct.logger.Fatalf("Cant find the handler for %s", kind)
+	}
+	virtualrouterpeeringgroupHandler := handler.(VirtualRouterPeeringGroupHandler)
+
+	opts := virtualrouterpeeringgroupHandler.GetVirtualRouterPeeringGroupWatchOptions()
+
+	// if there is no API server to connect to, we are done
+	if (ct.resolver == nil) || ct.apisrvURL == "" {
+		return
+	}
+
+	// create context
+	ctx, cancel := context.WithCancel(context.Background())
+	ct.Lock()
+	ct.watchCancel[kind] = &watchCancelEntry{
+		cancelFn: cancel,
+	}
+	cancelEntry := ct.watchCancel[kind]
+	ct.Unlock()
+	logger := ct.logger.WithContext("submodule", "VirtualRouterPeeringGroupWatcher")
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		apiclt, err := apiclient.NewGrpcAPIClient(ct.name, ct.apisrvURL, logger, rpckit.WithBalancer(balancer.New(ct.resolver)))
+		// create a grpc client
+		if err == nil {
+			// Upon successful connection perform the diff, and start watch goroutine
+			ct.diffVirtualRouterPeeringGroup(apiclt)
+			break
+		}
+
+		logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
+		select {
+		case <-ctx.Done():
+			logger.Infof("Exiting API server watcher")
+			return
+		case <-time.After(time.Second):
+		}
+	}
+
+	// setup wait group
+	ct.waitGrp.Add(1)
+	cancelEntry.wg.Add(1)
+
+	// start a goroutine
+	go func() {
+		defer cancelEntry.wg.Done()
+		defer ct.waitGrp.Done()
+		ct.stats.Counter("VirtualRouterPeeringGroup_Watch").Inc()
+		defer ct.stats.Counter("VirtualRouterPeeringGroup_Watch").Dec()
+
+		if ctx.Err() != nil {
+			return
+		}
+
+		// loop forever
+		for {
+			// create a grpc client
+			apicl, err := apiclient.NewGrpcAPIClient(ct.name, ct.apisrvURL, logger, rpckit.WithBalancer(balancer.New(ct.resolver)))
+			if err != nil {
+				logger.Warnf("Failed to connect to gRPC server [%s]\n", ct.apisrvURL)
+				ct.stats.Counter("VirtualRouterPeeringGroup_ApiClientErr").Inc()
+			} else {
+				logger.Infof("API client connected {%+v}", apicl)
+
+				// VirtualRouterPeeringGroup object watcher
+				wt, werr := apicl.NetworkV1().VirtualRouterPeeringGroup().Watch(ctx, opts)
+				if werr != nil {
+					select {
+					case <-ctx.Done():
+						logger.Infof("watch %s cancelled", kind)
+						return
+					default:
+					}
+					logger.Errorf("Failed to start %s watch (%s)\n", kind, werr)
+					// wait for a second and retry connecting to api server
+					apicl.Close()
+					select {
+					case <-ctx.Done():
+						logger.Infof("Exiting API server watcher")
+						return
+					case <-time.After(time.Second):
+					}
+					continue
+				}
+				ct.Lock()
+				ct.watchers[kind] = wt
+				ct.Unlock()
+
+				// perform a diff with API server and local cache
+				// Sleeping to give time for other apiclient's to reconnect
+				// before calling reconnect handler
+				select {
+				case <-ctx.Done():
+					logger.Infof("Exiting API server watcher")
+					return
+				case <-time.After(time.Second):
+				}
+				ct.diffVirtualRouterPeeringGroup(apicl)
+				virtualrouterpeeringgroupHandler.OnVirtualRouterPeeringGroupReconnect()
+
+				// handle api server watch events
+			innerLoop:
+				for {
+					// wait for events
+					select {
+					case evt, ok := <-wt.EventChan():
+						if !ok {
+							logger.Error("Error receiving from apisrv watcher")
+							ct.stats.Counter("VirtualRouterPeeringGroup_WatchErrors").Inc()
+							break innerLoop
+						}
+
+						// handle event in parallel
+						ct.handleVirtualRouterPeeringGroupEventParallel(evt)
+					}
+				}
+				apicl.Close()
+			}
+
+			// if stop flag is set, we are done
+			if ct.stoped {
+				logger.Infof("Exiting API server watcher")
+				return
+			}
+
+			// wait for a second and retry connecting to api server
+			select {
+			case <-ctx.Done():
+				logger.Infof("Exiting API server watcher")
+				return
+			case <-time.After(time.Second):
+			}
+		}
+	}()
+}
+
+// WatchVirtualRouterPeeringGroup starts watch on VirtualRouterPeeringGroup object
+func (ct *ctrlerCtx) WatchVirtualRouterPeeringGroup(handler VirtualRouterPeeringGroupHandler) error {
+	kind := "VirtualRouterPeeringGroup"
+
+	// see if we already have a watcher
+	ct.Lock()
+	_, ok := ct.watchCancel[kind]
+	ct.Unlock()
+	if ok {
+		return fmt.Errorf("VirtualRouterPeeringGroup watcher already exists")
+	}
+
+	// save handler
+	ct.Lock()
+	ct.handlers[kind] = handler
+	ct.Unlock()
+
+	// run VirtualRouterPeeringGroup watcher in a go routine
+	ct.runVirtualRouterPeeringGroupWatcher()
+
+	return nil
+}
+
+// StopWatchVirtualRouterPeeringGroup stops watch on VirtualRouterPeeringGroup object
+func (ct *ctrlerCtx) StopWatchVirtualRouterPeeringGroup(handler VirtualRouterPeeringGroupHandler) error {
+	kind := "VirtualRouterPeeringGroup"
+
+	// see if we already have a watcher
+	ct.Lock()
+	_, ok := ct.watchCancel[kind]
+	ct.Unlock()
+	if !ok {
+		return fmt.Errorf("VirtualRouterPeeringGroup watcher does not exist")
+	}
+
+	ct.Lock()
+	cancelEntry, _ := ct.watchCancel[kind]
+	cancelEntry.cancelFn()
+	if _, ok := ct.watchers[kind]; ok {
+		delete(ct.watchers, kind)
+	}
+	delete(ct.watchCancel, kind)
+	ct.Unlock()
+
+	cancelEntry.wg.Wait() // Watcher thread may try to read the workPool entry
+
+	ct.Lock()
+	workerPool := ct.workPools[kind]
+	delete(ct.workPools, kind)
+	ct.Unlock()
+
+	workerPool.Stop()
+
+	time.Sleep(100 * time.Millisecond)
+
+	return nil
+}
+
+// VirtualRouterPeeringGroupAPI returns
+type VirtualRouterPeeringGroupAPI interface {
+	Create(obj *network.VirtualRouterPeeringGroup) error
+	SyncCreate(obj *network.VirtualRouterPeeringGroup) error
+	Update(obj *network.VirtualRouterPeeringGroup) error
+	SyncUpdate(obj *network.VirtualRouterPeeringGroup) error
+	Label(obj *api.Label) error
+	Delete(obj *network.VirtualRouterPeeringGroup) error
+	SyncDelete(obj *network.VirtualRouterPeeringGroup) error
+	Find(meta *api.ObjectMeta) (*VirtualRouterPeeringGroup, error)
+	List(ctx context.Context, opts *api.ListWatchOptions) ([]*VirtualRouterPeeringGroup, error)
+	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.VirtualRouterPeeringGroup, error)
+	Watch(handler VirtualRouterPeeringGroupHandler) error
+	ClearCache(handler VirtualRouterPeeringGroupHandler)
+	StopWatch(handler VirtualRouterPeeringGroupHandler) error
+}
+
+// dummy struct that implements VirtualRouterPeeringGroupAPI
+type virtualrouterpeeringgroupAPI struct {
+	ct *ctrlerCtx
+}
+
+// Create creates VirtualRouterPeeringGroup object
+func (api *virtualrouterpeeringgroupAPI) Create(obj *network.VirtualRouterPeeringGroup) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().VirtualRouterPeeringGroup().Create(context.Background(), obj)
+		if err != nil && strings.Contains(err.Error(), "AlreadyExists") {
+			_, err = apicl.NetworkV1().VirtualRouterPeeringGroup().Update(context.Background(), obj)
+
+		}
+		return err
+	}
+
+	api.ct.handleVirtualRouterPeeringGroupEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Created})
+	return nil
+}
+
+// SyncCreate creates VirtualRouterPeeringGroup object and updates the cache
+func (api *virtualrouterpeeringgroupAPI) SyncCreate(obj *network.VirtualRouterPeeringGroup) error {
+	newObj := obj
+	evtType := kvstore.Created
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		newObj, writeErr = apicl.NetworkV1().VirtualRouterPeeringGroup().Create(context.Background(), obj)
+		if writeErr != nil && strings.Contains(writeErr.Error(), "AlreadyExists") {
+			newObj, writeErr = apicl.NetworkV1().VirtualRouterPeeringGroup().Update(context.Background(), obj)
+			evtType = kvstore.Updated
+		}
+	}
+
+	if writeErr == nil {
+		api.ct.handleVirtualRouterPeeringGroupEvent(&kvstore.WatchEvent{Object: newObj, Type: evtType})
+	}
+	return writeErr
+}
+
+// Update triggers update on VirtualRouterPeeringGroup object
+func (api *virtualrouterpeeringgroupAPI) Update(obj *network.VirtualRouterPeeringGroup) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().VirtualRouterPeeringGroup().Update(context.Background(), obj)
+		return err
+	}
+
+	api.ct.handleVirtualRouterPeeringGroupEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Updated})
+	return nil
+}
+
+// SyncUpdate triggers update on VirtualRouterPeeringGroup object and updates the cache
+func (api *virtualrouterpeeringgroupAPI) SyncUpdate(obj *network.VirtualRouterPeeringGroup) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
+	newObj := obj
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		newObj, writeErr = apicl.NetworkV1().VirtualRouterPeeringGroup().Update(context.Background(), obj)
+	}
+
+	if writeErr == nil {
+		api.ct.handleVirtualRouterPeeringGroupEvent(&kvstore.WatchEvent{Object: newObj, Type: kvstore.Updated})
+	}
+
+	return writeErr
+}
+
+// Label labels VirtualRouterPeeringGroup object
+func (api *virtualrouterpeeringgroupAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().VirtualRouterPeeringGroup().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.VirtualRouterPeeringGroup
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleVirtualRouterPeeringGroupEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
+}
+
+// Delete deletes VirtualRouterPeeringGroup object
+func (api *virtualrouterpeeringgroupAPI) Delete(obj *network.VirtualRouterPeeringGroup) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().VirtualRouterPeeringGroup().Delete(context.Background(), &obj.ObjectMeta)
+		return err
+	}
+
+	api.ct.handleVirtualRouterPeeringGroupEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	return nil
+}
+
+// SyncDelete deletes VirtualRouterPeeringGroup object and updates the cache
+func (api *virtualrouterpeeringgroupAPI) SyncDelete(obj *network.VirtualRouterPeeringGroup) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().VirtualRouterPeeringGroup().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleVirtualRouterPeeringGroupEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
+// MakeKey generates a KV store key for the object
+func (api *virtualrouterpeeringgroupAPI) getFullKey(tenant, name string) string {
+	if tenant != "" {
+		return fmt.Sprint(globals.ConfigRootPrefix, "/", "network", "/", "virtual-router-peering-groups", "/", tenant, "/", name)
+	}
+	return fmt.Sprint(globals.ConfigRootPrefix, "/", "network", "/", "virtual-router-peering-groups", "/", name)
+}
+
+// Find returns an object by meta
+func (api *virtualrouterpeeringgroupAPI) Find(meta *api.ObjectMeta) (*VirtualRouterPeeringGroup, error) {
+	// find the object
+	obj, err := api.ct.FindObject("VirtualRouterPeeringGroup", meta)
+	if err != nil {
+		return nil, err
+	}
+
+	// asset type
+	switch obj.(type) {
+	case *VirtualRouterPeeringGroup:
+		hobj := obj.(*VirtualRouterPeeringGroup)
+		return hobj, nil
+	default:
+		return nil, errors.New("incorrect object type")
+	}
+}
+
+// List returns a list of all VirtualRouterPeeringGroup objects
+func (api *virtualrouterpeeringgroupAPI) List(ctx context.Context, opts *api.ListWatchOptions) ([]*VirtualRouterPeeringGroup, error) {
+	var objlist []*VirtualRouterPeeringGroup
+	objs, err := api.ct.List("VirtualRouterPeeringGroup", ctx, opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, obj := range objs {
+		switch tp := obj.(type) {
+		case *VirtualRouterPeeringGroup:
+			eobj := obj.(*VirtualRouterPeeringGroup)
+			objlist = append(objlist, eobj)
+		default:
+			log.Fatalf("Got invalid object type %v while looking for VirtualRouterPeeringGroup", tp)
+		}
+	}
+
+	return objlist, nil
+}
+
+// ApisrvList returns a list of all VirtualRouterPeeringGroup objects from apiserver
+func (api *virtualrouterpeeringgroupAPI) ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.VirtualRouterPeeringGroup, error) {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return nil, err
+		}
+
+		return apicl.NetworkV1().VirtualRouterPeeringGroup().List(context.Background(), opts)
+	}
+
+	// List from local cache
+	ctkitObjs, err := api.List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	var ret []*network.VirtualRouterPeeringGroup
+	for _, obj := range ctkitObjs {
+		ret = append(ret, &obj.VirtualRouterPeeringGroup)
+	}
+	return ret, nil
+}
+
+// Watch sets up a event handlers for VirtualRouterPeeringGroup object
+func (api *virtualrouterpeeringgroupAPI) Watch(handler VirtualRouterPeeringGroupHandler) error {
+	api.ct.startWorkerPool("VirtualRouterPeeringGroup")
+	return api.ct.WatchVirtualRouterPeeringGroup(handler)
+}
+
+// StopWatch stop watch for Tenant VirtualRouterPeeringGroup object
+func (api *virtualrouterpeeringgroupAPI) StopWatch(handler VirtualRouterPeeringGroupHandler) error {
+	api.ct.Lock()
+	worker := api.ct.workPools["VirtualRouterPeeringGroup"]
+	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
+	return api.ct.StopWatchVirtualRouterPeeringGroup(handler)
+}
+
+// ClearCache removes all VirtualRouterPeeringGroup objects in ctkit
+func (api *virtualrouterpeeringgroupAPI) ClearCache(handler VirtualRouterPeeringGroupHandler) {
+	api.ct.delKind("VirtualRouterPeeringGroup")
+}
+
+// VirtualRouterPeeringGroup returns VirtualRouterPeeringGroupAPI
+func (ct *ctrlerCtx) VirtualRouterPeeringGroup() VirtualRouterPeeringGroupAPI {
+	ct.Lock()
+	defer ct.Unlock()
+	kind := "VirtualRouterPeeringGroup"
+	if _, ok := ct.apiInfMap[kind]; !ok {
+		s := &virtualrouterpeeringgroupAPI{ct: ct}
+		ct.apiInfMap[kind] = s
+	}
+	return ct.apiInfMap[kind].(*virtualrouterpeeringgroupAPI)
+}

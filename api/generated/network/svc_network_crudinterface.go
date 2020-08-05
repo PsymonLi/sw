@@ -119,6 +119,19 @@ type NetworkV1RouteTableInterface interface {
 	Allowed(oper apiintf.APIOperType) bool
 }
 
+// NetworkV1VirtualRouterPeeringGroupInterface exposes the CRUD methods for VirtualRouterPeeringGroup
+type NetworkV1VirtualRouterPeeringGroupInterface interface {
+	Create(ctx context.Context, in *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error)
+	Update(ctx context.Context, in *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error)
+	UpdateStatus(ctx context.Context, in *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error)
+	Label(ctx context.Context, in *api.Label) (*VirtualRouterPeeringGroup, error)
+	Get(ctx context.Context, objMeta *api.ObjectMeta) (*VirtualRouterPeeringGroup, error)
+	Delete(ctx context.Context, objMeta *api.ObjectMeta) (*VirtualRouterPeeringGroup, error)
+	List(ctx context.Context, options *api.ListWatchOptions) ([]*VirtualRouterPeeringGroup, error)
+	Watch(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error)
+	Allowed(oper apiintf.APIOperType) bool
+}
+
 // NetworkV1Interface exposes objects with CRUD operations allowed by the service
 type NetworkV1Interface interface {
 	Network() NetworkV1NetworkInterface
@@ -129,5 +142,6 @@ type NetworkV1Interface interface {
 	IPAMPolicy() NetworkV1IPAMPolicyInterface
 	RoutingConfig() NetworkV1RoutingConfigInterface
 	RouteTable() NetworkV1RouteTableInterface
+	VirtualRouterPeeringGroup() NetworkV1VirtualRouterPeeringGroupInterface
 	Watch(ctx context.Context, options *api.AggWatchOptions) (kvstore.Watcher, error)
 }

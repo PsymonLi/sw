@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Network API reference",
-    "description": "Configure and Manage Networks and Services.\n\n API Objects are: IPAMPolicy Network NetworkInterface RouteTable RoutingConfig VirtualRouter ",
+    "description": "Configure and Manage Networks and Services.\n\n API Objects are: IPAMPolicy Network NetworkInterface RouteTable RoutingConfig VirtualRouter VirtualRouterPeeringGroup ",
     "version": "v1"
   },
   "schemes": [
@@ -4746,6 +4746,631 @@
         ]
       }
     },
+    "/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups": {
+      "get": {
+        "summary": "List VirtualRouterPeeringGroup objects",
+        "operationId": "ListVirtualRouterPeeringGroup",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroupList"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Tenant",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "O.name",
+            "description": "Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.namespace",
+            "description": "Namespace of the object, for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.generation-id",
+            "description": "GenerationID is the generation Id for the object. This is incremented anytime there is an update to the user intent, including Spec update and any update to ObjectMeta. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.resource-version",
+            "description": "Resource version in the object store. This is updated anytime there is any change to the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.uuid",
+            "description": "UUID is the unique identifier for the object. This is generated on creation of the object. System generated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.creation-time",
+            "description": "CreationTime is the creation time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "O.mod-time",
+            "description": "ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "O.self-link",
+            "description": "SelfLink is a link for accessing this object. When the object is served from the API-GW it is the URI path. Example: - \"/v1/tenants/tenants/tenant2\" System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "label-selector",
+            "description": "LabelSelector to select on labels in list or watch results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field-selector",
+            "description": "FieldSelector to select on field values in list or watch results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field-change-selector",
+            "description": "FieldChangeSelector specifies to generate a watch notification on change in field(s) specified.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "description": "From represents the start index number (1 based - first object starts from index 1), of the results list. The results returned would be in the range [from ... (from + (max-results - 1))]. If From = 0, the server will attempt to return all the results in the list without pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "max-results",
+            "description": "MaxResults is the maximum number of results to be returned as part of the response, per page If MaxResults is more than the maximum number of results per page supported by the server, the server will return an err If MaxResults is 0, the server will return all the results without pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "sort-order",
+            "description": "order to sort List results in.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      },
+      "post": {
+        "summary": "Create VirtualRouterPeeringGroup object",
+        "operationId": "AddVirtualRouterPeeringGroup",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Tenant",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroupCreate"
+            }
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      }
+    },
+    "/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups/{O.Name}": {
+      "get": {
+        "summary": "Get VirtualRouterPeeringGroup object",
+        "operationId": "GetVirtualRouterPeeringGroup",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Tenant",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "O.Name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "T.kind",
+            "description": "Kind represents the type of the API object.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "T.api-version",
+            "description": "APIVersion defines the version of the API object. This can only be set by the server.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.namespace",
+            "description": "Namespace of the object, for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.generation-id",
+            "description": "GenerationID is the generation Id for the object. This is incremented anytime there is an update to the user intent, including Spec update and any update to ObjectMeta. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.resource-version",
+            "description": "Resource version in the object store. This is updated anytime there is any change to the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.uuid",
+            "description": "UUID is the unique identifier for the object. This is generated on creation of the object. System generated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.creation-time",
+            "description": "CreationTime is the creation time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "meta.mod-time",
+            "description": "ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "meta.self-link",
+            "description": "SelfLink is a link for accessing this object. When the object is served from the API-GW it is the URI path. Example: - \"/v1/tenants/tenants/tenant2\" System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.generation-id",
+            "description": "The Generation ID this status is for.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.updated",
+            "description": "The number of Naples that this version has already been pushed to.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "propagation-status.pending",
+            "description": "Number of Naples pending. If this is 0 it can be assumed that everything is up to date.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "propagation-status.min-version",
+            "description": "The Version running on the slowest Naples.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.status",
+            "description": "Textual description of propagation status.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.pending-dscs",
+            "description": "list of DSCs where propagation did not complete.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      },
+      "delete": {
+        "summary": "Delete VirtualRouterPeeringGroup object",
+        "operationId": "DeleteVirtualRouterPeeringGroup",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Tenant",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "O.Name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      },
+      "put": {
+        "summary": "Update VirtualRouterPeeringGroup object",
+        "operationId": "UpdateVirtualRouterPeeringGroup",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Tenant",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "O.Name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroupUpdate"
+            }
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      }
+    },
+    "/configs/network/v1/tenant/{O.Tenant}/virtual-router-peering-groups/{O.Name}/label": {
+      "post": {
+        "summary": "Label VirtualRouterPeeringGroup object",
+        "operationId": "LabelVirtualRouterPeeringGroup",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Tenant",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "O.Name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/apiLabelCreate"
+            }
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      }
+    },
     "/configs/network/v1/tenant/{O.Tenant}/virtualrouters": {
       "get": {
         "summary": "List VirtualRouter objects",
@@ -5464,6 +6089,609 @@
             "required": true,
             "type": "string"
           },
+          {
+            "name": "O.Name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/apiLabelCreate"
+            }
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      }
+    },
+    "/configs/network/v1/virtual-router-peering-groups": {
+      "get": {
+        "summary": "List VirtualRouterPeeringGroup objects",
+        "operationId": "ListVirtualRouterPeeringGroup_1",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroupList"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.name",
+            "description": "Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.tenant",
+            "description": "Tenant to which the object belongs to. This can be automatically filled in many cases based on the tenant the user, who created the object, belongs to. Must be alpha-numerics. Length of string should be between 1 and 48.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.namespace",
+            "description": "Namespace of the object, for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.generation-id",
+            "description": "GenerationID is the generation Id for the object. This is incremented anytime there is an update to the user intent, including Spec update and any update to ObjectMeta. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.resource-version",
+            "description": "Resource version in the object store. This is updated anytime there is any change to the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.uuid",
+            "description": "UUID is the unique identifier for the object. This is generated on creation of the object. System generated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.creation-time",
+            "description": "CreationTime is the creation time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "O.mod-time",
+            "description": "ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "O.self-link",
+            "description": "SelfLink is a link for accessing this object. When the object is served from the API-GW it is the URI path. Example: - \"/v1/tenants/tenants/tenant2\" System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "label-selector",
+            "description": "LabelSelector to select on labels in list or watch results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field-selector",
+            "description": "FieldSelector to select on field values in list or watch results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field-change-selector",
+            "description": "FieldChangeSelector specifies to generate a watch notification on change in field(s) specified.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "description": "From represents the start index number (1 based - first object starts from index 1), of the results list. The results returned would be in the range [from ... (from + (max-results - 1))]. If From = 0, the server will attempt to return all the results in the list without pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "max-results",
+            "description": "MaxResults is the maximum number of results to be returned as part of the response, per page If MaxResults is more than the maximum number of results per page supported by the server, the server will return an err If MaxResults is 0, the server will return all the results without pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "sort-order",
+            "description": "order to sort List results in.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      },
+      "post": {
+        "summary": "Create VirtualRouterPeeringGroup object",
+        "operationId": "AddVirtualRouterPeeringGroup_1",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroupCreate"
+            }
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      }
+    },
+    "/configs/network/v1/virtual-router-peering-groups/{O.Name}": {
+      "get": {
+        "summary": "Get VirtualRouterPeeringGroup object",
+        "operationId": "GetVirtualRouterPeeringGroup_1",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "T.kind",
+            "description": "Kind represents the type of the API object.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "T.api-version",
+            "description": "APIVersion defines the version of the API object. This can only be set by the server.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.tenant",
+            "description": "Tenant to which the object belongs to. This can be automatically filled in many cases based on the tenant the user, who created the object, belongs to. Must be alpha-numerics. Length of string should be between 1 and 48.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.namespace",
+            "description": "Namespace of the object, for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.generation-id",
+            "description": "GenerationID is the generation Id for the object. This is incremented anytime there is an update to the user intent, including Spec update and any update to ObjectMeta. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.resource-version",
+            "description": "Resource version in the object store. This is updated anytime there is any change to the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.uuid",
+            "description": "UUID is the unique identifier for the object. This is generated on creation of the object. System generated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.creation-time",
+            "description": "CreationTime is the creation time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "meta.mod-time",
+            "description": "ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "meta.self-link",
+            "description": "SelfLink is a link for accessing this object. When the object is served from the API-GW it is the URI path. Example: - \"/v1/tenants/tenants/tenant2\" System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.generation-id",
+            "description": "The Generation ID this status is for.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.updated",
+            "description": "The number of Naples that this version has already been pushed to.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "propagation-status.pending",
+            "description": "Number of Naples pending. If this is 0 it can be assumed that everything is up to date.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "propagation-status.min-version",
+            "description": "The Version running on the slowest Naples.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.status",
+            "description": "Textual description of propagation status.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.pending-dscs",
+            "description": "list of DSCs where propagation did not complete.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      },
+      "delete": {
+        "summary": "Delete VirtualRouterPeeringGroup object",
+        "operationId": "DeleteVirtualRouterPeeringGroup_1",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      },
+      "put": {
+        "summary": "Update VirtualRouterPeeringGroup object",
+        "operationId": "UpdateVirtualRouterPeeringGroup_1",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroupUpdate"
+            }
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      }
+    },
+    "/configs/network/v1/virtual-router-peering-groups/{O.Name}/label": {
+      "post": {
+        "summary": "Label VirtualRouterPeeringGroup object",
+        "operationId": "LabelVirtualRouterPeeringGroup_1",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
           {
             "name": "O.Name",
             "in": "path",
@@ -7533,6 +8761,172 @@
         ]
       }
     },
+    "/configs/network/v1/watch/tenant/{O.Tenant}/virtual-router-peering-groups": {
+      "get": {
+        "summary": "Watch VirtualRouterPeeringGroup objects. Supports WebSockets or HTTP long poll",
+        "operationId": "WatchVirtualRouterPeeringGroup",
+        "responses": {
+          "200": {
+            "description": "(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/networkAutoMsgVirtualRouterPeeringGroupWatchHelper"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.Tenant",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "O.name",
+            "description": "Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.namespace",
+            "description": "Namespace of the object, for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.generation-id",
+            "description": "GenerationID is the generation Id for the object. This is incremented anytime there is an update to the user intent, including Spec update and any update to ObjectMeta. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.resource-version",
+            "description": "Resource version in the object store. This is updated anytime there is any change to the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.uuid",
+            "description": "UUID is the unique identifier for the object. This is generated on creation of the object. System generated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.creation-time",
+            "description": "CreationTime is the creation time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "O.mod-time",
+            "description": "ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "O.self-link",
+            "description": "SelfLink is a link for accessing this object. When the object is served from the API-GW it is the URI path. Example: - \"/v1/tenants/tenants/tenant2\" System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "label-selector",
+            "description": "LabelSelector to select on labels in list or watch results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field-selector",
+            "description": "FieldSelector to select on field values in list or watch results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field-change-selector",
+            "description": "FieldChangeSelector specifies to generate a watch notification on change in field(s) specified.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "description": "From represents the start index number (1 based - first object starts from index 1), of the results list. The results returned would be in the range [from ... (from + (max-results - 1))]. If From = 0, the server will attempt to return all the results in the list without pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "max-results",
+            "description": "MaxResults is the maximum number of results to be returned as part of the response, per page If MaxResults is more than the maximum number of results per page supported by the server, the server will return an err If MaxResults is 0, the server will return all the results without pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "sort-order",
+            "description": "order to sort List results in.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      }
+    },
     "/configs/network/v1/watch/tenant/{O.Tenant}/virtualrouters": {
       "get": {
         "summary": "Watch VirtualRouter objects. Supports WebSockets or HTTP long poll",
@@ -7591,6 +8985,173 @@
           {
             "name": "O.name",
             "description": "Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.namespace",
+            "description": "Namespace of the object, for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.generation-id",
+            "description": "GenerationID is the generation Id for the object. This is incremented anytime there is an update to the user intent, including Spec update and any update to ObjectMeta. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.resource-version",
+            "description": "Resource version in the object store. This is updated anytime there is any change to the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.uuid",
+            "description": "UUID is the unique identifier for the object. This is generated on creation of the object. System generated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.creation-time",
+            "description": "CreationTime is the creation time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "O.mod-time",
+            "description": "ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "O.self-link",
+            "description": "SelfLink is a link for accessing this object. When the object is served from the API-GW it is the URI path. Example: - \"/v1/tenants/tenants/tenant2\" System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "label-selector",
+            "description": "LabelSelector to select on labels in list or watch results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field-selector",
+            "description": "FieldSelector to select on field values in list or watch results.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "field-change-selector",
+            "description": "FieldChangeSelector specifies to generate a watch notification on change in field(s) specified.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "description": "From represents the start index number (1 based - first object starts from index 1), of the results list. The results returned would be in the range [from ... (from + (max-results - 1))]. If From = 0, the server will attempt to return all the results in the list without pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "max-results",
+            "description": "MaxResults is the maximum number of results to be returned as part of the response, per page If MaxResults is more than the maximum number of results per page supported by the server, the server will return an err If MaxResults is 0, the server will return all the results without pagination.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "sort-order",
+            "description": "order to sort List results in.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "network/v1"
+        ]
+      }
+    },
+    "/configs/network/v1/watch/virtual-router-peering-groups": {
+      "get": {
+        "summary": "Watch VirtualRouterPeeringGroup objects. Supports WebSockets or HTTP long poll",
+        "operationId": "WatchVirtualRouterPeeringGroup_1",
+        "responses": {
+          "200": {
+            "description": "(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/networkAutoMsgVirtualRouterPeeringGroupWatchHelper"
+            }
+          },
+          "400": {
+            "description": "Bad request parameters",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "409": {
+            "description": "Conflict while processing request",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "412": {
+            "description": "Pre-condition failed",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          },
+          "501": {
+            "description": "Request not implemented",
+            "schema": {
+              "$ref": "#/definitions/apiStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "O.name",
+            "description": "Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "O.tenant",
+            "description": "Tenant to which the object belongs to. This can be automatically filled in many cases based on the tenant the user, who created the object, belongs to. Must be alpha-numerics. Length of string should be between 1 and 48.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -8571,6 +10132,29 @@
         },
         "object": {
           "$ref": "#/definitions/networkService"
+        }
+      }
+    },
+    "networkAutoMsgVirtualRouterPeeringGroupWatchHelper": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/networkAutoMsgVirtualRouterPeeringGroupWatchHelperWatchEvent"
+          }
+        }
+      },
+      "description": "AutoMsgVirtualRouterPeeringGroupWatchHelper is a wrapper object for watch events for VirtualRouterPeeringGroup objects."
+    },
+    "networkAutoMsgVirtualRouterPeeringGroupWatchHelperWatchEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "object": {
+          "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
         }
       }
     },
@@ -10027,6 +11611,156 @@
         }
       },
       "description": "VirtualRouterList is a container object for list of VirtualRouter objects."
+    },
+    "networkVirtualRouterPeeringGroup": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/apiObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/networkVirtualRouterPeeringGroupSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/networkVirtualRouterPeeringGroupStatus"
+        }
+      }
+    },
+    "networkVirtualRouterPeeringGroupCreate": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/apiObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/networkVirtualRouterPeeringGroupSpec"
+        }
+      }
+    },
+    "networkVirtualRouterPeeringGroupList": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "list-meta": {
+          "$ref": "#/definitions/apiListMeta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/networkVirtualRouterPeeringGroup"
+          },
+          "description": "List of VirtualRouterPeeringGroup objects."
+        }
+      },
+      "description": "VirtualRouterPeeringGroupList is a container object for list of VirtualRouterPeeringGroup objects."
+    },
+    "networkVirtualRouterPeeringGroupSpec": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/networkVirtualRouterPeeringSpec"
+          }
+        }
+      }
+    },
+    "networkVirtualRouterPeeringGroupStatus": {
+      "type": "object",
+      "properties": {
+        "propagation-status": {
+          "$ref": "#/definitions/securityPropagationStatus",
+          "description": "The status of the configuration propagation to the DSC."
+        },
+        "route-tables": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/networkVirtualRouterPeeringRouteTable"
+          },
+          "description": "VirtualRouter -\u003e Route table derived from the prefixes exposed by other VirtualRouters in this peering group."
+        }
+      }
+    },
+    "networkVirtualRouterPeeringGroupUpdate": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/apiObjectMetaUpdate"
+        },
+        "spec": {
+          "$ref": "#/definitions/networkVirtualRouterPeeringGroupSpec"
+        }
+      }
+    },
+    "networkVirtualRouterPeeringRoute": {
+      "type": "object",
+      "required": [
+        "ipv4-prefix"
+      ],
+      "properties": {
+        "ipv4-prefix": {
+          "type": "string",
+          "example": "10.1.1.1/24, ff02::5/32 ",
+          "description": "Should be a valid v4 or v6 CIDR block."
+        },
+        "dest-virtual-router": {
+          "type": "string",
+          "description": "Destination VirtualRouter this prefix is reachable on."
+        }
+      }
+    },
+    "networkVirtualRouterPeeringRouteTable": {
+      "type": "object",
+      "properties": {
+        "routes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/networkVirtualRouterPeeringRoute"
+          }
+        }
+      }
+    },
+    "networkVirtualRouterPeeringSpec": {
+      "type": "object",
+      "required": [
+        "ipv4-prefix"
+      ],
+      "properties": {
+        "virtual-router": {
+          "type": "string"
+        },
+        "ipv4-prefix": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": "10.1.1.1/24, ff02::5/32 ",
+          "description": "List of destination prefixes located in this Virtual Router exposed as reachable from any other Virtual Router participating in this peering group. Should be a valid v4 or v6 CIDR block."
+        }
+      }
     },
     "networkVirtualRouterSpec": {
       "type": "object",

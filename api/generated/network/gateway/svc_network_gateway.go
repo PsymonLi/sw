@@ -342,6 +342,42 @@ func (a adapterNetworkV1) AutoAddVirtualRouter(oldctx oldcontext.Context, t *net
 	return ret.(*network.VirtualRouter), err
 }
 
+func (a adapterNetworkV1) AutoAddVirtualRouterPeeringGroup(oldctx oldcontext.Context, t *network.VirtualRouterPeeringGroup, options ...grpc.CallOption) (*network.VirtualRouterPeeringGroup, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoAddVirtualRouterPeeringGroup", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoAddVirtualRouterPeeringGroup")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.CreateOper, "VirtualRouterPeeringGroup", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.CreateOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*network.VirtualRouterPeeringGroup)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddVirtualRouterPeeringGroup(inctx, in)
+		}
+		return a.service.AutoAddVirtualRouterPeeringGroup(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.VirtualRouterPeeringGroup), err
+}
+
 func (a adapterNetworkV1) AutoDeleteIPAMPolicy(oldctx oldcontext.Context, t *network.IPAMPolicy, options ...grpc.CallOption) (*network.IPAMPolicy, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
@@ -628,6 +664,42 @@ func (a adapterNetworkV1) AutoDeleteVirtualRouter(oldctx oldcontext.Context, t *
 		return nil, err
 	}
 	return ret.(*network.VirtualRouter), err
+}
+
+func (a adapterNetworkV1) AutoDeleteVirtualRouterPeeringGroup(oldctx oldcontext.Context, t *network.VirtualRouterPeeringGroup, options ...grpc.CallOption) (*network.VirtualRouterPeeringGroup, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoDeleteVirtualRouterPeeringGroup", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoDeleteVirtualRouterPeeringGroup")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.DeleteOper, "VirtualRouterPeeringGroup", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.DeleteOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*network.VirtualRouterPeeringGroup)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteVirtualRouterPeeringGroup(inctx, in)
+		}
+		return a.service.AutoDeleteVirtualRouterPeeringGroup(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.VirtualRouterPeeringGroup), err
 }
 
 func (a adapterNetworkV1) AutoGetIPAMPolicy(oldctx oldcontext.Context, t *network.IPAMPolicy, options ...grpc.CallOption) (*network.IPAMPolicy, error) {
@@ -918,6 +990,42 @@ func (a adapterNetworkV1) AutoGetVirtualRouter(oldctx oldcontext.Context, t *net
 	return ret.(*network.VirtualRouter), err
 }
 
+func (a adapterNetworkV1) AutoGetVirtualRouterPeeringGroup(oldctx oldcontext.Context, t *network.VirtualRouterPeeringGroup, options ...grpc.CallOption) (*network.VirtualRouterPeeringGroup, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoGetVirtualRouterPeeringGroup", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoGetVirtualRouterPeeringGroup")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.GetOper, "VirtualRouterPeeringGroup", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.GetOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*network.VirtualRouterPeeringGroup)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetVirtualRouterPeeringGroup(inctx, in)
+		}
+		return a.service.AutoGetVirtualRouterPeeringGroup(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.VirtualRouterPeeringGroup), err
+}
+
 func (a adapterNetworkV1) AutoLabelIPAMPolicy(oldctx oldcontext.Context, t *api.Label, options ...grpc.CallOption) (*network.IPAMPolicy, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
@@ -1204,6 +1312,42 @@ func (a adapterNetworkV1) AutoLabelVirtualRouter(oldctx oldcontext.Context, t *a
 		return nil, err
 	}
 	return ret.(*network.VirtualRouter), err
+}
+
+func (a adapterNetworkV1) AutoLabelVirtualRouterPeeringGroup(oldctx oldcontext.Context, t *api.Label, options ...grpc.CallOption) (*network.VirtualRouterPeeringGroup, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoLabelVirtualRouterPeeringGroup", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoLabelVirtualRouterPeeringGroup")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.UpdateOper, "VirtualRouterPeeringGroup", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.LabelOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*api.Label)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelVirtualRouterPeeringGroup(inctx, in)
+		}
+		return a.service.AutoLabelVirtualRouterPeeringGroup(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.VirtualRouterPeeringGroup), err
 }
 
 func (a adapterNetworkV1) AutoListIPAMPolicy(oldctx oldcontext.Context, t *api.ListWatchOptions, options ...grpc.CallOption) (*network.IPAMPolicyList, error) {
@@ -1530,6 +1674,47 @@ func (a adapterNetworkV1) AutoListVirtualRouter(oldctx oldcontext.Context, t *ap
 	return ret.(*network.VirtualRouterList), err
 }
 
+func (a adapterNetworkV1) AutoListVirtualRouterPeeringGroup(oldctx oldcontext.Context, t *api.ListWatchOptions, options ...grpc.CallOption) (*network.VirtualRouterPeeringGroupList, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoListVirtualRouterPeeringGroup", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoListVirtualRouterPeeringGroup")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+
+	if t.Tenant == "" {
+		t.Tenant = globals.DefaultTenant
+	}
+	t.Namespace = ""
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.ListOper, "VirtualRouterPeeringGroup", t.Tenant, t.Namespace, "network", "", strings.Title(string(apiintf.ListOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*api.ListWatchOptions)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListVirtualRouterPeeringGroup(inctx, in)
+		}
+		return a.service.AutoListVirtualRouterPeeringGroup(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.VirtualRouterPeeringGroupList), err
+}
+
 func (a adapterNetworkV1) AutoUpdateIPAMPolicy(oldctx oldcontext.Context, t *network.IPAMPolicy, options ...grpc.CallOption) (*network.IPAMPolicy, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
@@ -1816,6 +2001,42 @@ func (a adapterNetworkV1) AutoUpdateVirtualRouter(oldctx oldcontext.Context, t *
 		return nil, err
 	}
 	return ret.(*network.VirtualRouter), err
+}
+
+func (a adapterNetworkV1) AutoUpdateVirtualRouterPeeringGroup(oldctx oldcontext.Context, t *network.VirtualRouterPeeringGroup, options ...grpc.CallOption) (*network.VirtualRouterPeeringGroup, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoUpdateVirtualRouterPeeringGroup", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoUpdateVirtualRouterPeeringGroup")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.UpdateOper, "VirtualRouterPeeringGroup", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.UpdateOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*network.VirtualRouterPeeringGroup)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateVirtualRouterPeeringGroup(inctx, in)
+		}
+		return a.service.AutoUpdateVirtualRouterPeeringGroup(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.VirtualRouterPeeringGroup), err
 }
 
 func (a adapterNetworkV1) AutoWatchSvcNetworkV1(oldctx oldcontext.Context, in *api.AggWatchOptions, options ...grpc.CallOption) (network.NetworkV1_AutoWatchSvcNetworkV1Client, error) {
@@ -2340,6 +2561,65 @@ func (a adapterNetworkV1) AutoWatchRouteTable(oldctx oldcontext.Context, in *api
 	return ret.(network.NetworkV1_AutoWatchRouteTableClient), err
 }
 
+func (a adapterNetworkV1) AutoWatchVirtualRouterPeeringGroup(oldctx oldcontext.Context, in *api.ListWatchOptions, options ...grpc.CallOption) (network.NetworkV1_AutoWatchVirtualRouterPeeringGroupClient, error) {
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoWatchVirtualRouterPeeringGroup")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+
+	if in.Tenant == "" {
+		in.Tenant = globals.DefaultTenant
+	}
+	in.Namespace = ""
+	oper, kind, tenant, namespace, group := apiintf.WatchOper, "VirtualRouterPeeringGroup", in.Tenant, in.Namespace, "network"
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, ""), oper, strings.Title(string(oper)))
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*api.ListWatchOptions)
+		iws, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwWebSocketWatch)
+		if ok && iws.(bool) {
+			nctx, cancel := context.WithCancel(ctx)
+			ir, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwHTTPReq)
+			if !ok {
+				return nil, errors.New("unable to retrieve request")
+			}
+			iw, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwHTTPWriter)
+			if !ok {
+				return nil, errors.New("unable to retrieve writer")
+			}
+			conn, err := wsUpgrader.Upgrade(iw.(http.ResponseWriter), ir.(*http.Request), nil)
+			if err != nil {
+				log.Errorf("WebSocket Upgrade failed (%s)", err)
+				return nil, err
+			}
+			ctx = apiutils.SetVar(nctx, apiutils.CtxKeyAPIGwWebSocketConn, conn)
+			conn.SetCloseHandler(func(code int, text string) error {
+				cancel()
+				log.Infof("received close notification on websocket [AutoWatchVirtualRouterPeeringGroup] (%v/%v)", code, text)
+				return nil
+			})
+			// start a dummy reciever
+			go func() {
+				for {
+					_, _, err := conn.ReadMessage()
+					if err != nil {
+						log.Errorf("received error on websocket receive (%s)", err)
+						cancel()
+						return
+					}
+				}
+			}()
+		}
+		return a.service.AutoWatchVirtualRouterPeeringGroup(ctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, in, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(network.NetworkV1_AutoWatchVirtualRouterPeeringGroupClient), err
+}
+
 func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.defSvcProf = apigwpkg.NewServiceProfile(nil, "", "network", apiintf.UnknownOper)
 	e.defSvcProf.SetDefaults()
@@ -2353,6 +2633,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 
 	e.svcProf["AutoAddVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouter", "network", apiintf.CreateOper)
 
+	e.svcProf["AutoAddVirtualRouterPeeringGroup"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouterPeeringGroup", "network", apiintf.CreateOper)
+
 	e.svcProf["AutoDeleteIPAMPolicy"] = apigwpkg.NewServiceProfile(e.defSvcProf, "IPAMPolicy", "network", apiintf.DeleteOper)
 
 	e.svcProf["AutoDeleteNetwork"] = apigwpkg.NewServiceProfile(e.defSvcProf, "Network", "network", apiintf.DeleteOper)
@@ -2360,6 +2642,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoDeleteRoutingConfig"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RoutingConfig", "network", apiintf.DeleteOper)
 
 	e.svcProf["AutoDeleteVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouter", "network", apiintf.DeleteOper)
+
+	e.svcProf["AutoDeleteVirtualRouterPeeringGroup"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouterPeeringGroup", "network", apiintf.DeleteOper)
 
 	e.svcProf["AutoGetIPAMPolicy"] = apigwpkg.NewServiceProfile(e.defSvcProf, "IPAMPolicy", "network", apiintf.GetOper)
 
@@ -2373,6 +2657,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 
 	e.svcProf["AutoGetVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouter", "network", apiintf.GetOper)
 
+	e.svcProf["AutoGetVirtualRouterPeeringGroup"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouterPeeringGroup", "network", apiintf.GetOper)
+
 	e.svcProf["AutoLabelIPAMPolicy"] = apigwpkg.NewServiceProfile(e.defSvcProf, "IPAMPolicy", "network", apiintf.CreateOper)
 
 	e.svcProf["AutoLabelNetwork"] = apigwpkg.NewServiceProfile(e.defSvcProf, "Network", "network", apiintf.CreateOper)
@@ -2382,6 +2668,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoLabelRoutingConfig"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RoutingConfig", "network", apiintf.CreateOper)
 
 	e.svcProf["AutoLabelVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouter", "network", apiintf.CreateOper)
+
+	e.svcProf["AutoLabelVirtualRouterPeeringGroup"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouterPeeringGroup", "network", apiintf.CreateOper)
 
 	e.svcProf["AutoListIPAMPolicy"] = apigwpkg.NewServiceProfile(e.defSvcProf, "IPAMPolicyList", "network", apiintf.ListOper)
 
@@ -2395,6 +2683,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 
 	e.svcProf["AutoListVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouterList", "network", apiintf.ListOper)
 
+	e.svcProf["AutoListVirtualRouterPeeringGroup"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouterPeeringGroupList", "network", apiintf.ListOper)
+
 	e.svcProf["AutoUpdateIPAMPolicy"] = apigwpkg.NewServiceProfile(e.defSvcProf, "IPAMPolicy", "network", apiintf.UpdateOper)
 
 	e.svcProf["AutoUpdateNetwork"] = apigwpkg.NewServiceProfile(e.defSvcProf, "Network", "network", apiintf.UpdateOper)
@@ -2404,6 +2694,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoUpdateRoutingConfig"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RoutingConfig", "network", apiintf.UpdateOper)
 
 	e.svcProf["AutoUpdateVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouter", "network", apiintf.UpdateOper)
+
+	e.svcProf["AutoUpdateVirtualRouterPeeringGroup"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouterPeeringGroup", "network", apiintf.UpdateOper)
 
 	e.svcProf["AutoWatchIPAMPolicy"] = apigwpkg.NewServiceProfile(e.defSvcProf, "AutoMsgIPAMPolicyWatchHelper", "network", apiintf.WatchOper)
 
@@ -2416,6 +2708,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoWatchRoutingConfig"] = apigwpkg.NewServiceProfile(e.defSvcProf, "AutoMsgRoutingConfigWatchHelper", "network", apiintf.WatchOper)
 
 	e.svcProf["AutoWatchVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "AutoMsgVirtualRouterWatchHelper", "network", apiintf.WatchOper)
+
+	e.svcProf["AutoWatchVirtualRouterPeeringGroup"] = apigwpkg.NewServiceProfile(e.defSvcProf, "AutoMsgVirtualRouterPeeringGroupWatchHelper", "network", apiintf.WatchOper)
 }
 
 // GetDefaultServiceProfile returns the default fallback service profile for this service

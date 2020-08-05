@@ -62,6 +62,7 @@ telemetry_query.proto telemetry_query true
 tenant.proto cluster true
 tokenauth.proto tokenauth true
 troubleshooting.proto monitoring true
+vr_peering_group.proto network true
 vrf.proto network true
 workload.proto workload true
 x509.proto security true

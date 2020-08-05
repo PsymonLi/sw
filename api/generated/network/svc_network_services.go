@@ -27,6 +27,7 @@ type ServiceNetworkV1Client interface {
 	AutoAddRoutingConfig(ctx context.Context, t *RoutingConfig) (*RoutingConfig, error)
 	AutoAddService(ctx context.Context, t *Service) (*Service, error)
 	AutoAddVirtualRouter(ctx context.Context, t *VirtualRouter) (*VirtualRouter, error)
+	AutoAddVirtualRouterPeeringGroup(ctx context.Context, t *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error)
 	AutoDeleteIPAMPolicy(ctx context.Context, t *IPAMPolicy) (*IPAMPolicy, error)
 	AutoDeleteLbPolicy(ctx context.Context, t *LbPolicy) (*LbPolicy, error)
 	AutoDeleteNetwork(ctx context.Context, t *Network) (*Network, error)
@@ -35,6 +36,7 @@ type ServiceNetworkV1Client interface {
 	AutoDeleteRoutingConfig(ctx context.Context, t *RoutingConfig) (*RoutingConfig, error)
 	AutoDeleteService(ctx context.Context, t *Service) (*Service, error)
 	AutoDeleteVirtualRouter(ctx context.Context, t *VirtualRouter) (*VirtualRouter, error)
+	AutoDeleteVirtualRouterPeeringGroup(ctx context.Context, t *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error)
 	AutoGetIPAMPolicy(ctx context.Context, t *IPAMPolicy) (*IPAMPolicy, error)
 	AutoGetLbPolicy(ctx context.Context, t *LbPolicy) (*LbPolicy, error)
 	AutoGetNetwork(ctx context.Context, t *Network) (*Network, error)
@@ -43,6 +45,7 @@ type ServiceNetworkV1Client interface {
 	AutoGetRoutingConfig(ctx context.Context, t *RoutingConfig) (*RoutingConfig, error)
 	AutoGetService(ctx context.Context, t *Service) (*Service, error)
 	AutoGetVirtualRouter(ctx context.Context, t *VirtualRouter) (*VirtualRouter, error)
+	AutoGetVirtualRouterPeeringGroup(ctx context.Context, t *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error)
 	AutoLabelIPAMPolicy(ctx context.Context, t *api.Label) (*IPAMPolicy, error)
 	AutoLabelLbPolicy(ctx context.Context, t *api.Label) (*LbPolicy, error)
 	AutoLabelNetwork(ctx context.Context, t *api.Label) (*Network, error)
@@ -51,6 +54,7 @@ type ServiceNetworkV1Client interface {
 	AutoLabelRoutingConfig(ctx context.Context, t *api.Label) (*RoutingConfig, error)
 	AutoLabelService(ctx context.Context, t *api.Label) (*Service, error)
 	AutoLabelVirtualRouter(ctx context.Context, t *api.Label) (*VirtualRouter, error)
+	AutoLabelVirtualRouterPeeringGroup(ctx context.Context, t *api.Label) (*VirtualRouterPeeringGroup, error)
 	AutoListIPAMPolicy(ctx context.Context, t *api.ListWatchOptions) (*IPAMPolicyList, error)
 	AutoListLbPolicy(ctx context.Context, t *api.ListWatchOptions) (*LbPolicyList, error)
 	AutoListNetwork(ctx context.Context, t *api.ListWatchOptions) (*NetworkList, error)
@@ -59,6 +63,7 @@ type ServiceNetworkV1Client interface {
 	AutoListRoutingConfig(ctx context.Context, t *api.ListWatchOptions) (*RoutingConfigList, error)
 	AutoListService(ctx context.Context, t *api.ListWatchOptions) (*ServiceList, error)
 	AutoListVirtualRouter(ctx context.Context, t *api.ListWatchOptions) (*VirtualRouterList, error)
+	AutoListVirtualRouterPeeringGroup(ctx context.Context, t *api.ListWatchOptions) (*VirtualRouterPeeringGroupList, error)
 	AutoUpdateIPAMPolicy(ctx context.Context, t *IPAMPolicy) (*IPAMPolicy, error)
 	AutoUpdateLbPolicy(ctx context.Context, t *LbPolicy) (*LbPolicy, error)
 	AutoUpdateNetwork(ctx context.Context, t *Network) (*Network, error)
@@ -67,6 +72,7 @@ type ServiceNetworkV1Client interface {
 	AutoUpdateRoutingConfig(ctx context.Context, t *RoutingConfig) (*RoutingConfig, error)
 	AutoUpdateService(ctx context.Context, t *Service) (*Service, error)
 	AutoUpdateVirtualRouter(ctx context.Context, t *VirtualRouter) (*VirtualRouter, error)
+	AutoUpdateVirtualRouterPeeringGroup(ctx context.Context, t *VirtualRouterPeeringGroup) (*VirtualRouterPeeringGroup, error)
 
 	AutoWatchNetwork(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchNetworkClient, error)
 	AutoWatchService(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchServiceClient, error)
@@ -76,6 +82,7 @@ type ServiceNetworkV1Client interface {
 	AutoWatchIPAMPolicy(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchIPAMPolicyClient, error)
 	AutoWatchRoutingConfig(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchRoutingConfigClient, error)
 	AutoWatchRouteTable(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchRouteTableClient, error)
+	AutoWatchVirtualRouterPeeringGroup(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchVirtualRouterPeeringGroupClient, error)
 }
 
 // ServiceNetworkV1Server is the server interface for the service.
@@ -90,6 +97,7 @@ type ServiceNetworkV1Server interface {
 	AutoAddRoutingConfig(ctx context.Context, t RoutingConfig) (RoutingConfig, error)
 	AutoAddService(ctx context.Context, t Service) (Service, error)
 	AutoAddVirtualRouter(ctx context.Context, t VirtualRouter) (VirtualRouter, error)
+	AutoAddVirtualRouterPeeringGroup(ctx context.Context, t VirtualRouterPeeringGroup) (VirtualRouterPeeringGroup, error)
 	AutoDeleteIPAMPolicy(ctx context.Context, t IPAMPolicy) (IPAMPolicy, error)
 	AutoDeleteLbPolicy(ctx context.Context, t LbPolicy) (LbPolicy, error)
 	AutoDeleteNetwork(ctx context.Context, t Network) (Network, error)
@@ -98,6 +106,7 @@ type ServiceNetworkV1Server interface {
 	AutoDeleteRoutingConfig(ctx context.Context, t RoutingConfig) (RoutingConfig, error)
 	AutoDeleteService(ctx context.Context, t Service) (Service, error)
 	AutoDeleteVirtualRouter(ctx context.Context, t VirtualRouter) (VirtualRouter, error)
+	AutoDeleteVirtualRouterPeeringGroup(ctx context.Context, t VirtualRouterPeeringGroup) (VirtualRouterPeeringGroup, error)
 	AutoGetIPAMPolicy(ctx context.Context, t IPAMPolicy) (IPAMPolicy, error)
 	AutoGetLbPolicy(ctx context.Context, t LbPolicy) (LbPolicy, error)
 	AutoGetNetwork(ctx context.Context, t Network) (Network, error)
@@ -106,6 +115,7 @@ type ServiceNetworkV1Server interface {
 	AutoGetRoutingConfig(ctx context.Context, t RoutingConfig) (RoutingConfig, error)
 	AutoGetService(ctx context.Context, t Service) (Service, error)
 	AutoGetVirtualRouter(ctx context.Context, t VirtualRouter) (VirtualRouter, error)
+	AutoGetVirtualRouterPeeringGroup(ctx context.Context, t VirtualRouterPeeringGroup) (VirtualRouterPeeringGroup, error)
 	AutoLabelIPAMPolicy(ctx context.Context, t api.Label) (IPAMPolicy, error)
 	AutoLabelLbPolicy(ctx context.Context, t api.Label) (LbPolicy, error)
 	AutoLabelNetwork(ctx context.Context, t api.Label) (Network, error)
@@ -114,6 +124,7 @@ type ServiceNetworkV1Server interface {
 	AutoLabelRoutingConfig(ctx context.Context, t api.Label) (RoutingConfig, error)
 	AutoLabelService(ctx context.Context, t api.Label) (Service, error)
 	AutoLabelVirtualRouter(ctx context.Context, t api.Label) (VirtualRouter, error)
+	AutoLabelVirtualRouterPeeringGroup(ctx context.Context, t api.Label) (VirtualRouterPeeringGroup, error)
 	AutoListIPAMPolicy(ctx context.Context, t api.ListWatchOptions) (IPAMPolicyList, error)
 	AutoListLbPolicy(ctx context.Context, t api.ListWatchOptions) (LbPolicyList, error)
 	AutoListNetwork(ctx context.Context, t api.ListWatchOptions) (NetworkList, error)
@@ -122,6 +133,7 @@ type ServiceNetworkV1Server interface {
 	AutoListRoutingConfig(ctx context.Context, t api.ListWatchOptions) (RoutingConfigList, error)
 	AutoListService(ctx context.Context, t api.ListWatchOptions) (ServiceList, error)
 	AutoListVirtualRouter(ctx context.Context, t api.ListWatchOptions) (VirtualRouterList, error)
+	AutoListVirtualRouterPeeringGroup(ctx context.Context, t api.ListWatchOptions) (VirtualRouterPeeringGroupList, error)
 	AutoUpdateIPAMPolicy(ctx context.Context, t IPAMPolicy) (IPAMPolicy, error)
 	AutoUpdateLbPolicy(ctx context.Context, t LbPolicy) (LbPolicy, error)
 	AutoUpdateNetwork(ctx context.Context, t Network) (Network, error)
@@ -130,6 +142,7 @@ type ServiceNetworkV1Server interface {
 	AutoUpdateRoutingConfig(ctx context.Context, t RoutingConfig) (RoutingConfig, error)
 	AutoUpdateService(ctx context.Context, t Service) (Service, error)
 	AutoUpdateVirtualRouter(ctx context.Context, t VirtualRouter) (VirtualRouter, error)
+	AutoUpdateVirtualRouterPeeringGroup(ctx context.Context, t VirtualRouterPeeringGroup) (VirtualRouterPeeringGroup, error)
 
 	AutoWatchNetwork(in *api.ListWatchOptions, stream NetworkV1_AutoWatchNetworkServer) error
 	AutoWatchService(in *api.ListWatchOptions, stream NetworkV1_AutoWatchServiceServer) error
@@ -139,4 +152,5 @@ type ServiceNetworkV1Server interface {
 	AutoWatchIPAMPolicy(in *api.ListWatchOptions, stream NetworkV1_AutoWatchIPAMPolicyServer) error
 	AutoWatchRoutingConfig(in *api.ListWatchOptions, stream NetworkV1_AutoWatchRoutingConfigServer) error
 	AutoWatchRouteTable(in *api.ListWatchOptions, stream NetworkV1_AutoWatchRouteTableServer) error
+	AutoWatchVirtualRouterPeeringGroup(in *api.ListWatchOptions, stream NetworkV1_AutoWatchVirtualRouterPeeringGroupServer) error
 }

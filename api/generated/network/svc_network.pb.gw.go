@@ -300,6 +300,85 @@ func request_NetworkV1_AutoAddVirtualRouter_1(ctx context.Context, marshaler run
 
 }
 
+func request_NetworkV1_AutoAddVirtualRouterPeeringGroup_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &VirtualRouterPeeringGroup{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Tenant"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Tenant")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Tenant", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	msg, err := client.AutoAddVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+func request_NetworkV1_AutoAddVirtualRouterPeeringGroup_1(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &VirtualRouterPeeringGroup{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	msg, err := client.AutoAddVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
 var (
 	filter_NetworkV1_AutoDeleteIPAMPolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"O": 0, "Tenant": 1, "Name": 2}, Base: []int{1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3, 4}}
 )
@@ -735,6 +814,133 @@ func request_NetworkV1_AutoDeleteVirtualRouter_1(ctx context.Context, marshaler 
 	}
 
 	msg, err := client.AutoDeleteVirtualRouter(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+var (
+	filter_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_0 = &utilities.DoubleArray{Encoding: map[string]int{"O": 0, "Tenant": 1, "Name": 2}, Base: []int{1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3, 4}}
+)
+
+func request_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &VirtualRouterPeeringGroup{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Tenant"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Tenant")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Tenant", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	val, ok = pathParams["O.Name"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Name")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Name", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	if err := runtime.PopulateQueryParameters(protoReq, req.URL.Query(), filter_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_0); err != nil {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.AutoDeleteVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+var (
+	filter_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_1 = &utilities.DoubleArray{Encoding: map[string]int{"O": 0, "Name": 1}, Base: []int{1, 1, 1, 0}, Check: []int{0, 1, 2, 3}}
+)
+
+func request_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_1(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &VirtualRouterPeeringGroup{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Name"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Name")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Name", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	if err := runtime.PopulateQueryParameters(protoReq, req.URL.Query(), filter_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_1); err != nil {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.AutoDeleteVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
 	return msg, smetadata, err
 
 }
@@ -1363,6 +1569,133 @@ func request_NetworkV1_AutoGetVirtualRouter_1(ctx context.Context, marshaler run
 
 }
 
+var (
+	filter_NetworkV1_AutoGetVirtualRouterPeeringGroup_0 = &utilities.DoubleArray{Encoding: map[string]int{"O": 0, "Tenant": 1, "Name": 2}, Base: []int{1, 1, 1, 2, 0, 0}, Check: []int{0, 1, 2, 2, 3, 4}}
+)
+
+func request_NetworkV1_AutoGetVirtualRouterPeeringGroup_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &VirtualRouterPeeringGroup{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Tenant"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Tenant")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Tenant", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	val, ok = pathParams["O.Name"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Name")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Name", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	if err := runtime.PopulateQueryParameters(protoReq, req.URL.Query(), filter_NetworkV1_AutoGetVirtualRouterPeeringGroup_0); err != nil {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.AutoGetVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+var (
+	filter_NetworkV1_AutoGetVirtualRouterPeeringGroup_1 = &utilities.DoubleArray{Encoding: map[string]int{"O": 0, "Name": 1}, Base: []int{1, 1, 1, 0}, Check: []int{0, 1, 2, 3}}
+)
+
+func request_NetworkV1_AutoGetVirtualRouterPeeringGroup_1(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &VirtualRouterPeeringGroup{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Name"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Name")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Name", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	if err := runtime.PopulateQueryParameters(protoReq, req.URL.Query(), filter_NetworkV1_AutoGetVirtualRouterPeeringGroup_1); err != nil {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.AutoGetVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
 func request_NetworkV1_AutoLabelIPAMPolicy_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	protoReq := &api.Label{}
 	var smetadata runtime.ServerMetadata
@@ -1792,6 +2125,117 @@ func request_NetworkV1_AutoLabelVirtualRouter_1(ctx context.Context, marshaler r
 	ctx = runtime.PopulateContextKV(ctx, kvMap)
 
 	msg, err := client.AutoLabelVirtualRouter(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+func request_NetworkV1_AutoLabelVirtualRouterPeeringGroup_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &api.Label{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Tenant"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Tenant")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Tenant", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	val, ok = pathParams["O.Name"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Name")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Name", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	msg, err := client.AutoLabelVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+func request_NetworkV1_AutoLabelVirtualRouterPeeringGroup_1(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &api.Label{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Name"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Name")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Name", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	msg, err := client.AutoLabelVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
 	return msg, smetadata, err
 
 }
@@ -2250,6 +2694,101 @@ func request_NetworkV1_AutoListVirtualRouter_1(ctx context.Context, marshaler ru
 
 }
 
+var (
+	filter_NetworkV1_AutoListVirtualRouterPeeringGroup_0 = &utilities.DoubleArray{Encoding: map[string]int{"O": 0, "Tenant": 1}, Base: []int{1, 1, 1, 0}, Check: []int{0, 1, 2, 3}}
+)
+
+func request_NetworkV1_AutoListVirtualRouterPeeringGroup_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &api.ListWatchOptions{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Tenant"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Tenant")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Tenant", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	if err := runtime.PopulateQueryParameters(protoReq, req.URL.Query(), filter_NetworkV1_AutoListVirtualRouterPeeringGroup_0); err != nil {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.AutoListVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+var (
+	filter_NetworkV1_AutoListVirtualRouterPeeringGroup_1 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
+func request_NetworkV1_AutoListVirtualRouterPeeringGroup_1(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &api.ListWatchOptions{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	if err := runtime.PopulateQueryParameters(protoReq, req.URL.Query(), filter_NetworkV1_AutoListVirtualRouterPeeringGroup_1); err != nil {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.AutoListVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
 func request_NetworkV1_AutoUpdateIPAMPolicy_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	protoReq := &IPAMPolicy{}
 	var smetadata runtime.ServerMetadata
@@ -2679,6 +3218,117 @@ func request_NetworkV1_AutoUpdateVirtualRouter_1(ctx context.Context, marshaler 
 	ctx = runtime.PopulateContextKV(ctx, kvMap)
 
 	msg, err := client.AutoUpdateVirtualRouter(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+func request_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &VirtualRouterPeeringGroup{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Tenant"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Tenant")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Tenant", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	val, ok = pathParams["O.Name"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Name")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Name", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	msg, err := client.AutoUpdateVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
+	return msg, smetadata, err
+
+}
+
+func request_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_1(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	protoReq := &VirtualRouterPeeringGroup{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Name"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Name")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Name", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	msg, err := client.AutoUpdateVirtualRouterPeeringGroup(ctx, protoReq, grpc.Header(&smetadata.HeaderMD), grpc.Trailer(&smetadata.TrailerMD))
 	return msg, smetadata, err
 
 }
@@ -3217,6 +3867,117 @@ func request_NetworkV1_AutoWatchVirtualRouter_1(ctx context.Context, marshaler r
 
 }
 
+var (
+	filter_NetworkV1_AutoWatchVirtualRouterPeeringGroup_0 = &utilities.DoubleArray{Encoding: map[string]int{"O": 0, "Tenant": 1}, Base: []int{1, 1, 1, 0}, Check: []int{0, 1, 2, 3}}
+)
+
+func request_NetworkV1_AutoWatchVirtualRouterPeeringGroup_0(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (NetworkV1_AutoWatchVirtualRouterPeeringGroupClient, runtime.ServerMetadata, error) {
+	protoReq := &api.ListWatchOptions{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	var (
+		val   string
+		ok    bool
+		err   error
+		_                       = err
+		kvMap map[string]string = make(map[string]string)
+	)
+
+	val, ok = pathParams["O.Tenant"]
+	if !ok {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "missing parameter %s", "O.Tenant")
+	}
+
+	err = runtime.PopulateFieldFromPath(protoReq, "O.Tenant", val)
+
+	if err != nil {
+		return nil, smetadata, err
+	}
+
+	ctx = runtime.PopulateContextKV(ctx, kvMap)
+
+	if err := runtime.PopulateQueryParameters(protoReq, req.URL.Query(), filter_NetworkV1_AutoWatchVirtualRouterPeeringGroup_0); err != nil {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	stream, err := client.AutoWatchVirtualRouterPeeringGroup(ctx, protoReq)
+	if err != nil {
+		return nil, smetadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, smetadata, err
+	}
+	smetadata.HeaderMD = header
+	return stream, smetadata, nil
+
+}
+
+var (
+	filter_NetworkV1_AutoWatchVirtualRouterPeeringGroup_1 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
+func request_NetworkV1_AutoWatchVirtualRouterPeeringGroup_1(ctx context.Context, marshaler runtime.Marshaler, client NetworkV1Client, req *http.Request, pathParams map[string]string) (NetworkV1_AutoWatchVirtualRouterPeeringGroupClient, runtime.ServerMetadata, error) {
+	protoReq := &api.ListWatchOptions{}
+	var smetadata runtime.ServerMetadata
+
+	ver := req.Header.Get("Grpc-Metadata-Req-Version")
+	if ver == "" {
+		ver = "all"
+	}
+	if req.ContentLength != 0 {
+		var buf bytes.Buffer
+		tee := io.TeeReader(req.Body, &buf)
+		if err := marshaler.NewDecoder(tee).Decode(protoReq); err != nil {
+			return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+		}
+		changed := protoReq.Defaults(ver)
+		if changed {
+			if err := marshaler.NewDecoder(&buf).Decode(protoReq); err != nil {
+				return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+			}
+		}
+	} else {
+		protoReq.Defaults(ver)
+	}
+
+	if err := runtime.PopulateQueryParameters(protoReq, req.URL.Query(), filter_NetworkV1_AutoWatchVirtualRouterPeeringGroup_1); err != nil {
+		return nil, smetadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	stream, err := client.AutoWatchVirtualRouterPeeringGroup(ctx, protoReq)
+	if err != nil {
+		return nil, smetadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, smetadata, err
+	}
+	smetadata.HeaderMD = header
+	return stream, smetadata, nil
+
+}
+
 // RegisterNetworkV1HandlerFromEndpoint is same as RegisterNetworkV1Handler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterNetworkV1HandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
@@ -3449,6 +4210,62 @@ func RegisterNetworkV1HandlerWithClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
+	mux.Handle("POST", pattern_NetworkV1_AutoAddVirtualRouterPeeringGroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoAddVirtualRouterPeeringGroup_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoAddVirtualRouterPeeringGroup_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_NetworkV1_AutoAddVirtualRouterPeeringGroup_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoAddVirtualRouterPeeringGroup_1(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoAddVirtualRouterPeeringGroup_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("DELETE", pattern_NetworkV1_AutoDeleteIPAMPolicy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -3642,6 +4459,62 @@ func RegisterNetworkV1HandlerWithClient(ctx context.Context, mux *runtime.ServeM
 		}
 
 		forward_NetworkV1_AutoDeleteVirtualRouter_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("DELETE", pattern_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("DELETE", pattern_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_1(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -3925,6 +4798,62 @@ func RegisterNetworkV1HandlerWithClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
+	mux.Handle("GET", pattern_NetworkV1_AutoGetVirtualRouterPeeringGroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoGetVirtualRouterPeeringGroup_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoGetVirtualRouterPeeringGroup_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_NetworkV1_AutoGetVirtualRouterPeeringGroup_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoGetVirtualRouterPeeringGroup_1(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoGetVirtualRouterPeeringGroup_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("POST", pattern_NetworkV1_AutoLabelIPAMPolicy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -4146,6 +5075,62 @@ func RegisterNetworkV1HandlerWithClient(ctx context.Context, mux *runtime.ServeM
 		}
 
 		forward_NetworkV1_AutoLabelVirtualRouter_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_NetworkV1_AutoLabelVirtualRouterPeeringGroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoLabelVirtualRouterPeeringGroup_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoLabelVirtualRouterPeeringGroup_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_NetworkV1_AutoLabelVirtualRouterPeeringGroup_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoLabelVirtualRouterPeeringGroup_1(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoLabelVirtualRouterPeeringGroup_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -4429,6 +5414,62 @@ func RegisterNetworkV1HandlerWithClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
+	mux.Handle("GET", pattern_NetworkV1_AutoListVirtualRouterPeeringGroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoListVirtualRouterPeeringGroup_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoListVirtualRouterPeeringGroup_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_NetworkV1_AutoListVirtualRouterPeeringGroup_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoListVirtualRouterPeeringGroup_1(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoListVirtualRouterPeeringGroup_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("PUT", pattern_NetworkV1_AutoUpdateIPAMPolicy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -4650,6 +5691,62 @@ func RegisterNetworkV1HandlerWithClient(ctx context.Context, mux *runtime.ServeM
 		}
 
 		forward_NetworkV1_AutoUpdateVirtualRouter_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("PUT", pattern_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("PUT", pattern_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		resp, md, err := request_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_1(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_1(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -5203,6 +6300,116 @@ func RegisterNetworkV1HandlerWithClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
+	mux.Handle("GET", pattern_NetworkV1_AutoWatchVirtualRouterPeeringGroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		ws := false
+		rctx = apiutils.SetVar(rctx, apiutils.CtxKeyAPIGwBinStreamReq, false)
+		if websocket.IsWebSocketUpgrade(req) {
+			ws = true
+			rctx = apiutils.SetVar(rctx, apiutils.CtxKeyAPIGwHTTPReq, req)
+			apiutils.SetVar(rctx, apiutils.CtxKeyAPIGwHTTPWriter, w)
+			apiutils.SetVar(rctx, apiutils.CtxKeyAPIGwWebSocketWatch, true)
+		}
+		resp, md, err := request_NetworkV1_AutoWatchVirtualRouterPeeringGroup_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		if ws {
+			ic, ok := apiutils.GetVar(rctx, apiutils.CtxKeyAPIGwWebSocketConn)
+			if !ok {
+				runtime.HTTPError(ctx, outboundMarshaler, w, req, errors.New("error recovering we socket"))
+				return
+			}
+			conn := ic.(*websocket.Conn)
+			runtime.FowardResponseStreamToWebSocket(ctx, outboundMarshaler, w, req, conn, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+		} else {
+			bs, ok := apiutils.GetVar(rctx, apiutils.CtxKeyAPIGwBinStreamReq)
+			if !ok {
+				runtime.HTTPError(ctx, outboundMarshaler, w, req, errors.New("error recovering binary stream information"))
+				return
+			}
+			if bs.(bool) {
+				runtime.ForwardBinaryResponseStream(ctx, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+			} else {
+				forward_NetworkV1_AutoWatchVirtualRouterPeeringGroup_0(ctx, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+			}
+		}
+
+	})
+
+	mux.Handle("GET", pattern_NetworkV1_AutoWatchVirtualRouterPeeringGroup_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, req)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+		}
+		ws := false
+		rctx = apiutils.SetVar(rctx, apiutils.CtxKeyAPIGwBinStreamReq, false)
+		if websocket.IsWebSocketUpgrade(req) {
+			ws = true
+			rctx = apiutils.SetVar(rctx, apiutils.CtxKeyAPIGwHTTPReq, req)
+			apiutils.SetVar(rctx, apiutils.CtxKeyAPIGwHTTPWriter, w)
+			apiutils.SetVar(rctx, apiutils.CtxKeyAPIGwWebSocketWatch, true)
+		}
+		resp, md, err := request_NetworkV1_AutoWatchVirtualRouterPeeringGroup_1(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
+			return
+		}
+
+		if ws {
+			ic, ok := apiutils.GetVar(rctx, apiutils.CtxKeyAPIGwWebSocketConn)
+			if !ok {
+				runtime.HTTPError(ctx, outboundMarshaler, w, req, errors.New("error recovering we socket"))
+				return
+			}
+			conn := ic.(*websocket.Conn)
+			runtime.FowardResponseStreamToWebSocket(ctx, outboundMarshaler, w, req, conn, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+		} else {
+			bs, ok := apiutils.GetVar(rctx, apiutils.CtxKeyAPIGwBinStreamReq)
+			if !ok {
+				runtime.HTTPError(ctx, outboundMarshaler, w, req, errors.New("error recovering binary stream information"))
+				return
+			}
+			if bs.(bool) {
+				runtime.ForwardBinaryResponseStream(ctx, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+			} else {
+				forward_NetworkV1_AutoWatchVirtualRouterPeeringGroup_1(ctx, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+			}
+		}
+
+	})
+
 	return nil
 }
 
@@ -5221,6 +6428,10 @@ var (
 
 	pattern_NetworkV1_AutoAddVirtualRouter_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"virtualrouters"}, ""))
 
+	pattern_NetworkV1_AutoAddVirtualRouterPeeringGroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"tenant", "O.Tenant", "virtual-router-peering-groups"}, ""))
+
+	pattern_NetworkV1_AutoAddVirtualRouterPeeringGroup_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"virtual-router-peering-groups"}, ""))
+
 	pattern_NetworkV1_AutoDeleteIPAMPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"tenant", "O.Tenant", "ipam-policies", "O.Name"}, ""))
 
 	pattern_NetworkV1_AutoDeleteIPAMPolicy_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"ipam-policies", "O.Name"}, ""))
@@ -5234,6 +6445,10 @@ var (
 	pattern_NetworkV1_AutoDeleteVirtualRouter_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"tenant", "O.Tenant", "virtualrouters", "O.Name"}, ""))
 
 	pattern_NetworkV1_AutoDeleteVirtualRouter_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"virtualrouters", "O.Name"}, ""))
+
+	pattern_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"tenant", "O.Tenant", "virtual-router-peering-groups", "O.Name"}, ""))
+
+	pattern_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"virtual-router-peering-groups", "O.Name"}, ""))
 
 	pattern_NetworkV1_AutoGetIPAMPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"tenant", "O.Tenant", "ipam-policies", "O.Name"}, ""))
 
@@ -5255,6 +6470,10 @@ var (
 
 	pattern_NetworkV1_AutoGetVirtualRouter_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"virtualrouters", "O.Name"}, ""))
 
+	pattern_NetworkV1_AutoGetVirtualRouterPeeringGroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"tenant", "O.Tenant", "virtual-router-peering-groups", "O.Name"}, ""))
+
+	pattern_NetworkV1_AutoGetVirtualRouterPeeringGroup_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"virtual-router-peering-groups", "O.Name"}, ""))
+
 	pattern_NetworkV1_AutoLabelIPAMPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"tenant", "O.Tenant", "ipam-policies", "O.Name", "label"}, ""))
 
 	pattern_NetworkV1_AutoLabelIPAMPolicy_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"ipam-policies", "O.Name", "label"}, ""))
@@ -5270,6 +6489,10 @@ var (
 	pattern_NetworkV1_AutoLabelVirtualRouter_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"tenant", "O.Tenant", "virtualrouters", "O.Name", "label"}, ""))
 
 	pattern_NetworkV1_AutoLabelVirtualRouter_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"virtualrouters", "O.Name", "label"}, ""))
+
+	pattern_NetworkV1_AutoLabelVirtualRouterPeeringGroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"tenant", "O.Tenant", "virtual-router-peering-groups", "O.Name", "label"}, ""))
+
+	pattern_NetworkV1_AutoLabelVirtualRouterPeeringGroup_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"virtual-router-peering-groups", "O.Name", "label"}, ""))
 
 	pattern_NetworkV1_AutoListIPAMPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"tenant", "O.Tenant", "ipam-policies"}, ""))
 
@@ -5291,6 +6514,10 @@ var (
 
 	pattern_NetworkV1_AutoListVirtualRouter_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"virtualrouters"}, ""))
 
+	pattern_NetworkV1_AutoListVirtualRouterPeeringGroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"tenant", "O.Tenant", "virtual-router-peering-groups"}, ""))
+
+	pattern_NetworkV1_AutoListVirtualRouterPeeringGroup_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"virtual-router-peering-groups"}, ""))
+
 	pattern_NetworkV1_AutoUpdateIPAMPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"tenant", "O.Tenant", "ipam-policies", "O.Name"}, ""))
 
 	pattern_NetworkV1_AutoUpdateIPAMPolicy_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"ipam-policies", "O.Name"}, ""))
@@ -5306,6 +6533,10 @@ var (
 	pattern_NetworkV1_AutoUpdateVirtualRouter_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"tenant", "O.Tenant", "virtualrouters", "O.Name"}, ""))
 
 	pattern_NetworkV1_AutoUpdateVirtualRouter_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"virtualrouters", "O.Name"}, ""))
+
+	pattern_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"tenant", "O.Tenant", "virtual-router-peering-groups", "O.Name"}, ""))
+
+	pattern_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"virtual-router-peering-groups", "O.Name"}, ""))
 
 	pattern_NetworkV1_AutoWatchIPAMPolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"watch", "tenant", "O.Tenant", "ipam-policies"}, ""))
 
@@ -5326,6 +6557,10 @@ var (
 	pattern_NetworkV1_AutoWatchVirtualRouter_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"watch", "tenant", "O.Tenant", "virtualrouters"}, ""))
 
 	pattern_NetworkV1_AutoWatchVirtualRouter_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"watch", "virtualrouters"}, ""))
+
+	pattern_NetworkV1_AutoWatchVirtualRouterPeeringGroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"watch", "tenant", "O.Tenant", "virtual-router-peering-groups"}, ""))
+
+	pattern_NetworkV1_AutoWatchVirtualRouterPeeringGroup_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"watch", "virtual-router-peering-groups"}, ""))
 )
 
 var (
@@ -5343,6 +6578,10 @@ var (
 
 	forward_NetworkV1_AutoAddVirtualRouter_1 = runtime.ForwardResponseMessage
 
+	forward_NetworkV1_AutoAddVirtualRouterPeeringGroup_0 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoAddVirtualRouterPeeringGroup_1 = runtime.ForwardResponseMessage
+
 	forward_NetworkV1_AutoDeleteIPAMPolicy_0 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoDeleteIPAMPolicy_1 = runtime.ForwardResponseMessage
@@ -5356,6 +6595,10 @@ var (
 	forward_NetworkV1_AutoDeleteVirtualRouter_0 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoDeleteVirtualRouter_1 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_0 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoDeleteVirtualRouterPeeringGroup_1 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoGetIPAMPolicy_0 = runtime.ForwardResponseMessage
 
@@ -5377,6 +6620,10 @@ var (
 
 	forward_NetworkV1_AutoGetVirtualRouter_1 = runtime.ForwardResponseMessage
 
+	forward_NetworkV1_AutoGetVirtualRouterPeeringGroup_0 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoGetVirtualRouterPeeringGroup_1 = runtime.ForwardResponseMessage
+
 	forward_NetworkV1_AutoLabelIPAMPolicy_0 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoLabelIPAMPolicy_1 = runtime.ForwardResponseMessage
@@ -5392,6 +6639,10 @@ var (
 	forward_NetworkV1_AutoLabelVirtualRouter_0 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoLabelVirtualRouter_1 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoLabelVirtualRouterPeeringGroup_0 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoLabelVirtualRouterPeeringGroup_1 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoListIPAMPolicy_0 = runtime.ForwardResponseMessage
 
@@ -5413,6 +6664,10 @@ var (
 
 	forward_NetworkV1_AutoListVirtualRouter_1 = runtime.ForwardResponseMessage
 
+	forward_NetworkV1_AutoListVirtualRouterPeeringGroup_0 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoListVirtualRouterPeeringGroup_1 = runtime.ForwardResponseMessage
+
 	forward_NetworkV1_AutoUpdateIPAMPolicy_0 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoUpdateIPAMPolicy_1 = runtime.ForwardResponseMessage
@@ -5428,6 +6683,10 @@ var (
 	forward_NetworkV1_AutoUpdateVirtualRouter_0 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoUpdateVirtualRouter_1 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_0 = runtime.ForwardResponseMessage
+
+	forward_NetworkV1_AutoUpdateVirtualRouterPeeringGroup_1 = runtime.ForwardResponseMessage
 
 	forward_NetworkV1_AutoWatchIPAMPolicy_0 = runtime.ForwardResponseStream
 
@@ -5448,4 +6707,8 @@ var (
 	forward_NetworkV1_AutoWatchVirtualRouter_0 = runtime.ForwardResponseStream
 
 	forward_NetworkV1_AutoWatchVirtualRouter_1 = runtime.ForwardResponseStream
+
+	forward_NetworkV1_AutoWatchVirtualRouterPeeringGroup_0 = runtime.ForwardResponseStream
+
+	forward_NetworkV1_AutoWatchVirtualRouterPeeringGroup_1 = runtime.ForwardResponseStream
 )

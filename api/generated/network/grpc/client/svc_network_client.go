@@ -142,6 +142,20 @@ func NewNetworkV1(conn *grpc.ClientConn, logger log.Logger) network.ServiceNetwo
 		).Endpoint()
 		lAutoAddVirtualRouterEndpoint = trace.ClientEndPoint("NetworkV1:AutoAddVirtualRouter")(lAutoAddVirtualRouterEndpoint)
 	}
+	var lAutoAddVirtualRouterPeeringGroupEndpoint endpoint.Endpoint
+	{
+		lAutoAddVirtualRouterPeeringGroupEndpoint = grpctransport.NewClient(
+			conn,
+			"network.NetworkV1",
+			"AutoAddVirtualRouterPeeringGroup",
+			network.EncodeGrpcReqVirtualRouterPeeringGroup,
+			network.DecodeGrpcRespVirtualRouterPeeringGroup,
+			&network.VirtualRouterPeeringGroup{},
+			grpctransport.ClientBefore(trace.ToGRPCRequest(logger)),
+			grpctransport.ClientBefore(dummyBefore),
+		).Endpoint()
+		lAutoAddVirtualRouterPeeringGroupEndpoint = trace.ClientEndPoint("NetworkV1:AutoAddVirtualRouterPeeringGroup")(lAutoAddVirtualRouterPeeringGroupEndpoint)
+	}
 	var lAutoDeleteIPAMPolicyEndpoint endpoint.Endpoint
 	{
 		lAutoDeleteIPAMPolicyEndpoint = grpctransport.NewClient(
@@ -253,6 +267,20 @@ func NewNetworkV1(conn *grpc.ClientConn, logger log.Logger) network.ServiceNetwo
 			grpctransport.ClientBefore(dummyBefore),
 		).Endpoint()
 		lAutoDeleteVirtualRouterEndpoint = trace.ClientEndPoint("NetworkV1:AutoDeleteVirtualRouter")(lAutoDeleteVirtualRouterEndpoint)
+	}
+	var lAutoDeleteVirtualRouterPeeringGroupEndpoint endpoint.Endpoint
+	{
+		lAutoDeleteVirtualRouterPeeringGroupEndpoint = grpctransport.NewClient(
+			conn,
+			"network.NetworkV1",
+			"AutoDeleteVirtualRouterPeeringGroup",
+			network.EncodeGrpcReqVirtualRouterPeeringGroup,
+			network.DecodeGrpcRespVirtualRouterPeeringGroup,
+			&network.VirtualRouterPeeringGroup{},
+			grpctransport.ClientBefore(trace.ToGRPCRequest(logger)),
+			grpctransport.ClientBefore(dummyBefore),
+		).Endpoint()
+		lAutoDeleteVirtualRouterPeeringGroupEndpoint = trace.ClientEndPoint("NetworkV1:AutoDeleteVirtualRouterPeeringGroup")(lAutoDeleteVirtualRouterPeeringGroupEndpoint)
 	}
 	var lAutoGetIPAMPolicyEndpoint endpoint.Endpoint
 	{
@@ -366,6 +394,20 @@ func NewNetworkV1(conn *grpc.ClientConn, logger log.Logger) network.ServiceNetwo
 		).Endpoint()
 		lAutoGetVirtualRouterEndpoint = trace.ClientEndPoint("NetworkV1:AutoGetVirtualRouter")(lAutoGetVirtualRouterEndpoint)
 	}
+	var lAutoGetVirtualRouterPeeringGroupEndpoint endpoint.Endpoint
+	{
+		lAutoGetVirtualRouterPeeringGroupEndpoint = grpctransport.NewClient(
+			conn,
+			"network.NetworkV1",
+			"AutoGetVirtualRouterPeeringGroup",
+			network.EncodeGrpcReqVirtualRouterPeeringGroup,
+			network.DecodeGrpcRespVirtualRouterPeeringGroup,
+			&network.VirtualRouterPeeringGroup{},
+			grpctransport.ClientBefore(trace.ToGRPCRequest(logger)),
+			grpctransport.ClientBefore(dummyBefore),
+		).Endpoint()
+		lAutoGetVirtualRouterPeeringGroupEndpoint = trace.ClientEndPoint("NetworkV1:AutoGetVirtualRouterPeeringGroup")(lAutoGetVirtualRouterPeeringGroupEndpoint)
+	}
 	var lAutoLabelIPAMPolicyEndpoint endpoint.Endpoint
 	{
 		lAutoLabelIPAMPolicyEndpoint = grpctransport.NewClient(
@@ -477,6 +519,20 @@ func NewNetworkV1(conn *grpc.ClientConn, logger log.Logger) network.ServiceNetwo
 			grpctransport.ClientBefore(dummyBefore),
 		).Endpoint()
 		lAutoLabelVirtualRouterEndpoint = trace.ClientEndPoint("NetworkV1:AutoLabelVirtualRouter")(lAutoLabelVirtualRouterEndpoint)
+	}
+	var lAutoLabelVirtualRouterPeeringGroupEndpoint endpoint.Endpoint
+	{
+		lAutoLabelVirtualRouterPeeringGroupEndpoint = grpctransport.NewClient(
+			conn,
+			"network.NetworkV1",
+			"AutoLabelVirtualRouterPeeringGroup",
+			network.EncodeGrpcReqLabel,
+			network.DecodeGrpcRespVirtualRouterPeeringGroup,
+			&network.VirtualRouterPeeringGroup{},
+			grpctransport.ClientBefore(trace.ToGRPCRequest(logger)),
+			grpctransport.ClientBefore(dummyBefore),
+		).Endpoint()
+		lAutoLabelVirtualRouterPeeringGroupEndpoint = trace.ClientEndPoint("NetworkV1:AutoLabelVirtualRouterPeeringGroup")(lAutoLabelVirtualRouterPeeringGroupEndpoint)
 	}
 	var lAutoListIPAMPolicyEndpoint endpoint.Endpoint
 	{
@@ -590,6 +646,20 @@ func NewNetworkV1(conn *grpc.ClientConn, logger log.Logger) network.ServiceNetwo
 		).Endpoint()
 		lAutoListVirtualRouterEndpoint = trace.ClientEndPoint("NetworkV1:AutoListVirtualRouter")(lAutoListVirtualRouterEndpoint)
 	}
+	var lAutoListVirtualRouterPeeringGroupEndpoint endpoint.Endpoint
+	{
+		lAutoListVirtualRouterPeeringGroupEndpoint = grpctransport.NewClient(
+			conn,
+			"network.NetworkV1",
+			"AutoListVirtualRouterPeeringGroup",
+			network.EncodeGrpcReqListWatchOptions,
+			network.DecodeGrpcRespVirtualRouterPeeringGroupList,
+			&network.VirtualRouterPeeringGroupList{},
+			grpctransport.ClientBefore(trace.ToGRPCRequest(logger)),
+			grpctransport.ClientBefore(dummyBefore),
+		).Endpoint()
+		lAutoListVirtualRouterPeeringGroupEndpoint = trace.ClientEndPoint("NetworkV1:AutoListVirtualRouterPeeringGroup")(lAutoListVirtualRouterPeeringGroupEndpoint)
+	}
 	var lAutoUpdateIPAMPolicyEndpoint endpoint.Endpoint
 	{
 		lAutoUpdateIPAMPolicyEndpoint = grpctransport.NewClient(
@@ -702,57 +772,77 @@ func NewNetworkV1(conn *grpc.ClientConn, logger log.Logger) network.ServiceNetwo
 		).Endpoint()
 		lAutoUpdateVirtualRouterEndpoint = trace.ClientEndPoint("NetworkV1:AutoUpdateVirtualRouter")(lAutoUpdateVirtualRouterEndpoint)
 	}
+	var lAutoUpdateVirtualRouterPeeringGroupEndpoint endpoint.Endpoint
+	{
+		lAutoUpdateVirtualRouterPeeringGroupEndpoint = grpctransport.NewClient(
+			conn,
+			"network.NetworkV1",
+			"AutoUpdateVirtualRouterPeeringGroup",
+			network.EncodeGrpcReqVirtualRouterPeeringGroup,
+			network.DecodeGrpcRespVirtualRouterPeeringGroup,
+			&network.VirtualRouterPeeringGroup{},
+			grpctransport.ClientBefore(trace.ToGRPCRequest(logger)),
+			grpctransport.ClientBefore(dummyBefore),
+		).Endpoint()
+		lAutoUpdateVirtualRouterPeeringGroupEndpoint = trace.ClientEndPoint("NetworkV1:AutoUpdateVirtualRouterPeeringGroup")(lAutoUpdateVirtualRouterPeeringGroupEndpoint)
+	}
 	return network.EndpointsNetworkV1Client{
 		Client: network.NewNetworkV1Client(conn),
 
-		AutoAddIPAMPolicyEndpoint:          lAutoAddIPAMPolicyEndpoint,
-		AutoAddLbPolicyEndpoint:            lAutoAddLbPolicyEndpoint,
-		AutoAddNetworkEndpoint:             lAutoAddNetworkEndpoint,
-		AutoAddNetworkInterfaceEndpoint:    lAutoAddNetworkInterfaceEndpoint,
-		AutoAddRouteTableEndpoint:          lAutoAddRouteTableEndpoint,
-		AutoAddRoutingConfigEndpoint:       lAutoAddRoutingConfigEndpoint,
-		AutoAddServiceEndpoint:             lAutoAddServiceEndpoint,
-		AutoAddVirtualRouterEndpoint:       lAutoAddVirtualRouterEndpoint,
-		AutoDeleteIPAMPolicyEndpoint:       lAutoDeleteIPAMPolicyEndpoint,
-		AutoDeleteLbPolicyEndpoint:         lAutoDeleteLbPolicyEndpoint,
-		AutoDeleteNetworkEndpoint:          lAutoDeleteNetworkEndpoint,
-		AutoDeleteNetworkInterfaceEndpoint: lAutoDeleteNetworkInterfaceEndpoint,
-		AutoDeleteRouteTableEndpoint:       lAutoDeleteRouteTableEndpoint,
-		AutoDeleteRoutingConfigEndpoint:    lAutoDeleteRoutingConfigEndpoint,
-		AutoDeleteServiceEndpoint:          lAutoDeleteServiceEndpoint,
-		AutoDeleteVirtualRouterEndpoint:    lAutoDeleteVirtualRouterEndpoint,
-		AutoGetIPAMPolicyEndpoint:          lAutoGetIPAMPolicyEndpoint,
-		AutoGetLbPolicyEndpoint:            lAutoGetLbPolicyEndpoint,
-		AutoGetNetworkEndpoint:             lAutoGetNetworkEndpoint,
-		AutoGetNetworkInterfaceEndpoint:    lAutoGetNetworkInterfaceEndpoint,
-		AutoGetRouteTableEndpoint:          lAutoGetRouteTableEndpoint,
-		AutoGetRoutingConfigEndpoint:       lAutoGetRoutingConfigEndpoint,
-		AutoGetServiceEndpoint:             lAutoGetServiceEndpoint,
-		AutoGetVirtualRouterEndpoint:       lAutoGetVirtualRouterEndpoint,
-		AutoLabelIPAMPolicyEndpoint:        lAutoLabelIPAMPolicyEndpoint,
-		AutoLabelLbPolicyEndpoint:          lAutoLabelLbPolicyEndpoint,
-		AutoLabelNetworkEndpoint:           lAutoLabelNetworkEndpoint,
-		AutoLabelNetworkInterfaceEndpoint:  lAutoLabelNetworkInterfaceEndpoint,
-		AutoLabelRouteTableEndpoint:        lAutoLabelRouteTableEndpoint,
-		AutoLabelRoutingConfigEndpoint:     lAutoLabelRoutingConfigEndpoint,
-		AutoLabelServiceEndpoint:           lAutoLabelServiceEndpoint,
-		AutoLabelVirtualRouterEndpoint:     lAutoLabelVirtualRouterEndpoint,
-		AutoListIPAMPolicyEndpoint:         lAutoListIPAMPolicyEndpoint,
-		AutoListLbPolicyEndpoint:           lAutoListLbPolicyEndpoint,
-		AutoListNetworkEndpoint:            lAutoListNetworkEndpoint,
-		AutoListNetworkInterfaceEndpoint:   lAutoListNetworkInterfaceEndpoint,
-		AutoListRouteTableEndpoint:         lAutoListRouteTableEndpoint,
-		AutoListRoutingConfigEndpoint:      lAutoListRoutingConfigEndpoint,
-		AutoListServiceEndpoint:            lAutoListServiceEndpoint,
-		AutoListVirtualRouterEndpoint:      lAutoListVirtualRouterEndpoint,
-		AutoUpdateIPAMPolicyEndpoint:       lAutoUpdateIPAMPolicyEndpoint,
-		AutoUpdateLbPolicyEndpoint:         lAutoUpdateLbPolicyEndpoint,
-		AutoUpdateNetworkEndpoint:          lAutoUpdateNetworkEndpoint,
-		AutoUpdateNetworkInterfaceEndpoint: lAutoUpdateNetworkInterfaceEndpoint,
-		AutoUpdateRouteTableEndpoint:       lAutoUpdateRouteTableEndpoint,
-		AutoUpdateRoutingConfigEndpoint:    lAutoUpdateRoutingConfigEndpoint,
-		AutoUpdateServiceEndpoint:          lAutoUpdateServiceEndpoint,
-		AutoUpdateVirtualRouterEndpoint:    lAutoUpdateVirtualRouterEndpoint,
+		AutoAddIPAMPolicyEndpoint:                   lAutoAddIPAMPolicyEndpoint,
+		AutoAddLbPolicyEndpoint:                     lAutoAddLbPolicyEndpoint,
+		AutoAddNetworkEndpoint:                      lAutoAddNetworkEndpoint,
+		AutoAddNetworkInterfaceEndpoint:             lAutoAddNetworkInterfaceEndpoint,
+		AutoAddRouteTableEndpoint:                   lAutoAddRouteTableEndpoint,
+		AutoAddRoutingConfigEndpoint:                lAutoAddRoutingConfigEndpoint,
+		AutoAddServiceEndpoint:                      lAutoAddServiceEndpoint,
+		AutoAddVirtualRouterEndpoint:                lAutoAddVirtualRouterEndpoint,
+		AutoAddVirtualRouterPeeringGroupEndpoint:    lAutoAddVirtualRouterPeeringGroupEndpoint,
+		AutoDeleteIPAMPolicyEndpoint:                lAutoDeleteIPAMPolicyEndpoint,
+		AutoDeleteLbPolicyEndpoint:                  lAutoDeleteLbPolicyEndpoint,
+		AutoDeleteNetworkEndpoint:                   lAutoDeleteNetworkEndpoint,
+		AutoDeleteNetworkInterfaceEndpoint:          lAutoDeleteNetworkInterfaceEndpoint,
+		AutoDeleteRouteTableEndpoint:                lAutoDeleteRouteTableEndpoint,
+		AutoDeleteRoutingConfigEndpoint:             lAutoDeleteRoutingConfigEndpoint,
+		AutoDeleteServiceEndpoint:                   lAutoDeleteServiceEndpoint,
+		AutoDeleteVirtualRouterEndpoint:             lAutoDeleteVirtualRouterEndpoint,
+		AutoDeleteVirtualRouterPeeringGroupEndpoint: lAutoDeleteVirtualRouterPeeringGroupEndpoint,
+		AutoGetIPAMPolicyEndpoint:                   lAutoGetIPAMPolicyEndpoint,
+		AutoGetLbPolicyEndpoint:                     lAutoGetLbPolicyEndpoint,
+		AutoGetNetworkEndpoint:                      lAutoGetNetworkEndpoint,
+		AutoGetNetworkInterfaceEndpoint:             lAutoGetNetworkInterfaceEndpoint,
+		AutoGetRouteTableEndpoint:                   lAutoGetRouteTableEndpoint,
+		AutoGetRoutingConfigEndpoint:                lAutoGetRoutingConfigEndpoint,
+		AutoGetServiceEndpoint:                      lAutoGetServiceEndpoint,
+		AutoGetVirtualRouterEndpoint:                lAutoGetVirtualRouterEndpoint,
+		AutoGetVirtualRouterPeeringGroupEndpoint:    lAutoGetVirtualRouterPeeringGroupEndpoint,
+		AutoLabelIPAMPolicyEndpoint:                 lAutoLabelIPAMPolicyEndpoint,
+		AutoLabelLbPolicyEndpoint:                   lAutoLabelLbPolicyEndpoint,
+		AutoLabelNetworkEndpoint:                    lAutoLabelNetworkEndpoint,
+		AutoLabelNetworkInterfaceEndpoint:           lAutoLabelNetworkInterfaceEndpoint,
+		AutoLabelRouteTableEndpoint:                 lAutoLabelRouteTableEndpoint,
+		AutoLabelRoutingConfigEndpoint:              lAutoLabelRoutingConfigEndpoint,
+		AutoLabelServiceEndpoint:                    lAutoLabelServiceEndpoint,
+		AutoLabelVirtualRouterEndpoint:              lAutoLabelVirtualRouterEndpoint,
+		AutoLabelVirtualRouterPeeringGroupEndpoint:  lAutoLabelVirtualRouterPeeringGroupEndpoint,
+		AutoListIPAMPolicyEndpoint:                  lAutoListIPAMPolicyEndpoint,
+		AutoListLbPolicyEndpoint:                    lAutoListLbPolicyEndpoint,
+		AutoListNetworkEndpoint:                     lAutoListNetworkEndpoint,
+		AutoListNetworkInterfaceEndpoint:            lAutoListNetworkInterfaceEndpoint,
+		AutoListRouteTableEndpoint:                  lAutoListRouteTableEndpoint,
+		AutoListRoutingConfigEndpoint:               lAutoListRoutingConfigEndpoint,
+		AutoListServiceEndpoint:                     lAutoListServiceEndpoint,
+		AutoListVirtualRouterEndpoint:               lAutoListVirtualRouterEndpoint,
+		AutoListVirtualRouterPeeringGroupEndpoint:   lAutoListVirtualRouterPeeringGroupEndpoint,
+		AutoUpdateIPAMPolicyEndpoint:                lAutoUpdateIPAMPolicyEndpoint,
+		AutoUpdateLbPolicyEndpoint:                  lAutoUpdateLbPolicyEndpoint,
+		AutoUpdateNetworkEndpoint:                   lAutoUpdateNetworkEndpoint,
+		AutoUpdateNetworkInterfaceEndpoint:          lAutoUpdateNetworkInterfaceEndpoint,
+		AutoUpdateRouteTableEndpoint:                lAutoUpdateRouteTableEndpoint,
+		AutoUpdateRoutingConfigEndpoint:             lAutoUpdateRoutingConfigEndpoint,
+		AutoUpdateServiceEndpoint:                   lAutoUpdateServiceEndpoint,
+		AutoUpdateVirtualRouterEndpoint:             lAutoUpdateVirtualRouterEndpoint,
+		AutoUpdateVirtualRouterPeeringGroupEndpoint: lAutoUpdateVirtualRouterPeeringGroupEndpoint,
 	}
 }
 
@@ -2421,18 +2511,227 @@ func (a *restObjNetworkV1RouteTable) Allowed(oper apiintf.APIOperType) bool {
 	}
 }
 
+type grpcObjNetworkV1VirtualRouterPeeringGroup struct {
+	logger log.Logger
+	client network.ServiceNetworkV1Client
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) Create(ctx context.Context, in *network.VirtualRouterPeeringGroup) (*network.VirtualRouterPeeringGroup, error) {
+	a.logger.DebugLog("msg", "received call", "object", "VirtualRouterPeeringGroup", "oper", "create")
+	if in == nil {
+		return nil, errors.New("invalid input")
+	}
+	nctx := addVersion(ctx, "v1")
+	return a.client.AutoAddVirtualRouterPeeringGroup(nctx, in)
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) Update(ctx context.Context, in *network.VirtualRouterPeeringGroup) (*network.VirtualRouterPeeringGroup, error) {
+	a.logger.DebugLog("msg", "received call", "object", "VirtualRouterPeeringGroup", "oper", "update")
+	if in == nil {
+		return nil, errors.New("invalid input")
+	}
+	nctx := addVersion(ctx, "v1")
+	return a.client.AutoUpdateVirtualRouterPeeringGroup(nctx, in)
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) UpdateStatus(ctx context.Context, in *network.VirtualRouterPeeringGroup) (*network.VirtualRouterPeeringGroup, error) {
+	a.logger.DebugLog("msg", "received call", "object", "VirtualRouterPeeringGroup", "oper", "update")
+	if in == nil {
+		return nil, errors.New("invalid input")
+	}
+	nctx := addVersion(ctx, "v1")
+	nctx = addStatusUpd(nctx)
+	return a.client.AutoUpdateVirtualRouterPeeringGroup(nctx, in)
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) Label(ctx context.Context, in *api.Label) (*network.VirtualRouterPeeringGroup, error) {
+	a.logger.DebugLog("msg", "received call", "object", "VirtualRouterPeeringGroup", "oper", "label")
+	if in == nil {
+		return nil, errors.New("invalid input")
+	}
+	nctx := addVersion(ctx, "v1")
+	return a.client.AutoLabelVirtualRouterPeeringGroup(nctx, in)
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) Get(ctx context.Context, objMeta *api.ObjectMeta) (*network.VirtualRouterPeeringGroup, error) {
+	a.logger.DebugLog("msg", "received call", "object", "VirtualRouterPeeringGroup", "oper", "get")
+	if objMeta == nil {
+		return nil, errors.New("invalid input")
+	}
+	in := network.VirtualRouterPeeringGroup{}
+	in.ObjectMeta = *objMeta
+	nctx := addVersion(ctx, "v1")
+	return a.client.AutoGetVirtualRouterPeeringGroup(nctx, &in)
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) Delete(ctx context.Context, objMeta *api.ObjectMeta) (*network.VirtualRouterPeeringGroup, error) {
+	a.logger.DebugLog("msg", "received call", "object", "VirtualRouterPeeringGroup", "oper", "delete")
+	if objMeta == nil {
+		return nil, errors.New("invalid input")
+	}
+	in := network.VirtualRouterPeeringGroup{}
+	in.ObjectMeta = *objMeta
+	nctx := addVersion(ctx, "v1")
+	return a.client.AutoDeleteVirtualRouterPeeringGroup(nctx, &in)
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) List(ctx context.Context, options *api.ListWatchOptions) ([]*network.VirtualRouterPeeringGroup, error) {
+	a.logger.DebugLog("msg", "received call", "object", "VirtualRouterPeeringGroup", "oper", "list")
+	if options == nil {
+		return nil, errors.New("invalid input")
+	}
+	nctx := addVersion(ctx, "v1")
+	r, err := a.client.AutoListVirtualRouterPeeringGroup(nctx, options)
+	if err == nil {
+		return r.Items, nil
+	}
+	return nil, err
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) Watch(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error) {
+	a.logger.DebugLog("msg", "received call", "object", "VirtualRouterPeeringGroup", "oper", "WatchOper")
+	nctx := addVersion(ctx, "v1")
+	if options == nil {
+		return nil, errors.New("invalid input")
+	}
+	stream, err := a.client.AutoWatchVirtualRouterPeeringGroup(nctx, options)
+	if err != nil {
+		return nil, err
+	}
+	wstream := stream.(network.NetworkV1_AutoWatchVirtualRouterPeeringGroupClient)
+	bridgefn := func(lw *listerwatcher.WatcherClient) {
+		for {
+			r, err := wstream.Recv()
+			if err != nil {
+				a.logger.ErrorLog("msg", "error on receive", "err", err)
+				close(lw.OutCh)
+				return
+			}
+			for _, e := range r.Events {
+				ev := kvstore.WatchEvent{
+					Type:   kvstore.WatchEventType(e.Type),
+					Object: e.Object,
+				}
+				select {
+				case lw.OutCh <- &ev:
+				case <-wstream.Context().Done():
+					close(lw.OutCh)
+					return
+				}
+			}
+		}
+	}
+	lw := listerwatcher.NewWatcherClient(wstream, bridgefn)
+	lw.Run()
+	return lw, nil
+}
+
+func (a *grpcObjNetworkV1VirtualRouterPeeringGroup) Allowed(oper apiintf.APIOperType) bool {
+	return true
+}
+
+type restObjNetworkV1VirtualRouterPeeringGroup struct {
+	endpoints network.EndpointsNetworkV1RestClient
+	instance  string
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) Create(ctx context.Context, in *network.VirtualRouterPeeringGroup) (*network.VirtualRouterPeeringGroup, error) {
+	if in == nil {
+		return nil, errors.New("invalid input")
+	}
+	return a.endpoints.AutoAddVirtualRouterPeeringGroup(ctx, in)
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) Update(ctx context.Context, in *network.VirtualRouterPeeringGroup) (*network.VirtualRouterPeeringGroup, error) {
+	if in == nil {
+		return nil, errors.New("invalid input")
+	}
+	return a.endpoints.AutoUpdateVirtualRouterPeeringGroup(ctx, in)
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) UpdateStatus(ctx context.Context, in *network.VirtualRouterPeeringGroup) (*network.VirtualRouterPeeringGroup, error) {
+	return nil, errors.New("not supported for REST")
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) Label(ctx context.Context, in *api.Label) (*network.VirtualRouterPeeringGroup, error) {
+	if in == nil {
+		return nil, errors.New("invalid input")
+	}
+	return a.endpoints.AutoLabelVirtualRouterPeeringGroup(ctx, in)
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) Get(ctx context.Context, objMeta *api.ObjectMeta) (*network.VirtualRouterPeeringGroup, error) {
+	if objMeta == nil {
+		return nil, errors.New("invalid input")
+	}
+	in := network.VirtualRouterPeeringGroup{}
+	in.ObjectMeta = *objMeta
+	return a.endpoints.AutoGetVirtualRouterPeeringGroup(ctx, &in)
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) Delete(ctx context.Context, objMeta *api.ObjectMeta) (*network.VirtualRouterPeeringGroup, error) {
+	if objMeta == nil {
+		return nil, errors.New("invalid input")
+	}
+	in := network.VirtualRouterPeeringGroup{}
+	in.ObjectMeta = *objMeta
+	return a.endpoints.AutoDeleteVirtualRouterPeeringGroup(ctx, &in)
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) List(ctx context.Context, options *api.ListWatchOptions) ([]*network.VirtualRouterPeeringGroup, error) {
+	if options == nil {
+		return nil, errors.New("invalid input")
+	}
+
+	if options.Tenant == "" {
+		options.Tenant = globals.DefaultTenant
+	}
+	r, err := a.endpoints.AutoListVirtualRouterPeeringGroup(ctx, options)
+	if err == nil {
+		return r.Items, nil
+	}
+	return nil, err
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) Watch(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error) {
+	if options == nil {
+		return nil, errors.New("invalid input")
+	}
+	return a.endpoints.AutoWatchVirtualRouterPeeringGroup(ctx, options)
+}
+
+func (a *restObjNetworkV1VirtualRouterPeeringGroup) Allowed(oper apiintf.APIOperType) bool {
+	switch oper {
+	case apiintf.CreateOper:
+		return true
+	case apiintf.UpdateOper:
+		return true
+	case apiintf.GetOper:
+		return true
+	case apiintf.DeleteOper:
+		return true
+	case apiintf.ListOper:
+		return true
+	case apiintf.WatchOper:
+		return true
+	default:
+		return false
+	}
+}
+
 type crudClientNetworkV1 struct {
 	logger log.Logger
 	client network.ServiceNetworkV1Client
 
-	grpcNetwork          network.NetworkV1NetworkInterface
-	grpcService          network.NetworkV1ServiceInterface
-	grpcLbPolicy         network.NetworkV1LbPolicyInterface
-	grpcVirtualRouter    network.NetworkV1VirtualRouterInterface
-	grpcNetworkInterface network.NetworkV1NetworkInterfaceInterface
-	grpcIPAMPolicy       network.NetworkV1IPAMPolicyInterface
-	grpcRoutingConfig    network.NetworkV1RoutingConfigInterface
-	grpcRouteTable       network.NetworkV1RouteTableInterface
+	grpcNetwork                   network.NetworkV1NetworkInterface
+	grpcService                   network.NetworkV1ServiceInterface
+	grpcLbPolicy                  network.NetworkV1LbPolicyInterface
+	grpcVirtualRouter             network.NetworkV1VirtualRouterInterface
+	grpcNetworkInterface          network.NetworkV1NetworkInterfaceInterface
+	grpcIPAMPolicy                network.NetworkV1IPAMPolicyInterface
+	grpcRoutingConfig             network.NetworkV1RoutingConfigInterface
+	grpcRouteTable                network.NetworkV1RouteTableInterface
+	grpcVirtualRouterPeeringGroup network.NetworkV1VirtualRouterPeeringGroupInterface
 }
 
 // NewGrpcCrudClientNetworkV1 creates a GRPC client for the service
@@ -2442,14 +2741,15 @@ func NewGrpcCrudClientNetworkV1(conn *grpc.ClientConn, logger log.Logger) networ
 		logger: logger,
 		client: client,
 
-		grpcNetwork:          &grpcObjNetworkV1Network{client: client, logger: logger},
-		grpcService:          &grpcObjNetworkV1Service{client: client, logger: logger},
-		grpcLbPolicy:         &grpcObjNetworkV1LbPolicy{client: client, logger: logger},
-		grpcVirtualRouter:    &grpcObjNetworkV1VirtualRouter{client: client, logger: logger},
-		grpcNetworkInterface: &grpcObjNetworkV1NetworkInterface{client: client, logger: logger},
-		grpcIPAMPolicy:       &grpcObjNetworkV1IPAMPolicy{client: client, logger: logger},
-		grpcRoutingConfig:    &grpcObjNetworkV1RoutingConfig{client: client, logger: logger},
-		grpcRouteTable:       &grpcObjNetworkV1RouteTable{client: client, logger: logger},
+		grpcNetwork:                   &grpcObjNetworkV1Network{client: client, logger: logger},
+		grpcService:                   &grpcObjNetworkV1Service{client: client, logger: logger},
+		grpcLbPolicy:                  &grpcObjNetworkV1LbPolicy{client: client, logger: logger},
+		grpcVirtualRouter:             &grpcObjNetworkV1VirtualRouter{client: client, logger: logger},
+		grpcNetworkInterface:          &grpcObjNetworkV1NetworkInterface{client: client, logger: logger},
+		grpcIPAMPolicy:                &grpcObjNetworkV1IPAMPolicy{client: client, logger: logger},
+		grpcRoutingConfig:             &grpcObjNetworkV1RoutingConfig{client: client, logger: logger},
+		grpcRouteTable:                &grpcObjNetworkV1RouteTable{client: client, logger: logger},
+		grpcVirtualRouterPeeringGroup: &grpcObjNetworkV1VirtualRouterPeeringGroup{client: client, logger: logger},
 	}
 }
 
@@ -2483,6 +2783,10 @@ func (a *crudClientNetworkV1) RoutingConfig() network.NetworkV1RoutingConfigInte
 
 func (a *crudClientNetworkV1) RouteTable() network.NetworkV1RouteTableInterface {
 	return a.grpcRouteTable
+}
+
+func (a *crudClientNetworkV1) VirtualRouterPeeringGroup() network.NetworkV1VirtualRouterPeeringGroupInterface {
+	return a.grpcVirtualRouterPeeringGroup
 }
 
 func (a *crudClientNetworkV1) Watch(ctx context.Context, options *api.AggWatchOptions) (kvstore.Watcher, error) {
@@ -2541,14 +2845,15 @@ func (a *crudClientNetworkV1) Watch(ctx context.Context, options *api.AggWatchOp
 }
 
 type crudRestClientNetworkV1 struct {
-	restNetwork          network.NetworkV1NetworkInterface
-	restService          network.NetworkV1ServiceInterface
-	restLbPolicy         network.NetworkV1LbPolicyInterface
-	restVirtualRouter    network.NetworkV1VirtualRouterInterface
-	restNetworkInterface network.NetworkV1NetworkInterfaceInterface
-	restIPAMPolicy       network.NetworkV1IPAMPolicyInterface
-	restRoutingConfig    network.NetworkV1RoutingConfigInterface
-	restRouteTable       network.NetworkV1RouteTableInterface
+	restNetwork                   network.NetworkV1NetworkInterface
+	restService                   network.NetworkV1ServiceInterface
+	restLbPolicy                  network.NetworkV1LbPolicyInterface
+	restVirtualRouter             network.NetworkV1VirtualRouterInterface
+	restNetworkInterface          network.NetworkV1NetworkInterfaceInterface
+	restIPAMPolicy                network.NetworkV1IPAMPolicyInterface
+	restRoutingConfig             network.NetworkV1RoutingConfigInterface
+	restRouteTable                network.NetworkV1RouteTableInterface
+	restVirtualRouterPeeringGroup network.NetworkV1VirtualRouterPeeringGroupInterface
 }
 
 // NewRestCrudClientNetworkV1 creates a REST client for the service.
@@ -2559,14 +2864,15 @@ func NewRestCrudClientNetworkV1(url string, httpClient *http.Client) network.Net
 	}
 	return &crudRestClientNetworkV1{
 
-		restNetwork:          &restObjNetworkV1Network{endpoints: endpoints, instance: url},
-		restService:          &restObjNetworkV1Service{endpoints: endpoints, instance: url},
-		restLbPolicy:         &restObjNetworkV1LbPolicy{endpoints: endpoints, instance: url},
-		restVirtualRouter:    &restObjNetworkV1VirtualRouter{endpoints: endpoints, instance: url},
-		restNetworkInterface: &restObjNetworkV1NetworkInterface{endpoints: endpoints, instance: url},
-		restIPAMPolicy:       &restObjNetworkV1IPAMPolicy{endpoints: endpoints, instance: url},
-		restRoutingConfig:    &restObjNetworkV1RoutingConfig{endpoints: endpoints, instance: url},
-		restRouteTable:       &restObjNetworkV1RouteTable{endpoints: endpoints, instance: url},
+		restNetwork:                   &restObjNetworkV1Network{endpoints: endpoints, instance: url},
+		restService:                   &restObjNetworkV1Service{endpoints: endpoints, instance: url},
+		restLbPolicy:                  &restObjNetworkV1LbPolicy{endpoints: endpoints, instance: url},
+		restVirtualRouter:             &restObjNetworkV1VirtualRouter{endpoints: endpoints, instance: url},
+		restNetworkInterface:          &restObjNetworkV1NetworkInterface{endpoints: endpoints, instance: url},
+		restIPAMPolicy:                &restObjNetworkV1IPAMPolicy{endpoints: endpoints, instance: url},
+		restRoutingConfig:             &restObjNetworkV1RoutingConfig{endpoints: endpoints, instance: url},
+		restRouteTable:                &restObjNetworkV1RouteTable{endpoints: endpoints, instance: url},
+		restVirtualRouterPeeringGroup: &restObjNetworkV1VirtualRouterPeeringGroup{endpoints: endpoints, instance: url},
 	}
 }
 
@@ -2578,14 +2884,15 @@ func NewStagedRestCrudClientNetworkV1(url string, id string, httpClient *http.Cl
 	}
 	return &crudRestClientNetworkV1{
 
-		restNetwork:          &restObjNetworkV1Network{endpoints: endpoints, instance: url},
-		restService:          &restObjNetworkV1Service{endpoints: endpoints, instance: url},
-		restLbPolicy:         &restObjNetworkV1LbPolicy{endpoints: endpoints, instance: url},
-		restVirtualRouter:    &restObjNetworkV1VirtualRouter{endpoints: endpoints, instance: url},
-		restNetworkInterface: &restObjNetworkV1NetworkInterface{endpoints: endpoints, instance: url},
-		restIPAMPolicy:       &restObjNetworkV1IPAMPolicy{endpoints: endpoints, instance: url},
-		restRoutingConfig:    &restObjNetworkV1RoutingConfig{endpoints: endpoints, instance: url},
-		restRouteTable:       &restObjNetworkV1RouteTable{endpoints: endpoints, instance: url},
+		restNetwork:                   &restObjNetworkV1Network{endpoints: endpoints, instance: url},
+		restService:                   &restObjNetworkV1Service{endpoints: endpoints, instance: url},
+		restLbPolicy:                  &restObjNetworkV1LbPolicy{endpoints: endpoints, instance: url},
+		restVirtualRouter:             &restObjNetworkV1VirtualRouter{endpoints: endpoints, instance: url},
+		restNetworkInterface:          &restObjNetworkV1NetworkInterface{endpoints: endpoints, instance: url},
+		restIPAMPolicy:                &restObjNetworkV1IPAMPolicy{endpoints: endpoints, instance: url},
+		restRoutingConfig:             &restObjNetworkV1RoutingConfig{endpoints: endpoints, instance: url},
+		restRouteTable:                &restObjNetworkV1RouteTable{endpoints: endpoints, instance: url},
+		restVirtualRouterPeeringGroup: &restObjNetworkV1VirtualRouterPeeringGroup{endpoints: endpoints, instance: url},
 	}
 }
 
@@ -2619,6 +2926,10 @@ func (a *crudRestClientNetworkV1) RoutingConfig() network.NetworkV1RoutingConfig
 
 func (a *crudRestClientNetworkV1) RouteTable() network.NetworkV1RouteTableInterface {
 	return a.restRouteTable
+}
+
+func (a *crudRestClientNetworkV1) VirtualRouterPeeringGroup() network.NetworkV1VirtualRouterPeeringGroupInterface {
+	return a.restVirtualRouterPeeringGroup
 }
 
 func (a *crudRestClientNetworkV1) Watch(ctx context.Context, options *api.AggWatchOptions) (kvstore.Watcher, error) {
