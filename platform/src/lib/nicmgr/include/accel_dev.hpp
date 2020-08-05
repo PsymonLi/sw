@@ -23,7 +23,6 @@
 
 #ifdef ELBA
 #include "elb_top_csr_defines.h"
-#include "elb_wa_csr_define.h"
 #include "elb_ms_csr_define.h"
 #include "elb_soc_c_hdr.h"
 
