@@ -522,7 +522,8 @@ jobd/dol/apulu/ipsec: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/apulu/upgrade
 jobd/dol/apulu/upgrade: ${JOBD_PREREQS}
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature upgrade --memory 8G
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature upgrade --memory 8G --sub hitless
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature upgrade --memory 8G --sub hitless-fail-preswitch
 
 .PHONY: jobd/dol/apulu/l2
 jobd/dol/apulu/l2: ${JOBD_PREREQS}

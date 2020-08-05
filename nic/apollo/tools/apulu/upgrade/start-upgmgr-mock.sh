@@ -12,7 +12,9 @@ fi
 
 function finish {
     echo "pdsupgmgr exit"
-    operdctl dump upgradelog > upgrademgr.log
+    if [ -e $CONFIG_PATH/operd-regions.json ];then
+        operdctl dump upgradelog > upgrademgr.log
+    fi
     if [ ! -z "$OPERD_REGIONS" ];then
         rm -f $CONFIG_PATH/operd-regions.json
     fi

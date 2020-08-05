@@ -146,7 +146,9 @@ function start_upgrade_manager () {
 
 function stop_upgrade_manager () {
     if [ $PIPELINE == 'apulu' ];then
-        operdctl dump upgradelog > upgrademgr.log
+        if [ -e $CONFIG_PATH/operd-regions.json ];then
+            operdctl dump upgradelog > upgrademgr.log
+        fi
         pkill pdsupgmgr
     fi
 }

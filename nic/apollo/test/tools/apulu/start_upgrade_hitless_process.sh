@@ -4,7 +4,10 @@ set -x
 MY_DIR=$( readlink -f $( dirname $0 ))
 HITLESS_DOM=$1
 SET_DOM=$2
+FAILURE_STAGE=$3
+FAILURE_REASON=$4
 
+PREV_PDSPKG_TOPDIR=$PDSPKG_TOPDIR
 export PDSPKG_TOPDIR=/tmp/$HITLESS_DOM/
 export ZMQ_SOC_DIR=/sw/nic/
 source $MY_DIR/../../../tools/setup_env_sim.sh $PIPELINE
@@ -39,6 +42,7 @@ function trap_finish () {
     terminate "$PDSPKG_TOPDIR/apollo/tools/apulu/start-agent-sim.sh"
     terminate "$BUILD_DIR/bin/pdsagent"
     terminate "$PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh"
+    terminate "$BUILD_DIR/bin/fsm_test"
     rm /sw/nic/conf/vpp_startup.conf
 }
 trap trap_finish EXIT
@@ -47,13 +51,16 @@ trap trap_finish EXIT
 $BUILD_DIR/bin/pciemgrd -d &
 $BUILD_DIR/bin/operd $CONFIG_PATH/apulu/operd.json $CONFIG_PATH/apulu/operd-decoders.json &
 $PDSPKG_TOPDIR/apollo/tools/$PIPELINE/start-agent-sim.sh > $PDSPKG_TOPDIR/agent.log 2>&1 &
+if [ ! -z $FAILURE_STAGE ];then
+    $BUILD_DIR/bin/fsm_test -s upgtestapp -i 60 -f $FAILURE_STAGE -e $FAILURE_REASON > $PDSPKG_TOPDIR/fsm_test.log 2>&1 &
+fi
 
 upg_wait_for_pdsagent
 
 $PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh ${DOL_ARGS} &
 
 # start upgrade manager
-upg_setup $BUILD_DIR/gen/upgrade_hitless_sim.json upgrade_hitless.json
+upg_setup $PREV_PDSPKG_TOPDIR/conf/gen/upgrade_hitless.json upgrade_hitless.json
 $BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > $PDSPKG_TOPDIR/upgrade.log 2>&1 &
 
 tail --pid=$PPID -f /dev/null

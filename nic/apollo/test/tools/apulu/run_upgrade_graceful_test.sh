@@ -45,8 +45,8 @@ function check_upgrade_status() {
 # start DOL now
 # comment out below for debugging any application where config
 # is not needed
-#$DOLDIR/main.py $CMDARGS 2>&1 | tee dol.log
-#status=${PIPESTATUS[0]}
+$DOLDIR/main.py $CMDARGS 2>&1 | tee dol.log
+status=${PIPESTATUS[0]}
 
 # run client
 pdsupgclient
@@ -81,8 +81,8 @@ check_upgrade_status
 rm /update/upgrade*
 start_upgrade_manager
 sleep 5
-#$DOLDIR/main.py $CMDARGS 2>&1 | tee dol.log
-#status=${PIPESTATUS[0]}
+$DOLDIR/main.py $CMDARGS 2>&1 | tee dol.log
+status=${PIPESTATUS[0]}
 
 # end of script
 rm -rf $PDSPKG_TOPDIR/model.log

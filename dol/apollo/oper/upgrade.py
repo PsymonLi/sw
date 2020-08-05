@@ -180,6 +180,8 @@ class UpgradeObject(base.ConfigObjectBase):
                 if status.find("success") != -1:
                     return True
                 if status.find("failed") != -1:
+                    if self.failure_stage != None:
+                        return True
                     return False
             retry = retry - 1
             utils.Sleep(10)
@@ -192,14 +194,26 @@ class UpgradeObject(base.ConfigObjectBase):
         if utils.IsDryRun():
             return True
         mode = "hitless"
+        self.failure_stage = None
+        self.failure_reason = None
+        args = ""
         if hasattr(spec, "UpgMode"):
             mode = getattr(spec, "UpgMode", "hitless")
+        if hasattr(spec, "failure_stage"):
+            self.failure_stage =  getattr(spec, "failure_stage", None)
+        if hasattr(spec, "failure_reason"):
+            self.failure_reason =  getattr(spec, "failure_reason", None)
         logger.info("Setup Upgrade Config Files for %s mode"%mode)
+        logger.info("Setup Upgrade failure stage %s, failure reason %s"
+                    %(self.failure_stage, self.failure_reason))
+
+        if self.failure_stage != None and self.failure_reason != None:
+            args = "%s %s" %(self.failure_stage, self.failure_reason)
 
         # For now cfg file setup done only for hitless mode
         if mode == "hitless":
             # setup hitless upgrade config files
-            upg_setup_cmds = "apollo/test/tools/apulu/setup_hitless_upgrade_cfg_sim.sh"
+            upg_setup_cmds = "apollo/test/tools/apulu/setup_hitless_upgrade_cfg_sim.sh %s" %args
             if not RunCmd(upg_setup_cmds, timeout=20, background=True):
                 logger.error("Command Execution Failed: %s"%upg_setup_cmds)
                 return False

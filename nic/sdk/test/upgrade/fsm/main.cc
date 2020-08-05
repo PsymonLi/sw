@@ -47,6 +47,7 @@ init_stage_names (void)
     upg_stages.insert("UPG_STAGE_PREPARE");
     upg_stages.insert("UPG_STAGE_SYNC");
     upg_stages.insert("UPG_STAGE_PRE_SWITCHOVER");
+    upg_stages.insert("UPG_STAGE_CONFIG_REPLAY");
     upg_stages.insert("UPG_STAGE_SWITCHOVER");
     upg_stages.insert("UPG_STAGE_READY");
     upg_stages.insert("UPG_STAGE_RESPAWN");
@@ -79,8 +80,9 @@ msleep (long inject_delay)
 static sdk_ret_t
 test_upgrade (sdk::upg::upg_ev_params_t *params)
 {
-    printf("\nSuccessfully to handled event\n");
+    printf("\nSuccessfully handled event\n");
     params->response_cb(SDK_RET_OK, params->response_cookie);
+    fflush(stdout);
     return SDK_RET_IN_PROGRESS;
 }
 
@@ -92,6 +94,7 @@ fault_injection (sdk::upg::upg_ev_params_t *params)
     }
     printf("\nFailed to handle event %s\n", fsm_stage.c_str());
     params->response_cb(ret_code_map[error_code], params->response_cookie);
+    fflush(stdout);
     return SDK_RET_IN_PROGRESS;
 }
 
@@ -155,6 +158,13 @@ upg_ev_fill (sdk::upg::upg_ev_t *ev)
         ev->ready_hdlr = fault_injection;
     } else {
         ev->ready_hdlr = test_upgrade;
+    }
+
+    if (fsm_stage.compare("UPG_STAGE_CONFIG_REPLAY") == 0) {
+        printf("\nSetting fault injection in stage UPG_STAGE_CONFIG_REPLAY\n");
+        ev->config_replay_hdlr = fault_injection;
+    } else {
+        ev->config_replay_hdlr = test_upgrade;
     }
 
     if (fsm_stage.compare("UPG_STAGE_SYNC") == 0) {

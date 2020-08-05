@@ -10,8 +10,7 @@ session:
             configs            :
                 - object       : ref://testcase/config/root
                   method       : SetupCfgFilesForUpgrade
-                  fields       :
-                    UpgMode    : hitless
+                  fields       : callback://common/config/GetCfgFields
 
                 - object       : ref://testcase/config/root
                   method       : UpdateUpgradeMode
