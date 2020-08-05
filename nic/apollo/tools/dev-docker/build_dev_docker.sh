@@ -209,7 +209,7 @@ save_files() {
     platform_inc='pciemgr_if/include/pciemgr_if.hpp '
     platform_inc+='nicmgr/include/dev.hpp nicmgr/include/pd_client.hpp nicmgr/include/device.hpp nicmgr/include/pal_compat.hpp nicmgr/include/upgrade.hpp '
     platform_inc+='nicmgr/include/eth_dev.hpp nicmgr/include/eth_lif.hpp nicmgr/include/logger.hpp nicmgr/include/nicmgr_utils.hpp nicmgr/include/ftl_dev.hpp '
-    platform_inc+='nicmgr/include/ftl_lif.hpp eth_p4plus/eth_p4pd.hpp nicmgr/include/nicmgr_shm.hpp '
+    platform_inc+='nicmgr/include/ftl_lif.hpp eth_p4plus/eth_p4pd.hpp nicmgr/include/nicmgr_shm.hpp nicmgr/include/hii.hpp nicmgr/include/hii_ipc.hpp nicmgr/include/eth_fw_update.hpp '
     platform_inc+='nicmgr/include/eth_pstate.hpp nicmgr/include/eth_if.h nicmgr/include/eth_utils.hpp '
     if [ "$pipeline" != "athena" ];then
         platform_inc+='nic/sdk/lib/edma/edmaq.hpp '
