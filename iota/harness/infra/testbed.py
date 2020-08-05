@@ -553,6 +553,8 @@ class _Testbed:
                     Logger.header("FIRMWARE UPGRADE / MODE CHANGE / REBOOT FAILED: LOGFILE = %s" % logfiles[idx])
                     Logger.error("Firmware upgrade failed : %d " % result)
                     Logger.error("Firmware upgrade failed : " + err.decode())
+                    if proc_hdl.returncode == 124:
+                        Logger.error("TIMEOUT RUNNING BOOTNAPLES.PY. Verify host recovered from reboot/upgrade")
                 else:
                     Logger.debug('Firmware upgrade finished at time: {0}'.format(time.asctime()))
         except KeyboardInterrupt:

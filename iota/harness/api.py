@@ -1265,8 +1265,8 @@ def UnsetBreakoutInterfaces():
     try:
         req = topo_svc.UnsetBreakoutMsg()
         for instance in store.GetTestbed().GetInstances():
-            for nic in instance.Nics:
-                for port in nic.Ports:
+            for nic in getattr(instance, "Nics", []):
+                for port in getattr(nic, "Ports", []):
                     if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
                         switch_ctx = req.data_switches.add()
                         switch_ctx.username = port.SwitchUsername
@@ -1277,7 +1277,7 @@ def UnsetBreakoutInterfaces():
                         switch_ctx.ports.append("e1/" + str(port.SwitchPort) + "/1")
         return __rpc(req, gl_topo_svc_stub.UnsetBreakoutInterfaces)
     except:
-        Logger.warn("failed to clear breakout interfaces")
+        Logger.debug("failed to clear breakout interfaces. error was: {0}".format(traceback.format_exc()))
 
 def GetCurrentTestsuite():
     return store.GetTestbed().GetCurrentTestsuite()
@@ -1290,4 +1290,15 @@ def GetVlanGroupVlan(vgi):
     for va in vas:
         if va.GetId() == vgi:
             return list(va.Vlans())
+
+def GetNodeByName(nodeName):
+    return store.GetTopology().GetNodeByName(nodeName)
+
+def TimeSyncNaples(nodeNames):
+    s = time.mktime(time.gmtime())
+    for nodeName in nodeNames:
+        node = GetNodeByName(nodeName)
+        for name, nic in node.GetDevices().items():
+            Logger.debug("sync time for naples {0}".format(name))
+            node.RunNaplesConsoleCmd("date --date='{0}'".format(s), device=name, skip_clear_line=True)
 

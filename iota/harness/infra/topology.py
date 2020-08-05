@@ -333,7 +333,7 @@ class Node(object):
                     self.__console_hdl = Console(self.__nic_console_ip, self.__nic_console_port, disable_log=True)
                 self.__console_hdl.RunCmdGetOp("iptables -D tcp_inbound -p tcp -m tcp --dport 11357:11360 -j DROP")
 
-        def RunNaplesConsoleCmd(self, cmd, get_exit_code=False):
+        def RunNaplesConsoleCmd(self, cmd, get_exit_code=False, skip_clear_line=False):
             if GlobalOptions.dryrun:
                 return
             if not self.__nic_console_ip:
@@ -341,7 +341,7 @@ class Node(object):
             if self.__console_hdl:
                 self.__console_hdl.Close()
             else:
-                self.__console_hdl = Console(self.__nic_console_ip, self.__nic_console_port, disable_log=True)
+                self.__console_hdl = Console(self.__nic_console_ip, self.__nic_console_port, disable_log=True, skip_clear_line=skip_clear_line)
 
             output = self.__console_hdl.RunCmdGetOp(cmd, get_exit_code)
             exit_code = 0
@@ -1132,9 +1132,9 @@ class Node(object):
     def GetBondIp(self):
         return self.__bond_ip
 
-    def RunNaplesConsoleCmd(self, cmd, get_exit_code = False, device = None):
+    def RunNaplesConsoleCmd(self, cmd, get_exit_code = False, device = None, skip_clear_line=False):
         dev = self.__get_device(device)
-        return dev.RunNaplesConsoleCmd(cmd, get_exit_code)
+        return dev.RunNaplesConsoleCmd(cmd, get_exit_code, skip_clear_line=skip_clear_line)
 
     def IsNodeMgmtUp(self):
         try:
@@ -1262,6 +1262,7 @@ class Topology(object):
             for node in nodes:
                 if hasattr(node, "redfish"):
                     node.redfish.Close()
+        api.TimeSyncNaples(node_names)
 
     def IpmiNodes(self, node_names, ipmiMethod, useNcsi=False):
         if ipmiMethod not in self.IpmiMethods:
@@ -1280,7 +1281,7 @@ class Topology(object):
         resp = api.IpmiNodeAction(req)
         if not api.IsApiResponseOk(resp):
             return types.status.FAILURE
-
+        api.TimeSyncNaples(node_names)
         return types.status.SUCCESS
 
     def ApcPowerCycle(self, node_names):
@@ -1321,7 +1322,7 @@ class Topology(object):
         resp = api.ReloadNodes(req)
         if not api.IsApiResponseOk(resp):
             return types.status.FAILURE
-
+        api.TimeSyncNaples(node_names)
         return types.status.SUCCESS
 
     def SaveNodes(self, node_names):
@@ -1893,8 +1894,8 @@ class Topology(object):
     def SetNicFirewallRules(self, node_name, device = None):
         return self.__nodes[node_name].SetNicFirewallRules(device)
 
-    def RunNaplesConsoleCmd(self, node_name, cmd, get_exit_code = False, device = None):
-        return self.__nodes[node_name].RunNaplesConsoleCmd(cmd, get_exit_code, device)
+    def RunNaplesConsoleCmd(self, node_name, cmd, get_exit_code = False, device = None, skip_clear_line=False):
+        return self.__nodes[node_name].RunNaplesConsoleCmd(cmd, get_exit_code, device, skip_clear_line=skip_clear_line)
 
     def GetEsxHostIpAddress(self, node_name):
         return self.__nodes[node_name].EsxHostIpAddress()

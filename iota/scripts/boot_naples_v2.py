@@ -244,6 +244,11 @@ class EntityManagement:
         self.scp_pfx = "sshpass -p %s scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " % self.password
         self.ssh_pfx = "sshpass -p %s ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " % self.password
 
+    def TimeSyncNaples(self):
+        print("time sync for naples {0}".format(self.ipaddr))
+        s = time.mktime(time.gmtime())
+        self.SendlineExpect("date --date='{0}'".format(s), "#", timeout=30)
+
     def IsUpgradeComplete(self):
         return self.upgrade_complete
 
@@ -557,6 +562,7 @@ class NaplesManagement(EntityManagement):
             self.hdl.expect_exact('Starting kernel',120)
             time.sleep(5)
         self.__login()
+        self.TimeSyncNaples()
 
     def RebootAndLogin(self):
         if not self.host.PciSensitive():
@@ -565,6 +571,7 @@ class NaplesManagement(EntityManagement):
             self.hdl.expect_exact(["#", "capri login:", "capri-gold login:"],120)
 
         self.__login()
+        self.TimeSyncNaples()
 
     def InstallPrep(self):
         data = [
@@ -1034,6 +1041,7 @@ class HostManagement(EntityManagement):
             print("sleeping 60 after shutdown -r in Reboot")
             time.sleep(60)
             self.WaitForSsh()
+            self.TimeSyncNaples()
         self.RunSshCmd("uptime")
         return
 
@@ -1098,6 +1106,7 @@ class HostManagement(EntityManagement):
             self.RunNaplesCmd(naples_inst, "rm -rf /data/core/* && sync")
             self.RunNaplesCmd(naples_inst, "rm -rf /data/*.dat && sync")
             self.RunNaplesCmd(naples_inst, "rm -rf /data/pen-netagent* && sync")
+            self.RunNaplesCmd(naples_inst, "rm -rf /obfl/asicerrord_err*", ignore_failure=True)
 
     def SetUpInitFiles(self):
         CreateConfigConsoleNoAuth()

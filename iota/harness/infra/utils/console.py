@@ -10,7 +10,7 @@ CONSOLE_SVR_PASSWORD = 'N0isystem$'
 
 
 class Console(object):
-    def __init__(self, console_ip, console_port, disable_log=False, username = 'root', password = 'pen123', timeout=TIMEOUT):
+    def __init__(self, console_ip, console_port, disable_log=False, username = 'root', password = 'pen123', timeout=TIMEOUT, skip_clear_line=False):
         self.console_ip = console_ip
         self.timeout = timeout
         self.console_port = console_port
@@ -19,7 +19,9 @@ class Console(object):
         self.username = username
         self.password = password
         self.__disable_log = disable_log
-        self.__clear_line()
+        self.__skip_clear_line = skip_clear_line
+        if not self.__skip_clear_line:
+            self.__clear_line()
         self.hdl = None
         self.hdl = self.__get_handle()
 
@@ -97,7 +99,8 @@ class Console(object):
             pass
 
     def __login(self):
-        self.clear_buffer()
+        if not self.__skip_clear_line:
+            self.clear_buffer()
         retry_count  = 0
         while retry_count < 10:
             retry_count += 1

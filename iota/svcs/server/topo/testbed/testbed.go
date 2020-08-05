@@ -442,6 +442,15 @@ func (n *TestNode) StartAgent(command string, cfg *ssh.ClientConfig) error {
 		log.Errorf("TOPO SVC | InitTestBed | StartAgent on node %v failed, IPAddress: %v , Err: %v", n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress, err)
 		return fmt.Errorf("StartAgent on node failed. TestNode: %v, IPAddress: %v , Err: %v", n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress, err)
 	}
+
+	//sleep 5 seconds
+	time.Sleep(5 * time.Second)
+	//verify iota_agent is in process list
+	log.Debugf("verify iota_agent running")
+	err := runner.Run(addr, "ps ax | grep [i]ota_agent", constants.RunCommandForeground)
+	if err != nil {
+		log.Debugf("failed to start iota agent. Err: %v", err)
+	}
 	return nil
 }
 
