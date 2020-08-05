@@ -25,16 +25,20 @@ extern vmk_MgmtApiSignature ionic_en_mgmt_sig;
 
 VMK_MODPARAM(ntxq_descs,
              uint,
-             "Descriptors per Tx queue, must be power of 2");
+             "Descriptors per Tx queue, must be power of 2. "\
+             "Default: 8192, Min: 128, Max: 16384");
 VMK_MODPARAM(nrxq_descs,
              uint,
-             "Descriptors per Rx queue, must be power of 2");
+             "Descriptors per Rx queue, must be power of 2. "\
+             "Default: 1024, Min: 128, Max: 8192");
 VMK_MODPARAM(DRSS,
              uint,
-             "Number of HW queues for Device RSS");
+             "Number of HW queues for Device RSS, must be power of 2. "\
+             "Default: 16, Min: 2, Max: Number of cores of the host");
 VMK_MODPARAM(devcmd_timeout,
              uint,
-             "Devcmd timeout in seconds (default 50 secs)");
+             "Devcmd timeout in seconds. "\
+             "Default: 50s, Min: 30s, Max: 60s");
 VMK_MODPARAM(log_level,
              uint,
              "Log level, 0 - No Log, 1 - Error, 2 - Warning,"\
@@ -88,10 +92,14 @@ ionic_validate_module_params()
                 }
         }
 
-        if (devcmd_timeout > IONIC_MAX_DEVCMD_TIMEOUT) {
-                vmk_WarningMessage("Devcmd timeout: %d is too big, "
-                                   "change it to default value: %d",
+        if (devcmd_timeout < IONIC_MIN_DEVCMD_TIMEOUT ||
+            devcmd_timeout > IONIC_MAX_DEVCMD_TIMEOUT) {
+                vmk_WarningMessage("Devcmd timeout value: %d is invalid. "
+                                   "It should be set between %d and %d. "
+                                   "Reverting it to the default value: %d",
                                    devcmd_timeout,
+                                   IONIC_MIN_DEVCMD_TIMEOUT,
+                                   IONIC_MAX_DEVCMD_TIMEOUT,
                                    IONIC_DEFAULT_DEVCMD_TIMEOUT);
                 devcmd_timeout = IONIC_DEFAULT_DEVCMD_TIMEOUT;
         }
