@@ -486,5 +486,7 @@ using sdk::platform::elba::elba_barco_sym_alloc_key_withid;
 using sdk::platform::elba::elba_barco_sym_free_key;
 using sdk::platform::elba::elba_barco_asym_alloc_key;
 using sdk::platform::elba::elba_barco_asym_free_key;
+using sdk::platform::elba::crypto_key_type_t;
+using sdk::platform::elba::elba_barco_asym_key_desc_t;
 
 #endif  //  __ELBA_BARCO_CRYPTO_HPP__

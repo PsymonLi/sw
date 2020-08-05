@@ -2,6 +2,7 @@
 //  {C} Copyright 2019 Pensando Systems Inc. All rights reserved.
 //
 
+#include <arpa/inet.h>
 #include "pdsa_uds_hdlr.h"
 #include "nic/vpp/infra/ipc/uds_internal.h"
 #include "nic/sdk/include/sdk/uds.hpp"

@@ -1,11 +1,18 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "ftl_includes.hpp"
+#include "lib/pal/pal.hpp"
+#include "platform/pal/include/pal_mem.h"
+#include "lib/p4/p4_api.hpp"
+#include "asic/pd/pd.hpp"
+#include "lib/table/ftl/ftl_apictx.hpp"
+#include "lib/table/ftl/ftl_utils.hpp"
+#include "lib/table/ftl/ftl_platform.hpp"
 
 namespace sdk {
 namespace table {
@@ -33,9 +40,9 @@ memrd(Apictx *ctx) {
                    ctx->entry->entry_size());
         // FTL_TRACE_ERR("Read from :0x%llx", get_va(ctx));
     } else if (ctx->props->stable_base_mem_pa && ctx->props->ptable_base_mem_pa) {
-        pal_mem_read(get_pa(ctx),
-                     (uint8_t*)get_sw_entry_pointer(ctx->entry),
-                     ctx->entry->entry_size());
+        sdk::lib::pal_mem_read(get_pa(ctx),
+                               (uint8_t*)get_sw_entry_pointer(ctx->entry),
+                               ctx->entry->entry_size());
     }
     sdk::lib::swizzle(get_sw_entry_pointer(ctx->entry), ctx->entry->entry_size());
     return SDK_RET_OK;
@@ -50,9 +57,9 @@ memwr(Apictx *ctx) {
                    ctx->entry->entry_size());
         // FTL_TRACE_ERR("Wrote to :0x%llx", get_va(ctx));
     } else if (ctx->props->stable_base_mem_pa && ctx->props->ptable_base_mem_pa) {
-        pal_mem_write(get_pa(ctx),
-                      (uint8_t*)get_sw_entry_pointer(ctx->entry),
-                      ctx->entry->entry_size());
+        sdk::lib::pal_mem_write(get_pa(ctx),
+                                (uint8_t*)get_sw_entry_pointer(ctx->entry),
+                                ctx->entry->entry_size());
         // FTL_TRACE_ERR("Wrote to :0x%llx", get_pa(ctx));
     }
 
@@ -64,11 +71,8 @@ memwr(Apictx *ctx) {
     auto basepa = ctx->level ? ctx->props->stable_base_mem_pa :
                                ctx->props->ptable_base_mem_pa;
     auto size = ctx->table_index * ctx->entry->entry_size();
-#ifdef ELBA
-    elba_hbm_table_entry_cache_invalidate(P4_TBL_CACHE_INGRESS, size, 1, basepa);
-#else
-    capri_hbm_table_entry_cache_invalidate(P4_TBL_CACHE_INGRESS, size, 1, basepa);
-#endif
+    sdk::asic::pd::asicpd_hbm_table_entry_cache_invalidate(
+        P4_TBL_CACHE_INGRESS, size, 1, basepa);
 #endif
 
     return SDK_RET_OK;
@@ -80,25 +84,17 @@ memclr(uint64_t memva, uint64_t mempa, uint32_t num_entries,
     if (memva) {
         memset((void*)memva, 0, entry_size * num_entries);
     } else if (mempa) {
-        pal_mem_set(mempa, 0, entry_size * num_entries, 0);
+        sdk::lib::pal_mem_set(mempa, 0, entry_size * num_entries, 0);
     }
 
     PAL_barrier();
 
 #ifndef SIM
     for (uint32_t i = 0; i < num_entries; i++) {
-#ifdef ELBA
-        elba_hbm_table_entry_cache_invalidate(P4_TBL_CACHE_INGRESS, 
-                                              (i * entry_size),
-                                              1, mempa);
-#else
-        capri_hbm_table_entry_cache_invalidate(P4_TBL_CACHE_INGRESS,
-                                               (i * entry_size),
-                                               1, mempa);
-#endif
+        sdk::asic::pd::asicpd_hbm_table_entry_cache_invalidate(
+            P4_TBL_CACHE_INGRESS, (i * entry_size), 1, mempa);
     }
 #endif
-
     return SDK_RET_OK;
 }
 

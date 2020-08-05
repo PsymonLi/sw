@@ -16,6 +16,12 @@
 #include "nic/sdk/include/sdk/qos.hpp"
 #include "nic/hal/pd/iris/nw/enicif_pd.hpp"
 
+#ifdef ELBA
+#include "nic/sdk/platform/elba/elba_tm_utils.hpp"
+#else
+#include "nic/sdk/platform/capri/capri_tm_utils.hpp"
+#endif
+
 using namespace sdk;
 using namespace sdk::asic::pd;
 
@@ -895,9 +901,9 @@ pd_pb_stats_get (pd_func_args_t *pd_func_args)
     // TODO: Hook up the reset flag to API call
     bool                   reset = false;
 #ifdef ELBA
-    elba_queue_stats_t    qos_queue_stats = {0};
+    sdk::platform::elba::elba_queue_stats_t qos_queue_stats = {0};
 #else
-    capri_queue_stats_t   qos_queue_stats = {0};
+    sdk::platform::capri::capri_queue_stats_t qos_queue_stats = {0};
 #endif
 
     pb_stats = rsp->mutable_stats()->mutable_packet_buffer_stats();

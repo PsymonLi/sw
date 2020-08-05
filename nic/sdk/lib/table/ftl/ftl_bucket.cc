@@ -1,11 +1,16 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "ftl_includes.hpp"
+#include "lib/p4/p4_api.hpp"
+#include "lib/p4/p4_utils.hpp"
+#include "lib/table/ftl/ftl_utils.hpp"
+#include "lib/table/ftl/ftl_bucket.hpp"
+#include "lib/table/ftl/ftl_platform.hpp"
 
 #define FOREACH_HINT(_n) for (uint32_t i = 1; i <= (_n); i++)
 #define FOREACH_HINT_REVERSE(_n) for (uint32_t i = (_n); i > 0; i--)
@@ -501,8 +506,8 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
             new_handle.sindex(ectx->table_index);
         }
         // Update epoch
-        old_handle.epoch(++tctx->bucket->epoch_);
-        new_handle.epoch(ectx->bucket->epoch_);
+        old_handle.epoch(++BUCKET(tctx)->epoch_);
+        new_handle.epoch(BUCKET(ectx)->epoch_);
     }
 
     // STEP 2: Move tctx key+data to ectx key+data
@@ -514,21 +519,21 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
 
     // STEP 3: Write ectx to HW
     if (ectx != pctx) {
-        ret = ectx->bucket->write_(ectx);
+        ret = BUCKET(ectx)->write_(ectx);
         SDK_ASSERT(ret == SDK_RET_OK);
     }
 
     // STEP 4: Delink parent node
-    ret = pctx->bucket->delink_(pctx);
+    ret = BUCKET(pctx)->delink_(pctx);
     SDK_ASSERT(ret == SDK_RET_OK);
 
     // STEP 5: Write pctx to HW
-    ret = pctx->bucket->write_(pctx);
+    ret = BUCKET(pctx)->write_(pctx);
     SDK_ASSERT(ret == SDK_RET_OK);
 
     if (ectx != tctx) {
         // STEP 6: Write tctx to HW
-        ret = tctx->bucket->write_(tctx);
+        ret = BUCKET(tctx)->write_(tctx);
         SDK_ASSERT(ret == SDK_RET_OK);
 
         // We always update the stats using the level of the tail context, this
@@ -547,7 +552,7 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
             // However, it has been copied to ectx but, if ectx itself had gone
             // thru write_() above, it would have been byte swizzled. So to provide
             // correct context to the 2nd move step, ectx has to be re-read.
-            ret = ectx->bucket->read_(ectx, true);
+            ret = BUCKET(ectx)->read_(ectx, true);
             SDK_ASSERT(ret == SDK_RET_OK);
             ectx->params->movecb(ectx->entry, old_handle, new_handle);
         }

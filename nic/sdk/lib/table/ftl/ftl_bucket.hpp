@@ -1,9 +1,21 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
+#ifndef __FTL_BUCKET_HPP__
+#define __FTL_BUCKET_HPP__
+
+#include "lib/table/ftl/ftl_apictx.hpp"
+
+#define BUCKET(ctx) ((Bucket *)ctx->bucket)
+
 namespace sdk {
 namespace table {
 namespace internal {
+
+class base_table;
+class main_table;
+class hint_table;
 
 class Bucket {
 public:
@@ -60,3 +72,7 @@ public:
 } // namespace internal
 } // namespace table
 } // namespace sdk
+
+using sdk::table::internal::Bucket;
+
+#endif    // __FTL_BUCKET_HPP__

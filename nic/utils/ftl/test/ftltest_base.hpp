@@ -18,6 +18,10 @@
 #include "lib/table/ftl/ftl_base.hpp"
 #include "gen/p4gen/p4/include/ftl_table.hpp"
 
+#ifdef ATHENA
+#include "nic/utils/ftl/test/athena/ftl_table.hpp"
+#endif
+
 #include "ftltest_common.hpp"
 
 #define WITH_HASH true
@@ -40,6 +44,7 @@ using sdk::table::sdk_table_factory_params_t;
 class ftl_test_base: public ::testing::Test {
 protected:
     ftl_base *table;
+    ftl_base *table_shm;
     atomic_uint num_insert;
     atomic_uint num_remove;
     atomic_uint num_update;
@@ -69,6 +74,9 @@ protected:
         table = flow_hash_info::factory(&params);
 #else
         table = flow_hash::factory(&params);
+#ifdef ATHENA
+        table_shm = flow_hash_shm::factory(&params);
+#endif
 #endif
         assert(table);
 

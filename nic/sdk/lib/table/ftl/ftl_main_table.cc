@@ -1,11 +1,15 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
+#include <cstring>
 #include <cinttypes>
-#include "ftl_includes.hpp"
+#include "lib/table/ftl/ftl_utils.hpp"
+#include "lib/table/ftl/ftl_table.hpp"
+#include "lib/table/ftl/ftl_apictx.hpp"
+#include "lib/table/ftl/ftl_platform.hpp"
 
 #define MASK(_nbits) ((1 << (_nbits)) - 1)
 
@@ -13,20 +17,20 @@
 // Factory method to instantiate the main_table class
 //---------------------------------------------------------------------------
 main_table *
-main_table::factory(sdk::table::properties_t *props) {
+main_table::factory(sdk::table::properties_t *props, ftl_base *ftlbase) {
     void *mem = NULL;
     main_table *table = NULL;
     sdk_ret_t ret = SDK_RET_OK;
 
     mem = (main_table *) SDK_CALLOC(SDK_MEM_ALLOC_FTL_MAIN_TABLE,
-                                          sizeof(main_table));
+                                    sizeof(main_table));
     if (!mem) {
         return NULL;
     }
 
     table = new (mem) main_table();
 
-    ret = table->init_(props);
+    ret = table->init_(props, ftlbase);
     if (ret != SDK_RET_OK) {
         table->~main_table();
         SDK_FREE(SDK_MEM_ALLOC_FTL_MAIN_TABLE, mem);
@@ -39,20 +43,22 @@ main_table::factory(sdk::table::properties_t *props) {
 // main_table init_()
 //---------------------------------------------------------------------------
 sdk_ret_t
-main_table::init_(sdk::table::properties_t *props) {
+main_table::init_(sdk::table::properties_t *props,
+                  ftl_base *ftlbase) {
     sdk_ret_t ret = SDK_RET_OK;
 
     // Size validation
     SDK_ASSERT(props->ptable_size <= ((uint32_t)1 << NUM_PINDEX_BITS));
 
-    ret = base_table::init_(props->ptable_id, props->ptable_size);
+    set_ftlbase(ftlbase);
+    ret = base_table::init_(props->ptable_id, props->ptable_size, true);
 
     num_hash_bits_ = 32 - num_table_index_bits_;
     FTL_TRACE_VERBOSE("main_table: Created main_table "
                       "TableID:%d TableSize:%d NumTableIndexBits:%d NumHashBits:%d",
                       table_id_, table_size_, num_table_index_bits_, num_hash_bits_);
 
-    hint_table_ = hint_table::factory(props);
+    hint_table_ = hint_table::factory(props, ftlbase);
     SDK_ASSERT_RETURN(hint_table_, SDK_RET_OOM);
 
     return ret;
@@ -61,7 +67,7 @@ main_table::init_(sdk::table::properties_t *props) {
 void
 main_table::destroy_(main_table *table) {
     hint_table::destroy_(table->hint_table_);
-    base_table::destroy_(table);
+    base_table::destroy_(table, true);
     SDK_FREE(SDK_MEM_ALLOC_FTL_MAIN_TABLE, table);
 }
 
@@ -133,7 +139,7 @@ main_table::insert_(Apictx *ctx) {
 
     lock_(ctx);
 
-    SDK_ASSERT(ctx->bucket->read_(ctx) == SDK_RET_OK);
+    SDK_ASSERT(BUCKET(ctx)->read_(ctx) == SDK_RET_OK);
 
     auto ret = buckets_[ctx->table_index].insert_(ctx);
     if (unlikely(ret == SDK_RET_COLLISION)) {
@@ -176,7 +182,7 @@ __label__ done;
 
     lock_(ctx);
 
-    SDK_ASSERT(ctx->bucket->read_(ctx) == SDK_RET_OK);
+    SDK_ASSERT(BUCKET(ctx)->read_(ctx) == SDK_RET_OK);
 
     auto ret = buckets_[ctx->table_index].remove_(ctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket remove r:%d", ret);
@@ -214,10 +220,10 @@ __label__ done;
     if (!ctx->inited) {
         // If entry_valid, then context is already initialized.
         SDK_ASSERT(initctx_(ctx) == SDK_RET_OK);
-        SDK_ASSERT(ctx->bucket->read_(ctx) == SDK_RET_OK);
+        SDK_ASSERT(BUCKET(ctx)->read_(ctx) == SDK_RET_OK);
     }
 
-    auto ret = ctx->bucket->find_(ctx);
+    auto ret = BUCKET(ctx)->find_(ctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket find r:%d", ret);
 
     if (ctx->exmatch) {
@@ -243,12 +249,12 @@ __label__ done;
 
     lock_(ctx);
 
-    SDK_ASSERT(ctx->bucket->read_(ctx) == SDK_RET_OK);
+    SDK_ASSERT(BUCKET(ctx)->read_(ctx) == SDK_RET_OK);
 
     auto ret = find_(ctx, &match_ctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "find r:%d", ret);
 
-    ret = match_ctx->bucket->update_(match_ctx);
+    ret = BUCKET(match_ctx)->update_(match_ctx);
     ctx->params->handle.pindex(ctx->table_index);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket update r:%d", ret);
 
@@ -266,7 +272,7 @@ __label__ done;
 
     lock_(ctx);
 
-    SDK_ASSERT(ctx->bucket->read_(ctx) == SDK_RET_OK);
+    SDK_ASSERT(BUCKET(ctx)->read_(ctx) == SDK_RET_OK);
 
     auto ret = find_(ctx, &match_ctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "find r:%d", ret);
@@ -279,7 +285,7 @@ __label__ done;
         match_ctx->params->handle.sindex(match_ctx->table_index);
         ctx->params->handle.sindex(match_ctx->table_index);
     }
-    ctx->params->handle.epoch(match_ctx->bucket->epoch_);
+    ctx->params->handle.epoch(BUCKET(match_ctx)->epoch_);
 
     ctx->params->entry->copy_key_data(match_ctx->entry);
 
@@ -300,7 +306,7 @@ main_table::get_with_handle_(Apictx *ctx) {
         goto done;
     }
 
-    ret = ctx->bucket->read_(ctx);
+    ret = BUCKET(ctx)->read_(ctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket read r:%d", ret);
 
     ctx->params->entry->copy_key_data(ctx->entry);
@@ -331,7 +337,7 @@ __label__ cont_main_table;
             unlock_(ctx);
             continue;
         }
-        SDK_ASSERT(ctx->bucket->read_(ctx) == SDK_RET_OK);
+        SDK_ASSERT(BUCKET(ctx)->read_(ctx) == SDK_RET_OK);
         iterate_stop = base_table::invoke_iterate_cb_(ctx);
         if (unlikely(iterate_stop)) {
             unlock_(ctx);

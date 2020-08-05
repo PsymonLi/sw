@@ -1,24 +1,34 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "ftl_includes.hpp"
+#include <math.h>
+#include "include/sdk/mem.hpp"
+#include "lib/table/ftl/ftl_utils.hpp"
+#include "lib/table/ftl/ftl_table.hpp"
+#include "lib/table/ftl/ftl_bucket.hpp"
 
 sdk_ret_t
-base_table::init_(uint32_t id, uint32_t size) {
+base_table::init_(uint32_t id, uint32_t size, bool main_table) {
     void *mem;
     uint32_t bucket_size = sizeof(Bucket);
+    uint32_t mem_id;
 
     table_id_ = id;
     table_size_ = size;
     num_table_index_bits_ = log2(size);
     assert(floor(num_table_index_bits_) == ceil(num_table_index_bits_));
 
-    mem = SDK_CALLOC(SDK_MEM_ALLOC_FTL_TABLE_BUCKETS,
-                     table_size_ * bucket_size);
+    if (main_table) {
+        mem_id = SDK_MEM_ALLOC_FTL_MAIN_TABLE_BUCKETS;
+    } else {
+        mem_id = SDK_MEM_ALLOC_FTL_HINT_TABLE_BUCKETS;
+    }
+    mem = ftlbase()->ftl_calloc(mem_id, table_size_ * bucket_size);
     if (mem == NULL) {
         return SDK_RET_OOM;
     }
@@ -29,9 +39,15 @@ base_table::init_(uint32_t id, uint32_t size) {
 }
 
 void
-base_table::destroy_(base_table *table) {
-    // Free the Hash table entries.
-    SDK_FREE(SDK_MEM_ALLOC_FTL_TABLE_ENTRIES, table->buckets_);
+base_table::destroy_(base_table *table, bool main_table) {
+    uint32_t mem_id;
+
+    if (main_table) {
+        mem_id = SDK_MEM_ALLOC_FTL_MAIN_TABLE_BUCKETS;
+    } else {
+        mem_id = SDK_MEM_ALLOC_FTL_HINT_TABLE_BUCKETS;
+    }
+    table->ftlbase()->ftl_free(mem_id, table->buckets_);
     table->buckets_ = NULL;
 }
 
@@ -46,7 +62,7 @@ base_table::invoke_iterate_cb_(Apictx *ctx) {
         params.handle.pindex(ctx->pindex);
         params.handle.sindex(ctx->table_index);
     }
-    params.handle.epoch(ctx->bucket->epoch_);
+    params.handle.epoch(BUCKET(ctx)->epoch_);
     params.entry = ctx->entry;
     params.cbdata = ctx->params->cbdata;
     return ctx->params->itercb(&params);

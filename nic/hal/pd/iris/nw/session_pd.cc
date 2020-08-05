@@ -6,6 +6,7 @@
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/timestamp.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "nic/sdk/lib/pal/pal.hpp"
 #include "gen/p4gen/p4/include/p4pd.h"
 #include "gen/p4gen/p4/include/ftl.h"
 #include "nic/include/pd_api.hpp"

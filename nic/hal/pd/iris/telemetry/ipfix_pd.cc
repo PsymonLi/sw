@@ -15,6 +15,8 @@
 #include "lib/periodic/periodic.hpp"
 #include "nic/hal/pd/iris/telemetry/telemetry_pd.hpp"
 
+using sdk::lib::memrev;
+
 namespace hal {
 namespace pd {
 

@@ -692,7 +692,7 @@ ${table_name}::genhash_(sdk_table_api_params_t *params) {
                                     64,
                                     props_->hash_poly);
 #else
-        params->hash_32b = crc32_aarch64(
+        params->hash_32b = sdk::lib::crc32_aarch64(
                                 (uint64_t *)get_sw_entry_pointer(hashkey));
 #endif
         params->hash_valid = true;

@@ -1003,9 +1003,9 @@ hal_state_pd::init_tables(pd_mem_init_args_t *args)
         case P4_TBL_TYPE_INDEX:
             if (tid == P4TBL_ID_SESSION_STATE || tid == P4TBL_ID_FLOW_INFO ||
                 tid == P4TBL_ID_FLOW_STATS) {
-                sdk_table_factory_params_t params;
+                sdk::table::sdk_table_factory_params_t params;
 
-                bzero(&params, sizeof(sdk_table_factory_params_t));
+                bzero(&params, sizeof(sdk::table::sdk_table_factory_params_t));
                 params.entry_trace_en = false;
                 params.table_id = tid;
                 dm_tables_[tid - P4TBL_ID_INDEX_MIN] =

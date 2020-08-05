@@ -5,9 +5,11 @@
 #ifndef __FTL_BASE_HPP__
 #define __FTL_BASE_HPP__
 
-// #undef __FTL_INCLUDES_HPP__
 #include <map>
-#include "ftl_includes.hpp"
+#include "include/sdk/table.hpp"
+#include "include/sdk/base_table_entry.hpp"
+#include "lib/table/ftl/ftl_defines.hpp"
+#include "lib/table/ftl/ftl_apictx.hpp"
 
 namespace sdk {
 namespace table {
@@ -15,8 +17,8 @@ namespace table {
 class ftl_base {
 private:
     static Apictx apictx_[FTL_MAX_THREADS][FTL_MAX_API_CONTEXTS + 1];
-    static Apictx *get_apictx(uint32_t thread_id, int index) { 
-        return &apictx_[thread_id][index]; 
+    static Apictx *get_apictx(uint32_t thread_id, int index) {
+        return &apictx_[thread_id][index];
     }
 
     void *main_table_;
@@ -57,9 +59,14 @@ public:
     sdk_ret_t clear_stats(uint32_t thread_id=0);
 
     virtual base_table_entry_t *get_entry(uint16_t thread_id, int index) = 0;
+    virtual void *ftl_calloc(uint32_t mem_id, size_t size);
+    virtual void ftl_free(uint32_t mem_id, void *ptr);
+    virtual bool restore_state(void);
 };
 
 }   // namespace table
 }   // namespace sdk
+
+using sdk::table::ftl_base;
 
 #endif    // __FTL_BASE_HPP__

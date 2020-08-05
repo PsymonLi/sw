@@ -1,30 +1,33 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
+#include <cstring>
 #include <cinttypes>
-#include "ftl_base.hpp"
-#include "ftl_includes.hpp"
+#include "lib/table/ftl/ftl_utils.hpp"
+#include "lib/table/ftl/ftl_table.hpp"
+#include "lib/table/ftl/ftl_apictx.hpp"
+#include "lib/table/ftl/ftl_platform.hpp"
 
 uint8_t hint_table::nctx_[FTL_MAX_THREADS];
 
 hint_table *
-hint_table::factory(sdk::table::properties_t *props) {
+hint_table::factory(sdk::table::properties_t *props, ftl_base *ftlbase) {
     void *mem = NULL;
     hint_table *table = NULL;
     sdk_ret_t ret = SDK_RET_OK;
 
     mem = (hint_table *) SDK_CALLOC(SDK_MEM_ALLOC_FTL_HINT_TABLE,
-                                          sizeof(hint_table));
+                                    sizeof(hint_table));
     if (!mem) {
         return NULL;
     }
 
     table = new (mem) hint_table();
 
-    ret = table->init_(props);
+    ret = table->init_(props, ftlbase);
     if (ret != SDK_RET_OK) {
         table->~hint_table();
         SDK_FREE(SDK_MEM_ALLOC_FTL_HINT_TABLE, mem);
@@ -34,37 +37,53 @@ hint_table::factory(sdk::table::properties_t *props) {
 }
 
 sdk_ret_t
-hint_table::init_(sdk::table::properties_t *props) {
-    // Size validation
+hint_table::init_(sdk::table::properties_t *props, ftl_base *ftlbase) {
+    // size validation
     SDK_ASSERT(props->stable_size <= ((uint32_t)1 << NUM_SINDEX_BITS));
 
-    auto ret = base_table::init_(props->stable_id,
-                                     props->stable_size);
+    set_ftlbase(ftlbase);
+    auto ret = base_table::init_(props->stable_id, props->stable_size, false);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
-    ret = indexer_.init(table_size_);
-    SDK_ASSERT(ret == SDK_RET_OK);
+    indexer_ = ftlindexer::factory(table_size_, ftlbase);
+    if (indexer_ == NULL) {
+        FTL_TRACE_ERR("Failed to alloc memory for ftlindexer");
+        return SDK_RET_OOM;
+    }
 
-    // Index 0 cannot be used, so reserve it by doing a dummy alloc.
-    uint32_t temp = 0;
-    ret = indexer_.alloc(temp);
-    SDK_ASSERT(ret == SDK_RET_OK);
+    thr_local_pools_ = (ftl_flow_hint_id_thr_local_pool_t *)
+        ftlbase->ftl_calloc(SDK_MEM_ALLOC_FTL_THREAD_HINT_POOL,
+        PDS_FLOW_HINT_POOLS_MAX * sizeof(ftl_flow_hint_id_thr_local_pool_t));
+    if (thr_local_pools_ == NULL) {
+        FTL_TRACE_ERR("Failed to alloc memory for thread local pools");
+        return SDK_RET_OOM;
+    }
+
+    // init values for indexer and thread pool only during non-upgrade case
+    if (!ftlbase->restore_state()) {
+        // Index 0 cannot be used, so reserve it by doing a dummy alloc.
+        uint32_t temp = 0;
+        ret = indexer_->alloc(temp);
+        SDK_ASSERT(ret == SDK_RET_OK);
+
+        for (auto i = 0; i < PDS_FLOW_HINT_POOLS_MAX; i++) {
+            thr_local_pools_[i].pool_count = -1;
+        }
+    }
     FTL_TRACE_VERBOSE("Created hint_table TableID:%d TableSize:%d "
                       "NumTableIndexBits:%d",
                       table_id_, table_size_, num_table_index_bits_);
-
-    for (auto i = 0; i < PDS_FLOW_HINT_POOLS_MAX; i++) {
-        thr_local_pools_[i].pool_count = -1;
-    }
     return ret;
 }
 
 void
 hint_table::destroy_(hint_table *table) {
-    base_table::destroy_(table);
-    table->indexer_.deinit();
+    base_table::destroy_(table, false);
+    ftlindexer::destroy(table->indexer_, table->ftlbase());
+    table->ftlbase()->ftl_free(SDK_MEM_ALLOC_FTL_THREAD_HINT_POOL,
+                               table->thr_local_pools_);
     SDK_FREE(SDK_MEM_ALLOC_FTL_HINT_TABLE, table);
 }
 
@@ -98,7 +117,7 @@ hint_table::alloc_(Apictx *ctx) {
         thr_local_pool->pool_count--;
     }
     else {
-        if (unlikely(indexer_.full() == true)) {
+        if (unlikely(indexer_->full() == true)) {
             return SDK_RET_NO_RESOURCE;
         }
         /* refill pool */
@@ -106,7 +125,7 @@ hint_table::alloc_(Apictx *ctx) {
         spin_lock_();
         while (refill_count) {
             thr_local_pool->pool_count++;
-            ret = indexer_.alloc(hint);
+            ret = indexer_->alloc(hint);
             if (ret != SDK_RET_OK) {
                 thr_local_pool->pool_count--;
                 break;
@@ -140,7 +159,7 @@ hint_table::alloc_(Apictx *ctx) {
 sdk_ret_t
 hint_table::dealloc_(Apictx *ctx) {
     spin_lock_();
-    indexer_.free(ctx->table_index);
+    indexer_->free(ctx->table_index);
     spin_unlock_();
     FTL_TRACE_VERBOSE("hint_table: Freed index:%d", ctx->table_index);
     return SDK_RET_OK;
@@ -211,8 +230,8 @@ __label__ done;
     // Initialize the context
     SDK_ASSERT_RETURN(initctx_(hctx) == SDK_RET_OK, SDK_RET_ERR);
 
-    hctx->bucket->read_(hctx);
-    ret = hctx->bucket->insert_(hctx);
+    BUCKET(hctx)->read_(hctx);
+    ret = BUCKET(hctx)->insert_(hctx);
     if (unlikely(ret == SDK_RET_COLLISION)) {
         // Recursively call the insert_ with hint table context
         ret = insert_(hctx);
@@ -220,7 +239,7 @@ __label__ done;
 
     // Write to hardware
     if (ret == SDK_RET_OK) {
-        ret = hctx->bucket->write_(hctx);
+        ret = BUCKET(hctx)->write_(hctx);
     }
 
 done:
@@ -257,9 +276,9 @@ hint_table::tail_(Apictx *ctx,
     SDK_ASSERT_RETURN(initctx_(tctx) == SDK_RET_OK, SDK_RET_ERR);
 
     lock_(tctx);
-    tctx->bucket->read_(tctx);
+    BUCKET(tctx)->read_(tctx);
 
-    auto ret = tctx->bucket->find_last_hint_(tctx);
+    auto ret = BUCKET(tctx)->find_last_hint_(tctx);
     if (ret == SDK_RET_OK) {
         FTL_TRACE_VERBOSE("%s: find_last_hint_ Ctx: [%s], ret:%d", tctx->idstr(),
                           tctx->metastr(), ret);
@@ -322,7 +341,7 @@ hint_table::defragment_(Apictx *ectx) {
         return ret;
     }
 
-    ret = ectx->bucket->defragment_(ectx, tctx);
+    ret = BUCKET(ectx)->defragment_(ectx, tctx);
     SDK_ASSERT(ret == SDK_RET_OK);
 
     dealloc_(tctx);
@@ -341,10 +360,10 @@ __label__ done;
     auto hctx = ctxnew_(ctx);
     SDK_ASSERT_RETURN(initctx_(hctx) == SDK_RET_OK, SDK_RET_ERR);
 
-    hctx->bucket->read_(hctx);
+    BUCKET(hctx)->read_(hctx);
 
     // Remove entry from the bucket
-    auto ret = hctx->bucket->remove_(hctx);
+    auto ret = BUCKET(hctx)->remove_(hctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket remove r:%d", ret);
 
     if (hctx->exmatch) {
@@ -374,10 +393,10 @@ __label__ done;
     SDK_ASSERT_RETURN(initctx_(hctx) == SDK_RET_OK, SDK_RET_ERR);
 
     lock_(hctx);
-    hctx->bucket->read_(hctx);
+    BUCKET(hctx)->read_(hctx);
 
     // Remove entry from the bucket
-    auto ret = hctx->bucket->find_(hctx);
+    auto ret = BUCKET(hctx)->find_(hctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket find r:%d", ret);
 
     if (hctx->exmatch) {
@@ -401,7 +420,7 @@ hint_table::get_with_handle_(Apictx *ctx) {
     auto hctx = ctxnew_(ctx);
     SDK_ASSERT(initctx_with_handle_(hctx) == SDK_RET_OK);
 
-    auto ret = hctx->bucket->read_(hctx);
+    auto ret = BUCKET(hctx)->read_(hctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket read r:%d", ret);
     hctx->params->entry->copy_key_data(hctx->entry);
 done:
@@ -420,7 +439,7 @@ hint_table::iterate_(Apictx *ctx) {
     auto hctx = ctxnew_(ctx);
     SDK_ASSERT_RETURN(hctx->is_max_recircs() == false, SDK_RET_MAX_RECIRC_EXCEED);
     SDK_ASSERT_RETURN(initctx_(hctx) == SDK_RET_OK, SDK_RET_ERR);
-    SDK_ASSERT(hctx->bucket->read_(hctx) == SDK_RET_OK);
+    SDK_ASSERT(BUCKET(hctx)->read_(hctx) == SDK_RET_OK);
     iterate_stop = base_table::invoke_iterate_cb_(hctx);
     if (unlikely(iterate_stop)) {
         return iterate_stop;
@@ -466,11 +485,12 @@ hint_table::clear_(Apictx *ctx) {
                            ctx->props->stable_base_mem_pa,
                            ctx->props->stable_size,
                            ctx->entry->entry_size());
-        indexer_.clear(); 
+        indexer_->clear();
 
         for (auto i = 0; i < PDS_FLOW_HINT_POOLS_MAX; i++) {
             thr_local_pools_[i].pool_count = -1;
-            memset(thr_local_pools_[i].hint_ids, 0, sizeof(thr_local_pools_[i].hint_ids));
+            memset(thr_local_pools_[i].hint_ids, 0,
+                   sizeof(thr_local_pools_[i].hint_ids));
         }
     }
 done:

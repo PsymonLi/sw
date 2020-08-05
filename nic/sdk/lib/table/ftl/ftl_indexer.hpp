@@ -1,9 +1,12 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #ifndef __FTL_INDEXER_HPP__
 #define __FTL_INDEXER_HPP__
 
+#include "include/sdk/mem.hpp"
+#include "lib/table/ftl/ftl_base.hpp"
 
 #define WORDSIZE 64
 #define I2W(_i) ((_i)/WORDSIZE)
@@ -12,6 +15,7 @@
 namespace sdk {
 namespace table {
 namespace ftlint {
+
 class indexer {
 private:
     uint64_t          *pool;
@@ -23,13 +27,39 @@ private:
     uint32_t          total_;
 
 public:
-    sdk_ret_t init(uint32_t num_entries) {
+    static indexer *factory(uint32_t num_entries, ftl_base *ftlbase) {
+        void *mem;
+        indexer *idxr;
+        sdk_ret_t ret;
+
+        mem = (indexer *)ftlbase->ftl_calloc(SDK_MEM_ALLOC_FTL_INDEXER,
+                                             sizeof(indexer));
+        if (mem == NULL) {
+            FTL_TRACE_ERR("Failed to alloc memory for ftlindexer");
+            return NULL;
+        }
+        idxr = new (mem) indexer();
+
+        // init values for indexer only during non-upgrade case
+        if (!ftlbase->restore_state()) {
+            ret = idxr->init_(num_entries, ftlbase);
+            if (ret != SDK_RET_OK) {
+                idxr->~indexer();
+                ftlbase->ftl_free(SDK_MEM_ALLOC_FTL_INDEXER, mem);
+                idxr = NULL;
+            }
+        }
+        return idxr;
+    }
+
+    sdk_ret_t init_(uint32_t num_entries, ftl_base *ftlbase) {
         pool_size = num_entries / 8;
-        pool = (uint64_t *)SDK_CALLOC(SDK_MEM_ALLOC_INDEX_POOL, pool_size);
+        pool = (uint64_t *)ftlbase->ftl_calloc(SDK_MEM_ALLOC_FTL_INDEXER_POOL,
+                                               pool_size);
         if (pool == NULL) {
+            FTL_TRACE_ERR("Failed to alloc pool for indexer");
             return SDK_RET_OOM;
         }
-
         last_alloc = 0;
         last_free = 0;
         usage_ = 0;
@@ -38,8 +68,13 @@ public:
         return SDK_RET_OK;
     }
 
-    void deinit() {
-        SDK_FREE(SDK_MEM_ALLOC_INDEX_POOL, pool);
+    static void destroy(indexer *idxr, ftl_base *ftlbase) {
+        idxr->deinit_(ftlbase);
+        ftlbase->ftl_free(SDK_MEM_ALLOC_FTL_INDEXER, idxr);
+    }
+
+    void deinit_(ftl_base *ftlbase) {
+        ftlbase->ftl_free(SDK_MEM_ALLOC_FTL_INDEXER_POOL, pool);
     }
 
     sdk_ret_t alloc(uint32_t &ret_index) {

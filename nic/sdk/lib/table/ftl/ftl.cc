@@ -6,7 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "ftl_base.hpp"
+#include "lib/utils/time_profile.hpp"
+#include "lib/p4/p4_api.hpp"
+#include "lib/p4/p4_utils.hpp"
+#include "include/sdk/mem.hpp"
+#include "lib/table/ftl/ftl_base.hpp"
+#include "lib/table/ftl/ftl_table.hpp"
 
 Apictx ftl_base::apictx_[FTL_MAX_THREADS][FTL_MAX_API_CONTEXTS + 1];
 
@@ -75,7 +80,7 @@ ftl_base::init_(sdk_table_factory_params_t *params) {
     props_->stable_size = ctinfo.tabledepth;
     SDK_ASSERT(props_->stable_size);
 
-    main_table_ = main_table::factory(props_);
+    main_table_ = main_table::factory(props_, this);
     SDK_ASSERT_RETURN(main_table_, SDK_RET_OOM);
 
     FTL_TRACE_INFO("Creating Flow table.");
@@ -91,6 +96,21 @@ ftl_base::init_(sdk_table_factory_params_t *params) {
                    props_->stable_base_mem_pa, props_->stable_base_mem_va);
 
     return SDK_RET_OK;
+}
+
+void *
+ftl_base::ftl_calloc(uint32_t mem_id, size_t size) {
+    return SDK_CALLOC(mem_id, size);
+}
+
+void
+ftl_base::ftl_free(uint32_t mem_id, void *ptr) {
+    return SDK_FREE(mem_id, ptr);
+}
+
+bool
+ftl_base::restore_state(void) {
+    return false;
 }
 
 //---------------------------------------------------------------------------

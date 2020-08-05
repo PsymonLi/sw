@@ -6,9 +6,11 @@
 #define __FTL_APICTX_HPP__
 
 #include "include/sdk/base_table_entry.hpp"
+#include "lib/table/ftl/ftl_defines.hpp"
+#include "lib/table/ftl/ftl_stats.hpp"
 
 #define FTL_MAX_API_CONTEXTS 8
-#define FTL_MAX_THREADS      8 
+#define FTL_MAX_THREADS      8
 
 namespace sdk {
 namespace table {
@@ -66,9 +68,9 @@ public:
     bool exmatch;
     bool write_pending;
     bool inited;
-    
+
     uint32_t table_id;
-    
+
     // 32 Bits
     uint32_t table_index;
     uint32_t pindex;
@@ -79,8 +81,8 @@ public:
     // 32 Bits
     uint32_t hint;
     uint32_t thread_id:6;
-    Bucket *bucket;
-    
+    void *bucket;
+
     // Properties of this table
     sdk::table::properties_t *props;
     // API Params of this context
@@ -197,5 +199,7 @@ public:
 } // namespace internal
 } // namespace table
 } // namespace sdk
+
+using sdk::table::internal::Apictx;
 
 #endif   // __FTL_APICTX_HPP__

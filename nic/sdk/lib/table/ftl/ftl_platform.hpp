@@ -1,6 +1,7 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #ifndef __FTL_PLATFORM_HPP__
 #define __FTL_PLATFORM_HPP__
 

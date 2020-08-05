@@ -1,8 +1,11 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #ifndef __FTL_STATS_HPP__
 #define __FTL_STATS_HPP__
+
+#include "include/sdk/table.hpp"
 
 namespace sdk {
 namespace table {
@@ -203,5 +206,8 @@ public:
 } // namespace ftlint
 } // namespace table
 } // namespace sdk
+
+using sdk::table::ftlint::apistats;
+using sdk::table::ftlint::tablestats;
 
 #endif // __FTL_STATS_HPP__

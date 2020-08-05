@@ -1,12 +1,16 @@
 //-----------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
+
 #ifndef __FTL_TABLE_HPP__
 #define __FTL_TABLE_HPP__
 
-#define PDS_FLOW_HINT_POOL_COUNT_MAX    256
-#define PDS_FLOW_HINT_POOLS_MAX 8
-#define FTL_MAX_THREADS 8
+#include "lib/table/ftl/ftl_base.hpp"
+#include "lib/table/ftl/ftl_indexer.hpp"
+#include "lib/table/ftl/ftl_bucket.hpp"
+
+using ftlindexer = sdk::table::ftlint::indexer;
+
 namespace sdk {
 namespace table {
 namespace internal {
@@ -17,9 +21,14 @@ typedef struct ftl_flow_hint_id_thr_local_pool_s {
 } ftl_flow_hint_id_thr_local_pool_t;
 
 class base_table {
+private:
+    ftl_base *ftlbase_;
+
 public:
     friend ftl_base;
-    static void destroy_(base_table *table);
+    static void destroy_(base_table *table, bool main_table);
+    ftl_base *ftlbase(void) { return ftlbase_; }
+    void set_ftlbase(ftl_base *ftlbase) { ftlbase_ = ftlbase; }
 
 protected:
     uint32_t table_id_;
@@ -29,7 +38,7 @@ protected:
     volatile uint8_t slock_;
 
 protected:
-    sdk_ret_t init_(uint32_t id, uint32_t size);
+    sdk_ret_t init_(uint32_t id, uint32_t size, bool main_table);
     void spin_lock_(void) {
         while(__sync_lock_test_and_set(&slock_, 1));
     }
@@ -63,14 +72,14 @@ public:
     static void destroy_(hint_table *table);
 
 private:
-    ftlindexer indexer_;
+    ftlindexer *indexer_;
     static uint8_t nctx_[FTL_MAX_THREADS];
-    ftl_flow_hint_id_thr_local_pool_t thr_local_pools_[PDS_FLOW_HINT_POOLS_MAX];
+    ftl_flow_hint_id_thr_local_pool_t *thr_local_pools_;
 
 private:
     sdk_ret_t alloc_(Apictx *ctx);
     sdk_ret_t dealloc_(Apictx *ctx);
-    sdk_ret_t init_(sdk::table::properties_t *props);
+    sdk_ret_t init_(sdk::table::properties_t *props, ftl_base *ftlbase);
     sdk_ret_t initctx_(Apictx *ctx);
     sdk_ret_t initctx_with_handle_(Apictx *ctx);
     sdk_ret_t insert_(Apictx *ctx);
@@ -89,7 +98,7 @@ private:
 
 
 public:
-    static hint_table* factory(sdk::table::properties_t *props);
+    static hint_table* factory(sdk::table::properties_t *props, ftl_base *ftlbase);
     hint_table() {
         memset(&nctx_, 0, sizeof(nctx_));
     }
@@ -106,7 +115,7 @@ private:
     uint32_t num_hash_bits_;
 
 private:
-    sdk_ret_t init_(sdk::table::properties_t *props);
+    sdk_ret_t init_(sdk::table::properties_t *props, ftl_base *ftlbase);
     sdk_ret_t initctx_(Apictx *ctx);
     sdk_ret_t initctx_with_handle_(Apictx *ctx);
     sdk_ret_t insert_(Apictx *ctx);
@@ -124,7 +133,7 @@ private:
     void unlock_(Apictx *ctx);
 
 public:
-    static main_table* factory(sdk::table::properties_t *props);
+    static main_table* factory(sdk::table::properties_t *props, ftl_base *ftlbase);
 
     main_table() {
         hint_table_ = NULL;
@@ -138,5 +147,9 @@ public:
 } // namespace internal
 } // namespace table
 } // namespace sdk
+
+using sdk::table::internal::base_table;
+using sdk::table::internal::main_table;
+using sdk::table::internal::hint_table;
 
 #endif    // __FTL_TABLE_HPP__
