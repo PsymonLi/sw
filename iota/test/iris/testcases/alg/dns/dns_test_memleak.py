@@ -107,6 +107,8 @@ def Verify(tc):
         if cmd.exit_code != 0 and not api.Trigger_IsBackgroundCommand(cmd):
              if tc.cmd_cookies[cookie_idx].find("Show session") != -1 and cmd.exit_code == 0:
                  result = api.types.status.SUCCESS
+             elif tc.cmd_cookies[cookie_idx].find("Remove resolv.conf") != -1:
+                 result = api.types.status.SUCCESS
              else:
                  result = api.types.status.FAILURE
         if tc.cmd_cookies[cookie_idx].find("Show session") != -1 and \

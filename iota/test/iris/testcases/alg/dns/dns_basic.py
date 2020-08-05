@@ -59,9 +59,9 @@ def Trigger(tc):
                 "/nic/bin/shmdump -file=/dev/shm/fwlog_ipc_shm -type=fwlog > /obfl/shmdump")
     tc.cmd_cookies.append("Dump fwlog")
 
-    api.Trigger_AddNaplesCommand(req, naples.node_name,
-                 "cat /var/log/pensando/hal.log > /obfl/hallogs")
-    tc.cmd_cookies.append("Dump hal logs")
+    #api.Trigger_AddNaplesCommand(req, naples.node_name,
+    #             "cat /var/log/pensando/hal.log > /obfl/hallogs")
+    #tc.cmd_cookies.append("Dump hal logs")
 
     api.Trigger_AddCommand(req, client.node_name, client.workload_name,
                         "sudo rm /etc/resolv.conf")
