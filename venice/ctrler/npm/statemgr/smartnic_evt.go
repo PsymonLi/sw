@@ -154,7 +154,7 @@ func (sm *Statemgr) dscCreate(smartNic *ctkit.DistributedServiceCard) (*Distribu
 			profileState.DscList[smartNic.ObjectMeta.Name] = profileVersion
 			sns.profileVersion = profileVersion
 			//sns.NodeVersion = cluster.DSCProfileVersion{}
-			ret := profileState.PushObj.AddObjReceivers([]objReceiver.Receiver{sns.recvHandle})
+			ret := sm.AddReceiverToPushObject(profileState, []objReceiver.Receiver{sns.recvHandle})
 			if ret != nil {
 				log.Infof("Add receiver failed %v", ret)
 			} else {
@@ -271,12 +271,11 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 				}
 				profileState.DscList[smartNic.ObjectMeta.Name] = profileVersion
 				sns.profileVersion = profileVersion
-				ret := profileState.PushObj.AddObjReceivers([]objReceiver.Receiver{sns.recvHandle})
+				ret := sm.AddReceiverToPushObject(profileState, []objReceiver.Receiver{sns.recvHandle})
 				if ret != nil {
 					log.Infof("Add receiver failed %v for dsc %s for profile %s", ret, smartNic.Name, profile)
 				} else {
 					log.Infof("Added the dsc: %s to profile: %s", smartNic.Name, profile)
-					sm.PeriodicUpdaterPush(profileState)
 				}
 				profileState.DSCProfile.Unlock()
 			}
@@ -321,7 +320,7 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 				profileState.DscList[smartNic.ObjectMeta.Name] = profileVersion
 				sns.profileVersion = profileVersion
 				//sns.NodeVersion = cluster.DSCProfileVersion{}
-				ret := profileState.PushObj.AddObjReceivers([]objReceiver.Receiver{sns.recvHandle})
+				ret := sm.AddReceiverToPushObject(profileState, []objReceiver.Receiver{sns.recvHandle})
 				if ret != nil {
 					log.Infof("Add receiver failed %v", ret)
 				} else {
@@ -329,7 +328,6 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 				}
 
 				profileState.DSCProfile.Unlock()
-				sm.PeriodicUpdaterPush(profileState)
 			} else {
 				//Retry as this might be timing
 				log.Errorf("Profile %v not found", newProfile)
@@ -346,8 +344,7 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 				//Ideally OnOperDelete from agent should confirm this.
 				// However the way agent is cleaning up the watche Channels, delete response may not reach
 				// npm. Propagation status is whether new change is posted to hardware or not.
-				delete(oldProfileState.NodeVersions, nsnic.ObjectMeta.Name)
-				ret := oldProfileState.PushObj.RemoveObjReceivers([]objReceiver.Receiver{sns.recvHandle})
+				ret := sm.RemoveReceiverFromPushObject(oldProfileState, []objReceiver.Receiver{sns.recvHandle})
 				if ret != nil {
 					log.Infof("Remove receiver failed %v", ret)
 				} else {
@@ -356,8 +353,6 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 
 			}
 			oldProfileState.DSCProfile.Unlock()
-			sm.PeriodicUpdaterPush(oldProfileState)
-
 		}
 	} else {
 		log.Infof("No change in profile")
@@ -403,11 +398,9 @@ func (sm *Statemgr) deleteDsc(smartNic *ctkit.DistributedServiceCard) (*Distribu
 		if _, ok := oldProfileState.DscList[smartNic.ObjectMeta.Name]; ok {
 			delete(oldProfileState.DscList, smartNic.ObjectMeta.Name)
 
-			oldProfileState.PushObj.RemoveObjReceivers([]objReceiver.Receiver{hs.recvHandle})
+			sm.RemoveReceiverFromPushObject(oldProfileState, []objReceiver.Receiver{hs.recvHandle})
 		}
 		oldProfileState.DSCProfile.Unlock()
-		sm.PeriodicUpdaterPush(oldProfileState)
-
 	}
 	return hs, nil
 }

@@ -4,7 +4,6 @@ package statemgr
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -26,27 +25,25 @@ type dscProfileVersion struct {
 
 // DSCProfileState is a wrapper for dscProfile object
 type DSCProfileState struct {
-	DSCProfile   *ctkit.DSCProfile            `json:"-"` // dscProfile object
-	stateMgr     *Statemgr                    // pointer to state manager
-	NodeVersions map[string]string            // Map  of node -> version
-	DscList      map[string]dscProfileVersion // set for list of dsc
-	PushObj      memdb.PushObjectHandle
+	smObjectTracker
+	DSCProfile      *ctkit.DSCProfile `json:"-"` // dscProfile object
+	stateMgr        *Statemgr         // pointer to state manager
+	PushObj         memdb.PushObjectHandle
+	DscList         map[string]dscProfileVersion
+	obj             *netproto.Profile
+	markedForDelete bool
 }
 
-// initNodeVersions initializes node versions for the policy
-func (dps *DSCProfileState) initNodeVersions() error {
-	dscs, _ := dps.stateMgr.ListDistributedServiceCards()
+//TrackedDSCs tracked DSCs
+func (dps *DSCProfileState) TrackedDSCs() []string {
 
+	trackedDSCs := []string{}
 	// walk all smart nics
-	for _, dsc := range dscs {
-		if dps.stateMgr.isDscAdmitted(&dsc.DistributedServiceCard.DistributedServiceCard) {
-			if _, ok := dps.NodeVersions[dsc.DistributedServiceCard.Name]; !ok {
-				dps.NodeVersions[dsc.DistributedServiceCard.Name] = ""
-			}
-		}
+	for dsc := range dps.DscList {
+		trackedDSCs = append(trackedDSCs, dsc)
 	}
 
-	return nil
+	return trackedDSCs
 }
 func (dps *DSCProfileState) isOrchestratorCompatible() bool {
 	return dps.DSCProfile.Spec.DeploymentTarget == cluster.DSCProfileSpec_VIRTUALIZED.String() && dps.DSCProfile.Spec.FeatureSet == cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String()
@@ -79,11 +76,11 @@ func (sm *Statemgr) GetDSCProfileWatchOptions() *api.ListWatchOptions {
 // NewDSCProfileState creates new dscProfile state object
 func NewDSCProfileState(dscProfile *ctkit.DSCProfile, stateMgr *Statemgr) (*DSCProfileState, error) {
 	dps := DSCProfileState{
-		DSCProfile:   dscProfile,
-		stateMgr:     stateMgr,
-		NodeVersions: make(map[string]string),
-		DscList:      make(map[string]dscProfileVersion),
+		DSCProfile: dscProfile,
+		stateMgr:   stateMgr,
+		DscList:    make(map[string]dscProfileVersion),
 	}
+	dps.smObjectTracker.init(&dps)
 	dscProfile.HandlerCtx = &dps
 
 	return &dps, nil
@@ -139,22 +136,20 @@ func (sm *Statemgr) OnDSCProfileCreate(dscProfile *ctkit.DSCProfile) error {
 	}()
 
 	// store it in local DB
-	pushObj, err := sm.mbus.AddPushObject(dscProfile.MakeKey("cluster"), convertDSCProfile(dps), references(dscProfile), nil)
+	pushObj, err := sm.AddPushObjectToMbus(dscProfile.MakeKey("cluster"), dps, references(dscProfile), nil)
 	dps.PushObj = pushObj
-	dps.initNodeVersions()
-	sm.PeriodicUpdaterPush(dps)
 
 	return nil
 }
 
 // OnDSCProfileUpdate handles update event
-func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, nfwp *cluster.DSCProfile) error {
+func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, ndsp *cluster.DSCProfile) error {
 	// see if anything changed
-	log.Infof("Received update %v\n", nfwp)
-	_, ok := ref.ObjDiff(dscProfile.Spec, nfwp.Spec)
-	if (nfwp.GenerationID == dscProfile.GenerationID) && !ok {
+	log.Infof("Received update %v\n", ndsp)
+	_, ok := ref.ObjDiff(dscProfile.Spec, ndsp.Spec)
+	if (ndsp.GenerationID == dscProfile.GenerationID) && !ok {
 		log.Infof("No update received")
-		dscProfile.ObjectMeta = nfwp.ObjectMeta
+		dscProfile.ObjectMeta = ndsp.ObjectMeta
 		return nil
 	}
 
@@ -165,8 +160,8 @@ func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, nfwp *clust
 	}
 
 	// update the object in mbus
-	dps.DSCProfile.Spec = nfwp.Spec
-	dps.DSCProfile.ObjectMeta = nfwp.ObjectMeta
+	dps.DSCProfile.Spec = ndsp.Spec
+	dps.DSCProfile.ObjectMeta = ndsp.ObjectMeta
 	dps.DSCProfile.Status = cluster.DSCProfileStatus{}
 
 	// Stop all migration for DSCs associated with this Profile if profile is no longer compatible
@@ -190,16 +185,14 @@ func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, nfwp *clust
 
 	log.Infof("Sending update received")
 
-	dps.PushObj.UpdateObjectWithReferences(dscProfile.MakeKey("cluster"), convertDSCProfile(dps), references(dscProfile))
+	dscs := dps.DscList
+	for dsc := range dscs {
+		dps.DscList[dsc] = dscProfileVersion{dscProfile.Name, ndsp.GenerationID}
+	}
+	sm.UpdatePushObjectToMbus(dscProfile.MakeKey("cluster"), dps, references(dscProfile))
 
 	log.Infof("Updated dscProfile: %+v", dscProfile)
 
-	dscs := dps.DscList
-	for dsc := range dscs {
-		dps.DscList[dsc] = dscProfileVersion{dscProfile.Name, nfwp.GenerationID}
-	}
-	dps.initNodeVersions()
-	sm.PeriodicUpdaterPush(dps)
 	return nil
 }
 
@@ -211,10 +204,11 @@ func (sm *Statemgr) OnDSCProfileDelete(dscProfile *ctkit.DSCProfile) error {
 		log.Errorf("Could not find the dscProfile %v. Err: %v", dscProfile, err)
 		return err
 	}
+	dps.markedForDelete = true
 
 	log.Infof("Deleting dscProfile: %+v %v", dscProfile, dps)
 
-	return dps.PushObj.DeleteObjectWithReferences(dscProfile.MakeKey("cluster"), convertDSCProfile(dps), references(dscProfile))
+	return sm.DeletePushObjectToMbus(dscProfile.MakeKey("cluster"), dps, references(dscProfile))
 }
 
 // OnDSCProfileReconnect is called when ctkit reconnects to apiserver
@@ -243,7 +237,22 @@ func (dps *DSCProfileState) GetKind() string {
 	return dps.DSCProfile.GetKind()
 }
 
-func (dps *DSCProfileState) propagatationStatusDifferent(
+// GetGenerationID returns the kind of DSCProfile
+func (dps *DSCProfileState) GetGenerationID() string {
+	return dps.DSCProfile.GetGenerationID()
+}
+
+//GetDBObject get db object
+func (dps *DSCProfileState) GetDBObject() memdb.Object {
+	return convertDSCProfile(dps)
+}
+
+//PushObject get push object
+func (dps *DSCProfileState) PushObject() memdb.PushObjectHandle {
+	return dps.PushObj
+}
+
+func (sm *Statemgr) propagatationStatusDifferent(
 	current *cluster.PropagationStatus,
 	other *cluster.PropagationStatus) bool {
 
@@ -273,61 +282,35 @@ func (dps *DSCProfileState) propagatationStatusDifferent(
 	return false
 }
 
-func (dps *DSCProfileState) updatePropagationStatus(genID string,
-	current *cluster.PropagationStatus, nodeVersions map[string]string) *cluster.PropagationStatus {
-
-	objs := dps.stateMgr.ListObjects("DistributedServiceCard")
-	newProp := &cluster.PropagationStatus{GenerationID: genID}
-	pendingNodes := []string{}
-	newProp.Updated = 0
-	for _, obj := range objs {
-		snic, err := DistributedServiceCardStateFromObj(obj)
-		if err != nil || !dps.stateMgr.isDscAdmitted(&snic.DistributedServiceCard.DistributedServiceCard) {
-			continue
-		}
-		if _, ok := dps.DscList[snic.DistributedServiceCard.Name]; !ok {
-			continue
-		}
-
-		if ver, ok := nodeVersions[snic.DistributedServiceCard.Name]; ok && ver == genID {
-			newProp.Updated++
-		} else {
-			pendingNodes = append(pendingNodes, snic.DistributedServiceCard.Name)
-			newProp.Pending++
-			if current.MinVersion == "" || versionToInt(ver) < versionToInt(newProp.MinVersion) {
-				newProp.MinVersion = ver
-			}
-		}
-	}
-	// set status
-	if newProp.Pending == 0 {
-		newProp.Status = fmt.Sprintf("Propagation Complete")
-		newProp.PendingNaples = []string{}
-	} else {
-		newProp.Status = fmt.Sprintf("Propagation pending on: %s", strings.Join(pendingNodes, ", "))
-		newProp.PendingNaples = pendingNodes
-	}
-	return newProp
-}
-
 // Write write the object to api server
 func (dps *DSCProfileState) Write() error {
-	var err error
 	log.Infof("dscProfile %s Evaluate status", dps.DSCProfile.Name)
 	dps.DSCProfile.Lock()
 	defer dps.DSCProfile.Unlock()
-	prop := &dps.DSCProfile.Status.PropagationStatus
-	newProp := dps.updatePropagationStatus(dps.DSCProfile.GenerationID, prop, dps.NodeVersions)
-	/* Not checking the difference in status as genId could be diff.We dont have genID to compare
-	 */
-	dps.DSCProfile.Status.PropagationStatus = *newProp
-	err = dps.DSCProfile.Write()
-	if err != nil {
-		log.Errorf("dscProfile %s Update failed %s", dps.DSCProfile.Name, err)
-		dps.DSCProfile.Status.PropagationStatus = *prop
+
+	if dps.markedForDelete {
+		return nil
 	}
-	log.Infof("dscProfile %s Evaluate status done", dps.DSCProfile.Name)
-	return err
+
+	propStatus := dps.getPropStatus()
+	newProp := &cluster.PropagationStatus{
+		GenerationID:  propStatus.generationID,
+		MinVersion:    propStatus.minVersion,
+		Pending:       propStatus.pending,
+		PendingNaples: propStatus.pendingDSCs,
+		Updated:       propStatus.updated,
+		Status:        propStatus.status,
+	}
+	prop := &dps.DSCProfile.Status.PropagationStatus
+
+	//Do write only if changed
+	if dps.stateMgr.propagatationStatusDifferent(prop, newProp) {
+		dps.DSCProfile.Status.PropagationStatus = *newProp
+		log.Infof("dscProfile %s Evaluate status done writing %v", dps.DSCProfile.Name, dps.DSCProfile.Status)
+		return dps.DSCProfile.Write()
+	}
+
+	return nil
 }
 
 // ListDSCProfiles lists all apps
@@ -396,25 +379,16 @@ func (sm *Statemgr) UpdateDSCProfileStatusOnOperDelete(nodeuuid, tenant, name, g
 
 	// lock profile for concurrent modifications
 	dscProfile.DSCProfile.Lock()
-	update := false
-	_, ok := dscProfile.DscList[snic.DistributedServiceCard.Name]
-
-	if !ok {
-		log.Infof("OnOperDelete: received status for profile %s tenant %s nodeuud %s", name, tenant, nodeuuid)
-		// update node version
-		delete(dscProfile.NodeVersions, nodeuuid)
-		update = true
+	if _, ok := dscProfile.DscList[snic.DistributedServiceCard.Name]; ok {
+		dscProfile.updateNodeVersion(nodeuuid, generationID)
 	}
 
 	dscProfile.DSCProfile.Unlock()
-	if update {
-		sm.PeriodicUpdaterPush(dscProfile)
-	}
 }
 
 // UpdateDSCProfileStatusOnOperUpdate updates the profile status on Create/Update
 func (sm *Statemgr) UpdateDSCProfileStatusOnOperUpdate(nodeuuid, tenant, name, generationID string) {
-	//log.Infof("OnOperUpdate: received status for profile %s tenant %s nodeuud %s", name, tenant, nodeuuid)
+	log.Infof("OnOperUpdate: received status for profile %s tenant %s nodeuud %s", name, tenant, nodeuuid)
 	dscProfile, err := sm.FindDSCProfile(tenant, name)
 	if err != nil {
 		return
@@ -433,24 +407,8 @@ func (sm *Statemgr) UpdateDSCProfileStatusOnOperUpdate(nodeuuid, tenant, name, g
 	dscProfile.DSCProfile.Lock()
 	expVersion, ok := dscProfile.DscList[snic.DistributedServiceCard.Name]
 
-	update := false
-	if ok && expVersion.profileName == name && expVersion.agentGenID == generationID {
-		// update node version
-		if dscProfile.NodeVersions[nodeuuid] != generationID {
-			log.Infof("OnOperUpdate:Enqueue profile for status %s tenant %s nodeuud %s", name, tenant, nodeuuid)
-			dscProfile.NodeVersions[nodeuuid] = generationID
-
-			// ToDo: Writing status from NPM conflicts with CMD in integ tests.
-			//  We have to fix this eventually
-			//snic.NodeVersion = cluster.DSCProfileVersion{ProfileName: name, GenerationID: generationID}
-			update = true
-
-		}
+	if ok && expVersion.profileName == name {
+		dscProfile.updateNodeVersion(nodeuuid, generationID)
 	}
 	dscProfile.DSCProfile.Unlock()
-	if update {
-		sm.PeriodicUpdaterPush(dscProfile)
-	}
-	//log.Infof("OnOperUpdate: received status for profile %s tenant %s nodeuud %s done", name, tenant, nodeuuid)
-
 }
