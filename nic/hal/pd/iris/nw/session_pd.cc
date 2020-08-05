@@ -93,8 +93,8 @@ p4pd_add_upd_flow_stats_table_entry (uint32_t *assoc_hw_idx, uint64_t permit_pac
         HAL_TRACE_ERR("flow stats table write failure, err : {}", ret);
         return ret;
     }
-    HAL_TRACE_DEBUG("Setting the last seen timestamp: {} clock {} hwIndx: {}",
-                     fs_entry.get_last_seen_timestamp(), clock, *assoc_hw_idx);
+    HAL_TRACE_VERBOSE("Setting the last seen timestamp: {} clock {} hwIndx: {}",
+                      fs_entry.get_last_seen_timestamp(), clock, *assoc_hw_idx);
     return HAL_RET_OK;
 }
 
@@ -1090,7 +1090,7 @@ pd_session_create (pd_func_args_t *pd_func_args)
     sdk::timestamp_to_nsecs(&ts, &sw_ns);
     args->clock = (sw_ns/TIME_NSECS_PER_MSEC);
     args->last_seen_clock = args->clock;
-    HAL_TRACE_DEBUG("sw-ns: {} clock: {}", sw_ns, args->clock);
+    HAL_TRACE_VERBOSE("sw-ns: {} clock: {}", sw_ns, args->clock);
 
     if (session->syncing_session) {
         args->last_seen_clock = ((sw_ns + VMOTION_AGE_DELAY)/TIME_NSECS_PER_MSEC);
