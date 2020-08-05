@@ -464,6 +464,11 @@ func (md *MetadataMgr) checkNumReplicas() error {
 	md.Lock()
 	defer md.Unlock()
 
+	if len(md.cluster.GetActiveNodes()) == 1 && md.cluster.ShardMap.LastReplicaID > uint64(md.cfg.NumShards) {
+		log.Errorf("!! cluster has only one node %+v last replica %v", md.cluster.NodeMap, md.cluster.ShardMap.LastReplicaID)
+		return nil
+	}
+
 	// scan all shards and see if any of them have less replicas than desired
 	for _, shard := range md.cluster.ShardMap.Shards {
 		if shard.NumReplicas < md.cluster.ShardMap.DesiredReplicas && len(md.cluster.GetActiveNodes()) > 0 {
