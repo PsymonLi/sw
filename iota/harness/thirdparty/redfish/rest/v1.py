@@ -801,7 +801,7 @@ class RestClientBase(object):
                     LOGGER.debug('HTTP REQUEST: %s\n\tPATH: %s\n\tBODY: %s'% \
                                 (restreq.method, restreq.path, 'binary body'))
             attempts = attempts + 1
-            LOGGER.info('Attempt %s of %s', attempts, path)
+            LOGGER.debug('Attempt %s of %s', attempts, path)
 
             try:
                 while True:
@@ -815,7 +815,7 @@ class RestClientBase(object):
                     inittime = time.clock()
                     resp = self._conn.getresponse()
                     endtime = time.clock()
-                    LOGGER.info('Response Time to %s: %s seconds.'% \
+                    LOGGER.debug('Response Time to %s: %s seconds.'% \
                                         (restreq.path, str(endtime-inittime)))
 
                     if resp.getheader('Connection') == 'close':
@@ -847,7 +847,7 @@ class RestClientBase(object):
 
                 if not cause_exception:
                     cause_exception = excp
-                LOGGER.info('Retrying %s [%s]'% (path, excp))
+                LOGGER.debug('Retrying %s [%s]'% (path, excp))
                 time.sleep(1)
 
                 self.__init_connection()
@@ -919,8 +919,8 @@ class RestClientBase(object):
             resp = self._rest_request(self.login_url, method="POST", \
                                                     body=data, headers=headers)
 
-            LOGGER.info(json.loads('%s' % resp.text))
-            LOGGER.info('Login returned code %s: %s', resp.status, resp.text)
+            LOGGER.debug(json.loads('%s' % resp.text))
+            LOGGER.debug('Login returned code %s: %s', resp.status, resp.text)
             self.__session_key = resp.session_key
             if resp.session_location:
                 self.__session_location = resp.session_location

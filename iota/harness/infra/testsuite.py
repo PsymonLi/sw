@@ -726,6 +726,10 @@ class TestSuite:
     def PrintReport(self):
         if self.__skip:
            return types.status.SUCCESS
+        try: 
+            self.GetTopology().PrintTestbedInfo()
+        except Exception as e:
+            Logger.debug("Error while collecting testbed info %s", e)
         print("\nTestSuite: %s" % self.__spec.meta.name)
         print(types.HEADER_SUMMARY)
         print(types.FORMAT_TESTCASE_SUMMARY %\

@@ -1137,6 +1137,12 @@ def RestartNodes(nodes, restartMode='', useNcsi=False):
 def IpmiNodes(nodes, ipmiMethod, useNcsi=False):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().IpmiNodes(nodes,ipmiMethod,useNcsi)
 
+def PowerCycleNodes(nodes, powerCycleMethod='apc'):
+    if powerCycleMethod == 'apc':
+        return store.GetTestbed().GetCurrentTestsuite().GetTopology().ApcPowerCycle(nodes)
+    elif powerCycleMethod == 'ipmi':
+        return store.GetTestbed().GetCurrentTestsuite().GetTopology().IpmiPowerCycle(nodes)
+
 def ReinitForTestsuite():
     return store.GetTestbed().InitForTestsuite()
 

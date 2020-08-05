@@ -567,6 +567,9 @@ class Node(object):
             sys.exit(1)
         return personalities[0] # FIXME - review for multi-nic
 
+    def GetType(self):
+        return self.__node_type
+
     def GetNicsByMode(self, mode):
         if not types.NicModes.valid(mode.upper()):
             raise ValueError("mode {0} is not valid".format(mode))
@@ -1280,6 +1283,24 @@ class Topology(object):
 
         return types.status.SUCCESS
 
+    def ApcPowerCycle(self, node_names):
+        if GlobalOptions.dryrun:
+            return types.status.SUCCESS
+
+        for node_name in node_names:
+            self.__nodes[node_name].ApcPowerCycle()
+
+        return types.status.SUCCESS
+
+    def IpmiPowerCycle(self, node_names):
+        if GlobalOptions.dryrun:
+            return types.status.SUCCESS
+
+        for node_name in node_names:
+            self.__nodes[node_name].IpmiPowerCycle()
+
+        return types.status.SUCCESS
+
     def RestartNodes(self, node_names, restartMethod=RestartMethodAuto, useNcsi=False):
         if GlobalOptions.dryrun:
             return types.status.SUCCESS
@@ -1649,7 +1670,45 @@ class Topology(object):
             for vlan in resp.allocated_vlans:
                 tbvlans.append(vlan)
             store.GetTestbed().SetVlans(tbvlans)
+
         return types.status.SUCCESS
+
+    def PrintTestbedInfo(self):
+        for node in self.GetNodes():
+            if node.GetType() == "vm":
+                continue
+            try:
+                if not hasattr(node, "redfish"):
+                    node.redfish = irf.IotaRedfish(node.GetCimcInfo())
+                # TODO: Pull expected version from repo for this vendor/server-type.
+                print("\nNode Software Info: %s/%s" % (node.Name(), node.GetCimcInfo().GetIp()))
+                print(types.HEADER_SHORT_SUMMARY)
+                print(types.FORMAT_SOFTWARE_SUMMARY % ("Name", "Version"))
+                print(types.HEADER_SHORT_SUMMARY)
+
+                for item in node.redfish.GetFirmwareInventoryInfos():
+                    print(types.FORMAT_SOFTWARE_SUMMARY % (item.Name, item.Version))
+                print(types.HEADER_SHORT_SUMMARY)
+                print("\n")
+            except RuntimeError as re:
+                Logger.error("Failed to obtained BMC Software Details: %s, error: %s" % (node.Name(), re))
+
+            print("\nPensando Software Info: %s/%s" % (node.Name(), node.GetCimcInfo().GetIp()))
+            print(types.HEADER_SHORT_SUMMARY)
+            print(types.FORMAT_SOFTWARE_SUMMARY % ("Name", "Version"))
+            print(types.HEADER_SHORT_SUMMARY)
+            print(types.FORMAT_SOFTWARE_SUMMARY % (
+                "Pensando Driver", 
+                store.GetTestbed().GetCurrentTestsuite().GetDriverVersion()))
+            for _, device in node.GetDevices().items():
+                print(types.FORMAT_SOFTWARE_SUMMARY % (
+                    "Pensando Firmware: %s" % device.Name(), 
+                    store.GetTestbed().GetCurrentTestsuite().GetFirmwareVersion()))
+            print(types.HEADER_SHORT_SUMMARY)
+            print("\n")
+
+        print("\n\n")
+        return
 
     def __convert_to_roles(self, nics, mode=None):
         roles = []

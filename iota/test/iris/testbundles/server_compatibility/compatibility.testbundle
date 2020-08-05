@@ -70,3 +70,17 @@ testcases:
         disable : False
         ignore  : True
         stress  : True
+
+    -   name    : RandomWaitPowerTest
+        testcase: testcases.server.random_wait_power
+        disable : False
+        ignore  : False
+        stress  : True
+        iterators :
+            type                : nested
+            powercycle_method   : ['apc', 'ipmi']
+        args    :
+            timeout: 360000
+            type: host
+            # 30% of the test cycle time spent on IPMI power cycle
+            reboots: 1

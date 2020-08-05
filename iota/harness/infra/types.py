@@ -77,6 +77,7 @@ vendors = utils.List2Enum(__vendors)
 
 HEADER_SUMMARY = "-" * 140
 FORMAT_TESTCASE_SUMMARY = "%-15s %-70s %-32s %-7s %-8s"
+FORMAT_SOFTWARE_SUMMARY = "%-64s %-24s"
 HEADER_SHORT_SUMMARY = "-" * 104
 
 FORMAT_ALL_TESTSUITE_SUMMARY = "%-32s %-5s %-5s %-6s %-8s %-5s %-6s %-6s %-8s %-8s"

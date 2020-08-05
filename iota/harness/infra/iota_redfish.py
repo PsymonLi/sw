@@ -1,5 +1,12 @@
+
+
 from iota.harness.thirdparty.redfish.rest.v1 import ServerDownOrUnreachableError
 from iota.harness.thirdparty.redfish.rest.v1 import InvalidCredentialsError
+from iota.harness.thirdparty.redfish.rest.v1 import RetriesExhaustedError
+from iota.harness.thirdparty.redfish.rest.v1 import DecompressResponseError
+from iota.harness.thirdparty.redfish.rest.v1 import JsonDecodingError
+from iota.harness.thirdparty.redfish.rest.v1 import BadRequestError
+
 from iota.harness.thirdparty.redfish import redfish_client
 import iota.harness.api as api
 import iota.harness.infra.types as types
@@ -48,6 +55,9 @@ class IotaRedfish(object):
     def GetRedfishClient(self):
         return self.rfc
 
+    def GetServerVendor(self):
+        return self.vendor
+
     def GetFirstMember(self):
         mgrUri = self.rfc.root['Managers']['@odata.id']
         resp = self.rfc.get(mgrUri)
@@ -67,4 +77,27 @@ class IotaRedfish(object):
         resp = self.rfc.post(req, body=data)
         if resp.status != 0:
             raise Exception("failed to issue power cycle operation {0}. return code was: {1}".format(param, resp.status))
+
+
+    def GetFirmwareInventoryInfos(self):
+        # retrieve the UpdateService
+        inv_items = []
+        try:
+            update_service_uri = self.rfc.root['UpdateService']['@odata.id']
+            resp = self.rfc.get(update_service_uri)
+            resp = self.rfc.get(resp.obj['FirmwareInventory']['@odata.id'])
+
+            for member in resp.obj['Members']:
+                inv_item_info = self.rfc.get(member['@odata.id'])
+                inv_items.append(inv_item_info.obj)
+        except ServerDownOrUnreachableError:
+            raise RuntimeError("ILO(%s) not reachable or does not support RedFish" % self.ip)
+        except DecompressResponseError:
+            raise RuntimeError("Failed to decompress response: %s" % self.ip)
+        except JsonDecodingError:
+            raise RuntimeError("Failed to decode json response: %s" % self.ip)
+        except BadRequestError:
+            raise RuntimeError("Invalid request error: %s" % self.ip)
+
+        return inv_items
 
