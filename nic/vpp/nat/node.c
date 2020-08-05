@@ -131,9 +131,23 @@ error:
         nat_trace_add(trace, vpc_id, pvt_ip, pvt_port, dip, dport, protocol,
                       sip, sport, nat_ret, NAT_NODE_ALLOC);
     }
-    nat_next_node_fill(next0, counter,
-                       NAT_NEXT_DROP,
-                       NAT_COUNTER_FAILED);
+    switch (nat_ret) {
+        case NAT_ERR_INVALID_PROTOCOL:
+            counter[NAT_COUNTER_ALLOC_FAILED_INVALID_PROTO]++;
+            break;
+        case NAT_ERR_NO_RESOURCE:
+            counter[NAT_COUNTER_ALLOC_FAILED_NO_RESOURCE]++;
+            break;
+        case NAT_ERR_HW_TABLE_FULL:
+            counter[NAT_COUNTER_ALLOC_FAILED_NO_HW_RESOURCE]++;
+            break;
+        case NAT_ERR_NO_PB_CONFIG:
+            counter[NAT_COUNTER_ALLOC_FAILED_NO_PB_CONFIG]++;
+            break;
+        default:
+            counter[NAT_COUNTER_FAILED]++;
+    }
+    *next0 = NAT_NEXT_DROP;
     return;
 }
 

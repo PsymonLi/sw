@@ -10,6 +10,16 @@
 #define foreach_nat_counter                                 \
         _(SUCCESS, "NAT success" )                          \
         _(FAILED, "NAT failed" )                            \
+        _(ALLOC_FAILED_INVALID_PROTO,                       \
+          "NAT allocation failed due to invalid protocol")  \
+        _(ALLOC_FAILED_NO_RESOURCE,                         \
+          "NAT allocation failed due to no port "           \
+          "availability")                                   \
+        _(ALLOC_FAILED_NO_HW_RESOURCE,                      \
+          "NAT allocation failed due to no NAT HW indices") \
+        _(ALLOC_FAILED_NO_PB_CONFIG,                        \
+          "NAT allocation failed due to no NAT port block " \
+          "found")                                          \
         _(ERR_DEALLOC, "NAT dealloc due to error" )         \
         _(INVALID_EXISTS, "Invalid NAT flow, PB exists" )   \
         _(INVALID, "Invalid NAT flow, PB does not exist" )  \

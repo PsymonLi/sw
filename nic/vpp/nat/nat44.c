@@ -922,11 +922,11 @@ nat_flow_alloc(u32 vpc_id, ip4_address_t dip, u16 dport,
     nat_port_block_t *nat_pb;
 
     if (PREDICT_FALSE(vpc_id >= vec_len(nat_main.vpc_config))) {
-        return NAT_ERR_NO_RESOURCE;
+        return NAT_ERR_NO_PB_CONFIG;
     }
     vpc = vec_elt(nat_main.vpc_config, vpc_id);
     if (PREDICT_FALSE(!vpc || vpc->num_port_blocks == 0)) {
-        return NAT_ERR_NO_RESOURCE;
+        return NAT_ERR_NO_PB_CONFIG;
     }
 
     nat_proto = get_nat_proto_from_proto(protocol);
@@ -939,7 +939,7 @@ nat_flow_alloc(u32 vpc_id, ip4_address_t dip, u16 dport,
     nat_pb = vpc->nat_pb[nat_addr_type][nat_proto - 1];
     if (PREDICT_FALSE(pool_elts(nat_pb) == 0)) {
         clib_spinlock_unlock(&vpc->lock);
-        return NAT_ERR_NO_RESOURCE;
+        return NAT_ERR_NO_PB_CONFIG;
     }
 
     // if we have already allocated <pvt_ip, pvt_port>, try to use it
@@ -1471,11 +1471,11 @@ nat_sync_restore(nat44_sync_info_t *sync)
     nat_flow_key_t flow_key;
 
     if (PREDICT_FALSE(sync->vpc_id >= vec_len(nat_main.vpc_config))) {
-        return NAT_ERR_NO_RESOURCE;
+        return NAT_ERR_NO_PB_CONFIG;
     }
     vpc = vec_elt(nat_main.vpc_config, sync->vpc_id);
     if (PREDICT_FALSE(!vpc || vpc->num_port_blocks == 0)) {
-        return NAT_ERR_NO_RESOURCE;
+        return NAT_ERR_NO_PB_CONFIG;
     }
 
     nat_proto = get_nat_proto_from_proto(sync->proto);
@@ -1486,7 +1486,7 @@ nat_sync_restore(nat44_sync_info_t *sync)
     nat_pb = vpc->nat_pb[sync->nat_addr_type][nat_proto - 1];
     if (PREDICT_FALSE(pool_elts(nat_pb) == 0)) {
         clib_spinlock_unlock(&vpc->lock);
-        return NAT_ERR_NO_RESOURCE;
+        return NAT_ERR_NO_PB_CONFIG;
     }
     pool_foreach (pb_iter, nat_pb,
     ({
@@ -1494,7 +1494,7 @@ nat_sync_restore(nat44_sync_info_t *sync)
              pb = pb_iter;
     }));
     if (!pb) {
-        return NAT_ERR_NO_RESOURCE;
+        return NAT_ERR_NO_PB_CONFIG;
     }
 
     num_ports = pb->end_port - pb->start_port + 1;
