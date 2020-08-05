@@ -1,0 +1,12 @@
+meta:
+    name    : mode_change
+    os      : [ linux ]
+    nics    : [ pensando, mellanox, intel ]
+    targetcount : 2 
+
+testcases:
+    -   name    : MODE_VERIFY_PARAMS
+        testcase: testcases.penctl.mode_verify_show_naples
+
+    -   name    : MODE_UPDATE_RANDOM_LOOP_STRESS
+        testcase: testcases.penctl.mode_random_loop_stress

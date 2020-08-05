@@ -62,6 +62,7 @@ testbundles:
         - hpe_ilo/hpe_ilo.testbundle
         - linktest/linktest.testbundle
         - marvell/marvell.testbundle
+        - penctl/mode_change_lite.testbundle
 
     sanity:
         # Relative paths from iota/test/iris/testbundles/
@@ -87,7 +88,7 @@ testbundles:
         - classic/driver-features-sanity.testbundle
         - linktest/linktest.testbundle
         - penctl/penctl_classic.testbundle
-        #- penctl/mode_change.testbundle
+        - penctl/mode_change_lite.testbundle
         - post_diag/post_diag.testbundle
         - asic_tools/asic_tools.testbundle
         - system/obfl_check.testbundle

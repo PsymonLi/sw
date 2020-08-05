@@ -685,14 +685,7 @@ func (n *NMD) AdmitNaples() {
 	log.Info("Starting Managed Mode")
 	defer n.dscRegWaitGrp.Done()
 	currentVeniceIdx := 0
-
-	n.modeChange.Lock()
-
-	// Set Registration in progress flag
 	log.Infof("NIC in managed mode, mac: %v", n.config.Status.Fru.MacStr)
-
-	// The mode change is completed when we start the registration loop.
-	n.modeChange.Unlock()
 
 	for {
 		select {
