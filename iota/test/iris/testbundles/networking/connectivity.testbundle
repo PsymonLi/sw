@@ -5,6 +5,11 @@ meta:
     #targetcount : 35
 
 testcases:
+    -   name     : Marvell_Access
+        testcase : testcases.linktest.marvell_access
+        disable  : False
+        ignore   : False
+
     -   name    : Ping_Local_Workloads
         testcase: testcases.networking.ping
         stress  : True

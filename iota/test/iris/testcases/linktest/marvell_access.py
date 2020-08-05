@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
 import iota.harness.api as api
+from iota.harness.infra.exceptions import *
 
 def Setup(test_case):
     api.Logger.info("Checking for Marvell access")
@@ -45,7 +46,10 @@ def check_marvell_access(test_case):
     return api.types.status.SUCCESS
 
 def Trigger(test_case):
-    return check_marvell_access(test_case)
+    if check_marvell_access(test_case) == api.types.status.FAILURE:
+        raise OfflineTestbedException
+
+    return api.types.status.SUCCESS
 
 def Verify(test_case):
     return api.types.status.SUCCESS
