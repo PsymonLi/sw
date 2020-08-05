@@ -43,19 +43,20 @@ typedef u8 bool;
 
 #define IONIC_DEV_CMD_DONE              0x00000001
 
-/* Polling delay in micro seconds. */
+/* Polling delay in micro seconds, 0.5ms */
 #define IONIC_DEVCMD_WAIT_USECS		500
 /* Total wait time of 5 seconds. */
-#define IONIC_DEVCMD_MAX_RETRY		(5000000 / IONIC_DEVCMD_WAIT_USECS)
+#define IONIC_DEVCMD_MAX_RETRY		10000
 
 
 static int
 devcmd_go(FILE *fstream, union ionic_dev_cmd_regs *cmd_regs, union ionic_dev_cmd *cmd,
 	union ionic_dev_cmd_comp *comp)
 {
-	uint32_t i, retry;
+	uint32_t i, loop = 1, retry;
 	/* Wait for 5 seconds. */
 	uint32_t max_retry = IONIC_DEVCMD_MAX_RETRY;
+
 	for (i = 0; i < ARRAY_SIZE(cmd->words); i++)
 		cmd_regs->cmd.words[i] = cmd->words[i];
 
@@ -64,18 +65,25 @@ devcmd_go(FILE *fstream, union ionic_dev_cmd_regs *cmd_regs, union ionic_dev_cmd
 
 	/*
 	 * For firmware install, we can't abort in between.
-	 * if it includes  CPLD image.
+	 * if it includes  CPLD image, wait 300 * 5 = 1500 seconds.
 	 */
 	if (cmd->cmd.opcode == IONIC_CMD_FW_CONTROL) {
-		max_retry = 0xFFFFFFF;
+		loop = 300;
 	}
 
-	for (retry = 0;retry < max_retry; retry++) {
-		/* Sleep for 1 ms. */
-		usleep(IONIC_DEVCMD_WAIT_USECS);
+	//ionic_print_info(fstream, "", "Running devcmd: %d\n", cmd->cmd.opcode);
+	for (i = 0; i < loop; i++) {
+		for (retry = 0; retry < max_retry; retry++) {
+			/* Sleep for .5 ms. */
+			usleep(IONIC_DEVCMD_WAIT_USECS);
 
-		if (cmd_regs->done & IONIC_DEV_CMD_DONE) {
-			break;
+			if (cmd_regs->done & IONIC_DEV_CMD_DONE) {
+				break;
+			}
+		}
+		if (!(cmd_regs->done & IONIC_DEV_CMD_DONE)) {
+			ionic_print_debug(fstream, "", "Waiting for devcmd: %d, loop: %d\n",
+			cmd->cmd.opcode, i);
 		}
 	}
 
@@ -159,35 +167,37 @@ ionic_pmd_fw_copy(FILE *fstream, union ionic_dev_cmd_regs *cmd_regs, char *fw_pa
 	int fd, len, status;
 	/* BLOCK_SIZE has to be less than IONIC_DEVCMD_DATA_SIZE */
 	const int BLOCK_SIZE = 0x700;
-	uint64_t *src, *dst;
+	uint64_t *src = NULL, *dst, last, done;
+	int error = 0;
 
 	gettimeofday(&start, NULL);
 
 	fd = open(fw_path, O_RDONLY);
 	if (fd == -1) {
-		perror(fw_path);
-		return (ENXIO);
+		ionic_print_error(fstream, "", "Failed to open file: %s\n", fw_path);
+		return (HPE_SPP_FW_FILE_MISSING);
 	}
 
 	status = fstat(fd, &sb);
 	if (status) {
-		ionic_print_error(fstream, "", "Failed to get size of: %s\n", fw_path);
-		perror(fw_path);
-		close(fd);
-		return (ENXIO);
+		ionic_print_error(fstream, "", "Failed to get size of: %s, error: %s\n",
+			fw_path, strerror(errno));
+		error = HPE_SPP_FW_FILE_PERM_ERR;
+		goto err_out;
 	}
 	file_len = sb.st_size;
 
-	ionic_print_info(fstream, "", "Firmware: %s length: %ld bytes, copy done:     ", fw_path, file_len);
-
+	//ionic_print_info(fstream, "", "Firmware: %s length: %ld bytes, copy done:     ",
+	//	fw_path, file_len);
 	src = mmap(NULL, file_len, PROT_READ, MAP_SHARED, fd, 0);
 	if (src == MAP_FAILED) {
-		ionic_print_error(fstream, "", "Failed to open: %s\n", fw_path);
-		perror(fw_path);
-		close(fd);
-		return (ENXIO);
+		ionic_print_error(fstream, "", "Failed to mmap: %s, error: %s\n",
+			fw_path, strerror(errno));
+		error = HPE_SPP_FW_FILE_PERM_ERR;
+		goto err_out;
 	}
 
+	last = 0;
 	for (offset = 0; offset < file_len; offset += BLOCK_SIZE) {
 		len = file_len - offset;
 		len = BLOCK_SIZE > len ? len : BLOCK_SIZE;
@@ -196,12 +206,21 @@ ionic_pmd_fw_copy(FILE *fstream, union ionic_dev_cmd_regs *cmd_regs, char *fw_pa
 		cmd.length = len;
 		dst = (uint64_t *)cmd_regs->data;
 		memcpy(cmd_regs->data, (uint8_t *)src + offset, len);
-		fprintf(fstream, "\b\b\b%02lu%%", (100 * offset) / file_len);
+		//fprintf(fstream, "\b\b\b%02lu%%", (100 * offset) / file_len);
+		done = SIZE_1MB(offset);
+		if (done > last + 10) {
+			ionic_print_info(fstream, "", "Copied %lu MB of %lu MB\n",
+				done, SIZE_1MB(file_len));
+			last = done;
+		}
+
 		status = devcmd_go(fstream, cmd_regs, (union ionic_dev_cmd *)&cmd, &comp);
 		if (status) {
 			ionic_print_error(fstream, "", "Firmware: %s program failed at"
-				" offset: %ld length: %d status: %d\n", fw_path, offset, len, status);
-			break;
+				" offset: %ld length: %d status: %d\n", fw_path, offset,
+				len, status);
+			error = HPE_SPP_INSTALL_HW_ERROR;
+			goto err_out;
 		}
 	}
 
@@ -209,10 +228,12 @@ ionic_pmd_fw_copy(FILE *fstream, union ionic_dev_cmd_regs *cmd_regs, char *fw_pa
 	fprintf(fstream, "\n");
 	ionic_print_info(fstream, "", "Firmware copy took %ld seconds\n", end.tv_sec - start.tv_sec);
 
-	munmap(src, file_len);
+err_out:
+	if (src)
+		munmap(src, file_len);
 	close(fd);
 
-	return (0);
+	return (error);
 }
 
 static int
@@ -232,7 +253,7 @@ ionic_pmd_fw_install(FILE *fstream, union ionic_dev_cmd_regs *cmd_regs)
 	status = devcmd_go(fstream, cmd_regs, (union ionic_dev_cmd *)&cmd, &comp);
 	if (status) {
 		ionic_print_error(fstream, "", "Firmware: install failed status: %d, is it valid Naples image?\n", status);
-		return (status);
+		return (HPE_SPP_INSTALL_HW_ERROR);
 	}
 
 	fw_control_comp = (struct ionic_fw_control_comp *)&comp.comp;
@@ -246,7 +267,7 @@ ionic_pmd_fw_install(FILE *fstream, union ionic_dev_cmd_regs *cmd_regs)
 	status = devcmd_go(fstream, cmd_regs, (union ionic_dev_cmd *)&cmd, &comp);
 	if (status) {
 		ionic_print_error(fstream, "", "Firmware: activate failed status: %d\n", status);
-		return (status);
+		return (HPE_SPP_INSTALL_HW_ERROR);
 	}
 
 	gettimeofday(&end, NULL);
@@ -263,7 +284,7 @@ ionic_pmd_flash_firmware(FILE *fstream, void *bar0_ptr, char *fw_file)
 
 	if (bar0_ptr == NULL) {
 		ionic_print_error(fstream, "", "address is NULL\n");
-		return (ENXIO);
+		return (HPE_SPP_HW_ACCESS);
 	}
 
 	cmd_regs = bar0_ptr + IONIC_BAR0_DEV_CMD_REGS_OFFSET;

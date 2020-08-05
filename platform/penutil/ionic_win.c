@@ -69,7 +69,7 @@ DoIoctl(FILE* fstream,
         DWORD nOutBufferSize,
         PDWORD pnBytesReturned)
 {
-    return DoIoctlEx(fstream, 
+    return DoIoctlEx(fstream,
                      IONIC_LINKNAME_STRING_USER,
                      dwIoControlCode,
                      lpInBuffer,
@@ -127,7 +127,7 @@ ULONG DumpAdapterInfo(FILE* fstream, void* info_buffer, ULONG Size, struct ionic
         adapter->subDevId = info->sub_system_id;
         snprintf(adapter->asicType, sizeof(adapter->asicType), "%s", GetAsicTypeStr(info->asic_type));
         snprintf(adapter->macAddr, sizeof(adapter->macAddr), "%02X-%02X-%02X-%02X-%02X-%02X", info->config_mac_addr[0], info->config_mac_addr[1], info->config_mac_addr[2], info->config_mac_addr[3], info->config_mac_addr[4], info->config_mac_addr[5]);
-        
+
         snprintf(adapter->intfName, sizeof(adapter->intfName), "%S", info->name);
         snprintf(adapter->curFwVer, sizeof(adapter->curFwVer), "%s", info->fw_version);
         _snwscanf(info->device_location, sizeof(info->device_location), L"PCI bus %u, device %u, function %u", &ulBus, &ulDev, &ulFun);
@@ -150,7 +150,7 @@ int
 ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
 {
     DWORD Size = 1024 * 1024;
-    DWORD error = ERROR_SUCCESS; 
+    DWORD error = ERROR_SUCCESS;
     DWORD BytesReturned = 0;
     AdapterCB cb = {0};
     DWORD dumped = 0;
@@ -168,7 +168,7 @@ ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
     do {
         memset(pBuffer, 0, Size);
 
-        BytesReturned = 0;        
+        BytesReturned = 0;
         error = DoIoctl(fstream, IOCTL_IONIC_GET_ADAPTER_INFO, &cb, sizeof(cb), pBuffer, Size, &BytesReturned);
 
         ionic_print_info(fstream, "all", "DoIoctl returned: %u, bytes: %u\n", error, BytesReturned);
@@ -183,16 +183,16 @@ ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
         cb.Skip += dumped;
 
     } while (error == ERROR_MORE_DATA);
-    
+
     free(pBuffer);
-    
+
     return iRet;
 }
 
 int
 ionic_open(FILE *fstream, struct ionic *ionic)
 {
-    
+
     ionic_print_info(fstream, ionic->intfName, "Opening device\n");
     return (0);
 }
@@ -200,7 +200,7 @@ ionic_open(FILE *fstream, struct ionic *ionic)
 int
 ionic_close(FILE *fstream, struct ionic *ionic)
 {
-    
+
     ionic_print_info(fstream, ionic->intfName, "Closing device\n");
     return (0);
 }
@@ -244,11 +244,11 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
     pBuffer = malloc(Size);
     if (NULL == pBuffer) {
         ionic_print_info(fstream, intfName, "Couldn't allocate memory for adapter info buffer.\n");
-        iret = ENOMEM;
+        iret = HPE_SPP_LIBRARY_DEP_FAILED;
         goto exit;
     }
     memset(pBuffer, 0, Size);
-    
+
     cbBytes = 0;
     _snwprintf_s(cb.AdapterName, sizeof(cb.AdapterName)/sizeof(WCHAR), _TRUNCATE, L"%S", intfName);
 
@@ -256,12 +256,12 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
 
     ionic_print_info(fstream, intfName, "DoIoctl returned: %u, bytes returned: %u\n", error, cbBytes);
     if (error != ERROR_SUCCESS) {
-        iret = EIO;
+        iret = HPE_SPP_HW_ACCESS;
         goto exit;
     }
     pHeader = (PADAPTER_INFO_HDR)pBuffer;
     if (pHeader->count != 1) {
-        iret = EIO;
+        iret = HPE_SPP_HW_ACCESS;
         goto exit;
     }
     pAdapterInfo = (PADAPTER_INFO)(pHeader + 1);
@@ -270,14 +270,14 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
     if (file == INVALID_HANDLE_VALUE) {
         error = GetLastError();
         ionic_print_info(fstream, intfName, "Couldn't open file %s. Err: %u\n", fw_file_name, error);
-        iret = 1;
+        iret = HPE_SPP_FW_FILE_MISSING;
         goto exit;
     };
     if ((!GetFileSizeEx(file, &FileSize)) || (0LL == FileSize.QuadPart)) {
         error = GetLastError();
         ionic_print_info(fstream, intfName, "Couldn't get file size for file %s. Err: %u\n", fw_file_name, error);
         CloseHandle(file);
-        iret = 1;
+        iret = HPE_SPP_FW_FILE_PERM_ERR;
         goto exit;
     }
 
@@ -286,7 +286,7 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
         error = GetLastError();
         ionic_print_info(fstream, intfName, "Couldn't map file %s. Err: %u\n", fw_file_name, error);
         CloseHandle(file);
-        iret = 1;
+        iret = HPE_SPP_FW_FILE_PERM_ERR;
         goto exit;
     };
 
@@ -297,7 +297,7 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
         ionic_print_info(fstream, intfName, "Couldn't map view of file %s. Err: %u\n", fw_file_name, error);
         CloseHandle(file);
         CloseHandle(mapping);
-        iret = 1;
+        iret = HPE_SPP_FW_FILE_PERM_ERR;
         goto exit;
     }
 
@@ -313,7 +313,7 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
     ionic_print_info(fstream, intfName, "DoIoctl returned: %u, bytes read: %u\n", error, cbBytes);
 
     if (error != ERROR_SUCCESS) {
-        iret = EIO;
+        iret = HPE_SPP_INSTALL_HW_ERROR;
     }
 
     UnmapViewOfFile(pFwBuf);

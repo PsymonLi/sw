@@ -79,6 +79,11 @@ typedef char spp_char_t;
 #define HPE_SPP_FW_CORRUPT		15 /* Inability to validate firmware integrity */
 
 /*
+ * Pensando defined error codes > 100
+ */
+#define HPE_SPP_DSC_NICFWDATA_ERROR	101 /* NICFWData.xml related error. */
+
+/*
  * File contains firmware version and file name details.
  */
 #define HPE_NIC_FW_DATA_FILE 	"NICFWData.xml"
@@ -144,25 +149,25 @@ nvm
 extern "C" {
 #endif
 
-int 
+int
 #ifdef _WIN32
 __stdcall
 #endif
 dsc_do_discovery_with_files(spp_char_t *discover_file_xml, spp_char_t *firmware_file_path);
 
-int 
+int
 #ifdef _WIN32
 __stdcall
 #endif
 dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain,uint8_t  bus, uint8_t dev, uint8_t func);
 
-int 
+int
 #ifdef _WIN32
 __stdcall
 #endif
 dsc_do_flash_with_file(spp_char_t *dsicover_file_xml, spp_char_t *firmware_file_path);
 
-int 
+int
 #ifdef _WIN32
 __stdcall
 #endif
@@ -174,13 +179,13 @@ __stdcall
 #endif
 dsc_text_for_error_code(uint32_t erro_code);
 
-int 
+int
 #ifdef _WIN32
 __stdcall
 #endif
 dsc_get_debug_info(spp_char_t *log_file);
 
-int 
+int
 #ifdef _WIN32
 __stdcall
 #endif

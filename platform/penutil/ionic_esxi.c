@@ -122,7 +122,7 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
         fd = fopen(fw_file_name,"rb");
         if(fd == NULL) {
                 ionic_print_info(fstream, intfName, "Failed to open firmware file: %s", fw_file_name);
-                rc = -1;
+                rc = HPE_SPP_FW_FILE_MISSING;
                 goto out;
         }
 
@@ -133,7 +133,7 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
         fw_data = calloc(fw_sz + 1, 1);
         if (!fw_data) {
                 ionic_print_info(fstream, intfName, "Failed to allocate memory");
-                rc = -1;
+                rc = HPE_SPP_LIBRARY_DEP_FAILED;
                 fclose(fd);
                 goto out;
         }
@@ -145,7 +145,7 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
 
         if (fw_sz != rd_size) {
                 ionic_print_info(fstream, intfName, "Firmware file was not read properly");
-                rc = -1;
+                rc = HPE_SPP_FW_FILE_PERM_ERR;
                 goto out;
         }
 
@@ -162,6 +162,7 @@ ionic_flash_firmware( FILE *fstream, struct ionic *ionic, char *fw_file_name)
         if (rc) {
                 ionic_print_info(fstream, intfName,"Failed to call ionic_en_mgmt_inf_flush_fw_cb(),"
                                  " (rcUser=0x%x)", rc);
+		rc = HPE_SPP_INSTALL_HW_ERROR;
         }
 
         free(fw_data);

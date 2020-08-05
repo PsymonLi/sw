@@ -182,7 +182,9 @@ ionic_parse_NICFWData_nic(FILE *fstream, xmlNodePtr nic)
 		devid = (char *)xmlGetProp(node, BAD_CAST "devid");
 		subvenid = (char *)xmlGetProp(node, BAD_CAST "subvenid");
 		subdevid = (char *)xmlGetProp(node, BAD_CAST "subdevid");
-		if ((venid == NULL) || (devid == NULL) || (subvenid == NULL))
+		ionic_print_debug(fstream, "", "Found entry in %s for (%s %s %s %s)\n",
+			HPE_NIC_FW_DATA_FILE, venid, devid, subvenid, subdevid);
+		if ((venid == NULL) || (devid == NULL) || (subvenid == NULL) || (subdevid == NULL))
 			continue;
 		/* XXX: is format guaranteed at hex. */
 		venId = strtoul(venid, 0, 16);
@@ -211,7 +213,7 @@ ionic_parse_NICFWData_nic(FILE *fstream, xmlNodePtr nic)
 						IONIC_SPP_FW_TYPE, IONIC_SPP_FW_TYPE_FILE,
 						HPE_NIC_FW_DATA_FILE);
 
-					return (ENXIO);
+					return (HPE_SPP_DSC_NICFWDATA_ERROR);
 				}
 				ionic_spp2pen_verstr(fw_ver, ionic->newFwVer, sizeof(ionic->newFwVer));
 				ionic_print_info(fstream, intfName, "Firmware from %s"
@@ -235,22 +237,23 @@ ionic_parse_NICFWData(FILE *fstream, char *firmware_file_path)
 {
 	xmlDoc *doc = NULL;
 	xmlNodePtr root, node, child;
+	struct ionic *ionic;
 	char nic_file[512];
-	char *ver;
-	int error = 0;
+	char *ver, *intfName;
+	int i, error = 0;
 
 	snprintf(nic_file, sizeof(nic_file), "%s/%s", firmware_file_path, HPE_NIC_FW_DATA_FILE);
 	doc = xmlReadFile(nic_file, NULL, 0);
 	if (doc == NULL) {
 		ionic_print_error(fstream, "all", "%s file not found\n", nic_file);
-		return (EEXIST);
+		return (HPE_SPP_DSC_NICFWDATA_ERROR);
 	}
 
 	ionic_print_info(fstream, "all", "Parsing %s\n", nic_file);
 	root = xmlDocGetRootElement(doc);
 	if (root == NULL) {
 		ionic_print_error(fstream, "all", "Couldn't parse %s\n", nic_file);
-		error = EINVAL;
+		error = HPE_SPP_DSC_NICFWDATA_ERROR;
 		goto err_exit;
 	}
 
@@ -281,6 +284,19 @@ ionic_parse_NICFWData(FILE *fstream, char *firmware_file_path)
 		}
 	}
 
+	for (i = 0; i < ionic_count; i++) {
+		ionic = &ionic_devs[i];
+		intfName = ionic->intfName;
+		if (ionic->fwFile[0] == 0) {
+			ionic_print_error(fstream, intfName,
+				"No firmware file specified in %s for (0x%X 0x%x 0x%x 0x%x)\n",
+				HPE_NIC_FW_DATA_FILE, ionic->venId, ionic->devId, ionic->subVenId,
+				ionic->subDevId);
+			error = HPE_SPP_DSC_NICFWDATA_ERROR;
+			goto err_exit;
+		}
+	}
+
 err_exit:
 	//xmlMemoryDump();
 	xmlCleanupParser();
@@ -306,10 +322,10 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 		if (node->type != XML_ELEMENT_NODE)
 			continue;
 
-		ionic_print_debug(fstream, intfName, "%s\n", node->name);
 		if (xmlStrcasecmp(node->name, (const xmlChar *)"type") == 0) {
 			value = (char *)xmlGetProp(node, BAD_CAST "value");
 			if (value) {
+				ionic_print_debug(fstream, intfName, "%s: %s\n", node->name, value);
 				if (STRCASECMP(value, IONIC_SPP_FW_TYPE) != 0) {
 					ionic_print_error(fstream, intfName,
 						"Unknown type for fw_items: %s\n", value);
@@ -317,8 +333,7 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 					return (EINVAL);
 				}
 			} else {
-				ionic_print_error(fstream, intfName,
-					"Missing fw_items type value\n");
+				ionic_print_error(fstream, intfName, "Missing type value for %s\n", node->name);
 				return (EINVAL);
 			}
 		}
@@ -326,6 +341,7 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 		if (xmlStrcasecmp(node->name, (const xmlChar *)"firmware_file") == 0) {
 			value = (char *)xmlGetProp(node, BAD_CAST "value");
 			if (value) {
+				ionic_print_debug(fstream, intfName, "%s: %s\n", node->name, value);
 				strncpy(ionic->fwFile, value, sizeof(ionic->fwFile));
 				xmlFree(value);
 			}
@@ -333,8 +349,9 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 		if (xmlStrcasecmp(node->name, (const xmlChar *)"version") == 0) {
 			value = (char *)xmlGetProp(node, BAD_CAST "value");
 			if (value) {
+				ionic_print_debug(fstream, intfName, "%s: %s\n", node->name, value);
 				ionic_spp2pen_verstr(value, ionic->newFwVer, sizeof(ionic->newFwVer));
-				ionic_print_info(fstream, intfName, "New SPP ver: %s Pensando ver: %s\n",
+				ionic_print_debug(fstream, intfName, "SPP ver: %s -> Pensando ver: %s\n",
 					value, ionic->newFwVer);
 				//strncpy(ionic->newFwVer, value, sizeof(ionic->newFwVer));
 				xmlFree(value);
@@ -343,6 +360,7 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 		if (xmlStrcasecmp(node->name, (const xmlChar *)"active_version") == 0) {
 			value = (char *)xmlGetProp(node, BAD_CAST "value");
 			if (value) {
+				ionic_print_debug(fstream, intfName, "%s: %s\n", node->name, value);
 				ionic_spp2pen_verstr(value, ionic->curFwVer, sizeof(ionic->curFwVer));
 				//strncpy(ionic->curFwVer, value, sizeof(ionic->curFwVer));
 				ionic_print_info(fstream, intfName, "Active SPP ver: %s Pensando ver: %s\n",
@@ -353,6 +371,7 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 		if (xmlStrcasecmp(node->name, (const xmlChar *)"action") == 0) {
 			value = (char *)xmlGetProp(node, BAD_CAST "value");
 			if (value) {
+				ionic_print_debug(fstream, intfName, "%s: %s\n", node->name, value);
 				strncpy(ionic->action, value, sizeof(ionic->action));
 				xmlFree(value);
 			}
@@ -367,15 +386,15 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 				xmlSetProp(node, BAD_CAST "value", BAD_CAST "");
 			} else {
 				error = ionic_flash_firmware(fstream, ionic, ionic->fwFile);
-				/* Set one to indicate we need reboot. */
+				/* Set '1' to indicate we need reboot. */
 				if (error == 0) {
 					snprintf(buffer, sizeof(buffer), "%d",
 						HPE_SPP_REBOOT_AFTER_INSTALL);
 				} else {
 					ionic_print_error(fstream, intfName, "Flash update failed, error: %d\n",
 						error);
-					snprintf(buffer, sizeof(buffer), "%d",
-						HPE_SPP_INSTALL_HW_ERROR);
+					snprintf(buffer, sizeof(buffer), "%d", error);
+					break;
 				}
 				xmlSetProp(node, BAD_CAST "value", BAD_CAST buffer);
 			}
@@ -470,7 +489,8 @@ ionic_parse_dis_device(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 				error = ionic_parse_disc_fw_items(fstream, ionic, child);
 				if (error) {
 					ionic_print_error(fstream, intfName,
-						"Failed to parse fw_items\n");
+						"Failed to parse fw_items, error: %d\n",
+						error);
 					break;
 				}
 			}
@@ -554,11 +574,13 @@ ionic_parse_discovery_devices(FILE *fstream, xmlNodePtr device)
 				if (error)
 					continue;
 				error = ionic_parse_dis_device(fstream, ionic, child);
+				if (error)
+					break;
 				ionic_print_info(fstream, ionic->intfName, "From discovery file"
 					" PCI config: %d:%d.%d.%d"
-					" fw version: %s driver version: %s slot: %s mac: %s\n",
+					" fw version: %s slot: %s mac: %s\n",
 					ionic->domain, ionic->bus, ionic->dev, ionic->func,
-					ionic->curFwVer, ionic->drvVer, ionic->slotInfo, ionic->macAddr);
+					ionic->curFwVer, ionic->slotInfo, ionic->macAddr);
 			}
 		}
 	}
@@ -574,19 +596,19 @@ ionic_parse_discovery(FILE *fstream, const char *dis_file)
 	xmlDoc *doc = NULL;
 	xmlNodePtr root, node, child;
 	char *ver;
-	int error;
+	int error = 0;
 
 	doc = xmlReadFile(dis_file, NULL, 0);
 	if (doc == NULL) {
 		ionic_print_error(fstream, "all", "%s file not found\n", dis_file);
-		return (EEXIST);
+		return (HPE_SPP_DIS_MISSING);
 	}
 
 	ionic_print_debug(fstream, "all", "Parsing %s\n", dis_file);
 	root = xmlDocGetRootElement(doc);
 	if (root == NULL) {
 		ionic_print_error(fstream, "all", "Couldn't parse %s\n", dis_file);
-		error = EINVAL;
+		error = HPE_SPP_DIS_ACCESS;
 		goto err_exit;
 	}
 
@@ -603,14 +625,16 @@ ionic_parse_discovery(FILE *fstream, const char *dis_file)
 		}
 	}
 
-
 	for (node = root->children; node; node = node->next) {
 		if (node->type == XML_ELEMENT_NODE) {
 			if (xmlStrcasecmp(node->name, (const xmlChar *)"devices") == 0) {
 				ionic_print_debug(fstream, "all", "Found devices node\n");
 				child = node->children;
-				if (child)
+				if (child) {
 					error = ionic_parse_discovery_devices(fstream, child);
+					if (error)
+						break;
+				}
 			}
 		}
 	}
@@ -619,5 +643,5 @@ err_exit:
 	xmlMemoryDump();
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
-	return (0);
+	return (error);
 }

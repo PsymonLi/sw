@@ -301,7 +301,7 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 	if (error && (errno != EEXIST)) {
 		ionic_print_error(fstream, intfName, "Couldn't access %s, error: %s\n",
 			LIB_FW_PATH, strerror(errno));
-		return (error);
+		return (HPE_SPP_FW_FILE_MISSING);
 	}
 
 	/* Extract the firmware file name, always have at least one '/'. */
@@ -320,7 +320,7 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 	if (error) {
 		ionic_print_error(fstream, intfName, "Couldn't copy file: %s, error: %s\n",
 			path, strerror(errno));
-		return (error);
+		return (HPE_SPP_FW_FILE_PERM_ERR);
 	}
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -328,7 +328,7 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 		ionic_print_error(fstream, intfName,
 			"Failed to open socket for flash update, error: %s\n",
 			strerror(errno));
-		return (errno);
+		return (HPE_SPP_LIBRARY_DEP_FAILED);
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
@@ -345,12 +345,12 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 		ionic_print_error(fstream, intfName, "flash update ioctl failed, error: %s\n",
 			strerror(errno));
 		close (fd);
-		return (error);
+		return (HPE_SPP_INSTALL_HW_ERROR);
 	}
 
 	gettimeofday(&end, NULL);
 
-	ionic_print_info(fstream, intfName, "firmware update took %ld seconds\n",
+	ionic_print_info(fstream, intfName, "Firmware update took %ld seconds\n",
 		end.tv_sec - start.tv_sec);
 	close (fd);
 

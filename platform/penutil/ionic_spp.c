@@ -71,11 +71,29 @@ dsc_text_for_error_code(uint32_t err_code)
 			return W_STRING("Install failed, old firmware was restored");
 		case HPE_SPP_FW_CORRUPT:
 			return W_STRING("Firmware image corrupted");
+		/* Pensando defined error codes. */
+		case HPE_SPP_DSC_NICFWDATA_ERROR:
+			return W_STRING("NICFWData.xml related error");
 		default:
 			return W_STRING("Unknown");
 	}
 }
 
+static FILE *
+ionic_open_log_file(void)
+{
+	FILE *fstream;
+
+	fstream = fopen(dsc_log_file, "a");
+	if (fstream == NULL) {
+		ionic_print_error(stderr, "all", "failed to open log file" PRIxHS ", error: " PRIxWS "\n",
+			dsc_log_file, strerror(errno));
+	} else {
+		setvbuf (fstream, NULL, _IONBF, 0);
+	}
+
+	return (fstream);
+}
 int
 #ifdef _WIN32
 __stdcall
@@ -91,11 +109,9 @@ dsc_get_debug_info(spp_char_t *log_file)
 	strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtime(&t));
 
 	snprintf(dsc_log_file, sizeof(dsc_log_file), PRIxWS, log_file);
-	fstream = fopen(dsc_log_file, "a");
+	fstream = ionic_open_log_file();
 	if (fstream == NULL) {
 		error = HPE_SPP_LIBRARY_DEP_FAILED;
-		ionic_print_error(stderr, "all", "failed to open file" PRIxHS ", SPP error: " PRIxWS "\n",
-			dsc_log_file, dsc_text_for_error_code(error));
 		return (error);
 	}
 
@@ -128,11 +144,9 @@ dsc_get_adapter_info(ven_adapter_info *ionic_info, int *count, spp_char_t *firmw
 	char *intfName;
 
 	snprintf(fw_file_path, sizeof(fw_file_path), PRIxWS, firmware_file_path);
-	fstream = fopen(dsc_log_file, "a");
+	fstream = ionic_open_log_file();
 	if (fstream == NULL) {
 		error = HPE_SPP_LIBRARY_DEP_FAILED;
-		ionic_print_error(stderr, "all", "failed to open file" PRIxHS ", SPP error: " PRIxWS "\n",
-			dsc_log_file, dsc_text_for_error_code(error));
 		return (error);
 	}
 
@@ -190,11 +204,9 @@ dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uin
 	clock_t start, end;
 #endif
 
-	fstream = fopen(dsc_log_file, "a");
+	fstream = ionic_open_log_file();
 	if (fstream == NULL) {
 		error = HPE_SPP_LIBRARY_DEP_FAILED;
-		ionic_print_error(stderr, "all", "failed to open file" PRIxHS ", SPP error: " PRIxWS "\n",
-			dsc_log_file, dsc_text_for_error_code(error));
 		return (error);
 	}
 
@@ -275,11 +287,9 @@ dsc_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType fwType,
 	FILE *fstream;
 	int error = HPE_SPP_FW_VER_LATEST;
 
-	fstream = fopen(dsc_log_file, "a");
+	fstream = ionic_open_log_file();
 	if (fstream == NULL) {
 		error = HPE_SPP_LIBRARY_DEP_FAILED;
-		ionic_print_error(stderr, "all", "failed to open file" PRIxHS ", SPP error: " PRIxWS "\n",
-			dsc_log_file, dsc_text_for_error_code(error));
 		return (error);
 	}
 
@@ -311,11 +321,9 @@ dsc_do_discovery_with_files(spp_char_t *discovery_file, spp_char_t *firmware_fil
 	char buffer[256], dis_file[256], fw_file[256];
 	char *intfName;
 
-	fstream = fopen(dsc_log_file, "a");
+	fstream = ionic_open_log_file();
 	if (fstream == NULL) {
 		error = HPE_SPP_LIBRARY_DEP_FAILED;
-		ionic_print_error(stderr, "all", "failed to open file" PRIxHS ", SPP error: " PRIxWS "\n",
-			dsc_log_file, dsc_text_for_error_code(error));
 		return (error);
 	}
 
@@ -333,7 +341,6 @@ dsc_do_discovery_with_files(spp_char_t *discovery_file, spp_char_t *firmware_fil
 	error = ionic_parse_NICFWData(fstream, fw_file);
 	if (error) {
 		ionic_print_error(fstream, "all", "%s error\n", HPE_NIC_FW_DATA_FILE);
-		error = HPE_SPP_FW_FILE_MISSING;
 		goto err_out;
 	}
 
@@ -405,11 +412,10 @@ dsc_do_flash_with_file(spp_char_t *discovery_file, spp_char_t *firmware_file_pat
 
 	snprintf(dis_file, sizeof(dis_file), PRIxWS, discovery_file);
 	snprintf(fw_file, sizeof(fw_file), PRIxWS, firmware_file_path);
-	fstream = fopen(dsc_log_file, "a");
+
+	fstream = ionic_open_log_file();
 	if (fstream == NULL) {
 		error = HPE_SPP_LIBRARY_DEP_FAILED;
-		ionic_print_error(stderr, "all", "failed to open file" PRIxHS ", SPP error: " PRIxWS "\n",
-			dsc_log_file, dsc_text_for_error_code(error));
 		return (error);
 	}
 
@@ -417,7 +423,6 @@ dsc_do_flash_with_file(spp_char_t *discovery_file, spp_char_t *firmware_file_pat
 	error = ionic_parse_discovery(fstream, dis_file);
 	if (error) {
 		ionic_print_error(fstream, "all", "%s error\n", dis_file);
-		error =  (error == EEXIST) ? HPE_SPP_DIS_MISSING : HPE_SPP_DIS_ACCESS;
 		goto err_exit;
 	}
 #if 0
