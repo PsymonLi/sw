@@ -58,7 +58,6 @@ message MappingSpec {
   }
   // subnet this mapping is in
   bytes           SubnetId       = 4 [(gogoproto.moretags) = "meta:mandatory"];
-  // dstinfo is expected to empty for local mappings
   oneof dstinfo {
       // if IP is that of local vnic, corresponding vnic id
       // this is mandatory attribute for local IP mappings

@@ -101,17 +101,28 @@ pds_policy_info_from_entry (void *entry, void *ctxt)
         (rule_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_SECURITY_POLICY,
                                   POLICY_RULE_INFO_SIZE(num_rules));
     info.spec.rule_info->num_rules = num_rules;
+    if (info.spec.rule_info) {
+        if (num_rules) {
+            info.stats.rule_stats =
+                (rule_stats_t *)SDK_CALLOC(PDS_MEM_ALLOC_SECURITY_POLICY,
+                                           POLICY_RULE_STATS_SIZE(num_rules));
+        }
 
-    // entry read
-    pol->read(&info);
+        // entry read
+        pol->read(&info);
 
-    // call cb on info
-    args->cb(&info, args->ctxt);
+        // call cb on info
+        args->cb(&info, args->ctxt);
 
-    // free memory
-    SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.spec.rule_info);
-    info.spec.rule_info = NULL;
-
+        SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.spec.rule_info);
+        info.spec.rule_info = NULL;
+        if (info.stats.rule_stats) {
+            SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.stats.rule_stats);
+        }
+    } else {
+        // skip this policy
+        PDS_TRACE_ERR("Failed to allocated memory for policy read");
+    }
     return false;
 }
 

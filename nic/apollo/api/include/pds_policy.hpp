@@ -105,7 +105,11 @@ typedef union rule_action_data_s {
 ///< \brief    policy rule attributes
 typedef struct pds_policy_rule_attrs_s {
     bool                  stateful;       ///< true, if rule is stateful
-    uint32_t              priority;       ///< rule Priority
+    // priority of this rule (lower the numeric value, higher the priority is)
+    // if there are multiple rules with same highest priority that match the
+    // packet, the first such matching rule in the policy is picked (i.e.,
+    // based on the order, first in the list of such matching rules)
+    uint32_t              priority;
     rule_match_t          match;          ///< rule match
     rule_action_data_t    action_data;    ///< action and related information
 } pds_policy_rule_attrs_t;
@@ -163,8 +167,15 @@ typedef struct pds_policy_status_s {
     mem_addr_t policy_base_addr;    ///< policy base address
 } pds_policy_status_t;
 
+typedef struct rule_stats_s {
+    /// number of times rule is hit
+    uint64_t num_rule_hit;
+} rule_stats_t;
+#define POLICY_RULE_STATS_SIZE(count)    (sizeof(rule_stats_t) * (count))
+
 /// \brief policy statistics
 typedef struct pds_policy_stats_s {
+    rule_stats_t *rule_stats;
 } pds_policy_stats_t;
 
 /// \brief policy info
@@ -230,6 +241,8 @@ typedef struct pds_policy_rule_status_s {
 
 /// \brief policy rule statistics
 typedef struct pds_policy_rule_stats_s {
+    /// number of times rule is hit
+    uint64_t num_rule_hit;
 } pds_policy_rule_stats_t;
 
 /// \brief policy rule info

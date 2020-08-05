@@ -117,6 +117,9 @@ message SecurityRuleAttrs {
   // will not result in flow creation
   bool                     Stateful = 1 [(gogoproto.moretags) = "meta:mandatory"];
   // priority of this rule (lower the numeric value, higher the priority is)
+  // if there are multiple rules with same highest priority that match the
+  // packet, the first such matching rule in the policy is picked (i.e., based on
+  // the order, first in the list of such matching rules)
   uint32                   Priority = 2 [(gogoproto.moretags) = "meta:range:0-1022"];
   // rule match criteria
   types.RuleMatch          Match    = 3;
@@ -158,6 +161,8 @@ message SecurityPolicyStatus {
 
 // stats of security policy, if any
 message SecurityPolicyStats {
+  // per security rule statistics
+  repeated SecurityRuleStats RuleStats = 1;
 }
 
 // security policy object
@@ -229,6 +234,8 @@ message SecurityRuleStatus {
 
 // stats of the security rule, if any
 message SecurityRuleStats {
+  // number of times the rule is hit
+  uint64 NumRuleHit = 1;
 }
 
 // security rule object

@@ -433,6 +433,7 @@ static inline void
 pds_policy_api_stats_to_proto (pds::SecurityPolicyStats *proto_stats,
                                const pds_policy_stats_t *api_stats)
 {
+    // TODO
 }
 
 // populate proto buf from policy API info
@@ -476,6 +477,7 @@ static inline void
 pds_security_rule_api_stats_to_proto (pds::SecurityRuleStats *proto_stats,
                                       const pds_policy_rule_stats_t *api_stats)
 {
+    // TODO
 }
 
 static inline void
@@ -795,14 +797,33 @@ pds_svc_security_policy_get (const pds::SecurityPolicyGetRequest *proto_req,
                 info.spec.rule_info =
                     (rule_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_SECURITY_POLICY,
                                               POLICY_RULE_INFO_SIZE(num_rules));
-                info.spec.rule_info->num_rules = num_rules;
-                ret = pds_policy_read(&key, &info);
+                if (unlikely(info.spec.rule_info == NULL)) {
+                    ret = SDK_RET_OOM;
+                } else {
+                    info.stats.rule_stats =
+                        (rule_stats_t *)
+                            SDK_CALLOC(PDS_MEM_ALLOC_SECURITY_POLICY,
+                                       POLICY_RULE_STATS_SIZE(num_rules));
+                    if (unlikely(info.stats.rule_stats == NULL)) {
+                        ret = SDK_RET_OOM;
+                    } else {
+                        // read the policy
+                        info.spec.rule_info->num_rules = num_rules;
+                        ret = pds_policy_read(&key, &info);
+                    }
+                }
             }
         }
         if (ret != SDK_RET_OK) {
             proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
-            SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.spec.rule_info);
-            info.spec.rule_info = NULL;
+            if (info.spec.rule_info) {
+                SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.spec.rule_info);
+                info.spec.rule_info = NULL;
+            }
+            if (info.stats.rule_stats) {
+                SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.stats.rule_stats);
+                info.stats.rule_stats = NULL;
+            }
             break;
         }
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_OK);
@@ -811,8 +832,13 @@ pds_svc_security_policy_get (const pds::SecurityPolicyGetRequest *proto_req,
             SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.spec.rule_info);
             info.spec.rule_info = NULL;
         }
+        if (info.stats.rule_stats) {
+            SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.stats.rule_stats);
+            info.stats.rule_stats = NULL;
+        }
     }
 
+    // handle GET all case
     if (proto_req->id_size() == 0) {
         ret = pds_policy_read_all(pds_policy_api_info_to_proto, proto_rsp);
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
