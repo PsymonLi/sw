@@ -57,28 +57,6 @@ def getProfilePath(tc):
     file_path = os.path.dirname(__file__)
     return os.path.join(file_path, 'trex_profile/http_udp_high_active_flow.py')
 
-def StoreCurrentHalLogLevel(tc):
-    tc.halLogLevelByNode = {}
-    try:
-        for n in api.GetNaplesHostnames():
-            tc.halLogLevelByNode[n] = utils.GetHalLogsLevel(n)
-    except Exception as e:
-        api.Logger.error("%s"%e)
-
-def SetHalLogsLevelToError(tc):
-    try:
-        for n in api.GetNaplesHostnames():
-            utils.SetHalLogsLevel(n, "error")
-    except Exception as e:
-        api.Logger.error("%s"%e)
-
-def RestoreHalLogLevel(tc):
-    try:
-        for n,l in tc.halLogLevelByNode.items():
-            utils.SetHalLogsLevel(n, l)
-    except Exception as e:
-        api.Logger.error("%s"%e)
-
 def printWorkloadInfo(w):
     return "%s: %s(%s)(%s)"%(getRole(w), w.workload_name,
                              w.ip_address, w.mgmt_ip)
@@ -211,8 +189,6 @@ def Setup(tc):
     tc.events = []
 
     try:
-        StoreCurrentHalLogLevel(tc)
-        SetHalLogsLevelToError(tc)
         findWorkloadPeers(tc)
 
         ret = connectTrex(tc)
@@ -299,7 +275,6 @@ def cleanup(tc):
             pass
     try:
         utils.clearNaplesSessions()
-        RestoreHalLogLevel(tc)
     except:
         pass
 

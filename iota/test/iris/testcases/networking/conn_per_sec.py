@@ -55,28 +55,6 @@ def getProfilePath(tc):
     else:
         raise ValueError('Profile not defined for protocol %s'%tc.iterators.proto)
 
-def StoreCurrentHalLogLevel(tc):
-    tc.halLogLevelByNode = {}
-    try:
-        for n in api.GetNaplesHostnames():
-            tc.halLogLevelByNode[n] = utils.GetHalLogsLevel(n)
-    except Exception as e:
-        api.Logger.error("%s"%e)
-
-def SetHalLogsLevelToError(tc):
-    try:
-        for n in api.GetNaplesHostnames():
-            utils.SetHalLogsLevel(n, "error")
-    except Exception as e:
-        api.Logger.error("%s"%e)
-
-def RestoreHalLogLevel(tc):
-    try:
-        for n,l in tc.halLogLevelByNode.items():
-            utils.SetHalLogsLevel(n, l)
-    except Exception as e:
-        api.Logger.error("%s"%e)
-
 def __modify_security_profile(tc):
     sp_objects = netagent_api.QueryConfigs(kind='SecurityProfile')
     tc.cloned_sp_objects = netagent_api.CloneConfigObjects(sp_objects)
@@ -96,8 +74,6 @@ def Setup(tc):
     api.Logger.info("Using seed : %s"%(tc.seed))
     tc.serverHandle = None
     tc.clientHandle = None
-    StoreCurrentHalLogLevel(tc)
-    SetHalLogsLevelToError(tc)
     __modify_security_profile(tc)
     utils.clearNaplesSessions()
     chooseWorkload(tc)
@@ -199,7 +175,6 @@ def Verify(tc):
 def cleanup(tc):
     try:
         utils.clearNaplesSessions()
-        RestoreHalLogLevel(tc)
         __restore_security_profile(tc)
         if tc.serverHandle:
             tc.serverHandle.disconnect()
