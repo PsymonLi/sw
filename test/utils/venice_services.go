@@ -4,6 +4,7 @@ package utils
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -354,6 +355,8 @@ func StartEvtsProxy(hostname, serverAddr string, mr resolver.Interface, logger l
 
 // StartVos starts virtual object store
 func StartVos(ctx context.Context, logger log.Logger, credsManager minio.CredentialsManager) {
+	var resolverURLs = flag.String("resolver-urls", ":"+globals.CMDResolverPort,
+		"comma separated list of resolver URLs of the form 'ip:port'")
 	go func() {
 		url := "localhost"
 		paths := new(sync.Map)
@@ -368,7 +371,7 @@ func StartVos(ctx context.Context, logger log.Logger, credsManager minio.Credent
 			"server", "--address", fmt.Sprintf("%s:%s", url, globals.VosMinioPort), "/data"}
 		credsMgrChannel := make(chan interface{}, 1)
 		credsMgrChannel <- credsManager
-		vospkg.New(ctx, false, url,
+		vospkg.New(ctx, false, url, *resolverURLs,
 			credsMgrChannel,
 			vospkg.WithBootupArgs(args),
 			vospkg.WithBucketDiskThresholds(paths))

@@ -209,6 +209,9 @@ func stopKibana(t *testing.T) {
 }
 
 func setupVos(t *testing.T, ctx context.Context, logger log.Logger, url string, credentialManagerChannel <-chan interface{}) {
+	var resolverURLs = flag.String("resolver-urls", ":"+globals.CMDResolverPort,
+		"comma separated list of resolver URLs of the form 'ip:port'")
+
 	go func() {
 		paths := new(sync.Map)
 		c := vospkg.DiskMonitorConfig{
@@ -218,7 +221,7 @@ func setupVos(t *testing.T, ctx context.Context, logger log.Logger, url string, 
 		}
 		paths.Store("", c)
 		args := []string{globals.Vos, "server", "--address", fmt.Sprintf("%s:%s", url, globals.VosMinioPort), "/disk1"}
-		_, err := vospkg.New(ctx, false, url,
+		_, err := vospkg.New(ctx, false, url, *resolverURLs,
 			credentialManagerChannel,
 			vospkg.WithBootupArgs(args),
 			vospkg.WithBucketDiskThresholds(paths),

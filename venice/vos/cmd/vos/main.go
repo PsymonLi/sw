@@ -97,7 +97,7 @@ func main() {
 	go waitForAPIServerAndGetMinioCredsManager(resolverURLs, credsMgrChannel)
 
 	// init obj store
-	_, err = vospkg.New(ctx, *traceAPI, "",
+	_, err = vospkg.New(ctx, *traceAPI, "", *resolverURLs,
 		credsMgrChannel,
 		vospkg.WithBootupArgs(args),
 		vospkg.WithBucketDiskThresholds(vospkg.GetBucketDiskThresholds()))

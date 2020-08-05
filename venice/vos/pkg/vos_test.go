@@ -3,12 +3,14 @@ package vospkg
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	minioclient "github.com/minio/minio-go/v6"
@@ -23,6 +25,9 @@ import (
 	"github.com/pensando/sw/api/generated/objstore"
 	. "github.com/pensando/sw/venice/utils/testutils"
 )
+
+var resolverURLs = flag.String("resolver-urls", ":"+globals.CMDResolverPort,
+	"comma separated list of resolver URLs of the form 'ip:port'")
 
 type mockBackend struct {
 	bucketExists, makeBucket, removeBucket, putBucket int
@@ -304,7 +309,7 @@ func TestNew(t *testing.T) {
 	// negative case - vos constructor fails when unexpected type is sent over cert manager channel
 	testCertMgrChannel := make(chan interface{}, 1)
 	testCertMgrChannel <- errors.New("unexpected data")
-	_, err := New(context.Background(), false, "testURL", testCertMgrChannel)
+	_, err := New(context.Background(), false, "testURL", *resolverURLs, testCertMgrChannel)
 	AssertError(t, err, "VOS constructor is expected to fail")
 
 	// negative case - vos constructor fails when credentials creation fails
@@ -314,7 +319,7 @@ func TestNew(t *testing.T) {
 	mockCredentialManager.EXPECT().GetCredentials().Return(nil, errors.New("failed to get credentials")).AnyTimes()
 	testCertMgrChannel = make(chan interface{}, 1)
 	testCertMgrChannel <- mockCredentialManager
-	_, err = New(context.Background(), false, "testURL", testCertMgrChannel)
+	_, err = New(context.Background(), false, "testURL", *resolverURLs, testCertMgrChannel)
 	AssertError(t, err, "VOS constructor is expected to fail")
 
 	// positive case
@@ -329,6 +334,43 @@ func TestNew(t *testing.T) {
 	testCertMgrChannel = make(chan interface{}, 1)
 	testCertMgrChannel <- mockCredentialManager
 	args := []string{globals.Vos, "server", "--address", fmt.Sprintf("%s:%s", "localhost", globals.VosMinioPort), "/disk1"}
-	_, err = New(context.Background(), false, "testURL", testCertMgrChannel, WithBootupArgs(args))
+	_, err = New(context.Background(), false, "testURL", *resolverURLs, testCertMgrChannel, WithBootupArgs(args))
 	AssertError(t, err, "VOS constructor is expected to fail")
+}
+
+func TestInitTSDBClient(t *testing.T) {
+	fb := &mockBackend{}
+	bmap := make(map[string]int)
+	lcmap := make(map[string]string) // key = bucketName, value == lifecycle
+	var makeErr error
+	fb.makeBucketFn = func(name, loc string) error {
+		if v, ok := bmap[name]; ok {
+			bmap[name] = v + 1
+		} else {
+			bmap[name] = 1
+		}
+		return makeErr
+	}
+	fb.setLifecycleFunc = func(bucketName, lc string) error {
+		if lc != "" {
+			lcmap[bucketName] = lc
+		}
+		return nil
+	}
+	inst := &instance{}
+	inst.Init(fb)
+	c := gomock.NewController(t)
+	defer c.Finish()
+	mockCredentialManager := mock_credentials.NewMockCredentialsManager(c)
+	mockCredentialManager.EXPECT().GetCredentials().Return(&minio.Credentials{
+		AccessKey: "testAccessKey",
+		SecretKey: "testSecretKey",
+	}, nil).AnyTimes()
+	minioCreds, err := mockCredentialManager.GetCredentials()
+	AssertOk(t, err, "Failed to get minio credentials. Err: %v", err)
+
+	// init tsdb client and wait for one report interval for code coverage
+	err = inst.initTsdbClient(*resolverURLs, minioCreds.AccessKey, minioCreds.SecretKey)
+	time.Sleep(metricsReportInterval + 10*time.Second)
+	AssertOk(t, err, "Failed to init tsdb client. Err: %v", err)
 }

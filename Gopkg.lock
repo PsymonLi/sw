@@ -3320,6 +3320,8 @@
     "github.com/pensando/test-infra/public",
     "github.com/pkg/errors",
     "github.com/pkg/sftp",
+    "github.com/prometheus/client_model/go",
+    "github.com/prometheus/common/expfmt",
     "github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc",
     "github.com/russross/blackfriday",
     "github.com/satori/go.uuid",

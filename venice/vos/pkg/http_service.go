@@ -270,22 +270,7 @@ func (h *httpHandler) writeError(w http.ResponseWriter, code int, msg interface{
 
 func (h *httpHandler) minioMetricsHandler(minioKey, minioSecret string) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		token, err := generateTokenForMetrics(minioKey, minioSecret)
-		if err != nil {
-			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in generating token (%s)", err))
-			return
-		}
-
-		metricsReq, err := http.NewRequest("GET",
-			fmt.Sprintf("https://%s:%s/minio/prometheus/metrics", k8s.GetPodIP(), globals.VosMinioPort), nil)
-		if err != nil {
-			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in creating metrics request (%s)", err))
-			return
-		}
-
-		metricsReq.Header.Set("Authorization", "Bearer "+token)
-		client := &http.Client{Timeout: time.Second * 10}
-		resp, err := client.Do(metricsReq)
+		resp, err := getDebugMetricsResponse(minioKey, minioSecret)
 		if err != nil {
 			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in collecting metrics request (%s)", err))
 			return
@@ -496,4 +481,25 @@ func (h *httpHandler) updateBucketLifecycle(w http.ResponseWriter, config map[st
 			}
 		}
 	}
+}
+
+func getDebugMetricsResponse(minioKey, minioSecret string) (*http.Response, error) {
+	token, err := generateTokenForMetrics(minioKey, minioSecret)
+	if err != nil {
+		return nil, fmt.Errorf("error in generating token (%s)", err)
+	}
+
+	metricsReq, err := http.NewRequest("GET",
+		fmt.Sprintf("https://%s:%s/minio/prometheus/metrics", k8s.GetPodIP(), globals.VosMinioPort), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error in creating metrics request (%s)", err)
+	}
+
+	metricsReq.Header.Set("Authorization", "Bearer "+token)
+	client := &http.Client{Timeout: time.Second * 10}
+	resp, err := client.Do(metricsReq)
+	if err != nil {
+		return nil, fmt.Errorf("error in collecting metrics request (%s)", err)
+	}
+	return resp, nil
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 	minioclient "github.com/pensando/sw/venice/utils/objstore/minio/client"
 	"github.com/pensando/sw/venice/utils/rpckit"
+	"github.com/pensando/sw/venice/utils/tsdb"
 	"github.com/pensando/sw/venice/utils/watchstream"
 	"github.com/pensando/sw/venice/vos"
 	"github.com/pensando/sw/venice/vos/plugins"
@@ -82,6 +83,7 @@ type instance struct {
 	bootupArgs              []string
 	bucketDiskThresholds    *sync.Map
 	periodicDiskMonitorTime time.Duration
+	metricsObjMap           map[string]tsdb.Obj
 }
 
 func (i *instance) Init(client vos.BackendClient) {
@@ -95,6 +97,7 @@ func (i *instance) Init(client vos.BackendClient) {
 	i.store = &storeImpl{client}
 	i.watcherMap = make(map[string]*storeWatcher)
 	i.ctx, i.cancel = context.WithCancel(context.Background())
+	i.metricsObjMap = map[string]tsdb.Obj{}
 }
 
 func (i *instance) RegisterCb(bucket string, stage vos.OperStage, oper vos.ObjectOper, cb vos.CallBackFunc) {
@@ -254,7 +257,7 @@ func (i *instance) Watch(ctx context.Context,
 // testURL = url for minio server for testing
 // Vos is setup differently when testURL is provided. For example, tls is not used whil testing and
 // insecure minio connection is initialized.
-func New(ctx context.Context, trace bool, testURL string, credentialsManagerChannel <-chan interface{}, opts ...Option) (vos.Interface, error) {
+func New(ctx context.Context, trace bool, testURL string, resolverURLs string, credentialsManagerChannel <-chan interface{}, opts ...Option) (vos.Interface, error) {
 	inst := &instance{periodicDiskMonitorTime: periodicDiskMonitorTime}
 
 	// Run options
@@ -399,6 +402,7 @@ func New(ctx context.Context, trace bool, testURL string, credentialsManagerChan
 	plugins.RegisterPlugins(inst)
 	grpcBackend.start(ctx)
 	httpBackend.start(ctx, globals.VosHTTPPort, minioCreds.AccessKey, minioCreds.SecretKey, tlsc)
+	inst.initTsdbClient(resolverURLs, minioCreds.AccessKey, minioCreds.SecretKey)
 	log.Infof("Initialization complete")
 	<-ctx.Done()
 	return inst, nil
