@@ -429,3 +429,7 @@ MigrationBackup/
 
 # Ignore .tgz files
 *.tgz
+
+# Visual Code
+.vscode/
+compile_commands.json
