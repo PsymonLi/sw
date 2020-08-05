@@ -9,6 +9,7 @@ struct phv_ p;
 %%
         .param esp_ipv4_tunnel_h2n_txdma2_ipsec_dummy 
         .param IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N
+        .param IPSEC_ENC_DB_ADDR_NOP
         .align
 esp_ipv4_tunnel_h2n_txdma2_ipsec_encap_txdma2_initial_table:
     //seq c6, d.flags, 0xFF
@@ -46,7 +47,7 @@ esp_ipv4_tunnel_h2n_txdma2_ipsec_encap_txdma2_initial_table:
     seq c1, d.{barco_ring_pindex}.hx, d.{barco_ring_cindex}.hx 
     bcf [!c1], esp_ipv4_tunnel_h2n_txdma2_ipsec_encap_txdma2_initial_do_nothing2
     nop
-    addi r4, r0, CAPRI_DOORBELL_ADDR(0, DB_IDX_UPD_NOP, DB_SCHED_UPD_EVAL, 0, FIXME_IPSEC_LIF)
+    addi r4, r0, IPSEC_ENC_DB_ADDR_NOP
     CAPRI_RING_DOORBELL_DATA(0, d.ipsec_cb_index, 1, 0)
     memwr.dx  r4, r3
     nop.e

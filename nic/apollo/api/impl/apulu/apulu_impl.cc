@@ -23,6 +23,7 @@
 #include "nic/sdk/lib/periodic/periodic.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/sdk/lib/edma/edmaq.hpp"
+#include "nic/sdk/ipsec/ipsec.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
@@ -53,8 +54,8 @@ extern sdk_ret_t ipsec_lif_upgrade_verify(uint32_t lif_id,
 #define MEM_REGION_LIF_STATS_BASE     "lif_stats_base"
 #define MEM_REGION_SESSION_STATS_NAME "session_stats"
 
-#define RXDMA_SYMBOLS_MAX            12
-#define TXDMA_SYMBOLS_MAX            15
+#define RXDMA_SYMBOLS_MAX            16
+#define TXDMA_SYMBOLS_MAX            21
 
 #define APULU_PHV_SIZE               (4096 / 8)
 
@@ -213,6 +214,28 @@ apulu_impl::rxdma_symbols_init_(void **p4plus_symbols,
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
 
+    symbols[i].name = IPSEC_LIF_PARAM_NAME;
+    symbols[i].val = APULU_IPSEC_LIF;
+    i++;
+    SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_ENC_DB_ADDR_SET_PI_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_PIDX_SET, DB_SCHED_UPD_SET,
+                                         APULU_IPSEC_LIF, IPSEC_ENCRYPT_QTYPE);
+    i++;
+    SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_DEC_DB_ADDR_SET_PI_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_PIDX_SET, DB_SCHED_UPD_SET,
+                                         APULU_IPSEC_LIF, IPSEC_DECRYPT_QTYPE);
+    i++;
+    SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_P4PLUS_TO_P4_LIF_PARAM_NAME;
+    symbols[i].val = APULU_IPSEC_LIF;
+    i++;
+    SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
+
     return i;
 }
 
@@ -332,6 +355,40 @@ apulu_impl::txdma_symbols_init_(void **p4plus_symbols,
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME) + IPSEC_N2H_GLOBAL_STATS_OFFSET;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
+    i++;
+    SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_LIF_PARAM_NAME;
+    symbols[i].val = APULU_IPSEC_LIF;
+    i++;
+    SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_ENC_DB_ADDR_SET_PI_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_PIDX_SET, DB_SCHED_UPD_SET,
+                                         APULU_IPSEC_LIF, IPSEC_ENCRYPT_QTYPE);
+    i++;
+    SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_ENC_DB_ADDR_NOP_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_NOP, DB_SCHED_UPD_EVAL,
+                                         APULU_IPSEC_LIF, IPSEC_ENCRYPT_QTYPE);
+    i++;
+    SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_DEC_DB_ADDR_SET_PI_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_PIDX_SET, DB_SCHED_UPD_SET,
+                                         APULU_IPSEC_LIF, IPSEC_DECRYPT_QTYPE);
+    i++;
+    SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_DEC_DB_ADDR_NOP_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_NOP, DB_SCHED_UPD_EVAL,
+                                         APULU_IPSEC_LIF, IPSEC_DECRYPT_QTYPE);
+    i++;
+    SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
+
+    symbols[i].name = IPSEC_P4PLUS_TO_P4_LIF_PARAM_NAME;
+    symbols[i].val = APULU_IPSEC_LIF;
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
 

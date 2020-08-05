@@ -11,6 +11,7 @@ struct phv_ p;
 
 %%
         .param esp_ipv4_tunnel_h2n_txdma2_ipsec_encap_txdma2_load_barco_req 
+        .param IPSEC_P4PLUS_TO_P4_LIF
         .align
 esp_ipv4_tunnel_h2n_txdma2_ipsec_dummy:
     phvwri p.p4plus2p4_hdr_p4plus_app_id, P4PLUS_APPTYPE_IPSEC
@@ -29,9 +30,5 @@ esp_ipv4_tunnel_h2n_txdma2_ipsec_dummy:
     add r5, r0, k.ipsec_to_stage1_barco_desc_addr
     CAPRI_NEXT_TABLE_READ(0, TABLE_LOCK_DIS, esp_ipv4_tunnel_h2n_txdma2_ipsec_encap_txdma2_load_barco_req, r5, TABLE_SIZE_64_BITS)
     phvwri p.{p4_intr_global_tm_iport...p4_intr_global_tm_oport}, ((TM_OPORT_DMA << 4) | TM_OPORT_P4INGRESS) 
-#ifdef IRIS
-    phvwri.e p.p4_intr_global_lif, LIF_CPU
-#else
-    phvwri.e p.p4_intr_global_lif, FIXME_IPSEC_LIF
-#endif
+    phvwri.e p.p4_intr_global_lif, IPSEC_P4PLUS_TO_P4_LIF
     nop

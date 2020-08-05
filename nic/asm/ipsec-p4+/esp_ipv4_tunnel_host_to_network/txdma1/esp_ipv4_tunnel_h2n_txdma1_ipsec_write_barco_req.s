@@ -11,6 +11,7 @@ struct phv_ p;
         .align
         .param IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N
         .param esp_ipv4_tunnel_h2n_txdma1_ipsec_free_resources
+        .param IPSEC_ENC_DB_ADDR_SET_PI
 
 esp_ipv4_tunnel_h2n_txdma1_ipsec_write_barco_req:
     seq c1, k.ipsec_to_stage4_cb_cindex[3:0], 0
@@ -27,7 +28,7 @@ esp_ipv4_tunnel_h2n_txdma1_ipsec_write_barco_req:
     nop
     phvwr p.dma_cmd_post_barco_ring_dma_cmd_addr, r3
     phvwri p.{app_header_table0_valid...app_header_table3_valid}, 0
-    addi r4, r0, CAPRI_DOORBELL_ADDR(0, DB_IDX_UPD_PIDX_SET, DB_SCHED_UPD_SET, 0, FIXME_IPSEC_LIF)
+    addi r4, r0, IPSEC_ENC_DB_ADDR_SET_PI
     phvwr p.barco_req_doorbell_address, r4.dx
     add r1, k.ipsec_to_stage4_barco_pindex, 1
     and r1, r1, IPSEC_BARCO_RING_INDEX_MASK 
@@ -73,7 +74,7 @@ esp_ipv4_tunnel_h2n_hit_errors:
     // Doorbell to TxDMA2
     add r7, k.ipsec_to_stage4_barco_pindex, 1
     andi r7, r7, IPSEC_BARCO_RING_INDEX_MASK
-    CAPRI_DMA_CMD_RING_DOORBELL2_SET_PI_FENCE(doorbell_cmd_dma_cmd, FIXME_IPSEC_LIF, 0, d.ipsec_cb_index, 1, r7, db_data_pid, db_data_index)
+    CAPRI_DMA_CMD_RING_DOORBELL3_SET_PI(doorbell_cmd_dma_cmd, IPSEC_ENC_DB_ADDR_SET_PI, d.ipsec_cb_index, 1, r7, db_data_pid, db_data_index, DMA_CMD_WR_FENCE, 0)
 
 esp_ipv4_tunnel_h2n_skip_doorbell:
     phvwri p.brq_req_write_dma_cmd_type, 0

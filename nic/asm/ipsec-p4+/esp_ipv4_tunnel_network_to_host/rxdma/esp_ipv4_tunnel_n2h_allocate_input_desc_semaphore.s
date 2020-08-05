@@ -12,6 +12,7 @@ struct phv_ p;
         .param          IPSEC_BIG_RNMPR_TABLE_BASE
         .param          IPSEC_BIG_TNMPR_TABLE_BASE
         .param          IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_N2H
+        .param          IPSEC_DEC_DB_ADDR_SET_PI
         .align
 
 #define c_qfull c7
@@ -48,7 +49,7 @@ esp_ipv4_tunnel_n2h_desc_ring_full:
     phvwri p.{dma_cmd_post_cb_ring_dma_cmd_phv_end_addr...dma_cmd_post_cb_ring_dma_cmd_type}, ((IPSEC_CB_RING_IN_DESC_END << 18) | (IPSEC_CB_RING_IN_DESC_START << 8) | IPSEC_PHV2MEM_CACHE_ENABLE | CAPRI_DMA_COMMAND_PHV_TO_MEM)
     add r7, k.ipsec_global_cb_pindex, 1
     andi r7, r7, IPSEC_CB_RING_INDEX_MASK
-    CAPRI_DMA_CMD_RING_DOORBELL2_SET_PI(doorbell_cmd_dma_cmd, FIXME_IPSEC_LIF, 1, k.ipsec_global_ipsec_cb_index, 0, r7, db_data_pid, db_data_index)
+    CAPRI_DMA_CMD_RING_DOORBELL3_SET_PI(doorbell_cmd_dma_cmd, IPSEC_DEC_DB_ADDR_SET_PI, k.ipsec_global_ipsec_cb_index, 0, r7, db_data_pid, db_data_index, 0, 0)
     add r1, r0, k.ipsec_global_ipsec_cb_index
     phvwri          p.doorbell_cmd_dma_cmd_eop, 1
     phvwri        p.doorbell_cmd_dma_cmd_wr_fence, 1

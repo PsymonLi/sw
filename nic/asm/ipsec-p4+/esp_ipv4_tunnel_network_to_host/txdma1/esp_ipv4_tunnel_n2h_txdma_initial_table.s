@@ -10,6 +10,7 @@ struct phv_ p;
         .param esp_v4_tunnel_n2h_get_in_desc_from_cb_cindex
         .param esp_v4_tunnel_n2h_load_part2
         .param IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_N2H
+        .param IPSEC_DEC_DB_ADDR_NOP
         .align
 esp_ipv4_tunnel_n2h_txdma_initial_table:
     //seq c6, d.is_v6, 0xFF
@@ -45,7 +46,7 @@ esp_ipv4_tunnel_n2h_txdma_initial_table:
     //CAPRI_ATOMIC_STATS_INCR1_NO_CHECK(r7, N2H_TXDMA1_ENTER_OFFSET, 1)
     seq c1, d.{rxdma_ring_pindex}.hx, d.{rxdma_ring_cindex}.hx
     b.!c1 esp_ipv4_tunnel_n2h_txdma1_initial_table_do_nothing2 
-    addi r4, r0, CAPRI_DOORBELL_ADDR(0, DB_IDX_UPD_NOP, DB_SCHED_UPD_EVAL, 1, FIXME_IPSEC_LIF)
+    addi r4, r0, IPSEC_DEC_DB_ADDR_NOP
     CAPRI_RING_DOORBELL_DATA(0, d.ipsec_cb_index, 0, 0)
     memwr.dx  r4, r3
     nop.e

@@ -11,6 +11,7 @@ struct phv_ p;
         .param IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N
         .param esp_ipv4_tunnel_h2n_rxdma_ipsec_update_rx_stats
         .param IPSEC_PAGE_ADDR_RX
+        .param IPSEC_ENC_DB_ADDR_SET_PI
         .align
 
 esp_ipv4_tunnel_h2n_ipsec_cb_tail_enqueue_input_desc:
@@ -29,7 +30,7 @@ esp_ipv4_tunnel_h2n_ipsec_cb_tail_enqueue_input_desc:
     add r7, k.ipsec_global_ipsec_cb_pindex, 1
     andi r7, r7, IPSEC_CB_RING_INDEX_MASK 
 
-    CAPRI_DMA_CMD_RING_DOORBELL2_SET_PI_STOP_FENCE(doorbell_cmd_dma_cmd, FIXME_IPSEC_LIF, 0, k.ipsec_global_ipsec_cb_index, 0, r7, db_data_pid, db_data_index)
+    CAPRI_DMA_CMD_RING_DOORBELL3_SET_PI(doorbell_cmd_dma_cmd, IPSEC_ENC_DB_ADDR_SET_PI, k.ipsec_global_ipsec_cb_index, 0, r7, db_data_pid, db_data_index, DMA_CMD_WR_FENCE, DMA_CMD_EOP)
     and r6, k.ipsec_to_stage4_flags, IPSEC_N2H_GLOBAL_FLAGS
     seq c1, r6, IPSEC_N2H_GLOBAL_FLAGS
     bcf [c1], esp_ipv4_tunnel_h2n_rxdma_disbale_dma_cmds 

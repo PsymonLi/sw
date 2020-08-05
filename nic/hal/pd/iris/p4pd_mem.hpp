@@ -176,6 +176,12 @@ namespace hal  {
 #define IPSEC_IP_HDR_BASE "ipsec_ip_hdr_base"
 #define IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N "ipsec_global_drop_h2n_counters"
 #define IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_N2H "ipsec_global_drop_n2h_counters"
+#define IPSEC_LIF_PARAM_NAME                  "IPSEC_LIF"
+#define IPSEC_P4PLUS_TO_P4_LIF_PARAM_NAME     "IPSEC_P4PLUS_TO_P4_LIF"
+#define IPSEC_ENC_DB_ADDR_SET_PI_PARAM_NAME   "IPSEC_ENC_DB_ADDR_SET_PI"
+#define IPSEC_ENC_DB_ADDR_NOP_PARAM_NAME      "IPSEC_ENC_DB_ADDR_NOP"
+#define IPSEC_DEC_DB_ADDR_SET_PI_PARAM_NAME   "IPSEC_DEC_DB_ADDR_SET_PI"
+#define IPSEC_DEC_DB_ADDR_NOP_PARAM_NAME      "IPSEC_DEC_DB_ADDR_NOP"
 
 
 #define TLS_PROXY_PAD_BYTES_HBM_TABLE_BASE "tls_pad_table_base"

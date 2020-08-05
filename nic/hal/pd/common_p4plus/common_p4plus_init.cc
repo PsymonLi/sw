@@ -3,6 +3,7 @@
 #include "nic/include/hal.hpp"
 #include "nic/include/hal_cfg.hpp"
 #include "nic/include/pd_api.hpp"
+#include "nic/sdk/ipsec/ipsec.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "platform/capri/capri_pxb_pcie.hpp"
@@ -17,7 +18,7 @@ namespace pd {
 
 #define IPSEC_N2H_GLOBAL_STATS_OFFSET 512
 
-#define P4PLUS_SYMBOLS_MAX 86
+#define P4PLUS_SYMBOLS_MAX 92
 
 uint32_t
 common_p4plus_symbols_init (void **p4plus_symbols, platform_type_t platform_type)
@@ -419,6 +420,34 @@ common_p4plus_symbols_init (void **p4plus_symbols, platform_type_t platform_type
 
     symbols[i].name = NVME_RX_NMDPR_RING_BASE;
     symbols[i].val = asicpd_get_mem_addr(ASIC_HBM_NVME_RX_NMDPR_RING_BASE);
+    i++;
+
+    symbols[i].name = IPSEC_LIF_PARAM_NAME;
+    symbols[i].val = SERVICE_LIF_IPSEC_ESP;
+    i++;
+
+    symbols[i].name = IPSEC_ENC_DB_ADDR_SET_PI_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_PIDX_SET, DB_SCHED_UPD_SET,
+                                         SERVICE_LIF_IPSEC_ESP, IPSEC_ENCRYPT_QTYPE);
+    i++;
+
+    symbols[i].name = IPSEC_ENC_DB_ADDR_NOP_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_NOP, DB_SCHED_UPD_EVAL,
+                                         SERVICE_LIF_IPSEC_ESP, IPSEC_ENCRYPT_QTYPE);
+    i++;
+
+    symbols[i].name = IPSEC_DEC_DB_ADDR_SET_PI_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_PIDX_SET, DB_SCHED_UPD_SET,
+                                         SERVICE_LIF_IPSEC_ESP, IPSEC_DECRYPT_QTYPE);
+    i++;
+
+    symbols[i].name = IPSEC_DEC_DB_ADDR_NOP_PARAM_NAME;
+    symbols[i].val = _ASIC_SETUP_DB_ADDR(DB_IDX_UPD_NOP, DB_SCHED_UPD_EVAL,
+                                         SERVICE_LIF_IPSEC_ESP, IPSEC_DECRYPT_QTYPE);
+    i++;
+
+    symbols[i].name = IPSEC_P4PLUS_TO_P4_LIF_PARAM_NAME;
+    symbols[i].val = HAL_LIF_CPU;
     i++;
 
     // Please increment CAPRI_P4PLUS_NUM_SYMBOLS when you want to add more below

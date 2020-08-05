@@ -269,16 +269,6 @@
     ((((_pid_chk) | (_idx_upd) | (_sched_upd)) << DB_UPD_SHFT) + \
      DB_ADDR_BASE)
 
-#define CAPRI_RING_DOORBELL_ADDR2(_pid_chk, _idx_upd, _sched_upd, _type, _lif) \
-       addi            r5, r0, _pid_chk | _idx_upd | _sched_upd;\
-       sll             r5, r5, DB_UPD_SHFT;\
-       sll             r6, _lif, DB_LIF_SHFT;\
-       or              r5, r5, r6;\
-       add             r6, r0, _type;\
-       sll             r6, r6, DB_TYPE_SHFT;\
-       or              r5, r5, r6;\
-       addi            r4, r5, DB_ADDR_BASE
-
 #define CAPRI_RING_DOORBELL_ADDR_HOST(_pid_chk, _idx_upd, _sched_upd, _type, _lif) \
         addi            r4, r0, CAPRI_DOORBELL_ADDR_HOST(_pid_chk, _idx_upd, _sched_upd, _type); \
         add             r4, r4, _lif, DB_LIF_SHFT; \
@@ -760,6 +750,17 @@
                      CAPRI_DMA_COMMAND_PHV_TO_MEM);                                             \
         phvwri      p.##_dma_cmd_prefix##_addr,                                                 \
                     CAPRI_DOORBELL_ADDR(0, DB_IDX_UPD_PIDX_SET, DB_SCHED_UPD_SET,__type, _lif); \
+        CAPRI_RING_DOORBELL_DATA(0, _qid, _ring, _pidx);                                        \
+        phvwr       p.{_sfield..._efield}, r3.dx;
+
+#define CAPRI_DMA_CMD_RING_DOORBELL3_SET_PI(_dma_cmd_prefix, db_addr, _qid, _ring, _pidx,       \
+                                            _sfield, _efield, _fence, _eop)                     \
+        phvwri      p.{##_dma_cmd_prefix##_phv_end_addr...##_dma_cmd_prefix##_type},            \
+                    ((CAPRI_PHV_END_OFFSET(_efield) << 18) |                                    \
+                     (CAPRI_PHV_START_OFFSET(_sfield) << 8) |                                   \
+                     (_eop << 3 | _fence << 6) |                                                \
+                     CAPRI_DMA_COMMAND_PHV_TO_MEM);                                             \
+        phvwri      p.##_dma_cmd_prefix##_addr, db_addr;                                        \
         CAPRI_RING_DOORBELL_DATA(0, _qid, _ring, _pidx);                                        \
         phvwr       p.{_sfield..._efield}, r3.dx;
 
