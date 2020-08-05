@@ -28,7 +28,11 @@ CMD_P4C_ASM  := ${TOPDIR}/nic/tools/sorrento/tools/p4c_asm.sh
 CMD_CAPAS       := ${COMMON_CMD_CAPAS}
 CMD_CAPAS_OPTS  := ${COMMON_CAPAS_OPTS}
 
-CMD_PROTOC_LDLIB_PATH   := ${TOPDIR}/nic/hal/third-party/google/x86_64/lib/
+ifeq ($(ANE),y)
+    CMD_PROTOC_LDLIB_PATH   := ${LD_LIBRARY_PATH}:${TOPDIR}/nic/hal/third-party/google/x86_64/lib/
+else 
+    CMD_PROTOC_LDLIB_PATH   := ${TOPDIR}/nic/hal/third-party/google/x86_64/lib/
+endif
 CMD_PROTOC_PLUGIN_PATH   := ${TOPDIR}/nic/build/x86_64/iris/${ASIC}/bin/
 CMD_PROTOC              := LC_ALL=C PATH=${CMD_PROTOC_PLUGIN_PATH}:$$(PATH) LD_LIBRARY_PATH=${CMD_PROTOC_LDLIB_PATH} ${TOPDIR}/nic/hal/third-party/google/x86_64/bin/protoc
 CMD_PROTOC_C            := ${TOPDIR}/nic/hal/third-party/google/x86_64/bin/protoc-c
