@@ -1485,10 +1485,12 @@ port_periodic_update_helper (port_args_t *port_args,
                                         pi_p->port_num);
         // populate the event info
         sdk::platform::xcvr_get(phy_port - 1, &xcvr_event_info);
-        // read dom info
-        sdk::platform::xcvr_read_dom(phy_port - 1, xcvr_event_info.xcvr_sprom);
-        // notify outside
-        linkmgr::ipc::xcvr_event_notify(&xcvr_event_info, true);
+        if (xcvr_event_info.state == xcvr_state_t::XCVR_SPROM_READ) {
+            // read dom info
+            sdk::platform::xcvr_read_dom(phy_port - 1, xcvr_event_info.xcvr_sprom);
+            // notify outside
+            linkmgr::ipc::xcvr_event_notify(&xcvr_event_info, true);
+        }
     }
 }
 
