@@ -102,12 +102,13 @@ NAME_SORRENTO   := "[SORRENTO ]"
 
 COMMON_CMD_NCC              := ${TOPDIR}/nic/tools/ncc/capri-ncc.py
 COMMON_CMD_SORRENTO         := ${TOPDIR}/nic/tools/sorrento/bin/p4c-sorrento.sh
-COMMON_P4C_OPTS             :=
+COMMON_P4C_OPTS             := --target=${ASIC}
 
 ifeq ($(ASIC),elba)
      NAME_CAPAS     := "[ ELBAS  ]"
      COMMON_CMD_CAPAS            := ${SDKDIR}/third-party/asic/ip/verif/pensim/gen/x86_64/bin/elbas
      COMMON_NCC_OPTS             := --asic "elba"
+     COMMON_P4C_OPTS             := --target=elba -D__SORRENTO_CAPRI_COMPAT_MODE__
 else
      NAME_CAPAS     := "[ CAPAS  ]"
      COMMON_CMD_CAPAS            := ${SDKDIR}/third-party/asic/capri/model/capsim-gen/bin/capas
