@@ -6,10 +6,10 @@
 #include <string.h>
 #include <cinttypes>
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/test/api/utils/base.hpp"
 #include "nic/sdk/lib/utils/time_profile.hpp"
 #include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/athena/test/api/utils/base.hpp"
 #include "nic/apollo/athena/test/api/include/ftl_scale.hpp"
 #include "ftl_p4pd_mock.hpp"
 #include "ftltest_utils.hpp"

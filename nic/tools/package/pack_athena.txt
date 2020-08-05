@@ -164,8 +164,6 @@ nic/build/$ARCH/$PIPELINE/bin/ftl_test                            /nic/bin/
 
 nic/build/$ARCH/$PIPELINE/bin/console                             /nic/bin/
 
-nic/build/$ARCH/$PIPELINE/bin/$PIPELINE_flow_test                 /nic/bin/
-nic/build/$ARCH/$PIPELINE/lib/libpdstestutils.so                  /nic/lib/
 nic/build/$ARCH/$PIPELINE/bin/pciemgrd-gold                       /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pdsctl                              /nic/bin/
 

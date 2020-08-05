@@ -11,7 +11,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/api/include/athena/pds_dnat.h"
 #include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/test/api/utils/base.hpp"
+#include "nic/apollo/athena/test/api/utils/base.hpp"
 #include "nic/apollo/athena/test/api/include/trace.hpp"
 #include "ftl_p4pd_mock.hpp"
 

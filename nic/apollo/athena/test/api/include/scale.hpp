@@ -6,7 +6,7 @@
 #define __SCALE_HPP__
 
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/test/api/utils/base.hpp"
+#include "nic/apollo/athena/test/api/utils/base.hpp"
 
 #define MHTEST_CHECK_RETURN(_exp, _ret) if (!(_exp)) return (_ret)
 

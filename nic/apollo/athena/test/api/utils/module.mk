@@ -1,8 +1,7 @@
 # {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 
 include ${MKDEFS}/pre.mk
-MODULE_TARGET   = libpdstest.lib
-MODULE_PIPELINE = apollo artemis apulu
+MODULE_TARGET   = libpdstestapiutils_athena.lib
+MODULE_PIPELINE = athena
 MODULE_SRCS     = $(wildcard ${MODULE_SRC_DIR}/*.cc)
-MODULE_SOLIBS   = sdkfru pal
 include ${MKDEFS}/post.mk

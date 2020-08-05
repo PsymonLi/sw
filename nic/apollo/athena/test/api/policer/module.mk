@@ -5,7 +5,7 @@ MODULE_TARGET   = athena_policer_test.gtest
 MODULE_PIPELINE = athena
 MODULE_ARCH     = x86_64
 MODULE_SOLIBS   = pal pdsframework pdscore pdsapi_athena pdsapi_athena_impl \
-                  pdstest pdstestapiutils \
+                  pdstest_athena pdstestapiutils_athena \
                   ${NIC_${PIPELINE}_P4PD_SOLIBS} \
                   ${NIC_SDK_SOLIBS} ${NIC_HAL_PD_SOLIBS_${ARCH}} \
                   sdkp4 sdkp4utils sdk_asicrw_if sdk${ASIC} penmetrics \

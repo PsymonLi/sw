@@ -13,7 +13,7 @@
 #include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_flow_cache.h"
 #include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/test/api/utils/base.hpp"
+#include "nic/apollo/athena/test/api/utils/base.hpp"
 #include "nic/apollo/athena/test/api/include/trace.hpp"
 #include "ftl_p4pd_mock.hpp"
 #include "ftltest_utils.hpp"

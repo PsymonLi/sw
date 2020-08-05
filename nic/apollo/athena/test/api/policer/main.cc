@@ -9,7 +9,7 @@
 ///
 //----------------------------------------------------------------------------
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/test/api/utils/base.hpp"
+#include "nic/apollo/athena/test/api/utils/base.hpp"
 #include "nic/apollo/athena/test/api/policer/utils.hpp"
 #include "nic/apollo/athena/test/api/include/scale.hpp"
 
@@ -60,7 +60,7 @@ protected:
         display_gtest_stats();
     }
     static void SetUpTestCase() {
-        pds_test_base::SetUpTestCase(g_tc_params);
+        pds_test_base::SetUpTestCase();
     }
     static void TearDownTestCase() {
         pds_test_base::TearDownTestCase();
