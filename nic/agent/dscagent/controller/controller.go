@@ -784,17 +784,15 @@ func (c *API) postConfigHandler(r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	err = c.HandleVeniceCoordinates(o)
+	go func() {
+		if err := c.HandleVeniceCoordinates(o); err != nil {
+			log.Errorf("HTTP Post Handler returned err: %v", err)
+		}
+	}()
 
 	var resp restapi.Response
-	if err != nil {
-		resp.StatusCode = http.StatusInternalServerError
-		resp.Error = err.Error()
-	} else {
-		resp.StatusCode = http.StatusOK
-	}
-
-	return nil, err
+	resp.StatusCode = http.StatusAccepted
+	return resp, nil
 }
 
 func (c *API) getMappingHandler(r *http.Request) (interface{}, error) {
