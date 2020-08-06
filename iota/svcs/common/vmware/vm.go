@@ -236,9 +236,88 @@ func (vm *VM) ReconfigureNetwork(currNW string, newNW string, maxReconfigs int) 
 			return errors.Wrap(err, "Reconfiguring to network failed")
 		}
 
-		veth.Connectable = &types.VirtualDeviceConnectInfo{
-			StartConnected: false,
-			Connected:      false,
+		reconfigs++
+		if maxReconfigs != 0 && reconfigs == maxReconfigs {
+			break
+		}
+	}
+
+	return nil
+}
+
+//ReconnectLink will reconnect
+func (vm *VM) ReconnectLink(currNW string) error {
+
+	var task *object.Task
+	var devList object.VirtualDeviceList
+	var err error
+
+	curNet, err := vm.entity.Finder().Network(vm.entity.Ctx(), currNW)
+	if err != nil {
+		return errors.Wrap(err, "Failed Find current Network")
+	}
+
+	curNetRef, err := curNet.EthernetCardBackingInfo(vm.entity.Ctx())
+	if err != nil {
+		return errors.Wrap(err, "Failed Find current Network")
+	}
+
+	devList, err = vm.vm.Device(vm.entity.Ctx())
+	if err != nil {
+		return errors.Wrap(err, "Failed to device list of VM")
+	}
+
+	for _, d := range devList.SelectByType((*types.VirtualEthernetCard)(nil)) {
+		veth := d.GetVirtualDevice()
+
+		switch curNetRef.(type) {
+		case *types.VirtualEthernetCardNetworkBackingInfo:
+			switch a := veth.Backing.(type) {
+			case *types.VirtualEthernetCardNetworkBackingInfo:
+				if veth.Backing.(*types.VirtualEthernetCardNetworkBackingInfo).DeviceName != currNW {
+					fmt.Println("Skipping as current network does not match ", currNW)
+					continue
+				}
+			case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
+				switch curn := curNetRef.(type) {
+				case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
+					if a.Port.SwitchUuid != curn.Port.SwitchUuid ||
+						a.Port.PortgroupKey != curn.Port.SwitchUuid {
+						fmt.Println("Skipping as current network does not match ", currNW)
+						continue
+					}
+				}
+			}
+
+			veth.Connectable = &types.VirtualDeviceConnectInfo{
+				StartConnected: true,
+				Connected:      true,
+			}
+		case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
+			switch a := veth.Backing.(type) {
+			case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
+				switch curn := curNetRef.(type) {
+				case *types.VirtualEthernetCardDistributedVirtualPortBackingInfo:
+					if a.Port.SwitchUuid != curn.Port.SwitchUuid ||
+						a.Port.PortgroupKey != curn.Port.SwitchUuid {
+						fmt.Println("Skipping as network already connected ", currNW)
+						continue
+					}
+				default:
+					continue
+
+				}
+
+			case *types.VirtualEthernetCardNetworkBackingInfo:
+				if veth.Backing.(*types.VirtualEthernetCardNetworkBackingInfo).DeviceName != currNW {
+					fmt.Println("Skipping as network already connected ", currNW)
+					continue
+				}
+			}
+			veth.Connectable = &types.VirtualDeviceConnectInfo{
+				StartConnected: false,
+				Connected:      false,
+			}
 		}
 
 		task, err = vm.vm.Reconfigure(vm.entity.Ctx(),
@@ -264,10 +343,6 @@ func (vm *VM) ReconfigureNetwork(currNW string, newNW string, maxReconfigs int) 
 			return errors.Wrap(err, "Reconfiguring to network failed")
 		}
 
-		reconfigs++
-		if maxReconfigs != 0 && reconfigs == maxReconfigs {
-			break
-		}
 	}
 
 	return nil

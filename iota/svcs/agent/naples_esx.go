@@ -542,7 +542,12 @@ func (node *esxHwNode) setUpNaplesMgmtNetwork(inst int, hint string) error {
 		return errors.Wrap(err, "Failed to reconfigure Ctrl VM to Naples Mgmt network")
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
+
+	err = ctrlVM.ReconnectLink(mgmtNetwork)
+	if err != nil {
+		return errors.Wrap(err, "Failed to connect Ctrl VM to Naples Mgmt network")
+	}
 
 	Utils.DisableDhcpOnInterface(Common.EsxCtrlVMNaplesMgmtInterface)
 

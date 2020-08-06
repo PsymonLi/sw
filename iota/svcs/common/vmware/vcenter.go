@@ -1378,15 +1378,16 @@ func (dc *DataCenter) AddPortGroupToDvs(name string, pairs []DvsPortGroup) error
 func (dc *DataCenter) ReconfigureVMNetwork(vm *VM, currNW string, switcName string, newNW string, maxReconfigs int, relaxSecurity bool) error {
 	dc.getClientWithLock()
 	defer dc.releaseClientLock()
-	if err := vm.ReconfigureNetwork(currNW, newNW, maxReconfigs); err != nil {
-		return err
-	}
 
 	if relaxSecurity {
-		return dc.relaxSecurityOnPg(switcName, newNW)
+		err := dc.relaxSecurityOnPg(switcName, newNW)
+		if err != nil {
+			return err
+		}
 	}
 
-	return nil
+	return vm.ReconfigureNetwork(currNW, newNW, maxReconfigs)
+
 }
 
 // RelaxSecurityOnPg relaxes security on PG
