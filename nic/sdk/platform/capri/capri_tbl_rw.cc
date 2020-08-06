@@ -1259,7 +1259,7 @@ capri_flush_tcam_shadow (p4pd_table_dir_en gress)
                 tcam_block_data[p + bytes_in_a_block] = *tcam_block_data_y; tcam_block_data_y++;                            
             }
             // set valid bit
-            tcam_block_data[byte_width - 1] = 0x1;
+            tcam_block_data[byte_width - 4] = 0x1;
             sdk::lib::pal_reg_write(pa, (uint32_t *)tcam_block_data, word_width);
             pa += sizeof(Cap_pict_csr_dhs_tcam_xy_entry);
         }
