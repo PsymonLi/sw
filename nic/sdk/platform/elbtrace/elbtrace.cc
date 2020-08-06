@@ -76,6 +76,9 @@ elbtrace_init(void)
     utils::mpartition          *mpartition = NULL;
     sdk::lib::catalog          *catalog;
     uint32_t                   region_split_size;
+    uint32_t                   sdp_region_size;
+    uint32_t                   sdp_phv_region_size;
+    uint32_t                   sdp_ctl_region_size;
 
     assert(sdk::lib::pal_init(g_state.platform_type) == sdk::lib::PAL_RET_OK);
     catalog = sdk::lib::catalog::factory(g_state.cfg_path, "",
@@ -86,14 +89,36 @@ elbtrace_init(void)
     mpartition = utils::mpartition::factory(mpart_file.c_str());
     assert(mpartition);
     region_split_size = mpartition->size("mpu-trace") / 4;
+    sdp_region_size = region_split_size / 16; 
+    sdp_phv_region_size = sdp_region_size * 15;
+    sdp_ctl_region_size = sdp_region_size;
     g_state.mputrace_base = roundup(mpartition->start_addr("mpu-trace"), 4096);
     g_state.mputrace_end = g_state.mputrace_base + region_split_size;
-    g_state.sdptrace_phv_base = roundup(g_state.mputrace_end + 1, 4096);
-    g_state.sdptrace_phv_end  = g_state.sdptrace_phv_base + region_split_size - 4096;
-    g_state.sdptrace_ctl_base = roundup(g_state.sdptrace_phv_end + 1, 4096);
-    g_state.sdptrace_ctl_end  = g_state.sdptrace_ctl_base + region_split_size - 4096;
-    g_state.dmatrace_base = roundup(g_state.sdptrace_ctl_end + 1, 4096);
+    g_state.sdptrace_phv_base = roundup(g_state.mputrace_end, 4096);
+    g_state.sdptrace_phv_end  = g_state.sdptrace_phv_base + sdp_phv_region_size - 4096;
+    g_state.sdptrace_ctl_base = roundup(g_state.sdptrace_phv_end, 4096);
+    g_state.sdptrace_ctl_end  = g_state.sdptrace_ctl_base + sdp_ctl_region_size - 4096;
+    g_state.dmatrace_base = roundup(g_state.sdptrace_ctl_end, 4096);
     g_state.dmatrace_end  = g_state.dmatrace_base + region_split_size - 4096;
+
+    SDK_TRACE_DEBUG("region %s, size %lu, start 0x%" PRIx64 ", end 0x%" PRIx64, 
+                    "elba-trace", mpartition->size("mpu-trace"),
+                    mpartition->start_addr("mpu-trace"), (mpartition->size("mpu-trace") 
+                    + mpartition->start_addr("mpu-trace")));
+    SDK_TRACE_DEBUG("elba trace region split size 0x%" PRIx32,
+                    region_split_size);
+    SDK_TRACE_DEBUG("region %s, size %u, start 0x%" PRIx64 ", end 0x%" PRIx64,
+                    "mpu-trace", region_split_size, g_state.mputrace_base,
+                    g_state.mputrace_end);
+    SDK_TRACE_DEBUG("region %s, size %u, start 0x%" PRIx64 ", end 0x%" PRIx64,
+                    "sdp-phv-trace", sdp_phv_region_size,
+                    g_state.sdptrace_phv_base, g_state.sdptrace_phv_end);
+    SDK_TRACE_DEBUG("region %s, size %u, start 0x%" PRIx64 ", end 0x%" PRIx64,
+                    "sdp-ctl-trace", sdp_ctl_region_size,
+                    g_state.sdptrace_ctl_base, g_state.sdptrace_ctl_end);
+    SDK_TRACE_DEBUG("region %s, size %u, start 0x%" PRIx64 ", end 0x%" PRIx64,
+                    "dma-trace", region_split_size, g_state.dmatrace_base,
+                    g_state.dmatrace_end);
     elba::csr_init();
 }
 
@@ -166,27 +191,6 @@ elbtrace_handle_options (int argc, char *argv[])
         dmatrace_reset();
         break;
     case MPUTRACE_SHOW:
-
-        //cout << "MREGION_MPU_TRACE_ADDR          " << hex << MREGION_MPU_TRACE_ADDR << endl;
-        //cout << "MREGION_BASE_ADDR 	           " << hex << MREGION_BASE_ADDR << endl;
-        //cout << "MREGION_MPU_TRACE_START_OFFSET  " << hex << MREGION_MPU_TRACE_START_OFFSET << endl;
-        //cout << "MREGION_MPU_TRACE_SIZE          " << hex << MREGION_MPU_TRACE_SIZE << endl;
-
-        //cout << "REGION_SPLIT         " << hex << REGION_SPLIT << endl;
-        //cout << "MPU_TRACE_SIZE       " << hex << MPU_TRACE_SIZE << endl;
-        //cout << "SDP_PHV_TRACE_SIZE   " << hex << SDP_PHV_TRACE_SIZE << endl;
-        //cout << "SDP_CTL_TRACE_SIZE   " << hex << SDP_CTL_TRACE_SIZE << endl;
-        //cout << "DMA_TRACE_SIZE       " << hex << DMA_TRACE_SIZE << endl << endl;
-
-        //cout << "MPUTRACE_BASE	  " << hex << TRACE_BASE	     << endl;
-        //cout << "MPUTRACE_END       " << hex << TRACE_END          << endl;
-        //cout << "SDPTRACE_PHV_BASE  " << hex << SDPTRACE_PHV_BASE  << endl;
-        //cout << "SDPTRACE_PHV_END   " << hex << SDPTRACE_PHV_END   << endl;
-        //cout << "SDPTRACE_CTL_BASE  " << hex << SDPTRACE_CTL_BASE  << endl;
-        //cout << "SDPTRACE_CTL_END   " << hex << SDPTRACE_CTL_END   << endl;
-        //cout << "DMATRACE_BASE      " << hex << DMATRACE_BASE      << endl;
-        //cout << "DMATRACE_END       " << hex << DMATRACE_END       << endl;
-
         elbtrace_init();
         mputrace_show();
         break;

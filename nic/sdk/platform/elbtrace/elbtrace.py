@@ -198,7 +198,7 @@ elif args.command == "decode_mpu":
 
             stg_phv = defaultdict(list)
             #check if ts entry is available in sdp_list
-            if ts in sdp_list:
+            if args.decode_sdp and ts in sdp_list:
                 #print("Timestamp match found")
                 for entry in sdp_list[ts]:
                     #print("entry")

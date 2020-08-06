@@ -180,6 +180,7 @@ def decode_mpu_trace_file(bytez):
         # print(ctypes_pformat(fhdr))
         s += sizeof(TraceFileHeader)
 
+        #debug info
         #print(sizeof(TraceFileHeader))
         #print("\n>>> Trace config HDR : 0x{:0128x}\n".format(int.from_bytes(fhdr, byteorder='big')))
         #for fld in (fhdr._fields_):
@@ -209,7 +210,7 @@ def decode_mpu_trace_kd(bytez):
             break
     else:
         # Empty trace
-        #print("\n Empty trace \n")
+        print("\n Empty trace \n")
         return
 
     # print(','.join(hex(x) for x in bytez[:64]))
