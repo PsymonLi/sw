@@ -487,6 +487,12 @@ binding_i2c_init(struct mctp *mctp, struct binding *binding, mctp_eid_t eid,
     assert(i2c);
 
     rc = mctp_i2c_open_path(i2c, path);
+    if (rc == ENOENT) {
+        g_log->err("kernel support missing, %s not found, pausing app", path);
+        while (1) {
+            pause();
+        }
+    }
     if (rc)
         return -1;
 

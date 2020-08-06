@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -255,8 +256,8 @@ mctp_i2c_open_path(struct mctp_binding_i2c *i2c, const char *device)
 {
     i2c->fd = open(device, O_RDWR);
     if (i2c->fd < 0) {
-        mctp_prerr("can't open device %s", device);
-        return -1;
+        mctp_prerr("can't open device %s, errno -%d", device, errno);
+        return errno;
     }
     return 0;
 }
