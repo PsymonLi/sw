@@ -19,10 +19,10 @@ using namespace std;
 
 const char *fwctrl_cmd_to_str(int cmd);
 void FwUpdateInit(PdClient *pd);
-status_code_t FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset,
-                         uint32_t length, edma_q *edmaq, bool host_dev);
-status_code_t FwDownload(string dev_name, uint8_t *addr, uint32_t offset,
+status_code_t FwDownloadEdma(string owner, uint64_t addr, uint32_t offset,
+                             uint32_t length, edma_q *edmaq, bool host_dev);
+status_code_t FwDownload(string owner, uint8_t *addr, uint32_t offset,
                          uint32_t length);
-status_code_t FwControl(string dev_name, int oper);
+status_code_t FwControl(string owner, int oper);
 
 #endif /* __ETH_FW_UPDATE_HPP__ */

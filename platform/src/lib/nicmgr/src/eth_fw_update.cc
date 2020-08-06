@@ -8,7 +8,7 @@
 #include "eth_if.h"
 #include "nicmgr_utils.hpp"
 
-#define FW_UPDATE_DEV_NONE  ""
+#define FW_UPDATE_OWNER_NONE  ""
 
 enum fw_install_state {
     FW_INSTALL_NONE = 0,
@@ -17,10 +17,19 @@ enum fw_install_state {
     FW_INSTALL_ERR
 };
 
-struct fw_install_args {
-    int seq_no;
-    string dev_name;
+enum fw_activate_state {
+    FW_ACTIVATE_NONE = 0,
+    FW_ACTIVATE_IN_PROGRESS,
+    FW_ACTIVATE_DONE,
+    FW_ACTIVATE_ERR
 };
+
+typedef struct fw_install_args_s {
+    int seq_no;
+    string owner;
+} fw_install_args_t;
+
+typedef fw_install_args_t fw_activate_args_t;
 
 static uint64_t fw_buf_addr;
 static uint32_t fw_buf_size;
@@ -29,10 +38,12 @@ static uint8_t *fw_buf;
 static FILE *fw_file;
 static uint32_t fw_file_off;
 static bool init_done = false;
-static string curr_dev = FW_UPDATE_DEV_NONE;
+static string curr_owner = FW_UPDATE_OWNER_NONE;
 static atomic<int> fw_install_status(FW_INSTALL_NONE);
-static atomic<int> fw_install_seq(0);
+static atomic<int> fw_activate_status(FW_ACTIVATE_NONE);
+static atomic<int> fw_update_seq(0);
 static sdk::lib::thread *fw_install_thread = NULL;
+static sdk::lib::thread *fw_activate_thread = NULL;
 
 const char *
 fwctrl_cmd_to_str(int cmd)
@@ -41,8 +52,10 @@ fwctrl_cmd_to_str(int cmd)
         CASE(IONIC_FW_RESET);
         CASE(IONIC_FW_INSTALL);
         CASE(IONIC_FW_INSTALL_ASYNC);
-        CASE(IONIC_FW_ACTIVATE);
         CASE(IONIC_FW_INSTALL_STATUS);
+        CASE(IONIC_FW_ACTIVATE);
+        CASE(IONIC_FW_ACTIVATE_ASYNC);
+        CASE(IONIC_FW_ACTIVATE_STATUS);
         default:
             return "UNKNOWN";
     }
@@ -78,7 +91,7 @@ FwUpdateInit(PdClient *pd)
 }
 
 status_code_t
-FwDownloadReset(string dev_name)
+FwDownloadReset(string owner)
 {
     if (fw_file)
         fclose(fw_file);
@@ -88,50 +101,55 @@ FwDownloadReset(string dev_name)
     fw_file_off = 0;
     fw_file = fopen(FW_FILEPATH, "wb+");
     if (fw_file == NULL) {
-        NIC_LOG_ERR("{}: Failed to open firmware fw_file", dev_name);
+        NIC_LOG_ERR("{}: Failed to open firmware fw_file", owner);
         return (IONIC_RC_EIO);
     }
     return (IONIC_RC_SUCCESS);
 }
 
 void
-FwInstallReset(string dev_name)
+FwUpdateReset(string owner)
 {
     if (fw_install_thread) {
         fw_install_thread->destroy(fw_install_thread);
         fw_install_thread = NULL;
     }
-    curr_dev = dev_name;
+    if (fw_activate_thread) {
+        fw_activate_thread->destroy(fw_activate_thread);
+        fw_activate_thread = NULL;
+    }
+    curr_owner = owner;
     fw_install_status = FW_INSTALL_NONE;
-    fw_install_seq++;
+    fw_activate_status = FW_ACTIVATE_NONE;
+    fw_update_seq++;
 }
 
 status_code_t
-FwFlushBuffer(string dev_name, bool close)
+FwFlushBuffer(string owner, bool close)
 {
     int err;
 
     if (fw_file == NULL) {
         if(close)
             return (IONIC_RC_SUCCESS);
-        NIC_LOG_ERR("{}: Fw file not open, exiting", dev_name);
+        NIC_LOG_ERR("{}: Fw file not open, exiting", owner);
         return (IONIC_RC_EIO);
     }
 
-    NIC_LOG_DEBUG("{}: Flushing fw buffer, buf_off {} file_off {}", dev_name,
+    NIC_LOG_DEBUG("{}: Flushing fw buffer, buf_off {} file_off {}", owner,
                   fw_buf_off, fw_file_off);
     /* write the leftover data */
     if (fw_buf_off > 0) {
         err = fseek(fw_file, fw_file_off, SEEK_SET);
         if (err) {
-            NIC_LOG_ERR("{}: Failed to seek offset {}, {}", dev_name, fw_file_off,
+            NIC_LOG_ERR("{}: Failed to seek offset {}, {}", owner, fw_file_off,
                         strerror(errno));
             return (IONIC_RC_EIO);
         }
 
         err = fwrite((const void *)fw_buf, sizeof(fw_buf[0]), fw_buf_off, fw_file);
         if (err != (int)fw_buf_off) {
-            NIC_LOG_ERR("{}: Failed to write chunk, {}", dev_name, strerror(errno));
+            NIC_LOG_ERR("{}: Failed to write chunk, {}", owner, strerror(errno));
             return (IONIC_RC_EIO);
         }
         fw_file_off += fw_buf_off;
@@ -146,7 +164,7 @@ FwFlushBuffer(string dev_name, bool close)
 }
 
 status_code_t
-FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length, edma_q *edmaq, bool host_dev)
+FwDownloadEdma(string owner, uint64_t addr, uint32_t offset, uint32_t length, edma_q *edmaq, bool host_dev)
 {
     status_code_t status = IONIC_RC_SUCCESS;
     uint32_t transfer_off = 0, transfer_sz = 0;
@@ -154,12 +172,11 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
     struct edmaq_ctx ctx = {0};
     int retries;
 
-    if (curr_dev == FW_UPDATE_DEV_NONE) {
-        FwInstallReset(dev_name);
-    } else if (dev_name != curr_dev) {
-        NIC_LOG_ERR("Fw update in progress by device {}, exiting", curr_dev);
-        status = IONIC_RC_EBUSY;
-        goto err;
+    if (curr_owner == FW_UPDATE_OWNER_NONE) {
+        FwUpdateReset(owner);
+    } else if (owner != curr_owner) {
+        NIC_LOG_ERR("Fw update in progress by {}, exiting", curr_owner);
+        return (IONIC_RC_EBUSY);
     }
 
     if (!init_done) {
@@ -169,19 +186,19 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
     }
 
     if (addr == 0) {
-        NIC_LOG_ERR("{}: Invalid chunk address {:#x}!", dev_name, addr);
+        NIC_LOG_ERR("{}: Invalid chunk address {:#x}!", owner, addr);
         status = IONIC_RC_EINVAL;
         goto err;
     }
 
     if (addr & ~BIT_MASK(52)) {
-        NIC_LOG_ERR("{}: bad addr {:#x}", dev_name, addr);
+        NIC_LOG_ERR("{}: bad addr {:#x}", owner, addr);
         status = IONIC_RC_EINVAL;
         goto err;
     }
 
     if (offset + length > FW_MAX_SZ) {
-        NIC_LOG_ERR("{}: Invalid chunk offset {} or length {}!", dev_name, offset,
+        NIC_LOG_ERR("{}: Invalid chunk offset {} or length {}!", owner, offset,
                     length);
         status = IONIC_RC_EINVAL;
         goto err;
@@ -189,7 +206,7 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
 
     /* cleanup update partition before starting download */
     if (offset == 0) {
-        if ((status = FwDownloadReset(dev_name)) != IONIC_RC_SUCCESS)
+        if ((status = FwDownloadReset(owner)) != IONIC_RC_SUCCESS)
             goto err;
     }
 
@@ -201,7 +218,7 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
         if (fw_buf_off + transfer_sz > fw_buf_size) {
             /* wait for pending edma transfers to complete before writing to file */
             edmaq->flush();
-            status = FwFlushBuffer(dev_name, false);
+            status = FwFlushBuffer(owner, false);
             if (status != IONIC_RC_SUCCESS) {
                 goto err;
             }
@@ -212,17 +229,17 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
                         addr + transfer_off, fw_buf_addr + fw_buf_off, transfer_sz, &ctx);
         if (posted) {
             NIC_LOG_INFO("{}: Queued transfer offset {:#x} size {} src {:#x} dst {:#x}",
-                dev_name, transfer_off, transfer_sz,
+                owner, transfer_off, transfer_sz,
                 addr + transfer_off, fw_buf_addr + transfer_off);
             transfer_off += transfer_sz;
             fw_buf_off += transfer_sz;
         } else {
             if (++retries > 5) {
-                NIC_LOG_ERR("{}: Exhausted edma transfer retries, exiting", dev_name);
+                NIC_LOG_ERR("{}: Exhausted edma transfer retries, exiting", owner);
                 status = IONIC_RC_EIO;
                 goto err;
             }
-            NIC_LOG_INFO("{}: Waiting for transfers to complete ...", dev_name);
+            NIC_LOG_INFO("{}: Waiting for transfers to complete ...", owner);
             usleep(1000);
         }
     }
@@ -232,23 +249,22 @@ FwDownloadEdma(string dev_name, uint64_t addr, uint32_t offset, uint32_t length,
 
 err:
     if (status != IONIC_RC_SUCCESS)
-        FwInstallReset(FW_UPDATE_DEV_NONE);
+        FwUpdateReset(FW_UPDATE_OWNER_NONE);
 
     return status;
 }
 
 status_code_t
-FwDownload(string dev_name, uint8_t *addr, uint32_t offset, uint32_t length)
+FwDownload(string owner, uint8_t *addr, uint32_t offset, uint32_t length)
 {
     status_code_t status = IONIC_RC_SUCCESS;
     uint32_t transfer_off = 0, transfer_sz = 0;
 
-    if (curr_dev == FW_UPDATE_DEV_NONE) {
-        FwInstallReset(dev_name);
-    } else if (dev_name != curr_dev) {
-        NIC_LOG_ERR("Fw update in progress by device {}, exiting", curr_dev);
-        status = IONIC_RC_EBUSY;
-        goto err;
+    if (curr_owner == FW_UPDATE_OWNER_NONE) {
+        FwUpdateReset(owner);
+    } else if (owner != curr_owner) {
+        NIC_LOG_ERR("Fw update in progress by {}, exiting", curr_owner);
+        return (IONIC_RC_EBUSY);
     }
 
     if (!init_done) {
@@ -258,13 +274,13 @@ FwDownload(string dev_name, uint8_t *addr, uint32_t offset, uint32_t length)
     }
 
     if (addr == 0) {
-        NIC_LOG_ERR("{}: Invalid chunk address {:#x}!", dev_name, addr);
+        NIC_LOG_ERR("{}: Invalid chunk address {:#x}!", owner, addr);
         status = IONIC_RC_EINVAL;
         goto err;
     }
 
     if (offset + length > FW_MAX_SZ) {
-        NIC_LOG_ERR("{}: Invalid chunk offset {} or length {}!", dev_name, offset,
+        NIC_LOG_ERR("{}: Invalid chunk offset {} or length {}!", owner, offset,
                     length);
         status = IONIC_RC_EINVAL;
         goto err;
@@ -272,7 +288,7 @@ FwDownload(string dev_name, uint8_t *addr, uint32_t offset, uint32_t length)
 
     /* cleanup update partition before starting download */
     if (offset == 0) {
-        if ((status = FwDownloadReset(dev_name)) != IONIC_RC_SUCCESS)
+        if ((status = FwDownloadReset(owner)) != IONIC_RC_SUCCESS)
             goto err;
     }
 
@@ -280,7 +296,7 @@ FwDownload(string dev_name, uint8_t *addr, uint32_t offset, uint32_t length)
         transfer_sz = min(length - transfer_off, fw_buf_size);
         /* if the local buffer does not have enough free space, then flush it to fw_file */
         if (fw_buf_off + transfer_sz > fw_buf_size) {
-            status = FwFlushBuffer(dev_name, false);
+            status = FwFlushBuffer(owner, false);
             if (status != IONIC_RC_SUCCESS) {
                 goto err;
             }
@@ -292,7 +308,7 @@ FwDownload(string dev_name, uint8_t *addr, uint32_t offset, uint32_t length)
 
 err:
     if (status != IONIC_RC_SUCCESS)
-        FwInstallReset(FW_UPDATE_DEV_NONE);
+        FwUpdateReset(FW_UPDATE_OWNER_NONE);
 
     return status;
 }
@@ -301,23 +317,17 @@ static void*
 FwInstallAsync(void *obj)
 {
     int err;
-    struct fw_install_args *args = (struct fw_install_args *)obj;
+    fw_install_args_t *args = (fw_install_args_t *)obj;
 
-    NIC_LOG_INFO("{}: IONIC_FW_INSTALL_ASYNC[{}] thread started!", args->dev_name,
-                     args->seq_no);
+    NIC_LOG_INFO("{}: IONIC_FW_INSTALL_ASYNC[{}] thread started!", args->owner,
+                 args->seq_no);
     string buf = "/nic/tools/fwupdate -p " + string(FW_FILEPATH) + " -i all";
     err = system(buf.c_str());
-    if (args->seq_no != fw_install_seq) {
-        NIC_LOG_WARN("{}: FW_INSTALL SEQ MISMATCH seq %d fw_install_seq %d, aborting",
-                     args->dev_name, args->seq_no, fw_install_seq);
-        goto err;
-    }
     if (err) {
         fw_install_status = FW_INSTALL_ERR;
-        NIC_LOG_ERR("{}: Fw install failed with exit status: {}", args->dev_name, err);
+        NIC_LOG_ERR("{}: Fw install failed with exit status: {}", args->owner, err);
         goto err;
     }
-
     fw_install_status = FW_INSTALL_DONE;
 
 err:
@@ -327,15 +337,10 @@ err:
 }
 
 status_code_t
-FwInstall(string dev_name, bool is_async)
+FwInstall(string owner, bool is_async)
 {
     int err;
     status_code_t status = IONIC_RC_SUCCESS;
-
-    if (curr_dev != dev_name) {
-            NIC_LOG_ERR("{}: Fw update in progress by {}, exiting", dev_name, curr_dev);
-            return (IONIC_RC_EBUSY);
-    }
 
     if (!init_done) {
         NIC_LOG_ERR("Fw buffer not initialized, exiting");
@@ -343,17 +348,17 @@ FwInstall(string dev_name, bool is_async)
     }
 
     /* Flush any leftover data in the buffer */
-    status = FwFlushBuffer(dev_name, true);
+    status = FwFlushBuffer(owner, true);
     if (status != IONIC_RC_SUCCESS) {
         goto err;
     }
 
     if (is_async) {
-        NIC_LOG_INFO("{}: IONIC_FW_INSTALL_ASYNC[{}] starting", dev_name,
-                     fw_install_seq);
-        struct fw_install_args *args = new fw_install_args();
-        args->dev_name = dev_name;
-        args->seq_no = fw_install_seq;
+        NIC_LOG_INFO("{}: IONIC_FW_INSTALL_ASYNC[{}] starting", owner,
+                     fw_update_seq);
+        fw_install_args_t *args = new fw_install_args_t();
+        args->owner = owner;
+        args->seq_no = fw_update_seq;
         fw_install_thread = sdk::lib::thread::factory("FW_INSTALL",
                                                       NICMGRD_THREAD_ID_FW_INSTALL,
                                                       sdk::lib::THREAD_ROLE_CONTROL,
@@ -362,88 +367,162 @@ FwInstall(string dev_name, bool is_async)
                                                       sched_get_priority_min(SCHED_OTHER),
                                                       SCHED_OTHER);
         if (fw_install_thread == NULL) {
-                NIC_LOG_ERR("{}: Failed to instantiate fw install thread", dev_name);
+                NIC_LOG_ERR("{}: Failed to instantiate fw install thread", owner);
                 status = IONIC_RC_ERROR;
                 goto err;
         }
-        if (fw_install_thread->start(args) == SDK_RET_OK) {
-            fw_install_status = FW_INSTALL_IN_PROGRESS;
-        } else {
-            NIC_LOG_ERR("{}: Failed to start fw install thread", dev_name);
+        fw_install_status = FW_INSTALL_IN_PROGRESS;
+        if (fw_install_thread->start(args) != SDK_RET_OK){
+            NIC_LOG_ERR("{}: Failed to start fw install thread", owner);
             status = IONIC_RC_ERROR;
             goto err;
         }
     } else {
-        NIC_LOG_INFO("{}: IONIC_FW_INSTALL[{}] starting", dev_name, fw_install_seq);
-        fw_install_status = FW_INSTALL_IN_PROGRESS;
+        NIC_LOG_INFO("{}: IONIC_FW_INSTALL[{}] starting", owner, fw_update_seq);
         string buf = "/nic/tools/fwupdate -p " + string(FW_FILEPATH) + " -i all";
         err = system(buf.c_str());
         if (err) {
-            NIC_LOG_ERR("{}: Fw install failed with exit status: {}", dev_name, err);
+            NIC_LOG_ERR("{}: Fw install failed with exit status: {}", owner, err);
             status = IONIC_RC_ERROR;
             goto err;
         }
         fw_install_status = FW_INSTALL_DONE;
-        NIC_LOG_INFO("{}: IONIC_FW_INSTALL[{}] done!", dev_name, fw_install_seq);
+        NIC_LOG_INFO("{}: IONIC_FW_INSTALL[{}] done!", owner, fw_update_seq);
     }
 
-    err:
+err:
     if (status != IONIC_RC_SUCCESS)
-        FwInstallReset(FW_UPDATE_DEV_NONE);
+        FwUpdateReset(FW_UPDATE_OWNER_NONE);
 
     return status;
 }
 
+static void*
+FwActivateAsync(void *obj)
+{
+    int err;
+    fw_activate_args_t *args = (fw_activate_args_t *)obj;
+
+    NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE_ASYNC[{}] thread started!", args->owner,
+                 args->seq_no);
+    err = system("/nic/tools/fwupdate -s altfw");
+    if (err) {
+        fw_activate_status = FW_ACTIVATE_ERR;
+        NIC_LOG_ERR("{}: Fw activate failed with exit status: {}", args->owner, err);
+        goto err;
+    }
+    fw_activate_status = FW_ACTIVATE_DONE;
+
+err:
+    delete args;
+
+    return NULL;
+}
+
 status_code_t
-FwControl(string dev_name, int oper)
+FwActivate(string owner, bool async)
 {
     status_code_t status = IONIC_RC_SUCCESS;
     int err;
 
+    if (async) {
+        NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE_ASYNC[{}] starting", owner,
+                     fw_update_seq);
+        fw_activate_args_t *args = new fw_activate_args_t();
+        args->owner = owner;
+        args->seq_no = fw_update_seq;
+        fw_activate_thread = sdk::lib::thread::factory("FW_ACTIVATE",
+                                                       NICMGRD_THREAD_ID_FW_ACTIVATE,
+                                                       sdk::lib::THREAD_ROLE_CONTROL,
+                                                       0xD,
+                                                       FwActivateAsync,
+                                                       sched_get_priority_min(SCHED_OTHER),
+                                                       SCHED_OTHER);
+        if (fw_activate_thread == NULL) {
+                NIC_LOG_ERR("{}: Failed to instantiate fw install thread", owner);
+                status = IONIC_RC_ERROR;
+                goto err;
+        }
+        fw_activate_status = FW_ACTIVATE_IN_PROGRESS;
+        if (fw_activate_thread->start(args) != SDK_RET_OK) {
+            NIC_LOG_ERR("{}: Failed to start fw activate thread", owner);
+            status = IONIC_RC_ERROR;
+            goto err;
+        }
+    } else {
+        NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE starting", owner);
+        err = system("/nic/tools/fwupdate -s altfw");
+        if (err) {
+            NIC_LOG_ERR("{}: Fw activate failed with exit status: {}", owner, err);
+            status = IONIC_RC_ERROR;
+            goto err;
+        }
+        NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE done!", owner);
+        FwUpdateReset(FW_UPDATE_OWNER_NONE);
+    }
+
+err:
+    if (status != IONIC_RC_SUCCESS)
+        FwUpdateReset(FW_UPDATE_OWNER_NONE);
+
+    return status;
+}
+
+
+status_code_t
+FwControl(string owner, int oper)
+{
+    status_code_t status = IONIC_RC_SUCCESS;
+
+    if (curr_owner != owner) {
+            NIC_LOG_ERR("{}: Fw update in progress by {}, exiting", owner, curr_owner);
+            return (IONIC_RC_EBUSY);
+    }
+
     switch (oper) {
     case IONIC_FW_RESET:
-        if (curr_dev == dev_name) {
-            NIC_LOG_INFO("{}: IONIC_FW_RESET", dev_name);
-            FwInstallReset(FW_UPDATE_DEV_NONE); // Clear fw install in progress
-        }
+        NIC_LOG_INFO("{}: IONIC_FW_RESET", owner);
+        FwUpdateReset(FW_UPDATE_OWNER_NONE);
         status = IONIC_RC_SUCCESS;
         break;
-
     case IONIC_FW_INSTALL:
-        status = FwInstall(dev_name, false);
+        status = FwInstall(owner, false);
         break;
-
     case IONIC_FW_INSTALL_ASYNC:
-        status = FwInstall(dev_name, true);
+        status = FwInstall(owner, true);
         break;
-
     case IONIC_FW_INSTALL_STATUS:
-        if (dev_name != curr_dev) {
-            status = IONIC_RC_EBUSY;
-        } else if (fw_install_status == FW_INSTALL_ERR) {
+        if (fw_install_status == FW_INSTALL_ERR) {
             status = IONIC_RC_ERROR;
+            // Revoke the ownership and cleanup the state
+            FwUpdateReset(FW_UPDATE_OWNER_NONE);
         } else if (fw_install_status == FW_INSTALL_IN_PROGRESS) {
             status = IONIC_RC_EAGAIN;
         } else {
             status = IONIC_RC_SUCCESS;
         }
         break;
-
     case IONIC_FW_ACTIVATE:
-        NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE starting", dev_name);
-        err = system("/nic/tools/fwupdate -s altfw");
-        if (err) {
-            // TODO: Indicate the reason for the failure
-            NIC_LOG_ERR("{}: Fw activate failed with exit status: {}", dev_name, err);
-            status = IONIC_RC_ERROR;
-        } else {
-            NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE done!", dev_name);
-        }
-        FwInstallReset(FW_UPDATE_DEV_NONE);
+        status = FwActivate(owner, false);
         break;
-
+    case IONIC_FW_ACTIVATE_ASYNC:
+        status = FwActivate(owner, true);
+        break;
+    case IONIC_FW_ACTIVATE_STATUS:
+        if (fw_activate_status == FW_ACTIVATE_ERR) {
+            status = IONIC_RC_ERROR;
+        } else if (fw_activate_status == FW_ACTIVATE_IN_PROGRESS) {
+            status = IONIC_RC_EAGAIN;
+        } else {
+            status = IONIC_RC_SUCCESS;
+        }
+        if (status == IONIC_RC_ERROR || status == IONIC_RC_SUCCESS) {
+            // Revoke the ownership and cleanup the state
+            FwUpdateReset(FW_UPDATE_OWNER_NONE);
+        }
+        break;
     default:
-        NIC_LOG_ERR("{}: Unknown operation {}", dev_name, oper);
+        NIC_LOG_ERR("{}: Unknown operation {}", owner, oper);
         status = IONIC_RC_ENOSUPP;
         break;
     }

@@ -2685,7 +2685,7 @@ Eth::_CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data)
     // cmd->addr represents the offset in ionic_dev_cmd_regs where data starts
     data = (uint8_t *)devcmd + cmd->addr;
 
-    return FwDownload(spec->name, data, cmd->offset, cmd->length);
+    return FwDownload(spec->name + "_devcmd", data, cmd->offset, cmd->length);
 }
 
 status_code_t
@@ -2696,7 +2696,7 @@ Eth::_CmdFwControl(void *req, void *req_data, void *resp, void *resp_data)
     NIC_LOG_DEBUG("{}: DEVCMD: {} CTRL CMD: {}", spec->name,
         opcode_to_str(cmd->opcode), fwctrl_cmd_to_str(cmd->oper));
 
-    return FwControl(spec->name, cmd->oper);
+    return FwControl(spec->name + "_devcmd", cmd->oper);
 }
 
 status_code_t
