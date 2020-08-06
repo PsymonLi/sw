@@ -2159,6 +2159,40 @@ pd_qos_swm_and_control_queue_deinit (pd_func_args_t *pd_func_args)
     return HAL_RET_OK;
 }
 
+hal_ret_t
+pd_qos_swm_and_control_add_del_mac (pd_func_args_t *pd_func_args)
+{
+/* TBD-ELBA-REBASE: fixup */
+#ifdef ELBA_REBASE
+    hal_ret_t       ret = HAL_RET_OK;
+
+    pd_qos_swm_and_control_add_del_mac_args_t *args =
+                            pd_func_args->pd_qos_swm_and_control_add_del_mac;
+    uint32_t uplink_port = args->uplink_port;
+    bool add = args->add;
+    uint64_t dmac = args->dmac;
+    const char *op = (add ? "add" : "delete");
+
+    HAL_TRACE_DEBUG("SWM/Control {} mac {}", op, dmac);
+
+    if (uplink_port > TM_PORT_UPLINK_7) {
+        HAL_TRACE_ERR("unsupported port number for SWM/Control {}",
+                      uplink_port);
+        return HAL_RET_INVALID_ARG;
+    }
+
+    ret = pd_qos_program_uplink_for_swm_control(uplink_port, dmac, add);
+    if(ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Failed to program HW ret {}", ret);
+        return ret;
+    }
+
+    HAL_TRACE_DEBUG("Done programming the uplinks to pick the allocated queues "
+                    "for SWM/Control traffic!");
+
+#endif
+    return HAL_RET_OK;
+}
 
 hal_ret_t
 pd_qos_class_defaults_set (qos_class_t *qos_class)
