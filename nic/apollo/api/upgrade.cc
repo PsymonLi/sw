@@ -76,6 +76,56 @@ read_modules_version (sysinit_mode_t init_mode)
     }
 }
 
+static void
+stale_shmstores_remove (std::string path)
+{
+    DIR *dir;
+    struct dirent *entry;
+    uint32_t id;
+    sdk::lib::shmstore *store;
+    std::string name;
+
+    PDS_TRACE_DEBUG("shmstore stale check, path %s", path.c_str());
+    dir = opendir(path.c_str());
+    if (dir == NULL) {
+        return;
+    }
+    while ((entry = readdir(dir))) {
+        PDS_TRACE_DEBUG("shmstore stale check, name %s", entry->d_name);
+        if (!strstr(entry->d_name, "upgdata")) {
+            continue;
+        }
+        name = path + "/" + entry->d_name;
+        for (id = PDS_SHMSTORE_ID_MIN + 1; id < PDS_SHMSTORE_ID_MAX; id++) {
+            store = g_upg_state->backup_shmstore((pds_shmstore_id_t)id);
+            if ((store != NULL) && (!strncmp(store->name(), name.c_str(),
+                                             SHMSEG_NAME_MAX_LEN))) {
+                break;
+            }
+            store = g_upg_state->restore_shmstore((pds_shmstore_id_t)id);
+            if ((store != NULL) && (!strncmp(store->name(), name.c_str(),
+                                             SHMSEG_NAME_MAX_LEN))) {
+                break;
+            }
+        }
+        if (id >= PDS_SHMSTORE_ID_MAX) { // not found
+            PDS_TRACE_INFO("Removing unused shmstore file %s", name.c_str());
+            remove(name.c_str());
+        }
+    }
+    closedir(dir);
+}
+
+// remove all the un-used stale stores from the previous upgrade
+// should be invoked only during a new upgrade request
+void
+upg_stale_shmstores_remove (void)
+{
+    stale_shmstores_remove(upg_shmstore_volatile_path_hitless());
+    stale_shmstores_remove(upg_shmstore_volatile_path_graceful());
+    stale_shmstores_remove(upg_shmstore_persistent_path());
+}
+
 static std::string
 upg_shmstore_name (const char *name, module_version_t version, bool vstore)
 {

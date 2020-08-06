@@ -72,6 +72,7 @@ sdk_ret_t upg_hitless_restore_api_objs(void);
 sdk_ret_t upg_shmstore_create(sysinit_mode_t mode, bool vstore = false);
 sdk_ret_t upg_shmstore_open(sysinit_mode_t mode, bool vstore = false);
 sdk_ret_t threads_suspend_or_resume(bool suspend);
+void upg_stale_shmstores_remove(void);
 
 }   // namespace api
 

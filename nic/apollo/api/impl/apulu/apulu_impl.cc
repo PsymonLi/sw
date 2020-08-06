@@ -396,7 +396,7 @@ apulu_impl::txdma_symbols_init_(void **p4plus_symbols,
 }
 
 void
-apulu_impl::table_engine_cfg_backup_(p4pd_pipeline_t pipe) {
+apulu_impl::table_engine_cfg_save_(p4pd_pipeline_t pipe) {
     p4_tbl_eng_cfg_t *cfg;
     uint32_t num_cfgs, max_cfgs;
 
@@ -1125,7 +1125,7 @@ apulu_impl::pipeline_init(void) {
 // called on B during A to B ISSU upgrade
 // this follows a save and write scheme between init and switchover
 sdk_ret_t
-apulu_impl::p4plus_table_cfg_backup_(void) {
+apulu_impl::p4plus_table_cfg_save_(void) {
     p4plus_prog_t prog;
     p4pd_table_properties_t tbl_ctx_apphdr;
     p4pd_table_properties_t tbl_ctx_apphdr_off;
@@ -1198,8 +1198,8 @@ apulu_impl::pipeline_upgrade_hitless_init(void) {
     SDK_ASSERT(ret == SDK_RET_OK);
     ret = sdk::asic::pd::asicpd_p4plus_table_mpu_base_init(&p4pd_cfg);
     SDK_ASSERT(ret == SDK_RET_OK);
-    // backup the existing configuration for save and write scheme
-    upgrade_backup();
+    // save the existing configuration for save and write scheme
+    upgrade_config_save();
     // rss config is not modified across upgrades
     // TODO : confirm this aproach is correct
     // ret = sdk::asic::pd::asicpd_toeplitz_init("apulu_rxdma",
@@ -1277,7 +1277,7 @@ upgrade_flush_sram_table_entries (uint32_t tableid)
 // stage of the upgrade steps
 // if this returns OK, pipeline is switched to B from A.
 // if there is an error, rollback should rewrites these to A. so old
-// configuration should be saved by A impl(see upg_backup)
+// configuration should be saved by A impl(see upgrade_config_save)
 // keep this code very minimum to reduce the traffic hit duration.
 // avoid TRACES.
 sdk_ret_t
@@ -1359,18 +1359,18 @@ apulu_impl::upgrade_switchover(void) {
     return SDK_RET_OK;
 }
 
-// backup all the existing configs which will be modified during switchover.
+// save all the existing configs which will be modified during switchover.
 // during A to B upgrade, this will be invoked by A and B
-// if there is a switchover failue from A to B, during rollbacking, this backed
+// if there is a switchover failue from A to B, during rollbacking, this saved
 // up config will be applied as B might have overwritten some of these configs
 // B invokes this to save the current config and during switchover it writes
 // the saved data
 // pipeline switchover and pipeline backup should be in sync
-// sequence : A(backup) -> upgrade -> A2B(switchover) ->
+// sequence : A(backup/save) -> upgrade -> A2B(switchover) ->
 //          : B(switchover_failure) -> rollback -> B2A(switchover) -> success/failure
 // B2A(switchover_failure) cannot be recovered
 sdk_ret_t
-apulu_impl::upgrade_backup(void) {
+apulu_impl::upgrade_config_save(void) {
     p4pd_pipeline_t pipe[] = { P4_PIPELINE_INGRESS, P4_PIPELINE_EGRESS,
                                P4_PIPELINE_RXDMA, P4_PIPELINE_TXDMA };
     p4_tbl_eng_cfg_t *cfg;
@@ -1379,22 +1379,22 @@ apulu_impl::upgrade_backup(void) {
     sdk_ret_t ret;
 
     api::g_upg_state->clear_tbl_eng_cfg();
-    // backup table engine config
+    // save table engine config
     for (uint32_t i = 0; i < sizeof(pipe)/sizeof(uint32_t); i++) {
-        table_engine_cfg_backup_(pipe[i]);
+        table_engine_cfg_save_(pipe[i]);
     }
 
-    // backup rss table engine config
+    // save rss table engine config
     api::g_upg_state->tbl_eng_rss_cfg(&cfg);
     sdk::asic::pd::asicpd_rss_tbl_eng_cfg_get("apulu_rxdma", rss_tblid, cfg);
 
-    // backup the p4plus configuration. it follows a save and write scheme
-    ret = p4plus_table_cfg_backup_();
+    // save the p4plus configuration. it follows a save and write scheme
+    ret = p4plus_table_cfg_save_();
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("P4plus table config backup failed");
+        PDS_TRACE_ERR("P4plus table config save failed");
         return ret;
     }
-    // TODO : backup pc offsets for qstate. may not be needed with latest nicmgr
+    // TODO : save pc offsets for qstate. may not be needed with latest nicmgr
     // changes. but need to confirm
     return SDK_RET_OK;
 }

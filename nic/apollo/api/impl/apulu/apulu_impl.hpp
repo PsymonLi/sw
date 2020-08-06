@@ -291,9 +291,9 @@ public:
     /// \return SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t pipeline_upgrade_hitless_init(void) override;
 
-    /// \brief  routine to backup the states during the pipeline upgrade
+    /// \brief  routine to save the configs during the pipeline upgrade
     /// \return SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t upgrade_backup(void) override;
+    virtual sdk_ret_t upgrade_config_save(void) override;
 
     /// \brief  routine to switchover during the pipeline upgrade
     /// \return SDK_RET_OK on success, failure status code on error
@@ -441,15 +441,15 @@ private:
 
     /// \brief  routine to save the table engine config
     /// \param[in] pipe pipeline
-    void table_engine_cfg_backup_(p4pd_pipeline_t pipe);
+    void table_engine_cfg_save_(p4pd_pipeline_t pipe);
 
     /// \brief  routine to update the table engine config
     /// \param[in] prog p4plus program info
     void table_engine_cfg_update_(p4plus_prog_t *prog);
 
-    /// \brief  routine to backup the p4plus table config
+    /// \brief  routine to save the p4plus table config
     /// \return SDK_RET_OK on success, failure status code on error
-    sdk_ret_t p4plus_table_cfg_backup_(void);
+    sdk_ret_t p4plus_table_cfg_save_(void);
 
     /// \brief  program nexthop and lif tables for ipsec lif
     /// \return SDK_RET_OK on success, failure status code on error

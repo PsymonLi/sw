@@ -161,9 +161,9 @@ public:
         return sdk::SDK_RET_ERR;
     }
 
-    /// \brief routine to backup the pipeline configs during upgrade
+    /// \brief routine to save the pipeline configs during upgrade
     /// \return #SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t upgrade_backup(void) { return sdk::SDK_RET_ERR; }
+    virtual sdk_ret_t upgrade_config_save(void) { return sdk::SDK_RET_ERR; }
 
     /// \brief routine to switchover the pipeline configs during upgrade
     /// \return #SDK_RET_OK on success, failure status code on error

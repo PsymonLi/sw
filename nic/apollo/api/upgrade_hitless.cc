@@ -344,6 +344,7 @@ upg_ev_compat_check (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_start (upg_ev_params_t *params)
 {
+    upg_stale_shmstores_remove();
     // below file is used by B to offsets its mem regions during
     // A to B hitless upgrade
     api::g_pds_state.mempartition()->dump_regions_info(
@@ -442,9 +443,9 @@ upg_ev_backup (upg_ev_params_t *params)
 
     // save the existing configuration for rollback if there is a switchover
     // failure
-    ret = impl_base::pipeline_impl()->upgrade_backup();
+    ret = impl_base::pipeline_impl()->upgrade_config_save();
     if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Upgrade pipeline backup failed, err %u", ret);
+        PDS_TRACE_ERR("Upgrade pipeline config save failed, err %u", ret);
     }
     return ret;
 }
@@ -596,7 +597,7 @@ upg_ev_switchover (upg_ev_params_t *params)
 
     ret = asic_quiesce(true);
     if (ret == SDK_RET_OK) {
-        pstate->switchover_done = true;
+        pstate->pipeline_switchover_done = true;
         ret = impl_base::pipeline_impl()->upgrade_switchover();
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Pipeline switchover failed, ret %u", ret);
@@ -734,7 +735,7 @@ upg_ev_repeal (upg_ev_params_t *params)
         return SDK_RET_ERR;
     }
     ret = threads_suspend_or_resume(false);
-    if ((ret == SDK_RET_OK) && pstate->switchover_done) {
+    if ((ret == SDK_RET_OK) && pstate->pipeline_switchover_done) {
         ret = asic_quiesce(true);
         if (ret == SDK_RET_OK) {
             ret = impl_base::pipeline_impl()->upgrade_switchover();
@@ -754,7 +755,7 @@ upg_ev_repeal (upg_ev_params_t *params)
         }
     }
     // clear of the states
-    pstate->switchover_done = false;
+    pstate->pipeline_switchover_done = false;
     pstate->linkmgr_switchover_done = false;
     return ret != SDK_RET_OK ? sdk_ret_t::SDK_RET_UPG_CRITICAL : ret;
 }

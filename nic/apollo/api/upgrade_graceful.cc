@@ -59,6 +59,7 @@ upg_ev_compat_check (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_start (upg_ev_params_t *params)
 {
+    upg_stale_shmstores_remove();
     return SDK_RET_OK;
 }
 

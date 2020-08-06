@@ -29,7 +29,7 @@ typedef struct upgrade_pstate_v1_s {
     /// always assign the default valuse for the structure
     upgrade_pstate_v1_s () {
         metadata =  { 0 };
-        switchover_done = false;
+        pipeline_switchover_done = false;
         linkmgr_switchover_done = false;
         memset(port_ingress_oq_credits, 0, sizeof(port_ingress_oq_credits));
         memset(port_egress_oq_credits, 0, sizeof(port_egress_oq_credits));
@@ -39,7 +39,7 @@ typedef struct upgrade_pstate_v1_s {
     pstate_meta_info_t  metadata;
 
     /// A to know whether switchover has been done by B or not
-    bool switchover_done;
+    bool pipeline_switchover_done;
 
     /// A to know whether linkmgr switchover has been done by B or not
     bool linkmgr_switchover_done;

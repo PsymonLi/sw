@@ -32,7 +32,8 @@ typedef std::pair<module_version_t, module_version_t> module_version_pair_t;
 
 // store id - this can be used by threads/modules to get the store pointer
 typedef enum pds_shmstore_id_e {
-    PDS_NICMGR_CFG_SHMSTORE_ID = 0,
+    PDS_SHMSTORE_ID_MIN        = 0,
+    PDS_NICMGR_CFG_SHMSTORE_ID,
     PDS_NICMGR_OPER_SHMSTORE_ID,
     PDS_AGENT_CFG_SHMSTORE_ID,
     PDS_AGENT_OPER_SHMSTORE_ID,

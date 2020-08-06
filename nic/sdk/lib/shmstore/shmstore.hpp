@@ -88,6 +88,12 @@ public:
     /// \return None
     void segment_walk(void *ctxt, shmstore_seg_walk_cb_t cb);
 
+    /// \brief get store name
+    /// \return store name
+    const char *name(void) {
+        SDK_ASSERT(shmmgr_ != NULL);
+        return shmmgr_->name();
+    }
 private:
     /// store mode
     sdk::lib::shm_mode_e mode_;

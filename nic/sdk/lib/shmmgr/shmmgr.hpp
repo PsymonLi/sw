@@ -16,7 +16,7 @@ enum shm_mode_e {
     SHM_OPEN_READ_ONLY,
 };
 
-#define SHMSEG_NAME_MAX_LEN    16
+#define SHMSEG_NAME_MAX_LEN    256
 
 // segment walk callback function
 typedef void (*shmmgr_seg_walk_cb_t)(void *ctx, const char *name,
@@ -74,6 +74,8 @@ public:
     // segment walk (iterate through all segments)
     void segment_walk(void *ctxt, shmmgr_seg_walk_cb_t cb);
 
+    // get name
+    const char *name(void) { return name_; }
 private:
     char    name_[SHMSEG_NAME_MAX_LEN];
     void    *mmgr_;
