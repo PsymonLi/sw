@@ -51,14 +51,14 @@ const char *
 EthLif::lif_state_to_str(enum eth_lif_state state)
 {
     switch (state) {
-        CASE(LIF_STATE_RESETTING);
-        CASE(LIF_STATE_RESET);
-        CASE(LIF_STATE_CREATING);
-        CASE(LIF_STATE_CREATED);
-        CASE(LIF_STATE_INITING);
-        CASE(LIF_STATE_INIT);
-        CASE(LIF_STATE_UP);
-        CASE(LIF_STATE_DOWN);
+        CASE(::LIF_STATE_RESETTING);
+        CASE(::LIF_STATE_RESET);
+        CASE(::LIF_STATE_CREATING);
+        CASE(::LIF_STATE_CREATED);
+        CASE(::LIF_STATE_INITING);
+        CASE(::LIF_STATE_INIT);
+        CASE(::LIF_STATE_UP);
+        CASE(::LIF_STATE_DOWN);
     default:
         return "LIF_STATE_INVALID";
     }
@@ -3496,7 +3496,7 @@ EthLif::UpgradeSyncHandler(void)
 
 
         // Update lif admin state
-        hal_lif_admin_state = lif_pstate->state == LIF_STATE_UP ?
+        hal_lif_admin_state = lif_pstate->state == ::LIF_STATE_UP ?
                     sdk::types::LIF_STATE_UP : sdk::types::LIF_STATE_DOWN;
         UpdateHalLifAdminStatus(hal_lif_admin_state);
 
@@ -3641,9 +3641,9 @@ EthLif::XcvrEventHandler(port_status_t *evd)
     }
 
     // drop the event if the lif is not initialized
-    if (lif_pstate->state != LIF_STATE_INIT &&
-        lif_pstate->state != LIF_STATE_UP &&
-        lif_pstate->state != LIF_STATE_DOWN) {
+    if (lif_pstate->state != ::LIF_STATE_INIT &&
+        lif_pstate->state != ::LIF_STATE_UP &&
+        lif_pstate->state != ::LIF_STATE_DOWN) {
         NIC_LOG_INFO("{}: {} + XCVR_EVENT => {} dropping event",
                      hal_lif_info_.name,
                      lif_state_to_str(lif_pstate->state),
@@ -3887,7 +3887,7 @@ lif_state_t
 EthLif::ConvertEthLifStateToLifState(enum eth_lif_state lif_state)
 {
     switch (lif_state) {
-    case LIF_STATE_UP:
+    case ::LIF_STATE_UP:
         return sdk::types::LIF_STATE_UP;
     default:
         return sdk::types::LIF_STATE_DOWN;
@@ -3961,9 +3961,9 @@ EthLif::SetLifLinkState()
     sdk_ret_t ret;
 
     // drop the event if the lif is not initialized
-    if (lif_pstate->state != LIF_STATE_INIT &&
-        lif_pstate->state != LIF_STATE_UP &&
-        lif_pstate->state != LIF_STATE_DOWN) {
+    if (lif_pstate->state != ::LIF_STATE_INIT &&
+        lif_pstate->state != ::LIF_STATE_UP &&
+        lif_pstate->state != ::LIF_STATE_DOWN) {
         NIC_LOG_WARN("{}: is in {} admin_state: {} proxy_admin_state: {}"\
                     "\n\tport_status: {}, cannot transition to UP/DOWN",
                     hal_lif_info_.name,
@@ -3979,7 +3979,7 @@ EthLif::SetLifLinkState()
         /*
          * For a PF lif link status just depends on uplink port status.
          */
-        next_lif_state = LIF_STATE_UP;
+        next_lif_state = ::LIF_STATE_UP;
     } else if (spec->vf_dev &&
                lif_pstate->port_status == IONIC_PORT_OPER_STATUS_UP &&
                lif_pstate->proxy_admin_state == IONIC_PORT_ADMIN_STATE_UP &&
@@ -3988,14 +3988,14 @@ EthLif::SetLifLinkState()
          * VF lif link status depends on uplink port status and proxy_admin_state.
          * proxy_admin_state indicates a VF's admin_status controlled by PF.
          */
-        next_lif_state = LIF_STATE_UP;
+        next_lif_state = ::LIF_STATE_UP;
     } else {
-        next_lif_state = LIF_STATE_DOWN;
+        next_lif_state = ::LIF_STATE_DOWN;
     }
 
     // Track LIF LINK DOWN events
-    if (lif_pstate->state == LIF_STATE_UP &&
-        next_lif_state == LIF_STATE_DOWN) {
+    if (lif_pstate->state == ::LIF_STATE_UP &&
+        next_lif_state == ::LIF_STATE_DOWN) {
         // FIXME: This counter now tracks LIF DOWN events instead of PORT DOWN
         ++lif_status->link_down_count;
     }
@@ -4032,7 +4032,7 @@ EthLif::SetLifLinkState()
     NIC_LOG_INFO("{}: {} + {} => {}",
                  hal_lif_info_.name,
                  lif_state_to_str(lif_pstate->state),
-                 (lif_pstate->state == LIF_STATE_UP) ? "LINK_UP" : "LINK_DN",
+                 (lif_pstate->state == ::LIF_STATE_UP) ? "LINK_UP" : "LINK_DN",
                  lif_state_to_str(lif_pstate->state));
 
     if (state_changed) {

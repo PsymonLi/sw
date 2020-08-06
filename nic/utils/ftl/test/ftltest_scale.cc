@@ -11,14 +11,14 @@
 #include "ftltest_main.hpp"
 
 class scale: public ftl_test_base {
-    sdk_trace_level_e trace_level;
+    trace_level_e trace_level;
 
 protected:
     sdk::utils::time_profile::time_profile_info t_info;
 
     scale() {
         trace_level = g_trace_level;
-        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_INFO;
+        g_trace_level = sdk::types::trace_info;
         sdk::utils::time_profile::time_profile_enable = true;
     }
 

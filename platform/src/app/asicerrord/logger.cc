@@ -30,7 +30,7 @@ GetLogger()
 }
 
 int
-asicerrord_logger (sdk_trace_level_e tracel_level, const char *format, ...)
+asicerrord_logger (trace_level_e tracel_level, const char *format, ...)
 {
     char       logbuf[1024];
     va_list    args;
@@ -38,13 +38,13 @@ asicerrord_logger (sdk_trace_level_e tracel_level, const char *format, ...)
     va_start(args, format);
     vsnprintf(logbuf, sizeof(logbuf), format, args);
     switch (tracel_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         ERR("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         WARN("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         INFO("{}", logbuf);
         break;
     default:

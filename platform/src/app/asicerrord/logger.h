@@ -32,5 +32,5 @@ Logger GetLogger();
 #define ERR(args...) GetLogger()->error(args)
 #define FATAL(args...) { GetLogger()->error(args); assert(0); }
 
-int asicerrord_logger (sdk_trace_level_e tracel_level, const char *format, ...);
+int asicerrord_logger (trace_level_e tracel_level, const char *format, ...);
 #endif

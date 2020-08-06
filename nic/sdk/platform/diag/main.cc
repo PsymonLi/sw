@@ -16,7 +16,7 @@
 using namespace sdk::platform::diag;
 
 FILE *g_log_fp;
-sdk_trace_level_e g_trace_level;
+trace_level_e g_trace_level;
 
 struct test_info
 {
@@ -54,7 +54,7 @@ usage (int argc, char* argv[])
 }
 
 static int
-diag_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
+diag_logger (uint32_t mod_id, trace_level_e trace_level,
              const char *format, ...)
 {
     char       logbuf[1024];
@@ -71,19 +71,19 @@ diag_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
     fprintf(g_log_fp, "%s", logbuf);
 
     switch (trace_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         fprintf(g_log_fp, " E ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         fprintf(g_log_fp, " W ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         fprintf(g_log_fp, " I ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+    case sdk::types::trace_debug:
         fprintf(g_log_fp, " D ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+    case sdk::types::trace_verbose:
         fprintf(g_log_fp, " V ");
         break;
     default:
@@ -112,9 +112,9 @@ init_logger (const char* log_name)
     }
     sdk::lib::logger::init(diag_logger);
 #ifdef DEBUG_ENABLE
-    g_trace_level = sdk::lib::SDK_TRACE_LEVEL_VERBOSE;
+    g_trace_level = sdk::types::trace_verbose;
 #else
-    g_trace_level = sdk::lib::SDK_TRACE_LEVEL_INFO;
+    g_trace_level = sdk::types::trace_info;
 #endif
     return SDK_RET_OK;
 }

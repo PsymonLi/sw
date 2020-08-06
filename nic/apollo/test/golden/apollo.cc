@@ -641,29 +641,29 @@ memrev (uint8_t *block, size_t elnum)
 }
 
 static int
-sdk_trace_cb (uint32_t mod_id, sdk_trace_level_e trace_level,
+sdk_trace_cb (uint32_t mod_id, trace_level_e trace_level,
               const char *format, ...)
 {
     char logbuf[1024];
     va_list args;
 
     switch (trace_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_NONE:
+    case sdk::types::trace_none:
         return 0;
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         printf("[E] ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         printf("[W] ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         printf("[I] ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+    case sdk::types::trace_debug:
         printf("[D] ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+    case sdk::types::trace_verbose:
         printf("[V] ");
         break;
     default:

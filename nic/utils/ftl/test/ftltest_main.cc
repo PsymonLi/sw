@@ -6,12 +6,12 @@
 #include <stdio.h>
 #include "ftltest_main.hpp"
 
-sdk_trace_level_e g_trace_level = sdk::lib::SDK_TRACE_LEVEL_VERBOSE;
+trace_level_e g_trace_level = sdk::types::trace_verbose;
 uint32_t g_no_of_threads = 2;
 FILE *logfp;
 
 static int
-ftl_debug_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
+ftl_debug_logger (uint32_t mod_id, trace_level_e trace_level,
                   const char *format, ...)
 {
     char       logbuf[1024];

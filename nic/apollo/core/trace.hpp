@@ -39,96 +39,96 @@ register_trace_cb (sdk_logger::trace_cb_t trace_cb)
 
 #define PDS_TRACE_ERR(fmt, ...)                                           \
 {                                                                         \
-    PDS_HAL_TRACE(sdk::lib::SDK_TRACE_LEVEL_ERR, "[%s:%u] "               \
+    PDS_HAL_TRACE(sdk::types::trace_err, "[%s:%u] "                       \
                   fmt, __FNAME__, __LINE__, ##__VA_ARGS__);               \
 }
 
 #define PDS_TRACE_WARN(fmt, ...)                                          \
 {                                                                         \
-    PDS_HAL_TRACE(sdk::lib::SDK_TRACE_LEVEL_WARN, "[%s:%u] "              \
+    PDS_HAL_TRACE(sdk::types::trace_warn, "[%s:%u] "                      \
                   fmt, __FNAME__, __LINE__, ##__VA_ARGS__);               \
 }
 
 #define PDS_TRACE_INFO(fmt, ...)                                          \
 {                                                                         \
-    PDS_HAL_TRACE(sdk::lib::SDK_TRACE_LEVEL_INFO, "[%s:%u] "              \
+    PDS_HAL_TRACE(sdk::types::trace_info, "[%s:%u] "                      \
                   fmt, __FNAME__, __LINE__,  ##__VA_ARGS__);              \
 }
 
 #define PDS_TRACE_DEBUG(fmt, ...)                                         \
 {                                                                         \
-    PDS_HAL_TRACE(sdk::lib::SDK_TRACE_LEVEL_DEBUG, "[%s:%u] "             \
+    PDS_HAL_TRACE(sdk::types::trace_debug, "[%s:%u] "                     \
                   fmt, __FNAME__, __LINE__, ##__VA_ARGS__);               \
 }
 
 #define PDS_TRACE_DEBUG_NO_HEADER(fmt, ...)                               \
 {                                                                         \
-    PDS_HAL_TRACE(sdk::lib::SDK_TRACE_LEVEL_DEBUG, fmt, ##__VA_ARGS__);   \
+    PDS_HAL_TRACE(sdk::types::trace_debug, fmt, ##__VA_ARGS__);           \
 }
 
 #define PDS_TRACE_VERBOSE(fmt, ...)                                       \
 {                                                                         \
-    PDS_HAL_TRACE(sdk::lib::SDK_TRACE_LEVEL_VERBOSE, "[%s:%u] "           \
+    PDS_HAL_TRACE(sdk::types::trace_verbose, "[%s:%u] "                   \
                   fmt, __FNAME__, __LINE__, ##__VA_ARGS__);               \
 }
 
 #define PDS_HMON_TRACE_ERR(fmt, ...)                                      \
 {                                                                         \
-    PDS_HMON_TRACE(sdk::lib::SDK_TRACE_LEVEL_ERR, "[%s:%u] "              \
+    PDS_HMON_TRACE(sdk::types::trace_err, "[%s:%u] "                      \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_HMON_TRACE_WARN(fmt, ...)                                     \
 {                                                                         \
-    PDS_HMON_TRACE(sdk::lib::SDK_TRACE_LEVEL_WARN, "[%s:%u] "             \
+    PDS_HMON_TRACE(sdk::types::trace_warn, "[%s:%u] "                     \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_HMON_TRACE_INFO(fmt, ...)                                     \
 {                                                                         \
-    PDS_HMON_TRACE(sdk::lib::SDK_TRACE_LEVEL_INFO, "[%s:%u] "             \
+    PDS_HMON_TRACE(sdk::types::trace_info, "[%s:%u] "                     \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_HMON_TRACE_DEBUG(fmt, ...)                                    \
 {                                                                         \
-    PDS_HMON_TRACE(sdk::lib::SDK_TRACE_LEVEL_DEBUG, "[%s:%u] "            \
+    PDS_HMON_TRACE(sdk::types::trace_debug, "[%s:%u] "                    \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_HMON_TRACE_VERBOSE(fmt, ...)                                  \
 {                                                                         \
-    PDS_HMON_TRACE(sdk::lib::SDK_TRACE_LEVEL_VERBOSE, "[%s:%u] "          \
+    PDS_HMON_TRACE(sdk::types::trace_verbose, "[%s:%u] "                  \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_INTR_TRACE_ERR(fmt, ...)                                      \
 {                                                                         \
-    PDS_INTR_TRACE(sdk::lib::SDK_TRACE_LEVEL_ERR, "[%s:%u] "              \
+    PDS_INTR_TRACE(sdk::types::trace_err, "[%s:%u] "                      \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_INTR_TRACE_WARN(fmt, ...)                                     \
 {                                                                         \
-    PDS_INTR_TRACE(sdk::lib::SDK_TRACE_LEVEL_WARN, "[%s:%u] "             \
+    PDS_INTR_TRACE(sdk::types::trace_warn, "[%s:%u] "                     \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_INTR_TRACE_INFO(fmt, ...)                                     \
 {                                                                         \
-    PDS_INTR_TRACE(sdk::lib::SDK_TRACE_LEVEL_INFO, "[%s:%u] "             \
+    PDS_INTR_TRACE(sdk::types::trace_info, "[%s:%u] "                     \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_INTR_TRACE_DEBUG(fmt, ...)                                    \
 {                                                                         \
-    PDS_INTR_TRACE(sdk::lib::SDK_TRACE_LEVEL_DEBUG, "[%s:%u] "            \
+    PDS_INTR_TRACE(sdk::types::trace_debug, "[%s:%u] "                    \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 
 #define PDS_INTR_TRACE_VERBOSE(fmt, ...)                                  \
 {                                                                         \
-    PDS_INTR_TRACE(sdk::lib::SDK_TRACE_LEVEL_VERBOSE, "[%s:%u] "          \
+    PDS_INTR_TRACE(sdk::types::trace_verbose, "[%s:%u] "                  \
                    fmt, __FNAME__, __LINE__, ##__VA_ARGS__);              \
 }
 

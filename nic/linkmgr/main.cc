@@ -156,7 +156,7 @@ linkmgr_cfg_init(void)
 } // namespace linkmgr
 
 static int
-sdk_trace_cb (sdk_trace_level_e tracel_level, const char *format, ...)
+sdk_trace_cb (trace_level_e tracel_level, const char *format, ...)
 {
     char       logbuf[1024];
     va_list    args;
@@ -164,19 +164,19 @@ sdk_trace_cb (sdk_trace_level_e tracel_level, const char *format, ...)
     va_start(args, format);
     vsnprintf(logbuf, sizeof(logbuf), format, args);
     switch (tracel_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         HAL_TRACE_ERR_NO_META("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         HAL_TRACE_WARN_NO_META("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         HAL_TRACE_INFO_NO_META("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+    case sdk::types::trace_debug:
         HAL_TRACE_DEBUG_NO_META("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+    case sdk::types::trace_verbose:
         HAL_TRACE_VERBOSE_NO_META("{}", logbuf);
         break;
     default:

@@ -8,7 +8,7 @@
 #include "nic/sdk/lib/logger/logger.hpp"
 
 static int
-sdk_test_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
+sdk_test_logger (uint32_t mod_id, trace_level_e tracel_level,
                  const char *format, ...)
 {
     char       logbuf[1024];
@@ -17,19 +17,19 @@ sdk_test_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
     va_start(args, format);
     vsnprintf(logbuf, sizeof(logbuf), format, args);
     switch (tracel_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         printf("%s\n", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         printf("%s\n", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         printf("%s\n", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+    case sdk::types::trace_debug:
         printf("%s\n", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+    case sdk::types::trace_verbose:
         printf("%s\n", logbuf);
         break;
     default:

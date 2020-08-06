@@ -18,7 +18,7 @@ using namespace sdk::platform;
 extern "C" {
 
 static int
-pds_init_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
+pds_init_logger (uint32_t mod_id, trace_level_e tracel_level,
                  const char *format, ...)
 {
     return 0;

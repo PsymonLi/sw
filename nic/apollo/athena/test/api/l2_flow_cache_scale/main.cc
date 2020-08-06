@@ -31,14 +31,14 @@ namespace api {
 //----------------------------------------------------------------------------
 
 class l2_flow_cache_scale: public ftl_scale_base {
-    sdk_trace_level_e trace_level;
+    trace_level_e trace_level;
 
 protected:
     sdk::utils::time_profile::time_profile_info t_info;
 
     l2_flow_cache_scale() {
         trace_level = g_trace_level;
-        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_ERR;
+        g_trace_level = sdk::types::trace_err;
         sdk::utils::time_profile::time_profile_enable = true;
     }
 

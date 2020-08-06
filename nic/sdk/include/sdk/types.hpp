@@ -304,7 +304,7 @@ typedef struct port_event_info_s {
 
 typedef void (*port_event_notify_t)(port_event_info_t *port_event_info);
 
-typedef enum lif_state {
+typedef enum lif_state_e {
     LIF_STATE_NONE = 0,
     LIF_STATE_UP,
     LIF_STATE_DOWN,

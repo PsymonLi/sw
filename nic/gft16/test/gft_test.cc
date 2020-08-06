@@ -1444,27 +1444,27 @@ tx_create_gft_entry3() {
 }
 
 static int
-sdk_trace_cb(sdk_trace_level_e trace_level, const char *format, ...) {
+sdk_trace_cb(trace_level_e trace_level, const char *format, ...) {
     char       logbuf[1024];
     va_list    args;
 
     switch (trace_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_NONE:
+    case sdk::types::trace_none:
         return 0;
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         printf("[E] ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         printf("[W] ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         printf("[I] ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+    case sdk::types::trace_debug:
         printf("[D] ");
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+    case sdk::types::trace_verbose:
         printf("[V] ");
         break;
     default:

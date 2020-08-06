@@ -61,7 +61,7 @@ Logger GetCurrentLogger() {
     return current_logger;
 }
 
-int ncsi_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
+int ncsi_logger (uint32_t mod_id, trace_level_e trace_level,
                  const char *format, ...)
 {
     char       logbuf[1024];
@@ -72,10 +72,10 @@ int ncsi_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
     va_end(args);
 
     switch (trace_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         NCSI_TRACE_ERR("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         NCSI_TRACE_INFO("{}", logbuf);
         break;
     default:

@@ -12,7 +12,7 @@
 void run_basic_tests();
 
 static int
-ftl_debug_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
+ftl_debug_logger (uint32_t mod_id, trace_level_e trace_level,
                   const char *format, ...)
 {
     char logbuf[1024];
@@ -24,7 +24,7 @@ ftl_debug_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
         assert(logfp);
     }
 
-    if (trace_level <= sdk::lib::SDK_TRACE_LEVEL_VERBOSE) {
+    if (trace_level <= sdk::types::trace_verbose) {
         va_start(args, format);
         vsnprintf(logbuf, sizeof(logbuf), format, args);
         fprintf(logfp, "%s\n", logbuf);

@@ -243,7 +243,7 @@ logger_init (void)
 // logger callback passed to SDK and PDS lib
 //------------------------------------------------------------------------------
 static int
-pegasus_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
+pegasus_logger (uint32_t mod_id, trace_level_e tracel_level,
                 const char *format, ...)
 {
     char       logbuf[1024];
@@ -252,19 +252,19 @@ pegasus_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
     va_start(args, format);
     vsnprintf(logbuf, sizeof(logbuf), format, args);
     switch (tracel_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         PEGASUS_TRACE_ERR_NO_META("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         PEGASUS_TRACE_WARN_NO_META("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         PEGASUS_TRACE_INFO_NO_META("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+    case sdk::types::trace_debug:
         PEGASUS_TRACE_DEBUG_NO_META("{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+    case sdk::types::trace_verbose:
         PEGASUS_TRACE_VERBOSE_NO_META("{}", logbuf);
         break;
     default:

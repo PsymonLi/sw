@@ -56,7 +56,7 @@ typedef struct mputrace_global_state_s {
     std::string profile;
     std::string pipeline;
     platform_type_t platform_type;
-    sdk_trace_level_e trace_level;
+    trace_level_e trace_level;
 } elbtrace_global_state_t;
 
 extern elbtrace_global_state_t g_state;

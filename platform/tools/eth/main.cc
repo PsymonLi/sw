@@ -16,7 +16,7 @@
 
 
 int
-debug_logger (uint32_t mod_id, sdk::lib::sdk_trace_level_e trace_level,
+debug_logger (uint32_t mod_id, sdk::types::trace_level_e trace_level,
               const char *format, ...)
 {
     return 0;

@@ -1693,7 +1693,7 @@ TEST_F(hbmhash_test, DISABLED_test21) {
 }
 
 static int
-hal_sdk_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
+hal_sdk_logger (uint32_t mod_id, trace_level_e trace_level,
                 const char *format, ...)
 {
     char       logbuf[1024];

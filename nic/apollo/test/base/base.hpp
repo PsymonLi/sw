@@ -162,6 +162,6 @@ protected:
 };
 
 // externs
-extern sdk_trace_level_e g_trace_level;  // trace level, default is DEBUG
+extern trace_level_e g_trace_level;  // trace level, default is DEBUG
 
 #endif  // __TEST_BASE_HPP__

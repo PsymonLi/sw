@@ -102,22 +102,22 @@ pds_sig_init (sig_handler_t sig_handler)
 }
 
 static int
-sdk_logger_ (uint32_t mod_id, sdk_trace_level_e trace_level, const char *logbuf)
+sdk_logger_ (uint32_t mod_id, trace_level_e trace_level, const char *logbuf)
 {
     switch (trace_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         PDS_MOD_TRACE_ERR_NO_META(mod_id, "{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         PDS_MOD_TRACE_WARN_NO_META(mod_id, "{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         PDS_MOD_TRACE_INFO_NO_META(mod_id, "{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+    case sdk::types::trace_debug:
         PDS_MOD_TRACE_DEBUG_NO_META(mod_id, "{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+    case sdk::types::trace_verbose:
         PDS_MOD_TRACE_VERBOSE_NO_META(mod_id, "{}", logbuf);
         break;
     default:
@@ -130,7 +130,7 @@ sdk_logger_ (uint32_t mod_id, sdk_trace_level_e trace_level, const char *logbuf)
 // logger callback passed to SDK and PDS lib
 //------------------------------------------------------------------------------
 static int
-sdk_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
+sdk_logger (uint32_t mod_id, trace_level_e trace_level,
             const char *format, ...)
 {
     char    logbuf[1024];

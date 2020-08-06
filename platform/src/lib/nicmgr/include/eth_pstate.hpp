@@ -48,7 +48,7 @@ typedef struct ethlif_pstate_v1_s {
         metadata =  { 0 };
         lif_id = 0;
         memset(name, 0, sizeof(name));
-        state = LIF_STATE_NONE;
+        state = ::LIF_STATE_NONE;
         host_lif_config_addr = 0;
         host_lif_status_addr = 0;
         host_lif_stats_addr = 0;

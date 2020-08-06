@@ -11,25 +11,19 @@
 #include <stdarg.h>
 #include <cstdint>
 #include "include/sdk/globals.hpp"
+#include "include/sdk/types.hpp"
+
+using namespace sdk::types;
 
 namespace sdk {
 namespace lib {
-
-enum sdk_trace_level_e {
-    SDK_TRACE_LEVEL_NONE    = 0,
-    SDK_TRACE_LEVEL_ERR     = 1,
-    SDK_TRACE_LEVEL_WARN    = 2,
-    SDK_TRACE_LEVEL_INFO    = 3,
-    SDK_TRACE_LEVEL_DEBUG   = 4,
-    SDK_TRACE_LEVEL_VERBOSE = 5,
-};
 
 //------------------------------------------------------------------------------
 // trace library that abstracts the app's logger
 //------------------------------------------------------------------------------
 class logger {
 public:
-    typedef int (*trace_cb_t)(uint32_t mod_id, sdk_trace_level_e trace_level,
+    typedef int (*trace_cb_t)(uint32_t mod_id, trace_level_e trace_level,
                               const char *format, ...)
                               __attribute__((format (printf, 3, 4)));
     static void init(trace_cb_t trace_cb);
@@ -37,7 +31,7 @@ public:
         return trace_cb_ ? trace_cb_ : null_logger_;
     }
 private:
-    static int null_logger_(uint32_t mod_id, sdk_trace_level_e trace_level,
+    static int null_logger_(uint32_t mod_id, trace_level_e trace_level,
                             const char *fmt, ...) {
         char       logbuf[1024];
         va_list    args;
@@ -54,31 +48,30 @@ private:
 }    // namespace lib
 }    // namespace sdk
 
-using sdk::lib::sdk_trace_level_e;
 using sdk_logger = sdk::lib::logger;
 
 #define SDK_TRACE(...)              sdk::lib::logger::trace_cb()(              \
                                         sdk_mod_id_t::SDK_MOD_ID_SDK,          \
                                         ##__VA_ARGS__)
 
-#define SDK_TRACE_ERR(fmt, ...)     SDK_TRACE(sdk::lib::SDK_TRACE_LEVEL_ERR,   \
+#define SDK_TRACE_ERR(fmt, ...)     SDK_TRACE(sdk::types::trace_err,           \
                                               "[%s:%d] " fmt, __FNAME__,       \
                                               __LINE__, ##__VA_ARGS__)
 
-#define SDK_TRACE_WARN(fmt, ...)    SDK_TRACE(sdk::lib::SDK_TRACE_LEVEL_WARN,  \
+#define SDK_TRACE_WARN(fmt, ...)    SDK_TRACE(sdk::types::trace_warn,          \
                                               "[%s:%d] " fmt, __FNAME__,       \
                                               __LINE__, ##__VA_ARGS__)
 
-#define SDK_TRACE_INFO(fmt, ...)    SDK_TRACE(sdk::lib::SDK_TRACE_LEVEL_INFO,  \
+#define SDK_TRACE_INFO(fmt, ...)    SDK_TRACE(sdk::types::trace_info,          \
                                               "[%s:%d] " fmt, __FNAME__,       \
                                               __LINE__, ##__VA_ARGS__)
 
-#define SDK_TRACE_DEBUG(fmt, ...)   SDK_TRACE(sdk::lib::SDK_TRACE_LEVEL_DEBUG, \
+#define SDK_TRACE_DEBUG(fmt, ...)   SDK_TRACE(sdk::types::trace_debug,         \
                                               "[%s:%d] " fmt, __FNAME__,       \
                                               __LINE__, ##__VA_ARGS__)
 
 #define SDK_TRACE_VERBOSE(fmt, ...) SDK_TRACE(                                 \
-                                        sdk::lib::SDK_TRACE_LEVEL_VERBOSE,     \
+                                        sdk::types::trace_verbose,             \
                                         "[%s:%d] " fmt, __FNAME__, __LINE__,   \
                                         ##__VA_ARGS__)
 
@@ -90,27 +83,27 @@ using sdk_logger = sdk::lib::logger;
                                              ##__VA_ARGS__)
 
 #define SDK_HMON_TRACE_ERR(fmt, ...)     SDK_HMON_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_ERR,    \
+                                             sdk::types::trace_err,            \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_HMON_TRACE_WARN(fmt, ...)    SDK_HMON_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_WARN,   \
+                                             sdk::types::trace_warn,           \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_HMON_TRACE_INFO(fmt, ...)    SDK_HMON_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_INFO,   \
+                                             sdk::types::trace_info,           \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_HMON_TRACE_DEBUG(fmt, ...)   SDK_HMON_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_DEBUG,  \
+                                             sdk::types::trace_debug,          \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_HMON_TRACE_VERBOSE(fmt, ...) SDK_HMON_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_VERBOSE,\
+                                             sdk::types::trace_verbose,        \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
@@ -119,27 +112,27 @@ using sdk_logger = sdk::lib::logger;
                                              ##__VA_ARGS__)
 
 #define SDK_INTR_TRACE_ERR(fmt, ...)     SDK_INTR_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_ERR,    \
+                                             sdk::types::trace_err,            \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_INTR_TRACE_WARN(fmt, ...)    SDK_INTR_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_WARN,   \
+                                             sdk::types::trace_warn,           \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_INTR_TRACE_INFO(fmt, ...)    SDK_INTR_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_INFO,   \
+                                             sdk::types::trace_info,           \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_INTR_TRACE_DEBUG(fmt, ...)   SDK_INTR_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_DEBUG,  \
+                                             sdk::types::trace_debug,          \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_INTR_TRACE_VERBOSE(fmt, ...) SDK_INTR_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_VERBOSE,\
+                                             sdk::types::trace_verbose,        \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
@@ -148,27 +141,27 @@ using sdk_logger = sdk::lib::logger;
                                              ##__VA_ARGS__)
 
 #define SDK_LINK_TRACE_ERR(fmt, ...)     SDK_LINK_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_ERR,    \
+                                             sdk::types::trace_err,            \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_LINK_TRACE_WARN(fmt, ...)    SDK_LINK_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_WARN,   \
+                                             sdk::types::trace_warn,           \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_LINK_TRACE_INFO(fmt, ...)    SDK_LINK_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_INFO,   \
+                                             sdk::types::trace_info,           \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_LINK_TRACE_DEBUG(fmt, ...)   SDK_LINK_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_DEBUG,  \
+                                             sdk::types::trace_debug,          \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 
 #define SDK_LINK_TRACE_VERBOSE(fmt, ...) SDK_LINK_TRACE(                       \
-                                             sdk::lib::SDK_TRACE_LEVEL_VERBOSE,\
+                                             sdk::types::trace_verbose,        \
                                              "[%s:%d] " fmt, __FNAME__,        \
                                              __LINE__, ##__VA_ARGS__)
 

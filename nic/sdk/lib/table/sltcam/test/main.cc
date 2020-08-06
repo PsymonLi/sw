@@ -13,7 +13,7 @@ using sdk::table::sltcam;
 FILE *logfp;
 
 static int
-sltcam_debug_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
+sltcam_debug_logger (uint32_t mod_id, trace_level_e trace_level,
                      const char *format, ...)
 {
     char       logbuf[1024];

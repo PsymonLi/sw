@@ -71,11 +71,11 @@ public:
     }
 
 protected:
-    sdk_trace_level_e trace_level;
+    trace_level_e trace_level;
 
     multi_thread() {
         trace_level = g_trace_level;
-        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_INFO;
+        g_trace_level = sdk::types::trace_info;
     }
 
     ~multi_thread() {

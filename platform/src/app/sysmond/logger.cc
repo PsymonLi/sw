@@ -40,17 +40,17 @@ GetAsicErrOnetimeLogger (void)
 
 static int
 sysmon_sdk_logger (std::shared_ptr<spdlog::logger> logger,
-                   sdk_trace_level_e tracel_level,
+                   trace_level_e tracel_level,
                    const char *logbuf)
 {
     switch (tracel_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         TRACE_ERR(logger, "{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         TRACE_WARN(logger, "{}", logbuf);
         break;
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         TRACE_INFO(logger, "{}", logbuf);
         break;
     default:
@@ -60,7 +60,7 @@ sysmon_sdk_logger (std::shared_ptr<spdlog::logger> logger,
 }
 
 int
-sysmond_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
+sysmond_logger (uint32_t mod_id, trace_level_e tracel_level,
                 const char *format, ...)
 {
     char       logbuf[1024];

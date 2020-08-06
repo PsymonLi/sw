@@ -32,7 +32,7 @@ typedef struct port_obj_meta_s {
     uint8_t  obj[0];            ///< start offset of structs
 } __PACK__ port_obj_meta_t;
 
-typedef void (*port_log_fn_t)(sdk_trace_level_e trace_level,
+typedef void (*port_log_fn_t)(trace_level_e trace_level,
                               const char *msg);
 
 typedef void (*xcvr_event_notify_t)(xcvr_event_info_t *xcvr_event_info);

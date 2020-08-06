@@ -26,7 +26,7 @@ namespace linkmgr {
 }
 
 int
-sdk_trace_cb (uint32_t mod_id, sdk_trace_level_e trace_level,
+sdk_trace_cb (uint32_t mod_id, trace_level_e trace_level,
               const char *format, ...)
 {
     char       logbuf[128];

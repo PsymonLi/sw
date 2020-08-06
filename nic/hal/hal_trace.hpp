@@ -94,7 +94,7 @@ hal_mod_trace_enabled (int mod_id)
 }
 
 static inline bool
-hal_mod_trace_enabled (uint32_t mod_id, sdk_trace_level_e trace_level)
+hal_mod_trace_enabled (uint32_t mod_id, trace_level_e trace_level)
 {
     sdk::types::trace_level_e  mod_trace_level;
 

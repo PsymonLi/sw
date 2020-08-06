@@ -186,7 +186,7 @@ linkmgr_logger_init (void)
     return logger;
 }
 
-void linkmgr_log(sdk::lib::sdk_trace_level_e trace_level, const char *buf)
+void linkmgr_log(sdk::types::trace_level_e trace_level, const char *buf)
 {
     linkmgr_logger->logger()->debug(buf);
 }

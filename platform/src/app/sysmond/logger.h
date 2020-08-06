@@ -15,7 +15,7 @@ const auto ASICERR_OBFL_LOG_FILENAME = "/obfl/asicerrord_err.log";
 const auto ASICERR_OBFL_LOG_ONETIME_FILENAME = "/obfl/asicerrord_onetime_err.log";
 
 void initializeLogger(void);
-int sysmond_logger(uint32_t mod_id, sdk_trace_level_e tracel_level,
+int sysmond_logger(uint32_t mod_id, trace_level_e tracel_level,
                    const char *format, ...);
 void sysmond_flush_logger(void);
 std::shared_ptr<spdlog::logger> GetLogger(void);

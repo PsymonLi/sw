@@ -20,9 +20,9 @@ const auto LOG_MAX_FILES = 1;
  * SDK Logger for CLI:
  * - Only Warnings and Errors are shown on console.
  */
-sdk_trace_level_e g_cli_trace_level = sdk::lib::SDK_TRACE_LEVEL_WARN;
+trace_level_e g_cli_trace_level = sdk::types::trace_warn;
 static int
-cli_sdk_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
+cli_sdk_logger (uint32_t mod_id, trace_level_e tracel_level,
                 const char *format, ...)
 {
     char       logbuf[1024];
@@ -32,19 +32,19 @@ cli_sdk_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
         va_start(args, format);
         vsnprintf(logbuf, sizeof(logbuf), format, args);
         switch (tracel_level) {
-        case sdk::lib::SDK_TRACE_LEVEL_ERR:
+        case sdk::types::trace_err:
             TRACE_ERR(P4CTL_LOGGER, "%s\n", logbuf);
             break;
-        case sdk::lib::SDK_TRACE_LEVEL_WARN:
+        case sdk::types::trace_warn:
             TRACE_WARN(P4CTL_LOGGER, "%s\n", logbuf);
             break;
-        case sdk::lib::SDK_TRACE_LEVEL_INFO:
+        case sdk::types::trace_info:
             TRACE_INFO(P4CTL_LOGGER, "%s\n", logbuf);
             break;
-        case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+        case sdk::types::trace_debug:
             TRACE_DEBUG(P4CTL_LOGGER, "%s\n", logbuf);
             break;
-        case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+        case sdk::types::trace_verbose:
             TRACE_INFO(P4CTL_LOGGER, "%s\n", logbuf);
             break;
         default:

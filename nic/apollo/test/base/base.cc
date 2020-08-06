@@ -18,9 +18,9 @@
 // doesn't check whether user enabled traces at what level, it always prints
 // the traces but with a simple header prepended that tells what level the
 // trace is spwed at ... in reality, you call your favorite logger here
-sdk_trace_level_e g_trace_level = sdk::lib::SDK_TRACE_LEVEL_DEBUG;
+trace_level_e g_trace_level = sdk::types::trace_debug;
 static int
-trace_cb (uint32_t mod_id, sdk_trace_level_e trace_level,
+trace_cb (uint32_t mod_id, trace_level_e trace_level,
           const char *format, ...)
 {
     va_list args;
@@ -28,7 +28,7 @@ trace_cb (uint32_t mod_id, sdk_trace_level_e trace_level,
     struct timespec tp_;
     char logbuf[1024];
 
-    if (trace_level == sdk::lib::SDK_TRACE_LEVEL_NONE) {
+    if (trace_level == sdk::types::trace_none) {
         return 0;
     }
 
@@ -37,23 +37,23 @@ trace_cb (uint32_t mod_id, sdk_trace_level_e trace_level,
     }
 
     switch (trace_level) {
-    case sdk::lib::SDK_TRACE_LEVEL_ERR:
+    case sdk::types::trace_err:
         pfx = "[E]";
         break;
 
-    case sdk::lib::SDK_TRACE_LEVEL_WARN:
+    case sdk::types::trace_warn:
         pfx = "[W]";
         break;
 
-    case sdk::lib::SDK_TRACE_LEVEL_INFO:
+    case sdk::types::trace_info:
         pfx = "[I]";
         break;
 
-    case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
+    case sdk::types::trace_debug:
         pfx = "[D]";
         break;
 
-    case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
+    case sdk::types::trace_verbose:
     default:
         // pfx = "[V]";
         // fprintf(stdout, "[V] %s\n", logbuf);

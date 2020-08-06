@@ -38,7 +38,7 @@ protected:
     static void SetUpTestCase() {
         test_case_params_t params;
 
-        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_DEBUG;
+        g_trace_level = sdk::types::trace_debug;
         params.cfg_file = g_cfg_file;
         params.enable_fte = false;
         params.profile = g_profile;
@@ -46,7 +46,7 @@ protected:
         pds_test_base::SetUpTestCase(params);
     }
     static void TearDownTestCase() {
-        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_DEBUG;
+        g_trace_level = sdk::types::trace_debug;
         pds_test_base::TearDownTestCase();
     }
 };

@@ -32,7 +32,7 @@ protected:
     static void SetUpTestCase() {
         if (!agent_mode())
             pds_test_base::SetUpTestCase(g_tc_params);
-        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_VERBOSE;
+        g_trace_level = sdk::types::trace_verbose;
         // the scale number should be based on memory profile
         if (apulu()) {
             // for 4G profile, we can only support 64
@@ -47,7 +47,7 @@ protected:
         batch_commit(bctxt);
     }
     static void TearDownTestCase() {
-        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_DEBUG;
+        g_trace_level = sdk::types::trace_debug;
         pds_batch_ctxt_t bctxt = batch_start();
         sample_vpc_teardown(bctxt, PDS_VPC_TYPE_TENANT);
         batch_commit(bctxt);

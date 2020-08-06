@@ -148,7 +148,7 @@ get_profile (int *argc, char **argv)
 }
 
 static int
-logger_trace_cb (uint32_t mod_id, sdk_trace_level_e trace_level,
+logger_trace_cb (uint32_t mod_id, trace_level_e trace_level,
                  const char *fmt, ...)
 {
     char       logbuf[1024];
@@ -184,7 +184,7 @@ main (int argc, char *argv[])
 
     g_state.platform_type = platform_type_t::PLATFORM_TYPE_HW;
     g_state.cfg_path = sdk::lib::get_config_path(g_state.platform_type);
-    g_state.trace_level = sdk::lib::sdk_trace_level_e::SDK_TRACE_LEVEL_ERR;
+    g_state.trace_level = sdk::types::trace_err;
     sdk::lib::logger::init(logger_trace_cb);
     get_profile(&argc, argv);
     get_pipeline();
