@@ -47,7 +47,7 @@ protected:
         
         flow_mock_init();
         memset(&init_params, 0, sizeof(init_params));
-        init_params.flow_age_pid = getpid();
+        init_params.init_mode = PDS_CINIT_MODE_COLD_START;
         pds_flow_cache_create(&init_params);
         pds_flow_cache_set_core_id(2);
     }

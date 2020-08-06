@@ -14,6 +14,17 @@
 
 #define PDS_STORE_NAME_SIZE    (256)
 
+// TODO: Read the below from a json file
+#define PDS_STORE_MOD_NAME_IMPL "impl"
+
+#define PDS_STORE_TBL_NAME_CONN_TRACK "conntrack"
+#define PDS_STORE_TBL_VER_CONN_TRACK  (1)
+#define PDS_STORE_TBL_SIZE_CONN_TRACK (33 * (1 << 20)) //33MB
+
+#define PDS_STORE_TBL_NAME_SESSION_INFO "sesion_info"
+#define PDS_STORE_TBL_VER_SESSION_INFO  (1)
+#define PDS_STORE_TBL_SIZE_SESSION_INFO (33 * (1 << 20)) // 33MB
+
 /// \brief     create a store for state save/restore
 /// \param[in] mod_name module name, eg ftl, impl
 /// \param[in] tbl_name table name, eg flow, session_age_ctx
