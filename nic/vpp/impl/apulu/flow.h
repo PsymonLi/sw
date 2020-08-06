@@ -342,18 +342,29 @@ pds_flow_add_tx_hdrs_x2 (vlib_buffer_t *b0, vlib_buffer_t *b1)
     iflow0 = !pds_is_rflow(b0);
     iflow1 = !pds_is_rflow(b1);
 
-    if (pds_is_flow_l2l(b0) && iflow0) {
+    /*
+     * VXLAN encap needs to be added only for l2l iflow packets which are not
+     * coming from upstream.
+     * Also, if the session is already present, then we should not add VXLAN
+     * header unless it is a defunct flow & policy needs to be reevaluated.
+     * In all other cases, packet should be forwarded as is.
+     */
+    if (pds_is_flow_l2l(b0) && iflow0 && !pds_is_rx_pkt(b0) &&
+        (!pds_is_flow_session_present(b0) || pds_is_flow_defunct(b0))) {
         pds_flow_add_vxlan_template(b0);
         lif0 = PDS_FLOW_UPLINK0_LIF_ID;
     } else {
         lif0 = vnet_buffer(b0)->pds_flow_data.lif;
     }
-    if (pds_is_flow_l2l(b1) && iflow1) {
+
+    if (pds_is_flow_l2l(b1) && iflow1 && !pds_is_rx_pkt(b1) &&
+        (!pds_is_flow_session_present(b1) || pds_is_flow_defunct(b1))) {
         pds_flow_add_vxlan_template(b1);
         lif1 = PDS_FLOW_UPLINK0_LIF_ID;
     } else {
         lif1 = vnet_buffer(b1)->pds_flow_data.lif;
     }
+
     tx0 = vlib_buffer_get_current(b0);
     tx1 = vlib_buffer_get_current(b1);
 
@@ -396,12 +407,21 @@ pds_flow_add_tx_hdrs_x1 (vlib_buffer_t *b0)
 
     iflow0 = !pds_is_rflow(b0);
 
-    if (pds_is_flow_l2l(b0) && iflow0) {
+    /*
+     * VXLAN encap needs to be added only for l2l iflow packets which are not
+     * coming from upstream.
+     * Also, if the session is already present, then we should not add VXLAN
+     * header unless it is a defunct flow & policy needs to be reevaluated.
+     * In all other cases, packet should be forwarded as is.
+     */
+    if (pds_is_flow_l2l(b0) && iflow0 && !pds_is_rx_pkt(b0) &&
+        (!pds_is_flow_session_present(b0) || pds_is_flow_defunct(b0))) {
         pds_flow_add_vxlan_template(b0);
         lif = PDS_FLOW_UPLINK0_LIF_ID;
     } else {
         lif = vnet_buffer(b0)->pds_flow_data.lif;
     }
+
     tx0 = vlib_buffer_get_current(b0);
     tx0->lif_flags = 0;
     tx0->lif_sbit0_ebit7 = lif & 0xff;
