@@ -735,6 +735,9 @@ func (c *API) netIfWorker(ctx context.Context) {
 						log.Errorf("create interface [%v] failed (%s)", resp, err)
 						c.InfraAPI.UpdateIfChannel(evt)
 					}
+				} else {
+					log.Errorf("NPM connection closed for updating %v. Retrying...", evt.Intf.GetKey())
+					c.InfraAPI.UpdateIfChannel(evt)
 				}
 				c.netifWorker.Unlock()
 			}
