@@ -1378,7 +1378,7 @@ ionic_error_to_errno(enum status_code code)
     case IONIC_RC_ENOENT:
         return NDIS_STATUS_NOT_SUPPORTED;
     case IONIC_RC_EAGAIN:
-        return NDIS_STATUS_RESOURCES;
+        return STATUS_IO_OPERATION_TIMEOUT;
     case IONIC_RC_ENOMEM:
         return NDIS_STATUS_RESOURCES;
     case IONIC_RC_EFAULT:

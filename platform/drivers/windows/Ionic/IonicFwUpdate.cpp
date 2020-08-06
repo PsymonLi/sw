@@ -1,7 +1,8 @@
 #include "common.h"
 
 
-#define FW_INSTALL_ACTIVATE_TIMEOUT (25*60)  // sec.
+#define FW_INSTALL_TIMEOUT (1500)  // sec.
+#define FW_ACTIVATE_TIMEOUT (30)   // sec.
 
 NTSTATUS
 ionic_firmware_download_adminq(struct lif* lif, uint64_t addr, uint32_t offset, uint32_t length)
@@ -30,15 +31,35 @@ ionic_firmware_install_adminq(struct lif* lif, uint8_t* slot)
     struct ionic_admin_ctx ctx = { 0 };
     //ctx.work = COMPLETION_INITIALIZER_ONSTACK(ctx.work);
     ctx.cmd.fw_control.opcode = CMD_OPCODE_FW_CONTROL;
-    ctx.cmd.fw_control.oper = IONIC_FW_INSTALL;
+    ctx.cmd.fw_control.oper = IONIC_FW_INSTALL_ASYNC;
 
-    status = ionic_adminq_post_wait_timeout(lif, &ctx, FW_INSTALL_ACTIVATE_TIMEOUT);
+    status = ionic_adminq_post_wait(lif, &ctx);
     if (status != NDIS_STATUS_SUCCESS) {
-        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_INSTALL) failed: 0x%x\n", __FUNCTION__, status));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_INSTALL_ASYNC) failed: 0x%x\n", __FUNCTION__, status));
     }
     else {
         *slot = ctx.comp.fw_control.slot;
-        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_INSTALL) succeeded. Slot: %u\n", __FUNCTION__, *slot));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_INSTALL_ASYNC) succeeded. Slot: %u\n", __FUNCTION__, *slot));
+    }
+
+    return status;
+}
+
+NTSTATUS
+ionic_firmware_install_status_adminq(struct lif* lif)
+{
+    NDIS_STATUS status = NDIS_STATUS_SUCCESS;
+    struct ionic_admin_ctx ctx = { 0 };
+    //ctx.work = COMPLETION_INITIALIZER_ONSTACK(ctx.work);
+    ctx.cmd.fw_control.opcode = CMD_OPCODE_FW_CONTROL;
+    ctx.cmd.fw_control.oper = IONIC_FW_INSTALL_STATUS;
+
+    status = ionic_adminq_post_wait(lif, &ctx);
+    if (status != NDIS_STATUS_SUCCESS) {
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_INSTALL_STATUS) failed: 0x%x\n", __FUNCTION__, status));
+    }
+    else {
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_INSTALL_STATUS) succeeded.\n", __FUNCTION__));
     }
 
     return status;
@@ -51,18 +72,48 @@ ionic_firmware_activate_adminq(struct lif* lif, uint8_t slot)
     struct ionic_admin_ctx ctx = { 0 };
     //ctx.work = COMPLETION_INITIALIZER_ONSTACK(ctx.work);
     ctx.cmd.fw_control.opcode = CMD_OPCODE_FW_CONTROL;
-    ctx.cmd.fw_control.oper = IONIC_FW_ACTIVATE;
+    ctx.cmd.fw_control.oper = IONIC_FW_ACTIVATE_ASYNC;
     ctx.cmd.fw_control.slot = slot;
 
-    status = ionic_adminq_post_wait_timeout(lif, &ctx, FW_INSTALL_ACTIVATE_TIMEOUT);
+    status = ionic_adminq_post_wait(lif, &ctx);
     if (status != NDIS_STATUS_SUCCESS) {
-        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_ACTIVATE) failed: 0x%x\n", __FUNCTION__, status));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_ACTIVATE_ASYNC) failed: 0x%x\n", __FUNCTION__, status));
     }
     else {
-        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_ACTIVATE) succeeded. Slot: %u\n", __FUNCTION__, slot));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_ACTIVATE_ASYNC) succeeded. Slot: %u\n", __FUNCTION__, slot));
     }
 
     return status;
+}
+
+NTSTATUS
+ionic_firmware_activate_status_adminq(struct lif* lif)
+{
+    NDIS_STATUS status = NDIS_STATUS_SUCCESS;
+    struct ionic_admin_ctx ctx = { 0 };
+    //ctx.work = COMPLETION_INITIALIZER_ONSTACK(ctx.work);
+    ctx.cmd.fw_control.opcode = CMD_OPCODE_FW_CONTROL;
+    ctx.cmd.fw_control.oper = IONIC_FW_ACTIVATE_STATUS; 
+
+    status = ionic_adminq_post_wait(lif, &ctx);
+    if (status != NDIS_STATUS_SUCCESS) {
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_ACTIVATE_STATUS) failed: 0x%x\n", __FUNCTION__, status));
+    }
+    else {
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s CMD_OPCODE_FW_CONTROL(IONIC_FW_ACTIVATE_STATUS) succeeded.\n", __FUNCTION__));
+    }
+
+    return status;
+}
+
+static __inline void StartOpTimer(PLARGE_INTEGER pStart) {
+    KeQuerySystemTime(pStart);
+}
+
+static __inline LONGLONG EndOpTimer(PLARGE_INTEGER pStart) {
+    LARGE_INTEGER End;
+    KeQuerySystemTime(&End);
+    return (End.QuadPart - pStart->QuadPart);
 }
 
 NTSTATUS
@@ -74,10 +125,11 @@ ionic_firmware_update_adminq(struct ionic* adapter, const void* const fw_data, u
     uint8_t fw_slot;
     NTSTATUS ntStatus;
     struct lif* lif = adapter->master_lif;
-    LARGE_INTEGER StartTime1, EndTime1, StartTime2, EndTime2, StartToEndTime;
+    LARGE_INTEGER StartTime1, StartTime2;
+    ULONG MaxWaitTime, CrtTimeDelta;
 
-    KeQuerySystemTime(&StartTime1);
-    StartTime2 = StartTime1;
+    StartOpTimer(&StartTime1);
+    StartOpTimer(&StartTime2);
 
     if (NULL == lif) {
         return STATUS_INVALID_PARAMETER;
@@ -104,37 +156,75 @@ ionic_firmware_update_adminq(struct ionic* adapter, const void* const fw_data, u
         ntStatus = ionic_firmware_download_adminq(lif, buf_pa, offset, copy_sz);
         if (ntStatus != STATUS_SUCCESS) {
             DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware upload failed at offset: 0x%x addr: %p len: %u\n", __FUNCTION__, offset, buf_pa, copy_sz));
+            DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to upload failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
             goto err_out_free_buf;
         }
         DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Firmware upload success at offset: 0x%x addr: %p len: %u\n", __FUNCTION__, offset, buf_pa, copy_sz));
         offset += copy_sz;
     }
-    KeQuerySystemTime(&EndTime2);
-    StartToEndTime.QuadPart = EndTime2.QuadPart - StartTime2.QuadPart;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to download: %I64u ms\n", __FUNCTION__, StartToEndTime.QuadPart / 10000));
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to upload: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
 
-    KeQuerySystemTime(&StartTime2);
+    StartOpTimer(&StartTime2);
     ntStatus = ionic_firmware_install_adminq(lif, &fw_slot);
     if (ntStatus != STATUS_SUCCESS) {
         DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware install failed.\n", __FUNCTION__));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to install failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
         goto err_out_free_buf;
     }
-    KeQuerySystemTime(&EndTime2);
-    StartToEndTime.QuadPart = EndTime2.QuadPart - StartTime2.QuadPart;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to install: %I64u ms\n", __FUNCTION__, StartToEndTime.QuadPart / 10000));
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to install: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
 
-    KeQuerySystemTime(&StartTime2);
+    StartOpTimer(&StartTime2);
+    MaxWaitTime = FW_INSTALL_TIMEOUT;
+    while (MaxWaitTime) {
+        ntStatus = ionic_firmware_install_status_adminq(lif);
+        if (ntStatus != STATUS_IO_OPERATION_TIMEOUT) {
+            break;
+        }
+        NdisMSleep(HZ_1US);
+        CrtTimeDelta = (ULONG)(EndOpTimer(&StartTime2) / (HZ_100NS));
+        if (MaxWaitTime < CrtTimeDelta) {
+            break;
+        }
+        MaxWaitTime -= CrtTimeDelta;
+    }
+    if (ntStatus != STATUS_SUCCESS) {
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware install status failed.\n", __FUNCTION__));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to install status failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+        goto err_out_free_buf;
+    }
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to install status: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+
+    StartOpTimer(&StartTime2);
     ntStatus = ionic_firmware_activate_adminq(lif, fw_slot);
     if (ntStatus != STATUS_SUCCESS) {
         DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware activate failed.\n", __FUNCTION__));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to activate failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
         goto err_out_free_buf;
     }
-    KeQuerySystemTime(&EndTime2);
-    EndTime1 = EndTime2;
-    StartToEndTime.QuadPart = EndTime2.QuadPart - StartTime2.QuadPart;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to activate: %I64u ms\n", __FUNCTION__, StartToEndTime.QuadPart / 10000));
-    StartToEndTime.QuadPart = EndTime1.QuadPart - StartTime1.QuadPart;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Total time: %I64u ms\n", __FUNCTION__, StartToEndTime.QuadPart / 10000));
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to activate: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+
+    StartOpTimer(&StartTime2);
+    MaxWaitTime = FW_ACTIVATE_TIMEOUT;
+    while (MaxWaitTime) {
+        ntStatus = ionic_firmware_activate_status_adminq(lif);
+        if (ntStatus != STATUS_IO_OPERATION_TIMEOUT) {
+            break;
+        }
+        NdisMSleep(HZ_1US);
+        CrtTimeDelta = (ULONG)(EndOpTimer(&StartTime2) / (HZ_100NS));
+        if (MaxWaitTime < CrtTimeDelta) {
+            break;
+        }
+        MaxWaitTime -= CrtTimeDelta;
+    }
+    if (ntStatus != STATUS_SUCCESS) {
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware activate status failed.\n", __FUNCTION__));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to activate status failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+        goto err_out_free_buf;
+    }
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to activate status: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Total time: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime1) / (HZ_100NS / HZ_1MS))));
 
 err_out_free_buf:
     dma_free_coherent(lif->ionic, buf_sz, buf, buf_pa);
@@ -152,10 +242,10 @@ ionic_firmware_update_devcmd(struct ionic* adapter, const void* const fw_data, u
     union dev_cmd_comp comp = {};
     struct fw_control_comp* fw_control_comp;
     struct ionic_dev* idev = &adapter->idev;
-    LARGE_INTEGER StartTime1, EndTime1, StartTime2, EndTime2, StartToEndTime;
+    LARGE_INTEGER StartTime1, StartTime2;
 
-    KeQuerySystemTime(&StartTime1);
-    StartTime2 = StartTime1;
+    StartOpTimer(&StartTime1);
+    StartOpTimer(&StartTime2);
 
     buf_sz = sizeof(idev->dev_cmd_regs->data);
     offset = 0;
@@ -167,45 +257,61 @@ ionic_firmware_update_devcmd(struct ionic* adapter, const void* const fw_data, u
 
         ntStatus = ionic_dev_cmd_wait(adapter, devcmd_timeout);
         if (ntStatus != STATUS_SUCCESS) {
-            DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware upload failed at offset: 0x%x len: %u\n", __FUNCTION__, offset, copy_sz));
+            DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware upload failed at offset: 0x%x len: %u (0x%x)\n", __FUNCTION__, offset, copy_sz, ntStatus));
+            DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to upload failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
             goto fwdownload_exit;
         }
         DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Firmware upload success at offset: 0x%x len: %u\n", __FUNCTION__, offset, copy_sz));
         offset += copy_sz;
     }
-    KeQuerySystemTime(&EndTime2);
-    StartToEndTime.QuadPart = EndTime2.QuadPart - StartTime2.QuadPart;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to download: %I64u ms\n", __FUNCTION__, StartToEndTime.QuadPart / 10000));
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to upload: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
 
-    KeQuerySystemTime(&StartTime2);
-    ionic_dev_cmd_fw_install(idev);
-    ntStatus = ionic_dev_cmd_wait(adapter, FW_INSTALL_ACTIVATE_TIMEOUT);
+    StartOpTimer(&StartTime2);
+    ionic_dev_cmd_fw_install_async(idev);
+    ntStatus = ionic_dev_cmd_wait(adapter, devcmd_timeout);
     if (ntStatus != STATUS_SUCCESS) {
-        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware install failed.\n", __FUNCTION__));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware install cmd failed: 0x%x.\n", __FUNCTION__, ntStatus));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to install failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
         goto fwdownload_exit;
     }
     ionic_dev_cmd_comp(idev, &comp);
     fw_control_comp = (struct fw_control_comp*) & comp.comp;
     fw_slot = fw_control_comp->slot;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Firmware install succeeded. Slot: %u\n", __FUNCTION__, fw_slot));
-    KeQuerySystemTime(&EndTime2);
-    StartToEndTime.QuadPart = EndTime2.QuadPart - StartTime2.QuadPart;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to install: %I64u ms\n", __FUNCTION__, StartToEndTime.QuadPart / 10000));
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Firmware install cmd succeeded. Slot: %u\n", __FUNCTION__, fw_slot));
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to install: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
 
-    KeQuerySystemTime(&StartTime2);
-    ionic_dev_cmd_fw_activate(idev, fw_slot);
-    ntStatus = ionic_dev_cmd_wait(adapter, FW_INSTALL_ACTIVATE_TIMEOUT);
+    StartOpTimer(&StartTime2);
+    ionic_dev_cmd_fw_install_status(idev);
+    ntStatus = ionic_dev_cmd_wait(adapter, FW_INSTALL_TIMEOUT);
     if (ntStatus != STATUS_SUCCESS) {
-        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware activate failed.\n", __FUNCTION__));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware install status cmd failed: 0x%x.\n", __FUNCTION__, ntStatus));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to install status failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+        goto fwdownload_exit;
+    }
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to install status: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+
+    StartOpTimer(&StartTime2);
+    ionic_dev_cmd_fw_activate_async(idev, fw_slot);
+    ntStatus = ionic_dev_cmd_wait(adapter, devcmd_timeout);
+    if (ntStatus != STATUS_SUCCESS) {
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware activate failed: 0x%x.\n", __FUNCTION__, ntStatus));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to activate failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
         goto fwdownload_exit;
     }
     DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Firmware activate succeeded. Slot: %u\n", __FUNCTION__, fw_slot));
-    KeQuerySystemTime(&EndTime2);
-    EndTime1 = EndTime2;
-    StartToEndTime.QuadPart = EndTime2.QuadPart - StartTime2.QuadPart;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to activate: %I64u ms\n", __FUNCTION__, StartToEndTime.QuadPart / 10000));
-    StartToEndTime.QuadPart = EndTime1.QuadPart - StartTime1.QuadPart;
-    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Total time: %I64u ms\n", __FUNCTION__, StartToEndTime.QuadPart / 10000));
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to activate: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+
+    StartOpTimer(&StartTime2);
+    ionic_dev_cmd_fw_activate_status(idev);
+    ntStatus = ionic_dev_cmd_wait(adapter, FW_ACTIVATE_TIMEOUT);
+    if (ntStatus != STATUS_SUCCESS) {
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Firmware activate status cmd failed: 0x%x.\n", __FUNCTION__, ntStatus));
+        DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_ERROR, "%s - Time to activate status failure: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+        goto fwdownload_exit;
+    }
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Time to activate status: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime2) / (HZ_100NS / HZ_1MS))));
+
+    DbgTrace((TRACE_COMPONENT_IOCTL, TRACE_LEVEL_VERBOSE, "%s - Total time to update firmware: %I64u ms\n", __FUNCTION__, (EndOpTimer(&StartTime1) / (HZ_100NS / HZ_1MS))));
 
 fwdownload_exit:
 

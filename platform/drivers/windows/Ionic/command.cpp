@@ -23,6 +23,13 @@ ionic_dev_cmd_status(struct ionic_dev *idev)
     return ioread8(&idev->dev_cmd_regs->comp.comp.status);
 }
 
+void ionic_dev_cmd_clean(struct ionic_dev* idev)
+{
+    union dev_cmd cmd = { 0 };
+    iowrite32(0, &idev->dev_cmd_regs->doorbell);
+    memcpy_toio(&idev->dev_cmd_regs->cmd, &cmd, sizeof(cmd));
+}
+
 NDIS_STATUS
 ionic_dev_cmd_wait(struct ionic *ionic, unsigned long max_seconds)
 {
@@ -40,7 +47,7 @@ ionic_dev_cmd_wait(struct ionic *ionic, unsigned long max_seconds)
     /* Wait for dev cmd to complete, retrying if we get EAGAIN,
      * but don't wait any longer than max_seconds.
      */
-    timeout.QuadPart = max_seconds * HZ_100NS;
+    timeout.QuadPart = (LONGLONG)max_seconds * HZ_100NS;
 
     NdisGetCurrentSystemTime(&ts1);
 
@@ -60,16 +67,24 @@ ionic_dev_cmd_wait(struct ionic *ionic, unsigned long max_seconds)
                     NdisGetCurrentSystemTime(&ts2);
                     delta.QuadPart = ts2.QuadPart - ts1.QuadPart;
 
-                    if (timeout.QuadPart > delta.QuadPart)
+                    if (timeout.QuadPart > delta.QuadPart) {
+                        // Sleep 1sec 
+                        for (int i = 0; i < 1000; i++) {
+                            NdisStallExecution(100);
+                        }
+                        iowrite32(0, &idev->dev_cmd_regs->done);
+                        iowrite32(1, &idev->dev_cmd_regs->doorbell);
                         continue;
+                    }
                 }
+                
+                status = ionic_error_to_errno((status_code)err);
 
                 DbgTrace((TRACE_COMPONENT_COMMAND, TRACE_LEVEL_ERROR,
                           "%s DEV_CMD %s (%d) error, %s (%d) failed\n",
                           __FUNCTION__, ionic_opcode_to_str((cmd_opcode)opcode),
                           opcode, ionic_error_to_str((status_code)err), err));
 
-                status = ionic_error_to_errno((status_code)err);
                 break;
             }
 
@@ -87,6 +102,13 @@ ionic_dev_cmd_wait(struct ionic *ionic, unsigned long max_seconds)
         NdisGetCurrentSystemTime(&ts2);
 
         delta.QuadPart = ts2.QuadPart - ts1.QuadPart;
+        if (timeout.QuadPart <= delta.QuadPart) {
+            // timeout expired
+            if (!done) {
+                ionic_dev_cmd_clean(&ionic->idev);
+                status = STATUS_IO_OPERATION_TIMEOUT;
+            }
+        }
     } while (timeout.QuadPart > delta.QuadPart);
 
 	if( status == NDIS_STATUS_FAILURE) {
@@ -269,12 +291,53 @@ ionic_dev_cmd_fw_install(struct ionic_dev* idev)
 }
 
 void
+ionic_dev_cmd_fw_install_async(struct ionic_dev* idev)
+{
+    union dev_cmd cmd = { 0 };
+    cmd.fwcontrol.opcode = CMD_OPCODE_FW_CONTROL;
+    cmd.fwcontrol.oper = IONIC_FW_INSTALL_ASYNC;
+
+    ionic_dev_cmd_go(idev, &cmd);
+}
+
+void
+ionic_dev_cmd_fw_install_status(struct ionic_dev* idev)
+{
+    union dev_cmd cmd = { 0 };
+    cmd.fwcontrol.opcode = CMD_OPCODE_FW_CONTROL;
+    cmd.fwcontrol.oper = IONIC_FW_INSTALL_STATUS;
+
+    ionic_dev_cmd_go(idev, &cmd);
+}
+
+void
 ionic_dev_cmd_fw_activate(struct ionic_dev* idev, u8 slot)
 {
     union dev_cmd cmd = { 0 };
     cmd.fwcontrol.opcode = CMD_OPCODE_FW_CONTROL;
     cmd.fwcontrol.oper = IONIC_FW_ACTIVATE;
     cmd.fwcontrol.slot = slot;
+
+    ionic_dev_cmd_go(idev, &cmd);
+}
+
+void
+ionic_dev_cmd_fw_activate_async(struct ionic_dev* idev, u8 slot)
+{
+    union dev_cmd cmd = { 0 };
+    cmd.fwcontrol.opcode = CMD_OPCODE_FW_CONTROL;
+    cmd.fwcontrol.oper = IONIC_FW_ACTIVATE_ASYNC;
+    cmd.fwcontrol.slot = slot;
+
+    ionic_dev_cmd_go(idev, &cmd);
+}
+
+void
+ionic_dev_cmd_fw_activate_status(struct ionic_dev* idev)
+{
+    union dev_cmd cmd = { 0 };
+    cmd.fwcontrol.opcode = CMD_OPCODE_FW_CONTROL;
+    cmd.fwcontrol.oper = IONIC_FW_ACTIVATE_STATUS;
 
     ionic_dev_cmd_go(idev, &cmd);
 }

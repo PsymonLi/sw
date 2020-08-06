@@ -6,11 +6,11 @@
     <RemoteDebuggerConnection>RemoteWithoutAuthentication</RemoteDebuggerConnection>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <RemoteDebuggerCommand>c:\IonicDrivers\penutil_win.exe</RemoteDebuggerCommand>
-    <RemoteDebuggerServerName>192.168.70.105</RemoteDebuggerServerName>
+    <RemoteDebuggerCommand>c:\IonicDrivers\penutil-windows\penutil_win.exe</RemoteDebuggerCommand>
+    <RemoteDebuggerServerName>192.168.68.99</RemoteDebuggerServerName>
     <RemoteDebuggerConnection>RemoteWithoutAuthentication</RemoteDebuggerConnection>
     <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
-    <RemoteDebuggerWorkingDirectory>c:\IonicDrivers</RemoteDebuggerWorkingDirectory>
-    <RemoteDebuggerCommandArguments>update c:\IonicDrivers c:\IonicDrivers\penutil_win.log c:\IonicDrivers\penutil_win.xml</RemoteDebuggerCommandArguments>
+    <RemoteDebuggerWorkingDirectory>c:\IonicDrivers\penutil-windows</RemoteDebuggerWorkingDirectory>
+    <RemoteDebuggerCommandArguments>update c:\IonicDrivers\penutil-windows c:\IonicDrivers\penutil-windows\penutil-win.log c:\IonicDrivers\penutil-windows\penutil-win.xml 0 0x1004 1</RemoteDebuggerCommandArguments>
   </PropertyGroup>
 </Project>

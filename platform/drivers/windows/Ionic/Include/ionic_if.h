@@ -1846,6 +1846,10 @@ enum fw_control_oper {
 	IONIC_FW_RESET		= 0,	/* Reset firmware */
 	IONIC_FW_INSTALL	= 1,	/* Install firmware */
 	IONIC_FW_ACTIVATE	= 2,	/* Activate firmware */
+	IONIC_FW_INSTALL_ASYNC = 3,
+	IONIC_FW_INSTALL_STATUS = 4,
+	IONIC_FW_ACTIVATE_ASYNC = 5,
+	IONIC_FW_ACTIVATE_STATUS = 6,
 };
 
 /**

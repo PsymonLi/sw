@@ -151,7 +151,15 @@ void ionic_dev_cmd_fw_download(struct ionic_dev* idev, u32 offset, u64 addr, u32
 
 void ionic_dev_cmd_fw_install(struct ionic_dev* idev);
 
+void ionic_dev_cmd_fw_install_async(struct ionic_dev* idev);
+
+void ionic_dev_cmd_fw_install_status(struct ionic_dev* idev);
+
 void ionic_dev_cmd_fw_activate(struct ionic_dev* idev, u8 slot);
+
+void ionic_dev_cmd_fw_activate_async(struct ionic_dev* idev, u8 slot);
+
+void ionic_dev_cmd_fw_activate_status(struct ionic_dev* idev);
 
 void ionic_dev_cmd_comp(struct ionic_dev *idev, union dev_cmd_comp *comp);
 

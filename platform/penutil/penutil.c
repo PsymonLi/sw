@@ -123,23 +123,31 @@ main (int argc,  char **argv)
 		print_usage(argv);
 		exit(1);
 	}
-
-	if (strcmp(argv[1], "update") == 0)
+	if (strcmp(argv[1], "update") == 0) {
 		update = true;
+	}
+	else if (strcmp(argv[1], "discovery") != 0) {
+		print_usage(argv);
+		exit(1);
+	}
 	path_of_fw = argv[2];
 	log_file = argv[3];
 	discovery_file = argv[4];
-	if (argv[5]) {
+	if ((argc > 5) && (argv[5])) {
 		ionic_fw_update_type = strtoul(argv[5], NULL, 0);
 	}
-	if (argv[6]) {
-		ionic_devid = strtoul(argv[6], NULL, 0);
+	if ((argc > 6) && (argv[6])) {
+		ionic_devid = (uint16_t)strtoul(argv[6], NULL, 0);
 	}
-	if (argv[7]) {
-		ionic_verbose_level = strtoul(argv[6], NULL, 0);
+	if ((argc > 7) && (argv[7])) {
+		ionic_verbose_level = strtoul(argv[7], NULL, 0);
 	}
 	//why test_multi?
-	test_multi = true;
+	if ((argc > 8) && (argv[8])) {
+		if (strcmp(argv[8], "multi") == 0) {
+			test_multi = true;
+		}
+	}
 #endif
 
 	if (log_file == NULL || discovery_file == NULL || path_of_fw == NULL) {

@@ -489,6 +489,7 @@ unsigned __stdcall ionic_test_flash_thread(void* arg)
 	spp_char_t w_fw_file[256];
 
 	W_SNPRINTF(w_fw_file, sizeof(w_fw_file), PRIxHS, ionic->fwFile);
+	fprintf(stderr, "Starting Flash update...\n");
 	error = dsc_do_full_flash_PCI(w_fw_file, true, ionic->domain, ionic->bus, ionic->dev, ionic->func);
 	fprintf(stderr, "Flash update, SPP status: " PRIxWS "\n", dsc_text_for_error_code(error));
 
@@ -510,7 +511,7 @@ ionic_test_flash(void)
 	DWORD WaitStatus;
 #endif
 
-	fprintf(stderr, "Starting flash update, will take few mins\n");
+	fprintf(stderr, "Starting flash update, will take few mins. Threads to start: %u\n", ionic_count);
 	for (i = 0; i < ionic_count; i++) {
 		ionic = &ionic_devs[i];
 #ifndef _WIN32
@@ -526,8 +527,10 @@ ionic_test_flash(void)
 			fprintf(stderr, "Failed to create flash thread. Err: %u\n", error);
 			break;
 		}
+		fprintf(stderr, "flashing thread %p started.\n", thr[i]);
 #endif
 	}
+	fprintf(stderr, "%u flashing threads started.\n", i);
 
 #ifndef _WIN32
 	for (i = 0; i < ionic_count; i++) {
@@ -536,7 +539,7 @@ ionic_test_flash(void)
 			perror("pthread_join");
 	}
 #else
-	WaitStatus = WaitForMultipleObjects(ionic_count, thr[i], TRUE, INFINITE);
+	WaitStatus = WaitForMultipleObjects(i, thr, TRUE, INFINITE);
 	if (WAIT_OBJECT_0 == WaitStatus) {
 		for (i = 0; i < ionic_count; i++) {
 			CloseHandle(thr[i]);
