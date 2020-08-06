@@ -39,6 +39,8 @@ function initial_boot_action {
    #echo "|$PDSPKG_TOPDIR/bin/coremgr -P /data/core -p %p -e %e -m $CORE_MIN_DISK" > /proc/sys/kernel/core_pattern
    echo "/data/core/core_%p_%e" > /proc/sys/kernel/core_pattern
 
+   # Verify BSM (this sould be moved inside sysmgr eventually)
+   echo 1 > /sys/firmware/pensando/bsm/success
 }
 
 function load_drivers {
