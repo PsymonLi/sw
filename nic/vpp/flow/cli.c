@@ -1134,7 +1134,6 @@ VLIB_CLI_COMMAND (show_pds_flow_session_command, static) =
                   "bd-id <number>)} | session <session-index> | "
                   "timer-wheel} [detail]",
     .function = show_pds_flow_session_info_command_fn,
-    .is_mp_safe = 1,
 };
 
 static clib_error_t *
