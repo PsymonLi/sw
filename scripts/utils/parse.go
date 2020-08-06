@@ -36,6 +36,7 @@ type ParseOutput struct {
 	TestCases  []*types.Report
 	OutputMsgs []string
 	Coverage   float64
+	FailedMsgs []string
 }
 
 //TestOutputParser is an interface which simplifies the process of adding parsers
@@ -52,14 +53,13 @@ func (js *JSONTestOutputParser) Parse(testOutput []byte) (*ParseOutput, error) {
 
 	ret := new(ParseOutput)
 	scanner := bufio.NewScanner(bytes.NewReader(testOutput))
-
-	ret.TestCases = []*types.Report{}
-	ret.OutputMsgs = []string{}
+	var outputMsgs []string
 
 	targetID, err := strconv.Atoi(os.Getenv("TARGET_ID"))
 	if err != nil {
 		return ret, fmt.Errorf("while getting target ID: %v", err)
 	}
+
 	for scanner.Scan() {
 		testEvent := &TestEvent{}
 		err := json.Unmarshal(scanner.Bytes(), testEvent)
@@ -67,14 +67,29 @@ func (js *JSONTestOutputParser) Parse(testOutput []byte) (*ParseOutput, error) {
 			fmt.Printf("Unable to parse test event: %v, err: %+v", testEvent, err)
 			return ret, fmt.Errorf("unable to parse test events, err: %s", err.Error())
 		}
+
 		switch testEvent.Action {
 		case "pass", "skip", "fail":
 			if testEvent.Test == "" {
 				// this event is at package level, skip it. No useful information in there.
+
 				continue
 			}
+
 			testCase := convertToReport(testEvent)
 			ret.TestCases = append(ret.TestCases, testCase)
+
+			if testEvent.Action == "fail" {
+				for _, msg := range outputMsgs {
+					ret.FailedMsgs = append(ret.FailedMsgs, msg)
+				}
+			}
+
+			for _, msg := range outputMsgs {
+				ret.OutputMsgs = append(ret.OutputMsgs, msg)
+			}
+
+			outputMsgs = nil
 
 		case "output":
 			if strings.HasPrefix(testEvent.Output, "coverage:") {
@@ -84,10 +99,12 @@ func (js *JSONTestOutputParser) Parse(testOutput []byte) (*ParseOutput, error) {
 				} else {
 					ret.Coverage = c
 				}
+
 			} else if strings.Contains(testEvent.Output, covIgnorePrefix) {
 				ret.Coverage = 100.0
 			}
-			ret.OutputMsgs = append(ret.OutputMsgs, testEvent.Output)
+
+			outputMsgs = append(outputMsgs, testEvent.Output)
 
 		case "run", "pause", "cont", "bench":
 			// no-op, explicitly skipping these actions
@@ -95,6 +112,8 @@ func (js *JSONTestOutputParser) Parse(testOutput []byte) (*ParseOutput, error) {
 			return ret, fmt.Errorf("unrecognized action: %s found", testEvent.Action)
 		}
 	}
+
+	ret.OutputMsgs = append(ret.OutputMsgs, outputMsgs...)
 
 	// set package level coverage, logURL for all test-cases
 	for _, tc := range ret.TestCases {

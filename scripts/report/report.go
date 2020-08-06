@@ -39,13 +39,13 @@ const (
 	WhiteColor = "\u001b[37m%s\u001b[0m\n"
 
 	//RedColor for Test Summary
-	RedSumm = "\033[1;31m%s\033[0m"
+	RedSummary = "\033[1;31m%s\033[0m"
 	//GreenColor for Test Summary
-	GreenSumm = "\033[0;32m%s\033[0m"
+	GreenSummary = "\033[0;32m%s\033[0m"
 	//BlueColor for Test Summary
-	BlueSumm = "\033[0;34m%s\033[0m"
+	BlueSummary = "\033[0;34m%s\033[0m"
 	//CyanColor for Test Summary
-	WhiteSumm = "\033[0;36m%s\033[0m"
+	WhiteSummary = "\033[0;36m%s\033[0m"
 )
 
 var (
@@ -61,6 +61,9 @@ var (
 	errNotBaseRepo = errors.New("not pensando/sw repo")
 
 	covIgnoreFilePath = fmt.Sprintf("%s/src/github.com/pensando/sw/scripts/report/.coverignore", os.Getenv("GOPATH"))
+
+	//CoverageFailed is a bool which tracks whether coverage criteria has been met
+	CoverageFailed bool
 )
 
 // TestReport summarizes all the targets. We capture only the failed tests.
@@ -72,12 +75,13 @@ type TestReport struct {
 
 // Target holds test execution details.
 type Target struct {
-	Name        string
-	Coverage    float64
-	Duration    string
-	FailedTests []string
-	Error       string
-	Reports     []*types.Report `json:"-"`
+	Name           string
+	Coverage       float64
+	Duration       string
+	FailedTests    []string
+	Error          string
+	Reports        []*types.Report `json:"-"`
+	FailedTestMsgs []string
 }
 
 func main() {
@@ -120,6 +124,16 @@ func main() {
 			}
 		}
 	}
+
+	if t.RunFailed {
+		fmt.Printf(RedColor, "\n ====== All Failed Tests ======\n")
+		for _, target := range t.Results {
+			for _, l := range target.FailedTestMsgs {
+				fmt.Println(l)
+			}
+		}
+	}
+
 	printTestSummary(t)
 	if t.RunFailed {
 		log.Fatalf("Test(s) failed, check the summary above to find failed tests.")
@@ -169,9 +183,11 @@ func printTestSummary(t TestReport) {
 
 		}
 	}
+
 	for _, reports := range failTests {
 		prettyPrint(reports.report, reports.testStatus, reports.lineColor)
 	}
+
 	summaryPrint(passNum, failNum, skipNum)
 }
 
@@ -179,12 +195,16 @@ func summaryPrint(passNum int, failNum int, skipNum int) {
 
 	var result, resultColor string
 
-	if failNum == 0 {
+	if failNum == 0 && !CoverageFailed {
 		result = "SUCCESS!"
-		resultColor = GreenSumm
+		resultColor = GreenSummary
 	} else {
-		result = "FAIL!"
-		resultColor = RedSumm
+		if CoverageFailed {
+			result = "FAIL! (Insufficient Code Coverage)"
+		} else {
+			result = "FAIL!"
+		}
+		resultColor = RedSummary
 	}
 
 	total := failNum + passNum + skipNum
@@ -194,11 +214,11 @@ func summaryPrint(passNum int, failNum int, skipNum int) {
 	fmt.Printf(resultColor, lineTxt)
 	fmt.Printf(resultColor, "\n"+result)
 	fmt.Printf(" -- ")
-	fmt.Printf(GreenSumm, strconv.Itoa(passNum)+" Passed ")
+	fmt.Printf(GreenSummary, strconv.Itoa(passNum)+" Passed ")
 	fmt.Printf("| ")
-	fmt.Printf(RedSumm, strconv.Itoa(failNum)+" Failed ")
+	fmt.Printf(RedSummary, strconv.Itoa(failNum)+" Failed ")
 	fmt.Printf("| ")
-	fmt.Printf(WhiteSumm, strconv.Itoa(skipNum)+" Skipped ")
+	fmt.Printf(WhiteSummary, strconv.Itoa(skipNum)+" Skipped \n")
 
 }
 
@@ -247,6 +267,7 @@ func (t *TestReport) testCoveragePass() {
 			log.Println(fmt.Sprintf("\033[31m%s\033[39m", "Insufficient code coverage for the following packages:"))
 			log.Println(fmt.Sprintf("\033[31m%s\033[39m", tgt.Name))
 			t.RunFailed = true
+			CoverageFailed = true
 		}
 	}
 }
@@ -254,6 +275,7 @@ func (t *TestReport) testCoveragePass() {
 func (tgt *Target) test(ignoredPackages []string) error {
 	goTestCmd := "GOPATH=%s VENICE_DEV=1 CGO_LDFLAGS_ALLOW=-I/usr/local/share/libtool go test -json -timeout 20m %s -tags test -p 1 %s"
 	cover := "-cover"
+	var packageLine string
 	isCovIgnored := tgt.checkCoverageIgnore(ignoredPackages)
 	if isCovIgnored {
 		cover = "" // no need for coverage for tests for which coverage is ignored
@@ -270,6 +292,7 @@ func (tgt *Target) test(ignoredPackages []string) error {
 	}
 	jsParse := utils.JSONTestOutputParser{}
 	parsed, err := jsParse.Parse(out)
+
 	if err != nil {
 		fmt.Printf("Error parsing test output. Error: %s", err.Error())
 		fmt.Println("Printing the output as-is from the test run")
@@ -277,20 +300,27 @@ func (tgt *Target) test(ignoredPackages []string) error {
 		return ErrParsingTestOutput
 	}
 
-	for _, l := range parsed.OutputMsgs {
-		fmt.Println(l)
-	}
 	tgt.Reports = parsed.TestCases
 	tgt.Coverage = parsed.Coverage
+
 	for _, report := range parsed.TestCases {
 		if report.Result == -1 {
 			tgt.FailedTests = append(tgt.FailedTests, report.Name)
 		}
 	}
+
+	for _, l := range parsed.OutputMsgs {
+		fmt.Println(l)
+	}
+
 	if len(tgt.FailedTests) > 0 {
-		log.Printf("Test Failure: %v\n", tgt.Name)
+		packageLine = fmt.Sprintf("Test Failure: %v\n", tgt.Name)
+		tgt.FailedTestMsgs = append(tgt.FailedTestMsgs, packageLine)
+		tgt.FailedTestMsgs = append(tgt.FailedTestMsgs, parsed.FailedMsgs...)
+
 		return ErrTestFailed
 	}
+
 	if tgt.Coverage < minCoverage && !isCovIgnored {
 		tgt.Error = ErrTestCovFailed.Error()
 		return ErrTestCovFailed

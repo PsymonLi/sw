@@ -78,13 +78,27 @@ const (
 {"Time":"2020-05-04T10:45:57.110001-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"ok  \tgithub.com/pensando/sw/nic/agent/nmd/state\t0.201s\n"}
 {"Time":"2020-05-04T10:45:57.11005-07:00","Action":"pass","Package":"github.com/pensando/sw/nic/agent/nmd/state","Elapsed":0.201}`
 
+	testOutputWithTestFailures = `{"Time":"2020-07-10T11:54:17.154036-07:00","Action":"run","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster"}
+{"Time":"2020-07-10T11:54:17.154394-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster","Output":"=== RUN   TestValidateCluster\n"}
+{"Time":"2020-07-10T11:54:17.154412-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster","Output":"    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-ip-addrs\n"}
+{"Time":"2020-07-10T11:54:17.15442-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster","Output":"    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-mixed-ids\n"}
+{"Time":"2020-07-10T11:54:17.154427-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster","Output":"    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-good-ntp-servers\n"}
+{"Time":"2020-07-10T11:54:17.154456-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster","Output":"    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-dns-names\n"}
+{"Time":"2020-07-10T11:54:17.15447-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster","Output":"    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-fqdns\n"}
+{"Time":"2020-07-10T11:54:17.154487-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster","Output":"--- FAIL: TestValidateCluster (0.00s)\n"}
+{"Time":"2020-07-10T11:54:17.154508-07:00","Action":"fail","Package":"github.com/pensando/sw/venice/cmd/validation","Test":"TestValidateCluster","Elapsed":0}
+{"Time":"2020-07-10T11:54:17.154531-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Output":"FAIL\n"}
+{"Time":"2020-07-10T11:54:17.155187-07:00","Action":"output","Package":"github.com/pensando/sw/venice/cmd/validation","Output":"FAIL\tgithub.com/pensando/sw/venice/cmd/validation\t0.287s\n"}
+{"Time":"2020-07-10T11:54:17.15523-07:00","Action":"fail","Package":"github.com/pensando/sw/venice/cmd/validation","Elapsed":0.288}`
+
 	testTargetID          = 12345
 	testLowCoverageStdout = `coverage: 41.7% of statements`
 	testCovIgnoreZeroCov  = "coverage: 0.0% of statements"
 )
 
 var (
-	jsParse = JSONTestOutputParser{}
+	jsParse       = JSONTestOutputParser{}
+	testFailedMsg = []string{"=== RUN   TestValidateCluster\n", "    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-ip-addrs\n", "    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-mixed-ids\n", "    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-good-ntp-servers\n", "    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-dns-names\n", "    TestValidateCluster: validation_test.go:192: Unexpected success for scenario: good-cluster-with-fqdns\n", "--- FAIL: TestValidateCluster (0.00s)\n"}
 )
 
 func TestStdOutParsing_failedTestCase(t *testing.T) {
@@ -154,6 +168,22 @@ func TestStdOutParsing_mixedResultTestCases(t *testing.T) {
 	assertReportIsPresent(t, reports, expectedSkippedTestReport)
 	assertTestIsNotReported(t, reports, pausedTestCaseName)
 	AssertEquals(t, 41.7, parsed.Coverage, "did not get expected coverage results")
+	AssertOk(t, os.Setenv("TARGET_ID", targetID), "could not set TARGET_ID")
+}
+
+func TestFailureFunctionality(t *testing.T) {
+	targetID := os.Getenv("TARGET_ID")
+	AssertOk(t, os.Setenv("TARGET_ID", strconv.Itoa(testTargetID)), "could not set TARGET_ID")
+	parsed, err := jsParse.Parse([]byte(testOutputWithTestFailures))
+
+	AssertOk(t, err, "parsing stdout failed")
+	reports := parsed.FailedMsgs
+
+	var failedMsgs []string
+	for _, msg := range reports {
+		failedMsgs = append(failedMsgs, msg)
+	}
+	AssertEquals(t, testFailedMsg, failedMsgs, "expected to find failed test signatures")
 	AssertOk(t, os.Setenv("TARGET_ID", targetID), "could not set TARGET_ID")
 }
 
