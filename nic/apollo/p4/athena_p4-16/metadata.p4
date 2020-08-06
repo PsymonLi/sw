@@ -190,7 +190,7 @@ struct scratch_metadata_t {
 	bit<1> flag;
 	bit<32> ipv4_src;
 	bit<18> flow_hash;
-	bit<20> flow_hint;
+	bit<21> flow_hint;
 	bit<18> l2_flow_hash;
 	bit<18> l2_flow_hint;
 	bit<8> class_id;

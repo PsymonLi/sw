@@ -65,22 +65,22 @@ control dnat_lookup(inout cap_phv_intr_global_h intr_global,
 	 bit<1> hint_valid = FALSE;
 	 if ((hint1 != 0 )  && (hash1 == hardware_hash[31:14])) {
 	   hint_valid = TRUE;
-	   metadata.scratch.flow_hint = (bit<20>)hint1;
+	   metadata.scratch.flow_hint = (bit<21>)hint1;
 	 } else if ((hint2 != 0 )  && (hash2 == hardware_hash[31:14])) {
 	   hint_valid = TRUE;
-	   metadata.scratch.flow_hint = (bit<20>)hint2;
+	   metadata.scratch.flow_hint = (bit<21>)hint2;
 	 } else if ((hint3 != 0 ) &&  (hash3 == hardware_hash[31:14])) {
 	   hint_valid = TRUE;
-	   metadata.scratch.flow_hint = (bit<20>)hint3;
+	   metadata.scratch.flow_hint = (bit<21>)hint3;
 	 } else if ((hint4 != 0 ) && (hash4 == hardware_hash[31:14])) {
 	   hint_valid = TRUE;
-	   metadata.scratch.flow_hint = (bit<20>)hint4;
+	   metadata.scratch.flow_hint = (bit<21>)hint4;
 	 } else if ((hint5 != 0 )  && (hash5 == hardware_hash[31:14])) {
 	   hint_valid = TRUE;
-	   metadata.scratch.flow_hint = (bit<20>)hint5;
+	   metadata.scratch.flow_hint = (bit<21>)hint5;
 	 } else if ((more_hashes == 1) ) {
 	   hint_valid = TRUE;
-	   metadata.scratch.flow_hint = (bit<20>)more_hints;
+	   metadata.scratch.flow_hint = (bit<21>)more_hints;
 	 }
 	 
 	 if( hint_valid == TRUE) {

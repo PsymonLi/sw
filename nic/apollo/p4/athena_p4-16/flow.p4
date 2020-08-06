@@ -13,22 +13,21 @@ control flow_lookup(inout cap_phv_intr_global_h intr_global,
     @hwfields_access_api  
     @name(".flow_hash")
     action flow_hash(
-		           bit<22>     idx,
-                            bit<1>     idx_type,
-			   //    bit<8>     pad,
-		            bit<11>    hash1,
-		            bit<20>    hint1,
-		            bit<11>    hash2,
-		            bit<20>    hint2,
-		            bit<11>    hash3,
-		            bit<20>    hint3,
-		            bit<11>    hash4,
-		            bit<20>    hint4,
-		            bit<11>    hash5,
-		            bit<20>    hint5,
-                            bit<1>      more_hashes,
-			   bit<20>     more_hints,
-			   bit<1>      entry_valid ) {
+                    bit<22>     idx,
+                    bit<1>      idx_type,
+                    bit<10>     hash1,
+                    bit<21>     hint1,
+                    bit<10>     hash2,
+                    bit<21>     hint2,
+                    bit<10>     hash3,
+                    bit<21>     hint3,
+                    bit<10>     hash4,
+                    bit<21>     hint4,
+                    bit<10>     hash5,
+                    bit<21>     hint5,
+                    bit<1>      more_hashes,
+                    bit<21>     more_hints,
+                    bit<1>      entry_valid ) {
        bit<32>  hardware_hash = __hash_value();
        hdr.p4i_to_p4e_header.flow_hash = hardware_hash;
 
@@ -61,19 +60,19 @@ control flow_lookup(inout cap_phv_intr_global_h intr_global,
 
 	} else {
 	  bit<1> hint_valid = FALSE; 
-	  if ((hint1 != 0 ) && (hash1 == hardware_hash[31:21])) {
+	  if ((hint1 != 0 ) && (hash1 == hardware_hash[31:22])) {
 	  hint_valid = TRUE;
 	  metadata.scratch.flow_hint = hint1;
-	  } else if ((hint2 != 0 ) && (hash2 == hardware_hash[31:21])) {
+	  } else if ((hint2 != 0 ) && (hash2 == hardware_hash[31:22])) {
 	    hint_valid = TRUE;
 	    metadata.scratch.flow_hint = hint2;
-	  } else if ((hint3 != 0 ) && (hash3 == hardware_hash[31:21])) {
+	  } else if ((hint3 != 0 ) && (hash3 == hardware_hash[31:22])) {
 	    hint_valid = TRUE;
 	    metadata.scratch.flow_hint = hint3;
-	  } else if ((hint4 != 0 ) &&  (hash4 == hardware_hash[31:21])) {
+	  } else if ((hint4 != 0 ) &&  (hash4 == hardware_hash[31:22])) {
 	    hint_valid = TRUE;
 	    metadata.scratch.flow_hint = hint4;
-	  } else if ((hint5 != 0 ) && (hash5 == hardware_hash[31:21])) {
+	  } else if ((hint5 != 0 ) && (hash5 == hardware_hash[31:22])) {
 	    hint_valid = TRUE;
 	    metadata.scratch.flow_hint = hint5;
 	  } else if ((more_hashes == 1)) {

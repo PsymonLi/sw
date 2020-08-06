@@ -258,13 +258,13 @@ TEST_F(flow_cache_scale, delete2M) {
     ASSERT_TRUE(rs == PDS_RET_OK);
 }
 
-TEST_F(flow_cache_scale, DISABLED_create4M) {
+TEST_F(flow_cache_scale, create4M) {
     pds_ret_t rs;
     rs = create_entries(4*1024*1024, PDS_RET_OK);
     ASSERT_TRUE(rs == PDS_RET_OK);
 }
 
-TEST_F(flow_cache_scale, DISABLED_delete4M) {
+TEST_F(flow_cache_scale, delete4M) {
     pds_ret_t rs;
     rs = create_entries(4*1024*1024, PDS_RET_OK);
     ASSERT_TRUE(rs == PDS_RET_OK);
