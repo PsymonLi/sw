@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Replace absoulte links to relative link
+# Replace absolute links with relative links
 if [ ! $# -eq 1 ]
 then
     echo "Invalid number of arguments"

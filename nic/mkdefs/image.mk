@@ -179,7 +179,7 @@ ifeq ($(PIPELINE),iris)
 	make penctl-version
 	OUT_DIR=output/${ASIC} NAPLES_FW_NAME=naples_fw.tar FW_PACKAGE_DIR=${ASIC} make firmware-upgrade
 endif
-	${TOOLS_DIR}/relative_link.sh ${NICDIR}/build
+	${TOOLS_DIR}/relative_link.sh ${NICDIR}/build/${ARCH}/${PIPELINE}/${ASIC}
 
 .PHONY: gold_env
 gold_env:

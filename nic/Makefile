@@ -38,7 +38,7 @@ include ${MKINFRA}/config.mk
 
 .DEFAULT_GOAL := package
 .PHONY: all clean
-all: ${ALL_TARGETS} 
+all: ${ALL_TARGETS}
 
 clean: package-clean
 	@rm -rf ${BLD_ARCH_DIR}

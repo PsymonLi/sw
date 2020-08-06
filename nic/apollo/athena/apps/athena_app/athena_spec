@@ -209,7 +209,6 @@
 /sw/nic/sdk/third-party/avago/fw/serdes.0x1094_244D.rom
 /sw/nic/sdk/third-party/boost/include/boost
 /sw/nic/sdk/third-party/dhcp-server-pkg/aarch64/lib/*.so* /sw/lib/other/
-/sw/nic/sdk/third-party/dpdk/v18.11/lib
 /sw/nic/sdk/third-party/edit/aarch64/*.so /sw/lib/other/
 /sw/nic/sdk/third-party/edit/include
 /sw/nic/sdk/third-party/gmp/aarch64/*.so* /sw/lib/other/
