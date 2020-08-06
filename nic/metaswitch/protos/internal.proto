@@ -128,6 +128,7 @@ message BGPGlobalResetSpec {
   option (venice.pdsaSetGlobOpts) = {
     OidLen: "AMB_BGP_RM_OID_LEN",
     Mib:    "bgpRmEntTable",
+    FillFn: "bgp_global_reset_fill_func"
   };
   types.AdminState State = 1 [(venice.pdsaFields) = {Field: "admin_status"}];
   uint32           Index = 2 [(venice.pdsaFields) = {Field: "index", SetKeyOidIndex:"AMB_BGP_RM_INDEX_INDEX"}];

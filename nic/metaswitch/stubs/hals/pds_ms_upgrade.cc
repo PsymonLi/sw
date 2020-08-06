@@ -123,7 +123,6 @@ upg_ipc_start_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
         mgmt_state_t::thread_context().state()->set_upg_ht_start();
 
         // TODO Lock Hals stubs
-
         // TODO Increase snapshot flush timer and force flush before BGP disable
 
         // Disable BGP to close listen socket and all network route updates
@@ -172,10 +171,44 @@ upg_ipc_sync_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 static void
 upg_ipc_repeal_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 {
-    auto params = (api::upg_ev_params_t *)(msg->data());
-    PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
+    try {
+        auto params = (api::upg_ev_params_t *)(msg->data());
+        PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
 
-    mgmt_state_t::thread_context().state()->set_upg_ht_repeal();
+        // enable BGP
+        auto ret = mgmt_stub_api_set_bgp_state(true);
+        if (ret != SDK_RET_OK) {
+            throw Error ("failed to enable BGP", ret);
+        }
+        mgmt_state_t::thread_context().state()->set_upg_ht_repeal();
+
+    } catch (Error& e) {
+        PDS_TRACE_ERR("hitless upgrade repeal failed - %s", e.what());
+        upg_ipc_process_response(e.rc(), msg);
+        return;
+    }
+    upg_ipc_process_response(SDK_RET_OK, msg);
+}
+
+static void
+upg_ipc_rollback_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    try {
+        auto params = (api::upg_ev_params_t *)(msg->data());
+        PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
+
+        mgmt_state_t::thread_context().state()->set_upg_ht_rollback();
+        // disable BGP
+        auto ret = mgmt_stub_api_set_bgp_state(false);
+        if (ret != SDK_RET_OK) {
+            throw Error ("failed to disable BGP", ret);
+        }
+
+    } catch (Error& e) {
+        PDS_TRACE_ERR("hitless upgrade rollback failed - %s", e.what());
+        upg_ipc_process_response(e.rc(), msg);
+        return;
+    }
     upg_ipc_process_response(SDK_RET_OK, msg);
 }
 
@@ -185,6 +218,7 @@ upg_ipc_init (void)
     SDK_TRACE_DEBUG ("Registering Upgrade IPC handlers");
     sdk::ipc::reg_request_handler(UPG_MSG_ID_START, upg_ipc_start_hdlr, NULL);
     sdk::ipc::reg_request_handler(UPG_MSG_ID_SYNC, upg_ipc_sync_hdlr, NULL);
+    sdk::ipc::reg_request_handler(UPG_MSG_ID_ROLLBACK, upg_ipc_rollback_hdlr, NULL);
     sdk::ipc::reg_request_handler(UPG_MSG_ID_REPEAL, upg_ipc_repeal_hdlr, NULL);
 }
 
@@ -204,6 +238,28 @@ pds_ms_upg_hitless_sync_test (void)
 {
     api::upg_ev_params_t  params {
         .id = UPG_MSG_ID_SYNC,
+        .mode = sysinit_mode_t::SYSINIT_MODE_HITLESS
+    };
+    upg_cb_ev_sync(&params);
+    return params.rsp_code;
+}
+
+sdk_ret_t
+pds_ms_upg_hitless_repeal_test (void)
+{
+    api::upg_ev_params_t  params {
+        .id = UPG_MSG_ID_REPEAL,
+        .mode = sysinit_mode_t::SYSINIT_MODE_HITLESS
+    };
+    upg_cb_ev_sync(&params);
+    return params.rsp_code;
+}
+
+sdk_ret_t
+pds_ms_upg_hitless_rollback_test (void)
+{
+    api::upg_ev_params_t  params {
+        .id = UPG_MSG_ID_ROLLBACK,
         .mode = sysinit_mode_t::SYSINIT_MODE_HITLESS
     };
     upg_cb_ev_sync(&params);

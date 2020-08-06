@@ -225,11 +225,11 @@ void mgmt_state_t::set_upg_ht_start(void) {
     // in internal gRPC buffers
     upg_ht_grpc_lock_ = std::unique_lock<std::mutex>(g_grpc_lock_);
 }
-void mgmt_state_t::set_upg_ht_repeal(void) {
+
+void mgmt_state_t::set_upg_ht_repeal() {
     upg_ht_a_going_down_ = false;
-    // Unlock gRPC to unblock configurations
+    // unblock MS configurations
     upg_ht_grpc_lock_.unlock();
-    upg_ht_grpc_lock_.release();
 }
 
 bool mgmt_state_t::is_upg_ht_mode(void) {

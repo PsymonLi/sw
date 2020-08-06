@@ -22,17 +22,12 @@ constexpr uint32_t k_bgp_gr_best_path_time = 30;  // seconds
 constexpr uint32_t k_upg_routing_convergence_time
                           = k_bgp_gr_best_path_time + 5;  // seconds
 
-sdk_ret_t
-pds_ms_upg_hitless_init (void);
-
-sdk_ret_t
-pds_ms_upg_hitless_start_test (void);
-
-sdk_ret_t
-pds_ms_upg_hitless_sync_test (void);
-
-void
-upg_ipc_init (void);
+sdk_ret_t pds_ms_upg_hitless_init(void);
+sdk_ret_t pds_ms_upg_hitless_start_test(void);
+sdk_ret_t pds_ms_upg_hitless_sync_test(void);
+sdk_ret_t pds_ms_upg_hitless_repeal_test(void);
+sdk_ret_t pds_ms_upg_hitless_rollback_test(void);
+void upg_ipc_init(void);
 
 }
 

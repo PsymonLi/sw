@@ -47,4 +47,16 @@ pds_ms_upg_hitless_sync_test (void)
     return SDK_RET_OK;
 }
 
+sdk_ret_t
+pds_ms_upg_hitless_repeal_test (void)
+{
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+pds_ms_upg_hitless_rollback_test (void)
+{
+    return SDK_RET_OK;
+}
+
 } // End namespace

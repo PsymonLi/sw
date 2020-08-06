@@ -28,6 +28,8 @@ RR=0
 DOL_RUN=0
 DOL_TEST=0
 UNDERLAY=0
+UPG_TEST_A=0
+UPG_FAIL=0
 
 CMDARGS=""
 argc=$#
@@ -45,6 +47,11 @@ for (( j=0; j<argc; j++ )); do
         GRACEFUL_UPG=1
     elif [ ${argv[j]} == '--hiupg' ];then
         HITLESS_UPG=1
+    elif [ ${argv[j]} == '--hiupg-test-a' ];then
+        HITLESS_UPG=1
+        UPG_TEST_A=1
+    elif [ ${argv[j]} == '--hiupg-fail' ];then
+        UPG_FAIL=1
     else
         CMDARGS+="${argv[j]} "
     fi
@@ -128,17 +135,32 @@ if [ $HITLESS_UPG == 1 ]; then
     sleep 5
     # Simulate 1 BGP Peer fail during upgrade
     # docker exec -it -e CONFIG_PATH="$DOL_CFG"2  "$CONTAINER"2 sh -c "$CLIENTAPP bgp-upeer-del 2" || ret=$?
-    echo "Kill Domain A pdsagent"
-    docker exec -it "$CONTAINER"1 sh -c "pkill pdsagent"
-    sleep 2
-    #echo "Starting pegasus in "$CONTAINER"$i"
-    #docker exec -dit -w "$DOL_CFG_UPG" -e LD_LIBRARY_PATH=/sw/nic/third-party/metaswitch/output/x86_64/ "$CONTAINER"1 sh -c '/sw/nic/build/x86_64/apulu/capri/bin/pegasus' || ret=$?
-    echo "Starting Domain B pdsagent in "$CONTAINER"$i"
-    start-pdsagent-dut $DOL_CFG_UPG
-    echo "Simulate Hitless upgrade Domain B Sync config replay in 5 seconds"
-    sleep 5
-    client-app-cfg 1
-    docker exec -it -e CONFIG_PATH="$DOL_CFG"1 "$CONTAINER"1 sh -c "$CLIENTAPP htupg-sync"
+    if [ $UPG_TEST_A == 0 ]; then
+       echo "Kill Domain A pdsagent"
+       docker exec -it "$CONTAINER"1 sh -c "pkill pdsagent"
+       sleep 2
+       #echo "Starting pegasus in "$CONTAINER"$i"
+       #docker exec -dit -w "$DOL_CFG_UPG" -e LD_LIBRARY_PATH=/sw/nic/third-party/metaswitch/output/x86_64/ "$CONTAINER"1 sh -c '/sw/nic/build/x86_64/apulu/capri/bin/pegasus' || ret=$?
+       echo "Starting Domain B pdsagent in "$CONTAINER"$i"
+       start-pdsagent-dut $DOL_CFG_UPG
+    fi
+    if [ $UPG_TEST_A == 0 ]; then
+       client-app-cfg 1
+       if [ $UPG_FAIL == 1 ]; then
+          echo "Simulate upgrade failure - send rollback to B"
+          docker exec -it -e CONFIG_PATH="$DOL_CFG"1 "$CONTAINER"1 sh -c "$CLIENTAPP htupg-rollbk"
+       else    
+          echo "Simulate Hitless upgrade Domain B Sync config replay in 5 seconds"
+          sleep 5
+          docker exec -it -e CONFIG_PATH="$DOL_CFG"1 "$CONTAINER"1 sh -c "$CLIENTAPP htupg-sync"
+          sleep 10
+       fi
+    else
+       if [ $UPG_FAIL == 1 ]; then
+          echo "Simulate upgrade failure - send repeal to A"
+          docker exec -it -e CONFIG_PATH="$DOL_CFG"1 "$CONTAINER"1 sh -c "$CLIENTAPP htupg-repeal"
+       fi
+    fi
     exit
 fi
 

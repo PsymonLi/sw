@@ -17,7 +17,7 @@ using namespace types;
 namespace pds_ms {
 
 static ApiStatus
-set_bgp_rm_ent_state_(types::AdminState state)
+set_bgp_rm_ent_state_ (types::AdminState state)
 {
     BGPGlobalResetSpec proto_req;
 
@@ -48,7 +48,7 @@ set_bgp_rm_ent_state_(types::AdminState state)
 }
 
 static ApiStatus
-bgp_global_hard_reset_ ()
+bgp_global_hard_reset_ (void)
 {
     auto ret = set_bgp_rm_ent_state_(ADMIN_STATE_DISABLE);
     if (ret != API_STATUS_OK) {
@@ -1014,6 +1014,19 @@ bgp_rm_ent_set_fill_func (BGPSpec        &req,
             v_amb_bgp_rm_ent->select_defer_time = k_bgp_gr_best_path_time;
             AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_SELECT_DFR_TIME);
         }
+    }
+}
+
+NBB_VOID
+bgp_global_reset_fill_func (BGPGlobalResetSpec&  req,
+                            AMB_GEN_IPS         *mib_msg,
+                            AMB_BGP_RM_ENT      *data,
+                            NBB_LONG            row_status)
+{
+    if (mgmt_state_t::thread_context().state()->is_upg_ht_in_progress()) {
+        PDS_TRACE_DEBUG("Enable BGP do_graceful flag for next start");
+        data->do_graceful_restart = AMB_TRUE;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_DO_GR_RESTART);
     }
 }
 

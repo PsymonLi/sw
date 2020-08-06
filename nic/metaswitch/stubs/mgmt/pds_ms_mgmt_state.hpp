@@ -230,6 +230,9 @@ public:
     void set_upg_ht_sync(void) {
         upg_ht_b_starting_up_ = false;
     }
+    void set_upg_ht_rollback(void) {
+        upg_ht_b_starting_up_ = false;
+    }
 
 private:
     static mgmt_state_t* g_state_;
