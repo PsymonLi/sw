@@ -29,6 +29,7 @@ import (
 	"github.com/pensando/sw/nic/agent/protos/generated/nimbus"
 	restapi "github.com/pensando/sw/nic/agent/protos/generated/restapi/netagent"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/nic/agent/protos/tpmprotos"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 	"github.com/pensando/sw/venice/evtsproxy/rpcserver"
 	"github.com/pensando/sw/venice/globals"
@@ -599,6 +600,61 @@ func (c *API) WatchTechSupport() {
 		c.sendTechSupportUpdate(techSupportAPIHandler, &req, tsproto.TechSupportRequestStatus_Completed)
 	}
 	techSupportClient.Close()
+}
+
+// WatchFwlogPolicies watches for fwlog policies. This is called only in Cloud Pipeline.
+func (c *API) WatchFwlogPolicies() {
+	if c.WatchCtx == nil {
+		log.Info("Controller API: WatchCtx is not set")
+		return
+	}
+
+	if c.ResolverClient == nil {
+		log.Info("Controller API: Resolver client is not set.")
+		return
+	}
+
+	dscID := c.InfraAPI.GetConfig().DSCID
+	fwlogPolicyClient, err := rpckit.NewRPCClient(dscID, globals.Tpm, rpckit.WithBalancer(balancer.New(c.ResolverClient)))
+	if err != nil || fwlogPolicyClient == nil {
+		log.Error(errors.Wrapf(types.ErrFwlogPolicyClientInit, "Controller API: %s", err))
+		return
+	}
+
+	fwlogPolicyAPIHandler := tpmprotos.NewFwlogPolicyApiV1Client(fwlogPolicyClient.ClientConn)
+	stream, err := fwlogPolicyAPIHandler.WatchFwlogPolicy(c.WatchCtx, &api.ObjectMeta{})
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrFwlogPolicyWatch, "Controller API: %s", err))
+		fwlogPolicyClient.Close()
+		return
+	}
+
+	log.Infof("Controller API: Started fwlogPolicy watch for %s", dscID)
+
+	for {
+		evt, err := stream.Recv()
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrFwlogPolicyWatchExited, "Controller API: %s", err))
+			break
+		}
+		eventType := evt.EventType
+		log.Infof("Controller API: %s | Evt: %v", types.InfoFwlogPolicyWatchReceived, eventType)
+
+		pol := *evt.Policy
+		switch eventType {
+		case api.EventType_CreateEvent:
+			err = c.PipelineAPI.HandleFwlogPolicyConfig(types.Create, pol)
+		case api.EventType_UpdateEvent:
+			err = c.PipelineAPI.HandleFwlogPolicyConfig(types.Update, pol)
+		case api.EventType_DeleteEvent:
+			err = c.PipelineAPI.HandleFwlogPolicyConfig(types.Delete, pol)
+		}
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrFwlogPolicyConfig, "Controller API: %s", err))
+		}
+	}
+
+	fwlogPolicyClient.Close()
 }
 
 // closeConnections close connections

@@ -25,6 +25,7 @@ import (
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
 	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/nic/agent/protos/tpmprotos"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 	"github.com/pensando/sw/venice/utils/events"
 	"github.com/pensando/sw/venice/utils/log"
@@ -1754,6 +1755,11 @@ func (i *FakeAgentAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string
 // HandleAlerts unimplemented
 func (i *FakeAgentAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
 	return
+}
+
+// HandleFwlogPolicyConfig unimplemented
+func (i *FakeAgentAPI) HandleFwlogPolicyConfig(oper types.Operation, obj tpmprotos.FwlogPolicy) error {
+	return errors.Wrapf(types.ErrNotImplemented, "FwlogPolicy config not implemented by unspecified Pipeline")
 }
 
 // TODO Move this into InfraAPI to avoid code duplication

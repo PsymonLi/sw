@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
+	"github.com/pensando/sw/nic/agent/protos/tpmprotos"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 
 	"github.com/pensando/sw/venice/utils/emstore"
@@ -20,6 +21,7 @@ type ControllerAPI interface {
 	Stop() error
 	WatchTechSupport()
 	WatchAlertPolicies() error
+	WatchFwlogPolicies()
 	GetAgentStatus(context.Context, *api.Empty) (*dscagentproto.DSCAgentStatus, error)
 }
 
@@ -147,6 +149,8 @@ type PipelineAPI interface {
 
 	// HandleAlerts relays alerts from pen-oper to various exporters
 	HandleAlerts(evtsDispatcher events.Dispatcher)
+
+	HandleFwlogPolicyConfig(oper Operation, obj tpmprotos.FwlogPolicy) error
 
 	// GetDSCAgentStatus returns the current agent status
 	GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus)

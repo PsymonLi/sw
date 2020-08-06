@@ -146,6 +146,10 @@ const (
 	ErrEmptyResponse                                     = Error("ErrEmptyResponse")
 	ErrRPCServerClose                                    = Error("ErrRPCServerClose")
 	ErrRPCServerStart                                    = Error("ErrRPCServerStart")
+	ErrFwlogPolicyClientInit                             = Error("ErrFwlogPolicyClientInit")
+	ErrFwlogPolicyWatch                                  = Error("ErrFwlogPolicyWatch")
+	ErrFwlogPolicyWatchExited                            = Error("ErrFwlogPolicyWatchExited")
+	ErrFwlogPolicyConfig                                 = Error("ErrFwlogPolicyConfig")
 )
 
 // Const Info
@@ -191,4 +195,5 @@ const (
 	InfoMirrorNotDeletedStillReferenced  = Info("InfoMirrorNotDeletedStillReferenced")
 	InfoTechSupportWatchReceived         = Info("InfoTechSupportWatchReceived")
 	InfoIgnoreDuplicateVeniceCoodrinates = Info("InfoIgnoreDuplicateVeniceCoodrinates")
+	InfoFwlogPolicyWatchReceived         = Info("InfoFwlogPolicyWatchReceived")
 )

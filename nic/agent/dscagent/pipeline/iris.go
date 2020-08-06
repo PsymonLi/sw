@@ -30,6 +30,7 @@ import (
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
 	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/nic/agent/protos/tpmprotos"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 	delphi "github.com/pensando/sw/nic/delphi/gosdk"
 	sysmgr "github.com/pensando/sw/nic/sysmgr/golib"
@@ -2379,6 +2380,11 @@ func (i *IrisAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, err
 // HandleAlerts unimplemented
 func (i *IrisAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
 	return
+}
+
+// HandleFwlogPolicyConfig unimplemented
+func (i *IrisAPI) HandleFwlogPolicyConfig(oper types.Operation, obj tpmprotos.FwlogPolicy) error {
+	return errors.Wrapf(types.ErrNotImplemented, "FwlogPolicy config not implemented by Iris Pipeline")
 }
 
 // TODO Remove PortCreates once the linkmgr changes are stable

@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pensando/sw/nic/agent/protos/tpmprotos"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 
 	"github.com/gogo/protobuf/proto"
@@ -60,6 +61,7 @@ type ApuluAPI struct {
 	TechSupportSvcClient    operdapi.TechSupportSvcClient
 	OperSvcClient           operdapi.OperSvcClient
 	MetricsSvcClient        operdapi.MetricsSvcClient
+	SyslogSvcClient         operdapi.SyslogSvcClient
 	LocalInterfaces         sync.Map
 }
 
@@ -100,6 +102,7 @@ func NewPipelineAPI(infraAPI types.InfraAPI) (*ApuluAPI, error) {
 		MirrorClient:            halapi.NewMirrorSvcClient(conn),
 		TechSupportSvcClient:    operdapi.NewTechSupportSvcClient(operdconn),
 		OperSvcClient:           operdapi.NewOperSvcClient(penoperconn),
+		SyslogSvcClient:         operdapi.NewSyslogSvcClient(penoperconn),
 		MetricsSvcClient:        operdapi.NewMetricsSvcClient(penoperconn),
 	}
 
@@ -185,6 +188,20 @@ func (a *ApuluAPI) PipelineInit() error {
 			}
 			log.Info("Staring Tech Support Watch")
 			a.ControllerAPI.WatchTechSupport() // This blocks only on stream.Recv
+			time.Sleep(time.Minute)
+		}
+	}()
+
+	// Start fwlog policy watcher.
+	go func() {
+		for {
+			if a.ControllerAPI == nil {
+				// Wait till Controller API is correctly registered
+				time.Sleep(time.Minute)
+				continue
+			}
+			log.Info("Staring fwlogPolicy watch")
+			a.ControllerAPI.WatchFwlogPolicies()
 			time.Sleep(time.Minute)
 		}
 	}()
@@ -1512,6 +1529,11 @@ func (a *ApuluAPI) HandleRouteTable(oper types.Operation, routetableObj netproto
 // HandleTechSupport requests techsupport to operd
 func (a *ApuluAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, error) {
 	return apulu.HandleTechSupport(a.TechSupportSvcClient, obj.Spec.SkipCores, obj.Spec.InstanceID)
+}
+
+// HandleFwlogPolicyConfig configures syslog collectors in operd
+func (a *ApuluAPI) HandleFwlogPolicyConfig(oper types.Operation, obj tpmprotos.FwlogPolicy) error {
+	return apulu.HandleFwlogPolicyConfig(a.InfraAPI, a.SyslogSvcClient, oper, obj)
 }
 
 // HandleAlerts start consuming alerts from operd plugin & export
