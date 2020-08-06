@@ -277,7 +277,7 @@ func TestMetaBasic(t *testing.T) {
 
 	// verify all the shards and nodes go away
 	AssertEventually(t, func() (bool, interface{}) {
-		return (w1.GetCluster(meta.ClusterTypeTstore).ShardMap.Shards[0].NumReplicas == 1) &&
+		return (w1.GetCluster(meta.ClusterTypeTstore).ShardMap.Shards[0].NumReplicas <= 1) &&
 			(len(w1.GetCluster(meta.ClusterTypeTstore).NodeMap) == 1), w1.GetCluster(meta.ClusterTypeTstore)
 	}, "shards and nodes did not go away", "100ms", "30s")
 
