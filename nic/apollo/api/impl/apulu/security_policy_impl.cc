@@ -9,6 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/asic/common/asic_mem.hpp"
+#include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
@@ -117,8 +118,10 @@ security_policy_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
 
 void
 security_policy_impl::reset_rule_stats_(uint8_t af) {
+    int64_t rem;
+    uint64_t size;
     uint32_t policy_block_id;
-    mem_addr_t rule_stats_block_addr, va;
+    mem_addr_t rule_stats_block_addr, pa, va;
 
     // if rule stats feature is not supported, bail out
     if (security_policy_impl_db()->rule_stats_region_addr(af) ==
@@ -137,8 +140,23 @@ security_policy_impl::reset_rule_stats_(uint8_t af) {
             (security_policy_impl_db()->rule_stats_table_size(af) *
                  policy_block_id);
     // reset the corresponding memory
-    sdk::asic::asic_mem_reset(rule_stats_block_addr,
-                   security_policy_impl_db()->rule_stats_table_size(af));
+    size = security_policy_impl_db()->rule_stats_table_size(af);
+    va = (mem_addr_t)sdk::lib::pal_mem_map(rule_stats_block_addr, size);
+    if (va != 0) {
+        PDS_TRACE_DEBUG("Resetting using VA");
+		memset((void *)va, 0, size);
+    } else {
+        PDS_TRACE_DEBUG("Resetting using PA");
+        rem = size;
+        pa = rule_stats_block_addr;
+        while (rem > 0) {
+            sdk::asic::asic_mem_write(pa, zero_kb,
+                                      ((uint64_t)rem > sizeof(zero_kb)) ?
+                                          sizeof(zero_kb) : rem);
+            pa += sizeof(zero_kb);
+            rem -= sizeof(zero_kb);
+        }
+    }
 }
 
 sdk_ret_t
@@ -179,7 +197,7 @@ security_policy_impl::program_security_policy_(pds_policy_spec_t *spec) {
                       spec->key.str(), ret);
     }
     // reset the rule stats memory block of this policy
-    //reset_rule_stats_(spec->rule_info->af);
+    reset_rule_stats_(spec->rule_info->af);
     return ret;
 }
 
