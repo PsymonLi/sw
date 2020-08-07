@@ -75,6 +75,7 @@ testbundles:
         - flowlog/flowlog.testbundle
         - networking/cps.testbundle
         #- networking/upgrade.testbundle
+        - networking/mem_leak_check.testbundle
         - networking/telemetry.testbundle
         - linktest/linktest.testbundle
         - firewall/policy.testbundle
@@ -104,6 +105,7 @@ testbundles:
         #- ipsec/ipsec.testbundle
         - networking/telemetry_regression.testbundle
         - networking/cps_regression.testbundle
+        - networking/mem_leak_check_regression.testbundle
         - firewall/conntrack_regression.testbundle
         - naples_upgrade/naples_upgrade_hostpin_long.testbundle
 

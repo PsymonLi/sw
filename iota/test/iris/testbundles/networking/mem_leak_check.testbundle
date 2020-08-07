@@ -1,0 +1,30 @@
+meta:
+    name    : mem_leak_check
+    os      : [ esx ]
+    nics    : [ pensando, mellanox, intel, broadcom ]
+
+testcases:
+    -   name    : techsupp_leak_test
+        testcase: testcases.networking.session_scale
+        stress  : True
+        ignore  : False
+        args    :
+             latency_pps    : 10
+             mem_leak_test  : True
+             mem_incr_threshold : 60   # allowed threshold in memory increase in MB at end of test
+        iterators:
+            type             : simple
+            max_active_flow  : [10000]
+            cps              : [900]
+            duration         : [600]
+        background_tasks:
+            collectMemStats  : 
+                trigger         : auto
+                run             : repeat
+                sleep_interval  : 50
+                terminate       : after_trigger
+            triggerTechSupport :
+                trigger         : auto
+                run             : repeat
+                sleep_interval  : 60
+                terminate       : after_trigger
