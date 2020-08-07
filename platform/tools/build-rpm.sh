@@ -16,19 +16,13 @@ then
 	major=${temp:0:1}
 	minor=${temp:1:4}
 	DISTRO="rhel${major}u${minor}"
-	REQUIRES="kernel"
 elif [ -f /etc/os-release ]
 then
 	DISTRO=$(cat /etc/os-release | grep VERSION_ID | awk -F= '{print $2}' | tr -d '\"' | sed 's/\./sp/')
 	DISTRO="sles${DISTRO}"
-	REQUIRES="kernel-default"
 fi
 
 RPMDIR=$(pwd)/rpmbuild
-
-KVER=$(uname -r)
-KBASEVER=$(echo $KVER | cut -d- -f1)
-KREL=$(echo $KVER | cut -d- -f2- | rev | cut -d. -f2- | rev | tr - .)
 
 # cleanup if needed
 rm -rf rpmbuild
@@ -39,12 +33,18 @@ tar czf $RPMDIR/SOURCES/ionic-$VERSION.tar.gz --exclude=build-rpm.sh --exclude=i
 cp ionic.files $RPMDIR/SOURCES/
 cp kmod-ionic.conf $RPMDIR/SOURCES/
 
-echo "===> DISTRO $DISTRO"
-echo "===> KERNEL version $KVER base $KBASEVER release $KREL"
-echo "===> IONIC version $VERSION base $BASEVER release $RELEASE"
+# define variables to pass to rpm spec
+declare -A VARS
+VARS["KMOD_VERSION"]="${VERSION}"
+VARS["KMOD_BASEVER"]="${BASEVER}"
+VARS["KMOD_RELEASE"]="${RELEASE}"
+VARS["DISTRO"]="${DISTRO}"
 
-rpmbuild -vv -ba -D "_topdir $RPMDIR" -D "_requires $REQUIRES" \
-		-D "distro $DISTRO" \
-		-D "kmod_version $VERSION" -D "kmod_basever $BASEVER" -D "kmod_release $RELEASE" \
-		-D "kernel_version $KVER" -D "kernel_basever $KBASEVER" -D "kernel_release $KREL" \
-		ionic.spec
+# post process spec to fill-in defines
+for i in "${!VARS[@]}"
+do
+	echo "===> ${i} : ${VARS[$i]}"
+	sed -i "s/@${i}@/${VARS[$i]}/" ionic.spec
+done
+
+rpmbuild -vv -ba -D "_topdir $RPMDIR" ionic.spec

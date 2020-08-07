@@ -3,7 +3,16 @@
 # Disable the building of the debug package(s).
 %define debug_package %{nil}
 
-%define kmod_name ionic
+%define kmod_name	ionic
+%define kmod_basever	@KMOD_BASEVER@
+%define kmod_release	@KMOD_RELEASE@
+%define kmod_version	@KMOD_VERSION@
+
+%define distro	@DISTRO@
+
+%define kernel_version %(uname -r)
+%define kernel_basever %(echo %{kernel_version} | cut -d- -f1)
+%define kernel_release %(echo %{kernel_version} | cut -d- -f2- | rev | cut -d. -f2- | rev | tr - .)
 
 Name:		%{kmod_name}
 Vendor:		Pensando Systems
@@ -18,7 +27,6 @@ Source0:	%{kmod_name}-%{kmod_version}.tar.gz
 Source1:	%{kmod_name}.files
 Source2:	kmod-%{kmod_name}.conf
 
-Requires:	%{_requires}
 BuildRequires:	%{kernel_module_package_buildreqs}
 ExclusiveArch:	x86_64
 
