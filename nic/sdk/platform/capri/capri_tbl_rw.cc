@@ -6,6 +6,7 @@
  */
 #include <map>
 #include <rte_bitmap.h>
+#include <arpa/inet.h>
 #include "asic/common/asic_common.hpp"
 #include "lib/p4/p4_api.hpp"
 #include "lib/pal/pal.hpp"
@@ -140,8 +141,10 @@ typedef struct capri_sram_shadow_mem_ {
     // a three dim array is maintained
     // Since word width is 16bits, uint16_t is used. A table entry starts at 16b
     // boundary
-    uint16_t mem[CAPRI_SRAM_ROWS][CAPRI_SRAM_BLOCK_COUNT][CAPRI_SRAM_WORDS_PER_BLOCK];
-
+    struct {
+        uint16_t entry[CAPRI_SRAM_WORDS_PER_BLOCK];
+        uint16_t hole[CAPRI_SRAM_WORDS_PER_BLOCK];
+    } mem[CAPRI_SRAM_BLOCK_COUNT][CAPRI_SRAM_ROWS];
 } capri_sram_shadow_mem_t;
 
 typedef struct capri_tcam_shadow_mem_ {
@@ -150,10 +153,12 @@ typedef struct capri_tcam_shadow_mem_ {
                             // to reduce access/update contention
     struct rte_bitmap *dirty_block_map; // tracks dirty tcam blocks
     //pthread_mutex_t mutex; // TBD: when its decided to make HAL thread safe
-
-    uint16_t mem_x[CAPRI_TCAM_ROWS][CAPRI_TCAM_BLOCK_COUNT][CAPRI_TCAM_WORDS_PER_BLOCK];
-    uint16_t mem_y[CAPRI_TCAM_ROWS][CAPRI_TCAM_BLOCK_COUNT][CAPRI_TCAM_WORDS_PER_BLOCK];
-
+    struct {
+        uint16_t x[CAPRI_TCAM_WORDS_PER_BLOCK];
+        uint16_t y[CAPRI_TCAM_WORDS_PER_BLOCK];
+        uint8_t valid;
+        uint8_t hole[31];
+    } mem[CAPRI_TCAM_BLOCK_COUNT][CAPRI_TCAM_ROWS];
 } capri_tcam_shadow_mem_t;
 
 static uint32_t                 g_tcam_base_offset[2];
@@ -901,8 +906,12 @@ capri_p4_shadow_init (void)
         }
         // Initialize shadow tcam to match all ones. This makes all entries
         // to be treated as inactive
-        memset(g_shadow_tcam_p4[i]->mem_x, 0xFF,
-               sizeof(g_shadow_tcam_p4[i]->mem_x));
+        for (int blk = 0; blk < CAPRI_TCAM_BLOCK_COUNT; blk++) {
+            for (int row = 0; row < CAPRI_TCAM_ROWS; row++) {
+                memset(g_shadow_tcam_p4[i]->mem[blk][row].x, 0xFF,
+                       sizeof(g_shadow_tcam_p4[i]->mem[blk][row].x));
+            }
+        }
     }
 
     return CAPRI_OK;
@@ -1228,7 +1237,6 @@ capri_flush_tcam_shadow (p4pd_table_dir_en gress)
     uint64_t pa = 0;
     void    *va = NULL;
     uint32_t num_blocks_in_stage = 0;
-    uint32_t bytes_in_a_block = (CAPRI_TCAM_BLOCK_WIDTH / 8);
     uint8_t tcam_block_data[byte_width] = { 0 };
     uint8_t *tcam_block_data_x = NULL;
     uint8_t *tcam_block_data_y = NULL;
@@ -1251,15 +1259,13 @@ capri_flush_tcam_shadow (p4pd_table_dir_en gress)
                 pa += sizeof(Cap_pict_csr_dhs_tcam_xy_entry);
                 continue;
             }            
-            tcam_block_data_x = (uint8_t *) (g_shadow_tcam_p4[gress]->mem_x[tcam_row][blk]);
-            tcam_block_data_y = (uint8_t *) (g_shadow_tcam_p4[gress]->mem_y[tcam_row][blk]);
-            // copy X and Y in reverse order
-            for (int p = 15; p >= 0; p--) {
-                tcam_block_data[p] = *tcam_block_data_x; tcam_block_data_x++;
-                tcam_block_data[p + bytes_in_a_block] = *tcam_block_data_y; tcam_block_data_y++;                            
-            }
+            tcam_block_data_x = (uint8_t *) (g_shadow_tcam_p4[gress]->mem[blk][tcam_row].x);
+            tcam_block_data_y = (uint8_t *) (g_shadow_tcam_p4[gress]->mem[blk][tcam_row].y);
+            // copy X and Y
+            memcpy(&tcam_block_data[0], tcam_block_data_x, 16);
+            memcpy(&tcam_block_data[16], tcam_block_data_y, 16);
             // set valid bit
-            tcam_block_data[byte_width - 4] = 0x1;
+            tcam_block_data[32] = 0xFF;
             sdk::lib::pal_reg_write(pa, (uint32_t *)tcam_block_data, word_width);
             pa += sizeof(Cap_pict_csr_dhs_tcam_xy_entry);
         }
@@ -1334,6 +1340,7 @@ capri_table_entry_write (uint32_t tableid, uint32_t index,
 
     int sram_row, entry_start_block, entry_end_block;
     int entry_start_word;
+    int entry_start_mirror_word;
     capri_sram_shadow_mem_t *shadow_sram;
 
     shadow_sram = get_sram_shadow_for_table(tableid, gress);
@@ -1373,21 +1380,25 @@ capri_table_entry_write (uint32_t tableid, uint32_t index,
         }
     }
 
+    entry_start_mirror_word = CAPRI_SRAM_WORDS_PER_BLOCK - entry_start_word - 1;
     for (int j = 0; j < tbl_info.entry_width; j++) {
         if (copy_bits >= 16) {
-            shadow_sram->mem[sram_row][block %
-                CAPRI_SRAM_BLOCK_COUNT][entry_start_word] = *_hwentry;
+            shadow_sram->mem[block % CAPRI_SRAM_BLOCK_COUNT]
+                            [sram_row].entry[entry_start_mirror_word] =
+                            htons(*_hwentry);
             _hwentry++;
             copy_bits -= 16;
         } else if (copy_bits) {
             assert(0);
         }
         entry_start_word++;
+        entry_start_mirror_word--;
         if (entry_start_word % CAPRI_SRAM_WORDS_PER_BLOCK == 0) {
             // crossed over to next block
             //block += CAPRI_SRAM_ROWS;
             block++;
             entry_start_word = 0;
+            entry_start_mirror_word = CAPRI_SRAM_WORDS_PER_BLOCK - 1;
         }
     }
 
@@ -1402,11 +1413,9 @@ capri_table_entry_write (uint32_t tableid, uint32_t index,
     uint8_t temp[16], tempmask[16];
     for (int i = entry_start_block; i <= entry_end_block;
          i += CAPRI_SRAM_ROWS, blk++) {
-        //all shadow_sram->mem[sram_row][i] to be pushed to capri..
-        uint8_t *s = (uint8_t*)(shadow_sram->mem[sram_row][blk]);
-        for (int p = 15; p >= 0; p--) {
-            temp[p] = *s; s++;
-        }
+        //all shadow_sram->mem[i][sram_row] to be pushed to capri..
+        uint8_t *s = (uint8_t*)(shadow_sram->mem[blk][sram_row].entry);
+        memcpy(&temp[0], s, sizeof(temp));
         cap_pics_csr_t *pics_csr;
         if (ingress) {
             pics_csr = capri_global_pics_get(tableid);
@@ -1454,6 +1463,7 @@ capri_table_entry_read (uint32_t tableid, uint32_t index,
      */
     int sram_row, entry_start_block, entry_end_block;
     int entry_start_word;
+    int entry_start_mirror_word;
     // In case of overflow TCAM, SRAM associated with the table
     // is folded along with its parent's hash table.
     // Change index to parent table size + index
@@ -1481,6 +1491,7 @@ capri_table_entry_read (uint32_t tableid, uint32_t index,
 
     shadow_sram = get_sram_shadow_for_table(tableid, gress);
 
+    entry_start_mirror_word = CAPRI_SRAM_WORDS_PER_BLOCK - entry_start_word - 1;
     while(copy_bits) {
         if (entry_start_word) {
             int bits_in_macro = 128 - (entry_start_word * 16);
@@ -1491,12 +1502,13 @@ capri_table_entry_read (uint32_t tableid, uint32_t index,
         uint8_t to_copy_bytes = (to_copy + 7) >> 3;
         to_copy_bytes += (to_copy_bytes & 0x1) ? 1 : 0;
         for (int i = 0; i < (to_copy_bytes >> 1); ++i) {
-            *_hwentry = shadow_sram->mem[sram_row][block %
-                CAPRI_SRAM_BLOCK_COUNT][entry_start_word + i];
+            *_hwentry = htons(shadow_sram->mem[block %
+                CAPRI_SRAM_BLOCK_COUNT][sram_row].entry[entry_start_mirror_word - i]);
             ++_hwentry;
         }
         copy_bits -= to_copy;
         entry_start_word = 0;
+        entry_start_mirror_word = CAPRI_SRAM_WORDS_PER_BLOCK - 1;
         block++;
     }
 
@@ -1672,6 +1684,7 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
      */
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
+    int entry_start_mirror_word;
     rte_bitmap *dirty_map = g_shadow_tcam_p4[gress]->dirty_block_map;
 
     capri_tcam_entry_details_get(index, gress,
@@ -1691,13 +1704,15 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
     int copy_bits = hwentry_bit_len;
     uint16_t *_trit_x = (uint16_t*)trit_x;
     uint16_t *_trit_y = (uint16_t*)trit_y;
+
+    entry_start_mirror_word = CAPRI_TCAM_WORDS_PER_BLOCK - entry_start_word - 1;
     for (int j = 0; j < tbl_info.entry_width; j++) {
         rte_bitmap_set(dirty_map, (CAPRI_TCAM_ROWS * block) + tcam_row);
         if (copy_bits >= 16) {
-            g_shadow_tcam_p4[gress]->mem_x[tcam_row]
-                            [block][entry_start_word] = *_trit_x;
-            g_shadow_tcam_p4[gress]->mem_y[tcam_row]
-                            [block][entry_start_word] = *_trit_y;
+            g_shadow_tcam_p4[gress]->mem[block][tcam_row].x
+                            [entry_start_mirror_word] = htons(*_trit_x);
+            g_shadow_tcam_p4[gress]->mem[block][tcam_row].y
+                            [entry_start_mirror_word] = htons(*_trit_y);
             _trit_x++;
             _trit_y++;
             copy_bits -= 16;
@@ -1706,17 +1721,19 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
         } else {
             // do not match remaining bits from end of entry bits to next 16b
             // aligned word
-            g_shadow_tcam_p4[gress]->mem_x[tcam_row]
-                            [block][entry_start_word] = 0;
-            g_shadow_tcam_p4[gress]->mem_y[tcam_row]
-                            [block][entry_start_word] = 0;
+            g_shadow_tcam_p4[gress]->mem[block][tcam_row].x
+                            [entry_start_word] = 0;
+            g_shadow_tcam_p4[gress]->mem[block][tcam_row].y
+                            [entry_start_word] = 0;
         }
         entry_start_word++;
+        entry_start_mirror_word--;
         if (entry_start_word % CAPRI_TCAM_WORDS_PER_BLOCK == 0) {
             // crossed over to next block
             block++;
             block = block % CAPRI_TCAM_BLOCK_COUNT;
             entry_start_word = 0;
+            entry_start_mirror_word = CAPRI_TCAM_WORDS_PER_BLOCK - 1;
         }
     }
 
@@ -1735,12 +1752,10 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
 
     for (int i = entry_start_block; i <= entry_end_block;
          i += CAPRI_TCAM_ROWS, blk++) {
-        sx = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_x[tcam_row][blk]);
-        sy = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_y[tcam_row][blk]);
-        for (int p = 15; p >= 0; p--) {
-            temp_x[p] = *sx; sx++;
-            temp_y[p] = *sy; sy++;
-        }
+        sx = (uint8_t*)(g_shadow_tcam_p4[gress]->mem[blk][tcam_row].x);
+        sy = (uint8_t*)(g_shadow_tcam_p4[gress]->mem[blk][tcam_row].y);
+        memcpy(&temp_x[0], sx, sizeof(temp_x));
+        memcpy(&temp_y[0], sy, sizeof(temp_y));
         tcam_block_data_x = 0;
         tcam_block_data_y = 0;
         cpp_int_helper::s_cpp_int_from_array(tcam_block_data_x, 0, 15, temp_x);
@@ -1781,36 +1796,40 @@ capri_tcam_table_entry_read (uint32_t tableid, uint32_t index,
                                                    16)) : 0;
     int copy_bits = tbl_info.entry_width_bits + pad;
     int start_word = entry_start_word;
+    int start_mirror_word = CAPRI_TCAM_WORDS_PER_BLOCK - start_word - 1;
     uint16_t *_trit_x = (uint16_t*)trit_x;
     uint16_t *_trit_y = (uint16_t*)trit_y;
+
     while(copy_bits) {
         if (copy_bits >= 16) {
-            *_trit_x = g_shadow_tcam_p4[gress]->mem_x[tcam_row]
-                [block%CAPRI_TCAM_BLOCK_COUNT][start_word];
-            *_trit_y = g_shadow_tcam_p4[gress]->mem_y[tcam_row]
-                [block%CAPRI_TCAM_BLOCK_COUNT][start_word];
+            *_trit_x = htons(g_shadow_tcam_p4[gress]->mem
+                [block%CAPRI_TCAM_BLOCK_COUNT][tcam_row].x[start_mirror_word]);
+            *_trit_y = htons(g_shadow_tcam_p4[gress]->mem
+                [block%CAPRI_TCAM_BLOCK_COUNT][tcam_row].y[start_mirror_word]);
             _trit_x++;
             _trit_y++;
             copy_bits -= 16;
         } else if (copy_bits) {
             if (copy_bits > 8) {
-                *_trit_x = g_shadow_tcam_p4[gress]->mem_x[tcam_row]
-                    [block%CAPRI_TCAM_BLOCK_COUNT][start_word];
-                *_trit_y = g_shadow_tcam_p4[gress]->mem_y[tcam_row]
-                    [block%CAPRI_TCAM_BLOCK_COUNT][start_word];
+                *_trit_x = htons(g_shadow_tcam_p4[gress]->mem
+                    [block%CAPRI_TCAM_BLOCK_COUNT][tcam_row].x[start_mirror_word]);
+                *_trit_y = htons(g_shadow_tcam_p4[gress]->mem
+                    [block%CAPRI_TCAM_BLOCK_COUNT][tcam_row].y[start_mirror_word]);
             } else {
-                *(uint8_t*)_trit_x = g_shadow_tcam_p4[gress]->mem_x[tcam_row]
-                    [block%CAPRI_TCAM_BLOCK_COUNT][start_word] >> 8;
-                *(uint8_t*)_trit_y = g_shadow_tcam_p4[gress]->mem_y[tcam_row]
-                    [block%CAPRI_TCAM_BLOCK_COUNT][start_word] >> 8;
+                *(uint8_t*)_trit_x = g_shadow_tcam_p4[gress]->mem
+                    [block%CAPRI_TCAM_BLOCK_COUNT][tcam_row].x[start_mirror_word] & 0xff;
+                *(uint8_t*)_trit_y = g_shadow_tcam_p4[gress]->mem
+                    [block%CAPRI_TCAM_BLOCK_COUNT][tcam_row].y[start_mirror_word] & 0xff;
             }
             copy_bits = 0;
         }
         start_word++;
+        start_mirror_word--;
         if (start_word % CAPRI_TCAM_WORDS_PER_BLOCK == 0) {
             // crossed over to next block
             block++;
             start_word = 0;
+            start_mirror_word = CAPRI_TCAM_WORDS_PER_BLOCK - 1;
         }
     }
 
