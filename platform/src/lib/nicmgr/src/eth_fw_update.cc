@@ -7,6 +7,7 @@
 #include "eth_fw_update.hpp"
 #include "eth_if.h"
 #include "nicmgr_utils.hpp"
+#include "nic/sdk/include/sdk/globals.hpp"
 
 #define FW_UPDATE_OWNER_NONE  ""
 
@@ -360,7 +361,7 @@ FwInstall(string owner, bool is_async)
         args->owner = owner;
         args->seq_no = fw_update_seq;
         fw_install_thread = sdk::lib::thread::factory("FW_INSTALL",
-                                                      NICMGRD_THREAD_ID_FW_INSTALL,
+                                                      SDK_IPC_ID_NICMGR_FIRMWARE_INSTALL,
                                                       sdk::lib::THREAD_ROLE_CONTROL,
                                                       0xD,
                                                       FwInstallAsync,
@@ -432,7 +433,7 @@ FwActivate(string owner, bool async)
         args->owner = owner;
         args->seq_no = fw_update_seq;
         fw_activate_thread = sdk::lib::thread::factory("FW_ACTIVATE",
-                                                       NICMGRD_THREAD_ID_FW_ACTIVATE,
+                                                       SDK_IPC_ID_NICMGR_FIRMWARE_ACTIVATE,
                                                        sdk::lib::THREAD_ROLE_CONTROL,
                                                        0xD,
                                                        FwActivateAsync,

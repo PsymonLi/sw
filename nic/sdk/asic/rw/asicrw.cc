@@ -13,7 +13,7 @@ namespace asic {
 
 static bool g_asicrw_ready_;
 
-#define ASICRW_NUM_QUEUES                16
+#define ASICRW_NUM_QUEUES                64
 #define ASICRW_Q_SIZE                    128
 #define ASICRW_OP_MEM_READ               0
 #define ASICRW_OP_MEM_WRITE              1

@@ -28,10 +28,6 @@
 #include "ev.h"
 #include "hii.hpp"
 
-#define NICMGRD_THREAD_ID_MNET          0
-#define NICMGRD_THREAD_ID_FW_INSTALL    1
-#define NICMGRD_THREAD_ID_FW_ACTIVATE   2
-
 enum {
     NICMGR_MAC_DEV_CAP              = 0x1000000,
     NICMGR_MAC_DEV_MASK             = 0xffffff,

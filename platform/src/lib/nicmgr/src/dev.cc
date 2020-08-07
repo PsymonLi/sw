@@ -21,6 +21,7 @@
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
 #include "nic/sdk/platform/mnet/include/mnet.h"
 #include "nic/sdk/lib/utils/path_utils.hpp"
+#include "nic/sdk/include/sdk/globals.hpp"
 
 #include "logger.hpp"
 
@@ -1066,7 +1067,7 @@ DeviceManager::DeviceCreate(bool status) {
         if (!skip_hwinit) {
             sdk::lib::thread *mnet_thread = NULL;
             mnet_thread = sdk::lib::thread::factory("MNET_CREATE",
-                                                    NICMGRD_THREAD_ID_MNET,
+                                                    SDK_IPC_ID_NICMGR_MNET,
                                                     sdk::lib::THREAD_ROLE_CONTROL,
                                                     0xD,
                                                     create_mnets,

@@ -29,8 +29,7 @@ heartbeat_monitor_cb (void *timer, uint32_t timer_id, void *ctxt)
     for (uint32_t tid = HAL_THREAD_ID_CFG + 1; tid < HAL_THREAD_ID_MAX; tid++) {
         // skip linkmgr-ctrl/delphi_client/vmotion_master thread, since it doesn't punch heartbeat
         if ((tid == HAL_THREAD_ID_DELPHI_CLIENT) ||
-            (tid == HAL_THREAD_ID_VMOTION) ||
-            (tid == HAL_THREAD_ID_LINKMGR_CTRL)) {
+            (tid == HAL_THREAD_ID_VMOTION)) {
             continue;
         }
         if ((hal_thread = hal_thread_get(tid)) != NULL) {
