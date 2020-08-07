@@ -29,7 +29,7 @@
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "gen/p4gen/p4/include/p4pd.h"
 #include "nic/apollo/p4/include/athena_defines.h"
-#include "nic/apollo/p4/include/athena_table_sizes.h"
+#include "nic/apollo/p4/athena_p4-16/athena_table_sizes.h"
 #include "trace.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "gen/p4gen/p4/include/ftl_table.hpp"
@@ -419,58 +419,58 @@ p4pd_ipv4_flow_insert (uint16_t vnic_id, ipv4_addr_t v4_addr_sip, ipv4_addr_t v4
     flow_hash_info->entry_valid = 1;
     flow_hash_info->idx = index;
     if(ovfl) {
-      hash = entry_write(P4TBL_ID_FLOW, 0, &key, NULL, &data, true,
-                       FLOW_TABLE_SIZE);
-      hint_nxt = g_flow_ohash_index++;
-      hint = hint_nxt;
-      memset(&key, 0, sizeof(key));
-      flow_hash_info->hash1 = hash >> LOG2_U32(FLOW_TABLE_SIZE);
-      flow_hash_info->hint1 = hint;
-      entry_write(P4TBL_ID_FLOW, hash, &key, NULL, &data, true,
-		  FLOW_TABLE_SIZE);
-      printf("Insert dummy key in flow_hash to point to flow_ohash index: %u\n", hint);
+        hash = entry_write(P4TBL_ID_FLOW, 0, &key, NULL, &data, true,
+                FLOW_TABLE_SIZE);
+        hint_nxt = g_flow_ohash_index++;
+        hint = hint_nxt;
+        memset(&key, 0, sizeof(key));
+        flow_hash_info->hash1 = hash >> LOG2_U32(FLOW_TABLE_SIZE);
+        flow_hash_info->hint1 = hint;
+        entry_write(P4TBL_ID_FLOW, hash, &key, NULL, &data, true,
+                FLOW_TABLE_SIZE);
+        printf("Insert dummy key in flow_hash to point to flow_ohash index: %u\n", hint);
 
-      //      if(recirc_num >= 1) {
-      for(unsigned i = 0; i < recirc_num; i++) {
-	hint = hint_nxt;
-	hint_nxt = g_flow_ohash_index++;
-	memset(&key, 0, sizeof(key));
-	memset(&data, 0, sizeof(data));
-	flow_hash_info->entry_valid = 1;
-	flow_hash_info->hash1 = hash >> LOG2_U32(FLOW_TABLE_SIZE);
-	flow_hash_info->hint1 = hint_nxt;
-	entry_write(P4TBL_ID_FLOW_OHASH, hint, &key, NULL, &data, true,
-		    FLOW_OHASH_TABLE_SIZE);
-	printf("Insert key in flow_ohash force recirculation: %u writing flow_ohash_entry %u to pint to entry %u\n", i, hint,hint_nxt);
+        //      if(recirc_num >= 1) {
+        for(unsigned i = 0; i < recirc_num; i++) {
+            hint = hint_nxt;
+            hint_nxt = g_flow_ohash_index++;
+            memset(&key, 0, sizeof(key));
+            memset(&data, 0, sizeof(data));
+            flow_hash_info->entry_valid = 1;
+            flow_hash_info->hash1 = hash >> LOG2_U32(FLOW_TABLE_SIZE);
+            flow_hash_info->hint1 = hint_nxt;
+            entry_write(P4TBL_ID_FLOW_OHASH, hint, &key, NULL, &data, true,
+                    FLOW_OHASH_TABLE_SIZE);
+            printf("Insert key in flow_ohash force recirculation: %u writing flow_ohash_entry %u to pint to entry %u\n", i, hint,hint_nxt);
 
-      }
+        }
 
-      // ohash table with result
-      hint = hint_nxt;
-      memset(&key, 0, sizeof(key));
-      memset(&data, 0, sizeof(data));
-      key.key_metadata_ktype = KEY_TYPE_IPV4;
-      key.key_metadata_vnic_id = vnic_id;
-      memset(key.key_metadata_src, 0, sizeof(key.key_metadata_src));
-      memcpy(key.key_metadata_src, &v4_addr_sip, sizeof(ipv4_addr_t));
-      memset(key.key_metadata_dst, 0, sizeof(key.key_metadata_dst));
-      memcpy(key.key_metadata_dst, &v4_addr_dip, sizeof(ipv4_addr_t));
-      key.key_metadata_proto = proto;
-      key.key_metadata_sport = sport;
-      key.key_metadata_dport = dport;
-      flow_hash_info->entry_valid = 1;
-      flow_hash_info->idx = index;
-      entry_write(P4TBL_ID_FLOW_OHASH, hint, &key, NULL, &data, true,
-		  FLOW_OHASH_TABLE_SIZE);
-      printf("Insert key in flow_hash_table writing flow_ohash_entry %u\n", hint);
-      printf("g_flow_ohash_index %u\n", g_flow_ohash_index);
+        // ohash table with result
+        hint = hint_nxt;
+        memset(&key, 0, sizeof(key));
+        memset(&data, 0, sizeof(data));
+        key.key_metadata_ktype = KEY_TYPE_IPV4;
+        key.key_metadata_vnic_id = vnic_id;
+        memset(key.key_metadata_src, 0, sizeof(key.key_metadata_src));
+        memcpy(key.key_metadata_src, &v4_addr_sip, sizeof(ipv4_addr_t));
+        memset(key.key_metadata_dst, 0, sizeof(key.key_metadata_dst));
+        memcpy(key.key_metadata_dst, &v4_addr_dip, sizeof(ipv4_addr_t));
+        key.key_metadata_proto = proto;
+        key.key_metadata_sport = sport;
+        key.key_metadata_dport = dport;
+        flow_hash_info->entry_valid = 1;
+        flow_hash_info->idx = index;
+        entry_write(P4TBL_ID_FLOW_OHASH, hint, &key, NULL, &data, true,
+                FLOW_OHASH_TABLE_SIZE);
+        printf("Insert key in flow_hash_table writing flow_ohash_entry %u\n", hint);
+        printf("g_flow_ohash_index %u\n", g_flow_ohash_index);
 
     } else {
-      entry_write(P4TBL_ID_FLOW, 0, &key, NULL, &data, true,
-		  FLOW_TABLE_SIZE);
-      printf("Insert key in flow_table  \n");
+        entry_write(P4TBL_ID_FLOW, 0, &key, NULL, &data, true,
+                FLOW_TABLE_SIZE);
+        printf("Insert key in flow_table  \n");
     }
-}
+    }
 
 void
 p4pd_ipv6_flow_insert (uint16_t vnic_id, ipv6_addr_t v6_addr_sip, ipv6_addr_t v6_addr_dip,
