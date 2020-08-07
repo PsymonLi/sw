@@ -332,7 +332,7 @@ var _ = Describe("Vc hub workload tests", func() {
 			networks := ts.model.Networks("").Any(2)
 
 			// Run traffic between 8 remote pairs
-			workloads = ts.model.BringUpNewWorkloads(ts.model.Hosts(), networks, 8)
+			workloads = ts.model.BringUpNewWorkloads(ts.model.Hosts(), networks, 1)
 			Expect(workloads.Error()).ShouldNot(HaveOccurred())
 
 			//Mesh pairs to generate traffic from all
@@ -378,7 +378,7 @@ var _ = Describe("Vc hub workload tests", func() {
 					DstHostCollection:     dst,
 					WorkloadCollection:    wc,
 					Timeout:               30,
-					NumberOfParallelMoves: 2,
+					NumberOfParallelMoves: 1,
 				})
 
 				Expect(err != nil)

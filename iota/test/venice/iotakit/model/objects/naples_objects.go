@@ -282,6 +282,20 @@ func (npc *NaplesCollection) Difference(other *NaplesCollection) *NaplesCollecti
 	return newNpc
 }
 
+//Count returns total naples in collection
+func (npc *NaplesCollection) Count() int {
+	count := 0
+	for _, naples := range npc.Nodes {
+		count += len(naples.Instances)
+	}
+
+	for _, naples := range npc.FakeNodes {
+		count += len(naples.Instances)
+	}
+
+	return count
+}
+
 // SetDscProfile sets DSC profile for the given naples
 func (npc *NaplesCollection) SetDscProfile(profile *DscProfile) error {
 

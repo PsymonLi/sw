@@ -21,6 +21,7 @@ var _ = Describe("Basnet Sanity", func() {
 	var dscInsertionProfile *objects.DscProfile
 	var dscFlowawareProfile *objects.DscProfile
 	var dscEnforcedProfile *objects.DscProfile
+	NumberOfUplinkIntsPerNaples := 2
 	BeforeEach(func() {
 		// verify cluster is in good health
 		Eventually(func() error {
@@ -395,7 +396,16 @@ var _ = Describe("Basnet Sanity", func() {
 				}).Should(Succeed())
 
 				Expect(ts.model.Naples().ResetProfile()).Should(Succeed())
-				//reload Nodes so that it can Join
+
+				//Make sure interfaces are present after admit
+				Eventually(func() error {
+					intfCollection := ts.model.NetworkInterfaces().Uplinks()
+					if intfCollection.Len() != NumberOfUplinkIntsPerNaples*ts.model.Naples().Count() {
+						return fmt.Errorf("Not all uplinks present after admit, present %v,  expected %v", intfCollection.Len(),
+							NumberOfUplinkIntsPerNaples*ts.model.Naples().Count())
+					}
+					return nil
+				})
 
 				Eventually(func() error {
 					return verifyNoDatapathCollection(workloadPairs, veniceCollector)
@@ -456,6 +466,16 @@ var _ = Describe("Basnet Sanity", func() {
 					return ts.model.Naples().IsAdmitted()
 				}).Should(Succeed())
 
+				//Make sure interfaces are present after admit
+				Eventually(func() error {
+					intfCollection := ts.model.NetworkInterfaces().Uplinks()
+					if intfCollection.Len() != NumberOfUplinkIntsPerNaples*ts.model.Naples().Count() {
+						return fmt.Errorf("Not all uplinks present after admit, present %v,  expected %v", intfCollection.Len(),
+							NumberOfUplinkIntsPerNaples*ts.model.Naples().Count())
+					}
+					return nil
+				})
+
 				Eventually(func() error {
 					return verifyNoDatapathCollection(workloadPairs, veniceCollector)
 				}).Should(Succeed())
@@ -471,6 +491,16 @@ var _ = Describe("Basnet Sanity", func() {
 				}).Should(Succeed())
 
 				Expect(ts.model.Naples().ResetProfile()).Should(Succeed())
+
+				//Make sure interfaces are present after restore
+				Eventually(func() error {
+					intfCollection := ts.model.NetworkInterfaces().Uplinks()
+					if intfCollection.Len() != NumberOfUplinkIntsPerNaples*ts.model.Naples().Count() {
+						return fmt.Errorf("Not all uplinks present after admit, present %v,  expected %v", intfCollection.Len(),
+							NumberOfUplinkIntsPerNaples*ts.model.Naples().Count())
+					}
+					return nil
+				})
 
 				//Ping should work as expected
 				Eventually(func() error {

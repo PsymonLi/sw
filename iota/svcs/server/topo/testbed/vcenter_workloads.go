@@ -333,11 +333,6 @@ func (n *VcenterNode) MoveWorkloads(ctx context.Context, req *iota.WorkloadMoveM
 							mvReq.err = errors.New(msg)
 						}
 					}
-				} else {
-					msg := fmt.Sprintf("Workload migrate Name aborted: %v, Src : %v, Dst %v ",
-						mvReq.workloadName, mvReq.srcHost, mvReq.dstHost)
-					log.Error(msg)
-					mvReq.err = errors.New(msg)
 				}
 				return err
 			})
