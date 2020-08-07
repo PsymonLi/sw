@@ -769,7 +769,8 @@ func (c *API) addDebugRoutes(r *mux.Router) {
 }
 
 func (c *API) addAPIMappingRoutes(r *mux.Router) {
-	r.Methods("GET").Subrouter().HandleFunc("/interfaces/{id}", httputils.MakeHTTPHandler(c.getMappingHandler))
+	r.Methods("GET").Subrouter().HandleFunc("/interfaces/{id}", httputils.MakeHTTPHandler(c.getInterfaceMappingHandler))
+	r.Methods("GET").Subrouter().HandleFunc("/mirror-collectors/{id}", httputils.MakeHTTPHandler(c.getCollectorMappingHandler))
 }
 
 func (c *API) getConfigHandler(r *http.Request) (interface{}, error) {
@@ -795,7 +796,7 @@ func (c *API) postConfigHandler(r *http.Request) (interface{}, error) {
 	return resp, nil
 }
 
-func (c *API) getMappingHandler(r *http.Request) (interface{}, error) {
+func (c *API) getInterfaceMappingHandler(r *http.Request) (interface{}, error) {
 	var resp restapi.Response
 	o := netproto.Interface{
 		TypeMeta: api.TypeMeta{Kind: "Interface"},
@@ -824,6 +825,61 @@ func (c *API) getMappingHandler(r *http.Request) (interface{}, error) {
 
 	resp.StatusCode = http.StatusNotFound
 	resp.Error = fmt.Sprintf("Interface: %d not found", intfID)
+	return resp, err
+}
+
+func (c *API) getCollectorMappingHandler(r *http.Request) (interface{}, error) {
+	var resp restapi.Response
+	id, _ := mux.Vars(r)["id"]
+	colID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		resp.StatusCode = http.StatusBadRequest
+		resp.Error = err.Error()
+		return resp, err
+	}
+
+	o := netproto.MirrorSession{
+		TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
+	}
+
+	ms, err := c.PipelineAPI.HandleMirrorSession(types.List, o)
+	if err != nil {
+		resp.StatusCode = http.StatusNotFound
+		resp.Error = err.Error()
+		return resp, err
+	}
+
+	for _, m := range ms {
+		for _, id := range m.Status.MirrorSessionIDs {
+			if id == uint64(colID) {
+				resp.StatusCode = http.StatusOK
+				return m, nil
+			}
+		}
+	}
+
+	oi := netproto.InterfaceMirrorSession{
+		TypeMeta: api.TypeMeta{Kind: "InterfaceMirrorSession"},
+	}
+
+	ims, err := c.PipelineAPI.HandleInterfaceMirrorSession(types.List, oi)
+	if err != nil {
+		resp.StatusCode = http.StatusNotFound
+		resp.Error = err.Error()
+		return resp, err
+	}
+
+	for _, m := range ims {
+		for _, id := range m.Status.MirrorSessionIDs {
+			if id == uint64(colID) {
+				resp.StatusCode = http.StatusOK
+				return m, nil
+			}
+		}
+	}
+
+	resp.StatusCode = http.StatusNotFound
+	resp.Error = fmt.Sprintf("Collector: %d not found", colID)
 	return resp, err
 }
 
