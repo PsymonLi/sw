@@ -360,7 +360,7 @@ jobs:
   nic/agent:
     labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   nic/apollo/athena/tools/sanity/base:
-    labels: ["CI-Sim-UnitTest-Cloud"]
+    labels: ["CI-Sanity-Build", "CI-Precheckin-Athena", "CI-Sim-UnitTest-Cloud"]
   # nic/apollo/tools/athena/sanity/customer-docker:
     # labels: [ "CI-Sim-UnitTest-Cloud"]
   nic/sdk:
