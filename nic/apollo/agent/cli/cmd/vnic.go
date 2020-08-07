@@ -498,7 +498,7 @@ func vnicShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
 		for _, resp := range respMsg.Response {
 			spec := resp.GetSpec()
 			stats := resp.GetStats()
-			fmt.Printf("Vnic ID: %s\n", utils.IdToStr(spec.GetId()))
+			fmt.Printf("Vnic ID : %s\n", utils.IdToStr(spec.GetId()))
 			fmt.Printf("\tTxBytes           : %d\n", stats.GetTxBytes())
 			fmt.Printf("\tTxPackets         : %d\n", stats.GetTxPackets())
 			fmt.Printf("\tRxBytes           : %d\n", stats.GetRxBytes())

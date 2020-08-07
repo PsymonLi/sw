@@ -431,9 +431,15 @@ pds_policy_api_status_to_proto (pds::SecurityPolicyStatus *proto_status,
 // populate proto buf stats from policy API stats
 static inline void
 pds_policy_api_stats_to_proto (pds::SecurityPolicyStats *proto_stats,
-                               const pds_policy_stats_t *api_stats)
+                               const pds_policy_stats_t *api_stats,
+                               uint32_t num_rules)
 {
-    // TODO
+    if (api_stats->rule_stats) {
+        for (uint32_t i = 0; i < num_rules; i++) {
+            auto rule_stats = proto_stats->add_rulestats();
+            rule_stats->set_numrulehit(api_stats->rule_stats[i].num_rule_hit);
+        }
+    }
 }
 
 // populate proto buf from policy API info
@@ -449,7 +455,8 @@ pds_policy_api_info_to_proto (pds_policy_info_t *api_info, void *ctxt)
 
     pds_policy_api_spec_to_proto(proto_spec, &api_info->spec);
     pds_policy_api_status_to_proto(proto_status, &api_info->status);
-    pds_policy_api_stats_to_proto(proto_stats, &api_info->stats);
+    pds_policy_api_stats_to_proto(proto_stats, &api_info->stats,
+                                  api_info->spec.rule_info->num_rules);
 }
 
 static inline sdk_ret_t

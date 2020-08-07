@@ -45,6 +45,13 @@ var securityPolicyShowCmd = &cobra.Command{
 	Run:   securityPolicyShowCmdHandler,
 }
 
+var securityPolicyShowStatisticsCmd = &cobra.Command{
+	Use:   "statistics",
+	Short: "show security-policy statistics",
+	Long:  "show security-policy statistics",
+	Run:   securityPolicyShowStatisticsCmdHandler,
+}
+
 var securityProfileShowCmd = &cobra.Command{
 	Use:   "security-profile",
 	Short: "show security profile",
@@ -69,8 +76,14 @@ var securityProfileUpdateCmd = &cobra.Command{
 func init() {
 	showCmd.AddCommand(securityPolicyShowCmd)
 	securityPolicyShowCmd.Flags().Bool("yaml", false, "Output in yaml")
-	securityPolicyShowCmd.Flags().Bool("summary", false, "Display number of objects")
-	securityPolicyShowCmd.Flags().StringVarP(&policyID, "id", "i", "", "Specify ID")
+	securityPolicyShowCmd.Flags().Bool("summary", false,
+		"Display number of objects")
+	securityPolicyShowCmd.Flags().StringVarP(&policyID, "id", "i", "",
+		"Specify Security Policy ID")
+
+	securityPolicyShowCmd.AddCommand(securityPolicyShowStatisticsCmd)
+	securityPolicyShowStatisticsCmd.Flags().StringVarP(&policyID, "id", "i", "",
+		"Specify Security Policy ID")
 
 	showCmd.AddCommand(securityProfileShowCmd)
 	securityProfileShowCmd.Flags().Bool("yaml", false, "Output in yaml")
@@ -294,6 +307,65 @@ func printPolicy(resp *pds.SecurityPolicy) {
 		}
 	}
 	fmt.Println("")
+}
+
+func securityPolicyShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewSecurityPolicySvcClient(c)
+	var req *pds.SecurityPolicyGetRequest
+	if cmd != nil && cmd.Flags().Changed("id") {
+		// Get specific security policy
+		req = &pds.SecurityPolicyGetRequest{
+			Id: [][]byte{uuid.FromStringOrNil(policyID).Bytes()},
+		}
+	} else {
+		// Get all security policies
+		req = &pds.SecurityPolicyGetRequest{
+			Id: [][]byte{},
+		}
+	}
+
+	// PDS call
+	respMsg, err := client.SecurityPolicyGet(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Getting Security Policy failed, err %v\n", err)
+		return
+	}
+
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+
+	// Print security policy statistics
+	for _, resp := range respMsg.Response {
+		spec := resp.GetSpec()
+		stats := resp.GetStats()
+		if stats != nil {
+			fmt.Printf("Policy ID : %s\n", utils.IdToStr(spec.GetId()))
+			// print the header
+			hdrLine := strings.Repeat("-", 58)
+			fmt.Println(hdrLine)
+			fmt.Printf("%-40s%-10s\n", "RuleID", "RuleHits")
+			fmt.Println(hdrLine)
+			for i, rule := range spec.Rules {
+				fmt.Printf("%-40s%-10d\n", utils.IdToStr(rule.GetId()),
+					stats.GetRuleStats()[i].GetNumRuleHit())
+			}
+		}
+	}
 }
 
 func securityProfileShowCmdHandler(cmd *cobra.Command, args []string) {
