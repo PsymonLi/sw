@@ -41,16 +41,17 @@
 #define CPLD_ALOM_PRESENT_BIT                 0x20
 
 //CPLD ID and REV
-#define CPLD_NAPLES_100_ID      0x12
-#define CPLD_NAPLES_25_ID       0x13
-#define CPLD_NAPLES_FORIO_ID    0x14
-#define CPLD_NAPLES_VOMERO_ID   0x15
-#define CPLD_ID_NAPLES25_SWM    0x17
-#define CPLD_ID_NAPLES25_OCP    0x19
-#define CPLD_REV_0              0x0
-#define CPLD_REV_8              0x8
-#define CPLD_NAPLES_VOMERO_2_ID 0x1e
-#define CPLD_NAPLES_100_HPE_ID  0x1F
+#define CPLD_NAPLES_100_ID         0x12
+#define CPLD_NAPLES_25_ID          0x13
+#define CPLD_NAPLES_FORIO_ID       0x14
+#define CPLD_NAPLES_VOMERO_ID      0x15
+#define CPLD_ID_NAPLES25_SWM       0x17
+#define CPLD_ID_NAPLES25_OCP       0x19
+#define CPLD_REV_0                 0x0
+#define CPLD_REV_8                 0x8
+#define CPLD_NAPLES_VOMERO_2_ID    0x1e
+#define CPLD_NAPLES_100_HPE_ID     0x1F
+#define CPLD_NAPLES25_DELL_SWM_ID  0x20
 
 // CPLD qsfp port number specifiers.
 #define QSFP_PORT1   1

@@ -547,7 +547,9 @@ main(int argc, char *argv[])
     if (ret < 0) {
         cpldmon_exit("Error reading cpld id register", ret);
     } else {
-        if (ret != CPLD_ID_NAPLES25_SWM && ret != CPLD_ID_NAPLES25_OCP) {
+        if (ret != CPLD_ID_NAPLES25_SWM &&
+            ret != CPLD_ID_NAPLES25_OCP &&
+            ret != CPLD_NAPLES25_DELL_SWM_ID) {
             CLOG_INFO("Not a Naples25 SWM or OCP card");
             while (1) {
                 pause();

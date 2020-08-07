@@ -50,11 +50,10 @@ pcie_hostdn(void)
 
 #ifdef __aarch64__
 /*
- * When Naples25 SWM ALOM card is not present hostdn handling is
- * the same as Naples25.  This function is used to negate the
- * catalog long_lived setting based on CPLD control register
- * alom_present bit.  OCP card also is long_lived but its CPLD
- * does not have that bit setting as it does not need an ALOM.
+ * Naples25 OCP and SWM with ALOM present will not reboot when the
+ * hostdn event is received.  The catalog long_lived setting is used
+ * to enable this behavior which is negated when the ALOM is missing
+ * per the CPLD.
  */
 static int swm_alom_present(void)
 {
@@ -67,8 +66,7 @@ static int swm_alom_present(void)
         return 0;
     }
 
-    /* OCP card type has long_lived set in the catalog */
-    if (id != CPLD_ID_NAPLES25_SWM)
+    if (id == CPLD_ID_NAPLES25_OCP)
         return 1;
 
     cntl = cpld_reg_rd(CPLD_REGISTER_CTRL);
@@ -77,7 +75,8 @@ static int swm_alom_present(void)
         return 0;
     }
 
-    if ((id == CPLD_ID_NAPLES25_SWM) && (cntl & CPLD_ALOM_PRESENT_BIT)) {
+    if ((id == CPLD_ID_NAPLES25_SWM || id == CPLD_NAPLES25_DELL_SWM_ID) &&
+        (cntl & CPLD_ALOM_PRESENT_BIT)) {
         return 1;
     } else {
         pciesys_loginfo("naples25 swm alom missing, reset for hostdn\n");
