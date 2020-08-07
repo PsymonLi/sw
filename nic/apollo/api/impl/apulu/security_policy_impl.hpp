@@ -165,6 +165,12 @@ private:
     /// \param[out] status status
     void fill_status_(pds_policy_status_t *status);
 
+    /// \brief      fill the policy stats
+    /// \param[in] security_policy    security policy instance
+    /// \param[out] stats    statistics
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    void fill_stats_(policy *security_policy, pds_policy_stats_t *stats);
+
 private:
     // P4 datapath specific state
     mem_addr_t  security_policy_root_addr_;    ///< policy root node address

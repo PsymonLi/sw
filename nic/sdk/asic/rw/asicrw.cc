@@ -65,7 +65,7 @@ is_asicrw_ready (void)
 //       thread's context
 //------------------------------------------------------------------------------
 static sdk_ret_t
-asic_do_read (thread *curr_thread, uint8_t opn, uint64_t addr,
+asic_do_read (thread *curr_thread, uint8_t opn, mem_addr_t addr,
               uint8_t *data, uint32_t len)
 {
     uint16_t          pindx = 0;
@@ -109,7 +109,7 @@ asic_do_read (thread *curr_thread, uint8_t opn, uint64_t addr,
 // public API for register read operations
 //------------------------------------------------------------------------------
 sdk_ret_t
-asic_reg_read (uint64_t addr, uint32_t *data, uint32_t num_words,
+asic_reg_read (mem_addr_t addr, uint32_t *data, uint32_t num_words,
                bool read_thru)
 {
     sdk_ret_t    rc = SDK_RET_OK;
@@ -140,7 +140,7 @@ asic_reg_read (uint64_t addr, uint32_t *data, uint32_t num_words,
 // public API for memory read operations
 //------------------------------------------------------------------------------
 sdk_ret_t
-asic_mem_read (uint64_t addr, uint8_t *data, uint32_t len, bool read_thru)
+asic_mem_read (mem_addr_t addr, uint8_t *data, uint32_t len, bool read_thru)
 {
     sdk_ret_t    rc = SDK_RET_OK;
     thread       *curr_thread = sdk::lib::thread::current_thread();
@@ -200,7 +200,7 @@ asic_vmem_read (mem_addr_t addr, uint8_t *data, uint32_t len, bool read_thru)
 // blocking and non-blocking writes
 //------------------------------------------------------------------------------
 static sdk_ret_t
-asic_do_write (thread *curr_thread, uint8_t opn, uint64_t addr, uint8_t *data,
+asic_do_write (thread *curr_thread, uint8_t opn, mem_addr_t addr, uint8_t *data,
                uint32_t len, asic_write_mode_t mode)
 {
     sdk_ret_t          ret;
@@ -247,7 +247,7 @@ asic_do_write (thread *curr_thread, uint8_t opn, uint64_t addr, uint8_t *data,
 // blocking and non-blocking writes
 //------------------------------------------------------------------------------
 sdk_ret_t
-asic_reg_write (uint64_t addr, uint32_t *data, uint32_t num_words,
+asic_reg_write (mem_addr_t addr, uint32_t *data, uint32_t num_words,
                 asic_write_mode_t mode)
 {
     sdk_ret_t    rc = SDK_RET_OK;
@@ -279,7 +279,7 @@ asic_reg_write (uint64_t addr, uint32_t *data, uint32_t num_words,
 // public API for memory write operations
 //------------------------------------------------------------------------------
 sdk_ret_t
-asic_mem_write (uint64_t addr, uint8_t *data, uint32_t len,
+asic_mem_write (mem_addr_t addr, uint8_t *data, uint32_t len,
                 asic_write_mode_t mode)
 {
     sdk_ret_t    rc = SDK_RET_OK;
@@ -310,7 +310,7 @@ asic_mem_write (uint64_t addr, uint8_t *data, uint32_t len,
 }
 
 sdk_ret_t
-asic_vmem_write (uint64_t addr, uint8_t *data, uint32_t len,
+asic_vmem_write (mem_addr_t addr, uint8_t *data, uint32_t len,
                  asic_write_mode_t mode)
 {
     sdk_ret_t    rc = SDK_RET_OK;
@@ -343,7 +343,7 @@ asic_vmem_write (uint64_t addr, uint8_t *data, uint32_t len,
 // public API for ringing doorbell
 //------------------------------------------------------------------------------
 sdk_ret_t
-asic_ring_doorbell (uint64_t addr, uint64_t data, asic_write_mode_t mode)
+asic_ring_doorbell (mem_addr_t addr, uint64_t data, asic_write_mode_t mode)
 {
     sdk_ret_t    rc = SDK_RET_OK;
     thread       *curr_thread = sdk::lib::thread::current_thread();

@@ -28,13 +28,13 @@ typedef enum asic_write_mode_e {
 //------------------------------------------------------------------------------
 // public API for register read operations
 //------------------------------------------------------------------------------
-sdk_ret_t asic_reg_read(uint64_t addr, uint32_t *data, uint32_t num_words = 1,
+sdk_ret_t asic_reg_read(mem_addr_t addr, uint32_t *data, uint32_t num_words = 1,
                         bool read_thru=false);
 
 //------------------------------------------------------------------------------
 // public API for memory read operations
 //------------------------------------------------------------------------------
-sdk_ret_t asic_mem_read(uint64_t addr, uint8_t *data, uint32_t len,
+sdk_ret_t asic_mem_read(mem_addr_t addr, uint8_t *data, uint32_t len,
                         bool read_thru=false);
 
 sdk_ret_t asic_vmem_read(mem_addr_t addr, uint8_t *data, uint32_t len,
@@ -44,14 +44,15 @@ sdk_ret_t asic_vmem_read(mem_addr_t addr, uint8_t *data, uint32_t len,
 // public API for register write operations
 // write given data at specified address in the memory
 //------------------------------------------------------------------------------
-sdk_ret_t asic_reg_write(uint64_t addr, uint32_t *data, uint32_t num_words = 1,
+sdk_ret_t asic_reg_write(mem_addr_t addr, uint32_t *data,
+                         uint32_t num_words = 1,
                          asic_write_mode_t mode = ASIC_WRITE_MODE_BLOCKING);
 
 //------------------------------------------------------------------------------
 // public API for memory write operations
 // write given data at specified address in the memory
 //------------------------------------------------------------------------------
-sdk_ret_t asic_mem_write(uint64_t addr, uint8_t *data, uint32_t len,
+sdk_ret_t asic_mem_write(mem_addr_t addr, uint8_t *data, uint32_t len,
                          asic_write_mode_t mode = ASIC_WRITE_MODE_BLOCKING);
 
 sdk_ret_t asic_vmem_write(mem_addr_t addr, uint8_t *data, uint32_t len,

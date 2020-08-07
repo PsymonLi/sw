@@ -365,6 +365,7 @@ func securityPolicyShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
 					stats.GetRuleStats()[i].GetNumRuleHit())
 			}
 		}
+		fmt.Println("\n")
 	}
 }
 
@@ -549,78 +550,78 @@ func printRule(resp *pds.SecurityRule) {
 	l3Match := attr.GetMatch().GetL3Match()
 	switch l3Match.GetProtomatch().(type) {
 	case *pds.RuleL3Match_ProtoNum:
-		fmt.Printf("%-30s : %d\n", "Protocol Number", l3Match.GetProtoNum())
+		fmt.Printf("  %-30s : %d\n", "Protocol Number", l3Match.GetProtoNum())
 	case *pds.RuleL3Match_ProtoWildcard:
-		fmt.Printf("%-30s : %s\n", "Protocol Match",
+		fmt.Printf("  %-30s : %s\n", "Protocol Match",
 			strings.Replace(l3Match.GetProtoWildcard().String(), "MATCH_", "", -1))
 	default:
-		fmt.Printf("%-30s : %s\n", "Protocol Number", "-")
+		fmt.Printf("  %-30s : %s\n", "Protocol Number", "-")
 	}
 
 	switch l3Match.GetSrcmatch().(type) {
 	case *pds.RuleL3Match_SrcPrefix:
-		fmt.Printf("%-30s : %s\n", "Source Match Type", "Prefix")
-		fmt.Printf("%-30s : %s\n", "Source Prefix", utils.IPPrefixToStr(l3Match.GetSrcPrefix()))
+		fmt.Printf("  %-30s : %s\n", "Source Match Type", "Prefix")
+		fmt.Printf("  %-30s : %s\n", "Source Prefix", utils.IPPrefixToStr(l3Match.GetSrcPrefix()))
 	case *pds.RuleL3Match_SrcRange:
 		switch l3Match.GetSrcRange().GetRange().(type) {
 		case *pds.AddressRange_IPv4Range:
-			fmt.Printf("%-30s : %s\n", "Source Match Type", "Range")
+			fmt.Printf("  %-30s : %s\n", "Source Match Type", "Range")
 			ipRange := l3Match.GetSrcRange().GetIPv4Range()
-			fmt.Printf("%-30s : %s\n", "Source Range Low",
+			fmt.Printf("  %-30s : %s\n", "Source Range Low",
 				utils.IPAddrToStr(ipRange.GetLow()))
-			fmt.Printf("%-30s : %s\n", "Source Range High",
+			fmt.Printf("  %-30s : %s\n", "Source Range High",
 				utils.IPAddrToStr(ipRange.GetHigh()))
 		case *pds.AddressRange_IPv6Range:
-			fmt.Printf("%-30s : %s\n", "Source Match Type", "Range")
+			fmt.Printf("  %-30s : %s\n", "Source Match Type", "Range")
 			ipRange := l3Match.GetSrcRange().GetIPv6Range()
-			fmt.Printf("%-30s : %s\n", "Source Range Low",
+			fmt.Printf("  %-30s : %s\n", "Source Range Low",
 				utils.IPAddrToStr(ipRange.GetLow()))
-			fmt.Printf("%-30s : %s\n", "Source Range High",
+			fmt.Printf("  %-30s : %s\n", "Source Range High",
 				utils.IPAddrToStr(ipRange.GetHigh()))
 		default:
-			fmt.Printf("%-30s : %s\n", "Source Match Type", "Range")
-			fmt.Printf("%-30s : %s\n", "Source Range Low", "-")
-			fmt.Printf("%-30s : %s\n", "Source Range High", "-")
+			fmt.Printf("  %-30s : %s\n", "Source Match Type", "Range")
+			fmt.Printf("  %-30s : %s\n", "Source Range Low", "-")
+			fmt.Printf("  %-30s : %s\n", "Source Range High", "-")
 		}
 
 	case *pds.RuleL3Match_SrcTag:
-		fmt.Printf("%-30s : %s\n", "Source Match Type", "Tag")
-		fmt.Printf("%-30s : %d\n", "Source Tag", l3Match.GetSrcTag())
+		fmt.Printf("  %-30s : %s\n", "Source Match Type", "Tag")
+		fmt.Printf("  %-30s : %d\n", "Source Tag", l3Match.GetSrcTag())
 	default:
-		fmt.Printf("%-30s : %s\n", "Source Match Type", "-")
+		fmt.Printf("  %-30s : %s\n", "Source Match Type", "-")
 	}
 
 	switch l3Match.GetDstmatch().(type) {
 	case *pds.RuleL3Match_DstPrefix:
-		fmt.Printf("%-30s : %s\n", "Destination Match Type", "Prefix")
-		fmt.Printf("%-30s : %s\n", "Destination Prefix",
+		fmt.Printf("  %-30s : %s\n", "Destination Match Type", "Prefix")
+		fmt.Printf("  %-30s : %s\n", "Destination Prefix",
 			utils.IPPrefixToStr(l3Match.GetDstPrefix()))
 	case *pds.RuleL3Match_DstRange:
 		switch l3Match.GetDstRange().GetRange().(type) {
 		case *pds.AddressRange_IPv4Range:
-			fmt.Printf("%-30s : %s\n", "Destination Match Type", "Range")
+			fmt.Printf("  %-30s : %s\n", "Destination Match Type", "Range")
 			ipRange := l3Match.GetDstRange().GetIPv4Range()
-			fmt.Printf("%-30s : %s\n", "Destination Range Low",
+			fmt.Printf("  %-30s : %s\n", "Destination Range Low",
 				utils.IPAddrToStr(ipRange.GetLow()))
-			fmt.Printf("%-30s : %s\n", "Destination Range High",
+			fmt.Printf("  %-30s : %s\n", "Destination Range High",
 				utils.IPAddrToStr(ipRange.GetHigh()))
 		case *pds.AddressRange_IPv6Range:
-			fmt.Printf("%-30s : %s\n", "Destination Match Type", "Range")
+			fmt.Printf("  %-30s : %s\n", "Destination Match Type", "Range")
 			ipRange := l3Match.GetDstRange().GetIPv6Range()
-			fmt.Printf("%-30s : %s\n", "Destination Range Low",
+			fmt.Printf("  %-30s : %s\n", "Destination Range Low",
 				utils.IPAddrToStr(ipRange.GetLow()))
-			fmt.Printf("%-30s : %s\n", "Destination Range High",
+			fmt.Printf("  %-30s : %s\n", "Destination Range High",
 				utils.IPAddrToStr(ipRange.GetHigh()))
 		default:
-			fmt.Printf("%-30s : %s\n", "Destination Match Type", "Range")
-			fmt.Printf("%-30s : %s\n", "Destination Range Low", "-")
-			fmt.Printf("%-30s : %s\n", "Destination Range High", "-")
+			fmt.Printf("  %-30s : %s\n", "Destination Match Type", "Range")
+			fmt.Printf("  %-30s : %s\n", "Destination Range Low", "-")
+			fmt.Printf("  %-30s : %s\n", "Destination Range High", "-")
 		}
 	case *pds.RuleL3Match_DstTag:
-		fmt.Printf("%-30s : %s\n", "Destination Match Type", "Tag")
-		fmt.Printf("%-30s : %d\n", "Destination Tag", l3Match.GetDstTag())
+		fmt.Printf("  %-30s : %s\n", "Destination Match Type", "Tag")
+		fmt.Printf("  %-30s : %d\n", "Destination Tag", l3Match.GetDstTag())
 	default:
-		fmt.Printf("%-30s : %s\n", "Destination Match Type", "-")
+		fmt.Printf("  %-30s : %s\n", "Destination Match Type", "-")
 	}
 
 	// L4 info:
@@ -631,44 +632,44 @@ func printRule(resp *pds.SecurityRule) {
 	l4Match := attr.GetMatch().GetL4Match()
 	switch l4Match.GetL4Info().(type) {
 	case *pds.RuleL4Match_Ports:
-		fmt.Printf("%-30s : %s\n", "Match Type", "Port")
+		fmt.Printf("  %-30s : %s\n", "Match Type", "Port")
 		srcPortRange := l4Match.GetPorts().GetSrcPortRange()
 		dstPortRange := l4Match.GetPorts().GetDstPortRange()
-		fmt.Printf("%-30s : %d\n", "Source Port Low",
+		fmt.Printf("  %-30s : %d\n", "Source Port Low",
 			srcPortRange.GetPortLow())
-		fmt.Printf("%-30s : %d\n", "Source Port High",
+		fmt.Printf("  %-30s : %d\n", "Source Port High",
 			srcPortRange.GetPortHigh())
-		fmt.Printf("%-30s : %d\n", "Destination Port Low",
+		fmt.Printf("  %-30s : %d\n", "Destination Port Low",
 			dstPortRange.GetPortLow())
-		fmt.Printf("%-30s : %d\n", "Destination Port High",
+		fmt.Printf("  %-30s : %d\n", "Destination Port High",
 			dstPortRange.GetPortHigh())
 	case *pds.RuleL4Match_TypeCode:
-		fmt.Printf("%-30s : %s\n", "Match Type", "ICMP")
+		fmt.Printf("  %-30s : %s\n", "Match Type", "ICMP")
 		switch l4Match.GetTypeCode().GetTypematch().(type) {
 		case *pds.ICMPMatch_TypeNum:
-			fmt.Printf("%-30s : %d\n", "Type number",
+			fmt.Printf("  %-30s : %d\n", "Type number",
 				l4Match.GetTypeCode().GetTypeNum())
 		case *pds.ICMPMatch_TypeWildcard:
-			fmt.Printf("%-30s : %s\n", "Type",
+			fmt.Printf("  %-30s : %s\n", "Type",
 				strings.Replace(l4Match.GetTypeCode().GetTypeWildcard().String(), "MATCH_", "", -1))
 		default:
-			fmt.Printf("%-30s : %s\n", "Type Number", "-")
+			fmt.Printf("  %-30s : %s\n", "Type Number", "-")
 		}
 
 		switch l4Match.GetTypeCode().GetCodematch().(type) {
 		case *pds.ICMPMatch_CodeNum:
-			fmt.Printf("%-30s : %d\n", "Code number",
+			fmt.Printf("  %-30s : %d\n", "Code number",
 				l4Match.GetTypeCode().GetCodeNum())
 		case *pds.ICMPMatch_CodeWildcard:
-			fmt.Printf("%-30s : %s\n", "Code",
+			fmt.Printf("  %-30s : %s\n", "Code",
 				strings.Replace(l4Match.GetTypeCode().GetCodeWildcard().String(), "MATCH_", "", -1))
 		default:
 		}
 	default:
-		fmt.Printf("%-30s : %s\n", "Match Type", "-")
+		fmt.Printf("  %-30s : %s\n", "Match Type", "-")
 	}
 
-	fmt.Printf("\n%-30s : %s\n", "Security Rule Action",
+	fmt.Printf("\n  %-30s : %s\n", "Security Rule Action",
 		strings.Replace(attr.GetAction().String(), "SECURITY_RULE_ACTION_", "", -1))
 }
 

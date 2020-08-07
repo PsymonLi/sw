@@ -143,10 +143,8 @@ security_policy_impl::reset_rule_stats_(uint8_t af) {
     size = security_policy_impl_db()->rule_stats_table_size(af);
     va = (mem_addr_t)sdk::lib::pal_mem_map(rule_stats_block_addr, size);
     if (va != 0) {
-        PDS_TRACE_DEBUG("Resetting using VA");
 		memset((void *)va, 0, size);
     } else {
-        PDS_TRACE_DEBUG("Resetting using PA");
         rem = size;
         pa = rule_stats_block_addr;
         while (rem > 0) {
@@ -443,13 +441,54 @@ security_policy_impl::fill_status_(pds_policy_status_t *status) {
     status->policy_base_addr = security_policy_root_addr_;
 }
 
+void
+security_policy_impl::fill_stats_(policy *security_policy,
+                                  pds_policy_stats_t *stats) {
+    uint64_t size;
+    uint32_t policy_block_id;
+    uint8_t af = security_policy->af();
+    mem_addr_t rule_stats_block_addr, pa, va;
+
+    // if rule stats feature is not supported, bail out
+    if (security_policy_impl_db()->rule_stats_region_addr(af) ==
+            INVALID_MEM_ADDRESS) {
+        return;
+    }
+
+    // if memory is not provided to copy the stats, no point in reading stats
+    if (unlikely(stats->rule_stats == NULL)) {
+        return;
+    }
+
+    // compute the policy block index within policy region for this policy
+    policy_block_id =
+        (security_policy_root_addr_ -
+             security_policy_impl_db()->security_policy_region_addr(af))/
+                 security_policy_impl_db()->security_policy_table_size(af);
+    // compute the rule stats block base address for this policy
+    rule_stats_block_addr =
+        security_policy_impl_db()->rule_stats_region_addr(af) +
+            (security_policy_impl_db()->rule_stats_table_size(af) *
+                 policy_block_id);
+    size = security_policy->num_rules() *
+               PDS_IMPL_SECURITY_POLICY_RULE_STATS_RECORD_SIZE;
+    va = (mem_addr_t)sdk::lib::pal_mem_map(rule_stats_block_addr, size);
+    if (va != 0) {
+        memcpy(stats->rule_stats, (void *)va, size);
+    } else {
+        sdk::asic::asic_mem_read(rule_stats_block_addr,
+                                 (uint8_t *)stats->rule_stats, size);
+    }
+}
+
 sdk_ret_t
 security_policy_impl::read_hw(api_base *api_obj, obj_key_t *key,
                               obj_info_t *info) {
+    policy *security_policy = (policy *)api_obj;
     pds_policy_info_t *policy_info = (pds_policy_info_t *)info;
 
     fill_status_(&policy_info->status);
-
+    fill_stats_(security_policy, &policy_info->stats);
     return SDK_RET_OK;
 }
 

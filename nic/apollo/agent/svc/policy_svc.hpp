@@ -484,7 +484,7 @@ static inline void
 pds_security_rule_api_stats_to_proto (pds::SecurityRuleStats *proto_stats,
                                       const pds_policy_rule_stats_t *api_stats)
 {
-    // TODO
+    proto_stats->set_numrulehit(api_stats->num_rule_hit);
 }
 
 static inline void
