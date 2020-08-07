@@ -10,6 +10,8 @@
 
  #include "ionic.h"
 
+#define IONIC_EN_UPLINK_NAME_LEN                  8
+
 static inline vmk_HashKeyIteratorCmd
 ionic_hash_table_count_num_dsc_iterator(vmk_HashTable hash_table,
                                         vmk_HashKey key,
@@ -127,6 +129,7 @@ ionic_en_mgmt_inf_get_adpt_info_cb(vmk_MgmtCookies *cookies,
         return VMK_OK;
 }
 
+
 VMK_ReturnStatus
 ionic_en_mgmt_inf_flush_fw_cb(vmk_MgmtCookies *cookies,
                               vmk_MgmtEnvelope *envelope,
@@ -141,11 +144,17 @@ ionic_en_mgmt_inf_flush_fw_cb(vmk_MgmtCookies *cookies,
         fw_img_name = (char *)(fw_flush_params->fw_img_name_addr);
         buf = (char *)(fw_flush_params->fw_img_data_addr);
 
-        vmk_StringCopy(uplink_name.string, (char *)(fw_flush_params->uplink_name_addr), 7);
+        vmk_StringCopy(uplink_name.string,
+                       (char *)(fw_flush_params->uplink_name_addr),
+                       IONIC_EN_UPLINK_NAME_LEN);
 
-        ionic_device_list_get(uplink_name,
-                              &ionic_driver.uplink_dev_list,
-                              &priv_data);
+        status = ionic_device_list_get(uplink_name,
+                                       &ionic_driver.uplink_dev_list,
+                                       &priv_data);
+        if (status != VMK_OK) {
+                ionic_en_err("Uplink: %s is not found", vmk_NameToString(&uplink_name));
+                return VMK_NOT_FOUND;
+        }
 
         status = ionic_firmware_update(priv_data,
                                        buf,
