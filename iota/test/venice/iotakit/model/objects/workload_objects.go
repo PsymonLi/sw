@@ -391,6 +391,101 @@ func (wpc *WorkloadCollection) Filter(filter *WorkloadFilter) *WorkloadCollectio
 	return &newCollection
 }
 
+// AddLabel add label
+func (wpc *WorkloadCollection) AddLabel(label map[string]string) *WorkloadCollection {
+
+	for _, wc := range wpc.Workloads {
+		wc.VeniceWorkload.ObjectMeta.Labels = label
+	}
+
+	return wpc
+}
+
+// Commit updates workload
+func (wpc *WorkloadCollection) Commit() error {
+
+	wloads := []*workload.Workload{}
+	for _, wc := range wpc.Workloads {
+		wloads = append(wloads, wc.VeniceWorkload)
+	}
+
+	return wpc.CollectionCommon.Client.UpdateWorkloads(wloads)
+}
+
+func (wpc *WorkloadCollection) fetch() error {
+
+	nwloads, err := wpc.Client.ListWorkload()
+	if err != nil {
+		return err
+	}
+
+	for index, wload := range wpc.Workloads {
+		for _, nwload := range nwloads {
+			if nwload.Name == wload.VeniceWorkload.Name {
+				wpc.Workloads[index].VeniceWorkload = nwload
+			}
+		}
+	}
+
+	return nil
+}
+
+// VerifyMirrors verify mirrors are present as expected
+func (wpc *WorkloadCollection) VerifyMirrors(mirrors []string) error {
+
+	err := wpc.fetch()
+	if err != nil {
+		return err
+	}
+
+	for _, wload := range wpc.Workloads {
+		for _, mirror := range mirrors {
+			mirrorPresent := false
+			for _, intfMirror := range wload.VeniceWorkload.Status.MirrorSessions {
+				if intfMirror == mirror {
+					mirrorPresent = true
+					break
+				}
+			}
+			if !mirrorPresent {
+				return fmt.Errorf("Workload %v does not have mirror %v", wload.Name, mirror)
+			}
+		}
+	}
+
+	return nil
+}
+
+// VerifyNoMirrors verify no mirrors are present as expected
+func (wpc *WorkloadCollection) VerifyNoMirrors(mirrors []string) error {
+	err := wpc.fetch()
+	if err != nil {
+		return err
+	}
+
+	for _, wload := range wpc.Workloads {
+		for _, mirror := range mirrors {
+			mirrorPresent := false
+			for _, intfMirror := range wload.VeniceWorkload.Status.MirrorSessions {
+				if intfMirror == mirror {
+					mirrorPresent = true
+					break
+				}
+			}
+			if mirrorPresent {
+				return fmt.Errorf("Workload %v has mirror %v", wload.Name, mirror)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Len returns length
+func (wpc *WorkloadCollection) Len() int {
+	return len(wpc.Workloads)
+}
+
 func (wpc *WorkloadPairCollection) policyHelper(policyCollection *NetworkSecurityPolicyCollection, action, proto string) *WorkloadPairCollection {
 	if policyCollection == nil || len(policyCollection.Policies) == 0 {
 		return wpc

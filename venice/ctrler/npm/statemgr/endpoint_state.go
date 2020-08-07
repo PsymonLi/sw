@@ -4,6 +4,7 @@ package statemgr
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -46,12 +47,14 @@ const (
 // EndpointState is a wrapper for endpoint object
 type EndpointState struct {
 	smObjectTracker
-	Endpoint        *ctkit.Endpoint                `json:"-"` // embedding endpoint object
-	groups          map[string]*SecurityGroupState // list of security groups
-	stateMgr        *SmEndpoint
-	migrationState  MigrationStatus
-	markedForDelete bool
-	moveEP          *netproto.Endpoint
+	Endpoint               *ctkit.Endpoint                `json:"-"` // embedding endpoint object
+	groups                 map[string]*SecurityGroupState // list of security groups
+	stateMgr               *SmEndpoint
+	migrationState         MigrationStatus
+	markedForDelete        bool
+	moveEP                 *netproto.Endpoint
+	netProtoMirrorSessions []string
+	mirrorSessions         []string
 }
 
 // endpointKey returns endpoint key
@@ -78,19 +81,21 @@ func EndpointStateFromObj(obj runtime.Object) (*EndpointState, error) {
 	}
 }
 
-func convertEndpoint(eps *workload.Endpoint) *netproto.Endpoint {
+func convertEndpoint(ep *EndpointState) *netproto.Endpoint {
 	// build endpoint
+	eps := &ep.Endpoint.Endpoint
 	creationTime, _ := types.TimestampProto(time.Now())
 	nep := netproto.Endpoint{
 		TypeMeta:   eps.TypeMeta,
 		ObjectMeta: agentObjectMeta(eps.ObjectMeta),
 		Spec: netproto.EndpointSpec{
-			NetworkName:   eps.Status.Network,
-			IPv4Addresses: eps.Status.IPv4Addresses,
-			IPv6Addresses: eps.Status.IPv6Addresses,
-			MacAddress:    eps.Status.MacAddress,
-			UsegVlan:      eps.Status.MicroSegmentVlan,
-			NodeUUID:      eps.Spec.NodeUUID,
+			NetworkName:    eps.Status.Network,
+			IPv4Addresses:  eps.Status.IPv4Addresses,
+			IPv6Addresses:  eps.Status.IPv6Addresses,
+			MacAddress:     eps.Status.MacAddress,
+			UsegVlan:       eps.Status.MicroSegmentVlan,
+			NodeUUID:       eps.Spec.NodeUUID,
+			MirrorSessions: ep.netProtoMirrorSessions,
 		},
 	}
 	if eps.Spec.NodeUUID == "" {
@@ -175,6 +180,39 @@ func (eps *EndpointState) attachSecurityGroups() error {
 
 // Write writes the object to api server
 func (eps *EndpointState) Write() error {
+
+	sliceEqual := func(X, Y []string) bool {
+		m := make(map[string]int)
+
+		for _, y := range Y {
+			m[y]++
+		}
+
+		for _, x := range X {
+			if m[x] > 0 {
+				m[x]--
+				if m[x] == 0 {
+					delete(m, x)
+				}
+				continue
+			}
+			//not present or execess
+			return false
+		}
+
+		return len(m) == 0
+	}
+
+	eps.Endpoint.Status.MirrorSessions = eps.mirrorSessions
+	ws, err := smgrEndpoint.sm.FindWorkload(eps.Endpoint.Tenant, getWorkloadNameFromEPName(eps.Endpoint.Name))
+	if err == nil && !sliceEqual(ws.Workload.Status.MirrorSessions, eps.mirrorSessions) {
+		ws.Workload.Workload.Status.MirrorSessions = eps.mirrorSessions
+		err = ws.Workload.Write()
+		if err != nil {
+			log.Errorf("Failed to write workload (mirror-update) for EP [%v]. Err : %v", eps.Endpoint.Name, err)
+		}
+	}
+
 	return eps.Endpoint.Write()
 }
 
@@ -262,7 +300,7 @@ func (eps *EndpointState) TrackedDSCs() []string {
 //GetEndpointWatchOptions gets options
 func (sma *SmEndpoint) GetEndpointWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
-	opts.FieldChangeSelector = []string{"Spec", "Status.Migration", "Status.NodeUUID"}
+	opts.FieldChangeSelector = []string{"ObjectMeta.Labels", "Spec", "Status.Migration", "Status.NodeUUID"}
 	return &opts
 }
 
@@ -348,7 +386,7 @@ func (eps *EndpointState) GetDBObject() memdb.Object {
 	if eps.moveEP != nil {
 		return eps.moveEP
 	}
-	return convertEndpoint(&eps.Endpoint.Endpoint)
+	return convertEndpoint(eps)
 }
 
 // OnEndpointCreate creates an endpoint
@@ -378,6 +416,8 @@ func (sma *SmEndpoint) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
 		return fmt.Errorf("Duplicate Mac Address %v for endpoint %+v", existing.Endpoint.Status.WorkloadName, epinfo.ObjectMeta)
 	}
 
+	//update for label map
+	smgrMirrorInterface.UpdateLabelMap(eps)
 	// save the endpoint in the database
 	ns.AddEndpoint(eps)
 
@@ -391,13 +431,103 @@ func (sma *SmEndpoint) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
 		log.Errorf("Error storing the sg policy in memdb. Err: %v", err)
 		return nil
 	}
+
+	if len(eps.Endpoint.ObjectMeta.Labels) != 0 {
+		smgrMirrorInterface.processLabelMirrorUpdate(eps)
+	}
+
 	return nil
+}
+
+//DSC gets DSC
+func (eps *EndpointState) DSC() string {
+	return eps.Endpoint.Spec.NodeUUID
+}
+
+//Name name of object
+func (eps *EndpointState) Name() string {
+	return eps.Endpoint.Name
+}
+
+//Key Key of object
+func (eps *EndpointState) Key() string {
+	return eps.Endpoint.GetKey()
+}
+
+//MirrorAllowed mirroring allowed
+func (eps *EndpointState) MirrorAllowed() bool {
+	return true
+}
+
+//Kind kind of object
+func (eps *EndpointState) Kind() string {
+	return eps.Endpoint.Kind
+}
+
+//MarkedForDelete marked for delete
+func (eps *EndpointState) MarkedForDelete() bool {
+	return eps.markedForDelete
+}
+
+//Update udpate object
+func (eps *EndpointState) Update() error {
+	err := smgrEndpoint.sm.UpdateObjectToMbus(eps.Endpoint.MakeKey("cluster"),
+		eps, references(eps.Endpoint))
+	if err != nil {
+		log.Errorf("error updating  push object %v", err)
+	}
+
+	//This update is only called from mirror update, so call periodic push to update status
+	//Periodic push for every write is not enabled for endpoint
+	smgrEndpoint.sm.PeriodicUpdaterPush(eps)
+	return err
+}
+
+//Lock  lock
+func (eps *EndpointState) Lock() {
+	eps.Endpoint.Lock()
+}
+
+//Unlock unlock
+func (eps *EndpointState) Unlock() {
+	eps.Endpoint.Unlock()
+}
+
+//Labels gets labels
+func (eps *EndpointState) Labels() map[string]string {
+	return eps.Endpoint.ObjectMeta.Labels
+}
+
+//GetMirrorSessions get current mirror sessions
+func (eps *EndpointState) GetMirrorSessions() []string {
+	return eps.mirrorSessions
+}
+
+//SetMirrorSessions sets current mirror sessions
+func (eps *EndpointState) SetMirrorSessions(msessions []string) {
+	eps.mirrorSessions = msessions
+}
+
+//GetNetProtoMirrorSessions get current mirror sessions
+func (eps *EndpointState) GetNetProtoMirrorSessions() []string {
+
+	return eps.netProtoMirrorSessions
+}
+
+//SetNetProtoMirrorSessions sets current mirror sessions
+func (eps *EndpointState) SetNetProtoMirrorSessions(msessions []string) {
+	eps.netProtoMirrorSessions = msessions
 }
 
 // OnEndpointUpdate handles update event
 func (sma *SmEndpoint) OnEndpointUpdate(epinfo *ctkit.Endpoint, nep *workload.Endpoint) error {
 	sm := sma.sm
 	log.Infof("Got EP update. %v", nep)
+	labelChanged := false
+
+	if !reflect.DeepEqual(epinfo.Labels, nep.Labels) {
+		labelChanged = true
+	}
 	epinfo.ObjectMeta = nep.ObjectMeta
 
 	eps, err := sm.FindEndpoint(epinfo.Tenant, epinfo.Name)
@@ -424,6 +554,13 @@ func (sma *SmEndpoint) OnEndpointUpdate(epinfo *ctkit.Endpoint, nep *workload.En
 	} else {
 		log.Infof("Updating EP. Sending the object to DSC %v. MoveEP %v", eps.Endpoint.Spec.NodeUUID, eps.moveEP)
 		sm.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
+	}
+
+	//Update labels only if changed.
+	if labelChanged {
+		smgrMirrorInterface.ClearLabelMap(eps)
+		smgrMirrorInterface.UpdateLabelMap(eps)
+		smgrMirrorInterface.processLabelMirrorUpdate(eps)
 	}
 
 	return nil
@@ -562,6 +699,10 @@ func (sma *SmEndpoint) OnEndpointDelete(epinfo *ctkit.Endpoint) error {
 
 	sm.DeleteObjectToMbus(epinfo.Endpoint.MakeKey("cluster"), eps, references(epinfo))
 	log.Infof("Deleted endpoint: %+v", eps)
+
+	eps.markedForDelete = true
+	smgrMirrorInterface.ClearLabelMap(eps)
+	smgrMirrorInterface.processLabelMirrorUpdate(eps)
 
 	return nil
 }
@@ -975,4 +1116,15 @@ func (sma *SmEndpoint) delDuplicateMacEndpoints(eps *EndpointState) error {
 		return err
 	}
 	return ws.doReconcile()
+}
+
+func (sma *SmEndpoint) getEndpointsMatchingSelector(selectors []*labels.Selector) ([]*EndpointState, error) {
+
+	networkStates := []*EndpointState{}
+
+	objs, _ := smgrMirrorInterface.getMirroredObjectsMatchingSelector("Endpoint", selectors)
+	for _, obj := range objs {
+		networkStates = append(networkStates, obj.(*EndpointState))
+	}
+	return networkStates, nil
 }

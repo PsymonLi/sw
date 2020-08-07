@@ -66,6 +66,8 @@ message EndpointStatus {
     repeated string IPv6Addresses   = 18  [(gogoproto.nullable) = true, (gogoproto.jsontag) = "ipv6-addresses,omitempty"];
     // IPv6 gateways
     repeated string IPv6Gateways    = 19 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "ipv6-gateways,omitempty"];
+    // MirrorSessions list of mirror sessions enabled on this endpoint
+    repeated string MirrorSessions   = 20 [(gogoproto.jsontag) = "mirror-sessions"];
 }
 
 // Endpoint represents a network endpoint
@@ -102,6 +104,6 @@ message EndpointMigrationStatus {
     }
 
     // Status of migration
-    string Status                = 1 [(venice.check) = "StrEnum(EndpointMigrationStatus.MigrationState)",
+    string Status                 = 1 [(venice.check) = "StrEnum(EndpointMigrationStatus.MigrationState)",
                                         (gogoproto.jsontag) = "status, omitempty"];
 }

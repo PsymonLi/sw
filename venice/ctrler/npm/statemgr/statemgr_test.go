@@ -285,6 +285,32 @@ func createEndpoint(stateMgr *Statemgr, tenant, endpoint, net string) (*workload
 	return &ep, stateMgr.ctrler.Endpoint().Create(&ep)
 }
 
+// createEndpoint utility function to create an endpoint
+func createEndpointWithLabel(stateMgr *Statemgr, tenant, endpoint, nodeuuid, net string, label map[string]string) (*workload.Endpoint, error) {
+	// network params
+	ep := workload.Endpoint{
+		TypeMeta: api.TypeMeta{Kind: "Endpoint"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      endpoint,
+			Namespace: "default",
+			Tenant:    tenant,
+			Labels:    label,
+		},
+		Spec: workload.EndpointSpec{
+			NodeUUID: nodeuuid,
+		},
+		Status: workload.EndpointStatus{
+			WorkloadName:   endpoint,
+			Network:        net,
+			HomingHostAddr: "192.168.1.1",
+			HomingHostName: "testHost",
+			MacAddress:     endpoint,
+		},
+	}
+
+	return &ep, stateMgr.ctrler.Endpoint().Create(&ep)
+}
+
 func createMirror(stateMgr *Statemgr, tenant, mirrorName string, spanID uint32, startConditions *monitoring.MirrorStartConditions,
 	matchRules []monitoring.MatchRule, collectors []monitoring.MirrorCollector, selector *labels.Selector) (*monitoring.MirrorSession, error) {
 	mr := monitoring.MirrorSession{
@@ -303,7 +329,12 @@ func createMirror(stateMgr *Statemgr, tenant, mirrorName string, spanID uint32, 
 	}
 
 	if selector != nil {
-		mr.Spec.Interfaces = &monitoring.InterfaceMirror{Selectors: []*labels.Selector{selector}}
+		if strings.Contains(mirrorName, "workload") {
+			mr.Spec.Workloads = &monitoring.WorkloadMirror{Selectors: []*labels.Selector{selector}}
+		} else {
+			mr.Spec.Interfaces = &monitoring.InterfaceMirror{Selectors: []*labels.Selector{selector}}
+
+		}
 	}
 	if startConditions != nil {
 		schAfter := time.Duration(uint64(startConditions.ScheduleTime.Seconds) * uint64(time.Second))
@@ -350,9 +381,13 @@ func updateMirror(stateMgr *Statemgr, tenant, mirrorName string, spanID uint32, 
 	}
 
 	if selector != nil {
-		mr.Spec.Interfaces = &monitoring.InterfaceMirror{Selectors: []*labels.Selector{selector}}
-	}
+		if strings.Contains(mirrorName, "workload") {
+			mr.Spec.Workloads = &monitoring.WorkloadMirror{Selectors: []*labels.Selector{selector}}
+		} else {
+			mr.Spec.Interfaces = &monitoring.InterfaceMirror{Selectors: []*labels.Selector{selector}}
 
+		}
+	}
 	if startConditions != nil {
 		schAfter := time.Duration(uint64(startConditions.ScheduleTime.Seconds) * uint64(time.Second))
 		schTime := time.Now().Add(schAfter)
@@ -362,6 +397,37 @@ func updateMirror(stateMgr *Statemgr, tenant, mirrorName string, spanID uint32, 
 				Timestamp: *ts,
 			},
 		}
+	}
+
+	err := stateMgr.ctrler.MirrorSession().Update(&mr)
+
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
+	return &mr, err
+}
+
+func updateLabelMirror(stateMgr *Statemgr, tenant, mirrorName string,
+	collectors []monitoring.MirrorCollector, intfSelector *labels.Selector,
+	workloadSelector *labels.Selector) (*monitoring.MirrorSession, error) {
+	genID++
+	mr := monitoring.MirrorSession{
+		TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:       tenant,
+			Namespace:    "default",
+			Name:         mirrorName,
+			GenerationID: strconv.Itoa(genID),
+		},
+		Spec: monitoring.MirrorSessionSpec{
+			Collectors: collectors,
+		},
+	}
+
+	if intfSelector != nil {
+		mr.Spec.Interfaces = &monitoring.InterfaceMirror{Selectors: []*labels.Selector{intfSelector}}
+	} else {
+		mr.Spec.Workloads = &monitoring.WorkloadMirror{Selectors: []*labels.Selector{workloadSelector}}
+
 	}
 
 	err := stateMgr.ctrler.MirrorSession().Update(&mr)
@@ -407,8 +473,33 @@ func deleteMirror(stateMgr *Statemgr, tenant, mirrorName string, selector *label
 		Spec: monitoring.MirrorSessionSpec{},
 	}
 	if selector != nil {
-		mr.Spec.Interfaces = &monitoring.InterfaceMirror{Selectors: []*labels.Selector{selector}}
+		if strings.Contains(mirrorName, "workload") {
+			mr.Spec.Workloads = &monitoring.WorkloadMirror{Selectors: []*labels.Selector{selector}}
+		} else {
+			mr.Spec.Interfaces = &monitoring.InterfaceMirror{Selectors: []*labels.Selector{selector}}
+
+		}
 	}
+
+	// create sg
+	err := stateMgr.ctrler.MirrorSession().Delete(&mr)
+
+	//Give it some time to schedule
+	time.Sleep(300 * time.Millisecond)
+	return &mr, err
+}
+
+func deleteWorkloadMirror(stateMgr *Statemgr, tenant, mirrorName string, selector *labels.Selector) (*monitoring.MirrorSession, error) {
+	mr := monitoring.MirrorSession{
+		TypeMeta: api.TypeMeta{Kind: "MirrorSession"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    tenant,
+			Namespace: "default",
+			Name:      mirrorName,
+		},
+		Spec: monitoring.MirrorSessionSpec{},
+	}
+	mr.Spec.Workloads = &monitoring.WorkloadMirror{Selectors: []*labels.Selector{selector}}
 
 	// create sg
 	err := stateMgr.ctrler.MirrorSession().Delete(&mr)
@@ -6717,6 +6808,145 @@ func TestWatcherWithMirrorCreateDelete(t *testing.T) {
 
 }
 
+func TestWorkloadWatcherWithMirrorCreateDelete(t *testing.T) {
+	// create network state manager
+	ResetWatchMap()
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	numOfIntfs := 1
+	dscs := createsDSCs(stateMgr, 0, numOfIntfs)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	//Start watchers
+
+	watchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		watchers = append(watchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("InterfaceMirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Endpoint", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+	defer stopWatchers(t, watchers)
+
+	label1 := map[string]string{
+		"env": "production", "app": "procurement",
+	}
+
+	err = createNetwork(t, stateMgr, "default", "mynet", "20.1.1.0/24", "20.1.1.254", 2000)
+	AssertOk(t, err, "Error creating the network")
+
+	for i := 0; i < numOfIntfs; i++ {
+		name := "workload-" + strconv.Itoa(i)
+		_, err = createEndpointWithLabel(stateMgr, "default", name, dscs[i].Status.PrimaryMAC, "mynet", labels.Set(label1))
+		AssertOk(t, err, "Error creating endpoint ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, ok := stateMgr.FindEndpointByMacAddr("default", name)
+			if ok {
+				return true, nil
+			}
+			return false, nil
+		}, "Endpoint not found", "1ms", "1s")
+	}
+
+	numCollectors := 1
+	collectors := getCollectors(0, numCollectors)
+	_, err = createMirror(stateMgr, "default", "workload-testMirror", 1, nil, nil, collectors, labels.SelectorFromSet(labels.Set(label1)))
+	AssertOk(t, err, "Error creating mirror session ")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrMirrorInterface.FindMirrorSession("default", "workload-testMirror")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Mirror session not found", "1ms", "1s")
+
+	intfs, err := smgrEndpoint.getEndpointsMatchingSelector([]*labels.Selector{labels.SelectorFromSet(label1)})
+	AssertOk(t, err, "Error find endpoints")
+	Assert(t, len(intfs) == numOfIntfs, "Number of endpoints don't match")
+
+	for _, intf := range intfs {
+		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
+		Assert(t, ok, "Collector not present")
+	}
+
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsExp.evKindMap[memdb.CreateEvent]["InterfaceMirrorSession"] = 1
+		watcher.evtsExp.evKindMap[memdb.CreateEvent]["Endpoint"] = 1
+		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1
+	}
+
+	errs := make(chan error, len(watchers))
+	for _, watcher := range watchers {
+		watcher := watcher
+		go func() {
+			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+		}()
+
+	}
+
+	for _ = range watchers {
+		err := <-errs
+		AssertOk(t, err, "Error verifying objects")
+	}
+
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+		watcher.evtsExp.evKindMap[memdb.DeleteEvent]["InterfaceMirrorSession"] = 1
+		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1
+	}
+
+	_, err = deleteMirror(stateMgr, "default", "workload-testMirror", labels.SelectorFromSet(labels.Set(label1)))
+	AssertOk(t, err, "Error creating mirror session ")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrMirrorInterface.FindMirrorSession("default", "workload-testMirror")
+		if err != nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Mirror session found", "1ms", "1s")
+
+	errs = make(chan error, len(watchers))
+	for _, watcher := range watchers {
+		watcher := watcher
+		go func() {
+			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+		}()
+
+	}
+
+	for _ = range watchers {
+		err := <-errs
+		AssertOk(t, err, "Error verifying objects")
+	}
+
+	intfs, err = smgrEndpoint.getEndpointsMatchingSelector([]*labels.Selector{labels.SelectorFromSet(label1)})
+	AssertOk(t, err, "Error find interfaces")
+	Assert(t, len(intfs) == numOfIntfs, "Number of interfaces don't match")
+
+	for _, intf := range intfs {
+		Assert(t, len(intf.mirrorSessions) == 0, "Number of collectors don't match")
+	}
+
+}
+
 func TestWatcherWithMirrorCreateUpdate(t *testing.T) {
 	// create network state manager
 	ResetWatchMap()
@@ -7124,6 +7354,138 @@ func TestWatcherWithMirrorCreateDeleteBeforeWatcherJoin(t *testing.T) {
 
 }
 
+func TestWatcherWithWorkloadMirrorCreateDeleteBeforeWatcherJoin(t *testing.T) {
+	// create network state manager
+	ResetWatchMap()
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	numOfIntfs := 5
+	dscs := createsDSCs(stateMgr, 0, numOfIntfs)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	label1 := map[string]string{
+		"env": "production", "app": "procurement",
+	}
+
+	err = createNetwork(t, stateMgr, "default", "mynet", "20.1.1.0/24", "20.1.1.254", 2000)
+	AssertOk(t, err, "Error creating the network")
+
+	for i := 0; i < numOfIntfs; i++ {
+		name := "workload-" + strconv.Itoa(i)
+		_, err = createEndpointWithLabel(stateMgr, "default", name, dscs[i].Status.PrimaryMAC, "mynet", labels.Set(label1))
+		AssertOk(t, err, "Error creating endpoint ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, ok := stateMgr.FindEndpointByMacAddr("default", name)
+			if ok {
+				return true, nil
+			}
+			return false, nil
+		}, "Endpoint not found", "1ms", "1s")
+	}
+
+	numCollectors := 1
+	collectors := getCollectors(0, numCollectors)
+	_, err = createMirror(stateMgr, "default", "workload-testMirror", 1, nil, nil, collectors, labels.SelectorFromSet(labels.Set(label1)))
+	AssertOk(t, err, "Error creating mirror session ")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrMirrorInterface.FindMirrorSession("default", "workload-testMirror")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Mirror session not found", "1ms", "1s")
+
+	intfs, err := smgrEndpoint.getEndpointsMatchingSelector([]*labels.Selector{labels.SelectorFromSet(label1)})
+	AssertOk(t, err, "Error find interfaces")
+	Assert(t, len(intfs) == numOfIntfs, "Number of interfaces don't match")
+
+	for _, intf := range intfs {
+		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
+		Assert(t, ok, "Collector not present")
+	}
+
+	//Start watchers
+
+	oldWatchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		oldWatchers = append(oldWatchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("InterfaceMirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Endpoint", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+
+	watchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		watchers = append(watchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("InterfaceMirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Endpoint", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+	defer stopWatchers(t, watchers)
+
+	time.Sleep(3 * time.Second)
+	stopWatchers(t, oldWatchers)
+
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+		watcher.evtsExp.evKindMap[memdb.DeleteEvent]["InterfaceMirrorSession"] = numCollectors
+		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = numOfIntfs
+	}
+
+	_, err = deleteMirror(stateMgr, "default", "workload-testMirror", labels.SelectorFromSet(labels.Set(label1)))
+	AssertOk(t, err, "Error creating mirror session ")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrMirrorInterface.FindMirrorSession("default", "workload-testMirror")
+		if err != nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Mirror session found", "1ms", "1s")
+
+	errs := make(chan error, len(watchers))
+	for _, watcher := range watchers {
+		watcher := watcher
+		go func() {
+			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+		}()
+
+	}
+
+	for _ = range watchers {
+		err := <-errs
+		AssertOk(t, err, "Error verifying objects")
+	}
+
+	intfs, err = smgrEndpoint.getEndpointsMatchingSelector([]*labels.Selector{labels.SelectorFromSet(label1)})
+	AssertOk(t, err, "Error find interfaces")
+	Assert(t, len(intfs) == numOfIntfs, "Number of interfaces don't match")
+
+	for _, intf := range intfs {
+		Assert(t, len(intf.mirrorSessions) == 0, "Number of collectors don't match")
+	}
+
+}
 func TestWatcherWithMirrorCreateDeleteMultipleTimes(t *testing.T) {
 	// create network state manager
 	ResetWatchMap()
@@ -7279,6 +7641,148 @@ func TestWatcherWithMirrorCreateDeleteMultipleTimes(t *testing.T) {
 
 }
 
+func TestWatcherWithWorkloadMirrorCreateDeleteMultipleTimes(t *testing.T) {
+	// create network state manager
+	ResetWatchMap()
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	numOfIntfs := 1
+	dscs := createsDSCs(stateMgr, 0, numOfIntfs)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	//Start watchers
+
+	watchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		watchers = append(watchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("InterfaceMirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Endpoint", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+	defer stopWatchers(t, watchers)
+
+	label1 := map[string]string{
+		"env": "production", "app": "procurement",
+	}
+
+	err = createNetwork(t, stateMgr, "default", "mynet", "20.1.1.0/24", "20.1.1.254", 2000)
+	AssertOk(t, err, "Error creating the network")
+
+	for i := 0; i < numOfIntfs; i++ {
+		name := "workload-" + strconv.Itoa(i)
+		_, err = createEndpointWithLabel(stateMgr, "default", name, dscs[i].Status.PrimaryMAC, "mynet", labels.Set(label1))
+		AssertOk(t, err, "Error creating endpoint ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, ok := stateMgr.FindEndpointByMacAddr("default", name)
+			if ok {
+				return true, nil
+			}
+			return false, nil
+		}, "Endpoint not found", "1ms", "1s")
+	}
+
+	for iter := 0; iter < 3; iter++ {
+		numCollectors := 1
+		collectors := getCollectors(0, numCollectors)
+		for _, watcher := range watchers {
+			watcher.evtsRcvd.Reset()
+		}
+		_, err = createMirror(stateMgr, "default", "workload-testMirror", 1, nil, nil, collectors, labels.SelectorFromSet(labels.Set(label1)))
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", "workload-testMirror")
+			if err == nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session not found", "1ms", "1s")
+
+		intfs, err := smgrEndpoint.getEndpointsMatchingSelector([]*labels.Selector{labels.SelectorFromSet(label1)})
+		AssertOk(t, err, "Error find interfaces")
+		Assert(t, len(intfs) == numOfIntfs, "Number of interfaces don't match")
+
+		for _, intf := range intfs {
+			Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
+			_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
+			Assert(t, ok, "Collector not present")
+		}
+
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			watcher.evtsExp.evKindMap[memdb.CreateEvent]["InterfaceMirrorSession"] = numCollectors
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1
+		}
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			watcher.evtsRcvd.Reset()
+			watcher.evtsExp.evKindMap[memdb.DeleteEvent]["InterfaceMirrorSession"] = numCollectors
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1
+		}
+
+		_, err = deleteMirror(stateMgr, "default", "workload-testMirror", labels.SelectorFromSet(labels.Set(label1)))
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", "testMirror")
+			if err != nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session found", "1ms", "1s")
+
+		errs = make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+
+		intfs, err = smgrEndpoint.getEndpointsMatchingSelector([]*labels.Selector{labels.SelectorFromSet(label1)})
+		AssertOk(t, err, "Error find interfaces")
+		Assert(t, len(intfs) == numOfIntfs, "Number of interfaces don't match")
+
+		for _, intf := range intfs {
+			Assert(t, len(intf.mirrorSessions) == 0, "Number of collectors don't match")
+		}
+	}
+
+}
 func TestWatcherWithMirrorCreateFakeUpdate(t *testing.T) {
 	// create network state manager
 	ResetWatchMap()
@@ -7743,6 +8247,240 @@ func TestWatcherWithMirrorCreateUpdateDelete(t *testing.T) {
 			return false, nil
 		}, "Interface session found", "1ms", "1s")
 
+	}
+
+}
+
+func TestWatcherWithWorkloadMirrorCreateUpdateDelete(t *testing.T) {
+	// create network state manager
+	ResetWatchMap()
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	numOfIntfs := 1
+	numOfNewIntfs := 1
+	dscs := createsDSCs(stateMgr, 0, numOfIntfs)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+	//Start watchers
+
+	watchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		watchers = append(watchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("InterfaceMirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Endpoint", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+	defer stopWatchers(t, watchers)
+
+	label1 := map[string]string{
+		"env": "production", "app": "procurement",
+	}
+
+	label2 := map[string]string{
+		"env": "production1", "app": "procurement1",
+	}
+
+	err = createNetwork(t, stateMgr, "default", "mynet", "20.1.1.0/24", "20.1.1.254", 2000)
+	AssertOk(t, err, "Error creating the network")
+
+	for i := 0; i < numOfIntfs; i++ {
+		name := "workload-" + strconv.Itoa(i)
+		_, err = createEndpointWithLabel(stateMgr, "default", name, dscs[i].Status.PrimaryMAC, "mynet", labels.Set(label1))
+		AssertOk(t, err, "Error creating endpoint ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, ok := stateMgr.FindEndpointByMacAddr("default", name)
+			if ok {
+				return true, nil
+			}
+			return false, nil
+		}, "Endpoint not found", "1ms", "1s")
+	}
+
+	for i := 0; i < numOfNewIntfs; i++ {
+		name := "workload-0-" + strconv.Itoa(i)
+		_, err = createEndpointWithLabel(stateMgr, "default", name, dscs[i].Status.PrimaryMAC, "mynet", labels.Set(label2))
+		AssertOk(t, err, "Error creating endpoint ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, ok := stateMgr.FindEndpointByMacAddr("default", name)
+			if ok {
+				return true, nil
+			}
+			return false, nil
+		}, "Endpoint not found", "1ms", "1s")
+	}
+
+	numCollectors := 10
+	collectors := getCollectors(0, numCollectors)
+	_, err = createMirror(stateMgr, "default", "workload-testMirror", 1, nil, nil, collectors, labels.SelectorFromSet(labels.Set(label1)))
+	AssertOk(t, err, "Error creating mirror session ")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrMirrorInterface.FindMirrorSession("default", "workload-testMirror")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Mirror session not found", "1ms", "1s")
+
+	intfs, err := smgrEndpoint.getEndpointsMatchingSelector([]*labels.Selector{labels.SelectorFromSet(label1)})
+	AssertOk(t, err, "Error find interfaces")
+	Assert(t, len(intfs) == numOfIntfs, "Number of interfaces don't match")
+
+	for _, intf := range intfs {
+		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
+		Assert(t, ok, "Collector not present")
+
+		stringSliceEqual(intf.Endpoint.Status.MirrorSessions, []string{"workload-testMirror"})
+	}
+
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsExp.evKindMap[memdb.CreateEvent]["InterfaceMirrorSession"] = 1
+		watcher.evtsExp.evKindMap[memdb.CreateEvent]["Endpoint"] = 2
+		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1
+	}
+
+	errs := make(chan error, len(watchers))
+	for _, watcher := range watchers {
+		watcher := watcher
+		go func() {
+			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+		}()
+
+	}
+
+	for _ = range watchers {
+		err := <-errs
+		AssertOk(t, err, "Error verifying objects")
+	}
+
+	newCollectorsCnt := 5
+	newCollectors := getCollectors(numCollectors, numCollectors+newCollectorsCnt)
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["InterfaceMirrorSession"] = 1
+	}
+
+	//Lets up update the mirror
+
+	//Add new collectors for same mirror
+	_, err = updateMirror(stateMgr, "default", "workload-testMirror", 1, nil, nil, newCollectors, labels.SelectorFromSet(labels.Set(label1)), 0)
+	AssertOk(t, err, "Error creating mirror session ")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrMirrorInterface.FindMirrorSession("default", "workload-testMirror")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Mirror session not found", "1ms", "1s")
+
+	errs = make(chan error, len(watchers))
+	for _, watcher := range watchers {
+		watcher := watcher
+		go func() {
+			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+		}()
+
+	}
+
+	for _ = range watchers {
+		err := <-errs
+		AssertOk(t, err, "Error verifying objects")
+	}
+
+	otherNewCollectorsCnt := 5
+	otherNewCollectors := getCollectors(numCollectors+newCollectorsCnt, numCollectors+newCollectorsCnt+otherNewCollectorsCnt)
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["InterfaceMirrorSession"] = 1
+		//watcher.evtsExp.evKindMap[memdb.CreateEvent]["InterfaceMirrorSession"] = 1
+		//	watcher.evtsExp.evKindMap[memdb.De]["InterfaceMirrorSession"] = 1
+		//watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Interface"] = 2
+	}
+
+	log.Infof("New collectors %v", len(otherNewCollectors))
+
+	//Add new collectors for same mirror
+	_, err = updateMirror(stateMgr, "default", "workload-testMirror", 1, nil, nil, otherNewCollectors, labels.SelectorFromSet(labels.Set(label1)), 0)
+	AssertOk(t, err, "Error creating mirror session ")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrMirrorInterface.FindMirrorSession("default", "workload-testMirror")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Mirror session not found", "1ms", "1s")
+
+	errs = make(chan error, len(watchers))
+	for _, watcher := range watchers {
+		watcher := watcher
+		go func() {
+			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+		}()
+
+	}
+
+	for _ = range watchers {
+		err := <-errs
+		AssertOk(t, err, "Error verifying objects")
+	}
+
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+		watcher.evtsExp.evKindMap[memdb.DeleteEvent]["InterfaceMirrorSession"] = 1
+		watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1
+	}
+
+	_, err = deleteMirror(stateMgr, "default", "workload-testMirror", labels.SelectorFromSet(labels.Set(label1)))
+	AssertOk(t, err, "Error creating mirror session ")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrMirrorInterface.FindMirrorSession("default", "testMirror")
+		if err != nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Mirror session found", "1ms", "1s")
+
+	errs = make(chan error, len(watchers))
+	for _, watcher := range watchers {
+		watcher := watcher
+		go func() {
+			errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+		}()
+
+	}
+
+	for _ = range watchers {
+		err := <-errs
+		AssertOk(t, err, "Error verifying objects")
+	}
+
+	intfs, err = smgrEndpoint.getEndpointsMatchingSelector([]*labels.Selector{labels.SelectorFromSet(label1)})
+	AssertOk(t, err, "Error find interfaces")
+	Assert(t, len(intfs) == numOfIntfs, "Number of interfaces don't match")
+
+	for _, intf := range intfs {
+		Assert(t, len(intf.mirrorSessions) == 0, "Number of collectors don't match")
 	}
 
 }
@@ -10380,6 +11118,391 @@ func TestWatcherWithFlowMirrorToInterfaceMirror(t *testing.T) {
 
 }
 
+func TestWatcherWithWorkloadMirrorToInterfaceMirror(t *testing.T) {
+	// create network state manager
+	ResetWatchMap()
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	numOfIntfs := 1
+	dscs := createsDSCs(stateMgr, 0, numOfIntfs)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	label1 := map[string]string{
+		"env": "production", "app": "procurement",
+	}
+
+	err = createNetwork(t, stateMgr, "default", "mynet", "20.1.1.0/24", "20.1.1.254", 2000)
+	AssertOk(t, err, "Error creating the network")
+
+	for i := 0; i < numOfIntfs; i++ {
+		name := "workload-" + strconv.Itoa(i)
+		_, err = createEndpointWithLabel(stateMgr, "default", name, dscs[i].Status.PrimaryMAC, "mynet", labels.Set(label1))
+		AssertOk(t, err, "Error creating endpoint ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, ok := stateMgr.FindEndpointByMacAddr("default", name)
+			if ok {
+				return true, nil
+			}
+			return false, nil
+		}, "Endpoint not found", "1ms", "1s")
+	}
+
+	for i := 0; i < numOfIntfs; i++ {
+		name := "intf" + strconv.Itoa(i)
+		_, err = createNetworkInterface(stateMgr, name, dscs[i].Status.PrimaryMAC, labels.Set(label1))
+		AssertOk(t, err, "Error creating interface ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrNetworkInterface.FindNetworkInterface(name)
+			if err == nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Interface not found", "1ms", "1s")
+	}
+
+	numCollectors := 4
+	collectors := getCollectors(0, numCollectors)
+	//Start watchers
+
+	watchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		watchers = append(watchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("InterfaceMirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Endpoint", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Interface", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+	defer stopWatchers(t, watchers)
+
+	numOfMirrors := 2
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("workload-testMirror-%v", i)
+		spanID := uint32(i + 1)
+		_, err = createMirror(stateMgr, "default", mirrorName, spanID, nil, nil, collectors, labels.SelectorFromSet(labels.Set(label1)))
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err == nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session not found", "1ms", "1s")
+
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			watcher.evtsExp.evKindMap[memdb.CreateEvent]["InterfaceMirrorSession"] = 1 + i
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1 + i
+		}
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+
+	}
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+	}
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("workload-testMirror-%v", i)
+		_, err = updateLabelMirror(stateMgr, "default", mirrorName, collectors, labels.SelectorFromSet(labels.Set(label1)), nil)
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err == nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session not found", "1ms", "1s")
+
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["InterfaceMirrorSession"] = 1 + i
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1 + i
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Interface"] = 1 + i
+		}
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+
+	}
+
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+	}
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("workload-testMirror-%v", i)
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			//watcher.evtsRcvd.Reset()
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Interface"] = 1 + i
+			watcher.evtsExp.evKindMap[memdb.DeleteEvent]["InterfaceMirrorSession"] = 1 + i
+		}
+
+		_, err = deleteMirror(stateMgr, "default", mirrorName, nil)
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err != nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session found", "1ms", "1s")
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+	}
+
+}
+
+func TestWatcherWithInterfaceMirrorToWorkloadMirror(t *testing.T) {
+	// create network state manager
+	ResetWatchMap()
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	numOfIntfs := 1
+	dscs := createsDSCs(stateMgr, 0, numOfIntfs)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	label1 := map[string]string{
+		"env": "production", "app": "procurement",
+	}
+
+	err = createNetwork(t, stateMgr, "default", "mynet", "20.1.1.0/24", "20.1.1.254", 2000)
+	AssertOk(t, err, "Error creating the network")
+
+	for i := 0; i < numOfIntfs; i++ {
+		name := "workload-" + strconv.Itoa(i)
+		_, err = createEndpointWithLabel(stateMgr, "default", name, dscs[i].Status.PrimaryMAC, "mynet", labels.Set(label1))
+		AssertOk(t, err, "Error creating endpoint ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, ok := stateMgr.FindEndpointByMacAddr("default", name)
+			if ok {
+				return true, nil
+			}
+			return false, nil
+		}, "Endpoint not found", "1ms", "1s")
+	}
+
+	for i := 0; i < numOfIntfs; i++ {
+		name := "intf" + strconv.Itoa(i)
+		_, err = createNetworkInterface(stateMgr, name, dscs[i].Status.PrimaryMAC, labels.Set(label1))
+		AssertOk(t, err, "Error creating interface ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrNetworkInterface.FindNetworkInterface(name)
+			if err == nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Interface not found", "1ms", "1s")
+	}
+
+	numCollectors := 4
+	collectors := getCollectors(0, numCollectors)
+	//Start watchers
+
+	watchers := []*watchWrapper{}
+	for _, dsc := range dscs {
+		watcher := &memdb.Watcher{Name: dsc.Status.PrimaryMAC}
+		watcher.Channel = make(chan memdb.Event, (1000))
+		watchWrap := addWatcher(watcher)
+		watchers = append(watchers, watchWrap)
+		err = stateMgr.mbus.WatchObjects("InterfaceMirrorSession", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Endpoint", watcher)
+		AssertOk(t, err, "Error watching")
+		err = stateMgr.mbus.WatchObjects("Interface", watcher)
+		AssertOk(t, err, "Error watching")
+	}
+	defer stopWatchers(t, watchers)
+
+	numOfMirrors := 2
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+		spanID := uint32(i + 1)
+		_, err = createMirror(stateMgr, "default", mirrorName, spanID, nil, nil, collectors, labels.SelectorFromSet(labels.Set(label1)))
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err == nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session not found", "1ms", "1s")
+
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			watcher.evtsExp.evKindMap[memdb.CreateEvent]["InterfaceMirrorSession"] = 1 + i
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Interface"] = 1 + i
+		}
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+
+	}
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+	}
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+		_, err = updateLabelMirror(stateMgr, "default", mirrorName, collectors, nil, labels.SelectorFromSet(labels.Set(label1)))
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err == nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session not found", "1ms", "1s")
+
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["InterfaceMirrorSession"] = 1 + i
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1 + i
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Interface"] = 1 + i
+		}
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+
+	}
+
+	for _, watcher := range watchers {
+		watcher.evtsExp.Reset()
+		watcher.evtsRcvd.Reset()
+	}
+
+	for i := 0; i < numOfMirrors; i++ {
+
+		mirrorName := fmt.Sprintf("testMirror-%v", i)
+		for _, watcher := range watchers {
+			watcher.evtsExp.Reset()
+			//watcher.evtsRcvd.Reset()
+			watcher.evtsExp.evKindMap[memdb.UpdateEvent]["Endpoint"] = 1 + i
+			watcher.evtsExp.evKindMap[memdb.DeleteEvent]["InterfaceMirrorSession"] = 1 + i
+		}
+
+		_, err = deleteMirror(stateMgr, "default", mirrorName, nil)
+		AssertOk(t, err, "Error creating mirror session ")
+
+		AssertEventually(t, func() (bool, interface{}) {
+			_, err := smgrMirrorInterface.FindMirrorSession("default", mirrorName)
+			if err != nil {
+				return true, nil
+			}
+			return false, nil
+		}, "Mirror session found", "1ms", "1s")
+
+		errs := make(chan error, len(watchers))
+		for _, watcher := range watchers {
+			watcher := watcher
+			go func() {
+				errs <- verifyEvObjects(t, watchMap[watcher.watcher.Name], time.Duration(1*time.Second))
+			}()
+
+		}
+
+		for _ = range watchers {
+			err := <-errs
+			AssertOk(t, err, "Error verifying objects")
+		}
+	}
+
+}
 func TestWatcherWithInterfaceMirrorToFlowMirror(t *testing.T) {
 	// create network state manager
 	ResetWatchMap()

@@ -419,7 +419,12 @@ func (sm *SysModel) UDPSessionFails(wpc *objects.WorkloadPairCollection, port in
 // Workloads returns all Workloads in the model
 func (sm *SysModel) Workloads() *objects.WorkloadCollection {
 
-	wpc := objects.WorkloadCollection{}
+	wpc := objects.WorkloadCollection{
+		CollectionCommon: objects.CollectionCommon{
+			Client:  sm.ObjClient(),
+			Testbed: sm.Testbed(),
+		},
+	}
 
 	for _, wf := range sm.WorkloadsObjs {
 		wpc.Workloads = append(wpc.Workloads, wf)

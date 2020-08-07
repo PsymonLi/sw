@@ -70,6 +70,7 @@ var typesMapEndpoint = map[string]*api.Struct{
 			"labels":              api.CLIInfo{Path: "Labels", Skip: false, Insert: "", Help: ""},
 			"mac-address":         api.CLIInfo{Path: "Status.MacAddress", Skip: false, Insert: "", Help: ""},
 			"micro-segment-vlan":  api.CLIInfo{Path: "Spec.MicroSegmentVlan", Skip: false, Insert: "", Help: ""},
+			"mirror-sessions":     api.CLIInfo{Path: "Status.MirrorSessions", Skip: false, Insert: "", Help: ""},
 			"name":                api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
 			"namespace":           api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
 			"network":             api.CLIInfo{Path: "Status.Network", Skip: false, Insert: "", Help: ""},
@@ -139,6 +140,8 @@ var typesMapEndpoint = map[string]*api.Struct{
 			"IPv6Addresses": api.Field{Name: "IPv6Addresses", CLITag: api.CLIInfo{ID: "ipv6-addresses", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ipv6-addresses", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"IPv6Gateways": api.Field{Name: "IPv6Gateways", CLITag: api.CLIInfo{ID: "ipv6-gateways", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ipv6-gateways", Pointer: true, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"MirrorSessions": api.Field{Name: "MirrorSessions", CLITag: api.CLIInfo{ID: "mirror-sessions", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "mirror-sessions", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"workload.EndpointStatus.WorkloadAttributesEntry": &api.Struct{

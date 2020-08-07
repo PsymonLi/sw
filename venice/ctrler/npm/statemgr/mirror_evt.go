@@ -20,6 +20,7 @@ import (
 	"github.com/pensando/sw/api/labels"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/memdb"
+	"github.com/pensando/sw/venice/utils/memdb/objReceiver"
 	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
@@ -500,10 +501,13 @@ func (smm *SmMirrorSessionInterface) FindMirrorSession(tenant, name string) (*Mi
 //SmMirrorSessionInterface is statemanagers struct for mirror session handling
 type SmMirrorSessionInterface struct {
 	featureMgrBase
-	sm                 *Statemgr
-	mirrorSessions     *sync.Map
-	mirrorTimerWatcher chan MirrorTimerEvent // mirror session Timer watcher
-	numMirrorSessions  int                   // total mirror sessions created
+	sm                            *Statemgr
+	mirrorSessions                *sync.Map
+	mirrorTimerWatcher            chan MirrorTimerEvent                  // mirror session Timer watcher
+	numMirrorSessions             int                                    // total mirror sessions created
+	lablelBasedMirrorUpdaterQueue chan mirrorObjectState                 // to serialize interface mirror updates
+	objsByLabel                   map[string]map[string]*labelInterfaces //intferfaces by labels
+	dscMirrorSessions             map[string]*[]*dscMirrorSession
 }
 
 var smgrMirrorInterface *SmMirrorSessionInterface
@@ -526,8 +530,11 @@ func initSmMirrorInterface() {
 	smgrMirrorInterface = &SmMirrorSessionInterface{
 		sm:                 mgr,
 		mirrorTimerWatcher: make(chan MirrorTimerEvent, watcherQueueLen),
+		dscMirrorSessions:  make(map[string]*[]*dscMirrorSession),
 	}
 	smgrMirrorInterface.mirrorSessions = new(sync.Map)
+	smgrMirrorInterface.lablelBasedMirrorUpdaterQueue = newInterfaceUpdater()
+	smgrMirrorInterface.objsByLabel = make(map[string]map[string]*labelInterfaces)
 	mgr.Register("statemgrmirrorSession", smgrMirrorInterface)
 }
 
@@ -643,7 +650,7 @@ func (smm *SmMirrorSessionInterface) deleteMirrorSession(ms *MirrorSessionState)
 	return nil
 }
 
-func (smm *SmMirrorSessionInterface) getAllInterfaceMirrorSessions() []*interfaceMirrorSelector {
+func (smm *SmMirrorSessionInterface) getAllLabelMirrorSessions(kind string) []*interfaceMirrorSelector {
 
 	intfMirrors := []*interfaceMirrorSelector{}
 
@@ -655,15 +662,24 @@ func (smm *SmMirrorSessionInterface) getAllInterfaceMirrorSessions() []*interfac
 			return true
 		}
 
-		if mirror.markedForDelete || ms.MirrorSession.MirrorSession.Spec.Interfaces == nil {
+		if mirror.markedForDelete || (ms.MirrorSession.MirrorSession.Spec.Interfaces == nil &&
+			ms.MirrorSession.MirrorSession.Spec.Workloads == nil) {
 			return true
 		}
 
-		intfMirrors = append(intfMirrors, &interfaceMirrorSelector{
-			selectors:         ms.MirrorSession.MirrorSession.Spec.Interfaces.Selectors,
+		intfMirror := &interfaceMirrorSelector{
 			intfMirrorSession: &ms.intfMirrorSession,
 			mirrorSession:     interfaceMirrorSessionKey(ms),
-		})
+		}
+		if kind == "NetworkInterface" && ms.MirrorSession.MirrorSession.Spec.Interfaces != nil {
+			intfMirror.selectors = ms.MirrorSession.MirrorSession.Spec.Interfaces.Selectors
+		} else if kind == "Endpoint" && ms.MirrorSession.MirrorSession.Spec.Workloads != nil {
+			intfMirror.selectors = ms.MirrorSession.MirrorSession.Spec.Workloads.Selectors
+		} else {
+			return true
+		}
+
+		intfMirrors = append(intfMirrors, intfMirror)
 		return true
 	})
 
@@ -710,7 +726,11 @@ func (smm *SmMirrorSessionInterface) initInterfaceMirrorSession(ms *MirrorSessio
 		ms: ms,
 	}
 	ms.intfMirrorSession.objectTrackerIntf = ms
-	ms.intfMirrorSession.obj.Spec.MirrorDirection = getNetProtoDirection(ms.MirrorSession.Spec.Interfaces.Direction)
+	if ms.MirrorSession.Spec.Interfaces != nil {
+		ms.intfMirrorSession.obj.Spec.MirrorDirection = getNetProtoDirection(ms.MirrorSession.Spec.Interfaces.Direction)
+	} else {
+		ms.intfMirrorSession.obj.Spec.MirrorDirection = getNetProtoDirection(ms.MirrorSession.Spec.Workloads.Direction)
+	}
 	refs := make(map[string]apiintf.ReferenceObj)
 
 	pobj, err := smm.sm.AddPushObjectToMbus(interfaceMirrorSessionKey(ms), &ms.intfMirrorSession, refs, nil)
@@ -738,7 +758,7 @@ func (smm *SmMirrorSessionInterface) addInterfaceMirror(ms *MirrorSessionState) 
 
 	//Process only if no match rules
 	smgrMirrorInterface.addMirrorSession(ms)
-	if ms.MirrorSession.Spec.Interfaces == nil {
+	if ms.MirrorSession.Spec.Interfaces == nil && ms.MirrorSession.Spec.Workloads == nil {
 		log.Infof("Skipping processing of mirror session %v  as interface selector not assigned yet", ms.MirrorSession.Name)
 		return nil
 	}
@@ -754,13 +774,23 @@ func (smm *SmMirrorSessionInterface) addInterfaceMirror(ms *MirrorSessionState) 
 		return err
 	}
 
+	var selectors []*labels.Selector
+	kind := ""
 	if ms.MirrorSession.Spec.Interfaces != nil {
+		selectors = ms.MirrorSession.Spec.Interfaces.Selectors
+		kind = "NetworkInterface"
+	} else if ms.MirrorSession.Spec.Workloads != nil {
+		selectors = ms.MirrorSession.Spec.Workloads.Selectors
+		kind = "Endpoint"
+	}
+
+	if selectors != nil {
 		//Now evaluate the interfaces
 		interMirrorSelector := &interfaceMirrorSelector{intfMirrorSession: &ms.intfMirrorSession,
-			selectors:     ms.MirrorSession.Spec.Interfaces.Selectors,
+			selectors:     selectors,
 			mirrorSession: ms.MirrorSession.Name}
 
-		err := smgrNetworkInterface.UpdateInterfacesMatchingSelector(nil, interMirrorSelector)
+		err := smm.UpdateInterfacesMatchingSelector(kind, nil, interMirrorSelector)
 		if err != nil {
 			log.Infof("Error updating collector state %v", err)
 		}
@@ -833,13 +863,6 @@ func (smm *SmMirrorSessionInterface) updateInterfaceMirror(ms *MirrorSessionStat
 		}
 	}
 
-	selectorChanged := true
-	if (ms.MirrorSession.Spec.Interfaces == nil && nmirror.Spec.Interfaces == nil) ||
-		(ms.MirrorSession.Spec.Interfaces != nil && nmirror.Spec.Interfaces != nil &&
-			selectorsEqual(ms.MirrorSession.Spec.Interfaces.Selectors, nmirror.Spec.Interfaces.Selectors)) {
-		selectorChanged = false
-	}
-
 	var oldIntfMirrorSelector *interfaceMirrorSelector
 
 	if ms.intfMirrorSession.obj != nil {
@@ -847,7 +870,11 @@ func (smm *SmMirrorSessionInterface) updateInterfaceMirror(ms *MirrorSessionStat
 			mirrorSession:     interfaceMirrorSessionKey(ms),
 			intfMirrorSession: &ms.intfMirrorSession,
 		}
-		oldIntfMirrorSelector.selectors = ms.MirrorSession.Spec.Interfaces.Selectors
+		if ms.MirrorSession.Spec.Interfaces != nil {
+			oldIntfMirrorSelector.selectors = ms.MirrorSession.Spec.Interfaces.Selectors
+		} else {
+			oldIntfMirrorSelector.selectors = ms.MirrorSession.Spec.Workloads.Selectors
+		}
 		updateReqd := false
 		for _, cref := range newColMap {
 			if cref.cnt == 1 {
@@ -904,6 +931,13 @@ func (smm *SmMirrorSessionInterface) updateInterfaceMirror(ms *MirrorSessionStat
 			}
 		}
 
+		if ms.MirrorSession.MirrorSession.Spec.Workloads != nil && nmirror.Spec.Workloads != nil {
+			if ms.MirrorSession.MirrorSession.Spec.Workloads.Direction != nmirror.Spec.Workloads.Direction {
+				updateReqd = true
+				ms.intfMirrorSession.obj.Spec.MirrorDirection = getNetProtoDirection(nmirror.Spec.Workloads.Direction)
+			}
+		}
+
 		if ms.MirrorSession.MirrorSession.Spec.PacketSize != nmirror.Spec.PacketSize {
 			updateReqd = true
 			ms.intfMirrorSession.obj.Spec.PacketSize = nmirror.Spec.PacketSize
@@ -924,9 +958,22 @@ func (smm *SmMirrorSessionInterface) updateInterfaceMirror(ms *MirrorSessionStat
 		}
 	}
 
+	var updateLabelMirrorTrans labelMirrorTransition
+	if ms.MirrorSession.Spec.Interfaces != nil && nmirror.Spec.Workloads != nil {
+		updateLabelMirrorTrans = interfaceToWorkloadLabelMirror
+	} else if ms.MirrorSession.Spec.Workloads != nil && nmirror.Spec.Interfaces != nil {
+		updateLabelMirrorTrans = workloadToInterfaceLabelMirror
+	} else if !((ms.MirrorSession.Spec.Workloads == nil && nmirror.Spec.Workloads == nil) ||
+		(ms.MirrorSession.Spec.Workloads != nil && nmirror.Spec.Workloads != nil &&
+			selectorsEqual(ms.MirrorSession.Spec.Workloads.Selectors, nmirror.Spec.Workloads.Selectors))) {
+		updateLabelMirrorTrans = updateWorkloadLabelMirror
+	} else if !((ms.MirrorSession.Spec.Interfaces == nil && nmirror.Spec.Interfaces == nil) || (ms.MirrorSession.Spec.Interfaces != nil && nmirror.Spec.Interfaces != nil &&
+		selectorsEqual(ms.MirrorSession.Spec.Interfaces.Selectors, nmirror.Spec.Interfaces.Selectors))) {
+		updateLabelMirrorTrans = updateInterfaceLabelMirror
+	}
 	ms.MirrorSession.Spec.Collectors = nmirror.Spec.Collectors
 	ms.MirrorSession.Spec.Interfaces = nmirror.Spec.Interfaces
-
+	ms.MirrorSession.Spec.Workloads = nmirror.Spec.Workloads
 	if ms.intfMirrorSession.obj == nil {
 		err := smm.initInterfaceMirrorSession(ms)
 		if err != nil {
@@ -942,13 +989,49 @@ func (smm *SmMirrorSessionInterface) updateInterfaceMirror(ms *MirrorSessionStat
 	}
 	if nmirror.Spec.Interfaces != nil {
 		newIntfMirrorSelector.selectors = nmirror.Spec.Interfaces.Selectors
+	} else if nmirror.Spec.Workloads != nil {
+		newIntfMirrorSelector.selectors = nmirror.Spec.Workloads.Selectors
 	}
 
 	ms.MirrorSession.Spec.Collectors = nmirror.Spec.Collectors
 	ms.MirrorSession.Spec.Interfaces = nmirror.Spec.Interfaces
+	ms.MirrorSession.Spec.Workloads = nmirror.Spec.Workloads
 
-	if selectorChanged {
-		err := smgrNetworkInterface.UpdateInterfacesMatchingSelector(oldIntfMirrorSelector, newIntfMirrorSelector)
+	switch updateLabelMirrorTrans {
+	case interfaceToWorkloadLabelMirror:
+		//Selector changed from interface to workload based
+		//Remove Network interface mirror and add workload mirror
+
+		err := smm.UpdateInterfacesMatchingSelector("NetworkInterface", oldIntfMirrorSelector, nil)
+		if err != nil {
+			log.Infof("Error removing collector state %v", err)
+		}
+
+		err = smm.UpdateInterfacesMatchingSelector("Endpoint", nil, newIntfMirrorSelector)
+		if err != nil {
+			log.Infof("Error updating collector state %v", err)
+		}
+	case workloadToInterfaceLabelMirror:
+		//Selector changed from workload to interface based
+		//Remove Workload mirror and add interface mirror
+
+		err := smm.UpdateInterfacesMatchingSelector("Endpoint", oldIntfMirrorSelector, nil)
+		if err != nil {
+			log.Infof("Error removing collector state %v", err)
+		}
+
+		err = smm.UpdateInterfacesMatchingSelector("NetworkInterface", nil, newIntfMirrorSelector)
+		if err != nil {
+			log.Infof("Error updating collector state %v", err)
+		}
+	case updateInterfaceLabelMirror:
+
+		err := smm.UpdateInterfacesMatchingSelector("NetworkInterface", oldIntfMirrorSelector, newIntfMirrorSelector)
+		if err != nil {
+			log.Infof("Error updating collector state %v", err)
+		}
+	case updateWorkloadLabelMirror:
+		err := smm.UpdateInterfacesMatchingSelector("Endpoint", oldIntfMirrorSelector, newIntfMirrorSelector)
 		if err != nil {
 			log.Infof("Error updating collector state %v", err)
 		}
@@ -1138,14 +1221,23 @@ func (smm *SmMirrorSessionInterface) deleteInterfaceMirror(ms *MirrorSessionStat
 
 	smgrMirrorInterface.deleteMirrorSession(ms)
 
+	var selectors []*labels.Selector
+	kind := ""
 	if ms.MirrorSession.Spec.Interfaces != nil {
+		selectors = ms.MirrorSession.Spec.Interfaces.Selectors
+		kind = "NetworkInterface"
+	} else if ms.MirrorSession.Spec.Workloads != nil {
+		selectors = ms.MirrorSession.Spec.Workloads.Selectors
+		kind = "Endpoint"
+	}
+	log.Infof("Deleting mirror %v %v", kind, selectors)
+	if selectors != nil {
 
-		//Now evaluate the interfaces
 		interMirrorSelector := &interfaceMirrorSelector{intfMirrorSession: &ms.intfMirrorSession,
-			selectors:     ms.MirrorSession.Spec.Interfaces.Selectors,
+			selectors:     selectors,
 			mirrorSession: ms.MirrorSession.Name}
 
-		err := smgrNetworkInterface.UpdateInterfacesMatchingSelector(interMirrorSelector, nil)
+		err := smm.UpdateInterfacesMatchingSelector(kind, interMirrorSelector, nil)
 		if err != nil {
 			log.Infof("Error updating collector state %v", err)
 		}
@@ -1336,7 +1428,7 @@ func (smm *SmMirrorSessionInterface) dscTracking(dsc *cluster.DistributedService
 	}
 
 	for _, aps := range fwps {
-		//Interface based mirroring is pushed to respective naples selectively.
+		//Interface or endpoint based mirroring is pushed to respective naples selectively.
 		// and are tracked when receiver is added, whihc triggers interface add mirror update
 		if !aps.isFlowBasedMirroring() {
 			continue
@@ -1373,4 +1465,511 @@ func (smm *SmMirrorSessionInterface) ProcessDSCUpdate(dsc *cluster.DistributedSe
 //ProcessDSCDelete delete
 func (smm *SmMirrorSessionInterface) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
 	smm.dscTracking(dsc, false)
+}
+
+type mirrorObjectState interface {
+	Name() string
+	Kind() string
+	Key() string
+	MirrorAllowed() bool
+	Lock()
+	Unlock()
+	Labels() map[string]string
+	GetMirrorSessions() []string
+	SetMirrorSessions([]string)
+	GetNetProtoMirrorSessions() []string
+	SetNetProtoMirrorSessions([]string)
+	Update() error
+	DSC() string
+	MarkedForDelete() bool
+}
+
+type objMirrorState struct {
+	mobj        mirrorObjectState
+	mirrorState map[string]mirrorSessionIntState
+}
+
+type dscMirrorSession struct {
+	name          string
+	mirrorSession *interfaceMirrorSession
+	refCnt        int
+}
+
+// spin up go routine to process interface mirror updates
+func newInterfaceUpdater() chan mirrorObjectState {
+	updateChan := make(chan mirrorObjectState, maxUpdateChannelSize)
+	go smgrMirrorInterface.runInterfaceMirrorUpdater(updateChan)
+	return updateChan
+}
+
+type collectorIntState int
+type mirrorSessionIntState int
+type labelMirrorTransition int
+
+type intfMirrorState struct {
+	nwIntf      *NetworkInterfaceState
+	mirrorState map[string]mirrorSessionIntState
+}
+
+const (
+	collIntfStateInitial collectorIntState = iota
+	collIntfStateStatusQuo
+	collIntfStateAdded
+	collIntfStateRemoved
+)
+
+const (
+	mirrorIntfStateInitial mirrorSessionIntState = iota
+	mirrorIntfStateStatusQuo
+	mirrorIntfStateAdded
+	mirrorIntfStateRemoved
+)
+
+const (
+	noChangeInLabelMirror labelMirrorTransition = iota
+	interfaceToWorkloadLabelMirror
+	workloadToInterfaceLabelMirror
+	updateInterfaceLabelMirror
+	updateWorkloadLabelMirror
+)
+
+type collectorOp int
+type mirrorOp int
+type collectorDir int
+
+const (
+	collectorAdd collectorOp = iota
+	collectorDelete
+)
+
+const (
+	mirrorAdd mirrorOp = iota
+	mirrorDelete
+)
+
+const (
+	collectorTxDir collectorDir = iota
+	collectorRxDir
+)
+
+func removeMirrorSession(mobj mirrorObjectState, session string) {
+
+	mirrorSessions := mobj.GetMirrorSessions()
+	for i, msession := range mirrorSessions {
+		if msession == session {
+			mirrorSessions[i] = mirrorSessions[len(mirrorSessions)-1]
+			mirrorSessions[len(mirrorSessions)-1] = ""
+			mirrorSessions = mirrorSessions[:len(mirrorSessions)-1]
+			dscMSessions, ok := smgrMirrorInterface.dscMirrorSessions[mobj.DSC()]
+			if ok {
+				for _, dscMs := range *dscMSessions {
+					if dscMs.name == session {
+						if dscMs.refCnt > 0 {
+							dscMs.refCnt--
+						}
+					}
+				}
+			}
+		}
+	}
+	mobj.SetMirrorSessions(mirrorSessions)
+
+}
+
+func addMirrorSession(mobj mirrorObjectState, ms *interfaceMirrorSelector) {
+
+	mirrorSessions := mobj.GetMirrorSessions()
+	for _, msession := range mirrorSessions {
+		if msession == ms.mirrorSession {
+			return
+		}
+	}
+	dscMSessions, ok := smgrMirrorInterface.dscMirrorSessions[mobj.DSC()]
+	if !ok {
+		smgrMirrorInterface.dscMirrorSessions[mobj.DSC()] = &[]*dscMirrorSession{}
+		dscMSessions = smgrMirrorInterface.dscMirrorSessions[mobj.DSC()]
+	}
+
+	added := false
+	for _, dscMs := range *dscMSessions {
+		if ms.mirrorSession == dscMs.name {
+			dscMs.refCnt++
+			added = true
+		}
+	}
+
+	if !added {
+		*dscMSessions = append(*dscMSessions, &dscMirrorSession{name: ms.mirrorSession, refCnt: 1, mirrorSession: ms.intfMirrorSession})
+	}
+	mirrorSessions = append(mirrorSessions, ms.mirrorSession)
+	mobj.SetMirrorSessions(mirrorSessions)
+}
+
+func clearUnusedMirrorSessions(intfState *objMirrorState, netprotoMirrorSessions []string) []string {
+
+	done := false
+	for !done {
+		done = true
+		for i, ms := range netprotoMirrorSessions {
+			if state, ok := intfState.mirrorState[ms]; ok && state == mirrorIntfStateInitial {
+				intfState.mirrorState[ms] = mirrorIntfStateRemoved
+				netprotoMirrorSessions[i] = netprotoMirrorSessions[len(netprotoMirrorSessions)-1]
+				netprotoMirrorSessions[len(netprotoMirrorSessions)-1] = ""
+				netprotoMirrorSessions = netprotoMirrorSessions[:len(netprotoMirrorSessions)-1]
+				done = false
+				break
+			}
+		}
+	}
+	return netprotoMirrorSessions
+}
+
+func updateInterfaceRequired(intfColState *objMirrorState) bool {
+
+	for _, state := range intfColState.mirrorState {
+		if state != mirrorIntfStateStatusQuo {
+			return true
+		}
+	}
+	return false
+}
+
+func selectorsMatch(selectors []*labels.Selector, l labels.Set) bool {
+
+	if len(selectors) == 0 || len(l) == 0 {
+		return false
+	}
+	for ii := range selectors {
+		if matches := selectors[ii].Matches(l); !matches {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (smm *SmMirrorSessionInterface) runInterfaceMirrorUpdater(queue chan mirrorObjectState) {
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	dirty := false
+	for {
+		select {
+		case mObj, ok := <-queue:
+			if ok == false {
+				return
+			}
+			if !mObj.MarkedForDelete() {
+				mObj.Lock()
+				smm.updateMirror(mObj)
+				mObj.Unlock()
+			}
+			dirty = true
+		case <-ticker.C:
+			//CLean up DSC mirror sessions as there might be some objects in flight
+			if len(queue) == 0 && dirty {
+				smm.cleanUpDscMirrorSessions()
+				dirty = false
+			}
+		}
+	}
+}
+
+func setupInitialStates(objStates []mirrorObjectState, collectorIntfState map[string]*objMirrorState) {
+	//Setup the initial state to figure out if something has changed
+	for _, mobj := range objStates {
+		intfColState := &objMirrorState{
+			mobj: mobj,
+		}
+		intfColState.mirrorState = make(map[string]mirrorSessionIntState)
+		for _, mirror := range mobj.GetMirrorSessions() {
+			intfColState.mirrorState[mirror] = mirrorIntfStateInitial
+		}
+
+		collectorIntfState[mobj.Name()] = intfColState
+	}
+
+}
+
+func updateMirrorSession(intfState *objMirrorState,
+	op mirrorOp, intfName string, receiver objReceiver.Receiver,
+	mirrorSessions []string, opMirrorSessions []*interfaceMirrorSession) []string {
+
+	sm := MustGetStatemgr()
+	for _, newMs := range opMirrorSessions {
+		if _, ok := intfState.mirrorState[newMs.obj.GetKey()]; !ok {
+			if op == mirrorAdd {
+				intfState.mirrorState[newMs.obj.GetKey()] = mirrorIntfStateAdded
+				log.Infof("Sending Interface Mirror session %v for DSC %v Intf %v",
+					newMs.obj.GetKey(), intfState.mobj.DSC(),
+					intfState.mobj.Name())
+				err := sm.AddReceiverToPushObject(newMs, []objReceiver.Receiver{receiver})
+				if err != nil {
+					log.Errorf("Error adding receiver %v", err)
+				}
+				mirrorSessions = append(mirrorSessions, newMs.obj.GetKey())
+			}
+		} else {
+			if op == mirrorDelete {
+				intfState.mirrorState[newMs.obj.GetKey()] = mirrorIntfStateRemoved
+				for i, ms := range mirrorSessions {
+					if ms == newMs.obj.GetKey() {
+						mirrorSessions[i] = mirrorSessions[len(mirrorSessions)-1]
+						mirrorSessions[len(mirrorSessions)-1] = ""
+						mirrorSessions = mirrorSessions[:len(mirrorSessions)-1]
+					}
+				}
+			} else {
+				//Make sure collector added back
+				intfState.mirrorState[newMs.obj.GetKey()] = mirrorIntfStateStatusQuo
+				found := false
+				for _, ms := range mirrorSessions {
+					if ms == newMs.obj.GetKey() {
+						found = true
+					}
+				}
+				if !found {
+					mirrorSessions = append(mirrorSessions, newMs.obj.GetKey())
+				}
+			}
+		}
+	}
+	return mirrorSessions
+}
+func (smm *SmMirrorSessionInterface) getAllInterfaceMirrorSessions() []*interfaceMirrorSelector {
+	return smgrMirrorInterface.getAllLabelMirrorSessions("NetworkInterface")
+}
+
+func (smm *SmMirrorSessionInterface) updateMirror(mObj mirrorObjectState) error {
+	smgrNetworkInterface.Lock()
+	defer smgrNetworkInterface.Unlock()
+	collectorIntfState := make(map[string]*objMirrorState)
+	setupInitialStates([]mirrorObjectState{mObj}, collectorIntfState)
+
+	receiver, err := smm.sm.mbus.FindReceiver(mObj.DSC())
+	if err != nil {
+		log.Errorf("Error finding receiver %v", err.Error())
+		return err
+	}
+
+	intfState, _ := collectorIntfState[mObj.Name()]
+
+	intfMirrorSessions := smgrMirrorInterface.getAllLabelMirrorSessions(mObj.Kind())
+
+	//Step 1 : First delete all collectors which don't match any existing mirrors
+	for _, ms := range intfMirrorSessions {
+		if !selectorsMatch(ms.selectors, labels.Set(mObj.Labels())) {
+			//Mirror selector does not match
+			mObj.SetNetProtoMirrorSessions(updateMirrorSession(intfState, mirrorDelete, mObj.Name(), receiver, mObj.GetNetProtoMirrorSessions(), []*interfaceMirrorSession{ms.intfMirrorSession}))
+			log.Infof("Removing mirror %v for DSC %v Intf %v",
+				ms.mirrorSession, intfState.mobj.DSC(), intfState.mobj.Name())
+			removeMirrorSession(mObj, ms.mirrorSession)
+		}
+	}
+
+	//Step 2 : Next add collectors which match existing mirrors
+	for _, ms := range intfMirrorSessions {
+		if selectorsMatch(ms.selectors, labels.Set(mObj.Labels())) {
+			//Mirror selector still matches
+			mObj.SetNetProtoMirrorSessions(updateMirrorSession(intfState, mirrorAdd, mObj.Name(), receiver, mObj.GetNetProtoMirrorSessions(), []*interfaceMirrorSession{ms.intfMirrorSession}))
+			log.Infof("Adding mirror %v for DSC %v Intf %v",
+				ms.mirrorSession, intfState.mobj.DSC(), intfState.mobj.Name())
+			addMirrorSession(mObj, ms)
+		}
+	}
+
+	//Step 3 : Remove mirror sessions which are not used.
+	for _, ms := range mObj.GetMirrorSessions() {
+		found := false
+		for _, curMs := range intfMirrorSessions {
+			if curMs.mirrorSession == ms {
+				found = true
+				break
+			}
+		}
+		if !found {
+			log.Infof("Removing mirror %v for DSC %v Intf %v",
+				ms, intfState.mobj.DSC(), intfState.mobj.Name())
+			removeMirrorSession(mObj, ms)
+		}
+	}
+
+	//Step 4 : Clear all selectors which are not used by any mirrors
+	mObj.SetNetProtoMirrorSessions(clearUnusedMirrorSessions(intfState, mObj.GetNetProtoMirrorSessions()))
+
+	if updateInterfaceRequired(intfState) {
+		//Sendupdate
+		log.Infof("Sending mirror update for DSC %v Intf %v Mirror Sessions %v",
+			mObj.DSC(), mObj.Name(), mObj.GetMirrorSessions())
+		err = mObj.Update()
+		if err != nil {
+			log.Errorf("error updating  push object %v", err)
+			return err
+		}
+
+		if err != nil {
+			log.Errorf("Error updating interface %v", err.Error())
+			return err
+		}
+	} else {
+		log.Infof("No mirror update for DSC %v Object %v  Mirror Sessions %v ",
+			mObj.DSC(), mObj.Name(), mObj.GetMirrorSessions())
+	}
+
+	return nil
+}
+
+func (smm *SmMirrorSessionInterface) cleanUpDscMirrorSessions() {
+
+	//Send delete of interface mirror session if not referenced
+	sm := MustGetStatemgr()
+	for dsc, dscMirrorSessions := range smgrMirrorInterface.dscMirrorSessions {
+		index := 0
+		for _, dscMs := range *dscMirrorSessions {
+			if dscMs.refCnt == 0 {
+				receiver, err := smm.sm.mbus.FindReceiver(dsc)
+				if err == nil {
+					//No references, remove it
+					err := sm.RemoveReceiverFromPushObject(dscMs.mirrorSession, []objReceiver.Receiver{receiver})
+					if err != nil {
+						log.Errorf("Error removing receiver %v", err)
+					}
+
+				}
+			} else {
+				(*dscMirrorSessions)[index] = dscMs
+				index++
+			}
+		}
+		*dscMirrorSessions = (*dscMirrorSessions)[:index]
+	}
+
+}
+
+func (smm *SmMirrorSessionInterface) processLabelMirrorUpdate(mobj mirrorObjectState) {
+	smm.lablelBasedMirrorUpdaterQueue <- mobj
+}
+
+//ClearLabelMap clear label map
+func (smm *SmMirrorSessionInterface) ClearLabelMap(ifcfg mirrorObjectState) {
+	smm.Lock()
+	defer smm.Unlock()
+	var ok bool
+	var labelIntfs *labelInterfaces
+
+	ls := labels.Set(ifcfg.Labels()).String()
+	labelMap, ok := smm.objsByLabel[ifcfg.Kind()]
+	if !ok {
+		smm.objsByLabel[ifcfg.Kind()] = make(map[string]*labelInterfaces)
+		labelMap = smm.objsByLabel[ifcfg.Kind()]
+	}
+	if labelIntfs, ok = labelMap[ls]; ok {
+		delete(labelIntfs.intfs, ifcfg.Key())
+		if len(labelIntfs.intfs) == 0 {
+			delete(labelMap, ls)
+		}
+	}
+}
+
+func (smm *SmMirrorSessionInterface) getMirroredObjectsMatchingSelector(kind string, selectors []*labels.Selector) ([]mirrorObjectState, error) {
+
+	networkStates := []mirrorObjectState{}
+
+	labelMap, ok := smm.objsByLabel[kind]
+	if ok {
+		for _, labelIntfs := range labelMap {
+			label := labelIntfs.label
+			if selectorsMatch(selectors, labels.Set(label)) {
+				for _, intf := range labelIntfs.intfs {
+					if intf.MirrorAllowed() {
+						networkStates = append(networkStates, intf)
+					}
+				}
+			}
+		}
+	}
+
+	return networkStates, nil
+}
+
+func (smm *SmMirrorSessionInterface) findMirroredObjectsByLabel(kind string, label map[string]string) ([]mirrorObjectState, error) {
+
+	smm.Lock()
+	defer smm.Unlock()
+	ls := labels.Set(label).String()
+
+	var ok bool
+	var labelIntfs *labelInterfaces
+
+	networkStates := []mirrorObjectState{}
+	labelMap, ok := smm.objsByLabel[kind]
+	if ok {
+		if labelIntfs, ok = labelMap[ls]; ok {
+			for _, intf := range labelIntfs.intfs {
+				if intf.MirrorAllowed() {
+					networkStates = append(networkStates, intf)
+				}
+			}
+		}
+	}
+
+	return networkStates, nil
+}
+
+//UpdateLabelMap upadate label map
+func (smm *SmMirrorSessionInterface) UpdateLabelMap(ifcfg mirrorObjectState) {
+
+	smm.Lock()
+	defer smm.Unlock()
+
+	ls := labels.Set(ifcfg.Labels()).String()
+	labelMap, ok := smm.objsByLabel[ifcfg.Kind()]
+	if !ok {
+		smm.objsByLabel[ifcfg.Kind()] = make(map[string]*labelInterfaces)
+		labelMap = smm.objsByLabel[ifcfg.Kind()]
+	}
+	var labelIntfs *labelInterfaces
+	if labelIntfs, ok = labelMap[ls]; !ok {
+		//intfsMap = make(map[string]*NetworkInterfaceState)
+		labelIntfs = &labelInterfaces{
+			label: ifcfg.Labels(),
+			intfs: make(map[string]mirrorObjectState),
+		}
+
+		labelMap[ls] = labelIntfs
+	}
+	labelIntfs.intfs[ifcfg.Key()] = ifcfg
+}
+
+//UpdateInterfacesMatchingSelector  updates interface mirror matching selector
+func (smm *SmMirrorSessionInterface) UpdateInterfacesMatchingSelector(kind string, oldSelCol *interfaceMirrorSelector,
+	newSelCol *interfaceMirrorSelector) error {
+	nwInterfaceStatesMap := make(map[string]mirrorObjectState)
+
+	if newSelCol != nil {
+		nwInterfaceStates, err := smm.getMirroredObjectsMatchingSelector(kind, newSelCol.selectors)
+		if err == nil {
+			for _, nw := range nwInterfaceStates {
+				nwInterfaceStatesMap[nw.Name()] = nw
+			}
+		} else {
+			log.Errorf("Error finding interfaces matching selector %v %v", newSelCol.selectors, err.Error())
+		}
+	}
+	if oldSelCol != nil {
+		nwInterfaceStates, err := smm.getMirroredObjectsMatchingSelector(kind, oldSelCol.selectors)
+		if err == nil {
+			for _, nw := range nwInterfaceStates {
+				nwInterfaceStatesMap[nw.Name()] = nw
+			}
+		} else {
+			log.Errorf("Error finding interfaces matching selector %v %v", oldSelCol.selectors, err.Error())
+		}
+
+	}
+
+	for _, nw := range nwInterfaceStatesMap {
+		smm.processLabelMirrorUpdate(nw)
+	}
+
+	return nil
 }

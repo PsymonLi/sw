@@ -16,6 +16,7 @@ export interface IWorkloadWorkloadStatus {
     'interfaces'?: Array<IWorkloadWorkloadIntfStatus>;
     'host-name'?: string;
     'migration-status'?: IWorkloadWorkloadMigrationStatus;
+    'mirror-sessions'?: Array<string>;
     '_ui'?: any;
 }
 
@@ -31,6 +32,8 @@ export class WorkloadWorkloadStatus extends BaseModel implements IWorkloadWorklo
     'host-name': string = null;
     /** Status of workload migration when migration is in process. */
     'migration-status': WorkloadWorkloadMigrationStatus = null;
+    /** MirrorSessions list of mirror sessions enabled on this workload. */
+    'mirror-sessions': Array<string> = null;
     public static propInfo: { [prop in keyof IWorkloadWorkloadStatus]: PropInfoItem } = {
         'propagation-status': {
             description:  `The status of the configuration propagation to the Naples.`,
@@ -51,6 +54,11 @@ export class WorkloadWorkloadStatus extends BaseModel implements IWorkloadWorklo
             description:  `Status of workload migration when migration is in process.`,
             required: false,
             type: 'object'
+        },
+        'mirror-sessions': {
+            description:  `MirrorSessions list of mirror sessions enabled on this workload.`,
+            required: false,
+            type: 'Array<string>'
         },
     }
 
@@ -79,6 +87,7 @@ export class WorkloadWorkloadStatus extends BaseModel implements IWorkloadWorklo
         this['propagation-status'] = new SecurityPropagationStatus();
         this['interfaces'] = new Array<WorkloadWorkloadIntfStatus>();
         this['migration-status'] = new WorkloadWorkloadMigrationStatus();
+        this['mirror-sessions'] = new Array<string>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -113,6 +122,13 @@ export class WorkloadWorkloadStatus extends BaseModel implements IWorkloadWorklo
         } else {
             this['migration-status'].setValues(null, fillDefaults);
         }
+        if (values && values['mirror-sessions'] != null) {
+            this['mirror-sessions'] = values['mirror-sessions'];
+        } else if (fillDefaults && WorkloadWorkloadStatus.hasDefaultValue('mirror-sessions')) {
+            this['mirror-sessions'] = [ WorkloadWorkloadStatus.propInfo['mirror-sessions'].default];
+        } else {
+            this['mirror-sessions'] = [];
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -124,6 +140,7 @@ export class WorkloadWorkloadStatus extends BaseModel implements IWorkloadWorklo
                 'interfaces': new FormArray([]),
                 'host-name': CustomFormControl(new FormControl(this['host-name']), WorkloadWorkloadStatus.propInfo['host-name']),
                 'migration-status': CustomFormGroup(this['migration-status'].$formGroup, WorkloadWorkloadStatus.propInfo['migration-status'].required),
+                'mirror-sessions': CustomFormControl(new FormControl(this['mirror-sessions']), WorkloadWorkloadStatus.propInfo['mirror-sessions']),
             });
             // generate FormArray control elements
             this.fillFormArray<WorkloadWorkloadIntfStatus>('interfaces', this['interfaces'], WorkloadWorkloadIntfStatus);
@@ -156,6 +173,7 @@ export class WorkloadWorkloadStatus extends BaseModel implements IWorkloadWorklo
             this.fillModelArray<WorkloadWorkloadIntfStatus>(this, 'interfaces', this['interfaces'], WorkloadWorkloadIntfStatus);
             this._formGroup.controls['host-name'].setValue(this['host-name']);
             this['migration-status'].setFormGroupValuesToBeModelValues();
+            this._formGroup.controls['mirror-sessions'].setValue(this['mirror-sessions']);
         }
     }
 }

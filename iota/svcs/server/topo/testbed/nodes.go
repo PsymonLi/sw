@@ -210,7 +210,7 @@ func (n *TestNode) AddNode() error {
 			ApiStatus: iota.APIResponseType_API_SERVER_ERROR,
 			ErrorMsg:  msg,
 		}
-		n.SetNodeResponse(resp)
+		n.SetNodeResponse(n.RespNode)
 		return err
 	}
 

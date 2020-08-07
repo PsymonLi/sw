@@ -115,6 +115,7 @@ func (sm *modelReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 			fmt.Printf("\t%v\n", specSummary.Failure.Location.String())
 			sm.callbacks.FailTest(bundleName, groupName, testcaseDescr)
 		} else if specSummary.Panicked() {
+			resultColor = redColor
 			resultString = "FAIL"
 			fmt.Printf("%s%s%s\n", redColor, "Panicked", defaultStyle)
 			fmt.Printf("%s%s%s\n", redColor, specSummary.Failure.ForwardedPanic, defaultStyle)
@@ -152,7 +153,7 @@ func (sm *modelReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	groupResult.duration += specSummary.RunTime
 	bundleResult.duration += specSummary.RunTime
 	if !specSummary.Skipped() {
-		if specSummary.Failed() {
+		if specSummary.Failed() || specSummary.Panicked() {
 			testcaseResult.failCount++
 			groupResult.failCount++
 			bundleResult.failCount++

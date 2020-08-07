@@ -5,6 +5,7 @@ package statemgr
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -70,7 +71,7 @@ func WorkloadStateFromObj(obj runtime.Object) (*WorkloadState, error) {
 //GetWorkloadWatchOptions gets options
 func (sm *Statemgr) GetWorkloadWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
-	opts.FieldChangeSelector = []string{"Spec", "Status.MigrationStatus.Stage"}
+	opts.FieldChangeSelector = []string{"ObjectMeta.Labels", "Spec", "Status.MigrationStatus.Stage"}
 	return &opts
 }
 
@@ -149,7 +150,6 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 
 // OnWorkloadUpdate handles workload update event
 func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nwrk *workload.Workload) error {
-	w.ObjectMeta = nwrk.ObjectMeta
 
 	log.Infof("Updating workload: %+v", nwrk)
 
@@ -167,6 +167,7 @@ func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nwrk *workload.Workload)
 			log.Errorf("Could not find workload. Err : %v", err)
 			return nil
 		}
+		w.ObjectMeta = nwrk.ObjectMeta
 		ws.Workload.Spec = nwrk.Spec
 		ws.Workload.Status = nwrk.Status
 
@@ -188,6 +189,7 @@ func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nwrk *workload.Workload)
 		}
 
 		// update the spec
+		w.ObjectMeta = nwrk.ObjectMeta
 		w.Spec = nwrk.Spec
 		ws.Workload.Spec = nwrk.Spec
 
@@ -412,6 +414,7 @@ func (ws *WorkloadState) createEndpoints(indexes []int) error {
 				Tenant:       ws.Workload.Tenant,
 				Namespace:    ws.Workload.Namespace,
 				GenerationID: "1",
+				Labels:       ws.Workload.ObjectMeta.Labels,
 			},
 			Spec: workload.EndpointSpec{
 				NodeUUID:         nodeUUID,
@@ -831,6 +834,7 @@ func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServ
 					Name:      epName,
 					Tenant:    ws.Workload.Tenant,
 					Namespace: ws.Workload.Namespace,
+					Labels:    ws.Workload.ObjectMeta.Labels,
 				},
 				Spec: workload.EndpointSpec{
 					NodeUUID:         destNodeUUID,
@@ -1121,10 +1125,20 @@ func (ws *WorkloadState) processUpdate(nwrk *workload.Workload) error {
 		}
 	}
 
-	if len(createIndexes) != 0 {
-		//Change the spec
-		ws.Workload.Spec = nwrk.Spec
-		ws.Workload.Status = nwrk.Status
+	labelChanged := false
+	if !reflect.DeepEqual(ws.Workload.ObjectMeta.Labels, nwrk.ObjectMeta.Labels) {
+		log.Infof("Labels changed for workload %v", ws.Workload.Name)
+		labelChanged = true
+		createIndexes = []int{}
+	}
+
+	//Change the spec
+	ws.Workload.ObjectMeta = nwrk.ObjectMeta
+	ws.Workload.Spec = nwrk.Spec
+	ws.Workload.Status = nwrk.Status
+
+	//Create is idempotent, so label changed should update endpoint as well.
+	if labelChanged || len(createIndexes) != 0 {
 		if err := ws.createEndpoints(createIndexes); err != nil {
 			return err
 		}

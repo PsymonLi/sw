@@ -237,6 +237,21 @@ func (msc *MirrorSessionCollection) SetInterfaceSelector(selector *labels.Select
 	return msc
 }
 
+// SetWorkloadSelector add workload selector
+func (msc *MirrorSessionCollection) SetWorkloadSelector(selector *labels.Selector) *MirrorSessionCollection {
+	if msc.err != nil {
+		return msc
+	}
+
+	for _, sess := range msc.Sessions {
+		sess.VeniceMirrorSess.Spec.Workloads = &monitoring.WorkloadMirror{
+			Selectors: []*labels.Selector{selector},
+		}
+	}
+
+	return msc
+}
+
 // Delete deletes all sessions in the collection
 func (msc *MirrorSessionCollection) Delete() error {
 	if msc.err != nil {

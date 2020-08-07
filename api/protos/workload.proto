@@ -65,6 +65,9 @@ message WorkloadStatus {
 
     // Status of workload migration when migration is in process
     WorkloadMigrationStatus MigrationStatus      = 4 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "migration-status,omitempty"];
+
+    // MirrorSessions list of mirror sessions enabled on this workload
+    repeated string MirrorSessions               = 5 [(gogoproto.jsontag) = "mirror-sessions"];
 }
 
 // Spec of a Workload interface

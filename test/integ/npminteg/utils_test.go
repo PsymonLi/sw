@@ -342,6 +342,34 @@ func (it *integTestSuite) CreateWorkload(tenant, namespace, name, host, macAddr 
 	return err
 }
 
+// CreateWorkload creates a workload
+func (it *integTestSuite) CreateWorkloadWithLabel(tenant, namespace, name, host, macAddr string, label map[string]string, usegVlan, extVlan uint32) error {
+	// build workload object
+	wr := workload.Workload{
+		TypeMeta: api.TypeMeta{Kind: "Workload"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Tenant:    tenant,
+			Labels:    label,
+		},
+		Spec: workload.WorkloadSpec{
+			HostName: host,
+			Interfaces: []workload.WorkloadIntfSpec{
+				{
+					MACAddress:   macAddr,
+					MicroSegVlan: usegVlan,
+					ExternalVlan: extVlan,
+				},
+			},
+		},
+	}
+
+	_, err := it.apisrvClient.WorkloadV1().Workload().Create(context.Background(), &wr)
+
+	return err
+}
+
 // UpdateWorkload updates an existing workload
 func (it *integTestSuite) UpdateWorkload(tenant, namespace, name, host, macAddr string, usegVlan, extVlan uint32) error {
 	// build workload object

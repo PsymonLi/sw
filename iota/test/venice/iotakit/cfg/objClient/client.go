@@ -76,6 +76,7 @@ type ObjClient interface {
 	DeleteApp(app *security.App) error
 
 	CreateWorkloads(wrklds []*workload.Workload) error
+	UpdateWorkloads(wrklds []*workload.Workload) error
 	GetWorkload(meta *api.ObjectMeta) (w *workload.Workload, err error)
 	ListWorkload() (objs []*workload.Workload, err error)
 	GetWorkloads() (objs []*workload.Workload, err error)
@@ -596,6 +597,16 @@ func (r *Client) GetWorkload(meta *api.ObjectMeta) (w *workload.Workload, err er
 
 // CreateWorkloads creates workloads
 func (r *Client) CreateWorkloads(wrklds []*workload.Workload) error {
+	wCtx := &workCtx{
+		objs: wrklds,
+		len:  len(wrklds),
+		ctx:  r.ctx,
+	}
+	return r.parallelPush(wCtx, workloadWork)
+}
+
+// UpdateWorkloads creates workloads
+func (r *Client) UpdateWorkloads(wrklds []*workload.Workload) error {
 	wCtx := &workCtx{
 		objs: wrklds,
 		len:  len(wrklds),

@@ -1471,6 +1471,34 @@ func (dc *DataCenter) relaxSecurityOnPg(name string, pgName string) error {
 	}
 
 	if len(ports) != 0 {
+		allow = false
+		for _, port := range ports {
+			spec := types.DVPortConfigSpec{
+				Key: port.Key,
+				//Name:          name,
+				Scope:         port.Config.Scope,
+				ConfigVersion: port.Config.ConfigVersion,
+				Operation:     "edit",
+				Setting: &types.VMwareDVSPortSetting{
+					SecurityPolicy: &types.DVSSecurityPolicy{
+						MacChanges:       &types.BoolPolicy{Value: &allow},
+						ForgedTransmits:  &types.BoolPolicy{Value: &allow},
+						AllowPromiscuous: &types.BoolPolicy{Value: &allow},
+					},
+				},
+			}
+			pSpec = append(pSpec, spec)
+		}
+		task, err = dvs.ReconfigureDVPort(dc.Ctx(), pSpec)
+		if err != nil {
+			return err
+		}
+		_, err = task.WaitForResult(dc.Ctx())
+		if err != nil {
+			return err
+		}
+
+		allow = true
 		for _, port := range ports {
 			spec := types.DVPortConfigSpec{
 				Key: port.Key,

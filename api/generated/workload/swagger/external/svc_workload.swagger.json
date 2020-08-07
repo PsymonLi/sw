@@ -473,6 +473,16 @@
             "items": {
               "type": "string"
             }
+          },
+          {
+            "name": "status.mirror-sessions",
+            "description": "MirrorSessions list of mirror sessions enabled on this endpoint.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         ],
         "tags": [
@@ -929,6 +939,16 @@
           {
             "name": "status.ipv6-gateways",
             "description": "IPv6 gateways.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status.mirror-sessions",
+            "description": "MirrorSessions list of mirror sessions enabled on this endpoint.",
             "in": "query",
             "required": false,
             "type": "array",
@@ -1398,6 +1418,16 @@
             "required": false,
             "type": "string",
             "format": "date-time"
+          },
+          {
+            "name": "status.mirror-sessions",
+            "description": "MirrorSessions list of mirror sessions enabled on this workload.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         ],
         "tags": [
@@ -3036,6 +3066,16 @@
             "required": false,
             "type": "string",
             "format": "date-time"
+          },
+          {
+            "name": "status.mirror-sessions",
+            "description": "MirrorSessions list of mirror sessions enabled on this workload.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         ],
         "tags": [
@@ -4288,6 +4328,13 @@
             "type": "string"
           },
           "description": "IPv6 gateways."
+        },
+        "mirror-sessions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "MirrorSessions list of mirror sessions enabled on this endpoint."
         }
       },
       "description": "status part of Endpoint object."
@@ -4523,6 +4570,13 @@
         "migration-status": {
           "$ref": "#/definitions/workloadWorkloadMigrationStatus",
           "description": "Status of workload migration when migration is in process."
+        },
+        "mirror-sessions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "MirrorSessions list of mirror sessions enabled on this workload."
         }
       },
       "description": "Status part of Workload object."

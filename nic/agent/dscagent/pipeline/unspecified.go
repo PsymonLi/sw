@@ -1094,7 +1094,113 @@ func (i *FakeAgentAPI) HandleSecurityProfile(oper types.Operation, profile netpr
 
 // HandleInterfaceMirrorSession handles CRUD Methods for MirrorSession Object
 func (i *FakeAgentAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror netproto.InterfaceMirrorSession) (mirrors []netproto.InterfaceMirrorSession, err error) {
-	return nil, errors.New("Not implemented")
+	i.Lock()
+	defer i.Unlock()
+
+	err = utils.ValidateMeta(oper, mirror.Kind, mirror.ObjectMeta)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	// Handle Get and LIST. This doesn't need any pipeline specific APIs
+	switch oper {
+	case types.Get:
+		var (
+			dat []byte
+			obj netproto.InterfaceMirrorSession
+		)
+		dat, err = i.InfraAPI.Read(mirror.Kind, mirror.GetKey())
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "MirrorSession: %s| Err: %v", mirror.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "MirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound)
+		}
+		err = obj.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
+		}
+		mirrors = append(mirrors, obj)
+
+		return
+	case types.List:
+		var (
+			dat [][]byte
+		)
+		dat, err = i.InfraAPI.List(mirror.Kind)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "MirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "MirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound)
+		}
+
+		for _, o := range dat {
+			var mirror netproto.InterfaceMirrorSession
+			err := proto.Unmarshal(o, &mirror)
+			if err != nil {
+				log.Error(errors.Wrapf(types.ErrUnmarshal, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
+				continue
+			}
+			mirrors = append(mirrors, mirror)
+		}
+
+		return
+	case types.Create:
+		mirrorBytes, _ := mirror.Marshal()
+
+		if err := i.InfraAPI.Store(mirror.Kind, mirror.GetKey(), mirrorBytes); err != nil {
+			log.Error(errors.Wrapf(types.ErrBoltDBStoreCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrBoltDBStoreCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
+		}
+		return nil, nil
+
+	case types.Update:
+		// Get to ensure that the object exists
+		var existingMirrorSession netproto.InterfaceMirrorSession
+		dat, err := i.InfraAPI.Read(mirror.Kind, mirror.GetKey())
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "MirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "MirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound)
+		}
+		err = existingMirrorSession.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
+		}
+
+		// Check for idempotency
+		if proto.Equal(&mirror.Spec, &existingMirrorSession.Spec) {
+			//log.Infof("MirrorSession: %s | Info: %s ", mirror.GetKey(), types.InfoIgnoreUpdate)
+			return nil, nil
+		}
+
+		mirrorBytes, _ := mirror.Marshal()
+		if err := i.InfraAPI.Store(mirror.Kind, mirror.GetKey(), mirrorBytes); err != nil {
+			log.Error(errors.Wrapf(types.ErrBoltDBStoreCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrBoltDBStoreCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
+		}
+		return nil, nil
+
+	case types.Delete:
+		var existingMirrorSession netproto.InterfaceMirrorSession
+		dat, err := i.InfraAPI.Read(mirror.Kind, mirror.GetKey())
+		if err != nil {
+			log.Infof("Controller API: %s | Err: %s", types.InfoIgnoreDelete, err)
+			return nil, nil
+		}
+		err = existingMirrorSession.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
+		}
+		mirror = existingMirrorSession
+		if err := i.InfraAPI.Delete(mirror.Kind, mirror.GetKey()); err != nil {
+			log.Error(errors.Wrapf(types.ErrBoltDBStoreDelete, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrBoltDBStoreDelete, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
+		}
+		return nil, nil
+	}
+
+	return
 }
 
 // HandleMirrorSession handles CRUD methods for MirrorSession Object

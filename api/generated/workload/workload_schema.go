@@ -63,6 +63,7 @@ var typesMapWorkload = map[string]*api.Struct{
 			"mac-address":       api.CLIInfo{Path: "Spec.Interfaces[].MACAddress", Skip: false, Insert: "", Help: "MAC address of the interface as seen by the workload"},
 			"micro-seg-vlan":    api.CLIInfo{Path: "Spec.Interfaces[].MicroSegVlan", Skip: false, Insert: "", Help: "Vlan identifying host unique vlan id"},
 			"migration-timeout": api.CLIInfo{Path: "Spec.MigrationTimeout", Skip: false, Insert: "", Help: ""},
+			"mirror-sessions":   api.CLIInfo{Path: "Status.MirrorSessions", Skip: false, Insert: "", Help: ""},
 			"name":              api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
 			"namespace":         api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
 			"network":           api.CLIInfo{Path: "Spec.Interfaces[].Network", Skip: false, Insert: "", Help: "Network this interface will belong to"},
@@ -136,6 +137,8 @@ var typesMapWorkload = map[string]*api.Struct{
 			"HostName": api.Field{Name: "HostName", CLITag: api.CLIInfo{ID: "host-name", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "host-name", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"MigrationStatus": api.Field{Name: "MigrationStatus", CLITag: api.CLIInfo{ID: "migration-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "migration-status", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "workload.WorkloadMigrationStatus"},
+
+			"MirrorSessions": api.Field{Name: "MirrorSessions", CLITag: api.CLIInfo{ID: "mirror-sessions", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "mirror-sessions", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 }

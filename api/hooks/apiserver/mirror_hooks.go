@@ -73,12 +73,20 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 	// Filter validation, ALL_DROPS cannot be used with specific DROP conditions
 	// ALL_PKTS implies all good packets, it can be specified with DROP condition(s)
 
-	if len(ms.Spec.MatchRules) != 0 && ms.Spec.Interfaces != nil {
-		return i, false, fmt.Errorf("Either Match rules or Interfaces can be set, not both")
+	if len(ms.Spec.MatchRules) != 0 && (ms.Spec.Interfaces != nil || ms.Spec.Workloads != nil) {
+		return i, false, fmt.Errorf("Either Match rules or Interfaces or Workloads can be set, not all")
+	}
+
+	if ms.Spec.Interfaces != nil && ms.Spec.Workloads != nil {
+		return i, false, fmt.Errorf("Label based mirroring can be enabled either for Interfaces or Workloads, not both")
 	}
 
 	if len(ms.Spec.PacketFilters) != 0 && ms.Spec.Interfaces != nil {
 		return i, false, fmt.Errorf("Interfaces could only be set with no packet filters")
+	}
+
+	if len(ms.Spec.PacketFilters) != 0 && ms.Spec.Workloads != nil {
+		return i, false, fmt.Errorf("Workloads could only be set with no packet filters")
 	}
 
 	if ms.Spec.Interfaces != nil && (ms.Spec.Interfaces.Selectors == nil || len(ms.Spec.Interfaces.Selectors) == 0) {
@@ -215,7 +223,7 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 			return i, false, fmt.Errorf("Cannot use multiple match-rules when match-all is used")
 		}
 	}
-	if ms.Spec.Interfaces == nil && matchAll && !dropOnlyFilter {
+	if (ms.Spec.Interfaces == nil && ms.Spec.Workloads == nil) && matchAll && !dropOnlyFilter {
 		return i, false, fmt.Errorf("Match-all type rule can be used only for mirror-on-drop")
 	}
 
