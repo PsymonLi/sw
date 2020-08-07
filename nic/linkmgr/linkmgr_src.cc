@@ -1477,6 +1477,7 @@ port_periodic_update_helper (port_args_t *port_args,
         delphi::objects::MacMetrics::Release(mac_metrics_old);
     }
 
+    HAL_TRACE_VERBOSE("sending DOM info for ports");
     // send xcvr dom event
     phy_port = sdk::lib::catalog::logical_port_to_phy_port(pi_p->port_num);
     if (port_args->port_type != port_type_t::PORT_TYPE_MGMT) {

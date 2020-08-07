@@ -41,8 +41,11 @@
 #define NCSI_CAP_VLAN_MODE_SUPPORT	                    0x3
 #define NCSI_CAP_CHANNEL_COUNT  	                    0x2
 
+struct mctp_header {
+    uint8_t msg_type;
+};
+
 struct NcsiPktHdr {
-    struct ethhdr eth_hdr;
     uint8_t       mc_id;
     uint8_t       version;
     uint8_t       rsvd;
@@ -161,6 +164,16 @@ struct EnGlobalMcastFilterCmdPkt {
     __be32               mode;
     __be32               csum;
     uint8_t              pad[22];
+} __attribute__((packed));
+
+#define NCSI_OEM_MFG_ID_DELL    0x02A2
+
+/* OEM Command */
+struct OEMCmdPkt {
+    struct NcsiCmdPktHdr cmd;
+    __be32               mfg_id;
+    uint8_t              vendor_data[1462]; /*1500 - NCSI Hdr - mfg_id - csum*/
+    __be32               csum;
 } __attribute__((packed));
 
 /* Packet definitions for NCSI response packets */
@@ -367,6 +380,7 @@ typedef enum {
     CMD_GET_NCSI_STATS           = 0x19,
     CMD_GET_NCSI_PASSTHRU_STATS  = 0x1A,
     CMD_GET_PACKAGE_STATUS       = 0x1B,
+    CMD_OEM_COMMAND              = 0x50,
     CMD_GET_PACKAGE_UUID         = 0x52
 } NcsiCmd;
 

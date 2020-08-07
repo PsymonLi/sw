@@ -14,6 +14,7 @@
 #include "gen/proto/ncsi.grpc.pb.h"
 #include "gen/proto/port.grpc.pb.h"
 #include "nic/sdk/platform/ncsi/ipc_service.h"
+#include "nic/sdk/include/sdk/types.hpp"
 
 using grpc::Status;
 using ncsi::VlanFilterRequestMsg;
@@ -32,6 +33,7 @@ using port::PortGetRequest;
 using port::PortGetRequestMsg;
 using port::PortGetResponseMsg;
 
+using namespace sdk::types;
 using namespace ncsi;
 
 class grpc_ipc : public IpcService {
@@ -80,6 +82,8 @@ public:
     int PostMsg(struct EnableBcastFilterMsg& bcast_filter);
     int PostMsg(struct EnableGlobalMcastFilterMsg& mcast_filter);
     int GetLinkStatus(uint32_t port, bool& link_status, uint8_t& link_speed);
+    //int GetXcvrInfo(uint32_t port, cable_type_e& cable_type, std::string& sprom_data);
+    int GetLinkStatus(uint32_t port, bool& link_status, uint8_t& link_speed, uint8_t& cable_type, uint8_t *sprom_bytes);
 };
 
 #endif //__GRCP_IPC_SERVICE_H__

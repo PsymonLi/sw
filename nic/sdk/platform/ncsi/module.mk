@@ -3,5 +3,6 @@ include ${MKDEFS}/pre.mk
 MODULE_PIPELINE := iris
 MODULE_ARCH     := aarch64
 MODULE_TARGET   = libncsi.lib
+MODULE_INCS     := ${MODULE_SRC_DIR} ${TOPDIR}/platform/src/lib/mctp
 MODULE_FLAGS    = ${NIC_CSR_FLAGS} -O2
 include ${MKDEFS}/post.mk

@@ -27,9 +27,9 @@ public:
     void UpdateNcsiParam(struct SetLinkMsg& msg);
     void UpdateNcsiParam(struct EnableBcastFilterMsg& msg);
     void UpdateNcsiParam(struct EnableGlobalMcastFilterMsg& msg);
-    void GetNcsiParamRespPacket(struct GetParamRespPkt& resp_pkt) 
+    void GetNcsiParamRespPacket(struct GetParamRespPkt *resp_pkt) 
     { 
-        memcpy(&resp_pkt, NcsiParamResp, sizeof(struct GetParamRespPkt));
+        memcpy(resp_pkt, NcsiParamResp, sizeof(struct GetParamRespPkt));
     }
 
 private:

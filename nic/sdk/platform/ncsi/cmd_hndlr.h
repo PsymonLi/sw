@@ -9,18 +9,34 @@
 #include <memory>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#include <sys/socket.h>
+#include <linux/if.h>
+#include <linux/if_ether.h>
+#include <linux/if_packet.h>
+#include <arpa/inet.h>
+
+#include "platform/evutils/include/evutils.h"
 #include "pkt-defs.h"
+#include "dell-pkt-defs.h"
 #include "ipc_service.h"
+
 #include "transport.h"
+#include "rbt_transport.h"
+#include "mctp_transport.h"
+
 #include "state_machine.h"
 #include "ncsi_param_db.h"
 #include "platform/utils/mpartition.hpp"
+#include "lib/lldp/lldp.hpp"
+#include "lib/ipc/ipc.hpp"
 
 #define SUPPORTED_NCSI_REV          0x1
 #define MAX_NCSI_CMDS               256
-#define MIN_802_3_FRAME_SZ          60
-#define NCSI_HDR_REV_OFFSET         15
-#define NCSI_CMD_OPCODE_OFFSET      18
+#define MIN_802_3_FRAME_PAYLOAD_SZ  46
+#define NCSI_HDR_REV_OFFSET         1
+#define NCSI_CMD_OPCODE_OFFSET      4
+#define SPROM_CONTENT_SZ            96
 
 /* Response codes */
 #define NCSI_RSP_COMMAND_COMPLETED      0x0
@@ -47,6 +63,25 @@
 // pensando specific reason code
 #define NCSI_REASON_INTERNAL_ERR        0x8000 
 #define NCSI_REASON_INVALID_CMD_ERR     0x8001 
+#define NCSI_REASON_INFO_NOT_AVAIL_ERR  0x8005
+
+//FIXME: Bharat needs to fix this smac hack
+#define NCSI_CMD_BEGIN_BANNER() \
+{\
+    SDK_TRACE_INFO("-------------- NCSI Cmd (%s)--------------", hndlr->xport->name().c_str()); \
+    SDK_TRACE_INFO("cmd: %s", __FUNCTION__); \
+}
+
+#define NCSI_CMD_END_BANNER() \
+{ \
+    uint8_t* ptr = (uint8_t *)resp; \
+    SDK_TRACE_INFO("cmd: %s, response code: 0x%x, reason code: 0x%x, resp_payload_sz: %u", \
+            __FUNCTION__, ntohs(resp->rsp.code), ntohs(resp->rsp.reason), ntohs(resp->rsp.NcsiHdr.length)); \
+    printf("%s response:\n", __FUNCTION__); \
+    for (uint32_t idx=0; idx < (ntohs(resp->rsp.NcsiHdr.length) + 16); idx++) { printf("%02x ", ptr[idx]); if(!((idx+1) % 16)) printf("\n"); } \
+    printf("\n\n\n"); \
+    SDK_TRACE_INFO("-------------- NCSI Cmd End --------------"); \
+}
 
 class StateMachine;
 
@@ -210,29 +245,50 @@ class CmdHndler {
 //class CmdHndler : public IpcService {
 
 public:
-    CmdHndler(std::shared_ptr<IpcService> IpcObj, transport *xport);
+    static CmdHndler *factory(std::shared_ptr<IpcService> IpcObj, transport *xport, EV_P);
     int HandleCmd(const void* pkt, ssize_t sz);
-private:
+    struct ev_loop* GetEvLoop() { return this->loop; };
 
+private:
+    CmdHndler(std::shared_ptr<IpcService> IpcObj, transport *XportObj);
+    ~CmdHndler();
+
+    EV_P;
+    int xport_fd;
     struct NcsiStats stats;
-    sdk::platform::utils::mpartition* mempartition;
     transport *xport;
+    uint8_t *PktData;
 
     std::shared_ptr<IpcService> ipc;
     //void (*cmd_hndlr[MAX_NCSI_CMDS])(const void* cmd_pkt, ssize_t cmd_sz);
-    CmdHndlrFunc CmdTable[MAX_NCSI_CMDS];
-    static NcsiParamDb* NcsiDb[NCSI_CAP_CHANNEL_COUNT];
+    static uint32_t init_done;
+    static sdk::platform::utils::mpartition* mempartition;
+    static CmdHndlrFunc CmdTable[MAX_NCSI_CMDS];
+    static void populate_fw_name_ver();
+    static NcsiParamDb NcsiDb[NCSI_CAP_CHANNEL_COUNT];
     static uint64_t mac_addr_list[NCSI_CAP_CHANNEL_COUNT][NCSI_CAP_MIXED_MAC_FILTER_COUNT];
     static uint16_t vlan_filter_list[NCSI_CAP_CHANNEL_COUNT][NCSI_CAP_VLAN_FILTER_COUNT];
     static uint8_t vlan_mode_list[NCSI_CAP_CHANNEL_COUNT];
     static uint32_t last_link_status[NCSI_CAP_CHANNEL_COUNT];
-    static StateMachine *StateM[NCSI_CAP_CHANNEL_COUNT];
+    static StateMachine StateM[NCSI_CAP_CHANNEL_COUNT];
+    static struct GetCapRespPkt get_cap_resp;
+    static struct GetVersionIdRespPkt get_version_resp;
+	static void port_event_handler(sdk::ipc::ipc_msg_ptr msg, const void *ctxt);
+	static void xcvr_event_handler(sdk::ipc::ipc_msg_ptr msg, const void *ctxt);
+	static void xcvr_dom_event_handler(sdk::ipc::ipc_msg_ptr msg, const void *ctxt);
 
-    void GetMacStats(uint32_t port, struct GetNicStatsRespPkt& resp);
+    int Init(EV_P);
+    void DellOemCmdHndlrInit();
+    static void RecvNcsiCtrlPkts(void *obj);
+    static void AltRecvNcsiCtrlPkts(void *obj);
+    static void RecvNcsiMctpCtrlPkts(void *obj);
+
+    void GetMacStats(uint32_t port, struct GetNicStatsRespPkt *resp);
     void ReadMacStats(uint32_t port, struct port_stats& stats);
 
     int SendNcsiCmdResponse(const void *buf, ssize_t sz);
 
+    void SendNcsiUnSupCmdResponse(const void *cmd_pkt);
     int ValidateCmdPkt(const void *pkt, ssize_t sz);
     int ConfigVlanFilter(uint8_t filter_idx, uint16_t vlan, uint32_t port, bool enable);
     int ConfigVlanMode(uint8_t vlan_mode, uint32_t port, bool enable);
@@ -274,6 +330,20 @@ private:
     static void GetPackageStatus(void *obj, const void *cmd_pkt,
             ssize_t cmd_sz);
     static void GetPackageUUID(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void HandleOEMCmd(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+
+    // Dell specific OEM commands
+    static void DellOEMCmdHndlr(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetInventory(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetExtCap(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetPartitionInfo(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetTemperature(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetSupPayloadVer(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetOsDrvVer(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetLLDP(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetIntfInfo(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdGetIntfSensor(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
+    static void DellOEMCmdSendLLDP(void *obj, const void *cmd_pkt, ssize_t cmd_sz);
 };
 
 } // namespace ncsi

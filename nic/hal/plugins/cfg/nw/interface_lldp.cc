@@ -14,7 +14,7 @@
 #include "nic/sdk/lib/lldp/lldp.hpp"
 #include "gen/proto/interface.pb.h"
 #include "nic/sdk/lib/runenv/runenv.h"
-#include "nic/sdk/platform/ncsi/ncsi_mgr.h"
+//#include "nic/sdk/platform/ncsi/ncsi_mgr.h"
 
 #define TNNL_ENC_TYPE intf::IfTunnelEncapType
 
