@@ -74,6 +74,14 @@ sdk_ret_t rfc_build_lpm_trees(rfc_ctxt_t *rfc_ctxt,
  */
 sdk_ret_t rfc_build_eqtables(rfc_ctxt_t *rfc_ctxt);
 
+/**
+ * @brief     program the sacl_result table
+ * @param[in] rfc_ctxt    RFC context carrying all of the previous phases
+ *                        information processed until now
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t program_sacl_result(rfc_ctxt_t *rfc_ctxt);
+
 }    // namespace rfc
 
 #endif    // __RFC_IMPL_HPP__

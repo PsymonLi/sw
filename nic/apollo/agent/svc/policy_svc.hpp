@@ -209,6 +209,8 @@ pds_policy_rule_attrs_proto_to_api_spec (
                       policy_key.str(), rule_key.str());
         return SDK_RET_INVALID_ARG;
     }
+
+    rule_attrs->alg_type = proto_attrs.algspec().alg();
     rule_attrs->stateful = proto_attrs.stateful();
     rule_attrs->priority = proto_attrs.priority();
     rule_attrs->action_data.fw_action.action =

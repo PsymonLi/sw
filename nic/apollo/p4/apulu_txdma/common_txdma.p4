@@ -1056,6 +1056,7 @@ control ingress {
         if (txdma_predicate.pass_two == 0) {
             read_qstate();
         } else {
+            sacl_rfc();
             if (txdma_predicate.lpm1_enable == TRUE) {
                 // Not first iter, but route LPM is still enabled.
                 // This means dnat table should be looked up
@@ -1067,7 +1068,6 @@ control ingress {
             route_lookup();
         }
 
-        sacl_rfc();
         pkt_dma();
     } else {
         if (app_header.table0_valid == 1) {

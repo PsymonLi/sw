@@ -1128,7 +1128,7 @@ pds_flow_classify_x1 (vlib_buffer_t *p,
         PDS_FLOW_NH_TYPE_SET(nexthop, hdr->nexthop_type);
         PDS_FLOW_NH_PRIO_SET(nexthop, hdr->route_priority);
     }
-    PDS_FLOW_NH_DROP_SET(nexthop, hdr->drop);
+    PDS_FLOW_NH_DROP_SET(nexthop, hdr->sacl_drop);
     vnet_buffer(p)->pds_flow_data.nexthop = nexthop;
 
     vnet_buffer(p)->l2_hdr_offset = hdr->l2_offset;

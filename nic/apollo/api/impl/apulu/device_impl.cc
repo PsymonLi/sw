@@ -137,17 +137,17 @@ program_device (pds_device_spec_t *spec)
     // program the policy transposition scheme
     if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_GLOBAL_PRIORITY) {
         sdk::asic::pd::asicpd_program_table_constant(
-                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
+                           P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
                            FW_ACTION_XPOSN_GLOBAL_PRIORTY);
         sdk::asic::pd::asicpd_program_table_constant(
-                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
+                           P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT_1,
                            FW_ACTION_XPOSN_GLOBAL_PRIORTY);
     } else if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_ANY_DENY) {
         sdk::asic::pd::asicpd_program_table_constant(
-                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
+                           P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
                            FW_ACTION_XPOSN_ANY_DENY);
         sdk::asic::pd::asicpd_program_table_constant(
-                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
+                           P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT_1,
                            FW_ACTION_XPOSN_ANY_DENY);
     }
     return sdk::SDK_RET_OK;
@@ -260,7 +260,7 @@ device_impl::fill_spec_(pds_device_spec_t *spec) {
     spec->ip_mapping_class_priority = tc;
 
     // fill the policy transposition scheme configured
-    sdk::asic::pd::asicpd_read_table_constant(P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
+    sdk::asic::pd::asicpd_read_table_constant(P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
                                               &tc);
     if (tc == FW_ACTION_XPOSN_GLOBAL_PRIORTY) {
         spec->fw_action_xposn_scheme = FW_POLICY_XPOSN_GLOBAL_PRIORITY;

@@ -9,6 +9,13 @@ struct rfc_p2_1_k_         k;
 %%
 
 rfc_p2_1:
+    /* Write IPv6 policy index to PHV */
+    seq        c1, k.rx_to_tx_hdr_iptype, IPTYPE_IPV6
+    sub.c1     r5, k.rx_to_tx_hdr_sacl_base_addr0, r5
+    addi.c1    r1, r0, SACL_IPV6_BLOCK_SIZE
+    div.c1     r5, r5, r1
+    phvwr.c1   p.txdma_control_sacl_policy_index, r5
+
     /* Compute the index into the classid array */
     mod        r7, k.txdma_control_rfc_index, SACL_P2_ENTRIES_PER_CACHE_LINE
     mul        r7, r7, SACL_P2_CLASSID_WIDTH

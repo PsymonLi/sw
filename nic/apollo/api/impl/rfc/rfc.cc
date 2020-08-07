@@ -269,6 +269,9 @@ rfc_policy_create (policy_params_t *policy_params)
     // phases of RFC
     rfc_build_eqtables(&rfc_ctxt);
 
+    // program the policy result table
+    program_sacl_result(&rfc_ctxt);
+
 cleanup:
 
     ///< free all the temporary state

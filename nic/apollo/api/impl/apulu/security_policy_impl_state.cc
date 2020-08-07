@@ -32,10 +32,32 @@ security_policy_impl_state::security_policy_impl_state(pds_state *state) {
     SDK_ASSERT(v6_idxr_ != NULL);
     v4_region_addr_ = state->mempartition()->start_addr("sacl_v4");
     SDK_ASSERT(v4_region_addr_ != INVALID_MEM_ADDRESS);
+    if (v4_region_addr_ != INVALID_MEM_ADDRESS) {
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_RFC_P1, v4_region_addr_);
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_RFC_P1_1, v4_region_addr_);
+    } else {
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_RFC_P1, 0);
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_RFC_P1_1, 0);
+    }
     v4_table_size_ = state->mempartition()->block_size("sacl_v4");
     v4_max_rules_ = state->mempartition()->max_elements("sacl_v4") - 1;
     v6_region_addr_ = state->mempartition()->start_addr("sacl_v6");
     SDK_ASSERT(v6_region_addr_ != INVALID_MEM_ADDRESS);
+    if (v6_region_addr_ != INVALID_MEM_ADDRESS) {
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_RFC_P2, v6_region_addr_);
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_RFC_P2_1, v6_region_addr_);
+    } else {
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_RFC_P2, 0);
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_RFC_P2_1, 0);
+    }
     v6_table_size_ = state->mempartition()->block_size("sacl_v6");
     v6_max_rules_ = state->mempartition()->max_elements("sacl_v6") - 1;
     v4_rule_stats_region_addr_ =
@@ -44,18 +66,23 @@ security_policy_impl_state::security_policy_impl_state(pds_state *state) {
         v4_rule_stats_table_size_ =
             state->mempartition()->block_size("rule_stats_v4");
         sdk::asic::pd::asicpd_program_table_constant(
-                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P1_1,
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
                            v4_rule_stats_region_addr_);
         sdk::asic::pd::asicpd_program_table_constant(
-                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P2_1,
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
                            v4_rule_stats_region_addr_);
     } else {
         v4_rule_stats_table_size_ = 0;
         sdk::asic::pd::asicpd_program_table_constant(
-                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P1_1, 0);
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3, 0);
         sdk::asic::pd::asicpd_program_table_constant(
-                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P2_1, 0);
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1, 0);
     }
+    // V6 counter needs to be programmed in sacl result table
+    // The constant needs to be read first coz theres
+    // FW_ACTION_XPOSN_ANY_DENY already programmed by
+    // device_impl.cc. We should program the v6 counter addr
+    // at bits [63:1] of that table constant.
 }
 
 security_policy_impl_state::~security_policy_impl_state() {

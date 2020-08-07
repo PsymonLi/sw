@@ -15,9 +15,11 @@ setup_rfc2:
     seq              c1, r0, k.txdma_control_root_change
     // No. Stop.
     nop.c1.e
-    nop
 
-    // Yes. Check new root_number and copy tags from the correct root
+    // Yes. Reset root changed
+    phvwr            p.txdma_control_root_change, r0
+
+    // Check new root_number and copy tags from the correct root
     seq              c1, k.txdma_control_root_count, 1
     bcf              [c1], load1
     phvwr.c1         p.rx_to_tx_hdr_stag0_classid0, k.rx_to_tx_hdr_stag0_classid1
@@ -33,11 +35,8 @@ setup_rfc2:
     seq              c1, k.txdma_control_root_count, 5
     bcf              [c1], load5
     phvwr.c1         p.rx_to_tx_hdr_stag0_classid0, k.rx_to_tx_hdr_stag0_classid5
-    seq              c1, k.txdma_control_root_count, 6
-    bcf              [c1], clearall
-    phvwr.c1         p.rx_to_tx_hdr_stag0_classid0, r0
-    nop.e
-    nop
+    b                clearall
+    phvwr            p.rx_to_tx_hdr_stag0_classid0, r0
 
 load1:
     phvwr            p.rx_to_tx_hdr_stag1_classid0, k.rx_to_tx_hdr_stag1_classid1
@@ -117,8 +116,10 @@ clearall:
     phvwr            p.rx_to_tx_hdr_dtag2_classid0, r0
     phvwr            p.rx_to_tx_hdr_dtag3_classid0, r0
     phvwr            p.rx_to_tx_hdr_dtag4_classid0, r0
-    phvwr.e          p.txdma_control_stag_classid,  r0
-    phvwr            p.txdma_control_dtag_classid,  r0
+    phvwr            p.txdma_control_stag_classid,  r0
+    phvwr.e          p.txdma_control_dtag_classid,  r0
+    phvwr            p.txdma_predicate_rfc_enable, FALSE
+
 
 /*****************************************************************************/
 /* error function                                                            */
@@ -126,5 +127,5 @@ clearall:
 .align
 .assert $ < ASM_INSTRUCTION_OFFSET_MAX
 setup_rfc2_error:
-    phvwr.e         p.capri_intr_drop, 1
+    phvwr.e          p.capri_intr_drop, 1
     nop

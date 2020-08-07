@@ -9,39 +9,41 @@ struct rfc_p3_1_k_         k;
 %%
 
 rfc_p3_1:
+    /* Write HBM region address for IPv6 policy counters to PHV */
+    seq        c1, k.rx_to_tx_hdr_iptype, IPTYPE_IPV6
+    phvwr.c1   p.txdma_control_sacl_cntr_regn_addr, r5
+
     /* Compute the index into the classid array */
     mod        r7, k.txdma_control_rfc_index, SACL_P3_ENTRIES_PER_CACHE_LINE
     mul        r7, r7, SACL_P3_ENTRY_WIDTH
-    /* Access the classid at the index */
+    /* Access the rule index at the index */
     tblrdp     r7, r7, 0, SACL_P3_ENTRY_WIDTH
-    /* Priority = r7 >> SACL_P3_ENTRY_PRIORITY_SHIFT */
-    srl        r1, r7, SACL_P3_ENTRY_PRIORITY_SHIFT
-    /* Action = r7 & SACL_P3_ENTRY_ACTION_MASK */
-    and        r2, r7, SACL_P3_ENTRY_ACTION_MASK
 
-    /* Set c1 if current priority is higher that previous */
-    slt        c1, r1, k.txdma_control_rule_priority
+    /* Write the rule index to PHV */
+    phvwr      p.txdma_control_rule_index, r7
 
-    /* Update PHV with new priority and action if c1 is set */
-    phvwr.c1   p.txdma_control_rule_priority, r1
-    phvwr.c1   p.txdma_to_p4e_drop, r2
-    phvwr.c1   p.txdma_to_p4e_sacl_action, r2
-    phvwr.c1   p.txdma_to_p4e_sacl_root_num, k.txdma_control_recirc_count[3:1]
+    /* Load sacl base addr + SACL_RSLT_TABLE_OFFSET to r1 */
+    add        r1, r0, k.rx_to_tx_hdr_sacl_base_addr0
+    addi       r1, r1, SACL_RSLT_TABLE_OFFSET
+    /* Compute the byte offset for result table index */
+    div        r2, r7, SACL_RSLT_ENTRIES_PER_CACHE_LINE
+    mul        r2, r2, SACL_CACHE_LINE_SIZE
+    /* Add the byte offset to table base */
+    add        r1, r1, r2
+    /* Write the address back to phv for RSLT lookup */
+    phvwr      p.txdma_control_sacl_rslt_tbl_addr, r1
 
-    /* Are we done with SACLs to process... ? */
-    seq        c1, k.rx_to_tx_hdr_sacl_base_addr0, r0
-    phvwr.c1.e p.txdma_predicate_rfc_enable, FALSE
+    /* P1 table index = SIP:SPORT. */
+    add        r7, k.rx_to_tx_hdr_sport_classid0, k.rx_to_tx_hdr_sip_classid0, \
+                                                  SACL_SPORT_CLASSID_WIDTH
+    /* Write P1 table index to PHV */
+    phvwr      p.txdma_control_rfc_index, r7
 
     /* Load sacl base addr + SACL_P1_TABLE_OFFSET to r1 */
     add        r1, r0, k.rx_to_tx_hdr_sacl_base_addr0
     addi       r1, r1, SACL_P1_TABLE_OFFSET
-    /* P1 table index = SIP:SPORT. */
-    add        r2, k.rx_to_tx_hdr_sport_classid0, k.rx_to_tx_hdr_sip_classid0, \
-                                                  SACL_SPORT_CLASSID_WIDTH
-    /* Write P1 table index to PHV */
-    phvwr      p.txdma_control_rfc_index, r2
     /* Compute the byte offset for P1 table index */
-    div        r2, r2, SACL_P1_ENTRIES_PER_CACHE_LINE
+    div        r2, r7, SACL_P1_ENTRIES_PER_CACHE_LINE
     mul        r2, r2, SACL_CACHE_LINE_SIZE
     /* Add the byte offset to table base */
     add.e      r1, r1, r2

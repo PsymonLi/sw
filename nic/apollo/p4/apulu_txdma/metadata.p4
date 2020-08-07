@@ -15,6 +15,8 @@ header_type txdma_control_metadata_t {
         pktdesc_addr3       : 40;
         rxdma_cindex_addr   : 40;
         rfc_table_addr      : 40;
+        sacl_rslt_tbl_addr  : 40;
+        sacl_cntr_regn_addr : 40;
         lpm1_base_addr      : 40;
         lpm1_next_addr      : 40;
         lpm1_key            : 128;
@@ -36,6 +38,10 @@ header_type txdma_control_metadata_t {
         root_count          : 3;
         rule_priority       : 11;
         pad0                : 1;
+
+        sacl_policy_index   : 10;
+        rule_index          : 10;
+        pad1                : 4;
     }
 }
 
@@ -76,6 +82,15 @@ header_type scratch_metadata_t {
         flow_hint           : 23;
         session_index       : 23;
         flow_role           : 1;
+        stateful            : 1;
+        sacl_region_addr    : 40;
+        sacl_cntr_regn_addr : 40;
+        sacl_counter        : 8;
+        sport_classid       : 8;
+        dport_classid       : 8;
+        sip_classid         : 10;
+        dip_classid         : 10;
+        sacl_base_addr      : 40;
     }
 }
 

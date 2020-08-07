@@ -1407,6 +1407,7 @@ apulu_impl::write_to_rxdma_table(mem_addr_t addr, uint32_t tableid,
     uint8_t      packed_bytes[CACHE_LINE_SIZE];
     uint8_t      *packed_entry = packed_bytes;
 
+    p4pd_p4plus_rxdma_raw_table_hwentry_query(tableid, action_id, &len);
     if (p4pd_rxdma_get_max_action_id(tableid) > 1) {
         struct line_s {
             uint8_t action_pc;
@@ -1416,10 +1417,10 @@ apulu_impl::write_to_rxdma_table(mem_addr_t addr, uint32_t tableid,
         line->action_pc = sdk::asic::pd::asicpd_get_action_pc(tableid,
                                                               action_id);
         packed_entry = line->packed_entry;
+        len += 8;
     }
-    p4pd_p4plus_rxdma_raw_table_hwentry_query(tableid, action_id, &len);
     p4pd_p4plus_rxdma_entry_pack(tableid, action_id, actiondata, packed_entry);
-    ret = asic_mem_write(addr, packed_bytes, 1 + (len >> 3),
+    ret = asic_mem_write(addr, packed_bytes, len >> 3,
                          ASIC_WRITE_MODE_WRITE_THRU);
     SDK_ASSERT(ret == SDK_RET_OK);
     sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, CACHE_LINE_SIZE,
@@ -1435,6 +1436,7 @@ apulu_impl::write_to_txdma_table(mem_addr_t addr, uint32_t tableid,
     uint8_t      packed_bytes[CACHE_LINE_SIZE];
     uint8_t      *packed_entry = packed_bytes;
 
+    p4pd_p4plus_txdma_raw_table_hwentry_query(tableid, action_id, &len);
     if (p4pd_txdma_get_max_action_id(tableid) > 1) {
         struct line_s {
             uint8_t action_pc;
@@ -1444,10 +1446,10 @@ apulu_impl::write_to_txdma_table(mem_addr_t addr, uint32_t tableid,
         line->action_pc = sdk::asic::pd::asicpd_get_action_pc(tableid,
                                                               action_id);
         packed_entry = line->packed_entry;
+        len += 8;
     }
-    p4pd_p4plus_txdma_raw_table_hwentry_query(tableid, action_id, &len);
     p4pd_p4plus_txdma_entry_pack(tableid, action_id, actiondata, packed_entry);
-    ret = asic_mem_write(addr, packed_bytes, 1 + (len >> 3),
+    ret = asic_mem_write(addr, packed_bytes, len >> 3,
                          ASIC_WRITE_MODE_WRITE_THRU);
     SDK_ASSERT(ret == SDK_RET_OK);
     sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, CACHE_LINE_SIZE,

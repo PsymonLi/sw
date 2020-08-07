@@ -9,7 +9,7 @@ action dnat(dnat_address, route_table_hw_id)
     modify_field(txdma_control.lpm1_key, dnat_address);
 }
 
-@pragma stage 1
+@pragma stage 0
 @pragma hbm_table
 @pragma index_table
 table dnat {

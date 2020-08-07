@@ -17,12 +17,6 @@
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 #include "nic/apollo/p4/include/apulu_sacl_defines.h"
 
-#define RFC_RESULT_RULE_ACTION_ALLOW               SACL_P3_ENTRY_ACTION_ALLOW
-#define RFC_RESULT_RULE_ACTION_DENY                SACL_P3_ENTRY_ACTION_DENY
-#define RFC_RESULT_SET_ACTION_BIT(val, action)     ((val) |= action)
-#define RFC_RESULT_BITS_PRIORITY_MASK              0x7FE
-#define RFC_RESULT_SET_PRIORITY_BITS(val, prio)    ((val) |= ((prio<<1) & RFC_RESULT_BITS_PRIORITY_MASK))
-
 namespace rfc {
 
 typedef void (*rfc_compute_cl_addr_entry_cb_t)(mem_addr_t base_address,
@@ -516,210 +510,177 @@ rfc_compute_p2_next_cl_addr_entry_num (mem_addr_t base_address,
 }
 
 /**
- * @brief    given 10 bits of priority, one bit of drop/allow, and the
- *           entry id, fill corresponding portion of the RFC phase 3
+ * @brief    given the entry num, fill corresponding portion of the RFC phase 3
  *           table entry action data.
  * @param[in] table_idx      index of the entry (for debugging)
  * @param[in] action_data    pointer to the action data
  * @param[in] entry_num      entry idx (0 to 46, inclusive), we can fit 46
  *                           entries, each 11 bits wide
- * @param[in] prio           priority
- * @param[in] result         drop/allow
+ * @param[in] rule_id        rule id
  * @return    SDK_RET_OK on success, failure status code on error
  */
 static inline sdk_ret_t
 rfc_p3_table_entry_pack (uint32_t table_idx, void *actiondata,
-                         uint32_t entry_num, uint16_t result)
+                         uint32_t entry_num, uint16_t rule_id)
 {
     rfc_p3_actiondata_t    *action_data;
 
     action_data = (rfc_p3_actiondata_t *)actiondata;
-    result &= (uint16_t)0x7FF; // Only 11 bits are valid
-    PDS_TRACE_VERBOSE("P3 table[0x%x] <- class id %u", table_idx, result);
+    rule_id &= (uint16_t)0x3FF; // Only 10 bits are valid
+    PDS_TRACE_VERBOSE("P3 table[0x%x] <- rule id %u", table_idx, rule_id);
     switch (entry_num) {
     case 0:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr00 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res00 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id00 = rule_id;
         break;
     case 1:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr01 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res01 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id01 = rule_id;
         break;
     case 2:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr02 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res02 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id02 = rule_id;
         break;
     case 3:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr03 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res03 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id03 = rule_id;
         break;
     case 4:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr04 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res04 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id04 = rule_id;
         break;
     case 5:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr05 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res05 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id05 = rule_id;
         break;
     case 6:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr06 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res06 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id06 = rule_id;
         break;
     case 7:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr07 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res07 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id07 = rule_id;
         break;
     case 8:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr08 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res08 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id08 = rule_id;
         break;
     case 9:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr09 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res09 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id09 = rule_id;
         break;
     case 10:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr10 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res10 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id10 = rule_id;
         break;
     case 11:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr11 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res11 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id11 = rule_id;
         break;
     case 12:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr12 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res12 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id12 = rule_id;
         break;
     case 13:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr13 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res13 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id13 = rule_id;
         break;
     case 14:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr14 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res14 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id14 = rule_id;
         break;
     case 15:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr15 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res15 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id15 = rule_id;
         break;
     case 16:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr16 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res16 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id16 = rule_id;
         break;
     case 17:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr17 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res17 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id17 = rule_id;
         break;
     case 18:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr18 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res18 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id18 = rule_id;
         break;
     case 19:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr19 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res19 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id19 = rule_id;
         break;
     case 20:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr20 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res20 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id20 = rule_id;
         break;
     case 21:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr21 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res21 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id21 = rule_id;
         break;
     case 22:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr22 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res22 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id22 = rule_id;
         break;
     case 23:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr23 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res23 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id23 = rule_id;
         break;
     case 24:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr24 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res24 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id24 = rule_id;
         break;
     case 25:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr25 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res25 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id25 = rule_id;
         break;
     case 26:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr26 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res26 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id26 = rule_id;
         break;
     case 27:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr27 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res27 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id27 = rule_id;
         break;
     case 28:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr28 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res28 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id28 = rule_id;
         break;
     case 29:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr29 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res29 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id29 = rule_id;
         break;
     case 30:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr30 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res30 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id30 = rule_id;
         break;
     case 31:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr31 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res31 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id31 = rule_id;
         break;
     case 32:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr32 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res32 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id32 = rule_id;
         break;
     case 33:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr33 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res33 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id33 = rule_id;
         break;
     case 34:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr34 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res34 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id34 = rule_id;
         break;
     case 35:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr35 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res35 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id35 = rule_id;
         break;
     case 36:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr36 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res36 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id36 = rule_id;
         break;
     case 37:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr37 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res37 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id37 = rule_id;
         break;
     case 38:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr38 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res38 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id38 = rule_id;
         break;
     case 39:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr39 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res39 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id39 = rule_id;
         break;
     case 40:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr40 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res40 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id40 = rule_id;
         break;
     case 41:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr41 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res41 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id41 = rule_id;
         break;
     case 42:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr42 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res42 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id42 = rule_id;
         break;
     case 43:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr43 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res43 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id43 = rule_id;
         break;
     case 44:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr44 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res44 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id44 = rule_id;
         break;
     case 45:
-        action_data->action_u.rfc_p3_rfc_action_p3.pr45 = result>>1;
-        action_data->action_u.rfc_p3_rfc_action_p3.res45 = result&0x01;
+        action_data->action_u.rfc_p3_rfc_action_p3.id45 = rule_id;
+        break;
+    case 46:
+        action_data->action_u.rfc_p3_rfc_action_p3.id46 = rule_id;
+        break;
+    case 47:
+        action_data->action_u.rfc_p3_rfc_action_p3.id47 = rule_id;
+        break;
+    case 48:
+        action_data->action_u.rfc_p3_rfc_action_p3.id48 = rule_id;
+        break;
+    case 49:
+        action_data->action_u.rfc_p3_rfc_action_p3.id49 = rule_id;
+        break;
+    case 50:
+        action_data->action_u.rfc_p3_rfc_action_p3.id50 = rule_id;
         break;
     default:
         break;
@@ -780,14 +741,15 @@ rfc_compute_p3_next_cl_addr_entry_num (mem_addr_t base_address,
  * @param[in] rfc_table   result RFC table
  * @param[in] cbm         class bitmap from which is result is computed from
  * @param[in] cbm_size    class bitmap size
- * @return    result bits of P2 table corresponding to the class bitmap provided
+ * @return    rule idx for P3 table corresponding to the class bitmap provided
  */
 uint16_t
 rfc_compute_p3_result (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table,
                        rte_bitmap *cbm, uint32_t cbm_size, void *ctxt)
 {
     int         rv;
-    uint16_t    result = 0, priority = SACL_PRIORITY_INVALID;
+    uint16_t    priority = SACL_PRIORITY_INVALID;
+    uint16_t    final_rule_id = SACL_RULE_ID_DEFAULT;
     uint32_t    ruleidx, posn, start_posn = 0, new_posn = 0;
     uint64_t    slab = 0;
 
@@ -801,33 +763,17 @@ rfc_compute_p3_result (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table,
     rv = rte_bitmap_scan(cbm, &start_posn, &slab);
     if (rv == 0) {
         // no bit is set in the bitmap
-        PDS_TRACE_VERBOSE("No bits set in bitmap, setting lowest priority");
-        RFC_RESULT_SET_PRIORITY_BITS(result, SACL_PRIORITY_LOWEST);
-        if (rfc_ctxt->policy->default_action.fw_action.action ==
-                SECURITY_RULE_ACTION_ALLOW) {
-            RFC_RESULT_SET_ACTION_BIT(result, RFC_RESULT_RULE_ACTION_ALLOW);
-        } else {
-            RFC_RESULT_SET_ACTION_BIT(result, RFC_RESULT_RULE_ACTION_DENY);
-        }
+        PDS_TRACE_VERBOSE("No bits set in bitmap, setting rule id %u",
+                final_rule_id);
     } else {
         do {
             posn = RTE_BITMAP_START_SLAB_SCAN_POS;
             while (rte_bitmap_slab_scan(slab, posn, &new_posn) != 0) {
-                ruleidx =
-                    rte_bitmap_get_global_bit_pos(cbm->index2-1, new_posn);
+                ruleidx = rte_bitmap_get_global_bit_pos(cbm->index2-1, new_posn);
                 if (priority > rfc_ctxt->policy->rules[ruleidx].attrs.priority) {
                     priority = rfc_ctxt->policy->rules[ruleidx].attrs.priority;
+                    final_rule_id = ruleidx;
                     PDS_TRACE_VERBOSE("Picked high priority rule %u", ruleidx);
-                    result = 0;
-                    if (rfc_ctxt->policy->rules[ruleidx].attrs.fw_act ==
-                            SECURITY_RULE_ACTION_ALLOW) {
-                        RFC_RESULT_SET_ACTION_BIT(result,
-                                                  RFC_RESULT_RULE_ACTION_ALLOW);
-                    } else {
-                        RFC_RESULT_SET_ACTION_BIT(result,
-                                                  RFC_RESULT_RULE_ACTION_DENY);
-                    }
-                    RFC_RESULT_SET_PRIORITY_BITS(result, priority);
                 } else {
                     PDS_TRACE_VERBOSE("rule %u priority %u < current %u"
                         ", skipping", ruleidx,
@@ -839,7 +785,7 @@ rfc_compute_p3_result (rfc_ctxt_t *rfc_ctxt, rfc_table_t *rfc_table,
             rte_bitmap_scan(cbm, &posn, &slab);
         } while (posn != start_posn);
     }
-    return result;
+    return final_rule_id;
 }
 
 /**
@@ -1051,6 +997,316 @@ rfc_build_eqtables (rfc_ctxt_t *rfc_ctxt)
     rfc_compute_p3_tables(rfc_ctxt, SACL_P3_TABLE_OFFSET);
     rfc_table_destroy(&rfc_ctxt->p1_table);
     rfc_table_destroy(&rfc_ctxt->p2_table);
+
+    return SDK_RET_OK;
+}
+
+/**
+ * @brief    given the entry num, fill corresponding portion of the sacl result
+ *           table entry action data.
+ * @param[in] table_idx      index of the entry (for debugging)
+ * @param[in] action_data    pointer to the action data
+ * @param[in] entry_num      entry idx (0 to 31, inclusive), we can fit 32
+ *                           entries in a single cache line
+ * @param[in] alg_type       algo type
+ * @param[in] stateful       stateful
+ * @param[in] priority       priority
+ * @param[in] action         sacl action
+ *
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+
+sdk_ret_t
+sacl_result_table_entry_pack (uint32_t table_idx, uint32_t entry_num,
+                              sacl_result_actiondata_t *entry,
+                              uint8_t alg_type, uint8_t stateful,
+                              uint16_t priority, uint8_t action)
+{
+    PDS_TRACE_DEBUG("SACL Result table[0x%x] <- alg_type: %u, stateful: %u, "
+                    "priority: %u, action: %u",
+                    table_idx, alg_type, stateful, priority, action);
+    switch (entry_num) {
+    case 0:
+        entry->action_u.sacl_result_sacl_action_result.alg_type00 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful00 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority00 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action00 = action;
+        break;
+    case 1:
+        entry->action_u.sacl_result_sacl_action_result.alg_type01 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful01 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority01 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action01 = action;
+        break;
+    case 2:
+        entry->action_u.sacl_result_sacl_action_result.alg_type02 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful02 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority02 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action02 = action;
+        break;
+    case 3:
+        entry->action_u.sacl_result_sacl_action_result.alg_type03 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful03 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority03 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action03 = action;
+        break;
+    case 4:
+        entry->action_u.sacl_result_sacl_action_result.alg_type04 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful04 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority04 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action04 = action;
+        break;
+    case 5:
+        entry->action_u.sacl_result_sacl_action_result.alg_type05 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful05 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority05 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action05 = action;
+        break;
+    case 6:
+        entry->action_u.sacl_result_sacl_action_result.alg_type06 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful06 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority06 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action06 = action;
+        break;
+    case 7:
+        entry->action_u.sacl_result_sacl_action_result.alg_type07 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful07 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority07 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action07 = action;
+        break;
+    case 8:
+        entry->action_u.sacl_result_sacl_action_result.alg_type08 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful08 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority08 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action08 = action;
+        break;
+    case 9:
+        entry->action_u.sacl_result_sacl_action_result.alg_type09 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful09 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority09 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action09 = action;
+        break;
+    case 10:
+        entry->action_u.sacl_result_sacl_action_result.alg_type10 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful10 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority10 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action10 = action;
+        break;
+    case 11:
+        entry->action_u.sacl_result_sacl_action_result.alg_type11 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful11 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority11 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action11 = action;
+        break;
+    case 12:
+        entry->action_u.sacl_result_sacl_action_result.alg_type12 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful12 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority12 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action12 = action;
+        break;
+    case 13:
+        entry->action_u.sacl_result_sacl_action_result.alg_type13 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful13 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority13 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action13 = action;
+        break;
+    case 14:
+        entry->action_u.sacl_result_sacl_action_result.alg_type14 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful14 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority14 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action14 = action;
+        break;
+    case 15:
+        entry->action_u.sacl_result_sacl_action_result.alg_type15 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful15 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority15 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action15 = action;
+        break;
+    case 16:
+        entry->action_u.sacl_result_sacl_action_result.alg_type16 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful16 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority16 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action16 = action;
+        break;
+    case 17:
+        entry->action_u.sacl_result_sacl_action_result.alg_type17 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful17 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority17 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action17 = action;
+        break;
+    case 18:
+        entry->action_u.sacl_result_sacl_action_result.alg_type18 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful18 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority18 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action18 = action;
+        break;
+    case 19:
+        entry->action_u.sacl_result_sacl_action_result.alg_type19 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful19 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority19 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action19 = action;
+        break;
+    case 20:
+        entry->action_u.sacl_result_sacl_action_result.alg_type20 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful20 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority20 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action20 = action;
+        break;
+    case 21:
+        entry->action_u.sacl_result_sacl_action_result.alg_type21 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful21 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority21 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action21 = action;
+        break;
+    case 22:
+        entry->action_u.sacl_result_sacl_action_result.alg_type22 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful22 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority22 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action22 = action;
+        break;
+    case 23:
+        entry->action_u.sacl_result_sacl_action_result.alg_type23 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful23 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority23 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action23 = action;
+        break;
+    case 24:
+        entry->action_u.sacl_result_sacl_action_result.alg_type24 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful24 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority24 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action24 = action;
+        break;
+    case 25:
+        entry->action_u.sacl_result_sacl_action_result.alg_type25 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful25 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority25 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action25 = action;
+        break;
+    case 26:
+        entry->action_u.sacl_result_sacl_action_result.alg_type26 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful26 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority26 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action26 = action;
+        break;
+    case 27:
+        entry->action_u.sacl_result_sacl_action_result.alg_type27 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful27 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority27 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action27 = action;
+        break;
+    case 28:
+        entry->action_u.sacl_result_sacl_action_result.alg_type28 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful28 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority28 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action28 = action;
+        break;
+    case 29:
+        entry->action_u.sacl_result_sacl_action_result.alg_type29 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful29 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority29 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action29 = action;
+        break;
+    case 30:
+        entry->action_u.sacl_result_sacl_action_result.alg_type30 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful30 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority30 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action30 = action;
+        break;
+    case 31:
+        entry->action_u.sacl_result_sacl_action_result.alg_type31 = alg_type;
+        entry->action_u.sacl_result_sacl_action_result.stateful31 = stateful;
+        entry->action_u.sacl_result_sacl_action_result.priority31 = priority;
+        entry->action_u.sacl_result_sacl_action_result.action31 = action;
+        break;
+    default:
+    PDS_TRACE_ERR("Invalid entry number %u while packing SACL Result table",
+                  entry_num);
+        break;
+    }
+
+    return SDK_RET_OK;
+}
+
+/**
+ * @brief    write the current contents of sacl_result action data buffer to
+ *           memory
+ * @param[in] addr        address to write the action data to
+ * @param[in] actiondata    action data buffer
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+static inline sdk_ret_t
+sacl_result_action_data_flush (mem_addr_t addr, void *actiondata)
+{
+    sdk_ret_t                   ret;
+    sacl_result_actiondata_t    *action_data;
+
+    PDS_TRACE_DEBUG("Flushing action data to 0x%lx", addr);
+    action_data = (sacl_result_actiondata_t *)actiondata;
+    ret = impl_base::pipeline_impl()->write_to_txdma_table(addr,
+                                                           P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
+                                                           SACL_RESULT_SACL_ACTION_RESULT_ID,
+                                                           action_data);
+    // reset the action data after flushing it
+    memset(action_data, 0, sizeof(*action_data));
+    return ret;
+}
+
+/**
+ * @brief     program the sacl_result table
+ * @param[in] rfc_ctxt    RFC context carrying all of the previous phases
+ *                        information processed until now
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+
+sdk_ret_t
+program_sacl_result (rfc_ctxt_t *rfc_ctxt)
+{
+    uint32_t action;
+    bool flush = false;
+    sacl_result_actiondata_t data = { 0 };
+    mem_addr_t addr = rfc_ctxt->base_addr + SACL_RSLT_TABLE_OFFSET;
+
+    // Iterate through the rules
+    for (uint32_t rule_num = 0;
+         rule_num < SACL_NUM_RULES;
+         rule_num += SACL_RSLT_ENTRIES_PER_CACHE_LINE) {
+        for (uint32_t entry_num = 0;
+             entry_num < SACL_RSLT_ENTRIES_PER_CACHE_LINE;
+             entry_num++) {
+            uint32_t rule_idx = rule_num + entry_num;
+            if ((rule_idx < rfc_ctxt->policy->num_rules) && (rule_idx !=
+                    SACL_RULE_ID_DEFAULT)) {
+                // Get the result fields from the rule
+                rule_t *rule = &rfc_ctxt->policy->rules[rule_idx];
+                action = (rule->attrs.action_data.fw_action.action ==
+                                SECURITY_RULE_ACTION_ALLOW) ?
+                                SACL_RSLT_ENTRY_ACTION_ALLOW :
+                                SACL_RSLT_ENTRY_ACTION_DENY;
+                sacl_result_table_entry_pack(rule_idx, entry_num, &data,
+                                             rule->attrs.alg_type,
+                                             rule->attrs.stateful,
+                                             rule->attrs.priority,
+                                             action);
+                flush = true;
+            } else if (rule_idx == SACL_RULE_ID_DEFAULT) {
+                // Set the default entry
+                action = (rfc_ctxt->policy->default_action.fw_action.action ==
+                                SECURITY_RULE_ACTION_ALLOW) ?
+                                SACL_RSLT_ENTRY_ACTION_ALLOW :
+                                SACL_RSLT_ENTRY_ACTION_DENY;
+                sacl_result_table_entry_pack(rule_idx, entry_num, &data, 0, 0,
+                                             SACL_PRIORITY_LOWEST, action);
+                flush = true;
+            }
+        }
+
+        if (flush) {
+            sacl_result_action_data_flush(addr, (void*)&data);
+            flush = false;
+        }
+
+        addr += SACL_CACHE_LINE_SIZE;
+    }
 
     return SDK_RET_OK;
 }

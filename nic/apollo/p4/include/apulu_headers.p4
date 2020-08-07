@@ -28,16 +28,17 @@ header_type apulu_p4i_to_rxdma_header_t {
 header_type apulu_txdma_to_p4e_header_t {
     fields {
         meter_en        : 1;
-        sacl_action     : 1;
+        sacl_stateful   : 1;
         sacl_root_num   : 3;
         nexthop_type    : 2;
-        drop            : 1;
+        sacl_drop       : 1;
         nexthop_id      : 16;
         snat_type       : 2;
         dnat_en         : 1;
         dnat_idx        : 13;
         src_bd_id       : 16;
-        pad             : 7;
+        sacl_alg_type   : 4;
+        pad             : 3;
         src_mapping_hit : 1;
         route_priority  : 16;
     }
@@ -80,16 +81,18 @@ header_type apulu_p4_to_arm_header_t {
         dnat_en                 : 1;
 
         mapping_hit             : 1;
-        sacl_action             : 1;
-        sacl_root               : 3;
+        sacl_stateful           : 1;
+        sacl_root_num           : 3;
         nexthop_type            : 2;
-        drop                    : 1;
+        sacl_drop               : 1;
 
         defunct_flow            : 1;
         local_mapping_ip_type   : 2;
         src_mapping_hit         : 1;
+        sacl_alg_type           : 4;
+
         meter_en                : 1;
-        pad                     : 3;
+        pad                     : 7;
 
         epoch                   : 8;
         sw_meta                 : 32;

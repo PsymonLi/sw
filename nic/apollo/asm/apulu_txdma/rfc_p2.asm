@@ -9,13 +9,23 @@ struct rfc_p2_k_           k;
 %%
 
 rfc_p2:
+    /* Write IPv6 policy index to PHV */
+    seq        c1, k.rx_to_tx_hdr_iptype, IPTYPE_IPV6
+    add.c1     r1, k.rx_to_tx_hdr_sacl_base_addr0_s32_e39, \
+                   k.rx_to_tx_hdr_sacl_base_addr0_s0_e31, 8
+    sub.c1     r5, r1, r5
+    addi.c1    r1, r0, SACL_IPV6_BLOCK_SIZE
+    div.c1     r5, r5, r1
+    phvwr.c1   p.txdma_control_sacl_policy_index, r5
+
     /* Compute the index into the classid array */
     mod        r7, k.txdma_control_rfc_index, SACL_P2_ENTRIES_PER_CACHE_LINE
     mul        r7, r7, SACL_P2_CLASSID_WIDTH
     /* Access the classid at the index */
     tblrdp     r7, r7, 0, SACL_P2_CLASSID_WIDTH
     /* Load sacl base addr + SACL_P3_TABLE_OFFSET to r1 */
-    add        r1, r0, k.rx_to_tx_hdr_sacl_base_addr0
+    add        r1, k.rx_to_tx_hdr_sacl_base_addr0_s32_e39, \
+                   k.rx_to_tx_hdr_sacl_base_addr0_s0_e31, 8
     addi       r1, r1, SACL_P3_TABLE_OFFSET
     /* P3 table index = P1:P2. */
     add        r2, r7, k.txdma_control_rfc_p1_classid, SACL_P2_CLASSID_WIDTH

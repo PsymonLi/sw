@@ -57,9 +57,10 @@ egress_to_rxdma_arm:
     phvwr           p.capri_p4_intrinsic_packet_len, r6
     phvwr           p.p4e_to_arm_rx_packet, k.control_metadata_rx_packet
     phvwr           p.p4e_to_arm_egress_bd_id, k.{vnic_metadata_egress_bd_id}.hx
-    phvwr           p.{p4e_to_arm_sacl_action,p4e_to_arm_sacl_root}, \
-                        k.{txdma_to_p4e_sacl_action,txdma_to_p4e_sacl_root_num}
-    phvwr           p.p4e_to_arm_drop, k.txdma_to_p4e_drop
+    phvwr           p.{p4e_to_arm_sacl_stateful,p4e_to_arm_sacl_root_num}, \
+                        k.{txdma_to_p4e_sacl_stateful,txdma_to_p4e_sacl_root_num}
+    phvwr           p.p4e_to_arm_sacl_drop, k.txdma_to_p4e_sacl_drop
+    phvwr           p.p4e_to_arm_sacl_alg_type, k.txdma_to_p4e_sacl_alg_type
     phvwr           p.{p4e_to_arm_snat_type,p4e_to_arm_dnat_en}, \
                         k.{txdma_to_p4e_snat_type,txdma_to_p4e_dnat_en}
     phvwr           p.p4e_to_arm_dnat_id, k.{txdma_to_p4e_dnat_idx}.hx

@@ -176,9 +176,10 @@ action p4e_app_classic_nic() {
         add_to_field(capri_p4_intrinsic.packet_len, APULU_P4_TO_ARM_HDR_SZ);
         modify_field(p4e_to_arm.rx_packet, control_metadata.rx_packet);
         modify_field(p4e_to_arm.egress_bd_id, vnic_metadata.egress_bd_id);
-        modify_field(p4e_to_arm.sacl_action, txdma_to_p4e.sacl_action);
-        modify_field(p4e_to_arm.sacl_root, txdma_to_p4e.sacl_root_num);
-        modify_field(p4e_to_arm.drop, txdma_to_p4e.drop);
+        modify_field(p4e_to_arm.sacl_stateful, txdma_to_p4e.sacl_stateful);
+        modify_field(p4e_to_arm.sacl_alg_type, txdma_to_p4e.sacl_alg_type);
+        modify_field(p4e_to_arm.sacl_root_num, txdma_to_p4e.sacl_root_num);
+        modify_field(p4e_to_arm.sacl_drop, txdma_to_p4e.sacl_drop);
         modify_field(p4e_to_arm.snat_type, txdma_to_p4e.snat_type);
         modify_field(p4e_to_arm.dnat_en, txdma_to_p4e.dnat_en);
         modify_field(p4e_to_arm.dnat_id, txdma_to_p4e.dnat_idx);

@@ -9,6 +9,13 @@ struct rfc_p1_1_k_         k;
 %%
 
 rfc_p1_1:
+    /* Write IPv4 policy index to PHV */
+    seq        c1, k.rx_to_tx_hdr_iptype, IPTYPE_IPV4
+    sub.c1     r5, k.rx_to_tx_hdr_sacl_base_addr0, r5
+    addi.c1    r1, r0, SACL_IPV4_BLOCK_SIZE
+    div.c1     r5, r5, r1
+    phvwr.c1   p.txdma_control_sacl_policy_index, r5
+
     /* Compute the index into the classid array */
     mod        r7, k.txdma_control_rfc_index, SACL_P1_ENTRIES_PER_CACHE_LINE
     mul        r7, r7, SACL_P1_CLASSID_WIDTH
@@ -19,8 +26,8 @@ rfc_p1_1:
     /* Load sacl base addr + SACL_P2_TABLE_OFFSET to r1 */
     add        r1, r0, k.rx_to_tx_hdr_sacl_base_addr0
     addi       r1, r1, SACL_P2_TABLE_OFFSET
-    /* Is this an even numbered pass? */
-    seq        c1, k.txdma_control_recirc_count[0:0], r0
+    /* Is this an odd numbered pass? */
+    seq        c1, k.txdma_control_recirc_count[0:0], 0x01
     /* Yes. P2 table index = DIP:DPORT. */
     add.c1     r2, k.rx_to_tx_hdr_dport_classid0, k.rx_to_tx_hdr_dip_classid0, \
                                                  SACL_PROTO_DPORT_CLASSID_WIDTH

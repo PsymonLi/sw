@@ -104,6 +104,7 @@ typedef union rule_action_data_s {
 
 ///< \brief    policy rule attributes
 typedef struct pds_policy_rule_attrs_s {
+    uint8_t               alg_type;       ///< algo type
     bool                  stateful;       ///< true, if rule is stateful
     // priority of this rule (lower the numeric value, higher the priority is)
     // if there are multiple rules with same highest priority that match the

@@ -1118,4 +1118,19 @@ rfc_build_eqtables (rfc_ctxt_t *rfc_ctxt)
     return SDK_RET_OK;
 }
 
+/**
+ * @brief     program the sacl_result table
+ * @param[in] rfc_ctxt    RFC context carrying all of the previous phases
+ *                        information processed until now
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+
+sdk_ret_t
+program_sacl_result (rfc_ctxt_t *rfc_ctxt) {
+    /* This table is not implemented for the Artemis pipeline.
+     * Policy results fields are directly embedded in the last
+     * RFC table */
+    return SDK_RET_OK;
+}
+
 }    // namespace rfc
