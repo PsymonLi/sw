@@ -1,6 +1,12 @@
-/*
- * Copyright (c) 2019, Pensando Systems Inc.
- */
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// system monitor
+///
+//----------------------------------------------------------------------------
 
 #ifndef __SYSMON_H__
 #define __SYSMON_H__
@@ -82,11 +88,11 @@ typedef struct sysmon_cfg_s {
     memory_threshold_event_cb_t   memory_threshold_event_cb;
     sysmon_memory_threshold_cfg_t *memory_threshold_cfg;
     uint16_t                      num_memory_threshold_cfg;
+    uint32_t                      sysmon_poll_time;
 } sysmon_cfg_t;
 
 int sysmon_init(sysmon_cfg_t *sysmon_cfg);
-void sysmgrsystemled(systemled_t led);
-int sysmon_monitor(void);
 void sysmon_ipc_init(void);
+void sysmgrsystemled(systemled_t led);
 
 #endif    // __SYSMON_H__

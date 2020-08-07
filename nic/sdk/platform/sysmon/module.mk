@@ -2,15 +2,16 @@
 
 include ${MKDEFS}/pre.mk
 MODULE_TARGET   = libsysmon.lib
-MODULE_SRCS     = ${MODULE_SRC_DIR}/disk.cc  \
-		  ${MODULE_SRC_DIR}/fwversion.cc  \
-		  ${MODULE_SRC_DIR}/memory.cc  \
-		  ${MODULE_SRC_DIR}/panic.cc  \
-		  ${MODULE_SRC_DIR}/pciehealth.cc  \
-		  ${MODULE_SRC_DIR}/postdiag.cc  \
-		  ${MODULE_SRC_DIR}/power.cc  \
-		  ${MODULE_SRC_DIR}/runtime.cc  \
-		  ${MODULE_SRC_DIR}/sysmon.cc  \
+MODULE_SRCS     = ${MODULE_SRC_DIR}/disk.cc   \
+		  ${MODULE_SRC_DIR}/fwversion.cc      \
+		  ${MODULE_SRC_DIR}/memory.cc         \
+		  ${MODULE_SRC_DIR}/panic.cc          \
+		  ${MODULE_SRC_DIR}/pciehealth.cc     \
+		  ${MODULE_SRC_DIR}/postdiag.cc       \
+		  ${MODULE_SRC_DIR}/power.cc          \
+		  ${MODULE_SRC_DIR}/runtime.cc        \
+		  ${MODULE_SRC_DIR}/sysmon.cc         \
+		  ${MODULE_SRC_DIR}/sysmon_thread.cc  \
 		  ${MODULE_SRC_DIR}/temperature.cc
 ifeq ($(ASIC),elba)
 MODULE_SRCS     += ${MODULE_SRC_DIR}/sysmon_monitor_elba.cc

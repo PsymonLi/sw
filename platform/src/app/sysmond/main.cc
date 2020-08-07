@@ -16,7 +16,7 @@
 
 #define SYSMOND_TIMER_ID_POLL 1
 #define ASICERROR_TIMER_ID_POLL 2
-#define SYSMOND_POLL_TIME     10000 // 10 secs = 10 * 1000 msecs
+#define SYSMOND_POLL_TIME     10    // 10 secs
 #define ASICERROR_POLL_TIME   1000  // 1 sec   = 1  * 1000 msecs
 #define THREAD_ID_AGENT_CMD_SERVER 1
 
@@ -51,14 +51,6 @@ periodic_thread_start (void *ctxt)
     // run main loop
     sdk::lib::periodic_thread_run(ctxt);
     return NULL;
-}
-
-static sdk_ret_t
-sysmond_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
-{
-    sysmon_monitor();
-    sysmond_flush_logger();
-    return SDK_RET_OK;
 }
 
 static sdk_ret_t
@@ -147,9 +139,8 @@ main(int argc, char *argv[])
     sysmon_cfg.liveness_event_cb = liveness_event_cb;
     sysmon_cfg.pciehealth_event_cb = pciehealth_event_cb;
     sysmon_cfg.catalog = g_catalog;
+    sysmon_cfg.sysmon_poll_time = SYSMOND_POLL_TIME;
 
-    //TODO: Use enum for IDs
-    sdk::ipc::ipc_init_ev_default(14);
     sysmon_grpc_init();
 
     // init the lib; initialize ipc.
@@ -188,12 +179,6 @@ main(int argc, char *argv[])
     while (!sdk::lib::periodic_thread_is_running()) {
         pthread_yield();
     }
-
-    // schedule the sysmon timer cb
-    sdk::lib::timer_schedule(
-                    SYSMOND_TIMER_ID_POLL, SYSMOND_POLL_TIME, NULL,
-                    (sdk::lib::twheel_cb_t)sysmond_timer_cb,
-                    true);
 
     // schedule the asicerror timer cb
     sdk::lib::timer_schedule(

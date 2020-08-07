@@ -12,7 +12,6 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/platform/sensor/sensor.hpp"
 #include "nic/sdk/asic/port.hpp"
-#include "nic/sdk/platform/sysmon/sysmon.hpp"
 #include "nic/sdk/platform/asicerror/interrupts.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
@@ -260,14 +259,12 @@ asic_impl::pb_stats(debug::pb_stats_get_cb_t cb, void *ctxt) {
 }
 
 /**
- * @brief    monitor the system and asic interrupts
+ * @brief    monitor the asic interrupts
  * @return   SDK_RET_OK on success, failure status code on error
  */
 sdk_ret_t
 asic_impl::monitor(monitor_type_t monitor_type) {
-    if (monitor_type == monitor_type_t::MONITOR_TYPE_SYSTEM) {
-        sysmon_monitor();
-    } else if (monitor_type == monitor_type_t::MONITOR_TYPE_INTERRUPTS) {
+    if (monitor_type == monitor_type_t::MONITOR_TYPE_INTERRUPTS) {
         traverse_interrupts();
     }
     return SDK_RET_OK;

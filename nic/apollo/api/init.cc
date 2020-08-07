@@ -46,6 +46,7 @@ const pds_obj_key_t k_pds_obj_key_invalid = { 0 };
  */
 #define PDS_SYSMON_LOGDIR                 "/var/log/pensando"
 #define PDS_SYSMON_LOGDIR_THRESHOLD       90
+#define SYSTEM_SCAN_INTVL                 10    // in seconds
 
 static sysmon_memory_threshold_cfg_t mem_threshold_cfg[] = {
     {
@@ -259,6 +260,7 @@ sysmon_init (void)
 
     sysmon_cfg.num_memory_threshold_cfg = SDK_ARRAY_SIZE(mem_threshold_cfg);
     sysmon_cfg.memory_threshold_cfg = mem_threshold_cfg;
+    sysmon_cfg.sysmon_poll_time = SYSTEM_SCAN_INTVL;
 
     // init the sysmon lib
     sysmon_init(&sysmon_cfg);

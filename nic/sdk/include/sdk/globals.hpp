@@ -20,6 +20,7 @@ typedef enum sdk_ipc_id_s {
     SDK_IPC_ID_OPERD_PLUGIN        = SDK_IPC_ID_MIN + 4,
     SDK_IPC_ID_LINKMGR_AACS_SERVER = SDK_IPC_ID_MIN + 5,
     SDK_IPC_ID_LINKMGR_CTRL        = SDK_IPC_ID_MIN + 6,
+    SDK_IPC_ID_SYSMON              = SDK_IPC_ID_MIN + 7,
     SDK_IPC_ID_MAX                 = SDK_IPC_ID_MIN + 31,
 } sdk_ipc_id_t;
 

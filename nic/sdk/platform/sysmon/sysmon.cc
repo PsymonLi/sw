@@ -1,37 +1,26 @@
-/*
- * Copyright (c) 2019, Pensando Systems Inc.
- */
-#include "sysmon_internal.hpp"
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// system monitor
+///
+//----------------------------------------------------------------------------
+
+#include "lib/thread/thread.hpp"
+#include "lib/event_thread/event_thread.hpp"
+#include "platform/sysmon/sysmon_internal.hpp"
+#include "platform/sysmon/sysmon_thread.hpp"
 
 #define HEALTH_OK 1
 #define HEALTH_NOK 0
-sysmon_cfg_t g_sysmon_cfg;
 
 systemled_t currentstatus = {UKNOWN_STATE, LED_COLOR_NONE};
 
-monfunc_t monfunclist[] = {
-    { checkcattrip           },
-    { checkfrequency         },
-    { checkruntime           },
-    { checktemperature       },
-    { checkdisk              },
-    { checkmemory            },
-    { check_memory_threshold },
-    { checkpostdiag          },
-    { checkliveness          },
-    { checkpower             },
-    { checkpciehealth        },
-};
-
-static void monitorsystem() {
-    for (int i = 0; i < SDK_ARRAY_SIZE(monfunclist); i++) {
-        monfunclist[i].func();
-    }
-    return;
-}
-
 void
-sysmgrsystemled (systemled_t led) {
+sysmgrsystemled (systemled_t led)
+{
 
     //Check if already at max warning level.
     if (led.event >= currentstatus.event) {
@@ -72,6 +61,30 @@ sysmgrsystemled (systemled_t led) {
     return;
 }
 
+static sdk_ret_t
+thread_init (void)
+{
+    int thread_id;
+    sdk::event_thread::event_thread *new_thread;
+
+    thread_id = SDK_IPC_ID_SYSMON;
+    new_thread =
+        sdk::event_thread::event_thread::factory(
+            "sysmon", thread_id,
+            sdk::lib::THREAD_ROLE_CONTROL,
+            0x0,    // use all control cores
+            sysmon_event_thread_init,
+            sysmon_event_thread_exit,
+            sysmon_event_handler,
+            sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+            sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+            sdk::lib::thread_flags_t::THREAD_YIELD_ENABLE);
+    SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
+                            "sysmon thread create failure");
+    new_thread->start(new_thread);
+    return SDK_RET_OK;
+}
+
 int
 sysmon_init (sysmon_cfg_t *sysmon_cfg)
 {
@@ -105,13 +118,6 @@ sysmon_init (sysmon_cfg_t *sysmon_cfg)
     led.event = EVERYTHING_WORKING;
     sysmgrsystemled(led);
 
-    return 0;
-}
-
-int
-sysmon_monitor (void)
-{
-    // Poll the system variables
-    monitorsystem();
+    thread_init();
     return 0;
 }
