@@ -957,12 +957,6 @@ func TestHosts(t *testing.T) {
 					}
 					return false, fmt.Errorf("Failed to find event in: %+v", eventRecorder.GetEvents())
 				}, "Host not in statemgr")
-
-				hostAPI := v.StateMgr.Controller().Host()
-				hosts, err := hostAPI.List(context.Background(), &api.ListWatchOptions{})
-				AssertOk(t, err, "Failed to list hosts")
-				// Conflicting host will be written since there are no api hooks to reject it.
-				AssertEquals(t, 2, len(hosts), "Conflict host should not be deleted")
 			},
 		},
 		{
