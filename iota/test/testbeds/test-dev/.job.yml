@@ -104,6 +104,35 @@ e2e-targets:
           EsxUsername: root
           EsxPassword: Pen0trl!
 
+ 2esx67DualNicWithVenice:
+   commands: [ "cat /warmd.json && sleep 30000000"]
+   owners: ["email:ci-status@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   clusters:
+     - image: build-160
+       count: 1
+       resources:
+         cpus: 4
+         memory: 8
+         pvt-networks:
+         - control-1
+         - control-2
+     - image: build-9
+       count: 2
+       resources:
+         servers:
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
  # single instance of RHEL 8.0 with 1 Venice instance
  rhel82WithVenice:
    commands: [ "cat /warmd.json && sleep 30000000"]
