@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2020 Pensando Systems. All rights reserved.
+ */
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
