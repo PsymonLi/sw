@@ -437,7 +437,7 @@ hal_ret_t interface_update(InterfaceSpec& spec,
 hal_ret_t interface_delete(InterfaceDeleteRequest& req,
                            InterfaceDeleteResponse *rsp);
 hal_ret_t interface_get(InterfaceGetRequest& spec,
-                        InterfaceGetResponseMsg *rsp);
+                        InterfaceGetResponseMsg *rsp, bool skip_lldp);
 hal_ret_t add_l2seg_on_uplink(InterfaceL2SegmentSpec& spec,
                               InterfaceL2SegmentResponse *rsp);
 hal_ret_t del_l2seg_on_uplink(InterfaceL2SegmentSpec& spec,

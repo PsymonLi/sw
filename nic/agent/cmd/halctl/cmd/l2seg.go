@@ -113,6 +113,8 @@ func l2segShowSpecCmdHandler(cmd *cobra.Command, args []string) {
 	// Print Header
 	l2segShowHeader(cmd, args)
 
+	ifIdxStr := ifGetAllIdxStr()
+
 	// Print l2segs
 	m := make(map[uint64]*halproto.L2SegmentGetResponse)
 	for _, resp := range respMsg.Response {
@@ -128,7 +130,7 @@ func l2segShowSpecCmdHandler(cmd *cobra.Command, args []string) {
 	}
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 	for _, k := range keys {
-		l2segShowOneResp(m[k])
+		l2segShowOneResp(m[k], ifIdxStr)
 	}
 }
 
@@ -294,7 +296,7 @@ func l2segShowHeader(cmd *cobra.Command, args []string) {
 	fmt.Println(hdrLine)
 }
 
-func l2segShowOneResp(resp *halproto.L2SegmentGetResponse) {
+func l2segShowOneResp(resp *halproto.L2SegmentGetResponse, ifIdxStr map[uint32]string) {
 	ifList := resp.GetSpec().GetIfKeyHandle()
 	ifStr := ""
 	weStr := ""
@@ -345,7 +347,6 @@ func l2segShowOneResp(resp *halproto.L2SegmentGetResponse) {
 	// 	replIndices += "-N"
 	// }
 
-	ifIdxStr := ifGetAllIdxStr()
 	oiflStr := ""
 	if resp.GetStatus().GetBaseOifl() != nil {
 		oiflStr += fmt.Sprintf("%d",

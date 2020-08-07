@@ -573,7 +573,7 @@ TEST_F(uplinkpc_test, test6)
     // Get interface by setting key.
     get_req.mutable_key_or_handle()->set_interface_id(600 + num_uplinks + 1);
     hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
-    ret = hal::interface_get(get_req, &get_rsp_msg);
+    ret = hal::interface_get(get_req, &get_rsp_msg, true);
     hal::hal_cfg_db_close();
     ASSERT_TRUE(ret == HAL_RET_OK);
     ASSERT_TRUE(get_rsp_msg.response_size() == 1);
@@ -582,7 +582,7 @@ TEST_F(uplinkpc_test, test6)
     get_rsp_msg.clear_response();
     get_req.clear_key_or_handle();
     hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
-    ret = hal::interface_get(get_req, &get_rsp_msg);
+    ret = hal::interface_get(get_req, &get_rsp_msg, true);
     hal::hal_cfg_db_close();
     ASSERT_TRUE(ret == HAL_RET_OK);
     ASSERT_TRUE(get_rsp_msg.response_size() > 1);

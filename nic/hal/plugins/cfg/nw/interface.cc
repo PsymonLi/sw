@@ -3075,7 +3075,7 @@ end:
 }
 
 static void
-if_process_get (if_t *hal_if, InterfaceGetResponse *rsp)
+if_process_get (if_t *hal_if, InterfaceGetResponse *rsp, bool skip_lldp)
 {
     hal_ret_t               ret    = HAL_RET_OK;
     InterfaceSpec           *spec  = NULL;
@@ -3132,7 +3132,6 @@ if_process_get (if_t *hal_if, InterfaceGetResponse *rsp)
                     set_mirrorsession_id(hal_if->rx_mirror_session_id[i]);
             }
         }
-
     }
         break;
 
@@ -3148,11 +3147,13 @@ if_process_get (if_t *hal_if, InterfaceGetResponse *rsp)
         rsp->mutable_status()->mutable_uplink_info()->
             set_hw_port_num(hal_if->uplink_port_num);
         rsp->mutable_status()->set_if_status(hal_if->if_op_status);
-        interface_lldp_status_get(uplink_if_get_idx(hal_if),
-                                  rsp->mutable_status()->mutable_uplink_info());
-        interface_lldp_stats_get(uplink_if_get_idx(hal_if),
-                                 rsp->mutable_stats()->
-                                 mutable_uplinkifstats()->mutable_lldpifstats());
+        if (!skip_lldp) {
+            interface_lldp_status_get(uplink_if_get_idx(hal_if),
+                                      rsp->mutable_status()->mutable_uplink_info());
+            interface_lldp_stats_get(uplink_if_get_idx(hal_if),
+                                     rsp->mutable_stats()->
+                                     mutable_uplinkifstats()->mutable_lldpifstats());
+        }
         // TODO: is this populated today ?
         //uplink_if_info->set_l2segment_id();
         // TODO: don't see this info populated in if today
@@ -3270,34 +3271,41 @@ if_process_get (if_t *hal_if, InterfaceGetResponse *rsp)
 
 }
 
-static bool
-if_get_ht_cb (void *ht_entry, void *ctxt)
-{
-    hal_handle_id_ht_entry_t *entry = (hal_handle_id_ht_entry_t *)ht_entry;
-    InterfaceGetResponseMsg *rsp    = (InterfaceGetResponseMsg *)ctxt;
-    InterfaceGetResponse *response  = rsp->add_response();
-    if_t          *hal_if           = NULL;
-
-    hal_if = (if_t *)hal_handle_get_obj(entry->handle_id);
-    if_process_get(hal_if, response);
-
-    // Always return false here, so that we walk through all hash table
-    // entries.
-    return false;
-}
-
 //------------------------------------------------------------------------------
 // process a interface get request
 //------------------------------------------------------------------------------
 hal_ret_t
-interface_get (InterfaceGetRequest& req, InterfaceGetResponseMsg *rsp)
+interface_get (InterfaceGetRequest& req, InterfaceGetResponseMsg *rsp, 
+               bool skip_lldp)
 {
     if_t             *hal_if;
+
+    struct if_ctxt_t {
+        bool skip_lldp;
+        InterfaceGetResponseMsg *rsp;
+    } ctxt = {};
+
+    auto walk_cb = [](void *ht_entry, void *ctxt) {
+        hal_handle_id_ht_entry_t *entry = (hal_handle_id_ht_entry_t *)ht_entry;
+        if_ctxt_t *ctx = (if_ctxt_t *)ctxt;
+        InterfaceGetResponseMsg *rsp    = ctx->rsp;
+        InterfaceGetResponse *response  = rsp->add_response();
+        if_t          *hal_if           = NULL;
+
+        hal_if = (if_t *)hal_handle_get_obj(entry->handle_id);
+        if_process_get(hal_if, response, ctx->skip_lldp);
+
+        // Always return false here, so that we walk through all hash table
+        // entries.
+        return false;
+    };
 
     if (!req.has_key_or_handle()) {
         // When the key-handle is not set, this is a request for all interface
         // objects. Run through the hash table and retrieve all values.
-        g_hal_state->if_id_ht()->walk(if_get_ht_cb, rsp);
+        ctxt.skip_lldp = skip_lldp;
+        ctxt.rsp = rsp;
+        g_hal_state->if_id_ht()->walk(walk_cb, &ctxt);
     } else {
         hal_if = if_lookup_key_or_handle(req.key_or_handle());
 
@@ -3306,7 +3314,7 @@ interface_get (InterfaceGetRequest& req, InterfaceGetResponseMsg *rsp)
             response->set_api_status(types::API_STATUS_NOT_FOUND);
             return HAL_RET_INVALID_ARG;
         } else {
-            if_process_get(hal_if, response);
+            if_process_get(hal_if, response, skip_lldp);
         }
     }
 
@@ -6567,7 +6575,7 @@ if_store_cb (void *obj, uint8_t *mem, uint32_t len, uint32_t *mlen)
     *mlen = 0;
 
     // get all information about this interface
-    if_process_get(hal_if, &rsp);
+    if_process_get(hal_if, &rsp, true);
     serialized_state_sz = rsp.ByteSizeLong();
     if (serialized_state_sz > len) {
         HAL_TRACE_ERR("Failed to marshall interface {}, not enough room, "

@@ -66,6 +66,7 @@ interface_lldp_parse_json (bool nbrs, lldp_status_t *lldp_status,
                 str = iface.second.get<std::string>("name", "");
                 if (!str.empty()) {
                     strncpy(lldp_status->if_name, str.c_str(), LLDP_MAX_NAME_LEN);
+                    lldp_status->if_name[LLDP_MAX_NAME_LEN-1] = '\0';
                 } else {
                     SDK_TRACE_ERR("  No interface entry");
                 }
@@ -129,22 +130,31 @@ interface_lldp_parse_json (bool nbrs, lldp_status_t *lldp_status,
                         }
             
                         str = cid.second.get<std::string>("value", "");
-                        memcpy(lldp_status->chassis_status.chassis_id.value, str.c_str(),
-                               LLDP_MAX_NAME_LEN);
+                        if (!str.empty()) {
+                            strncpy((char *)lldp_status->chassis_status.chassis_id.value, str.c_str(),
+                                    LLDP_MAX_NAME_LEN);
+                            lldp_status->chassis_status.chassis_id.value[LLDP_MAX_NAME_LEN-1] = '\0';
+                        }
                     }
             
                     BOOST_FOREACH (pt::ptree::value_type &cname,
                                    chassis.second.get_child("name")) {
                         str = cname.second.get<std::string>("value", "");
-                        strncpy(lldp_status->chassis_status.sysname, str.c_str(),
-                                LLDP_MAX_NAME_LEN);
+                        if (!str.empty()) {
+                            strncpy(lldp_status->chassis_status.sysname, str.c_str(),
+                                    LLDP_MAX_NAME_LEN);
+                            lldp_status->chassis_status.sysname[LLDP_MAX_NAME_LEN-1] = '\0';
+                        }
                     }
 
                     BOOST_FOREACH (pt::ptree::value_type &cdescr,
                                    chassis.second.get_child("descr")) {
                         str = cdescr.second.get<std::string>("value", "");
-                        strncpy(lldp_status->chassis_status.sysdescr, str.c_str(),
-                                LLDP_MAX_DESCR_LEN);
+                        if (!str.empty()) {
+                            strncpy(lldp_status->chassis_status.sysdescr, str.c_str(),
+                                    LLDP_MAX_DESCR_LEN);
+                            lldp_status->chassis_status.sysdescr[LLDP_MAX_DESCR_LEN-1] = '\0';
+                        }
                     }
 
                     // mgmt ip tlv may not be present in certain chassis tlvs
@@ -157,36 +167,39 @@ interface_lldp_parse_json (bool nbrs, lldp_status_t *lldp_status,
                         }
                     }
 
-                    i = 0;
-                    BOOST_FOREACH (pt::ptree::value_type &capability,
-                                   chassis.second.get_child("capability")) {
+                    boost::optional<pt::ptree&> cap_opt = chassis.second.get_child_optional("capability");
+                    if (cap_opt) {
+                        i = 0;
+                        BOOST_FOREACH (pt::ptree::value_type &capability,
+                                       chassis.second.get_child("capability")) {
 
-                        str = capability.second.get<std::string>("type", "");
+                            str = capability.second.get<std::string>("type", "");
 
-                        if (!str.empty()) {
-                            if (!str.compare("Repeater")) {
-                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_REPEATER;
-                            } else if (!str.compare("Bridge")) {
-                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_BRIDGE;
-                            } else if (!str.compare("Router")) {
-                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_ROUTER;
-                            } else if (!str.compare("Wlan")) {
-                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_WLAN;
-                            } else if (!str.compare("Telephone")) {
-                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_TELEPHONE;
-                            } else if (!str.compare("Docsis")) {
-                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_DOCSIS;
-                            } else if (!str.compare("Station")) {
-                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_STATION;
-                            } else {
-                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_OTHER;
+                            if (!str.empty()) {
+                                if (!str.compare("Repeater")) {
+                                    lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_REPEATER;
+                                } else if (!str.compare("Bridge")) {
+                                    lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_BRIDGE;
+                                } else if (!str.compare("Router")) {
+                                    lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_ROUTER;
+                                } else if (!str.compare("Wlan")) {
+                                    lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_WLAN;
+                                } else if (!str.compare("Telephone")) {
+                                    lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_TELEPHONE;
+                                } else if (!str.compare("Docsis")) {
+                                    lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_DOCSIS;
+                                } else if (!str.compare("Station")) {
+                                    lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_STATION;
+                                } else {
+                                    lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_OTHER;
+                                }
                             }
-                        }
-                  
-                        lldp_status->chassis_status.chassis_cap_info[i].cap_enabled = capability.second.get<bool>("enabled");
-                        i++;
-                        if (i >= LLDP_MAX_CAPS) {
-                            break;
+
+                            lldp_status->chassis_status.chassis_cap_info[i].cap_enabled = capability.second.get<bool>("enabled");
+                            i++;
+                            if (i >= LLDP_MAX_CAPS) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -223,8 +236,9 @@ interface_lldp_parse_json (bool nbrs, lldp_status_t *lldp_status,
             
                         str = pid.second.get<std::string>("value", "");
                         if (!str.empty()) {
-                            memcpy(lldp_status->port_status.port_id.value, str.c_str(),
-                                   LLDP_MAX_NAME_LEN);
+                            strncpy((char *)lldp_status->port_status.port_id.value, str.c_str(),
+                                    LLDP_MAX_NAME_LEN);
+                            lldp_status->port_status.port_id.value[LLDP_MAX_NAME_LEN-1] = '\0';
                         }
                     }
 
@@ -234,6 +248,7 @@ interface_lldp_parse_json (bool nbrs, lldp_status_t *lldp_status,
                         if (!str.empty()) {
                             strncpy(lldp_status->port_status.port_descr, str.c_str(),
                                     LLDP_MAX_DESCR_LEN);
+                            lldp_status->port_status.port_descr[LLDP_MAX_DESCR_LEN-1] = '\0';
                         }
                     }
 
@@ -260,6 +275,7 @@ interface_lldp_parse_json (bool nbrs, lldp_status_t *lldp_status,
                             if (!str.empty()) {
                                 strncpy(lldp_status->unknown_tlv_status.tlvs[i].oui, str.c_str(),
                                         LLDP_MAX_OUI_LEN);
+                                lldp_status->unknown_tlv_status.tlvs[i].oui[LLDP_MAX_OUI_LEN-1] = '\0';
                             }
 
                             lldp_status->unknown_tlv_status.tlvs[i].subtype = tlv.second.get<uint32_t>("subtype");
@@ -268,6 +284,7 @@ interface_lldp_parse_json (bool nbrs, lldp_status_t *lldp_status,
                             if (!str.empty()) {
                                 strncpy(lldp_status->unknown_tlv_status.tlvs[i].value, str.c_str(),
                                         LLDP_MAX_NAME_LEN);
+                                lldp_status->unknown_tlv_status.tlvs[i].value[LLDP_MAX_NAME_LEN-1] = '\0';
                             }
                             i++;
                             if (i >= LLDP_MAX_UNK_TLVS) {

@@ -1149,7 +1149,8 @@ func ifGetAllIdxStr() map[uint32]string {
 	req = &halproto.InterfaceGetRequest{}
 
 	ifGetReqMsg := &halproto.InterfaceGetRequestMsg{
-		Request: []*halproto.InterfaceGetRequest{req},
+		SkipLldp: true,
+		Request:  []*halproto.InterfaceGetRequest{req},
 	}
 
 	var m map[uint32]string

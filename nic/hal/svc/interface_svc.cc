@@ -220,7 +220,7 @@ InterfaceServiceImpl::InterfaceGet(ServerContext *context,
     hal::hal_cfg_db_open(hal::CFG_OP_READ);
     for (i = 0; i < nreqs; i++) {
         auto spec = req->request(i);
-        hal::interface_get(spec, rsp);
+        hal::interface_get(spec, rsp, req->skip_lldp());
     }
     hal::hal_cfg_db_close();
     return Status::OK;

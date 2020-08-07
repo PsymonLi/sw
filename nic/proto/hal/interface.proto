@@ -825,7 +825,8 @@ message InterfaceGetRequest {
 
 // InterfaceGetRequestMsg is batched GET request for interfaces
 message InterfaceGetRequestMsg {
-  repeated InterfaceGetRequest    request = 1;    // batched get request
+  bool                            skip_lldp = 1;    // Get lldp info
+  repeated InterfaceGetRequest    request   = 2;    // batched get request
 }
 
 // InterfaceGetResponse captures all the information about a interface

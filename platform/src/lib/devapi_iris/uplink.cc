@@ -96,6 +96,7 @@ devapi_uplink::populate_lif_(uplink_id_t id)
     InterfaceGetRequestMsg    req_msg;
     InterfaceGetResponseMsg   rsp_msg;
 
+    req_msg.set_skip_lldp(true);
     req = req_msg.add_request();
     req->mutable_key_or_handle()->set_interface_id(id_);
     VERIFY_HAL();
@@ -201,6 +202,7 @@ devapi_uplink::update_hal_native_l2seg(uint32_t native_l2seg_id)
     InterfaceRequestMsg       if_req_msg;
     InterfaceResponseMsg      if_rsp_msg;
 
+    req_msg.set_skip_lldp(true);
     req = req_msg.add_request();
     req->mutable_key_or_handle()->set_interface_id(id_);
     VERIFY_HAL();
