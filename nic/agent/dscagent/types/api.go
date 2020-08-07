@@ -154,4 +154,7 @@ type PipelineAPI interface {
 
 	// GetDSCAgentStatus returns the current agent status
 	GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus)
+
+	// HandleVirtualRouterPeeringGroup handles CRUD Methods for VirtualRouterPeeringGroup object
+	HandleVirtualRouterPeeringGroup(oper Operation, obj netproto.VirtualRouterPeeringGroup) ([]netproto.VirtualRouterPeeringGroup, error)
 }

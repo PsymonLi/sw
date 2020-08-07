@@ -63,6 +63,8 @@ import (
 														err := netutils.HTTPGet("http://"+cl.agentURL+"/api/profiles/", &{{lower $crudObject}}{{title .}} )
 												{{else if strEq $crudObject "IPAMPolicy"}}
 														err := netutils.HTTPGet("http://"+cl.agentURL+"/api/ipam-policies/", &{{lower $crudObject}}{{title .}} )
+												{{else if strEq $crudObject "VirtualRouterPeeringGroup"}}
+														err := netutils.HTTPGet("http://"+cl.agentURL+"/api/vr-peering-groups/", &{{lower $crudObject}}{{title .}} )
                         {{else}}
                             err := netutils.HTTPGet("http://"+cl.agentURL+"/api/{{lower $crudObject}}s/", &{{lower $crudObject}}{{title .}} )
                         {{end}}
@@ -126,6 +128,8 @@ import (
 														err := netutils.HTTPPost("http://"+cl.agentURL+"/api/profiles/", &{{lower .}}Data, &resp)
 												{{else if strEq $crudObject "IPAMPolicy"}}
 														err := netutils.HTTPPost("http://"+cl.agentURL+"/api/ipam-policies/", &{{lower .}}Data, &resp)
+												{{else if strEq $crudObject "VirtualRouterPeeringGroup"}}
+														err := netutils.HTTPPost("http://"+cl.agentURL+"/api/vr-peering-groups/", &{{lower .}}Data, &resp)
                         {{end}}
 
                         return err
@@ -189,6 +193,8 @@ import (
 																	err := netutils.HTTPPut("http://"+cl.agentURL+"/api/profiles/default/default/preCreated{{title $crudObject}}", &{{lower .}}Data, &resp)
 															{{else if strEq $crudObject "IPAMPolicy"}}
 																	err := netutils.HTTPPut("http://"+cl.agentURL+"/api/ipam-policies/default/default/preCreated{{title $crudObject}}", &{{lower .}}Data, &resp)
+															{{else if strEq $crudObject "VirtualRouterPeeringGroup"}}
+																	err := netutils.HTTPPut("http://"+cl.agentURL+"/api/vr-peering-groups/default/default/preCreated{{title $crudObject}}", &{{lower .}}Data, &resp)
                             {{end}}
 
                             return err
@@ -251,6 +257,8 @@ import (
 																	err := netutils.HTTPDelete("http://"+cl.agentURL+"/api/profiles/default/default/test{{title .}}{{title $crudObject}}", &{{lower .}}Data, &resp)
 															{{else if strEq $crudObject "IPAMPolicy"}}
 																	err := netutils.HTTPDelete("http://"+cl.agentURL+"/api/ipam-policies/default/default/test{{title .}}{{title $crudObject}}", &{{lower .}}Data, &resp)
+															{{else if strEq $crudObject "VirtualRouterPeeringGroup"}}
+																	err := netutils.HTTPDelete("http://"+cl.agentURL+"/api/vr-peering-groups/default/default/test{{title .}}{{title $crudObject}}", &{{lower .}}Data, &resp)
                         {{end}}
                         return err
                     }

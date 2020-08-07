@@ -1,0 +1,70 @@
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved.
+
+syntax = "proto3";
+
+package netproto;
+
+// Mandatory imports.
+import "google/api/annotations.proto";
+import public "github.com/pensando/sw/venice/utils/apigen/annotations/includes.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github.com/pensando/sw/api/meta.proto";
+
+// VR Peering Group Route table api
+service VirtualRouterPeeringGroupApiV1 {
+    // options for auto generating rest endpoints
+    option(venice.naplesRestService) = {
+        Object: "VirtualRouterPeeringGroup",
+        Method: ["list", "get", "post", "delete", "put"],
+        Pattern: "/{ObjectMeta.Tenant}/{ObjectMeta.Namespace}/{ObjectMeta.Name}"
+        Prefix: "api/vr-peering-groups"
+        Version: "V1"
+    };
+
+    rpc ListVirtualRouterPeeringGroups (api.ListWatchOptions) returns (VirtualRouterPeeringGroupList) {};
+    rpc WatchVirtualRouterPeeringGroups (api.ListWatchOptions) returns (stream VirtualRouterPeeringGroupEventList) {};
+    rpc VirtualRouterPeeringGroupOperUpdate (stream VirtualRouterPeeringGroupEvent) returns (api.TypeMeta) {};
+}
+
+message VRPeeringRoute {
+    string IPv4Prefix          = 1 [(gogoproto.jsontag) = "ipv4-prefix", (venice.check) = "CIDR()"];
+    // Destination VR where this IP prefix belongs 
+    string DestVirtualRouter   = 2 [(gogoproto.jsontag) = "dest-virtual-router"];
+}
+
+message VRPeeringRouteTable {
+    repeated VRPeeringRoute VRPeeringRoutes = 1 [(gogoproto.nullable) = false,
+                                                 (gogoproto.jsontag) = "vr-peering-routes,omitempty"];
+}
+
+message VirtualRouterPeeringGroupSpec {
+    // map [VirtualRouter] -> VRPeeringRouteTable, for all virtual routers in this peering group
+    map<string, VRPeeringRouteTable> VRPeeringRouteTables = 1 [(gogoproto.nullable) = true,
+                                                               (gogoproto.jsontag) = "vr-peering-route-tables,omitempty"];
+}
+
+message VirtualRouterPeeringGroupStatus {
+    // map [VirtualRouter] -> VRPeeringRouteTable, for only those virtual-routers that this DSC is interested in
+    map<string, VRPeeringRouteTable> VRPeeringRouteTables = 1 [(gogoproto.nullable) = true,
+                                                               (gogoproto.jsontag) = "vr-peering-route-tables,omitempty"];
+}
+
+message VirtualRouterPeeringGroupEvent {
+    api.EventType    EventType       = 1 [(gogoproto.jsontag) = "event-type,omitempty"];
+    VirtualRouterPeeringGroup  VirtualRouterPeeringGroup   = 2 [(gogoproto.nullable) = false,
+                                                                (gogoproto.jsontag) = "vr-peering-group,omitempty"];
+}
+
+message VirtualRouterPeeringGroupEventList {
+    repeated VirtualRouterPeeringGroupEvent virtualRouterPeeringGroupEvents = 1;
+}
+message VirtualRouterPeeringGroupList {
+    repeated VirtualRouterPeeringGroup virtualRouterPeeringGroups = 1;
+}
+
+message VirtualRouterPeeringGroup {
+    api.TypeMeta   TypeMeta   = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta ObjectMeta = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,omitempty"];
+    VirtualRouterPeeringGroupSpec Spec           = 3  [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec,omitempty"];
+    VirtualRouterPeeringGroupStatus Status       = 4  [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status,omitempty"];
+}

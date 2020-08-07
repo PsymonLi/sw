@@ -2391,6 +2391,11 @@ func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP) error {
 	return nil
 }
 
+// HandleVirtualRouterPeeringGroup handles CRUD Methods for VirtualRouterPeeringGroup object
+func (a *ApuluAPI) HandleVirtualRouterPeeringGroup(oper types.Operation, obj netproto.VirtualRouterPeeringGroup) (vrPeeringGroups []netproto.VirtualRouterPeeringGroup, err error) {
+	return nil, nil
+}
+
 // TODO Move this into InfraAPI to avoid code duplication
 func (a *ApuluAPI) startDynamicWatch(kinds []string) {
 	log.Infof("Starting Dynamic Watches for kinds: %v", kinds)

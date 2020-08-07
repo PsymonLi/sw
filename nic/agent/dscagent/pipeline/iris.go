@@ -1600,7 +1600,7 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 	return
 }
 
-// HandleRoutingConfig handles CRUDs for NetworkSecurityPolicy object
+// HandleRoutingConfig unimplemented
 func (i *IrisAPI) HandleRoutingConfig(oper types.Operation, obj netproto.RoutingConfig) ([]netproto.RoutingConfig, error) {
 	return nil, errors.Wrapf(types.ErrNotImplemented, "Routing Config not implemented by Iris Pipeline")
 }
@@ -2469,6 +2469,11 @@ func (i *IrisAPI) isLocalEP(endpoint netproto.Endpoint) bool {
 // HandleDSCInterfaceInfo handles configuring DSC interfaces served from the DB
 func (i *IrisAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardStatus) {
 	return
+}
+
+// HandleVirtualRouterPeeringGroup unimplemented
+func (i *IrisAPI) HandleVirtualRouterPeeringGroup(oper types.Operation, vrPeeringGroup netproto.VirtualRouterPeeringGroup) (vrPeeringGroups []netproto.VirtualRouterPeeringGroup, err error) {
+	return nil, errors.Wrapf(types.ErrNotImplemented, "VirtualRouterPeeringGroup not implemented by Iris Pipeline")
 }
 
 // TODO Move this into InfraAPI to avoid code duplication

@@ -24,6 +24,7 @@
 		tunnel.proto
 		types.proto
 		vrf.proto
+		vr_peering_group.proto
 
 	It has these top-level messages:
 		App
@@ -170,6 +171,14 @@
 		VrfList
 		VrfEvent
 		VrfEventList
+		VRPeeringRoute
+		VRPeeringRouteTable
+		VirtualRouterPeeringGroupSpec
+		VirtualRouterPeeringGroupStatus
+		VirtualRouterPeeringGroupEvent
+		VirtualRouterPeeringGroupEventList
+		VirtualRouterPeeringGroupList
+		VirtualRouterPeeringGroup
 */
 package netproto
 

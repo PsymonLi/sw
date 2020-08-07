@@ -198,6 +198,9 @@ func (client *NimbusClient) processAggObjectWatchEvent(evt netproto.AggObjectEve
 	case "SecurityProfile":
 		err = client.processSecurityProfileDynamic(evt.EventType, object.Message.(*netproto.SecurityProfile), reactor.(SecurityProfileReactor))
 
+	case "VirtualRouterPeeringGroup":
+		err = client.processVirtualRouterPeeringGroupDynamic(evt.EventType, object.Message.(*netproto.VirtualRouterPeeringGroup), reactor.(VirtualRouterPeeringGroupReactor))
+
 	case "Vrf":
 		err = client.processVrfDynamic(evt.EventType, object.Message.(*netproto.Vrf), reactor.(VrfReactor))
 
@@ -1222,6 +1225,83 @@ func (client *NimbusClient) diffSecurityProfilesDynamic(objList *netproto.Securi
 	}
 }
 
+// diffVirtualRouterPeeringGroupsDynamic diffs local state with controller state
+func (client *NimbusClient) diffVirtualRouterPeeringGroupsDynamic(objList *netproto.VirtualRouterPeeringGroupList, reactor VirtualRouterPeeringGroupReactor,
+	ostream *AggWatchOStream, op diffOpType) {
+	// build a map of objects
+	objmap := make(map[string]*netproto.VirtualRouterPeeringGroup)
+	if objList != nil {
+		for _, obj := range objList.VirtualRouterPeeringGroups {
+			key := obj.ObjectMeta.GetKey()
+			objmap[key] = obj
+		}
+	}
+
+	// see if we need to delete any locally found object
+	o := netproto.VirtualRouterPeeringGroup{
+		TypeMeta: api.TypeMeta{Kind: "VirtualRouterPeeringGroup"},
+	}
+
+	localObjs, err := reactor.HandleVirtualRouterPeeringGroup(types.List, o)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrNimbusHandling, "Op: %s | Kind: VirtualRouterPeeringGroup | Err: %v", types.Operation(types.List), err))
+	}
+	//localObjs := reactor.ListVirtualRouterPeeringGroup()
+	if op == delAddUpdateDiffOp || op == delteDiffOp {
+		for _, lobj := range localObjs {
+			ctby, ok := lobj.ObjectMeta.Labels["CreatedBy"]
+			if ok && ctby == "Venice" {
+				key := lobj.ObjectMeta.GetKey()
+				if _, ok := objmap[key]; !ok {
+					evt := netproto.VirtualRouterPeeringGroupEvent{
+						EventType: api.EventType_DeleteEvent,
+
+						VirtualRouterPeeringGroup: lobj,
+					}
+					log.Infof("diffVirtualRouterPeeringGroups(): Deleting object %+v", lobj.ObjectMeta)
+					client.lockObject(evt.VirtualRouterPeeringGroup.GetObjectKind(), evt.VirtualRouterPeeringGroup.ObjectMeta)
+					client.processVirtualRouterPeeringGroupEvent(evt, reactor, nil)
+				}
+			} else {
+				log.Infof("Not deleting non-venice object %+v", lobj.ObjectMeta)
+			}
+		}
+	}
+
+	if op == delAddUpdateDiffOp || op == addUpdateOp {
+		// add/update all new objects
+		for _, obj := range objList.VirtualRouterPeeringGroups {
+			evt := netproto.VirtualRouterPeeringGroupEvent{
+				EventType: api.EventType_UpdateEvent,
+
+				VirtualRouterPeeringGroup: *obj,
+			}
+			client.lockObject(evt.VirtualRouterPeeringGroup.GetObjectKind(), evt.VirtualRouterPeeringGroup.ObjectMeta)
+			err := client.processVirtualRouterPeeringGroupEvent(evt, reactor, nil)
+
+			if err == nil {
+				mobj, err := protoTypes.MarshalAny(obj)
+				aggObj := netproto.AggObject{Kind: "VirtualRouterPeeringGroup", Object: &api.Any{}}
+				aggObj.Object.Any = *mobj
+				robj := netproto.AggObjectEvent{
+					EventType: api.EventType_UpdateEvent,
+					AggObj:    aggObj,
+				}
+				// send oper status
+				ostream.Lock()
+				err = ostream.stream.Send(&robj)
+				if err != nil {
+					log.Errorf("failed to send Agg oper Status, %s", err)
+					client.debugStats.AddInt("AggOperSendError", 1)
+				} else {
+					client.debugStats.AddInt("AggOperSent", 1)
+				}
+				ostream.Unlock()
+			}
+		}
+	}
+}
+
 // diffVrfsDynamic diffs local state with controller state
 func (client *NimbusClient) diffVrfsDynamic(objList *netproto.VrfList, reactor VrfReactor,
 	ostream *AggWatchOStream, op diffOpType) {
@@ -1390,6 +1470,11 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 					msglist.SecurityProfiles = append(msglist.SecurityProfiles, obj.Message.(*netproto.SecurityProfile))
 					return
 
+				case "VirtualRouterPeeringGroup":
+					msglist := lobj.objects.(*netproto.VirtualRouterPeeringGroupList)
+					msglist.VirtualRouterPeeringGroups = append(msglist.VirtualRouterPeeringGroups, obj.Message.(*netproto.VirtualRouterPeeringGroup))
+					return
+
 				case "Vrf":
 					msglist := lobj.objects.(*netproto.VrfList)
 					msglist.Vrfs = append(msglist.Vrfs, obj.Message.(*netproto.Vrf))
@@ -1466,6 +1551,11 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 			listObj.objects = &netproto.SecurityProfileList{}
 			msglist := listObj.objects.(*netproto.SecurityProfileList)
 			msglist.SecurityProfiles = append(msglist.SecurityProfiles, obj.Message.(*netproto.SecurityProfile))
+
+		case "VirtualRouterPeeringGroup":
+			listObj.objects = &netproto.VirtualRouterPeeringGroupList{}
+			msglist := listObj.objects.(*netproto.VirtualRouterPeeringGroupList)
+			msglist.VirtualRouterPeeringGroups = append(msglist.VirtualRouterPeeringGroups, obj.Message.(*netproto.VirtualRouterPeeringGroup))
 
 		case "Vrf":
 			listObj.objects = &netproto.VrfList{}
@@ -1598,6 +1688,13 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 				client.diffSecurityProfilesDynamic(nil, reactor.(SecurityProfileReactor), ostream, delteDiffOp)
 			}
 
+		case "VirtualRouterPeeringGroup":
+			if lobj != nil {
+				client.diffVirtualRouterPeeringGroupsDynamic(lobj.objects.(*netproto.VirtualRouterPeeringGroupList), reactor.(VirtualRouterPeeringGroupReactor), ostream, delteDiffOp)
+			} else {
+				client.diffVirtualRouterPeeringGroupsDynamic(nil, reactor.(VirtualRouterPeeringGroupReactor), ostream, delteDiffOp)
+			}
+
 		case "Vrf":
 			if lobj != nil {
 				client.diffVrfsDynamic(lobj.objects.(*netproto.VrfList), reactor.(VrfReactor), ostream, delteDiffOp)
@@ -1654,6 +1751,9 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 
 		case "SecurityProfile":
 			client.diffSecurityProfilesDynamic(lobj.objects.(*netproto.SecurityProfileList), reactor.(SecurityProfileReactor), ostream, addUpdateOp)
+
+		case "VirtualRouterPeeringGroup":
+			client.diffVirtualRouterPeeringGroupsDynamic(lobj.objects.(*netproto.VirtualRouterPeeringGroupList), reactor.(VirtualRouterPeeringGroupReactor), ostream, addUpdateOp)
 
 		case "Vrf":
 			client.diffVrfsDynamic(lobj.objects.(*netproto.VrfList), reactor.(VrfReactor), ostream, addUpdateOp)
@@ -1764,6 +1864,13 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 				client.diffSecurityProfilesDynamic(lobj.objects.(*netproto.SecurityProfileList), reactor.(SecurityProfileReactor), ostream, delteDiffOp)
 			} else {
 				client.diffSecurityProfilesDynamic(nil, reactor.(SecurityProfileReactor), ostream, delteDiffOp)
+			}
+
+		case "VirtualRouterPeeringGroup":
+			if lobj != nil {
+				client.diffVirtualRouterPeeringGroupsDynamic(lobj.objects.(*netproto.VirtualRouterPeeringGroupList), reactor.(VirtualRouterPeeringGroupReactor), ostream, delteDiffOp)
+			} else {
+				client.diffVirtualRouterPeeringGroupsDynamic(nil, reactor.(VirtualRouterPeeringGroupReactor), ostream, delteDiffOp)
 			}
 
 		case "Vrf":
@@ -1966,6 +2073,18 @@ func (client *NimbusClient) WatchAggregate(ctx context.Context, kinds []string, 
 			aggKind.Kind = kind
 			aggKind.Group = "netproto"
 			listWatchOptions := reactor.(SecurityProfileReactor).GetWatchOptions(ctx, "SecurityProfile")
+			aggKind.Options = listWatchOptions
+			aggKinds.WatchOptions = append(aggKinds.WatchOptions, aggKind)
+
+		case "VirtualRouterPeeringGroup":
+			//Make sure all kinds are implemented by the reactor to avoid later failures
+			if _, ok := reactor.(VirtualRouterPeeringGroupReactor); !ok {
+				return fmt.Errorf("Reactor does not implement %v", "VirtualRouterPeeringGroupReactor")
+			}
+			aggKind := api.KindWatchOptions{}
+			aggKind.Kind = kind
+			aggKind.Group = "netproto"
+			listWatchOptions := reactor.(VirtualRouterPeeringGroupReactor).GetWatchOptions(ctx, "VirtualRouterPeeringGroup")
 			aggKind.Options = listWatchOptions
 			aggKinds.WatchOptions = append(aggKinds.WatchOptions, aggKind)
 

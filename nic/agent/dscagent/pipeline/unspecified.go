@@ -1762,6 +1762,11 @@ func (i *FakeAgentAPI) HandleFwlogPolicyConfig(oper types.Operation, obj tpmprot
 	return errors.Wrapf(types.ErrNotImplemented, "FwlogPolicy config not implemented by unspecified Pipeline")
 }
 
+// HandleVirtualRouterPeeringGroup unimplemented
+func (i *FakeAgentAPI) HandleVirtualRouterPeeringGroup(oper types.Operation, vrPeeringGroup netproto.VirtualRouterPeeringGroup) (vrPeeringGroups []netproto.VirtualRouterPeeringGroup, err error) {
+	return nil, errors.Wrapf(types.ErrNotImplemented, "VirtualRouterPeeringGroup not implemented by Iris Pipeline")
+}
+
 // TODO Move this into InfraAPI to avoid code duplication
 func (i *FakeAgentAPI) startDynamicWatch(kinds []string) {
 	log.Infof("Starting Dynamic Watches for kinds: %v", kinds)

@@ -563,6 +563,26 @@ func (eh *AggregateTopic) ListObjects(ctx context.Context, kinds *api.AggWatchOp
 				addAggObjectEvent(mobj, obj.GetObjectMeta())
 			}
 
+		case "VirtualRouterPeeringGroup":
+
+			if _, ok := eh.statusReactor.(VirtualRouterPeeringGroupStatusReactor); ok {
+				filters = eh.statusReactor.(VirtualRouterPeeringGroupStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
+			}
+
+			objlist, err := eh.server.ListVirtualRouterPeeringGroups(context.Background(), nodeID, filters)
+			if err != nil {
+				log.Errorf("Error getting a list of objects. Err: %v", err)
+				return nil, err
+			}
+			for _, obj := range objlist {
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return nil, err
+				}
+				addAggObjectEvent(mobj, obj.GetObjectMeta())
+			}
+
 		case "Vrf":
 
 			if _, ok := eh.statusReactor.(VrfStatusReactor); ok {
@@ -749,6 +769,16 @@ func (eh *AggregateTopic) ObjectOperUpdate(stream netproto.AggWatchApiV1_ObjectO
 				}
 				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.SecurityProfile).GetObjectMeta())
 
+			case "VirtualRouterPeeringGroup":
+				if _, ok := eh.statusReactor.(VirtualRouterPeeringGroupStatusReactor); ok {
+					err = eh.statusReactor.(VirtualRouterPeeringGroupStatusReactor).OnVirtualRouterPeeringGroupOperUpdate(nodeID,
+						object.Message.(*netproto.VirtualRouterPeeringGroup))
+					if err != nil {
+						log.Errorf("Error updating VirtualRouterPeeringGroup oper state. Err: %v", err)
+					}
+				}
+				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.VirtualRouterPeeringGroup).GetObjectMeta())
+
 			case "Vrf":
 				if _, ok := eh.statusReactor.(VrfStatusReactor); ok {
 					err = eh.statusReactor.(VrfStatusReactor).OnVrfOperUpdate(nodeID,
@@ -892,6 +922,16 @@ func (eh *AggregateTopic) ObjectOperUpdate(stream netproto.AggWatchApiV1_ObjectO
 					}
 				}
 				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.SecurityProfile).GetObjectMeta())
+
+			case "VirtualRouterPeeringGroup":
+				if _, ok := eh.statusReactor.(VirtualRouterPeeringGroupStatusReactor); ok {
+					err = eh.statusReactor.(VirtualRouterPeeringGroupStatusReactor).OnVirtualRouterPeeringGroupOperDelete(nodeID,
+						object.Message.(*netproto.VirtualRouterPeeringGroup))
+					if err != nil {
+						log.Errorf("Error updating VirtualRouterPeeringGroup oper state. Err: %v", err)
+					}
+				}
+				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.VirtualRouterPeeringGroup).GetObjectMeta())
 
 			case "Vrf":
 				if _, ok := eh.statusReactor.(VrfStatusReactor); ok {
@@ -1713,6 +1753,52 @@ func (eh *AggregateTopic) handleReconcileEvent(aggKey string, ctx context.Contex
 			}
 		}
 
+	case "VirtualRouterPeeringGroup":
+		objlist, err := eh.server.ListVirtualRouterPeeringGroupsNoFilter(context.Background())
+		if err != nil {
+			log.Errorf("Error getting a list of objects. Err: %v", err)
+			return
+		}
+		for _, obj := range objlist {
+			oldVal := evalFilterFns(obj, evt.OldFlts)
+			newVal := evalFilterFns(obj, evt.NewFlts)
+			// watch filters didn't exist earlier
+			if len(evt.OldFlts) == 0 {
+				if newVal == true {
+					mobj, err := types.MarshalAny(obj)
+					if err != nil {
+						log.Errorf("Error  marshalling any object. Err: %v", err)
+						return
+					}
+					log.Infof("Adding object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+					addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_CreateEvent)
+				}
+				continue
+			}
+
+			if oldVal == newVal {
+				continue
+			} else if newVal == true {
+				// add the object
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return
+				}
+				log.Infof("Adding object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+				addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_CreateEvent)
+			} else {
+				// delete the object
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return
+				}
+				log.Infof("Deleting object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+				addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_DeleteEvent)
+			}
+		}
+
 	case "Vrf":
 		objlist, err := eh.server.ListVrfsNoFilter(context.Background())
 		if err != nil {
@@ -1908,6 +1994,16 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 		case "SecurityProfile":
 			if _, ok := eh.statusReactor.(SecurityProfileStatusReactor); ok {
 				watcher.Filters[kind.Kind] = eh.statusReactor.(SecurityProfileStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
+			} else {
+				filt := func(obj, prev memdb.Object) bool {
+					return true
+				}
+				watcher.Filters[kind.Kind] = append(watcher.Filters[kind.Kind], filt)
+			}
+
+		case "VirtualRouterPeeringGroup":
+			if _, ok := eh.statusReactor.(VirtualRouterPeeringGroupStatusReactor); ok {
+				watcher.Filters[kind.Kind] = eh.statusReactor.(VirtualRouterPeeringGroupStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
 			} else {
 				filt := func(obj, prev memdb.Object) bool {
 					return true
@@ -2147,6 +2243,21 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 				addAggObjectEvent(mobj, obj.GetObjectMeta())
 			}
 
+		case "VirtualRouterPeeringGroup":
+			objlist, err := eh.server.ListVirtualRouterPeeringGroups(context.Background(), nodeID, watcher.Filters[kind])
+			if err != nil {
+				log.Errorf("Error getting a list of objects. Err: %v", err)
+				return err
+			}
+			for _, obj := range objlist {
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return err
+				}
+				addAggObjectEvent(mobj, obj.GetObjectMeta())
+			}
+
 		case "Vrf":
 			objlist, err := eh.server.ListVrfs(context.Background(), nodeID, watcher.Filters[kind])
 			if err != nil {
@@ -2370,6 +2481,17 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 
 				case "SecurityProfile":
 					obj, err := SecurityProfileFromObj(evt.Obj)
+					if err != nil {
+						return err
+					}
+					mobj, err = types.MarshalAny(obj)
+					if err != nil {
+						log.Errorf("Error  marshalling any object. Err: %v", err)
+						return err
+					}
+
+				case "VirtualRouterPeeringGroup":
+					obj, err := VirtualRouterPeeringGroupFromObj(evt.Obj)
 					if err != nil {
 						return err
 					}
