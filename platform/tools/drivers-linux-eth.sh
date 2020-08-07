@@ -84,6 +84,7 @@ else
 	VER=`git describe --tags`
 fi
 
+VER=`echo $VER | sed 's/-[CE]//'`
 VERSION=$(echo $VER | cut -d- -f1 )
 RELEASE=$(echo $VER | cut -d- -f2- | tr - .)
 VER="${VERSION}-${RELEASE}"

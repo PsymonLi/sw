@@ -132,6 +132,12 @@ if [ -n "$SW_VERSION" ] ; then
 else
 	VER=`git describe --tags`
 fi
+
+VER=`echo $VER | sed 's/-[CE]//'`
+VERSION=$(echo $VER | cut -d- -f1 )
+RELEASE=$(echo $VER | cut -d- -f2- | tr - .)
+VER="${VERSION}-${RELEASE}"
+
 sed -i "s/^\\(#define DR\\w*_VER\\w*\\s\\+\"\\).*\\(\"\\)\$/\1$VER\2/" \
 	"$GEN_DIR/drivers/rdma/drv/ionic/ionic_ibdev.c"
 sed -i "s/^\\(#define IONIC_DRV_VERSION\\s\\+\\).*\$/\1\\\"$VER\\\"/" \
