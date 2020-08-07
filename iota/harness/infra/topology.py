@@ -1015,7 +1015,7 @@ class Node(object):
                         idx += 1
                         bond_config.teaming_mode = bond_spec.teaming_mode
                         bond_config.load_balancing_algorithm = bond_spec.lb_scheme
-                        bond_config.append(device.GetMac())
+                        bond_config.nic_hints.append(device.GetMac())
                         device.SetBondIntfs(bond_config.bond_interface_name)
                         self.__bond_intfs.append(bond_config.bond_interface_name)
                 else:

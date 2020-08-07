@@ -348,9 +348,11 @@ jobs:
   iota/test/standalone/regression/swm:
     labels: ["CI-Regression", "CI-Regression-SWM"]
   iota/test/standalone/dualnic/linux:
-    labels: ["CI-DualNIC"]
+    labels: ["CI-DualNIC", "CI-DualNIC-Linux"]
   iota/test/standalone/dualnic/windows:
-    labels: ["CI-DualNIC"]
+    labels: ["CI-DualNIC", "CI-DualNIC-Windows"]
+  iota/test/standalone/dualnic/esx:
+    labels: ["CI-DualNIC", "CI-DualNIC-ESX"]
   iota/test/venice/regression:
     labels: ["CI-Regression", "CI-Regression-Venice"]
   iota/test/venice/sim:

@@ -1,0 +1,40 @@
+---
+version: 2.0
+image:
+  bind_dir: "/sw"
+  work_dir: "/sw/iota/test/standalone"
+
+queue_name: compat
+
+e2e-targets:
+ e2e-linux-bm-dualnic:
+   commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --enable-multi-naples"]
+   owners: ["email:srivatsa@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-83
+       count: 2
+       resources:
+         servers:
+           - type: compat-dell-r640
+           - type: compat-dell-r740
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: esx
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+logfiles:
+  - /sw/iota/iota_sanity_logs.tar.gz
+  - /sw/iota/all_corefiles.tgz
+  - /testcase_result_export/testsuite_transparent_basenet_results.json
+  - /testcase_result_export/testsuite_transparent_flowaware_results.json
