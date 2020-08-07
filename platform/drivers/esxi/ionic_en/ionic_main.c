@@ -266,6 +266,10 @@ ionic_adminq_check_err(struct lif *lif,
                         if (ctx->cmd.cmd.opcode == IONIC_CMD_RX_FILTER_DEL &&
                             ctx->comp.comp.status == IONIC_RC_ENOENT) {
                                 return VMK_OK;
+                        } else if (ctx->cmd.cmd.opcode == IONIC_CMD_FW_CONTROL &&
+                                   ctx->comp.comp.status == IONIC_RC_EAGAIN) {
+                                /* For spp fw upgrade related async operations */
+                                return VMK_NOT_READY;
                         }
                         status_str = ionic_en_error_to_str(ctx->comp.comp.status);
                         ionic_en_err("%s: %s (%d) failed: %s (%d)\n",
@@ -319,6 +323,9 @@ retry:
                               vmk_NameToString(&lif->uplink_handle->uplink_name));
                 is_retry = VMK_TRUE;
                 goto retry;
+        } else if (status == VMK_NOT_READY) {
+                /* For spp fw upgrade related async operations */
+                return status;
         } else if (status != VMK_OK) {
                 if (status == VMK_TIMEOUT && is_retry == VMK_TRUE) {
                         vmk_AtomicWrite64(&priv_data->keep_posting_cmds,

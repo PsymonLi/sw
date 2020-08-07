@@ -3015,13 +3015,10 @@ ionic_firmware_install_adminq(struct lif *lif,
 
         status = ionic_adminq_post_wait(lif, &ctx);
         ionic_completion_destroy(&ctx.work);
-        if (status != VMK_OK) { 
-                ionic_en_err("ionic_adminq_post_wait() failed, status: %s",
-                             vmk_StatusToString(status));
-                return status;
+        if (status == VMK_OK) { 
+                *slot = ctx.comp.fw_control.slot;
         }
 
-        *slot = ctx.comp.fw_control.slot;
         return status;
 }
 
@@ -3045,14 +3042,26 @@ ionic_firmware_install(struct lif *lif,
 {
         VMK_ReturnStatus status;
         union ionic_dev_cmd_comp comp;
+        vmk_uint64 time, max_wait;
+
+        max_wait = HZ * devcmd_timeout * 30;
 
         if (is_adminq_based) {
-                status = ionic_firmware_install_adminq(lif,
-                                                       slot);
+                time = vmk_GetTimerCycles() + max_wait;
+                do {
+                        status = ionic_firmware_install_adminq(lif,
+                                                               slot);
+                        if (status == VMK_NOT_READY) { 
+                                ionic_en_warn("ionic_firmware_install_adminq() in progress...");
+                        }
+                        /*Sleep for 5s */
+                        vmk_WorldSleep(5 * 1000 * 1000);
+                } while (status == VMK_NOT_READY &&
+                         IONIC_TIME_AFTER(time, vmk_GetTimerCycles()));
         } else {
                 vmk_MutexLock(lif->ionic->dev_cmd_lock);
                 ionic_firmware_install_devcmd(lif);
-                status = ionic_dev_cmd_wait_check(lif->ionic, HZ * devcmd_timeout * 30);
+                status = ionic_dev_cmd_wait_check(lif->ionic, max_wait);
                 ionic_dev_cmd_comp(&(lif->ionic->en_dev.idev), &comp);
                 *slot = comp.fw_control.slot;
                 vmk_MutexUnlock(lif->ionic->dev_cmd_lock);
@@ -3093,10 +3102,6 @@ ionic_firmware_install_status_check_adminq(struct lif *lif)
 
         status = ionic_adminq_post_wait(lif, &ctx);
         ionic_completion_destroy(&ctx.work);
-        if (status != VMK_OK) { 
-                ionic_en_err("ionic_adminq_post_wait() failed, status: %s",
-                             vmk_StatusToString(status));
-        }
 
         return status;
 }
@@ -3119,12 +3124,26 @@ ionic_firmware_install_status_check(struct lif *lif,
                                     vmk_Bool is_adminq_based)
 {
         VMK_ReturnStatus status;
+        vmk_uint64 time, max_wait;
+
+        max_wait = HZ * devcmd_timeout * 30;
+
         if (is_adminq_based) {
-                status = ionic_firmware_install_status_check_adminq(lif);
+                time = vmk_GetTimerCycles() + max_wait;
+                do {
+                        status = ionic_firmware_install_status_check_adminq(lif);
+                        if (status == VMK_NOT_READY) { 
+                                ionic_en_warn("ionic_firmware_install_status_check_adminq() in progress...");
+                        }
+
+                        /*Sleep for 5s */
+                        vmk_WorldSleep(5 * 1000 * 1000);
+                } while (status == VMK_NOT_READY &&
+                         IONIC_TIME_AFTER(time, vmk_GetTimerCycles()));
         } else {
                 vmk_MutexLock(lif->ionic->dev_cmd_lock);
                 ionic_firmware_install_status_check_devcmd(lif);
-                status = ionic_dev_cmd_wait_check(lif->ionic, HZ * devcmd_timeout * 30);
+                status = ionic_dev_cmd_wait_check(lif->ionic, max_wait);
                 vmk_MutexUnlock(lif->ionic->dev_cmd_lock);
         }
 
@@ -3145,7 +3164,7 @@ ionic_firmware_activate_adminq(struct lif *lif,
         struct ionic_admin_ctx ctx = {
                 .cmd.fw_control = {
                         .opcode = IONIC_CMD_FW_CONTROL,
-                        .oper = IONIC_FW_ACTIVATE,
+                        .oper = IONIC_FW_ACTIVATE_ASYNC,
                         .slot = slot
                 }
         };
@@ -3165,10 +3184,6 @@ ionic_firmware_activate_adminq(struct lif *lif,
 
         status = ionic_adminq_post_wait(lif, &ctx);
         ionic_completion_destroy(&ctx.work);
-        if (status != VMK_OK) { 
-                ionic_en_err("ionic_adminq_post_wait() failed, status: %s",
-                             vmk_StatusToString(status));
-        }
 
         return status;
 }
@@ -3180,7 +3195,7 @@ ionic_firmware_activate_devcmd(struct lif *lif,
 {
         union ionic_dev_cmd cmd = {
                 .fw_control.opcode = IONIC_CMD_FW_CONTROL,
-                .fw_control.oper = IONIC_FW_ACTIVATE,
+                .fw_control.oper = IONIC_FW_ACTIVATE_ASYNC,
                 .fw_control.slot = slot
         };
 
@@ -3194,20 +3209,120 @@ ionic_firmware_activate(struct lif *lif,
                         vmk_Bool is_adminq_based)
 {
         VMK_ReturnStatus status;
+        vmk_uint64 time, max_wait;
+
+        max_wait = HZ * devcmd_timeout * 6;
+
         if (is_adminq_based) {
-                status = ionic_firmware_activate_adminq(lif,
-                                                        slot);
+                time = vmk_GetTimerCycles() + max_wait;
+                do {
+                        status = ionic_firmware_activate_adminq(lif,
+                                                                slot);
+                        if (status == VMK_NOT_READY) { 
+                                ionic_en_warn("ionic_firmware_activate_adminq() in progress...");
+                        }
+
+                        /*Sleep for 5s */
+                        vmk_WorldSleep(5 * 1000 * 1000);
+                } while (status == VMK_NOT_READY &&
+                         IONIC_TIME_AFTER(time, vmk_GetTimerCycles()));
         } else {
                 vmk_MutexLock(lif->ionic->dev_cmd_lock);
                 ionic_firmware_activate_devcmd(lif,
                                                slot);
-                status = ionic_dev_cmd_wait_check(lif->ionic, HZ * devcmd_timeout * 6);
+                status = ionic_dev_cmd_wait_check(lif->ionic, max_wait);
+                vmk_MutexUnlock(lif->ionic->dev_cmd_lock);
+        }
+
+        if (status != VMK_OK) {
+                ionic_en_err("FW active based on %s failed, status: %s",
+                             is_adminq_based? "adminq" : "devcmd", vmk_StatusToString(status));
+        }
+
+        return status;
+}
+
+
+static VMK_ReturnStatus
+ionic_firmware_activate_status_check_adminq(struct lif *lif,
+                                            vmk_uint8 slot)
+{
+        VMK_ReturnStatus status;
+        struct ionic_admin_ctx ctx = {
+                .cmd.fw_control = {
+                        .opcode = IONIC_CMD_FW_CONTROL,
+                        .oper = IONIC_FW_ACTIVATE_STATUS,
+                        .slot = slot
+                }
+        };
+
+        status = ionic_completion_create(ionic_driver.module_id,
+                                         ionic_driver.heap_id,
+                                         ionic_driver.lock_domain,
+                                         "ionic_admin_ctx.work",
+                                         &ctx.work);
+        if (status != VMK_OK) {
+                ionic_en_err("ionic_completion_create() failed, status: %s",
+                          vmk_StatusToString(status));
+                return status;
+        }
+
+        ionic_completion_init(&ctx.work);
+
+        status = ionic_adminq_post_wait(lif, &ctx);
+        ionic_completion_destroy(&ctx.work);
+
+        return status;
+}
+
+
+static void
+ionic_firmware_activate_status_check_devcmd(struct lif *lif,
+                                            vmk_uint8 slot)
+{
+        union ionic_dev_cmd cmd = {
+                .fw_control.opcode = IONIC_CMD_FW_CONTROL,
+                .fw_control.oper = IONIC_FW_ACTIVATE_STATUS,
+                .fw_control.slot = slot
+        };
+
+        ionic_dev_cmd_go(&(lif->ionic->en_dev.idev), &cmd);
+}
+
+
+static VMK_ReturnStatus
+ionic_firmware_activate_status_check(struct lif *lif,
+                                     vmk_uint8 slot,
+                                     vmk_Bool is_adminq_based)
+{
+        VMK_ReturnStatus status;
+        vmk_uint64 time, max_wait;
+
+        max_wait = HZ * devcmd_timeout;
+
+        if (is_adminq_based) {
+                time = vmk_GetTimerCycles() + max_wait;
+                do {
+                        status = ionic_firmware_activate_status_check_adminq(lif,
+                                                                             slot);
+                        if (status == VMK_NOT_READY) { 
+                                ionic_en_warn("ionic_firmware_activate_status_check_adminq() in progress...");
+                        }
+                        /*Sleep for 1s */
+                        vmk_WorldSleep(5 * 1000 * 1000);
+                } while (status == VMK_NOT_READY &&
+                         IONIC_TIME_AFTER(time, vmk_GetTimerCycles()));
+        } else {
+                vmk_MutexLock(lif->ionic->dev_cmd_lock);
+                ionic_firmware_activate_status_check_devcmd(lif,
+                                                            slot);
+                status = ionic_dev_cmd_wait_check(lif->ionic, HZ * devcmd_timeout);
                 vmk_MutexUnlock(lif->ionic->dev_cmd_lock);
         }
 
 
         if (status != VMK_OK) {
-                ionic_en_err("FW active based on %s failed, status: %s",
+                ionic_en_err("FW active status check based on %s failed, status: %s",
                              is_adminq_based? "adminq" : "devcmd", vmk_StatusToString(status));
         }
 
@@ -3296,6 +3411,16 @@ ionic_firmware_update(struct ionic_en_priv_data *priv_data,
                                          is_adminq_based);
         if (status != VMK_OK) {
                 ionic_en_err("FW activation failed, status: %s", vmk_StatusToString(status));
+                goto out;
+        }
+
+        ionic_en_info("Checking firmware activation status");
+        status = ionic_firmware_activate_status_check(lif,
+                                                      fw_slot,
+                                                      is_adminq_based);
+        if (status != VMK_OK) {
+                ionic_en_err("FW activation status check failed, status: %s", vmk_StatusToString(status));
+                goto out;
         }
 
         ionic_en_info("FW upgrade completed! Reboot is required");
