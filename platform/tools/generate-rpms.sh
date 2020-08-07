@@ -15,7 +15,7 @@ if [ -n "$1" ] ; then
 fi
 
 # list of live VMs for building the RPMs
-hosts="
+hosts=(
 rhel73-build.pensando.io
 rhel75-build.pensando.io
 rhel76-build.pensando.io
@@ -30,7 +30,7 @@ sles12sp5-build.pensando.io
 sles15-build.pensando.io
 sles15sp1-build.pensando.io
 sles15sp2-build.pensando.io
-"
+)
 
 if [ -z "$TOPDIR" ] ; then
 	echo "$PROG: ERROR: no TOPDIR defined"
@@ -59,7 +59,7 @@ cp $TOPDIR/platform/tools/drivers-linux-eth/ionic.spec $TEMP/drivers-linux-eth
 
 count=0
 retcode=0
-for vm in ${hosts}
+for vm in ${hosts[@]}
 do
 	echo $(seq -s "=" 80 | sed 's/[0-9]//g')
 
@@ -80,7 +80,7 @@ do
 	sshpass -p docker ssh -o StrictHostKeyChecking=no root@$vm "cd $TEMP/drivers-linux-eth ; ./build-rpm.sh $RELEASE" < /dev/null
 
 	# copy rpms to platform/gen
-	sshpass -p docker scp -o StrictHostKeyChecking=no root@$vm:$TEMP/drivers-linux-eth/rpmbuild/RPMS/*.rpm $TOPDIR/platform/gen < /dev/null
+	sshpass -p docker scp -o StrictHostKeyChecking=no root@$vm:$TEMP/drivers-linux-eth/rpmbuild/RPMS/x86_64/*.rpm $TOPDIR/platform/gen < /dev/null
 	sshpass -p docker scp -o StrictHostKeyChecking=no root@$vm:$TEMP/drivers-linux-eth/rpmbuild/SRPMS/*.rpm $TOPDIR/platform/gen < /dev/null
 
 	# cleanup

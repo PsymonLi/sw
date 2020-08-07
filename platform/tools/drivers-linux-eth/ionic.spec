@@ -3,15 +3,12 @@
 # Disable the building of the debug package(s).
 %define debug_package %{nil}
 
-# RPM filename
-%define _rpmfilename %%{name}-%{version}-%{release}.rpm
-
 %define kmod_name ionic
 
 Name:		%{kmod_name}
 Vendor:		Pensando Systems
-Version:	%{kmod_version}
-Release:	%{kmod_release}.%{kernel_dist}
+Version:	%{kmod_basever}
+Release:	%{kmod_release}.%{distro}
 Summary:	Pensando Systems %{kmod_name} Driver
 URL:		https://pensando.io
 
@@ -32,7 +29,7 @@ ExclusiveArch:	x86_64
 This package provides the %{vendor} %{kmod_name} kernel driver.
 
 %prep
-%setup -q -n %{kmod_name}-%{kmod_version}
+%setup -q
 
 %build
 sh build.sh
