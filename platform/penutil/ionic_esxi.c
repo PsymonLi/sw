@@ -90,6 +90,9 @@ ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
                 memcpy(&ionic->curFwVer[0],
                        vmk_NameToString(&adapter_info_list[i].fw_ver),
                        VMK_MISC_NAME_MAX);
+                memcpy(ionic->macAddr,
+                       adapter_info_list[i].mac_address,
+                       HPE_SPP_MAC_ADDR_MAX_LEN);
         }
 
 out:

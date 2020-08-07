@@ -101,6 +101,10 @@ ionic_hash_table_get_adpt_info_iterator(vmk_HashTable hash_table,
         adapter_info_list[i].device_number = priv_data->ionic.en_dev.sbdf.dev;
         adapter_info_list[i].func_number = priv_data->ionic.en_dev.sbdf.fn;
 
+        vmk_Snprintf(adapter_info_list[i].mac_address,
+                     IONIC_EN_MAC_ADDR_MAX_LEN,
+                     VMK_ETH_ADDR_FMT_STR, VMK_ETH_ADDR_FMT_ARGS(priv_data->uplink_handle.vmk_mac_addr)); 
+
         return VMK_HASH_KEY_ITER_CMD_CONTINUE;
 }
 

@@ -35,6 +35,8 @@ typedef enum ionic_en_mgmt_interface_cbs {
 #define IONIC_EN_ADPT_BRANDING_NAME_MAX_LEN        8 
 #define IONIC_EN_FW_TYPE_MAX_LEN                 256
 #define IONIC_EN_FW_FILE_NAME_MAX_LEN           1024
+#define IONIC_EN_MAC_ADDR_MAX_LEN                 20
+#define IONIC_EN_SLOT_NUM_MAX_LEN                 16
 
 typedef struct ionic_en_fw_flush_params {
         vmk_uint64 fw_img_name_addr;
@@ -60,8 +62,8 @@ typedef struct ionic_en_adapter_info {
         vmk_uint32 bus_number;
         vmk_uint32 device_number;
         vmk_uint32 func_number;
-        char slot_number[16];
-        char mac_address[20];
+        char slot_number[IONIC_EN_SLOT_NUM_MAX_LEN];
+        char mac_address[IONIC_EN_MAC_ADDR_MAX_LEN];
 
         // Independent FW Count
         vmk_uint32 n_fw;
