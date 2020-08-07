@@ -2,7 +2,6 @@
 #define __P4_COMMON_DEFINES_H__
 
 // Add a "if asic == capri" check to support more asics in future.
-#include "capri.h"
 
 #define TRUE                           1
 #define FALSE                          0
@@ -250,5 +249,11 @@
 #define CLASSIC_NIC_PKT_TYPE_IPV6       0x008
 #define CLASSIC_NIC_PKT_TYPE_IPV6_TCP   0x018
 #define CLASSIC_NIC_PKT_TYPE_IPV6_UDP   0x028
+
+
+/*****************************************************************************/
+/* TM reserved queues placeholder                                            */
+/*****************************************************************************/
+#define TM_P4_RECIRC_QUEUE             23 /* Recirc queue in the P4 ports */
 
 #endif //__P4_COMMON_DEFINES_H__

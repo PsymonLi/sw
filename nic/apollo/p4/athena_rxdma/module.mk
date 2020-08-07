@@ -7,8 +7,12 @@ MODULE_PIPELINE = athena
 MODULE_NCC_OPTS = --pipeline=athena --asm-out --p4-plus --no-ohi --two-byte-profile \
                   --p4-plus-module rxdma \
                   --gen-dir ${BLD_P4GEN_DIR} \
-                  --cfg-dir ${BLD_PGMBIN_DIR}/athena_rxdma \
-                  --fe-flags="-I${TOPDIR} -I${SDKDIR}"
+                  --cfg-dir ${BLD_PGMBIN_DIR}/athena_rxdma
+ifeq ($(ASIC),elba)
+MODULE_NCC_OPTS += --asic elba --fe-flags="-I${TOPDIR} -I${SDKDIR}"
+else
+MODULE_NCC_OPTS += --fe-flags="-I${TOPDIR} -I${SDKDIR}"
+endif
 MODULE_DEPS     = $(shell find ${MODULE_DIR} -name '*.p4' -o -name '*.h') \
                   $(shell find ${MODULE_DIR}/../include -name '*.p4' -o -name '*.h') \
                   $(shell find ${TOPDIR}/nic/p4/include -name '*')
