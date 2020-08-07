@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"strings"
+
+	mapset "github.com/deckarep/golang-set"
 
 	"github.com/pensando/sw/api/generated/cluster"
 	iota "github.com/pensando/sw/iota/protos/gogen"
@@ -662,9 +663,12 @@ func (npc *NaplesCollection) SelectByTenant(tenantName string) (*NaplesCollectio
 
 	HwNaples := make(map[string]*Naples)
 	FakeNaples := make(map[string]*Naples)
+	fakeDscs := mapset.NewSet()
 
 	for _, n := range npc.FakeNodes {
-		FakeNaples[n.name] = n
+		nodeName := n.Instances[0].Dsc.GetName()
+		FakeNaples[nodeName] = n
+		fakeDscs.Add(nodeName)
 	}
 
 	if len(npc.Nodes) != 0 {
@@ -678,14 +682,13 @@ func (npc *NaplesCollection) SelectByTenant(tenantName string) (*NaplesCollectio
 	}
 
 	for _, pf := range pfIntfc.Interfaces {
-		dscid := pf.Status.GetDSCID()
 		dsc := pf.Status.GetDSC()
-		if strings.Contains(dscid, "naples-sim-") {
+		if fakeDscs.Contains(dsc) {
 			//lookup in map of fake naples
-			if node, ok := FakeNaples[dscid]; ok {
+			if node, ok := FakeNaples[dsc]; ok {
 				newNpc.FakeNodes = append(newNpc.FakeNodes, node)
 				//delete node entry from map so that it's not duplicated in newNpc.FakeNodes
-				delete(FakeNaples, dscid)
+				delete(FakeNaples, dsc)
 			}
 		} else {
 			if node, ok := HwNaples[dsc]; ok {
