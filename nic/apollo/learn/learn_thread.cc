@@ -13,16 +13,50 @@
 #include "nic/sdk/lib/dpdk/dpdk.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/framework/api.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/core/msg.h"
 #include "nic/apollo/api/include/pds_subnet.hpp"
 #include "nic/apollo/learn/learn_impl_base.hpp"
 #include "nic/apollo/learn/learn_thread.hpp"
 #include "nic/apollo/learn/learn.hpp"
+#include "nic/apollo/learn/learn_internal.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
 
 namespace learn {
+
+learn_handlers_t g_handler_tbl;
+
+static void
+setup_handlers (pds_learn_mode_t mode)
+{
+    switch (mode) {
+    case PDS_LEARN_MODE_NOTIFY:
+        g_handler_tbl.parse       = parse_packet;
+        g_handler_tbl.pre_process = mode_notify::pre_process;
+        g_handler_tbl.validate    = mode_notify::validate;
+        g_handler_tbl.process     = mode_notify::process;
+        g_handler_tbl.store       = mode_notify::store;
+        g_handler_tbl.notify      = mode_notify::notify;
+        break;
+
+    case PDS_LEARN_MODE_AUTO:
+        g_handler_tbl.parse       = parse_packet;
+        g_handler_tbl.pre_process = mode_auto::pre_process;
+        g_handler_tbl.validate    = mode_auto::validate;
+        g_handler_tbl.process     = mode_auto::process;
+        g_handler_tbl.store       = mode_auto::store;
+        g_handler_tbl.notify      = mode_auto::notify;
+        break;
+
+    case PDS_LEARN_MODE_NONE:
+    default:
+        memset(&g_handler_tbl, 0, sizeof(learn_handlers_t));
+        break;
+    }
+}
 
 bool
 learning_enabled (void)
@@ -86,6 +120,44 @@ learn_thread_pkt_poll_timer_cb (event::timer_t *timer)
     }
 }
 
+static void
+process_device_create (pds_learn_mode_t mode)
+{
+    static event::timer_t pkt_poll_timer;
+    float                 pkt_poll_interval;
+
+    learn_db()->init_oper_mode(mode);
+    setup_handlers(mode);
+    if (mode != PDS_LEARN_MODE_NONE) {
+        // pkt poll timer handler
+        pkt_poll_interval = learn_db()->pkt_poll_interval_msecs()/1000.;
+        event::timer_init(&pkt_poll_timer, learn_thread_pkt_poll_timer_cb,
+                          1., pkt_poll_interval);
+        event::timer_start(&pkt_poll_timer);
+    }
+}
+
+void
+learn_thread_api_cfg_cb (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctx)
+{
+    sdk::sdk_ret_t    ret = SDK_RET_OK;;
+    pds_msg_list_t    *msg_list  = (pds_msg_list_t *)ipc_msg->data();
+    pds_cfg_msg_t     *cfg_msg;
+    pds_device_spec_t *device_spec;
+
+    msg_list = (pds_msg_list_t *)ipc_msg->data();
+    for (uint32_t i = 0; i < msg_list->num_msgs; i++) {
+        cfg_msg = &msg_list->msgs[i].cfg_msg;
+        if ((cfg_msg->obj_id == OBJ_ID_DEVICE) &&
+            (cfg_msg->op == API_OP_CREATE)) {
+            PDS_TRACE_VERBOSE("Received device create message");
+            device_spec = &cfg_msg->device.spec.spec;
+            process_device_create(device_spec->learn_spec.learn_mode);
+        }
+    }
+    sdk::ipc::respond(ipc_msg, (const void *)&ret, sizeof(sdk_ret_t));
+}
+
 void
 learn_thread_ipc_api_cb (sdk::ipc::ipc_msg_ptr msg, const void *ctx)
 {
@@ -139,24 +211,17 @@ learn_thread_ipc_clear_cmd_cb (sdk::ipc::ipc_msg_ptr msg, const void *ctx)
 void
 learn_thread_init_fn (void *ctxt)
 {
-    static event::timer_t pkt_poll_timer;
-    float pkt_poll_interval;
-
     // initalize learn state and dpdk_device
     SDK_ASSERT(learn_db()->init() == SDK_RET_OK);
 
+    sdk::ipc::reg_request_handler(PDS_MSG_TYPE_CFG_OBJ_SET,
+                                  learn_thread_api_cfg_cb, NULL);
     // control plane message handler
     sdk::ipc::reg_request_handler(LEARN_MSG_ID_API, learn_thread_ipc_api_cb,
                                   NULL);
     sdk::ipc::reg_request_handler(LEARN_MSG_ID_CLEAR_CMD,
                                   learn_thread_ipc_clear_cmd_cb,
                                   NULL);
-
-    // pkt poll timer handler
-    pkt_poll_interval = learn_db()->pkt_poll_interval_msecs()/1000.;
-    event::timer_init(&pkt_poll_timer, learn_thread_pkt_poll_timer_cb,
-                      1., pkt_poll_interval);
-    event::timer_start(&pkt_poll_timer);
 }
 
 }    // namespace learn

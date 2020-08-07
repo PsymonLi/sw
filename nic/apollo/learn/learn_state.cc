@@ -16,6 +16,7 @@
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_vnic.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/learn/learn_impl_base.hpp"
 #include "nic/apollo/learn/learn_state.hpp"
 #include "nic/apollo/learn/learn_uio.hpp"
@@ -101,24 +102,44 @@ learn_state::lif_init_(void) {
 }
 
 sdk_ret_t
-learn_state::init (void) {
+learn_state::init(void) {
     // instantiate MAC and IP states
-    sdk_ret_t ret;
+    operd_region_ = nullptr;
+    vnic_objid_idxr_ = nullptr;
     ep_mac_state_ = new ep_mac_state();
     ep_ip_state_ = new ep_ip_state();
     if (ep_mac_state_ == nullptr || ep_ip_state_ == nullptr) {
         return SDK_RET_OOM;
     }
-
-    vnic_objid_idxr_ = rte_indexer::factory(PDS_MAX_VNIC, false, true);
-    if (vnic_objid_idxr_ == nullptr) {
-        return SDK_RET_ERR;
-    }
-    ret = pending_ntfn_state_init(&pend_ntfn_state_);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
     return lif_init_();
+}
+
+sdk_ret_t
+learn_state::init_oper_mode(pds_learn_mode_t mode) {
+    sdk_ret_t ret = SDK_RET_OK;
+
+    switch (mode) {
+    case PDS_LEARN_MODE_AUTO:
+        PDS_TRACE_INFO("Enabling learning in auto mode");
+        vnic_objid_idxr_ = rte_indexer::factory(PDS_MAX_VNIC, false, true);
+        if (vnic_objid_idxr_ == nullptr) {
+            return SDK_RET_ERR;
+        }
+        ret = pending_ntfn_state_init(&pend_ntfn_state_);
+        break;
+
+    case PDS_LEARN_MODE_NOTIFY:
+        PDS_TRACE_INFO("Enabling learning in notify mode");
+        // TODO: commenting out operd init
+        // operd_region_ = learn_operd_init();
+        break;
+
+    case PDS_LEARN_MODE_NONE:
+        // this is hit if learning is disabled
+    default:
+        break;
+    }
+    return ret;
 }
 
 uint32_t

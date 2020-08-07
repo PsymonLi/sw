@@ -15,10 +15,12 @@
 #include "nic/sdk/lib/slab/slab.hpp"
 #include "nic/sdk/lib/dpdk/dpdk.hpp"
 #include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
+#include "lib/operd/region.hpp"
 #include "nic/apollo/framework/state_base.hpp"
+#include "nic/apollo/api/include/pds_device.hpp"
 #include "nic/apollo/learn/ep_mac_state.hpp"
 #include "nic/apollo/learn/ep_ip_state.hpp"
-#include "nic/apollo/learn/pending_ntfn.hpp"
+#include "nic/apollo/learn/auto/pending_ntfn.hpp"
 
 using api::state_walk_cb_t;
 
@@ -125,6 +127,7 @@ typedef struct learn_counters_s {
 #define LEARN_EP_DEFAULT_AGE_SEC                300
 #define LEARN_EP_ARP_PROBE_TIMEOUT_SEC          30
 #define LEARN_PKT_POLL_INTERVAL_MSEC            50
+#define LEARN_EP_DEFAULT_DEDUP_PERIOD_SEC       5
 
 /// \brief packet receive parameters
 #ifdef DPDK_SIM
@@ -146,7 +149,6 @@ typedef struct learn_counters_s {
                                                  LEARN_LIF_RECV_BURST_SZ + \
                                                  LEARN_LIF_APP_MBUF_COUNT)
 
-
 /// \brief start epoch for API calls
 // TODO: define a generic internal epoch id that can be used for batching only
 // and not to advance the epoch
@@ -164,6 +166,11 @@ public:
     /// \brief      initialize the global state
     /// \return     #SDK_RET_OK on success, error code on failure
     sdk_ret_t init(void);
+
+    /// \brief     initialize mode specific state
+    /// \param[in] mode    device learn mode
+    /// \return    #SDK_RET_OK on success, error code on failure
+    sdk_ret_t init_oper_mode(pds_learn_mode_t mode);
 
     /// \brief      return epoch to be used for API batch
     /// \return     epoch value
@@ -206,6 +213,12 @@ public:
     /// \return     age in seconds
     uint32_t ep_timeout(void) const;
 
+    /// \brief      return configured dedup period
+    /// \return     dedup period in seconds
+    uint32_t dedup_timeout(void) const {
+        return LEARN_EP_DEFAULT_DEDUP_PERIOD_SEC;
+    }
+
     /// \brief      return arp probe reply timeout
     /// \return     timeout value in seconds
     uint16_t arp_probe_timeout(void) const { return arp_probe_timeout_secs_; }
@@ -236,9 +249,13 @@ public:
     /// \return   SDK_RET_OK on success, failure status code on error
     sdk_ret_t slab_walk(state_walk_cb_t walk_cb, void *ctxt) override;
 
-    /// \brief      return pending notification state
-    /// \return     pointer to pending notificaiton state
+    /// \brief     return pending notification state
+    /// \return    pointer to pending notificaiton state
     pending_ntfn_state_t *pending_ntfn_state(void) { return &pend_ntfn_state_; }
+
+    /// \brief     get operd region to write learnt ep info into
+    /// \return    pointer to operd region
+    sdk::operd::region_ptr operd_region(void) const { return operd_region_; }
 
 private:
     /// \brief      intialize learn lif device
@@ -254,6 +271,7 @@ private:
     ep_mac_state *ep_mac_state_;            ///< endpoint MAC state
     ep_ip_state *ep_ip_state_;              ///< endpoint IP state
     pending_ntfn_state_t pend_ntfn_state_;  ///< pending notification state
+    sdk::operd::region_ptr operd_region_;   ///< operd region for learn
 };
 
 }    // namepsace learn

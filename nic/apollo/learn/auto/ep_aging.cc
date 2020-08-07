@@ -14,7 +14,7 @@
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
-#include "nic/apollo/learn/ep_aging.hpp"
+#include "nic/apollo/learn/auto/ep_aging.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
 #include "nic/apollo/learn/learn_state.hpp"
 

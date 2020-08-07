@@ -18,7 +18,8 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
 #include "nic/apollo/learn/learn_impl_base.hpp"
-#include "nic/apollo/learn/ep_aging.hpp"
+#include "nic/apollo/learn/auto/ep_aging.hpp"
+#include "nic/apollo/learn/notify/ep_dedup.hpp"
 #include "nic/apollo/learn/learn_state.hpp"
 #include "nic/apollo/learn/utils.hpp"
 
@@ -50,8 +51,14 @@ sdk_ret_t
 delete_ip_entry (ep_ip_entry *ip_entry, ep_mac_entry *mac_entry)
 {
     sdk_ret_t ret;
+    pds_learn_mode_t mode = learn_oper_mode();
 
-    event::timer_stop(ip_entry->timer());
+    if (mode == PDS_LEARN_MODE_AUTO) {
+        timer_stop(ip_entry->aging_timer());
+    } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+        timer_stop(ip_entry->dedup_timer());
+    }
+
     ip_entry->set_state(EP_STATE_DELETED);
     mac_entry->del_ip(ip_entry);
 
@@ -65,9 +72,13 @@ delete_ip_entry (ep_ip_entry *ip_entry, ep_mac_entry *mac_entry)
 
     ret = ip_entry->delay_delete();
     if (ret == SDK_RET_OK) {
-        // if this was the last IP on this EP, start MAC aging timer
+        // if this was the last IP on this EP, start MAC aging or dedup timer
         if (mac_entry->ip_count() == 0) {
-            mac_aging_timer_restart(mac_entry);
+            if (mode == PDS_LEARN_MODE_AUTO) {
+                mac_aging_timer_restart(mac_entry);
+            } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+                mac_dedup_timer_restart(mac_entry);
+            }
         }
     }
     return ret;
@@ -108,11 +119,16 @@ sdk_ret_t
 delete_mac_entry (ep_mac_entry *mac_entry)
 {
     sdk_ret_t ret;
+    pds_learn_mode_t mode = learn_oper_mode();
 
-    timer_stop(mac_entry->timer());
+    if (mode == PDS_LEARN_MODE_AUTO) {
+        timer_stop(mac_entry->aging_timer());
+        learn_db()->vnic_obj_id_free(mac_entry->vnic_obj_id());
+    } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+        timer_stop(mac_entry->dedup_timer());
+    }
+
     mac_entry->set_state(EP_STATE_DELETED);
-    learn_db()->vnic_obj_id_free(mac_entry->vnic_obj_id());
-
     ret = mac_entry->del_from_db();
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to delete %s from db, error code %u",

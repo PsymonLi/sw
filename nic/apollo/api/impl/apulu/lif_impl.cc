@@ -1142,6 +1142,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     key.control_metadata_learn_enabled = 1;
     key.control_metadata_lif_type = P4_LIF_TYPE_HOST;
     key.control_metadata_local_mapping_miss = 1;
+    key.arm_to_p4i_learning_done = 0;
     key.control_metadata_tunneled_packet = 0;
     key.key_metadata_dport = ETH_TYPE_ARP;
     key.key_metadata_sport = 1;    // ARP request
@@ -1151,6 +1152,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     mask.control_metadata_learn_enabled_mask = ~0;
     mask.control_metadata_lif_type_mask = ~0;
     mask.control_metadata_local_mapping_miss_mask = ~0;
+    mask.arm_to_p4i_learning_done_mask = ~0;
     mask.control_metadata_tunneled_packet_mask = ~0;
     mask.key_metadata_dport_mask = ~0;
     mask.key_metadata_sport_mask = ~0;
@@ -1179,6 +1181,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     key.key_metadata_ktype = KEY_TYPE_MAC;
     key.control_metadata_learn_enabled = 1;
     key.control_metadata_lif_type = P4_LIF_TYPE_HOST;
+    key.arm_to_p4i_learning_done = 0;
     key.control_metadata_tunneled_packet = 0;
     key.key_metadata_dport = ETH_TYPE_ARP;
     key.key_metadata_sport = 2;    // ARP response
@@ -1187,6 +1190,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     mask.key_metadata_ktype_mask = ~0;
     mask.control_metadata_learn_enabled_mask = ~0;
     mask.control_metadata_lif_type_mask = ~0;
+    mask.arm_to_p4i_learning_done_mask = ~0;
     mask.control_metadata_tunneled_packet_mask = ~0;
     mask.key_metadata_dport_mask = ~0;
     mask.key_metadata_sport_mask = ~0;
@@ -1213,6 +1217,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     key.key_metadata_ktype = KEY_TYPE_MAC;
     key.control_metadata_learn_enabled = 1;
     key.control_metadata_lif_type = P4_LIF_TYPE_HOST;
+    key.arm_to_p4i_learning_done = 0;
     key.control_metadata_tunneled_packet = 0;
     key.key_metadata_dport = ETH_TYPE_RARP;
     mask.key_metadata_entry_valid_mask = ~0;
@@ -1220,6 +1225,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     mask.key_metadata_ktype_mask = ~0;
     mask.control_metadata_learn_enabled_mask = ~0;
     mask.control_metadata_lif_type_mask = ~0;
+    mask.arm_to_p4i_learning_done_mask = ~0;
     mask.control_metadata_tunneled_packet_mask = ~0;
     mask.key_metadata_dport_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;

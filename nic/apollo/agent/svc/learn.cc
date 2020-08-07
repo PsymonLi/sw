@@ -10,7 +10,7 @@
 
 #include "nic/apollo/agent/svc/learn_svc.hpp"
 #include "nic/apollo/api/pds_state.hpp"
-#include "nic/apollo/learn/ep_aging.hpp"
+#include "nic/apollo/learn/auto/ep_aging.hpp"
 #include "nic/apollo/learn/ep_mac_entry.hpp"
 #include "nic/apollo/learn/ep_ip_entry.hpp"
 #include "nic/apollo/learn/ep_mac_state.hpp"

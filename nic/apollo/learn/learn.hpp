@@ -13,11 +13,13 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/ht/ht.hpp"
+#include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_mapping.hpp"
 #include "nic/apollo/api/include/pds_vnic.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/include/globals.hpp"
+#include "nic/apollo/core/msg.h"
 
 namespace learn {
 
@@ -27,6 +29,7 @@ namespace learn {
 #define UIO_DEV_ROOT            "/sys/class/uio/"
 #define UIO_DEV_SCAN_INTERVAL   1
 #define UIO_DEV_SCAN_MAX_RETRY  600
+#define TIMER_NOT_STARTED       0
 
 /// \brief endpoint state
 /// \remark
@@ -45,20 +48,48 @@ typedef enum {
 
 /// \brief key to L2 endpoint data base
 typedef struct {
-    pds_obj_key_t subnet;
     mac_addr_t mac_addr;
+    union {
+        pds_obj_key_t subnet;
+        uint16_t      lif;
+    } __PACK__;
+
+    void make_key(char *mac, pds_obj_key_t subnet_uuid) {
+        MAC_ADDR_COPY(mac_addr, mac);
+        subnet = subnet_uuid;
+    }
+
+    void make_key(char *mac, uint16_t lif_id) {
+        MAC_ADDR_COPY(mac_addr, mac);
+        lif = lif_id;
+    }
 } __PACK__ ep_mac_key_t;
 
 /// \brief key to L3 endpoint data base
 typedef struct ep_ip_key_s {
-    pds_obj_key_t vpc;
     ip_addr_t ip_addr;
+    union {
+        pds_obj_key_t vpc;
+        uint16_t      lif;
+    } __PACK__;
 
+    void make_key(ip_addr_t *ip, pds_obj_key_t vpc_uuid) {
+        memcpy(&ip_addr, ip, sizeof(ip_addr_t));
+        vpc = vpc_uuid;
+    }
+
+    void make_key(ip_addr_t *ip, uint16_t lif_id) {
+        memcpy(&ip_addr, ip, sizeof(ip_addr_t));
+        lif = lif_id;
+    }
+
+    // TODO: redefine this to accomodate notify mode too
+    // 1. define a char[] of size same as max size of union or
+    // 2. do memcmp of struct size from ip_addr variablw
     bool operator ==(const ep_ip_key_s &key) const {
         return (key.vpc == vpc) &&
             (memcmp(&key.ip_addr, &ip_addr, sizeof(ip_addr_t)) == 0);
     }
-
 } __PACK__ ep_ip_key_t;
 
 /// \brief hasher class for ep_ip_key_t
@@ -128,6 +159,35 @@ void process_learn_pkt(void *mbuf);
 /// \brief process API batch received by learn thread
 sdk_ret_t process_api_batch(api::api_msg_t *api_msg);
 
+/// \brief     get time remaining for timer expiry
+///            when remaining aging time is returned as '0, it can mean any of
+///            the following condiitons:
+///            1. aging is disabled by conifg by setting timeout to 0
+///            2. aging timer has just expired, for IP entries, state indicates
+//                this
+///            3. aging has not yet started, for MAC entries
+/// \param[in] ts    timestamp at which the timer expires
+/// \return    remaining time from now in seconds
+///            0 if current time is past the timestamp or timestamp is invalid
+static inline uint32_t
+remaining_age (uint64_t ts)
+{
+    uint64_t now;
+
+    if (ts == 0) {
+        return TIMER_NOT_STARTED;
+    }
+    now = sdk::event_thread::timestamp_now();
+
+    // this may be called just after expiry before timer callback is run
+    // or, ARP probing might be on, in which case we deem the entry expired
+    // for IP entry, state indicates that we are in ARP probe
+    if (now > ts) {
+        return 0;
+    }
+    return (ts - now);
+}
+
 }    // namespace learn
 
 using namespace learn;
@@ -150,7 +210,7 @@ typedef struct learn_clear_msg_s {
 } learn_clear_msg_t;
 
 typedef enum learn_msg_id_e {
-    LEARN_MSG_ID_NONE        = (SDK_IPC_MSG_ID_MAX + 1),
+    LEARN_MSG_ID_NONE        = (PDS_MSG_TYPE_MAX + 1),
     LEARN_MSG_ID_API,
     LEARN_MSG_ID_CLEAR_CMD,
 } learn_msg_id_t;

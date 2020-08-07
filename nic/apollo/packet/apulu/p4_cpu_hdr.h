@@ -90,7 +90,7 @@ typedef struct p4_tx_cpu_hdr_s {
             uint16_t lif_sbit0_ebit7        : 8;
             uint16_t lif_sbit8_ebit10       : 3;
             uint16_t nexthop_valid          : 1;
-            uint16_t local_mapping_override : 1;
+            uint16_t learning_done          : 1;
             uint16_t flow_lkp_id_override   : 1;
             uint16_t skip_stats_update      : 1;
             uint16_t pad                    : 1;

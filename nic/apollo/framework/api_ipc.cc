@@ -23,6 +23,7 @@ static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
     // IPC peers interseted in DEVICE object
     { OBJ_ID_DEVICE,
         {
+            { (pds_ipc_id_t)core::PDS_THREAD_ID_LEARN, false, {}},
             { PDS_IPC_ID_VPP, false, {}},
         }
     },

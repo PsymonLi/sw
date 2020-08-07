@@ -4,6 +4,8 @@ include ${MKDEFS}/pre.mk
 MODULE_TARGET   = libpdslearn.lib
 MODULE_PIPELINE = apollo artemis apulu athena
 MODULE_SRCS	= $(wildcard ${MODULE_SRC_DIR}/*.cc)
+MODULE_SRCS	+= $(wildcard ${MODULE_SRC_DIR}/auto/*.cc)
+MODULE_SRCS	+= $(wildcard ${MODULE_SRC_DIR}/notify/*.cc)
 ifneq ($(PIPELINE), apulu)
 MODULE_SRCS	+= $(wildcard ${MODULE_SRC_DIR}/impl/stub/*.cc)
 else

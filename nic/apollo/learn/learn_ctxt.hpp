@@ -15,11 +15,13 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/core/event.hpp"
+#include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/learn/ep_mac_entry.hpp"
 #include "nic/apollo/learn/ep_ip_entry.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
 #include "nic/apollo/learn/learn.hpp"
+#include "nic/apollo/learn/utils.hpp"
 #include "nic/apollo/learn/learn_impl_base.hpp"
 #include "nic/apollo/learn/learn_state.hpp"
 
@@ -130,18 +132,31 @@ typedef struct learn_ctxt_s {
     const char *pkt_ctxt_str(void) const {
         static string str;
         const impl::learn_info_t *impl = &pkt_ctxt.impl_info;
-
-        str = "(" +
-              std::string(mac_key.subnet.str()) + ", " +
-              std::string(macaddr2str(mac_key.mac_addr)) + ", " +
-              std::string(ip_key.vpc.str()) + ", " +
-              std::string(ipaddr2str(&ip_key.ip_addr)) + ", " +
-              "mac learn type " + to_string(mac_learn_type) + ", " +
-              "ip learn type " + to_string(ip_learn_type) + ", " +
-              "pkt type " + sdk::types::pkttype2str(impl->pkt_type) + ", " +
-              "impl hints " + to_string(impl->hints) + ", " +
-              "lif " + to_string(impl->lif) +
-              ")";
+        pds_learn_mode_t mode = learn_oper_mode();
+        if (mode == PDS_LEARN_MODE_AUTO) {
+            str = "(" +
+                  std::string(mac_key.subnet.str()) + ", " +
+                  std::string(macaddr2str(mac_key.mac_addr)) + ", " +
+                  std::string(ip_key.vpc.str()) + ", " +
+                  std::string(ipaddr2str(&ip_key.ip_addr)) + ", " +
+                  "mac learn type " + to_string(mac_learn_type) + ", " +
+                  "ip learn type " + to_string(ip_learn_type) + ", " +
+                  "pkt type " + sdk::types::pkttype2str(impl->pkt_type) + ", " +
+                  "impl hints " + to_string(impl->hints) + ", " +
+                  "lif " + to_string(impl->lif) +
+                  ")";
+        } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+            str = "(" +
+                  std::string(macaddr2str(mac_key.mac_addr)) + ", " +
+                  std::string(ipaddr2str(&ip_key.ip_addr)) + ", " +
+                  "lif " + to_string(impl->lif) + ", " +
+                  "encap" + pds_encap2str(&impl->encap) + ", "
+                  "mac learn type " + to_string(mac_learn_type) + ", " +
+                  "ip learn type " + to_string(ip_learn_type) + ", " +
+                  "pkt type " + sdk::types::pkttype2str(impl->pkt_type) + ", " +
+                  "impl hints " + to_string(impl->hints) +
+                  ")";
+        }
         return str.c_str();
     }
 
@@ -173,18 +188,36 @@ typedef struct learn_ctxt_s {
 
     const char *pkt_ctxt_log_str(pds_mapping_type_t mtype) const {
         static string str;
+        pds_learn_mode_t mode = learn_oper_mode();
 
         if (mtype == PDS_MAPPING_TYPE_L2) {
-            str = "learn type " +
-                  std::string(ep_learn_type_str(mac_learn_type)) + ", MAC-(" +
-                  std::string(mac_key.subnet.str()) + ", " +
-                  std::string(macaddr2str(mac_key.mac_addr)) + ")" +
-                  mac_move_log;
+            if (mode == PDS_LEARN_MODE_AUTO) {
+                str = "learn type " +
+                      std::string(ep_learn_type_str(mac_learn_type)) + ", MAC-("
+                      + std::string(mac_key.subnet.str()) + ", "
+                      + std::string(macaddr2str(mac_key.mac_addr)) + ")"
+                      + mac_move_log;
+            } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+                str = "learn type " +
+                      std::string(ep_learn_type_str(mac_learn_type)) + ", MAC-("
+                      + std::string(macaddr2str(mac_key.mac_addr)) + ", "
+                      + to_string(mac_key.lif) + ")"
+                      + mac_move_log;
+            }
         } else {
-            str = "learn type " +
-                  std::string(ep_learn_type_str(ip_learn_type)) + ", IP-(" +
-                  std::string(ip_key.vpc.str()) + ", " +
-                  std::string(ipaddr2str(&ip_key.ip_addr)) + ")" + ip_move_log;
+            if (mode == PDS_LEARN_MODE_AUTO) {
+                str = "learn type " +
+                      std::string(ep_learn_type_str(ip_learn_type)) + ", IP-("
+                      + std::string(ip_key.vpc.str()) + ", "
+                      + std::string(ipaddr2str(&ip_key.ip_addr)) + ")"
+                      + ip_move_log;
+            } else if (mode == PDS_LEARN_MODE_NOTIFY) {
+                str = "learn type " +
+                      std::string(ep_learn_type_str(ip_learn_type)) + ", IP-("
+                      + std::string(ipaddr2str(&ip_key.ip_addr)) + ", "
+                      + to_string(ip_key.lif) + ")"
+                      + ip_move_log;
+            }
         }
         return str.c_str();
     }

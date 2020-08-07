@@ -13,7 +13,7 @@
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
 #include "nic/apollo/learn/learn_impl_base.hpp"
-#include "nic/apollo/learn/pending_ntfn.hpp"
+#include "nic/apollo/learn/auto/pending_ntfn.hpp"
 
 namespace learn {
 

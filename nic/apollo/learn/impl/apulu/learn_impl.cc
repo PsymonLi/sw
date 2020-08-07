@@ -13,6 +13,7 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/learn/learn_state.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "nic/apollo/api/internal/pds_mapping.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
@@ -21,6 +22,7 @@
 #include "nic/apollo/api/impl/apulu/subnet_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vnic_impl.hpp"
 #include "nic/apollo/learn/learn_impl_base.hpp"
+#include "nic/apollo/learn/utils.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "nic/apollo/packet/apulu/p4_cpu_hdr.h"
 
@@ -105,9 +107,13 @@ extract_info_from_p4_hdr (char *pkt, learn_info_t *info)
 
     info->hints = 0;
     info->lif = p4_rx_hdr->lif;
-    info->subnet = bdid_to_subnet(p4_rx_hdr->ingress_bd_id);
-    if (info->subnet == k_pds_obj_key_invalid) {
-        return SDK_RET_ERR;
+
+    info->subnet = k_pds_obj_key_invalid;
+    if (learn_oper_mode() == PDS_LEARN_MODE_AUTO) {
+        info->subnet = bdid_to_subnet(p4_rx_hdr->ingress_bd_id);
+        if (info->subnet == k_pds_obj_key_invalid) {
+            return SDK_RET_ERR;
+        }
     }
     info->l2_offset = APULU_P4_TO_ARM_HDR_SZ;
     if (p4_rx_hdr->flags & APULU_CPU_FLAGS_VLAN_VALID) {
@@ -138,15 +144,17 @@ extract_info_from_p4_hdr (char *pkt, learn_info_t *info)
     case NACL_DATA_ID_L2_MISS_DHCP:
         info->pkt_type = PKT_TYPE_DHCP;
         break;
-    default:
-        // currently no other packets are sent to learn lif, we can however
-        // infer from flags if we have an IPv4 or IPv6 packet
+    case NACL_DATA_ID_L3_MISS_IP4_IP6:
         if (p4_rx_hdr->flags & APULU_CPU_FLAGS_IPV4_1_VALID) {
             info->pkt_type = PKT_TYPE_IPV4;
         } else if (p4_rx_hdr->flags & APULU_CPU_FLAGS_IPV6_1_VALID) {
             info->pkt_type = PKT_TYPE_IPV6;
         }
+        break;
+    default:
+        // currently no other packets are sent to learn lif
         // TODO: NDP
+        break;
     }
     return SDK_RET_OK;
 }
@@ -184,7 +192,7 @@ arm_to_p4_tx_hdr_fill (char *tx_hdr, p4_tx_info_t *tx_info)
         break;
     default:
         // nexthop_valid is intialized to zero
-        p4_tx_hdr->local_mapping_override = 1;
+        p4_tx_hdr->learning_done = 1;
         break;
     }
 

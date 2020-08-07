@@ -12,6 +12,8 @@
 #define __LEARN_UTILS_HPP__
 
 #include "nic/sdk/lib/dpdk/dpdk.hpp"
+#include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/include/pds_device.hpp"
 #include "nic/apollo/learn/learn_state.hpp"
 #include "nic/apollo/learn/learn_impl_base.hpp"
 
@@ -132,6 +134,14 @@ dbg_dump_pkt (void *pbuf, const char *msg)
         PDS_TRACE_VERBOSE("%s", buf);
     }
     PDS_TRACE_VERBOSE("Packet dump end");
+}
+
+/// \brief     get configured learn mode
+/// \return    configured learn mode
+static inline pds_learn_mode_t
+learn_oper_mode (void)
+{
+    return device_db()->find()->learn_mode();
 }
 
 }    // namespace learn

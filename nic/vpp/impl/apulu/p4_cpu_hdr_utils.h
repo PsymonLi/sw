@@ -216,7 +216,7 @@ format_pds_p4_tx_cpu_hdr (u8 * s, va_list * args)
                "flow_lkp_id[%d], skip_stats_update[%d], sw_meta[%d]",
                t->lif_sbit0_ebit7 | (t->lif_sbit8_ebit10 << 8),
                t->nexthop_valid, t->nexthop_type, t->nexthop_id,
-               t->local_mapping_override, t->flow_lkp_id_override,
+               t->learning_done, t->flow_lkp_id_override,
                t->flow_lkp_id, t->skip_stats_update, t->sw_meta);
     return s;
 }

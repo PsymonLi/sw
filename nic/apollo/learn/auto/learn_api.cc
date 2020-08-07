@@ -17,7 +17,7 @@
 #include "nic/apollo/learn/learn.hpp"
 #include "nic/apollo/learn/learn_api.hpp"
 #include "nic/apollo/learn/learn_ctxt.hpp"
-#include "nic/apollo/learn/pending_ntfn.hpp"
+#include "nic/apollo/learn/auto/pending_ntfn.hpp"
 #include "nic/apollo/learn/learn_thread.hpp"
 
 namespace learn {
