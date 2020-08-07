@@ -24,6 +24,9 @@ var _ = Describe("LLDP", func() {
 	Context("LLDP Tests", func() {
 
 		It("LLDP Neighbor", func() {
+			if !ts.tb.HasNaplesHW() {
+				Skip("LLDP test cases are enabled only for HW naples")
+			}
 			verifyUplinkNeighbor()
 		})
 	})
