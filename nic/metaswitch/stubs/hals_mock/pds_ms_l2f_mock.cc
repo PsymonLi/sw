@@ -40,11 +40,12 @@ void l2f_integ_subcomp_t::delete_bd_if(const ATG_L2_BD_ID *bd_id,
 NBB_BYTE l2f_integ_subcomp_t::add_upd_fdb_mac(ATG_BDPI_UPDATE_FDB_MAC *update_fdb_mac) {
     return ATG_OK;
 }
+
 void l2f_integ_subcomp_t::delete_fdb_mac(l2f::FdbMacKey *key) {
 }
-NBB_ULONG l2f_integ_subcomp_t::add_upd_mac_ip(ATG_MAI_UPDATE_MAC_IP *mac_ip_id,
-                                              NBB_BYTE sticky)
-{
+
+NBB_ULONG l2f_integ_subcomp_t::add_upd_mac_ip(ATG_MAI_UPDATE_MAC_IP *mac_ip,
+                                              NBB_BYTE sticky) {
     return ATG_OK;
 }
 
@@ -52,6 +53,7 @@ void l2f_integ_subcomp_t::delete_mac_ip(const ATG_MAI_MAC_IP_ID *mac_ip_id,
                                         bool programmed)
 {
 }
+
 NBB_BYTE l2f_integ_subcomp_t::add_upd_vrf_arp_entry(const ATG_MAI_MAC_IP_ID *mac_ip_id,
                                                     const char *vrf_name)
 {
