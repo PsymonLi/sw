@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <inttypes.h>
 #include "pds_flow_session_ctx.hpp"
-#include "nic/apollo/api/include/athena/internal/pds_store.h"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "platform/src/lib/nicmgr/include/pd_client.hpp"
@@ -59,9 +58,7 @@
  */
 typedef struct {
     uint64_t            handle;
-} __attribute__((packed)) ctx_entry_v1_t;
-
-typedef ctx_entry_v1_t ctx_entry_t;
+} __attribute__((packed)) ctx_entry_t;
 
 typedef struct {
     volatile uint8_t    lock;
@@ -76,7 +73,6 @@ public:
     session_ctx_t() :
         platform_type(platform_type_t::PLATFORM_TYPE_NONE),
         ctx_lock(nullptr),
-        ctx_store(nullptr),
         ctx_table(nullptr)
     {
         session_prop = {0};
@@ -124,7 +120,6 @@ private:
     p4pd_table_properties_t     session_prop;
     p4pd_table_properties_t     cache_prop;
     ctx_lock_t                  *ctx_lock;
-    sdk::lib::shmstore          *ctx_store;
     ctx_entry_t                 *ctx_table;
 };
 
@@ -185,26 +180,11 @@ session_ctx_t::init(pds_cinit_params_t *params)
         }
         memset((void *)ctx_table, 0, table_bytes);
 #else
-        size_t table_size =  session_prop.tabledepth * sizeof(ctx_entry_t);
-        SDK_ASSERT(table_size <= PDS_STORE_TBL_SIZE_SESSION_INFO);
-        bool store_create = params->init_mode == PDS_CINIT_MODE_COLD_START;
-        ctx_store = pds_store_init(PDS_STORE_MOD_NAME_IMPL,
-                                   PDS_STORE_TBL_NAME_SESSION_INFO,
-                                   PDS_STORE_TBL_VER_SESSION_INFO,
-                                   PDS_STORE_TBL_SIZE_SESSION_INFO,
-                                   store_create);
-        if (!ctx_store) {
-            PDS_TRACE_ERR("fail to create/open store: create=%i ver=%u size=%i",
-                           store_create, PDS_STORE_TBL_VER_SESSION_INFO,
-                           PDS_STORE_TBL_SIZE_SESSION_INFO);
-            return PDS_RET_OOM;
-        }
-
-        ctx_table = (ctx_entry_t*)ctx_store->create_or_open_segment(
-                PDS_STORE_TBL_NAME_SESSION_INFO, table_size);
+        ctx_table = (ctx_entry_t *)SDK_CALLOC(SDK_MEM_ALLOC_FLOW_SESSION_CTX,
+                                              session_prop.tabledepth *
+                                              sizeof(ctx_entry_t));
         if (!ctx_table) {
-            PDS_TRACE_ERR("fail to create/open segment: create=%i ver=%u size=%li",
-                    store_create, PDS_STORE_TBL_VER_SESSION_INFO, table_size);
+            PDS_TRACE_ERR("fail to allocate ctx_table");
             return PDS_RET_OOM;
         }
 #endif
@@ -229,8 +209,11 @@ session_ctx_t::fini(void)
         sdk::lib::pal_mem_unmap((void *)ctx_table);
         ctx_vaddr = nullptr;
     }
-#else 
-    ctx_table = nullptr;
+#else
+    if (ctx_table) {
+        SDK_FREE(SDK_MEM_ALLOC_FLOW_SESSION_CTX, ctx_table);
+        ctx_table = nullptr;
+    }
 #endif
     if (ctx_lock) {
         SDK_FREE(SDK_MEM_ALLOC_FLOW_SESSION_CTX, ctx_lock);
