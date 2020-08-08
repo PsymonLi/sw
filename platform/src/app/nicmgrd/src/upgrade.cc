@@ -53,40 +53,42 @@ typedef struct __attribute__((packed)) backup_mem_hdr_s {
 } backup_mem_hdr_t;
 
 
-#define NICMGR_BKUP_PBUF(pbuf_info, ret, str) {                            \
-    uint32_t pbuf_byte_size = pbuf_info.ByteSizeLong();              \
-    if ((obj_mem_offset_ + pbuf_byte_size + 4) > obj_mem_size_) {     \
-        NIC_LOG_ERR("Failed to serialize {}", str);                   \
-        ret = SDK_RET_OOM;                                            \
-    }                                                                 \
-    *(uint32_t *)&mem_[obj_mem_offset_] = pbuf_byte_size;             \
-    if (pbuf_info.SerializeToArray(&mem_[obj_mem_offset_ + 4],       \
-                                  pbuf_byte_size) == false) {         \
-        NIC_LOG_ERR("Failed to serialize {}", str);                   \
-        ret = SDK_RET_OOM;                                            \
-    }                                                                 \
-    obj_mem_offset_ += (pbuf_byte_size + 4);                          \
+#define NICMGR_BKUP_PBUF(pbuf_info, ret, str) {                    \
+    uint32_t pbuf_byte_size = pbuf_info.ByteSizeLong();            \
+    if ((obj_mem_offset_ + pbuf_byte_size + 4) > obj_mem_size_) {  \
+        NIC_LOG_ERR("Failed to serialize {}", str);                \
+        ret = SDK_RET_OOM;                                         \
+    }                                                              \
+    *(uint32_t *)&mem_[obj_mem_offset_] = pbuf_byte_size;          \
+    if (pbuf_info.SerializeToArray(&mem_[obj_mem_offset_ + 4],     \
+                                  pbuf_byte_size) == false) {      \
+        NIC_LOG_ERR("Failed to serialize {}", str);                \
+        ret = SDK_RET_OOM;                                         \
+    }                                                              \
+    obj_mem_offset_ += (pbuf_byte_size + 4);                       \
 }
 
-#define NICMGR_RESTORE_PBUF(pbuf_info, cb, arg, oid, ret, str) {                                \
-    uint32_t pbuf_byte_size;                                           \
-    backup_mem_hdr_t *hdr = (backup_mem_hdr_t *)mem_;    \
-                                                                       \
-    obj_mem_offset_ = hdr[oid].mem_offset;                             \
-    if (hdr[oid].obj_count) {                                                  \
-        SDK_ASSERT(hdr[oid].id == oid);                                  \
-    }                                                                  \
-    for (uint32_t i = 0; i < hdr[oid].obj_count; i++) {                        \
-        pbuf_byte_size =  *(uint32_t *)&mem_[obj_mem_offset_];         \
-                                                                       \
-        if (pbuf_info.ParseFromArray(&mem_[obj_mem_offset_ + 4],       \
-                                     pbuf_byte_size) == false) {       \
-            NIC_LOG_ERR("Failed to de-serialize {}", str);           \
-            ret = SDK_RET_OOM;                                        \
-        }                                                              \
-        cb(&pbuf_info, arg);                                                 \
-        obj_mem_offset_ += (pbuf_byte_size + 4);                            \
-    } \
+#define NICMGR_RESTORE_PBUF(pbuf_info, cb, arg, oid, ret, str) {   \
+    uint32_t pbuf_byte_size;                                       \
+    backup_mem_hdr_t *hdr = (backup_mem_hdr_t *)mem_;              \
+                                                                   \
+    obj_mem_offset_ = hdr[oid].mem_offset;                         \
+    if (hdr[oid].obj_count) {                                      \
+        SDK_ASSERT(hdr[oid].id == oid);                            \
+    }                                                              \
+    NIC_LOG_INFO("Found objects in shm count {} type {}",          \
+                 hdr[oid].obj_count, oid);                         \
+    for (uint32_t i = 0; i < hdr[oid].obj_count; i++) {            \
+        pbuf_byte_size =  *(uint32_t *)&mem_[obj_mem_offset_];     \
+                                                                   \
+        if (pbuf_info.ParseFromArray(&mem_[obj_mem_offset_ + 4],   \
+                                     pbuf_byte_size) == false) {   \
+            NIC_LOG_ERR("Failed to de-serialize {}", str);         \
+            ret = SDK_RET_OOM;                                     \
+        }                                                          \
+        cb(&pbuf_info, arg);                                       \
+        obj_mem_offset_ += (pbuf_byte_size + 4);                   \
+    }                                                              \
 }
 
 static int
@@ -259,8 +261,9 @@ upgrade_state_save_delphi (void)
 
 // returns void, as save state fails only in case of out of memory.
 void
-nicmgr_upg_hndlr::upgrade_state_save(void) {
-    backup_mem_hdr_t *hdr = (backup_mem_hdr_t *)mem_;
+nicmgr_upg_hndlr::upgrade_state_save(void)
+{
+    backup_mem_hdr_t *hdr;
     sdk_ret_t ret = SDK_RET_OK;
     UplinkInfo uplinkinfo;
     EthDeviceInfo devinfo;
@@ -270,9 +273,15 @@ nicmgr_upg_hndlr::upgrade_state_save(void) {
     std::string dst = std::string(NICMGR_BKUP_DIR) + std::string(NICMGR_BKUP_SHM_NAME);
     std::string src = std::string("/dev/shm/") + std::string(NICMGR_BKUP_SHM_NAME);
 
-    dev_info = devmgr->GetEthDevStateInfo();
-    NIC_FUNC_DEBUG("Saving {} objects of EthDevInfo to shm", dev_info.size());
+    // recreate shm memory with new size before backup
+    ret = upg_handler->upg_shm_alloc(NICMGR_BKUP_SHM_NAME,
+                                     NICMGR_BKUP_SHM_SIZE, true);
+    SDK_ASSERT(ret == SDK_RET_OK);
 
+    dev_info = devmgr->GetEthDevStateInfo();
+    NIC_LOG_INFO("Saving {} objects of EthDevInfo to shm", dev_info.size());
+
+    hdr = (backup_mem_hdr_t *)mem_;
     hdr[NICMGR_BKUP_OBJ_DEVINFO_ID].id = NICMGR_BKUP_OBJ_DEVINFO_ID;
     hdr[NICMGR_BKUP_OBJ_DEVINFO_ID].obj_count = dev_info.size();
     hdr[NICMGR_BKUP_OBJ_DEVINFO_ID].mem_offset = obj_mem_offset_;
@@ -285,7 +294,7 @@ nicmgr_upg_hndlr::upgrade_state_save(void) {
     }
 
     up_links = devmgr->GetUplinks();
-    NIC_FUNC_DEBUG("Saving {} objects of UplinkInfo to shm", up_links.size());
+    NIC_LOG_INFO("Saving {} objects of UplinkInfo to shm", up_links.size());
 
     hdr[NICMGR_BKUP_OBJ_UPLINKINFO_ID].id = NICMGR_BKUP_OBJ_UPLINKINFO_ID;
     hdr[NICMGR_BKUP_OBJ_UPLINKINFO_ID].obj_count = up_links.size();
@@ -639,20 +648,23 @@ nicmgr_upg_hndlr::upg_timer_func(void *obj)
     }
 
     if (SendAppResp) {
-        if (ExpectedState == DEVICES_RESET_STATE) {
-            if (!IsUpgFailed) {
-                ret = writefile(nicmgr_upgrade_state_file, "in progress", 11);
-                if (ret == -1)
-                    return;
-            }
-        }
-
-        NIC_FUNC_DEBUG("Sending App Response to hal upgrade client");
+        NIC_LOG_INFO("Sending App Response to hal upgrade client");
 
         if (max_retry >= ServiceTimeout) {
             status = false;
         } else {
             status = true;
+        }
+
+        if (ExpectedState == DEVICES_RESET_STATE) {
+            if (!IsUpgFailed) {
+                ret = writefile(nicmgr_upgrade_state_file, "in progress", 11);
+                if (ret == -1) {
+                    status = false;
+                    NIC_LOG_ERR("Failed to write upgrade state file {}",
+                                nicmgr_upgrade_state_file);
+                }
+            }
         }
 
         // sending async upgrade status event to hal from nicmgr
