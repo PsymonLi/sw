@@ -8,6 +8,88 @@ targets:
     sub-area:
     feature:
 
+# ====================== Additional Elba DOLs ====================
+  elba_dol/acl:
+    commands: ["make", "ASIC=elba", "jobd/dol/elba_acl"]
+    owners: ["email:bharat@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-iris-x86-elba
+  elba_dol/classicl2mc:
+    commands: ["make", "ASIC=elba", "jobd/dol/elba_classicl2mc"]
+    owners: ["email:ajeer@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-iris-x86-elba
+  elba_dol/parser:
+    commands: ["make", "ASIC=elba", "jobd/dol/elba_parser"]
+    owners: ["email:pbhide@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-iris-x86-elba
+  elba_dol/swphv:
+    commands: ["make", "ASIC=elba", "jobd/dol/elba_swphv"]
+    owners: ["email:bharat@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-iris-x86-elba
+  elba_dol/fte2:
+    commands: ["make", "ASIC=elba", "jobd/dol/elba_fte2"]
+    owners: ["email:lseshan@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-iris-x86-elba
+#  elba_dol/telemetry:
+#    commands: ["make", "ASIC=elba", "jobd/dol/elba_telemetry"]
+#    owners: ["email:jcruz@pensando.io"]
+#    area:
+#    sub-area:
+#    feature:
+#    build-dependencies:
+#    - build-iris-x86-elba
+#  elba_dol/rdma:
+#    commands: ["make", "ASIC=elba", "jobd/dol/elba_rdma"]
+#    owners: ["email:rdma-dpath@pensando.io"]
+#    area:
+#    sub-area:
+#    feature:
+#    build-dependencies:
+#    - build-iris-x86-elba
+#  elba_dol/rdma_ext:
+#    commands: ["make", "ASIC=elba", "jobd/dol/elba_rdma_ext"]
+#    owners: ["email:rdma-dpath@pensando.io"]
+#    area:
+#    sub-area:
+#    feature:
+#    build-dependencies:
+#    - build-iris-x86-elba
+#  elba_dol/recirc:
+#    commands: ["make", "ASIC=elba", "jobd/dol/elba_recirc"]
+#    owners: ["email:bharat@pensando.io"]
+#    area:
+#    sub-area:
+#    feature:
+#    build-dependencies:
+#    - build-iris-x86-elba
+#  elba_dol/basetopo:
+#    commands: ["make", "ASIC=elba", "jobd/dol/elba_basetopo"]
+#    owners: ["email:bharat@pensando.io"]
+#    area:
+#    sub-area:
+#    feature:
+#    build-dependencies:
+#    - build-iris-x86-elba
+
 image:
   bind_dir: "/sw"
   work_dir: "/sw/nic"

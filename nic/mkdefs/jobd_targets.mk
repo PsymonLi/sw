@@ -656,3 +656,144 @@ jobd/dol/elba_storage/perf: ${JOBD_PREREQS}
 jobd/elba_storage/nvme: ${JOBD_PREREQS}
 	${NICDIR}/tools/sw-env elba iris
 	${NICDIR}/run.py ${COVERAGE_OPTS} --storage --storage_test nvme_dp
+
+
+.PHONY: jobd/dol/elba_acl
+jobd/dol/elba_acl: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo acl --feature acl --microseg-enable
+
+.PHONY: jobd/dol/elba_classicl2mc
+jobd/dol/elba_classicl2mc: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo classic --feature classicl2mc --classic
+
+.PHONY: jobd/dol/elba_parser
+jobd/dol/elba_parser: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo parser --feature parser --modellogs
+
+.PHONY: jobd/dol/elba_telemetry
+jobd/dol/elba_telemetry: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo telemetry --feature telemetry --microseg-enable
+
+.PHONY: jobd/dol/elba_basetopo
+jobd/dol/elba_basetopo: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo base --feature eth_base,rdma_base --lite
+
+.PHONY: jobd/dol/elba_rdma
+jobd/dol/elba_rdma: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma
+
+.PHONY: jobd/dol/elba_rdma_ext
+jobd/dol/elba_rdma_ext: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma_ext,rdma_perf
+
+.PHONY: jobd/dol/elba_swphv
+jobd/dol/elba_swphv: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo firewall --feature swphv
+
+.PHONY: jobd/dol/elba_fte2
+jobd/dol/elba_fte2: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo fte --feature fte2 --lite --microseg-enable
+
+.PHONY: jobd/dol/elba_recirc
+jobd/dol/elba_recirc: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo recirc --feature recirc --microseg-enable
+
+.PHONY: jobd/dol/elba_alg
+jobd/dol/elba_alg: ${JOBD_PREREQS}
+	${NICDIR}/tools/sw-env elba iris
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo alg --feature alg
+
+#.PHONY: jobd/dol/elba_fte
+#jobd/dol/elba_fte: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo fte --feature fte --lite
+#
+#.PHONY: jobd/dol/elba_ftevxlan
+#jobd/dol/elba_ftevxlan: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo fte --feature ftevxlan --lite
+#
+#.PHONY: jobd/dol/elba_norm
+#jobd/dol/elba_norm: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo norm --feature norm
+#
+#.PHONY: jobd/dol/elba_proxy
+#jobd/dol/elba_proxy: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo proxy --feature proxy,proxy_fte,proxy_asym1,proxy_asym2
+#
+#.PHONY: jobd/dol/elba_ipsec
+#jobd/dol/elba_ipsec: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo proxy --feature ipsec --no_error_check
+#
+#.PHONY: jobd/dol/elba_networking
+#jobd/dol/elba_networking: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo up2up --feature networking
+#
+#.PHONY: jobd/dol/elba_vxlan
+#jobd/dol/elba_vxlan: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo vxlan --feature vxlan
+#
+#.PHONY: jobd/dol/elba_mplsudp
+#jobd/dol/elba_mplsudp: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo mpls_udp --feature mpls_udp --classic
+#
+#.PHONY: jobd/dol/elba_ipsg
+#jobd/dol/elba_ipsg: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo eth --feature ipsg
+#
+#.PHONY: jobd/dol/elba_firewall
+#jobd/dol/elba_firewall: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo firewall --feature firewall
+#
+#.PHONY: jobd/dol/elba_pin
+#jobd/dol/elba_pin: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo fte --feature fte2,hostpin --hostpin --lite --microseg-enable
+#
+#.PHONY: jobd/dol/elba_multicast
+#jobd/dol/elba_multicast: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo multicast --feature multicast --modellogs
+#
+#.PHONY: jobd/dol/elba_pinl2mc
+#jobd/dol/elba_pinl2mc: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo multicast --feature pinl2mc --hostpin
+#
+#.PHONY: jobd/dol/elba_l4lb
+#jobd/dol/elba_l4lb: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo l4lb --feature l4lb
+#
+#.PHONY: jobd/dol/elba_dos
+#jobd/dol/elba_dos: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo dos --feature dos
+#
+#.PHONY: jobd/dol/elba_p4pt
+#jobd/dol/elba_p4pt: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --modellogs --topo p4pt --feature p4pt
+#
+#.PHONY: jobd/dol/elba_app_redir
+#jobd/dol/elba_app_redir: ${JOBD_PREREQS}
+#	${NICDIR}/tools/sw-env elba iris
+#	${NICDIR}/run.py ${COVERAGE_OPTS} --topo app_redir --feature app_redir
