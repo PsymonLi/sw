@@ -55,7 +55,8 @@ var typesMapVr_peering_group = map[string]*api.Struct{
 			"api-version":         api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
 			"dest-virtual-router": api.CLIInfo{Path: "Status.RouteTables[].Routes[].DestVirtualRouter", Skip: false, Insert: "", Help: ""},
 			"generation-id":       api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
-			"ipv4-prefix":         api.CLIInfo{Path: "Spec.Items[].IPv4Prefix", Skip: false, Insert: "", Help: ""},
+			"ipv4-prefix":         api.CLIInfo{Path: "Status.RouteTables[].Routes[].IPv4Prefix", Skip: false, Insert: "", Help: ""},
+			"ipv4-prefixes":       api.CLIInfo{Path: "Spec.Items[].IPv4Prefixes", Skip: false, Insert: "", Help: ""},
 			"kind":                api.CLIInfo{Path: "Kind", Skip: false, Insert: "", Help: ""},
 			"labels":              api.CLIInfo{Path: "Labels", Skip: false, Insert: "", Help: ""},
 			"name":                api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
@@ -107,7 +108,7 @@ var typesMapVr_peering_group = map[string]*api.Struct{
 		Fields: map[string]api.Field{
 			"VirtualRouter": api.Field{Name: "VirtualRouter", CLITag: api.CLIInfo{ID: "virtual-router", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "virtual-router", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
-			"IPv4Prefix": api.Field{Name: "IPv4Prefix", CLITag: api.CLIInfo{ID: "ipv4-prefix", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ipv4-prefix", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+			"IPv4Prefixes": api.Field{Name: "IPv4Prefixes", CLITag: api.CLIInfo{ID: "ipv4-prefixes", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ipv4-prefixes", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 }

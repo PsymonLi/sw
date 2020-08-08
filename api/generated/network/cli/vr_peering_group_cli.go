@@ -15,7 +15,7 @@ import (
 // CreateVirtualRouterPeeringGroupFlags specifies flags for VirtualRouterPeeringGroup create operation
 var CreateVirtualRouterPeeringGroupFlags = []gen.CliFlag{
 	{
-		ID:     "ipv4-prefix",
+		ID:     "ipv4-prefixes",
 		Type:   "StringSlice",
 		Help:   "",
 		Skip:   false,

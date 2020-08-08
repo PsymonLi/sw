@@ -563,9 +563,9 @@ func init() {
 
 	validatorMapVr_peering_group["VirtualRouterPeeringSpec"]["all"] = append(validatorMapVr_peering_group["VirtualRouterPeeringSpec"]["all"], func(path string, i interface{}) error {
 		m := i.(*VirtualRouterPeeringSpec)
-		for k, v := range m.IPv4Prefix {
+		for k, v := range m.IPv4Prefixes {
 			if err := validators.CIDR(v); err != nil {
-				return fmt.Errorf("%v[%v] failed validation: %s", path+"."+"IPv4Prefix", k, err.Error())
+				return fmt.Errorf("%v[%v] failed validation: %s", path+"."+"IPv4Prefixes", k, err.Error())
 			}
 		}
 

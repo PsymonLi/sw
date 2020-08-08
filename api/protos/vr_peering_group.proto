@@ -18,9 +18,9 @@ message VirtualRouterPeeringSpec {
                                            (venice.objRelation) = {Type: "NamedRef", To: "network/VirtualRouter"}];
     // List of destination prefixes located in this Virtual Router exposed as
     // reachable from any other Virtual Router participating in this peering group
-    repeated string IPv4Prefix        = 2 [(gogoproto.nullable) = false,
-                                           (gogoproto.jsontag) = "ipv4-prefix,omitempty",
-                                           (venice.check) = "CIDR()"];
+    repeated string IPv4Prefixes        = 2 [(gogoproto.nullable) = false,
+                                             (gogoproto.jsontag) = "ipv4-prefixes,omitempty",
+                                             (venice.check) = "CIDR()"];
 }
 
 message VirtualRouterPeeringGroupSpec {

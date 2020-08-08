@@ -11746,13 +11746,13 @@
     "networkVirtualRouterPeeringSpec": {
       "type": "object",
       "required": [
-        "ipv4-prefix"
+        "ipv4-prefixes"
       ],
       "properties": {
         "virtual-router": {
           "type": "string"
         },
-        "ipv4-prefix": {
+        "ipv4-prefixes": {
           "type": "array",
           "items": {
             "type": "string"

@@ -10,7 +10,7 @@ import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
 export interface INetworkVirtualRouterPeeringSpec {
     'virtual-router'?: string;
-    'ipv4-prefix': Array<string>;
+    'ipv4-prefixes': Array<string>;
     '_ui'?: any;
 }
 
@@ -20,13 +20,13 @@ export class NetworkVirtualRouterPeeringSpec extends BaseModel implements INetwo
     '_ui': any = {};
     'virtual-router': string = null;
     /** List of destination prefixes located in this Virtual Router exposed as reachable from any other Virtual Router participating in this peering group. Should be a valid v4 or v6 CIDR block. */
-    'ipv4-prefix': Array<string> = null;
+    'ipv4-prefixes': Array<string> = null;
     public static propInfo: { [prop in keyof INetworkVirtualRouterPeeringSpec]: PropInfoItem } = {
         'virtual-router': {
             required: false,
             type: 'string'
         },
-        'ipv4-prefix': {
+        'ipv4-prefixes': {
             description:  `List of destination prefixes located in this Virtual Router exposed as reachable from any other Virtual Router participating in this peering group. Should be a valid v4 or v6 CIDR block.`,
             hint:  '10.1.1.1/24, ff02::5/32 ',
             required: true,
@@ -56,7 +56,7 @@ export class NetworkVirtualRouterPeeringSpec extends BaseModel implements INetwo
     */
     constructor(values?: any, setDefaults:boolean = true) {
         super();
-        this['ipv4-prefix'] = new Array<string>();
+        this['ipv4-prefixes'] = new Array<string>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -76,12 +76,12 @@ export class NetworkVirtualRouterPeeringSpec extends BaseModel implements INetwo
         } else {
             this['virtual-router'] = null
         }
-        if (values && values['ipv4-prefix'] != null) {
-            this['ipv4-prefix'] = values['ipv4-prefix'];
-        } else if (fillDefaults && NetworkVirtualRouterPeeringSpec.hasDefaultValue('ipv4-prefix')) {
-            this['ipv4-prefix'] = [ NetworkVirtualRouterPeeringSpec.propInfo['ipv4-prefix'].default];
+        if (values && values['ipv4-prefixes'] != null) {
+            this['ipv4-prefixes'] = values['ipv4-prefixes'];
+        } else if (fillDefaults && NetworkVirtualRouterPeeringSpec.hasDefaultValue('ipv4-prefixes')) {
+            this['ipv4-prefixes'] = [ NetworkVirtualRouterPeeringSpec.propInfo['ipv4-prefixes'].default];
         } else {
-            this['ipv4-prefix'] = [];
+            this['ipv4-prefixes'] = [];
         }
         this.setFormGroupValuesToBeModelValues();
     }
@@ -91,7 +91,7 @@ export class NetworkVirtualRouterPeeringSpec extends BaseModel implements INetwo
         if (!this._formGroup) {
             this._formGroup = new FormGroup({
                 'virtual-router': CustomFormControl(new FormControl(this['virtual-router']), NetworkVirtualRouterPeeringSpec.propInfo['virtual-router']),
-                'ipv4-prefix': CustomFormControl(new FormControl(this['ipv4-prefix']), NetworkVirtualRouterPeeringSpec.propInfo['ipv4-prefix']),
+                'ipv4-prefixes': CustomFormControl(new FormControl(this['ipv4-prefixes']), NetworkVirtualRouterPeeringSpec.propInfo['ipv4-prefixes']),
             });
         }
         return this._formGroup;
@@ -104,7 +104,7 @@ export class NetworkVirtualRouterPeeringSpec extends BaseModel implements INetwo
     setFormGroupValuesToBeModelValues() {
         if (this._formGroup) {
             this._formGroup.controls['virtual-router'].setValue(this['virtual-router']);
-            this._formGroup.controls['ipv4-prefix'].setValue(this['ipv4-prefix']);
+            this._formGroup.controls['ipv4-prefixes'].setValue(this['ipv4-prefixes']);
         }
     }
 }
