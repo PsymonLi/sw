@@ -269,6 +269,34 @@ fte_get_egress_action (uint16_t vnic_id, uint8_t dir)
     return egress_action;
 }
 
+static uint16_t
+fte_get_statistics_id (uint16_t vnic_id, uint8_t dir)
+{
+    uint16_t statistics_id = 0;
+
+    if (dir == HOST_TO_SWITCH) {
+        statistics_id = g_flow_cache_policy[vnic_id].to_switch.statistics_id;
+    } else { //Asummming to Host as default
+        statistics_id = g_flow_cache_policy[vnic_id].to_host.statistics_id;
+    }
+
+    return statistics_id;
+}
+
+static uint32_t
+fte_get_statistics_mask (uint16_t vnic_id, uint8_t dir)
+{
+    uint32_t statistics_mask = 0;
+
+    if (dir == HOST_TO_SWITCH) {
+        statistics_mask = g_flow_cache_policy[vnic_id].to_switch.statistics_mask;
+    } else { //Asummming to Host as default
+        statistics_mask = g_flow_cache_policy[vnic_id].to_host.statistics_mask;
+    }
+
+    return statistics_mask;
+}
+
 sdk_ret_t
 fte_session_indexer_init (void)
 {
@@ -1110,7 +1138,11 @@ fte_session_info_create (uint32_t session_index,
                          uint32_t s2h_rewrite_id,
                          bool     skip_flow_log,
                          pds_egress_action_t  h2s_egress_action,
-                         pds_egress_action_t  s2h_egress_action)
+                         pds_egress_action_t  s2h_egress_action,
+                         uint16_t h2s_statistics_id,
+                         uint32_t h2s_statistics_mask,
+                         uint16_t s2h_statistics_id,
+                         uint32_t s2h_statistics_mask)
 {
     pds_flow_session_spec_t spec;
 
@@ -1130,6 +1162,12 @@ fte_session_info_create (uint32_t session_index,
     spec.data.switch_to_host_flow_info.allowed_flow_state_bitmask =
                                     s2h_allowed_flow_state_bitmask;
     spec.data.switch_to_host_flow_info.egress_action = s2h_egress_action;
+
+    spec.data.host_to_switch_flow_info.vnic_stats_id = h2s_statistics_id;
+    memcpy(spec.data.host_to_switch_flow_info.vnic_stats_mask, &h2s_statistics_mask, PDS_FLOW_STATS_MASK_LEN);
+
+    spec.data.switch_to_host_flow_info.vnic_stats_id = s2h_statistics_id;
+    memcpy(spec.data.switch_to_host_flow_info.vnic_stats_mask, &s2h_statistics_mask, PDS_FLOW_STATS_MASK_LEN);
 
     return (sdk_ret_t)pds_flow_session_info_create(&spec);
 }
@@ -1463,6 +1501,10 @@ fte_flow_prog (struct rte_mbuf *m, uint16_t portid)
     pds_egress_action_t s2h_egress_action = EGRESS_ACTION_TX_TO_HOST;
     uint32_t h2s_l2_bmp_posn = 0; // L2 Flows range bitmap position
     uint32_t s2h_l2_bmp_posn = 0;
+    uint16_t h2s_statistics_id = 0;
+    uint32_t h2s_statistics_mask = 0;
+    uint16_t s2h_statistics_id = 0;
+    uint32_t s2h_statistics_mask = 0;
 
     if (portid == TM_PORT_UPLINK_1) {
         flow_dir = HOST_TO_SWITCH;
@@ -1552,13 +1594,22 @@ fte_flow_prog (struct rte_mbuf *m, uint16_t portid)
     h2s_egress_action = fte_get_egress_action(vnic_id, HOST_TO_SWITCH);
     s2h_egress_action = fte_get_egress_action(vnic_id, SWITCH_TO_HOST);
 
+    h2s_statistics_id = fte_get_statistics_id(vnic_id, HOST_TO_SWITCH);
+    h2s_statistics_mask = fte_get_statistics_mask(vnic_id, HOST_TO_SWITCH);
+    s2h_statistics_id = fte_get_statistics_id(vnic_id, SWITCH_TO_HOST);
+    s2h_statistics_mask = fte_get_statistics_mask(vnic_id, SWITCH_TO_HOST);
+
     ret = fte_session_info_create(session_index, conntrack_index,
                                   h2s_flow_state_bmp,
                                   s2h_flow_state_bmp,
                                   h2s_rewrite_id, s2h_rewrite_id,
                                   skip_flow_log,
                                   h2s_egress_action,
-                                  s2h_egress_action);
+                                  s2h_egress_action,
+                                  h2s_statistics_id,
+                                  h2s_statistics_mask,
+                                  s2h_statistics_id,
+                                  s2h_statistics_mask);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_session_info_create failed. "
                         "ret: %s \n", SDK_RET_ENTRIES_str(ret));
@@ -2083,6 +2134,10 @@ fte_setup_v4_flows_json (void)
     uint32_t session_index;
     uint32_t h2s_rewrite_id;
     uint32_t s2h_rewrite_id;
+    uint16_t h2s_statistics_id = 0;
+    uint32_t h2s_statistics_mask = 0;
+    uint16_t s2h_statistics_id = 0;
+    uint32_t s2h_statistics_mask = 0;
 
     while (v4_flows_cnt < g_num_v4_flows) {
         v4_flows = &g_v4_flows[v4_flows_cnt];
@@ -2126,13 +2181,23 @@ fte_setup_v4_flows_json (void)
                                 return ret;
                             }
 
+                            h2s_statistics_id = fte_get_statistics_id(vnic_id, HOST_TO_SWITCH);
+                            h2s_statistics_mask = fte_get_statistics_mask(vnic_id, HOST_TO_SWITCH);
+                            s2h_statistics_id = fte_get_statistics_id(vnic_id, SWITCH_TO_HOST);
+                            s2h_statistics_mask = fte_get_statistics_mask(vnic_id, SWITCH_TO_HOST);
+
                             ret = fte_session_info_create(
                                     session_index,
                                     0 /* conntrack_index */,
                                     0 /* h2s_flow_state_bmp */,
                                     0 /* s2h_flow_state_bmp */,
                                     h2s_rewrite_id, s2h_rewrite_id, 0,
-                                    EGRESS_ACTION_TX_TO_SWITCH, EGRESS_ACTION_TX_TO_HOST);
+                                    EGRESS_ACTION_TX_TO_SWITCH, EGRESS_ACTION_TX_TO_HOST,
+                                    h2s_statistics_id,
+                                    h2s_statistics_mask,
+                                    s2h_statistics_id,
+                                    s2h_statistics_mask);
+
                             if (ret != SDK_RET_OK) {
                                 PDS_TRACE_DEBUG(
                                     "fte_session_info_create failed. "

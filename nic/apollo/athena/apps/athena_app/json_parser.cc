@@ -28,6 +28,50 @@ pds_flow_age_timeouts_t g_flow_age_normal_tmo;
 bool g_flow_age_accel_tmo_set;
 pds_flow_age_accel_timeouts_t g_flow_age_accel_tmo;
 
+static uint32_t
+get_statistics_mask (boost::optional<pt::ptree&> statistics_opt)
+{
+    uint32_t statistics_mask = 0;
+    boost::optional<std::string> statistics_type_vnic;
+    boost::optional<std::string> statistics_type_gw;
+    boost::optional<std::string> statistics_type_iscsi;
+
+    statistics_type_vnic = statistics_opt.get().get_optional<std::string>("statistics_type_vnic");
+    if (statistics_type_vnic) {
+        if (statistics_type_vnic.get() == "yes") {
+            statistics_mask |= STATISTICS_TYPE_VNIC;
+        } else {
+            statistics_mask &= ~STATISTICS_TYPE_VNIC;
+        }
+    } else {
+        statistics_mask &= ~STATISTICS_TYPE_VNIC;
+    }
+
+    statistics_type_gw = statistics_opt.get().get_optional<std::string>("statistics_type_gw");
+    if (statistics_type_gw) {
+        if (statistics_type_gw.get() == "yes") {
+            statistics_mask |= STATISTICS_TYPE_GW;
+        } else {
+            statistics_mask &= ~STATISTICS_TYPE_GW;
+        }
+    } else {
+        statistics_mask &= ~STATISTICS_TYPE_GW;
+    }
+
+    statistics_type_iscsi = statistics_opt.get().get_optional<std::string>("statistics_type_iscsi");
+    if (statistics_type_iscsi) {
+        if (statistics_type_iscsi.get() == "yes") {
+            statistics_mask |= STATISTICS_TYPE_ISCSI;
+        } else {
+            statistics_mask &= ~STATISTICS_TYPE_ISCSI;
+        }
+    } else {
+        statistics_mask &= ~STATISTICS_TYPE_ISCSI;
+    }
+
+    return statistics_mask;
+}
+
 static int
 str2mac(const char* mac, uint8_t *out)
 {
@@ -203,6 +247,15 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
                 policy->to_host.egress_action = EGR_ACTION_TO_HOST;
             }
 
+            boost::optional<pt::ptree&> s2h_statistics_opt = session_info_s2h.get_child_optional("statistics");
+            if (s2h_statistics_opt) {
+                policy->to_host.statistics_id = s2h_statistics_opt.get().get<uint16_t>("statistics_id");
+                policy->to_host.statistics_mask = get_statistics_mask(s2h_statistics_opt);
+            } else {
+                policy->to_host.statistics_id = STATISTICS_ID_DEFAULT;
+                policy->to_host.statistics_mask = STATISTICS_MASK_DEFAULT;
+            }
+
             pt::ptree& session_info_h2s = session.get_child("to_switch");
             policy->to_switch.tcp_flags =
                 session_info_h2s.get<uint8_t>("tcp_flags");
@@ -219,6 +272,15 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
                 }
             } else {
                 policy->to_switch.egress_action = EGR_ACTION_TO_SWITCH;
+            }
+
+            boost::optional<pt::ptree&> h2s_statistics_opt = session_info_h2s.get_child_optional("statistics");
+            if (h2s_statistics_opt) {
+                policy->to_switch.statistics_id = h2s_statistics_opt.get().get<uint16_t>("statistics_id");
+                policy->to_switch.statistics_mask = get_statistics_mask(h2s_statistics_opt);
+            } else {
+                policy->to_switch.statistics_id = STATISTICS_ID_DEFAULT;
+                policy->to_switch.statistics_mask = STATISTICS_MASK_DEFAULT;
             }
 
             pt::ptree& rewrite_underlay = vnic.second.get_child("rewrite_underlay");

@@ -29,6 +29,12 @@ namespace fte_ath {
 #define EGR_ACTION_DROP 3
 #define EGR_ACTION_DROP_BY_SL 4
 
+#define STATISTICS_ID_DEFAULT    0
+#define STATISTICS_MASK_DEFAULT  0
+#define STATISTICS_TYPE_VNIC     (1 << 0)
+#define STATISTICS_TYPE_GW       (1 << 1)
+#define STATISTICS_TYPE_ISCSI    (1 << 2)
+
 typedef struct l2_flows_range_info_s {
     uint64_t h2s_mac_lo;
     uint64_t h2s_mac_hi;
@@ -45,6 +51,8 @@ typedef struct session_info_s {
     uint64_t policer_bw1;
     uint8_t host_mac[ETH_ADDR_LEN];
     uint8_t egress_action;  
+    uint16_t statistics_id;
+    uint32_t statistics_mask;
 } session_info_t;
 
 typedef struct mplsoudp_encap_info_s {
