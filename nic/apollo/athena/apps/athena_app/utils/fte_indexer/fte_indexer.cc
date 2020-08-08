@@ -176,7 +176,7 @@ fte_indexer::init_(uint32_t size, bool thread_safe, bool skip_zero,
         if (store_) {
             pstate_name(pname);
             bits_ = (uint8_t *)store_->create_or_open_segment(pname.c_str(),
-                                                              sz, 0,
+                                                              sz,
                                                               CACHE_LINE_SIZE);
         } else {
             posix_memalign((void **)&bits_, CACHE_LINE_SIZE, sz);

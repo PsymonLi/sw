@@ -20,8 +20,7 @@ enum shm_mode_e {
 
 // segment walk callback function
 typedef void (*shmmgr_seg_walk_cb_t)(void *ctx, const char *name,
-                                     std::size_t size, void *addr,
-                                     uint16_t label);
+                                     std::size_t size, void *addr);
 
 //------------------------------------------------------------------------------
 // shmmgr is the shared memory and it expected to be instantiated once
@@ -67,7 +66,7 @@ public:
     // if size is given in the latter case, it compares the allocated and the
     // requested and returns memory only if requested size <= allocated size
     void *segment_find(const char *name, bool create, std::size_t size = 0,
-                       uint16_t label = 0, std::size_t alignment = 0);
+                       std::size_t alignment = 0);
     // get size of the named segment
     std::size_t get_segment_size(const char *name);
 

@@ -40,7 +40,7 @@ shmstore::file_init_(const char *name, size_t size, enum shm_mode_e mode) {
 
 void *
 shmstore::segment_init_(const char *name, size_t size, bool create,
-                        uint16_t label, size_t alignment) {
+                        size_t alignment) {
     void *mem;
     const char *op = create == true ? "create" : "open";
 
@@ -48,7 +48,7 @@ shmstore::segment_init_(const char *name, size_t size, bool create,
     SDK_ASSERT(shmmgr_);
     try {
         mem = (char *)shmmgr_->segment_find(name, create, create ? size : 0,
-                                            label, alignment);
+                                            alignment);
         if (!mem) {
             SDK_TRACE_ERR("Failed to %s shmstore segment %s, size %lu,"
                          " alignment %lu", op, name, size, alignment);
@@ -56,13 +56,13 @@ shmstore::segment_init_(const char *name, size_t size, bool create,
         }
     } catch (...) {
         SDK_TRACE_ERR("Failed to %s shmstore segment %s, size %lu,"
-                      " label %u, alignment %lu",
-                      op, name, size, label, alignment);
+                      " alignment %lu",
+                      op, name, size, alignment);
         return NULL;
     }
     SDK_TRACE_DEBUG("shmstore segment %s done for %s, size %lu," 
-                    " label %u, alignment %lu",
-                    op, name, size, label, alignment);
+                    " alignment %lu",
+                    op, name, size, alignment);
     return mem;
 }
 
@@ -106,9 +106,8 @@ shmstore::size(void) {
 }
 
 void *
-shmstore::create_segment(const char *name, size_t size, uint16_t label,
-                         size_t alignment) {
-    return segment_init_(name, size, true, label, alignment);
+shmstore::create_segment(const char *name, size_t size, size_t alignment) {
+    return segment_init_(name, size, true, alignment);
 }
 
 void *
@@ -117,12 +116,12 @@ shmstore::open_segment(const char *name) {
 }
 
 void *
-shmstore::create_or_open_segment(const char *name, size_t size, uint16_t label,
+shmstore::create_or_open_segment(const char *name, size_t size,
                                  size_t alignment) {
     if (mode() == sdk::lib::SHM_CREATE_ONLY) {
-        return segment_init_(name, size, true, label, alignment);
+        return segment_init_(name, size, true, alignment);
     } else {
-        return segment_init_(name, 0, false, label, alignment);
+        return segment_init_(name, 0, false, alignment);
     }
 }
 

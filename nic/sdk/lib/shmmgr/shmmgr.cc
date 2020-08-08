@@ -11,9 +11,6 @@ using namespace boost::interprocess;
 #define TO_SHM(x)          ((managed_shared_memory *)(x))
 #define TO_FILE_MAP_SHM(x) ((managed_mapped_file *)(x))
 
-// current version of shmmgr
-#define SHMMGR_VERSION (0x0101)
-
 namespace sdk {
 namespace lib {
 
@@ -24,12 +21,6 @@ public:
     uint64_t offset;
     // size of the allocated memory
     std::size_t size;
-    // shm_segment structure version
-    uint16_t version;
-    // segment label, identifies the data content
-    uint16_t label;
-    // reserved for future use
-    uint32_t rsvd[5];
 };
 
 #define SHMMGR_OP(op, res) {                                        \
@@ -304,7 +295,7 @@ shmmgr::mmgr(void) const
 
 void *
 shmmgr::segment_find(const char *name, bool create, std::size_t size,
-                     uint16_t label, std::size_t alignment) {
+                     std::size_t alignment) {
     std::pair<shm_segment*, std::size_t> res;
     shm_segment* state;
     void *addr = NULL;
@@ -337,8 +328,6 @@ shmmgr::segment_find(const char *name, bool create, std::size_t size,
                     memset(state, 0, sizeof(shm_segment));
                     state->offset = (uint64_t)state - (uint64_t)addr;
                     state->size = size;
-                    state->version  = SHMMGR_VERSION;
-                    state->label = label;
                     return addr;
                 } else {
                     SDK_TRACE_ERR("Failed to allocate memory for segment %s",
@@ -384,7 +373,7 @@ void shmmgr::iterate(T *mmgr, void *ctxt, shmmgr_seg_walk_cb_t cb) {
          curr != end ; ++curr) {
         const shm_segment *seg = (const shm_segment*)curr->value();
         void *addr = (void *)((uint64_t)seg - seg->offset);
-        cb(ctxt, curr->name(), seg->size, addr, seg->label);
+        cb(ctxt, curr->name(), seg->size, addr);
     };
 };
 
