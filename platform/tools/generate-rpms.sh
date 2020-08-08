@@ -9,11 +9,6 @@
 
 PROG=$0
 
-# check for release number on command line, else rely on env variable setting if used
-if [ -n "$1" ] ; then
-	RELEASE=$1
-fi
-
 # list of live VMs for building the RPMs
 hosts=(
 rhel73-build.pensando.io
@@ -77,7 +72,7 @@ do
 
 	# launch build on build machine
 	sshpass -p docker ssh -o StrictHostKeyChecking=no root@$vm "cd $TEMP/drivers-linux-eth ; ./build.sh" < /dev/null
-	sshpass -p docker ssh -o StrictHostKeyChecking=no root@$vm "cd $TEMP/drivers-linux-eth ; ./build-rpm.sh $RELEASE" < /dev/null
+	sshpass -p docker ssh -o StrictHostKeyChecking=no root@$vm "cd $TEMP/drivers-linux-eth ; ./build-rpm.sh" < /dev/null
 
 	# copy rpms to platform/gen
 	sshpass -p docker scp -o StrictHostKeyChecking=no root@$vm:$TEMP/drivers-linux-eth/rpmbuild/RPMS/x86_64/*.rpm $TOPDIR/platform/gen < /dev/null

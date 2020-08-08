@@ -1,11 +1,7 @@
 #!/bin/bash
 
 # determine driver version
-if [ -n "$1" ] ; then
-	VERSION=$1
-else
-	VERSION=$(cat drivers/eth/ionic/ionic.h | grep VERSION | awk '{print $3}' | sed 's/"//g')
-fi
+VERSION=$(cat drivers/eth/ionic/ionic.h | grep VERSION | awk '{print $3}' | sed 's/"//g')
 BASEVER=$(echo $VERSION | cut -d- -f1)
 RELEASE=$(echo $VERSION | cut -d- -f2- | tr - .)
 
