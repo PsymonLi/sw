@@ -284,7 +284,7 @@ def Trigger(tc):
                               resp_tcpdump_erspan, term_resp_tcpdump_erspan)
         if api.GetNodeOs(tc.naples.node_name) == "windows":
             req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-            cmd = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe Stop-Process -Name 'tcpdump' -Force"
+            cmd = api.WINDOWS_POWERSHELL_CMD + " Stop-Process -Name 'tcpdump' -Force"
             api.Trigger_AddCommand(req, tc.naples.node_name, tc.naples.workload_name, cmd, background = False)
             resp = api.Trigger(req)
 

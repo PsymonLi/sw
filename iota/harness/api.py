@@ -31,6 +31,9 @@ DEFAULT_COMMAND_TIMEOUT = 30
 HOST_NAPLES_DIR         = "/naples"
 
 NAPLES_SW_ASSET_NAME = 'released-naples-sw'
+
+WINDOWS_POWERSHELL_CMD = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+
 gl_iota_svc_channel = None
 gl_topo_svc_stub = None
 gl_cfg_svc_stub = None

@@ -64,7 +64,7 @@ def debug_dump_HostArpTable(node):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
     os = api.GetNodeOs(node)
     if os == "windows":
-        cmd = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \"Get-NetNeighbor -State Reachable, Stale, Permanent\""
+        cmd = api.WINDOWS_POWERSHELL_CMD + " \"Get-NetNeighbor -State Reachable, Stale, Permanent\""
     else:
         cmd = "arp -a"
     api.Trigger_AddHostCommand(req, node, cmd)
@@ -97,7 +97,7 @@ def GetVlanID(node, interface):
     elif os == "windows":
         intf = workload.GetNodeInterface(node)
         name = intf.WindowsIntName(interface)
-        cmd = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \"Get-NetAdapterAdvancedProperty -Name '%s' -RegistryKeyword 'VlanId' | Select-Object RegistryValue | Convertto-json\"" % name
+        cmd = "%s \"Get-NetAdapterAdvancedProperty -Name '%s' -RegistryKeyword 'VlanId' | Select-Object RegistryValue | Convertto-json\"" % (api.WINDOWS_POWERSHELL_CMD, name)
         return 0
     api.Trigger_AddHostCommand(req, node, cmd)
     resp = api.Trigger(req)
@@ -153,7 +153,7 @@ def SetMACAddress(node, interface, mac_addr):
     elif os == "windows":
         intf = workload.GetNodeInterface(node)
         name = intf.WindowsIntName(interface)
-        cmd = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \"Set-NetAdapter -Name '%s' -MacAddress '%s' -Confirm:\$false\"" % (name, mac_addr)
+        cmd = "%s \"Set-NetAdapter -Name '%s' -MacAddress '%s' -Confirm:\$false\"" % (api.WINDOWS_POWERSHELL_CMD, name, mac_addr)
     api.Trigger_AddHostCommand(req, node, cmd)
     resp = api.Trigger(req)
     return resp.commands[0]
@@ -169,7 +169,7 @@ def setInterfaceMTU(node, interface, mtu):
         intf = workload.GetNodeInterface(node)
         name = intf.WindowsIntName(interface)
         # windows mtu includes 14B ethernet header and checksum
-        cmd = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \"Set-NetAdapterAdvancedProperty -Name '%s' -RegistryKeyword *JumboPacket -RegistryValue '%s'\"" % (name, str(mtu+14))
+        cmd = "%s \"Set-NetAdapterAdvancedProperty -Name '%s' -RegistryKeyword *JumboPacket -RegistryValue '%s'\"" % (api.WINDOWS_POWERSHELL_CMD, name, str(mtu+14))
         api.Trigger_AddHostCommand(req, node, "sleep 10", timeout=300)
     else:
         assert(0)
@@ -187,7 +187,7 @@ def getInterfaceMTU(node, interface):
     elif os == "windows":
         intf = workload.GetNodeInterface(node)
         name = intf.WindowsIntName(interface)
-        cmd = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \"(Get-NetIPInterface -InterfaceAlias '%s' | Where-Object AddressFamily -eq 'IPv4' | Select-Object -Property NlMtu).NlMtu\"" % name
+        cmd = "%s \"(Get-NetIPInterface -InterfaceAlias '%s' | Where-Object AddressFamily -eq 'IPv4' | Select-Object -Property NlMtu).NlMtu\"" % (api.WINDOWS_POWERSHELL_CMD, name)
     else:
         assert(0)
     api.Trigger_AddHostCommand(req, node, cmd)
@@ -326,8 +326,7 @@ def AddStaticARP(node, interface, hostname, macaddr):
         # Got windows name - Ethernet from ethX
         winIntf = intf_list.WindowsIntName(interface)
         winMac = macaddr.replace(':', '-', 5)
-        cmd = ('/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe '
-           '  netsh interface ipv4 add neighbors \\\"%s\\\" %s  %s  ' % (winIntf, hostname, winMac))
+        cmd = ('%s  netsh interface ipv4 add neighbors \\\"%s\\\" %s  %s  ' % (api.WINDOWS_POWERSHELL_CMD, winIntf, hostname, winMac))
         api.Logger.info("win cmd: %s" %cmd)
     else:
         assert(0)
@@ -353,8 +352,7 @@ def DeleteARP(node, interface, hostname):
         intf_list = workload.GetNodeInterface(node)
         # Got windows name - Ethernet from ethX
         winIntf = intf_list.WindowsIntName(interface)
-        cmd = ('/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe '
-           ' netsh interface ipv4 delete neighbors \\\"%s\\\" %s ' % (winIntf, hostname))
+        cmd = ('%s netsh interface ipv4 delete neighbors \\\"%s\\\" %s ' % (api.WINDOWS_POWERSHELL_CMD, winIntf, hostname))
         api.Logger.info("win cmd: %s" %cmd)
     else:
         assert(0)

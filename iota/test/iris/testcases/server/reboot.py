@@ -56,7 +56,7 @@ def checkDrv(node):
     elif os == host.OS_TYPE_LINUX:
         hostCmd = "lspci  -kd 1dd8:1002 | grep ionic"
     elif os == host.OS_TYPE_WINDOWS:
-        hostCmd = '/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe Get-NetAdapter -InterfaceDescription *DSC*'
+        hostCmd = api.WINDOWS_POWERSHELL_CMD + ' Get-NetAdapter -InterfaceDescription *DSC*'
     else:
         api.Logger.error("Not supported on %s" %os)
         return api.types.status.FAILURE

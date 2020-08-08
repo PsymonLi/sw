@@ -237,8 +237,7 @@ def winIntfJson(node, intf, key):
     # Got windows name - Ethernet from ethX
     winName = intf_list.WindowsIntName(intf)
 
-    hostCmd = ("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe "
-           "\" Get-NetAdapter -name '%s' | ConvertTo-Json \"" % (winName))
+    hostCmd = ("%s \" Get-NetAdapter -name '%s' | ConvertTo-Json \"" % (api.WINDOWS_POWERSHELL_CMD, winName))
     
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
     api.Trigger_AddHostCommand(req, node, hostCmd)
@@ -290,8 +289,7 @@ def winHalIntfName(node, intf):
 
 # Use Interface GUID to get tcpdump -D index value for tcpdump -i input
 def winTcpDumpIdx(node, intfGuid):
-    hostCmd = ("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe "
-           "\" tcpdump -D | ConvertTo-Json \"")
+    hostCmd = ("%s \" tcpdump -D | ConvertTo-Json \"" % api.WINDOWS_POWERSHELL_CMD)
     
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
     api.Trigger_AddHostCommand(req, node, hostCmd)

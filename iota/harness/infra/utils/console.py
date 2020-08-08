@@ -82,7 +82,11 @@ class Console(object):
         print("%sClearing Console Server Line" % self.__log_pfx)
         hdl = self.__spawn("telnet %s -l %s" % (self.console_ip, self.console_svr_username))
         hdl.expect_exact("Password:")
-        self.__sendline_expect(self.console_svr_password, "#", hdl = hdl)
+        midx = self.__sendline_expect(self.console_svr_password, [">", "#"], hdl = hdl)
+
+        if midx == 0:
+            self.__sendline_expect("enable", "Password:", hdl = hdl)
+            self.__sendline_expect(self.console_svr_password, "#", hdl = hdl)
 
         for i in range(3):
             self.__sendline_expect("clear line %d" % (int(self.console_port) - 2000), "[confirm]", hdl = hdl)

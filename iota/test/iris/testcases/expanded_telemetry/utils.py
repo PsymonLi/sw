@@ -1178,7 +1178,7 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
             req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
             hostCmd = "cp /mnt/c/Windows/SysWOW64/*.pcap ."
             add_command(req, lif_flow_collector[c], hostCmd, False)
-            cmd = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe del ..\syswow64\*.pcap"
+            cmd = api.WINDOWS_POWERSHELL_CMD + " del ..\syswow64\*.pcap"
             add_command(req, lif_flow_collector[c], cmd, False)
             resp = api.Trigger(req)
             if resp is None:

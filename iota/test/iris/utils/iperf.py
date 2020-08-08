@@ -16,7 +16,7 @@ def ServerCmd(port = None, time=None, run_core=None, jsonOut=False, naples=False
         break
 
     if os == "windows" and not naples:
-        cmd = ["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \"iperf3.exe", "-s", "-p", str(port)]
+        cmd = [api.WINDOWS_POWERSHELL_CMD + " \"iperf3.exe", "-s", "-p", str(port)]
     else:
         cmd = ["iperf3", "-s", "-p", str(port)]
         if naples:
@@ -51,7 +51,7 @@ def ClientCmd(server_ip, port = None, time=10, pktsize=None, proto='tcp', run_co
         break
 
     if os == "windows" and not naples:
-        cmd = ["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \"iperf3.exe", "-c", str(server_ip), "-p", str(port), "-b", str(bandwidth)]
+        cmd = [api.WINDOWS_POWERSHELL_CMD + " \"iperf3.exe", "-c", str(server_ip), "-p", str(port), "-b", str(bandwidth)]
     else:
         cmd = ["iperf3", "-c", str(server_ip), "-p", str(port), "-b", str(bandwidth)]
         if naples:

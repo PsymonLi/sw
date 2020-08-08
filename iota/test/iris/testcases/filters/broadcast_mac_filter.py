@@ -127,7 +127,7 @@ def triggerArping(w1, w2, tc):
 
     #do arping
     if api.GetNodeOs(tc.naples_node) == "windows":
-        cmd_cookie = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \"arp-ping -n %d %s\"" %(arping_count, w1.ip_address)
+        cmd_cookie = "%s \"arp-ping -n %d %s\"" %(api.WINDOWS_POWERSHELL_CMD, arping_count, w1.ip_address)
     else:
         cmd_cookie = "%sarping -W 0.01 -c %d %s" %(tc.ArpingPrefix, arping_count, w1.ip_address)
     api.Trigger_AddHostCommand(tc.req, w2.node_name, cmd_cookie)
