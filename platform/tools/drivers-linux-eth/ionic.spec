@@ -26,6 +26,7 @@ License:	GPLv2
 Source0:	%{kmod_name}-%{kmod_version}.tar.gz
 Source1:	%{kmod_name}.files
 Source2:	kmod-%{kmod_name}.conf
+Source3:	%{kmod_name}.conf
 
 BuildRequires:	%{kernel_module_package_buildreqs}
 ExclusiveArch:	x86_64
@@ -50,6 +51,8 @@ sh build.sh
 %{__install} -m 755 drivers/eth/%{kmod_name}/%{kmod_name}.ko %{buildroot}/lib/modules/%{kernel_version}/extra/ionic/
 %{__install} -d %{buildroot}%{_sysconfdir}/depmod.d/
 %{__install} -m 644 kmod-%{kmod_name}.conf %{buildroot}%{_sysconfdir}/depmod.d/
+%{__install} -d %{buildroot}%{_sysconfdir}/dracut.conf.d/
+%{__install} -m 644 %{kmod_name}.conf %{buildroot}%{_sysconfdir}/dracut.conf.d/%{kmod_name}.conf
 
 %clean
 %{__rm} -rf %{buildroot}
@@ -60,11 +63,15 @@ if [ %{distro} == rhel8u0 -o %{distro} == rhel8u1 -o %{distro} == rhel8u2 ] ; th
 	echo 'SUBSYSTEM=="net", ENV{ID_VENDOR_ID}=="0x1dd8", NAME="$env{ID_NET_NAME_PATH}"' > %{udev_file}
 fi
 
+dracut --force --kver %{kernel_release}
+
 %preun
 
 %postun
 # Don't remove the udev rule we added in the broken rhel8.x so that we don't
 # lose it when the user does an "rpm -U" update.
+
+dracut --force --kver %{kernel_release}
 
 %changelog
 * Tue Jul 21 2020 Neel Patel <neel@pensando.io>

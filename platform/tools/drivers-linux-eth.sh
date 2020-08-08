@@ -35,6 +35,7 @@ mkdir -p "$GEN_DIR"
 cp   "$SCRIPTS_SRC/build.sh" "$GEN_DIR"
 cp   "$SCRIPTS_SRC/ionic.files" "$GEN_DIR"
 cp   "$SCRIPTS_SRC/kmod-ionic.conf" "$GEN_DIR"
+cp   "$SCRIPTS_SRC/ionic.conf" "$GEN_DIR"
 
 # Copy linux driver sources to gen dir
 mkdir -p "$GEN_DIR/drivers/eth/ionic"

@@ -29,9 +29,12 @@ rm -rf rpmbuild
 
 # package tarball and build rpm
 mkdir -p $RPMDIR/SOURCES
-tar czf $RPMDIR/SOURCES/ionic-$VERSION.tar.gz --exclude=build-rpm.sh --exclude=ionic.spec --transform "s,^,ionic-$BASEVER/," *
+tar czf $RPMDIR/SOURCES/ionic-$VERSION.tar.gz \
+	--exclude=build-rpm.sh --exclude=ionic.spec \
+	--transform "s,^,ionic-$BASEVER/," *
 cp ionic.files $RPMDIR/SOURCES/
 cp kmod-ionic.conf $RPMDIR/SOURCES/
+cp ionic.conf $RPMDIR/SOURCES/
 
 # define variables to pass to rpm spec
 declare -A VARS
