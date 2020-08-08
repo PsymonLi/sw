@@ -1,4 +1,3 @@
-
 //
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //
@@ -8,10 +7,11 @@
 /// This file contains the all flow session info test cases for athena
 ///
 //----------------------------------------------------------------------------
+
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/api/include/athena/pds_init.h"
-#include "nic/apollo/api/include/athena/pds_flow_session_info.h"
-#include "nic/apollo/api/impl/athena/pds_conntrack_ctx.hpp"
+#include "nic/apollo/athena/api/include/pds_init.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_info.h"
+#include "nic/apollo/athena/api/impl/pds_conntrack_ctx.hpp"
 #include "nic/apollo/athena/test/api/utils/base.hpp"
 #include "nic/apollo/athena/test/api/flow_session_info/utils.hpp"
 #include "nic/apollo/athena/test/api/include/scale.hpp"

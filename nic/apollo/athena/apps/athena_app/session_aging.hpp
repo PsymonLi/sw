@@ -12,7 +12,7 @@
 #define __TEST_ATHENA_SESSION_AGING_HPP__
 
 #include "app_test_utils.hpp"
-#include "nic/apollo/api/include/athena/pds_base.h"
+#include "nic/apollo/athena/api/include/pds_base.h"
 
 namespace test {
 namespace athena_app {

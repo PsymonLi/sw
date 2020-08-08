@@ -6,7 +6,7 @@
 #include <iostream>
 #include <getopt.h>
 #include <stdarg.h>
-#include "nic/apollo/test/api/utils/base.hpp"
+#include "nic/apollo/athena/test/api/utils/base.hpp"
 
 //----------------------------------------------------------------------------
 // API test program routines, called from main()
@@ -27,8 +27,6 @@ api_test_options_parse (int argc, char **argv)
     struct option longopts[] = {{"config", required_argument, NULL, 'c'},
                                 {"help", no_argument, NULL, 'h'},
                                 {0, 0, 0, 0}};
-
-    g_tc_params.enable_fte = false;
 
     while ((oc = getopt_long(argc, argv, ":hc:", longopts, NULL)) != -1) {
         switch (oc) {

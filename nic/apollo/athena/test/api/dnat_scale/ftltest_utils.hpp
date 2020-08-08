@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "nic/apollo/api/include/athena/pds_dnat.h"
+#include "nic/apollo/athena/api/include/pds_dnat.h"
 
 void fill_key(uint32_t index, pds_dnat_mapping_key_t *key);
 

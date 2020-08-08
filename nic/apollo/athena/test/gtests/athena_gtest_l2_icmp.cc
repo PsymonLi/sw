@@ -5,11 +5,11 @@
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
-#include "nic/apollo/api/include/athena/pds_vnic.h"
-#include "nic/apollo/api/include/athena/pds_flow_cache.h"
-#include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
-#include "nic/apollo/api/include/athena/pds_flow_session_info.h"
-#include "nic/apollo/api/include/athena//pds_flow_session_rewrite.h"
+#include "nic/apollo/athena/api/include/pds_vnic.h"
+#include "nic/apollo/athena/api/include/pds_flow_cache.h"
+#include "nic/apollo/athena/api/include/pds_l2_flow_cache.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_info.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_rewrite.h"
 
 #include "athena_gtest.hpp"
 

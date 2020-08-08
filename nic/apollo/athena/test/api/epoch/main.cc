@@ -1,4 +1,3 @@
-
 //
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //
@@ -8,8 +7,9 @@
 /// This file contains the all epoch test cases for athena
 ///
 //----------------------------------------------------------------------------
+
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/api/include/athena/pds_epoch.h"
+#include "nic/apollo/athena/api/include/pds_epoch.h"
 #include "nic/apollo/athena/test/api/utils/base.hpp"
 #include "nic/apollo/athena/test/api/epoch/utils.hpp"
 #include "nic/apollo/athena/test/api/include/scale.hpp"

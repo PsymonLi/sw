@@ -293,9 +293,10 @@ def copy_includes (dest, arch):
              "{0}/nic/sdk/include".format(dest))
     except :
          pass
-    copytree("apollo/api/impl/athena", 
-             "{0}/nic/apollo/api/impl/athena".format(dest), 
+    copytree("apollo/athena/api/impl",
+             "{0}/nic/apollo/athena/api/impl".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
+    copytree("apollo/athena/api/include", "{0}/nic/apollo/athena/api/include".format(dest))
     copytree("apollo/api/include", "{0}/nic/apollo/api/include".format(dest))
     copytree("p4/ftl_dev/include","{0}/nic/p4/ftl_dev/include".format(dest))
     copytree("p4/common","{0}/nic/p4/common".format(dest), 
@@ -310,13 +311,13 @@ def copy_includes (dest, arch):
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("apollo/include","{0}/nic/apollo/include".format(dest))
     copytree("apollo/p4/include","{0}/nic/apollo/p4/include".format(dest))
-    copytree("apollo/test/api/utils","{0}/nic/apollo/test/api/utils".format(dest), 
+    copytree("apollo/athena/test/api/utils","{0}/nic/apollo/athena/test/api/utils".format(dest), 
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("apollo/test/base", "{0}/nic/apollo/test/base".format(dest), 
+    copytree("apollo/athena/test/base", "{0}/nic/apollo/athena/test/base".format(dest), 
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("sdk/asic","{0}/nic/sdk/asic".format(dest), 
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("sdk/p4/loader","{0}/nic/sdk/p4/loader".format(dest), 
+    copytree("sdk/p4/loader","{0}/nic/sdk/p4/loader".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("sdk/linkmgr","{0}/nic/sdk/linkmgr".format(dest), 
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))

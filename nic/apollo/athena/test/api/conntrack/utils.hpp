@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "nic/apollo/api/include/athena/pds_conntrack.h"
+#include "nic/apollo/athena/api/include/pds_conntrack.h"
 
 #define MHTEST_CHECK_RETURN(_exp, _ret) if (!(_exp)) return (_ret)
 

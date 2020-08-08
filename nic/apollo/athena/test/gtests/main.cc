@@ -33,20 +33,20 @@
 #include "trace.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "gen/p4gen/p4/include/ftl_table.hpp"
-#include "nic/apollo/api/include/athena/pds_init.h"
-#include "nic/apollo/api/include/athena/pds_vnic.h"
-#include "nic/apollo/api/include/athena/pds_flow_cache.h"
-#include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
-#include "nic/apollo/api/include/athena/pds_flow_session_info.h"
-#include "nic/apollo/api/include/athena/pds_flow_session_rewrite.h"
-#include "nic/apollo/api/include/athena/pds_dnat.h"
-#include "nic/apollo/api/include/athena/pds_conntrack.h"
+#include "nic/apollo/athena/api/include/pds_init.h"
+#include "nic/apollo/athena/api/include/pds_vnic.h"
+#include "nic/apollo/athena/api/include/pds_flow_cache.h"
+#include "nic/apollo/athena/api/include/pds_l2_flow_cache.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_info.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_rewrite.h"
+#include "nic/apollo/athena/api/include/pds_dnat.h"
+#include "nic/apollo/athena/api/include/pds_conntrack.h"
 #include "athena_gtest.hpp"
 #include <boost/crc.hpp>
 
 
 #ifndef P4_14
-#include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
+#include "nic/apollo/athena/api/include/pds_l2_flow_cache.h"
 #endif
 
 #define LOG2_U32(x) (((x) == 0) ? 0 : (31 - __builtin_clz((x))))

@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "nic/apollo/api/include/athena/pds_vnic.h"
+#include "nic/apollo/athena/api/include/pds_vnic.h"
 
 #define UPDATE_DELTA 12
 

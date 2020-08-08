@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
+#include "nic/apollo/athena/api/include/pds_l2_flow_cache.h"
 
 void fill_key(uint32_t index, pds_l2_flow_key_t *key);
 

@@ -1,11 +1,13 @@
 #ifndef __ATHENA_TEST_HPP__
 #define __ATHENA_TEST_HPP__
 
-#include "nic/apollo/api/include/athena/pds_flow_cache.h"
-#include "nic/apollo/api/include/athena/pds_flow_session_rewrite.h"
-#include "nic/apollo/api/include/athena/pds_dnat.h"
-#include "nic/apollo/api/include/athena/pds_vnic.h"
-#include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
+#include "nic/sdk/include/sdk/eth.hpp"
+#include "nic/sdk/include/sdk/ip.hpp"
+#include "nic/apollo/athena/api/include/pds_flow_cache.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_rewrite.h"
+#include "nic/apollo/athena/api/include/pds_dnat.h"
+#include "nic/apollo/athena/api/include/pds_vnic.h"
+#include "nic/apollo/athena/api/include/pds_l2_flow_cache.h"
 
 extern uint32_t num_flows_added;
 extern uint32_t attempted_flows;

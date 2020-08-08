@@ -1,9 +1,10 @@
 //------------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //------------------------------------------------------------------------------
+
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
-#include "nic/apollo/api/include/athena/pds_flow_session_info.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_info.h"
 #include "nic/apollo/athena/test/api/flow_session_info/utils.hpp"
 
 #define UPDATE_DELTA 20

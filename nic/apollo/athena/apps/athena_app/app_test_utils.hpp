@@ -26,13 +26,13 @@
 #include <netinet/in.h>
 #include "nic/sdk/third-party/zmq/include/zmq.h"
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/test/api/utils/base.hpp"
-#include "nic/apollo/api/include/athena/pds_base.h"
-#include "nic/apollo/api/include/athena/pds_flow_cache.h"
+#include "nic/apollo/athena/test/api/utils/base.hpp"
+#include "nic/apollo/athena/api/include/pds_base.h"
+#include "nic/apollo/athena/api/include/pds_flow_cache.h"
 #include "script_parser.hpp"
 #include "nic/include/ftl_dev_if.hpp"
-#include "nic/apollo/api/include/athena/pds_conntrack.h"
-#include "nic/apollo/api/include/athena/pds_flow_session_info.h"
+#include "nic/apollo/athena/api/include/pds_conntrack.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_info.h"
 #include <rte_atomic.h>
 #include <rte_spinlock.h>
 

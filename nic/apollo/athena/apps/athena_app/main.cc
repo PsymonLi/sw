@@ -26,7 +26,7 @@
 #include "nic/apollo/athena/agent/trace.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/include/pds_device.hpp"
-#include "nic/apollo/api/include/athena/pds_init.h"
+#include "nic/apollo/athena/api/include/pds_init.h"
 #include "nic/sdk/model_sim/include/lib_model_client.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>

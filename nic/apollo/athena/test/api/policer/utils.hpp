@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "nic/apollo/api/include/athena/pds_policer.h"
-#include "nic/apollo/api/impl/athena/pds_policer_impl.hpp"
+#include "nic/apollo/athena/api/include/pds_policer.h"
+#include "nic/apollo/athena/api/impl/pds_policer_impl.hpp"
 
 #define MHTEST_CHECK_RETURN(_exp, _ret) if (!(_exp)) return (_ret)
 

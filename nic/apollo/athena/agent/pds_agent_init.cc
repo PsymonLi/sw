@@ -16,7 +16,7 @@
 #include "nic/apollo/agent/core/core.hpp"
 #include "nic/apollo/agent/core/state.hpp"
 #include "nic/apollo/athena/agent/grpc_thread.hpp"
-#include "nic/apollo/api/include/athena/pds_base.h"
+#include "nic/apollo/athena/api/include/pds_base.h"
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"

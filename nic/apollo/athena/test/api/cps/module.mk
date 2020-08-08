@@ -3,7 +3,7 @@
 include ${MKDEFS}/pre.mk
 MODULE_TARGET   = athena_cps
 MODULE_PIPELINE = athena
-MODULE_INCS     = $(TOPDIR)/nic/apollo/api/include/athena
+MODULE_INCS     = $(TOPDIR)/nic/apollo/athena/api/include
 MODULE_LDFLAGS  = -L$(MS_LIB_DIR)
 MODULE_SOLIBS   = pal pdsframework pdscore pdslearn pdsapi_athena pdsapi_athena_impl \
                   thread trace logger pdsapi_athena memhash sltcam \

@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "nic/apollo/api/include/athena/pds_flow_session_info.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_info.h"
 
 #define CREATE    (0)
 #define UPDATE    (1)

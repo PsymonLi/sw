@@ -7,13 +7,14 @@
 /// This file contains all conntrack aging test cases for athena
 ///
 //----------------------------------------------------------------------------
+
 #include "conntrack_aging.hpp"
 #include "session_aging.hpp"
 #include "athena_test.hpp"
-#include "nic/apollo/api/include/athena/pds_conntrack.h"
-#include "nic/apollo/api/include/athena/pds_flow_age.h"
-#include "nic/apollo/api/impl/athena/ftl_pollers_client.hpp"
-#include "nic/apollo/api/impl/athena/pds_conntrack_ctx.hpp"
+#include "nic/apollo/athena/api/include/pds_conntrack.h"
+#include "nic/apollo/athena/api/include/pds_flow_age.h"
+#include "nic/apollo/athena/api/impl/ftl_pollers_client.hpp"
+#include "nic/apollo/athena/api/impl/pds_conntrack_ctx.hpp"
 #include "nic/apollo/p4/include/athena_defines.h"
 #include "nic/apollo/core/trace.hpp"
 #include "fte_athena.hpp"

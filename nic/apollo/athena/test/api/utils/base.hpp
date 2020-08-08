@@ -14,6 +14,9 @@
 #include <gtest/gtest.h>
 #include "nic/apollo/athena/test/base/base.hpp"
 
+// globals
+extern test_case_params_t g_tc_params;
+
 // function prototypes
 int api_test_program_run(int argc, char **argv);
 

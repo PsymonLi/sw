@@ -10,7 +10,7 @@
 
 #include <time.h>
 #include "app_test_utils.hpp"
-#include "nic/apollo/api/impl/athena/ftl_pollers_client.hpp"
+#include "nic/apollo/athena/api/impl/ftl_pollers_client.hpp"
 #include "nic/sdk/model_sim/include/lib_model_client.h"
 #include "nic/p4/ftl_dev/include/ftl_dev_shared.h"
 #include "nic/apollo/core/trace.hpp"

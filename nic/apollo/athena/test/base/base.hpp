@@ -12,6 +12,40 @@
 #define __ATHENA_TEST_BASE_HPP__
 
 #include <gtest/gtest.h>
+#include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/logger/logger.hpp"
+
+// globals
+static const std::string k_sim_arch = "x86";
+static const std::string k_hw_arch = "arm";
+
+// Returns target arch string
+static inline std::string
+aarch_get (void)
+{
+#ifdef __x86_64__
+    return k_sim_arch;
+#elif __aarch64__
+    return k_hw_arch;
+#else
+    SDK_ASSERT(0);
+    return NULL;
+#endif
+}
+
+// Returns true on hw
+static inline bool
+hw (void)
+{
+    return (aarch_get() == k_hw_arch);
+}
+
+// test case parameters
+typedef struct test_case_params_t_ {
+    const char      *cfg_file;        ///< config file
+    std::string     profile;          ///< config profile
+    std::string     oper_mode;        ///< operational mode of the device
+} test_case_params_t;
 
 // base class for all gtests.
 // implements init and teardown routines common to all test cases

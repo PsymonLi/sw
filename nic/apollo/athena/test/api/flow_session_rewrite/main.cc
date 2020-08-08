@@ -1,4 +1,3 @@
-
 //
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //
@@ -8,8 +7,9 @@
 /// This file contains the all flow session rewrite test cases for athena
 ///
 //----------------------------------------------------------------------------
+
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/api/include/athena/pds_flow_session_rewrite.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_rewrite.h"
 #include "nic/apollo/athena/test/api/utils/base.hpp"
 #include "nic/apollo/athena/test/api/include/scale.hpp"
 #include "nic/apollo/athena/test/api/flow_session_rewrite/utils.hpp"

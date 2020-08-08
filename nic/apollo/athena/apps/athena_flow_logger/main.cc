@@ -17,7 +17,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/apollo/athena/agent/trace.hpp"
-#include "nic/apollo/api/include/athena/pds_init.h"
+#include "nic/apollo/athena/api/include/pds_init.h"
 #include "fte_athena_flow_log.hpp"
 
 namespace core {

@@ -5,7 +5,7 @@
 #ifndef __PDSCTL_PDS_AGENT_INIT_H__
 #define __PDSCTL_PDS_AGENT_INIT_H__
 
-#include "nic/apollo/api/include/athena/pds_base.h"
+#include "nic/apollo/athena/api/include/pds_base.h"
 
 #ifdef __cplusplus
 extern "C" {

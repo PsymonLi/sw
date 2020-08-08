@@ -6,10 +6,15 @@
 # If there are both src and dst on the line, the dst sub directory is not the same as src
 # If dst ends with /, means copy into that directory
 # Line starts with ! means all file/dir name contain that text will be deleted
+
 /sw/nic/apollo/athena/agent
-/sw/nic/apollo/athena/tools
+/sw/nic/apollo/athena/api
+/sw/nic/apollo/athena/api/impl
 /sw/nic/apollo/athena/apps/athena_app
 -/sw/nic/apollo/athena/apps/athena_app/Makefile
+/sw/nic/apollo/athena/test/api/utils/base.hpp
+/sw/nic/apollo/athena/test/base/base.hpp
+/sw/nic/apollo/athena/tools
 #/sw/nic/apollo/agent/cli
 /sw/nic/apollo/agent/core
 /sw/nic/apollo/agent/protos
@@ -36,9 +41,6 @@
 /sw/nic/apollo/p4/athena_txdma
 /sw/nic/apollo/p4/include
 /sw/nic/apollo/pciemgr
-/sw/nic/apollo/test/api/utils/base.hpp
-/sw/nic/apollo/test/base/utils.hpp
-/sw/nic/apollo/test/base/base.hpp
 /sw/nic/apollo/tools/run_cron.sh
 /sw/nic/apollo/tools/setup_env_hw.sh
 /sw/nic/tools/start-nmd.sh

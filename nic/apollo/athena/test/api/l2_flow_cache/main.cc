@@ -9,8 +9,8 @@
 ///
 //----------------------------------------------------------------------------
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/api/include/athena/pds_init.h"
-#include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
+#include "nic/apollo/athena/api/include/pds_init.h"
+#include "nic/apollo/athena/api/include/pds_l2_flow_cache.h"
 #include "nic/apollo/athena/test/api/utils/base.hpp"
 #include "ftl_p4pd_mock.hpp"
 #include "ftltest_utils.hpp"

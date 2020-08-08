@@ -1,7 +1,7 @@
 #ifndef __ATHENA_GTEST_HPP__
 #define __ATHENA_GTEST_HPP__
 
-#include "nic/apollo/api/include/athena/pds_conntrack.h"
+#include "nic/apollo/athena/api/include/pds_conntrack.h"
 
 #define VNIC_ID_UDP         0x0001
 #define VNIC_ID_TCP         0x0002

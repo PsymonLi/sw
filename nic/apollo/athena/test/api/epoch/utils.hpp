@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "nic/apollo/api/include/athena/pds_epoch.h"
+#include "nic/apollo/athena/api/include/pds_epoch.h"
 
 #define MHTEST_CHECK_RETURN(_exp, _ret) if (!(_exp)) return (_ret)
 

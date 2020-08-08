@@ -1,4 +1,3 @@
-
 //
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
@@ -8,9 +7,10 @@
 /// This file contains all session aging test cases for athena
 ///
 //----------------------------------------------------------------------------
+
 #include <cstring>
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
-#include "nic/apollo/api/include/athena/pds_flow_log.h"
+#include "nic/apollo/athena/api/include/pds_flow_log.h"
 
 namespace event = sdk::event_thread;
 

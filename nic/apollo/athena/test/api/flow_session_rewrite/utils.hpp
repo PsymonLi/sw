@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cinttypes>
-#include "nic/apollo/api/include/athena/pds_flow_session_rewrite.h"
+#include "nic/apollo/athena/api/include/pds_flow_session_rewrite.h"
 
 void fill_data(pds_flow_session_rewrite_data_t *data, uint32_t index,
                pds_flow_session_rewrite_nat_type_t nat_type,

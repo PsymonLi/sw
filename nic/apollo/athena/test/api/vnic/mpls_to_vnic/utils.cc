@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
-#include "nic/apollo/api/include/athena/pds_vnic.h"
+#include "nic/apollo/athena/api/include/pds_vnic.h"
 #include "nic/apollo/athena/test/api/vnic/mpls_to_vnic/utils.hpp"
 
 void

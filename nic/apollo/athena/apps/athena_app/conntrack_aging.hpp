@@ -12,7 +12,7 @@
 #define __TEST_ATHENA_CONNTRACK_AGING_HPP__
 
 #include "app_test_utils.hpp"
-#include "nic/apollo/api/include/athena/pds_conntrack.h"
+#include "nic/apollo/athena/api/include/pds_conntrack.h"
 
 namespace test {
 namespace athena_app {

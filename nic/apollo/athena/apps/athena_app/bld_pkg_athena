@@ -106,10 +106,10 @@ def copy_includes (dest, arch):
              "{0}/nic/sdk/include".format(dest))
     except :
          pass
-    copytree("apollo/api/impl/athena", 
-             "{0}/nic/apollo/api/impl/athena".format(dest), 
+    copytree("apollo/athena/api/impl", 
+             "{0}/nic/apollo/athena/api/impl".format(dest), 
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("apollo/api/include", "{0}/nic/apollo/api/include".format(dest))
+    copytree("apollo/api/athena/include", "{0}/nic/apollo/athena/api/include".format(dest))
     copytree("p4/ftl_dev/include","{0}/nic/p4/ftl_dev/include".format(dest))
     copytree("p4/common","{0}/nic/p4/common".format(dest), 
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
@@ -194,7 +194,7 @@ def copy_includes (dest, arch):
                     "nic/sdk/third-party/googletest-release-1.8.0/googletest/make/gtest.a",
                     "nic/build/{0}/athena/{1}/gen/proto/gogo.pb.h".format(arch, asic),
                     "nic/sdk/third-party/libev/include/ev.h",
-                    "nic/apollo/api/include/athena/pds_epoch.h"]
+                    "nic/apollo/athena/api/include/pds_epoch.h"]
     for fp in static_files:
         idx = fp.rfind("/")
         src_dir = "{0}/{1}".format(dest, fp[:idx])

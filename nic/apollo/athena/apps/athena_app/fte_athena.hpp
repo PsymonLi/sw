@@ -12,9 +12,9 @@
 #define __FTE_FTE_HPP__
 
 #include "nic/sdk/third-party/zmq/include/zmq.h"
-#include "nic/apollo/api/include/athena/pds_base.h"
-#include "nic/apollo/api/include/athena/pds_init.h"
-#include "nic/apollo/api/include/athena/pds_flow_age.h"
+#include "nic/apollo/athena/api/include/pds_base.h"
+#include "nic/apollo/athena/api/include/pds_init.h"
+#include "nic/apollo/athena/api/include/pds_flow_age.h"
 
 #include <rte_version.h>
 

@@ -517,15 +517,7 @@ dependencies:
     # - reference: nic/apollo/tools/athena/sanity/customer-docker
   nic/apollo/p4/athena_p4-16:
     - reference: iota/test/standalone/precheckin/athena
-  nic/apollo/athena/apps/athena_app:
-    - reference: iota/test/standalone/precheckin/athena
-  nic/apollo/test/athena:
-    - reference: iota/test/standalone/precheckin/athena
-  nic/apollo/api/include/athena:
-    - reference: iota/test/standalone/precheckin/athena
-  nic/apollo/agent/athena:
-    - reference: iota/test/standalone/precheckin/athena
-  nic/apollo/agent/cli:
+  nic/apollo/athena:
     - reference: iota/test/standalone/precheckin/athena
   nic/agent:
     - reference: iota/test/venice
