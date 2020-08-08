@@ -41,6 +41,7 @@ enum {
     PDS_TIMER_ID_SESSION_AGE  = 1,
     PDS_TIMER_ID_SYSTEM_SCAN  = 2,
     PDS_TIMER_ID_INTR_SCAN    = 3,
+    PDS_TIMER_ID_IF_STATS     = 4,
 };
 
 sdk_ret_t spawn_periodic_thread(pds_state *state);

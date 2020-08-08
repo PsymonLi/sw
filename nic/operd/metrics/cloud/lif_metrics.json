@@ -284,8 +284,8 @@
         },
         {
           "Name": "Tx descriptor fetch errors",
-          "DisplayName": "Tx descriptor data fetch errors",
-          "Description": "Tx descriptor data fetch errors",
+          "DisplayName": "Tx descriptor fetch errors",
+          "Description": "Tx descriptor fetch errors",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -541,42 +541,58 @@
         {
           "Name": "RESERVED",
           "DisplayName": "-",
-          "Description": "-"
+          "Description": "Tx frames old",
+          "Units": "Count",
+          "BaseType": "Counter"
         },
         {
           "Name": "RESERVED",
           "DisplayName": "-",
-          "Description": "-"
+          "Description": "Tx octets old",
+          "Units": "Count",
+          "BaseType": "Counter"
         },
         {
           "Name": "RESERVED",
           "DisplayName": "-",
-          "Description": "-"
+          "Description": "Rx frames old",
+          "Units": "Count",
+          "BaseType": "Counter"
         },
         {
           "Name": "RESERVED",
           "DisplayName": "-",
-          "Description": "-"
+          "Description": "Rx octets old",
+          "Units": "Count",
+          "BaseType": "Counter"
         },
         {
           "Name": "RESERVED",
           "DisplayName": "-",
-          "Description": "-"
+          "Description": "Tx frames per second",
+          "Units": "Count",
+          "BaseType": "Counter"
         },
         {
           "Name": "RESERVED",
           "DisplayName": "-",
-          "Description": "-"
+          "Description": "Tx octets per second",
+          "Units": "Count",
+          "BaseType": "Counter"
         },
         {
           "Name": "RESERVED",
           "DisplayName": "-",
-          "Description": "-"
+          "Description": "Rx frames per second",
+          "Units": "Count",
+          "BaseType": "Counter"
         },
         {
           "Name": "RESERVED",
           "DisplayName": "-",
-          "Description": "-"
+          "Description": "Rx octets per second",
+          "Units": "Count",
+          "BaseType": "Counter"
         },
         {
           "Name": "Frames Rx RDMA request sequence errors",

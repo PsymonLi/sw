@@ -35,7 +35,9 @@ service DebugSvc {
   rpc StopAacsServer (types.Empty) returns (types.Empty) {}
   rpc InternalPortGet (InternalPortRequestMsg) returns (InternalPortResponseMsg) {}
   rpc FlowStatsSummaryGet (types.Empty) returns (FlowStatsSummaryResponse) {}
-  rpc DataPathAssistStatsGet(types.Empty) returns (DataPathAssistStatsResponse) {}
+  rpc DataPathAssistStatsGet (types.Empty) returns (DataPathAssistStatsResponse) {}
+  rpc InterfacePpsTrackingEnable (types.Empty) returns (types.Empty) {}
+  rpc InterfacePpsTrackingDisable (types.Empty) returns (types.Empty) {}
 }
 
 enum TraceLevel {
@@ -428,6 +430,7 @@ enum Command {
   CMD_NACL_DUMP             = 8;
   CMD_PORT_FSM_DUMP         = 9;
   CMD_NAT_GLOBAL_STATS      = 10;
+  CMD_LIF_STATS_DUMP        = 11;
 }
 
 message CommandMessage {

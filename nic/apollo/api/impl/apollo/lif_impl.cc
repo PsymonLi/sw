@@ -381,6 +381,15 @@ lif_impl::reset_stats(void) {
     return SDK_RET_ERR;
 }
 
+sdk_ret_t
+lif_impl::track_pps(uint32_t interval) {
+    return SDK_RET_ERR;
+}
+
+void
+lif_impl::dump_stats(uint32_t fd) {
+}
+
 /// \@}
 
 }    // namespace impl

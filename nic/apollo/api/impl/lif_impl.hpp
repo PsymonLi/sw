@@ -23,6 +23,156 @@
 namespace api {
 namespace impl {
 
+#define PDS_LIF_IMPL_COUNTER_SIZE   sizeof(uint64_t)
+#define PDS_LIF_IMPL_NUM_PPS_STATS  8
+
+typedef struct lif_metrics_s {
+    /* RX */
+    uint64_t rx_ucast_bytes;
+    uint64_t rx_ucast_packets;
+    uint64_t rx_mcast_bytes;
+    uint64_t rx_mcast_packets;
+    uint64_t rx_bcast_bytes;
+    uint64_t rx_bcast_packets;
+    uint64_t rsvd0;
+    uint64_t rsvd1;
+    /* RX drops */
+    uint64_t rx_ucast_drop_bytes;
+    uint64_t rx_ucast_drop_packets;
+    uint64_t rx_mcast_drop_bytes;
+    uint64_t rx_mcast_drop_packets;
+    uint64_t rx_bcast_drop_bytes;
+    uint64_t rx_bcast_drop_packets;
+    uint64_t rx_dma_error;
+    uint64_t rsvd2;
+    /* TX */
+    uint64_t tx_ucast_bytes;
+    uint64_t tx_ucast_packets;
+    uint64_t tx_mcast_bytes;
+    uint64_t tx_mcast_packets;
+    uint64_t tx_bcast_bytes;
+    uint64_t tx_bcast_packets;
+    uint64_t rsvd3;
+    uint64_t rsvd4;
+    /* TX drops */
+    uint64_t tx_ucast_drop_bytes;
+    uint64_t tx_ucast_drop_packets;
+    uint64_t tx_mcast_drop_bytes;
+    uint64_t tx_mcast_drop_packets;
+    uint64_t tx_bcast_drop_bytes;
+    uint64_t tx_bcast_drop_packets;
+    uint64_t tx_dma_error;
+    uint64_t rsvd5;
+    /* Rx Queue/Ring drops */
+    uint64_t rx_queue_disabled;
+    uint64_t rx_queue_empty;
+    uint64_t rx_queue_error;
+    uint64_t rx_desc_fetch_error;
+    uint64_t rx_desc_data_error;
+    uint64_t rsvd6;
+    uint64_t rsvd7;
+    uint64_t rsvd8;
+    /* Tx Queue/Ring drops */
+    uint64_t tx_queue_disabled;
+    uint64_t tx_queue_error;
+    uint64_t tx_desc_fetch_error;
+    uint64_t tx_desc_data_error;
+    uint64_t tx_queue_empty;
+    uint64_t rsvd10;
+    uint64_t rsvd11;
+    uint64_t rsvd12;
+    /* RDMA/ROCE TX */
+    uint64_t tx_rdma_ucast_bytes;
+    uint64_t tx_rdma_ucast_packets;
+    uint64_t tx_rdma_mcast_bytes;
+    uint64_t tx_rdma_mcast_packets;
+    uint64_t tx_rdma_cnp_packets;
+    uint64_t rsvd13;
+    uint64_t rsvd14;
+    uint64_t rsvd15;
+    /* RDMA/ROCE RX */
+    uint64_t rx_rdma_ucast_bytes;
+    uint64_t rx_rdma_ucast_packets;
+    uint64_t rx_rdma_mcast_bytes;
+    uint64_t rx_rdma_mcast_packets;
+    uint64_t rx_rdma_cnp_packets;
+    uint64_t rx_rdma_ecn_packets;
+    uint64_t rsvd16;
+    uint64_t rsvd17;
+    uint64_t rsvd18;
+    uint64_t rsvd19;
+    uint64_t rsvd20;
+    uint64_t rsvd21;
+    uint64_t rsvd22;
+    uint64_t rsvd23;
+    uint64_t rsvd24;
+    uint64_t rsvd25;
+    uint64_t rsvd26;
+    uint64_t rsvd27;
+    uint64_t rsvd28;
+    uint64_t rsvd29;
+    uint64_t rsvd30;
+    uint64_t rsvd31;
+    uint64_t rsvd32;
+    uint64_t rsvd33;
+    uint64_t rsvd34;
+    uint64_t rsvd35;
+    uint64_t rsvd36;
+    uint64_t rsvd37;
+    uint64_t rsvd38;
+    uint64_t rsvd39;
+    uint64_t rsvd40;
+    uint64_t rsvd41;
+    uint64_t tx_pkts;
+    uint64_t tx_bytes;
+    uint64_t rx_pkts;
+    uint64_t rx_bytes;
+    uint64_t tx_pps;
+    uint64_t tx_bytesps;
+    uint64_t rx_pps;
+    uint64_t rx_bytesps;
+    /* RDMA/ROCE REQ Error/Debugs (768 - 895) */
+    uint64_t rdma_req_rx_pkt_seq_err;
+    uint64_t rdma_req_rx_rnr_retry_err;
+    uint64_t rdma_req_rx_remote_access_err;
+    uint64_t rdma_req_rx_remote_inv_req_err;
+    uint64_t rdma_req_rx_remote_oper_err;
+    uint64_t rdma_req_rx_implied_nak_seq_err;
+    uint64_t rdma_req_rx_cqe_err;
+    uint64_t rdma_req_rx_cqe_flush_err;
+    uint64_t rdma_req_rx_dup_responses;
+    uint64_t rdma_req_rx_invalid_packets;
+    uint64_t rdma_req_tx_local_access_err;
+    uint64_t rdma_req_tx_local_oper_err;
+    uint64_t rdma_req_tx_memory_mgmt_err;
+    uint64_t rsvd42;
+    uint64_t rsvd43;
+    uint64_t rsvd44;
+    /* RDMA/ROCE RESP Error/Debugs (896 - 1023) */
+    uint64_t rdma_resp_rx_dup_requests;
+    uint64_t rdma_resp_rx_out_of_buffer;
+    uint64_t rdma_resp_rx_out_of_seq_pkts;
+    uint64_t rdma_resp_rx_cqe_err;
+    uint64_t rdma_resp_rx_cqe_flush_err;
+    uint64_t rdma_resp_rx_local_len_err;
+    uint64_t rdma_resp_rx_inv_request_err;
+    uint64_t rdma_resp_rx_local_qp_oper_err;
+    uint64_t rdma_resp_rx_out_of_atomic_resource;
+    uint64_t rdma_resp_tx_pkt_seq_err;
+    uint64_t rdma_resp_tx_remote_inv_req_err;
+    uint64_t rdma_resp_tx_remote_access_err;
+    uint64_t rdma_resp_tx_remote_oper_err;
+    uint64_t rdma_resp_tx_rnr_retry_err;
+    uint64_t rsvd45;
+    uint64_t rsvd46;
+} lif_metrics_t;
+
+#define RATE_OF_X(x, curr_x, interval)                              \
+    ((x == curr_x) ? 0 :                                            \
+                     (((curr_x > x) ? (curr_x - x) :                \
+                                      ((UINT64_MAX-x) + curr_x)) /  \
+                                          interval))
+
 // forward declaration
 class lif_impl_state;
 
@@ -178,7 +328,7 @@ public:
     bool create_done(void) const { return create_done_; }
 
     /// \brief    retrieve tx scheduler offset and number of entries from this lif
-    /// \retrun   true if it is valid, false otherwise
+    /// \return   true if it is valid, false otherwise
     bool tx_sched_info(uint32_t *offset, uint32_t *num_entries) {
         if (tx_sched_offset_ == INVALID_INDEXER_INDEX) {
             return false;
@@ -191,6 +341,15 @@ public:
     /// \brief      reset all the statistics associated with the lif
     /// \return     SDK_RET_OK on success, failure status code on error
     sdk_ret_t reset_stats(void);
+
+    /// \brief      track pps for lif
+    /// \param[in]  interval    sampling interval in secs
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t track_pps(uint32_t interval);
+
+    /// \brief      dump all the statistics associated with the lif
+    /// \param[in]  fd  file descriptor to which output is dumped
+    void dump_stats(uint32_t fd);
 
 private:
     ///< constructor

@@ -455,3 +455,17 @@ DebugSvcImpl::DataPathAssistStatsGet(ServerContext *context,
     }
     return Status::OK;
 }
+
+Status
+DebugSvcImpl::InterfacePpsTrackingEnable(ServerContext *context, const Empty *req,
+                                         Empty *rsp) {
+    debug::pds_if_pps_tracking_enable();
+    return Status::OK;
+}
+
+Status
+DebugSvcImpl::InterfacePpsTrackingDisable(ServerContext *context, const Empty *req,
+                                          Empty *rsp) {
+    debug::pds_if_pps_tracking_disable();
+    return Status::OK;
+}

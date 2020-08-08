@@ -19,6 +19,7 @@
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/api/utils.hpp"
+#include "nic/apollo/api/impl/lif_impl.hpp"
 
 using sdk::utils::in_mem_fsm_logger;
 using sdk::utils::record_t;
@@ -190,6 +191,30 @@ dump_port_fsm_cb (void *entry, void *ctxt)
     dump_port_fsm(info, fd);
 }
 
+static bool
+dump_lif_stats_cb (void *entry, void *ctxt)
+{
+    api::impl::lif_impl *lif = (api::impl::lif_impl *)entry;
+
+    PDS_TRACE_VERBOSE("Interface pps tracking callback called");
+    lif->dump_stats(((cmd_ctxt_t *)ctxt)->io_fd);
+    // continue the walk
+    return false;
+}
+
+sdk_ret_t
+dump_lif_stats (cmd_ctxt_t *ctxt)
+{
+    if (ctxt->args.valid) {
+        api::impl::lif_impl *lif = (api::impl::lif_impl *)
+                                       lif_db()->find(&ctxt->args.obj_key);
+        lif->dump_stats(ctxt->io_fd);
+    } else {
+        lif_db()->walk(dump_lif_stats_cb, ctxt);
+    }
+    return SDK_RET_OK;
+}
+
 /**
  * @brief       Handles command based on ctxt
  * @param[in]   ctxt  Context for CLI handler
@@ -222,13 +247,16 @@ pds_handle_cmd (cmd_ctxt_t *ctxt)
         break;
     case CMD_MSG_PORT_FSM_DUMP:
         if (ctxt->args.valid == true) {
-            ret = api::port_get(&ctxt->args.port_id, &info);
+            ret = api::port_get(&ctxt->args.obj_key, &info);
             if (ret == SDK_RET_OK) {
                 dump_port_fsm(&info, ctxt->io_fd);
             }
         } else {
             ret = api::port_get_all(dump_port_fsm_cb, (void *)&ctxt->io_fd);
         }
+        break;
+    case CMD_MSG_LIF_STATS_DUMP:
+        ret = dump_lif_stats(ctxt);
         break;
     default:
         ret = SDK_RET_INVALID_ARG;

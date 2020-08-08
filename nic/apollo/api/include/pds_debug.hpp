@@ -112,8 +112,8 @@ typedef struct cmd_args_s {
     bool valid;
     union {
         mapping_dump_args_t mapping_dump;
-        pds_obj_key_t port_id;
-        flow_dump_args_t flow_dump;
+        pds_obj_key_t       obj_key;
+        flow_dump_args_t    flow_dump;
     };
 } cmd_args_t;
 
@@ -129,6 +129,7 @@ typedef enum cmd_msg_e {
     CMD_MSG_PORT_FSM_DUMP,
     CMD_MSG_NAT_FLOW_DUMP,
     CMD_MSG_NAT_GLOBAL_STATS,
+    CMD_MSG_LIF_STATS_DUMP,
 } cmd_msg_t;
 
 typedef struct cmd_ctxt_s {

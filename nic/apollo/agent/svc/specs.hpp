@@ -455,6 +455,8 @@ pds_proto_cmd_to_api_cmd (pds::Command proto_cmd)
         return CMD_MSG_NAT_FLOW_DUMP;
     case pds::CMD_NAT_GLOBAL_STATS:
         return CMD_MSG_NAT_GLOBAL_STATS;
+    case pds::CMD_LIF_STATS_DUMP:
+        return CMD_MSG_LIF_STATS_DUMP;
     default:
         return CMD_MSG_NONE;
     }
@@ -626,8 +628,8 @@ pds_cmd_proto_to_cmd_ctxt (cmd_ctxt_t *cmd_ctxt,
                 }
             } else if (!cmd_msg.compare("pds.CommandUUID")) {
                 any_msg->UnpackTo(&uuid);
-                pds_obj_key_proto_to_api_spec(&cmd_ctxt->args.port_id, uuid.id());
-                if (cmd_ctxt->args.port_id == k_pds_obj_key_invalid) {
+                pds_obj_key_proto_to_api_spec(&cmd_ctxt->args.obj_key, uuid.id());
+                if (cmd_ctxt->args.obj_key == k_pds_obj_key_invalid) {
                     cmd_ctxt->args.valid = false;
                 } else {
                     cmd_ctxt->args.valid = true;

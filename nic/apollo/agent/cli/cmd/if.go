@@ -26,10 +26,11 @@ const (
 )
 
 var (
-	lifID       string
-	ifID        string
-	ifType      string
-	txPolicerID string
+	lifID               string
+	ifID                string
+	ifType              string
+	txPolicerID         string
+	ifPpsTrackingAction string
 )
 
 var lifShowCmd = &cobra.Command{
@@ -37,6 +38,13 @@ var lifShowCmd = &cobra.Command{
 	Short: "show lif information",
 	Long:  "show lif object information",
 	Run:   lifShowCmdHandler,
+}
+
+var lifStatsShowCmd = &cobra.Command{
+	Use:   "statistics",
+	Short: "show lif statistics",
+	Long:  "show lif object information",
+	Run:   lifStatsShowCmdHandler,
 }
 
 var ifShowCmd = &cobra.Command{
@@ -94,6 +102,19 @@ var ifUpdateCmd = &cobra.Command{
 	Run:   ifUpdateCmdHandler,
 }
 
+var ifDebugCmd = &cobra.Command{
+	Use:   "interface",
+	Short: "interface debug commands",
+	Long:  "interface debug commands",
+}
+
+var ifPpsTrackingCmd = &cobra.Command{
+	Use:   "pps-tracking",
+	Short: "interface PPS tracking",
+	Long:  "interface PPS tracking",
+	Run:   ifPpsTrackingCmdHandler,
+}
+
 func init() {
 	showCmd.AddCommand(lifShowCmd)
 	showCmd.AddCommand(ifShowCmd)
@@ -106,6 +127,9 @@ func init() {
 	lifShowCmd.Flags().StringVar(&lifID, "id", "", "Specify Lif ID")
 	lifShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	lifShowCmd.Flags().Bool("summary", false, "Display number of objects")
+
+	lifShowCmd.AddCommand(lifStatsShowCmd)
+	lifStatsShowCmd.Flags().StringVar(&lifID, "id", "", "Specify Lif ID")
 
 	ifShowCmd.Flags().StringVar(&ifType, "type", "", "Specify interface type (uplink, control, host, l3)")
 	ifShowCmd.Flags().StringVar(&ifID, "id", "", "Specify interface ID")
@@ -121,6 +145,47 @@ func init() {
 	ifUpdateCmd.Flags().StringVar(&txPolicerID, "tx-policer", "", "Specify tx policer ID")
 	ifUpdateCmd.MarkFlagRequired("id")
 	ifUpdateCmd.MarkFlagRequired("tx-policer")
+
+	debugCmd.AddCommand(ifDebugCmd)
+	ifDebugCmd.AddCommand(ifPpsTrackingCmd)
+	ifPpsTrackingCmd.Flags().StringVar(&ifPpsTrackingAction, "action", "", "Specify interface pps tracking action (enable | disable)")
+	ifPpsTrackingCmd.MarkFlagRequired("action")
+}
+
+func ifPpsTrackingCmdHandler(cmd *cobra.Command, args []string) {
+	// connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewDebugSvcClient(c)
+	var empty *pds.Empty
+	if strings.ToLower(ifPpsTrackingAction) == "enable" {
+		_, err = client.InterfacePpsTrackingEnable(context.Background(), empty)
+		if err != nil {
+			fmt.Printf("Interface pps tracking enable failed, err %v\n", err)
+			return
+		}
+		fmt.Printf("Interface pps tracking enabled\n")
+	} else if strings.ToLower(ifPpsTrackingAction) == "disable" {
+		_, err = client.InterfacePpsTrackingDisable(context.Background(), empty)
+		if err != nil {
+			fmt.Printf("Interface pps tracking disable failed, err %v\n", err)
+			return
+		}
+		fmt.Printf("Interface pps tracking disabled\n")
+	} else {
+		fmt.Printf("Invalid argument specified. Refer to help string\n")
+		cmd.Help()
+	}
 }
 
 func ifUpdateCmdHandler(cmd *cobra.Command, args []string) {
@@ -718,6 +783,39 @@ func lifGetNameFromKey(key []byte) string {
 	}
 	resp := respMsg.Response[0]
 	return resp.GetStatus().GetName()
+}
+
+func lifStatsShowCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	var filter *pds.CommandUUID
+	if cmd != nil && cmd.Flags().Changed("id") {
+		filter = &pds.CommandUUID{
+			Id: uuid.FromStringOrNil(lifID).Bytes(),
+		}
+	} else {
+		filter = nil
+	}
+
+	// handle cmd
+	var cmdResp *pds.ServiceResponseMessage
+	var err error
+	if filter == nil {
+		cmdResp, err = HandleSvcReqCommandMsg(pds.Command_CMD_LIF_STATS_DUMP, nil)
+	} else {
+		cmdResp, err = HandleSvcReqCommandMsg(pds.Command_CMD_LIF_STATS_DUMP, filter)
+	}
+	if err != nil {
+		fmt.Printf("Command failed with %v error\n", err)
+		return
+	}
+	if cmdResp.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Command failed with %v error\n", cmdResp.ApiStatus)
+		return
+	}
 }
 
 func lifShowCmdHandler(cmd *cobra.Command, args []string) {

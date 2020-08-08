@@ -14,6 +14,8 @@
 
 namespace debug {
 
+#define IF_PPS_TRACKING_INTERVAL    (1)
+
 /// \brief flow table statistics summary, for v4 & v6 flows
 typedef struct pds_flow_stats_summary_s {
     uint64_t value[FLOW_TYPE_COUNTER_MAX];
@@ -26,6 +28,8 @@ typedef struct pds_datapath_assist_stats_s {
 
 sdk_ret_t pds_flow_summary_get(pds_flow_stats_summary_t *flow_stats);
 sdk_ret_t pds_datapath_assist_stats_get(pds_datapath_assist_stats_t *dpa_stats);
+sdk_ret_t pds_if_pps_tracking_enable(void);
+sdk_ret_t pds_if_pps_tracking_disable(void);
 
 }    // namespace debug
 

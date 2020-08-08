@@ -79,6 +79,10 @@ public:
                                pds::FlowStatsSummaryResponse *rsp) override;
     Status DataPathAssistStatsGet(ServerContext *context, const Empty *req,
                                   pds::DataPathAssistStatsResponse *rsp) override;
+    Status InterfacePpsTrackingEnable(ServerContext *context, const Empty *req,
+                                      Empty *rsp);
+    Status InterfacePpsTrackingDisable(ServerContext *context, const Empty *req,
+                                       Empty *rsp);
 };
 
 #endif    // __AGENT_SVC_DEBUG_HPP__

@@ -1461,6 +1461,201 @@ lif_impl::reset_stats(void) {
     return SDK_RET_OK;
 }
 
+sdk_ret_t
+lif_impl::track_pps(uint32_t interval) {
+    sdk_ret_t ret;
+    lif_metrics_t lif_metrics = { 0 };
+    uint64_t curr_tx_pkts, curr_tx_bytes;
+    uint64_t curr_rx_pkts, curr_rx_bytes;
+    uint64_t tx_pkts, tx_bytes, rx_pkts, rx_bytes;
+    mem_addr_t base_addr, lif_addr, write_mem_addr;
+
+    base_addr = g_pds_state.mempartition()->start_addr(MEM_REGION_LIF_STATS_NAME);
+    lif_addr = base_addr + (id_ << LIF_STATS_SIZE_SHIFT);
+
+    ret = sdk::asic::asic_mem_read(lif_addr, (uint8_t *)&lif_metrics,
+                                   sizeof(lif_metrics_t));
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Error reading stats for lif %s hw id %u, err %u",
+                      key_.str(), id_, ret);
+        return ret;
+    }
+
+    tx_pkts  = lif_metrics.tx_pkts;
+    tx_bytes = lif_metrics.tx_bytes;
+    rx_pkts  = lif_metrics.rx_pkts;
+    rx_bytes = lif_metrics.rx_bytes;
+
+    curr_tx_pkts = lif_metrics.tx_ucast_packets +
+                       lif_metrics.tx_mcast_packets +
+                       lif_metrics.tx_bcast_packets +
+                       lif_metrics.tx_ucast_drop_packets +
+                       lif_metrics.tx_mcast_drop_packets +
+                       lif_metrics.tx_bcast_drop_packets +
+                       lif_metrics.tx_rdma_ucast_packets +
+                       lif_metrics.tx_rdma_mcast_packets +
+                       lif_metrics.tx_rdma_cnp_packets;
+
+    curr_tx_bytes = lif_metrics.tx_ucast_bytes +
+                        lif_metrics.tx_mcast_bytes +
+                        lif_metrics.tx_bcast_bytes +
+                        lif_metrics.tx_ucast_drop_bytes +
+                        lif_metrics.tx_mcast_drop_bytes +
+                        lif_metrics.tx_bcast_drop_bytes +
+                        lif_metrics.tx_rdma_ucast_bytes +
+                        lif_metrics.tx_rdma_mcast_bytes;
+
+    curr_rx_pkts = lif_metrics.rx_ucast_packets +
+                       lif_metrics.rx_mcast_packets +
+                       lif_metrics.rx_bcast_packets +
+                       lif_metrics.rx_ucast_drop_packets +
+                       lif_metrics.rx_mcast_drop_packets +
+                       lif_metrics.rx_bcast_drop_packets +
+                       lif_metrics.rx_rdma_ucast_packets +
+                       lif_metrics.rx_rdma_mcast_packets +
+                       lif_metrics.rx_rdma_cnp_packets +
+                       lif_metrics.rx_rdma_ecn_packets;
+
+    curr_rx_bytes = lif_metrics.rx_ucast_bytes +
+                        lif_metrics.rx_mcast_bytes +
+                        lif_metrics.rx_bcast_bytes +
+                        lif_metrics.rx_ucast_drop_bytes +
+                        lif_metrics.rx_mcast_drop_bytes +
+                        lif_metrics.rx_bcast_drop_bytes +
+                        lif_metrics.rx_rdma_ucast_bytes +
+                        lif_metrics.rx_rdma_mcast_bytes;
+
+    lif_metrics.tx_pps = RATE_OF_X(tx_pkts, curr_tx_pkts, interval);
+    lif_metrics.tx_bytesps = RATE_OF_X(tx_bytes, curr_tx_bytes, interval);
+    lif_metrics.rx_pps = RATE_OF_X(rx_pkts, curr_rx_pkts, interval);
+    lif_metrics.rx_bytesps = RATE_OF_X(rx_bytes, curr_rx_bytes, interval);
+    lif_metrics.tx_pkts = curr_tx_pkts;
+    lif_metrics.tx_bytes = curr_tx_bytes;
+    lif_metrics.rx_pkts = curr_rx_pkts;
+    lif_metrics.rx_bytes = curr_rx_bytes;
+
+    write_mem_addr = lif_addr + LIF_STATS_TX_PKTS_OFFSET;
+    ret = sdk::asic::asic_mem_write(write_mem_addr,
+                                    (uint8_t *)&lif_metrics.tx_pkts,
+                                    PDS_LIF_IMPL_NUM_PPS_STATS *
+                                        PDS_LIF_IMPL_COUNTER_SIZE); // 8 fields
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Writing stats for lif %s hw id %u failed, err %u",
+                      key_.str(), id_, ret);
+    }
+    return ret;
+}
+
+void
+lif_impl::dump_stats(uint32_t fd) {
+    sdk_ret_t ret;
+    lif_metrics_t stats = { 0 };
+    mem_addr_t base_addr, lif_addr;
+
+    base_addr = g_pds_state.mempartition()->start_addr(MEM_REGION_LIF_STATS_NAME);
+    lif_addr = base_addr + (id_ << LIF_STATS_SIZE_SHIFT);
+
+    ret = sdk::asic::asic_mem_read(lif_addr, (uint8_t *)&stats,
+                                   sizeof(lif_metrics_t));
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Error reading stats for lif %s hw id %u, err %u",
+                      key_.str(), id_, ret);
+        return;
+    }
+
+    dprintf(fd, "\nLIF ID: %s HW ID: %u\n", key_.str(), id_);
+    dprintf(fd, "%s\n", std::string(54, '-').c_str());
+    dprintf(fd, "rx_ucast_bytes                  : %lu\n", stats.rx_ucast_bytes);
+    dprintf(fd, "rx_ucast_packets                : %lu\n", stats.rx_ucast_packets);
+    dprintf(fd, "rx_mcast_bytes                  : %lu\n", stats.rx_mcast_bytes);
+    dprintf(fd, "rx_mcast_packets                : %lu\n", stats.rx_mcast_packets);
+    dprintf(fd, "rx_bcast_bytes                  : %lu\n", stats.rx_bcast_bytes);
+    dprintf(fd, "rx_bcast_packets                : %lu\n", stats.rx_bcast_packets);
+    dprintf(fd, "rx_ucast_drop_bytes             : %lu\n", stats.rx_ucast_drop_bytes);
+    dprintf(fd, "rx_ucast_drop_packets           : %lu\n", stats.rx_ucast_drop_packets);
+    dprintf(fd, "rx_mcast_drop_bytes             : %lu\n", stats.rx_mcast_drop_bytes);
+    dprintf(fd, "rx_mcast_drop_packets           : %lu\n", stats.rx_mcast_drop_packets);
+    dprintf(fd, "rx_bcast_drop_bytes             : %lu\n", stats.rx_bcast_drop_bytes);
+    dprintf(fd, "rx_bcast_drop_packets           : %lu\n", stats.rx_bcast_drop_packets);
+    dprintf(fd, "rx_dma_error                    : %lu\n", stats.rx_dma_error);
+    dprintf(fd, "tx_ucast_bytes                  : %lu\n", stats.tx_ucast_bytes);
+    dprintf(fd, "tx_ucast_packets                : %lu\n", stats.tx_ucast_packets);
+    dprintf(fd, "tx_mcast_bytes                  : %lu\n", stats.tx_mcast_bytes);
+    dprintf(fd, "tx_mcast_packets                : %lu\n", stats.tx_mcast_packets);
+    dprintf(fd, "tx_bcast_bytes                  : %lu\n", stats.tx_bcast_bytes);
+    dprintf(fd, "tx_bcast_packets                : %lu\n", stats.tx_bcast_packets);
+    dprintf(fd, "tx_ucast_drop_bytes             : %lu\n", stats.tx_ucast_drop_bytes);
+    dprintf(fd, "tx_ucast_drop_packets           : %lu\n", stats.tx_ucast_drop_packets);
+    dprintf(fd, "tx_mcast_drop_bytes             : %lu\n", stats.tx_mcast_drop_bytes);
+    dprintf(fd, "tx_mcast_drop_packets           : %lu\n", stats.tx_mcast_drop_packets);
+    dprintf(fd, "tx_bcast_drop_bytes             : %lu\n", stats.tx_bcast_drop_bytes);
+    dprintf(fd, "tx_bcast_drop_packets           : %lu\n", stats.tx_bcast_drop_packets);
+    dprintf(fd, "tx_dma_error                    : %lu\n", stats.tx_dma_error);
+    dprintf(fd, "rx_queue_disabled               : %lu\n", stats.rx_queue_disabled);
+    dprintf(fd, "rx_queue_empty                  : %lu\n", stats.rx_queue_empty);
+    dprintf(fd, "rx_queue_error                  : %lu\n", stats.rx_queue_error);
+    dprintf(fd, "rx_desc_fetch_error             : %lu\n", stats.rx_desc_fetch_error);
+    dprintf(fd, "rx_desc_data_error              : %lu\n", stats.rx_desc_data_error);
+    dprintf(fd, "tx_queue_disabled               : %lu\n", stats.tx_queue_disabled);
+    dprintf(fd, "tx_queue_error                  : %lu\n", stats.tx_queue_error);
+    dprintf(fd, "tx_desc_fetch_error             : %lu\n", stats.tx_desc_fetch_error);
+    dprintf(fd, "tx_desc_data_error              : %lu\n", stats.tx_desc_data_error);
+    dprintf(fd, "tx_queue_empty                  : %lu\n", stats.tx_queue_empty);
+    dprintf(fd, "tx_ucast_drop_bytes             : %lu\n", stats.tx_ucast_drop_bytes);
+    dprintf(fd, "tx_ucast_drop_packets           : %lu\n", stats.tx_ucast_drop_packets);
+    dprintf(fd, "tx_mcast_drop_bytes             : %lu\n", stats.tx_mcast_drop_bytes);
+    dprintf(fd, "tx_mcast_drop_packets           : %lu\n", stats.tx_mcast_drop_packets);
+    dprintf(fd, "tx_bcast_drop_bytes             : %lu\n", stats.tx_bcast_drop_bytes);
+    dprintf(fd, "tx_bcast_drop_packets           : %lu\n", stats.tx_bcast_drop_packets);
+    dprintf(fd, "tx_dma_error                    : %lu\n", stats.tx_dma_error);
+    dprintf(fd, "tx_rdma_ucast_bytes             : %lu\n", stats.tx_rdma_ucast_bytes);
+    dprintf(fd, "tx_rdma_ucast_packets           : %lu\n", stats.tx_rdma_ucast_packets);
+    dprintf(fd, "tx_rdma_mcast_bytes             : %lu\n", stats.tx_rdma_mcast_bytes);
+    dprintf(fd, "tx_rdma_mcast_packets           : %lu\n", stats.tx_rdma_mcast_packets);
+    dprintf(fd, "tx_rdma_cnp_packets             : %lu\n", stats.tx_rdma_cnp_packets);
+    dprintf(fd, "rx_rdma_ucast_bytes             : %lu\n", stats.rx_rdma_ucast_bytes);
+    dprintf(fd, "rx_rdma_ucast_packets           : %lu\n", stats.rx_rdma_ucast_packets);
+    dprintf(fd, "rx_rdma_mcast_bytes             : %lu\n", stats.rx_rdma_mcast_bytes);
+    dprintf(fd, "rx_rdma_mcast_packets           : %lu\n", stats.rx_rdma_mcast_packets);
+    dprintf(fd, "rx_rdma_cnp_packets             : %lu\n", stats.rx_rdma_cnp_packets);
+    dprintf(fd, "rx_rdma_ecn_packets             : %lu\n", stats.rx_rdma_ecn_packets);
+    dprintf(fd, "tx_pkts                         : %lu\n", stats.tx_pkts);
+    dprintf(fd, "tx_bytes                        : %lu\n", stats.tx_bytes);
+    dprintf(fd, "rx_pkts                         : %lu\n", stats.rx_pkts);
+    dprintf(fd, "rx_bytes                        : %lu\n", stats.rx_bytes);
+    dprintf(fd, "tx_pps                          : %lu\n", stats.tx_pps);
+    dprintf(fd, "tx_bytesps                      : %lu\n", stats.tx_bytesps);
+    dprintf(fd, "rx_pps                          : %lu\n", stats.rx_pps);
+    dprintf(fd, "rx_bytesps                      : %lu\n", stats.rx_bytesps);
+    dprintf(fd, "rdma_packet_seq_err             : %lu\n", stats.rdma_req_rx_pkt_seq_err);
+    dprintf(fd, "rdma_req_rnr_retry_err          : %lu\n", stats.rdma_req_rx_rnr_retry_err);
+    dprintf(fd, "rdma_req_remote_access_err      : %lu\n", stats.rdma_req_rx_remote_access_err);
+    dprintf(fd, "rdma_req_remote_inv_req_err     : %lu\n", stats.rdma_req_rx_remote_inv_req_err);
+    dprintf(fd, "rdma_req_remote_oper_err        : %lu\n", stats.rdma_req_rx_remote_oper_err);
+    dprintf(fd, "rdma_implied_nak_seq_err        : %lu\n", stats.rdma_req_rx_implied_nak_seq_err);
+    dprintf(fd, "rdma_req_cqe_err                : %lu\n", stats.rdma_req_rx_cqe_err);
+    dprintf(fd, "rdma_req_cqe_flush_err          : %lu\n", stats.rdma_req_rx_cqe_flush_err);
+    dprintf(fd, "rdma_duplicate_responses        : %lu\n", stats.rdma_req_rx_dup_responses);
+    dprintf(fd, "rdma_req_invalid_packets        : %lu\n", stats.rdma_req_rx_invalid_packets);
+    dprintf(fd, "rdma_req_local_access_err       : %lu\n", stats.rdma_req_tx_local_access_err);
+    dprintf(fd, "rdma_req_local_oper_err         : %lu\n", stats.rdma_req_tx_local_oper_err);
+    dprintf(fd, "rdma_req_memory_mgmt_err        : %lu\n", stats.rdma_req_tx_memory_mgmt_err);
+    dprintf(fd, "rdma_duplicate_request          : %lu\n", stats.rdma_resp_rx_dup_requests);
+    dprintf(fd, "rdma_out_of_buffer              : %lu\n", stats.rdma_resp_rx_out_of_buffer);
+    dprintf(fd, "rdma_out_of_sequence            : %lu\n", stats.rdma_resp_rx_out_of_seq_pkts);
+    dprintf(fd, "rdma_resp_cqe_err               : %lu\n", stats.rdma_resp_rx_cqe_err);
+    dprintf(fd, "rdma_resp_cqe_flush_err         : %lu\n", stats.rdma_resp_rx_cqe_flush_err);
+    dprintf(fd, "rdma_resp_local_len_err         : %lu\n", stats.rdma_resp_rx_local_len_err);
+    dprintf(fd, "rdma_resp_inv_request_err       : %lu\n", stats.rdma_resp_rx_inv_request_err);
+    dprintf(fd, "rdma_resp_local_qp_oper_err     : %lu\n", stats.rdma_resp_rx_local_qp_oper_err);
+    dprintf(fd, "rdma_out_of_atomic_resource     : %lu\n", stats.rdma_resp_rx_out_of_atomic_resource);
+    dprintf(fd, "rdma_resp_pkt_seq_err           : %lu\n", stats.rdma_resp_tx_pkt_seq_err);
+    dprintf(fd, "rdma_resp_remote_inv_req_err    : %lu\n", stats.rdma_resp_tx_remote_inv_req_err);
+    dprintf(fd, "rdma_resp_remote_access_err     : %lu\n", stats.rdma_resp_tx_remote_access_err);
+    dprintf(fd, "rdma_resp_remote_oper_err       : %lu\n", stats.rdma_resp_tx_remote_oper_err);
+    dprintf(fd, "rdma_resp_rnr_retry_err         : %lu\n", stats.rdma_resp_tx_rnr_retry_err);
+}
+
 /// \@}
 
 }    // namespace impl
