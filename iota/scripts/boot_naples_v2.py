@@ -256,14 +256,23 @@ class EntityManagement:
         self.upgrade_complete = flag
 
     def NaplesWait(self):
-        self.clear_buffer()
-        midx = self.SendlineExpect("", ["#", "capri login:", "capri-gold login:"],
-                               hdl = self.hdl, timeout = 30)
-        if midx == 0: return
-        # Got capri login prompt, send username/password.
-        self.SendlineExpect(self.username, "Password:")
-        ret = self.SendlineExpect(self.password, ["#", pexpect.TIMEOUT], timeout = 3)
-        if ret == 1: self.SendlineExpect("", "#")
+        i = 0
+        while True:
+            try:
+                self.clear_buffer()
+                midx = self.SendlineExpect("", ["#", "capri login:", "capri-gold login:"],
+                                       hdl = self.hdl, timeout = 30)
+                if midx == 0: return
+                # Got capri login prompt, send username/password.
+                self.SendlineExpect(self.username, "Password:")
+                ret = self.SendlineExpect(self.password, ["#", pexpect.TIMEOUT], timeout = 3)
+                if ret == 1: self.SendlineExpect("", "#")
+                break
+            except:
+                if i > 3:
+                    raise Exception("Naples prompt not observed")
+                i = i + 1
+                continue
 
     def IpmiResetAndWait(self):
         print('calling IpmiResetAndWait')
@@ -273,23 +282,15 @@ class EntityManagement:
         self.WaitAfterReset()
         return
 
+    # WaitAfterReset is not optimal for dual-nic - adds extra 2-min of sleep
     def WaitAfterReset(self):
         print("sleeping 120 seconds after IpmiReset")
         time.sleep(120)
         print("finished 120 second sleep")
         print("Waiting for host ssh..")
         self.host.WaitForSsh()
-        i = 0
         print("Logging into naples..")
-        while True:
-            try:
-                self.NaplesWait()
-                break
-            except:
-                if i > 3:
-                    raise Exception("Naples prompt not observed")
-                i = i + 1
-                continue
+        self.NaplesWait()
 
     def __syncLine(self, hdl):
         for i in range(3):
@@ -1655,8 +1656,9 @@ class PenOrchestrator:
                 naples_inst.Connect(force_connect=False)
                 naples_inst.InstallPrep()
                 naplesInst = naples_inst
-            naplesInst.IpmiResetAndWait()
+            self.__host.IpmiReset()
             for naples_inst in self.__naples:
+                naples_inst.NaplesWait()
                 naples_inst.Close()
             return
 
@@ -1703,7 +1705,7 @@ class PenOrchestrator:
             self.__ipmi_reboot_allowed=True
             self.IpmiReset() # Do IpmiReset once
             for naples_inst in self.__naples:
-                naples_inst.WaitAfterReset()
+                naples_inst.NaplesWait()
                 naples_inst.Close()
 
             #Naples would have rebooted to, login again.
@@ -1834,7 +1836,7 @@ class PenOrchestrator:
         self.__ipmi_reboot_allowed=True
         self.IpmiReset() # Do IpmiReset once
         for naples_inst in self.__naples:
-            naples_inst.WaitAfterReset()
+            naples_inst.NaplesWait()
 
         #Naples would have rebooted to, login again.
         for naples_inst in self.__naples:
@@ -1875,6 +1877,11 @@ class PenOrchestrator:
                     self.__testbed.NodeCimcIP, self.__testbed.NodeCimcUsername, 
                     self.__testbed.NodeCimcPassword)
             subprocess.check_call(cmd, shell=True)
+            print("sleeping 120 seconds after IpmiReset")
+            time.sleep(120)
+            print("finished 120 second sleep")
+            print("Waiting for host ssh..")
+            self.__host.WaitForSsh()
         else:
             print("Skipping IPMI Reset")
 
