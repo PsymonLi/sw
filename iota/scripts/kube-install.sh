@@ -25,10 +25,12 @@ else
     wget -c http://pm.test.pensando.io/tools/libnetfilter_cttimeout-1.0.0-7.el7.x86_64.rpm
     wget -c http://pm.test.pensando.io/tools/libnetfilter_queue-1.0.2-2.el7_2.x86_64.rpm
     wget -c http://pm.test.pensando.io/tools/conntrack-tools-1.4.4-7.el7.x86_64.rpm
+    wget -c http://pm.test.pensando.io/tools/libtool-ltdl-2.4.2-22.el7_3.x86_64.rpm
     rpm -i libnetfilter_cthelper-1.0.0-11.el7.x86_64.rpm
     rpm -i libnetfilter_cttimeout-1.0.0-7.el7.x86_64.rpm
     rpm -i libnetfilter_queue-1.0.2-2.el7_2.x86_64.rpm
     rpm -i conntrack-tools-1.4.4-7.el7.x86_64.rpm
+    rpm -i libtool-ltdl-2.4.2-22.el7_3.x86_64.rpm
   else
     if grep -q ubuntu /etc/os-release
     then
