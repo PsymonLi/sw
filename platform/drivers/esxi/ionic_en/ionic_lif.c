@@ -3330,6 +3330,20 @@ ionic_firmware_activate_status_check(struct lif *lif,
 }
 
 
+static void
+ionic_firmware_reset(struct lif *lif,
+                     vmk_uint8 slot)
+{
+        union ionic_dev_cmd cmd = {
+                .fw_control.opcode = IONIC_CMD_FW_CONTROL,
+                .fw_control.oper = IONIC_FW_RESET,
+                .fw_control.slot = slot
+        };
+
+        ionic_dev_cmd_go(&(lif->ionic->en_dev.idev), &cmd);
+}
+
+
 VMK_ReturnStatus
 ionic_firmware_update(struct ionic_en_priv_data *priv_data,
                       const char *fw_data,
@@ -3402,7 +3416,7 @@ ionic_firmware_update(struct ionic_en_priv_data *priv_data,
                                                      is_adminq_based);
         if (status != VMK_OK) {
                 ionic_en_err("FW status check failed, status: %s", vmk_StatusToString(status));
-                goto out;
+                goto out_fw_reset;
         }
 
         ionic_en_info("Activating firmware %s", fw_name);
@@ -3420,10 +3434,21 @@ ionic_firmware_update(struct ionic_en_priv_data *priv_data,
                                                       is_adminq_based);
         if (status != VMK_OK) {
                 ionic_en_err("FW activation status check failed, status: %s", vmk_StatusToString(status));
-                goto out;
+                goto out_fw_reset;
         }
 
         ionic_en_info("FW upgrade completed! Reboot is required");
+        goto out;
+
+out_fw_reset:
+        /* We only do firmware reset when timeout occurs from 
+         * IONIC_FW_INSTALL_STATUS or IONIC_FW_ACTIVATE_STATUS */
+        if (status == VMK_TIMEOUT) {
+                ionic_en_warn("Canceling FW install...");
+                ionic_firmware_reset(lif,
+                                     fw_slot);
+        }
+
 out:
         if (is_adminq_based) {
                 ionic_dma_free(ionic_driver.heap_id,
