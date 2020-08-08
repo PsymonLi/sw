@@ -35,13 +35,13 @@ void CmdHndler::xcvr_dom_event_handler(sdk::ipc::ipc_msg_ptr msg, const void *ct
     uint8_t port;
     xcvr_event_info_t *event = (xcvr_event_info_t *)msg->data();
 
-    if (event->port_num == 0x11010001)
+    if (event->ifindex == 0x11010001)
         port = 0;
-    else if (event->port_num == 0x11020001)
+    else if (event->ifindex == 0x11020001)
         port = 1;
     else {
         SDK_TRACE_ERR("XCVR DOM event for Invalid port number: %d",
-                event->port_num);
+                event->ifindex);
     }
     SDK_TRACE_INFO("--------------  XCVR DOM event from LinkMgr for port: 0x%x, xcvr_type: 0x%x cable_type: 0x%x -------------",
                   port, event->type, event->cable_type);
@@ -56,13 +56,13 @@ void CmdHndler::xcvr_event_handler(sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     uint8_t port;
     xcvr_event_info_t *event = (xcvr_event_info_t *)msg->data();
 
-    if (event->port_num == 0x11010001)
+    if (event->ifindex == 0x11010001)
         port = 0;
-    else if (event->port_num == 0x11020001)
+    else if (event->ifindex == 0x11020001)
         port = 1;
     else {
         SDK_TRACE_ERR("XCVR event for Invalid port number: %d",
-                event->port_num);
+                event->ifindex);
     }
 
     SDK_TRACE_INFO("--------------  XCVR event from LinkMgr for port: 0x%x, xcvr type: 0x%x cable_type: 0x%x -------------",
@@ -117,7 +117,7 @@ void CmdHndler::DellOemCmdHndlrInit()
         bool link_status = false;
         uint8_t link_speed = 0;
 
-        if ((this->ipc->GetLinkStatus(0, link_status, link_speed, (uint8_t &)xcvr_status[port].cable_type, xcvr_status[port].xcvr_sprom))) {
+        if ((this->ipc->GetLinkStatus(0, link_status, link_speed, (uint8_t &)xcvr_status[port].cable_type, xcvr_status[port].sprom))) {
 
             SDK_TRACE_ERR("Failed to read link status during init");
         }
@@ -751,7 +751,7 @@ void CmdHndler::DellOEMCmdGetIntfInfo(void *obj, const void *cmd_pkt, ssize_t cm
 
     resp->intf_type = 0x3; //Optical Fiber
 	resp_tlvs = (uint8_t *)&resp->csum;
-    memcpy(resp_tlvs, xcvr_status[cmd->cmd.NcsiHdr.channel].xcvr_sprom, 96);
+    memcpy(resp_tlvs, xcvr_status[cmd->cmd.NcsiHdr.channel].sprom, 96);
 
 error_out:
     memcpy(&resp->rsp.NcsiHdr, &cmd->cmd.NcsiHdr, sizeof(resp->rsp.NcsiHdr));
@@ -844,13 +844,13 @@ void CmdHndler::DellOEMCmdGetIntfSensor(void *obj, const void *cmd_pkt, ssize_t 
     resp_tlvs = (uint8_t *)&resp->csum;
     memset(&sensor_info, 0, sizeof(sensor_info));
 
-    memcpy(&sensor_info.temp_high_alarm_threshold, &xcvr_dom_info[cmd->cmd.NcsiHdr.channel].xcvr_sprom[0], sizeof(__be16));
-    memcpy(&sensor_info.temp_high_warn_threshold, &xcvr_dom_info[cmd->cmd.NcsiHdr.channel].xcvr_sprom[4], sizeof(__be16));
-    memcpy(&sensor_info.temperature, &xcvr_dom_info[cmd->cmd.NcsiHdr.channel].xcvr_sprom[96], (5 * sizeof(__be16)));
-    sensor_info.flag1 = xcvr_dom_info[cmd->cmd.NcsiHdr.channel].xcvr_sprom[112];
-    sensor_info.flag2 = xcvr_dom_info[cmd->cmd.NcsiHdr.channel].xcvr_sprom[113];
-    sensor_info.flag3 = xcvr_dom_info[cmd->cmd.NcsiHdr.channel].xcvr_sprom[116];
-    sensor_info.flag4 = xcvr_dom_info[cmd->cmd.NcsiHdr.channel].xcvr_sprom[117];
+    memcpy(&sensor_info.temp_high_alarm_threshold, &xcvr_dom_info[cmd->cmd.NcsiHdr.channel].sprom[0], sizeof(__be16));
+    memcpy(&sensor_info.temp_high_warn_threshold, &xcvr_dom_info[cmd->cmd.NcsiHdr.channel].sprom[4], sizeof(__be16));
+    memcpy(&sensor_info.temperature, &xcvr_dom_info[cmd->cmd.NcsiHdr.channel].sprom[96], (5 * sizeof(__be16)));
+    sensor_info.flag1 = xcvr_dom_info[cmd->cmd.NcsiHdr.channel].sprom[112];
+    sensor_info.flag2 = xcvr_dom_info[cmd->cmd.NcsiHdr.channel].sprom[113];
+    sensor_info.flag3 = xcvr_dom_info[cmd->cmd.NcsiHdr.channel].sprom[116];
+    sensor_info.flag4 = xcvr_dom_info[cmd->cmd.NcsiHdr.channel].sprom[117];
 
     memcpy(resp_tlvs, &sensor_info, sizeof(sensor_info));
 

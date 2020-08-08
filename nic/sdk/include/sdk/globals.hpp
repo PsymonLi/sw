@@ -34,11 +34,13 @@ typedef enum sdk_ipc_event_id_s {
     // may need to communicate with new/previous version of processes.
     // so changing this id will result in upgrade backward/forward
     // compatibility failures.
-    SDK_IPC_EVENT_ID_UPGMGR_MIN     = SDK_IPC_EVENT_ID_MIN + 1,
-    SDK_IPC_EVENT_ID_UPGMGR_MAX     = SDK_IPC_EVENT_ID_MIN + 24,
-    SDK_IPC_EVENT_ID_HOST_DEV_UP    = SDK_IPC_EVENT_ID_MIN + 25,
-    SDK_IPC_EVENT_ID_HOST_DEV_DOWN  = SDK_IPC_EVENT_ID_MIN + 26,
-    SDK_IPC_EVENT_ID_MAX            = SDK_IPC_EVENT_ID_HOST_DEV_DOWN,
+    SDK_IPC_EVENT_ID_UPGMGR_MIN      = SDK_IPC_EVENT_ID_MIN + 1,
+    SDK_IPC_EVENT_ID_UPGMGR_MAX      = SDK_IPC_EVENT_ID_MIN + 24,
+    SDK_IPC_EVENT_ID_HOST_DEV_UP     = SDK_IPC_EVENT_ID_MIN + 25,
+    SDK_IPC_EVENT_ID_HOST_DEV_DOWN   = SDK_IPC_EVENT_ID_MIN + 26,
+    SDK_IPC_EVENT_ID_XCVR_STATUS     = SDK_IPC_EVENT_ID_MIN + 27,
+    SDK_IPC_EVENT_ID_XCVR_DOM_STATUS = SDK_IPC_EVENT_ID_MIN + 28,
+    SDK_IPC_EVENT_ID_MAX             = SDK_IPC_EVENT_ID_XCVR_DOM_STATUS,
 } sdk_ipc_event_id_t;
 
 /// \brief ipc unicast event ids reserved for sdk processes

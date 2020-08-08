@@ -17,22 +17,20 @@ namespace core {
 
 // event identifiers
 typedef enum event_id_e {
-    EVENT_ID_NONE               = 0,
-    EVENT_ID_HAL_UP             = 1,
-    EVENT_ID_PORT_STATUS        = 2,
-    EVENT_ID_XCVR_STATUS        = 3,
-    EVENT_ID_UPLINK_STATUS      = 4,
-    EVENT_ID_HOST_LIF_CREATE    = 5,
-    EVENT_ID_LIF_STATUS         = 6,
-    EVENT_ID_UPG                = 7,
-    EVENT_ID_UPG_STAGE_STATUS   = 8,
-    EVENT_ID_MICRO_SEG          = 9,
-    EVENT_ID_NCSI               = 10,
-    EVENT_ID_NCSID              = 11,
-    EVENT_ID_NICMGR_DELPHIC     = 12,
-    EVENT_ID_NICMGR_DSC_STATUS  = 13,   // HAL's delphi thread -> nicmgr thread
-    EVENT_ID_XCVR_DOM_STATUS    = 14,
-    EVENT_ID_HII                = 15,
+    EVENT_ID_NONE               = SDK_IPC_EVENT_ID_MAX + 1,
+    EVENT_ID_HAL_UP             = EVENT_ID_NONE + 1,
+    EVENT_ID_PORT_STATUS        = EVENT_ID_NONE + 2,
+    EVENT_ID_UPLINK_STATUS      = EVENT_ID_NONE + 3,
+    EVENT_ID_HOST_LIF_CREATE    = EVENT_ID_NONE + 4,
+    EVENT_ID_LIF_STATUS         = EVENT_ID_NONE + 5,
+    EVENT_ID_UPG                = EVENT_ID_NONE + 6,
+    EVENT_ID_UPG_STAGE_STATUS   = EVENT_ID_NONE + 7,
+    EVENT_ID_MICRO_SEG          = EVENT_ID_NONE + 8,
+    EVENT_ID_NCSI               = EVENT_ID_NONE + 9,
+    EVENT_ID_NCSID              = EVENT_ID_NONE + 10,
+    EVENT_ID_NICMGR_DELPHIC     = EVENT_ID_NONE + 11,
+    EVENT_ID_NICMGR_DSC_STATUS  = EVENT_ID_NONE + 12,   // HAL's delphi thread -> nicmgr thread
+    EVENT_ID_HII                = EVENT_ID_NONE + 13,
 } event_id_t;
 
 // port event specific information
@@ -42,16 +40,6 @@ typedef struct port_event_info_s {
     port_speed_t     speed;
     port_fec_type_t  fec_type;
 } port_event_info_t;
-
-// xcvr event specific information
-typedef struct xcvr_event_info_s {
-    uint32_t         id;
-    xcvr_state_t     state;
-    xcvr_pid_t       pid;
-    cable_type_t     cable_type;
-    xcvr_type_t      type;
-    uint8_t          sprom[XCVR_SPROM_SIZE];
-} xcvr_event_info_t;
 
 // micro segment event handle
 typedef struct micro_seg_info_s {
@@ -68,7 +56,6 @@ typedef struct event_s {
     event_id_t              event_id;
     union {
         port_event_info_t   port;
-        xcvr_event_info_t   xcvr;
         micro_seg_info_t    mseg;
         ncsi_ipc_msg_t      ncsi;
         dsc_status_t        dsc_status;

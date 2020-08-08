@@ -634,7 +634,7 @@ ipc_service::broadcast(uint32_t msg_code, const void *data,
     std::vector<uint32_t> recipients = subscribers::instance()->get(msg_code);
 
     if (recipients.size() == 0) {
-        SDK_TRACE_DEBUG("no subscribers for message: msg_code: %u", msg_code);
+        SDK_TRACE_VERBOSE("no subscribers for message: msg_code: %u", msg_code);
     }
     for (uint32_t recipient : recipients) {
         this->get_client_(recipient)->broadcast(msg_code, data, data_length);

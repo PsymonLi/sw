@@ -38,21 +38,18 @@ port_event_notify (port_event_info_t *port_event_info)
 static void
 send_xcvr_event (xcvr_event_info_t *xcvr_event_info, bool dom)
 {
-    hal::core::event_t event;
-
-    memset(&event, 0, sizeof(event));
-    event.xcvr.id = xcvr_event_info->port_num;
-    event.xcvr.state = xcvr_event_info->state;
-    event.xcvr.pid = xcvr_event_info->pid;
-    event.xcvr.type = xcvr_event_info->type;
-    event.xcvr.cable_type = xcvr_event_info->cable_type;
-    memcpy(event.xcvr.sprom, xcvr_event_info->xcvr_sprom, XCVR_SPROM_SIZE);
     if (dom) {
-        sdk::ipc::broadcast(event_id_t::EVENT_ID_XCVR_DOM_STATUS, &event,
-                            sizeof(event));
+        sdk::ipc::broadcast(
+            sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_DOM_STATUS,
+            xcvr_event_info, sizeof(xcvr_event_info_t));
     } else {
-        sdk::ipc::broadcast(event_id_t::EVENT_ID_XCVR_STATUS, &event,
-                            sizeof(event));
+        SDK_TRACE_DEBUG("send event xcvr status, phy_port %u, ifindex 0x%x, "
+                        "type %u, state %u, pid %u, cable_type %u",
+                        xcvr_event_info->phy_port, xcvr_event_info->ifindex,
+                        xcvr_event_info->type, xcvr_event_info->state,
+                        xcvr_event_info->pid, xcvr_event_info->cable_type);
+        sdk::ipc::broadcast(sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS,
+                            xcvr_event_info, sizeof(xcvr_event_info_t));
     }
 }
 

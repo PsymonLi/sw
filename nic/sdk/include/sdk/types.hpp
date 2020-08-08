@@ -265,7 +265,7 @@ typedef struct port_an_args_s {
     bool         fec_ability;
     uint32_t     user_cap;
     uint32_t     fec_request;
-} port_an_args_t;
+} __attribute__((packed)) port_an_args_t;
 
 typedef struct xcvr_sprom_data_t {
     uint32_t  length_smf_km;
@@ -282,14 +282,14 @@ typedef struct xcvr_sprom_data_t {
 
 typedef struct xcvr_event_info_s {
     uint32_t          phy_port;       ///< transceiver port number
-    uint32_t          port_num;       ///< front panel port number
+    uint32_t          ifindex;        ///< ifindex for transceiver port
     xcvr_type_t       type;           ///< transceiver type - SFP/QSFP/QSFP28
     xcvr_state_t      state;          ///< transceiver state - removed, inserted, sprom_read etc
     xcvr_pid_t        pid;            ///< transceiver pid
     cable_type_t      cable_type;     ///< copper or fiber
     port_an_args_t    *port_an_args;  ///< auto-neg params based on cable
-    uint8_t           xcvr_sprom[XCVR_SPROM_SIZE];
-} xcvr_event_info_t;
+    uint8_t           sprom[XCVR_SPROM_SIZE];
+} __attribute__((packed)) xcvr_event_info_t;
 
 typedef struct port_event_info_s {
     uint32_t           logical_port;    // logical port number

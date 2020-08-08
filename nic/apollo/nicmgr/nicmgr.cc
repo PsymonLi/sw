@@ -118,7 +118,8 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
 
     if (sdk::asic::asic_is_hard_init()) {
         sdk::ipc::subscribe(EVENT_ID_PORT_STATUS, port_event_handler_, NULL);
-        sdk::ipc::subscribe(EVENT_ID_XCVR_STATUS, xcvr_event_handler_, NULL);
+        sdk::ipc::subscribe(sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS,
+                            xcvr_event_handler_, NULL);
         sdk::ipc::subscribe(EVENT_ID_PDS_HAL_UP, hal_up_event_handler_, NULL);
         sdk::ipc::subscribe(SDK_IPC_EVENT_ID_HOST_DEV_UP,
                             host_dev_up_event_handler_, NULL);
@@ -178,13 +179,13 @@ nicmgrapi::port_event_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt) {
 void
 nicmgrapi::xcvr_event_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt) {
     port_status_t st = { 0 };
-    core::event_t *event = (core::event_t *)msg->data();
+    xcvr_event_info_t *event = (xcvr_event_info_t *)msg->data();
 
-    st.id = event->port.ifindex;
-    st.xcvr.state = event->xcvr.state;
-    st.xcvr.pid = event->xcvr.pid;
-    st.xcvr.phy = event->xcvr.cable_type;
-    memcpy(st.xcvr.sprom, event->xcvr.sprom, XCVR_SPROM_SIZE);
+    st.id = event->ifindex;
+    st.xcvr.state = event->state;
+    st.xcvr.pid = event->pid;
+    st.xcvr.phy = event->cable_type;
+    memcpy(st.xcvr.sprom, event->sprom, XCVR_SPROM_SIZE);
     g_devmgr->XcvrEventHandler(&st);
     PDS_TRACE_DEBUG("Rcvd xcvr event for ifidx 0x%x, state %u, cable type %u"
                     "pid %u", st.id, st.xcvr.state, st.xcvr.phy, st.xcvr.pid);

@@ -619,8 +619,8 @@ ev_timer_callback_ (struct ev_loop *loop, ev_timer *watcher, int revents)
     cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
 
     if (cpu_time_used > MAX_CALLBACK_DURATION) {
-        SDK_TRACE_DEBUG("timer_callback %p took %f seconds",
-                        timer->callback, cpu_time_used);
+        SDK_TRACE_VERBOSE("timer_callback %p took %f seconds",
+                          timer->callback, cpu_time_used);
     }
 }
 

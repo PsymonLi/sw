@@ -477,7 +477,7 @@ populate_port_get_response_spec (port_args_t *port_args,
         xcvr_status->set_cable_type(port::CableType(
                                     port_args->xcvr_event_info.cable_type));
         linkmgr::port_populate_xcvr_status_sprom(
-                        xcvr_status, &port_args->xcvr_event_info.xcvr_sprom);
+                        xcvr_status, &port_args->xcvr_event_info.sprom);
 
         // set the internal link state machine
         response->set_linksm_state(

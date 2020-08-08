@@ -132,7 +132,6 @@ bool
 xvcr_event_walk_cb (void *entry, void *ctxt)
 {
     int phy_port;
-    ::core::event_t event;
     uint32_t logical_port;
     if_index_t ifindex;
     if_entry *intf = (if_entry *)entry;
@@ -151,13 +150,9 @@ xvcr_event_walk_cb (void *entry, void *ctxt)
     }
     sdk::linkmgr::port_update_xcvr_event(intf->port_info(), xcvr_event_info);
 
-    memset(&event, 0, sizeof(event));
-    event.xcvr.ifindex = ifindex;
-    event.xcvr.state = xcvr_event_info->state;
-    event.xcvr.pid = xcvr_event_info->pid;
-    event.xcvr.cable_type = xcvr_event_info->cable_type;
-    memcpy(event.xcvr.sprom, xcvr_event_info->xcvr_sprom, XCVR_SPROM_SIZE);
-    sdk::ipc::broadcast(EVENT_ID_XCVR_STATUS, &event, sizeof(event));
+    xcvr_event_info->ifindex = ifindex;
+    sdk::ipc::broadcast(sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS,
+                        xcvr_event_info, sizeof(xcvr_event_info_t));
     return false;
 }
 

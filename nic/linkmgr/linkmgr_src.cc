@@ -215,7 +215,7 @@ xcvr_event_port_get_ht_cb (void *ht_entry, void *ctxt)
     sdk::linkmgr::port_update_xcvr_event(port->pd_p, xcvr_event_info);
 
     // update the front panel port number with ifindex
-    xcvr_event_info->port_num = sdk::lib::catalog::logical_port_to_ifindex(
+    xcvr_event_info->ifindex = sdk::lib::catalog::logical_port_to_ifindex(
                                     port->port_num);
 
     // notify outside
@@ -504,7 +504,7 @@ port_create_commit_cb (cfg_op_ctxt_t *cfg_ctxt)
         }
 
         // update the front panel port number with ifindex
-        xcvr_event_info.port_num = sdk::lib::catalog::logical_port_to_ifindex(
+        xcvr_event_info.ifindex = sdk::lib::catalog::logical_port_to_ifindex(
                                        pi_p->port_num);
 
         linkmgr::ipc::xcvr_event_notify(&xcvr_event_info, false);
@@ -1482,13 +1482,13 @@ port_periodic_update_helper (port_args_t *port_args,
     phy_port = sdk::lib::catalog::logical_port_to_phy_port(pi_p->port_num);
     if (port_args->port_type != port_type_t::PORT_TYPE_MGMT) {
         // update the front panel port number with ifindex
-        xcvr_event_info.port_num = sdk::lib::catalog::logical_port_to_ifindex(
-                                        pi_p->port_num);
+        xcvr_event_info.ifindex = sdk::lib::catalog::logical_port_to_ifindex(
+                                      pi_p->port_num);
         // populate the event info
         sdk::platform::xcvr_get(phy_port - 1, &xcvr_event_info);
         if (xcvr_event_info.state == xcvr_state_t::XCVR_SPROM_READ) {
             // read dom info
-            sdk::platform::xcvr_read_dom(phy_port - 1, xcvr_event_info.xcvr_sprom);
+            sdk::platform::xcvr_read_dom(phy_port - 1, xcvr_event_info.sprom);
             // notify outside
             linkmgr::ipc::xcvr_event_notify(&xcvr_event_info, true);
         }

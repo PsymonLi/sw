@@ -312,7 +312,7 @@ pal_hw_qsfp_read(const uint8_t *buffer, uint32_t size, uint32_t offset,
     if(page != QSFP_PAGE_LOW) {
         if((*gl_hw_vecs.qsfp_write)((uint8_t *)&page, 1, QSFP_PAGE_OFFSET, nretry, port) != 0) {
             // TODO Revisit. If write fails for non-CR4 we might read incorrectly
-            SDK_TRACE_DEBUG("QSFP high page write failed");
+            SDK_TRACE_VERBOSE("QSFP high page write failed");
         }
     }
 
@@ -323,7 +323,7 @@ pal_hw_qsfp_read(const uint8_t *buffer, uint32_t size, uint32_t offset,
     if(page != QSFP_PAGE_LOW) {
         if((*gl_hw_vecs.qsfp_write)((uint8_t *)&lowpage, 1, QSFP_PAGE_OFFSET, nretry, port) != 0) {
             // TODO Revisit. If write fails for non-CR4 we might read incorrectly
-            SDK_TRACE_DEBUG("QSFP low page write failed");
+            SDK_TRACE_VERBOSE("QSFP low page write failed");
         }
     }
 

@@ -25,23 +25,22 @@ typedef enum event_id_e {
     EVENT_ID_NONE                 = PDS_IPC_EVENT_ID_HAL_MIN,
     EVENT_ID_PDS_HAL_UP           = (PDS_IPC_EVENT_ID_HAL_MIN + 1),
     EVENT_ID_PORT_STATUS          = (PDS_IPC_EVENT_ID_HAL_MIN + 2),
-    EVENT_ID_XCVR_STATUS          = (PDS_IPC_EVENT_ID_HAL_MIN + 3),
-    EVENT_ID_UPLINK_STATUS        = (PDS_IPC_EVENT_ID_HAL_MIN + 4),
-    EVENT_ID_HOST_LIF_CREATE      = (PDS_IPC_EVENT_ID_HAL_MIN + 5),
-    EVENT_ID_HOST_IF_STATUS       = (PDS_IPC_EVENT_ID_HAL_MIN + 6),
-    EVENT_ID_MAC_LEARN            = (PDS_IPC_EVENT_ID_HAL_MIN + 7),
-    EVENT_ID_IP_LEARN             = (PDS_IPC_EVENT_ID_HAL_MIN + 8),
-    EVENT_ID_MAC_AGE              = (PDS_IPC_EVENT_ID_HAL_MIN + 9),
-    EVENT_ID_IP_AGE               = (PDS_IPC_EVENT_ID_HAL_MIN + 10),
-    EVENT_ID_IP_DELETE            = (PDS_IPC_EVENT_ID_HAL_MIN + 11),
-    EVENT_ID_MAC_DELETE           = (PDS_IPC_EVENT_ID_HAL_MIN + 12),
-    EVENT_ID_MAC_MOVE_L2R         = (PDS_IPC_EVENT_ID_HAL_MIN + 13),
-    EVENT_ID_IP_MOVE_L2R          = (PDS_IPC_EVENT_ID_HAL_MIN + 14),
-    EVENT_ID_MAC_MOVE_R2L         = (PDS_IPC_EVENT_ID_HAL_MIN + 15),
-    EVENT_ID_IP_MOVE_R2L          = (PDS_IPC_EVENT_ID_HAL_MIN + 16),
-    EVENT_ID_PDS_CFG_OBJ_SET      = (PDS_IPC_EVENT_ID_HAL_MIN + 17),
-    EVENT_ID_PDS_API_BATCH_COMMIT = (PDS_IPC_EVENT_ID_HAL_MIN + 18),
-    EVENT_ID_PDS_API_BATCH_ABORT  = (PDS_IPC_EVENT_ID_HAL_MIN + 19),
+    EVENT_ID_UPLINK_STATUS        = (PDS_IPC_EVENT_ID_HAL_MIN + 3),
+    EVENT_ID_HOST_LIF_CREATE      = (PDS_IPC_EVENT_ID_HAL_MIN + 4),
+    EVENT_ID_HOST_IF_STATUS       = (PDS_IPC_EVENT_ID_HAL_MIN + 5),
+    EVENT_ID_MAC_LEARN            = (PDS_IPC_EVENT_ID_HAL_MIN + 6),
+    EVENT_ID_IP_LEARN             = (PDS_IPC_EVENT_ID_HAL_MIN + 7),
+    EVENT_ID_MAC_AGE              = (PDS_IPC_EVENT_ID_HAL_MIN + 8),
+    EVENT_ID_IP_AGE               = (PDS_IPC_EVENT_ID_HAL_MIN + 9),
+    EVENT_ID_IP_DELETE            = (PDS_IPC_EVENT_ID_HAL_MIN + 10),
+    EVENT_ID_MAC_DELETE           = (PDS_IPC_EVENT_ID_HAL_MIN + 11),
+    EVENT_ID_MAC_MOVE_L2R         = (PDS_IPC_EVENT_ID_HAL_MIN + 12),
+    EVENT_ID_IP_MOVE_L2R          = (PDS_IPC_EVENT_ID_HAL_MIN + 13),
+    EVENT_ID_MAC_MOVE_R2L         = (PDS_IPC_EVENT_ID_HAL_MIN + 14),
+    EVENT_ID_IP_MOVE_R2L          = (PDS_IPC_EVENT_ID_HAL_MIN + 15),
+    EVENT_ID_PDS_CFG_OBJ_SET      = (PDS_IPC_EVENT_ID_HAL_MIN + 16),
+    EVENT_ID_PDS_API_BATCH_COMMIT = (PDS_IPC_EVENT_ID_HAL_MIN + 17),
+    EVENT_ID_PDS_API_BATCH_ABORT  = (PDS_IPC_EVENT_ID_HAL_MIN + 18),
 } event_id_t;
 
 namespace core {
@@ -53,15 +52,6 @@ typedef struct port_event_info_s {
     port_speed_t     speed;
     port_fec_type_t  fec_type;
 } port_event_info_t;
-
-// xcvr event specific information
-typedef struct xcvr_event_info_s {
-    if_index_t       ifindex;
-    xcvr_state_t     state;
-    xcvr_pid_t       pid;
-    cable_type_t     cable_type;
-    uint8_t          sprom[XCVR_SPROM_SIZE];
-} xcvr_event_info_t;
 
 // uplink interface event specific information {
 typedef struct uplink_event_info_s {
@@ -104,7 +94,6 @@ typedef struct event_s {
     event_id_t                 event_id;
     union {
         port_event_info_t      port;
-        xcvr_event_info_t      xcvr;
         uplink_event_info_t    uplink;
         host_if_event_info_t   intf;
         learn_event_info_t     learn;

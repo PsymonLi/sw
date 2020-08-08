@@ -101,7 +101,7 @@ xcvr_get (int port, xcvr_event_info_t *xcvr_event_info)
     xcvr_event_info->port_an_args = xcvr_get_an_args(port);
     xcvr_event_info->type = xcvr_type(port);
 
-    xcvr_sprom_get (port, xcvr_event_info->xcvr_sprom);
+    xcvr_sprom_get (port, xcvr_event_info->sprom);
 
     return SDK_RET_OK;
 }
@@ -201,7 +201,7 @@ xcvr_send_notification (int port)
         default:
             xcvr_event_info.pid = xcvr_pid_t::XCVR_PID_UNKNOWN;
             xcvr_cache_reset(port);
-            memset(&xcvr_event_info.xcvr_sprom, 0, XCVR_SPROM_SIZE);
+            memset(&xcvr_event_info.sprom, 0, XCVR_SPROM_SIZE);
             break;
         }
         g_xcvr_notify_cb(&xcvr_event_info);

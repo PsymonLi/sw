@@ -103,13 +103,14 @@ static void
 xcvr_event_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 {
     port_status_t st = { 0 };
-    hal::core::event_t *event = (hal::core::event_t *)msg->data();
+    sdk::types::xcvr_event_info_t *event =
+        (sdk::types::xcvr_event_info_t *)msg->data();
 
-    st.id = event->port.id;
-    st.xcvr.state = event->xcvr.state;
-    st.xcvr.pid = event->xcvr.pid;
-    st.xcvr.phy = event->xcvr.cable_type;
-    memcpy(st.xcvr.sprom, event->xcvr.sprom, XCVR_SPROM_SIZE);
+    st.id = event->ifindex;
+    st.xcvr.state = event->state;
+    st.xcvr.pid = event->pid;
+    st.xcvr.phy = event->cable_type;
+    memcpy(st.xcvr.sprom, event->sprom, XCVR_SPROM_SIZE);
     NIC_LOG_DEBUG("IPC, Rcvd xcvr event for id {}, state {}, cable type {}, pid {}",
                   st.id, st.xcvr.state, st.xcvr.phy, st.xcvr.pid);
     devmgr->XcvrEventHandler(&st);
@@ -156,7 +157,8 @@ register_for_events (void)
 {
     // register for hal up and port events
     sdk::ipc::subscribe(event_id_t::EVENT_ID_PORT_STATUS, port_event_handler, NULL);
-    sdk::ipc::subscribe(event_id_t::EVENT_ID_XCVR_STATUS, xcvr_event_handler, NULL);
+    sdk::ipc::subscribe(sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS,
+                        xcvr_event_handler, NULL);
     sdk::ipc::subscribe(event_id_t::EVENT_ID_HAL_UP, hal_up_event_handler, NULL);
 
     // dsc status event

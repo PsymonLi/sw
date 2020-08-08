@@ -400,7 +400,7 @@ if_entry::fill_port_if_status_(pds_if_status_t *status,
     status->port_status.xcvr_status.media_type =
         port_args->xcvr_event_info.cable_type;
     memcpy(status->port_status.xcvr_status.xcvr_sprom,
-           port_args->xcvr_event_info.xcvr_sprom,
+           port_args->xcvr_event_info.sprom,
            sizeof(uint8_t) * XCVR_SPROM_SIZE);
 
     status->port_status.fsm_state = port_args->link_sm;
