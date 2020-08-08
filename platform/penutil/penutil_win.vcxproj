@@ -169,9 +169,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="getopt_win.c" />
     <ClCompile Include="penutil.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="getopt_win.h" />
     <ClInclude Include="ionic_os.h" />
     <ClInclude Include="ionic_spp.h" />
     <ClInclude Include="ionic_spp_util.h" />

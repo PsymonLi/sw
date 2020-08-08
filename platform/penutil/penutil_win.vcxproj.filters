@@ -18,6 +18,9 @@
     <ClCompile Include="penutil.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="getopt_win.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ionic_os.h">
@@ -27,6 +30,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ionic_spp_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="getopt_win.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

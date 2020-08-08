@@ -7,6 +7,8 @@
 #ifndef _WIN32
 #include <getopt.h>
 #include <pthread.h>
+#else
+#include "getopt_win.h"
 #endif
 #include <stdbool.h>
 #include <stdio.h>
@@ -23,18 +25,15 @@
 static void
 print_usage (char **argv)
 {
-
-#ifdef _WIN32
-	fprintf(stdout, "Usage : %s <update/discovery> <Firmware image directory> <log file> <Discovery file> <Update Type> <DevId> <Verbose>\n",
-		argv[0]);
-#else
 	fprintf(stdout, "Usage : %s\n"
 		"\t-p|--image <Firmware image directory>\n"
 		"\t-d|--discovery <Discovery file>\n"
 		"\t-l|--log <log file>\n"
-		"\t[-u|--update <0/1>] Flash firmware using discovery file, 0 - single/1 - multi threaded\n",
+		"\t[-u|--update <0/1>] Flash firmware using discovery file, 0 - single/1 - multi threaded\n"
+		"\t[-m|--mode <0/1>]\n"
+		"\t[-x|--devid] Device ID\n"
+		"\t[-h|--help] This help\n",
 		argv[0]);
-#endif
 }
 
 int
@@ -42,7 +41,7 @@ main (int argc,  char **argv)
 {
 	char *log_file = NULL, *path_of_fw = NULL, *discovery_file = NULL;
 	bool update = false, test_multi = false;
-#ifndef _WIN32
+
 	int error;
 	struct option longopts[] = {
 		{ "discovery_file", 	required_argument, 	NULL, 'd'},
@@ -98,7 +97,7 @@ main (int argc,  char **argv)
 			break;
 
 		case 'x':
-			ionic_devid = strtoul(optarg, NULL, 0);
+			ionic_devid = (uint16_t)strtoul(optarg, NULL, 0);
 			break;
 
 		case '?':
@@ -117,38 +116,6 @@ main (int argc,  char **argv)
 		print_usage(argv);
 		exit(1);
 	}
-
-#else /* For Windows */
-	if (argc < 5) {
-		print_usage(argv);
-		exit(1);
-	}
-	if (strcmp(argv[1], "update") == 0) {
-		update = true;
-	}
-	else if (strcmp(argv[1], "discovery") != 0) {
-		print_usage(argv);
-		exit(1);
-	}
-	path_of_fw = argv[2];
-	log_file = argv[3];
-	discovery_file = argv[4];
-	if ((argc > 5) && (argv[5])) {
-		ionic_fw_update_type = strtoul(argv[5], NULL, 0);
-	}
-	if ((argc > 6) && (argv[6])) {
-		ionic_devid = (uint16_t)strtoul(argv[6], NULL, 0);
-	}
-	if ((argc > 7) && (argv[7])) {
-		ionic_verbose_level = strtoul(argv[7], NULL, 0);
-	}
-	//why test_multi?
-	if ((argc > 8) && (argv[8])) {
-		if (strcmp(argv[8], "multi") == 0) {
-			test_multi = true;
-		}
-	}
-#endif
 
 	if (log_file == NULL || discovery_file == NULL || path_of_fw == NULL) {
 		print_usage(argv);
