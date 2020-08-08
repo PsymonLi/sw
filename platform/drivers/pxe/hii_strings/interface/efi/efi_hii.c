@@ -51,6 +51,13 @@ UINT8 mHiiDefaultTypeToWidth[] = {
     2  // EFI_IFR_TYPE_STRING
 };
 
+UINT8 mNumericDefaultTypeToWidth[] = {
+    3, // EFI_IFR_TYPE_NUM_SIZE_8
+    6, // EFI_IFR_TYPE_NUM_SIZE_16
+    12, // EFI_IFR_TYPE_NUM_SIZE_32
+    24, // EFI_IFR_TYPE_NUM_SIZE_64
+};
+
 /** Tiano GUID */
 static const EFI_GUID tiano_guid = EFI_IFR_TIANO_GUID;
 EFI_GUID gEfiHiiStringProtocolGuid = EFI_HII_STRING_PROTOCOL_GUID;
@@ -95,7 +102,7 @@ GetBestLanguage (
         //
         // Loop through all language codes in SupportedLanguages
         //
-        for (Supported = SupportedLanguages; *Supported != '\0'; Supported += CompareLength) {    
+        for (Supported = SupportedLanguages; *Supported != '\0'; Supported += CompareLength) {
         //
         // In RFC 4646 mode, then Loop through all language codes in SupportedLanguages
         //
@@ -129,7 +136,7 @@ GetBestLanguage (
           if (BestLanguage == NULL) {
             return NULL;
           }
-          
+
           return generic_memcpy (BestLanguage, Supported, CompareLength);
         }
       }
@@ -223,7 +230,7 @@ EFIAPI
 HiiGetString (
   IN EFI_HII_HANDLE  HiiHandle,
   IN EFI_STRING_ID   StringId,
-  IN OUT UINT8        *StringLen, 
+  IN OUT UINT8        *StringLen,
   IN CONST CHAR8     *Language  OPTIONAL
   )
 {
@@ -327,7 +334,7 @@ HiiGetString (
     //
     // Free the buffer and return NULL if the supported languages can not be retrieved.
     //
-    bs->FreePool (String);    
+    bs->FreePool (String);
 
     String = NULL;
   }
@@ -337,21 +344,21 @@ Error:
   // Free allocated buffers
   //
   if (SupportedLanguages != NULL) {
-    bs->FreePool (SupportedLanguages);          
+    bs->FreePool (SupportedLanguages);
 
   }
   if (PlatformLanguage != NULL) {
-    bs->FreePool (PlatformLanguage);                
+    bs->FreePool (PlatformLanguage);
   }
   if (BestLanguage != NULL) {
-    bs->FreePool (BestLanguage);                      
+    bs->FreePool (BestLanguage);
   }
 
   //
   // Return the Null-terminated Unicode string
   //
   *StringLen = StringSize;
-  
+
   return String;
 }
 
@@ -364,24 +371,23 @@ UnicodeSPrint (
   ...
   )
 {
-  va_list args;    
-  
+  va_list args;
+
   int   NumberOfPrinted;
 
-  va_start ( args, fmt );    
+  va_start ( args, fmt );
   NumberOfPrinted = efi_vsnprintf ( Buffer, BufferSize, fmt, args );
   va_end ( args );
 
   return NumberOfPrinted;
 }
 
-
 void efi_ifr_checkbox_op ( struct efi_ifr_builder *ifr,
              unsigned int prompt_id,unsigned int help_id,
              unsigned int question_id,
              unsigned int varstore_id,
-             unsigned int varstore_info,
-             unsigned int varstore_offset __unused,
+             unsigned int varstore_info __unused,
+             unsigned int varstore_offset,
              unsigned int vflags,
              unsigned int flags ) {
 
@@ -390,11 +396,11 @@ void efi_ifr_checkbox_op ( struct efi_ifr_builder *ifr,
     /* Add opcode */
     OpCode = efi_ifr_op ( ifr, EFI_IFR_CHECKBOX_OP, sizeof ( *OpCode ) );
     if ( ! OpCode )
-        return;                 
+        return;
 
     OpCode->Question.QuestionId             = question_id;
       OpCode->Question.VarStoreId             = varstore_id;
-      OpCode->Question.VarStoreInfo.VarName     = varstore_info;
+      OpCode->Question.VarStoreInfo.VarOffset = varstore_offset;
       OpCode->Question.Header.Prompt          = prompt_id;
       OpCode->Question.Header.Help            = help_id;
       OpCode->Question.Flags                  = vflags;
@@ -409,11 +415,11 @@ efi_ifr_oneofoption_op ( struct efi_ifr_builder *ifr,
   IN UINT64  Value
   )
 {
-    EFI_IFR_ONE_OF_OPTION *OpCode;    
-      EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
-    UINTN    ValueLen = mHiiDefaultTypeToWidth[Type];  
+    EFI_IFR_ONE_OF_OPTION *OpCode;
+    EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
+    UINTN	ValueLen = mHiiDefaultTypeToWidth[Type];
 
-     /* Add opcode */
+    /* Add opcode */
     OpCode = efi_ifr_op ( ifr, EFI_IFR_ONE_OF_OPTION_OP, EFI_IFR_ONE_OF_OPTION_BASE_SIZE + ValueLen);
     if ( ! OpCode )
         return;
@@ -421,8 +427,7 @@ efi_ifr_oneofoption_op ( struct efi_ifr_builder *ifr,
     OpCode->Option = StringId;
     OpCode->Flags = (UINT8) (Flags & (EFI_IFR_OPTION_DEFAULT | EFI_IFR_OPTION_DEFAULT_MFG));
     OpCode->Type = Type;
-     bs->CopyMem(&OpCode->Value,&Value,ValueLen);
-
+    bs->CopyMem(&OpCode->Value,&Value,ValueLen);
 }
 
 
@@ -434,7 +439,7 @@ efi_ifr_OneOf_Op (  struct efi_ifr_builder *ifr,
   EFI_STRING_ID    Prompt,
   EFI_STRING_ID    Help,
   UINT8            QuestionFlags,
-  UINT8            OneOfFlags __unused
+  UINT8            OneOfFlags
   )
 {
     EFI_IFR_ONE_OF  *OpCode;
@@ -449,29 +454,28 @@ efi_ifr_OneOf_Op (  struct efi_ifr_builder *ifr,
       OpCode->Question.Header.Help            = Help;
       OpCode->Question.QuestionId             = QuestionId;
       OpCode->Question.VarStoreId             = VarStoreId;
-      OpCode->Question.VarStoreInfo.VarName   = VarInfo;
+      OpCode->Question.VarStoreInfo.VarOffset = VarInfo;
       OpCode->Question.Flags                  = QuestionFlags;
-      OpCode->Flags                           = 1;
+      OpCode->Flags                           = OneOfFlags;
 
 }
 
 
-
 void efi_ifr_suppress_grayout_op ( struct efi_ifr_builder *ifr,
-                              UINT16         QuestionId,
-                              UINT16         Value,
+                              UINT16 		QuestionId,
+                              UINT16 		Value,
                               BOOLEAN     Suppress    //if TRUE Suppress; False Gray out.
 ) {
 
     EFI_IFR_OP_HEADER   *OpCode;
     EFI_IFR_EQ_ID_VAL   *Condition;
-    
+
     /* Add opcode */
     if(Suppress) {
         OpCode = efi_ifr_op ( ifr, EFI_IFR_SUPPRESS_IF_OP, sizeof ( *OpCode ) );
     } else {
         OpCode = efi_ifr_op ( ifr, EFI_IFR_GRAY_OUT_IF_OP, sizeof ( *OpCode ) );
-    }    
+    }
     if ( ! OpCode )
         return;
 
@@ -483,7 +487,7 @@ void efi_ifr_suppress_grayout_op ( struct efi_ifr_builder *ifr,
         return;
 
     Condition->Header.Scope = 0;
-    
+
     //Then goes Opcode Data..
     Condition->QuestionId = QuestionId;
     Condition->Value = Value;
@@ -493,11 +497,11 @@ void efi_ifr_suppress_grayout_op ( struct efi_ifr_builder *ifr,
 /**
  * Add EFI_IFR_REF_OP
  *
- * @v ifr            IFR builder
- * @v form_id        Title string identifier
- * @v Promt            String ID for Promt
- * @v Help            String ID for Help
- * @v QuestionFlags    Flags in Question Header
+ * @v ifr           IFR builder
+ * @v form_id       Title string identifier
+ * @v Promt         String ID for Promt
+ * @v Help          String ID for Help
+ * @v QuestionFlags Flags in Question Header
  * @v QuestionID    Question ID
  * @ret A pointer tp tje created opcode.
  */
@@ -517,9 +521,9 @@ void efi_ifr_goto_op ( struct efi_ifr_builder *ifr,
         return;
 
     OpCode->Question.Header.Prompt = Promt;
-    OpCode->Question.Header.Help = Help;    
-    OpCode->Question.QuestionId = QuestionId;        
-    OpCode->Question.Flags = QuestionFlags;    
+    OpCode->Question.Header.Help = Help;
+    OpCode->Question.QuestionId = QuestionId;
+    OpCode->Question.Flags = QuestionFlags;
     OpCode->Question.VarStoreId = 0;
     OpCode->Question.VarStoreInfo.VarOffset = 0xFFFF;
     OpCode->FormId = form_id;
@@ -528,10 +532,10 @@ void efi_ifr_goto_op ( struct efi_ifr_builder *ifr,
 /**
  * Add string to IFR builder
  *
- * @v ifr        IFR builder
- * @v fmt        Format string
- * @v ...        Arguments
- * @ret string_id    String identifier, or zero on failure
+ * @v ifr		IFR builder
+ * @v fmt		Format string
+ * @v ...		Arguments
+ * @ret string_id	String identifier, or zero on failure
  */
 unsigned int efi_ifr_string ( struct efi_ifr_builder *ifr, const char *fmt,
                   ... ) {
@@ -581,10 +585,10 @@ unsigned int efi_ifr_string ( struct efi_ifr_builder *ifr, const char *fmt,
 /**
  * Add IFR opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v opcode        Opcode
- * @v len        Opcode length
- * @ret op        Opcode, or NULL
+ * @v ifr		IFR builder
+ * @v opcode		Opcode
+ * @v len		Opcode length
+ * @ret op		Opcode, or NULL
  */
 static void * efi_ifr_op ( struct efi_ifr_builder *ifr, unsigned int opcode,
                size_t len ) {
@@ -619,7 +623,7 @@ static void * efi_ifr_op ( struct efi_ifr_builder *ifr, unsigned int opcode,
 /**
  * Add end opcode to IFR builder
  *
- * @v ifr        IFR builder
+ * @v ifr		IFR builder
  */
 void efi_ifr_end_op ( struct efi_ifr_builder *ifr ) {
     size_t dispaddr = ifr->ops_len;
@@ -635,7 +639,7 @@ void efi_ifr_end_op ( struct efi_ifr_builder *ifr ) {
 /**
  * Add false opcode to IFR builder
  *
- * @v ifr        IFR builder
+ * @v ifr		IFR builder
  */
 void efi_ifr_false_op ( struct efi_ifr_builder *ifr ) {
     size_t dispaddr = ifr->ops_len;
@@ -651,9 +655,9 @@ void efi_ifr_false_op ( struct efi_ifr_builder *ifr ) {
 /**
  * Add form opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v title_id        Title string identifier
- * @ret form_id        Form identifier
+ * @v ifr		IFR builder
+ * @v title_id		Title string identifier
+ * @ret form_id		Form identifier
  */
 unsigned int efi_ifr_form_op ( struct efi_ifr_builder *ifr,
                    unsigned int title_id ) {
@@ -677,11 +681,11 @@ unsigned int efi_ifr_form_op ( struct efi_ifr_builder *ifr,
 /**
  * Add formset opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v guid        GUID
- * @v title_id        Title string identifier
- * @v help_id        Help string identifier
- * @v ...        Class GUIDs (terminated by NULL)
+ * @v ifr		IFR builder
+ * @v guid		GUID
+ * @v title_id		Title string identifier
+ * @v help_id		Help string identifier
+ * @v ...		Class GUIDs (terminated by NULL)
  */
 void efi_ifr_form_set_op ( struct efi_ifr_builder *ifr, const EFI_GUID *guid,
                unsigned int title_id, unsigned int help_id, ... ) {
@@ -727,10 +731,10 @@ void efi_ifr_form_set_op ( struct efi_ifr_builder *ifr, const EFI_GUID *guid,
 /**
  * Add get opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v varstore_id    Variable store identifier
- * @v varstore_info    Variable string identifier or offset
- * @v varstore_type    Variable type
+ * @v ifr		IFR builder
+ * @v varstore_id	Variable store identifier
+ * @v varstore_info	Variable string identifier or offset
+ * @v varstore_type	Variable type
  */
 void efi_ifr_get_op ( struct efi_ifr_builder *ifr, unsigned int varstore_id,
               unsigned int varstore_info, unsigned int varstore_type ) {
@@ -751,8 +755,8 @@ void efi_ifr_get_op ( struct efi_ifr_builder *ifr, unsigned int varstore_id,
 /**
  * Add GUID class opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v class        Class
+ * @v ifr		IFR builder
+ * @v class		Class
  */
 void efi_ifr_guid_class_op ( struct efi_ifr_builder *ifr, unsigned int class ) {
     size_t dispaddr = ifr->ops_len;
@@ -774,8 +778,8 @@ void efi_ifr_guid_class_op ( struct efi_ifr_builder *ifr, unsigned int class ) {
 /**
  * Add GUID subclass opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v subclass        Subclass
+ * @v ifr		IFR builder
+ * @v subclass		Subclass
  */
 void efi_ifr_guid_subclass_op ( struct efi_ifr_builder *ifr,
                 unsigned int subclass ) {
@@ -799,17 +803,17 @@ void efi_ifr_guid_subclass_op ( struct efi_ifr_builder *ifr,
 /**
  * Add numeric opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v prompt_id        Prompt string identifier
- * @v help_id        Help string identifier
- * @v question_id    Question identifier
- * @v varstore_id    Variable store identifier
- * @v varstore_info    Variable string identifier or offset
+ * @v ifr           IFR builder
+ * @v prompt_id     Prompt string identifier
+ * @v help_id       Help string identifier
+ * @v question_id   Question identifier
+ * @v varstore_id   Variable store identifier
+ * @v varstore_info Variable string identifier or offset
  * @v vflags        Variable flags
- * @v min_value        Minimum value
- * @v max_value        Maximum value
- * @v step        Step
- * @v flags        Flags
+ * @v min_value     Minimum value
+ * @v max_value     Maximum value
+ * @v step          Step
+ * @v flags         Flags
  */
 void efi_ifr_numeric_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
               unsigned int help_id, unsigned int question_id,
@@ -817,22 +821,31 @@ void efi_ifr_numeric_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
               unsigned int vflags, unsigned long min_value,
               unsigned long max_value, unsigned int step,
               unsigned int flags ) {
+
     size_t dispaddr = ifr->ops_len;
     EFI_IFR_NUMERIC *numeric;
+    EFI_IFR_NUMERIC_BASE *Base;
     unsigned int size;
+    UINTN	ValueLen = mNumericDefaultTypeToWidth[flags];
 
     /* Add opcode */
-    numeric = efi_ifr_op ( ifr, EFI_IFR_NUMERIC_OP, sizeof ( *numeric ) );
+    numeric = efi_ifr_op ( ifr, EFI_IFR_NUMERIC_OP, sizeof ( *Base )+ ValueLen);
+
     if ( ! numeric )
         return;
+
+    numeric->Header.Scope = 1;
+
     numeric->Question.Header.Prompt = prompt_id;
     numeric->Question.Header.Help = help_id;
     numeric->Question.QuestionId = question_id;
     numeric->Question.VarStoreId = varstore_id;
-    numeric->Question.VarStoreInfo.VarName = varstore_info;
+    numeric->Question.VarStoreInfo.VarOffset = varstore_info;
     numeric->Question.Flags = vflags;
+    numeric->Flags = flags;
 
     size = ( flags & EFI_IFR_NUMERIC_SIZE );
+
     switch ( size ) {
     case EFI_IFR_NUMERIC_SIZE_1 :
         numeric->data.u8.MinValue = min_value;
@@ -865,16 +878,16 @@ void efi_ifr_numeric_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
 /**
  * Add string opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v prompt_id        Prompt string identifier
- * @v help_id        Help string identifier
- * @v question_id    Question identifier
- * @v varstore_id    Variable store identifier
- * @v varstore_info    Variable string identifier or offset
+ * @v ifr           IFR builder
+ * @v prompt_id     Prompt string identifier
+ * @v help_id       Help string identifier
+ * @v question_id   Question identifier
+ * @v varstore_id   Variable store identifier
+ * @v varstore_info Variable string identifier or offset
  * @v vflags        Variable flags
- * @v min_size        Minimum size
- * @v max_size        Maximum size
- * @v flags        Flags
+ * @v min_size      Minimum size
+ * @v max_size      Maximum size
+ * @v flags         Flags
  */
 void efi_ifr_string_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
              unsigned int help_id, unsigned int question_id,
@@ -892,7 +905,7 @@ void efi_ifr_string_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
     string->Question.Header.Help = help_id;
     string->Question.QuestionId = question_id;
     string->Question.VarStoreId = varstore_id;
-    string->Question.VarStoreInfo.VarName = varstore_info;
+    string->Question.VarStoreInfo.VarOffset = varstore_info;
     string->Question.Flags = vflags;
     string->MinSize = min_size;
     string->MaxSize = max_size;
@@ -907,7 +920,7 @@ void efi_ifr_string_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
 /**
  * Add suppress-if opcode to IFR builder
  *
- * @v ifr        IFR builder
+ * @v ifr		IFR builder
  */
 void efi_ifr_suppress_if_op ( struct efi_ifr_builder *ifr ) {
     size_t dispaddr = ifr->ops_len;
@@ -925,10 +938,10 @@ void efi_ifr_suppress_if_op ( struct efi_ifr_builder *ifr ) {
 /**
  * Add text opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v prompt_id        Prompt string identifier
- * @v help_id        Help string identifier
- * @v text_id        Text string identifier
+ * @v ifr           IFR builder
+ * @v prompt_id     Prompt string identifier
+ * @v help_id       Help string identifier
+ * @v text_id       Text string identifier
  */
 void efi_ifr_text_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
                unsigned int help_id, unsigned int text_id ) {
@@ -951,7 +964,7 @@ void efi_ifr_text_op ( struct efi_ifr_builder *ifr, unsigned int prompt_id,
 /**
  * Add true opcode to IFR builder
  *
- * @v ifr        IFR builder
+ * @v ifr		IFR builder
  */
 void efi_ifr_true_op ( struct efi_ifr_builder *ifr ) {
     size_t dispaddr = ifr->ops_len;
@@ -964,12 +977,37 @@ void efi_ifr_true_op ( struct efi_ifr_builder *ifr ) {
     DBGC2_HDA ( ifr, dispaddr, true, sizeof ( *true ) );
 }
 
+
+unsigned int efi_ifr_varstore_op ( struct efi_ifr_builder *ifr,
+                          const EFI_GUID *guid,
+                          UINT16 size,
+                          const char *name ) {
+
+    UINT8	length;
+    EFI_IFR_VARSTORE *varstore;
+
+    length = strlen(&name[0]);
+    length += sizeof ( *varstore );
+
+    /* Add opcode */
+    varstore = efi_ifr_op ( ifr, EFI_IFR_VARSTORE_OP,length );
+
+    if ( ! varstore )
+        return 0;
+
+    varstore->VarStoreId = ++(ifr->varstore_id);
+    memcpy ( &varstore->Guid, guid, sizeof ( varstore->Guid ) );
+    varstore->Size = size;
+    strcpy((char *)varstore->Name,name);
+    return varstore->VarStoreId;
+}
+
 /**
  * Add name/value store opcode to IFR builder
  *
- * @v ifr        IFR builder
- * @v guid        GUID
- * @ret varstore_id    Variable store identifier, or 0 on failure
+ * @v ifr		IFR builder
+ * @v guid		GUID
+ * @ret varstore_id	Variable store identifier, or 0 on failure
  */
 unsigned int efi_ifr_varstore_name_value_op ( struct efi_ifr_builder *ifr,
                           const EFI_GUID *guid ) {
@@ -986,6 +1024,7 @@ unsigned int efi_ifr_varstore_name_value_op ( struct efi_ifr_builder *ifr,
 
     DBGC ( ifr, "IFR %p name/value store %#04x\n",
            ifr, varstore->VarStoreId );
+
     DBGC2_HDA ( ifr, dispaddr, varstore, sizeof ( *varstore ) );
     return varstore->VarStoreId;
 }
@@ -993,7 +1032,7 @@ unsigned int efi_ifr_varstore_name_value_op ( struct efi_ifr_builder *ifr,
 /**
  * Free memory used by IFR builder
  *
- * @v ifr        IFR builder
+ * @v ifr		IFR builder
  */
 void efi_ifr_free ( struct efi_ifr_builder *ifr ) {
 
@@ -1005,11 +1044,11 @@ void efi_ifr_free ( struct efi_ifr_builder *ifr ) {
 /**
  * Construct package list from IFR builder
  *
- * @v ifr        IFR builder
- * @v guid        Package GUID
- * @v language        Language
- * @v language_id    Language string ID
- * @ret package        Package list, or NULL
+ * @v ifr		IFR builder
+ * @v guid		Package GUID
+ * @v language		Language
+ * @v language_id	Language string ID
+ * @ret package		Package list, or NULL
  *
  * The package list is allocated using malloc(), and must eventually
  * be freed by the caller.  (The caller must also call efi_ifr_free()
