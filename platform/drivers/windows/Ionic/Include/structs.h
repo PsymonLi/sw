@@ -13,7 +13,7 @@ struct txq_nbl_list {
 
 struct rxq_pkt {
 
-	struct rxq_pkt *next;
+	SLIST_ENTRY	next;
 
     ULONG flags;
 
@@ -27,10 +27,9 @@ struct rxq_pkt {
 
 	u32				bytes;
 
-    // NDIS structures for this packet
-    PNET_BUFFER_LIST    nbl;
-    PNET_BUFFER         nb;
-    PMDL                mdl;
+    PNET_BUFFER_LIST parent_nbl;
+
+	PNET_BUFFER		packet;
 
 	NDIS_NET_BUFFER_LIST_FILTERING_INFO	filter_info;
 
@@ -40,6 +39,7 @@ struct rxq_pkt {
 
 	struct rxq_pkt*	rsc_next;
 	PMDL			rsc_last_mdl;
+	ULONG			rsc_off;
 
 	u64				phys_addr[1];
 };
@@ -161,7 +161,7 @@ struct ionic_admin_ctx {
 };
 
 typedef bool (*desc_cb)(struct queue *q, struct desc_info *desc_info,
-			struct cq_info *cq_info, void *cb_arg, void *nbls_to_indicate, void *last_nbl);
+			struct cq_info *cq_info, void *cb_arg, void *packets_to_indicate, void *last_packet);
 
 struct desc_info {
 	void *desc;
@@ -269,7 +269,7 @@ struct cq {
 #define q_to_rx_dev_stats(qu)    q_to_qcq(qu)->rx_stats
 
 struct rsc_scratch {
-	PNET_BUFFER_LIST	nbl[IONIC_MAX_RSC_FLOWS];
+	PNET_BUFFER_LIST	packet[IONIC_MAX_RSC_FLOWS];
 	ULONG			hash[IONIC_MAX_RSC_FLOWS];
 	ULONG			fifo_i;
 };
@@ -449,9 +449,7 @@ struct lif {
 	// rx pool
 	//
 
-    CACHE_ALIGN NDIS_SPIN_LOCK rx_pool_lock;
-    struct rxq_pkt *rx_pool_head;
-    NDIS_HANDLE		rx_pkts_nbl_pool;
+	NDIS_HANDLE		rx_pkts_nbl_pool;
     struct rxq_pkt *rxq_pkt_base;
 
 #ifdef DBG
@@ -468,6 +466,7 @@ struct lif {
 	void		   *rx_pkt_sgl_buffer;
 
 	// cache aligned elements
+	CACHE_ALIGN SLIST_HEADER   rx_pkts_list;
 	CACHE_ALIGN NDIS_SPIN_LOCK dbid_inuse_lock;	/* lock the dbid bit list */
 	CACHE_ALIGN NDIS_SPIN_LOCK adminq_lock;		/* lock for AdminQ operations */
 };

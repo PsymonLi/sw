@@ -5,8 +5,8 @@ static bool ionic_rx_clean(struct queue *q,
                            struct desc_info *desc_info,
                            struct cq_info *cq_info,
                            void *cb_arg,
-                           PNET_BUFFER_LIST *nbls_to_indicate,
-                           PNET_BUFFER_LIST *last_nbl);
+                           PNET_BUFFER_LIST *packets_to_indicate,
+                           PNET_BUFFER_LIST *last_packet);
 
 static ULONG_PTR ndis_hash_type[16] = {
     0,
@@ -100,7 +100,7 @@ ionic_rxq_post(struct queue *q, bool ring_dbell, desc_cb cb_func, void *cb_arg)
 void
 ionic_reset_rxq_pkts(struct lif *lif)
 {
-    struct rxq_pkt *pkt = NULL;
+    struct rxq_pkt *rxq_pkt = NULL;
     ULONG sg_slots = 0;
     ULONG rxq_pkt_len = 0;
 
@@ -110,42 +110,48 @@ ionic_reset_rxq_pkts(struct lif *lif)
 
 	rxq_pkt_len = ALIGN_SZ( (sizeof(struct rxq_pkt) + (sg_slots * sizeof(u64))), MEMORY_ALLOCATION_ALIGNMENT);
 
-    pkt = (struct rxq_pkt *)lif->rxq_pkt_base;
+    rxq_pkt = (struct rxq_pkt *)lif->rxq_pkt_base;
 
     /* First, reset the entries in the list */
-	lif->rx_pool_head = NULL;
+	InitializeSListHead(&lif->rx_pkts_list);
 #ifdef DBG
-    lif->rx_pkts_free_count = lif->rx_pkt_cnt;
+    lif->rx_pkts_free_count = 0;
 #endif
     for (unsigned int i = 0; i < lif->rx_pkt_cnt; i++) {
-        pkt->next = lif->rx_pool_head;
-        lif->rx_pool_head = pkt;
 
-        pkt = (struct rxq_pkt *)((char *)pkt + rxq_pkt_len);
+        rxq_pkt->next.Next = NULL;
+
+		InterlockedPushEntrySList( &lif->rx_pkts_list,
+								   &rxq_pkt->next);
+
+        rxq_pkt = (struct rxq_pkt *)((char *)rxq_pkt + rxq_pkt_len);
+#ifdef DBG
+        lif->rx_pkts_free_count++;
+#endif
     }
 }
 
 void
 ionic_release_rxq_pkts(struct lif *lif)
 {
-    struct rxq_pkt *pkt, *next;
+    struct rxq_pkt *rxq_pkt = NULL;
 
-    for (pkt = lif->rx_pool_head; pkt != NULL; pkt = next) {
-        next = pkt->next;
+    rxq_pkt = (struct rxq_pkt *)FirstEntrySList(&lif->rx_pkts_list);
 
-        if (pkt->nbl != NULL) {
-            NdisFreeNetBufferList(pkt->nbl);
-            pkt->nbl = NULL;
-            pkt->nb = NULL;
+    for (unsigned int i = 0; i < lif->rx_pkt_cnt; i++) {
+
+        if (rxq_pkt == NULL) {
+            break;
         }
 
-        if (pkt->mdl != NULL) {
-            NdisFreeMdl(pkt->mdl);
-            pkt->mdl = NULL;
+        if (rxq_pkt->parent_nbl != NULL) {
+            NdisFreeNetBufferList(rxq_pkt->parent_nbl);
+            rxq_pkt->parent_nbl = NULL;
+            rxq_pkt->packet = NULL;
         }
+
+        rxq_pkt = (struct rxq_pkt *)rxq_pkt->next.Next;
     }
-
-    lif->rx_pool_head = NULL;
 }
 
 NDIS_STATUS
@@ -155,7 +161,7 @@ ionic_alloc_rxq_pkts(struct ionic *ionic, struct lif *lif)
     NET_BUFFER_LIST_POOL_PARAMETERS pool_params;
     ULONG size;
     ULONG sg_slots = 0;
-    struct rxq_pkt *pkt = NULL;
+    struct rxq_pkt *rxq_pkt = NULL;
     ULONG rxq_len = 0;
 
     ASSERT(ionic != NULL);
@@ -212,18 +218,24 @@ ionic_alloc_rxq_pkts(struct ionic *ionic, struct lif *lif)
                   __FUNCTION__,
                   lif->rxq_pkt_base, size));
 
-    lif->rx_pool_head = NULL;
+    InitializeSListHead(&lif->rx_pkts_list);
 #ifdef DBG
-    lif->rx_pkts_free_count = lif->rx_pkt_cnt;
+    lif->rx_pkts_free_count = 0;
 #endif
 
-    pkt = (struct rxq_pkt *)lif->rxq_pkt_base;
+    rxq_pkt = (struct rxq_pkt *)lif->rxq_pkt_base;
 
     for (unsigned int i = 0; i < lif->rx_pkt_cnt; i++) {
-        pkt->next = lif->rx_pool_head;
-        lif->rx_pool_head = pkt;
 
-        pkt = (struct rxq_pkt *)((char *)pkt + rxq_len);
+        rxq_pkt->next.Next = NULL;
+
+		InterlockedPushEntrySList( &lif->rx_pkts_list,
+								   &rxq_pkt->next);
+
+        rxq_pkt = (struct rxq_pkt *)((char *)rxq_pkt + rxq_len);
+#ifdef DBG
+        lif->rx_pkts_free_count++;
+#endif
     }
 
     return NDIS_STATUS_SUCCESS;
@@ -234,97 +246,104 @@ err_alloc_failed:
 }
 
 struct rxq_pkt *
-ionic_get_rxq_pkts(struct lif *lif, int count)
+ionic_get_next_rxq_pkt(struct lif *lif)
 {
-    struct rxq_pkt *pkt, *last;
+    struct rxq_pkt *rxq_pkt = NULL;
+#ifdef DBG
+	LARGE_INTEGER start = {0,0};
+	start = KeQueryPerformanceCounter( NULL);
+#endif
 
-    if (count < 1) {
-        return NULL;
-    }
+	rxq_pkt = (struct rxq_pkt *)InterlockedPopEntrySList( &lif->rx_pkts_list);
 
-    // take packets from the rx pool free list
-    NdisAcquireSpinLock(&lif->rx_pool_lock);
-    pkt = lif->rx_pool_head;
-    if (pkt != NULL) {
-        for (last = pkt; count > 1 && last->next != NULL; --count) {
-            last = last->next;
-        }
-        lif->rx_pool_head = last->next;
-        last->next = NULL;
-    }
-    NdisReleaseSpinLock(&lif->rx_pool_lock);
+	if( rxq_pkt != NULL) {
 
-    return pkt;
+#ifdef DBG
+		InterlockedAdd64( (LONG64 *)&lif->lif_stats->rx_pool_alloc_time,
+						  (KeQueryPerformanceCounter( NULL).QuadPart - start.QuadPart));
+		InterlockedIncrement( (LONG *)&lif->lif_stats->rx_pool_alloc_cnt);
+
+		ASSERT( lif->rx_pkts_free_count > 0);
+		InterlockedDecrement(&lif->rx_pkts_free_count);
+#endif
+	}
+
+    return rxq_pkt;
 }
 
 void
-ionic_put_rxq_pkts(struct lif *lif, struct rxq_pkt *pkt)
+_ionic_return_rxq_pkt(struct lif *lif, struct rxq_pkt *rxq_pkt)
 {
-    unsigned int frame_size = lif->ionic->frame_size;
-    struct rxq_pkt *next, *last, *rsc_pkt, *rsc_next;
+    PMDL mdl = NET_BUFFER_FIRST_MDL(rxq_pkt->packet);
 
-    if (pkt == NULL) {
-        return;
-    }
-    last = pkt;
+    // reset oob data per mbl in case it was used for rsc
+    NET_BUFFER_LIST_COALESCED_SEG_COUNT(rxq_pkt->parent_nbl) = 0;
+    NET_BUFFER_LIST_DUP_ACK_COUNT(rxq_pkt->parent_nbl) = 0;
 
-    // untangle the lists if packets were used for rsc
-    for (next = pkt; next != NULL; next = next->next) {
-        // flatten rsc_next lists into the single list
-        for (; next->rsc_next != NULL; next->rsc_next = rsc_next) {
-            rsc_pkt = next->rsc_next;
-            rsc_next = rsc_pkt->rsc_next;
+    // readjust mdl in case it was used for rsc
+    mdl->StartVa = (void *)((char *)mdl->StartVa - rxq_pkt->rsc_off);
+    mdl->ByteOffset -= rxq_pkt->rsc_off;
+    mdl->ByteCount -= rxq_pkt->rsc_off;
+    mdl->Next = NULL;
 
-            rsc_pkt->rsc_next = NULL;
+    // reset the rsc info
+    rxq_pkt->rsc_off = 0;
+    rxq_pkt->rsc_last_mdl = NULL;
+    rxq_pkt->rsc_next = NULL;
 
-            rsc_pkt->next = next->next;
-            next->next = rsc_pkt;
-        }
+#ifdef DBG
+	LARGE_INTEGER start = {0,0};
+	
+	InterlockedIncrement(&lif->rx_pkts_free_count);	
+	start = KeQueryPerformanceCounter( NULL);
+#endif
 
-        // reset the next mdl pointer, each packet has just one mdl
-        next->mdl->Next = NULL;
-        // reset the next mdl length to the rx frame size
-        NdisAdjustMdlLength(next->mdl, frame_size);
+	rxq_pkt->q = NULL;
+    rxq_pkt->next.Next = NULL;
 
-        // reset oob data per nbl
-        NET_BUFFER_LIST_COALESCED_SEG_COUNT(next->nbl) = 0;
-        NET_BUFFER_LIST_DUP_ACK_COUNT(next->nbl) = 0;
+	InterlockedPushEntrySList( &lif->rx_pkts_list,
+							   &rxq_pkt->next);
 
-        // reset the rsc pointers
-        next->rsc_last_mdl = NULL;
+#ifdef DBG
+	InterlockedAdd64( (LONG64 *)&lif->lif_stats->rx_pool_free_time,
+						(KeQueryPerformanceCounter( NULL).QuadPart - start.QuadPart));
+	InterlockedIncrement( (LONG *)&lif->lif_stats->rx_pool_free_cnt);
+#endif
 
-        // find the last packet
-        last = next;
-    }
-
-    // place packets on the rx pool free list
-    NdisAcquireSpinLock(&lif->rx_pool_lock);
-    last->next = lif->rx_pool_head;
-    lif->rx_pool_head = pkt;
-    NdisReleaseSpinLock(&lif->rx_pool_lock);
+    return;
 }
 
-struct rxq_pkt *
-ionic_get_next_rxq_pkt(struct lif *lif)
+void
+ionic_return_rxq_pkt(struct lif *lif, struct rxq_pkt *rxq_pkt)
 {
-    return ionic_get_rxq_pkts(lif, 1);
+
+    while (rxq_pkt->rsc_next != NULL) {
+        struct rxq_pkt *rsc_pkt = rxq_pkt->rsc_next;
+
+        rxq_pkt->rsc_next = rsc_pkt->rsc_next;
+        rsc_pkt->rsc_next = NULL;
+
+        _ionic_return_rxq_pkt(lif, rsc_pkt);
+    }
+
+    _ionic_return_rxq_pkt(lif, rxq_pkt);
 }
 
 NDIS_STATUS
 ionic_alloc_rxq_netbuffers(struct ionic *ionic,
                            struct lif *lif,
                            unsigned int size,
-                           struct rxq_pkt *pkt)
+                           struct rxq_pkt *rxq_pkt)
 {
 	NDIS_STATUS status = NDIS_STATUS_SUCCESS;
-    PNET_BUFFER nb = NULL;
-    PNET_BUFFER_LIST nbl = NULL;
+    PNET_BUFFER packet = NULL;
+    PNET_BUFFER_LIST parent_nbl = NULL;
     PMDL mdl = NULL;
 
     ASSERT(ionic != NULL);
-    ASSERT(pkt != NULL);
+    ASSERT(rxq_pkt != NULL);
 
-    mdl = NdisAllocateMdl(ionic->adapterhandle, pkt->addr, size);
+    mdl = NdisAllocateMdl(ionic->adapterhandle, rxq_pkt->addr, size);
 
     if (mdl == NULL) {
         DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
@@ -335,9 +354,10 @@ ionic_alloc_rxq_netbuffers(struct ionic *ionic,
     }
 
     // allocate a packet descriptor
-    nbl = NdisAllocateNetBufferAndNetBufferList(lif->rx_pkts_nbl_pool, 0, 0, mdl, 0, 0);
+    parent_nbl =
+        NdisAllocateNetBufferAndNetBufferList(lif->rx_pkts_nbl_pool, 0, 0, mdl, 0, 0);
 
-    if (nbl == NULL) {
+    if (parent_nbl == NULL) {
         DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
                   "%s Failed to alloc rq net buffer list adapter %p\n",
                   __FUNCTION__, ionic));
@@ -345,29 +365,29 @@ ionic_alloc_rxq_netbuffers(struct ionic *ionic,
         goto err_nbl_alloc_failed;
     }
 
-    nb = NET_BUFFER_LIST_FIRST_NB(nbl);
-    NET_BUFFER_FIRST_MDL(nb) = mdl;
+    packet = NET_BUFFER_LIST_FIRST_NB(parent_nbl);
+    NET_BUFFER_FIRST_MDL(packet) = mdl;
 
     /* setup the rq_pkt */
-    pkt->nbl = nbl;
-    pkt->nb = nb;
-    pkt->mdl = mdl;
+    rxq_pkt->parent_nbl = parent_nbl;
 
-    pkt->filter_info.Value = 0;
-    pkt->filter_info.FilteringInfo.FilterId = 0;
-    pkt->filter_info.FilteringInfo.QueueVPortInfo.QueueId = 0;
-    NET_BUFFER_LIST_INFO(pkt->nbl, NetBufferListFilteringInfo) =
-        pkt->filter_info.Value;
+    rxq_pkt->packet = packet;
 
-    pkt->nb_shared_memory_info.NextSharedMemorySegment = NULL;
-    pkt->nb_shared_memory_info.SharedMemoryFlags = 0;
-    pkt->nb_shared_memory_info.SharedMemoryHandle = lif->rx_pkt_buffer_handle;
-    pkt->nb_shared_memory_info.SharedMemoryLength = size;
-    pkt->nb_shared_memory_info.SharedMemoryOffset = pkt->offset;
+    rxq_pkt->filter_info.Value = 0;
+    rxq_pkt->filter_info.FilteringInfo.FilterId = 0;
+    rxq_pkt->filter_info.FilteringInfo.QueueVPortInfo.QueueId = 0;
+    NET_BUFFER_LIST_INFO(rxq_pkt->parent_nbl, NetBufferListFilteringInfo) =
+        rxq_pkt->filter_info.Value;
 
-    nb->SharedMemoryInfo = &pkt->nb_shared_memory_info;
+    rxq_pkt->nb_shared_memory_info.NextSharedMemorySegment = NULL;
+    rxq_pkt->nb_shared_memory_info.SharedMemoryFlags = 0;
+    rxq_pkt->nb_shared_memory_info.SharedMemoryHandle = lif->rx_pkt_buffer_handle;
+    rxq_pkt->nb_shared_memory_info.SharedMemoryLength = size;
+    rxq_pkt->nb_shared_memory_info.SharedMemoryOffset = rxq_pkt->offset;
 
-    *(struct rxq_pkt **)NET_BUFFER_MINIPORT_RESERVED(nb) = pkt;
+    packet->SharedMemoryInfo = &rxq_pkt->nb_shared_memory_info;
+
+    *(struct rxq_pkt **)NET_BUFFER_MINIPORT_RESERVED(packet) = rxq_pkt;
 
     return NDIS_STATUS_SUCCESS;
 
@@ -771,6 +791,27 @@ _ionic_do_rsc(struct qcq *qcq,
     last_mdl->ByteCount -= shorten;
     NET_BUFFER_DATA_LENGTH(last_nb) += lengthen - shorten;
 
+#ifdef IONIC_MDL_STRIP
+    // strip header from second packet by advancing start of mdl
+
+    DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+        "%s strip headers %u bytes from nb %u bytes\n",
+        __FUNCTION__, off, NET_BUFFER_DATA_LENGTH(nb)));
+
+    DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+        "%s mdl va %p offset %lu count %lu (before)\n",
+        __FUNCTION__, mdl->StartVa, mdl->ByteOffset, mdl->ByteCount));
+
+    // strip the header (not using MmAdvanceMdl)
+    mdl->StartVa = (void *)((char *)mdl->StartVa + off);
+    mdl->ByteOffset += off;
+    mdl->ByteCount -= off;
+    pkt->rsc_off = off;
+
+    DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
+        "%s mdl va %p offset %lu count %lu (after)\n",
+        __FUNCTION__, mdl->StartVa, mdl->ByteOffset, mdl->ByteCount));
+#else
     // copy end of first packet overwriting header of second packet
 
     // XXX: some special cases could be merged, but those are avoided above.
@@ -779,6 +820,7 @@ _ionic_do_rsc(struct qcq *qcq,
 
     // scrub that part of the first packet, for pcap debugging
     memset((char*)last_mdl->StartVa + last_mdl->ByteCount, 'A', off);
+#endif
 
     return IONIC_RSC_MERGE;
 }
@@ -825,12 +867,12 @@ ionic_do_rsc(struct qcq *qcq, PNET_BUFFER_LIST nbl, u8 pkt_type_color)
     // find and merge a matching flow
     for (flow_i = 0; flow_i < IONIC_MAX_RSC_FLOWS; ++flow_i) {
         if (rss_hash != rsc->hash[flow_i] ||
-            rsc->nbl[flow_i] == NULL) {
+            rsc->packet[flow_i] == NULL) {
             continue;
         }
 
         // same flow hash, likely same flow, try to merge
-        result = _ionic_do_rsc(qcq, nbl, rsc->nbl[flow_i]);
+        result = _ionic_do_rsc(qcq, nbl, rsc->packet[flow_i]);
 
         if (result == IONIC_RSC_MERGE) {
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
@@ -843,7 +885,7 @@ ionic_do_rsc(struct qcq *qcq, PNET_BUFFER_LIST nbl, u8 pkt_type_color)
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
                       "%s packet replaces flow %lu\n",
                       __FUNCTION__, flow_i));
-            rsc->nbl[flow_i] = nbl;
+            rsc->packet[flow_i] = nbl;
             rsc->hash[flow_i] = rss_hash;
             return false;
         }
@@ -865,7 +907,7 @@ ionic_do_rsc(struct qcq *qcq, PNET_BUFFER_LIST nbl, u8 pkt_type_color)
               "%s evict and replace flow %lu\n",
               __FUNCTION__, flow_i));
 
-    rsc->nbl[flow_i] = nbl;
+    rsc->packet[flow_i] = nbl;
     rsc->hash[flow_i] = rss_hash;
 
     rsc->fifo_i = (flow_i + 1) & (IONIC_MAX_RSC_FLOWS - 1);
@@ -878,15 +920,15 @@ ionic_rx_clean(struct queue *q,
                struct desc_info *desc_info,
                struct cq_info *cq_info,
                void *cb_arg,
-               PNET_BUFFER_LIST *nbls_to_indicate,
-               PNET_BUFFER_LIST *last_nbl)
+               PNET_BUFFER_LIST *packets_to_indicate,
+               PNET_BUFFER_LIST *last_packet)
 {
     struct lif *lif = q->lif;
     struct ionic *ionic = lif->ionic;
     struct rxq_comp *comp = (struct rxq_comp *)cq_info->cq_desc;
-    PNET_BUFFER nb = (PNET_BUFFER)cb_arg;
-    PNET_BUFFER_LIST nbl;
-    struct rxq_pkt *pkt;
+    PNET_BUFFER packet = (PNET_BUFFER)cb_arg;
+    PNET_BUFFER_LIST parent_nbl;
+    struct rxq_pkt *rxq_pkt;
     NDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO csum_info;
     NDIS_NET_BUFFER_LIST_8021Q_INFO vlan_pri_info;
     PMDL mdl;
@@ -908,21 +950,23 @@ ionic_rx_clean(struct queue *q,
               "%s Processing packet for lif %d\n", __FUNCTION__,
               q->lif->index));
 
-    pkt = *(struct rxq_pkt **)NET_BUFFER_MINIPORT_RESERVED(nb);
-    nbl = pkt->nbl;
-    mdl = pkt->mdl;
+    mdl = NET_BUFFER_FIRST_MDL(packet);
 
-    frame_type = get_frame_type((void *)pkt->addr);
+    rxq_pkt = *(struct rxq_pkt **)NET_BUFFER_MINIPORT_RESERVED(packet);
 
-    NET_BUFFER_LIST_STATUS(nbl) = NDIS_STATUS_SUCCESS;
-    nbl->SourceHandle = ionic->adapterhandle;
+    frame_type = get_frame_type((void *)rxq_pkt->addr);
 
-    NET_BUFFER_LIST_NEXT_NBL(nbl) = NULL;
+    parent_nbl = rxq_pkt->parent_nbl;
+
+    NET_BUFFER_LIST_STATUS(parent_nbl) = NDIS_STATUS_SUCCESS;
+    parent_nbl->SourceHandle = ionic->adapterhandle;
+
+    NET_BUFFER_LIST_NEXT_NBL(parent_nbl) = NULL;
 
     DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_VERBOSE,
               "%s RXQ Process Pkts adapter %p NB: %p NBL %p Len 0x%08lX Pad %s "
               "status 0x%08lX \n",
-              __FUNCTION__, ionic, nb, nbl, comp_len,
+              __FUNCTION__, ionic, packet, parent_nbl, comp_len,
               comp_len < IONIC_MINIMUM_RX_PACKET_LEN ? "Yes" : "No",
               comp_status));
 
@@ -930,7 +974,7 @@ ionic_rx_clean(struct queue *q,
         DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_ERROR,
                   "%s RXQ Packet Error adapter %p Queue %d Status 0x%0x\n",
                   __FUNCTION__, ionic, q->index, comp_status));
-        NET_BUFFER_DATA_LENGTH(nb) = 0;
+        NET_BUFFER_DATA_LENGTH(packet) = 0;
         NdisAdjustMdlLength(mdl, 0);
 
         ++rx_stats->completion_errors;
@@ -939,13 +983,13 @@ ionic_rx_clean(struct queue *q,
     }
 
 #ifdef DBG
-    for (u32 sg_index = 0; sg_index < pkt->sg_count; sg_index++) {
+    for (u32 sg_index = 0; sg_index < rxq_pkt->sg_count; sg_index++) {
         DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_VERBOSE,
                     "%s Rxq packet %p sg%d PA %I64X\n", 
                     __FUNCTION__,
-                    pkt,
+                    rxq_pkt,
                     sg_index,
-                    pkt->phys_addr[sg_index]));
+                    rxq_pkt->phys_addr[sg_index]));
     }
 #endif
 
@@ -970,7 +1014,7 @@ ionic_rx_clean(struct queue *q,
         comp_len = IONIC_MINIMUM_RX_PACKET_LEN;
     }
 
-    pkt->bytes = comp_len;
+    rxq_pkt->bytes = comp_len;
 
     vlan_pri_info.Value = 0;
 
@@ -989,46 +1033,46 @@ ionic_rx_clean(struct queue *q,
         rx_stats->vlan_stripped++;
     }
 
-    NDIS_SET_NET_BUFFER_LIST_VLAN_ID(nbl,
+    NDIS_SET_NET_BUFFER_LIST_VLAN_ID(parent_nbl,
                                      vlan_pri_info.TagHeader.VlanId);
-    NDIS_SET_NET_BUFFER_LIST_PRIORITY(nbl,
+    NDIS_SET_NET_BUFFER_LIST_PRIORITY(parent_nbl,
                                       vlan_pri_info.TagHeader.UserPriority);
 
     //
     // Check if we should have a vlan tag on this queue
     //
 
-    NET_BUFFER_LIST_INFO(pkt->nbl, NetBufferListFilteringInfo) =
-        pkt->filter_info.Value;
+    NET_BUFFER_LIST_INFO(rxq_pkt->parent_nbl, NetBufferListFilteringInfo) =
+        rxq_pkt->filter_info.Value;
 
     if (BooleanFlagOn(ionic->ConfigStatus, IONIC_SRIOV_MODE)) {
-        q_index = NET_BUFFER_LIST_RECEIVE_FILTER_VPORT_ID(pkt->nbl);
+        q_index = NET_BUFFER_LIST_RECEIVE_FILTER_VPORT_ID(rxq_pkt->parent_nbl);
 
         if (BooleanFlagOn(ionic->SriovSwitch.Ports[q_index].Flags,
                           IONIC_VPORT_STATE_VLAN_FLTR_SET) &&
             vlan_pri_info.TagHeader.VlanId == 0) {
-            NET_BUFFER_LIST_RECEIVE_QUEUE_ID(nbl) = 0;
+            NET_BUFFER_LIST_RECEIVE_QUEUE_ID(parent_nbl) = 0;
         } else if (ionic->SriovSwitch.Ports[q_index].filter_cnt == 0) {
-            NET_BUFFER_LIST_RECEIVE_QUEUE_ID(nbl) = 0;
+            NET_BUFFER_LIST_RECEIVE_QUEUE_ID(parent_nbl) = 0;
         }
     } else {
-        q_index = NET_BUFFER_LIST_RECEIVE_QUEUE_ID(pkt->nbl);
+        q_index = NET_BUFFER_LIST_RECEIVE_QUEUE_ID(rxq_pkt->parent_nbl);
 
         if (BooleanFlagOn(ionic->vm_queue[q_index].Flags,
                           IONIC_QUEUE_STATE_VLAN_FLTR_SET) &&
             vlan_pri_info.TagHeader.VlanId == 0) {
-            NET_BUFFER_LIST_RECEIVE_QUEUE_ID(nbl) = 0;
+            NET_BUFFER_LIST_RECEIVE_QUEUE_ID(parent_nbl) = 0;
         } else if (ionic->vm_queue[q_index].active_filter_cnt == 0) {
-            NET_BUFFER_LIST_RECEIVE_QUEUE_ID(nbl) = 0;
+            NET_BUFFER_LIST_RECEIVE_QUEUE_ID(parent_nbl) = 0;
         }
     }
 
     DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_VERBOSE,
-              "%s Processing packet %p queue id %d-%d\n", __FUNCTION__, pkt,
-              pkt->filter_info.FilteringInfo.QueueVPortInfo.QueueId,
-              NET_BUFFER_LIST_RECEIVE_QUEUE_ID(nbl)));
+              "%s Processing packet %p queue id %d-%d\n", __FUNCTION__, rxq_pkt,
+              rxq_pkt->filter_info.FilteringInfo.QueueVPortInfo.QueueId,
+              NET_BUFFER_LIST_RECEIVE_QUEUE_ID(parent_nbl)));
 
-    NET_BUFFER_DATA_LENGTH(nb) = comp_len;
+    NET_BUFFER_DATA_LENGTH(packet) = comp_len;
 
     NdisAdjustMdlLength(mdl, comp_len);
 
@@ -1098,7 +1142,7 @@ ionic_rx_clean(struct queue *q,
         rx_stats->csum_none++;
     }
 
-    NET_BUFFER_LIST_INFO(nbl, TcpIpChecksumNetBufferListInfo) =
+    NET_BUFFER_LIST_INFO(parent_nbl, TcpIpChecksumNetBufferListInfo) =
         csum_info.Value;
 
     rss_type = getmappedtype((u8)comp->pkt_type_color);
@@ -1106,8 +1150,8 @@ ionic_rx_clean(struct queue *q,
 
     if (rss_type != 0 && BooleanFlagOn(lif->rss_hash_flags,
                                        NDIS_RECEIVE_HASH_FLAG_ENABLE_HASH)) {
-        NET_BUFFER_LIST_SET_HASH_VALUE(nbl, rss_hash);
-        NET_BUFFER_LIST_INFO(nbl, NetBufferListHashInfo) =
+        NET_BUFFER_LIST_SET_HASH_VALUE(parent_nbl, rss_hash);
+        NET_BUFFER_LIST_INFO(parent_nbl, NetBufferListHashInfo) =
             (PVOID)NDIS_RSS_HASH_INFO_FROM_TYPE_AND_FUNC(
                 ndis_hash_type[rss_type], NdisHashFunctionToeplitz);
 
@@ -1124,8 +1168,8 @@ ionic_rx_clean(struct queue *q,
                   __FUNCTION__, ionic, lif->rss_hash_flags,
                   rss_type, rss_hash));
 
-        NET_BUFFER_LIST_INFO(nbl, NetBufferListHashInfo) = 0;
-        NET_BUFFER_LIST_SET_HASH_VALUE(nbl, 0);
+        NET_BUFFER_LIST_INFO(parent_nbl, NetBufferListHashInfo) = 0;
+        NET_BUFFER_LIST_SET_HASH_VALUE(parent_nbl, 0);
     }
 
     rx_stats->buffers_posted++;
@@ -1151,14 +1195,14 @@ ionic_rx_clean(struct queue *q,
     }
     }
 
-    if (!ionic_do_rsc(qcq, pkt->nbl, comp->pkt_type_color)) {
-        if (*nbls_to_indicate == NULL) {
-            *nbls_to_indicate = pkt->nbl;
-            *last_nbl = pkt->nbl;
+    if (!ionic_do_rsc(qcq, rxq_pkt->parent_nbl, comp->pkt_type_color)) {
+        if (*packets_to_indicate == NULL) {
+            *packets_to_indicate = rxq_pkt->parent_nbl;
+            *last_packet = rxq_pkt->parent_nbl;
             ref_request(qcq);
         } else  {
-            NET_BUFFER_LIST_NEXT_NBL(*last_nbl) = pkt->nbl;
-            *last_nbl = pkt->nbl;
+            NET_BUFFER_LIST_NEXT_NBL(*last_packet) = rxq_pkt->parent_nbl;
+            *last_packet = rxq_pkt->parent_nbl;
             ref_request(qcq);
         }
 
@@ -1173,8 +1217,8 @@ cleanup:
 static bool
 ionic_rx_service(struct cq *cq,
                  struct cq_info *cq_info,
-                 PNET_BUFFER_LIST *nbls_to_indicate,
-                 PNET_BUFFER_LIST *last_nbl,
+                 PNET_BUFFER_LIST *packets_to_indicate,
+                 PNET_BUFFER_LIST *last_packet,
                  bool *indicate_nbl)
 {
     struct rxq_comp *comp = (struct rxq_comp *)cq_info->cq_desc;
@@ -1198,7 +1242,7 @@ ionic_rx_service(struct cq *cq,
 
     *indicate_nbl =
         ionic_rx_clean(q, desc_info, cq_info, desc_info->cb_arg,
-                       nbls_to_indicate, last_nbl);
+                       packets_to_indicate, last_packet);
 
     desc_info->cb = NULL;
     desc_info->cb_arg = NULL;
@@ -1209,22 +1253,22 @@ ionic_rx_service(struct cq *cq,
 static u32
 ionic_rx_walk_cq(struct cq *rxcq,
                  u32 indicate_limit,
-                 PNET_BUFFER_LIST *nbls_to_indicate,
+                 PNET_BUFFER_LIST *packets_to_indicate,
                  u32 *indicate_count)
 {
     struct qcq *qcq = cq_to_qcq(rxcq);
     u32 work_limit = indicate_limit * IONIC_MAX_RSC_FLOWS;
     u32 work_done = 0;
-    PNET_BUFFER_LIST last_nbl = NULL;
+    PNET_BUFFER_LIST last_packet = NULL;
     bool indicate_nbl = false;
 
     // reset rsc_hash to nonzero (to avoid collisions with zero)
     // and ensure there are no dangling packets in the table
-    memset(qcq->rsc->nbl, 0, sizeof(qcq->rsc->nbl));
+    memset(qcq->rsc->packet, 0, sizeof(qcq->rsc->packet));
     memset(qcq->rsc->hash, 'A', sizeof(qcq->rsc->hash));
     qcq->rsc->fifo_i = 0;
 
-    while (ionic_rx_service(rxcq, rxcq->tail, nbls_to_indicate, &last_nbl,
+    while (ionic_rx_service(rxcq, rxcq->tail, packets_to_indicate, &last_packet,
                             &indicate_nbl)) {
         if (rxcq->tail->last)
             rxcq->done_color = !rxcq->done_color;
@@ -1240,7 +1284,7 @@ ionic_rx_walk_cq(struct cq *rxcq,
     }
 
     // leave no dangling packets in the table
-    memset(qcq->rsc->nbl, 0, sizeof(qcq->rsc->nbl));
+    memset(qcq->rsc->packet, 0, sizeof(qcq->rsc->packet));
 
     return work_done;
 }
@@ -1252,13 +1296,13 @@ ionic_rx_flush(struct cq *cq)
     struct ionic_dev *idev = &cq->lif->ionic->idev;
     u32 work_done;
     u32 rx_indicate_count = 0;
-    PNET_BUFFER_LIST nbls_to_indicate = NULL;
+    PNET_BUFFER_LIST packets_to_indicate = NULL;
 
     DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_VERBOSE,
               "%s Entry for lif %s budget %d\n", __FUNCTION__, cq->lif->name,
               cq->num_descs));
 
-    work_done = ionic_rx_walk_cq(cq, cq->num_descs, &nbls_to_indicate, &rx_indicate_count);
+    work_done = ionic_rx_walk_cq(cq, cq->num_descs, &packets_to_indicate, &rx_indicate_count);
 
     if (work_done) {
         ionic_intr_credits(idev->intr_ctrl, cq->bound_intr->index, work_done,
@@ -1267,8 +1311,11 @@ ionic_rx_flush(struct cq *cq)
         DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_VERBOSE,
                   "%s Returning %d packets\n", __FUNCTION__, work_done));
 
-        ionic_return_packet((NDIS_HANDLE)cq->lif->ionic, nbls_to_indicate, 0);
+        ionic_return_packet((NDIS_HANDLE)cq->lif->ionic, packets_to_indicate,
+                            0);
     }
+
+    return;
 }
 
 #define RX_RING_DOORBELL_STRIDE ((1 << 2) - 1)
@@ -1285,7 +1332,7 @@ ionic_rx_init(struct lif *lif, struct qcqst *qcqst)
     unsigned int i;
     struct qcq *qcq = qcqst->qcq;
     struct queue *q = &qcq->q;
-    struct rxq_pkt *pkt = NULL;
+    struct rxq_pkt *rxq_pkt = NULL;
     ULONG sg_index = 0;
     struct rxq_sg_elem *sg_elem;
 	unsigned int remaining_len = 0;
@@ -1294,11 +1341,11 @@ ionic_rx_init(struct lif *lif, struct qcqst *qcqst)
 
     for (i = 0; i < ionic_q_space_avail(q); i++) {
 
-        pkt = ionic_get_next_rxq_pkt(lif);
-        ASSERT(pkt != NULL);
-		ASSERT(pkt->nb != NULL);
+        rxq_pkt = ionic_get_next_rxq_pkt(lif);
+        ASSERT(rxq_pkt != NULL);
+		ASSERT(rxq_pkt->packet != NULL);
 
-		pkt->q = q;
+		rxq_pkt->q = q;
 
         desc_info = q->head;
         desc = (struct rxq_desc *)desc_info->desc;
@@ -1306,16 +1353,16 @@ ionic_rx_init(struct lif *lif, struct qcqst *qcqst)
 
 		remaining_len = len;
 
-        desc->opcode = (pkt->sg_count > 1) ? (u8)RXQ_DESC_OPCODE_SG
+        desc->opcode = (rxq_pkt->sg_count > 1) ? (u8)RXQ_DESC_OPCODE_SG
                                                 : (u8)RXQ_DESC_OPCODE_SIMPLE;
 
-        desc->addr = cpu_to_le64(pkt->phys_addr[0]);
+        desc->addr = cpu_to_le64(rxq_pkt->phys_addr[0]);
         desc->len = (__le16)cpu_to_le16(min( remaining_len, PAGE_SIZE));
 		remaining_len -= desc->len;
            
-        for (sg_index = 0; sg_index < (pkt->sg_count - 1); sg_index++) {
+        for (sg_index = 0; sg_index < (rxq_pkt->sg_count - 1); sg_index++) {
             sg_elem = &sg_desc->elems[sg_index];
-            sg_elem->addr = cpu_to_le64(pkt->phys_addr[sg_index + 1]);
+            sg_elem->addr = cpu_to_le64(rxq_pkt->phys_addr[sg_index + 1]);
             sg_elem->len = (__le16)cpu_to_le16(min( remaining_len, PAGE_SIZE));
 			remaining_len -= sg_elem->len;
         }
@@ -1323,14 +1370,14 @@ ionic_rx_init(struct lif *lif, struct qcqst *qcqst)
 		ASSERT( remaining_len == 0);
 
         // zero filled sentinel
-        sg_elem = &sg_desc->elems[pkt->sg_count];
+        sg_elem = &sg_desc->elems[rxq_pkt->sg_count];
         sg_elem->addr = 0;
         sg_elem->len = 0;
 
         ring_doorbell =
             ((q->head->index + 1) & RX_RING_DOORBELL_STRIDE) == 0;
 
-        ionic_rxq_post(q, ring_doorbell, NULL, pkt->nb);
+        ionic_rxq_post(q, ring_doorbell, NULL, rxq_pkt->packet);
     }
 
     return ntStatus;
@@ -1343,37 +1390,43 @@ ionic_rx_fill(struct qcq *qcq)
     struct queue *q = rxcq->bound_q;
     struct rxq_desc *desc;
     bool ring_doorbell;
-    struct rxq_pkt *pkt = NULL, *pkt_next;
+    unsigned int i;
+    struct rxq_pkt *rxq_pkt = NULL;
     struct desc_info *desc_info;
     struct rxq_sg_desc *sg_desc;
     ULONG sg_index = 0;
     struct rxq_sg_elem *sg_elem;
 	unsigned int remaining_len = 0;
 
-    pkt = ionic_get_rxq_pkts(q->lif, ionic_q_space_avail(q));
+    for (i = ionic_q_space_avail(q); i; i--) {
 
-    for (; pkt != NULL && ionic_q_space_avail(q) != 0; pkt = pkt_next) {
-        pkt_next = pkt->next;
-        pkt->next = NULL;
+        rxq_pkt = ionic_get_next_rxq_pkt(q->lif);
 
-		pkt->q = q;
+        if (rxq_pkt == NULL) {
+            ++qcq->rx_stats->pool_empty;
+            DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_ERROR,
+                      "%s No rxq packets available on fill\n", __FUNCTION__));
+            break;
+        }
 
+		rxq_pkt->q = q;
+		
 		remaining_len = q->lif->ionic->frame_size;
 
         desc_info = q->head;
         desc = (struct rxq_desc *)desc_info->desc;
         sg_desc = (struct rxq_sg_desc *)desc_info->sg_desc;
 
-        desc->opcode = (pkt->sg_count > 1) ? (u8)RXQ_DESC_OPCODE_SG
+        desc->opcode = (rxq_pkt->sg_count > 1) ? (u8)RXQ_DESC_OPCODE_SG
                                                : (u8)RXQ_DESC_OPCODE_SIMPLE;
 
-        desc->addr = cpu_to_le64(pkt->phys_addr[0]);
+        desc->addr = cpu_to_le64(rxq_pkt->phys_addr[0]);
 		desc->len = (__le16)cpu_to_le16(min( remaining_len, PAGE_SIZE));
 		remaining_len -= desc->len;
 
-        for (sg_index = 0; sg_index < (pkt->sg_count - 1); sg_index++) {
+        for (sg_index = 0; sg_index < (rxq_pkt->sg_count - 1); sg_index++) {
             sg_elem = &sg_desc->elems[sg_index];
-            sg_elem->addr = cpu_to_le64(pkt->phys_addr[sg_index + 1]);
+            sg_elem->addr = cpu_to_le64(rxq_pkt->phys_addr[sg_index + 1]);
 			sg_elem->len = (__le16)cpu_to_le16(min( remaining_len, PAGE_SIZE));
 			remaining_len -= sg_elem->len;
         }
@@ -1381,26 +1434,15 @@ ionic_rx_fill(struct qcq *qcq)
 		ASSERT( remaining_len == 0);
 
         // zero filled sentinel
-        sg_elem = &sg_desc->elems[pkt->sg_count];
+        sg_elem = &sg_desc->elems[rxq_pkt->sg_count];
         sg_elem->addr = 0;
         sg_elem->len = 0;
 
         ring_doorbell = ((q->head->index + 1) & RX_RING_DOORBELL_STRIDE) == 0;
 
-        ASSERT(pkt->nb != NULL);
-        ionic_rxq_post(q, ring_doorbell, NULL, pkt->nb);
+        ASSERT(rxq_pkt->packet != NULL);
+        ionic_rxq_post(q, ring_doorbell, NULL, rxq_pkt->packet);
     }
-
-    if (ionic_q_space_avail(q) != 0) {
-        ++qcq->rx_stats->pool_empty;
-        DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_ERROR,
-                    "%s No rxq packets available on fill\n", __FUNCTION__));
-    }
-
-    if (pkt != NULL) {
-        ionic_put_rxq_pkts(q->lif, pkt);
-    }
-
 #ifdef DBG
     InterlockedAdd( (LONG *)&qcq->rx_stats->pool_packet_count,
                       q->lif->rx_pkts_free_count);
@@ -1455,7 +1497,7 @@ ionic_rx_napi(struct lif *lif,
     u32 rx_work_done = 0;
 	u32 rx_tot_work_done = 0;
     u32 rx_indicate_count = 0;
-    PNET_BUFFER_LIST nbls_to_indicate = NULL;
+    PNET_BUFFER_LIST packets_to_indicate = NULL;
 	unsigned int tot_budget = receive_throttle_params->MaxNblsToIndicate;
 	unsigned int budget = 0;
 
@@ -1475,11 +1517,11 @@ ionic_rx_napi(struct lif *lif,
 			budget = tot_budget;
 		}
 
-		nbls_to_indicate = NULL;
+		packets_to_indicate = NULL;
 		rx_indicate_count = 0;
 
 		NdisDprAcquireSpinLock(&qcq->rx_ring_lock);
-		rx_work_done = ionic_rx_walk_cq(rxcq, budget, &nbls_to_indicate, &rx_indicate_count);
+		rx_work_done = ionic_rx_walk_cq(rxcq, budget, &packets_to_indicate, &rx_indicate_count);
 		if (rx_work_done) {
 			ionic_rx_fill(qcq);
 		}
@@ -1487,7 +1529,7 @@ ionic_rx_napi(struct lif *lif,
 
 		if (rx_indicate_count) {
 			ionic_rq_indicate_bufs(lif, &lif->rxqcqs[qcq->q.index], qcq, rx_indicate_count,
-					nbls_to_indicate);
+					packets_to_indicate);
 		}
 		else {
 			DbgTrace((
@@ -1521,7 +1563,7 @@ ionic_rq_indicate_bufs(struct lif *lif,
                        struct qcqst *qcqst,
                        struct qcq *qcq,
                        unsigned int count,
-                       PNET_BUFFER_LIST nbls_to_indicate)
+                       PNET_BUFFER_LIST packets_to_indicate)
 {
     struct ionic *ionic = lif->ionic;
     ULONG flags = NDIS_RECEIVE_FLAGS_DISPATCH_LEVEL;
@@ -1536,15 +1578,15 @@ ionic_rq_indicate_bufs(struct lif *lif,
     flags |= (NDIS_RECEIVE_FLAGS_SINGLE_QUEUE |
               NDIS_RECEIVE_FLAGS_SHARED_MEMORY_INFO_VALID);
 
-    if (nbls_to_indicate != NULL) {
+    if (packets_to_indicate != NULL) {
 
         DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_VERBOSE,
                   "%s Indicating %d packets nbl %p\n", __FUNCTION__, count,
-                  nbls_to_indicate));
+                  packets_to_indicate));
 
         /* inform ndis about received packets */
         NdisMIndicateReceiveNetBufferLists(
-            ionic->adapterhandle, nbls_to_indicate, 0, count, flags);
+            ionic->adapterhandle, packets_to_indicate, 0, count, flags);
 #ifdef DBG
         InterlockedAdd(&qcq->outstanding_rx_count, (LONG)count);
 #endif
@@ -1560,12 +1602,13 @@ ionic_return_packet(NDIS_HANDLE adapter_context,
                     ULONG return_flags)
 {
     struct ionic *ionic = (struct ionic *)adapter_context;
-    struct lif *lif = ionic->master_lif;
+    ULONG num_nbls = 0;
+    PNET_BUFFER packet;
+    struct rxq_pkt *rxq_pkt;
+    unsigned int len = ionic->frame_size;
+    PMDL mdl;
     PNET_BUFFER_LIST nbl, nbl_next;
-    PNET_BUFFER nb;
-    struct rxq_pkt *pkt = NULL, *pkt_next;
-    struct qcq *qcq = NULL, *qcq_next;
-    int tot_nbls = 0, qcq_nbls = 0;
+    struct dev_rx_ring_stats *rx_stats = NULL;
 
     UNREFERENCED_PARAMETER(return_flags);
 
@@ -1574,55 +1617,51 @@ ionic_return_packet(NDIS_HANDLE adapter_context,
               ionic, pnetlist));
 
     nbl = pnetlist;
-    // transform nbl list into pkt list, unlink nbls, reset nb
+
     while (nbl) {
+        // Ideally we need to check the NB and return the buffer to
+        // the pool, but we are not there yet so for now just ignore
+
+        packet = NET_BUFFER_LIST_FIRST_NB(nbl);
+        rxq_pkt = *(struct rxq_pkt **)NET_BUFFER_MINIPORT_RESERVED(packet);
+
         nbl_next = NET_BUFFER_LIST_NEXT_NBL(nbl);
         NET_BUFFER_LIST_NEXT_NBL(nbl) = NULL;
 
-        nb = NET_BUFFER_LIST_FIRST_NB(nbl);
-        pkt_next = *(struct rxq_pkt **)NET_BUFFER_MINIPORT_RESERVED(nb);
-        qcq_next = q_to_qcq(pkt_next->q);
+        ASSERT(rxq_pkt != NULL);
 
-        // unlikely if qcq changes, free those pkts and deref that qcq
-        if (qcq != qcq_next) {
-            if (qcq != NULL) {
-                ionic_put_rxq_pkts(lif, pkt);
+        if (rxq_pkt != NULL) {
+            struct qcq *qcq;
 
+            qcq = q_to_qcq(rxq_pkt->q);
+            rx_stats = qcq->rx_stats;
 #ifdef DBG
-                InterlockedAdd(&qcq->outstanding_rx_count, -qcq_nbls);
+            InterlockedDecrement(&qcq->outstanding_rx_count);
 #endif
-                qcq->rx_stats->completion_count += qcq_nbls;
+            // Dev stats
+            rx_stats->completion_count++;
 
-                deref_request(qcq, qcq_nbls);
-                pkt = NULL;
-            }
+            // Reinitialize the packet so that it can be reused
+            mdl = NET_BUFFER_FIRST_MDL(packet);
+            NdisAdjustMdlLength(mdl, len);
 
-            qcq = qcq_next;
-            qcq_nbls = 0;
+            DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_VERBOSE,
+                      "%s Return  RXQ NBL adapter %p NB %p NBL %p\n",
+                      __FUNCTION__, ionic, packet, rxq_pkt->parent_nbl));
+			
+            ionic_return_rxq_pkt(qcq->q.lif, rxq_pkt);
+
+			// deref the adapter
+			deref_request(qcq, 1);
         }
 
-        pkt_next->next = pkt;
-        pkt = pkt_next;
-
-        ++tot_nbls;
-        ++qcq_nbls;
         nbl = nbl_next;
-    }
-
-    ionic_put_rxq_pkts(lif, pkt);
-
-    if (qcq != NULL) {
-#ifdef DBG
-        InterlockedAdd(&qcq->outstanding_rx_count, -qcq_nbls);
-#endif
-        qcq->rx_stats->completion_count += qcq_nbls;
-
-        deref_request(qcq, qcq_nbls);
+        num_nbls++;
     }
 
     DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_VERBOSE,
-              "%s Exit ionic_return_packets adapter %p tot_nbls [%d]\n",
-              __FUNCTION__, ionic, tot_nbls));
+              "%s Exit ionic_return_packets adapter %p num_nbls [%d]\n",
+              __FUNCTION__, ionic, num_nbls));
 }
 
 struct rx_filter *
@@ -1889,10 +1928,10 @@ delete_rx_queue_info(struct ionic *ionic)
 }
 
 void
-DumpRxPacket(struct rxq_pkt *pkt)
+DumpRxPacket(struct rxq_pkt *rxq_pkt)
 {
 
-    u8 *pStream = (u8 *)pkt->addr;
+    u8 *pStream = (u8 *)rxq_pkt->addr;
     u8 *pSrcMac = NULL;
     u8 *pDestMac = NULL;
     u8 *pICmp = NULL;
@@ -1913,7 +1952,7 @@ DumpRxPacket(struct rxq_pkt *pkt)
             IoPrint("%s ******* Have ping packet %p Src "
                     "%02lX:%02lX:%02lX:%02lX:%02lX:%02lX Dst "
                     "%02lX:%02lX:%02lX:%02lX:%02lX:%02lX ********\n",
-                    __FUNCTION__, pkt, pSrcMac[0], pSrcMac[1], pSrcMac[2],
+                    __FUNCTION__, rxq_pkt, pSrcMac[0], pSrcMac[1], pSrcMac[2],
                     pSrcMac[3], pSrcMac[4], pSrcMac[5], pDestMac[0],
                     pDestMac[1], pDestMac[2], pDestMac[3], pDestMac[4],
                     pDestMac[5]);
@@ -1955,9 +1994,10 @@ NDIS_STATUS
 ionic_lif_rxq_pkt_init(struct lif* lif)
 {
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
+    u32 ring_index = 0;
     void *dma_entry_addr = NULL;
     u32 data_offset = 0;
-    struct rxq_pkt *pkt = NULL;
+    struct rxq_pkt *rxq_pkt = NULL;
     SCATTER_GATHER_LIST *pSGList = NULL;
     ULONG sg_count = 0;
     ULONG sg_index = 0;
@@ -1970,26 +2010,29 @@ ionic_lif_rxq_pkt_init(struct lif* lif)
 
     dma_entry_addr = lif->rx_pkt_buffer_base;
     data_offset = 0;
+    ring_index = 0;
 
     ASSERT((lif->rx_pkt_buffer_elementsize % PAGE_SIZE) == 0);
     sg_count = lif->rx_pkt_buffer_elementsize / PAGE_SIZE;
     sg_index = 0;
 
+    rxq_pkt = (struct rxq_pkt *)FirstEntrySList( &lif->rx_pkts_list);
+
     pSrcElem = &pSGList->Elements[0];
     ullSrcPA = pSrcElem->Address.QuadPart;
     ulSrcLen = pSrcElem->Length;
 
-    for (pkt = lif->rx_pool_head; pkt != NULL; pkt = pkt->next) {
+    while (ring_index < lif->rx_pkt_cnt) {
 
-        pkt->sg_count = sg_count;
-        pkt->addr = dma_entry_addr;
+        rxq_pkt->sg_count = sg_count;
+        rxq_pkt->addr = dma_entry_addr;
 
         rxq_sg_index = 0;
         while (rxq_sg_index < sg_count) {
             ASSERT(pSrcElem != NULL);
             ASSERT((pSrcElem->Length % PAGE_SIZE) == 0);
 
-            pkt->phys_addr[rxq_sg_index] = ullSrcPA;
+            rxq_pkt->phys_addr[rxq_sg_index] = ullSrcPA;
 
             ullSrcPA += PAGE_SIZE;
             ulSrcLen -= PAGE_SIZE;
@@ -2017,9 +2060,9 @@ ionic_lif_rxq_pkt_init(struct lif* lif)
             rxq_sg_index++;
         }
 
-        pkt->offset = data_offset;
+        rxq_pkt->offset = data_offset;
 
-        status = ionic_alloc_rxq_netbuffers(lif->ionic, lif, lif->ionic->frame_size, pkt);
+        status = ionic_alloc_rxq_netbuffers(lif->ionic, lif, lif->ionic->frame_size, rxq_pkt);
         if (status != NDIS_STATUS_SUCCESS) {
             DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_ERROR,
                       "%s RXQ Buffer Alloc Failed adapter %p Status 0x%0x\n",
@@ -2032,6 +2075,10 @@ ionic_lif_rxq_pkt_init(struct lif* lif)
             (void *)((char *)dma_entry_addr +
                         lif->rx_pkt_buffer_elementsize);
         data_offset += lif->rx_pkt_buffer_elementsize;
+
+        rxq_pkt = (struct rxq_pkt *)rxq_pkt->next.Next;
+
+        ring_index++;
     }
 
     return NDIS_STATUS_SUCCESS;
@@ -2162,7 +2209,7 @@ ionic_free_rxq_pool( struct lif *lif)
             lif->ionic->adapterhandle, lif->rxq_pkt_base, IONIC_RX_MEM_TAG);
         lif->rxq_pkt_base = NULL;
 
-        lif->rx_pool_head = NULL;
+		InitializeSListHead( &lif->rx_pkts_list);
 #ifdef DBG
         lif->rx_pkts_free_count = 0;
 #endif
@@ -2189,4 +2236,6 @@ ionic_free_rxq_pool( struct lif *lif)
                                       IONIC_SG_LIST_TAG);
         lif->rx_pkt_sgl_buffer = NULL;
     }
+
+	return;
 }
