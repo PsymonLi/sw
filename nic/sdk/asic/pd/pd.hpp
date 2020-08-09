@@ -11,6 +11,8 @@
 #include "platform/utils/lif_manager_base.hpp"
 #include "platform/utils/program.hpp"
 
+#define ASICPD_TCAM_TABLE_ENTRY_FLAG_HW_VALID 0x1
+
 namespace sdk {
 namespace asic {
 namespace pd {
@@ -140,7 +142,7 @@ int asicpd_table_hw_entry_read(uint32_t tableid, uint32_t index,
                                uint8_t  *hwentry, uint16_t *hwentry_bit_len);
 int asicpd_tcam_table_hw_entry_read(uint32_t tableid, uint32_t index,
                                     uint8_t  *trit_x, uint8_t  *trit_y,
-                                    uint16_t *hwentry_bit_len);
+                                    uint16_t *hwentry_bit_len, uint8_t *flags = NULL);
 void asicpd_copy_table_info(p4_table_mem_layout_t *out,
                             p4pd_table_mem_layout_t *in,
                             p4pd_table_properties_t *tbl_ctx);

@@ -2366,6 +2366,10 @@ ${table}_hwkey_unbuild(uint32_t tableid,
  *  OUT  : ${table}_swkey_mask_t *swkey_mask: Software key read from P4-table
 //::        #endif
  *  OUT  : ${table}_actions_un* *actiondata : Action data associated with the key.
+ //::        if pddict['tables'][table]['type'] == 'Ternary':
+ *  OUT  : uint8_t *flags                   : Optional flags 
+ *                                              - ASICPD_TCAM_TABLE_ENTRY_FLAG_HW_VALID 
+//::        #endif
  *
  * Return Value:
  *  pd_error_t                              : P4PD_SUCCESS / P4PD_FAIL
@@ -2376,14 +2380,16 @@ ${table}_entry_read(uint32_t tableid,
                     uint32_t index,
                     ${table}_swkey_t *swkey,
                     ${table}_swkey_mask_t *swkey_mask,
-                    ${table}_actiondata_t *actiondata)
+                    ${table}_actiondata_t *actiondata,
+                    uint8_t *flags)
 {
     uint8_t  hwentry_x[P4PD_MAX_MATCHKEY_LEN + P4PD_MAX_ACTION_DATA_LEN] = {0};
     uint8_t  hwentry_y[P4PD_MAX_MATCHKEY_LEN + P4PD_MAX_ACTION_DATA_LEN] = {0};
     uint8_t  hwentry[P4PD_MAX_MATCHKEY_LEN + P4PD_MAX_ACTION_DATA_LEN] = {0};
     uint16_t hwentry_bit_len;
     sdk::asic::pd::asicpd_tcam_table_hw_entry_read(tableid, index, hwentry_x,
-                                                   hwentry_y, &hwentry_bit_len);
+                                                   hwentry_y, &hwentry_bit_len,
+                                                   flags);
     if (!hwentry_bit_len) {
         return (P4PD_FAIL);
     }
@@ -2423,14 +2429,16 @@ ${table}_entry_read(uint32_t tableid,
                     uint32_t index,
                     ${table}_swkey_t *swkey,
                     ${table}_swkey_mask_t *swkey_mask,
-                    ${table}_actiondata_t *actiondata)
+                    ${table}_actiondata_t *actiondata,
+                    uint8_t *flags)
 {
     uint8_t  hwentry_x[P4PD_MAX_MATCHKEY_LEN + P4PD_MAX_ACTION_DATA_LEN] = {0};
     uint8_t  hwentry_y[P4PD_MAX_MATCHKEY_LEN + P4PD_MAX_ACTION_DATA_LEN] = {0};
     uint8_t  hwentry[P4PD_MAX_MATCHKEY_LEN + P4PD_MAX_ACTION_DATA_LEN] = {0};
     uint16_t hwentry_bit_len;
     sdk::asic::pd::asicpd_tcam_table_hw_entry_read(tableid, index, hwentry_x,
-                                                   hwentry_y, &hwentry_bit_len);
+                                                   hwentry_y, &hwentry_bit_len,
+                                                   flags);
     if (!hwentry_bit_len) {
         return (P4PD_FAIL);
     }
@@ -3132,7 +3140,7 @@ ${api_prefix}_entry_install(uint32_t tableid,
  *                                 Data bits read from hardware are returned
  *                                 action data structure generated per p4 table.
  *                                 Refer to p4pd.h for structure details
- *
+ *  OUT : void    *outdata       : Optional ouput parameter to get data.
  * Return Value:
  *  pd_error_t                              : P4PD_SUCCESS / P4PD_FAIL
  */
@@ -3141,7 +3149,8 @@ ${api_prefix}_entry_read(uint32_t   tableid,
                          uint32_t   index,
                          void       *swkey,
                          void       *swkey_mask,
-                         void       *actiondata)
+                         void       *actiondata,
+                         void       *outdata)
 {
     p4pd_error_t ret = P4PD_SUCCESS;
     time_profile_begin(sdk::utils::time_profile::P4PD_ENTRY_READ);
@@ -3173,7 +3182,8 @@ ${api_prefix}_entry_read(uint32_t   tableid,
             ret = (${table}_entry_read(tableid, index,
                             (${table}_swkey_t*)swkey,
                             (${table}_swkey_mask_t*)swkey_mask,
-                            (${table}_actiondata_t*) actiondata));
+                            (${table}_actiondata_t*) actiondata,
+                            (uint8_t *)outdata));
 //::            #endif
         break;
 //::        #endfor

@@ -99,7 +99,7 @@ p4pd_global_entry_install(uint32_t tableid,
 
 int
 p4pd_entry_read(uint32_t table_id, uint32_t index, void *swkey,
-                void *swkey_mask, void *actiondata)
+                void *swkey_mask, void *actiondata, void *outdata)
 {
     assert(index < TABLE_SIZE);
     slhash_mock_table_t *tab = GET_TABLE(table_id);
@@ -111,8 +111,10 @@ p4pd_entry_read(uint32_t table_id, uint32_t index, void *swkey,
 
 int
 p4pd_global_entry_read(uint32_t table_id, uint32_t index, void *swkey,
-                       void *swkey_mask, void *actiondata) {
-    return p4pd_entry_read(table_id, index, swkey, swkey_mask, actiondata);
+                       void *swkey_mask, void *actiondata, void *outdata)
+{
+    return p4pd_entry_read(table_id, index, swkey, swkey_mask, actiondata, 
+                           outdata);
 }
 
 p4pd_error_t

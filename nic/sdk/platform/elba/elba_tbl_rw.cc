@@ -1710,12 +1710,13 @@ elba_tcam_table_entry_read (uint32_t tableid, uint32_t index,
 sdk_ret_t
 elba_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
                                uint8_t  *trit_x, uint8_t  *trit_y,
-                               uint16_t *hwentry_bit_len,
+                               uint16_t *hwentry_bit_len, uint8_t *flags,
                                p4_table_mem_layout_t &tbl_info, bool ingress)
 {
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
-
+    if (flags) { *flags = 0; }
+    
     elba_tcam_entry_details_get(index, (ingress ? P4_GRESS_INGRESS : P4_GRESS_EGRESS),
                                 &tcam_row, &entry_start_block,
                                 &entry_end_block, &entry_start_word,
@@ -1731,33 +1732,25 @@ elba_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
     uint8_t *_trit_x = (uint8_t*)trit_x;
     uint8_t *_trit_y = (uint8_t*)trit_y;
 
-    elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    elb_pict_csr_t &pict_csr = ingress ? elb0.tsi.pict : elb0.tse.pict;
     // push to HW/Capri from entry_start_block to block
     cpp_int tcam_block_data_x;
     cpp_int tcam_block_data_y;
     uint8_t temp_x[16];
     uint8_t temp_y[16];
+    uint8_t is_hw_valid =
+        (entry_start_block <= entry_end_block && (copy_bits > 0)) ? 1 : 0;
+
     for (int i = entry_start_block; (i <= entry_end_block) && (copy_bits > 0);
          i += ELBA_TCAM_ROWS) {
-        if (ingress) {
-            elb_pict_csr_t & pict_csr = elb0.tsi.pict;
-            pict_csr.dhs_tcam_xy.entry[i].read();
-            tcam_block_data_x = pict_csr.dhs_tcam_xy.entry[i].x();
-            tcam_block_data_y = pict_csr.dhs_tcam_xy.entry[i].y();
-            cpp_int_helper::s_array_from_cpp_int(tcam_block_data_x, 0, 15,
-                                                 temp_x);
-            cpp_int_helper::s_array_from_cpp_int(tcam_block_data_y, 0, 15,
-                                                 temp_y);
-        } else {
-            elb_pict_csr_t & pict_csr = elb0.tse.pict;
-            pict_csr.dhs_tcam_xy.entry[i].read();
-            tcam_block_data_x = pict_csr.dhs_tcam_xy.entry[i].x();
-            tcam_block_data_y = pict_csr.dhs_tcam_xy.entry[i].y();
-            cpp_int_helper::s_array_from_cpp_int(tcam_block_data_x, 0, 15,
-                                                 temp_x);
-            cpp_int_helper::s_array_from_cpp_int(tcam_block_data_y, 0, 15,
-                                                 temp_y);
-        }
+        pict_csr.dhs_tcam_xy.entry[i].read();
+        tcam_block_data_x = pict_csr.dhs_tcam_xy.entry[i].x();
+        tcam_block_data_y = pict_csr.dhs_tcam_xy.entry[i].y();
+        cpp_int_helper::s_array_from_cpp_int(tcam_block_data_x, 0, 15, temp_x);
+        cpp_int_helper::s_array_from_cpp_int(tcam_block_data_y, 0, 15, temp_y);
+        is_hw_valid &= (pict_csr.dhs_tcam_xy.entry[i].valid() ? 1 : 0);
+
         for (int p = 15; p >= 8; p--) {
             byte = temp_x[p];
             temp_x[p] = temp_x[15-p];
@@ -1782,8 +1775,8 @@ elba_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
         entry_start_word = 0;
         copy_bits -= to_copy;
     }
-    *hwentry_bit_len = tbl_info.entry_width_bits;;
-
+    *hwentry_bit_len = tbl_info.entry_width_bits;
+    if (flags && is_hw_valid) { *flags |= ASICPD_TCAM_TABLE_ENTRY_FLAG_HW_VALID; }
     return (SDK_RET_OK);
 }
 

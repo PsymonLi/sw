@@ -542,6 +542,7 @@ p4pd_error_t p4pd_entry_write_with_datamask(uint32_t tableid,
  *                                 action data structure matching structure
  *                                 generated per p4 table. Refer to p4pd.h for
  *                                 structure details
+ *  OUT : void    *outdata       : Optional ouput data, default value NULL.
  *
  * Return Value:
  *  pd_error_t                              : P4PD_SUCCESS / P4PD_FAIL
@@ -550,7 +551,8 @@ p4pd_error_t p4pd_entry_read(uint32_t   tableid,
                              uint32_t   index,
                              void       *swkey,
                              void       *swkey_mask,
-                             void       *actiondata);
+                             void       *actiondata,
+                             void       *outdata = NULL);
 
 
 
@@ -659,7 +661,7 @@ extern p4pd_error_t p4pd_rxdma_entry_write_with_datamask(uint32_t tableid,
 extern p4pd_error_t p4pd_rxdma_entry_write(uint32_t tableid, uint32_t index,
     uint8_t *hwkey, uint8_t *hwkey_y, void *actiondata);
 extern p4pd_error_t p4pd_rxdma_entry_read(uint32_t tableid, uint32_t index,
-    void *swkey, void *swkey_mask, void *actiondata);
+    void *swkey, void *swkey_mask, void *actiondata, void *outdata = NULL);
 extern p4pd_error_t p4pd_rxdma_table_entry_decoded_string_get(uint32_t tableid,
     uint32_t index, uint8_t* hwentry, uint8_t* hwentry_y,
     uint16_t hwentry_len, char* buffer, uint16_t buf_len);
@@ -718,7 +720,7 @@ extern p4pd_error_t p4pd_txdma_entry_write_with_datamask(uint32_t tableid,
 extern p4pd_error_t p4pd_txdma_entry_write(uint32_t tableid, uint32_t index,
     uint8_t *hwkey, uint8_t *hwkey_y, void *actiondata);
 extern p4pd_error_t p4pd_txdma_entry_read(uint32_t tableid, uint32_t index,
-    void *swkey, void *swkey_mask, void *actiondata);
+    void *swkey, void *swkey_mask, void *actiondata, void *outdata = NULL);
 extern p4pd_error_t p4pd_txdma_table_entry_decoded_string_get(uint32_t tableid,
     uint32_t index, uint8_t* hwentry, uint8_t* hwentry_y,
     uint16_t hwentry_len, char* buffer, uint16_t buf_len);
@@ -888,7 +890,8 @@ p4pd_global_entry_write_with_datamask(uint32_t tableid,
  *                                 action data structure matching structure
  *                                 generated per p4 table. Refer to p4pd.h for
  *                                 structure details
- *
+ *  OUT : void    *outdata       : Optional output data, default value NULL.
+ * 
  * Return Value:
  *  pd_error_t                              : P4PD_SUCCESS / P4PD_FAIL
  */
@@ -896,7 +899,8 @@ p4pd_error_t p4pd_global_entry_read(uint32_t   tableid,
                                     uint32_t   index,
                                     void       *swkey,
                                     void       *swkey_mask,
-                                    void       *actiondata);
+                                    void       *actiondata,
+                                    void       *outdata = NULL);
 
 
 

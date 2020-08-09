@@ -65,7 +65,7 @@ int capri_tcam_table_entry_read(uint32_t tableid, uint32_t index,
 
 int capri_tcam_table_hw_entry_read(uint32_t tableid, uint32_t index,
                                    uint8_t  *trit_x, uint8_t  *trit_y,
-                                   uint16_t *hwentry_bit_len,
+                                   uint16_t *hwentry_bit_len, uint8_t *flags,
                                    p4_table_mem_layout_t &tbl_info,
                                    bool ingress);
 

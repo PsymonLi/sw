@@ -65,7 +65,7 @@ p4pd_entry_install (uint32_t tableid, uint32_t index, void *swkey,
 
 int 
 p4pd_entry_read(uint32_t table_id, uint32_t index, void *swkey,
-                void *swkey_mask, void *actiondata)
+                void *swkey_mask, void *actiondata, void *outdata)
 {
     assert(index < SLTCAM_MOCK_TABLE_SIZE);
     *(sltcam_table_key_t*)swkey = mocktable.entries[index].key;

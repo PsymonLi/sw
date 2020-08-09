@@ -126,20 +126,22 @@ nacl_dump_header (int fd)
                 "RP  - Rx packet                TP  - Tunnel Pkt\n"
                 "NhV - ARM to P4 Nexthop Valid  LMM - Local mapping miss\n"
                 "Act - Action (R - Redirect, AR - Redirect to ARM, P - Permit)\n"
-                "KT  - Key type                 DF  - Don't Fragment\n");
-    dprintf(fd, "%s\n", std::string(193, '-').c_str());
+                "KT  - Key type                 DF  - Don't Fragment\n"
+                "HV  - Hardware valid\n");
+    dprintf(fd, "%s\n", std::string(196, '-').c_str());
     dprintf(fd, "%-4s%-8s%-6s%-3s%-3s%-3s%-3s%-3s%-4s%-4s"
-            "%-18s%-6s%-40s%-40s%-6s%-6s%-7s%-4s%-10s%-5s%-8s%-2s\n",
+            "%-18s%-6s%-40s%-40s%-6s%-6s%-7s%-4s%-10s%-5s%-8s%-3s%-2s\n",
             "Idx", "LifType", "Lif", "LE",
             "FM", "RP", "TP", "KT", "NhV", "LMM",
             "DMAC", "Proto", "SIP", "DIP", "SPort", "DPort",
-            "VnicID", "Act", "Nexthop", "Data", "CoPPIdx", "DF");
-    dprintf(fd, "%s\n", std::string(193, '-').c_str());
+            "VnicID", "Act", "Nexthop", "Data", "CoPPIdx", "DF", "HV");
+    dprintf(fd, "%s\n", std::string(196, '-').c_str());
 }
 
 void
 print_nacl_entry (int fd, uint32_t idx, nacl_swkey_t &key,
-                  nacl_swkey_mask_t &mask, nacl_actiondata_t &data)
+                  nacl_swkey_mask_t &mask, nacl_actiondata_t &data, 
+                  uint8_t flags)
 {
     // print the key fields
     dprintf(fd, "%-4u", idx);
@@ -282,10 +284,12 @@ print_nacl_entry (int fd, uint32_t idx, nacl_swkey_t &key,
     }
     // print ip fragmentation
     if (mask.control_metadata_ip_fragment_mask) {
-        dprintf(fd, "%-2d", key.control_metadata_ip_fragment);
+        dprintf(fd, "%-3d", key.control_metadata_ip_fragment);
     } else {
-        dprintf(fd, "%-2s", "*");
+        dprintf(fd, "%-3s", "*");
     }
+    // print hardware valid
+    dprintf(fd, "%-2s", (flags & ASICPD_TCAM_TABLE_ENTRY_FLAG_HW_VALID) ? "T" : "F");
     dprintf(fd, "\n");
 }
 
@@ -295,16 +299,17 @@ apulu_impl_state::nacl_dump(int fd) {
     p4pd_error_t p4pd_ret;
     nacl_swkey_mask_t mask;
     nacl_actiondata_t data;
-
+    uint8_t flags;
+    
     nacl_dump_header(fd);
     for (uint32_t i = 0; i < nacl_idxr_->size(); i++) {
         if (nacl_idxr_->is_index_allocated(i)) {
-            p4pd_ret = p4pd_entry_read(P4TBL_ID_NACL, i, &key, &mask, &data);
+            p4pd_ret = p4pd_entry_read(P4TBL_ID_NACL, i, &key, &mask, &data, &flags);
             if (p4pd_ret == P4PD_SUCCESS) {
                 if (!key.key_metadata_entry_valid) {
                     continue;
                 }
-                print_nacl_entry(fd, i, key, mask, data);
+                print_nacl_entry(fd, i, key, mask, data, flags);
             } else {
                 PDS_TRACE_ERR("Failed to read NACL entry at idx %u", i);
             }

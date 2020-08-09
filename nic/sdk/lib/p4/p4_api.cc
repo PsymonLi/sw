@@ -150,11 +150,13 @@ p4pd_global_entry_read (uint32_t tableid,
                         uint32_t   index,
                         void       *swkey,
                         void       *swkey_mask,
-                        void       *actiondata)
+                        void       *actiondata,
+                        void       *outdata)
 {
     if ((tableid >= p4pd_tableid_min_get()) &&
         (tableid <= p4pd_tableid_max_get())) {
-        return (p4pd_entry_read(tableid, index, swkey, swkey_mask, actiondata));
+        return (p4pd_entry_read(tableid, index, swkey, swkey_mask, actiondata, 
+                                outdata));
     } else if ((tableid >= p4pd_rxdma_tableid_min_get()) &&
                (tableid <= p4pd_rxdma_tableid_max_get())) {
         return (p4pd_rxdma_entry_read(tableid,

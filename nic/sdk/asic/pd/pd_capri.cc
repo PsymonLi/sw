@@ -120,7 +120,8 @@ asicpd_table_hw_entry_read (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
 int
 asicpd_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
                                  uint8_t  *trit_x, uint8_t  *trit_y,
-                                 uint16_t *hwentry_bit_len)
+                                 uint16_t *hwentry_bit_len,
+                                 uint8_t  *flags)
 {
     int ret;
     p4pd_table_properties_t tbl_ctx;
@@ -134,7 +135,8 @@ asicpd_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
                                            hwentry_bit_len);
     } else {
         ret = capri_tcam_table_hw_entry_read(tableid, index, trit_x, trit_y,
-                                             hwentry_bit_len, cap_tbl_info,
+                                             hwentry_bit_len, flags,
+                                             cap_tbl_info,
                                              (tbl_ctx.gress ==
                                               P4_GRESS_INGRESS));
     }

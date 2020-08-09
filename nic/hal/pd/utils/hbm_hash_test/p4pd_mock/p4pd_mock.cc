@@ -7,7 +7,8 @@ int p4pd_entry_write(unsigned int tableid, unsigned int index, unsigned char *hw
 }
 
 int p4pd_entry_read(uint32_t tableid, uint32_t index, void *swkey,
-                                       void *swkey_mask, void *actiondata)
+                                       void *swkey_mask, void *actiondata, 
+                                       void *outdata)
 {
     return 0;
 }
@@ -33,7 +34,8 @@ int p4pd_global_entry_write_with_datamask(uint32_t tableid, uint32_t index, uint
 }
 
 int p4pd_global_entry_read(uint32_t tableid, uint32_t index, void *swkey,
-                                       void *swkey_mask, void *actiondata)
+                                       void *swkey_mask, void *actiondata, 
+                                       void *outdata)
 {
     return 0;
 }
