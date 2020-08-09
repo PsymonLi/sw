@@ -105,7 +105,9 @@ EthLif::opcode_to_str(cmd_opcode_t opcode)
         CASE(IONIC_CMD_RDMA_CREATE_CQ);
         CASE(IONIC_CMD_RDMA_CREATE_ADMINQ);
         CASE(IONIC_CMD_FW_DOWNLOAD);
+        CASE(IONIC_CMD_FW_DOWNLOAD_V1);
         CASE(IONIC_CMD_FW_CONTROL);
+        CASE(IONIC_CMD_FW_CONTROL_V1);
         default: return "UNKNOWN";
     }
 }
@@ -1213,6 +1215,8 @@ EthLif::_CmdAccessCheck(cmd_opcode_t opcode)
         switch (opcode) {
         case IONIC_CMD_FW_DOWNLOAD:
         case IONIC_CMD_FW_CONTROL:
+        case IONIC_CMD_FW_DOWNLOAD_V1:
+        case IONIC_CMD_FW_CONTROL_V1:
             NIC_LOG_ERR("{}: {} is not allowed in nw managed mode", hal_lif_info_.name,
                         opcode_to_str(opcode));
             return (IONIC_RC_EPERM);
@@ -1226,6 +1230,8 @@ EthLif::_CmdAccessCheck(cmd_opcode_t opcode)
     switch(opcode) {
         case IONIC_CMD_FW_DOWNLOAD:
         case IONIC_CMD_FW_CONTROL:
+        case IONIC_CMD_FW_DOWNLOAD_V1:
+        case IONIC_CMD_FW_CONTROL_V1:
             NIC_LOG_ERR("{}: {} not allowed for untrusted devices", hal_lif_info_.name,
                         opcode_to_str(opcode));
             status = IONIC_RC_EPERM;
@@ -1323,10 +1329,12 @@ EthLif::CmdHandler(void *req, void *req_data,
         break;
 
     case IONIC_CMD_FW_DOWNLOAD:
+    case IONIC_CMD_FW_DOWNLOAD_V1:
         status = _CmdFwDownload(req, req_data, resp, resp_data);
         break;
 
     case IONIC_CMD_FW_CONTROL:
+    case IONIC_CMD_FW_CONTROL_V1:
         status = _CmdFwControl(req, req_data, resp, resp_data);
         break;
 
@@ -1363,7 +1371,7 @@ EthLif::_CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data)
     NIC_LOG_INFO("CMD {}: {} addr {:#x} offset {:#x} length {}", hal_lif_info_.name,
                  opcode_to_str((cmd_opcode_t)cmd->opcode), cmd->addr, cmd->offset, cmd->length);
 
-    return FwDownloadEdma(hal_lif_info_.name, cmd->addr, cmd->offset, cmd->length,
+    return FwDownloadEdma(spec->name, cmd->addr, cmd->offset, cmd->length,
                           edmaq, spec->host_dev);
 }
 
@@ -1376,7 +1384,7 @@ EthLif::_CmdFwControl(void *req, void *req_data, void *resp, void *resp_data)
     NIC_LOG_INFO("{}: CMD: {} CTRL CMD: {}", hal_lif_info_.name,
         opcode_to_str(cmd->opcode), fwctrl_cmd_to_str(cmd->oper));
 
-    return FwControl(hal_lif_info_.name, cmd->oper);
+    return FwControl(spec->name, cmd->oper);
 }
 #if 0
 status_code_t

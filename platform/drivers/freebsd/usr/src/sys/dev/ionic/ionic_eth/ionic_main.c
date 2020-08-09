@@ -306,6 +306,10 @@ ionic_opcode_to_str(enum ionic_cmd_opcode opcode)
 		return "IONIC_CMD_FW_DOWNLOAD";
 	case IONIC_CMD_FW_CONTROL:
 		return "IONIC_CMD_FW_CONTROL";
+	case IONIC_CMD_FW_DOWNLOAD_V1:
+		return "IONIC_CMD_FW_DOWNLOAD_V1";
+	case IONIC_CMD_FW_CONTROL_V1:
+		return "IONIC_CMD_FW_CONTROL_V1";
 	default:
 		return "DEVCMD_UNKNOWN";
 	}
@@ -447,8 +451,8 @@ ionic_adminq_post_wait(struct ionic_lif *lif, struct ionic_admin_ctx *ctx)
 		return (err);
 	}
 
-	if ((ctx->cmd.cmd.opcode == IONIC_CMD_FW_DOWNLOAD) ||
-		(ctx->cmd.cmd.opcode == IONIC_CMD_FW_CONTROL)) {
+	if ((ctx->cmd.cmd.opcode == IONIC_CMD_FW_DOWNLOAD_V1) ||
+		(ctx->cmd.cmd.opcode == IONIC_CMD_FW_CONTROL_V1)) {
 		timeout = ionic_fw_update_timeout;
 		if (timeout < IONIC_FW_MIN_TIMEOUT) {
 			if_printf(ifp, "Firmware timeout: %d is low, using default value\n", timeout);

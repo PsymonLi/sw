@@ -3865,7 +3865,7 @@ ionic_firmware_download(struct ionic_lif *lif, uint64_t addr,
 	struct ionic_admin_ctx ctx = {
 		.work = COMPLETION_INITIALIZER_ONSTACK(ctx.work),
 		.cmd.fw_download = {
-			.opcode = IONIC_CMD_FW_DOWNLOAD,
+			.opcode = IONIC_CMD_FW_DOWNLOAD_V1,
 			.offset = offset,
 			.addr = addr,
 			.length = length
@@ -3881,7 +3881,7 @@ ionic_firmware_install(struct ionic_lif *lif, uint8_t *slot)
 	struct ionic_admin_ctx ctx = {
 		.work = COMPLETION_INITIALIZER_ONSTACK(ctx.work),
 		.cmd.fw_control = {
-			.opcode = IONIC_CMD_FW_CONTROL,
+			.opcode = IONIC_CMD_FW_CONTROL_V1,
 			.oper = IONIC_FW_INSTALL
 		}
 	};
@@ -3901,7 +3901,7 @@ ionic_firmware_activate(struct ionic_lif *lif, uint8_t slot)
 	struct ionic_admin_ctx ctx = {
 		.work = COMPLETION_INITIALIZER_ONSTACK(ctx.work),
 		.cmd.fw_control = {
-			.opcode = IONIC_CMD_FW_CONTROL,
+			.opcode = IONIC_CMD_FW_CONTROL_V1,
 			.oper = IONIC_FW_ACTIVATE,
 			.slot = slot
 		}

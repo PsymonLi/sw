@@ -1305,7 +1305,9 @@ Eth::opcode_to_str(cmd_opcode_t opcode)
         CASE(IONIC_CMD_QOS_CLEAR_STATS);
         CASE(IONIC_CMD_QOS_RESET);
         CASE(IONIC_CMD_FW_DOWNLOAD);
+        CASE(IONIC_CMD_FW_DOWNLOAD_V1);
         CASE(IONIC_CMD_FW_CONTROL);
+        CASE(IONIC_CMD_FW_CONTROL_V1);
         CASE(IONIC_CMD_VF_GETATTR);
         CASE(IONIC_CMD_VF_SETATTR);
         CASE(IONIC_CMD_HII_IDENTIFY);
@@ -1513,6 +1515,13 @@ Eth::CmdHandler(void *req, void *req_data, void *resp, void *resp_data)
         break;
     case IONIC_CMD_FW_CONTROL:
         status = _CmdFwControl(req, req_data, resp, resp_data);
+        break;
+
+    /* Firmware update V1 commands */
+    case IONIC_CMD_FW_DOWNLOAD_V1:
+    case IONIC_CMD_FW_CONTROL_V1:
+        // Block fw update via devcmd using old opcodes
+        status = IONIC_RC_ENOSUPP;
         break;
 
     /* UEFI HII commands */
@@ -2685,7 +2694,7 @@ Eth::_CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data)
     // cmd->addr represents the offset in ionic_dev_cmd_regs where data starts
     data = (uint8_t *)devcmd + cmd->addr;
 
-    return FwDownload(spec->name + "_devcmd", data, cmd->offset, cmd->length);
+    return FwDownload(spec->name, data, cmd->offset, cmd->length);
 }
 
 status_code_t
@@ -2696,7 +2705,7 @@ Eth::_CmdFwControl(void *req, void *req_data, void *resp, void *resp_data)
     NIC_LOG_DEBUG("{}: DEVCMD: {} CTRL CMD: {}", spec->name,
         opcode_to_str(cmd->opcode), fwctrl_cmd_to_str(cmd->oper));
 
-    return FwControl(spec->name + "_devcmd", cmd->oper);
+    return FwControl(spec->name, cmd->oper);
 }
 
 status_code_t

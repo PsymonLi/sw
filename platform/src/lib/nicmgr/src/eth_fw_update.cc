@@ -324,6 +324,11 @@ FwInstallAsync(void *obj)
                  args->seq_no);
     string buf = "/nic/tools/fwupdate -p " + string(FW_FILEPATH) + " -i all";
     err = system(buf.c_str());
+    if (fw_update_seq != args->seq_no) {
+        NIC_LOG_ERR("{}: Fw install seq mismatch cfg_seq: {} curr_seq: {}",
+                    args->owner, args->seq_no, fw_update_seq);
+        return NULL;
+    }
     if (err) {
         fw_install_status = FW_INSTALL_ERR;
         NIC_LOG_ERR("{}: Fw install failed with exit status: {}", args->owner, err);
@@ -407,6 +412,11 @@ FwActivateAsync(void *obj)
     NIC_LOG_INFO("{}: IONIC_FW_ACTIVATE_ASYNC[{}] thread started!", args->owner,
                  args->seq_no);
     err = system("/nic/tools/fwupdate -s altfw");
+    if (fw_update_seq != args->seq_no) {
+        NIC_LOG_ERR("{}: Fw activate seq mismatch cfg_seq: {} curr_seq: {}",
+                    args->owner, args->seq_no, fw_update_seq);
+        return NULL;
+    }
     if (err) {
         fw_activate_status = FW_ACTIVATE_ERR;
         NIC_LOG_ERR("{}: Fw activate failed with exit status: {}", args->owner, err);
