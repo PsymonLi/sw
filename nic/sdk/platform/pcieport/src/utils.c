@@ -169,25 +169,6 @@ pcieport_set_serdes_reset(const int port,
     pal_reg_wr32(PP_(CFG_PP_SD_ASYNC_RESET_N, port), v);
 }
 
-/*
- * Note this function sets reset on/off, but the register
- * is inverted logic for _RESET_N.  If on=1 then put the serdes
- * in reset by clearing reset_n bits;
- */
-void
-pcieport_set_pcs_reset(const int port,
-                       const u_int16_t lanemask,
-                       const int on)
-{
-    u_int32_t v = pal_reg_rd32(PP_(CFG_PP_PCS_RESET_N, port));
-    if (on) {
-        v &= ~lanemask;
-    } else {
-        v |= lanemask;
-    }
-    pal_reg_wr32(PP_(CFG_PP_PCS_RESET_N, port), v);
-}
-
 void
 pcieport_set_mac_reset(pcieport_t *p, const int on)
 {

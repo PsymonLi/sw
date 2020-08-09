@@ -6,6 +6,11 @@
 #define __PCIEPORTPD_H__
 
 #include "platform/pcieport/include/elba/pcieportpd.h"
+#include "elb_soc_c_hdr.h"
+
+/* pcie registers in MS/SOC block */
+#define MS_SOC_(REG) \
+    (ELB_ADDR_BASE_MS_SOC_OFFSET + ELB_SOC_CSR_ ##REG## _BYTE_ADDRESS)
 
 #define ASIC_(REG)              ELB_ ##REG
 
@@ -24,6 +29,7 @@ int pcieportpd_serdes_reset(void);
 void pcieportpd_mac_set_ids(pcieport_t *p);
 void pcieportpd_select_pcie_refclk(const int port, const int host_clock);
 int pcieportpd_is_accessible(const int port);
+int pcieportpd_pp_linkwidth(void);
 
 void pcieportpd_intr_inherit(pcieport_t *p);
 int pcieportpd_check_for_intr(const int port);

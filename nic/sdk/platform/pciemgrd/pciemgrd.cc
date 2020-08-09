@@ -906,8 +906,11 @@ pciemgrd_evmon_init(pciemgrenv_t *pme)
     static evutil_prepare evmonprep;
     static u_int64_t evmon_tstamp;
 
-    evutil_add_check(EV_DEFAULT_ &evmoncheck, evmon_begin, &evmon_tstamp);
-    evutil_add_prepare(EV_DEFAULT_ &evmonprep, evmon_end, &evmon_tstamp);
+    // Only check on real hw, haps is slow
+    if (pal_is_asic()) {
+        evutil_add_check(EV_DEFAULT_ &evmoncheck, evmon_begin, &evmon_tstamp);
+        evutil_add_prepare(EV_DEFAULT_ &evmonprep, evmon_end, &evmon_tstamp);
+    }
 }
 
 void

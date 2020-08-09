@@ -185,6 +185,25 @@ pcieport_set_pcie_pll_rst(pcieport_t *p, const int on)
     }
 }
 
+/*
+ * Note this function sets reset on/off, but the register
+ * is inverted logic for _RESET_N.  If on=1 then put the serdes
+ * in reset by clearing reset_n bits;
+ */
+static void
+pcieport_set_pcs_reset(const int port,
+                       const u_int16_t lanemask,
+                       const int on)
+{
+    u_int32_t v = pal_reg_rd32(PP_(CFG_PP_PCS_RESET_N, port));
+    if (on) {
+        v &= ~lanemask;
+    } else {
+        v |= lanemask;
+    }
+    pal_reg_wr32(PP_(CFG_PP_PCS_RESET_N, port), v);
+}
+
 static void
 pcieport_set_pcs_interrupt_disable(const int port, const u_int16_t lanemask)
 {

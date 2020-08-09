@@ -9,4 +9,8 @@ MODULE_LDFLAGS  := ${BLD_OUT_DIR}/sbus_pcie_rom_$(ASIC)_submake/sbus_pcie_rom.o
 ifeq ($(ASIC),capri)
 MODULE_DEFS     := -DCAPRI_SW
 endif
+ifeq ($(ASIC),elba)
+MODULE_DEFS     := -DELBA_SW
+endif
+
 include ${MKDEFS}/post.mk

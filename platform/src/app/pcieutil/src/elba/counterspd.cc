@@ -250,24 +250,6 @@ show_pxb_sat_tgt(void)
 }
 
 static void
-show_pxb_cnt_axi(void)
-{
-#define GROUP           "PXB_CNT_AXI"
-#define ADDR(CTR)       PXB_(CNT_AXI_##CTR)
-
-#define PXB_CNT_AXI_SHOW_GEN(ty, CTR, fld, bits, bitc) \
-    show_counter_##ty(-1, ADDR(CTR), GROUP, #CTR, #fld, bits, bitc);
-
-#if 0
-    // XXX ELBA-TODO
-    PXB_CNT_AXI_GENERATOR(PXB_CNT_AXI_SHOW_GEN)
-#endif
-
-#undef GROUP
-#undef ADDR
-}
-
-static void
 show_pxb_cnt_itr(void)
 {
 #define GROUP           "PXB_CNT_ITR"
@@ -408,7 +390,6 @@ counterspd_show_global_counters(const int flags)
     show_pxb_sat_itr();
     show_pxb_sat_tgt();
 
-    show_pxb_cnt_axi();
     show_pxb_cnt_itr();
     show_pxb_cnt_tgt();
 

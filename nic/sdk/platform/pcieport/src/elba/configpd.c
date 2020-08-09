@@ -163,9 +163,9 @@ pcieport_set_sw_reset(pcieport_t *p, const int on)
 {
     u_int32_t val = pal_reg_rd32(PP_(CFG_PP_SW_RESET, p->port));
     if (on) {
-        val |= 0x3 << (p->port << 1);
+        val |= 0x3 << ((p->port % 4) << 1);
     } else {
-        val &= ~(0x3 << (p->port << 1));
+        val &= ~(0x3 << ((p->port % 4) << 1));
     }
     pal_reg_wr32(PP_(CFG_PP_SW_RESET, p->port), val);
 }
@@ -178,20 +178,65 @@ pcieport_set_sw_reset(pcieport_t *p, const int on)
 static void
 pcieport_set_pcie_pll_rst(pcieport_t *p, const int on)
 {
-    /* XXX ELBA-TODO */
-#if 0
+    /* XXX ELBA-TODO  HV need pll number here or just do this for both PLLs */
+    /* XXX ELBA-TODO  HV updated */
+
+    const int pll = 1; /* was p->port */
+    u_int32_t pll_cfg[3];
+
+#define CFG_PLL_PCIE(pll) \
+    (MS_SOC_(SCA_CFG_PLL_PCIE_0) + \
+     ((pll) * ELB_SOCA_CSR_CFG_PLL_PCIE_0_BYTE_SIZE))
+
+    pal_reg_rd32w(CFG_PLL_PCIE(pll), pll_cfg, 3);
+
+    /*****************
+     * word2
+     */
+    /* set resetb and post_resetb according to input value of on */
+
     if (on) {
-        pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_RST_N, p->port), 0);
+        /* assert post_resetb, resetb */
+        pll_cfg[2] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_2_3_POST_RESETB_MODIFY(pll_cfg[2], 0);
+        pll_cfg[2] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_2_3_RESETB_MODIFY(pll_cfg[2], 0);
+        pll_cfg[1] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_1_3_BYP_EN_MODIFY(pll_cfg[1], 1);
     } else {
-        pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_RST_N, p->port), 0x3);
+        /* deassert post_resetb, resetb */
+        pll_cfg[2] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_2_3_POST_RESETB_MODIFY(pll_cfg[2], 1);
+        pll_cfg[2] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_2_3_RESETB_MODIFY(pll_cfg[2], 1);
+        pll_cfg[1] = ELB_SOCA_CSR_CFG_PLL_PCIE_0_CFG_PLL_PCIE_0_1_3_BYP_EN_MODIFY(pll_cfg[1], 0);
     }
-#endif
+
+    pal_reg_wr32w(CFG_PLL_PCIE(pll), pll_cfg, 3);
+}
+
+/*
+ * Note this function sets reset on/off, but the register
+ * is inverted logic for _RESET_N.  If on=1 then put the serdes
+ * in reset by clearing reset_n bits;
+ */
+static void
+pcieport_set_pcs_reset(const int port,
+                       const u_int16_t lanemask,
+                       const int on)
+{
+    u_int32_t v = pal_reg_rd32(PP_(CFG_PP_PCS_RESET_N, port));
+    if (on) {
+        v &= ~(1 << (port % 4));
+    } else {
+        v |=  (1 << (port % 4));
+    }
+    pal_reg_wr32(PP_(CFG_PP_PCS_RESET_N, port), v);
 }
 
 static void
 pcieport_set_pcs_interrupt_disable(const int port, const u_int16_t lanemask)
 {
     /* XXX ELBA-TODO check this */
+    /*
+     * HV comment, PP_ macro takes care of port 4..7 = PP1
+     * for multi-port support
+     */
     pal_reg_wr32(PP_(CFG_PP_PCS_INTERRUPT_DISABLE, port), lanemask);
 }
 
@@ -304,6 +349,12 @@ pcieportpd_config_host(pcieport_t *p)
             }
 
             pcieportpd_select_pcie_refclk(p->port, host_clock);
+            /*
+             * XXX ELBA-TODO
+             * Kinjal: FIXME this argument is not accurate.
+             * We need to pass : host clock or local clock
+             */
+            pcieport_set_pcie_pll_rst(p, 0);
             pcieport_set_serdes_reset(p->port, p->lanemask, 0);
             if (pcieportpd_serdes_init() < 0) {
                 return -1;
@@ -389,16 +440,14 @@ pcieportpd_mac_set_ids(pcieport_t *p)
 void
 pcieportpd_select_pcie_refclk(const int port, const int host_clock)
 {
-    /* XXX ELBA-TODO */
-#if 0
+    /* XXX ELBA-TODO HV-updated */
     if (host_clock) {
         pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_REFCLK_SEL, port), 0xff);
-        pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_REFCLK_SOURCE_SEL, port), 0x3);
+        pal_reg_wr32(MS_SOC_(CFG_REFCLK_SEL), 0x3);
     } else {
         pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_REFCLK_SEL, port), 0x00);
-        pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_REFCLK_SOURCE_SEL, port), 0x0);
+        pal_reg_wr32(MS_SOC_(CFG_REFCLK_SEL), 0x0);
     }
-#endif
 }
 
 /*

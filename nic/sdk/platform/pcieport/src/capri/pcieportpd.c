@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -11,8 +12,17 @@
 #include "platform/pal/include/pal.h"
 #include "platform/pciemgrutils/include/pciesys.h"
 #include "platform/pcieport/include/pcieport.h"
+#include "platform/pcieport/include/portmap.h"
 #include "platform/pcieport/src/pcieport_impl.h"
 #include "pcieportpd.h"
+
+typedef struct pp_linkwidth_s {
+    int port;
+    int gen;
+    int width;
+    uint32_t usedlanes;
+    uint32_t pp_linkwidth;
+} pp_linkwidth_t;
 
 int
 pcieportpd_validate_hostconfig(pcieport_t *p)
@@ -131,4 +141,109 @@ pcieport_get_lanes(const int port,
     if (lanes_detected) *lanes_detected = port_lanes & 0xff;
     if (lanes_active)   *lanes_active   = (port_lanes >> 8) & 0xff;
     return r;
+}
+
+static int
+pp_linkwidth(pp_linkwidth_t *pplw, const int maxwidth)
+{
+    uint32_t linkwidth, portlanes;
+
+    if (pplw->width > maxwidth) {
+        pciesys_logerror("pp_linkwidth port%d max width %d > %d\n",
+                         pplw->port, pplw->width, maxwidth);
+        return -1;
+    }
+
+    /*
+     * 1-2 lanes: set pp_linkwidth 3
+     * 4   lanes: set 2
+     * 8   lanes: set 1
+     * 16  lanes: set 0
+     */
+    switch (pplw->width) {
+    case  1:
+    case  2: linkwidth = 3; portlanes = 0x3    << (pplw->port * 2); break;
+    case  4: linkwidth = 2; portlanes = 0xf    << (pplw->port * 2); break;
+    case  8: linkwidth = 1; portlanes = 0xff   << (pplw->port * 2); break;
+    case 16: linkwidth = 0; portlanes = 0xffff << (pplw->port * 2); break;
+    default:
+        pciesys_logerror("pp_linkwidth port%d bad width %d\n",
+                         pplw->port, pplw->width);
+        return -1;
+    }
+
+    /* check if someone is already using these lanes */
+    if (pplw->usedlanes & portlanes) {
+        pciesys_logerror("pp_linkwidth port%d gen%dx%d lane overlap\n",
+                         pplw->port, pplw->gen, pplw->width);
+        return -1;
+    }
+
+    /* we are using these lanes */
+    pplw->usedlanes |= portlanes;
+    pplw->pp_linkwidth |= linkwidth << (pplw->port * 2);
+    return 0;
+}
+
+/*
+ * We have 16 pcie lanes to configure across 8 ports.
+ * Based on the pcie link port config for this platform
+ * configure the global PP_LINKWIDTH lane configuration
+ * to match the port mapping.
+ *
+ * Enforce these constraints on the maximum number of lanes
+ * for ports, and watch for overlapping lane commitments,
+ * e.g. if port0 is configured for 8 lanes then port3 cannot use 2.
+ *
+ *     Port0 can use 16, 8, 4, 2 lanes.
+ *     Port1 can use           2 lanes.
+ *     Port2 can use        4, 2 lanes.
+ *     Port3 can use           2 lanes.
+ *     Port4 can use     8, 4, 2 lanes.
+ *     Port5 can use           2 lanes.
+ *     Port6 can use        4, 2 lanes.
+ *     Port7 can use           2 lanes.
+ */
+int
+pcieportpd_pp_linkwidth(void)
+{
+    const uint32_t portmask = portmap_portmask();
+    pp_linkwidth_t pplw;
+    int port, r;
+
+    memset(&pplw, 0, sizeof(pplw));
+
+    for (port = 0; port < PCIEPORT_NPORTS; port++) {
+        const int portbit = 1 << port;
+        if (portmask & portbit) {
+            pcieport_spec_t ps;
+
+            if (portmap_getspec(port, &ps) < 0) {
+                pciesys_logerror("portmap_getspec port %d failed\n", port);
+                return -1;
+            }
+            pplw.port = port;
+            pplw.gen = ps.gen;
+            pplw.width = ps.width;
+
+            switch (port) {
+            case 0: r = pp_linkwidth(&pplw, 16); break;
+            case 1: r = pp_linkwidth(&pplw,  2); break;
+            case 2: r = pp_linkwidth(&pplw,  4); break;
+            case 3: r = pp_linkwidth(&pplw,  2); break;
+            case 4: r = pp_linkwidth(&pplw,  8); break;
+            case 5: r = pp_linkwidth(&pplw,  2); break;
+            case 6: r = pp_linkwidth(&pplw,  4); break;
+            case 7: r = pp_linkwidth(&pplw,  2); break;
+            default:
+                pciesys_logerror("pp_linkwidth: unknown port %d\n", port);
+                return -1;
+            }
+            if (r < 0) {
+                return r;
+            }
+        }
+    }
+    pal_reg_wr32(PP_(CFG_PP_LINKWIDTH, 0), pplw.pp_linkwidth);
+    return 0;
 }
