@@ -1553,6 +1553,7 @@ pds_flow_pipeline_init (vlib_main_t *vm)
 {
     pds_flow_nacl_init();
     icmp_echo_request_register_next_node(vm, (u8 *) "pds-vnic-l2-rewrite");
+    pds_sesion_stats_init();
     return;
 }
 

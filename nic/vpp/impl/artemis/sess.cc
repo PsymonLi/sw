@@ -65,8 +65,14 @@ pds_session_stats_read(uint32_t session_id, pds_session_stats_t *stats)
     return -1;
 }
 
-int
+void
 pds_session_stats_clear (uint32_t session_id)
 {
-    return -1;
+    return;
+}
+
+void
+pds_sesion_stats_init (void)
+{
+    return;
 }

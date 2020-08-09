@@ -20,7 +20,8 @@
 extern int get_skip_session_program(void);
 
 #define MEM_REGION_SESSION_STATS_NAME "session_stats"
-static uint64_t g_region_addr = INVALID_MEM_ADDRESS;
+static mem_addr_t g_region_pa = INVALID_MEM_ADDRESS;
+static pds_session_stats_t *g_region_va = NULL;
 static uint8_t g_zero_array[sizeof(pds_session_stats_t)] = {0};
 
 uint64_t
@@ -113,12 +114,12 @@ pds_session_stats_read (uint32_t session_id, pds_session_stats_t *stats)
     sdk::lib::pal_ret_t ret;
     uint64_t offset = 0;
 
-    if (g_region_addr == INVALID_MEM_ADDRESS) {
-        g_region_addr = api::g_pds_state.mempartition()->start_addr(
-            MEM_REGION_SESSION_STATS_NAME);
+    if (likely(g_region_va)) {
+        *stats = g_region_va[session_id];
+        return 0;
     }
     offset = session_id * sizeof(pds_session_stats_t);
-    ret = sdk::lib::pal_mem_read(g_region_addr + offset, (uint8_t *)stats,
+    ret = sdk::lib::pal_mem_read(g_region_pa + offset, (uint8_t *)stats,
                                  sizeof(pds_session_stats_t));
     if (ret != sdk::lib::PAL_RET_OK) {
         return -1;
@@ -242,21 +243,52 @@ pds_session_update_rewrite_flags(uint32_t ses_id, uint16_t tx_rewrite,
     return pds_session_program(ses_id, (void *)&session_info_entry);
 }
 
-int
+void
 pds_session_stats_clear (uint32_t session_id)
 {
-    sdk::lib::pal_ret_t ret;
     uint64_t offset = 0;
+    uint32_t i;
+    uint64_t *stat_addr_64;
+    uint8_t *stat_addr_8;
 
-    if (g_region_addr == INVALID_MEM_ADDRESS) {
-        g_region_addr = api::g_pds_state.mempartition()->start_addr(
-            MEM_REGION_SESSION_STATS_NAME);
-    }
     offset = session_id * sizeof(pds_session_stats_t);
-    ret = sdk::lib::pal_mem_write(g_region_addr + offset, g_zero_array,
-                                  sizeof(g_zero_array));
-    if (ret != sdk::lib::PAL_RET_OK) {
-        return -1;
+    // fastpath when region is memory mapped
+    if (likely(g_region_va)) {
+        stat_addr_64 = (uint64_t *) (g_region_va + session_id);
+        for (i = 0; i < sizeof(pds_session_stats_t) / sizeof(uint64_t); i++) {
+            stat_addr_64[i] = 0;
+        }
+        stat_addr_8 = (uint8_t *)(stat_addr_64 + i);
+        for (i = 0; i < sizeof(pds_session_stats_t) % sizeof(uint64_t); i++) {
+            stat_addr_8[i] = 0;
+        }
+        sdk::asic::pd::asicpd_hbm_table_entry_cache_invalidate(
+                            P4_TBL_CACHE_EGRESS, offset,
+                            sizeof(pds_session_stats_t),
+                            g_region_pa);
+        return;
     }
-    return 0;
+    // slowpath when region isn't memory mapped
+    (void) sdk::lib::pal_mem_write(g_region_pa + offset, g_zero_array,
+                                   sizeof(g_zero_array));
+    return;
+}
+
+void
+pds_sesion_stats_init (void)
+{
+    platform_type_t platform_type = api::g_pds_state.platform_type();
+
+    g_region_pa = api::g_pds_state.mempartition()->start_addr(
+                                      MEM_REGION_SESSION_STATS_NAME);
+    SDK_ASSERT(g_region_pa != INVALID_MEM_ADDRESS);
+    if (sdk::platform::PLATFORM_TYPE_HW == platform_type) {
+        uint32_t stats_region_size = api::g_pds_state.mempartition()->size(
+                                      MEM_REGION_SESSION_STATS_NAME);
+        mem_addr_t va = (mem_addr_t) sdk::lib::pal_mem_map(g_region_pa,
+                                                           stats_region_size);
+        SDK_ASSERT(va != INVALID_MEM_ADDRESS);
+        g_region_va = (pds_session_stats_t *) va;
+    }
+    return;
 }

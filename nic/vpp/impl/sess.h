@@ -80,7 +80,9 @@ void pds_session_track_get_info(uint32_t session_id, session_track_info_t *info)
 
 int pds_session_stats_read(uint32_t session_id, pds_session_stats_t *stats);
 
-int pds_session_stats_clear(uint32_t session_id);
+void pds_session_stats_clear(uint32_t session_id);
+
+void pds_sesion_stats_init(void);
 
 uint64_t pds_session_get_timestamp(uint32_t ses);
 
