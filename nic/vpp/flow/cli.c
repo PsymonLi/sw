@@ -915,6 +915,10 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     }
     vlib_cli_output(vm, "%s", delimiter);
     if (session->v4) {
+        if (!pds_is_valid_handle(session->iflow.handle)) {
+            vlib_cli_output(vm, "Iflow deleted");
+            goto rflow;
+        }
         ret = ftlv4_dump_entry_with_handle(fm->table4, session->iflow.handle,
                                            &flow_info, vm->thread_index);
         if (ret < 0) {
@@ -945,6 +949,11 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
             }
         }
 
+rflow:
+        if (!pds_is_valid_handle(session->rflow.handle)) {
+            vlib_cli_output(vm, "Rflow deleted");
+            goto flow_done;
+        }
         ret = ftlv4_dump_entry_with_handle(fm->table4, session->rflow.handle,
                                            &flow_info, vm->thread_index);
         if (ret < 0) {
@@ -974,6 +983,7 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
                                 flow_info.nexthop_priority);
             }
         }
+flow_done: ;
     }
 
     if (session_info.session_tracking_en && detail) {
@@ -1169,6 +1179,10 @@ set_vpp_pds_secprofile_command_fn (vlib_main_t *vm,
             fm->drop_timeout[PDS_FLOW_PROTO_ICMP] = PDS_FLOW_SEC_TO_TIMER_TICK(icmp_drop_timeout);
         } else if (unformat(input, "other-drop-timeout %u", &other_drop_timeout)) {
             fm->drop_timeout[PDS_FLOW_PROTO_OTHER] = PDS_FLOW_SEC_TO_TIMER_TICK(other_drop_timeout);
+        } else if (unformat(input, "conn-track enable")) {
+            fm->con_track_en = true;
+        } else if (unformat(input, "conn-track disable")) {
+            fm->con_track_en = false;
         } else {
             vlib_cli_output(vm, "ERROR: Invalid command");
             goto done;
@@ -1187,7 +1201,8 @@ VLIB_CLI_COMMAND (set_vpp_pds_secprofile_command, static) =
                   "[other-idle-timeout <timeout>] [tcp-syn-timeout <timeout>] "
                   "[tcp-half-close-timeout <timeout>] [tcp-close-timeout <timeout>] "
                   "[tcp-drop-timeout <timeout>] [udp-drop-timeout <timeout>] "
-                  "[icmp-drop-timeout <timeout>] [other-drop-timeout <timeout>]",
+                  "[icmp-drop-timeout <timeout>] [other-drop-timeout <timeout>]"
+                  "[conn-track <enable | disable>]",
     .function = set_vpp_pds_secprofile_command_fn,
 };
 

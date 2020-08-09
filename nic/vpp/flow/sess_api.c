@@ -69,39 +69,36 @@ pds_flow_delete_session (u32 ses_id)
                                      session->drop,
                                      thread);
         }
-        if (pds_is_valid_handle(session->iflow.handle)) {
-            //handle may already be invalid as a result of previous attempt
-            //to delete which resulted in retry failure
+        if (PREDICT_TRUE(pds_is_valid_handle(session->iflow.handle))) {
+            // handle may already be invalid as a result of previous attempt
+            // to delete which resulted in retry failure
             ret = ftlv4_get_with_handle(table4, session->iflow.handle, thread);
-
-            if (PREDICT_FALSE(ret!= 0)) {
+            if (PREDICT_FALSE(ret!= FTL_OK)) {
                 if (ret == FTL_RETRY)
                     goto start_close_overdue_timer;
                 else
                     goto end;
             }
+            if (PREDICT_FALSE(session->napt)) {
+                ftlv4_update_iflow_nat_session(table4, thread);
+            }
+            if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != FTL_OK) {
+                goto end;
+            }
+            pds_invalidate_handle(&session->iflow.handle);
         }
-
-        if (PREDICT_FALSE(session->napt)) {
-            ftlv4_update_iflow_nat_session(table4, thread);
-        }
-        if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
-            goto end;
-        }
-        pds_invalidate_handle(&session->iflow.handle);
 
         ret = ftlv4_get_with_handle(table4, session->rflow.handle, thread);
-        if (PREDICT_FALSE(ret!= 0)) {
+        if (PREDICT_FALSE(ret!= FTL_OK)) {
             if (ret == FTL_RETRY)
                 goto start_close_overdue_timer;
             else
                 goto end;
         }
-
         if (PREDICT_FALSE(session->napt)) {
             ftlv4_update_rflow_nat_session(table4, thread);
         }
-        if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
+        if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != FTL_OK) {
             goto end;
         }
         if (PREDICT_FALSE(session->napt)) {
@@ -116,31 +113,29 @@ pds_flow_delete_session (u32 ses_id)
                                    session->drop);
         }
         if (pds_is_valid_handle(session->iflow.handle)) {
-            //handle may already be invalid as a result of previous attempt
-            //to delete which resulted in retry failure
+            // handle may already be invalid as a result of previous attempt
+            // to delete which resulted in retry failure
             ret = ftlv6_get_with_handle(table, session->iflow.handle);
-            if (PREDICT_FALSE(ret!= 0)) {
+            if (PREDICT_FALSE(ret!= FTL_OK)) {
                 if (ret == FTL_RETRY)
                     goto start_close_overdue_timer;
                 else
                     goto end;
             }
+            if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != FTL_OK) {
+                goto end;
+            }
+            pds_invalidate_handle(&session->iflow.handle);
         }
-
-        if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
-            goto end;
-        }
-        pds_invalidate_handle(&session->iflow.handle);
 
         ret = ftlv6_get_with_handle(table, session->rflow.handle);
-        if (PREDICT_FALSE(ret!= 0)) {
+        if (PREDICT_FALSE(ret!= FTL_OK)) {
             if (ret == FTL_RETRY)
                 goto start_close_overdue_timer;
             else
                 goto end;
         }
-
-        if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
+        if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != FTL_OK) {
             goto end;
         }
     }
