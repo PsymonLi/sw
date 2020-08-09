@@ -40,35 +40,40 @@ enum SecurityPolicyType {
 // this format
 message FlowLog {
   // timestamp indicating when the flow is created/closed
-  uint64                   Timestamp    = 1;
+  uint64                   Timestamp            = 1;
   // flow open log or flow close log
-  FlowLogType              LogType      = 2;
-  // source interface of first packet (uplink of VF/PF id)
-  uint32                   SrcInterface = 3;
+  FlowLogType              LogType              = 2;
+  // source interface of first packet in the session
+  // NOTE: this is source vnic's uuid if the session is initiated locally
+  //       (irrespective of whether destination is local or remote) and if the
+  //       session is created because first packet came on uplink, this field
+  //       is left empty
+  bytes                    SrcInterface         = 3;
   // flow key
-  types.FlowKey            Key          = 4;
+  types.FlowKey            Key                  = 4;
   // flow action taken
-  types.SecurityRuleAction FlowAction   = 5;
+  types.SecurityRuleAction FlowAction           = 5;
   // NAT-ed source IP after the rewrite, if any
-  types.IPAddress          SrcNATIP     = 6;
+  types.IPAddress          SrcNATIP             = 6;
   // source NAT port, if any
-  uint32                   SrcNATPort   = 7;
+  uint32                   SrcNATPort           = 7;
   // NAT-ed destination IP after the rewrite, if any
-  types.IPAddress          DstNATIP     = 8;
+  types.IPAddress          DstNATIP             = 8;
   // destination NAT port, if any
-  uint32                   DstNATPort   = 9;
-  // type of the security policy rule that matched the packet
-  SecurityPolicyType       PolicyType   = 10;
+  uint32                   DstNATPort           = 9;
   // SessionId identifies unique id assigned for the the flow pair
   // for the lifetime of the session
-  uint64                   SessionId    = 11;
+  uint64                   SessionId            = 10;
   // initiator flow octet count
-  uint64                   IflowBytes   = 12;
+  uint64                   IflowBytes           = 11;
   // initator flow packet count
-  uint64                   IflowPackets = 13;
+  uint64                   IflowPackets         = 12;
   // responder flow octet count
-  uint64                   RflowBytes   = 14;
+  uint64                   RflowBytes           = 13;
   // responder flow packet count
-  uint64                   RflowPackets = 15;
+  uint64                   RflowPackets         = 14;
+  // security policy id, if security policy was evaluated
+  bytes                    SecurityPolicyId     = 15;
+  // security policy rule id, if security policy was evaluated
+  bytes                    SecurityPolicyRuleId = 16;
 }
-
