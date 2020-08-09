@@ -104,7 +104,7 @@ func convertHalMirrorSession(col commonUtils.Collector, vrfID uint64) *halapi.Mi
 						VlanStripEn: col.StripVlanHdr,
 					},
 				},
-				//Tag: uint32(col.SessionID),
+				Tag: uint32(col.SessionID),
 			},
 		},
 	}
