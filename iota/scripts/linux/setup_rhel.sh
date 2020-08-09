@@ -15,11 +15,13 @@ if [ "$1" = "register" ]; then
 		subscription-manager repos --enable rhel-7-server-extras-rpms
 		yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
-		yum install -y bind-utils net-tools wireshark
+		yum -y install bind-utils net-tools wireshark
 
-		yum install -y iperf3 vim sshpass sysfsutils net-tools libnl3-devel valgrind-devel hping3 lshw python-setuptools
+		yum -y install iperf3 vim sshpass sysfsutils net-tools libnl3-devel valgrind-devel hping3 lshw python-setuptools
 		yum -y install elfutils-libelf-devel nmap
 		yum -y install docker-ce container-selinux
+                yum -y install libtool-ltdl
+                yum -y install kernel-abi-whitelists
 
 		easy_install pip
 		pip install pyyaml
@@ -31,6 +33,11 @@ if [ "$1" = "register" ]; then
 		# iperf
 		rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 		yum -y install iperf
+
+        elif [[ $os_version == *"8"* ]]; then
+		yum -y install libtool-ltdl
+		yum -y install kernel-abi-whitelists
+		yum -y install kernel-rpm-macros
 	fi
 elif [ "$1" = "unregister" ]; then
 	sudo subscription-manager remove --all

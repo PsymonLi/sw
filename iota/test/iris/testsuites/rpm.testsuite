@@ -1,0 +1,39 @@
+meta:
+    name        : rpm
+    description : RPM validation on respective OS images 
+    mode        : hardware
+    cfgmode     : netagent
+    nicmode     : classic
+    os          : [ linux ]
+
+packages:
+    - iota.test.iris
+
+image_manifest:
+    spec        : images/latest.json
+    naples      : capri
+    
+setup:
+    topology: test/iris/topologies/classic_baremetal_1Naples/classic_baremetal.topology
+    config  :
+
+        - step : utils.cleanup
+        - step : testcases.penctl.install
+        - step : testcases.penctl.enable_ssh
+        - step : utils.naples_workloads
+        - step : config.workload.api
+
+common:
+    verifs:
+        # N/A
+    debugs:
+        # N/A
+    setup:
+        # N/A
+testbundles:
+    sanity:
+        # Relative paths from iota/test/iris/testbundles/
+        - classic/rpm.testbundle
+
+teardown:
+        # N/A

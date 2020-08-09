@@ -337,6 +337,8 @@ jobs:
     labels: ["compat-other-reboot-uefi"]
   iota/test/standalone/compat/compat-server/ubuntu2004-reboot-uefi/:
     labels: ["compat-other-reboot-uefi"]
+  iota/test/standalone/rpm:
+    label: ["CI-Weekly"]
   iota/test/standalone/os_coverage/linux:
     label: ["CI-Weekly"]
   iota/test/standalone/os_coverage_apulu/linux:

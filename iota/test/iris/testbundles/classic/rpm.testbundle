@@ -1,0 +1,13 @@
+meta:
+    name    : [ rpm ]
+    os      : [ linux ]
+    nics    : [ pensando ]
+    targetcount : 1
+
+testcases:
+    -   name    : install_rpm
+        testcase: testcases.drivers.rpm.rpm_install
+        enable  : True
+        args    :
+            type         : remote_only
+
