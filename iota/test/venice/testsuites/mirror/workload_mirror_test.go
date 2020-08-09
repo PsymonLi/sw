@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("Workload mirror tests", func() {
 	var startTime time.Time
-	dataPathEnabled := false
+	dataPathEnabled := true
 	BeforeEach(func() {
 		startTime = time.Now().UTC()
 		// verify cluster is in good health
