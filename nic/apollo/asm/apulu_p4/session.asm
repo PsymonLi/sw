@@ -2,7 +2,6 @@
 #include "egress.h"
 #include "EGRESS_p.h"
 #include "EGRESS_session_k.h"
-#include "nic/apollo/p4/include/apulu_table_sizes.h"
 
 struct session_k_   k;
 struct session_d    d;

@@ -26,6 +26,7 @@ header_type key_metadata_t {
         parsed_dport    : 16;
         entry_valid     : 1;
         lif             : 12;
+        flow_info_id    : 22;
 
         local_mapping_lkp_type  : 2;
         local_mapping_lkp_id    : 16;
@@ -81,6 +82,7 @@ header_type control_metadata_t {
         session_tracking_en     : 1;
         local_mapping_done      : 1;
         flow_done               : 1;
+        flow_info_lkp           : 1;
         parse_tcp_option_error  : 1;
         tcp_option_ws_valid     : 1;
         tcp_option_mss_valid    : 1;
@@ -163,6 +165,7 @@ header_type scratch_metadata_t {
         xlate_id            : 20;
         l2_pkt_type         : 2;
         lif_vlan_mode       : 2;
+        flow_info_pad       : 58;
 
         // policer
         policer_valid       : 1;

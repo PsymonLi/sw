@@ -440,7 +440,7 @@ rxdma_symbols_init (void **p4plus_symbols,
                      start_addr(MEM_REGION_LIF_STATS_NAME);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_RNMPR_TABLE_BASE;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX_NAME);
@@ -468,21 +468,21 @@ rxdma_symbols_init (void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_PAD_BYTES_HBM_TABLE_BASE;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_IPSEC_PAD_TABLE_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
- 
+
     symbols[i].name = IPSEC_ENC_NMDR_PI;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_ENC_NMDR_ALLOC_PI;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_DEC_NMDR_PI;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_DEC_NMDR_ALLOC_PI;
@@ -496,14 +496,14 @@ rxdma_symbols_init (void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_BIG_TNMPR_TABLE_BASE;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_TX_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_N2H;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME) + IPSEC_N2H_GLOBAL_STATS_OFFSET;
@@ -554,14 +554,14 @@ txdma_symbols_init (void **p4plus_symbols,
     i++;
 
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = BRQ_BASE;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_BRQ_RING_GCM0_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME);
@@ -575,21 +575,21 @@ txdma_symbols_init (void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_PAGE_ADDR_TX;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_DEC_PAGE_BIG_TX_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-     
+
     symbols[i].name = IPSEC_BIG_RNMPR_TABLE_BASE;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_RX_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_BIG_TNMPR_TABLE_BASE;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_IPSEC_NMDPR_DECRYPT_TX_NAME);
@@ -603,14 +603,14 @@ txdma_symbols_init (void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-     
+
     symbols[i].name = IPSEC_DEC_NMDR_CI;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_DEC_NMDR_ALLOC_CI;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-     
+
     symbols[i].name = IPSEC_RNMPR_TABLE_BASE;
     symbols[i].val =
         g_mempartition->start_addr(MEM_REGION_IPSEC_NMDPR_ENCRYPT_RX_NAME);

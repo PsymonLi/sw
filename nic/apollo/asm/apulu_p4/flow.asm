@@ -68,6 +68,11 @@ label_flow_hit:
 label_flow_hit_nexthop_done:
     phvwr           p.p4i_i2e_is_local_to_local, \
                         d.flow_hash_d.is_local_to_local
+    phvwr           p.control_metadata_flow_info_lkp, TRUE
+    add             r1, r0, d.flow_hash_d.session_index
+    seq             c2, d.flow_hash_d.flow_role, TCP_FLOW_INITIATOR
+    addi.!c2        r1, r1, FLOW_INFO_TABLE_SIZE / 2
+    phvwr           p.key_metadata_flow_info_id, r1
     seq             c2, k.arm_to_p4i_valid, FALSE
     smneb.c2        c2, k.tcp_flags, (TCP_FLAG_FIN|TCP_FLAG_RST), 0
     nop.!c2.e

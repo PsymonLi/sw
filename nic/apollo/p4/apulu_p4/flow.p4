@@ -27,6 +27,15 @@ action flow_hash(epoch, session_index,
         } else {
             modify_field(p4i_i2e.is_local_to_local, is_local_to_local);
             modify_field(p4i_i2e.flow_role, flow_role);
+            modify_field(control_metadata.flow_info_lkp, TRUE);
+            if (flow_role == TCP_FLOW_INITIATOR) {
+                modify_field(key_metadata.flow_info_id,
+                             scratch_metadata.session_id);
+            } else {
+                modify_field(key_metadata.flow_info_id,
+                             scratch_metadata.session_id +
+                             (FLOW_INFO_TABLE_SIZE / 2));
+            }
             modify_field(control_metadata.flow_done, TRUE);
             modify_field(scratch_metadata.flag, nexthop_valid);
             if (nexthop_valid == TRUE) {
@@ -60,8 +69,7 @@ action flow_hash(epoch, session_index,
 
         // if hardware register indicates miss, compare hashes with r1
         // (scratch_metadata.flow_hash) and setup lookup in overflow table
-        modify_field(scratch_metadata.flow_hash,
-                     scratch_metadata.flow_hash);
+        modify_field(scratch_metadata.flow_hash, scratch_metadata.flow_hash);
         modify_field(scratch_metadata.hint_valid, FALSE);
         if ((scratch_metadata.hint_valid == FALSE) and
             (scratch_metadata.flow_hash == hash1)) {
@@ -170,6 +178,15 @@ action ipv4_flow_hash(epoch, session_index, nexthop_type,
         } else {
             modify_field(p4i_i2e.is_local_to_local, is_local_to_local);
             modify_field(p4i_i2e.flow_role, flow_role);
+            modify_field(control_metadata.flow_info_lkp, TRUE);
+            if (flow_role == TCP_FLOW_INITIATOR) {
+                modify_field(key_metadata.flow_info_id,
+                             scratch_metadata.session_id);
+            } else {
+                modify_field(key_metadata.flow_info_id,
+                             scratch_metadata.session_id +
+                             (FLOW_INFO_TABLE_SIZE / 2));
+            }
             modify_field(control_metadata.flow_done, TRUE);
             modify_field(scratch_metadata.flag, nexthop_valid);
             if (nexthop_valid == TRUE) {
@@ -273,6 +290,28 @@ table ipv4_flow_ohash {
     size : IPV4_FLOW_OHASH_TABLE_SIZE;
 }
 
+/*****************************************************************************/
+/* Additional info for flow                                                  */
+/*****************************************************************************/
+action flow_info(priority, is_local_to_local, pad) {
+    modify_field(p4i_i2e.priority, priority);
+    modify_field(p4i_i2e.is_local_to_local, is_local_to_local);
+    modify_field(scratch_metadata.flow_info_pad, pad);
+}
+
+@pragma stage 4
+@pragma hbm_table
+@pragma index_table
+table flow_info {
+    reads {
+        key_metadata.flow_info_id   : exact;
+    }
+    actions {
+        flow_info;
+    }
+    size : FLOW_INFO_TABLE_SIZE;
+}
+
 control flow_lookup {
     if (control_metadata.flow_ohash_lkp == FALSE) {
         if (key_metadata.ktype == KEY_TYPE_IPV4) {
@@ -287,5 +326,8 @@ control flow_lookup {
         } else {
             apply(flow_ohash);
         }
+    }
+    if (control_metadata.flow_info_lkp == TRUE) {
+        apply(flow_info);
     }
 }
