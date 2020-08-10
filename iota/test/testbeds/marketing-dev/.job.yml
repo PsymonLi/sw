@@ -351,5 +351,45 @@ e2e-targets:
        password: vm
        vars:
           BmOs: freebsd
+ # one bare-metal instance of windows 2019
+ windows2019:
+   commands: [ "cat /warmd.json && sleep 30000000"]
+   owners: ["email:ci-status@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   clusters:
+     - image: build-41
+       count: 1
+       resources:
+         servers:
+           - type: ae-hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: windows
+
+ # two bare-metal instance of windows 2019
+ 2windows2019:
+   commands: [ "cat /warmd.json && sleep 30000000"]
+   owners: ["email:ci-status@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   clusters:
+     - image: build-41
+       count: 2
+       resources:
+         servers:
+           - type: ae-hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: windows
+
 logfiles:
   - /sw/iota/iota_sanity_logs.tar.gz
