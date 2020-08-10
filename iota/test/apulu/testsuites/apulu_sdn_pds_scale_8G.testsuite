@@ -43,7 +43,7 @@ testbundles:
     sanity:
         # Relative paths from iota/test/apulu/testbundles/
         - api_crud_scale/api_crud_scale.testbundle
-        - naples_upgrade/issu_upgrade.testbundle
+        - upgrade/hitless.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

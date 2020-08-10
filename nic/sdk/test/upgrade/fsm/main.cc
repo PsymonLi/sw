@@ -87,6 +87,23 @@ test_upgrade (sdk::upg::upg_ev_params_t *params)
 }
 
 static sdk_ret_t
+test_upgrade_prepare (sdk::upg::upg_ev_params_t *params)
+{
+    FILE *f = fopen("/tmp/upgrade_stage_prepare_delay.txt", "r");
+    uint32_t delay = 0;
+
+    if (f) {
+        fscanf(f, "%u", &delay);
+        sleep(delay);
+        fclose(f);
+    }
+    printf("\nSuccessfully handled event\n");
+    params->response_cb(SDK_RET_OK, params->response_cookie);
+    fflush(stdout);
+    return SDK_RET_IN_PROGRESS;
+}
+
+static sdk_ret_t
 fault_injection (sdk::upg::upg_ev_params_t *params)
 {
     if (rsp_time_delay > 0) {
@@ -129,7 +146,9 @@ upg_ev_fill (sdk::upg::upg_ev_t *ev)
         printf("\nSetting fault injection in stage UPG_STAGE_PREPARE\n");
         ev->prepare_hdlr = fault_injection;
     } else {
-        ev->prepare_hdlr = test_upgrade;
+        // in naples(hw) negative test, we need to delay the prepare to
+        // launch the same application in second instance.
+        ev->prepare_hdlr = test_upgrade_prepare;
     }
 
     if (fsm_stage.compare("UPG_STAGE_PRE_SWITCHOVER") == 0) {

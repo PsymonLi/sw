@@ -1,12 +1,12 @@
 meta:
-    name    : issu_upgrade
+    name    : upgrade_hitless
     os      : [ linux ]
     nics    : [ pensando, mellanox, intel ]
     targetcount : 1
 
 testcases:
-    -   name: ISSU_UPGRADE_FWONLY
-        testcase    : testcases.naples_upgrade.issu_upgrade
+    -   name: UPGRADE_HITLESS
+        testcase    : testcases.upgrade.hitless
         stress      : True
         ignore      : True
         iterators   :

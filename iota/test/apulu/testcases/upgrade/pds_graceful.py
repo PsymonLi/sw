@@ -4,7 +4,7 @@ import time
 import random
 import iota.harness.api as api
 import iota.test.apulu.config.api as config_api
-import iota.test.apulu.testcases.naples_upgrade.upgrade_utils as upgrade_utils
+import iota.test.apulu.testcases.upgrade.utils as upgrade_utils
 import iota.test.utils.ping as ping
 import iota.test.apulu.utils.naples as naples_utils
 import iota.test.apulu.utils.misc as misc_utils

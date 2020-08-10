@@ -55,7 +55,7 @@ testbundles:
         - networking/link_events.testbundle
         - networking/node_events.testbundle
         #- networking/h2n.testbundle
-        - naples_upgrade/naples_upgrade.testbundle
+        - upgrade/dsc_graceful.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

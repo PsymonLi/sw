@@ -7,11 +7,11 @@ import iota.test.utils.timout_wrapper as timeout_wrapper
 import iota.test.utils.traffic as traffic
 import iota.test.apulu.config.api as config_api
 import iota.test.apulu.config.del_iptable_rule as iptable_rule
-import iota.test.apulu.testcases.naples_upgrade.upgrade_utils as upgrade_utils
+import iota.test.apulu.testcases.upgrade.utils as upgrade_utils
 import iota.test.utils.ping as ping
 import iota.test.apulu.utils.naples as naples_utils
 import iota.test.apulu.utils.misc as misc_utils
-from iota.test.apulu.testcases.naples_upgrade.upgrade_status import *
+from iota.test.apulu.testcases.upgrade.status import *
 
 # Following come from DOL
 import upgrade_pb2 as upgrade_pb2
@@ -155,10 +155,6 @@ def PacketTestSetup(tc):
     tc.interval = 0.001 #1msec
     tc.count = int(tc.duration / tc.interval)
 
-    # TODO - Set pktlossverif flag to True if we need to fail the test
-    #        for any packet loss in hitless upgrade mode.
-    # if tc.upgrade_mode == "hitless":
-    #     tc.pktlossverif = True
 
     # start background ping before start of test
     if ping.TestPing(tc, 'user_input', "ipv4", tc.pktsize, interval=tc.interval, \
@@ -236,6 +232,10 @@ def Setup(tc):
     tc.pkg_name = getattr(tc.args, "naples_upgr_pkg", "naples_fw.tar")
     tc.node_selection = tc.iterators.selection
     tc.iperf = getattr(tc.args, "iperf", False)
+    tc.failure_stage = getattr(tc.args, "failure_stage", None)
+    tc.failure_reason = getattr(tc.args, "failure_reason", None)
+    tc.hitless_instance = { }
+
     if tc.node_selection not in ["any", "all"]:
         api.Logger.error("Incorrect Node selection option {} specified. Use 'any' or 'all'".format(tc.node_selection))
         tc.skip = True
@@ -244,7 +244,7 @@ def Setup(tc):
     tc.nodes = api.GetNaplesHostnames()
     if tc.node_selection == "any":
         tc.nodes = [random.choice(tc.nodes)]
-    
+
     if len(tc.nodes) == 0:
         api.Logger.error("No naples nodes found")
         result = api.types.status.FAILURE
@@ -277,6 +277,11 @@ def Setup(tc):
         tc.skip = True
         return result
 
+    if tc.failure_stage != None:
+        result = upgrade_utils.HitlessNegativeSetup(tc)
+        if result != api.types.status.SUCCESS:
+            return result
+
     # choose workloads for connectivity/traffic test
     result = ChooseWorkLoads(tc)
     if result != api.types.status.SUCCESS or tc.skip:
@@ -300,22 +305,26 @@ def Setup(tc):
     api.Logger.info(f"Upgrade: Setup returned {result}")
     return result
 
-def Trigger(tc):   
-    # Trigger upgrade  
+def Trigger(tc):
+    # for negative testcases
+    if tc.failure_stage != None:
+        return TriggerHitlessNegative(tc)
+
+    # Trigger upgrade
     result = trigger_upgrade_request(tc)
     if result != api.types.status.SUCCESS:
         return result
-    
+
     # Make sure upgrade is kick started
     result = PollUpgradeStatus(tc, UpgStatus.UPG_STATUS_IN_PROGRESS, timeout=100)
     if result != api.types.status.SUCCESS:
         return result
-    
+
     # Poll upgrade stage ready
     result = PollUpgradeStage(tc, UpgStage.UPG_STAGE_READY, timeout=300)
     if result !=  api.types.status.SUCCESS:
-       return result 
-    
+       return result
+
     # Delete iptable rule to unblock the GRPC port
     iptable_rule.DelIptablesRule(tc.nodes)
 
@@ -330,10 +339,57 @@ def Trigger(tc):
     result = hitless_upgrade_trigger_config_replay(tc)
     if result != api.types.status.SUCCESS:
         return result
-    
+
     # Poll finish stage
-    return PollUpgradeStage(tc, UpgStage.UPG_STAGE_FINISH, timeout=300) 
-    
+    return PollUpgradeStage(tc, UpgStage.UPG_STAGE_FINISH, timeout=300)
+
+def TriggerHitlessNegative(tc):
+    result = upgrade_utils.HitlessSaveInstanceId(tc)
+    if result != api.types.status.SUCCESS:
+        return result
+
+    # Trigger upgrade
+    result = trigger_upgrade_request(tc)
+    if result != api.types.status.SUCCESS:
+        return result
+
+    # Make sure upgrade is kick started
+    result = PollUpgradeStatus(tc, UpgStatus.UPG_STATUS_IN_PROGRESS, timeout=100)
+    if result != api.types.status.SUCCESS:
+        return result
+
+    # Poll upgrade stage prepare
+    result = PollUpgradeStage(tc, UpgStage.UPG_STAGE_PREPARE, timeout=300)
+    if result !=  api.types.status.SUCCESS:
+        return result
+
+    result = upgrade_utils.HitlessPrepUpgTestApp(tc, False)
+    if result != api.types.status.SUCCESS:
+        return result
+
+    # Poll upgrade stage ready
+    result = PollUpgradeStage(tc, UpgStage.UPG_STAGE_READY, timeout=300)
+    if result !=  api.types.status.SUCCESS:
+       return result
+
+    # Delete iptable rule to unblock the GRPC port
+    iptable_rule.DelIptablesRule(tc.nodes)
+
+    # Poll config replay ready state
+    result = hitless_upgrade_poll_config_replay_ready(tc)
+    if result != api.types.status.SUCCESS:
+        return result
+
+    api.Logger.info("PDS agent is ready to receive the config replay")
+
+    # Replay the configuration
+    result = hitless_upgrade_trigger_config_replay(tc)
+    if result != api.types.status.SUCCESS:
+        return result
+
+    # Poll for upgrade failed status
+    return PollUpgradeStatus(tc, UpgStatus.UPG_STATUS_FAILED, timeout=300)
+
 def Verify(tc):
     sshd_restart_wait = 20 #sec
     result = api.types.status.SUCCESS
@@ -344,8 +400,13 @@ def Verify(tc):
     misc_utils.Sleep(sshd_restart_wait)
 
     # Check upgrade status
+    if tc.failure_stage != None:
+        # TODO : details check on stage etc
+        status =  UpgStatus.UPG_STATUS_FAILED
+    else:
+        status = UpgStatus.UPG_STATUS_SUCCESS
     for node in tc.nodes:
-        if not upgrade_utils.CheckUpgradeStatus(node, UpgStatus.UPG_STATUS_SUCCESS):
+        if not upgrade_utils.CheckUpgradeStatus(node, status):
             result = api.types.status.FAILURE
     
     # validate the configuration

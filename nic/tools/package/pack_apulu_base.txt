@@ -373,6 +373,7 @@ nic/vpp/conf/upgrade/vpp_dom_b_2_workers.conf                     /nic/conf/vpp/
 nic/vpp/conf/upgrade/startup_$PIPELINE_dom_b.conf                 /nic/conf/vpp/startup_dom_b.conf
 nic/build/$ARCH/$PIPELINE/bin/pdsupgmgr                           /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pdsupgclient                        /nic/bin/
+nic/build/$ARCH/$PIPELINE/bin/upgrade_fsm_test                    /nic/bin/
 nic/conf/$PIPELINE/upgrade_cc_hitless_version.json                /nic/upgrade/etc/
 nic/conf/$PIPELINE/upgrade_cc_graceful_version.json               /nic/upgrade/etc/
 nic/build/$ARCH/$PIPELINE/lib/libpdsupgmgrapi.so                  /nic/lib/

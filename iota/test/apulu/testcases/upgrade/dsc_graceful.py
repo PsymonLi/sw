@@ -9,7 +9,7 @@ import iota.test.common.utils.copy_tech_support as techsupp
 import iota.test.apulu.config.api as config_api
 import iota.test.apulu.utils.learn as learn_utils
 import iota.test.apulu.utils.connectivity as conn_utils
-import iota.test.apulu.testcases.naples_upgrade.upgrade_utils as upgrade_utils
+import iota.test.apulu.testcases.upgrade.utils as upgrade_utils
 import iota.test.apulu.utils.pdsctl as pdsctl
 import iota.test.apulu.utils.misc as misc_utils
 import iota.test.utils.ping as ping
@@ -56,7 +56,7 @@ def VerifyConnectivity(tc):
 
 
 def PacketTestSetup(tc):
-    if tc.upgrade_mode is None:
+    if tc.pktloss_verify is False:
         return api.types.status.SUCCESS
 
     tc.bg_cmd_cookies = None
@@ -64,12 +64,8 @@ def PacketTestSetup(tc):
     tc.pktsize = 128
     tc.duration = tc.sleep
     tc.background = True
-    tc.pktlossverif = False
     tc.interval = 0.001 #1msec
     tc.count = int(tc.duration / tc.interval)
-
-    if tc.upgrade_mode != "graceful":
-        tc.pktlossverif = True
 
     if api.GlobalOptions.dryrun:
         return api.types.status.SUCCESS
@@ -97,7 +93,7 @@ def Setup(tc):
     tc.skip = False
     tc.sleep = getattr(tc.args, "sleep", 200)
     tc.allowed_down_time = getattr(tc.args, "allowed_down_time", 0)
-    tc.upgrade_mode = getattr(tc.args, "mode", None)
+    tc.pktloss_verify = getattr(tc.args, "pktloss_verify", False)
     tc.node_selection = tc.iterators.selection
 
     if tc.node_selection not in ["any", "all"]:
@@ -144,7 +140,7 @@ def Setup(tc):
         tc.skip = True
         return result
 
-    # setup packet test based on upgrade_mode
+    # setup packet test based on pktloss verify argument
     result = PacketTestSetup(tc)
     if result != api.types.status.SUCCESS or tc.skip:
         api.Logger.error("Failed in Packet Test setup.")
@@ -241,7 +237,7 @@ def Verify(tc):
     if tc.skip:
         return api.types.status.SUCCESS
 
-    if tc.upgrade_mode:
+    if tc.pktloss_verify:
         if tc.background and tc.bg_cmd_resp is None:
             api.Logger.error("Failed in background Ping cmd trigger")
             return api.types.status.FAILURE
@@ -294,7 +290,7 @@ def Verify(tc):
         result = api.types.status.FAILURE
 
     error_str = None
-    if tc.upgrade_mode:
+    if tc.pktloss_verify:
         # If rollout status is failure, then no need to wait for traffic test
         if result == api.types.status.SUCCESS:
             api.Logger.info("Sleep for %s secs for traffic test to complete"%tc.sleep)

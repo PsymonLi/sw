@@ -1,12 +1,12 @@
 meta:
-    name    : naples_upgrade
+    name    : upgrade_dsc_graceful
     os      : [ linux ]
     nics    : [ pensando, mellanox, intel ]
     targetcount : 1
 
 testcases:
-    -   name        : DISRUPTIVE_UPGRADE
-        testcase    : testcases.naples_upgrade.disruptive_upgrade
+    -   name        : UPGRADE_DSC_GRACEFUL
+        testcase    : testcases.upgrade.dsc_graceful
         stress      : True
         disable     : False
         ignore      : False
@@ -19,8 +19,8 @@ testcases:
         verifs:
             - step : verif.utils.collect_techsupport
 
-    -   name        : DISRUPTIVE_UPGRADE_GRACEFUL
-        testcase    : testcases.naples_upgrade.disruptive_upgrade
+    -   name        : UPGRADE_DSC_GRACEFUL_PKTLOSS_VERIFY
+        testcase    : testcases.upgrade.dsc_graceful
         stress      : True
         disable     : False
         ignore      : False
@@ -33,7 +33,7 @@ testcases:
         args        :
             type    : remote_only
             sleep   : 300
-            mode    : "graceful"
+            pktloss_verify    : True
             allowed_down_time : 40
         verifs:
             - step : verif.utils.collect_techsupport

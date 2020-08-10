@@ -1,0 +1,21 @@
+meta:
+    name    : upgrade_pds_graceful
+    os      : [ linux ]
+    nics    : [ pensando, mellanox, intel ]
+    targetcount : 1
+
+testcases:
+    -   name        : UPGRADE_PDS_GRACEFUL
+        testcase    : testcases.upgrade.pds_graceful
+        stress      : True
+        disable     : False
+        ignore      : False
+        iterators   :
+            type    : nested
+            selection : [ any ]  # upgrade all or any
+        args                  :
+            #timeout           : 14400
+            sleep             : 150
+            naples_upgr_pkg   : "naples_fw.tar"
+            upgrade_mode      : "graceful"
+            allowed_down_time : 40

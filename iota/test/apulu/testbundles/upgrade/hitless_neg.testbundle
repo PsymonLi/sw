@@ -1,0 +1,19 @@
+meta:
+    name    : upgrade_hitless_neg
+    os      : [ linux ]
+    nics    : [ pensando, mellanox, intel ]
+    targetcount : 1
+
+testcases:
+    -   name: UPGRADE_HITLESS_NEG
+        testcase    : testcases.upgrade.hitless
+        stress      : True
+        ignore      : True
+        iterators   :
+            type    : simple
+            selection : [ any ]  # upgrade all or any
+        args        :
+            sleep             : 300
+            naples_upgr_pkg   : "naples_fw.tar"
+            failure_stage     : "UPG_STAGE_PRE_SWITCHOVER"
+            failure_reason    : "fail"

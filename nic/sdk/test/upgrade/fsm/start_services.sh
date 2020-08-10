@@ -18,14 +18,14 @@ elif [ $# == 6 ]; then
     ERR_STAG=$5
     DELAY=$6
 else
-    echo "usage : fsm_test <bin_dir> <svc> <id>"
-    echo "usage : fsm_test <bin_dir> <svc> <id> <erro_code> <error_stage>"
-    echo "usage : fsm_test <bin_dir> <svc> <id> <erro_code> <error_stage> <time_delay>"
+    echo "usage : upgrade_fsm_test <bin_dir> <svc> <id>"
+    echo "usage : upgrade_fsm_test <bin_dir> <svc> <id> <erro_code> <error_stage>"
+    echo "usage : upgrade_fsm_test <bin_dir> <svc> <id> <erro_code> <error_stage> <time_delay>"
     exit 1
 fi
 
 CUR_DIR=$( readlink -f $( dirname $0 ))
-TEST_BIN_NAME=fsm_test
+TEST_BIN_NAME=upgrade_fsm_test
 
 function create_svc_thread()
 {
