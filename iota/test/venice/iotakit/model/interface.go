@@ -187,6 +187,7 @@ type VeniceNodeActionIntf interface {
 	GetExclusiveServices() ([]string, error)
 	DisconnectVeniceAndOrchestrator() error
 	AllowVeniceAndOrchestrator() error
+	RuncCommandUntilCancel(ctx context.Context, vnc *objects.VeniceNodeCollection, cmd string) []chan string
 }
 
 //NodeActionIntf All actions related node intf

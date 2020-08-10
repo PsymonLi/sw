@@ -329,6 +329,49 @@ func (sm *SysModel) CaptureGRETCPDump(ctx context.Context, vnc *objects.VeniceNo
 	return stopResp[0].GetStdout(), nil
 }
 
+func (sm *SysModel) RuncCommandUntilCancel(ctx context.Context, vnc *objects.VeniceNodeCollection, cmd string) []chan string {
+	chs := []chan string{}
+
+	trig := sm.Tb.NewTrigger()
+	for _, node := range vnc.Nodes {
+		err := trig.AddBackgroundCommand(cmd, node.Name()+"_venice", node.Name())
+		if err != nil {
+			log.Errorf("Error adding command %v on node %v", err.Error(), node.Name())
+			return nil
+		}
+
+		ch := make(chan string, 2)
+		chs = append(chs, ch)
+	}
+
+	go func() {
+		resp, err := trig.Run()
+		if err != nil {
+			log.Errorf("Error running command, err: %v", err.Error())
+			return
+		}
+
+		<-ctx.Done()
+
+		stopResp, err := trig.StopCommands(resp)
+		if err != nil {
+			log.Errorf("Error stopping command, %v", err.Error())
+			return
+		}
+
+		for i, r := range stopResp {
+			chs[i] <- r.GetStdout()
+		}
+
+		time.Sleep(1 * time.Second)
+		for _, ch := range chs {
+			close(ch)
+		}
+	}()
+
+	return chs
+}
+
 //GetVeniceNodeWithService  Get nodes running service
 func (sm *SysModel) GetVeniceNodeWithService(vnc *objects.VeniceNodeCollection, service string) (*objects.VeniceNodeCollection, error) {
 	srvVnc := objects.NewVeniceNodeCollection(sm.ObjClient(), sm.Tb)

@@ -14,6 +14,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
+	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/api/generated/security"
 	iota "github.com/pensando/sw/iota/protos/gogen"
@@ -788,7 +789,34 @@ func (sm *SysModel) GetFwLogObjectCount(tenantName string, bucketName string, na
 
 // NewFwlogPolicy creates new monitoring.FwlogPolicy
 func (sm *SysModel) NewFwlogPolicy(name string) *objects.FwlogPolicyCollection {
-	return nil
+	policy := &objects.FwlogPolicy{
+		VenicePolicy: &monitoring.FwlogPolicy{
+			TypeMeta: api.TypeMeta{
+				Kind: "fwLogPolicy",
+			},
+			ObjectMeta: api.ObjectMeta{
+				Name:      name,
+				Tenant:    globals.DefaultTenant,
+				Namespace: globals.DefaultNamespace,
+			},
+			Spec: monitoring.FwlogPolicySpec{
+				VrfName: globals.DefaultVrf,
+				Targets: []monitoring.ExportConfig{
+					{
+						Destination: "192.168.68.43",
+						Transport:   "udp/9999",
+					},
+				},
+				Format: monitoring.MonitoringExportFormat_SYSLOG_BSD.String(),
+				Filter: []string{monitoring.FwlogFilter_FIREWALL_ACTION_ALL.String()},
+				Config: &monitoring.SyslogExportConfig{
+					FacilityOverride: monitoring.SyslogFacility_LOG_USER.String(),
+				},
+			},
+		},
+	}
+
+	return objects.NewFwlogPolicyCollection(policy, sm.ObjClient(), sm.Tb)
 }
 
 // FwlogPolicy finds an existing monitoring.FwlogPolicy
