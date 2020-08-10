@@ -220,13 +220,13 @@ tep_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
             // in this case, nh_type_ change is detected but in reality user
             // intention is not to update it
             cloned_tep = (tep_entry *)obj_ctxt->cloned_obj;
-            cloned_tep->nh_type_ =  spec->nh_type = nh_type_;
+            cloned_tep->nh_type_ = nh_type_;
             if (nh_type_ == PDS_NH_TYPE_UNDERLAY) {
-                cloned_tep->nh_ = spec->nh = nh_;
+                cloned_tep->nh_ = nh_;
             } else if (nh_type_ == PDS_NH_TYPE_UNDERLAY_ECMP) {
-                cloned_tep->nh_group_ = spec->nh_group = nh_group_;
+                cloned_tep->nh_group_ = nh_group_;
             } else if (nh_type_ == PDS_NH_TYPE_OVERLAY) {
-                cloned_tep->tep_ = spec->tep = tep_;
+                cloned_tep->tep_ = tep_;
             }
         } else {
             // nexthop type itself has changed
