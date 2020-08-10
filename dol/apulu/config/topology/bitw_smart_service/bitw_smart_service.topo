@@ -96,6 +96,21 @@ node:
                     value:
                       ctag: 111
                       stag: 222
+                - id        : 2
+                  count     : 1
+                  vmac      : macaddr/00ae.cd00.0814
+                  ipcount   : 2
+                  lmap    :
+                    - id       : 2
+                      keytype  : l3
+                      lmacaddr : macaddr/00ae.cd00.0814
+                      lipaddr  : '9.0.0.3'
+                      origin   : test-only
+                  usehostif : false
+                  srcguard: false
+                  public  : false
+                  vnicencap:
+                    type: dot1q
 
               rmap:
                 - id       : 1

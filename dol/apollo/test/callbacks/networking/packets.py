@@ -1082,10 +1082,10 @@ def GetVnicQTag(tc, pkt, args=None):
         vnic = tc.config.localmapping.VNIC
     tagType = getattr(args, 'type', None)
     if not tagType:
+        if vnic.VnicEncap.Type == 'qinq':
+            return vnic.VnicEncap.Value[0]
         return vnic.VlanId()
     assert (vnic.VnicEncap.Type == 'qinq'), f"Invalid qinq tag request from {vnic} with vnic encap {vnic.VnicEncap}"
-    if tagType == 'CUSTOMER':
-        return vnic.VnicEncap.Value[0]
     if tagType == 'SERVICE':
         return vnic.VnicEncap.Value[1]
     assert (0), f"Invalid {tagType} tag request from {vnic} with vnic encap {vnic.VnicEncap}"

@@ -16,3 +16,10 @@ modules:
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
               vnic : filter://VnicEncapType=qinq
+
+    - module:
+        name    : L2_IPV4_TCP_TAG
+        spec    : host2network.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q

@@ -18,7 +18,7 @@ packets:
             outerqtag:
                 vlan    : callback://networking/packets/GetVnicQTag/type=SERVICE
             qtag:
-                vlan    : callback://networking/packets/GetVnicQTag/type=CUSTOMER
+                vlan    : callback://networking/packets/GetVnicQTag
             ipv4:
                 src     : ref://testcase/config/localmapping/IP
                 dst     : ref://testcase/config/remotemapping/IP
