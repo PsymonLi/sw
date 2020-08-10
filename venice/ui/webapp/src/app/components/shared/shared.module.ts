@@ -43,6 +43,7 @@ import { LinegraphComponent } from './linegraph/linegraph.component';
 import { FlipComponent } from './flip/flip.component';
 import { ErrorTooltipDirective } from './directives/errorTooltip.directive';
 import { PentableComponent } from './pentable/pentable.component';
+import { PenServerTableComponent } from './pentable/penservertable.component';
 import { TablevieweditHTMLComponent } from './tableviewedit/tableviewedit.component';
 import { RoleGuardDirective } from './directives/roleGuard.directive';
 import { LabeleditorComponent } from './labeleditor/labeleditor.component';
@@ -114,6 +115,7 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     FlipComponent,
     ErrorTooltipDirective,
     PentableComponent,
+    PenServerTableComponent,
     TablevieweditHTMLComponent,
     RoleGuardDirective,
     FeatureGuardDirective,
@@ -172,6 +174,7 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     FlipComponent,
     ErrorTooltipDirective,
     PentableComponent,
+    PenServerTableComponent,
     TablevieweditHTMLComponent,
     RoleGuardDirective,
     FeatureGuardDirective,

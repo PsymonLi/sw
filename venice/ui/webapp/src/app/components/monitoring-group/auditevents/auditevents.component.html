@@ -23,54 +23,46 @@
     </div>
   </div>
   <div fxLayout="row" style="height: 100%;">
-    <app-tableviewedit fxLayout="column" class="auditevents-widget"
-                       [showRowExpand]="showRowExpand"
-                       [data]="dataObjects"
-                       [cols]="cols"
-                       [sortField]="startingSortField"
-                       [sortOrder]="startingSortOrder"
-                       [tableLoading]="loading"
-                       [disableTableWhenRowExpanded]="disableTableWhenRowExpanded"
-                       [creatingMode]="creatingMode"
-                       [createTemplate]="createTemplate"
-                       [runDoCheck]="false"
-                       [expandedRowData]="expandedRowData"
-                       [captionTemplate]="captionTemplate"
-                       [bodyTemplate]="bodyTemplate"
-                       [expandTemplate]="expandTemplate"
-                       (lazyLoadEvent)="onTableSort($event)"
-                       (rowClick)="onAuditeventsTableRowClick($event)"
-                       (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-    </app-tableviewedit>
+    <app-penservertable #auditTable
+                        (archiveQueryEmitter)="getArchiveQuery($event)"
+                        [bodyTemplate]="bodyTemplate"
+                        [captionTemplate]="captionTemplate"
+                        [columns]="cols"
+                        [createTemplate]="createTemplate"
+                        [data]="dataObjects"
+                        [expandTemplate]="expandTemplate"
+                        [exportFilename]="exportFilename"
+                        [exportMap]="exportMap"
+                        [lazyLoad]="true"
+                        (lazyLoadEvent)="fetchLazyDataObjects($event)"
+                        [loading]="loading"
+                        (rowClickEmitter)="showAuditEventDetail($event)"
+                        [rowHeight]="36"
+                        [searchable]="true"
+                        (searchCancelledEmitter)="onCancelAuditSearch($event)"
+                        [searchCols]="cols"
+                        (searchEmitter)="getAuditEvents()"
+                        [searchFormArray]="fieldFormArray"
+                        searchKind="AuditEvent"
+                        [totalRecords]="totalRecords">
+    </app-penservertable>
   </div>
 </app-pagebody>
 
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <div fxFlex fxLayout="column">
+  <div class="auditevents-caption" fxLayout="column">
     <div fxLayout="row" style="border-bottom: 1px solid #d9d9d9;">
-      <app-tableheader title="Audit Events" [max]="maxRecords" [total]="displayRecords"
+      <app-tableheader title="Audit Events" [max]="maxRecords" [total]="totalRecords"
                        fxFlex="auto"
-                       fxLayout="row" [tableMenuItems]="tableMenuItems"
+                       fxLayout="row"
                        [enableColumnSelect]="true" [icon]="headerIcon" [cols]="cols"
                        (columnSelectChange)="onColumnSelectChange($event)"
                        [lastUpdateTime]="lastUpdateTime" [showRefreshIcon]="true"
                        [showTotalHits]="true"
-                       (refreshIconClick)="getAuditevents()" class="audit-table-header">
-        <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
+                       (refreshIconClick)="getAuditEvents()" class="audit-table-header">
       </app-tableheader>
-    </div>
-
-    <div fxLayout="row">
-      <app-advanced-search #advancedSearchComponent
-                           (repeaterValues)="handleFieldRepeaterData($event)"
-                           [formArray]="fieldFormArray" [cols]="cols"
-                           (archiveQuery)="getArchiveQuery($event)"
-                           (cancelEmitter)="onCancelAuditSearch($event)"
-                           (searchEmitter)="getAuditevents()"
-                           kind="AuditEvent" fxFlex="grow">
-      </app-advanced-search>
     </div>
   </div>
 
@@ -90,16 +82,18 @@
   </ng-container>
 </ng-template>
 
-<ng-template #expandTemplate let-rowData let-columns="columns">
+<ng-template #expandTemplate let-rowData>
   <div class="auditevents-detail-div auditevents-rowexpand">
-    <pre>{{displayAuditEvent()}}</pre>
-  </div>
-</ng-template>
-
-<ng-template #actionButtonsTemplate>
-  <div matTooltip="Total audit event records" class="audit-table-header-title">
-    {{ (totalHitRecords >   maxRecords  && totalHitRecords < veniceRecords)? ' | Search criteria matches ' +   totalHitRecords : ' ' }}
-    | System has ({{veniceRecords | number}}) records
+    <div class="auditevents-detail-header" fxLayout="row">
+      <span class="auditevents-detail-header-title ui-flex" fxLayoutAlign="start center">Audit Event
+        Detail:</span>
+      <mat-icon class="auditevents-detail-close" [matTooltip]="'Close Audit Event Detail'"
+                (click)="editFormClose(rowData)">close
+      </mat-icon>
+    </div>
+    <div class="auditevents-detail-body">
+      <pre>{{displayAuditEvent(rowData)}}</pre>
+    </div>
   </div>
 </ng-template>
 

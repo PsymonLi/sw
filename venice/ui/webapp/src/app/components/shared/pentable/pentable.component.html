@@ -8,7 +8,9 @@
            [columns]="selectedColumns"
            [dataKey]="dataKey"
            [first]="first"
+           [lazy]="lazyLoad"
            [loading]="loading"
+           (onLazyLoad)="onLazyLoad($event)"
            (onPage)="onPage($event)"
            (onRowSelect)="rowSelected($event)"
            (onRowUnselect)="rowUnselected($event)"
@@ -23,7 +25,7 @@
            [(selection)]="selectedDataObjects"
            [sortField]="sortField"
            [sortOrder]="sortOrder"
-           [totalRecords]="data.length"
+           [totalRecords]="totalRecords"
            [value]="data">
     <ng-template pTemplate="caption" *ngIf="captionTemplate != null">
       <ng-container *ngTemplateOutlet="captionTemplate; context: {count: data.length}">
@@ -124,15 +126,7 @@
     </ng-template>
     <ng-template pTemplate="paginatorright">
       <div class="pentable-paginator-right">
-        Showing
-        <span class="pentable-paginator-value">{{first + 1}}</span>
-        to
-        <span class="pentable-paginator-value">
-          {{numRows > data.length - first ? data.length : first + numRows}}
-        </span>
-        of
-        <span class="pentable-paginator-value">{{data.length}}</span>
-        records
+        <span class="pentable-paginator-value">{{getPaginatorText()}}</span>
       </div>
     </ng-template>
   </p-table>

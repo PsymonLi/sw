@@ -13,7 +13,7 @@ import { CustomExportMap, TableCol } from '../tableviewedit';
 import { TableUtility } from '../tableviewedit/tableutility';
 import { TableMenuItem } from '../tableheader/tableheader.component';
 import { RepeaterData } from 'web-app-framework';
-import { SelectItem } from 'primeng/api';
+import { SelectItem, LazyLoadEvent } from 'primeng/api';
 
 @Component({
     selector: 'app-pentable',
@@ -38,6 +38,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Input() expandTemplate: TemplateRef<any>;
   @Input() exportFilename: string = 'Pensando';
   @Input() exportMap: CustomExportMap = {};
+  @Input() lazyLoad: boolean = false;
   @Input() loading: boolean;
   @Input() numRows: number = 25;
   @Input() receiveSelectedDataUpdate: boolean = false;
@@ -52,8 +53,10 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Input() searchMultiSelectFields: Array<string> = [];
   @Input() sortField: string = 'meta.mod-time';
   @Input() sortOrder: number = -1;
+  @Input() totalRecords: number = this.data.length;
 
   @Output() archiveQueryEmitter: EventEmitter<any> = new EventEmitter<any>();
+  @Output() lazyLoadEvent: EventEmitter<LazyLoadEvent> = new EventEmitter<LazyLoadEvent>();
   @Output() operationOnMultiRecordsComplete: EventEmitter<any> = new EventEmitter<any>();
   @Output() rowClickEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() rowSelectedEmitter: EventEmitter<any> = new EventEmitter<any>();
@@ -64,6 +67,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
 
   colMouseMoveUnlisten: () => void;
   colMouseUpUnlisten: () => void;
+  componentInit: boolean = false; // Temp for AuditEvents PenServer
   creatingMode: boolean = false;
   expandedRowData: any;
   filter: string;
@@ -78,6 +82,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   selectedColumns: TableCol[] = [];
   selectedDataObjects: any[] = [];
   selectedDataObjectsKeySet: Set<any> = new Set<any>();
+  serverMode: boolean = false; // Temp for AuditEvents PenServer
   showRowExpand: boolean = false;
   subscriptions: Subscription[] = [];
   tableMenuItems: TableMenuItem[] = [
@@ -119,6 +124,8 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       this.cdr.detectChanges();
     }
   }
+
+  onLazyLoad(event) {}
 
   ngOnInit() {
     this.selectedColumns = this.columns;
@@ -162,7 +169,12 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
 
       if (loadingCompleted || dataChanged) {
         // emit search based on query params after current cycle
+        if (this.serverMode && !this.componentInit) {
+          // don't want to run this code in pen-server table for now, although on component init it will still run once
+          return;
+        }
         setTimeout(() => {
+          this.componentInit = false;
           if (!this.searchInitialized) {
             this.advancedSearchComponent.search = this.filter;
             this.advancedSearchComponent.generalSearch = this.filter;
@@ -560,6 +572,11 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       $('.ui-paginator-element').removeClass(className);
       $('.ui-paginator p-dropdown > .ui-dropdown').removeClass(className);
     }
+  }
+
+  getPaginatorText(): string {
+    const text = `Showing ${this.first + 1} to ${this.numRows > this.data.length - this.first ? this.data.length : this.first + this.numRows} of ${this.data.length} records`;
+    return text;
   }
 
   toggleRow(rowData: any, event?: Event) {

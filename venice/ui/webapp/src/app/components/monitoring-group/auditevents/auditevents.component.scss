@@ -4,10 +4,6 @@
   @include primary-font();
 }
 
-.auditevents .pagebody-content-container {
-  overflow-y: hidden !important;
-}
-
 .audit-table-header>.tableheader-container>.tableheader-title-container {
   flex: 0 0 auto !important;
 }
@@ -25,7 +21,9 @@
 }
 
 .auditevents-detail-div {
-  padding: 10px;
+  padding-top: 15px;
+  padding-left: 20px;
+  padding-right: 20px;
   width: 100%;
   max-height: 250px;
   overflow: auto;
@@ -43,6 +41,19 @@
   >td {
     padding: 0px !important; // Padding interferes with animation on the rowexpands exit
   }
+}
+
+.auditevents-detail-header-title {
+  @include primary-font(16px, $mediumGray, bold);
+}
+
+.auditevents-detail-close {
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.auditevents-detail-body {
+  padding-top: 5px;
 }
 
 .auditevents-rowhighlight {
@@ -93,4 +104,9 @@
     text-decoration: underline;
     color: #6ba0e5;
   }
+}
+
+.auditevents-caption {
+  min-width: 150px;
+  text-align: left;
 }

@@ -14,14 +14,17 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { BaseComponent } from '@app/components/base/base.component';
 import { Eventtypes } from '@app/enum/eventtypes.enum';
 import { PentableComponent } from '../pentable/pentable.component';
-import { BaseModel } from '@sdk/v1/models/generated/basemodel/base-model';
+import { PenServerTableComponent } from '../pentable/penservertable.component';
+import { LazyLoadEvent } from 'primeng/primeng';
 
 export abstract class DataComponent extends BaseComponent implements OnInit, OnDestroy {
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
 
   @Output() operationOnMultiRecordsComplete: EventEmitter<any> = new EventEmitter<any>();
 
-  penTable: PentableComponent;
+  penTable: PentableComponent | PenServerTableComponent;
+  totalRecords: number = 0;
+  lazyLoadEvent: LazyLoadEvent;
 
   protected stagingService: StagingService;
 
@@ -39,6 +42,10 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
       'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
     });
     this.setDefaultToolbar();
+  }
+
+  clearLazyLoadEvent() {
+    this.lazyLoadEvent = {};
   }
 
   getClassName(): string {
