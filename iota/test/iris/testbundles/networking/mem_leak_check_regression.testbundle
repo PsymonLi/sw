@@ -10,6 +10,7 @@ testcases:
         ignore  : False
         args    :
              timeout        : 7200
+             flap_port_count : 2
              latency_pps    : 10
              mem_leak_test  : True
              mem_incr_threshold : 60   # allowed threshold in memory increase in MB at end of test
@@ -19,7 +20,7 @@ testcases:
             cps              : [900]
             duration         : [3600]
         background_tasks:
-            collectMemStats  : 
+            collectMemStats    :
                 trigger         : auto
                 run             : repeat
                 sleep_interval  : 90
@@ -28,4 +29,9 @@ testcases:
                 trigger         : auto
                 run             : repeat
                 sleep_interval  : 180
+                terminate       : after_trigger
+            switchPortFlap     :
+                trigger         : auto
+                run             : repeat
+                sleep_interval  : 30
                 terminate       : after_trigger

@@ -96,9 +96,9 @@ def switchPortFlap(tc):
 
     api.Logger.info("Running switchPortFlap...")
     flap_count = 1
-    num_ports = 1
     interval = 2
     down_time  = 2
+    num_ports = tc.flap_port_count
 
     api.Logger.info("Flapping switch port on %s ..."%tc.nodes)
     ret = api.FlapDataPorts(tc.nodes, num_ports, down_time, flap_count, interval)
@@ -239,6 +239,7 @@ def Setup(tc):
     tc.workloadPeers = {}
     tc.events = []
     tc.nodes = api.GetNaplesHostnames()
+    tc.flap_port_count = getattr(tc.args, "flap_port_count", 1)
     tc.mem_leak_test = getattr(tc.args, "mem_leak_test", False)
     tc.mem_incr_threshold = getattr(tc.args, "mem_incr_threshold", 1)
     tc.bg_trigger_cmd_timeout = 200
