@@ -30,6 +30,7 @@ testcases:
             ps_2263   : bypass
             ps_2790   : bypass
             pkt_count : check
+            arp_check : check
             timeout   : 72000
 
     -   name          : FlowErspanInbandCollector
@@ -50,6 +51,7 @@ testcases:
             ps_2263   : bypass
             ps_2790   : bypass
             pkt_count : check
+            arp_check : check
             timeout   : 72000
 
     -   name          : FlowMonInbandCollector
@@ -71,6 +73,7 @@ testcases:
             ps_2263   : bypass
             ps_2790   : bypass
             pkt_count : check
+            arp_check : check
             timeout   : 72000
 
     -   name          : FlowErspanFlowMonInbandCollector
@@ -92,6 +95,7 @@ testcases:
             ps_2263   : bypass
             ps_2790   : bypass
             pkt_count : check
+            arp_check : check
             timeout   : 72000
 
     -   name          : LifErspanFlowMonInbandCollector
@@ -115,6 +119,7 @@ testcases:
             ps_2263   : bypass
             ps_2790   : bypass
             pkt_count : check
+            arp_check : check
             timeout   : 72000
 
     -   name          : LifFlowErspanInbandCollector
@@ -137,6 +142,7 @@ testcases:
             ps_2263   : bypass
             ps_2790   : bypass
             pkt_count : check
+            arp_check : check
             timeout   : 72000
 
     -   name          : LifFlowErspanFlowMonInbandCollector
@@ -160,5 +166,6 @@ testcases:
             ps_2263   : bypass
             ps_2790   : bypass
             pkt_count : check
+            arp_check : check
             timeout   : 72000
 

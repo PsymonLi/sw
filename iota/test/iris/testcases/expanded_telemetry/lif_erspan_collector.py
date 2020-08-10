@@ -288,6 +288,12 @@ def Trigger(tc):
             api.Trigger_AddCommand(req, tc.naples.node_name, tc.naples.workload_name, cmd, background = False)
             resp = api.Trigger(req)
 
+        #
+        # Gather Collector-IP Resolution Info
+        #
+        eutils.gatherCollectorIpResolutionInfo(tc, tc.lif_collector,
+                                               tc.lif_collector_idx)
+
         # Delete the objects
         eutils.deGenerateLifInterfaceConfig(tc, tc.interface_objects, 
                                             tc.lif_collector_objects)

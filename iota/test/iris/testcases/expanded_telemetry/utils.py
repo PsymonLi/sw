@@ -235,6 +235,7 @@ def establishCollectorSecondaryIPs(tc):
     tc.collector_udp_pkts = []
     tc.collector_icmp_pkts = []
     tc.collector_other_pkts = []
+    tc.collector_ip_resolved = []
     tc.collector_erspan_type = []
     tc.collector_vlan_strip = []
     tc.result = []
@@ -251,6 +252,7 @@ def establishCollectorSecondaryIPs(tc):
         tc.collector_udp_pkts.append(0)
         tc.collector_icmp_pkts.append(0)
         tc.collector_other_pkts.append(0)
+        tc.collector_ip_resolved.append(False)
         tc.collector_erspan_type.append('type_3')
         updateErspanTypeOption(tc, c)
         tc.collector_vlan_strip.append(False)
@@ -305,6 +307,7 @@ def establishCollectorSecondaryIPs(tc):
         tc.collector_udp_pkts.append(0)
         tc.collector_icmp_pkts.append(0)
         tc.collector_other_pkts.append(0)
+        tc.collector_ip_resolved.append(False)
         tc.collector_erspan_type.append('type_3')
         updateErspanTypeOption(tc, c)
         tc.collector_vlan_strip.append(False)
@@ -1149,6 +1152,32 @@ def validate_ip_tuple(tc, sip, dip, sport, dport, tag_etype, vlan_tag,
     return result
 
 #
+# Check if Collector-IP is resolved
+#
+def gatherCollectorIpResolutionInfo(tc, collector, collector_idx):
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    cmd = "/nic/bin/halctl show table dump --table-id {} | \
+           grep ip_da".format(tc.tunnel_rewrite_table_id)
+    add_naples_command(req, tc.naples, cmd, tc.naples_device_name)
+
+    resp = api.Trigger(req)
+    for cmd in resp.commands:
+        api.PrintCommandResults(cmd)
+
+        for line in cmd.stdout.split('\n'):
+            w = 0
+            for word in line.split():
+                if w == 2:
+                    ip_address = int(word, 16)
+                    for c in range(0, len(collector)):
+                        idx = collector_idx[c]
+                        if ip_address == int(ipaddress.
+                           ip_address(tc.collector_ip_address[idx])):
+                            tc.collector_ip_resolved[idx] = True
+                            break
+                w += 1
+
+#
 # Validate ERSPAN packets reception
 #
 def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
@@ -1465,9 +1494,16 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
 
         if tc.collector_tcp_pkts[c] == 0 and tc.collector_udp_pkts[c] == 0 and\
            tc.collector_icmp_pkts[c] == 0 and pkt_erspan_count == 0:
-            api.Logger.error("ERROR: No ERSPAN packets to {}"\
-                             .format(tc.collector_ip_address[idx]))
-            result = api.types.status.FAILURE
+            if tc.args.arp_check != 'bypass' or\
+               tc.collector_ip_resolved[idx] == True:
+                api.Logger.error("ERROR: No ERSPAN packets to {}"\
+                                 .format(tc.collector_ip_address[idx]))
+                result = api.types.status.FAILURE
+        elif tc.args.arp_check == 'bypass':
+            if tc.collector_ip_resolved[idx] == False:
+                api.Logger.error("ERROR: Collector-IP {} Not Resolved"\
+                                 .format(tc.collector_ip_address[idx]))
+                result = api.types.status.FAILURE
 
         # For failed cases, print pkts for debug
         if tc.result[c] == api.types.status.FAILURE or\

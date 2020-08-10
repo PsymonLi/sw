@@ -29,7 +29,8 @@ testcases:
             vlan_strip: [mixed]
         args          :
             type      : precheckin
-            ps_2263   : [bypass]
-            ps_2790   : [bypass]
-            pkt_count : [bypass]
+            ps_2263   : bypass
+            ps_2790   : bypass
+            pkt_count : bypass
+            arp_check : bypass
 
