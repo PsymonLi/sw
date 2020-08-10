@@ -162,7 +162,7 @@
         "repeal": {
             "//": "todo: needs discussion here on sysmgr A/B",
              "svc": {
-                "names": [ "pdsagent", "vpp" ],
+                "names": [ "vpp", "pdsagent", "pciemgr" ],
                 "event_sequence": "serial",
                 "domain": "A"
             },
@@ -178,7 +178,7 @@
             "//": "todo: failure or failure-non-recovarable status to netagent",
             "svc": {
                 "event_sequence": "serial",
-                "names": [ "vpp", "pdsagent" ],
+                "names": [ "vpp", "pdsagent", "pciemgr" ],
                 "rsp_timeout": "12000000ms",
                 "domain": "A"
             },

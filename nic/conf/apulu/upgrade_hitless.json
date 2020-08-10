@@ -77,8 +77,7 @@
             "//": "all services are ready on B",
             "svc": {
               "domain": "B",
-              "discovery": "yes",
-              "rsp_timeout": "300000ms"
+              "discovery": "yes"
             },
             "events": [
                 { "name": "svc_rsp_ok",   "next_stage": "config_replay"   },
@@ -162,9 +161,8 @@
         },
 
         "repeal": {
-            "//": "todo: needs discussion here on sysmgr A/B",
              "svc": {
-                "names": [ "pdsagent", "vpp" ],
+                "names": [ "vpp", "pdsagent", "pciemgr" ],
                 "event_sequence": "serial",
                 "domain": "A"
             },
@@ -180,7 +178,7 @@
             "//": "todo: failure or failure-non-recovarable status to netagent",
             "svc": {
                 "event_sequence": "serial",
-                "names": [ "vpp", "pdsagent" ],
+                "names": [ "vpp", "pdsagent", "pciemgr" ],
                 "domain": "A"
             },
             "events": [

@@ -63,10 +63,10 @@ upg_oper_shmstore_name (std::string module_name)
         return "pds_agent_oper_upgdata";
 
     if (module_name == std::string("nicmgr"))
-        return "nicmgr_oper_upgdata";
+        return "pds_nicmgr_oper_upgdata";
 
     if (module_name == std::string("linkmgr"))
-        return "linkmgr_oper_upgdata";
+        return "pds_linkmgr_oper_upgdata";
 
     return NULL;
 }

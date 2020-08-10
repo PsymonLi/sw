@@ -41,6 +41,10 @@ function initial_boot_action {
 
    # Verify BSM (this sould be moved inside sysmgr eventually)
    echo 1 > /sys/firmware/pensando/bsm/success
+
+   # cleanup if there are any stale upgrade files due to incomplete upgrades
+   rm -rf /update/*_upg*
+   rm -rf /update/upgmgr_init_mode.txt
 }
 
 function load_drivers {
