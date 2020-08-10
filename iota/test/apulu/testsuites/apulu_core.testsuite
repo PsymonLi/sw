@@ -41,8 +41,8 @@ testbundles:
         - classic/ethtool.testbundle
         - mtu/mtu.testbundle
         - vlanoffload/vlanoffload.testbundle
-        - classic/driver-features-sanity.testbundle
         - networking/policer.testbundle
+        - classic/driver-features-sanity.testbundle
         - reboot/reboot.testbundle
         - techsupport/techsupport.testbundle
 

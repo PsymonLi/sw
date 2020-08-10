@@ -7,18 +7,17 @@ meta:
 
 testcases:
     -   name    : Iperf_Policer
-        testcase: testcases.networking.iperf
+        testcase: testcases.networking.policer
         args    :
             type : remote_only
             num_streams : 1
-            policer: 1
         iterators :
             type        : nested
             ipaf        : [ ipv4 ]
             #pktsize     : [ 128, 256, 512, 1024, 1518, 4096, 9000 ]
             pktsize     : [ 256 ]
-            #protocol    : [ tcp, udp ]
-            protocol    : [ tcp ]
+            protocol    : [ tcp, udp ]
+            #protocol    : [ tcp ]
             direction   : [ egress, ingress ]
             policertype : [ bps, pps ]
 
