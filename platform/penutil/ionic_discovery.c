@@ -53,7 +53,6 @@ ionic_dis_add_fw(FILE *fstream, struct ionic *ionic, const char *fw_file, xmlNod
  	xmlNodePtr child;
 	char buffer[256];
 	char *intfName;
-	uint32_t new_maj, new_min, new_rel, cur_maj, cur_min, cur_rel;
 
 	intfName = ionic->intfName;
 	ionic_print_debug(fstream, intfName, "Adding fw entry in discovery\n");
@@ -63,20 +62,17 @@ ionic_dis_add_fw(FILE *fstream, struct ionic *ionic, const char *fw_file, xmlNod
 	child = ionic_dis_add_new_node(fstream, intfName, fw, "firmware_file", "value",
 		fw_file);
 
-	ionic_encode_fw_version(ionic->newFwVer, &new_maj, &new_min, &new_rel);
-	snprintf(buffer, sizeof(buffer), "%d.%d.%d", new_maj, new_min, new_rel);
-	ionic_print_info(fstream, intfName, "Adding entry for version: %s(%s)\n",
+	ionic_pen2spp_verstr(ionic->newFwVer, buffer, sizeof(buffer));
+	ionic_print_info(fstream, intfName, "Adding entry for new version: %s(%s)\n",
 		buffer, ionic->newFwVer);
 	child = ionic_dis_add_new_node(fstream, intfName, fw, "version", "value", buffer);
 
-	ionic_encode_fw_version(ionic->curFwVer, &cur_maj, &cur_min, &cur_rel);
-	snprintf(buffer, sizeof(buffer), "%d.%d.%d", cur_maj, cur_min, cur_rel);
+	ionic_pen2spp_verstr(ionic->curFwVer, buffer, sizeof(buffer));
 	ionic_print_info(fstream, intfName, "Adding entry for active_version: %s(%s)\n",
 		buffer, ionic->curFwVer);
 	child = ionic_dis_add_new_node(fstream, intfName, fw, "active_version", "value", buffer);
 
-	strncpy(buffer, ionic_fw_decision2(new_maj, new_min, new_rel, cur_maj,
-		cur_min, cur_rel), sizeof(buffer));
+	strncpy(buffer, ionic_fw_decision(ionic->newFwVer, ionic->curFwVer), sizeof(buffer));
 	child = ionic_dis_add_new_node(fstream, intfName, fw, "action", "value", buffer);
 
 	if (STRCASECMP(buffer, "skip") == 0) {
@@ -104,6 +100,7 @@ ionic_dis_add_dev(FILE *fstream, struct ionic *ionic, char *fw_file, xmlNodePtr 
 	xmlNodePtr child, fw;
 	char buffer[256];
 	char *intfName;
+	uint32_t i, j;
 
 	intfName = ionic->intfName;
 	ionic_print_debug(fstream, intfName, "Adding dev entry in discovery file\n");
@@ -128,22 +125,32 @@ ionic_dis_add_dev(FILE *fstream, struct ionic *ionic, char *fw_file, xmlNodePtr 
 	snprintf(buffer, sizeof(buffer), "HPE Pensando DSC adapter");
 	child = ionic_dis_add_new_node(fstream, intfName, device, "product_id", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%x", ionic->domain);
+	snprintf(buffer, sizeof(buffer), "%04x", ionic->domain);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "segment", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%x", ionic->bus);
+	snprintf(buffer, sizeof(buffer), "%02x", ionic->bus);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "busnumber", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%x", ionic->dev);
+	snprintf(buffer, sizeof(buffer), "%02x", ionic->dev);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "devicenumber", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%x", ionic->func);
+	snprintf(buffer, sizeof(buffer), "%02x", ionic->func);
 	child = ionic_dis_add_new_node(fstream, intfName, device, "functionnumber", "value", buffer);
 
-	child = ionic_dis_add_new_node(fstream, intfName, device, "slotnumber", "value", ionic->slotInfo);
+	for (i = 0, j = 0; i< strlen(ionic->slotInfo); i++) {
+		if ((ionic->slotInfo[i] != ':') && (ionic->slotInfo[i] != '.'))
+			buffer[j++] = ionic->slotInfo[i];
+	}
+	buffer[j] = 0;
+	child = ionic_dis_add_new_node(fstream, intfName, device, "slotnumber", "value", buffer);
 
-	snprintf(buffer, sizeof(buffer), "%s", ionic->macAddr);
+	for (i = 0, j = 0; i< strlen(ionic->macAddr); i++) {
+		if (ionic->macAddr[i] != ':')
+			buffer[j++] = ionic->macAddr[i];
+	}
+	buffer[j] = 0;
 	child = ionic_dis_add_new_node(fstream, intfName, device, "macaddress", "value", buffer);
+
 	fw = xmlNewChild(device, NULL, BAD_CAST "fw_item", NULL);
 	if (fw)
 		ionic_dis_add_fw(fstream, ionic, fw_file, fw);
@@ -153,6 +160,7 @@ ionic_dis_add_dev(FILE *fstream, struct ionic *ionic, char *fw_file, xmlNodePtr 
 	return (0);
 }
 
+#ifdef SPP_DSC_OLD_NICFWDATA
 /*
  * Parse the NICFWData.xml nic node and update ionic with
  * available firmware version details.
@@ -304,16 +312,16 @@ err_exit:
 		xmlFreeDoc(doc);
 	return (error);
 }
-
+#endif /* SPP_DSC_OLD_NICFWDATA */
 /*
  * Parse the fw_items in discovery file.
  */
 static int
-ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
+ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device, const char *fw_path)
 {
 	xmlNodePtr node;
 	char *intfName, *value;
-	char buffer[32];
+	char buffer[32], fw_full_path[512];
 	int error = 0;
 
 	intfName = ionic->intfName;
@@ -385,7 +393,8 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 			if (strlen(ionic->fwFile) == 0) {
 				xmlSetProp(node, BAD_CAST "value", BAD_CAST "");
 			} else {
-				error = ionic_flash_firmware(fstream, ionic, ionic->fwFile);
+				snprintf(fw_full_path, sizeof(fw_full_path), "%s/%s", fw_path, ionic->fwFile);
+				error = ionic_flash_firmware(fstream, ionic, fw_full_path);
 				/* Set '1' to indicate we need reboot. */
 				if (error == 0) {
 					snprintf(buffer, sizeof(buffer), "%d",
@@ -408,7 +417,7 @@ ionic_parse_disc_fw_items(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
  * Parse the discovery file device node which is per management device.
  */
 static int
-ionic_parse_dis_device(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
+ionic_parse_dis_device(FILE *fstream, struct ionic *ionic, xmlNodePtr device, const char *fw_path)
 {
 	xmlNodePtr node, child;
 	char *intfName, *value;
@@ -486,7 +495,7 @@ ionic_parse_dis_device(FILE *fstream, struct ionic *ionic, xmlNodePtr device)
 		if (xmlStrcasecmp(node->name, (const xmlChar *)"fw_item") == 0) {
 			child = node->children;
 			if (child) {
-				error = ionic_parse_disc_fw_items(fstream, ionic, child);
+				error = ionic_parse_disc_fw_items(fstream, ionic, child, fw_path);
 				if (error) {
 					ionic_print_error(fstream, intfName,
 						"Failed to parse fw_items, error: %d\n",
@@ -548,7 +557,7 @@ ionic_parse_dis_device_is_naples(FILE *fstream, struct ionic *ionic, xmlNodePtr 
  * Helper function to parse discovery device nodes.
  */
 int
-ionic_parse_discovery_devices(FILE *fstream, xmlNodePtr device)
+ionic_parse_discovery_devices(FILE *fstream, xmlNodePtr device, const char *fw_path)
 {
 	xmlNodePtr node, child;
 	struct ionic *ionic;
@@ -573,7 +582,7 @@ ionic_parse_discovery_devices(FILE *fstream, xmlNodePtr device)
 				error = ionic_parse_dis_device_is_naples(fstream, ionic, child);
 				if (error)
 					continue;
-				error = ionic_parse_dis_device(fstream, ionic, child);
+				error = ionic_parse_dis_device(fstream, ionic, child, fw_path);
 				if (error)
 					break;
 				ionic_print_info(fstream, ionic->intfName, "From discovery file"
@@ -591,7 +600,7 @@ ionic_parse_discovery_devices(FILE *fstream, xmlNodePtr device)
  * Read the discovery file and populate the ionic tables.
  */
 int
-ionic_parse_discovery(FILE *fstream, const char *dis_file)
+ionic_parse_discovery(FILE *fstream, const char *dis_file, const char *fw_path)
 {
 	xmlDoc *doc = NULL;
 	xmlNodePtr root, node, child;
@@ -631,7 +640,7 @@ ionic_parse_discovery(FILE *fstream, const char *dis_file)
 				ionic_print_debug(fstream, "all", "Found devices node\n");
 				child = node->children;
 				if (child) {
-					error = ionic_parse_discovery_devices(fstream, child);
+					error = ionic_parse_discovery_devices(fstream, child, fw_path);
 					if (error)
 						break;
 				}

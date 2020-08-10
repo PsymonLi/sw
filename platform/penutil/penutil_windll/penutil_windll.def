@@ -10,6 +10,7 @@ EXPORTS
     dsc_do_discovery_with_files
     ionic_test_discovery
     ionic_test_update
+    ionic_test_multi_update
     ionic_devs DATA
     ionic_count DATA
     ionic_devid DATA

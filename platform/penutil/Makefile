@@ -14,7 +14,7 @@ endif
 
 DSC_SPP_LIB = libdscspp.so
 
-CFILES = ionic_spp.c ionic_spp_util.c ionic_discovery.c
+CFILES = ionic_spp.c ionic_spp_util.c ionic_discovery.c ionic_pkg.c
 #CPPFILES = ionic_fw_meta.cc
 
 GIT_TAG := $(shell git describe --abbrev=0 --tags)

@@ -167,9 +167,9 @@ TEST (IonicSppUtilTest, SPPVer2PenVerDev)
 	EXPECT_EQ(ret, 0);
 
 	snprintf(spp_ver, sizeof(spp_ver), "%d.%d.%d", maj, min, rel);
-	ASSERT_STREQ("1.13.200711", spp_ver);
+	ASSERT_STREQ("1.13.557063", spp_ver);
 	ionic_spp2pen_verstr(spp_ver, buffer, sizeof(buffer));
-	ASSERT_STREQ("1.13.0-1-7", buffer);
+	ASSERT_STREQ("1.13.0-136-7", buffer);
 }
 
 TEST (IonicSppUtilTest, FwVerValidMajMinRelSingleType)
@@ -297,6 +297,6 @@ TEST (IonicSppUtilTest, DescNameInvalid)
 	ionic.subDevId = 0x4003;
 	ret = ionic_desc_name(&ionic, buf, sizeof(buf));
 	EXPECT_EQ(ret, EINVAL);
-	ASSERT_STREQ(buf, "PEN_DSC_CAPRI_UNKNOWN_0x4003_NIC");
+	ASSERT_STREQ(buf, "PEN_DSC_CAPRI_0x4003_NIC");
 }
 

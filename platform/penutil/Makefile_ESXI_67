@@ -27,7 +27,7 @@ UWTOOL_VERSION = 1.0
 # mgmtInterface.c is in DEV_COMMON_DIR, the build system looks
 # there for sources as well as here.
 #UWTOOL_SOURCES = ionic_en_mgmt_interface.c penutil.c ionic_spp.c ionic_spp_util.c
-UWTOOL_SOURCES = ionic_en_mgmt_interface.c ionic_discovery.c ionic_spp.c ionic_spp_util.c ionic_esxi.c penutil.c
+UWTOOL_SOURCES = ionic_en_mgmt_interface.c ionic_discovery.c ionic_spp.c ionic_spp_util.c ionic_pkg.c ionic_esxi.c penutil.c
 DEV_COMMON_DIR = ../drivers/esxi/common
 PLUGIN_XML = penutil-esxi.xml
 

@@ -38,7 +38,7 @@ TEST (IonicSppTest, End2EndNoDev)
 
 	ret = ionic_test_discovery(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
 	EXPECT_EQ(ret, HPE_SPP_HW_ACCESS);
-	ret = ionic_test_update(log_file.c_str(), fw_path.c_str(), dis_file.c_str(), false);
+	ret = ionic_test_update(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
 	EXPECT_EQ(ret, HPE_SPP_DIS_MISSING);
 }
 
@@ -56,7 +56,7 @@ TEST (IonicSppTest, End2EndNoNICFWData)
 
 	ret = ionic_test_discovery(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
 	EXPECT_EQ(ret, HPE_SPP_HW_ACCESS);
-	ret = ionic_test_update(log_file.c_str(), fw_path.c_str(), dis_file.c_str(), false);
+	ret = ionic_test_update(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
 	EXPECT_EQ(ret, HPE_SPP_DIS_MISSING);
 }
 

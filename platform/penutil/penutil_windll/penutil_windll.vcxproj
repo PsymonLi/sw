@@ -175,12 +175,14 @@
   <ItemGroup>
     <ClInclude Include="..\ionic_discovery.h" />
     <ClInclude Include="..\ionic_os.h" />
+    <ClInclude Include="..\ionic_pkg.h" />
     <ClInclude Include="..\ionic_spp.h" />
     <ClInclude Include="..\ionic_spp_util.h" />
     <ClInclude Include="framework.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ionic_discovery.c" />
+    <ClCompile Include="..\ionic_pkg.c" />
     <ClCompile Include="..\ionic_spp.c" />
     <ClCompile Include="..\ionic_spp_util.c" />
     <ClCompile Include="..\ionic_win.c" />

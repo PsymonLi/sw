@@ -107,8 +107,8 @@ package-penutil: package-esx package-windows
 	${TOPDIR}/platform/tools/penutil-windows.sh
 	@echo "Building penutil for ESX"
 	# penutil for ESXi is built during the driver build, we don't do duplicated work here
-	@echo "Creating penutil package for Linux, Windows and ESX"
-	${TOPDIR}/platform/tools/package-penutil.sh
+	@echo "Creating penutil package for Linux, Windows and ESX for: " $(RELEASE)
+	${TOPDIR}/platform/tools/package-penutil.sh $(RELEASE)
 
 .PHONY: release
 release: ${PKG_PREREQS}

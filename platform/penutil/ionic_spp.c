@@ -17,10 +17,11 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include "ionic_spp.h"
 #include "ionic_os.h"
-#include "ionic_spp_util.h"
 #include "ionic_discovery.h"
+#include "ionic_pkg.h"
+#include "ionic_spp.h"
+#include "ionic_spp_util.h"
 
 /* Log file name */
 static char dsc_log_file[HPE_SPP_PATH_MAX_LEN];
@@ -86,7 +87,7 @@ ionic_open_log_file(void)
 
 	fstream = fopen(dsc_log_file, "a");
 	if (fstream == NULL) {
-		ionic_print_error(stderr, "all", "failed to open log file" PRIxHS ", error: " PRIxWS "\n",
+		ionic_print_error(stderr, "all", "failed to open log file" PRIxHS ", error: " PRIxHS "\n",
 			dsc_log_file, strerror(errno));
 	} else {
 		setvbuf (fstream, NULL, _IONBF, 0);
@@ -408,10 +409,10 @@ dsc_do_flash_with_file(spp_char_t *discovery_file, spp_char_t *firmware_file_pat
 {
 	FILE *fstream;
 	int error = HPE_SPP_STATUS_SUCCESS;
-	char dis_file[256], fw_file[256];
+	char dis_file[256], fw_path[256];
 
 	snprintf(dis_file, sizeof(dis_file), PRIxWS, discovery_file);
-	snprintf(fw_file, sizeof(fw_file), PRIxWS, firmware_file_path);
+	snprintf(fw_path, sizeof(fw_path), PRIxWS, firmware_file_path);
 
 	fstream = ionic_open_log_file();
 	if (fstream == NULL) {
@@ -420,11 +421,12 @@ dsc_do_flash_with_file(spp_char_t *discovery_file, spp_char_t *firmware_file_pat
 	}
 
 	ionic_print_info(fstream, "all", "Flash update with discovery file: %s\n", dis_file);
-	error = ionic_parse_discovery(fstream, dis_file);
+	error = ionic_parse_discovery(fstream, dis_file, fw_path);
 	if (error) {
 		ionic_print_error(fstream, "all", "%s error\n", dis_file);
 		goto err_exit;
 	}
+
 #if 0
 	/*
 	 * XXX: not clear if we need to read NICFWData now or its read only
