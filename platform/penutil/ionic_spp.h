@@ -6,15 +6,19 @@
 #ifndef IONIC_SPP_H
 #define IONIC_SPP_H
 
-/* SPP build OS for discovery file. */
+/* SPP build OS for discovery file.
+ * Note: Please make sure to put __ESXI__ before __linux__,
+ * since __linux__ is also available in ESXi build environment
+ * and will impact the build behavior
+ */
 #ifdef _WIN32
 #define SPP_BUILD_OS "Windows"
+#elif __ESXI__
+#define SPP_BUILD_OS "ESXI"
 #elif __linux__
 #define SPP_BUILD_OS "Linux"
 #elif __FreeBSD__
 #define SPP_BUILD_OS "FreeBSD"
-#elif __ESXI__
-#define SPP_BUILD_OS "ESXI"
 #endif /* __linux__ */
 
 #ifndef DSC_SPP_VERSION
