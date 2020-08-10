@@ -1,6 +1,6 @@
 meta:
-    name        : apulu_sdn_pds_traffic_scale
-    description : Apulu SDN PDS Scaled Traffic Testsuite
+    name        : apulu_sdn_pds_cps
+    description : Apulu SDN PDS Kernel Pktgen CPS Testsuite
     mode        : hardware
     cfgmode     : netagent
     nicmode     : hostpin
@@ -15,7 +15,7 @@ image_manifest:
     naples      : capri
 
 setup:
-    topology : test/apulu/topologies/classic_baremetal/vm.topology
+    topology : test/apulu/topologies/classic_baremetal/classic_baremetal.topology
     config   :
         - step : verif.config.verify_oob
         - step : config.set_max_mtu
@@ -25,8 +25,6 @@ setup:
                 node1 : 2naples_container_static_node1.cfgyml
                 node2 : 2naples_container_static_node2.cfgyml
         - step : config.bringup_workloads
-          args :
-             trex : True
 
 common:
     verifs:
@@ -39,7 +37,7 @@ common:
 testbundles:
     sanity:
         # Relative paths from iota/test/apulu/testbundles/
-        - dp_assist_scale/cps_trex.testbundle
+        - networking/pktgen.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

@@ -1,0 +1,20 @@
+meta:
+    name    : cps_kernel_pktgen
+    os      : [ linux ]
+    nics    : [ pensando ]
+
+testcases:
+    -   name    : CPS_UDP_kernel_pktgen
+        testcase: testcases.networking.cps_kernel_pktgen
+        stress  : False
+        ignore  : False
+        args    :
+            type: remote_only
+            timeout: 20000
+            xmittime: 1
+        iterators:
+            type            : nested
+            packet_count    : [ 500000 ]
+            packet_size     : [ 64, 128, 256, 516, 1024, 2048, 4096, 8192 ]
+            cores           : [ 8, 2, 3, 4, 5, 6, 7, 1 ]
+            burst           : [ 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8192, 9216 ]

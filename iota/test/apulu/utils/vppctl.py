@@ -120,3 +120,24 @@ def ParseClearCommand(node_name, type, args=None):
 
     return api.types.status.SUCCESS
 
+def __clearVPPEntity(entity):
+    res = api.types.status.SUCCESS
+    for node in api.GetNaplesHostnames():
+        ret = ParseClearCommand(node, entity)
+        if ret != api.types.status.SUCCESS:
+            api.Logger.error(f"Failed to run clear errors at node {node}")
+            res = ret
+
+    return res
+
+def __showVPPEntity(entity):
+    res = api.types.status.SUCCESS
+    for node in api.GetNaplesHostnames():
+        ret, resp = ParseShowCommand(node, entity)
+        if ret != api.types.status.SUCCESS:
+            api.Logger.error(f"Failed to run clear errors at node {node}")
+            res = ret
+
+    return res
+
+

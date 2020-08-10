@@ -1,11 +1,11 @@
 meta:
-    name    : cps
+    name    : cps_trex
     os      : [ linux ]
     nics    : [ pensando ]
 
 testcases:
-    -   name    : Trex_CPS_cloud
-        testcase: testcases.networking.conn_per_sec
+    -   name    : CPS_UDP_Trex
+        testcase: testcases.networking.trex_traffic
         stress  : False
         ignore  : False
         args    :
@@ -16,8 +16,8 @@ testcases:
             cps       : [ 465000 ]
             duration  : [ 1 ]
 
-    -   name    : Trex_UDP_TCP_Remote_Workloads
-        testcase: testcases.networking.conn_per_sec
+    -   name    : Longevity_TCP_Trex
+        testcase: testcases.networking.trex_traffic
         stress  : False
         ignore  : True
         args    :
@@ -25,11 +25,11 @@ testcases:
         iterators:
             type      : simple
             proto     : [ tcp, tcp ]
-            cps       : [ 10000, 200 ]
+            cps       : [ 100000, 200 ]
             duration  : [ 10, 3000 ]
 
-    -   name    : Traffic_Test_With_Triggers
-        testcase: testcases.networking.conn_per_sec
+    -   name    : Triggers_UDP_TCP_Trex
+        testcase: testcases.networking.trex_traffic
         stress  : True
         ignore  : False
         args    :
@@ -72,8 +72,8 @@ testcases:
                 sleep_interval  : 20
                 terminate       : verify
 
-    -   name    : Trex_Vnic_Session_Limits
-        testcase: testcases.networking.conn_per_sec
+    -   name    : Vnic_Session_Limits_UDP_TCP_Trex
+        testcase: testcases.networking.trex_traffic
         stress  : False
         args    :
             type: remote_only
