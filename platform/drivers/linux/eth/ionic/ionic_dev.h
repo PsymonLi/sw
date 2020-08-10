@@ -332,9 +332,6 @@ u8 ionic_dev_cmd_status(struct ionic_dev *idev);
 bool ionic_dev_cmd_done(struct ionic_dev *idev);
 void ionic_dev_cmd_comp(struct ionic_dev *idev, union ionic_dev_cmd_comp *comp);
 
-#define IONIC_FW_INSTALL_TIMEOUT			(25 * 60)
-#define IONIC_FW_ACTIVATE_TIMEOUT			(30)
-
 int ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_sz);
 
 void ionic_dev_cmd_identify(struct ionic_dev *idev, u8 ver);

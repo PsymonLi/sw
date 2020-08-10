@@ -35,7 +35,7 @@ ionic_dev_cmd_firmware_install(struct ionic_dev *idev)
 }
 
 static void
-ionic_dev_cmd_firmware_status(struct ionic_dev *idev)
+ionic_dev_cmd_firmware_install_status(struct ionic_dev *idev)
 {
 	union ionic_dev_cmd cmd = {
 		.fw_control.opcode = IONIC_CMD_FW_CONTROL,
@@ -50,8 +50,19 @@ ionic_dev_cmd_firmware_activate(struct ionic_dev *idev, uint8_t slot)
 {
 	union ionic_dev_cmd cmd = {
 		.fw_control.opcode = IONIC_CMD_FW_CONTROL,
-		.fw_control.oper = IONIC_FW_ACTIVATE,
+		.fw_control.oper = IONIC_FW_ACTIVATE_ASYNC,
 		.fw_control.slot = slot
+	};
+
+	ionic_dev_cmd_go(idev, &cmd);
+}
+
+static void
+ionic_dev_cmd_firmware_activate_status(struct ionic_dev *idev)
+{
+	union ionic_dev_cmd cmd = {
+		.fw_control.opcode = IONIC_CMD_FW_CONTROL,
+		.fw_control.oper = IONIC_FW_ACTIVATE_STATUS,
 	};
 
 	ionic_dev_cmd_go(idev, &cmd);
@@ -106,8 +117,8 @@ ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_s
 	}
 
 	mutex_lock(&ionic->dev_cmd_lock);
-	ionic_dev_cmd_firmware_status(idev);
-	err = ionic_dev_cmd_wait(ionic, IONIC_FW_INSTALL_TIMEOUT);
+	ionic_dev_cmd_firmware_install_status(idev);
+	err = ionic_dev_cmd_wait(ionic, devcmd_timeout);
 	mutex_unlock(&ionic->dev_cmd_lock);
 	if (err) {
 		netdev_err(netdev, "firmware install failed\n");
@@ -118,7 +129,16 @@ ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_s
 
 	mutex_lock(&ionic->dev_cmd_lock);
 	ionic_dev_cmd_firmware_activate(idev, fw_slot);
-	err = ionic_dev_cmd_wait(ionic, IONIC_FW_ACTIVATE_TIMEOUT);
+	err = ionic_dev_cmd_wait(ionic, devcmd_timeout);
+	mutex_unlock(&ionic->dev_cmd_lock);
+	if (err) {
+		netdev_err(netdev, "failed to start firmware activation\n");
+		goto err_out;
+	}
+
+	mutex_lock(&ionic->dev_cmd_lock);
+	ionic_dev_cmd_firmware_activate_status(idev);
+	err = ionic_dev_cmd_wait(ionic, devcmd_timeout);
 	mutex_unlock(&ionic->dev_cmd_lock);
 	if (err) {
 		netdev_err(netdev, "firmware activation failed\n");

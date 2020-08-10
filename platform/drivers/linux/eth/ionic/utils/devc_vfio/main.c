@@ -44,8 +44,6 @@ typedef u8 bool;
 
 #define IONIC_DEV_CMD_DONE              0x00000001
 #define DEVCMD_TIMEOUT                  (5)
-#define IONIC_FW_INSTALL_TIMEOUT        (25 * 60)
-#define IONIC_FW_ACTIVATE_TIMEOUT       (30)
 
 #define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
 
@@ -789,7 +787,7 @@ ionic_dev_cmd_firmware_install(union ionic_dev_regs *dev_regs)
 }
 
 static void
-ionic_dev_cmd_firmware_status(union ionic_dev_regs *dev_regs)
+ionic_dev_cmd_firmware_install_status(union ionic_dev_regs *dev_regs)
 {
     union ionic_dev_cmd cmd = {
         .fw_control.opcode = IONIC_CMD_FW_CONTROL,
@@ -804,8 +802,19 @@ ionic_dev_cmd_firmware_activate(union ionic_dev_regs *dev_regs, uint8_t slot)
 {
     union ionic_dev_cmd cmd = {
         .fw_control.opcode = IONIC_CMD_FW_CONTROL,
-        .fw_control.oper = IONIC_FW_ACTIVATE,
+        .fw_control.oper = IONIC_FW_ACTIVATE_ASYNC,
         .fw_control.slot = slot
+    };
+
+    ionic_dev_cmd_go(dev_regs, &cmd);
+}
+
+static void
+ionic_dev_cmd_firmware_activate_status(union ionic_dev_regs *dev_regs)
+{
+    union ionic_dev_cmd cmd = {
+        .fw_control.opcode = IONIC_CMD_FW_CONTROL,
+        .fw_control.oper = IONIC_FW_ACTIVATE_STATUS
     };
 
     ionic_dev_cmd_go(dev_regs, &cmd);
@@ -851,8 +860,8 @@ ionic_firmware_update(union ionic_dev_regs *dev_regs, const void *const fw_data,
         goto err_out;
     }
 
-    ionic_dev_cmd_firmware_status(dev_regs);
-    err = ionic_dev_cmd_wait(dev_regs, IONIC_FW_INSTALL_TIMEOUT, &comp);
+    ionic_dev_cmd_firmware_install_status(dev_regs);
+    err = ionic_dev_cmd_wait(dev_regs, DEVCMD_TIMEOUT, &comp);
     if (err) {
         fprintf(stderr, "firmware install failed\n");
         goto err_out;
@@ -861,9 +870,16 @@ ionic_firmware_update(union ionic_dev_regs *dev_regs, const void *const fw_data,
     fprintf(stdout, "activating firmware - slot %d\n", fw_slot);
 
     ionic_dev_cmd_firmware_activate(dev_regs, fw_slot);
-    err = ionic_dev_cmd_wait(dev_regs, IONIC_FW_ACTIVATE_TIMEOUT, &comp);
+    err = ionic_dev_cmd_wait(dev_regs, DEVCMD_TIMEOUT, &comp);
     if (err) {
-        fprintf(stderr, "firmware activation failed\n");
+        fprintf(stderr, "failed to start firmware activation\n");
+        goto err_out;
+    }
+
+    ionic_dev_cmd_firmware_activate_status(dev_regs);
+    err = ionic_dev_cmd_wait(dev_regs, DEVCMD_TIMEOUT, &comp);
+    if (err) {
+        fprintf(stderr, "firmware activate failed\n");
         goto err_out;
     }
 
@@ -908,7 +924,7 @@ int main(int argc, const char *argv[])
     dev = setup_vfio_device(sbdf, "1dd8:1004");
     if (!dev) {
         fprintf(stderr, "Cannot continue, aborting!\n");
-        return -6;
+        return -5;
     }
 
     union ionic_dev_regs *dev_regs = (union ionic_dev_regs *)dev->regions[VFIO_PCI_BAR0_REGION_INDEX].vaddr;
@@ -916,20 +932,20 @@ int main(int argc, const char *argv[])
         fprintf(stderr,
             "Signature mismatch. Expected 0x%08x, got 0x%08x\n",
             IONIC_DEV_INFO_SIGNATURE, dev_regs->info.signature);
-        return -7;
+        return -6;
     }
 
     int fw_fd = open(fw_fpath, O_RDONLY);
     if (fw_fd < 0) {
         fprintf(stderr, "Failed to open firmware file: %s\n", strerror(errno));
-        return -8;
+        return -7;
     }
     // size_t pagesize = getpagesize();
 
     struct stat status;
     if (fstat(fw_fd, &status)) {
         fprintf(stderr, "Failed to stat firmware file: %s\n", strerror(errno));
-        return -9;
+        return -8;
     }
 
     char *fw_data = mmap(
