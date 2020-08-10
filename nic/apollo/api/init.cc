@@ -246,6 +246,10 @@ sysmon_init (void)
     sysmon_cfg_t sysmon_cfg;
     intr_cfg_t intr_cfg;
 
+    if (g_pds_state.platform_type() != sdk::platform::PLATFORM_TYPE_HW) {
+        return;
+    }
+
     memset(&sysmon_cfg, 0, sizeof(sysmon_cfg_t));
     sysmon_cfg.cattrip_event_cb = cattrip_event_cb;
     sysmon_cfg.power_event_cb = power_event_cb;
