@@ -125,6 +125,7 @@ public:
     slab *snake_test_slab(void) const { return slabs_[HAL_PD_SLAB_ID(HAL_SLAB_SNAKE_TEST_PD)]; }
     slab *snake_test_if_slab(void) const { return slabs_[HAL_PD_SLAB_ID(HAL_SLAB_SNAKE_TEST_IF_PD)]; }
     slab *mirror_session_pd_slab(void) const { return slabs_[HAL_PD_SLAB_ID(HAL_SLAB_MIRROR_SESSION_PD)]; }
+    slab *l2seg_encap_entry_slab(void) const { return slabs_[HAL_PD_SLAB_ID(HAL_SLAB_L2SEG_ENCAP_PD)]; }
 
     // get hts
     ht *flow_lkupid_ht(void) const { return flow_lkupid_ht_; }
@@ -145,6 +146,7 @@ public:
     ht *proxyccb_hwid_ht(void) const { return proxyccb_hwid_ht_; }
     ht *rw_table_ht(void) const { return rw_table_ht_; }
     ht *tnnl_rw_table_ht(void) const { return tnnl_rw_table_ht_; }
+    ht *l2seg_encap_ht(void) const {return l2seg_encap_ht_; }
 
     // get indexers
     indexer *vrf_hwid_idxr(void) const { return vrf_hwid_idxr_; }
@@ -160,6 +162,7 @@ public:
     indexer *rw_tbl_idxr(void) { return rw_tbl_idxr_; }
     indexer *tnnl_rw_tbl_idxr(void) { return tnnl_rw_tbl_idxr_; }
     indexer *mirror_session_idxr(void) { return mirror_session_idxr_; }
+    indexer *l2seg_encap_idxr(void) { return l2seg_encap_idxr_; }
 
     hal_ret_t init_tables(pd_mem_init_args_t *args);
     hal_ret_t p4plus_rxdma_init_tables(pd_mem_init_args_t *args);
@@ -321,6 +324,11 @@ private:
     struct {
         ht        *rw_table_ht_;
         indexer   *rw_tbl_idxr_;
+    } __PACK__;
+
+    struct {
+        ht  *l2seg_encap_ht_;
+        indexer *l2seg_encap_idxr_;
     } __PACK__;
 
     // tnnl rw table management

@@ -479,6 +479,7 @@ hal_ret_t if_enic_install_ncsi_nacls(if_t *enic_if, lif_t *lif);
 hal_ret_t if_enic_install_lldp_nacls(if_t *enic_if, lif_t *lif, bool install);
 hal_ret_t if_compute_bw(uint32_t interval);
 uint32_t count_set_bits(uint32_t n);
+if_t *find_uplink_if_by_lport(uint32_t lport);
 
 
 }    // namespace hal

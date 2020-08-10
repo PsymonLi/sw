@@ -52,6 +52,11 @@ tcp_session_state_info:
   seq          c1, k.l4_metadata_tcp_normalization_en, 1
 
 lb_tcp_session_state_initiator:
+  seq          c2, d.u.tcp_session_state_info_d.iflow_dir_valid, TRUE
+  sne          c3, d.u.tcp_session_state_info_d.iflow_dir, k.flow_lkp_metadata_lkp_dir
+  bcf          [c2 & c3], session_state_done
+  tblwr.!c2    d.u.tcp_session_state_info_d.iflow_dir_valid, TRUE
+  tblwr.!c2    d.u.tcp_session_state_info_d.iflow_dir, k.flow_lkp_metadata_lkp_dir
   // New Instruction TBD,
   sll          r6, d.u.tcp_session_state_info_d.rflow_tcp_win_sz, d.u.tcp_session_state_info_d.rflow_tcp_win_scale // r6 = rcvr_win_sz
   add          r2, k.l4_metadata_tcp_data_len, r0 // r2 can  be modified by lb_tcp_session_initator_normalization
@@ -69,7 +74,7 @@ lb_tcp_session_state_initiator:
   // All normalizaiton checks are in c3. c3 = TRUE (needs normaliaiton, otherwise no normalization)
   // c1 = normalizatio en, c2 = established connection, c3 = bad condition hit
   bcf          [c1 & c2 & c3], lb_tcp_session_initator_normalization
-  add          r7, k.tcp_ackNo, d.u.tcp_session_state_info_d.syn_cookie_delta // r7 = adjusted_ack_num
+  add          r7, k.tcp_ackNo, 0 // r7 = adjusted_ack_num
 lb_initator_normlizaiton_return:
   add          r5, k.tcp_seqNo, r2  // tcp_seq_num_hi
   add          r4, d.u.tcp_session_state_info_d.rflow_tcp_ack_num, r6 // rflow_tcp_ack_num + rcvr_win_sz
@@ -336,6 +341,11 @@ f_tcp_session_initiator_rtt_calculate:
   nop
 
 lb_tcp_session_state_responder:
+  seq          c2, d.u.tcp_session_state_info_d.rflow_dir_valid, TRUE
+  sne          c3, d.u.tcp_session_state_info_d.rflow_dir, k.flow_lkp_metadata_lkp_dir
+  bcf          [c2 & c3], session_state_done
+  tblwr.!c2    d.u.tcp_session_state_info_d.rflow_dir_valid, TRUE
+  tblwr.!c2    d.u.tcp_session_state_info_d.rflow_dir, k.flow_lkp_metadata_lkp_dir
   // New Instruction TBD,
   add          r1, d.u.tcp_session_state_info_d.iflow_tcp_win_scale, r0
   sll          r6, d.u.tcp_session_state_info_d.iflow_tcp_win_sz, d.u.tcp_session_state_info_d.iflow_tcp_win_scale // r6 = rcvr_win_sz
@@ -355,7 +365,7 @@ lb_tcp_session_state_responder:
   // All normalizaiton checks are in c3. c3 = TRUE (needs normaliaiton, otherwise no normalization)
   // c1 = normalizatio en, c2 = established connection, c3 = bad condition hit
   bcf          [c1 & c2 & c3], lb_tcp_session_responder_normalization
-  sub          r7, k.tcp_seqNo, d.u.tcp_session_state_info_d.syn_cookie_delta // r7 = adjusted_seq_num
+  sub          r7, k.tcp_seqNo, 0 // r7 = adjusted_seq_num
 
 lb_responder_normalization_return:
   add          r5, r7, r2  // tcp_seq_num_hi
@@ -848,3 +858,7 @@ lb_tcp_ts_not_present:
   nop
   phvwr.e      p.control_metadata_drop_reason[DROP_TCP_NORMALIZATION], 1
   phvwr        p.capri_intrinsic_drop, 1
+
+session_state_done:
+  nop.e
+  nop

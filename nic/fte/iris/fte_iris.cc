@@ -11,6 +11,7 @@
 #include "nic/hal/plugins/app_redir/app_redir_ctx.hpp"
 #include "nic/sdk/platform/capri/capri_tm_rw.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
+#include "nic/hal/plugins/cfg/lif/lif_api.hpp"
 
 #define LOG_SIZE(ev) ev.ByteSizeLong()
 #define TYPE_TO_LG_SZ(type, sz_) {                                    \
@@ -47,6 +48,8 @@ ctx_t::extract_flow_key()
     hal::pd::pd_get_object_from_flow_lkupid_args_t args;
     hal::pd::pd_func_args_t pd_func_args = {0};
     hal::hal_obj_id_t obj_id;
+    hal::if_t *uplink_if = NULL;
+    hal::lif_t *lif = NULL;
     void *obj;
     hal_ret_t ret;
 
@@ -64,6 +67,18 @@ ctx_t::extract_flow_key()
     args.flow_lkupid = cpu_rxhdr_->lkp_vrf;
     args.obj_id = &obj_id;
     args.pi_obj = &obj;
+    args.uplink_if = NULL;
+    if (!hal::g_hal_state->is_microseg_enabled()) {
+        if (direction_ == hal::FLOW_DIR_FROM_DMA) {
+            lif = hal::find_lif_by_id(cpu_rxhdr_->src_lif);
+            if (lif) {
+                hal::lif_get_pinned_if(lif, &uplink_if);
+            }
+        } else {
+            uplink_if = hal::find_uplink_if_by_lport(cpu_rxhdr_->src_lport);
+        }
+        args.uplink_if = uplink_if;
+    }
     pd_func_args.pd_get_object_from_flow_lkupid = &args;
     ret = hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_GET_OBJ_FROM_FLOW_LKPID, &pd_func_args);
     if (ret != HAL_RET_OK) {

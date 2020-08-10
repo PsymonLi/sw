@@ -564,7 +564,7 @@ acl_pd_pgm_acl_tbl (pd_acl_t *pd_acl, bool update,
     } else if (ms->l2seg_match) {
         l2seg = l2seg_lookup_by_handle(ms->l2seg_handle);
         key.flow_lkp_metadata_lkp_vrf =
-            ((pd_l2seg_t *)(l2seg->pd))->l2seg_fl_lkup_id;
+            ((pd_l2seg_t *)(l2seg->pd))->l2seg_hw_fl_lkup_id;
         mask.flow_lkp_metadata_lkp_vrf_mask = ten_mask | l2seg_mask;
     }
 

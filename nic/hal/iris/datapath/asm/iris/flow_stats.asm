@@ -15,6 +15,11 @@ flow_stats:
   seq         c1, k.control_metadata_skip_flow_update, TRUE
   seq.!c1     c1, k.flow_info_metadata_flow_index, 0
   nop.c1.e
+  seq         c1, d.flow_stats_d.flow_dir_valid, TRUE
+  sne         c2, d.flow_stats_d.flow_dir, k.flow_lkp_metadata_lkp_dir
+  bcf         [c1 & c2], flow_stats_done
+  tblwr.!c1   d.flow_stats_d.flow_dir_valid, TRUE
+  tblwr.!c1   d.flow_stats_d.flow_dir, k.flow_lkp_metadata_lkp_dir
 
   add         r7, r0, k.capri_p4_intrinsic_packet_len
   smeqb       c1, k.flow_lkp_metadata_lkp_type, \
@@ -46,6 +51,10 @@ flow_stats_dropped:
   tblor       d.flow_stats_d.drop_reason, k.control_metadata_drop_reason
   tbladd.e    d.flow_stats_d.drop_packets, 1
   tbladd.f    d.flow_stats_d.drop_bytes, r7
+
+flow_stats_done:
+  nop.e
+  nop
 
 /*****************************************************************************/
 /* error function                                                            */

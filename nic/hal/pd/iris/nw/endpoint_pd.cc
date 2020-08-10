@@ -790,7 +790,7 @@ ep_pd_pgm_ipsg_tble_per_ip(pd_ep_t *pd_ep,
     key.entry_inactive_ipsg = 0;
     l2seg = l2seg_lookup_by_handle(pi_ep->l2seg_handle);
     SDK_ASSERT_RETURN(l2seg != NULL, HAL_RET_L2SEG_NOT_FOUND);
-    key.flow_lkp_metadata_lkp_vrf = ((pd_l2seg_t *)(l2seg->pd))->l2seg_fl_lkup_id;
+    key.flow_lkp_metadata_lkp_vrf = ((pd_l2seg_t *)(l2seg->pd))->l2seg_hw_fl_lkup_id;
     memcpy(key.flow_lkp_metadata_lkp_src,
            pi_ip_entry->ip_addr.addr.v6_addr.addr8,
            IP6_ADDR8_LEN);
@@ -909,9 +909,9 @@ pd_ep_reg_mac_info (l2seg_t *ep_l2seg, l2seg_t *cl_l2seg, l2seg_t *hp_l2seg,
     hp_l2seg_pd = hp_l2seg ? (pd_l2seg_t *)hp_l2seg->pd : NULL;
     if (cl_l2seg && hp_l2seg) {
         if (orig && (ep_l2seg == hp_l2seg)) {
-            key.flow_lkp_metadata_lkp_reg_mac_vrf = hp_l2seg_pd->l2seg_fl_lkup_id;
+            key.flow_lkp_metadata_lkp_reg_mac_vrf = hp_l2seg_pd->l2seg_classic_vrf;
         } else {
-            key.flow_lkp_metadata_lkp_reg_mac_vrf = cl_l2seg_pd->l2seg_fl_lkup_id;
+            key.flow_lkp_metadata_lkp_reg_mac_vrf = cl_l2seg_pd->l2seg_classic_vrf;
         }
         if (ep_l2seg == cl_l2seg) {
             reg_mac.skip_ip_drop = true;
@@ -926,12 +926,12 @@ pd_ep_reg_mac_info (l2seg_t *ep_l2seg, l2seg_t *cl_l2seg, l2seg_t *hp_l2seg,
             reg_mac.l4_profile_idx = L4_PROF_DEFAULT_ENTRY;
         }
     } else if (hp_l2seg) {
-        key.flow_lkp_metadata_lkp_reg_mac_vrf = hp_l2seg_pd->l2seg_fl_lkup_id;
+        key.flow_lkp_metadata_lkp_reg_mac_vrf = hp_l2seg_pd->l2seg_classic_vrf;
         reg_mac.multicast_en = 0;
         reg_mac.dst_if_label = pd_uplinkif_if_label(uplink_if);
         reg_mac.flow_learn = 1;
     } else {
-        key.flow_lkp_metadata_lkp_reg_mac_vrf = cl_l2seg_pd->l2seg_fl_lkup_id;
+        key.flow_lkp_metadata_lkp_reg_mac_vrf = cl_l2seg_pd->l2seg_classic_vrf;
         reg_mac.multicast_en = 0;
         reg_mac.dst_if_label = pd_uplinkif_if_label(uplink_if);
         /*

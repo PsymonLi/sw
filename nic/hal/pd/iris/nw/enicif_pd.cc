@@ -1267,8 +1267,8 @@ pd_enicif_pd_pgm_inp_prop_l2seg(pd_enicif_t *pd_enicif,
     }
 
     // Data
-    inp_prop.vrf = hp_l2seg_pd ? hp_l2seg_pd->l2seg_fl_lkup_id : l2seg_pd->l2seg_fl_lkup_id;
-    inp_prop.reg_mac_vrf = l2seg_pd->l2seg_fl_lkup_id;
+    inp_prop.vrf = hp_l2seg_pd ? hp_l2seg_pd->l2seg_hw_fl_lkup_id : l2seg_pd->l2seg_hw_fl_lkup_id;
+    inp_prop.reg_mac_vrf = l2seg_pd->l2seg_classic_vrf;
     inp_prop.dir = FLOW_DIR_FROM_DMA;
     inp_prop.l4_profile_idx = nwsec_get_nwsec_prof_hw_id(nwsec_prof);
     inp_prop.ipsg_enable = 0;
@@ -2254,7 +2254,7 @@ pd_enicif_inp_prop_mac_vlan_form_data (pd_enicif_t *pd_enicif,
         }
 
         data.action_id = INPUT_PROPERTIES_MAC_VLAN_INPUT_PROPERTIES_MAC_VLAN_ID;
-        inp_prop_mac_vlan_data.vrf = pd_l2seg->l2seg_fl_lkup_id;
+        inp_prop_mac_vlan_data.vrf = pd_l2seg->l2seg_hw_fl_lkup_id;
         inp_prop_mac_vlan_data.dir = FLOW_DIR_FROM_DMA;
         // inp_prop_mac_vlan_data.ipsg_enable = if_enicif_get_ipsg_en((if_t *)pd_enicif->pi_if);
         inp_prop_mac_vlan_data.ipsg_enable = ipsg_en;

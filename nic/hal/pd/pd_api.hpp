@@ -244,6 +244,7 @@ pd_l2seg_mem_free_args_init (pd_l2seg_mem_free_args_t *args)
 // misc. apis of vrf and l2seg
 typedef struct pd_get_object_from_flow_lkupid_args_s {
     uint32_t flow_lkupid;   // in
+    if_t *uplink_if;
     hal_obj_id_t *obj_id;   // out
     void **pi_obj;          // out
 } __PACK__ pd_get_object_from_flow_lkupid_args_t;

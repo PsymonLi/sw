@@ -246,11 +246,14 @@ action tcp_session_state_info(iflow_tcp_seq_num,
                        iflow_tcp_state,
                        rflow_tcp_state,
                        iflow_exceptions_seen,
+                       iflow_dir_valid,
+                       iflow_dir,
+                       rflow_dir_valid,
+                       rflow_dir,
                        rflow_tcp_seq_num,
                        rflow_tcp_ack_num,
                        rflow_tcp_win_sz, rflow_tcp_win_scale,
                        rflow_tcp_mss,
-                       syn_cookie_delta,
                        rflow_exceptions_seen,
                        flow_rtt_seq_check_enabled,
                        iflow_rtt_in_progress,
@@ -274,12 +277,15 @@ action tcp_session_state_info(iflow_tcp_seq_num,
     modify_field(scratch_metadata.rflow_tcp_win_scale, rflow_tcp_win_scale);
     modify_field(scratch_metadata.rflow_tcp_state, rflow_tcp_state);
     modify_field(scratch_metadata.rflow_exceptions_seen, rflow_exceptions_seen);
-    modify_field(scratch_metadata.syn_cookie_delta, syn_cookie_delta);
     modify_field(scratch_metadata.iflow_tcp_ws_option_sent, iflow_tcp_ws_option_sent);
     modify_field(scratch_metadata.iflow_tcp_ts_option_sent, iflow_tcp_ts_option_sent);
     modify_field(scratch_metadata.iflow_tcp_sack_perm_option_sent, iflow_tcp_sack_perm_option_sent);
     modify_field(l4_metadata.tcp_ts_option_negotiated, tcp_ts_option_negotiated);
     modify_field(l4_metadata.tcp_sack_perm_option_negotiated, tcp_sack_perm_option_negotiated);
+    modify_field(scratch_metadata.iflow_dir_valid, iflow_dir_valid);
+    modify_field(scratch_metadata.iflow_dir, iflow_dir);
+    modify_field(scratch_metadata.rflow_dir_valid, rflow_dir_valid);
+    modify_field(scratch_metadata.rflow_dir, rflow_dir);
 
     // RTT
     modify_field(scratch_metadata.flow_rtt_seq_check_enabled, flow_rtt_seq_check_enabled);
@@ -292,6 +298,7 @@ action tcp_session_state_info(iflow_tcp_seq_num,
     modify_field(scratch_metadata.flow_rtt_seq_no, rflow_rtt_seq_no);
     modify_field(scratch_metadata.flow_rtt_timestamp, rflow_rtt_timestamp);
 
+
     // To avoid checks of flow_role in the code and to prevent using
     // registers, we will split the code into initator and responder
     // sections. Even though there might be a bit of code duplication
@@ -299,15 +306,22 @@ action tcp_session_state_info(iflow_tcp_seq_num,
     // and maintenance easier.
     if (flow_info_metadata.flow_role == TCP_FLOW_INITIATOR) {
         // PACKET FROM INITATOR
+
+        if (iflow_dir_valid == TRUE) { 
+            if (flow_lkp_metadata.lkp_dir != scratch_metadata.iflow_dir) {
+                // return
+            }
+        } else {
+            modify_field(scratch_metadata.iflow_dir_valid, TRUE);
+            modify_field(scratch_metadata.iflow_dir, flow_lkp_metadata.lkp_dir);
+        }
+
         // Commenting the below line to get the correct size for scale and win_sz
         // modify_field(l4_metadata.tcp_rcvr_win_sz, (rflow_tcp_win_sz << rflow_tcp_win_scale));
         modify_field(scratch_metadata.tcp_mss, rflow_tcp_mss);
 
        if (l4_metadata.tcp_normalization_en == P4_FEATURE_ENABLED) {
            tcp_session_normalization();
-       }
-       if (syn_cookie_delta != 0) {
-           modify_field(scratch_metadata.adjusted_ack_num, (tcp.ackNo + syn_cookie_delta));
        }
        modify_field(scratch_metadata.tcp_seq_num_hi, (tcp.seqNo + l4_metadata.tcp_data_len -1));
        if (iflow_tcp_state == FLOW_STATE_ESTABLISHED and
@@ -330,10 +344,6 @@ action tcp_session_state_info(iflow_tcp_seq_num,
             if (scratch_metadata.tcp_seq_num_hi >  iflow_tcp_seq_num) {
                 // Only if we are seeing a new high sequence number than we saved already
                 modify_field(scratch_metadata.iflow_tcp_seq_num, scratch_metadata.tcp_seq_num_hi + 1);
-            }
-            // Now Update the PHV Fields to accomodate the adjusted seq and ack number in case
-            if (scratch_metadata.syn_cookie_delta != 0) {
-                modify_field(tcp.ackNo, scratch_metadata.adjusted_ack_num);
             }
            // Exit the action routine or Jump to RTT Computation if enabled.
         }
@@ -634,10 +644,6 @@ action tcp_session_state_info(iflow_tcp_seq_num,
             // Only if we are seeing a new high sequence number than we saved already
             modify_field(scratch_metadata.iflow_tcp_seq_num, scratch_metadata.tcp_seq_num_hi + 1);
         }
-        // Now Update the PHV Fields to accomodate the adjusted seq and ack number in case
-        if (scratch_metadata.syn_cookie_delta != 0) {
-            modify_field(tcp.ackNo, scratch_metadata.adjusted_ack_num);
-        }
 
 
 // INITIATOR_TCP_SESSION_STATE_INFO_EXIT:
@@ -650,15 +656,22 @@ action tcp_session_state_info(iflow_tcp_seq_num,
 
     } else {
         // PACKET FROM RESPONDER
+
+        if (rflow_dir_valid == TRUE) { 
+            if (flow_lkp_metadata.lkp_dir != scratch_metadata.rflow_dir) {
+                // return
+            }
+        } else {
+            modify_field(scratch_metadata.rflow_dir_valid, TRUE);
+            modify_field(scratch_metadata.rflow_dir, flow_lkp_metadata.lkp_dir);
+        }
+
         // Commenting the below line to get the correct size for scale and win_sz
         // modify_field(l4_metadata.tcp_rcvr_win_sz, (iflow_tcp_win_sz << iflow_tcp_win_scale));
         modify_field(scratch_metadata.tcp_mss, iflow_tcp_mss);
 
        if (l4_metadata.tcp_normalization_en == P4_FEATURE_ENABLED) {
            tcp_session_normalization();
-       }
-       if (syn_cookie_delta != 0) {
-           modify_field(scratch_metadata.adjusted_seq_num, (tcp.seqNo - syn_cookie_delta));
        }
        modify_field(scratch_metadata.tcp_seq_num_hi, (scratch_metadata.adjusted_seq_num + l4_metadata.tcp_data_len - 1));
        if (iflow_tcp_state == FLOW_STATE_ESTABLISHED and
@@ -681,10 +694,6 @@ action tcp_session_state_info(iflow_tcp_seq_num,
             if (scratch_metadata.tcp_seq_num_hi >  scratch_metadata.rflow_tcp_seq_num) {
                 // Only if we are seeing a new high sequence number than we saved already
                 modify_field(scratch_metadata.rflow_tcp_seq_num, scratch_metadata.tcp_seq_num_hi + 1);
-            }
-            // Now Update the PHV Fields to accomodate the adjusted seq and ack number in case
-            if (scratch_metadata.syn_cookie_delta != 0) {
-                modify_field(tcp.seqNo, scratch_metadata.adjusted_seq_num);
             }
         }
         // Exit the action routine or Jump to RTT Computation if enabled.
@@ -1085,10 +1094,6 @@ action tcp_session_state_info(iflow_tcp_seq_num,
         if (scratch_metadata.tcp_seq_num_hi >=  scratch_metadata.rflow_tcp_seq_num) {
             // Only if we are seeing a new high sequence number than we saved already
             modify_field(scratch_metadata.rflow_tcp_seq_num, scratch_metadata.tcp_seq_num_hi + 1);
-        }
-        // Now Update the PHV Fields to accomodate the adjusted seq and ack number in case
-        if (scratch_metadata.syn_cookie_delta != 0) {
-            modify_field(tcp.seqNo, scratch_metadata.adjusted_seq_num);
         }
 
 

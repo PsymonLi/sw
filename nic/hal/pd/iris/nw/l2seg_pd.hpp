@@ -20,6 +20,80 @@ namespace pd {
 #define L2SEG_UPLINK_UPD_FLAGS_NWSEC_PROF           0x1
 #define HAL_MAX_HW_L2SEGMENTS                       2048
 
+#define HAL_PD_UNTAG_FLOW_LKUP_ID                   0
+#define HAL_PD_FLOW_LKUP_ID_TEL_SHIFT               22
+#define HAL_PD_FLOW_LKUP_ID_UPLINK_SHIFT            23
+
+
+typedef struct pd_l2seg_encap_entry_s {
+    uint32_t encap;
+    uint32_t encap_idx;
+    uint32_t ref_cnt;
+    ht_ctxt_t ht_ctxt; 
+} __PACK__ pd_l2seg_encap_entry_t;
+
+static inline pd_l2seg_encap_entry_t*
+l2seg_encap_entry_alloc (void) 
+{
+    pd_l2seg_encap_entry_t *encap_entry;
+
+    encap_entry = (pd_l2seg_encap_entry_t *)g_hal_state_pd->l2seg_encap_entry_slab()->alloc();
+    return encap_entry;
+}
+
+static inline pd_l2seg_encap_entry_t*
+l2seg_encap_entry_init (pd_l2seg_encap_entry_t *encap_entry)
+{
+    if (!encap_entry) {
+        return NULL;
+    }
+    encap_entry->encap = 0;
+    encap_entry->encap_idx = 0;
+    encap_entry->ref_cnt = 0;
+    encap_entry->ht_ctxt.reset();
+
+    return encap_entry;
+}
+
+static inline pd_l2seg_encap_entry_t *
+l2seg_encap_entry_alloc_init (void)
+{
+    return l2seg_encap_entry_init(l2seg_encap_entry_alloc());
+}
+
+static inline hal_ret_t
+l2seg_encap_entry_free (pd_l2seg_encap_entry_t *rwe)
+{
+    hal::pd::delay_delete_to_slab(HAL_SLAB_L2SEG_ENCAP_PD, rwe);
+    return HAL_RET_OK;
+}
+
+static inline hal_ret_t
+add_l2seg_encap_entry_to_db (pd_l2seg_encap_entry_t *encap_entry)
+{
+    g_hal_state_pd->l2seg_encap_ht()->insert(encap_entry, 
+                                             &encap_entry->ht_ctxt);
+    return HAL_RET_OK;
+}
+
+static inline hal_ret_t
+del_l2seg_encap_entry_from_db(pd_l2seg_encap_entry_t *encap_entry)
+{
+    g_hal_state_pd->l2seg_encap_ht()->remove_entry(encap_entry, 
+                                                   &encap_entry->ht_ctxt);
+    return HAL_RET_OK;
+}
+
+// find a ipseccb pd instance given its hw id
+static inline pd_l2seg_encap_entry_t *
+find_l2seg_encap_entry_by_key (uint32_t encap)
+{
+    return (pd_l2seg_encap_entry_t *)g_hal_state_pd->l2seg_encap_ht()->lookup(&encap);
+}
+
+extern void *l2seg_encap_get_key_func(void *entry);
+extern uint32_t l2seg_encap_key_size(void);
+
 // Mgmt L2seg:
 // (A) - l2seg_fl_lkup_id
 // Customer L2seg:
@@ -59,9 +133,11 @@ namespace pd {
 // l2seg pd state
 typedef struct pd_l2seg_s {
     l2seg_hw_id_t   l2seg_hw_id;         // hw id for this segment
-    l2seg_hw_id_t   l2seg_hw_id_upl[HAL_MAX_UPLINK_IF_PCS];
-    uint32_t        l2seg_fl_lkup_id;    
-    uint32_t        l2seg_fl_lkup_id_upl[HAL_MAX_UPLINK_IF_PCS];// May be not needed
+    uint32_t        encap;
+    uint32_t        encap_idx;
+    uint32_t        l2seg_sw_fl_lkup_id;    
+    uint32_t        l2seg_hw_fl_lkup_id;    
+    uint32_t        l2seg_classic_vrf;
     uint32_t        cpu_l2seg_id;        // traffic from CPU
     // [Uplink ifpc_id] -> Input Properties(Hash Index).
     // If L2Seg is native on an uplink, it will have two entries.
@@ -103,7 +179,9 @@ l2seg_pd_init (pd_l2seg_t *l2seg_pd)
     }
     l2seg_pd->l2seg                = NULL;
     l2seg_pd->l2seg_hw_id          = INVALID_INDEXER_INDEX;
-    l2seg_pd->l2seg_fl_lkup_id     = INVALID_INDEXER_INDEX;
+    l2seg_pd->l2seg_sw_fl_lkup_id  = INVALID_INDEXER_INDEX;
+    l2seg_pd->l2seg_hw_fl_lkup_id  = INVALID_INDEXER_INDEX;
+    l2seg_pd->l2seg_classic_vrf    = INVALID_INDEXER_INDEX;
     l2seg_pd->cpu_l2seg_id         = INVALID_INDEXER_INDEX;
     l2seg_pd->inp_prop_tbl_cpu_idx = INVALID_INDEXER_INDEX;
     l2seg_pd->num_prom_lifs        = 0;
@@ -113,8 +191,6 @@ l2seg_pd_init (pd_l2seg_t *l2seg_pd)
     for (int i = 0; i < HAL_MAX_UPLINK_IF_PCS; i++) {
         l2seg_pd->inp_prop_tbl_idx[i]     = INVALID_INDEXER_INDEX;
         l2seg_pd->inp_prop_tbl_idx_pri[i] = INVALID_INDEXER_INDEX;
-        l2seg_pd->l2seg_hw_id_upl[i]      = INVALID_INDEXER_INDEX; 
-        l2seg_pd->l2seg_fl_lkup_id_upl[i] = INVALID_INDEXER_INDEX;
     }
 
     return l2seg_pd;
@@ -194,6 +270,11 @@ hal_ret_t l2seg_repgm_mgmt_enics_eps(l2seg_t *l2seg, l2seg_t *hp_l2seg);
 hal_ret_t l2seg_program_cust_eps_reg_mac(l2seg_t *l2seg_cust, l2seg_t *l2seg_mgmt, 
                                          bool orig, uint32_t uplink_if_idx,
                                          table_oper_t oper);
+uint32_t l2seg_pd_hw_to_sw_flow_lkupid(uint32_t hw_flow_lkupid, 
+                                       if_t *uplink_if);
+pd_l2seg_encap_entry_t* l2seg_find_or_alloc_encap_entry(uint32_t encap);
+hal_ret_t l2seg_delete_encap_entry(uint32_t encap);
+void l2seg_print_l2seg_encaps(void);
 }   // namespace pd
 }   // namespace hal
 

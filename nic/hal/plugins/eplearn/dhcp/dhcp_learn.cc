@@ -48,6 +48,7 @@ static bool is_dhcp_learning_required(fte::ctx_t &ctx) {
     args.flow_lkupid = cpu_hdr->lkp_vrf;
     args.obj_id = &obj_id;
     args.pi_obj = &obj;
+    args.uplink_if = NULL;
     pd_func_args.pd_get_object_from_flow_lkupid = &args;
     ret = hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_GET_OBJ_FROM_FLOW_LKPID, &pd_func_args);
     if (ret != HAL_RET_OK && obj_id != hal::HAL_OBJ_ID_L2SEG) {

@@ -266,6 +266,8 @@ header_type scratch_metadata_t {
         iflow_tcp_ws_option_sent      : 1;
         iflow_tcp_ts_option_sent      : 1;
         iflow_tcp_sack_perm_option_sent : 1;
+        iflow_dir_valid               : 1;
+        iflow_dir                     : 1;
 
         // responder flow's TCP state
         rflow_tcp_seq_num             : 32;           // TCP seq#
@@ -275,8 +277,8 @@ header_type scratch_metadata_t {
         rflow_tcp_state               : 4;            // flow_state
         rflow_tcp_mss                 : 16;
         rflow_exceptions_seen         : 14;           // list of exceptions seen
-
-        syn_cookie_delta              : 32 (signed);  // TCP seq/ack# adjustment
+        rflow_dir_valid               : 1;
+        rflow_dir                     : 1;
 
         tcp_mss                       : 16;
         // icmp code and type needed for ip normalization

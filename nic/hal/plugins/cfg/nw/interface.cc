@@ -350,6 +350,39 @@ if_compute_bw (uint32_t interval)
 }
 
 if_t *
+find_uplink_if_by_lport (uint32_t lport) 
+{
+    struct if_lport_t {
+        uint32_t lport;
+        if_t *uplink_if;
+    } ctxt = {};
+
+    ctxt.lport = lport;
+
+    auto walk_cb = [](void *ht_entry, void *ctxt) {
+        hal_handle_id_ht_entry_t *entry = (hal_handle_id_ht_entry_t *)ht_entry;
+        if_lport_t *ctx = (if_lport_t*)ctxt;
+        if_t *hal_if = NULL;
+
+        hal_if = (if_t *)hal_handle_get_obj(entry->handle_id);
+        if (hal_if->if_type == intf::IF_TYPE_UPLINK) {
+            pd::pd_if_get_lport_id_args_t args;
+            pd::pd_func_args_t pd_func_args = {0};
+            args.pi_if = hal_if;
+            pd_func_args.pd_if_get_lport_id= &args;
+            pd::hal_pd_call(pd::PD_FUNC_ID_IF_GET_LPORT_ID, &pd_func_args);
+            if (ctx->lport == args.lport_id) {
+                ctx->uplink_if = hal_if;
+                return true;
+            }
+        }
+        return false;
+    };
+    g_hal_state->if_id_ht()->walk(walk_cb, &ctxt);
+    return ctxt.uplink_if;
+}
+
+if_t *
 find_tnnlif_by_dst_ip (IfTunnelEncapType encap_type, ip_addr_t *ip)
 {
     tnnlif_walk_ctxt_t ctxt;

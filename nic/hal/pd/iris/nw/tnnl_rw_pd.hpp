@@ -95,7 +95,8 @@ add_tnnl_rw_entry_pd_to_db (pd_tnnl_rw_entry_t *tnnl_rwe)
 static inline hal_ret_t
 del_tnnl_rw_entry_pd_from_db(pd_tnnl_rw_entry_t *tnnl_rwe)
 {
-    g_hal_state_pd->tnnl_rw_table_ht()->remove(&tnnl_rwe->tnnl_rw_key);
+    g_hal_state_pd->tnnl_rw_table_ht()->remove_entry(tnnl_rwe,
+                                                     &tnnl_rwe->ht_ctxt);
     return HAL_RET_OK;
 }
 

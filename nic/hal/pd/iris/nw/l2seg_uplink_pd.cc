@@ -164,8 +164,8 @@ l2seg_uplink_pgm_input_properties_tbl(pd_add_l2seg_uplink_args_t *args)
 
         HAL_TRACE_DEBUG("input properties (lif, vlan_v, vlan) lkup_id:{}: "
                         "({}, {}, {}) => ",
-                        l2seg_pd->l2seg_fl_lkup_id,
-			key.capri_intrinsic_lif,
+                        l2seg_pd->l2seg_classic_vrf,
+                        key.capri_intrinsic_lif,
                         key.vlan_tag_valid, key.vlan_tag_vid);
         // Insert
         sdk_ret = inp_prop_tbl->insert(&key, &data, &hash_idx,

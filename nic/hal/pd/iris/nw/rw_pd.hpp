@@ -89,7 +89,8 @@ add_rw_entry_pd_to_db (pd_rw_entry_t *rwe)
 static inline hal_ret_t
 del_rw_entry_pd_from_db(pd_rw_entry_t *rwe)
 {
-    g_hal_state_pd->rw_table_ht()->remove(&rwe->ht_ctxt);
+    g_hal_state_pd->rw_table_ht()->remove_entry(rwe, 
+                                                &rwe->ht_ctxt);
     return HAL_RET_OK;
 }
 

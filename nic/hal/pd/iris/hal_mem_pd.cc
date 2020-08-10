@@ -615,6 +615,26 @@ hal_state_pd::init(void)
     mirror_session_idxr_ = sdk::lib::indexer::factory(MAX_MIRROR_SESSION_DEST);
     SDK_ASSERT_RETURN((mirror_session_idxr_ != NULL), false);
 
+
+    slabs_[HAL_PD_SLAB_ID(HAL_SLAB_L2SEG_ENCAP_PD)] =
+        slab::factory("l2seg_encap_pd", HAL_SLAB_L2SEG_ENCAP_PD,
+                      sizeof(hal::pd::pd_l2seg_encap_entry_t), 128,
+                      true, true, true);
+    SDK_ASSERT_RETURN((slabs_[HAL_PD_SLAB_ID(HAL_SLAB_L2SEG_ENCAP_PD)] != NULL),
+                      false);
+
+    HAL_HT_CREATE("l2seg-encap", l2seg_encap_ht_,
+                  HAL_MAX_HW_L2SEGMENTS >> 1,
+                  hal::pd::l2seg_encap_get_key_func,
+                  hal::pd::l2seg_encap_key_size());
+    SDK_ASSERT_RETURN((l2seg_encap_ht_ != NULL), false);
+
+    l2seg_encap_idxr_ = sdk::lib::indexer::factory(HAL_MAX_HW_L2SEGMENTS,
+                                                 true, /* thread safe */
+                                                 true);/* skip zero */
+    SDK_ASSERT_RETURN((l2seg_encap_idxr_ != NULL), false);
+
+
     dm_tables_ = NULL;
     hash_tcam_tables_ = NULL;
     tcam_tables_ = NULL;
@@ -643,6 +663,7 @@ hal_state_pd::hal_state_pd()
     vrf_hwid_idxr_           = NULL;
     nwsec_profile_hwid_idxr_ = NULL;
     l2seg_cpu_idxr_          = NULL;
+    l2seg_encap_idxr_        = NULL;
     lport_idxr_              = NULL;
     lif_hwid_idxr_           = NULL;
     uplinkifpc_idxr_         = NULL;
@@ -689,6 +710,7 @@ hal_state_pd::~hal_state_pd()
     vrf_hwid_idxr_ ? indexer::destroy(vrf_hwid_idxr_) : HAL_NOP;
     nwsec_profile_hwid_idxr_ ? indexer::destroy(nwsec_profile_hwid_idxr_) : HAL_NOP;
     l2seg_cpu_idxr_ ? indexer::destroy(l2seg_cpu_idxr_) : HAL_NOP;
+    l2seg_encap_idxr_ ? indexer::destroy(l2seg_encap_idxr_) : HAL_NOP;
     lport_idxr_ ? indexer::destroy(lport_idxr_) : HAL_NOP;
     lif_hwid_idxr_ ? indexer::destroy(lif_hwid_idxr_) : HAL_NOP;
     uplinkifpc_idxr_ ? indexer::destroy(uplinkifpc_idxr_): HAL_NOP;
@@ -1528,6 +1550,10 @@ free_to_slab (hal_slab_t slab_id, void *elem)
 
     case HAL_SLAB_MIRROR_SESSION_PD:
         g_hal_state_pd->mirror_session_pd_slab()->free(elem);
+        break;
+
+    case HAL_SLAB_L2SEG_ENCAP_PD:
+        g_hal_state_pd->l2seg_encap_entry_slab()->free(elem);
         break;
 
     default:

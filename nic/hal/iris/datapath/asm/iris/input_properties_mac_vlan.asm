@@ -108,10 +108,15 @@ input_properties_mac_vlan_common:
     phvwr           p.capri_intrinsic_tm_span_session, r1
 
     // input_properties call
-    or              r1, d.u.input_properties_mac_vlan_d.vrf, \
-                        d.u.input_properties_mac_vlan_d.src_lport, 16
-    phvwr           p.{control_metadata_src_lport, flow_lkp_metadata_lkp_vrf}, r1
-    phvwr           p.control_metadata_dst_lport, d.u.input_properties_mac_vlan_d.dst_lport
+    or              r1, d.u.input_properties_mac_vlan_d.src_lport, \
+                        d.u.input_properties_mac_vlan_d.dst_lport, 16
+    phvwrpair       p.{control_metadata_dst_lport,control_metadata_src_lport}, \
+                        r1, p.flow_lkp_metadata_lkp_vrf, \
+                        d.u.input_properties_mac_vlan_d.vrf
+    // or              r1, d.u.input_properties_mac_vlan_d.vrf, \
+    //                     d.u.input_properties_mac_vlan_d.src_lport, 16
+    // phvwr           p.{control_metadata_src_lport, flow_lkp_metadata_lkp_vrf}, r1
+    // phvwr           p.control_metadata_dst_lport, d.u.input_properties_mac_vlan_d.dst_lport
 
     or              r2, d.u.input_properties_mac_vlan_d.mirror_on_drop_session_id, \
                         d.u.input_properties_mac_vlan_d.mirror_on_drop_en, 8

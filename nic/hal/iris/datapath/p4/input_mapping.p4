@@ -261,11 +261,7 @@ action input_properties(vrf, reg_mac_vrf, dir, flow_miss_qos_class_id,
     modify_field(control_metadata.flow_learn, flow_learn);
     modify_field(control_metadata.uuc_fl_pe_sup_en, uuc_fl_pe_sup_en);
     modify_field(control_metadata.has_prom_host_lifs, has_prom_host_lifs);
-    if (flow_lkp_metadata.pkt_type == PACKET_TYPE_MULTICAST) {
-        modify_field(flow_lkp_metadata.lkp_reg_mac_vrf, reg_mac_vrf);
-    } else {
-        modify_field(flow_lkp_metadata.lkp_reg_mac_vrf, vrf);
-    }
+    modify_field(flow_lkp_metadata.lkp_reg_mac_vrf, reg_mac_vrf);
 }
 
 @pragma stage 1

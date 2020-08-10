@@ -13,10 +13,15 @@ struct phv_                 p;
 input_properties:
     // if table lookup is miss, return
     nop.!c1.e
-    or              r1, d.input_properties_d.vrf, \
-                        d.input_properties_d.src_lport, 16
-    phvwr           p.{control_metadata_src_lport, flow_lkp_metadata_lkp_vrf}, r1
-    phvwr           p.control_metadata_dst_lport, d.input_properties_d.dst_lport
+    or              r1, d.input_properties_d.src_lport, \
+                        d.input_properties_d.dst_lport, 16
+    phvwrpair       p.{control_metadata_dst_lport,control_metadata_src_lport}, \
+                        r1, p.flow_lkp_metadata_lkp_vrf, \
+                        d.input_properties_d.vrf
+    // or              r1, d.input_properties_d.vrf, \
+    //                     d.input_properties_d.src_lport, 16
+    // phvwr           p.{control_metadata_src_lport, flow_lkp_metadata_lkp_vrf}, r1
+    // phvwr           p.control_metadata_dst_lport, d.input_properties_d.dst_lport
 
     or              r2, d.input_properties_d.mirror_on_drop_session_id, \
                         d.input_properties_d.mirror_on_drop_en, 8

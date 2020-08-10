@@ -91,7 +91,7 @@ action ingress_tx_stats(ucast_bytes, ucast_pkts, mcast_bytes, mcast_pkts,
     }
 
     modify_field(control_metadata.i2e_flags,
-		 control_metadata.uplink << P4_I2E_FLAGS_UPLINK,
+        control_metadata.uplink << P4_I2E_FLAGS_UPLINK,
                  (1 << P4_I2E_FLAGS_UPLINK));
     modify_field(control_metadata.i2e_flags,
         l3_metadata.ip_frag << P4_I2E_FLAGS_IP_FRAGMENT,
@@ -275,12 +275,22 @@ table egress_drop_stats {
     size : DROP_STATS_TABLE_SIZE;
 }
 
-action flow_stats(last_seen_timestamp, permit_packets, permit_bytes,
+action flow_stats(last_seen_timestamp, flow_dir_valid, flow_dir, 
+                  permit_packets, permit_bytes,
                   drop_packets, drop_bytes, drop_reason, drop_count_map,
                   drop_count1, drop_count2, drop_count3, drop_count4,
                   drop_count5, drop_count6, drop_count7, drop_count8) {
     if (control_metadata.skip_flow_update == TRUE) {
         // return;
+    }
+
+    if (flow_dir_valid == TRUE) { 
+        if (flow_lkp_metadata.lkp_dir != scratch_metadata.iflow_dir) {
+            // return
+        }
+    } else {
+        modify_field(scratch_metadata.iflow_dir_valid, TRUE);
+        modify_field(scratch_metadata.iflow_dir, flow_lkp_metadata.lkp_dir);
     }
 
     modify_field(scratch_metadata.flow_bytes, capri_p4_intrinsic.packet_len);
@@ -318,6 +328,8 @@ action flow_stats(last_seen_timestamp, permit_packets, permit_bytes,
     }
 
     // dummy ops to keep compiler happy
+    modify_field(scratch_metadata.iflow_dir_valid, flow_dir_valid);
+    modify_field(scratch_metadata.iflow_dir, flow_dir);
     modify_field(scratch_metadata.drop_count, drop_count_map);
     modify_field(scratch_metadata.drop_count, drop_count1);
     modify_field(scratch_metadata.drop_count, drop_count2);
