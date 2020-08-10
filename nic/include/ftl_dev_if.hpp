@@ -5,7 +5,7 @@
 #ifndef _FTL_DEV_IF_H_
 #define _FTL_DEV_IF_H_
 
-#include "nic/apollo/athena/api/include/pds_flow_age.h"
+#include "nic/athena/api/include/pds_flow_age.h"
 #include "nic/p4/ftl_dev/include/ftl_dev_shared.h"
 
 #if !defined(_LINUX_TYPES_H) && !defined(_LINUX_TYPES_H_)

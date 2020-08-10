@@ -14,7 +14,7 @@
 #include "nic/sdk/lib/p4/p4_utils.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/lib/utils/path_utils.hpp"
-#include "nic/apollo/athena/api/impl/impl_utils.hpp"
+#include "nic/athena/api/impl/impl_utils.hpp"
 #include "nic/debug_cli/include/cli.hpp"
 
 using namespace sdk::asic::pd;

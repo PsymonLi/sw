@@ -60,19 +60,19 @@ builds:
   #   artifacts:
   #     - /sw/customimage.tar.gz
   build-athena-arm-native-sim:
-    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic/apollo/athena/apps/athena_app && mkdir -p /tmp/athena &&
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic/athena/apps/athena_app && mkdir -p /tmp/athena &&
         ./gsrc.py --src /usr/src/github.com/pensando --dst /tmp/athena/src/github.com/pensando && ./build_athena /tmp/athena s"]
     owners: ["email:jason@pensando.io"]
     artifacts:
       - /tmp/athena/src/github.com/pensando/sw/nic/nic.tar
       - /tmp/athena/src/github.com/pensando/sw/nic/build/aarch64/athena/capri/out/athena_app_bin/athena_app.bin
   build-athena-customer-arm:
-    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && ./apollo/athena/apps/athena_app/bld_pkg_athena --arch=aarch64 --output=athena-arm"]
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && ./athena/apps/athena_app/bld_pkg_athena --arch=aarch64 --output=athena-arm"]
     owners: ["email:murali@pensando.io"]
     artifacts:
       - /sw/athena-arm.tar.gz
   build-athena-customer-x86:
-    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && ./apollo/athena/apps/athena_app/bld_pkg_athena --arch=x86_64 --output=athena-x86"]
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && ./athena/apps/athena_app/bld_pkg_athena --arch=x86_64 --output=athena-x86"]
     owners: ["email:murali@pensando.io"]
     artifacts:
       - /sw/athena-x86.tar.gz
@@ -363,7 +363,7 @@ jobs:
     labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud", "CI-Sanity-Build"]
   nic/agent:
     labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
-  nic/apollo/athena/tools/sanity/base:
+  nic/athena/tools/sanity/base:
     labels: ["CI-Sanity-Build", "CI-Precheckin-Athena", "CI-Sim-UnitTest-Cloud"]
   # nic/apollo/tools/athena/sanity/customer-docker:
     # labels: [ "CI-Sim-UnitTest-Cloud"]
@@ -508,7 +508,7 @@ dependencies:
       exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
     - reference: nic/apollo/tools/apulu/sanity/base
       exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
-    - reference: nic/apollo/athena/tools/sanity/base
+    - reference: nic/athena/tools/sanity/base
     - reference: iota/test/standalone/precheckin/athena
     - reference: test/ci_targets/cloud-e2e
       exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
@@ -519,7 +519,7 @@ dependencies:
     # - reference: nic/apollo/tools/athena/sanity/customer-docker
   nic/apollo/p4/athena_p4-16:
     - reference: iota/test/standalone/precheckin/athena
-  nic/apollo/athena:
+  nic/athena:
     - reference: iota/test/standalone/precheckin/athena
   nic/agent:
     - reference: iota/test/venice
@@ -607,7 +607,7 @@ dependencies:
     - reference: iota/test/standalone/precheckin/linux
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
     - reference: nic/apollo/tools/apulu/sanity/base
-    - reference: nic/apollo/athena/tools/sanity/base
+    - reference: nic/athena/tools/sanity/base
     - reference: test/ci_targets/controlplane-dol
   nic/sysmgr:
     - reference: iota/test/venice
@@ -633,7 +633,7 @@ dependencies:
       exclude_dirs: ["arm_compiler","asic_sw_combined_sanity","client","gcov","hal","jenkins","ncc","package","server", "valgrind"]
   nic/tools/ncc:
     - reference: nic/apollo/tools/apulu/sanity/base
-    - reference: nic/apollo/athena/tools/sanity/base
+    - reference: nic/athena/tools/sanity/base
   nic/tools/package:
     - reference: nic/apollo/tools/apulu/sanity/customer-docker
   nic/upgrade_manager:
@@ -646,7 +646,7 @@ dependencies:
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
     - reference: nic/apollo/tools/apulu/sanity/base
   nic/conf/athena:
-    - reference: nic/apollo/athena/tools/sanity/base
+    - reference: nic/athena/tools/sanity/base
   nic/debug_cli/apollo:
     - reference: nic/apollo/tools/apulu/sanity/base
   nic/sdk/platform/cfgspace:
@@ -720,7 +720,7 @@ dependencies:
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
     - reference: iota/test/standalone/sanity/swm
     - reference: nic/apollo/tools/apulu/sanity/base
-    - reference: nic/apollo/athena/tools/sanity/base
+    - reference: nic/athena/tools/sanity/base
     - reference: iota/test/standalone/precheckin/athena
   platform/src/lib/devapi_iris:
     - reference: iota/test/standalone/precheckin/linux

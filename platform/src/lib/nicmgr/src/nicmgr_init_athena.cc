@@ -3,7 +3,7 @@
 //-----------------------------------------------------------------------------
 
 #include "platform/src/lib/nicmgr/include/nicmgr_init.hpp"
-#include "nic/apollo/athena/api/impl/athena_devapi_impl.hpp"
+#include "nic/athena/api/impl/athena_devapi_impl.hpp"
 
 rdmamgr *
 rdma_manager_init (mpartition *mp, lif_mgr *lm)

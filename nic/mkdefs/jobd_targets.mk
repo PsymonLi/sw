@@ -305,19 +305,19 @@ jobd/offload: ${JOBD_PREREQS}
 
 .PHONY: jobd/athena_app/session_aging_sim_simple
 jobd/athena_app/session_aging_sim_simple: ${JOBD_PREREQS}
-	${NICDIR}/run.py ${COVERAGE_OPTS} --athena_app --athena_app_runargs '-d /sw/nic/apollo/athena/apps/athena_app/scripts -t session_aging_sim_simple.txt \-\-no-fte-flow-prog'
+	${NICDIR}/run.py ${COVERAGE_OPTS} --athena_app --athena_app_runargs '-d /sw/nic/athena/apps/athena_app/scripts -t session_aging_sim_simple.txt \-\-no-fte-flow-prog'
 
 .PHONY: jobd/athena_app/session_aging_sim_medium
 jobd/athena_app/session_aging_sim_medium: ${JOBD_PREREQS}
-	${NICDIR}/run.py ${COVERAGE_OPTS} --athena_app --athena_app_runargs '-d /sw/nic/apollo/athena/apps/athena_app/scripts -t session_aging_sim_medium.txt \-\-no-fte-flow-prog'
+	${NICDIR}/run.py ${COVERAGE_OPTS} --athena_app --athena_app_runargs '-d /sw/nic/athena/apps/athena_app/scripts -t session_aging_sim_medium.txt \-\-no-fte-flow-prog'
 
 .PHONY: jobd/athena_app/conntrack_aging_sim_simple
 jobd/athena_app/conntrack_aging_sim_simple: ${JOBD_PREREQS}
-	${NICDIR}/run.py ${COVERAGE_OPTS} --athena_app --athena_app_runargs '-d /sw/nic/apollo/athena/apps/athena_app/scripts -t conntrack_aging_sim_simple.txt \-\-no-fte-flow-prog'
+	${NICDIR}/run.py ${COVERAGE_OPTS} --athena_app --athena_app_runargs '-d /sw/nic/athena/apps/athena_app/scripts -t conntrack_aging_sim_simple.txt \-\-no-fte-flow-prog'
 
 .PHONY: jobd/athena_app/conntrack_aging_sim_medium
 jobd/athena_app/conntrack_aging_sim_medium: ${JOBD_PREREQS}
-	${NICDIR}/run.py ${COVERAGE_OPTS} --athena_app --athena_app_runargs '-d /sw/nic/apollo/athena/apps/athena_app/scripts -t conntrack_aging_sim_medium.txt \-\-no-fte-flow-prog'
+	${NICDIR}/run.py ${COVERAGE_OPTS} --athena_app --athena_app_runargs '-d /sw/nic/athena/apps/athena_app/scripts -t conntrack_aging_sim_medium.txt \-\-no-fte-flow-prog'
 
 .PHONY: jobd/athena_app/policy_sim_gtests
 jobd/athena_app/policy_sim_gtests: ${JOBD_PREREQS}
@@ -621,11 +621,11 @@ jobd/dol/apulu/mirror: ${JOBD_PREREQS}
 
 .PHONY: jobd/athena/gtests
 jobd/athena/gtests: ${JOBD_PREREQS}
-	${NICDIR}/apollo/athena/test/tools/run_gtests.sh ${COVERAGE_OPTS}
+	${NICDIR}/athena/test/tools/run_gtests.sh ${COVERAGE_OPTS}
 
 .PHONY: jobd/athena_app/make
 jobd/athena_app/make: ${JOBD_PREREQS}
-	${NICDIR}/apollo/athena/apps/athena_app/build_athena_app.sh
+	${NICDIR}/athena/apps/athena_app/build_athena_app.sh
 
 .PHONY: jobd/apulu/upgrade
 jobd/apulu/upgrade: ${JOBD_PREREQS}
