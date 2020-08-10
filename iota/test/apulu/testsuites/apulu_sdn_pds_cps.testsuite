@@ -1,5 +1,5 @@
 meta:
-    name        : apulu_sdn_pds_traffic_scale
+    name        : apulu_sdn_pds_cps
     description : Apulu SDN PDS Scaled Traffic Testsuite
     mode        : hardware
     cfgmode     : netagent

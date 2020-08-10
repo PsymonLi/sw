@@ -1,5 +1,5 @@
 meta:
-    name        : apulu_sdn_pds_cps
+    name        : apulu_sdn_pds_pktgen
     description : Apulu SDN PDS Kernel Pktgen CPS Testsuite
     mode        : hardware
     cfgmode     : netagent
