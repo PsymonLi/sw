@@ -441,6 +441,7 @@ sdk_ret_t many_read_cmp(feeder_T& feeder,
     for (tmp.iter_init(); tmp.iter_more(); tmp.iter_next()) {
         SDK_ASSERT(read_cmp(tmp) == expected_result);
     }
+    feeder.vec = tmp.vec;
     return SDK_RET_OK;
 }
 

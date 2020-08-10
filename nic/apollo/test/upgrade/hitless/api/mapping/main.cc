@@ -127,6 +127,57 @@ TEST_F(mapping_upg_test, local_mapping_workflow_u1) {
     mapping_upg_teardown();
 }
 
+/// \brief Local mapping WF_U_2
+/// \ref WF_U_2
+TEST_F(mapping_upg_test, local_mapping_workflow_u2) {
+    local_mapping_feeder feeder1A, feeder1B, feeder2;
+
+    // setup precursor
+    mapping_upg_setup();
+    // setup local mapping
+    feeder1A.init(k_vpc_key, k_subnet_key, "10.0.0.2/8",
+                  0x000000030b020a01, PDS_ENCAP_TYPE_VXLAN,
+                  pdsobjkey2int(k_subnet_key) + 512,
+                  int2pdsobjkey(1), true, "12.0.0.0/16",
+                  2, PDS_MAX_VNIC_IP, PDS_MAPPING_TYPE_L3,
+                  PDS_MAX_TAGS_PER_MAPPING, true);
+    // backup
+    workflow_u1_s1<local_mapping_feeder>(feeder1A);
+
+    // tearup precursor
+    mapping_upg_teardown();
+    // restore
+    workflow_u1_s2<local_mapping_feeder>(feeder1A);
+
+    // setup precursor again
+    mapping_upg_setup();
+    // recalibrate feeder to replay subset of stashed objs
+    feeder1A.init(k_vpc_key, k_subnet_key, "10.0.0.2/8",
+                  0x000000030b020a01, PDS_ENCAP_TYPE_VXLAN,
+                  pdsobjkey2int(k_subnet_key) + 512,
+                  int2pdsobjkey(1), true, "12.0.0.0/16",
+                  1, PDS_MAX_VNIC_IP, PDS_MAPPING_TYPE_L3,
+                  PDS_MAX_TAGS_PER_MAPPING);
+    // setup another feeder to create additional local mapping
+    feeder2.init(k_vpc_key, k_subnet_key, "11.0.0.2/8",
+                 0x000000030b020a01, PDS_ENCAP_TYPE_VXLAN,
+                 pdsobjkey2int(k_subnet_key) + 512,
+                 int2pdsobjkey(3), true, "13.0.0.0/16",
+                 1, PDS_MAX_VNIC_IP, PDS_MAPPING_TYPE_L3,
+                 PDS_MAX_TAGS_PER_MAPPING);
+    // position another feeder to point to next key to be replayed
+    feeder1B.init(k_vpc_key, k_subnet_key, "10.0.0.35/8",
+                  0x000000030b020a01, PDS_ENCAP_TYPE_VXLAN,
+                  pdsobjkey2int(k_subnet_key) + 512,
+                  int2pdsobjkey(2), true, "12.0.0.33/16",
+                  1, PDS_MAX_VNIC_IP, PDS_MAPPING_TYPE_L3,
+                  PDS_MAX_TAGS_PER_MAPPING);
+    workflow_u2<local_mapping_feeder>(feeder1A, feeder2, feeder1B);
+
+    // tearup precursor
+    mapping_upg_teardown();
+}
+
 /// @}
 
 }    // namespace api

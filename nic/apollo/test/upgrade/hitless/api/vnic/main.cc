@@ -76,7 +76,6 @@ vnic_upg_teardown (void)
 TEST_F(vnic_upg_test, vnic_upg_workflow_u1) {
     vnic_feeder feeder;
 
-    pds_batch_ctxt_t bctxt = batch_start();
     // setup precursor
     vnic_upg_setup();
     // setup vnic
@@ -95,6 +94,53 @@ TEST_F(vnic_upg_test, vnic_upg_workflow_u1) {
     vnic_upg_setup();
     // config replay
     workflow_u1_s3<vnic_feeder>(feeder);
+    // tearup precursor
+    vnic_upg_teardown();
+}
+
+/// \brief VNIC WF_U_2
+/// \ref WF_U_2
+TEST_F(vnic_upg_test, vnic_upg_workflow_u2) {
+    vnic_feeder feeder1A, feeder1B, feeder2;
+    uint32_t start_key, num_obj, obj_in_set;
+
+    start_key = 1;
+    num_obj = 10;
+    obj_in_set = 5;
+    // setup precursor
+    vnic_upg_setup();
+    // setup vnic
+    feeder1A.init(int2pdsobjkey(start_key), int2pdsobjkey(start_key), num_obj,
+                  k_feeder_mac, PDS_ENCAP_TYPE_DOT1Q, PDS_ENCAP_TYPE_MPLSoUDP,
+                  true, true, 0, 0, 5, 0, int2pdsobjkey(20010),
+                  int2pdsobjkey(20000), 1);
+    // backup
+    workflow_u1_s1<vnic_feeder>(feeder1A);
+
+    // tearup precursor
+    vnic_upg_teardown();
+    // restore
+    workflow_u1_s2<vnic_feeder>(feeder1A);
+    // setup precursor again
+    vnic_upg_setup();
+
+    // recalibrate feeder to replay subset of stashed objs
+    feeder1A.init(int2pdsobjkey(start_key), int2pdsobjkey(start_key), obj_in_set,
+                  k_feeder_mac, PDS_ENCAP_TYPE_DOT1Q, PDS_ENCAP_TYPE_MPLSoUDP,
+                  true, true, 0, 0, 5, 0, int2pdsobjkey(20010),
+                  int2pdsobjkey(20000));
+    // setup another feeder to create additional vnic
+    feeder2.init(int2pdsobjkey(start_key + num_obj), int2pdsobjkey(start_key), num_obj,
+                 k_feeder_mac, PDS_ENCAP_TYPE_DOT1Q, PDS_ENCAP_TYPE_MPLSoUDP,
+                 true, true, 0, 0, 5, 0, int2pdsobjkey(20010),
+                 int2pdsobjkey(20000));
+    // position another feeder to point to next key to be replayed
+    feeder1B.init(int2pdsobjkey(start_key + obj_in_set), int2pdsobjkey(start_key),
+                  (num_obj - obj_in_set), k_feeder_mac + obj_in_set,
+                  PDS_ENCAP_TYPE_DOT1Q, PDS_ENCAP_TYPE_MPLSoUDP,
+                  true, true, 0, 0, 5, 0, int2pdsobjkey(20010),
+                  int2pdsobjkey(20000));
+    workflow_u2<vnic_feeder>(feeder1A, feeder2, feeder1B);
     // tearup precursor
     vnic_upg_teardown();
 }

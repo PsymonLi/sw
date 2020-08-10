@@ -756,7 +756,7 @@ inline void workflow_u1_s2(feeder_T& feeder1)
     WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U1_S2 - upg restore failed");
 }
 
-/// \brief WF_U_3
+/// \brief WF_U_1_S_3
 /// [ Create Set1 ] - Read - [ Delete Set1 ] - Read
 template <typename feeder_T>
 inline void workflow_u1_s3(feeder_T& feeder1)
@@ -779,6 +779,64 @@ inline void workflow_u1_s3(feeder_T& feeder1)
 
     ret = many_read<feeder_T>(feeder1, sdk::SDK_RET_ENTRY_NOT_FOUND);
     WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U1_S3 cleanup - read set1 failed");
+}
+
+/// \brief WF_U_2
+/// [ Create Set1 ] - Read - [ Create Set2 ] - Read - [ Create Set3 ] - Read
+template <typename feeder_T>
+inline void workflow_u2(feeder_T& feeder1A, feeder_T& feeder2,
+                        feeder_T& feeder1B)
+{
+    sdk_ret_t ret;
+
+    // trigger
+    pds_batch_ctxt_t bctxt = batch_start();
+    ret = many_create<feeder_T>(bctxt, feeder1A);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - create set1 failed");
+    batch_commit(bctxt);
+
+    ret = many_read_cmp<feeder_T>(feeder1A);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - read set1 failed");
+
+    bctxt = batch_start();
+    ret = many_create<feeder_T>(bctxt, feeder2);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - create set2 failed");
+    batch_commit(bctxt);
+
+    ret = many_read<feeder_T>(feeder2, SDK_RET_OK);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - read set2 failed");
+
+    bctxt = batch_start();
+    feeder1B.vec = feeder1A.vec;
+    ret = many_create<feeder_T>(bctxt, feeder1B);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - create set3 failed");
+    batch_commit(bctxt);
+
+    ret = many_read_cmp<feeder_T>(feeder1B);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - read set3 failed");
+
+    // cleanup
+    bctxt = batch_start();
+    ret = many_delete<feeder_T>(bctxt, feeder1A);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - delete set1 failed");
+    batch_commit(bctxt);
+
+    bctxt = batch_start();
+    ret = many_delete<feeder_T>(bctxt, feeder2);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - delete set2 failed");
+    batch_commit(bctxt);
+
+    bctxt = batch_start();
+    ret = many_delete<feeder_T>(bctxt, feeder1B);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 - delete set3 failed");
+    batch_commit(bctxt);
+
+    ret = many_read<feeder_T>(feeder1A, sdk::SDK_RET_ENTRY_NOT_FOUND);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 cleanup - read set1 failed");
+    ret = many_read<feeder_T>(feeder2, sdk::SDK_RET_ENTRY_NOT_FOUND);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 cleanup - read set2 failed");
+    ret = many_read<feeder_T>(feeder1B, sdk::SDK_RET_ENTRY_NOT_FOUND);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 cleanup - read set3 failed");
 }
 
 /// @}
