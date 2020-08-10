@@ -483,55 +483,45 @@ func putObjectHelper(ctx context.Context,
 }
 
 func getCSVObjectBuffer(logs interface{}, b *bytes.Buffer, zip bool) {
-	helper := func(csvBytes *bytes.Buffer) {
-		w := csv.NewWriter(csvBytes)
-		w.Write([]string{"svrf", "dvrf", "sip",
-			"dip", "ts", "sport", "dport",
-			"proto", "act", "dir", "ruleid",
-			"sessionid", "sessionstate",
-			"icmptype", "icmpid", "icmpcode",
-			"appid", "alg", "iflowbytes",
-			"rflowbytes", "count"})
-		for _, l := range logs.([]interface{}) {
-			temp := l.([]string)
-			w.Write(temp)
-		}
-		w.Flush()
+	var writer *csv.Writer
+	if zip {
+		zw := gzip.NewWriter(b)
+		writer = csv.NewWriter(zw)
+		defer zw.Close()
+	} else {
+		writer = csv.NewWriter(b)
 	}
-
-	if !zip {
-		helper(b)
-		return
+	writer.Write([]string{"svrf", "dvrf", "sip",
+		"dip", "ts", "sport", "dport",
+		"proto", "act", "dir", "ruleid",
+		"sessionid", "sessionstate",
+		"icmptype", "icmpid", "icmpcode",
+		"appid", "alg", "iflowbytes",
+		"rflowbytes", "count"})
+	for _, l := range logs.([]interface{}) {
+		temp := l.([]string)
+		writer.Write(temp)
 	}
-
-	var csvBytes bytes.Buffer
-	helper(&csvBytes)
-	zw := gzip.NewWriter(b)
-	zw.Write(csvBytes.Bytes())
-	zw.Close()
+	writer.Flush()
 }
 
 func getCSVIndexBuffer(index map[string]string, b *bytes.Buffer, zip bool) {
-	helper := func(metaBytes *bytes.Buffer) {
-		csvMeta := [][]string{}
-		csvMeta = append(csvMeta, []string{"ip", "mode"})
-		for k, v := range index {
-			csvMeta = append(csvMeta, []string{k, v})
-		}
-		mw := csv.NewWriter(metaBytes)
-		mw.WriteAll(csvMeta)
+	var writer *csv.Writer
+	if zip {
+		zw := gzip.NewWriter(b)
+		writer = csv.NewWriter(zw)
+		defer zw.Close()
+	} else {
+		writer = csv.NewWriter(b)
 	}
 
-	if !zip {
-		helper(b)
-		return
+	csvMeta := [][]string{}
+	csvMeta = append(csvMeta, []string{"ip", "mode"})
+	for k, v := range index {
+		csvMeta = append(csvMeta, []string{k, v})
 	}
 
-	var csvBytes bytes.Buffer
-	helper(&csvBytes)
-	zw := gzip.NewWriter(b)
-	zw.Write(csvBytes.Bytes())
-	zw.Close()
+	writer.WriteAll(csvMeta)
 }
 
 func getBucketName(tenantName string) string {
