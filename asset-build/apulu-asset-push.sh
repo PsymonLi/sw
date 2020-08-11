@@ -75,8 +75,8 @@ fi
 echo "Copy artifacts..."
 mkdir -p /sw/output/apulu-bundle
 ls -al bin/
-mv tools/docker-files/ova/output-apulu/venice.ova /sw/output/psm.apulu.ova
-mv tools/docker-files/ova/output-apulu/venice.qcow2 /sw/output/psm.apulu.qcow2
+mv tools/docker-files/ova/output-apulu/venice.ova /sw/output/psm.apulu.${RELEASE}.ova
+mv tools/docker-files/ova/output-apulu/venice.qcow2 /sw/output/psm.apulu.${RELEASE}.qcow2
 mv apulu-bundle/bundle.tar /sw/output/apulu-bundle/
 mv bin/venice.apulu.tgz /sw/output/psm.apulu.tgz
 mv bin/pen-install.apulu.iso /sw/output/

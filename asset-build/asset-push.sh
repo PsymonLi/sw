@@ -83,8 +83,8 @@ ls -al bin/
 mv bin/venice.tgz /sw/output/psm.tgz
 ls -al /sw/output
 tar -ztvf /sw/output/psm.tgz
-mv tools/docker-files/ova/output/venice.ova /sw/output/psm.ova
-mv tools/docker-files/ova/output/venice.qcow2 /sw/output/psm.qcow2
+mv tools/docker-files/ova/output/venice.ova /sw/output/psm.${RELEASE}.ova
+mv tools/docker-files/ova/output/venice.qcow2 /sw/output/psm.${RELEASE}.qcow2
 mv bin/bundle/bundle.tar /sw/output/bundle/
 mv bin/pen-install.iso /sw/output/
 
