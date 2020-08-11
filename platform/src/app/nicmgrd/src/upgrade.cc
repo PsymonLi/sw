@@ -8,6 +8,7 @@
 #include "nic/include/trace.hpp"
 #include "nic/include/base.hpp"
 #include "nic/include/hal_cfg.hpp"
+#include "nic/sdk/include/sdk/if.hpp"
 
 #include "platform/src/lib/nicmgr/include/dev.hpp"
 #include "platform/src/lib/nicmgr/include/eth_dev.hpp"
@@ -542,6 +543,7 @@ restore_eth_device_info_cb (EthDeviceInfo *EthDevProtoObj, void *arg)
 static void
 restore_uplink_info_cb (UplinkInfo *UplinkProtoObj,  void *arg)
 {
+    UplinkProtoObj->set_id(ETH_IFINDEX_TO_UPLINK_IFINDEX(UplinkProtoObj->port()));
     NIC_LOG_DEBUG("Restore uplink id {} port {}", UplinkProtoObj->id(), UplinkProtoObj->port());
     devmgr->CreateUplink(UplinkProtoObj->id(), UplinkProtoObj->port(), UplinkProtoObj->is_oob());
 }
