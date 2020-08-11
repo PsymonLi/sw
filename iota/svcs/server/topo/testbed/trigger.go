@@ -29,6 +29,12 @@ func (n *TestNode) TriggerWithContext(ctx context.Context,
 
 	if err != nil {
 		log.Errorf("Running trigger on node %v failed. Err: %v", n.Node.Name, err)
+		if !n.isAgentUp() {
+			arErr := n.RestartAgent()
+			if arErr != nil {
+				log.Error("failed to restart agent. Err: %v", arErr)
+			}
+		}
 		return nil, err
 	}
 

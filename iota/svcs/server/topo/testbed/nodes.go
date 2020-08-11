@@ -164,6 +164,78 @@ func (n *TestNode) installImage() error {
 	return nil
 }
 
+// check if agent port is accepting connections
+func (n *TestNode) isAgentUp() bool {
+	if n.GrpcClient.Client.GetState() == connectivity.Shutdown {
+		return false
+	}
+	return true
+}
+
+// attempt to restart agent if not running / crashed
+func (n *TestNode) RestartAgent() error {
+	var agentBinary string
+	var sshCfg *ssh.ClientConfig
+
+	if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_FREEBSD {
+		agentBinary = constants.IotaAgentBinaryPathFreebsd
+	} else {
+		agentBinary = constants.IotaAgentBinaryPathLinux
+	}
+
+	if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_ESX {
+		sshCfg = InitSSHConfig(constants.EsxDataVMUsername, constants.EsxDataVMPassword)
+	} else {
+		sshCfg = n.info.SSHCfg
+	}
+	ip, _ := n.GetNodeIP()
+	log.Infof("TOPO SVC | RestartAgent | Attempting to restart IOTA agent on TestNode: %v, IPAddress: %v", n.Node.Name, ip)
+	sudoAgtCmd := fmt.Sprintf("sudo -E %s", constants.DstIotaAgentBinary)
+	if err := n.StartAgent(sudoAgtCmd, sshCfg); err != nil {
+		log.Errorf("TOPO SVC | RestartNode | Failed to start agent binary: %v, on TestNode: %v, at IPAddress: %v", agentBinary, n.Node.Name, n.Node.IpAddress)
+		return err
+	}
+	agentURL := fmt.Sprintf("%s:%d", ip, constants.IotaAgentPort)
+	c, err := constants.CreateNewGRPCClient(n.Node.Name, agentURL, constants.GrpcMaxMsgSize)
+	if err != nil {
+		errorMsg := fmt.Sprintf("Could not create GRPC Connection to IOTA Agent. Err: %v", err)
+		log.Errorf("TOPO SVC | ReloadNode | ReloadNode call failed to establish GRPC Connection to Agent running on Node: %v. Err: %v", n.Node.Name, errorMsg)
+		return err
+	}
+
+	n.GrpcClient = c
+	oldClient := n.AgentClient
+	n.AgentClient = iota.NewIotaAgentApiClient(c.Client)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+	resp, err := n.AgentClient.ReloadNode(ctx, n.Node)
+	log.Infof("TOPO SVC | IpmiNodeControl | IpmiNodeControl Agent . Received Response Msg: %v", resp)
+	if err != nil || resp.NodeStatus.ApiStatus != iota.APIResponseType_API_STATUS_OK {
+		msg := fmt.Sprintf("Reload node %v failed. Err: %v", n.Node.Name, err)
+		if resp.NodeStatus != nil {
+			msg = fmt.Sprintf("Reload node %v failed. Err: %v, %v", n.Node.Name, err, resp.NodeStatus.ErrorMsg)
+		}
+		return fmt.Errorf(msg)
+	}
+
+	if n.workloadMap != nil {
+		n.workloadMap.Range(func(key interface{}, item interface{}) bool {
+			wload := item.(iotaWorkload)
+			if wload.workload != nil && wload.workload.GetWorkloadAgent() == oldClient {
+				//Return as this is a control vm handle
+				wload.workload.SetWorkloadAgent(n.AgentClient)
+				return true
+			}
+			return true
+		})
+	}
+	if !n.isAgentUp() {
+		msg := fmt.Sprintf("failed to restart agent")
+		return errors.New(msg)
+	}
+	return nil
+}
+
 // AddNode adds a node to the topology
 func (n *TestNode) AddNode() error {
 	var ip string
