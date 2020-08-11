@@ -662,7 +662,7 @@ def encapType2Id(encapType):
 def __get_host_packet_encap_impl(vnic):
     encapId = encapType2Id(vnic.VnicEncap.Type)
     if not encapId:
-        return []
+        return [] 
     return [infra_api.GetPacketTemplate(encapId)]
 
 # Encap for to/from host packet

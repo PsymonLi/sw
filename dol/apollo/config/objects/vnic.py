@@ -213,17 +213,39 @@ class VnicObject(base.ConfigObjectBase):
         self.Stats.Show()
         return
 
+    def IsMirrorFilterMatch(self, vnicSelector):
+        # filter based on all these selectors 
+        selectors = ['TxRspanMirrorCount', 'RxRspanMirrorCount', 'TxErspanMirrorCount', 'RxErspanMirrorCount']
+
+        for selector in selectors:
+            value = vnicSelector.GetValueByKey(selector)
+            if value != None:
+                vnicSelector.filters.remove((selector, value))
+                direction = selector[:len('Tx')]
+                SpanType = selector[:len(selector) - len("MirrorCount")][len('Tx'):].upper()
+                MirrorObjs = direction + 'MirrorObjs'
+                if (direction == 'Tx' and self.TxMirrorObjs == None) or (direction == 'Rx' and self.RxMirrorObjs == None):
+                    return False
+                count = 0
+                for mirror in getattr(self, MirrorObjs).values():
+                    if mirror.SpanType == SpanType: 
+                        count += 1
+                if count != int(value):
+                    return False
+        return True
+
     def IsFilterMatch(self, selectors):
         vnicSelector = getattr(selectors, 'vnic', None)
         if vnicSelector:
             vnicSel = copy.deepcopy(vnicSelector)
+            result = True
+            # filter based on encap
             key = 'VnicEncapType'
             value = vnicSel.GetValueByKey(key)
-            result = True
             if value != None:
                 vnicSel.filters.remove((key, value))
                 result = self.VnicEncap.Type == value
-            return result and super().IsFilterMatch(vnicSel.filters)
+            return result and self.IsMirrorFilterMatch(vnicSel) and super().IsFilterMatch(vnicSel.filters)
         return True
 
     def VerifyVnicStats(self, spec):

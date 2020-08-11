@@ -1,0 +1,76 @@
+# Feature Rx Mirror Modules List
+feature:
+    id          : mirror
+    sub         : erspan_rx 
+    package     : test.mirror
+    module      : mirror
+    enable      : True
+    ignore      : True 
+    runorder    : 27 
+
+modules:
+
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_RX_0
+        spec    : mirror_r2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=0,RxRspanMirrorCount=0
+
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_RX_1
+        spec    : mirror_r2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=1,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=1,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=1,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=1,RxRspanMirrorCount=0
+              
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_RX_2 
+        spec    : mirror_r2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=2,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=2,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=2,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=2,RxRspanMirrorCount=0
+
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_RX_3
+        spec    : mirror_r2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=3,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=3,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=3,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=3,RxRspanMirrorCount=0
+
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_RX_4
+        spec    : mirror_r2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=4,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=4,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,RxErspanMirrorCount=4,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,RxErspanMirrorCount=4,RxRspanMirrorCount=0

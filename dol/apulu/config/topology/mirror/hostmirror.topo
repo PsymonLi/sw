@@ -35,72 +35,112 @@ node:
     security_profile:
         - id: 1
     mirror:                                                                                                                                    
-        - spantype   : 'RSPAN' # span type RSPAN or ERSPAN                                                                                     
-          snaplen    : 128 # max packet length gets spanned                                                                                    
-          interface  : 285343745 #destination or collector interface eth 1/2                                                                   
+        - id         : 1
+          spantype   : 'RSPAN' # span type RSPAN 
+          snaplen    : 126 # max packet length gets spanned                                                                                    
+          interface  : 285278209 # RSPAN session with collector interface eth 1/1 
           vlanid     : 10 # rspan vlanid                                                                                                       
 
-        # ERSPAN session to underlay vpc using tunnel as dest                                                                     
-        - spantype   : 'ERSPAN' # span type                                                                                                     
-          erspantype : 3        # erspan protocol version                                                                                       
-          snaplen    : 128      # snapshot length                                                                                               
-          dscp       : 0                                                                                                                        
-          vpcid      : 1        # the vpc to which we want to mirror session                                                                                                                
-          erspandsttype : 'tep' # erspan destination type tunnel, remote ip                                                                     
-          tunnelid   : 3                                                                                                                        
-          dstip      : '172.16.0.1' #dstip is redundant if erspandsttype is tep 
-          spanid     : 0        # taken care by Resource manager                                                                                
-          vlanstripen : false   # If set true strips q-tag from inner packet before spanning                                                    
-                                                                                                                                                
-        # ERSPAN session to underlay vpc using ip as dest                                                                  
-        - spantype   : 'ERSPAN'                                                                                                                 
-          erspantype : 3                                                                                                                        
-          snaplen    : 128                                                                                                                      
-          dscp       : 0                                                                                                                        
-          vpcid      : 1                                                                                                                        
-          erspandsttype : 'tep'                                                                                                                 
-          tunnelid   : 5                                                                                                                        
-          dstip      : '172.16.0.1'                                                                                                             
-          spanid     : 0                                                                                                                        
-          vlanstripen : false         
+        # RSPAN session without truncate (snaplen > packet size)
+        - id         : 2
+          spantype   : 'RSPAN'
+          snaplen    : 65535 
+          interface  : 285278209
+          vlanid     : 20
 
-        # RSPAN session with collector interface eth 1/1 
-        - spantype   : 'RSPAN' # span type RSPAN 
-          snaplen    : 128 # max packet length gets spanned                                                                                    
-          interface  : 285278209 
-          vlanid     : 20 # rspan vlanid                                                                                                       
+        - id         : 3
+          spantype   : 'RSPAN'
+          snaplen    : 126
+          interface  : 285343745 #destination or collector interface eth 1/2
+          vlanid     : 30
+
+        - id         : 4
+          spantype   : 'RSPAN'  
+          snaplen    : 65535 
+          interface  : 285343745 #RSPAN session with collector interface eth 1/2 
+          vlanid     : 40 
+
+          # ERSPAN session to underlay vpc using tunnel as dest without truncation                                                                     >
+        - id         : 5
+          spantype   : 'ERSPAN' # span type                                                                                                           
+          erspantype : 3        # erspan protocol version                                                                                             
+          snaplen    : 128      # snapshot length                                                                                                     
+          dscp       : 0                                                                                                                              
+          vpcid      : 1        # the vpc to which we want to mirror session                                                                   >      
+          erspandsttype : 'tep' # erspan destination type tunnel, remote ip                                                                           
+          tunnelid   : 3                                                                                                                              
+          dstip      : '172.16.0.1' #dstip is redundant if erspandsttype is tep                                                                       
+          spanid     : 0        # taken care by Resource manager                                                                                      
+          vlanstripen : false   # If set true strips q-tag from inner packet before spanning    
+
+          # ERSPAN session to underlay vpc using ip as dest without truncation                                                                         >
+        - id         : 6
+          spantype   : 'ERSPAN'                                                                                                                       
+          erspantype : 3                                                                                                                              
+          snaplen    : 128                                                                                                                            
+          dscp       : 0                                                                                                                              
+          vpcid      : 1                                                                                                                              
+          erspandsttype : 'ip'                                                                                                                        
+          tunnelid   : 5                                                                                                                              
+          dstip      : '220.0.0.10'                                                                                                                   
+          spanid     : 0                                                                                                                              
+          vlanstripen : false    
+
+          # Uncomment these mirror sessions post tenant vpc asm fix
+          # ERSPAN session to tenant vpc using local mapping as dest                                                                                  >
+#        - spantype   : 'ERSPAN'                                                                                                                      
+#          erspantype : 3                                                                                                                             
+#          snaplen    : 128                                                                                                                           
+#          dscp       : 0                                                                                                                             
+#          vpcid      : 2                                                                                                                             
+#          erspandsttype : 'tep'                                                                                                                      
+#          tunnelid   : 5                                                                                                                             
+#          dstip      : '172.16.0.1' #dst ip will be set to local mapping 
+#          spanid     : 0                                                                                                                             
+#          vlanstripen : false                                                                                                                        
+#                                                                                                                                                     
+#        # ERSPAN session to tenant vpc using remote mapping as dest                                                                                 
+#        - spantype   : 'ERSPAN'                                                                                                                      
+#          erspantype : 3                                                                                                                             
+#          snaplen    : 128                                                                                                                           
+#          dscp       : 0                                                                                                                             
+#          vpcid      : 2                                                                                                                             
+#          tunnelid   : 5                                                                                                                             
+#          dstip      : '172.16.0.1' #dst ip will be set to remote mapping 
+#          spanid     : 0                                                                                                                             
+#          vlanstripen : false                                         
+        # Adding these ERSPAN sessions temporarily till tenant vpc asm fix
+        # ERSPAN session to underlay vpc using tep as dest
+        - id         : 7
+          spantype   : 'ERSPAN'                                                                                                                      
+          erspantype : 3                                                                                                                             
+          snaplen    : 128                                                                                                                           
+          dscp       : 0                                                                                                                             
+          vpcid      : 1                                                                                                                             
+          erspandsttype : 'tep'                                                                                                                      
+          tunnelid   : 5                                                                                                                             
+          dstip      : '172.16.0.1' 
+          spanid     : 0                                                                                                                             
+          vlanstripen : false                                                                                                                        
+                                                                                                                                                     
+        # ERSPAN session to underlay vpc using ip as dest                                                                                 >
+        - id         : 8
+          spantype   : 'ERSPAN'                                                                                                                      
+          erspantype : 3                                                                                                                             
+          snaplen    : 128                                                                                                                           
+          dscp       : 0                                                                                                                             
+          vpcid      : 1                                                                                                                             
+          erspandsttype : 'ip'                                                                                                                      
+          tunnelid   : 5                                                                                                                             
+          dstip      : '220.0.0.20' 
+          spanid     : 0                                                                                                                             
+          vlanstripen : false                                         #
 
     vpc:
         # If dual stack true, VPC and Subnet will have both v4 & v6 based on the prefixlen.
         - stack  : dual # dual, ipv4 , ipv6
           count : 1
           type  : underlay  # This VPC is applicable only for ARTEMIS pipeline.
-          ipsec:
-            - id         : 1
-              spi        : 0
-              salt       : 0xbbbbbbbb
-              iv         : 0xaaaaaaaaaaaaaaaa
-          dhcprelay:
-            # TODO: generate max dhcp relay objects instead
-             - serverip : '100.1.1.1'
-               agentip  : '1.1.1.1'
-             - serverip : '100.1.1.2'
-               agentip  : '1.1.1.1'
-             - serverip : '100.1.1.3'
-               agentip  : '1.1.1.1'
-          dhcppolicy:
-             - ntpserver    : '192.168.5.12'
-               serverip     : '192.168.5.50'
-               routers      : '192.168.5.1'
-               dnsserver    : '192.168.5.10'
-               interfacemtu : 9020
-               domainname   : 'hostvxlan.example.com'
-             - ntpserver    : '172.18.35.12'
-               serverip     : '172.18.35.50'
-               routers      : '172.18.35.1'
-               dnsserver    : '172.18.35.10'
-               interfacemtu : 8970
-               domainname   : 'hostvxlan.misc.com'
           subnet :
              - count : 1
                v4prefixlen : 24
@@ -146,130 +186,780 @@ node:
             - count     : 1
               v4prefixlen : 24
               v6prefixlen : 64
-              v4ingrpolicycount: 1        # default 0
-              v4egrpolicycount : 1        # default 0
-              v6ingrpolicycount: 1        # default 0
-              v6egrpolicycount : 1        # default 0
-              vnic:
+              vnic:                                                                                                                               
+                - count   : 1             # Untagged VNIC with no mirror-sessions                                                                                       
+                  ipcount : 2             # Local IP mapping per vnic                                                                             
+                  public  : false                                                                                                                 
+                  vnicencap:                                                                                                                      
+                    type : none                                                                                                                   
+                  maxsessions: 1000                                                                                                               
+                # Rspan related Mirror Sessions
+                - count   : 1             # tagged VNIC with no mirror-sessions                                                                                       
+                  ipcount : 1             # Local IP mapping per vnic                                                                             
+                  public  : false                                                                                                                 
+                  vnicencap:                                                                                                                      
+                    type : dot1q 
+                  maxsessions: 1000                                                                                                               
                 - count   : 1             # 1 untagged VNIC
-                  ipcount : 4             # Local IP mapping per vnic
-                  srcguard: true          # true or false (default false)
+                  ipcount : 2             # Local IP mapping per vnic
                   public  : false
                   vnicencap:
                     type : none
-                  rxpolicer: 1
-                  txpolicer: 2
                   maxsessions: 1000
                   txmirror :                                                                                                                    
                     - msid    : 1                                                                                                               
-                    - msid    : 2                                                                                                               
-                    # - msid    : 3                                                                                                               
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 2             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type : dot1q 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: none 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: dot1q
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: none 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                    - msid    : 3
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                    - msid    : 3
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: dot1q 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                    - msid    : 3
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                    - msid    : 3
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: none 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                    - msid    : 3
                     - msid    : 4
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                    - msid    : 3
+                    - msid    : 4
+              rmap:                       # Remote IP mappings per subnet                                                                             
+                - count : 1                                                                                                                           
+            - count     : 1
+              v4prefixlen : 24
+              v6prefixlen : 64
+              vnic:                                                                                                                               
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: dot1q 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                    - msid    : 3
+                    - msid    : 4
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2
+                    - msid    : 3
+                    - msid    : 4
+                # Erspan related Mirror sessions
+                - count   : 1             # 1 untagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type : none
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                  rxmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type : dot1q 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                  rxmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: none 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: dot1q
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: none 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                  rxmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: dot1q 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                  rxmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+              rmap:                       # Remote IP mappings per subnet                                                                             
+                - count : 1                                                                                                                           
+            - count     : 1
+              v4prefixlen : 24
+              v6prefixlen : 64
+              vnic:                                                                                                                               
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: none 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1             # Local IP mapping per vnic
+                  public  : false
+                  vnicencap:
+                    type: dot1q 
+                  maxsessions: 1000
+                  txmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                # Rspan and Erspan combo vnic's
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+              rmap:                       # Remote IP mappings per subnet                                                                             
+                - count : 1                                                                                                                           
+            - count     : 1
+              v4prefixlen : 24
+              v6prefixlen : 64
+              vnic:                                                                                                                               
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                - count   : 1             # 1 tagged VNIC 
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                - count   : 1             # 1 Untagged VNIC 
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+              rmap:                       # Remote IP mappings per subnet                                                                             
+                - count : 1                                                                                                                           
+            - count     : 1                                                                                                                           
+              v4prefixlen : 28                                                                                                                        
+              v6prefixlen : 96                                                                                                                        
+              vnic:                                                                                                                                   
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                - count   : 1             # 1 tagged VNIC 
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                - count   : 1             # 1 Untagged VNIC 
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
                   rxmirror :                                                                                                                    
                     - msid    : 1                                                                                                               
                     - msid    : 2                                                                                                               
                     - msid    : 3                                                                                                               
+                    - msid    : 5
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                - count   : 1             # 1 tagged VNIC 
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                - count   : 1             # 1 Untagged VNIC 
+                  ipcount : 1
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 5
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
               rmap:                       # Remote IP mappings per subnet
-                - count : 4
+                - count : 1 
             - count     : 1
               v4prefixlen : 28
               v6prefixlen : 96
               vnic:
-                - count   : 1             # 1 tagged VNIC
-                  ipcount : 4
-                  srcguard: false
-                  public  : true
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
                   vnicencap:
-                    type: dot1q
-                  rxpolicer: 3
-                  txpolicer: 4
+                    type: none 
                   txmirror :                                                                                                                    
                     - msid    : 1                                                                                                               
                     - msid    : 2                                                                                                               
-                    #- msid    : 3                                                                                                               
+                    - msid    : 3                                                                                                               
                     - msid    : 4
+                    - msid    : 5
                   rxmirror :                                                                                                                    
                     - msid    : 1                                                                                                               
                     - msid    : 2                                                                                                               
                     - msid    : 3                                                                                                               
+                    - msid    : 4
+                    - msid    : 5
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 4
+                    - msid    : 5
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 4
+                    - msid    : 5
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 1 
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1
+                    - msid    : 2
+                    - msid    : 3
+                    - msid    : 4
+                    - msid    : 5
+                    - msid    : 6
+                  rxmirror :                                                                                                                    
+                    - msid    : 1
+                    - msid    : 2
+                    - msid    : 3
+                    - msid    : 4
+                    - msid    : 5
+                    - msid    : 6
                 - count   : 1             # 1 tagged VNIC
-                  ipcount : 4
-                  srcguard: true
-                  public  : false
+                  ipcount : 1 
                   vnicencap:
                     type: dot1q
                   txmirror :                                                                                                                    
                     - msid    : 1
                     - msid    : 2
+                    - msid    : 3
                     - msid    : 4
+                    - msid    : 5
+                    - msid    : 6
                   rxmirror :                                                                                                                    
-                    - msid    : 3  
-                - count   : 1             # 1 untagged VNIC
-                  ipcount : 2
-                  srcguard: false
-                  public  : true
-                  vnicencap:
-                    type: none
-                  rxpolicer: 5
-                  txpolicer: 6
-                  txmirror :                                                                                                                    
-                    - msid    : 1                                                                                                               
-                    - msid    : 2                                                                                                               
-                    #- msid    : 3                                                                                                               
+                    - msid    : 1
+                    - msid    : 2
+                    - msid    : 3
                     - msid    : 4
-                  rxmirror :                                                                                                                    
-                    - msid    : 1                                                                                                               
-                    - msid    : 2                                                                                                               
-                    - msid    : 3                                                                                                               
-              rmap:
-                - count : 3
+                    - msid    : 5
+                    - msid    : 6
+#              rmap:                       # Remote IP mappings per subnet                                                                             
+#                - count : 1                                                                                                                           
             - count     : 1
               v4prefixlen : 28
               v6prefixlen : 96
-              v4ingrpolicycount: 1        # default 0
-              v4egrpolicycount : 1        # default 0
-              v6ingrpolicycount: 1        # default 0
-              v6egrpolicycount : 1        # default 0
               vnic:
-                - count   : 2             # 2 tagged VNICs
-                  ipcount : 2
-                  srcguard: false
-                  public  : false
+                - count   : 1             # 1 untagged VNIC
+                  ipcount : 1
                   vnicencap:
-                    type : dot1q
-                  rxpolicer: 3
-                  txpolicer: 4
+                    type: none
                   txmirror :                                                                                                                    
                     - msid    : 1                                                                                                               
-                    - msid    : 2 
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
                     - msid    : 4
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
                   rxmirror :                                                                                                                    
                     - msid    : 1                                                                                                               
                     - msid    : 2                                                                                                               
                     - msid    : 3                                                                                                               
-                - count   : 2             # 2 tagged VNICs
-                  ipcount : 2
-                  srcguard: false
-                  public  : true
+                    - msid    : 4
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                - count   : 1             # 1 untagged VNIC
+                  ipcount : 4
                   vnicencap:
-                    type : dot1q
-                  rxpolicer: 3
-                  txpolicer: 4
+                    type: dot1q 
                   txmirror :                                                                                                                    
                     - msid    : 1                                                                                                               
                     - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
                     - msid    : 4
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
                   rxmirror :                                                                                                                    
                     - msid    : 1                                                                                                               
                     - msid    : 2                                                                                                               
                     - msid    : 3                                                                                                               
+                    - msid    : 4
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                - count   : 1             # 1 Untagged VNIC
+                  ipcount : 4
+                  vnicencap:
+                    type: none 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 4
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 4
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                - count   : 1             # 1 tagged VNIC
+                  ipcount : 1
+                  vnicencap:
+                    type: dot1q 
+                  txmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 4
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
+                  rxmirror :                                                                                                                    
+                    - msid    : 1                                                                                                               
+                    - msid    : 2                                                                                                               
+                    - msid    : 3                                                                                                               
+                    - msid    : 4
+                    - msid    : 5                                                                                                               
+                    - msid    : 6
+                    - msid    : 7
+                    - msid    : 8
               rmap:
-                - count : 2
-          nat:
-            count : 2
-            prefixlen : 32
-            addrtype : PUBLIC_AND_SERVICE
-            protocol : tcp,udp,icmp
+                - count : 1 
           nexthop:
             - type : overlay
               count : 8
@@ -297,103 +987,3 @@ node:
                    v4routes:
                    v6routes:
                    teptype : underlay
-
-                 - type: base
-                   routetype: adjacent
-                   count : 1
-                   v4base: '64.0.0.0\16'
-                   v4prefixlen : 28
-                   nv4routes   : 10
-                   servicenatprefix: '64.0.0.80\32'
-                   dnatip: 10.0.200.1
-                   v6base: '2000::\65'
-                   v6prefixlen : 96
-                   nv6routes   : 10
-                   v4routes:
-                        - '10.0.200.1\32' # dnat entry needs a route entry
-                   v6routes:
-                   teptype : underlay
-                   nat:
-                     level : route # all routes will have static nat enabled
-                     type  : static
-
-                 - type: base
-                   routetype: adjacent
-                   count : 1
-                   v4base: '65.0.0.0\16'
-                   v4prefixlen : 28
-                   nv4routes   : 10
-                   v6base: '2001::\65'
-                   v6prefixlen : 96
-                   nv6routes   : 10
-                   v4routes:
-                   v6routes:
-                   teptype : underlay-ecmp
-
-                 - type: base
-                   routetype: overlap
-                   count : 1
-                   v4base: '66.0.0.0\16'
-                   v4prefixlen: 24
-                   nv4routes   : 10
-                   v6base: '2002::\65'
-                   v6prefixlen: 120
-                   nv6routes   : 10
-                   v4routes:
-                   v6routes:
-                   teptype : overlay-ecmp
-
-                 - type: base
-                   routetype: overlap
-                   count : 1
-                   v4base: '67.0.0.0\16'
-                   v4prefixlen: 24
-                   nv4routes   : 10
-                   v6base: '2003::\65'
-                   v6prefixlen: 120
-                   nv6routes   : 10
-                   v4routes:
-                   v6routes:
-                   teptype : overlay-ecmp
-                   dual-ecmp : true
-
-          meter:
-            - auto_fill: True
-              base_priority: 1
-              rule_type: PDS_METER_TYPE_ACCOUNTING
-
-          policy:
-                  - type : specific
-                    policytype : default
-                    direction : bidir
-    policer:
-      - id: 1
-        direction: ingress
-        type: pps
-        rate: 750000
-        burst: 7500000
-      - id: 2
-        direction: egress
-        type: bps
-        rate: 850000
-        burst: 8500000
-      - id: 3
-        direction: ingress
-        type: pps
-        rate: 950000
-        burst: 9500000
-      - id: 4
-        direction: egress
-        type: pps
-        rate: 400000
-        burst: 1400000
-      - id: 5
-        direction: ingress
-        type: bps
-        rate: 500000
-        burst: 1500000
-      - id: 6
-        direction: egress
-        type: pps
-        rate: 600000
-        burst: 1600000

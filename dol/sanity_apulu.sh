@@ -65,7 +65,7 @@ DryRunSanity hostvxlan_ex_anydeny policy SUB="multi_policy"
 DryRunSanity hostvxlan meter
 
 # mirror jobs
-DryRunSanity hostmirror mirror SUB="tx_mirror" 
+DryRunSanity hostmirror mirror 
 
 DryRunSanity ipsec ipsec
 

@@ -41,6 +41,8 @@ def GetSPANVlanID(testcase, packet, args=None):
 
 def GetRSPANVlanID(testcase, packet, args=None):                                                                                               
     mirrorObj = __get_mirror_object(testcase, args)                                                                                           
+    if not mirrorObj or mirrorObj.SpanType != "RSPAN":
+        return 0
     vnic = testcase.config.localmapping.VNIC                                                                                              
     if vnic.VnicEncap.Type != "dot1q":                                                                                                            
         if mirrorObj:
@@ -82,6 +84,8 @@ def GetERSPANSessionId(testcase, packet, args=None):
 
 def GetERSPANSrcIP(testcase, packet, args=None):
     mirrorObj = __get_mirror_object(testcase, args)
+    if not mirrorObj or mirrorObj.SpanType != "ERSPAN":
+        return "0"
     spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
     if spanvpc.IsUnderlayVPC():
         if mirrorObj.ErSpanDstType == 'tep':
@@ -211,13 +215,10 @@ def GetERSPANType3PortID(testcase, inpkt, args=None):
         return topo.PortTypes.NONE
     spanvpc = vpc.client.GetVpcObject(mirrorObj.Node, mirrorObj.VPCId)
     if spanvpc.IsUnderlayVPC():
-        if args.direction == "TX":
-            lif = testcase.config.localmapping.VNIC.SUBNET.HostIf.lif                                                                                              
-            lifId = str(lif.GID())
-            # lifId is in lif74 format
-            return int(lifId[len("lif"):])
-        elif args.direction == "RX":
-            return GetExpectedEgressUplinkPort(testcase)
+        lif = testcase.config.localmapping.VNIC.SUBNET.HostIf.lif                                                                                              
+        lifId = str(lif.GID())
+        # lifId is in lif74 format
+        return int(lifId[len("lif"):])
     # tenant vpc and local mapping, return hostport
     # tenant vpc and remote mapping, return switchport
     return topo.PortTypes.NONE

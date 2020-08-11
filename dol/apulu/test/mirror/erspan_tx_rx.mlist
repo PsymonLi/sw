@@ -1,0 +1,96 @@
+feature:
+    id          : mirror
+    sub         : erspan_tx_rx 
+    package     : test.mirror
+    module      : mirror
+    enable      : False 
+    ignore      : True 
+    runorder    : 51 
+
+modules:
+
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_TX_RX_0
+        spec    : mirror_l2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=0,RxErspanMirrorCount=0,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=0,RxErspanMirrorCount=0,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=0,RxErspanMirrorCount=0,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=0,RxErspanMirrorCount=0,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=0,RxErspanMirrorCount=0,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=0,RxErspanMirrorCount=0,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_TX_RX_1
+        spec    : mirror_l2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=1,RxErspanMirrorCount=1,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=1,RxErspanMirrorCount=1,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=1,RxErspanMirrorCount=1,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=1,RxErspanMirrorCount=1,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=1,RxErspanMirrorCount=1,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=1,RxErspanMirrorCount=1,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+              
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_TX_RX_2 
+        spec    : mirror_l2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=2,RxErspanMirrorCount=2,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=2,RxErspanMirrorCount=2,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=2,RxErspanMirrorCount=2,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=2,RxErspanMirrorCount=2,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=2,RxErspanMirrorCount=2,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=2,RxErspanMirrorCount=2,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_TX_RX_3
+        spec    : mirror_l2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=3,RxErspanMirrorCount=3,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=3,RxErspanMirrorCount=3,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=3,RxErspanMirrorCount=3,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=3,RxErspanMirrorCount=3,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=3,RxErspanMirrorCount=3,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=3,RxErspanMirrorCount=3,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+
+    - module:
+        name    : MIRROR_IPV4_TCP_ERSPAN_TX_RX_4
+        spec    : mirror_l2l.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=4,RxErspanMirrorCount=4,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VNIC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=4,RxErspanMirrorCount=4,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=4,RxErspanMirrorCount=4,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_SUBNET,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=4,RxErspanMirrorCount=4,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=4,RxErspanMirrorCount=4,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2L,L2LType=SAME_VPC,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=4,RxErspanMirrorCount=4,TxRspanMirrorCount=0,RxRspanMirrorCount=0
+
