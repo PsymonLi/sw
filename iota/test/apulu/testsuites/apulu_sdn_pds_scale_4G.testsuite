@@ -26,12 +26,26 @@ setup:
         - step : config.add_routes
 
 common:
+
+    setups:
+        - step : config.utils.trim_memory
+        - step : config.utils.collect_mem_usage
+
+    triggers:
+        - step : config.utils.collect_mem_usage
+
     verifs:
+
+    teardowns:
+        - step : config.utils.trim_memory
+        - step : config.utils.collect_mem_usage
+        - step : verif.utils.check_mem_leak
+          args :
+              buffer : 50 # TODO: fix memleak and remove this
 
     debugs:
         - step : verif.utils.collect_techsupport
 
-    setup:
 
 testbundles:
     sanity:

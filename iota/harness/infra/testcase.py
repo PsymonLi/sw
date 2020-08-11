@@ -168,7 +168,7 @@ class TriggerStep:
         return
 
     def __resolve(self):
-        Logger.debug("Resolving testcase trigger  module: %s" % self.__spec.step)
+        Logger.debug("Resolving testcase trigger module: %s" % self.__spec.step)
         self.__mod = loader.Import(self.__spec.step, self.__spec.packages)
         if hasattr(self.__spec, 'args') and hasattr(self.__spec.args, 'trigger'):
             self.__trigger = self.__spec.args.trigger
@@ -220,7 +220,7 @@ class TeardownStep:
         self.__run = 'once'
         self.__sleep_interval = 0
         self.__terminate = 'teardown'
-        self.__background = True
+        self.__background = False
         self.__resolve()
         self.__status = api.types.status.FAILURE
         return
@@ -613,7 +613,7 @@ class Testcase:
             t.packages = self.__spec.packages
             trigger = TriggerStep(t)
             self.__triggers.append(trigger)
-        common_teardowns_spec = getattr(self.__spec, 'teardowns', {})
+        common_teardowns_spec = getattr(self.__spec, 'teardowns', [])
         if common_teardowns_spec is None:
             return types.status.SUCCESS
         for t in common_teardowns_spec:
@@ -653,6 +653,14 @@ class Testcase:
         else:
             self.__stats_error += count
         return
+
+    def __run_common_setups(self, iter_data):
+        result = types.status.SUCCESS
+        for t in self.__setups:
+            status = t.Main()
+            if status != types.status.SUCCESS:
+                result = status
+        return result
 
     def __run_common_triggers(self, iter_data):
         result = types.status.SUCCESS
@@ -737,6 +745,7 @@ class Testcase:
             api.ChangeDirectory(instance_id)
 
             result = types.status.SUCCESS
+            setup_result = self.__run_common_setups(iter_data)
             setup_result = loader.RunCallback(self.__tc, 'Setup', False, iter_data)
             if setup_result != types.status.SUCCESS:
                 Logger.error("Setup callback failed, Cannot continue, switching to Teardown")

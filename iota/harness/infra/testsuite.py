@@ -325,7 +325,7 @@ class TestSuite:
         if getattr(self.__spec, 'common', None) and getattr(self.__spec.common, 'triggers', None):
             self.__triggers = self.__spec.common.triggers
         if getattr(self.__spec, 'common', None) and getattr(self.__spec.common, 'teardowns', None):
-            self.__teardowns = self.__spec.common.triggers
+            self.__teardowns = self.__spec.common.teardowns
         if getattr(self.__spec, 'common', None) and getattr(self.__spec.common, 'args', None):
             self.__common_args = self.__spec.common.args
 

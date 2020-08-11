@@ -6,8 +6,11 @@ import os
 from infra.common.logging import logger
 
 import iota.harness.api as api
+import iota.test.apulu.utils.naples as naplesUtils
 
-__CMDBASE  = '/nic/bin/pdsctl'
+PDSCTL_PATH = f"{naplesUtils.NAPLES_BIN_PATH}/pdsctl"
+
+__CMDBASE = PDSCTL_PATH
 __CMDSEP  = ' '
 
 __CMDTYPE_SHOW  = 'show'
@@ -46,3 +49,9 @@ def GetObjects(node, objName, args=None):
     # get object name
     return ExecutePdsctlShowCommand(node, objName, args)
 
+def RunCmds(cmds, naplesNodes=None):
+    return naplesUtils.ExecuteCmds(cmds, naplesNodes)
+
+def TrimMemory(naplesNodes=None):
+    trimMemCmd = f"{PDSCTL_PATH} debug memory --memory-trim"
+    return RunCmds([trimMemCmd], naplesNodes)

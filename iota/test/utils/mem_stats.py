@@ -43,8 +43,7 @@ class MemLeakObject():
         resp = api.Trigger(req)
     
         if resp is None:
-            api.Logger.error("Failed to run %s on Naples: %s"
-                             %(MemStatsToolNaplesPath, self.node));
+            api.Logger.error(f"Failed to run {MemStatsToolNaplesPath} on Naples: {self.node}")
             result = api.types.status.FAILURE
         else:
             for cmd in resp.commands:
@@ -61,11 +60,12 @@ class MemLeakObject():
     # runs mem leak check from usage history
     def RunMemLeakCheckFromHistory(self, pname=None, acceptable_increase=1):
         indent = "-" * 15
-        p_str = pname if pname else ""
-        api.Logger.info("{} Memory Leak Detection Check {} {} {}".format(indent, self.node, p_str, indent))
+        api.Logger.debug("{} Memory Leak Detection Check {} {} {}".format(
+            indent, self.node, pname, indent))
         leak_found = False
         for k,v in self.mem_use_history_dict.items():
-            if pname and p_str != k:
+            if pname and k not in pname:
+                # continue if this process is of not interest
                 continue
             min_val = float(v[0])
             max_val = float(v[len(v)-1])
@@ -73,7 +73,7 @@ class MemLeakObject():
             if max_val > (min_val + acceptable_increase):
                 leak = True
                 leak_found = True
-            api.Logger.info("Process: %s, Mem-Increase: %.1f M, Leak: %s"%(k, float(max_val-min_val), leak))
+            api.Logger.debug("Process: %s, Mem-Increase: %.1f M, Leak: %s"%(k, float(max_val-min_val), leak))
         return leak_found 
    
     # print mem usage stats
@@ -110,6 +110,8 @@ class MemLeakObject():
     def __build_mem_usage_history(self, cmd_resp):
         records = self.__disset_mem_usage_resp(cmd_resp)
         if not records:
+            if api.IsDryrun():
+                return api.types.status.SUCCESS
             api.Logger.error("Failed to dissect the mem usage response")
             return api.types.status.FAILURE
         self.__build_mem_usage_history_from_rec(records)
@@ -129,12 +131,14 @@ class MemUsageStatsObjClient():
             self.MemLeakObjs[node] = obj
             obj.CopyMemStatsTool()
             obj.EnableMemUsageHistory()
-            obj.RunMemStatsCheckTool(log=False)
 
-    def CollectMemUsageSnapshot(self, log=True):
+    def CollectMemUsageSnapshot(self, log=False):
         objs = list(self.MemLeakObjs.values())
+        result = True
         for obj in objs:
-            obj.RunMemStatsCheckTool(log=log)
+            if obj.RunMemStatsCheckTool(log=log) != api.types.status.SUCCESS:
+                result = False
+        return result
 
     def PrintMemUsageHistory(self):
         objs = list(self.MemLeakObjs.values())

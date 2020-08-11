@@ -145,7 +145,10 @@ class TestBundle:
                 tc_spec.debugs = self.__parent.GetDebugs()
 
             tc_spec.triggers = self.__parent.GetTriggers()
-            tc_spec.teardowns = self.__parent.GetTeardowns()
+            if getattr(tc_spec, 'teardowns', None):
+                tc_spec.teardowns += self.__parent.GetTeardowns()
+            else:
+                tc_spec.teardowns = self.__parent.GetTeardowns()
             if getattr(tc_spec, 'args', None):
                 tc_spec.args.ImportProperties(self.__parent.GetCommonArgs())
             else:

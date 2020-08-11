@@ -1,8 +1,12 @@
 #! /usr/bin/python3
 import iota.harness.api as api
 
-def __execute_naples_cmd(naples_nodes, cmds):
+NAPLES_BIN_PATH = "/nic/bin/"
+
+def ExecuteCmds(cmds, naples_nodes=None):
     result = True
+    if not naples_nodes:
+        naples_nodes = api.GetNaplesHostnames()
     req = api.Trigger_CreateAllParallelCommandsRequest()
     for node in naples_nodes:
         for cmd in cmds:
@@ -17,15 +21,15 @@ def __execute_naples_cmd(naples_nodes, cmds):
 def ChangeFilesPermission(naples_nodes, files, perm='644'):
     chmodCmd = f"chmod {perm} "
     chmodCmds = map((lambda x: chmodCmd + x), files)
-    return __execute_naples_cmd(naples_nodes, chmodCmds)
+    return ExecuteCmds(chmodCmds, naples_nodes)
 
 def DeleteDirectories(naples_nodes, dirs):
     deleteCmd = "rm -rf "
     deleteCmds = map((lambda x: deleteCmd + x), dirs)
-    return __execute_naples_cmd(naples_nodes, deleteCmds)
+    return ExecuteCmds(deleteCmds, naples_nodes)
 
 def EnableReachability(naples_nodes):
-    if api.GlobalOptions.dryrun:
+    if api.IsDryrun():
         return True
 
     try:
