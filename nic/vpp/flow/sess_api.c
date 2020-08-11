@@ -61,17 +61,18 @@ pds_flow_delete_session (u32 ses_id)
     // Delete both iflow and rflow
     if (session->v4) {
         ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
-        if (flow_log_enabled) {
-            ftlv4_export_with_handle(table4, session->iflow.handle,
-                                     session->rflow.handle,
-                                     FLOW_EXPORT_REASON_DEL,
-                                     session->iflow_rx,
-                                     session->drop,
-                                     thread);
-        }
         if (PREDICT_TRUE(pds_is_valid_handle(session->iflow.handle))) {
             // handle may already be invalid as a result of previous attempt
             // to delete which resulted in retry failure
+            if (flow_log_enabled) {
+                ftlv4_export_with_handle(table4, session->iflow.handle,
+                                         session->rflow.handle,
+                                         FLOW_EXPORT_REASON_DEL,
+                                         session->iflow_rx,
+                                         session->drop,
+                                         thread);
+            }
+
             ret = ftlv4_get_with_handle(table4, session->iflow.handle, thread);
             if (PREDICT_FALSE(ret!= FTL_OK)) {
                 if (ret == FTL_RETRY)
@@ -107,14 +108,15 @@ pds_flow_delete_session (u32 ses_id)
         }
     } else {
         ftl *table = (ftl *)pds_flow_get_table6_or_l2();
-        if (flow_log_enabled) {
-            ftl_export_with_handle(table, session->iflow.handle,
-                                   FLOW_EXPORT_REASON_DEL,
-                                   session->drop);
-        }
-        if (pds_is_valid_handle(session->iflow.handle)) {
+        if (PREDICT_TRUE(pds_is_valid_handle(session->iflow.handle))) {
             // handle may already be invalid as a result of previous attempt
             // to delete which resulted in retry failure
+            if (flow_log_enabled) {
+                ftl_export_with_handle(table, session->iflow.handle,
+                                       FLOW_EXPORT_REASON_DEL,
+                                       session->drop);
+            }
+
             ret = ftlv6_get_with_handle(table, session->iflow.handle);
             if (PREDICT_FALSE(ret!= FTL_OK)) {
                 if (ret == FTL_RETRY)
