@@ -101,6 +101,7 @@ testcases:
 
     -   name    : Iperf_IGW_NAPT_SERVICE_UDP
         testcase: testcases.networking.iperf
+        ignore  : True
         args    :
             type : igw_only
             nat_type: napt_service

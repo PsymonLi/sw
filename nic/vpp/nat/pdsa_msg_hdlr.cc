@@ -69,7 +69,9 @@ pds_nat_cfg_set(const pds_cfg_msg_t *cfg_msg) {
             }
         }
     } else {
-        SDK_ASSERT(cfg_msg->op == API_OP_UPDATE);
+        // delete is possible during config rollback
+        SDK_ASSERT(cfg_msg->op == API_OP_UPDATE ||
+                   cfg_msg->op == API_OP_DELETE);
         for (addr = nat_msg->spec.nat_ip_range.ip_lo.v4_addr;
              addr <= nat_msg->spec.nat_ip_range.ip_hi.v4_addr; addr++) {
             ret = nat_port_block_update((const uint8_t *)nat_msg->key.id, vpc_hw_id,
