@@ -40,15 +40,17 @@ func (r *Runner) run(ipPort, command string, cmdMode int) (string, error) {
 	}
 	defer session.Close()
 
-	ptyModes := ssh.TerminalModes{
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-		ssh.ECHO:          0,
-	}
+	if cmdMode != constants.RunCommandForegroundNoShell {
+		ptyModes := ssh.TerminalModes{
+			ssh.TTY_OP_ISPEED: 14400,
+			ssh.TTY_OP_OSPEED: 14400,
+			ssh.ECHO:          0,
+		}
 
-	if err := session.RequestPty("xterm", 80, 40, ptyModes); err != nil {
-		log.Errorf("Runner | Run on node %v failed to get a pseudo TTY, Err: %v", ipPort, err)
-		return "", err
+		if err := session.RequestPty("xterm", 80, 40, ptyModes); err != nil {
+			log.Errorf("Runner | Run on node %v failed to get a pseudo TTY, Err: %v", ipPort, err)
+			return "", err
+		}
 	}
 
 	stdoutBuffer := bytes.Buffer{}
@@ -60,20 +62,24 @@ func (r *Runner) run(ipPort, command string, cmdMode int) (string, error) {
 		log.Errorf("Runner | Run on node %v failed to get a stdout, Err: %v", ipPort, err)
 		return "", fmt.Errorf("could not capture stdout. %v", err)
 	}
-	ioDone := make(chan bool)
+	ioDone := make(chan bool, 1)
 	ioStart := make(chan bool)
 
 	go func() {
 		ioStart <- true
-		io.Copy(stdoutWriter, stdout)
+		_, err = io.Copy(stdoutWriter, stdout)
+		if err != nil {
+			log.Errorf("Runner | Copy stdout failed %v", err)
+		}
 		ioDone <- true
 	}()
 
 	<-ioStart
-	if cmdMode == constants.RunCommandBackground {
+	switch cmdMode {
+	case constants.RunCommandBackground:
 		log.Infof("Runner | Running command %v in background...", command)
 		command = "nohup sh -c  \"" + command + " 2>&1 >/dev/null </dev/null & \""
-	} else {
+	case constants.RunCommandForeground:
 		command = "sh -c \"" + command + "\""
 	}
 

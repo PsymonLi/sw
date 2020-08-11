@@ -122,9 +122,10 @@ def Trigger(tc):
 
             # don't run this while we figure out how to do this in ESX
             if tc.os != host.OS_TYPE_ESX:
-		# Load the ionic driver
-                if host.LoadDriver(tc.os, node) is api.types.status.FAILURE:
-                    api.Logger.info("ionic already loaded")
+		# Load the ionic driver except windows
+                if tc.os != host.OS_TYPE_WINDOWS:
+                    if host.LoadDriver(tc.os, node) is api.types.status.FAILURE:
+                        api.Logger.info("ionic already loaded")
                 # Make sure ionic driver attached to Uplink ports.
 
                 if checkDrv(node) is api.types.status.FAILURE:

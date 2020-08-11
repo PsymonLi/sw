@@ -296,7 +296,7 @@ func (n *TestNode) AddNode() error {
 }
 
 func (n *TestNode) waitForNodeUp(timeout time.Duration) error {
-	cTimeout := time.After(time.Second * time.Duration(timeout))
+	cTimeout := time.After(time.Second * timeout)
 	for {
 		addr := n.info.IPAddress
 		sshCfg := n.info.SSHCfg
@@ -633,12 +633,13 @@ func (n *TestNode) RestartNode(method string, useNcsi bool) error {
 
 			splitCmd := strings.Split(cmd, " ")
 			if stdout, err := exec.Command(splitCmd[0], splitCmd[1:]...).CombinedOutput(); err != nil {
-				log.Errorf("TOPO SVC | Reset Node Failed %v", stdout)
+				log.Errorf("TOPO SVC | Reset Node Failed %v", string(stdout))
 			} else {
 				log.Errorf("TOPO SVC | Reset Node Success")
 			}
 		} else {
-			if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_ESX {
+			switch n.info.Os {
+			case iota.TestBedNodeOs_TESTBED_NODE_OS_ESX:
 				//First shutdown control node
 				if ip, err = n.GetNodeIP(); err == nil {
 					sshCfg = InitSSHConfig(constants.EsxDataVMUsername, constants.EsxDataVMPassword)
@@ -647,38 +648,46 @@ func (n *TestNode) RestartNode(method string, useNcsi bool) error {
 						n.info.Username, n.info.Password, ip)
 					addr = fmt.Sprintf("%s:%d", ip, constants.SSHPort)
 					command = fmt.Sprintf("sudo -E sync && sudo -E shutdown -h now")
-					nrunner.Run(addr, command, constants.RunCommandForeground)
+					nrunner.Run(addr, command, constants.RunCommandForegroundNoShell)
 				}
-				sshCfg = InitSSHConfig(n.info.Username, n.info.Password)
-				addr = fmt.Sprintf("%s:%d", n.info.IPAddress, constants.SSHPort)
-				nrunner = runner.NewRunner(sshCfg)
-				log.Infof("Restart Host machine wtth %v %v %v",
-					n.info.Username, n.info.Password, n.info.IPAddress)
 				command = fmt.Sprintf("reboot && sleep 30")
-				nrunner = runner.NewRunner(sshCfg)
-			} else {
-				addr = fmt.Sprintf("%s:%d", n.info.IPAddress, constants.SSHPort)
-				sshCfg = InitSSHConfig(n.info.Username, n.info.Password)
-				log.Infof("Restart Host machine wtth %v %v %v",
-					n.info.Username, n.info.Password, n.info.IPAddress)
-				nrunner = runner.NewRunner(sshCfg)
+			case iota.TestBedNodeOs_TESTBED_NODE_OS_WINDOWS:
+				command = fmt.Sprintf(common.WindowsPowerShell + " Restart-Computer")
+			default:
 				command = fmt.Sprintf("sudo -E sync && sudo -E shutdown -r now")
 			}
-			nrunner.Run(addr, command, constants.RunCommandForeground)
+			addr = fmt.Sprintf("%s:%d", n.info.IPAddress, constants.SSHPort)
+			sshCfg = InitSSHConfig(n.info.Username, n.info.Password)
+			log.Infof("Restart Host machine with %v %v %v",
+				n.info.Username, n.info.Password, n.info.IPAddress)
+			nrunner = runner.NewRunner(sshCfg)
+			nrunner.Run(addr, command, constants.RunCommandForegroundNoShell)
 		}
 	} else if method == "ipmi" {
 		log.Infof("restarting node %s using ipmi", n.Node.Name)
 		if cimcIp == "" {
 			log.Errorf("user requested ipmi reset but no cimc ip in node object")
 		} else {
+			if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_WINDOWS {
+				// windows needs graceful shutdown
+				command = fmt.Sprintf(common.WindowsPowerShell + " Restart-Computer")
+				addr = fmt.Sprintf("%s:%d", n.info.IPAddress, constants.SSHPort)
+				sshCfg = InitSSHConfig(n.info.Username, n.info.Password)
+				log.Infof("Shut down windows machine with %v %v %v",
+					n.info.Username, n.info.Password, n.info.IPAddress)
+				nrunner = runner.NewRunner(sshCfg)
+				nrunner.Run(addr, command, constants.RunCommandForegroundNoShell)
+				// Dell needs longer than 30s
+				time.Sleep(60 * time.Second)
+			}
 			cmd := fmt.Sprintf("ipmitool -I lanplus -H %s -U %s -P %s power cycle",
 				cimcIp, n.info.CimcUserName, n.info.CimcPassword)
 
 			splitCmd := strings.Split(cmd, " ")
 			if stdout, err := exec.Command(splitCmd[0], splitCmd[1:]...).CombinedOutput(); err != nil {
-				log.Errorf("TOPO SVC | Reset Node Failed %v", stdout)
+				log.Errorf("TOPO SVC | IPMI Power Cycle Node Failed %v", string(stdout))
 			} else {
-				log.Errorf("TOPO SVC | Reset Node Success")
+				log.Errorf("TOPO SVC | IPMI Power Cycle Node Success")
 			}
 		}
 	} else if method == "apc" {
@@ -686,7 +695,17 @@ func (n *TestNode) RestartNode(method string, useNcsi bool) error {
 			log.Errorf("user requested apc power cycle but node %s missing apc info", n.Node.Name)
 		} else {
 			log.Infof("restarting node %s using apc power cycle(ip:%s, user:%s, pass:%s)", n.Node.Name, n.info.ApcInfo.Ip, n.info.ApcInfo.Username, n.info.ApcInfo.Password)
-
+			if n.info.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_WINDOWS {
+				// windows needs graceful shutdown
+				command = fmt.Sprintf(common.WindowsPowerShell + " Restart-Computer")
+				addr = fmt.Sprintf("%s:%d", n.info.IPAddress, constants.SSHPort)
+				sshCfg = InitSSHConfig(n.info.Username, n.info.Password)
+				log.Infof("Shut down windows machine with %v %v %v",
+					n.info.Username, n.info.Password, n.info.IPAddress)
+				nrunner = runner.NewRunner(sshCfg)
+				nrunner.Run(addr, command, constants.RunCommandForegroundNoShell)
+				time.Sleep(30 * time.Second)
+			}
 			h, err := apc.Dial(n.info.ApcInfo.Ip, n.info.ApcInfo.Username, n.info.ApcInfo.Password, os.Stdout)
 			if err != nil {
 				log.Errorf("failed to connect to apc %s with username %s and password %s. error was: %v", n.info.ApcInfo.Ip, n.info.ApcInfo.Username, n.info.ApcInfo.Password, err)
@@ -704,7 +723,7 @@ func (n *TestNode) RestartNode(method string, useNcsi bool) error {
 					n.info.CimcIP, n.info.CimcUserName, n.info.CimcPassword)
 				splitCmd := strings.Split(cmd, " ")
 				if stdout, err := exec.Command(splitCmd[0], splitCmd[1:]...).CombinedOutput(); err != nil {
-					log.Errorf("TOPO SVC | Failed to call ipmi power on: %v", stdout)
+					log.Errorf("TOPO SVC | Failed to call ipmi power on: %v", string(stdout))
 				} else {
 					log.Errorf("TOPO SVC | ipmi power on Success")
 				}
@@ -744,7 +763,7 @@ func (n *TestNode) RestartNode(method string, useNcsi bool) error {
 		return err
 	}
 
-	//Give it some time for node to stabalize
+	//Give it some time for node to stabilize
 	time.Sleep(5 * time.Second)
 	n.SSHClient = sshclient
 

@@ -194,6 +194,9 @@ const (
 
 	// RunCommandBackground runs a command in the background
 	RunCommandBackground
+
+	// RunCommandForegroundNoShell runs a command in the foreground without a new shell
+	RunCommandForegroundNoShell
 )
 
 // global derived vars  from the constants
