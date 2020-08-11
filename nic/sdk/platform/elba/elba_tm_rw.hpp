@@ -360,6 +360,11 @@ sdk_ret_t elba_tm_get_uplink_mac_xoff(tm_port_t port,
 
 sdk_ret_t elba_tm_uplink_set_cam_da(tm_port_t port, uint32_t  entry,
                                     uint64_t  dmac);
+uint32_t elba_tm_get_port_occupancy(tm_port_t port, uint32_t iq);
+uint32_t elba_tm_get_xon_threshold(uint32_t ctx);
+uint32_t elba_tm_get_xoff_threshold(uint32_t ctx);
+sdk_ret_t elba_tm_get_current_credits(tm_port_t tm_port, tm_q_t oq, 
+                                      uint32_t *val);
 
 }    // namespace elba
 }    // namespace platform
