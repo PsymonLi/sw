@@ -30,8 +30,6 @@ parser.add_argument('--testbed', dest='testbed', required = True,
                     default=None, help='testbed json file - warmd.json.')
 parser.add_argument('--instance-name', dest='instance_name', required = True,
                     default=None, help='instance id.')
-parser.add_argument('--naples', dest='naples_type', required = True,
-                    default="", help='Naples type : capri')
 
 # Optional parameters
 parser.add_argument("--provision-spec", dest="provision", default=None, 
@@ -1370,7 +1368,7 @@ class PenOrchestrator:
         self.__load_provision_spec()
         self.__load_testbed_json()
         # Load Default/cmd-line specified image
-        self.__driver_images, _, _ = self.__load_image_manifest(GlobalOptions.image_manifest, GlobalOptions.naples_type, 
+        self.__driver_images, _, _ = self.__load_image_manifest(GlobalOptions.image_manifest, "capri", # common driver for all ASICs
                                                                 GlobalOptions.pipeline, GlobalOptions.image_build)
 
     def __load_provision_spec(self):
@@ -1393,8 +1391,7 @@ class PenOrchestrator:
                         {
                             'name'              : 'naples' + str(idx + 1),
                             'pipeline'          : GlobalOptions.pipeline,
-                            'image'             : GlobalOptions.image_manifest, 
-                            'naples_type'       : GlobalOptions.naples_type
+                            'image'             : GlobalOptions.image_manifest
                         })
                 if GlobalOptions.image_build:
                     setattr(nic_attr, 'image_build', GlobalOptions.image_build)
@@ -1403,10 +1400,10 @@ class PenOrchestrator:
         
         return self.__provision_spec.nodes[self.__testbed_id].node
 
-    def __load_image_manifest(self, manifest_file, naples_type, pipeline, extra=None):
+    def __load_image_manifest(self, manifest_file, processor, pipeline, extra=None):
         img_manifest = spec_parser.JsonParse(manifest_file)
         driver_images = list(filter(lambda x: x.OS == self.__node_os, img_manifest.Drivers))[0]
-        naples_fw_img_spec = list(filter(lambda x: x.naples_type == naples_type, img_manifest.Firmwares))[0]
+        naples_fw_img_spec = list(filter(lambda x: x.Processor == processor, img_manifest.Firmwares))[0]
         # Build tag based on pipeline and optional image_build
         tag = pipeline
         if extra:
@@ -1556,8 +1553,9 @@ class PenOrchestrator:
         for idx, nic in enumerate(self.__testbed.Nics):
             # pick up nic_prov_info.pipeline and nic_prov_info.image to load on this naples
             nic_prov_info = node_prov_info.nics[idx].nic
+            processor = getattr(nic, "Processor", "capri")
             _, fw_images, goldfw_images = self.__load_image_manifest(nic_prov_info.image, 
-                                                                     nic_prov_info.naples_type, 
+                                                                     processor, 
                                                                      nic_prov_info.pipeline, 
                                                                      getattr(nic_prov_info, 'image_build', None))
             naples_inst = NaplesManagement(nic, fw_images = fw_images, goldfw_images = goldfw_images) 
@@ -1637,10 +1635,11 @@ class PenOrchestrator:
 
         node_prov_info = self.__retrieve_node_provisioning_info()
         for idx, nic in enumerate(self.__testbed.Nics):
-            nic_prov_info = node_prov_info.nics[idx].nic
             # pick up nic_prov_info.pipeline and nic_prov_info.image to load on this naples
+            nic_prov_info = node_prov_info.nics[idx].nic
+            processor = getattr(nic, "Processor", "capri")
             _, fw_images, goldfw_images = self.__load_image_manifest(nic_prov_info.image, 
-                                                                     nic_prov_info.naples_type, 
+                                                                     processor, 
                                                                      nic_prov_info.pipeline, 
                                                                      getattr(nic_prov_info, 'image_build', None))
             naples_inst = NaplesManagement(nic, fw_images, goldfw_images = goldfw_images)

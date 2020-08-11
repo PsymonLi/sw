@@ -53,7 +53,7 @@
   ],
   "Firmwares": [
     {
-      "naples_type": "capri",
+      "Processor": "capri",
       "Images": [
         {
           "tag": "iris",

@@ -68,6 +68,12 @@ __pipelines = [
 ]
 pipelines = utils.List2Enum(__pipelines)
 
+__processors = [
+    'CAPRI',
+    'ELBA',
+]
+processors = utils.List2Enum(__processors)
+
 __vendors = [
     'HPE',
     'DELL',

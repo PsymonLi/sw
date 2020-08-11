@@ -68,7 +68,7 @@
   ],
   "Firmwares": [
     {
-      "naples_type": "capri",
+      "Processor": "capri",
       "Images": [
         {
           "tag": "iris",
@@ -91,6 +91,33 @@
           "gold_fw_img": "platform/goldfw/naples/naples_fw.tar",
           "gold_fw_latest_ver": "1.3.1-E-29",
           "gold_fw_old_ver": "1.3.1-E-27"
+        }
+      ]
+    },
+    {
+      "Processor": "elba",
+      "Images": [
+        {
+          "tag": "iris",
+          "image": "nic/naples_fw_elba.tar"
+        },
+        {
+          "tag": "athena",
+          "image": "nic/naples_fw_elba.tar"
+        },
+        {
+          "tag": "apulu",
+          "image": "nic/naples_fw_elba.tar"
+        },
+        {
+          "tag": "apulu-equinix",
+          "image": "nic/naples_fw_elba_venice.tar"
+        },
+        {
+          "tag": "goldfw",
+          "gold_fw_img": "platform/goldfw/naples/naples_fw.tar",
+          "gold_fw_latest_ver": "1.3.1-E-27",
+          "gold_fw_old_ver": "1.3.1-E-26"
         }
       ]
     }

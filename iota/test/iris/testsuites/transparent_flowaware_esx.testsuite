@@ -14,7 +14,6 @@ packages:
 
 image_manifest:
     spec        : images/latest.json
-    naples      : capri
 
 setup:
     topology: test/iris/topologies/2Naples_VM/vm.topology

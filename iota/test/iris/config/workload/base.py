@@ -372,7 +372,7 @@ class NodeWorkloads(object):
 
                 intf.ip_prefix = ip4_addr_str + "/" + str(nw_spec.GetIPv4PrefixLength())
                 intf.ipv6_prefix = ip6_addr_str + "/" + str(nw_spec.GetIPv6PrefixLength())
-                intf.mac_address = nw_spec.GetClassicMacAllocator().Alloc().get()
+                # intf.mac_address = nw_spec.GetClassicMacAllocator().Alloc().get()
                 intf.encap_vlan = vlan
                 intf.uplink_vlan = intf.encap_vlan
                 wl_msg.workload_name = self.GetNodeName() + "_" + intfObj.HostInterface + "_subif_" + str(vlan)

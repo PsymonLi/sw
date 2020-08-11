@@ -417,6 +417,9 @@ def GetNodes():
 def GetDeviceNames(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetDeviceNames(node_name)
 
+def GetDeviceAsic(node_name, device_name):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetDeviceAsic(node_name, device_name)
+
 def GetDeviceHint(node_name, device_name):
     devices = store.GetTestbed().GetCurrentTestsuite().GetTopology().GetDevices(node_name)
     return devices[device_name].GetMac()

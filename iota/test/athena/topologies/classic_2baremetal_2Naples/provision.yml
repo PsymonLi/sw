@@ -13,7 +13,6 @@ nodes:
             - nic : 
                 name            : naples1
                 pipeline        : athena
-                naples_type     : capri
                 image           : /sw/images/latest.json
                 mode            : bitw
 
@@ -23,7 +22,6 @@ nodes:
             - nic :
                 name            : naples1
                 pipeline        : iris
-                naples_type     : capri
                 image           : /sw/images/1.5.0-E-14.json
                 mode            : classic
 

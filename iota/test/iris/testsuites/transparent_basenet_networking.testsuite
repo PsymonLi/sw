@@ -12,7 +12,6 @@ packages:
 
 image_manifest:
     spec        : images/latest.json
-    naples      : capri
 
 setup:
     topology: test/iris/topologies/classic_baremetal/classic_baremetal.topology

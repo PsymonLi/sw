@@ -90,7 +90,6 @@ class TestSuite:
         self.result = types.status.FAILURE
         self.__skip = self.__apply_skip_filters()
         self.__ignoreList = getattr(spec.meta, "ignore_list", [])
-        self.__images = self.__load_image_manifest()
         self.__process_provision_spec()
         self.__defaultNicMode = getattr(spec.meta, "nicmode", "classic")
         self.__defaultNicPipeline = GlobalOptions.pipeline
@@ -120,7 +119,7 @@ class TestSuite:
         if pipeline == "athena":
             speed = self.__portspeed
         else:
-            speed = topo_pb2.DataSwitch.Speed_auto
+            speed = self.__portspeed
         api.Logger.debug("{0}:{1} is {2}. using port speed {3}".format(node, nic, pipeline, speed))
         return speed 
 
@@ -155,8 +154,8 @@ class TestSuite:
     def SetupComplete(self):
         return self.__setup_complete
 
-    def GetImages(self):
-        return self.__images
+    def GetImages(self, processor='capri'):
+        return self.__read_image_manifest(processor)
 
     def GetFirmwareVersion(self):
         return self.__release_versions.get('Firmware', 'latest')
@@ -277,22 +276,17 @@ class TestSuite:
 
         return
 
-    def __load_image_manifest(self):
+    def __read_image_manifest(self, processor):
         manifest_file = self.GetImageManifestFile()
         image_info = parser.JsonParse(manifest_file)
         images = parser.Dict2Object({})
-
-        naples_type = 'capri'
-        if hasattr(self.__spec, 'image_manifest') and hasattr(self.__spec.image_manifest, 'naples'): 
-            naples_type = self.__spec.image_manifest.naples 
-        setattr(images, 'naples_type', naples_type)
 
         image_tag = GlobalOptions.pipeline
         if hasattr(self.__spec, 'image_manifest') and hasattr(self.__spec.image_manifest, 'build'): 
             setattr(images, 'build', self.__spec.image_manifest.build)
             image_tag += "-" + images.build
 
-        all_fw_images = list(filter(lambda x: x.naples_type == naples_type, image_info.Firmwares))
+        all_fw_images = list(filter(lambda x: x.Processor == processor, image_info.Firmwares))
         if all_fw_images and len(all_fw_images) == 1:
             fw_images = list(filter(lambda x: x.tag == image_tag, all_fw_images[0].Images))
             if fw_images and len(fw_images) == 1:

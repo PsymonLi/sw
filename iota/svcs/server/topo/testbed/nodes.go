@@ -84,8 +84,6 @@ func (n *TestNode) installImage() error {
 		cmd += fmt.Sprintf(" --mnic-ip 169.254.0.1")
 		cmd += fmt.Sprintf(" --instance-name %v", node.InstanceName)
 		cmd += fmt.Sprintf(" --testbed %v", n.info.InstallInfo.TestbedJsonFile)
-		// naples_type should come from topology or testbed
-		cmd += fmt.Sprintf(" --naples capri")
 		if filepath.Base(n.info.InstallInfo.Images[0]) != "naples_fw.tar" {
 			cmd += fmt.Sprintf(" --pipeline apulu --image-build equinix")
 		}

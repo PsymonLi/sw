@@ -133,6 +133,13 @@ class Node(object):
             self.__ports = []
             self.__data_networks = []
             self.__nodeName = None
+            self.__processor = "capri"
+
+        def GetProcessor(self):
+            return self.__processor
+
+        def SetProcessor(self, processor):
+            self.__processor = processor
 
         def HostIntfs(self):
             return self.__host_intfs
@@ -451,6 +458,8 @@ class Node(object):
                         device.SetMac(port.MAC)
                         break
                     device.read_from_console()       
+                    warmd_processor = getattr(nic, "Processor", "capri")
+                    device.SetProcessor(types.processors.id(warmd_processor.upper()))
 
                     if self.__prov_spec:
                         nic_prov_spec = self.__prov_spec.nics[idx].nic
@@ -480,6 +489,8 @@ class Node(object):
                     device.SetNicUnderlayIPs(getattr(self.__inst, "NicUnderlayIPs", []))
                     device.SetNicStaticRoutes(getattr(self.__inst, "NicStaticRoutes", []))
                     device.read_from_console()
+                    warmd_processor = getattr(nic, "Processor", "capri")
+                    device.SetProcessor(types.processors.id(warmd_processor.upper()))
                     if self.__prov_spec:
                         nic_prov_spec = self.__prov_spec.nics[0].nic
                         device.SetMode(nic_prov_spec.mode)
@@ -1934,6 +1945,13 @@ class Topology(object):
 
     def GetDeviceNames(self, node_name):
         return self.__nodes[node_name].GetDeviceNames()
+
+    def GetDeviceProcessor(self, node_name, device_name):
+        node =  self.__nodes[node_name]
+        devices = node.GetDevices()
+        if device_name:
+            return devices[device_name].GetProcessor()
+        return types.processors.CAPRI
 
     def GetOrchestratorNode(self):
         return self.__orch_node.Name()

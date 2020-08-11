@@ -417,7 +417,6 @@ class _Testbed:
         firmware_reimage_only = kwargs.get('firmware_reimage_only', False)
         driver_reimage_only = kwargs.get('driver_reimage_only', False)
         devices = kwargs.get('devices', {})
-        images = self.curr_ts.GetImages()
         devicePipeline = None
         #if [n for n in self.__tbspec.Instances if n.NodeOs in ["linux","freebsd"]]:
         #    self.__verifyImagePath()
@@ -454,9 +453,6 @@ class _Testbed:
 
                 cmd.extend(["--testbed", GlobalOptions.testbed_json])
                 cmd.extend(["--instance-name", instance.Name])
-                cmd.extend(["--naples", images.naples_type])
-                if hasattr(images, "build"):
-                    cmd.extend(["--image-build", images.build])
                 #this will need to be changed when multi nics are supported.
                 if devicePipeline:
                     cmd.extend(["--pipeline", devicePipeline])
