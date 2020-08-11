@@ -70,6 +70,15 @@ chmod +x /t2/usr/local/bin/jq
 cp /tools/scripts/venice_appl_GrubEntry.sh /t2/usr/local/bin/venice_appl_GrubEntry.sh
 chmod +x /t2/usr/local/bin/venice_appl_GrubEntry.sh
 
+cp /tools/scripts/ionic.modules /t2/etc/sysconfig/modules/ionic.modules
+chmod +x /t2/etc/sysconfig/modules/ionic.modules
+
+cp /tools/scripts/install_driver.sh /t2/usr/local/bin//install_driver.sh
+chmod +x /t2/usr/local/bin/install_driver.sh
+
+cp /tools/scripts/kmod-ionic-driver.rpm /t2/usr/local/bin/kmod-ionic-driver.rpm
+chmod +x /t2/usr/local/bin/kmod-ionic-driver.rpm
+
 systemctl --root=/t2 enable docker
 systemctl --root=/t2 enable penservice
 systemctl --root=/t2 enable penservice-early

@@ -22,5 +22,6 @@ ws_tools 0.0.1
 systemd_docker 0.3.0
 ova 0.0.2
 nist 0.0.2
+kmod-ionic-driver rhel7u7.1062.el7
 dhcpd dhcpd-4.4.2.no-nsupdate-9
 pencap 3.0
