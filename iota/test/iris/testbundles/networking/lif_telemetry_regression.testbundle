@@ -33,5 +33,5 @@ testcases:
             ps_2790   : bypass
             pkt_count : bypass
             arp_check : bypass
-            timeout   : 7200
+            timeout   : 14400
 

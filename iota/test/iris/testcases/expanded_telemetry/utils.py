@@ -1493,7 +1493,8 @@ def validateErspanPackets(tc, lif_flow_collector, lif_flow_collector_idx):
                     tc.result[c] = api.types.status.FAILURE
 
         if tc.collector_tcp_pkts[c] == 0 and tc.collector_udp_pkts[c] == 0 and\
-           tc.collector_icmp_pkts[c] == 0 and pkt_erspan_count == 0:
+           tc.collector_icmp_pkts[c] == 0 and pkt_erspan_count == 0 and\
+           pkts_rcvd == 0:
             if tc.args.arp_check != 'bypass' or\
                tc.collector_ip_resolved[idx] == True:
                 api.Logger.error("ERROR: No ERSPAN packets to {}"\
