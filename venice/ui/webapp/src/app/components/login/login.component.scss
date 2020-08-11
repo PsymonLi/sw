@@ -178,24 +178,15 @@
     height: 100px;
     margin-bottom: 5%;
     overflow: hidden;
-  }
-
-  img {
-    width: 100%;
-    height: auto;
-    margin-top: -20%;
+    background: url("/assets/images/Pensando-Logo.jpg") center center no-repeat;
+    background-size: 400px;
+    background-position-y: 90%;
   }
 }
 
 .login-doc-link {
   text-align: center;
   margin-top: 35px;
-}
-
-.loign-image {
-  margin: -10px auto 15px auto;
-  clear: both;
-  display: block;
 }
 
 .login-label {
