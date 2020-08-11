@@ -100,7 +100,8 @@ lif_impl::reserve_tx_scheduler(pds_lif_spec_t *spec) {
     lif_sched_params.lif_id = spec->id;
     lif_sched_params.hw_lif_id = spec->id;
     lif_sched_params.tx_sched_table_offset = spec->tx_sched_table_offset;
-    lif_sched_params.tx_sched_num_table_entries = spec->tx_sched_num_table_entries;
+    lif_sched_params.tx_sched_num_table_entries =
+        spec->tx_sched_num_table_entries;
     ret = sdk::asic::pd::asicpd_tx_scheduler_map_reserve(&lif_sched_params);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to reserve tx sched. lif %s, err %u",
@@ -121,7 +122,8 @@ lif_impl::program_tx_scheduler(pds_lif_spec_t *spec) {
 
     // allocate tx-scheduler resource, or use existing allocation
     lif_sched_params.tx_sched_table_offset = spec->tx_sched_table_offset;
-    lif_sched_params.tx_sched_num_table_entries = spec->tx_sched_num_table_entries;
+    lif_sched_params.tx_sched_num_table_entries =
+        spec->tx_sched_num_table_entries;
     ret = sdk::asic::pd::asicpd_tx_scheduler_map_alloc(&lif_sched_params);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to alloc tx sched. lif %s, err %u",
@@ -130,7 +132,8 @@ lif_impl::program_tx_scheduler(pds_lif_spec_t *spec) {
     }
     // save allocation in spec
     spec->tx_sched_table_offset = lif_sched_params.tx_sched_table_offset;
-    spec->tx_sched_num_table_entries = lif_sched_params.tx_sched_num_table_entries;
+    spec->tx_sched_num_table_entries =
+        lif_sched_params.tx_sched_num_table_entries;
 
     // program tx scheduler and policer
     ret = sdk::asic::pd::asicpd_tx_scheduler_map_program(&lif_sched_params);
@@ -244,34 +247,16 @@ lif_impl::set_admin_state(lif_state_t state) {
 #define nacl_redirect_action    action_u.nacl_nacl_redirect
 #define nexthop_info            action_u.nexthop_nexthop_info
 sdk_ret_t
-lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
-    if_impl *intf;
+lif_impl::install_oob_mnic_nacls_(uint32_t uplink_nh_idx) {
     sdk_ret_t ret;
+    if_impl *intf;
     nacl_swkey_t key;
-    p4pd_error_t p4pd_ret;
-    sdk::qos::policer_t policer;
     if_index_t if_index;
+    p4pd_error_t p4pd_ret;
     nacl_swkey_mask_t mask;
     nacl_actiondata_t data;
     uint32_t idx, nacl_idx;
-    static uint32_t oob_lif = 0;
-    nexthop_info_entry_t nexthop_info_entry;
-
-    strncpy(name_, spec->name, sizeof(name_));
-    PDS_TRACE_DEBUG("Creating oob lif %s", name_);
-
-    // program the nexthop for ARM to uplink traffic
-    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
-    nexthop_info_entry.port =
-            g_pds_state.catalogue()->ifindex_to_tm_port(pinned_if_idx_);
-    // per uplink nh idx is reserved during init time, so use it
-    nh_idx_ = nexthop_info_entry.port + 1;
-    ret = nexthop_info_entry.write(nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program NEXTHOP table for oob lif %s "
-                      "at idx %u", key_.str(), nh_idx_);
-        return sdk::SDK_RET_HW_PROGRAM_ERR;
-    }
+    sdk::qos::policer_t policer;
 
     // cap ARP packets from oob lif(s) to 256 pps
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
@@ -300,17 +285,12 @@ lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
     mask.key_metadata_dport_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_action.nexthop_id = uplink_nh_idx;
     data.nacl_redirect_action.copp_policer_id = idx;
     data.nacl_redirect_action.copp_class = P4_COPP_DROP_CLASS_INBAND;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for (%s, ARP) -> "
-                      "uplink if index 0x%x", name_, pinned_if_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // install NACL for ARM to uplink traffic (all vlans)
     memset(&key, 0, sizeof(key));
@@ -322,36 +302,10 @@ lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
     mask.capri_intrinsic_lif_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_action.nexthop_id = uplink_nh_idx;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for oob lif %u to "
-                      "uplink 0x%x", id_, pinned_if_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
-
-    // allocate required nexthop for ARM out of band lif
-    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to allocate nexthop entries for oob "
-                      "lif %u, err %u", id_, ret);
-        return ret;
-    }
-
-    // program the nexthop for uplink to ARM traffic
-    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
-    nexthop_info_entry.lif = id_;
-    nexthop_info_entry.port = TM_PORT_DMA;
-    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
-    ret = nexthop_info_entry.write(nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program NEXTHOP table for oob lif %s "
-                      "at idx %u", key_.str(), nh_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // install for NACL for uplink to ARM (untagged) traffic
     memset(&key, 0, sizeof(key));
@@ -368,17 +322,44 @@ lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_action.nexthop_id = nh_idx_;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for uplink %u to "
-                      "oob lif %s", pinned_if_idx_, key_.str());
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
-    PDS_TRACE_DEBUG("nacl lif %u -> nh type %u, idx %u, nh lif %lu, port %lu",
-                    key.capri_intrinsic_lif, NEXTHOP_TYPE_NEXTHOP,
-                    nh_idx_, nexthop_info_entry.lif,
-                    nexthop_info_entry.port);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
+    sdk_ret_t ret;
+    uint32_t idx, uplink_nh_idx;
+    nexthop_info_entry_t nexthop_info_entry;
+
+    strncpy(name_, spec->name, sizeof(name_));
+    PDS_TRACE_DEBUG("Creating oob lif %s", name_);
+
+    // program the nexthop for ARM to uplink traffic
+    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
+    nexthop_info_entry.port =
+            g_pds_state.catalogue()->ifindex_to_tm_port(pinned_if_idx_);
+    // per uplink nh idx is reserved during init time, so use it
+    uplink_nh_idx = nexthop_info_entry.port + 1;
+    ret = nexthop_info_entry.write(nexthop_info_entry.port + 1);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // allocate required nexthop for ARM out of band lif
+    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // program the nexthop for uplink to ARM traffic
+    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
+    nexthop_info_entry.lif = id_;
+    nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
+    ret = nexthop_info_entry.write(nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // install all oob NACLs
+    ret = install_oob_mnic_nacls_(uplink_nh_idx);
+    SDK_ASSERT(ret == SDK_RET_OK);
 
     // allocate vnic h/w id for this lif
     if ((ret = vnic_impl_db()->vnic_idxr()->alloc(&idx)) != SDK_RET_OK) {

@@ -359,6 +359,12 @@ private:
     ///< destructor
     ~lif_impl() {}
 
+    ///< \brief    install all the NACLs needed for the oob lif/uplink traffic
+    ///            forwarding
+    ///< \param[in] uplink_nh_idx    nexthop index allocated for the oob uplink
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t install_oob_mnic_nacls_(uint32_t uplink_nh_idx);
+
     ///< \brief    program necessary h/w entries for oob mnic lif
     ///< \param[in] spec    lif configuration parameters
     /// \return    SDK_RET_OK on success, failure status code on error
