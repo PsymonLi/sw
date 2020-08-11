@@ -303,11 +303,14 @@ delphi_pub_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
         HAL_TRACE_ERR("Error in updating port metrics/dom, ret {}", ret);
     }
 
+#if 0
+    // TBD - figure out why delphi leaks memory here
     // Publish mirror stats to delphi
     ret = mirror_session_stats_update();
     if (unlikely(ret != HAL_RET_OK)) {
         HAL_TRACE_ERR("Error publishing metrics, ret {}", ret);
     }
+#endif
 
     // Compute BW on lifs
     ret = lif_compute_bw(1 /* secs */);
