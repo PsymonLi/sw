@@ -884,14 +884,54 @@ error:
 }
 
 sdk_ret_t
-lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
-    sdk_ret_t ret;
+lif_impl::install_internal_mgmt_mnic_nacls_(lif_impl *host_mgmt_lif,
+                                            uint32_t host_mgmt_lif_nh_idx,
+                                            lif_impl *int_mgmt_lif,
+                                            uint32_t int_mgmt_lif_nh_idx) {
     p4pd_error_t p4pd_ret;
-    uint32_t idx, nacl_idx;
     nacl_swkey_t key = { 0 };
     nacl_swkey_mask_t mask = { 0 };
     nacl_actiondata_t data =  { 0 };
-    static uint32_t hmlif = 0, imlif = 0;
+
+    // program NACL for host mgmt lif to internal mgmt lif traffic
+    key.key_metadata_entry_valid = 1;
+    key.capri_intrinsic_lif = host_mgmt_lif->id();
+    key.control_metadata_lif_type = P4_LIF_TYPE_HOST_MGMT;
+    mask.key_metadata_entry_valid_mask = ~0;
+    mask.capri_intrinsic_lif_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
+    data.action_id = NACL_NACL_REDIRECT_ID;
+    data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    data.nacl_redirect_action.nexthop_id = int_mgmt_lif_nh_idx;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL,
+                                  PDS_IMPL_NACL_BLOCK_INTERNAL_MGMT_MIN,
+                                  &key, &mask, &data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    // program NACL for internal mgmt lif to host mgmt lif traffic
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_entry_valid = 1;
+    key.capri_intrinsic_lif = int_mgmt_lif->id();
+    key.control_metadata_lif_type = P4_LIF_TYPE_HOST_MGMT;
+    mask.key_metadata_entry_valid_mask = ~0;
+    mask.capri_intrinsic_lif_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
+    data.action_id = NACL_NACL_REDIRECT_ID;
+    data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    data.nacl_redirect_action.nexthop_id = host_mgmt_lif_nh_idx;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL,
+                                  PDS_IMPL_NACL_BLOCK_INTERNAL_MGMT_MIN + 1,
+                                  &key, &mask, &data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
+    uint32_t idx;
+    sdk_ret_t ret;
     lif_impl *host_mgmt_lif = NULL, *int_mgmt_lif = NULL;
     nexthop_info_entry_t nexthop_info_entry;
 
@@ -917,12 +957,7 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     }
     PDS_TRACE_DEBUG("Programming NACLs for internal management");
     ret = nexthop_impl_db()->nh_idxr()->alloc_block(&nh_idx_, 2);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to allocate nexthop entries for internal mgmt. "
-                      "lifs %u, %u, err %u", host_mgmt_lif->id(),
-                      int_mgmt_lif->id(), ret);
-        return ret;
-    }
+    SDK_ASSERT(ret == SDK_RET_OK);
 
     // program the nexthop for host mgmt. lif to internal mgmt. lif traffic
     memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
@@ -930,72 +965,18 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     nexthop_info_entry.port = TM_PORT_DMA;
     nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program NEXTHOP table for host mgmt. lif %u "
-                      "to internal mgmt. lif %u traffic at idx %u",
-                      host_mgmt_lif->id(), int_mgmt_lif->id(), nh_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
-
-    // program NACL for host mgmt lif to internal mgmt lif traffic
-    key.key_metadata_entry_valid = 1;
-    key.capri_intrinsic_lif = host_mgmt_lif->id();
-    key.control_metadata_lif_type = P4_LIF_TYPE_HOST_MGMT;
-    mask.key_metadata_entry_valid_mask = ~0;
-    mask.capri_intrinsic_lif_mask = ~0;
-    mask.control_metadata_lif_type_mask = ~0;
-    data.action_id = NACL_NACL_REDIRECT_ID;
-    data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_action.nexthop_id = nh_idx_;
-    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL,
-                                  PDS_IMPL_NACL_BLOCK_INTERNAL_MGMT_MIN,
-                                  &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to install NACL redirect entry for host mgmt "
-                      "lif %u to internal mgmt lif %u traffic",
-                      host_mgmt_lif->id(), int_mgmt_lif->id());
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(ret == SDK_RET_OK);
 
     // program the nexthop for internal mgmt. lif to host mgmt. lif traffic
     nexthop_info_entry.lif = host_mgmt_lif->id();
     nexthop_info_entry.port = TM_PORT_DMA;
     nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     ret = nexthop_info_entry.write(nh_idx_ + 1);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program NEXTHOP table for internal mgmt. "
-                      "lif %u to host mgmt. lif %u traffic at idx %u",
-                      int_mgmt_lif->id(), host_mgmt_lif->id(),
-                      nh_idx_ + 1);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(ret == SDK_RET_OK);
 
-    // program NACL for internal mgmt lif to host mgmt lif traffic
-    memset(&key, 0, sizeof(key));
-    memset(&mask, 0, sizeof(mask));
-    memset(&data, 0, sizeof(data));
-    key.key_metadata_entry_valid = 1;
-    key.capri_intrinsic_lif = int_mgmt_lif->id();
-    key.control_metadata_lif_type = P4_LIF_TYPE_HOST_MGMT;
-    mask.key_metadata_entry_valid_mask = ~0;
-    mask.capri_intrinsic_lif_mask = ~0;
-    mask.control_metadata_lif_type_mask = ~0;
-    data.action_id = NACL_NACL_REDIRECT_ID;
-    data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_action.nexthop_id = nh_idx_ + 1;
-    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL,
-                                  PDS_IMPL_NACL_BLOCK_INTERNAL_MGMT_MIN + 1,
-                                  &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to install NACL redirect entry for internal mgmt "
-                      "lif %u to host mgmt lif %u traffic, err %u",
-                      int_mgmt_lif->id(), host_mgmt_lif->id(), ret);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    ret = install_internal_mgmt_mnic_nacls_(host_mgmt_lif, nh_idx_ + 1,
+                                            int_mgmt_lif, nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
 
     // allocate vnic h/w ids for these lifs
     if ((ret = vnic_impl_db()->vnic_idxr()->alloc_block(&idx, 2)) !=

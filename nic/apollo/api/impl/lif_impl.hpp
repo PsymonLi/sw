@@ -327,7 +327,7 @@ public:
     /// \return    true if lif initialization is done
     bool create_done(void) const { return create_done_; }
 
-    /// \brief    retrieve tx scheduler offset and number of entries from this lif
+    /// \brief    retrieve tx scheduler offset & number of entries from this lif
     /// \return   true if it is valid, false otherwise
     bool tx_sched_info(uint32_t *offset, uint32_t *num_entries) {
         if (tx_sched_offset_ == INVALID_INDEXER_INDEX) {
@@ -364,6 +364,18 @@ private:
     ///< \param[in] uplink_nh_idx    nexthop index allocated for the oob uplink
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t install_oob_mnic_nacls_(uint32_t uplink_nh_idx);
+
+    ///< \brief    install all the NACLs needed for the internal management
+    ///            mnic traffic
+    ///< \param[in] host_mgmt_lif    host mgmt. lif instance
+    ///< \param[in] host_mgmt_lif_nh_idx    host mgmt. lif's nexthop index
+    ///< \param[in] int_mgmt_lif    internal mgmt. lif instance
+    ///< \param[in] int_mgmt_lif_nh_idx    internal mgmt. lif's nexthop index
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t install_internal_mgmt_mnic_nacls_(lif_impl *host_mgmt_lif,
+                                                uint32_t host_mgmt_lif_nh_idx,
+                                                lif_impl *int_mgmt_lif,
+                                                uint32_t int_mgmt_lif_nh_idx);
 
     ///< \brief    program necessary h/w entries for oob mnic lif
     ///< \param[in] spec    lif configuration parameters
