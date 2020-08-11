@@ -1,4 +1,3 @@
-%define udev_file %{_sysconfdir}/udev/rules.d/81-pensando-net.rules
 
 # Disable the building of the debug package(s).
 %define debug_package %{nil}
@@ -32,7 +31,7 @@ BuildRequires:	%{kernel_module_package_buildreqs}
 ExclusiveArch:	x86_64
 
 # Macro defined in /usr/lib/rpm/redhat/macros
-%kernel_module_package -f %{SOURCE1}
+%kernel_module_package @DASHB@ -f %{SOURCE1}
 
 %description
 This package provides the %{vendor} %{kmod_name} kernel driver.
@@ -43,8 +42,6 @@ This package provides the %{vendor} %{kmod_name} kernel driver.
 %build
 sh build.sh
 
-%pre
-
 %install
 
 %{__install} -d %{buildroot}/lib/modules/%{kernel_version}/extra/%{kmod_name}/
@@ -53,27 +50,14 @@ sh build.sh
 %{__install} -m 644 kmod-%{kmod_name}.conf %{buildroot}%{_sysconfdir}/depmod.d/
 %{__install} -d %{buildroot}%{_sysconfdir}/dracut.conf.d/
 %{__install} -m 644 %{kmod_name}.conf %{buildroot}%{_sysconfdir}/dracut.conf.d/%{kmod_name}.conf
+@UDEV_RULE@
 
 %clean
 %{__rm} -rf %{buildroot}
 
-%post
-# RHEL 8.0, 8.1, and 8.2 need this udev hack for correct interface names
-if [ %{distro} == rhel8u0 -o %{distro} == rhel8u1 -o %{distro} == rhel8u2 ] ; then
-	echo 'SUBSYSTEM=="net", ENV{ID_VENDOR_ID}=="0x1dd8", NAME="$env{ID_NET_NAME_PATH}"' > %{udev_file}
-fi
-
-dracut --force --kver %{kernel_release}
-
-%preun
-
-%postun
-# Don't remove the udev rule we added in the broken rhel8.x so that we don't
-# lose it when the user does an "rpm -U" update.
-
-dracut --force --kver %{kernel_release}
-
 %changelog
+* Mon Aug 10 2020 Shannon Nelson <snelson@pensando.io>
+- fix up kernel_module_package use for sles
 * Tue Jul 21 2020 Neel Patel <neel@pensando.io>
 - Use kernel module package rpm macros
 * Tue Jun 30 2020 Shannon Nelson <snelson@pensando.io>
