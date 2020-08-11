@@ -498,7 +498,7 @@ var (
 
 // String implements stringer for Operation
 func (o Operation) String() string {
-	return [...]string{"Get", "List", "Create", "Update", "Delete"}[o]
+	return [...]string{"Get", "List", "Create", "Update", "Delete", "Purge"}[o]
 }
 
 // String implements stringer for IPAddressKind
