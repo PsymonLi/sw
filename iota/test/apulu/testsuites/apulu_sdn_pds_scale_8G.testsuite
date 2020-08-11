@@ -28,7 +28,7 @@ setup:
         - step : config.add_routes
         - step : utils.naples_upgrade.install
           args :
-             naples_upgr_pkgs : ["naples_fw.tar"]        
+             naples_upgr_pkgs : ["naples_fw.tar"]
 
 common:
     verifs:
@@ -42,7 +42,6 @@ testbundles:
     sanity:
         # Relative paths from iota/test/apulu/testbundles/
         - api_crud_scale/api_crud_scale.testbundle
-        - upgrade/hitless.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

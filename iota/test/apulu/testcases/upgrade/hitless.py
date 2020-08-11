@@ -18,7 +18,7 @@ import upgrade_pb2 as upgrade_pb2
 from apollo.config.node import client as NodeClient
 from apollo.oper.upgrade import client as UpgradeClient
 
-skip_connectivity_failure = True
+skip_connectivity_failure = False
 
 def check_pds_agent_debug_data(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
@@ -92,7 +92,7 @@ def hitless_upgrade_trigger_config_replay(tc):
 def hitless_upgrade_validate_config(tc):
     result = api.types.status.SUCCESS
     api.Logger.info("Validating Configuration... ")
-    
+
     for node in tc.nodes:
         upg_obj = UpgradeClient.GetUpgradeObject(node)
         if not upg_obj.ValidateCfgPostUpgrade():
@@ -187,7 +187,7 @@ def __poll_upgrade_status(tc, status, **kwargs):
 def PollUpgradeStatus(tc, status, **kwargs):
     if api.IsDryrun():
        return api.types.status.SUCCESS
- 
+
     try:
         __poll_upgrade_status(tc, status, **kwargs)
         return api.types.status.SUCCESS
@@ -394,7 +394,7 @@ def Verify(tc):
     sshd_restart_wait = 20 #sec
     result = api.types.status.SUCCESS
     if api.IsDryrun():
-        return result        
+        return result
     # Let sshd start in new domain
     api.Logger.info(f"Waiting {sshd_restart_wait} sec for sshd to restart in new Domain...")
     misc_utils.Sleep(sshd_restart_wait)
@@ -408,13 +408,13 @@ def Verify(tc):
     for node in tc.nodes:
         if not upgrade_utils.CheckUpgradeStatus(node, status):
             result = api.types.status.FAILURE
-    
+
     # validate the configuration
-    result = hitless_upgrade_validate_config(tc) 
+    result = hitless_upgrade_validate_config(tc)
     if result != api.types.status.SUCCESS:
         api.Logger.info("Ignoring the configuration validation failure")
         result = api.types.status.SUCCESS
-    
+
     # verify mgmt connectivity
     if VerifyMgmtConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Mgmt Connectivity Check after Upgrade .")
@@ -476,14 +476,14 @@ def Verify(tc):
                     #result = api.types.status.FAILURE
             else:
                 api.Logger.info("No Packet Loss Found during UPGRADE Test")
-    
+
     # Terminate the iperf in backaground
     if tc.iperf:
         tc.client_term_resp = api.Trigger_TerminateAllCommands(tc.client_resp)
         api.Trigger_TerminateAllCommands(tc.server_resp)
         tc.client_aggr_resp = api.Trigger_AggregateCommandsResponse(tc.client_resp, tc.client_term_resp)
         traffic.verifyIPerf(tc.cmd_desc, tc.client_aggr_resp)
-    
+
     if upgrade_utils.VerifyUpgLog(tc.nodes, tc.GetLogsDir()):
         api.Logger.error("Failed to verify the upgrademgr logs...")
 
