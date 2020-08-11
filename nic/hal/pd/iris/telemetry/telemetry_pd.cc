@@ -1350,6 +1350,7 @@ pd_mirror_stats_update (pd_func_args_t *pd_func_args)
 
             if (mptr != NULL) {
                 delphi::objects::MirrorMetrics::Release(mptr);
+                g_mirr_metrics[i].mptr.reset();
             }
         }
     }
