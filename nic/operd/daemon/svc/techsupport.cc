@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <string>
 #include <time.h>
-#include "gen/proto/techsupport.grpc.pb.h"
+#include "gen/proto/operd/techsupport.grpc.pb.h"
 #include "gen/proto/types.pb.h"
 #include "techsupport.hpp"
 

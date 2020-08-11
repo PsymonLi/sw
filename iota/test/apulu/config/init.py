@@ -9,6 +9,7 @@ paths = [
     '/dol/third_party/',
     '/nic/sdk',
     '/nic/build/aarch64/apulu/' + asic + '/gen/proto',
+    '/nic/build/aarch64/apulu/' + asic + '/gen/proto/operd/',
 ]
 
 ws_top = os.path.dirname(sys.argv[0]) + '/../'

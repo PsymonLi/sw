@@ -9,7 +9,7 @@
         "name": "DSC_SERVICE_STOPPED",
         "category": "System",
         "severity": "CRITICAL",
-        "description": "DSC service stopped"
+        "description": "DSC related process has been stopped. System performance may be impacted. Further policy changes will not be applied to this DSC till it is reloaded. Recommendation is to collect techsupport and contact Pensando support."
     },
     {
         "name": "SYSTEM_COLDBOOT",
@@ -26,7 +26,7 @@
     {
         "name": "LINK_DOWN",
         "category": "Network",
-        "severity": "INFO",
+        "severity": "WARN",
         "description": "Port link is down"
     },
     {
@@ -45,13 +45,13 @@
         "name": "DSC_CATTRIP_INTERRUPT",
         "category": "System",
         "severity": "CRITICAL",
-        "description": "DSC temperature crossed the fatal threshold and cattrip is triggered, resetting the system"
+        "description": "DSC temperature has crossed a fatal threshold, and this DSC has been reloaded. Recommendation is to check environmental conditions."
     },
     {
         "name": "DSC_PANIC_EVENT",
         "category": "System",
         "severity": "CRITICAL",
-        "description": "DSC panic occurred on previous boot"
+        "description": "DSC encountered a panic during the last boot. Recommendation is to collect techsupport and contact Pensando support."
     },
     {
         "name": "DSC_POST_DIAG_FAILURE_EVENT",
@@ -75,7 +75,7 @@
         "name": "DSC_ERR_PCIEHEALTH_EVENT",
         "category": "System",
         "severity": "CRITICAL",
-        "description": "DSC has detected a pcie link health error"
+        "description": "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect techsupport and contact Pensando support."
     },
     {
         "name": "DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD",

@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "flow_decoder.h"
-#include "gen/proto/flow.pb.h"
+#include "gen/proto/operd/flow.pb.h"
 #include "gen/proto/types.pb.h"
 #include "lib/operd/decoder.h"
 

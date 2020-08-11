@@ -2377,8 +2377,8 @@ func (i *IrisAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, err
 	return "", errors.Wrapf(types.ErrNotImplemented, "Tech Support Capture not implemented by Iris Pipeline")
 }
 
-// HandleAlerts unimplemented
-func (i *IrisAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
+// HandleEvents unimplemented
+func (i *IrisAPI) HandleEvents(evtsDispatcher events.Dispatcher) {
 	return
 }
 

@@ -4,7 +4,7 @@
 #define __OPERD_SVC_SYSLOG_HPP__
 
 #include "grpc++/grpc++.h"
-#include "gen/proto/syslog.grpc.pb.h"
+#include "gen/proto/operd/syslog.grpc.pb.h"
 #include "nic/operd/daemon/operd_impl.hpp"
 
 using grpc::Status;

@@ -168,8 +168,8 @@ func (a *ApuluAPI) PipelineInit() error {
 	// initialize stream for Lif events
 	a.initEventStream()
 
-	// handle alerts & alert policies
-	a.startAlertPoliciesWatch()
+	// handle events & event policies
+	a.startEventPoliciesWatch()
 
 	// handle all the metrics
 	handleMetrics(a)
@@ -1536,10 +1536,10 @@ func (a *ApuluAPI) HandleFwlogPolicyConfig(oper types.Operation, obj tpmprotos.F
 	return apulu.HandleFwlogPolicyConfig(a.InfraAPI, a.SyslogSvcClient, oper, obj)
 }
 
-// HandleAlerts start consuming alerts from operd plugin & export
-func (a *ApuluAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
-	// handle all the alerts
-	apulu.HandleAlerts(evtsDispatcher, a.OperSvcClient)
+// HandleEvents start consuming events from operd plugin & export
+func (a *ApuluAPI) HandleEvents(evtsDispatcher events.Dispatcher) {
+	// handle all the events
+	apulu.HandleEvents(evtsDispatcher, a.OperSvcClient)
 }
 
 // ReplayConfigs replays last known configs from boltDB
@@ -2418,27 +2418,27 @@ func (a *ApuluAPI) startDynamicWatch(kinds []string) {
 	go startWatcher()
 }
 
-// StartAlertPoliciesWatch starts watcher to watch for alert/event policies & handles alerts.
-func (a *ApuluAPI) startAlertPoliciesWatch() {
-	log.Infof("Initiating alert policy watch")
-	startAlertPolicyWatcher := func() {
+// startEventPoliciesWatch starts watcher for event policies & handles events.
+func (a *ApuluAPI) startEventPoliciesWatch() {
+	log.Infof("Initiating event policy watch")
+	startEventPolicyWatcher := func() {
 		ticker := time.NewTicker(5 * time.Second)
 		for {
 			select {
 			case <-ticker.C:
 				if a.ControllerAPI == nil {
-					log.Info("Waiting for controller registration before starting alert policy watch")
+					log.Info("Waiting for controller registration before starting event policy watch")
 				} else {
-					err := a.ControllerAPI.WatchAlertPolicies()
+					err := a.ControllerAPI.WatchEventPolicies()
 					if err == nil {
-						log.Infof("Started alert policy watch")
+						log.Infof("Started event policy watch")
 						return
 					}
 				}
 			}
 		}
 	}
-	go startAlertPolicyWatcher()
+	go startEventPolicyWatcher()
 }
 
 type byBGPPeerIP []cluster.PeerStatus

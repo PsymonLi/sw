@@ -1,0 +1,122 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//------------------------------------------------------------------------------
+///
+/// \file
+/// protobuf specification for event types
+///
+//------------------------------------------------------------------------------
+
+syntax = "proto3";
+package operd;
+
+import "google/protobuf/descriptor.proto";
+import "eventattributes.proto";
+
+extend google.protobuf.EnumValueOptions {
+    // event category
+    EventCategory Category    = 100001;
+
+    // event severity
+    EventSeverity Severity    = 100002;
+
+    // description for the event
+    string        Description = 100003;
+}
+
+enum EventType {
+  DSC_EVENT_TYPE_NONE                      = 0     [(Category)    = NONE,
+                                                    (Severity)    = DEBUG,
+                                                    (Description) = "Invalid event"];
+
+  // ----------------------------- SYSTEM events --------------------------- //
+  DSC_SERVICE_STARTED                      = 1     [(Category)    = SYSTEM,
+                                                    (Severity)    = DEBUG,
+                                                    (Description) = "DSC service started"];
+
+  DSC_SERVICE_STOPPED                      = 2     [(Category)    = SYSTEM,
+                                                    (Severity)    = CRITICAL,
+                                                    (Description) = "DSC related process has been stopped. System performance may be impacted. Further policy changes will not be applied to this DSC till it is reloaded. Recommendation is to collect techsupport and contact Pensando support."];
+
+  SYSTEM_COLDBOOT                          = 3     [(Category)    = SYSTEM,
+                                                    (Severity)    = WARN,
+                                                    (Description) = "DSC cold booted"];
+
+  DSC_MEM_TEMP_ABOVE_THRESHOLD             = 4     [(Category)    = SYSTEM,
+                                                    (Severity)    = CRITICAL,
+                                                    (Description) = "DSC memory temperature is above the critical threshold. SYSTEM performance may be degraded"];
+
+  DSC_MEM_TEMP_BELOW_THRESHOLD             = 5     [(Category)    = SYSTEM,
+                                                    (Severity)    = INFO,
+                                                    (Description) = "DSC memory temperature has fallen below the critical threshold"];
+
+  DSC_CATTRIP_INTERRUPT                    = 6     [(Category)    = SYSTEM,
+                                                    (Severity)    = CRITICAL,
+                                                    (Description) = "DSC temperature has crossed a fatal threshold, and this DSC has been reloaded. Recommendation is to check environmental conditions."];
+
+  DSC_PANIC_EVENT                          = 7     [(Category)    = SYSTEM,
+                                                    (Severity)    = CRITICAL,
+                                                    (Description) = "DSC encountered a panic during the last boot. Recommendation is to collect techsupport and contact Pensando support."];
+
+  DSC_POST_DIAG_FAILURE_EVENT              = 8     [(Category)    = SYSTEM,
+                                                    (Severity)    = WARN,
+                                                    (Description) = "DSC post diag test failed"];
+
+  DSC_INFO_PCIEHEALTH_EVENT                = 9     [(Category)    = SYSTEM,
+                                                    (Severity)    = INFO,
+                                                    (Description) = "DSC has detected a pcie link health event"];
+
+  DSC_WARN_PCIEHEALTH_EVENT                = 10     [(Category)    = SYSTEM,
+                                                    (Severity)    = WARN,
+                                                    (Description) = "DSC has detected a pcie link health warning"];
+
+  DSC_ERR_PCIEHEALTH_EVENT                 = 11    [(Category)    = SYSTEM,
+                                                    (Severity)    = CRITICAL,
+                                                    (Description) = "DSC has detected PCIe link error. System performance may be impacted. Recommendation is to collect techsupport and contact Pensando support."];
+
+  DSC_FILESYSTEM_USAGE_ABOVE_THRESHOLD     = 12    [(Category)    = SYSTEM,
+                                                     (Severity)    = WARN,
+                                                     (Description) = "Usage of the filesystem partition is above threshold"];
+
+  DSC_FILESYSTEM_USAGE_BELOW_THRESHOLD     = 13    [(Category)    = SYSTEM,
+                                                    (Severity)    = INFO,
+                                                    (Description) = "Usage of the filesystem partition is below threshold"];
+
+
+  // ----------------------------- Network events -------------------------- //
+  LINK_UP                                  = 1001  [(Category)    = NETWORK,
+                                                    (Severity)    = INFO,
+                                                    (Description) = "Port link is up"];
+
+  LINK_DOWN                                = 1002  [(Category)    = NETWORK,
+                                                    (Severity)    = WARN,
+                                                    (Description) = "Port link is down"];
+
+  BGP_SESSION_ESTABLISHED                  = 1003  [(Category)    = NETWORK,
+                                                    (Severity)    = INFO,
+                                                    (Description) = "BGP session is established"];
+
+  BGP_SESSION_DOWN                         = 1004  [(Category)    = NETWORK,
+                                                    (Severity)    = WARN,
+                                                    (Description) = "BGP session is down"];
+
+
+  // ----------------------------- Resource events ------------------------- //
+  VNIC_SESSION_LIMIT_EXCEEDED              = 2001  [(Category)    = RESOURCE,
+                                                    (Severity)    = CRITICAL,
+                                                    (Description) = "Session count for vnic reached limit, new sessions will be dropped"];
+
+  VNIC_SESSION_THRESHOLD_EXCEEDED          = 2002  [(Category)    = RESOURCE,
+                                                    (Severity)    = WARN,
+                                                    (Description) = "Session count for vnic exceeds threshold, new sessions will be dropped once limit is reached"];
+
+  VNIC_SESSION_WITHIN_THRESHOLD            = 2003  [(Category)    = RESOURCE,
+                                                    (Severity)    = INFO,
+                                                    (Description) = "Session count for vnic falls within the threshold"];
+
+  // ----------------------------- Learn events ---------------------------- //
+
+  // ----------------------------- Rollout events -------------------------- //
+
+}

@@ -395,8 +395,8 @@ func (c *API) stopNetworkModeServices() {
 	// so that events can still be logged in persistent store
 }
 
-// WatchAlertPolicies watches for alert/event policies & handles alerts. Cloud Pipeline only
-func (c *API) WatchAlertPolicies() error {
+// WatchEventPolicies watches for event policies & handles events. Cloud Pipeline only
+func (c *API) WatchEventPolicies() error {
 
 	if c.ResolverClient == nil {
 		log.Info("Controller API: Resolver client is not set yet")
@@ -462,7 +462,7 @@ func (c *API) WatchAlertPolicies() error {
 	c.evtsRPCServer = rpcServer
 	c.evtsDispatcher.Start()
 	log.Info("Controller API: Started Events Dispatcher")
-	c.PipelineAPI.HandleAlerts(c.evtsDispatcher)
+	c.PipelineAPI.HandleEvents(c.evtsDispatcher)
 	return nil
 }
 

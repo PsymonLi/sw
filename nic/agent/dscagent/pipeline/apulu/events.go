@@ -30,16 +30,17 @@ import (
 // UnhealthyServices var
 var UnhealthyServices []string
 
-// helper function to convert operd alert to venice alert
-func convertToVeniceAlert(nEvt *operdapi.Alert) *evtsapi.Event {
+// helper function to convert operd event to venice event
+func convertToVeniceEvent(nEvt *operdapi.Event) *evtsapi.Event {
 	uuid := uuid.NewV4().String()
 	// TODO: Timestamp is not populated by operd
 	// until then use current time instead of nEvt.GetTimestamp()
 	ts := gogoproto.TimestampNow()
+	operdEvtType := nEvt.GetType()
 
-	evtType, found := eventtypes.EventType_value[nEvt.GetName()]
+	evtType, found := eventtypes.EventType_value[operdapi.EventType_name[int32(operdEvtType)]]
 	if !found {
-		log.Errorf("Failed to find event type for alert %s", nEvt.GetName())
+		log.Errorf("Failed to find event type for event %s", operdEvtType.String())
 		return nil
 	}
 	eTypeAttrs := eventtypes.GetEventTypeAttrs(eventtypes.EventType(evtType))
@@ -73,75 +74,75 @@ func convertToVeniceAlert(nEvt *operdapi.Alert) *evtsapi.Event {
 	return vAlert
 }
 
-func queryAlerts(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClient) {
+func queryEvents(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClient) {
 	operInfoReqMsg := &operdapi.OperInfoRequest{
 		Request: []*operdapi.OperInfoSpec{
 			{
-				InfoType: operdapi.OperInfoType_OPER_INFO_TYPE_ALERT,
+				InfoType: operdapi.OperInfoType_OPER_INFO_TYPE_EVENT,
 				Action:   operdapi.OperInfoOp_OPER_INFO_OP_SUBSCRIBE,
 			},
 		},
 	}
 
-	// create a stream for alerts
+	// create a stream for events
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	stream, err := client.OperInfoSubscribe(ctx)
 	if err != nil {
-		log.Error(errors.Wrapf(types.ErrAlertsGet, "Alerts subscription failure | Err %v", err))
+		log.Error(errors.Wrapf(types.ErrEventsGet, "Events subscription failure | Err %v", err))
 		return
 	}
 
-	// send subscription request for alerts stream
+	// send subscription request for events stream
 	stream.Send(operInfoReqMsg)
-	log.Info("Streaming alerts from pen-oper plugin")
+	log.Info("Streaming events from pen-oper plugin")
 	for {
 		resp, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			log.Error(errors.Wrapf(types.ErrAlertsRecv,
-				"Error receiving alerts | Err %v", err))
+			log.Error(errors.Wrapf(types.ErrEventsRecv,
+				"Error receiving events | Err %v", err))
 			continue
 		}
 		if resp.GetStatus() != halapi.ApiStatus_API_STATUS_OK {
-			log.Error(errors.Wrapf(types.ErrAlertsRecv,
-				"Alerts response failure, | Err %v",
+			log.Error(errors.Wrapf(types.ErrEventsRecv,
+				"Events response failure, | Err %v",
 				resp.GetStatus().String()))
 			continue
 		}
-		if resp.GetInfoType() != operdapi.OperInfoType_OPER_INFO_TYPE_ALERT {
-			log.Error(errors.Wrapf(types.ErrAlertsRecv,
-				"Invalid Alerts %v in response",
+		if resp.GetInfoType() != operdapi.OperInfoType_OPER_INFO_TYPE_EVENT {
+			log.Error(errors.Wrapf(types.ErrEventsRecv,
+				"Invalid events %v in response",
 				resp.GetInfoType().String()))
 			continue
 		}
 
-		// process the alerts
-		alert := resp.GetAlertInfo()
-		processAlert(alert)
-		// convert to venice alert format
-		vAlert := convertToVeniceAlert(alert)
+		// process the events
+		event := resp.GetEventInfo()
+		processEvent(event)
+		// convert to venice event format
+		vAlert := convertToVeniceEvent(event)
 		if vAlert == nil {
-			log.Errorf("Failed to convert alert %+v", alert)
+			log.Errorf("Failed to convert event %+v", event)
 			continue
 		}
 		// send to dispatcher
 		if err := evtsDispatcher.Action(*vAlert); err != nil {
-			log.Error(errors.Wrapf(types.ErrAlertsFwd,
-				"Error dispatching alert {%+v}, err: %v", alert, err))
+			log.Error(errors.Wrapf(types.ErrEventsFwd,
+				"Error dispatching event {%+v}, err: %v", event, err))
 		} else {
-			log.Infof("Dispatched alert %+v", alert)
+			log.Infof("Dispatched event %+v", event)
 		}
 	}
 	return
 }
 
-// HandleAlerts handles collecting and reporting of alerts
-func HandleAlerts(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClient) {
-	// check if pen-oper plugin is up and subscribe for alerts
-	startAlertsExport := func() {
+// HandleEvents handles collecting and reporting of events
+func HandleEvents(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClient) {
+	// check if pen-oper plugin is up and subscribe for events
+	startEventsExport := func() {
 		ticker := time.NewTicker(time.Second * 5)
 		for {
 			select {
@@ -151,17 +152,17 @@ func HandleAlerts(evtsDispatcher events.Dispatcher, client operdapi.OperSvcClien
 					// wait until pen-oper plugin is up
 					continue
 				}
-				queryAlerts(evtsDispatcher, client)
+				queryEvents(evtsDispatcher, client)
 			}
 		}
 	}
-	go startAlertsExport()
+	go startEventsExport()
 	return
 }
 
-func processAlert(nEvt *operdapi.Alert) {
+func processEvent(nEvt *operdapi.Event) {
 	// TODO: May need further handling if processes are restartable
-	if nEvt.GetName() == "DSC_SERVICE_STOPPED" {
+	if nEvt.GetType() == operdapi.EventType_DSC_SERVICE_STOPPED {
 		svcName := strings.Split(nEvt.GetMessage(), ":")
 		UnhealthyServices = append(UnhealthyServices, svcName[1])
 	}

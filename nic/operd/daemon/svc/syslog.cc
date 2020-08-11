@@ -6,10 +6,10 @@
 #include <string>
 #include <time.h>
 
-#include "gen/proto/syslog.grpc.pb.h"
-#include "gen/proto/types.pb.h"
 #include "nic/operd/daemon/operd_impl.hpp"
 #include "syslog.hpp"
+#include "gen/proto/operd/syslog.grpc.pb.h"
+#include "gen/proto/types.pb.h"
 
 SyslogSvcImpl::SyslogSvcImpl(syslog_cbs_t *syslog_cbs) {
     this->syslog_cbs_ = syslog_cbs;

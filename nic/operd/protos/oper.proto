@@ -12,7 +12,7 @@ syntax = "proto3";
 package operd;
 
 import "types.proto";
-import "alerts.proto";
+import "events.proto";
 
 service OperSvc {
   rpc OperInfoSubscribe (stream OperInfoRequest) returns (stream OperInfoResponse) {}
@@ -21,7 +21,7 @@ service OperSvc {
 // Operational Info exported by operd plugin through push / subscription model
 enum OperInfoType {
   OPER_INFO_TYPE_NONE   = 0;
-  OPER_INFO_TYPE_ALERT  = 1;
+  OPER_INFO_TYPE_EVENT  = 1;
 }
 
 // OperInfoOp indicates whether client is subscribing or unsubscribing
@@ -33,9 +33,14 @@ enum OperInfoOp {
 
 message OperInfoSpec {
   // oper info of interest
-  OperInfoType InfoType  = 1;
+  OperInfoType InfoType       = 1;
   // action is either subscribe or unsubscribe
-  OperInfoOp   Action    = 2;
+  OperInfoOp   Action         = 2;
+  // any additional InfoType specific filters
+  oneof info_filter {
+      // filter for interested events 
+      EventFilter EventFilter = 3;
+  }
 }
 
 // OperInfoRequest captures the operational information for subscription/unsubscription
@@ -46,9 +51,9 @@ message OperInfoRequest {
 message OperInfoResponse {
   types.ApiStatus Status    = 1;
   OperInfoType    InfoType  = 2;
-  // operational information specific to InfoId
+  // operational information specific to InfoType
   oneof oper_info {
-      // information specific for alerts
-      Alert       AlertInfo = 3;
+      // information specific for events
+      Event       EventInfo = 3;
   }
 }

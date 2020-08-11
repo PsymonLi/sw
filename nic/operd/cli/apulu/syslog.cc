@@ -2,9 +2,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "grpc++/grpc++.h"
-#include "gen/proto/syslog.grpc.pb.h"
 
 #include "../operdctl.hpp"
+#include "gen/proto/operd/syslog.grpc.pb.h"
 
 int
 syslog (int argc, const char *argv[])

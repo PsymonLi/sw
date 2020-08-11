@@ -12,7 +12,7 @@
 #define __OPERD_SVC_TECHSUPPORT_HPP__
 
 #include "grpc++/grpc++.h"
-#include "gen/proto/techsupport.grpc.pb.h"
+#include "gen/proto/operd/techsupport.grpc.pb.h"
 
 using grpc::Status;
 using grpc::ServerContext;

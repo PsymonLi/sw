@@ -20,7 +20,7 @@ type ControllerAPI interface {
 	Start(kinds []string) error
 	Stop() error
 	WatchTechSupport()
-	WatchAlertPolicies() error
+	WatchEventPolicies() error
 	WatchFwlogPolicies()
 	GetAgentStatus(context.Context, *api.Empty) (*dscagentproto.DSCAgentStatus, error)
 }
@@ -147,8 +147,8 @@ type PipelineAPI interface {
 	// HandleTechSupport captures tech support from DSC and uploads it to Venice
 	HandleTechSupport(obj tsproto.TechSupportRequest) (techSupportArtifact string, err error)
 
-	// HandleAlerts relays alerts from pen-oper to various exporters
-	HandleAlerts(evtsDispatcher events.Dispatcher)
+	// HandleEvents relays events from pen-oper to various exporters
+	HandleEvents(evtsDispatcher events.Dispatcher)
 
 	HandleFwlogPolicyConfig(oper Operation, obj tpmprotos.FwlogPolicy) error
 

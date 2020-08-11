@@ -1,0 +1,38 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//------------------------------------------------------------------------------
+///
+/// \file
+/// protobuf specification for events
+///
+//------------------------------------------------------------------------------
+
+syntax = "proto3";
+package operd;
+
+import "gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "eventattributes.proto";
+import "eventinfo.proto";
+import "eventtypes.proto";
+
+message EventFilter {
+  // if no filters specified, all events are considered
+  repeated EventType Types = 1;
+}
+
+message Event {
+  EventType                 Type             = 1;
+  EventCategory             Category         = 2;
+  EventSeverity             Severity         = 3;
+  EventSource               Source           = 4;
+  google.protobuf.Timestamp Time             = 5 [(gogoproto.stdtime) = true];
+  string                    Description      = 6;
+  oneof event_info {
+      // TODO: deprecate Message and add EventType specific info
+      string                Message          = 7;
+      // information specific to learn event
+      EpLearnPkt            EpLearnPktInfo   = 8;
+  }
+}

@@ -17,7 +17,8 @@ from apollo.oper.alerts import client as AlertsClient
 
 import apollo.test.utils.pdsctl as pdsctl
 
-import alerts_pb2 as alerts_pb2
+import eventattributes_pb2 as eventattributes_pb2
+import eventtypes_pb2 as eventtypes_pb2
 
 class UplinkPorts(enum.IntEnum):
     # In DOL, it starts with 1
@@ -68,14 +69,18 @@ class PortObject(base.ConfigObjectBase):
         return pdsctl.UpdatePort(cmd)
 
     def __validate_link_alert(self, alert):
+        def __expected_event_severity(adminState):
+            if adminState == 'DOWN':
+                return eventattributes_pb2.WARN
+            return eventattributes_pb2.INFO
         logger.info(f"Validating link alert {alert} against {self}")
         if not alert:
             return False
-        if alert.Name != f"LINK_{self.AdminState}":
+        if alert.Type != eventtypes_pb2.EventType.Value(f"LINK_{self.AdminState}"):
             return False
-        if alert.Category != "Network":
+        if alert.Category != eventattributes_pb2.NETWORK:
             return False
-        if alert.Severity != alerts_pb2.INFO:
+        if alert.Severity != __expected_event_severity(self.AdminState):
             return False
         if alert.Description != f"Port link is {self.AdminState.lower()}":
             return False

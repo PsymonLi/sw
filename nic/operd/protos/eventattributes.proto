@@ -1,0 +1,41 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//------------------------------------------------------------------------------
+///
+/// \file
+/// protobuf specification for event attributes
+///
+//------------------------------------------------------------------------------
+
+syntax = "proto3";
+package operd;
+
+enum EventCategory {
+  NONE     = 0;
+  // system related events (service events, system boot/reboot events, etc...)
+  SYSTEM   = 1;
+  // network related events (linkmgr, bgp, etc...)
+  NETWORK  = 2;
+  // resource related events (cpu, mem and disk usage)
+  RESOURCE = 3;
+  // learning related events (endpoint info)
+  LEARN    = 4;
+  // upgrade/rollout related events
+  ROLLOUT  = 5;
+}
+
+// severity level of the event
+enum EventSeverity {
+  DEBUG    = 0; // only for debugging purposes
+  INFO     = 1; // no action needed
+  WARN     = 2; // no immediate action needed
+  CRITICAL = 3; // immediate attention required
+}
+
+message EventSource {
+  // name of the component which generated the event
+  string Component = 1;
+  // name of the DSC node which generated the event
+  string NodeName  = 2;
+}

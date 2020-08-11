@@ -1,8 +1,8 @@
 #include <arpa/inet.h>
 #include <inttypes.h>
 
-#include "gen/proto/flow.pb.h"
 #include "gen/proto/types.pb.h"
+#include "gen/proto/operd/flow.pb.h"
 #include "lib/operd/operd.hpp"
 
 extern "C" {

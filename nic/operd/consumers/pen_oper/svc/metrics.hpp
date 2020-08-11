@@ -7,7 +7,7 @@
 #define __PEN_OPER_SVC_METRICS_HPP__
 
 #include "grpc++/grpc++.h"
-#include "gen/proto/metrics.grpc.pb.h"
+#include "gen/proto/operd/metrics.grpc.pb.h"
 
 using grpc::Status;
 using grpc::ServerContext;

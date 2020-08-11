@@ -20,6 +20,8 @@ APULU_CONFIG_TOPO_SPEC_PATH = "apollo/config/topology/%s" % GlobalOptions.topolo
 APULU_TEST_PATH             = "apulu/test/"
 APULU_TEST_CALLBACK_PATH    = "apollo.test.callbacks"
 APULU_PROTO_PATH            = os.environ['WS_TOP'] + '/nic/build/x86_64/apulu/' + asic + '/gen/proto/'
+APULU_OPERD_PROTO_PATH      = APULU_PROTO_PATH + "/operd/"
+sys.path.insert(0, APULU_OPERD_PROTO_PATH)
 sys.path.insert(0, APULU_PROTO_PATH)
 import apollo.config.topology    as topology
 

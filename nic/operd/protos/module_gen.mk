@@ -16,5 +16,5 @@ MODULE_INCS         = ${MODULE_DIR} \
 MODULE_SRCS         = $(wildcard ${MODULE_DIR}/*.proto)
 MODULE_POSTGEN_MK   = module.mk
 MODULE_PROTOC_GOFAST_OPTS = --gogofast_out=Mgogo.proto=github.com/gogo/protobuf/gogoproto,plugins=grpc:${MODULE_DIR}
-MODULE_GEN_DIR      = ${BLD_PROTOGEN_DIR}
+MODULE_GEN_DIR      = ${BLD_PROTOGEN_DIR}/operd
 include ${MKDEFS}/post.mk

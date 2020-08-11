@@ -22,13 +22,25 @@ class Top():
         self.names_[alert.name_] = True
 
     def generate_implementation(self, f):
+        def __add_empty_alert(fileHandle, alertName):
+            fileHandle.write('\t{\n')
+            fileHandle.write(f'\t\tname: "{alertName}",\n')
+            fileHandle.write('\t\tcategory: "NONE",\n')
+            fileHandle.write('\t\tseverity: "DEBUG",\n')
+            fileHandle.write('\t\tdescription: "Invalid event",\n')
+            fileHandle.write('\t\tmessage: NULL\n')
+            fileHandle.write('\t},\n')
+            return
+
         f.write('#include <cstdlib>\n')
         f.write('#include "alert_defs.h"\n')
         f.write('\n')
         f.write('namespace operd {\n')
         f.write('namespace alerts {\n')
         f.write('\n')
-        f.write('const alert_t alerts[%d] = {\n' % (len(self.alerts_)))
+        # +2 to include OPERD_EVENT_TYPE_NONE and OPERD_EVENT_TYPE_MAX
+        f.write('const alert_t alerts[%d] = {\n' % (len(self.alerts_)+2))
+        __add_empty_alert(f, "OPERD_EVENT_TYPE_NONE")
         for alert in self.alerts_:
             f.write('\t{\n')
             f.write('\t\tname: "%s",\n' % (alert.name_))
@@ -37,6 +49,7 @@ class Top():
             f.write('\t\tdescription: "%s",\n' % (alert.description_))
             f.write('\t\tmessage: NULL\n')
             f.write('\t},\n')
+        __add_empty_alert(f, "OPERD_EVENT_TYPE_MAX")
         f.write('};\n')
         f.write('\n')
         f.write('}\n')
@@ -44,20 +57,26 @@ class Top():
         
     def generate_header(self, f):
         f.write('#ifndef __OPERD_ALERT_DEFS_H__\n')
-        f.write('#define __OPERD_ALERT_DEFS_H__\n\n')
+        f.write('#define __OPERD_ALERT_DEFS_H__\n')
         f.write('\n')
-        f.write('#include "nic/operd/alerts/alert_type.hpp"')
+        f.write('#include "nic/operd/alerts/alert_type.hpp"\n')
         f.write('\n')
         f.write('namespace operd {\n')
         f.write('namespace alerts {\n')
-        f.write('\n');
+        f.write('\n')
         f.write('typedef enum operd_alerts_ {\n')
-        for i in range(0, len(self.alerts_)):
+        f.write('\t%s = %d,\n' % ("OPERD_EVENT_TYPE_NONE", 0))
+        f.write('\t%s = %d,\n' % ("OPERD_EVENT_TYPE_MIN", 1))
+        numAlerts = len(self.alerts_)
+        # first event to use OPERD_EVENT_TYPE_MIN
+        f.write('\t%s = %s,\n' % (self.alerts_[0].name_, "OPERD_EVENT_TYPE_MIN"))
+        for i in range(1, numAlerts):
             alert = self.alerts_[i]
-            f.write('\t%s = %d,\n' % (alert.name_, i))
+            f.write('\t%s = %d,\n' % (alert.name_, i+1))
+        f.write('\t%s = %d,\n' % ("OPERD_EVENT_TYPE_MAX", numAlerts+1))
         f.write('} operd_alerts_t;\n')
         f.write('\n')
-        f.write('extern const alert_t alerts[%d];' % (len(self.alerts_)))
+        f.write('extern const alert_t alerts[%d];' % (numAlerts+2))
         f.write('\n')
         f.write('}\n')
         f.write('}\n')

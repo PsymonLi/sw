@@ -63,7 +63,7 @@ void grpc_thread_exit (void *ctxt)
 static sdk_ret_t
 spawn_grpc_thread (void)
 {
-    // spawn grpc server which handles alerts & metrics
+    // spawn grpc server which handles events & metrics
     g_pen_oper_grpc_thread =
         sdk::event_thread::event_thread::factory(
             "pen_oper_grpc", SDK_IPC_ID_OPERD_PLUGIN,
@@ -112,7 +112,7 @@ pen_oper_get_info_type (sdk::operd::log_ptr entry)
 {
     switch (entry->encoder()) {
     case OPERD_DECODER_ALERTS:
-        return PENOPER_INFO_TYPE_ALERT;
+        return PENOPER_INFO_TYPE_EVENT;
     default:
         // pen-oper plugin is not interested in other info types yet
         break;

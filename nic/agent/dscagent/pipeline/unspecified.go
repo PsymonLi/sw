@@ -1858,8 +1858,8 @@ func (i *FakeAgentAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string
 	return "", errors.Wrapf(types.ErrNotImplemented, "Handle Tech Support not implemented by Iris Pipeline")
 }
 
-// HandleAlerts unimplemented
-func (i *FakeAgentAPI) HandleAlerts(evtsDispatcher events.Dispatcher) {
+// HandleEvents unimplemented
+func (i *FakeAgentAPI) HandleEvents(evtsDispatcher events.Dispatcher) {
 	return
 }
 

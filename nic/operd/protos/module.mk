@@ -11,11 +11,11 @@ MODULE_FLAGS         = -O3
 MODULE_EXCLUDE_FLAGS = -O2
 MODULE_SRCS          = $(wildcard ${BLD_PROTOGEN_DIR}/gogo.*.cc) \
                        $(wildcard ${BLD_PROTOGEN_DIR}/types.*.cc) \
-                       $(wildcard ${BLD_PROTOGEN_DIR}/metrics.*.cc) \
-                       $(wildcard ${BLD_PROTOGEN_DIR}/flow.*.cc) \
-                       $(wildcard ${BLD_PROTOGEN_DIR}/alerts.*.cc) \
-                       $(wildcard ${BLD_PROTOGEN_DIR}/oper.*.cc) \
-                       $(wildcard ${BLD_PROTOGEN_DIR}/techsupport.*.cc) \
-                       $(wildcard ${BLD_PROTOGEN_DIR}/syslog.*.cc) \
-                       $(wildcard ${BLD_PROTOGEN_DIR}/meta/*.cc)
+                       $(wildcard ${BLD_PROTOGEN_DIR}/meta/*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/operd/metrics.*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/operd/flow.*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/operd/event*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/operd/oper.*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/operd/techsupport.*.cc) \
+                       $(wildcard ${BLD_PROTOGEN_DIR}/operd/syslog.*.cc)
 include ${MKDEFS}/post.mk

@@ -12,7 +12,7 @@
 #define __PEN_OPER_SVC_OPER_HPP__
 
 #include "grpc++/grpc++.h"
-#include "gen/proto/oper.grpc.pb.h"
+#include "gen/proto/operd/oper.grpc.pb.h"
 
 using grpc::Status;
 using grpc::ServerContext;

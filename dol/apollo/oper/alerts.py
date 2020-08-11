@@ -31,7 +31,7 @@ class AlertsObject(base.ConfigObjectBase):
     def GetGrpcAlertsMessage(self):
         grpcmsg = oper_pb2.OperInfoRequest()
         spec = grpcmsg.Request.add()
-        spec.InfoType = oper_pb2.OPER_INFO_TYPE_ALERT
+        spec.InfoType = oper_pb2.OPER_INFO_TYPE_EVENT
         spec.Action = oper_pb2.OPER_INFO_OP_SUBSCRIBE
         return grpcmsg
 
@@ -51,10 +51,10 @@ class AlertsObject(base.ConfigObjectBase):
         for infoResp in self.Stream:
             assert (infoResp.Status == types_pb2.API_STATUS_OK),\
                    f"Alerts get failed on {self.Node}, rc {infoResp.Status}"
-            assert (infoResp.InfoType == oper_pb2.OPER_INFO_TYPE_ALERT),\
+            assert (infoResp.InfoType == oper_pb2.OPER_INFO_TYPE_EVENT),\
                    f"Unexpected oper info {infoResp.InfoType} received on "\
                    f"{self.Node} instead of alerts"
-            yield infoResp.AlertInfo
+            yield infoResp.EventInfo
 
     def DrainAlerts(self, spec=None):
         try:
