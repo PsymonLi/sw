@@ -114,6 +114,7 @@ func systemStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 	// Check the args
 	fte := false
 	pb := false
+	clearAll := false
 
 	if len(args) > 0 {
 		if strings.Compare(args[0], "fte") == 0 {
@@ -123,6 +124,7 @@ func systemStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 		} else if strings.Compare(args[0], "all") == 0 {
 			fte = true
 			pb = true
+			clearAll = true
 		} else {
 			fmt.Printf("Invalid argument\n")
 			return
@@ -130,6 +132,7 @@ func systemStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 	} else {
 		fte = true
 		pb = true
+		clearAll = true
 	}
 
 	var empty *halproto.Empty
@@ -148,6 +151,13 @@ func systemStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 			fmt.Printf("Clearing Pb Stats failed. %v\n", err)
 			return
 		}
+	}
+	if clearAll {
+		systemIngressDropStatsClearCmdHandler(cmd, args)
+		systemEgressDropStatsClearCmdHandler(cmd, args)
+		handleLifStatsClearCmd(cmd, args)
+		handlePortStatsClearCmd(cmd, nil)
+		handleCoppStatsClearCmd(cmd, args)
 	}
 }
 
@@ -189,12 +199,7 @@ func systemEgressDropStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func systemLifStatsClearCmdHandler(cmd *cobra.Command, args []string) {
-	if len(args) > 0 {
-		fmt.Printf("Invalid argument\n")
-		return
-	}
-
+func handleLifStatsClearCmd(cmd *cobra.Command, args []string) {
 	// Connect to HAL
 	c, err := utils.CreateNewGRPCClient()
 	if err != nil {
@@ -254,6 +259,15 @@ func systemLifStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 			}
 		}
 	}
+}
+
+func systemLifStatsClearCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	handleLifStatsClearCmd(cmd, args)
 }
 
 func handlePortStatsClearCmd(cmd *cobra.Command, ofile *os.File) {
@@ -398,12 +412,7 @@ func systemInternalPortStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 
 }
 
-func systemCoppStatsClearCmdHandler(cmd *cobra.Command, args []string) {
-	if len(args) > 0 {
-		fmt.Printf("Invalid argument\n")
-		return
-	}
-
+func handleCoppStatsClearCmd(cmd *cobra.Command, args []string) {
 	// Connect to HAL
 	c, err := utils.CreateNewGRPCClient()
 	if err != nil {
@@ -452,6 +461,15 @@ func systemCoppStatsClearCmdHandler(cmd *cobra.Command, args []string) {
 		fmt.Printf("Clearing Copp Stats failed. %v\n", err)
 		return
 	}
+}
+
+func systemCoppStatsClearCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	handleCoppStatsClearCmd(cmd, args)
 }
 
 var platformClearCmd = &cobra.Command{
