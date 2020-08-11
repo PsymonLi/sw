@@ -111,7 +111,7 @@ if __name__ == "__main__":
     if handlers:
         logging.basicConfig(handlers=handlers, level=logging.DEBUG)
         log = logging.getLogger()
-    core_collector.CollectCores(args.testbed, args.destdir, args.username, args.password, log=log)
+    core_collector.CollectCores(args.testbed, args.destDir, args.username, args.password, log=log)
     nodes = buildNodesFromTestbedFile(args.testbed)
     pool = ThreadPool(len(nodes))
     if not args.logDirs:

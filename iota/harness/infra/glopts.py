@@ -3,6 +3,7 @@ import argparse
 import pdb
 import sys
 import os
+import time
 
 __valid = False
 
@@ -109,6 +110,7 @@ GlobalOptions.end_testcase = None
 GlobalOptions.testcases = None
 GlobalOptions.markers_present = False
 GlobalOptions.inb_markers = False
+GlobalOptions.starttime = time.mktime(time.gmtime())
 
 if GlobalOptions.testcase != None:
     if "..." in GlobalOptions.testcase:

@@ -7,6 +7,7 @@ import pdb
 import re
 import subprocess
 import sys
+import time
 import traceback
 
 import iota.harness.infra.store as store
@@ -84,9 +85,34 @@ def CollectBmcLogs(ip, username, password, vendor=None):
             api.Logger.debug("closing redfish connection to {0}".format(ip))
             rf.Close()
 
-def SearchBmcLogs(ip, username, password, searchString):
-    logs = CollectBmcLogs(ip, username, password)
-    raise NotImplementedError()
+def SearchBmcLogs(logs, searchString, startTimeSeconds=None, stopTimeSeconds=None, severity=None):
+    entries = []
+    timeFormat1 = "[\d]+\-[\d]+\-[\d]+ [\d]+:[\d]+:[\d]+ UTC"
+    timeFormat2 = "[\d]+\-[\d]+\-[\d]+T[\d]+:[\d]+:[\d]+Z"
+    if not startTimeSeconds:
+        startTimeSeconds = 0
+    if not stopTimeSeconds:
+        stopTimeSeconds = time.mktime(time.gmtime())
+    if severity:
+        severity = severity.lower()
+    for entry in logs:
+        if not entry.get("Created", None):
+            continue
+        if severity and entry.get("Severity", "").lower() != severity:
+            continue
+        if re.search("^0000", entry["Created"]):
+            continue
+        ts = None
+        if re.search(timeFormat1, entry["Created"]):
+            ts = time.mktime(time.strptime(entry["Created"], "%Y-%m-%d %H:%M:%S UTC"))
+        elif re.search(timeFormat2, entry["Created"]):
+            ts = time.mktime(time.strptime(entry["Created"], "%Y-%m-%dT%H:%M:%SZ"))
+        if not ts:
+            continue
+        if ts >= startTimeSeconds and ts <= stopTimeSeconds:
+            if re.search(searchString, entry.get("Description", "")):
+                entries.append(entry)
+    return sorted(entries, key=lambda k: k["Created"])
 
 
 class CollectLogNode:
@@ -104,6 +130,7 @@ class CollectLogNode:
 
 
 def __collect_onenode(node):
+    bmcLogs = []
     SSHCMD = "timeout 300 sshpass -p {0} scp -r -o ConnectTimeout=60 -o StrictHostKeyChecking=no {1}@".format(node.password,node.username)
     msg="Collecting Logs for Node: %s (%s)" % (node.Name(), node.ip)
     print(msg)
@@ -139,6 +166,14 @@ def __collect_onenode(node):
             json.dump(bmcLogs, outfile)
     except:
         Logger.debug("failed to collect BMC logs for node {0}".format(node.ip))
+        Logger.debug(traceback.format_exc())
+    try:
+        Logger.debug("checking BMC logs for critical severity entries")
+        res = SearchBmcLogs(bmcLogs, "", GlobalOptions.starttime, None, "Critical")
+        if len(res) > 0:
+            Logger.warn("found {0} entries in BMC logs with severity of Critical".format(len(res)))
+    except:
+        Logger.debug("failed to search BMC logs for node {0}".format(node.ip))
         Logger.debug(traceback.format_exc())
 
 def buildNodesFromTestbedFile(testbed):
