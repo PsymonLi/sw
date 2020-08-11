@@ -136,6 +136,7 @@ xvcr_event_walk_cb (void *entry, void *ctxt)
     if_index_t ifindex;
     if_entry *intf = (if_entry *)entry;
     xcvr_event_info_t *xcvr_event_info = (xcvr_event_info_t *)ctxt;
+    sdk::types::sdk_event_t sdk_event;
 
     // if the interface is already added to db, but port_info is not yet set
     if (intf->port_info() == NULL) {
@@ -151,8 +152,11 @@ xvcr_event_walk_cb (void *entry, void *ctxt)
     sdk::linkmgr::port_update_xcvr_event(intf->port_info(), xcvr_event_info);
 
     xcvr_event_info->ifindex = ifindex;
-    sdk::ipc::broadcast(sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS,
-                        xcvr_event_info, sizeof(xcvr_event_info_t));
+    sdk_event.event_id = sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS;
+    memcpy(&sdk_event.xcvr_event_info, xcvr_event_info,
+           sizeof(xcvr_event_info_t));
+    sdk::ipc::broadcast(sdk_event.event_id, &sdk_event,
+                        sizeof(sdk::types::sdk_event_t));
     return false;
 }
 

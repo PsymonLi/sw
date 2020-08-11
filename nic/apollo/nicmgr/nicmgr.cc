@@ -179,7 +179,8 @@ nicmgrapi::port_event_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt) {
 void
 nicmgrapi::xcvr_event_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt) {
     port_status_t st = { 0 };
-    xcvr_event_info_t *event = (xcvr_event_info_t *)msg->data();
+    sdk::types::sdk_event_t *sdk_event = (sdk::types::sdk_event_t *)msg->data();
+    xcvr_event_info_t *event = &sdk_event->xcvr_event_info;
 
     st.id = event->ifindex;
     st.xcvr.state = event->state;

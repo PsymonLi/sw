@@ -33,7 +33,8 @@ void CmdHndler::xcvr_dom_event_handler(sdk::ipc::ipc_msg_ptr msg, const void *ct
 {
     sdk_ret_t ret = SDK_RET_OK;
     uint8_t port;
-    xcvr_event_info_t *event = (xcvr_event_info_t *)msg->data();
+    sdk::types::sdk_event_t *sdk_event = (sdk::types::sdk_event_t *)msg->data();
+    sdk::types::xcvr_event_info_t *event = &sdk_event->xcvr_event_info;
 
     if (event->ifindex == 0x11010001)
         port = 0;
@@ -54,7 +55,8 @@ void CmdHndler::xcvr_event_handler(sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 {
     sdk_ret_t ret = SDK_RET_OK;
     uint8_t port;
-    xcvr_event_info_t *event = (xcvr_event_info_t *)msg->data();
+    sdk::types::sdk_event_t *sdk_event = (sdk::types::sdk_event_t *)msg->data();
+    sdk::types::xcvr_event_info_t *event = &sdk_event->xcvr_event_info;
 
     if (event->ifindex == 0x11010001)
         port = 0;

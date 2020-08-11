@@ -103,8 +103,8 @@ static void
 xcvr_event_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 {
     port_status_t st = { 0 };
-    sdk::types::xcvr_event_info_t *event =
-        (sdk::types::xcvr_event_info_t *)msg->data();
+    sdk::types::sdk_event_t *sdk_event = (sdk::types::sdk_event_t *)msg->data();
+    sdk::types::xcvr_event_info_t *event = &sdk_event->xcvr_event_info;
 
     st.id = event->ifindex;
     st.xcvr.state = event->state;

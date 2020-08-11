@@ -38,19 +38,26 @@ port_event_notify (port_event_info_t *port_event_info)
 static void
 send_xcvr_event (xcvr_event_info_t *xcvr_event_info, bool dom)
 {
+    sdk::types::sdk_event_t sdk_event;
+
+    memcpy(&sdk_event.xcvr_event_info, xcvr_event_info,
+           sizeof(xcvr_event_info_t));
     if (dom) {
-        sdk::ipc::broadcast(
-            sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_DOM_STATUS,
-            xcvr_event_info, sizeof(xcvr_event_info_t));
+        sdk_event.event_id =
+            sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_DOM_STATUS;
     } else {
         SDK_TRACE_DEBUG("send event xcvr status, phy_port %u, ifindex 0x%x, "
                         "type %u, state %u, pid %u, cable_type %u",
-                        xcvr_event_info->phy_port, xcvr_event_info->ifindex,
-                        xcvr_event_info->type, xcvr_event_info->state,
-                        xcvr_event_info->pid, xcvr_event_info->cable_type);
-        sdk::ipc::broadcast(sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS,
-                            xcvr_event_info, sizeof(xcvr_event_info_t));
+                        sdk_event.xcvr_event_info.phy_port,
+                        sdk_event.xcvr_event_info.ifindex,
+                        sdk_event.xcvr_event_info.type,
+                        sdk_event.xcvr_event_info.state,
+                        sdk_event.xcvr_event_info.pid,
+                        sdk_event.xcvr_event_info.cable_type);
+        sdk_event.event_id = sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_XCVR_STATUS;
     }
+    sdk::ipc::broadcast(sdk_event.event_id, &sdk_event,
+                        sizeof(sdk::types::sdk_event_t));
 }
 
 void

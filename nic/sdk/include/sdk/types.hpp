@@ -9,6 +9,7 @@
 
 #include <cinttypes>
 #include <string>
+#include "include/sdk/globals.hpp"
 
 #define XCVR_SPROM_SIZE 256
 
@@ -374,6 +375,14 @@ typedef union module_version_s {
             uint16_t minor;
         };
 } module_version_t;
+
+/// \brief event definition for sdk
+typedef struct sdk_event_s {
+    sdk_ipc_event_id_t event_id;
+    union {
+        xcvr_event_info_t xcvr_event_info;  ///< transceiver event info
+    };
+} sdk_event_t;
 
 }    // namespace types
 }    // namespace sdk
