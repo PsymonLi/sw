@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import errno
 import traceback
 import http.client
@@ -10,8 +11,15 @@ import uuid
 import textwrap
 import ssl
 import shutil
+import json
+import time
+import io
+import os.path
+from collections import OrderedDict
+import datetime
+import re
 
-TOOL_VERSION = '1.12'
+TOOL_VERSION = '1.13'
 
 CLI_UPLINKS = 'esxcfg-nics '
 CLI_VS = 'esxcfg-vswitch '
@@ -757,6 +765,1084 @@ class Pencli:
         print('Interface: ' + inf_name + ' does not exist on DSC')
         return None
 
+    
+    def ShowTime(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting time of an interface on DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"getdate\"}')
+            response = connection.getresponse()
+
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read())
+            return results[2:][:-3]
+
+        return None
+
+    def ShowSysMemUsage(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting memory usage analytics from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"getsysmem\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowPortStat(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting port status information from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowport\", \"opts\":\"status\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read())
+            return results
+
+        return None
+
+
+    def ShowQosClass(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the qos class from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowqosclass\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowQosQueues(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the qos class queues from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowqosclassqueues\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+
+    def ShowProcMem(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the /proc/meminfo file from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"getprocmeminfo\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowPbDetail(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting system statistics pb detail from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowsystemstatisticspbdetail\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowQueueStats(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting system queue-statistics from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowsystemqueuestats\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowPort(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the port object from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowport\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowPortStatus(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the port object status from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowport\", \"opts\":\"status\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowPortStatistics(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the port statistics from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowport\", \"opts\":\"statistics\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowStartupFirm(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the startup firmware from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"showStartupFirmware\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowIntMPL(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the MPLSoUDP tunnel interface from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowinterfacetunnelmplsoudp\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowIntTunnel(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the tunnel interface from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowinterfacetunnel\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowInterface(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the interface from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"halctlshowinterface\"}')
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowSysStatus(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the current system status from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/monitoring/v1/naples/obfl/pciemgrd.log")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results
+
+        return None
+
+    def ShowMetPciemgr(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the Pcie Mgr Metrics information from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/pciemgrmetrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowMetPciePort(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the Pcie Port Metrics information from the DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/pcieportmetrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowDSC(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the DSC Modes and Profiles, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/api/v1/naples/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowDSConfig(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the DSC configuration, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/api/v1/naples/profiles/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowFWVersion(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting firmware version on DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/api/v1/naples/version/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowMetSysTemp(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting system temperature information, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/asictemperaturemetrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowMetSysPower(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting system power information, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/asicpowermetrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowMetSysMem(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting system memory information, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/asicmemorymetrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowMetSysFreq(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting system frequency information, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/asicfrequencymetrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowDevProf(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting available DSC profiles, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,
+                                                         context=ssl._create_unverified_context())
+
+            connection.request("GET", "/api/v1/naples/profiles/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def UpdateTime(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support updating time of an interface on DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10, context=ssl._create_unverified_context())
+
+
+            timezone = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
+            timezoneStr = "Etc/" + str(timezone) + "\\n"
+
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"pensettimezone\", \"opts\":'+ '\"' + timezoneStr + '\"' + '}')
+            response = connection.getresponse()
+
+            inLocalTime = "/usr/share/zoneinfo/posix/Etc/" + str(timezone)
+
+            connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10, context=ssl._create_unverified_context())
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"lnlocaltime\", \"opts\":'+ '\"' + inLocalTime + '\"' + '}')
+            response = connection.getresponse()
+
+            mydate = datetime.datetime.now()
+            dateFormat = mydate.strftime("%b %-d %H:%M:%S %Y")
+
+            connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10, context=ssl._create_unverified_context())
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"setdate\", \"opts\":' + '\"' + dateFormat + '\"' + '}')
+            responseRet = connection.getresponse()
+
+            connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10, context=ssl._create_unverified_context())
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"sethwclock\"}')
+            response = connection.getresponse()
+
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(responseRet.read())
+            return results
+
+        return None
+
+    def ListCoreDumps(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting core dumps from DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10, context=ssl._create_unverified_context())
+
+            connection.request("GET", "/cores/v1/naples/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read())
+            return re.findall("\"([^\"]*)\"", results)
+
+        return None
+
+    def ShowLogs(self, module):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting module logs from DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10, context=ssl._create_unverified_context())
+
+            if module == "pciemgrd":
+                connection.request("GET", "/monitoring/v1/naples/obfl/pciemgrd.log")
+            else:
+                connection.request("GET", "/monitoring/v1/naples/logs/pensando/pen-" + module +".log")
+
+            response = connection.getresponse()
+
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read())[2:-1].split('\\n')
+            return results
+
+        return None
+
+    def ShowEvents(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting events from DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10, context=ssl._create_unverified_context())
+
+            connection.request("GET", "/monitoring/v1/naples/events/events")
+            response = connection.getresponse()
+
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read())[2:-1].split('\\n')
+            return results
+
+        return None
+
+    def ShowSonicHw(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting the Metrics for hardware rings, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/accelhwringmetrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowSonicSeqInf(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting sequencer queues information, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/accelseqqueueinfometrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowSonicSeqMet(self):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting metrics for sequencer queues, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10,context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/accelseqqueuemetrics/")
+            response = connection.getresponse()
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def ShowMetrics(self, kind):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting metrics from DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=10, context=ssl._create_unverified_context())
+
+            connection.request("GET", "/telemetry/v1/metrics/" + kind +"metrics/")
+            
+            response = connection.getresponse()
+
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(response.status, response.reason))
+
+        if response.reason != 'OK':
+            return None
+        else:
+            results = str(response.read()).split('\\n')
+            return results[0]
+
+        return None
+
+    def TechSupport(self, tarballStr, skipBool):
+        try:
+            if self.__compat:
+                print(
+                    'Current DSC firmware does not support getting tech support from DSC, please move to a new version(at least 1.3)')
+                return None
+
+            else:
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=300,
+                                                         context=ssl._create_unverified_context())
+            
+            if skipBool:
+                skipCores = "true"
+            else:
+                skipCores = "false"
+
+            
+            cmd = '{\"kind\":\"TechSupportRequest\",\"meta\":{\"name\":\"PenctlTechSupportRequest\",\"generation-id\":\"\",\"creation-time\":\"\",\"mod-time\":\"\"},\"spec\":{\"instance-id\":\"penctl-techsupport\", \"skip-core\":'+ skipCores + '},\"status\":{}}'                                            
+
+            connection.request("POST", "/api/techsupport/", cmd)
+            postResponse = connection.getresponse()
+
+            connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=300, context=ssl._create_unverified_context())
+            connection.request("GET", "/data/techsupport/PenctlTechSupportRequest-penctl-techsupport/PenctlTechSupportRequest-penctl-techsupport.tar.gz")
+            getResponse = connection.getresponse()
+
+            dirName = './pen_techsupport'
+
+            if os.path.isdir(dirName):
+                print(" This directory already exists. Please delete the " + dirName + " directory and then run the command.")
+                return 1
+            else:
+                os.mkdir(dirName) 
+ 
+            if len(tarballStr) > 0 :
+                fileName = '/' + tarballStr
+            else :
+                fileName = "/PenctlTechSupportRequest-penctl-techsupport"
+            
+            path = dirName + fileName + ".tar.gz"
+            f = open(path, "w+b", 1)
+
+            for chunk in self.__read_in_chunks(getResponse):
+                f.write(chunk)
+            
+            connection = http.client.HTTPSConnection('10.8.157.235', 8888, timeout=300, context=ssl._create_unverified_context())
+            connection.request("GET", "/cmd/v1/naples/", '{\"executable\":\"rmpentechsupportdir\"}')
+            response = connection.getresponse()
+
+        except Exception as err:
+            if self.__verbose:
+                traceback.print_exc()
+            return None
+        
+        if self.__verbose:
+            print("Status: {} and reason: {}".format(getResponse.status, getResponse.reason))
+        
+        if postResponse.status != 200 or getResponse.status != 200:
+            return None
+        else:
+            print("Downloaded tech-support file: " + path)
+            return 1
+
+        return None
+    
+
 def ConfigureSSH(args):
     pencli = Pencli(args)
 
@@ -932,10 +2018,974 @@ def GetVersion(args):
     print('The current version of this tool is: ' + TOOL_VERSION)
     return 0
 
+
+def ShowTime(args):
+
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowTime()
+    pencli.CleanupPenMgmtNetwork()
+    if out is None:
+        print('Failed at getting time')
+        return 1
+
+    print(out)
+
+    return ret
+
+
+def ShowSysMemUsage(args):
+
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowSysMemUsage()
+    pencli.CleanupPenMgmtNetwork()
+    if out is None:
+        print('Failed at getting system memory usage')
+        return 1
+
+    for str in out:
+        if(str[0:2] == ("b'") or str[0] == ("'")):
+            str = str[2:]
+
+        print(str)
+
+    return ret
+
+def ShowPortStat(args):
+
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowPortStat()
+    pencli.CleanupPenMgmtNetwork()
+    if out is None:
+        print('Failed at getting port status')
+        return 1
+
+    print(out)
+
+    return ret
+
+def ShowQosClass(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowQosClass()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print("Failed at getting the qos-class object")
+        return 1
+    for str in out:
+        if (str[0:2] == ("b'") or str[0] == ("'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+
+def ShowQosQueues(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowQosQueues()
+
+    pencli.CleanupPenMgmtNetwork()
+    if out is None:
+        print("Failed at getting the qos-class queues")
+        return 1
+    for str in out:
+        if (str[0:2] == ("b'") or str[0] == ("'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowProcMem(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowProcMem()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the /proc/meminfo file on DSC')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowPbDetail(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowPbDetail()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting system statistics pb detail')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowQueueStats(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowQueueStats()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting system queue-statistics')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowPort(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowPort()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the port object')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+
+def ShowPortStatus(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowPortStatus()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the port object status')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+
+def ShowPortStatistics(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowPortStatistics()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the port statistics')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowStartupFirm(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowStartupFirm()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the startup firmware')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowIntMPL(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowIntMPL()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the MPLSoUDP tunnel interface')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowIntTunnel(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowIntTunnel()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the tunnel interface')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowInterface(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowInterface()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the interface')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowSysStatus(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowSysStatus()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the current system status')
+        return 1
+
+    out[-1] = ""
+    for str in out:
+        if (str[0:2] == ("b'")):
+            str = str[2:]
+        print(str)
+
+    return ret
+
+def ShowMetPciemgr(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowMetPciemgr()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the Pcie Mgr Metrics information')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowMetPciePort(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowMetPciePort()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting the Pcie Port Metrics information')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowDSC(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowDSC()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting DSC Modes and Profiles')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowDSConfig(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowDSConfig()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting DSC configuration')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowFWVersion(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowFWVersion()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting firmware version on DSC')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowMetSysTemp(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowMetSysTemp()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting system temperature information')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowMetSysPower(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowMetSysPower()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting system power information')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowMetSysMem(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowMetSysMem()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting system memory information')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowMetSysFreq(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowMetSysFreq()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting system frequency information')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowDevProf(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowDevProf()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting available DSC profiles')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+
+def UpdateTime(args):
+
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.UpdateTime()
+    pencli.CleanupPenMgmtNetwork()
+    if out is None:
+        print('Failed at updating time')
+        return 1
+
+    print(out[2:][:-3])
+
+    return ret
+
+
+def ListCoreDumps(args):
+
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ListCoreDumps()
+    pencli.CleanupPenMgmtNetwork()
+    if out is None:
+        print('Failed at getting core dumps from DSC')
+        return 1
+    elif not out:
+        print('No core files found')
+        return 1
+
+    for str in out:
+        print(str)
+
+    return ret
+
+
+def ShowLogs(args):
+
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowLogs(args.module)
+    pencli.CleanupPenMgmtNetwork()
+    if out is None:
+        print('Failed at getting module logs from DSC')
+        return 1
+
+    for str in out:
+        print(str)
+
+    return ret
+
+def ShowEvents(args):
+
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowEvents()
+    pencli.CleanupPenMgmtNetwork()
+    if out is None:
+        print('Failed at getting events from DSC')
+        return 1
+
+    for str in out:
+        print(str)
+
+    return ret
+
+def ShowSonicHw(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowSonicHw()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting metrics for hardware rings')
+        return 1
+    elif out == "b'null":
+        print('No accelhwringmetrics object(s) found')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowSonicSeqInf(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowSonicSeqInf()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting sequencer queues information')
+        return 1
+    elif out == "b'null":
+        print('No accelseqqueueinfometrics object(s) found')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowSonicSeqMet(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowSonicSeqMet()
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting metrics for sequencer queues')
+        return 1
+    elif out == "b'null":
+        print('No accelseqqueuemetrics object(s) found')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def ShowMetrics(args):
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.ShowMetrics(args.kind)
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting metrics')
+        return 1
+
+    out = out[2:]
+    formatted = json.loads(out, object_pairs_hook=OrderedDict)
+    print(json.dumps(formatted, indent=8), "\n")
+
+    return ret
+
+def TechSupport(args):
+
+    pencli = Pencli(args)
+
+    ret = pencli.CheckEnv()
+    if ret:
+        print('Failed at checking environment')
+        return 1
+
+    ret = pencli.ValidateDscConnectivity()
+    if ret:
+        print('Failed at validating connectivity to Pensando DSC')
+        return 1
+
+    out = pencli.TechSupport(args.tarball_string, args.skip_core)
+    pencli.CleanupPenMgmtNetwork()
+
+    if out is None:
+        print('Failed at getting tech support from DSC')
+        return 1
+
+
+    return ret
+
+def ReadArgs():
+    joinArgs = sys.argv[1:]
+    args = False
+    for x in range(0, len(sys.argv)):
+        if sys.argv[x][0] == "-":
+            flag = x
+            args = True
+            break
+
+    if args and len(joinArgs) > 1:
+        joinArgs[0:flag - 1]= [' '.join(joinArgs[0:flag - 1])]
+    elif len(joinArgs) == 0 or joinArgs[0] == '-h':
+        joinArgs = ['-h']
+    else:
+        joinArgs = [' '.join(joinArgs)]
+    
+    return joinArgs
+
 #------------------------------------------------------------------------------
 # Main processing from here
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
+
+    #Structure command line args
+    joinArgs = ReadArgs()
 
     # Parse command line args
     parser = argparse.ArgumentParser(prog='esx-pencli', formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -947,15 +2997,15 @@ if __name__ == '__main__':
 
             Examples:
                 1. Query mac address on a specific interface on DSC
-                   python esx-pencli.pyc get_dsc_inf_mac_address --inf_name inb_mnic1
+                   esx-pencli.pyc get_dsc_inf_mac_address --inf_name inb_mnic1
                 2. Query detailed information of all interfaces on DSC
-                   python esx-pencli.pyc get_dsc_all_mgmt_interfaces                   
+                   esx-pencli.pyc get_dsc_all_mgmt_interfaces                   
                 3. Perform FW upgrade(Require to reboot the ESXi host after this)
-                   python esx-pencli.pyc upgrade_dsc  --fw_img /vmfs/volumes/datastore1/naples_fw.tar
+                   esx-pencli.pyc upgrade_dsc  --fw_img /vmfs/volumes/datastore1/naples_fw.tar
                 4. Change Pensando DSC mode from host managed to network managed
-                   python esx-pencli.pyc change_dsc_mode --config_opt static --management_network oob --dsc_id pen_dsc1 --mgmt_ip 10.10.10.10/24 --gw 10.10.10.1 --controllers 10.10.10.11,10.10.10.12,10.10.10.13
+                   esx-pencli.pyc change_dsc_mode --config_opt static --management_network oob --dsc_id pen_dsc1 --mgmt_ip 10.10.10.10/24 --gw 10.10.10.1 --controllers 10.10.10.11,10.10.10.12,10.10.10.13
                 5. Change Pensando DSC mode from host managed to network managed with static configurations and inband IP address
-                   python esx-pencli.pyc change_dsc_mode --config_opt static --management_network oob --dsc_id pen_dsc1 --mgmt_ip 10.10.10.10/24 --gw 10.10.10.1 --inband_ip 1.1.1.1/24 --controllers 10.10.10.11,10.10.10.12,10.10.10.13
+                   esx-pencli.pyc change_dsc_mode --config_opt static --management_network oob --dsc_id pen_dsc1 --mgmt_ip 10.10.10.10/24 --gw 10.10.10.1 --inband_ip 1.1.1.1/24 --controllers 10.10.10.11,10.10.10.12,10.10.10.13
         '''))          
     subparsers = parser.add_subparsers()
 
@@ -999,8 +3049,191 @@ if __name__ == '__main__':
     subparser = subparsers.add_parser('version', help = 'Return the current version of this tool')
     subparser.set_defaults(callback=GetVersion) 
 
+    subparser = subparsers.add_parser('show time', help='Show system clock time from DSC')
+    subparser.set_defaults(callback=ShowTime)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show system memory usage', help='Show free/used memory on DSC (in MB)')
+    subparser.set_defaults(callback=ShowSysMemUsage)
+    subparser.add_argument('--uplink', default='',help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show port status', help='Show the status of the port')
+    subparser.set_defaults(callback=ShowPortStat)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show qos class', help='Show the qos-class object')
+    subparser.set_defaults(callback=ShowQosClass)
+    subparser.add_argument('--uplink', default='',help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show qos class queues', help='Show the qos-class queues')
+    subparser.set_defaults(callback=ShowQosQueues)
+    subparser.add_argument('--uplink', default='',help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show proc meminfo', help='Show the /proc/meminfo file on DSC')
+    subparser.set_defaults(callback=ShowProcMem)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show system statistics pb detail', help='Show the system statistics pb detail')
+    subparser.set_defaults(callback=ShowPbDetail)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show system queue statistics', help='Show the system queue-statistics')
+    subparser.set_defaults(callback=ShowQueueStats)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show port', help='Show the port object')
+    subparser.set_defaults(callback=ShowPort)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show port status', help='Show the port object status')
+    subparser.set_defaults(callback=ShowPortStatus)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show port statistics', help='Show the port statistics')
+    subparser.set_defaults(callback=ShowPortStatistics)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show startup firmware', help='Show startup firmware from DSC')
+    subparser.set_defaults(callback=ShowStartupFirm)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show interface tunnel mplsoudp', help='Show MPLSoUDP tunnel interface')
+    subparser.set_defaults(callback=ShowIntMPL)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show interface tunnel', help='Show tunnel interface')
+    subparser.set_defaults(callback=ShowIntTunnel)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show interface', help='Show interface')
+    subparser.set_defaults(callback=ShowInterface)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show system status', help='Show current system status')
+    subparser.set_defaults(callback=ShowSysStatus)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics pcie pciemgr', help='Show Pcie Mgr Metrics information')
+    subparser.set_defaults(callback=ShowMetPciemgr)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics pcie port', help='Show Pcie Port Metrics information')
+    subparser.set_defaults(callback=ShowMetPciePort)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show dsc', help='Show DSC Modes and Profiles')
+    subparser.set_defaults(callback=ShowDSC)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show dsc config', help='Show DSC Configuration')
+    subparser.set_defaults(callback=ShowDSConfig)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show firmware version', help='Show firmware version on DSC')
+    subparser.set_defaults(callback=ShowFWVersion)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics system temp', help='Show system temperature information')
+    subparser.set_defaults(callback=ShowMetSysTemp)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics system power', help='Show system power information')
+    subparser.set_defaults(callback=ShowMetSysPower)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics system memory', help='Show system memory information')
+    subparser.set_defaults(callback=ShowMetSysMem)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics system frequency', help='Show system frequency information')
+    subparser.set_defaults(callback=ShowMetSysFreq)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show device profiles', help='Show available DSC profiles')
+    subparser.set_defaults(callback=ShowDevProf)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('update time', help='Set system clock time on DSC')
+    subparser.set_defaults(callback=UpdateTime)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('list core dumps', help='Show core dumps from DSC')
+    subparser.set_defaults(callback=ListCoreDumps)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show logs', help='Show module logs from DSC')
+    subparser.set_defaults(callback=ShowLogs)
+    required = subparser.add_argument_group('required arguments')
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+    required.add_argument('-m','--module', required=True, help='Module to show logs for Valid modules are: nmd netagent tmagent pciemgrd')
+
+    subparser = subparsers.add_parser('show events', help='Show events from DSC')
+    subparser.set_defaults(callback=ShowEvents)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics sonic hw_ring', help='Show metrics for hardware rings')
+    subparser.set_defaults(callback=ShowSonicHw)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics sonic sequencer_info', help='Show sequencer queues information')
+    subparser.set_defaults(callback=ShowSonicSeqInf)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics sonic sequencer_metrics', help='Show metrics for sequencer queues')
+    subparser.set_defaults(callback=ShowSonicSeqMet)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+
+    subparser = subparsers.add_parser('show metrics', help='Show metrics from DSC')
+    subparser.set_defaults(callback=ShowMetrics)
+    required = subparser.add_argument_group('required arguments')
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+    required.add_argument('-k','--kind', required=True, help='Kind for metrics object')
+
+    subparser = subparsers.add_parser('system tech-support', help='Get tech support from DSC')
+    subparser.set_defaults(callback=TechSupport)
+    subparser.add_argument('--uplink', default='', help='Which management uplink to be used, required only in dual DSCs environment')
+    subparser.add_argument('--verbose', action='store_true', help='increase output verbosity')
+    subparser.add_argument('-s','--skip_core', action='store_true', help='Skip the collection of core files')
+    subparser.add_argument('-b', '--tarball_string', default='', help='Name of tarball to create (without .tar.gz)')
+
+
+
     # Parse the args
-    args = parser.parse_args()
+    args = parser.parse_args(joinArgs)
     
     try:
         args.callback(args)
