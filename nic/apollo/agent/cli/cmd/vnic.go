@@ -81,8 +81,10 @@ func init() {
 
 	debugUpdateCmd.AddCommand(vnicUpdateCmd)
 	vnicUpdateCmd.Flags().StringVarP(&vnicID, "id", "i", "", "Specify vnic ID")
-	vnicUpdateCmd.Flags().StringVarP(&txMirrorID, "tx-mirror-id", "t", "", "Specify TX Mirror Session IDs in comma separated list")
-	vnicUpdateCmd.Flags().StringVarP(&rxMirrorID, "rx-mirror-id", "r", "", "Specify RX Mirror Session IDs in comma separated list")
+	vnicUpdateCmd.Flags().StringVarP(&txMirrorID, "tx-mirror-id", "t", "",
+		"Specify TX Mirror Session IDs in comma separated list")
+	vnicUpdateCmd.Flags().StringVarP(&rxMirrorID, "rx-mirror-id", "r", "",
+		"Specify RX Mirror Session IDs in comma separated list")
 }
 
 func vnicUpdateCmdPreRunE(cmd *cobra.Command, args []string) error {
@@ -400,6 +402,7 @@ func printVnicDetail(vnic *pds.Vnic) {
 	fmt.Printf("%-30s    : %d\n", "Maximum Sessions", maxSessions)
 	fmt.Printf("%-30s    : %t\n", "Flow Learn Enabled", flowLearn)
 	fmt.Printf("%-30s    : %t\n", "Meter Enabled", meterEn)
+	fmt.Printf("%-30s    : %t\n", "Movable", spec.GetMovable())
 	fmt.Printf("%-30s    : %s\n", "IPv4 Meter ID:", utils.IdToStr(v4Meter))
 	fmt.Printf("%-30s    : %s\n", "IPv6 Meter ID:", utils.IdToStr(v6Meter))
 	fmt.Printf("%-30s    : %s\n", "Rx Policer ID:", utils.IdToStr(rxPolicer))

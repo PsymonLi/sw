@@ -98,6 +98,9 @@ message VnicSpec {
   // received with destination as PublicMACAddress, it gets translated to
   // vnic's private MAC address before the packet is delivered to the vnic
   uint64          PublicMACAddress      = 24;
+  // when movable attribute is set to true, this vnic is moveable from one
+  // host to another (e.g., as part of vmotion event)
+  bool            Movable               = 25;
 }
 
 // operational status of Vnic, if any
