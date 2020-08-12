@@ -10,14 +10,14 @@
 
 ### On DOL
 
-    OPERD_REGIONS=/sw/nic/conf/apulu/operd-regions.json /sw/nic/build/x86_64/apulu/capri/bin/flowlog_gen -r 1 -n 5
+    OPERD_REGIONS=/sw/nic/conf/apulu/operd-regions.json /sw/nic/build/x86_64/apulu/capri/bin/flowlog_gen -r 1 -n 5 -t ipv4 -l 1
 
 ### On SIM
 
-    OPERD_REGIONS=/naples/nic/conf/operd-regions.json /naples/nic/bin/flowlog_gen  -r 100 -n 500
+    OPERD_REGIONS=/naples/nic/conf/operd-regions.json /naples/nic/bin/flowlog_gen  -r 100 -n 500 -t ipv4 -l 1
 
 ### On HW
 
     Being a testapp, It is not packaged in HW but it should work
-    <copied_path>/flowlog_gen -r 100 -n 1000
+    <copied_path>/flowlog_gen -r 100 -n 1000 -t ipv4 -l 1
 

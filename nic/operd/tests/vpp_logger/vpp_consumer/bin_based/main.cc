@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <sys/stat.h>
 
+#include "nic/sdk/include/sdk/eth.hpp"
 #include "gen/proto/types.pb.h"
 #include "gen/proto/operd/flow.pb.h"
 #include "lib/operd/operd.hpp"
@@ -76,13 +77,18 @@ print_flow (int fd, char *data, uint64_t data_length)
             
             dprintf(fd, "proto: %" PRIu32 ", ", flow.key().ipflowkey().ipprotocol());
 
-            dprintf(fd, "packets: iflow: %" PRIu64 ", rflow: %" PRIu64 ", ",
-                    flow.iflowpackets(), flow.rflowpackets());
-            dprintf(fd, "bytes: iflow: %" PRIu64 ", rflow: %" PRIu64 " ",
-                    flow.iflowbytes(), flow.rflowbytes());
         } else if (flow.key().has_macflowkey()) {
-            dprintf(fd, "l2");
+            dprintf(fd, "l2, ");
+            dprintf(fd, "source: %s ", mac2str(flow.key().macflowkey().srcmac()));
+            dprintf(fd, "destination: %s ",
+                    mac2str(flow.key().macflowkey().dstmac()));
+            dprintf(fd, "ethtype: %" PRIu32 ", ",
+                    flow.key().macflowkey().ethertype());
         }
+        dprintf(fd, "packets: iflow: %" PRIu64 ", rflow: %" PRIu64 ", ",
+                flow.iflowpackets(), flow.rflowpackets());
+        dprintf(fd, "bytes: iflow: %" PRIu64 ", rflow: %" PRIu64 " ",
+                flow.iflowbytes(), flow.rflowbytes());
     }
     fflush(stdout);
 }

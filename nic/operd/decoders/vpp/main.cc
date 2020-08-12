@@ -154,6 +154,7 @@ vpp_decoder (uint8_t encoder, const char *data, size_t data_length,
         macKey->set_subnet(&flow->l2.bd_id, sizeof(flow->l2.bd_id));
         macKey->set_srcmac(mac_to_u64(flow->l2.src));
         macKey->set_dstmac(mac_to_u64(flow->l2.dst));
+        macKey->set_ethertype(flow->l2.ether_type);
     }
     break;
     default:
