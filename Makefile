@@ -548,6 +548,11 @@ shell:
 	@mkdir -p ${PWD}/bin/pkg
 	docker run -it --user $(shell id -u):$(shell id -g) -e "GOCACHE=/import/src/github.com/pensando/sw/.cache" --rm -e "VENICE_CCOMPILE_FORCE=1" -v${PWD}:/import/src/github.com/pensando/sw${CACHEMOUNT} -v${PWD}/bin/pkg:/import/pkg${CACHEMOUNT} -v${PWD}/bin/cbin:/import/bin${CACHEMOUNT} -w /import/src/github.com/pensando/sw ${REGISTRY_URL}/${BUILD_CONTAINER} bash
 
+run-shell-iso:
+	@mkdir -p ${PWD}/bin/cbin
+	@mkdir -p ${PWD}/bin/pkg
+	docker run -it --user $(shell id -u):$(shell id -g) -e "GOCACHE=/import/src/github.com/pensando/sw/.cache" --rm -e "VENICE_CCOMPILE_FORCE=1" -v${PWD}:/import/src/github.com/pensando/sw${CACHEMOUNT} -v${PWD}/bin/pkg:/import/pkg${CACHEMOUNT} -v${PWD}/bin/cbin:/import/bin${CACHEMOUNT} -w /import/src/github.com/pensando/sw ${REGISTRY_URL}/${BUILD_CONTAINER} bash -c "make ws-tools && make pull-assets-venice"
+
 container-qcompile:
 	mkdir -p ${PWD}/bin/cbin
 	mkdir -p ${PWD}/bin/pkg
@@ -969,13 +974,13 @@ venice-base-iso:
 # and creates the venice iso file (from base iso downloaded from pull-assets)
 # This also creates files for the ability to pxe boot appliance installation inside pensando
 venice-iso:
-	$(MAKE) pull-assets-venice
+	$(MAKE) run-shell-iso
 	mkdir -p bin/venice-install
 	mkdir -p bin/pxe
 	$(MAKE) -C tools/docker-files/vinstall venice-iso
 
 venice-apulu-iso:
-	$(MAKE) pull-assets-venice
+	$(MAKE) run-shell-iso
 	mkdir -p bin/venice-install
 	mkdir -p bin/pxe
 	$(MAKE) -C tools/docker-files/vinstall venice-apulu-iso
