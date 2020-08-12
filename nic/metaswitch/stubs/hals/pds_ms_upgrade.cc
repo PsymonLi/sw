@@ -8,6 +8,7 @@
 #include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/core/trace.hpp"
@@ -68,9 +69,7 @@ upg_cb_ev_sync (api::upg_ev_params_t *params)
 static sdk_ret_t
 upg_cb_ev_repeal (api::upg_ev_params_t *params)
 {
-    // TODO , @mukesh, please see the failure in dol
-    // return upg_cb_ev_send_ipc(params);
-    return SDK_RET_OK;
+    return upg_cb_ev_send_ipc(params);
 }
 
 sdk_ret_t
@@ -121,14 +120,37 @@ upg_ipc_start_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
 
     try {
+        if (!bgp_rm_ent_get_enabled_status()) {
+            // BGP disabled - nothing to do
+            PDS_TRACE_DEBUG("BGP disabled, ignore upgrade start");
+            upg_ipc_process_response(SDK_RET_OK, msg);
+            return;
+        }
         // lock grpc
         mgmt_state_t::thread_context().state()->set_upg_ht_start();
 
-        // TODO Lock Hals stubs
-        // TODO Increase snapshot flush timer and force flush before BGP disable
-
         // Disable BGP to close listen socket and all network route updates
         // Also saves the do_graceful restart in snapshot before going down
+        //
+        // TODO Lock Hals stubs - not strictly necessary since BGP and gRPC
+        // are closed so there are no new triggers.
+        // Any outstanding messages to HAL can still be pushed since
+        // HAL does not backup underlay NH objs.
+        //
+        // TODO Increase snapshot flush timer and force flush before BGP disable
+        // NOTE: CTM snapshot saves BGP Admin state as disabled.
+        // But in future if we change that to save BGP Admin state as enabled
+        // then it will
+        // a) break rollback since after CTM snapshot replay BGP
+        // would become enabled.
+        // But since there is no BGP UUID until gRPC cfg replay,
+        // any rollback event before Cfg Replay will return without
+        // rolling back assuming BGP is disabled.
+        //
+        // b) introduce race conditions for ip tracked objects since
+        // BGP routing to TOR can converge before grpc comfig replay.
+        // So when ropi stub gets tracked route it wont know what its
+        // tracked for.
         auto ret = mgmt_stub_api_set_bgp_state(false);
         if (ret != SDK_RET_OK) {
             throw Error ("failed to disable BGP", ret);
@@ -177,12 +199,19 @@ upg_ipc_repeal_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
         auto params = (api::upg_ev_params_t *)(msg->data());
         PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
 
+        if (!mgmt_state_t::thread_context().state()->is_upg_ht_in_progress()) {
+            // BGP not enabled - nothing to do
+            PDS_TRACE_DEBUG("Routing not in upgrade start state, ignoring repeal");
+            upg_ipc_process_response(SDK_RET_OK, msg);
+            return;
+        }
         // enable BGP
         auto ret = mgmt_stub_api_set_bgp_state(true);
         if (ret != SDK_RET_OK) {
             throw Error ("failed to enable BGP", ret);
         }
         mgmt_state_t::thread_context().state()->set_upg_ht_repeal();
+        PDS_TRACE_DEBUG("hitless upgrade repeal completed successfully");
 
     } catch (Error& e) {
         PDS_TRACE_ERR("hitless upgrade repeal failed - %s", e.what());
@@ -198,13 +227,21 @@ upg_ipc_rollback_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     try {
         auto params = (api::upg_ev_params_t *)(msg->data());
         PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
-
         mgmt_state_t::thread_context().state()->set_upg_ht_rollback();
+
+        // This check returns false if BGP UUID is not found.
+        if (!bgp_rm_ent_get_enabled_status()) {
+            // BGP disabled - nothing to do
+            PDS_TRACE_DEBUG("BGP disabled, ignore upgrade rollback");
+            upg_ipc_process_response(SDK_RET_OK, msg);
+            return;
+        }
         // disable BGP
         auto ret = mgmt_stub_api_set_bgp_state(false);
         if (ret != SDK_RET_OK) {
             throw Error ("failed to disable BGP", ret);
         }
+        PDS_TRACE_DEBUG("hitless upgrade rollback completed successfully");
 
     } catch (Error& e) {
         PDS_TRACE_ERR("hitless upgrade rollback failed - %s", e.what());

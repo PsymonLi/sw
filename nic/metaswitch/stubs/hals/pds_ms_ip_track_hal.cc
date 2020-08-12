@@ -83,6 +83,9 @@ ip_track_are_all_reachable (void)
         walk([&all_reachable] (const pds_obj_key_t& key,
                                ip_track_obj_t& ip_track_obj) -> bool {
             if (!ip_track_obj.reachable()) {
+                PDS_TRACE_DEBUG("ip-track obj %s destination %s unreachable",
+                                ip_track_obj.pds_obj_key().str(),
+                                ipaddr2str(&ip_track_obj.destip()));
                 all_reachable = false;
                 return false; // Break walk
             }

@@ -345,6 +345,8 @@ pds_obj_key_proto_to_spec (pds_obj_key_t *key,
     return SDK_RET_OK;
 }
 
+bool bgp_rm_ent_get_enabled_status(void);
+
 } // End namespace
 
 static inline bool operator==(const ip_addr_t& a,

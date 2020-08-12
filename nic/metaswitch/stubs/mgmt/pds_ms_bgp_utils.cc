@@ -16,6 +16,49 @@ using namespace types;
 
 namespace pds_ms {
 
+bool
+bgp_rm_ent_get_enabled_status (void)
+{
+    pds_ms::BGPGetResponse proto_resp;
+    types::ApiStatus ret = types::API_STATUS_OK;
+ 
+    // allow only one thread to issue Metaswitch mgmt requests
+    std::lock_guard<std::mutex> lck(pds_ms::mgmt_state_t::grpc_lock());
+    try {
+        pds_ms::BGPSpec proto_status;
+        bool found_uuid = false;
+        mgmt_state_t::thread_context().state()->walk_uuid([&proto_status,
+                                                           &found_uuid]
+            (const pds_obj_key_t &key, uuid_obj_t *uuid_obj) -> bool {
+            if (uuid_obj->obj_type() == uuid_obj_type_t::BGP) {
+                // assuming singleton BGP global spec
+                proto_status.set_id(key.id, PDS_MAX_KEY_LEN);
+                found_uuid = true;
+                return false;
+            }
+            return true;
+        });
+        if (!found_uuid) {
+            PDS_TRACE_DEBUG ("BGP UUID not found");
+            return false;
+        }
+        PDS_MS_GET_SHARED_START();
+        pds_ms_get_bgpstatus_amb_bgp_rm_ent(proto_status, &proto_resp);
+        PDS_MS_GET_SHARED_END();
+        ret = pds_ms::mgmt_state_t::ms_response_wait();
+    } catch (const pds_ms::Error& e) {
+        PDS_TRACE_ERR ("BGPGetStatus failed: %s", e.what());
+        return false;
+    }
+
+    if (ret != types::API_STATUS_OK) {
+        PDS_TRACE_ERR ("BGPGetStatus failed: %s", pds_ms_api_ret_str(ret));
+        return false;
+    }
+    PDS_TRACE_VERBOSE ("BGPGetStatus successful");
+    return (proto_resp.response().status().status() == BGP_OPER_STATUS_UP);
+}
+
 static ApiStatus
 set_bgp_rm_ent_state_ (types::AdminState state)
 {
@@ -857,7 +900,7 @@ bgp_rm_ent_pre_set (BGPSpec &req, NBB_LONG row_status,
     }
 
     req.set_state (state);
-    PDS_TRACE_VERBOSE ("BGP Rm Ent admin status is updated to %s",
+    PDS_TRACE_VERBOSE ("BGP RM Ent admin status is updated to %s",
                         (state == ADMIN_STATE_DISABLE) ? "Disable" : "Enable");
 }
 
@@ -930,12 +973,7 @@ bgp_rm_ent_get_fill_func (BGPSpec &req, NBB_ULONG *oid)
         auto mgmt_ctxt = mgmt_state_t::thread_context();
         auto uuid_obj = mgmt_ctxt.state()->lookup_uuid(uuid);
         if (uuid_obj == nullptr) {
-            bgp_uuid_obj_uptr_t bgp_uuid_obj(new bgp_uuid_obj_t (uuid));
-            entity_index = bgp_uuid_obj->ms_id();
-            mgmt_ctxt.state()->set_pending_uuid_create(uuid,
-                                                       std::move(bgp_uuid_obj));
-            PDS_TRACE_VERBOSE("BGP RM Pre-set Create UUID %s Entity %d",
-                              uuid.str(), entity_index);
+            PDS_TRACE_ERR("BGP RM Request with unknown UUID %s", uuid.str());
         } else if (uuid_obj->obj_type() == uuid_obj_type_t::BGP) {
             auto bgp_uuid_obj = (bgp_uuid_obj_t*)uuid_obj;
             entity_index = bgp_uuid_obj->ms_id();
