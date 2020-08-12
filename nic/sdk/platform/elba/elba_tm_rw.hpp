@@ -16,12 +16,11 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "include/sdk/base.hpp"
-#include "include/sdk/qos.hpp"
-#include "nic/sdk/lib/device/device.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/platform/elba/elba_p4.hpp"
 #include "nic/sdk/asic/port.hpp"
+#include "include/sdk/base.hpp"
+#include "include/sdk/qos.hpp"
 
 namespace sdk {
 namespace platform {
@@ -218,7 +217,7 @@ sdk_ret_t elba_tm_asic_init(void);
  * @return sdk_ret_t: Status of the operation
  */
 sdk_ret_t elba_tm_init(sdk::lib::catalog* catalog,
-                       sdk::lib::qos_profile_t *qos_profile);
+                       sdk::qos::qos_profile_t *qos_profile);
 
 /** elba_tm_soft_init
  * API to initialize the PBC block for just reading the registers
@@ -226,7 +225,7 @@ sdk_ret_t elba_tm_init(sdk::lib::catalog* catalog,
  * @return sdk_ret_t: Status of the operation
  */
 sdk_ret_t elba_tm_soft_init(sdk::lib::catalog* catalog,
-                            sdk::lib::qos_profile_t *qos_profile);
+                            sdk::qos::qos_profile_t *qos_profile);
 
 sdk_ret_t elba_pf_init(void);
 

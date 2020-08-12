@@ -1,12 +1,13 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 
 #include <libgen.h>
-#include "lib/device/device.hpp"
-#include "include/sdk/mem.hpp"
-#include "lib/utils/utils.hpp"
+#include "nic/sdk/include/sdk/mem.hpp"
+#include "nic/sdk/include/sdk/qos.hpp"
+#include "nic/sdk/lib/utils/utils.hpp"
+#include "nic/utils/device/device.hpp"
 
-namespace sdk {
-namespace lib {
+namespace hal {
+namespace utils {
 
 SDK_DEFINE_MAP(dev_forwarding_mode_t, DEV_FORWARDING_MODE)
 SDK_DEFINE_MAP(dev_feature_profile_t, DEV_FEATURE_PROFILE)
@@ -97,7 +98,7 @@ device::get_ptree_(std::string& device_file, ptree& prop_tree)
         return SDK_RET_ERR;
     }
 
-    if (file_is_empty(device_file)) {
+    if (sdk::lib::file_is_empty(device_file)) {
         SDK_TRACE_DEBUG("device file %s is empty. Using defaults",
                         device_file.c_str());
         return SDK_RET_ERR;
@@ -111,7 +112,8 @@ sdk_ret_t
 device::populate_qos_profile(std::string qos_profile_name) {
     ptree prop_tree;
     uint32_t i = 0;
-    qos_profile_t *qos_profile = &device_db_.device_profile.qos_profile;
+    sdk::qos::qos_profile_t *qos_profile = 
+        &device_db_.device_profile.qos_profile;
     std::string profile_fname = device_db_.device_cfg_path + "/profiles/" +
                                 "qos_profile_" + qos_profile_name + ".json";
 
@@ -274,5 +276,5 @@ device::is_integer_(const std::string & s)
     return (*p == 0);
 }
 
-}    // namespace lib
-}    // namespace sdk
+}    // namespace utils
+}    // namespace hal

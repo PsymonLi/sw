@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include <stdio.h>
 
-#include "nic/sdk/lib/device/device.hpp"
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "platform/src/lib/devapi_iris/devapi_iris.hpp"
 #include "platform/src/lib/nicmgr/include/logger.hpp"
+#include "nic/utils/device/device.hpp"
 
 using namespace std;
 

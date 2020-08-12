@@ -3,30 +3,30 @@
 #ifndef  __HAL_STATE_HPP__
 #define  __HAL_STATE_HPP__
 
-#include "lib/list/list.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
+#include "nic/sdk/lib/shmmgr/shmmgr.hpp"
+#include "nic/sdk/include/sdk/timestamp.hpp"
+#include "nic/sdk/include/sdk/eth.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
+#include "nic/sdk/include/sdk/ip.hpp"
+#include "nic/sdk/include/sdk/eth.hpp"
+#include "lib/list/list.hpp"
 #include "lib/slab/slab.hpp"
 #include "lib/indexer/indexer.hpp"
 #include "lib/ht/ht.hpp"
-#include "nic/sdk/include/sdk/timestamp.hpp"
-#include "nic/sdk/lib/shmmgr/shmmgr.hpp"
 #include "lib/bitmap/bitmap.hpp"
-#include "nic/sdk/include/sdk/eth.hpp"
+#include "lib/periodic/periodic.hpp"
 #include "nic/include/eventmgr.hpp"
-#include "nic/sdk/include/sdk/types.hpp"
 #include "nic/include/hal.hpp"
 #include "nic/include/hal_cfg.hpp"
-#include "nic/sdk/include/sdk/ip.hpp"
-#include "nic/sdk/lib/device/device.hpp"
 #include "nic/include/hal_mem.hpp"
-#include "lib/periodic/periodic.hpp"
 #include "nic/fte/acl/acl.hpp"
 #include "nic/hal/src/debug/debug.hpp"
 #include "nic/hal/src/debug/snake.hpp"
 #include "nic/hal/plugins/cfg/lif/lif.hpp"
 #include "nic/hal/vmotion/vmotion.hpp"
+#include "nic/utils/device/device.hpp"
 #include "gen/proto/system.pb.h"
-#include "nic/sdk/include/sdk/eth.hpp"
 
 #ifdef SHM
 #define slab_ptr_t        offset_ptr<slab>
@@ -51,6 +51,7 @@ using sdk::lib::slab;
 using sdk::lib::indexer;
 using sdk::lib::ht;
 using hal::utils::eventmgr;
+using hal::utils::dev_forwarding_mode_t;
 using sdk::lib::dllist_ctxt_t;
 using acl::acl_ctx_t;
 using acl::acl_config_t;
@@ -343,10 +344,10 @@ public:
         mnic_internal_mgmt_lif_id_ = id;
     }
 
-    void set_forwarding_mode(sdk::lib::dev_forwarding_mode_t mode) {
+    void set_forwarding_mode(dev_forwarding_mode_t mode) {
         forwarding_mode_ = mode;
     }
-    sdk::lib::dev_forwarding_mode_t forwarding_mode(void) const { return forwarding_mode_; }
+    dev_forwarding_mode_t forwarding_mode(void) const { return forwarding_mode_; }
 
     void set_mgmt_vlan(uint32_t vlan) {
         mgmt_vlan_ = vlan;
@@ -526,7 +527,7 @@ private:
     hal_handle_t            infra_vrf_handle_;                      // infra vrf handle
     eventmgr                *event_mgr_;
     ip_addr_t               mytep_ip_;
-    sdk::lib::dev_forwarding_mode_t forwarding_mode_;
+    dev_forwarding_mode_t   forwarding_mode_;
     uint32_t                mgmt_vlan_;
     uint64_t                mgmt_if_mac_ = 0;
     uint64_t                max_sessions_;
@@ -853,10 +854,10 @@ public:
     slab *vmotion_thread_ctx_slab(void) const { return cfg_db_->vmotion_thread_ctx_slab(); }
 
     // forwarding mode APIs
-    void set_forwarding_mode(sdk::lib::dev_forwarding_mode_t mode) {
+    void set_forwarding_mode(dev_forwarding_mode_t mode) {
         oper_db_->set_forwarding_mode(mode);
     }
-    sdk::lib::dev_forwarding_mode_t forwarding_mode(void) const { return oper_db_->forwarding_mode(); }
+    dev_forwarding_mode_t forwarding_mode(void) const { return oper_db_->forwarding_mode(); }
 
     // mgmt vlan APIs
     void set_mgmt_vlan(uint32_t vlan) {

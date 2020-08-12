@@ -1,18 +1,18 @@
 #include <gtest/gtest.h>
 #include <stdio.h>
+#include <chrono>
+#include <grpc++/grpc++.h>
+#include <boost/multiprecision/cpp_int.hpp>
 
 #include "nic/sdk/lib/shmstore/shmstore.hpp"
-#include "nic/sdk/lib/device/device.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "platform/src/lib/nicmgr/include/dev.hpp"
 #include "platform/src/lib/nicmgr/include/eth_dev.hpp"
 #include "platform/src/lib/nicmgr/include/eth_if.h"
 #include "platform/src/lib/nicmgr/include/logger.hpp"
-#include <grpc++/grpc++.h>
-#include "gen/proto/interface.grpc.pb.h"
-#include <boost/multiprecision/cpp_int.hpp>
-#include <chrono>
 #include "nic/hal/test/utils/hal_test_utils.hpp"
+#include "nic/utils/device/device.hpp"
+#include "gen/proto/interface.grpc.pb.h"
 // #include "devapi_types.hpp"
 // #include "logger.hpp"
 
@@ -35,7 +35,7 @@ namespace nicmgr {
 }
 
 DeviceManager *devmgr = NULL;
-sdk::lib::dev_forwarding_mode_t g_fwd_mode;
+hal::utils::dev_forwarding_mode_t g_fwd_mode;
 
 void
 create_uplinks()
@@ -151,7 +151,7 @@ nicmgr_init()
     cfg.cfg_path = std::string(getenv("CONFIG_PATH"));
     cfg.device_conf_file = "../nic/conf/device.conf";
     cfg.catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog_4g.json", platform_type_t::PLATFORM_TYPE_SIM);
-    cfg.fwd_mode = sdk::lib::FORWARDING_MODE_NONE;
+    cfg.fwd_mode = hal::utils::FORWARDING_MODE_NONE;
     cfg.micro_seg_en = false;
     cfg.shm_mgr = NULL;
     cfg.backup_store = nicmgr_shmstore_init();
@@ -598,11 +598,11 @@ int main(int argc, char **argv) {
     // sdk::lib::logger::init(sdk_error_logger, sdk_debug_logger);
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--classic") == 0) {
-            g_fwd_mode = sdk::lib::FORWARDING_MODE_CLASSIC;
+            g_fwd_mode = hal::utils::FORWARDING_MODE_CLASSIC;
         }
     }
     printf("\n------------------ Executing tests in mode: %s ---------------------\n",
-           (g_fwd_mode == sdk::lib::FORWARDING_MODE_CLASSIC) ? "CLASSIC" : "SMART");
+           (g_fwd_mode == hal::utils::FORWARDING_MODE_CLASSIC) ? "CLASSIC" : "SMART");
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

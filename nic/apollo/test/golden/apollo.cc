@@ -30,12 +30,12 @@
 #include "nic/apollo/p4/include/table_sizes.h"
 #include "nic/apollo/p4/include/sacl_defines.h"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/utils/pack_bytes/pack_bytes.hpp"
+#include "nic/utils/device/device.hpp"
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/apollo/include/p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 #include "gen/p4gen/p4plus_rxdma/include/p4plus_rxdma_p4pd.h"
-#include "nic/utils/pack_bytes/pack_bytes.hpp"
-#include "nic/sdk/lib/device/device.hpp"
 
 #define EPOCH 0xb055
 #define ROUTE_LPM_MEM_SIZE (64 + (16 * 64) + (16 * 16 * 64))
@@ -1624,7 +1624,7 @@ TEST_F(apollo_test, test1)
     cfg.asm_cfg[2].symbols_func = txdma_symbols_init;
 
     cfg.completion_func = NULL;
-    sdk::lib::device_profile_t device_profile = {0};
+    hal::utils::device_profile_t device_profile = { 0 };
     device_profile.qos_profile = {9216, 8, 25, 27, 16, 2, {0, 24}, 2, {0, 1}};
     cfg.device_profile = &device_profile;
 

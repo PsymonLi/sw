@@ -809,7 +809,7 @@ elba_cfg_init (asic_cfg_t *cfg, asic_cfg_t& elba_cfg)
     }
 
     elba_cfg.completion_func = cfg->completion_func;
-    elba_cfg.device_profile = cfg->device_profile;
+    elba_cfg.qos_profile = cfg->qos_profile;
     return SDK_RET_OK;
 }
 

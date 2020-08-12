@@ -44,8 +44,7 @@ capri_upgrade_hitless_init (asic_cfg_t *cfg)
                             "Capri ASM init failure, err : %d", ret);
     // initialize the profiles for capri register accesses by
     // other modules (link manager).
-    ret = capri_tm_soft_init(cfg->catalog,
-                             &cfg->device_profile->qos_profile);
+    ret = capri_tm_soft_init(cfg->catalog, cfg->qos_profile);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "Capri TM Slave init failure, err : %d", ret);
 

@@ -198,7 +198,7 @@ hal_init (hal_cfg_t *hal_cfg)
                                          hal_cfg->platform);
     SDK_ASSERT_TRACE_RETURN(catalog != NULL, HAL_RET_ERR, "Catalog file error");
     profile =
-        sdk::lib::dev_feature_profile_to_string(hal_cfg->device_cfg.feature_profile);
+        hal::utils::dev_feature_profile_to_string(hal_cfg->device_cfg.feature_profile);
     mpart_json =
         sdk::lib::get_mpart_file_path(hal_cfg->cfg_path,
                                       std::string(hal_cfg->feature_set),

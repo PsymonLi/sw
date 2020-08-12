@@ -13,7 +13,6 @@
 #include "lib/pal/pal.hpp"
 #include "platform/pciehdevices/include/pci_ids.h"
 #include "lib/catalog/catalog.hpp"
-#include "lib/device/device.hpp"
 #include "lib/utils/path_utils.hpp"
 
 namespace sdk {
@@ -315,7 +314,8 @@ void CmdHndler::GetMacStats(uint32_t port, struct GetNicStatsRespPkt *resp)
 }
 
 CmdHndler *
-CmdHndler::factory(std::shared_ptr<IpcService> IpcObj, transport *xport, EV_P)
+CmdHndler::factory(std::shared_ptr<IpcService> IpcObj, transport *xport,
+                   std::string dev_feature_profile, EV_P)
 {
     CmdHndler *cmd_hndlr;
 
@@ -380,13 +380,9 @@ CmdHndler::factory(std::shared_ptr<IpcService> IpcObj, transport *xport, EV_P)
 			cfg_path = (char *)"./";
 
 		SDK_TRACE_INFO("config_path:%s, pipeline:%s", cfg_path, pipeline);
-		sdk::lib::device *device =
-			sdk::lib::device::factory(sdk::lib::get_device_conf_path());
-		std::string profile =
-			sdk::lib::dev_feature_profile_to_string(device->get_feature_profile());
 		std::string mpart_json =
 			sdk::lib::get_mpart_file_path(cfg_path, std::string(pipeline), catalog_db, 
-					profile, platform_type_t::PLATFORM_TYPE_HW);
+					dev_feature_profile, platform_type_t::PLATFORM_TYPE_HW);
 		mempartition =
 			sdk::platform::utils::mpartition::factory(mpart_json.c_str());
 

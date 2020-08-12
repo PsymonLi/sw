@@ -520,7 +520,7 @@ devapi_iris::qos_reset(uint32_t group)
 }
 
 sdk_ret_t
-devapi_iris::set_fwd_mode(sdk::lib::dev_forwarding_mode_t fwd_mode)
+devapi_iris::set_fwd_mode(hal::utils::dev_forwarding_mode_t fwd_mode)
 {
 #if 0
     fwd_mode_ = fwd_mode;

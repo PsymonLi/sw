@@ -22,6 +22,7 @@
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/platform/pciehdevices/include/pciehdevices.h"
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
+#include "nic/utils/device/device.hpp"
 
 #include "device.hpp"
 #include "pd_client.hpp"
@@ -68,7 +69,7 @@ typedef struct devicemgr_cfg_s {
     sdk::platform::platform_type_t platform_type;
     std::string cfg_path;
     std::string device_conf_file;
-    sdk::lib::dev_forwarding_mode_t fwd_mode;
+    hal::utils::dev_forwarding_mode_t fwd_mode;
     bool micro_seg_en;
     sdk::lib::shmmgr *shm_mgr;
     // pipeline string indicates which p4 pipine is loaded in the datapath
@@ -216,7 +217,7 @@ private:
     bool init_done;
     UpgradeMode upgrade_mode;
     sdk::platform::platform_type_t platform;
-    sdk::lib::dev_forwarding_mode_t fwd_mode;
+    hal::utils::dev_forwarding_mode_t fwd_mode;
     bool micro_seg_en;
     bool is_host_managed;
     std::string device_json_file;

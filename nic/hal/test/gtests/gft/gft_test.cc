@@ -10,13 +10,13 @@
 #include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
-#include "gen/p4gen/gft/include/p4pd.h"
-#include "nic/p4/gft/include/defines.h"
 #include "nic/sdk/asic/pd/pd.hpp"
+#include "nic/p4/gft/include/defines.h"
 #include "nic/hal/pd/asicpd/asic_pd_common.hpp"
 #include "nic/hal/pd/asic_pd.hpp"
 #include "nic/hal/pd/iris/p4pd_mem.hpp"
-#include "nic/sdk/lib/device/device.hpp"
+#include "nic/utils/device/device.hpp"
+#include "gen/p4gen/gft/include/p4pd.h"
 
 using sdk::asic::pd::p4_deparser_cfg_t;
 
@@ -1515,9 +1515,9 @@ TEST_F(gft_test, test1) {
     cfg.asm_cfg[0].base_addr = std::string(JP4_PRGM);
 
     cfg.completion_func = NULL;
-    sdk::lib::device_profile_t device_profile = {0};
+    hal::utils::device_profile_t device_profile = { 0 };
     device_profile.qos_profile = {9216, 8, 25, 27, 16, 2, {0, 24}, 2, {0, 5}};
-    cfg.device_profile = &device_profile;
+    cfg.qos_profile = &device_profile.qos_profile;
 
     ret = sdk::asic::pd::asicpd_init(&cfg);
     ASSERT_EQ(ret, SDK_RET_OK);

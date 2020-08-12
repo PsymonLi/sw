@@ -6,12 +6,12 @@
 #include <string>
 #include "include/sdk/base.hpp"
 #include "include/sdk/types.hpp"
+#include "include/sdk/qos.hpp"
 #include "lib/catalog/catalog.hpp"
+#include "lib/p4/p4_api.hpp"
 #include "platform/utils/mpartition.hpp"
 #include "platform/ring/ring.hpp"
 #include "p4/loader/loader.hpp"
-#include "lib/p4/p4_api.hpp"
-#include "lib/device/device.hpp"
 
 namespace sdk {
 namespace asic {
@@ -103,7 +103,7 @@ typedef struct asic_cfg_s {
     bool                        p4_cache;
     bool                        p4plus_cache;
     bool                        llc_cache;
-    sdk::lib::device_profile_t  *device_profile;
+    sdk::qos::qos_profile_t     *qos_profile;
     sdk::platform::sysinit_mode_t init_mode;
     sdk::platform::sysinit_dom_t  init_domain;
 } asic_cfg_t;

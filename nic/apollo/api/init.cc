@@ -11,13 +11,14 @@
 #include "nic/sdk/platform/marvell/marvell.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/sdk/linkmgr/linkmgr.hpp"
-#include "nic/sdk/lib/device/device.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/platform/pal/include/pal.h"
 #include "nic/sdk/platform/fru/fru.hpp"
+#include "nic/sdk/platform/asicerror/interrupts.hpp"
 #include "nic/sdk/lib/kvstore/kvstore.hpp"
 #include "nic/sdk/lib/utils/path_utils.hpp"
+#include "nic/utils/device/device.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
@@ -34,7 +35,6 @@
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
 #include "platform/sysmon/sysmon.hpp"
-#include "nic/sdk/platform/asicerror/interrupts.hpp"
 #include "nic/apollo/api/internal/monitor.hpp"
 
 const pds_obj_key_t k_pds_obj_key_invalid = { 0 };
@@ -445,7 +445,7 @@ pds_init (pds_init_params_t *params)
     sysinit_mode_t    init_mode;
     sysinit_dom_t     init_domain;
 
-    sdk::lib::device_profile_t device_profile = { 0 };
+    hal::utils::device_profile_t device_profile = { 0 };
     device_profile.qos_profile = {9216, 8, 25, 27, 16, 2, {0, 24}, 2, {0, 1}};
 
     sdk::lib::logger::init(params->trace_cb);
@@ -490,7 +490,7 @@ pds_init (pds_init_params_t *params)
 
     // setup all asic specific config params
     api::asic_global_config_init(params, &asic_cfg);
-    asic_cfg.device_profile = &device_profile;
+    asic_cfg.qos_profile = &device_profile.qos_profile;
 
     // skip the threads, ports and monitoring if it is soft initialization
     if (sdk::asic::asic_is_hard_init()) {

@@ -12,7 +12,6 @@
 #include "include/sdk/types.hpp"
 #include "lib/shmmgr/shmmgr.hpp"
 #include "platform/utils/mcache_pipe.hpp"
-#include "lib/device/device.hpp"
 
 namespace sdk {
 namespace platform {

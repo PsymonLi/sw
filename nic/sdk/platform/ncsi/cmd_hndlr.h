@@ -245,7 +245,9 @@ class CmdHndler {
 //class CmdHndler : public IpcService {
 
 public:
-    static CmdHndler *factory(std::shared_ptr<IpcService> IpcObj, transport *xport, EV_P);
+    static CmdHndler *factory(std::shared_ptr<IpcService> IpcObj,
+                              transport *xport, std::string dev_feature_profile,
+                              EV_P);
     int HandleCmd(const void* pkt, ssize_t sz);
     struct ev_loop* GetEvLoop() { return this->loop; };
 

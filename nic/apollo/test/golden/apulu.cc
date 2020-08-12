@@ -14,6 +14,7 @@
 
 #include <boost/crc.hpp>
 #include "boost/property_tree/json_parser.hpp"
+
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/model_sim/include/lib_model_client.h"
 #include "nic/sdk/lib/pal/pal.hpp"
@@ -21,26 +22,26 @@
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
-#include "nic/sdk/lib/device/device.hpp"
-#include "nic/utils/pack_bytes/pack_bytes.hpp"
-#include "platform/utils/lif_manager_base.hpp"
-#include "platform/capri/capri_qstate.hpp"
 #include "nic/sdk/platform/capri/capri_hbm_rw.hpp"
 #include "nic/sdk/platform/capri/capri_tm_rw.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/asic/rw/asicrw.hpp"
 #include "nic/sdk/asic/common/asic_common.hpp"
 #include "nic/sdk/ipsec/ipsec.hpp"
+#include "nic/utils/device/device.hpp"
+#include "nic/utils/pack_bytes/pack_bytes.hpp"
+#include "platform/utils/lif_manager_base.hpp"
+#include "platform/capri/capri_qstate.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "nic/apollo/p4/include/apulu_table_sizes.h"
 #include "nic/apollo/api/impl/apulu/apulu_mem_regions.h"
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/test/golden/apulu_pkts.h"
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 #include "gen/p4gen/p4plus_rxdma/include/p4plus_rxdma_p4pd.h"
-#include "nic/apollo/test/golden/apulu_pkts.h"
 
 #define LOG2_U32(x) (((x) == 0) ? 0 : (31 - __builtin_clz((x))))
 
@@ -1812,9 +1813,9 @@ TEST_F(apulu_test, test1)
     cfg.asm_cfg[2].symbols_func = txdma_symbols_init;
 
     cfg.completion_func = NULL;
-    sdk::lib::device_profile_t device_profile = {0};
+    hal::utils::device_profile_t device_profile = { 0 };
     device_profile.qos_profile = {9216, 8, 25, 27, 16, 2, {0, 24}, 2, {0, 1}};
-    cfg.device_profile = &device_profile;
+    cfg.qos_profile = &device_profile.qos_profile;
 
     printf("Doing asic init ...\n");
     ret = sdk::asic::pd::asicpd_init(&cfg);

@@ -4,7 +4,7 @@ include ${MKDEFS}/pre.mk
 MODULE_ASIC     = elba
 MODULE_TARGET   := elbtrace.bin
 MODULE_SOLIBS   := sdkpal logger sdk_asicrw_if  pal catalog \
-                   device sdkplatformutils sdkfru shmmgr
+                   sdkplatformutils sdkfru shmmgr
 ifeq ($(ARCH),x86_64)
 MODULE_SOLIBS   += model_client
 endif

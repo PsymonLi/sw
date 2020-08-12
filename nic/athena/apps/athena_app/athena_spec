@@ -104,7 +104,6 @@
 /sw/nic/sdk/lib/bitmap
 /sw/nic/sdk/lib/bm_allocator
 /sw/nic/sdk/lib/catalog
-/sw/nic/sdk/lib/device
 /sw/nic/sdk/lib/dpdk
 /sw/nic/sdk/lib/dpdk/sim
 /sw/nic/sdk/lib/edma
@@ -259,6 +258,7 @@
 /sw/nic/utils/events/recorder
 /sw/nic/utils/ftlite/*.hpp
 /sw/nic/utils/trace
+/sw/nic/utils/device
 /sw/nic/vpp/flow/pdsa_hdlr.h
 /sw/nic/vpp/flow/stats.h
 /sw/nic/vpp/infra/ipc/pdsa_hdlr.hpp

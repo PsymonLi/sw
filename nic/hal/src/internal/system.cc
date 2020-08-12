@@ -688,25 +688,25 @@ hal_ret_t
 feature_profile_get (FeatureProfileResponse *rsp)
 {
     switch (hal::g_hal_cfg.device_cfg.feature_profile) {
-    case sdk::lib::FEATURE_PROFILE_NONE:
+    case hal::utils::FEATURE_PROFILE_NONE:
         rsp->set_feature_profile(sys::FEATURE_PROFILE_NONE);
         break;
-    case sdk::lib::FEATURE_PROFILE_BASE:
+    case hal::utils::FEATURE_PROFILE_BASE:
         rsp->set_feature_profile(sys::FEATURE_PROFILE_BASE);
         break;
-    case sdk::lib::FEATURE_PROFILE_STORAGE:
+    case hal::utils::FEATURE_PROFILE_STORAGE:
         rsp->set_feature_profile(sys::FEATURE_PROFILE_STORAGE);
         break;
-    case sdk::lib::FEATURE_PROFILE_SRIOV:
+    case hal::utils::FEATURE_PROFILE_SRIOV:
         rsp->set_feature_profile(sys::FEATURE_PROFILE_SRIOV);
         break;
-    case sdk::lib::FEATURE_PROFILE_VIRTUALIZED:
+    case hal::utils::FEATURE_PROFILE_VIRTUALIZED:
         rsp->set_feature_profile(sys::FEATURE_PROFILE_VIRTUALIZED);
         break;
-    case sdk::lib::FEATURE_PROFILE_PROXY:
+    case hal::utils::FEATURE_PROFILE_PROXY:
         rsp->set_feature_profile(sys::FEATURE_PROFILE_PROXY);
         break;
-    case sdk::lib::FEATURE_PROFILE_DEVELOPER:
+    case hal::utils::FEATURE_PROFILE_DEVELOPER:
         rsp->set_feature_profile(sys::FEATURE_PROFILE_DEVELOPER);
         break;
     default:
@@ -1201,7 +1201,7 @@ system_handle_a_to_b (void)
     SysSpec         sys_spec;
     SysSpecResponse sys_rsp;
 
-    if (g_hal_state->forwarding_mode() == sdk::lib::FORWARDING_MODE_HOSTPIN) {
+    if (g_hal_state->forwarding_mode() == hal::utils::FORWARDING_MODE_HOSTPIN) {
         HAL_TRACE_DEBUG("Upgrade A(Hostpin) -> B. Moving to microseg-enforce");
         sys_spec.set_fwd_mode(sys::FWD_MODE_MICROSEG);
         sys_spec.set_policy_mode(sys::POLICY_MODE_ENFORCE);

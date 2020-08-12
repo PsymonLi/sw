@@ -11,7 +11,7 @@ MODULE_SRCS     := $(shell find ${MODULE_SRC_DIR} -type f -name '*.cc' \
                    ! -name 'ftl*' \
                    ! -name '*athena*' \
                    ! -name '*apollo*')
-MODULE_SOLIBS   := edma
+MODULE_SOLIBS   := edma device
 ifeq ($(ASIC),elba)
 MODULE_FLAGS     := -DELBA
 endif

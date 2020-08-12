@@ -11,7 +11,7 @@ MODULE_SOLIBS   := sdkpal logger sdkplatformutils shmmgr bm_allocator \
                     p4pd_${PIPELINE} \
                     p4pd_${PIPELINE}_rxdma p4pd_${PIPELINE}_txdma \
                     ${NIC_HAL_PD_SOLIBS_${ARCH}} \
-                    lif_mgr sdkxcvrdriver pal
+                    lif_mgr sdkxcvrdriver pal device
 MODULE_LDLIBS   := crypto ${NIC_COMMON_LDLIBS} \
                     ${NIC_THIRDPARTY_GOOGLE_LDLIBS} \
                     ${SDK_THIRDPARTY_CAPRI_LDLIBS} \

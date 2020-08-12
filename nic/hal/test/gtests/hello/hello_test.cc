@@ -9,17 +9,17 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
+#include "nic/sdk/lib/p4/p4_api.hpp"
 #include "platform/utils/lif_manager_base.hpp"
 #include "nic/hal/pd/iris/p4pd_mem.hpp"
-#include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/hal/pd/asicpd/asic_pd_common.hpp"
 #include "nic/hal/pd/asic_pd.hpp"
-#include "nic/utils/pack_bytes/pack_bytes.hpp"
 #include "nic/hal/pd/globalpd/gpd_utils.hpp"
-#include "nic/utils/pack_bytes/pack_bytes.hpp"
 #include "nic/p4/common/defines.h"
+#include "nic/utils/pack_bytes/pack_bytes.hpp"
+#include "nic/utils/pack_bytes/pack_bytes.hpp"
+#include "nic/utils/device/device.hpp"
 #include "gen/p4gen/hello/include/p4pd.h"
-#include "nic/sdk/lib/device/device.hpp"
 
 using namespace sdk::platform::utils;
 
@@ -338,7 +338,7 @@ TEST_F(hello_test, test1) {
     cfg.asm_cfg[0].base_addr = std::string(JP4_PRGM);
 
     cfg.completion_func = NULL;
-    sdk::lib::device_profile_t device_profile.qos_profiles =
+    hal::utils::device_profile_t device_profile.qos_profiles =
                                         {9216, 8, 25, 27, 16, 2, {0, 24}};
     cfg.device_profile = &device_profile;
 

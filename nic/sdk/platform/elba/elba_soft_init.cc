@@ -43,8 +43,7 @@ elba_soft_init (asic_cfg_t *cfg)
                             "elba ASM init failure, err %u", ret);
     // initialize the profiles for elba register accesses by
     // other modules (link manager).
-    ret = elba_tm_soft_init(cfg->catalog,
-                             &cfg->device_profile->qos_profile);
+    ret = elba_tm_soft_init(cfg->catalog, cfg->qos_profile);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "elba TM Slave init failure, err %u", ret);
 

@@ -3,11 +3,11 @@
 #ifndef __HAL_CFG_HPP__
 #define __HAL_CFG_HPP__
 
-#include "nic/include/base.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/platform/utils/mpartition.hpp"
-#include "nic/sdk/lib/device/device.hpp"
+#include "nic/include/base.hpp"
+#include "nic/utils/device/device.hpp"
 
 namespace hal {
 
@@ -46,10 +46,10 @@ typedef enum hal_feature_set_s {
  #undef UPLINK_FLOOD_MODES
 
 typedef struct device_cfg_s {
-    sdk::lib::dev_forwarding_mode_t forwarding_mode;
-    sdk::lib::dev_feature_profile_t feature_profile;
+    hal::utils::dev_forwarding_mode_t forwarding_mode;
+    hal::utils::dev_feature_profile_t feature_profile;
     port_admin_state_t admin_state; // default port admin state
-    sdk::lib::device_profile_t *device_profile;
+    hal::utils::device_profile_t *device_profile;
     uint32_t mgmt_vlan;
     bool micro_seg_en;
 } device_cfg_t;

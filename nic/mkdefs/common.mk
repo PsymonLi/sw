@@ -31,7 +31,7 @@ export NIC_COMMON_FLAGS := -pthread -rdynamic
 
 export NIC_SDK_SOLIBS   := utils list slab shmmgr shmstore mmgr sdkpal sdkfru \
     ht indexer logger thread event_thread periodic twheel directmap sldirectmap \
-    hash hbmhash tcam timerfd catalog runenv device lldp sdkplatformutils sdk${ASIC} \
+    hash hbmhash tcam timerfd catalog runenv lldp sdkplatformutils sdk${ASIC} \
     sdkp4loader sdkasicrw sdkasiccommon sdkasicpd lif_mgr sdkring sysmon sensor \
     sdkxcvrdriver pcieport pciemgrutils pciemgr pcietlp intrutils cfgspace \
     evutils misc marvell

@@ -4634,7 +4634,7 @@ capri_tm_init_enable_ports (void)
 static sdk_ret_t
 capri_tm_init_qos_profile (capri_tm_cfg_profile_t *tm_cfg_profile,
                            sdk::lib::catalog *catalog,
-                           sdk::lib::qos_profile_t *qos_profile)
+                           sdk::qos::qos_profile_t *qos_profile)
 {
     uint32_t interpipe_mtu;
     uint32_t jumbo_mtu     = qos_profile->jumbo_mtu;
@@ -4742,7 +4742,7 @@ capri_tm_update_perf_run_config (void)
 
 sdk_ret_t
 capri_tm_soft_init (sdk::lib::catalog* catalog,
-                    sdk::lib::qos_profile_t *qos_profile)
+                    sdk::qos::qos_profile_t *qos_profile)
 {
     sdk_ret_t ret = sdk::SDK_RET_OK;
     capri_tm_cfg_profile_t tm_cfg_profile_;
@@ -4790,7 +4790,7 @@ capri_tm_soft_init (sdk::lib::catalog* catalog,
 
 sdk_ret_t
 capri_tm_init (sdk::lib::catalog* catalog,
-               sdk::lib::qos_profile_t *qos_profile)
+               sdk::qos::qos_profile_t *qos_profile)
 {
     sdk_ret_t ret = sdk::SDK_RET_OK;
     capri_tm_cfg_profile_t tm_cfg_profile_;

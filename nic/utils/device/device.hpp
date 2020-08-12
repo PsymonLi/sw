@@ -1,17 +1,18 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 
-#ifndef __SDK_DEVICE_HPP__
-#define __SDK_DEVICE_HPP__
+#ifndef __UTILS_DEVICE_HPP__
+#define __UTILS_DEVICE_HPP__
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include "include/sdk/base.hpp"
-#include "include/sdk/types.hpp"
+#include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/types.hpp"
+#include "nic/sdk/include/sdk/qos.hpp"
 
 #define DEVICE_CFG_FNAME "device.conf"
 
-namespace sdk {
-namespace lib {
+namespace hal {
+namespace utils {
 
 using boost::property_tree::ptree;
 
@@ -60,20 +61,8 @@ SDK_DEFINE_ENUM_TO_STR(dev_micro_seg_t, DEV_MICRO_SEG)
 SDK_DEFINE_MAP_EXTERN(dev_micro_seg_t, DEV_MICRO_SEG)
 // #undef DEV_PORT_STATE
 
-typedef struct qos_profile_s {
-    uint32_t jumbo_mtu;
-    uint32_t num_uplink_qs;
-    uint32_t num_p4ig_qs;
-    uint32_t num_p4eg_qs;
-    uint32_t num_dma_qs;
-    uint32_t num_p4_high_perf_qs;
-    int32_t  p4_high_perf_qs[2];
-    uint32_t num_oob_uplink_qs;
-    int32_t  oob_uplink_qs[2];
-} qos_profile_t;
-
 typedef struct device_profile_s {
-    qos_profile_t qos_profile;
+    sdk::qos::qos_profile_t qos_profile;
 } device_profile_t;
 
 typedef struct device_s {
@@ -142,7 +131,7 @@ dev_feature_profile_to_string (dev_feature_profile_t profile)
     }
 }
 
-}    // namespace lib
-}    // namespace sdk
+}    // namespace utils
+}    // namespace hal
 
-#endif    //__SDK_DEVICE_HPP__
+#endif    //__UTILS_DEVICE_HPP__

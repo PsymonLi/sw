@@ -146,6 +146,18 @@ typedef struct qos_cmap_s {
     bool            ip_dscp[TM_MAX_DSCP_VALS];  ///< valid dscp values (0-63)
 } __PACK__ qos_cmap_t;
 
+typedef struct qos_profile_s {
+    uint32_t jumbo_mtu;
+    uint32_t num_uplink_qs;
+    uint32_t num_p4ig_qs;
+    uint32_t num_p4eg_qs;
+    uint32_t num_dma_qs;
+    uint32_t num_p4_high_perf_qs;
+    int32_t  p4_high_perf_qs[2];
+    uint32_t num_oob_uplink_qs;
+    int32_t  oob_uplink_qs[2];
+} qos_profile_t;
+
 static inline bool
 cmap_type_pcp (qos_cmap_type_e type) {
     return type == QOS_CMAP_TYPE_PCP;

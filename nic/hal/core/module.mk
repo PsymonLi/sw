@@ -3,4 +3,5 @@
 include ${MKDEFS}/pre.mk
 MODULE_TARGET   = libcore.lib
 MODULE_PIPELINE = iris gft
+MODULE_SOLIBS   = device
 include ${MKDEFS}/post.mk

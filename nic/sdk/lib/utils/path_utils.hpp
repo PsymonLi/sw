@@ -12,7 +12,6 @@
 #define __SDK_PATH_UTILS_HPP__
 
 #include "platform/pal/include/pal.h"
-#include "lib/device/device.hpp"
 #include "lib/catalog/catalog.hpp"
 
 namespace sdk {

@@ -23,14 +23,12 @@
 #endif
 
 #include "nic/sdk/lib/pal/pal.hpp"
-#include "nic/sdk/lib/device/device.hpp"
 #include "nic/sdk/platform/pal/include/pal.h"
-#include "platform/utils/mpartition.hpp"
-
 #include "nic/sdk/lib/utils/path_utils.hpp"
+#include "platform/utils/mpartition.hpp"
+#include "platform/tools/eth/impl.hpp"
+#include "nic/utils/device/device.hpp"
 #include "gen/platform/mem_regions.hpp"
-
-#include "impl.hpp"
 
 bool
 get_lif_qstate (uint16_t lif, queue_info_t qinfo[QTYPE_MAX])
@@ -156,9 +154,9 @@ mpart_cfg_path (void)
 #elif defined(ATHENA)
     pipeline = "athena";
 #else
-    sdk::lib::dev_feature_profile_t feature_profile;
-    sdk::lib::device *device =
-        sdk::lib::device::factory("/sysconfig/config0/device.conf");
+    hal::utils::dev_feature_profile_t feature_profile;
+    hal::utils::device *device =
+        hal::utils::device::factory("/sysconfig/config0/device.conf");
 
     feature_profile = device->get_feature_profile();
     profile_name = std::string(DEV_FEATURE_PROFILE_str(feature_profile));

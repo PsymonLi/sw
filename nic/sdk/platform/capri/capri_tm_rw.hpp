@@ -250,7 +250,7 @@ sdk_ret_t capri_tm_asic_init(void);
  * @return sdk_ret_t: Status of the operation
  */
 sdk_ret_t capri_tm_init(sdk::lib::catalog* catalog,
-                        sdk::lib::qos_profile_t *qos_profile);
+                        sdk::qos::qos_profile_t *qos_profile);
 
 /** capri_tm_soft_init
  * API to initialize the PBC block for just reading the registers
@@ -258,7 +258,7 @@ sdk_ret_t capri_tm_init(sdk::lib::catalog* catalog,
  * @return sdk_ret_t: Status of the operation
  */
 sdk_ret_t capri_tm_soft_init(sdk::lib::catalog* catalog,
-                             sdk::lib::qos_profile_t *qos_profile);
+                             sdk::qos::qos_profile_t *qos_profile);
 
 /** capri_tm_repl_table_base_addr_set
  * API to program the base address in HBM for the replication table

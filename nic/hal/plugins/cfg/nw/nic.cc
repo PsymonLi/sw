@@ -12,36 +12,36 @@
 
 namespace hal {
 
-static sdk::lib::dev_forwarding_mode_t
+static hal::utils::dev_forwarding_mode_t
 device_mode_to_hal_fwd_mode (DeviceMode dev_mode)
 {
     switch (dev_mode) {
     case device::DEVICE_MODE_NONE:
-        return sdk::lib::FORWARDING_MODE_NONE;
+        return hal::utils::FORWARDING_MODE_NONE;
     case device::DEVICE_MODE_MANAGED_SWITCH:
-        return sdk::lib::FORWARDING_MODE_SWITCH;
+        return hal::utils::FORWARDING_MODE_SWITCH;
     case device::DEVICE_MODE_MANAGED_HOST_PIN:
-        return sdk::lib::FORWARDING_MODE_HOSTPIN;
+        return hal::utils::FORWARDING_MODE_HOSTPIN;
     case device::DEVICE_MODE_STANDALONE:
-        return sdk::lib::FORWARDING_MODE_CLASSIC;
+        return hal::utils::FORWARDING_MODE_CLASSIC;
     default:
         break;
     }
 
-    return sdk::lib::FORWARDING_MODE_NONE;
+    return hal::utils::FORWARDING_MODE_NONE;
 }
 
 static DeviceMode
-hal_fwd_mode_to_device_mode (sdk::lib::dev_forwarding_mode_t hal_mode)
+hal_fwd_mode_to_device_mode (hal::utils::dev_forwarding_mode_t hal_mode)
 {
     switch (hal_mode) {
-    case sdk::lib::FORWARDING_MODE_NONE:
+    case hal::utils::FORWARDING_MODE_NONE:
         return device::DEVICE_MODE_NONE;
-    case sdk::lib::FORWARDING_MODE_SWITCH:
+    case hal::utils::FORWARDING_MODE_SWITCH:
         return device::DEVICE_MODE_MANAGED_SWITCH;
-    case sdk::lib::FORWARDING_MODE_HOSTPIN:
+    case hal::utils::FORWARDING_MODE_HOSTPIN:
         return device::DEVICE_MODE_MANAGED_HOST_PIN;
-    case sdk::lib::FORWARDING_MODE_CLASSIC:
+    case hal::utils::FORWARDING_MODE_CLASSIC:
         return device::DEVICE_MODE_STANDALONE;
     default:
         break;

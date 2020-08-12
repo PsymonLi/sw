@@ -77,9 +77,9 @@ cli_init (char *ptr)
 #endif
 
     auto device_cfg_path  = std::string(SYSCONFIG_PATH) + "/" + DEVICE_CFG_FNAME;
-    auto device = sdk::lib::device::factory(device_cfg_path);
+    auto device = hal::utils::device::factory(device_cfg_path);
     SDK_ASSERT(device != NULL);
-    asic_cfg.device_profile = device->device_profile();
+    asic_cfg.qos_profile = &device->device_profile()->qos_profile;
 
     // asic_cfg.completion_func = asiccfg_init_completion_event;
     asic_cfg.completion_func = NULL;

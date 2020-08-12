@@ -11,7 +11,6 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-#include "nic/sdk/lib/device/device.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/include/sdk/timestamp.hpp"
@@ -22,6 +21,7 @@
 #include "nic/sdk/platform/mnet/include/mnet.h"
 #include "nic/sdk/lib/utils/path_utils.hpp"
 #include "nic/sdk/include/sdk/globals.hpp"
+#include "nic/utils/device/device.hpp"
 
 #include "logger.hpp"
 
@@ -296,10 +296,10 @@ DeviceManager::GetConfigFiles(devicemgr_cfg_t *cfg, string &hbm_mem_json_file,
 
 #if defined(IRIS)
     string profile_name;
-    sdk::lib::device *device = NULL;
-    sdk::lib::dev_feature_profile_t feature_profile;
+    hal::utils::device *device = NULL;
+    hal::utils::dev_feature_profile_t feature_profile;
 
-    device = sdk::lib::device::factory(cfg->device_conf_file);
+    device = hal::utils::device::factory(cfg->device_conf_file);
     feature_profile = device->get_feature_profile();
     profile_name = std::string(DEV_FEATURE_PROFILE_str(feature_profile));
     profile_name.replace(0, std::string("FEATURE_PROFILE_").length(), "");

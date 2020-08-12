@@ -558,8 +558,7 @@ elba_init (asic_cfg_t *cfg)
 
     } /* else */ {
         SDK_TRACE_DEBUG("elba TM Real Init ");
-        ret = elba_tm_init(cfg->catalog,
-                &cfg->device_profile->qos_profile);
+        ret = elba_tm_init(cfg->catalog, cfg->qos_profile);
         SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                 "elba TM init failure, err %u", ret);
 #if 0

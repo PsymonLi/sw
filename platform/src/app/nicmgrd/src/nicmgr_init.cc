@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "nic/sdk/lib/device/device.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
@@ -22,6 +21,7 @@
 #include "platform/src/lib/nicmgr/include/eth_utils.hpp"
 #include "platform/src/lib/devapi_iris/devapi_iris.hpp"
 #include "nic/hal/core/event_ipc.hpp"
+#include "nic/utils/device/device.hpp"
 #include "upgrade.hpp"
 #include "upgrade_rel_a2b.hpp"
 #include "nicmgr_ncsi.hpp"
@@ -200,8 +200,8 @@ nicmgr_init (platform_type_t platform,
     string profile;
     string device_file;
     bool micro_seg_en = false;
-    sdk::lib::device *device = NULL;
-    sdk::lib::dev_forwarding_mode_t fwd_mode;
+    hal::utils::device *device = NULL;
+    hal::utils::dev_forwarding_mode_t fwd_mode;
     UpgradeMode upg_mode;
     devicemgr_cfg_t cfg;
     std::string cfg_path;
@@ -219,7 +219,7 @@ nicmgr_init (platform_type_t platform,
 
     if (platform == platform_type_t::PLATFORM_TYPE_SIM) {
         profile = cfg_path + "/../../" + "platform/src/app/nicmgrd/etc/eth.json";
-        fwd_mode = sdk::lib::FORWARDING_MODE_CLASSIC;
+        fwd_mode = hal::utils::FORWARDING_MODE_CLASSIC;
         goto dev_init;
     } else {
         device_file = std::string(SYSCONFIG_PATH) +  "/" + DEVICE_CFG_FNAME;
@@ -231,7 +231,7 @@ nicmgr_init (platform_type_t platform,
     }
 
     // Load device configuration
-    device = sdk::lib::device::factory(device_file.c_str());
+    device = hal::utils::device::factory(device_file.c_str());
     fwd_mode = device->get_forwarding_mode();
     micro_seg_en = (device->get_micro_seg_en() == device::MICRO_SEG_ENABLE);
 

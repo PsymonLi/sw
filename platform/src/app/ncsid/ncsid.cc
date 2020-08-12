@@ -10,8 +10,10 @@
 #include "nic/sdk/platform/pal/include/pal.h"
 #include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/sdk/lib/runenv/runenv.h"
+#include "nic/sdk/lib/utils/path_utils.hpp"
 #include "grpc_ipc.h"
 #include "nic/include/hal_cfg.hpp"
+#include "nic/utils/device/device.hpp"
 
 #define ARRAY_LEN(var)   (int)((sizeof(var)/sizeof(var[0])))
 
@@ -32,6 +34,7 @@ static EV_P;
 using namespace std;
 using namespace sdk::platform::ncsi;
 using namespace sdk::lib;
+using namespace hal::utils;
 
 int usage(int argc, char* argv[]);
 void ipc_init();
@@ -134,6 +137,11 @@ void InitNcsiMgr(EV_P)
 {
     string xport_mode;
     string iface_name;
+    CmdHndler * cmdhndlr;
+    hal::utils::device *device =
+        hal::utils::device::factory(sdk::lib::get_device_conf_path());
+    string dev_feature_profile =
+        dev_feature_profile_to_string(device->get_feature_profile());
 
     for (size_t xport=0; xport < transport_modes.size(); xport++)
     {
@@ -165,16 +173,18 @@ void InitNcsiMgr(EV_P)
                 //SDK_TRACE_INFO("Interface is not online, waiting...\n");
                 usleep(10000);
             }
-
-            cmd_hndlr_objs.push_back(CmdHndler::factory(grpc_ipc_svc, xport_obj, EV_A));
+            cmdhndlr = CmdHndler::factory(grpc_ipc_svc, xport_obj,
+                                          dev_feature_profile, EV_A);
+            cmd_hndlr_objs.push_back(cmdhndlr);
         }
         else if (!xport_mode.compare("MCTP"))
         {
             SDK_TRACE_INFO("Initializing ncsi transport in %s mode", 
                     xport_mode.c_str());
             xport_obj = new mctp_transport();
-
-            cmd_hndlr_objs.push_back(CmdHndler::factory(grpc_ipc_svc, xport_obj, EV_A));
+            cmdhndlr = CmdHndler::factory(grpc_ipc_svc, xport_obj,
+                                          dev_feature_profile, EV_A);
+            cmd_hndlr_objs.push_back(cmdhndlr );
         }
         else
         {

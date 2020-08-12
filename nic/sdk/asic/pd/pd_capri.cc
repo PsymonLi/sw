@@ -867,7 +867,7 @@ capri_cfg_init (asic_cfg_t *cfg, asic_cfg_t& capri_cfg)
     }
 
     capri_cfg.completion_func = cfg->completion_func;
-    capri_cfg.device_profile = cfg->device_profile;
+    capri_cfg.qos_profile = cfg->qos_profile;
     capri_cfg.init_mode = cfg->init_mode;
     return SDK_RET_OK;
 }

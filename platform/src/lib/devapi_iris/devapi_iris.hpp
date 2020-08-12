@@ -7,6 +7,7 @@
 #include "include/sdk/lock.hpp"
 #include "include/sdk/base.hpp"
 #include "nic/sdk/platform/devapi/devapi.hpp"
+#include "nic/utils/device/device.hpp"
 #include "devapi_iris_types.hpp"
 
 namespace iris {
@@ -69,7 +70,7 @@ public:
     sdk_ret_t uplink_available_count(uint8_t *count);
 
     // Generic APIs
-    sdk_ret_t set_fwd_mode(sdk::lib::dev_forwarding_mode_t fwd_mode);
+    sdk_ret_t set_fwd_mode(hal::utils::dev_forwarding_mode_t fwd_mode);
 
     // Generic APIs
     sdk_ret_t set_micro_seg_en(bool en);
@@ -161,7 +162,7 @@ private:
 
 private:
     bool mirco_seg_en_;
-    sdk::lib::dev_forwarding_mode_t fwd_mode_;
+    hal::utils::dev_forwarding_mode_t fwd_mode_;
     sdk_spinlock_t slock_;
     uint32_t num_int_mgmt_mnics_;
 };

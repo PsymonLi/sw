@@ -7,15 +7,15 @@
 #include "boost/property_tree/json_parser.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
+#include "nic/sdk/lib/logger/logger.hpp"
+#include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/hal/core/core.hpp"
 #include "nic/hal/core/plugins.hpp"
 #include "lib/periodic/periodic.hpp"
-#include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/linkmgr/linkmgr.hpp"
-#include "nic/sdk/lib/device/device.hpp"
+#include "nic/utils/device/device.hpp"
 #include "nic/hal/vmotion/vmotion.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
-#include "nic/sdk/include/sdk/eth.hpp"
 
 namespace hal {
 
@@ -677,7 +677,7 @@ hal_ret_t
 hal_device_cfg_init (hal_cfg_t *hal_cfg)
 {
     device_cfg_t *device_cfg = &hal_cfg->device_cfg;
-    sdk::lib::device *device = NULL;
+    hal::utils::device *device = NULL;
     std::string device_cfg_path;
 
     if (hal_cfg->platform == platform_type_t::PLATFORM_TYPE_HW) {
@@ -686,7 +686,7 @@ hal_device_cfg_init (hal_cfg_t *hal_cfg)
         device_cfg_path = hal_cfg->cfg_path;
     }
 
-    device = sdk::lib::device::factory(device_cfg_path + "/" + DEVICE_CFG_FNAME);
+    device = hal::utils::device::factory(device_cfg_path + "/" + DEVICE_CFG_FNAME);
     SDK_ASSERT_TRACE_RETURN(device != NULL, HAL_RET_ERR, "Device conf file error");
 
     device_cfg->forwarding_mode = device->get_forwarding_mode();

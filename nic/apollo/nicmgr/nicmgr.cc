@@ -84,7 +84,7 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
     cfg.platform_type = state->platform_type();
     cfg.cfg_path = state->cfg_path();
     cfg.device_conf_file = "";
-    cfg.fwd_mode = sdk::lib::FORWARDING_MODE_NONE;
+    cfg.fwd_mode = hal::utils::FORWARDING_MODE_NONE;
     cfg.micro_seg_en = false;
     cfg.shm_mgr = NULL;
     cfg.pipeline = state->pipeline();
