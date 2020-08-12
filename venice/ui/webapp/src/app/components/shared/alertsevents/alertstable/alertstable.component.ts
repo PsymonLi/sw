@@ -327,6 +327,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     stagingBulkEditAction.spec.items = [];
 
     for (const alert of updateAlerts) {
+      alert.meta['resource-version'] = '0';  // VS-2181, Per discussion with Abhinav, setting alert.meta['resource-version']=0  backend to prevent concurrent update problems.
       alert.spec.state = newState;
       const obj = {
         uri: '',
