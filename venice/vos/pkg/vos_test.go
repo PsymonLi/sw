@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -371,6 +372,11 @@ func TestInitTSDBClient(t *testing.T) {
 
 	// init tsdb client and wait for one report interval for code coverage
 	err = inst.initTsdbClient(*resolverURLs, minioCreds.AccessKey, minioCreds.SecretKey)
-	time.Sleep(metricsReportInterval + 10*time.Second)
+	time.Sleep(MetricsReportInterval + 10*time.Second)
 	AssertOk(t, err, "Failed to init tsdb client. Err: %v", err)
+}
+
+func TestGetMinioDebugMetricsMap(t *testing.T) {
+	Assert(t, reflect.DeepEqual(GetMinioDebugMetricsMap(), minioDebugMetricsMap),
+		"Failed to get the same minioDebugMetricsMap via get api. Get: %+v, Want: %+v", GetMinioDebugMetricsMap(), minioDebugMetricsMap)
 }

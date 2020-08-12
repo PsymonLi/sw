@@ -16,9 +16,10 @@ import (
 	"github.com/pensando/sw/metrics/iris/genfields"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/telemetryclient"
+	"github.com/pensando/sw/venice/vos/pkg"
 )
 
-func testQueryingMetrics(kind string) {
+func testQueryingMetrics(kind string, expectedCols []string, allowZeroVal bool) {
 	// Create telemetry client
 	apiGwAddr := ts.tu.ClusterVIP + ":" + globals.APIGwRESTPort
 	tc, err := telemetryclient.NewTelemetryClient(apiGwAddr)
@@ -51,7 +52,6 @@ func testQueryingMetrics(kind string) {
 		Expect(len(series.Values)).ShouldNot(BeZero(), "Query response had no value entries in its series")
 
 		colMap := make(map[string]int)
-		expectedCols := []string{"CPUUsedPercent", "MemUsedPercent"}
 		for i, col := range series.Columns {
 			colMap[col] = i
 		}
@@ -61,7 +61,9 @@ func testQueryingMetrics(kind string) {
 			i, inMap := colMap[expCol]
 			Expect(inMap).Should(BeTrue(), "Query Response didn't have column %s", expCol)
 			Expect(series.Values[0][i]).ShouldNot(BeNil(), "Value for column %s was nil", expCol)
-			Expect(series.Values[0][i]).ShouldNot(BeZero(), "Value for column %s was zero")
+			if !allowZeroVal {
+				Expect(series.Values[0][i]).ShouldNot(BeZero(), "Value for column %s was zero")
+			}
 		}
 
 		return true
@@ -72,14 +74,16 @@ var _ = Describe("telemetry tests", func() {
 	BeforeEach(func() {
 		validateCluster()
 	})
+
 	It("telemetry Node data", func() {
-		testQueryingMetrics("Node")
+		testQueryingMetrics("Node", []string{"CPUUsedPercent", "MemUsedPercent"}, false)
 	})
+
 	It("telemetry SmartNIC data", func() {
 		if ts.tu.NumNaplesHosts == 0 {
 			Skip("No Naples node to report metrics")
 		}
-		testQueryingMetrics("DistributedServiceCard")
+		testQueryingMetrics("DistributedServiceCard", []string{"CPUUsedPercent", "MemUsedPercent"}, false)
 	})
 
 	It("verify query functions", func() {
@@ -194,6 +198,14 @@ var _ = Describe("telemetry tests", func() {
 			err = fmt.Errorf("Cannot find these checkpoint fields exist in current metrics/iris/genfields map: \n %v", strings.Join(errList, "\n"))
 		}
 		Expect(err).Should(BeNil())
+	})
+
+	It("verify minio debug metrics on citadel", func() {
+		// wait for one minio debug metrics report interval and then check metrics
+		time.Sleep(vospkg.MetricsReportInterval)
+		for kind, fields := range vospkg.GetMinioDebugMetricsMap() {
+			testQueryingMetrics(kind, fields, true)
+		}
 	})
 })
 

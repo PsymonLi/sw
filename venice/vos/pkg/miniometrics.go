@@ -16,8 +16,10 @@ import (
 )
 
 const (
-	metricsReportInterval       = 3 * time.Minute
-	metricsConnectRetryInterval = 100 * time.Millisecond
+	// MetricsReportInterval interval for reporting minio debug metrics
+	MetricsReportInterval = 3 * time.Minute
+	// MetricsConnectRetryInterval interval for metrics client connection retry
+	MetricsConnectRetryInterval = 100 * time.Millisecond
 )
 
 var minioDebugMetricsMap = map[string][]string{
@@ -42,6 +44,11 @@ var minioDebugMetricsMap = map[string][]string{
 	},
 }
 
+// GetMinioDebugMetricsMap get minioDebugMetricsMap key is table name and value is slice of field names
+func GetMinioDebugMetricsMap() map[string][]string {
+	return minioDebugMetricsMap
+}
+
 // initTsdbClient init tsdb client and start to report metrics
 func (i *instance) initTsdbClient(resolverURLs, minioKey, minioSecret string) error {
 	i.Lock()
@@ -52,8 +59,8 @@ func (i *instance) initTsdbClient(resolverURLs, minioKey, minioSecret string) er
 		ResolverClient:          resolverClient,
 		Collector:               globals.Collector,
 		DBName:                  "default",
-		SendInterval:            metricsReportInterval,
-		ConnectionRetryInterval: metricsConnectRetryInterval,
+		SendInterval:            MetricsReportInterval,
+		ConnectionRetryInterval: MetricsConnectRetryInterval,
 	}
 	tsdb.Init(i.ctx, opts)
 	log.Infof("%v tsdb client initialized with option %+v", globals.Vos, *opts)
@@ -137,7 +144,7 @@ func (i *instance) reportMetrics(minioKey, minioSecret string) {
 	log.Infof("Routine for reporting metrics created")
 	for {
 		select {
-		case <-time.After(metricsReportInterval):
+		case <-time.After(MetricsReportInterval):
 			if i.ctx.Err() != nil {
 				log.Infof("Vos instance ctx canceled. Stop reporting minio debug metrics")
 				return
