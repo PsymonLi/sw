@@ -540,51 +540,15 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
 #define nacl_redirect_to_arm_action     action_u.nacl_nacl_redirect_to_arm
 #define nacl_drop_action                action_u.nacl_nacl_drop
 sdk_ret_t
-lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
+lif_impl::install_datapath_mnic_nacls_(void) {
     sdk_ret_t ret;
     nacl_swkey_t key;
     p4pd_error_t p4pd_ret;
     uint32_t idx, nacl_idx;
     nacl_swkey_mask_t mask;
     nacl_actiondata_t data;
-    static uint32_t dplif = 0;
     sdk::qos::policer_t policer;
-    nexthop_info_entry_t nexthop_info_entry;
 
-    strncpy(name_, spec->name, sizeof(name_));
-    // during hitless upgrade, domain-b uses cpu_mnic2
-    if (sdk::platform::sysinit_domain_b(api::g_upg_state->init_domain())) {
-        if (!strncmp(name_, "cpu_mnic0", strlen("cpu_mnic0"))) {
-            return SDK_RET_OK;
-        }
-    } else {
-        if (!strncmp(name_, "cpu_mnic2", strlen("cpu_mnic2"))) {
-            return SDK_RET_OK;
-        }
-    }
-    PDS_TRACE_DEBUG("Creating s/w datapath lif %s, id %u", name_, id_);
-    // allocate required nexthop to point to ARM datapath lif
-    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to allocate nexthop entry for flow miss, "
-                      "lif %s, id %s, err %u", name_, key_.str(), ret);
-        return ret;
-    }
-
-    // program the nexthop to point to vpp lif
-    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
-    nexthop_info_entry.lif = id_;
-    nexthop_info_entry.port = TM_PORT_DMA;
-    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
-    ret = nexthop_info_entry.write(nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program NEXTHOP table for datapath lif %u "
-                      "at idx %u", id_, nh_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
-
-    // cap ARP requests from host lifs to 256/sec
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     policer = {
@@ -593,6 +557,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
         COPP_BURST(COPP_FLOW_MISS_ARP_REQ_FROM_HOST_PPS)
     };
     program_copp_entry_(&policer, idx, false);
+
     // install NACL entry for ARP requests from host
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
@@ -621,12 +586,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_ARP;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL redirect entry for "
-                      "(flow miss, ARP requests from host) -> lif %s", name_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // cap DHCP requests from host lifs to 256/sec
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
@@ -667,12 +627,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_DHCP_HOST;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for (host lif, DHCP req) "
-                      "-> lif %s", name_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // allocate and program copp table entry for flow miss
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
@@ -696,7 +651,8 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     mask.control_metadata_flow_miss_mask = ~0;
     mask.ingress_recirc_defunct_flow_mask = ~0;
     if ((g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) ||
-        (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
+        (g_pds_state.device_oper_mode() ==
+             PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
         // in all other modes, mappings are not installed in datapath
         key.control_metadata_local_mapping_miss = 0;
         mask.control_metadata_local_mapping_miss_mask = ~0;
@@ -709,12 +665,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_IP4_IP6;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for defunct flow redirect "
-                      "to arm lif %u", id_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // allocate and program copp table entry for flow miss
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
@@ -750,34 +701,26 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_IP4_IP6;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry to redirect encapped TCP");
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // redirect flow miss encapped UDP traffic from uplinks to s/w datapath lif
     key.key_metadata_proto = IP_PROTO_UDP;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry to redirect encapped UDP");
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // redirect flow miss encapped ICMP traffic from uplinks to s/w datapath lif
     key.key_metadata_proto = IP_PROTO_ICMP;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry to redirect encapped ICMP");
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // drop all flow miss non-TCP/UDP/ICMP traffic from PFs and uplinks
-    // TODO: dols need to be fixed for this to be relaxed
+    // TODO:
+    // 1. this needs to be conditional.. store this NACL idx in some global
+    //    variable and enable/disable based on deployment mode
+    // 2. this can be moved to nacl_init_() -> dols are failing for some reason
+    //    and need to be fixed
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
@@ -792,12 +735,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_drop_action.drop_reason = P4I_DROP_PROTOCOL_NOT_SUPPORTED;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program drop entry for nonTCP/UDP/ICMP "
-                      "encapped traffic");
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // flow miss packet coming back from txdma to s/w datapath
     // lif (i.e., dpdk/vpp lif)
@@ -809,7 +747,8 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     mask.key_metadata_entry_valid_mask = ~0;
     mask.control_metadata_flow_miss_mask = ~0;
     if ((g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) ||
-        (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
+        (g_pds_state.device_oper_mode() ==
+             PDS_DEV_OPER_MODE_BITW_SMART_SWITCH)) {
         // in all other modes, mappings are not installed in datapath
         key.control_metadata_local_mapping_miss = 0;
         mask.control_metadata_local_mapping_miss_mask = ~0;
@@ -822,33 +761,54 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_IP4_IP6;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for redirect to "
-                      "arm lif %u", id_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
+    uint32_t idx;
+    sdk_ret_t ret;
+    nexthop_info_entry_t nexthop_info_entry;
+
+    strncpy(name_, spec->name, sizeof(name_));
+    if (sdk::platform::sysinit_domain_b(api::g_upg_state->init_domain())) {
+        // during hitless upgrade, domain B uses cpu_mnic2, so skip cpu_mnic0
+        if (!strncmp(name_, "cpu_mnic0", strlen("cpu_mnic0"))) {
+            return SDK_RET_OK;
+        }
+    } else {
+        // during hitless upgrade, domain A uses cpu_mnic0, so skip cpu_mnic2
+        if (!strncmp(name_, "cpu_mnic2", strlen("cpu_mnic2"))) {
+            return SDK_RET_OK;
+        }
     }
+    PDS_TRACE_DEBUG("Creating s/w datapath lif %s, id %u", name_, id_);
+
+    // allocate required nexthop to point to ARM datapath lif
+    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // program the nexthop to point to vpp lif
+    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
+    nexthop_info_entry.lif = id_;
+    nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
+    ret = nexthop_info_entry.write(nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    ret = install_datapath_mnic_nacls_();
+    SDK_ASSERT(ret == SDK_RET_OK);
 
     // allocate vnic h/w id for this lif
-    if ((ret = vnic_impl_db()->vnic_idxr()->alloc(&idx)) != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to allocate vnic h/w id for lif %u, err %u",
-                      id_, ret);
-        return ret;
-    }
+    SDK_ASSERT(vnic_impl_db()->vnic_idxr()->alloc(&idx) == SDK_RET_OK);
     // program the LIF table
     ret = program_lif_table(id_, P4_LIF_TYPE_ARM_DPDK, PDS_IMPL_RSVD_VPC_HW_ID,
                             PDS_IMPL_RSVD_BD_HW_ID, idx, g_zero_mac,
                             false, true, P4_LIF_DIR_HOST);
-    if (ret != SDK_RET_OK) {
-        goto error;
-    }
+    SDK_ASSERT(ret == SDK_RET_OK);
     return SDK_RET_OK;
-
-error:
-
-    nexthop_impl_db()->nh_idxr()->free(nh_idx_);
-    nh_idx_ = 0xFFFFFFFF;
-    return ret;
 }
 
 sdk_ret_t

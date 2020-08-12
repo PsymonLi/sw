@@ -365,12 +365,31 @@ private:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t install_oob_mnic_nacls_(uint32_t uplink_nh_idx);
 
+    ///< \brief    program necessary h/w entries for oob mnic lif
+    ///< \param[in] spec    lif configuration parameters
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t create_oob_mnic_(pds_lif_spec_t *spec);
+
     ///< \brief    install all the NACLs needed for the inband lif/uplink
     ///            traffic forwarding
     ///< \param[in] uplink_nh_idx    nexthop index allocated for inband uplink
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t install_inb_mnic_nacls_(uint32_t uplink_nh_idx);
-  
+
+    ///< \brief    program necessary h/w entries for inband mnic lif(s)
+    ///< \param[in] spec    lif configuration parameters
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t create_inb_mnic_(pds_lif_spec_t *spec);
+
+    ///< \brief    install all the NACLs needed for redirecting traffic to vpp
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t install_datapath_mnic_nacls_(void);
+
+    ///< \brief    program necessary h/w entries for datapath lif(s)
+    ///< \param[in] spec    lif configuration parameters
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t create_datapath_mnic_(pds_lif_spec_t *spec);
+
     ///< \brief    install all the NACLs needed for the internal management
     ///            mnic traffic
     ///< \param[in] host_mgmt_lif    host mgmt. lif instance
@@ -382,21 +401,6 @@ private:
                                                 uint32_t host_mgmt_lif_nh_idx,
                                                 lif_impl *int_mgmt_lif,
                                                 uint32_t int_mgmt_lif_nh_idx);
-
-    ///< \brief    program necessary h/w entries for oob mnic lif
-    ///< \param[in] spec    lif configuration parameters
-    /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t create_oob_mnic_(pds_lif_spec_t *spec);
-
-    ///< \brief    program necessary h/w entries for inband mnic lif(s)
-    ///< \param[in] spec    lif configuration parameters
-    /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t create_inb_mnic_(pds_lif_spec_t *spec);
-
-    ///< \brief    program necessary h/w entries for datapath lif(s)
-    ///< \param[in] spec    lif configuration parameters
-    /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t create_datapath_mnic_(pds_lif_spec_t *spec);
 
     ///< \brief    program necessary entries for internal mgmt. mnic lif(s)
     ///< \param[in] spec    lif configuration parameters
