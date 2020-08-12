@@ -63,8 +63,30 @@
     start of the next line)
 * "if" block must have 4 space indentation and must always be inside curly
   braces (even if there is only one statement in the block)
+* "if" block code shouldn't be in same line as "if". for example, instead of
+
+   `if (cond) { return x; }`
+
+   it should be
+
+   ```
+   if (cond) {
+       return x;
+   }
+   ```
 * if-else must always be cuddled (e.g., } else { in same line)
 * switch & case in switch-case statement should be aligned in same column
+* in the include section of .cc or .h/.hpp files, following order must be
+  followed:
+  1. standard C/C++ headers
+  2. third-party header files
+  3. sdk header files
+  4. application (e.g. HAL) specific header files
+  5. generated header files - e.g. ncc generated or proto compiler generated etc.
+* when including header files, use the full pathi even if the header file is in
+  the same direcotry as .cc/.c file, for example:
+
+  `#include "nic/sdk/lib/ipc/ipc.hpp"`
 
 
 ## Building and making sure HAL build is fine

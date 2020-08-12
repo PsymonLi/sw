@@ -170,7 +170,8 @@ lif_impl::program_tx_policer(sdk::qos::policer_t *policer) {
                                              SDK_MAX_POLICER_TOKENS_PER_INTERVAL,
                                              &rate_tokens, &burst_tokens);
             if (ret != SDK_RET_OK) {
-                PDS_TRACE_ERR("Error converting rate to token rate, err %u", ret);
+                PDS_TRACE_ERR("Error converting rate to token rate, err %u",
+                              ret);
                 return ret;
             }
             memcpy(rlimit_data.lif_egress_rl_params.burst, &burst_tokens,
@@ -202,17 +203,20 @@ lif_impl::program_tx_policer(sdk::qos::policer_t *policer) {
     lif_scheduler_params.total_qcount = total_qcount_;
     lif_scheduler_params.cos_bmp = cos_bmp_;
     if (policer) {
-        // program mapping from rate-limiter-table to scheduler-table rate-limiter-group (RLG) for pausing.
+        // program mapping from rate-limiter-table to scheduler-table
+        // rate-limiter-group (RLG) for pausing
         ret = sdk::asic::pd::asicpd_tx_policer_program(&lif_scheduler_params);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("lif %s unable to program hw for tx policer", key_.str());
+            PDS_TRACE_ERR("lif %s unable to program hw for tx policer",
+                          key_.str());
             return ret;
         }
     } else {
         // remove tx policer
         ret = sdk::asic::pd::asicpd_tx_policer_cleanup(&lif_scheduler_params);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("lif %s unable to cleanup hw for tx policer", key_.str());
+            PDS_TRACE_ERR("lif %s unable to cleanup hw for tx policer",
+                          key_.str());
             return ret;
         }
     }
@@ -382,39 +386,17 @@ error:
     return ret;
 }
 
-#define p4i_device_info    action_u.p4i_device_info_p4i_device_info
 sdk_ret_t
-lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
+lif_impl::install_inb_mnic_nacls_(uint32_t uplink_nh_idx) {
     if_impl *intf;
     sdk_ret_t ret;
     nacl_swkey_t key;
+    if_index_t if_index;
     p4pd_error_t p4pd_ret;
-    sdk::qos::policer_t policer;
+    uint32_t idx, nacl_idx;
     nacl_swkey_mask_t mask;
     nacl_actiondata_t data;
-    if_index_t if_index;
-    static uint32_t inb_lif = 0;
-    uint32_t idx, nacl_idx, tm_port;
-    lif_actiondata_t lif_data = { 0 };
-    p4i_device_info_actiondata_t p4i_device_info_data;
-    nexthop_info_entry_t nexthop_info_entry;
-
-    strncpy(name_, spec->name, sizeof(name_));
-    PDS_TRACE_DEBUG("Creating inband lif %s", name_);
-
-    // program the nexthop for ARM to uplink traffic
-    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
-    tm_port = nexthop_info_entry.port =
-        g_pds_state.catalogue()->ifindex_to_tm_port(pinned_if_idx_);
-    // per uplink nh idx is reserved during init time, so use it
-    nh_idx_ = tm_port + 1;
-    ret = nexthop_info_entry.write(nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program NEXTHOP table for inb lif %s at "
-                      "idx %u", key_.str(), nh_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    sdk::qos::policer_t policer;
 
     // cap ARP packets from inband lif(s) to 256 pps
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
@@ -443,17 +425,12 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     mask.key_metadata_dport_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_action.nexthop_id = uplink_nh_idx;
     data.nacl_redirect_action.copp_policer_id = idx;
     data.nacl_redirect_action.copp_class = P4_COPP_DROP_CLASS_INBAND;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for (%s, ARP) -> "
-                      "uplink if index 0x%x", name_, pinned_if_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // install NACL for ARM to uplink traffic (all vlans)
     memset(&key, 0, sizeof(key));
@@ -465,36 +442,10 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     mask.capri_intrinsic_lif_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_action.nexthop_id = uplink_nh_idx;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for inb lif %u to "
-                      "uplink 0x%x", id_, pinned_if_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
-
-    // allocate required nexthop for ARM inband lif
-    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to allocate nexthop entries for inband "
-                      "lif %u, err %u", id_, ret);
-        return ret;
-    }
-
-    // program the nexthop for uplink to ARM traffic
-    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
-    nexthop_info_entry.lif = id_;
-    nexthop_info_entry.port = TM_PORT_DMA;
-    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
-    ret = nexthop_info_entry.write(nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program NEXTHOP table for oob lif %s "
-                      "at idx %u", key_.str(), nh_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // install for NACL for uplink to ARM (untagged) traffic
     memset(&key, 0, sizeof(key));
@@ -517,21 +468,53 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_action.nexthop_id = nh_idx_;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for uplink %u to inb "
-                      "lif %u", pinned_if_idx_, id_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+    return SDK_RET_OK;
+}
+
+#define p4i_device_info    action_u.p4i_device_info_p4i_device_info
+sdk_ret_t
+lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
+    sdk_ret_t ret;
+    uint32_t idx,tm_port;
+    p4pd_error_t p4pd_ret;
+    lif_actiondata_t lif_data = { 0 };
+    nexthop_info_entry_t nexthop_info_entry;
+    p4i_device_info_actiondata_t p4i_device_info_data;
+
+    strncpy(name_, spec->name, sizeof(name_));
+    PDS_TRACE_DEBUG("Creating inband lif %s", name_);
+
+    // program the nexthop for ARM to uplink traffic
+    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
+    tm_port = nexthop_info_entry.port =
+        g_pds_state.catalogue()->ifindex_to_tm_port(pinned_if_idx_);
+    // per uplink nh idx is reserved during init time, so use it
+    ret = nexthop_info_entry.write(tm_port + 1);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // allocate required nexthop for ARM inband lif
+    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // program the nexthop for uplink to ARM traffic
+    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
+    nexthop_info_entry.lif = id_;
+    nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
+    ret = nexthop_info_entry.write(nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // install all the NACLs needed for inband traffic
+    ret = install_inb_mnic_nacls_(tm_port + 1);
+    SDK_ASSERT(ret == SDK_RET_OK);
 
     // program the device info table with the MAC of this lif by
     // doing read-modify-write
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4I_DEVICE_INFO, 0,
                                       NULL, NULL, &p4i_device_info_data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to read P4I_DEVICE_INFO table");
-        return sdk::SDK_RET_HW_READ_ERR;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
     if (tm_port == TM_PORT_UPLINK_0) {
         sdk::lib::memrev(p4i_device_info_data.p4i_device_info.device_mac_addr1,
                          spec->mac, ETH_ADDR_LEN);
@@ -542,31 +525,16 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     // program the P4I_DEVICE_INFO table
     p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4I_DEVICE_INFO, 0,
                                        NULL, NULL, &p4i_device_info_data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program P4I_DEVICE_INFO table");
-        return sdk::SDK_RET_HW_PROGRAM_ERR;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // allocate vnic h/w id for this lif
-    if ((ret = vnic_impl_db()->vnic_idxr()->alloc(&idx)) != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to allocate vnic h/w id for lif %u, err %u",
-                      id_, ret);
-        return ret;
-    }
+    SDK_ASSERT(vnic_impl_db()->vnic_idxr()->alloc(&idx) == SDK_RET_OK);
     // program the LIF table
     ret = program_lif_table(id_, P4_LIF_TYPE_ARM_MGMT, PDS_IMPL_RSVD_VPC_HW_ID,
                             PDS_IMPL_RSVD_BD_HW_ID, idx, g_zero_mac,
                             false, true, P4_LIF_DIR_HOST);
-    if (ret != SDK_RET_OK) {
-        goto error;
-    }
+    SDK_ASSERT(ret == SDK_RET_OK);
     return SDK_RET_OK;
-
-error:
-
-    nexthop_impl_db()->nh_idxr()->free(nh_idx_, 2);
-    nh_idx_ = 0xFFFFFFFF;
-    return ret;
 }
 
 #define nacl_redirect_to_arm_action     action_u.nacl_nacl_redirect_to_arm

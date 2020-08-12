@@ -361,10 +361,16 @@ private:
 
     ///< \brief    install all the NACLs needed for the oob lif/uplink traffic
     ///            forwarding
-    ///< \param[in] uplink_nh_idx    nexthop index allocated for the oob uplink
+    ///< \param[in] uplink_nh_idx    nexthop index allocated for oob uplink
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t install_oob_mnic_nacls_(uint32_t uplink_nh_idx);
 
+    ///< \brief    install all the NACLs needed for the inband lif/uplink
+    ///            traffic forwarding
+    ///< \param[in] uplink_nh_idx    nexthop index allocated for inband uplink
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t install_inb_mnic_nacls_(uint32_t uplink_nh_idx);
+  
     ///< \brief    install all the NACLs needed for the internal management
     ///            mnic traffic
     ///< \param[in] host_mgmt_lif    host mgmt. lif instance
