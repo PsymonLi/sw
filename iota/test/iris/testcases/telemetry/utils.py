@@ -12,6 +12,13 @@ from scapy.utils import wrpcap
 from scapy import packet
 from scapy.all import Dot1Q
 from scapy.contrib.erspan import ERSPAN_II, ERSPAN_III, ERSPAN_PlatformSpecific
+from scapy.all import Ether
+from scapy.all import IP
+from scapy.all import TCP
+from scapy.all import UDP
+from scapy.all import ICMP
+from scapy.all import GRE
+from iota.test.utils.flowmon import *
 import glob
 import json
 import copy
@@ -27,6 +34,9 @@ import iota.test.iris.config.netagent.hw_sec_ip_config as sec_ip_api
 
 ERSPAN_TYPE_2 = "erspan_type_2"
 ERSPAN_TYPE_3 = "erspan_type_3"
+
+IPFIX_TEMPLATE_SET_ID = 0x0002
+IPFIX_DPORT = 2055
 
 uplink_vlan = 0
 # for local work loads, the packet vlan may not be wire encap vlan.
@@ -386,7 +396,7 @@ def GetHping3Cmd(protocol, src_wl, destination_ip, destination_port):
 
     return cmd
 
-def GetNpingCmd(protocol, destination_ip, destination_port, source_ip = "", count = 1):
+def GetNpingCmd(protocol, destination_ip, destination_port, source_ip = "", count = 5):
     if protocol == 'tcp':
         if source_ip != "":
             cmd = "nping --tcp --source-ip {} -p {} -c {} {}".format(source_ip, int(destination_port), int(count), destination_ip)
@@ -429,6 +439,30 @@ def VerifyVlan(pkt):
         pkt.show()
         return api.types.status.FAILURE
     return api.types.status.SUCCESS
+
+def showCurrentTimeForValidation(tc):
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    pytime = os.path.dirname(os.path.realpath(__file__)) + '/' + "pytime.py"
+    f = open(pytime, "w")
+    f.write("#! /usr/bin/python3\n")
+    f.write("import time\n")
+    f.write("print(time.clock_gettime(time.CLOCK_GETTIME))")
+    f.close()
+
+    resp = api.CopyToNaples(tc.naples, [pytime], "", naples_dir="/data/")
+    if resp is None:
+        return api.types.status.FAILURE
+
+    cmd = "chmod +x /data/pytime.py; cd /data"
+    add_naples_command(req, tc.naples, cmd)
+
+    cmd = "./pytime.py"
+    add_naples_command(req, tc.naples, cmd)
+
+    timestamp = api.Trigger(req)
+
+    os.remove(pytime)
+    return timestamp
 
 def VerifyTimeStamp(pkt):
     g_time = datetime.fromtimestamp(time.clock_gettime(time.CLOCK_REALTIME))
@@ -501,26 +535,69 @@ def VerifyErspanPackets(pcap_file_name, erspan_type, span_id):
         api.Logger.error(f"Failed to find any ERSPAN packet in {mirrorscapy} ")
         return api.types.status.FAILURE
 
+#
+# Validate IPFIX packets reception
+#
+def VerifyIpFixPackets(pcap_file_name):
+    result = api.types.status.SUCCESS
+        
+    # Read pcap file
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    flowmonscapy = dir_path + '/' + pcap_file_name
+    api.Logger.info("File Name: %s" % (flowmonscapy))
+    try:
+        pkts = rdpcap(flowmonscapy)
+    except Exception as e:
+        api.Logger.error("ERROR: Exception {} in parsing pcap file."\
+                            .format(str(e)))
+        return api.types.status.FAILURE
+
+    curr_time = datetime.fromtimestamp(time.clock_gettime(time.CLOCK_REALTIME))
+    api.Logger.info("Current time {}".format(curr_time))
+
+    # Parse pkts in pcap file
+    udppkts = 0
+    ipfix_defragment(pkts)
+    templateseen = 0
+    for pkt in pkts:
+       if pkt.haslayer(UDP):
+          udppkts = udppkts + 1
+
+          # Scapy cannot parse if we receive in 
+          # non-standard port number
+          if pkt[UDP].dport != IPFIX_DPORT:
+             continue
+       else:
+          continue
+
+       if pkt.haslayer(NetflowFlowsetV9) and pkt[NetflowFlowsetV9].flowSetID == IPFIX_TEMPLATE_SET_ID:
+          templateseen = 1
+
+       # Parse and validate IPFIX packet
+       if templateseen and pkt.haslayer(NetflowDataflowsetV9):
+           pkt_start_time = datetime.fromtimestamp(pkt[NetflowDataflowsetV9].records[0].flowStartMilliseconds/1000)
+           pkt_end_time = datetime.fromtimestamp(pkt[NetflowDataflowsetV9].records[0].flowEndMilliseconds/1000)
+           if ((curr_time.hour != pkt_start_time.hour or curr_time.hour != pkt_end_time.hour) or 
+               (curr_time.day != pkt_start_time.day or curr_time.day != pkt_end_time.day) or 
+               (curr_time.month != pkt_start_time.month or curr_time.month != pkt_end_time.month) or
+               (curr_time.year != pkt_start_time.year or curr_time.year != pkt_end_time.year)):
+               api.Logger.info("IPFIX Start time: %s" % (datetime.fromtimestamp(pkt[NetflowDataflowsetV9].records[0].flowStartMilliseconds/1000).strftime('%c')))
+               api.Logger.info("IPFIX End time: %s" % (datetime.fromtimestamp(pkt[NetflowDataflowsetV9].records[0].flowEndMilliseconds/1000).strftime('%c')))
+               result = api.types.status.FAILURE
+
+    if (udppkts == 0):
+        result = api.types.status.FAILURE
+
+    return result
+
+
 def VerifyCmd(cmd, feature, pcap_file_name, export_cfg_port=2055, erspan_type=ERSPAN_TYPE_3, span_id=1):
     api.PrintCommandResults(cmd)
     result = api.types.status.SUCCESS
     if feature == 'mirror':
         result =  VerifyErspanPackets(pcap_file_name, erspan_type, span_id)
     elif feature == 'flowmon':
-        search_str = r'(.*)%s: UDP, length(.*)'%export_cfg_port
-        # Use UDP in search string only if the export config port
-        # is a non-standard port. For non-standard ports,
-        # getservbyport method raises exception.
-        try:
-            svc = socket.getservbyport(export_cfg_port, 'udp')
-            search_str = r'(.*).%s: (.*), length(.*)'%export_cfg_port
-            api.Logger.info(f"Standard protocol port {export_cfg_port} is used as export config port")
-        except Exception as e:
-            pass
-
-        matchObj = re.search(search_str, cmd.stdout, 0)
-        if matchObj is None:
-            result = api.types.status.FAILURE
+        result = VerifyIpFixPackets(pcap_file_name) 
     return result
 
 def GetDestPort(port):
@@ -553,8 +630,8 @@ def RunCmd(src_wl, protocol, dest_wl, destination_ip, destination_port, collecto
                                    (coll_wl.interface, coll_ip, coll_ip), background=True, timeout=20)
         elif feature == 'flowmon':
             api.Trigger_AddCommand(backgroun_req, coll_wl.node_name, coll_wl.workload_name,
-                                   "tcpdump -c 10 -nni %s udp and dst port %s and dst host %s"%
-                                   (coll_wl.interface, coll_ip.proto_port.port, coll_ip.destination),
+                                   "tcpdump -c 100 -nni %s udp and dst port %s and dst host -w flowmon-%s.pcap %s"%
+                                   (coll_wl.interface, coll_ip.proto_port.port, coll_ip.destination, coll_ip.destination),
                                    background=True, timeout=20)
 
     trig_resp = api.Trigger(req)
@@ -576,7 +653,8 @@ def RunCmd(src_wl, protocol, dest_wl, destination_ip, destination_port, collecto
         cmd = GetHping3Cmd(protocol, src_wl, destination_ip, destination_port)
 
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    api.Trigger_AddCommand(req, src_wl.node_name, src_wl.workload_name, cmd, timeout=3)
+    api.Trigger_AddCommand(req, src_wl.node_name, src_wl.workload_name, cmd, timeout=10)
+    api.Logger.info("Running from src_wl_ip {} COMMAND {}".format(src_wl.ip_address, cmd))
 
     # retry traffic in case of any send failures
     for retry in range(4):
@@ -613,6 +691,8 @@ def RunCmd(src_wl, protocol, dest_wl, destination_ip, destination_port, collecto
             pcap_file_name = ('mirror-%s.pcap'%coll_ip)
             api.CopyFromWorkload(coll_wl.node_name, coll_wl.workload_name, [pcap_file_name], dir_path)
         elif feature == 'flowmon':
+            pcap_file_name = ('flowmon-%s.pcap'%coll_ip.destination)
+            api.CopyFromWorkload(coll_wl.node_name, coll_wl.workload_name, [pcap_file_name], dir_path)
             proto_port = coll_ip.proto_port.port
 
         cmd = background_resp.commands[cmd_resp_idx]
@@ -732,6 +812,8 @@ def RunAll(tc, verif_json, feature, collector_info, is_wl_type_bm=False):
                 api.Logger.info("Source and Dest workloads are same {}".format(dest_w.node_name))
                 continue
         dest_port = GetDestPort(verif[i]['port'])
+        #global naples_time = showCurrentTimeForValidation(tc)
+        #api.Logger.info("Current Naples time {}".format(naples_time))
         res = RunCmd(src_w, protocol, dest_w, dest_w.ip_address, dest_port,
                      collector_info, feature, is_wl_type_bm, span_id=span_id)
         if (res == api.types.status.FAILURE):

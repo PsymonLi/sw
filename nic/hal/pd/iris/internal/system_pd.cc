@@ -660,73 +660,20 @@ pd_table_stats_get(pd_func_args_t *pd_func_args)
     return ret;
 }
 
-//------------------------------------------------------------------------------
-// convert hardware timestamp to software timestamp
-//------------------------------------------------------------------------------
-hal_ret_t
-pd_conv_hw_clock_to_sw_clock (pd_func_args_t *pd_func_args)
-{
-    pd_conv_hw_clock_to_sw_clock_args_t *args = pd_func_args->pd_conv_hw_clock_to_sw_clock;
-
-    if (g_hal_state_pd->clock_delta_op() == HAL_CLOCK_DELTA_OP_ADD) {
-        //HAL_TRACE_DEBUG("hw tick: {} sw_ns: {}", HW_CLOCK_TICK_TO_NS(args->hw_tick),
-        //                 (HW_CLOCK_TICK_TO_NS(args->hw_tick) + g_hal_state_pd->clock_delta()));
-        *args->sw_ns = HW_CLOCK_TICK_TO_NS(args->hw_tick)  + g_hal_state_pd->clock_delta();
-    } else {
-        //HAL_TRACE_DEBUG("hw tick: {} sw_ns: {}", HW_CLOCK_TICK_TO_NS(args->hw_tick),
-        //                 (HW_CLOCK_TICK_TO_NS(args->hw_tick) - g_hal_state_pd->clock_delta()));
-        *args->sw_ns = HW_CLOCK_TICK_TO_NS(args->hw_tick) - g_hal_state_pd->clock_delta();
-    }
-
-    return HAL_RET_OK;
-}
-
-//------------------------------------------------------------------------------
-// convert hardware timestamp to software timestamp
-//------------------------------------------------------------------------------
-hal_ret_t
-pd_conv_sw_clock_to_hw_clock (pd_func_args_t *pd_func_args)
-{
-    pd_conv_sw_clock_to_hw_clock_args_t *args = pd_func_args->pd_conv_sw_clock_to_hw_clock;
-
-    if (g_hal_state_pd->clock_delta_op() == HAL_CLOCK_DELTA_OP_ADD) {
-        //HAL_TRACE_DEBUG("sw ns: {} hw tick: {}", args->sw_ns,
-        //                 NS_TO_HW_CLOCK_TICK((args->sw_ns - g_hal_state_pd->clock_delta())));
-        *args->hw_tick = NS_TO_HW_CLOCK_TICK((args->sw_ns - g_hal_state_pd->clock_delta()));
-    } else {
-        //HAL_TRACE_DEBUG("sw ns: {} hw tick: {}", args->sw_ns,
-        //                NS_TO_HW_CLOCK_TICK((args->sw_ns + g_hal_state_pd->clock_delta())));
-        *args->hw_tick = NS_TO_HW_CLOCK_TICK((args->sw_ns + g_hal_state_pd->clock_delta()));
-    }
-
-    return HAL_RET_OK;
-}
-
-//--------------------------------------------------------------------------------------
-// Get the clock details: hw clock, delta maintained and sw clock at the given instant
-//---------------------------------------------------------------------------------------
 hal_ret_t
 pd_clock_detail_get (pd_func_args_t *pd_func_args)
 {
     hal_ret_t                           ret = HAL_RET_OK;
     uint64_t                            hw_ns = 0;
     pd_clock_detail_get_args_t         *args = pd_func_args->pd_clock_detail_get;
-    pd_conv_hw_clock_to_sw_clock_args_t conv_args = {0};
-    pd_func_args_t                      conv_func_args;
 
     // Read hw time
     asicpd_tm_get_clock_tick(&hw_ns);
     HAL_TRACE_DEBUG("Hardware tick:{}", hw_ns);
-    args->hw_clock = HW_CLOCK_TICK_TO_NS(hw_ns);
-    args->sw_delta = g_hal_state_pd->clock_delta();
-    args->clock_op = g_hal_state_pd->clock_delta_op();
+    memcpy(&args->hw_tick, &g_hbm_clockaddr->ticks, CLOCK_WIDTH);
+    memcpy(&args->sw_ns, &g_hbm_clockaddr->time_in_ns, CLOCK_WIDTH);
+    memcpy(&args->sw_ms, &g_hbm_clockaddr->time_in_ms, CLOCK_WIDTH);
 
-    conv_args.hw_tick = args->hw_clock;
-    conv_args.sw_ns = &args->sw_clock;
-    conv_func_args.pd_conv_hw_clock_to_sw_clock = &conv_args;
-    ret = pd_conv_hw_clock_to_sw_clock(&conv_func_args);
-
-    HAL_TRACE_DEBUG("Hardware ns: {} sw ns: {}", args->hw_clock, args->sw_clock);
     return ret;
 }
 
@@ -736,7 +683,7 @@ pd_clock_detail_get (pd_func_args_t *pd_func_args)
 static void
 clock_delta_comp_cb (void *timer, uint32_t timer_id, void *ctxt)
 {
-    uint64_t              hw_tick = 0, hw_ns = 0, sw_ns = 0, delta_ns = 0;
+    uint64_t              hw_tick = 0, hw_ns = 0, sw_ns = 0;
     timespec_t            sw_ts;
     uint64_t              sw_ms = 0;
 
@@ -748,34 +695,7 @@ clock_delta_comp_cb (void *timer, uint32_t timer_id, void *ctxt)
     clock_gettime(CLOCK_MONOTONIC, &sw_ts);
     sdk::timestamp_to_nsecs(&sw_ts, &sw_ns);
 
-    //Compute the delta if rollover happens before the next timer update
-    if (timer_id != HAL_TIMER_ID_CLOCK_ROLLOVER) {
-        uint64_t rollover_window = (HW_CLOCK_TICK_TO_NS(0xFFFFFFFFFFFF)-\
-                                    (HAL_TIMER_ID_CLOCK_SYNC_INTVL_NS));
-        if (hw_ns >= rollover_window) {
-            g_clock_rollover_timer =
-                        sdk::lib::timer_schedule(HAL_TIMER_ID_CLOCK_ROLLOVER, // timer_id
-                                      (HW_CLOCK_TICK_TO_NS(0xFFFFFFFFFFFF)-hw_ns), //time to rollover
-                                      (void *)0,    // ctxt
-                                      clock_delta_comp_cb, false);
-        }
-    }
-
-    if (sw_ns == hw_ns) {
-        // Do nothing. We are in sync in hw!
-        return;
-    } else if (sw_ns < hw_ns) {
-        delta_ns = hw_ns - sw_ns;
-        g_hal_state_pd->set_clock_delta_op(HAL_CLOCK_DELTA_OP_SUBTRACT);
-    } else {
-        // hw_ns < sw_ns
-        delta_ns = sw_ns - hw_ns;
-        g_hal_state_pd->set_clock_delta_op(HAL_CLOCK_DELTA_OP_ADD);
-    }
-
-    HAL_TRACE_DEBUG("hw tick: {} Hw ns: {} sw ns: {} Delta ns: {}", hw_tick, hw_ns, sw_ns, delta_ns);
-    HAL_TRACE_DEBUG("Clock delta op: {}", g_hal_state_pd->clock_delta_op());
-    g_hal_state_pd->set_clock_delta(delta_ns);
+    HAL_TRACE_DEBUG("hw tick: {} Hw ns: {} sw ns: {}", hw_tick, hw_ns, sw_ns);
 
     clock_gettime(CLOCK_REALTIME, &sw_ts);
     sdk::timestamp_to_nsecs(&sw_ts, &sw_ns);

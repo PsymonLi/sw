@@ -11,7 +11,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.102",
@@ -542,7 +542,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.102",
@@ -1080,7 +1080,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.102",
@@ -1625,7 +1625,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.102",
@@ -2105,7 +2105,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.104",
@@ -2564,7 +2564,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.104",
@@ -3030,7 +3030,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.104",
@@ -3431,7 +3431,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.104",
@@ -3839,7 +3839,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.102",
@@ -4226,7 +4226,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.102",
@@ -4548,7 +4548,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.102",
@@ -4877,7 +4877,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.102",
@@ -5213,7 +5213,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.104",
@@ -5456,7 +5456,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.104",
@@ -5706,7 +5706,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.104",
@@ -5963,7 +5963,7 @@
                 "mod-time": "1970-01-01T00:00:00Z"
             },
             "spec": {
-                "template-interval": "5m",
+                "template-interval": "5s",
                 "exports": [
                     {
                         "destination": "192.168.100.104",

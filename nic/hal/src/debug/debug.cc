@@ -868,10 +868,9 @@ clock_get(ClockResponse *response)
     pd_func_args.pd_clock_detail_get = &clock_args;
     pd::hal_pd_call(pd::PD_FUNC_ID_CLOCK_DETAIL_GET, &pd_func_args);
 
-    response->mutable_spec()->set_hardware_clock(clock_args.hw_clock);
-    response->mutable_spec()->set_software_delta(clock_args.sw_delta);
-    response->mutable_spec()->set_software_clock(clock_args.sw_clock);
-    response->mutable_spec()->set_clock_op_type((debug::ClockOpType)clock_args.clock_op);
+    response->mutable_spec()->set_hardware_ticks(clock_args.hw_tick);
+    response->mutable_spec()->set_software_nanoseconds(clock_args.sw_ns);
+    response->mutable_spec()->set_software_milliseconds(clock_args.sw_ms);
 
     response->set_api_status(types::API_STATUS_OK);
 

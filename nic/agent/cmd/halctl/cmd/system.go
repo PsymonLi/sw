@@ -1740,9 +1740,9 @@ func systemClockShowCmdHandler(cmd *cobra.Command, args []string) {
 
 	spec := resp.GetSpec()
 	fmt.Println("\nSystem Clock Information:")
-	fmt.Printf("\n%s%-15d\n", "Hardware Clock (in nanoseconds)    :", spec.GetHardwareClock())
-	fmt.Printf("%s%-15d\n", "Software Delta                     :", spec.GetSoftwareDelta())
-	fmt.Printf("%s%-15d\n", "Software Clock (in nanoseconds)    :", spec.GetSoftwareClock())
+	fmt.Printf("\n%s%-15d\n", "Hardware Ticks                   :", spec.GetHardwareTicks())
+	fmt.Printf("%s%-15d\n", "Software Clock (in milliseconds)   :", spec.GetSoftwareMilliseconds())
+	fmt.Printf("%s%-15d\n", "Software Clock (in nanoseconds)    :", spec.GetSoftwareNanoseconds())
 }
 
 func leftArrow() uint32 {

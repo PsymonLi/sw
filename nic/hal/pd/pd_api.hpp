@@ -2964,10 +2964,9 @@ typedef struct pd_clock_delta_comp_args_s {
 } __PACK__ pd_clock_delta_comp_args_t;
 
 typedef struct pd_clock_detail_get_args_s {
-    uint64_t   hw_clock;
-    uint64_t   sw_delta;
-    uint64_t   sw_clock;
-    uint8_t    clock_op;
+    uint64_t   sw_ms;
+    uint64_t   sw_ns;
+    uint64_t   hw_tick;
 } __PACK__ pd_clock_detail_get_args_t;
 
 typedef struct pd_clock_trigger_sync_args_s {

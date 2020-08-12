@@ -11,7 +11,7 @@
                 "tenant": "default"
             }, 
             "spec": {
-                "template-interval": "5m", 
+                "template-interval": "5s", 
                 "exports": [
                     {
                         "destination": "10.255.0.2", 
