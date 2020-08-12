@@ -224,6 +224,8 @@ AdminQ::AdminResponseQInit(uint8_t cos_sel, uint8_t cosA, uint8_t cosB)
 bool
 AdminQ::Reset()
 {
+    Flush();
+
     if (!AdminRequestQReset()) {
         NIC_LOG_ERR("{}: Failed to reset request queue", name);
         return false;
@@ -262,7 +264,7 @@ AdminQ::AdminRequestQReset()
                                                   P4PLUS_CACHE_INVALIDATE_TXDMA);
 
     db_addr.lif_id = lif;
-    db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_NONE,
+    db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_CLEAR,
                                         ASIC_DB_UPD_INDEX_UPDATE_NONE, false);
     db_addr.q_type = req_qtype;
 
@@ -298,7 +300,7 @@ AdminQ::AdminResponseQReset()
 
     db_addr.lif_id = lif;
     db_addr.q_type = resp_qtype;
-    db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_NONE,
+    db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_CLEAR,
                                         ASIC_DB_UPD_INDEX_UPDATE_NONE, false);
 
     db_data = resp_qid << 24;
