@@ -4573,7 +4573,13 @@ func TestMemdbCtrlWatchTopo(t *testing.T) {
 	wobj = eventObj.Obj
 	Assert(t, (err == nil), "Received invalid object", watchers[0])
 	Assert(t, eventObj.EventType == ReconcileEvent, "Received invalid object", wobj)
-	Assert(t, (len(eventObj.OldFlts) != 0 && len(eventObj.NewFlts) != 0), "received a wrong object", wobj)
+	Assert(t, (len(eventObj.OldFlts) != 0 && len(eventObj.NewFlts) == 0), "received a wrong object", wobj)
+
+	eventObj, err = waitForWatch(t, watchers[0].Channel)
+	wobj = eventObj.Obj
+	Assert(t, (err == nil), "Received invalid object", watchers[0])
+	Assert(t, eventObj.EventType == ReconcileEvent, "Received invalid object", wobj)
+	Assert(t, (len(eventObj.OldFlts) == 0 && len(eventObj.NewFlts) != 0), "received a wrong object", wobj)
 
 	// delete routing config
 	md.SendRoutingConfig(watchers[0].Name, rtCfg[1].Name, "")

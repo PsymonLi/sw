@@ -1741,7 +1741,10 @@ func (md *Memdb) SendRoutingConfig(dsc, oldRtCfg, newRtCfg string) {
 		md.topoHandler.delRefCnt(dsc, "RoutingConfig", "", oldRtCfg)
 		md.topoHandler.addRefCnt(dsc, "RoutingConfig", "", newRtCfg)
 		log.Infof("Sending reconcile event for RoutingConfig | dsc: %s | opts: %v", dsc, opts)
-		md.sendReconcileEvent(dsc, "RoutingConfig", oldFlt, newFlt)
+		// naples expects the old routing config to be deleted first
+		md.sendReconcileEvent(dsc, "RoutingConfig", oldFlt, nil)
+		// send the reconciliation event with the newfiter
+		md.sendReconcileEvent(dsc, "RoutingConfig", nil, newFlt)
 		update.AddDSCs = append(update.AddDSCs, dsc)
 		update.AddObjects["RoutingConfig"] = []string{newRtCfg}
 		update.DelDSCs = append(update.DelDSCs, dsc)

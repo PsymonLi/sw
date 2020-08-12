@@ -116,6 +116,10 @@ func TestValidateHooks(t *testing.T) {
 	errs = nh.validateNetworkConfig(nw, "v1", false, false)
 	Assert(t, len(errs) != 0, "Expecting error when there is no IP gateway ")
 
+	nw.Spec.IPv4Gateway = "10.1.2.1"
+	errs = nh.validateNetworkConfig(nw, "v1", false, false)
+	Assert(t, len(errs) != 0, "Expecting to fail when gw doesn't belong to subnet [%v]", errs)
+
 	nw.Spec.IPv4Gateway = "10.1.1.1"
 	errs = nh.validateNetworkConfig(nw, "v1", false, false)
 	Assert(t, len(errs) == 0, "Expecting to succeed [%v]", errs)

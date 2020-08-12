@@ -82,6 +82,27 @@ func validateImportExportRTs(rd *network.RouteDistinguisher, name string) (ret [
 	return
 }
 
+func validateNetworkGwAddress(addr, gw string) error {
+	_, ipnet, err := net.ParseCIDR(addr)
+	if err != nil {
+		return fmt.Errorf("IPV4 Subnet: %s parsing failed: %s", addr, err)
+	}
+
+	reqIPAddr, _, err := net.ParseCIDR(gw)
+	if err != nil {
+		reqIPAddr = net.ParseIP(gw)
+	} else {
+		return fmt.Errorf("IPV4 Gateway: %s parsing failed: %s", addr, err)
+	}
+
+	// verify requested address is in this subnet
+	if !ipnet.Contains(reqIPAddr) {
+		log.Errorf("Requested address %s is not in subnet %s", gw, addr)
+		return fmt.Errorf("IPV4 Gateway: %s is not in subnet: %s", gw, addr)
+	}
+	return nil
+}
+
 func (h *networkHooks) validateNetworkConfig(i interface{}, ver string, ignStatus, ignoreSpec bool) []error {
 	var ret []error
 
@@ -92,6 +113,12 @@ func (h *networkHooks) validateNetworkConfig(i interface{}, ver string, ignStatu
 		}
 		if in.Spec.IPv6Gateway != "" || in.Spec.IPv6Subnet != "" {
 			ret = append(ret, fmt.Errorf("IPv6 not supported"))
+		}
+		if in.Spec.IPv4Subnet != "" && in.Spec.IPv4Gateway != "" {
+			err := validateNetworkGwAddress(in.Spec.IPv4Subnet, in.Spec.IPv4Gateway)
+			if err != nil {
+				ret = append(ret, fmt.Errorf("Error validating Gateway address: %s", err))
+			}
 		}
 	}
 
@@ -312,6 +339,13 @@ func (h *networkHooks) checkNetworkCreateConfig(ctx context.Context, kv kvstore.
 	if !ok {
 		h.logger.ErrorLog("method", "checkNetworkCreateConfig", "msg", fmt.Sprintf("API server network hook called for invalid object type [%#v]", i))
 		return i, true, errors.New("invalid input type")
+	}
+
+	if in.Spec.IPv4Subnet != "" && in.Spec.IPv4Gateway != "" {
+		err := validateNetworkGwAddress(in.Spec.IPv4Subnet, in.Spec.IPv4Gateway)
+		if err != nil {
+			return i, true, fmt.Errorf("Error validating Gateway address: %s", err)
+		}
 	}
 
 	// make sure that vlanID is unique (network:vlan relationship is 1:1)
