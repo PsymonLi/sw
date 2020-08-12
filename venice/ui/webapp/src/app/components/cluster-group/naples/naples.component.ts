@@ -858,6 +858,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
     this.genCharts('CPUUsedPercent', this.cpuChartData);
     this.genCharts('MemUsedPercent', this.memChartData);
     this.genCharts('DiskUsedPercent', this.diskChartData);
+    this.refreshGui(this.cdr); // VS-2178, trigger rendering CPU/MEM/Disk charts
   }
 
   private genCharts(fieldName: string, heroCard: HeroCardOptions) {

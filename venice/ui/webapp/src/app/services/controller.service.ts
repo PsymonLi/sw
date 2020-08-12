@@ -79,7 +79,7 @@ export class ControllerService {
   // time to idle before warning user of logout (in seconds)
   private _idleTime = 60 * 60 * 1;  // 60 minutes
 
-  sessionExpired: boolean = false;
+  sessionExpiredOrNetworkProblem: boolean = false;
 
   constructor(
     private _router: Router,
@@ -95,7 +95,7 @@ export class ControllerService {
   ) {
     this._subscribeToEvents();
     this._registerSVGIcons();
-    this.sessionExpired = false;
+    this.sessionExpiredOrNetworkProblem = false;
   }
 
   private handler = new Subject<Message>();
@@ -491,14 +491,14 @@ export class ControllerService {
     // JSON.stringify(error) -- > "{"body":{"isTrusted":true},"statusCode":0}". Stop "yarn run dev" will reproduce this problem.
     if (error.body && error.body.type === 'error' && error.statusCode === 0 && (error.body instanceof ProgressEvent) ) {
       const errorMsg = 'Session expired or network connection issue. System will sign out in 3 seconds.';
-      if (! this.sessionExpired) {
-        this.sessionExpired = true;
+      if (! this.sessionExpiredOrNetworkProblem) {
+        this.sessionExpiredOrNetworkProblem = true;
         this.invokeErrorToaster(summary, errorMsg);
       }
       const setTime1 = window.setTimeout(() => {
         this.publish(Eventtypes.LOGOUT, { 'reason': 'Session expired or network connection issue.' });
         window.clearTimeout(setTime1);
-      }, 3000);
+      }, 3000);  // VS-2163
       return;
     }
 
@@ -506,8 +506,15 @@ export class ControllerService {
     if (!error.statusCode && !error.body) {
       this.removeToaster(summary);
       let errorMsg = Utility.getLodash().isObject(error) ? JSON.stringify(error) : error.toString();
-      errorMsg = error +  '. Please check network connection. Reloading page and signing in again may help.';
-      this.invokeErrorToaster(summary, errorMsg);
+      errorMsg = errorMsg +  '. Please check network connection. Reloading page and signing in again may help.';
+      if (! this.sessionExpiredOrNetworkProblem) {
+        this.sessionExpiredOrNetworkProblem = true;
+        this.invokeErrorToaster(summary, errorMsg);
+      }
+      const setTime1 = window.setTimeout(() => {
+        this.sessionExpiredOrNetworkProblem = false;
+        window.clearTimeout(setTime1);
+      }, 10000); // subpress toastor for 10 seconds.  VS-2163
       return;
     }
 
