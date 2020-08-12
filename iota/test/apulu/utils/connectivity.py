@@ -5,6 +5,9 @@ import iota.test.apulu.config.api as config_api
 import apollo.config.objects.vnic as vnic
 import apollo.config.objects.subnet as subnet
 import vpc_pb2 as vpc_pb2
+import apollo.config.objects.metaswitch.bgp_peer as bgp_peer
+import apollo.config.objects.device as device
+import iota.test.apulu.utils.bgp as bgp_utils
 
 def TriggerConnectivityTestAll(proto="icmp", af="ipv4", pktsize=128, sec_ip_test_type="all"):
     wl_pairs = []
@@ -32,6 +35,30 @@ def TriggerConnectivityTest(workload_pairs, proto, af, pktsize, sec_ip_test_type
 
     return cmd_cookies, resp
 
+def CheckUnderlayConnectivity(retry_on_failure=3, bgp_sleep_time=15, bgp_timeout=120):
+    resp = api.types.status.SUCCESS
+    if api.IsDryrun():
+        return resp
+
+    def __checkUnderlayBGPConnectivity(sleeptime, timeout):
+        resp = api.types.status.SUCCESS
+        if bgp_utils.check_underlay_bgp_peer_connectivity(sleeptime, timeout) != resp:
+            resp = api.types.status.FAILURE
+            api.Logger.error(f"Underlay BGP is not up")
+        return resp
+
+    while (retry_on_failure):
+        resp = __checkUnderlayBGPConnectivity(bgp_sleep_time, bgp_timeout)
+        if resp == api.types.status.SUCCESS:
+            underlay_trigger, underlay_cookies = TriggerUnderlayConnectivityTest()
+            resp = VerifyUnderlayConnectivityTest(underlay_trigger, underlay_cookies)
+            if resp != api.types.status.SUCCESS:
+                api.Logger.error(f"Underlay BGP connectivity failed to establish")
+            else:
+                break
+        retry_on_failure -= 1
+    return resp
+
 def VerifyConnectivityTest(proto, cmd_cookies, resp, expected_exit_code=0):
     if proto == 'icmp' or proto == 'arp':
         if traffic_utils.verifyPing(cmd_cookies, resp, expected_exit_code) != api.types.status.SUCCESS:
@@ -39,7 +66,6 @@ def VerifyConnectivityTest(proto, cmd_cookies, resp, expected_exit_code=0):
     if proto in ['tcp','udp']:
         if traffic_utils.verifyIPerf(cmd_cookies, resp) != api.types.status.SUCCESS:
             return api.types.status.FAILURE
-
     return api.types.status.SUCCESS
 
 # Testcases which want to test connectivity after a trigger, through
@@ -47,6 +73,12 @@ def VerifyConnectivityTest(proto, cmd_cookies, resp, expected_exit_code=0):
 def ConnectivityTest(workload_pairs, proto_list, ipaf_list, pktsize_list, expected_exit_code=0, sec_ip_test_type='none'):
     cmd_cookies = []
     resp = None
+    # Run underlay connectivity first before overlay connectivity test
+    resp = CheckUnderlayConnectivity()
+    if resp != api.types.status.SUCCESS:
+        api.Logger.error(f"Failed to establish underlay connectivity. Exiting now...")
+        return resp
+
     for af in ipaf_list:
         for proto in proto_list:
             for pktsize in pktsize_list:
@@ -82,6 +114,61 @@ def GetWorkloadScope(iterators=None):
         scope = config_api.WORKLOAD_PAIR_SCOPE_INTER_VPC
 
     return scope
+
+def TriggerUnderlayConnectivityTest(ping_count=20, connectivity = 'bgp_peer', interval = 0.01):
+    req = None
+    req = api.Trigger_CreateAllParallelCommandsRequest()
+    cmd_cookies = []
+    naplesHosts = api.GetNaplesHostnames()
+
+    if connectivity == 'bgp_peer':
+        for node in naplesHosts:
+            for bgppeer in bgp_peer.client.Objects(node):
+                cmd_cookie = "%s --> %s" %\
+                             (str(bgppeer.LocalAddr), str(bgppeer.PeerAddr))
+                api.Trigger_AddNaplesCommand(req, node, \
+                        f"ping -i {interval} -c {ping_count} -s 64 {str(bgppeer.PeerAddr)}")
+                api.Logger.verbose(f"Ping test from {cmd_cookie}")
+                cmd_cookies.append(cmd_cookie)
+    else:
+        for node1 in naplesHosts:
+            for node2 in naplesHosts:
+                if node1 == node2:
+                    continue
+                objs = device.client.Objects(node1)
+                device1 = next(iter(objs))
+                objs = device.client.Objects(node2)
+                device2 = next(iter(objs))
+                cmd_cookie = "%s --> %s" %\
+                             (device1.IP, device2.IP)
+                api.Trigger_AddNaplesCommand(req, node1, \
+                        f"ping -i {interval} -c {ping_count} -s 64 {device2.IP}")
+                api.Logger.verbose(f"Loopback ping test from {cmd_cookie}")
+                cmd_cookies.append(cmd_cookie)
+
+    resp = api.Trigger(req)
+
+    return resp, cmd_cookies
+
+def VerifyUnderlayConnectivityTest(resp, cmd_cookies):
+    if resp is None:
+        return api.types.status.FAILURE
+
+    result = api.types.status.SUCCESS
+    cookie_idx = 0
+
+    for cmd in resp.commands:
+        api.Logger.verbose(f"Ping Results for {(cmd_cookies[cookie_idx])}")
+
+        if cmd.exit_code != 0:
+            ip_str = cmd_cookies[cookie_idx]
+            ip_pair = ip_str.split(" --> ")
+            api.Logger.error(f"UNDERLAY_PING: Ping failed between {ip_pair}")
+            api.PrintCommandResults(cmd)
+            result = api.types.status.FAILURE
+
+        cookie_idx += 1
+    return result
 
 def ConnectivityARPingTest(workload_pairs, args=None):
     # default probe count is 3

@@ -1,9 +1,7 @@
 #! /usr/bin/python3
 import iota.harness.api as api
 import iota.test.apulu.config.api as config_api
-import iota.test.utils.traffic as traffic_utils
 import iota.test.apulu.utils.connectivity as conn_utils
-import iota.test.apulu.utils.misc as misc
 
 def __getOperations(tc_operation):
     opers = list()
@@ -35,68 +33,66 @@ def Trigger(tc):
     tc.is_config_deleted = False
     tc.is_config_updated = False
     tc.is_config_created = False
-    tc.cmd_cookies = None
-    tc.resp = None
-    tc.cmd_cookies_vr = None
-    tc.resp_vr = None
+    tc.trigger_resp = None
     sent_probes = None
+    tc.resp_vr = None
+    tc.cmd_cookies_vr = None
 
     for op in tc.opers:
-        res = config_api.ProcessObjectsByOperation(op, tc.selected_objs)
+        resp = config_api.ProcessObjectsByOperation(op, tc.selected_objs)
         if op == 'Delete':
             tc.is_config_deleted = True
         elif op == 'Update':
             tc.is_config_updated = True
         elif op == 'Create':
             tc.is_config_created = True
-        if res != api.types.status.SUCCESS:
+        if resp != api.types.status.SUCCESS:
             break;
 
-    # NOTE: Wait to make sure that underlay tep and nexthop updates/deletes
-    #       configs will be pushed by underlay BGP
-    misc.Sleep(3)
+    if resp == api.types.status.SUCCESS:
+        resp = conn_utils.CheckUnderlayConnectivity()
+        if resp != api.types.status.SUCCESS:
+            api.Logger.error(f"Failed to establish underlay connectivity. Exiting now...")
+            return resp
 
-    if res == api.types.status.SUCCESS:
-        tc.cmd_cookies, tc.resp = conn_utils.TriggerConnectivityTest(tc.workload_pairs, 'icmp',
-                                                                     tc.iterators.ipaf, 64)
+        tc.cmd_cookies, tc.trigger_resp = \
+            conn_utils.TriggerConnectivityTest(tc.workload_pairs, 'icmp', tc.iterators.ipaf, 64)
 
         # For subnet object change, we also change VR IP. Test the connectivity.
         if tc.iterators.objtype == 'subnet' and tc.is_config_updated is True \
-           and tc.is_config_deleted is False and tc.is_config_created is False:
-            tc.cmd_cookies_vr, tc.resp_vr, sent_probes = conn_utils.ConnectivityVRIPTest('icmp', 'ipv4', 64,
-                                                                config_api.WORKLOAD_PAIR_SCOPE_INTRA_SUBNET)
-    api.Logger.info(f"Trigger result {res}")
-    return res
+                and tc.is_config_deleted is False and tc.is_config_created is False:
+                    tc.cmd_cookies_vr, tc.resp_vr, sent_probes = \
+                            conn_utils.ConnectivityVRIPTest('icmp', 'ipv4', 64, config_api.WORKLOAD_PAIR_SCOPE_INTRA_SUBNET)
+
+    api.Logger.info(f"Trigger result {resp}")
+    return resp
 
 def Verify(tc):
-    result = api.types.status.SUCCESS
-    if tc.resp is None:
+    if tc.trigger_resp is None:
         api.Logger.error("verify - no response")
-        return api.types.status.SUCCESS
-    commands = tc.resp.commands
+        return api.types.status.FAILURE
+
+    tc.verif_resp = api.types.status.SUCCESS
+    commands = tc.trigger_resp.commands
     cookie_idx = 0
     for cmd in commands:
+        exp_exit_code = 0
         if tc.is_config_deleted:
             res = config_api.IsAnyConfigDeleted(tc.workload_pairs[cookie_idx])
+            if res:
+                exp_exit_code = 1
             # nexthop, interface and tunnel create duplicate objects after delete operation, so traffic should not fail
             if tc.iterators.objtype in [ 'nexthop', 'interface', 'tunnel' ]:
-                if cmd.exit_code != 0:
-                    api.Logger.error("verifyPing failed for %s" % (tc.cmd_cookies[cookie_idx]))
-                    api.PrintCommandResults(cmd)
-                    result = api.types.status.FAILURE
-            elif (res is True and cmd.exit_code == 0) or (res is False and cmd.exit_code != 0):
-                api.Logger.error("verifyPing failed for %s" % (tc.cmd_cookies[cookie_idx]))
+                exp_exit_code = 0
+
+            if cmd.exit_code != exp_exit_code:
                 api.PrintCommandResults(cmd)
-                result = api.types.status.FAILURE
+                tc.verif_resp = api.types.status.FAILURE
+
         if tc.is_config_updated:
-            if cmd.exit_code != 0:
+            if cmd.exit_code != exp_exit_code:
                 api.PrintCommandResults(cmd)
-                # TODO: some objetcs(tunnel, interface) fail due to 1-1 config, move to dol config
-                # result = api.types.status.FAILURE
-        if tc.is_config_deleted is False and tc.is_config_updated is False:
-            if cmd.exit_code != 0:
-                api.PrintCommandResults(cmd)
-                result = api.types.status.FAILURE
+
         cookie_idx += 1
 
     if tc.resp_vr != None:
@@ -104,10 +100,10 @@ def Verify(tc):
         for cmd in commands:
             if cmd.exit_code != 0:
                 api.PrintCommandResults(cmd)
-                result = api.types.status.FAILURE
+                tc.verif_resp = api.types.status.FAILURE
 
-    api.Logger.info(f"Verify result: {result}")
-    return result
+    api.Logger.info(f"Verify result: {tc.verif_resp}")
+    return tc.verif_resp
 
 def Teardown(tc):
     if tc.is_config_updated:
@@ -118,8 +114,6 @@ def Teardown(tc):
         rs = config_api.RestoreObjects('Delete', tc.selected_objs)
         if rs is False:
             api.Logger.error(f"Teardown failed to restore objs from Delete operation: {rs}")
-    misc.Sleep(3)
-    tc.cmd_cookies, tc.resp = traffic_utils.pingWorkloads(tc.workload_pairs, tc.iterators.ipaf)
-    rs = traffic_utils.verifyPing(tc.cmd_cookies, tc.resp)
+    rs = conn_utils.ConnectivityTest(tc.workload_pairs, ['icmp'], [tc.iterators.ipaf], [64], 0)
     api.Logger.info(f"Teardown result: {rs}")
     return rs

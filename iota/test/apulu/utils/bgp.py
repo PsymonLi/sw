@@ -125,7 +125,7 @@ def ValidateBGPUnderlayNeighborship(node):
         api.Logger.error(" - ERROR: pdstcl show bgp peers-af failed")
         return False
 
-    api.Logger.info("pdstcl show output: %s" % (json_output))
+    api.Logger.verbose("pdstcl show output: %s" % (json_output))
 
     bgp_peers = GetBgpNbrEntries(json_output, "IPV4")
 
@@ -144,7 +144,7 @@ def ValidateBGPUnderlayNeighborship(node):
         api.Logger.error(" - ERROR: pdstcl show bgp peers failed")
         return False
 
-    api.Logger.info("pdstcl show output: %s" % (json_output))
+    api.Logger.verbose("pdstcl show output: %s" % (json_output))
 
     if not ValidateBGPPeerNbrStatus(json_output, bgp_peers):
         api.Logger.error(" - ERROR: Validating BGP Peer Underlay status")

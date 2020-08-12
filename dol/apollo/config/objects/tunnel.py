@@ -1,6 +1,4 @@
 #! /usr/bin/python3
-import pdb
-
 from infra.common.logging import logger
 from infra.common.objects import MacAddressBase
 
@@ -13,13 +11,11 @@ from apollo.config.agent.api import ObjectTypes as ObjectTypes
 import apollo.config.utils as utils
 import apollo.config.topo as topo
 import apollo.config.objects.base as base
-import apollo.config.objects.ipsec as ipsec
 
 import tunnel_pb2 as tunnel_pb2
 import types_pb2 as types_pb2
 import ipaddress
 import copy
-import time
 
 class TunnelStatus(base.StatusObjectBase):
     def __init__(self):
@@ -163,15 +159,6 @@ class TunnelObject(base.ConfigObjectBase):
 
     def UpdateAttributes(self, spec):
         if self.LocalIPAddr != self.RemoteIPAddr:
-            if self.Type == tunnel_pb2.TUNNEL_TYPE_WORKLOAD:
-                self.RemoteIPAddr = next(ResmgrClient[self.Node].TepIpAddressAllocator)
-            elif self.Type == tunnel_pb2.TUNNEL_TYPE_IGW:
-                self.RemoteIPAddr = next(ResmgrClient[self.Node].TepIpAddressAllocator)
-            else:
-                if utils.IsV4Stack(self.DEVICE.Stack):
-                    self.RemoteIPAddr = next(ResmgrClient[self.Node].TepIpAddressAllocator)
-                else:
-                    self.RemoteIPAddr = next(ResmgrClient[self.Node].TepIpv6AddressAllocator)
             if self.IsUnderlay():
                 self.NEXTHOP = ResmgrClient[self.Node].UnderlayNHAllocator.rrnext()
                 self.NexthopId = self.NEXTHOP.NexthopId
