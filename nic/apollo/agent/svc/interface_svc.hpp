@@ -156,6 +156,7 @@ pds_if_api_spec_to_proto (pds::InterfaceSpec *proto_spec,
     case IF_TYPE_HOST:
         {
             auto proto_host_if = proto_spec->mutable_hostifspec();
+            proto_host_if->set_conntracken(api_spec->host_if_info.conn_track_en);
             proto_host_if->set_txpolicer(api_spec->host_if_info.tx_policer.id,
                                          PDS_MAX_KEY_LEN);
         }
@@ -479,6 +480,8 @@ pds_if_proto_to_api_spec (pds_if_spec_t *api_spec,
 
     case pds::InterfaceSpec::kHostIfSpec:
         api_spec->type = IF_TYPE_HOST;
+        api_spec->host_if_info.conn_track_en =
+            proto_spec.hostifspec().conntracken();
         pds_obj_key_proto_to_api_spec(&api_spec->host_if_info.tx_policer,
                                       proto_spec.hostifspec().txpolicer());
         api_spec->num_tx_mirror_session = proto_spec.txmirrorsessionid_size();

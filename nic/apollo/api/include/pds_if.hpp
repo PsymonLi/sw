@@ -191,11 +191,33 @@ typedef struct pds_port_info_s {
 
 /// \brief host interface specific configuration
 typedef struct pds_host_if_info_s {
-    ///< tx policer bound to the host interface
+    /// conn_track_en, if set to true, will enable full connection tracking
+    /// NOTE:
+    /// 1. this knob is useful to enable connection tracking on per PF level if
+    ///    enabling connection tracking for the entire DSC is not desirable
+    ///    i.e, if pds_security_profile_spec_t has conn_track_en set to false
+    ///    but conn_track_en is set to true in this object, then connection
+    ///    tracking is enabled only for traffic from/to this host interface
+    ///    alone
+    /// 2. to disable connection tracking only for a PF or subset of PFs but
+    ///    keep it enabled for all other PFs the following configuration steps
+    ///    should be followed:
+    ///    a) set conn_track_en attribute in pds_security_profile_spec_t to
+    ///       false
+    ///    b) set conn_track_en attribute in HostIfSpec to true on the PFs where
+    ///       connection tracking is needed
+    ///    c) set conn_track_en attribute in HostIfSpec to false on the PFs
+    ///       where connection tracking is not needed
+    ///    In other words, connection tracking is disabled only if conn_track_en
+    ///    attribute is set to false in BOTH HostIfSpec and
+    ///    pds_security_profile_spec_t and enabled if either of these objects
+    ///    have conn_track_en set to true
+    bool  conn_track_en;
+    /// tx policer bound to the host interface
     pds_obj_key_t tx_policer;
-    ///< tx/egress mirror session id list, if any
+    /// tx/egress mirror session id list, if any
     pds_obj_key_t tx_mirror_sessions[PDS_MAX_MIRROR_SESSION];
-    ///< rx/ingress mirror session id list, if any
+    /// rx/ingress mirror session id list, if any
     pds_obj_key_t rx_mirror_sessions[PDS_MAX_MIRROR_SESSION];
 } __PACK__ pds_host_if_info_t;
 

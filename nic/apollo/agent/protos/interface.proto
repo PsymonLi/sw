@@ -168,8 +168,27 @@ message ControlIfSpec {
 //       policy) can be applied on such interfaces and they can't be brought
 //       down or up as they are host devices and DSC has no control over them
 message HostIfSpec {
+  // ConnTrackEn, if set to true, will enable full connection tracking
+  // NOTE:
+  // 1. this knob is useful to enable connection tracking on per PF level if
+  //    enabling connection tracking for the entire DSC is not desirable
+  //    i.e, if SecurityProfileSpec has ConnTrackEn set to false but
+  //    ConnTrackEn is set to true in this object, then connection tracking
+  //    is enabled only for traffic from/to this host interface alone
+  // 2. to disable connection tracking only for a PF or subset of PFs but keep
+  //    it enabled for all other PFs the following configuration steps
+  //    should be followed:
+  //    a) set ConnTrackEn attribute in SecurityProfileSpec to false
+  //    b) set ConnTrackEn attribute in HostIfSpec to true on the PFs where
+  //       conneection tracking is needed
+  //    c) set ConnTrackEn attribute in HostIfSpec to false on the PFs where
+  //       conneection tracking is not needed
+  //    In other words, connection tracking is disabled only if ConnTrackEn
+  //    attribute is set to false in BOTH HostIfSpec and SecurityProfileSpec
+  //    and enabled if either of these objects have ConnTrackEn set to true
+  bool  ConnTrackEn = 1 [(gogoproto.moretags) = "meta:default=false"];
   // Tx policer uuid
-  bytes TxPolicer = 1;
+  bytes TxPolicer   = 2;
 }
 
 // InterfaceSpec is used to add or update of an interface
