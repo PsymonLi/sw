@@ -42,7 +42,7 @@ source $CUR_DIR/../setup_upgrade_gtests.sh
 rm -rf /update/*
 
 function trap_finish () {
-    kill_process "upgrade_fsm_test -s"
+    kill_process "upg_fsm_test -s"
     kill_process "pdsupgmgr"
 }
 
@@ -74,18 +74,18 @@ function hitless_test() {
     upg_operd_init
     upgmgr_clear_init_mode
     trap trap_finish EXIT
-    $BUILD_DIR/bin/upgrade_fsm_test -s svc1 -i 60  2>&1 &
+    $BUILD_DIR/bin/upg_fsm_test -s svc1 -i 60  2>&1 &
     sleep 2
-    $BUILD_DIR/bin/upgrade_fsm_test -s svc2 -i 61 2>&1 &
+    $BUILD_DIR/bin/upg_fsm_test -s svc2 -i 61 2>&1 &
     sleep 2
     $BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/sdk/test/upgrade/fsm/scripts > upgrade_doma.log 2>&1 &
     sleep 2
     # create another upgmgr for hitless
     upgmgr_set_init_mode "hitless"
     upgmgr_set_init_domain $CONFIG_PATH $UPGRADE_DOMAIN_B
-    $BUILD_DIR/bin/upgrade_fsm_test -s svc1 -i 58 2>&1 &
+    $BUILD_DIR/bin/upg_fsm_test -s svc1 -i 58 2>&1 &
     sleep 2
-    $BUILD_DIR/bin/upgrade_fsm_test -s svc2 -i 59 2>&1 &
+    $BUILD_DIR/bin/upg_fsm_test -s svc2 -i 59 2>&1 &
     sleep 2
     $BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/sdk/test/upgrade/fsm/scripts > upgrade_domb.log 2>&1 &
     sleep 5

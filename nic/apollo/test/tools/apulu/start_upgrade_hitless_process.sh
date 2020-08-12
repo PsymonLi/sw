@@ -42,7 +42,7 @@ function trap_finish () {
     terminate "$PDSPKG_TOPDIR/apollo/tools/apulu/start-agent-sim.sh"
     terminate "$BUILD_DIR/bin/pdsagent"
     terminate "$PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh"
-    terminate "$BUILD_DIR/bin/fsm_test"
+    terminate "$BUILD_DIR/bin/upg_fsm_test"
     rm /sw/nic/conf/vpp_startup.conf
 }
 trap trap_finish EXIT
@@ -52,7 +52,7 @@ $BUILD_DIR/bin/pciemgrd -d &
 $BUILD_DIR/bin/operd $CONFIG_PATH/apulu/operd.json $CONFIG_PATH/apulu/operd-decoders.json &
 $PDSPKG_TOPDIR/apollo/tools/$PIPELINE/start-agent-sim.sh > $PDSPKG_TOPDIR/agent.log 2>&1 &
 if [ ! -z $FAILURE_STAGE ];then
-    $BUILD_DIR/bin/fsm_test -s upgtestapp -i 60 -f $FAILURE_STAGE -e $FAILURE_REASON > $PDSPKG_TOPDIR/fsm_test.log 2>&1 &
+    $BUILD_DIR/bin/upg_fsm_test -s upgtestapp -i 60 -f $FAILURE_STAGE -e $FAILURE_REASON > $PDSPKG_TOPDIR/upg_fsm_test.log 2>&1 &
 fi
 
 upg_wait_for_pdsagent

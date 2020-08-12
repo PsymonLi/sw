@@ -175,7 +175,7 @@ def GetPdsUpgContext(node_name):
 
 def CheckUpgradeStatus(node_name, status):
     ctxt = GetPdsUpgContext(node_name)
-    if ctxt: 
+    if ctxt:
         api.Logger.info(f"Upgrade context {ctxt} from {node_name}")
     else:
         api.Logger.error(f"Failed to get upgrade context from {node_name}")
@@ -183,7 +183,7 @@ def CheckUpgradeStatus(node_name, status):
 
 def CheckUpgradeStage(node_name, stage):
     ctxt = GetPdsUpgContext(node_name)
-    if ctxt: 
+    if ctxt:
         api.Logger.info(f"Upgrade context {ctxt} from {node_name}")
     else:
         api.Logger.error(f"Failed to get upgrade context from {node_name}")
@@ -266,7 +266,7 @@ def HitlessRunCmdOnInstance(node, instance, cmd):
     return api.types.status.SUCCESS
 
 def HitlessRunUpgTestApp(node, instance, failure_stage, failure_reason):
-    cmd = f"(upgrade_fsm_test -s upgtestapp -i 60 -e {failure_reason} -f {failure_stage}"
+    cmd = f"(upg_fsm_test -s upgtestapp -i 60 -e {failure_reason} -f {failure_stage}"
     cmd = cmd + " > /var/log/pensando/upg_fsm_test.log 2>&1 &) "
     return HitlessRunCmdOnInstance(node, instance, cmd)
 
@@ -311,7 +311,7 @@ def HitlessPrepUpgTestApp(tc, init):
         else:
             # add a 40 second delay in the prepare stage for the instance to
             # reload the upgrade manager with test application
-            # see upgrade_fsm_test/main.cc for details
+            # see upg_fsm_test/main.cc for details
             cmd = "(echo 40 > /tmp/upgrade_stage_prepare_delay.txt)"
             rv = HitlessRunCmdOnInstance(node, tc.hitless_instance[node], cmd)
             if rv != api.types.status.SUCCESS:

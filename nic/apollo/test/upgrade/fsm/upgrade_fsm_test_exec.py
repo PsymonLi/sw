@@ -103,7 +103,7 @@ class Log(RuntimeError):
 
 @atexit.register
 def at_exit():
-    os.system("pkill upgrade_fsm_test")
+    os.system("pkill upg_fsm_test")
     os.system("pkill pdsupgmgr")
     PDSPKG_TOPDIR = os.getenv("PDSPKG_TOPDIR")
     os.system("rm -f {0}/fsm_test_*.log".format(PDSPKG_TOPDIR))
@@ -328,7 +328,7 @@ class ExecutePdsUpgradeFsmTest(object):
         execute(cmd="rm -f {0}".format(self.upgrade_log), return_check=False)
 
     def __cleanup__(self):
-        execute(cmd="pkill upgrade_fsm_test", return_check=True)
+        execute(cmd="pkill upg_fsm_test", return_check=True)
         execute(cmd="pkill pdsupgmgr", return_check=False)
         execute(cmd="source {0} && upg_finish upgmgr".format(
             self.setup_upgrade_gtests),

@@ -162,7 +162,7 @@
         "repeal": {
             "//": "todo: needs discussion here on sysmgr A/B",
              "svc": {
-                "names": [ "vpp", "pdsagent", "pciemgr" ],
+                "names": [ "pdsagent", "vpp", "pciemgr" ],
                 "event_sequence": "serial",
                 "domain": "A"
             },

@@ -68,7 +68,9 @@ upg_cb_ev_sync (api::upg_ev_params_t *params)
 static sdk_ret_t
 upg_cb_ev_repeal (api::upg_ev_params_t *params)
 {
-    return upg_cb_ev_send_ipc(params);
+    // TODO , @mukesh, please see the failure in dol
+    // return upg_cb_ev_send_ipc(params);
+    return SDK_RET_OK;
 }
 
 sdk_ret_t

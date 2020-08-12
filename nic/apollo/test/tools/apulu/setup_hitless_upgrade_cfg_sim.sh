@@ -31,7 +31,7 @@ function copy_json() {
 
 if [ ! -z "$FAILURE_STAGE" ];then
     copy_json
-    $BUILD_DIR/bin/upgrade_fsm_test -s upgtestapp -i 60 -e $FAILURE_REASON -f $FAILURE_STAGE > $PDSPKG_TOPDIR/fsm_test.log 2>&1 &
+    $BUILD_DIR/bin/upg_fsm_test -s upgtestapp -i 60 -e $FAILURE_REASON -f $FAILURE_STAGE > $PDSPKG_TOPDIR/fsm_test.log 2>&1 &
 fi
 
 function check_status() {
