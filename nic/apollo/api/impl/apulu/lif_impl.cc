@@ -969,49 +969,18 @@ error:
     return ret;
 }
 
+// in PDS_LEARN_MODE_AUTO, learn sources are not customizable at this
+// point and we learn from all possible learn sources
 sdk_ret_t
-lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
+lif_impl::install_learn_auto_mode_nacls_(lif_impl *lif) {
     sdk_ret_t ret;
     nacl_swkey_t key;
     p4pd_error_t p4pd_ret;
-    sdk::qos::policer_t policer;
     nacl_swkey_mask_t mask;
     nacl_actiondata_t data;
+    sdk::qos::policer_t policer;
+    uint32_t nh_idx = lif->nh_idx();
     uint32_t idx, nacl_idx = PDS_IMPL_NACL_BLOCK_LEARN_MIN;
-    nexthop_info_entry_t nexthop_info_entry;
-
-    strncpy(name_, spec->name, sizeof(name_));
-    // during hitless upgrade, domain-b uses cpu_mnic3
-    if (sdk::platform::sysinit_domain_b(api::g_upg_state->init_domain())) {
-        if (!strncmp(name_, "cpu_mnic1", strlen("cpu_mnic1"))) {
-            return SDK_RET_OK;
-        }
-    } else {
-        if (!strncmp(name_, "cpu_mnic3", strlen("cpu_mnic3"))) {
-            return SDK_RET_OK;
-        }
-    }
-    PDS_TRACE_DEBUG("Creating learn lif %s", name_);
-    // allocate required nexthop to point to ARM datapath lif
-    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to allocate nexthop entry for learn lif %s, "
-                      "id %u, err %u", name_, id_, ret);
-        return ret;
-    }
-
-    // program the nexthop
-    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
-    nexthop_info_entry.lif = id_;
-    nexthop_info_entry.port = TM_PORT_DMA;
-    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
-    ret = nexthop_info_entry.write(nh_idx_);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program NEXTHOP table for learn lif %u "
-                      "at idx %u", id_, nh_idx_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
 
     // cap ARP requests from host lifs to 256/sec towards learn lif
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
@@ -1022,7 +991,8 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
         COPP_BURST(COPP_LEARN_MISS_ARP_REQ_FROM_HOST_PPS)
     };
     program_copp_entry_(&policer, idx, false);
-    // install NACL entry
+
+    // install NACL entry to redirect ARP requests from host lifs to learn lif
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
@@ -1048,20 +1018,15 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     mask.key_metadata_sport_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
     data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_ARP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L2_MISS_ARP;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for (learn miss, ARP "
-                      "requests from host) -> lif %s", name_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
-    // install NACL entry to direct ARP replies to learn lif
+    // install NACL entry to redirect ARP replies from host lifs to learn lif
     // reusing the policer index allocated for ARP requests
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
@@ -1086,19 +1051,15 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     mask.key_metadata_sport_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
     data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_ARP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_ARP_REPLY;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for (learn probe, ARP "
-                      "replies from host) -> lif %s", name_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
-    // install NACL entry to direct RARP packets to learn lif
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    // install NACL entry to redirect RARP packets from host lifs to learn lif
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
@@ -1120,18 +1081,13 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     mask.key_metadata_dport_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
     data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_ARP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L2_MISS_RARP;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for (learn probe, RARP "
-                      "packets from host) -> lif %s", name_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // cap DHCP requests from host lifs to 256/sec
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
@@ -1142,7 +1098,8 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
         COPP_BURST(COPP_LEARN_MISS_DHCP_REQ_FROM_HOST_PPS)
     };
     program_copp_entry_(&policer, idx, false);
-    // install NACL entry for DHCP requests
+
+    // install NACL entry to redirect DHCP requests from host lifs to learn lif
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
@@ -1170,18 +1127,13 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     mask.key_metadata_proto_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
     data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_DHCP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L2_MISS_DHCP;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL redirect entry for "
-                      "(host lif, DHCP req) -> lif %s", name_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // allocate and program copp table entry for mapping miss
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
@@ -1192,7 +1144,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     };
     program_copp_entry_(&policer, idx, false);
 
-    // redirect mapping miss IPv4 packets from host PFs for datapath learning
+    // redirect mapping miss IPv4 packets from host lifs for datapath learning
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
@@ -1212,37 +1164,80 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     mask.control_metadata_tunneled_packet_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
     data.nacl_redirect_to_arm_action.copp_class =
         P4_COPP_DROP_CLASS_DATAPATH_LEARN;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L3_MISS_IP4_IP6;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL redirect entry for "
-                      "(host lif, TCP) -> lif %s", name_);
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    }
-
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
     SDK_ASSERT(nacl_idx <= PDS_IMPL_NACL_BLOCK_GENERIC_MIN);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+lif_impl::install_learn_notify_mode_nacls_(lif_impl *lif,
+                                           pds_learn_source_t *source) {
+    // TODO:
+    SDK_ASSERT(0);
+}
+
+sdk_ret_t
+lif_impl::install_learn_nacls_(pds_learn_mode_t mode,
+                               pds_learn_source_t *source) {
+    if (mode == PDS_LEARN_MODE_AUTO) {
+        install_learn_auto_mode_nacls_(this);
+    } else {
+        // mode is PDS_LEARN_MODE_NOTIFY
+        install_learn_notify_mode_nacls_(this, source);
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
+    sdk_ret_t ret;
+    p4pd_error_t p4pd_ret;
+    nexthop_info_entry_t nexthop_info_entry;
+
+    strncpy(name_, spec->name, sizeof(name_));
+    if (sdk::platform::sysinit_domain_b(api::g_upg_state->init_domain())) {
+        // during hitless upgrade, domain B uses cpu_mnic3, so skip cpu_mnic1
+        if (!strncmp(name_, "cpu_mnic1", strlen("cpu_mnic1"))) {
+            return SDK_RET_OK;
+        }
+    } else {
+        // during hitless upgrade, domain A uses cpu_mnic1, so skip cpu_mnic3
+        if (!strncmp(name_, "cpu_mnic3", strlen("cpu_mnic3"))) {
+            return SDK_RET_OK;
+        }
+    }
+    PDS_TRACE_DEBUG("Creating learn lif %s", name_);
+
+    // allocate required nexthop to point to ARM datapath lif
+    ret = nexthop_impl_db()->nh_idxr()->alloc(&nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // program the nexthop
+    memset(&nexthop_info_entry, 0, nexthop_info_entry.entry_size());
+    nexthop_info_entry.lif = id_;
+    nexthop_info_entry.port = TM_PORT_DMA;
+    nexthop_info_entry.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
+    ret = nexthop_info_entry.write(nh_idx_);
+    SDK_ASSERT(ret == SDK_RET_OK);
+
+    // TODO: we can start with _NONE and handle this in device object handling
+    ret = install_learn_nacls_(PDS_LEARN_MODE_AUTO, NULL);
+    SDK_ASSERT(ret == SDK_RET_OK);
 
     // program the LIF table
     ret = program_lif_table(id_, P4_LIF_TYPE_ARM_LEARN,
                             PDS_IMPL_RSVD_VPC_HW_ID, PDS_IMPL_RSVD_BD_HW_ID,
                             PDS_IMPL_RSVD_VNIC_HW_ID, g_zero_mac, false, true,
                             P4_LIF_DIR_HOST);
-    if (ret != SDK_RET_OK) {
-        goto error;
-    }
+    SDK_ASSERT(ret == SDK_RET_OK);
     return SDK_RET_OK;
-
-error:
-
-    nexthop_impl_db()->nh_idxr()->free(nh_idx_);
-    nh_idx_ = 0xFFFFFFFF;
-    return ret;
 }
 
 sdk_ret_t

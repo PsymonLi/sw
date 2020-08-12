@@ -412,6 +412,24 @@ private:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t create_host_lif_(pds_lif_spec_t *spec);
 
+    ///< \brief    install all NACLs needed for PDS_LEARN_MODE_AUTO
+    ///< \param[in] lif    learn lif instance
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t install_learn_auto_mode_nacls_(lif_impl *lif);
+
+    ///< \brief    install all NACLs needed for PDS_LEARN_MODE_NOTIFY
+    ///< \param[in] lif    learn lif instance
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t install_learn_notify_mode_nacls_(lif_impl *lif,
+                                               pds_learn_source_t *source);
+
+    ///< \brief    program necessary entries for host (data) lifs
+    ///< \param[in] mode      learn mode
+    ///< \param[in] source    learn source configuration
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t install_learn_nacls_(pds_learn_mode_t mode,
+                                   pds_learn_source_t *source);
+
     ///< \brief    program necessary entries for learn lif(s)
     ///< \param[in] spec    lif configuration parameters
     /// \return    SDK_RET_OK on success, failure status code on error

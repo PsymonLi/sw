@@ -77,6 +77,7 @@ enum DeviceOperMode {
 
 // supported learn modes
 enum LearnMode {
+  // when learn mode is set to LEARN_MODE_NONE, learning is completely disabled
   LEARN_MODE_NONE   = 0;
   // in LEARN_MODE_NOTIFY mode, when a unknown MAC/IP is seen, notification
   // is generated via operd to the app, learn module will not populate the

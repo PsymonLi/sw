@@ -157,6 +157,7 @@ func (DeviceOperMode) EnumDescriptor() ([]byte, []int) { return fileDescriptorDe
 type LearnMode int32
 
 const (
+	// when learn mode is set to LEARN_MODE_NONE, learning is completely disabled
 	LearnMode_LEARN_MODE_NONE LearnMode = 0
 	// in LEARN_MODE_NOTIFY mode, when a unknown MAC/IP is seen, notification
 	// is generated via operd to the app, learn module will not populate the

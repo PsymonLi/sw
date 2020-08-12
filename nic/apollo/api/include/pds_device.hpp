@@ -82,21 +82,23 @@ typedef enum pds_memory_profile_e {
 
 /// support learn modes
 typedef enum pds_learn_mode_e {
+  ///  when learn mode is set to PDS_LEARN_MODE_NONE, learning is completely
+  /// disabled
   PDS_LEARN_MODE_NONE   = 0,
-  // in LEARN_MODE_NOTIFY mode, when a unknown MAC/IP is seen, notification
-  // is generated via operd to the app, learn module will not populate the
-  // p4 tables with the MAC or IP; they will be programmed when app comes back
-  // and install vnics and/or IP mappings because of these learn notifications
-  // NOTE:
-  // 1. as learn events are simply notified to app, learn module doesn't need to
-  //    perform aging of the MAC/IP entries in this mode.
-  // 2. in order to de-dup back-to-back learn events and not bombard the app
-  //    listening  to these notifications, some state will be maintained about
-  //    the notified MAC/IP entries and will be deleted within short time
+  /// in LEARN_MODE_NOTIFY mode, when a unknown MAC/IP is seen, notification
+  /// is generated via operd to the app, learn module will not populate the
+  /// p4 tables with the MAC or IP; they will be programmed when app comes back
+  /// and install vnics and/or IP mappings because of these learn notifications
+  /// NOTE:
+  /// 1. as learn events are simply notified to app, learn module doesn't need
+  ///    to perform aging of the MAC/IP entries in this mode.
+  /// 2. in order to de-dup back-to-back learn events and not bombard the app
+  ///    listening  to these notifications, some state will be maintained about
+  ///    the notified MAC/IP entries and will be deleted within short time
   PDS_LEARN_MODE_NOTIFY = 1,
-  // in LEARN_MODE_AUTO, learn module will learn and automatically program the
-  // learnt MAC/IP in the datapath. Additionally, notifications will be
-  // generated for the clients of interest via operd
+  /// in LEARN_MODE_AUTO, learn module will learn and automatically program the
+  /// learnt MAC/IP in the datapath. Additionally, notifications will be
+  /// generated for the clients of interest via operd
   PDS_LEARN_MODE_AUTO   = 2,
 } pds_learn_mode_t;
 
