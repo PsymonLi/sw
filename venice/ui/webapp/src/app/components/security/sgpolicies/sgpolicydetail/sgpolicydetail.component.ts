@@ -105,12 +105,12 @@ export class SgpolicydetailComponent extends DataComponent implements OnInit, On
   METRICS_POLLING_INTERVAL = 60000;
 
   cols: TableCol[] = [
-    { field: 'ruleNum', header: 'Number', class: 'sgpolicy-rule-number', width: 4 },
-    { field: 'sourceIPs', header: 'Source IPs', class: 'sgpolicy-source-ip', width: 22 },
-    { field: 'destIPs', header: 'Destination IPs', class: 'sgpolicy-dest-ip', width: 22 },
-    { field: 'action', header: 'Action', class: 'sgpolicy-action', width: 8 },
-    { field: 'protocolPort', header: 'Protocol / Application', class: 'sgpolicy-port', width: 20 },
-    { field: 'TotalHits', header: 'Total Connection Hits', class: 'sgpolicy-rule-stat', width: 10 },
+    { field: 'ruleNum', header: 'Number', class: 'sgpolicy-rule-number', width: '65px' },
+    { field: 'sourceIPs', header: 'Source IPs', class: 'sgpolicy-source-ip', width: 100 },
+    { field: 'destIPs', header: 'Destination IPs', class: 'sgpolicy-dest-ip', width: 100 },
+    { field: 'action', header: 'Action', class: 'sgpolicy-action', width: '70px' },
+    { field: 'protocolPort', header: 'Protocol / Application', class: 'sgpolicy-port', width: 100 },
+    { field: 'TotalHits', header: 'Total Connection Hits', class: 'sgpolicy-rule-stat', width: '145px' },
   ];
 
   ruleHitItems: SelectItem[] = [
