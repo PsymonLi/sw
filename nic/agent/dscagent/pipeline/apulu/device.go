@@ -85,6 +85,7 @@ func convertDevice(lbip *halapi.IPAddress, sysName string) *halapi.DeviceRequest
 			OverlayRoutingEn:    true,
 			IPAddr:              lbip,
 			FwPolicyXposnScheme: halapi.FwPolicyXposn_FW_POLICY_XPOSN_ANY_DENY,
+			SymmetricRoutingEn:  false,
 			SysName:             sysName,
 		},
 	}

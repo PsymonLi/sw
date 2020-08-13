@@ -58,7 +58,7 @@ class DeviceObject(base.ConfigObjectBase):
             self.Mode = utils.GetDefaultDeviceMode()
         self.BridgingEnabled = getattr(spec, 'bridging', False)
         self.OverlayRoutingEn = getattr(spec, 'overlayrouting', False)
-        self.SymmetricRoutingEn = getattr(spec, 'symmetricrouting', False)
+        self.SymmetricRoutingEn = getattr(spec, 'symmetricrouting', True)
         #TODO: based on stack, get ip & gw addr
         # If loopback ip exists in testbed json, use that,
         # else use from cfgyaml
@@ -130,7 +130,8 @@ class DeviceObject(base.ConfigObjectBase):
     def __repr__(self):
         return (f"Device1|IPAddr:{self.IPAddr}|GatewayAddr:{self.GatewayAddr}|" \
                 f"MAC:{self.MACAddr.get()}|Encap:{base.Encap.GetEncapTypeString(self.EncapType)}" \
-                f"|OverlayRoutingEn:{self.OverlayRoutingEn}")
+                f"|OverlayRoutingEn:{self.OverlayRoutingEn}"\
+                f"|SymmetricRoutingEn:{self.SymmetricRoutingEn}")
 
     def Show(self):
         logger.info("Device Object: %s" % self)
@@ -156,6 +157,7 @@ class DeviceObject(base.ConfigObjectBase):
         spec.DevOperMode = utils.GetRpcDeviceMode(self.Mode)
         spec.BridgingEn = self.BridgingEnabled
         spec.OverlayRoutingEn = self.OverlayRoutingEn
+        spec.SymmetricRoutingEn = self.SymmetricRoutingEn
         spec.IPMappingClassPriority = self.IPMappingClassPriority
         spec.LearnSpec.LearnMode = self.LearnSpec.LearnMode
         spec.LearnSpec.LearnAgeTimeout = self.LearnSpec.LearnAgeTimeout

@@ -16,6 +16,7 @@ device:
     learn-mode         : auto # none (default), auto, notify
     learn-agetimeout   : 50
     overlayrouting     : true
+    symmetricrouting   : false
     ipaddress          : '18.18.18.18'
     gateway            : '1.0.0.1'
     macaddress         : macaddr/0000.bbbb.bbb1
