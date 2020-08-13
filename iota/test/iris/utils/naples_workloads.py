@@ -246,7 +246,8 @@ class NaplesInterface(Interface):
 
     def GetConfiguredIP(self):
         if self.IntfType() >= InterfaceType.NAPLES_INT_MGMT:
-            return Interface._IP_CMD_WRAPPER[self.IntfType()](self.Node(), self.Name(), self.__device_name)
+            device_ip_map = Interface._IP_CMD_WRAPPER[self.IntfType()](self.Node(), self.Name(), self.__device_name)
+            return device_ip_map[self.__device_name]
         else:
             return Interface._IP_CMD_WRAPPER[self.IntfType()](self.Node(), self.Name())
 

@@ -248,13 +248,13 @@ def getNaplesInterfaces(naples_node, device = None):
 
 def GetIPAddress(node, interface, device_name = None):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    cmd = "ifconfig " + interface + "   | grep 'inet' | cut -d: -f2 |  awk '{print $1}' "
+    cmd = "ifconfig " + interface + " | grep 'inet addr' | cut -d: -f2 | awk '{print \$1}'"
     api.Trigger_AddNaplesCommand(req, node, cmd, naples=device_name)
     resp = api.Trigger(req)
 
     ip_addr = {}
     for cmd in resp.commands:
-        ip_addr[cmd.entity_name] = resp.commands[0].stdout.strip("\n")
+        ip_addr[cmd.entity_name] = cmd.stdout.rstrip()
 
     return ip_addr
 
