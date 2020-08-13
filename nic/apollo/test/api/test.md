@@ -91,4 +91,17 @@ of the system
    [ Create Set1 ] - Read - [ Delete Set1] - Read
 
 ## Workflow U2
+   Workflow U1_S1
+   [ Create Set1 ] - Backup - [ Delete Set1 ] - Read
+   Workflow U1_S2
+   Restore
+   Workflow U2
    [ Create Set1 ] - Read - [ Create Set2 ] - Read - [ Create Set3 ] - Read
+
+## Workflow U1_N1
+   Workflow U1_S1
+   [ Create Set1 ] - Backup - [ Delete Set1 ] - Read
+   Workflow U1_S2
+   Restore
+   Workflow U1_N1
+   [ Create Set1] - [ Delete Set2 ] - Read

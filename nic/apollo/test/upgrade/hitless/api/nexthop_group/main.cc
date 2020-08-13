@@ -131,6 +131,40 @@ TEST_F(nh_group_upg_test, nh_group_upg_workflow_u2) {
     nh_group_upg_teardown();
 }
 
+/// \brief Nexthop group WF_U_1_N_1
+/// \ref WF_U_1_N_1
+TEST_F(nh_group_upg_test, nh_group_upg_workflow_u1_neg_1) {
+    nexthop_group_feeder feeder1, feeder2;
+    uint32_t start_key = 1;
+    uint32_t   num_obj = 10;
+
+    // setup precursor
+    nh_group_upg_setup();
+    // setup nh group
+    feeder1.init(PDS_NHGROUP_TYPE_OVERLAY_ECMP, PDS_MAX_OVERLAY_ECMP_TEP,
+                int2pdsobjkey(start_key), num_obj, 1);
+    // backup
+    workflow_u1_s1<nexthop_group_feeder>(feeder1);
+
+    // tearup precursor
+    nh_group_upg_teardown();
+    // restore
+    workflow_u1_s2<nexthop_group_feeder>(feeder1);
+
+    // setup precursor again
+    nh_group_upg_setup();
+    // recalibrate feeder to configure max+1 objs
+    feeder1.init(PDS_NHGROUP_TYPE_OVERLAY_ECMP, PDS_MAX_OVERLAY_ECMP_TEP,
+                 int2pdsobjkey(start_key), num_obj);
+    // setup another feeder to delete one obj
+    feeder2.init(PDS_NHGROUP_TYPE_OVERLAY_ECMP, PDS_MAX_OVERLAY_ECMP_TEP,
+                 int2pdsobjkey(start_key + num_obj), 1);
+    workflow_u1_neg_1<nexthop_group_feeder>(feeder1, feeder2);
+
+    // tearup precursor
+    nh_group_upg_teardown();
+}
+
 /// @}
 
 }    // namespace api

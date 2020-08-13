@@ -93,6 +93,31 @@ TEST_F(vpc_upg_test, vpc_upg_workflow_u2) {
     workflow_u2<vpc_feeder>(feeder1A, feeder2, feeder1B);
 }
 
+/// \brief VPC WF_U_1_N_1
+/// \ref WF_U_1_N_1
+TEST_F(vpc_upg_test, vpc_upg_workflow_u1_neg_1) {
+    vpc_feeder feeder1, feeder2;
+    uint32_t start_key = 1;
+    uint32_t   num_obj = 10;
+
+    // setup vpc
+    feeder1.init(int2pdsobjkey(start_key), PDS_VPC_TYPE_UNDERLAY, "10.0.0.0/16",
+                num_obj);
+    feeder1.set_stash(true);
+    // backup
+    workflow_u1_s1<vpc_feeder>(feeder1);
+
+    // restore
+    workflow_u1_s2<vpc_feeder>(feeder1);
+    // setup feeder again to configure original set of objs
+    feeder1.init(int2pdsobjkey(start_key), PDS_VPC_TYPE_UNDERLAY, "10.0.0.0/16",
+                 num_obj);
+    // setup another feeder to delete one obj
+    feeder2.init(int2pdsobjkey(start_key + num_obj), PDS_VPC_TYPE_UNDERLAY,
+                 "10.0.0.0/16", 1);
+    workflow_u1_neg_1<vpc_feeder>(feeder1, feeder2);
+}
+
 /// @}
 
 }    // namespace api

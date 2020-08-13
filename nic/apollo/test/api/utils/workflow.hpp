@@ -839,6 +839,25 @@ inline void workflow_u2(feeder_T& feeder1A, feeder_T& feeder2,
     WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U2 cleanup - read set3 failed");
 }
 
+/// \brief WF_U_1_N_1
+/// [ Create Set1 ] - [ Delete Set2 ] - Read
+template <typename feeder_T>
+inline void workflow_u1_neg_1(feeder_T& feeder1, feeder_T& feeder2)
+{
+    sdk_ret_t ret;
+
+    // trigger
+    pds_batch_ctxt_t bctxt = batch_start();
+    ret = many_create<feeder_T>(bctxt, feeder1);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U1_N1 batch1 - create set1 failed");
+    ret = many_delete<feeder_T>(bctxt, feeder2);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U1_N1 batch1 - delete set2 failed");
+    batch_commit_fail(bctxt);
+
+    ret = many_read<feeder_T>(feeder1, sdk::SDK_RET_ENTRY_NOT_FOUND);
+    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U1_N1 batch1 - read set1 failed");
+}
+
 /// @}
 
 }    // end namespace api

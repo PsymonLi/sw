@@ -127,6 +127,38 @@ TEST_F(tep_upg_test, tep_upg_workflow_u2) {
     tep_upg_teardown();
 }
 
+/// \brief TEP WF_U_1_N_1
+/// \ref WF_U_1_N_1
+TEST_F(tep_upg_test, tep_upg_workflow_u1_neg_1) {
+    tep_feeder feeder1, feeder2;
+    uint32_t start_key = 1;
+    uint32_t   num_obj = 10;
+
+    // setup precursor
+    tep_upg_setup();
+    // setup tep
+    feeder1.init(start_key, 0x0E0D0A0B0200, "50.50.1.1", num_obj);
+    feeder1.set_stash(true);
+    // backup
+    workflow_u1_s1<tep_feeder>(feeder1);
+
+    // tearup precursor
+    tep_upg_teardown();
+    // restore
+    workflow_u1_s2<tep_feeder>(feeder1);
+
+    // setup precursor again
+    tep_upg_setup();
+    // setup feeder again to replay original set of objs
+    feeder1.init(start_key, 0x0E0D0A0B0200, "50.50.1.1", num_obj);
+    // setup another tep to delete non existing obj
+    feeder2.init(start_key + num_obj, 0x0E0D0A0B0200, "50.50.1.1", 1);
+    workflow_u1_neg_1<tep_feeder>(feeder1, feeder2);
+
+    // tearup precursor
+    tep_upg_teardown();
+}
+
 /// @}
 
 }    // namespace api
