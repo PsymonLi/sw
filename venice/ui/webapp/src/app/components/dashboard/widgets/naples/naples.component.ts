@@ -113,7 +113,7 @@ export class NaplesComponent implements OnInit, OnChanges, AfterViewInit, OnDest
 
   healthyNaplesCount = 0;
   unknownNaplesCount = 0;
-  unhealthyNaples: string[] = [];
+  unhealthyUnAdmittedNaples: string[] = [];
 
   themeColor: string = '#b592e3';
   backgroundIcon: Icon = {
@@ -224,11 +224,13 @@ export class NaplesComponent implements OnInit, OnChanges, AfterViewInit, OnDest
             const displayArr = [];
             //  this.dscsConditionMap has dsc.condition distribution map
             if (length > 0) {
-              displayArr.push(`${length} ${objectLabel} with a non-healthy or unknown status:`);
+              displayArr.push(`${length} ${objectLabel} with a bad status`);
               // VS-1847 - besides healthy state, there are other 5 non healthy DSC states. We can not list all. So, just use "non-healthy" label.
             }
             for (let i = 0; i < length && i < maxNames; i++) {
-              displayArr.push(this.unhealthyNaples[i]);
+              if (this.unhealthyUnAdmittedNaples[i]) {
+                 displayArr.push(this.unhealthyUnAdmittedNaples[i]);
+              }
             }
             if (length > maxNames) {
               displayArr.pop();
@@ -437,7 +439,7 @@ calculateNaplesStatus() {
 let rejected = 0; let admitted = 0; let pending = 0;
 this.healthyNaplesCount = 0;
 this.unknownNaplesCount = 0;
-this.unhealthyNaples = [];
+this.unhealthyUnAdmittedNaples = [];
 const admittedNics = [];
 
 this.naples.forEach((naple, index) => {
@@ -458,10 +460,12 @@ this.naples.forEach((naple, index) => {
     } else if (Utility.getNaplesCondition(naple) === NaplesConditionValues.UNKNOWN) {
       this.unknownNaplesCount += 1;
     } else {
-      const dsclabel  = (naple.spec.id) ? naple.spec.id : naple.meta.name;
-      this.unhealthyNaples.push(dsclabel);
+      this.storeProblematicDSCs(naple);
     }
     admittedNics.push(naple);
+  } else {
+    // VS-2183. Put store non-admitted DSCs.
+    this.storeProblematicDSCs(naple);
   }
   switch (naple.status['admission-phase']) {
     case ClusterDistributedServiceCardStatus_admission_phase.admitted:
@@ -492,6 +496,11 @@ if (admittedNics && admittedNics.length !== 0) {
 }
 this.generatePieChartText();
 this.generateDoughnut();
+}
+
+private storeProblematicDSCs(naple: ClusterDistributedServiceCard) {
+    const dsclabel = (naple.spec.id) ? naple.spec.id : naple.meta.name;
+    this.unhealthyUnAdmittedNaples.push(dsclabel);
 }
 
 generatePieChartText() {
