@@ -303,7 +303,7 @@ def copy_includes (dest, arch):
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile")) #try to copy only nic/hal/pd/pd.hpp
     copytree("apollo/core", "{0}/nic/apollo/core".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("apollo/upgrade","{0}/nic/apollo/upgrade".format(dest),
+    copytree("infra/upgrade","{0}/nic/infra/upgrade".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("apollo/framework","{0}/nic/apollo/framework".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))

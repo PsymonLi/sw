@@ -12,13 +12,13 @@
 > Terminal 1:
 
 ```sh
-$ cd /usr/src/github.com/pensando/sw/nic/apollo/upgrade/test/workflow
+$ cd /usr/src/github.com/pensando/sw/nic/infra/upgrade/test/workflow
 $ ./ start_services.sh
 ```
 
 >Terminal 2:
 
 ```sh
-$ cd /usr/src/github.com/pensando/sw/nic/apollo/upgrade/test
+$ cd /usr/src/github.com/pensando/sw/nic/infra/upgrade/test
 $ ./start_upgmgr.sh
 ```

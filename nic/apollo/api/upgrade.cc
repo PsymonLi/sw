@@ -5,6 +5,8 @@
 
 #include <sys/stat.h>
 #include "nic/sdk/upgrade/include/ev.hpp"
+#include "nic/infra/upgrade/api/include/shmstore.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/include/pds_event.hpp"
@@ -13,8 +15,6 @@
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/port.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
-#include "nic/apollo/upgrade/api/include/shmstore.hpp"
-#include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
 
 namespace api {
 

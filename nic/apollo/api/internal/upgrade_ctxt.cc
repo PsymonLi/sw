@@ -8,13 +8,13 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/infra/upgrade/api/include/shmstore.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/internal/upgrade_ctxt.hpp"
-#include "nic/apollo/upgrade/api/include/shmstore.hpp"
 
 namespace api {
 

@@ -2,18 +2,19 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 //----------------------------------------------------------------------------
+
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <algorithm>
-#include "nic/apollo/include/globals.hpp"
 #include "nic/sdk/upgrade/core/fsm.hpp"
 #include "nic/sdk/upgrade/core/utils.hpp"
 #include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/sdk/upgrade/core/logger.hpp"
-#include "nic/apollo/upgrade/upgmgr/svc/upgrade.hpp"
-#include "nic/apollo/upgrade/upgmgr/api/upgrade_api.hpp"
+#include "nic/infra/upgrade/upgmgr/svc/upgrade.hpp"
+#include "nic/infra/upgrade/upgmgr/api/upgrade_api.hpp"
+#include "nic/apollo/include/globals.hpp"
 
 using grpc::Server;
 using grpc::ServerBuilder;

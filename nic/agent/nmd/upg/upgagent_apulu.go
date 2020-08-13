@@ -19,8 +19,8 @@ import (
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
 
-	"github.com/pensando/sw/nic/apollo/agent/gen/pds"
 	clientAPI "github.com/pensando/sw/nic/delphi/gosdk/client_api"
+	"github.com/pensando/sw/nic/infra/upgrade/upgmgr/gen/pds"
 	"github.com/pensando/sw/nic/upgrade_manager/export/upggosdk"
 )
 

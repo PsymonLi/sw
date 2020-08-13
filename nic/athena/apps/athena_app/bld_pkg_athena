@@ -106,18 +106,18 @@ def copy_includes (dest, arch):
              "{0}/nic/sdk/include".format(dest))
     except :
          pass
-    copytree("apollo/athena/api/impl", 
-             "{0}/nic/athena/api/impl".format(dest), 
+    copytree("apollo/athena/api/impl",
+             "{0}/nic/athena/api/impl".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("apollo/api/athena/include", "{0}/nic/athena/api/include".format(dest))
     copytree("p4/ftl_dev/include","{0}/nic/p4/ftl_dev/include".format(dest))
-    copytree("p4/common","{0}/nic/p4/common".format(dest), 
+    copytree("p4/common","{0}/nic/p4/common".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("hal/pd", "{0}/nic/hal/pd".format(dest), 
+    copytree("hal/pd", "{0}/nic/hal/pd".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile")) #try to copy only nic/hal/pd/pd.hpp
-    copytree("apollo/core", "{0}/nic/apollo/core".format(dest), 
+    copytree("apollo/core", "{0}/nic/apollo/core".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("apollo/upgrade","{0}/nic/apollo/upgrade".format(dest), 
+    copytree("infra/upgrade","{0}/nic/infra/upgrade".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("apollo/framework","{0}/nic/apollo/framework".format(dest), 
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
