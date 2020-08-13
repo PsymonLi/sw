@@ -3,7 +3,7 @@
 cd /sw/iota
 cat /warmd.json
 
-timeout 20700 ./iota.py --testbed /warmd.json $@
+./iota.py --testbed /warmd.json $@
 ret=$?
 
 if [ "$ret" = "124" ];then
