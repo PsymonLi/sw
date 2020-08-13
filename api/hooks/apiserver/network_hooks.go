@@ -32,7 +32,10 @@ import (
 )
 
 const (
-	ipamMaxDhcpServers = 8
+	ipamMaxDhcpServers           = 8
+	vrPeeringGrpMinVRs           = 2
+	vrPeeringGrpMaxVRs           = 16
+	vrPeeringGrpMaxPrefixesPerVR = 128
 )
 
 type networkHooks struct {
@@ -890,6 +893,31 @@ func (h *networkHooks) restoreResourceMap(kvs kvstore.Interface, logger log.Logg
 	}
 }
 
+func (h *networkHooks) validateVRPeeringGroup(i interface{}, ver string, ignStatus, ignoreSpec bool) []error {
+	var ret []error
+	in, ok := i.(network.VirtualRouterPeeringGroup)
+	if !ok {
+		return nil
+	}
+	if in.Spec.Items == nil || len(in.Spec.Items) < vrPeeringGrpMinVRs {
+		ret = append(ret, fmt.Errorf("minimum %v VirtualRouters required in a VirtualRouterPeeringGroup", vrPeeringGrpMinVRs))
+	}
+	if len(in.Spec.Items) > vrPeeringGrpMaxVRs {
+		ret = append(ret, fmt.Errorf("only %v VirtualRouters allowed in a VirtualRouterPeeringGroup, %v provided", vrPeeringGrpMaxVRs, len(in.Spec.Items)))
+	}
+
+	for _, n := range in.Spec.Items {
+		if n.IPv4Prefixes == nil || len(n.IPv4Prefixes) == 0 {
+			ret = append(ret, fmt.Errorf("minimum 1 prefix required in each VirtualRouter in a VirtualRouterPeeringGroup, VirtualRouter %v has none", n.VirtualRouter))
+		}
+		if len(n.IPv4Prefixes) > vrPeeringGrpMaxPrefixesPerVR {
+			ret = append(ret, fmt.Errorf("only %v prefixes allowed in each VirtualRouter in a VirtualRouterPeeringGroup, VirtualRouter %v has %v", vrPeeringGrpMaxPrefixesPerVR, n.VirtualRouter, len(n.IPv4Prefixes)))
+		}
+	}
+
+	return ret
+}
+
 func registerNetworkHooks(svc apiserver.Service, logger log.Logger) {
 	hooks := networkHooks{
 		vnidMap: make(map[uint32]string),
@@ -917,6 +945,7 @@ func registerNetworkHooks(svc apiserver.Service, logger log.Logger) {
 	svc.GetCrudService("RoutingConfig", apiintf.GetOper).WithResponseWriter(hooks.updateAuthStatus)
 	svc.GetCrudService("RoutingConfig", apiintf.ListOper).WithResponseWriter(hooks.updateAuthStatus)
 	svc.GetCrudService("RoutingConfig", apiintf.UpdateOper).GetRequestType().WithValidate(hooks.validateRoutingConfig)
+	svc.GetCrudService("VirtualRouterPeeringGroup", apiintf.CreateOper).GetRequestType().WithValidate(hooks.validateVRPeeringGroup)
 
 	apisrv := apisrvpkg.MustGetAPIServer()
 	apisrv.RegisterRestoreCallback(hooks.restoreResourceMap)
