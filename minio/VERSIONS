@@ -1,14 +1,14 @@
 # format: <name> <version>
-third_party_libs 1.1.224
+third_party_libs 1.1.226
 lkl_libs 1.1.11
 vpp e3d5df6ee27bda4c824261c9693e2dc581811537
 openssl_libs 1.1.0.2
 platform_libs 0.0.45
 storage_libs 0.0.1
-asic_libs 2.0.6
+asic_libs 2.0.7
 ncc_tools 1.0.1
 sorrento_tools ef177ad3a3791dc2a40447bbd3033d67b590e537
-pbc_config 2.0.1
+pbc_config 2.0.2
 upgrade 1.0.20
 iota 1.0.3
 host_tools 1.0.39

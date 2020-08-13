@@ -14,6 +14,7 @@
 #include "nic/utils/host_mem/host_mem.hpp"
 #include "nic/p4/common/defines.h"
 #include "nic/hal/plugins/cfg/mcast/oif_list_api.hpp"
+#include "nic/sdk/platform/intrutils/include/intrutils.h"
 
 namespace hal {
 
@@ -758,24 +759,7 @@ rdma_cq_create (RdmaCqSpec& spec, RdmaCqResponse *rsp)
 }
 #endif
 
-/*
- * TODO: Need to remove this hardcoded values. They will go away
- * anyway once we move the code out to nicmgr.
- */
-#define CAP_ADDR_BASE_INTR_INTR_OFFSET 0x6000000
-#define CAP_INTR_CSR_DHS_INTR_ASSERT_BYTE_OFFSET 0x68000
-#define INTR_BASE               CAP_ADDR_BASE_INTR_INTR_OFFSET
-#define INTR_ASSERT_OFFSET      CAP_INTR_CSR_DHS_INTR_ASSERT_BYTE_OFFSET
-#define INTR_ASSERT_BASE        (INTR_BASE + INTR_ASSERT_OFFSET)
-#define INTR_ASSERT_STRIDE      0x4
-
 #ifdef __x86_64__
-static u_int64_t
-intr_assert_addr(const int intr)
-{
-    return INTR_ASSERT_BASE + (intr * INTR_ASSERT_STRIDE);
-}
-
 hal_ret_t
 rdma_eq_create (RdmaEqSpec& spec, RdmaEqResponse *rsp)
 {

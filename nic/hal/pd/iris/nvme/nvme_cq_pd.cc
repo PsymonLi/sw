@@ -17,6 +17,7 @@
 #include "nvme_pd.hpp"
 #include "p4pd_nvme_api.h"
 #include "nic/sdk/nvme/nvme_common.h"
+#include "nic/sdk/platform/intrutils/include/intrutils.h"
 
 namespace hal {
 namespace pd {
