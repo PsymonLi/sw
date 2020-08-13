@@ -393,6 +393,10 @@ export class PolicyhealthComponent implements OnInit, OnChanges, AfterViewInit, 
           newData.series.forEach((series, idx) => {
             const data = series.values;
             currData.series[idx].values.push(...data);
+            // currData can be [ t0, t1, t2, t3, ..] and newData can be [ t2, t3...]
+            // We have to remove the duplication to have [ t0, t1, t2, t3 ...]
+            // currData looks like [ [  "2020-08-13T04:35:00Z",  7730.5   ], [  "2020-08-13T04:40:00Z",   7437.1  ],
+            currData.series[idx].values = _.uniqWith(currData.series[idx].values, (valA, valB) => (valA[0] === valB[0]));
           });
         } else {
           return newData;
