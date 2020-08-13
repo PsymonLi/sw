@@ -143,11 +143,10 @@ dsc_status_event_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
                   event->dsc_status.mode);
 
     // Nicmgr handling
-    if (event->dsc_status.mode == nmd::DistributedServiceCardStatus_Mode_NONE ||
-        event->dsc_status.mode == nmd::DistributedServiceCardStatus_Mode_HOST_MANAGED) {
+    if (event->dsc_status.mode == nmd::DistributedServiceCardStatus_Mode_HOST_MANAGED) {
         status.mode = sdk::platform::DSC_MODE_HOST_MANAGED;
     } else {
-        status.mode = sdk::platform::DSC_MODE_VENICE_MANAGED;
+        status.mode = sdk::platform::DSC_MODE_NETWORK_MANAGED;
     }
     devmgr->DscStatusUpdateHandler(&status);
 }

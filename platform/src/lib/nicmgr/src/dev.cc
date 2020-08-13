@@ -198,6 +198,12 @@ DeviceManager::PlatformInit(devicemgr_cfg_t *cfg) {
     if (pd == NULL) {
         throw runtime_error("Failed to Init PD Client");
     }
+
+    /* Set default DSC mode */
+    is_host_managed = (cfg->fwd_mode == hal::utils::FORWARDING_MODE_CLASSIC);
+    NIC_LOG_INFO("Default DSC mode: {} MANAGED",
+                 is_host_managed ? "HOST" : "NETWORK");
+
     FwUpdateInit(pd);
 }
 
@@ -1223,7 +1229,7 @@ DeviceManager::DscStatusUpdateHandler(sdk::platform::dsc_mode_status_t *status)
         NIC_LOG_INFO("DSC MODE: HOST MANAGED");
         is_host_managed = true;
     } else {
-        NIC_LOG_INFO("DSC MODE: VENICE MANAGED");
+        NIC_LOG_INFO("DSC MODE: NETWORK MANAGED");
         is_host_managed = false;
     }
 }

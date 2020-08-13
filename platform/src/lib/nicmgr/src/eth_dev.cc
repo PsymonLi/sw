@@ -2765,6 +2765,11 @@ Eth::_CmdHiiInit(void *req, void *req_data, void *resp, void *resp_data)
     NIC_LOG_INFO("{}: {} oob_en: {} uid_led_on: {} vlan_en: {} vlan: {}", spec->name,
                  opcode_to_str(cmd->opcode), cmd->oob_en, cmd->uid_led_on, cmd->vlan_en,
                  cmd->vlan);
+    if (!devmgr->IsHostManaged() && hii->GetOobEn() != cmd->oob_en) {
+        NIC_LOG_ERR("{}: Oob state cannot be modified in N/W mode",
+                    spec->name);
+        return (IONIC_RC_EPERM);
+    }
     if (hii->SetOobEn(cmd->oob_en) != SDK_RET_OK ||
         hii->SetLedStatus(cmd->uid_led_on) != SDK_RET_OK ||
         hii->SetVlanCfg(spec->name, cmd->vlan_en, cmd->vlan) != SDK_RET_OK)
@@ -2787,6 +2792,11 @@ Eth::_CmdHiiSetAttr(void *req, void *req_data, void *resp, void *resp_data)
                  opcode_to_str(cmd->opcode), hii_attr_to_str(cmd->attr));
     switch (cmd->attr) {
     case IONIC_HII_ATTR_OOB_EN:
+        if (!devmgr->IsHostManaged() && hii->GetOobEn() != cmd->oob_en) {
+            NIC_LOG_ERR("{}: Oob state cannot be modified in N/W mode",
+                        spec->name);
+            return (IONIC_RC_EPERM);
+        }
         NIC_LOG_DEBUG("{}: Setting HII oob_en {}", spec->name, cmd->oob_en);
         if (hii->SetOobEn(cmd->oob_en) != SDK_RET_OK) {
             status = IONIC_RC_ERROR;
@@ -2853,6 +2863,11 @@ Eth::_CmdHiiReset(void *req, void *req_data, void *resp, void *resp_data)
     HII *hii = devmgr->GetHiiInstance();
 
     NIC_LOG_INFO("{}: {}", spec->name, opcode_to_str(cmd->opcode));
+    if (!devmgr->IsHostManaged() && hii->GetOobEn() != hii->DEFAULT_OOB_EN) {
+        NIC_LOG_ERR("{}: Oob state cannot be modified in N/W mode",
+                    spec->name);
+        return (IONIC_RC_EPERM);
+    }
     hii->Reset();
     return (IONIC_RC_SUCCESS);
 }

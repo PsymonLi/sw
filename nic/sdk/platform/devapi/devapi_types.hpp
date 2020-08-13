@@ -268,8 +268,8 @@ typedef void (*accel_rgroup_rmisc_rsp_cb_t)(void *user_ctx,
                                             const accel_rgroup_rmisc_rsp_t& indices);
 
 typedef enum dsc_mode_s {
-    DSC_MODE_HOST_MANAGED   = 0,
-    DSC_MODE_VENICE_MANAGED = 1,
+    DSC_MODE_HOST_MANAGED       = 0,
+    DSC_MODE_NETWORK_MANAGED    = 1,
 } dsc_mode_t;
 
 typedef struct dsc_mode_status_s {

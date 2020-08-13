@@ -13,13 +13,6 @@ std::string hii_attr_to_str (int attr);
 class HII
 {
 private:
-    /* Default values */
-    const bool DEFAULT_OOB_EN = false;
-    const bool DEFAULT_UID_LED_STATE = false;
-    const bool DEFAULT_VLAN_EN = false;
-    const uint16_t DEFAULT_VLAN = 0;
-    const std::string HII_CFG_FILE = "/sysconfig/config0/hii_cfg.json";
-
     /* data */
     boost::property_tree::ptree cfg;
     bool uid_led_on;
@@ -46,6 +39,13 @@ public:
     uint32_t GetCapabilities() { return this->capabilities; }
 
     void Reset();
+
+    /* Default values */
+    const bool DEFAULT_OOB_EN = false;
+    const bool DEFAULT_UID_LED_STATE = false;
+    const bool DEFAULT_VLAN_EN = false;
+    const uint16_t DEFAULT_VLAN = 0;
+    const std::string HII_CFG_FILE = "/sysconfig/config0/hii_cfg.json";
 };
 
 #endif  // __HII_HPP__
