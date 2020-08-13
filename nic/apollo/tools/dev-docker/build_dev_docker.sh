@@ -69,6 +69,7 @@ copy_files() {
     fi
 
     utilsd='nic/utils/ftlite '
+    utilsd+='nic/utils/device '
 
     pack_apollo='nic/conf/init_bins nic/conf/catalog_hw.json nic/conf/serdes.json '
     pack_apollo+='nic/tools/sysupdate.sh nic/tools/apollo nic/tools/sysreset.sh nic/tools/fwupdate '
