@@ -219,7 +219,6 @@ vpc_impl::nuke_resources(api_base *api_obj) {
 sdk_ret_t
 vpc_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
                         api_obj_ctxt_t *obj_ctxt) {
-
     msg->cfg_msg.vpc.status.hw_id = hw_id_;
     msg->cfg_msg.vpc.status.bd_hw_id = bd_hw_id_;
     return SDK_RET_OK;

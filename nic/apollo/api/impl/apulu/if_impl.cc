@@ -131,6 +131,22 @@ if_impl::nuke_resources(api_base *api_obj) {
     return this->release_resources(api_obj);
 }
 
+sdk_ret_t
+if_impl::populate_msg(pds_msg_t *msg, api_base *api_obj,
+                      api_obj_ctxt_t *obj_ctxt) {
+    if_index_t if_index;
+    if_entry *intf = (if_entry *)api_obj;
+
+    if (intf->type() == IF_TYPE_HOST) {
+        msg->cfg_msg.intf.status.host_if_status.num_lifs = 1;
+        if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(
+                       objid_from_uuid(msg->cfg_msg.intf.spec.key)));
+        msg->cfg_msg.intf.status.host_if_status.lifs[0] =
+            uuid_from_objid(if_index);
+    };
+    return SDK_RET_OK;
+}
+
 uint32_t
 if_impl::port(if_entry *intf) {
     const if_entry *eth_if = if_entry::eth_if(intf);

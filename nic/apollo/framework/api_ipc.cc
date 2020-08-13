@@ -49,7 +49,8 @@ static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
     { OBJ_ID_MIRROR_SESSION,
         {
             { (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG, false,
-                {PDS_IPC_ID_ROUTING}},
+                {PDS_IPC_ID_ROUTING}
+            },
         }
     },
     // IPC peers interseted in NAT_PORT_BLOCK object
@@ -74,14 +75,17 @@ static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
     { OBJ_ID_TEP,
         {
             { (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG, false,
-                {PDS_IPC_ID_ROUTING}},
+                {PDS_IPC_ID_ROUTING}
+            },
         }
     },
     // IPC peers interseted in interface object
     { OBJ_ID_IF,
         {
             { (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG, false,
-                {PDS_IPC_ID_ROUTING}},
+                {PDS_IPC_ID_ROUTING}
+            },
+            //{ PDS_IPC_ID_VPP, false, {}},
         }
     },
     // IPC peers interseted in policy object

@@ -282,7 +282,8 @@ if_entry::cleanup_config(api_obj_ctxt_t *obj_ctxt) {
 
 bool
 if_entry::circulate(api_obj_ctxt_t *obj_ctxt) {
-    if ((type_ == IF_TYPE_L3) || (type_ == IF_TYPE_LOOPBACK)) {
+    if ((type_ == IF_TYPE_L3) || (type_ == IF_TYPE_LOOPBACK) ||
+        (type_ == IF_TYPE_HOST)) {
         return true;
     }
     return false;
@@ -296,6 +297,7 @@ if_entry::populate_msg(pds_msg_t *msg, api_obj_ctxt_t *obj_ctxt) {
         msg->cfg_msg.intf.key = obj_ctxt->api_params->key;
     } else {
         msg->cfg_msg.intf.spec = obj_ctxt->api_params->if_spec;
+        impl_->populate_msg(msg, this, obj_ctxt);
     }
     return SDK_RET_OK;
 }
