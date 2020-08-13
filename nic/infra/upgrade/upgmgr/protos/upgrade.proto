@@ -47,10 +47,10 @@ enum UpgradeMode {
 
 // upgrade specification
 message UpgradeSpec {
-  UpgradeRequestType RequestType = 1 [(gogoproto.moretags) = "meta:mandatory,immutable"];
-  UpgradeMode        Mode        = 2 [(gogoproto.moretags) = "meta:mandatory,immutable"];
+  UpgradeRequestType RequestType = 1 [(gogoproto.moretags) = "meta:\"mandatory,immutable\""];
+  UpgradeMode        Mode        = 2 [(gogoproto.moretags) = "meta:\"mandatory,immutable\""];
   // new package name with full path
-  string             PackageName = 3 [(gogoproto.moretags) = "meta:mandatory,immutable"];
+  string             PackageName = 3 [(gogoproto.moretags) = "meta:\"mandatory,immutable\""];
 }
 
 // upgrade return status

@@ -41,6 +41,7 @@ venice/utils/diagnostics/protos \
 metrics \
 nic/metaswitch/protos \
 nic/operd/protos \
+nic/infra/upgrade/upgmgr/protos \
 nic/apollo/agent/protos
 
 PARALLEL := $(shell command -v parallel 2> /dev/null)
@@ -146,6 +147,7 @@ nic-protos:
 	make -C nic/agent/protos/netproto delphi-gen
 	make -C nic/metaswitch/protos
 	make -C nic/operd/protos
+	make -C nic/infra/upgrade/upgmgr/protos
 	make -C nic/apollo/agent/protos
 
 # gen does all the autogeneration. viz venice cli, proto sources. Ensure that any new autogen target is added to TO_GEN above
