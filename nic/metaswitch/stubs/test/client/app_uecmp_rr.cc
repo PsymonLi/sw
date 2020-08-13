@@ -1284,7 +1284,7 @@ int main(int argc, char** argv)
             create_bgp_peer_af_proto_grpc();
             create_bgp_peer_proto_grpc(false, true /* second peer */);
             create_bgp_peer_af_proto_grpc(false, true);
-            sleep (2);
+            sleep (5);
         }
         if (underlay_only && g_node_id == 1) {
             create_tunnel_proto_grpc();

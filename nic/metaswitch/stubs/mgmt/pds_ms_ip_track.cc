@@ -46,13 +46,60 @@ release_ip_track_obj_ (const pds_obj_key_t& pds_obj_key)
     ip_track_reachability_delete(pds_obj_key, pds_obj_id);
 }
 
+static types::ApiStatus
+configure_ms_static_route_ (ip_prefix_t& internal_ip_pfx,
+                            ip_addr_t& destip,
+                            bool op_delete)
+{
+    uint correlator = PDS_MS_CTM_GRPC_CORRELATOR;
+    PDS_MS_START_TXN(correlator);
+
+    // Route Table ID is unused since Static route is only supported
+    // for underlay
+    CPStaticRouteSpec static_route_spec;
+    auto dest_addr_spec = static_route_spec.mutable_destaddr();
+    dest_addr_spec->set_af(types::IP_AF_INET);
+    dest_addr_spec->set_v4addr(internal_ip_pfx.addr.addr.v4_addr);
+
+    static_route_spec.set_prefixlen(internal_ip_pfx.len);
+
+    NBB_LONG row_status;
+    auto nh_addr_spec = static_route_spec.mutable_nexthopaddr();
+    nh_addr_spec->set_af(types::IP_AF_INET);
+    nh_addr_spec->set_v4addr(destip.addr.v4_addr);
+
+    if (!op_delete) {
+        static_route_spec.set_admindist(10);
+        static_route_spec.set_state(types::ADMIN_STATE_ENABLE);
+        static_route_spec.set_override(true);
+
+        row_status = AMB_ROW_ACTIVE;
+    } else {
+        row_status = AMB_ROW_DESTROY;
+    }
+
+    pds_ms_validate_cpstaticroutespec(static_route_spec);
+    pds_ms_pre_set_cpstaticroutespec_amb_cipr_rtm_static_rt(static_route_spec,
+                                                            row_status,
+                                                            correlator, nullptr);
+    pds_ms_dump_cpstaticroutespec(static_route_spec);
+    pds_ms_set_cpstaticroutespec_amb_cipr_rtm_static_rt(static_route_spec,
+                                                        row_status, correlator,
+                                                        FALSE);
+    pds_ms_post_set_cpstaticroutespec_amb_cipr_rtm_static_rt(static_route_spec,
+                                                             row_status,
+                                                             correlator, nullptr);
+
+    PDS_MS_END_TXN(correlator);
+    return pds_ms::mgmt_state_t::ms_response_wait();
+}
+
 static sdk_ret_t
 configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
                                   ip_addr_t& destip,
                                   obj_id_t pds_obj_id, bool op_delete,
                                   bool update = false)
 {
-    CPStaticRouteSpec static_route_spec;
     ip_track_obj_t *ip_track_obj = nullptr;
     ip_prefix_t internal_ip_pfx;
     types::ApiStatus  ret;
@@ -63,10 +110,6 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
     }
 
     try {
-
-        uint correlator = PDS_MS_CTM_GRPC_CORRELATOR;
-        PDS_MS_START_TXN(correlator);
-
         { // Enter State context
             auto state_ctxt = state_t::thread_context();
             auto state = state_ctxt.state();
@@ -105,43 +148,18 @@ configure_static_tracking_route_ (const pds_obj_key_t& pds_obj_key,
                        (op_delete) ? "delete" : "create",
                        ippfx2str(&internal_ip_pfx), pds_obj_id);
 
-        // Route Table ID is unused since Static route is only supported
-        // for underlay
-        auto dest_addr_spec = static_route_spec.mutable_destaddr();
-        dest_addr_spec->set_af(types::IP_AF_INET);
-        dest_addr_spec->set_v4addr(internal_ip_pfx.addr.addr.v4_addr);
-
-        static_route_spec.set_prefixlen(internal_ip_pfx.len);
-
-        NBB_LONG row_status;
-        auto nh_addr_spec = static_route_spec.mutable_nexthopaddr();
-        nh_addr_spec->set_af(types::IP_AF_INET);
-        nh_addr_spec->set_v4addr(destip.addr.v4_addr);
-
-        if (!op_delete) {
-            static_route_spec.set_admindist(10);
-            static_route_spec.set_state(types::ADMIN_STATE_ENABLE);
-            static_route_spec.set_override(true);
-
-            row_status = AMB_ROW_ACTIVE;
-        } else {
-            row_status = AMB_ROW_DESTROY;
+        if (!(op_delete || update)) {
+            // Delete any stale MS routes already installed with same
+            // internal prefix.
+            // This is possible in case of hitless upgrade as the MS routes
+            // are internally replayed from the CTM snapshot.
+            // Explicit delete needed because if the internal prefix and
+            // destip tracked matches previous config then this will be a
+            // no-op in MS and ROPI stub API won't be triggered if BGP is
+            // already converged before config replay ends. 
+            ret = configure_ms_static_route_(internal_ip_pfx, destip, true);
         }
-
-        pds_ms_validate_cpstaticroutespec(static_route_spec);
-        pds_ms_pre_set_cpstaticroutespec_amb_cipr_rtm_static_rt(static_route_spec,
-                                                                row_status,
-                                                                correlator, nullptr);
-        pds_ms_dump_cpstaticroutespec(static_route_spec);
-        pds_ms_set_cpstaticroutespec_amb_cipr_rtm_static_rt(static_route_spec,
-                                                            row_status, correlator,
-                                                            FALSE);
-        pds_ms_post_set_cpstaticroutespec_amb_cipr_rtm_static_rt(static_route_spec,
-                                                                 row_status,
-                                                                 correlator, nullptr);
-
-        PDS_MS_END_TXN(correlator);
-        ret = pds_ms::mgmt_state_t::ms_response_wait();
+        ret = configure_ms_static_route_(internal_ip_pfx, destip, op_delete);
 
         if (op_delete) {
             release_ip_track_obj_(pds_obj_key);
