@@ -468,7 +468,7 @@ func bgpNlriShowCmdHandler(cmd *cobra.Command, _afisafi string, args []string) e
 	var safi string
 	var network string
 	for _, p := range respMsg.Response {
-		nlri := utils.NewBGPNLRIPrefixStatus(p.Status)
+		nlri := utils.NewBGPNLRIPrefixStatus(p.Status, doJSON)
 
 		//Print AFI/SAFI info
 		afi = strings.TrimPrefix(nlri.Afi.String(), "BGP_AFI_")

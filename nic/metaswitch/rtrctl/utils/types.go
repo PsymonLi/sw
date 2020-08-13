@@ -876,7 +876,7 @@ func BGPNextHop(routeSrc pds.NLRISrc, nexthopip []byte) string {
 	return net.IP(nexthopip).String()
 }
 
-func NewBGPNLRIPrefixStatus(in *pds.BGPNLRIPrefixStatus) *ShadowBGPNLRIPrefixStatus {
+func NewBGPNLRIPrefixStatus(in *pds.BGPNLRIPrefixStatus, doJSON bool) *ShadowBGPNLRIPrefixStatus {
 	var pathOrigId string
 
 	if net.IP(in.PathOrigId).String() == "0.0.0.0" {
@@ -906,17 +906,17 @@ func NewBGPNLRIPrefixStatus(in *pds.BGPNLRIPrefixStatus) *ShadowBGPNLRIPrefixSta
 		PeerAddr:            PdsIPToString(in.PeerAddr),
 		BGPNLRIPrefixStatus: in,
 	}
-	ret.ExtComm = dumpExtComm(in.ExtComm)
+	ret.ExtComm = dumpExtComm(in.ExtComm, doJSON)
 	return &ret
 }
 
-func dumpExtComm(in [][]byte) []string {
+func dumpExtComm(in [][]byte, doJSON bool) []string {
 	var r []string
 	first := true
 	for _, b := range in {
 		v := dumpRt(b)
 		if v != "" {
-			if !first {
+			if !first && !doJSON {
 				r = append(r, "\n                             ")
 			}
 			first = false
