@@ -3,7 +3,7 @@
     "mpu_trace_size" : "2048",
     "cores_mask": "0xf",
     "form_factor": "HHHL",
-    "emmc_size": "4",
+    "emmc_size": "8",
     "memory_size": "4",
     "num_asics" : "1",
     "board_type" : "Naples25",

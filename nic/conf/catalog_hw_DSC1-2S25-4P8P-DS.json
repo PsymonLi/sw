@@ -2,11 +2,11 @@
     "max_mpu_per_stage" : "4",
     "mpu_trace_size" : "2048",
     "cores_mask": "0xf",
-    "form_factor": "HHHL",
+    "form_factor": "OCP-3.0",
     "emmc_size": "8",
     "memory_size": "4",
     "num_asics" : "1",
-    "board_type" : "Naples25",
+    "board_type" : "Naples25 OCP",
     "voltages" :
     {
         "startup_arm" : "",
@@ -37,12 +37,14 @@
     ],
 
     "pcie" : {
-	"subdeviceid"   : "4002",
-	"clock_freq"    : "416666666",
-	"portspecs"	:
-	[
-	    { "host":"0", "port":"0", "gen":"3", "width":"8" }
-	]
+        "subdeviceid"   : "400f",
+        "vpd_format"    : "dell",
+        "long_lived"    : "1",
+        "clock_freq"    : "416666666",
+        "portspecs"     :
+        [
+            { "host":"0", "port":"4", "gen":"3", "width":"8" }
+        ]
     },
 
     "serdes" : {
@@ -59,12 +61,11 @@
         "sbm_clk_div"    : "6"
     },
 
-    "num_logical_oob_ports" : "3",
+    "num_logical_oob_ports" : "2",
     "logical_oob_ports" :
     [
-        { "port_num" : "1", "connection": "asic", "phy_id" : "0xc", "hw_port" : "0x10", "speed" : "1G", "auto_neg_enable" : "false" },
-        { "port_num" : "2", "connection": "diag", "phy_id" : "",    "hw_port" : "0x11", "speed" : "1G", "auto_neg_enable" : "true"  },
-        { "port_num" : "3", "connection": "mgmt", "phy_id" : "0x3", "hw_port" : "0x13", "speed" : "1G", "auto_neg_enable" : "true"  }
+        { "port_num" : "1", "connection" : "asic", "phy_id" : "0xc", "hw_port" : "0x10", "speed" : "1G", "auto_neg_enable" : "false" },
+        { "port_num" : "2", "connection" : "mgmt", "phy_id" : "0x3", "hw_port" : "0x13", "speed" : "1G", "auto_neg_enable" : "true"  }
     ],
 
     "num_fp_ports": "3",
@@ -399,8 +400,4 @@
         {"freq" : "416", "multiplier_ns" : "5153960754", "multiplier_ms" : "5277656"},
         {"freq" : "208", "multiplier_ns" : "10307921508", "multiplier_ms" : "10555312"}
     ]
-
-
-
-
 }
