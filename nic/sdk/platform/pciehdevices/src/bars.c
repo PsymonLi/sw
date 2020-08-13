@@ -191,6 +191,13 @@ add_common_resource_bar(pciehbars_t *pbars,
 
     /*****************
      * +0x0800 Device Cmd Regs 4-byte doorbell */
+    /*
+     * XXX Disable notifications from devcmd doorbell.
+     * nicmgr is not consuming these doorbell events right now
+     * and relies on polling the doorbell memory location
+     * to detect devcmd service requests.
+     */
+#if 0
     memset(&preg, 0, sizeof(preg));
     preg.baroff = dboff;
     pmt_bar_enc(&preg.pmt,
@@ -203,6 +210,7 @@ add_common_resource_bar(pciehbars_t *pbars,
                 PRT_RESF_PMVDIS | PRT_RESF_NOTIFY);
     pciehbarreg_add_prt(&preg, &prt);
     pciehbar_add_reg(&pbar, &preg);
+#endif
 
     /*****************
      * +0x0000 Device Info/Cmd Regs (rw for devcmd section)
