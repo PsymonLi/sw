@@ -16,7 +16,7 @@ rfc_p2:
     sub.c1     r5, r1, r5
     addi.c1    r1, r0, SACL_IPV6_BLOCK_SIZE
     div.c1     r5, r5, r1
-    phvwr.c1   p.txdma_control_sacl_policy_index, r5
+    phvwr.c1   p.txdma_control_policy_index, r5
 
     /* Compute the index into the classid array */
     mod        r7, k.txdma_control_rfc_index, SACL_P2_ENTRIES_PER_CACHE_LINE

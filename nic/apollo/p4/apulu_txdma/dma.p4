@@ -23,6 +23,20 @@ action pkt_dma() {
     } else {
         modify_field(capri_p4_intr.recirc, FALSE);
 
+        // If policy counter is enabled, increment if policy was enabled and hit
+        if (txdma_control.sacl_cntr_regn_addr != 0) {
+            if (txdma_control.rule_priority != SACL_PRIORITY_INVALID) {
+                // Write to Atomic Add region to increment the counter
+                modify_field(scratch_metadata.sacl_counter,      // Counter addr =
+                             txdma_control.sacl_cntr_regn_addr + // Counter base +
+                             (txdma_control.final_policy_index * // (Policy index *
+                              SACL_COUNTER_BLOCK_SIZE) +         // Counter blk size) +
+                             (txdma_control.final_rule_index *   // (Rule index *
+                              SACL_COUNTER_SIZE)                 //  Counter width)
+                             );
+            }
+        }
+
         // Setup Intrinsic fields and DMA commands to create packet and inject to P4IG
         // Touching fields required for DMA commands in ASM code
         modify_field(txdma_control.payload_addr, txdma_control.payload_addr);

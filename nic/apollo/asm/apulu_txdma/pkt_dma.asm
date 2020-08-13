@@ -1,3 +1,4 @@
+#include "../../p4/include/apulu_sacl_defines.h"
 #include "nic/apollo/asm/include/apulu.h"
 #include "INGRESS_p.h"
 #include "ingress.h"
@@ -38,6 +39,31 @@ pkt_dma:
     phvwr           p.capri_p4_intr_recirc, FALSE
     phvwr           p.txdma_predicate_pass_two, FALSE
 
+    /* If policy counter is enabled, increment if policy was enabled and hit */
+    add             r1, k.txdma_control_rule_priority_s4_e10, \
+                        k.txdma_control_rule_priority_s0_e3, \
+                        7
+    sne             c1, r0, k.txdma_control_sacl_cntr_regn_addr
+    sne             c2, r1, SACL_PRIORITY_INVALID
+    setcf           c1, [c1 & c2]
+    /* Compute and add policy offset to the counter address */
+    add.c1          r1, k.txdma_control_final_policy_index_s4_e9, \
+                        k.txdma_control_final_policy_index_s0_e3, \
+                        6
+    mul.c1          r2, r1, SACL_COUNTER_BLOCK_SIZE
+    add.c1          r1, r2, k.txdma_control_sacl_cntr_regn_addr
+    /* Compute and add rule offset to the counter address */
+    mul.c1          r2, k.txdma_control_final_rule_index, SACL_COUNTER_SIZE
+    add.c1          r1, r1, r2
+    /* Compute atomic_add array index */
+    addi.c1         r6, r0, ASIC_MEM_SEM_ATOMIC_ADD_START
+    add.c1          r6, r6, r1[26:0]
+    /* Format the atomic_add array command for adding 1 to one counter only */
+    add.c1          r7, r0, 1
+    add.c1          r7, r7, r1[31:27], 58
+    /* Increment the counter */
+    memwr.dx.c1     r6, r7
+
     // Setup Intrisic fields and DMA commands to generate packet to P4IG
     phvwr           p.capri_intr_tm_oport, TM_PORT_EGRESS
 
@@ -69,8 +95,9 @@ pkt_dma:
                                      txdma_control_cindex, c1)
 
     // 4) DMA command setup for Doorbell Sched Eval
+    add r1, k.capri_intr_lif_s3_e10, k.capri_intr_lif_s0_e2, 8
     CAPRI_RING_DOORBELL_ADDR(0, DB_IDX_UPD_CIDX_SET, DB_SCHED_UPD_EVAL, 0, \
-                             k.capri_intr_lif)
+                             r1)
     CAPRI_DMA_CMD_PHV2MEM_SETUP_STOP_END(doorbell_ci_update_dma_cmd, \
                                          r4, \
                                          doorbell_data_pid, \

@@ -110,7 +110,7 @@ action rfc_action_p1(pad,id50, id49, id48,
 
     // Write the policy index to PHV
     if (rx_to_tx_hdr.iptype == IPTYPE_IPV4) {
-        modify_field(txdma_control.sacl_policy_index,        // Policy Index =
+        modify_field(txdma_control.policy_index,             // Policy Index =
                      ((rx_to_tx_hdr.sacl_base_addr0 -        // (Policy base -
                        scratch_metadata.sacl_region_addr) /  // Region base)/
                        SACL_IPV4_BLOCK_SIZE));               // Block Size
@@ -224,7 +224,7 @@ action rfc_action_p2(pad,id50, id49, id48,
 
     // Write the policy index to PHV
     if (rx_to_tx_hdr.iptype == IPTYPE_IPV6) {
-        modify_field(txdma_control.sacl_policy_index,        // Policy Index =
+        modify_field(txdma_control.policy_index,             // Policy Index =
                      ((rx_to_tx_hdr.sacl_base_addr0 -        // (Policy base -
                        scratch_metadata.sacl_region_addr) /  // Region base)/
                        SACL_IPV6_BLOCK_SIZE));               // Block Size
@@ -537,6 +537,12 @@ action sacl_action_result(alg_type31, stateful31, priority31, action31,
     modify_field(scratch_metadata.field10, priority00);
     modify_field(scratch_metadata.field1, action00);
 
+    // Write the counter hbm region address from table constant
+    if (rx_to_tx_hdr.iptype == IPTYPE_IPV6) {
+        modify_field(txdma_control.sacl_cntr_regn_addr, \
+                     scratch_metadata.sacl_cntr_regn_addr);
+    }
+
     /* Get the result entry by indexing into the result array */
     modify_field(scratch_metadata.field4,alg_type00>>(txdma_control.rule_index%
                  SACL_RSLT_ENTRIES_PER_CACHE_LINE)*SACL_RSLT_ENTRY_WIDTH);
@@ -563,6 +569,8 @@ action sacl_action_result(alg_type31, stateful31, priority31, action31,
                 modify_field(txdma_to_p4e.sacl_alg_type, scratch_metadata.field4);
                 modify_field(txdma_to_p4e.sacl_stateful, scratch_metadata.stateful);
                 modify_field(txdma_to_p4e.sacl_root_num, txdma_control.root_count);
+                modify_field(txdma_control.final_rule_index, txdma_control.rule_index);
+                modify_field(txdma_control.final_policy_index, txdma_control.policy_index);
             }
         } else {
             // Is this a higher priority allow than before ?
@@ -574,6 +582,8 @@ action sacl_action_result(alg_type31, stateful31, priority31, action31,
                 modify_field(txdma_to_p4e.sacl_alg_type, scratch_metadata.field4);
                 modify_field(txdma_to_p4e.sacl_stateful, scratch_metadata.stateful);
                 modify_field(txdma_to_p4e.sacl_root_num, txdma_control.root_count);
+                modify_field(txdma_control.final_rule_index, txdma_control.rule_index);
+                modify_field(txdma_control.final_policy_index, txdma_control.policy_index);
             }
         }
     } else {
@@ -585,27 +595,9 @@ action sacl_action_result(alg_type31, stateful31, priority31, action31,
             modify_field(txdma_to_p4e.sacl_alg_type, scratch_metadata.field4);
             modify_field(txdma_to_p4e.sacl_stateful, scratch_metadata.stateful);
             modify_field(txdma_to_p4e.sacl_root_num, txdma_control.root_count);
+            modify_field(txdma_control.final_rule_index, txdma_control.rule_index);
+            modify_field(txdma_control.final_policy_index, txdma_control.policy_index);
         }
-    }
-
-    // Load the counter hbm region address
-    if (rx_to_tx_hdr.iptype == IPTYPE_IPV4) {
-        modify_field(scratch_metadata.field40,
-                     txdma_control.sacl_cntr_regn_addr);
-    } else {
-        modify_field(scratch_metadata.field40,
-                     scratch_metadata.sacl_cntr_regn_addr);
-    }
-
-    if (scratch_metadata.field40 != 0) {
-        // Write to Atomic Add region to increment the counter
-        modify_field(scratch_metadata.sacl_counter,      // Counter addr =
-                     scratch_metadata.field40 +          // Counter base +
-                     (txdma_control.sacl_policy_index *  // (Policy index *
-                      SACL_COUNTER_BLOCK_SIZE) +         // Counter blk size) +
-                     (txdma_control.rule_index *         // (Rule index *
-                      SACL_COUNTER_SIZE)                 // Counter width)
-                     );
     }
 }
 
@@ -685,7 +677,7 @@ action rfc_action_p1_1(pad,id50, id49, id48,
 
     // Write the policy index to PHV
     if (rx_to_tx_hdr.iptype == IPTYPE_IPV4) {
-        modify_field(txdma_control.sacl_policy_index,        // Policy Index =
+        modify_field(txdma_control.policy_index,             // Policy Index =
                      ((rx_to_tx_hdr.sacl_base_addr0 -        // (Policy base -
                        scratch_metadata.sacl_region_addr) /  // Region base)/
                        SACL_IPV4_BLOCK_SIZE));               // Block Size
@@ -799,7 +791,7 @@ action rfc_action_p2_1(pad,id50, id49, id48,
 
     // Write the policy index to PHV
     if (rx_to_tx_hdr.iptype == IPTYPE_IPV6) {
-        modify_field(txdma_control.sacl_policy_index,        // Policy Index =
+        modify_field(txdma_control.policy_index,             // Policy Index =
                      ((rx_to_tx_hdr.sacl_base_addr0 -        // (Policy base -
                        scratch_metadata.sacl_region_addr) /  // Region base)/
                        SACL_IPV6_BLOCK_SIZE));               // Block Size
@@ -1112,6 +1104,12 @@ action sacl_action_result_1(alg_type31, stateful31, priority31, action31,
     modify_field(scratch_metadata.field10, priority00);
     modify_field(scratch_metadata.field1, action00);
 
+    // Write the counter hbm region address from table constant
+    if (rx_to_tx_hdr.iptype == IPTYPE_IPV6) {
+        modify_field(txdma_control.sacl_cntr_regn_addr, \
+                     scratch_metadata.sacl_cntr_regn_addr);
+    }
+
     /* Get the result entry by indexing into the result array */
     modify_field(scratch_metadata.field4,alg_type00>>(txdma_control.rule_index%
                  SACL_RSLT_ENTRIES_PER_CACHE_LINE)*SACL_RSLT_ENTRY_WIDTH);
@@ -1130,26 +1128,8 @@ action sacl_action_result_1(alg_type31, stateful31, priority31, action31,
         modify_field(txdma_to_p4e.sacl_alg_type, scratch_metadata.field4);
         modify_field(txdma_to_p4e.sacl_stateful, scratch_metadata.stateful);
         modify_field(txdma_to_p4e.sacl_root_num, txdma_control.root_count);
-    }
-
-    // Load the counter hbm region address
-    if (rx_to_tx_hdr.iptype == IPTYPE_IPV4) {
-        modify_field(scratch_metadata.field40,
-                     txdma_control.sacl_cntr_regn_addr);
-    } else {
-        modify_field(scratch_metadata.field40,
-                     scratch_metadata.sacl_cntr_regn_addr);
-    }
-
-    if (scratch_metadata.field40 != 0) {
-        // Write to Atomic Add region to increment the counter
-        modify_field(scratch_metadata.sacl_counter,      // Counter addr =
-                     scratch_metadata.field40 +          // Counter base +
-                     (txdma_control.sacl_policy_index *  // (Policy index *
-                      SACL_COUNTER_BLOCK_SIZE) +         // Counter blk size) +
-                     (txdma_control.rule_index *         // (Rule index *
-                      SACL_COUNTER_SIZE)                 //  Counter width)
-                     );
+        modify_field(txdma_control.final_rule_index, txdma_control.rule_index);
+        modify_field(txdma_control.final_policy_index, txdma_control.policy_index);
     }
 }
 

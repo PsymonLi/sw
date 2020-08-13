@@ -251,6 +251,8 @@
 /*****************************************************************************/
 #define FW_ACTION_XPOSN_GLOBAL_PRIORTY       0
 #define FW_ACTION_XPOSN_ANY_DENY             1
+#define FW_ACTION_XPOSN_SHIFT                1
+#define FW_ACTION_XPOSN_MASK                 ((1 << FW_ACTION_XPOSN_SHIFT) - 1)
 
 /*****************************************************************************/
 /* IP mapping types                                                          */

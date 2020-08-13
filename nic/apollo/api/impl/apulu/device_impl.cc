@@ -71,6 +71,7 @@ device_impl::free(device_impl *impl) {
 static inline sdk_ret_t
 program_device (pds_device_spec_t *spec)
 {
+    uint64_t tc = 0;
     p4pd_error_t p4pd_ret;
     p4i_device_info_actiondata_t p4i_device_info_data = { 0 };
     p4e_device_info_actiondata_t p4e_device_info_data = { 0 };
@@ -134,21 +135,25 @@ program_device (pds_device_spec_t *spec)
     // program priority of the mapping lookup results as table constant
     sdk::asic::pd::asicpd_program_table_constant(P4TBL_ID_MAPPING,
                        spec->ip_mapping_class_priority);
-    // program the policy transposition scheme
+
+    // read/mod/write the default policy transposition scheme
+    sdk::asic::pd::asicpd_read_table_constant(P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
+                                              &tc);
+    tc &= ~FW_ACTION_XPOSN_MASK;
     if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_GLOBAL_PRIORITY) {
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
-                           FW_ACTION_XPOSN_GLOBAL_PRIORTY);
+                           tc | FW_ACTION_XPOSN_GLOBAL_PRIORTY);
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT_1,
-                           FW_ACTION_XPOSN_GLOBAL_PRIORTY);
+                           tc | FW_ACTION_XPOSN_GLOBAL_PRIORTY);
     } else if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_ANY_DENY) {
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
-                           FW_ACTION_XPOSN_ANY_DENY);
+                           tc | FW_ACTION_XPOSN_ANY_DENY);
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT_1,
-                           FW_ACTION_XPOSN_ANY_DENY);
+                           tc | FW_ACTION_XPOSN_ANY_DENY);
     }
     return sdk::SDK_RET_OK;
 }

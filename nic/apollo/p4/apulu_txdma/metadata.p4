@@ -39,9 +39,10 @@ header_type txdma_control_metadata_t {
         rule_priority       : 11;
         pad0                : 1;
 
-        sacl_policy_index   : 10;
+        policy_index        : 10;
         rule_index          : 10;
-        pad1                : 4;
+        final_policy_index  : 10;
+        final_rule_index    : 10;
     }
 }
 

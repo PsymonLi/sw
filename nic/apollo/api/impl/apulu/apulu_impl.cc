@@ -940,6 +940,7 @@ apulu_impl::checksum_init_(void) {
 #define ecmp_info       action_u.ecmp_ecmp_info
 sdk_ret_t
 apulu_impl::table_init_(void) {
+    uint64_t tc = 0;
     sdk_ret_t ret;
     mem_addr_t addr;
     p4pd_error_t p4pd_ret;
@@ -985,11 +986,13 @@ apulu_impl::table_init_(void) {
     sdk::asic::pd::asicpd_program_table_constant(P4TBL_ID_MAPPING,
                        PDS_IMPL_DEFAULT_MAPPING_PRIORITY);
 
-    // program the default policy transposition scheme
-    sdk::asic::pd::asicpd_program_table_constant(P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
-                                                 FW_ACTION_XPOSN_GLOBAL_PRIORTY);
-    sdk::asic::pd::asicpd_program_table_constant(P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
-                                                 FW_ACTION_XPOSN_GLOBAL_PRIORTY);
+    // read/mod/write the default policy transposition scheme
+    sdk::asic::pd::asicpd_read_table_constant(P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
+                                              &tc);
+    sdk::asic::pd::asicpd_program_table_constant(P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
+                                                 tc | FW_ACTION_XPOSN_GLOBAL_PRIORTY);
+    sdk::asic::pd::asicpd_program_table_constant(P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT_1,
+                                                 tc | FW_ACTION_XPOSN_GLOBAL_PRIORTY);
 
     // program thread ids for nexthop table
     sdk::asic::pd::asicpd_program_table_thread_constant(P4TBL_ID_NEXTHOP, 0, 0);

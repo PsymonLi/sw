@@ -1,3 +1,5 @@
+#define ROUND1024(a)                      ((((a) + 1023) / 1024) * 1024)
+
 #define SACL_NUM_RULES                    1024      // Number of rules per policy
 
 #define SACL_SPORT_CLASSID_WIDTH          7         // width in bits
@@ -86,12 +88,14 @@
                                          SACL_IPV4_DIP_TABLE_SIZE)
 #define SACL_IPV6_SIP_TABLE_OFFSET      (SACL_DIP_TABLE_OFFSET +\
                                          SACL_IPV6_DIP_TABLE_SIZE)
-#define SACL_IPV4_BLOCK_SIZE            (SACL_IPV4_SIP_TABLE_OFFSET + \
-                                         SACL_IPV4_SIP_TABLE_SIZE)
-#define SACL_IPV6_BLOCK_SIZE            (SACL_IPV6_SIP_TABLE_OFFSET + \
-                                         SACL_IPV6_SIP_TABLE_SIZE)
+#define SACL_IPV4_BLOCK_SIZE            (ROUND1024(\
+                                         SACL_IPV4_SIP_TABLE_OFFSET + \
+                                         SACL_IPV4_SIP_TABLE_SIZE))
+#define SACL_IPV6_BLOCK_SIZE            (ROUND1024(\
+                                         SACL_IPV6_SIP_TABLE_OFFSET + \
+                                         SACL_IPV6_SIP_TABLE_SIZE))
 
-#define SACL_RULE_ID_DEFAULT            1023
+#define SACL_RULE_ID_DEFAULT            (SACL_NUM_RULES-1)
 #define SACL_PRIORITY_HIGHEST           0
 #define SACL_PRIORITY_LOWEST            0x3FF
 #define SACL_PRIORITY_INVALID           (SACL_PRIORITY_LOWEST+1)

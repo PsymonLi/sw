@@ -1,3 +1,4 @@
+#include "../../p4/include/apulu_defines.h"
 #include "../../p4/include/apulu_sacl_defines.h"
 #include "nic/apollo/asm/include/apulu.h"
 #include "INGRESS_p.h"
@@ -9,6 +10,10 @@ struct sacl_result_k_      k;
 %%
 
 rfc_result:
+    /* Write HBM region address for IPv6 policy counters to PHV */
+    seq        c1, k.rx_to_tx_hdr_iptype, IPTYPE_IPV6
+    phvwr.c1   p.txdma_control_sacl_cntr_regn_addr, r5[63:FW_ACTION_XPOSN_SHIFT]
+
     /* Compute the index into the results entry array */
     mod        r7, k.txdma_control_rule_index, SACL_RSLT_ENTRIES_PER_CACHE_LINE
     mul        r7, r7, SACL_RSLT_ENTRY_WIDTH
@@ -35,7 +40,7 @@ rfc_result:
     setcf      c6, [c2 | c3 | c4]
 
     /* Set c2 if table constant is FW_ACTION_XPOSN_ANY_DENY */
-    seq        c2, r5[0:0], FW_ACTION_XPOSN_ANY_DENY
+    seq        c2, r5[FW_ACTION_XPOSN_SHIFT-1:0], FW_ACTION_XPOSN_ANY_DENY
     /* Set c3 if current action is deny */
     seq        c3, r1, SACL_RSLT_ENTRY_ACTION_DENY
     /* Set c4 if previous action is deny */
@@ -60,29 +65,10 @@ rfc_result:
     phvwr.c1   p.txdma_to_p4e_sacl_stateful, r3
     phvwr.c1   p.txdma_to_p4e_sacl_alg_type, r4
     phvwr.c1   p.txdma_to_p4e_sacl_root_num, k.txdma_control_root_count
-
-    /* Load counter region address from metadata if IPv4. For IPv6, */
-    /* the counter region address is already in table constant r5 */
-    seq        c1, k.rx_to_tx_hdr_iptype, IPTYPE_IPV4
-    add.c1     r5, r0, k.txdma_control_sacl_cntr_regn_addr
-    add.!c1    r5, r0, r5[63:1]
-    /* Stop if the counter region isn't configured */
-    seq        c1, r0, r5
-    nop.c1.e
-    /* Compute and add policy offset to the counter address */
-    mul        r1, k.txdma_control_sacl_policy_index, SACL_COUNTER_BLOCK_SIZE
-    add        r5, r5, r1
-    /* Compute and add rule offset to the counter address */
-    mul        r1, k.txdma_control_rule_index, SACL_COUNTER_SIZE
-    add        r5, r5, r1
-    /* Compute atomic_add array index */
-    addi       r6, r0, ASIC_MEM_SEM_ATOMIC_ADD_START
-    add        r6, r6, r5[26:0]
-    /* Format the atomic_add array command for adding 1 to one counter only */
-    add        r7, r0, 1
-    add.e      r7, r7, r5[31:27], 58
-    /* Increment the counter */
-    memwr.dx   r6, r7
+    phvwr.c1   p.txdma_control_final_rule_index, k.txdma_control_rule_index
+    phvwr.c1   p.txdma_control_final_policy_index, k.txdma_control_policy_index
+    nop.e
+    nop
 
 /*****************************************************************************/
 /* error function                                                            */

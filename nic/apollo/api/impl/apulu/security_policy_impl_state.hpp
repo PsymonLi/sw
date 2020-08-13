@@ -118,6 +118,9 @@ private:
     mem_addr_t  v4_rule_stats_region_addr_;
     /// size of each policy's rule stats block size
     uint32_t    v4_rule_stats_table_size_;
+    mem_addr_t  v6_rule_stats_region_addr_;
+    /// size of each policy's rule stats block size
+    uint32_t    v6_rule_stats_table_size_;
 };
 
 /// \@}

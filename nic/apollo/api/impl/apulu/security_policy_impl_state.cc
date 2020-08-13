@@ -11,6 +11,7 @@
 #include "nic/apollo/api/include/pds_policy.hpp"
 #include "nic/apollo/api/impl/apulu/security_policy_impl.hpp"
 #include "nic/apollo/api/impl/apulu/security_policy_impl_state.hpp"
+#include "nic/apollo/p4/include/apulu_defines.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 
 namespace api {
@@ -67,10 +68,10 @@ security_policy_impl_state::security_policy_impl_state(pds_state *state) {
             state->mempartition()->block_size("rule_stats_v4");
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
-                           v4_rule_stats_region_addr_);
+                           v4_rule_stats_region_addr_ - ((uint64_t)1 << 31));
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
-                           v4_rule_stats_region_addr_);
+                           v4_rule_stats_region_addr_ - ((uint64_t)1 << 31));
     } else {
         v4_rule_stats_table_size_ = 0;
         sdk::asic::pd::asicpd_program_table_constant(
@@ -78,11 +79,27 @@ security_policy_impl_state::security_policy_impl_state(pds_state *state) {
         sdk::asic::pd::asicpd_program_table_constant(
                            P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1, 0);
     }
-    // V6 counter needs to be programmed in sacl result table
-    // The constant needs to be read first coz theres
-    // FW_ACTION_XPOSN_ANY_DENY already programmed by
-    // device_impl.cc. We should program the v6 counter addr
-    // at bits [63:1] of that table constant.
+    v6_rule_stats_region_addr_ =
+            state->mempartition()->start_addr("rule_stats_v6");
+    if (v6_rule_stats_region_addr_ != INVALID_MEM_ADDRESS) {
+        v6_rule_stats_table_size_ =
+                state->mempartition()->block_size("rule_stats_v6");
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT,
+                (v6_rule_stats_region_addr_ - ((uint64_t)1 << 31)) <<
+                    FW_ACTION_XPOSN_SHIFT);
+        // LSB bit is for FW_ACTION_XPOSN config
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT_1,
+                (v6_rule_stats_region_addr_ - ((uint64_t)1 << 31)) <<
+                    FW_ACTION_XPOSN_SHIFT);
+    } else {
+        v6_rule_stats_table_size_ = 0;
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT, 0);
+        sdk::asic::pd::asicpd_program_table_constant(
+                P4_P4PLUS_TXDMA_TBL_ID_SACL_RESULT_1, 0);
+    }
 }
 
 security_policy_impl_state::~security_policy_impl_state() {
