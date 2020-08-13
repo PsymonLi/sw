@@ -106,7 +106,7 @@ typedef struct catalog_logical_port_s {
 typedef enum oob_connection_type_e {
     OOB_CONNECTION_TYPE_NONE,
     OOB_CONNECTION_TYPE_ASIC,   ///< port connected to asic
-    OOB_CONNECTION_TYPE_MTP,    ///< port connected to MTP
+    OOB_CONNECTION_TYPE_DIAG,   ///< port connected to diag/MTP
     OOB_CONNECTION_TYPE_MGMT,   ///< port connected to RJ45
     OOB_CONNECTION_TYPE_BMC     ///< port connected to BMC
 } oob_connection_type_t;
@@ -328,6 +328,7 @@ public:
     port_speed_t oob_speed(uint32_t logical_oob_port);
     bool oob_auto_neg_enable(uint32_t logical_oob_port);
     bool oob_mgmt_port(uint32_t logical_oob_port);
+    bool oob_diag_port(uint32_t logical_oob_port);
 
     // lookups based on logical port
     uint32_t num_logical_ports(void) const { return catalog_db_.num_logical_ports; }

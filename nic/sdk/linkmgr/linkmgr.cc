@@ -1556,7 +1556,8 @@ port_get (void *pd_p, port_args_t *args)
             (runenv::is_feature_enabled(NCSI_FEATURE) != FEATURE_ENABLED)) {
             args->oper_status = port_oper_status_t::PORT_OPER_STATUS_DOWN;
             for (uint32_t i = 1; i <= catalog->num_logical_oob_ports(); i++) {
-                if (catalog->oob_mgmt_port(i) == true) {
+                if ((catalog->oob_mgmt_port(i) == true) ||
+                    (catalog->oob_diag_port(i) == true)) {
                     status = 0;
                     sdk::marvell::marvell_get_hwport_status(
                         catalog->oob_hw_port(i), &status);
@@ -1564,6 +1565,7 @@ port_get (void *pd_p, port_args_t *args)
                     if (up == true) {
                         args->oper_status =
                             port_oper_status_t::PORT_OPER_STATUS_UP;
+                        break;
                     }
                 }
             }

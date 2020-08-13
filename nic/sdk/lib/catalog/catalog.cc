@@ -282,8 +282,8 @@ catalog::catalog_oob_connection_type_to_connection_type(std::string val)
 {
     if (val == "asic") {
         return oob_connection_type_t::OOB_CONNECTION_TYPE_ASIC;
-    } else if (val == "mtp") {
-        return oob_connection_type_t::OOB_CONNECTION_TYPE_MTP;
+    } else if (val == "diag") {
+        return oob_connection_type_t::OOB_CONNECTION_TYPE_DIAG;
     } else if (val == "mgmt") {
         return oob_connection_type_t::OOB_CONNECTION_TYPE_MGMT;
     } else if (val == "bmc") {
@@ -1105,6 +1105,15 @@ catalog::oob_mgmt_port(uint32_t logical_oob_port) {
 
     return catalog_logical_oob_port->connection_type ==
         oob_connection_type_t::OOB_CONNECTION_TYPE_MGMT;
+}
+
+bool
+catalog::oob_diag_port(uint32_t logical_oob_port) {
+    catalog_logical_oob_port_t *catalog_logical_oob_port =
+        logical_oob_port_internal(logical_oob_port);
+
+    return catalog_logical_oob_port->connection_type ==
+        oob_connection_type_t::OOB_CONNECTION_TYPE_DIAG;
 }
 
 // TODO: to get the serdes_info we could have used mac_id and mac_chnl instead of serdes_index.
