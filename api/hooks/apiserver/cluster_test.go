@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/types"
+
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/rollout"
 	"github.com/pensando/sw/venice/utils/objstore/minio"
@@ -116,61 +118,15 @@ func TestNodeObject(t *testing.T) {
 
 	rcfg := network.RoutingConfig{}
 
-	clusterVer := cluster.Version{
-		Status: cluster.VersionStatus{
-			RolloutBuildVersion: "TestVersion1.0",
-			BuildVersion:        "1.3.0-E-2",
-		},
-	}
-	nic := cluster.DistributedServiceCard{
-		TypeMeta: api.TypeMeta{
-			Kind: "DistributedServiceCard",
-		},
-		ObjectMeta: api.ObjectMeta{
-			Name: "00ae.cd01.0001",
-		},
-		Spec: cluster.DistributedServiceCardSpec{
-			ID: "hostname",
-			IPConfig: &cluster.IPConfig{
-				IPAddress: "0.0.0.0/0",
-			},
-			MgmtMode:    cluster.DistributedServiceCardSpec_NETWORK.String(),
-			NetworkMode: cluster.DistributedServiceCardSpec_OOB.String(),
-			DSCProfile:  "",
-		},
-		Status: cluster.DistributedServiceCardStatus{
-			AdmissionPhase: "UNKNOWN",
-			SerialNum:      "TestNIC",
-			PrimaryMAC:     "00ae.cd01.0001",
-			IPConfig: &cluster.IPConfig{
-				IPAddress: "192.168.10.3/32",
-			},
-		},
-	}
-	roa := rollout.RolloutAction{
-		TypeMeta: api.TypeMeta{
-			Kind: "RolloutAction",
-		},
-		ObjectMeta: api.ObjectMeta{
-			Name: rolloutName,
-		},
-		Spec: rollout.RolloutSpec{
-			Version:                   "1.5.0-E-2",
-			ScheduledStartTime:        nil,
-			ScheduledEndTime:          nil,
-			Strategy:                  rollout.RolloutSpec_LINEAR.String(),
-			MaxParallel:               0,
-			MaxNICFailuresBeforeAbort: 0,
-			OrderConstraints:          nil,
-			Suspend:                   false,
-			DSCsOnly:                  false,
-			DSCMustMatchConstraint:    true, // hence venice upgrade only
-			UpgradeType:               rollout.RolloutSpec_Graceful.String(),
-		},
-		Status: rollout.RolloutActionStatus{
-			OperationalState: rollout.RolloutPhase_PROGRESSING.String(),
-		},
-	}
+	clusterVer := getVersionObj()
+	nic := getDscObj()
+
+	now := time.Now()
+	future := now.Add(time.Duration(30))
+	futureTimestamp, _ := types.TimestampProto(future)
+	roa := getRolloutActionObj(futureTimestamp)
+	rolloutObj := getRolloutObj(futureTimestamp)
+
 	expected := []cluster.DistributedServiceCard{nic}
 
 	kvs.Listfn = func(ctx context.Context, key string, into runtime.Object) error {
@@ -193,6 +149,9 @@ func TestNodeObject(t *testing.T) {
 		case *rollout.RolloutAction:
 			in0 := into.(*rollout.RolloutAction)
 			*in0 = roa
+		case *rollout.Rollout:
+			in0 := into.(*rollout.Rollout)
+			*in0 = rolloutObj
 		case *cluster.DistributedServiceCard:
 			in0 := into.(*cluster.DistributedServiceCard)
 			*in0 = nic
@@ -228,18 +187,500 @@ func TestNodeObject(t *testing.T) {
 	assertCredentialsCreation(t, txn)
 }
 
+func TestNodePreCommitHook_minioCredentialUpdate(t *testing.T) {
+	cl := &clusterHooks{
+		logger: log.SetConfig(log.GetDefaultConfig("Node-Hooks-Test")),
+	}
+	// Test Precommit Hook
+	kvs := &mocks.FakeKvStore{}
+	txn := &mocks.FakeTxn{}
+	ctx, cancelFunc := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancelFunc()
+
+	rcfg := network.RoutingConfig{}
+
+	clusterVer := getVersionObj()
+	nic := getDscObj()
+
+	now := time.Now()
+	future := now.Add(time.Duration(30))
+	futureTimestamp, _ := types.TimestampProto(future)
+	roa := getRolloutActionObj(futureTimestamp)
+	rolloutObj := getRolloutObj(futureTimestamp)
+
+	nowTimestamp, _ := types.TimestampProto(now)
+	minioCredentialsBeforeRolloutStart := getMinioCredentialsObj(nowTimestamp)
+	err := minioCredentialsBeforeRolloutStart.ApplyStorageTransformer(ctx, true)
+	AssertOk(t, err, "unexpected error encrypting test credentials")
+
+	expected := []cluster.DistributedServiceCard{nic}
+
+	kvs.Listfn = func(ctx context.Context, key string, into runtime.Object) error {
+		obj := into.(*cluster.DistributedServiceCardList)
+		for _, v := range expected {
+			r := v
+			obj.Items = append(obj.Items, &r)
+		}
+		return nil
+	}
+
+	//credentials need to be updated if they were created during a previous rollout and when old credentials are present
+	kvs.Getfn = func(ctx context.Context, key string, into runtime.Object) error {
+		switch into.(type) {
+		case *network.RoutingConfig:
+			in0 := into.(*network.RoutingConfig)
+			*in0 = rcfg
+		case *cluster.Version:
+			in0 := into.(*cluster.Version)
+			*in0 = clusterVer
+		case *rollout.RolloutAction:
+			in0 := into.(*rollout.RolloutAction)
+			*in0 = roa
+		case *rollout.Rollout:
+			in0 := into.(*rollout.Rollout)
+			*in0 = rolloutObj
+		case *cluster.DistributedServiceCard:
+			in0 := into.(*cluster.DistributedServiceCard)
+			*in0 = nic
+		case *cluster.Credentials:
+			in0 := into.(*cluster.Credentials)
+			*in0 = minioCredentialsBeforeRolloutStart
+		}
+		return nil
+	}
+
+	kvs.Updatefn = func(ctx context.Context, key string, into runtime.Object) error {
+		switch into.(type) {
+		case *cluster.DistributedServiceCard:
+			in0 := into.(*cluster.DistributedServiceCard)
+			nic = *in0
+		}
+		return nil
+	}
+	nd := cluster.Node{
+		Spec: cluster.NodeSpec{
+			RoutingConfig: "xyz",
+		},
+	}
+
+	_, kvw, err := cl.nodePreCommitHook(ctx, kvs, txn, "/test/key1", apiintf.CreateOper, false, nd)
+	AssertOk(t, err, "expecting to succeed")
+	Assert(t, kvw, "expecting kvwrite to be true")
+	assertCredentialsUpdate(t, txn, roa.CreationTime.Timestamp, "", "")
+}
+
+func TestNodePreCommitHook_minioCredentialUpdate_hasPreviouslyHardcodedCreds(t *testing.T) {
+	cl := &clusterHooks{
+		logger: log.SetConfig(log.GetDefaultConfig("Node-Hooks-Test")),
+	}
+	// Test Precommit Hook
+	kvs := &mocks.FakeKvStore{}
+	txn := &mocks.FakeTxn{}
+	ctx, cancelFunc := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancelFunc()
+
+	rcfg := network.RoutingConfig{}
+
+	clusterVer := getVersionObj()
+	nic := getDscObj()
+
+	now := time.Now()
+	future := now.Add(time.Duration(30))
+	futureTimestamp, _ := types.TimestampProto(future)
+	roa := getRolloutActionObj(futureTimestamp)
+	rolloutObj := getRolloutObj(futureTimestamp)
+
+	nowTimestamp, _ := types.TimestampProto(now)
+	minioCredentialsWithHardCodedKeys := getMinioCredentialsObjWithHardCodedKeys(nowTimestamp)
+	err := minioCredentialsWithHardCodedKeys.ApplyStorageTransformer(ctx, true)
+	AssertOk(t, err, "unexpected error encrypting test credentials")
+
+	expected := []cluster.DistributedServiceCard{nic}
+
+	kvs.Listfn = func(ctx context.Context, key string, into runtime.Object) error {
+		obj := into.(*cluster.DistributedServiceCardList)
+		for _, v := range expected {
+			r := v
+			obj.Items = append(obj.Items, &r)
+		}
+		return nil
+	}
+
+	//credentials need to be updated if they were created during a previous rollout and when old credentials are present
+	kvs.Getfn = func(ctx context.Context, key string, into runtime.Object) error {
+		switch into.(type) {
+		case *network.RoutingConfig:
+			in0 := into.(*network.RoutingConfig)
+			*in0 = rcfg
+		case *cluster.Version:
+			in0 := into.(*cluster.Version)
+			*in0 = clusterVer
+		case *rollout.RolloutAction:
+			in0 := into.(*rollout.RolloutAction)
+			*in0 = roa
+		case *rollout.Rollout:
+			in0 := into.(*rollout.Rollout)
+			*in0 = rolloutObj
+		case *cluster.DistributedServiceCard:
+			in0 := into.(*cluster.DistributedServiceCard)
+			*in0 = nic
+		case *cluster.Credentials:
+			in0 := into.(*cluster.Credentials)
+			*in0 = minioCredentialsWithHardCodedKeys
+		}
+		return nil
+	}
+
+	kvs.Updatefn = func(ctx context.Context, key string, into runtime.Object) error {
+		switch into.(type) {
+		case *cluster.DistributedServiceCard:
+			in0 := into.(*cluster.DistributedServiceCard)
+			nic = *in0
+		}
+		return nil
+	}
+	nd := cluster.Node{
+		Spec: cluster.NodeSpec{
+			RoutingConfig: "xyz",
+		},
+	}
+
+	_, kvw, err := cl.nodePreCommitHook(ctx, kvs, txn, "/test/key1", apiintf.CreateOper, false, nd)
+	AssertOk(t, err, "expecting to succeed")
+	Assert(t, kvw, "expecting kvwrite to be true")
+	assertCredentialsUpdate(t, txn, roa.CreationTime.Timestamp, "miniokey", "minio0523")
+}
+
+func TestNodePreCommitHook_noMinioCredentialUpdate(t *testing.T) {
+	cl := &clusterHooks{
+		logger: log.SetConfig(log.GetDefaultConfig("Node-Hooks-Test")),
+	}
+	// Test Precommit Hook
+	kvs := &mocks.FakeKvStore{}
+	txn := &mocks.FakeTxn{}
+	ctx, cancelFunc := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancelFunc()
+
+	rcfg := network.RoutingConfig{}
+
+	clusterVer := getVersionObj()
+	nic := getDscObj()
+
+	now := time.Now()
+	future := now.Add(time.Duration(30))
+	futureTimestamp, _ := types.TimestampProto(future)
+	roa := getRolloutActionObj(futureTimestamp)
+	rolloutObj := getRolloutObj(futureTimestamp)
+
+	futurePlusTimestamp, _ := types.TimestampProto(future.Add(time.Duration(60) * time.Second))
+	minioCredentialsAfterRolloutStart := getMinioCredentialsObj(futurePlusTimestamp)
+	err := minioCredentialsAfterRolloutStart.ApplyStorageTransformer(ctx, true)
+	AssertOk(t, err, "unexpected error encrypting test credentials")
+
+	nowTimestamp, _ := types.TimestampProto(now)
+	minioCredentialsBeforeRolloutStartNoOldCreds := getMinioCredsWithoutOldKeys(nowTimestamp)
+	err = minioCredentialsBeforeRolloutStartNoOldCreds.ApplyStorageTransformer(ctx, true)
+	AssertOk(t, err, "unexpected error encrypting test credentials")
+
+	expected := []cluster.DistributedServiceCard{nic}
+
+	kvs.Listfn = func(ctx context.Context, key string, into runtime.Object) error {
+		obj := into.(*cluster.DistributedServiceCardList)
+		for _, v := range expected {
+			r := v
+			obj.Items = append(obj.Items, &r)
+		}
+		return nil
+	}
+
+	//credentials should not be updated if they were created during a after rollout start and when old credentials are present
+	kvs.Getfn = func(ctx context.Context, key string, into runtime.Object) error {
+		switch into.(type) {
+		case *network.RoutingConfig:
+			in0 := into.(*network.RoutingConfig)
+			*in0 = rcfg
+		case *cluster.Version:
+			in0 := into.(*cluster.Version)
+			*in0 = clusterVer
+		case *rollout.RolloutAction:
+			in0 := into.(*rollout.RolloutAction)
+			*in0 = roa
+		case *rollout.Rollout:
+			in0 := into.(*rollout.Rollout)
+			*in0 = rolloutObj
+		case *cluster.DistributedServiceCard:
+			in0 := into.(*cluster.DistributedServiceCard)
+			*in0 = nic
+		case *cluster.Credentials:
+			in0 := into.(*cluster.Credentials)
+			*in0 = minioCredentialsAfterRolloutStart
+		}
+		return nil
+	}
+
+	kvs.Updatefn = func(ctx context.Context, key string, into runtime.Object) error {
+		switch into.(type) {
+		case *cluster.DistributedServiceCard:
+			in0 := into.(*cluster.DistributedServiceCard)
+			nic = *in0
+		}
+		return nil
+	}
+	nd := cluster.Node{
+		Spec: cluster.NodeSpec{
+			RoutingConfig: "xyz",
+		},
+	}
+
+	_, kvw, err := cl.nodePreCommitHook(ctx, kvs, txn, "/test/key1", apiintf.CreateOper, false, nd)
+	AssertOk(t, err, "expecting to succeed")
+	Assert(t, kvw, "expecting kvwrite to be true")
+	assertNoCredentialsUpdate(t, txn)
+
+	// credentials should not be updated if they were created before rollout start and when old credentials are not present
+	kvs.Getfn = func(ctx context.Context, key string, into runtime.Object) error {
+		switch into.(type) {
+		case *network.RoutingConfig:
+			in0 := into.(*network.RoutingConfig)
+			*in0 = rcfg
+		case *cluster.Version:
+			in0 := into.(*cluster.Version)
+			*in0 = clusterVer
+		case *rollout.RolloutAction:
+			in0 := into.(*rollout.RolloutAction)
+			*in0 = roa
+		case *rollout.Rollout:
+			in0 := into.(*rollout.Rollout)
+			*in0 = rolloutObj
+		case *cluster.DistributedServiceCard:
+			in0 := into.(*cluster.DistributedServiceCard)
+			*in0 = nic
+		case *cluster.Credentials:
+			in0 := into.(*cluster.Credentials)
+			*in0 = minioCredentialsBeforeRolloutStartNoOldCreds
+		}
+		return nil
+	}
+
+	_, kvw, err = cl.nodePreCommitHook(ctx, kvs, txn, "/test/key1", apiintf.CreateOper, false, nd)
+	AssertOk(t, err, "expecting to succeed")
+	Assert(t, kvw, "expecting kvwrite to be true")
+	assertNoCredentialsUpdate(t, txn)
+}
+
+func getMinioCredsWithoutOldKeys(nowTimestamp *types.Timestamp) cluster.Credentials {
+	return cluster.Credentials{
+		TypeMeta: api.TypeMeta{
+			Kind: "Credentials",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: globals.MinioCredentialsObjectName,
+			CreationTime: api.Timestamp{
+				Timestamp: *nowTimestamp,
+			},
+			ModTime: api.Timestamp{
+				Timestamp: *nowTimestamp,
+			},
+		},
+		Spec: cluster.CredentialsSpec{
+			KeyValuePairs: []cluster.KeyValue{
+				{
+					Key:   globals.MinioAccessKeyName,
+					Value: []byte("accessKey"),
+				},
+				{
+					Key:   globals.MinioSecretKeyName,
+					Value: []byte("secretKey"),
+				},
+			},
+		},
+	}
+}
+
+func getVersionObj() cluster.Version {
+	return cluster.Version{
+		Status: cluster.VersionStatus{
+			RolloutBuildVersion: "TestVersion1.0",
+			BuildVersion:        "1.3.0-E-2",
+		},
+	}
+}
+
+func getDscObj() cluster.DistributedServiceCard {
+	return cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{
+			Kind: "DistributedServiceCard",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: "00ae.cd01.0001",
+		},
+		Spec: cluster.DistributedServiceCardSpec{
+			ID: "hostname",
+			IPConfig: &cluster.IPConfig{
+				IPAddress: "0.0.0.0/0",
+			},
+			MgmtMode:    cluster.DistributedServiceCardSpec_NETWORK.String(),
+			NetworkMode: cluster.DistributedServiceCardSpec_OOB.String(),
+			DSCProfile:  "",
+		},
+		Status: cluster.DistributedServiceCardStatus{
+			AdmissionPhase: "UNKNOWN",
+			SerialNum:      "TestNIC",
+			PrimaryMAC:     "00ae.cd01.0001",
+			IPConfig: &cluster.IPConfig{
+				IPAddress: "192.168.10.3/32",
+			},
+		},
+	}
+}
+
+func getRolloutActionObj(futureTimestamp *types.Timestamp) rollout.RolloutAction {
+	return rollout.RolloutAction{
+		TypeMeta: api.TypeMeta{
+			Kind: "RolloutAction",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: rolloutName,
+			CreationTime: api.Timestamp{
+				Timestamp: *futureTimestamp,
+			},
+		},
+		Spec: rollout.RolloutSpec{
+			Version:                   "1.5.0-E-2",
+			ScheduledStartTime:        nil,
+			ScheduledEndTime:          nil,
+			Strategy:                  rollout.RolloutSpec_LINEAR.String(),
+			MaxParallel:               0,
+			MaxNICFailuresBeforeAbort: 0,
+			OrderConstraints:          nil,
+			Suspend:                   false,
+			DSCsOnly:                  false,
+			DSCMustMatchConstraint:    true, // hence venice upgrade only
+			UpgradeType:               rollout.RolloutSpec_Graceful.String(),
+		},
+		Status: rollout.RolloutActionStatus{
+			OperationalState: rollout.RolloutPhase_PROGRESSING.String(),
+		},
+	}
+}
+
+func getRolloutObj(futureTimestamp *types.Timestamp) rollout.Rollout {
+	rolloutObj := newRollout(rolloutName, "2.8.1")
+	rolloutObj.CreationTime = api.Timestamp{
+		Timestamp: *futureTimestamp,
+	}
+	return rolloutObj
+}
+
+func getMinioCredentialsObj(nowTimestamp *types.Timestamp) cluster.Credentials {
+	return cluster.Credentials{
+		TypeMeta: api.TypeMeta{
+			Kind: "Credentials",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: globals.MinioCredentialsObjectName,
+			CreationTime: api.Timestamp{
+				Timestamp: *nowTimestamp,
+			},
+			ModTime: api.Timestamp{
+				Timestamp: *nowTimestamp,
+			},
+		},
+		Spec: cluster.CredentialsSpec{
+			KeyValuePairs: []cluster.KeyValue{
+				{
+					Key:   globals.MinioAccessKeyName,
+					Value: []byte("accessKey"),
+				},
+				{
+					Key:   globals.MinioSecretKeyName,
+					Value: []byte("secretKey"),
+				},
+				{
+					Key:   globals.MinioOldAccessKeyName,
+					Value: []byte("miniokey"),
+				},
+				{
+					Key:   globals.MinioOldSecretKeyName,
+					Value: []byte("minio0523"),
+				},
+			},
+		},
+	}
+}
+
+func getMinioCredentialsObjWithHardCodedKeys(nowTimestamp *types.Timestamp) cluster.Credentials {
+	return cluster.Credentials{
+		TypeMeta: api.TypeMeta{
+			Kind: "Credentials",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: globals.MinioCredentialsObjectName,
+			CreationTime: api.Timestamp{
+				Timestamp: *nowTimestamp,
+			},
+			ModTime: api.Timestamp{
+				Timestamp: *nowTimestamp,
+			},
+		},
+		Spec: cluster.CredentialsSpec{
+			KeyValuePairs: []cluster.KeyValue{
+				{
+					Key:   globals.MinioAccessKeyName,
+					Value: []byte(oldMinioAccessKey),
+				},
+				{
+					Key:   globals.MinioSecretKeyName,
+					Value: []byte(oldMinioSecretKey),
+				},
+			},
+		},
+	}
+}
+
 func assertCredentialsCreation(t *testing.T, txn *mocks.FakeTxn) {
 	for _, op := range txn.Ops {
 		if op.Op == "create" && strings.Contains(op.Key, "credentials") {
 			credentials := op.Obj.(*cluster.Credentials)
 			err := credentials.ApplyStorageTransformer(context.TODO(), false)
 			AssertOk(t, err, "Credentials object should have been decrypted successfully")
-			err = minio.ValidateObjectStoreCredentials(credentials)
+			minioCreds, err := minio.GetMinioKeys(credentials)
 			AssertOk(t, err, "Invalid credentials object attempted to be created")
+			Assert(t, len(minioCreds.AccessKey) > 0, "access key can not be empty")
+			Assert(t, len(minioCreds.SecretKey) > 0, "secret key can not be empty")
+			AssertEquals(t, "miniokey", minioCreds.OldAccessKey, "unexpected old access key found")
+			AssertEquals(t, "minio0523", minioCreds.OldSecretKey, "unexpected old secret key found")
 			return
 		}
 	}
 	t.Fatalf("credential creation operation not found")
+}
+
+func assertCredentialsUpdate(t *testing.T, txn *mocks.FakeTxn, rolloutCreationTime types.Timestamp, expectedOldAccessKey, expectedOldSecretKey string) {
+	for _, op := range txn.Ops {
+		if op.Op == "update" && strings.Contains(op.Key, "credentials") {
+			credentials := op.Obj.(*cluster.Credentials)
+			err := credentials.ApplyStorageTransformer(context.TODO(), false)
+			AssertOk(t, err, "Credentials object should have been decrypted successfully")
+			Assert(t, rolloutCreationTime.Compare(credentials.ModTime.Timestamp) <= 0, "update operation should have updated the last modified time of credentials object")
+			minioCreds, err := minio.GetMinioKeys(credentials)
+			AssertOk(t, err, "Invalid credentials object attempted to be created")
+			Assert(t, len(minioCreds.AccessKey) > 0, "access key can not be empty")
+			Assert(t, len(minioCreds.SecretKey) > 0, "secret key can not be empty")
+			Assert(t, minioCreds.OldAccessKey == expectedOldAccessKey, "Old access key should have been cleared")
+			Assert(t, minioCreds.OldSecretKey == expectedOldSecretKey, "Old secret key should have been cleared")
+			return
+		}
+	}
+	t.Fatalf("credential update operation not found")
+}
+
+func assertNoCredentialsUpdate(t *testing.T, txn *mocks.FakeTxn) {
+	for _, op := range txn.Ops {
+		if op.Op == "update" && strings.Contains(op.Key, "credentials") {
+			t.Fatalf("credential update operation found. Credentials should not have been updated")
+		}
+	}
 }
 
 func TestClusterObject(t *testing.T) {

@@ -37,8 +37,10 @@ type CredentialsManager interface {
 
 //Credentials is a concrete type to hold minio credentials
 type Credentials struct {
-	AccessKey string
-	SecretKey string
+	AccessKey    string
+	SecretKey    string
+	OldAccessKey string
+	OldSecretKey string
 }
 
 //APIServerBasedCredsManager is an implementation of CredentialsManager that manages minio credentials via APIServer
@@ -172,17 +174,14 @@ func GenerateObjectStoreCredentials() (*cluster.Credentials, error) {
 		},
 	}
 	credentials.SelfLink = credentials.MakeKey("cluster")
-	//accessKey, err := generateRandomKey()
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "unable to generate random access key")
-	//}
-	//secretKey, err := generateRandomKey()
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "unable to generate random secret key")
-	//}
-	// TODO: This is a temporary fix to unblock QA, will be reverted to random keys once upgrade issue is resolved.
-	accessKey := "miniokey"
-	secretKey := "minio0523"
+	accessKey, err := generateRandomKey()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to generate random access key")
+	}
+	secretKey, err := generateRandomKey()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to generate random secret key")
+	}
 	credentials.Spec = cluster.CredentialsSpec{
 		KeyValuePairs: []cluster.KeyValue{
 			{
@@ -211,22 +210,32 @@ func generateRandomKey() (string, error) {
 // GetMinioKeys extracts minio access, secret keys from Credentials object
 func GetMinioKeys(credentials *cluster.Credentials) (creds *Credentials, err error) {
 	var accessKey, secretKey string
+	var oldAccessKey, oldSecretKey string
 	for _, kvPair := range credentials.Spec.KeyValuePairs {
 		switch kvPair.Key {
 		case globals.MinioAccessKeyName:
 			accessKey = string(kvPair.Value)
 		case globals.MinioSecretKeyName:
 			secretKey = string(kvPair.Value)
+		case globals.MinioOldAccessKeyName:
+			oldAccessKey = string(kvPair.Value)
+		case globals.MinioOldSecretKeyName:
+			oldSecretKey = string(kvPair.Value)
 		default:
-			return nil, fmt.Errorf("invalid key found: %s, expected to be %s or %s", kvPair.Key, globals.MinioSecretKeyName, globals.MinioAccessKeyName)
+			return nil, fmt.Errorf("invalid key found: %s, expected to be one of %v", kvPair.Key, []string{globals.MinioAccessKeyName, globals.MinioSecretKeyName, globals.MinioOldAccessKeyName, globals.MinioOldSecretKeyName})
 		}
 	}
 	if accessKey == "" || secretKey == "" {
 		return nil, errors.New("access key or secret key can not be blank")
 	}
+	if (oldSecretKey == "" && oldAccessKey != "") || (oldSecretKey != "" && oldAccessKey == "") {
+		return nil, errors.New("either both or none of oldAccessKey and oldSecretKey should be empty")
+	}
 	return &Credentials{
-		AccessKey: accessKey,
-		SecretKey: secretKey,
+		AccessKey:    accessKey,
+		SecretKey:    secretKey,
+		OldAccessKey: oldAccessKey,
+		OldSecretKey: oldSecretKey,
 	}, nil
 }
 

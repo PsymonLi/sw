@@ -57,8 +57,10 @@ type clusterHooks struct {
 }
 
 const (
-	relAMajorVersion = 1
-	relAMinorVersion = 3
+	relAMajorVersion  = 1
+	relAMinorVersion  = 3
+	oldMinioAccessKey = "miniokey"
+	oldMinioSecretKey = "minio0523"
 )
 
 // ClusterHooksObjStoreClient is used for testing and overrides the objectstore client used by the hooks.
@@ -1201,6 +1203,18 @@ func (cl *clusterHooks) nodePreCommitHook(ctx context.Context, kvs kvstore.Inter
 		return i, true, nil
 	}
 
+	rolloutObj := &rollout.Rollout{
+		ObjectMeta: api.ObjectMeta{
+			Name: rolloutActionObj.Name,
+		},
+	}
+	rolloutObjKey := rolloutObj.MakeKey(string(apiclient.GroupRollout))
+	err = kvs.Get(ctx, rolloutObjKey, rolloutObj)
+	if err != nil {
+		cl.logger.Errorf("(nodePreCommitHook) rollout obj with name: %s is not present. Error: %+v", rolloutActionObj.Name, err)
+		return i, true, nil
+	}
+
 	//Assumption A release starts with 1.3 && B Release starts with 1.4 & up
 	rolloutMajorVersion := version.GetMajorVersion(rolloutActionObj.Spec.Version)
 	rolloutMinorVersion := version.GetMinorVersion(rolloutActionObj.Spec.Version)
@@ -1263,12 +1277,6 @@ func (cl *clusterHooks) nodePreCommitHook(ctx context.Context, kvs kvstore.Inter
 			}
 		}
 
-		err = cl.createMinioCredentials(ctx, kvs, txn)
-		if err != nil {
-			// TODO: what should the behavior be if this fails?
-			return i, true, nil
-		}
-
 		into := cluster.DistributedServiceCardList{}
 		into.Kind = "DistributedServiceCardList"
 		r := cluster.DistributedServiceCard{}
@@ -1292,42 +1300,162 @@ func (cl *clusterHooks) nodePreCommitHook(ctx context.Context, kvs kvstore.Inter
 				}
 			}
 		}
-	} else if rolloutMajorVersion == relAMajorVersion && rolloutMinorVersion > relAMinorVersion {
-		// TODO this is a temporary fix to save QA setup, remove this once credential creation for upgrade case is resolved
-		// ideally, credentials creation only happens for upgrades from relA
-		err := cl.createMinioCredentials(ctx, kvs, txn)
-		if err != nil {
-			// TODO: what should the behavior be if this fails?
-			return i, true, nil
-		}
 	}
+
+	// Rotate object store credentials when upgrading from a release with hard-coded creds
+	// The old/hard-coded credentials can be in kvstore (RelB)
+	// Or they can be in code (RelBMinus)
+	err = cl.rotateMinioCredentials(ctx, kvs, txn, rolloutObj.CreationTime)
+	if err != nil {
+		cl.logger.Errorf("(nodePreCommitHook) credential rotation failed, error: %+v", err)
+		return i, true, nil
+	}
+
 	return i, true, nil
 }
 
-func (cl *clusterHooks) createMinioCredentials(ctx context.Context, kvs kvstore.Interface, txn kvstore.Txn) error {
+func (cl *clusterHooks) rotateMinioCredentials(ctx context.Context, kvs kvstore.Interface, txn kvstore.Txn, rolloutCreationTime api.Timestamp) error {
 	// Create minio credentials object as Rel A has these credentials hard-coded
-	credentials, err := minio.GenerateObjectStoreCredentials()
+	newCredentials, err := minio.GenerateObjectStoreCredentials()
 	if err != nil {
 		cl.logger.Errorf("(nodePreCommitHook) credentials generation error %+v", err)
 		return err
 	}
-	credentialsKey := credentials.MakeKey(string(apiclient.GroupCluster))
-	intoCredentials := cluster.Credentials{}
-	err = kvs.Get(ctx, credentialsKey, &intoCredentials)
+	credentialsKey := newCredentials.MakeKey(string(apiclient.GroupCluster))
+	existingCredentials := &cluster.Credentials{}
+	err = kvs.Get(ctx, credentialsKey, existingCredentials)
 	if err != nil {
 		cl.logger.Infof("(nodePreCommitHook) credentials not found (%+v). Creating now", err)
-		err = credentials.ApplyStorageTransformer(ctx, true)
+		err = addHardcodedKeysAsOldCredentials(newCredentials)
+		if err != nil {
+			cl.logger.Errorf("(nodePreCommitHook) error adding old credentials %+v", err)
+			return err
+		}
+		err = newCredentials.ApplyStorageTransformer(ctx, true)
 		if err != nil {
 			cl.logger.Errorf("(nodePreCommitHook) credentials encryption error %+v", err)
 			return err
 		}
 
-		err = txn.Create(credentialsKey, credentials)
+		err = txn.Create(credentialsKey, newCredentials)
 		if err != nil {
 			cl.logger.Errorf("(nodePreCommitHook) credentials creation error %+v", err)
 			return err
 		}
+	} else {
+		err = existingCredentials.ApplyStorageTransformer(ctx, false)
+		if err != nil {
+			cl.logger.Errorf("(nodePreCommitHook) credentials decryption error %+v", err)
+			return err
+		}
+		// This case is to switch from hardcoded creds (within kvstore) to randomly generated ones.
+		// Check includes rollout, credential object timestamp comparison to make sure the credential update (if needed)
+		// is done only once.
+		if rolloutCreationTime.Timestamp.Compare(existingCredentials.ModTime.Timestamp) > 0 && hasPreviouslyHardCodedCreds(existingCredentials) {
+			cl.logger.Infof("(nodePreCommitHook) credentials object has previously hard-coded credentials, switching to randomly generated ones")
+			// swap existing credentials with newly generated ones
+			existingCredentials.Spec.KeyValuePairs = newCredentials.Spec.KeyValuePairs
+			err = addHardcodedKeysAsOldCredentials(existingCredentials)
+			if err != nil {
+				cl.logger.Errorf("(nodePreCommitHook) error adding old credentials %+v", err)
+				return err
+			}
+			err = cl.updateCredentialsObject(ctx, txn, credentialsKey, existingCredentials)
+			if err != nil {
+				cl.logger.Errorf("(nodePreCommitHook) unable to update credentials object %+v", err)
+				return err
+			}
+		} else if rolloutCreationTime.Timestamp.Compare(existingCredentials.ModTime.Timestamp) > 0 && hasOldCredentials(existingCredentials) {
+			// credentials already exist, clear old credentials only if created prior to ongoing rollout
+			cl.logger.Infof("(nodePreCommitHook) credentials object was last modified prior to rollout and has old credentials")
+
+			err = removeOldCredentials(existingCredentials)
+			if err != nil {
+				cl.logger.Errorf("(nodePreCommitHook) error clearing old credentials %+v", err)
+				return err
+			}
+			err = cl.updateCredentialsObject(ctx, txn, credentialsKey, existingCredentials)
+			if err != nil {
+				cl.logger.Errorf("(nodePreCommitHook) unable to update credentials object %+v", err)
+				return err
+			}
+		} else {
+			cl.logger.Infof("(nodePreCommitHook) No need to update minio credentials. rolloutTime: %v, credentials last modified: %v, contains old credentials: %t", rolloutCreationTime, existingCredentials.ModTime, hasOldCredentials(existingCredentials))
+		}
 	}
+	return nil
+}
+
+func (cl *clusterHooks) updateCredentialsObject(ctx context.Context, txn kvstore.Txn, credsKey string, credsObj *cluster.Credentials) error {
+	err := credsObj.ApplyStorageTransformer(ctx, true)
+	if err != nil {
+		cl.logger.Errorf("(nodePreCommitHook) credentials encryption error %+v", err)
+		return err
+	}
+	err = updateLastModifiedDate(credsObj)
+	if err != nil {
+		cl.logger.Errorf("(nodePreCommitHook) unable to update ModTime on credentials object %+v", err)
+		return err
+	}
+	err = txn.Update(credsKey, credsObj)
+	if err != nil {
+		cl.logger.Errorf("(nodePreCommitHook) credentials update error %+v", err)
+		return err
+	}
+	return nil
+}
+
+func updateLastModifiedDate(credentials *cluster.Credentials) error {
+	c, err := types.TimestampProto(time.Now())
+	if err != nil {
+		return err
+	}
+	credentials.ModTime = api.Timestamp{
+		Timestamp: *c,
+	}
+	return nil
+}
+
+func hasPreviouslyHardCodedCreds(credentials *cluster.Credentials) bool {
+	for _, kvPair := range credentials.Spec.KeyValuePairs {
+		if (kvPair.Key == globals.MinioAccessKeyName && string(kvPair.Value) == oldMinioAccessKey) || (kvPair.Key == globals.MinioSecretKeyName && string(kvPair.Value) == oldMinioSecretKey) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasOldCredentials(credentials *cluster.Credentials) bool {
+	for _, kvPair := range credentials.Spec.KeyValuePairs {
+		if (kvPair.Key == globals.MinioOldSecretKeyName || kvPair.Key == globals.MinioOldAccessKeyName) && len(kvPair.Value) != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func removeOldCredentials(credentials *cluster.Credentials) error {
+	trimmedKVPairs := make([]cluster.KeyValue, 0)
+	for _, kvPair := range credentials.Spec.KeyValuePairs {
+		if kvPair.Key != globals.MinioOldSecretKeyName && kvPair.Key != globals.MinioOldAccessKeyName {
+			trimmedKVPairs = append(trimmedKVPairs, kvPair)
+		}
+	}
+	credentials.Spec.KeyValuePairs = trimmedKVPairs
+	return nil
+}
+
+func addHardcodedKeysAsOldCredentials(credentials *cluster.Credentials) error {
+	kvPairs := credentials.Spec.KeyValuePairs
+	kvPairs = append(kvPairs, cluster.KeyValue{
+		Key:   globals.MinioOldAccessKeyName,
+		Value: []byte(oldMinioAccessKey),
+	})
+	kvPairs = append(kvPairs, cluster.KeyValue{
+		Key:   globals.MinioOldSecretKeyName,
+		Value: []byte(oldMinioSecretKey),
+	})
+	credentials.Spec.KeyValuePairs = kvPairs
 	return nil
 }
 

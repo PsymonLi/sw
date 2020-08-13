@@ -283,6 +283,12 @@ const (
 
 	// MinioSecretKeyName is the environment variable name of minio secret key
 	MinioSecretKeyName = "MINIO_SECRET_KEY"
+
+	// MinioAccessKeyName is the environment variable name of minio access key
+	MinioOldAccessKeyName = "MINIO_ACCESS_KEY_OLD"
+
+	// MinioSecretKeyName is the environment variable name of minio secret key
+	MinioOldSecretKeyName = "MINIO_SECRET_KEY_OLD"
 )
 
 var (

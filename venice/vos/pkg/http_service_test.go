@@ -21,6 +21,8 @@ import (
 	minioclient "github.com/minio/minio-go/v6"
 	"github.com/pkg/errors"
 
+	"github.com/pensando/sw/venice/utils/objstore/minio"
+
 	"github.com/pensando/sw/api/generated/objstore"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/vos"
@@ -34,7 +36,11 @@ func TestNewHandler(t *testing.T) {
 	Assert(t, h != nil, "handler is nil")
 	ctx, cancel := context.WithCancel(context.Background())
 	// should start the server and return
-	h.start(ctx, "0", "dummy", "dummy", nil)
+	minioCredentials := &minio.Credentials{
+		AccessKey: "dummy",
+		SecretKey: "dummy",
+	}
+	h.start(ctx, "0", minioCredentials, nil)
 	cancel()
 }
 
@@ -258,20 +264,32 @@ func TestCredentialsHandler(t *testing.T) {
 
 	wr := httptest.NewRecorder()
 	testAccessKey := "minioTestAccessKey"
+	testOldAccessKey := "minioTestOldAccessKey"
 	testSecretKey := "minioTestSecretKey"
-	handler := srv.minioCredentialsHandler(testAccessKey, testSecretKey)
+	testOldSecretKey := "minioTestOldSecretKey"
+	minioCredentials := &minio.Credentials{
+		AccessKey:    testAccessKey,
+		SecretKey:    testSecretKey,
+		OldAccessKey: testOldAccessKey,
+		OldSecretKey: testOldSecretKey,
+	}
+	handler := srv.minioCredentialsHandler(minioCredentials)
 	handler(wr, req)
 	bodyBytes, err := ioutil.ReadAll(wr.Body)
 	AssertOk(t, err, "Body should have been read successfully")
 	minioCreds := map[string]string{}
 	err = json.Unmarshal(bodyBytes, &minioCreds)
 	AssertOk(t, err, "Credentials should have been unmarshalled successfully")
-	accessKey, ok := minioCreds[globals.MinioAccessKeyName]
-	Assert(t, ok, "Minio access key should be present")
-	AssertEquals(t, testAccessKey, accessKey, "actual key different from expected")
-	secretKey, ok := minioCreds[globals.MinioSecretKeyName]
-	Assert(t, ok, "Minio secret key should be present")
-	AssertEquals(t, testSecretKey, secretKey, "actual key different from expected")
+	assertKey(t, minioCreds, globals.MinioAccessKeyName, testAccessKey)
+	assertKey(t, minioCreds, globals.MinioSecretKeyName, testSecretKey)
+	assertKey(t, minioCreds, globals.MinioOldAccessKeyName, testOldAccessKey)
+	assertKey(t, minioCreds, globals.MinioOldSecretKeyName, testOldSecretKey)
+}
+
+func assertKey(t *testing.T, minioCreds map[string]string, keyName, expectedValue string) {
+	actualValue, ok := minioCreds[keyName]
+	Assert(t, ok, "%s should be present", keyName)
+	AssertEquals(t, expectedValue, actualValue, "actual key different from expected")
 }
 
 func TestDebugConfigHandler(t *testing.T) {

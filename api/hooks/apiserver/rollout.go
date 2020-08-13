@@ -6,6 +6,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/pensando/sw/venice/utils/objstore/minio"
 	"github.com/pensando/sw/venice/utils/version"
 
 	"github.com/pensando/sw/api/generated/cluster"
@@ -404,6 +405,15 @@ func (h *rolloutHooks) doRolloutAction(ctx context.Context, kv kvstore.Interface
 			return buf, false, errors.New(errmsg)
 		}
 
+		// Clear old keys from credentials object (if present) prior to updating rolloutAction object.
+		// Old keys are present in credentials object during the current rollout only after credential rotation occurred
+		// during previous rollout. As a result it is safe to clear old credentials at this point either for upgrade or
+		// a downgrade.
+		err = h.clearOldKeysFromCredentialsObj(ctx, kv, txn)
+		if err != nil {
+			return buf, false, errors.New("failed to clear old keys from object store credentials object")
+		}
+
 		if _, err := updateRolloutActionObj(rolloutActionObj, &buf, txn, createRolloutOp); err != nil {
 			h.l.InfoLog("msg", "Update RolloutAction Failed %s", err)
 			return buf, false, err
@@ -412,6 +422,51 @@ func (h *rolloutHooks) doRolloutAction(ctx context.Context, kv kvstore.Interface
 	}
 	h.l.InfoLog("msg", "RolloutAction Prehook Completed %v", rolloutActionObj)
 	return buf, false, nil
+}
+
+func (h *rolloutHooks) clearOldKeysFromCredentialsObj(ctx context.Context, kvs kvstore.Interface, txn kvstore.Txn) error {
+	h.l.Infof("(rolloutActionPreCommitHook) trying to clear old keys from credentials object")
+	newCredentials, err := minio.GenerateObjectStoreCredentials()
+	if err != nil {
+		h.l.Errorf("(rolloutActionPreCommitHook) credentials generation error %+v", err)
+		return err
+	}
+	credentialsKey := newCredentials.MakeKey(string(apiclient.GroupCluster))
+	existingCredentials := &cluster.Credentials{}
+	err = kvs.Get(ctx, credentialsKey, existingCredentials)
+	if err != nil {
+		h.l.Errorf("(rolloutActionPreCommitHook) unable to get existing object store credentials, error: %+v", err)
+		return err
+	}
+	backgroundCtx := context.Background()
+	err = existingCredentials.ApplyStorageTransformer(backgroundCtx, false)
+	if err != nil {
+		h.l.Errorf("(rolloutActionPreCommitHook) credentials decryption error %+v", err)
+		return err
+	}
+	if hasOldCredentials(existingCredentials) {
+		h.l.Info("(rolloutActionPreCommitHook) credentials object contains old keys, trying to remove them")
+		if err := removeOldCredentials(existingCredentials); err != nil {
+			h.l.Errorf("(rolloutActionPreCommitHook) unable to clear old credentials, error %+v", err)
+			return err
+		}
+	}
+	err = existingCredentials.ApplyStorageTransformer(ctx, true)
+	if err != nil {
+		h.l.Errorf("(rolloutActionPreCommitHook) credentials encryption error %+v", err)
+		return err
+	}
+	err = updateLastModifiedDate(existingCredentials)
+	if err != nil {
+		h.l.Errorf("(rolloutActionPreCommitHook) unable to update ModTime on credentials object %+v", err)
+		return err
+	}
+	err = txn.Update(credentialsKey, existingCredentials)
+	if err != nil {
+		h.l.Errorf("(rolloutActionPreCommitHook) credentials update error %+v", err)
+		return err
+	}
+	return nil
 }
 
 func (h *rolloutHooks) getRolloutObject(ctx context.Context, kv kvstore.Interface, prefix string, in, old, resp interface{}, oper apiintf.APIOperType) (interface{}, error) {

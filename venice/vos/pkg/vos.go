@@ -288,8 +288,14 @@ func New(ctx context.Context, trace bool, testURL string, resolverURLs string, c
 		return nil, errors.Wrap(err, "unable to get MINIO credentials")
 	}
 
-	os.Setenv("MINIO_ACCESS_KEY", minioCreds.AccessKey)
-	os.Setenv("MINIO_SECRET_KEY", minioCreds.SecretKey)
+	os.Setenv(globals.MinioAccessKeyName, minioCreds.AccessKey)
+	os.Setenv(globals.MinioSecretKeyName, minioCreds.SecretKey)
+	if minioCreds.OldAccessKey != "" {
+		os.Setenv(globals.MinioOldAccessKeyName, minioCreds.OldAccessKey)
+	}
+	if minioCreds.OldSecretKey != "" {
+		os.Setenv(globals.MinioOldSecretKeyName, minioCreds.OldSecretKey)
+	}
 	var envVars string
 	// remove secrets out from log info
 	for _, envVar := range os.Environ() {
@@ -401,7 +407,7 @@ func New(ctx context.Context, trace bool, testURL string, resolverURLs string, c
 	// Register all plugins
 	plugins.RegisterPlugins(inst)
 	grpcBackend.start(ctx)
-	httpBackend.start(ctx, globals.VosHTTPPort, minioCreds.AccessKey, minioCreds.SecretKey, tlsc)
+	httpBackend.start(ctx, globals.VosHTTPPort, minioCreds, tlsc)
 	inst.initTsdbClient(resolverURLs, minioCreds.AccessKey, minioCreds.SecretKey)
 	log.Infof("Initialization complete")
 	<-ctx.Done()

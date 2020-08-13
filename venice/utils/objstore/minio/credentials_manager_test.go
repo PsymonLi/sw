@@ -192,6 +192,9 @@ func TestValidateObjectStoreCredentials(t *testing.T) {
 	invalidCreds = getObjectStoreCredsWithoutSecretKey()
 	testutils.AssertError(t, ValidateObjectStoreCredentials(invalidCreds), "validator should return error when secret key is not present")
 
+	invalidCreds = getObjectStoreCredsWithImproperOldKeys()
+	testutils.AssertError(t, ValidateObjectStoreCredentials(invalidCreds), "validator should return error when old secret key is not present")
+
 	testutils.AssertError(t, ValidateObjectStoreCredentials(nil), "validator should return error when credentials obj is nil")
 }
 
@@ -249,6 +252,45 @@ func getValidObjectStoreCreds() *cluster.Credentials {
 				Key:   globals.MinioSecretKeyName,
 				Value: []byte(minioSecretKey),
 			},
+		},
+	}
+	return credentials
+}
+
+func getObjectStoreCredsWithImproperOldKeys() *cluster.Credentials {
+	credentials := &cluster.Credentials{}
+	c, _ := types.TimestampProto(time.Now())
+	credentials.Defaults("all")
+	credentials.APIVersion = "v1"
+	credentials.ObjectMeta = api.ObjectMeta{
+		Name:         globals.MinioCredentialsObjectName,
+		GenerationID: "1",
+		UUID:         uuid.NewV4().String(),
+		CreationTime: api.Timestamp{
+			Timestamp: *c,
+		},
+		ModTime: api.Timestamp{
+			Timestamp: *c,
+		},
+	}
+	credentials.SelfLink = credentials.MakeKey("cluster")
+	minioAccessKey := uuid.NewV4().String()
+	minioSecretKey := uuid.NewV4().String()
+	credentials.Spec = cluster.CredentialsSpec{
+		KeyValuePairs: []cluster.KeyValue{
+			{
+				Key:   globals.MinioAccessKeyName,
+				Value: []byte(minioAccessKey),
+			},
+			{
+				Key:   globals.MinioSecretKeyName,
+				Value: []byte(minioSecretKey),
+			},
+			{
+				Key:   globals.MinioOldAccessKeyName,
+				Value: []byte("miniokey"),
+			},
+			// no old-secret key specified
 		},
 	}
 	return credentials
