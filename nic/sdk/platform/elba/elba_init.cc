@@ -81,6 +81,11 @@ elba_default_config_init (asic_cfg_t *cfg)
                                 "Error loading init phase %d binaries ret %d",
                                 i, ret);
 
+        ret = sdk::asic::asic_verify_config((char *)full_path.c_str());
+        if (ret == SDK_RET_OK) {
+            SDK_TRACE_DEBUG("Check done phase %d Binaries dir: %s", i, full_path.c_str());
+        }
+
         // Now do any polling for init complete for this phase
         elba_tm_hw_config_load_poll(i);
     }
@@ -556,22 +561,21 @@ elba_init (asic_cfg_t *cfg)
         SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                 "elba default config init failure, err %u", ret);
 
-    } /* else */ {
-        SDK_TRACE_DEBUG("elba TM Real Init ");
-        ret = elba_tm_init(cfg->catalog, cfg->qos_profile);
-        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                "elba TM init failure, err %u", ret);
-#if 0
-        /* TBD-ELBA-REBASE */
-        ret = elba_pf_init();
-        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                "Error intializing pbc err %u", ret);
-
-        ret = elba_tm_port_program_uplink_byte_count();
-        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                "elba TM port program defaults, err %u", ret);
-#endif
     }
+
+    SDK_TRACE_DEBUG("elba TM Real Init ");
+    ret = elba_tm_init(cfg->catalog, cfg->qos_profile);
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+            "elba TM init failure, err %u", ret);
+
+    ret = elba_pf_init();
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+            "Error intializing pbc err %u", ret);
+
+    ret = elba_tm_port_program_uplink_byte_count();
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+            "elba TM port program defaults, err %u", ret);
+
     ret = elba_repl_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "elba replication init failure, err %u", ret);

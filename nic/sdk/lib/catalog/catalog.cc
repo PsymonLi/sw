@@ -717,7 +717,7 @@ catalog::catalog_board_type_to_sdk_card_id(std::string board_type)
         return CARD_ID_NAPLES100;
     } else if (board_type.compare("Naples25") == 0) {
         return CARD_ID_NAPLES25;
-    } else if (board_type.compare("Naples25 SWM") == 0) { 
+    } else if (board_type.compare("Naples25 SWM") == 0) {
         return CARD_ID_NAPLES25_SWM;
     } else if(board_type.compare("Naples25 OCP") == 0) {
         return CARD_ID_NAPLES25_OCP;
@@ -820,10 +820,18 @@ catalog::init(std::string &catalog_file)
 catalog *
 catalog::factory(std::string catalog_file_path, std::string catalog_file_name,
                  platform_type_t platform) {
-    sdk_ret_t  ret;
-    void       *mem;
-    catalog    *new_catalog = NULL;
-    int pal_platform;
+    int           pal_platform;
+    sdk_ret_t     ret;
+    void         *mem;
+    catalog      *new_catalog = NULL;
+    std::string   chip_name;
+
+    // get asic-name from env
+    if (char* chip = std::getenv("ASIC")) {
+        chip_name = chip;
+    } else {
+        chip_name = "capri";
+    }
 
     //If user didn't provide platfrm then we try to determine platform through pal
     if (platform == platform_type_t::PLATFORM_TYPE_NONE) {
@@ -880,11 +888,16 @@ catalog::factory(std::string catalog_file_path, std::string catalog_file_name,
         }
         else if (platform == platform_type_t::PLATFORM_TYPE_SIM ||
                 platform == platform_type_t::PLATFORM_TYPE_MOCK) {
-            catalog_file_name = "/catalog.json";
+            if (chip_name == "elba") {
+                catalog_file_name = "/catalog_elba.json";
+            } else {
+                catalog_file_name = "/catalog.json";
+            }
         }
     }
 
     std::string catalog_file = catalog_file_path + catalog_file_name;
+    SDK_TRACE_DEBUG("Using config file %s ", catalog_file.c_str());
 
     // make sure file exists
     if (access(catalog_file.c_str(), R_OK) < 0) {
@@ -1240,7 +1253,7 @@ catalog::is_card_naples25(void) {
 
 bool
 catalog::is_card_naples25_swm(void) {
-    return ((card_id() == CARD_ID_NAPLES25_SWM) || 
+    return ((card_id() == CARD_ID_NAPLES25_SWM) ||
             (card_id() == CARD_ID_NAPLES25_OCP));
 }
 

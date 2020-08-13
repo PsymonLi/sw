@@ -206,6 +206,12 @@ xcvr_event_port_get_ht_cb (void *ht_entry, void *ctxt)
 
     phy_port = sdk::lib::catalog::logical_port_to_phy_port(port->port_num);
 
+    if (port == NULL) {
+        HAL_TRACE_ERR("hal returned null for port obj with handle {}",
+                      entry->handle_id);
+        return false;
+    }
+
     // Ignore transceiver events for non-transceiver ports (MGMT)
     if (phy_port == -1 || phy_port != (int)xcvr_event_info->phy_port) {
         return false;
