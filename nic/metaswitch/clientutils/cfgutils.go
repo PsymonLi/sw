@@ -459,7 +459,7 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 								SendExtComm:  true,
 								KeepAlive:    n.keepalive,
 								HoldTime:     n.holdtime,
-								TTL:          n.multihop,
+								Ttl:          n.multihop,
 								ConnectRetry: 60,
 								Password:     []byte(n.password),
 							}
@@ -543,7 +543,7 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 					SendExtComm:  true,
 					KeepAlive:    n.keepalive,
 					HoldTime:     n.holdtime,
-					TTL:          n.multihop,
+					Ttl:          n.multihop,
 					ConnectRetry: 60,
 					// TODO add Holdtime and Keepalive
 					Password: []byte(n.password),

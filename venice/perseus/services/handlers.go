@@ -263,7 +263,7 @@ func (m *ServiceHandlers) configurePeer(nic *snicT, deleteOp bool) {
 		}
 		if m.naplesTemplate != nil {
 			peer.Password = []byte(m.naplesTemplate.Password)
-			peer.TTL = m.naplesTemplate.MultiHop
+			peer.Ttl = m.naplesTemplate.MultiHop
 			if m.naplesTemplate.Shutdown {
 				peer.State = pdstypes.AdminState_ADMIN_STATE_DISABLE
 			} else {
@@ -634,7 +634,7 @@ func (m *ServiceHandlers) ListNeighbors(ctx context.Context, in *routing.Neighbo
 				RemoteAS: api.BgpAsn{
 					ASNumber: peer.Spec.RemoteASN,
 				},
-				MultiHop:              peer.Spec.TTL,
+				MultiHop:              peer.Spec.Ttl,
 				KeepaliveInterval:     peer.Spec.KeepAlive,
 				Holdtime:              peer.Spec.HoldTime,
 				EnableAddressFamilies: []string{network.BGPAddressFamily_L2vpnEvpn.String()},

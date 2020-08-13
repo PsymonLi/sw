@@ -258,7 +258,7 @@ message BGPPeerSpec {
   // MD5 authentication
   bytes            Password     = 12 [(venice.pdsaFields) = {Field: "password"}];
   // TTL
-  uint32           TTL          = 13 [(venice.pdsaFields) = {Field: "ttl"}];
+  uint32           Ttl          = 13 [(venice.pdsaFields) = {Field: "ttl"}];
   // IdleHoldTime in seconds
   uint32           IdleHoldTime = 14 [(venice.pdsaFields) = {Field: "config_idle_hold"}];
 }
@@ -328,6 +328,7 @@ message BGPPeerStatus {
   uint32          InOpens               = 43 [(venice.pdsaFields) = {Field: "in_opens"}];
   uint32          OutOpens              = 44 [(venice.pdsaFields) = {Field: "out_opens"}];
   uint32          PeerIndex             = 45 [(venice.pdsaFields) = {Field: "peer_index"}];
+  uint32          Ttl                   = 46 [(venice.pdsaFields) = {Field: "ttl"}];
 }
 
 // BGP peer object

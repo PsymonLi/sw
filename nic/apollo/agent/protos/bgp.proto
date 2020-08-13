@@ -217,7 +217,7 @@ message BGPPeerSpec {
   // MD5 authentication
   bytes            Password     = 12;
   // TTL, set 1 to enable fast-external-fallover for directly connected eBGP sessions
-  uint32           TTL          = 13 [(gogoproto.moretags) = "meta:range:0-255, meta:default=64"];
+  uint32           Ttl          = 13 [(gogoproto.moretags) = "meta:range:1-255, meta:default=64"];
   // IdleHoldTime in seconds
   uint32           IdleHoldTime = 14 [(gogoproto.moretags) = "meta:range:1-32767, meta:default=15"];
 }
@@ -314,6 +314,8 @@ message BGPPeerStatus {
  uint32          OutOpens              = 44;
  // Peer Index
  uint32          PeerIndex             = 45;
+ // Current TTL value in use
+ uint32          Ttl                   = 46;
 }
 
 // BGP peer object

@@ -482,7 +482,7 @@ bgp_rm_ent_pre_get(BGPSpec &req, BGPGetResponse* resp, NBB_VOID* kh)
     req.set_id(key_spec->id());
 }
 
-NBB_VOID
+static NBB_VOID
 bgp_peer_post_get_common(BGPPeerGetResponse* resp)
 {
     // no need to do anything if get failed
@@ -513,16 +513,46 @@ bgp_peer_post_get_common(BGPPeerGetResponse* resp)
     }
 }
 
+static NBB_VOID
+bgp_peerstatus_post_get_common(BGPPeerGetResponse* resp)
+{
+    // no need to do anything if get failed
+    if (resp->apistatus() != types::ApiStatus::API_STATUS_OK) {
+        return;
+    }
+
+    for (int i = 0; i< resp->response_size(); i++) {
+        auto res = resp->mutable_response(i);
+        auto status = res->mutable_status();
+        if (status->ttl() == 0) {
+            // ttl not set, return default linux socket ttl
+            status->set_ttl(64);
+        }
+    }
+}
+
 NBB_VOID
 bgp_peer_post_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh)
 {
-    return bgp_peer_post_get_common(resp);
+    bgp_peer_post_get_common(resp);
 }
 
 NBB_VOID
 bgp_peer_post_getall(const BGPPeerGetRequest *req, BGPPeerGetResponse* resp)
 {
-    return bgp_peer_post_get_common(resp);
+    bgp_peer_post_get_common(resp);
+}
+
+NBB_VOID
+bgp_peerstatus_post_get (BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh)
+{
+    bgp_peerstatus_post_get_common(resp);
+}
+
+NBB_VOID
+bgp_peerstatus_post_getall (const BGPPeerGetRequest *req, BGPPeerGetResponse* resp)
+{
+    bgp_peerstatus_post_get_common(resp);
 }
 
 NBB_VOID

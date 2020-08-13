@@ -246,7 +246,7 @@ func bgpPeersShowCmdHandler(cmd *cobra.Command, args []string) error {
 				fmt.Printf(bgpPeerDetStr, peer.Spec.State, peer.Spec.LocalAddr,
 					peer.Status.LocalAddr, peer.Spec.PeerAddr, peer.Spec.RemoteASN, peer.Spec.Password,
 					peer.Spec.RRClient, peer.Spec.SendComm, peer.Spec.SendExtComm, peer.Spec.HoldTime,
-					peer.Spec.KeepAlive, peer.Status.HoldTime, peer.Status.KeepAlive, peer.Spec.TTL,
+					peer.Spec.KeepAlive, peer.Status.HoldTime, peer.Status.KeepAlive, peer.Status.Ttl,
 					peer.Status.Status, peer.Status.PrevStatus,
 					peer.Status.LastErrorRcvd, peer.Status.LastErrorSent,
 					peer.Status.CapsSent, peer.Status.CapsRcvd,

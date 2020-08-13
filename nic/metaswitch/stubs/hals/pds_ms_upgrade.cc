@@ -121,7 +121,6 @@ upg_ipc_start_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 
     try {
         if (!bgp_rm_ent_get_enabled_status()) {
-            // BGP disabled - nothing to do
             PDS_TRACE_DEBUG("BGP disabled, ignore upgrade start");
             upg_ipc_process_response(SDK_RET_OK, msg);
             return;
@@ -200,7 +199,6 @@ upg_ipc_repeal_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
         PDS_TRACE_DEBUG("Upgrade IPC %s handler", upg_msgid2str(params->id));
 
         if (!mgmt_state_t::thread_context().state()->is_upg_ht_in_progress()) {
-            // BGP not enabled - nothing to do
             PDS_TRACE_DEBUG("Routing not in upgrade start state, ignoring repeal");
             upg_ipc_process_response(SDK_RET_OK, msg);
             return;
@@ -231,7 +229,6 @@ upg_ipc_rollback_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 
         // This check returns false if BGP UUID is not found.
         if (!bgp_rm_ent_get_enabled_status()) {
-            // BGP disabled - nothing to do
             PDS_TRACE_DEBUG("BGP disabled, ignore upgrade rollback");
             upg_ipc_process_response(SDK_RET_OK, msg);
             return;

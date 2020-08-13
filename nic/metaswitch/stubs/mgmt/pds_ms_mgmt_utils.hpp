@@ -183,6 +183,9 @@ NBB_VOID bgp_rm_ent_post_getall(const BGPGetRequest *req, BGPGetResponse* resp);
 NBB_VOID bgp_peer_pre_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh);
 NBB_VOID bgp_peer_post_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh);
 NBB_VOID bgp_peer_post_getall(const BGPPeerGetRequest *req, BGPPeerGetResponse* resp);
+NBB_VOID bgp_peerstatus_post_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh);
+NBB_VOID bgp_peerstatus_post_getall(const BGPPeerGetRequest *req, BGPPeerGetResponse* resp);
+
 NBB_VOID bgp_peer_afi_safi_pre_get(BGPPeerAfSpec &req,
                                    BGPPeerAfGetResponse* resp,
                                    NBB_VOID* kh);
