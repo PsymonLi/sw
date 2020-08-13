@@ -179,16 +179,18 @@ lif_impl::program_tx_policer(sdk::qos::policer_t *policer) {
             memcpy(rlimit_data.lif_egress_rl_params.rate, &rate_tokens,
                    sizeof(rlimit_data.lif_egress_rl_params.rate));
         }
-        ret = lif_impl_db()->tx_rate_limiter_tbl()->insert_withid(&rlimit_data,
-                                                                  id_, NULL);
+        ret = lif_impl_db()->tx_rate_limiter_tbl()->insert_atid(&rlimit_data,
+                                                                id_, NULL);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("LIF_TX_POLICER table write failure, lif %s, err %u",
                           key_.str(), ret);
             return ret;
         }
     } else {
-        // remove tx policer
-        ret = lif_impl_db()->tx_rate_limiter_tbl()->remove(id_);
+        // remove (zero out) tx policer
+        rlimit_data.lif_egress_rl_params.entry_valid = 0;
+        ret = lif_impl_db()->tx_rate_limiter_tbl()->insert_atid(&rlimit_data,
+                                                                id_, NULL);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("LIF_TX_POLICER table write failure, lif %s, err %u",
                           key_.str(), ret);
@@ -959,6 +961,13 @@ lif_impl::create_host_lif_(pds_lif_spec_t *spec) {
                             g_zero_mac, false, true, P4_LIF_DIR_HOST);
     if (unlikely(ret != SDK_RET_OK)) {
         goto error;
+    }
+    // reserve the policer entry
+    ret = lif_impl_db()->tx_rate_limiter_tbl()->reserve_index(id_);
+    if (unlikely(ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("LIF_TX_POLICER table index alloc failure, lif %s, err %u",
+                      key_.str(), ret);
+        return ret;
     }
     return SDK_RET_OK;
 

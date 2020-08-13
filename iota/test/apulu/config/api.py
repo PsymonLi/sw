@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+import pdb
 import random
 import copy
 #Following come from dol/infra
@@ -231,7 +232,10 @@ def GetIgwWorkload():
 def __getObjects(objtype):
     objs = list()
     naplesHosts = api.GetNaplesHostnames()
-    objClient = GetObjClient(objtype)
+    if objtype == 'hostif':
+        objClient = GetObjClient('interface')
+    else:
+        objClient = GetObjClient(objtype)
     for node in naplesHosts:
         if objtype == 'nexthop':
             objs.extend(objClient.GetUnderlayNexthops(node))
@@ -243,6 +247,8 @@ def __getObjects(objtype):
         elif objtype == 'interface':
             interfaceobjs = objClient.Objects(node, True)
             objs.extend(list(filter(lambda x: x.Type != topo.InterfaceTypes.LOOPBACK, interfaceobjs)))
+        elif objtype == 'hostif':
+            objs.extend(objClient.GetAllHostInterfaces(node))
         else:
             obj = objClient.Objects(node, True)
             objs.extend(obj)

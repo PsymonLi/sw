@@ -27,6 +27,10 @@ def Setup(tc):
     tc.opers = __getOperations(tc.iterators.oper)
     tc.selected_objs = config_api.SetupConfigObjects(tc.iterators.objtype)
 
+    if hasattr(tc.args, 'preclear'):
+        for obj in tc.selected_objs:
+            setattr(obj, tc.args.preclear, None)
+
     return result
 
 def Trigger(tc):

@@ -19,6 +19,7 @@ import apollo.config.objects.base as base
 import apollo.config.objects.host.lif as lif
 import apollo.config.topo as topo
 from apollo.config.objects.port import client as PortClient
+from apollo.config.objects.policer import client as PolicerClient
 
 import interface_pb2 as interface_pb2
 import types_pb2 as types_pb2
@@ -60,6 +61,7 @@ class InterfaceObject(base.ConfigObjectBase):
         self.MacAddr = getattr(spec, 'macaddress', None)
         self.VPCId = getattr(spec, 'vpcid', None)
         self.VrfName = None
+        self.TxPolicer = None
         if hasattr(spec, 'vrfname'):
             self.VrfName = spec.vrfname
         elif self.VPCId:
@@ -195,7 +197,7 @@ class InterfaceObject(base.ConfigObjectBase):
         return
 
     def RollbackAttributes(self):
-        attrlist = ["MacAddr", "MTU", "Speed"]
+        attrlist = ["MacAddr", "MTU", "Speed", "TxPolicer"]
         self.RollbackMany(attrlist)
         self.PauseSpec = self.GetPrecedent().PauseSpec
         return
@@ -263,7 +265,14 @@ class HostInterfaceObject(InterfaceObject):
             self.obj_helper_lif = lif.LifObjectHelper(node)
             self.__generate_lifs(spec)
         self.UpdateImplicit()
+        if spec.txpolicer:
+            self.TxPolicer = PolicerClient.GetMatchingPolicerObject(node, 'egress')
         self.Show()
+        return
+
+    def UpdateAttributes(self, spec):
+        super().UpdateAttributes(spec)
+        self.TxPolicer = PolicerClient.GetMatchingPolicerObject(self.Node, 'egress')
         return
 
     def GetInterfaceNetwork(self):
@@ -303,6 +312,22 @@ class HostInterfaceObject(InterfaceObject):
             self.VrfName = subnet.Tenant if not dissociate else ""
             self.Network = subnet.GID() if not dissociate else ""
         return
+
+    def PopulateSpec(self, grpcmsg):
+        spec = grpcmsg.Request.add()
+        spec.Id = self.GetKey()
+        spec.AdminStatus = interface_pb2.IF_STATUS_UP
+        if self.TxPolicer:
+            spec.HostIfSpec.TxPolicer = self.TxPolicer.GetKey()
+        else:
+            spec.HostIfSpec.TxPolicer = utils.PdsUuid.GetUUIDfromId(0)
+        return
+
+    def ValidateSpec(self, spec):
+        if not super().ValidateSpec(spec):
+            return False
+        return True
+
 
 class InbandMgmtInterfaceObject(InterfaceObject):
     def __init__(self, node, spec):
@@ -495,6 +520,16 @@ class InterfaceObjectClient(base.ConfigClientBase):
             return self.__hostifs_iter[node].rrnext()
         return None
 
+    def GetAllHostInterfaces(self, node):
+        return self.__hostifs[node].values()
+
+    def PublishHostInterfaces(self, node):
+        if utils.IsDryRun() or utils.IsNetAgentMode():
+            return
+        for ifobj in self.__hostifs[node].values():
+            ifobj.ProcessUpdate()
+        return
+
     def FindHostInterface(self, node, hostifindex):
         if self.__hostifs[node]:
             return self.__hostifs[node].get(hostifindex, None)
@@ -518,6 +553,7 @@ class InterfaceObjectClient(base.ConfigClientBase):
         spec = InterfaceSpec_()
         spec.ifadminstatus = 'UP'
         spec.lifspec = ifspec.lif.Get(EzAccessStoreClient[node])
+        spec.txpolicer = False
         for obj in ResmgrClient[node].HostIfs.values():
             spec = utils.CopySpec(spec, ifspec)
             spec.ifname = obj.IfName
@@ -534,7 +570,7 @@ class InterfaceObjectClient(base.ConfigClientBase):
             self.__hostifs_iter[node] = utils.rrobiniter(self.__hostifs[node].values())
         return
 
-    def __generate_host_interfaces_iota(self, node):
+    def __generate_host_interfaces_iota(self, node, topospec):
         cmd_op = self.ReadLifs(node)
 
         if utils.IsDryRun():
@@ -548,10 +584,16 @@ class InterfaceObjectClient(base.ConfigClientBase):
             intf_type = lif_spec['type']
             spec = InterfaceSpec_()
             spec.iid = utils.LifIfIndex2HostIfIndex(lif_status['ifindex'])
-            spec.uuid = utils.PdsUuid(spec.iid)
+            node_mac = 0
+            for x in lif_spec['id'][-6:]: node_mac=((node_mac<<8)|x)
+            spec.uuid = utils.PdsUuid(spec.iid, node_uuid=node_mac)
             spec.ifname = lif_status['name']
             spec.macaddress = objects.MacAddressBase(integer=lif_spec['macaddress'])
             spec.origin = 'implicitly-created'
+            spec.txpolicer = False
+            if hasattr(topospec, 'hostinterface'):
+                if getattr(topospec.hostinterface, 'txpolicer', False) == True:
+                    spec.txpolicer = True
 
             if intf_type == types_pb2.LIF_TYPE_INBAND_MGMT:
                 inb_mgmtif = InbandMgmtInterfaceObject(node, spec)
@@ -581,7 +623,7 @@ class InterfaceObjectClient(base.ConfigClientBase):
         if utils.IsReconfigInProgress(node):
             return
         if not utils.IsDol():
-            self.__generate_host_interfaces_iota(node)
+            self.__generate_host_interfaces_iota(node, topospec)
         else:
             if hasattr(topospec, 'hostinterface'):
                 self.__generate_host_interfaces_dol(node, topospec.hostinterface)

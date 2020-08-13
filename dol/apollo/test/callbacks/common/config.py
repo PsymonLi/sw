@@ -51,6 +51,8 @@ def GetCfgObject(tc):
         tunnel = tc.config.tunnel
         if tunnel.IsUnderlay():
             cfgObject = tunnel.NEXTHOP.L3Interface
+    elif objname == 'hostif':
+        cfgObject = tc.config.localmapping.VNIC.SUBNET.HostIf
     elif objname == 'routetable':
         cfgObject = tc.config.route
     elif objname == 'policy':

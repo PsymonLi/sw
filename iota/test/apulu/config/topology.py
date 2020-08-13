@@ -100,6 +100,13 @@ def __update_nexthops_from_uplink_info():
         api.Logger.debug(f"Updated {num} NH Objects in {targetNode}")
     return
 
+def __update_host_interfaces():
+    interfaceClient = config_api.GetObjClient('interface')
+    nodes = api.GetNaplesHostnames()
+    for targetNode in nodes:
+        interfaceClient.PublishHostInterfaces(targetNode)
+    return
+
 def Main(args):
     defs.DOL_PATH = "/iota/"
     defs.TEST_TYPE = "IOTA"
@@ -121,6 +128,7 @@ def Main(args):
     # Update static NextHop objects with the mac-addresses of the peer's interfaces
     # This is temporary until the dynamic underlay NH stitching support comes in soon.
     __update_nexthops_from_uplink_info()
+    __update_host_interfaces()
 
     naplesNodes = api.GetNaplesHostnames()
     MemStatsClient.InitNodesForMemUsageStats(naplesNodes)

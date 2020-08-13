@@ -76,6 +76,14 @@ if_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
     if_entry *intf = (if_entry *)api_obj;
     pds_if_spec_t *spec = &obj_ctxt->api_params->if_spec;
 
+    if (spec->type == IF_TYPE_HOST) {
+        // if a policer is attached, verify that policer is valid
+        if ((spec->host_if_info.tx_policer != k_pds_obj_key_invalid) &&
+            (policer_db()->find(&spec->host_if_info.tx_policer) == NULL)) {
+            return SDK_RET_INVALID_ARG;
+        }
+    }
+
     if (spec->type != IF_TYPE_UPLINK) {
         // nothing to reserve
         return SDK_RET_OK;

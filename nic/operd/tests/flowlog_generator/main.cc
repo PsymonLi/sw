@@ -36,7 +36,7 @@ int main (int argc, char** argv)
     int opt;
     uint32_t rate = 100;
     uint32_t total = 1000;
-    uint32_t lookup_id;
+    uint32_t lookup_id = 0;
     string type;
     test::flow_logs_generator *generator;
 

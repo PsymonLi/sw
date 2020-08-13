@@ -2,6 +2,7 @@
 import pdb
 
 from infra.common.logging import logger
+from collections import defaultdict
 
 from apollo.config.resmgr import client as ResmgrClient
 from apollo.config.resmgr import Resmgr
@@ -126,6 +127,8 @@ class PolicerObjectClient(base.ConfigClientBase):
         super().__init__(api.ObjectTypes.POLICER, (2 * Resmgr.MAX_POLICER_PER_DIRECTION))
         self.rxpolicercount = 0
         self.txpolicercount = 0
+        self.txpoliceriter = defaultdict(dict)
+        self.rxpoliceriter = defaultdict(dict)
         return
 
     def GenerateObjects(self, node, topospecobj):
@@ -134,20 +137,39 @@ class PolicerObjectClient(base.ConfigClientBase):
         if utils.IsReconfigInProgress(node):
             return
 
+        rxpol = []
+        txpol = []
         for policer_spec_obj in topospecobj.policer:
             obj = PolicerObject(node, policer_spec_obj)
             self.Objs[node].update({obj.PolicerId: obj})
             if (policer_spec_obj.direction == 'ingress'):
+                rxpol.append(obj)
                 self.rxpolicercount += 1
             else:
+                txpol.append(obj)
                 self.txpolicercount += 1
+
+        if len(rxpol):
+            self.rxpoliceriter[node] = utils.rrobiniter(rxpol)
+        if len(txpol):
+            self.txpoliceriter[node] = utils.rrobiniter(txpol)
         return
 
-    def GetMatchingPolicerObject(self, node, direction, policertype):
-        for key in self.Objs[node]:
-            val = self.Objs[node][key]
-            if policertype == val.type and direction == val.direction:
+    def GetMatchingPolicerObject(self, node, direction, policertype=None):
+        if direction == 'egress':
+            politer = self.txpoliceriter[node]
+        else:
+            politer = self.rxpoliceriter[node]
+        val = politer.rrnext()
+        if not policertype:
+            return val
+        first = val
+        while(True):
+            if policertype == val.type:
                 return val
+            val = politer.rrnext()
+            if val == first:
+                break
         return None
 
     def GetPolicerObject(self, node, policerid):
