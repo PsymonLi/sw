@@ -64,7 +64,7 @@
 /sw/nic/hal/pd/hal_pd_error.hpp
 /sw/nic/hal/pd/*.hpp
 /sw/nic/hal/third-party/google
-/sw/nic/hal/third-party/judy/aarch64/lib/*.so* /sw/lib/other/
+#/sw/nic/hal/third-party/judy/aarch64/lib/*.so* /sw/lib/other/
 /sw/nic/third-party/gflags/aarch64/lib
 #/sw/nic/sdk/third-party/googletest-release-1.8.0/googletest/include/gtest/gtest.h
 /sw/nic/sdk/third-party/googletest-release-1.8.0/googletest/include/gtest/
@@ -332,5 +332,5 @@
 # cp /tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/libzmq.so ../nic/build/aarch64/athena/capri/lib
 # cp /tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/aarch64-linux-gnu/libJudy.so ../nic/build/aarch64/athena/capri/lib
 # /tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/libzmq.so /sw/lib/other/
-# /tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/aarch64-linux-gnu/libJudy.so /sw/lib/other/
+/tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/aarch64-linux-gnu/libJudy.so /sw/lib/other/
 

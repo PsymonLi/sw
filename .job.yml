@@ -61,11 +61,25 @@ builds:
   #     - /sw/customimage.tar.gz
   build-athena-arm-native-sim:
     commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic/athena/apps/athena_app && mkdir -p /tmp/athena &&
-        ./gsrc.py --src /usr/src/github.com/pensando --dst /tmp/athena/src/github.com/pensando && ./build_athena /tmp/athena s"]
+        ./gsrc.py --src /usr/src/github.com/pensando --dst /tmp/athena/src/github.com/pensando &&
+        tar zcf /sw/pen-src-sim.tar.gz -C /tmp/athena src && ./build_athena /tmp/athena s &&
+        cp /tmp/athena/src/github.com/pensando/sw/nic/nic.tar /sw/athena-sim-nic.tar &&
+        cp /tmp/athena/src/github.com/pensando/sw/nic/build/aarch64/athena/capri/out/athena_app_bin/athena_app.bin /sw/athena_app-sim.bin"]
     owners: ["email:jason@pensando.io"]
     artifacts:
-      - /tmp/athena/src/github.com/pensando/sw/nic/nic.tar
-      - /tmp/athena/src/github.com/pensando/sw/nic/build/aarch64/athena/capri/out/athena_app_bin/athena_app.bin
+      - /sw/pen-src-sim.tar.gz
+      - /sw/athena-sim-nic.tar
+      - /sw/athena_app-sim.bin
+  build-athena-arm-native:
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw && asset-pull athena_nb 0.0.2 /dev/stdout | tar xz &&
+        cd /usr/src/github.com/pensando/sw/nic/athena/apps/athena_app && mkdir -p /tmp/athena &&
+        ./gsrc.py --src /usr/src/github.com/pensando --dst /tmp/athena/src/github.com/pensando && ./arm-job"]
+    owners: ["email:jason@pensando.io"]
+    artifacts:
+      - /sw/pen-src.tar.gz
+      - /sw/athena_app.bin
+      - /sw/athena-nic.tar
+      - /sw/athena-build-log
   build-athena-customer-arm:
     commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && ./athena/apps/athena_app/bld_pkg_athena --arch=aarch64 --output=athena-arm"]
     owners: ["email:murali@pensando.io"]

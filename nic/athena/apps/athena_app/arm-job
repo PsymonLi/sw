@@ -1,0 +1,29 @@
+#!/bin/bash -x
+
+: ${BUILD_SERVER:="pen-arm1.pensando.io"}
+: ${BUILD_USER:="build"}
+: ${PASSWD:="N0isystem$"}
+: ${WORK_DIR:="/home/build/work"}
+: ${SW_DIR:="src/github.com/pensando/sw"}
+: ${NIC_TAR:="$WORK_DIR/$SW_DIR/nic/nic.tar"}
+: ${ATHENA_APP:="$WORK_DIR/$SW_DIR/nic/build/aarch64/athena/capri/out/athena_app_bin/athena_app.bin"}
+
+cd /tmp/athena
+echo "tar zcf pen-src.tar.gz src"
+tar zcf pen-src.tar.gz src
+cp pen-src.tar.gz /sw
+
+sshpass -p $PASSWD ssh -o StrictHostKeyChecking=no "$BUILD_USER"@"$BUILD_SERVER" "rm -rf $WORK_DIR; mkdir -p $WORK_DIR"
+sshpass -p $PASSWD scp pen-src.tar.gz build@$BUILD_SERVER:$WORK_DIR
+sshpass -p $PASSWD ssh -o StrictHostKeyChecking=no "$BUILD_USER"@"$BUILD_SERVER" "cd $WORK_DIR; tar zxf pen-src.tar.gz"
+
+sshpass -p $PASSWD ssh -o StrictHostKeyChecking=no "$BUILD_USER"@"$BUILD_SERVER" \
+    "docker run --rm --user build --name ba1 -h ba1 -v $WORK_DIR:$WORK_DIR jzcq/pen:olc-2 bin/bash -c \
+    \"export PATH=/opt/oracle/oracle-armtoolset-1/root/usr/bin:/usr/local/bin:/usr/bin; \
+    export LD_LIBRARY_PATH=/usr/local/lib; export GOPATH=$WORK_DIR; \
+    cd $WORK_DIR/src/github.com/pensando/sw/nic; \
+    ANE=y COVERAGE=1 make PIPELINE=athena ARCH=aarch64 PLATFORM=hw |& tee athena-build-log\""
+sshpass -p $PASSWD scp build@$BUILD_SERVER:$NIC_TAR /sw/athena-nic.tar
+sshpass -p $PASSWD scp build@$BUILD_SERVER:$ATHENA_APP /sw
+sshpass -p $PASSWD scp build@$BUILD_SERVER:$WORK_DIR/$SW_DIR/nic/athena-build-log /sw
+

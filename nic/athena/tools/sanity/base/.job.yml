@@ -13,6 +13,7 @@ targets:
     #- build-custom-athena-image
     - build-athena-customer-arm
     - build-athena-arm-native-sim
+    - build-athena-arm-native
 
 #  athena/gtests_14:
 #    commands: ["make", "PIPELINE=athena", "P4VER=P4_14", "PKG_PIPELINE=athena14", "jobd/athena/gtests"]
