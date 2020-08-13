@@ -252,8 +252,8 @@ func testBulkeditCUDOps() func() {
 				},
 				Spec: network.NetworkSpec{
 					Type:        network.NetworkType_Bridged.String(),
-					IPv4Subnet:  "10.0.0.0/8",
-					IPv4Gateway: "10.1.1.1",
+					IPv4Subnet:  "12.0.0.0/8",
+					IPv4Gateway: "12.1.1.1",
 				},
 			}
 			numNetw := 20 // Number of networks
@@ -291,7 +291,8 @@ func testBulkeditCUDOps() func() {
 					objMeta := &netw.ObjectMeta
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = uint32(i)
-					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Subnet = "12.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "12.0." + strconv.Itoa(i) + ".1"
 					p, err := types.MarshalAny(&netw)
 					Expect(err).Should(BeNil(), fmt.Sprintf("got error Marshalling network %s (%s)", netw.ObjectMeta.Name, err))
 					items = append(items, &bulkedit.BulkEditItem{
@@ -319,7 +320,8 @@ func testBulkeditCUDOps() func() {
 						objMeta := &netw.ObjectMeta
 						objMeta.Name = netwPrefix + strconv.Itoa(i)
 						netw.Spec.VlanID = uint32(i)
-						netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+						netw.Spec.IPv4Subnet = "12.0." + strconv.Itoa(i) + ".0/24"
+						netw.Spec.IPv4Gateway = "12.0." + strconv.Itoa(i) + ".1"
 						if retNetw.GetObjectMeta().GetName() == objMeta.Name {
 							Expect(reflect.DeepEqual(retNetw.Spec, netw.Spec)).To(Equal(true))
 							netwFound = true
@@ -330,13 +332,13 @@ func testBulkeditCUDOps() func() {
 				}
 			}
 			{ // Update operation
-				netw.Spec.IPv4Gateway = "10.1.1.254"
 				items := []*bulkedit.BulkEditItem{}
 				for i := 0; i < numNetw; i++ {
 					objMeta := &netw.ObjectMeta
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = uint32(i)
-					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Subnet = "12.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "12.0." + strconv.Itoa(i) + ".1"
 					p, err := types.MarshalAny(&netw)
 					Expect(err).Should(BeNil(), fmt.Sprintf("got error Marshalling network %s (%s)", netw.ObjectMeta.Name, err))
 					items = append(items, &bulkedit.BulkEditItem{
@@ -354,7 +356,6 @@ func testBulkeditCUDOps() func() {
 				commitStagingBuffer()
 			}
 			{ // List all objects to ensure that they got updated
-				netw.Spec.IPv4Gateway = "10.1.1.254"
 				retList, err := grpcClient.NetworkV1().Network().List(lctx, &api.ListWatchOptions{From: 0})
 				Expect(err).To(BeNil())
 				Expect(len(retList)).To(Equal(numNetw))
@@ -364,7 +365,8 @@ func testBulkeditCUDOps() func() {
 						objMeta := &netw.ObjectMeta
 						objMeta.Name = netwPrefix + strconv.Itoa(i)
 						netw.Spec.VlanID = uint32(i)
-						netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+						netw.Spec.IPv4Subnet = "12.0." + strconv.Itoa(i) + ".0/24"
+						netw.Spec.IPv4Gateway = "12.0." + strconv.Itoa(i) + ".1"
 						if retNetw.GetObjectMeta().GetName() == objMeta.Name {
 							Expect(reflect.DeepEqual(retNetw.Spec, netw.Spec)).To(Equal(true))
 							netwFound = true
@@ -380,7 +382,8 @@ func testBulkeditCUDOps() func() {
 					objMeta := &netw.ObjectMeta
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = uint32(i)
-					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Subnet = "12.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "12.0." + strconv.Itoa(i) + ".1"
 					p, err := types.MarshalAny(&netw)
 					Expect(err).Should(BeNil(), fmt.Sprintf("got error Marshalling network %s (%s)", netw.ObjectMeta.Name, err))
 					items = append(items, &bulkedit.BulkEditItem{
@@ -615,7 +618,7 @@ func testAPICRUDOps() func() {
 				Spec: network.NetworkSpec{
 					Type:        network.NetworkType_Bridged.String(),
 					IPv4Subnet:  "10.0.0.0/8",
-					IPv4Gateway: "10.1.1.1",
+					IPv4Gateway: "10.0.0.1",
 				},
 			}
 			{ // Cleanup if object already exists
@@ -651,6 +654,7 @@ func testAPICRUDOps() func() {
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = uint32(i)
 					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "10.0." + strconv.Itoa(i) + ".1"
 					ret, err := grpcClient.NetworkV1().Network().Create(lctx, &netw)
 					Expect(err).Should(BeNil(), fmt.Sprintf("got error Creating network %s (%s)", objMeta.Name, err))
 					Expect(reflect.DeepEqual(ret.Spec, netw.Spec)).To(Equal(true))
@@ -670,6 +674,7 @@ func testAPICRUDOps() func() {
 						if retNetw.GetObjectMeta().GetName() == objMeta.Name {
 							netw.Spec.VlanID = uint32(i)
 							netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+							netw.Spec.IPv4Gateway = "10.0." + strconv.Itoa(i) + ".1"
 							Expect(reflect.DeepEqual(retNetw.Spec, netw.Spec)).To(Equal(true))
 							netwFound = true
 							break
@@ -685,6 +690,7 @@ func testAPICRUDOps() func() {
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = uint32(i)
 					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "10.0." + strconv.Itoa(i) + ".1"
 					ret, err := grpcClient.NetworkV1().Network().Update(lctx, &netw)
 					Expect(err).To(BeNil())
 					Expect(reflect.DeepEqual(ret.Spec, netw.Spec)).To(Equal(true))
@@ -702,6 +708,7 @@ func testAPICRUDOps() func() {
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = uint32(i)
 					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "10.0." + strconv.Itoa(i) + ".1"
 					ret, err := grpcClient.NetworkV1().Network().Delete(lctx, &netw.ObjectMeta)
 					Expect(err).To(BeNil())
 					expNEvents = addToWatchList(expNEvents, ret, kvstore.Deleted)
@@ -742,10 +749,10 @@ func testAPICRUDOps() func() {
 						Eventually(func() string {
 							rcvNEventsMutex.Lock()
 							defer rcvNEventsMutex.Unlock()
-							if len(rcvNEvents) == len(expNEvents) {
+							if len(rcvNEvents) >= len(expNEvents) {
 								return "success"
 							}
-							return fmt.Sprintf("got %v Tenant events expecing %v events", len(rcvTEvents), len(expTEvents))
+							return fmt.Sprintf("got %v events expecing %v events", len(rcvNEvents), len(expNEvents))
 						}, 10, 1).Should(Equal("success"), "Number of bulk Tenant watch events did not match")
 					}
 					if del {
@@ -761,6 +768,7 @@ func testAPICRUDOps() func() {
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = 300 + uint32(i)
 					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "10.0." + strconv.Itoa(i) + ".1"
 					ret, err := restClient.NetworkV1().Network().Create(lctx, &netw)
 					Expect(err).To(BeNil())
 					Expect(reflect.DeepEqual(ret.Spec, netw.Spec)).To(Equal(true))
@@ -779,6 +787,7 @@ func testAPICRUDOps() func() {
 						objMeta.Name = netwPrefix + strconv.Itoa(i)
 						netw.Spec.VlanID = 300 + uint32(i)
 						netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+						netw.Spec.IPv4Gateway = "10.0." + strconv.Itoa(i) + ".1"
 						if retNetw.GetObjectMeta().GetName() == objMeta.Name {
 							Expect(reflect.DeepEqual(retNetw.Spec, netw.Spec)).To(Equal(true))
 							netwFound = true
@@ -795,6 +804,7 @@ func testAPICRUDOps() func() {
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = 300 + uint32(i)
 					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "10.0." + strconv.Itoa(i) + ".1"
 					ret, err := restClient.NetworkV1().Network().Update(lctx, &netw)
 					Expect(err).To(BeNil())
 					Expect(reflect.DeepEqual(ret.Spec, netw.Spec)).To(Equal(true))
@@ -816,6 +826,7 @@ func testAPICRUDOps() func() {
 					objMeta.Name = netwPrefix + strconv.Itoa(i)
 					netw.Spec.VlanID = uint32(i)
 					netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+					netw.Spec.IPv4Gateway = "10.0." + strconv.Itoa(i) + ".1"
 					ret, err := restClient.NetworkV1().Network().Delete(lctx, &netw.ObjectMeta)
 					Expect(err).To(BeNil())
 					expNEvents = addToWatchList(expNEvents, ret, kvstore.Deleted)
@@ -834,7 +845,7 @@ func testAPICRUDOps() func() {
 		Eventually(func() string {
 			rcvNEventsMutex.Lock()
 			defer rcvNEventsMutex.Unlock()
-			if len(rcvNEvents) == len(expNEvents) {
+			if len(rcvNEvents) >= len(expNEvents) {
 				return "success"
 			}
 			retStr := fmt.Sprintf("Got %v Network events expecing %v events\n", len(rcvNEvents), len(expNEvents))
@@ -846,7 +857,7 @@ func testAPICRUDOps() func() {
 		Consistently(func() string {
 			rcvNEventsMutex.Lock()
 			defer rcvNEventsMutex.Unlock()
-			if len(rcvNEvents) == len(expNEvents) {
+			if len(rcvNEvents) >= len(expNEvents) {
 				return "success"
 			}
 			retStr := fmt.Sprintf("Got %v Network events expecing %v events\n", len(rcvNEvents), len(expNEvents))
@@ -977,7 +988,8 @@ var _ = Describe("api crud and bulkedit tests", func() {
 		for i := 0; i < numNetw; i++ {
 			netw.ObjectMeta.Name = netwPrefix + strconv.Itoa(i)
 			netw.Spec.VlanID = uint32(i)
-			netw.Spec.IPv4Subnet = "10.0." + strconv.Itoa(i) + ".0/24"
+			netw.Spec.IPv4Subnet = "10.1." + strconv.Itoa(i) + ".0/24"
+			netw.Spec.IPv4Gateway = "10.1." + strconv.Itoa(i) + ".1"
 			_, err := grpcClient.NetworkV1().Network().Create(context.Background(), &netw)
 			Expect(err).Should(BeNil(), fmt.Sprintf("got error Creatring network %s (%s)", netw.ObjectMeta.Name, err))
 		}

@@ -1086,11 +1086,13 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 	netw2 := netw1
 	netw2.ObjectMeta.Name = "TestStagingNetw2"
 	netw2.Spec.IPv4Subnet = "12.1.1.1/24"
+	netw2.Spec.IPv4Gateway = "12.1.1.2"
 	netw2.Spec.VlanID = 12
 	n2, err := types.MarshalAny(&netw2)
 	AssertOk(t, err, "error marshalling network netw2")
 	netw3 := netw1
 	netw3.ObjectMeta.Name = "TestStagingNetw3"
+	netw3.Spec.IPv4Gateway = "13.1.1.2"
 	netw3.Spec.IPv4Subnet = "13.1.1.1/24"
 	netw3.Spec.VlanID = 13
 	n3, err := types.MarshalAny(&netw3)

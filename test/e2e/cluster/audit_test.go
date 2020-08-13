@@ -124,7 +124,7 @@ var _ = Describe("audit tests", func() {
 					Spec: network.NetworkSpec{
 						Type:        network.NetworkType_Bridged.String(),
 						IPv4Subnet:  subnet,
-						IPv4Gateway: "10.1.1.1",
+						IPv4Gateway: "10.3." + strconv.Itoa(i/256) + "." + strconv.Itoa(i%256),
 						VlanID:      uint32(i + 100),
 					},
 				}
