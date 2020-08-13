@@ -170,8 +170,6 @@ mirror_session::init_config(api_ctxt_t *api_ctxt) {
                 erspan_.ip_ = spec->erspan_spec.ip_addr;
             } else {
                 // TODO: make sure the mapping is known
-                PDS_TRACE_ERR("ERSPAN to a overlay mapping is not supported");
-                return SDK_RET_INVALID_ARG;
             }
         }
         break;
