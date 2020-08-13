@@ -24,7 +24,7 @@ int pcieportpd_hostconfig(pcieport_t *p, const pciemgr_params_t *params);
 int pcieportpd_config_host(pcieport_t *p);
 int pcieportpd_config_rc(pcieport_t *p);
 int pcieportpd_config_powerdown(pcieport_t *p);
-int pcieportpd_serdes_init(void);
+int pcieportpd_serdes_init(pcieport_t *p);
 int pcieportpd_serdes_reset(void);
 void pcieportpd_mac_set_ids(pcieport_t *p);
 void pcieportpd_select_pcie_refclk(const int port, const int host_clock);

@@ -320,7 +320,7 @@ pcieportpd_config_host(pcieport_t *p)
 
             pcieportpd_select_pcie_refclk(p->port, host_clock);
             pcieport_set_serdes_reset(p->port, p->lanemask, 0);
-            if (pcieportpd_serdes_init() < 0) {
+            if (pcieportpd_serdes_init(p) < 0) {
                 return -1;
             }
             /*

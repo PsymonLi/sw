@@ -246,6 +246,13 @@ void elb_pcie_sbus_clk(int chip_id, int sbus_clk_div) {
     } 
 }
 
+int elb_pcie_get_cur_sbus_clk_div(int chip_id) {
+    int rd_data = elb_pp_sbus_read(chip_id, 0xfe, 0xa);
+    if(rd_data == 1) return 1;
+    else if(rd_data == 0x83) return 6;
+    return 0;
+}
+
 /**
  * @brief do idcode check on pcie sbus ring 
  * @param chip_id       unused 

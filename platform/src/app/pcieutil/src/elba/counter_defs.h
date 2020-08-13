@@ -86,7 +86,6 @@
 
 #define PP_PORT_C_CNT_C_GENERATOR(mac) \
     mac(32,  PORT_RX_CFG0_REQ,          x, 0, 0) \
-    mac(64,  TL_RX_CPL,                 x, 0, 0) \
     mac(64,  TL_RX_REQ_POSTED,          x, 0, 0) \
     mac(64,  TL_RX_REQ_NON_POSTED,      x, 0, 0) \
     mac(64,  TL_RX_CPL,                 x, 0, 0) \

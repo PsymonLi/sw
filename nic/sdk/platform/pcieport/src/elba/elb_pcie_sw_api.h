@@ -17,6 +17,7 @@ int pcie_check_sd_core_status (int chip_id, int inst_id, unsigned phy_port, unsi
 int pcie_core_interrupts_sw (int chip_id, int inst_id, int int_code, int int_data, int delay_num, int phy_port, int lanes, int check_output_data, int exp_data);
 #ifndef _PCIE_BLOCK_LEVEL_    
 void elb_pcie_sbus_clk(int chip_id, int sbus_clk_div);
+int elb_pcie_get_cur_sbus_clk_div(int chip_id);
 int elb_pcie_sbus_idcode_check(int chip_id);
 #endif 
 void elb_pcie_init_sbus(int chip_id, int bcast_all_lanes, int px_port, int lanes, int bgroup, char * file_name);

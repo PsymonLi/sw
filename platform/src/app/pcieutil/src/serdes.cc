@@ -26,28 +26,32 @@ default_lanemask(void)
 static void
 serdesfw(int argc, char *argv[])
 {
-    int opt;
+    int opt, port;
     uint16_t lanemask, lanes_ready;
     laneinfo_t build, revid, engbd;
 
+    port = default_pcieport();
     lanemask = default_lanemask();
     optind = 0;
-    while ((opt = getopt(argc, argv, "l:")) != -1) {
+    while ((opt = getopt(argc, argv, "l:p:")) != -1) {
         switch (opt) {
         case 'l':
             lanemask = strtoul(optarg, NULL, 0);
             break;
+        case 'p':
+            port = strtoul(optarg, NULL, 0);
+            break;
         default:
-            printf("Usage: %s [-l <lanemask>]\n", argv[0]);
+            printf("Usage: %s [-l <lanemask>] [-p <port>]\n", argv[0]);
             return;
         }
     }
 
     pal_wr_lock(SBUSLOCK);
-    lanes_ready = pciesd_lanes_ready(lanemask);
-    pciesd_core_interrupt(lanes_ready, 0,    0, &build);
-    pciesd_core_interrupt(lanes_ready, 0x3f, 0, &revid);
-    pciesd_core_interrupt(lanes_ready, 0,    1, &engbd);
+    lanes_ready = pciesd_lanes_ready(port, lanemask);
+    pciesd_core_interrupt(port, lanes_ready, 0,    0, &build);
+    pciesd_core_interrupt(port, lanes_ready, 0x3f, 0, &revid);
+    pciesd_core_interrupt(port, lanes_ready, 0,    1, &engbd);
     pal_wr_unlock(SBUSLOCK);
 
     for (int i = 0; i < 16; i++) {
@@ -69,26 +73,28 @@ serdesfw(int argc, char *argv[])
 }
 CMDFUNC(serdesfw,
 "pcie serdes fw version info",
-"serdesfw [-l <lanemask>]\n"
-"    -l <lanemask>      use lanemask (default port lanemask)\n");
+"serdesfw [-l <lanemask>][-p <port>]\n"
+"    -l <lanemask>      use lanemask (default port lanemask)\n"
+"    -p <port>          use port (default port)");
 
 static void
 serdesint(int argc, char *argv[])
 {
-    int opt;
+    int opt, port;
     u_int64_t starttm, stoptm;
     uint16_t lanemask, code, data;
     laneinfo_t result;
     int got_code, got_data, dotime;
 
-    lanemask = 0xffff;
+    port = default_pcieport();
+    lanemask = default_lanemask();
     got_code = 0;
     got_data = 0;
     dotime = 0;
     code = 0;
     data = 0;
     optind = 0;
-    while ((opt = getopt(argc, argv, "c:d:l:t")) != -1) {
+    while ((opt = getopt(argc, argv, "c:d:l:t:p:")) != -1) {
         switch (opt) {
         case 'c':
             code = strtoul(optarg, NULL, 0);
@@ -104,9 +110,12 @@ serdesint(int argc, char *argv[])
         case 't':
             dotime = 1;
             break;
+        case 'p':
+            port = strtoul(optarg, NULL, 0);
+            break;
         default:
             fprintf(stderr,
-                    "Usage: %s [-t][-l <lanemask>] -c <code> -d <data>\n",
+                    "Usage: %s [-t][-l <lanemask>] -c <code> -d <data> [-p <port>]\n",
                     argv[0]);
             return;
         }
@@ -121,7 +130,7 @@ serdesint(int argc, char *argv[])
 
     pal_wr_lock(SBUSLOCK);
     starttm = gettimestamp();
-    pciesd_core_interrupt(lanemask, code, data, &result);
+    pciesd_core_interrupt(port, lanemask, code, data, &result);
     stoptm = gettimestamp();
     pal_wr_unlock(SBUSLOCK);
 
@@ -139,10 +148,11 @@ serdesint(int argc, char *argv[])
 }
 CMDFUNC(serdesint,
 "pcie serdes send interrupt",
-"serdesint [-t][-l <lanemask>] -c <code> -d <data>\n"
+"serdesint [-t][-l <lanemask>] -c <code> -d <data> [-p <port>]\n"
 "    -c <code>          int code\n"
 "    -d <data>          int data\n"
 "    -l <lanemask>      use lanemask (default port lanemask)\n"
+"    -p <port>          use port (default port)\n"
 "    -t                 display elapsed time taken for interrupt\n");
 
 static void

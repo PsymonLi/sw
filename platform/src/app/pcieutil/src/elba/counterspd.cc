@@ -286,7 +286,7 @@ show_pp_sat_pp_pipe(const int port)
 #define ADDR(CTR, LN)   PP_(SAT_PP_PIPE_## CTR ##_## LN, port)
 
 #define SHOW_COUNTER_PIPE(LN, ty, CTR, fld, bits, bitc) \
-    show_counter_##ty(-1, ADDR(CTR,LN), GROUP, #CTR "_" #LN,  #fld, bits, bitc)
+    show_counter_##ty(port, ADDR(CTR,LN), GROUP, #CTR "_" #LN, #fld, bits,bitc)
 
 #define PP_SAT_PP_PIPE_SHOW_GEN(ty, CTR, fld, bits, bitc) \
     SHOW_COUNTER_PIPE(0,  ty, CTR, fld, bits, bitc); \
@@ -321,10 +321,7 @@ show_pp_port_c_cnt_c(const int port)
 #define PP_PORT_C_CNT_C_SHOW_GEN(ty, CTR, fld, bits, bitc) \
     show_counter_##ty(port, ADDR(CTR, port), GROUP, #CTR, #fld, bits, bitc);
 
-#if 0
-    // XXX ELBA-TODO
     PP_PORT_C_CNT_C_GENERATOR(PP_PORT_C_CNT_C_SHOW_GEN)
-#endif
 
 #undef GROUP
 #undef ADDR
@@ -339,10 +336,7 @@ show_pp_port_c_sat_c_port_cnt(const int port)
 #define PP_PORT_C_SAT_C_PORT_SHOW_GEN(ty, CTR, fld, bits, bitc) \
     show_counter_##ty(port, ADDR(CTR, port), GROUP, #CTR, #fld, bits, bitc);
 
-#if 0
-    // XXX ELBA-TODO
     PP_PORT_C_SAT_C_PORT_CNT_GENERATOR(PP_PORT_C_SAT_C_PORT_SHOW_GEN)
-#endif
 
 #undef GROUP
 #undef ADDR
@@ -367,16 +361,13 @@ static void
 show_db_wa_sat_wa(void)
 {
 #define GROUP           "DB_WA_SAT_WA"
-#define ADDR(CTR)       (CAP_ADDR_BASE_DB_WA_OFFSET + \
-                         CAP_WA_CSR_SAT_WA_ ##CTR## _BYTE_ADDRESS)
+#define ADDR(CTR)       (ELB_ADDR_BASE_DB_WA_OFFSET + \
+                         ELB_WA_CSR_SAT_WA_ ##CTR## _BYTE_ADDRESS)
 
 #define DB_WA_SAT_WA_SHOW_GEN(ty, CTR, fld, bits, bitc) \
     show_counter_##ty(-1, ADDR(CTR), GROUP, #CTR, #fld, bits, bitc);
 
-#if 0
-    // XXX ELBA-TODO
     DB_WA_SAT_WA_GENERATOR(DB_WA_SAT_WA_SHOW_GEN)
-#endif
 
 #undef GROUP
 #undef ADDR
@@ -401,6 +392,10 @@ counterspd_show_port_counters(const int port, const int flags)
 {
     global_flags = flags;
 
+    /*
+     * XXX ELBA-TODO
+     * HV- pipe counters can be read per PP block instead of per-port
+     */
     show_pp_sat_pp_pipe(port);
     show_pp_port_c_cnt_c(port);
     show_pp_port_c_sat_c_port_cnt(port);

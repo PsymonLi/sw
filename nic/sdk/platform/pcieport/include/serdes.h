@@ -17,8 +17,10 @@ typedef union laneinfo_u {
     uint32_t w[8];
 } laneinfo_t;
 
-uint16_t pciesd_lanes_ready(const uint16_t lanemask);
-int pciesd_core_interrupt(const uint16_t lanemask,
+uint16_t pciesd_lanes_ready(const int port,
+                            const uint16_t lanemask);
+int pciesd_core_interrupt(const int port,
+                          const uint16_t lanemask,
                           const uint16_t code,
                           const uint16_t data,
                           laneinfo_t *dataout);

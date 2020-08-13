@@ -94,6 +94,12 @@ pcieport_mac_k_pexconf(pcieport_t *p)
         pexconf[5] &= ~(1 << 31); /* [191] AER implemented */
     }
 
+    /*
+     * ELBA-TODO HV: pexconf[5][13]=PCIEPORT_HOST_CLOCK
+     * This reflects as a slot clock setting in lspci on our device
+     * 0=independent clock, 1=host refclk
+     */
+
     pal_reg_wr32w(PXC_(CFG_C_MAC_K_PEXCONF, pn), pexconf, 12);
 }
 
@@ -176,12 +182,13 @@ pcieport_set_sw_reset(pcieport_t *p, const int on)
  * the serdes in reset by clearing reset_n bits;
  */
 static void
-pcieport_set_pcie_pll_rst(pcieport_t *p, const int on)
+pcieport_set_pcie_pll_rst(pcieport_t *p, const int on, const int host_clk)
 {
-    /* XXX ELBA-TODO  HV need pll number here or just do this for both PLLs */
-    /* XXX ELBA-TODO  HV updated */
-
-    const int pll = 1; /* was p->port */
+    /*
+     * host_clk mode uses pll1
+     * local_clk mode uses pll0
+     */
+    const int pll = host_clk;
     u_int32_t pll_cfg[3];
 
 #define CFG_PLL_PCIE(pll) \
@@ -232,11 +239,6 @@ pcieport_set_pcs_reset(const int port,
 static void
 pcieport_set_pcs_interrupt_disable(const int port, const u_int16_t lanemask)
 {
-    /* XXX ELBA-TODO check this */
-    /*
-     * HV comment, PP_ macro takes care of port 4..7 = PP1
-     * for multi-port support
-     */
     pal_reg_wr32(PP_(CFG_PP_PCS_INTERRUPT_DISABLE, port), lanemask);
 }
 
@@ -341,6 +343,7 @@ pcieportpd_config_host(pcieport_t *p)
 
         if (!pi->serdes_init || pi->serdes_init_always) {
             int host_clock = 1;
+            /* ELBA-TODO per port configurablity for future will be great */
             char *env = getenv("PCIEPORT_HOST_CLOCK");
 
             if (env) {
@@ -349,14 +352,9 @@ pcieportpd_config_host(pcieport_t *p)
             }
 
             pcieportpd_select_pcie_refclk(p->port, host_clock);
-            /*
-             * XXX ELBA-TODO
-             * Kinjal: FIXME this argument is not accurate.
-             * We need to pass : host clock or local clock
-             */
-            pcieport_set_pcie_pll_rst(p, 0);
+            pcieport_set_pcie_pll_rst(p, 0, host_clock);
             pcieport_set_serdes_reset(p->port, p->lanemask, 0);
-            if (pcieportpd_serdes_init() < 0) {
+            if (pcieportpd_serdes_init(p) < 0) {
                 return -1;
             }
             /*
@@ -364,6 +362,11 @@ pcieportpd_config_host(pcieport_t *p)
              * pp_port_c_cfg_c_mac_k_gen.sris_mode.  When
              * sris_mode=0 (default) we set sris_en_grp_X to 0.
              * Saves about 20ns rx latency.
+             */
+
+            /*
+             * ELBA-TODO pcieport_pcsd_control_sris needs update for ELBA
+             * 4 bits per group instead of 2 per group in capri
              */
             pcieport_pcsd_control_sris(p->sris);
             pi->serdes_init = 1;
@@ -440,13 +443,23 @@ pcieportpd_mac_set_ids(pcieport_t *p)
 void
 pcieportpd_select_pcie_refclk(const int port, const int host_clock)
 {
-    /* XXX ELBA-TODO HV-updated */
+    /*
+     * Select pll0 source from local osc
+     * Select pll1 source from host refclk
+     */
+
+    pal_reg_wr32(MS_SOC_(CFG_REFCLK_SEL), 0x2);
+
+    /*
+     * XXX ELBA-TODO
+     * Currently assuming all 4 ports within a PP use same pcie source clk
+     * This can be changed at per-port configuration granularity
+     */
+
     if (host_clock) {
         pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_REFCLK_SEL, port), 0xff);
-        pal_reg_wr32(MS_SOC_(CFG_REFCLK_SEL), 0x3);
     } else {
         pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_REFCLK_SEL, port), 0x00);
-        pal_reg_wr32(MS_SOC_(CFG_REFCLK_SEL), 0x0);
     }
 }
 
@@ -477,7 +490,7 @@ pcieport_reset(pcieport_t *p)
     pcieport_pcs_int_disable(p->port, lanemask);
     pcieport_set_pcs_reset(p->port, lanemask, 1);
     pcieport_set_serdes_reset(p->port, lanemask, 1);
-    pcieport_set_pcie_pll_rst(p, 1);
+    pcieport_set_pcie_pll_rst(p, 1, 1);  /* reset host clock pll1 */
     pcieportpd_select_pcie_refclk(p->port, 0); /* select local refclk */
     return 0;
 }

@@ -34,23 +34,24 @@ pciesd_sbus_wr(const unsigned int addr,
 }
 
 static uint64_t
-pp_pcsd_interrupt_addr(const int lane)
+pp_pcsd_interrupt_addr(const int port, const int lane)
 {
-    return PP_(CFG_PP_PCSD_INTERRUPT, 0) + lane * 4;
+    return PP_(CFG_PP_PCSD_INTERRUPT, port) + lane * 4;
 }
 
 static uint16_t
-pciesd_poll_interrupt_in_progress(const uint16_t want)
+pciesd_poll_interrupt_in_progress(const int port,
+                                  const uint16_t want)
 {
     const int maxpolls = 100;
     uint16_t inprog;
     int polls = 0;
 
     /* check once, if not done immediately then poll loop */
-    inprog = pal_reg_rd32(PP_(STA_PP_PCSD_INTERRUPT_IN_PROGRESS, 0));
+    inprog = pal_reg_rd32(PP_(STA_PP_PCSD_INTERRUPT_IN_PROGRESS, port));
     while (inprog != want && ++polls < maxpolls) {
         usleep(1000);
-        inprog = pal_reg_rd32(PP_(STA_PP_PCSD_INTERRUPT_IN_PROGRESS, 0));
+        inprog = pal_reg_rd32(PP_(STA_PP_PCSD_INTERRUPT_IN_PROGRESS, port));
     }
 
     if (inprog != want) {
@@ -63,7 +64,8 @@ pciesd_poll_interrupt_in_progress(const uint16_t want)
 }
 
 int
-pciesd_core_interrupt(const uint16_t lanemask,
+pciesd_core_interrupt(const int port,
+                      const uint16_t lanemask,
                       const uint16_t code,
                       const uint16_t data,
                       laneinfo_t *dataout)
@@ -76,32 +78,32 @@ pciesd_core_interrupt(const uint16_t lanemask,
         const uint16_t lanebit = 1 << i;
 
         if (lanemask & lanebit) {
-            pal_reg_wr32(pp_pcsd_interrupt_addr(i), codedata);
+            pal_reg_wr32(pp_pcsd_interrupt_addr(port, i), codedata);
         }
     }
 
     /* issue interrupt request */
-    pal_reg_wr32(PP_(CFG_PP_PCSD_INTERRUPT_REQUEST, 0), lanemask);
+    pal_reg_wr32(PP_(CFG_PP_PCSD_INTERRUPT_REQUEST, port), lanemask);
 
     /* wait for interrupt-in-progress */
-    inprog = pciesd_poll_interrupt_in_progress(lanemask);
+    inprog = pciesd_poll_interrupt_in_progress(port, lanemask);
     if (inprog != lanemask) {
         memset(dataout->w, 0xff, sizeof(dataout->w));
         return -1;
     }
 
     /* clear interrupt request */
-    pal_reg_wr32(PP_(CFG_PP_PCSD_INTERRUPT_REQUEST, 0), 0);
+    pal_reg_wr32(PP_(CFG_PP_PCSD_INTERRUPT_REQUEST, port), 0);
 
     /* wait for interrupt-complete */
-    inprog = pciesd_poll_interrupt_in_progress(0);
+    inprog = pciesd_poll_interrupt_in_progress(port, 0);
     if (inprog != 0) {
         memset(dataout->w, 0xff, sizeof(dataout->w));
         return -1;
     }
 
     /* read interrupt response data */
-    pal_reg_rd32w(PP_(STA_PP_PCSD_INTERRUPT_DATA_OUT, 0), dataout->w, 8);
+    pal_reg_rd32w(PP_(STA_PP_PCSD_INTERRUPT_DATA_OUT, port), dataout->w, 8);
 
     return 0;
 }
@@ -117,7 +119,8 @@ pcie_sta_pp_sd_core_status(laneinfo_t *li)
  * have the "ready" bit set.  See the Avago serdes documentation.
  */
 uint16_t
-pciesd_lanes_ready(const uint16_t lanemask)
+pciesd_lanes_ready(const int port,
+                   const uint16_t lanemask)
 {
     laneinfo_t st;
     uint16_t lanes_ready = 0;
@@ -136,14 +139,15 @@ pciesd_lanes_ready(const uint16_t lanemask)
 }
 
 static uint16_t
-pcieport_serdes_crc_check(const uint16_t lanemask)
+pcieport_serdes_crc_check(const int port,
+                          const uint16_t lanemask)
 {
     laneinfo_t result;
     uint16_t lanepass;
     int i, r;
 
     pciesys_sbus_lock();
-    r = pciesd_core_interrupt(lanemask, 0x3c, 0, &result);
+    r = pciesd_core_interrupt(port, lanemask, 0x3c, 0, &result);
     pciesys_sbus_unlock();
 
     if (r < 0) {
@@ -233,7 +237,7 @@ pcie_serdesfw_list(void)
 }
 
 int
-pcieportpd_serdes_init(void)
+pcieportpd_serdes_init(pcieport_t *p)
 {
     const char *s = getenv("PCIE_SERDESFW");
     const struct sbus_hdr {
@@ -275,7 +279,7 @@ pcieportpd_serdes_init(void)
     /* verify crc */
     if (r >= 0) {
         const uint16_t lanemask = 0xffff;
-        uint16_t lanepass = pcieport_serdes_crc_check(lanemask);
+        uint16_t lanepass = pcieport_serdes_crc_check(p->port, lanemask);
         if (lanepass != lanemask) {
             pciesys_logerror("serdes_init crc failed: "
                              "want 0x%04x got 0x%04x\n", lanemask, lanepass);
