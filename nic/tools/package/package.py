@@ -2,6 +2,7 @@ import os
 from subprocess import call
 import sys
 import argparse
+import re
 
 pwd          = os.getcwd()
 if 'ASIC' in os.environ:
@@ -64,6 +65,14 @@ parser.add_argument('--feature', dest='feature',
                      default=None,
                      choices=['ipsec'],
                      help='Feature (eg)ipsec')
+
+# packaging args
+parser.add_argument('--kvp', dest='kvp',
+                     default=None,
+                     help='comma separated list for substring replacement in packaging file.'
+                            'e.g. if --kvp $KEY1=VAL1,$KEY2=VAL2 is provided, $KEY1 and $KEY2 '
+                            'are replaced with VAL1 and VAL2')
+
 
 args = parser.parse_args()
 def process_files(files, arch, pipeline):
@@ -195,6 +204,46 @@ if args.dry_run == True:
 ###################################
 ##### Process packaging files #####
 ###################################
+# Parse key-value pairs 
+kvp = {}
+if args.kvp:
+    pairs = args.kvp.strip().split(',') 
+    for pair in pairs:
+        tokens = pair.split('=')
+        if len(tokens) != 2:   
+            raise Exception('Unable to parse kvp')
+        kvp[tokens[0]] = tokens[1]
+
+# substring replacement - instances of $KEY will be replaced with VAL
+'''
+KEY pattern search scans for any substring beginning with $ sign. Then, we put 
+following zero or more chars till we encounter any one of '/', '.', '_', 
+whitespace char (indicated by \s) or end-of-string (indicated by $) into a 
+group, which forms the KEY. The KEY string in $KEY should not contain any of 
+these terminating chars, o.w. only the initial part of the KEY would be 
+extracted and not the whole KEY. e.g. MFG-DIR or MFGDIR would be extracted 
+correctly but MFG_DIR would only return MFG. Also, '.', '_' are used a 
+terminating chars for KEY pattern match because they are used in cases like 
+libp4pd_$PIPELINE.so, libp4pd_$PIPELINE_rxdma.so etc.
+'''
+re_pattern = '\$(.*?)(?:[./_\s]|$)'
+
+# excl_keys don't fit into $KEY=VAL replacement model always
+# hence, ignore them during find and replace
+excl_keys = ['ASIC', 'ARCH', 'PIPELINE']
+
+def pkgfile_find_replace(inp_str):
+    mo = re.findall(re_pattern, inp_str)
+    keys = set(mo)      
+    for key in keys:
+        if key in excl_keys:
+            continue
+        # if key not present in kvp, replace with '' 
+        val = kvp.get(key, '')
+        inp_str = inp_str.replace("${}".format(key), val)
+
+    return inp_str
+
 
 # Process input files
 for input_file in files:
@@ -215,6 +264,10 @@ for input_file in files:
         items[0] = items[0].replace("$ARCH", arch)
         items[0] = items[0].replace("$PIPELINE", args.pipeline)
         items[1] = items[1].replace("$PIPELINE", args.pipeline)
+       
+        # $KEY=VAL substitution
+        items[0] = pkgfile_find_replace(items[0])
+        items[1] = pkgfile_find_replace(items[1])
 
         output_file = output_dir + '/' + items[1]
 

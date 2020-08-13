@@ -105,6 +105,11 @@ builds:
     owners: ["email:skittur@pensando.io"]
     artifacts:
       - /sw/naples_fw_all_athena.tgz
+  build-athena-arm-mfg:
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw && ls -al && make PIPELINE=athena CUSTOM_BUILDROOT=1 PKG_ARGS=\"--kvp MFG-DIR=mfg\" naples-firmware && make PIPELINE=athena naples-firmware-tarball-athena-mfg"]
+    owners: ["email:vignesh@pensando.io"]
+    artifacts:
+      - /sw/naples_fw_all_athena_mfg.tgz
   build-venice-image:
     commands: ["bash", "-c", "mkdir -p /sw/bin; cd /usr/src/github.com/pensando/sw/test/ci_targets/e2e-venice-image; GIT_VERSION=$(git describe --tags --dirty --always) GIT_COMMIT=$(git rev-list -1 HEAD --abbrev-commit) go run make-venice-image.go; sync; ls -al /sw/bin"]
     owners: ["email:jainvipin@pensando.io"]
