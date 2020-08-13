@@ -104,6 +104,7 @@
 /sw/nic/sdk/lib/bitmap
 /sw/nic/sdk/lib/bm_allocator
 /sw/nic/sdk/lib/catalog
+/sw/nic/sdk/lib/config
 /sw/nic/sdk/lib/dpdk
 /sw/nic/sdk/lib/dpdk/sim
 /sw/nic/sdk/lib/edma

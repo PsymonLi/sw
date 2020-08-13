@@ -37,6 +37,7 @@ nic/conf/serdes_68-0006.json                                      /nic/conf/
 nic/conf/serdes_68-0007.json                                      /nic/conf/
 
 nic/build/$ARCH/$PIPELINE/lib/libdevice.so                        /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libconfig.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/liblldp.so                          /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libvenice.so                        /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libp4pd_$PIPELINE.so                /nic/lib/
