@@ -406,6 +406,9 @@ ionic_lif_alloc(struct ionic *ionic, unsigned int index)
         lif->nrxqs = ionic->nrxqs_per_lif;
     }
 
+    NdisAllocateSpinLock(&lif->adminq_lock);
+    NdisAllocateSpinLock(&lif->rx_pool_lock);
+
     RtlInitializeBitMap(&lif->state, (PULONG)lif->state_buffer, LIF_STATE_SIZE);
     KeInitializeEvent(&lif->state_change, SynchronizationEvent, TRUE);
 
@@ -420,8 +423,6 @@ ionic_lif_alloc(struct ionic *ionic, unsigned int index)
     _snprintf_s(lif->name, LIF_NAME_MAX_SZ, sizeof(lif->name), "lif%u", index);
 
     strcpy_s(lif->lif_stats->lif_name, LIF_NAME_MAX_SZ, lif->name);
-
-    NdisAllocateSpinLock(&lif->adminq_lock);
 
     /* allocate lif info */
     lif->info_sz = ALIGN(sizeof(*lif->info), PAGE_SIZE);
@@ -1154,7 +1155,8 @@ ionic_lif_free(struct lif *lif)
     ionic->total_lif_count--;
     ionic->port_stats.lif_count--;
 
-    return;
+    NdisFreeSpinLock(&lif->rx_pool_lock);
+    NdisFreeSpinLock(&lif->adminq_lock);
 }
 
 NDIS_STATUS
