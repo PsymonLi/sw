@@ -567,6 +567,9 @@ func (node *esxHwNode) addHostEntity(in *iota.Node) error {
 				return err
 			}
 			node.entityMap.Store(node.esxHostEntityKey, iotaWorkload{workload: wload})
+			wDir := Common.DstIotaEntitiesDir + "/" + node.esxHostEntityKey
+			wload.SetBaseDir(wDir)
+			node.logger.Printf("Bringup success for entity: %v", node.esxHostEntityKey)
 
 			//Add Naples host too
 			wload = Workload.NewWorkload(Workload.WorkloadTypeBareMetal, entityEntry.GetName(), node.name, node.logger)
@@ -576,7 +579,7 @@ func (node *esxHwNode) addHostEntity(in *iota.Node) error {
 				//return err
 			}
 			node.entityMap.Store(node.hostEntityKey, iotaWorkload{workload: wload})
-			wDir := Common.DstIotaEntitiesDir + "/" + entityEntry.GetName()
+			wDir = Common.DstIotaEntitiesDir + "/" + entityEntry.GetName()
 			wload.SetBaseDir(wDir)
 		}
 	}

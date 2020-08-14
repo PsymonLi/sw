@@ -7,9 +7,13 @@ meta:
 testcases:
     -   name    : SaveReImageRestoreNodes
         testcase: testcases.iota.save_reimage_restore_test
+        enable  : False
+        ignore  : True
 
     -   name    : Ping_Local_Workloads
         testcase: testcases.networking.ping
+        enable  : False
+        ignore  : True
         stress  : True
         args    :
             type: local_only
@@ -18,3 +22,5 @@ testcases:
             pktsize : [ 64 ]
             ipaf    : [ ipv4 ]
 
+    -   name    : ESX_API
+        testcase: testcases.iota.esx_api

@@ -936,6 +936,12 @@ def Trigger_AddHostCommand(req, node_name, command,
     return Trigger_AddCommand(req, node_name, "%s_host" % node_name,
                               command, background, rundir, timeout)
 
+def Trigger_AddESXCommand(req, node_name, command,
+                          background = False, rundir = "",
+                          timeout = DEFAULT_COMMAND_TIMEOUT):
+    return Trigger_AddCommand(req, node_name, "%s_host_ESX" % node_name,
+                              command, background, rundir, timeout)
+
 def Trigger_AddNaplesCommand(req, node_name, command, naples = None,
                              background = False, rundir = "",
                              timeout = DEFAULT_COMMAND_TIMEOUT):
@@ -1136,6 +1142,22 @@ def CopyFromNaples(node_name, files, dest_dir, naples=None, via_oob=False):
 
 def CopyFromWorkload(node_name, workload_name, files, dest_dir):
     return __CopyCommon(topo_svc.DIR_OUT, node_name, workload_name, files, dest_dir)
+
+def CopyFromESX(node_name, files, dest_dir, esx_dir="/tmp"):
+    ret_resp = None
+    req = Trigger_CreateExecuteCommandsRequest()
+    for f in files:
+        copy_cmd = "sshpass -p %s scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no %s@%s:/%s ." % (
+                   GetTestbedEsxPassword(), GetTestbedEsxUsername(), GetEsxHostIpAddress(node_name), os.path.join(esx_dir, os.path.basename(f)))
+        Trigger_AddHostCommand(req, node_name, copy_cmd)
+    tresp = Trigger(req)
+    for cmd in tresp.commands:
+        if cmd.exit_code != 0:
+            Logger.error("Copy from ESX failed %s" % cmd.command)
+
+    files = [os.path.basename(f) for f in files]
+    ret_resp = __CopyCommon(topo_svc.DIR_OUT, node_name, "%s_host" % node_name, files, dest_dir)
+    return ret_resp
 
 def RestartNodes(nodes, restartMode='', useNcsi=False):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().RestartNodes(nodes,restartMode,useNcsi)
