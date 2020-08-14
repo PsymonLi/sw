@@ -55,7 +55,9 @@ main (int argc,  char **argv)
 		{ "devid", 		optional_argument, 	NULL, 'x'},
 		{ 0,       		0,                 	0,     0}
 	};
-
+#ifdef _WIN32
+	fprintf(stdout, "%s Ver.: %s\n", argv[0], ionic_get_dll_ver());
+#endif
 	while ((error = getopt_long(argc, argv, "c:d:hl:m:p:u:v:x:", longopts, NULL)) != -1) {
 		switch (error) {
 		case 'd':

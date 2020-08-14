@@ -18,6 +18,18 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <PropertyGroup>
+    <PenutilVerExt>Dev</PenutilVerExt>
+    <PenutilVerExt Condition="'$(PENUTIL_VERSION_EXT)' != ''">$(PENUTIL_VERSION_EXT)</PenutilVerExt>
+    <PenutilVerMaj>1</PenutilVerMaj>
+    <PenutilVerMaj Condition="'$(PENUTIL_VERSION_MAJOR)' != ''">$(PENUTIL_VERSION_MAJOR)</PenutilVerMaj>
+    <PenutilVerMin>0</PenutilVerMin>
+    <PenutilVerMin Condition="'$(PENUTIL_VERSION_MINOR)' != ''">$(PENUTIL_VERSION_MINOR)</PenutilVerMin>
+    <PenutilVerSP>0</PenutilVerSP>
+    <PenutilVerSP Condition="'$(PENUTIL_VERSION_SP)' != ''">$(PENUTIL_VERSION_SP)</PenutilVerSP>
+    <PenutilVerBuild>0</PenutilVerBuild>
+    <PenutilVerBuild Condition="'$(PENUTIL_VERSION_BUILD)' != ''">$(PENUTIL_VERSION_BUILD)</PenutilVerBuild>
+  </PropertyGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{A3754785-4154-457E-B666-C53D0EE71917}</ProjectGuid>
@@ -87,7 +99,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PENUTIL_VERSIONINFO_EXTENSION=$(PenutilVerExt);PENUTIL_MAJOR_VERSION=$(PenutilVerMaj);PENUTIL_MINOR_VERSION=$(PenutilVerMin);PENUTIL_SP_VERSION=$(PenutilVerSP);PENUTIL_BUILD_VERSION=$(PenutilVerBuild);_CRT_SECURE_NO_WARNINGS;_DEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -101,13 +113,16 @@
       <ModuleDefinitionFile>penutil_windll.def</ModuleDefinitionFile>
       <AdditionalDependencies>libxml2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>PENUTIL_VERSIONINFO_EXTENSION=$(PenutilVerExt);PENUTIL_MAJOR_VERSION=$(PenutilVerMaj);PENUTIL_MINOR_VERSION=$(PenutilVerMin);PENUTIL_SP_VERSION=$(PenutilVerSP);PENUTIL_BUILD_VERSION=$(PenutilVerBuild);_CRT_SECURE_NO_WARNINGS;_DEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PENUTIL_VERSIONINFO_EXTENSION=$(PenutilVerExt);PENUTIL_MAJOR_VERSION=$(PenutilVerMaj);PENUTIL_MINOR_VERSION=$(PenutilVerMin);PENUTIL_SP_VERSION=$(PenutilVerSP);PENUTIL_BUILD_VERSION=$(PenutilVerBuild);_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -121,6 +136,9 @@
       <ModuleDefinitionFile>penutil_windll.def</ModuleDefinitionFile>
       <AdditionalDependencies>libxml2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>PENUTIL_VERSIONINFO_EXTENSION=$(PenutilVerExt);PENUTIL_MAJOR_VERSION=$(PenutilVerMaj);PENUTIL_MINOR_VERSION=$(PenutilVerMin);PENUTIL_SP_VERSION=$(PenutilVerSP);PENUTIL_BUILD_VERSION=$(PenutilVerBuild);_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -129,7 +147,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PENUTIL_VERSIONINFO_EXTENSION=$(PenutilVerExt);PENUTIL_MAJOR_VERSION=$(PenutilVerMaj);PENUTIL_MINOR_VERSION=$(PenutilVerMin);PENUTIL_SP_VERSION=$(PenutilVerSP);PENUTIL_BUILD_VERSION=$(PenutilVerBuild);_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -146,6 +164,9 @@
       <ModuleDefinitionFile>penutil_windll.def</ModuleDefinitionFile>
       <AdditionalDependencies>libxml2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>PENUTIL_VERSIONINFO_EXTENSION=$(PenutilVerExt);PENUTIL_MAJOR_VERSION=$(PenutilVerMaj);PENUTIL_MINOR_VERSION=$(PenutilVerMin);PENUTIL_SP_VERSION=$(PenutilVerSP);PENUTIL_BUILD_VERSION=$(PenutilVerBuild);_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -154,7 +175,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PENUTIL_VERSIONINFO_EXTENSION=$(PenutilVerExt);PENUTIL_MAJOR_VERSION=$(PenutilVerMaj);PENUTIL_MINOR_VERSION=$(PenutilVerMin);PENUTIL_SP_VERSION=$(PenutilVerSP);PENUTIL_BUILD_VERSION=$(PenutilVerBuild);_CRT_SECURE_NO_WARNINGS;NDEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -171,6 +192,9 @@
       <ModuleDefinitionFile>penutil_windll.def</ModuleDefinitionFile>
       <AdditionalDependencies>libxml2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>PENUTIL_VERSIONINFO_EXTENSION=$(PenutilVerExt);PENUTIL_MAJOR_VERSION=$(PenutilVerMaj);PENUTIL_MINOR_VERSION=$(PenutilVerMin);PENUTIL_SP_VERSION=$(PenutilVerSP);PENUTIL_BUILD_VERSION=$(PenutilVerBuild);_CRT_SECURE_NO_WARNINGS;NDEBUG;PENUTILWINDLL_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\ionic_discovery.h" />
@@ -179,6 +203,7 @@
     <ClInclude Include="..\ionic_spp.h" />
     <ClInclude Include="..\ionic_spp_util.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ionic_discovery.c" />
@@ -191,6 +216,9 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="penutil_windll.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="penutil_windll.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

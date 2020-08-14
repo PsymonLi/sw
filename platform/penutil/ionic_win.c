@@ -127,7 +127,7 @@ ULONG DumpAdapterInfo(FILE* fstream, void* info_buffer, ULONG Size, struct ionic
         adapter->subVenId = info->sub_vendor_id;
         adapter->subDevId = info->sub_system_id;
         snprintf(adapter->asicType, sizeof(adapter->asicType), "%s", GetAsicTypeStr(info->asic_type));
-        snprintf(adapter->macAddr, sizeof(adapter->macAddr), "%02X-%02X-%02X-%02X-%02X-%02X", info->config_mac_addr[0], info->config_mac_addr[1], info->config_mac_addr[2], info->config_mac_addr[3], info->config_mac_addr[4], info->config_mac_addr[5]);
+        snprintf(adapter->macAddr, sizeof(adapter->macAddr), "%02X-%02X-%02X-%02X-%02X-%02X", info->perm_mac_addr[0], info->perm_mac_addr[1], info->perm_mac_addr[2], info->perm_mac_addr[3], info->perm_mac_addr[4], info->perm_mac_addr[5]);
 
         snprintf(adapter->intfName, sizeof(adapter->intfName), "%S", info->name);
         snprintf(adapter->curFwVer, sizeof(adapter->curFwVer), "%s", info->fw_version);

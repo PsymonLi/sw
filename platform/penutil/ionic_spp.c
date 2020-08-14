@@ -92,6 +92,12 @@ oem_text_for_error_code(uint32_t err_code)
 	}
 }
 
+#ifdef _WIN32
+#define DEFAULT_LOG_FILE	"pnso_dsc.log"
+#else
+#define DEFAULT_LOG_FILE	"/var/cpq/pnso_dsc.log"
+#endif
+
 static FILE *
 ionic_open_log_file(void)
 {
@@ -101,7 +107,7 @@ ionic_open_log_file(void)
 	 * In case log file is not provided, create our own file.
 	 */
 	if (oem_log_file[0] == 0)
-		snprintf(oem_log_file, sizeof(oem_log_file), "/var/cpq/pnso_dsc.log");
+		snprintf(oem_log_file, sizeof(oem_log_file), DEFAULT_LOG_FILE);
 	fstream = fopen(oem_log_file, "a");
 	if (fstream == NULL) {
 		ionic_print_error(stderr, "all", "failed to open log file" PRIxHS ", error: " PRIxHS "\n",

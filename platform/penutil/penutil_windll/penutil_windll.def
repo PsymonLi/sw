@@ -8,6 +8,7 @@ EXPORTS
     oem_get_debug_info
     oem_get_full_flash_dump_PCI
     oem_do_discovery_with_files
+    ionic_get_dll_ver
     ionic_test_discovery
     ionic_test_update
     ionic_test_multi_update

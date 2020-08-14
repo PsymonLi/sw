@@ -202,6 +202,10 @@ __stdcall
 #endif
 oem_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType firmware_type,uint16_t domain, uint8_t bus, uint8_t dev, uint8_t func);
 
+#ifdef _WIN32
+const char* __stdcall ionic_get_dll_ver();
+#endif
+
 #ifdef __cplusplus
 }
 #endif
