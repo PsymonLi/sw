@@ -11,7 +11,7 @@
       },
       "capture": {
         "key-data": true,
-        "instructions": true
+        "instructions": false
       },
       "settings": {
         "trace-size": "8192",

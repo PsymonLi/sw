@@ -1,23 +1,23 @@
 {
   "instances": [
     {
-      "pipeline": ".*dma",
+      "pipeline": "sxdma",
       "stage": ".*",
       "mpu": ".*",
       "control": {
-        "trace": false,
-        "phv-debug": false,
-        "phv-error": false
+        "trace": true,
+        "phv-debug": true,
+        "phv-error": true
       },
       "capture": {
         "key-data": true,
         "instructions": false
       },
       "settings": {
-        "trace-size": "4096",
+        "trace-size": "8192",
         "wrap": true
       },
-      "description": "this enables for all mpus in all stages in txdma, rxdma and sxdma pipelines"
+      "description": "this enables tracing for all mpus in all stages in sxdma pipeline"
     }
   ]
 }

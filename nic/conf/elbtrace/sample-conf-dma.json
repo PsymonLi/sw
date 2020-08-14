@@ -1,0 +1,34 @@
+{
+  "instances": [
+    {
+      "pipeline": "txdma",
+      "control": {
+        "trace": true,
+        "phv_enable": false,
+        "capture_all": true,
+        "axi_err_enable": false,
+        "pkt_phv_sync_err_enable": false
+      },
+      "settings": {
+        "trace-size": "8192",
+        "wrap": 1
+      },
+      "description": "this enables for txdma pipeline, PTD with the specified options"
+    },
+    {
+      "pipeline": "rxdma",
+      "control": {
+        "trace": true,
+        "phv_enable": false,
+        "capture_all": true,
+        "axi_err_enable": false,
+        "pkt_phv_sync_err_enable": false
+      },
+      "settings": {
+        "trace-size": "8192",
+        "wrap": 1
+      },
+      "description": "this enables for rxdma pipeline, PRD with the specified options"
+    }
+  ]
+}

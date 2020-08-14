@@ -108,19 +108,19 @@ prd_read_counters (int verbose)
     int fc_axi_wr_nordy, fc_axi_rd_nordy;
     uint64_t  axi_rd_req, axi_wr_req;
     // AXI fc
-    pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET +
+    pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET + ELB_PR_CSR_PRD_BYTE_ADDRESS +
 		  ELB_PRD_CSR_CNT_FC_AXI_WR_BYTE_ADDRESS,
 		  &fc_axi_wr, 1);
     fc_axi_wr_nordy = ELB_PRD_CSR_CNT_FC_AXI_WR_NO_READY_GET(fc_axi_wr);
-    pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET +
+    pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET + ELB_PR_CSR_PRD_BYTE_ADDRESS +
 		  ELB_PRD_CSR_CNT_FC_AXI_RD_BYTE_ADDRESS,
 		  &fc_axi_rd, 1);
     fc_axi_rd_nordy = ELB_PRD_CSR_CNT_FC_AXI_RD_NO_READY_GET(fc_axi_rd);
     // AXI req
-    pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET +
+    pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET + ELB_PR_CSR_PRD_BYTE_ADDRESS +
 		  ELB_PRD_CSR_CNT_AXI_RD_REQ_BYTE_ADDRESS,
 		  (uint32_t *)&axi_rd_req, 2);
-    pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET +
+    pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET + ELB_PR_CSR_PRD_BYTE_ADDRESS +
 		  ELB_PRD_CSR_CNT_AXI_WR_REQ_BYTE_ADDRESS,
 		  (uint32_t *)&axi_wr_req, 2);
 
@@ -195,7 +195,7 @@ prd_read_counters (int verbose)
         pkt_ff_depth +=
             ELB_PRD_CSR_STA_XOFF_STA_XOFF_2_3_PKT_FF_DEPTH_GET(cnt[2]);
 	// FIFO depths:
-	pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET +
+	pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET + ELB_PR_CSR_PRD_BYTE_ADDRESS +
 		      ELB_PRD_CSR_STA_FIFO_FLDS_BYTE_ADDRESS,
 		      sta_fifo_depth, 5);
 	lat_ff_depth    += ELB_PRD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_5_WR_LAT_FF_DEPTH_GET(sta_fifo_depth[0]);
@@ -203,7 +203,7 @@ prd_read_counters (int verbose)
 	dfence_ff_depth += ELB_PRD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_1_5_DFENCE_FF_DEPTH_GET(sta_fifo_depth[1]);
 	ffence_ff_depth += ELB_PRD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_1_5_FFENCE_FF_DEPTH_GET(sta_fifo_depth[1]);
 	// FlowControl:
-	pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET +
+	pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET + ELB_PR_CSR_PRD_BYTE_ADDRESS +
 		      ELB_PRD_CSR_STA_FC_BYTE_ADDRESS,
 		      &sta_fc, 1);
 	ma_srdy += ELB_PRD_CSR_STA_FC_MA_SRDY_GET(sta_fc);
@@ -214,7 +214,7 @@ prd_read_counters (int verbose)
 	//txs_drdy += ELB_PRD_CSR_STA_FC_PRD_TXS_FEEDBACK_DRDY_GET(sta_fc);
         npv_full += ELB_PRD_CSR_STA_FC_PRD_PSP_PHV_FULL_GET(sta_fc);
 	// pending IDs
-	pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET +
+	pal_reg_rd32w(ELB_ADDR_BASE_PR_PR_OFFSET + ELB_PR_CSR_PRD_BYTE_ADDRESS +
 		      ELB_PRD_CSR_STA_ID_STA_ID_0_3_BYTE_ADDRESS,
 		      sta_id, 2);
 	pend_rsc += ELB_PRD_CSR_STA_ID_STA_ID_0_3_RD_PEND_RSRC_CNT_GET(sta_id[0]);

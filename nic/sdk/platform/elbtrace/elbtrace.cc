@@ -44,6 +44,10 @@ usage (char *argv[])
               << "elbtrace is a tool to enable tracing on Match Processing Unit (MPU), \n"
               <<" SDP and DMA using the independent trace facility provided by the ASIC.\n\n"
               << "elbtrace supports following commands: \n"
+              << "    conf     <cfg_file>   Enables tracing for MPUs specified by file\n"
+              << "    dump     <out_file>   Collects trace logs for MPU in specified binary file\n"
+              << "    show                  Displays the content of trace register for enabled MPUs\n"
+              << "    reset                 Clears the contents of trace registers of all the MPUs and "
               << "    conf_mpu <cfg_file>   Enables tracing for MPUs specified by file\n"
               << "    dump_mpu <out_file>   Collects trace logs for MPU in specified binary file\n"
               << "    show_mpu              Displays the content of trace register for enabled MPUs\n"
@@ -128,6 +132,10 @@ elbtrace_handle_options (int argc, char *argv[])
     int ret = 0;
     string oper_str = std::string((const char *)argv[1]);
     std::map<std::string, int> oper = {
+        {"conf", MPUTRACE_CONFIG},
+        {"dump", MPUTRACE_DUMP},
+        {"reset", MPUTRACE_RESET},
+        {"show", MPUTRACE_SHOW},
         {"conf_mpu", MPUTRACE_CONFIG},
         {"dump_mpu", MPUTRACE_DUMP},
         {"reset_mpu", MPUTRACE_RESET},

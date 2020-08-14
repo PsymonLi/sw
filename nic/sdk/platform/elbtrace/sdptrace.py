@@ -4,7 +4,7 @@ from pprint import pformat
 import os.path
 from enum import Enum
 from collections import defaultdict
-from common import get_bits, get_bit
+from common import get_bits, get_bit, reverse_bytes
 
 ###################
 ##### SDP Trace 
@@ -222,7 +222,6 @@ def decode_sdp_trace_file(bytez, sort_type, print_type):
 
     sdp_trace = defaultdict(list)
         
-    #Create 2 fhdr for PRD and PTD. Each fhdr has a list of trace_dict_entries    
     while s < len(bytez):
         if (len(bytez) - s) < sizeof(SdpTraceFileHeader):
             break
@@ -254,7 +253,6 @@ def decode_sdp_trace_file(bytez, sort_type, print_type):
         sdp_trace = decode_rings(b_ctl, b_phv, fhdr, sort_type, sdp_trace, print_type)
         #print_trace(sdp_trace)
         
-
     #print_trace(sdp_trace)
     return sdp_trace
     
@@ -287,9 +285,9 @@ def decode_rings(ctl, phv, fhdr, sort_type, sdp_trace, print_type):
     #assert (isinstance(ctl, bytes))
     s = 0
     k = 0
-    if print_type:
-        print_fhdr(fhdr)
     pipeline = fhdr.pipeline_num
+    if print_type:
+        print_fhdr(pipeline, fhdr)
     #print(" ")
     
     #print ("len of ctl {}".format(len(ctl)))
@@ -302,13 +300,17 @@ def decode_rings(ctl, phv, fhdr, sort_type, sdp_trace, print_type):
 
     pipeline_num = fhdr.pipeline_num
     stage_num = fhdr.stage_num
+    
+    full_list = []
 
     while s < len(ctl):
 
         Cinfo = SdpCtlHeader.from_buffer_copy(ctl[s: s + sizeof(SdpCtlHeader)])
+        Cbytes = int.from_bytes(ctl[s: s + sizeof(SdpCtlHeader)], byteorder='big')
         s += sizeof(SdpCtlHeader)
 
         entryDict = {}
+        entryDict["cinfo"] = Cbytes
         for fld in (Cinfo._fields_):
             if not fld[0].startswith('_'):
                 #print("{:50} {:#x}".format(fld[0], getattr(Cinfo, fld[0])))
@@ -364,29 +366,46 @@ def decode_rings(ctl, phv, fhdr, sort_type, sdp_trace, print_type):
         #sdp_trace[timestamp].append((pipeline_num, stage_num, sdp_phv))
         sdp_trace[timestamp].append((jkDict))
         #sdp_trace[1918281453].append((jkDict))
-
+        
+        #print("k--")
+        #print(k)
+        jk = k
         for i in range(num_phv_lines):
-           Pdata = phv[k: k + 64]
+           Pdata = phv[jk: jk + 64]
            #print(int.from_bytes(Pdata, byteorder='big'))
            fld_name = "phv_line" + p_list[i]
            #print(fld_name)
            entryDict[fld_name] = int.from_bytes(Pdata, byteorder='big')
+           jk += 64
            
-        if not sort_type:
-            sortedList = entryDict
-        else:
-            sortedList = sorted(entryDict, key=lambda x: x[sort_type])
+        #if not sort_type:
+        #    sortedList = entryDict
+        #else:
+        #    sortedList = entryDict
+            #print("sort_type")
+            #print(sort_type)
+            #print(entryDict)
+            #sortedList = sorted(entryDict, key=lambda x: x[sort_type])
 
-        if print_type:
-            print_phv(sortedList, Cinfo)
+        #if print_type:
+        #    print_phv(sortedList)
 
         k += Cinfo.phv_len * 64
         #print ("jumping k to {}".format(k))
+        full_list.append(entryDict)
 
     #print("mpuDict")
     #for key in (mpuDict):
         #print("{:50} {:#x}".format(key, mpuDict[key]))
     
+    if not sort_type:    
+        sortedList = full_list
+    else:
+        sortedList = sorted(full_list, key=lambda x: x[sort_type])
+    if print_type:
+        for s in sortedList:
+            print_phv(s)
+
     return sdp_trace
     
 def rotate(l, n):
@@ -404,15 +423,15 @@ def filter_rings(ctl, phv, ctl_ptr, phv_ptr):
 
     while s < len(ctl):
         Cdata = ctl[s: s + 64]
-        ctl_list.append(int.from_bytes(Cdata, byteorder='big'))
+        ctl_list.append(int.from_bytes(Cdata, byteorder='little'))
         s += 64
-        #print("\n>>> Cdata : 0x{:0128x}\n".format(int.from_bytes(Cdata, byteorder='big')))
+        #print("\n>>> Cdata : 0x{:0128x}\n".format(int.from_bytes(Cdata, byteorder='little')))
 
     while k < len(phv):
         Pdata = phv[k: k + 64]
-        phv_list.append(int.from_bytes(Pdata, byteorder='big'))
+        phv_list.append(int.from_bytes(Pdata, byteorder='little'))
         k += 64
-        #print("\n>>> Pdata : 0x{:0128x}\n".format(int.from_bytes(Pdata, byteorder='big')))
+        #print("\n>>> Pdata : 0x{:0128x}\n".format(int.from_bytes(Pdata, byteorder='little')))
 
     #print("length of ctl_list is {}".format(len(ctl_list)))
     #print("length of phv_list is {}".format(len(phv_list)))
@@ -422,16 +441,21 @@ def filter_rings(ctl, phv, ctl_ptr, phv_ptr):
     r_ctl_list = rotate(ctl_list, ctl_ptr)
     r_phv_list = rotate(phv_list, phv_ptr)
 
-    magic = 0x100102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
+    # SDP doesn't swizzle bytes when writing on AXI bus. So swizzle the init_val here to compensate for it
+    init_val = reverse_bytes(0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f) << 8
+    #print("init_val")
+    #print(hex(init_val))
     f_ctl_list = []
     for s in r_ctl_list:
-        if not (s == magic):
+        if not (s == init_val):
             f_ctl_list.append(s)
+            #print("\n>>> Cdata_rotated : 0x{:0128x}\n".format(s))
 
     f_phv_list = []
     for s in r_phv_list:
-        if not (s == magic):
+        if not (s == init_val):
             f_phv_list.append(s)
+            #print("\n>>> Pdata_rotated : 0x{:0128x}\n".format(s))
 
     if (len(f_ctl_list) == 0):
         print("Control buffer is empty")
@@ -452,6 +476,7 @@ def list_to_bytes (c_list, p_list):
     for i in range(c_len):
         c_bytes += c_list[i].to_bytes(64, 'big')
 
+    #print("c_bytes")
     #print(hex(int.from_bytes(c_bytes, byteorder='big') ) )
 
     p_bytes = bytearray()
@@ -459,6 +484,7 @@ def list_to_bytes (c_list, p_list):
     for i in range(p_len):
         p_bytes += p_list[i].to_bytes(64, 'big')
 
+    #print("p_bytes")
     #print(hex(int.from_bytes(p_bytes, byteorder='big') ) )
 
     return (c_bytes, p_bytes)
@@ -474,8 +500,10 @@ def check_ctl_phv_len (ctl, phv):
         phv_len += Cinfo.phv_len
         s += sizeof(SdpCtlHeader)
         
+    #print("ctl_len")
     #print(phv_len)
     phv_size = len(phv) / 64
+    #print("phv_size")
     #print(phv_size)
     assert phv_size >= phv_len, "PHV buffer size and Control ring size valid entries mismatch"
 
@@ -483,7 +511,7 @@ def check_ctl_phv_len (ctl, phv):
 
 
 
-def print_fhdr(fhdr):
+def print_fhdr(pipeline, fhdr):
 
     #print ("\n Size of SDP TraceFileHeader is {}".format(sizeof(SdpTraceFileHeader) ) )
     print("\n>>> SDP Trace HDR : 0x{:0128x}\n".format(int.from_bytes(fhdr, byteorder='big')))
@@ -496,6 +524,7 @@ def print_fhdr(fhdr):
                 if fld[0].endswith('_7'):
                     k = fld[0].split('_7')
                     print("\n{}: \n 0x{:0128x}".format(k[0], trigger_val))
+                    print_intrinsic(pipeline, trigger_val)
                     trigger_val = 0
             elif fld[0].startswith('pipeline'):
                 #print pipeline as RXDMA/TXDMA instead of 2/3
@@ -506,20 +535,21 @@ def print_fhdr(fhdr):
     return
 
 
-def print_phv(sortedList, Cinfo):
-
-    print("\n>>> SDP ctl ring data : 0x{:0128x}\n".format(int.from_bytes(Cinfo, byteorder='big')))
+def print_phv(sortedList):
 
     for key in (sortedList):
         
         if key.startswith('full_phv'):
             print(" ")
+        elif key.startswith('cinfo'):
+            print("\n>>> SDP ctl ring data : 0x{:0128x}\n".format(sortedList[key]))
         elif key.startswith('phv_line'):
             if key.startswith('phv_line0'):
                 print(" ")
                 print("PHV (64B in each flit including SOP intrinsic):")
                 print("===============================================")
             print("0x{:0128x}".format(sortedList[key]))
+            #print("{:50} 0x{:0128x}".format(key, sortedList[key]))
         else:
             if key.startswith('tm_iport'):
                 print(" ")
@@ -554,4 +584,54 @@ def print_trace(sdp_trace):
                 #print("phv")
                 #print(sdp_phv)
 
+    return
+
+def print_intrinsic(pipeline, phv_sop_flit):
+
+    #print("\n VAL: \n 0x{:0128x}".format(phv_sop_flit))
+    #num_str = "{0:b}".format(phv_sop_flit)
+    #print("\n size: \n {}".format(len(num_str)))
+
+    #a = 1 << 511 | phv_sop_flit
+    #a = phv_sop_flit
+    #num_str = "{0:b}".format(a)
+    #print("\n size: \n {}".format(len(num_str)))
+    #b = get_bits(phv_sop_flit,0,135)
+    #print(b)
+    
+    c_bytes = bytearray()
+    c_bytes += phv_sop_flit.to_bytes(64, 'big')
+    #print(c_bytes)
+    
+    k = 0
+    Ginfo = IntGlobalHeader.from_buffer_copy(c_bytes[k: k + sizeof(IntGlobalHeader)])
+    k += sizeof(IntGlobalHeader)
+    #print(Ginfo)
+    if pipeline is PIPELINE.TXDMA_PCT.value:
+        #print("pipeline is TX")
+        Pinfo = IntTxHeader.from_buffer_copy(c_bytes[k: k + sizeof(IntTxHeader)])
+    elif pipeline is PIPELINE.RXDMA_PCR.value:
+        #print("pipeline is RX")
+        Pinfo = IntRxHeader.from_buffer_copy(c_bytes[k: k + sizeof(IntRxHeader)])
+    else:
+        #print("pipeline is P4")
+        Pinfo = IntP4Header.from_buffer_copy(c_bytes[k: k + sizeof(IntP4Header)])
+
+    for fld in (Ginfo._fields_):
+        if not fld[0].startswith('_'):
+            if not (getattr(Ginfo, fld[0]) == 0):
+                print("{:50} {:#x}".format(fld[0], getattr(Ginfo, fld[0])))
+
+    for fld in (Pinfo._fields_):
+        if not fld[0].startswith('_'):
+            if not fld[0].startswith('a__'):
+                if not (getattr(Pinfo, fld[0]) == 0):
+                    print("{:50} {:#x}".format(fld[0], getattr(Pinfo, fld[0])))
+                    print("test")
+            else:    
+                q = fld[0].split('__')
+                tt = getattr(Pinfo, fld[0])
+                if not (int.from_bytes(tt, byteorder='big') == 0):
+                    print("{:50} {:#x}".format(q[1], int.from_bytes(tt, byteorder='big') ) )
+                    
     return

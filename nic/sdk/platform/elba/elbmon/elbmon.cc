@@ -17,6 +17,7 @@
 #include <time.h>
 #include <inttypes.h>
 #include "elb_txs_sw_api.h"
+#include "elb_pics_sw_api.h"
 
 asic_data_t *asic = NULL;
 
@@ -159,6 +160,7 @@ elbmon_mpu_display_fn (void *ptr)
 
         ELBMON_REPORT(" mpu %d cycles=%u", mpu->index, cycles);
         ELBMON_REPORT(" inst=%u", mpu->inst_executed);
+        ELBMON_REPORT(" CPI=%2.2f", ((float) cycles / (float) mpu->inst_executed));
         ELBMON_REPORT(" imiss=%u", mpu->icache_miss);
         ELBMON_REPORT(" ihit=%u", mpu->icache_hit);
         ELBMON_REPORT(" dmiss=%u", mpu->dcache_miss);
@@ -166,44 +168,34 @@ elbmon_mpu_display_fn (void *ptr)
         ELBMON_REPORT(" phv=%u", mpu->phv_executed);
         ELBMON_REPORT(" phvwr_stl=%u", mpu->phvwr_stall);
         ELBMON_REPORT(" st_stl=%u", mpu->st_stall);
-        ELBMON_REPORT(" inst_per_prog=%u", mpu->inst_per_phv);
+        ELBMON_REPORT(" inst_per_prog=%u\n", mpu->inst_per_phv);
 
-        cycles = cycles == 0 ? 1 : cycles;
-        ELBMON_REPORT(" mpu %u percentages", mpu->index);
-        ELBMON_REPORT(" inst=%u%%", (mpu->inst_executed * 100) / cycles);
-	ELBMON_REPORT(" imiss=%u%%", (mpu->icache_miss * 100) / cycles);
-	ELBMON_REPORT(" ihit=%u%%", (mpu->icache_hit * 100) / cycles);
-	ELBMON_REPORT(" dmiss=%u%%", (mpu->dcache_miss * 100) / cycles);
-	ELBMON_REPORT(" dhit=%u%%", (mpu->dcache_hit * 100) / cycles);
-        ELBMON_REPORT(" phv=%u%%", (mpu->phv_executed * 100) / cycles);
-        ELBMON_REPORT(" phvwr_stl=%u%%", (mpu->phvwr_stall * 100) / cycles);
-        ELBMON_REPORT(" st_stl=%u%%", (mpu->st_stall * 100) / cycles);
         ELBMON_REPORT(" mpu %u table address = 0x%lx", mpu->index,
                       mpu->addr);
-        ELBMON_REPORT(" last PC byte addr = 0x%lx\n", mpu->last_pc << 3);
+        ELBMON_REPORT(" last PC byte addr = 0x%lx ", mpu->last_pc << 3);
         ELBMON_REPORT(" last icache miss addr = 0x%lx,", mpu->icache_miss_address);
         ELBMON_REPORT(" fill latency = %d\n", mpu->icache_miss_latency);
 
-	if(mpu->last_exception_code !=0) {
-	  ELBMON_REPORT(" held excepetion code=%hhd ", mpu->last_exception_code);
-	  switch(mpu->last_exception_code) {
-	  case 1: ELBMON_REPORT("ILLEGAL_OPCODE");
-	  case 2: ELBMON_REPORT("MPU_INST_RESP_ERR");
-	  case 3: ELBMON_REPORT("MPU_DATA_RESP_ERR");
-	  case 4: ELBMON_REPORT("MPU_TABLE_ERR");
-	  case 5: ELBMON_REPORT("MPU_MAX_INST_ERR");
-	  case 6: ELBMON_REPORT("MPU_LD_ALIGN");
-	  case 7: ELBMON_REPORT("MPU_SP_ACCESS");
-	  case 8: ELBMON_REPORT("MPU_PHV_LD_FLUSHED");
-	  case 9: ELBMON_REPORT("MPU_DIV0MPU_DIV0");
-	  case 10: ELBMON_REPORT("MPU_PHV_ERR");
-	  case 11: ELBMON_REPORT("MPU_WATCH_PC_HIT");
-	  case 12: ELBMON_REPORT("MPU_WATCH_DATA_HIT");
-	  case 13: ELBMON_REPORT("MPU_STGLOCK_TIMEOUT");
-	  }
-	  ELBMON_REPORT(" held excepetion pc=0x%lx\n", mpu->last_exception_pc);
-	  ELBMON_REPORT(" current excepetion level=%hhd\n", mpu->exception_level);
-	}
+        if(mpu->last_exception_code !=0) {
+            ELBMON_REPORT(" held excepetion code=%hhd ", mpu->last_exception_code);
+            switch(mpu->last_exception_code) {
+            case 1: ELBMON_REPORT("ILLEGAL_OPCODE"); break;
+            case 2: ELBMON_REPORT("MPU_INST_RESP_ERR"); break;
+            case 3: ELBMON_REPORT("MPU_DATA_RESP_ERR"); break;
+            case 4: ELBMON_REPORT("MPU_TABLE_ERR"); break;
+            case 5: ELBMON_REPORT("MPU_MAX_INST_ERR"); break;
+            case 6: ELBMON_REPORT("MPU_LD_ALIGN"); break;
+            case 7: ELBMON_REPORT("MPU_SP_ACCESS"); break;
+            case 8: ELBMON_REPORT("MPU_PHV_LD_FLUSHED"); break;
+            case 9: ELBMON_REPORT("MPU_DIV0"); break;
+            case 10: ELBMON_REPORT("MPU_PHV_ERR"); break;
+            case 11: ELBMON_REPORT("MPU_WATCH_PC_HIT"); break;
+            case 12: ELBMON_REPORT("MPU_WATCH_DATA_HIT"); break;
+            case 13: ELBMON_REPORT("MPU_STGLOCK_TIMEOUT"); break;
+            }
+            ELBMON_REPORT(" held excepetion pc=0x%lx ", mpu->last_exception_pc);
+            ELBMON_REPORT(" current excepetion level=%hhd\n", mpu->exception_level);
+        }
     }
 }
 
@@ -222,9 +214,12 @@ static inline void
 elbmon_stage_mpu_basic_display (stage_t *stage)
 {
     mpu_t *mpu = NULL;
+    if (verbose) {	  
+      ELBMON_REPORT("\n");
+    }
     for (int i = 0; i < MPU_COUNT; i++) {
         mpu = &stage->mpus[i];
-        if (verbose) {
+        if (verbose) {	  
             ELBMON_REPORT("  mpu %u  processing %2d%%, stalls: "
                           "phvwr %2d%% icache_miss %2d%%\n",
                           mpu->index, mpu->processing_pc,
@@ -250,15 +245,15 @@ elbmon_stage_phv_display (stage_t *stage)
         ELBMON_REPORT("  sdp PHV processed count=%u\n",
                       stage->phv_processed_count);
 
-	if(stage->te_axi_err_resp != 0) {
-	  ELBMON_REPORT("  TE ERROR REPONSE = %hd for ID=%d; req_addr=0x%ld req_id=%hd, req_len=%hd, req_sz=%hd\n",
-			stage->te_axi_err_resp,
-			stage->te_axi_err_id,
-			stage->te_bad_addr,
-			stage->te_bad_id,
-			stage->te_bad_len,
-			stage->te_bad_sz);
-	}
+        if(stage->te_axi_err_resp != 0) {
+            ELBMON_REPORT("  TE ERROR REPONSE = %hd for ID=%d; req_addr=0x%ld req_id=%hd, req_len=%hd, req_sz=%hd\n",
+                          stage->te_axi_err_resp,
+                          stage->te_axi_err_id,
+                          stage->te_bad_addr,
+                          stage->te_bad_id,
+                          stage->te_bad_len,
+                          stage->te_bad_sz);
+        }
     }
 }
 
@@ -271,10 +266,10 @@ elbmon_stage_display (stage_t *stage)
         ELBMON_REPORT("\n");
     }
     ELBMON_REPORT(" (util/xoff/idle) in=%3d/%3d/%3d "
-                  "out=%3d/%3d/%3d TE=%2u",
+                  "out=%3d/%3d/%3d TE=%2u+%2u",
                   stage->util.in, stage->xoff.in, stage->idle.in,
                   stage->util.out, stage->xoff.out, stage->idle.out,
-          stage->te_queued + stage->te_issued);
+                  stage->te_queued, stage->te_issued);
 
     if (stage->last_table_type == TABLE_PCI) {
         ELBMON_REPORT(" PCI_lat=");
@@ -318,10 +313,9 @@ static inline void
 elbmon_dma_pipeline_data_display2 (pipeline_t *pipeline)
 {
     if (pipeline->type == TXDMA) {
-        ELBMON_REPORT(" NPV: phv=%lu pb_pbus=%ld pr_pbus=%ld sw=%ld "
+        ELBMON_REPORT(" NPV: phv=%lu sw=%ld "
                       "phv_drop=%ld recirc=%ld\n",
-                      pipeline->phv, pipeline->pb_pbus_cnt,
-                      pipeline->pr_pbus_cnt, pipeline->sw_cnt,
+                      pipeline->phv, pipeline->sw_cnt,
                       pipeline->phv_drop_cnt, pipeline->recirc_cnt);
     } else if (pipeline->type == RXDMA) {
         ELBMON_REPORT(" PSP: phv=%" PRIu64 " pb_pbus=%ld pr_pbus=%ld sw=%ld "
@@ -330,10 +324,9 @@ elbmon_dma_pipeline_data_display2 (pipeline_t *pipeline)
                       pipeline->pr_pbus_cnt, pipeline->sw_cnt,
                       pipeline->phv_drop_cnt, pipeline->recirc_cnt);
     } else if (pipeline->type == SXDMA) {
-        ELBMON_REPORT(" NPV: phv=%" PRIu64 " pb_pbus=%ld pr_pbus=%ld sw=%ld "
+        ELBMON_REPORT(" NPV: phv=%" PRIu64 " sw=%ld "
                       "phv_drop=%ld recirc=%ld\n",
-                      pipeline->phv, pipeline->pb_pbus_cnt,
-                      pipeline->pr_pbus_cnt, pipeline->sw_cnt,
+                      pipeline->phv, pipeline->sw_cnt,
                       pipeline->phv_drop_cnt, pipeline->recirc_cnt);
     }
 }
@@ -395,9 +388,9 @@ elbmon_dma_post_stage_display (pipeline_t *pipeline)
                   pipeline->in_flight);
 
     ELBMON_REPORT(" srdy%%/drdy%% TXS=%" PRIu64 "/%" PRIu64 ", MA=%" PRIu64 "/%" PRIu64 ", PBUS=%" PRIu64 "/%" PRIu64 "\n",
-		  pipeline->txs_srdy, pipeline->txs_drdy,
-		  pipeline->ma_srdy, pipeline->ma_drdy, 
-		  pipeline->pbus_srdy, pipeline->pbus_drdy);
+                  pipeline->txs_srdy, pipeline->txs_drdy,
+                  pipeline->ma_srdy, pipeline->ma_drdy,
+                  pipeline->pbus_srdy, pipeline->pbus_drdy);
 
     ELBMON_REPORT("       FIFO (empty%%/full%%) rd=%d/%d wr=%d/%d pkt=%d/%d",
                   pipeline->rd_empty_fifos, pipeline->rd_full_fifos,
@@ -405,20 +398,20 @@ elbmon_dma_post_stage_display (pipeline_t *pipeline)
                   pipeline->pkt_empty_fifos, pipeline->pkt_full_fifos);
 
     ELBMON_REPORT("  depths: lat=%" PRIu64 " wdata=%" PRIu64 " dfence=%" PRIu64 " fence=%" PRIu64 " \n",
-		  pipeline->lat_ff_depth, pipeline->wdata_ff_depth,
-		  pipeline->dfence_ff_depth, pipeline->ffence_ff_depth);
+                  pipeline->lat_ff_depth, pipeline->wdata_ff_depth,
+                  pipeline->dfence_ff_depth, pipeline->ffence_ff_depth);
 
     ELBMON_REPORT("       AXI pending reads=%ld pending writes=%ld", pipeline->axi_reads,
                   pipeline->axi_writes);
 
     ELBMON_REPORT(" AXI_rd_req=%" PRIu64 "/nordy=%" PRIu64 ", AXI_wr_req=%" PRIu64 "/nordy=%" PRIu64 "\n",
-		  pipeline->axi_rd_req, pipeline->fc_axi_rd_nordy,
-		  pipeline->axi_wr_req, pipeline->fc_axi_wr_nordy);
+                  pipeline->axi_rd_req, pipeline->fc_axi_rd_nordy,
+                  pipeline->axi_wr_req, pipeline->fc_axi_wr_nordy);
     
     if (pipeline->type == RXDMA) {
       // ELBMON_REPORT(" ff_depth=%u\n", pipeline->ff_depth);
     } else {
-        ELBMON_REPORT("\n");
+      // ELBMON_REPORT("\n");
     }
 }
 
@@ -626,9 +619,12 @@ elbmon_asic_display_tx_sched (void)
       ELBMON_REPORT("LIF %0d: DOORBELL %u TXDMA %u SXDMA %u\n",
             asic->cnt_lif[i], asic->cnt_doorbell[i], asic->cnt_txdma[i], asic->cnt_sxdma[i]);
     }
-    ELBMON_REPORT("\n");
+    ELBMON_REPORT("\n"); 
 
     elb_txs_mon_credit(0, 0);
+
+    //    elb_pics_cache_cnt(0, 0);
+
 }
 
 static inline void

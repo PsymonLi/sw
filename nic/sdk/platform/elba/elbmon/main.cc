@@ -473,7 +473,9 @@ read_counters (void)
         return;
     }
 
-    pxb_read_counters(verbose);
+#ifdef PXB_WORKING
+#    pxb_read_counters(verbose);
+#endif
 
     doorbell_read_counters(verbose);
 

@@ -1,0 +1,106 @@
+{
+  "instances": [
+    {
+      "pipeline": "txdma",
+      "stage": "1",
+      "control": {
+        "trace": true,
+        "trace_trigger_enable": true
+      },
+      "capture": {
+        "trigger_data": {
+          "tm_iport": "0x1",
+          "tm_oport": "0x2",
+          "tm_iq": "0x6",
+          "lif": "0x456",
+          "timestamp": "0x789ABCDEF123",
+          "no_data": "0x1",
+          "recirc": "0x0",
+          "elb_txdma_rsv": "0x3"
+        },
+        "trigger_mask": {
+          "tm_iport": "0xF",
+          "tm_oport": "0xF",
+          "tm_iq": "0xF",
+          "lif": "0x1FF",
+          "timestamp": "0xFFFFFFFFFFFF",
+          "no_data": "0x1",
+          "recirc": "0x1",
+          "elb_txdma_rsv": "0xF"
+        }
+      },
+      "settings": {
+        "trace-size": "8192",
+        "no_trace_when_full": true,
+        "stop_when_full": true
+      },
+      "description": "for txdma trigger_data/mask, use fields in elb_phv_intr_txdma_c_t from elb_phv_intr_decoder.hpp. Mask can be true/false or hex values to mask only few bits of a field."
+    },
+    {
+      "pipeline": "rxdma",
+      "stage": "1",
+      "control": {
+        "trace": true,
+        "trace_trigger_enable": true
+      },
+      "capture": {
+        "trigger_data": {
+          "tm_iport": "0x1",
+          "tm_oport": "0x2",
+          "tm_iq": "0x6",
+          "lif": "0x456",
+          "timestamp": "0x789ABCDEF123",
+          "no_data": "0x1",
+          "recirc": "0x0",
+          "elb_txdma_rsv": "0x3"
+        },
+        "trigger_mask": {
+          "tm_iport": "0xF",
+          "tm_oport": "0xF",
+          "tm_iq": "0xF",
+          "lif": "0x1FF",
+          "timestamp": "0xFFFFFFFFFFFF",
+          "no_data": "0x1",
+          "recirc": "0x1",
+          "elb_txdma_rsv": "0xF"
+        }
+      },
+      "settings": {
+        "trace-size": "8192",
+        "no_trace_when_full": true,
+        "stop_when_full": true
+      },
+      "description": "this enables for rxdma pipeline, stage 1, sdp with the specified options"
+    },
+    {
+      "pipeline": "p4ig",
+      "stage": ".*",
+      "control": {
+        "trace": true,
+        "trace_trigger_enable": true
+      },
+      "capture": {},
+      "settings": {
+        "trace-size": "8192",
+        "no_trace_when_full": true,
+        "stop_when_full": true
+      },
+      "description": "this enables for p4ig pipeline, all stages, sdp with the specified options"
+    },
+    {
+      "pipeline": "p4eg",
+      "stage": "2",
+      "control": {
+        "trace": true,
+        "trace_trigger_enable": true
+      },
+      "capture": {},
+      "settings": {
+        "trace-size": "8192",
+        "no_trace_when_full": true,
+        "stop_when_full": true
+      },
+      "description": "this enables for p4eg pipeline, stage 2, sdp with the specified options"
+    }
+  ]
+}

@@ -45,22 +45,24 @@ qstate_queue_dump (int verbose, int qid, int rid, int rsize, int poll,
     pal_mem_rd(qaddr, buf, 64, 0);
     qstate_t *q = (qstate_t *)buf;
 
-    printf("QID %u: ", qid);
     if (verbose) {
-        printf(" total_rings=%02d cosA=%02d cosB=%02d cos_sel=0x%02x pc=0x%02x",
-               q->total, q->cosA, q->cosB, q->cos_sel, q->pc_offset);
+      printf("QID %u: ", qid);
+      printf(" total_rings=%02d cosA=%02d cosB=%02d cos_sel=0x%02x pc=0x%02x",
+             q->total, q->cosA, q->cosB, q->cos_sel, q->pc_offset);
+      printf("\n");
     }
     for (uint8_t ring = 0; ring < q->total; ring++) {
-        if ((rid == -1) || (rid == ring)) {
-            printf(" ring %02d: PI=%06d CI=%06d", ring, q->rings[ring].pi,
-                   q->rings[ring].ci);
-        }
-        if (rid == ring) {
-            break;
-        }
+      if (((rid == -1) || (rid == ring)) & (q->rings[ring].pi != q->rings[ring].ci)) {
+          printf("QID %u: ", qid);
+          printf(" ring %02d: PI=%06d CI=%06d", ring, q->rings[ring].pi,
+                 q->rings[ring].ci);
+          printf("\n");
+      }
+      if (rid == ring) {
+          break;
+      }
     }
 
-    printf("\n");
 
     if ((poll > 0) && (q->total > 0)) {
         long long depth_avg[8] = {};
@@ -118,7 +120,7 @@ qstate_lif_dump (int lif_start, int lif_end, int queue_type, int qid_start,
                  int qid_end, int rid, int rsize, int poll, int verbose)
 {
     u_int32_t cnt[8], size[8], length[8];
-    u_int32_t valid, hint, hint_cos;
+    u_int32_t valid;
     u_int64_t base;
     int type, max_type;
     int this_size, this_len;
@@ -127,7 +129,7 @@ qstate_lif_dump (int lif_start, int lif_end, int queue_type, int qid_start,
     for (lif = lif_start; lif <= lif_end; lif++) {
         pal_reg_rd32w(ELB_ADDR_BASE_DB_WA_OFFSET +
                           ELB_WA_CSR_DHS_LIF_QSTATE_MAP_BYTE_ADDRESS +
-                          (16 * lif),
+                          (32 * lif),
                       cnt, 8);
         valid = ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_0_8_VLD_GET(cnt[0]);
         if (!valid) {
@@ -139,15 +141,9 @@ qstate_lif_dump (int lif_start, int lif_end, int queue_type, int qid_start,
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_0_8_QSTATE_BASE_GET(
                 cnt[0]);
 
-#if 0 /* TODO_ELBA */
-        hint = ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_4_SCHED_HINT_EN_GET(
-            cnt[2]);
-        hint_cos =
-            ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_4_SCHED_HINT_COS_GET(
-                cnt[2]);
         // 3 bit size is qstate size: 32B/64B/128B...
         size[0] =
-            ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_0_8_SIZE0_GET(cnt[0]);
+            ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_0_8_SIZE0_0_0_GET(cnt[0]);
         size[1] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_SIZE1_GET(cnt[1]);
         size[2] =
@@ -155,22 +151,18 @@ qstate_lif_dump (int lif_start, int lif_end, int queue_type, int qid_start,
         size[3] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_SIZE3_GET(cnt[1]);
         size[4] =
-            ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_SIZE4_GET(cnt[1]);
+            ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_SIZE4_0_0_GET(cnt[1]);
         size[5] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_8_SIZE5_GET(cnt[2]);
         size[6] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_8_SIZE6_GET(cnt[2]);
         size[7] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_8_SIZE7_GET(cnt[2]);
-        // 5 bit length is lg2 # entries:
+        // 5 bit length is lg2 # entries
         length[0] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_0_8_LENGTH0_GET(cnt[0]);
         length[1] =
-            ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_0_8_LENGTH1_0_0_GET(
-                cnt[0]) |
-            (ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_LENGTH1_8_1_GET(
-                 cnt[1])
-             << 1);
+	    ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_LENGTH1_GET(cnt[1]);
         length[2] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_LENGTH2_GET(cnt[1]);
         length[3] =
@@ -178,19 +170,11 @@ qstate_lif_dump (int lif_start, int lif_end, int queue_type, int qid_start,
         length[4] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_LENGTH4_GET(cnt[1]);
         length[5] =
-            ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_1_8_LENGTH5_0_0_GET(
-                cnt[1]) |
-            (ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_8_LENGTH5_8_1_GET(
-                 cnt[2])
-             << 1);
+ 	    ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_8_LENGTH5_GET(cnt[2]);
         length[6] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_8_LENGTH6_GET(cnt[2]);
         length[7] =
             ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_2_8_LENGTH7_GET(cnt[2]);
-#else
-        hint = 0;
-        hint_cos = 0;
-#endif 
 
         for (max_type = 0; max_type < 8; max_type++) {
             if (size[max_type] == 0) {
@@ -199,8 +183,8 @@ qstate_lif_dump (int lif_start, int lif_end, int queue_type, int qid_start,
         }
 
         base = base << 12; // base is 4KB aligned
-        printf("LIF %u valid, qstate_base=0x%lx, hint=%u, hint_cos=%u\n", lif,
-               base, hint, hint_cos);
+        printf("LIF %u valid, qstate_base=0x%lx\n", lif,
+               base);
 
         for (type = 0; type < max_type; type++) {
             this_len = 1 << length[type];

@@ -8,7 +8,7 @@ from collections import defaultdict
 from common import get_bits, get_bit
 
 ###################
-##### MPU Trace 
+##### MPU Trace
 ###################
 
 def libelbisa_so_load():
@@ -164,7 +164,7 @@ class TraceFileHeader(LittleEndianStructure):
         ("debug_generation", c_uint8),
         ("__pad", c_int8 * 49)
 ]
-        
+
 
 
 def decode_mpu_trace_file(bytez):
@@ -262,6 +262,8 @@ def decode_mpu_trace_kd(bytez):
                         instructions.append(ent)
                     s += sizeof(MpuTraceInstructionEntry)
 
+                #print("instructions length is")
+                #print(len(instructions))
                 # Generate
                 yield (
                         thdr,

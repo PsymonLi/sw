@@ -108,9 +108,9 @@ sdp_read_counters (int verbose, uint8_t pipeline, uint8_t stage)
 {
     uint64_t sdp_base = get_sdp_base(pipeline, stage);
     uint32_t sdp[6]; /* 6 for Elba, 3 for Capri, ELB_MCPU_CSR_CNT_SDP_SIZE=4 looks wrong? */
-    uint32_t sdp_fifo, read_ptr, write_ptr;
+    //uint32_t sdp_fifo, read_ptr, write_ptr;
     int phv_fifo_depth = 0;
-    // int sop_in = 0;
+    int sop_in = 0;
     // int eop_in = 0;
     // eop_out = 0;
     int srdy_nodrdy_in = 0;
@@ -119,19 +119,23 @@ sdp_read_counters (int verbose, uint8_t pipeline, uint8_t stage)
 
     if (verbose) {
         pal_reg_rd32w(sdp_base + ELB_SDP_CSR_CNT_SDP_BYTE_OFFSET, sdp, 6);
-	// sop_in          = ELB_SDP_CSR_CNT_SDP_CNT_SDP_0_6_SOP_IN_GET(sdp[0]);
+        sop_in          = ELB_SDP_CSR_CNT_SDP_CNT_SDP_0_6_SOP_IN_GET(sdp[0]);
         // eop_in          = ELB_SDP_CSR_CNT_SDP_CNT_SDP_1_6_EOP_IN_GET(sdp[1]);
-	srdy_nodrdy_in  = ELB_SDP_CSR_CNT_SDP_CNT_SDP_2_6_SRDY_NO_DRDY_IN_GET(sdp[2]);
+        srdy_nodrdy_in  = ELB_SDP_CSR_CNT_SDP_CNT_SDP_2_6_SRDY_NO_DRDY_IN_GET(sdp[2]);
         sop_out         = ELB_SDP_CSR_CNT_SDP_CNT_SDP_3_6_SOP_OUT_GET(sdp[3]);
         // eop_out         = ELB_SDP_CSR_CNT_SDP_CNT_SDP_4_6_EOP_OUT_GET(sdp[4]);
-	srdy_nodrdy_out = ELB_SDP_CSR_CNT_SDP_CNT_SDP_5_6_SRDY_NO_DRDY_OUT_GET(sdp[5]);
+        srdy_nodrdy_out = ELB_SDP_CSR_CNT_SDP_CNT_SDP_5_6_SRDY_NO_DRDY_OUT_GET(sdp[5]);
 
-	// number of entries in this SDP:
-        pal_reg_rd32w(sdp_base + ELB_SDP_CSR_STA_SDP_FIFO_BYTE_OFFSET, &sdp_fifo, 1);
-        read_ptr = ELB_SDP_CSR_STA_SDP_FIFO_READ_POINTER_GET(sdp_fifo);
-        write_ptr = ELB_SDP_CSR_STA_SDP_FIFO_WRITE_POINTER_GET(sdp_fifo);
-	phv_fifo_depth = (write_ptr >= read_ptr) ? (write_ptr - read_ptr) : 
-	                                           (32 - read_ptr + write_ptr);
+        // FIFO read/write pointers not returning usable values
+        // number of entries in this SDP:
+        //pal_reg_rd32w(sdp_base + ELB_SDP_CSR_STA_SDP_FIFO_BYTE_OFFSET, &sdp_fifo, 1);
+        // read_ptr is in flits, write_ptr in PHVs
+        //read_ptr = (ELB_SDP_CSR_STA_SDP_FIFO_READ_POINTER_GET(sdp_fifo) >> 4);
+        //write_ptr = ELB_SDP_CSR_STA_SDP_FIFO_WRITE_POINTER_GET(sdp_fifo);
+        //phv_fifo_depth = (write_ptr >= read_ptr) ? (write_ptr - read_ptr) :
+        //((32 - read_ptr) + write_ptr);
+	
+        phv_fifo_depth = sop_out - sop_in;
 
     }
     stage_ptr = &(asic->pipelines[pipeline].stages[stage]);
@@ -208,7 +212,7 @@ te_reset_counters (int verbose, uint8_t pipeline, uint8_t stage)
 void
 mpu_read_counters (int verbose, uint8_t pipeline, uint8_t stage, uint8_t mpu)
 {
-  uint64_t mpu_base = get_mpu_base(pipeline, stage, mpu);
+    uint64_t mpu_base = get_mpu_base(pipeline, stage, mpu);
     uint32_t inst_executed;
     uint32_t icache_miss;
     uint32_t dcache_miss;
@@ -222,31 +226,31 @@ mpu_read_counters (int verbose, uint8_t pipeline, uint8_t stage, uint8_t mpu)
 
     if (verbose) {
         pal_reg_rd32w( mpu_base +
-                          ELB_MPU_CSR_CNT_INST_EXECUTED_BYTE_OFFSET,
-                      &inst_executed, 1);
+                       ELB_MPU_CSR_CNT_INST_EXECUTED_BYTE_OFFSET,
+                       &inst_executed, 1);
         pal_reg_rd32w( mpu_base +
-                          ELB_MPU_CSR_CNT_ICACHE_MISS_BYTE_OFFSET,
-                      &icache_miss, 1);
+                       ELB_MPU_CSR_CNT_ICACHE_MISS_BYTE_OFFSET,
+                       &icache_miss, 1);
         pal_reg_rd32w( mpu_base +
-                          ELB_MPU_CSR_CNT_ICACHE_HIT_BYTE_OFFSET,
-                      &icache_hit, 1);
+                       ELB_MPU_CSR_CNT_ICACHE_HIT_BYTE_OFFSET,
+                       &icache_hit, 1);
         pal_reg_rd32w( mpu_base +
-                          ELB_MPU_CSR_CNT_DCACHE_MISS_BYTE_OFFSET,
-                      &dcache_miss, 1);
+                       ELB_MPU_CSR_CNT_DCACHE_MISS_BYTE_OFFSET,
+                       &dcache_miss, 1);
         pal_reg_rd32w( mpu_base +
-                          ELB_MPU_CSR_CNT_DCACHE_HIT_BYTE_OFFSET,
-                      &dcache_hit, 1);
+                       ELB_MPU_CSR_CNT_DCACHE_HIT_BYTE_OFFSET,
+                       &dcache_hit, 1);
         pal_reg_rd32w( mpu_base + ELB_MPU_CSR_CNT_CYCLES_BYTE_OFFSET,
-                      &cycles, 1);
+                       &cycles, 1);
         pal_reg_rd32w( mpu_base +
-                          ELB_MPU_CSR_CNT_PHV_EXECUTED_BYTE_OFFSET,
-                      &phv_executed, 1);
+                       ELB_MPU_CSR_CNT_PHV_EXECUTED_BYTE_OFFSET,
+                       &phv_executed, 1);
         pal_reg_rd32w( mpu_base +
-                          ELB_MPU_CSR_CNT_PHVWR_STALL_BYTE_OFFSET,
-                      &phvwr_stall, 1);
+                       ELB_MPU_CSR_CNT_PHVWR_STALL_BYTE_OFFSET,
+                       &phvwr_stall, 1);
         pal_reg_rd32w( mpu_base +
-                          ELB_MPU_CSR_CNT_ST_STALL_BYTE_OFFSET,
-                      &st_stall, 1);
+                       ELB_MPU_CSR_CNT_ST_STALL_BYTE_OFFSET,
+                       &st_stall, 1);
         mpu_ptr->cycles = cycles;
 
         mpu_ptr->inst_executed = inst_executed;
@@ -258,9 +262,15 @@ mpu_read_counters (int verbose, uint8_t pipeline, uint8_t stage, uint8_t mpu)
         mpu_ptr->phvwr_stall = phvwr_stall;
         mpu_ptr->st_stall = st_stall;
 
-	if(cycles==0) cycles=1;
-	if(inst_executed==0) inst_executed=1;
-	if(phv_executed==0) phv_executed=1;
+        if (cycles == 0) {
+            cycles = 1;
+        }
+        if (inst_executed == 0) {
+            inst_executed = 1;
+        }
+        if (phv_executed == 0) {
+            phv_executed = 1;
+        }
 
         mpu_ptr->inst_executed_pc = inst_executed * 100 / cycles;
         mpu_ptr->icache_miss_pc = icache_miss * 100 / inst_executed;
@@ -269,27 +279,26 @@ mpu_read_counters (int verbose, uint8_t pipeline, uint8_t stage, uint8_t mpu)
         mpu_ptr->phvwr_stall_pc = phvwr_stall * 100 / cycles;
         mpu_ptr->st_stall_pc = st_stall * 100 / cycles;
 
-	// icache miss
-	uint32_t sta_icache_miss [2] = {0};
-        pal_reg_rd32w( mpu_base +
-		       ELB_MPU_CSR_STA_ICACHE_MISS_BYTE_OFFSET,
-		       sta_icache_miss, 2);
-	mpu_ptr->icache_miss_address = 
-	  (ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_0_2_ADDRESS_GET(sta_icache_miss[0]) << 6);
-	mpu_ptr->icache_miss_latency = 
-	  (ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_1_2_LATENCY_9_1_GET(sta_icache_miss[1]) << 1) +
-	  ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_0_2_LATENCY_0_0_GET(sta_icache_miss[0]);
+        // icache miss
+        uint32_t sta_icache_miss [2] = {0};
+        pal_reg_rd32w(mpu_base + ELB_MPU_CSR_STA_ICACHE_MISS_BYTE_OFFSET,
+                      sta_icache_miss, 2);
+        mpu_ptr->icache_miss_address =
+            (ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_0_2_ADDRESS_GET(sta_icache_miss[0]) << 6);
+        mpu_ptr->icache_miss_latency =
+            (ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_1_2_LATENCY_9_1_GET(sta_icache_miss[1]) << 1) +
+            ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_0_2_LATENCY_0_0_GET(sta_icache_miss[0]);
 
-	// Load excpetion status:
-	uint32_t sta_exception [2] = {0};
-        pal_reg_rd32w( mpu_base +
-		       ELB_MPU_CSR_STA_EXCEPTION_BYTE_OFFSET,
+        // Load excpetion status:
+        uint32_t sta_exception [2] = {0};
+        pal_reg_rd32w(mpu_base + ELB_MPU_CSR_STA_EXCEPTION_BYTE_OFFSET,
                       sta_exception, 2);
-	mpu_ptr->last_exception_code = ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_CODE_GET(sta_exception[0]);
-	mpu_ptr->last_exception_pc   = 
-	  ((uint64_t) ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_1_2_PC_33_27_GET(sta_exception[1]) << 27) +
-	  ((uint64_t) ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_PC_26_0_GET(sta_exception[0]));
-	mpu_ptr->exception_level = ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_LVL_GET(sta_exception[0]);
+        mpu_ptr->last_exception_pc   =
+            ((uint64_t) ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_1_2_PC_33_27_GET(sta_exception[1]) << 27) +
+            ((uint64_t) ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_PC_26_0_GET(sta_exception[0]));
+        mpu_ptr->last_exception_code = (mpu_ptr->last_exception_pc == 0) ? 0 :
+            ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_CODE_GET(sta_exception[0]);
+        mpu_ptr->exception_level = ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_LVL_GET(sta_exception[0]);
     }
 }
 
@@ -431,16 +440,24 @@ stg_poll (int verbose, uint8_t pipeline, uint8_t stage)
 
         // count all te states pending
         for (j = 0; j < TE_NUM_PENDING_READS; j++) {
-	  // 3-bit state values packed into 3-word arrary:
-	  fsm_value = (sta_te_fsm[ (j * 3) / 32] >> ((j * 3) % 32)) & 0x7;
-	  if(((j * 3) % 32)>=30) // 3-bit state wraps to next word
-	    {
-	      fsm_value += (sta_te_fsm[((j+1) * 3) / 32] << (32 - ((j * 3) % 32))) & 0x7;
-	    }
-	  if(fsm_value == TE_FSM_IDLE) te_idle++;
-	  if(fsm_value == TE_FSM_NEW_ENTRY) te_new++;
-	  if(fsm_value == TE_FSM_ISSUED_AXI_REQ0) te_issued++;
-	  if(fsm_value == TE_FSM_QUEUED_AXI_REQ0) te_queued++;
+            // 3-bit state values packed into 3-word arrary:
+            fsm_value = (sta_te_fsm[ (j * 3) / 32] >> ((j * 3) % 32)) & 0x7;
+            if(((j * 3) % 32) >= 30) // 3-bit state wraps to next word
+            {
+                fsm_value += (sta_te_fsm[((j+1) * 3) / 32] << (32 - ((j * 3) % 32))) & 0x7;
+            }
+            if (fsm_value == TE_FSM_IDLE) {
+                te_idle++;
+            }
+            if (fsm_value == TE_FSM_NEW_ENTRY) {
+                te_new++;
+            }
+            if (fsm_value == TE_FSM_ISSUED_AXI_REQ0) {
+                te_issued++;
+            }
+            if (fsm_value == TE_FSM_QUEUED_AXI_REQ0) {
+                te_queued++;
+            }
         }
     }
 

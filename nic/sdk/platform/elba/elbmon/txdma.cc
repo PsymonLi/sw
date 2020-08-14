@@ -19,6 +19,7 @@
 #include "elb_wa_c_hdr.h"
 namespace pt {
 #include "elb_pt_c_hdr.h"
+#include "elb_phb_c_hdr.h"
 }
 namespace psp {
 #include "elb_psp_c_hdr.h"
@@ -66,15 +67,15 @@ elbmon_pipeline_data_store2 (uint8_t type, uint64_t pend_rd, uint64_t pend_wr,
 
 void
 elbmon_pipeline_data_store4 (uint8_t type, 
-			     uint64_t lat_ff_depth, uint64_t wdata_ff_depth, 
-			     uint64_t dfence_ff_depth, uint64_t ffence_ff_depth,
-			     uint64_t ma_srdy, uint64_t ma_drdy, uint64_t pbus_srdy, 
-			     uint64_t pbus_drdy, uint64_t txs_srdy, 
-			     uint64_t txs_drdy, uint64_t npv_full,
-			     uint64_t pend_rsc,
-			     uint64_t fc_axi_wr_nordy, uint64_t fc_axi_rd_nordy, 
-			     uint64_t axi_rd_req, uint64_t axi_wr_req, 
-			     uint64_t polls)
+                             uint64_t lat_ff_depth, uint64_t wdata_ff_depth,
+                             uint64_t dfence_ff_depth, uint64_t ffence_ff_depth,
+                             uint64_t ma_srdy, uint64_t ma_drdy, uint64_t pbus_srdy,
+                             uint64_t pbus_drdy, uint64_t txs_srdy,
+                             uint64_t txs_drdy, uint64_t npv_full,
+                             uint64_t pend_rsc,
+                             uint64_t fc_axi_wr_nordy, uint64_t fc_axi_rd_nordy,
+                             uint64_t axi_rd_req, uint64_t axi_wr_req,
+                             uint64_t polls)
 {
     pipeline_t *pipeline = &asic->pipelines[type];
 
@@ -162,26 +163,26 @@ ptd_read_counters (int verbose)
     uint64_t  axi_rd_req, axi_wr_req;
     // AXI fc
     pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		  ELB_PTD_CSR_CNT_FC_AXI_WR_BYTE_ADDRESS,
-		  &fc_axi_wr, 1);
+                  ELB_PT_CSR_PTD_CNT_FC_AXI_WR_BYTE_ADDRESS,
+                  &fc_axi_wr, 1);
     fc_axi_wr_nordy = ELB_PTD_CSR_CNT_FC_AXI_WR_NO_READY_GET(fc_axi_wr);
     pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		  ELB_PTD_CSR_CNT_FC_AXI_RD_BYTE_ADDRESS,
-		  &fc_axi_rd, 1);
+                  ELB_PT_CSR_PTD_CNT_FC_AXI_RD_BYTE_ADDRESS,
+                  &fc_axi_rd, 1);
     fc_axi_rd_nordy = ELB_PTD_CSR_CNT_FC_AXI_RD_NO_READY_GET(fc_axi_rd);
     // AXI req
     pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		  ELB_PTD_CSR_CNT_AXI_RD_REQ_BYTE_ADDRESS,
-		  (uint32_t *)&axi_rd_req, 2);
+                  ELB_PT_CSR_PTD_CNT_AXI_RD_REQ_BYTE_ADDRESS,
+                  (uint32_t *)&axi_rd_req, 2);
     pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		  ELB_PTD_CSR_CNT_AXI_WR_REQ_BYTE_ADDRESS,
-		  (uint32_t *)&axi_wr_req, 2);
+                  ELB_PT_CSR_PTD_CNT_AXI_WR_REQ_BYTE_ADDRESS,
+                  (uint32_t *)&axi_wr_req, 2);
     
     // Pending Reads/Writes, # PHVs
     for (i = 0; i < polls; i++) {
         // FIFO Status
         pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		      ELB_PT_CSR_PTD_STA_FIFO_BYTE_ADDRESS,
+                      ELB_PT_CSR_PTD_STA_FIFO_BYTE_ADDRESS,
                       sta_fifo, 2);
         rd_ff_full   += ELB_PTD_CSR_STA_FIFO_STA_FIFO_0_2_LAT_FF_FULL_GET(sta_fifo[0]);
         rd_ff_empty  += ELB_PTD_CSR_STA_FIFO_STA_FIFO_0_2_LAT_FF_EMPTY_GET(sta_fifo[0]);
@@ -189,52 +190,52 @@ ptd_read_counters (int verbose)
         wr_ff_empty  += ELB_PTD_CSR_STA_FIFO_STA_FIFO_0_2_WR_MEM_FF_EMPTY_GET(sta_fifo[0]);
         pkt_ff_full  += ELB_PTD_CSR_STA_FIFO_STA_FIFO_0_2_PKT_FF_FULL_GET(sta_fifo[0]);
         pkt_ff_empty += ELB_PTD_CSR_STA_FIFO_STA_FIFO_0_2_PKT_FF_EMPTY_GET(sta_fifo[0]);
-        pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-                          ELB_PT_CSR_PTD_STA_XOFF_BYTE_ADDRESS,
+        pal_reg_rd32w(ELB_ADDR_BASE_PH_PHB_OFFSET +
+		      ELB_PHB_CSR_STA_XOFF_NUMPHV_BYTE_ADDRESS,
                       &sta_xoff, 1);
-        num_phv += ELB_PTD_CSR_STA_XOFF_NUMPHV_COUNTER_GET(sta_xoff);
-	// FIFO depths:
-	pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		      ELB_PTD_CSR_STA_FIFO_FLDS_BYTE_ADDRESS,
-		      sta_fifo_depth, 3);
-	lat_ff_depth    += ELB_PTD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_3_LAT_FF_DEPTH_GET(sta_fifo_depth[0]);
-	wdata_ff_depth  += ELB_PTD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_3_WDATA_FF_DEPTH_GET(sta_fifo_depth[0]);
-	dfence_ff_depth += ELB_PTD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_3_DFENCE_FF_DEPTH_GET(sta_fifo_depth[0]);
-	ffence_ff_depth += ELB_PTD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_3_FFENCE_FF_DEPTH_GET(sta_fifo_depth[0]);
-	// FlowControl:
-	pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		      ELB_PTD_CSR_STA_FC_BYTE_ADDRESS,
-		      &sta_fc, 1);
-	ma_srdy += ELB_PTD_CSR_STA_FC_MA_SRDY_GET(sta_fc);
-	ma_drdy += ELB_PTD_CSR_STA_FC_MA_DRDY_GET(sta_fc);
-	pbus_srdy += ELB_PTD_CSR_STA_FC_PB_PBUS_SRDY_GET(sta_fc);
-	pbus_drdy += ELB_PTD_CSR_STA_FC_PB_PBUS_DRDY_GET(sta_fc);
-	txs_srdy += ELB_PTD_CSR_STA_FC_PTD_TXS_FEEDBACK_SRDY_GET(sta_fc);
-	txs_drdy += ELB_PTD_CSR_STA_FC_PTD_TXS_FEEDBACK_DRDY_GET(sta_fc);
+        num_phv += ELB_PHB_CSR_STA_XOFF_NUMPHV_COUNTER_GET(sta_xoff);
+        // FIFO depths:
+        pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
+                      ELB_PT_CSR_PTD_STA_FIFO_FLDS_BYTE_ADDRESS,
+                      sta_fifo_depth, 3);
+        lat_ff_depth    += ELB_PTD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_3_LAT_FF_DEPTH_GET(sta_fifo_depth[0]);
+        wdata_ff_depth  += ELB_PTD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_3_WDATA_FF_DEPTH_GET(sta_fifo_depth[0]);
+        dfence_ff_depth += ELB_PTD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_3_DFENCE_FF_DEPTH_GET(sta_fifo_depth[0]);
+        ffence_ff_depth += ELB_PTD_CSR_STA_FIFO_FLDS_STA_FIFO_FLDS_0_3_FFENCE_FF_DEPTH_GET(sta_fifo_depth[0]);
+        // FlowControl:
+        pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
+                      ELB_PT_CSR_PTD_STA_FC_BYTE_ADDRESS,
+                      &sta_fc, 1);
+        ma_srdy += ELB_PTD_CSR_STA_FC_MA_SRDY_GET(sta_fc);
+        ma_drdy += ELB_PTD_CSR_STA_FC_MA_DRDY_GET(sta_fc);
+        pbus_srdy += ELB_PTD_CSR_STA_FC_PB_PBUS_SRDY_GET(sta_fc);
+        pbus_drdy += ELB_PTD_CSR_STA_FC_PB_PBUS_DRDY_GET(sta_fc);
+        txs_srdy += ELB_PTD_CSR_STA_FC_PTD_TXS_FEEDBACK_SRDY_GET(sta_fc);
+        txs_drdy += ELB_PTD_CSR_STA_FC_PTD_TXS_FEEDBACK_DRDY_GET(sta_fc);
         npv_full += ELB_PTD_CSR_STA_FC_PTD_NPV_PHV_FULL_GET(sta_fc);
-	// pending IDs
-	pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		      ELB_PTD_CSR_STA_ID_STA_ID_0_2_BYTE_ADDRESS,
-		      sta_id, 2);
-	pend_rsc += ELB_PTD_CSR_STA_ID_STA_ID_0_2_RD_PEND_RSRC_CNT_GET(sta_id[0]);
+        // pending IDs
+        pal_reg_rd32w(ELB_ADDR_BASE_PT_PT_OFFSET +
+                      ELB_PT_CSR_PTD_STA_ID_STA_ID_0_2_BYTE_ADDRESS ,
+                      sta_id, 2);
+        pend_rsc += ELB_PTD_CSR_STA_ID_STA_ID_0_2_RD_PEND_RSRC_CNT_GET(sta_id[0]);
         pend_rd += ELB_PTD_CSR_STA_ID_STA_ID_0_2_RD_PEND_CNT_GET(sta_id[0]);
         pend_wr += ELB_PTD_CSR_STA_ID_STA_ID_0_2_WR_PEND_CNT_GET(sta_id[0]);
     }
 
     elbmon_pipeline_data_store1(TXDMA, 
-				ma_cnt, pb_cnt, phv_drop, phv_err,
+                                ma_cnt, pb_cnt, phv_drop, phv_err,
                                 phv_recirc, resub_cnt, num_phv, polls);
     elbmon_pipeline_data_store2(TXDMA, 
-				pend_rd, pend_wr, rd_ff_empty, rd_ff_full,
-				wr_ff_empty, wr_ff_full, pkt_ff_empty, pkt_ff_full, 0, polls);
+                                pend_rd, pend_wr, rd_ff_empty, rd_ff_full,
+                                wr_ff_empty, wr_ff_full, pkt_ff_empty, pkt_ff_full, 0, polls);
     elbmon_pipeline_data_store4(TXDMA,
-				// polls:
-				lat_ff_depth, wdata_ff_depth, dfence_ff_depth, ffence_ff_depth,
-				ma_srdy, ma_drdy, pbus_srdy, pbus_drdy, txs_srdy, txs_drdy, npv_full,
-				pend_rsc,
-				fc_axi_wr_nordy, fc_axi_rd_nordy, // counts
-				axi_rd_req, axi_wr_req, // counts
-				polls);
+                                // polls:
+                                lat_ff_depth, wdata_ff_depth, dfence_ff_depth, ffence_ff_depth,
+                                ma_srdy, ma_drdy, pbus_srdy, pbus_drdy, txs_srdy, txs_drdy, npv_full,
+                                pend_rsc,
+                                fc_axi_wr_nordy, fc_axi_rd_nordy, // counts
+                                axi_rd_req, axi_wr_req, // counts
+                                polls);
 }
 
 void
@@ -254,17 +255,17 @@ ptd_reset_counters (int verbose)
     pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET +
                       ELB_PT_CSR_PTD_CNT_PB_BYTE_ADDRESS,
                   zero, 3);
-    pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		  ELB_PTD_CSR_CNT_FC_AXI_WR_BYTE_ADDRESS,
+    pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET + ELB_PT_CSR_PTD_BYTE_ADDRESS +
+                  ELB_PTD_CSR_CNT_FC_AXI_WR_BYTE_ADDRESS,
                   zero, 1);
-    pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		  ELB_PTD_CSR_CNT_FC_AXI_RD_BYTE_ADDRESS,
+    pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET + ELB_PT_CSR_PTD_BYTE_ADDRESS +
+                  ELB_PTD_CSR_CNT_FC_AXI_RD_BYTE_ADDRESS,
                   zero, 1);
-    pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		  ELB_PTD_CSR_CNT_AXI_RD_REQ_BYTE_ADDRESS,
+    pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET + ELB_PT_CSR_PTD_BYTE_ADDRESS +
+                  ELB_PTD_CSR_CNT_AXI_RD_REQ_BYTE_ADDRESS,
                   zero, 2);
-    pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET +
-		  ELB_PTD_CSR_CNT_AXI_WR_REQ_BYTE_ADDRESS,
+    pal_reg_wr32w(ELB_ADDR_BASE_PT_PT_OFFSET + ELB_PT_CSR_PTD_BYTE_ADDRESS +
+                  ELB_PTD_CSR_CNT_AXI_WR_REQ_BYTE_ADDRESS,
                   zero, 2);
 }
 
@@ -437,16 +438,16 @@ txs_read_counters (int verbose)
     }
 
     // TxDMA PHVs
-    pal_reg_rd32w(ELB_TXS_CSR_CNT_SCH_TXDMA_SENT_BYTE_OFFSET,
-		  cnt_txdma, 2);
+    pal_reg_rd32w(ELB_TXS_CSR_CNT_SCH_TXDMA_SENT_BYTE_OFFSET+ELB_ADDR_BASE_TXS_TXS_OFFSET,
+                  cnt_txdma, 2);
     asic->txdma_phvs = ELB_TXS_CSR_CNT_SCH_TXDMA_SENT_CNT_SCH_TXDMA_SENT_0_2_VAL_31_0_GET(cnt_txdma[0]) +
-                 ELB_TXS_CSR_CNT_SCH_TXDMA_SENT_CNT_SCH_TXDMA_SENT_1_2_VAL_63_32_GET(cnt_txdma[1]);
+        ELB_TXS_CSR_CNT_SCH_TXDMA_SENT_CNT_SCH_TXDMA_SENT_1_2_VAL_63_32_GET(cnt_txdma[1]);
 
     // SxDMA PHVs
-    pal_reg_rd32w(ELB_TXS_CSR_CNT_SCH_SXDMA_SENT_BYTE_OFFSET,
-		  cnt_sxdma, 2);
+    pal_reg_rd32w(ELB_TXS_CSR_CNT_SCH_SXDMA_SENT_BYTE_OFFSET+ELB_ADDR_BASE_TXS_TXS_OFFSET,
+                  cnt_sxdma, 2);
     asic->sxdma_phvs = ELB_TXS_CSR_CNT_SCH_SXDMA_SENT_CNT_SCH_SXDMA_SENT_0_2_VAL_31_0_GET(cnt_sxdma[0]) +
-                 ELB_TXS_CSR_CNT_SCH_SXDMA_SENT_CNT_SCH_SXDMA_SENT_1_2_VAL_63_32_GET(cnt_sxdma[1]);
+        ELB_TXS_CSR_CNT_SCH_SXDMA_SENT_CNT_SCH_SXDMA_SENT_1_2_VAL_63_32_GET(cnt_sxdma[1]);
 
 
 }
@@ -460,17 +461,17 @@ txs_read_debug_counters (int verbose)
     int stride = ELB_TXS_CSR_CNT_DOORBELL_DEBUG1_BYTE_OFFSET - ELB_TXS_CSR_CNT_DOORBELL_DEBUG0_BYTE_OFFSET;
 
     for(i=0; i<4; i++) {
-      pal_reg_rd32w(ELB_TXS_CSR_CNT_DOORBELL_DEBUG0_BYTE_OFFSET + (i * stride), &cnt, 1);
+      pal_reg_rd32w(ELB_TXS_CSR_CNT_DOORBELL_DEBUG0_BYTE_OFFSET + ELB_ADDR_BASE_TXS_TXS_OFFSET + (i * stride), &cnt, 1);
       asic->cnt_doorbell[i] = cnt;
-      pal_reg_rd32w(ELB_TXS_CSR_CNT_TXDMA_DEBUG0_BYTE_OFFSET + (i * stride), &cnt, 1);
+      pal_reg_rd32w(ELB_TXS_CSR_CNT_TXDMA_DEBUG0_BYTE_OFFSET + ELB_ADDR_BASE_TXS_TXS_OFFSET + (i * stride), &cnt, 1);
       asic->cnt_txdma[i] = cnt;
-      pal_reg_rd32w(ELB_TXS_CSR_CNT_SXDMA_DEBUG0_BYTE_OFFSET + (i * stride), &cnt, 1);
+      pal_reg_rd32w(ELB_TXS_CSR_CNT_SXDMA_DEBUG0_BYTE_OFFSET + ELB_ADDR_BASE_TXS_TXS_OFFSET + (i * stride), &cnt, 1);
       asic->cnt_sxdma[i] = cnt;
     }
 
     stride = ELB_TXS_CSR_CFG_DOORBELL_DEBUG1_BYTE_OFFSET - ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_BYTE_OFFSET;
     for(i=0; i<4; i++) {
-      pal_reg_rd32w(ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_BYTE_OFFSET + (i * stride), cfg, 3);
+      pal_reg_rd32w(ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_BYTE_OFFSET +ELB_ADDR_BASE_TXS_TXS_OFFSET + (i * stride), cfg, 3);
       enable = ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_ENABLE_GET(cfg[0]);
       lif = ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_LIF_START_GET(cfg[0]);
       asic->cnt_lif[i] = lif;
@@ -484,10 +485,10 @@ txs_reset_counters (int verbose)
     uint32_t zero[2] = {0};
 
     // TXS counter reset
-    pal_reg_wr32w(ELB_TXS_CSR_CNT_SCH_TXDMA_SENT_BYTE_OFFSET,
-		  zero, 2);
-    pal_reg_wr32w(ELB_TXS_CSR_CNT_SCH_SXDMA_SENT_BYTE_OFFSET,
-		  zero, 2);
+    pal_reg_wr32w(ELB_ADDR_BASE_TXS_TXS_OFFSET + ELB_TXS_CSR_CNT_SCH_TXDMA_SENT_BYTE_OFFSET,
+                  zero, 2);
+    pal_reg_wr32w(ELB_ADDR_BASE_TXS_TXS_OFFSET + ELB_TXS_CSR_CNT_SCH_SXDMA_SENT_BYTE_OFFSET,
+                  zero, 2);
 
 }
 
@@ -499,54 +500,56 @@ txs_reset_debug_counters (int verbose)
     int stride = ELB_TXS_CSR_CNT_DOORBELL_DEBUG1_BYTE_OFFSET - ELB_TXS_CSR_CNT_DOORBELL_DEBUG0_BYTE_OFFSET;
 
     for(i=0; i<4; i++) {
-      pal_reg_wr32w(ELB_TXS_CSR_CNT_DOORBELL_DEBUG0_BYTE_OFFSET + (i * stride), &zero, 1);
-      pal_reg_wr32w(ELB_TXS_CSR_CNT_TXDMA_DEBUG0_BYTE_OFFSET + (i * stride), &zero, 1);
-      pal_reg_wr32w(ELB_TXS_CSR_CNT_SXDMA_DEBUG0_BYTE_OFFSET + (i * stride), &zero, 1);
+      pal_reg_wr32w(ELB_ADDR_BASE_TXS_TXS_OFFSET + ELB_TXS_CSR_CNT_DOORBELL_DEBUG0_BYTE_OFFSET + (i * stride), &zero, 1);
+      pal_reg_wr32w(ELB_ADDR_BASE_TXS_TXS_OFFSET + ELB_TXS_CSR_CNT_TXDMA_DEBUG0_BYTE_OFFSET + (i * stride), &zero, 1);
+      pal_reg_wr32w(ELB_ADDR_BASE_TXS_TXS_OFFSET + ELB_TXS_CSR_CNT_SXDMA_DEBUG0_BYTE_OFFSET + (i * stride), &zero, 1);
     }
 }
 
 void
 txs_program_debug_counters (int verbose)
 {
-    uint32_t cfg[3] = {0};
     int i;
-    int stride;
     int lif;
     int lif_start = 0;
-    int lif_end = 2047;
-    u_int32_t cnt[8];
-    u_int32_t valid;
+    //    int lif_end = 2047;
+    int lif_end = 1;
+    u_int32_t valid, cnt[8];
 
     i = 0;
     // Detect enabled LIFs, choose first 4:
     for (lif = lif_start; lif <= lif_end; lif++) {
-        pal_reg_rd32w(ELB_ADDR_BASE_DB_WA_OFFSET +
-                          ELB_WA_CSR_DHS_LIF_QSTATE_MAP_BYTE_ADDRESS +
-                          (16 * lif),
-                      cnt, 8);
+      pal_reg_rd32w(ELB_ADDR_BASE_DB_WA_OFFSET +
+		    ELB_WA_CSR_DHS_LIF_QSTATE_MAP_BYTE_ADDRESS +
+		    (32 * lif),
+		    cnt, 8);
         valid = ELB_WA_CSR_DHS_LIF_QSTATE_MAP_ENTRY_ENTRY_0_8_VLD_GET(cnt[0]);
         if (!valid) {
-	  continue;
+            continue;
         }
-	asic->cnt_lif[i] = lif; // chose next debug LIF to observe
-	asic->cnt_enable[i] = 1;
-	if(i >= 3) break; // got the first 4 enabled LIFs
-	else i++;
+        asic->cnt_lif[i] = lif; // chose next debug LIF to observe
+        asic->cnt_enable[i] = 1;
+        if(i >= 3) break; // got the first 4 enabled LIFs
+        else i++;
     }
     // Program the debug count registers
-    stride = ELB_TXS_CSR_CFG_DOORBELL_DEBUG1_BYTE_OFFSET - ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_BYTE_OFFSET;
-    for(i=0; i<4; i++) {
+    /*
+      uint32_t cfg[3] = {0};
+
+      int stride = ELB_TXS_CSR_CFG_DOORBELL_DEBUG1_BYTE_OFFSET - ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_BYTE_OFFSET;
+      for(i=0; i<4; i++) {
       // DB
       cfg[0] = ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_ENABLE_SET(asic->cnt_enable[i]) |
-	ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_LIF_START_SET(asic->cnt_lif[i]) |
-	ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_LIF_END_SET(asic->cnt_lif[i]) |
-	ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_LIF_EN_SET(asic->cnt_enable[i]);
-      pal_reg_wr32w(ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_BYTE_OFFSET + (i * stride), cfg, 3);
+      ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_LIF_START_SET(asic->cnt_lif[i]) |
+      ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_LIF_END_SET(asic->cnt_lif[i]) |
+      ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_CFG_DOORBELL_DEBUG0_0_3_LIF_EN_SET(asic->cnt_enable[i]);
+      pal_reg_wr32w(ELB_ADDR_BASE_TXS_TXS_OFFSET + ELB_TXS_CSR_CFG_DOORBELL_DEBUG0_BYTE_OFFSET + (i * stride), cfg, 3);
       // TXDMA
       cfg[0] = ELB_TXS_CSR_CFG_TXDMA_DEBUG0_CFG_TXDMA_DEBUG0_0_3_ENABLE_SET(asic->cnt_enable[i]) |
-	ELB_TXS_CSR_CFG_TXDMA_DEBUG0_CFG_TXDMA_DEBUG0_0_3_LIF_START_SET(asic->cnt_lif[i]) |
-	ELB_TXS_CSR_CFG_TXDMA_DEBUG0_CFG_TXDMA_DEBUG0_0_3_LIF_END_SET(asic->cnt_lif[i]) |
-	ELB_TXS_CSR_CFG_TXDMA_DEBUG0_CFG_TXDMA_DEBUG0_0_3_LIF_EN_SET(asic->cnt_enable[i]);
-      pal_reg_wr32w(ELB_TXS_CSR_CFG_TXDMA_DEBUG0_BYTE_OFFSET + (i * stride), cfg, 3);
-    }
+      ELB_TXS_CSR_CFG_TXDMA_DEBUG0_CFG_TXDMA_DEBUG0_0_3_LIF_START_SET(asic->cnt_lif[i]) |
+      ELB_TXS_CSR_CFG_TXDMA_DEBUG0_CFG_TXDMA_DEBUG0_0_3_LIF_END_SET(asic->cnt_lif[i]) |
+      ELB_TXS_CSR_CFG_TXDMA_DEBUG0_CFG_TXDMA_DEBUG0_0_3_LIF_EN_SET(asic->cnt_enable[i]);
+      pal_reg_wr32w(ELB_ADDR_BASE_TXS_TXS_OFFSET + ELB_TXS_CSR_CFG_TXDMA_DEBUG0_BYTE_OFFSET + (i * stride), cfg, 3);
+      }
+    */
 }
