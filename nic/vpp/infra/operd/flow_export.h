@@ -6,7 +6,7 @@
 #define __VPP_INFRA_OPERD_FLOW_EXPORT_H__
 
 #include <stdint.h>
-#include "nic/operd/decoders/vpp/flow_decoder.h"
+#include "nic/infra/operd/decoders/vpp/flow_decoder.h"
 
 #ifdef __cplusplus
 extern "C" {

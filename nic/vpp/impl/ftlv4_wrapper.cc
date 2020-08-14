@@ -16,7 +16,7 @@
 #include <pd_utils.h>
 #include <ftl_wrapper.h>
 #include <sess.h>
-#include "nic/operd/decoders/vpp/flow_decoder.h"
+#include "nic/infra/operd/decoders/vpp/flow_decoder.h"
 #include <nat.h>
 #include <pds_table.h>
 

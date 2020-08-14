@@ -9,8 +9,10 @@ export GEN_TEST_RESULTS_DIR=${BUILD_DIR}/gtest_results
 export VAL_CMD=valgrind
 export IPC_MOCK_MODE=1
 
+OPERD_METRICS_PATH=${PDSPKG_TOPDIR}/infra/operd/metrics/cloud/
+
 function remove_conf_files () {
-    find $PDSPKG_TOPDIR/operd/metrics/cloud/ -name "*.json" -printf "unlink ${CONFIG_PATH}/%P > /dev/null 2>&1 \n" | sh | echo -n ""
+    find ${OPERD_METRICS_PATH} -name "*.json" -printf "unlink ${CONFIG_PATH}/%P > /dev/null 2>&1 \n" | sh | echo -n ""
     sudo rm -f ${CONFIG_PATH}/pipeline.json ${CONFIG_PATH}/vpp_startup.conf
 }
 
@@ -32,7 +34,7 @@ function finish () {
 trap finish EXIT
 
 function setup_metrics_conf_files () {
-    ln -s $PDSPKG_TOPDIR/operd/metrics/cloud/*.json $CONFIG_PATH/
+    ln -s ${OPERD_METRICS_PATH}/*.json $CONFIG_PATH/
 }
 
 function setup_conf_files () {

@@ -11,6 +11,8 @@ else
 source $CUR_DIR/../../../tools/setup_env_sim.sh $PIPELINE
 fi
 
+OPERD_METRICS_PATH=${PDSPKG_TOPDIR}/infra/operd/metrics/cloud/
+
 function stop_model() {
     pkill cap_model
 }
@@ -29,7 +31,7 @@ function remove_shm_files () {
 }
 
 function remove_metrics_conf_files () {
-    find $PDSPKG_TOPDIR/operd/metrics/cloud/ -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
+    find ${OPERD_METRICS_PATH} -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
 }
 
 function remove_conf_files () {
@@ -52,7 +54,7 @@ function finish () {
 trap finish EXIT
 
 function setup_metrics_conf_files () {
-    ln -s $PDSPKG_TOPDIR/operd/metrics/cloud/*.json $CONFIG_PATH/ | echo -n ""
+    ln -s ${OPERD_METRICS_PATH}/*.json $CONFIG_PATH/ | echo -n ""
 }
 
 function setup_conf_files () {

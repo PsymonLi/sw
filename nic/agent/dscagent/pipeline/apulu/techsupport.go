@@ -12,7 +12,7 @@ import (
 
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/apulu/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
-	operdapi "github.com/pensando/sw/nic/operd/daemon/gen/operd"
+	operdapi "github.com/pensando/sw/nic/infra/operd/daemon/gen/operd"
 	"github.com/pensando/sw/venice/utils/log"
 )
 

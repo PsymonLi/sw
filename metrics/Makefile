@@ -11,9 +11,9 @@ IRIS_PATHS =\
 	nmdmetrics:nic/agent/protos/nmd/nmdmetrics      \
 	pciemgr:platform/src/app/pciemgrd/proto
 
-# Apulu metric jsons are hand maintained in nic/operd/metrics.
+# Apulu metric jsons are hand maintained in nic/infra/operd/metrics.
 APULU_PATHS =\
-	nic/operd/metrics/venice
+	nic/infra/operd/metrics/venice
 
 # all generated files are in the <pipeline>/generated/ path
 all:

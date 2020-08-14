@@ -40,7 +40,7 @@ venice/ctrler/orchhub/orchestrators/vchub/vcprobe/mock \
 venice/utils/diagnostics/protos \
 metrics \
 nic/metaswitch/protos \
-nic/operd/protos \
+nic/infra/operd/protos \
 nic/infra/upgrade/upgmgr/protos \
 nic/apollo/agent/protos
 
@@ -146,7 +146,7 @@ nic-protos:
 	make -C nic/sysmgr/proto
 	make -C nic/agent/protos/netproto delphi-gen
 	make -C nic/metaswitch/protos
-	make -C nic/operd/protos
+	make -C nic/infra/operd/protos
 	make -C nic/infra/upgrade/upgmgr/protos
 	make -C nic/apollo/agent/protos
 

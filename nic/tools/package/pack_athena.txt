@@ -10,11 +10,11 @@ nic/conf/$PIPELINE/policy.json                                    /nic/conf/$PIP
 nic/conf/$PIPELINE/system_boot_config                             /nic/conf/
 
 # metrics schema
-nic/operd/metrics/cloud/lif_metrics.json                          /nic/conf/
-nic/operd/metrics/cloud/mac_metrics.json                          /nic/conf/
-nic/operd/metrics/cloud/flowstats_metrics.json                    /nic/conf/
-nic/operd/metrics/cloud/sysmond_metrics.json                      /nic/conf/
-nic/operd/metrics/cloud/pcie_metrics.json                         /nic/conf/
+nic/infra/operd/metrics/cloud/lif_metrics.json                    /nic/conf/
+nic/infra/operd/metrics/cloud/mac_metrics.json                    /nic/conf/
+nic/infra/operd/metrics/cloud/flowstats_metrics.json              /nic/conf/
+nic/infra/operd/metrics/cloud/sysmond_metrics.json                /nic/conf/
+nic/infra/operd/metrics/cloud/pcie_metrics.json                   /nic/conf/
 
 # HW catalog files
 nic/conf/catalog_hw_68-0003.json                                  /nic/conf/

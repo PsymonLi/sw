@@ -6,5 +6,5 @@ MODULE_PREREQS  =
 MODULE_PIPELINE = apulu iris
 MODULE_DIR      := ${GOPATH}/src/github.com/pensando/sw/nic/${MODULE_DIR}
 MODULE_DEPS     := $(wildcard ${NICDIR}/apollo/agent/protos/*.proto) \
-                   $(wildcard ${NICDIR}/operd/protos/*.proto)
+                   $(wildcard ${NICDIR}/infra/operd/protos/*.proto)
 include ${MKDEFS}/post.mk

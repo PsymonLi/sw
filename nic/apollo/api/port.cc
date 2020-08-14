@@ -22,7 +22,7 @@
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/api/internal/pds_if.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
-#include "nic/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/alerts/alerts.hpp"
 
 using sdk::linkmgr::linkmgr_async_response_cb_t;
 

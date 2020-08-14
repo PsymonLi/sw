@@ -39,7 +39,7 @@ copy_files() {
     pkgf+='nic/tools/package/pack_test_utils.txt nic/tools/hal/mem_parser.py nic/hal/module_memrgns.mk '
 
     vppd='nic/vpp '
-    operd='nic/operd '
+    operd='nic/infra/operd '
 
     apollod='nic/apollo '
 

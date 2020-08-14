@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/platform/sensor/sensor.hpp"
-#include "nic/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/alerts/alerts.hpp"
 
 namespace api {
 #include <sys/time.h>

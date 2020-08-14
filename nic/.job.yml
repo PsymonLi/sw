@@ -548,7 +548,7 @@ targets:
     sub-area:
     feature:
   operd-syslog:
-    commands: ["sh", "-c", "cd /sw/nic/operd/tests/syslog && ./test.sh" ]
+    commands: ["sh", "-c", "cd /sw/nic/infra/operd/tests/syslog && ./test.sh" ]
     owners: ["email:stavros@pensando.io"]
     area:
     sub-area:

@@ -48,10 +48,10 @@ source $CUR_DIR/setup_env_sim.sh $PIPELINE
 
 function setup_global_options () {
     if [[ $DSCAGENTMODE == 1 ]]; then
-        METRICS_CONF_DIR=$PDSPKG_TOPDIR/operd/metrics/venice/
+        METRICS_CONF_DIR=$PDSPKG_TOPDIR/infra/operd/metrics/venice/
         SYSMGR_CONF=pipeline-venice-dol.json
     else
-        METRICS_CONF_DIR=$PDSPKG_TOPDIR/operd/metrics/cloud/
+        METRICS_CONF_DIR=$PDSPKG_TOPDIR/infra/operd/metrics/cloud/
         if [[ -n ${DEVICE_OPER_MODE} ]]; then
             SYSMGR_CONF=pipeline-${DEVICE_OPER_MODE}-dol.json
         else

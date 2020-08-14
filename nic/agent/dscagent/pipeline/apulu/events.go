@@ -21,7 +21,7 @@ import (
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	halapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
-	operdapi "github.com/pensando/sw/nic/operd/daemon/gen/operd"
+	operdapi "github.com/pensando/sw/nic/infra/operd/daemon/gen/operd"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/events"
 	"github.com/pensando/sw/venice/utils/log"

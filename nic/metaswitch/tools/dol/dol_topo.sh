@@ -11,6 +11,7 @@ DOL_CFG=/sw/nic/metaswitch/config/dol_ctr
 DOL_CFG_UPG=/sw/nic/metaswitch/config/dol_ctr1/ht-upg
 MIB_PY=/sw/nic/third-party/metaswitch/code/comn/tools/mibapi/metaswitch/cam/mib.py
 PDSAGENT=/sw/nic/apollo/tools/apulu/start-agent-mock.sh
+OPERD_METRICS_PATH=${NICDIR}/infra/operd/metrics/cloud/
 
 ###################################################
 #
@@ -58,11 +59,11 @@ for (( j=0; j<argc; j++ )); do
 done
 
 function remove_conf_files () {
-    find ${NICDIR}/operd/metrics/cloud/ -name "*.json" -printf "rm -f ${NICDIR}/conf/%P \n" | sh
+    find ${OPERD_METRICS_PATH} -name "*.json" -printf "rm -f ${NICDIR}/conf/%P \n" | sh
 }
 
 function setup_metrics_conf_files () {
-    cp $NICDIR/operd/metrics/cloud/*.json ${NICDIR}/conf/
+    cp ${OPERD_METRICS_PATH}/*.json ${NICDIR}/conf/
 }
 setup_metrics_conf_files
 

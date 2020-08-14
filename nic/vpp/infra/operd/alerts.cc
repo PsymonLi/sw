@@ -3,7 +3,7 @@
 //
 
 #include "nic/apollo/api/include/pds.hpp"
-#include "nic/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/alerts/alerts.hpp"
 #include "alerts.h"
 
 static operd::alerts::alert_recorder_ptr g_alert_recorder = NULL;

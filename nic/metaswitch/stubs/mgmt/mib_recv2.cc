@@ -15,7 +15,7 @@
 #include "nic/metaswitch/stubs/common/pds_ms_ifindex.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/apollo/core/trace.hpp"
-#include "nic/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/alerts/alerts.hpp"
 #include "nbase.h"
 #include "nbbstub.h"
 #include "qbnmdef.h"

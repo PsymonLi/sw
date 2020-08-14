@@ -599,7 +599,7 @@ dependencies:
     - reference: nic/apollo/tools/apulu/sanity/base
     - reference: test/ci_targets/cloud-e2e
     - reference: test/ci_targets/controlplane-dol
-  nic/operd:
+  nic/infra/operd:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
     - reference: nic/apollo/tools/apulu/sanity/base

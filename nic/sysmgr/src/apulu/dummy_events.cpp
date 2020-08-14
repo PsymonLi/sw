@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "../events_api.hpp"
-#include "nic/operd/alerts/alerts.hpp"
+#include "nic/infra/operd/alerts/alerts.hpp"
 
 class DummyLogger : public SysmgrEvents {
 public:

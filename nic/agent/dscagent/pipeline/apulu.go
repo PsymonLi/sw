@@ -35,7 +35,7 @@ import (
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	halapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
 	msapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
-	operdapi "github.com/pensando/sw/nic/operd/daemon/gen/operd"
+	operdapi "github.com/pensando/sw/nic/infra/operd/daemon/gen/operd"
 	"github.com/pensando/sw/venice/utils/events"
 	"github.com/pensando/sw/venice/utils/log"
 )
