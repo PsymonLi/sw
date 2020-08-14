@@ -1,3 +1,5 @@
+@import 'src/global-mixins';
+
 #networkgraph-graph {
   background-size: 10px 10px;
   background-color: rgb(250, 250, 250);
@@ -7,18 +9,7 @@
 $healthy: #a3d771;
 $neutral: #a4c7f0;
 $error: #e57553;
-
-%text-fira {
-  font-family: "Fira Sans Condensed";
-  font-size: 16px;
-  fill: #676763;
-}
-
-%text-roboto {
-  font-family: "Roboto Condensed";
-  font-size: 12px;
-  fill: #676763;
-}
+$label: #6ba0e5;
 
 .networkgraph-sourcelink {
   stroke: $neutral;
@@ -32,14 +23,13 @@ $error: #e57553;
 }
 
 .networkgraph-node-workloadSource-label {
-  @extend %text-fira;
-  fill: #6ba0e5;
+  @include primary-font(16px);
+  fill: $label;
 }
 
 .networkgraph-node-workloadSource-label-secondary {
-  @extend %text-fira;
-  fill: #6ba0e5;
-  font-weight: bold;
+  @include primary-font(16px, $label, bold);
+  fill: $label;
 }
 
 /* Workload Destination */
@@ -49,12 +39,13 @@ $error: #e57553;
 }
 
 .networkgraph-node-workloadDestination-label {
-  @extend %text-fira;
+  @include primary-font(16px);
+  fill: $label;
 }
 
 .networkgraph-node-workloadDestination-label-secondary {
-  @extend %text-fira;
-  font-weight: bold;
+  @include primary-font(16px, $label, bold);
+  fill: $label;
 }
 
 /* Security Group */
@@ -64,7 +55,21 @@ $error: #e57553;
 }
 
 .networkgraph-node-securityGroup-label {
-  @extend %text-roboto;
+  @include primary-font(12px);
+}
+
+/* Security Rule*/
+.networkgraph-node-rule {
+  stroke: #b7d594;
+  fill: #e2f2d0;
+}
+
+.networkgraph-node-rule-label {
+  @include primary-font(12px);
+}
+
+.networkgraph-node-rule-label-secondary {
+  @include primary-font(16px, $label, bold);
 }
 
 /* Security Policy */
@@ -78,8 +83,7 @@ $error: #e57553;
 }
 
 .networkgraph-node-securityPolicy-label {
-
-  @extend %text-roboto;
+  @include primary-font(12px);
 }
 
 /* Naples */
@@ -89,14 +93,23 @@ $error: #e57553;
 }
 
 .networkgraph-node-naples-label {
-  @extend %text-roboto;
-  font-size: 14px;
+  @include primary-font(16px);
+  fill: $label;
 }
 
 /* Network */
 .networkgraph-node-network {
   stroke: #a5d9b7;
   fill: #def5e6;
+}
+
+/* Empty */
+.networkgraph-node-empty-label {
+  @include primary-font(12px, $label, italic);
+}
+
+.networkgraph-node-empty-label-secondary {
+  @include primary-font(14px);
 }
 
 /* Link States */

@@ -3,63 +3,486 @@
     <!-- Troubleshooting config bar -->
     <div fxFlex="70px" fxLayout="row" class="troubleshooting-config">
       <div fxFlex="none" class="troubleshooting-config-item">
-        Source:
+        Source :
         <mat-form-field floatLabel="never">
-          <input autocomplete="off" matInput [formControl]="sourceFormControl"
-                 (blur)="submitSource()"
-                 placeholder="IP/Port">
+          <input matInput [(ngModel)]="sourceIP" (blur)="submitSource()"
+                 matTooltip="Should be a valid IPv4 address. Ex : 10.1.1.1"
+                 placeholder="IP Address">
         </mat-form-field>
       </div>
       <div fxFlex="none" class="troubleshooting-config-item">
-        Destination:
+        Destination :
         <mat-form-field floatLabel="never">
-          <input autocomplete="off" [formControl]="destFormControl" (blur)="submitDest()" matInput
-                 placeholder="IP/Port">
+          <input [(ngModel)]="destIP" (blur)="submitDest()" matInput
+                 matTooltip="Should be a valid IPv4 address. Ex : 10.1.1.2"
+                 placeholder="IP Address">
         </mat-form-field>
       </div>
       <div fxFlex="none" class="troubleshooting-config-item">
+        Port :
         <mat-form-field floatLabel="never">
-          <input autocomplete="off" matInput [matDatepicker]="picker" placeholder="start date">
-          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-          <mat-datepicker #picker></mat-datepicker>
+          <input [(ngModel)]="destPort" (blur)="submitPort()" matInput placeholder="Protocol/Port">
         </mat-form-field>
       </div>
       <div fxFlex="none" class="troubleshooting-config-item">
-        <mat-form-field floatLabel="never">
-          <input autocomplete="off" matInput [matDatepicker]="picker2" placeholder="end date">
-          <mat-datepicker-toggle matSuffix [for]="picker2"></mat-datepicker-toggle>
-          <mat-datepicker #picker2></mat-datepicker>
-        </mat-form-field>
-      </div>
-      <div fxFlex="none" class="troubleshooting-config-item">
-        <mat-form-field floatLabel="never">
-          <mat-select placeholder="Tools...">
-            <mat-option *ngFor="let option of toolOptions">
-              {{ option }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
+        <button class="global-button-primary troubleshooting-link-button"
+                (click)="troubleshoot()">TROUBLESHOOT</button>
       </div>
     </div>
     <div fxFlex="40px" fxLayout="row" class="troubleshooting-tab-container"
-         [ngStyle]="{'background-color': showTabs ? 'white' : 'rgb(250, 250, 250)'}">
+         [ngStyle]="{'background-color' : showTabs ? 'white' : 'rgb(250, 250, 250)'}">
       <mat-tab-group fxFlex *ngIf="showTabs" class="troubleshooting-tab-group"
                      (selectedTabChange)="tabChange($event)">
-        <mat-tab label="EVENTS">
+        <mat-tab label="TOPOLOGY">
         </mat-tab>
-        <mat-tab label="INGRESS POLICIES">
-        </mat-tab>
-        <mat-tab label="EGRESS POLICIES">
-        </mat-tab>
-        <mat-tab label="STATS">
+        <mat-tab label="POLICIES">
         </mat-tab>
       </mat-tab-group>
     </div>
     <!-- Graph -->
-    <div fxFlex="415px" fxLayout="column">
+    <div fxFlex="215px" fxLayout="column">
       <div fxFlex fxLayout="column" id="troubleshooting-graph">
         <app-networkgraph #networkgraph fxFlex fxLayout="row"></app-networkgraph>
       </div>
     </div>
+    <!-- Rules Table for Policies Tab -->
+    <div *ngIf="this.showTable === true">
+      <app-pentable #rulesTable [data]="dataObjects" [columns]="cols"
+                    [captionTemplate]="captionTemplate"
+                    [bodyTemplate]="bodyTemplate" [actionTemplate]="actionTemplate"
+                    [enableCheckbox]="true"
+                    [loading]="tableLoading" [numRows]="10"
+                    [rowHeight]="46" [exportFilename]="exportFilename"
+                    (rowSelectedEmitter)="checkboxClicked($event)"
+                    (rowUnselectedEmitter)="checkboxClicked($event)"
+                    [dataKey]="'order'">
+      </app-pentable>
+    </div>
+    <!-- Diagnostic Test Results for Topology Tab -->
+    <div *ngIf="this.showTestResults === true" fxLayout="row" class="troubleshooting-test-cards">
+      <!-- Diagnostic Test Results for Source -->
+      <div *ngIf="this.sourceWorkload === null || this.sourceDSC === null"
+           class="troubleshooting-placeholder-div">
+      </div>
+      <mat-card *ngIf="this.sourceWorkload != null && this.sourceDSC!= null">
+        <mat-card-title class="troubleshooting-title-header"><img
+               src="/assets/images/icons/cluster/naples/ico-dsc-black.svg" />
+          Source Test Results
+        </mat-card-title>
+
+        <mat-card-subtitle>
+          <div class="troubleshooting-card-div">
+            <div fxLayout="row" class="troubleshooting-test-passed">Workload : <a
+                 routerLink="/workload/{{this.sourceWorkload.meta.name}}"
+                 class="troubleshooting-dsc-spec">{{this.sourceWorkload.meta.name}}</a></div>
+          </div>
+        </mat-card-subtitle>
+
+        <mat-card-subtitle>
+          <div class="troubleshooting-card-div">
+            <div fxLayout="row" class="troubleshooting-test-passed">DSC : <a
+                 routerLink="/cluster/dscs/{{this.sourceDSC.meta.name}}"
+                 class="troubleshooting-dsc-spec">{{this.sourceDSC.spec.id}}</a></div>
+            <div fxLayout="row" class="troubleshooting-test-passed"> DSC System Spec</div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec">CPU Speed :
+              {{this.sourceDSC.status['system-info']['cpu-info'].speed}}
+            </div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec">Memory Type :
+              {{this.sourceDSC.status['system-info']['memory-info'].type}}</div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec"> OS Processor :
+              {{this.sourceDSC.status['system-info']['os-info'].processor}}</div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec"> OS Type :
+              {{this.sourceDSC.status['system-info']['os-info'].type}}
+            </div>
+          </div>
+        </mat-card-subtitle>
+
+        <!-- TEST 1 Source -->
+        <mat-card-subtitle>
+          <div *ngIf="this.srcTest1Passed"
+               [ngClass]="[this.srcTest1Passed ? 'troubleshooting-test-passed' : 'troubleshooting-test-failed']">
+            DSC Health
+          </div>
+        </mat-card-subtitle>
+        <!--  DSC Admitted -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.sourceDSCisAdmitted ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Admitted">
+              {{this.sourceDSCisAdmitted ? 'check_circle' : 'warning' }}
+            </mat-icon>
+            <div>Admitted : {{this.sourceDSCisAdmitted}}</div>
+          </div>
+        </mat-card-subtitle>
+        <!--  DSC Condition -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.sourceDSCCondition === 'healthy' ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Healthy">
+              {{this.sourceDSCCondition === 'healthy' ? 'check_circle' : 'warning' }}</mat-icon>
+            <div>Condition : {{this.sourceDSCCondition}}</div>
+          </div>
+        </mat-card-subtitle>
+        <!--  DSC Phase -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.sourceDSCPhase === 'admitted'  ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Admitted">
+              {{this.sourceDSCPhase === 'admitted' ? 'check_circle' : 'warning' }}
+            </mat-icon>
+            <div>Phase : {{this.sourceDSCPhase}}</div>
+          </div>
+        </mat-card-subtitle>
+        <!-- TEST 2 Source -->
+        <mat-card-subtitle>
+          <div *ngIf="this.srcTest2Passed" class="troubleshooting-test-passed"> DSC in Correct
+            Profile </div>
+        </mat-card-subtitle>
+        <mat-card-subtitle>
+          <div *ngIf="!this.srcTest2Passed" class="troubleshooting-test-failed"> DSC in Incorrect
+            Profile </div>
+        </mat-card-subtitle>
+        <!--  DSC in Profile -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.sourceDSCisinFirewallProfile ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="DSC Profile">
+              {{this.sourceDSCisinFirewallProfile? 'check_circle' : 'warning' }}</mat-icon>
+            <div> DSC in Firewall Profile : {{this.sourceDSCisinFirewallProfile}}</div>
+          </div>
+        </mat-card-subtitle>
+        <!--  DSC Virtualized -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.sourceDSCisVirtualized ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Virtualized">
+              {{this.sourceDSCisVirtualized? 'check_circle' : 'warning' }}
+            </mat-icon>
+            <div>DSC Virtualization : {{this.sourceDSCisVirtualized }}</div>
+          </div>
+        </mat-card-subtitle>
+
+        <!-- TEST 3 Source -->
+        <mat-card-subtitle>
+          <div *ngIf="this.srcTest3Passed" class="troubleshooting-test-passed"> Policy Propagated to
+            DSC</div>
+        </mat-card-subtitle>
+        <mat-card-subtitle>
+          <div *ngIf="!this.srcTest3Passed" class="troubleshooting-test-failed"> Policy not
+            Propagated to DSC </div>
+        </mat-card-subtitle>
+        <!--  DSC Propagation Status -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.sourceDSCHasPropagatedPolicy ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Policy Propagated">
+              {{this.sourceDSCHasPropagatedPolicy? 'check_circle' : 'warning' }}</mat-icon>
+            <div>Policy Progated to DSC : {{this.sourceDSCHasPropagatedPolicy}}</div>
+          </div>
+        </mat-card-subtitle>
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.sourcePolicyPropagatedPolicy? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Policy Propagated">
+              {{this.sourcePolicyPropagatedPolicy? 'check_circle' : 'warning' }}</mat-icon>
+            <div>Policy Progated from Security Profile : {{this.sourcePolicyPropagatedPolicy}}</div>
+          </div>
+        </mat-card-subtitle>
+      </mat-card>
+      <!-- Diagnostic Test Results for Network Connection -->
+      <mat-card
+                *ngIf="this.showFirewallLogSpecs === true ||this.showSourceDSCDropData === true || this.showDestDSCDropData === true ">
+        <mat-card-title class="troubleshooting-title-header">
+          Network Connection Results
+        </mat-card-title>
+        <!-- From Latest Firewall Log -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-card-div" *ngIf="this.showFirewallLogSpecs === true">
+            <div fxLayout="row" class="troubleshooting-subtitle-header">Last Connection between
+              {{sourceIP}} and
+              {{destIP}} : </div>
+            <div fxLayout="row" class="troubleshooting-connection-spec">{{this.logCreationTime}}
+            </div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec">Protocol : {{this.logProtocol}}
+            </div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec">Source Port :
+              {{this.logSourcePort}}
+            </div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec"> Destination Port :
+              {{this.logDestPort}}</div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec"> Session Action :
+              {{this.logAction}}
+            </div>
+            <mat-card-actions>
+              <button class="global-button-primary troubleshooting-link-button"><a
+                   routerLink="/monitoring/fwlogs"
+                   class="troubleshooting-link-action">See all Firewall Logs</a></button>
+            </mat-card-actions>
+          </div>
+        </mat-card-subtitle>
+
+        <!-- From Metrics Query about Forwarding Drops-->
+        <mat-card-subtitle>
+          <div class="troubleshooting-card-div" *ngIf="this.showSourceDSCDropData === true">
+            <div fxLayout="row" class="troubleshooting-test-passed">Source DSC Forwarding Drops
+            </div>
+            <div fxLayout="row" class="troubleshooting-connection-spec">Over Past Day</div>
+            <div *ngFor="let dropRow of srcDropData">
+              <div fxLayout="row" class="troubleshooting-dsc-spec">{{dropRow.column}} :
+                {{dropRow.value}}</div>
+            </div>
+            <mat-card-actions>
+              <button class="global-button-primary troubleshooting-link-button"><a
+                   routerLink="/monitoring/metrics"
+                   class="troubleshooting-link-action">Find More Metrics</a></button>
+            </mat-card-actions>
+          </div>
+        </mat-card-subtitle>
+        <mat-card-subtitle>
+          <div class="troubleshooting-card-div" *ngIf="this.showDestDSCDropData === true">
+            <div fxLayout="row" class="troubleshooting-test-passed">Destination DSC Forwarding Drops
+            </div>
+            <div fxLayout="row" class="troubleshooting-connection-spec">Over Past Day</div>
+            <div *ngFor="let dropRow of destDropData">
+              <div fxLayout="row" class="troubleshooting-dsc-spec">{{dropRow.column}} :
+                {{dropRow.value}}</div>
+            </div>
+            <mat-card-actions>
+              <button class="global-button-primary troubleshooting-link-button"><a
+                   routerLink="/monitoring/metrics"
+                   class="troubleshooting-link-action">Find More Metrics</a></button>
+            </mat-card-actions>
+          </div>
+        </mat-card-subtitle>
+      </mat-card>
+
+      <div *ngIf="this.destWorkload === null || this.destDSC === null"
+           class="troubleshooting-placeholder-div">
+      </div>
+      <!-- Diagnostic Test Results for Destination-->
+      <mat-card *ngIf="!this.destWorkload != null && this.destDSC!= null">
+        <mat-card-title class="troubleshooting-title-header"><img
+               src="/assets/images/icons/cluster/naples/ico-dsc-black.svg" />
+          Destination Test Results
+        </mat-card-title>
+
+        <mat-card-subtitle>
+          <div class="troubleshooting-card-div">
+            <div fxLayout="row" class="troubleshooting-test-passed">Workload : <a
+                 routerLink="/workload/{{this.destWorkload.meta.name}}"
+                 class="troubleshooting-dsc-spec">{{this.destWorkload.meta.name}}</a></div>
+          </div>
+        </mat-card-subtitle>
+
+        <mat-card-subtitle>
+          <div class="troubleshooting-card-div">
+            <div fxLayout="row" class="troubleshooting-test-passed">DSC : <a
+                 routerLink="/cluster/dscs/{{this.destDSC.meta.name}}"
+                 class="troubleshooting-dsc-spec">{{this.destDSC.spec.id}}</a></div>
+            <div fxLayout="row" class="troubleshooting-test-passed"> System Spec :</div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec">CPU Speed :
+              {{this.destDSC.status['system-info']['cpu-info'].speed}}
+            </div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec">Memory Type :
+              {{this.destDSC.status['system-info']['memory-info'].type}}
+            </div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec"> OS Processor :
+              {{this.destDSC.status['system-info']['os-info'].processor}}</div>
+            <div fxLayout="row" class="troubleshooting-dsc-spec"> OS Type :
+              {{this.destDSC.status['system-info']['os-info'].type}}</div>
+          </div>
+        </mat-card-subtitle>
+
+        <!-- TEST 1 Destination -->
+        <mat-card-subtitle>
+          <div *ngIf="this.destTest1Passed"
+               [ngClass]="[this.destTest1Passed ? 'troubleshooting-test-passed' : 'troubleshooting-test-failed']">
+            DSC
+            Health </div>
+        </mat-card-subtitle>
+        <!--  DSC Admitted -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.destDSCisAdmitted ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Admitted">
+              {{this.destDSCisAdmitted ? 'check_circle' : 'warning' }}
+            </mat-icon>
+            <div>Admitted : {{this.destDSCisAdmitted}}</div>
+          </div>
+        </mat-card-subtitle>
+        <!--  DSC Condition -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.destDSCCondition === 'healthy' ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Healthy">
+              {{this.destDSCCondition === 'healthy' ? 'check_circle' : 'warning' }}</mat-icon>
+            <div>Condition : {{this.destDSCCondition}}</div>
+          </div>
+        </mat-card-subtitle>
+        <!--  DSC Phase -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.destDSCPhase === 'admitted'  ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Admitted">
+              {{this.destDSCPhase === 'admitted' ? 'check_circle' : 'warning' }}
+            </mat-icon>
+            <div>Phase : {{this.destDSCPhase}}</div>
+          </div>
+        </mat-card-subtitle>
+
+        <!-- TEST 2 Destination -->
+        <mat-card-subtitle>
+          <div *ngIf="this.destTest2Passed" class="troubleshooting-test-passed"> DSC in Correct
+            Profile </div>
+        </mat-card-subtitle>
+        <mat-card-subtitle>
+          <div *ngIf="!this.destTest2Passed" class="troubleshooting-test-failed"> DSC in Incorrect
+            Profile </div>
+        </mat-card-subtitle>
+        <!--  DSC in Profile -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.destDSCisinFirewallProfile ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="DSC Profile">
+              {{this.destDSCisinFirewallProfile? 'check_circle' : 'warning' }}</mat-icon>
+            <div> DSC in Firewall Profile : {{this.destDSCisinFirewallProfile}}</div>
+          </div>
+        </mat-card-subtitle>
+        <!--  DSC Virtualized -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.destDSCisVirtualized ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Virtualized">
+              {{this.destDSCisVirtualized? 'check_circle' : 'warning' }}
+            </mat-icon>
+            <div>DSC Virtualization : {{this.destDSCisVirtualized }}</div>
+          </div>
+        </mat-card-subtitle>
+
+        <!-- TEST 3 Dest -->
+        <mat-card-subtitle>
+          <div *ngIf="this.destTest3Passed" class="troubleshooting-test-passed"> Policy Propagated
+            to DSC</div>
+        </mat-card-subtitle>
+        <mat-card-subtitle>
+          <div *ngIf="!this.destTest3Passed" class="troubleshooting-test-failed"> Policy not
+            Propagated to DSC
+          </div>
+        </mat-card-subtitle>
+        <!--  DSC Propagation Status -->
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.destDSCHasPropagatedPolicy ? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Policy Propagated">
+              {{this.destDSCHasPropagatedPolicy? 'check_circle' : 'warning' }}</mat-icon>
+            <div>Policy Progated to DSC : {{this.destDSCHasPropagatedPolicy}}</div>
+          </div>
+        </mat-card-subtitle>
+        <mat-card-subtitle>
+          <div class="troubleshooting-test-spec">
+            <mat-icon fxFlex="nogrow"
+                      [ngClass]="[this.destPolicyPropagatedPolicy? 'troubleshooting-status-icon troubleshooting-status-green-icon' : 'troubleshooting-status-icon global-alert-warning-icon']"
+                      [inline]="true" matTooltip="Policy Propagated">
+              {{this.destPolicyPropagatedPolicy? 'check_circle' : 'warning' }}</mat-icon>
+            <div>Policy Progated from Security Profile : {{this.destPolicyPropagatedPolicy}}</div>
+          </div>
+        </mat-card-subtitle>
+      </mat-card>
+    </div>
   </div>
 </app-pagebody>
+
+<!-- RULES TABLE HEADER -->
+<ng-template #captionTemplate let-count="count">
+  <div fxFlex="none" fxLayout="row">
+    <div fxFlex="none" fxLayout="column">
+      <div fxFlex="none" fxLayout="row">
+        <app-tableheader fxFlex="none" title="Applied Rules" [total]="dataObjects.length"
+                         [icon]="tableIcon"
+                         [enableColumnSelect]="true"
+                         [cols]="cols"
+                         (columnSelectChange)="onColumnSelectChange($event)">
+        </app-tableheader>
+      </div>
+      <div *roleGuard="'monitoringfwlogpolicy_update'" fxFlex="none" fxLayout="row"
+           fxLayoutAlign="center center"
+           class="troubleshooting-rules-editor">
+        <mat-icon [matTooltip]="'Edit Selected Rules'" *ngIf="isOneSelected()"
+                  class="troubleshooting-sgpolicy-icons-button"
+                  (click)="onUpdate()" fxFlex="none">edit</mat-icon>
+        <mat-icon [matTooltip]="'Delete selected rules. Each operation can delete up to a maximum of 56 records'"
+                  *ngIf="isAnythingSelected()" class="troubleshooting-sgpolicy-icons-button"
+                  (click)="onDelete()"
+                  fxFlex="none">delete
+        </mat-icon>
+        <div fxFlex="5px"></div>
+        <div *ngIf="isOneSelected()" class="troubleshooting-ui-inputgroup">
+          <input fxflex="nogrow" class="troubleshooting-sgpolicydetail-input-reorder"
+                 spellcheck="false"
+                 type="number" pInputText
+                 [matTooltip]="'Enter the target row number (start from 1)...'" placeholder="row #"
+                 autocomplete="off"
+                 min="1" (keyup)="reorderKeyUp($event)">
+          <button mat-button [disabled]="!isReorderReady()"
+                  class="troubleshooting-ui-inputgroup-addon sgpolicy-icon-addon-span">
+            <mat-icon [matTooltip]="'Change Order'" class="troubleshooting-sgpolicy-icons-button"
+                      (click)="onReorder()" fxFlex="none">
+              wrap_text</mat-icon>
+          </button>
+        </div>
+      </div>
+      <ng-container *ngIf="display">
+        <ng-container *ngTemplateOutlet="policyEditor"></ng-container>
+      </ng-container>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #bodyTemplate let-rowData let-col="col">
+  <ng-container>
+    <div [matTooltip]=" col.field === 'TotalHits' ? ruleMetricsTooltip[rowData.ruleHash]: ''"
+         [matTooltipShowDelay]="100"
+         [matTooltipClass]="'global-info-tooltip troubleshooting-sgpolicy-tooltip'">
+      {{displayColumn(rowData, col)}}
+    </div>
+  </ng-container>
+</ng-template>
+
+<ng-template #actionTemplate let-rowData>
+  <div class="global-column-action-icon-container" fxLayout="row" fxLayoutGap="5px">
+    <mat-icon *roleGuard="'monitoringfwlogpolicy_update'"
+              class="troubleshooting-sgpolicy-icons-button global-table-action-icon troubleshooting-insert-icon"
+              (click)="onAdd(rowData, true)"
+              matTooltip="Insert Rule Before" svgIcon="add-above">
+    </mat-icon>
+    <mat-icon *roleGuard="'monitoringfwlogpolicy_update'"
+              class="troubleshooting-sgpolicy-icons-button global-table-action-icon troubleshooting-insert-icon"
+              (click)="onAdd(rowData)"
+              matTooltip="Insert Rule After" svgIcon="add-below">
+    </mat-icon>
+  </div>
+</ng-template>
+
+<ng-template #policyEditor>
+  <p-dialog header="Policy Editing" [(visible)]="display" [appendTo]="'body'" [maximizable]="true"
+            [modal]="true" [styleClass]="'popup'">
+    <app-partial-edit-sgpolicy [style.width]="'100%'" [objectData]="this.editObject"
+                               [isInline]="true"
+                               [securityAppOptions]='securityAppOptions' fxFlex="none"
+                               (saveEmitter)="onSave($event)" (closeEmitter)="onClose()">
+    </app-partial-edit-sgpolicy>
+  </p-dialog>
+</ng-template>

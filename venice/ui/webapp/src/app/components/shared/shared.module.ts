@@ -65,6 +65,7 @@ import { AlertIndicationBarComponent } from './alert-indication-bar/alert-indica
 import { DscprofilesetterComponent } from './dscprofilesetter/dscprofilesetter.component';
 import { ExportLogsComponent } from './exportlogs/exportlogs.component';
 import { RrstatusComponent } from './rrstatus/rrstatus.component';
+import { PartialEditSgpolicyComponent } from '@app/components/security/sgpolicies/partial-edit-sgpolicy/partial-edit-sgpolicy.component';
 
 @NgModule({
   imports: [
@@ -134,7 +135,8 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     AlertIndicationBarComponent,
     DscprofilesetterComponent,
     ExportLogsComponent,
-    RrstatusComponent
+    RrstatusComponent,
+    PartialEditSgpolicyComponent
   ],
   exports: [
     PagebodyComponent,
@@ -193,7 +195,8 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     AlertIndicationBarComponent,
     DscprofilesetterComponent,
     ExportLogsComponent,
-    RrstatusComponent
+    RrstatusComponent,
+    PartialEditSgpolicyComponent
   ],
   providers: [
     DomHandler

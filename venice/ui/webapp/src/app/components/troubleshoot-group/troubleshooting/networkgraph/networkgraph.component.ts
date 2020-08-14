@@ -16,7 +16,7 @@ export const NodeConsts = {
         size: 45
       },
       unknown: {
-        url: '',
+        url: '/assets/images/icons/networkgraph/ico-workload-source-unknown.svg',
         size: 45
       },
       pulsing: {
@@ -49,7 +49,7 @@ export const NodeConsts = {
         size: 45
       },
       pulsing: {
-        url: '',
+        url: '/assets/images/icons/networkgraph/workloadDestination/ico-workload-destination-healthy.svg',
         size: 45
       },
       error: {
@@ -120,13 +120,41 @@ export const NodeConsts = {
       },
     }
   },
-  rule: {},
+  rule: {
+    class: 'networkgraph-node-rule',
+    labelClass: 'networkgraph-node-rule-label',
+    secondaryLabelClass: 'networkgraph-node-rule-label-secondary',
+    labelOffset: 25,
+    radius: 0,
+    image: {
+      loading: {
+        url: '',
+        size: 60
+      },
+      unknown: {
+        url: '',
+        size: 60
+      },
+      pulsing: {
+        url: '',
+        size: 60
+      },
+      error: {
+        url: '',
+        size: 60
+      },
+      healthy: {
+        url: '',
+        size: 60
+      },
+    }
+  },
   naples: {
     class: 'networkgraph-node-naples',
     labelClass: 'networkgraph-node-naples-label',
     secondaryLabelClass: 'networkgraph-node-naples-label-secondary',
     radius: 25,
-    labelOffset: 25,
+    labelOffset: 35,
     image: {
       loading: {
         url: '',
@@ -177,6 +205,19 @@ export const NodeConsts = {
         url: '/assets/images/icons/networkgraph/ico-service-copy.svg',
         size: 60
       },
+    }
+  },
+  empty: {
+    class: 'networkgraph-node-empty',
+    labelClass: 'networkgraph-node-empty-label',
+    secondaryLabelClass: 'networkgraph-node-empty-label-secondary',
+    labelOffset: 22,
+    radius: 0,
+    image: {
+      healthy: {
+        url: '',
+        size: 60
+      }
     }
   }
 };

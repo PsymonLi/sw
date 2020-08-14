@@ -255,6 +255,30 @@ export class ObjectsRelationsUtility {
         return dscWorkloadsTuple;
     }
 
+        /**
+     * Build a map key=dsc.meta.name, value = 'DSCWorkloadsTuple' object
+     *
+     * dsc -- 1:1 --> host
+     * host -- 1:m --> workloads
+     * @param workloads
+     * @param naples
+     */
+    public static buildDscWorkloadMaps(workloads: ReadonlyArray<WorkloadWorkload> | WorkloadWorkload[], naples: ReadonlyArray<ClusterDistributedServiceCard> | ClusterDistributedServiceCard[])
+        : any[] {
+        const dscWorkloadMap = [];
+        const dscWorkloads = {};
+
+        for (const naple of naples) {
+            const linkworkloads = this.findAssociatedWorkloadsByDSC(workloads, naple);
+            dscWorkloads[naple.meta.name] = linkworkloads;
+        }
+
+        Object.keys(dscWorkloads).forEach(dsc => {
+            dscWorkloadMap.push({ dsc: dsc, workload: dscWorkloads[dsc] });
+        });
+        return dscWorkloadMap;
+    }
+
     /**
      * Build a map key=vcenter.meta.name, value = 'Workload' object
      *

@@ -1,6 +1,6 @@
 import { Rule, PortRule, IPRule } from '@app/models/frontend/shared/rule.interface';
 import { AbstractControl, ValidationErrors } from '@angular/forms';
-
+import { ISecuritySGRule, SecuritySGRule, SecurityNetworkSecurityPolicy, SecuritySGRule_action_uihint, ISecurityNetworkSecurityPolicy, SecurityApp } from '@sdk/v1/models/generated/security';
 
 export class IPUtility {
 
@@ -253,6 +253,35 @@ export class IPUtility {
     }
     return false;
   }
+  /* Checks the Rule's source and dest IP. */
+  public static filterSGRuleByIPv4(rule: ISecuritySGRule, searchIP: string): boolean {
+    if (searchIP === '' || searchIP == null) {
+      return true;
+    }
+    // check if search has invalid characters or invalid formatting
+    const charCheck = RegExp('^[0-9./]*$');
+    if (!charCheck.test(searchIP)) {
+      return false;
+    }
+    let isValid = true;
+    searchIP.split('.').forEach((oct) => {
+      if (oct.length > 3) {
+        isValid = false;
+      }
+    });
+    if (!isValid) {
+      return false;
+    }
+    const ruleIPsrc = rule['from-ip-addresses'];
+    const ruleIPtgt = rule['to-ip-addresses'];
+    if (this.matchSGIPv4(ruleIPsrc, searchIP)) {
+      return true;
+    }
+    if (this.matchSGIPv4(ruleIPtgt, searchIP)) {
+      return true;
+    }
+    return false;
+  }
 
   /**
    * Given a mask size, generates the corresponding IP
@@ -326,6 +355,16 @@ export class IPUtility {
       }
     }
     return false;
+  }
+
+  /**
+   * Check the searched ip with an ip list or range
+   * @param ruleIP
+   * @param searchIP
+   */
+  public static matchSGIPv4(ruleIP: string[] = null, searchIP: string): boolean {
+    // checking if can match with list first
+    return ruleIP.some(ip => this.matchIPv4Helper(ip, searchIP));
   }
 
   /**

@@ -29,7 +29,6 @@ describe('PartialEditSgpolicyComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ PartialEditSgpolicyComponent ],
       imports: [
         FormsModule,
         ReactiveFormsModule,

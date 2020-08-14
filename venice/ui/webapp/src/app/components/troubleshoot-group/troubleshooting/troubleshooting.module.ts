@@ -16,6 +16,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TroubleshootingComponent } from './troubleshooting.component';
 import { NetworkgraphComponent } from './networkgraph/networkgraph.component';
 import { TroubleshootingRoutingModule } from './troubleshooting.route';
+
 @NgModule({
   declarations: [TroubleshootingComponent, NetworkgraphComponent],
   imports: [
@@ -27,7 +28,6 @@ import { TroubleshootingRoutingModule } from './troubleshooting.route';
     FormsModule,
     WidgetsModule,
     SharedModule,
-
     TroubleshootingRoutingModule
   ]
 })

@@ -6,7 +6,8 @@ export enum NodeType {
     securityPolicy = 'securityPolicy',
     rule = 'rule',
     naples = 'naples',
-    network = 'network'
+    network = 'network',
+    empty = 'empty'
 }
 
 export enum NodeStates {

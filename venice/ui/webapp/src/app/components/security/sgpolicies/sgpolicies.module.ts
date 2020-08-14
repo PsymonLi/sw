@@ -10,8 +10,6 @@ import { SgpoliciesComponent } from './sgpolicies.component';
 import { SgpolicydetailComponent } from './sgpolicydetail/sgpolicydetail.component';
 import { SgpoliciesRoutingModule } from '@app/components/security/sgpolicies/sgpolicies.route';
 import { NewsgpolicyComponent } from './newsgpolicy/newsgpolicy.component';
-import { PartialEditSgpolicyComponent } from './partial-edit-sgpolicy/partial-edit-sgpolicy.component';
-
 
 @NgModule({
   imports: [
@@ -29,6 +27,6 @@ import { PartialEditSgpolicyComponent } from './partial-edit-sgpolicy/partial-ed
 
     SgpoliciesRoutingModule
   ],
-  declarations: [SgpoliciesComponent, SgpolicydetailComponent, NewsgpolicyComponent, PartialEditSgpolicyComponent],
+  declarations: [SgpoliciesComponent, SgpolicydetailComponent, NewsgpolicyComponent],
 })
 export class SgpoliciesModule { }
