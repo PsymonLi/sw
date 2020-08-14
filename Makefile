@@ -819,10 +819,10 @@ naples-protos-apulu:
 naples-firmware-tarball-athena: NAPLES_FW_TAR=naples_fw_all_athena.tgz
 naples-firmware-tarball-athena: naples-firmware-tarball
 
-naples-firmware-tarball-athena-mfg: 
-	NAPLES_FW_TAR=naples_fw_all_athena_mfg.tgz
-	@if [ "x${RELEASE}" = "x" ]; then echo "RELEASE is not set"; else cd ../; asset-push --remote-name sw-${PIPELINE}-mfg-${ASIC}.tar.gz builds hourly ${RELEASE} sw || cd sw; fi
-	tar -zcf $(NAPLES_FW_TAR) nic/naples_fw*.tar nic/dsc_fw*.tar --ignore-failed-read nic/naples_upg_fw*.tar nic/dsc_upg_fw*.tar platform/gen/ipxe platform/gen/drivers-*.tar.xz platform/gen/drivers-*.zip platform/goldfw/naples/naples_fw.tar platform/hosttools nic/host.tar nic/test-utils.tgz nic/box.rb nic/entrypoint.sh tools/test-build storage/gen/*.tar.xz
+#naples-firmware-tarball-athena-mfg: 
+#	NAPLES_FW_TAR=naples_fw_all_athena_mfg.tgz
+#	@if [ "x${RELEASE}" = "x" ]; then echo "RELEASE is not set"; else cd ../; asset-push --remote-name sw-${PIPELINE}-mfg-${ASIC}.tar.gz builds hourly ${RELEASE} sw || cd sw; fi
+#	tar -zcf $(NAPLES_FW_TAR) nic/naples_fw*.tar nic/dsc_fw*.tar --ignore-failed-read nic/naples_upg_fw*.tar nic/dsc_upg_fw*.tar platform/gen/ipxe platform/gen/drivers-*.tar.xz platform/gen/drivers-*.zip platform/goldfw/naples/naples_fw.tar platform/hosttools nic/host.tar nic/test-utils.tgz nic/box.rb nic/entrypoint.sh tools/test-build storage/gen/*.tar.xz
 
 
 e2e-iota: e2e-naples
