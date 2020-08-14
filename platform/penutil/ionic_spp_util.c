@@ -598,9 +598,9 @@ ionic_test_flash_thread(void *arg)
 	struct ionic *ionic = (struct ionic *)arg;
 	int error;
 
-	error = dsc_do_full_flash_PCI(ionic->fwFile, true, ionic->domain, ionic->bus,
+	error = oem_do_full_flash_PCI(ionic->fwFile, true, ionic->domain, ionic->bus,
 		ionic->dev, ionic->func);
-	fprintf(stderr, "Flash update status: " PRIxWS "\n", dsc_text_for_error_code(error));
+	fprintf(stderr, "Flash update status: " PRIxWS "\n", oem_text_for_error_code(error));
 	pthread_exit(NULL);
 }
 #else
@@ -612,8 +612,8 @@ unsigned __stdcall ionic_test_flash_thread(void* arg)
 
 	W_SNPRINTF(w_fw_file, sizeof(w_fw_file), PRIxHS, ionic->fwFile);
 	fprintf(stderr, "Starting Flash update...\n");
-	error = dsc_do_full_flash_PCI(w_fw_file, true, ionic->domain, ionic->bus, ionic->dev, ionic->func);
-	fprintf(stderr, "Flash update, SPP status: " PRIxWS "\n", dsc_text_for_error_code(error));
+	error = oem_do_full_flash_PCI(w_fw_file, true, ionic->domain, ionic->bus, ionic->dev, ionic->func);
+	fprintf(stderr, "Flash update, SPP status: " PRIxWS "\n", oem_text_for_error_code(error));
 
 	_endthreadex(0);
 	return 0;
@@ -682,6 +682,7 @@ ionic_test_multi_update(const char *log_file, const char *fw_path, const char *d
 		fprintf(stderr, "Failed to wait for flash thread. Err: %u\n", error);
 	}
 #endif
+	fprintf(stderr, "SPP status:" PRIxWS "\n", oem_text_for_error_code(error));
 
 	return (error);
 }
@@ -703,16 +704,16 @@ ionic_test_discovery(const char *log_file, const char *fw_path, const char *disc
 		W_SNPRINTF(w_discovery_file, sizeof(w_discovery_file), PRIxHS, discovery_file);
 
 	count = 0;
-	error = dsc_get_debug_info(w_log_file);
+	error = oem_get_debug_info(w_log_file);
 	if (error) {
-		fprintf(stderr, "SPP status: " PRIxWS "\n", dsc_text_for_error_code(error));
+		fprintf(stderr, "SPP status: " PRIxWS "\n", oem_text_for_error_code(error));
 		return (error);
 	}
 
-	error = dsc_get_adapter_info(NULL, &count, w_fw_path);
+	error = oem_get_adapter_info(NULL, &count, w_fw_path);
 	if (error) {
 		fprintf(stderr, "Couldn't get count, SPP status: " PRIxWS "\n",
-			dsc_text_for_error_code(error));
+			oem_text_for_error_code(error));
 		return (error);
 	}
 
@@ -724,21 +725,16 @@ ionic_test_discovery(const char *log_file, const char *fw_path, const char *disc
 	}
 
 	memset(ionic_info, 0, count * sizeof(ven_adapter_info));
-	error = dsc_get_adapter_info(ionic_info, &count, w_fw_path);
+	error = oem_get_adapter_info(ionic_info, &count, w_fw_path);
 	if (error) {
 		fprintf(stderr, "Couldn't get adapter info, SPP status: " PRIxWS "\n",
-			dsc_text_for_error_code(error));
+			oem_text_for_error_code(error));
 		free(ionic_info);
 		return (error);
 	}
 
-	error = dsc_do_discovery_with_files(w_discovery_file, w_fw_path);
-	if (error) {
-		fprintf(stderr, "SPP status:" PRIxWS "\n",
-			dsc_text_for_error_code(error));
-		free(ionic_info);
-		return (error);
-	}
+	error = oem_do_discovery_with_files(w_discovery_file, w_fw_path);
+	fprintf(stderr, "SPP status:" PRIxWS "\n", oem_text_for_error_code(error));
 
 	//ionic_dump_list();
 
@@ -762,19 +758,16 @@ ionic_test_update(const char *log_file, const char *fw_path, const char *discove
 	if (discovery_file)
 		W_SNPRINTF(w_discovery_file, sizeof(w_discovery_file)/2, PRIxHS, discovery_file);
 
-	error = dsc_get_debug_info(w_log_file);
+	error = oem_get_debug_info(w_log_file);
 	if (error) {
 		fprintf(stderr, "Failed to open log file, SPP status: " PRIxWS "\n",
-			dsc_text_for_error_code(error));
+			oem_text_for_error_code(error));
 		return (error);
 	}
 
-	error = dsc_do_flash_with_file(w_discovery_file, w_fw_path);
-	if (error) {
-		fprintf(stderr, "SPP status: " PRIxWS "\n",
-			dsc_text_for_error_code(error));
-		return (error);
-	}
+	error = oem_do_flash_with_file(w_discovery_file, w_fw_path);
+	fprintf(stderr, "SPP status: " PRIxWS "\n",
+			oem_text_for_error_code(error));
 
 	return (error);
 }

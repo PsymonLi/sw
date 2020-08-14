@@ -21,7 +21,7 @@ TEST (IonicSppTest, GetDebugInfoInvalid)
 {
 	int ret;
 
-	ret = dsc_get_debug_info((spp_char_t *)"/non/existing/path");
+	ret = oem_get_debug_info((spp_char_t *)"/non/existing/path");
 	EXPECT_EQ(ret, HPE_SPP_LIBRARY_DEP_FAILED);
 }
 
@@ -37,7 +37,7 @@ TEST (IonicSppTest, End2EndNoDev)
 	ionic_devid = 0xffff;
 
 	ret = ionic_test_discovery(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
-	EXPECT_EQ(ret, HPE_SPP_HW_ACCESS);
+	EXPECT_EQ(ret, HPE_SPP_DSC_DRV_NOT_AVAIL);
 	ret = ionic_test_update(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
 	EXPECT_EQ(ret, HPE_SPP_DIS_MISSING);
 }
@@ -55,7 +55,7 @@ TEST (IonicSppTest, End2EndNoNICFWData)
 	ionic_devid = 0xffff;
 
 	ret = ionic_test_discovery(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
-	EXPECT_EQ(ret, HPE_SPP_HW_ACCESS);
+	EXPECT_EQ(ret, HPE_SPP_DSC_DRV_NOT_AVAIL);
 	ret = ionic_test_update(log_file.c_str(), fw_path.c_str(), dis_file.c_str());
 	EXPECT_EQ(ret, HPE_SPP_DIS_MISSING);
 }

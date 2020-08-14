@@ -41,9 +41,14 @@ mkdir -p "$GEN_LINUX_DIR"
 #
 #LD_LIBRARY_PATH=$LINUX_PACKAGE $LINUX_PACKAGE/penutil -c $VERSION -p $FW_GEN_DIR
 
-cp $TOP/nic/dsc_fw_${VERSION}.tar $FW_GEN_DIR/
+if [ -f "$TOP/nic/dsc_fw_${VERSION}.tar" ]; then
+	cp $TOP/nic/dsc_fw_${VERSION}.tar $FW_GEN_DIR/
+fi
 
-cp $PLAT_GEN_DIR/penutil-windows.zip $GEN_DIR/
+if [ -f "$PLAT_GEN_DIR/penutil-windows.zip" ]; then
+	cp $PLAT_GEN_DIR/penutil-windows.zip $GEN_DIR/
+fi
+
 mv $ESXI67_PACKAGE/*penutil*.* $GEN_DIR/
 mv $ESXI70_PACKAGE/*penutil*.* $GEN_DIR/
 

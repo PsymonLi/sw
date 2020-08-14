@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stddef.h>
 #include "ionic_os.h"
+#include "ionic_spp.h"
 #include "../common/include/ionic_en_mgmt_interface.h"
 
 vmk_MgmtUserHandle ionic_en_mgmt_handle;
@@ -48,14 +49,14 @@ ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
         if (error) {
                 ionic_print_error(fstream, "all", "Failed to call ionic_en_mgmt_inf_count_num_dsc_cb(),"
                                   " (rcUser=0x%x)\n", error);
-                return error;
+                return HPE_SPP_DSC_DRV_CHANNEL_ERR;
         }
 
         error = ionic_en_allocate_adapter_list(*count,
                                                &adapter_list);
         if (error) {
                 ionic_print_error(fstream, "all", "Failed to allocate memory for adapter list\n");
-                return error;
+                return HPE_SPP_LIBRARY_DEP_FAILED;
         }
 
         error = vmk_MgmtUserCallbackInvoke(ionic_en_mgmt_handle,
@@ -65,6 +66,7 @@ ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
         if (error) {
                 ionic_print_error(fstream, "all", "Failed to call ionic_en_mgmt_inf_get_adpt_info_cb(),"
                                   " (rcUser=0x%x)\n", error);
+                error = HPE_SPP_DSC_DRV_CHANNEL_ERR;
                 goto out;
         }
 
@@ -184,6 +186,7 @@ int ionic_platform_init()
         if (error) {
                 fprintf(stderr, "Failed to initialize management interface,"
                         " (rcUser=0x%x)\n", error);
+                error = HPE_SPP_DSC_DRV_INCOMPATIBLE;
         }
 
         return error;

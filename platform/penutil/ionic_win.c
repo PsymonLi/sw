@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stddef.h>
 #include "ionic_os.h"
+#include "ionic_spp.h"
 
 #ifndef __cplusplus
 
@@ -162,7 +163,7 @@ ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
 
     void* pBuffer = malloc(Size);
     if (pBuffer == NULL) {
-        return ENOMEM;
+        return HPE_SPP_LIBRARY_DEP_FAILED;
     }
 
     do {
@@ -174,7 +175,7 @@ ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
         ionic_print_info(fstream, "all", "DoIoctl returned: %u, bytes: %u\n", error, BytesReturned);
 
         if (error != ERROR_SUCCESS && error != ERROR_MORE_DATA) {
-            iRet = EIO;
+            iRet = HPE_SPP_HW_ACCESS;
             break;
         }
         dumped = DumpAdapterInfo(fstream, pBuffer, BytesReturned, ionic_devs, count);
@@ -187,22 +188,6 @@ ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
     free(pBuffer);
 
     return iRet;
-}
-
-int
-ionic_open(FILE *fstream, struct ionic *ionic)
-{
-
-    ionic_print_info(fstream, ionic->intfName, "Opening device\n");
-    return (0);
-}
-
-int
-ionic_close(FILE *fstream, struct ionic *ionic)
-{
-
-    ionic_print_info(fstream, ionic->intfName, "Closing device\n");
-    return (0);
 }
 
 int

@@ -165,18 +165,27 @@ int
 ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count)
 {
 	struct dirent *de;
+	const char *sys_ionic = "/sys/module/ionic";
 	const char *sys_net = "/sys/class/net/";
-	DIR *dr = opendir(sys_net);
+	DIR *dr;
 	struct ionic *ionic;
 	int error;
 
 	*count = 0;
 	ionic_print_info(fstream, "", "Scanning using sysfs\n");
 
+	dr = opendir(sys_ionic);
+	if (dr == NULL) {
+		ionic_print_error(fstream, "", "ionic driver module(%s) not loaded, error: %s\n",
+			sys_ionic, strerror(errno));
+		return (HPE_SPP_DSC_DRV_NOT_AVAIL);
+	}
+
+	dr = opendir(sys_net);
 	if (dr == NULL) {
 		ionic_print_error(fstream, "", "Couldn't open: %s, error: %s\n",
 			sys_net, strerror(errno));
-		return (ENXIO);
+		return (HPE_SPP_LIBRARY_DEP_FAILED);
 	}
 
 	while ((de = readdir(dr)) != NULL) {
@@ -288,7 +297,7 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 	struct ifreq ifr;
 	struct ethtool_flash efl;
 	struct timeval start, end;
-	int i, fd, error;
+	int i, fd, error, status = HPE_SPP_STATUS_SUCCESS;
 	char *intfName;
 	const char LIB_FW_PATH[] = "/lib/firmware/ionic";
 	char dest_file[256];
@@ -296,6 +305,11 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 
 	intfName = ionic->intfName;
 	ionic_print_info(fstream, intfName, "Enter firmware update\n");
+
+	if (ionic_fw_update_type) {
+		ionic_print_error(fstream, intfName, "AdminQ flash update not supported\n");
+		return (HPE_SPP_DSC_ADMINQ_FLASH_UNSUPPORTED);
+	}
 
 	error = mkdir(LIB_FW_PATH, 0);
 	if (error && (errno != EEXIST)) {
@@ -342,10 +356,14 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 		ionic_fw_update_type ? "adminQ" : "devcmd", path);
 	error = ioctl(fd, SIOCETHTOOL, &ifr);
 	if (error < 0) {
-		ionic_print_error(fstream, intfName, "flash update ioctl failed, error: %s\n",
-			strerror(errno));
-		close (fd);
-		return (HPE_SPP_INSTALL_HW_ERROR);
+		ionic_print_error(fstream, intfName, "flash update ioctl failed, error: %d errno: (%d)%s\n",
+			error, errno, strerror(errno));
+		if (errno == EOPNOTSUPP)
+			status = HPE_SPP_DSC_DRV_INCOMPATIBLE;
+		else if (errno == EPERM)
+			status = HPE_SPP_DSC_CNIC_MODE_ERROR;
+		else
+			status = HPE_SPP_INSTALL_HW_ERROR;
 	}
 
 	gettimeofday(&end, NULL);
@@ -354,5 +372,5 @@ ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file_name)
 		end.tv_sec - start.tv_sec);
 	close (fd);
 
-	return (0);
+	return (status);
 }

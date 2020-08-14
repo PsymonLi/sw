@@ -1,13 +1,13 @@
 LIBRARY PENUTIL_WINDLL.DLL
 
 EXPORTS
-    dsc_do_full_flash_PCI
-    dsc_do_flash_with_file
-    dsc_get_adapter_info
-    dsc_text_for_error_code
-    dsc_get_debug_info
-    dsc_get_full_flash_dump_PCI
-    dsc_do_discovery_with_files
+    oem_do_full_flash_PCI
+    oem_do_flash_with_file
+    oem_get_adapter_info
+    oem_text_for_error_code
+    oem_get_debug_info
+    oem_get_full_flash_dump_PCI
+    oem_do_discovery_with_files
     ionic_test_discovery
     ionic_test_update
     ionic_test_multi_update

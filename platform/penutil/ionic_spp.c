@@ -24,8 +24,10 @@
 #include "ionic_spp_util.h"
 
 /* Log file name */
-static char dsc_log_file[HPE_SPP_PATH_MAX_LEN];
+static char oem_log_file[HPE_SPP_PATH_MAX_LEN];
 
+/* XXX: HPE spp core needs this, need to resolve with Karthik. */
+char g_XMLDiscoveryReport[1024];
 /**************************************************************************
  * Naples SPP public APIs.
  **************************************************************************/
@@ -36,7 +38,7 @@ spp_char_t *
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_text_for_error_code(uint32_t err_code)
+oem_text_for_error_code(uint32_t err_code)
 {
 
 	switch (err_code) {
@@ -74,9 +76,19 @@ dsc_text_for_error_code(uint32_t err_code)
 			return W_STRING("Firmware image corrupted");
 		/* Pensando defined error codes. */
 		case HPE_SPP_DSC_NICFWDATA_ERROR:
-			return W_STRING("NICFWData.xml related error");
+			return W_STRING("Firmware package meta file error");
+		case HPE_SPP_DSC_DRV_NOT_AVAIL:
+			return W_STRING("DSC driver not available");
+		case HPE_SPP_DSC_DRV_INCOMPATIBLE: /* For old drivers. */
+			return W_STRING("DSC driver is not compatible");
+		case HPE_SPP_DSC_CNIC_MODE_ERROR: /* Card is not in CNIC mode */
+			return W_STRING("DSC card not in CNIC mode");
+		case HPE_SPP_DSC_ADMINQ_FLASH_UNSUPPORTED:
+			return W_STRING("DSC driver adminQ flash update not supported");
+		case HPE_SPP_DSC_DRV_CHANNEL_ERR:
+			return W_STRING("DSC SPP driver channel error");
 		default:
-			return W_STRING("Unknown");
+			return W_STRING("Unknown SPP error");
 	}
 }
 
@@ -85,10 +97,15 @@ ionic_open_log_file(void)
 {
 	FILE *fstream;
 
-	fstream = fopen(dsc_log_file, "a");
+	/*
+	 * In case log file is not provided, create our own file.
+	 */
+	if (oem_log_file[0] == 0)
+		snprintf(oem_log_file, sizeof(oem_log_file), "/var/cpq/pnso_dsc.log");
+	fstream = fopen(oem_log_file, "a");
 	if (fstream == NULL) {
 		ionic_print_error(stderr, "all", "failed to open log file" PRIxHS ", error: " PRIxHS "\n",
-			dsc_log_file, strerror(errno));
+			oem_log_file, strerror(errno));
 	} else {
 		setvbuf (fstream, NULL, _IONBF, 0);
 	}
@@ -99,7 +116,7 @@ int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_get_debug_info(spp_char_t *log_file)
+oem_get_debug_info(spp_char_t *log_file)
 {
 	FILE *fstream;
 	char buffer[256];
@@ -109,7 +126,7 @@ dsc_get_debug_info(spp_char_t *log_file)
 	t = time(NULL);
 	strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtime(&t));
 
-	snprintf(dsc_log_file, sizeof(dsc_log_file), PRIxWS, log_file);
+	snprintf(oem_log_file, sizeof(oem_log_file), PRIxWS, log_file);
 	fstream = ionic_open_log_file();
 	if (fstream == NULL) {
 		error = HPE_SPP_LIBRARY_DEP_FAILED;
@@ -120,7 +137,7 @@ dsc_get_debug_info(spp_char_t *log_file)
 	fprintf(fstream, "DSC SPP version: %s Build(OS:%s date: %s %s)\n",
 		DSC_SPP_VERSION, SPP_BUILD_OS, __DATE__, __TIME__);
 	fprintf(fstream, "Start time: %s log file: %s\n",
-		buffer, dsc_log_file);
+		buffer, oem_log_file);
 
 	fflush(fstream);
 	fclose(fstream);
@@ -136,7 +153,7 @@ int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_get_adapter_info(ven_adapter_info *ionic_info, int *count, spp_char_t *firmware_file_path)
+oem_get_adapter_info(ven_adapter_info *ionic_info, int *count, spp_char_t *firmware_file_path)
 {
 	struct ionic *ionic;
 	FILE *fstream;
@@ -160,7 +177,6 @@ dsc_get_adapter_info(ven_adapter_info *ionic_info, int *count, spp_char_t *firmw
 
 	if (ionic_info == NULL) {
 		error = ionic_init(fstream);
-		error = error ? HPE_SPP_HW_ACCESS : HPE_SPP_STATUS_SUCCESS;
 		*count = ionic_count;
 		ionic_print_info(fstream, "all", "Count of devices: %d\n", *count);
 	} else {
@@ -180,7 +196,7 @@ dsc_get_adapter_info(ven_adapter_info *ionic_info, int *count, spp_char_t *firmw
 
 err_out:
 	ionic_print_info(fstream, "all", "Exit get_adapter_info, SPP status: " PRIxWS "\n",
-		dsc_text_for_error_code(error));
+		oem_text_for_error_code(error));
 	fflush(fstream);
 	fclose(fstream);
 
@@ -191,7 +207,7 @@ int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uint8_t  bus, uint8_t dev,
+oem_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uint8_t  bus, uint8_t dev,
 	uint8_t func)
 {
 	struct ionic *ionic;
@@ -268,7 +284,7 @@ dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain, uin
 err_out:
 	ionic_print_info(fstream, "all", "Exit flash update PCI(%d:%d:%d.%d)"
 		"firmware image: %s, SPP status: " PRIxWS "\n",
-		domain, bus, dev, func, fw_file, dsc_text_for_error_code(error));
+		domain, bus, dev, func, fw_file, oem_text_for_error_code(error));
 	fflush(fstream);
 	fclose(fstream);
 	return (error);
@@ -282,7 +298,7 @@ int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType fwType,
+oem_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType fwType,
 	uint16_t domain, uint8_t bus, uint8_t dev, uint8_t func)
 {
 	FILE *fstream;
@@ -296,7 +312,7 @@ dsc_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType fwType,
 
 	ionic_print_info(fstream, "all", "PCI(%d:%d:%d.%d), type: %d, file: "
 		PRIxWS "SPP status : " PRIxWS "\n", domain, bus, dev, func, fwType, flash_dump_file,
-		dsc_text_for_error_code(error));
+		oem_text_for_error_code(error));
 
 	fflush(fstream);
 	fclose(fstream);
@@ -312,7 +328,7 @@ int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_do_discovery_with_files(spp_char_t *discovery_file, spp_char_t *firmware_file_path)
+oem_do_discovery_with_files(spp_char_t *discovery_file, spp_char_t *firmware_file_path)
 {
 	xmlDocPtr doc;
  	xmlNodePtr root, child, devices, device;
@@ -392,7 +408,7 @@ dsc_do_discovery_with_files(spp_char_t *discovery_file, spp_char_t *firmware_fil
 
 err_out:
 	ionic_print_info(fstream, "all", "Exit create discovery file: %s, SPP status: " PRIxWS "\n",
-		dis_file, dsc_text_for_error_code(error));
+		dis_file, oem_text_for_error_code(error));
 	fflush(fstream);
 	fclose(fstream);
 	return (error);
@@ -405,7 +421,7 @@ int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_do_flash_with_file(spp_char_t *discovery_file, spp_char_t *firmware_file_path)
+oem_do_flash_with_file(spp_char_t *discovery_file, spp_char_t *firmware_file_path)
 {
 	FILE *fstream;
 	int error = HPE_SPP_STATUS_SUCCESS;
@@ -440,7 +456,7 @@ dsc_do_flash_with_file(spp_char_t *discovery_file, spp_char_t *firmware_file_pat
 #endif
 err_exit:
 	ionic_print_info(fstream, "all", "Exit, SPP status: " PRIxWS "\n",
-		dsc_text_for_error_code(error));
+		oem_text_for_error_code(error));
 	fflush(fstream);
 	fclose(fstream);
 	return (error);

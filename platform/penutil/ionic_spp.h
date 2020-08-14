@@ -85,7 +85,14 @@ typedef char spp_char_t;
 /*
  * Pensando defined error codes > 100
  */
-#define HPE_SPP_DSC_NICFWDATA_ERROR	101 /* NICFWData.xml related error. */
+#define HPE_SPP_DSC_NICFWDATA_ERROR	101 /* Firmware packet meta file error */
+
+/* Driver relate errors. */
+#define HPE_SPP_DSC_DRV_NOT_AVAIL	105 /* ionic driver not available */
+#define HPE_SPP_DSC_DRV_INCOMPATIBLE	106 /* ionic driver doesn't support SPP */
+#define HPE_SPP_DSC_CNIC_MODE_ERROR	107 /* DSC card is not in classic NIC mode */
+#define HPE_SPP_DSC_ADMINQ_FLASH_UNSUPPORTED 108 /* AdminQ flash not suppported by driver */
+#define HPE_SPP_DSC_DRV_CHANNEL_ERR	109 /* Failed to communicate with driver */
 
 /*
  * File contains firmware version and file name details.
@@ -157,43 +164,43 @@ int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_do_discovery_with_files(spp_char_t *discover_file_xml, spp_char_t *firmware_file_path);
+oem_do_discovery_with_files(spp_char_t *discover_file_xml, spp_char_t *firmware_file_path);
 
 int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain,uint8_t  bus, uint8_t dev, uint8_t func);
+oem_do_full_flash_PCI(spp_char_t *firmware_file, int force, uint16_t domain,uint8_t  bus, uint8_t dev, uint8_t func);
 
 int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_do_flash_with_file(spp_char_t *dsicover_file_xml, spp_char_t *firmware_file_path);
+oem_do_flash_with_file(spp_char_t *dsicover_file_xml, spp_char_t *firmware_file_path);
 
 int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_get_adapter_info(ven_adapter_info *adp, int *nEntries, spp_char_t *fimware_file_path);
+oem_get_adapter_info(ven_adapter_info *adp, int *nEntries, spp_char_t *fimware_file_path);
 
 spp_char_t *
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_text_for_error_code(uint32_t erro_code);
+oem_text_for_error_code(uint32_t erro_code);
 
 int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_get_debug_info(spp_char_t *log_file);
+oem_get_debug_info(spp_char_t *log_file);
 
 int
 #ifdef _WIN32
 __stdcall
 #endif
-dsc_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType firmware_type,uint16_t domain, uint8_t bus, uint8_t dev, uint8_t func);
+oem_get_full_flash_dump_PCI(spp_char_t *flash_dump_file, dscFirmwareType firmware_type,uint16_t domain, uint8_t bus, uint8_t dev, uint8_t func);
 
 #ifdef __cplusplus
 }
