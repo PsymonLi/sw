@@ -5,10 +5,11 @@ cat /warmd.json
 
 ./iota.py --testbed /warmd.json $@
 ret=$?
+echo "IOTA Exit-Code: ${ret}"
 
 if [ "$ret" = "124" ];then
     #run triage script
-    timeout 300 ./harness/infra/triage_failure.py --testbed ../warmd.json --destdir testcase_result_export --username vm --password vm
+    timeout 300 ./harness/infra/triage_failure.py --testbed /warmd.json --destdir testcase_result_export --username vm --password vm
 fi
 
 cp -v testsuite_*_results.json /testcase_result_export

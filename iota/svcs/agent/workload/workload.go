@@ -819,7 +819,17 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 				}
 			}
 			if retCode, stdout, err := utils.Run(cmd, 0, false, false, nil); retCode != 0 {
-				return "", errors.Wrap(err, stdout)
+				if app.osDistro == "rhel" && strings.Contains(stdout, ": File exists") {
+					// this is the case where interface already exists and has rule for ip-address.
+					// Use ip addr change command
+					cmd = nil
+					cmd = append(cmd, "ip", "addr", "change", spec.IPV4Address, "dev", intfToAttach)
+					if retCode, stdout, err := utils.Run(cmd, 0, false, false, nil); retCode != 0 {
+						return "", errors.Wrap(err, stdout)
+					}
+				} else {
+					return "", errors.Wrap(err, stdout)
+				}
 			}
 		case "freebsd":
 			cmd := []string{"ifconfig", intfToAttach, spec.IPV4Address}

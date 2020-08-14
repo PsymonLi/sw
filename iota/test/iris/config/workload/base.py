@@ -529,7 +529,7 @@ def AddConfigWorkloads(req, nodes = None):
             intf.encap_vlan = intf.uplink_vlan
 
         else:
-            assert(0)
+            return api.types.status.FAILURE
 
         intf.interface = host_if
         intf.parent_interface = host_if
@@ -539,6 +539,7 @@ def AddConfigWorkloads(req, nodes = None):
         wl_msg.mgmt_ip = api.GetMgmtIPAddress(wl_msg.node_name)
         wl_msg.cpus = api.GetWorkloadCpusForNode(wl_msg.node_name)
         wl_msg.memory = api.GetWorkloadMemoryForNode(wl_msg.node_name)
+    return api.types.status.SUCCESS
 
 def AddConfigClassicWorkloads(req, nodes = None):
     # Using up first vlan for native
@@ -561,5 +562,5 @@ def AddConfigClassicWorkloads(req, nodes = None):
             node_wlm = NodeWorkloads(wl, tagged_vlan)
             node_wlm.CreateTaggedWorkloads(req)
 
-    return
+    return api.types.status.SUCCESS
 

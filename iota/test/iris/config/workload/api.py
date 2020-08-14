@@ -82,23 +82,22 @@ def __add_workloads(nodes):
             else:
                 api.Logger.error("Unknown NicMode for node %s device %s - Skipping" % (node, dev_name))
 
+    ret = api.types.status.SUCCESS
     if classic_wload_nodes: 
         api.Logger.info("Creating Classic-Workloads for %s" % classic_wload_nodes)
-        wl_orch.AddConfigClassicWorkloads(req, classic_wload_nodes)
+        ret = wl_orch.AddConfigClassicWorkloads(req, classic_wload_nodes)
     if unified_wload_nodes:
         api.Logger.info("Creating hostpin/unified mode workloads for %s" % unified_wload_nodes)
-        wl_orch.AddConfigWorkloads(req, unified_wload_nodes)
+        ret = wl_orch.AddConfigWorkloads(req, unified_wload_nodes)
 
-    if len(req.workloads):
+    if ret == api.types.status.SUCCESS and len(req.workloads):
         resp = api.AddWorkloads(req, skip_bringup=api.IsConfigOnly())
         if resp is None:
-            sys.exit(1)
+            return api.types.status.FAILURE
 
     if vmotion_enabled_nodes:
         ret = __setup_vmotion_on_hosts(vmotion_enabled_nodes)
-        if ret != api.types.status.SUCCESS:
-            sys.exit(1)
-    return api.types.status.SUCCESS
+    return ret
 
 def __recover_workloads(target_node = None):
     objects = netagent_api.QueryConfigs(kind='Endpoint')
@@ -106,7 +105,7 @@ def __recover_workloads(target_node = None):
     req = topo_svc.WorkloadMsg()
     resp = api.RestoreWorkloads(req)
     if resp is None:
-        sys.exit(1)
+        return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 def GetIPv4Allocator(nw_name):
@@ -162,7 +161,7 @@ def AddNaplesWorkloads(target_node=None):
     if len(req.workloads):
         resp = api.AddWorkloads(req, skip_store=True)
         if resp is None:
-            sys.exit(1)
+            return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 def __delete_classic_workloads(target_node = None):
@@ -178,7 +177,7 @@ def __delete_classic_workloads(target_node = None):
     if len(req.workloads):
         resp = api.DeleteWorkloads(req, True)
         if resp is None:
-            sys.exit(1)
+            return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 def __readd_classic_workloads(target_node = None):
@@ -208,7 +207,7 @@ def __readd_classic_workloads(target_node = None):
     if len(req.workloads):
         resp = api.AddWorkloads(req)
         if resp is None:
-            sys.exit(1)
+            return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 def __delete_workloads(target_node = None):
@@ -229,17 +228,24 @@ def __delete_workloads(target_node = None):
     if len(req.workloads):
         resp = api.DeleteWorkloads(req)
         if resp is None:
-            sys.exit(1)
+            return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 def ReAddWorkloads(node):
+    ret = api.types.status.SUCCESS
+
     if api.GetTestbedNicMode(node) in ['classic', 'sriov']:
-        __delete_classic_workloads(node)
-        __readd_classic_workloads(node)
+        ret = __delete_classic_workloads(node)
+        if ret == api.types.status.SUCCESS:
+            ret = __readd_classic_workloads(node)
     else:
-        __delete_workloads(node)
-        __add_workloads([node])
-    return AddNaplesWorkloads(node)
+        ret = __delete_workloads(node)
+        if ret == api.types.status.SUCCESS:
+            ret = __add_workloads([node])
+
+    if ret == api.types.status.SUCCESS:
+        ret = AddNaplesWorkloads(node)
+    return ret
 
 def UpdateNetworkAndEnpointObject():
     nwObj = netagent_api.QueryConfigs(kind='Network')
@@ -268,6 +274,7 @@ def Main(args):
 
     netagent_api.ReadConfigs(api.GetTopologyDirectory(), reset=False)
 
+    ret = api.types.status.SUCCESS
     if api.GetConfigNicMode() in ['unified']:
         ret = UpdateNetworkAndEnpointObject()
         if ret != api.types.status.SUCCESS:
@@ -277,14 +284,14 @@ def Main(args):
     #netagent_api.DeleteBaseConfig()
 
     if GlobalOptions.skip_setup:
-        RestoreWorkloads()
+        ret = RestoreWorkloads()
     else:
         nic_mode = api.GetConfigNicMode()
         if nic_mode not in ['classic', 'sriov']:
             kinds = ["SecurityProfile"] if nic_mode == 'unified' else None
             netagent_api.PushBaseConfig(kinds=kinds)
-        __add_workloads(api.GetNodes())
-    return api.types.status.SUCCESS
+        ret = __add_workloads(api.GetNodes())
+    return ret
 
 if __name__ == '__main__':
     Main(None)
