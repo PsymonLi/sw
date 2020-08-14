@@ -28,7 +28,8 @@ usage() {
     echo "    -a <third_party_libs minio version>  minio VERSION to use for asset-upload"
     echo "    -s                                   Skip VPP repo download"
     echo "    -w                                   Wait 120s for asset pull to complete"
-    echo "    -k                                   Don't cleanup docker or vpp repo (debug)"
+    echo "    -k                                   Don't cleanup docker (debug)"
+    echo "    -c                                   Cleanup vpp repo"
     exit 1
 }
 
@@ -69,7 +70,7 @@ pwd | grep -q "\/sw\/nic$" || { echo Please run from "sw/nic" directory; exit -1
 
 VPP_REPO="git@github.com:pensando/vpp"
 
-while getopts 'v:d:a:swkh' opt
+while getopts 'v:d:a:swkch' opt
 do
     case $opt in
         v)
@@ -87,6 +88,9 @@ do
             ;;
         k)
             SKIP_CLEANUP=1
+            ;;
+        c)
+            CLEANUP_VPP_REPO=1
             ;;
         h | *)
             usage
@@ -135,12 +139,14 @@ docker_root() {
 }
 
 clean_vpp_build() {
+    if [[ $CLEANUP_VPP_REPO -eq 1 ]]; then
+        echo "Delete VPP repo"
+        docker_exec "rm -rf $DOCKER_VPP_DIR"
+    fi
+
     if [[ $SKIP_CLEANUP -eq 1 ]]; then
         echo "Skipped cleanup"
     else
-        echo "Delete VPP repo"
-        docker_exec "rm -rf $DOCKER_VPP_DIR"
-
         cleanup
     fi
 }
