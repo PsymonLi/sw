@@ -667,8 +667,7 @@ always_inline bool
 pds_device_asymmetric_routing (void) {
     pds_impl_db_device_entry_t *dev = pds_impl_db_device_get();
 
-    return (dev->overlay_routing_en &&
-            !dev->symmetric_routing_en);
+    return !dev->symmetric_routing_en;
 }
 
 always_inline void
