@@ -27,16 +27,18 @@ var _ = Describe("LLDP", func() {
 			if !ts.tb.HasNaplesHW() {
 				Skip("LLDP test cases are enabled only for HW naples")
 			}
-			verifyUplinkNeighbor()
+			Eventually(func() error {
+				return verifyUplinkNeighbor()
+			}).Should(Succeed())
 		})
 	})
 })
 
-func verifyUplinkNeighbor() {
+func verifyUplinkNeighbor() error {
 	uplinks, err := ts.model.ConfigClient().ListNetworkUplinkInterfaces()
 	if err != nil {
 		log.Infof("No uplink interfaces to test LLDP")
-		return
+		return nil
 	}
 
 	for _, u := range uplinks {
@@ -47,8 +49,9 @@ func verifyUplinkNeighbor() {
 			neighbor.GetSysDescription() == "" &&
 			neighbor.GetPortID() == "" &&
 			neighbor.GetPortDescription() == "" {
-			err = fmt.Errorf("Uplink doesn't have LLDP neighbor (%+v)", u)
+			return fmt.Errorf("Uplink doesn't have LLDP neighbor (%+v)", u)
 		}
-		Expect(err).Should(Succeed())
+
 	}
+	return nil
 }

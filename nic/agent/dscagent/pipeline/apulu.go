@@ -2101,11 +2101,43 @@ func (a *ApuluAPI) initEventStream() {
 		},
 	}
 
+	// store the key/lldp neighbor info of uplink interfaces
+	m := make(map[string]*netproto.LLDPNeighbor)
+	intReqMsg := &halapi.InterfaceGetRequest{
+		Id: [][]byte{},
+	}
+	intfs, err := a.InterfaceClient.InterfaceGet(context.Background(), intReqMsg)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "Init: could not get interfaces %v", err))
+	} else {
+		for _, i := range intfs.Response {
+
+			if i.Spec.GetUplinkSpec() == nil {
+				continue
+			}
+			uid, err := uuid.FromBytes(i.Spec.GetUplinkSpec().GetPortId())
+			if err != nil {
+				log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse port uuid %v, err %v", i.Spec.GetUplinkSpec().GetPortId(), err))
+				continue
+			}
+			lldpNbrChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisStatus()
+			lldpNbrPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortStatus()
+			m[uid.String()] = &netproto.LLDPNeighbor{
+				ChassisID:       lldpNbrChs.GetChassisId().String(),
+				SysName:         lldpNbrChs.GetSysName(),
+				SysDescription:  lldpNbrChs.GetSysDescr(),
+				MgmtAddress:     apuluutils.HalIPToString(lldpNbrChs.GetMgmtIP()),
+				PortID:          lldpNbrPort.GetPortId().String(),
+				PortDescription: lldpNbrPort.GetPortDescr(),
+			}
+		}
+	}
+
 	// get all the host IFs known at this time
 	ifReqMsg := &halapi.InterfaceGetRequest{
 		Id: [][]byte{},
 	}
-	intfs, err := a.InterfaceClient.InterfaceGet(context.Background(), ifReqMsg)
+	intfs, err = a.InterfaceClient.InterfaceGet(context.Background(), ifReqMsg)
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "Init: %v", err))
 	}
@@ -2165,6 +2197,21 @@ func (a *ApuluAPI) initEventStream() {
 				fallthrough
 			case halapi.EventId_EVENT_ID_PORT_DOWN:
 				if port != nil {
+
+					// clear LLDP neighbor cache for this uplink interface
+					uid, err := uuid.FromBytes(port.Spec.GetId())
+					if err != nil {
+						log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse port uuid %v, err %v", port.Spec.GetId(), err))
+						continue
+					}
+					lldpCache, ok := m[uid.String()]
+					if ok == false {
+						log.Errorf("Uplink Event: [%+v] doesnt have LLDP cache", uid.String())
+						continue
+					}
+					lldpCache.Reset()
+					log.Infof("Uplink Event: LLDP neighbor cache is cleared for port %v", uid.String())
+
 					err = a.handleUplinkInterface(port.Spec, port.Status)
 				}
 			}
@@ -2185,44 +2232,12 @@ func (a *ApuluAPI) initEventStream() {
 		}
 	}
 
-	// list of uplink interfaces and store the key/lldp neighbor info
-	m := make(map[string]*netproto.LLDPNeighbor)
-	intReqMsg := &halapi.InterfaceGetRequest{
-		Id: [][]byte{},
-	}
-	intfs, err = a.InterfaceClient.InterfaceGet(context.Background(), intReqMsg)
-	if err != nil {
-		log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "Init: could not get interfaces %v", err))
-	} else {
-		for _, i := range intfs.Response {
-			uid, err := uuid.FromBytes(i.Spec.GetId())
-			if err != nil {
-				log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse port uuid %v, err %v", i.Spec.GetId(), err))
-				continue
-			}
-
-			// move this check to top
-			if i.Spec.GetUplinkSpec() == nil {
-				continue
-			}
-			lldpNbrChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisStatus()
-			lldpNbrPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortStatus()
-			m[uid.String()] = &netproto.LLDPNeighbor{
-				ChassisID:       lldpNbrChs.GetChassisId().String(),
-				SysName:         lldpNbrChs.GetSysName(),
-				SysDescription:  lldpNbrChs.GetSysDescr(),
-				MgmtAddress:     apuluutils.HalIPToString(lldpNbrChs.GetMgmtIP()),
-				PortID:          lldpNbrPort.GetPortId().String(),
-				PortDescription: lldpNbrPort.GetPortDescr(),
-			}
-		}
-	}
-
 	go func() {
-		// miute loop to check lldp updates on uplink interfaces
+		// minute loop to check lldp updates on uplink interfaces
 		ticker := time.Tick(time.Minute)
 		for {
 			select {
+
 			case <-ticker:
 				//get all uplink interfaces
 				uplinkReqMsg := &halapi.InterfaceGetRequest{
@@ -2239,17 +2254,24 @@ func (a *ApuluAPI) initEventStream() {
 					if i.Spec.GetUplinkSpec() == nil {
 						continue
 					}
+
 					uid, err := uuid.FromBytes(i.Spec.GetId())
 					if err != nil {
-						log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse port uuid %v, err %v", i.Spec.GetId(), err))
+						log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse interface uuid %v, err %v", i.Spec.GetId(), err))
 						continue
 					}
 
-					val, ok := m[uid.String()]
-					if ok == false {
-						log.Errorf("LLDPPeriodicTimer: [%+v] doesnt have value", uid.String())
+					pUID, err := uuid.FromBytes(i.Spec.GetUplinkSpec().GetPortId())
+					if err != nil {
+						log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse port uuid %v, err %v", i.Spec.GetUplinkSpec().GetPortId(), err))
 						continue
 					}
+					val, ok := m[pUID.String()]
+					if ok == false {
+						log.Errorf("LLDPPeriodicTimer: [%+v] doesnt have LLDP cache", uid.String())
+						continue
+					}
+
 					lChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisStatus()
 					lPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortStatus()
 
@@ -2268,7 +2290,7 @@ func (a *ApuluAPI) initEventStream() {
 						val.PortDescription = lPort.GetPortDescr()
 						val.MgmtAddress = apuluutils.HalIPToString(lChs.GetMgmtIP())
 
-						log.Infof("LLDPPeriodicTimer: Update LLDP Neighbor of Uplink Intf [%+v]", uid.String())
+						log.Infof("LLDPPeriodicTimer: Update LLDP Neighbor of Uplink Port/Intf [%v]", pUID.String(), uid.String())
 						// update uplink interface's lldp neighbor info
 						a.handleUplinkLldpUpdate(i.Spec.GetUplinkSpec().GetPortId())
 					}
