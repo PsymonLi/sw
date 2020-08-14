@@ -44,6 +44,10 @@
 .PARAMETER Sign
     Perform driver signing
 
+.PARAMETER PushSymbols
+    push symbols to symbol server
+
+
 #>
 
 [CmdletBinding()]
@@ -91,7 +95,10 @@ param(
     [switch] $ResetVerBuild=$false,
 
     [Parameter(Mandatory=$false)]
-    [switch] $Sign=$true
+    [switch] $Sign=$true,
+
+    [Parameter(Mandatory=$false)]
+    [switch] $PushSymbols=$false
 )
 
 
@@ -387,6 +394,15 @@ if ($CollectArtifacts) {
     $ZipFilePath = $ArtifactsZipFolder + "\Artifacts.zip"
     Add-Type -AssemblyName "system.io.compression.filesystem"
     [io.compression.zipfile]::CreateFromDirectory($NewArtifactsFolder, $ZipFilePath)
+}
+if ($PushSymbols) {
+    $SymSource = $PathToSln+"\"+$Platform+"\"+$Configuration+"\*.*"
+    $SymDestSrv = "\\WIN-D40QMEU9D79\IonicSymbols"
+    $SymAppTitle = "Pensando Ionic Driver and Tools"
+    $SymVer = $VerStr
+    $SymstorePath = "Symstore.exe"
+    
+    & $SymstorePath add /f $SymSource /s $SymDestSrv /t $SymAppTitle /v $SymVer
 }
 
 $OperationEndTime = Get-Date

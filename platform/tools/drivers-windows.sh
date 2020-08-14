@@ -61,6 +61,12 @@ else
 	VER=`git describe --tags`
 fi
 
+if [ -n "$RELEASE" ] ; then
+    PUSHSYMBOLS=" -PushSymbols"
+else
+    PUSHSYMBOLS=""
+fi
+
 # Remove remote build source folder in case it exists (probably never since its name is based on a uuid).
 sshpass -p $BUILD_VM_PW ssh -o StrictHostKeyChecking=no "$BUILD_VM_USER"@"$BUILD_VM_NAME" "rmdir " "$REMOTE_DRIVERS_SRCSTR" "/s /q"
 
@@ -72,9 +78,9 @@ sshpass -p $BUILD_VM_PW scp -o StrictHostKeyChecking=no -pr "$PENCTL_IMAGE" "$BU
 
 # Start remote Build script
 if [ -z "$VER" ] ; then
-	sshpass -p $BUILD_VM_PW ssh -o StrictHostKeyChecking=no "$BUILD_VM_USER"@"$BUILD_VM_NAME" "powershell -f" "$REMOTE_DRIVERS_BUILDSCRIPT" "-SolutionNameAndPath" "$REMOTE_DRIVERS_SOLSTR"
+	sshpass -p $BUILD_VM_PW ssh -o StrictHostKeyChecking=no "$BUILD_VM_USER"@"$BUILD_VM_NAME" "powershell -f" "$REMOTE_DRIVERS_BUILDSCRIPT" "-SolutionNameAndPath" "$REMOTE_DRIVERS_SOLSTR" "$PUSHSYMBOLS"
 else
-	sshpass -p $BUILD_VM_PW ssh -o StrictHostKeyChecking=no "$BUILD_VM_USER"@"$BUILD_VM_NAME" "powershell -f" "$REMOTE_DRIVERS_BUILDSCRIPT" "-SolutionNameAndPath" "$REMOTE_DRIVERS_SOLSTR" "-VerStr " "$VER"
+	sshpass -p $BUILD_VM_PW ssh -o StrictHostKeyChecking=no "$BUILD_VM_USER"@"$BUILD_VM_NAME" "powershell -f" "$REMOTE_DRIVERS_BUILDSCRIPT" "-SolutionNameAndPath" "$REMOTE_DRIVERS_SOLSTR" "-VerStr " "$VER" "$PUSHSYMBOLS"
 fi
 
 if [ 0 -eq $? ] ; then
