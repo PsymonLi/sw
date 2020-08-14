@@ -824,13 +824,16 @@ catalog::factory(std::string catalog_file_path, std::string catalog_file_name,
     sdk_ret_t     ret;
     void         *mem;
     catalog      *new_catalog = NULL;
-    std::string   chip_name;
+    std::string   chip_name = "capri";
+    std::string   default_catalog = "/catalog_hw_68-0003.json";
 
     // get asic-name from env
     if (char* chip = std::getenv("ASIC")) {
         chip_name = chip;
-    } else {
-        chip_name = "capri";
+    }
+
+    if (chip_name == "elba") {
+        default_catalog = "/catalog_elba.json";
     }
 
     //If user didn't provide platfrm then we try to determine platform through pal
@@ -883,7 +886,7 @@ catalog::factory(std::string catalog_file_path, std::string catalog_file_name,
             } else {
                 SDK_TRACE_ERR("part-id from FRU is empty. Please program the correct FRU");
                 SDK_TRACE_ERR("Using default catalog.");
-                catalog_file_name = "/catalog_hw_68-0003.json";
+                catalog_file_name = default_catalog;
             }
         }
         else if (platform == platform_type_t::PLATFORM_TYPE_SIM ||
@@ -903,7 +906,7 @@ catalog::factory(std::string catalog_file_path, std::string catalog_file_name,
     if (access(catalog_file.c_str(), R_OK) < 0) {
         SDK_TRACE_ERR("config file %s has no read permissions",
                       catalog_file.c_str());
-        catalog_file = catalog_file_path + "/catalog_hw_68-0003.json";
+        catalog_file = catalog_file_path + default_catalog;
         if (access(catalog_file.c_str(), R_OK) < 0) {
             SDK_TRACE_ERR("default config file %s has no read permissions",
                          catalog_file.c_str());

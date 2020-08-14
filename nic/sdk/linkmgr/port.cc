@@ -549,8 +549,13 @@ port::port_serdes_dfe_complete(void)
     for (lane = 0; lane < num_lanes_; ++lane) {
         sbus_addr = port_sbus_addr(lane);
         if (sbus_addr == 0) {
+        // TODO-ELBA-LINKMGR skip for elba bringup
+#ifdef ELBA
+            return true;
+#else
             // invalid config. fail dfe complete
             return false;
+#endif
         }
         if (serdes_fns()->serdes_dfe_status(sbus_addr) != 1) {
             return false;
@@ -605,15 +610,7 @@ port::port_serdes_an_start (void)
         serdes_fns()->serdes_cfg(sbus_addr, serdes_info);
     }
     // start AN
-    return serdes_fns()->serdes_an_start(port_sbus_addr(0), &serdes_info_an,
-                                         user_cap(), fec_ability(),
-                                         fec_request());
-}
-
-bool
-port::port_serdes_an_wait_hcd (void)
-{
-    return serdes_fns()->serdes_an_wait_hcd(port_sbus_addr(0));
+    return port_an_start(&serdes_info_an);
 }
 
 bool
@@ -690,10 +687,11 @@ port::port_serdes_an_hcd_cfg (void)
     int           rsfec_enable = 0;
     serdes_info_t *serdes_info = NULL;
     uint32_t      num_lanes    = 0;
+    uint32_t      rx_term      = 0;
 
-    an_hcd       = serdes_fns()->serdes_an_hcd_read(port_sbus_addr(0));
-    fec_enable   = serdes_fns()->serdes_an_fec_enable_read(port_sbus_addr(0));
-    rsfec_enable = serdes_fns()->serdes_an_rsfec_enable_read(port_sbus_addr(0));
+    an_hcd       = port_an_hcd_read();
+    fec_enable   = port_an_fec_enable_read();
+    rsfec_enable = port_an_rsfec_enable_read();
 
     SDK_LINKMGR_TRACE_DEBUG("port: %d, an_hcd: %d, fec_enable: %d, "
                             "rsfec_enable: %d",
@@ -736,10 +734,12 @@ port::port_serdes_an_hcd_cfg (void)
 
         // configure Tx/Rx slip, Rx termination, Tx EQ
         serdes_fns()->serdes_cfg(sbus_addr, serdes_info);
+
+        rx_term = serdes_info->rx_term;
     }
 
     // configure divider, width, start link training
-    return serdes_fns()->serdes_an_hcd_cfg(port_sbus_addr(0), this->sbus_addr_);
+    return port_an_hcd_cfg(an_hcd, rx_term);
 }
 
 int
@@ -876,7 +876,7 @@ port::port_link_sm_an_process(void)
         // 100 msecs spin for AN HCD resolution
         do {
             clock_gettime(CLOCK_MONOTONIC, &after);
-            an_good = port_serdes_an_wait_hcd();
+            an_good = port_an_wait_hcd();
             if (an_good == true) {
                 break;
             }
@@ -946,6 +946,10 @@ port::port_serdes_eye_check(void) {
     uint32_t max;
     uint32_t values[2 * MAX_SERDES_EYE_HEIGHTS];
 
+    // TODO-ELBA-LINKMGR skip for elba bringup
+#ifdef ELBA
+    return true;
+#endif
     for (lane = 0; lane < num_lanes_; ++lane) {
         min = 0xFFFF;
         max = 0x0;

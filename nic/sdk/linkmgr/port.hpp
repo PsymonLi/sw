@@ -429,18 +429,28 @@ public:
     bool port_serdes_rdy(void);
     bool port_serdes_dfe_complete(void);
     int  port_serdes_an_start(void);
-    bool port_serdes_an_wait_hcd(void);
     int  port_serdes_an_hcd_cfg(void);
     bool port_serdes_an_link_train_check(void);
 
     // set the sbus addr for each serdes
-    sdk_ret_t sbus_addr_set (uint32_t lane, uint32_t sbus_addr);
+    sdk_ret_t sbus_addr_set(uint32_t lane, uint32_t sbus_addr);
 
     int port_serdes_ical_start(void);
     int port_serdes_pcal_start(void);
     int port_serdes_pcal_continuous_start(void);
     bool port_serdes_eye_check(void);
     int port_serdes_eye_get(void);
+
+    // ----------------------------------------------------
+    // autoneg methods
+    // ----------------------------------------------------
+
+    int  port_an_start(serdes_info_t *serdes_info);
+    bool port_an_wait_hcd(void);
+    int  port_an_hcd_read(void);
+    int  port_an_fec_enable_read(void);
+    int  port_an_rsfec_enable_read(void);
+    int  port_an_hcd_cfg(uint32_t an_hcd, uint32_t rx_term);
 
     // ----------------------------------------------------
     // static methods

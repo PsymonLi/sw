@@ -446,7 +446,10 @@ def run_hal(args):
 
     FNULL = open(os.devnull, 'w')
     FOUT  = open(nic_dir + "/hal_stdout.log", 'w')
-    cmd_args = [bin_dir+'/hal', "--config", jsonfile, "--platform=catalog_4g.json"]
+    if asic == 'elba':
+        cmd_args = [bin_dir+'/hal', "--config", jsonfile, "--platform=catalog_elba.json"]
+    else:
+        cmd_args = [bin_dir+'/hal', "--config", jsonfile, "--platform=catalog_4g.json"]
     print (" ".join(cmd_args))
     p = Popen(" ".join(cmd_args), preexec_fn=demote, stdout=FOUT, stderr=FNULL, shell=True)
     global hal_process

@@ -330,12 +330,6 @@ linkmgr_ctrl_timers_init (void)
 void
 linkmgr_event_thread_init (void *ctxt)
 {
-    int         exp_build_id = serdes_build_id();
-    int         exp_rev_id   = serdes_rev_id();
-    std::string cfg_file     = "fw/" + serdes_fw_file();
-    serdes_fn_t *serdes_fn = serdes_fns();
-
-    cfg_file = std::string(g_linkmgr_cfg.cfg_path) + "/" + cfg_file;
 
     pal_wr_lock(SBUSLOCK);
 
@@ -344,36 +338,7 @@ linkmgr_event_thread_init (void *ctxt)
 
     serdes_sbm_set_sbus_clock_divider(sbm_clk_div());
 
-    // download serdes fw only if port state is not restored from memory
-    if (g_linkmgr_state->port_restore_state() == false) {
-        for (uint32_t asic_port = 0; asic_port < num_asic_ports(0); ++asic_port) {
-            uint32_t sbus_addr = sbus_addr_asic_port(0, asic_port);
-
-            if (sbus_addr == 0) {
-                continue;
-            }
-
-            serdes_fn->serdes_spico_upload(sbus_addr, cfg_file.c_str());
-
-            int build_id = serdes_fn->serdes_get_build_id(sbus_addr);
-            int rev_id   = serdes_fn->serdes_get_rev(sbus_addr);
-
-            if (build_id != exp_build_id || rev_id != exp_rev_id) {
-                SDK_TRACE_DEBUG("sbus_addr 0x%x,"
-                                " build_id 0x%x, exp_build_id 0x%x,"
-                                " rev_id 0x%x, exp_rev_id 0x%x",
-                                sbus_addr, build_id, exp_build_id,
-                                rev_id, exp_rev_id);
-                // TODO fail if no match
-            }
-
-            serdes_fn->serdes_spico_status(sbus_addr);
-
-            SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
-                            sbus_addr,
-                            serdes_fn->serdes_spico_crc(sbus_addr));
-        }
-    }
+    serdes_fns()->serdes_firmware_upload();
 
     pal_wr_unlock(SBUSLOCK);
 

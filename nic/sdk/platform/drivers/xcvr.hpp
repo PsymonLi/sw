@@ -288,7 +288,11 @@ sdk_ret_t xcvr_init(xcvr_event_notify_t xcvr_notify_cb, void *mem,
 static inline bool
 xcvr_valid_check_enabled (void)
 {
+#ifdef ELBA
+    return false;
+#else
     return xcvr_valid_enable;
+#endif
 }
 
 static inline void

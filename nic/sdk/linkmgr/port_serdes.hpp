@@ -29,6 +29,10 @@ typedef struct serdes_fn_s_ {
     int (*serdes_an_core_status)   (uint32_t sbus_addr);
     int (*serdes_an_hcd_cfg)       (uint32_t sbus_addr,
                                     uint32_t *sbus_addr_arr);
+    int (*serdes_an_hcd_rxterm_cfg) (uint32_t sbus_addr,
+                                     uint32_t *sbus_addr_arr,
+                                     uint32_t an_hcd,
+                                     uint32_t rx_term);
     int (*serdes_invert_cfg)       (uint32_t sbus_addr,
                                     serdes_info_t *serdes_info);
     int (*serdes_ical_start)       (uint32_t sbus_addr,
@@ -59,6 +63,8 @@ typedef struct serdes_fn_s_ {
     int (*serdes_an_fec_enable_read)   (uint32_t sbus_addr);
     int (*serdes_an_rsfec_enable_read) (uint32_t sbus_addr);
     int (*serdes_eye_check)        (uint32_t sbus_addr, uint32_t *values);
+    int (*serdes_firmware_upload)  (void);
+
 } serdes_fn_t;
 
 sdk_ret_t
