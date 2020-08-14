@@ -54,8 +54,8 @@ portmap_setlif(const u_int32_t lif, const u_int8_t port)
     u_int64_t e;
 
     portmap_get(idx, &e);
-    e &= ~(0x7 << (off * 3));
-    e |= (port & 0x7) << (off * 3);
+    e &= ~((u_int64_t)0x7 << (off * 3));
+    e |= ((u_int64_t)port & 0x7) << (off * 3);
     portmap_set(idx, e);
 }
 
