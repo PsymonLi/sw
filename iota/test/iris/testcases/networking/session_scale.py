@@ -253,6 +253,7 @@ def Setup(tc):
         findWorkloadPeers(tc)
 
         if tc.mem_leak_test:
+            triggerTechSupport(tc)
             memStatsObjClient.InitNodesForMemUsageStats()
 
         ret = connectTrex(tc)

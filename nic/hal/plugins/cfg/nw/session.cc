@@ -2392,10 +2392,17 @@ dequeue_flow_telemetry_state_from_age_list (
 }
 
 inline void
-update_session_stats_thr_safe(uint64_t *stat_ptr, bool decr)
+update_tcp_half_open_sess_stats_thr_safe(session_t *session, bool decr)
 {
     while(__sync_lock_test_and_set(&g_session_stats_updt_locked_, 1));
-    decr ? (*stat_ptr)--:(*stat_ptr)++;
+    if (decr) {
+        if (session->is_in_half_open_state) {
+            session->is_in_half_open_state = 0;
+            HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions -= 1;
+        }
+    } else {
+        HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions += 1;
+    }
     __sync_lock_release(&g_session_stats_updt_locked_);
 }
 
@@ -2620,9 +2627,7 @@ update_global_session_stats (session_t *session, bool decr=false)
             HAL_SESSION_STATS_PTR(session->fte_id)->tcp_sessions += (decr)?(-1):1;
             // update half open session count on delete
             if ((session->is_in_half_open_state) && (decr)) {
-                session->is_in_half_open_state = 0;
-                update_session_stats_thr_safe(
-                        &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                update_tcp_half_open_sess_stats_thr_safe(session, true);
             }
         } else if (key.proto == types::IPPROTO_UDP) {
             HAL_SESSION_STATS_PTR(session->fte_id)->udp_sessions += (decr)?(-1):1;
@@ -3223,9 +3228,7 @@ hal_has_session_aged (session_t *session, uint64_t ctime_ns,
     // update half open session count if state has moved beyond SYN_ACK_RCVD
     if ((tcp_session) && (session->is_in_half_open_state) &&
         (session_state_p->iflow_state.state >= session::FLOW_TCP_STATE_SYN_ACK_RCVD)) {
-        session->is_in_half_open_state = 0;
-        update_session_stats_thr_safe(
-                &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+        update_tcp_half_open_sess_stats_thr_safe(session, true);
         // Check and raise session limit approach/reached event
         check_and_generate_session_limit_event(session);
     }
@@ -3618,9 +3621,7 @@ session_age_cb (void *entry, void *ctxt)
 
             // update half open session count if session is agedout
             if (session->is_in_half_open_state) {
-                session->is_in_half_open_state = 0;
-                update_session_stats_thr_safe(
-                        &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                update_tcp_half_open_sess_stats_thr_safe(session, true);
                 // Check and raise session limit approach/reached event
                 check_and_generate_session_limit_event(session);
             }
@@ -3972,9 +3973,7 @@ schedule_tcp_close_timer (session_t *session, nwsec_profile_t *nwsec_prof)
 
     // update half open session count for sessions that are in TCP close state
     if (session->is_in_half_open_state) {
-        session->is_in_half_open_state = 0;
-        update_session_stats_thr_safe(
-                &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+        update_tcp_half_open_sess_stats_thr_safe(session, true);
         // Check and raise session limit approach/reached event
         check_and_generate_session_limit_event(session);
     }
@@ -4071,9 +4070,7 @@ schedule_tcp_half_closed_timer (session_t *session, nwsec_profile_t *nwsec_prof)
 
     // update half open session count for sessions that are in TCP close state
     if (session->is_in_half_open_state) {
-        session->is_in_half_open_state = 0;
-        update_session_stats_thr_safe(
-                &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+        update_tcp_half_open_sess_stats_thr_safe(session, true);
         // Check and raise session limit approach/reached event
         check_and_generate_session_limit_event(session);
     }
@@ -4121,9 +4118,7 @@ tcp_cxnsetup_cb (void *timer, uint32_t timer_id, void *ctxt)
     }
     // On cxn setup timer expiry, update half open session count
     if (session->is_in_half_open_state) {
-        session->is_in_half_open_state = 0;
-        update_session_stats_thr_safe(
-                &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+        update_tcp_half_open_sess_stats_thr_safe(session, true);
         // Check and raise session limit approach/reached event
         check_and_generate_session_limit_event(session);
     }
@@ -4186,8 +4181,7 @@ schedule_tcp_cxnsetup_timer (session_t *session, nwsec_profile_t *nwsec_prof)
     }
     session->is_in_half_open_state = 1;
     // Keep track of number of TCP half open sessions
-    update_session_stats_thr_safe(
-            &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, false);
+    update_tcp_half_open_sess_stats_thr_safe(session, false);
     // Check and raise session limit approach/reached event
     check_and_generate_session_limit_event(session);
 
@@ -4212,9 +4206,7 @@ session_set_tcp_state (session_t *session, hal::flow_role_t role,
         // then update the half open session count.
         if ((session->is_in_half_open_state) &&
             (tcp_state >= session::FLOW_TCP_STATE_SYN_ACK_RCVD)) {
-            session->is_in_half_open_state = 0;
-            update_session_stats_thr_safe(
-                    &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+            update_tcp_half_open_sess_stats_thr_safe(session, true);
             // Check and raise session limit approach/reached event
             check_and_generate_session_limit_event(session);
         }
