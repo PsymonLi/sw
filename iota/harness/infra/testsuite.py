@@ -155,7 +155,9 @@ class TestSuite:
         return self.__setup_complete
 
     def GetImages(self, processor='capri'):
-        return self.__read_image_manifest(processor)
+        if self.__image_obj == None:
+            self.__image_obj = self.__build_image_object(processor)
+        return self.__image_obj
 
     def GetFirmwareVersion(self):
         return self.__release_versions.get('Firmware', 'latest')
@@ -224,6 +226,13 @@ class TestSuite:
     def GetCommonArgs(self):
         return self.__common_args
 
+    def DownloadReleaseImages(self):
+        if self.__release_versions:
+            # Download Assets
+            for _, rel in self.__release_versions.items():
+                if rel != 'latest':
+                    api.DownloadAssets(rel)
+
     def __build_new_image_manifest(self):
         # Pick up latest.json (from testsuite spec)
         if hasattr(self.__spec, 'image_manifest'):
@@ -276,7 +285,7 @@ class TestSuite:
 
         return
 
-    def __read_image_manifest(self, processor):
+    def __build_image_object(self, processor):
         manifest_file = self.GetImageManifestFile()
         image_info = parser.JsonParse(manifest_file)
         images = parser.Dict2Object({})
@@ -677,12 +686,6 @@ class TestSuite:
         if self.GetFirmwareType() == types.firmware.GOLD:
             Logger.debug("setting global firmware type to gold")
             GlobalOptions.use_gold_firmware = True
-
-        if self.__release_versions:
-            # Download Assets
-            for _, rel in self.__release_versions.items():
-                if rel != 'latest':
-                    api.DownloadAssets(rel)
 
         # Initialize Testbed for this testsuite
         status = store.GetTestbed().InitForTestsuite(self)

@@ -579,6 +579,7 @@ class _Testbed:
         self.__multi_vlan_allocators = []
         self.__nextVlanAllocator = 0
         self.__image_manifest_file = self.curr_ts.GetImageManifestFile()
+        self.curr_ts.DownloadReleaseImages()
         resp = None
         msg = self.__prepare_TestBedMsg(self.curr_ts)
         if not GlobalOptions.skip_setup:
