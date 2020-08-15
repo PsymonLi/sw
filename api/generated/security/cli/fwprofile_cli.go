@@ -15,6 +15,13 @@ import (
 // CreateFirewallProfileFlags specifies flags for FirewallProfile create operation
 var CreateFirewallProfileFlags = []gen.CliFlag{
 	{
+		ID:     "connection-tracking",
+		Type:   "Bool",
+		Help:   "",
+		Skip:   false,
+		Insert: "",
+	},
+	{
 		ID:     "detect-app",
 		Type:   "Bool",
 		Help:   "",

@@ -220,6 +220,7 @@ func convertSecurityProfile(profile netproto.SecurityProfile) *halapi.SecurityPr
 				UDPDropTimeout:      udpDropTimeout,
 				ICMPDropTimeout:     icmpDropTimeout,
 				OtherDropTimeout:    types.DefaultOtherDropTimeout,
+				ConnTrackEn:         profile.Spec.ConnectionTracking,
 			},
 		},
 	}

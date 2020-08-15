@@ -55,6 +55,7 @@ message SecurityProfileSpec {
 	// Rate limits for the security profile
 	RateLimits  RateLimits            = 3 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "rate-limits"];
 	bool DetectApp                    = 4 [(gogoproto.nullable) = true, (gogoproto.jsontag)= "detect-app", (venice.default) = "false"];
+	bool ConnectionTracking           = 5 [(gogoproto.nullable) = true, (gogoproto.jsontag)= "connection-tracking", (venice.default) = "false"];
 }
 
 

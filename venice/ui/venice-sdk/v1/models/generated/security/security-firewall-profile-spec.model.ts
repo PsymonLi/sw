@@ -24,6 +24,7 @@ export interface ISecurityFirewallProfileSpec {
     'udp-active-session-limit': number;
     'icmp-active-session-limit': number;
     'detect-app'?: boolean;
+    'connection-tracking'?: boolean;
     '_ui'?: any;
 }
 
@@ -61,6 +62,8 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
     'icmp-active-session-limit': number = null;
     /** Set the Application Identification Detection config for DSCs. */
     'detect-app': boolean = null;
+    /** Enable/disable Connection Tracking. */
+    'connection-tracking': boolean = null;
     public static propInfo: { [prop in keyof ISecurityFirewallProfileSpec]: PropInfoItem } = {
         'session-idle-timeout': {
             default: '90s',
@@ -160,6 +163,11 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
         'detect-app': {
             default: 'false',
             description:  `Set the Application Identification Detection config for DSCs.`,
+            required: false,
+            type: 'boolean'
+        },
+        'connection-tracking': {
+            description:  `Enable/disable Connection Tracking.`,
             required: false,
             type: 'boolean'
         },
@@ -304,6 +312,13 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
         } else {
             this['detect-app'] = null
         }
+        if (values && values['connection-tracking'] != null) {
+            this['connection-tracking'] = values['connection-tracking'];
+        } else if (fillDefaults && SecurityFirewallProfileSpec.hasDefaultValue('connection-tracking')) {
+            this['connection-tracking'] = SecurityFirewallProfileSpec.propInfo['connection-tracking'].default;
+        } else {
+            this['connection-tracking'] = null
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -326,6 +341,7 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
                 'udp-active-session-limit': CustomFormControl(new FormControl(this['udp-active-session-limit'], [required, minValueValidator(0), maxValueValidator(32768), ]), SecurityFirewallProfileSpec.propInfo['udp-active-session-limit']),
                 'icmp-active-session-limit': CustomFormControl(new FormControl(this['icmp-active-session-limit'], [required, minValueValidator(0), maxValueValidator(32768), ]), SecurityFirewallProfileSpec.propInfo['icmp-active-session-limit']),
                 'detect-app': CustomFormControl(new FormControl(this['detect-app']), SecurityFirewallProfileSpec.propInfo['detect-app']),
+                'connection-tracking': CustomFormControl(new FormControl(this['connection-tracking']), SecurityFirewallProfileSpec.propInfo['connection-tracking']),
             });
         }
         return this._formGroup;
@@ -352,6 +368,7 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
             this._formGroup.controls['udp-active-session-limit'].setValue(this['udp-active-session-limit']);
             this._formGroup.controls['icmp-active-session-limit'].setValue(this['icmp-active-session-limit']);
             this._formGroup.controls['detect-app'].setValue(this['detect-app']);
+            this._formGroup.controls['connection-tracking'].setValue(this['connection-tracking']);
         }
     }
 }

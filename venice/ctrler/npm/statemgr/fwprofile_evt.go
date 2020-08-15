@@ -89,7 +89,8 @@ func convertFirewallProfile(fps *FirewallProfileState) *netproto.SecurityProfile
 				IcmpActiveSessionLimit:  fps.FirewallProfile.Spec.IcmpActiveSessionLimit,
 				OtherActiveSessionLimit: 0,
 			},
-			DetectApp: fps.FirewallProfile.Spec.DetectApp,
+			DetectApp:          fps.FirewallProfile.Spec.DetectApp,
+			ConnectionTracking: fps.FirewallProfile.Spec.ConnectionTracking,
 		},
 	}
 	fwp.CreationTime = api.Timestamp{Timestamp: *creationTime}

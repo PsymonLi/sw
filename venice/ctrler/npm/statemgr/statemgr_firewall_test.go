@@ -974,12 +974,13 @@ func TestFirewallProfile(t *testing.T) {
 	// updat ethe firewall profile
 	fwp.Spec.SessionIdleTimeout = "5m"
 	fwp.Spec.DetectApp = true
+	fwp.Spec.ConnectionTracking = true
 	err = stateMgr.ctrler.FirewallProfile().Update(&fwp)
 	AssertOk(t, err, "Error updating fw profile")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		p, err := stateMgr.FindFirewallProfile("default", "testProfile")
-		if err == nil && p.FirewallProfile.Spec.SessionIdleTimeout == "5m" && p.FirewallProfile.Spec.DetectApp == true {
+		if err == nil && p.FirewallProfile.Spec.SessionIdleTimeout == "5m" && p.FirewallProfile.Spec.DetectApp == true && p.FirewallProfile.Spec.ConnectionTracking == true {
 			return true, err
 		}
 		return false, nil
@@ -991,6 +992,7 @@ func TestFirewallProfile(t *testing.T) {
 	Assert(t, (len(fwlist) == 1), "invalid number of fw profiles")
 	Assert(t, fwlist[0].FirewallProfile.Spec.SessionIdleTimeout == "5m", "fw profile was not updated")
 	Assert(t, fwlist[0].FirewallProfile.Spec.DetectApp == true, "fw profile detect-app was not updated")
+	Assert(t, fwlist[0].FirewallProfile.Spec.ConnectionTracking == true, "fw profile connection-tracking was not updated")
 
 	// delete firewall profile
 	err = stateMgr.ctrler.FirewallProfile().Delete(&fwp)

@@ -44,6 +44,8 @@ message FirewallProfileSpec {
 	uint32 IcmpActiveSessionLimit       = 14 [(gogoproto.jsontag) = "icmp-active-session-limit", (venice.default) = "0", (venice.check) = "IntRange(0,32768)"];
 	// Set the Application Identification Detection config for DSCs
 	bool DetectApp                      = 16 [(gogoproto.jsontag)= "detect-app", (venice.default) = "false"];
+	// Enable/disable Connection Tracking
+	bool ConnectionTracking             = 17 [(gogoproto.jsontag) = "connection-tracking"];
 }
 
 

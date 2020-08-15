@@ -66,6 +66,7 @@ var typesMapSecprofile = map[string]*api.Struct{
 		CLITags: map[string]api.CLIInfo{
 			"api-version":                 api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
 			"attach-vrfs":                 api.CLIInfo{Path: "Spec.AttachVrfs", Skip: false, Insert: "", Help: ""},
+			"connection-tracking":         api.CLIInfo{Path: "Spec.ConnectionTracking", Skip: false, Insert: "", Help: ""},
 			"detect-app":                  api.CLIInfo{Path: "Spec.DetectApp", Skip: false, Insert: "", Help: ""},
 			"drop":                        api.CLIInfo{Path: "Spec.Timeouts.Drop", Skip: false, Insert: "", Help: ""},
 			"generation-id":               api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
@@ -124,6 +125,8 @@ var typesMapSecprofile = map[string]*api.Struct{
 			"RateLimits": api.Field{Name: "RateLimits", CLITag: api.CLIInfo{ID: "rate-limits", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "rate-limits", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "netproto.RateLimits"},
 
 			"DetectApp": api.Field{Name: "DetectApp", CLITag: api.CLIInfo{ID: "detect-app", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "detect-app", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_BOOL"},
+
+			"ConnectionTracking": api.Field{Name: "ConnectionTracking", CLITag: api.CLIInfo{ID: "connection-tracking", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "connection-tracking", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_BOOL"},
 		},
 	},
 	"netproto.SecurityProfileStatus": &api.Struct{

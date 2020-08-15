@@ -1060,6 +1060,14 @@
             "format": "boolean"
           },
           {
+            "name": "spec.connection-tracking",
+            "description": "Enable/disable Connection Tracking.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
             "name": "propagation-status.generation-id",
             "description": "The Generation ID this status is for.",
             "in": "query",
@@ -3523,6 +3531,14 @@
           {
             "name": "spec.detect-app",
             "description": "Set the Application Identification Detection config for DSCs.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "spec.connection-tracking",
+            "description": "Enable/disable Connection Tracking.",
             "in": "query",
             "required": false,
             "type": "boolean",
@@ -7353,6 +7369,11 @@
           "format": "boolean",
           "default": "false",
           "description": "Set the Application Identification Detection config for DSCs."
+        },
+        "connection-tracking": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Enable/disable Connection Tracking."
         }
       },
       "description": "FirewallProfileSpec - spec part of FirewallProfile object."

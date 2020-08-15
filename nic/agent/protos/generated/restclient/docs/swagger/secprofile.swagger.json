@@ -611,6 +611,11 @@
           "type": "boolean",
           "format": "boolean",
           "default": "false"
+        },
+        "connection-tracking": {
+          "type": "boolean",
+          "format": "boolean",
+          "default": "false"
         }
       },
       "description": "SecurityProfileSpec captures all the security profile configuration."
