@@ -48,6 +48,7 @@ func TestIPAMPolicyConfig(t *testing.T) {
 	service.AddMethod("NetworkInterface", meth)
 	service.AddMethod("IPAMPolicy", meth)
 	service.AddMethod("RoutingConfig", meth)
+	service.AddMethod("VirtualRouterPeeringGroup", meth)
 
 	s := &networkHooks{
 		svc:    service,
@@ -347,6 +348,109 @@ func TestValidateHooks(t *testing.T) {
 		errs = nh.validateRoutingConfig(rtcfg, "v1", false, false)
 		Assert(t, c.ok && len(errs) == 0 || !c.ok && len(errs) != 0, "case [holdtime: %v / Keepalive: %v] result [%v] got errors[%v]", c.holdtime, c.keepalive, c.ok, errs)
 	}
+
+	// VRPeeringGroup - Empty spec
+	vrPeeringGrp1 := network.VirtualRouterPeeringGroup{
+		Spec: network.VirtualRouterPeeringGroupSpec{},
+	}
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp1, "v1", false, false)
+	Assert(t, len(errs) > 0, "Expecting errors %s", errs)
+
+	// VRPeeringGroup - Only 1 VR
+	vrPeeringGrp2 := network.VirtualRouterPeeringGroup{
+		Spec: network.VirtualRouterPeeringGroupSpec{
+			Items: []network.VirtualRouterPeeringSpec{
+				{
+					VirtualRouter: "vr1",
+					IPv4Prefixes:  []string{"10.1.0.0/16"},
+				},
+			},
+		},
+	}
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp2, "v1", false, false)
+	Assert(t, len(errs) > 0, "Expecting errors %s", errs)
+
+	// VRPeeringGroup - Duplicate VR
+	vrPeeringGrp2.Spec.Items = append(vrPeeringGrp2.Spec.Items, network.VirtualRouterPeeringSpec{
+		VirtualRouter: "vr1",
+		IPv4Prefixes:  []string{"10.17.0.0/16"},
+	})
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp2, "v1", false, false)
+	Assert(t, len(errs) > 0, "Expecting errors %s", errs)
+
+	// VRPeeringGroup - No Prefixes
+	vrPeeringGrp3 := network.VirtualRouterPeeringGroup{
+		Spec: network.VirtualRouterPeeringGroupSpec{
+			Items: []network.VirtualRouterPeeringSpec{
+				{
+					VirtualRouter: "vr1",
+					IPv4Prefixes:  []string{"10.1.0.0/16"},
+				},
+				{
+					VirtualRouter: "vr2",
+				},
+			},
+		},
+	}
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp3, "v1", false, false)
+	Assert(t, len(errs) > 0, "Expecting errors %s", errs)
+
+	// VRPeeringGroup - Empty Prefixes
+	vrPeeringGrp4 := network.VirtualRouterPeeringGroup{
+		Spec: network.VirtualRouterPeeringGroupSpec{
+			Items: []network.VirtualRouterPeeringSpec{
+				{
+					VirtualRouter: "vr1",
+					IPv4Prefixes:  []string{"10.1.0.0/16"},
+				},
+				{
+					VirtualRouter: "vr2",
+					IPv4Prefixes:  []string{},
+				},
+			},
+		},
+	}
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp4, "v1", false, false)
+	Assert(t, len(errs) > 0, "Expecting errors %s", errs)
+
+	// VRPeeringGroup - Success upto max VRs
+	c := make([]network.VirtualRouterPeeringSpec, 16)
+	vrNum := 0
+	for ; vrNum < 16; vrNum++ {
+		vrName := fmt.Sprintf("vr%d", vrNum+1)
+		prefix := fmt.Sprintf("10.%d.0.0/16", vrNum+1)
+		c[vrNum] = network.VirtualRouterPeeringSpec{
+			VirtualRouter: vrName,
+			IPv4Prefixes:  []string{prefix},
+		}
+	}
+	vrPeeringGrp1.Spec.Items = c
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp1, "v1", false, false)
+	Assert(t, len(errs) == 0, "Expecting to succeed %v", errs)
+
+	// VRPeeringGroup - Failure beyond max VRs
+	vrPeeringGrp1.Spec.Items = append(vrPeeringGrp1.Spec.Items, network.VirtualRouterPeeringSpec{
+		VirtualRouter: "vr17",
+		IPv4Prefixes:  []string{"10.17.0.0/16"},
+	})
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp1, "v1", false, false)
+	Assert(t, len(errs) > 0, "Expecting errors %s", errs)
+
+	// VRPeeringGroup - Success upto max prefixes
+	vrPeeringGrp1.Spec.Items = vrPeeringGrp1.Spec.Items[0 : len(vrPeeringGrp1.Spec.Items)-1]
+	vrPeeringGrp1.Spec.Items[15].IPv4Prefixes = make([]string, 128)
+
+	pfxNum := 16
+	for ; pfxNum < 128+16; pfxNum++ {
+		vrPeeringGrp1.Spec.Items[15].IPv4Prefixes[pfxNum-16] = fmt.Sprintf("10.%d.0.0/16", pfxNum)
+	}
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp1, "v1", false, false)
+	Assert(t, len(errs) == 0, "Expecting to succeed %v", errs)
+
+	// VRPeeringGroup - Failure beyond max prefixes
+	vrPeeringGrp1.Spec.Items[15].IPv4Prefixes = append(vrPeeringGrp1.Spec.Items[15].IPv4Prefixes, fmt.Sprintf("10.%d.0.0/16", pfxNum))
+	errs = nh.validateVRPeeringGroup(vrPeeringGrp1, "v1", false, false)
+	Assert(t, len(errs) > 0, "Expecting errors %s", errs)
 }
 
 func TestNetworkPrecommitHooks(t *testing.T) {

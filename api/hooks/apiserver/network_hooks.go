@@ -15,6 +15,8 @@ import (
 	"github.com/gogo/protobuf/types"
 	uuid "github.com/satori/go.uuid"
 
+	mapset "github.com/deckarep/golang-set"
+
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/network"
@@ -906,6 +908,7 @@ func (h *networkHooks) validateVRPeeringGroup(i interface{}, ver string, ignStat
 		ret = append(ret, fmt.Errorf("only %v VirtualRouters allowed in a VirtualRouterPeeringGroup, %v provided", vrPeeringGrpMaxVRs, len(in.Spec.Items)))
 	}
 
+	uniqueVRs := mapset.NewSet()
 	for _, n := range in.Spec.Items {
 		if n.IPv4Prefixes == nil || len(n.IPv4Prefixes) == 0 {
 			ret = append(ret, fmt.Errorf("minimum 1 prefix required in each VirtualRouter in a VirtualRouterPeeringGroup, VirtualRouter %v has none", n.VirtualRouter))
@@ -913,8 +916,11 @@ func (h *networkHooks) validateVRPeeringGroup(i interface{}, ver string, ignStat
 		if len(n.IPv4Prefixes) > vrPeeringGrpMaxPrefixesPerVR {
 			ret = append(ret, fmt.Errorf("only %v prefixes allowed in each VirtualRouter in a VirtualRouterPeeringGroup, VirtualRouter %v has %v", vrPeeringGrpMaxPrefixesPerVR, n.VirtualRouter, len(n.IPv4Prefixes)))
 		}
+		if uniqueVRs.Contains(n.VirtualRouter) {
+			ret = append(ret, fmt.Errorf("VirtualRouter %v repeated", n.VirtualRouter))
+		}
+		uniqueVRs.Add(n.VirtualRouter)
 	}
-
 	return ret
 }
 
