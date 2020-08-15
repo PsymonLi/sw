@@ -97,8 +97,7 @@
             "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
-                "num_vfs" : 0,
-                "oprom": "uefi"
+                "num_vfs" : 0
             }
         }
     ]

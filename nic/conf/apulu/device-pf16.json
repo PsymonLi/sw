@@ -108,6 +108,7 @@
             "txq_count" : 16,
             "adminq_count" : 16,
             "intr_count" : 64,
+            "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
                 "num_vfs" : 0,
@@ -123,6 +124,7 @@
             "txq_count" : 16,
             "adminq_count" : 16,
             "intr_count" : 64,
+            "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
                 "num_vfs" : 0
@@ -137,6 +139,7 @@
             "txq_count" : 16,
             "adminq_count" : 16,
             "intr_count" : 64,
+            "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
                 "num_vfs" : 0
@@ -151,6 +154,7 @@
             "txq_count" : 16,
             "adminq_count" : 16,
             "intr_count" : 64,
+            "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
                 "num_vfs" : 0
@@ -165,6 +169,7 @@
             "txq_count" : 16,
             "adminq_count" : 16,
             "intr_count" : 64,
+            "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
                 "num_vfs" : 0
@@ -179,6 +184,7 @@
             "txq_count" : 16,
             "adminq_count" : 16,
             "intr_count" : 64,
+            "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
                 "num_vfs" : 0
@@ -193,6 +199,7 @@
             "txq_count" : 16,
             "adminq_count" : 16,
             "intr_count" : 64,
+            "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
                 "num_vfs" : 0
@@ -207,6 +214,7 @@
             "txq_count" : 16,
             "adminq_count" : 16,
             "intr_count" : 64,
+            "cmb_size" : 1,
             "pcie" : {
                 "port" : 0,
                 "num_vfs" : 0
