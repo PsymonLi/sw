@@ -1356,7 +1356,7 @@ lif_impl::reset_stats(void) {
 }
 
 sdk_ret_t
-lif_impl::track_pps(uint32_t interval) {
+lif_impl::track_pps(api_base *api_obj, uint32_t interval) {
     sdk_ret_t ret;
     lif_metrics_t lif_metrics = { 0 };
     uint64_t curr_tx_pkts, curr_tx_bytes;
@@ -1420,9 +1420,9 @@ lif_impl::track_pps(uint32_t interval) {
                         lif_metrics.rx_rdma_mcast_bytes;
 
     lif_metrics.tx_pps = RATE_OF_X(tx_pkts, curr_tx_pkts, interval);
-    lif_metrics.tx_bytesps = RATE_OF_X(tx_bytes, curr_tx_bytes, interval);
+    lif_metrics.tx_bps = RATE_OF_X(tx_bytes, curr_tx_bytes, interval);
     lif_metrics.rx_pps = RATE_OF_X(rx_pkts, curr_rx_pkts, interval);
-    lif_metrics.rx_bytesps = RATE_OF_X(rx_bytes, curr_rx_bytes, interval);
+    lif_metrics.rx_bps = RATE_OF_X(rx_bytes, curr_rx_bytes, interval);
     lif_metrics.tx_pkts = curr_tx_pkts;
     lif_metrics.tx_bytes = curr_tx_bytes;
     lif_metrics.rx_pkts = curr_rx_pkts;
@@ -1431,8 +1431,8 @@ lif_impl::track_pps(uint32_t interval) {
     write_mem_addr = lif_addr + LIF_STATS_TX_PKTS_OFFSET;
     ret = sdk::asic::asic_mem_write(write_mem_addr,
                                     (uint8_t *)&lif_metrics.tx_pkts,
-                                    PDS_LIF_IMPL_NUM_PPS_STATS *
-                                        PDS_LIF_IMPL_COUNTER_SIZE); // 8 fields
+                                    PDS_LIF_NUM_PPS_STATS *
+                                        PDS_LIF_COUNTER_SIZE); // 8 fields
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Writing stats for lif %s hw id %u failed, err %u",
                       key_.str(), id_, ret);
@@ -1441,7 +1441,7 @@ lif_impl::track_pps(uint32_t interval) {
 }
 
 void
-lif_impl::dump_stats(uint32_t fd) {
+lif_impl::dump_stats(api_base *api_obj, uint32_t fd) {
     sdk_ret_t ret;
     lif_metrics_t stats = { 0 };
     mem_addr_t base_addr, lif_addr;
@@ -1518,9 +1518,9 @@ lif_impl::dump_stats(uint32_t fd) {
     dprintf(fd, "rx_pkts                         : %lu\n", stats.rx_pkts);
     dprintf(fd, "rx_bytes                        : %lu\n", stats.rx_bytes);
     dprintf(fd, "tx_pps                          : %lu\n", stats.tx_pps);
-    dprintf(fd, "tx_bytesps                      : %lu\n", stats.tx_bytesps);
+    dprintf(fd, "tx_bps                          : %lu\n", stats.tx_bps);
     dprintf(fd, "rx_pps                          : %lu\n", stats.rx_pps);
-    dprintf(fd, "rx_bytesps                      : %lu\n", stats.rx_bytesps);
+    dprintf(fd, "rx_bps                          : %lu\n", stats.rx_bps);
     dprintf(fd, "rdma_packet_seq_err             : %lu\n", stats.rdma_req_rx_pkt_seq_err);
     dprintf(fd, "rdma_req_rnr_retry_err          : %lu\n", stats.rdma_req_rx_rnr_retry_err);
     dprintf(fd, "rdma_req_remote_access_err      : %lu\n", stats.rdma_req_rx_remote_access_err);

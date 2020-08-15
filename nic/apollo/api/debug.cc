@@ -197,7 +197,7 @@ dump_lif_stats_cb (void *entry, void *ctxt)
     api::impl::lif_impl *lif = (api::impl::lif_impl *)entry;
 
     PDS_TRACE_VERBOSE("Interface pps tracking callback called");
-    lif->dump_stats(((cmd_ctxt_t *)ctxt)->io_fd);
+    lif->dump_stats(NULL, ((cmd_ctxt_t *)ctxt)->io_fd);
     // continue the walk
     return false;
 }
@@ -208,9 +208,34 @@ dump_lif_stats (cmd_ctxt_t *ctxt)
     if (ctxt->args.valid) {
         api::impl::lif_impl *lif = (api::impl::lif_impl *)
                                        lif_db()->find(&ctxt->args.obj_key);
-        lif->dump_stats(ctxt->io_fd);
+        lif->dump_stats(NULL, ctxt->io_fd);
     } else {
         lif_db()->walk(dump_lif_stats_cb, ctxt);
+    }
+    return SDK_RET_OK;
+}
+
+static bool
+dump_if_stats_cb (void *entry, void *ctxt)
+{
+    api::if_entry *intf = (api::if_entry *)entry;
+
+    PDS_TRACE_VERBOSE("Interface pps tracking callback called");
+    intf->dump_stats(((cmd_ctxt_t *)ctxt)->io_fd);
+    // continue the walk
+    return false;
+}
+
+sdk_ret_t
+dump_if_stats (cmd_ctxt_t *ctxt)
+{
+    if (ctxt->args.valid) {
+        if (ctxt->args.if_dump.type != IF_TYPE_NONE) {
+            if_db()->walk(ctxt->args.if_dump.type, dump_if_stats_cb, ctxt);
+        } else {
+            api::if_entry *intf = (api::if_entry *)if_db()->find(&ctxt->args.if_dump.key);
+            intf->dump_stats(ctxt->io_fd);
+        }
     }
     return SDK_RET_OK;
 }
@@ -257,6 +282,9 @@ pds_handle_cmd (cmd_ctxt_t *ctxt)
         break;
     case CMD_MSG_LIF_STATS_DUMP:
         ret = dump_lif_stats(ctxt);
+        break;
+    case CMD_MSG_IF_STATS_DUMP:
+        ret = dump_if_stats(ctxt);
         break;
     default:
         ret = SDK_RET_INVALID_ARG;

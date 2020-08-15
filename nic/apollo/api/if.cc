@@ -18,9 +18,11 @@
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/if.hpp"
+#include "nic/apollo/api/port.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
+#include "nic/apollo/api/include/pds_lif.hpp"
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/api/utils.hpp"
 
@@ -61,7 +63,7 @@ if_entry::factory(pds_if_spec_t *spec) {
     intf = if_db()->alloc();
     if (intf) {
         new (intf) if_entry();
-        intf->impl_ = impl_base::factory(impl::IMPL_OBJ_ID_IF, spec);
+        intf->impl_ = (if_impl_base *)impl_base::factory(impl::IMPL_OBJ_ID_IF, spec);
     }
     return intf;
 }
@@ -73,7 +75,7 @@ void
 if_entry::destroy(if_entry *intf) {
     intf->nuke_resources_();
     if (intf->impl_) {
-        impl_base::destroy(impl::IMPL_OBJ_ID_IF, intf->impl_);
+        impl_base::destroy(impl::IMPL_OBJ_ID_IF, (impl_base *)intf->impl_);
     }
     intf->~if_entry();
     if_db()->free(intf);
@@ -95,7 +97,7 @@ if_entry::clone(api_ctxt_t *api_ctxt) {
             cloned_if->set_host_if_name(if_info_.host_.name_);
             cloned_if->set_host_if_mac(if_info_.host_.mac_);
         }
-        cloned_if->impl_ = impl_->clone();
+        cloned_if->impl_ = (if_impl_base *)impl_->clone();
         if (unlikely(cloned_if->impl_ == NULL)) {
             PDS_TRACE_ERR("Failed to clone intf %s impl", key_.str());
             goto error;
@@ -116,7 +118,7 @@ error:
 sdk_ret_t
 if_entry::free(if_entry *intf) {
     if (intf->impl_) {
-        impl_base::free(impl::IMPL_OBJ_ID_IF, intf->impl_);
+        impl_base::free(impl::IMPL_OBJ_ID_IF, (impl_base *)intf->impl_);
     }
     intf->~if_entry();
     if_db()->free(intf);
@@ -145,6 +147,24 @@ if_entry::nuke_resources_(void) {
         return impl_->nuke_resources(this);
     }
     return SDK_RET_OK;
+}
+
+void
+if_entry::dump_stats(uint32_t fd) {
+    if (impl_ && (type_ == IF_TYPE_UPLINK)) {
+        impl_->dump_stats(this, fd);
+    }
+}
+
+sdk_ret_t
+if_entry::track_pps(uint32_t interval) {
+    if (type_ != IF_TYPE_UPLINK) {
+        return SDK_RET_INVALID_ARG;
+    }
+    if (!impl_) {
+        return SDK_RET_ERR;
+    }
+    return impl_->track_pps(this, interval);
 }
 
 sdk_ret_t
@@ -443,7 +463,7 @@ if_entry::port_api_spec_to_args_(port_args_t *port_args,
 }
 
 sdk_ret_t
-if_entry::port_get_(port_args_t *port_args) {
+if_entry::port_get(port_args_t *port_args) {
     sdk_ret_t ret;
     int phy_port;
 
@@ -556,6 +576,22 @@ if_entry::fill_status_(pds_if_status_t *status, port_args_t *port_args) {
     case IF_TYPE_ETH:
         fill_port_if_status_(status, port_args);
         break;
+    case IF_TYPE_HOST:
+        {
+            if_index_t ifindex;
+            uint8_t num_lifs = 0;
+            pds_obj_key_t lif_key;
+
+            ifindex = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(objid_from_uuid(key_)));
+            lif_key = uuid_from_objid(ifindex);
+            status->host_if_status.lifs[num_lifs++] = lif_key;
+            status->host_if_status.num_lifs = num_lifs;
+            strncpy(status->host_if_status.name,
+                    this->name().c_str(), SDK_MAX_NAME_LEN);
+            MAC_ADDR_COPY(status->host_if_status.mac_addr,
+                          this->host_if_mac());
+        }
+        break;
     default:
         break;
     }
@@ -582,7 +618,7 @@ if_entry::read(pds_if_info_t *info) {
 
     if (type() == IF_TYPE_ETH) {
         port_args.stats_data = stats;
-        ret = port_get_(&port_args);
+        ret = port_get(&port_args);
         if(ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to get port info for %s, err %u",
                           eth_ifindex_to_str(ifindex()).c_str(), ret);

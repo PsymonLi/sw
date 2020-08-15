@@ -14,6 +14,7 @@
 #include "nic/apollo/framework/api.hpp"
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
+#include "nic/apollo/framework/if_impl_base.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
 #include "nic/apollo/api/if.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl.hpp"
@@ -26,7 +27,7 @@ namespace impl {
 /// @{
 
 /// \brief  interface implementation
-class if_impl : public impl_base {
+class if_impl : public if_impl_base {
 public:
     /// \brief      factory method to allocate & initialize interface
     ///             impl instance
@@ -45,7 +46,7 @@ public:
     ///           allocated for this object into new object and return the
     ///           cloned object
     /// \return    cloned impl instance
-    virtual impl_base *clone(void) override;
+    virtual if_impl_base *clone(void) override;
 
     /// \brief    free all the memory associated with this object without
     ///           touching any of the databases or h/w etc.
@@ -159,6 +160,15 @@ public:
     /// \return     #SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t read_hw(api_base *api_obj, obj_key_t *key,
                               obj_info_t *info) override;
+
+    /// \brief      track pps for uplink interfaces
+    /// \param[in]  interval    sampling interval in secs
+    /// \return     SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t track_pps(api_base *api_obj, uint32_t interval) override;
+
+    /// \brief      dump interface statistics to file descriptor
+    /// \param[in]  fd          file descriptor
+    virtual void dump_stats(api_base *api_obj, uint32_t fd) override;
 
     /// \brief      return h/w id of this interface
     /// \return     h/w id corresponding to this interface

@@ -457,6 +457,8 @@ pds_proto_cmd_to_api_cmd (pds::Command proto_cmd)
         return CMD_MSG_NAT_GLOBAL_STATS;
     case pds::CMD_LIF_STATS_DUMP:
         return CMD_MSG_LIF_STATS_DUMP;
+    case pds::CMD_IF_STATS_DUMP:
+        return CMD_MSG_IF_STATS_DUMP;
     default:
         return CMD_MSG_NONE;
     }
@@ -473,6 +475,27 @@ proto_mapping_dump_type_to_pds (pds::MappingDumpType type)
     case pds::MAPPING_DUMP_LOCAL:
     default:
         return MAPPING_DUMP_TYPE_LOCAL;
+    }
+}
+
+static inline if_type_t
+pds_proto_if_type_to_if_type (pds::IfType type)
+{
+    switch (type) {
+    case pds::IF_TYPE_UPLINK:
+        return IF_TYPE_UPLINK;
+    case pds::IF_TYPE_UPLINK_PC:
+        return IF_TYPE_UPLINK_PC;
+    case pds::IF_TYPE_L3:
+        return IF_TYPE_L3;
+    case pds::IF_TYPE_LOOPBACK:
+        return IF_TYPE_LOOPBACK;
+    case pds::IF_TYPE_CONTROL:
+        return IF_TYPE_CONTROL;
+    case pds::IF_TYPE_HOST:
+        return IF_TYPE_HOST;
+    default:
+        return IF_TYPE_NONE;
     }
 }
 
@@ -584,7 +607,8 @@ pds_cmd_proto_to_cmd_ctxt (cmd_ctxt_t *cmd_ctxt,
                            int sock_fd, int io_fd)
 {
     google::protobuf::Any *any_msg;
-    pds::MappingDumpFilter filter;
+    pds::MappingDumpFilter mapping_filter;
+    pds::InterfaceDumpFilter if_filter;
     pds::CommandUUID uuid;
     pds::FlowGetRequest flow_req;
     std::string cmd_msg;
@@ -601,12 +625,12 @@ pds_cmd_proto_to_cmd_ctxt (cmd_ctxt_t *cmd_ctxt,
         if (delim_pos != std::string::npos) {
             cmd_msg = cmd_msg.substr(delim_pos + 1);
             if (!cmd_msg.compare("pds.MappingDumpFilter")) {
-                any_msg->UnpackTo(&filter);
+                any_msg->UnpackTo(&mapping_filter);
                 cmd_ctxt->args.valid = true;
                 cmd_ctxt->args.mapping_dump.type =
-                        proto_mapping_dump_type_to_pds(filter.type());
-                if (filter.has_key()) {
-                    auto key = filter.key();
+                        proto_mapping_dump_type_to_pds(mapping_filter.type());
+                if (mapping_filter.has_key()) {
+                    auto key = mapping_filter.key();
                     cmd_ctxt->args.mapping_dump.key_valid = true;
                     switch (cmd_ctxt->args.mapping_dump.type) {
                     case MAPPING_DUMP_TYPE_LOCAL:
@@ -625,6 +649,17 @@ pds_cmd_proto_to_cmd_ctxt (cmd_ctxt_t *cmd_ctxt,
                     default:
                         break;
                     }
+                }
+            } else if (!cmd_msg.compare("pds.InterfaceDumpFilter")) {
+                any_msg->UnpackTo(&if_filter);
+                cmd_ctxt->args.valid = true;
+                if (if_filter.has_id()) {
+                    pds_obj_key_proto_to_api_spec(&cmd_ctxt->args.if_dump.key,
+                                                  if_filter.id().id());
+                    cmd_ctxt->args.if_dump.type = IF_TYPE_NONE;
+                } else {
+                    cmd_ctxt->args.if_dump.type = pds_proto_if_type_to_if_type(
+                                                      if_filter.iftype());
                 }
             } else if (!cmd_msg.compare("pds.CommandUUID")) {
                 any_msg->UnpackTo(&uuid);

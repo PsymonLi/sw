@@ -17,6 +17,7 @@
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
+#include "nic/apollo/framework/if_impl_base.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
 
 #define PDS_MAX_IF    256             ///< Max interfaces
@@ -322,12 +323,26 @@ public:
         return num_rx_mirror_session_;
     }
 
+    /// \brief get the eth port information
+    /// \param[out] port_args port information
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t port_get(port_args_t *port_args);
+
     /// \brief          return Rx mirror session of the interface
     /// \param[in] n    Rx mirror session number being queried
     /// \return         Rx mirror session of the interface
     pds_obj_key_t rx_mirror_session(uint32_t n) const {
         return rx_mirror_session_[n];
     }
+
+    /// \brief      track pps for uplink interfaces
+    /// \param[in]  interval    sampling interval in secs
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t track_pps(uint32_t interval);
+
+    /// \brief      dump interface statistics
+    /// \param[in]  fd  file descriptor to which output is dumped
+    void dump_stats(uint32_t fd);
 
 private:
     /// \brief constructor
@@ -340,11 +355,6 @@ private:
     ///           (this API is invoked during object deletes)
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t nuke_resources_(void);
-
-    /// \brief get the eth port information
-    /// \param[out] port_args port information
-    /// \return     SDK_RET_OK on success, failure status code on error
-    sdk_ret_t port_get_(port_args_t *port_args);
 
     /// \brief create the eth port
     /// \param[out] spec port interface specification
@@ -442,7 +452,7 @@ private:
 
     ht_ctxt_t ht_ctxt_;            ///< hash table context
     ht_ctxt_t ifindex_ht_ctxt_;    ///< hash table context
-    impl_base *impl_;              ///< impl object instance
+    if_impl_base *impl_;           ///< if impl object instance
     friend class if_state;         ///< if_state is friend of if_entry
 };
 

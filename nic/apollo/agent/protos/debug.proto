@@ -418,6 +418,13 @@ message CommandUUID {
   bytes Id = 1;
 }
 
+message InterfaceDumpFilter {
+  oneof ifinfo {
+    CommandUUID Id     = 1;
+    IfType      IfType = 2;
+  }
+}
+
 enum Command {
   CMD_NONE                  = 0;
   CMD_MAPPING_DUMP          = 1;
@@ -431,6 +438,7 @@ enum Command {
   CMD_PORT_FSM_DUMP         = 9;
   CMD_NAT_GLOBAL_STATS      = 10;
   CMD_LIF_STATS_DUMP        = 11;
+  CMD_IF_STATS_DUMP         = 12;
 }
 
 message CommandMessage {

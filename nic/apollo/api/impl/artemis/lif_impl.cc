@@ -279,12 +279,12 @@ lif_impl::reset_stats(void) {
 }
 
 sdk_ret_t
-lif_impl::track_pps(uint32_t interval) {
+lif_impl::track_pps(api_base *api_obj, uint32_t interval) {
     return SDK_RET_ERR;
 }
 
 void
-lif_impl::dump_stats(uint32_t fd) {
+lif_impl::dump_stats(api_base *api_obj, uint32_t fd) {
 }
 
 /// \@}

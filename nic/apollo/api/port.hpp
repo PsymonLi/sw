@@ -17,6 +17,15 @@ namespace api {
 
 #define PDS_MAX_PORT        16
 
+#define PDS_MGMT_MAC_FRAMES_TX_ALL      24
+#define PDS_MGMT_MAC_OCTETS_TX_TOTAL    27
+#define PDS_MGMT_MAC_FRAMES_RX_ALL      1
+#define PDS_MGMT_MAC_OCTETS_RX_ALL      5
+#define PDS_FRAMES_TX_ALL               33
+#define PDS_OCTETS_TX_TOTAL             36
+#define PDS_FRAMES_RX_ALL               1
+#define PDS_OCTETS_RX_ALL               5
+
 /**
  * @brief        Handle transceiver insert/remove events
  * @param[in]    xcvr_event_info    transceiver info filled by linkmgr

@@ -55,6 +55,14 @@ var ifShowCmd = &cobra.Command{
 	PreRunE: ifShowCmdPreRun,
 }
 
+var ifStatsShowCmd = &cobra.Command{
+	Use:     "pps-statistics",
+	Short:   "show interface pps-statistics",
+	Long:    "show interface pps-statistics",
+	Run:     ifStatsShowCmdHandler,
+	PreRunE: ifStatsShowCmdPreRun,
+}
+
 var lldpShowCmd = &cobra.Command{
 	Use:   "lldp",
 	Short: "show lldp information",
@@ -135,6 +143,10 @@ func init() {
 	ifShowCmd.Flags().StringVar(&ifID, "id", "", "Specify interface ID")
 	ifShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	ifShowCmd.Flags().Bool("summary", false, "Display number of objects")
+
+	ifShowCmd.AddCommand(ifStatsShowCmd)
+	ifStatsShowCmd.Flags().StringVar(&ifType, "type", "uplink", "Specify interface type (uplink)")
+	ifStatsShowCmd.Flags().StringVar(&ifID, "id", "", "Specify interface ID")
 
 	clearCmd.AddCommand(lifClearCmd)
 	lifClearCmd.AddCommand(lifClearStatsCmd)
@@ -279,6 +291,7 @@ func lifClearStatsCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 }
+
 func ifShowCmdPreRun(cmd *cobra.Command, args []string) error {
 	if cmd == nil {
 		return fmt.Errorf("Invalid argument")
@@ -783,6 +796,52 @@ func lifGetNameFromKey(key []byte) string {
 	}
 	resp := respMsg.Response[0]
 	return resp.GetStatus().GetName()
+}
+
+func ifStatsShowCmdPreRun(cmd *cobra.Command, args []string) error {
+	if cmd == nil {
+		return fmt.Errorf("Invalid argument")
+	}
+	if cmd.Flags().Changed("type") &&
+		strings.ToLower(ifType) != "uplink" {
+		return fmt.Errorf("Invalid argument for \"type\", only uplink supported for now\n")
+	}
+	return nil
+}
+
+func ifStatsShowCmdHandler(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	var filter *pds.InterfaceDumpFilter
+	if cmd != nil && cmd.Flags().Changed("id") {
+		filter = &pds.InterfaceDumpFilter{
+			Ifinfo: &pds.InterfaceDumpFilter_Id{
+				Id: &pds.CommandUUID{
+					Id: uuid.FromStringOrNil(ifID).Bytes(),
+				},
+			},
+		}
+	} else {
+		filter = &pds.InterfaceDumpFilter{
+			Ifinfo: &pds.InterfaceDumpFilter_IfType{
+				IfType: pds.IfType_IF_TYPE_UPLINK,
+			},
+		}
+	}
+
+	// handle cmd
+	cmdResp, err := HandleSvcReqCommandMsg(pds.Command_CMD_IF_STATS_DUMP, filter)
+	if err != nil {
+		fmt.Printf("Command failed with %v error\n", err)
+		return
+	}
+	if cmdResp.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Command failed with %v error\n", cmdResp.ApiStatus)
+		return
+	}
 }
 
 func lifStatsShowCmdHandler(cmd *cobra.Command, args []string) {

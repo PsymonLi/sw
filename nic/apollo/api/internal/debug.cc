@@ -80,7 +80,21 @@ lif_pps_tracking_cb (void *entry, void *ctxt)
     api::impl::lif_impl *lif = (api::impl::lif_impl *)entry;
 
     PDS_TRACE_VERBOSE("Interface pps tracking callback called");
-    lif->track_pps(*(uint32_t *)ctxt);
+    lif->track_pps(NULL, *(uint32_t *)ctxt);
+    // continue the walk
+    return false;
+}
+
+/// \brief callback function called on each uplink if to track pps
+/// \param[in] entry    if entry
+/// \param[in] ctxt     opaque ctxt passed to callback
+static bool
+uplink_pps_tracking_cb (void *entry, void *ctxt)
+{
+    api::if_entry *intf = (api::if_entry *)entry;
+
+    PDS_TRACE_VERBOSE("Uplink pps tracking callback called");
+    intf->track_pps(*(uint32_t *)ctxt);
     // continue the walk
     return false;
 }
@@ -95,6 +109,7 @@ if_pps_tracking_cb (void *timer, uint32_t timer_id, void *ctxt)
     uint32_t interval = IF_PPS_TRACKING_INTERVAL;
 
     lif_db()->walk(lif_pps_tracking_cb, &interval);
+    if_db()->walk(IF_TYPE_UPLINK, uplink_pps_tracking_cb, &interval);
 }
 
 /// \brief  start interface stats update

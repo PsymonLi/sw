@@ -23,7 +23,11 @@
 #include "nic/apollo/api/impl/apulu/if_impl.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "nic/apollo/api/include/pds_policer.hpp"
+#include "nic/apollo/api/internal/lif.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/port.hpp"
+#include "nic/p4/common/defines.h"
+#include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/apulu/include/p4pd.h"
 
 namespace api {
@@ -51,7 +55,7 @@ if_impl::destroy(if_impl *impl) {
     if_impl_db()->free(impl);
 }
 
-impl_base *
+if_impl_base *
 if_impl::clone(void) {
     if_impl *cloned_impl;
 
@@ -583,19 +587,14 @@ if_impl::activate_hw(api_base *api_obj, api_base *orig_obj, pds_epoch_t epoch,
 
 sdk_ret_t
 if_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
-    if_entry *intf;
     uint32_t port_num;
-    if_index_t if_index;
     pds_if_spec_t *spec;
-    uint8_t num_lifs = 0;
     p4pd_error_t p4pd_ret;
-    pds_obj_key_t lif_key;
+    if_entry *intf = (if_entry *)api_obj;
     pds_if_info_t *if_info = (pds_if_info_t *)info;
     p4i_device_info_actiondata_t p4i_device_info_data;
 
-    intf = if_db()->find((pds_obj_key_t *)key);
     spec = &if_info->spec;
-    if_info->status.ifindex = intf->ifindex();
     if (spec->type == IF_TYPE_L3) {
         p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4I_DEVICE_INFO, 0,
                                           NULL, NULL, &p4i_device_info_data);
@@ -615,19 +614,114 @@ if_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
         }
     } else if (spec->type == IF_TYPE_UPLINK) {
         if_info->status.uplink_status.lif_id = hw_id_;
-    } else if (spec->type == IF_TYPE_HOST) {
-        if_index =
-            LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(objid_from_uuid(spec->key)));
-        lif_key = uuid_from_objid(if_index);
-        lif_impl *lif = (lif_impl *)lif_impl_db()->find(&lif_key);
-        if_info->status.host_if_status.lifs[num_lifs++] = lif->key();
-        if_info->status.host_if_status.num_lifs = num_lifs;
-        strncpy(if_info->status.host_if_status.name,
-                intf->name().c_str(), SDK_MAX_NAME_LEN);
-        MAC_ADDR_COPY(if_info->status.host_if_status.mac_addr,
-                      intf->host_if_mac());
     }
     return SDK_RET_OK;
+}
+
+sdk_ret_t
+if_impl::track_pps(api_base *api_obj, uint32_t interval) {
+    sdk_ret_t ret;
+    port_args_t port_args;
+    lif_metrics_t lif_metrics = { 0 };
+    uint64_t curr_tx_pkts, curr_tx_bytes;
+    uint64_t curr_rx_pkts, curr_rx_bytes;
+    if_entry *intf = (if_entry *)api_obj, *eth_if;
+    uint64_t tx_pkts, tx_bytes, rx_pkts, rx_bytes;
+    mem_addr_t base_addr, if_addr, write_mem_addr;
+    uint64_t stats[MAX_MAC_STATS];
+
+    base_addr = g_pds_state.mempartition()->start_addr(MEM_REGION_LIF_STATS_NAME);
+    if_addr = base_addr + (hw_id_ << LIF_STATS_SIZE_SHIFT);
+
+    ret = sdk::asic::asic_mem_read(if_addr, (uint8_t *)&lif_metrics,
+                                   sizeof(lif_metrics_t));
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Error reading stats for if %s hw id %u, err %u",
+                      intf->key().str(), hw_id_, ret);
+        return ret;
+    }
+
+    tx_pkts  = lif_metrics.tx_pkts;
+    tx_bytes = lif_metrics.tx_bytes;
+    rx_pkts  = lif_metrics.rx_pkts;
+    rx_bytes = lif_metrics.rx_bytes;
+
+    port_args.stats_data = stats;
+    // get the eth interface corresponding to this interface entry
+    eth_if = if_entry::eth_if(intf);
+    if (!eth_if) {
+        PDS_TRACE_ERR("Failed to get corresponding eth interface for uplink %s",
+                      intf->key().str());
+        return SDK_RET_ERR;
+    }
+    ret = eth_if->port_get(&port_args);
+    if(ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to get port info for uplink %s, err %u",
+                      intf->key().str(), ret);
+        return ret;
+    }
+    if (port_args.port_type == port_type_t::PORT_TYPE_MGMT) {
+        curr_tx_pkts = port_args.stats_data[PDS_MGMT_MAC_FRAMES_TX_ALL];
+        curr_tx_bytes = port_args.stats_data[PDS_MGMT_MAC_OCTETS_TX_TOTAL];
+        curr_rx_pkts = port_args.stats_data[PDS_MGMT_MAC_FRAMES_RX_ALL];
+        curr_rx_bytes = port_args.stats_data[PDS_MGMT_MAC_OCTETS_RX_ALL];
+    } else {
+        curr_tx_pkts = port_args.stats_data[PDS_FRAMES_TX_ALL];
+        curr_tx_bytes = port_args.stats_data[PDS_OCTETS_TX_TOTAL];
+        curr_rx_pkts = port_args.stats_data[PDS_FRAMES_RX_ALL];
+        curr_rx_bytes = port_args.stats_data[PDS_OCTETS_RX_ALL];
+    }
+    lif_metrics.tx_pps = RATE_OF_X(tx_pkts, curr_tx_pkts, interval);
+    lif_metrics.tx_bps = RATE_OF_X(tx_bytes, curr_tx_bytes, interval);
+    lif_metrics.rx_pps = RATE_OF_X(rx_pkts, curr_rx_pkts, interval);
+    lif_metrics.rx_bps = RATE_OF_X(rx_bytes, curr_rx_bytes, interval);
+    lif_metrics.tx_pkts = curr_tx_pkts;
+    lif_metrics.tx_bytes = curr_tx_bytes;
+    lif_metrics.rx_pkts = curr_rx_pkts;
+    lif_metrics.rx_bytes = curr_rx_bytes;
+
+    write_mem_addr = if_addr + LIF_STATS_TX_PKTS_OFFSET;
+    ret = sdk::asic::asic_mem_write(write_mem_addr,
+                                    (uint8_t *)&lif_metrics.tx_pkts,
+                                    PDS_LIF_NUM_PPS_STATS *
+                                        PDS_LIF_COUNTER_SIZE); // 8 fields
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Writing stats for lif %s hw id %u failed, err %u",
+                      intf->key().str(), hw_id_, ret);
+    }
+    return ret;
+}
+
+void
+if_impl::dump_stats(api_base *api_obj, uint32_t fd) {
+    sdk_ret_t ret;
+    uint16_t hw_id;
+    pds_if_info_t if_info;
+    mem_addr_t base_addr, if_addr;
+    lif_metrics_t lif_metrics = { 0 };
+    if_entry *intf = (if_entry *)api_obj;
+
+    base_addr = g_pds_state.mempartition()->start_addr(MEM_REGION_LIF_STATS_NAME);
+    if_addr = base_addr + (hw_id_ << LIF_STATS_SIZE_SHIFT);
+    ret = sdk::asic::asic_mem_read(if_addr, (uint8_t *)&lif_metrics,
+                                   sizeof(lif_metrics_t));
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Error reading stats for if %s hw id %u, err %u",
+                      intf->key().str(), hw_id_, ret);
+        return;
+    }
+
+    dprintf(fd, "\nInterface ID: %s\n", intf->key().str());
+    dprintf(fd, "%s\n", std::string(50, '-').c_str());
+    dprintf(fd, "tx_pkts                         : %lu\n", lif_metrics.tx_pkts);
+    dprintf(fd, "tx_bytes                        : %lu\n", lif_metrics.tx_bytes);
+    dprintf(fd, "rx_pkts                         : %lu\n", lif_metrics.rx_pkts);
+    dprintf(fd, "rx_bytes                        : %lu\n", lif_metrics.rx_bytes);
+    dprintf(fd, "tx_pps                          : %lu\n", lif_metrics.tx_pps);
+    dprintf(fd, "tx_bps                          : %lu\n", lif_metrics.tx_bps);
+    dprintf(fd, "rx_pps                          : %lu\n", lif_metrics.rx_pps);
+    dprintf(fd, "rx_bps                          : %lu\n", lif_metrics.rx_bps);
+
 }
 
 /// \@}    // end of IF_IMPL_IMPL

@@ -17,6 +17,9 @@
 //#include "nic/apollo/api/include/pds_lif.hpp"
 #include "nic/apollo/api/impl/lif_impl_state.hpp"
 
+#define PDS_LIF_COUNTER_SIZE   sizeof(uint64_t)
+#define PDS_LIF_NUM_PPS_STATS  8
+
 static inline pds_if_state_t
 lif_state_to_if_state (lif_state_t state)
 {

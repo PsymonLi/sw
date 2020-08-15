@@ -15,6 +15,7 @@
 #include "nic/apollo/api/include/pds_flow.hpp"
 #include "nic/apollo/api/debug.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/include/sdk/table.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/utils/ftlite/ftlite_ipv4_structs.hpp"
@@ -108,10 +109,16 @@ typedef struct flow_dump_args_s {
     bool summary;
 } flow_dump_args_t;
 
+typedef struct if_dump_args_s {
+    if_type_t     type;
+    pds_obj_key_t key;
+} if_dump_args_t;
+
 typedef struct cmd_args_s {
     bool valid;
     union {
         mapping_dump_args_t mapping_dump;
+        if_dump_args_t      if_dump;
         pds_obj_key_t       obj_key;
         flow_dump_args_t    flow_dump;
     };
@@ -130,6 +137,7 @@ typedef enum cmd_msg_e {
     CMD_MSG_NAT_FLOW_DUMP,
     CMD_MSG_NAT_GLOBAL_STATS,
     CMD_MSG_LIF_STATS_DUMP,
+    CMD_MSG_IF_STATS_DUMP,
 } cmd_msg_t;
 
 typedef struct cmd_ctxt_s {
