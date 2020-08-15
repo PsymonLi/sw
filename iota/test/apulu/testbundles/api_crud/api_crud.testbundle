@@ -33,13 +33,14 @@ testcases:
             ipaf    : [ ipv4 ]
             # objects tested with update config.
             # TODO: nh-group
-            #objtype : [ device, vpc, subnet, vnic, tunnel, nexthop, interface]
-            objtype : [ device, vpc, subnet, vnic, tunnel, interface, hostif ]
+            #objtype : [ device, vpc, subnet, vnic, tunnel, nexthop, interface ]
+            objtype : [ device, vpc, subnet, vnic, tunnel, interface ]
             oper    : [ [update] ]
 
     -   name    : Update_HostIf_And_Ping
         testcase: testcases.api_crud.ping
         stress  : True
+        enable  : False
         args    :
             type: remote_only
             preclear: TxPolicer
