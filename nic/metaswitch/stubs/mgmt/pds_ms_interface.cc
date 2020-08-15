@@ -69,7 +69,7 @@ interface_uuid_fetch(const pds_obj_key_t& key, bool del_op = false)
     }
     auto interface_uuid_obj = (interface_uuid_obj_t*) uuid_obj;
     PDS_TRACE_VERBOSE("Fetched Interface UUID %s MSIfindex 0x%X",
-                     key.str(), interface_uuid_obj->ms_id());
+                      key.str(), interface_uuid_obj->ms_id());
     if (del_op) {
         mgmt_ctxt.state()->set_pending_uuid_delete(key);
     }
@@ -302,7 +302,7 @@ interface_create (pds_if_spec_t *spec)
 
             ms_ifindex = pds_to_ms_ifindex(eth_ifindex, IF_TYPE_ETH);
             PDS_TRACE_INFO("L3 Intf Create:: UUID %s Eth[0x%X] to MS[0x%X]]",
-                            spec->key.str(), eth_ifindex, ms_ifindex);
+                           spec->key.str(), eth_ifindex, ms_ifindex);
 
             l3_intf_create(spec, ms_ifindex, eth_ifindex);
 
@@ -313,30 +313,30 @@ interface_create (pds_if_spec_t *spec)
         } else if (spec->type == IF_TYPE_LOOPBACK) {
             ms_ifindex = pds_to_ms_ifindex(LOOPBACK_IF_ID, IF_TYPE_LOOPBACK);
             PDS_TRACE_INFO("Loopback Intf Create:: UUID %s to MS[0x%X]]",
-                            spec->key.str(),  ms_ifindex);
+                           spec->key.str(),  ms_ifindex);
 
             // Cache Intf UUID to MS IfIndex
             interface_uuid_alloc(spec->key, ms_ifindex, 0,
                                  spec->loopback_if_info.ip_prefix);
         } else {
-            PDS_TRACE_DEBUG("Ignoring unknown interface %s type %d",
-                             spec->key.str(), spec->type);
+            PDS_TRACE_DEBUG("Ignoring interface %s create, type %u",
+                            spec->key.str(), spec->type);
             return SDK_RET_OK;
         }
 
         ret_status = process_interface_update (spec, ms_ifindex, AMB_ROW_ACTIVE);
         if (ret_status != types::ApiStatus::API_STATUS_OK) {
-            PDS_TRACE_ERR ("Failed to process interface %s create for "
-                           "MSIfIndex 0x%X err %d",
-                            spec->key.str(), ms_ifindex, ret_status);
+            PDS_TRACE_ERR("Failed to process interface %s create for "
+                          "MSIfIndex 0x%X err %d",
+                          spec->key.str(), ms_ifindex, ret_status);
             return pds_ms_api_to_sdk_ret (ret_status);
         }
 
-        PDS_TRACE_DEBUG ("Intf create for UUID %s successfully processed",
-                          spec->key.str());
+        PDS_TRACE_DEBUG("Intf create for UUID %s successfully processed",
+                        spec->key.str());
     } catch (const Error& e) {
-        PDS_TRACE_ERR ("Interface %s creation failed %s",
-                        spec->key.str(), e.what());
+        PDS_TRACE_ERR("Interface %s creation failed %s",
+                      spec->key.str(), e.what());
         return e.rc();
     }
     return SDK_RET_OK;
@@ -383,13 +383,13 @@ interface_delete (pds_obj_key_t* key)
         ret_status = process_interface_update(&if_spec, ms_ifindex,
                                               AMB_ROW_DESTROY);
         if (ret_status != types::ApiStatus::API_STATUS_OK) {
-            PDS_TRACE_ERR ("Failed to process interface UUID %s "
-                           "MS-Interface 0x%X delete err %d",
-                            key->str(), ms_ifindex, ret_status);
+            PDS_TRACE_ERR("Failed to process interface UUID %s "
+                          "MS-Interface 0x%X delete err %d",
+                          key->str(), ms_ifindex, ret_status);
             return pds_ms_api_to_sdk_ret (ret_status);
         }
-        PDS_TRACE_DEBUG ("Intf UUID %s successfully deleted in routing stack",
-                         key->str());
+        PDS_TRACE_DEBUG("Intf UUID %s successfully deleted in routing stack",
+                        key->str());
 
         if (if_spec.type == IF_TYPE_L3) {
             // MS does not invoke LI stub delete for interface delete.
@@ -397,14 +397,19 @@ interface_delete (pds_obj_key_t* key)
             li_intf_t li_intf;
             li_intf.intf_delete(ms_ifindex, false);
 
-            PDS_TRACE_DEBUG ("L3 Intf UUID %s delete completed successfully",
-                             key->str());
+            PDS_TRACE_DEBUG("L3 Intf UUID %s delete completed successfully",
+                            key->str());
         }
 
     } catch (const Error& e) {
-        PDS_TRACE_ERR ("Interface %s deletion failed %s",
-                        key->str(), e.what());
-        return e.rc();
+        if (e.rc() == SDK_RET_ENTRY_NOT_FOUND) {
+            PDS_TRACE_DEBUG("Ignoring interface %s delete", key->str());
+            return SDK_RET_OK;
+        } else {
+            PDS_TRACE_ERR("Interface %s deletion failed %s",
+                          key->str(), e.what());
+            return e.rc();
+        }
     }
     return SDK_RET_OK;
 }
@@ -426,8 +431,8 @@ interface_delete (pds_obj_key_t* key, pds_batch_ctxt_t bctxt)
         // via CFG IPC circulate
         return SDK_RET_ENTRY_NOT_FOUND;
     } catch (const Error& e) {
-        PDS_TRACE_ERR ("Interface %s deletion failed %s",
-                        key->str(), e.what());
+        PDS_TRACE_ERR("Interface %s deletion failed %s",
+                      key->str(), e.what());
         return e.rc();
     }
     return SDK_RET_OK;
@@ -469,6 +474,11 @@ interface_update (pds_if_spec_t *spec)
     try {
         // Guard to release all pending UUIDs in case of any failures
         mgmt_uuid_guard_t uuid_guard;
+        if ((spec->type != IF_TYPE_L3) && (spec->type != IF_TYPE_LOOPBACK)) {
+            PDS_TRACE_DEBUG("Ignoring interface %s update, type %u",
+                            spec->key.str(), spec->type);
+            return SDK_RET_OK;
+        }
 
         // Fill MS IfIndex from UUID cache
         auto ifinfo = interface_uuid_fetch(spec->key);
@@ -482,17 +492,17 @@ interface_update (pds_if_spec_t *spec)
         ret_status = process_interface_update(spec, ms_ifindex,
                                               AMB_ROW_ACTIVE, true);
         if (ret_status != types::ApiStatus::API_STATUS_OK) {
-            PDS_TRACE_ERR ("Failed to process interface UUID %s "
-                           "MS-Interface 0x%X "
-                           "update err %d",
-                            spec->key.str(), ms_ifindex, ret_status);
+            PDS_TRACE_ERR("Failed to process interface UUID %s "
+                          "MS-Interface 0x%X "
+                          "update err %d",
+                          spec->key.str(), ms_ifindex, ret_status);
             return pds_ms_api_to_sdk_ret (ret_status);
         }
-        PDS_TRACE_DEBUG ("Intf update for UUID %s successfully processed",
-                          spec->key.str());
+        PDS_TRACE_DEBUG("Intf update for UUID %s successfully processed",
+                        spec->key.str());
     } catch (const Error& e) {
-        PDS_TRACE_ERR ("Interface %s update failed %s",
-                        spec->key.str(), e.what());
+        PDS_TRACE_ERR("Interface %s update failed %s",
+                      spec->key.str(), e.what());
         return e.rc();
     }
     return SDK_RET_OK;
