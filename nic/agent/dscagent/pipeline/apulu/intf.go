@@ -432,7 +432,9 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collecto
 					Id:          uid.Bytes(),
 					AdminStatus: ifStatus,
 					Ifinfo: &halapi.InterfaceSpec_HostIfSpec{
-						HostIfSpec: &halapi.HostIfSpec{},
+						HostIfSpec: &halapi.HostIfSpec{
+							ConnTrackEn: intf.Spec.ConnectionTracking,
+						},
 					},
 					TxMirrorSessionId: txSessions,
 					RxMirrorSessionId: rxSessions,

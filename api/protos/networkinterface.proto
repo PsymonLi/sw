@@ -120,6 +120,9 @@ message NetworkInterfaceSpec {
     // Override system allocated MAC address
     string MACAddress       = 10 [(venice.check) = "EmptyOr(MacAddr())", (gogoproto.jsontag) = "mac-address,omitempty"];
 
+    // ConnectionTracking enables connection tracking on the interface. This is valid only for HOST_PF type.
+    bool ConnectionTracking = 11 [(gogoproto.jsontag)= "connection-tracking", (venice.default) = "false"];
+
     // Future: Breakout Config, CDP, LLDP, LACP, configuration would come here
     // Future: A lot of above configuration would be driven by profile when available
 }

@@ -36,6 +36,13 @@ var CreateNetworkInterfaceFlags = []gen.CliFlag{
 		Insert: "",
 	},
 	{
+		ID:     "connection-tracking",
+		Type:   "Bool",
+		Help:   "",
+		Skip:   false,
+		Insert: "",
+	},
+	{
 		ID:     "ip-alloc-type",
 		Type:   "String",
 		Help:   "",

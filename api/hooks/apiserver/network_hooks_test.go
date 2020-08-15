@@ -238,9 +238,10 @@ func TestValidateHooks(t *testing.T) {
 
 	nwif := network.NetworkInterface{
 		Spec: network.NetworkInterfaceSpec{
-			Type:          network.IFType_HOST_PF.String(),
-			AttachTenant:  "tenant",
-			AttachNetwork: "network1",
+			Type:               network.IFType_HOST_PF.String(),
+			AttachTenant:       "tenant",
+			AttachNetwork:      "network1",
+			ConnectionTracking: true,
 		},
 	}
 
@@ -249,10 +250,11 @@ func TestValidateHooks(t *testing.T) {
 
 	nwif = network.NetworkInterface{
 		Spec: network.NetworkInterfaceSpec{
-			Type:          network.IFType_HOST_PF.String(),
-			AttachTenant:  "tenant",
-			AttachNetwork: "network1",
-			AdminStatus:   "down",
+			Type:               network.IFType_HOST_PF.String(),
+			AttachTenant:       "tenant",
+			AttachNetwork:      "network1",
+			ConnectionTracking: true,
+			AdminStatus:        "down",
 		},
 	}
 	errs = nh.validateNetworkIntfConfig(nwif, "v1", false, false)

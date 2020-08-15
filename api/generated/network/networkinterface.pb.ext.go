@@ -415,6 +415,7 @@ func (m *NetworkInterfaceSpec) Defaults(ver string) bool {
 	switch ver {
 	default:
 		m.AdminStatus = "up"
+		m.ConnectionTracking = false
 		m.IPAllocType = "none"
 		m.Type = "none"
 	}

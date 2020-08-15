@@ -635,6 +635,12 @@
             "type": "string"
           },
           "description": "Mirror sessions, Tx and Rx collectors should be removed once implemented."
+        },
+        "connection-tracking": {
+          "type": "boolean",
+          "format": "boolean",
+          "default": "false",
+          "description": "Connection Tracking knob."
         }
       },
       "description": "InterfaceSpec captures all the interface level configuration."

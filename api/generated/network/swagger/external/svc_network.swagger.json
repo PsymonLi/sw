@@ -1022,6 +1022,14 @@
             "type": "string"
           },
           {
+            "name": "spec.connection-tracking",
+            "description": "ConnectionTracking enables connection tracking on the interface. This is valid only for HOST_PF type.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
             "name": "status.name",
             "in": "query",
             "required": false,
@@ -10766,6 +10774,12 @@
           "type": "string",
           "example": "aabb.ccdd.0000, aabb.ccdd.0000, aabb.ccdd.0000",
           "description": "Override system allocated MAC address. Should be a valid MAC address."
+        },
+        "connection-tracking": {
+          "type": "boolean",
+          "format": "boolean",
+          "default": "false",
+          "description": "ConnectionTracking enables connection tracking on the interface. This is valid only for HOST_PF type."
         }
       },
       "description": "NetworkInterfaceSpec."

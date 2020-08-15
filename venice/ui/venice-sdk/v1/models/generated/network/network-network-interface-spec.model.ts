@@ -24,6 +24,7 @@ export interface INetworkNetworkInterfaceSpec {
     'ip-alloc-type': NetworkNetworkInterfaceSpec_ip_alloc_type;
     'ip-config'?: IClusterIPConfig;
     'mac-address'?: string;
+    'connection-tracking'?: boolean;
     '_ui'?: any;
 }
 
@@ -49,6 +50,8 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
     'ip-config': ClusterIPConfig = null;
     /** Override system allocated MAC address. Should be a valid MAC address. */
     'mac-address': string = null;
+    /** ConnectionTracking enables connection tracking on the interface. This is valid only for HOST_PF type. */
+    'connection-tracking': boolean = null;
     public static propInfo: { [prop in keyof INetworkNetworkInterfaceSpec]: PropInfoItem } = {
         'admin-status': {
             enum: NetworkNetworkInterfaceSpec_admin_status,
@@ -104,6 +107,12 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
             hint:  'aabb.ccdd.0000, aabb.ccdd.0000, aabb.ccdd.0000',
             required: false,
             type: 'string'
+        },
+        'connection-tracking': {
+            default: 'false',
+            description:  `ConnectionTracking enables connection tracking on the interface. This is valid only for HOST_PF type.`,
+            required: false,
+            type: 'boolean'
         },
     }
 
@@ -209,6 +218,13 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
         } else {
             this['mac-address'] = null
         }
+        if (values && values['connection-tracking'] != null) {
+            this['connection-tracking'] = values['connection-tracking'];
+        } else if (fillDefaults && NetworkNetworkInterfaceSpec.hasDefaultValue('connection-tracking')) {
+            this['connection-tracking'] = NetworkNetworkInterfaceSpec.propInfo['connection-tracking'].default;
+        } else {
+            this['connection-tracking'] = null
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -226,6 +242,7 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
                 'ip-alloc-type': CustomFormControl(new FormControl(this['ip-alloc-type'], [required, enumValidator(NetworkNetworkInterfaceSpec_ip_alloc_type), ]), NetworkNetworkInterfaceSpec.propInfo['ip-alloc-type']),
                 'ip-config': CustomFormGroup(this['ip-config'].$formGroup, NetworkNetworkInterfaceSpec.propInfo['ip-config'].required),
                 'mac-address': CustomFormControl(new FormControl(this['mac-address']), NetworkNetworkInterfaceSpec.propInfo['mac-address']),
+                'connection-tracking': CustomFormControl(new FormControl(this['connection-tracking']), NetworkNetworkInterfaceSpec.propInfo['connection-tracking']),
             });
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('pause') as FormGroup).controls).forEach(field => {
@@ -257,6 +274,7 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
             this._formGroup.controls['ip-alloc-type'].setValue(this['ip-alloc-type']);
             this['ip-config'].setFormGroupValuesToBeModelValues();
             this._formGroup.controls['mac-address'].setValue(this['mac-address']);
+            this._formGroup.controls['connection-tracking'].setValue(this['connection-tracking']);
         }
     }
 }
