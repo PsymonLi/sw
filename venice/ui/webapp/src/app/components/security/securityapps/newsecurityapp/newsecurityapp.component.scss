@@ -1,93 +1,27 @@
 @import 'src/global-mixins';
 
-$horizontal-gutter: 10px;
-$vertical-gutter: 5px;
-$form-width: 450px;
-
 .newsecurityapp-container {
-  background: white;
-  padding: 0px 10px 10px 10px;
-
-  &:hover {
-    background: white;
-  }
-
-  .newsecurityapp-content {
-    background: white;
-    min-height: 180px;
-    margin-top: 4* $vertical-gutter;
-    @include primary-font();
-
-    .newsecurityapp-input-box {
-      height: 30px;
-
-      :first-child {
-        height: 30px;
-        font-size: 14px;
-        width: 100%;
-      }
-    }
-
-    .newsecurityapp-radios,
-    .newsecurityapp-name {
-      width: $form-width;
-    }
-
-    .newsecurityapp-protocolsandports {
-      width: $form-width;
-
-      .newsecurityapp-prot-box {
-        width: 170px;
-      }
-    }
-
-    .newsecurityapp-alg {
-      width: $form-width;
-
-      .newsecurityapp-alg-type,
-      .newsecurityapp-alg-icmp-box,
-      .newsecurityapp-alg-dns-box,
-      .newsecurityapp-alg-ftp-box {
-        width: 170px;
-      }
-
-      .newsecurityapp-alg-content {
-        margin-top: 15px;
-        margin-left: 10px;
-      }
-
-      .newsecurityapp-toggle-text {
-        white-space: normal;
-      }
-
-      .newsecurityapp-toggle-color {
-        @include global-mat-toggle(rgb(209, 209, 208), rgb(103, 103, 99), rgb(211, 226, 246), rgb(101, 169, 227));
-      }
-    }
-
-    .newsecurityapp-fieldtitle {
-      margin: $vertical-gutter $horizontal-gutter;
-    }
-
-    .newsecurityapp-and {
-      white-space: nowrap;
-      margin-top: 2*$vertical-gutter;
-      color: #6ba0e5;
-      display: inline-block;
-      cursor: pointer;
-    }
-
-    .newsecurityapp-del {
-      color: #767676;
-      cursor: pointer;
-    }
+  app-fieldcontainer {
+    margin-left: 10px;
   }
 }
 
-.newsecurityapp-button {
-  padding-left: 10px;
-  padding-right: 10px;
-  cursor: pointer;
+@media only screen and (max-width: 1160px) {
+  .menufullopened .newsecurityapp-container .new-securityapp-both-layout {
+    width: 450px;
+  }
+}
+
+@media only screen and (max-width: 1020px) {
+  .menupartialopened .newsecurityapp-container .new-securityapp-both-layout {
+    width: 450px;
+  }
+}
+
+@media only screen and (max-width: 940px) {
+  .menuclosed .newsecurityapp-container .new-securityapp-both-layout {
+    width: 450px;
+  }
 }
 
 @include adjust-inlinebuttons-boundry(1024, newsecurityapp-editform-inline);

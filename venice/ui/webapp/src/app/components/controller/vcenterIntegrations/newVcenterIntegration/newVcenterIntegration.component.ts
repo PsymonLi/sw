@@ -10,7 +10,7 @@ import { IApiStatus, OrchestrationOrchestrator, IOrchestrationOrchestrator,
 import { Observable } from 'rxjs';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { SelectItem } from 'primeng/api';
-import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 
 @Component({
   selector: 'app-newvcenter-integration',
@@ -19,7 +19,7 @@ import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.c
   animations: [Animations],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewVcenterIntegrationComponent extends CreationPushForm<IOrchestrationOrchestrator, OrchestrationOrchestrator> implements OnInit, OnChanges, AfterViewInit, OnDestroy {
+export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationOrchestrator, OrchestrationOrchestrator> implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
   @Input() isInline: boolean = false;
   @Input() existingObjects: IOrchestrationOrchestrator[] = [];

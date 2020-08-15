@@ -1,57 +1,48 @@
-<div fxFlex="auto" style="padding: 0px 10px;" fxLayout="column">
-  <div *ngIf="isInline">
-    <ng-container *ngTemplateOutlet="editButtonContainer;">
-    </ng-container>
-  </div>
-  <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start" class="newhost-container">
-    <!-- Limiting the size of the creation form - If it is inline, we have more room to fit in the save/cancel buttons -->
-    <div fxFlex fxLayout="row"
-         fxLayoutAlign="center" class="newhost-content">
-      <div *ngIf="isInline || notAdmittedCount==0">
-        <ng-container *ngTemplateOutlet="singleMode;"></ng-container>
-      </div>
-      <div *ngIf="false && !isInline && notAdmittedCount!=0">
-        <!-- 2020-03-24 disable multiple add UI as it can not set two DSC to one host -->
-        <ng-container *ngTemplateOutlet="multiAddMode;"></ng-container>
-      </div>
+<div fxFlex="auto" fxLayout="column" class="psm-form new-host-container">
+  <app-inlinebuttons class="new-host" *ngIf="isInline" [form]="this">
+  </app-inlinebuttons>
+  <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start"
+       [class]="isInline? 'new-host-editform-inline' : ''">
+    <div fxLayout="row" fxLayoutAlign="center" class="psm-form-content">
+      <ng-container *ngTemplateOutlet="singleMode"></ng-container>
     </div>
   </div>
 </div>
+
 <ng-template #singleMode>
   <div fxFlex fxLayout="column" [formGroup]="newObject.$formGroup">
-    <div fxFlex="nogrow" fxLayout="row" formGroupName="meta" class="newhost-row">
-      <span [ngClass]="{
-                'newhost-general-box': true,
-                'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
-              }">
-        <input autocomplete="off" fxFlex="nogrow" formControlName="name" class="newhost-name"
-               appErrorTooltip
-               spellcheck="false" type="text"
-               pInputText appFloatLabel="Name...">
-      </span>
+    <div fxFlex="none" fxLayout="row" formGroupName="meta">
+      <app-psmtextbox fxFlex="250px" label="Name" formControlName="name">
+      </app-psmtextbox>
     </div>
-    <div formGroupName="spec">
-      <div formArrayName="dscs">
-        <div fxFlex="nogrow" fxLayout="column" [@slideInOut]
-             *ngFor="let smartNICID of smartNICIDs; let index = index; let first = first"
-             [formGroupName]="index">
-          <ng-container *ngTemplateOutlet="newHostCreation; context:{index:index}">
-          </ng-container>
-          <div fxFlex="nogrow" fxLayout="row">
-            <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start start">
-              <div fxFlex="55px" fxLayout="row" fxLayoutAlign="start end"
-                   class="newhost-fieldtitle newhost-and">
-                <span fxFlex="nogrow" *ngIf="radioValues.length < 2"
-                      (click)="addDSC()">+ ADD</span>
-                <mat-icon fxFlex="nogrow" [style.color]="'#767676'" [style.cursor]="'pointer'"
-                          *ngIf="radioValues.length > 1 && (!isInline || (isInline && originalDSCcount === 1 && index === 1))"
-                          (click)="removeDSC(index)">delete</mat-icon>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div fxFlex="5px"></div>
+    <div fxFlex="none" fxLayout="row">
+      <app-fieldcontainer fxFlex="490px" fieldTitle="DS Cards">
+        <app-listcontainer [formGroup]="newObject.$formGroup.get(['spec', 'dscs'])"
+                           [itemTemplate]="dscRowTemplate" addText="DS Card" [maxiumCount]="2"
+                           [isInline]="isInline" [showDeleteButton]="isShowDeleteButton.bind(this)"
+                           (addItem)="addDSC()" (deleteItem)="removeDSC($event)">
+        </app-listcontainer>
+      </app-fieldcontainer>
     </div>
+  </div>
+</ng-template>
+
+<ng-template #dscRowTemplate let-dsc="item" let-index="index">
+  <div fxLayout="row" [formGroup]="dsc" fxLayoutAlign="start start">
+    <app-psmradiobuttons fxFlex="200px" formControlName="addDscType"
+                         [options]="addNICoptions" label="Add DSC By">
+    </app-psmradiobuttons>
+    <app-psmautocomplete fxFlex="250px" *ngIf="dsc.get('addDscType').value==='id'"
+                         [showRequired]="true" formControlName="id" label="DSC ID" [autoTrim]="true"
+                         [suggestions]="idSuggestions" [completeMethod]="searchDscIDs.bind(this)">
+    </app-psmautocomplete>
+    <app-psmautocomplete fxFlex="250px" *ngIf="dsc.get('addDscType').value==='mac-address'"
+                         [showRequired]="true" formControlName="mac-address" label="DSC MAC Address"
+                         [autoTrim]="true"
+                         [suggestions]="macSuggestions" [completeMethod]="searchDscMACs.bind(this)">
+    </app-psmautocomplete>
+    <div fxFlex="5px"></div>
   </div>
 </ng-template>
 
@@ -98,78 +89,4 @@
       </div>
     </ng-container>
   </ng-container>
-</ng-template>
-
-<ng-template #editButtonContainer>
-  <div class="newhost-buttoncontainer" fxLayout="row">
-    <div fxFlex="auto" fxLayoutAlign="end center" [style.max-height]="'0px'">
-      <div fxFlex="nogrow" class="button-container" [matTooltip]="getFieldTooltip()">
-        <button [disabled]="!isFormValid()" (click)="saveObject()"
-                class="global-button-primary newhost-save">SAVE</button>
-      </div>
-      <div fxFlex="nogrow" class="button-container">
-        <button (click)="cancelObject()"
-                class="global-button-neutral newhost-cancel">CANCEL</button>
-      </div>
-    </div>
-  </div>
-</ng-template>
-
-<ng-template #newHostCreation let-index="index">
-  <div fxFlex="none" class="newhost-sub-container">
-    <app-fieldcontainer class="newhost-rule-app" fieldTitle="ADD DSC BY:">
-      <div fxflex="nogrow" fxLayout="column" class="newhost-sNI-choose"
-           [formGroup]="newHostForm.get(['spec','dscs', index])">
-        <div fxFlex="5px"></div>
-        <div class="newhost-radio-container">
-
-          <mat-radio-group fxFlex="nogrow" class="newhost-attach-radio" fxLayout="start center"
-                           fxLayoutAlign="start center" fxLayoutGap="10px"
-                           [disabled]="isInline && (index !== 1 || originalDSCcount === 2)"
-                           (change)="onRadioButtonChange($event, index)">
-
-            <mat-radio-button fxFlex="nogrow" color="primary" fxLayoutAlign="start center"
-                              [disableRipple]="true"
-                              class="" *ngFor="let smartNICIDOption of smartNICIDOptions"
-                              [value]="smartNICIDOption"
-                              [checked]="shouldRadioButtonBeChecked(smartNICIDOption, index)">
-              {{smartNICIDOption}}
-            </mat-radio-button>
-
-          </mat-radio-group>
-
-        </div>
-        <div fxFlex="5px"></div>
-        <div [ngSwitch]="radioValues[index]">
-          <ng-container *ngSwitchCase="'id'">
-            <div class="newhost-input-row">
-              <span [ngClass]="{
-                            'newhost-general-box': true,
-                            'requiredField': isFieldEmpty(newObject.$formGroup.get(['spec', 'dscs', 0, 'id']))
-                          }">
-                <input autocomplete="off" fxFlex="nogrow" class="newhost-NAPLES-name"
-                       formControlName="id"
-                       appErrorTooltip spellcheck="false"
-                       type="text" pInputText>
-              </span>
-            </div>
-          </ng-container>
-
-          <ng-container *ngSwitchCase="'mac-address'">
-            <div class="newhost-input-row">
-              <span [ngClass]="{
-                          'newhost-general-box': true,
-                          'requiredField': isFieldEmpty(newObject.$formGroup.get(['spec', 'dscs', 0, 'mac-address']))
-                        }">
-                <input autocomplete="off" fxFlex="nogrow" class="newhost-mac-address"
-                       formControlName="mac-address"
-                       appErrorTooltip spellcheck="false"
-                       type="text" pInputText>
-              </span>
-            </div>
-          </ng-container>
-        </div>
-      </div>
-    </app-fieldcontainer>
-  </div>
 </ng-template>

@@ -1,10 +1,11 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
+import { AfterViewInit, ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { ControllerService } from '@app/services/controller.service';
 import { SecurityService } from '@app/services/generated/security.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ISecurityFirewallProfile, SecurityFirewallProfile } from '@sdk/v1/models/generated/security';
 import { minValueValidator } from '@sdk/v1/utils/validators';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 /**
  * As FirewallProfile object is a singleton object within Venice.
@@ -30,63 +31,90 @@ export class NewfirewallprofileComponent extends CreationForm<SecurityFirewallPr
   constructor(protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected securityService: SecurityService,
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService, SecurityFirewallProfile);
+    super(_controllerService, uiconfigsService, cdr, SecurityFirewallProfile);
   }
 
-  getClassName(): string {
-    return this.constructor.name;
+  postNgInit() {
+    // use selectedFirewallProfile to populate this.newObject
+    this.newObject = new SecurityFirewallProfile(this.objectData);
+    this.newObject.$formGroup.get(['meta', 'name']).disable();
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'session-idle-timeout']), this.isTimeoutValid('session-idle-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-connection-setup-timeout']), this.isTimeoutValid('tcp-connection-setup-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-close-timeout']), this.isTimeoutValid('tcp-close-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-half-closed-timeout']), this.isTimeoutValid('tcp-half-closed-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-drop-timeout']), this.isTimeoutValid('tcp-drop-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'udp-drop-timeout']), this.isTimeoutValid('udp-drop-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'icmp-drop-timeout']), this.isTimeoutValid('icmp-drop-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'drop-timeout']), this.isTimeoutValid('drop-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-timeout']), this.isTimeoutValid('tcp-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'udp-timeout']), this.isTimeoutValid('udp-timeout'));
+    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'icmp-timeout']), this.isTimeoutValid('icmp-timeout'));
   }
-
 
   setToolbar(): void {
-    const currToolbar = this._controllerService.getToolbarData();
-    this.oldButtons = currToolbar.buttons;
-    currToolbar.buttons = [
-      {
-        cssClass: 'global-button-primary newfirewallprofile-button newfirewallprofile-button-SAVE',
-        text: 'SAVE FIREWALL PROFILE',
-        callback: () => {
-          this.saveObject();  // should invoke updateObject() in super class as this.isSingleton is true
-        },
-        computeClass: () => this.computeButtonClass(),
-        genTooltip: () => this.getTooltip(),
-      },
-      {
-        cssClass: 'global-button-neutral newfirewallprofile-button newfirewallprofile-button-CANCEL',
-        text: 'CANCEL',
-        callback: () => {
-          this.cancelObject();
-        }
-      },
-    ];
-
-    this._controllerService.setToolbarData(currToolbar);
-
+    this.setCreationButtonsToolbar('SAVE FIREWALL PROFILE',
+      UIRolePermissions.securityfirewallprofile_update);
   }
 
-  /**
-   * compute whether to enable [save] button
-  */
-  computeButtonClass() {
-    let enable = false;
-    if (!this.newObject.$formGroup.dirty) {
-      // if no change, don't enable it
-      enable = false;
-    } else {
-      if (this.isFormValid()) {
-        enable = true;
-      }
+  isFormValid(): boolean {
+    if (this.newObject.$formGroup.get(['spec', 'session-idle-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: Session Idle Timeout is invalid.';
+      return false;
     }
-
-    if (enable) {
-      return '';
+    if (this.newObject.$formGroup.get(['spec', 'tcp-connection-setup-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: Tcp Connection Timeout is invalid.';
+      return false;
     }
-    return 'global-button-disabled';
-  }
-
-  getTooltip(): string {
-    return this.saveButtonTooltip;
+    if (this.newObject.$formGroup.get(['spec', 'tcp-close-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: TCP Close Timeout is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'tcp-half-closed-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: TCP Half Closed Timeout is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'tcp-drop-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: TCP Drop Timeout is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'udp-drop-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: UDP Drop Timeout is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'icmp-drop-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: ICMP Drop Timeout is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'drop-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: Drop Timeout is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'tcp-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: TCP Timeout is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'udp-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: UDP Timeout is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'icmp-timeout']).invalid) {
+      this.submitButtonTooltip = 'Error: ICMP Timeout is invalid.';
+      return false;
+    }if (this.newObject.$formGroup.get(['spec', 'tcp-half-open-session-limit']).invalid) {
+      this.submitButtonTooltip = 'Error: TCP Half Open Session Limit is invalid.';
+      return false;
+    }if (this.newObject.$formGroup.get(['spec', 'udp-active-session-limit']).invalid) {
+      this.submitButtonTooltip = 'Error: UDP Active Session Limit is invalid.';
+      return false;
+    }
+    if (this.newObject.$formGroup.get(['spec', 'icmp-active-session-limit']).invalid) {
+      this.submitButtonTooltip = 'Error: ICMP Active Session Limit is invalid.';
+      return false;
+    }
+    this.submitButtonTooltip = 'Ready to submit';
+    return true;
   }
 
   createObject(object: SecurityFirewallProfile) {
@@ -98,46 +126,12 @@ export class NewfirewallprofileComponent extends CreationForm<SecurityFirewallPr
     return this.securityService.UpdateFirewallProfile(oldObject.meta.name, newObject, null, oldObject, true, false);
   }
 
-  postNgInit() {
-    // use selectedFirewallProfile to populate this.newObject
-    this.newObject = new SecurityFirewallProfile(this.objectData);
-    this.newObject.$formGroup.get(['meta', 'name']).disable();
-
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'session-idle-timeout']), this.isTimeoutValid('session-idle-timeout'));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-connection-setup-timeout']), this.isTimeoutValid('tcp-connection-setup-timeout'));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-close-timeout']), this.isTimeoutValid('tcp-close-timeout'));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-half-closed-timeout']), this.isTimeoutValid('tcp-half-closed-timeout'));
-
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-drop-timeout']), this.isTimeoutValid('tcp-drop-timeout'));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'udp-drop-timeout']), this.isTimeoutValid('udp-drop-timeout'));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'icmp-drop-timeout']), this.isTimeoutValid('icmp-drop-timeout'));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'drop-timeout']), this.isTimeoutValid('drop-timeout'));
-
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-timeout']), this.isTimeoutValid('tcp-timeout'));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'udp-timeout']), this.isTimeoutValid('udp-timeout'));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'icmp-timeout']), this.isTimeoutValid('icmp-timeout'));
-
-    // add minValueValidator
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-half-open-session-limit']), minValueValidator(0));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'udp-active-session-limit']), minValueValidator(0));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'icmp-active-session-limit']), minValueValidator(0));
-
-  }
-
-
-
-
   generateUpdateSuccessMsg(object: SecurityFirewallProfile): string {
     return 'Updated firewall profile ' + object.meta.name;
   }
 
   generateCreateSuccessMsg(object: SecurityFirewallProfile): string {
     throw new Error('Firewall Profile is a singleton object. Create method is not supported');
-  }
-
-  isFormValid(): boolean {
-    this.saveButtonTooltip = (!this.newObject.$formGroup.valid) ? 'There are validation errors.' : 'Save';
-    return this.newObject.$formGroup.valid;
   }
 
 }

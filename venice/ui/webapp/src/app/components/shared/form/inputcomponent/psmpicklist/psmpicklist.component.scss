@@ -1,0 +1,65 @@
+$horizontal-gutter: 10px;
+$vertical-gutter: 5px;
+
+.psm-form {
+  .psm-form-picklist-box-container {
+    width: calc(100% - 10px);
+
+    &>label {
+      top: -1.5em;
+      left: .25em;
+      margin-top: .5em;
+      font-size: 12px;
+    }
+
+    .psm-form-picklist-box {
+      display: block;
+      width: 100%;
+      height: 100%;
+
+      .ui-picklist {
+        width: 100%;
+
+        .ui-picklist-listwrapper {
+          width: 50%;
+
+          .ui-picklist-caption {
+            padding: .125em .2em;
+          }
+
+          .ui-picklist-filter-container {
+            padding: .25em .25em;
+
+            .ui-picklist-filter {
+              text-indent: 0.25em !important;
+              padding: .125em .2em;
+            }
+
+            .ui-picklist-filter-icon {
+              margin-top: -0.5em !important;
+            }
+          }
+
+          ul {
+            width: 100%;
+
+            .psm-form-picklist-box-dropdown-row {
+              height: 22px;
+
+              .psm-form-picklist-box-dropdown-label {
+                font-size: 14px;
+                margin-top: 2px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  app-psmpicklist .psm-required-box {
+    position: relative;
+    top: 10px;
+  }
+
+}

@@ -1,13 +1,11 @@
 <div fxFlex="auto" fxLayout="column" class="psm-form partial-edit-sgpolicy-container">
 
-  <div fxFlex="auto" fxLayout="row">
+  <div fxFlex="auto" fxLayout="row" fxLayoutAlign="space-between">
     <ng-container *ngTemplateOutlet="meta"></ng-container>
-    <div fxFlex></div>
-    <div *ngIf="isInline" class="neweventpolicy-buttoncontainer" fxFlex="nogrow" fxLayout="row wrap"
+    <div *ngIf="isInline" fxFlex="nogrow" fxLayout="row wrap"
          fxLayoutAlign="start start">
       <span (click)="saveObject()"
-            [title]="getTooltip()"
-            [matTooltip]="'test'"
+            [title]="getSubmitButtonToolTip()"
             [ngClass]="{
               'global-button-primary': true,
               'global-button-padding': true,
@@ -19,23 +17,17 @@
     </div>
   </div>
   <!--
-  <div *ngIf="!isInline" fxFlex="30px"></div>
   <ng-container *ngTemplateOutlet="attachForm"></ng-container>
   -->
-  <div fxFlex="30px"></div>
+  <div fxFlex="15px"></div>
   <ng-container *ngTemplateOutlet="rulesSection"></ng-container>
 </div>
 
 <ng-template #meta>
   <div fxFlex="none" [formGroup]="newObject.$formGroup">
     <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start center" formGroupName="meta">
-      <span [ngClass]="{
-          'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
-        }">
-        <input autocomplete="off" formControlName="name" class="partial-edit-sgpolicy-name-box"
-               appFloatLabel="Unique Name"
-               appErrorTooltip spellcheck="false" type="text" pInputText>
-      </span>
+      <app-psmtextbox fxFlex="400px" label="Name" formControlName="name">
+      </app-psmtextbox>
     </div>
   </div>
 </ng-template>
@@ -68,13 +60,9 @@
 </ng-template>
 
 <ng-template #rulesSection>
-  <div fxFlex="none" fxLayout="column">
-    <div fxFlex="none" fxLayout="row">
-      <div fxFlex="none">RULES:</div>
-      <div fxFlex="5px"></div>
-      <div fxFlex="none" class="partial-edit-sgpolicy-subtext">(specify one or more)</div>
-    </div>
-    <app-orderedlist [dataArray]="rules" [template]="ruleTemplateEdit"
+  <div fxFlex="none" fxLayout="row">
+    <div fxFlex="10px"></div>
+    <app-orderedlist div fxFlex="900px" [dataArray]="rules" [template]="ruleTemplateEdit"
                      [enableDragDrop]="false" [enableOrdering]="false"
                      [skipRenderActionIcons]="true">
     </app-orderedlist>
@@ -83,8 +71,7 @@
 
 <ng-template #ruleTemplateEdit let-data="data" let-index="index" let-inEdit="inEdit">
   <div fxFlex="auto" fxLayout="column" fxLayoutAlign="center none"
-       class="partial-edit-sgpolicy-rule-template"
-       [ngClass]="{'partial-edit-sgpolicy-hide-primeng-panel': !rules[index].inEdit}">
+       class="partial-edit-sgpolicy-rule-template">
     <!-- RuleNumber commented for now, component doesnt have rule reorder logic at this time. -->
     <!-- <div class="partial-edit-sgpolicy-order-header" fxFlex="none" fxLayout="row" fxLayoutAlign="start center">
       <div fxLayout="row" fxLayoutAlign="start end">
@@ -101,51 +88,42 @@
     </div> -->
 
     <ng-container [formGroup]="data.rule.$formGroup">
-
       <!--<div fxFlex="5px"></div>
       <div fxFlex="15px" class="partial-edit-sgpolicy-divider"></div>-->
-
       <div fxFlex="none" fxLayout="row">
-        <p-dropdown class="partial-edit-sgpolicy-input"
-                    formControlName="action" appFloatLabel="Action"
-                    [options]="actionOptions">
-        </p-dropdown>
+        <app-psmselectbox fxFlex="400px" label="Action" formControlName="action"
+                          [options]="actionOptions">
+        </app-psmselectbox>
       </div>
-
-      <div fxFlex="20px"></div>
-
+      <div fxFlex="15px"></div>
       <div class="partial-edit-sgpolicy-chips" fxFlex="none" fxLayout="row">
         <app-psmchipsbox fxFlex="400px" [label]="'Source ' + IPS_LABEL"
-                         [showRequiredOnEmpty]="true"
+                         [showRequired]="true"
                          [formControl]="data.rule.$formGroup.get(['from-ip-addresses'])"
                          [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
         </app-psmchipsbox>
         <div fxFlex="20px"></div>
         <app-psmchipsbox fxFlex="400px" [label]="'Destination ' + IPS_LABEL"
-                         [showRequiredOnEmpty]="true"
+                         [showRequired]="true"
                          [formControl]="data.rule.$formGroup.get(['to-ip-addresses'])"
                          [itemValidator]="isValidIP" [itemErrorMsg]="IPS_ERRORMSG">
         </app-psmchipsbox>
       </div>
-      <div fxFlex="20px"></div>
-
+      <div fxFlex="15px"></div>
     </ng-container>
 
-    <mat-radio-group fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="25px"
-                     [(ngModel)]="data.selectedProtoAppOption">
-      <mat-radio-button fxFlex="nogrow" fxLayoutAlign="start center" color="primary"
-                        [disableRipple]="true"
-                        *ngFor="let option of protoAppOptions" [value]="option.value">
-        {{option.label}}
-      </mat-radio-button>
-    </mat-radio-group>
+    <div fxFlex="none" fxLayout="row">
+      <app-psmradiobuttons fxFlex="500px" [formControl]="data.selectedProtoAppOption"
+                           [options]="protoAppOptions">
+      </app-psmradiobuttons>
+    </div>
 
-    <div *ngIf="data.selectedProtoAppOption === PROTO_PORTS_OPTION"
+    <div *ngIf="data.selectedProtoAppOption.value === PROTO_PORTS_OPTION"
          fxFlex="grow" fxLayout="column" fxLayoutAlign="start start">
       <ng-container *ngTemplateOutlet="protoandportsTemplate; context:{data: data, index: index}">
       </ng-container>
     </div>
-    <div *ngIf="data.selectedProtoAppOption === APPS_OPTION"
+    <div *ngIf="data.selectedProtoAppOption.value === APPS_OPTION"
          fxFlex="grow" fxLayout="column" fxLayoutAlign="start start">
       <ng-container *ngTemplateOutlet="appsTemplate; context:{data: data, index: index}">
       </ng-container>
@@ -155,126 +133,34 @@
 </ng-template>
 
 <ng-template #ruleTemplateView let-data="data" let-index="index" let-inEdit="inEdit">
-  <div fxFlex="auto" fxLayout="column" fxLayoutAlign="start none"
-       class="partial-edit-sgpolicy-rule-template"
-       [ngClass]="{'partial-edit-sgpolicy-hide-primeng-panel': !rules[index].inEdit}">
-    <div fxFlex="none" fxLayout="row" fxLayoutAlign="start end">
-      <div fxFlex="15px"></div>
-      <div fxFlex="none" fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="14px">
-        <div fxFlex="auto" class="partial-edit-sgpolicy-bold">ACTION</div>
-        <div fxFlex="auto">{{ displayArrayField(data, 'action') }}</div>
-      </div>
-    </div>
-
-    <div fxFlex="none" fxLayout="row wrap" fxLayoutAlign="start start">
-      <div class="partial-edit-sgpolicy-fieldgroup" fxLayout="row" fxLayoutAlign="start start">
-        <div class="partial-edit-sgpolicy-fieldgroup-label-from partial-edit-sgpolicy-bold">
-          FROM
-        </div>
-        <div *ngIf="data.rule.$formGroup.get('from-security-groups').value.length !== 0"
-             fxFlex="auto" fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="25px">
-          <div fxFlex="auto" class="partial-edit-sgpolicy-bold-subtext">Security Groups</div>
-          <div fxFlex="auto">{{ displayArrayField(data, 'from-security-groups') }}</div>
-        </div>
-        <div *ngIf="data.rule.$formGroup.get('from-ip-addresses').value.length !== 0"
-             class="partial-edit-sgpolicy-ip-fieldgroup" fxLayout="row">
-          <div class="partial-edit-sgpolicy-ip-label partial-edit-sgpolicy-bold-subtext">
-            IP Addresses
-          </div>
-          <div class="partial-edit-sgpolicy-ip-value">
-            {{ displayArrayField(data, 'from-ip-addresses') }}
-          </div>
-        </div>
-      </div>
-      <div class="partial-edit-sgpolicy-fieldgroup" fxLayout="row" fxLayoutAlign="start start">
-        <div class="partial-edit-sgpolicy-fieldgroup-label-to partial-edit-sgpolicy-bold">
-          TO
-        </div>
-        <div *ngIf="data.rule.$formGroup.get('to-security-groups').value.length !== 0"
-             fxFlex="auto" fxLayout="row" fxLayoutAlign="center center" fxLayoutGap="25px">
-          <div fxFlex="auto" class="partial-edit-sgpolicy-bold-subtext">Security Groups</div>
-          <div fxFlex="auto">{{ displayArrayField(data, 'to-security-groups') }}</div>
-        </div>
-        <div *ngIf="data.rule.$formGroup.get('to-ip-addresses').value.length !== 0"
-             class="partial-edit-sgpolicy-ip-fieldgroup" fxLayout="row">
-          <div class="partial-edit-sgpolicy-ip-label partial-edit-sgpolicy-bold-subtext">
-            IP Addresses
-          </div>
-          <div class="partial-edit-sgpolicy-ip-value">
-            {{ displayArrayField(data, 'to-ip-addresses') }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div fxFlex="none" fxLayout="row" fxLayoutAlign="start end">
-      <div fxFlex="15px"></div>
-      <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start" fxLayoutGap="19px">
-        <div *ngIf="data.selectedProtoAppOption === APPS_OPTION"
-             fxFlex="auto" class="partial-edit-sgpolicy-bold">APPS</div>
-        <div *ngIf="data.selectedProtoAppOption === APPS_OPTION" fxFlex="auto"
-             [innerHTML]="displayArrayField(data, 'apps')"></div>
-        <div *ngIf="data.selectedProtoAppOption !== APPS_OPTION"
-             fxFlex="auto" class="partial-edit-sgpolicy-bold">PROTO-PORTS</div>
-        <div *ngIf="data.selectedProtoAppOption !== APPS_OPTION" fxFlex="auto"
-             [innerHTML]="displayArrayField(data, 'proto-ports')"></div>
-      </div>
-    </div>
-  </div>
 </ng-template>
 
 <ng-template #protoandportsTemplate let-data="data" let-ruleIndex="index">
-  <div fxFlex="nogrow" fxLayout="column" fxLayoutAlign="start center" [@slideInOut]
-       *ngFor="let target of controlAsFormArray(data.rule.$formGroup.get('proto-ports')).controls ; let index = index ; let first = first"
-       [formGroup]="target">
-    <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start center"
-         style="margin-bottom: 15px; padding-top: 5px;">
-      <div fxFlex="none" fxLayout="row">
-        <span [style.width]="'200px'"
-              [ngClass]="{'requiredField': isFieldEmpty(target.get(['protocol']))}">
-          <input autocomplete="off" class="partial-edit-sgpolicy-name-box" fxFlex="nogrow"
-                 spellcheck="false"
-                 pInputText formControlName="protocol" appFloatLabel="Protocol">
-        </span>
-      </div>
-      <div fxFlex="30px"></div>
-      <div fxFlex="none" fxLayout="row">
-        <span [style.width]="'200px'" [ngClass]="{'requiredField': isPortRequired(target)}">
-          <input autocomplete="off" class="partial-edit-sgpolicy-name-box" fxFlex="nogrow"
-                 spellcheck="false"
-                 pInputText formControlName="ports" appFloatLabel="Ports">
-        </span>
-      </div>
-      <div fxFlex="20px"></div>
-      <div fxFlex="nogrow" fxLayout="row">
-        <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start start">
-          <div fxFlex="55px" fxLayout="row" fxLayoutAlign="start end"
-               class="partial-edit-sgpolicy-fieldtitle global-add-button">
-            <span fxFlex="nogrow" (click)="addProtoTarget(ruleIndex)">+ ADD</span>
-            <mat-icon fxFlex="nogrow" class="global-trash-button"
-                      *ngIf="controlAsFormArray(data.rule.$formGroup.get('proto-ports')).controls.length > 1 && !first"
-                      (click)="removeProtoTarget(ruleIndex, index)">delete</mat-icon>
-          </div>
-        </div>
-      </div>
-      <div fxFlex="10px"></div>
+  <app-listcontainer [formGroup]="data.rule.$formGroup.get('proto-ports')"
+                     [itemTemplate]="protoandportsRowTemplate" addText="Protocols and Ports"
+                     [isInline]="isInline" (addItem)="addProtoTarget(ruleIndex)"
+                     (deleteItem)="removeProtoTarget(ruleIndex, $event)">
+  </app-listcontainer>
+</ng-template>
 
-    </div>
+<ng-template #protoandportsRowTemplate let-protoandports="item" let-index="index">
+  <div fxLayout="row" [formGroup]="protoandports" fxLayoutAlign="start start">
+    <app-psmtextbox fxFlex="250px" label="Protocol" formControlName="protocol"
+                    [showRequired]="true">
+    </app-psmtextbox>
+    <div fxFlex="5px"></div>
+    <app-psmtextbox fxFlex="250px" label="Ports" formControlName="ports"
+                    [showRequired]="isPortRequired(protoandports)">
+    </app-psmtextbox>
+    <div fxFlex="5px"></div>
   </div>
 </ng-template>
 
 <ng-template #appsTemplate let-data="data" let-index="index">
   <div fxFlex="none" fxLayout="row">
-    <span [ngClass]="{
-      'partial-edit-sgpolicy-appContainer': true,
-      'requiredField': isFieldEmpty(data.rule.$formGroup.get(['apps']))
-    }">
-      <p-multiSelect class="partial-edit-sgpolicy-multiselect" fxFlex="300px" appendTo="body"
-                     [filter]="false" [showHeader]="false" [showToggleAll]="false"
-                     [defaultLabel]="!securityAppOptions || securityAppOptions.length < 1 ? 'No Apps Available' : 'Select Apps...'"
-                     [options]="securityAppOptions"
-                     [formControl]="data.rule.$formGroup.get('apps')">
-      </p-multiSelect>
-    </span>
+    <app-psmmultiselectbox fxFlex="400px"
+                           [formControl]="data.rule.$formGroup.get('apps')"
+                           [options]="securityAppOptions" defaultLabel="Select Apps...">
+    </app-psmmultiselectbox>
   </div>
 </ng-template>

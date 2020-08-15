@@ -10,7 +10,6 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
 
   boxId: string = '';
   currentTooltipClass: string;
-  isRequiredField: boolean = false;
   disabled: boolean = false;
   subscriptions: Subscription[] = [];
 
@@ -25,7 +24,6 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   @Input() label: string;
   @Input() id: string;
   @Input() showRequired: boolean;
-  @Input() showRequiredOnEmpty: boolean;
   @Input() hintTooltip: string;
   @Input() errorTooltip: string;
   @Input() spanClass: string;
@@ -59,22 +57,14 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   }
 
   ngAfterViewInit() {
-    setTimeout(() => {this.cdr.detectChanges(); }, 0);
     if (this.ngControl && this.ngControl.control) {
-      this.disabled = this.ngControl.disabled;
       const sub = this.ngControl.valueChanges.subscribe(() => {
         if (this.disabled !== this.ngControl.disabled) {
           this.disabled = this.ngControl.disabled;
         }
-        this.cdr.detectChanges();
       });
       this.subscriptions.push(sub);
-      if (this.ngControl.control.validator) {
-        const validator = this.ngControl.control.validator({}as AbstractControl);
-        if (validator && validator.required) {
-          this.isRequiredField = true;
-        }
-      }
+      setTimeout(() => {this.disabled = this.ngControl.disabled; }, 0);
     }
   }
 
@@ -117,7 +107,13 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
     if (this.showRequired === true || this.showRequired === false) {
       return this.showRequired;
     }
-    return this.showRequiredOnEmpty === true || this.isRequiredField;
+    if (this.ngControl.control && this.ngControl.control.validator) {
+      const validator = this.ngControl.control.validator({}as AbstractControl);
+      if (validator && validator.required) {
+        return true;
+      }
+    }
+    return false;
   }
 
   getTooltip(): string {
@@ -186,7 +182,6 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
     if (!this.isEqual(val)) {
       this.innerValue = newVal;
     }
-    setTimeout(() => {this.cdr.detectChanges(); }, 0);
   }
 
   // this method compared the current value and the new value about

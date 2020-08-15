@@ -1,94 +1,74 @@
-<div [style.width]="'100%'" fxLayout="column">
-  <div fxFlex="auto" fxLayout="row" fxLayoutAlign="center start"
-       class="neweventalertpolicy-container">
-    <!-- Limiting the size of the creation form - If it is inline, we have more room to fit in the save/cancel buttons -->
-    <div fxFlex="auto" fxLayout="row" [style.max-width]="isInline ? '1300px' : '1200px'"
-         fxLayoutAlign="start stretch" class="neweventalertpolicy-content"
-         [formGroup]="newObject.$formGroup">
-
-      <ng-container formGroupName="spec">
-        <mat-slide-toggle formControlName="enable" fxFlex='nogrow'
-                          class="neweventalertpolicy-toggle"></mat-slide-toggle>
-      </ng-container>
-      <div fxFlex fxLayout="column">
-        <div fxFlex="nogrow" fxLayout="row" class="neweventalertpolicy-row" formGroupName="meta">
-          <!-- First row-->
-          <input autocomplete="off" fxFlex="300px" formControlName="name" appErrorTooltip
-                 class="neweventalertpolicy-name" matspellcheck="false"
-                 type="text" pInputText placeholder="Unique Policy Name...">
-          <!-- Commented out as it still isn't decided whether there will be a description -->
-          <!-- <input autocomplete="off" fxFlex class="neweventalertpolicy-description" spellcheck="false" type="text"  pInputText  placeholder="Brief Description (optional)..."> -->
+<div class="psm-form" fxFlex="auto" fxLayout="column">
+  <app-inlinebuttons class="neweventalertpolicy" *ngIf="isInline" [form]="this">
+  </app-inlinebuttons>
+  <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start"
+       [class]="isInline? 'neweventalertpolicy-editform-inline' : ''">
+    <div fxLayout="row" fxLayoutAlign="center"
+         class="psm-form-content neweventalertpolicy-container">
+      <div fxFlex="none" fxLayout="column" [formGroup]="newObject.$formGroup">
+        <div fxFlex="none" fxLayout="row" formGroupName="meta">
+          <app-psmtextbox fxFlex="300px" label="Name" formControlName="name"
+                          class="neweventalertpolicy-name">
+          </app-psmtextbox>
         </div>
-        <div fxFlex="noshrink" fxLayout="row" class="neweventalertpolicy-row" formGroupName="spec">
-          <!-- Second row-->
-          <div fxFlex fxLayout="row wrap">
-            <div fxFlex="auto" fxLayout="row">
-              <div fxFlex="nogrow" class="neweventalertpolicy-text">IF EVENT:</div>
-              <app-fieldselector #fieldSelector
-                                 kind="Event"
-                                 [formArray]="newObject.$formGroup.get(['spec', 'requirements'])"
-                                 keyFormName="key"
-                                 operatorFormName="operator"
-                                 valueFormName="values">
-              </app-fieldselector>
-            </div>
-            <div fxFlex></div>
-
-            <div fxFlex="nogrow" fxLayout="row">
-              <div fxFlex="nogrow" fxLayout="column">
-                <div fxFlex="nogrow" class="neweventalertpolicy-text">THEN ALERT:</div>
-                <div fxFlex="nogrow" class="neweventalertpolicy-text">DESTINATIONS</div>
-              </div>
-              <div fxFlex fxLayout="column">
-                <div fxFlex="nogrow" fxLayout="row" fxLayoutAlgin="start">
-                  <p-dropdown class="neweventalertpolicy-severity" fxFlex="200px" appErrorTooltip
-                              formControlName="severity" styleClass="neweventalertpolicy-font"
-                              appendTo="body"
-                              [options]="alertOptions"></p-dropdown>
-                  <div fxFlex="30px" fxLayout="row" fxLayoutAlign="center center">
-                    <mat-icon fxFlex="none"
-                              *ngIf="newObject.$formGroup.value.spec.severity?.toLowerCase() === 'critical'"
-                              class="global-alert-critical-icon">error</mat-icon>
-                    <mat-icon fxFlex="none"
-                              *ngIf="newObject.$formGroup.value.spec.severity?.toLowerCase() === 'warn'"
-                              class="global-alert-warning-icon">error</mat-icon>
-                    <mat-icon fxFlex="none"
-                              *ngIf="newObject.$formGroup.value.spec.severity?.toLowerCase() === 'info'"
-                              class="global-alert-info-icon">notifications</mat-icon>
-                  </div>
-                  <div fxFlex></div>
-                </div>
-                <div fxFlex="nogrow" fxLayout="row" fxLayoutAlign="start">
-                  <p-multiSelect class="neweventalertpolicy-destinations" fxFlex="300px"
-                                 formControlName="destinations"
-                                 appErrorTooltip appendTo="body"
-                                 styleClass="neweventalertpolicy-font"
-                                 [filter]="false"
-                                 [showToggleAll]="false"
-                                 [showHeader]="false"
-                                 [options]="destinationOptions"></p-multiSelect>
-
-                </div>
-
-              </div>
-            </div>
-            <div fxFlex></div>
+        <div fxFlex="15px"></div>
+        <div fxFlex="none" fxLayout="row" formGroupName="spec">
+          <app-psmtoggle fxFlex="250px" label="enable" formControlName="enable">
+          </app-psmtoggle>
+        </div>
+        <div fxFlex="none" fxLayout="row">
+          <app-fieldcontainer fxFlex="580px" fieldTitle="IF EVENT">
+            <app-fieldselector #fieldSelector
+                               kind="Event"
+                               [formArray]="newObject.$formGroup.get(['spec', 'requirements'])"
+                               keyFormName="key"
+                               operatorFormName="operator"
+                               valueFormName="values">
+            </app-fieldselector>
+          </app-fieldcontainer>
+        </div>
+        <div fxFlex="15px"></div>
+        <div fxFlex="none" fxLayout="row" fxLayoutAlign="start end" formGroupName="spec">
+          <app-psmselectbox fxFlex="266px" label="THEN ALERT" [options]="alertOptions"
+                            formControlName="severity"
+                            [optionItemTemplate]="severityItemTemplate"
+                            class="neweventalertpolicy-severity">
+          </app-psmselectbox>
+          <div fxFlex="10px"></div>
+          <div fxFlex="24px" fxLayout="row">
+            <mat-icon fxFlex="none"
+                      *ngIf="newObject.$formGroup.value.spec.severity?.toLowerCase() === 'critical'"
+                      class="global-alert-critical-icon">error</mat-icon>
+            <mat-icon fxFlex="none"
+                      *ngIf="newObject.$formGroup.value.spec.severity?.toLowerCase() === 'warn'"
+                      class="global-alert-warning-icon">error</mat-icon>
+            <mat-icon fxFlex="none"
+                      *ngIf="newObject.$formGroup.value.spec.severity?.toLowerCase() === 'info'"
+                      class="global-alert-info-icon">notifications</mat-icon>
           </div>
         </div>
-        <div fxFlex="20px"></div>
-        <!-- Buffer, creating as a div so there are no hiccups in the animation-->
-      </div>
-      <div *ngIf="isInline" class="neweventalertpolicy-buttoncontainer" fxFlex="nogrow"
-           fxLayout="row wrap" fxLayoutAlign="start start">
-        <div fxFlex="85px" fxLayout="row">
-          <div fxFlex="65px" (click)="saveObject()"
-               class="global-button-primary neweventalertpolicy-save">SAVE</div>
-        </div>
-        <div fxFlex="85px" fxLayout="row">
-          <div fxFlex="65px" (click)="cancelObject()"
-               class="global-button-neutral neweventalertpolicy-cancel">CANCEL</div>
+        <div fxFlex="15px"></div>
+        <div fxFlex="none" fxLayout="row" formGroupName="spec">
+          <app-psmmultiselectbox fxFlex="300px" formControlName="destinations"
+                                 label="Destination" [options]="destinationOptions"
+                                 defaultLabel="Select Destination...">
+          </app-psmmultiselectbox>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<ng-template #severityItemTemplate let-item>
+  <div class="psm-form-select-box-dropdown-row">
+    <div class="psm-form-select-box-dropdown-label">
+      <mat-icon fxFlex="none" *ngIf="item.value === 'critical'"
+                class="global-alert-critical-icon">error</mat-icon>
+      <mat-icon fxFlex="none" *ngIf="item.value === 'warn'"
+                class="global-alert-warning-icon">error</mat-icon>
+      <mat-icon fxFlex="none" *ngIf="item.value === 'info'"
+                class="global-alert-info-icon">notifications</mat-icon>
+      <span class="neweventalertpolicy-dropdown-option-span">{{item.label}}</span>
+    </div>
+  </div>
+</ng-template>

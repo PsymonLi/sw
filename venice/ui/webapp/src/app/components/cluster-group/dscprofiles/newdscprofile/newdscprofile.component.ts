@@ -1,26 +1,25 @@
 
-import { AfterViewInit, Component, Input, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
+import { AfterViewInit, Component, Input, OnDestroy, OnInit, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { ValidatorFn } from '@angular/forms';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { ControllerService } from '@app/services/controller.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
-import { ClusterDSCProfile, ClusterDSCProfileSpec, IClusterDSCProfile, ClusterDSCProfileSpec_deployment_target, ClusterDSCProfileSpec_feature_set } from '@sdk/v1/models/generated/cluster';
+import { ClusterDSCProfile, IClusterDSCProfile, ClusterDSCProfileSpec_deployment_target, ClusterDSCProfileSpec_feature_set } from '@sdk/v1/models/generated/cluster';
 import { SelectItem } from 'primeng/primeng';
-import { PropInfoItem } from '@sdk/v1/models/generated/basemodel/base-model';
-import { DSCProfileUtil, DSCProfileUIModel } from '../dscprofileUtil';
-
-
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 @Component({
   selector: 'app-newdscprofile',
   templateUrl: './newdscprofile.component.html',
   styleUrls: ['./newdscprofile.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
+
 export class NewdscprofileComponent extends CreationForm<IClusterDSCProfile, ClusterDSCProfile> implements OnInit, AfterViewInit, OnDestroy {
   @Input() existingObjects: ClusterDSCProfile[] = [];
 
@@ -28,39 +27,20 @@ export class NewdscprofileComponent extends CreationForm<IClusterDSCProfile, Clu
   selectedPolicyMode: SelectItem;
   validationErrorMessage: string;
 
-  constructor(protected _controllerService: ControllerService,
-    private clusterService: ClusterService,
-    protected uiconfigsService: UIConfigsService
-  ) {
-    super(_controllerService, uiconfigsService, ClusterDSCProfile);
-  }
-
   depolymentTargetOptions: SelectItem[] = Utility.convertEnumToSelectItem(ClusterDSCProfileSpec_deployment_target);
-
   featureSets: SelectItem[] = Utility.convertEnumToSelectItem(ClusterDSCProfileSpec_feature_set);
-
   hostFeatureSets: SelectItem[] = [];
-
   virtualizedFeatureSets: SelectItem[] = [];
 
-  // NEW 5/8/2020
-  selectedDeploymentTarget: SelectItem;
-  selectedFeatureSet: SelectItem;
-
-  generateCreateSuccessMsg(object: IClusterDSCProfile) {
-    return 'Created DSC Profile ' + object.meta.name;
-  }
-
-  generateUpdateSuccessMsg(object: IClusterDSCProfile) {
-    return 'Updated DSC Profile ' + object.meta.name;
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
+  constructor(protected _controllerService: ControllerService,
+    private clusterService: ClusterService,
+    protected uiconfigsService: UIConfigsService,
+    protected cdr: ChangeDetectorRef
+  ) {
+    super(_controllerService, uiconfigsService, cdr, ClusterDSCProfile);
   }
 
   postNgInit(): void {
-
     // populate form options depending on ui-config
     if (this.uiconfigsService.isFeatureEnabled('enterprise')) {
       this.featureSets = Utility.convertEnumToSelectItem(ClusterDSCProfileSpec_feature_set, ['sdn']);
@@ -73,19 +53,10 @@ export class NewdscprofileComponent extends CreationForm<IClusterDSCProfile, Clu
       this.hostFeatureSets = this.featureSets;
     }
 
-    if (this.isInline) {
-      const dscProfile: ClusterDSCProfile = this.newObject.getFormGroupValues();
-      if (dscProfile.spec['deployment-target'] === DSCProfileUtil.DTARGET_HOST) {
-        this.selectedDeploymentTarget = this.depolymentTargetOptions[0];
-        if (dscProfile.spec['feature-set'] === DSCProfileUtil.FSET_SMARTNIC) {
-          this.selectedFeatureSet = this.hostFeatureSets[0];
-        } else {
-          this.selectedFeatureSet = this.hostFeatureSets[1];
-        }
-      } else {
-        this.selectedDeploymentTarget = this.depolymentTargetOptions[1];
-        this.selectedFeatureSet = this.virtualizedFeatureSets[0];
-      }
+    if (!this.isInline) {
+      // for a new dsc profile clear default value for deployment target and featureset
+      this.newObject.$formGroup.get(['spec', 'deployment-target']).setValue(null);
+      this.newObject.$formGroup.get(['spec', 'feature-set']).setValue(null);
     }
   }
 
@@ -100,87 +71,61 @@ export class NewdscprofileComponent extends CreationForm<IClusterDSCProfile, Clu
   }
 
   setToolbar() {
-    if (!this.isInline) {
-      // If it is not inline, we change the toolbar buttons, and save the old one
-      // so that we can set it back when we are done
-      const currToolbar = this._controllerService.getToolbarData();
-      currToolbar.buttons = [
-        {
-          cssClass: 'global-button-primary global-button-padding',
-          text: 'CREATE DSC PROFILE ',
-          callback: () => { this.saveObject(); },
-          computeClass: () => this.computeButtonClass(),
-          genTooltip: () => this.getTooltip()
-        },
-        {
-          cssClass: 'global-button-primary global-button-padding',
-          text: 'CANCEL',
-          callback: () => { this.cancelObject(); }
-        },
-      ];
-
-      this._controllerService.setToolbarData(currToolbar);
-    }
+    this.setCreationButtonsToolbar('SAVE FIREWALL PROFILE',
+      UIRolePermissions.clusterdscprofile_update);
   }
 
   getFeatureSetOptions(): SelectItem[] {
-    if (this.selectedDeploymentTarget && this.selectedDeploymentTarget.value === 'host') {
+    const deploymentTarget = this.newObject.$formGroup.get(['spec', 'deployment-target']).value;
+    if (deploymentTarget === 'host') {
       return this.hostFeatureSets;
-    } else if (this.selectedDeploymentTarget && this.selectedDeploymentTarget.value === 'virtualized') {
+    }
+    if (deploymentTarget === 'virtualized') {
       return this.virtualizedFeatureSets;
     }
     return [];
   }
 
-  resetFeatureSet() {
-    if (this.selectedFeatureSet) {
-      this.selectedFeatureSet = null;
-    }
-  }
-
-  /**
-   * Override parent API
-   * We use UI-model to update backend-model
-   *
-   * not form validation; setting value equivalents of user selection in new object
-   */
-  getObjectValues(): IClusterDSCProfile {
-    const dscProfile: ClusterDSCProfile = this.newObject.getFormGroupValues();
-    dscProfile.spec['deployment-target'] = this.selectedDeploymentTarget.value;
-    dscProfile.spec['feature-set'] = this.selectedFeatureSet.value;
-    return dscProfile;
+  onDeploymentTargetChange() {
+    this.newObject.$formGroup.get(['spec', 'feature-set']).setValue(null);
   }
 
   createObject(object: IClusterDSCProfile) {
     return this.clusterService.AddDSCProfile(object, '', true, false);
   }
+
   updateObject(newObject: IClusterDSCProfile, oldObject: IClusterDSCProfile) {
     return this.clusterService.UpdateDSCProfile(oldObject.meta.name, newObject, null, oldObject, true, false);
   }
 
-  getTooltip(): string {
-    return (this.isFormValid()) ? 'Save DSC Profile' : this.validationErrorMessage;
+  generateCreateSuccessMsg(object: IClusterDSCProfile) {
+    return 'Created DSC Profile ' + object.meta.name;
   }
 
+  generateUpdateSuccessMsg(object: IClusterDSCProfile) {
+    return 'Updated DSC Profile ' + object.meta.name;
+  }
+
+
   isFormValid(): boolean {
-    this.validationErrorMessage = null;
     if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
-      this.validationErrorMessage = 'Error: Name field is empty.';
+      this.submitButtonTooltip = 'Error: Name field is empty.';
       return false;
     }
-    if (!this.newObject.$formGroup.valid) {
-      this.validationErrorMessage = 'Error: Name field is not valid.';
+    if (this.newObject.$formGroup.get(['meta', 'name']).invalid) {
+      this.submitButtonTooltip = 'Error: Name field is not valid.';
       return false;
     }
-    if (!this.selectedDeploymentTarget) {
-      this.validationErrorMessage = 'Error: Please select a Deployment Target';
+    if (this.isFieldEmpty(this.newObject.$formGroup.get(['spec', 'deployment-target']))) {
+      this.submitButtonTooltip = 'Error: Please select a Deployment Target';
       return false;
     }
-    if (!this.selectedFeatureSet) {
-      this.validationErrorMessage = 'Error: Please select a Feature Set';
+    if (this.isFieldEmpty(this.newObject.$formGroup.get(['spec', 'feature-set']))) {
+      this.submitButtonTooltip = 'Error: Please select a Feature Set';
       return false;
     }
 
+    this.submitButtonTooltip = 'Ready to submit';
     return true;
   }
 

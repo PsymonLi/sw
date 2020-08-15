@@ -8,10 +8,18 @@
                 [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
                 (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
                 (ngModelChange)="onInnerCtrlChange()">
-      <ng-template let-item pTemplate="item">
+      <ng-template let-item pTemplate="item" *ngIf="!optionItemTemplate">
         <div *ngIf="item.value" class="psm-form-select-box-dropdown-row">
-          <div class="psm-form-select-box-dropdown-label">{{formatOptionLabel(item)}}</div>
+          <div class="psm-form-select-box-dropdown-label">{{ item.label }}</div>
         </div>
+      </ng-template>
+      <ng-template let-option pTemplate="item" *ngIf="optionItemTemplate">
+        <ng-container *ngTemplateOutlet="optionItemTemplate; context: {$implicit: option}">
+        </ng-container>
+      </ng-template>
+      <ng-template let-option pTemplate="item" *ngIf="selectedItemTemplate">
+        <ng-container *ngTemplateOutlet="selectedItemTemplate; context: {$implicit: option}">
+        </ng-container>
       </ng-template>
     </p-dropdown>
     <label *ngIf="label" [for]="boxId">{{ label }}</label>

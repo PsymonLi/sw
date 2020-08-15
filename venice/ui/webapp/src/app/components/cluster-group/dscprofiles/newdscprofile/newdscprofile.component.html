@@ -1,65 +1,35 @@
-<div [style.width]="'100%'" fxLayout="column">
-  <ng-container *ngTemplateOutlet="inlineButtons"></ng-container>
-  <div fxFlex="auto" fxLayout="row" class="new-dsc-profile-container">
-
-    <div fxFlex="auto" fxLayout="row" class="new-dsc-profile-content">
-      <div fxFlex="nogrow" fxLayout="column">
-
-        <ng-container *ngTemplateOutlet="metaName"></ng-container>
-        <div fxFlex="10px"></div>
-        <ng-container>
-          <ng-container *ngTemplateOutlet="feature_set"></ng-container>
-        </ng-container>
+<div fxFlex="auto" fxLayout="column" class="psm-form">
+  <app-inlinebuttons class="new-dsc-profile" *ngIf="isInline" [form]="this">
+  </app-inlinebuttons>
+  <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start">
+    <div fxLayout="row" class="psm-form-content">
+      <div fxFlex="none" fxLayout="column" [formGroup]="newObject.$formGroup">
+        <div fxLayout="row" formGroupName="meta">
+          <app-psmtextbox fxFlex="350px" label="DSC Profile Name" formControlName="name">
+          </app-psmtextbox>
+        </div>
+        <div fxFlex="15px"></div>
+        <div fxFlex="none" fxLayout="column" fxLayoutGap="15px" formGroupName="spec">
+          <div fxFlex="none" fxLayout="row">
+            <app-psmlistbox fxFlex="350px" [listStyle]="{'height':'100px'}"
+                            label="Deployment Target" formControlName="deployment-target"
+                            [options]="depolymentTargetOptions"
+                            (change)="onDeploymentTargetChange()">
+            </app-psmlistbox>
+          </div>
+          <div fxFlex="none" fxLayout="row">
+            <app-psmlistbox fxFlex="350px" [listStyle]="{'height':'100px'}"
+                            label="Feature Set" formControlName="feature-set"
+                            [options]="getFeatureSetOptions()"
+                            *ngIf="!isFieldEmpty(newObject.$formGroup.get(['spec', 'deployment-target']))">
+            </app-psmlistbox>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<ng-template #metaName>
-  <div fxFlex="nogrow" fxLayout="row" class="new-dsc-profile-row"
-       [formGroup]="newObject.$formGroup">
-    <div formGroupName="meta">
-      <span [ngClass]="{
-        'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
-      }">
-        <input autocomplete="off" fxFlex="342px" formControlName="name" class="new-dsc-profile-name"
-               appErrorTooltip
-               spellcheck="false"
-               type="text" pInputText appFloatLabel="Unique DSP Profile Name...">
-      </span>
-    </div>
-  </div>
-</ng-template>
-
-<ng-template #feature_set>
-  <div fxLayout="column" fxLayoutAlign="center start">
-    <div class="new-dsc-profile-deployment-listbox">
-      <div class="new-dsc-profile-feature-description">Deployment Target</div>
-      <p-listbox #nodesListbox [options]="this.depolymentTargetOptions"
-                 styleClass="new-dsc-profile-row"
-                 *ngIf="this.depolymentTargetOptions && this.depolymentTargetOptions.length>0"
-                 [(ngModel)]="this.selectedDeploymentTarget"
-                 optionLabel="label" (onChange)="resetFeatureSet()"
-                 [listStyle]="{'height':'125px'}">
-      </p-listbox>
-    </div>
-
-    <div class="new-dsc-profile-feature-listbox">
-      <div class="new-dsc-profile-feature-description">Feature Set</div>
-      <p-listbox #nodesListbox [options]="getFeatureSetOptions()"
-                 styleClass="new-dsc-profile-row"
-                 *ngIf="this.selectedDeploymentTarget" [(ngModel)]="this.selectedFeatureSet"
-                 optionLabel="label"
-                 [listStyle]="{'height':'125px'}">
-      </p-listbox>
-    </div>
-
-    <div class="new-dsc-profile-feature-description">
-      {{this.selectedDeploymentTarget && this.selectedFeatureSet? this.selectedFeatureSet.value.description : 
-        'Please select both a Deployment Target and Feature Set.'}}
-    </div>
-  </div>
-</ng-template>
 
 <!-- <ng-template #feature_options>
   <fieldset [formGroup]="newObject.$formGroup">
@@ -94,29 +64,3 @@
     </div>
   </fieldset>
 </ng-template> -->
-
-<ng-template #divider>
-  <div fxFlex="20px" fxLayout="row">
-    <div fxFlex="30px"></div>
-    <div fxFlex="auto" class="new-dsc-profile-divider"></div>
-    <div fxFlex="30px"></div>
-  </div>
-</ng-template>
-
-<ng-template #inlineButtons>
-  <div *ngIf="isInline" class="new-dsc-profile-inline-buttoncontainer" fxFlex="nogrow"
-       fxLayout="row"
-       fxLayoutAlign="start end">
-    <div fxFlex="auto" fxLayoutAlign="end center">
-      <div fxFlex="nogrow">
-        <span (click)="saveObject()"
-              class="global-button-primary global-button-padding new-dsc-profile-inline-save"
-              [ngClass]="computeInlineButtonClass()">SAVE</span>
-      </div>
-      <div fxFlex="nogrow">
-        <span (click)="cancelObject()"
-              class="global-button-neutral global-button-padding new-dsc-profile-inline-save">CANCEL</span>
-      </div>
-    </div>
-  </div>
-</ng-template>

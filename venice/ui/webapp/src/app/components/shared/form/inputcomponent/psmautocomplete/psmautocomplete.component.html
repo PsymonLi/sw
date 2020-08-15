@@ -1,0 +1,14 @@
+<div fxLayout="row" fxLayoutAlign="start end">
+  <div [class]="getIconSpanClasses()">*</div>
+  <div [class]="getSpanClasses()">
+    <p-autoComplete autocomplete="off" [id]="boxId" [class]="getComponentClass()"
+                    [suggestions]="suggestions" (completeMethod)="completeMethod($event)"
+                    appendTo="body" [disabled]="disabled" [matTooltip]="getTooltip()"
+                    [matTooltipClass]="currentTooltipClass"
+                    [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
+                    (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
+                    (ngModelChange)="onInnerCtrlChange()">
+    </p-autoComplete>
+    <label *ngIf="label" [for]="boxId">{{ label }}</label>
+  </div>
+</div>

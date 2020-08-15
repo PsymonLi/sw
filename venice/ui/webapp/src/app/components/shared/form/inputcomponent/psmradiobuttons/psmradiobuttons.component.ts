@@ -11,7 +11,6 @@ import { SelectItem } from 'primeng/api';
   templateUrl: './psmradiobuttons.component.html',
   styleUrls: ['./psmradiobuttons.component.scss'],
   encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

@@ -18,7 +18,7 @@ import { NetworkNetworkInterface, NetworkNetworkInterfaceSpec_type } from '@sdk/
 import { NetworkService } from '@app/services/generated/network.service';
 import { LabelsSelector } from '@sdk/v1/models/generated/monitoring/labels-selector.model';
 import { MonitoringInterfaceMirror } from '@sdk/v1/models/generated/monitoring/monitoring-interface-mirror.model';
-import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 export interface MatchRule {
@@ -40,7 +40,7 @@ const PACKET_FILTERS_ERRORMSG: string =
   animations: Animations,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewmirrorsessionComponent extends CreationPushForm<IMonitoringMirrorSession, MonitoringMirrorSession> implements OnInit, OnChanges, AfterViewInit {
+export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSession, MonitoringMirrorSession> implements OnInit, OnChanges, AfterViewInit {
 
   @Input() existingObjects: MonitoringMirrorSession[] = [];
   @Input() interfaces: NetworkNetworkInterface[] = [];

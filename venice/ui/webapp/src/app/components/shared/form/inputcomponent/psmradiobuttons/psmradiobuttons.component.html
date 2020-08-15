@@ -4,7 +4,7 @@
                      fxLayout="row" fxLayoutGap="20px" fxFlex="nogrow"
                      fxLayoutAlign="start center" [class]="getComponentClass()"
                      [(ngModel)]="innerValue" [ngModelOptions]="{standalone: true}"
-                     [id]="boxId" [matTooltip]="getTooltip()"
+                     [id]="boxId" [matTooltip]="getTooltip()" [disabled]="disabled"
                      [matTooltipClass]="currentTooltipClass"
                      [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
                      (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"

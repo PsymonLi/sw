@@ -3,7 +3,7 @@
   <div [class]="getSpanClasses()">
     <p-multiSelect [id]="boxId" appendTo="body" [class]="getComponentClass()"
                    [options]="allOptions" [filter]="runningFilter"
-                   [showHeader]="runningShowHeader"
+                   [defaultLabel]="defaultLabel" [showHeader]="runningShowHeader"
                    [showToggleAll]="runningShowToggleAll"
                    [styleClass]="componentStyleClass"
                    [disabled]="disabled" [matTooltip]="getTooltip()"

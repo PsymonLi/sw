@@ -27,6 +27,14 @@
   height: 30px;
   min-width: 300px;
   padding-left: 10px;
+
+  label {
+    left: 1em !important;
+  }
+
+  &.requiredField>label {
+    left: 1.75em !important;
+  }
 }
 
 .export-logs-time-input {

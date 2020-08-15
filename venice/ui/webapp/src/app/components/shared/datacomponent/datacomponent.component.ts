@@ -110,6 +110,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
     if (this.penTable && !this.penTable.showRowExpand) {
       this.penTable.toggleRow(rowData, event);
     }
+    event.stopPropagation();
   }
 
   onDeleteRecord(event, object) {
@@ -121,6 +122,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
       this.deleteRecord.bind(this),
       this.postDeleteAction.bind(this)
     );
+    event.stopPropagation();
   }
 
   postDeleteAction() {}

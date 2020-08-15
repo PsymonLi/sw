@@ -9,7 +9,7 @@ import { SelectItem } from 'primeng/api';
 import { IPUtility } from '@app/common/IPUtility';
 import { Utility } from '@app/common/Utility';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
-import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 
 @Component({
   selector: 'app-newworkload',
@@ -19,7 +19,7 @@ import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.c
   animations: Animations,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewworkloadComponent extends CreationPushForm<IWorkloadWorkload, WorkloadWorkload> implements OnInit, OnChanges, AfterViewInit {
+export class NewworkloadComponent extends CreationForm<IWorkloadWorkload, WorkloadWorkload> implements OnInit, OnChanges, AfterViewInit {
 
   // Let workload.component pass in hostOptions
   @Input() hostOptions: SelectItem[] = [];

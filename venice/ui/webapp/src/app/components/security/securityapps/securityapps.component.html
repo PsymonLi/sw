@@ -1,18 +1,19 @@
 <app-pagebody [icon]="bodyIcon" header="Apps Overview">
-  <app-tableviewedit fxLayout="column" class="securityapps-widget"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     (rowClick)="selectApp($event)"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [expandTemplate]="expandTemplate"
-                     [createTemplate]="createTemplate"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
+  <app-pentable #securityappsTable
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [createTemplate]="createTemplate"
+                [data]="dataObjects"
+                [enableCheckbox]="false"
+                [expandTemplate]="expandTemplate"
+                [loading]="tableLoading"
+                (rowClickEmitter)="selectApp($event)"
+                [rowHeight]="43"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap">
+  </app-pentable>
 </app-pagebody>
 
 <ng-template #captionTemplate let-count="count">
@@ -20,15 +21,18 @@
     <div *ngIf="selectedApp" fxFlex="auto" fxLayout="row" class="securityapps-detail-container">
       <ng-container *ngTemplateOutlet="selectedAppDetail;"></ng-container>
     </div>
-    <app-tableheader title="Apps" [total]="count" [icon]="headerIcon" fxFlex="auto" fxLayout="row"
-                     [tableMenuItems]="tableMenuItems" [enableColumnSelect]="true"
+    <app-tableheader fxFlex="auto" fxLayout="row"
+                     [tableMenuItems]="penTable.tableMenuItems"
+                     title="Apps"
+                     [total]="dataObjects.length" [icon]="headerIcon"
+                     [enableColumnSelect]="true"
                      [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
     </app-tableheader>
   </div>
 </ng-template>
 
 <ng-template #createTemplate>
-  <app-newsecurityapp [@slideInOut] (formClose)="creationFormClose()"
+  <app-newsecurityapp (formClose)="creationFormClose()"
                       fxFlex="none" [existingApps]="dataObjects">
   </app-newsecurityapp>
 </ng-template>
@@ -51,53 +55,48 @@
 </ng-template>
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
-  <app-newsecurityapp [style.width]="'100%'" [@slideInOut] (formClose)="closeRowExpand()"
+  <app-newsecurityapp [style.width]="'100%'" (formClose)="editFormClose(rowData)"
                       [objectData]="rowData" [existingApps]="dataObjects" [isInline]="true"
                       fxFlex="none"></app-newsecurityapp>
 </ng-template>
 
 <ng-template #selectedAppDetail>
-  <div fxFlex>
-    <div fxFlex fxLayout="column">
-      <div class="securityapps-detail-header" fxFlex fxLayout="row">
-        <a fxFlex fxLayoutAlign="start center">App Details:</a>
+  <div fxFlex="auto" fxLayout="row">
+    <div fxFlex="auto" fxLayout="column">
+      <div class="securityapps-detail-header" fxLayout="row">
+        <a fxFlex="auto" fxLayoutAlign="start center">App Details:</a>
         <mat-icon class="securityapps-detail-close" (click)="closeDetails()">close</mat-icon>
       </div>
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div fxFlex="5px"></div>
+      <div fxFlex="auto" fxLayout="row">
+        <div fxFlex="50%" fxLayout="column" fxLayoutGap="5px">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="securityapps-detail-key">Name:</a>
-            <a fxFlex fxLayoutAlign="start center"
-               class="securityapps-detail-value">{{this.selectedApp.meta.name}}</a>
+            <a fxFlex="200px" fxLayoutAlign="start start" class="securityapps-detail-key">Name:</a>
+            <a fxFlex="200px" fxLayoutAlign="start start" class="securityapps-detail-value">
+              {{this.selectedApp.meta.name}}
+            </a>
           </div>
-        </div>
-        <div fxFlex fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center"
-               class="securityapps-detail-key">Configuration:</a>
-            <a fxFlex fxLayoutAlign="start center"
-               class="securityapps-detail-value">{{displayColumn(this.selectedApp, {'field': 'spec.alg.type'})}}</a>
-          </div>
-        </div>
-      </div>
-
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
-          <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="securityapps-detail-key">Modification
+            <a fxFlex="200px" fxLayoutAlign="start start" class="securityapps-detail-key">Creation
               Time:</a>
-            <a fxFlex fxLayoutAlign="start center" class="securityapps-detail-value">
+            <a fxFlex="200px" fxLayoutAlign="start start" class="securityapps-detail-value">
+              {{ dateToString(this.selectedApp.meta['creation-time']) | PrettyDate }}
+            </a>
+          </div>
+          <div fxLayout="row">
+            <a fxFlex="200px" fxLayoutAlign="start start"
+               class="securityapps-detail-key">Modification Time:</a>
+            <a fxFlex="200px" fxLayoutAlign="start start" class="securityapps-detail-value">
               {{ dateToString(this.selectedApp.meta['mod-time']) | PrettyDate }}
             </a>
           </div>
         </div>
-        <div fxFlex fxLayout="column">
-          <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="securityapps-detail-key">Creation
-              Time:</a>
-            <a fxFlex fxLayoutAlign="start center" class="securityapps-detail-value">
-              {{ dateToString(this.selectedApp.meta['creation-time']) | PrettyDate }}
-            </a>
+        <div fxFlex="50%" fxLayout="column">
+          <div fxLayout="row" fxLayoutAlign="start start">
+            <a fxFlex="150px" fxLayoutAlign="start start" class="securityapps-detail-key">
+              Configuration:</a>
+            <span fxFlex="auto" fxLayoutAlign="start start"
+                  class="securityapps-detail-value">{{displayColumn(this.selectedApp, {'field': 'spec.alg.type'})}}</span>
           </div>
         </div>
       </div>

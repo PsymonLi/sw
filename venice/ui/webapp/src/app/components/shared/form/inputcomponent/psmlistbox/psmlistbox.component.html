@@ -1,0 +1,19 @@
+<div fxLayout="row" fxLayoutAlign="start start">
+  <div [class]="getIconSpanClasses()">*</div>
+  <div [class]="getSpanClasses()">
+    <p-listbox [id]="boxId" appendTo="body" [class]="getComponentClass()" [listStyle]="listStyle"
+               [options]="options" [checkbox]="checkbox" [multiple]="multiple"
+               [matTooltip]="getTooltip()"
+               [matTooltipClass]="currentTooltipClass" [(ngModel)]="innerValue"
+               (onBlur)="onBoxBlur($event)" (onFocus)="onBoxFocus($event)"
+               (click)="onBoxClick($event)"
+               (ngModelChange)="onInnerCtrlChange()">
+      <ng-template let-option pTemplate="item" *ngIf="optionItemTemplate">
+        <ng-container *ngTemplateOutlet="optionItemTemplate; context: {$implicit: option}">
+        </ng-container>
+      </ng-template>
+    </p-listbox>
+    <label *ngIf="label" [for]="boxId">{{ label }}</label>
+  </div>
+
+</div>

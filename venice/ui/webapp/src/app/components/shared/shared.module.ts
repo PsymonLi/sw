@@ -26,8 +26,11 @@ import { WorkloadsColumnComponent } from './table-columns/workloadscolumn.compon
 import { PsmChipsBoxComponent } from './form/inputcomponent/psmchipsbox/psmchipsbox.component';
 import { PsmNumberBoxComponent } from './form/inputcomponent/psmnumberbox/psmnumberbox.component';
 import { PsmTextBoxComponent } from './form/inputcomponent/psmtextbox/psmtextbox.component';
+import { PsmAutoCompleteComponent } from './form/inputcomponent/psmautocomplete/psmautocomplete.component';
 import { PsmTextAreaComponent } from './form/inputcomponent/psmtextarea/psmtextarea.component';
 import { PsmSelectBoxComponent } from './form/inputcomponent/psmselectbox/psmselectbox.component';
+import { PsmListBoxComponent } from './form/inputcomponent/psmlistbox/psmlistbox.component';
+import { PsmPickListComponent } from './form/inputcomponent/psmpicklist/psmpicklist.component';
 import { PsmMultiSelectComponent } from './form/inputcomponent/psmmultiselectbox/psmmultiselectbox.component';
 import { PsmCalendarComponent } from './form/inputcomponent/psmcalendar/psmcalendar.component';
 import { PsmPasswordComponent } from './form/inputcomponent/psmpassword/psmpassword.component';
@@ -99,8 +102,11 @@ import { PartialEditSgpolicyComponent } from '@app/components/security/sgpolicie
     PsmNumberBoxComponent,
     PsmChipsBoxComponent,
     PsmTextBoxComponent,
+    PsmAutoCompleteComponent,
     PsmTextAreaComponent,
     PsmSelectBoxComponent,
+    PsmListBoxComponent,
+    PsmPickListComponent,
     PsmMultiSelectComponent,
     PsmToggleComponent,
     PsmCalendarComponent,
@@ -159,8 +165,11 @@ import { PartialEditSgpolicyComponent } from '@app/components/security/sgpolicie
     PsmChipsBoxComponent,
     PsmNumberBoxComponent,
     PsmTextBoxComponent,
+    PsmAutoCompleteComponent,
     PsmTextAreaComponent,
     PsmSelectBoxComponent,
+    PsmListBoxComponent,
+    PsmPickListComponent,
     PsmMultiSelectComponent,
     PsmToggleComponent,
     PsmCalendarComponent,

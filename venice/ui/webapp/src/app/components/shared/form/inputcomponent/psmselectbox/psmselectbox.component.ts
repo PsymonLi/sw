@@ -1,6 +1,6 @@
 import {
   Component, Input, ViewEncapsulation, OnInit, forwardRef, Injector,
-  ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, AfterViewInit, OnChanges, SimpleChanges
+  ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, AfterViewInit, OnChanges, SimpleChanges, TemplateRef
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import { FormInputComponent } from '../forminput.component';
@@ -11,7 +11,6 @@ import { SelectItem } from 'primeng/api';
   templateUrl: './psmselectbox.component.html',
   styleUrls: ['./psmselectbox.component.scss'],
   encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -32,8 +31,8 @@ export class PsmSelectBoxComponent extends FormInputComponent implements OnInit,
   @Input() options: SelectItem[];
   @Input() addEmptyOption: boolean = false;
   @Input() emptyOptionLabel: string = '';
-  @Input() formatOptionLabel: (option: any) => string =
-      (option: any) => option.label
+  @Input() optionItemTemplate: TemplateRef<any>;
+  @Input() selectedItemTemplate: TemplateRef<any>;
 
   constructor(protected inj: Injector, protected el: ElementRef, protected cdr: ChangeDetectorRef) {
     super(inj, el, cdr);

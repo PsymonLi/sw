@@ -10,7 +10,6 @@ import { FormInputComponent } from '../forminput.component';
   templateUrl: './psmtextbox.component.html',
   styleUrls: ['./psmtextbox.component.scss'],
   encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

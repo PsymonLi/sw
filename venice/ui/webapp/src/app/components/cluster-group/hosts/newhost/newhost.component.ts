@@ -1,9 +1,8 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewEncapsulation } from '@angular/core';
-import { AbstractControl, FormArray, FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { AfterViewInit, ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewEncapsulation, ChangeDetectorRef, SimpleChanges, OnChanges } from '@angular/core';
+import { AbstractControl, FormArray, FormGroup, ValidationErrors, ValidatorFn, FormControl } from '@angular/forms';
 import { Animations } from '@app/animations';
 import { Utility } from '@app/common/Utility';
 import { TableCol } from '@app/components/shared/tableviewedit';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { ControllerService } from '@app/services/controller.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { StagingService } from '@app/services/generated/staging.service';
@@ -15,19 +14,20 @@ import { StagingBuffer, StagingCommitAction } from '@sdk/v1/models/generated/sta
 import { patternValidator } from '@sdk/v1/utils/validators';
 import { forkJoin, Observable, throwError } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
+import { SelectItem } from 'primeng/api';
 
 
 export interface DSCIDuiModel {
   isUseID: boolean;
 }
 /**
- * NewhostComponent extends CreationForm
+ * NewhostComponent extends CreationPushForm
  * It enables adding and updating host object.  User must specify to use "ID" or "MAC" in UI-html
  * Internally, 'radioValue' holds the selected value (ID or MAC)
  *
  *  postNgInit() -> getPreSelectedDistributedServiceCardID() // when in edit mode, we compute the radio value from data
  *
- * In createObjct() and updateObject(), we clean up data using clearOtherRadios()
  */
 /**
  * Host edit logic 2020-05-13
@@ -42,7 +42,7 @@ export interface DSCIDuiModel {
 By 2020-03-24, one host can host tow DSCs.  We can mix DSC id or DSC mac-address as shown below. We can use either id or mac-address, but not both
 We use this.radioValues[i] to keep track wheterh the i-th DSC is using id or address.
 Host{
-	...
+  ...
   "spec": {
          "dscs": [
            {
@@ -62,7 +62,7 @@ Host{
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> implements OnInit, AfterViewInit, OnDestroy {
+export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> implements OnInit, AfterViewInit, OnChanges, OnDestroy {
 
   public static KEYS_ID = 'id';
   public static KEYS_MACADDRESS = 'mac-address';
@@ -78,14 +78,18 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
   @Input() allDSCs: ClusterDistributedServiceCard[] = [];
   @Output() formClose: EventEmitter<any> = new EventEmitter();
 
-  createButtonTooltip: string = '';
   newHostForm: FormGroup;
-  smartNICIDs: any;
-  smartNICIDOptions: string[] = [];
+  addNICoptions: SelectItem[] = [
+    {label: 'ID', value: 'id'},
+    {label: 'MAC ADDRESS', value: 'mac-address'}
+  ];
   originalDSCcount: number = 0;
 
-  // This property keep track of user input selection (ID or MAC)
-  radioValues: string[] = [];
+  dscIds: string[] = [];
+  dscMacs: string[] = [];
+
+  idSuggestions: string[] = [];
+  macSuggestions: string[] = [];
 
   cols: TableCol[] = [
     { field: 'meta.name', header: 'DSC Name', class: '', sortable: true, width: 20 },
@@ -98,45 +102,84 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
   constructor(protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected _clusterService: ClusterService,
-    protected stagingService: StagingService
+    protected stagingService: StagingService,
+    protected cdr: ChangeDetectorRef,
   ) {
-    super(_controllerService, uiconfigsService, ClusterHost);
+    super(_controllerService, uiconfigsService, cdr, ClusterHost);
   }
 
   postNgInit() {
-    if (!this.isInline) {
-      this.processNaples();
-    }
-    if (this.objectData != null) {
-      // in edit mode.  We compute the radio (ID/MAC) value
-      this.getPreSelectedDSCID();
-    }
-
     this.newHostForm = this.newObject.$formGroup;
     const smartNICIDs: any = this.newHostForm.get(['spec', 'dscs']);
-
-    if (smartNICIDs.controls.length === 0) {
-      this.addDSCID(this.newObject);
-    }
-
-    if (this.isInline) {
-      // disable name field
+    if (!this.isInline) {
+      this.processNaples();
+      this.addFieldValidator(this.newObject.$formGroup.get(['meta', 'name']),
+        this.isNewHostNameValid(this.existingObjects));
+    } else {
       this.newObject.$formGroup.get(['meta', 'name']).disable();
-      this.originalDSCcount = smartNICIDs.controls.length;
-
-      for (let i = 0; i < this.originalDSCcount; i++) {
+      // in edit mode.  We compute the radio (ID/MAC) value
+      for (let i = 0; i < smartNICIDs.controls.length; i++) {
         const formGroup = smartNICIDs.controls[i];
+        formGroup.addControl('addDscType', new FormControl());
+        if (formGroup.get(['id']).value) {
+          formGroup.get(['addDscType']).setValue('id');
+        } else {
+          formGroup.get(['addDscType']).setValue('mac-address');
+        }
+        formGroup.get(['addDscType']).disable();
         formGroup.get(['id']).disable();
         formGroup.get(['mac-address']).disable();
       }
     }
 
-    this.smartNICIDs = (<any>this.newHostForm.get(['spec', 'dscs'])).controls;
+    if (smartNICIDs.controls.length === 0) {
+      this.addDSCID(this.newObject);
+    }
+  }
 
-    // gets the options for the radio button
-    this.smartNICIDOptions = Object.keys((<any>this.newHostForm.get(['spec', 'dscs', 0])).controls);
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes.allDSCs) {
+      this.dscIds = [];
+      this.dscMacs = [];
+      if (this.allDSCs) {
+        this.allDSCs.forEach(dsc => {
+          this.dscIds.push(dsc.spec.id);
+          this.dscMacs.push(dsc.meta.name);
+        });
+      }
+    }
+    super.ngOnChanges(changes);
+  }
 
-    this.setValidators(this.newObject);
+  searchDscIDs(event) {
+    const query: string = event.query;
+    if (query && query.trim().length >= 2) {
+      this.idSuggestions = this.searchStringWithinArray(query.trim(), this.dscIds);
+    } else {
+      this.idSuggestions = [];
+    }
+  }
+
+  searchDscMACs(event) {
+    const query: string = event.query;
+    if (query && query.length >= 2) {
+      this.macSuggestions = this.searchStringWithinArray(query.trim(), this.dscMacs);
+    } else {
+      this.macSuggestions = [];
+    }
+  }
+
+  searchStringWithinArray(str: string, array: string[]) {
+    if (!array || array.length === 0) {
+      return [];
+    }
+    const result: string[] = array.filter(val =>
+      val.toLowerCase().indexOf(str.toLowerCase()) > -1);
+    const newResult = [];
+    for (let i = 0; i < result.length && i < 11; i++) {
+      newResult.push(result[i]);
+    }
+    return newResult;
   }
 
   /**
@@ -149,14 +192,10 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
     newObject.$formGroup.get(['meta', 'name']).setValidators([
       this.newObject.$formGroup.get(['meta', 'name']).validator,
       this.isNewHostNameValid(this.existingObjects)]);
-    for (let i = 0; i < this.radioValues.length; i++) {
+    const smartNICIDs: any = this.newHostForm.get(['spec', 'dscs']);
+    for (let i = 0; i < smartNICIDs.controls.length; i++) {
       this.setDSCValidator(newObject, i);
     }
-  }
-
-  shouldRadioButtonBeChecked(smartNICIDOption, index): boolean {
-    const control = this.newObject.$formGroup.get(['spec', 'dscs', index, smartNICIDOption]);
-    return (control && control.value);
   }
 
   /**
@@ -190,7 +229,7 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
 
   dscIDValidator(hosts: IClusterHost[], dscIndex: number): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
-      if (this.isDSCIdOccupied(control.value, hosts) || this.isDSCIdOrMacDuplicateWithinHost(control.value, 'id', dscIndex)) {
+      if (this.isDSCIdOccupied(control.value, hosts) || this.isDSCIdOrMacDuplicateWithinHost(control as FormControl, 'id')) {
         return {
           objectname: {
             required: true,
@@ -204,7 +243,7 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
 
   dscMacValidator(hosts: IClusterHost[], dscIndex: number): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
-      if (this.isDSCMacOccupied(control.value, hosts) || this.isDSCIdOrMacDuplicateWithinHost(control.value, 'mac-address', dscIndex)) {
+      if (this.isDSCMacOccupied(control.value, hosts) || this.isDSCIdOrMacDuplicateWithinHost(control  as FormControl, 'mac-address')) {
         return {
           objectname: {
             required: true,
@@ -216,18 +255,19 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
     };
   }
 
-  isDSCIdOrMacDuplicateWithinHost(input: string, field: string, dscIndex: number): boolean {
-    const target = this.newHostForm.get(['spec', 'dscs', dscIndex]).value;
+  isDSCIdOrMacDuplicateWithinHost(ctrl: FormControl, field: string): boolean {
     const len = this.newHostForm.get(['spec', 'dscs'])['length'];
     if (len <= 1) {
       return false;
     }
     for (let i = 0; i < len; i++) {
-      if (dscIndex !== i) {
-        const dscObject = this.newHostForm.get(['spec', 'dscs', i]).value;
-        if (dscObject[field] && dscObject[field] === input) {
+      const eachCtrl = this.newHostForm.get(['spec', 'dscs', i, field]);
+      if (ctrl !== eachCtrl) {
+        if (eachCtrl && eachCtrl.value === ctrl.value) {
           return true;
         }
+      } else {
+
       }
     }
     return false;
@@ -247,37 +287,44 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
   }
 
   /**
-   * A DSC has id="dsc1" and mac-address  = 'aaaa.bbbb.cccc".
-   * If User assigns a  DSC to a host using mac-address 'aaaa.bbbb.cccc".  In table row, DSC-column will show "dsc1"
-   * If user first assigns another DSC to using "id dsc1". This manually inputed "dsc1" will collid with real DSC (dsc1)
-   * @param inputvalue
-   * @param dscs
-   */
-  isInputDSCidCollidInNaplesList(inputvalue: string, dscs: ClusterDistributedServiceCard[]): boolean {
-    if (!dscs) {
-      return false;
-    }
-    const matchedDSCs = dscs.find(dsc => dsc.spec.id === inputvalue);
-    if (! matchedDSCs) {
-      return false;
-    }
-    // Check if matched DSC.mac is assigned to other host
-    const mac = matchedDSCs.meta.name;
-    return this.isDSCMacOccupied(mac, this.existingObjects);
-  }
-
-  /**
    * Say user inputs dscId (using id radio button)
    * This dscId can not be equal to  any  host.spec.dscs[i].id and dsc.spec.id
    * @param dscId
    * @param hosts
    */
   isDSCIdOccupied(dscId: string, hosts: IClusterHost[]): boolean {
-    return this.isDSCIdOrMacOccupied(dscId, hosts, 'id') || this.isInputDSCidCollidInNaplesList(dscId, this.allDSCs);
+    if (this.isDSCIdOrMacOccupied(dscId, hosts, 'id')) {
+      return true;
+    }
+    if (Utility.isValueOrArrayEmpty(this.allDSCs)) {
+      return false;
+    }
+    const dsc = this.allDSCs.find(item => item.spec.id === dscId);
+    if (!dsc) {
+      return false;
+    }
+    return this.isDSCIdOrMacOccupied(dsc.meta.name, hosts, 'mac-address');
   }
 
   isDSCMacOccupied(mac: string, hosts: IClusterHost[]): boolean {
-    return this.isDSCIdOrMacOccupied(mac, hosts, 'mac-address');
+    if (this.isDSCIdOrMacOccupied(mac, hosts, 'mac-address')) {
+      return true;
+    }
+    if (Utility.isValueOrArrayEmpty(this.allDSCs)) {
+      return false;
+    }
+    const dsc = this.allDSCs.find(item => item.meta.name === mac);
+    if (!dsc) {
+      return false;
+    }
+    return this.isDSCIdOrMacOccupied(dsc.spec.id, hosts, 'id');
+  }
+
+  isShowDeleteButton(index: number) {
+    if (this.isInline) {
+      return index > 0;
+    }
+    return (this.newHostForm.get(['spec', 'dscs']) as FormArray).length > 1;
   }
 
   processNaples() {
@@ -297,32 +344,24 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
     return this.objectMap[rowData.meta.name].$formGroup;
   }
 
-  /**
-   *  Sets radio when editing
-   *
-   *  TODO: 2020-03-24, once we support host update, fully test the API
-   */
-  getPreSelectedDSCID() {
-    if (this.newObject.spec['dscs'].length !== 0) {
-      this.radioValues = []; // clean up radioValues array
-      for (let i = 0; i < this.newObject.spec['dscs'].length; i++) {
-        const clusterDSCID: ClusterDistributedServiceCardID = this.newObject.spec['dscs'][i];
-
-        if (clusterDSCID[NewhostComponent.KEYS_ID] !== null) {
-          this.radioValues[i] = NewhostComponent.KEYS_ID;
-        }
-        if (clusterDSCID[NewhostComponent.KEYS_MACADDRESS] !== null) {
-          this.radioValues[i] = NewhostComponent.KEYS_MACADDRESS;
-        }
-        if (clusterDSCID[NewhostComponent.KEYS_ID] === null && clusterDSCID[NewhostComponent.KEYS_MACADDRESS] === null) {
-          this.radioValues[i] = '';
-        }
-      }
-    }
-
+  addDSCID(newObject: ClusterHost) {
+    // updates the form
+    const smartNICIDs = newObject.$formGroup.get(['spec', 'dscs']) as FormArray;
+    const len = smartNICIDs.length;
+    const clusterDistributedServiceCardID: ClusterDistributedServiceCardID = new ClusterDistributedServiceCardID();
+    smartNICIDs.push(clusterDistributedServiceCardID.$formGroup);
+    clusterDistributedServiceCardID.$formGroup.get(['mac-address']).setValidators([
+      patternValidator(Utility.MACADDRESS_REGEX, NewhostComponent.MACADDRESS_MESSAGE),
+      this.dscMacValidator(this.existingObjects, len)
+    ]);
+    clusterDistributedServiceCardID.$formGroup.get(['id']).setValidators([
+      this.dscIDValidator(this.existingObjects, len)
+    ]);
+    clusterDistributedServiceCardID.$formGroup.addControl('addDscType', new FormControl());
+    clusterDistributedServiceCardID.$formGroup.get(['addDscType']).setValue('id');
   }
 
-  computeButtonClass() {
+  computeFormSubmitButtonClass() {
     let enable = false;
     if (this.notAdmittedCount !== 0) {
       for (const key of Object.keys(this.objectMap)) {
@@ -331,13 +370,8 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
           enable = true;
         }
       }
-    } else {
-      if (Utility.isEmpty(this.newObject.$formGroup.get('meta.name').value)) {
-        return 'global-button-disabled';
-      }
-      if (this.newObject.$formGroup.get('meta.name').status === 'VALID' && this.isFormValid()) {
-        enable = true;
-      }
+    } else if (this.isFormValid()) {
+      enable = true;
     }
 
     if (enable) {
@@ -346,91 +380,42 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
     return 'global-button-disabled';
   }
 
-  addDSCID(newObject: ClusterHost) {
-    // updates the form
-    const smartNICIDs = newObject.$formGroup.get(['spec', 'dscs']) as FormArray;
-    const clusterDistributedServiceCardID: ClusterDistributedServiceCardID = new ClusterDistributedServiceCardID();
-    smartNICIDs.push(clusterDistributedServiceCardID.$formGroup);
-    this.radioValues.push('');
-  }
-
-  onRadioButtonChange($event, index: number) {
-    // changes value of radio to the one the user has selected
-    this.radioValues[index] = $event.value;
-    if (this.radioValues[index] === 'id') {
-      this.newHostForm.get(['spec', 'dscs', index, 'mac-address']).setValue(null);  // clear value
-      this.newHostForm.get(['spec', 'dscs', index, 'mac-address']).setErrors(null); // clear validation error
-    } else {
-      this.newHostForm.get(['spec', 'dscs', index, 'id']).setValue(null);
-      this.newHostForm.get(['spec', 'dscs', index, 'id']).setErrors(null);
-    }
-  }
-
-
-
-
-  /**
-   * User can flip between id and mac, we want to clear the non-selected field.
-   * Say, the radio value is 'id', we remove the 'mac-address' value
-   */
-  clearOtherRadios(): IClusterHost {
-    const host: IClusterHost = this.newObject.getFormGroupValues();
-    for (let i = 0; i < host.spec['dscs'].length; i++) {
-      const config = host.spec['dscs'][i];
-      const keys = Object.keys(config);
-      for (let j = 0; j < keys.length; j++) {
-        const key = keys[j];
-        if (this.radioValues[i] !== key) {
-          delete config[key];
-        }
-      }
-    }
-    return host;
-  }
-
   isFormValid(): boolean {
-    if (!this.radioValues.length) {
-      this.createButtonTooltip = 'Please pick either id or mac-address';
+    if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
+      this.submitButtonTooltip = 'Error: Name field is empty.';
       return false;
     }
-    // checks that the ADD DSCs BY field is filled out
-    for (let i = 0; i < this.radioValues.length; i++) {
-      if (this.radioValues[i] !== '') {
-        // both id and mac-address are empty
-        if (Utility.isEmpty(this.newHostForm.get(['spec', 'dscs', i, 'id']).value) &&
-          Utility.isEmpty(this.newHostForm.get(['spec', 'dscs', i, 'mac-address']).value)) {
-          this.createButtonTooltip = 'Need either id or mac-address input in box ' + (i + 1);
-          return false;
-        }
-        // both id and mac-address are not empty.
-        if (!Utility.isEmpty(this.newHostForm.get(['spec', 'dscs', i, 'id']).value) &&
-          !Utility.isEmpty(this.newHostForm.get(['spec', 'dscs', i, 'mac-address']).value)) {
-          this.createButtonTooltip = 'Can not have both id and mac-address input in box ' + (i + 1);
-          return false;
-        }
+    if (this.newObject.$formGroup.get(['meta', 'name']).invalid)  {
+      this.submitButtonTooltip = 'Error: Name field is invalid.';
+      return false;
+    }
 
-        // if "id" field is not empty or has invalid input, return false
-        if (!Utility.isEmpty(this.newHostForm.get(['spec', 'dscs', i, 'id']).value)
-          && this.newHostForm.get(['spec', 'dscs', i, this.radioValues[i]]).invalid) {
-          this.createButtonTooltip = 'Input id field is not valid in box ' + (i + 1);
+    const smartNICs: FormArray = this.newHostForm.get(['spec', 'dscs']) as FormArray;
+    for (let i = 0; i < smartNICs.length; i++) {
+      const formGroup: FormGroup = smartNICs.get([i]) as FormGroup;
+      const type = formGroup.get('addDscType').value;
+      if (type === 'id') {
+        if (this.isFieldEmpty(formGroup.get('id'))) {
+          this.submitButtonTooltip = 'Error: Field ' + (i + 1) + ' ID is empty.';
           return false;
         }
-        // if "mac" field is not empty and has invalid input, return false
-        if (!Utility.isEmpty(this.newHostForm.get(['spec', 'dscs', i, 'id']).value)
-          && this.newHostForm.get(['spec', 'dscs', i, 'mac-address']).invalid) {
-          this.createButtonTooltip = 'Box ' + (i + 1) + ' ' + NewhostComponent.MACADDRESS_MESSAGE;
+        if (formGroup.get('id').invalid) {
+          this.submitButtonTooltip = 'Error: Field ' + (i + 1) + ' ID is invalid.';
           return false;
         }
-      } else {
-        this.createButtonTooltip = 'Pick either id or mac-address input in  box ' + (i + 1);
-        return false;
+      } else if (type === 'mac-address') {
+        if (this.isFieldEmpty(formGroup.get('mac-address'))) {
+          this.submitButtonTooltip = 'Error: Field ' + (i + 1) + ' MAC Address is empty.';
+          return false;
+        }
+        if (formGroup.get('mac-address').invalid) {
+          this.submitButtonTooltip = 'Error: Field ' + (i + 1) + ' MAC Address is invalid.';
+          return false;
+        }
       }
     }
-    if (!this.newObject.$formGroup.valid) {
-      this.createButtonTooltip = 'Input data is not valid';
-      return false;
-    }
-    this.createButtonTooltip = '';
+
+    this.submitButtonTooltip = 'Ready to submit';
     return true;
   }
 
@@ -439,9 +424,18 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
     return Utility.isModelNameUniqueValidator(existingObjects, 'newHost-name');
   }
 
-
-  getClassName(): string {
-    return this.constructor.name;
+  getObjectValues(): IClusterHost {
+    const newClusterHost: IClusterHost = this.newObject.getFormGroupValues();
+    for (let i = 0; i < newClusterHost.spec.dscs.length; i++) {
+      const dsc: any = newClusterHost.spec.dscs[i];
+      if (dsc.addDscType === 'id') {
+        delete dsc['mac-address'];
+      } else {
+        delete dsc.id;
+      }
+      delete dsc.addDscType;
+    }
+    return newClusterHost;
   }
 
   setToolbar(): void {
@@ -452,17 +446,17 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
       this.oldButtons = currToolbar.buttons;
       currToolbar.buttons = [
         {
-          cssClass: 'global-button-primary host-button host-button-SAVE',
+          cssClass: 'global-button-primary psm-form-creation-button',
           text: 'CREATE HOSTS',
-          genTooltip: () => this.getTooltip(),
+          genTooltip: () => this.getSubmitButtonToolTip(),
           callback: () => { this.saveObjects(); },
-          computeClass: () => this.computeButtonClass()
+          computeClass: () => this.computeFormSubmitButtonClass()
         },
         {
-          cssClass: 'global-button-neutral host-button host-button-CANCEL',
+          cssClass: 'global-button-neutral psm-form-creation-button',
           text: 'CANCEL',
           callback: () => {
-            this.cancelObject(); // this.cancelHost();
+            this.cancelObject();
           }
         },
       ];
@@ -476,7 +470,6 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
    * We make up the JSON object
    */
   createObject(newObject: IClusterHost): Observable<{ body: IClusterHost | IApiStatus | Error; statusCode: number; }> {
-    // const host: IClusterHost = this.clearOtherRadios();
     return this._clusterService.AddHost(newObject);
   }
 
@@ -485,7 +478,6 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
    * We make up the JSON object
    */
   updateObject(newObject: IClusterHost, oldObject: IClusterHost): Observable<{ body: IClusterHost | IApiStatus | Error; statusCode: number; }> {
-    // const host: IClusterHost = this.clearOtherRadios();
     if (newObject && newObject.spec && newObject.spec.dscs && newObject.spec.dscs.length > 0 &&
       newObject.spec.dscs[0]) {
       if (oldObject && oldObject.spec && oldObject.spec.dscs) {
@@ -501,19 +493,6 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
 
   generateUpdateSuccessMsg(object: IClusterHost): string {
     return 'Updated host ' + object.meta.name;
-  }
-
-  getObjectValues(): IClusterHost {
-    const newClusterHost: IClusterHost = this.newObject.getFormGroupValues();
-    for (let i = 0; i < newClusterHost.spec.dscs.length; i++) {
-      if (newClusterHost.spec.dscs[i].id != null) {
-        newClusterHost.spec.dscs[i].id = newClusterHost.spec.dscs[i].id.trim();
-      }
-      if (newClusterHost.spec.dscs[i]['mac-address'] != null) {
-        newClusterHost.spec.dscs[i]['mac-address'] = newClusterHost.spec.dscs[i]['mac-address'].trim();
-      }
-    }
-    return newClusterHost;
   }
 
   onSaveFailure(isCreate: boolean) {
@@ -614,34 +593,12 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
       this.saveBatchMode();
     }
   }
-  getTooltip() {
-    return this.createButtonTooltip;
-  }
-
-  getFieldTooltip(): string {
-    // TODO: 2020-03-24 host update is not supported. This api is not fully tested.
-    const dscLen = this.newHostForm.get(['spec', 'dscs'])['length']; // spec.dsc is a formarray
-    for (let i = 0; i < dscLen; i++) {
-      for (let j = 0; j < this.radioValues.length; j++) {
-        const control = this.newHostForm.get(['spec', 'dscs', i, this.radioValues[j]]);
-        if (control && Utility.isEmpty(control.value)) {
-          return `${this.radioValues[j]} field is empty`;
-        }
-        if (this.radioValues[i] === 'mac-address' &&
-          (!this.newHostForm.get(['spec', 'dscs', i, 'mac-address']).valid) &&
-          (!this.newHostForm.get(['spec', 'dscs', i, 'mac-address']).disabled)) {
-          return NewhostComponent.MACADDRESS_MESSAGE;
-        }
-      }
-    }
-  }
 
   /**
    * When user call + to add a new  DSC
    */
   addDSC() {
     this.addDSCID(this.newObject);
-    this.setValidators(this.newObject);
   }
 
   /**
@@ -652,7 +609,6 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
     const tempTargets = this.newHostForm.get(['spec', 'dscs']) as FormArray;
     if (tempTargets.length > 1) {
       tempTargets.removeAt(index);
-      this.radioValues.splice(index, 1);
     }
   }
 }

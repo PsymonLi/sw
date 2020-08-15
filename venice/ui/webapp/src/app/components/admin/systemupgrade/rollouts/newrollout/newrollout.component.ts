@@ -742,10 +742,9 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
     }
   }
 
-  formatImageLabel() {
-    const func = (option: any) => option.label + (option.model && option.model.Description ?
-        option.model.Description : '');
-    return func;
+  formatImageLabel(option) {
+    return option.label + (option.model && option.model.Description ?
+      option.model.Description : '');
   }
 
   onVersionChange(selectedVersion) {

@@ -8,7 +8,6 @@ import { FormInputComponent } from '../forminput.component';
   templateUrl: './psmcalendar.component.html',
   styleUrls: ['./psmcalendar.component.scss'],
   encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

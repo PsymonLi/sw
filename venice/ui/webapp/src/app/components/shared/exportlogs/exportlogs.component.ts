@@ -1,6 +1,5 @@
-import { Component, ViewEncapsulation, Input, Output, EventEmitter } from '@angular/core';
+import { Component, ViewEncapsulation, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Utility } from '@app/common/Utility';
-import { CreationForm } from '../tableviewedit/tableviewedit.component';
 import { ControllerService } from '@app/services/controller.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
@@ -9,12 +8,14 @@ import { IMonitoringArchiveQuery, MonitoringArchiveRequest, IMonitoringArchiveRe
 import { Observable } from 'rxjs';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { TimeRange } from '../timerange/utility';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 
 @Component({
   selector: 'app-exportlogs',
   templateUrl: './exportlogs.component.html',
   styleUrls: ['./exportlogs.component.scss'],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest, MonitoringArchiveRequest> {
@@ -36,12 +37,9 @@ export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest,
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected monitoringService: MonitoringService,
-    protected securityService: SecurityService) {
-    super(controllerService, uiconfigsService, MonitoringArchiveRequest);
-  }
-
-  getClassName(): string {
-    return this.constructor.name;
+    protected securityService: SecurityService,
+    protected cdr: ChangeDetectorRef) {
+    super(controllerService, uiconfigsService, cdr, MonitoringArchiveRequest);
   }
 
   postNgInit(): void {
@@ -57,22 +55,7 @@ export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest,
   }
 
   setToolbar(): void {
-    const currToolbar = this.controllerService.getToolbarData();
-    currToolbar.buttons = [
-      {
-        cssClass: 'global-button-primary global-button-padding',
-        text: 'CREATE ARCHIVE',
-        callback: () => { this.saveObject(); },
-        computeClass: () => this.computeButtonClass()
-      },
-      {
-        cssClass: 'global-button-neutral global-button-padding',
-        text: 'CANCEL',
-        callback: () => { this.cancelObject(); }
-      },
-    ];
-
-    this.controllerService.setToolbarData(currToolbar);
+    this.setCreationButtonsToolbar('CREATE ARCHIVE', null);
   }
 
   getArchiveTimeRange(timeRange) {
@@ -128,11 +111,11 @@ export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest,
   }
 
   isFormValid(): boolean {
-    this.validationMessage = null;
     if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
-      this.validationMessage = 'Error: Request name is required.';
+      this.submitButtonTooltip = 'Error: Archive File name is required.';
       return false;
     }
+    this.submitButtonTooltip = 'Ready to submit';
     return true;
   }
 

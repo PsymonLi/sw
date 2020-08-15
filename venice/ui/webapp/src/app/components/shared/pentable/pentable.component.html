@@ -1,5 +1,5 @@
 <div class="pentable-widget">
-  <div [@slideInOut] *ngIf="creatingMode" fxLayout="column">
+  <div *ngIf="creatingMode" fxLayout="column">
     <ng-container *ngTemplateOutlet="createTemplate"></ng-container>
     <div class="pentable-form-border"></div>
   </div>

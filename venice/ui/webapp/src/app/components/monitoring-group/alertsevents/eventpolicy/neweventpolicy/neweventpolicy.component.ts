@@ -8,7 +8,7 @@ import { SyslogComponent, ReturnObjectType } from '@app/components/shared/syslog
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { Utility } from '@app/common/Utility';
 import { ValidatorFn } from '@angular/forms';
-import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { EventpolicyComponent } from '../eventpolicy.component';
 
@@ -20,7 +20,7 @@ import { EventpolicyComponent } from '../eventpolicy.component';
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class NeweventpolicyComponent extends CreationPushForm<IMonitoringEventPolicy, MonitoringEventPolicy> implements OnInit, AfterViewInit {
+export class NeweventpolicyComponent extends CreationForm<IMonitoringEventPolicy, MonitoringEventPolicy> implements OnInit, AfterViewInit {
   @ViewChild('fieldSelector') fieldSelector: FieldselectorComponent;
   @ViewChild('syslogComponent') syslogComponent: SyslogComponent;
   @Input() existingObjects: MonitoringEventPolicy[] = [];

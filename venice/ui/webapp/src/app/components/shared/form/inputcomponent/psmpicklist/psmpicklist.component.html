@@ -1,0 +1,24 @@
+<div fxLayout="row" fxLayoutAlign="start start">
+  <div [class]="getIconSpanClasses()">*</div>
+  <div [class]="getSpanClasses()">
+    <p-pickList [id]="boxId" appendTo="body" [class]="getComponentClass()"
+                [source]="source" [target]="target" [filterBy]="filterBy"
+                [sourceHeader]="sourceHeader" [targetHeader]="targetHeader"
+                [dragdrop]="dragdrop" [sourceFilterPlaceholder]="sourceFilterPlaceholder"
+                [targetFilterPlaceholder]="targetFilterPlaceholder"
+                [showSourceControls]="showSourceControls" [showTargetControls]="showTargetControls"
+                [sourceStyle]="listStyle" [targetStyle]="listStyle"
+                (onMoveToTarget)="onDataChanged()" (onMoveToSource)="onDataChanged()">
+      <ng-template let-option pTemplate="item" *ngIf="optionItemTemplate">
+        <ng-container *ngTemplateOutlet="optionItemTemplate; context: {$implicit: option}">
+        </ng-container>
+      </ng-template>
+      <ng-template let-option pTemplate="item" *ngIf="!optionItemTemplate">
+        <div class="psm-form-picklist-box-dropdown-row">
+          <div class="psm-form-picklist-box-dropdown-label">{{ option.label }}</div>
+        </div>
+      </ng-template>
+    </p-pickList>
+    <label *ngIf="label" [for]="boxId">{{ label }}</label>
+  </div>
+</div>

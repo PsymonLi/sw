@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, DoCheck, EventEmitter, AfterViewInit, ViewEncapsulation, ChangeDetectionStrategy,  } from '@angular/core';
+import { Component, OnInit, Input, Output, DoCheck, EventEmitter, AfterViewInit, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef,  } from '@angular/core';
 import { Animations } from '@app/animations';
 import { ISecurityApp, SecurityApp, SecurityALG, SecurityALG_type, SecuritySunrpc, SecurityMsrpc} from '@sdk/v1/models/generated/security';
 import { ControllerService } from '@app/services/controller.service';
@@ -23,39 +23,39 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
 })
 export class NewsecurityappComponent extends CreationForm<ISecurityApp, SecurityApp> implements OnInit, AfterViewInit {
 
-  newApp: SecurityApp;
   @Input() existingApps: SecurityApp[] = [];
   securityForm: FormGroup;
   secOptions: SelectItem[] = Utility.convertEnumToSelectItem(SecurityAppOptions);
-  pickedOption: String;
-  protoandports: any = null;
+  pickedOption: FormControl = new FormControl();
   securityOptions = SecurityAppOptions;
   algEnumOptions = SecurityALG_type;
   algOptions: SelectItem[] = Utility.convertEnumToSelectItem(SecurityALG.propInfo['type'].enum);
 
   selectedType = SecurityALG_type.icmp;
-  sunRPCTargets: any = null;
-  msRPCTargets: any = null;
 
   ftpTimeoutTooltip = 'Timeout for this program ID. Should be a valid time duration.\n' +
                     'Example: 1h5m2s, 100ns... ';
   dnsTimeoutTooltip = ' Timeout for DNS Query, default 60s. Should be a valid time duration.\n' +
                     'Example: 1h5m2s, 100ns... ';
 
-  createButtonTooltip: string = '';
-
   constructor(protected _controllerService: ControllerService,
     protected _securityService: SecurityService,
-    protected uiconfigsService: UIConfigsService
+    protected uiconfigsService: UIConfigsService,
+    protected cdr: ChangeDetectorRef,
   ) {
-    super(_controllerService, uiconfigsService, SecurityApp);
+    super(_controllerService, uiconfigsService, cdr, SecurityApp);
   }
 
   postNgInit() {
+    this.secOptions.forEach(option => {
+      option.value = option.label;
+    });
     if (this.objectData != null) {
       this.setRadio();
     } else {
-      this.pickedOption = SecurityAppOptions.PROTOCOLSANDPORTS;
+      this.pickedOption.setValue(SecurityAppOptions.PROTOCOLSANDPORTS);
+      this.addFieldValidator(this.newObject.$formGroup.get(['meta', 'name']),
+        this.isAppNameValid(this.existingApps));
     }
     this.securityForm = this.newObject.$formGroup;
     this.setUpTargets();
@@ -67,9 +67,6 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     const icmpCode: AbstractControl = this.securityForm.get(['spec', 'alg', 'icmp', 'code']);
     this.addFieldValidator(icmpCode, minValueValidator(0));
     this.addFieldValidator(icmpCode, maxValueValidator(18));
-    const dnsMaxMsgLen: AbstractControl = this.securityForm.get(['spec', 'alg', 'dns', 'max-message-length']);
-    this.addFieldValidator(dnsMaxMsgLen, minValueValidator(1));
-    this.addFieldValidator(dnsMaxMsgLen, maxValueValidator(8129));
     if (this.isInline) {
       const allTargets = this.securityForm.get(['spec', 'proto-ports']) as FormArray;
       allTargets.controls.forEach((formGroup: FormGroup) => {
@@ -86,12 +83,6 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     }
   }
 
-  setCustomValidation() {
-    this.newObject.$formGroup.get(['meta', 'name']).setValidators([
-      this.newObject.$formGroup.get(['meta', 'name']).validator,
-      this.isAppNameValid(this.existingApps)]);
-  }
-
   generateCreateSuccessMsg(object: ISecurityApp) {
     return 'Created app ' + object.meta.name;
   }
@@ -100,49 +91,13 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     return 'Updated app ' + object.meta.name;
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
-  getObjectValues(): ISecurityApp {
-    const obj = this.newObject.getFormGroupValues();
-    if (obj.spec.alg && obj.spec.alg.icmp) {
-      if (obj.spec.alg.icmp.type || obj.spec.alg.icmp.type === 0) {
-        obj.spec.alg.icmp.type = obj.spec.alg.icmp.type.toString();
-      }
-      if (obj.spec.alg.icmp.code || obj.spec.alg.icmp.code === 0) {
-        obj.spec.alg.icmp.code = obj.spec.alg.icmp.code.toString();
-      }
-    }
-    return obj;
-  }
   // tcp,icmp,udp, any + 1< x < 255
   updateObject(newObject: ISecurityApp, oldObject: ISecurityApp) {
     return this._securityService.UpdateApp(oldObject.meta.name, newObject, null, oldObject, true, false);
   }
 
   setToolbar() {
-    if (!this.isInline && this.uiconfigsService.isAuthorized(UIRolePermissions.securityapp_create)) {
-      // If it is not inline, we change the toolbar buttons, and save the old one
-      // so that we can set it back when we are done
-      const currToolbar = this._controllerService.getToolbarData();
-      currToolbar.buttons = [
-        {
-          cssClass: 'global-button-primary newsecurityapp-button',
-          text: 'CREATE APP ',
-          genTooltip: () => this.getTooltip(),
-          callback: () => { this.savePolicy(); },
-          computeClass: () => this.computeButtonClass()
-        },
-        {
-          cssClass: 'global-button-primary newsecurityapp-button',
-          text: 'CANCEL',
-          callback: () => { this.cancelObject(); }
-        },
-      ];
-
-      this._controllerService.setToolbarData(currToolbar);
-    }
+    this.setCreationButtonsToolbar('CREATE APP', UIRolePermissions.securityapp_create);
   }
 
   isAppNameValid(existingApps: SecurityApp[]): ValidatorFn {
@@ -154,18 +109,14 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     if (!tempProto.controls || tempProto.controls.length === 0) {
       this.addProtoTarget();
     }
-    this.protoandports = (<any>this.securityForm.get(['spec', 'proto-ports'])).controls;
     const tempSun: any = this.securityForm.get(['spec', 'alg', 'sunrpc']);
     if (!tempSun.controls || tempSun.controls.length === 0) {
       this.addSunRPCTarget();
     }
-    this.sunRPCTargets = (<any>this.securityForm.get(['spec', 'alg', 'sunrpc'])).controls;
     const tempMSRPC: any = this.securityForm.get(['spec', 'alg', 'msrpc']);
     if (!tempMSRPC.controls || tempMSRPC.controls.length === 0) {
       this.addMSRPCTarget();
     }
-    this.msRPCTargets = (<any>this.securityForm.get(['spec', 'alg', 'msrpc'])).controls;
-
   }
 
   createObject(object: ISecurityApp) {
@@ -173,25 +124,19 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
   }
 
   setRadio() {
-    if (!this.objectData.spec['alg']) {
-      this.pickedOption = SecurityAppOptions.PROTOCOLSANDPORTS;
-    } else if (this.objectData.spec['alg'] && !this.objectData.spec['proto-ports']) {
-      this.pickedOption = SecurityAppOptions.ALGONLY;
+    if (!this.objectData.spec['alg'].type) {
+      this.pickedOption.setValue(SecurityAppOptions.PROTOCOLSANDPORTS);
+    } else if (this.objectData.spec['alg'].type &&
+      Utility.isValueOrArrayEmpty(this.objectData.spec['proto-ports'])) {
+      this.pickedOption.setValue(SecurityAppOptions.ALGONLY);
       this.selectedType = this.objectData.spec.alg.type;
-    } else if (this.objectData.spec['alg'] && this.objectData.spec['proto-ports']) {
-      this.pickedOption = SecurityAppOptions.BOTH;
+    } else if (this.objectData.spec['alg'].type &&
+      !Utility.isValueOrArrayEmpty(this.objectData.spec['proto-ports'])) {
+      this.pickedOption.setValue(SecurityAppOptions.BOTH);
       this.selectedType = this.objectData.spec.alg.type;
     } else {
-      this.pickedOption = SecurityAppOptions.PROTOCOLSANDPORTS;
+      this.pickedOption.setValue(SecurityAppOptions.PROTOCOLSANDPORTS);
     }
-  }
-
-  addSunRPCTarget() {
-    const tempTargets = this.securityForm.get(['spec', 'alg', 'sunrpc']) as FormArray;
-    const newFormGroup: FormGroup = new SecuritySunrpc().$formGroup;
-    const ctrl: AbstractControl = newFormGroup.get(['timeout']);
-    this.addFieldValidator(ctrl, this.isTimeoutValid('sunrpcTimeout'));
-    tempTargets.push(newFormGroup);
   }
 
   addProtoTarget() {
@@ -205,14 +150,6 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     tempTargets.push(newFormGroup);
   }
 
-  addMSRPCTarget() {
-    const tempTargets = this.securityForm.get(['spec', 'alg', 'msrpc']) as FormArray;
-    const newFormGroup: FormGroup = new SecurityMsrpc().$formGroup;
-    const ctrl: AbstractControl = newFormGroup.get(['timeout']);
-    this.addFieldValidator(ctrl, this.isTimeoutValid('msrpcTimeout'));
-    tempTargets.push(newFormGroup);
-  }
-
   removeProtoTarget(index) {
     const tempTargets = this.securityForm.get(['spec', 'proto-ports']) as FormArray;
     if (tempTargets.length > 1) {
@@ -220,11 +157,27 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     }
   }
 
+  addSunRPCTarget() {
+    const tempTargets = this.securityForm.get(['spec', 'alg', 'sunrpc']) as FormArray;
+    const newFormGroup: FormGroup = new SecuritySunrpc().$formGroup;
+    const ctrl: AbstractControl = newFormGroup.get(['timeout']);
+    this.addFieldValidator(ctrl, this.isTimeoutValid('sunrpcTimeout'));
+    tempTargets.push(newFormGroup);
+  }
+
   removeSunRPCTarget(index) {
     const tempTargets = this.securityForm.get(['spec', 'alg', 'sunrpc']) as FormArray;
     if (tempTargets.length > 1) {
       tempTargets.removeAt(index);
     }
+  }
+
+  addMSRPCTarget() {
+    const tempTargets = this.securityForm.get(['spec', 'alg', 'msrpc']) as FormArray;
+    const newFormGroup: FormGroup = new SecurityMsrpc().$formGroup;
+    const ctrl: AbstractControl = newFormGroup.get(['timeout']);
+    this.addFieldValidator(ctrl, this.isTimeoutValid('msrpcTimeout'));
+    tempTargets.push(newFormGroup);
   }
 
   removeMSRPCTarget(index) {
@@ -235,7 +188,7 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
   }
 
   onPickedOptionChange() {
-    if (this.pickedOption === SecurityAppOptions.ALGONLY) {
+    if (this.pickedOption.value === SecurityAppOptions.ALGONLY) {
       this.selectedType = SecurityALG_type.icmp;
       this.securityForm.get(['spec', 'alg', 'type']).setValue(SecurityALG_type.icmp);
       this.processALGValues();
@@ -243,7 +196,7 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
   }
 
   processALGValues() {
-    if (this.pickedOption === SecurityAppOptions.PROTOCOLSANDPORTS) {
+    if (this.pickedOption.value === SecurityAppOptions.PROTOCOLSANDPORTS) {
       this.resetDNSValues();
       this.resetFTPValues();
       this.resetSunRPC();
@@ -288,32 +241,10 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
   }
 
   processFormValues() {
-    if (this.pickedOption === SecurityAppOptions.ALGONLY) {
+    if (this.pickedOption.value === SecurityAppOptions.ALGONLY) {
       this.resetProto();
     }
     this.processALGValues();
-
-  }
-
-  resetALG() {
-    this.securityForm.get(['spec', 'alg', 'type']).setValue(null);
-  }
-
-  resetICMPValues() {
-    this.securityForm.get(['spec', 'alg', 'icmp', 'type']).setValue(null);
-    this.securityForm.get(['spec', 'alg', 'icmp', 'code']).setValue(null);
-  }
-
-  resetDNSValues() {
-    this.securityForm.get(['spec', 'alg', 'dns', 'drop-multi-question-packets']).setValue(null);
-    this.securityForm.get(['spec', 'alg', 'dns', 'drop-large-domain-name-packets']).setValue(null);
-    this.securityForm.get(['spec', 'alg', 'dns', 'drop-long-label-packets']).setValue(null);
-    this.securityForm.get(['spec', 'alg', 'dns', 'max-message-length']).setValue(null);
-    this.securityForm.get(['spec', 'alg', 'dns', 'query-response-timeout']).setValue(null);
-  }
-
-  resetFTPValues() {
-    this.securityForm.get(['spec', 'alg', 'ftp', 'allow-mismatch-ip-address']).setValue(null);
   }
 
   /*
@@ -331,9 +262,9 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
    *                         plus ports should be a range
    */
   onTypeChange($event) {
-    this.selectedType = $event.value;
+    this.selectedType = $event;
     if (this.selectedType !== SecurityALG_type.icmp) {
-      this.pickedOption = SecurityAppOptions.BOTH;
+      this.pickedOption.setValue(SecurityAppOptions.BOTH);
       this.resetProto();
       this.addProtoTarget();
       const firstProtGroup: FormGroup = this.securityForm.get(['spec', 'proto-ports', 0]) as FormGroup;
@@ -357,9 +288,19 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
         firstProtGroup.get(['protocol']).updateValueAndValidity();
         firstProtGroup.get(['ports']).enable();
         firstProtGroup.get(['ports']).setValue('554');
+      } else if (this.selectedType === SecurityALG_type.sunrpc) {
+        const tempSun: any = this.securityForm.get(['spec', 'alg', 'sunrpc']);
+        if (!tempSun.controls || tempSun.controls.length === 0) {
+          this.addSunRPCTarget();
+        }
+      } else if (this.selectedType === SecurityALG_type.msrpc) {
+        const tempMSRPC: any = this.securityForm.get(['spec', 'alg', 'msrpc']);
+        if (!tempMSRPC.controls || tempMSRPC.controls.length === 0) {
+          this.addMSRPCTarget();
+        }
       }
     } else {
-      this.pickedOption = SecurityAppOptions.ALGONLY;
+      this.pickedOption.setValue(SecurityAppOptions.ALGONLY);
     }
   }
 
@@ -368,6 +309,27 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     while (tempproto && tempproto.length !== 0) {
       tempproto.removeAt(0);
     }
+  }
+
+  resetALG() {
+    this.securityForm.get(['spec', 'alg', 'type']).setValue(null);
+  }
+
+  resetICMPValues() {
+    this.securityForm.get(['spec', 'alg', 'icmp', 'type']).setValue(null);
+    this.securityForm.get(['spec', 'alg', 'icmp', 'code']).setValue(null);
+  }
+
+  resetDNSValues() {
+    this.securityForm.get(['spec', 'alg', 'dns', 'drop-multi-question-packets']).setValue(null);
+    this.securityForm.get(['spec', 'alg', 'dns', 'drop-large-domain-name-packets']).setValue(null);
+    this.securityForm.get(['spec', 'alg', 'dns', 'drop-long-label-packets']).setValue(null);
+    this.securityForm.get(['spec', 'alg', 'dns', 'max-message-length']).setValue(null);
+    this.securityForm.get(['spec', 'alg', 'dns', 'query-response-timeout']).setValue(null);
+  }
+
+  resetFTPValues() {
+    this.securityForm.get(['spec', 'alg', 'ftp', 'allow-mismatch-ip-address']).setValue(null);
   }
 
   resetSunRPC() {
@@ -384,38 +346,29 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     }
   }
 
-  savePolicy() {
+  saveObject() {
     this.processFormValues();
-    this.saveObject();
-  }
-
-  getTooltip(): string {
-    if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
-      return 'Error: Name field is empty.';
-    }
-    if (this.newObject.$formGroup.get(['meta', 'name']).invalid) {
-      return 'Error: Name field is invalid.';
-    }
-    return this.createButtonTooltip ? this.createButtonTooltip : 'Ready to submit';
+    super.saveObject();
   }
 
   isFormValid(): boolean {
     if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
+      this.submitButtonTooltip = 'Error: Name field is empty.';
       return false;
     }
-    if (!this.isInline) {
-      if (this.newObject.$formGroup.get('meta.name').status !== 'VALID') {
-        return false;
-      }
+    if (this.newObject.$formGroup.get(['meta', 'name']).invalid)  {
+      this.submitButtonTooltip = 'Error: Name field is invalid.';
+      return false;
     }
-    if (this.pickedOption === SecurityAppOptions.PROTOCOLSANDPORTS) {
+
+    if (this.pickedOption.value === SecurityAppOptions.PROTOCOLSANDPORTS) {
       const isValid: boolean = this.validatingProtoInputs() && !this.isProtoInputsEmpty();
       if (isValid) {
-        this.createButtonTooltip = '';
+        this.submitButtonTooltip = 'Ready to submit';
       }
       return isValid;
     }
-    if (this.pickedOption === SecurityAppOptions.ALGONLY) {
+    if (this.pickedOption.value === SecurityAppOptions.ALGONLY) {
       return this.validatingALGinputs();
     }
     if (!this.validatingALGinputs()) {
@@ -425,13 +378,13 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
       return false;
     }
     if (this.selectedType === SecurityALG_type.icmp) {
-      this.createButtonTooltip = '';
+      this.submitButtonTooltip = 'Ready to submit';
       return true;
     }
 
     const result: boolean = this.isProtoInputsEmpty();
     if (!result) {
-      this.createButtonTooltip = '';
+      this.submitButtonTooltip = 'Ready to submit';
     }
     return !result;
   }
@@ -451,7 +404,7 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
         }
       }
     }
-    this.createButtonTooltip = 'Error: Protocols and ports are empty.';
+    this.submitButtonTooltip = 'Error: Protocols and ports are empty.';
     return true;
   }
 
@@ -461,18 +414,18 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     for (let i = 0; i < formGroups.length; i++) {
       const formGroup: FormGroup = formGroups[i];
       if (Utility.isEmpty(formGroup.value.protocol)) {
-        this.createButtonTooltip = 'Error: Protocol ' + (i + 1) + ' is empty.';
+        this.submitButtonTooltip = 'Error: Protocol ' + (i + 1) + ' is empty.';
         return false;
       }
       if (formGroup.value && formGroup.value.protocol &&
           (formGroup.value.protocol.toLowerCase() === 'tcp' ||
           formGroup.value.protocol.toLowerCase() === 'udp')
           && Utility.isEmpty(formGroup.value.ports, true)) {
-        this.createButtonTooltip = 'Error: Port ' + (i + 1) + ' is empty.';
+        this.submitButtonTooltip = 'Error: Port ' + (i + 1) + ' is empty.';
         return false;
       }
       if (!formGroup.valid) { // validate error
-        this.createButtonTooltip = 'Error: Protocal and port ' + (i + 1) + ' are invalid.';
+        this.submitButtonTooltip = 'Error: Protocal and port ' + (i + 1) + ' are invalid.';
         return false;
       }
     }
@@ -482,12 +435,12 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
   validatingALGinputs() {
     if (this.selectedType === SecurityALG_type.icmp) {
       if (!this.securityForm.get(['spec', 'alg', 'icmp']).valid) {
-        this.createButtonTooltip = 'Error: ICMP values are invalid.';
+        this.submitButtonTooltip = 'Error: ICMP values are invalid.';
         return false;
       }
     } else if (this.selectedType === SecurityALG_type.dns) {
       if (!this.securityForm.get(['spec', 'alg', 'dns']).valid) {
-        this.createButtonTooltip = 'Error: DNS values are invalid.';
+        this.submitButtonTooltip = 'Error: DNS values are invalid.';
         return false;
       }
     } else if (this.selectedType === SecurityALG_type.sunrpc) {
@@ -497,11 +450,11 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
         const formGroup: FormGroup = formArray.controls[i] as FormGroup;
         if (!formGroup.value || !formGroup.value['program-id'] ||
             !formGroup.value.timeout) {
-          this.createButtonTooltip = 'Error: SUNRPC program ID or timeout ' + (i + 1) + ' is empty.';
+          this.submitButtonTooltip = 'Error: SUNRPC program ID or timeout ' + (i + 1) + ' is empty.';
           return false;
         }
         if (!formGroup.valid) {
-          this.createButtonTooltip = 'Error: SUNRPC program ID or timeout ' + (i + 1) + ' is invalid.';
+          this.submitButtonTooltip = 'Error: SUNRPC program ID or timeout ' + (i + 1) + ' is invalid.';
           return false;
         }
       }
@@ -512,11 +465,11 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
         const formGroup: FormGroup = formArray.controls[i] as FormGroup;
         if (!formGroup.value || !formGroup.value['program-uuid'] ||
             !formGroup.value.timeout) {
-          this.createButtonTooltip = 'Error: MSRPC program UUID or timeout ' + (i + 1) + ' is empty.';
+          this.submitButtonTooltip = 'Error: MSRPC program UUID or timeout ' + (i + 1) + ' is empty.';
           return false;
         }
         if (!formGroup.valid) {
-          this.createButtonTooltip = 'Error: MSRPC program UUID or timeout ' + (i + 1) + ' is invalid.';
+          this.submitButtonTooltip = 'Error: MSRPC program UUID or timeout ' + (i + 1) + ' is invalid.';
           return false;
         }
       }
@@ -524,9 +477,9 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     return true;
   }
 
-  isPortRequired(formGroup: any): boolean {
+  onProtocolChange(formGroup: FormGroup) {
     const protocol = formGroup.get(['protocol']).value;
-    const portsCtrl: FormControl = formGroup.get(['ports']);
+    const portsCtrl: FormControl = formGroup.get(['ports']) as FormControl;
     const shouldEnable: boolean = protocol &&
         (protocol.trim().toLowerCase() === 'tcp' ||
           protocol.trim().toLowerCase() === 'udp' ||
@@ -537,20 +490,12 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
       portsCtrl.setValue(null);
       portsCtrl.disable();
     }
-    const val = portsCtrl.value;
-    if (val && val.trim()) {
-      return false;
-    }
-    return protocol && (protocol.trim().toLowerCase() === 'tcp' ||
-        protocol.trim().toLowerCase() === 'udp');
   }
 
-  addFieldValidator(ctrl: AbstractControl, validator: ValidatorFn) {
-    if (!ctrl.validator) {
-      ctrl.setValidators([validator]);
-    } else {
-      ctrl.setValidators([ctrl.validator, validator]);
-    }
+  isPortRequired(formGroup: FormGroup): boolean {
+    const protocol = formGroup.get(['protocol']).value;
+    return protocol && (protocol.trim().toLowerCase() === 'tcp' ||
+        protocol.trim().toLowerCase() === 'udp');
   }
 
   isProtocolFieldValid(): ValidatorFn {
@@ -590,7 +535,6 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
       return null;
     };
   }
-
 
 }
 

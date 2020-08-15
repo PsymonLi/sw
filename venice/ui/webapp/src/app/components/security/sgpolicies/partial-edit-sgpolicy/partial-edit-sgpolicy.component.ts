@@ -35,10 +35,6 @@ export class PartialEditSgpolicyComponent extends NewsgpolicyComponent implement
     super(_controllerService, uiconfigsService, securityService, cdr);
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
   saveObject() {
 
     const obj = this.getObjectValues();

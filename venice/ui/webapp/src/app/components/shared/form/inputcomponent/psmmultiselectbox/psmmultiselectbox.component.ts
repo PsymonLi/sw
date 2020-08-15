@@ -12,7 +12,6 @@ import { SelectItem } from 'primeng/api';
   templateUrl: './psmmultiselectbox.component.html',
   styleUrls: ['./psmmultiselectbox.component.scss'],
   encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -28,6 +27,7 @@ export class PsmMultiSelectComponent extends FormInputComponent implements OnIni
   @Input() filter: boolean = false;
   @Input() showHeader: boolean = false;
   @Input() showToggleAll: boolean = false;
+  @Input() defaultLabel: string = null;
 
   runningFilter: boolean = false;
   runningShowHeader: boolean = false;

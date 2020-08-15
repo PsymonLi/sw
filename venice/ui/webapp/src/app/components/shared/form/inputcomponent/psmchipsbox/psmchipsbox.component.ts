@@ -17,7 +17,6 @@ import { DomHandler } from 'primeng/api';
   templateUrl: './psmchipsbox.component.html',
   styleUrls: ['./psmchipsbox.component.scss'],
   encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{
     provide: NG_VALUE_ACCESSOR,
     useExisting: forwardRef(() => PsmChipsBoxComponent),
@@ -46,7 +45,6 @@ export class PsmChipsBoxComponent extends ChipsComponent  implements OnInit, Aft
   @Input() label: string = '';
   @Input() toolTip: string = '';
   @Input() showRequired: boolean;
-  @Input() showRequiredOnEmpty: boolean;
   @Input() itemValidator: (item: string) => boolean = (item: string) => true;
 
   constructor(protected inj: Injector, el: ElementRef, protected cdr: ChangeDetectorRef, domHandler: DomHandler) {
@@ -61,7 +59,6 @@ export class PsmChipsBoxComponent extends ChipsComponent  implements OnInit, Aft
 
   ngAfterViewInit() {
     super.ngAfterViewInit();
-    setTimeout(() => {this.cdr.detectChanges(); }, 0);
     this.ngControl = this.inj.get<NgControl>(NgControl as Type<NgControl>);
     if (this.ngControl && this.ngControl.control) {
       this.formCtrl = this.ngControl.control as FormControl;
@@ -113,7 +110,7 @@ export class PsmChipsBoxComponent extends ChipsComponent  implements OnInit, Aft
     if (this.showRequired === true || this.showRequired === false) {
       return this.showRequired;
     }
-    return this.showRequiredOnEmpty === true || this.isRequiredField;
+    return this.isRequiredField;
   }
 
   isFieldValid(): ValidatorFn {

@@ -9,7 +9,7 @@ import { Utility } from '@app/common/Utility';
 import { OrchestrationOrchestrator } from '@sdk/v1/models/generated/orchestration';
 import { SelectItem } from 'primeng/api';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
-import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 
 @Component({
   selector: 'app-newnetwork',
@@ -19,7 +19,7 @@ import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.c
   animations: Animations,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewnetworkComponent extends CreationPushForm<INetworkNetwork, NetworkNetwork> implements OnInit, AfterViewInit {
+export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNetwork> implements OnInit, AfterViewInit {
   @Input() vcenterOptions: SelectItem[] = [];
   @Input() vcenters: ReadonlyArray<OrchestrationOrchestrator> = [];
   @Input() existingObjects: INetworkNetwork[] = [];

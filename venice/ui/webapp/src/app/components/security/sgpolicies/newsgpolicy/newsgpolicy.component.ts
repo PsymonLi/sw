@@ -10,6 +10,7 @@ import { Utility } from '@app/common/Utility';
 import { SelectItem } from 'primeng/api';
 import { IPUtility } from '@app/common/IPUtility';
 import { AbstractControl, FormGroup, FormArray, FormControl, ValidatorFn, ValidationErrors } from '@angular/forms';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 @Component({
   selector: 'app-newsgpolicy',
@@ -36,14 +37,6 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
 
   createButtonTooltip: string = '';
 
-  constructor(protected _controllerService: ControllerService,
-    protected uiconfigsService: UIConfigsService,
-    protected securityService: SecurityService,
-    protected cdr: ChangeDetectorRef
-  ) {
-    super(_controllerService, uiconfigsService, SecurityNetworkSecurityPolicy);
-  }
-
   attachOptions = [
     { label: 'TENANT', value: this.ATTACH_TENANT },
     // Product Release-A constraints
@@ -69,14 +62,12 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
     { label: 'APPS', value: this.APPS_OPTION },
   ];
 
-  selectedProtoAppOption: string = this.PROTO_PORTS_OPTION;
-
   repeaterAnimationEnabled = true;
 
   actionEnum = SecuritySGRule.propInfo.action.enum;
   actionOptions: SelectItem[] = Utility.convertEnumToSelectItem(SecuritySGRule.propInfo.action.enum);
 
-  rules: OrderedItem<{ rule: SecuritySGRule, selectedProtoAppOption: string }>[] = [];
+  rules: OrderedItem<{ rule: SecuritySGRule, selectedProtoAppOption: FormControl }>[] = [];
 
   sgpolicyOptions;
 
@@ -97,9 +88,12 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
   @Input() objectData: ISecurityNetworkSecurityPolicy;
   @Output() formClose: EventEmitter<any> = new EventEmitter();
 
-
-  getClassName() {
-    return this.constructor.name;
+  constructor(protected _controllerService: ControllerService,
+    protected uiconfigsService: UIConfigsService,
+    protected securityService: SecurityService,
+    protected cdr: ChangeDetectorRef
+  ) {
+    super(_controllerService, uiconfigsService, cdr, SecurityNetworkSecurityPolicy);
   }
 
   // Empty Hook
@@ -112,9 +106,11 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
         if (uiIRule.$formGroup.get(['apps']).value.length > 0) {
           selectedProtoAppOption = this.APPS_OPTION;
         }
+        const formCtrl = new FormControl();
+        formCtrl.setValue(selectedProtoAppOption);
         this.rules.push({
           id: Utility.s4(),
-          data: { rule: uiIRule, selectedProtoAppOption: selectedProtoAppOption },
+          data: { rule: uiIRule, selectedProtoAppOption: formCtrl },
           inEdit: false,
         });
       });
@@ -130,8 +126,6 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
     }
 
     this.setValidationRules();
-    // Add a default protocol port if its the default option
-    // if (this.selectedProtoAppOption === this.PROTO_PORTS_OPTION)
   }
 
   setValidationRules() {
@@ -148,60 +142,62 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
   // Empty Hook
   isFormValid() {
     if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
+      this.submitButtonTooltip = 'Error: Name field is empty.';
       return false;
     }
-    if (!this.newObject.$formGroup.get(['meta', 'name']).disabled &&
-        !this.newObject.$formGroup.get(['meta', 'name']).valid)  {
+    if (this.newObject.$formGroup.get(['meta', 'name']).invalid)  {
+      this.submitButtonTooltip = 'Error: Name field is invalid.';
       return false;
     }
+
     for (let i = 0; i < this.rules.length; i++) {
       const rule: SecuritySGRule = this.rules[i].data.rule;
       const fromIpField: AbstractControl = rule.$formGroup.get(['from-ip-addresses']);
       if (Utility.isEmpty(fromIpField.value)) {
-        this.createButtonTooltip =
+        this.submitButtonTooltip =
           'Error: Rule ' + (i + 1) + ' source IP addresses are empty.';
         return false;
       }
       if (!fromIpField.valid) {
-        this.createButtonTooltip =
+        this.submitButtonTooltip =
           'Error: Rule ' + (i + 1) + ' source IP addresses are invalid.';
         return false;
       }
       const toIpField: AbstractControl = rule.$formGroup.get(['to-ip-addresses']);
       if (Utility.isEmpty(toIpField.value)) {
-        this.createButtonTooltip =
+        this.submitButtonTooltip =
           'Error: Rule ' + (i + 1) + ' destination IP addresses are empty.';
         return false;
       }
       if (!toIpField.valid) {
-        this.createButtonTooltip =
+        this.submitButtonTooltip =
           'Error: Rule ' + (i + 1) + ' destination IP addresses are invalid.';
         return false;
       }
-      if (this.rules[i].data.selectedProtoAppOption === this.APPS_OPTION) {
+      if (this.rules[i].data.selectedProtoAppOption.value === this.APPS_OPTION) {
         const appField: AbstractControl = rule.$formGroup.get(['apps']);
         if (Utility.isEmpty(appField.value) || appField.value.length === 0) {
-          this.createButtonTooltip =
+          this.submitButtonTooltip =
             'Error: Rule ' + (i + 1) + ' applications are empty.';
           return false;
         }
       }
-      if (this.rules[i].data.selectedProtoAppOption === this.PROTO_PORTS_OPTION) {
+      if (this.rules[i].data.selectedProtoAppOption.value === this.PROTO_PORTS_OPTION) {
         const protoArr: FormArray = rule.$formGroup.get(['proto-ports']) as FormArray;
         if (protoArr.length === 0) {
-          this.createButtonTooltip =
+          this.submitButtonTooltip =
             'Error: Rule ' + (i + 1) + ' protocol-ports are empty.';
           return false;
         }
         for (let j = 0; j < protoArr.length; j++) {
           const protocolField: AbstractControl = protoArr.controls[j].get(['protocol']);
           if (Utility.isEmpty(protocolField.value)) {
-            this.createButtonTooltip =
+            this.submitButtonTooltip =
               'Error: Rule ' + (i + 1) + ' protocol ' + (j + 1) + ' is empty.';
             return false;
           }
           if (!protocolField.valid) {
-            this.createButtonTooltip =
+            this.submitButtonTooltip =
             'Error: Rule ' + (i + 1) + ' protocol ' + (j + 1) + ' is invalid.';
             return false;
           }
@@ -210,19 +206,19 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
                 (protocolField.value.toLowerCase() === 'tcp' ||
                 protocolField.value.toLowerCase() === 'udp')) {
             if (Utility.isEmpty(portsField.value)) {
-              this.createButtonTooltip =
+              this.submitButtonTooltip =
                 'Error: Rule ' + (i + 1) + ' ports ' + (j + 1) + ' are empty.';
               return false;
             }
             if (!portsField.valid) {
-              this.createButtonTooltip =
+              this.submitButtonTooltip =
               'Error: Rule ' + (i + 1) + ' ports ' + (j + 1) + ' are invalid.';
               return false;
             }
           }
           if (protocolField.value === 'any') {
             if (!portsField.valid) {
-              this.createButtonTooltip =
+              this.submitButtonTooltip =
               'Error: Rule ' + (i + 1) + ' ports ' + (j + 1) + ' are invalid.';
               return false;
             }
@@ -230,40 +226,13 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
         }
       }
     }
-    this.createButtonTooltip = '';
+    this.submitButtonTooltip = 'Ready to submit';
     return true;
   }
 
-  getTooltip(): string {
-    if (Utility.isEmpty(this.newObject.$formGroup.get(['meta', 'name']).value)) {
-      return 'Error: Name field is empty.';
-    }
-    if (!this.newObject.$formGroup.get(['meta', 'name']).disabled &&
-        !this.newObject.$formGroup.get(['meta', 'name']).valid)  {
-      return 'Error: Name field is invalid.';
-    }
-    return Utility.isEmpty(this.createButtonTooltip) ? 'Ready to save new policy' :
-            this.createButtonTooltip;
-  }
-
   setToolbar() {
-    const currToolbar = this.controllerService.getToolbarData();
-    currToolbar.buttons = [
-      {
-        cssClass: 'global-button-primary global-button-padding',
-        text: 'CREATE POLICY',
-        genTooltip: () => this.getTooltip(),
-        callback: () => { this.saveObject(); },
-        computeClass: () => this.computeButtonClass()
-      },
-      {
-        cssClass: 'global-button-neutral global-button-padding',
-        text: 'CANCEL',
-        callback: () => { this.cancelObject(); }
-      },
-    ];
-
-    this._controllerService.setToolbarData(currToolbar);
+    this.setCreationButtonsToolbar('CREATE POLICY',
+      UIRolePermissions.securitynetworksecuritypolicy_create);
   }
 
   createObject(object: ISecurityNetworkSecurityPolicy) {
@@ -289,7 +258,7 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
     }
     currValue.spec.rules = this.rules.map(r => {
       const formValues = r.data.rule.getFormGroupValues();
-      if (r.data.selectedProtoAppOption === this.PROTO_PORTS_OPTION) {
+      if (r.data.selectedProtoAppOption.value === this.PROTO_PORTS_OPTION) {
         formValues['apps'] = null;
         // trim protocol value vs-1569
         if (formValues['proto-ports'] && formValues['proto-ports'].length > 0) {
@@ -310,9 +279,11 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
 
   addRule() {
     const rule = new SecuritySGRule();
+    const formCtrl = new FormControl();
+    formCtrl.setValue(this.PROTO_PORTS_OPTION);
     this.rules.push({
       id: Utility.s4(),
-      data: { rule: rule, selectedProtoAppOption: this.PROTO_PORTS_OPTION },
+      data: { rule: rule, selectedProtoAppOption: formCtrl },
       inEdit: false,
     });
     this.rules.forEach( (r, i) => {
@@ -337,7 +308,6 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
     }
     return IPUtility.isValidIPWithOptionalMask(ip);
   }
-
 
   isProtocolFieldValid(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -436,5 +406,4 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
     }
     return rule.rule.$formGroup.get(field).value.join(', ');
   }
-
 }

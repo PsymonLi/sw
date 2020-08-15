@@ -16,7 +16,7 @@
 
 <ng-template #createTemplate>
   <app-neweventalertpolicy [destinations]="destinations" (formClose)="creationFormClose()"
-                           fxFlex="none">
+                           [existingObjects]='dataObjects' fxFlex="none">
   </app-neweventalertpolicy>
 </ng-template>
 

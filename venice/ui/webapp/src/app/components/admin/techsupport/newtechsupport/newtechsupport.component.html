@@ -1,50 +1,39 @@
-<div [style.width]="'100%'" fxLayout="column">
-  <div fxFlex="auto" fxLayout="row wrap" fxLayoutAlign="center start"
-       class="newtechsupport-content">
-    <div fxFlex="none" fxLayout="row" [formGroup]="newObject.$formGroup.get(['meta'])">
-      <span [ngClass]="{
-        'newtechsupport-name': true,
-        'requiredField': isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))
-      }">
-        <input autocomplete="off" formControlName="name" appErrorTooltip spellcheck="false"
-               type="text"
-               class="newtechsupport-name" pInputText appFloatLabel="Tech Support Request Name">
-      </span>
-    </div>
-    <div fxFlex="10px"></div>
-    <div fxLayout="column" class="newtechsupport-row">
-      <div fxFlex="nogrow" [ngClass]="{
-        'newtechsupport-row-label': true, 'requiredLabel': !oneTargetPicked()
-      }">Nodes</div>
-      <div class="newtechsupport-plist-div">
-        <p-listbox #nodesListbox [options]="nodesOptions"
-                   *ngIf="nodesOptions && nodesOptions.length>0"
-                   [(ngModel)]="selectedNodes" multiple="multiple" checkbox="checkbox"
-                   [showToggleAll]="true"
-                   optionLabel="label" [listStyle]="{'height':'100px'}">
-        </p-listbox>
-      </div>
-    </div>
-    <div fxLayout="column" class="newtechsupport-row">
-      <div fxFlex="nogrow" [ngClass]="{
-        'newtechsupport-row-label': true, 'requiredLabel': !oneTargetPicked()
-      }">DS Cards</div>
-      <div class="newtechsupport-plist-div">
-        <p-pickList [source]="sourceNaples" [target]="targetNaples" filterBy="label,title"
-                    sourceHeader="Available"
-                    targetHeader="Selected" dragdrop="true"
-                    sourceFilterPlaceholder="Search by name/MAC"
-                    targetFilterPlaceholder="Search by name/MAC" [showSourceControls]="false"
-                    [showTargetControls]="false"
-                    [sourceStyle]="{'height':'100px'}" [targetStyle]="{'height':'100px'}">
-          <ng-template let-naple pTemplate="item">
-            <div class="newtechsupport-plist-item">
-              <div class="newtechsupport-naple-label">{{naple.label}} </div>
-              <div class="newtechsupport-naple-description">{{naple.title}} </div>
-            </div>
-          </ng-template>
-        </p-pickList>
+<div fxFlex="auto" fxLayout="column" class="psm-form">
+  <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start">
+    <div fxLayout="row" class="psm-form-content newtechsupport-content">
+      <div fxFlex="none" fxLayout="column" fxLayoutGap="15px">
+        <div fxFlex="none" fxLayout="row" [formGroup]="newObject.$formGroup.get(['meta'])">
+          <app-psmtextbox fxFlex="285px" label="Tech Support Request Name" formControlName="name">
+          </app-psmtextbox>
+        </div>
+        <div fxFlex="none" fxLayout="row"
+             [formGroup]="newObject.$formGroup.get(['spec', 'node-selector'])">
+          <app-psmlistbox fxFlex="285px" [listStyle]="{'height':'100px'}" formControlName="names"
+                          label="Nodes" [multiple]="true" [checkbox]="true" [options]="nodesOptions"
+                          [showRequired]="isRequired()">
+          </app-psmlistbox>
+        </div>
+        <div fxFlex="none" fxLayout="row"
+             [formGroup]="newObject.$formGroup.get(['spec', 'node-selector'])">
+          <app-psmpicklist fxFlex="600px" formControlName="dscNames" label="DS Cards"
+                           [options]="naplesOptions" [optionItemTemplate]="dscOptionItemTemplate"
+                           [listStyle]="{'height':'150px'}" filterBy="label,value" dragdrop="true"
+                           sourceHeader="Available"
+                           sourceFilterPlaceholder="Search by DSC ID or MAC address"
+                           targetHeader="Selected"
+                           targetFilterPlaceholder="Search by DSC ID or MAC address"
+                           [showSourceControls]="false" [showTargetControls]="false"
+                           [showRequired]="isRequired()">
+          </app-psmpicklist>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<ng-template #dscOptionItemTemplate let-naple>
+  <div class="newtechsupport-plist-item">
+    <div class="newtechsupport-naple-label">{{naple.value}} </div>
+    <div class="newtechsupport-naple-description">{{naple.label}} </div>
+  </div>
+</ng-template>

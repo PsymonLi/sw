@@ -3,8 +3,7 @@
   </app-inlinebuttons>
   <div fxFlex="none" fxLayout="row" fxLayoutAlign="center start"
        [class]="isInline? 'newVcenter-editform-inline' : ''">
-    <div fxFlex="400px" fxLayout="row" fxLayoutAlign="center"
-         class="psm-form-content">
+    <div fxLayout="row" fxLayoutAlign="center" class="psm-form-content">
       <ng-container *ngTemplateOutlet="singleMode;"></ng-container>
     </div>
   </div>
@@ -32,7 +31,7 @@
         <app-psmchipsbox *ngIf="datacenterCtrl.value !== ALL_DATACENTERS"
                          fxFlex="410px" label="Datacenter Names"
                          formControlName="manage-namespaces"
-                         [toolTip]="DCNAMES_TOOLTIP" [showRequiredOnEmpty]="true">
+                         [toolTip]="DCNAMES_TOOLTIP" [showRequired]="true">
         </app-psmchipsbox>
       </div>
       <app-fieldcontainer fieldTitle="Credential" class="newVcenter-cred-box">

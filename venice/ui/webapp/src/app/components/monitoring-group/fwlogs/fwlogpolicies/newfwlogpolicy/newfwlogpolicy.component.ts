@@ -8,7 +8,7 @@ import { SyslogComponent, ReturnObjectType } from '@app/components/shared/syslog
 import { Utility } from '@app/common/Utility';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ValidatorFn } from '@angular/forms';
-import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { FwlogpoliciesComponent } from '../fwlogpolicies.component';
 
@@ -20,7 +20,7 @@ import { FwlogpoliciesComponent } from '../fwlogpolicies.component';
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class NewfwlogpolicyComponent extends CreationPushForm<IMonitoringFwlogPolicy, MonitoringFwlogPolicy> implements OnInit {
+export class NewfwlogpolicyComponent extends CreationForm<IMonitoringFwlogPolicy, MonitoringFwlogPolicy> implements OnInit {
   public static LOGOPTIONS_ALL = MonitoringFwlogPolicySpec_filter.all ;
   public static LOGOPTIONS_NONE = MonitoringFwlogPolicySpec_filter.none;
   public static PSM_TARGET = 'psm-target';

@@ -632,7 +632,7 @@ export abstract class TablevieweditAbstract<I, T extends I> extends TableviewAbs
   }
 }
 
-export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent implements OnInit, OnDestroy, AfterViewInit {
+export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit {
   subscriptions: Subscription[] = [];
   newObject: T;
 
@@ -646,6 +646,8 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
 
   oldButtons: ToolbarButton[] = [];
 
+  destroyed: boolean = false;
+
   // Hook to add extra logic during component initialization
   // Defining as abstract to enforce the idea that ngOnInit shouldn't be overriden unless
   // it's really needed.
@@ -658,10 +660,16 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
   abstract generateUpdateSuccessMsg(object: I): string;
   abstract isFormValid(): boolean;
 
-  constructor(protected controllerService: ControllerService, protected uiconfigsSerivce: UIConfigsService, protected objConstructor: any = null) {
+  constructor(protected controllerService: ControllerService,
+    protected uiconfigsSerivce: UIConfigsService,
+    protected cdr: ChangeDetectorRef,
+    protected objConstructor: any = null) {
     super(controllerService, uiconfigsSerivce);
   }
 
+  ngOnChanges(changes: SimpleChanges) {
+    this.cdr.markForCheck();
+  }
 
   ngOnInit() {
     this.controllerService.publish(Eventtypes.COMPONENT_INIT, {
@@ -682,7 +690,13 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
   }
 
   debug(text: string = ' is rendering ......') {
-    console.warn(this.getClassName() + text);
+    console.warn(this.getClassName() + ' ' + text);
+  }
+
+  refreshGui() {
+    if (!this.destroyed) {
+      this.cdr.detectChanges();
+    }
   }
 
   // set for overriden
@@ -704,6 +718,7 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
   ngAfterViewInit() {
     this.replaceToolbar();
     this.postViewInit();
+    setTimeout(() => {this.refreshGui(); }, 0);
   }
 
   // hook for overriding
@@ -719,37 +734,6 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
     }
   }
 
-  /**
-  * This API is for table form toolbar buttons style (the [ADD XXX ] button)
-  */
-  computeButtonClass() {
-    if (this.newObject.$formGroup.get('meta.name') && Utility.isEmpty(this.newObject.$formGroup.get('meta.name').value)) {
-      return 'global-button-disabled';
-    }
-    if (this.newObject.$formGroup.get('meta.name').status === 'VALID' && this.isFormValid()) {
-      return '';
-    } else {
-      return 'global-button-disabled';
-    }
-  }
-
-  /**
-   * This API is for inline edit [SAVE] button
-   */
-  computeInlineButtonClass() {
-    if (this.isFormValid()) {  // don't disable [SAVE] button
-      return '';
-    } else {  // disable [SAVE] button
-      return 'global-button-disabled';
-    }
-  }
-
-  // this is the new api to unify both computeButtonClass() and computeInlineButtonClass()
-  // currently if the form is invalid, then disable the button.
-  // In future, we need to think about diable button if the form is not dirty.
-  // that will be useful for the editting form.
-  // this api can coexist with the old computerbuttonclasses. Those old apis will be removed
-  // when all the creation forms use new api
   computeFormSubmitButtonClass(): string {
     return this.isFormValid() ? '' : 'global-button-disabled';
   }
@@ -873,6 +857,7 @@ export abstract class CreationForm<I, T extends BaseModel> extends BaseComponent
   }
 
   ngOnDestroy() {
+    this.destroyed = true;
     this.subscriptions.forEach(sub => {
       sub.unsubscribe();
     });

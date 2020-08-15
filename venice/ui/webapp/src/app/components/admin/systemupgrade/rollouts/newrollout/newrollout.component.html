@@ -120,7 +120,7 @@
       <app-psmselectbox fxFlex="310px" label="version"
                         [addEmptyOption]="true" emptyOptionLabel="Select an image version"
                         (change)="onVersionChange($event)" [options]="rolloutImageOptions"
-                        formControlName="version" [formatOptionLabel]="formatImageLabel()">
+                        formControlName="version" [optionItemTemplate]="imageItemTemplate">
       </app-psmselectbox>
       <div class="newrollout-version-desc">{{ versiondescription }}</div>
     </div>
@@ -221,6 +221,12 @@
       <div fxFlex="nogrow" class="newrollout-text">Upgrade DSCs by labels</div>
     </div>
 
+  </div>
+</ng-template>
+
+<ng-template #imageItemTemplate let-item>
+  <div *ngIf="item.value" class="psm-form-select-box-dropdown-row">
+    <div class="psm-form-select-box-dropdown-label">{{ formatImageLabel(item) }}</div>
   </div>
 </ng-template>
 

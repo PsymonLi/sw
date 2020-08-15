@@ -288,7 +288,7 @@ class DummyCreateComponent extends CreationForm<IDummyCreateObj, DummyCreateObj>
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected cdr: ChangeDetectorRef) {
-    super(controllerService, uiconfigsService, DummyCreateObj);
+    super(controllerService, uiconfigsService, cdr, DummyCreateObj);
   }
 
   getClassName() {

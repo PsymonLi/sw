@@ -86,9 +86,9 @@ describe('NeweventalertpolicyComponent', () => {
         severity: MonitoringAlertPolicySpec_severity.critical,
       }
     };
-    tu.setInput('.neweventalertpolicy-name', policy.meta.name);
+    tu.setInput('.neweventalertpolicy-name input', policy.meta.name);
     tu.setRepeater(policy.spec.requirements);
-    tu.setDropdown('.neweventalertpolicy-severity', policy.spec.severity);
+    tu.setPsmSelectbox('.neweventalertpolicy-severity', policy.spec.severity);
     component.saveObject();
     fixture.detectChanges();
     expect(spy).toHaveBeenCalled();
@@ -124,7 +124,7 @@ describe('NeweventalertpolicyComponent', () => {
     policy.spec.requirements[0].values = ['test3'];
     tu.setRepeater(policy.spec.requirements);
 
-    tu.sendClick(tu.getElemByCss('.neweventalertpolicy-save'));
+    tu.sendClick(tu.getElemByCss('.form-inlinebuttons-savebutton'));
     expect(spy).toHaveBeenCalled();
     const recVal = spy.calls.mostRecent().args[1];
     const expVal = TrimUIFields(new MonitoringAlertPolicy(policy).getModelValues());

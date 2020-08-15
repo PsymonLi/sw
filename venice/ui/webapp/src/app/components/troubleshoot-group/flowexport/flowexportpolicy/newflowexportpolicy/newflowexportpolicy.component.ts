@@ -17,7 +17,7 @@ import { IPUtility } from '@app/common/IPUtility';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { SecurityApp } from '@sdk/v1/models/generated/security';
 import { SecurityService } from '@app/services/generated/security.service';
-import { CreationPushForm } from '@app/components/shared/pentable/penpushtable.component';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 @Component({
@@ -28,7 +28,7 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NewflowexportpolicyComponent extends CreationPushForm<IMonitoringFlowExportPolicy, MonitoringFlowExportPolicy> {
+export class NewflowexportpolicyComponent extends CreationForm<IMonitoringFlowExportPolicy, MonitoringFlowExportPolicy> {
   @ViewChild('syslogComponent') syslogComponent: SyslogComponent;
   @Input() maxTargets: number;
   @Input() existingObjects: IMonitoringFlowExportPolicy[] = [];

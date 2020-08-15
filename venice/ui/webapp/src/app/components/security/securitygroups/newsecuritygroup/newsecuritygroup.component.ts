@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, OnDestroy, ViewChild, ChangeDetectorRef} from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, OnDestroy, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy} from '@angular/core';
 import { Animations } from '@app/animations';
 import { BaseComponent } from '@app/components/base/base.component';
 import { ToolbarButton } from '@app/models/frontend/shared/toolbar.interface';
@@ -7,24 +7,22 @@ import { IApiStatus, ILabelsRequirement } from '@sdk/v1/models/generated/securit
 import { ISecuritySecurityGroup, SecuritySecurityGroup} from '@sdk/v1/models/generated/security/security-security-group.model';
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import { SecurityService } from '@app/services/generated/security.service';
-import { SelectItem, MultiSelect } from 'primeng/primeng';
 import { Observable } from 'rxjs';
 import { Utility } from '@app/common/Utility';
 import { SearchUtil } from '@app/components/search/SearchUtil';
-import { required, patternValidator } from '@sdk/v1/utils/validators';
 import { FormGroup, FormArray, ValidatorFn, FormControl } from '@angular/forms';
-import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
-import { RepeaterComponent, RepeaterData, ValueType } from 'web-app-framework';
-import { SearchExpression } from '@app/components/search';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { IPUtility } from '@app/common/IPUtility';
+import { CreationForm } from '@app/components/shared/tableviewedit/tableviewedit.component';
+import { RepeaterData, ValueType } from 'web-app-framework';
 
 @Component({
   selector: 'app-newsecuritygroup',
   templateUrl: './newsecuritygroup.component.html',
   styleUrls: ['./newsecuritygroup.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 /**
@@ -50,14 +48,11 @@ export class NewsecuritygroupComponent  extends CreationForm<ISecuritySecurityGr
   constructor(protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected _securityService: SecurityService,
+    protected cdr: ChangeDetectorRef
   ) {
-    super(_controllerService, uiconfigsService,  SecuritySecurityGroup);
+    super(_controllerService, uiconfigsService,  cdr, SecuritySecurityGroup);
   }
 
-
-  getClassName(): string {
-    return this.constructor.name;
-  }
   postNgInit() {
     this.labelData = [
       {
@@ -102,27 +97,7 @@ export class NewsecuritygroupComponent  extends CreationForm<ISecuritySecurityGr
   }
 
   setToolbar(): void {
-    if (!this.isInline) {
-      // If it is not inline, we change the toolbar buttons, and save the old one
-      // so that we can set it back when we are done
-      const currToolbar = this._controllerService.getToolbarData();
-      this.oldButtons = currToolbar.buttons;
-      currToolbar.buttons = [
-        {
-          cssClass: 'global-button-primary newsecuritygroup-button newsecuritygroup-save',
-          text: 'CREATE SECURITY GROUP',
-          callback: () => { this.saveObject(); },
-          computeClass: () => this.computeButtonClass()
-        },
-        {
-          cssClass: 'global-button-neutral newsecuritygroup-button newsecuritygroup-cancel',
-          text: 'CANCEL',
-          callback: () => { this.cancelObject(); }
-        },
-      ];
-
-      this._controllerService.setToolbarData(currToolbar);
-    }
+    this.setCreationButtonsToolbar('CREATE SECURITY GROUP', null);
   }
 
   /**

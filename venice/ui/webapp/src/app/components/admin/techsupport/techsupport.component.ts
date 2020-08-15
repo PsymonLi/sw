@@ -16,6 +16,7 @@ import { ClusterDistributedServiceCard, ClusterNode } from '@sdk/v1/models/gener
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { SelectItem } from 'primeng/api';
 
 @Component({
   selector: 'app-techsupport',
@@ -65,8 +66,8 @@ export class TechsupportComponent extends DataComponent implements OnInit {
     },
   };
 
-  naples: ReadonlyArray<ClusterDistributedServiceCard> = [];
-  nodes: ReadonlyArray<ClusterNode> = [];
+  naplesOptions: SelectItem[] = [];
+  nodesOptions: SelectItem[] = [];
 
   isTabComponent = false;
   disableTableWhenRowExpanded = true;
@@ -98,7 +99,16 @@ export class TechsupportComponent extends DataComponent implements OnInit {
         if (response.connIsErrorState) {
           return;
         }
-        this.naples = response.data;
+        const naples = response.data;
+        this.naplesOptions = [];
+        if (naples) {
+          naples.forEach ( (naple: ClusterDistributedServiceCard) => {
+            this.naplesOptions.push({
+              value: (naple.spec.id) ? naple.spec.id : naple.meta.name,
+              label: naple.meta.name
+            });
+          });
+        }
         this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get DSCs')
@@ -112,7 +122,17 @@ export class TechsupportComponent extends DataComponent implements OnInit {
         if (response.connIsErrorState) {
           return;
         }
-        this.nodes  = response.data;
+        const nodes  = response.data;
+        this.nodesOptions = [];
+        if (nodes) {
+          nodes.forEach( (node: ClusterNode) => {
+            this.nodesOptions.push({
+                label: node.meta.name,
+                value: node.meta.name
+              }
+            );
+          });
+        }
         this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get nodes')

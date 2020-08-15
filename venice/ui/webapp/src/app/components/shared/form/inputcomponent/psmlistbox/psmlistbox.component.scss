@@ -1,0 +1,35 @@
+.psm-form {
+  .psm-form-list-box-container {
+    width: calc(100% - 10px);
+
+    &>label {
+      top: -1.5em;
+      left: .25em;
+      margin-top: .5em;
+      font-size: 12px;
+    }
+
+    .psm-form-list-box {
+      display: block;
+      width: 100%;
+      height: 100%;
+
+      .ui-listbox {
+        width: 100%;
+      }
+
+    }
+
+    &.psm-invalid-box {
+      .ui-listbox {
+        border: 1px solid #e57553 !important;
+      }
+    }
+  }
+
+  app-psmlistbox .psm-required-box {
+    position: relative;
+    top: 10px;
+  }
+
+}

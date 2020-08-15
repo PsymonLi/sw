@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Utility } from '@app/common/Utility';
@@ -16,32 +16,34 @@ import { IApiStatus, ISecurityApp, SecurityApp } from '@sdk/v1/models/generated/
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { Table } from 'primeng/table';
 import { Observable, Subscription } from 'rxjs';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 
 interface PartialTableCol {
   field: string;
 }
-
 
 @Component({
   selector: 'app-securityapps',
   templateUrl: './securityapps.component.html',
   styleUrls: ['./securityapps.component.scss'],
   animations: [Animations],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 /**
  * This component displays security-apps UI.
  * TODO: 2018-12-20, there is no UX design for this page yet. It simply show records to help QA viewing data.
  */
-export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, SecurityApp> implements OnInit, OnDestroy {
-  @ViewChild('securityappsTable') securityappsTable: Table;
-  @ViewChild(LazyrenderComponent) lazyRenderWrapper: LazyrenderComponent;
+export class SecurityappsComponent extends DataComponent implements OnInit, OnDestroy {
+
+  @ViewChild('securityappsTable') securityappsTable: PentableComponent;
+
   dataObjects: ReadonlyArray<SecurityApp> = [];
 
-  securityappsEventUtility: HttpEventUtility<SecurityApp>;
   disableTableWhenRowExpanded = true;
   subscriptions: Subscription[] = [];
-  isTabComponent = false;
+
   exportFilename: string = 'PSM-Apps';
   exportMap: CustomExportMap = {
     'spec.alg.type': (opts): string => {
@@ -50,8 +52,6 @@ export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, S
   };
 
   selectedApp: SecurityApp = null;
-
-  selectedSecurityApp: SecurityApp = null;
 
   bodyIcon: any = {
     margin: {
@@ -69,6 +69,9 @@ export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, S
     matIcon: 'grid_on'
   };
 
+  // Used for the table - when true there is a loading icon displayed
+  tableLoading: boolean = false;
+
   cols: TableCol[] = [
     { field: 'meta.name', header: 'Name', class: 'securityapps-column-metaname', sortable: true, width: '400px' },
     { field: 'spec.alg.type', header: 'Configuration', class: 'securityapps-column-host-name', sortable: false, width: 100 },
@@ -80,22 +83,43 @@ export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, S
     protected uiconfigsService: UIConfigsService,
     protected cdr: ChangeDetectorRef,
     protected securityService: SecurityService,
-    private _route: ActivatedRoute
+    private _route: ActivatedRoute,
+    private router: Router
   ) {
-    super(_controllerService, cdr, uiconfigsService);
+    super(_controllerService, uiconfigsService);
   }
 
-  postNgInit() {
-    this._route.queryParams.subscribe(params => {
+  ngOnInit() {
+    super.ngOnInit();
+    this.penTable = this.securityappsTable;
+    this.tableLoading = true;
+    this.registURLChange();
+    this.getSecurityApps();
+  }
+
+  registURLChange() {
+    const sub = this._route.queryParams.subscribe(params => {
       if (params.hasOwnProperty('app')) {
         // alerttab selected
-        this.getSearchedSecurityApp(params['app']);
+        if (Utility.isValueOrArrayEmpty(this.dataObjects)) {
+          this.getSearchedSecurityApp(params['app']);
+        } else {
+          this.selectedApp = this.findSecurityAppByName(params['app']);
+          this.refreshGui(this.cdr);
+        }
+      } else {
+        this.selectedApp = null;
+        this.refreshGui(this.cdr);
       }
     });
+    this.subscriptions.push(sub);
+  }
 
-    this._controllerService.publish(Eventtypes.COMPONENT_INIT, { 'component': 'SecurityappsComponent', 'state': Eventtypes.COMPONENT_INIT });
-    this.getSecurityApps();
-    this.setDefaultToolbar();
+  findSecurityAppByName(name: string) {
+    if (Utility.isValueOrArrayEmpty(this.dataObjects)) {
+      return null;
+    }
+    return this.dataObjects.find(app => app.meta.name === name);
   }
 
   setDefaultToolbar() {
@@ -105,8 +129,8 @@ export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, S
         {
           cssClass: 'global-button-primary security-new-app',
           text: 'ADD APP',
-          computeClass: () => this.shouldEnableButtons ? '' : 'global-button-disabled',
-          callback: () => { this.createNewObject(); }
+          computeClass: () =>  !(this.penTable.showRowExpand) ? '' : 'global-button-disabled',
+          callback: () => { this.penTable.createNewObject(); }
         }
       ];
     }
@@ -116,17 +140,6 @@ export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, S
     });
   }
 
-  getClassName(): string {
-    return this.constructor.name;
-  }
-
-  ngOnDestroy() {
-    this.subscriptions.forEach(
-      subscription => {
-        subscription.unsubscribe();
-      }
-    );
-  }
 
   generateDeleteConfirmMsg(object: ISecurityApp) {
     return 'Are you sure you want to delete security app : ' + object.meta.name;
@@ -136,18 +149,11 @@ export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, S
     return 'Deleted security app ' + object.meta.name;
   }
 
-  /**
-   * Toolbar button call back function
-   */
-  refresh() {
-    this.selectedSecurityApp = null;
-    this.getSecurityApps();
-  }
-
   getSearchedSecurityApp(appname) {
     const subscription = this.securityService.GetApp(appname).subscribe(
       response => {
         this.selectedApp = response.body as SecurityApp;
+        this.refreshGui(this.cdr);
       },
       this._controllerService.webSocketErrorHandler('Failed to get Apps')
     );
@@ -158,47 +164,30 @@ export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, S
    * Fetch security apps records
    */
   getSecurityApps() {
-    this.securityappsEventUtility = new HttpEventUtility<SecurityApp>(SecurityApp, false, null, true); // https://pensando.atlassian.net/browse/VS-93 we want to trim the object
-    this.dataObjects = this.securityappsEventUtility.array;
-    const subscription = this.securityService.WatchApp().subscribe(
-      response => {
-        this.securityappsEventUtility.processEvents(response);
-        // As server  keeps pushing records to UI and UI has a selected securityApp, we have to update the selected one.
-        if (this.selectedSecurityApp) {
-          let matchedSecurityApp: SecurityApp = null;
-          for (let i = 0; i < this.dataObjects.length; i++) {
-            const secApp = this.dataObjects[i];
-            if (secApp.meta.name === this.selectedSecurityApp.meta.name) {
-              matchedSecurityApp = secApp;
-            }
-          }
-          this.selectedSecurityApp = matchedSecurityApp; // matchedSecurityApp could be null. It means the UI selected one is deleted in server.
+    const subscription = this.securityService.ListAppCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
         }
+        this.dataObjects = response.data as SecurityApp[];
+        this.tableLoading = false;
+        // As server  keeps pushing records to UI and UI has a selected securityApp, we have to update the selected one.
+        if (this.selectedApp) {
+          this.selectedApp = this.findSecurityAppByName(this.selectedApp.meta.name);
+        }
+        this.refreshGui(this.cdr);
       },
-      this._controllerService.webSocketErrorHandler('Failed to get Apps')
+      (error) => {
+        this.tableLoading = false;
+        this.controllerService.invokeRESTErrorToaster('Failed to get network security app', error);
+        this.refreshGui(this.cdr);
+      }
     );
     this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
   }
 
-  /**
-   * This API serves html template
-   */
-  displaySecurityApp(): string {
-    return JSON.stringify(this.selectedSecurityApp, null, 1);
-  }
-
   deleteRecord(object: SecurityApp): Observable<{ body: SecurityApp | IApiStatus | Error, statusCode: number }> {
     return this.securityService.DeleteApp(object.meta.name);
-  }
-
-  /**
-   * This API serves html template
-   */
-  onSecurityAppsTableRowClick(event, rowData: any) {
-    this.selectedSecurityApp = rowData;
-    this.securityappsTable.toggleRow(rowData, event);
-    this.lazyRenderWrapper.resizeTable(); // This is necessary to properly show expanded row.
-    return false;
   }
 
   displaySpecAlgType(rowData: SecurityApp, col: TableCol) {
@@ -252,14 +241,15 @@ export class SecurityappsComponent extends TablevieweditAbstract<ISecurityApp, S
 
   selectApp(event) {
     if ( this.selectedApp && event.rowData === this.selectedApp ) {
-      this.selectedApp = null;
+      this.closeDetails();
     } else {
-      this.selectedApp = event.rowData;
+      this.router.navigate(['/security/securityapps'],
+        { queryParams: { app:  event.rowData.meta.name }});
     }
   }
 
   closeDetails() {
-    this.selectedApp = null;
+    this.router.navigate(['/security/securityapps']);
   }
 
   dateToString(date) {
