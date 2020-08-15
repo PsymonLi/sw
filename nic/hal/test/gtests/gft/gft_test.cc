@@ -1468,7 +1468,12 @@ TEST_F(gft_test, test1) {
 
     cfg.cfg_path = std::string(std::getenv("CONFIG_PATH"));
     platform_type_t platform = platform_type_t::PLATFORM_TYPE_SIM;
-    catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog_4g.json");
+
+    if ("elba" == std::string(std::getenv("ASIC"))) {
+        catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog_elba.json");
+    } else {
+        catalog = sdk::lib::catalog::factory(cfg.cfg_path, "/catalog_4g.json");
+    }
     if (getenv("HAL_PLATFORM_RTL")) {
         platform = platform_type_t::PLATFORM_TYPE_RTL;
     } else if (getenv("HAL_PLATFORM_HW")) {

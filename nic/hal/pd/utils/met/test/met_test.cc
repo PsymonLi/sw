@@ -483,7 +483,11 @@ int main(int argc, char **argv) {
     std::string mpart_json;
     sdk::lib::catalog *catalog;
 
-    catalog = sdk::lib::catalog::factory(cfg_path, "/catalog_4g.json", platform_type_t::PLATFORM_TYPE_SIM);
+    if ("elba" == std::string(std::getenv("ASIC"))) {
+        catalog = sdk::lib::catalog::factory(cfg_path, "/catalog_elba.json", platform_type_t::PLATFORM_TYPE_SIM);
+    } else {
+        catalog = sdk::lib::catalog::factory(cfg_path, "/catalog_4g.json", platform_type_t::PLATFORM_TYPE_SIM);
+    }
     mpart_json = sdk::lib::get_mpart_file_path(cfg_path, "iris", catalog, "",
                                                platform_type_t::PLATFORM_TYPE_SIM);
     // Instantiate the singleton class

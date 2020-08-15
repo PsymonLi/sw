@@ -23,8 +23,8 @@
 #ifndef MX_DEBUG_MSG
 
 #define MX_DEBUG_INFO(...)
-#define MX_DEBUG_MSG  SDK_LINKMGR_TRACE_DEBUG
-#define MX_DEBUG_ERR  SDK_LINKMGR_TRACE_ERR
+#define MX_DEBUG_MSG(...)
+#define MX_DEBUG_ERR(...)
 
 #endif
 

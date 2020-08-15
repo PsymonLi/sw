@@ -101,7 +101,11 @@ int main(int argc, char **argv) {
     std::string mpart_json;
     sdk::lib::catalog *catalog;
 
-    catalog = sdk::lib::catalog::factory(cfg_path, "/catalog_4g.json");
+    if ("elba" == std::string(std::getenv("ASIC"))) {
+        catalog = sdk::lib::catalog::factory(cfg_path, "/catalog_elba.json");
+    } else {
+        catalog = sdk::lib::catalog::factory(cfg_path, "/catalog_4g.json");
+    }
     mpart_json = sdk::lib::get_mpart_file_path(cfg_path, "iris", 
                                                catalog, "", platform);
 

@@ -20,8 +20,8 @@
 
 #ifndef BX_DEBUG_MSG
 #define BX_DEBUG_INFO(...)
-#define BX_DEBUG_MSG  SDK_LINKMGR_TRACE_DEBUG
-#define BX_DEBUG_ERR  SDK_LINKMGR_TRACE_ERR
+#define BX_DEBUG_MSG(...)
+#define BX_DEBUG_ERR(...)
 #endif
 
 mac_profile_t bx[MAX_MAC];
