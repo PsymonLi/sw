@@ -32,11 +32,11 @@ jobd/codesync: all
 
 .PHONY: jobd/dol/rdma_ext
 jobd/dol/rdma_ext: ${JOBD_PREREQS}
-	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma_ext,rdma_perf
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma_ext,rdma_perf --microseg-enable
 
 .PHONY: jobd/dol/rdma
 jobd/dol/rdma: ${JOBD_PREREQS}
-	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma --microseg-enable
 
 .PHONY: jobd/dol/fte
 jobd/dol/fte: ${JOBD_PREREQS}
@@ -129,7 +129,7 @@ jobd/dol/classicl2mc: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/parser
 jobd/dol/parser: ${JOBD_PREREQS}
-	${NICDIR}/run.py ${COVERAGE_OPTS} --topo parser --feature parser --modellogs
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo parser --feature parser --microseg-enable
 
 .PHONY: jobd/dol/telemetry
 jobd/dol/telemetry: ${JOBD_PREREQS}
@@ -145,7 +145,7 @@ jobd/dol/app_redir: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/basetopo
 jobd/dol/basetopo: ${JOBD_PREREQS}
-	${NICDIR}/run.py ${COVERAGE_OPTS} --topo base --feature eth_base,rdma_base --lite
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo base --feature eth_base,rdma_base --lite --microseg-enable
 
 .PHONY: jobd/dol/swphv
 jobd/dol/swphv: ${JOBD_PREREQS}

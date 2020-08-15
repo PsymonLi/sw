@@ -1720,6 +1720,15 @@ vrf_is_mgmt (vrf_t *vrf)
     return false;
 }
 
+bool
+vrf_is_inband_mgmt (vrf_t *vrf) 
+{
+    if (vrf) {
+        return (vrf->vrf_type == types::VRF_TYPE_INBAND_MANAGEMENT);
+    }
+    return false;
+}
+
 //------------------------------------------------------------------------------
 // Prints VRF's keyhandle
 //------------------------------------------------------------------------------

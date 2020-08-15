@@ -28,6 +28,9 @@ namespace pd {
 typedef struct pd_l2seg_encap_entry_s {
     uint32_t encap;
     uint32_t encap_idx;
+    uint32_t sw_flow_lkupid[HAL_MAX_UPLINK_IF_PCS];
+    uint32_t hw_flow_lkupid;
+    uint32_t classic_vrf[HAL_MAX_UPLINK_IF_PCS];
     uint32_t ref_cnt;
     ht_ctxt_t ht_ctxt; 
 } __PACK__ pd_l2seg_encap_entry_t;

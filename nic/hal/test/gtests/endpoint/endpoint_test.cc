@@ -19,6 +19,7 @@
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "nic/hal/test/utils/hal_base_test.hpp"
 #include "nic/hal/test/utils/hal_test_utils.hpp"
+#include "nic/hal/test/hal_calls/hal_calls.hpp"
 
 using intf::InterfaceSpec;
 using intf::InterfaceResponse;
@@ -44,6 +45,25 @@ using nw::NetworkResponse;
 using l4lb::L4LbServiceSpec;
 using l4lb::L4LbServiceResponse;
 
+#define VRF_ID_CLASSIC1  18 
+
+void
+setup_uplinks_vrfs (void)
+{
+    uint32_t       test_id = 1;
+    uint32_t       uplinkif_id1 = UPLINK_IF_ID_OFFSET + test_id,
+                   uplinkif_id2 = uplinkif_id1 + 1;
+    uint32_t       up_port1 = PORT_NUM_1, up_port2 = PORT_NUM_2;
+    uint32_t       vrf_id_cl_up1 = 18, vrf_id_cl_up2 = 19;
+
+    // Create uplinks
+    ASSERT_EQ(create_uplink(uplinkif_id1, up_port1), HAL_RET_OK);
+    ASSERT_EQ(create_uplink(uplinkif_id2, up_port2), HAL_RET_OK);
+
+    // Create 2 Classic VRFs
+    ASSERT_EQ(create_vrf(vrf_id_cl_up1, types::VRF_TYPE_INBAND_MANAGEMENT, uplinkif_id1), HAL_RET_OK);
+    ASSERT_EQ(create_vrf(vrf_id_cl_up2, types::VRF_TYPE_INBAND_MANAGEMENT, uplinkif_id2), HAL_RET_OK);
+}
 
 class endpoint_test : public hal_base_test {
 protected:
@@ -65,6 +85,7 @@ protected:
   static void SetUpTestCase() {
     hal_base_test::SetUpTestCase();
     hal_test_utils_slab_disable_delete();
+    setup_uplinks_vrfs();
   }
 };
 
@@ -150,7 +171,7 @@ TEST_F(endpoint_test, test1)
 
     // Create an uplink
     up_spec.set_type(intf::IF_TYPE_UPLINK);
-    up_spec.mutable_key_or_handle()->set_interface_id(UPLINK_IF_ID_OFFSET + 1);
+    up_spec.mutable_key_or_handle()->set_interface_id(UPLINK_IF_ID_OFFSET + 1 + 100);
     up_spec.mutable_if_uplink_info()->set_port_num(PORT_NUM_1);
     hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
     ret = hal::interface_create(up_spec, &up_rsp);
@@ -440,12 +461,12 @@ TEST_F(endpoint_test, test3)
     uint64_t nw_hdl = nw_rsp.mutable_status()->mutable_key_or_handle()->nw_handle();
 
     // Create L2 Segment
-    l2seg_spec.mutable_vrf_key_handle()->set_vrf_id(3);
+    l2seg_spec.mutable_vrf_key_handle()->set_vrf_id(VRF_ID_CLASSIC1);
     nkh = l2seg_spec.add_network_key_handle();
     nkh->set_nw_handle(nw_hdl);
     l2seg_spec.mutable_key_or_handle()->set_segment_id(3);
     l2seg_spec.mutable_wire_encap()->set_encap_type(types::ENCAP_TYPE_DOT1Q);
-    l2seg_spec.mutable_wire_encap()->set_encap_value(11);
+    l2seg_spec.mutable_wire_encap()->set_encap_value(31);
     hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
     ret = hal::l2segment_create(l2seg_spec, &l2seg_rsp);
     hal::hal_cfg_db_close();
@@ -551,7 +572,7 @@ TEST_F(endpoint_test, test4)
     uint64_t nw_hdl = nw_rsp.mutable_status()->mutable_key_or_handle()->nw_handle();
 
     // Create L2 Segment
-    l2seg_spec.mutable_vrf_key_handle()->set_vrf_id(4);
+    l2seg_spec.mutable_vrf_key_handle()->set_vrf_id(VRF_ID_CLASSIC1);
     nkh = l2seg_spec.add_network_key_handle();
     nkh->set_nw_handle(nw_hdl);
     l2seg_spec.mutable_key_or_handle()->set_segment_id(41);

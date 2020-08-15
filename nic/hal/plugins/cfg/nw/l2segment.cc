@@ -208,6 +208,12 @@ l2seg_is_cust (l2seg_t *l2seg)
 }
 
 bool
+l2seg_is_transparent_cust (l2seg_t *l2seg)
+{
+    return (!g_hal_state->is_microseg_enabled() && l2seg_is_cust(l2seg));
+}
+
+bool
 l2seg_is_telemetry (l2seg_t *l2seg)
 {
     return (l2seg->wire_encap.type == types::ENCAP_TYPE_DOT1Q &&

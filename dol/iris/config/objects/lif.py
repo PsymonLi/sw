@@ -313,7 +313,7 @@ class LifObject(base.ConfigObjectBase):
         req_spec.rdma_max_pt_entries = self.rdma_max_pt_entries
         req_spec.vlan_strip_en = self.vlan_strip_en
         req_spec.vlan_insert_en = self.vlan_insert_en
-        req_spec.pinned_uplink_if_key_handle.interface_id = 0x51010001
+        req_spec.pinned_uplink_if_key_handle.interface_id = 0x41010001
         if self.tx_qos_class:
             req_spec.tx_qos_class.qos_group = self.tx_qos_class.GroupEnum()
         if self.rx_qos_class:

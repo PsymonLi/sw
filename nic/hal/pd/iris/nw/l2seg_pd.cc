@@ -216,7 +216,7 @@ l2seg_pd_del_from_db (pd_l2seg_t *pd_l2seg)
 hal_ret_t
 pd_l2seg_create (pd_func_args_t *pd_func_args)
 {
-    hal_ret_t     ret;
+    hal_ret_t     ret = HAL_RET_OK;
     pd_l2seg_create_args_t *args = pd_func_args->pd_l2seg_create;
     pd_l2seg_t    *l2seg_pd = NULL;
 
@@ -239,17 +239,19 @@ pd_l2seg_create (pd_func_args_t *pd_func_args)
         goto end;
     }
 
-    // Program HW
-    ret = l2seg_pd_program_hw(l2seg_pd);
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Failed to program hw");
-        goto end;
-    }
+    if (!l2seg_is_transparent_cust(args->l2seg)) {
+        // Program HW
+        ret = l2seg_pd_program_hw(l2seg_pd);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Failed to program hw");
+            goto end;
+        }
 
-    // Add to DB. Assuming PI calls PD create at the end
-    ret = l2seg_pd_add_to_db(l2seg_pd, ((l2seg_t *)(l2seg_pd->l2seg))->hal_handle);
-    if (ret != HAL_RET_OK) {
-        goto end;
+        // Add to DB. Assuming PI calls PD create at the end
+        ret = l2seg_pd_add_to_db(l2seg_pd, ((l2seg_t *)(l2seg_pd->l2seg))->hal_handle);
+        if (ret != HAL_RET_OK) {
+            goto end;
+        }
     }
 
 end:
@@ -345,6 +347,11 @@ pd_l2seg_update (pd_func_args_t *pd_func_args)
     hal_ret_t   ret = HAL_RET_OK;
     pd_l2seg_update_args_t *args = pd_func_args->pd_l2seg_update;
 
+    if (l2seg_is_transparent_cust(args->l2seg)) {
+        HAL_TRACE_DEBUG("Skip l2seg pd in transparent mode");
+        return ret;
+    }
+
     if (args->swm_change) {
         if (l2seg_is_oob_mgmt(args->l2seg)) {
             // Pkts. from OOB:
@@ -412,17 +419,19 @@ pd_l2seg_delete (pd_func_args_t *pd_func_args)
     SDK_ASSERT_RETURN((args->l2seg->pd != NULL), HAL_RET_INVALID_ARG);
     l2seg_pd = (pd_l2seg_t *)args->l2seg->pd;
 
-    // deprogram HW
-    ret = l2seg_pd_deprogram_hw(l2seg_pd);
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Unable to deprogram hw");
-    }
+    if (!l2seg_is_transparent_cust(args->l2seg)) {
+        // deprogram HW
+        ret = l2seg_pd_deprogram_hw(l2seg_pd);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to deprogram hw");
+        }
 
-    // remove from db
-    ret = l2seg_pd_del_from_db(l2seg_pd);
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Unable to delete from db");
-        goto end;
+        // remove from db
+        ret = l2seg_pd_del_from_db(l2seg_pd);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to delete from db");
+            goto end;
+        }
     }
 
     // dealloc resources and free
@@ -1650,6 +1659,7 @@ l2seg_pd_hw_to_sw_flow_lkupid (uint32_t hw_flow_lkupid,
     return sw_flow_lkupid;
 }
 
+#if 0
 uint32_t
 l2seg_pd_form_hw_flow_lkupid (pd_l2seg_t *pd_l2seg)
 {
@@ -1707,6 +1717,51 @@ l2seg_pd_form_classic_vrf (pd_l2seg_t *pd_l2seg, pd_vrf_t *pd_vrf)
 
     return fl_lkup_id;
 }
+#endif
+
+static hal_ret_t
+l2seg_pd_form_lkupids (pd_l2seg_t *pd_l2seg, pd_vrf_t *pd_vrf)
+{
+    l2seg_t *pi_l2seg = (l2seg_t *)pd_l2seg->l2seg;
+    pd_l2seg_encap_entry_t *encap_entry = NULL;
+    vrf_t *pi_vrf = NULL;
+    uint32_t encap = 0;
+    if_t *uplink_if;
+    uint32_t if_idx = 0;
+
+    pi_vrf = l2seg_get_pi_vrf(pi_l2seg);
+    if (l2seg_is_inband_mgmt(pi_l2seg) || 
+        l2seg_is_transparent_cust(pi_l2seg)) {
+        if (pi_l2seg->wire_encap.val == NATIVE_VLAN_ID) {
+            encap = 0;
+        } else {
+            encap = pi_l2seg->wire_encap.val;
+        }
+        encap_entry = l2seg_find_or_alloc_encap_entry(encap);
+        pd_l2seg->encap = encap;
+        pd_l2seg->encap_idx = encap_entry->encap_idx;
+        if (l2seg_is_inband_mgmt(pi_l2seg)) {
+            uplink_if = find_if_by_handle(pi_vrf->designated_uplink);
+            if_idx = uplink_if ? uplink_if_get_idx(uplink_if) : 0;
+            pd_l2seg->l2seg_sw_fl_lkup_id = encap_entry->sw_flow_lkupid[if_idx];
+            pd_l2seg->l2seg_hw_fl_lkup_id = encap_entry->hw_flow_lkupid;
+            pd_l2seg->l2seg_classic_vrf = encap_entry->classic_vrf[if_idx];
+        }
+    } else {
+        pd_l2seg->l2seg_sw_fl_lkup_id = 
+            pd_l2seg->l2seg_hw_fl_lkup_id =
+            pd_l2seg->l2seg_classic_vrf = pd_vrf->vrf_hw_id << HAL_PD_VRF_SHIFT |
+            pd_l2seg->l2seg_hw_id;
+    }
+
+    HAL_TRACE_DEBUG("l2seg: {}, sw_flow_lkup_id:{}, hw_flow_lkupid: {}, "
+                    "classic_vrf: {}", pi_l2seg->seg_id, 
+                    pd_l2seg->l2seg_sw_fl_lkup_id,
+                    pd_l2seg->l2seg_hw_fl_lkup_id,
+                    pd_l2seg->l2seg_classic_vrf);
+
+    return HAL_RET_OK;
+}
 
 //-----------------------------------------------------------------------------
 // allocating hwid for l2segment
@@ -1727,9 +1782,12 @@ l2seg_pd_alloc_hwid (pd_l2seg_t *pd_l2seg)
     if (ret != HAL_RET_OK) {
         goto end;
     }
+    l2seg_pd_form_lkupids(pd_l2seg, ten_pd);
+#if 0
     pd_l2seg->l2seg_sw_fl_lkup_id = l2seg_pd_form_sw_flow_lkupid(pd_l2seg);
     pd_l2seg->l2seg_hw_fl_lkup_id = l2seg_pd_form_hw_flow_lkupid(pd_l2seg);
     pd_l2seg->l2seg_classic_vrf = l2seg_pd_form_classic_vrf(pd_l2seg, ten_pd);
+#endif
 
     HAL_TRACE_DEBUG("HWIDs l2seg_hwid:{}, vrf_hwid:{}, l2seg_sw_fl_lkup_id:{} "
                     "l2seg_hw_fl_lkup_id:{}, classic_vrf: {}",
@@ -1788,7 +1846,8 @@ l2seg_pd_dealloc_hwid(pd_l2seg_t *l2seg_pd)
 
         HAL_TRACE_DEBUG("Freed l2seg_hwid: {}", l2seg_pd->l2seg_hw_id);
  
-        if (l2seg_is_inband_mgmt(l2seg)) {
+        if (l2seg_is_inband_mgmt(l2seg) || 
+            l2seg_is_transparent_cust(l2seg)) {
             ret = l2seg_delete_encap_entry(l2seg_pd->encap);
         }
 
@@ -1929,7 +1988,8 @@ pd_l2seg_get_flow_lkupid (pd_func_args_t *pd_func_args)
 {
     pd_l2seg_get_flow_lkupid_args_t *args = pd_func_args->pd_l2seg_get_flow_lkupid;
     l2seg_t *l2seg = args->l2seg;
-    args->hwid = ((pd_l2seg_t *)l2seg->pd)->l2seg_hw_fl_lkup_id;
+    args->hwid = (l2seg->pd != NULL) ? 
+        ((pd_l2seg_t *)l2seg->pd)->l2seg_hw_fl_lkup_id : 0;
     return HAL_RET_OK;
 }
 
@@ -2396,6 +2456,50 @@ l2seg_encap_key_size()
     return sizeof(uint32_t);
 }
 
+static hal_ret_t
+l2seg_form_lkupids(pd_l2seg_encap_entry_t *encap_entry)
+{
+    struct l2seg_ctxt_t {
+        pd_l2seg_encap_entry_t *encap_entry;
+    } ctxt = {};
+
+    auto walk_cb = [](void *ht_entry, void *ctxt) {
+        hal_handle_id_ht_entry_t *entry = (hal_handle_id_ht_entry_t *)ht_entry;
+        vrf_t *vrf = (vrf_t *)hal_handle_get_obj(entry->handle_id);
+        pd_vrf_t *pd_vrf = (pd_vrf_t *)vrf->pd;
+        pd_l2seg_encap_entry_t *encap_entry = ((l2seg_ctxt_t *)ctxt)->encap_entry;
+        if_t *uplink_if = NULL;
+        uint32_t up_ifpc_id;
+        if (vrf_is_inband_mgmt(vrf)) {
+            uplink_if = find_if_by_handle(vrf->designated_uplink);
+            up_ifpc_id = if_get_uplink_ifpc_id(uplink_if);
+            encap_entry->sw_flow_lkupid[up_ifpc_id] =
+                (up_ifpc_id << HAL_PD_FLOW_LKUP_ID_UPLINK_SHIFT) |
+                (0 << HAL_PD_VRF_SHIFT) |
+                encap_entry->encap_idx;
+            encap_entry->classic_vrf[up_ifpc_id] = 
+                pd_vrf->vrf_hw_id << HAL_PD_VRF_SHIFT |
+                encap_entry->encap_idx;
+        }
+        encap_entry->hw_flow_lkupid = 
+            (0 << HAL_PD_VRF_SHIFT) | encap_entry->encap_idx;
+        return false;
+    };
+
+    ctxt.encap_entry = encap_entry;
+    g_hal_state->vrf_id_ht()->walk(walk_cb, &ctxt);
+
+    HAL_TRACE_DEBUG("Encap: {}, encap_idx: {}, sw_flow_lkup_id: {}, {}, "
+                    "hw_flow_lkupid: {}, classic_vrf: {}, {}",
+                    encap_entry->encap,
+                    encap_entry->encap_idx,
+                    encap_entry->sw_flow_lkupid[0], encap_entry->sw_flow_lkupid[1],
+                    encap_entry->hw_flow_lkupid,
+                    encap_entry->classic_vrf[0], encap_entry->classic_vrf[1]);
+
+    return HAL_RET_OK;
+}
+
 pd_l2seg_encap_entry_t*
 l2seg_find_or_alloc_encap_entry (uint32_t encap)
 {
@@ -2412,9 +2516,8 @@ l2seg_find_or_alloc_encap_entry (uint32_t encap)
                           g_hal_state_pd->l2seg_encap_idxr()->num_indices_allocated());
             goto end;
         }
+        l2seg_form_lkupids(encap_entry);
         add_l2seg_encap_entry_to_db(encap_entry);
-        HAL_TRACE_DEBUG("Alloc Encap: {}, Encap_idx: {}",
-                        encap, encap_entry->encap_idx);
     }
     encap_entry->ref_cnt++;
     // l2seg_print_l2seg_encaps();

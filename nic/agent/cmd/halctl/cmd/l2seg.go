@@ -427,7 +427,7 @@ func l2segPdShowHeader(cmd *cobra.Command, args []string) {
 	fmt.Printf("InpProp.1q: Inp. Prop table indices for IFs  InpPropPr:  Inp. Prop table indices for IFs\n")
 	hdrLine := strings.Repeat("-", 130)
 	fmt.Println(hdrLine)
-	fmt.Printf("%-10s%-10s%-15s%-15s%-15s%-10s%-12s%-20s%-20s\n",
+	fmt.Printf("%-10s%-10s%-15s%-15s%-15s%-10s%-15s%-20s%-20s\n",
 		"Id", "HwId", "CvrfId", "HwLkupId", "SwLkupId", "CPUVlan", "InpPropCPU", "InpProp.1q", "InpPropPr")
 	fmt.Println(hdrLine)
 }
@@ -565,7 +565,7 @@ func l2segEPdShowOneResp(resp *halproto.L2SegmentGetResponse, ifIDxToStr map[uin
 					inpPropCPUStr = fmt.Sprintf("H:%d", idx)
 				}
 			}
-			fmt.Printf("%-10d%-10d0x%-13x0x%-13x0x%-13x%-10d%-12s%-40s\n",
+			fmt.Printf("%-10d%-10d0x%-13x0x%-13x0x%-13x%-10d%-15s%-40s\n",
 				resp.GetSpec().GetKeyOrHandle().GetSegmentId(),
 				epdStatus.GetHwL2SegId(),
 				epdStatus.GetClassicVrf(),

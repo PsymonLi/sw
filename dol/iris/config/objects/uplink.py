@@ -26,7 +26,7 @@ class UplinkObject(base.ConfigObjectBase):
     def Init(self, spec):
         self.GID(spec.id)
         #self.id = resmgr.InterfaceIdAllocator.get()
-        self.id = (5 << 28) | (1 << 24) | (spec.port << 16) | 1
+        self.id = (4 << 28) | (1 << 24) | (spec.port << 16) | 1
         self.port   = spec.port
         self.type   = 'UPLINK'
         self.status = haldefs.interface.IF_STATUS_UP

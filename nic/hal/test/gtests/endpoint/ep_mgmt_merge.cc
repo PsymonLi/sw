@@ -70,6 +70,8 @@ protected:
   // Will be called at the beginning of all test cases in this class
   static void SetUpTestCase() {
     hal_base_test::SetUpTestCase();
+    hal::g_hal_state->set_fwd_mode(sys::FWD_MODE_MICROSEG);
+    hal::g_hal_state->set_policy_mode(sys::POLICY_MODE_ENFORCE);
   }
 };
 
