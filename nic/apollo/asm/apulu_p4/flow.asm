@@ -13,6 +13,7 @@ struct phv_ p;
 
 flow_hash:
     sne             c7, r0, r0
+    phvwr           p.p4i_to_arm_flow_hash, r1[31:0].wx
     bbne            d.flow_hash_d.entry_valid, TRUE, label_flow_miss
     phvwr           p.p4i_i2e_entropy_hash, r1
     bcf             [c1], label_flow_hit

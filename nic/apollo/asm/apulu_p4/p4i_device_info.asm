@@ -19,6 +19,7 @@ p4i_device_info:
     phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
     phvwr           p.control_metadata_qos_class_id, k.capri_intrinsic_tm_oq
     phvwr           p.capri_intrinsic_tm_span_session, 0
+    phvwr           p.p4i_i2e_device_mode, d.p4i_device_info_d.device_mode
     bbeq            k.ingress_recirc_valid, FALSE, p4i_recirc_done
     phvwr           p.capri_p4_intrinsic_packet_len, r1
 

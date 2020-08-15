@@ -31,11 +31,11 @@ nexthop_info:
     phvwr           p.rewrite_metadata_tunnel2_vni, d.nexthop_info_d.vlan
 
 nexthop_info2:
+    phvwr           p.capri_intrinsic_tm_oport, d.nexthop_info_d.port
     seq             c1, d.nexthop_info_d.port, TM_PORT_DMA
     bcf             [!c1], nexthop_rewrite
-    phvwr           p.capri_intrinsic_tm_oport, d.nexthop_info_d.port
-    phvwr           p.capri_intrinsic_lif, d.nexthop_info_d.lif
     phvwr           p.control_metadata_p4plus_app_id, d.nexthop_info_d.app_id
+    phvwr           p.capri_intrinsic_lif, d.nexthop_info_d.lif
     phvwr           p.capri_rxdma_intrinsic_qtype, d.nexthop_info_d.qtype
     seq             c1, k.p4e_to_p4plus_classic_nic_rss_override, FALSE
     phvwr.c1        p.capri_rxdma_intrinsic_qid, d.nexthop_info_d.qid
@@ -107,6 +107,17 @@ nexthop2:
     bbeq            k.control_metadata_erspan_copy, TRUE, nexthop_erspan_copy
     add             r1, k.capri_p4_intrinsic_packet_len_s6_e13, \
                         k.capri_p4_intrinsic_packet_len_s0_e5, 8
+    // TTL decrement
+    seq             c1, r2[P4_REWRITE_TTL_BITS], P4_REWRITE_TTL_DEC
+    bcf             [!c1], nexthop_encap
+    crestore        [c2-c1], k.{ipv4_1_valid,ipv6_1_valid}, 0x3
+    sub.c2          r7, k.ipv4_1_ttl, 1
+    phvwr.c2        p.control_metadata_update_checksum, 1
+    b.c2            nexthop_encap
+    phvwr.c2        p.ipv4_1_ttl, r7
+    sub.c1          r7, k.ipv6_1_hopLimit, 1
+    phvwr.c1        p.ipv6_1_hopLimit, r7
+nexthop_encap:
     seq             c1, r2[P4_REWRITE_ENCAP_BITS], P4_REWRITE_ENCAP_VXLAN
     nop.!c1.e
 vxlan_encap:

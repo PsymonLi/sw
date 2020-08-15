@@ -76,6 +76,8 @@ mapping_info:
     add             r2, r2, d.mapping_info_d.more_hints
 mapping_miss:
     seq             c7, k.p4e_to_arm_valid, TRUE
+    seq             c1, k.p4e_i2e_device_mode, APULU_DEVICE_MODE_CLASSIC_SWITCH
+    bcf             [c1&c7], mapping_miss_classic_switch
     phvwr.c7        p.p4e_to_arm_nexthop_id, k.{txdma_to_p4e_nexthop_id}.hx
     phvwr.c7        p.p4e_to_arm_nexthop_type, k.txdma_to_p4e_nexthop_type
 
@@ -97,12 +99,30 @@ mapping_hit:
     phvwr.e         p.vnic_metadata_rx_vnic_id, d.mapping_info_d.rx_vnic_id
     phvwr.f         p.rewrite_metadata_dmaci, d.mapping_info_d.dmaci
 mapping_hit_arm:
-    phvwr           p.vnic_metadata_egress_bd_id, d.mapping_info_d.egress_bd_id
+    seq             c1, k.p4e_i2e_device_mode, APULU_DEVICE_MODE_CLASSIC_SWITCH
+    b.c1            mapping_hit_classic_switch
+    phvwr.!c1       p.vnic_metadata_egress_bd_id, d.mapping_info_d.egress_bd_id
     phvwr           p.vnic_metadata_rx_vnic_id, d.mapping_info_d.rx_vnic_id
     phvwr           p.p4e_to_arm_nexthop_id, k.{txdma_to_p4e_nexthop_id}.hx
     phvwr           p.p4e_to_arm_nexthop_type, k.txdma_to_p4e_nexthop_type
     phvwr.e         p.p4e_to_arm_is_local, d.mapping_info_d.is_local
     phvwr.f         p.p4e_to_arm_mapping_hit, TRUE
+
+mapping_hit_classic_switch:
+    seq             c1, d.mapping_info_d.nexthop_valid, TRUE
+    sle.c1          c1, r5, k.txdma_to_p4e_route_priority
+    cmov            r1, c1, d.mapping_info_d.nexthop_type, \
+                        k.txdma_to_p4e_nexthop_type
+    cmov            r2, c1, d.mapping_info_d.nexthop_id, \
+                        k.txdma_to_p4e_nexthop_id
+    phvwr.e         p.rewrite_metadata_nexthop_type, r1
+    phvwr.f         p.p4e_i2e_nexthop_id, r2
+
+mapping_miss_classic_switch:
+    phvwr           p.rewrite_metadata_nexthop_type, k.txdma_to_p4e_nexthop_type
+    phvwr           p.p4e_i2e_nexthop_id, k.txdma_to_p4e_nexthop_id
+    phvwr.e         p.egress_recirc_mapping_done, TRUE
+    phvwr.f         p.control_metadata_mapping_done, TRUE
 
 mapping_hash_hit:
     phvwr.e         p.egress_recirc_mapping_ohash, r2

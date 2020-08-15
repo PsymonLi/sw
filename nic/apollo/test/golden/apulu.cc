@@ -57,6 +57,7 @@ using namespace sdk::asic::pd;
 #define JPKTDESC        "rxdma_to_txdma_desc"
 #define JSTATSBASE      "session_stats"
 #define JP4_PRGM        "p4_program"
+#define JLPMV4BASE      "lpm_v4"
 
 #define MEM_REGION_LIF_STATS_BASE       "lif_stats_base"
 
@@ -104,6 +105,7 @@ uint32_t g_lif0 = 0x1;
 uint32_t g_lif1 = 0x2;
 uint32_t g_lif2 = 0x3;
 uint32_t g_lif3 = 0x4;
+uint32_t g_lif4 = 0x5;
 uint16_t g_vpc_id = 0x2FC;
 uint16_t g_bd_id = 0x2FD;
 uint16_t g_vnic_id = 0x2FE;
@@ -182,8 +184,12 @@ uint16_t g_dport13 = 6081;
 uint16_t g_ctag16 = 116;
 uint16_t g_vpc_id16 = 0x216;
 uint16_t g_bd_id16 = 0x616;
-uint32_t g_session_id16 = 0x55E16;
-uint32_t g_nexthop_id16 = 0x2E16;
+uint32_t g_session_id16 = 0x55E10;
+uint32_t g_nexthop_id16 = 0x2E10;
+
+uint16_t g_vnic_id17 = 0x211;
+uint32_t g_dip17 = 0xc8c80101;
+uint32_t g_nexthop_id17 = 0x2E11;
 
 mpartition *g_mempartition;
 
@@ -268,13 +274,17 @@ is_equal_double_encap_pkt (std::vector<uint8_t> pkt1, std::vector<uint8_t> pkt2,
 static bool
 is_equal_arm_pkt (std::vector<uint8_t> pkt1, std::vector<uint8_t> pkt2)
 {
-    if (pkt1.size() != pkt2.size()) {
+    uint8_t pkt1_offset = CAPRI_RXDMA_INTRINSIC_HDR_SZ -
+        CAPRI_P4_INTRINSIC_HDR_SZ + P4PLUS_CLASSIC_NIC_HDR_SZ ;
+
+    if ((pkt1.size() - pkt1_offset) != pkt2.size()) {
        return false;
     }
 
-    return (std::equal(pkt1.begin(),
-                       pkt1.begin() + FLOW_HASH_OFFSET, pkt2.begin()) &&
-            std::equal(pkt1.begin() + FLOW_HASH_OFFSET + FLOW_HASH_SIZE,
+    std::vector<uint8_t>::iterator pkt1_begin = pkt1.begin() + pkt1_offset;
+    return (std::equal(pkt1_begin,
+                       pkt1_begin + FLOW_HASH_OFFSET, pkt2.begin()) &&
+            std::equal(pkt1_begin + FLOW_HASH_OFFSET + FLOW_HASH_SIZE,
                        pkt1.end(),
                        pkt2.begin() + FLOW_HASH_OFFSET + FLOW_HASH_SIZE));
 }
@@ -400,7 +410,7 @@ entry_write (uint32_t tbl_id, uint32_t index, void *key, void *mask, void *data,
         uint32_t hwdata_len = 0;
         uint8_t *hwkey = NULL;
         uint8_t *hwmask = NULL;
-        p4pd_hwentry_query(tbl_id, &hwkey_len, &hwmask_len, &hwdata_len);
+        p4pd_global_hwentry_query(tbl_id, &hwkey_len, &hwmask_len, &hwdata_len);
         hwkey_len = (hwkey_len >> 3) + ((hwkey_len & 0x7) ? 1 : 0);
         hwmask_len = (hwmask_len >> 3) + ((hwmask_len & 0x7) ? 1 : 0);
         hwdata_len = (hwdata_len >> 3) + ((hwdata_len & 0x7) ? 1 : 0);
@@ -408,18 +418,18 @@ entry_write (uint32_t tbl_id, uint32_t index, void *key, void *mask, void *data,
         hwmask = new uint8_t[hwmask_len];
         memset(hwkey, 0, hwkey_len);
         memset(hwmask, 0, hwmask_len);
-        p4pd_hwkey_hwmask_build(tbl_id, key, mask, hwkey, hwmask);
+        p4pd_global_hwkey_hwmask_build(tbl_id, key, mask, hwkey, hwmask);
         if (hash_table) {
             if (index == 0) {
                 hash = index = generate_hash_(hwkey, hwkey_len, 0);
             }
             index &= table_size - 1;
         }
-        p4pd_entry_write(tbl_id, index, hwkey, hwmask, data);
+        p4pd_global_entry_write(tbl_id, index, hwkey, hwmask, data);
         delete[] hwkey;
         delete[] hwmask;
     } else {
-        p4pd_entry_write(tbl_id, index, NULL, NULL, data);
+        p4pd_global_entry_write(tbl_id, index, NULL, NULL, data);
     }
     return hash;
 }
@@ -692,7 +702,7 @@ txdma_symbols_init (void **p4plus_symbols,
 }
 
 static void
-device_init (void)
+device_mode (int mode)
 {
     p4i_device_info_actiondata_t p4i_data;
     p4i_device_info_p4i_device_info_t *p4i_info =
@@ -703,6 +713,7 @@ device_init (void)
 
     memset(&p4i_data, 0, sizeof(p4i_data));
     memcpy(p4i_info->device_mac_addr1, &g_device_mac, 6);
+    p4i_info->device_mode = mode;
     p4i_info->device_ipv4_addr = g_device_ipv4_addr;
     entry_write(P4TBL_ID_P4I_DEVICE_INFO, 0, NULL, NULL, &p4i_data, false, 0);
 
@@ -710,10 +721,18 @@ device_init (void)
     p4e_info->device_ipv4_addr = g_device_ipv4_addr;
     entry_write(P4TBL_ID_P4E_DEVICE_INFO, 0, NULL, NULL, &p4e_data, false, 0);
 
+}
+
+static void
+device_init (void)
+{
+    device_mode(APULU_DEVICE_MODE_DEFAULT);
+
     asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_0, g_lif0);
     asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_1, g_lif1);
     asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_2, g_lif2);
-    asicpd_tm_uplink_lif_set(TM_PORT_NCSI, g_lif3);
+    asicpd_tm_uplink_lif_set(TM_PORT_UPLINK_3, g_lif3);
+    asicpd_tm_uplink_lif_set(TM_PORT_NCSI, g_lif4);
 
     uint64_t session_stats_addr;
     session_stats_addr = asicpd_get_mem_addr(JSTATSBASE);
@@ -873,12 +892,20 @@ lif_table_init (void)
 
     memset(&data, 0, sizeof(data));
     data.action_id = LIF_LIF_INFO_ID;
+    lif_info->vpc_id = g_vpc_id;
+    lif_info->bd_id = 0;
+    lif_info->vnic_id = g_vnic_id17;
+    lif_info->direction = P4_LIF_DIR_HOST;
+    entry_write(tbl_id, g_lif3, 0, 0, &data, false, 0);
+
+    memset(&data, 0, sizeof(data));
+    data.action_id = LIF_LIF_INFO_ID;
     lif_info->vpc_id = 0;
     lif_info->bd_id = 0;
     lif_info->vnic_id = 0;
     lif_info->direction = P4_LIF_DIR_UPLINK;
     lif_info->lif_type = NACL_TEST_LIF_TYPE;
-    entry_write(tbl_id, g_lif3, 0, 0, &data, false, 0);
+    entry_write(tbl_id, g_lif4, 0, 0, &data, false, 0);
 }
 
 static void
@@ -1501,6 +1528,50 @@ flows_with_ohash_init (void)
 }
 
 static void
+route_init (void)
+{
+    uint64_t lpm_base_addr = asicpd_get_mem_addr(JLPMV4BASE);
+    txlpm1_actiondata_t sw_entry;
+    cache_line_t cache_line;
+
+    /* Program lpm stage 0 */
+    memset(&sw_entry, 0xFF, sizeof(sw_entry));
+    sw_entry.action_id = TXLPM1_MATCH1_32B_ID;
+    p4pd_p4plus_txdma_entry_pack(P4_P4PLUS_TXDMA_TBL_ID_TXLPM1,
+                                 TXLPM1_MATCH1_32B_ID, &sw_entry,
+                                 cache_line.packed_entry);
+    cache_line.action_pc =
+        sdk::asic::pd::asicpd_get_action_pc(P4_P4PLUS_TXDMA_TBL_ID_TXLPM1,
+                                            TXLPM1_MATCH1_32B_ID);
+    sdk::asic::asic_mem_write(lpm_base_addr + 0, (uint8_t *)&cache_line,
+                              sizeof(cache_line));
+
+    /* Program lpm stage 1 */
+    sdk::asic::asic_mem_write(lpm_base_addr + 64, (uint8_t *)&cache_line,
+                              sizeof(cache_line));
+
+    /* Program lpm stage 2 */
+    memset(&sw_entry, 0xFF, sizeof(sw_entry));
+    sw_entry.action_id = TXLPM1_MATCH1_32B_RETRIEVE_ID;
+    sw_entry.action_u.txlpm1_match1_32b_retrieve.key0 = g_dip17 - 1;
+    sw_entry.action_u.txlpm1_match1_32b_retrieve.data_ =
+        (NEXTHOP_TYPE_NEXTHOP << ROUTE_RESULT_NHTYPE_SHIFT) |
+        (0 << ROUTE_RESULT_NEXTHOP_SHIFT);
+    sw_entry.action_u.txlpm1_match1_32b_retrieve.data0 =
+        (NEXTHOP_TYPE_NEXTHOP << ROUTE_RESULT_NHTYPE_SHIFT) |
+        (g_nexthop_id17 << ROUTE_RESULT_NEXTHOP_SHIFT);
+
+    p4pd_p4plus_txdma_entry_pack(P4_P4PLUS_TXDMA_TBL_ID_TXLPM1,
+                                 TXLPM1_MATCH1_32B_RETRIEVE_ID, &sw_entry,
+                                 cache_line.packed_entry);
+    cache_line.action_pc =
+        sdk::asic::pd::asicpd_get_action_pc(P4_P4PLUS_TXDMA_TBL_ID_TXLPM1,
+                                            TXLPM1_MATCH1_32B_RETRIEVE_ID);
+    sdk::asic::asic_mem_write(lpm_base_addr + 64 + (16 * 64),
+                              (uint8_t *)&cache_line, sizeof(cache_line));
+}
+
+static void
 sessions_init (void)
 {
     session_actiondata_t data;
@@ -1586,6 +1657,7 @@ nexthops_init (void)
     memset(&data, 0, sizeof(data));
     data.action_id = NEXTHOP_NEXTHOP_INFO_ID;
     nexthop_info->port = TM_PORT_UPLINK_1;
+    nexthop_info->app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
     entry_write(tbl_id, g_nexthop_id_arm, 0, 0, &data, false, 0);
 
     memset(&data, 0, sizeof(data));
@@ -1628,6 +1700,12 @@ nexthops_init (void)
     data.action_id = NEXTHOP_NEXTHOP_INFO_ID;
     nexthop_info->port = TM_PORT_UPLINK_1;
     entry_write(tbl_id, g_nexthop_id16, 0, 0, &data, false, 0);
+
+    memset(&data, 0, sizeof(data));
+    data.action_id = NEXTHOP_NEXTHOP_INFO_ID;
+    nexthop_info->port = TM_PORT_UPLINK_1;
+    nexthop_info->rewrite_flags = P4_SET_REWRITE(TTL, DEC);
+    entry_write(tbl_id, g_nexthop_id17, 0, 0, &data, false, 0);
 }
 
 static void
@@ -1676,6 +1754,17 @@ vnic_init (void)
     vnic_info->tx_mirror_session = (1 << g_mirror_id3);
     vnic_info->epoch = EPOCH + 1;
     entry_write(tbl_id, g_vnic_id12, 0, 0, &data, false, 0);
+
+    uint64_t lpm_base_addr = asicpd_get_mem_addr(JLPMV4BASE);
+    vnic_info_rxdma_actiondata_t rxdma_data;
+    vnic_info_rxdma_vnic_info_rxdma_t *rxdma_info =
+        &rxdma_data.action_u.vnic_info_rxdma_vnic_info_rxdma;
+    memset(&rxdma_data, 0, sizeof(rxdma_data));
+    memcpy(&rxdma_info->lpm_base1, &lpm_base_addr,
+           sizeof(rxdma_info->lpm_base1));
+    entry_write(P4_P4PLUS_RXDMA_TBL_ID_VNIC_INFO_RXDMA,
+                (VNIC_INFO_TABLE_SIZE << 1) + (g_vnic_id17 << 1), 0, 0,
+                &rxdma_data, false, 0);
 }
 
 static void
@@ -1715,6 +1804,21 @@ mirror_init (void)
     lspan_info->nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     lspan_info->nexthop_id = g_nexthop_id1;
     entry_write(tbl_id, g_mirror_id3, 0, 0, &data, false, 0);
+}
+
+static void
+p4e_inter_pipe_init (void)
+{
+    p4e_inter_pipe_actiondata_t data;
+    uint16_t tbl_id = P4TBL_ID_P4E_INTER_PIPE;
+
+    memset(&data, 0, sizeof(data));
+    data.action_id = P4E_INTER_PIPE_P4E_APP_DEFAULT_ID;
+    entry_write(tbl_id, P4PLUS_APPTYPE_DEFAULT, 0, 0, &data, false, 0);
+
+    memset(&data, 0, sizeof(data));
+    data.action_id = P4E_INTER_PIPE_P4E_APP_CLASSIC_NIC_ID;
+    entry_write(tbl_id, P4PLUS_APPTYPE_CLASSIC_NIC, 0, 0, &data, false, 0);
 }
 
 class apulu_test : public ::testing::Test {
@@ -1870,6 +1974,7 @@ TEST_F(apulu_test, test1)
     mappings_with_ohash_init();
     flows_init();
     flows_with_ohash_init();
+    route_init();
     mirror_init();
     sessions_init();
     egress_properties_init();
@@ -1877,6 +1982,7 @@ TEST_F(apulu_test, test1)
     nexthops_init();
     tunnel2_init();
     checksum_init();
+    p4e_inter_pipe_init();
 
 #ifdef SIM
     uint32_t port = 0;
@@ -2218,6 +2324,27 @@ TEST_F(apulu_test, test1)
             }
             testcase_end(tcid, i + 1);
         }
+    }
+
+    tcid++;
+    if (tcid_filter == 0 || tcid == tcid_filter) {
+        device_mode(APULU_DEVICE_MODE_CLASSIC_SWITCH);
+        ipkt.resize(sizeof(g_snd_pkt17));
+        memcpy(ipkt.data(), g_snd_pkt17, sizeof(g_snd_pkt17));
+        epkt.resize(sizeof(g_rcv_pkt17));
+        memcpy(epkt.data(), g_rcv_pkt17, sizeof(g_rcv_pkt17));
+        std::cout << "[TCID=" << tcid << "] Classic Switch" << std::endl;
+        for (i = 0; i < tcscale; i++) {
+            testcase_begin(tcid, i + 1);
+            step_network_pkt(ipkt, TM_PORT_UPLINK_3);
+            if (!getenv("SKIP_VERIFY")) {
+                get_next_pkt(opkt, port, cos);
+                EXPECT_TRUE(opkt == epkt);
+                EXPECT_TRUE(port == TM_PORT_UPLINK_1);
+            }
+            testcase_end(tcid, i + 1);
+        }
+        device_mode(APULU_DEVICE_MODE_DEFAULT);
     }
 
     exit_simulation();

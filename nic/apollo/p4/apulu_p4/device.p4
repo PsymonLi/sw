@@ -11,7 +11,8 @@ action p4i_recirc() {
 }
 
 action p4i_device_info(device_mac_addr1, device_mac_addr2,
-                       device_ipv4_addr, device_ipv6_addr, l2_enabled) {
+                       device_ipv4_addr, device_ipv6_addr, l2_enabled,
+                       device_mode) {
     modify_field(key_metadata.entry_valid, 1);
     modify_field(scratch_metadata.mac, device_mac_addr1);
     modify_field(scratch_metadata.mac, device_mac_addr2);
@@ -19,6 +20,7 @@ action p4i_device_info(device_mac_addr1, device_mac_addr2,
     modify_field(scratch_metadata.ipv6_addr, device_ipv6_addr);
     modify_field(p4i_i2e.nexthop_type, NEXTHOP_TYPE_NEXTHOP);
     modify_field(p4i_i2e.priority, -1);
+    modify_field(p4i_i2e.device_mode, device_mode);
     modify_field(capri_intrinsic.tm_span_session, 0);
 
     if (((ethernet_1.dstAddr == device_mac_addr1) or

@@ -326,6 +326,18 @@ action nexthop_info(lif, qtype, qid, rx_vnic_id, vlan_strip_en, port, vlan,
         modify_field(rewrite_metadata.flags, rewrite_flags);
     }
 
+    // TTL decrement
+    if (P4_REWRITE(rewrite_metadata.flags, TTL, DEC)) {
+        if (ipv4_1.valid == TRUE) {
+            add(ipv4_1.ttl, ipv4_1.ttl, -1);
+            modify_field(control_metadata.update_checksum, TRUE);
+        } else {
+            if (ipv6_1.valid == TRUE) {
+                add(ipv6_1.hopLimit, ipv6_1.hopLimit, -1);
+            }
+        }
+    }
+
     if (control_metadata.erspan_copy == TRUE) {
         if (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_NEXTHOP)) {
             modify_field(ethernet_0.dstAddr, dmaco);

@@ -23,6 +23,12 @@
 #define APULU_LIF_VLAN_MODE_QINQ        3
 
 /*****************************************************************************/
+/* Device mode                                                               */
+/*****************************************************************************/
+#define APULU_DEVICE_MODE_DEFAULT           0
+#define APULU_DEVICE_MODE_CLASSIC_SWITCH    3
+
+/*****************************************************************************/
 /* Lifs                                                                      */
 /*****************************************************************************/
 #define APULU_SERVICE_LIF               34
@@ -288,7 +294,7 @@
 /* Header sizes                                                              */
 /*****************************************************************************/
 #define APULU_P4I_TO_RXDMA_HDR_SZ       52
-#define APULU_I2E_HDR_SZ                46
+#define APULU_I2E_HDR_SZ                44
 #define APULU_P4_TO_ARM_HDR_SZ          57
 #define APULU_ARM_TO_P4_HDR_SZ          11
 #define APULU_INGRESS_RECIRC_HDR_SZ      9

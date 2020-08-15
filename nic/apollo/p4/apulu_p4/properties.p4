@@ -285,18 +285,6 @@ action vpc_info(vni, vrmac, tos) {
     modify_field(rewrite_metadata.vni, vni);
     modify_field(rewrite_metadata.vrmac, vrmac);
     modify_field(rewrite_metadata.tunnel_tos, tos);
-
-    // TTL decrement
-    if (P4_REWRITE(rewrite_metadata.flags, TTL, DEC)) {
-        if (ipv4_1.valid == TRUE) {
-            add(ipv4_1.ttl, ipv4_1.ttl, -1);
-            modify_field(control_metadata.update_checksum, TRUE);
-        } else {
-            if (ipv6_1.valid == TRUE) {
-                add(ipv6_1.hopLimit, ipv6_1.hopLimit, -1);
-            }
-        }
-    }
 }
 
 @pragma stage 2

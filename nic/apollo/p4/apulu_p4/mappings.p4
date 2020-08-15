@@ -246,12 +246,23 @@ action mapping_info(entry_valid, is_local, pad11, nexthop_valid,
     if (entry_valid == TRUE) {
         // if hardware register indicates hit, take the results
         if (p4e_to_arm.valid == TRUE) {
-            modify_field(p4e_to_arm.nexthop_type, txdma_to_p4e.nexthop_type);
-            modify_field(p4e_to_arm.nexthop_id, txdma_to_p4e.nexthop_id);
-            modify_field(p4e_to_arm.mapping_hit, TRUE);
-            modify_field(p4e_to_arm.is_local, is_local);
-            modify_field(vnic_metadata.egress_bd_id, egress_bd_id);
-            modify_field(vnic_metadata.rx_vnic_id, rx_vnic_id);
+            if (p4e_i2e.device_mode == APULU_DEVICE_MODE_CLASSIC_SWITCH) {
+                if (scratch_metadata.priority <= txdma_to_p4e.route_priority) {
+                    modify_field(rewrite_metadata.nexthop_type, nexthop_type);
+                    modify_field(p4e_i2e.nexthop_id, nexthop_id);
+                } else {
+                    modify_field(rewrite_metadata.nexthop_type,
+                                 txdma_to_p4e.nexthop_type);
+                    modify_field(p4e_i2e.nexthop_id, txdma_to_p4e.nexthop_id);
+                }
+            } else {
+                modify_field(p4e_to_arm.nexthop_type, txdma_to_p4e.nexthop_type);
+                modify_field(p4e_to_arm.nexthop_id, txdma_to_p4e.nexthop_id);
+                modify_field(p4e_to_arm.mapping_hit, TRUE);
+                modify_field(p4e_to_arm.is_local, is_local);
+                modify_field(vnic_metadata.egress_bd_id, egress_bd_id);
+                modify_field(vnic_metadata.rx_vnic_id, rx_vnic_id);
+            }
         } else {
             modify_field(scratch_metadata.flag, nexthop_valid);
             if ((scratch_metadata.flag == TRUE) and
@@ -330,8 +341,15 @@ action mapping_info(entry_valid, is_local, pad11, nexthop_valid,
         }
     } else {
         if (p4e_to_arm.valid == TRUE) {
-            modify_field(p4e_to_arm.nexthop_type, txdma_to_p4e.nexthop_type);
-            modify_field(p4e_to_arm.nexthop_id, txdma_to_p4e.nexthop_id);
+            if (p4e_i2e.device_mode == APULU_DEVICE_MODE_CLASSIC_SWITCH) {
+                modify_field(rewrite_metadata.nexthop_type,
+                             txdma_to_p4e.nexthop_type);
+                modify_field(p4e_i2e.nexthop_id, txdma_to_p4e.nexthop_id);
+            } else {
+                modify_field(p4e_to_arm.nexthop_type,
+                             txdma_to_p4e.nexthop_type);
+                modify_field(p4e_to_arm.nexthop_id, txdma_to_p4e.nexthop_id);
+            }
         }
         modify_field(egress_recirc.mapping_done, TRUE);
         modify_field(control_metadata.mapping_done, TRUE);

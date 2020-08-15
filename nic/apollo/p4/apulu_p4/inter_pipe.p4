@@ -35,7 +35,6 @@ action ingress_to_rxdma() {
     add_header(p4i_to_arm);
 
     modify_field(p4i_to_arm.packet_len, capri_p4_intrinsic.packet_len);
-    modify_field(p4i_to_arm.flow_hash, p4i_i2e.entropy_hash);
     modify_field(p4i_to_arm.vnic_id, vnic_metadata.vnic_id);
     modify_field(p4i_to_arm.ingress_bd_id, vnic_metadata.bd_id);
     modify_field(p4i_to_arm.vpc_id, vnic_metadata.vpc_id);
@@ -103,7 +102,7 @@ action ingress_to_rxdma() {
         modify_field(p4i_to_rxdma.vnic_info_en, FALSE);
     }
     modify_field(p4i_to_rxdma.vnic_info_key,
-                 ((control_metadata.rx_packet << 11) |
+                 (((~control_metadata.rx_packet & 0x1) << 11) |
                   (vnic_metadata.vnic_id << 1) | scratch_metadata.flag));
 
     add_to_field(capri_p4_intrinsic.packet_len,
@@ -331,6 +330,7 @@ action p4e_app_default() {
     }
 
     remove_header(p4e_i2e);
+    remove_header(p4e_to_arm);
     remove_header(txdma_to_p4e);
     remove_header(egress_recirc);
 }

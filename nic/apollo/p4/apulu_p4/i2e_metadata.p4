@@ -1,7 +1,7 @@
 header_type apulu_i2e_metadata_t {
     fields {
         mapping_lkp_addr    : 128;
-        entropy_hash        : 32;
+        entropy_hash        : 16;
         mapping_lkp_type    : 2;
         flow_role           : 1;
         session_id          : 21;
@@ -19,7 +19,8 @@ header_type apulu_i2e_metadata_t {
         priority            : 5;
         src_lif             : 11;
         mirror_session      : 8;
-        pad0                : 3;
+        pad0                : 1;
+        device_mode         : 2;
         is_local_to_local   : 1;
         binding_check_drop  : 1;
         skip_stats_update   : 1;

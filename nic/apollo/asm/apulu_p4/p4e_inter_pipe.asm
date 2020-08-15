@@ -13,10 +13,10 @@ struct phv_                 p;
 p4e_app_default:
     seq             c1, k.egress_recirc_mapping_done, FALSE
     bcf             [c1], egress_recirc
-    phvwrmi.!c1.e   p.{p4e_i2e_valid, \
+    phvwr.!c1.e     p.{p4e_i2e_valid, \
                         p4e_to_arm_valid, \
                         txdma_to_p4e_valid, \
-                        egress_recirc_valid}, 0x0, 0xB
+                        egress_recirc_valid}, 0
     phvwr.f         p.capri_txdma_intrinsic_valid, 0
 
 .align

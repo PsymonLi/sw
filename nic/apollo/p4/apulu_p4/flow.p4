@@ -9,6 +9,7 @@ action flow_hash(epoch, session_index,
                  nexthop_valid, nexthop_type, nexthop_id, entry_valid,
                  priority, is_local_to_local) {
     modify_field(p4i_i2e.entropy_hash, scratch_metadata.flow_hash);
+    modify_field(p4i_to_arm.flow_hash, scratch_metadata.flow_hash);
     if (entry_valid == TRUE) {
         // if hardware register indicates hit, take the results
         modify_field(control_metadata.flow_epoch, epoch);
@@ -160,6 +161,7 @@ action ipv4_flow_hash(epoch, session_index, nexthop_type,
                       force_flow_miss, flow_role, nexthop_valid, nexthop_id,
                       entry_valid, priority, is_local_to_local) {
     modify_field(p4i_i2e.entropy_hash, scratch_metadata.flow_hash);
+    modify_field(p4i_to_arm.flow_hash, scratch_metadata.flow_hash);
     if (entry_valid == TRUE) {
         // if hardware register indicates hit, take the results
         modify_field(control_metadata.flow_epoch, epoch);
