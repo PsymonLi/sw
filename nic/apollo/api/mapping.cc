@@ -6,8 +6,8 @@
  * @brief   mapping entry handling
  */
 
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/mapping.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/framework/api_base.hpp"

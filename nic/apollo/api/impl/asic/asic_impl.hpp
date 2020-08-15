@@ -11,8 +11,8 @@
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/include/trace.hpp"
+#include "nic/infra/core/core.hpp"
 #include "nic/apollo/framework/asic_impl_base.hpp"
-#include "nic/apollo/core/core.hpp"
 
 namespace api {
 namespace impl {

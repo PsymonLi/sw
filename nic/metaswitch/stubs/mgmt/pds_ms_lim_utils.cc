@@ -1,12 +1,12 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
-// Purpose: Helper APIs for metaswitch LIM stub programming 
+// Purpose: Helper APIs for metaswitch LIM stub programming
 
+#include "nic/infra/core/trace.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_config.hpp"
-#include "evpn_prod.h"
 #include "nic/metaswitch/stubs/common/pds_ms_ifindex.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "evpn_prod.h"
 #include "lim_mgmt_if.h"
 
 namespace pds_ms {
@@ -66,7 +66,7 @@ lim_intf_addr_fill_func (LimInterfaceAddrSpec&   req,
             break;
 
         default:
-           PDS_TRACE_ERR ("Invalid Interface Address Req %d\n", if_type); 
+           PDS_TRACE_ERR ("Invalid Interface Address Req %d\n", if_type);
     }
     data->if_index                   = if_index;
     oid[AMB_LIM_L3_ADDR_IF_IX_INDEX] = if_index;
@@ -110,16 +110,16 @@ lim_sw_intf_fill_func (LimInterfaceSpec&    req,
 // Fill limEntTable: AMB_LIM_ENT
 NBB_VOID
 pds_ms_fill_amb_lim_ent (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
-{ 
+{
     // Local variables
-    NBB_ULONG   *oid = NULL; 
+    NBB_ULONG   *oid = NULL;
     AMB_LIM_ENT *data= NULL;
 
     NBB_TRC_ENTRY ("pds_ms_fill_amb_lim_ent");
 
-    // Get oid and data offset 
+    // Get oid and data offset
     oid     = (NBB_ULONG *)((NBB_BYTE *)mib_msg + mib_msg->oid_offset);
-    data    = (AMB_LIM_ENT *)((NBB_BYTE *)mib_msg + mib_msg->data_offset); 
+    data    = (AMB_LIM_ENT *)((NBB_BYTE *)mib_msg + mib_msg->data_offset);
 
     // Set all fields absent
     AMB_SET_ALL_FIELDS_NOT_PRESENT (mib_msg);
@@ -149,16 +149,16 @@ pds_ms_fill_amb_lim_ent (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
 // Fill limMjTable: AMB_LIM_MJ
 NBB_VOID
 pds_ms_fill_amb_lim_mj (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
-{ 
+{
     // Local variables
-    NBB_ULONG   *oid = NULL; 
+    NBB_ULONG   *oid = NULL;
     AMB_LIM_MJ  *data= NULL;
 
     NBB_TRC_ENTRY ("pds_ms_fill_amb_lim_mj");
 
-    // Get oid and data offset 
+    // Get oid and data offset
     oid     = (NBB_ULONG *)((NBB_BYTE *)mib_msg + mib_msg->oid_offset);
-    data    = (AMB_LIM_MJ *)((NBB_BYTE *)mib_msg + mib_msg->data_offset); 
+    data    = (AMB_LIM_MJ *)((NBB_BYTE *)mib_msg + mib_msg->data_offset);
 
     // Set all fields absent
     AMB_SET_ALL_FIELDS_NOT_PRESENT (mib_msg);
@@ -205,7 +205,7 @@ pds_ms_row_update_lim (pds_ms_config_t *conf)
     conf->data_len      = sizeof (AMB_LIM_ENT);
 
     // Convert to row_update and send
-    pds_ms_ctm_send_row_update_common (conf, pds_ms_fill_amb_lim_ent); 
+    pds_ms_ctm_send_row_update_common (conf, pds_ms_fill_amb_lim_ent);
 
     NBB_TRC_EXIT();
     return;
@@ -219,9 +219,9 @@ pds_ms_row_update_lim_mj (pds_ms_config_t  *conf)
     // Set params
     conf->oid_len       = AMB_LIM_ENT_OID_LEN;
     conf->data_len      = sizeof (AMB_LIM_ENT);
-    
+
     // Convert to row_update and send
-    pds_ms_ctm_send_row_update_common (conf, pds_ms_fill_amb_lim_mj); 
+    pds_ms_ctm_send_row_update_common (conf, pds_ms_fill_amb_lim_mj);
 
     NBB_TRC_EXIT();
     return;

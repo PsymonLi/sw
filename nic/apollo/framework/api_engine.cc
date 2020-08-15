@@ -9,17 +9,17 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
+#include "nic/infra/core/core.hpp"
+#include "nic/infra/core/event.hpp"
+#include "nic/infra/core/msg.h"
+#include "nic/infra/core/msg.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
 #include "nic/apollo/framework/api_ipc.hpp"
-#include "nic/apollo/core/core.hpp"
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/event.hpp"
-#include "nic/apollo/core/msg.h"
-#include "nic/apollo/core/msg.hpp"
 #include "nic/apollo/include/globals.hpp"
 
 #define PDS_API_PREPROCESS_COUNTER_INC(cntr_, val)           \

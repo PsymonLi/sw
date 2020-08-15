@@ -12,7 +12,7 @@
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/api/include/pds.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/learn/auto/ep_aging.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"

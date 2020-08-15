@@ -8,10 +8,10 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/mem.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/api/if_state.hpp"
-#include "nic/apollo/core/trace.hpp"
 
 namespace api {
 

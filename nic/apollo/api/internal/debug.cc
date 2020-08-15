@@ -10,10 +10,10 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/metrics/metrics.hpp"
 #include "nic/sdk/lib/periodic/periodic.hpp"
+#include "nic/infra/core/core.hpp"
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/internal/debug.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
-#include "nic/apollo/core/core.hpp"
 #include "nic/vpp/flow/pdsa_hdlr.h"
 
 namespace debug {

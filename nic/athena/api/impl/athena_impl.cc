@@ -18,7 +18,7 @@
 // TODO: clean this up
 #include "nic/sdk/asic/common/asic_common.hpp"
 #include "nic/sdk/platform/ring/ring.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/impl/athena_impl.hpp"
 #include "nic/athena/api/impl/pds_impl_state.hpp"
 #include "nic/athena/api/impl/impl_utils.hpp"

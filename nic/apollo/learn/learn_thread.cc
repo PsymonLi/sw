@@ -12,7 +12,7 @@
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/lib/dpdk/dpdk.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/framework/api.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/framework/api_params.hpp"

@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/lib/metrics/metrics.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 

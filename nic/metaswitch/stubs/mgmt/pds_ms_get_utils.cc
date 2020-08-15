@@ -4,8 +4,8 @@
 
 
 #include <iostream>
+#include "nic/infra/core/trace.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_get_utils.hpp"
-#include "nic/apollo/core/trace.hpp"
 extern "C" {
 #include "qb0user.h"
 }

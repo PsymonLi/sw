@@ -16,7 +16,7 @@
 #include "nic/sdk/p4/loader/loader.hpp"
 #include "nic/sdk/include/sdk/qos.hpp"
 #include "nic/sdk/platform/capri/capri_tbl_rw.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/framework/pipeline_impl_base.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"

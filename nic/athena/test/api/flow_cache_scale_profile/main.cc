@@ -9,9 +9,9 @@
 #include <cinttypes>
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/utils/time_profile.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_init.h"
 #include "nic/athena/api/include/pds_flow_cache.h"
-#include "nic/apollo/core/trace.hpp"
 #include "nic/athena/test/api/utils/base.hpp"
 #include "nic/athena/test/api/include/ftl_scale.hpp"
 #include "ftl_p4pd_mock.hpp"

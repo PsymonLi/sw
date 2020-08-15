@@ -8,19 +8,19 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/mem.hpp"
+#include "nic/sdk/include/sdk/table.hpp"
+#include "nic/sdk/lib/p4/p4_api.hpp"
+#include "nic/sdk/lib/utils/utils.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/service.hpp"
-#include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl.hpp"
 #include "nic/apollo/api/impl/apulu/service_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vpc_impl.hpp"
-#include "nic/sdk/lib/p4/p4_api.hpp"
-#include "nic/sdk/include/sdk/table.hpp"
-#include "nic/sdk/lib/utils/utils.hpp"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4/include/ftl.h"
 

@@ -11,12 +11,12 @@
 #include <algorithm>
 #include <inttypes.h>
 #include "pds_flow_session_ctx.hpp"
-#include "nic/athena/api/include/internal/pds_store.h"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/api/pds_state.hpp"
-#include "platform/src/lib/nicmgr/include/pd_client.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/athena/api/include/internal/pds_store.h"
+#include "nic/apollo/api/pds_state.hpp"
+#include "platform/src/lib/nicmgr/include/pd_client.hpp"
 #include "gen/p4gen/athena/include/p4pd.h"
 
 /*
@@ -29,10 +29,10 @@
  * flow cache entry points to session_info and session_info points to flow
  * cache. Flow cache and session_info creation would have necessitated
  * 3 operations: 1) create session_info, 2) create flow cache, 3) update
- * session_info. Step 3 is expensive as it is a 64-byte write with byte 
+ * session_info. Step 3 is expensive as it is a 64-byte write with byte
  * swizzling. In total, that would double the time for flow creation and also
  * double flow deletion time.
- * 
+ *
  * Moving the context outside of session_info results in shorter write time
  * (4 bytes) and, since SW is the only component reading/writing the context,
  * no byte swizzling is necessary. Futhermore, the context can be in process
@@ -302,7 +302,7 @@ pds_flow_session_ctx_get_clr(uint32_t session_id,
 
 void
 pds_flow_session_ctx_move(uint32_t session_id,
-                          uint64_t handle) 
+                          uint64_t handle)
 {
     ctx_entry_t *ctx = session_ctx.ctx_entry_get(session_id);
     if (ctx) {

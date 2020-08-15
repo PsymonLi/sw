@@ -8,15 +8,15 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "conntrack_aging.hpp"
-#include "session_aging.hpp"
-#include "athena_test.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_conntrack.h"
 #include "nic/athena/api/include/pds_flow_age.h"
 #include "nic/athena/api/impl/ftl_pollers_client.hpp"
 #include "nic/athena/api/impl/pds_conntrack_ctx.hpp"
 #include "nic/apollo/p4/include/athena_defines.h"
-#include "nic/apollo/core/trace.hpp"
+#include "conntrack_aging.hpp"
+#include "session_aging.hpp"
+#include "athena_test.hpp"
 #include "fte_athena.hpp"
 
 namespace test {
@@ -333,7 +333,7 @@ conntrack_and_cache_populate(test_vparam_ref_t vparam)
 
     spec.key.conntrack_id = 1;
     spec.data.flow_state = ESTABLISHED;
-    switch (proto) { 
+    switch (proto) {
     case IPPROTO_ICMP:
         spec.data.flow_type = PDS_FLOW_TYPE_ICMP;
         break;
@@ -518,7 +518,7 @@ conntrack_aging_expiry_fn(uint32_t expiry_id,
     }
     return ret;
 }
-                             
+
 bool
 conntrack_aging_init(test_vparam_ref_t vparam)
 {
@@ -538,7 +538,7 @@ conntrack_aging_init(test_vparam_ref_t vparam)
     }
     if (CONNTRACK_RET_VALIDATE(ret)) {
 
-        // On HW go with FTE polling threads; 
+        // On HW go with FTE polling threads;
         // otherwise do self polling in this module.
 
         ret = pds_flow_age_sw_pollers_poll_control(!hw(),
@@ -547,7 +547,7 @@ conntrack_aging_init(test_vparam_ref_t vparam)
     if (!hw() && CONNTRACK_RET_VALIDATE(ret)) {
         ret = pds_flow_age_hw_scanners_start();
     }
-    return CONNTRACK_RET_VALIDATE(ret) && pollers_qcount && 
+    return CONNTRACK_RET_VALIDATE(ret) && pollers_qcount &&
            conntrack_table_depth() && aging_expiry_dflt_fn;
 }
 

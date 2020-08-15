@@ -8,8 +8,8 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
-#include "nic/apollo/core/trace.hpp"
 
 using namespace api;
 

@@ -12,7 +12,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/dpdk/dpdk.hpp"
 #include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_vnic.hpp"
 #include "nic/apollo/api/pds_state.hpp"

@@ -3,15 +3,15 @@
 // PDS MS Cfg Msg handler
 //---------------------------------------------------------------
 
+#include <string>
+#include "nic/sdk/include/sdk/ip.hpp"
+#include "nic/sdk/include/sdk/base.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/apollo/api/core/msg.h"
 #include "nic/metaswitch/stubs/hals/pds_ms_cfg_msg.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_ip_track.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_interface.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
-#include "nic/apollo/api/core/msg.h"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/sdk/include/sdk/ip.hpp"
-#include "nic/sdk/include/sdk/base.hpp"
-#include <string>
 
 namespace pds_ms {
 void
@@ -105,7 +105,7 @@ pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
                 ret = interface_update(&cfg_msg->intf.spec);
             }
             if (ret != SDK_RET_OK) {
-                // abort obj walk and return failure 
+                // abort obj walk and return failure
                 goto exit;
             }
             // processing for interface obj complete
@@ -130,7 +130,7 @@ pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
         if (op_delete) {
             ret = ip_track_del(*key);
             if (ret == SDK_RET_ENTRY_NOT_FOUND) {
-                // Ignore deletes for cfg objcts that we dont know about 
+                // Ignore deletes for cfg objcts that we dont know about
                 ret = SDK_RET_OK;
             }
         } else {
@@ -146,7 +146,7 @@ pds_msg_cfg_callback (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctxt)
                           (ip != nullptr) ? ipaddr2str(ip) : "",
                           (op_update) ? "update" : "",
                           (op_delete) ? "delete" : "create");
-            // abort obj walk and return failure 
+            // abort obj walk and return failure
             break;
         }
     }

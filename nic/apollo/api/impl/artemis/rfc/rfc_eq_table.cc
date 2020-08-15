@@ -7,15 +7,15 @@
  */
 
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/framework/pipeline_impl_base.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
 #include "nic/apollo/api/impl/rfc/rfc.hpp"
 #include "nic/apollo/api/impl/rfc/rfc_tree.hpp"
 #include "nic/apollo/api/impl/rfc/rte_bitmap_utils.hpp"
 #include "nic/apollo/api/impl/artemis/rfc/rfc_utils.hpp"
-#include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 #include "nic/apollo/p4/include/artemis_sacl_defines.h"
+#include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 
 #define RFC_RESULT_RULE_ACTION_ALLOW               0
 #define RFC_RESULT_RULE_ACTION_DENY                1

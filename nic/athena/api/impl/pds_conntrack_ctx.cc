@@ -11,13 +11,13 @@
 #include <algorithm>
 #include <inttypes.h>
 #include "pds_conntrack_ctx.hpp"
+#include "nic/sdk/lib/p4/p4_api.hpp"
+#include "nic/sdk/lib/pal/pal.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/internal/pds_store.h"
-#include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/athena/api/include/pds_conntrack.h"
 #include "platform/src/lib/nicmgr/include/pd_client.hpp"
-#include "nic/sdk/lib/p4/p4_api.hpp"
-#include "nic/sdk/lib/pal/pal.hpp"
 #include "gen/p4gen/athena/include/p4pd.h"
 
 /*
@@ -283,7 +283,7 @@ pds_conntrack_ctx_get_clr(uint32_t conntrack_id,
 
 void
 pds_conntrack_ctx_move(uint32_t conntrack_id,
-                       uint64_t handle) 
+                       uint64_t handle)
 {
     ctx_entry_t *ctx = conntrack_ctx.ctx_entry_get(conntrack_id);
     if (ctx) {

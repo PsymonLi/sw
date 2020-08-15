@@ -11,10 +11,10 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/lib/p4/p4_utils.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/sdk/asic/pd/pd.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_flow_session_info.h"
 #include "gen/p4gen/athena/include/p4pd.h"
-#include "nic/sdk/asic/pd/pd.hpp"
 #include "gen/p4gen/p4/include/ftl.h"
 #include "ftl_dev_impl.hpp"
 #include "pds_conntrack_ctx.hpp"
@@ -44,7 +44,7 @@ pds_flow_session_entry_setup (session_info_entry_t *entry,
     memcpy(&smac, data->host_mac,ETH_ADDR_LEN);
     entry->set_smac(smac);
 
-    if (direction & HOST_TO_SWITCH) { 
+    if (direction & HOST_TO_SWITCH) {
         entry->set_h2s_epoch_vnic_value(
                 data->host_to_switch_flow_info.epoch_vnic);
         entry->set_h2s_epoch_vnic_id(
@@ -73,7 +73,7 @@ pds_flow_session_entry_setup (session_info_entry_t *entry,
                 data->host_to_switch_flow_info.egress_action);
         entry->set_h2s_allowed_flow_state_bitmap(
                 data->host_to_switch_flow_info.allowed_flow_state_bitmask);
-    } 
+    }
 
     if (direction & SWITCH_TO_HOST) {
         entry->set_s2h_epoch_vnic_value(
@@ -124,65 +124,65 @@ pds_flow_session_info_spec_fill (pds_flow_session_spec_t *spec,
     }
 
     if (direction & SWITCH_TO_HOST) {
-        spec->data.switch_to_host_flow_info.epoch_vnic = 
+        spec->data.switch_to_host_flow_info.epoch_vnic =
                 entry->get_s2h_epoch_vnic_value();
-        spec->data.switch_to_host_flow_info.epoch_vnic_id = 
+        spec->data.switch_to_host_flow_info.epoch_vnic_id =
                 entry->get_s2h_epoch_vnic_id();
-        spec->data.switch_to_host_flow_info.epoch_mapping = 
+        spec->data.switch_to_host_flow_info.epoch_mapping =
                 entry->get_s2h_epoch_mapping_value();
-        spec->data.switch_to_host_flow_info.epoch_mapping_id  = 
+        spec->data.switch_to_host_flow_info.epoch_mapping_id  =
                 entry->get_s2h_epoch_mapping_id();
-        spec->data.switch_to_host_flow_info.policer_bw1_id = 
+        spec->data.switch_to_host_flow_info.policer_bw1_id =
                 entry->get_s2h_throttle_bw1_id();
-        spec->data.switch_to_host_flow_info.policer_bw2_id = 
+        spec->data.switch_to_host_flow_info.policer_bw2_id =
                 entry->get_s2h_throttle_bw2_id();
-        spec->data.switch_to_host_flow_info.vnic_stats_id = 
+        spec->data.switch_to_host_flow_info.vnic_stats_id =
                 entry->get_s2h_vnic_statistics_id();
         vnic_stats_mask = entry->get_s2h_vnic_statistics_mask();
-        memcpy((char *)spec->data.switch_to_host_flow_info.vnic_stats_mask,  
+        memcpy((char *)spec->data.switch_to_host_flow_info.vnic_stats_mask,
                 (char *)&vnic_stats_mask, PDS_FLOW_STATS_MASK_LEN);
-        spec->data.switch_to_host_flow_info.vnic_histogram_packet_len_id = 
+        spec->data.switch_to_host_flow_info.vnic_histogram_packet_len_id =
                 entry->get_s2h_vnic_histogram_packet_len_id();
-        spec->data.switch_to_host_flow_info.vnic_histogram_latency_id = 
+        spec->data.switch_to_host_flow_info.vnic_histogram_latency_id =
                 entry->get_s2h_vnic_histogram_latency_id();
-        spec->data.switch_to_host_flow_info.tcp_flags_bitmap = 
+        spec->data.switch_to_host_flow_info.tcp_flags_bitmap =
                 entry->get_s2h_slow_path_tcp_flags_match();
-        spec->data.switch_to_host_flow_info.rewrite_id = 
+        spec->data.switch_to_host_flow_info.rewrite_id =
                 entry->get_s2h_session_rewrite_id();
-        spec->data.switch_to_host_flow_info.allowed_flow_state_bitmask  = 
+        spec->data.switch_to_host_flow_info.allowed_flow_state_bitmask  =
                 entry->get_s2h_allowed_flow_state_bitmap();
-        spec->data.switch_to_host_flow_info.egress_action  = 
+        spec->data.switch_to_host_flow_info.egress_action  =
                 (pds_egress_action_t) entry->get_s2h_egress_action();
     }
     if (direction & HOST_TO_SWITCH) {
-        spec->data.host_to_switch_flow_info.epoch_vnic = 
+        spec->data.host_to_switch_flow_info.epoch_vnic =
                 entry->get_h2s_epoch_vnic_value();
-        spec->data.host_to_switch_flow_info.epoch_vnic_id = 
+        spec->data.host_to_switch_flow_info.epoch_vnic_id =
                 entry->get_h2s_epoch_vnic_id();
-        spec->data.host_to_switch_flow_info.epoch_mapping = 
+        spec->data.host_to_switch_flow_info.epoch_mapping =
                 entry->get_h2s_epoch_mapping_value();
-        spec->data.host_to_switch_flow_info.epoch_mapping_id  = 
+        spec->data.host_to_switch_flow_info.epoch_mapping_id  =
                 entry->get_h2s_epoch_mapping_id();
-        spec->data.host_to_switch_flow_info.policer_bw1_id = 
+        spec->data.host_to_switch_flow_info.policer_bw1_id =
                 entry->get_h2s_throttle_bw1_id();
-        spec->data.host_to_switch_flow_info.policer_bw2_id = 
+        spec->data.host_to_switch_flow_info.policer_bw2_id =
                 entry->get_h2s_throttle_bw2_id();
-        spec->data.host_to_switch_flow_info.vnic_stats_id = 
+        spec->data.host_to_switch_flow_info.vnic_stats_id =
                 entry->get_h2s_vnic_statistics_id();
         vnic_stats_mask = entry->get_h2s_vnic_statistics_mask();
-        memcpy((char *)spec->data.host_to_switch_flow_info.vnic_stats_mask,  
+        memcpy((char *)spec->data.host_to_switch_flow_info.vnic_stats_mask,
                 (char *)&vnic_stats_mask, PDS_FLOW_STATS_MASK_LEN);
-        spec->data.host_to_switch_flow_info.vnic_histogram_packet_len_id = 
+        spec->data.host_to_switch_flow_info.vnic_histogram_packet_len_id =
                 entry->get_h2s_vnic_histogram_packet_len_id();
-        spec->data.host_to_switch_flow_info.vnic_histogram_latency_id = 
+        spec->data.host_to_switch_flow_info.vnic_histogram_latency_id =
                 entry->get_h2s_vnic_histogram_latency_id();
-        spec->data.host_to_switch_flow_info.tcp_flags_bitmap = 
+        spec->data.host_to_switch_flow_info.tcp_flags_bitmap =
                 entry->get_h2s_slow_path_tcp_flags_match();
-        spec->data.host_to_switch_flow_info.rewrite_id = 
+        spec->data.host_to_switch_flow_info.rewrite_id =
                 entry->get_h2s_session_rewrite_id();
-        spec->data.host_to_switch_flow_info.allowed_flow_state_bitmask  = 
+        spec->data.host_to_switch_flow_info.allowed_flow_state_bitmask  =
                 entry->get_h2s_allowed_flow_state_bitmap();
-        spec->data.host_to_switch_flow_info.egress_action  = 
+        spec->data.host_to_switch_flow_info.egress_action  =
                 (pds_egress_action_t) entry->get_h2s_egress_action();
     }
     return PDS_RET_OK;
@@ -211,9 +211,9 @@ pds_flow_session_info_create (pds_flow_session_spec_t *spec)
         return PDS_RET_INVALID_ARG;
     }
     entry.clear();
-    if ((ret = pds_flow_session_entry_setup(&entry, 
-                                            &spec->data, 
-                                            spec->key.direction)) != 
+    if ((ret = pds_flow_session_entry_setup(&entry,
+                                            &spec->data,
+                                            spec->key.direction)) !=
             PDS_RET_OK ) {
         return ret;
     }
@@ -276,8 +276,8 @@ pds_flow_session_info_read (pds_flow_session_key_t *key,
     info->status.timestamp = entry.get_timestamp();;
     smac = entry.get_smac();
     memcpy(info->spec.data.host_mac, &smac, ETH_ADDR_LEN);
-    return pds_flow_session_info_spec_fill(&info->spec, 
-                                           &entry, 
+    return pds_flow_session_info_spec_fill(&info->spec,
+                                           &entry,
                                            key->direction);
 }
 
@@ -310,12 +310,12 @@ pds_flow_session_info_update (pds_flow_session_spec_t *spec)
     old_entry.read(session_info_id);
     entry.clear();
     entry.read(session_info_id);
-    if ((ret = pds_flow_session_entry_setup(&entry, 
-                                            &spec->data, 
-                                            spec->key.direction)) != 
+    if ((ret = pds_flow_session_entry_setup(&entry,
+                                            &spec->data,
+                                            spec->key.direction)) !=
             PDS_RET_OK ) {
         return ret;
-    } 
+    }
     p4pd_ret =  entry.write(spec->key.session_info_id);
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to update session info table at index %u",

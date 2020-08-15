@@ -13,7 +13,7 @@
 #include "nic/sdk/include/sdk/table.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/lib/p4/p4_utils.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_flow_cache.h"
 #include "nic/athena/api/include/pds_flow_session_info.h"
 #include "nic/apollo/p4/include/athena_defines.h"

@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/include/pds_mirror.hpp"

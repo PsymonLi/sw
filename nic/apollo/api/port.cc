@@ -12,9 +12,10 @@
 #include "nic/sdk/include/sdk/ip.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/linkmgr/linkmgr.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/core.hpp"
-#include "nic/apollo/core/event.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/core.hpp"
+#include "nic/infra/core/event.hpp"
+#include "nic/infra/operd/alerts/alerts.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/if.hpp"
@@ -22,7 +23,6 @@
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/api/internal/pds_if.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
-#include "nic/infra/operd/alerts/alerts.hpp"
 
 using sdk::linkmgr::linkmgr_async_response_cb_t;
 

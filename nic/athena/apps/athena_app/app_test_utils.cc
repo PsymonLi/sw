@@ -10,10 +10,10 @@
 
 #include <time.h>
 #include "app_test_utils.hpp"
-#include "nic/athena/api/impl/ftl_pollers_client.hpp"
 #include "nic/sdk/model_sim/include/lib_model_client.h"
+#include "nic/infra/core/trace.hpp"
 #include "nic/p4/ftl_dev/include/ftl_dev_shared.h"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/athena/api/impl/ftl_pollers_client.hpp"
 #include "fte_athena.hpp"
 
 FILE    *app_test_log_fp;
@@ -169,7 +169,7 @@ proto2num_find(const std::string& token)
 /**
  * Test parameters
  */
-pds_ret_t 
+pds_ret_t
 test_param_t::num(uint32_t *ret_num,
                   bool suppress_err_log) const
 {
@@ -185,7 +185,7 @@ test_param_t::num(uint32_t *ret_num,
     return PDS_RET_ERR;
 }
 
-pds_ret_t 
+pds_ret_t
 test_param_t::str(std::string *ret_str,
                   bool suppress_err_log) const
 {
@@ -338,7 +338,7 @@ test_param_t::proto(uint32_t *ret_proto,
     return PDS_RET_OK;
 }
 
-pds_ret_t 
+pds_ret_t
 test_param_t::tuple(test_param_tuple_t *ret_tuple,
                     bool suppress_err_log) const
 {
@@ -357,7 +357,7 @@ test_param_t::tuple(test_param_tuple_t *ret_tuple,
 /**
  * Vector parameters
  */
-pds_ret_t 
+pds_ret_t
 test_vparam_t::num(uint32_t idx,
                    uint32_t *ret_num,
                    bool suppress_err_log) const
@@ -374,7 +374,7 @@ test_vparam_t::num(uint32_t idx,
     return PDS_RET_ERR;
 }
 
-pds_ret_t 
+pds_ret_t
 test_vparam_t::str(uint32_t idx,
                    std::string *ret_str,
                    bool suppress_err_log) const
@@ -442,7 +442,7 @@ test_vparam_t::proto(uint32_t idx,
     return PDS_RET_ERR;
 }
 
-pds_ret_t 
+pds_ret_t
 test_vparam_t::tuple(uint32_t idx,
                      test_param_tuple_t *ret_tuple,
                      bool suppress_err_log) const
@@ -633,7 +633,7 @@ aging_metrics_t::show(bool latest) const
 
         TEST_LOG_INFO("\nScanners metrics:"
                       "\n-----------------\n");
-        TEST_LOG_INFO("total_cb_cfg_discards   : %" PRIu64 "\n", 
+        TEST_LOG_INFO("total_cb_cfg_discards   : %" PRIu64 "\n",
                       curr.scanners.total_cb_cfg_discards);
         TEST_LOG_INFO("total_scan_invocations  : %" PRIu64 "\n",
                       curr.scanners.total_scan_invocations);
@@ -653,9 +653,9 @@ aging_metrics_t::show(bool latest) const
 
         TEST_LOG_INFO("\nPollers metrics:"
                       "\n----------------\n");
-        TEST_LOG_INFO("total_num_qposts        : %" PRIu64 "\n", 
+        TEST_LOG_INFO("total_num_qposts        : %" PRIu64 "\n",
                       curr.pollers.total_num_qposts);
-        TEST_LOG_INFO("total_num_qfulls        : %" PRIu64 "\n", 
+        TEST_LOG_INFO("total_num_qfulls        : %" PRIu64 "\n",
                       curr.pollers.total_num_qfulls);
         break;
 
@@ -663,11 +663,11 @@ aging_metrics_t::show(bool latest) const
 
         TEST_LOG_INFO("\nMPU timestamp metrics:"
                       "\n----------------------\n");
-        TEST_LOG_INFO("total_num_updates       : %" PRIu64 "\n", 
+        TEST_LOG_INFO("total_num_updates       : %" PRIu64 "\n",
                       curr.mpu_timestamp.total_num_updates);
-        TEST_LOG_INFO("session_timestamp       : %" PRIu64 "\n", 
+        TEST_LOG_INFO("session_timestamp       : %" PRIu64 "\n",
                       curr.mpu_timestamp.session_timestamp);
-        TEST_LOG_INFO("conntrack_timestamp     : %" PRIu64 "\n", 
+        TEST_LOG_INFO("conntrack_timestamp     : %" PRIu64 "\n",
                       curr.mpu_timestamp.conntrack_timestamp);
         break;
 
@@ -762,7 +762,7 @@ ftl_table_metrics_t::refresh(pds_flow_stats_t& m) const
 /*
  * Aging timeout configs
  */
-void 
+void
 aging_tmo_cfg_t::reset(void)
 {
     pds_flow_age_accel_timeouts_t   accel_tmo;
@@ -786,9 +786,9 @@ aging_tmo_cfg_t::reset(void)
 void
 aging_tmo_cfg_t::session_tmo_set(uint32_t tmo_val)
 {
-    tmo_rec.session_tmo = tmo_val; 
+    tmo_rec.session_tmo = tmo_val;
     max_tmo = std::max(max_tmo, tmo_val);
-    tmo_set(); 
+    tmo_set();
 }
 
 /*
@@ -970,7 +970,7 @@ aging_tmo_cfg_t::conntrack_tmo_get(pds_flow_type_t flowtype,
     return ret_tmo;
 }
 
-void 
+void
 aging_tmo_cfg_t::tmo_set(void)
 {
     pds_flow_age_accel_timeouts_t   accel_tmo = {0};
@@ -990,7 +990,7 @@ aging_tmo_cfg_t::tmo_set(void)
     }
 }
 
-void 
+void
 aging_tmo_cfg_t::tmo_show(void)
 {
     pds_flow_age_timeouts_t         normal_tmo;
@@ -1032,7 +1032,7 @@ aging_tmo_cfg_t::tmo_show(void)
     }
 }
 
-void 
+void
 aging_tmo_cfg_t::tmo_factory_dflt_set(void)
 {
     tmo_rec.tcp_syn_tmo      = SCANNER_TCP_SYN_TMO_DFLT;
@@ -1051,7 +1051,7 @@ aging_tmo_cfg_t::tmo_factory_dflt_set(void)
     tmo_set();
 }
 
-void 
+void
 aging_tmo_cfg_t::tmo_artificial_long_set(void)
 {
 #define TMO_ARTIFICIAL_LONG     (SCANNER_SESSION_TMO_DFLT * 6)
@@ -1071,7 +1071,7 @@ aging_tmo_cfg_t::tmo_artificial_long_set(void)
 /*
  * Aging results, with tolerance
  */
-void 
+void
 aging_tolerance_t::reset(uint32_t ids_max)
 {
     num_ids_max = ids_max;
@@ -1094,13 +1094,13 @@ aging_tolerance_t::reset(uint32_t ids_max)
      */
 }
 
-void 
+void
 aging_tolerance_t::tolerance_secs_set(uint32_t tolerance_secs)
 {
     this->tolerance_secs = tolerance_secs;
 }
 
-void 
+void
 aging_tolerance_t::age_accel_control(bool enable_sense)
 {
     if (pds_flow_age_accel_control(enable_sense) == PDS_RET_OK) {
@@ -1112,7 +1112,7 @@ aging_tolerance_t::age_accel_control(bool enable_sense)
     }
 }
 
-void 
+void
 aging_tolerance_t::create_id_map_insert(uint32_t id)
 {
     if (create_map_with_ids()) {
@@ -1141,7 +1141,7 @@ aging_tolerance_t::create_id_map_insert(uint32_t id)
     }
 }
 
-void 
+void
 aging_tolerance_t::create_id_map_find_erase(uint32_t id)
 {
     if (create_map_with_ids()) {
@@ -1161,14 +1161,14 @@ aging_tolerance_t::create_id_map_find_erase(uint32_t id)
     }
 }
 
-uint32_t 
+uint32_t
 aging_tolerance_t::create_id_map_size(void)
 {
     return create_map_with_ids() ?
            create_id_map.size() : create_count();
 }
 
-void 
+void
 aging_tolerance_t::create_id_map_empty_check(void)
 {
     uint32_t    rem_count;
@@ -1186,7 +1186,7 @@ aging_tolerance_t::create_id_map_empty_check(void)
 /*
  * Validate that HW declared the session timeout within a certain tolerance.
  */
-void 
+void
 aging_tolerance_t::session_tmo_tolerance_check(uint32_t id)
 {
     pds_flow_session_key_t  key;
@@ -1223,7 +1223,7 @@ aging_tolerance_t::session_tmo_tolerance_check(uint32_t id)
 /*
  * Validate that HW declared the conntrack entry timeout within a certain tolerance.
  */
-void 
+void
 aging_tolerance_t::conntrack_tmo_tolerance_check(uint32_t id)
 {
     pds_conntrack_key_t     key;
@@ -1254,7 +1254,7 @@ aging_tolerance_t::conntrack_tmo_tolerance_check(uint32_t id)
     }
 }
 
-void 
+void
 aging_tolerance_t::tmo_tolerance_check(uint32_t id,
                                        uint32_t delta_secs,
                                        uint32_t applic_tmo_secs)

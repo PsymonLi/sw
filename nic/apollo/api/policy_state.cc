@@ -8,8 +8,8 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/policy_state.hpp"
 
 // NOTE:

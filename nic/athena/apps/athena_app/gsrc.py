@@ -20,11 +20,11 @@ asic = environ.get('ASIC', 'capri')
 
 def parse_input ():
     parser = argparse.ArgumentParser(description="Create mini athena src tree")
-    parser.add_argument('--dst', default='pensando', 
+    parser.add_argument('--dst', default='pensando',
            help='Dst folder relative to /sw where all the src and Athena App should be copied', dest='dst')
-    parser.add_argument('--src', default='.', 
+    parser.add_argument('--src', default='.',
            help='Src tree folder', dest='src')
-    parser.add_argument('--spec', default='athena_spec', 
+    parser.add_argument('--spec', default='athena_spec',
            help='src selection specification', dest='spec')
     args = parser.parse_args()
     return args
@@ -139,7 +139,7 @@ def copy_mod(dst):
     print(liba)
     print(len(liba))
 
-    d1 = dict() 
+    d1 = dict()
     rootdir=('/usr/src/github.com/pensando/sw')
     for x in liba:
         for folder, dirs, files in os.walk(rootdir):
@@ -210,7 +210,7 @@ def copy_mod(dst):
 
 def build (arch="aarch64", clean=False):
     """
-       Build Athena APP. 
+       Build Athena APP.
        TODO: Need to get the return value and bailout if make failed.
     """
     cmds = {
@@ -229,7 +229,7 @@ def build (arch="aarch64", clean=False):
 
 def modifyMakeFile (dest):
     """
-        Modify any static definitions in Makefile to reflect 
+        Modify any static definitions in Makefile to reflect
         new location.
     """
     system("pwd")
@@ -238,7 +238,7 @@ def modifyMakeFile (dest):
         data = fp.read()
         #Modify TOPDIR to point to correct location
         wdata = data.replace("TOPDIR = ../../../..", "TOPDIR = ../")
-    
+
     with open(fileLoc, "wt") as fp:
         fp.write(wdata)
 
@@ -269,18 +269,18 @@ def copy_gen (dest, arch="aarch64"):
 
 def copy_test_app (dest="nic"):
     """
-        Copy athena_app code except for module.mk 
+        Copy athena_app code except for module.mk
         and blg_pkg_athena files.
     """
-    copytree("nic/athena/apps/athena_app", 
+    copytree("nic/athena/apps/athena_app",
              "{0}/athena_app".format(dest),
              ignore=ignore_patterns("*.mk", "bld_pkg_athena", "*.sh", "*.py*"))
 
 def copy_includes (dest, arch):
     """
-    copytree("hal/third-party/spdlog/include", 
+    copytree("hal/third-party/spdlog/include",
              "{0}/nic/hal/third-party/spdlog/include".format(dest))
-    copytree("build/{0}/athena/{1}/out/pen_dpdk_submake/include".format(arch, asic), 
+    copytree("build/{0}/athena/{1}/out/pen_dpdk_submake/include".format(arch, asic),
              "{0}/nic/sdk/dpdk/build/include".format(dest))
     #nic/include and nic/sdk/include have some dead symlinks
     try:
@@ -301,7 +301,7 @@ def copy_includes (dest, arch):
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("hal/pd", "{0}/nic/hal/pd".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile")) #try to copy only nic/hal/pd/pd.hpp
-    copytree("apollo/core", "{0}/nic/apollo/core".format(dest),
+    copytree("infra/core", "{0}/nic/infra/core".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("infra/upgrade","{0}/nic/infra/upgrade".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
@@ -320,31 +320,31 @@ def copy_includes (dest, arch):
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("sdk/linkmgr","{0}/nic/sdk/linkmgr".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("sdk/lib", "{0}/nic/sdk/lib".format(dest), 
+    copytree("sdk/lib", "{0}/nic/sdk/lib".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("sdk/upgrade", "{0}/nic/sdk/upgrade".format(dest), 
+    copytree("sdk/upgrade", "{0}/nic/sdk/upgrade".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("sdk/platform/utils","{0}/nic/sdk/platform/utils".format(dest), 
+    copytree("sdk/platform/utils","{0}/nic/sdk/platform/utils".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("sdk/platform/ring","{0}/nic/sdk/platform/ring".format(dest), 
+    copytree("sdk/platform/ring","{0}/nic/sdk/platform/ring".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
 
-    copytree("sdk/platform/fru","{0}/nic/sdk/platform/fru".format(dest), 
+    copytree("sdk/platform/fru","{0}/nic/sdk/platform/fru".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("sdk/platform/devapi","{0}/nic/sdk/platform/devapi".format(dest), 
+    copytree("sdk/platform/devapi","{0}/nic/sdk/platform/devapi".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
-    copytree("sdk/platform/capri","{0}/nic/sdk/platform/capri".format(dest), 
+    copytree("sdk/platform/capri","{0}/nic/sdk/platform/capri".format(dest),
              ignore=ignore_patterns("*.cc", "*.mk", "Makefile"))
     copytree("sdk/platform/pal/include",
              "{0}/nic/sdk/platform/pal/include".format(dest))
     copytree("sdk/model_sim/include","{0}/nic/sdk/model_sim/include".format(dest))
 
-    copytree("sdk/third-party/googletest-release-1.8.0/googletest/include", 
+    copytree("sdk/third-party/googletest-release-1.8.0/googletest/include",
         "{0}/nic/sdk/third-party/googletest-release-1.8.0/googletest/include/".format(dest))
-    copytree("sdk/third-party/boost/include/", 
+    copytree("sdk/third-party/boost/include/",
         "{0}/nic/sdk/third-party/boost/include/".format(dest))
     """
-    parser = Parser(rwd="/usr/src/github.com/pensando/sw", arch=arch) 
+    parser = Parser(rwd="/usr/src/github.com/pensando/sw", arch=arch)
     hfiles = parser.process("nic/athena/apps/athena_app")
     for src in hfiles:
         dirIdx = src.rfind("/")
@@ -387,10 +387,10 @@ def copy_includes (dest, arch):
         if not path.exists(src_dir):
             makedirs(src_dir)
         copyfile(fp, "{0}/{1}".format(dest, fp))
-    """   
-    copytree("third-party/gflags/include/gflags", 
+    """
+    copytree("third-party/gflags/include/gflags",
              "{0}/nic/third-party/gflags/include/gflags".format(dest))
-    copytree("sdk/third-party/zmq/include", 
+    copytree("sdk/third-party/zmq/include",
              "{0}/nic/sdk/third-party/zmq/include".format(dest))
     """
 if __name__ == '__main__':

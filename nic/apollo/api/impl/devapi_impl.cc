@@ -20,8 +20,8 @@
 // TODO: replace this with asic pd
 #include "nic/sdk/platform/capri/capri_tm_rw.hpp"
 #include "nic/sdk/linkmgr/port_mac.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/event.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/event.hpp"
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/impl/devapi_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"

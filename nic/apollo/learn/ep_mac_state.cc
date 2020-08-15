@@ -10,7 +10,7 @@
 
 #include "nic/sdk/lib/ht/ht.hpp"
 #include "nic/sdk/lib/slab/slab.hpp"
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/learn/ep_mac_state.hpp"
 
 namespace learn {

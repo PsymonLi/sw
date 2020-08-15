@@ -9,8 +9,8 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/core/core.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/core.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"

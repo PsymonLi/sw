@@ -10,7 +10,7 @@
 
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/impl/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 #include "nic/athena/api/impl/athena_impl.hpp"

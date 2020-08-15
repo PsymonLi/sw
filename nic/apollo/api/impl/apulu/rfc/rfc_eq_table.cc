@@ -7,7 +7,7 @@
  */
 
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/framework/pipeline_impl_base.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
 #include "nic/apollo/api/impl/rfc/rfc.hpp"

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_flow_age.h"
 #include "fte_athena.hpp"
 #include "json_parser.hpp"

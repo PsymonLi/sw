@@ -16,7 +16,7 @@
 #include "nic/sdk/lib/p4/p4_api.hpp"
 // TODO: clean this up
 #include "nic/sdk/platform/capri/capri_sw_phv.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/impl/artemis/artemis_impl.hpp"
 #include "nic/apollo/api/impl/artemis/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/artemis/impl_utils.hpp"

@@ -13,7 +13,7 @@
 #include "nic/sdk/platform/sensor/sensor.hpp"
 #include "nic/sdk/asic/port.hpp"
 #include "nic/sdk/platform/asicerror/interrupts.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/asic/asic_impl.hpp"
 #include "nic/apollo/p4/include/artemis_table_sizes.h"

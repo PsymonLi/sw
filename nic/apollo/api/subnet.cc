@@ -10,9 +10,9 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/msg.h"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
+#include "nic/infra/core/msg.h"
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
@@ -223,7 +223,7 @@ subnet_entry::init_config(api_ctxt_t *api_ctxt) {
                           "type %u", spec->key.str(), spec->host_if[i].str(),
                           intf->type());
             return SDK_RET_INVALID_ARG;
-        }   
+        }
     }
     return SDK_RET_OK;
 }

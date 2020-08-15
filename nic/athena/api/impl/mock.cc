@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "nic/sdk/lib/thread/thread.hpp"
-#include "nic/apollo/core/core.hpp"
 #include <nic/sdk/include/sdk/table.hpp>
+#include "nic/infra/core/core.hpp"
 
 
 namespace pds_ms {
@@ -16,7 +16,7 @@ pds_ms_thread_init (void *ctxt)
     return NULL;
 }
 
-sdk_ret_t 
+sdk_ret_t
 pds_ms_upg_hitless_init (void)
 {
     return SDK_RET_OK;

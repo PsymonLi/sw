@@ -7,11 +7,11 @@
 #include "nic/sdk/asic/pd/scheduler.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/core.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/port.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 

@@ -11,7 +11,7 @@
 #define __APULU_SVC_TUNNEL_SVC_HPP__
 
 #include "grpc++/grpc++.h"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/tep.hpp"
 #include "nic/apollo/api/impl/apulu/svc/specs.hpp"
 #include "gen/proto/tunnel.grpc.pb.h"

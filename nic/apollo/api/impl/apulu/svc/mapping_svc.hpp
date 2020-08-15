@@ -11,7 +11,7 @@
 #define __APULU_SVC_MAPPING_SVC_HPP__
 
 #include "grpc++/grpc++.h"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/mapping.hpp"
 #include "nic/apollo/api/impl/apulu/svc/specs.hpp"
 #include "gen/proto/mapping.grpc.pb.h"

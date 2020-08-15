@@ -14,12 +14,12 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/ht/ht.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
+#include "nic/infra/core/msg.h"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_mapping.hpp"
 #include "nic/apollo/api/include/pds_vnic.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/include/globals.hpp"
-#include "nic/apollo/core/msg.h"
 
 namespace learn {
 

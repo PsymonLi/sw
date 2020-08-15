@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/lib/ipc/ipc.hpp"
-#include "nic/apollo/core/msg.h"
+#include "nic/infra/core/msg.h"
 #include "nic/apollo/api/core/msg.h"
 #include "nic/apollo/test/api/utils/api_base.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"

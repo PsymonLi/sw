@@ -9,10 +9,10 @@
 //----------------------------------------------------------------------------
 
 #include <stack>
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/impl/lpm/lpm.hpp"
 #include "nic/apollo/api/impl/lpm/lpm_priv.hpp"
 #include "nic/apollo/api/impl/lpm/lpm_impl.hpp"
-#include "nic/apollo/core/trace.hpp"
 
 using std::stack;
 

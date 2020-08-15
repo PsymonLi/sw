@@ -11,14 +11,15 @@
 
 #define SHARED_DATA_TYPE SMS_SHARED_LOCAL
 
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/operd/alerts/alerts.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_ifindex.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/infra/operd/alerts/alerts.hpp"
 #include "nbase.h"
 #include "nbbstub.h"
 #include "qbnmdef.h"
+
 extern "C" {
 #include "smsiincl.h"
 #include "smsincl.h"
@@ -181,8 +182,8 @@ NBB_VOID sms_rcv_amb_trap(AMB_TRAP *v_amb_trap NBB_CCXT_T NBB_CXT)
       /***********************************************************************/
       trap_data = (AMB_BGP_TRAP_DATA *)((NBB_BYTE *)v_amb_trap +
                                                     v_amb_trap->data_offset);
-      // Log message only if the status is changing from established to Backward 
-      if (trap_data->old_fsm_state == QBNM_CONN_ESTABLISHED) 
+      // Log message only if the status is changing from established to Backward
+      if (trap_data->old_fsm_state == QBNM_CONN_ESTABLISHED)
       {
           NBB_TRC_FLOW((NBB_FORMAT "AMB_BGP_TRAP_BACKWARD"));
           pds_ms_convert_amb_ip_addr_to_ip_addr (trap_data->remote_addr,
@@ -216,7 +217,7 @@ NBB_VOID sms_rcv_amb_trap(AMB_TRAP *v_amb_trap NBB_CCXT_T NBB_CXT)
       {
           // Interested only in L3 Interface status changes
           if_index = pds_ms::ms_to_pds_ifindex (if_trap_data->if_index);
-          PDS_TRACE_INFO 
+          PDS_TRACE_INFO
                  ("Interface %s [index: 0x%X] Oper Status changed to %s",
                  if_trap_data->name, if_index,
                  (if_trap_data->oper_status == AMB_IF_OPER_UP) ? "UP" : "DOWN");

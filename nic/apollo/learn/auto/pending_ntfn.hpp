@@ -14,7 +14,7 @@
 #include <unordered_map>
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/sdk/lib/slab/slab.hpp"
-#include "nic/apollo/core/event.hpp"
+#include "nic/infra/core/event.hpp"
 #include "nic/apollo/api/vnic.hpp"
 #include "nic/apollo/learn/learn.hpp"
 

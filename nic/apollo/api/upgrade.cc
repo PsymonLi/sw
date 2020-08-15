@@ -6,9 +6,9 @@
 #include <sys/stat.h>
 #include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/infra/upgrade/api/include/shmstore.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/core.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/include/pds_event.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/pds_state.hpp"

@@ -3,15 +3,16 @@
 // Hitless upgrade event handlers
 //---------------------------------------------------------------
 
+#include "nic/infra/core/core.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_stub_api.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
-#include "nic/apollo/api/internal/upgrade_ev.hpp"
-#include "nic/apollo/core/core.hpp"
-#include "nic/apollo/core/trace.hpp"
+
 extern "C" {
 #include <amxpenapi.h>
 }

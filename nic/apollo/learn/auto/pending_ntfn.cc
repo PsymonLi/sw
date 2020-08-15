@@ -8,8 +8,8 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
 #include "nic/apollo/learn/learn_impl_base.hpp"

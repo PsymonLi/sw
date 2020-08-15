@@ -24,7 +24,7 @@
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/sdk/lib/edma/edmaq.hpp"
 #include "nic/sdk/ipsec/ipsec.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl.hpp"

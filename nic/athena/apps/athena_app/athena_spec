@@ -30,7 +30,7 @@
 -/sw/nic/apollo/api/impl/rfc
 /sw/nic/apollo/asm/athena_rxdma
 /sw/nic/apollo/asm/athena_txdma
-/sw/nic/apollo/core
+/sw/nic/infra/core
 /sw/nic/apollo/framework
 /sw/nic/apollo/include
 /sw/nic/apollo/learn

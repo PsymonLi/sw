@@ -15,9 +15,9 @@
 
 #define SHARED_DATA_TYPE SMS_SHARED_LOCAL
 
-#include "nbase.h"
 #include "nic/sdk/lib/logger/logger.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nbase.h"
 
 /*****************************************************************************/
 /* Global Variables.  Use #define to include definitions from header file    */
@@ -390,7 +390,7 @@ EXIT_LABEL:
   NBB_TRC_DETAIL((NBB_FORMAT "Returning %B", rc));
   NBB_TRC_EXIT();
 
-  /***************************************************************************/ 
+  /***************************************************************************/
   /* Release the lock on the SHARED LOCAL data.                              */
   /***************************************************************************/
   NBS_RELEASE_SHARED_DATA();

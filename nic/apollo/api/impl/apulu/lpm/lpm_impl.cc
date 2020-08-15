@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include <math.h>
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/impl/lpm/lpm.hpp"
 #include "nic/apollo/api/impl/lpm/lpm_stag.hpp"
 #include "nic/apollo/api/impl/lpm/lpm_dtag.hpp"

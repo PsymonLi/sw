@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
-#include "nic/apollo/core/msg.h"
+#include "nic/infra/core/msg.h"
 #include "nic/apollo/test/base/vpp_mock.hpp"
 
 using namespace sdk::lib;

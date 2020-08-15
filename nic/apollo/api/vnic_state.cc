@@ -6,7 +6,7 @@
  * @brief   vnic database handling
  */
 
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/api/vnic_state.hpp"
 
 namespace api {

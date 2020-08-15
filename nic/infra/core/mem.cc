@@ -8,8 +8,8 @@
 
 #include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/sdk/lib/periodic/periodic.hpp"
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/vpc.hpp"
 #include "nic/apollo/api/subnet.hpp"
 #include "nic/apollo/api/vnic.hpp"

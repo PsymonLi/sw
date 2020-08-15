@@ -9,8 +9,8 @@
 //----------------------------------------------------------------------------
 
 #include <stdio.h>
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/api/tep_state.hpp"
 
 using sdk::lib::ht;

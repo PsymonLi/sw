@@ -13,9 +13,9 @@
 
 #include <vector>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/infra/core/event.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
-#include "nic/apollo/core/event.hpp"
-#include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/learn/ep_mac_entry.hpp"
 #include "nic/apollo/learn/ep_ip_entry.hpp"

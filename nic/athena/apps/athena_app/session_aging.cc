@@ -12,11 +12,11 @@
 #include "conntrack_aging.hpp"
 #include "athena_test.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_flow_session_info.h"
 #include "nic/athena/api/include/pds_flow_age.h"
 #include "nic/athena/api/impl/ftl_pollers_client.hpp"
 #include "nic/apollo/p4/include/athena_defines.h"
-#include "nic/apollo/core/trace.hpp"
 #include "fte_athena.hpp"
 
 namespace test {
@@ -430,7 +430,7 @@ session_and_cache_traffic_chkpt_end(test_vparam_ref_t vparam)
     uint32_t    expected = vparam.expected_num();
 
     if (expected) {
-        TEST_LOG_INFO("Test param expected active FTL entries: %u vs actual: %" 
+        TEST_LOG_INFO("Test param expected active FTL entries: %u vs actual: %"
                       PRIu64 "\n", expected, actual);
     } else {
         TEST_LOG_INFO("Delta active FTL entries: %" PRIu64 "\n", actual);
@@ -490,7 +490,7 @@ session_aging_expiry_fn(uint32_t expiry_id,
     }
     return ret;
 }
-                             
+
 bool
 session_aging_init(test_vparam_ref_t vparam)
 {
@@ -510,7 +510,7 @@ session_aging_init(test_vparam_ref_t vparam)
     }
     if (SESSION_RET_VALIDATE(ret)) {
 
-        // On HW go with FTE polling threads; 
+        // On HW go with FTE polling threads;
         // otherwise do self polling in this module.
 
         ret = pds_flow_age_sw_pollers_poll_control(!hw(),
@@ -519,7 +519,7 @@ session_aging_init(test_vparam_ref_t vparam)
     if (!hw() && SESSION_RET_VALIDATE(ret)) {
         ret = pds_flow_age_hw_scanners_start();
     }
-    return SESSION_RET_VALIDATE(ret) && pollers_qcount && 
+    return SESSION_RET_VALIDATE(ret) && pollers_qcount &&
            session_table_depth() && aging_expiry_dflt_fn;
 }
 

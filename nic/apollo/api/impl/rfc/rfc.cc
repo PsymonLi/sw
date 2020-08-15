@@ -8,7 +8,7 @@
 
 #include <string>
 #include "include/sdk/platform.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/lpm/lpm.hpp"
 #include "nic/apollo/api/impl/rfc/rfc.hpp"

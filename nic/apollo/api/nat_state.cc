@@ -8,7 +8,7 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/api/nat_state.hpp"
 
 using namespace sdk;

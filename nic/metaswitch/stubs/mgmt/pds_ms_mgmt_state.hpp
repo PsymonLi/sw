@@ -6,23 +6,23 @@
 #ifndef __PDS_MS_MGMT_STATE_HPP__
 #define __PDS_MS_MGMT_STATE_HPP__
 
+#include <mutex>
+#include <condition_variable>
+#include <random>
+#include <chrono>
+#include "nic/sdk/lib/logger/logger.hpp"
+#include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/thread/thread.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/apollo/agent/core/state.hpp"
+#include "nic/apollo/api/include/pds.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mib_idx_gen.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_uuid_obj.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_object_store.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_bgp_store.hpp"
-#include "nic/apollo/agent/core/state.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/api/include/pds.hpp"
-#include "nic/sdk/lib/logger/logger.hpp"
-#include "nic/sdk/include/sdk/base.hpp"
-#include "nic/sdk/lib/thread/thread.hpp"
 #include "gen/proto/types.pb.h"
-#include <mutex>
-#include <condition_variable>
-#include <random>
-#include <chrono>
 
 #define PDS_MOCK_MODE() \
             (mgmt_state_t::thread_context().state()->pds_mock_mode())
@@ -59,7 +59,7 @@ struct mgmt_obj_t {
 class mgmt_state_t {
 public:
     struct context_t {
-        public:    
+        public:
             context_t(std::recursive_mutex& m, mgmt_state_t* s) : l_(m), state_(s)  {
                 mgmt_state_locked(true, true);
             }
@@ -82,39 +82,39 @@ public:
                 l_ = std::move(c.l_);
                 return *this;
             }
-        private:    
+        private:
             std::unique_lock<std::recursive_mutex> l_;
             mgmt_state_t* state_;
     };
-    
+
     void gen_random(void) {
-        unsigned seed = 
+        unsigned seed =
             std::chrono::system_clock::now().time_since_epoch().count();
         std::mt19937 rand(seed);
         epoch_ = rand();
         PDS_TRACE_DEBUG("Using random epoch: %u", epoch_);
     }
 
-    static void create(void) { 
+    static void create(void) {
         SDK_ASSERT (g_state_ == nullptr);
         g_state_ = new mgmt_state_t;
         g_response_ready_ = false;
-        g_state_->gen_random();    
+        g_state_->gen_random();
     }
 
     static void destroy(void) {
         delete(g_state_); g_state_ = nullptr;
     }
 
-    // Obtain a mutual exclusion context for thread safe access to the 
-    // stub state. Automatic release when the context goes 
+    // Obtain a mutual exclusion context for thread safe access to the
+    // stub state. Automatic release when the context goes
     // out of scope. Direct external access to Mgmt state without
     // a context is prohibited.
     static context_t thread_context(void) {
         SDK_ASSERT(g_state_ != nullptr);
         return context_t(g_state_mtx_, g_state_);
     }
-    
+
     // Blocking function call. To be used only from the grpc thread
     // context while waiting for the async response back from nbase
     static types::ApiStatus ms_response_wait(void) {
@@ -123,7 +123,7 @@ public:
         g_response_ready_ = false;
         return g_ms_response_;
     }
-    
+
     // Called from the response method in the nbase thread context to
     // unblock the grpc thread
     static void ms_response_ready(types::ApiStatus resp);
@@ -135,7 +135,7 @@ public:
     sdk::lib::thread *nbase_thread(void) {
         return nbase_thread_;
     }
-    
+
     uint32_t epoch(void) { return epoch_; }
 
     bool pds_mock_mode(void) const { return pds_mock_mode_;  }
@@ -144,7 +144,7 @@ public:
     bool rr_mode(void) const { return rr_mode_;  }
     void set_rr_mode(bool val) { rr_mode_ = val; }
 
-    void set_pending_uuid_create(const pds_obj_key_t& uuid, 
+    void set_pending_uuid_create(const pds_obj_key_t& uuid,
                                  uuid_obj_uptr_t&& obj);
     void release_pending_uuid() {
         uuid_pending_create_.clear();
@@ -257,8 +257,8 @@ private:
     bgp_peer_store_t  bgp_peer_store_;
     std::vector<bgp_peer_pend_obj_t> bgp_peer_pend_;
     bool overlay_routing_en_ = false;
-        
-    std::unordered_map<pds_vnid_id_t, mgmt_obj_t> vni_store_; 
+
+    std::unordered_map<pds_vnid_id_t, mgmt_obj_t> vni_store_;
     bool route_map_created_ = false;
     bool amx_open_ = false;
     bool upg_ht_a_going_down_ = false;

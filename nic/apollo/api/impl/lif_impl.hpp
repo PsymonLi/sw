@@ -14,7 +14,7 @@
 #include "nic/sdk/lib/ht/ht.hpp"
 #include "nic/sdk/include/sdk/qos.hpp"
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
 #include "nic/apollo/framework/if_impl_base.hpp"
 #include "nic/apollo/api/include/pds_lif.hpp"

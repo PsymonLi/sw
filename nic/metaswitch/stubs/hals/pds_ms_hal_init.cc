@@ -3,6 +3,20 @@
 // Initialize Stubs that drive the dataplane
 //---------------------------------------------------------------
 
+#include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/ipc/ipc.hpp"
+#include "nic/sdk/lib/ipc/ipc_ms.hpp"
+#include "nic/sdk/include/sdk/ip.hpp"
+#include "nic/sdk/include/sdk/eth.hpp"
+#include "nic/sdk/lib/event_thread/event_thread.hpp"
+#include "nic/infra/core/event.hpp"
+#include "nic/infra/core/core.hpp"
+#include "nic/infra/core/msg.h"
+#include "nic/apollo/include/globals.hpp"
+#include "nic/apollo/api/core/msg.h"
+#include "nic/apollo/agent/core/core.hpp"
+#include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_cookie.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
@@ -14,20 +28,6 @@
 #include "nic/metaswitch/stubs/hals/pds_ms_hals_route.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_cfg_msg.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
-#include "nic/sdk/include/sdk/base.hpp"
-#include "nic/sdk/lib/ipc/ipc.hpp"
-#include "nic/sdk/lib/ipc/ipc_ms.hpp"
-#include "nic/apollo/include/globals.hpp"
-#include "nic/apollo/core/event.hpp"
-#include "nic/apollo/api/core/msg.h"
-#include "nic/apollo/core/core.hpp"
-#include "nic/apollo/core/msg.h"
-#include "nic/apollo/agent/core/core.hpp"
-#include "nic/sdk/include/sdk/ip.hpp"
-#include "nic/sdk/include/sdk/eth.hpp"
-#include "nic/apollo/api/pds_state.hpp"
-#include "nic/apollo/api/upgrade_state.hpp"
-#include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include <li_fte.hpp>
 
 extern NBB_ULONG li_proc_id;

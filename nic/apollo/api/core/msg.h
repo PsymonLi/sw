@@ -11,8 +11,8 @@
 #ifndef __API_CORE_MSG_H__
 #define __API_CORE_MSG_H__
 
+#include "nic/infra/core/msg.h"
 #include "nic/apollo/framework/api.h"
-#include "nic/apollo/core/msg.h"
 #include "nic/apollo/api/include/pds_device.hpp"
 #include "nic/apollo/api/include/pds_vpc.hpp"
 #include "nic/apollo/api/include/pds_dhcp.hpp"

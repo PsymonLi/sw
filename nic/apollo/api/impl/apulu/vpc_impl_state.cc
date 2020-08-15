@@ -11,7 +11,7 @@
 #include "nic/apollo/api/impl/apulu/vpc_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vpc_impl_state.hpp"
 #include "gen/p4gen/apulu/include/p4pd.h"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 
 using sdk::table::sdk_table_factory_params_t;
 

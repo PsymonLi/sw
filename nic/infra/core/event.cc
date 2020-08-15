@@ -9,10 +9,10 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/lib/thread/thread.hpp"
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/event.hpp"
-#include "nic/apollo/core/core.hpp"
+#include "nic/infra/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/event.hpp"
+#include "nic/infra/core/core.hpp"
 
 namespace core {
 

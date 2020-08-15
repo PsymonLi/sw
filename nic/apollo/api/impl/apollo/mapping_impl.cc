@@ -8,11 +8,15 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/mem.hpp"
+#include "nic/sdk/lib/p4/p4_api.hpp"
+#include "nic/sdk/lib/table/memhash/mem_hash.hpp"
+#include "nic/sdk/include/sdk/table.hpp"
+#include "nic/sdk/lib/utils/utils.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/mapping.hpp"
-#include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/apollo/apollo_impl.hpp"
 #include "nic/apollo/api/impl/apollo/tep_impl.hpp"
@@ -20,10 +24,6 @@
 #include "nic/apollo/api/impl/apollo/mapping_impl.hpp"
 #include "nic/apollo/api/impl/apollo/pds_impl_state.hpp"
 #include "nic/apollo/p4/include/defines.h"
-#include "nic/sdk/lib/p4/p4_api.hpp"
-#include "nic/sdk/lib/table/memhash/mem_hash.hpp"
-#include "nic/sdk/include/sdk/table.hpp"
-#include "nic/sdk/lib/utils/utils.hpp"
 
 using sdk::table::sdk_table_api_params_t;
 

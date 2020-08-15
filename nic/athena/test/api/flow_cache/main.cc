@@ -10,9 +10,9 @@
 //----------------------------------------------------------------------------
 #include <unistd.h>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_init.h"
 #include "nic/athena/api/include/pds_flow_cache.h"
-#include "nic/apollo/core/trace.hpp"
 #include "nic/athena/test/api/utils/base.hpp"
 #include "nic/athena/test/api/include/trace.hpp"
 #include "ftl_p4pd_mock.hpp"
@@ -38,13 +38,13 @@ class flow_cache_test : public pds_test_base {
 protected:
     flow_cache_test() {}
     virtual ~flow_cache_test() {}
-    
+
     virtual void SetUp() {
         pds_cinit_params_t init_params;
         SDK_TRACE_INFO("============== SETUP : %s.%s ===============",
                        ::testing::UnitTest::GetInstance()->current_test_info()->test_case_name(),
                        ::testing::UnitTest::GetInstance()->current_test_info()->name());
-        
+
         flow_mock_init();
         memset(&init_params, 0, sizeof(init_params));
         init_params.flow_age_pid = getpid();
@@ -93,7 +93,7 @@ TEST_F(flow_cache_test, flow_cache_crud) {
     SDK_ASSERT(iter_cb_arg.flow_appdata.index_type == PDS_FLOW_SPEC_INDEX_SESSION);
     SDK_ASSERT(iter_cb_arg.flow_appdata.index == 1);
 
-    memset(&spec, 0, sizeof(spec)); 
+    memset(&spec, 0, sizeof(spec));
     fill_key(2, &spec.key);
     fill_data(2, PDS_FLOW_SPEC_INDEX_CONNTRACK, &spec.data);
     SDK_ASSERT(pds_flow_cache_entry_create(&spec) == PDS_RET_OK);
@@ -107,7 +107,7 @@ TEST_F(flow_cache_test, flow_cache_crud) {
     SDK_ASSERT(pds_flow_cache_entry_iterate(dump_flow, &iter_cb_arg) ==
                PDS_RET_OK);
 
-    memset(&spec, 0, sizeof(spec)); 
+    memset(&spec, 0, sizeof(spec));
     fill_key(2, &spec.key);
     fill_data(2, PDS_FLOW_SPEC_INDEX_SESSION, &spec.data);
     SDK_ASSERT(pds_flow_cache_entry_update(&spec) == PDS_RET_OK);

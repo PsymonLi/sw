@@ -8,12 +8,12 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "ftl_dev_impl.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
-#include "gen/p4gen/athena/include/p4pd.h"
 #include "nic/sdk/lib/pal/pal.hpp"
-#include "nic/apollo/core/core.hpp"
+#include "nic/infra/core/core.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "ftl_dev_impl.hpp"
+#include "gen/p4gen/athena/include/p4pd.h"
 
 namespace ftl_dev_impl {
 
@@ -376,7 +376,7 @@ timestamp_metrics_get(lif_attr_metrics_t *metrics)
 pds_ret_t
 session_table_depth_get(uint32_t *ret_table_depth)
 {
-    *ret_table_depth = session_scanners() ? 
+    *ret_table_depth = session_scanners() ?
                        session_scanners()->table_depth() : 0;
     return PDS_RET_OK;
 }
@@ -384,7 +384,7 @@ session_table_depth_get(uint32_t *ret_table_depth)
 pds_ret_t
 conntrack_table_depth_get(uint32_t *ret_table_depth)
 {
-    *ret_table_depth = conntrack_scanners() ? 
+    *ret_table_depth = conntrack_scanners() ?
                        conntrack_scanners()->table_depth() : 0;
     return PDS_RET_OK;
 }
@@ -549,7 +549,7 @@ lif_init(pds_cinit_params_t *params)
                     ret = mpu_timestamp_ctl()->start(&devcmd_qinit);
                 }
             }
-            
+
             devcmd_qinit.owner_pre_unlock();
         }
         rte_atomic16_set(&lif_init_completed, 1);
@@ -975,7 +975,7 @@ lif_queues_ctl_t::dequeue_burst(uint32_t qid,
 bool
 lif_queues_ctl_t::queue_empty(uint32_t qid)
 {
-    return ftl_lif ? ftl_lif->queue_empty(qtype, qid) : true; 
+    return ftl_lif ? ftl_lif->queue_empty(qtype, qid) : true;
 }
 
 pds_ret_t
@@ -1113,10 +1113,10 @@ lif_queues_ctl_t::lock_all(void)
     /*
      * NOTE: this code gives the appearance that it would be inefficient
      * having to lock all queues. However, commands that end up using this
-     * function occur very infrequently, i.e., only once or twice 
+     * function occur very infrequently, i.e., only once or twice
      * during device bring up and bring down.
      *
-     * Other more frequent commands would only need to acquire a single queue 
+     * Other more frequent commands would only need to acquire a single queue
      * lock which is suitably fine-grained and less contentious.
      */
     for (uint32_t qid = 0; qid < qcount; qid++) {
@@ -1384,25 +1384,25 @@ ftl_status_2_pds_ret(ftl_status_code_t ftl_status)
 
 #define FTL_STATUS_CASE_PDS_RET(x, y)      case x: return y
 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_SUCCESS,  PDS_RET_OK); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EVERSION, PDS_RET_HW_SW_OO_SYNC); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EOPCODE,  PDS_RET_INVALID_OP); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EIO,      PDS_RET_HW_PROGRAM_ERR); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EPERM,    PDS_RET_ERR); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EQID,     PDS_RET_INVALID_ARG); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EQTYPE,   PDS_RET_INVALID_ARG); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_ENOENT,   PDS_RET_ENTRY_NOT_FOUND); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EINTR,    PDS_RET_RETRY); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EAGAIN,   PDS_RET_RETRY); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_ENOMEM,   PDS_RET_OOM); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EFAULT,   PDS_RET_INVALID_ARG); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EBUSY,    PDS_RET_IN_PROGRESS); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EEXIST,   PDS_RET_ENTRY_EXISTS); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_EINVAL,   PDS_RET_INVALID_ARG); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_ENOSPC,   PDS_RET_NO_RESOURCE); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_ERANGE,   PDS_RET_OOB); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_BAD_ADDR, PDS_RET_OOB); 
-    FTL_STATUS_CASE_PDS_RET(FTL_RC_ERROR,    PDS_RET_ERR); 
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_SUCCESS,  PDS_RET_OK);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EVERSION, PDS_RET_HW_SW_OO_SYNC);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EOPCODE,  PDS_RET_INVALID_OP);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EIO,      PDS_RET_HW_PROGRAM_ERR);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EPERM,    PDS_RET_ERR);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EQID,     PDS_RET_INVALID_ARG);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EQTYPE,   PDS_RET_INVALID_ARG);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_ENOENT,   PDS_RET_ENTRY_NOT_FOUND);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EINTR,    PDS_RET_RETRY);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EAGAIN,   PDS_RET_RETRY);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_ENOMEM,   PDS_RET_OOM);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EFAULT,   PDS_RET_INVALID_ARG);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EBUSY,    PDS_RET_IN_PROGRESS);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EEXIST,   PDS_RET_ENTRY_EXISTS);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_EINVAL,   PDS_RET_INVALID_ARG);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_ENOSPC,   PDS_RET_NO_RESOURCE);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_ERANGE,   PDS_RET_OOB);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_BAD_ADDR, PDS_RET_OOB);
+    FTL_STATUS_CASE_PDS_RET(FTL_RC_ERROR,    PDS_RET_ERR);
 
     default: return PDS_RET_ERR;
     }

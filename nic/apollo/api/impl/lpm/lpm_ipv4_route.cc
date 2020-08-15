@@ -7,12 +7,12 @@
  */
 
 #include <math.h>
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/impl/lpm/lpm.hpp"
-#include "lpm_ipv4_route.hpp"
-#include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 #include "nic/apollo/framework/impl_base.hpp"
 #include "nic/apollo/framework/pipeline_impl_base.hpp"
+#include "lpm_ipv4_route.hpp"
+#include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 
 sdk_ret_t
 lpm_ipv4_route_add_key_to_stage (uint8_t *bytes, uint32_t idx,

@@ -10,8 +10,8 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/core.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/core.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/framework/api_thread.hpp"

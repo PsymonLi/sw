@@ -12,9 +12,9 @@
 #define __LEARN_EP_LEARN_UTILS_HPP__
 
 #include "nic/sdk/include/sdk/types.hpp"
+#include "nic/infra/core/event.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/utils.hpp"
-#include "nic/apollo/core/event.hpp"
 #include "nic/apollo/learn/ep_ip_state.hpp"
 #include "nic/apollo/learn/ep_mac_state.hpp"
 

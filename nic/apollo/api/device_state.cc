@@ -9,8 +9,8 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/include/sdk/mem.hpp"
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/device_state.hpp"
 
 namespace api {

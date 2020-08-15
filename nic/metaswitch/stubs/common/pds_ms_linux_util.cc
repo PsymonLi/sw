@@ -3,11 +3,6 @@
 // Utilities to interface with Linux OS
 //---------------------------------------------------------------
 
-#include "nic/metaswitch/stubs/common/pds_ms_linux_util.hpp"
-#include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
-#include "nic/sdk/lib/logger/logger.hpp"
-#include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/core/trace.hpp"
 #include <ifaddrs.h>
 #include <netpacket/packet.h>
 #include <cstring>
@@ -23,6 +18,11 @@
 #include <string>
 #include <ctime>
 #include <thread>
+#include "nic/sdk/lib/logger/logger.hpp"
+#include "nic/sdk/include/sdk/base.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_linux_util.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
 
 namespace pds_ms {
 

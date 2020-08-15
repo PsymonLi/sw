@@ -14,15 +14,15 @@
 #include "nic/sdk/include/sdk/platform.hpp"
 #include "nic/sdk/platform/fru/fru.hpp"
 #include "nic/sdk/asic/asic.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/mem.hpp"
+#include "nic/sdk/platform/drivers/ionic_base.h"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/framework/impl.hpp"
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/device.hpp"
 #include "nic/apollo/api/pds_state.hpp"
-#include "nic/sdk/platform/drivers/ionic_base.h"
 
 namespace api {
 

@@ -8,8 +8,9 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/sdk/lib/p4/p4_api.hpp"
+#include "nic/infra/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/impl/apollo/tep_impl.hpp"
@@ -17,7 +18,6 @@
 #include "nic/apollo/api/impl/apollo/mirror_impl.hpp"
 #include "nic/apollo/api/impl/apollo/pds_impl_state.hpp"
 #include "nic/apollo/api/pds_state.hpp"
-#include "nic/sdk/lib/p4/p4_api.hpp"
 
 namespace api {
 namespace impl {

@@ -4,14 +4,14 @@
 //----------------------------------------------------------------------------
 ///
 /// \file
-/// This file implements APIs for store 
+/// This file implements APIs for store
 ///
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/shmstore/shmstore.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_base.h"
 #include "nic/athena/api/include/internal/pds_store.h"
-#include "nic/apollo/core/trace.hpp"
 
 using namespace sdk::lib;
 

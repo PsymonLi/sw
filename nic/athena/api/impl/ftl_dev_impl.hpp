@@ -25,10 +25,10 @@
 #include <rte_atomic.h>
 
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/ipc/ipc.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_base.h"
 #include "nic/athena/api/include/pds_init.h"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
 #include "platform/src/lib/nicmgr/include/dev.hpp"
 #include "platform/src/lib/nicmgr/include/ftl_dev.hpp"

@@ -10,7 +10,7 @@
 #include <vector>
 #include <list>
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/core/msg.h"
+#include "nic/infra/core/msg.h"
 #include "nic/apollo/api/core/msg.h"
 
 #define foreach_config_data_element                 \

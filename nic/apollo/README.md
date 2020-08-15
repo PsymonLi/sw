@@ -20,7 +20,6 @@ with clang rules as much as possible.
 ## PDS HAL directory layout
 
 * nic/apollo/agent/ - agent code, sub directories here are self-explanatory
-* nic/apollo/core/ - core services of HAL
 * nic/apollo/framework/ - API engine/framework
 * nic/apollo/nicmgr/ - nicmgr thread specific code
 * nic/apollo/pciemgr/ - pciemgr thread specific code

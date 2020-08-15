@@ -11,8 +11,8 @@
 #include  <string>
 #include <sys/stat.h>
 #include "nic/sdk/include/sdk/mem.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 
 namespace api {

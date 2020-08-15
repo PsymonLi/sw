@@ -8,9 +8,9 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/core.hpp"
-#include "nic/apollo/learn/learn.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
+#include "nic/infra/core/core.hpp"
+#include "nic/apollo/learn/learn.hpp"
 
 static void
 learn_clear_resp_cb (sdk::ipc::ipc_msg_ptr msg, const void *ret)

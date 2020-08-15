@@ -9,16 +9,16 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/include/sdk/base.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/sdk/asic/asic.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/athena/api/include/pds_init.h"
 #include "nic/athena/api/include/pds_flow_cache.h"
 #include "nic/athena/api/include/pds_l2_flow_cache.h"
 #include "nic/athena/api/include/pds_flow_age.h"
-#include "nic/sdk/asic/asic.hpp"
-#include "ftl_dev_impl.hpp"
 #include "nic/athena/api/include/pds_vnic.h"
 #include "nic/athena/api/include/internal/mfg_mode.hpp"
+#include "ftl_dev_impl.hpp"
 
 using namespace sdk;
 using namespace sdk::asic;
@@ -123,7 +123,7 @@ pds_global_init (pds_cinit_params_t *params)
     if (ret != SDK_RET_OK) {
         return (pds_ret_t)ret;
     }
-    
+
     return (pds_ret_t)ret;
 }
 
@@ -154,15 +154,15 @@ pds_global_teardown ()
     return;
 }
 
-pds_ret_t 
+pds_ret_t
 pds_mfg_mode_setup(pds_mfg_mode_params_t *params)
 {
     sdk_ret_t ret = SDK_RET_OK;
-    
+
     if(params == NULL) {
         PDS_TRACE_ERR("params arg is null");
         return PDS_RET_INVALID_ARG;
-    }    
+    }
 
     for(uint16_t idx = 0; idx < PDS_MFG_TEST_NUM_VLANS; ++idx) {
         if (params->vlans[idx] >= PDS_VLAN_ID_MAX) {
@@ -179,15 +179,15 @@ pds_mfg_mode_setup(pds_mfg_mode_params_t *params)
     return (pds_ret_t)ret;
 }
 
-pds_ret_t 
+pds_ret_t
 pds_mfg_mode_teardown(pds_mfg_mode_params_t *params)
 {
     sdk_ret_t ret = SDK_RET_OK;
-    
+
     if(params == NULL) {
         PDS_TRACE_ERR("params arg is null");
         return PDS_RET_INVALID_ARG;
-    }    
+    }
 
     for(uint16_t idx = 0; idx < PDS_MFG_TEST_NUM_VLANS; ++idx) {
         if (params->vlans[idx] >= PDS_VLAN_ID_MAX) {

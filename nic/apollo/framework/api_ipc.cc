@@ -13,8 +13,8 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/infra/core/core.hpp"
 #include "nic/apollo/framework/api_ipc.hpp"
-#include "nic/apollo/core/core.hpp"
 
 namespace api {
 

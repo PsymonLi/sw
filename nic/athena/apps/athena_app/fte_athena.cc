@@ -51,7 +51,7 @@
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/sdk/asic/asic.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/impl/ftl_pollers_client.hpp"
 #include "nic/athena/api/include/pds_flow_cache.h"
 #include "nic/athena/api/include/pds_l2_flow_cache.h"

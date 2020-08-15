@@ -8,18 +8,18 @@
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
 #include <lipi.h>
 #include <lim_smi_mac.hpp>
-#include "nic/apollo/api/pds_state.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
 #include "nic/sdk/platform/fru/fru.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/apollo/api/pds_state.hpp"
 
 //-------------------------------------------------------------------------
 // Shared function used by LIM and SMI for MAC handling.
 // Used to initialize LIM hardware manager MAC address pool.
-// LIM allocates MAC address from this pool for 
+// LIM allocates MAC address from this pool for
 // System MAC, IRB interfaces and Loopback interfaces
 // The system MAC will be used as Routers MAC in Type-5 routes generated
 // unless it is overridden by setting evpnIpVrfRoutersMac when creating VRF
@@ -51,7 +51,7 @@ NBB_ULONG get_initial_mac_address(NBB_BYTE (&initial_mac)[ATG_L2_MAC_ADDR_LEN],
 
 namespace smi
 {
-// Replace the MS stock smi::create_hw_desc function 
+// Replace the MS stock smi::create_hw_desc function
 // with our PDS-MS version that creates instance of our class
 HwDesc*
 create_hw_desc(void)
@@ -64,13 +64,13 @@ create_hw_desc(void)
     // During destruction in Debug mode NBASE calls verify memory which
     // requires the memory to be allocated using NBB_NEW and for the verify
     // method set a bit in the memory.
-    // Eve with this it asserts if there is a failure in the 
+    // Eve with this it asserts if there is a failure in the
     // initial CTM transaction - need to look into this.
     return (new pds_ms::pds_ms_smi_hw_desc_t(initial_mac_address, total_macs));
 }
 } // End namespace
 
-namespace pds_ms 
+namespace pds_ms
 {
 pds_ms_smi_hw_desc_t::pds_ms_smi_hw_desc_t(NBB_BYTE (&mac_address)[ATG_L2_MAC_ADDR_LEN],
                      NBB_ULONG total_macs) :
@@ -79,9 +79,9 @@ pds_ms_smi_hw_desc_t::pds_ms_smi_hw_desc_t(NBB_BYTE (&mac_address)[ATG_L2_MAC_AD
     reset();
 }
 
-// Populate physical port database in SMI HW Desc. 
-// This is called from smi::fte, smi::PortManager class construction 
-// that happens as part of NBASE init when a new SMI entity is created. 
+// Populate physical port database in SMI HW Desc.
+// This is called from smi::fte, smi::PortManager class construction
+// that happens as part of NBASE init when a new SMI entity is created.
 // The HW Desc is sent to LIM during the Join activation between LIM & SMI
 bool pds_ms_smi_hw_desc_t::create_ports(std::vector <smi::PortData> &port_config)
 {
@@ -105,12 +105,12 @@ bool pds_ms_smi_hw_desc_t::create_ports(std::vector <smi::PortData> &port_config
         strncpy (temp_port.id.if_name, if_name.c_str(), AMB_LIM_NAME_MAX_LEN);
 
         temp_port.settings = settings;
-        // Set dummy MAC - fetch actual MAC from Linux in the LI Stub 
+        // Set dummy MAC - fetch actual MAC from Linux in the LI Stub
         // interface create handler
         temp_port.settings.mac_address[5] = port;
 
         port_config.push_back(temp_port);
-        PDS_TRACE_INFO ("Metaswitch SMI port add id=%d name=%s ms_ifindex=0x%x", 
+        PDS_TRACE_INFO ("Metaswitch SMI port add id=%d name=%s ms_ifindex=0x%x",
                         port, if_name.c_str(), ms_ifindex);
     }
     return true;

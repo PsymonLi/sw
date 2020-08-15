@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/lib/slab/slab.hpp"
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/framework/api.h"
 #include "nic/apollo/framework/api_params.hpp"
 

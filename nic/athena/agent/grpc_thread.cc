@@ -4,6 +4,9 @@
 
 #include <cerrno>
 #include <sys/un.h>
+#include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/event_thread/event_thread.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/agent/svc/port.hpp"
 #include "nic/apollo/agent/svc/debug.hpp"
 #include "nic/apollo/agent/svc/device.hpp"
@@ -12,9 +15,6 @@
 #include "nic/apollo/agent/core/core.hpp"
 #include "nic/apollo/agent/trace.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
-#include "nic/apollo/core/mem.hpp"
-#include "nic/sdk/include/sdk/base.hpp"
-#include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "gen/proto/debug.pb.h"
 
 #define GRPC_API_PORT    11357

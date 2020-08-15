@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/include/sdk/mem.hpp"
-#include "nic/apollo/core/msg.hpp"
+#include "nic/infra/core/msg.hpp"
 #include "nic/apollo/api/core/msg.h"
 
 namespace core {

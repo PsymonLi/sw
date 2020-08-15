@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <pthread.h>
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "fte_athena_flow_log.hpp"
 
 

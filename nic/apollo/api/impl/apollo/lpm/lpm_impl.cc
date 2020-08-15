@@ -8,7 +8,7 @@
 
 #include <math.h>
 #include <stack>
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/impl/lpm/lpm.hpp"
 #include "nic/apollo/api/impl/lpm/lpm_priv.hpp"
 #include "lpm_sport.hpp"

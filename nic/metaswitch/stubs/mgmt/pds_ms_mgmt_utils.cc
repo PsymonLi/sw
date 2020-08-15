@@ -1,12 +1,12 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
-// Purpose: Common helper APIs for metaswitch stub programming 
+// Purpose: Common helper APIs for metaswitch stub programming
 
+#include "include/sdk/base.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
-#include "include/sdk/base.hpp"
-#include "nic/apollo/core/trace.hpp"
 #include "gen/proto/epoch.pb.h"
 
 #define SHARED_DATA_TYPE CSS_LOCAL
@@ -48,9 +48,9 @@ ip_addr_spec_to_ip_addr (const types::IPAddress& in_ipaddr,
 }
 
 NBB_VOID
-pds_ms_convert_ip_addr_to_amb_ip_addr (const ip_addr_t&   pds_ms_ip_addr, 
-                                       NBB_LONG      *type, 
-                                       NBB_ULONG     *len, 
+pds_ms_convert_ip_addr_to_amb_ip_addr (const ip_addr_t&   pds_ms_ip_addr,
+                                       NBB_LONG      *type,
+                                       NBB_ULONG     *len,
                                        NBB_BYTE      *amb_ip_addr,
                                        bool          is_zero_ip_valid)
 {

@@ -10,8 +10,8 @@
 
 #include "nic/sdk/asic/common/asic_mem.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/trace.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/policy.hpp"

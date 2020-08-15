@@ -11,10 +11,10 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/lib/p4/p4_utils.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/sdk/asic/pd/pd.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/athena/api/include/pds_conntrack.h"
 #include "gen/p4gen/athena/include/p4pd.h"
-#include "nic/sdk/asic/pd/pd.hpp"
 #include "gen/p4gen/p4/include/ftl.h"
 #include "ftl_dev_impl.hpp"
 
@@ -45,7 +45,7 @@ pds_conntrack_state_create (pds_conntrack_spec_t *spec)
     entry.set_flow_state(spec->data.flow_state);
     entry.set_timestamp(ftl_dev_if::scanner_conntrack_timestamp(
                                     ftl_dev_impl::mpu_timestamp()));
-  
+
     p4pd_ret = entry.write(conntrack_id);
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to write conntrack table at index %u",

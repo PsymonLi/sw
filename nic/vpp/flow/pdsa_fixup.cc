@@ -5,7 +5,7 @@
 #include <nic/sdk/include/sdk/ip.hpp>
 #include <nic/sdk/include/sdk/table.hpp>
 #include <nic/sdk/lib/ipc/ipc.hpp>
-#include <nic/apollo/core/event.hpp>
+#include <nic/infra/core/event.hpp>
 #include <nic/apollo/api/utils.hpp>
 #include <nic/vpp/infra/ipc/pdsa_vpp_hdlr.h>
 #include <nic/vpp/infra/cfg/pdsa_db.hpp>

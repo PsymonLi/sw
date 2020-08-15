@@ -12,7 +12,7 @@
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/internal/pds_mapping.hpp"
 #include "nic/apollo/api/utils.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/learn/learn_api.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
 #include "nic/apollo/learn/learn_ctxt.hpp"

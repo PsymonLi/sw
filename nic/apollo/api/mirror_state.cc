@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include <stdio.h>
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/api/mirror_state.hpp"
 
 using sdk::lib::ht;

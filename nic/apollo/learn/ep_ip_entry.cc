@@ -10,7 +10,7 @@
 
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/utils.hpp"
-#include "nic/apollo/core/mem.hpp"
+#include "nic/infra/core/mem.hpp"
 #include "nic/apollo/learn/auto/ep_aging.hpp"
 #include "nic/apollo/learn/notify/ep_dedup.hpp"
 #include "nic/apollo/learn/ep_ip_entry.hpp"

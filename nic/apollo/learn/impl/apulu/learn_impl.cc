@@ -10,7 +10,7 @@
 
 #include "nic/sdk/include/sdk/l2.hpp"
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/learn/learn_state.hpp"

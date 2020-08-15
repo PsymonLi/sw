@@ -8,7 +8,7 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/core/trace.hpp"
+#include "nic/infra/core/trace.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/mapping.hpp"
