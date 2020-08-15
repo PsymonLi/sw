@@ -139,7 +139,7 @@ __declspec(dllimport) int ionic_fw_update_type;
 #endif
 
 /*
- * DSC OS 5 APIs.
+ * DSC OS 3 APIs.
  */
 /* 1. For discovery of Naples management devices in system */
 int ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count);
@@ -147,7 +147,3 @@ int ionic_find_devices(FILE *fstream, struct ionic ionic_devs[], int *count);
 int ionic_get_details(FILE *fstream, struct ionic *ionic);
 /* 3. Called to do the actual flash update. */
 int ionic_flash_firmware(FILE *fstream, struct ionic *ionic, char *fw_file);
-/* 4. Platform related initialization for different OSes. */
-int ionic_platform_init();
-/* 5. Platform related cleanup for different OSes. */
-void ionic_platform_cleanup();
