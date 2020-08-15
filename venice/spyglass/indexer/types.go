@@ -21,19 +21,17 @@ type Interface interface {
 	// FlushIndex flushes the given index. This ensures all the writes are flushed to the shard.
 	FlushIndex(index string) error
 
-	// Index indexes a single document (obj) on the given `index` and
-	// type `docType` with the given ID.
-	Index(index, docType, ID string, obj interface{}) error
+	// Index indexes a single document (obj) on the given `index` with the given ID.
+	Index(index, ID string, obj interface{}) error
 
-	// Delete deletes a single document (obj) from the given `index` and
-	// type `docType` with the given ID.
-	Delete(index, docType, ID string) error
+	// Delete deletes a single document (obj) from the given `index` with the given ID.
+	Delete(index, ID string) error
 
 	// Bulk performs the bulk request against SearchDB. Each of the request
 	// in bulk operation can be heterogeneous.
 	// Length of IDs and objects should match and there is one corelation
 	// between elements in IDs and objects slice.
-	Bulk(index, docType string, IDs []string, objects []interface{}) error
+	Bulk(index string, IDs []string, objects []interface{}) error
 }
 
 // RunningStatus represents the status of indexer

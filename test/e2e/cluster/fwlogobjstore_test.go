@@ -394,7 +394,6 @@ func verifyLogsOnElastic(c elastic.ESClient, fwLogClient objstore.Client, indexN
 		// execute query
 		result, err := c.Search(context.Background(),
 			"*firewalllogs*", // index
-			"",               // skip the index type
 			query,            // query to be executed
 			nil,              // no aggregation
 			0,                // from
@@ -434,7 +433,6 @@ func verifyMinioObjectsOnElastic(c elastic.ESClient, fwLogClient objstore.Client
 			// execute query
 			result, err := c.Search(context.Background(),
 				indexName,       // index
-				"",              // skip the index type
 				query,           // query to be executed
 				nil,             // no aggregation
 				0,               // from

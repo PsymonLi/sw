@@ -56,12 +56,11 @@ func (a *fwlogHandler) GetLogs(ctx context.Context, r *fwlog.FwLogQuery) (*fwlog
 	if r.StartTime == nil && r.EndTime == nil { // get the latest index if time interval is not specified in the query
 		index = elastic.GetIndex(globals.FwLogs, r.Tenants[0])
 	} else {
-		index = strings.ToLower(fmt.Sprintf("%s.%s.%s.*", elastic.ExternalIndexPrefix, r.Tenants[0], elastic.GetDocType(globals.FwLogs)))
+		index = strings.ToLower(fmt.Sprintf("%s.%s.%s.*", elastic.ExternalIndexPrefix, r.Tenants[0], elastic.String(globals.FwLogs)))
 	}
 	// execute query
 	result, err := a.fdr.elasticClient.Search(ctx,
 		index, // search only in fwlogs indices
-		elastic.GetDocType(globals.FwLogs),
 		query, // query to be executed
 		nil,   // no aggregation
 		0,     // from

@@ -111,7 +111,7 @@ func (e *mockClient) GetIndexSettings(ctx context.Context, indices []string) (ma
 }
 
 //Index indexes the given mockObj using mockClient
-func (e *mockClient) Index(ctx context.Context, index, iType, ID string, obj interface{}) error {
+func (e *mockClient) Index(ctx context.Context, index, ID string, obj interface{}) error {
 	if _, ok := e.indexes[index]; !ok {
 		return elastic.NewError(elastic.ErrIndexNotExist, "")
 	}
@@ -137,7 +137,7 @@ func (e *mockClient) Bulk(ctx context.Context, objs []*elastic.BulkRequest) (*es
 				e.docs[obj.Index][obj.ID] = mc
 				response.Items = append(response.Items,
 					map[string]*es.BulkResponseItem{elastic.Index: &es.BulkResponseItem{
-						Index: obj.Index, Type: obj.IndexType, Id: obj.ID},
+						Index: obj.Index, Id: obj.ID},
 					})
 			} else {
 				error = true
@@ -148,7 +148,7 @@ func (e *mockClient) Bulk(ctx context.Context, objs []*elastic.BulkRequest) (*es
 				e.docs[obj.Index][obj.ID] = mc
 				response.Items = append(response.Items,
 					map[string]*es.BulkResponseItem{elastic.Update: &es.BulkResponseItem{
-						Index: obj.Index, Type: obj.IndexType, Id: obj.ID},
+						Index: obj.Index, Id: obj.ID},
 					})
 			} else {
 				error = true
@@ -158,7 +158,7 @@ func (e *mockClient) Bulk(ctx context.Context, objs []*elastic.BulkRequest) (*es
 				delete(e.docs[obj.Index], obj.ID)
 				response.Items = append(response.Items,
 					map[string]*es.BulkResponseItem{elastic.Delete: &es.BulkResponseItem{
-						Index: obj.Index, Type: obj.IndexType, Id: obj.ID},
+						Index: obj.Index, Id: obj.ID},
 					})
 			}
 		}
@@ -172,7 +172,7 @@ func (e *mockClient) Bulk(ctx context.Context, objs []*elastic.BulkRequest) (*es
 }
 
 //Delete removes the given mockObj using mockClient
-func (e *mockClient) Delete(ctx context.Context, index, iType, ID string) error {
+func (e *mockClient) Delete(ctx context.Context, index, ID string) error {
 	if _, ok := e.indexes[index]; !ok {
 		return elastic.NewError(elastic.ErrIndexNotExist, "")
 	}
@@ -183,13 +183,13 @@ func (e *mockClient) Delete(ctx context.Context, index, iType, ID string) error 
 
 // DeleteByQuery deletes objects that matches the given query from the given index
 func (e *mockClient) DeleteByQuery(ctx context.Context,
-	index string, iType string, query es.Query,
-	size int, sortByField string, sortAsc bool) (*es.BulkIndexByScrollResponse, error) {
+	index string, query es.Query, size int,
+	sortByField string, sortAsc bool) (*es.BulkIndexByScrollResponse, error) {
 	panic("not implemented")
 }
 
 // Search - mock implementation of search operation
-func (e *mockClient) Search(ctx context.Context, index, iType string, query es.Query, aggregation es.Aggregation,
+func (e *mockClient) Search(ctx context.Context, index string, query es.Query, aggregation es.Aggregation,
 	from, size int32, sortByField string, sortAsc bool, options ...elastic.SearchOption) (*es.SearchResult, error) {
 	var totalHits int64
 
@@ -213,7 +213,7 @@ func (e *mockClient) Search(ctx context.Context, index, iType string, query es.Q
 	return &es.SearchResult{Hits: &es.SearchHits{TotalHits: totalHits}}, nil
 }
 
-func (e *mockClient) Scroll(ctx context.Context, index, iType string, query es.Query, size int32) (elastic.Scroller, error) {
+func (e *mockClient) Scroll(ctx context.Context, index string, query es.Query, size int32) (elastic.Scroller, error) {
 	return nil, nil
 }
 

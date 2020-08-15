@@ -261,7 +261,6 @@ func (vw *vosDiskWatcher) cleanupOldObjects() {
 					request := &elastic.BulkRequest{
 						RequestType: elastic.Delete,
 						Index:       elastic.GetIndex(globals.FwLogsObjects, ""),
-						IndexType:   elastic.GetDocType(globals.FwLogsObjects),
 						ID:          getUUIDForFwlogObject("Object", tenant, globals.FwlogsBucketName, obj.Key),
 						Obj:         obj, // req.object
 					}
@@ -303,7 +302,6 @@ func (vw *vosDiskWatcher) getOldestFwLogObjects(maxResults int) (map[string][]*F
 	// execute query
 	result, err := vw.elasticClient.Search(vw.ctx,
 		elastic.GetIndex(globals.FwLogsObjects, ""), // index
-		"",                // skip the index type
 		query,             // query to be executed
 		nil,               // no aggregation
 		0,                 // from

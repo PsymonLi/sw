@@ -17,7 +17,6 @@ import (
 
 var (
 	indexName   = elastic.LogIndexPrefix
-	indexType   = "doc"
 	from        = int32(0)
 	maxResults  = int32(10)
 	sortByField = ""
@@ -51,7 +50,6 @@ var _ = Describe("logging tests", func() {
 							query := es.NewBoolQuery().Must(es.NewMatchPhraseQuery("module", service)).Must(es.NewTermQuery("beat.hostname", nodeName))
 							result, err := esClient.Search(context.Background(),
 								indexName,
-								indexType,
 								query,
 								nil,
 								from,
@@ -74,7 +72,6 @@ var _ = Describe("logging tests", func() {
 						query := es.NewBoolQuery().Must(es.NewMatchPhraseQuery("module", service)).Must(es.NewRegexpQuery("beat.hostname", nodePattern))
 						result, err := esClient.Search(context.Background(),
 							indexName,
-							indexType,
 							query,
 							nil,
 							from,

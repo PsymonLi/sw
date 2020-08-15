@@ -238,7 +238,7 @@ func (e *ElasticServer) addHandlers() {
 
 	// index operation - this dummy handler captures the indexed document as a []byte
 	// which will be used to serve GET and SEARCH requests
-	e.ms.AddHandler("/{index_name}/{index_type}/{id}", "PUT", func(w http.ResponseWriter, r *http.Request) {
+	e.ms.AddHandler("/{index_name}/_doc/{id}", "PUT", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		indexName := vars["index_name"]
 		docID := vars["id"]
@@ -298,7 +298,7 @@ func (e *ElasticServer) addHandlers() {
 
 	// search operation - this handler returns all the documents matching the query.
 	// the query here is restricted to `RawQueryString` (all docs containing the given string).
-	e.ms.AddHandler("/{index_name}/{index_type}/_search", "POST", func(w http.ResponseWriter, r *http.Request) {
+	e.ms.AddHandler("/{index_name}/_search", "POST", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		indexName := vars["index_name"]
 

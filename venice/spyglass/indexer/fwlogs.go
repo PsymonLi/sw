@@ -340,7 +340,6 @@ func (idr *Indexer) parseFwLogsCsvV1(id int,
 		request := &elastic.BulkRequest{
 			RequestType: elastic.Index,
 			Index:       elastic.GetIndex(globals.FwLogs, globals.DefaultTenant),
-			IndexType:   elastic.GetDocType(globals.FwLogs),
 			ID:          uuid + "-" + strconv.Itoa(i),
 			Obj:         obj, // req.object
 		}
@@ -392,7 +391,6 @@ func (idr *Indexer) parseFwLogsMetaV1(id int,
 	request := &elastic.BulkRequest{
 		RequestType: elastic.Index,
 		Index:       elastic.GetIndex(globals.FwLogsObjects, ""),
-		IndexType:   elastic.GetDocType(globals.FwLogsObjects),
 		ID:          uuid,
 		Obj:         obj, // req.object
 	}

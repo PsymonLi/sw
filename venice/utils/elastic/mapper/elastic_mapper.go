@@ -35,7 +35,7 @@ type Option func(opt *options)
 var fieldOrTypeOverride = map[string]map[string]string{
 
 	// Config DocType
-	elastic.GetDocType(globals.Configs): {
+	elastic.String(globals.Configs): {
 		// fields that need aggregations should map to keyword
 		"tenant":  "keyword",
 		"kind":    "keyword",
@@ -48,7 +48,7 @@ var fieldOrTypeOverride = map[string]map[string]string{
 		"Timestamp": "date",
 	},
 	// Events DocType
-	elastic.GetDocType(globals.Events): {
+	elastic.String(globals.Events): {
 		// fields that need aggregations should map to keyword
 		"tenant":    "keyword",
 		"kind":      "keyword",
@@ -62,7 +62,7 @@ var fieldOrTypeOverride = map[string]map[string]string{
 		"Timestamp": "date",
 	},
 	// AuditLogs DocType
-	elastic.GetDocType(globals.AuditLogs): {
+	elastic.String(globals.AuditLogs): {
 		// fields that need aggregations should map to keyword
 		"tenant":      "keyword",
 		"kind":        "keyword",
@@ -76,7 +76,7 @@ var fieldOrTypeOverride = map[string]map[string]string{
 		"Timestamp": "date",
 	},
 	// Fwlogs DocType
-	elastic.GetDocType(globals.FwLogs): {
+	elastic.String(globals.FwLogs): {
 		// special types mapping
 		"Timestamp": "date",
 	},
@@ -86,7 +86,7 @@ var fieldOrTypeOverride = map[string]map[string]string{
 // Please read "https://www.elastic.co/guide/en/elasticsearch/reference/6.3/enabled.html"
 // for understanding how it works & gets configured in elastic.
 var isIndexingDisabled = map[string]map[string]struct{}{
-	elastic.GetDocType(globals.FwLogs): {
+	elastic.String(globals.FwLogs): {
 		"rule-id":         struct{}{},
 		"session-id":      struct{}{},
 		"flow-action":     struct{}{},
@@ -109,7 +109,7 @@ var isIndexingDisabled = map[string]map[string]struct{}{
 		"labels":          struct{}{},
 		"self-link":       struct{}{},
 	},
-	elastic.GetDocType(globals.FwLogsObjects): {
+	elastic.String(globals.FwLogsObjects): {
 		"logscount": struct{}{},
 		"bucket":    struct{}{},
 	},
@@ -237,12 +237,12 @@ func GetElasticType(kind reflect.Kind) string {
 // docType
 // Usage example:
 // 		config := ElasticMapper(events.Event{},
-//                              elastic.GetDocType(globals.Events), 1, 0)
+//                              elastic.String(globals.Events), 1, 0)
 // To get JSON string output:
 //  	str, err = config.JSONString()
 //              (or)
 //  	str, err = config.JSONPrettyString()
-func ElasticMapper(obj interface{}, docType string, opts ...Option) (elastic.Config, error) {
+func ElasticMapper(obj interface{}, dType string, opts ...Option) (elastic.Config, error) {
 
 	options := *defaultOptions()
 
@@ -254,7 +254,7 @@ func ElasticMapper(obj interface{}, docType string, opts ...Option) (elastic.Con
 	}
 
 	log.Debugf("Object: %+v docType: %s options: %+v",
-		obj, docType, options)
+		obj, dType, options)
 
 	// Value of object has to be valid
 	val := reflect.ValueOf(obj)
@@ -283,11 +283,11 @@ func ElasticMapper(obj interface{}, docType string, opts ...Option) (elastic.Con
 
 	// Generate mappings for Object
 	configs := elastic.Mapping{}
-	mapper(docType, val.Type().String(), val, configs, "--", true, true, &options)
+	mapper(dType, val.Type().String(), val, configs, "--", true, true, &options)
 
 	// Fill in mappings for docType
 	mappings := elastic.Mapping{}
-	mappings[docType] = configs
+	mappings[elastic.DefaultElasticIndexType] = configs
 
 	// Fill in complete index mapping
 	indexMapping := elastic.Config{
@@ -302,14 +302,14 @@ func ElasticMapper(obj interface{}, docType string, opts ...Option) (elastic.Con
 
 // mapper is a helper function to generate mapping from golang types to elastic type.
 // TODO: Remove debug logs
-func mapper(docType, key string, val reflect.Value, config map[string]interface{}, indent string, outer, inline bool,
+func mapper(dType, key string, val reflect.Value, config map[string]interface{}, indent string, outer, inline bool,
 	opts *options) {
 
 	log.Debugf("%s mapper configmap: %v N:%v T:%v K:%v concrete-value: %v",
 		indent, config, key, val.Type().Name(), val.Kind(), val.Interface())
 
-	// check using feild name whether indexing is disabled on the field
-	if _, ok := isIndexingDisabled[docType][key]; ok {
+	// check using field name whether indexing is disabled on the field
+	if _, ok := isIndexingDisabled[dType][key]; ok {
 		eType := elastic.Mapping{
 			"enabled": false,
 		}
@@ -318,7 +318,7 @@ func mapper(docType, key string, val reflect.Value, config map[string]interface{
 	}
 
 	// check for override by field name
-	if kind, ok := fieldOrTypeOverride[docType][key]; ok {
+	if kind, ok := fieldOrTypeOverride[dType][key]; ok {
 		if kind == "keyword" {
 
 			// Generate both text and keyword mapping
@@ -353,7 +353,7 @@ func mapper(docType, key string, val reflect.Value, config map[string]interface{
 	}
 
 	// check for override by type
-	if kind, ok := fieldOrTypeOverride[docType][val.Type().Name()]; ok {
+	if kind, ok := fieldOrTypeOverride[dType][val.Type().Name()]; ok {
 		eType := elastic.Mapping{
 			"type": kind,
 		}
@@ -402,7 +402,7 @@ func mapper(docType, key string, val reflect.Value, config map[string]interface{
 				fieldName = val.Type().Field(i).Name
 			}
 
-			mapper(docType, fieldName, f, sMap, indent+"--", false, fieldInline, opts)
+			mapper(dType, fieldName, f, sMap, indent+"--", false, fieldInline, opts)
 		}
 
 		if inline == true {
@@ -460,7 +460,7 @@ func mapper(docType, key string, val reflect.Value, config map[string]interface{
 			return
 		}
 		log.Debugf("%s Ptr %s: %s", indent, pval.Type(), pval.String())
-		mapper(docType, key, pval, config, indent, false, false, opts)
+		mapper(dType, key, pval, config, indent, false, false, opts)
 
 	case reflect.String:
 		fallthrough
@@ -496,7 +496,7 @@ func mapper(docType, key string, val reflect.Value, config map[string]interface{
 		log.Debugf("%s %s: %s len: %d", indent, key,
 			GetElasticType(val.Kind()), val.Len())
 		if val.Len() > 0 {
-			mapper(docType, key, val.Index(0), config, indent, false, false, opts)
+			mapper(dType, key, val.Index(0), config, indent, false, false, opts)
 		} else {
 			log.Warn("Unable to generate mapping for empty slice")
 		}

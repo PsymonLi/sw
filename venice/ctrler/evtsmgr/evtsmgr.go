@@ -336,13 +336,12 @@ func (em *EventsManager) GCAlerts(retentionPeriod time.Duration) {
 
 // createEventsElasticTemplate helper function to create index template for events.
 func (em *EventsManager) createEventsElasticTemplate(esClient elastic.ESClient) error {
-	docType := elastic.GetDocType(globals.Events)
 	mapping, err := mapper.ElasticMapper(eventSkeleton,
-		docType,
+		elastic.String(globals.Events),
 		mapper.WithShardCount(3),
 		mapper.WithReplicaCount(2),
 		mapper.WithMaxInnerResults(globals.SpyglassMaxResults),
-		mapper.WithIndexPatterns(fmt.Sprintf("*.%s.*", docType)),
+		mapper.WithIndexPatterns(fmt.Sprintf("*.%s.*", elastic.String(globals.Events))),
 		mapper.WithCharFilter(),
 		mapper.WithAllcationMaxRetries(10))
 	if err != nil {

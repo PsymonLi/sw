@@ -106,7 +106,7 @@ func (s *scroller) search() (*es.SearchResult, error) {
 }
 
 // NewScroller returns an instance of Scroller. It fetches 8000 max records at a time. This Scroller implementation is not thread safe.
-func NewScroller(ctx context.Context, client *Client, index, iType string, query es.Query, size int32) (Scroller, error) {
+func NewScroller(ctx context.Context, client *Client, index string, query es.Query, size int32) (Scroller, error) {
 	// validate index
 	if len(strings.TrimSpace(index)) == 0 {
 		return nil, NewError(ErrInvalidIndex, "")
@@ -125,11 +125,6 @@ func NewScroller(ctx context.Context, client *Client, index, iType string, query
 	// Construct the search request on a given index
 	request := client.esClient.Scroll().Index(index)
 
-	// Add doc type if valid
-	if len(iType) != 0 {
-		request = request.Type(iType)
-	}
-
 	// Add query if valid
 	if query != nil {
 		request = request.Query(query)
@@ -147,7 +142,6 @@ func NewScroller(ctx context.Context, client *Client, index, iType string, query
 		request: request,
 		ctx:     ctx,
 		index:   index,
-		iType:   iType,
 		query:   query,
 		size:    size,
 	}

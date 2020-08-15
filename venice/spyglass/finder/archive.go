@@ -83,7 +83,7 @@ func (j *archiveJob) Run(ctx context.Context) error {
 	case monitoring.ArchiveRequestSpec_AuditEvent.String():
 		index = "*.auditlogs.*"
 	}
-	scroller, err := j.esClient.Scroll(j.ctx, index, "", query, 8000)
+	scroller, err := j.esClient.Scroll(j.ctx, index, query, 8000)
 	if err != nil {
 		j.archiveReq.Status.Status = monitoring.ArchiveRequestStatus_Failed.String()
 		j.archiveReq.Status.Reason = err.Error()

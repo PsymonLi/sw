@@ -604,10 +604,10 @@ func (idr *Indexer) FlushIndex(index string) error {
 
 // Index indexes the single document (obj) on the given `index` and
 // type `docType` with the given ID.
-func (idr *Indexer) Index(index, docType, ID string, obj interface{}) error {
+func (idr *Indexer) Index(index, ID string, obj interface{}) error {
 
 	// Index an object into elastic
-	if err := idr.elasticClient.Index(idr.ctx, index, docType, ID, obj); err != nil {
+	if err := idr.elasticClient.Index(idr.ctx, index, ID, obj); err != nil {
 		idr.logger.Errorf("Failed to index object: %+v err: %+v", obj, err)
 		return err
 	}
@@ -617,7 +617,7 @@ func (idr *Indexer) Index(index, docType, ID string, obj interface{}) error {
 
 // Bulk performs the bulk request against SearchDB.
 // Each of the request in bulk operation can be heterogeneous.
-func (idr *Indexer) Bulk(index, docType string, IDs []string, objects []interface{}) error {
+func (idr *Indexer) Bulk(index string, IDs []string, objects []interface{}) error {
 
 	if len(IDs) != len(objects) {
 		idr.logger.Errorf("Arg mismatch, len of IDs and objects should match")
@@ -632,7 +632,6 @@ func (idr *Indexer) Bulk(index, docType string, IDs []string, objects []interfac
 			&elastic.BulkRequest{
 				RequestType: elastic.Index,
 				Index:       index,
-				IndexType:   docType,
 				ID:          IDs[i],
 				Obj:         obj,
 			})
@@ -650,12 +649,12 @@ func (idr *Indexer) Bulk(index, docType string, IDs []string, objects []interfac
 
 // Delete removes a single document (obj) on the given `index` and
 // type `docType` with the given ID.
-func (idr *Indexer) Delete(index, docType, ID string) error {
+func (idr *Indexer) Delete(index, ID string) error {
 
 	// Index an object into elastic
-	if err := idr.elasticClient.Delete(idr.ctx, index, docType, ID); err != nil {
-		idr.logger.Errorf("Failed to delete object type: %s ID: %s err: %+v",
-			docType, ID, err)
+	if err := idr.elasticClient.Delete(idr.ctx, index, ID); err != nil {
+		idr.logger.Errorf("Failed to delete object from index: %s ID: %s err: %+v",
+			index, ID, err)
 		return err
 	}
 
@@ -731,11 +730,10 @@ func (idr *Indexer) refreshIndices() {
 
 			for _, name := range indexNames {
 				if strings.HasPrefix(name, elastic.ExternalIndexPrefix) &&
-					!strings.Contains(name, elastic.GetDocType(globals.FwLogs)) {
+					!strings.Contains(name, elastic.String(globals.FwLogs)) {
 					idr.logger.Debugf("Executing query to keep index %s warm in cache", name)
 					idr.elasticClient.Search(idr.ctx,
 						name,
-						"",
 						es.NewTermQuery("kind.keyword", "Node"),
 						nil,
 						0,

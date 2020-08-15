@@ -15,7 +15,6 @@ import (
 
 var (
 	indexName   = "mock"
-	indexType   = "mc"
 	ctx         = context.Background()
 	from        = int32(0)
 	maxResults  = int32(10)
@@ -36,41 +35,41 @@ func TestESMockIndex(t *testing.T) {
 func TestESMockDocIndex(t *testing.T) {
 	mc := newMockClient()
 	Assert(t, mc.CreateIndex(ctx, indexName, "") == nil, "failed to create index")
-	Assert(t, mc.Index(ctx, indexName, indexType, uuid.NewV4().String(), mockObj{name: "dummy1"}) == nil,
+	Assert(t, mc.Index(ctx, indexName, uuid.NewV4().String(), mockObj{name: "dummy1"}) == nil,
 		"failed to index document")
-	Assert(t, mc.Index(ctx, indexName, indexType, uuid.NewV4().String(), mockObj{name: "dummy1"}) == nil,
+	Assert(t, mc.Index(ctx, indexName, uuid.NewV4().String(), mockObj{name: "dummy1"}) == nil,
 		"failed to index document")
-	Assert(t, mc.Index(ctx, indexName, indexType, uuid.NewV4().String(), mockObj{name: "dummy2"}) == nil,
+	Assert(t, mc.Index(ctx, indexName, uuid.NewV4().String(), mockObj{name: "dummy2"}) == nil,
 		"failed to index document")
 
 	// index invalid doc
-	Assert(t, mc.Index(ctx, indexName, indexType, uuid.NewV4().String(), nil) != nil,
+	Assert(t, mc.Index(ctx, indexName, uuid.NewV4().String(), nil) != nil,
 		"expected failure, invalid doc")
 
 	// search on non-existing index
-	result, err := mc.Search(ctx, "dummy", indexType, mockQuery{}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err := mc.Search(ctx, "dummy", mockQuery{}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, !elastic.IsIndexExists(err), "expected failure, index does not exists")
 	Assert(t, result == nil, fmt.Sprintf("expected nil search result, got %v", result))
 
 	// search for docs
-	result, err = mc.Search(ctx, indexName, indexType, mockQuery{name: "dummy1"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err = mc.Search(ctx, indexName, mockQuery{name: "dummy1"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, result.TotalHits() == 2, fmt.Sprintf("expected search result %v, got %v", 2, result.TotalHits()))
 
 	// search for docs
-	result, err = mc.Search(ctx, indexName, indexType, mockQuery{name: "dummy2"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err = mc.Search(ctx, indexName, mockQuery{name: "dummy2"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, result.TotalHits() == 1, fmt.Sprintf("expected search result %v, got %v", 1, result.TotalHits()))
 
 	// search for non-existent docs
-	result, err = mc.Search(ctx, indexName, indexType, mockQuery{name: "non-existent-doc"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err = mc.Search(ctx, indexName, mockQuery{name: "non-existent-doc"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, result.TotalHits() == 0, fmt.Sprintf("expected search result %v, got %v", 0, result.TotalHits()))
 
 	Assert(t, mc.DeleteIndex(ctx, "mock") == nil, "failed to delete index")
 
 	// search on the deleted index
-	result, err = mc.Search(ctx, indexName, indexType, mockQuery{}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err = mc.Search(ctx, indexName, mockQuery{}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, !elastic.IsIndexExists(err), "expected failure, index does not exists")
 	Assert(t, result == nil, fmt.Sprintf("expected nil search result, got %v", result))
 }
@@ -86,7 +85,6 @@ func TestESMockBulkIndex(t *testing.T) {
 		requests[i] = &elastic.BulkRequest{
 			RequestType: elastic.Index,
 			Index:       indexName,
-			IndexType:   indexType,
 			ID:          uuid.NewV4().String(),
 			Obj:         mockObj{name: fmt.Sprintf("dummy%v", i)},
 		}
@@ -98,7 +96,7 @@ func TestESMockBulkIndex(t *testing.T) {
 	Assert(t, len(resp.Indexed()) == 10, fmt.Sprintf("expected %v, got %v", 10, len(resp.Indexed())))
 
 	// search
-	result, err := mc.Search(ctx, indexName, indexType, mockQuery{name: "dummy1"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err := mc.Search(ctx, indexName, mockQuery{name: "dummy1"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, result.TotalHits() == 1, fmt.Sprintf("expected search result %v, got %v", 1, result.TotalHits()))
 
@@ -109,7 +107,6 @@ func TestESMockBulkIndex(t *testing.T) {
 		requests = append(requests, &elastic.BulkRequest{
 			RequestType: elastic.Index,
 			Index:       indexName,
-			IndexType:   indexType,
 			ID:          uuid.NewV4().String(),
 			Obj:         mockObj{name: "dummy1"},
 		})
@@ -118,7 +115,6 @@ func TestESMockBulkIndex(t *testing.T) {
 		requests = append(requests, &elastic.BulkRequest{
 			RequestType: elastic.Index,
 			Index:       indexName,
-			IndexType:   indexType,
 			ID:          uuid.NewV4().String(),
 			Obj:         nil,
 		})
@@ -129,7 +125,7 @@ func TestESMockBulkIndex(t *testing.T) {
 	// only 10 of them are valid requests
 	Assert(t, len(resp.Indexed()) == 10, fmt.Sprintf("expected %v, got %v", 10, len(resp.Indexed())))
 
-	result, err = mc.Search(ctx, indexName, indexType, mockQuery{name: "dummy1"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err = mc.Search(ctx, indexName, mockQuery{name: "dummy1"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, result.TotalHits() == 11, fmt.Sprintf("expected search result %v, got %v", 11, result.TotalHits()))
 
@@ -149,7 +145,6 @@ func TestESMockSearch(t *testing.T) {
 		requests[i] = &elastic.BulkRequest{
 			RequestType: elastic.Index,
 			Index:       indexName,
-			IndexType:   indexType,
 			ID:          uuid.NewV4().String(),
 			Obj:         mockObj{name: "dummy1"},
 		}
@@ -161,12 +156,12 @@ func TestESMockSearch(t *testing.T) {
 	Assert(t, len(resp.Indexed()) == 10, fmt.Sprintf("expected %v, got %v", 10, len(resp.Indexed())))
 
 	// search documents
-	result, err := mc.Search(ctx, indexName, indexType, mockQuery{name: "dummy1"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err := mc.Search(ctx, indexName, mockQuery{name: "dummy1"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, result.TotalHits() == 10, fmt.Sprintf("expected search result %v, got %v", 10, result.TotalHits()))
 
 	// search using invalid query
-	result, err = mc.Search(ctx, indexName, indexType, nil, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err = mc.Search(ctx, indexName, nil, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, elastic.IsInvalidSearchQuery(err), fmt.Sprintf("expected failure, got %v", err))
 	Assert(t, result == nil, fmt.Sprintf("expected nil search result, got %v", result))
 }
@@ -183,7 +178,6 @@ func TestESMockBulk(t *testing.T) {
 		requests[i] = &elastic.BulkRequest{
 			RequestType: elastic.Index,
 			Index:       indexName,
-			IndexType:   indexType,
 			ID:          uuid.NewV4().String(),
 			Obj:         mockObj{name: "dummy1 - index"},
 		}
@@ -194,7 +188,7 @@ func TestESMockBulk(t *testing.T) {
 	Assert(t, len(resp.Indexed()) == totalEvents, fmt.Sprintf("expected %v, got %v", totalEvents, len(resp.Indexed())))
 
 	// search documents
-	result, err := mc.Search(ctx, indexName, indexType, mockQuery{name: "dummy1 - index"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err := mc.Search(ctx, indexName, mockQuery{name: "dummy1 - index"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, int(result.TotalHits()) == totalEvents, fmt.Sprintf("expected search result %v, got %v", totalEvents, result.TotalHits()))
 
@@ -214,12 +208,12 @@ func TestESMockBulk(t *testing.T) {
 	Assert(t, len(resp.Deleted()) == totalEvents/2, fmt.Sprintf("expected %v, got %v", totalEvents/2, len(resp.Deleted())))
 
 	// search old docs and it should match 0 events
-	result, err = mc.Search(ctx, indexName, indexType, mockQuery{name: "dummy1 - index"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err = mc.Search(ctx, indexName, mockQuery{name: "dummy1 - index"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, result.TotalHits() == 0, fmt.Sprintf("expected search result %v, got %v", 0, result.TotalHits()))
 
 	// search updated docs
-	result, err = mc.Search(ctx, indexName, indexType, mockQuery{name: "dummy1 - updated"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
+	result, err = mc.Search(ctx, indexName, mockQuery{name: "dummy1 - updated"}, mockAggregation{}, from, maxResults, sortByField, sortAsc)
 	Assert(t, err == nil, "failed to search")
 	Assert(t, int(result.TotalHits()) == totalEvents/2, fmt.Sprintf("expected search result %v, got %v", totalEvents/2, result.TotalHits()))
 }
@@ -246,7 +240,7 @@ func TestESMockFunctions(t *testing.T) {
 		}()
 
 		// This function should cause a panic
-		mc.DeleteByQuery(context.Background(), "test", "", mockQuery{name: "dummy1 - updated"}, -1, "", false)
+		mc.DeleteByQuery(context.Background(), "test", mockQuery{name: "dummy1 - updated"}, -1, "", false)
 	}()
 
 	func() {

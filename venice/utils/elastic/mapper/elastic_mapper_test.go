@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	eventTemplateMapping = `{"index_patterns":"*.events.*","settings":{"number_of_shards":1,"number_of_replicas":0,"codec":"best_compression","max_inner_result_window":8192,"allocation":{"max_retries":10}},"mappings":{"events":{"properties":{"api-version":{"type":"text"},"category":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"count":{"type":"integer"},"kind":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"message":{"type":"text"},"meta":{"properties":{"creation-time":{"type":"date"},"generation-id":{"type":"text"},"labels":{"properties":{"key":{"type":"text"},"value":{"type":"text"}}},"mod-time":{"type":"date"},"name":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"namespace":{"type":"text"},"resource-version":{"type":"text"},"self-link":{"type":"text"},"tenant":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"uuid":{"type":"text"}}},"object-ref":{"properties":{"kind":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"name":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"namespace":{"type":"text"},"tenant":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"uri":{"type":"text"}}},"severity":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"source":{"properties":{"component":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"node-name":{"type":"text"}}},"type":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"}}}}}
+	eventTemplateMapping = `{"index_patterns":"*.events.*","settings":{"number_of_shards":1,"number_of_replicas":0,"codec":"best_compression","max_inner_result_window":8192,"allocation":{"max_retries":10}},"mappings":{"_doc":{"properties":{"api-version":{"type":"text"},"category":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"count":{"type":"integer"},"kind":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"message":{"type":"text"},"meta":{"properties":{"creation-time":{"type":"date"},"generation-id":{"type":"text"},"labels":{"properties":{"key":{"type":"text"},"value":{"type":"text"}}},"mod-time":{"type":"date"},"name":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"namespace":{"type":"text"},"resource-version":{"type":"text"},"self-link":{"type":"text"},"tenant":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"uuid":{"type":"text"}}},"object-ref":{"properties":{"kind":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"name":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"namespace":{"type":"text"},"tenant":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"uri":{"type":"text"}}},"severity":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"source":{"properties":{"component":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"node-name":{"type":"text"}}},"type":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"}}}}}
 `
 	eventTemplateMappingPretty = `{
     "index_patterns": "*.events.*",
@@ -30,7 +30,7 @@ const (
         }
     },
     "mappings": {
-        "events": {
+        "_doc": {
             "properties": {
                 "api-version": {
                     "type": "text"
@@ -189,7 +189,7 @@ const (
 }
 `
 
-	searchMapping = `{"settings":{"number_of_shards":3,"number_of_replicas":2,"codec":"best_compression","max_inner_result_window":256},"mappings":{"configs":{"properties":{"api-version":{"type":"text"},"kind":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"meta":{"properties":{"creation-time":{"type":"date"},"generation-id":{"type":"text"},"labels":{"properties":{"key":{"type":"text"},"value":{"type":"text"}}},"mod-time":{"type":"date"},"name":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"namespace":{"type":"text"},"resource-version":{"type":"text"},"self-link":{"type":"text"},"tenant":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"uuid":{"type":"text"}}}}}}}
+	searchMapping = `{"settings":{"number_of_shards":3,"number_of_replicas":2,"codec":"best_compression","max_inner_result_window":256},"mappings":{"_doc":{"properties":{"api-version":{"type":"text"},"kind":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"meta":{"properties":{"creation-time":{"type":"date"},"generation-id":{"type":"text"},"labels":{"properties":{"key":{"type":"text"},"value":{"type":"text"}}},"mod-time":{"type":"date"},"name":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"namespace":{"type":"text"},"resource-version":{"type":"text"},"self-link":{"type":"text"},"tenant":{"fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"uuid":{"type":"text"}}}}}}}
 `
 	searchMappingPretty = `{
     "settings": {
@@ -199,7 +199,7 @@ const (
         "max_inner_result_window": 256
     },
     "mappings": {
-        "configs": {
+        "_doc": {
             "properties": {
                 "api-version": {
                     "type": "text"
@@ -272,7 +272,7 @@ const (
 }
 `
 
-	searchMappingWithCharFilter = `{"settings":{"number_of_shards":3,"number_of_replicas":2,"codec":"best_compression","max_inner_result_window":256,"analysis":{"analyzer":{"t_analyzer":{"char_filter":["t_char_filter"],"filter":["lowercase"],"tokenizer":"standard"}},"char_filter":{"t_char_filter":{"mappings":["- => _"],"type":"mapping"}}}},"mappings":{"configs":{"properties":{"api-version":{"type":"text"},"kind":{"analyzer":"t_analyzer","fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"meta":{"properties":{"creation-time":{"type":"date"},"generation-id":{"type":"text"},"labels":{"properties":{"key":{"type":"text"},"value":{"type":"text"}}},"mod-time":{"type":"date"},"name":{"analyzer":"t_analyzer","fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"namespace":{"type":"text"},"resource-version":{"type":"text"},"self-link":{"type":"text"},"tenant":{"analyzer":"t_analyzer","fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"uuid":{"type":"text"}}}}}}}
+	searchMappingWithCharFilter = `{"settings":{"number_of_shards":3,"number_of_replicas":2,"codec":"best_compression","max_inner_result_window":256,"analysis":{"analyzer":{"t_analyzer":{"char_filter":["t_char_filter"],"filter":["lowercase"],"tokenizer":"standard"}},"char_filter":{"t_char_filter":{"mappings":["- => _"],"type":"mapping"}}}},"mappings":{"_doc":{"properties":{"api-version":{"type":"text"},"kind":{"analyzer":"t_analyzer","fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"meta":{"properties":{"creation-time":{"type":"date"},"generation-id":{"type":"text"},"labels":{"properties":{"key":{"type":"text"},"value":{"type":"text"}}},"mod-time":{"type":"date"},"name":{"analyzer":"t_analyzer","fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"namespace":{"type":"text"},"resource-version":{"type":"text"},"self-link":{"type":"text"},"tenant":{"analyzer":"t_analyzer","fields":{"keyword":{"ignore_above":256,"type":"keyword"}},"type":"text"},"uuid":{"type":"text"}}}}}}}
 `
 	searchMappingPrettyWithCharFilter = `{
     "settings": {
@@ -303,7 +303,7 @@ const (
         }
     },
     "mappings": {
-        "configs": {
+        "_doc": {
             "properties": {
                 "api-version": {
                     "type": "text"
@@ -379,7 +379,7 @@ const (
 }
 `
 
-	s2Mapping = `{"settings":{"number_of_shards":5,"number_of_replicas":1,"codec":"lz4","max_inner_result_window":256},"mappings":{"s2":{"properties":{"P":{"properties":{"X":{"type":"long"},"Y":{"type":"boolean"},"Z":{"properties":{"X":{"type":"text"}}}}}}}}}
+	s2Mapping = `{"settings":{"number_of_shards":5,"number_of_replicas":1,"codec":"lz4","max_inner_result_window":256},"mappings":{"_doc":{"properties":{"P":{"properties":{"X":{"type":"long"},"Y":{"type":"boolean"},"Z":{"properties":{"X":{"type":"text"}}}}}}}}}
 `
 	s2MappingPretty = `{
     "settings": {
@@ -389,7 +389,7 @@ const (
         "max_inner_result_window": 256
     },
     "mappings": {
-        "s2": {
+        "_doc": {
             "properties": {
                 "P": {
                     "properties": {
@@ -468,7 +468,7 @@ func TestElasticMapper(t *testing.T) {
 	}{
 		{
 			search.ConfigEntry{},
-			elastic.GetDocType(globals.Configs),
+			elastic.String(globals.Configs),
 			nil, // test default option
 			nil,
 			searchMapping,
@@ -483,7 +483,7 @@ func TestElasticMapper(t *testing.T) {
 					Source:    &evtsapi.EventSource{},
 				},
 			},
-			elastic.GetDocType(globals.Events),
+			elastic.String(globals.Events),
 			[]Option{
 				WithReplicaCount(0),
 				WithShardCount(1),
@@ -514,7 +514,7 @@ func TestElasticMapper(t *testing.T) {
 		},
 		{
 			search.ConfigEntry{},
-			elastic.GetDocType(globals.Configs),
+			elastic.String(globals.Configs),
 			[]Option{WithCharFilter()},
 			nil,
 			searchMappingWithCharFilter,
@@ -555,41 +555,41 @@ func TestElasticMapper(t *testing.T) {
 }
 
 func TestMapperDisableIndexing(t *testing.T) {
-	_, ok := isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["rule-id"]
+	_, ok := isIndexingDisabled[elastic.String(globals.FwLogs)]["rule-id"]
 	Assert(t, ok, "indexing is enabled on fwlogs::ruleid")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["session-id"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["session-id"]
 	Assert(t, ok, "indexing is enabled on fwlogs::sessid")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["flow-action"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["flow-action"]
 	Assert(t, ok, "indexing is enabled on fwlogs::flowaction")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["icmp-type"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["icmp-type"]
 	Assert(t, ok, "indexing is enabled on fwlogs::icmptype")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["icmp-id"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["icmp-id"]
 	Assert(t, ok, "indexing is enabled on fwlogs::icmpid")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["icmp-code"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["icmp-code"]
 	Assert(t, ok, "indexing is enabled on fwlogs::icmpcode")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["direction"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["direction"]
 	Assert(t, ok, "indexing is enabled on fwlogs::dir")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["source-ip"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["source-ip"]
 	Assert(t, !ok, "indexing is disabled on fwlogs::sip")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["destination-ip"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["destination-ip"]
 	Assert(t, !ok, "indexing is disabled on fwlogs::dip")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["source-port"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["source-port"]
 	Assert(t, !ok, "indexing is disabled on fwlogs::sport")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogs)]["destination-port"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogs)]["destination-port"]
 	Assert(t, !ok, "indexing is disabled on fwlogs::dport")
 
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["bucket"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogsObjects)]["bucket"]
 	Assert(t, ok, "indexing is enabled on fwlogobjects::bucket")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["logscount"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogsObjects)]["logscount"]
 	Assert(t, ok, "indexing is enabled on fwlogobjects::logscount")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["startts"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogsObjects)]["startts"]
 	Assert(t, !ok, "indexing is enabled on fwlogobjects::startts")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["endts"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogsObjects)]["endts"]
 	Assert(t, !ok, "indexing is enabled on fwlogobjects::endts")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["key"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogsObjects)]["key"]
 	Assert(t, !ok, "indexing is disabled on fwlogobjects::key")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["tenant"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogsObjects)]["tenant"]
 	Assert(t, !ok, "indexing is disabled on fwlogobjects::tenant")
-	_, ok = isIndexingDisabled[elastic.GetDocType(globals.FwLogsObjects)]["dscid"]
+	_, ok = isIndexingDisabled[elastic.String(globals.FwLogsObjects)]["dscid"]
 	Assert(t, !ok, "indexing is disabled on fwlogobjects::dscid")
 }

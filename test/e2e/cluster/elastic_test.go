@@ -130,7 +130,7 @@ var _ = Describe("elastic cluster test", func() {
 					return fmt.Errorf("expected `yellow` status, got: %v", res.Status)
 				}
 
-				resp, err := esClient.Search(context.Background(), "*external*", "", searchAllQuery, nil, 0, 10, "", true)
+				resp, err := esClient.Search(context.Background(), "*external*", searchAllQuery, nil, 0, 10, "", true)
 				if err != nil || resp == nil {
 					return fmt.Errorf("search query failed")
 				}
@@ -325,7 +325,7 @@ func checkElasticClusterHealth(esClient elastic.ESClient, query es.Query) {
 			return fmt.Errorf("expected `green/yellow` status, got: %v", res.Status)
 		}
 
-		resp, err := esClient.Search(context.Background(), "*external*", "", query, nil, 0, 10, "", true)
+		resp, err := esClient.Search(context.Background(), "*external*", query, nil, 0, 10, "", true)
 		if err != nil || resp == nil {
 			return fmt.Errorf("search query failed")
 		}

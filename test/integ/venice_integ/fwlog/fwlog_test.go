@@ -433,7 +433,6 @@ func createFwLogs(t *testing.T, ti *TestInfo, count int) {
 		request := &elastic.BulkRequest{
 			RequestType: elastic.Index,
 			Index:       elastic.GetIndex(globals.FwLogs, globals.DefaultTenant),
-			IndexType:   elastic.GetDocType(globals.FwLogs),
 			ID:          uuid.NewV4().String(),
 			Obj:         obj, // req.object
 		}

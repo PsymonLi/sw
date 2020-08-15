@@ -447,7 +447,6 @@ func (idr *Indexer) startOrderedWriter(id int) {
 			request := &elastic.BulkRequest{
 				RequestType: reqType,
 				Index:       elastic.GetIndex(globals.Configs, globals.DefaultTenant),
-				IndexType:   elastic.GetDocType(globals.Configs),
 				ID:          uuid,
 				Obj:         req.object,
 			}

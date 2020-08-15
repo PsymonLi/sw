@@ -58,7 +58,6 @@ func getNICHealthEvents(ctx context.Context, esClient elastic.ESClient, evtType 
 	Eventually(func() error {
 		res, err = esClient.Search(context.Background(),
 			elastic.GetIndex(globals.Events, globals.DefaultTenant),
-			elastic.GetDocType(globals.Events),
 			query, nil, 0, 100, "", true)
 		return err
 	}, 15, 3).Should(BeNil(), fmt.Sprintf("Error querying ElasticSearch for NIC Health Events: %v", err))

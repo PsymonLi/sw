@@ -31,7 +31,6 @@ func (fdr *Finder) GetEvent(ctx context.Context, r *evtsapi.GetEventRequest) (*e
 	// execute query
 	result, err := fdr.elasticClient.Search(ctx,
 		"*.events.*", // search only in event indices
-		"",           // skip the index type
 		query,        // query to be executed
 		nil,          // no aggregation
 		0,            // from
@@ -158,7 +157,6 @@ func (fdr *Finder) GetEvents(ctx context.Context, r *api.ListWatchOptions) (*evt
 	// execute query
 	result, err := fdr.elasticClient.Search(ctx,
 		"*.events.*",    // search only in event indices
-		"",              // skip the index type
 		query,           // query to be executeds
 		nil,             // no aggregation
 		r.GetFrom(),     // from

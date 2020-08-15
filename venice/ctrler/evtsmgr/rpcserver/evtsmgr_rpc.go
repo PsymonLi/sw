@@ -20,8 +20,6 @@ import (
 var (
 	once sync.Once
 	last string
-
-	indexType = elastic.GetDocType(globals.Events)
 )
 
 // EvtsMgrRPCHandler handles all event RPC calls
@@ -61,8 +59,7 @@ func (e *EvtsMgrRPCHandler) SendEvents(ctx context.Context, eventList *evtsapi.E
 	if len(events) == 1 {
 		event := events[0]
 		if err := e.esClient.Index(ctx,
-			elastic.GetIndex(globals.Events, event.GetTenant()),
-			indexType, event.GetUUID(), event); err != nil {
+			elastic.GetIndex(globals.Events, event.GetTenant()), event.GetUUID(), event); err != nil {
 			e.logger.Errorf("error sending event to elastic, err: %v", err)
 			return nil, errors.Wrap(err, "error sending event to elastic")
 		}
@@ -72,7 +69,6 @@ func (e *EvtsMgrRPCHandler) SendEvents(ctx context.Context, eventList *evtsapi.E
 		for i, evt := range events {
 			requests[i] = &elastic.BulkRequest{
 				RequestType: "index",
-				IndexType:   indexType,
 				ID:          evt.GetUUID(),
 				Obj:         evt,
 				Index:       elastic.GetIndex(globals.Events, evt.GetTenant()),

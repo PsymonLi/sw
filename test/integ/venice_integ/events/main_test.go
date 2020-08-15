@@ -38,7 +38,6 @@ import (
 var (
 	testURL = "localhost:0"
 
-	indexType   = elastic.GetDocType(globals.Events)
 	sortByField = ""
 	sortAsc     = true
 
@@ -348,7 +347,7 @@ func (t *tInfo) assertElasticTotalEvents(te *testing.T, query es.Query, exact bo
 			singleEvents := es.NewBoolQuery()
 			singleEvents.Must(query, es.NewRangeQuery("count").Lte(1).Gt(0))
 			// count = 1
-			resp, err := t.esClient.Search(context.Background(), elastic.GetIndex(globals.Events, globals.DefaultTenant), indexType, singleEvents, nil, 0, 10, sortByField, sortAsc)
+			resp, err := t.esClient.Search(context.Background(), elastic.GetIndex(globals.Events, globals.DefaultTenant), singleEvents, nil, 0, 10, sortByField, sortAsc)
 			if err != nil {
 				return false, err
 			}
@@ -357,7 +356,7 @@ func (t *tInfo) assertElasticTotalEvents(te *testing.T, query es.Query, exact bo
 			// 2. query de-duped events, count>1
 			dedupedEvents := es.NewBoolQuery()
 			dedupedEvents.Must(query, es.NewRangeQuery("count").Gt(1))
-			resp, err = t.esClient.Search(context.Background(), elastic.GetIndex(globals.Events, globals.DefaultTenant), indexType, dedupedEvents, nil, 0, 10000, sortByField, sortAsc)
+			resp, err = t.esClient.Search(context.Background(), elastic.GetIndex(globals.Events, globals.DefaultTenant), dedupedEvents, nil, 0, 10000, sortByField, sortAsc)
 			if err != nil {
 				return false, err
 			}
@@ -388,7 +387,7 @@ func (t *tInfo) assertElasticUniqueEvents(te *testing.T, query es.Query, exact b
 		func() (bool, interface{}) {
 			var uniqueEventsReceived int
 
-			resp, err := t.esClient.Search(context.Background(), elastic.GetIndex(globals.Events, globals.DefaultTenant), indexType, query, nil, 0, 10000, sortByField, sortAsc)
+			resp, err := t.esClient.Search(context.Background(), elastic.GetIndex(globals.Events, globals.DefaultTenant), query, nil, 0, 10000, sortByField, sortAsc)
 			if err != nil {
 				return false, err
 			}

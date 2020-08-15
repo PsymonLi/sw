@@ -143,7 +143,7 @@ func (idr *Indexer) getIndexMapping(dType globals.DataType) (string, error) {
 
 		// get the elastic mapping config
 		config, err := mapper.ElasticMapper(search.ConfigEntry{},
-			elastic.GetDocType(dType),
+			elastic.String(dType),
 			mapper.WithShardCount(3),
 			mapper.WithReplicaCount(2),
 			mapper.WithMaxInnerResults(globals.SpyglassMaxResults),
@@ -165,11 +165,11 @@ func (idr *Indexer) getIndexMapping(dType globals.DataType) (string, error) {
 	case globals.FwLogs:
 		// get the elastic mapping config
 		config, err := mapper.ElasticMapper(fwlog.FwLog{},
-			elastic.GetDocType(dType),
+			elastic.String(dType),
 			mapper.WithShardCount(3),
 			mapper.WithReplicaCount(1),
 			mapper.WithMaxInnerResults(globals.SpyglassMaxResults),
-			mapper.WithIndexPatterns(fmt.Sprintf("*.%s.*", elastic.GetDocType(dType))),
+			mapper.WithIndexPatterns(fmt.Sprintf("*.%s.*", elastic.String(dType))),
 			mapper.WithCharFilter(),
 			mapper.WithAllcationMaxRetries(10))
 		if err != nil {
@@ -185,7 +185,7 @@ func (idr *Indexer) getIndexMapping(dType globals.DataType) (string, error) {
 	case globals.FwLogsObjects:
 		// get the elastic mapping config
 		config, err := mapper.ElasticMapper(FwLogObjectV1{},
-			elastic.GetDocType(dType),
+			elastic.String(dType),
 			mapper.WithShardCount(3),
 			mapper.WithReplicaCount(2),
 			mapper.WithMaxInnerResults(globals.SpyglassMaxResults),

@@ -36,31 +36,28 @@ type ESClient interface {
 	// for the given list of indices or a index patterns provided as input argument.
 	GetIndexSettings(ctx context.Context, indices []string) (map[string]SettingsResponse, error)
 
-	// Index indexes the single document (obj) on the given `index` and
-	// type `iType` with the given ID.
-	Index(ctx context.Context, index, iType, ID string, obj interface{}) error
+	// Index indexes the single document (obj) on the given `index` with the given ID.
+	Index(ctx context.Context, index, ID string, obj interface{}) error
 
 	// Bulk performs the bulk request against elasticsearch. Each of the request
 	// in bulk operation can be heterogeneous.
 	Bulk(ctx context.Context, objs []*BulkRequest) (*es.BulkResponse, error)
 
-	// Delete removes a single document (obj) from the given `index` and
-	// type `iType` with the given ID.
-	Delete(ctx context.Context, index, iType, ID string) error
+	// Delete removes a single document (obj) from the given `index` with the given ID.
+	Delete(ctx context.Context, index, ID string) error
 
 	// DeleteByQuery deletes objects that matches the given query from the given index
 	DeleteByQuery(ctx context.Context,
-		index string, iType string, query es.Query,
-		size int, sortByField string, sortAsc bool) (*es.BulkIndexByScrollResponse, error)
+		index string, query es.Query, size int,
+		sortByField string, sortAsc bool) (*es.BulkIndexByScrollResponse, error)
 
-	// Search performs the given query on `index` and type `iType` and limits
-	// the number of search results to desired 'size' with start offset specified
-	// by `from`.
-	Search(ctx context.Context, index, iType string, query es.Query, aggregation es.Aggregation,
+	// Search performs the given query on `index` and limits the number of search results
+	// to desired 'size' with start offset specified by `from`.
+	Search(ctx context.Context, index string, query es.Query, aggregation es.Aggregation,
 		from, size int32, sortByField string, sortAsc bool, options ...SearchOption) (*es.SearchResult, error)
 
 	// Scroll performs the given query and iteratively fetches the result
-	Scroll(ctx context.Context, index, iType string, query es.Query, size int32) (Scroller, error)
+	Scroll(ctx context.Context, index string, query es.Query, size int32) (Scroller, error)
 
 	// Close the elastic client
 	Close() error

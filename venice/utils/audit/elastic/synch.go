@@ -65,8 +65,7 @@ func (a *synchAuditor) ProcessEvents(events ...*auditapi.AuditEvent) error {
 			if _, err := utils.ExecuteWithRetry(func(mctx context.Context) (interface{}, error) {
 				event := events[0]
 				if err := a.elasticClient.Index(ctx,
-					elastic.GetIndex(globals.AuditLogs, event.GetTenant()),
-					elastic.GetDocType(globals.AuditLogs), event.GetUUID(), event); err != nil {
+					elastic.GetIndex(globals.AuditLogs, event.GetTenant()), event.GetUUID(), event); err != nil {
 					a.logger.Errorf("error logging audit event to elastic, err: %v", err)
 					return false, err
 				}
@@ -85,7 +84,6 @@ func (a *synchAuditor) ProcessEvents(events ...*auditapi.AuditEvent) error {
 			for i, evt := range events {
 				requests[i] = &elastic.BulkRequest{
 					RequestType: "index",
-					IndexType:   elastic.GetDocType(globals.AuditLogs),
 					ID:          evt.GetUUID(),
 					Obj:         evt,
 					Index:       elastic.GetIndex(globals.AuditLogs, evt.GetTenant()),
@@ -151,7 +149,7 @@ func (a *synchAuditor) Shutdown() {
 
 // createAuditLogsElasticTemplate helper function to create index template for audit logs.
 func (a *synchAuditor) createAuditLogsElasticTemplate() error {
-	docType := elastic.GetDocType(globals.AuditLogs)
+	docType := elastic.String(globals.AuditLogs)
 	mapping, err := mapper.ElasticMapper(auditapi.AuditEvent{
 		EventAttributes: auditapi.EventAttributes{
 			// Need to make sure pointer fields are valid to

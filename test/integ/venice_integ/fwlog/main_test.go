@@ -28,7 +28,7 @@ var (
 
 // createFwLogsElasticIndex helper function to create index template for fw logs.
 func createFwLogsElasticIndex(t *TestInfo) error {
-	docType := elastic.GetDocType(globals.FwLogs)
+	docType := elastic.String(globals.FwLogs)
 	mapping, err := mapper.ElasticMapper(fwlog.FwLog{},
 		docType,
 		mapper.WithShardCount(3),

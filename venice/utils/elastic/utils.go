@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	cmdutils "github.com/pensando/sw/venice/cmd/utils"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils"
 	"github.com/pensando/sw/venice/utils/log"
@@ -73,6 +72,9 @@ const (
 
 	// IndexScanInterval scan interval for elastic indices - 24 hours
 	IndexScanInterval = 24 * time.Hour
+
+	// DefaultElasticIndexType default type to be used for elasticsearch 6.x
+	DefaultElasticIndexType = "_doc"
 )
 
 // GetIndex returns the Elastic Index based on the data type & tenant name
@@ -96,16 +98,16 @@ func GetIndex(dtype globals.DataType, tenant string) string {
 	switch dtype {
 	case globals.FwLogs:
 		hour := getClockHourTimeForIndex(time.Now(), 6)
-		return strings.ToLower(fmt.Sprintf("%s.%s.%s.%s", ExternalIndexPrefix, tenant, GetDocType(dtype), hour))
+		return strings.ToLower(fmt.Sprintf("%s.%s.%s.%s", ExternalIndexPrefix, tenant, String(dtype), hour))
 	case globals.FwLogsObjects:
-		return strings.ToLower(fmt.Sprintf("%s.%s", InternalIndexPrefix, GetDocType(dtype)))
+		return strings.ToLower(fmt.Sprintf("%s.%s", InternalIndexPrefix, String(dtype)))
 	case globals.Configs:
-		return strings.ToLower(fmt.Sprintf("%s.%s.%s", ExternalIndexPrefix, tenant, GetDocType(dtype)))
+		return strings.ToLower(fmt.Sprintf("%s.%s.%s", ExternalIndexPrefix, tenant, String(dtype)))
 	case globals.Alerts, globals.Events, globals.AuditLogs, globals.DebugLogs:
 		if !utils.IsEmpty(tenant) {
-			return strings.ToLower(fmt.Sprintf("%s.%s.%s.%s", ExternalIndexPrefix, tenant, GetDocType(dtype), currentDay))
+			return strings.ToLower(fmt.Sprintf("%s.%s.%s.%s", ExternalIndexPrefix, tenant, String(dtype), currentDay))
 		}
-		return strings.ToLower(fmt.Sprintf("%s.%s.%s", ExternalIndexPrefix, GetDocType(dtype), currentDay))
+		return strings.ToLower(fmt.Sprintf("%s.%s.%s", ExternalIndexPrefix, String(dtype), currentDay))
 	case globals.Stats:
 		return "N/A"
 	}
@@ -113,10 +115,10 @@ func GetIndex(dtype globals.DataType, tenant string) string {
 	return ""
 }
 
-// GetDocType returns the string-enum of DataType.
+// String returns the string-enum of DataType.
 // This is intended to used as a document type
 // in ElasticDB.
-func GetDocType(dtype globals.DataType) string {
+func String(dtype globals.DataType) string {
 
 	switch dtype {
 	case globals.Configs:
@@ -144,7 +146,7 @@ func GetDocType(dtype globals.DataType) string {
 func GetTemplateName(dtype globals.DataType) string {
 	switch dtype {
 	case globals.Events, globals.AuditLogs, globals.FwLogs:
-		return fmt.Sprintf("%s-template", GetDocType(dtype))
+		return fmt.Sprintf("%s-template", String(dtype))
 	}
 
 	return ""
@@ -164,36 +166,6 @@ func getElasticSearchAddrs(resolverClient resolver.Interface) ([]string, error) 
 	}
 
 	return []string{}, fmt.Errorf("failed to get `%v` URLs using the resolver", globals.ElasticSearch)
-}
-
-// GetLogRetention returns the log retention in hours
-func GetLogRetention() time.Duration {
-	lRetention := cmdutils.GetLogRetention("")
-	if lRetention != 0 {
-		return time.Duration(int64(lRetention) * int64(24*time.Hour))
-	}
-
-	return LogIndexRetentionPeriod
-}
-
-// GetEventRetention returns the event retention in hours
-func GetEventRetention() time.Duration {
-	eRetention := cmdutils.GetEventRetention("")
-	if eRetention != 0 {
-		return time.Duration(int64(eRetention) * int64(24*time.Hour))
-	}
-
-	return EventsIndexRetentionPeriod
-}
-
-// GetAuditRetention returns the audit retention in hours
-func GetAuditRetention() time.Duration {
-	aRetention := cmdutils.GetAuditRetention("")
-	if aRetention != 0 {
-		return time.Duration(int64(aRetention) * int64(24*time.Hour))
-	}
-
-	return AuditLogsIndexRetentionPeriod
 }
 
 func getClockHourTimeForIndex(t time.Time, hoursapart int) string {

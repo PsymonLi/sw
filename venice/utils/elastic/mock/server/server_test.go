@@ -27,7 +27,6 @@ var (
 	from        = int32(0)
 	maxResults  = int32(10)
 	indexName   = "events"
-	indexType   = "event"
 	sortByField = ""
 	sortAsc     = true
 )
@@ -70,18 +69,18 @@ func TestMockElasticServer(t *testing.T) {
 
 	// index doc `id1`
 	data := `{"test":"data"}`
-	err = client.Index(ctx, indexName, indexType, "id1", data)
+	err = client.Index(ctx, indexName, "id1", data)
 	tu.AssertOk(t, err, "failed to perform index operation")
 
 	// test bulk operation
 	_, err = client.Bulk(ctx, []*elastic.BulkRequest{
-		&elastic.BulkRequest{RequestType: elastic.Index, Index: indexName, IndexType: indexType, Obj: "{}", ID: "dummy1"},
-		&elastic.BulkRequest{RequestType: elastic.Index, Index: indexName, IndexType: indexType, Obj: "{}", ID: "dummy2"},
+		{RequestType: elastic.Index, Index: indexName, Obj: "{}", ID: "dummy1"},
+		{RequestType: elastic.Index, Index: indexName, Obj: "{}", ID: "dummy2"},
 	})
 	tu.AssertOk(t, err, "failed to perform bulk operation")
 
 	// search should return the docs matching the string `test`
-	resp, err := client.Search(ctx, indexName, indexType, es.NewRawStringQuery(`{"match_all":"test"}`), nil, from, maxResults, sortByField, sortAsc)
+	resp, err := client.Search(ctx, indexName, es.NewRawStringQuery(`{"match_all":"test"}`), nil, from, maxResults, sortByField, sortAsc)
 	tu.AssertOk(t, err, "failed to perform search")
 	doc, err := json.Marshal(&resp.Hits.Hits[0].Source)
 	tu.AssertOk(t, err, "failed to doc from search result")
@@ -92,11 +91,11 @@ func TestMockElasticServer(t *testing.T) {
 
 	// index one more document
 	data = `{"test1":"data"}`
-	err = client.Index(ctx, indexName, indexType, "id2", data)
+	err = client.Index(ctx, indexName, "id2", data)
 	tu.AssertOk(t, err, "failed to perform index operation")
 
 	// this search should return the docs matching the string `test1`
-	resp, err = client.Search(ctx, indexName, indexType, es.NewRawStringQuery(`{"match_all":"test1"}`), nil, from, maxResults, sortByField, sortAsc)
+	resp, err = client.Search(ctx, indexName, es.NewRawStringQuery(`{"match_all":"test1"}`), nil, from, maxResults, sortByField, sortAsc)
 	tu.AssertOk(t, err, "failed to perform search")
 	doc, err = json.Marshal(&resp.Hits.Hits[0].Source)
 	tu.AssertOk(t, err, "failed to doc from search result")
@@ -105,17 +104,17 @@ func TestMockElasticServer(t *testing.T) {
 	tu.Assert(t, string(doc) == data, fmt.Sprintf("expected doc %v, got %v", data, string(doc)))
 
 	// query to match docs containing string `test`
-	resp, err = client.Search(ctx, indexName, indexType, es.NewRawStringQuery(`{"match_all":"test"}`), nil, from, maxResults, sortByField, sortAsc)
+	resp, err = client.Search(ctx, indexName, es.NewRawStringQuery(`{"match_all":"test"}`), nil, from, maxResults, sortByField, sortAsc)
 	tu.AssertOk(t, err, "failed to perform search")
 	totalHits = resp.TotalHits()
 	tu.Assert(t, totalHits == 2, fmt.Sprintf("expected %v hits, got %v", 2, totalHits))
 
 	/// index one more document
-	err = client.Index(ctx, indexName, indexType, "id3", `{}`)
+	err = client.Index(ctx, indexName, "id3", `{}`)
 	tu.AssertOk(t, err, "failed to perform index operation")
 
 	// query to match all the docs in the given index
-	resp, err = client.Search(ctx, indexName, indexType, es.NewRawStringQuery(`{"match_all":""}`), nil, from, maxResults, sortByField, sortAsc)
+	resp, err = client.Search(ctx, indexName, es.NewRawStringQuery(`{"match_all":""}`), nil, from, maxResults, sortByField, sortAsc)
 	tu.AssertOk(t, err, "failed to perform search")
 	totalHits = resp.TotalHits()
 	tu.Assert(t, totalHits == 5, fmt.Sprintf("expected %v hits, got %v", 5, totalHits))
@@ -123,14 +122,14 @@ func TestMockElasticServer(t *testing.T) {
 	// set default HTTP status on the server and make sure the calls get back the same
 	// simulate internal server error
 	mes.SetDefaultStatusCode(http.StatusInternalServerError)
-	err = client.Index(ctx, indexName, indexType, "id4", `{"test":"data"}`)
+	err = client.Index(ctx, indexName, "id4", `{"test":"data"}`)
 	tu.Assert(t, strings.Contains(err.Error(), "Internal Server Error"), "expected internal server error")
-	_, err = client.Search(ctx, indexName, indexType, es.NewRawStringQuery(`{"match_all":"test"}`), nil, from, maxResults, sortByField, sortAsc)
+	_, err = client.Search(ctx, indexName, es.NewRawStringQuery(`{"match_all":"test"}`), nil, from, maxResults, sortByField, sortAsc)
 	tu.Assert(t, strings.Contains(err.Error(), "Internal Server Error"), "expected internal server error")
 
 	// reset/clear the HTTP status and make sure the calls succeeded
 	mes.ClearDefaultStatusCode()
-	err = client.Index(ctx, indexName, indexType, "id4", `{"test":"data"}`)
+	err = client.Index(ctx, indexName, "id4", `{"test":"data"}`)
 	tu.AssertOk(t, err, "failed to perform index operation")
 
 	healthy, err = client.IsClusterHealthy(ctx)
@@ -138,7 +137,7 @@ func TestMockElasticServer(t *testing.T) {
 	tu.Assert(t, healthy, "elasticsearch cluster not healthy")
 
 	// -ve case; search for random strings
-	resp, err = client.Search(ctx, indexName, indexType, es.NewRawStringQuery(`{"match_all":"4adf232"}`), nil, from, maxResults, sortByField, sortAsc)
+	resp, err = client.Search(ctx, indexName, es.NewRawStringQuery(`{"match_all":"4adf232"}`), nil, from, maxResults, sortByField, sortAsc)
 	tu.AssertOk(t, err, "failed to perform search")
 	totalHits = resp.TotalHits()
 	tu.Assert(t, totalHits == 0, fmt.Sprintf("expected %v hits, got %v", 0, totalHits))
@@ -181,7 +180,7 @@ func TestMockElasticServerRestart(t *testing.T) {
 	tu.AssertOk(t, err, "failed to create index")
 	defer client.DeleteIndex(ctx, indexName)
 
-	err = client.Index(ctx, indexName, indexType, "id3", `{}`)
+	err = client.Index(ctx, indexName, "id3", `{}`)
 	tu.AssertOk(t, err, "failed to perform index operation")
 
 	stopServerRestarts := make(chan struct{}, 1)
@@ -221,13 +220,13 @@ func TestMockElasticServerRestart(t *testing.T) {
 		tu.Assert(t, err == nil || elastic.IsIndexExists(err), "expected successful creation of index or ErrIndexExists")
 
 		// index a document
-		err = client.Index(ctx, indexName, indexType, fmt.Sprintf("test%d", i), `{}`)
+		err = client.Index(ctx, indexName, fmt.Sprintf("test%d", i), `{}`)
 		tu.Assert(t, err == nil || elastic.IsIndexNotExists(err), "failed to perform index operation")
 
 		// bulk index documents
 		_, err = client.Bulk(ctx, []*elastic.BulkRequest{
-			&elastic.BulkRequest{RequestType: elastic.Index, Index: indexName, IndexType: indexType, Obj: "{}", ID: "dummy1"},
-			&elastic.BulkRequest{RequestType: elastic.Index, Index: indexName, IndexType: indexType, Obj: "{}", ID: "dummy2"},
+			{RequestType: elastic.Index, Index: indexName, Obj: "{}", ID: "dummy1"},
+			{RequestType: elastic.Index, Index: indexName, Obj: "{}", ID: "dummy2"},
 		})
 		tu.AssertOk(t, err, "failed to perform bulk operation")
 	}

@@ -40,7 +40,6 @@ var (
 	veniceBufferLen = 30
 	testServerURL   = "localhost:0"
 
-	indexType   = elastic.GetDocType(globals.Events)
 	sortByField = ""
 	sortAsc     = true
 
@@ -140,7 +139,7 @@ func TestVeniceEventsExporter(t *testing.T) {
 		func() (bool, interface{}) {
 			searchStr := "TEST-1"
 			resp, err := elasticClient.Search(context.Background(), elastic.GetIndex(globals.Events, dummyEvt.GetTenant()),
-				indexType, es.NewRawStringQuery(fmt.Sprintf("{\"match_all\":\"%s\"}", searchStr)), nil, 0, 10, sortByField, sortAsc)
+				es.NewRawStringQuery(fmt.Sprintf("{\"match_all\":\"%s\"}", searchStr)), nil, 0, 10, sortByField, sortAsc)
 			if err != nil {
 				return false, fmt.Sprintf("failed to find events matching {%s}, err: %v", searchStr, err)
 			}
@@ -167,7 +166,7 @@ func TestVeniceEventsExporter(t *testing.T) {
 		func() (bool, interface{}) {
 			searchStr := "TEST-2"
 			resp, err := elasticClient.Search(context.Background(), elastic.GetIndex(globals.Events, dummyEvt.GetTenant()),
-				indexType, es.NewRawStringQuery(fmt.Sprintf("{\"match_all\":\"%s\"}", searchStr)), nil, 0, 10, sortByField, sortAsc)
+				es.NewRawStringQuery(fmt.Sprintf("{\"match_all\":\"%s\"}", searchStr)), nil, 0, 10, sortByField, sortAsc)
 			if err != nil {
 				return false, fmt.Sprintf("failed to find events matching {%s}, err: %v", searchStr, err)
 			}
@@ -194,7 +193,7 @@ func TestVeniceEventsExporter(t *testing.T) {
 		func() (bool, interface{}) {
 			searchStr := "TEST-3"
 			resp, err := elasticClient.Search(context.Background(), elastic.GetIndex(globals.Events, dummyEvt.GetTenant()),
-				indexType, es.NewRawStringQuery(fmt.Sprintf("{\"match_all\":\"%s\"}", searchStr)), nil, 0, 10, sortByField, sortAsc)
+				es.NewRawStringQuery(fmt.Sprintf("{\"match_all\":\"%s\"}", searchStr)), nil, 0, 10, sortByField, sortAsc)
 			if err != nil {
 				return false, fmt.Sprintf("failed to find events matching {%s}, err: %v", searchStr, err)
 			}
@@ -290,7 +289,6 @@ func TestVeniceExporterWithEvtsMgrRestart(t *testing.T) {
 
 			resp, err := elasticClient.Search(context.Background(),
 				elastic.GetIndex(globals.Events, globals.DefaultTenant),
-				indexType,
 				es.NewRawStringQuery(fmt.Sprintf("{\"match_all\":\"%s\"}", t.Name())),
 				nil, 0, 10000, sortByField, sortAsc)
 			if err == nil {

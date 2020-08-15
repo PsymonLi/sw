@@ -80,7 +80,8 @@ func (e *elasticsearchTestSuite) TestElasticsearchRestart(c *C) {
 			return esClient.IsClusterHealthy(ctx)
 		}, "failed to get elasticsearch cluster health")
 
-	mapping, err := mapper.ElasticMapper(eventObj, indexType, mapper.WithShardCount(1), mapper.WithReplicaCount(0))
+	mapping, err := mapper.ElasticMapper(eventObj, elastic.String(globals.Events), mapper.WithShardCount(1),
+		mapper.WithReplicaCount(0))
 	AssertOk(c, err, "Failed to generate elastic mapping for events")
 
 	// Generate JSON string for the mapping
@@ -128,7 +129,7 @@ func (e *elasticsearchTestSuite) TestElasticsearchRestart(c *C) {
 				}
 
 				// index a document
-				if err := esClient.Index(ctx, indexName, indexType, fmt.Sprintf("test%d", i), `{}`); err != nil &&
+				if err := esClient.Index(ctx, indexName, fmt.Sprintf("test%d", i), `{}`); err != nil &&
 					!elastic.IsIndexNotExists(err) && !elastic.IsConnRefused(err) {
 					errs <- fmt.Errorf("failed to perform index operation, err: %v", err.Error())
 					return
@@ -136,8 +137,8 @@ func (e *elasticsearchTestSuite) TestElasticsearchRestart(c *C) {
 
 				// bulk index documents
 				if _, err := esClient.Bulk(ctx, []*elastic.BulkRequest{
-					&elastic.BulkRequest{RequestType: elastic.Index, Index: indexName, IndexType: indexType, Obj: "{}", ID: "dummy1"},
-					&elastic.BulkRequest{RequestType: elastic.Index, Index: indexName, IndexType: indexType, Obj: "{}", ID: "dummy2"},
+					{RequestType: elastic.Index, Index: indexName, Obj: "{}", ID: "dummy1"},
+					{RequestType: elastic.Index, Index: indexName, Obj: "{}", ID: "dummy2"},
 				}); err != nil && !elastic.IsConnRefused(err) {
 					errs <- fmt.Errorf("failed to perform bulk operation, err: %v", err.Error())
 					return

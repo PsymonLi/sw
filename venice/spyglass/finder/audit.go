@@ -31,7 +31,6 @@ func (a *auditHandler) GetEvent(ctx context.Context, r *audit.AuditEventRequest)
 	// execute query
 	result, err := a.fdr.elasticClient.Search(ctx,
 		"*.auditlogs.*", // search only in auditlogs indices
-		"",              // skip the index type
 		query,           // query to be executed
 		nil,             // no aggregation
 		0,               // from

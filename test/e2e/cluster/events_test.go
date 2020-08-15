@@ -3,7 +3,6 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	es "github.com/olivere/elastic"
@@ -80,8 +79,7 @@ var _ = Describe("events test", func() {
 			for _, query := range queries {
 				Eventually(func() error {
 					res, err := esClient.Search(context.Background(),
-						strings.ToLower(fmt.Sprintf("%s.%s.%s.%s", elastic.ExternalIndexPrefix, globals.DefaultTenant, elastic.GetDocType(globals.Events), "*")),
-						elastic.GetDocType(globals.Events),
+						elastic.GetIndex(globals.Events, globals.DefaultTenant),
 						query, nil, from, maxResults, sortByField, sortAsc)
 
 					if err != nil {
@@ -101,8 +99,7 @@ var _ = Describe("events test", func() {
 			query := es.NewBoolQuery().Must(es.NewTermQuery("source.component.keyword", globals.Cmd),
 				es.NewTermQuery("type.keyword", eventtypes.LEADER_ELECTED.String()))
 			res, err := esClient.Search(context.Background(),
-				strings.ToLower(fmt.Sprintf("%s.%s.%s.%s", elastic.ExternalIndexPrefix, globals.DefaultTenant, elastic.GetDocType(globals.Events), "*")),
-				elastic.GetDocType(globals.Events),
+				elastic.GetIndex(globals.Events, globals.DefaultTenant),
 				query, nil, from, maxResults, sortByField, sortAsc)
 
 			if err != nil {
@@ -128,8 +125,7 @@ var _ = Describe("events test", func() {
 			query := es.NewBoolQuery().Must(es.NewTermQuery("source.component.keyword", globals.Nmd),
 				es.NewTermQuery("type.keyword", eventtypes.DSC_ADMITTED.String()))
 			res, err := esClient.Search(context.Background(),
-				strings.ToLower(fmt.Sprintf("%s.%s.%s.%s", elastic.ExternalIndexPrefix, globals.DefaultTenant, elastic.GetDocType(globals.Events), "*")),
-				elastic.GetDocType(globals.Events),
+				elastic.GetIndex(globals.Events, globals.DefaultTenant),
 				query, nil, from, maxResults, sortByField, sortAsc)
 
 			if err != nil {

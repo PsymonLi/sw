@@ -148,7 +148,7 @@ func TestAuditManager(t *testing.T) {
 		if !test.err && test.query != nil {
 			AssertEventually(t, func() (bool, interface{}) {
 				resp, err := ti.ESClient.Search(context.Background(),
-					elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), elastic.GetDocType(globals.AuditLogs), test.query, nil, 0, 10000, "", true)
+					elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), test.query, nil, 0, 10000, "", true)
 				if err != nil {
 					return false, err
 				}
@@ -231,7 +231,7 @@ func TestAuditLogs(t *testing.T) {
 			es.NewTermQuery("outcome.keyword", auditapi.Outcome_Success.String()),
 			es.NewTermQuery("external-id.keyword", reqID))
 		resp, err := ti.ESClient.Search(context.Background(),
-			elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), elastic.GetDocType(globals.AuditLogs), query, nil, 0, 10000, "", true)
+			elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), query, nil, 0, 10000, "", true)
 		if err != nil {
 			return false, err.Error()
 		}
@@ -278,7 +278,7 @@ func TestAuditLogs(t *testing.T) {
 			es.NewTermQuery("action.keyword", strings.Title(string(apiintf.CreateOper))),
 			es.NewTermQuery("external-id.keyword", reqID))
 		resp, err := ti.ESClient.Search(context.Background(),
-			elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), elastic.GetDocType(globals.AuditLogs), query, nil, 0, 10000, "", true)
+			elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), query, nil, 0, 10000, "", true)
 		if err != nil {
 			return false, err.Error()
 		}
@@ -297,7 +297,7 @@ func TestAuditLogs(t *testing.T) {
 			es.NewTermQuery("outcome.keyword", auditapi.Outcome_Failure.String()),
 			es.NewTermQuery("stage.keyword", auditapi.Stage_RequestProcessing.String()))
 		resp, err := ti.ESClient.Search(context.Background(),
-			elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), elastic.GetDocType(globals.AuditLogs), query, nil, 0, 10000, "", true)
+			elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), query, nil, 0, 10000, "", true)
 		if err != nil {
 			return false, err.Error()
 		}
@@ -326,7 +326,7 @@ func TestAuditLogs(t *testing.T) {
 			es.NewTermQuery("outcome.keyword", auditapi.Outcome_Failure.String()),
 			es.NewTermQuery("stage.keyword", auditapi.Stage_RequestAuthorization.String()))
 		resp, err := ti.ESClient.Search(context.Background(),
-			elastic.GetIndex(globals.AuditLogs, testTenant), elastic.GetDocType(globals.AuditLogs), query, nil, 0, 10000, "", true)
+			elastic.GetIndex(globals.AuditLogs, testTenant), query, nil, 0, 10000, "", true)
 		if err != nil {
 			return false, err.Error()
 		}
@@ -347,7 +347,7 @@ func TestAuditLogs(t *testing.T) {
 			es.NewTermQuery("outcome.keyword", auditapi.Outcome_Failure.String()),
 			es.NewTermQuery("stage.keyword", auditapi.Stage_RequestProcessing.String()))
 		resp, err := ti.ESClient.Search(context.Background(),
-			elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), elastic.GetDocType(globals.AuditLogs), query, nil, 0, 10000, "", true)
+			elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), query, nil, 0, 10000, "", true)
 		if err != nil {
 			return false, err.Error()
 		}
@@ -1534,7 +1534,7 @@ func TestBulkProcessEvents(t *testing.T) {
 		AssertOk(t, err, fmt.Sprintf("[%v] test failed, error in processing [%d] bulk requests", test.name, test.numEvts))
 		AssertEventually(t, func() (bool, interface{}) {
 			resp, err := ti.ESClient.Search(context.Background(),
-				elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), elastic.GetDocType(globals.AuditLogs), test.query, nil, 0, 10000, "", true)
+				elastic.GetIndex(globals.AuditLogs, globals.DefaultTenant), test.query, nil, 0, 10000, "", true)
 			if err != nil {
 				return false, err
 			}

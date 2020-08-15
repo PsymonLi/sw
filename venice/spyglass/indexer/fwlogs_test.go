@@ -311,7 +311,6 @@ func verifyDiskMonitoring(ctx context.Context, t *testing.T, esClient elastic.ES
 	assert := func() (bool, interface{}) {
 		result, err := esClient.Search(ctx,
 			elastic.GetIndex(globals.FwLogsObjects, ""), // index
-			"",           // skip the index type
 			query,        // query to be executed
 			nil,          // no aggregation
 			0,            // from

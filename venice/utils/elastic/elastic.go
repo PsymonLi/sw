@@ -484,7 +484,7 @@ func (e *Client) GetIndexSettings(ctx context.Context, indices []string) (map[st
 // Index indexes the given object. Index action will either create the document if it doesn't
 // exist or replace it if it exists, but the call will always succeed.
 // Whereas the Create action will fail, if the doc exists already.
-func (e *Client) Index(ctx context.Context, index, iType, ID string, obj interface{}) error {
+func (e *Client) Index(ctx context.Context, index, ID string, obj interface{}) error {
 	if obj == nil {
 		return NewError(ErrEmptyDocument, "")
 	}
@@ -501,7 +501,8 @@ func (e *Client) Index(ctx context.Context, index, iType, ID string, obj interfa
 			ctxWithDeadline, cancel := context.WithDeadline(ctx, time.Now().Add(contextDeadline))
 			defer cancel()
 			// index the given document(obj)
-			return e.esClient.Index().Index(index).Type(iType).Id(ID).BodyJson(obj).Do(ctxWithDeadline)
+			// TODO: remove type once the client https://github.com/olivere/elastic deprecates "type" field.
+			return e.esClient.Index().Index(index).Type(DefaultElasticIndexType).Id(ID).BodyJson(obj).Do(ctxWithDeadline)
 		}, retryCount, rResp, rErr)
 
 		if retry {
@@ -555,13 +556,13 @@ func (e *Client) Bulk(ctx context.Context, objs []*BulkRequest) (*es.BulkRespons
 			for _, obj := range objs {
 				switch obj.RequestType {
 				case Index:
-					req := es.NewBulkIndexRequest().Index(obj.Index).Type(obj.IndexType).Id(obj.ID).Doc(obj.Obj)
+					req := es.NewBulkIndexRequest().Index(obj.Index).Type(DefaultElasticIndexType).Id(obj.ID).Doc(obj.Obj)
 					bulkReq.Add(req)
 				case Update: // update the doc identified by obj.ID
-					req := es.NewBulkUpdateRequest().Index(obj.Index).Type(obj.IndexType).Id(obj.ID).Doc(obj.Obj)
+					req := es.NewBulkUpdateRequest().Index(obj.Index).Type(DefaultElasticIndexType).Id(obj.ID).Doc(obj.Obj)
 					bulkReq.Add(req)
 				case Delete: // delete the doc identified by obj.ID
-					req := es.NewBulkDeleteRequest().Index(obj.Index).Type(obj.IndexType).Id(obj.ID)
+					req := es.NewBulkDeleteRequest().Index(obj.Index).Type(DefaultElasticIndexType).Id(obj.ID)
 					bulkReq.Add(req)
 				}
 			}
@@ -636,7 +637,7 @@ func (e *Client) Bulk(ctx context.Context, objs []*BulkRequest) (*es.BulkRespons
 }
 
 // DeleteByQuery deletes objects that matches the given query from the given index
-func (e *Client) DeleteByQuery(ctx context.Context, index string, iType string, query es.Query,
+func (e *Client) DeleteByQuery(ctx context.Context, index string, query es.Query,
 	size int, sortByField string, sortAsc bool) (*es.BulkIndexByScrollResponse, error) {
 	retryCount := 0
 	retryInterval := initialRetryInterval
@@ -649,7 +650,7 @@ func (e *Client) DeleteByQuery(ctx context.Context, index string, iType string, 
 		retry, rResp, rErr = e.Perform(func() (interface{}, error) {
 			ctxWithDeadline, cancel := context.WithDeadline(ctx, time.Now().Add(contextDeadline))
 			defer cancel()
-			return e.esClient.DeleteByQuery().Index(index).Type(iType).Query(query).
+			return e.esClient.DeleteByQuery().Index(index).Type(DefaultElasticIndexType).Query(query).
 				Size(size).SortByField(sortByField, sortAsc).Refresh("false").Do(ctxWithDeadline)
 		}, retryCount, rResp, rErr)
 
@@ -672,8 +673,8 @@ func (e *Client) DeleteByQuery(ctx context.Context, index string, iType string, 
 	}
 }
 
-// Delete deletes the given object in the index and docType provided
-func (e *Client) Delete(ctx context.Context, index, docType, ID string) error {
+// Delete deletes the given object in the index provided
+func (e *Client) Delete(ctx context.Context, index, ID string) error {
 	retryCount := 0
 	retryInterval := initialRetryInterval
 
@@ -685,7 +686,7 @@ func (e *Client) Delete(ctx context.Context, index, docType, ID string) error {
 		retry, rResp, rErr = e.Perform(func() (interface{}, error) {
 			ctxWithDeadline, cancel := context.WithDeadline(ctx, time.Now().Add(contextDeadline))
 			defer cancel()
-			return e.esClient.Delete().Index(index).Type(docType).Id(ID).Do(ctxWithDeadline)
+			return e.esClient.Delete().Index(index).Type(DefaultElasticIndexType).Id(ID).Do(ctxWithDeadline)
 		}, retryCount, rResp, rErr)
 
 		if retry {
@@ -710,7 +711,7 @@ func (e *Client) Delete(ctx context.Context, index, docType, ID string) error {
 // Elasticsearch by default refreshes each shard every 1s,
 // so the document will be available to search 1s after indexing it.
 // This behavior can be changed by adjusting `index.refresh_interval` in indices settings.
-func (e *Client) Search(ctx context.Context, index, iType string, query es.Query, aggregation es.Aggregation,
+func (e *Client) Search(ctx context.Context, index string, query es.Query, aggregation es.Aggregation,
 	from, size int32, sortByField string, sortAsc bool, options ...SearchOption) (*es.SearchResult, error) {
 
 	// validate index
@@ -757,11 +758,6 @@ func (e *Client) Search(ctx context.Context, index, iType string, query es.Query
 
 			// Construct the search request on a given index
 			request := e.esClient.Search().Index(index)
-
-			// Add doc type if valid
-			if len(iType) != 0 {
-				request = request.Type(iType)
-			}
 
 			// Add query if valid
 			if query != nil {
@@ -833,8 +829,8 @@ func (e *Client) Search(ctx context.Context, index, iType string, query es.Query
 }
 
 // Scroll performs the given query and iteratively fetches the result
-func (e *Client) Scroll(ctx context.Context, index, iType string, query es.Query, size int32) (Scroller, error) {
-	return NewScroller(ctx, e, index, iType, query, size)
+func (e *Client) Scroll(ctx context.Context, index string, query es.Query, size int32) (Scroller, error) {
+	return NewScroller(ctx, e, index, query, size)
 }
 
 // GetClusterHealth returns cluster health info including indices health if specified

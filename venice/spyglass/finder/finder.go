@@ -248,8 +248,7 @@ func (fdr *Finder) Query(ctx context.Context, in *search.SearchRequest) (*search
 	// execute the query with required index, etc
 	result, err := fdr.elasticClient.Search(ctx,
 		fmt.Sprintf("%s.*,-%s", elastic.ExternalIndexPrefix,
-			strings.ToLower(fmt.Sprintf("*%s.*", elastic.GetDocType(globals.FwLogs)))), //exclude fwlogs from search
-		"", //  skip the index/doc type for search
+			strings.ToLower(fmt.Sprintf("*%s.*", elastic.String(globals.FwLogs)))), //exclude fwlogs from search
 		query,
 		fdr.constructAggregateQuery(in),
 		in.From,

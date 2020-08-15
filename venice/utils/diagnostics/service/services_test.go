@@ -54,7 +54,7 @@ func TestLogHandlerAPI(t *testing.T) {
 
 	// index doc `id1`
 	data := `{"test":"data"}`
-	err = esClient.Index(ctx, elastic.LogIndexPrefix, "doc", "id1", data)
+	err = esClient.Index(ctx, elastic.LogIndexPrefix, "id1", data)
 	AssertOk(t, err, "failed to perform index operation")
 
 	server := GetDiagnosticsService("module", "node", diag.ModuleStatus_Venice, l)

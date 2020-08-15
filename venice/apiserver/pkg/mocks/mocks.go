@@ -354,7 +354,9 @@ type FakeMessage struct {
 var TxnTestKey = "/txn/testobj"
 
 // WithTransform is a mock method for testing
-func (m *FakeMessage) WithTransform(from, to string, fn apisrv.TransformFunc) apisrv.Message { return m }
+func (m *FakeMessage) WithTransform(from, to string, fn apisrv.TransformFunc) apisrv.Message {
+	return m
+}
 
 // WithValidate is a mock method for testing
 func (m *FakeMessage) WithValidate(fn apisrv.ValidateFunc) apisrv.Message { return m }
@@ -396,7 +398,9 @@ func (m *FakeMessage) WithKvListFunc(fn apisrv.ListFromKvFunc) apisrv.Message {
 func (m *FakeMessage) WithKvWatchFunc(fn apisrv.WatchKvFunc) apisrv.Message { return m }
 
 // WithObjectVersionWriter is a mock method for testing
-func (m *FakeMessage) WithObjectVersionWriter(fn apisrv.SetObjectVersionFunc) apisrv.Message { return m }
+func (m *FakeMessage) WithObjectVersionWriter(fn apisrv.SetObjectVersionFunc) apisrv.Message {
+	return m
+}
 
 // WithUUIDWriter is a mock method for testing
 func (m *FakeMessage) WithUUIDWriter(fn apisrv.CreateUUIDFunc) apisrv.Message { return m }
