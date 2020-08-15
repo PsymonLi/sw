@@ -686,12 +686,12 @@ jobd/dol/elba_basetopo: ${JOBD_PREREQS}
 .PHONY: jobd/dol/elba_rdma
 jobd/dol/elba_rdma: ${JOBD_PREREQS}
 	${NICDIR}/tools/sw-env elba iris
-	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma --microseg-enable
 
 .PHONY: jobd/dol/elba_rdma_ext
 jobd/dol/elba_rdma_ext: ${JOBD_PREREQS}
 	${NICDIR}/tools/sw-env elba iris
-	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma_ext,rdma_perf
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo rdma --feature rdma_ext,rdma_perf --microseg-enable
 
 .PHONY: jobd/dol/elba_swphv
 jobd/dol/elba_swphv: ${JOBD_PREREQS}
