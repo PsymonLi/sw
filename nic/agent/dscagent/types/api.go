@@ -117,6 +117,12 @@ type PipelineAPI interface {
 	// HandleIPAMPolicy handles CRUDs for IPAM policy object
 	HandleIPAMPolicy(oper Operation, obj netproto.IPAMPolicy) ([]netproto.IPAMPolicy, error)
 
+	// HandleTraffiPolicerPolicy handles CRUDs for PolicerProfile object
+	HandlePolicerProfile(oper Operation, obj netproto.PolicerProfile) ([]netproto.PolicerProfile, error)
+
+	// HandleDSCConfig handles CRUDs for PolicerProfile object
+	HandleDSCConfig(oper Operation, obj netproto.DSCConfig) ([]netproto.DSCConfig, error)
+
 	//HandleFlowExportPolicy handles CRUDs for NetworkSecurityPolicy object
 	HandleFlowExportPolicy(oper Operation, obj netproto.FlowExportPolicy) ([]netproto.FlowExportPolicy, error)
 

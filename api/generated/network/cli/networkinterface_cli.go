@@ -85,6 +85,13 @@ var CreateNetworkInterfaceFlags = []gen.CliFlag{
 		Insert: "",
 	},
 	{
+		ID:     "tx-policer",
+		Type:   "String",
+		Help:   "",
+		Skip:   false,
+		Insert: "",
+	},
+	{
 		ID:     "type",
 		Type:   "String",
 		Help:   "",

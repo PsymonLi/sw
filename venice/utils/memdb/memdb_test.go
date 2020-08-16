@@ -4517,7 +4517,7 @@ func TestMemdbCtrlWatchTopo(t *testing.T) {
 	// create a new memdb
 	md := NewMemdbWithResolver()
 
-	kinds := []string{"SecurityProfile", "IPAMPolicy", "RouteTable", "Vrf", "NetworkSecurityPolicy", "Network", "RoutingConfig"}
+	kinds := []string{"SecurityProfile", "IPAMPolicy", "RouteTable", "Vrf", "NetworkSecurityPolicy", "Network", "RoutingConfig", "PolicerProfile"}
 	// set watch flags
 	wFlags := map[string]uint{}
 	for _, kind := range kinds {
@@ -4727,6 +4727,25 @@ func TestMemdbCtrlWatchTopo(t *testing.T) {
 		}
 	}
 
+	policer := []*netproto.PolicerProfile{
+		&netproto.PolicerProfile{
+			TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+			ObjectMeta: api.ObjectMeta{
+				Name: "tp-test",
+			},
+		},
+		&netproto.PolicerProfile{
+			TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+			ObjectMeta: api.ObjectMeta{
+				Name: "tp-test1",
+			},
+		},
+	}
+	for _, p := range policer {
+		err = md.AddObject(p)
+		AssertOk(t, err, "Policer object add failed")
+	}
+
 	sgpolicy := []*netproto.NetworkSecurityPolicy{
 		&netproto.NetworkSecurityPolicy{
 			TypeMeta: api.TypeMeta{Kind: "NetworkSecurityPolicy"},
@@ -4873,6 +4892,70 @@ func TestMemdbCtrlWatchTopo(t *testing.T) {
 				DSC: "00:00:00:00:00:01",
 			},
 		},
+		&netproto.Interface{
+			TypeMeta: api.TypeMeta{Kind: "Interface"},
+			ObjectMeta: api.ObjectMeta{
+				Tenant:    "tenant1",
+				Name:      "netif-tp",
+				Namespace: "default",
+			},
+			Spec: netproto.InterfaceSpec{
+				VrfName:   "tenant1",
+				Network:   "network-test",
+				TxPolicer: "tp-test",
+			},
+			Status: netproto.InterfaceStatus{
+				DSC: "00:00:00:00:00:01",
+			},
+		},
+		&netproto.Interface{
+			TypeMeta: api.TypeMeta{Kind: "Interface"},
+			ObjectMeta: api.ObjectMeta{
+				Tenant:    "tenant1",
+				Name:      "netif-tp",
+				Namespace: "default",
+			},
+			Spec: netproto.InterfaceSpec{
+				VrfName:   "tenant2",
+				Network:   "network-test",
+				TxPolicer: "tp-test",
+			},
+			Status: netproto.InterfaceStatus{
+				DSC: "00:00:00:00:00:01",
+			},
+		},
+		&netproto.Interface{
+			TypeMeta: api.TypeMeta{Kind: "Interface"},
+			ObjectMeta: api.ObjectMeta{
+				Tenant:    "tenant1",
+				Name:      "netif-tp",
+				Namespace: "default",
+			},
+			Spec: netproto.InterfaceSpec{
+				VrfName:   "tenant1",
+				Network:   "network-test",
+				TxPolicer: "tp-test1",
+			},
+			Status: netproto.InterfaceStatus{
+				DSC: "00:00:00:00:00:01",
+			},
+		},
+		&netproto.Interface{
+			TypeMeta: api.TypeMeta{Kind: "Interface"},
+			ObjectMeta: api.ObjectMeta{
+				Tenant:    "tenant1",
+				Name:      "netif-tp",
+				Namespace: "default",
+			},
+			Spec: netproto.InterfaceSpec{
+				VrfName:   "tenant1",
+				Network:   "network-test",
+				TxPolicer: "",
+			},
+			Status: netproto.InterfaceStatus{
+				DSC: "00:00:00:00:00:01",
+			},
+		},
 	}
 
 	//for _, ni := range nwif {
@@ -4932,6 +5015,19 @@ func TestMemdbCtrlWatchTopo(t *testing.T) {
 		}
 	}
 
+	// Verify no error in creation of an interface with policer
+	_, err = md.AddPushObject(nwif[3].GetObjectMeta().GetKey(), nwif[3], nil, nil)
+	AssertOk(t, err, "nwif add failed")
+	// Verify no error in updation of the interface with policer with different vrf
+	_, err = md.AddPushObject(nwif[4].GetObjectMeta().GetKey(), nwif[4], nil, nil)
+	AssertOk(t, err, "nwif update failed")
+	// Verify no error in updatin of the interface with new policer
+	_, err = md.AddPushObject(nwif[5].GetObjectMeta().GetKey(), nwif[5], nil, nil)
+	AssertOk(t, err, "nwif update failed")
+	// Verify no error in removing the policer object from the interface
+	_, err = md.AddPushObject(nwif[6].GetObjectMeta().GetKey(), nwif[6], nil, nil)
+	AssertOk(t, err, "nwif update failed")
+
 	// update vrf ipam policy
 	err = md.UpdateObject(vrf[2])
 	AssertOk(t, err, "vrf update failed")
@@ -4973,6 +5069,12 @@ func TestMemdbCtrlWatchTopo(t *testing.T) {
 
 	err = md.DeleteObject(nw[0])
 	Assert(t, (err == nil), "nw delete failed")
+
+	// Delete the policer object
+	for _, p := range policer {
+		err = md.DeleteObject(p)
+		Assert(t, (err == nil), "policer delete failed")
+	}
 
 	err = md.DeleteObject(vrf[0])
 	Assert(t, (err == nil), "vrf delete failed")

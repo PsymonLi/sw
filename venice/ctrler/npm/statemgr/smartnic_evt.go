@@ -12,6 +12,7 @@ import (
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/memdb"
 	"github.com/pensando/sw/venice/utils/memdb/objReceiver"
 	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
@@ -21,6 +22,7 @@ import (
 type DistributedServiceCardState struct {
 	DistributedServiceCard *ctkit.DistributedServiceCard `json:"-"` // smartNic object
 	stateMgr               *Statemgr                     // pointer to state manager
+	pushObject             memdb.PushObjectHandle
 	recvHandle             objReceiver.Receiver
 	profileVersion         dscProfileVersion
 	decommissioned         bool
@@ -29,6 +31,7 @@ type DistributedServiceCardState struct {
 	//NodeVersion            cluster.DSCProfileVersion
 	workloadsMigratingIn  map[string]*WorkloadState
 	workloadsMigratingOut map[string]*WorkloadState
+	smObjectTracker
 }
 
 // GetKey returns the key of DSCProfile
@@ -39,6 +42,11 @@ func (sns *DistributedServiceCardState) GetKey() string {
 // GetKind returns the kind
 func (sns *DistributedServiceCardState) GetKind() string {
 	return sns.DistributedServiceCard.GetKind()
+}
+
+//GetGenerationID get genration ID
+func (sns *DistributedServiceCardState) GetGenerationID() string {
+	return sns.DistributedServiceCard.GenerationID
 }
 
 // Write write the obect to api server
@@ -113,6 +121,7 @@ func NewDistributedServiceCardState(smartNic *ctkit.DistributedServiceCard, stat
 		workloadsMigratingOut:  make(map[string]*WorkloadState),
 	}
 	smartNic.HandlerCtx = hs
+	hs.smObjectTracker.init(hs)
 
 	return hs, nil
 }

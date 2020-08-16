@@ -323,6 +323,26 @@ func (eh *AggregateTopic) ListObjects(ctx context.Context, kinds *api.AggWatchOp
 				addAggObjectEvent(mobj, obj.GetObjectMeta())
 			}
 
+		case "DSCConfig":
+
+			if _, ok := eh.statusReactor.(DSCConfigStatusReactor); ok {
+				filters = eh.statusReactor.(DSCConfigStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
+			}
+
+			objlist, err := eh.server.ListDSCConfigs(context.Background(), nodeID, filters)
+			if err != nil {
+				log.Errorf("Error getting a list of objects. Err: %v", err)
+				return nil, err
+			}
+			for _, obj := range objlist {
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return nil, err
+				}
+				addAggObjectEvent(mobj, obj.GetObjectMeta())
+			}
+
 		case "Endpoint":
 
 			if _, ok := eh.statusReactor.(EndpointStatusReactor); ok {
@@ -470,6 +490,26 @@ func (eh *AggregateTopic) ListObjects(ctx context.Context, kinds *api.AggWatchOp
 			}
 
 			objlist, err := eh.server.ListNetworkSecurityPolicys(context.Background(), nodeID, filters)
+			if err != nil {
+				log.Errorf("Error getting a list of objects. Err: %v", err)
+				return nil, err
+			}
+			for _, obj := range objlist {
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return nil, err
+				}
+				addAggObjectEvent(mobj, obj.GetObjectMeta())
+			}
+
+		case "PolicerProfile":
+
+			if _, ok := eh.statusReactor.(PolicerProfileStatusReactor); ok {
+				filters = eh.statusReactor.(PolicerProfileStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
+			}
+
+			objlist, err := eh.server.ListPolicerProfiles(context.Background(), nodeID, filters)
 			if err != nil {
 				log.Errorf("Error getting a list of objects. Err: %v", err)
 				return nil, err
@@ -649,6 +689,16 @@ func (eh *AggregateTopic) ObjectOperUpdate(stream netproto.AggWatchApiV1_ObjectO
 				}
 				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.App).GetObjectMeta())
 
+			case "DSCConfig":
+				if _, ok := eh.statusReactor.(DSCConfigStatusReactor); ok {
+					err = eh.statusReactor.(DSCConfigStatusReactor).OnDSCConfigOperUpdate(nodeID,
+						object.Message.(*netproto.DSCConfig))
+					if err != nil {
+						log.Errorf("Error updating DSCConfig oper state. Err: %v", err)
+					}
+				}
+				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.DSCConfig).GetObjectMeta())
+
 			case "Endpoint":
 				if _, ok := eh.statusReactor.(EndpointStatusReactor); ok {
 					err = eh.statusReactor.(EndpointStatusReactor).OnEndpointOperUpdate(nodeID,
@@ -729,6 +779,16 @@ func (eh *AggregateTopic) ObjectOperUpdate(stream netproto.AggWatchApiV1_ObjectO
 				}
 				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.NetworkSecurityPolicy).GetObjectMeta())
 
+			case "PolicerProfile":
+				if _, ok := eh.statusReactor.(PolicerProfileStatusReactor); ok {
+					err = eh.statusReactor.(PolicerProfileStatusReactor).OnPolicerProfileOperUpdate(nodeID,
+						object.Message.(*netproto.PolicerProfile))
+					if err != nil {
+						log.Errorf("Error updating PolicerProfile oper state. Err: %v", err)
+					}
+				}
+				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.PolicerProfile).GetObjectMeta())
+
 			case "Profile":
 				if _, ok := eh.statusReactor.(ProfileStatusReactor); ok {
 					err = eh.statusReactor.(ProfileStatusReactor).OnProfileOperUpdate(nodeID,
@@ -802,6 +862,16 @@ func (eh *AggregateTopic) ObjectOperUpdate(stream netproto.AggWatchApiV1_ObjectO
 					}
 				}
 				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.App).GetObjectMeta())
+
+			case "DSCConfig":
+				if _, ok := eh.statusReactor.(DSCConfigStatusReactor); ok {
+					err = eh.statusReactor.(DSCConfigStatusReactor).OnDSCConfigOperDelete(nodeID,
+						object.Message.(*netproto.DSCConfig))
+					if err != nil {
+						log.Errorf("Error updating DSCConfig oper state. Err: %v", err)
+					}
+				}
+				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.DSCConfig).GetObjectMeta())
 
 			case "Endpoint":
 				if _, ok := eh.statusReactor.(EndpointStatusReactor); ok {
@@ -882,6 +952,16 @@ func (eh *AggregateTopic) ObjectOperUpdate(stream netproto.AggWatchApiV1_ObjectO
 					}
 				}
 				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.NetworkSecurityPolicy).GetObjectMeta())
+
+			case "PolicerProfile":
+				if _, ok := eh.statusReactor.(PolicerProfileStatusReactor); ok {
+					err = eh.statusReactor.(PolicerProfileStatusReactor).OnPolicerProfileOperDelete(nodeID,
+						object.Message.(*netproto.PolicerProfile))
+					if err != nil {
+						log.Errorf("Error updating PolicerProfile oper state. Err: %v", err)
+					}
+				}
+				eh.updateAckedObjStatus(nodeID, oper.AggObj.Kind, oper.EventType, object.Message.(*netproto.PolicerProfile).GetObjectMeta())
 
 			case "Profile":
 				if _, ok := eh.statusReactor.(ProfileStatusReactor); ok {
@@ -1157,6 +1237,52 @@ func (eh *AggregateTopic) handleReconcileEvent(aggKey string, ctx context.Contex
 
 	case "App":
 		objlist, err := eh.server.ListAppsNoFilter(context.Background())
+		if err != nil {
+			log.Errorf("Error getting a list of objects. Err: %v", err)
+			return
+		}
+		for _, obj := range objlist {
+			oldVal := evalFilterFns(obj, evt.OldFlts)
+			newVal := evalFilterFns(obj, evt.NewFlts)
+			// watch filters didn't exist earlier
+			if len(evt.OldFlts) == 0 {
+				if newVal == true {
+					mobj, err := types.MarshalAny(obj)
+					if err != nil {
+						log.Errorf("Error  marshalling any object. Err: %v", err)
+						return
+					}
+					log.Infof("Adding object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+					addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_CreateEvent)
+				}
+				continue
+			}
+
+			if oldVal == newVal {
+				continue
+			} else if newVal == true {
+				// add the object
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return
+				}
+				log.Infof("Adding object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+				addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_CreateEvent)
+			} else {
+				// delete the object
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return
+				}
+				log.Infof("Deleting object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+				addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_DeleteEvent)
+			}
+		}
+
+	case "DSCConfig":
+		objlist, err := eh.server.ListDSCConfigsNoFilter(context.Background())
 		if err != nil {
 			log.Errorf("Error getting a list of objects. Err: %v", err)
 			return
@@ -1569,6 +1695,52 @@ func (eh *AggregateTopic) handleReconcileEvent(aggKey string, ctx context.Contex
 			}
 		}
 
+	case "PolicerProfile":
+		objlist, err := eh.server.ListPolicerProfilesNoFilter(context.Background())
+		if err != nil {
+			log.Errorf("Error getting a list of objects. Err: %v", err)
+			return
+		}
+		for _, obj := range objlist {
+			oldVal := evalFilterFns(obj, evt.OldFlts)
+			newVal := evalFilterFns(obj, evt.NewFlts)
+			// watch filters didn't exist earlier
+			if len(evt.OldFlts) == 0 {
+				if newVal == true {
+					mobj, err := types.MarshalAny(obj)
+					if err != nil {
+						log.Errorf("Error  marshalling any object. Err: %v", err)
+						return
+					}
+					log.Infof("Adding object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+					addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_CreateEvent)
+				}
+				continue
+			}
+
+			if oldVal == newVal {
+				continue
+			} else if newVal == true {
+				// add the object
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return
+				}
+				log.Infof("Adding object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+				addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_CreateEvent)
+			} else {
+				// delete the object
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return
+				}
+				log.Infof("Deleting object kind %s %v", obj.GetObjectKind(), obj.GetObjectMeta())
+				addAggObjectEvent(mobj, obj.GetObjectMeta(), api.EventType_DeleteEvent)
+			}
+		}
+
 	case "Profile":
 		objlist, err := eh.server.ListProfilesNoFilter(context.Background())
 		if err != nil {
@@ -1881,6 +2053,16 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 				watcher.Filters[kind.Kind] = append(watcher.Filters[kind.Kind], filt)
 			}
 
+		case "DSCConfig":
+			if _, ok := eh.statusReactor.(DSCConfigStatusReactor); ok {
+				watcher.Filters[kind.Kind] = eh.statusReactor.(DSCConfigStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
+			} else {
+				filt := func(obj, prev memdb.Object) bool {
+					return true
+				}
+				watcher.Filters[kind.Kind] = append(watcher.Filters[kind.Kind], filt)
+			}
+
 		case "Endpoint":
 			if _, ok := eh.statusReactor.(EndpointStatusReactor); ok {
 				watcher.Filters[kind.Kind] = eh.statusReactor.(EndpointStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
@@ -1954,6 +2136,16 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 		case "NetworkSecurityPolicy":
 			if _, ok := eh.statusReactor.(NetworkSecurityPolicyStatusReactor); ok {
 				watcher.Filters[kind.Kind] = eh.statusReactor.(NetworkSecurityPolicyStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
+			} else {
+				filt := func(obj, prev memdb.Object) bool {
+					return true
+				}
+				watcher.Filters[kind.Kind] = append(watcher.Filters[kind.Kind], filt)
+			}
+
+		case "PolicerProfile":
+			if _, ok := eh.statusReactor.(PolicerProfileStatusReactor); ok {
+				watcher.Filters[kind.Kind] = eh.statusReactor.(PolicerProfileStatusReactor).GetAgentWatchFilter(ctx, kind.Group+"."+kind.Kind, &kind.Options)
 			} else {
 				filt := func(obj, prev memdb.Object) bool {
 					return true
@@ -2050,6 +2242,21 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 
 		case "App":
 			objlist, err := eh.server.ListApps(context.Background(), nodeID, watcher.Filters[kind])
+			if err != nil {
+				log.Errorf("Error getting a list of objects. Err: %v", err)
+				return err
+			}
+			for _, obj := range objlist {
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return err
+				}
+				addAggObjectEvent(mobj, obj.GetObjectMeta())
+			}
+
+		case "DSCConfig":
+			objlist, err := eh.server.ListDSCConfigs(context.Background(), nodeID, watcher.Filters[kind])
 			if err != nil {
 				log.Errorf("Error getting a list of objects. Err: %v", err)
 				return err
@@ -2170,6 +2377,21 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 
 		case "NetworkSecurityPolicy":
 			objlist, err := eh.server.ListNetworkSecurityPolicys(context.Background(), nodeID, watcher.Filters[kind])
+			if err != nil {
+				log.Errorf("Error getting a list of objects. Err: %v", err)
+				return err
+			}
+			for _, obj := range objlist {
+				mobj, err := types.MarshalAny(obj)
+				if err != nil {
+					log.Errorf("Error  marshalling any object. Err: %v", err)
+					return err
+				}
+				addAggObjectEvent(mobj, obj.GetObjectMeta())
+			}
+
+		case "PolicerProfile":
+			objlist, err := eh.server.ListPolicerProfiles(context.Background(), nodeID, watcher.Filters[kind])
 			if err != nil {
 				log.Errorf("Error getting a list of objects. Err: %v", err)
 				return err
@@ -2358,6 +2580,17 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 						return err
 					}
 
+				case "DSCConfig":
+					obj, err := DSCConfigFromObj(evt.Obj)
+					if err != nil {
+						return err
+					}
+					mobj, err = types.MarshalAny(obj)
+					if err != nil {
+						log.Errorf("Error  marshalling any object. Err: %v", err)
+						return err
+					}
+
 				case "Endpoint":
 					obj, err := EndpointFromObj(evt.Obj)
 					if err != nil {
@@ -2437,6 +2670,17 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 
 				case "NetworkSecurityPolicy":
 					obj, err := NetworkSecurityPolicyFromObj(evt.Obj)
+					if err != nil {
+						return err
+					}
+					mobj, err = types.MarshalAny(obj)
+					if err != nil {
+						log.Errorf("Error  marshalling any object. Err: %v", err)
+						return err
+					}
+
+				case "PolicerProfile":
+					obj, err := PolicerProfileFromObj(evt.Obj)
 					if err != nil {
 						return err
 					}

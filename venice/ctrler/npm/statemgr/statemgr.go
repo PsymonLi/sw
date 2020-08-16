@@ -77,6 +77,7 @@ type Topics struct {
 	RoutingConfigTopic         *nimbus.RoutingConfigTopic
 	ProfileTopic               *nimbus.ProfileTopic
 	VrfTopic                   *nimbus.VrfTopic
+	PolicerProfileTopic        *nimbus.PolicerProfileTopic
 }
 
 // Statemgr is the object state manager
@@ -118,6 +119,7 @@ type Statemgr struct {
 	ctkit.DSCProfileHandler
 	ctkit.MirrorSessionHandler
 	ctkit.FlowExportPolicyHandler
+	ctkit.PolicerProfileHandler
 
 	SecurityProfileStatusReactor       nimbus.SecurityProfileStatusReactor
 	AppStatusReactor                   nimbus.AppStatusReactor
@@ -130,6 +132,7 @@ type Statemgr struct {
 	RoutingConfigStatusReactor         nimbus.RoutingConfigStatusReactor
 	ProfileStatusReactor               nimbus.ProfileStatusReactor
 	VrfStatusReactor                   nimbus.VrfStatusReactor
+	PolicerProfileStatusReactor        nimbus.PolicerProfileStatusReactor
 }
 
 // SetProfileStatusReactor sets the ProfileStatusReactor
@@ -175,6 +178,11 @@ func (sm *Statemgr) SetIPAMPolicyStatusReactor(handler nimbus.IPAMPolicyStatusRe
 // SetNetworkSecurityPolicyStatusReactor sets the NetworkSecurityPolicyStatusReactor
 func (sm *Statemgr) SetNetworkSecurityPolicyStatusReactor(handler nimbus.NetworkSecurityPolicyStatusReactor) {
 	sm.NetworkSecurityPolicyStatusReactor = handler
+}
+
+// SetPolicerProfileStatusReactor sets the PolicerProfileStatusReactor
+func (sm *Statemgr) SetPolicerProfileStatusReactor(handler nimbus.PolicerProfileStatusReactor) {
+	sm.PolicerProfileStatusReactor = handler
 }
 
 // SetEndpointStatusReactor sets the EndpointStatusReactor
@@ -294,6 +302,12 @@ func (sm *Statemgr) SetEndpointReactor(handler ctkit.EndpointHandler) {
 func (sm *Statemgr) SetNetworkSecurityPolicyReactor(handler ctkit.NetworkSecurityPolicyHandler) {
 	sm.NetworkSecurityPolicyHandler = handler
 	sm.addAggKind("security", "NetworkSecurityPolicy", handler)
+}
+
+// SetPolicerProfileReactor sets the PolicerProfile reactor
+func (sm *Statemgr) SetPolicerProfileReactor(handler ctkit.PolicerProfileHandler) {
+	sm.PolicerProfileHandler = handler
+	sm.addAggKind("network", "PolicerProfile", handler)
 }
 
 // SetWorkloadReactor sets the Workload reactor
@@ -492,6 +506,8 @@ func (sm *Statemgr) setDefaultReactors(reactor ctkit.CtrlDefReactor) {
 
 	sm.SetDSCProfileReactor(reactor)
 
+	sm.SetPolicerProfileReactor(reactor)
+
 }
 
 //PeriodicReconcile callback from ctkit when no new objects are received
@@ -544,6 +560,7 @@ func (sm *Statemgr) runPropagationTopoUpdater(c <-chan *memdb.PropagationStTopoU
 				log.Infof("runPropagationTopoUpdater exiting")
 				return
 			}
+			sm.handleTrafPolicerPropTopoUpdate(update)
 			sm.handleSgPolicyPropTopoUpdate(update)
 			sm.handleNetworkPropTopoUpdate(update)
 			sm.handleVrfPropTopoUpdate(update)
@@ -687,6 +704,12 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 		return err
 	}
 
+	sm.topics.PolicerProfileTopic, err = nimbus.AddPolicerProfileTopic(mserver, sm.PolicerProfileStatusReactor)
+	if err != nil {
+		logger.Errorf("Error starting PolicerProfile RPC server")
+		return err
+	}
+
 	return err
 }
 
@@ -705,6 +728,8 @@ func (sm *Statemgr) registerKindsWithMbus() {
 	sm.mbus.RegisterKind("Profile")
 	sm.mbus.RegisterKind("MirrorSession")
 	sm.mbus.RegisterKind("FlowExportPolicy")
+	sm.mbus.RegisterKind("PolicerProfile")
+	sm.mbus.RegisterKind("DSCConfig")
 }
 
 //EnableSelectivePushForKind enable selective push for a kind

@@ -11,13 +11,13 @@ import (
 	"github.com/pensando/sw/venice/utils/netutils"
 )
 
-var netAgentObjects = []string{"App", "Endpoint", "Network", "SecurityProfile", "NetworkSecurityPolicy", "NetworkInterface", "IPAMPolicy", "RoutingConfig", "Vrf", "RouteTable"}
+var netAgentObjects = []string{"App", "Endpoint", "Network", "SecurityProfile", "NetworkSecurityPolicy", "NetworkInterface", "IPAMPolicy", "RoutingConfig", "Vrf", "RouteTable", "PolicerProfile", "DSCConfig"}
 
 func (sm *Statemgr) setWatchFilterFlags() {
 	// set the watch filter behavior based on feature flags
 	for _, obj := range netAgentObjects {
 		switch obj {
-		case "IPAMPolicy", "Network", "NetworkSecurityPolicy", "Vrf", "RouteTable", "RoutingConfig", "SecurityProfile":
+		case "IPAMPolicy", "Network", "NetworkSecurityPolicy", "Vrf", "RouteTable", "RoutingConfig", "SecurityProfile", "PolicerProfile", "DSCConfig":
 			if featureflags.IsOVerlayRoutingEnabled() == true {
 				sm.logger.Infof("Setting controller filter flags: %s", obj)
 				sm.WatchFilterFlags[obj] = memdb.ControllerWatchFilter | memdb.DefWatchFilterBlock

@@ -19,6 +19,7 @@ import "networkinterface.proto";
 import "ipam.proto";
 import "route.proto";
 import "vr_peering_group.proto";
+import "policer.proto";
 
 // Network REST API
 service NetworkV1 {
@@ -36,6 +37,7 @@ service NetworkV1 {
     option (venice.apiGrpcCrudService) = "RoutingConfig";
     option (venice.apiGrpcCrudService) = "RouteTable";
     option (venice.apiGrpcCrudService) = "VirtualRouterPeeringGroup";
+    option (venice.apiGrpcCrudService) = "PolicerProfile";
 
     option (venice.apiRestService) = {
          Object: "Network"
@@ -71,5 +73,10 @@ service NetworkV1 {
     option (venice.apiRestService) = {
          Object: "VirtualRouterPeeringGroup"
          Method: [ "post", "put", "delete", "get", "list", "watch", "label" ]
+    };
+
+    option (venice.apiRestService) = {
+         Object: "PolicerProfile"
+        Method: [ "post", "put", "delete", "get", "list", "watch", "label" ]
     };
 }

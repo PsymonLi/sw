@@ -49,6 +49,34 @@ type networkHooks struct {
 	netwMap   map[string]map[string]*net.IPNet
 }
 
+func (h *networkHooks) validatePolicerConfig(i interface{}, ver string, ignoreStatus, ignoreSpec bool) (ret []error) {
+	policer, ok := i.(network.PolicerProfile)
+
+	if ok == false {
+		return []error{errors.New("Invalid input configuration")}
+	}
+
+	if policer.Spec.Criteria.PacketsPerSecond == 0 && policer.Spec.Criteria.BytesPerSecond == 0 {
+		log.Errorf("Policer:%s Atleast one value (PacketsPerSecond/BytesPerSecond) is required", policer.Name)
+		ret = append(ret, fmt.Errorf("Policer:%s Atleast one value (PacketsPerSecond/BytesPerSecond) is required", policer.Name))
+	}
+	if policer.Spec.Criteria.PacketsPerSecond != 0 {
+		if policer.Spec.Criteria.BytesPerSecond != 0 {
+			log.Errorf("Policer:%s cannot have both PacketsPerSecond and BytesPerSecond configured", policer.Name)
+			ret = append(ret, fmt.Errorf("Policer:%s cannot have both PacketsPerSecond and BytesPerSecond configured", policer.Name))
+		}
+		if policer.Spec.Criteria.PacketsPerSecond <= globals.MinPolicerPktsPerSecond {
+			log.Errorf("Policer:%s PacketsPerSecond should be more than %v", policer.Name, globals.MinPolicerPktsPerSecond)
+			ret = append(ret, fmt.Errorf("Policer:%s PacketsPerSecond should be more than %v", policer.Name, globals.MinPolicerPktsPerSecond))
+		}
+	}
+	if policer.Spec.Criteria.BytesPerSecond != 0 && policer.Spec.Criteria.BytesPerSecond <= globals.MinPolicerBytesPerSecond {
+		log.Errorf("Policer:%s BytesPerSecond should be more than %v", policer.Name, globals.MinPolicerBytesPerSecond)
+		ret = append(ret, fmt.Errorf("Policer:%s BytesPerSecond should be more than %v", policer.Name, globals.MinPolicerBytesPerSecond))
+	}
+	return ret
+}
+
 func (h *networkHooks) validateIPAMPolicyConfig(i interface{}, ver string, ignStatus, ignoreSpec bool) (ret []error) {
 	cfg, ok := i.(network.IPAMPolicy)
 
@@ -519,6 +547,10 @@ func (h *networkHooks) validateNetworkIntfConfig(i interface{}, ver string, ignS
 		ret = append(ret, fmt.Errorf("connection-tracking can only be specified for HOST_PFs"))
 	}
 
+	if in.Spec.Type != network.IFType_HOST_PF.String() && in.Spec.TxPolicer != "" {
+		ret = append(ret, fmt.Errorf("policer-profile can only be specified for HOST_PFs"))
+	}
+
 	if in.Spec.AdminStatus == network.IFStatus_DOWN.String() {
 		ret = append(ret, fmt.Errorf("Interface Down operation is not supported"))
 	}
@@ -960,6 +992,9 @@ func registerNetworkHooks(svc apiserver.Service, logger log.Logger) {
 	svc.GetCrudService("RoutingConfig", apiintf.ListOper).WithResponseWriter(hooks.updateAuthStatus)
 	svc.GetCrudService("RoutingConfig", apiintf.UpdateOper).GetRequestType().WithValidate(hooks.validateRoutingConfig)
 	svc.GetCrudService("VirtualRouterPeeringGroup", apiintf.CreateOper).GetRequestType().WithValidate(hooks.validateVRPeeringGroup)
+	svc.GetCrudService("PolicerProfile", apiintf.CreateOper).GetRequestType().WithValidate(hooks.validatePolicerConfig)
+	svc.GetCrudService("PolicerProfile", apiintf.UpdateOper).GetRequestType().WithValidate(hooks.validatePolicerConfig)
+	svc.GetCrudService("PolicerProfile", apiintf.DeleteOper).GetRequestType().WithValidate(hooks.validatePolicerConfig)
 
 	apisrv := apisrvpkg.MustGetAPIServer()
 	apisrv.RegisterRestoreCallback(hooks.restoreResourceMap)

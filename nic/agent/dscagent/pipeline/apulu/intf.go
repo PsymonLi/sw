@@ -18,6 +18,7 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/apulu/utils"
 	commonutils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
+	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils/validator"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	halapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
@@ -323,6 +324,24 @@ func deleteInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 	return nil
 }
 
+func getPolicerInfo(infraAPI types.InfraAPI, intf netproto.Interface) ([]byte, error) {
+
+	if intf.Spec.TxPolicer != "" {
+		policer, err := validator.ValidatePolicerProfileExists(infraAPI, intf.Spec.TxPolicer, intf.Spec.VrfName, intf.Namespace)
+		if err != nil {
+			log.Errorf("Get PolicerProfile failed for %s | %s", intf.GetKind(), intf.GetKey())
+			return nil, errors.Wrapf(types.ErrDatapathHandling, "Get PolicerProfile failed for %s | %s", intf.GetKind(), intf.GetKey())
+		}
+		polu, err := uuid.FromString(policer.UUID)
+		if err != nil {
+			log.Errorf("Failed to parse policer UUID: %v", policer.UUID)
+			return nil, errors.Wrapf(types.ErrDatapathHandling, "Failed to parse policer UUID: %v", policer.UUID)
+		}
+		return polu.Bytes(), nil
+	}
+	return nil, nil
+}
+
 func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collectorMap map[uint64]int) (*halapi.InterfaceRequest, error) {
 	var ifStatus halapi.IfStatus
 
@@ -336,6 +355,13 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collecto
 		ifStatus = halapi.IfStatus_IF_STATUS_UP
 	} else {
 		ifStatus = halapi.IfStatus_IF_STATUS_DOWN
+	}
+
+	//Get Policer UUID
+	polID, err := getPolicerInfo(infraAPI, intf)
+	if err != nil {
+		log.Errorf("Interface: %s policer parse failed | [%v] | Err: %v", intf.GetKey(), intf.UUID, err)
+		return nil, err
 	}
 
 	var prefix *halapi.IPPrefix
@@ -425,6 +451,11 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collecto
 		}, nil
 
 	case netproto.InterfaceSpec_HOST_PF.String():
+		hostIfSpec := &halapi.HostIfSpec{}
+		hostIfSpec.ConnTrackEn = intf.Spec.ConnectionTracking
+		if polID != nil {
+			hostIfSpec.TxPolicer = polID
+		}
 		return &halapi.InterfaceRequest{
 			BatchCtxt: nil,
 			Request: []*halapi.InterfaceSpec{
@@ -432,9 +463,7 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collecto
 					Id:          uid.Bytes(),
 					AdminStatus: ifStatus,
 					Ifinfo: &halapi.InterfaceSpec_HostIfSpec{
-						HostIfSpec: &halapi.HostIfSpec{
-							ConnTrackEn: intf.Spec.ConnectionTracking,
-						},
+						HostIfSpec: hostIfSpec,
 					},
 					TxMirrorSessionId: txSessions,
 					RxMirrorSessionId: rxSessions,

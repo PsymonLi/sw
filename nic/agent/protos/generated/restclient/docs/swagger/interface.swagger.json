@@ -641,6 +641,10 @@
           "format": "boolean",
           "default": "false",
           "description": "Connection Tracking knob."
+        },
+        "tx-policer": {
+          "type": "string",
+          "description": "Policer configuration."
         }
       },
       "description": "InterfaceSpec captures all the interface level configuration."

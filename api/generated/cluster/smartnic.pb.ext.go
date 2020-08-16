@@ -283,6 +283,7 @@ func (m *DistributedServiceCardSpec) Defaults(ver string) bool {
 	default:
 		m.MgmtMode = "host"
 		m.NetworkMode = "oob"
+		m.PolicerAttachTenant = "default"
 	}
 	return ret
 }
@@ -599,6 +600,29 @@ func (m *DistributedServiceCardSpec) References(tenant string, path string, resp
 
 		if m.RoutingConfig != "" {
 			uref.Refs = append(uref.Refs, globals.ConfigRootPrefix+"/network/"+"routing-config/"+m.RoutingConfig)
+		}
+
+		if len(uref.Refs) > 0 {
+			resp[tag] = uref
+		}
+	}
+	{
+		tenant = m.PolicerAttachTenant
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		tag := path + dlmtr + "tx-policer"
+		uref, ok := resp[tag]
+		if !ok {
+			uref = apiintf.ReferenceObj{
+				RefType: apiintf.ReferenceType("NamedRef"),
+				RefKind: "PolicerProfile",
+			}
+		}
+
+		if m.TxPolicer != "" {
+			uref.Refs = append(uref.Refs, globals.ConfigRootPrefix+"/network/"+"policer-profile/"+tenant+"/"+m.TxPolicer)
 		}
 
 		if len(uref.Refs) > 0 {

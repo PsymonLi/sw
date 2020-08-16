@@ -1,0 +1,21 @@
+//------------------------------------------------------------------------------
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+// protobuf specification for PolicerProfile
+//------------------------------------------------------------------------------
+
+syntax = "proto3";
+package dnetproto;
+
+// Mandatory imports.
+import "github.com/pensando/sw/nic/agent/protos/netproto/policer.proto";
+import "delphi.proto";
+
+
+// Tenant object
+message PolicerProfile {
+    option (delphi.update_event) = true;
+    delphi.ObjectMeta       Meta            = 1;
+    string                  Key             = 2;
+    netproto.PolicerProfile PolicerProfile  = 3;
+}

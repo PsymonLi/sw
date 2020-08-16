@@ -29,6 +29,7 @@ type grpcServerNetworkV1 struct {
 	AutoAddLbPolicyHdlr                     grpctransport.Handler
 	AutoAddNetworkHdlr                      grpctransport.Handler
 	AutoAddNetworkInterfaceHdlr             grpctransport.Handler
+	AutoAddPolicerProfileHdlr               grpctransport.Handler
 	AutoAddRouteTableHdlr                   grpctransport.Handler
 	AutoAddRoutingConfigHdlr                grpctransport.Handler
 	AutoAddServiceHdlr                      grpctransport.Handler
@@ -38,6 +39,7 @@ type grpcServerNetworkV1 struct {
 	AutoDeleteLbPolicyHdlr                  grpctransport.Handler
 	AutoDeleteNetworkHdlr                   grpctransport.Handler
 	AutoDeleteNetworkInterfaceHdlr          grpctransport.Handler
+	AutoDeletePolicerProfileHdlr            grpctransport.Handler
 	AutoDeleteRouteTableHdlr                grpctransport.Handler
 	AutoDeleteRoutingConfigHdlr             grpctransport.Handler
 	AutoDeleteServiceHdlr                   grpctransport.Handler
@@ -47,6 +49,7 @@ type grpcServerNetworkV1 struct {
 	AutoGetLbPolicyHdlr                     grpctransport.Handler
 	AutoGetNetworkHdlr                      grpctransport.Handler
 	AutoGetNetworkInterfaceHdlr             grpctransport.Handler
+	AutoGetPolicerProfileHdlr               grpctransport.Handler
 	AutoGetRouteTableHdlr                   grpctransport.Handler
 	AutoGetRoutingConfigHdlr                grpctransport.Handler
 	AutoGetServiceHdlr                      grpctransport.Handler
@@ -56,6 +59,7 @@ type grpcServerNetworkV1 struct {
 	AutoLabelLbPolicyHdlr                   grpctransport.Handler
 	AutoLabelNetworkHdlr                    grpctransport.Handler
 	AutoLabelNetworkInterfaceHdlr           grpctransport.Handler
+	AutoLabelPolicerProfileHdlr             grpctransport.Handler
 	AutoLabelRouteTableHdlr                 grpctransport.Handler
 	AutoLabelRoutingConfigHdlr              grpctransport.Handler
 	AutoLabelServiceHdlr                    grpctransport.Handler
@@ -65,6 +69,7 @@ type grpcServerNetworkV1 struct {
 	AutoListLbPolicyHdlr                    grpctransport.Handler
 	AutoListNetworkHdlr                     grpctransport.Handler
 	AutoListNetworkInterfaceHdlr            grpctransport.Handler
+	AutoListPolicerProfileHdlr              grpctransport.Handler
 	AutoListRouteTableHdlr                  grpctransport.Handler
 	AutoListRoutingConfigHdlr               grpctransport.Handler
 	AutoListServiceHdlr                     grpctransport.Handler
@@ -74,6 +79,7 @@ type grpcServerNetworkV1 struct {
 	AutoUpdateLbPolicyHdlr                  grpctransport.Handler
 	AutoUpdateNetworkHdlr                   grpctransport.Handler
 	AutoUpdateNetworkInterfaceHdlr          grpctransport.Handler
+	AutoUpdatePolicerProfileHdlr            grpctransport.Handler
 	AutoUpdateRouteTableHdlr                grpctransport.Handler
 	AutoUpdateRoutingConfigHdlr             grpctransport.Handler
 	AutoUpdateServiceHdlr                   grpctransport.Handler
@@ -111,6 +117,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			DecodeGrpcReqNetworkInterface,
 			EncodeGrpcRespNetworkInterface,
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoAddNetworkInterface", logger)))...,
+		),
+
+		AutoAddPolicerProfileHdlr: grpctransport.NewServer(
+			endpoints.AutoAddPolicerProfileEndpoint,
+			DecodeGrpcReqPolicerProfile,
+			EncodeGrpcRespPolicerProfile,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoAddPolicerProfile", logger)))...,
 		),
 
 		AutoAddRouteTableHdlr: grpctransport.NewServer(
@@ -176,6 +189,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoDeleteNetworkInterface", logger)))...,
 		),
 
+		AutoDeletePolicerProfileHdlr: grpctransport.NewServer(
+			endpoints.AutoDeletePolicerProfileEndpoint,
+			DecodeGrpcReqPolicerProfile,
+			EncodeGrpcRespPolicerProfile,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoDeletePolicerProfile", logger)))...,
+		),
+
 		AutoDeleteRouteTableHdlr: grpctransport.NewServer(
 			endpoints.AutoDeleteRouteTableEndpoint,
 			DecodeGrpcReqRouteTable,
@@ -237,6 +257,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			DecodeGrpcReqNetworkInterface,
 			EncodeGrpcRespNetworkInterface,
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoGetNetworkInterface", logger)))...,
+		),
+
+		AutoGetPolicerProfileHdlr: grpctransport.NewServer(
+			endpoints.AutoGetPolicerProfileEndpoint,
+			DecodeGrpcReqPolicerProfile,
+			EncodeGrpcRespPolicerProfile,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoGetPolicerProfile", logger)))...,
 		),
 
 		AutoGetRouteTableHdlr: grpctransport.NewServer(
@@ -302,6 +329,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoLabelNetworkInterface", logger)))...,
 		),
 
+		AutoLabelPolicerProfileHdlr: grpctransport.NewServer(
+			endpoints.AutoLabelPolicerProfileEndpoint,
+			DecodeGrpcReqLabel,
+			EncodeGrpcRespPolicerProfile,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoLabelPolicerProfile", logger)))...,
+		),
+
 		AutoLabelRouteTableHdlr: grpctransport.NewServer(
 			endpoints.AutoLabelRouteTableEndpoint,
 			DecodeGrpcReqLabel,
@@ -365,6 +399,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoListNetworkInterface", logger)))...,
 		),
 
+		AutoListPolicerProfileHdlr: grpctransport.NewServer(
+			endpoints.AutoListPolicerProfileEndpoint,
+			DecodeGrpcReqListWatchOptions,
+			EncodeGrpcRespPolicerProfileList,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoListPolicerProfile", logger)))...,
+		),
+
 		AutoListRouteTableHdlr: grpctransport.NewServer(
 			endpoints.AutoListRouteTableEndpoint,
 			DecodeGrpcReqListWatchOptions,
@@ -426,6 +467,13 @@ func MakeGRPCServerNetworkV1(ctx context.Context, endpoints EndpointsNetworkV1Se
 			DecodeGrpcReqNetworkInterface,
 			EncodeGrpcRespNetworkInterface,
 			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoUpdateNetworkInterface", logger)))...,
+		),
+
+		AutoUpdatePolicerProfileHdlr: grpctransport.NewServer(
+			endpoints.AutoUpdatePolicerProfileEndpoint,
+			DecodeGrpcReqPolicerProfile,
+			EncodeGrpcRespPolicerProfile,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoUpdatePolicerProfile", logger)))...,
 		),
 
 		AutoUpdateRouteTableHdlr: grpctransport.NewServer(
@@ -533,6 +581,24 @@ func decodeHTTPrespNetworkV1AutoAddNetworkInterface(_ context.Context, r *http.R
 		return nil, errorDecoder(r)
 	}
 	var resp NetworkInterface
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
+func (s *grpcServerNetworkV1) AutoAddPolicerProfile(ctx oldcontext.Context, req *PolicerProfile) (*PolicerProfile, error) {
+	_, resp, err := s.AutoAddPolicerProfileHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoAddPolicerProfile).V
+	return &r, resp.(respNetworkV1AutoAddPolicerProfile).Err
+}
+
+func decodeHTTPrespNetworkV1AutoAddPolicerProfile(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp PolicerProfile
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return &resp, err
 }
@@ -699,6 +765,24 @@ func decodeHTTPrespNetworkV1AutoDeleteNetworkInterface(_ context.Context, r *htt
 	return &resp, err
 }
 
+func (s *grpcServerNetworkV1) AutoDeletePolicerProfile(ctx oldcontext.Context, req *PolicerProfile) (*PolicerProfile, error) {
+	_, resp, err := s.AutoDeletePolicerProfileHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoDeletePolicerProfile).V
+	return &r, resp.(respNetworkV1AutoDeletePolicerProfile).Err
+}
+
+func decodeHTTPrespNetworkV1AutoDeletePolicerProfile(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp PolicerProfile
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
 func (s *grpcServerNetworkV1) AutoDeleteRouteTable(ctx oldcontext.Context, req *RouteTable) (*RouteTable, error) {
 	_, resp, err := s.AutoDeleteRouteTableHdlr.ServeGRPC(ctx, req)
 	if err != nil {
@@ -857,6 +941,24 @@ func decodeHTTPrespNetworkV1AutoGetNetworkInterface(_ context.Context, r *http.R
 		return nil, errorDecoder(r)
 	}
 	var resp NetworkInterface
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
+func (s *grpcServerNetworkV1) AutoGetPolicerProfile(ctx oldcontext.Context, req *PolicerProfile) (*PolicerProfile, error) {
+	_, resp, err := s.AutoGetPolicerProfileHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoGetPolicerProfile).V
+	return &r, resp.(respNetworkV1AutoGetPolicerProfile).Err
+}
+
+func decodeHTTPrespNetworkV1AutoGetPolicerProfile(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp PolicerProfile
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return &resp, err
 }
@@ -1023,6 +1125,24 @@ func decodeHTTPrespNetworkV1AutoLabelNetworkInterface(_ context.Context, r *http
 	return &resp, err
 }
 
+func (s *grpcServerNetworkV1) AutoLabelPolicerProfile(ctx oldcontext.Context, req *api.Label) (*PolicerProfile, error) {
+	_, resp, err := s.AutoLabelPolicerProfileHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoLabelPolicerProfile).V
+	return &r, resp.(respNetworkV1AutoLabelPolicerProfile).Err
+}
+
+func decodeHTTPrespNetworkV1AutoLabelPolicerProfile(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp PolicerProfile
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
 func (s *grpcServerNetworkV1) AutoLabelRouteTable(ctx oldcontext.Context, req *api.Label) (*RouteTable, error) {
 	_, resp, err := s.AutoLabelRouteTableHdlr.ServeGRPC(ctx, req)
 	if err != nil {
@@ -1181,6 +1301,24 @@ func decodeHTTPrespNetworkV1AutoListNetworkInterface(_ context.Context, r *http.
 		return nil, errorDecoder(r)
 	}
 	var resp NetworkInterfaceList
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
+func (s *grpcServerNetworkV1) AutoListPolicerProfile(ctx oldcontext.Context, req *api.ListWatchOptions) (*PolicerProfileList, error) {
+	_, resp, err := s.AutoListPolicerProfileHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoListPolicerProfile).V
+	return &r, resp.(respNetworkV1AutoListPolicerProfile).Err
+}
+
+func decodeHTTPrespNetworkV1AutoListPolicerProfile(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp PolicerProfileList
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return &resp, err
 }
@@ -1347,6 +1485,24 @@ func decodeHTTPrespNetworkV1AutoUpdateNetworkInterface(_ context.Context, r *htt
 	return &resp, err
 }
 
+func (s *grpcServerNetworkV1) AutoUpdatePolicerProfile(ctx oldcontext.Context, req *PolicerProfile) (*PolicerProfile, error) {
+	_, resp, err := s.AutoUpdatePolicerProfileHdlr.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	r := resp.(respNetworkV1AutoUpdatePolicerProfile).V
+	return &r, resp.(respNetworkV1AutoUpdatePolicerProfile).Err
+}
+
+func decodeHTTPrespNetworkV1AutoUpdatePolicerProfile(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp PolicerProfile
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
 func (s *grpcServerNetworkV1) AutoUpdateRouteTable(ctx oldcontext.Context, req *RouteTable) (*RouteTable, error) {
 	_, resp, err := s.AutoUpdateRouteTableHdlr.ServeGRPC(ctx, req)
 	if err != nil {
@@ -1475,6 +1631,10 @@ func (s *grpcServerNetworkV1) AutoWatchRouteTable(in *api.ListWatchOptions, stre
 
 func (s *grpcServerNetworkV1) AutoWatchVirtualRouterPeeringGroup(in *api.ListWatchOptions, stream NetworkV1_AutoWatchVirtualRouterPeeringGroupServer) error {
 	return s.Endpoints.AutoWatchVirtualRouterPeeringGroup(in, stream)
+}
+
+func (s *grpcServerNetworkV1) AutoWatchPolicerProfile(in *api.ListWatchOptions, stream NetworkV1_AutoWatchPolicerProfileServer) error {
+	return s.Endpoints.AutoWatchPolicerProfile(in, stream)
 }
 
 func encodeHTTPIPAMPolicyList(ctx context.Context, req *http.Request, request interface{}) error {
@@ -1610,6 +1770,40 @@ func EncodeGrpcRespNetworkList(ctx context.Context, response interface{}) (inter
 
 // DecodeGrpcRespNetworkList decodes the GRPC response
 func DecodeGrpcRespNetworkList(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+func encodeHTTPPolicerProfileList(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPPolicerProfileList(_ context.Context, r *http.Request) (interface{}, error) {
+	var req PolicerProfileList
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqPolicerProfileList encodes GRPC request
+func EncodeGrpcReqPolicerProfileList(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*PolicerProfileList)
+	return req, nil
+}
+
+// DecodeGrpcReqPolicerProfileList decodes GRPC request
+func DecodeGrpcReqPolicerProfileList(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*PolicerProfileList)
+	return req, nil
+}
+
+// EncodeGrpcRespPolicerProfileList endodes the GRPC response
+func EncodeGrpcRespPolicerProfileList(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespPolicerProfileList decodes the GRPC response
+func DecodeGrpcRespPolicerProfileList(ctx context.Context, response interface{}) (interface{}, error) {
 	return response, nil
 }
 

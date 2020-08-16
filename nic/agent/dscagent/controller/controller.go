@@ -150,6 +150,8 @@ func (c *API) newRestServer(url string, pipelineAPI types.PipelineAPI) *http.Ser
 		"/api/mapping/":                   c.addAPIMappingRoutes,
 		"/api/ipam-policies/":             agServer.AddIPAMPolicyAPIRoutes,
 		"/api/mirror/interface-sessions/": agServer.AddInterfaceMirrorSessionAPIRoutes,
+		"/api/policer-profiles/":          agServer.AddPolicerProfileAPIRoutes,
+		"/api/dscconfig/":                 agServer.AddDSCConfigAPIRoutes,
 	}
 
 	for prefix, subRouter := range prefixRoutes {

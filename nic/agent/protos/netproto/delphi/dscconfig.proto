@@ -1,0 +1,21 @@
+//------------------------------------------------------------------------------
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+// protobuf specification for DSCConfig
+//------------------------------------------------------------------------------
+
+syntax = "proto3";
+package dnetproto;
+
+// Mandatory imports.
+import "github.com/pensando/sw/nic/agent/protos/netproto/dscconfig.proto";
+import "delphi.proto";
+
+
+// Tenant object
+message DSCConfig {
+    option (delphi.update_event) = true;
+    delphi.ObjectMeta       Meta            = 1;
+    string                  Key             = 2;
+    netproto.DSCConfig      DSCConfig       = 3;
+}

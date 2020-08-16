@@ -85,7 +85,21 @@ var CreateDistributedServiceCardFlags = []gen.CliFlag{
 		Insert: "",
 	},
 	{
+		ID:     "policer-attach-tenant",
+		Type:   "String",
+		Help:   "",
+		Skip:   false,
+		Insert: "",
+	},
+	{
 		ID:     "routing-config",
+		Type:   "String",
+		Help:   "",
+		Skip:   false,
+		Insert: "",
+	},
+	{
+		ID:     "tx-policer",
 		Type:   "String",
 		Help:   "",
 		Skip:   false,

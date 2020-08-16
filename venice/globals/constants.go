@@ -289,6 +289,12 @@ const (
 
 	// MinioSecretKeyName is the environment variable name of minio secret key
 	MinioOldSecretKeyName = "MINIO_SECRET_KEY_OLD"
+
+	// MinPolicerPktsPerSecond is the minimum value allowed for packet based traffic policer
+	MinPolicerPktsPerSecond = 4000
+
+	// MinPolicerBytesPerSecond is the minimum value allowed for packet based traffic policer
+	MinPolicerBytesPerSecond = 4000
 )
 
 var (

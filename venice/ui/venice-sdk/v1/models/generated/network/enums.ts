@@ -80,6 +80,10 @@ export enum NetworkPauseSpec_type {
     'priority' = "priority",
 }
 
+export enum NetworkPolicerAction_policer_action {
+    'drop' = "drop",
+}
+
 export enum NetworkRDSpec_address_family {
     'ipv4-unicast' = "ipv4-unicast",
     'l2vpn-evpn' = "l2vpn-evpn",
@@ -205,6 +209,7 @@ export class AllEnums {
     NetworkNetworkSpec_type = NetworkNetworkSpec_type;
     NetworkNetworkStatus_oper_state = NetworkNetworkStatus_oper_state;
     NetworkPauseSpec_type = NetworkPauseSpec_type;
+    NetworkPolicerAction_policer_action = NetworkPolicerAction_policer_action;
     NetworkRDSpec_address_family = NetworkRDSpec_address_family;
     NetworkRouteDistinguisher_type = NetworkRouteDistinguisher_type;
     NetworkTLSServerPolicySpec_client_authentication = NetworkTLSServerPolicySpec_client_authentication;

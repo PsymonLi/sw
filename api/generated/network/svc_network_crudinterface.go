@@ -132,6 +132,19 @@ type NetworkV1VirtualRouterPeeringGroupInterface interface {
 	Allowed(oper apiintf.APIOperType) bool
 }
 
+// NetworkV1PolicerProfileInterface exposes the CRUD methods for PolicerProfile
+type NetworkV1PolicerProfileInterface interface {
+	Create(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error)
+	Update(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error)
+	UpdateStatus(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error)
+	Label(ctx context.Context, in *api.Label) (*PolicerProfile, error)
+	Get(ctx context.Context, objMeta *api.ObjectMeta) (*PolicerProfile, error)
+	Delete(ctx context.Context, objMeta *api.ObjectMeta) (*PolicerProfile, error)
+	List(ctx context.Context, options *api.ListWatchOptions) ([]*PolicerProfile, error)
+	Watch(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error)
+	Allowed(oper apiintf.APIOperType) bool
+}
+
 // NetworkV1Interface exposes objects with CRUD operations allowed by the service
 type NetworkV1Interface interface {
 	Network() NetworkV1NetworkInterface
@@ -143,5 +156,6 @@ type NetworkV1Interface interface {
 	RoutingConfig() NetworkV1RoutingConfigInterface
 	RouteTable() NetworkV1RouteTableInterface
 	VirtualRouterPeeringGroup() NetworkV1VirtualRouterPeeringGroupInterface
+	PolicerProfile() NetworkV1PolicerProfileInterface
 	Watch(ctx context.Context, options *api.AggWatchOptions) (kvstore.Watcher, error)
 }

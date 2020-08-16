@@ -48,6 +48,7 @@ type ApuluAPI struct {
 	SubnetClient            halapi.SubnetSvcClient
 	DeviceSvcClient         halapi.DeviceSvcClient
 	SecurityPolicySvcClient halapi.SecurityPolicySvcClient
+	PolicerSvcClient        halapi.PolicerSvcClient
 	DHCPRelayClient         halapi.DHCPSvcClient
 	InterfaceClient         halapi.IfSvcClient
 	EventClient             halapi.EventSvcClient
@@ -91,6 +92,7 @@ func NewPipelineAPI(infraAPI types.InfraAPI) (*ApuluAPI, error) {
 		SubnetClient:            halapi.NewSubnetSvcClient(conn),
 		DeviceSvcClient:         halapi.NewDeviceSvcClient(conn),
 		SecurityPolicySvcClient: halapi.NewSecurityPolicySvcClient(conn),
+		PolicerSvcClient:        halapi.NewPolicerSvcClient(conn),
 		DHCPRelayClient:         halapi.NewDHCPSvcClient(conn),
 		InterfaceClient:         halapi.NewIfSvcClient(conn),
 		PortClient:              halapi.NewPortSvcClient(conn),
@@ -344,7 +346,7 @@ func (a *ApuluAPI) HandleDevice(oper types.Operation) error {
 	if cfg.LoopbackIP != "" {
 		lbip = apuluutils.ConvertIPAddress(cfg.LoopbackIP)
 	}
-	return apulu.HandleDevice(oper, a.DeviceSvcClient, lbip, cfg.DSCID)
+	return apulu.HandleDevice(a.InfraAPI, oper, a.DeviceSvcClient, lbip, cfg.DSCID)
 }
 
 // HandleVrf handles CRUD Methods for Vrf Object
@@ -709,7 +711,7 @@ func (a *ApuluAPI) HandleInterface(oper types.Operation, intf netproto.Interface
 
 			if cfg.LoopbackIP != "" {
 				lbip := apuluutils.ConvertIPAddress(cfg.LoopbackIP)
-				apulu.HandleDevice(types.Update, a.DeviceSvcClient, lbip, cfg.DSCID)
+				apulu.HandleDevice(a.InfraAPI, types.Update, a.DeviceSvcClient, lbip, cfg.DSCID)
 			}
 			var vrf netproto.Vrf
 			vrf, err = validator.ValidateVrf(a.InfraAPI, types.DefaultTenant, types.DefaultNamespace, types.DefaulUnderlaytVrf)
@@ -1064,6 +1066,206 @@ func (a *ApuluAPI) HandleSecurityProfile(oper types.Operation, profile netproto.
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
 	err = apulu.HandleSecurityProfile(a.InfraAPI, a.SecurityPolicySvcClient, oper, profile)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return
+}
+
+//  HandleDSCConfig handles CRUD methods for DSCConfig objects
+func (a *ApuluAPI) HandleDSCConfig(oper types.Operation, DSCConf netproto.DSCConfig) (DSCConfs []netproto.DSCConfig, err error) {
+	switch oper {
+	case types.Get:
+		var (
+			dat []byte
+			obj netproto.DSCConfig
+		)
+		dat, err = a.InfraAPI.Read(DSCConf.Kind, DSCConf.GetKey())
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), types.ErrObjNotFound)
+		}
+		err = obj.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), err)
+		}
+		DSCConfs = append(DSCConfs, obj)
+
+		return
+	case types.List:
+		var (
+			dat [][]byte
+		)
+		dat, err = a.InfraAPI.List(DSCConf.Kind)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), types.ErrObjNotFound)
+		}
+
+		for _, o := range dat {
+			var DSCConf netproto.DSCConfig
+			err := proto.Unmarshal(o, &DSCConf)
+			if err != nil {
+				log.Error(errors.Wrapf(types.ErrUnmarshal, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), err))
+				continue
+			}
+			DSCConfs = append(DSCConfs, DSCConf)
+		}
+
+		return
+	case types.Create:
+	case types.Update:
+		// Get to ensure that the object exists
+		var existingDSCConfig netproto.DSCConfig
+		dat, err := a.InfraAPI.Read(DSCConf.Kind, DSCConf.GetKey())
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), types.ErrObjNotFound)
+		}
+		err = existingDSCConfig.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), err)
+		}
+
+		// Check for idempotency
+		if proto.Equal(&DSCConf.Spec, &existingDSCConfig.Spec) {
+			return nil, nil
+		}
+	case types.Delete:
+		var existingDSCConfig netproto.DSCConfig
+		dat, err := a.InfraAPI.Read(DSCConf.Kind, DSCConf.GetKey())
+		if err != nil {
+			log.Infof("Controller API: %s | Err: %s", types.InfoIgnoreDelete, err)
+			return nil, nil
+		}
+		err = existingDSCConfig.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "DSCConfig: %s | Err: %v", DSCConf.GetKey(), err)
+		}
+		DSCConf = existingDSCConfig
+	}
+	// Perform object validations
+	err = validator.ValidateDSCConfig(a.InfraAPI, DSCConf)
+	if err != nil {
+		log.Errorf("validator.ValidateDSCConfig failed")
+		return nil, errors.Wrapf(err, "validator.ValidateDSCConfig failed")
+	}
+
+	log.Infof("DSCConfig: %s | Op: %s | %s", DSCConf.GetKey(), oper, types.InfoHandleObjBegin)
+	defer log.Infof("DSCConfig: %s | Op: %s | %s", DSCConf.GetKey(), oper, types.InfoHandleObjEnd)
+
+	// Store the configuration
+	err = apulu.HandleDSCConfig(a.InfraAPI, oper, DSCConf)
+	log.Infof("HandleDSCConfig done...")
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	// Update the datapath
+	err = a.HandleDevice(types.Update)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return
+}
+
+// HandlePolicerProfile handles CRUD methods for PolicerProfile objects
+func (a *ApuluAPI) HandlePolicerProfile(oper types.Operation, policer netproto.PolicerProfile) (policers []netproto.PolicerProfile, err error) {
+	// Take a lock to ensure a single HAL API is active at any given point
+	a.Lock()
+	defer a.Unlock()
+
+	switch oper {
+	case types.Get:
+		var (
+			dat []byte
+			obj netproto.PolicerProfile
+		)
+		dat, err = a.InfraAPI.Read(policer.Kind, policer.GetKey())
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "PolicerProfile: %s | Err: %v", policer.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "PolicerProfile: %s | Err: %v", policer.GetKey(), types.ErrObjNotFound)
+		}
+		err = obj.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err)
+		}
+		policers = append(policers, obj)
+
+		return
+	case types.List:
+		var (
+			dat [][]byte
+		)
+		dat, err = a.InfraAPI.List(policer.Kind)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "PolicerProfile: %s | Err: %v", policer.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "PolicerProfile: %s | Err: %v", policer.GetKey(), types.ErrObjNotFound)
+		}
+
+		for _, o := range dat {
+			var policer netproto.PolicerProfile
+			err := proto.Unmarshal(o, &policer)
+			if err != nil {
+				log.Error(errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err))
+				continue
+			}
+			policers = append(policers, policer)
+		}
+
+		return
+	case types.Create:
+	case types.Update:
+		// Get to ensure that the object exists
+		var existingPolicer netproto.PolicerProfile
+		dat, err := a.InfraAPI.Read(policer.Kind, policer.GetKey())
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "PolicerProfile: %s | Err: %v", policer.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "PolicerProfile: %s | Err: %v", policer.GetKey(), types.ErrObjNotFound)
+		}
+		err = existingPolicer.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err)
+		}
+
+		// Check for idempotency
+		if proto.Equal(&policer.Spec, &existingPolicer.Spec) {
+			return nil, nil
+		}
+	case types.Delete:
+		var existingPolicer netproto.PolicerProfile
+		dat, err := a.InfraAPI.Read(policer.Kind, policer.GetKey())
+		if err != nil {
+			log.Infof("Controller API: %s | Err: %s", types.InfoIgnoreDelete, err)
+			return nil, nil
+		}
+		err = existingPolicer.Unmarshal(dat)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err))
+			return nil, errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err)
+		}
+		policer = existingPolicer
+	}
+	// Perform object validations
+	err = validator.ValidatePolicerProfile(a.InfraAPI, policer)
+	if err != nil {
+		log.Errorf("validator.ValidatePolicerProfile failed")
+		return nil, errors.Wrapf(err, "validator.ValidatePolicerProfile failed")
+	}
+
+	log.Infof("PolicerProfile: %s | Op: %s | %s", policer.GetKey(), oper, types.InfoHandleObjBegin)
+	defer log.Infof("PolicerProfile: %s | Op: %s | %s", policer.GetKey(), oper, types.InfoHandleObjEnd)
+
+	err = apulu.HandlePolicerProfile(a.InfraAPI, a.PolicerSvcClient, oper, policer)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1724,6 +1926,52 @@ func (a *ApuluAPI) ReplayConfigs() error {
 		}
 	}
 
+	// Replay PolicerProfile Object
+	tpKind := netproto.PolicerProfile{
+		TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+	}
+
+	tps, err := a.HandlePolicerProfile(types.List, tpKind)
+	if err == nil {
+		for _, tp := range tps {
+			creator, ok := tp.ObjectMeta.Labels["CreatedBy"]
+			if ok && creator == "Venice" {
+				log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", tp.Kind, tp.GetKey())
+				a.InfraAPI.Delete(tp.Kind, tp.GetKey())
+
+				log.Info("Replaying persisted Policer Profile object")
+				if _, err := a.HandlePolicerProfile(types.Create, tp); err != nil {
+					log.Errorf("Failed to recreate Policer Profile: %v. Err: %v", tp.GetKey(), err)
+				}
+			}
+		}
+	}
+
+	// Replay DSCConfig Object
+	dscKind := netproto.DSCConfig{
+		TypeMeta: api.TypeMeta{Kind: "DSCConfig"},
+	}
+
+	dsccs, err := a.HandleDSCConfig(types.List, dscKind)
+	if err == nil {
+		for _, dscc := range dsccs {
+			creator, ok := dscc.ObjectMeta.Labels["CreatedBy"]
+			if ok && creator == "Venice" {
+				log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", dscc.Kind, dscc.GetKey())
+				a.InfraAPI.Delete(dscc.Kind, dscc.GetKey())
+
+				log.Info("Replaying persisted DSCConfig object")
+				if _, err := a.HandleDSCConfig(types.Create, dscc); err != nil {
+					log.Errorf("Failed to recreate DSC config: %v. Err: %v", dscc.GetKey(), err)
+				}
+				// Update the datapath
+				if err := a.HandleDevice(types.Update); err != nil {
+					log.Errorf("Failed to push DSC config to datpath: %v Err: %v", dscc.GetKey(), err)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1821,6 +2069,22 @@ func (a *ApuluAPI) PurgeConfigs(deleteDB bool) error {
 	for _, vrf := range vrfs {
 		if _, err := a.HandleVrf(types.Delete, vrf); err != nil {
 			log.Errorf("Failed to purge the Vrf. Err: %v", err)
+		}
+	}
+
+	tp := netproto.PolicerProfile{TypeMeta: api.TypeMeta{Kind: "PolicerProfile"}}
+	tps, _ := a.HandlePolicerProfile(types.List, tp)
+	for _, tp := range tps {
+		if _, err := a.HandlePolicerProfile(types.Delete, tp); err != nil {
+			log.Errorf("Failed to purge the Policer Profile. Err: %v", err)
+		}
+	}
+
+	dscc := netproto.DSCConfig{TypeMeta: api.TypeMeta{Kind: "DSCConfig"}}
+	dsccs, _ := a.HandleDSCConfig(types.List, dscc)
+	for _, dscc := range dsccs {
+		if _, err := a.HandleDSCConfig(types.Delete, dscc); err != nil {
+			log.Errorf("Failed to purge the DSC Configuration. Err: %v", err)
 		}
 	}
 

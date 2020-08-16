@@ -13,6 +13,8 @@ import "cluster.proto";
 
 option (venice.filterImport) = "route.proto";
 import "route.proto";
+option (venice.filterImport) = "policer.proto";
+import "policer.proto";
 
 //------------------------------------ Distributed Service Card  -------------------------------------------
 //
@@ -104,6 +106,11 @@ message DistributedServiceCardSpec {
     string RoutingConfig            = 8 [(gogoproto.jsontag) = "routing-config,omitempty", (venice.objRelation) = {Type: "NamedRef", To: "network/RoutingConfig"}];
 
     string DSCProfile               = 9 [(venice.objRelation) = {Type: "NamedRef", To: "cluster/DSCProfile"}, (gogoproto.jsontag) = "dscprofile, omitempty"];
+
+    string PolicerAttachTenant      = 10 [(gogoproto.jsontag) = "policer-attach-tenant,omitempty", (venice.default) = "default"];
+
+    // Policer to be applied in Tx direction
+    string TxPolicer                = 11 [(gogoproto.jsontag) = "tx-policer,omitempty", (venice.objRelation) = {Type: "NamedRef", To: "network/PolicerProfile", UseTenant: "PolicerAttachTenant"}];
 }
 
 // IPConfig defines the static IP configuration for a DistributedServiceCard

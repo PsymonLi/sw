@@ -48,6 +48,7 @@ type ConfigCache struct {
 	VPCs     map[string]*network.VirtualRouter
 	Networks map[string]*network.Network
 	IPAMPols map[string]*network.IPAMPolicy
+	TrafPols map[string]*network.PolicerProfile
 	SecPols  map[string]*security.NetworkSecurityPolicy
 }
 
@@ -56,6 +57,7 @@ func (c *ConfigCache) Init() {
 	c.VPCs = make(map[string]*network.VirtualRouter)
 	c.Networks = make(map[string]*network.Network)
 	c.IPAMPols = make(map[string]*network.IPAMPolicy)
+	c.TrafPols = make(map[string]*network.PolicerProfile)
 	c.SecPols = make(map[string]*security.NetworkSecurityPolicy)
 }
 
@@ -64,6 +66,7 @@ const (
 	naplesNetworksPath = "/api/networks/"
 	naplesIPAMPath     = "/api/ipam-policies/"
 	naplesSecPolPath   = "/api/security/policies/"
+	naplesPolProfPath  = "/api/policer-profiles/"
 )
 
 func (c *ConfigCache) Create(ctx context.Context, client apiclient.Services, obj runtime.Object) error {
@@ -97,6 +100,13 @@ func (c *ConfigCache) Create(ctx context.Context, client apiclient.Services, obj
 			return err
 		}
 		c.IPAMPols[i.Tenant+"."+i.Name] = i
+	case string(network.KindPolicerProfile):
+		i := obj.(*network.PolicerProfile)
+		_, err := client.NetworkV1().PolicerProfile().Create(ctx, i)
+		if err != nil {
+			return err
+		}
+		c.TrafPols[i.Tenant+"."+i.Name] = i
 	case string(security.KindNetworkSecurityPolicy):
 		s := obj.(*security.NetworkSecurityPolicy)
 		_, err := client.SecurityV1().NetworkSecurityPolicy().Create(ctx, s)
@@ -141,6 +151,13 @@ func (c *ConfigCache) Update(ctx context.Context, client apiclient.Services, obj
 			return err
 		}
 		c.IPAMPols[i.Tenant+"."+i.Name] = i
+	case string(network.KindPolicerProfile):
+		i := obj.(*network.PolicerProfile)
+		_, err := client.NetworkV1().PolicerProfile().Update(ctx, i)
+		if err != nil {
+			return err
+		}
+		c.TrafPols[i.Tenant+"."+i.Name] = i
 	case string(security.KindNetworkSecurityPolicy):
 		s := obj.(*security.NetworkSecurityPolicy)
 		_, err := client.SecurityV1().NetworkSecurityPolicy().Update(ctx, s)
@@ -191,6 +208,13 @@ func (c *ConfigCache) Delete(ctx context.Context, client apiclient.Services, obj
 			return err
 		}
 		delete(c.IPAMPols, i.Tenant+"."+i.Name)
+	case string(network.KindPolicerProfile):
+		i := obj.(*network.PolicerProfile)
+		_, err := client.NetworkV1().PolicerProfile().Delete(ctx, &i.ObjectMeta)
+		if err != nil {
+			return err
+		}
+		delete(c.TrafPols, i.Tenant+"."+i.Name)
 	case string(security.KindNetworkSecurityPolicy):
 		s := obj.(*security.NetworkSecurityPolicy)
 		_, err := client.SecurityV1().NetworkSecurityPolicy().Delete(ctx, &s.ObjectMeta)
@@ -216,6 +240,8 @@ func (c *ConfigCache) Get(ctx context.Context, client apiclient.Services, kind s
 		return client.NetworkV1().IPAMPolicy().Get(ctx, obj)
 	case string(security.KindNetworkSecurityPolicy):
 		return client.SecurityV1().NetworkSecurityPolicy().Get(ctx, obj)
+	case string(network.KindPolicerProfile):
+		return client.NetworkV1().PolicerProfile().Get(ctx, obj)
 	}
 	return nil, fmt.Errorf("unknown kind")
 }
@@ -361,6 +387,17 @@ func (c *ConfigCache) Verify(tenant, kind, naples string, count int) error {
 			if !verifyRd(cv.Spec.RouteImportExport, v.Spec.RouteImportExport) {
 				return fmt.Errorf("RD does not match")
 			}
+		}
+	case string(network.KindPolicerProfile):
+		out := ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s curl -sS http://127.0.0.1:9007%s", naples, naplesPolProfPath))
+		var tps []*netproto.PolicerProfile
+
+		err := json.Unmarshal([]byte(out), &tps)
+		if err != nil {
+			return err
+		}
+		if len(tps) != count {
+			return fmt.Errorf("expecting [%d] Policer Profiles got [%d]", count, len(tps))
 		}
 	case string(network.KindIPAMPolicy):
 		out := ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec %s curl -sS http://127.0.0.1:9007%s", naples, naplesIPAMPath))
@@ -623,6 +660,528 @@ var _ = Describe("Cloud E2E", func() {
 		})
 	})
 
+	Context("Policer Profile tests", func() {
+		var restClient apiclient.Services
+		tenantName := "default"
+		vpcName := "def-vpc"
+		subnetName := "def-subnet"
+		policerName := "p1-tp8"
+		policer2Name := "p2-tp8"
+		policer3Name := "p3-tp8"
+
+		BeforeEach(func() {
+			var err error
+			apiGwAddr := ts.tu.ClusterVIP + ":" + globals.APIGwRESTPort
+			restClient, err = apiclient.NewRestAPIClient(apiGwAddr)
+			Expect(err).ShouldNot(HaveOccurred())
+			pegNodes := getPegasusNodes()
+			Expect(len(pegNodes)).Should(Equal(2), "did not find 2 Pegasus nodes got [%v]", pegNodes)
+		})
+		cleanUpObjects := func(ctx context.Context) {
+			//Detach policer, network, tenant from all interfaces
+			ifList, err := restClient.NetworkV1().NetworkInterface().List(ctx, &api.ListWatchOptions{FieldSelector: "spec.type=host-pf"})
+			Expect(err).To(BeNil(), "listing network interfaces failed (%s)", err)
+			for _, i := range ifList {
+				i.Spec.TxPolicer = ""
+				i.Spec.AttachTenant = ""
+				i.Spec.AttachNetwork = ""
+				_, err := restClient.NetworkV1().NetworkInterface().Update(ctx, i)
+				Expect(err).To(BeNil(), "updating network interfaces failed (%s)", err)
+			}
+			//Detach policer from all DSCs
+			dscs, err := restClient.ClusterV1().DistributedServiceCard().List(ctx, &api.ListWatchOptions{})
+			Expect(err).Should(BeNil(), fmt.Sprintf("failed to list DSCs %s)", err))
+			for _, dsc := range dscs {
+				dsc.Spec.TxPolicer = ""
+				_, err := restClient.ClusterV1().DistributedServiceCard().Update(ctx, dsc)
+				Expect(err).To(BeNil(), "updating DSC failed (%s)", err)
+			}
+
+			//Delete all the policer profiles
+			tpList, err := restClient.NetworkV1().PolicerProfile().List(ctx, &api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: tenantName}})
+			Expect(err).To(BeNil(), "listing policer profiles failed (%s)", err)
+			By(fmt.Sprintf("Listing TPs %v", tpList))
+
+			for _, n := range tpList {
+				_, err := restClient.NetworkV1().PolicerProfile().Delete(ctx, &n.ObjectMeta)
+				Expect(err).To(BeNil(), "failed to delete policer profiles [%v](%s)", n.Name, err)
+			}
+			//Delete the subnet
+			subnList, err := restClient.NetworkV1().Network().List(ctx, &api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: tenantName}})
+			Expect(err).To(BeNil(), "listing network failed (%s)", err)
+
+			for _, n := range subnList {
+				if n.Name == subnetName {
+					_, err := restClient.NetworkV1().Network().Delete(ctx, &n.ObjectMeta)
+					Expect(err).To(BeNil(), "failed to delete network [%v](%s)", n.Name, err)
+				}
+			}
+			//Delete the created virtual router
+			vpcList, err := restClient.NetworkV1().VirtualRouter().List(ctx, &api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: tenantName}})
+			Expect(err).To(BeNil(), "error getting list (%s)", err)
+			for _, v := range vpcList {
+				if v.Name != "underlay-vpc" {
+					_, err := restClient.NetworkV1().VirtualRouter().Delete(ctx, &v.ObjectMeta)
+					Expect(err).To(BeNil(), "failed to delete vpc [%v](%s)", v.Name, err)
+				}
+			}
+		}
+		It("CRUD tests", func() {
+			Skip("Skipping until datapath fixes are done")
+			lctx, cancel := context.WithCancel(ts.tu.MustGetLoggedInContext(context.Background()))
+			defer cancel()
+
+			cleanUpObjects(lctx)
+			cache := ConfigCache{}
+			cache.Init()
+			//return
+			By(fmt.Sprintf("Creating Tenant"))
+			// Create Tenant
+			err := cache.Create(lctx, restClient, &cluster.Tenant{
+				TypeMeta: api.TypeMeta{Kind: "Tenant"},
+				ObjectMeta: api.ObjectMeta{
+					Name: tenantName,
+				},
+			})
+
+			// Create VPC
+			vpc := &network.VirtualRouter{
+				TypeMeta: api.TypeMeta{Kind: "VirtualRouter"},
+				ObjectMeta: api.ObjectMeta{
+					Name:   vpcName,
+					Tenant: tenantName,
+				},
+				Spec: network.VirtualRouterSpec{
+					Type:             network.VirtualRouterSpec_Tenant.String(),
+					RouterMACAddress: "0000.1111.0011",
+					VxLanVNI:         90005,
+					RouteImportExport: &network.RDSpec{
+						AddressFamily: network.BGPAddressFamily_L2vpnEvpn.String(),
+						ExportRTs: []*network.RouteDistinguisher{
+							{
+								Type:          network.RouteDistinguisher_Type2.String(),
+								AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 1000},
+								AssignedValue: 1000,
+							},
+						},
+						ImportRTs: []*network.RouteDistinguisher{
+							{
+								Type:          network.RouteDistinguisher_Type2.String(),
+								AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 1000},
+								AssignedValue: 1000,
+							},
+						},
+					},
+				},
+			}
+			By(fmt.Sprintf("Creating VPC %s", vpc.Name))
+			err = cache.Create(lctx, restClient, vpc)
+			Expect(err).To(BeNil(), "VPC create failed (%s)", err)
+
+			// Create Network
+			subnet := &network.Network{
+				TypeMeta: api.TypeMeta{Kind: "Network"},
+				ObjectMeta: api.ObjectMeta{
+					Name:   subnetName,
+					Tenant: tenantName,
+				},
+				Spec: network.NetworkSpec{
+					Type:          network.NetworkType_Routed.String(),
+					VlanID:        10,
+					VirtualRouter: vpcName,
+					IPv4Subnet:    "10.1.1.0/24",
+					IPv4Gateway:   "10.1.1.254",
+					VxlanVNI:      uint32(10710),
+					RouteImportExport: &network.RDSpec{
+						AddressFamily: network.BGPAddressFamily_L2vpnEvpn.String(),
+						ExportRTs: []*network.RouteDistinguisher{
+							{
+								Type:          network.RouteDistinguisher_Type2.String(),
+								AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: uint32(10010)},
+								AssignedValue: uint32(1010),
+							},
+						},
+						ImportRTs: []*network.RouteDistinguisher{
+							{
+								Type:          network.RouteDistinguisher_Type2.String(),
+								AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: uint32(10010)},
+								AssignedValue: uint32(1010),
+							},
+						},
+					},
+				},
+			}
+			By(fmt.Sprintf("Creating network %s", subnetName))
+			err = cache.Create(lctx, restClient, subnet)
+			Expect(err).To(BeNil(), "subnet create [%v] failed 9%s)", subnetName, err)
+
+			opts := api.ListWatchOptions{
+				FieldSelector: "spec.type=host-pf",
+			}
+			By(fmt.Sprintf("List networks [%v]", cache.Networks))
+			for _, l := range cache.Networks {
+				By(fmt.Sprintf("Network: %v", l))
+			}
+			dscs, err := restClient.ClusterV1().DistributedServiceCard().List(lctx, &api.ListWatchOptions{})
+			Expect(err).Should(BeNil(), fmt.Sprintf("failed to list DSCs %s)", err))
+			By(fmt.Sprintf("List dscs [%v]", dscs))
+			Expect(dscs).Should(Not(HaveLen(0)), fmt.Sprintf("failed to find DSC in the test"))
+
+			nwIfs, err := restClient.NetworkV1().NetworkInterface().List(lctx, &opts)
+			Expect(err).Should(BeNil(), fmt.Sprintf("failed to list host-pf interfaces %s)", err))
+			By(fmt.Sprintf("List host-pfs [%v]", nwIfs))
+
+			naples := ""
+			dscn := dscs[0]
+			for _, dsc := range dscs {
+				if dsc.Name == nwIfs[0].Status.DSC {
+					naples = dsc.Spec.ID
+					dscn = dsc
+				}
+			}
+			By(fmt.Sprintf("Selected DSC %v", dscn))
+			Expect(naples).Should(Not(HaveLen(0)), fmt.Sprintf("failed to find the DSC: %s)", nwIfs[0].Status.DSC))
+
+			nwIfs[0].Spec.AttachTenant = tenantName
+			nwIfs[0].Spec.AttachNetwork = subnetName
+			By(fmt.Sprintf("Updating host-pf %s", nwIfs[0].Name))
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[0])
+				return err
+			}, 60, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+
+			nwIfs[1].Spec.AttachTenant = tenantName
+			nwIfs[1].Spec.AttachNetwork = subnetName
+			By(fmt.Sprintf("Updating host-pf %s", nwIfs[1].Name))
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[1])
+				return err
+			}, 60, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+
+			//Define the Policer Object
+			policer := &network.PolicerProfile{
+				TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+				ObjectMeta: api.ObjectMeta{
+					Name:   policerName,
+					Tenant: tenantName,
+				},
+				Spec: network.PolicerProfileSpec{
+					Criteria: network.PolicerCriteria{
+						BurstSize:        200,
+						PacketsPerSecond: 10000,
+					},
+					ExceedAction: network.PolicerAction{
+						PolicerAction: network.PolicerAction_DROP.String(),
+					},
+				},
+			}
+			//Create the Policer object
+			By(fmt.Sprintf("Create the first policer object"))
+			err = cache.Create(lctx, restClient, policer)
+			Expect(err).To(BeNil(), "Policer Profile %v create did not succeed (%s)", policerName, err)
+
+			//Define the Policer Object
+			policer = &network.PolicerProfile{
+				TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+				ObjectMeta: api.ObjectMeta{
+					Name:   policer2Name,
+					Tenant: tenantName,
+				},
+				Spec: network.PolicerProfileSpec{
+					Criteria: network.PolicerCriteria{
+						BurstSize:        200,
+						PacketsPerSecond: 10000,
+					},
+					ExceedAction: network.PolicerAction{
+						PolicerAction: network.PolicerAction_DROP.String(),
+					},
+				},
+			}
+			//Create the Policer object
+			By(fmt.Sprintf("Create the second policer object"))
+			err = cache.Create(lctx, restClient, policer)
+			Expect(err).To(BeNil(), "Policer Profile %v create did not succeed (%s)", policer2Name, err)
+
+			//Define the Policer Object
+			policer = &network.PolicerProfile{
+				TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+				ObjectMeta: api.ObjectMeta{
+					Name:   policer3Name,
+					Tenant: tenantName,
+				},
+				Spec: network.PolicerProfileSpec{
+					Criteria: network.PolicerCriteria{
+						BurstSize:        200,
+						PacketsPerSecond: 10000,
+					},
+					ExceedAction: network.PolicerAction{
+						PolicerAction: network.PolicerAction_DROP.String(),
+					},
+				},
+			}
+			//Create the Policer object
+			By(fmt.Sprintf("Create the third policer object"))
+			err = cache.Create(lctx, restClient, policer)
+			Expect(err).To(BeNil(), "Policer Profile %v create did not succeed (%s)", policer2Name, err)
+
+			//Verify the Policer object is available in Venice
+			tpList, err := restClient.NetworkV1().PolicerProfile().List(lctx, &api.ListWatchOptions{})
+			Expect(err).To(BeNil(), "listing policer profiles failed (%s)", err)
+			Expect(len(tpList) == 3, "PolicerProfile not available in venice")
+			By(fmt.Sprintf("Listing TPs %v", tpList))
+
+			//Verify the Policer object is not available in Naples
+			By(fmt.Sprintf("Verify the Policer is not available in Naples"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 0)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			// Verify the validity of traffic parameters
+			policer.Spec.Criteria.PacketsPerSecond = 100
+			_, err = restClient.NetworkV1().PolicerProfile().Update(lctx, policer)
+			Expect(err).ShouldNot(BeNil())
+			policer.Spec.Criteria.PacketsPerSecond = 10000
+			policer.Spec.Criteria.BytesPerSecond = 10000
+			_, err = restClient.NetworkV1().PolicerProfile().Update(lctx, policer)
+			Expect(err).ShouldNot(BeNil())
+
+			policer.Spec.Criteria.BytesPerSecond = 0
+			//Attach the policer to a DSC
+			for _, dsc := range dscs {
+				By(fmt.Sprintf("Attach policer %s to DSC %s", policerName, dsc.Name))
+				dsc.Spec.TxPolicer = policerName
+				//Any tenant other than default should result in error
+				dsc.Spec.PolicerAttachTenant = "nondefault"
+				_, err := restClient.ClusterV1().DistributedServiceCard().Update(lctx, dsc)
+				Expect(err).ShouldNot(BeNil())
+				// Empty tenant should result in default tenant
+				dsc.Spec.PolicerAttachTenant = ""
+				_, err = restClient.ClusterV1().DistributedServiceCard().Update(lctx, dsc)
+				Expect(err).Should(BeNil(), "DSC-Policer update err: %v", err)
+
+			}
+
+			//Verify the Policer object is available in Naples
+			By(fmt.Sprintf("Verify the Policer is available in Naples after attach of policer to DSC"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 1)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			//Change the policer attached to DSC
+			for _, dsc := range dscs {
+				By(fmt.Sprintf("Change policer on DSC(%s) from %s to %s", dsc.Name, policerName, policer2Name))
+				dsc.Spec.TxPolicer = policer2Name
+				_, err := restClient.ClusterV1().DistributedServiceCard().Update(lctx, dsc)
+				Expect(err).Should(BeNil(), "DSC-Policer update err: %v", err)
+			}
+
+			//Verify the Policer object is available in Naples
+			By(fmt.Sprintf("Verify the Policer is available in Naples after change of policer to DSC"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 1)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			//Detach the policer from a DSC
+			for _, dsc := range dscs {
+				By(fmt.Sprintf("Detach policer from DSC %s", dsc.Name))
+				dsc.Spec.TxPolicer = ""
+				_, err := restClient.ClusterV1().DistributedServiceCard().Update(lctx, dsc)
+				if err != nil {
+					By(fmt.Sprintf("DSC-Policer update err: %v", err))
+				}
+			}
+
+			//Verify the Policer object is not available in Naples
+			By(fmt.Sprintf("Verify the Policer is not available in Naples after detach of policer from DSC"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 0)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+			//Attach the Policer to 2 interfaces
+			By(fmt.Sprintf("Attach policer to interface %s", nwIfs[0].Name))
+			By(fmt.Sprintf("Attach policer to interface %s", nwIfs[1].Name))
+			nwIfs[0].Spec.TxPolicer = policerName
+			nwIfs[0].Spec.AttachTenant = tenantName
+			nwIfs[0].Spec.AttachNetwork = subnetName
+			nwIfs[1].Spec.TxPolicer = policerName
+			nwIfs[1].Spec.AttachTenant = tenantName
+			nwIfs[1].Spec.AttachNetwork = subnetName
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[0])
+				return err
+			}, 100, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[1])
+				return err
+			}, 100, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+
+			By(fmt.Sprintf("Verify the Policer is available in Naples after attach of policer to PF"))
+			//Verify the Policer is available in Naples
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 1)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			//Change the Policer on one interface
+			By(fmt.Sprintf("Change  policer interface %s from %s to %s", nwIfs[1].Name, policerName, policer2Name))
+			nwIfs[0].Spec.TxPolicer = policer2Name
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[0])
+				return err
+			}, 100, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+
+			//Verify 2 policers are available on Naples
+			By(fmt.Sprintf("Verify 2 policers are available on Naple"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 2)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			//Detach the Policer from one interface
+			By(fmt.Sprintf("Detach policer from interface %s", nwIfs[0].Name))
+			nwIfs[0].Spec.TxPolicer = ""
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[0])
+				return err
+			}, 100, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+			//Verify the Policer is still available in Naples
+			By(fmt.Sprintf("Verify one Policer is available in Naples after detach of policer from first PF"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 1)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			By(fmt.Sprintf("Detach policer from interface %s", nwIfs[1].Name))
+			nwIfs[1].Spec.TxPolicer = ""
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[1])
+				return err
+			}, 100, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+
+			By(fmt.Sprintf("Verify the Policer is not available in Naples after detach of policer from second PF"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 0)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+			//Attach the Policer to both DSC and an interafce
+			By(fmt.Sprintf("Attach the Policer(%s) to both DSC and an interafce", policerName))
+			for _, dsc := range dscs {
+				dsc.Spec.TxPolicer = policerName
+				dsc.Spec.PolicerAttachTenant = tenantName
+				_, err := restClient.ClusterV1().DistributedServiceCard().Update(lctx, dsc)
+				if err != nil {
+					By(fmt.Sprintf("DSC-Policer update err: %v", err))
+				}
+			}
+			nwIfs[0].Spec.TxPolicer = policerName
+			nwIfs[0].Spec.AttachTenant = tenantName
+			nwIfs[0].Spec.AttachNetwork = subnetName
+			By(fmt.Sprintf("Updating host-pf %s", nwIfs[0].Name))
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[0])
+				return err
+			}, 100, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+
+			//Verify the Policer is available in Naples
+			By(fmt.Sprintf("Verify the Policer is available in Naples after attcah of policer to PF and DSC"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 1)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			//Change the policer attached to DSC
+
+			for _, dsc := range dscs {
+				By(fmt.Sprintf("Change policer on DSC(%s) from %s to %s", dsc.Name, policerName, policer2Name))
+				dsc.Spec.TxPolicer = policer2Name
+				dsc.Spec.PolicerAttachTenant = tenantName
+				_, err := restClient.ClusterV1().DistributedServiceCard().Update(lctx, dsc)
+				Expect(err).Should(BeNil(), "DSC-Policer update err: %v", err)
+			}
+
+			//Verify the Policer object is available in Naples
+			By(fmt.Sprintf("Verify both the Policers are available in Naples after change of policer to DSC"))
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 2)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			//Detach the Policer from interface
+			By(fmt.Sprintf("Detaching host-pf %s from policer", nwIfs[0].Name))
+			nwIfs[0].Spec.TxPolicer = ""
+			Eventually(func() error {
+				err := cache.Update(lctx, restClient, nwIfs[0])
+				return err
+			}, 100, 10).Should(BeNil(), "Failed to update host-pf (%s)", err)
+
+			By(fmt.Sprintf("Verify only one policer is available on naples"))
+			//Verify the Policer is available in Naples
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 1)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			//Detach the Policer from DSC
+			for _, dsc := range dscs {
+				By(fmt.Sprintf("Detaching DSC %s from policer", dsc.Name))
+				dsc.Spec.TxPolicer = ""
+				_, err := restClient.ClusterV1().DistributedServiceCard().Update(lctx, dsc)
+				if err != nil {
+					By(fmt.Sprintf("DSC-Policer update err: %v", err))
+				}
+			}
+
+			By(fmt.Sprintf("Verify the Policer is not available in Naples after detach of policer from DSC"))
+			//Verify the Policer is not available in Naples
+			Eventually(func() error {
+				err = cache.Verify(tenantName, string(network.KindPolicerProfile), naples, 0)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, 100, 10).Should(BeNil(), "Failed to validate on naples (%s)", err)
+
+			//Delete the Policer Object
+			cleanUpObjects(lctx)
+		})
+	})
+
 	Context("Overlay Obejct tests", func() {
 		var restClient apiclient.Services
 		tenantName := "cloude2e"
@@ -641,17 +1200,35 @@ var _ = Describe("Cloud E2E", func() {
 			Expect(err).To(BeNil(), "listing network interfaces failed (%s)", err)
 			for _, i := range ifList {
 				if i.Spec.AttachTenant != "" {
-					i.Spec.AttachTenant, i.Spec.AttachNetwork = "", ""
+					i.Spec.AttachTenant, i.Spec.AttachNetwork, i.Spec.TxPolicer = "", "", ""
 					_, err := restClient.NetworkV1().NetworkInterface().Update(ctx, i)
 					Expect(err).To(BeNil(), "updating network interfaces failed (%s)", err)
 				}
 			}
+			//Detach policer from all DSCs
+			dscs, err := restClient.ClusterV1().DistributedServiceCard().List(ctx, &api.ListWatchOptions{})
+			Expect(err).Should(BeNil(), fmt.Sprintf("failed to list DSCs %s)", err))
+			for _, dsc := range dscs {
+				dsc.Spec.TxPolicer = ""
+				_, err := restClient.ClusterV1().DistributedServiceCard().Update(ctx, dsc)
+				Expect(err).To(BeNil(), "updating DSC failed (%s)", err)
+			}
+
 			tenantList, err := restClient.ClusterV1().Tenant().List(ctx, &api.ListWatchOptions{})
 			Expect(err).Should(BeNil(), "failed to get list of tenants")
 			for _, t := range tenantList {
 				if t.Name == "default" {
 					continue
 				}
+				//Delete all the policer profiles
+				tpList, err := restClient.NetworkV1().PolicerProfile().List(ctx, &api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: t.Name}})
+				Expect(err).To(BeNil(), "listing policer profiles failed (%s)", err)
+
+				for _, n := range tpList {
+					_, err := restClient.NetworkV1().PolicerProfile().Delete(ctx, &n.ObjectMeta)
+					Expect(err).To(BeNil(), "failed to delete policer profiles [%v](%s)", n.Name, err)
+				}
+
 				subnList, err := restClient.NetworkV1().Network().List(ctx, &api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: t.Name}})
 				Expect(err).To(BeNil(), "listing network failed (%s)", err)
 
@@ -1017,6 +1594,5 @@ var _ = Describe("Cloud E2E", func() {
 			cleanUpObjects(lctx)
 			cache.Init()
 		})
-
 	})
 })

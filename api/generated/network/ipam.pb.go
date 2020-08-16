@@ -9,6 +9,7 @@
 		lb.proto
 		network.proto
 		networkinterface.proto
+		policer.proto
 		route.proto
 		service.proto
 		svc_network.proto
@@ -37,6 +38,11 @@
 		NetworkInterfaceUplinkStatus
 		PauseSpec
 		TransceiverStatus
+		PolicerAction
+		PolicerCriteria
+		PolicerProfile
+		PolicerProfileSpec
+		PolicerProfileStatus
 		BGPAuthStatus
 		BGPConfig
 		BGPNeighbor
@@ -59,6 +65,7 @@
 		AutoMsgLbPolicyWatchHelper
 		AutoMsgNetworkInterfaceWatchHelper
 		AutoMsgNetworkWatchHelper
+		AutoMsgPolicerProfileWatchHelper
 		AutoMsgRouteTableWatchHelper
 		AutoMsgRoutingConfigWatchHelper
 		AutoMsgServiceWatchHelper
@@ -68,6 +75,7 @@
 		LbPolicyList
 		NetworkInterfaceList
 		NetworkList
+		PolicerProfileList
 		RouteTableList
 		RoutingConfigList
 		ServiceList

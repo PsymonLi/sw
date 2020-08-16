@@ -26,6 +26,7 @@ networkencryption.proto security true
 networkinterface.proto network true
 objstore.proto objstore true
 orchestration.proto orchestration true
+policer.proto network true
 rollout.proto rollout true
 route.proto network true
 routing.proto routing true

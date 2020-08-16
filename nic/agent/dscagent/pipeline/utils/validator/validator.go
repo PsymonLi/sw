@@ -473,6 +473,41 @@ func ValidateProfile(profile netproto.Profile) error {
 	return nil
 }
 
+// ValidateDSCConfig validates DSCConfig object
+func ValidateDSCConfig(i types.InfraAPI, dscconfig netproto.DSCConfig) error {
+	return nil
+}
+
+// ValidatePolicerProfile validates PolicerProfile object
+func ValidatePolicerProfile(i types.InfraAPI, policer netproto.PolicerProfile) error {
+	return nil
+}
+
+// ValidatePolicerProfileExists validates PolicerProfile existence
+func ValidatePolicerProfileExists(i types.InfraAPI, name, tenant, namespace string) (tp netproto.PolicerProfile, err error) {
+	policer := netproto.PolicerProfile{
+		TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    tenant,
+			Namespace: namespace,
+			Name:      name,
+		},
+	}
+	dat, err := i.Read(policer.Kind, policer.GetKey())
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrBadRequest, "PolicerProfile: %s | Err: %v", policer.GetKey(), types.ErrObjNotFound))
+		err = errors.Wrapf(types.ErrBadRequest, "PolicerProfile: %s | Err: %v", policer.GetKey(), types.ErrObjNotFound)
+		return
+	}
+	err = tp.Unmarshal(dat)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err))
+		err = errors.Wrapf(types.ErrUnmarshal, "PolicerProfile: %s | Err: %v", policer.GetKey(), err)
+		return
+	}
+	return
+}
+
 // ValidateIPAMPolicyExists validates IPAMPolicy
 func ValidateIPAMPolicyExists(i types.InfraAPI, tenant, namespace, name string) (ipam netproto.IPAMPolicy, err error) {
 	policy := netproto.IPAMPolicy{

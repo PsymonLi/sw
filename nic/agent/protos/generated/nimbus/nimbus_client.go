@@ -162,6 +162,9 @@ func (client *NimbusClient) processAggObjectWatchEvent(evt netproto.AggObjectEve
 	case "App":
 		err = client.processAppDynamic(evt.EventType, object.Message.(*netproto.App), reactor.(AppReactor))
 
+	case "DSCConfig":
+		err = client.processDSCConfigDynamic(evt.EventType, object.Message.(*netproto.DSCConfig), reactor.(DSCConfigReactor))
+
 	case "Endpoint":
 		err = client.processEndpointDynamic(evt.EventType, object.Message.(*netproto.Endpoint), reactor.(EndpointReactor))
 
@@ -185,6 +188,9 @@ func (client *NimbusClient) processAggObjectWatchEvent(evt netproto.AggObjectEve
 
 	case "NetworkSecurityPolicy":
 		err = client.processNetworkSecurityPolicyDynamic(evt.EventType, object.Message.(*netproto.NetworkSecurityPolicy), reactor.(NetworkSecurityPolicyReactor))
+
+	case "PolicerProfile":
+		err = client.processPolicerProfileDynamic(evt.EventType, object.Message.(*netproto.PolicerProfile), reactor.(PolicerProfileReactor))
 
 	case "Profile":
 		err = client.processProfileDynamic(evt.EventType, object.Message.(*netproto.Profile), reactor.(ProfileReactor))
@@ -281,6 +287,83 @@ func (client *NimbusClient) diffAppsDynamic(objList *netproto.AppList, reactor A
 			if err == nil {
 				mobj, err := protoTypes.MarshalAny(obj)
 				aggObj := netproto.AggObject{Kind: "App", Object: &api.Any{}}
+				aggObj.Object.Any = *mobj
+				robj := netproto.AggObjectEvent{
+					EventType: api.EventType_UpdateEvent,
+					AggObj:    aggObj,
+				}
+				// send oper status
+				ostream.Lock()
+				err = ostream.stream.Send(&robj)
+				if err != nil {
+					log.Errorf("failed to send Agg oper Status, %s", err)
+					client.debugStats.AddInt("AggOperSendError", 1)
+				} else {
+					client.debugStats.AddInt("AggOperSent", 1)
+				}
+				ostream.Unlock()
+			}
+		}
+	}
+}
+
+// diffDSCConfigsDynamic diffs local state with controller state
+func (client *NimbusClient) diffDSCConfigsDynamic(objList *netproto.DSCConfigList, reactor DSCConfigReactor,
+	ostream *AggWatchOStream, op diffOpType) {
+	// build a map of objects
+	objmap := make(map[string]*netproto.DSCConfig)
+	if objList != nil {
+		for _, obj := range objList.DSCConfigs {
+			key := obj.ObjectMeta.GetKey()
+			objmap[key] = obj
+		}
+	}
+
+	// see if we need to delete any locally found object
+	o := netproto.DSCConfig{
+		TypeMeta: api.TypeMeta{Kind: "DSCConfig"},
+	}
+
+	localObjs, err := reactor.HandleDSCConfig(types.List, o)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrNimbusHandling, "Op: %s | Kind: DSCConfig | Err: %v", types.Operation(types.List), err))
+	}
+	//localObjs := reactor.ListDSCConfig()
+	if op == delAddUpdateDiffOp || op == delteDiffOp {
+		for _, lobj := range localObjs {
+			ctby, ok := lobj.ObjectMeta.Labels["CreatedBy"]
+			if ok && ctby == "Venice" {
+				key := lobj.ObjectMeta.GetKey()
+				if _, ok := objmap[key]; !ok {
+					evt := netproto.DSCConfigEvent{
+						EventType: api.EventType_DeleteEvent,
+
+						DSCConfig: lobj,
+					}
+					log.Infof("diffDSCConfigs(): Deleting object %+v", lobj.ObjectMeta)
+					client.lockObject(evt.DSCConfig.GetObjectKind(), evt.DSCConfig.ObjectMeta)
+					client.processDSCConfigEvent(evt, reactor, nil)
+				}
+			} else {
+				log.Infof("Not deleting non-venice object %+v", lobj.ObjectMeta)
+			}
+		}
+	}
+
+	if op == delAddUpdateDiffOp || op == addUpdateOp {
+		// add/update all new objects
+		for _, obj := range objList.DSCConfigs {
+			evt := netproto.DSCConfigEvent{
+				EventType: api.EventType_UpdateEvent,
+
+				DSCConfig: *obj,
+			}
+			client.lockObject(evt.DSCConfig.GetObjectKind(), evt.DSCConfig.ObjectMeta)
+			err := client.processDSCConfigEvent(evt, reactor, nil)
+
+			if err == nil {
+				mobj, err := protoTypes.MarshalAny(obj)
+				aggObj := netproto.AggObject{Kind: "DSCConfig", Object: &api.Any{}}
 				aggObj.Object.Any = *mobj
 				robj := netproto.AggObjectEvent{
 					EventType: api.EventType_UpdateEvent,
@@ -917,6 +1000,83 @@ func (client *NimbusClient) diffNetworkSecurityPolicysDynamic(objList *netproto.
 	}
 }
 
+// diffPolicerProfilesDynamic diffs local state with controller state
+func (client *NimbusClient) diffPolicerProfilesDynamic(objList *netproto.PolicerProfileList, reactor PolicerProfileReactor,
+	ostream *AggWatchOStream, op diffOpType) {
+	// build a map of objects
+	objmap := make(map[string]*netproto.PolicerProfile)
+	if objList != nil {
+		for _, obj := range objList.PolicerProfiles {
+			key := obj.ObjectMeta.GetKey()
+			objmap[key] = obj
+		}
+	}
+
+	// see if we need to delete any locally found object
+	o := netproto.PolicerProfile{
+		TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+	}
+
+	localObjs, err := reactor.HandlePolicerProfile(types.List, o)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrNimbusHandling, "Op: %s | Kind: PolicerProfile | Err: %v", types.Operation(types.List), err))
+	}
+	//localObjs := reactor.ListPolicerProfile()
+	if op == delAddUpdateDiffOp || op == delteDiffOp {
+		for _, lobj := range localObjs {
+			ctby, ok := lobj.ObjectMeta.Labels["CreatedBy"]
+			if ok && ctby == "Venice" {
+				key := lobj.ObjectMeta.GetKey()
+				if _, ok := objmap[key]; !ok {
+					evt := netproto.PolicerProfileEvent{
+						EventType: api.EventType_DeleteEvent,
+
+						PolicerProfile: lobj,
+					}
+					log.Infof("diffPolicerProfiles(): Deleting object %+v", lobj.ObjectMeta)
+					client.lockObject(evt.PolicerProfile.GetObjectKind(), evt.PolicerProfile.ObjectMeta)
+					client.processPolicerProfileEvent(evt, reactor, nil)
+				}
+			} else {
+				log.Infof("Not deleting non-venice object %+v", lobj.ObjectMeta)
+			}
+		}
+	}
+
+	if op == delAddUpdateDiffOp || op == addUpdateOp {
+		// add/update all new objects
+		for _, obj := range objList.PolicerProfiles {
+			evt := netproto.PolicerProfileEvent{
+				EventType: api.EventType_UpdateEvent,
+
+				PolicerProfile: *obj,
+			}
+			client.lockObject(evt.PolicerProfile.GetObjectKind(), evt.PolicerProfile.ObjectMeta)
+			err := client.processPolicerProfileEvent(evt, reactor, nil)
+
+			if err == nil {
+				mobj, err := protoTypes.MarshalAny(obj)
+				aggObj := netproto.AggObject{Kind: "PolicerProfile", Object: &api.Any{}}
+				aggObj.Object.Any = *mobj
+				robj := netproto.AggObjectEvent{
+					EventType: api.EventType_UpdateEvent,
+					AggObj:    aggObj,
+				}
+				// send oper status
+				ostream.Lock()
+				err = ostream.stream.Send(&robj)
+				if err != nil {
+					log.Errorf("failed to send Agg oper Status, %s", err)
+					client.debugStats.AddInt("AggOperSendError", 1)
+				} else {
+					client.debugStats.AddInt("AggOperSent", 1)
+				}
+				ostream.Unlock()
+			}
+		}
+	}
+}
+
 // diffProfilesDynamic diffs local state with controller state
 func (client *NimbusClient) diffProfilesDynamic(objList *netproto.ProfileList, reactor ProfileReactor,
 	ostream *AggWatchOStream, op diffOpType) {
@@ -1410,6 +1570,11 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 					msglist.Apps = append(msglist.Apps, obj.Message.(*netproto.App))
 					return
 
+				case "DSCConfig":
+					msglist := lobj.objects.(*netproto.DSCConfigList)
+					msglist.DSCConfigs = append(msglist.DSCConfigs, obj.Message.(*netproto.DSCConfig))
+					return
+
 				case "Endpoint":
 					msglist := lobj.objects.(*netproto.EndpointList)
 					msglist.Endpoints = append(msglist.Endpoints, obj.Message.(*netproto.Endpoint))
@@ -1448,6 +1613,11 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 				case "NetworkSecurityPolicy":
 					msglist := lobj.objects.(*netproto.NetworkSecurityPolicyList)
 					msglist.NetworkSecurityPolicys = append(msglist.NetworkSecurityPolicys, obj.Message.(*netproto.NetworkSecurityPolicy))
+					return
+
+				case "PolicerProfile":
+					msglist := lobj.objects.(*netproto.PolicerProfileList)
+					msglist.PolicerProfiles = append(msglist.PolicerProfiles, obj.Message.(*netproto.PolicerProfile))
 					return
 
 				case "Profile":
@@ -1492,6 +1662,11 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 			msglist := listObj.objects.(*netproto.AppList)
 			msglist.Apps = append(msglist.Apps, obj.Message.(*netproto.App))
 
+		case "DSCConfig":
+			listObj.objects = &netproto.DSCConfigList{}
+			msglist := listObj.objects.(*netproto.DSCConfigList)
+			msglist.DSCConfigs = append(msglist.DSCConfigs, obj.Message.(*netproto.DSCConfig))
+
 		case "Endpoint":
 			listObj.objects = &netproto.EndpointList{}
 			msglist := listObj.objects.(*netproto.EndpointList)
@@ -1531,6 +1706,11 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 			listObj.objects = &netproto.NetworkSecurityPolicyList{}
 			msglist := listObj.objects.(*netproto.NetworkSecurityPolicyList)
 			msglist.NetworkSecurityPolicys = append(msglist.NetworkSecurityPolicys, obj.Message.(*netproto.NetworkSecurityPolicy))
+
+		case "PolicerProfile":
+			listObj.objects = &netproto.PolicerProfileList{}
+			msglist := listObj.objects.(*netproto.PolicerProfileList)
+			msglist.PolicerProfiles = append(msglist.PolicerProfiles, obj.Message.(*netproto.PolicerProfile))
 
 		case "Profile":
 			listObj.objects = &netproto.ProfileList{}
@@ -1604,6 +1784,13 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 				client.diffAppsDynamic(nil, reactor.(AppReactor), ostream, delteDiffOp)
 			}
 
+		case "DSCConfig":
+			if lobj != nil {
+				client.diffDSCConfigsDynamic(lobj.objects.(*netproto.DSCConfigList), reactor.(DSCConfigReactor), ostream, delteDiffOp)
+			} else {
+				client.diffDSCConfigsDynamic(nil, reactor.(DSCConfigReactor), ostream, delteDiffOp)
+			}
+
 		case "Endpoint":
 			if lobj != nil {
 				client.diffEndpointsDynamic(lobj.objects.(*netproto.EndpointList), reactor.(EndpointReactor), ostream, delteDiffOp)
@@ -1658,6 +1845,13 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 				client.diffNetworkSecurityPolicysDynamic(lobj.objects.(*netproto.NetworkSecurityPolicyList), reactor.(NetworkSecurityPolicyReactor), ostream, delteDiffOp)
 			} else {
 				client.diffNetworkSecurityPolicysDynamic(nil, reactor.(NetworkSecurityPolicyReactor), ostream, delteDiffOp)
+			}
+
+		case "PolicerProfile":
+			if lobj != nil {
+				client.diffPolicerProfilesDynamic(lobj.objects.(*netproto.PolicerProfileList), reactor.(PolicerProfileReactor), ostream, delteDiffOp)
+			} else {
+				client.diffPolicerProfilesDynamic(nil, reactor.(PolicerProfileReactor), ostream, delteDiffOp)
 			}
 
 		case "Profile":
@@ -1716,6 +1910,9 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 		case "App":
 			client.diffAppsDynamic(lobj.objects.(*netproto.AppList), reactor.(AppReactor), ostream, addUpdateOp)
 
+		case "DSCConfig":
+			client.diffDSCConfigsDynamic(lobj.objects.(*netproto.DSCConfigList), reactor.(DSCConfigReactor), ostream, addUpdateOp)
+
 		case "Endpoint":
 			client.diffEndpointsDynamic(lobj.objects.(*netproto.EndpointList), reactor.(EndpointReactor), ostream, addUpdateOp)
 
@@ -1739,6 +1936,9 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 
 		case "NetworkSecurityPolicy":
 			client.diffNetworkSecurityPolicysDynamic(lobj.objects.(*netproto.NetworkSecurityPolicyList), reactor.(NetworkSecurityPolicyReactor), ostream, addUpdateOp)
+
+		case "PolicerProfile":
+			client.diffPolicerProfilesDynamic(lobj.objects.(*netproto.PolicerProfileList), reactor.(PolicerProfileReactor), ostream, addUpdateOp)
 
 		case "Profile":
 			client.diffProfilesDynamic(lobj.objects.(*netproto.ProfileList), reactor.(ProfileReactor), ostream, addUpdateOp)
@@ -1780,6 +1980,13 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 				client.diffAppsDynamic(lobj.objects.(*netproto.AppList), reactor.(AppReactor), ostream, delteDiffOp)
 			} else {
 				client.diffAppsDynamic(nil, reactor.(AppReactor), ostream, delteDiffOp)
+			}
+
+		case "DSCConfig":
+			if lobj != nil {
+				client.diffDSCConfigsDynamic(lobj.objects.(*netproto.DSCConfigList), reactor.(DSCConfigReactor), ostream, delteDiffOp)
+			} else {
+				client.diffDSCConfigsDynamic(nil, reactor.(DSCConfigReactor), ostream, delteDiffOp)
 			}
 
 		case "Endpoint":
@@ -1836,6 +2043,13 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 				client.diffNetworkSecurityPolicysDynamic(lobj.objects.(*netproto.NetworkSecurityPolicyList), reactor.(NetworkSecurityPolicyReactor), ostream, delteDiffOp)
 			} else {
 				client.diffNetworkSecurityPolicysDynamic(nil, reactor.(NetworkSecurityPolicyReactor), ostream, delteDiffOp)
+			}
+
+		case "PolicerProfile":
+			if lobj != nil {
+				client.diffPolicerProfilesDynamic(lobj.objects.(*netproto.PolicerProfileList), reactor.(PolicerProfileReactor), ostream, delteDiffOp)
+			} else {
+				client.diffPolicerProfilesDynamic(nil, reactor.(PolicerProfileReactor), ostream, delteDiffOp)
 			}
 
 		case "Profile":
@@ -1932,6 +2146,18 @@ func (client *NimbusClient) WatchAggregate(ctx context.Context, kinds []string, 
 			aggKind.Options = listWatchOptions
 			aggKinds.WatchOptions = append(aggKinds.WatchOptions, aggKind)
 
+		case "DSCConfig":
+			//Make sure all kinds are implemented by the reactor to avoid later failures
+			if _, ok := reactor.(DSCConfigReactor); !ok {
+				return fmt.Errorf("Reactor does not implement %v", "DSCConfigReactor")
+			}
+			aggKind := api.KindWatchOptions{}
+			aggKind.Kind = kind
+			aggKind.Group = "netproto"
+			listWatchOptions := reactor.(DSCConfigReactor).GetWatchOptions(ctx, "DSCConfig")
+			aggKind.Options = listWatchOptions
+			aggKinds.WatchOptions = append(aggKinds.WatchOptions, aggKind)
+
 		case "Endpoint":
 			//Make sure all kinds are implemented by the reactor to avoid later failures
 			if _, ok := reactor.(EndpointReactor); !ok {
@@ -2025,6 +2251,18 @@ func (client *NimbusClient) WatchAggregate(ctx context.Context, kinds []string, 
 			aggKind.Kind = kind
 			aggKind.Group = "netproto"
 			listWatchOptions := reactor.(NetworkSecurityPolicyReactor).GetWatchOptions(ctx, "NetworkSecurityPolicy")
+			aggKind.Options = listWatchOptions
+			aggKinds.WatchOptions = append(aggKinds.WatchOptions, aggKind)
+
+		case "PolicerProfile":
+			//Make sure all kinds are implemented by the reactor to avoid later failures
+			if _, ok := reactor.(PolicerProfileReactor); !ok {
+				return fmt.Errorf("Reactor does not implement %v", "PolicerProfileReactor")
+			}
+			aggKind := api.KindWatchOptions{}
+			aggKind.Kind = kind
+			aggKind.Group = "netproto"
+			listWatchOptions := reactor.(PolicerProfileReactor).GetWatchOptions(ctx, "PolicerProfile")
 			aggKind.Options = listWatchOptions
 			aggKinds.WatchOptions = append(aggKinds.WatchOptions, aggKind)
 

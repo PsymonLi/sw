@@ -14,22 +14,22 @@ import (
 type Operation int
 
 // CloudPipelineKinds captures all the objects that agent will watch from Venice
-var CloudPipelineKinds = []string{"IPAMPolicy", "App", "NetworkSecurityPolicy", "RouteTable", "Vrf", "Network", "Interface", "InterfaceMirrorSession", "Endpoint", "SecurityProfile", "RoutingConfig"}
+var CloudPipelineKinds = []string{"IPAMPolicy", "App", "NetworkSecurityPolicy", "RouteTable", "Vrf", "Network", "Interface", "InterfaceMirrorSession", "Endpoint", "SecurityProfile", "RoutingConfig", "PolicerProfile", "DSCConfig"}
 
 // BaseNetKinds captures all the objects needed for Transparent Basenet Profile
-var BaseNetKinds = []string{"Profile", "Interface", "InterfaceMirrorSession"}
+var BaseNetKinds = []string{"Profile", "Interface", "InterfaceMirrorSession", "PolicerProfile", "DSCConfig"}
 
 // FlowAwareKinds catpures all the objects needed for FlowAware Profile
-var FlowAwareKinds = []string{"Profile", "Interface", "InterfaceMirrorSession", "MirrorSession", "FlowExportPolicy"}
+var FlowAwareKinds = []string{"Profile", "Interface", "InterfaceMirrorSession", "MirrorSession", "FlowExportPolicy", "PolicerProfile", "DSCConfig"}
 
 // EnforcedKinds catpures all the objects needed for Enfroced Profile
-var EnforcedKinds = []string{"Profile", "Interface", "InterfaceMirrorSession", "MirrorSession", "FlowExportPolicy", "App", "NetworkSecurityPolicy", "SecurityProfile"}
+var EnforcedKinds = []string{"Profile", "Interface", "InterfaceMirrorSession", "MirrorSession", "FlowExportPolicy", "App", "NetworkSecurityPolicy", "SecurityProfile", "PolicerProfile", "DSCConfig"}
 
 // InsertionKinds captures all the objects needed for Insertion USeg Enforced Profile
-var InsertionKinds = []string{"Profile", "Interface", "InterfaceMirrorSession", "MirrorSession", "FlowExportPolicy", "App", "NetworkSecurityPolicy", "Network", "Endpoint", "SecurityProfile"}
+var InsertionKinds = []string{"Profile", "Interface", "InterfaceMirrorSession", "MirrorSession", "FlowExportPolicy", "App", "NetworkSecurityPolicy", "Network", "Endpoint", "SecurityProfile", "PolicerProfile", "DSCConfig"}
 
 // AllKinds captures all the objects that agent will watch from Venice
-var AllKinds = []string{"App", "NetworkSecurityPolicy", "Vrf", "Network", "Endpoint", "SecurityProfile", "RouteTable", "RoutingConfig", "IPAMPolicy", "Interface"}
+var AllKinds = []string{"App", "NetworkSecurityPolicy", "Vrf", "Network", "Endpoint", "SecurityProfile", "RouteTable", "RoutingConfig", "IPAMPolicy", "Interface", "PolicerProfile", "DSCConfig"}
 
 // ResyncReverseKinds kinds which expects add/update first and then delete during resync
 var ResyncReverseKinds = []string{"Profile"}
@@ -283,6 +283,9 @@ const (
 
 	// IPAMPolicyID captures kind for ID allocation for IPAMPolicy
 	IPAMPolicyID = "ipamPolicyID"
+
+	// PolicerProfileID captures kind for ID allocation for PolicerProfile
+	PolicerProfileID = "PolicerProfileID"
 
 	// EnicOffset captures ID Alloc space for Enic
 	EnicOffset = UplinkOffset + 10000

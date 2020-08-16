@@ -25,6 +25,7 @@ var ObjRelations = map[string][]apiintf.ObjRelation{
 	"cluster.DistributedServiceCardSpec": []apiintf.ObjRelation{
 		{Type: "NamedRef", To: "network/RoutingConfig", Field: "RoutingConfig"},
 		{Type: "NamedRef", To: "cluster/DSCProfile", Field: "DSCProfile"},
+		{Type: "NamedRef", To: "network/PolicerProfile", Field: "TxPolicer"},
 	},
 	"cluster.NodeSpec": []apiintf.ObjRelation{
 		{Type: "NamedRef", To: "network/RoutingConfig", Field: "RoutingConfig"},
@@ -40,6 +41,7 @@ var ObjRelations = map[string][]apiintf.ObjRelation{
 	},
 	"network.NetworkInterfaceSpec": []apiintf.ObjRelation{
 		{Type: "NamedRef", To: "network/Network", Field: "AttachNetwork"},
+		{Type: "NamedRef", To: "network/PolicerProfile", Field: "TxPolicer"},
 	},
 	"network.NetworkInterfaceStatus": []apiintf.ObjRelation{
 		{Type: "NamedRef", To: "cluster/DistributedServiceCard", Field: "DSC"},

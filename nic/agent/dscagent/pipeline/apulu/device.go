@@ -7,20 +7,23 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/apulu/utils"
+	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils/validator"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
+	"github.com/pensando/sw/nic/agent/protos/netproto"
 	halapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
 	"github.com/pensando/sw/venice/utils/log"
 )
 
 // HandleDevice handles CRUD operations on device
-func HandleDevice(oper types.Operation, client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
+func HandleDevice(infraAPI types.InfraAPI, oper types.Operation, client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
 	switch oper {
 	case types.Create:
-		return createDeviceHandler(client, lbip, sysName)
+		return createDeviceHandler(infraAPI, client, lbip, sysName)
 	case types.Update:
-		return updateDeviceHandler(client, lbip, sysName)
+		return updateDeviceHandler(infraAPI, client, lbip, sysName)
 	case types.Delete:
 		return deleteDeviceHandler(client)
 	default:
@@ -28,8 +31,8 @@ func HandleDevice(oper types.Operation, client halapi.DeviceSvcClient, lbip *hal
 	}
 }
 
-func createDeviceHandler(client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
-	deviceRequest := convertDevice(lbip, sysName)
+func createDeviceHandler(infraAPI types.InfraAPI, client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
+	deviceRequest := convertDevice(infraAPI, lbip, sysName)
 	resp, err := client.DeviceCreate(context.Background(), deviceRequest)
 	log.Infof("createDeviceHandler Response: %v. Err : %v", resp, err)
 	if err == nil {
@@ -42,8 +45,8 @@ func createDeviceHandler(client halapi.DeviceSvcClient, lbip *halapi.IPAddress, 
 	return nil
 }
 
-func updateDeviceHandler(client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
-	deviceRequest := convertDevice(lbip, sysName)
+func updateDeviceHandler(infraAPI types.InfraAPI, client halapi.DeviceSvcClient, lbip *halapi.IPAddress, sysName string) error {
+	deviceRequest := convertDevice(infraAPI, lbip, sysName)
 	resp, err := client.DeviceUpdate(context.Background(), deviceRequest)
 	log.Infof("update DeviceHandler Response: %v. Err : %v", resp, err)
 	if err == nil {
@@ -67,8 +70,34 @@ func deleteDeviceHandler(client halapi.DeviceSvcClient) error {
 	return nil
 }
 
-func convertDevice(lbip *halapi.IPAddress, sysName string) *halapi.DeviceRequest {
-	return &halapi.DeviceRequest{
+func getPolInfo(infraAPI types.InfraAPI) []byte {
+
+	DSCConfBytes, err := infraAPI.Read("DSCConfig", "config")
+	if err != nil {
+		log.Errorf("Get DSCConfig failed for DSC")
+		return nil
+	}
+	DSCConf := netproto.DSCConfig{}
+	DSCConf.Unmarshal(DSCConfBytes)
+
+	if DSCConf.Spec.TxPolicer != "" {
+		policer, err := validator.ValidatePolicerProfileExists(infraAPI, DSCConf.Spec.TxPolicer, DSCConf.Spec.Tenant, "default")
+		if err != nil {
+			log.Errorf("Get PolicerProfile failed for %s", DSCConf.Spec.TxPolicer)
+			return nil
+		}
+		polu, err := uuid.FromString(policer.UUID)
+		if err != nil {
+			log.Errorf("Failed to parse policer UUID: %v", policer.UUID)
+			return nil
+		}
+		return polu.Bytes()
+	}
+	return nil
+}
+
+func convertDevice(infraAPI types.InfraAPI, lbip *halapi.IPAddress, sysName string) *halapi.DeviceRequest {
+	dr := &halapi.DeviceRequest{
 		Request: &halapi.DeviceSpec{
 			DevOperMode:   halapi.DeviceOperMode_DEVICE_OPER_MODE_HOST,
 			MemoryProfile: halapi.MemoryProfile_MEMORY_PROFILE_DEFAULT,
@@ -89,4 +118,10 @@ func convertDevice(lbip *halapi.IPAddress, sysName string) *halapi.DeviceRequest
 			SysName:             sysName,
 		},
 	}
+	//Get Policer UUID
+	polID := getPolInfo(infraAPI)
+	if polID != nil {
+		dr.Request.TxPolicerId = polID
+	}
+	return dr
 }

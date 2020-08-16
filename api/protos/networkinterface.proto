@@ -11,6 +11,7 @@ import "github.com/pensando/sw/api/meta.proto";
 
 import "vrf.proto";
 import "smartnic.proto";
+import "policer.proto";
 
 // NetworkInterface represents a VF, PF or an Uplink within an I/O subsystem
 // Each NetworkInterface is uniquely prepended by I/O subsystem to provide unique name
@@ -122,6 +123,8 @@ message NetworkInterfaceSpec {
 
     // ConnectionTracking enables connection tracking on the interface. This is valid only for HOST_PF type.
     bool ConnectionTracking = 11 [(gogoproto.jsontag)= "connection-tracking", (venice.default) = "false"];
+
+    string TxPolicer        = 12 [(gogoproto.jsontag) = "tx-policer,omitempty", (venice.objRelation) = {Type: "NamedRef", To: "network/PolicerProfile"}];
 
     // Future: Breakout Config, CDP, LLDP, LACP, configuration would come here
     // Future: A lot of above configuration would be driven by profile when available

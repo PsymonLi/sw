@@ -632,7 +632,8 @@
           "IPAMPolicy",
           "RoutingConfig",
           "RouteTable",
-          "VirtualRouterPeeringGroup"
+          "VirtualRouterPeeringGroup",
+          "PolicerProfile"
         ],
         "Properties": {
           "IPAMPolicy": {
@@ -683,6 +684,21 @@
               "label"
             ],
             "URI": "/configs/network/v1/networkinterfaces"
+          },
+          "PolicerProfile": {
+            "Scopes": [
+              "tenant"
+            ],
+            "RestMethods": [
+              "post",
+              "put",
+              "delete",
+              "get",
+              "list",
+              "watch",
+              "label"
+            ],
+            "URI": "/configs/network/v1/policer-profile"
           },
           "RouteTable": {
             "Scopes": [

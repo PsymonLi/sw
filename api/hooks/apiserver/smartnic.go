@@ -59,6 +59,14 @@ func (cl *clusterHooks) smartNICPreCommitHook(ctx context.Context, kvs kvstore.I
 		return i, true, errInvalidInputType
 	}
 
+	// Current configurable PolicerAttachTenant field supports default tenant only. This restriction will be removed in future
+	if updNIC.Spec.PolicerAttachTenant == "" {
+		updNIC.Spec.PolicerAttachTenant = "default"
+	} else if updNIC.Spec.PolicerAttachTenant != "default" {
+		cl.logger.Errorf("PolicerAttachTenant is supported for default tenant only")
+		return i, true, fmt.Errorf("PolicerAttachTenant is supported for default tenant only")
+	}
+
 	if oper == apiintf.CreateOper {
 		var nicIPAddr string // create modules with empty IP address if smartnic doesn't have an IP yet
 		if updNIC.Status.IPConfig != nil {

@@ -4,8 +4,8 @@ RestClientDir := ${GOPATH}/src/github.com/pensando/sw/nic/agent/protos/generated
 NimbusManifest := ${GOPATH}/src/github.com/pensando/sw/nic/agent/protos/generated/nimbus/manifest
 
 # all the sources for which .pb.go is generated
-SRC := app.proto agg_watch.proto endpoint.proto  flowexport.proto interface.proto ipam.proto match.proto mirror.proto namespace.proto network.proto port.proto profile.proto route.proto sgpolicy.proto secprofile.proto tenant.proto tunnel.proto types.proto vrf.proto vr_peering_group.proto
-NIMBUS_SRC := app.proto endpoint.proto interface.proto ipam.proto network.proto profile.proto route.proto sgpolicy.proto secprofile.proto vrf.proto flowexport.proto mirror.proto vr_peering_group.proto
+SRC := app.proto agg_watch.proto dscconfig.proto endpoint.proto  flowexport.proto interface.proto ipam.proto match.proto mirror.proto namespace.proto network.proto policer.proto port.proto profile.proto route.proto sgpolicy.proto secprofile.proto tenant.proto tunnel.proto types.proto vrf.proto vr_peering_group.proto
+NIMBUS_SRC := app.proto dscconfig.proto endpoint.proto interface.proto ipam.proto network.proto policer.proto profile.proto route.proto sgpolicy.proto secprofile.proto vrf.proto flowexport.proto mirror.proto vr_peering_group.proto
 
 #these wont have _api.go generated
 FILTER_OUT_API := agg_watch.proto  match.proto namespace.proto tenant.proto port.proto
@@ -23,7 +23,7 @@ DELPHI_SRC := $(NIMBUS_SRC:%.proto=./delphi/%.proto)
 
 default: gen-clean ${DEST} nimbus delphi-gen
 
-app.pb.% endpoint.pb.% flowexport.pb.% interface.pb.% ipam.pb.% match.pb.% mirror.pb.% namespace.pb.% network.pb.% port.pb.% secprofile.pb.% sgpolicy.pb.% tenant.pb.% tunnel.pb.% types.pb.% vrf.pb.%:  ${SRC}
+app.pb.% dscconfig.pb.% endpoint.pb.% flowexport.pb.% interface.pb.% ipam.pb.% match.pb.% mirror.pb.% namespace.pb.% network.pb.% policer.pb.% port.pb.% secprofile.pb.% sgpolicy.pb.% tenant.pb.% tunnel.pb.% types.pb.% vrf.pb.%:  ${SRC}
 	protoc -I. -I../../../../vendor -I${GOPATH}/src -I../../../../vendor/github.com/pensando/grpc-gateway/third_party -I../../../../vendor/github.com/pensando/grpc-gateway/third_party/googleapis \
 	-I../../../../vendor/github.com/gogo/protobuf/protobuf \
 	-I../../../../vendor/github.com/gogo/protobuf/gogoproto \

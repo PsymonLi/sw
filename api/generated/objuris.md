@@ -32,6 +32,7 @@
 | Node | /configs/cluster/v1/nodes |
 | Object | /configs/v1//{Namespace}/objects |
 | Orchestrator | /configs/orchestration/v1/orchestrator |
+| PolicerProfile | /configs/network/v1/policer-profile |
 | Role | /configs/auth/v1/roles |
 | RoleBinding | /configs/auth/v1/role-bindings |
 | Rollout | /configs/rollout/v1/rollout |

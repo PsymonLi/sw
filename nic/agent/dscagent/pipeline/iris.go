@@ -1781,6 +1781,16 @@ func (i *IrisAPI) HandleIPAMPolicy(oper types.Operation, policy netproto.IPAMPol
 	return nil, types.ErrNotImplemented
 }
 
+// HandlePolicerProfile handles CRUD methods for PolicerProfile
+func (i *IrisAPI) HandlePolicerProfile(oper types.Operation, policer netproto.PolicerProfile) (policers []netproto.PolicerProfile, err error) {
+	return nil, types.ErrNotImplemented
+}
+
+// HandleDSCConfig handles CRUD methods for DSCConfig
+func (i *IrisAPI) HandleDSCConfig(oper types.Operation, dscconfig netproto.DSCConfig) (dscconfigs []netproto.DSCConfig, err error) {
+	return nil, types.ErrNotImplemented
+}
+
 // HandleRouteTable handles CRUDs for RouteTable object
 func (i *IrisAPI) HandleRouteTable(oper types.Operation, routetableObj netproto.RouteTable) ([]netproto.RouteTable, error) {
 	return nil, types.ErrNotImplemented

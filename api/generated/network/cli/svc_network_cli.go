@@ -592,6 +592,95 @@ func restPutVirtualRouterPeeringGroup(hostname, token string, obj interface{}) e
 
 }
 
+func restGetPolicerProfile(hostname, tenant, token string, obj interface{}) error {
+
+	restcl, err := apiclient.NewRestAPIClient(hostname)
+	if err != nil {
+		return fmt.Errorf("cannot create REST client")
+	}
+	defer restcl.Close()
+	loginCtx := loginctx.NewContextWithAuthzHeader(context.Background(), "Bearer "+token)
+
+	if v, ok := obj.(*network.PolicerProfile); ok {
+		nv, err := restcl.NetworkV1().PolicerProfile().Get(loginCtx, &v.ObjectMeta)
+		if err != nil {
+			return err
+		}
+		*v = *nv
+	}
+
+	if v, ok := obj.(*network.PolicerProfileList); ok {
+		opts := api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: tenant}}
+		nv, err := restcl.NetworkV1().PolicerProfile().List(loginCtx, &opts)
+		if err != nil {
+			return err
+		}
+		v.Items = nv
+	}
+	return nil
+
+}
+
+func restDeletePolicerProfile(hostname, token string, obj interface{}) error {
+
+	restcl, err := apiclient.NewRestAPIClient(hostname)
+	if err != nil {
+		return fmt.Errorf("cannot create REST client")
+	}
+	defer restcl.Close()
+	loginCtx := loginctx.NewContextWithAuthzHeader(context.Background(), "Bearer "+token)
+
+	if v, ok := obj.(*network.PolicerProfile); ok {
+		nv, err := restcl.NetworkV1().PolicerProfile().Delete(loginCtx, &v.ObjectMeta)
+		if err != nil {
+			return err
+		}
+		*v = *nv
+	}
+	return nil
+
+}
+
+func restPostPolicerProfile(hostname, token string, obj interface{}) error {
+
+	restcl, err := apiclient.NewRestAPIClient(hostname)
+	if err != nil {
+		return fmt.Errorf("cannot create REST client")
+	}
+	defer restcl.Close()
+	loginCtx := loginctx.NewContextWithAuthzHeader(context.Background(), "Bearer "+token)
+
+	if v, ok := obj.(*network.PolicerProfile); ok {
+		nv, err := restcl.NetworkV1().PolicerProfile().Create(loginCtx, v)
+		if err != nil {
+			return err
+		}
+		*v = *nv
+	}
+	return nil
+
+}
+
+func restPutPolicerProfile(hostname, token string, obj interface{}) error {
+
+	restcl, err := apiclient.NewRestAPIClient(hostname)
+	if err != nil {
+		return fmt.Errorf("cannot create REST client")
+	}
+	defer restcl.Close()
+	loginCtx := loginctx.NewContextWithAuthzHeader(context.Background(), "Bearer "+token)
+
+	if v, ok := obj.(*network.PolicerProfile); ok {
+		nv, err := restcl.NetworkV1().PolicerProfile().Update(loginCtx, v)
+		if err != nil {
+			return err
+		}
+		*v = *nv
+	}
+	return nil
+
+}
+
 func init() {
 	cl := gen.GetInfo()
 	if cl == nil {
@@ -627,5 +716,10 @@ func init() {
 	cl.AddRestDeleteFunc("network.VirtualRouterPeeringGroup", "v1", restDeleteVirtualRouterPeeringGroup)
 	cl.AddRestPutFunc("network.VirtualRouterPeeringGroup", "v1", restPutVirtualRouterPeeringGroup)
 	cl.AddRestGetFunc("network.VirtualRouterPeeringGroup", "v1", restGetVirtualRouterPeeringGroup)
+
+	cl.AddRestPostFunc("network.PolicerProfile", "v1", restPostPolicerProfile)
+	cl.AddRestDeleteFunc("network.PolicerProfile", "v1", restDeletePolicerProfile)
+	cl.AddRestPutFunc("network.PolicerProfile", "v1", restPutPolicerProfile)
+	cl.AddRestGetFunc("network.PolicerProfile", "v1", restGetPolicerProfile)
 
 }

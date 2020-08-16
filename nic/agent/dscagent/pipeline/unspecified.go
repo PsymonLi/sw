@@ -1573,6 +1573,16 @@ func (i *FakeAgentAPI) HandleIPAMPolicy(oper types.Operation, policy netproto.IP
 	return nil, err
 }
 
+// HandlePolicerProfile handles CRUD methods for PolicerProfile objects
+func (i *FakeAgentAPI) HandlePolicerProfile(oper types.Operation, policer netproto.PolicerProfile) (policers []netproto.PolicerProfile, err error) {
+	return nil, err
+}
+
+// HandleDSCConfig handles CRUD methods for DSCConfig objects
+func (i *FakeAgentAPI) HandleDSCConfig(oper types.Operation, dscconfig netproto.DSCConfig) (dscconfigs []netproto.DSCConfig, err error) {
+	return nil, err
+}
+
 // HandleCPRoutingConfig handles creation of control plane route objects
 func (i *FakeAgentAPI) HandleCPRoutingConfig(obj types.DSCStaticRoute) error {
 	return nil

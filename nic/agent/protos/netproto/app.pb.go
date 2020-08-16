@@ -7,6 +7,7 @@
 	It is generated from these files:
 		app.proto
 		agg_watch.proto
+		dscconfig.proto
 		endpoint.proto
 		flowexport.proto
 		interface.proto
@@ -15,6 +16,7 @@
 		mirror.proto
 		namespace.proto
 		network.proto
+		policer.proto
 		port.proto
 		profile.proto
 		route.proto
@@ -45,6 +47,12 @@
 		AggObjectList
 		AggObjectEvent
 		AggObjectEventList
+		DSCConfigSpec
+		DSCConfigStatus
+		DSCConfigEvent
+		DSCConfigEventList
+		DSCConfigList
+		DSCConfig
 		Endpoint
 		EndpointSpec
 		EndpointStatus
@@ -107,6 +115,14 @@
 		NetworkList
 		NetworkEvent
 		NetworkEventList
+		PolicerAction
+		PolicerCriteria
+		PolicerProfileSpec
+		PolicerProfileStatus
+		PolicerProfileEvent
+		PolicerProfileEventList
+		PolicerProfileList
+		PolicerProfile
 		Port
 		PortSpec
 		PortStatus

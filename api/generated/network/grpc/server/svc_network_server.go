@@ -54,6 +54,7 @@ type eNetworkV1Endpoints struct {
 	fnAutoAddLbPolicy                     func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoAddNetwork                      func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoAddNetworkInterface             func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoAddPolicerProfile               func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoAddRouteTable                   func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoAddRoutingConfig                func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoAddService                      func(ctx context.Context, t interface{}) (interface{}, error)
@@ -63,6 +64,7 @@ type eNetworkV1Endpoints struct {
 	fnAutoDeleteLbPolicy                  func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoDeleteNetwork                   func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoDeleteNetworkInterface          func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoDeletePolicerProfile            func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoDeleteRouteTable                func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoDeleteRoutingConfig             func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoDeleteService                   func(ctx context.Context, t interface{}) (interface{}, error)
@@ -72,6 +74,7 @@ type eNetworkV1Endpoints struct {
 	fnAutoGetLbPolicy                     func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoGetNetwork                      func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoGetNetworkInterface             func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoGetPolicerProfile               func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoGetRouteTable                   func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoGetRoutingConfig                func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoGetService                      func(ctx context.Context, t interface{}) (interface{}, error)
@@ -81,6 +84,7 @@ type eNetworkV1Endpoints struct {
 	fnAutoLabelLbPolicy                   func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoLabelNetwork                    func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoLabelNetworkInterface           func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoLabelPolicerProfile             func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoLabelRouteTable                 func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoLabelRoutingConfig              func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoLabelService                    func(ctx context.Context, t interface{}) (interface{}, error)
@@ -90,6 +94,7 @@ type eNetworkV1Endpoints struct {
 	fnAutoListLbPolicy                    func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoListNetwork                     func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoListNetworkInterface            func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoListPolicerProfile              func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoListRouteTable                  func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoListRoutingConfig               func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoListService                     func(ctx context.Context, t interface{}) (interface{}, error)
@@ -99,6 +104,7 @@ type eNetworkV1Endpoints struct {
 	fnAutoUpdateLbPolicy                  func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoUpdateNetwork                   func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoUpdateNetworkInterface          func(ctx context.Context, t interface{}) (interface{}, error)
+	fnAutoUpdatePolicerProfile            func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoUpdateRouteTable                func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoUpdateRoutingConfig             func(ctx context.Context, t interface{}) (interface{}, error)
 	fnAutoUpdateService                   func(ctx context.Context, t interface{}) (interface{}, error)
@@ -114,6 +120,7 @@ type eNetworkV1Endpoints struct {
 	fnAutoWatchRoutingConfig             func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
 	fnAutoWatchRouteTable                func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
 	fnAutoWatchVirtualRouterPeeringGroup func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
+	fnAutoWatchPolicerProfile            func(in *api.ListWatchOptions, stream grpc.ServerStream, svcprefix string) error
 }
 
 func (s *snetworkSvc_networkBackend) regMsgsFunc(l log.Logger, scheme *runtime.Scheme) {
@@ -124,6 +131,7 @@ func (s *snetworkSvc_networkBackend) regMsgsFunc(l log.Logger, scheme *runtime.S
 		"network.AutoMsgLbPolicyWatchHelper":                  apisrvpkg.NewMessage("network.AutoMsgLbPolicyWatchHelper"),
 		"network.AutoMsgNetworkInterfaceWatchHelper":          apisrvpkg.NewMessage("network.AutoMsgNetworkInterfaceWatchHelper"),
 		"network.AutoMsgNetworkWatchHelper":                   apisrvpkg.NewMessage("network.AutoMsgNetworkWatchHelper"),
+		"network.AutoMsgPolicerProfileWatchHelper":            apisrvpkg.NewMessage("network.AutoMsgPolicerProfileWatchHelper"),
 		"network.AutoMsgRouteTableWatchHelper":                apisrvpkg.NewMessage("network.AutoMsgRouteTableWatchHelper"),
 		"network.AutoMsgRoutingConfigWatchHelper":             apisrvpkg.NewMessage("network.AutoMsgRoutingConfigWatchHelper"),
 		"network.AutoMsgServiceWatchHelper":                   apisrvpkg.NewMessage("network.AutoMsgServiceWatchHelper"),
@@ -249,6 +257,38 @@ func (s *snetworkSvc_networkBackend) regMsgsFunc(l log.Logger, scheme *runtime.S
 			return r, nil
 		}).WithGetRuntimeObject(func(i interface{}) runtime.Object {
 			r := i.(network.NetworkList)
+			return &r
+		}),
+		"network.PolicerProfileList": apisrvpkg.NewMessage("network.PolicerProfileList").WithKvListFunc(func(ctx context.Context, kvs kvstore.Interface, options *api.ListWatchOptions, prefix string) (interface{}, error) {
+
+			into := network.PolicerProfileList{}
+			into.Kind = "PolicerProfileList"
+			r := network.PolicerProfile{}
+			r.ObjectMeta = options.ObjectMeta
+			key := r.MakeKey(prefix)
+
+			if options.Tenant == "" {
+				if strings.HasSuffix(key, "//") {
+					key = key[:len(key)-1]
+				}
+			}
+
+			ctx = apiutils.SetVar(ctx, "ObjKind", "network.PolicerProfile")
+			err := kvs.ListFiltered(ctx, key, &into, *options)
+			if err != nil {
+				l.ErrorLog("msg", "Object ListFiltered failed", "key", key, "err", err)
+				return nil, err
+			}
+			return into, nil
+		}).WithSelfLinkWriter(func(path, ver, prefix string, i interface{}) (interface{}, error) {
+			r := i.(network.PolicerProfileList)
+			r.APIVersion = ver
+			for i := range r.Items {
+				r.Items[i].SelfLink = r.Items[i].MakeURI("configs", ver, prefix)
+			}
+			return r, nil
+		}).WithGetRuntimeObject(func(i interface{}) runtime.Object {
+			r := i.(network.PolicerProfileList)
 			return &r
 		}),
 		"network.RouteTableList": apisrvpkg.NewMessage("network.RouteTableList").WithKvListFunc(func(ctx context.Context, kvs kvstore.Interface, options *api.ListWatchOptions, prefix string) (interface{}, error) {
@@ -466,6 +506,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 			return "", fmt.Errorf("not rest endpoint")
 		}).HandleInvocation
 
+		s.endpointsNetworkV1.fnAutoAddPolicerProfile = srv.AddMethod("AutoAddPolicerProfile",
+			apisrvpkg.NewMethod(srv, pkgMessages["network.PolicerProfile"], pkgMessages["network.PolicerProfile"], "network", "AutoAddPolicerProfile")).WithOper(apiintf.CreateOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(network.PolicerProfile)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/policer-profile/", in.Name), nil
+		}).HandleInvocation
+
 		s.endpointsNetworkV1.fnAutoAddRouteTable = srv.AddMethod("AutoAddRouteTable",
 			apisrvpkg.NewMethod(srv, pkgMessages["network.RouteTable"], pkgMessages["network.RouteTable"], "network", "AutoAddRouteTable")).WithOper(apiintf.CreateOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
 			return "", fmt.Errorf("not rest endpoint")
@@ -529,6 +578,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 		s.endpointsNetworkV1.fnAutoDeleteNetworkInterface = srv.AddMethod("AutoDeleteNetworkInterface",
 			apisrvpkg.NewMethod(srv, pkgMessages["network.NetworkInterface"], pkgMessages["network.NetworkInterface"], "network", "AutoDeleteNetworkInterface")).WithOper(apiintf.DeleteOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
 			return "", fmt.Errorf("not rest endpoint")
+		}).HandleInvocation
+
+		s.endpointsNetworkV1.fnAutoDeletePolicerProfile = srv.AddMethod("AutoDeletePolicerProfile",
+			apisrvpkg.NewMethod(srv, pkgMessages["network.PolicerProfile"], pkgMessages["network.PolicerProfile"], "network", "AutoDeletePolicerProfile")).WithOper(apiintf.DeleteOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(network.PolicerProfile)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/policer-profile/", in.Name), nil
 		}).HandleInvocation
 
 		s.endpointsNetworkV1.fnAutoDeleteRouteTable = srv.AddMethod("AutoDeleteRouteTable",
@@ -598,6 +656,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 				return "", fmt.Errorf("wrong type")
 			}
 			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/networkinterfaces/", in.Name), nil
+		}).HandleInvocation
+
+		s.endpointsNetworkV1.fnAutoGetPolicerProfile = srv.AddMethod("AutoGetPolicerProfile",
+			apisrvpkg.NewMethod(srv, pkgMessages["network.PolicerProfile"], pkgMessages["network.PolicerProfile"], "network", "AutoGetPolicerProfile")).WithOper(apiintf.GetOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(network.PolicerProfile)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/policer-profile/", in.Name), nil
 		}).HandleInvocation
 
 		s.endpointsNetworkV1.fnAutoGetRouteTable = srv.AddMethod("AutoGetRouteTable",
@@ -757,6 +824,38 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 				return "", fmt.Errorf("Expected type to be api.Label")
 			}
 			cur := network.NetworkInterface{}
+			cur.ObjectMeta = label.ObjectMeta
+			key := cur.MakeKey(prefix)
+			if err := kvs.Get(ctx, key, &cur); err != nil {
+				return nil, err
+			}
+			return cur, nil
+		}).HandleInvocation
+
+		s.endpointsNetworkV1.fnAutoLabelPolicerProfile = srv.AddMethod("AutoLabelPolicerProfile",
+			apisrvpkg.NewMethod(srv, pkgMessages["api.Label"], pkgMessages["network.PolicerProfile"], "network", "AutoLabelPolicerProfile")).WithOper(apiintf.LabelOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(api.Label)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/policer-profile/", in.Name), nil
+		}).WithMethDbKey(func(i interface{}, prefix string) (string, error) {
+			new := network.PolicerProfile{}
+			if i == nil {
+				return new.MakeKey(prefix), nil
+			}
+			in, ok := i.(api.Label)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			new.ObjectMeta = in.ObjectMeta
+			return new.MakeKey(prefix), nil
+		}).WithResponseWriter(func(ctx context.Context, kvs kvstore.Interface, prefix string, in, old, resp interface{}, oper apiintf.APIOperType) (interface{}, error) {
+			label, ok := resp.(api.Label)
+			if !ok {
+				return "", fmt.Errorf("Expected type to be api.Label")
+			}
+			cur := network.PolicerProfile{}
 			cur.ObjectMeta = label.ObjectMeta
 			key := cur.MakeKey(prefix)
 			if err := kvs.Get(ctx, key, &cur); err != nil {
@@ -949,6 +1048,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/networkinterfaces/", in.Name), nil
 		}).HandleInvocation
 
+		s.endpointsNetworkV1.fnAutoListPolicerProfile = srv.AddMethod("AutoListPolicerProfile",
+			apisrvpkg.NewMethod(srv, pkgMessages["api.ListWatchOptions"], pkgMessages["network.PolicerProfileList"], "network", "AutoListPolicerProfile")).WithOper(apiintf.ListOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(api.ListWatchOptions)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/policer-profile/", in.Name), nil
+		}).HandleInvocation
+
 		s.endpointsNetworkV1.fnAutoListRouteTable = srv.AddMethod("AutoListRouteTable",
 			apisrvpkg.NewMethod(srv, pkgMessages["api.ListWatchOptions"], pkgMessages["network.RouteTableList"], "network", "AutoListRouteTable")).WithOper(apiintf.ListOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
 			in, ok := i.(api.ListWatchOptions)
@@ -1022,6 +1130,15 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/networkinterfaces/", in.Name), nil
 		}).HandleInvocation
 
+		s.endpointsNetworkV1.fnAutoUpdatePolicerProfile = srv.AddMethod("AutoUpdatePolicerProfile",
+			apisrvpkg.NewMethod(srv, pkgMessages["network.PolicerProfile"], pkgMessages["network.PolicerProfile"], "network", "AutoUpdatePolicerProfile")).WithOper(apiintf.UpdateOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
+			in, ok := i.(network.PolicerProfile)
+			if !ok {
+				return "", fmt.Errorf("wrong type")
+			}
+			return fmt.Sprint("/", globals.ConfigURIPrefix, "/", "network/v1/tenant/", in.Tenant, "/policer-profile/", in.Name), nil
+		}).HandleInvocation
+
 		s.endpointsNetworkV1.fnAutoUpdateRouteTable = srv.AddMethod("AutoUpdateRouteTable",
 			apisrvpkg.NewMethod(srv, pkgMessages["network.RouteTable"], pkgMessages["network.RouteTable"], "network", "AutoUpdateRouteTable")).WithOper(apiintf.UpdateOper).WithVersion("v1").WithMakeURI(func(i interface{}) (string, error) {
 			return "", fmt.Errorf("not rest endpoint")
@@ -1077,6 +1194,8 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 
 		s.endpointsNetworkV1.fnAutoWatchVirtualRouterPeeringGroup = pkgMessages["network.VirtualRouterPeeringGroup"].WatchFromKv
 
+		s.endpointsNetworkV1.fnAutoWatchPolicerProfile = pkgMessages["network.PolicerProfile"].WatchFromKv
+
 		s.Services = map[string]apiserver.Service{
 			"network.NetworkV1": srv,
 		}
@@ -1084,7 +1203,7 @@ func (s *snetworkSvc_networkBackend) regSvcsFunc(ctx context.Context, logger log
 		endpoints := network.MakeNetworkV1ServerEndpoints(s.endpointsNetworkV1, logger)
 		server := network.MakeGRPCServerNetworkV1(ctx, endpoints, logger)
 		network.RegisterNetworkV1Server(grpcserver.GrpcServer, server)
-		svcObjs := []string{"Network", "Service", "LbPolicy", "VirtualRouter", "NetworkInterface", "IPAMPolicy", "RoutingConfig", "RouteTable", "VirtualRouterPeeringGroup"}
+		svcObjs := []string{"Network", "Service", "LbPolicy", "VirtualRouter", "NetworkInterface", "IPAMPolicy", "RoutingConfig", "RouteTable", "VirtualRouterPeeringGroup", "PolicerProfile"}
 		fieldhooks.RegisterImmutableFieldsServiceHooks("network", "NetworkV1", svcObjs)
 	}
 }
@@ -2053,6 +2172,109 @@ func (s *snetworkSvc_networkBackend) regWatchersFunc(ctx context.Context, logger
 			}
 		})
 
+		pkgMessages["network.PolicerProfile"].WithKvWatchFunc(func(l log.Logger, options *api.ListWatchOptions, kvs kvstore.Interface, stream interface{}, txfn func(from, to string, i interface{}) (interface{}, error), version, svcprefix string) error {
+			o := network.PolicerProfile{}
+			key := o.MakeKey(svcprefix)
+			if strings.HasSuffix(key, "//") {
+				key = strings.TrimSuffix(key, "/")
+			}
+			if strings.HasSuffix(key, "//Singleton") {
+				key = strings.TrimSuffix(key, "/Singleton")
+			}
+			wstream := stream.(network.NetworkV1_AutoWatchPolicerProfileServer)
+			nctx, cancel := context.WithCancel(wstream.Context())
+			defer cancel()
+			id := fmt.Sprintf("%s-%x", ctxutils.GetPeerID(nctx), &key)
+
+			nctx = ctxutils.SetContextID(nctx, id)
+			if kvs == nil {
+				return fmt.Errorf("Nil KVS")
+			}
+			nctx = apiutils.SetVar(nctx, "ObjKind", "network.PolicerProfile")
+			l.InfoLog("msg", "KVWatcher starting watch", "WatcherID", id, "object", "network.PolicerProfile")
+			watcher, err := kvs.WatchFiltered(nctx, key, *options)
+			if err != nil {
+				l.ErrorLog("msg", "error starting Watch on KV", "err", err, "WatcherID", id, "bbject", "network.PolicerProfile")
+				return err
+			}
+			timer := time.NewTimer(apiserver.DefaultWatchHoldInterval)
+			if !timer.Stop() {
+				<-timer.C
+			}
+			running := false
+			events := &network.AutoMsgPolicerProfileWatchHelper{}
+			sendToStream := func() error {
+				l.DebugLog("msg", "writing to stream", "len", len(events.Events))
+				if err := wstream.Send(events); err != nil {
+					l.ErrorLog("msg", "Stream send error'ed for Order", "err", err, "WatcherID", id, "bbject", "network.PolicerProfile")
+					return err
+				}
+				events = &network.AutoMsgPolicerProfileWatchHelper{}
+				return nil
+			}
+			defer l.InfoLog("msg", "exiting watcher", "service", "network.PolicerProfile")
+			for {
+				select {
+				case ev, ok := <-watcher.EventChan():
+					if !ok {
+						l.ErrorLog("msg", "Channel closed for Watcher", "WatcherID", id, "bbject", "network.PolicerProfile")
+						return nil
+					}
+					evin, ok := ev.Object.(*network.PolicerProfile)
+					if !ok {
+						status, ok := ev.Object.(*api.Status)
+						if !ok {
+							return errors.New("unknown error")
+						}
+						return fmt.Errorf("%v:(%s) %s", status.Code, status.Result, status.Message)
+					}
+					// XXX-TODO(sanjayt): Avoid a copy and update selflink at enqueue.
+					cin, err := evin.Clone(nil)
+					if err != nil {
+						return fmt.Errorf("unable to clone object (%s)", err)
+					}
+					in := cin.(*network.PolicerProfile)
+					in.SelfLink = in.MakeURI(globals.ConfigURIPrefix, "v1", "network")
+
+					strEvent := &network.AutoMsgPolicerProfileWatchHelper_WatchEvent{
+						Type:   string(ev.Type),
+						Object: in,
+					}
+					l.DebugLog("msg", "received PolicerProfile watch event from KV", "type", ev.Type)
+					if version != in.APIVersion {
+						i, err := txfn(in.APIVersion, version, in)
+						if err != nil {
+							l.ErrorLog("msg", "Failed to transform message", "type", "PolicerProfile", "fromver", in.APIVersion, "tover", version, "WatcherID", id, "bbject", "network.PolicerProfile")
+							break
+						}
+						strEvent.Object = i.(*network.PolicerProfile)
+					}
+					events.Events = append(events.Events, strEvent)
+					if !running {
+						running = true
+						timer.Reset(apiserver.DefaultWatchHoldInterval)
+					}
+					if len(events.Events) >= apiserver.DefaultWatchBatchSize {
+						if err = sendToStream(); err != nil {
+							return err
+						}
+						if !timer.Stop() {
+							<-timer.C
+						}
+						timer.Reset(apiserver.DefaultWatchHoldInterval)
+					}
+				case <-timer.C:
+					running = false
+					if err = sendToStream(); err != nil {
+						return err
+					}
+				case <-nctx.Done():
+					l.DebugLog("msg", "Context cancelled for Watcher", "WatcherID", id, "bbject", "network.PolicerProfile")
+					return wstream.Context().Err()
+				}
+			}
+		})
+
 	}
 
 }
@@ -2102,6 +2324,14 @@ func (e *eNetworkV1Endpoints) AutoAddNetworkInterface(ctx context.Context, t net
 		return r.(network.NetworkInterface), err
 	}
 	return network.NetworkInterface{}, err
+
+}
+func (e *eNetworkV1Endpoints) AutoAddPolicerProfile(ctx context.Context, t network.PolicerProfile) (network.PolicerProfile, error) {
+	r, err := e.fnAutoAddPolicerProfile(ctx, t)
+	if err == nil {
+		return r.(network.PolicerProfile), err
+	}
+	return network.PolicerProfile{}, err
 
 }
 func (e *eNetworkV1Endpoints) AutoAddRouteTable(ctx context.Context, t network.RouteTable) (network.RouteTable, error) {
@@ -2176,6 +2406,14 @@ func (e *eNetworkV1Endpoints) AutoDeleteNetworkInterface(ctx context.Context, t 
 	return network.NetworkInterface{}, err
 
 }
+func (e *eNetworkV1Endpoints) AutoDeletePolicerProfile(ctx context.Context, t network.PolicerProfile) (network.PolicerProfile, error) {
+	r, err := e.fnAutoDeletePolicerProfile(ctx, t)
+	if err == nil {
+		return r.(network.PolicerProfile), err
+	}
+	return network.PolicerProfile{}, err
+
+}
 func (e *eNetworkV1Endpoints) AutoDeleteRouteTable(ctx context.Context, t network.RouteTable) (network.RouteTable, error) {
 	r, err := e.fnAutoDeleteRouteTable(ctx, t)
 	if err == nil {
@@ -2246,6 +2484,14 @@ func (e *eNetworkV1Endpoints) AutoGetNetworkInterface(ctx context.Context, t net
 		return r.(network.NetworkInterface), err
 	}
 	return network.NetworkInterface{}, err
+
+}
+func (e *eNetworkV1Endpoints) AutoGetPolicerProfile(ctx context.Context, t network.PolicerProfile) (network.PolicerProfile, error) {
+	r, err := e.fnAutoGetPolicerProfile(ctx, t)
+	if err == nil {
+		return r.(network.PolicerProfile), err
+	}
+	return network.PolicerProfile{}, err
 
 }
 func (e *eNetworkV1Endpoints) AutoGetRouteTable(ctx context.Context, t network.RouteTable) (network.RouteTable, error) {
@@ -2320,6 +2566,14 @@ func (e *eNetworkV1Endpoints) AutoLabelNetworkInterface(ctx context.Context, t a
 	return network.NetworkInterface{}, err
 
 }
+func (e *eNetworkV1Endpoints) AutoLabelPolicerProfile(ctx context.Context, t api.Label) (network.PolicerProfile, error) {
+	r, err := e.fnAutoLabelPolicerProfile(ctx, t)
+	if err == nil {
+		return r.(network.PolicerProfile), err
+	}
+	return network.PolicerProfile{}, err
+
+}
 func (e *eNetworkV1Endpoints) AutoLabelRouteTable(ctx context.Context, t api.Label) (network.RouteTable, error) {
 	r, err := e.fnAutoLabelRouteTable(ctx, t)
 	if err == nil {
@@ -2390,6 +2644,14 @@ func (e *eNetworkV1Endpoints) AutoListNetworkInterface(ctx context.Context, t ap
 		return r.(network.NetworkInterfaceList), err
 	}
 	return network.NetworkInterfaceList{}, err
+
+}
+func (e *eNetworkV1Endpoints) AutoListPolicerProfile(ctx context.Context, t api.ListWatchOptions) (network.PolicerProfileList, error) {
+	r, err := e.fnAutoListPolicerProfile(ctx, t)
+	if err == nil {
+		return r.(network.PolicerProfileList), err
+	}
+	return network.PolicerProfileList{}, err
 
 }
 func (e *eNetworkV1Endpoints) AutoListRouteTable(ctx context.Context, t api.ListWatchOptions) (network.RouteTableList, error) {
@@ -2464,6 +2726,14 @@ func (e *eNetworkV1Endpoints) AutoUpdateNetworkInterface(ctx context.Context, t 
 	return network.NetworkInterface{}, err
 
 }
+func (e *eNetworkV1Endpoints) AutoUpdatePolicerProfile(ctx context.Context, t network.PolicerProfile) (network.PolicerProfile, error) {
+	r, err := e.fnAutoUpdatePolicerProfile(ctx, t)
+	if err == nil {
+		return r.(network.PolicerProfile), err
+	}
+	return network.PolicerProfile{}, err
+
+}
 func (e *eNetworkV1Endpoints) AutoUpdateRouteTable(ctx context.Context, t network.RouteTable) (network.RouteTable, error) {
 	r, err := e.fnAutoUpdateRouteTable(ctx, t)
 	if err == nil {
@@ -2531,6 +2801,9 @@ func (e *eNetworkV1Endpoints) AutoWatchRouteTable(in *api.ListWatchOptions, stre
 }
 func (e *eNetworkV1Endpoints) AutoWatchVirtualRouterPeeringGroup(in *api.ListWatchOptions, stream network.NetworkV1_AutoWatchVirtualRouterPeeringGroupServer) error {
 	return e.fnAutoWatchVirtualRouterPeeringGroup(in, stream, "network")
+}
+func (e *eNetworkV1Endpoints) AutoWatchPolicerProfile(in *api.ListWatchOptions, stream network.NetworkV1_AutoWatchPolicerProfileServer) error {
+	return e.fnAutoWatchPolicerProfile(in, stream, "network")
 }
 func (e *eNetworkV1Endpoints) AutoWatchSvcNetworkV1(in *api.AggWatchOptions, stream network.NetworkV1_AutoWatchSvcNetworkV1Server) error {
 	return e.fnAutoWatchSvcNetworkV1(in, stream, "")

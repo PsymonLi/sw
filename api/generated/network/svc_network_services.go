@@ -23,6 +23,7 @@ type ServiceNetworkV1Client interface {
 	AutoAddLbPolicy(ctx context.Context, t *LbPolicy) (*LbPolicy, error)
 	AutoAddNetwork(ctx context.Context, t *Network) (*Network, error)
 	AutoAddNetworkInterface(ctx context.Context, t *NetworkInterface) (*NetworkInterface, error)
+	AutoAddPolicerProfile(ctx context.Context, t *PolicerProfile) (*PolicerProfile, error)
 	AutoAddRouteTable(ctx context.Context, t *RouteTable) (*RouteTable, error)
 	AutoAddRoutingConfig(ctx context.Context, t *RoutingConfig) (*RoutingConfig, error)
 	AutoAddService(ctx context.Context, t *Service) (*Service, error)
@@ -32,6 +33,7 @@ type ServiceNetworkV1Client interface {
 	AutoDeleteLbPolicy(ctx context.Context, t *LbPolicy) (*LbPolicy, error)
 	AutoDeleteNetwork(ctx context.Context, t *Network) (*Network, error)
 	AutoDeleteNetworkInterface(ctx context.Context, t *NetworkInterface) (*NetworkInterface, error)
+	AutoDeletePolicerProfile(ctx context.Context, t *PolicerProfile) (*PolicerProfile, error)
 	AutoDeleteRouteTable(ctx context.Context, t *RouteTable) (*RouteTable, error)
 	AutoDeleteRoutingConfig(ctx context.Context, t *RoutingConfig) (*RoutingConfig, error)
 	AutoDeleteService(ctx context.Context, t *Service) (*Service, error)
@@ -41,6 +43,7 @@ type ServiceNetworkV1Client interface {
 	AutoGetLbPolicy(ctx context.Context, t *LbPolicy) (*LbPolicy, error)
 	AutoGetNetwork(ctx context.Context, t *Network) (*Network, error)
 	AutoGetNetworkInterface(ctx context.Context, t *NetworkInterface) (*NetworkInterface, error)
+	AutoGetPolicerProfile(ctx context.Context, t *PolicerProfile) (*PolicerProfile, error)
 	AutoGetRouteTable(ctx context.Context, t *RouteTable) (*RouteTable, error)
 	AutoGetRoutingConfig(ctx context.Context, t *RoutingConfig) (*RoutingConfig, error)
 	AutoGetService(ctx context.Context, t *Service) (*Service, error)
@@ -50,6 +53,7 @@ type ServiceNetworkV1Client interface {
 	AutoLabelLbPolicy(ctx context.Context, t *api.Label) (*LbPolicy, error)
 	AutoLabelNetwork(ctx context.Context, t *api.Label) (*Network, error)
 	AutoLabelNetworkInterface(ctx context.Context, t *api.Label) (*NetworkInterface, error)
+	AutoLabelPolicerProfile(ctx context.Context, t *api.Label) (*PolicerProfile, error)
 	AutoLabelRouteTable(ctx context.Context, t *api.Label) (*RouteTable, error)
 	AutoLabelRoutingConfig(ctx context.Context, t *api.Label) (*RoutingConfig, error)
 	AutoLabelService(ctx context.Context, t *api.Label) (*Service, error)
@@ -59,6 +63,7 @@ type ServiceNetworkV1Client interface {
 	AutoListLbPolicy(ctx context.Context, t *api.ListWatchOptions) (*LbPolicyList, error)
 	AutoListNetwork(ctx context.Context, t *api.ListWatchOptions) (*NetworkList, error)
 	AutoListNetworkInterface(ctx context.Context, t *api.ListWatchOptions) (*NetworkInterfaceList, error)
+	AutoListPolicerProfile(ctx context.Context, t *api.ListWatchOptions) (*PolicerProfileList, error)
 	AutoListRouteTable(ctx context.Context, t *api.ListWatchOptions) (*RouteTableList, error)
 	AutoListRoutingConfig(ctx context.Context, t *api.ListWatchOptions) (*RoutingConfigList, error)
 	AutoListService(ctx context.Context, t *api.ListWatchOptions) (*ServiceList, error)
@@ -68,6 +73,7 @@ type ServiceNetworkV1Client interface {
 	AutoUpdateLbPolicy(ctx context.Context, t *LbPolicy) (*LbPolicy, error)
 	AutoUpdateNetwork(ctx context.Context, t *Network) (*Network, error)
 	AutoUpdateNetworkInterface(ctx context.Context, t *NetworkInterface) (*NetworkInterface, error)
+	AutoUpdatePolicerProfile(ctx context.Context, t *PolicerProfile) (*PolicerProfile, error)
 	AutoUpdateRouteTable(ctx context.Context, t *RouteTable) (*RouteTable, error)
 	AutoUpdateRoutingConfig(ctx context.Context, t *RoutingConfig) (*RoutingConfig, error)
 	AutoUpdateService(ctx context.Context, t *Service) (*Service, error)
@@ -83,6 +89,7 @@ type ServiceNetworkV1Client interface {
 	AutoWatchRoutingConfig(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchRoutingConfigClient, error)
 	AutoWatchRouteTable(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchRouteTableClient, error)
 	AutoWatchVirtualRouterPeeringGroup(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchVirtualRouterPeeringGroupClient, error)
+	AutoWatchPolicerProfile(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchPolicerProfileClient, error)
 }
 
 // ServiceNetworkV1Server is the server interface for the service.
@@ -93,6 +100,7 @@ type ServiceNetworkV1Server interface {
 	AutoAddLbPolicy(ctx context.Context, t LbPolicy) (LbPolicy, error)
 	AutoAddNetwork(ctx context.Context, t Network) (Network, error)
 	AutoAddNetworkInterface(ctx context.Context, t NetworkInterface) (NetworkInterface, error)
+	AutoAddPolicerProfile(ctx context.Context, t PolicerProfile) (PolicerProfile, error)
 	AutoAddRouteTable(ctx context.Context, t RouteTable) (RouteTable, error)
 	AutoAddRoutingConfig(ctx context.Context, t RoutingConfig) (RoutingConfig, error)
 	AutoAddService(ctx context.Context, t Service) (Service, error)
@@ -102,6 +110,7 @@ type ServiceNetworkV1Server interface {
 	AutoDeleteLbPolicy(ctx context.Context, t LbPolicy) (LbPolicy, error)
 	AutoDeleteNetwork(ctx context.Context, t Network) (Network, error)
 	AutoDeleteNetworkInterface(ctx context.Context, t NetworkInterface) (NetworkInterface, error)
+	AutoDeletePolicerProfile(ctx context.Context, t PolicerProfile) (PolicerProfile, error)
 	AutoDeleteRouteTable(ctx context.Context, t RouteTable) (RouteTable, error)
 	AutoDeleteRoutingConfig(ctx context.Context, t RoutingConfig) (RoutingConfig, error)
 	AutoDeleteService(ctx context.Context, t Service) (Service, error)
@@ -111,6 +120,7 @@ type ServiceNetworkV1Server interface {
 	AutoGetLbPolicy(ctx context.Context, t LbPolicy) (LbPolicy, error)
 	AutoGetNetwork(ctx context.Context, t Network) (Network, error)
 	AutoGetNetworkInterface(ctx context.Context, t NetworkInterface) (NetworkInterface, error)
+	AutoGetPolicerProfile(ctx context.Context, t PolicerProfile) (PolicerProfile, error)
 	AutoGetRouteTable(ctx context.Context, t RouteTable) (RouteTable, error)
 	AutoGetRoutingConfig(ctx context.Context, t RoutingConfig) (RoutingConfig, error)
 	AutoGetService(ctx context.Context, t Service) (Service, error)
@@ -120,6 +130,7 @@ type ServiceNetworkV1Server interface {
 	AutoLabelLbPolicy(ctx context.Context, t api.Label) (LbPolicy, error)
 	AutoLabelNetwork(ctx context.Context, t api.Label) (Network, error)
 	AutoLabelNetworkInterface(ctx context.Context, t api.Label) (NetworkInterface, error)
+	AutoLabelPolicerProfile(ctx context.Context, t api.Label) (PolicerProfile, error)
 	AutoLabelRouteTable(ctx context.Context, t api.Label) (RouteTable, error)
 	AutoLabelRoutingConfig(ctx context.Context, t api.Label) (RoutingConfig, error)
 	AutoLabelService(ctx context.Context, t api.Label) (Service, error)
@@ -129,6 +140,7 @@ type ServiceNetworkV1Server interface {
 	AutoListLbPolicy(ctx context.Context, t api.ListWatchOptions) (LbPolicyList, error)
 	AutoListNetwork(ctx context.Context, t api.ListWatchOptions) (NetworkList, error)
 	AutoListNetworkInterface(ctx context.Context, t api.ListWatchOptions) (NetworkInterfaceList, error)
+	AutoListPolicerProfile(ctx context.Context, t api.ListWatchOptions) (PolicerProfileList, error)
 	AutoListRouteTable(ctx context.Context, t api.ListWatchOptions) (RouteTableList, error)
 	AutoListRoutingConfig(ctx context.Context, t api.ListWatchOptions) (RoutingConfigList, error)
 	AutoListService(ctx context.Context, t api.ListWatchOptions) (ServiceList, error)
@@ -138,6 +150,7 @@ type ServiceNetworkV1Server interface {
 	AutoUpdateLbPolicy(ctx context.Context, t LbPolicy) (LbPolicy, error)
 	AutoUpdateNetwork(ctx context.Context, t Network) (Network, error)
 	AutoUpdateNetworkInterface(ctx context.Context, t NetworkInterface) (NetworkInterface, error)
+	AutoUpdatePolicerProfile(ctx context.Context, t PolicerProfile) (PolicerProfile, error)
 	AutoUpdateRouteTable(ctx context.Context, t RouteTable) (RouteTable, error)
 	AutoUpdateRoutingConfig(ctx context.Context, t RoutingConfig) (RoutingConfig, error)
 	AutoUpdateService(ctx context.Context, t Service) (Service, error)
@@ -153,4 +166,5 @@ type ServiceNetworkV1Server interface {
 	AutoWatchRoutingConfig(in *api.ListWatchOptions, stream NetworkV1_AutoWatchRoutingConfigServer) error
 	AutoWatchRouteTable(in *api.ListWatchOptions, stream NetworkV1_AutoWatchRouteTableServer) error
 	AutoWatchVirtualRouterPeeringGroup(in *api.ListWatchOptions, stream NetworkV1_AutoWatchVirtualRouterPeeringGroupServer) error
+	AutoWatchPolicerProfile(in *api.ListWatchOptions, stream NetworkV1_AutoWatchPolicerProfileServer) error
 }

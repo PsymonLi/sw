@@ -1531,6 +1531,19 @@
             "type": "string"
           },
           {
+            "name": "spec.policer-attach-tenant",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "spec.tx-policer",
+            "description": "Policer to be applied in Tx direction.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "status.admission-phase",
             "description": "Current admission phase of the DistributedServiceCard. When auto-admission is enabled, AdmissionPhase will be set to NIC_ADMITTED by CMD for validated NICs. When auto-admission is not enabled, AdmissionPhase will be set to NIC_PENDING by CMD for validated NICs since it requires manual approval. To admit the NIC as a part of manual admission, user is expected to set Spec.Admit to true for the NICs that are in NIC_PENDING state. Note : Whitelist mode is not supported yet.",
             "in": "query",
@@ -7435,6 +7448,14 @@
         },
         "dscprofile": {
           "type": "string"
+        },
+        "policer-attach-tenant": {
+          "type": "string",
+          "default": "default"
+        },
+        "tx-policer": {
+          "type": "string",
+          "description": "Policer to be applied in Tx direction."
         }
       },
       "description": "DistributedServiceCardSpec contains configuration of the DistributedServiceCard (Naples I/O subsystem)."

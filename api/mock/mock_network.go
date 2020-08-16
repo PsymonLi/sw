@@ -1267,6 +1267,145 @@ func (mr *MockNetworkV1VirtualRouterPeeringGroupInterfaceMockRecorder) Allowed(o
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Allowed", reflect.TypeOf((*MockNetworkV1VirtualRouterPeeringGroupInterface)(nil).Allowed), oper)
 }
 
+// MockNetworkV1PolicerProfileInterface is a mock of NetworkV1PolicerProfileInterface interface
+type MockNetworkV1PolicerProfileInterface struct {
+	ctrl     *gomock.Controller
+	recorder *MockNetworkV1PolicerProfileInterfaceMockRecorder
+}
+
+// MockNetworkV1PolicerProfileInterfaceMockRecorder is the mock recorder for MockNetworkV1PolicerProfileInterface
+type MockNetworkV1PolicerProfileInterfaceMockRecorder struct {
+	mock *MockNetworkV1PolicerProfileInterface
+}
+
+// NewMockNetworkV1PolicerProfileInterface creates a new mock instance
+func NewMockNetworkV1PolicerProfileInterface(ctrl *gomock.Controller) *MockNetworkV1PolicerProfileInterface {
+	mock := &MockNetworkV1PolicerProfileInterface{ctrl: ctrl}
+	mock.recorder = &MockNetworkV1PolicerProfileInterfaceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockNetworkV1PolicerProfileInterface) EXPECT() *MockNetworkV1PolicerProfileInterfaceMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) Create(ctx context.Context, in *network.PolicerProfile) (*network.PolicerProfile, error) {
+	ret := m.ctrl.Call(m, "Create", ctx, in)
+	ret0, _ := ret[0].(*network.PolicerProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) Create(ctx, in interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).Create), ctx, in)
+}
+
+// Update mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) Update(ctx context.Context, in *network.PolicerProfile) (*network.PolicerProfile, error) {
+	ret := m.ctrl.Call(m, "Update", ctx, in)
+	ret0, _ := ret[0].(*network.PolicerProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) Update(ctx, in interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).Update), ctx, in)
+}
+
+// UpdateStatus mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) UpdateStatus(ctx context.Context, in *network.PolicerProfile) (*network.PolicerProfile, error) {
+	ret := m.ctrl.Call(m, "UpdateStatus", ctx, in)
+	ret0, _ := ret[0].(*network.PolicerProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateStatus indicates an expected call of UpdateStatus
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) UpdateStatus(ctx, in interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).UpdateStatus), ctx, in)
+}
+
+// Label mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) Label(ctx context.Context, in *api.Label) (*network.PolicerProfile, error) {
+	ret := m.ctrl.Call(m, "Label", ctx, in)
+	ret0, _ := ret[0].(*network.PolicerProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Label indicates an expected call of Label
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) Label(ctx, in interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Label", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).Label), ctx, in)
+}
+
+// Get mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) Get(ctx context.Context, objMeta *api.ObjectMeta) (*network.PolicerProfile, error) {
+	ret := m.ctrl.Call(m, "Get", ctx, objMeta)
+	ret0, _ := ret[0].(*network.PolicerProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) Get(ctx, objMeta interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).Get), ctx, objMeta)
+}
+
+// Delete mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) Delete(ctx context.Context, objMeta *api.ObjectMeta) (*network.PolicerProfile, error) {
+	ret := m.ctrl.Call(m, "Delete", ctx, objMeta)
+	ret0, _ := ret[0].(*network.PolicerProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Delete indicates an expected call of Delete
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) Delete(ctx, objMeta interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).Delete), ctx, objMeta)
+}
+
+// List mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) List(ctx context.Context, options *api.ListWatchOptions) ([]*network.PolicerProfile, error) {
+	ret := m.ctrl.Call(m, "List", ctx, options)
+	ret0, _ := ret[0].([]*network.PolicerProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) List(ctx, options interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).List), ctx, options)
+}
+
+// Watch mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) Watch(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error) {
+	ret := m.ctrl.Call(m, "Watch", ctx, options)
+	ret0, _ := ret[0].(kvstore.Watcher)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Watch indicates an expected call of Watch
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) Watch(ctx, options interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).Watch), ctx, options)
+}
+
+// Allowed mocks base method
+func (m *MockNetworkV1PolicerProfileInterface) Allowed(oper interfaces.APIOperType) bool {
+	ret := m.ctrl.Call(m, "Allowed", oper)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Allowed indicates an expected call of Allowed
+func (mr *MockNetworkV1PolicerProfileInterfaceMockRecorder) Allowed(oper interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Allowed", reflect.TypeOf((*MockNetworkV1PolicerProfileInterface)(nil).Allowed), oper)
+}
+
 // MockNetworkV1Interface is a mock of NetworkV1Interface interface
 type MockNetworkV1Interface struct {
 	ctrl     *gomock.Controller
@@ -1396,6 +1535,18 @@ func (m *MockNetworkV1Interface) VirtualRouterPeeringGroup() network.NetworkV1Vi
 // VirtualRouterPeeringGroup indicates an expected call of VirtualRouterPeeringGroup
 func (mr *MockNetworkV1InterfaceMockRecorder) VirtualRouterPeeringGroup() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VirtualRouterPeeringGroup", reflect.TypeOf((*MockNetworkV1Interface)(nil).VirtualRouterPeeringGroup))
+}
+
+// PolicerProfile mocks base method
+func (m *MockNetworkV1Interface) PolicerProfile() network.NetworkV1PolicerProfileInterface {
+	ret := m.ctrl.Call(m, "PolicerProfile")
+	ret0, _ := ret[0].(network.NetworkV1PolicerProfileInterface)
+	return ret0
+}
+
+// PolicerProfile indicates an expected call of PolicerProfile
+func (mr *MockNetworkV1InterfaceMockRecorder) PolicerProfile() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PolicerProfile", reflect.TypeOf((*MockNetworkV1Interface)(nil).PolicerProfile))
 }
 
 // Watch mocks base method

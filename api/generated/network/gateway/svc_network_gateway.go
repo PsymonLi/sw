@@ -198,6 +198,42 @@ func (a adapterNetworkV1) AutoAddNetworkInterface(oldctx oldcontext.Context, t *
 	return ret.(*network.NetworkInterface), err
 }
 
+func (a adapterNetworkV1) AutoAddPolicerProfile(oldctx oldcontext.Context, t *network.PolicerProfile, options ...grpc.CallOption) (*network.PolicerProfile, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoAddPolicerProfile", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoAddPolicerProfile")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.CreateOper, "PolicerProfile", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.CreateOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*network.PolicerProfile)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddPolicerProfile(inctx, in)
+		}
+		return a.service.AutoAddPolicerProfile(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.PolicerProfile), err
+}
+
 func (a adapterNetworkV1) AutoAddRouteTable(oldctx oldcontext.Context, t *network.RouteTable, options ...grpc.CallOption) (*network.RouteTable, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
@@ -520,6 +556,42 @@ func (a adapterNetworkV1) AutoDeleteNetworkInterface(oldctx oldcontext.Context, 
 		return nil, err
 	}
 	return ret.(*network.NetworkInterface), err
+}
+
+func (a adapterNetworkV1) AutoDeletePolicerProfile(oldctx oldcontext.Context, t *network.PolicerProfile, options ...grpc.CallOption) (*network.PolicerProfile, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoDeletePolicerProfile", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoDeletePolicerProfile")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.DeleteOper, "PolicerProfile", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.DeleteOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*network.PolicerProfile)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeletePolicerProfile(inctx, in)
+		}
+		return a.service.AutoDeletePolicerProfile(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.PolicerProfile), err
 }
 
 func (a adapterNetworkV1) AutoDeleteRouteTable(oldctx oldcontext.Context, t *network.RouteTable, options ...grpc.CallOption) (*network.RouteTable, error) {
@@ -846,6 +918,42 @@ func (a adapterNetworkV1) AutoGetNetworkInterface(oldctx oldcontext.Context, t *
 	return ret.(*network.NetworkInterface), err
 }
 
+func (a adapterNetworkV1) AutoGetPolicerProfile(oldctx oldcontext.Context, t *network.PolicerProfile, options ...grpc.CallOption) (*network.PolicerProfile, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoGetPolicerProfile", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoGetPolicerProfile")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.GetOper, "PolicerProfile", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.GetOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*network.PolicerProfile)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetPolicerProfile(inctx, in)
+		}
+		return a.service.AutoGetPolicerProfile(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.PolicerProfile), err
+}
+
 func (a adapterNetworkV1) AutoGetRouteTable(oldctx oldcontext.Context, t *network.RouteTable, options ...grpc.CallOption) (*network.RouteTable, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
@@ -1168,6 +1276,42 @@ func (a adapterNetworkV1) AutoLabelNetworkInterface(oldctx oldcontext.Context, t
 		return nil, err
 	}
 	return ret.(*network.NetworkInterface), err
+}
+
+func (a adapterNetworkV1) AutoLabelPolicerProfile(oldctx oldcontext.Context, t *api.Label, options ...grpc.CallOption) (*network.PolicerProfile, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoLabelPolicerProfile", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoLabelPolicerProfile")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.UpdateOper, "PolicerProfile", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.LabelOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*api.Label)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelPolicerProfile(inctx, in)
+		}
+		return a.service.AutoLabelPolicerProfile(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.PolicerProfile), err
 }
 
 func (a adapterNetworkV1) AutoLabelRouteTable(oldctx oldcontext.Context, t *api.Label, options ...grpc.CallOption) (*network.RouteTable, error) {
@@ -1510,6 +1654,47 @@ func (a adapterNetworkV1) AutoListNetworkInterface(oldctx oldcontext.Context, t 
 		return nil, err
 	}
 	return ret.(*network.NetworkInterfaceList), err
+}
+
+func (a adapterNetworkV1) AutoListPolicerProfile(oldctx oldcontext.Context, t *api.ListWatchOptions, options ...grpc.CallOption) (*network.PolicerProfileList, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoListPolicerProfile", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoListPolicerProfile")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+
+	if t.Tenant == "" {
+		t.Tenant = globals.DefaultTenant
+	}
+	t.Namespace = ""
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.ListOper, "PolicerProfile", t.Tenant, t.Namespace, "network", "", strings.Title(string(apiintf.ListOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*api.ListWatchOptions)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListPolicerProfile(inctx, in)
+		}
+		return a.service.AutoListPolicerProfile(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.PolicerProfileList), err
 }
 
 func (a adapterNetworkV1) AutoListRouteTable(oldctx oldcontext.Context, t *api.ListWatchOptions, options ...grpc.CallOption) (*network.RouteTableList, error) {
@@ -1857,6 +2042,42 @@ func (a adapterNetworkV1) AutoUpdateNetworkInterface(oldctx oldcontext.Context, 
 		return nil, err
 	}
 	return ret.(*network.NetworkInterface), err
+}
+
+func (a adapterNetworkV1) AutoUpdatePolicerProfile(oldctx oldcontext.Context, t *network.PolicerProfile, options ...grpc.CallOption) (*network.PolicerProfile, error) {
+	// Not using options for now. Will be passed through context as needed.
+	trackTime := time.Now()
+	defer func() {
+		hdr.Record("apigw.NetworkV1AutoUpdatePolicerProfile", time.Since(trackTime))
+	}()
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoUpdatePolicerProfile")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+	oper, kind, tenant, namespace, group, name, auditAction := apiintf.UpdateOper, "PolicerProfile", t.Tenant, t.Namespace, "network", t.Name, strings.Title(string(apiintf.UpdateOper))
+
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*network.PolicerProfile)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(network.NetworkV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdatePolicerProfile(inctx, in)
+		}
+		return a.service.AutoUpdatePolicerProfile(inctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*network.PolicerProfile), err
 }
 
 func (a adapterNetworkV1) AutoUpdateRouteTable(oldctx oldcontext.Context, t *network.RouteTable, options ...grpc.CallOption) (*network.RouteTable, error) {
@@ -2620,6 +2841,65 @@ func (a adapterNetworkV1) AutoWatchVirtualRouterPeeringGroup(oldctx oldcontext.C
 	return ret.(network.NetworkV1_AutoWatchVirtualRouterPeeringGroupClient), err
 }
 
+func (a adapterNetworkV1) AutoWatchPolicerProfile(oldctx oldcontext.Context, in *api.ListWatchOptions, options ...grpc.CallOption) (network.NetworkV1_AutoWatchPolicerProfileClient, error) {
+	ctx := context.Context(oldctx)
+	prof, err := a.gwSvc.GetServiceProfile("AutoWatchPolicerProfile")
+	if err != nil {
+		return nil, errors.New("unknown service profile")
+	}
+
+	if in.Tenant == "" {
+		in.Tenant = globals.DefaultTenant
+	}
+	in.Namespace = ""
+	oper, kind, tenant, namespace, group := apiintf.WatchOper, "PolicerProfile", in.Tenant, in.Namespace, "network"
+	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, ""), oper, strings.Title(string(oper)))
+	ctx = apigwpkg.NewContextWithOperations(ctx, op)
+	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*api.ListWatchOptions)
+		iws, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwWebSocketWatch)
+		if ok && iws.(bool) {
+			nctx, cancel := context.WithCancel(ctx)
+			ir, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwHTTPReq)
+			if !ok {
+				return nil, errors.New("unable to retrieve request")
+			}
+			iw, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwHTTPWriter)
+			if !ok {
+				return nil, errors.New("unable to retrieve writer")
+			}
+			conn, err := wsUpgrader.Upgrade(iw.(http.ResponseWriter), ir.(*http.Request), nil)
+			if err != nil {
+				log.Errorf("WebSocket Upgrade failed (%s)", err)
+				return nil, err
+			}
+			ctx = apiutils.SetVar(nctx, apiutils.CtxKeyAPIGwWebSocketConn, conn)
+			conn.SetCloseHandler(func(code int, text string) error {
+				cancel()
+				log.Infof("received close notification on websocket [AutoWatchPolicerProfile] (%v/%v)", code, text)
+				return nil
+			})
+			// start a dummy reciever
+			go func() {
+				for {
+					_, _, err := conn.ReadMessage()
+					if err != nil {
+						log.Errorf("received error on websocket receive (%s)", err)
+						cancel()
+						return
+					}
+				}
+			}()
+		}
+		return a.service.AutoWatchPolicerProfile(ctx, in)
+	}
+	ret, err := a.gw.HandleRequest(ctx, in, prof, fn)
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(network.NetworkV1_AutoWatchPolicerProfileClient), err
+}
+
 func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.defSvcProf = apigwpkg.NewServiceProfile(nil, "", "network", apiintf.UnknownOper)
 	e.defSvcProf.SetDefaults()
@@ -2628,6 +2908,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoAddIPAMPolicy"] = apigwpkg.NewServiceProfile(e.defSvcProf, "IPAMPolicy", "network", apiintf.CreateOper)
 
 	e.svcProf["AutoAddNetwork"] = apigwpkg.NewServiceProfile(e.defSvcProf, "Network", "network", apiintf.CreateOper)
+
+	e.svcProf["AutoAddPolicerProfile"] = apigwpkg.NewServiceProfile(e.defSvcProf, "PolicerProfile", "network", apiintf.CreateOper)
 
 	e.svcProf["AutoAddRoutingConfig"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RoutingConfig", "network", apiintf.CreateOper)
 
@@ -2638,6 +2920,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoDeleteIPAMPolicy"] = apigwpkg.NewServiceProfile(e.defSvcProf, "IPAMPolicy", "network", apiintf.DeleteOper)
 
 	e.svcProf["AutoDeleteNetwork"] = apigwpkg.NewServiceProfile(e.defSvcProf, "Network", "network", apiintf.DeleteOper)
+
+	e.svcProf["AutoDeletePolicerProfile"] = apigwpkg.NewServiceProfile(e.defSvcProf, "PolicerProfile", "network", apiintf.DeleteOper)
 
 	e.svcProf["AutoDeleteRoutingConfig"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RoutingConfig", "network", apiintf.DeleteOper)
 
@@ -2650,6 +2934,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoGetNetwork"] = apigwpkg.NewServiceProfile(e.defSvcProf, "Network", "network", apiintf.GetOper)
 
 	e.svcProf["AutoGetNetworkInterface"] = apigwpkg.NewServiceProfile(e.defSvcProf, "NetworkInterface", "network", apiintf.GetOper)
+
+	e.svcProf["AutoGetPolicerProfile"] = apigwpkg.NewServiceProfile(e.defSvcProf, "PolicerProfile", "network", apiintf.GetOper)
 
 	e.svcProf["AutoGetRouteTable"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RouteTable", "network", apiintf.GetOper)
 
@@ -2665,6 +2951,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 
 	e.svcProf["AutoLabelNetworkInterface"] = apigwpkg.NewServiceProfile(e.defSvcProf, "NetworkInterface", "network", apiintf.CreateOper)
 
+	e.svcProf["AutoLabelPolicerProfile"] = apigwpkg.NewServiceProfile(e.defSvcProf, "PolicerProfile", "network", apiintf.CreateOper)
+
 	e.svcProf["AutoLabelRoutingConfig"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RoutingConfig", "network", apiintf.CreateOper)
 
 	e.svcProf["AutoLabelVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouter", "network", apiintf.CreateOper)
@@ -2676,6 +2964,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoListNetwork"] = apigwpkg.NewServiceProfile(e.defSvcProf, "NetworkList", "network", apiintf.ListOper)
 
 	e.svcProf["AutoListNetworkInterface"] = apigwpkg.NewServiceProfile(e.defSvcProf, "NetworkInterfaceList", "network", apiintf.ListOper)
+
+	e.svcProf["AutoListPolicerProfile"] = apigwpkg.NewServiceProfile(e.defSvcProf, "PolicerProfileList", "network", apiintf.ListOper)
 
 	e.svcProf["AutoListRouteTable"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RouteTableList", "network", apiintf.ListOper)
 
@@ -2691,6 +2981,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 
 	e.svcProf["AutoUpdateNetworkInterface"] = apigwpkg.NewServiceProfile(e.defSvcProf, "NetworkInterface", "network", apiintf.UpdateOper)
 
+	e.svcProf["AutoUpdatePolicerProfile"] = apigwpkg.NewServiceProfile(e.defSvcProf, "PolicerProfile", "network", apiintf.UpdateOper)
+
 	e.svcProf["AutoUpdateRoutingConfig"] = apigwpkg.NewServiceProfile(e.defSvcProf, "RoutingConfig", "network", apiintf.UpdateOper)
 
 	e.svcProf["AutoUpdateVirtualRouter"] = apigwpkg.NewServiceProfile(e.defSvcProf, "VirtualRouter", "network", apiintf.UpdateOper)
@@ -2702,6 +2994,8 @@ func (e *sNetworkV1GwService) setupSvcProfile() {
 	e.svcProf["AutoWatchNetwork"] = apigwpkg.NewServiceProfile(e.defSvcProf, "AutoMsgNetworkWatchHelper", "network", apiintf.WatchOper)
 
 	e.svcProf["AutoWatchNetworkInterface"] = apigwpkg.NewServiceProfile(e.defSvcProf, "AutoMsgNetworkInterfaceWatchHelper", "network", apiintf.WatchOper)
+
+	e.svcProf["AutoWatchPolicerProfile"] = apigwpkg.NewServiceProfile(e.defSvcProf, "AutoMsgPolicerProfileWatchHelper", "network", apiintf.WatchOper)
 
 	e.svcProf["AutoWatchRouteTable"] = apigwpkg.NewServiceProfile(e.defSvcProf, "AutoMsgRouteTableWatchHelper", "network", apiintf.WatchOper)
 

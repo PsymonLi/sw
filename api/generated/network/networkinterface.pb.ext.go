@@ -681,6 +681,29 @@ func (m *NetworkInterfaceSpec) References(tenant string, path string, resp map[s
 			resp[tag] = uref
 		}
 	}
+	{
+
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		tag := path + dlmtr + "tx-policer"
+		uref, ok := resp[tag]
+		if !ok {
+			uref = apiintf.ReferenceObj{
+				RefType: apiintf.ReferenceType("NamedRef"),
+				RefKind: "PolicerProfile",
+			}
+		}
+
+		if m.TxPolicer != "" {
+			uref.Refs = append(uref.Refs, globals.ConfigRootPrefix+"/network/"+"policer-profile/"+tenant+"/"+m.TxPolicer)
+		}
+
+		if len(uref.Refs) > 0 {
+			resp[tag] = uref
+		}
+	}
 }
 
 func (m *NetworkInterfaceSpec) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {

@@ -206,6 +206,96 @@ func (h Hal) SubnetDelete(ctx context.Context, req *apuluproto.SubnetDeleteReque
 	}, nil
 }
 
+// DeviceCreate stubbed out
+func (h Hal) DeviceCreate(ctx context.Context, req *apuluproto.DeviceRequest) (*apuluproto.DeviceResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got DeviceCreate Request:")
+	fmt.Println(string(dat))
+
+	return &apuluproto.DeviceResponse{
+		ApiStatus: apuluproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
+// DeviceUpdate stubbed out
+func (h Hal) DeviceUpdate(ctx context.Context, req *apuluproto.DeviceRequest) (*apuluproto.DeviceResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got DeviceUpdate Request:")
+	fmt.Println(string(dat))
+
+	return &apuluproto.DeviceResponse{
+		ApiStatus: apuluproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
+// DeviceDelete stubbed out
+func (h Hal) DeviceDelete(ctx context.Context, req *apuluproto.DeviceDeleteRequest) (*apuluproto.DeviceDeleteResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got DeviceDelete Request:")
+	fmt.Println(string(dat))
+
+	return &apuluproto.DeviceDeleteResponse{
+		ApiStatus: apuluproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
+// DeviceGet stubbed out
+func (h Hal) DeviceGet(ctx context.Context, req *apuluproto.DeviceGetRequest) (*apuluproto.DeviceGetResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got DeviceGet Request:")
+	fmt.Println(string(dat))
+
+	return &apuluproto.DeviceGetResponse{
+		ApiStatus: apuluproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
+// PolicerCreate stubbed out
+func (h Hal) PolicerCreate(ctx context.Context, req *apuluproto.PolicerRequest) (*apuluproto.PolicerResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got PolicerCreate Request:")
+	fmt.Println(string(dat))
+
+	return &apuluproto.PolicerResponse{
+		ApiStatus: apuluproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
+// PolicerUpdate stubbed out
+func (h Hal) PolicerUpdate(ctx context.Context, req *apuluproto.PolicerRequest) (*apuluproto.PolicerResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got PolicerUpdate Request:")
+	fmt.Println(string(dat))
+
+	return &apuluproto.PolicerResponse{
+		ApiStatus: apuluproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
+// PolicerDelete stubbed out
+func (h Hal) PolicerDelete(ctx context.Context, req *apuluproto.PolicerDeleteRequest) (*apuluproto.PolicerDeleteResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got PolicerDelete Request:")
+	fmt.Println(string(dat))
+
+	return &apuluproto.PolicerDeleteResponse{
+		ApiStatus: []apuluproto.ApiStatus{
+			apuluproto.ApiStatus_API_STATUS_OK,
+		},
+	}, nil
+}
+
+// PolicerGet stubbed out
+func (h Hal) PolicerGet(ctx context.Context, req *apuluproto.PolicerGetRequest) (*apuluproto.PolicerGetResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got PolicerGet Request:")
+	fmt.Println(string(dat))
+
+	return &apuluproto.PolicerGetResponse{
+		ApiStatus: apuluproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
 // MirrorSessionCreate stubbed out
 func (h Hal) MirrorSessionCreate(ctx context.Context, req *apuluproto.MirrorSessionRequest) (*apuluproto.MirrorSessionResponse, error) {
 	dat, _ := json.MarshalIndent(req, "", "  ")
@@ -290,6 +380,7 @@ func NewFakeHalServer(listenURL string) *Hal {
 
 	apuluproto.RegisterIfSvcServer(f.Srv, &f)
 	apuluproto.RegisterMirrorSvcServer(f.Srv, &f)
+	apuluproto.RegisterPolicerSvcServer(f.Srv, &f)
 	apuluproto.RegisterSubnetSvcServer(f.Srv, &f)
 	apuluproto.RegisterSecurityPolicySvcServer(f.Srv, &f)
 	apuluproto.RegisterDHCPSvcServer(f.Srv, &f)

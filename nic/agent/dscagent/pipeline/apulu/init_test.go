@@ -27,6 +27,8 @@ var (
 	lis             netutils.TestListenAddr
 	intfClient      halapi.IfSvcClient
 	mirrorClient    halapi.MirrorSvcClient
+	policerClient   halapi.PolicerSvcClient
+	deviceClient    halapi.DeviceSvcClient
 	subnetClient    halapi.SubnetSvcClient
 	secPolicyClient halapi.SecurityPolicySvcClient
 	ipamClient      halapi.DHCPSvcClient
@@ -75,6 +77,8 @@ func TestMain(m *testing.M) {
 	}
 	intfClient = halapi.NewIfSvcClient(conn)
 	mirrorClient = halapi.NewMirrorSvcClient(conn)
+	policerClient = halapi.NewPolicerSvcClient(conn)
+	deviceClient = halapi.NewDeviceSvcClient(conn)
 	subnetClient = halapi.NewSubnetSvcClient(conn)
 	secPolicyClient = halapi.NewSecurityPolicySvcClient(conn)
 	ipamClient = halapi.NewDHCPSvcClient(conn)

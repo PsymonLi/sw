@@ -49,6 +49,7 @@ func TestIPAMPolicyConfig(t *testing.T) {
 	service.AddMethod("IPAMPolicy", meth)
 	service.AddMethod("RoutingConfig", meth)
 	service.AddMethod("VirtualRouterPeeringGroup", meth)
+	service.AddMethod("PolicerProfile", meth)
 
 	s := &networkHooks{
 		svc:    service,
@@ -280,6 +281,12 @@ func TestValidateHooks(t *testing.T) {
 
 	nwif.Spec.Type = network.IFType_UPLINK_ETH.String()
 
+	errs = nh.validateNetworkIntfConfig(nwif, "v1", false, false)
+	Assert(t, len(errs) != 0, "expecting to fail")
+
+	nwif.Spec.AttachTenant = ""
+	nwif.Spec.AttachNetwork = ""
+	nwif.Spec.TxPolicer = "tp1"
 	errs = nh.validateNetworkIntfConfig(nwif, "v1", false, false)
 	Assert(t, len(errs) != 0, "expecting to fail")
 
@@ -638,6 +645,85 @@ func TestNetworkPrecommitHooks(t *testing.T) {
 	nw.Spec.Type = network.NetworkType_Bridged.String()
 	_, kvw, err = nh.checkNetworkMutableFields(ctx, kvs, txn, "/test/key", apiintf.UpdateOper, false, nw)
 	Assert(t, err != nil, "precommit check should fail")
+
+}
+
+func TestPolicerProfileCreate(t *testing.T) {
+	logConfig := &log.Config{
+		Module:      "Network-hooks",
+		Format:      log.LogFmt,
+		Filter:      log.AllowAllFilter,
+		Debug:       false,
+		CtxSelector: log.ContextAll,
+		LogToStdout: true,
+		LogToFile:   false,
+	}
+
+	// Initialize logger config
+	l := log.SetConfig(logConfig)
+	hooks := &networkHooks{
+		logger: l,
+	}
+
+	kvs := &mocks.FakeKvStore{}
+	policer := network.PolicerProfile{
+		TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name: "tp1",
+		},
+		Spec: network.PolicerProfileSpec{
+			Criteria: network.PolicerCriteria{
+				BurstSize:        200,
+				PacketsPerSecond: 10000,
+			},
+			ExceedAction: network.PolicerAction{
+				PolicerAction: network.PolicerAction_DROP.String(),
+			},
+		},
+	}
+	ctx := context.TODO()
+	kvs.Listfn = func(ctx context.Context, prefix string, into runtime.Object) error {
+		policerList, ok := into.(*network.PolicerProfileList)
+		if !ok {
+			return fmt.Errorf("Incorrect output list type")
+		}
+		policerList.Items = append(policerList.Items, &policer)
+		return nil
+	}
+
+	// Create policer
+	err := kvs.Create(ctx, policer.MakeKey(string(apiclient.GroupNetwork)), &policer)
+	AssertOk(t, err, "policer create operation failed")
+
+	// Check for no error in policer config
+	errs := hooks.validatePolicerConfig(policer, "v1", false, false)
+	Assert(t, len(errs) == 0, "expecting to succeed [%v]", errs)
+
+	// Update policer config
+	policer.Spec.Criteria.BytesPerSecond = 5000
+	// Check for error in policer config
+	errs = hooks.validatePolicerConfig(policer, "v1", false, false)
+	Assert(t, len(errs) != 0, "expecting to succeed [%v]", errs)
+
+	// Update policer config
+	policer.Spec.Criteria.BytesPerSecond = 0
+	policer.Spec.Criteria.PacketsPerSecond = 0
+	// Check for error in policer config
+	errs = hooks.validatePolicerConfig(policer, "v1", false, false)
+	Assert(t, len(errs) != 0, "expecting to succeed [%v]", errs)
+
+	// Update policer config
+	policer.Spec.Criteria.PacketsPerSecond = 125
+	// Check for error in policer config
+	errs = hooks.validatePolicerConfig(policer, "v1", false, false)
+	Assert(t, len(errs) != 0, "expecting to succeed [%v]", errs)
+
+	// Update policer config
+	policer.Spec.Criteria.BytesPerSecond = 10
+	policer.Spec.Criteria.PacketsPerSecond = 0
+	// Check for error in policer config
+	errs = hooks.validatePolicerConfig(policer, "v1", false, false)
+	Assert(t, len(errs) != 0, "expecting to succeed [%v]", errs)
 
 }
 

@@ -450,6 +450,7 @@ func convertNetworkInterfaceObject(ifcfg *NetworkInterfaceState) *netproto.Inter
 			Network:            ifcfg.NetworkInterfaceState.Spec.AttachNetwork,
 			ConnectionTracking: ifcfg.NetworkInterfaceState.Spec.ConnectionTracking,
 			MirrorSessions:     ifcfg.mirrorSessions,
+			TxPolicer:          ifcfg.NetworkInterfaceState.Spec.TxPolicer,
 		},
 		Status: netproto.InterfaceStatus{
 			DSC: ifcfg.NetworkInterfaceState.Status.DSC,

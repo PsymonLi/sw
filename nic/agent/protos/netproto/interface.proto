@@ -106,6 +106,9 @@ message InterfaceSpec {
 
     // Connection Tracking knob
     bool ConnectionTracking = 12 [(gogoproto.nullable) = true, (gogoproto.jsontag)= "connection-tracking", (venice.default) = "false"];
+
+    // Policer configuration
+    string TxPolicer        = 13 [(gogoproto.jsontag) = "tx-policer,omitemtpy"];
 }
 
 // InterfaceHostStatus is populated for PF and VF

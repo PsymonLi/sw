@@ -72,6 +72,8 @@ var revProxyConfig = map[string]string{
 	"/api/routingconfigs/":            "http://127.0.0.1:" + globals.AgentRESTPort,
 	"/api/ipam-policies/":             "http://127.0.0.1:" + globals.AgentRESTPort,
 	"/api/mirror/interface-sessions/": "http://127.0.0.1:" + globals.AgentRESTPort,
+	"/api/policer-profiles/":          "http://127.0.0.1:" + globals.AgentRESTPort,
+	"/api/dscconfig/":                 "http://127.0.0.1:" + globals.AgentRESTPort,
 
 	"/api ": "http://127.0.0.1:" + globals.AgentRESTPort,
 

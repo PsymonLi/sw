@@ -233,6 +233,7 @@ type Controller interface {
 	RoutingConfig() RoutingConfigAPI                         // return RoutingConfig API interface
 	RouteTable() RouteTableAPI                               // return RouteTable API interface
 	VirtualRouterPeeringGroup() VirtualRouterPeeringGroupAPI // return VirtualRouterPeeringGroup API interface
+	PolicerProfile() PolicerProfileAPI                       // return PolicerProfile API interface
 	Bucket() BucketAPI                                       // return Bucket API interface
 	Object() ObjectAPI                                       // return Object API interface
 	Orchestrator() OrchestratorAPI                           // return Orchestrator API interface
@@ -634,6 +635,9 @@ func (ct *ctrlerCtx) sweepObjects(kind string, watchTS time.Time) {
 			case "VirtualRouterPeeringGroup":
 				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*VirtualRouterPeeringGroup).VirtualRouterPeeringGroup)}
 				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleVirtualRouterPeeringGroupEventParallel})
+			case "PolicerProfile":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*PolicerProfile).PolicerProfile)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handlePolicerProfileEventParallel})
 			case "Bucket":
 				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Bucket).Bucket)}
 				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleBucketEventParallel})
@@ -845,6 +849,9 @@ func (ct *ctrlerCtx) FindObject(kind string, ometa *api.ObjectMeta) (runtime.Obj
 	case "VirtualRouterPeeringGroup":
 		obj := virtualrouterpeeringgroupAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
+	case "PolicerProfile":
+		obj := policerprofileAPI{}
+		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "Bucket":
 		obj := bucketAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
@@ -1031,6 +1038,9 @@ func (ct *ctrlerCtx) IsPending(kind string, ometa *api.ObjectMeta) (bool, error)
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "VirtualRouterPeeringGroup":
 		obj := virtualrouterpeeringgroupAPI{}
+		key = obj.getFullKey(ometa.Tenant, ometa.Name)
+	case "PolicerProfile":
+		obj := policerprofileAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "Bucket":
 		obj := bucketAPI{}
@@ -1500,6 +1510,9 @@ func (agg *aggwatchAPI) runLoop(wopts *api.AggWatchOptions, reactor AggWatchReac
 						case "VirtualRouterPeeringGroup":
 							wopts.ResourceVersion = ev.Object.(*network.VirtualRouterPeeringGroup).GetResourceVersion()
 							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleVirtualRouterPeeringGroupEventParallel}
+						case "PolicerProfile":
+							wopts.ResourceVersion = ev.Object.(*network.PolicerProfile).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handlePolicerProfileEventParallel}
 						case "Bucket":
 							wopts.ResourceVersion = ev.Object.(*objstore.Bucket).GetResourceVersion()
 							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleBucketEventParallel}
@@ -1885,6 +1898,13 @@ func (agg *aggwatchAPI) Start(reactor AggWatchReactor, kinds []AggKind) error {
 			} else {
 				wopts.WatchOptions = append(wopts.WatchOptions,
 					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetVirtualRouterPeeringGroupWatchOptions()})
+			}
+		case "PolicerProfile":
+			if reactor, ok := kind.Reactor.(PolicerProfileHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "PolicerProfile")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetPolicerProfileWatchOptions()})
 			}
 		case "Bucket":
 			if reactor, ok := kind.Reactor.(BucketHandler); !ok {

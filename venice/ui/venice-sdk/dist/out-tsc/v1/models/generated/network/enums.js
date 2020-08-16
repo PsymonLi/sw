@@ -81,6 +81,10 @@ var NetworkPauseSpec_type;
     NetworkPauseSpec_type["link"] = "link";
     NetworkPauseSpec_type["priority"] = "priority";
 })(NetworkPauseSpec_type = exports.NetworkPauseSpec_type || (exports.NetworkPauseSpec_type = {}));
+var NetworkPolicerAction_policer_action;
+(function (NetworkPolicerAction_policer_action) {
+    NetworkPolicerAction_policer_action["drop"] = "drop";
+})(NetworkPolicerAction_policer_action = exports.NetworkPolicerAction_policer_action || (exports.NetworkPolicerAction_policer_action = {}));
 var NetworkRDSpec_address_family;
 (function (NetworkRDSpec_address_family) {
     NetworkRDSpec_address_family["ipv4-unicast"] = "ipv4-unicast";
@@ -192,6 +196,7 @@ var AllEnums = /** @class */ (function () {
         this.NetworkNetworkSpec_type = NetworkNetworkSpec_type;
         this.NetworkNetworkStatus_oper_state = NetworkNetworkStatus_oper_state;
         this.NetworkPauseSpec_type = NetworkPauseSpec_type;
+        this.NetworkPolicerAction_policer_action = NetworkPolicerAction_policer_action;
         this.NetworkRDSpec_address_family = NetworkRDSpec_address_family;
         this.NetworkRouteDistinguisher_type = NetworkRouteDistinguisher_type;
         this.NetworkTLSServerPolicySpec_client_authentication = NetworkTLSServerPolicySpec_client_authentication;

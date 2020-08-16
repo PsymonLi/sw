@@ -4,7 +4,7 @@ import { Observable } from '../../../../webapp/node_modules/rxjs';
 import { Injectable } from '../../../../webapp/node_modules/@angular/core';
 import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/utility';
 
-import { INetworkIPAMPolicyList,NetworkIPAMPolicyList,IApiStatus,ApiStatus,INetworkIPAMPolicy,NetworkIPAMPolicy,ApiLabel,IApiLabel,INetworkNetworkInterfaceList,NetworkNetworkInterfaceList,INetworkNetworkInterface,NetworkNetworkInterface,INetworkNetworkList,NetworkNetworkList,INetworkNetwork,NetworkNetwork,INetworkRouteTableList,NetworkRouteTableList,INetworkRouteTable,NetworkRouteTable,INetworkRoutingConfigList,NetworkRoutingConfigList,INetworkRoutingConfig,NetworkRoutingConfig,INetworkVirtualRouterPeeringGroupList,NetworkVirtualRouterPeeringGroupList,INetworkVirtualRouterPeeringGroup,NetworkVirtualRouterPeeringGroup,INetworkVirtualRouterList,NetworkVirtualRouterList,INetworkVirtualRouter,NetworkVirtualRouter,INetworkAutoMsgIPAMPolicyWatchHelper,NetworkAutoMsgIPAMPolicyWatchHelper,INetworkAutoMsgNetworkInterfaceWatchHelper,NetworkAutoMsgNetworkInterfaceWatchHelper,INetworkAutoMsgNetworkWatchHelper,NetworkAutoMsgNetworkWatchHelper,INetworkAutoMsgRouteTableWatchHelper,NetworkAutoMsgRouteTableWatchHelper,INetworkAutoMsgRoutingConfigWatchHelper,NetworkAutoMsgRoutingConfigWatchHelper,INetworkAutoMsgVirtualRouterPeeringGroupWatchHelper,NetworkAutoMsgVirtualRouterPeeringGroupWatchHelper,INetworkAutoMsgVirtualRouterWatchHelper,NetworkAutoMsgVirtualRouterWatchHelper } from '../../models/generated/network';
+import { INetworkIPAMPolicyList,NetworkIPAMPolicyList,IApiStatus,ApiStatus,INetworkIPAMPolicy,NetworkIPAMPolicy,ApiLabel,IApiLabel,INetworkNetworkInterfaceList,NetworkNetworkInterfaceList,INetworkNetworkInterface,NetworkNetworkInterface,INetworkNetworkList,NetworkNetworkList,INetworkNetwork,NetworkNetwork,INetworkPolicerProfileList,NetworkPolicerProfileList,INetworkPolicerProfile,NetworkPolicerProfile,INetworkRouteTableList,NetworkRouteTableList,INetworkRouteTable,NetworkRouteTable,INetworkRoutingConfigList,NetworkRoutingConfigList,INetworkRoutingConfig,NetworkRoutingConfig,INetworkVirtualRouterPeeringGroupList,NetworkVirtualRouterPeeringGroupList,INetworkVirtualRouterPeeringGroup,NetworkVirtualRouterPeeringGroup,INetworkVirtualRouterList,NetworkVirtualRouterList,INetworkVirtualRouter,NetworkVirtualRouter,INetworkAutoMsgIPAMPolicyWatchHelper,NetworkAutoMsgIPAMPolicyWatchHelper,INetworkAutoMsgNetworkInterfaceWatchHelper,NetworkAutoMsgNetworkInterfaceWatchHelper,INetworkAutoMsgNetworkWatchHelper,NetworkAutoMsgNetworkWatchHelper,INetworkAutoMsgPolicerProfileWatchHelper,NetworkAutoMsgPolicerProfileWatchHelper,INetworkAutoMsgRouteTableWatchHelper,NetworkAutoMsgRouteTableWatchHelper,INetworkAutoMsgRoutingConfigWatchHelper,NetworkAutoMsgRoutingConfigWatchHelper,INetworkAutoMsgVirtualRouterPeeringGroupWatchHelper,NetworkAutoMsgVirtualRouterPeeringGroupWatchHelper,INetworkAutoMsgVirtualRouterWatchHelper,NetworkAutoMsgVirtualRouterWatchHelper } from '../../models/generated/network';
 
 @Injectable()
 export class Networkv1Service extends AbstractService {
@@ -24,6 +24,7 @@ export class Networkv1Service extends AbstractService {
     'NetworkRoutingConfig': 100,
     'NetworkIPAMPolicy': 100,
     'NetworkNetwork': 100,
+    'NetworkPolicerProfile': 100,
     'NetworkRouteTable': 100,
     'NetworkVirtualRouterPeeringGroup': 100,
     'NetworkVirtualRouter': 100,
@@ -310,6 +311,112 @@ export class Networkv1Service extends AbstractService {
       body = TrimDefaultsAndEmptyFields(body, new ApiLabel(body), null, trimDefaults)
     }
     return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkNetwork | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** List PolicerProfile objects */
+  public ListPolicerProfile_1(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkPolicerProfileList | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/policer-profile';
+    const opts = {
+      eventID: 'ListPolicerProfile_1',
+      objType: 'NetworkPolicerProfileList',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkPolicerProfileList | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Create PolicerProfile object */
+  public AddPolicerProfile_1(body: INetworkPolicerProfile, stagingID: string = "", trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/policer-profile';
+    const opts = {
+      eventID: 'AddPolicerProfile_1',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new NetworkPolicerProfile(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Get PolicerProfile object */
+  public GetPolicerProfile_1(O_Name, queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/policer-profile/{O.Name}';
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'GetPolicerProfile_1',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Delete PolicerProfile object */
+  public DeletePolicerProfile_1(O_Name, stagingID: string = ""):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/policer-profile/{O.Name}';
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'DeletePolicerProfile_1',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXDeleteCall(url, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Update PolicerProfile object */
+  public UpdatePolicerProfile_1(O_Name, body: INetworkPolicerProfile, stagingID: string = "", previousVal: INetworkPolicerProfile = null, trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/policer-profile/{O.Name}';
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'UpdatePolicerProfile_1',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new NetworkPolicerProfile(body), previousVal, trimDefaults)
+    }
+    return this.invokeAJAXPutCall(url, body, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Label PolicerProfile object */
+  public LabelPolicerProfile_1(O_Name, body: IApiLabel, stagingID: string = "", trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/policer-profile/{O.Name}/label';
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'LabelPolicerProfile_1',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new ApiLabel(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
   }
   
   /** List RouteTable objects */
@@ -671,6 +778,118 @@ export class Networkv1Service extends AbstractService {
       body = TrimDefaultsAndEmptyFields(body, new ApiLabel(body), null, trimDefaults)
     }
     return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkNetwork | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** List PolicerProfile objects */
+  public ListPolicerProfile(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkPolicerProfileList | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/policer-profile';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    const opts = {
+      eventID: 'ListPolicerProfile',
+      objType: 'NetworkPolicerProfileList',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkPolicerProfileList | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Create PolicerProfile object */
+  public AddPolicerProfile(body: INetworkPolicerProfile, stagingID: string = "", trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/policer-profile';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    const opts = {
+      eventID: 'AddPolicerProfile',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new NetworkPolicerProfile(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Get PolicerProfile object */
+  public GetPolicerProfile(O_Name, queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/policer-profile/{O.Name}';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'GetPolicerProfile',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Delete PolicerProfile object */
+  public DeletePolicerProfile(O_Name, stagingID: string = ""):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/policer-profile/{O.Name}';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'DeletePolicerProfile',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXDeleteCall(url, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Update PolicerProfile object */
+  public UpdatePolicerProfile(O_Name, body: INetworkPolicerProfile, stagingID: string = "", previousVal: INetworkPolicerProfile = null, trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/policer-profile/{O.Name}';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'UpdatePolicerProfile',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new NetworkPolicerProfile(body), previousVal, trimDefaults)
+    }
+    return this.invokeAJAXPutCall(url, body, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Label PolicerProfile object */
+  public LabelPolicerProfile(O_Name, body: IApiLabel, stagingID: string = "", trimObject: boolean = true, trimDefaults: boolean = true):Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/tenant/{O.Tenant}/policer-profile/{O.Name}/label';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    url = url.replace('{O.Name}', O_Name);
+    const opts = {
+      eventID: 'LabelPolicerProfile',
+      objType: 'NetworkPolicerProfile',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    body = TrimUIFields(body)
+    if (trimObject) {
+      body = TrimDefaultsAndEmptyFields(body, new ApiLabel(body), null, trimDefaults)
+    }
+    return this.invokeAJAXPostCall(url, body, opts) as Observable<{body: INetworkPolicerProfile | IApiStatus | Error, statusCode: number}>;
   }
   
   /** List RouteTable objects */
@@ -1187,6 +1406,21 @@ export class Networkv1Service extends AbstractService {
     return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkAutoMsgNetworkWatchHelper | IApiStatus | Error, statusCode: number}>;
   }
   
+  /** Watch PolicerProfile objects. Supports WebSockets or HTTP long poll */
+  public WatchPolicerProfile_1(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkAutoMsgPolicerProfileWatchHelper | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/watch/policer-profile';
+    const opts = {
+      eventID: 'WatchPolicerProfile_1',
+      objType: 'NetworkAutoMsgPolicerProfileWatchHelper',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkAutoMsgPolicerProfileWatchHelper | IApiStatus | Error, statusCode: number}>;
+  }
+  
   /** Watch RouteTable objects. Supports WebSockets or HTTP long poll */
   public WatchRouteTable_1(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkAutoMsgRouteTableWatchHelper | IApiStatus | Error, statusCode: number}> {
     let url = this['baseUrlAndPort'] + '/configs/network/v1/watch/route-tables';
@@ -1247,6 +1481,22 @@ export class Networkv1Service extends AbstractService {
       opts.isStaging = true;
     }
     return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkAutoMsgNetworkWatchHelper | IApiStatus | Error, statusCode: number}>;
+  }
+  
+  /** Watch PolicerProfile objects. Supports WebSockets or HTTP long poll */
+  public WatchPolicerProfile(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkAutoMsgPolicerProfileWatchHelper | IApiStatus | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/configs/network/v1/watch/tenant/{O.Tenant}/policer-profile';
+    url = url.replace('{O.Tenant}', this['O_Tenant']);
+    const opts = {
+      eventID: 'WatchPolicerProfile',
+      objType: 'NetworkAutoMsgPolicerProfileWatchHelper',
+      isStaging: false,
+    }
+    if (stagingID != null && stagingID.length != 0) {
+      url = url.replace('configs', 'staging/' + stagingID);
+      opts.isStaging = true;
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: INetworkAutoMsgPolicerProfileWatchHelper | IApiStatus | Error, statusCode: number}>;
   }
   
   /** Watch RouteTable objects. Supports WebSockets or HTTP long poll */
@@ -1357,6 +1607,14 @@ export class Networkv1Service extends AbstractService {
 
   public ListNetworkCache(): Observable<ServerEvent<NetworkNetwork>> {
     return this.getFromDataCache(`NetworkNetwork`, () => { return this.createListNetworkCache() });
+  }
+  
+  protected createListPolicerProfileCache(): Observable<ServerEvent<NetworkPolicerProfile>> {
+    return this.createDataCache<NetworkPolicerProfile>(NetworkPolicerProfile, `NetworkPolicerProfile`, () => this.ListPolicerProfile(), (body: any) => this.WatchPolicerProfile(body), this.bufferDelayMap);
+  }
+
+  public ListPolicerProfileCache(): Observable<ServerEvent<NetworkPolicerProfile>> {
+    return this.getFromDataCache(`NetworkPolicerProfile`, () => { return this.createListPolicerProfileCache() });
   }
   
   protected createListRouteTableCache(): Observable<ServerEvent<NetworkRouteTable>> {

@@ -30,6 +30,58 @@ func addDummyVrf() (string, error) {
 	return vrf.UUID, infraAPI.Store(vrf.Kind, vrf.GetKey(), dat)
 }
 
+func addPolicer() (string, error) {
+
+	policer := netproto.PolicerProfile{
+		TypeMeta: api.TypeMeta{Kind: "PolicerProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "TestPolicer",
+			UUID:      uuid.NewV4().String(),
+		},
+	}
+	dat, _ := policer.Marshal()
+
+	return policer.Name, infraAPI.Store(policer.Kind, policer.GetKey(), dat)
+}
+
+func TestHandleInterfacePolicer(t *testing.T) {
+	intf := netproto.Interface{
+		TypeMeta: api.TypeMeta{Kind: "Interface"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "default",
+			Namespace: "default",
+			Name:      "testInterface",
+			UUID:      uuid.NewV4().String(),
+		},
+		Spec: netproto.InterfaceSpec{
+			Type:        "HOST_PF",
+			AdminStatus: "UP",
+			VrfName:     "default",
+		},
+		Status: netproto.InterfaceStatus{
+			InterfaceID:   42,
+			InterfaceUUID: uuid.NewV4().String(),
+			IFUplinkStatus: netproto.InterfaceUplinkStatus{
+				PortID: 42,
+			},
+		},
+	}
+
+	if _, err := addDummyVrf(); err != nil {
+		t.Fatal(err)
+	}
+	policerName, err := addPolicer()
+	if err == nil {
+		intf.Spec.TxPolicer = policerName
+	}
+	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Create, intf, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestHandleInterface(t *testing.T) {
 	intf := netproto.Interface{
 		TypeMeta: api.TypeMeta{Kind: "Interface"},

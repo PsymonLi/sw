@@ -1,0 +1,78 @@
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved.
+
+syntax = "proto3";
+
+package netproto;
+
+// Mandatory imports.
+import "google/api/annotations.proto";
+import public "github.com/pensando/sw/venice/utils/apigen/annotations/includes.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github.com/pensando/sw/api/meta.proto";
+
+// policer controller api
+service PolicerProfileApiV1 {
+    // options for auto generating rest endpoints
+    option(venice.naplesRestService) = {
+        Object: "PolicerProfile",
+        Method: ["list", "get", "post", "delete", "put"],
+        Pattern: "/{ObjectMeta.Tenant}/{ObjectMeta.Namespace}/{ObjectMeta.Name}"
+        Prefix: "api/policers"
+        Version: "V1"
+    };
+
+    rpc ListPolicerProfiles (api.ListWatchOptions) returns (PolicerProfileList) {};
+    rpc WatchPolicerProfiles (api.ListWatchOptions) returns (stream PolicerProfileEventList) {};
+    rpc PolicerProfileOperUpdate (stream PolicerProfileEvent) returns (api.TypeMeta) {};
+}
+
+// ----------------------------- PolicerProfile Object -----------------------------
+
+message PolicerAction {
+    enum Action {
+        DENY    = 0;
+    }
+    string PolicerAction    = 1 [(gogoproto.jsontag) = "policer-action,omitempty", (venice.check) = "StrEnum(PolicerAction.Action)"];
+}
+
+message PolicerCriteria {
+    // Bytes per second as policer criteria
+    uint64 BytesPerSecond   = 1 [(gogoproto.jsontag) = "bytes-per-second,omitempty"];
+    // Packets per second as policer criteria
+    uint64 PacketsPerSecond = 2 [(gogoproto.jsontag) = "packets-per-second,omitempty"];
+    // Burst size in number of packets/bytes as policer criteria
+    uint64 BurstSize        = 3 [(gogoproto.jsontag) = "burst-size,omitempty"];
+}
+
+message PolicerProfileSpec {
+    // Policer Profile Criteria
+    PolicerCriteria Criteria    = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "criteria"];
+
+    // Policer Profile Action
+    PolicerAction ExceedAction  = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "exceed-action"];
+}
+
+message PolicerProfileStatus {
+    uint64 PolicerProfileID  = 1 [(gogoproto.jsontag) = "id,omitempty"];
+}
+
+message PolicerProfileEvent {
+    api.EventType EventType          = 1 [(gogoproto.jsontag) = "event-type,omitempty"];
+    PolicerProfile PolicerProfile    = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "policer-profile,omitempty"];
+}
+
+message PolicerProfileEventList {
+    repeated PolicerProfileEvent policerProfileEvents =1;
+}
+
+message PolicerProfileList {
+    repeated PolicerProfile policerProfiles = 1;
+}
+
+// PolicerProfile
+message PolicerProfile {
+    api.TypeMeta T              = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta O            = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,omitempty"];
+    PolicerProfileSpec Spec     = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec,omitempty"];
+    PolicerProfileStatus Status = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status,omitempty"];
+}

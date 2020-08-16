@@ -25,6 +25,7 @@ export interface INetworkNetworkInterfaceSpec {
     'ip-config'?: IClusterIPConfig;
     'mac-address'?: string;
     'connection-tracking'?: boolean;
+    'tx-policer'?: string;
     '_ui'?: any;
 }
 
@@ -52,6 +53,7 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
     'mac-address': string = null;
     /** ConnectionTracking enables connection tracking on the interface. This is valid only for HOST_PF type. */
     'connection-tracking': boolean = null;
+    'tx-policer': string = null;
     public static propInfo: { [prop in keyof INetworkNetworkInterfaceSpec]: PropInfoItem } = {
         'admin-status': {
             enum: NetworkNetworkInterfaceSpec_admin_status,
@@ -113,6 +115,10 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
             description:  `ConnectionTracking enables connection tracking on the interface. This is valid only for HOST_PF type.`,
             required: false,
             type: 'boolean'
+        },
+        'tx-policer': {
+            required: false,
+            type: 'string'
         },
     }
 
@@ -225,6 +231,13 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
         } else {
             this['connection-tracking'] = null
         }
+        if (values && values['tx-policer'] != null) {
+            this['tx-policer'] = values['tx-policer'];
+        } else if (fillDefaults && NetworkNetworkInterfaceSpec.hasDefaultValue('tx-policer')) {
+            this['tx-policer'] = NetworkNetworkInterfaceSpec.propInfo['tx-policer'].default;
+        } else {
+            this['tx-policer'] = null
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -243,6 +256,7 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
                 'ip-config': CustomFormGroup(this['ip-config'].$formGroup, NetworkNetworkInterfaceSpec.propInfo['ip-config'].required),
                 'mac-address': CustomFormControl(new FormControl(this['mac-address']), NetworkNetworkInterfaceSpec.propInfo['mac-address']),
                 'connection-tracking': CustomFormControl(new FormControl(this['connection-tracking']), NetworkNetworkInterfaceSpec.propInfo['connection-tracking']),
+                'tx-policer': CustomFormControl(new FormControl(this['tx-policer']), NetworkNetworkInterfaceSpec.propInfo['tx-policer']),
             });
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('pause') as FormGroup).controls).forEach(field => {
@@ -275,6 +289,7 @@ export class NetworkNetworkInterfaceSpec extends BaseModel implements INetworkNe
             this['ip-config'].setFormGroupValuesToBeModelValues();
             this._formGroup.controls['mac-address'].setValue(this['mac-address']);
             this._formGroup.controls['connection-tracking'].setValue(this['connection-tracking']);
+            this._formGroup.controls['tx-policer'].setValue(this['tx-policer']);
         }
     }
 }

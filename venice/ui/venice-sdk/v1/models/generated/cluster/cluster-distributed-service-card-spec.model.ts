@@ -21,6 +21,8 @@ export interface IClusterDistributedServiceCardSpec {
     'controllers'?: Array<string>;
     'routing-config'?: string;
     'dscprofile'?: string;
+    'policer-attach-tenant'?: string;
+    'tx-policer'?: string;
     '_ui'?: any;
 }
 
@@ -45,6 +47,9 @@ export class ClusterDistributedServiceCardSpec extends BaseModel implements IClu
     /** RoutingConfig is the routing configuration for the underlay routed network that this DSC participates in. */
     'routing-config': string = null;
     'dscprofile': string = null;
+    'policer-attach-tenant': string = null;
+    /** Policer to be applied in Tx direction. */
+    'tx-policer': string = null;
     public static propInfo: { [prop in keyof IClusterDistributedServiceCardSpec]: PropInfoItem } = {
         'admit': {
             description:  `Admit allows a DistributedServiceCard to join the cluster.`,
@@ -91,6 +96,16 @@ export class ClusterDistributedServiceCardSpec extends BaseModel implements IClu
             type: 'string'
         },
         'dscprofile': {
+            required: false,
+            type: 'string'
+        },
+        'policer-attach-tenant': {
+            default: 'default',
+            required: false,
+            type: 'string'
+        },
+        'tx-policer': {
+            description:  `Policer to be applied in Tx direction.`,
             required: false,
             type: 'string'
         },
@@ -193,6 +208,20 @@ export class ClusterDistributedServiceCardSpec extends BaseModel implements IClu
         } else {
             this['dscprofile'] = null
         }
+        if (values && values['policer-attach-tenant'] != null) {
+            this['policer-attach-tenant'] = values['policer-attach-tenant'];
+        } else if (fillDefaults && ClusterDistributedServiceCardSpec.hasDefaultValue('policer-attach-tenant')) {
+            this['policer-attach-tenant'] = ClusterDistributedServiceCardSpec.propInfo['policer-attach-tenant'].default;
+        } else {
+            this['policer-attach-tenant'] = null
+        }
+        if (values && values['tx-policer'] != null) {
+            this['tx-policer'] = values['tx-policer'];
+        } else if (fillDefaults && ClusterDistributedServiceCardSpec.hasDefaultValue('tx-policer')) {
+            this['tx-policer'] = ClusterDistributedServiceCardSpec.propInfo['tx-policer'].default;
+        } else {
+            this['tx-policer'] = null
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -209,6 +238,8 @@ export class ClusterDistributedServiceCardSpec extends BaseModel implements IClu
                 'controllers': CustomFormControl(new FormControl(this['controllers']), ClusterDistributedServiceCardSpec.propInfo['controllers']),
                 'routing-config': CustomFormControl(new FormControl(this['routing-config']), ClusterDistributedServiceCardSpec.propInfo['routing-config']),
                 'dscprofile': CustomFormControl(new FormControl(this['dscprofile']), ClusterDistributedServiceCardSpec.propInfo['dscprofile']),
+                'policer-attach-tenant': CustomFormControl(new FormControl(this['policer-attach-tenant']), ClusterDistributedServiceCardSpec.propInfo['policer-attach-tenant']),
+                'tx-policer': CustomFormControl(new FormControl(this['tx-policer']), ClusterDistributedServiceCardSpec.propInfo['tx-policer']),
             });
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('ip-config') as FormGroup).controls).forEach(field => {
@@ -234,6 +265,8 @@ export class ClusterDistributedServiceCardSpec extends BaseModel implements IClu
             this._formGroup.controls['controllers'].setValue(this['controllers']);
             this._formGroup.controls['routing-config'].setValue(this['routing-config']);
             this._formGroup.controls['dscprofile'].setValue(this['dscprofile']);
+            this._formGroup.controls['policer-attach-tenant'].setValue(this['policer-attach-tenant']);
+            this._formGroup.controls['tx-policer'].setValue(this['tx-policer']);
         }
     }
 }

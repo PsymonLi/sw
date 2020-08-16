@@ -47,6 +47,7 @@ type EndpointsNetworkV1Client struct {
 	AutoAddLbPolicyEndpoint                     endpoint.Endpoint
 	AutoAddNetworkEndpoint                      endpoint.Endpoint
 	AutoAddNetworkInterfaceEndpoint             endpoint.Endpoint
+	AutoAddPolicerProfileEndpoint               endpoint.Endpoint
 	AutoAddRouteTableEndpoint                   endpoint.Endpoint
 	AutoAddRoutingConfigEndpoint                endpoint.Endpoint
 	AutoAddServiceEndpoint                      endpoint.Endpoint
@@ -56,6 +57,7 @@ type EndpointsNetworkV1Client struct {
 	AutoDeleteLbPolicyEndpoint                  endpoint.Endpoint
 	AutoDeleteNetworkEndpoint                   endpoint.Endpoint
 	AutoDeleteNetworkInterfaceEndpoint          endpoint.Endpoint
+	AutoDeletePolicerProfileEndpoint            endpoint.Endpoint
 	AutoDeleteRouteTableEndpoint                endpoint.Endpoint
 	AutoDeleteRoutingConfigEndpoint             endpoint.Endpoint
 	AutoDeleteServiceEndpoint                   endpoint.Endpoint
@@ -65,6 +67,7 @@ type EndpointsNetworkV1Client struct {
 	AutoGetLbPolicyEndpoint                     endpoint.Endpoint
 	AutoGetNetworkEndpoint                      endpoint.Endpoint
 	AutoGetNetworkInterfaceEndpoint             endpoint.Endpoint
+	AutoGetPolicerProfileEndpoint               endpoint.Endpoint
 	AutoGetRouteTableEndpoint                   endpoint.Endpoint
 	AutoGetRoutingConfigEndpoint                endpoint.Endpoint
 	AutoGetServiceEndpoint                      endpoint.Endpoint
@@ -74,6 +77,7 @@ type EndpointsNetworkV1Client struct {
 	AutoLabelLbPolicyEndpoint                   endpoint.Endpoint
 	AutoLabelNetworkEndpoint                    endpoint.Endpoint
 	AutoLabelNetworkInterfaceEndpoint           endpoint.Endpoint
+	AutoLabelPolicerProfileEndpoint             endpoint.Endpoint
 	AutoLabelRouteTableEndpoint                 endpoint.Endpoint
 	AutoLabelRoutingConfigEndpoint              endpoint.Endpoint
 	AutoLabelServiceEndpoint                    endpoint.Endpoint
@@ -83,6 +87,7 @@ type EndpointsNetworkV1Client struct {
 	AutoListLbPolicyEndpoint                    endpoint.Endpoint
 	AutoListNetworkEndpoint                     endpoint.Endpoint
 	AutoListNetworkInterfaceEndpoint            endpoint.Endpoint
+	AutoListPolicerProfileEndpoint              endpoint.Endpoint
 	AutoListRouteTableEndpoint                  endpoint.Endpoint
 	AutoListRoutingConfigEndpoint               endpoint.Endpoint
 	AutoListServiceEndpoint                     endpoint.Endpoint
@@ -92,6 +97,7 @@ type EndpointsNetworkV1Client struct {
 	AutoUpdateLbPolicyEndpoint                  endpoint.Endpoint
 	AutoUpdateNetworkEndpoint                   endpoint.Endpoint
 	AutoUpdateNetworkInterfaceEndpoint          endpoint.Endpoint
+	AutoUpdatePolicerProfileEndpoint            endpoint.Endpoint
 	AutoUpdateRouteTableEndpoint                endpoint.Endpoint
 	AutoUpdateRoutingConfigEndpoint             endpoint.Endpoint
 	AutoUpdateServiceEndpoint                   endpoint.Endpoint
@@ -110,6 +116,7 @@ type EndpointsNetworkV1RestClient struct {
 	AutoAddLbPolicyEndpoint                     endpoint.Endpoint
 	AutoAddNetworkEndpoint                      endpoint.Endpoint
 	AutoAddNetworkInterfaceEndpoint             endpoint.Endpoint
+	AutoAddPolicerProfileEndpoint               endpoint.Endpoint
 	AutoAddRouteTableEndpoint                   endpoint.Endpoint
 	AutoAddRoutingConfigEndpoint                endpoint.Endpoint
 	AutoAddServiceEndpoint                      endpoint.Endpoint
@@ -119,6 +126,7 @@ type EndpointsNetworkV1RestClient struct {
 	AutoDeleteLbPolicyEndpoint                  endpoint.Endpoint
 	AutoDeleteNetworkEndpoint                   endpoint.Endpoint
 	AutoDeleteNetworkInterfaceEndpoint          endpoint.Endpoint
+	AutoDeletePolicerProfileEndpoint            endpoint.Endpoint
 	AutoDeleteRouteTableEndpoint                endpoint.Endpoint
 	AutoDeleteRoutingConfigEndpoint             endpoint.Endpoint
 	AutoDeleteServiceEndpoint                   endpoint.Endpoint
@@ -128,6 +136,7 @@ type EndpointsNetworkV1RestClient struct {
 	AutoGetLbPolicyEndpoint                     endpoint.Endpoint
 	AutoGetNetworkEndpoint                      endpoint.Endpoint
 	AutoGetNetworkInterfaceEndpoint             endpoint.Endpoint
+	AutoGetPolicerProfileEndpoint               endpoint.Endpoint
 	AutoGetRouteTableEndpoint                   endpoint.Endpoint
 	AutoGetRoutingConfigEndpoint                endpoint.Endpoint
 	AutoGetServiceEndpoint                      endpoint.Endpoint
@@ -137,6 +146,7 @@ type EndpointsNetworkV1RestClient struct {
 	AutoLabelLbPolicyEndpoint                   endpoint.Endpoint
 	AutoLabelNetworkEndpoint                    endpoint.Endpoint
 	AutoLabelNetworkInterfaceEndpoint           endpoint.Endpoint
+	AutoLabelPolicerProfileEndpoint             endpoint.Endpoint
 	AutoLabelRouteTableEndpoint                 endpoint.Endpoint
 	AutoLabelRoutingConfigEndpoint              endpoint.Endpoint
 	AutoLabelServiceEndpoint                    endpoint.Endpoint
@@ -146,6 +156,7 @@ type EndpointsNetworkV1RestClient struct {
 	AutoListLbPolicyEndpoint                    endpoint.Endpoint
 	AutoListNetworkEndpoint                     endpoint.Endpoint
 	AutoListNetworkInterfaceEndpoint            endpoint.Endpoint
+	AutoListPolicerProfileEndpoint              endpoint.Endpoint
 	AutoListRouteTableEndpoint                  endpoint.Endpoint
 	AutoListRoutingConfigEndpoint               endpoint.Endpoint
 	AutoListServiceEndpoint                     endpoint.Endpoint
@@ -155,6 +166,7 @@ type EndpointsNetworkV1RestClient struct {
 	AutoUpdateLbPolicyEndpoint                  endpoint.Endpoint
 	AutoUpdateNetworkEndpoint                   endpoint.Endpoint
 	AutoUpdateNetworkInterfaceEndpoint          endpoint.Endpoint
+	AutoUpdatePolicerProfileEndpoint            endpoint.Endpoint
 	AutoUpdateRouteTableEndpoint                endpoint.Endpoint
 	AutoUpdateRoutingConfigEndpoint             endpoint.Endpoint
 	AutoUpdateServiceEndpoint                   endpoint.Endpoint
@@ -164,6 +176,7 @@ type EndpointsNetworkV1RestClient struct {
 	AutoWatchLbPolicyEndpoint                   endpoint.Endpoint
 	AutoWatchNetworkEndpoint                    endpoint.Endpoint
 	AutoWatchNetworkInterfaceEndpoint           endpoint.Endpoint
+	AutoWatchPolicerProfileEndpoint             endpoint.Endpoint
 	AutoWatchRouteTableEndpoint                 endpoint.Endpoint
 	AutoWatchRoutingConfigEndpoint              endpoint.Endpoint
 	AutoWatchServiceEndpoint                    endpoint.Endpoint
@@ -183,6 +196,7 @@ type EndpointsNetworkV1Server struct {
 	AutoAddLbPolicyEndpoint                     endpoint.Endpoint
 	AutoAddNetworkEndpoint                      endpoint.Endpoint
 	AutoAddNetworkInterfaceEndpoint             endpoint.Endpoint
+	AutoAddPolicerProfileEndpoint               endpoint.Endpoint
 	AutoAddRouteTableEndpoint                   endpoint.Endpoint
 	AutoAddRoutingConfigEndpoint                endpoint.Endpoint
 	AutoAddServiceEndpoint                      endpoint.Endpoint
@@ -192,6 +206,7 @@ type EndpointsNetworkV1Server struct {
 	AutoDeleteLbPolicyEndpoint                  endpoint.Endpoint
 	AutoDeleteNetworkEndpoint                   endpoint.Endpoint
 	AutoDeleteNetworkInterfaceEndpoint          endpoint.Endpoint
+	AutoDeletePolicerProfileEndpoint            endpoint.Endpoint
 	AutoDeleteRouteTableEndpoint                endpoint.Endpoint
 	AutoDeleteRoutingConfigEndpoint             endpoint.Endpoint
 	AutoDeleteServiceEndpoint                   endpoint.Endpoint
@@ -201,6 +216,7 @@ type EndpointsNetworkV1Server struct {
 	AutoGetLbPolicyEndpoint                     endpoint.Endpoint
 	AutoGetNetworkEndpoint                      endpoint.Endpoint
 	AutoGetNetworkInterfaceEndpoint             endpoint.Endpoint
+	AutoGetPolicerProfileEndpoint               endpoint.Endpoint
 	AutoGetRouteTableEndpoint                   endpoint.Endpoint
 	AutoGetRoutingConfigEndpoint                endpoint.Endpoint
 	AutoGetServiceEndpoint                      endpoint.Endpoint
@@ -210,6 +226,7 @@ type EndpointsNetworkV1Server struct {
 	AutoLabelLbPolicyEndpoint                   endpoint.Endpoint
 	AutoLabelNetworkEndpoint                    endpoint.Endpoint
 	AutoLabelNetworkInterfaceEndpoint           endpoint.Endpoint
+	AutoLabelPolicerProfileEndpoint             endpoint.Endpoint
 	AutoLabelRouteTableEndpoint                 endpoint.Endpoint
 	AutoLabelRoutingConfigEndpoint              endpoint.Endpoint
 	AutoLabelServiceEndpoint                    endpoint.Endpoint
@@ -219,6 +236,7 @@ type EndpointsNetworkV1Server struct {
 	AutoListLbPolicyEndpoint                    endpoint.Endpoint
 	AutoListNetworkEndpoint                     endpoint.Endpoint
 	AutoListNetworkInterfaceEndpoint            endpoint.Endpoint
+	AutoListPolicerProfileEndpoint              endpoint.Endpoint
 	AutoListRouteTableEndpoint                  endpoint.Endpoint
 	AutoListRoutingConfigEndpoint               endpoint.Endpoint
 	AutoListServiceEndpoint                     endpoint.Endpoint
@@ -228,6 +246,7 @@ type EndpointsNetworkV1Server struct {
 	AutoUpdateLbPolicyEndpoint                  endpoint.Endpoint
 	AutoUpdateNetworkEndpoint                   endpoint.Endpoint
 	AutoUpdateNetworkInterfaceEndpoint          endpoint.Endpoint
+	AutoUpdatePolicerProfileEndpoint            endpoint.Endpoint
 	AutoUpdateRouteTableEndpoint                endpoint.Endpoint
 	AutoUpdateRoutingConfigEndpoint             endpoint.Endpoint
 	AutoUpdateServiceEndpoint                   endpoint.Endpoint
@@ -243,6 +262,7 @@ type EndpointsNetworkV1Server struct {
 	watchHandlerRoutingConfig             func(options *api.ListWatchOptions, stream grpc.ServerStream) error
 	watchHandlerRouteTable                func(options *api.ListWatchOptions, stream grpc.ServerStream) error
 	watchHandlerVirtualRouterPeeringGroup func(options *api.ListWatchOptions, stream grpc.ServerStream) error
+	watchHandlerPolicerProfile            func(options *api.ListWatchOptions, stream grpc.ServerStream) error
 }
 
 // AutoAddIPAMPolicy is endpoint for AutoAddIPAMPolicy
@@ -298,6 +318,20 @@ func (e EndpointsNetworkV1Client) AutoAddNetworkInterface(ctx context.Context, i
 
 type respNetworkV1AutoAddNetworkInterface struct {
 	V   NetworkInterface
+	Err error
+}
+
+// AutoAddPolicerProfile is endpoint for AutoAddPolicerProfile
+func (e EndpointsNetworkV1Client) AutoAddPolicerProfile(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error) {
+	resp, err := e.AutoAddPolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return &PolicerProfile{}, err
+	}
+	return resp.(*PolicerProfile), nil
+}
+
+type respNetworkV1AutoAddPolicerProfile struct {
+	V   PolicerProfile
 	Err error
 }
 
@@ -427,6 +461,20 @@ type respNetworkV1AutoDeleteNetworkInterface struct {
 	Err error
 }
 
+// AutoDeletePolicerProfile is endpoint for AutoDeletePolicerProfile
+func (e EndpointsNetworkV1Client) AutoDeletePolicerProfile(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error) {
+	resp, err := e.AutoDeletePolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return &PolicerProfile{}, err
+	}
+	return resp.(*PolicerProfile), nil
+}
+
+type respNetworkV1AutoDeletePolicerProfile struct {
+	V   PolicerProfile
+	Err error
+}
+
 // AutoDeleteRouteTable is endpoint for AutoDeleteRouteTable
 func (e EndpointsNetworkV1Client) AutoDeleteRouteTable(ctx context.Context, in *RouteTable) (*RouteTable, error) {
 	resp, err := e.AutoDeleteRouteTableEndpoint(ctx, in)
@@ -550,6 +598,20 @@ func (e EndpointsNetworkV1Client) AutoGetNetworkInterface(ctx context.Context, i
 
 type respNetworkV1AutoGetNetworkInterface struct {
 	V   NetworkInterface
+	Err error
+}
+
+// AutoGetPolicerProfile is endpoint for AutoGetPolicerProfile
+func (e EndpointsNetworkV1Client) AutoGetPolicerProfile(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error) {
+	resp, err := e.AutoGetPolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return &PolicerProfile{}, err
+	}
+	return resp.(*PolicerProfile), nil
+}
+
+type respNetworkV1AutoGetPolicerProfile struct {
+	V   PolicerProfile
 	Err error
 }
 
@@ -679,6 +741,20 @@ type respNetworkV1AutoLabelNetworkInterface struct {
 	Err error
 }
 
+// AutoLabelPolicerProfile is endpoint for AutoLabelPolicerProfile
+func (e EndpointsNetworkV1Client) AutoLabelPolicerProfile(ctx context.Context, in *api.Label) (*PolicerProfile, error) {
+	resp, err := e.AutoLabelPolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return &PolicerProfile{}, err
+	}
+	return resp.(*PolicerProfile), nil
+}
+
+type respNetworkV1AutoLabelPolicerProfile struct {
+	V   PolicerProfile
+	Err error
+}
+
 // AutoLabelRouteTable is endpoint for AutoLabelRouteTable
 func (e EndpointsNetworkV1Client) AutoLabelRouteTable(ctx context.Context, in *api.Label) (*RouteTable, error) {
 	resp, err := e.AutoLabelRouteTableEndpoint(ctx, in)
@@ -802,6 +878,20 @@ func (e EndpointsNetworkV1Client) AutoListNetworkInterface(ctx context.Context, 
 
 type respNetworkV1AutoListNetworkInterface struct {
 	V   NetworkInterfaceList
+	Err error
+}
+
+// AutoListPolicerProfile is endpoint for AutoListPolicerProfile
+func (e EndpointsNetworkV1Client) AutoListPolicerProfile(ctx context.Context, in *api.ListWatchOptions) (*PolicerProfileList, error) {
+	resp, err := e.AutoListPolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return &PolicerProfileList{}, err
+	}
+	return resp.(*PolicerProfileList), nil
+}
+
+type respNetworkV1AutoListPolicerProfile struct {
+	V   PolicerProfileList
 	Err error
 }
 
@@ -931,6 +1021,20 @@ type respNetworkV1AutoUpdateNetworkInterface struct {
 	Err error
 }
 
+// AutoUpdatePolicerProfile is endpoint for AutoUpdatePolicerProfile
+func (e EndpointsNetworkV1Client) AutoUpdatePolicerProfile(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error) {
+	resp, err := e.AutoUpdatePolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return &PolicerProfile{}, err
+	}
+	return resp.(*PolicerProfile), nil
+}
+
+type respNetworkV1AutoUpdatePolicerProfile struct {
+	V   PolicerProfile
+	Err error
+}
+
 // AutoUpdateRouteTable is endpoint for AutoUpdateRouteTable
 func (e EndpointsNetworkV1Client) AutoUpdateRouteTable(ctx context.Context, in *RouteTable) (*RouteTable, error) {
 	resp, err := e.AutoUpdateRouteTableEndpoint(ctx, in)
@@ -1050,6 +1154,11 @@ func (e EndpointsNetworkV1Client) AutoWatchVirtualRouterPeeringGroup(ctx context
 	return e.Client.AutoWatchVirtualRouterPeeringGroup(ctx, in)
 }
 
+// AutoWatchPolicerProfile performs Watch for PolicerProfile
+func (e EndpointsNetworkV1Client) AutoWatchPolicerProfile(ctx context.Context, in *api.ListWatchOptions) (NetworkV1_AutoWatchPolicerProfileClient, error) {
+	return e.Client.AutoWatchPolicerProfile(ctx, in)
+}
+
 // AutoAddIPAMPolicy implementation on server Endpoint
 func (e EndpointsNetworkV1Server) AutoAddIPAMPolicy(ctx context.Context, in IPAMPolicy) (IPAMPolicy, error) {
 	resp, err := e.AutoAddIPAMPolicyEndpoint(ctx, in)
@@ -1136,6 +1245,28 @@ func MakeNetworkV1AutoAddNetworkInterfaceEndpoint(s ServiceNetworkV1Server, logg
 		}, nil
 	}
 	return trace.ServerEndpoint("NetworkV1:AutoAddNetworkInterface")(f)
+}
+
+// AutoAddPolicerProfile implementation on server Endpoint
+func (e EndpointsNetworkV1Server) AutoAddPolicerProfile(ctx context.Context, in PolicerProfile) (PolicerProfile, error) {
+	resp, err := e.AutoAddPolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return PolicerProfile{}, err
+	}
+	return *resp.(*PolicerProfile), nil
+}
+
+// MakeNetworkV1AutoAddPolicerProfileEndpoint creates  AutoAddPolicerProfile endpoints for the service
+func MakeNetworkV1AutoAddPolicerProfileEndpoint(s ServiceNetworkV1Server, logger log.Logger) endpoint.Endpoint {
+	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*PolicerProfile)
+		v, err := s.AutoAddPolicerProfile(ctx, *req)
+		return respNetworkV1AutoAddPolicerProfile{
+			V:   v,
+			Err: err,
+		}, nil
+	}
+	return trace.ServerEndpoint("NetworkV1:AutoAddPolicerProfile")(f)
 }
 
 // AutoAddRouteTable implementation on server Endpoint
@@ -1336,6 +1467,28 @@ func MakeNetworkV1AutoDeleteNetworkInterfaceEndpoint(s ServiceNetworkV1Server, l
 	return trace.ServerEndpoint("NetworkV1:AutoDeleteNetworkInterface")(f)
 }
 
+// AutoDeletePolicerProfile implementation on server Endpoint
+func (e EndpointsNetworkV1Server) AutoDeletePolicerProfile(ctx context.Context, in PolicerProfile) (PolicerProfile, error) {
+	resp, err := e.AutoDeletePolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return PolicerProfile{}, err
+	}
+	return *resp.(*PolicerProfile), nil
+}
+
+// MakeNetworkV1AutoDeletePolicerProfileEndpoint creates  AutoDeletePolicerProfile endpoints for the service
+func MakeNetworkV1AutoDeletePolicerProfileEndpoint(s ServiceNetworkV1Server, logger log.Logger) endpoint.Endpoint {
+	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*PolicerProfile)
+		v, err := s.AutoDeletePolicerProfile(ctx, *req)
+		return respNetworkV1AutoDeletePolicerProfile{
+			V:   v,
+			Err: err,
+		}, nil
+	}
+	return trace.ServerEndpoint("NetworkV1:AutoDeletePolicerProfile")(f)
+}
+
 // AutoDeleteRouteTable implementation on server Endpoint
 func (e EndpointsNetworkV1Server) AutoDeleteRouteTable(ctx context.Context, in RouteTable) (RouteTable, error) {
 	resp, err := e.AutoDeleteRouteTableEndpoint(ctx, in)
@@ -1532,6 +1685,28 @@ func MakeNetworkV1AutoGetNetworkInterfaceEndpoint(s ServiceNetworkV1Server, logg
 		}, nil
 	}
 	return trace.ServerEndpoint("NetworkV1:AutoGetNetworkInterface")(f)
+}
+
+// AutoGetPolicerProfile implementation on server Endpoint
+func (e EndpointsNetworkV1Server) AutoGetPolicerProfile(ctx context.Context, in PolicerProfile) (PolicerProfile, error) {
+	resp, err := e.AutoGetPolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return PolicerProfile{}, err
+	}
+	return *resp.(*PolicerProfile), nil
+}
+
+// MakeNetworkV1AutoGetPolicerProfileEndpoint creates  AutoGetPolicerProfile endpoints for the service
+func MakeNetworkV1AutoGetPolicerProfileEndpoint(s ServiceNetworkV1Server, logger log.Logger) endpoint.Endpoint {
+	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*PolicerProfile)
+		v, err := s.AutoGetPolicerProfile(ctx, *req)
+		return respNetworkV1AutoGetPolicerProfile{
+			V:   v,
+			Err: err,
+		}, nil
+	}
+	return trace.ServerEndpoint("NetworkV1:AutoGetPolicerProfile")(f)
 }
 
 // AutoGetRouteTable implementation on server Endpoint
@@ -1732,6 +1907,28 @@ func MakeNetworkV1AutoLabelNetworkInterfaceEndpoint(s ServiceNetworkV1Server, lo
 	return trace.ServerEndpoint("NetworkV1:AutoLabelNetworkInterface")(f)
 }
 
+// AutoLabelPolicerProfile implementation on server Endpoint
+func (e EndpointsNetworkV1Server) AutoLabelPolicerProfile(ctx context.Context, in api.Label) (PolicerProfile, error) {
+	resp, err := e.AutoLabelPolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return PolicerProfile{}, err
+	}
+	return *resp.(*PolicerProfile), nil
+}
+
+// MakeNetworkV1AutoLabelPolicerProfileEndpoint creates  AutoLabelPolicerProfile endpoints for the service
+func MakeNetworkV1AutoLabelPolicerProfileEndpoint(s ServiceNetworkV1Server, logger log.Logger) endpoint.Endpoint {
+	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*api.Label)
+		v, err := s.AutoLabelPolicerProfile(ctx, *req)
+		return respNetworkV1AutoLabelPolicerProfile{
+			V:   v,
+			Err: err,
+		}, nil
+	}
+	return trace.ServerEndpoint("NetworkV1:AutoLabelPolicerProfile")(f)
+}
+
 // AutoLabelRouteTable implementation on server Endpoint
 func (e EndpointsNetworkV1Server) AutoLabelRouteTable(ctx context.Context, in api.Label) (RouteTable, error) {
 	resp, err := e.AutoLabelRouteTableEndpoint(ctx, in)
@@ -1930,6 +2127,28 @@ func MakeNetworkV1AutoListNetworkInterfaceEndpoint(s ServiceNetworkV1Server, log
 	return trace.ServerEndpoint("NetworkV1:AutoListNetworkInterface")(f)
 }
 
+// AutoListPolicerProfile implementation on server Endpoint
+func (e EndpointsNetworkV1Server) AutoListPolicerProfile(ctx context.Context, in api.ListWatchOptions) (PolicerProfileList, error) {
+	resp, err := e.AutoListPolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return PolicerProfileList{}, err
+	}
+	return *resp.(*PolicerProfileList), nil
+}
+
+// MakeNetworkV1AutoListPolicerProfileEndpoint creates  AutoListPolicerProfile endpoints for the service
+func MakeNetworkV1AutoListPolicerProfileEndpoint(s ServiceNetworkV1Server, logger log.Logger) endpoint.Endpoint {
+	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*api.ListWatchOptions)
+		v, err := s.AutoListPolicerProfile(ctx, *req)
+		return respNetworkV1AutoListPolicerProfile{
+			V:   v,
+			Err: err,
+		}, nil
+	}
+	return trace.ServerEndpoint("NetworkV1:AutoListPolicerProfile")(f)
+}
+
 // AutoListRouteTable implementation on server Endpoint
 func (e EndpointsNetworkV1Server) AutoListRouteTable(ctx context.Context, in api.ListWatchOptions) (RouteTableList, error) {
 	resp, err := e.AutoListRouteTableEndpoint(ctx, in)
@@ -2126,6 +2345,28 @@ func MakeNetworkV1AutoUpdateNetworkInterfaceEndpoint(s ServiceNetworkV1Server, l
 		}, nil
 	}
 	return trace.ServerEndpoint("NetworkV1:AutoUpdateNetworkInterface")(f)
+}
+
+// AutoUpdatePolicerProfile implementation on server Endpoint
+func (e EndpointsNetworkV1Server) AutoUpdatePolicerProfile(ctx context.Context, in PolicerProfile) (PolicerProfile, error) {
+	resp, err := e.AutoUpdatePolicerProfileEndpoint(ctx, in)
+	if err != nil {
+		return PolicerProfile{}, err
+	}
+	return *resp.(*PolicerProfile), nil
+}
+
+// MakeNetworkV1AutoUpdatePolicerProfileEndpoint creates  AutoUpdatePolicerProfile endpoints for the service
+func MakeNetworkV1AutoUpdatePolicerProfileEndpoint(s ServiceNetworkV1Server, logger log.Logger) endpoint.Endpoint {
+	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(*PolicerProfile)
+		v, err := s.AutoUpdatePolicerProfile(ctx, *req)
+		return respNetworkV1AutoUpdatePolicerProfile{
+			V:   v,
+			Err: err,
+		}, nil
+	}
+	return trace.ServerEndpoint("NetworkV1:AutoUpdatePolicerProfile")(f)
 }
 
 // AutoUpdateRouteTable implementation on server Endpoint
@@ -2367,6 +2608,19 @@ func MakeAutoWatchVirtualRouterPeeringGroupEndpoint(s ServiceNetworkV1Server, lo
 	}
 }
 
+// AutoWatchPolicerProfile is the watch handler for PolicerProfile on the server side.
+func (e EndpointsNetworkV1Server) AutoWatchPolicerProfile(in *api.ListWatchOptions, stream NetworkV1_AutoWatchPolicerProfileServer) error {
+	return e.watchHandlerPolicerProfile(in, stream)
+}
+
+// MakeAutoWatchPolicerProfileEndpoint creates the Watch endpoint
+func MakeAutoWatchPolicerProfileEndpoint(s ServiceNetworkV1Server, logger log.Logger) func(options *api.ListWatchOptions, stream grpc.ServerStream) error {
+	return func(options *api.ListWatchOptions, stream grpc.ServerStream) error {
+		wstream := stream.(NetworkV1_AutoWatchPolicerProfileServer)
+		return s.AutoWatchPolicerProfile(options, wstream)
+	}
+}
+
 // MakeNetworkV1ServerEndpoints creates server endpoints
 func MakeNetworkV1ServerEndpoints(s ServiceNetworkV1Server, logger log.Logger) EndpointsNetworkV1Server {
 	return EndpointsNetworkV1Server{
@@ -2376,6 +2630,7 @@ func MakeNetworkV1ServerEndpoints(s ServiceNetworkV1Server, logger log.Logger) E
 		AutoAddLbPolicyEndpoint:                     MakeNetworkV1AutoAddLbPolicyEndpoint(s, logger),
 		AutoAddNetworkEndpoint:                      MakeNetworkV1AutoAddNetworkEndpoint(s, logger),
 		AutoAddNetworkInterfaceEndpoint:             MakeNetworkV1AutoAddNetworkInterfaceEndpoint(s, logger),
+		AutoAddPolicerProfileEndpoint:               MakeNetworkV1AutoAddPolicerProfileEndpoint(s, logger),
 		AutoAddRouteTableEndpoint:                   MakeNetworkV1AutoAddRouteTableEndpoint(s, logger),
 		AutoAddRoutingConfigEndpoint:                MakeNetworkV1AutoAddRoutingConfigEndpoint(s, logger),
 		AutoAddServiceEndpoint:                      MakeNetworkV1AutoAddServiceEndpoint(s, logger),
@@ -2385,6 +2640,7 @@ func MakeNetworkV1ServerEndpoints(s ServiceNetworkV1Server, logger log.Logger) E
 		AutoDeleteLbPolicyEndpoint:                  MakeNetworkV1AutoDeleteLbPolicyEndpoint(s, logger),
 		AutoDeleteNetworkEndpoint:                   MakeNetworkV1AutoDeleteNetworkEndpoint(s, logger),
 		AutoDeleteNetworkInterfaceEndpoint:          MakeNetworkV1AutoDeleteNetworkInterfaceEndpoint(s, logger),
+		AutoDeletePolicerProfileEndpoint:            MakeNetworkV1AutoDeletePolicerProfileEndpoint(s, logger),
 		AutoDeleteRouteTableEndpoint:                MakeNetworkV1AutoDeleteRouteTableEndpoint(s, logger),
 		AutoDeleteRoutingConfigEndpoint:             MakeNetworkV1AutoDeleteRoutingConfigEndpoint(s, logger),
 		AutoDeleteServiceEndpoint:                   MakeNetworkV1AutoDeleteServiceEndpoint(s, logger),
@@ -2394,6 +2650,7 @@ func MakeNetworkV1ServerEndpoints(s ServiceNetworkV1Server, logger log.Logger) E
 		AutoGetLbPolicyEndpoint:                     MakeNetworkV1AutoGetLbPolicyEndpoint(s, logger),
 		AutoGetNetworkEndpoint:                      MakeNetworkV1AutoGetNetworkEndpoint(s, logger),
 		AutoGetNetworkInterfaceEndpoint:             MakeNetworkV1AutoGetNetworkInterfaceEndpoint(s, logger),
+		AutoGetPolicerProfileEndpoint:               MakeNetworkV1AutoGetPolicerProfileEndpoint(s, logger),
 		AutoGetRouteTableEndpoint:                   MakeNetworkV1AutoGetRouteTableEndpoint(s, logger),
 		AutoGetRoutingConfigEndpoint:                MakeNetworkV1AutoGetRoutingConfigEndpoint(s, logger),
 		AutoGetServiceEndpoint:                      MakeNetworkV1AutoGetServiceEndpoint(s, logger),
@@ -2403,6 +2660,7 @@ func MakeNetworkV1ServerEndpoints(s ServiceNetworkV1Server, logger log.Logger) E
 		AutoLabelLbPolicyEndpoint:                   MakeNetworkV1AutoLabelLbPolicyEndpoint(s, logger),
 		AutoLabelNetworkEndpoint:                    MakeNetworkV1AutoLabelNetworkEndpoint(s, logger),
 		AutoLabelNetworkInterfaceEndpoint:           MakeNetworkV1AutoLabelNetworkInterfaceEndpoint(s, logger),
+		AutoLabelPolicerProfileEndpoint:             MakeNetworkV1AutoLabelPolicerProfileEndpoint(s, logger),
 		AutoLabelRouteTableEndpoint:                 MakeNetworkV1AutoLabelRouteTableEndpoint(s, logger),
 		AutoLabelRoutingConfigEndpoint:              MakeNetworkV1AutoLabelRoutingConfigEndpoint(s, logger),
 		AutoLabelServiceEndpoint:                    MakeNetworkV1AutoLabelServiceEndpoint(s, logger),
@@ -2412,6 +2670,7 @@ func MakeNetworkV1ServerEndpoints(s ServiceNetworkV1Server, logger log.Logger) E
 		AutoListLbPolicyEndpoint:                    MakeNetworkV1AutoListLbPolicyEndpoint(s, logger),
 		AutoListNetworkEndpoint:                     MakeNetworkV1AutoListNetworkEndpoint(s, logger),
 		AutoListNetworkInterfaceEndpoint:            MakeNetworkV1AutoListNetworkInterfaceEndpoint(s, logger),
+		AutoListPolicerProfileEndpoint:              MakeNetworkV1AutoListPolicerProfileEndpoint(s, logger),
 		AutoListRouteTableEndpoint:                  MakeNetworkV1AutoListRouteTableEndpoint(s, logger),
 		AutoListRoutingConfigEndpoint:               MakeNetworkV1AutoListRoutingConfigEndpoint(s, logger),
 		AutoListServiceEndpoint:                     MakeNetworkV1AutoListServiceEndpoint(s, logger),
@@ -2421,6 +2680,7 @@ func MakeNetworkV1ServerEndpoints(s ServiceNetworkV1Server, logger log.Logger) E
 		AutoUpdateLbPolicyEndpoint:                  MakeNetworkV1AutoUpdateLbPolicyEndpoint(s, logger),
 		AutoUpdateNetworkEndpoint:                   MakeNetworkV1AutoUpdateNetworkEndpoint(s, logger),
 		AutoUpdateNetworkInterfaceEndpoint:          MakeNetworkV1AutoUpdateNetworkInterfaceEndpoint(s, logger),
+		AutoUpdatePolicerProfileEndpoint:            MakeNetworkV1AutoUpdatePolicerProfileEndpoint(s, logger),
 		AutoUpdateRouteTableEndpoint:                MakeNetworkV1AutoUpdateRouteTableEndpoint(s, logger),
 		AutoUpdateRoutingConfigEndpoint:             MakeNetworkV1AutoUpdateRoutingConfigEndpoint(s, logger),
 		AutoUpdateServiceEndpoint:                   MakeNetworkV1AutoUpdateServiceEndpoint(s, logger),
@@ -2436,6 +2696,7 @@ func MakeNetworkV1ServerEndpoints(s ServiceNetworkV1Server, logger log.Logger) E
 		watchHandlerRoutingConfig:             MakeAutoWatchRoutingConfigEndpoint(s, logger),
 		watchHandlerRouteTable:                MakeAutoWatchRouteTableEndpoint(s, logger),
 		watchHandlerVirtualRouterPeeringGroup: MakeAutoWatchVirtualRouterPeeringGroupEndpoint(s, logger),
+		watchHandlerPolicerProfile:            MakeAutoWatchPolicerProfileEndpoint(s, logger),
 	}
 }
 
@@ -2519,6 +2780,19 @@ func (m loggingNetworkV1MiddlewareClient) AutoAddNetworkInterface(ctx context.Co
 		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoAddNetworkInterface", "result", rslt, "duration", time.Since(begin), "error", err)
 	}(time.Now())
 	resp, err = m.next.AutoAddNetworkInterface(ctx, in)
+	return
+}
+func (m loggingNetworkV1MiddlewareClient) AutoAddPolicerProfile(ctx context.Context, in *PolicerProfile) (resp *PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoAddPolicerProfile", "result", rslt, "duration", time.Since(begin), "error", err)
+	}(time.Now())
+	resp, err = m.next.AutoAddPolicerProfile(ctx, in)
 	return
 }
 func (m loggingNetworkV1MiddlewareClient) AutoAddRouteTable(ctx context.Context, in *RouteTable) (resp *RouteTable, err error) {
@@ -2638,6 +2912,19 @@ func (m loggingNetworkV1MiddlewareClient) AutoDeleteNetworkInterface(ctx context
 	resp, err = m.next.AutoDeleteNetworkInterface(ctx, in)
 	return
 }
+func (m loggingNetworkV1MiddlewareClient) AutoDeletePolicerProfile(ctx context.Context, in *PolicerProfile) (resp *PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoDeletePolicerProfile", "result", rslt, "duration", time.Since(begin), "error", err)
+	}(time.Now())
+	resp, err = m.next.AutoDeletePolicerProfile(ctx, in)
+	return
+}
 func (m loggingNetworkV1MiddlewareClient) AutoDeleteRouteTable(ctx context.Context, in *RouteTable) (resp *RouteTable, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -2753,6 +3040,19 @@ func (m loggingNetworkV1MiddlewareClient) AutoGetNetworkInterface(ctx context.Co
 		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoGetNetworkInterface", "result", rslt, "duration", time.Since(begin), "error", err)
 	}(time.Now())
 	resp, err = m.next.AutoGetNetworkInterface(ctx, in)
+	return
+}
+func (m loggingNetworkV1MiddlewareClient) AutoGetPolicerProfile(ctx context.Context, in *PolicerProfile) (resp *PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoGetPolicerProfile", "result", rslt, "duration", time.Since(begin), "error", err)
+	}(time.Now())
+	resp, err = m.next.AutoGetPolicerProfile(ctx, in)
 	return
 }
 func (m loggingNetworkV1MiddlewareClient) AutoGetRouteTable(ctx context.Context, in *RouteTable) (resp *RouteTable, err error) {
@@ -2872,6 +3172,19 @@ func (m loggingNetworkV1MiddlewareClient) AutoLabelNetworkInterface(ctx context.
 	resp, err = m.next.AutoLabelNetworkInterface(ctx, in)
 	return
 }
+func (m loggingNetworkV1MiddlewareClient) AutoLabelPolicerProfile(ctx context.Context, in *api.Label) (resp *PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoLabelPolicerProfile", "result", rslt, "duration", time.Since(begin), "error", err)
+	}(time.Now())
+	resp, err = m.next.AutoLabelPolicerProfile(ctx, in)
+	return
+}
 func (m loggingNetworkV1MiddlewareClient) AutoLabelRouteTable(ctx context.Context, in *api.Label) (resp *RouteTable, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -2989,6 +3302,19 @@ func (m loggingNetworkV1MiddlewareClient) AutoListNetworkInterface(ctx context.C
 	resp, err = m.next.AutoListNetworkInterface(ctx, in)
 	return
 }
+func (m loggingNetworkV1MiddlewareClient) AutoListPolicerProfile(ctx context.Context, in *api.ListWatchOptions) (resp *PolicerProfileList, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoListPolicerProfile", "result", rslt, "duration", time.Since(begin), "error", err)
+	}(time.Now())
+	resp, err = m.next.AutoListPolicerProfile(ctx, in)
+	return
+}
 func (m loggingNetworkV1MiddlewareClient) AutoListRouteTable(ctx context.Context, in *api.ListWatchOptions) (resp *RouteTableList, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -3104,6 +3430,19 @@ func (m loggingNetworkV1MiddlewareClient) AutoUpdateNetworkInterface(ctx context
 		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoUpdateNetworkInterface", "result", rslt, "duration", time.Since(begin), "error", err)
 	}(time.Now())
 	resp, err = m.next.AutoUpdateNetworkInterface(ctx, in)
+	return
+}
+func (m loggingNetworkV1MiddlewareClient) AutoUpdatePolicerProfile(ctx context.Context, in *PolicerProfile) (resp *PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoUpdatePolicerProfile", "result", rslt, "duration", time.Since(begin), "error", err)
+	}(time.Now())
+	resp, err = m.next.AutoUpdatePolicerProfile(ctx, in)
 	return
 }
 func (m loggingNetworkV1MiddlewareClient) AutoUpdateRouteTable(ctx context.Context, in *RouteTable) (resp *RouteTable, err error) {
@@ -3303,6 +3642,19 @@ func (m loggingNetworkV1MiddlewareClient) AutoWatchVirtualRouterPeeringGroup(ctx
 	resp, err = m.next.AutoWatchVirtualRouterPeeringGroup(ctx, in)
 	return
 }
+func (m loggingNetworkV1MiddlewareClient) AutoWatchPolicerProfile(ctx context.Context, in *api.ListWatchOptions) (resp NetworkV1_AutoWatchPolicerProfileClient, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoWatchPolicerProfile", "result", rslt, "duration", time.Since(begin), "error", err)
+	}(time.Now())
+	resp, err = m.next.AutoWatchPolicerProfile(ctx, in)
+	return
+}
 
 func (m loggingNetworkV1MiddlewareServer) AutoAddIPAMPolicy(ctx context.Context, in IPAMPolicy) (resp IPAMPolicy, err error) {
 	defer func(begin time.Time) {
@@ -3354,6 +3706,19 @@ func (m loggingNetworkV1MiddlewareServer) AutoAddNetworkInterface(ctx context.Co
 		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoAddNetworkInterface", "result", rslt, "duration", time.Since(begin))
 	}(time.Now())
 	resp, err = m.next.AutoAddNetworkInterface(ctx, in)
+	return
+}
+func (m loggingNetworkV1MiddlewareServer) AutoAddPolicerProfile(ctx context.Context, in PolicerProfile) (resp PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoAddPolicerProfile", "result", rslt, "duration", time.Since(begin))
+	}(time.Now())
+	resp, err = m.next.AutoAddPolicerProfile(ctx, in)
 	return
 }
 func (m loggingNetworkV1MiddlewareServer) AutoAddRouteTable(ctx context.Context, in RouteTable) (resp RouteTable, err error) {
@@ -3473,6 +3838,19 @@ func (m loggingNetworkV1MiddlewareServer) AutoDeleteNetworkInterface(ctx context
 	resp, err = m.next.AutoDeleteNetworkInterface(ctx, in)
 	return
 }
+func (m loggingNetworkV1MiddlewareServer) AutoDeletePolicerProfile(ctx context.Context, in PolicerProfile) (resp PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoDeletePolicerProfile", "result", rslt, "duration", time.Since(begin))
+	}(time.Now())
+	resp, err = m.next.AutoDeletePolicerProfile(ctx, in)
+	return
+}
 func (m loggingNetworkV1MiddlewareServer) AutoDeleteRouteTable(ctx context.Context, in RouteTable) (resp RouteTable, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -3588,6 +3966,19 @@ func (m loggingNetworkV1MiddlewareServer) AutoGetNetworkInterface(ctx context.Co
 		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoGetNetworkInterface", "result", rslt, "duration", time.Since(begin))
 	}(time.Now())
 	resp, err = m.next.AutoGetNetworkInterface(ctx, in)
+	return
+}
+func (m loggingNetworkV1MiddlewareServer) AutoGetPolicerProfile(ctx context.Context, in PolicerProfile) (resp PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoGetPolicerProfile", "result", rslt, "duration", time.Since(begin))
+	}(time.Now())
+	resp, err = m.next.AutoGetPolicerProfile(ctx, in)
 	return
 }
 func (m loggingNetworkV1MiddlewareServer) AutoGetRouteTable(ctx context.Context, in RouteTable) (resp RouteTable, err error) {
@@ -3707,6 +4098,19 @@ func (m loggingNetworkV1MiddlewareServer) AutoLabelNetworkInterface(ctx context.
 	resp, err = m.next.AutoLabelNetworkInterface(ctx, in)
 	return
 }
+func (m loggingNetworkV1MiddlewareServer) AutoLabelPolicerProfile(ctx context.Context, in api.Label) (resp PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoLabelPolicerProfile", "result", rslt, "duration", time.Since(begin))
+	}(time.Now())
+	resp, err = m.next.AutoLabelPolicerProfile(ctx, in)
+	return
+}
 func (m loggingNetworkV1MiddlewareServer) AutoLabelRouteTable(ctx context.Context, in api.Label) (resp RouteTable, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -3824,6 +4228,19 @@ func (m loggingNetworkV1MiddlewareServer) AutoListNetworkInterface(ctx context.C
 	resp, err = m.next.AutoListNetworkInterface(ctx, in)
 	return
 }
+func (m loggingNetworkV1MiddlewareServer) AutoListPolicerProfile(ctx context.Context, in api.ListWatchOptions) (resp PolicerProfileList, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoListPolicerProfile", "result", rslt, "duration", time.Since(begin))
+	}(time.Now())
+	resp, err = m.next.AutoListPolicerProfile(ctx, in)
+	return
+}
 func (m loggingNetworkV1MiddlewareServer) AutoListRouteTable(ctx context.Context, in api.ListWatchOptions) (resp RouteTableList, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -3939,6 +4356,19 @@ func (m loggingNetworkV1MiddlewareServer) AutoUpdateNetworkInterface(ctx context
 		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoUpdateNetworkInterface", "result", rslt, "duration", time.Since(begin))
 	}(time.Now())
 	resp, err = m.next.AutoUpdateNetworkInterface(ctx, in)
+	return
+}
+func (m loggingNetworkV1MiddlewareServer) AutoUpdatePolicerProfile(ctx context.Context, in PolicerProfile) (resp PolicerProfile, err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(ctx, "service", "NetworkV1", "method", "AutoUpdatePolicerProfile", "result", rslt, "duration", time.Since(begin))
+	}(time.Now())
+	resp, err = m.next.AutoUpdatePolicerProfile(ctx, in)
 	return
 }
 func (m loggingNetworkV1MiddlewareServer) AutoUpdateRouteTable(ctx context.Context, in RouteTable) (resp RouteTable, err error) {
@@ -4138,6 +4568,19 @@ func (m loggingNetworkV1MiddlewareServer) AutoWatchVirtualRouterPeeringGroup(in 
 	err = m.next.AutoWatchVirtualRouterPeeringGroup(in, stream)
 	return
 }
+func (m loggingNetworkV1MiddlewareServer) AutoWatchPolicerProfile(in *api.ListWatchOptions, stream NetworkV1_AutoWatchPolicerProfileServer) (err error) {
+	defer func(begin time.Time) {
+		var rslt string
+		if err == nil {
+			rslt = "Success"
+		} else {
+			rslt = err.Error()
+		}
+		m.logger.Audit(stream.Context(), "service", "NetworkV1", "method", "AutoWatchPolicerProfile", "result", rslt, "duration", time.Since(begin))
+	}(time.Now())
+	err = m.next.AutoWatchPolicerProfile(in, stream)
+	return
+}
 
 func (r *EndpointsNetworkV1RestClient) updateHTTPHeader(ctx context.Context, header *http.Header) {
 	val, ok := loginctx.AuthzHeaderFromContext(ctx)
@@ -4186,6 +4629,11 @@ func makeURINetworkV1AutoAddNetworkCreateOper(in *Network) string {
 func makeURINetworkV1AutoAddNetworkInterfaceCreateOper(in *NetworkInterface) string {
 	return ""
 
+}
+
+//
+func makeURINetworkV1AutoAddPolicerProfileCreateOper(in *PolicerProfile) string {
+	return fmt.Sprint("/configs/network/v1", "/tenant/", in.Tenant, "/policer-profile")
 }
 
 //
@@ -4238,6 +4686,11 @@ func makeURINetworkV1AutoDeleteNetworkInterfaceDeleteOper(in *NetworkInterface) 
 }
 
 //
+func makeURINetworkV1AutoDeletePolicerProfileDeleteOper(in *PolicerProfile) string {
+	return fmt.Sprint("/configs/network/v1", "/tenant/", in.Tenant, "/policer-profile/", in.Name)
+}
+
+//
 func makeURINetworkV1AutoDeleteRouteTableDeleteOper(in *RouteTable) string {
 	return ""
 
@@ -4286,6 +4739,11 @@ func makeURINetworkV1AutoGetNetworkInterfaceGetOper(in *NetworkInterface) string
 }
 
 //
+func makeURINetworkV1AutoGetPolicerProfileGetOper(in *PolicerProfile) string {
+	return fmt.Sprint("/configs/network/v1", "/tenant/", in.Tenant, "/policer-profile/", in.Name)
+}
+
+//
 func makeURINetworkV1AutoGetRouteTableGetOper(in *RouteTable) string {
 	return fmt.Sprint("/configs/network/v1", "/tenant/", in.Tenant, "/route-tables/", in.Name)
 }
@@ -4330,6 +4788,11 @@ func makeURINetworkV1AutoLabelNetworkLabelOper(in *api.Label) string {
 //
 func makeURINetworkV1AutoLabelNetworkInterfaceLabelOper(in *api.Label) string {
 	return fmt.Sprint("/configs/network/v1", "/networkinterfaces/", in.Name, "/label")
+}
+
+//
+func makeURINetworkV1AutoLabelPolicerProfileLabelOper(in *api.Label) string {
+	return fmt.Sprint("/configs/network/v1", "/tenant/", in.Tenant, "/policer-profile/", in.Name, "/label")
 }
 
 //
@@ -4381,6 +4844,11 @@ func makeURINetworkV1AutoListNetworkInterfaceListOper(in *api.ListWatchOptions) 
 }
 
 //
+func makeURINetworkV1AutoListPolicerProfileListOper(in *api.ListWatchOptions) string {
+	return fmt.Sprint("/configs/network/v1", "/tenant/", in.Tenant, "/policer-profile")
+}
+
+//
 func makeURINetworkV1AutoListRouteTableListOper(in *api.ListWatchOptions) string {
 	return fmt.Sprint("/configs/network/v1", "/tenant/", in.Tenant, "/route-tables")
 }
@@ -4425,6 +4893,11 @@ func makeURINetworkV1AutoUpdateNetworkUpdateOper(in *Network) string {
 //
 func makeURINetworkV1AutoUpdateNetworkInterfaceUpdateOper(in *NetworkInterface) string {
 	return fmt.Sprint("/configs/network/v1", "/networkinterfaces/", in.Name)
+}
+
+//
+func makeURINetworkV1AutoUpdatePolicerProfileUpdateOper(in *PolicerProfile) string {
+	return fmt.Sprint("/configs/network/v1", "/tenant/", in.Tenant, "/policer-profile/", in.Name)
 }
 
 //
@@ -4473,6 +4946,11 @@ func makeURINetworkV1AutoWatchNetworkWatchOper(in *api.ListWatchOptions) string 
 //
 func makeURINetworkV1AutoWatchNetworkInterfaceWatchOper(in *api.ListWatchOptions) string {
 	return fmt.Sprint("/configs/network/v1", "/watch/networkinterfaces")
+}
+
+//
+func makeURINetworkV1AutoWatchPolicerProfileWatchOper(in *api.ListWatchOptions) string {
+	return fmt.Sprint("/configs/network/v1", "/watch/tenant/", in.Tenant, "/policer-profile")
 }
 
 //
@@ -5793,6 +6271,186 @@ func (r *EndpointsNetworkV1RestClient) AutoWatchVirtualRouterPeeringGroup(ctx co
 	bridgefn := func(lw *listerwatcher.WatcherClient) {
 		for {
 			in := &AutoMsgVirtualRouterPeeringGroupWatchHelper{}
+			err := conn.ReadJSON(in)
+			if err != nil {
+				return
+			}
+			for _, e := range in.Events {
+				ev := kvstore.WatchEvent{
+					Type:   kvstore.WatchEventType(e.Type),
+					Object: e.Object,
+				}
+				select {
+				case lw.OutCh <- &ev:
+				case <-ctx.Done():
+					close(lw.OutCh)
+					conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "client closing"), time.Now().Add(3*time.Second))
+					return
+				}
+			}
+		}
+	}
+	lw := listerwatcher.NewWatcherClient(nil, bridgefn)
+	lw.Run()
+	go func() {
+		<-ctx.Done()
+		conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "client closing"), time.Now().Add(3*time.Second))
+	}()
+	return lw, nil
+}
+
+// AutoAddPolicerProfile CRUD method for PolicerProfile
+func (r *EndpointsNetworkV1RestClient) AutoAddPolicerProfile(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error) {
+	path := makeURINetworkV1AutoAddPolicerProfileCreateOper(in)
+	if r.bufferId != "" {
+		path = strings.Replace(path, "/configs", "/staging/"+r.bufferId, 1)
+	}
+	req, err := r.getHTTPRequest(ctx, in, "POST", path)
+	if err != nil {
+		return nil, err
+	}
+	httpresp, err := r.client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("request failed (%s)", err)
+	}
+	defer httpresp.Body.Close()
+	ret, err := decodeHTTPrespNetworkV1AutoAddPolicerProfile(ctx, httpresp)
+	if err != nil {
+		return nil, err
+	}
+	return ret.(*PolicerProfile), nil
+}
+
+// AutoUpdatePolicerProfile CRUD method for PolicerProfile
+func (r *EndpointsNetworkV1RestClient) AutoUpdatePolicerProfile(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error) {
+	path := makeURINetworkV1AutoUpdatePolicerProfileUpdateOper(in)
+	if r.bufferId != "" {
+		path = strings.Replace(path, "/configs", "/staging/"+r.bufferId, 1)
+	}
+	req, err := r.getHTTPRequest(ctx, in, "PUT", path)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("request failed (%s)", err)
+	}
+	defer resp.Body.Close()
+	ret, err := decodeHTTPrespNetworkV1AutoUpdatePolicerProfile(ctx, resp)
+	if err != nil {
+		return nil, err
+	}
+	return ret.(*PolicerProfile), err
+}
+
+// AutoLabelPolicerProfile label method for PolicerProfile
+func (r *EndpointsNetworkV1RestClient) AutoLabelPolicerProfile(ctx context.Context, in *api.Label) (*PolicerProfile, error) {
+	path := makeURINetworkV1AutoLabelPolicerProfileLabelOper(in)
+	if r.bufferId != "" {
+		path = strings.Replace(path, "/configs", "/staging/"+r.bufferId, 1)
+	}
+	req, err := r.getHTTPRequest(ctx, in, "POST", path)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("request failed (%s)", err)
+	}
+	defer resp.Body.Close()
+	ret, err := decodeHTTPrespNetworkV1AutoLabelPolicerProfile(ctx, resp)
+	if err != nil {
+		return nil, err
+	}
+	return ret.(*PolicerProfile), err
+}
+
+// AutoGetPolicerProfile CRUD method for PolicerProfile
+func (r *EndpointsNetworkV1RestClient) AutoGetPolicerProfile(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error) {
+	path := makeURINetworkV1AutoGetPolicerProfileGetOper(in)
+	if r.bufferId != "" {
+		path = strings.Replace(path, "/configs", "/staging/"+r.bufferId, 1)
+	}
+	req, err := r.getHTTPRequest(ctx, in, "GET", path)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("request failed (%s)", err)
+	}
+	defer resp.Body.Close()
+	ret, err := decodeHTTPrespNetworkV1AutoGetPolicerProfile(ctx, resp)
+	if err != nil {
+		return nil, err
+	}
+	return ret.(*PolicerProfile), err
+}
+
+// AutoDeletePolicerProfile CRUD method for PolicerProfile
+func (r *EndpointsNetworkV1RestClient) AutoDeletePolicerProfile(ctx context.Context, in *PolicerProfile) (*PolicerProfile, error) {
+	path := makeURINetworkV1AutoDeletePolicerProfileDeleteOper(in)
+	if r.bufferId != "" {
+		path = strings.Replace(path, "/configs", "/staging/"+r.bufferId, 1)
+	}
+	req, err := r.getHTTPRequest(ctx, in, "DELETE", path)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("request failed (%s)", err)
+	}
+	defer resp.Body.Close()
+	ret, err := decodeHTTPrespNetworkV1AutoDeletePolicerProfile(ctx, resp)
+	if err != nil {
+		return nil, err
+	}
+	return ret.(*PolicerProfile), err
+}
+
+// AutoListPolicerProfile CRUD method for PolicerProfile
+func (r *EndpointsNetworkV1RestClient) AutoListPolicerProfile(ctx context.Context, options *api.ListWatchOptions) (*PolicerProfileList, error) {
+	path := makeURINetworkV1AutoListPolicerProfileListOper(options)
+	if r.bufferId != "" {
+		path = strings.Replace(path, "/configs", "/staging/"+r.bufferId, 1)
+	}
+	req, err := r.getHTTPRequest(ctx, options, "GET", path)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := r.client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("request failed (%s)", err)
+	}
+	defer resp.Body.Close()
+	ret, err := decodeHTTPrespNetworkV1AutoListPolicerProfile(ctx, resp)
+	if err != nil {
+		return nil, err
+	}
+	return ret.(*PolicerProfileList), err
+}
+
+// AutoWatchPolicerProfile CRUD method for PolicerProfile
+func (r *EndpointsNetworkV1RestClient) AutoWatchPolicerProfile(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error) {
+	path := r.instance + makeURINetworkV1AutoWatchPolicerProfileWatchOper(options)
+	path = strings.Replace(path, "http://", "ws://", 1)
+	path = strings.Replace(path, "https://", "wss://", 1)
+	params := apiutils.GetQueryStringFromListWatchOptions(options)
+	if params != "" {
+		path = path + "?" + params
+	}
+	header := http.Header{}
+	r.updateHTTPHeader(ctx, &header)
+	dialer := websocket.DefaultDialer
+	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	conn, hresp, err := dialer.Dial(path, header)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect web socket to [%s](%s)[%+v]", path, err, hresp)
+	}
+	bridgefn := func(lw *listerwatcher.WatcherClient) {
+		for {
+			in := &AutoMsgPolicerProfileWatchHelper{}
 			err := conn.ReadJSON(in)
 			if err != nil {
 				return

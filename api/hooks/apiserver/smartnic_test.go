@@ -55,9 +55,10 @@ func TestSmartNICObjectPreCommitHooks(t *testing.T) {
 			IPConfig: &cluster.IPConfig{
 				IPAddress: "0.0.0.0/0",
 			},
-			MgmtMode:    cluster.DistributedServiceCardSpec_NETWORK.String(),
-			NetworkMode: cluster.DistributedServiceCardSpec_OOB.String(),
-			DSCProfile:  globals.DefaultDSCProfile,
+			MgmtMode:            cluster.DistributedServiceCardSpec_NETWORK.String(),
+			NetworkMode:         cluster.DistributedServiceCardSpec_OOB.String(),
+			DSCProfile:          globals.DefaultDSCProfile,
+			PolicerAttachTenant: globals.DefaultTenant,
 		},
 		Status: cluster.DistributedServiceCardStatus{
 			AdmissionPhase: "UNKNOWN",
@@ -207,6 +208,13 @@ func TestSmartNICObjectPreCommitHooks(t *testing.T) {
 	txn = kv.NewTxn()
 	hooks.smartNICPreCommitHook(userCtx, kv, txn, key, apiintf.CreateOper, false, nic)
 	Assert(t, !txn.IsEmpty(), "module object should have been create")
+
+	// Check for unsupported tenant
+	nic.Spec.PolicerAttachTenant = "nondefault"
+	txn = kv.NewTxn()
+	_, _, err = hooks.smartNICPreCommitHook(userCtx, kv, txn, key, apiintf.UpdateOper, false, nic)
+	Assert(t, err != nil, "expected error from smartNICPreCommitHook")
+	nic.Spec.PolicerAttachTenant = "default"
 
 	// Update oper with IPconfig nil should fail
 	nic.Spec.IPConfig = nil

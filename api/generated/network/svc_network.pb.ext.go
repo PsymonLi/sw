@@ -66,6 +66,16 @@ func (m *NetworkList) MakeURI(ver, prefix string) string {
 }
 
 // MakeKey generates a KV store key for the object
+func (m *PolicerProfileList) MakeKey(prefix string) string {
+	obj := PolicerProfile{}
+	return obj.MakeKey(prefix)
+}
+
+func (m *PolicerProfileList) MakeURI(ver, prefix string) string {
+	return fmt.Sprint("/", globals.ConfigURIPrefix, "/", prefix, "/", ver)
+}
+
+// MakeKey generates a KV store key for the object
 func (m *RouteTableList) MakeKey(prefix string) string {
 	obj := RouteTable{}
 	return obj.MakeKey(prefix)
@@ -136,6 +146,12 @@ func (m *AutoMsgNetworkInterfaceWatchHelper) MakeKey(prefix string) string {
 // MakeKey generates a KV store key for the object
 func (m *AutoMsgNetworkWatchHelper) MakeKey(prefix string) string {
 	obj := Network{}
+	return obj.MakeKey(prefix)
+}
+
+// MakeKey generates a KV store key for the object
+func (m *AutoMsgPolicerProfileWatchHelper) MakeKey(prefix string) string {
+	obj := PolicerProfile{}
 	return obj.MakeKey(prefix)
 }
 
@@ -334,6 +350,48 @@ func (m *AutoMsgNetworkWatchHelper_WatchEvent) Clone(into interface{}) (interfac
 
 // Default sets up the defaults for the object
 func (m *AutoMsgNetworkWatchHelper_WatchEvent) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *AutoMsgPolicerProfileWatchHelper) Clone(into interface{}) (interface{}, error) {
+	var out *AutoMsgPolicerProfileWatchHelper
+	var ok bool
+	if into == nil {
+		out = &AutoMsgPolicerProfileWatchHelper{}
+	} else {
+		out, ok = into.(*AutoMsgPolicerProfileWatchHelper)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*AutoMsgPolicerProfileWatchHelper))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *AutoMsgPolicerProfileWatchHelper) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *AutoMsgPolicerProfileWatchHelper_WatchEvent) Clone(into interface{}) (interface{}, error) {
+	var out *AutoMsgPolicerProfileWatchHelper_WatchEvent
+	var ok bool
+	if into == nil {
+		out = &AutoMsgPolicerProfileWatchHelper_WatchEvent{}
+	} else {
+		out, ok = into.(*AutoMsgPolicerProfileWatchHelper_WatchEvent)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*AutoMsgPolicerProfileWatchHelper_WatchEvent))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *AutoMsgPolicerProfileWatchHelper_WatchEvent) Defaults(ver string) bool {
 	return false
 }
 
@@ -628,6 +686,27 @@ func (m *NetworkList) Clone(into interface{}) (interface{}, error) {
 
 // Default sets up the defaults for the object
 func (m *NetworkList) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *PolicerProfileList) Clone(into interface{}) (interface{}, error) {
+	var out *PolicerProfileList
+	var ok bool
+	if into == nil {
+		out = &PolicerProfileList{}
+	} else {
+		out, ok = into.(*PolicerProfileList)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*PolicerProfileList))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *PolicerProfileList) Defaults(ver string) bool {
 	return false
 }
 
@@ -1052,6 +1131,66 @@ func (m *AutoMsgNetworkWatchHelper_WatchEvent) Validate(ver, path string, ignore
 }
 
 func (m *AutoMsgNetworkWatchHelper_WatchEvent) Normalize() {
+
+	if m.Object != nil {
+		m.Object.Normalize()
+	}
+
+}
+
+func (m *AutoMsgPolicerProfileWatchHelper) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *AutoMsgPolicerProfileWatchHelper) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	for k, v := range m.Events {
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := fmt.Sprintf("%s%sEvents[%v]", path, dlmtr, k)
+		if errs := v.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
+	return ret
+}
+
+func (m *AutoMsgPolicerProfileWatchHelper) Normalize() {
+
+	for k, v := range m.Events {
+		if v != nil {
+			v.Normalize()
+			m.Events[k] = v
+		}
+	}
+
+}
+
+func (m *AutoMsgPolicerProfileWatchHelper_WatchEvent) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *AutoMsgPolicerProfileWatchHelper_WatchEvent) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+
+	if m.Object != nil {
+		{
+			dlmtr := "."
+			if path == "" {
+				dlmtr = ""
+			}
+			npath := path + dlmtr + "Object"
+			if errs := m.Object.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+				ret = append(ret, errs...)
+			}
+		}
+	}
+	return ret
+}
+
+func (m *AutoMsgPolicerProfileWatchHelper_WatchEvent) Normalize() {
 
 	if m.Object != nil {
 		m.Object.Normalize()
@@ -1592,6 +1731,36 @@ func (m *NetworkList) Validate(ver, path string, ignoreStatus bool, ignoreSpec b
 }
 
 func (m *NetworkList) Normalize() {
+
+	for k, v := range m.Items {
+		if v != nil {
+			v.Normalize()
+			m.Items[k] = v
+		}
+	}
+
+}
+
+func (m *PolicerProfileList) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *PolicerProfileList) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	for k, v := range m.Items {
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := fmt.Sprintf("%s%sItems[%v]", path, dlmtr, k)
+		if errs := v.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
+	return ret
+}
+
+func (m *PolicerProfileList) Normalize() {
 
 	for k, v := range m.Items {
 		if v != nil {

@@ -93,6 +93,7 @@ var typesMapInterface = map[string]*api.Struct{
 			"sys-name":            api.CLIInfo{Path: "Status.IFUplinkStatus.LLDPNeighbor.SysName", Skip: false, Insert: "", Help: ""},
 			"tenant":              api.CLIInfo{Path: "Tenant", Skip: false, Insert: "", Help: ""},
 			"tx-pause-enabled":    api.CLIInfo{Path: "Spec.Pause.TxPauseEnabled", Skip: false, Insert: "", Help: ""},
+			"tx-policer":          api.CLIInfo{Path: "Spec.TxPolicer", Skip: false, Insert: "", Help: ""},
 			"type":                api.CLIInfo{Path: "Spec.Type", Skip: false, Insert: "", Help: ""},
 			"uplink-port-id":      api.CLIInfo{Path: "Status.IFUplinkStatus.PortID", Skip: false, Insert: "", Help: ""},
 			"uuid":                api.CLIInfo{Path: "UUID", Skip: false, Insert: "", Help: ""},
@@ -155,6 +156,8 @@ var typesMapInterface = map[string]*api.Struct{
 			"MirrorSessions": api.Field{Name: "MirrorSessions", CLITag: api.CLIInfo{ID: "mirror-sessions", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "mirror-sessions", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"ConnectionTracking": api.Field{Name: "ConnectionTracking", CLITag: api.CLIInfo{ID: "connection-tracking", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "connection-tracking", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_BOOL"},
+
+			"TxPolicer": api.Field{Name: "TxPolicer", CLITag: api.CLIInfo{ID: "tx-policer", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "tx-policer", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"netproto.InterfaceStatus": &api.Struct{
