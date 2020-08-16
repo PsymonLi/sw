@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 
 #include "nic/sdk/include/sdk/mem.hpp"
-#include "state.hpp"
+#include "nic/infra/operd/consumers/pen_oper/core/state.hpp"
 #include "gen/alerts/alert_defs.h"
 
 namespace core {

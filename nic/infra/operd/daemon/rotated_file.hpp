@@ -1,12 +1,20 @@
-#ifndef __OPERD_DAEMON_ROTATED_FILE_H__
-#define __OPERD_DAEMON_ROTATED_FILE_H__
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file defines class for file logging
+///
+//----------------------------------------------------------------------------
+
+#ifndef __OPERD_DAEMON_ROTATED_FILE_HPP__
+#define __OPERD_DAEMON_ROTATED_FILE_HPP__
 
 #include <memory>
 #include <string>
-
-#include "lib/operd/operd.hpp"
-
-#include "output.hpp"
+#include "nic/sdk/lib/operd/operd.hpp"
+#include "nic/infra/operd/daemon/output.hpp"
 
 class rotated_file : public output {
 public:
@@ -18,10 +26,12 @@ public:
                  int max_files);
     ~rotated_file();
     void handle(sdk::operd::log_ptr entry) override;
+
 private:
     void open_file_(void);
     void close_file_(void);
     void rotate_files_(void);
+
 private:
     uint8_t level_;
     std::string path_;
@@ -32,5 +42,4 @@ private:
 };
 typedef std::shared_ptr<rotated_file> rotated_file_ptr;
 
-
-#endif
+#endif    // __OPERD_DAEMON_ROTATED_FILE_HPP__

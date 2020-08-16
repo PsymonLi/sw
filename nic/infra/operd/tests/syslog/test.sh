@@ -27,8 +27,7 @@ rm -rf ./syslog-ng.out
 ${BUILD_DIR}/bin/operd ./operd-daemon.json ./operd-decoders.json &
 OPERD_PID=$!
 
-syslog-ng -f /sw/nic/infra/operd/tests/syslog/syslog-ng.conf -Fedv -R \
-          /sw/nic/infra/operd/tests/syslog/syslog-ng.persist &
+syslog-ng -f /sw/nic/infra/operd/tests/syslog/syslog-ng.conf -Fedv -R /tmp/syslog-ng.persist &
 SYSLOGNG_PID=$!
 
 sleep 3

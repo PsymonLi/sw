@@ -42,4 +42,4 @@ private:
     syslog_cbs_t *syslog_cbs_;
 };
 
-#endif // __OPERD_SVC_SYSLOG_HPP__
+#endif    // __OPERD_SVC_SYSLOG_HPP__

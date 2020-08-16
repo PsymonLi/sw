@@ -2,14 +2,14 @@
 
 WS_TOP="/sw"
 TOPDIR="/sw/nic"
-BUILD_DIR=${TOPDIR}/build/x86_64/apulu/
+BUILD_DIR=${TOPDIR}/build/x86_64/apulu/capri/
 
 export OPERD_REGIONS="./operd-regions.json"
 
 pushd ${TOPDIR}
 
-make PIPELINE=apulu operd-test-vpp-logger.bin operd.bin libvpp_operd_dec.so \
-     liboperdvppconsumer.so operdvppconsumer.bin
+make PIPELINE=apulu operd-test-vpp-logger.bin operd.bin libvpp_operd_dec.lib \
+     liboperdvppconsumer.lib operdvppconsumer.bin
 RET=$?
 if [ $RET -ne 0 ]
 then

@@ -1,20 +1,29 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file contains implementation for binary based consumers
+///
+//----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <fcntl.h>
-#include <iterator>
-#include <memory>
 #include <signal.h>
-#include <sstream>
 #include <stdint.h>
 #include <string.h>
-#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iterator>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <vector>
-
-#include "lib/operd/operd.hpp"
-#include "output.hpp"
-#include "binary.hpp"
+#include "nic/sdk/lib/operd/operd.hpp"
+#include "nic/infra/operd/daemon/binary.hpp"
+#include "nic/infra/operd/daemon/output.hpp"
 
 static void
 exec_command (const std::string &command)

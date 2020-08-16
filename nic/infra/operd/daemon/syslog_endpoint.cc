@@ -1,17 +1,24 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file contains implementation for syslog endpoint
+///
+//----------------------------------------------------------------------------
 
 #include <arpa/inet.h>
 #include <assert.h>
 #include <limits.h>
 #include <inttypes.h>
-#include <memory>
 #include <netinet/in.h>
 #include <stdint.h>
-#include <string>
 #include <sys/socket.h>
 #include <unistd.h>
-
-#include "syslog_endpoint.hpp"
+#include <memory>
+#include <string>
+#include "nic/infra/operd/daemon/syslog_endpoint.hpp"
 
 static int
 rfc_style (char *buffer, int len, uint32_t facility, uint32_t severity,

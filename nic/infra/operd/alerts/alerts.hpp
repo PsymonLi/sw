@@ -14,7 +14,6 @@
 #include <stdarg.h>
 #include <memory>
 #include <string>
-
 #include "nic/sdk/lib/operd/operd.hpp"
 #include "nic/sdk/lib/operd/region.hpp"
 #include "gen/alerts/alert_defs.h"

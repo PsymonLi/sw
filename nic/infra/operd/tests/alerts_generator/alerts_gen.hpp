@@ -2,6 +2,11 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 //----------------------------------------------------------------------------
+///
+/// \file
+/// This file defines events generator
+///
+//----------------------------------------------------------------------------
 
 #ifndef __ALERTS_GEN_HPP__
 #define __ALERTS_GEN_HPP__

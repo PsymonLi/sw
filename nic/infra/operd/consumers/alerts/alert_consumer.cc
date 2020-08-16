@@ -10,8 +10,7 @@
 
 #include <arpa/inet.h>
 #include <inttypes.h>
-
-#include "lib/operd/operd.hpp"
+#include "nic/sdk/lib/operd/operd.hpp"
 #include "gen/proto/operd/events.pb.h"
 
 extern "C" {

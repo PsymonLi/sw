@@ -13,7 +13,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "nic/sdk/lib/operd/decoder.h"
 #include "gen/alerts/alert_defs.h"
 #include "gen/proto/operd/events.pb.h"
@@ -145,7 +144,7 @@ alerts_decoder (uint8_t encoder, const char *data, size_t data_length,
 }
 
 extern "C" void
-decoder_lib_init(register_decoder_fn register_decoder)
+decoder_lib_init (register_decoder_fn register_decoder)
 {
     register_decoder(OPERD_DECODER_ALERTS, alerts_decoder);
 }

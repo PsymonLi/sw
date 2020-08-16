@@ -2,11 +2,15 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 //----------------------------------------------------------------------------
+///
+/// \file
+/// This file contains implementation of events generator
+///
+//----------------------------------------------------------------------------
 
 #include <chrono>
 #include <iostream>
-
-#include "alerts_gen.hpp"
+#include "nic/infra/operd/tests/alerts_generator/alerts_gen.hpp"
 
 using namespace std;
 

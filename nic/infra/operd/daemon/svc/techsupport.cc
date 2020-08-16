@@ -11,7 +11,7 @@
 #include <time.h>
 #include <cstdlib>
 #include <string>
-#include "techsupport.hpp"
+#include "nic/infra/operd/daemon/svc/techsupport.hpp"
 #include "gen/proto/operd/techsupport.grpc.pb.h"
 #include "gen/proto/types.pb.h"
 

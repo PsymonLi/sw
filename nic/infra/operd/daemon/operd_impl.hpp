@@ -2,6 +2,11 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 //------------------------------------------------------------------------------
+///
+/// \file
+/// This file defines API for operd impl
+///
+//----------------------------------------------------------------------------
 
 #ifndef __OPERD_DAEMON_IMPL_HPP__
 #define __OPERD_DAEMON_IMPL_HPP__
@@ -26,4 +31,4 @@ typedef struct syslog_cbs_ {
 
 void impl_svc_init(syslog_cbs_t *syslog_cbs);
 
-#endif // __OPERD_DAEMON_IMPL_HPP__
+#endif    // __OPERD_DAEMON_IMPL_HPP__

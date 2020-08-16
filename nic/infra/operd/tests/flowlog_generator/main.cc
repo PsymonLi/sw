@@ -9,10 +9,9 @@
 //----------------------------------------------------------------------------
 
 #include <getopt.h>
-#include <string>
 #include <iostream>
-
-#include "flowlog_gen.hpp"
+#include <string>
+#include "nic/infra/operd/tests/flowlog_generator/flowlog_gen.hpp"
 
 using namespace std;
 

@@ -1,0 +1,23 @@
+---
+version: 2.0
+targets:
+  operd-syslog:
+    commands: ["sh", "-c", "cd /sw/nic/infra/operd/tests/syslog/ && ./test.sh" ]
+    owners: ["email:stavros@pensando.io"]
+    area:
+    sub-area:
+    feature:
+
+  operd-flowlog:
+    commands: ["sh", "-c", "cd /sw/nic/infra/operd/tests/vpp_logger/ && ./test.sh" ]
+    owners: ["email:stavros@pensando.io"]
+    area:
+    sub-area:
+    feature:
+
+image:
+  bind_dir: "/sw"
+  work_dir: "/sw/nic"
+
+logfiles:
+  - /sw/nic/nic_sanity_logs.tar.gz

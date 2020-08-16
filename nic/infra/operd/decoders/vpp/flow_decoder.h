@@ -11,10 +11,9 @@
 #ifndef __OPERD_DECODERS_VPP_FLOW_DECODER_H__
 #define __OPERD_DECODERS_VPP_FLOW_DECODER_H__
 
-
 #include <stdint.h>
-#include "include/sdk/ip.hpp"
-#include "include/sdk/eth.hpp"
+#include "nic/sdk/include/sdk/eth.hpp"
+#include "nic/sdk/include/sdk/ip.hpp"
 
 enum operd_flow_type {
     OPERD_FLOW_TYPE_L2,
@@ -86,4 +85,4 @@ typedef struct operd_flow {
     operd_flow_stats_t stats;
 } operd_flow_t;
 
-#endif // __OPERD_DECODERS_VPP_FLOW_DECODER_H__
+#endif    // __OPERD_DECODERS_VPP_FLOW_DECODER_H__

@@ -37,7 +37,7 @@ handle_event_request (const operd::OperInfoSpec *proto_req,
             event_type = operd_alerts_type_from_proto(event_filter.types(i));
             ret = handle_request(PENOPER_INFO_TYPE_EVENT, event_type,
                                 ctxt, subscribe);
-            if (ret != SDK_RET_OK) {
+            if (unlikely(ret != SDK_RET_OK)) {
                 return ret;
             }
         }
@@ -47,7 +47,7 @@ handle_event_request (const operd::OperInfoSpec *proto_req,
              event_type < operd::alerts::OPERD_EVENT_TYPE_MAX; event_type++) {
             ret = handle_request(PENOPER_INFO_TYPE_EVENT, event_type,
                                  ctxt, subscribe);
-            if (ret != SDK_RET_OK) {
+            if (unlikely(ret != SDK_RET_OK)) {
                 return ret;
             }
         }
@@ -97,14 +97,14 @@ OperSvcImpl::OperInfoSubscribe(
         while (stream->Read(&info_req)) {
             for (int i = 0; i < info_req.request_size(); i++) {
                 ret = handle_info_request(&info_req.request(i), stream);
-                if (ret != SDK_RET_OK) {
+                if (unlikely(ret != SDK_RET_OK)) {
                     goto end;
                 }
             }
         }
 
         // check if consumer is still active or not and update consumer state
-        if (!core::pen_oper_state::state()->is_client_active(stream)) {
+        if (unlikely(!core::pen_oper_state::state()->is_client_active(stream))) {
             // consumer unsubscribed to all oper info, bail out
             break;
         }
@@ -131,7 +131,7 @@ oper_info_send_cb (sdk::lib::event_id_t info_type, void *info_ctxt, void *ctxt)
     grpc::ServerReaderWriter<OperInfoResponse, OperInfoRequest> *stream =
         (grpc::ServerReaderWriter<OperInfoResponse, OperInfoRequest> *)ctxt;
 
-    if (!stream->Write(*resp)) {
+    if (unlikely(!stream->Write(*resp))) {
         // client closed connection, return false so that consumer gets removed
         fprintf(stderr, "Failed to write oper info %u - "
                 "client closed connection\n", info_type);
@@ -150,7 +150,7 @@ publish_oper_info (pen_oper_info_type_t info_type,
 
     ret = pen_oper_info_to_proto_info_response(info_type, info,
                                                info_length, &oper_info_rsp);
-    if (ret != SDK_RET_OK) {
+    if (unlikely(ret != SDK_RET_OK)) {
         fprintf(stderr, "Failed to convert, dropping the info of type %u\n",
                 info_type);
         return;
@@ -159,7 +159,7 @@ publish_oper_info (pen_oper_info_type_t info_type,
     info_id = operd_info_id_from_proto(&oper_info_rsp);
     ret = core::pen_oper_state::state()->client_mgr(info_type)->notify_event(
         info_id, &oper_info_rsp, oper_info_send_cb);
-    if (ret != SDK_RET_OK) {
+    if (unlikely(ret != SDK_RET_OK)) {
         fprintf(stderr, "Failed to notify, dropping the info of type %u\n",
                 info_type);
         return;

@@ -1,19 +1,28 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file contains implementation for file logging
+///
+//----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <fcntl.h>
-#include <memory>
 #include <stdint.h>
-#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <memory>
+#include <string>
+#include "nic/sdk/lib/operd/operd.hpp"
+#include "nic/infra/operd/daemon/output.hpp"
+#include "nic/infra/operd/daemon/rotated_file.hpp"
 
-#include "lib/operd/operd.hpp"
-
-#include "rotated_file.hpp"
-#include "output.hpp"
-
-static char
-level_to_c (uint8_t level) {
+static char inline
+level_to_c (uint8_t level)
+{
     switch (level) {
     case 1:
         return 'E';

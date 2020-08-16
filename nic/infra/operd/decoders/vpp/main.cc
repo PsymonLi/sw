@@ -1,15 +1,24 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file handles flow log translation from C struct to protobuf format
+///
+//----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "flow_decoder.h"
+#include "nic/sdk/lib/operd/decoder.h"
+#include "nic/infra/operd/decoders/vpp/flow_decoder.h"
 #include "gen/proto/operd/flow.pb.h"
 #include "gen/proto/types.pb.h"
-#include "lib/operd/decoder.h"
 
-static uint64_t
+static uint64_t inline
 mac_to_u64 (const uint8_t *mac)
 {
     return
@@ -171,7 +180,7 @@ vpp_decoder (uint8_t encoder, const char *data, size_t data_length,
 }
 
 extern "C" void
-decoder_lib_init(register_decoder_fn register_decoder)
+decoder_lib_init (register_decoder_fn register_decoder)
 {
     register_decoder(OPERD_DECODER_VPP, vpp_decoder);
 }

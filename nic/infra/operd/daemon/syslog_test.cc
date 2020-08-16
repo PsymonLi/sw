@@ -1,4 +1,12 @@
-// {C} Copyright 2020 Pensando Systems Inc. All rights reserved.
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file handles gtest for syslog
+///
+//----------------------------------------------------------------------------
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -8,15 +16,12 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
-
 #include "gtest/gtest.h"
-#include "syslog_endpoint.hpp"
+#include "nic/infra/operd/daemon/syslog_endpoint.hpp"
 
 #define PORT 6969
 
 class SyslogTest : public testing::Test {
-private:
-    int socket_;
 public:
     void SetUp() override {
         struct sockaddr_in addr;
@@ -40,6 +45,9 @@ public:
     const void receive(char *buf, int len) {
         recv(this->socket_, buf, len, 0);
     }
+
+private:
+    int socket_;
 };
 
 TEST_F(SyslogTest, BasicTest) {
@@ -56,7 +64,9 @@ TEST_F(SyslogTest, BasicTest) {
     printf("Got: %s\n", buf);
 }
 
-int main(int argc, char **argv) {
+int
+main (int argc, char **argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

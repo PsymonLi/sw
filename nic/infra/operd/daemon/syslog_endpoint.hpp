@@ -1,13 +1,21 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file defines class for syslog endpoint
+///
+//----------------------------------------------------------------------------
 
 #ifndef __OPERD_DAEMON_SYSLOG_ENDPOINT_HPP__
 #define __OPERD_DAEMON_SYSLOG_ENDPOINT_HPP__
 
 #include <netinet/in.h>
-#include <memory>
 #include <stdint.h>
-#include <string>
 #include <string.h>
+#include <memory>
+#include <string>
 
 class syslog_endpoint {
 public:
@@ -18,6 +26,7 @@ public:
         std::string app_name, std::string proc_id);
     void send_msg(uint32_t severity, const struct timeval *ts,
                   const char *msg_id, const char *msg);
+
 private:
     bool bsd_style_;
     std::string hostname_;
@@ -29,4 +38,4 @@ private:
 };
 typedef std::shared_ptr<syslog_endpoint> syslog_endpoint_ptr;
 
-#endif
+#endif    // __OPERD_DAEMON_SYSLOG_ENDPOINT_HPP__

@@ -9,12 +9,12 @@
 //----------------------------------------------------------------------------
 
 #include <sys/time.h>
+#include "nic/sdk/lib/operd/operd.hpp"
+#include "nic/infra/operd/cli/operdctl.hpp"
 
-#include "lib/operd/operd.hpp"
-#include "operdctl.hpp"
-
-static char
-level_to_c (uint8_t level) {
+static char inline
+level_to_c (uint8_t level)
+{
     switch (level) {
     case 1:
         return 'E';

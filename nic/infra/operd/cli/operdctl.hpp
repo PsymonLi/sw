@@ -8,8 +8,8 @@
 ///
 //----------------------------------------------------------------------------
 
-#ifndef __OPERDCTL_H__
-#define __OPERDCTL_H__
+#ifndef __OPERDCTL_HPP__
+#define __OPERDCTL_HPP__
 
 typedef int (*cmd_handler_fn)(int argc, const char *argv[]);
 
@@ -17,4 +17,4 @@ extern int dump(int argc, const char *argv[]);
 extern int level(int argc, const char *argv[]);
 extern int syslog(int argc, const char *argv[]);
 
-#endif    // __OPERDCTL_H__
+#endif    // __OPERDCTL_HPP__

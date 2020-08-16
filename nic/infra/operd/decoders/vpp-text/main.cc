@@ -1,15 +1,24 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file handles flow log translation from C struct to readable text
+///
+//----------------------------------------------------------------------------
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "flow_decoder.h"
-#include "lib/operd/decoder.h"
+#include "nic/sdk/lib/operd/decoder.h"
+#include "nic/infra/operd/decoders/vpp-text/flow_decoder.h"
 
 static size_t
 vpp_text_decoder (uint8_t encoder, const char *data, size_t data_length,
-             char *output, size_t output_size)
+                  char *output, size_t output_size)
 {
     char *buf = output;
     size_t buf_len = output_size;
@@ -135,7 +144,7 @@ vpp_text_decoder (uint8_t encoder, const char *data, size_t data_length,
 }
 
 extern "C" void
-decoder_lib_init(register_decoder_fn register_decoder)
+decoder_lib_init (register_decoder_fn register_decoder)
 {
     register_decoder(OPERD_DECODER_VPP, vpp_text_decoder);
 }

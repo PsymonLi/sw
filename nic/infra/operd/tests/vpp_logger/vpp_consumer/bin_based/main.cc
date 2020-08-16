@@ -1,12 +1,21 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// Testapp binary to consume flow logs from operd
+///
+//----------------------------------------------------------------------------
+
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <sys/stat.h>
-
 #include "nic/sdk/include/sdk/eth.hpp"
+#include "nic/sdk/lib/operd/operd.hpp"
 #include "gen/proto/types.pb.h"
 #include "gen/proto/operd/flow.pb.h"
-#include "lib/operd/operd.hpp"
 
 #define MAX_LINES 5000
 #define MAX_FILES 5
@@ -94,7 +103,7 @@ print_flow (int fd, char *data, uint64_t data_length)
 }
 
 int
-main(int argc, const char *argv[])
+main (int argc, const char *argv[])
 {
     char timebuf[256];
     struct tm *ltm;
@@ -140,13 +149,13 @@ main(int argc, const char *argv[])
 
         n = read(STDIN_FILENO, &next_size, sizeof(next_size));
         if (n != sizeof(next_size)) {
-            fprintf(stderr, "Unexpectect next size\n");
+            fprintf(stderr, "Unexpected next size\n");
             exit(-1);
         }
 
         n = read(STDIN_FILENO, &timestamp, sizeof(timestamp));
         if (n != sizeof(timestamp)) {
-            fprintf(stderr, "Unexpectect timestamp size\n");
+            fprintf(stderr, "Unexpected timestamp size\n");
             exit(-1);
         }
 

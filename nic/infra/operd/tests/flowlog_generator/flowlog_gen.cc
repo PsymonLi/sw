@@ -13,12 +13,11 @@
 #include <cstdint>
 #include <ctime>
 #include <iostream>
-
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/lib/operd/decoder.h"
 #include "nic/sdk/lib/operd/logger.hpp"
 #include "nic/infra/operd/decoders/vpp/flow_decoder.h"
-#include "flowlog_gen.hpp"
+#include "nic/infra/operd/tests/flowlog_generator/flowlog_gen.hpp"
 
 using namespace std;
 

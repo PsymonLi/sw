@@ -386,6 +386,10 @@ jobs:
     labels: ["CI-Sanity-Build", "CI-Precheckin-Athena", "CI-Sim-UnitTest-Cloud"]
   # nic/apollo/tools/athena/sanity/customer-docker:
     # labels: [ "CI-Sim-UnitTest-Cloud"]
+  nic/infra/operd/tests/tools/sanity/base:
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
+  nic/infra/operd/tests/tools/sanity/apulu:
+    labels: ["CI-Sim-UnitTest-Cloud"]
   nic/sdk:
     labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   penctl:
@@ -426,9 +430,11 @@ dependencies:
     - reference: iota/test/venice
   dol/apollo:
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
+    - reference: nic/infra/operd/tests/tools/sanity/apulu
     - reference: nic/apollo/tools/apulu/sanity/base
     - reference: test/ci_targets/controlplane-dol
   dol/apulu:
+    - reference: nic/infra/operd/tests/tools/sanity/apulu
     - reference: nic/apollo/tools/apulu/sanity/base
     - reference: test/ci_targets/controlplane-dol
   dol/test/networking:
@@ -521,6 +527,7 @@ dependencies:
     - reference: test/verify-build
     - reference: iota/test/standalone/precheckin/linux
   nic/apollo:
+    - reference: nic/infra/operd/tests/tools/sanity/apulu
     - reference: iota/test/venice
       exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
@@ -600,9 +607,10 @@ dependencies:
     - reference: test/ci_targets/cloud-e2e
     - reference: test/ci_targets/controlplane-dol
   nic/infra/operd:
+    - reference: nic/infra/operd/tests/tools/sanity/base
+    - reference: nic/infra/operd/tests/tools/sanity/apulu
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
-    - reference: nic/apollo/tools/apulu/sanity/base
   nic/p4-hlir:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx

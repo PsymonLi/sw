@@ -12,10 +12,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
-
 #include "nic/sdk/lib/operd/decoder.h"
 #include "nic/sdk/lib/operd/operd.hpp"
-#include "alerts.hpp"
+#include "nic/infra/operd/alerts/alerts.hpp"
 
 namespace operd {
 namespace alerts {

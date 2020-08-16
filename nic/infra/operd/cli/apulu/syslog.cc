@@ -10,10 +10,9 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "grpc++/grpc++.h"
 #include <memory>
-
-#include "../operdctl.hpp"
+#include "grpc++/grpc++.h"
+#include "nic/infra/operd/cli/operdctl.hpp"
 #include "gen/proto/operd/syslog.grpc.pb.h"
 
 int

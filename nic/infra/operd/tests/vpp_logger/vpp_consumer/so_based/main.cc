@@ -1,14 +1,23 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// Testapp library to consume flow logs from operd
+///
+//----------------------------------------------------------------------------
+
 #include <arpa/inet.h>
 #include <inttypes.h>
-
+#include "nic/sdk/lib/operd/operd.hpp"
 #include "gen/proto/types.pb.h"
 #include "gen/proto/operd/flow.pb.h"
-#include "lib/operd/operd.hpp"
 
 extern "C" {
 
 void
-handler(sdk::operd::log_ptr entry)
+handler (sdk::operd::log_ptr entry)
 {
     operd::FlowLog flow;
 

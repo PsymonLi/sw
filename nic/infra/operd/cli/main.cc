@@ -10,8 +10,7 @@
 
 #include <stdio.h>
 #include <string.h>
-
-#include "operdctl.hpp"
+#include "nic/infra/operd/cli/operdctl.hpp"
 
 struct cmd_handler_ {
     const char *name;

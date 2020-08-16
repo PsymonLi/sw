@@ -2,7 +2,7 @@
     {
         "output": {
             "type": "binary",
-            "command": "/usr/src/github.com/pensando/sw/nic/build/x86_64/apulu/bin/operdvppconsumer ./vpp.log"
+            "command": "/usr/src/github.com/pensando/sw/nic/build/x86_64/apulu/capri/bin/operdvppconsumer ./vpp.log"
         },
         "input": ["vpp"]
     }

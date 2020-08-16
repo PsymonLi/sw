@@ -1,7 +1,12 @@
 //
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file defines grpc APIs for metrics
+///
+//----------------------------------------------------------------------------
 
 #ifndef __PEN_OPER_SVC_METRICS_HPP__
 #define __PEN_OPER_SVC_METRICS_HPP__
@@ -25,4 +30,4 @@ public:
         override;
 };
 
-#endif // __PEN_OPER_SVC_METRICS_HPP__
+#endif    // __PEN_OPER_SVC_METRICS_HPP__

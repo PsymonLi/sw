@@ -1,0 +1,18 @@
+---
+version: 2.0
+targets:
+  apulu/dol/operd:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/operd"]
+    owners: ["email:param@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
+image:
+  bind_dir: "/sw"
+  work_dir: "/sw/nic"
+
+logfiles:
+  - /sw/nic/dol_techsupport.tar.gz

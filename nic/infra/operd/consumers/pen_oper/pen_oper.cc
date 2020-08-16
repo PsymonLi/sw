@@ -1,10 +1,14 @@
 //
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file handles pen_oper plugin
+///
+//----------------------------------------------------------------------------
 
 #include "grpc++/grpc++.h"
-
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/globals.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
@@ -13,9 +17,9 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/apollo/include/globals.hpp"
-#include "core/state.hpp"
-#include "svc/oper.hpp"
-#include "svc/metrics.hpp"
+#include "nic/infra/operd/consumers/pen_oper/core/state.hpp"
+#include "nic/infra/operd/consumers/pen_oper/svc/oper.hpp"
+#include "nic/infra/operd/consumers/pen_oper/svc/metrics.hpp"
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -93,12 +97,12 @@ plugin_init (void)
     ret = sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_HW);
 #endif
 
-    if (ret != sdk::lib::PAL_RET_OK) {
+    if (unlikely(ret != sdk::lib::PAL_RET_OK)) {
         fprintf(stderr, "pal init failed, ret %u\n", ret);
         return 1;
     }
 
-    if (core::pen_oper_state::init() != SDK_RET_OK) {
+    if (unlikely(core::pen_oper_state::init() != SDK_RET_OK)) {
         fprintf(stderr, "Failed to init pen_oper_state\n");
         return 1;
     }
@@ -122,12 +126,12 @@ pen_oper_get_info_type (sdk::operd::log_ptr entry)
 
 // consumes info from operd daemon & publishes to registered subscribers
 void
-handler(sdk::operd::log_ptr entry)
+handler (sdk::operd::log_ptr entry)
 {
     pen_oper_info_type_t info_type;
 
     info_type = pen_oper_get_info_type(entry);
-    if (info_type == PENOPER_INFO_TYPE_NONE) {
+    if (unlikely(info_type == PENOPER_INFO_TYPE_NONE)) {
         fprintf(stderr, "Non-registered info of type %u received\n",
                 entry->encoder());
         assert(0);
@@ -137,4 +141,4 @@ handler(sdk::operd::log_ptr entry)
     publish_oper_info(info_type, entry->data(), entry->data_length());
 }
 
-} // extern "C"
+}    // extern "C"

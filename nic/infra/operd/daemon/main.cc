@@ -22,13 +22,13 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include "lib/operd/decoder.h"
-#include "lib/operd/operd.hpp"
-#include "binary.hpp"
-#include "operd_impl.hpp"
-#include "output.hpp"
-#include "rotated_file.hpp"
-#include "syslog.hpp"
+#include "nic/sdk/lib/operd/decoder.h"
+#include "nic/sdk/lib/operd/operd.hpp"
+#include "nic/infra/operd/daemon/binary.hpp"
+#include "nic/infra/operd/daemon/operd_impl.hpp"
+#include "nic/infra/operd/daemon/output.hpp"
+#include "nic/infra/operd/daemon/rotated_file.hpp"
+#include "nic/infra/operd/daemon/syslog.hpp"
 
 namespace pt = boost::property_tree;
 
@@ -370,7 +370,7 @@ load_config (std::string config_file)
 }
 
 int
-register_decoder(uint8_t encoder_id, decoder_fn fn)
+register_decoder (uint8_t encoder_id, decoder_fn fn)
 {
     if (g_decoders.count(encoder_id) != 0) {
         fprintf(stderr, "Error: duplicate encoder_id registration for %hhu\n",

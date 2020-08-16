@@ -10,9 +10,8 @@
 
 #include <stdint.h>
 #include <memory>
-
-#include "lib/operd/region.hpp"
-#include "operdctl.hpp"
+#include "nic/sdk/lib/operd/region.hpp"
+#include "nic/infra/operd/cli/operdctl.hpp"
 
 int
 level (int argc, const char *argv[])

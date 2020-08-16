@@ -1,11 +1,17 @@
 //
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file contains definitions of grpc APIs for metrics
+///
+//----------------------------------------------------------------------------
 
+#include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/metrics/metrics.hpp"
 #include "nic/sdk/lib/operd/operd.hpp"
-#include "metrics.hpp"
+#include "nic/infra/operd/consumers/pen_oper/svc/metrics.hpp"
 
 typedef std::shared_ptr<MetricsGetResponse> MetricsGetResponsePtr;
 
@@ -21,7 +27,7 @@ metrics_read (std::string name, sdk::metrics::key_t key,
 
     if (g_handlers.count(name) == 0) {
         handler = sdk::metrics::metrics_open(name.c_str());
-        if (handler == NULL) {
+        if (unlikely(handler == NULL)) {
             // requested metrics is not initialized yet
             rsp->set_apistatus(types::ApiStatus::API_STATUS_RETRY);
             return;
@@ -33,7 +39,7 @@ metrics_read (std::string name, sdk::metrics::key_t key,
 
     counters = sdk::metrics::metrics_read(handler, key);
     num_counters = counters.size();
-    if (num_counters == 0) {
+    if (unlikely(num_counters == 0)) {
         // metrics requested for the key is not available
         rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
         return;
@@ -59,7 +65,7 @@ MetricsSvcImpl::MetricsGet(ServerContext* context,
         while (stream->Read(&metrics_req)) {
             sdk::metrics::key_t key;
 
-            if (metrics_req.key().size() != sizeof(key)) {
+            if (unlikely(metrics_req.key().size() != sizeof(key))) {
                 metrics_rsp->set_apistatus(
                     types::ApiStatus::API_STATUS_INVALID_ARG);
                 stream->Write(*metrics_rsp.get());

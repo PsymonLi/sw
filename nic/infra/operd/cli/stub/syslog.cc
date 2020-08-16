@@ -9,8 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include <stdio.h>
-
-#include "../operdctl.hpp"
+#include "nic/infra/operd/cli/operdctl.hpp"
 
 int
 syslog (int argc, const char *argv[])

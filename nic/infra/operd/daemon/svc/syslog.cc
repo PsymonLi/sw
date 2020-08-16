@@ -15,7 +15,7 @@
 #include <string>
 
 #include "nic/infra/operd/daemon/operd_impl.hpp"
-#include "syslog.hpp"
+#include "nic/infra/operd/daemon/svc/syslog.hpp"
 #include "gen/proto/operd/syslog.grpc.pb.h"
 #include "gen/proto/types.pb.h"
 

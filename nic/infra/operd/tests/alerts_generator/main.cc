@@ -2,12 +2,16 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 //----------------------------------------------------------------------------
+///
+/// \file
+/// test app to generate events
+///
+//----------------------------------------------------------------------------
 
 #include <getopt.h>
 #include <string>
 #include <iostream>
-
-#include "alerts_gen.hpp"
+#include "nic/infra/operd/tests/alerts_generator/alerts_gen.hpp"
 
 using namespace std;
 using namespace test::alerts;
@@ -26,7 +30,7 @@ void print_usage(char* name)
          << endl;
 }
 
-int main(int argc, char** argv)
+int main (int argc, char** argv)
 {
     int opt;
     int rate_per_second = 1;

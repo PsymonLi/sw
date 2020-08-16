@@ -1,7 +1,15 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file contains implementation for syslog
+///
+//----------------------------------------------------------------------------
 
-#include "lib/operd/operd.hpp"
-#include "syslog.hpp"
+#include "nic/sdk/lib/operd/operd.hpp"
+#include "nic/infra/operd/daemon/syslog.hpp"
 
 syslog_ptr
 syslog::factory(syslog_endpoint_ptr endpoint) {

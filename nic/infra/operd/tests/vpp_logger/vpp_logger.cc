@@ -1,9 +1,18 @@
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// Testapp to generate a flow log
+///
+//----------------------------------------------------------------------------
+
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "lib/operd/operd.hpp"
-#include "lib/operd/logger.hpp"
-#include "lib/operd/decoder.h"
+#include "nic/sdk/lib/operd/decoder.h"
+#include "nic/sdk/lib/operd/logger.hpp"
+#include "nic/sdk/lib/operd/operd.hpp"
 #include "nic/infra/operd/decoders/vpp/flow_decoder.h"
 
 int
