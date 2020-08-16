@@ -77,3 +77,51 @@ modules:
               vnic : filter://VnicEncapType=none,TxErspanMirrorCount=4,TxRspanMirrorCount=0
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
               vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=4,TxRspanMirrorCount=0
+
+    - module:
+        name    : L2IGW_V4_TCP_0_ERSPAN_SESS 
+        spec    : mirror_l2igw.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=0,TxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=0,TxRspanMirrorCount=0
+
+    - module:
+        name    : L2IGW_V4_TCP_1_ERSPAN_SESS 
+        spec    : mirror_l2igw.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=1,TxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=1,TxRspanMirrorCount=0
+
+    - module:
+        name    : L2IGW_V4_TCP_2_ERSPAN_SESS 
+        spec    : mirror_l2igw.testspec
+        enable  : False
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=2,TxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=2,TxRspanMirrorCount=0
+
+    - module:
+        name    : L2IGW_V4_TCP_3_ERSPAN_SESS 
+        spec    : mirror_l2igw.testspec
+        enable  : False
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=3,TxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=3,TxRspanMirrorCount=0
+
+    - module:
+        name    : L2IGW_V4_TCP_4_ERSPAN_SESS 
+        spec    : mirror_l2igw.testspec
+        enable  : False
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=none,TxErspanMirrorCount=4,TxRspanMirrorCount=0
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q,TxErspanMirrorCount=4,TxRspanMirrorCount=0
