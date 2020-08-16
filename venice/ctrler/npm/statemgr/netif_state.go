@@ -216,7 +216,10 @@ func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Int
 		update = true
 	}
 
-	if agentNetif.Spec.Type == netproto.InterfaceSpec_UPLINK_ETH.String() && obj.NetworkInterfaceState.Status.IFUplinkStatus != nil {
+	if agentNetif.Status.DSCID != obj.NetworkInterfaceState.Status.DSCID {
+		update = true
+	}
+	if agentNetif.Spec.Type == netproto.InterfaceSpec_UPLINK_ETH.String() {
 		if checkLLDPNeighborUpdate(obj.NetworkInterfaceState.Status.IFUplinkStatus.LLDPNeighbor, agentNetif.Status.IFUplinkStatus.LLDPNeighbor) == true {
 			log.Infof("Updating network interface LLDPNeighbor %v : %v", agentNetif.Name, obj.NetworkInterfaceState.Status.IFUplinkStatus.LLDPNeighbor)
 			update = true

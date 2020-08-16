@@ -131,6 +131,7 @@ type ObjectIntf interface {
 	WorkloadPairs() *objects.WorkloadPairCollection
 	NetworkSecurityPolicy(name string) *objects.NetworkSecurityPolicyCollection
 	DefaultNetworkSecurityPolicy() *objects.NetworkSecurityPolicyCollection
+	DefaultTenantNetworkSecurityPolicy(string) *objects.NetworkSecurityPolicyCollection
 	NewNetworkSecurityPolicy(name string) *objects.NetworkSecurityPolicyCollection
 	NewMirrorSession(name string) *objects.MirrorSessionCollection
 	LinkUpEventsSince(since time.Time, npc *objects.NaplesCollection) *objects.EventsCollection

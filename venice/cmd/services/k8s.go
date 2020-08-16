@@ -626,6 +626,14 @@ func createDeploymentObject(module *protos.Module) *clientTypes.Deployment {
 			},
 		}
 	}
+	if module.Name == globals.Pegasus {
+		var tolerateSeconds int64 = 60
+		dConfig.Spec.Template.Spec.Tolerations = append(dConfig.Spec.Template.Spec.Tolerations, v1.Toleration{
+			Operator:          v1.TolerationOpExists,
+			Effect:            v1.TaintEffectNoExecute,
+			TolerationSeconds: &tolerateSeconds,
+		})
+	}
 	return dConfig
 }
 
@@ -770,6 +778,12 @@ func (k *k8sService) deleteCronJob(name string) error {
 // StartServices starts a particular set of services
 func (k *k8sService) StartServices(svcs []string) error {
 	log.Infof("got call to start services %v", svcs)
+	defer k.Unlock()
+	k.Lock()
+	if k.modCh == nil {
+		log.Error("Modules Channel is nil, returning")
+		return nil
+	}
 	for _, m := range svcs {
 		module, ok := k8sModules[m]
 		if !ok {

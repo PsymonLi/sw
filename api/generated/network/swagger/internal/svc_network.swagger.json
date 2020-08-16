@@ -10125,8 +10125,7 @@
           "description": "Neighbor IP Address."
         },
         "remote-as": {
-          "type": "integer",
-          "format": "int64",
+          "$ref": "#/definitions/apiBgpAsn",
           "description": "ASN the neighbor belongs to."
         },
         "status": {

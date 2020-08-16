@@ -48,7 +48,7 @@ func TestIotaEquinixTest(t *testing.T) {
 	}
 	tb, model, err := model.InitSuite(*topoName, *testbedParams, *scaleFlag, *scaleDataFlag)
 
-	Assert(t, err == nil, "Init suite failed")
+	Assert(t, err == nil, "Init suite failed (%s)", err)
 
 	// test suite
 	ts = &TestSuite{
@@ -65,10 +65,17 @@ func TestIotaEquinixTest(t *testing.T) {
 
 // BeforeSuite runs before the test suite and sets up the testbed
 var _ = BeforeSuite(func() {
-
+	// XXX-TODO - replaces the Failure Handler. If we end up using customer fialure handler then use
+	//  an interceptor rather than replacing it.
+	defer RegisterFailHandler(Fail)
+	RegisterFailHandler(func(message string, callerSkip ...int) {
+		By("Test Suite Failed: Collecting logs")
+		ts.model.CollectLogs()
+		Fail(message, callerSkip...)
+	})
 	// verify cluster, workload are in good health
 	Eventually(func() error {
-		return ts.model.VerifySystemHealth(true)
+		return ts.model.VerifySystemHealth(false)
 	}).Should(Succeed())
 
 })

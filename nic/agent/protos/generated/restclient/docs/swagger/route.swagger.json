@@ -610,6 +610,12 @@
         "dsc-auto-config": {
           "type": "boolean",
           "format": "boolean"
+        },
+        "route-reflectors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -664,6 +670,10 @@
           "format": "int64"
         },
         "holdtime": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "idle-holdtime": {
           "type": "integer",
           "format": "int64"
         }

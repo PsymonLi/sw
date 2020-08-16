@@ -18,6 +18,15 @@ type RoutingConfigEventHandler func(et kvstore.WatchEventType, nwintf *network.R
 // NodeConfigEventHandler handles watch events for Node objects
 type NodeConfigEventHandler func(et kvstore.WatchEventType, nwintf *cluster.Node)
 
+// HealthReport reports health of a module
+type HealthReport struct {
+	Healthy bool
+	Reason  string
+}
+
+// HealthReportHandler handles health reports from a module.
+type HealthReportHandler func(in HealthReport)
+
 // CfgWatcherService watches for changes to config from API Server
 type CfgWatcherService interface {
 	// Start the service
@@ -36,6 +45,9 @@ type CfgWatcherService interface {
 
 	// SetNodeConfigEventHandler sets the handler to handle events related to Node object
 	SetNodeConfigEventHandler(NodeConfigEventHandler)
+
+	// SetHealthReportHandler sets the handler to report health events
+	SetHealthReportHandler(HealthReportHandler)
 
 	// APIClient returns a valid interface once the APIServer is good and
 	// accepting requests

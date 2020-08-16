@@ -95,6 +95,13 @@ func TestIPAMPolicyConfig(t *testing.T) {
 		t.Errorf("validation passed, expecting to fail for %v", policy.Name)
 	}
 	l.Infof("IPAM Policy %v : Error %v", policy.Name, ok)
+	policy.Spec.DHCPRelay.Servers = nil
+	server.VirtualRouter = "xyz"
+	policy.Spec.DHCPRelay.Servers = append(policy.Spec.DHCPRelay.Servers, server)
+	ok = s.validateIPAMPolicyConfig(policy, "", false, false)
+	if ok == nil {
+		t.Errorf("validation passed, expecting to fail for %v", policy.Name)
+	}
 }
 
 func TestValidateHooks(t *testing.T) {

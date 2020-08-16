@@ -11,6 +11,7 @@ import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 export interface IHealthStatusPeeringStatus {
     'configured'?: number;
     'established'?: number;
+    'down-peers'?: Array<string>;
     '_ui'?: any;
 }
 
@@ -20,6 +21,7 @@ export class HealthStatusPeeringStatus extends BaseModel implements IHealthStatu
     '_ui': any = {};
     'configured': number = null;
     'established': number = null;
+    'down-peers': Array<string> = null;
     public static propInfo: { [prop in keyof IHealthStatusPeeringStatus]: PropInfoItem } = {
         'configured': {
             required: false,
@@ -28,6 +30,10 @@ export class HealthStatusPeeringStatus extends BaseModel implements IHealthStatu
         'established': {
             required: false,
             type: 'number'
+        },
+        'down-peers': {
+            required: false,
+            type: 'Array<string>'
         },
     }
 
@@ -53,6 +59,7 @@ export class HealthStatusPeeringStatus extends BaseModel implements IHealthStatu
     */
     constructor(values?: any, setDefaults:boolean = true) {
         super();
+        this['down-peers'] = new Array<string>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -79,6 +86,13 @@ export class HealthStatusPeeringStatus extends BaseModel implements IHealthStatu
         } else {
             this['established'] = null
         }
+        if (values && values['down-peers'] != null) {
+            this['down-peers'] = values['down-peers'];
+        } else if (fillDefaults && HealthStatusPeeringStatus.hasDefaultValue('down-peers')) {
+            this['down-peers'] = [ HealthStatusPeeringStatus.propInfo['down-peers'].default];
+        } else {
+            this['down-peers'] = [];
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -88,6 +102,7 @@ export class HealthStatusPeeringStatus extends BaseModel implements IHealthStatu
             this._formGroup = new FormGroup({
                 'configured': CustomFormControl(new FormControl(this['configured']), HealthStatusPeeringStatus.propInfo['configured']),
                 'established': CustomFormControl(new FormControl(this['established']), HealthStatusPeeringStatus.propInfo['established']),
+                'down-peers': CustomFormControl(new FormControl(this['down-peers']), HealthStatusPeeringStatus.propInfo['down-peers']),
             });
         }
         return this._formGroup;
@@ -101,6 +116,7 @@ export class HealthStatusPeeringStatus extends BaseModel implements IHealthStatu
         if (this._formGroup) {
             this._formGroup.controls['configured'].setValue(this['configured']);
             this._formGroup.controls['established'].setValue(this['established']);
+            this._formGroup.controls['down-peers'].setValue(this['down-peers']);
         }
     }
 }

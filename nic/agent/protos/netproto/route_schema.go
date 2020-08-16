@@ -29,6 +29,8 @@ var typesMapRoute = map[string]*api.Struct{
 			"Holdtime": api.Field{Name: "Holdtime", CLITag: api.CLIInfo{ID: "holdtime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "holdtime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
 
 			"DSCAutoConfig": api.Field{Name: "DSCAutoConfig", CLITag: api.CLIInfo{ID: "dsc-auto-config", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "dsc-auto-config", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_BOOL"},
+
+			"RouteReflectors": api.Field{Name: "RouteReflectors", CLITag: api.CLIInfo{ID: "route-reflectors", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "route-reflectors", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"netproto.BGPNeighbor": &api.Struct{
@@ -51,6 +53,8 @@ var typesMapRoute = map[string]*api.Struct{
 			"KeepaliveInterval": api.Field{Name: "KeepaliveInterval", CLITag: api.CLIInfo{ID: "keepalive-interval", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "keepalive-interval", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
 
 			"Holdtime": api.Field{Name: "Holdtime", CLITag: api.CLIInfo{ID: "holdtime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "holdtime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
+
+			"IdleHoldTime": api.Field{Name: "IdleHoldTime", CLITag: api.CLIInfo{ID: "idle-holdtime", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "idle-holdtime", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
 		},
 	},
 	"netproto.EVPNConfig": &api.Struct{
@@ -218,6 +222,7 @@ var typesMapRoute = map[string]*api.Struct{
 			"enable-address-families": api.CLIInfo{Path: "Spec.BGPConfig.Neighbors[].EnableAddressFamilies", Skip: false, Insert: "", Help: ""},
 			"generation-id":           api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
 			"holdtime":                api.CLIInfo{Path: "Spec.BGPConfig.Neighbors[].Holdtime", Skip: false, Insert: "", Help: ""},
+			"idle-holdtime":           api.CLIInfo{Path: "Spec.BGPConfig.Neighbors[].IdleHoldTime", Skip: false, Insert: "", Help: ""},
 			"ip-address":              api.CLIInfo{Path: "Spec.BGPConfig.Neighbors[].IPAddress", Skip: false, Insert: "", Help: ""},
 			"keepalive-interval":      api.CLIInfo{Path: "Spec.BGPConfig.Neighbors[].KeepaliveInterval", Skip: false, Insert: "", Help: ""},
 			"kind":                    api.CLIInfo{Path: "Kind", Skip: false, Insert: "", Help: ""},
@@ -228,6 +233,7 @@ var typesMapRoute = map[string]*api.Struct{
 			"password":                api.CLIInfo{Path: "Spec.BGPConfig.Neighbors[].Password", Skip: false, Insert: "", Help: ""},
 			"remote-as":               api.CLIInfo{Path: "Spec.BGPConfig.Neighbors[].RemoteAS", Skip: false, Insert: "", Help: ""},
 			"resource-version":        api.CLIInfo{Path: "ResourceVersion", Skip: false, Insert: "", Help: ""},
+			"route-reflectors":        api.CLIInfo{Path: "Spec.BGPConfig.RouteReflectors", Skip: false, Insert: "", Help: ""},
 			"router-id":               api.CLIInfo{Path: "Spec.BGPConfig.RouterId", Skip: false, Insert: "", Help: ""},
 			"self-link":               api.CLIInfo{Path: "SelfLink", Skip: false, Insert: "", Help: ""},
 			"shutdown":                api.CLIInfo{Path: "Spec.BGPConfig.Neighbors[].Shutdown", Skip: false, Insert: "", Help: ""},

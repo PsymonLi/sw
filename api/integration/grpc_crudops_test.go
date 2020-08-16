@@ -5444,16 +5444,16 @@ func TestRoutingSecrets(t *testing.T) {
 		exp := []*network.BGPAuthStatus{
 			{
 				IPAddress: "10.1.1.1",
-				RemoteAS:  62000,
+				RemoteAS:  api.BgpAsn{ASNumber: 62000},
 				Status:    network.BGPAuthStatus_Disabled.String(),
 			},
 			{
 				IPAddress: "10.1.1.2",
-				RemoteAS:  63000,
+				RemoteAS:  api.BgpAsn{ASNumber: 63000},
 				Status:    network.BGPAuthStatus_Enabled.String(),
 			},
 			{
-				RemoteAS: 6500,
+				RemoteAS: api.BgpAsn{ASNumber: 6500},
 				Status:   network.BGPAuthStatus_Enabled.String(),
 			},
 		}

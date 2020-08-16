@@ -800,6 +800,7 @@ func (cl *clusterHooks) writeSnapshot(ctx context.Context, name string, client o
 	}
 	defer rdr.Close()
 
+	log.Infof("Starting to write Snapshot [%d] to objstore [%s]", rev, name)
 	meta["Creation-Time"] = fmt.Sprintf("%s", time.Now().Format(time.RFC3339Nano))
 
 	// XXX-TODO(sanjayt): Add metadata

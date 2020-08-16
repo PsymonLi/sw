@@ -60,6 +60,7 @@ var typesMapRouting = map[string]*api.Struct{
 		CLITags: map[string]api.CLIInfo{
 			"api-version":      api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
 			"configured":       api.CLIInfo{Path: "Status.InternalPeers.Configured", Skip: false, Insert: "", Help: ""},
+			"down-peers":       api.CLIInfo{Path: "Status.InternalPeers.DownPeers", Skip: false, Insert: "", Help: ""},
 			"established":      api.CLIInfo{Path: "Status.InternalPeers.Established", Skip: false, Insert: "", Help: ""},
 			"generation-id":    api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
 			"kind":             api.CLIInfo{Path: "Kind", Skip: false, Insert: "", Help: ""},
@@ -96,6 +97,8 @@ var typesMapRouting = map[string]*api.Struct{
 			"Configured": api.Field{Name: "Configured", CLITag: api.CLIInfo{ID: "configured", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "configured", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_INT32"},
 
 			"Established": api.Field{Name: "Established", CLITag: api.CLIInfo{ID: "established", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "established", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_INT32"},
+
+			"DownPeers": api.Field{Name: "DownPeers", CLITag: api.CLIInfo{ID: "down-peers", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "down-peers", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 	"routing.Neighbor": &api.Struct{

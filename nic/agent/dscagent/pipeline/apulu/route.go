@@ -78,7 +78,7 @@ func expandRoutingConfig(infraAPI types.InfraAPI, lbIP string, rtCfg *netproto.R
 
 	dsccfg := infraAPI.GetConfig()
 
-	log.Infof("DSCConfig Controllers[%v] Interfaces[%v]", dsccfg.Controllers, dsccfg.DSCInterfaceIPs)
+	log.Infof("DSCConfig Controllers[%v]/[%v] Interfaces[%v]", rtCfg.Spec.BGPConfig.RouteReflectors, dsccfg.Controllers, dsccfg.DSCInterfaceIPs)
 
 	ret.Spec.BGPConfig.Holdtime, ret.Spec.BGPConfig.KeepaliveInterval = rtCfg.Spec.BGPConfig.Holdtime, rtCfg.Spec.BGPConfig.KeepaliveInterval
 	ret.Spec.BGPConfig.ASNumber = rtCfg.Spec.BGPConfig.ASNumber
@@ -91,20 +91,33 @@ func expandRoutingConfig(infraAPI types.InfraAPI, lbIP string, rtCfg *netproto.R
 			}
 			switch n.EnableAddressFamilies[0] {
 			case "evpn", "l2vpn-evpn":
-				for _, c := range dsccfg.Controllers {
-					h, _, err := net.SplitHostPort(c)
-					if err != nil {
-						log.Errorf("hostport returned error for [%v](%v)", c, err)
+				var RRs []string
+				if len(rtCfg.Spec.BGPConfig.RouteReflectors) > 0 {
+					RRs = rtCfg.Spec.BGPConfig.RouteReflectors
+					log.Infof("RouteReflectors set in config: using [%v]", RRs)
+				} else {
+					for _, c := range dsccfg.Controllers {
+						h, _, err := net.SplitHostPort(c)
+						if err != nil {
+							log.Errorf("hostport returned error for [%v](%v)", c, err)
+						}
+						a, err := net.LookupHost(h)
+						if err != nil {
+							log.Errorf("LookupHost returned error for [%v](%v)", a, err)
+							continue
+						}
+						RRs = append(RRs, a[0])
 					}
-					a, err := net.LookupHost(h)
-					if err != nil {
-						log.Errorf("LookupHost returned error for [%v](%v)", a, err)
-						continue
-					}
+					log.Infof("Using RouteReflectors from DSC Controllers [%v]", RRs)
+				}
+				iht := clientutils.DefaultIdleHoldTime
+				for _, c := range RRs {
 					peer := new(netproto.BGPNeighbor)
 					*peer = *n
-					peer.IPAddress = a[0]
+					peer.IPAddress = c
 					peer.RemoteAS = rtCfg.Spec.BGPConfig.ASNumber
+					peer.IdleHoldTime = uint32(iht)
+					iht += clientutils.IdleHoldtimeJitter
 					ret.Spec.BGPConfig.Neighbors = append(ret.Spec.BGPConfig.Neighbors, peer)
 					log.Infof("Expand - peer [%+v]", peer)
 					expCfgs = append(expCfgs, fmt.Sprintf("%s-%v", peer.IPAddress, peer.EnableAddressFamilies))

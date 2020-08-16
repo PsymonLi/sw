@@ -411,7 +411,7 @@ func (spc *NetworkSecurityPolicyCollection) Restore() error {
 	if spc == nil {
 		return nil
 	}
-	return spc.AddRule("any", "any", "any", "PERMIT").Commit()
+	return spc.Commit()
 }
 
 // Status returns venice status of the policy

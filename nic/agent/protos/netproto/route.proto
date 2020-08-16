@@ -115,15 +115,17 @@ message BGPNeighbor {
     bool DSCAutoConfig                      = 7 [(gogoproto.jsontag) = "dsc-auto-config,omitempty"];
     uint32 KeepaliveInterval                = 8 [(gogoproto.jsontag) = "keepalive-interval,omitempty"];
     uint32 Holdtime                         = 9 [(gogoproto.jsontag) = "holdtime,omitempty"];
+    uint32 IdleHoldTime                     =10 [(gogoproto.jsontag) = "idle-holdtime,omitempty"];
 }
         
 message BGPConfig {
-    string RouterId = 1 [(gogoproto.jsontag) = "router-id,omitempty", (venice.check) = "EmptyOr(IPAddr())"];
-    uint32 ASNumber = 2 [(gogoproto.jsontag) = "as-number,omitempty"];
-    repeated BGPNeighbor Neighbors = 3 [(gogoproto.jsontag) = "neighbors,omitempty"];
-    uint32 KeepaliveInterval = 4 [(gogoproto.jsontag) = "keepalive-interval,omitempty"];
-    uint32 Holdtime = 5 [(gogoproto.jsontag) = "holdtime,omitempty"];
-    bool DSCAutoConfig = 6 [(gogoproto.jsontag) = "dsc-auto-config,omitempty"];
+    string RouterId                 = 1 [(gogoproto.jsontag) = "router-id,omitempty", (venice.check) = "EmptyOr(IPAddr())"];
+    uint32 ASNumber                 = 2 [(gogoproto.jsontag) = "as-number,omitempty"];
+    repeated BGPNeighbor Neighbors  = 3 [(gogoproto.jsontag) = "neighbors,omitempty"];
+    uint32 KeepaliveInterval        = 4 [(gogoproto.jsontag) = "keepalive-interval,omitempty"];
+    uint32 Holdtime                 = 5 [(gogoproto.jsontag) = "holdtime,omitempty"];
+    bool DSCAutoConfig              = 6 [(gogoproto.jsontag) = "dsc-auto-config,omitempty"];
+    repeated string RouteReflectors = 7 [(gogoproto.jsontag) = "route-reflectors,omitempty"];
 }
 
 message RoutingConfigSpec {

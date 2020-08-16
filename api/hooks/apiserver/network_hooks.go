@@ -654,7 +654,7 @@ func (h *networkHooks) updateAuthStatus(ctx context.Context, kvs kvstore.Interfa
 				for _, n := range inRtCfg.Spec.BGPConfig.Neighbors {
 					stat := &network.BGPAuthStatus{
 						IPAddress: n.IPAddress,
-						RemoteAS:  n.RemoteAS.ASNumber,
+						RemoteAS:  api.BgpAsn{ASNumber: n.RemoteAS.ASNumber},
 					}
 					if n.Password != "" {
 						stat.Status = network.BGPAuthStatus_Enabled.String()
@@ -687,7 +687,7 @@ func (h *networkHooks) updateAuthStatus(ctx context.Context, kvs kvstore.Interfa
 					for _, n := range r1.Spec.BGPConfig.Neighbors {
 						stat := &network.BGPAuthStatus{
 							IPAddress: n.IPAddress,
-							RemoteAS:  n.RemoteAS.ASNumber,
+							RemoteAS:  api.BgpAsn{ASNumber: n.RemoteAS.ASNumber},
 						}
 						if n.Password != "" {
 							stat.Status = network.BGPAuthStatus_Enabled.String()
@@ -725,6 +725,8 @@ func (h *networkHooks) networkVNIReserve(ctx context.Context, i interface{}, kvs
 
 		h.vnidMap[n.Spec.VxlanVNI] = "Network/" + n.Tenant + "/" + n.Name
 		return func(ctx context.Context, i interface{}, _ kvstore.Interface, key string, dryrun bool) {
+			defer h.vnidMapMu.Unlock()
+			h.vnidMapMu.Lock()
 			delete(h.vnidMap, n.Spec.VxlanVNI)
 		}, nil
 	}
@@ -794,6 +796,8 @@ func (h *networkHooks) vrouterVNIReserve(ctx context.Context, i interface{}, kvs
 
 		h.vnidMap[n.Spec.VxLanVNI] = "VirtualRouter/" + n.Tenant + "/" + n.Name
 		return func(ctx context.Context, i interface{}, _ kvstore.Interface, key string, dryrun bool) {
+			defer h.vnidMapMu.Unlock()
+			h.vnidMapMu.Lock()
 			delete(h.vnidMap, n.Spec.VxLanVNI)
 		}, nil
 	}

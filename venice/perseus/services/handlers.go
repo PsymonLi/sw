@@ -76,6 +76,7 @@ type ServiceHandlers struct {
 	routeSvc       pdstypes.CPRouteSvcClient
 	pegasusMon     msTypes.EpochSvcClient
 	apiclient      apiclient.Services
+	snicMapMu      sync.RWMutex
 	snicMap        map[string]*snicT
 	naplesTemplate *network.BGPNeighbor
 	ctx            context.Context
@@ -99,16 +100,15 @@ func NewServiceHandlers() *ServiceHandlers {
 	m.snicMap = make(map[string]*snicT)
 	m.peerTracker = make(map[string]*peerState)
 	m.pegasusURL = globals.Localhost + ":" + globals.PegasusGRPCPort
+
 	m.ctx, m.cancelFn = context.WithCancel(context.Background())
-	m.connectToPegasus()
+	m.initPegasus()
 	var err error
 	m.evRecorder, err = recorder.NewRecorder(&recorder.Config{
 		Component: globals.Perseus}, log.GetDefaultInstance())
 	if err != nil {
 		log.Fatalf("failed to create events recorder, err: %v", err)
 	}
-	go m.pollPeerState()
-	m.setupLBIf()
 
 	grpcSvc, err := rpckit.NewRPCServer(globals.Perseus, ":"+globals.PerseusGRPCPort)
 	if err != nil {
@@ -116,10 +116,26 @@ func NewServiceHandlers() *ServiceHandlers {
 	}
 	m.grpcSvc = grpcSvc
 	routing.RegisterRoutingV1Server(grpcSvc.GrpcServer, &m)
-	m.ctx, m.cancelFn = context.WithCancel(context.Background())
 	grpcSvc.Start()
-	m.registerDebugHandlers()
 
+	m.registerDebugHandlers()
+	m.cfgWatcherSvc.SetHealthReportHandler(m.HandleHealthReport)
+
+	return &m
+}
+
+// CfgAsn is the ASN for the RR config
+var CfgAsn uint32
+
+const (
+	maxInitialFail = 300
+	maxRunningfail = 10
+)
+
+func (m *ServiceHandlers) initPegasus() {
+	m.connectToPegasus()
+	go m.pollPeerState()
+	m.setupLBIf()
 	var doneWg sync.WaitGroup
 	doneWg.Add(1)
 	go func() {
@@ -131,17 +147,7 @@ func NewServiceHandlers() *ServiceHandlers {
 	doneWg.Add(1)
 	go m.monitor(&doneWg)
 	doneWg.Wait()
-
-	return &m
 }
-
-// CfgAsn is the ASN for the RR config
-var CfgAsn uint32
-
-const (
-	maxInitialFail = 30
-	maxRunningfail = 3
-)
 
 func (m *ServiceHandlers) monitor(wg *sync.WaitGroup) {
 	wg.Done()
@@ -164,6 +170,7 @@ func (m *ServiceHandlers) monitor(wg *sync.WaitGroup) {
 				log.Errorf("failed to connect (%s)", err)
 				if m.ctx.Err() != nil {
 					log.Errorf("monitor port is closed, exiting (%s)", m.ctx.Err())
+					return
 				}
 			}
 
@@ -183,7 +190,9 @@ func (m *ServiceHandlers) monitor(wg *sync.WaitGroup) {
 				m.cancelFn()
 				return
 			}
-			epResp, err := m.pegasusMon.EpochGet(m.ctx, &msTypes.EpochGetRequest{})
+			ctx, cancel := context.WithDeadline(m.ctx, time.Now().Add(time.Second*30))
+			epResp, err := m.pegasusMon.EpochGet(ctx, &msTypes.EpochGetRequest{})
+			cancel()
 			if err != nil {
 				failCount++
 				log.Errorf("Epoch get failed (%s)", err)
@@ -201,8 +210,22 @@ func (m *ServiceHandlers) monitor(wg *sync.WaitGroup) {
 			} else {
 				if epoch != epResp.Epoch {
 					log.Errorf("Epoch from pegasus has changed [%v]->[%v]", epoch, epResp.Epoch)
-					m.cancelFn()
-					return
+					initial = true
+					var curCfg *network.RoutingConfig
+					cache.Lock()
+					if cache.config != nil {
+						curCfg = cache.config
+						cache.config = nil
+					}
+					cache.Unlock()
+					if curCfg != nil {
+						m.setupLBIf()
+						err := m.configureBGP(m.ctx, curCfg)
+						if err != nil {
+							m.cancelFn()
+							return
+						}
+					}
 				}
 			}
 		}
@@ -227,7 +250,28 @@ func (m *ServiceHandlers) registerDebugHandlers() {
 	diagnostics.RegisterService(m.grpcSvc.GrpcServer, diagSvc)
 }
 
+func (m *ServiceHandlers) setSNIC(k string, t *snicT) {
+	defer m.snicMapMu.Unlock()
+	m.snicMapMu.Lock()
+	m.snicMap[k] = t
+}
+
+func (m *ServiceHandlers) getSNIC(k string) (*snicT, bool) {
+	defer m.snicMapMu.RUnlock()
+	m.snicMapMu.RLock()
+	r, ok := m.snicMap[k]
+	return r, ok
+}
+
+func (m *ServiceHandlers) delSNIC(k string) {
+	defer m.snicMapMu.Unlock()
+	m.snicMapMu.Lock()
+	delete(m.snicMap, k)
+}
+
 func (m *ServiceHandlers) configurePeers() {
+	defer m.snicMapMu.RUnlock()
+	m.snicMapMu.RLock()
 	for _, nic := range m.snicMap {
 		m.configurePeer(nic, false)
 	}
@@ -240,6 +284,10 @@ func (m *ServiceHandlers) configurePeer(nic *snicT, deleteOp bool) {
 		// might have to handle case where nic was admitted previously
 		// TODO
 		log.Infof("ignoring configure peer")
+		return
+	}
+	if cache.config == nil {
+		log.Infof("Routing config is not valid ignore peer config request")
 		return
 	}
 	keepalive, holdtime := cache.getTimers()
@@ -281,8 +329,9 @@ func (m *ServiceHandlers) configurePeer(nic *snicT, deleteOp bool) {
 			presp, err := m.pegasusClient.BGPPeerCreate(ctx, &peerReq)
 			if err != nil || presp.ApiStatus != pdstypes.ApiStatus_API_STATUS_OK {
 				log.Errorf("Peer create Request returned (%v)[%+v]", err, presp)
+			} else {
+				nic.pushed = true
 			}
-			nic.pushed = true
 		}
 
 	} else {
@@ -301,9 +350,8 @@ func (m *ServiceHandlers) configurePeer(nic *snicT, deleteOp bool) {
 				log.Errorf("Peer delete Request returned (%v)[%+v]", err, presp)
 			} else {
 				log.Infof("Peer delete request succeeded (%s)[%v]", err, presp.ApiStatus)
+				nic.pushed = false
 			}
-
-			nic.pushed = false
 		}
 	}
 
@@ -325,14 +373,13 @@ func (m *ServiceHandlers) configurePeer(nic *snicT, deleteOp bool) {
 		if err != nil || presp.ApiStatus != pdstypes.ApiStatus_API_STATUS_OK {
 			log.Errorf("Peer AF create Request returned (%v)[%+v]", err, presp)
 		}
-		nic.pushed = true
 	}
 
 	m.updated = true
 }
 
 func (m *ServiceHandlers) handleCreateUpdateSmartNICObject(evtNIC *cmd.DistributedServiceCard) {
-	snic, ok := m.snicMap[evtNIC.ObjectMeta.Name]
+	snic, ok := m.getSNIC(evtNIC.ObjectMeta.Name)
 	if !ok {
 		snic = &snicT{}
 	}
@@ -340,15 +387,24 @@ func (m *ServiceHandlers) handleCreateUpdateSmartNICObject(evtNIC *cmd.Distribut
 	snic.phase = evtNIC.Status.AdmissionPhase
 	snic.uuid = evtNIC.UUID
 	// snic.pushed = false
-	m.snicMap[evtNIC.ObjectMeta.Name] = snic
+	m.setSNIC(evtNIC.ObjectMeta.Name, snic)
 	m.configurePeer(snic, false)
 }
 
 func (m *ServiceHandlers) handleDeleteSmartNICObject(evtNIC *cmd.DistributedServiceCard) {
+	snic, ok := m.getSNIC(evtNIC.ObjectMeta.Name)
+	if !ok {
+		log.Infof("got delete DSC [%v] but not found", evtNIC.Name)
+		return
+	}
+	if snic.pushed == true {
+		m.configurePeer(snic, true)
+	}
+	m.delSNIC(evtNIC.ObjectMeta.Name)
 }
 
 func (m *ServiceHandlers) handleCreateUpdateNetIntfObject(evtIntf *network.NetworkInterface) {
-	snic, ok := m.snicMap[evtIntf.Status.DSC]
+	snic, ok := m.getSNIC(evtIntf.Status.DSC)
 	if !ok {
 		snic = &snicT{}
 	}
@@ -376,27 +432,36 @@ func (m *ServiceHandlers) handleCreateUpdateNetIntfObject(evtIntf *network.Netwo
 		m.configurePeer(snic, true)
 		snic.ip = ip
 	}
-	m.snicMap[evtIntf.Status.DSC] = snic
+	m.setSNIC(evtIntf.Status.DSC, snic)
 	m.configurePeer(snic, false)
 }
 
 func (m *ServiceHandlers) handleBGPConfigChange() {
+	m.snicMapMu.RLock()
 	for _, nic := range m.snicMap {
 		m.configurePeer(nic, false)
 	}
+	m.snicMapMu.RUnlock()
 }
 
 func (m *ServiceHandlers) handleBGPConfigDelete() {
+	m.snicMapMu.RLock()
 	for _, nic := range m.snicMap {
 		m.configurePeer(nic, true)
 	}
+	m.snicMapMu.RUnlock()
 }
 
 func (m *ServiceHandlers) handleDeleteNetIntfObject(evtIntf *network.NetworkInterface) {
-	snic := m.snicMap[evtIntf.Status.DSC]
+	snic, ok := m.getSNIC(evtIntf.Status.DSC)
+	if !ok {
+		log.Infof("got delete for Netif [%v] but DSC [%v] not found", evtIntf.Name, evtIntf.Status.DSC)
+		return
+	}
 	if snic.pushed == true {
 		m.configurePeer(snic, true)
 	}
+	m.delSNIC(evtIntf.Status.DSC)
 }
 
 func isEvtTypeCreatedupdated(et kvstore.WatchEventType) bool {
@@ -439,6 +504,14 @@ func (m *ServiceHandlers) HandleNetworkInterfaceEvent(et kvstore.WatchEventType,
 	return
 }
 
+// HandleHealthReport handles health reports
+func (m *ServiceHandlers) HandleHealthReport(in types.HealthReport) {
+	if !in.Healthy {
+		log.Errorf("got unhealthy report, triggering restart[%+v]", in)
+		m.stallMonitor = true
+	}
+}
+
 func (m *ServiceHandlers) pollPeerState() {
 	log.Infof("Starting BGP Peer polling")
 	tick := time.Tick(time.Second * 5)
@@ -447,6 +520,7 @@ func (m *ServiceHandlers) pollPeerState() {
 		select {
 		case <-m.ctx.Done():
 			log.Infof("got cancel, exiting BGP Peer polling")
+			return
 		case <-tick:
 			epoch++
 			resp, err := m.pegasusClient.BGPPeerGet(context.Background(), &pdstypes.BGPPeerGetRequest{})
@@ -657,7 +731,8 @@ type peerHealth struct {
 func (m *ServiceHandlers) HealthZ(ctx context.Context, in *routing.EmptyReq) (*routing.Health, error) {
 	log.Infof("got call for HealthZ [%+v]", in)
 	ret := &routing.Health{}
-	if cache.config.Spec.BGPConfig != nil {
+
+	if cache.config != nil && cache.config.Spec.BGPConfig != nil {
 		peerMap := make(map[string]peerHealth)
 		ret.Status.RouterID = cache.config.Spec.BGPConfig.RouterId
 		for _, p := range cache.config.Spec.BGPConfig.Neighbors {
@@ -665,9 +740,13 @@ func (m *ServiceHandlers) HealthZ(ctx context.Context, in *routing.EmptyReq) (*r
 				peerMap[p.IPAddress] = peerHealth{peer: p.IPAddress}
 			}
 		}
+		m.snicMapMu.RLock()
 		for _, p := range m.snicMap {
-			peerMap[p.ip] = peerHealth{peer: p.ip, internal: true}
+			if p.phase == cmd.DistributedServiceCardStatus_ADMITTED.String() && p.ip != "" && p.uuid != "" {
+				peerMap[p.ip] = peerHealth{peer: p.ip, internal: true}
+			}
 		}
+		m.snicMapMu.RUnlock()
 		resp, err := m.pegasusClient.BGPPeerGet(context.Background(), &pdstypes.BGPPeerGetRequest{})
 		if err == nil && resp.ApiStatus == pdstypes.ApiStatus_API_STATUS_OK {
 			for _, p := range resp.Response {
@@ -688,11 +767,15 @@ func (m *ServiceHandlers) HealthZ(ctx context.Context, in *routing.EmptyReq) (*r
 				internal++
 				if s.estab {
 					internalEstab++
+				} else {
+					ret.Status.InternalPeers.DownPeers = append(ret.Status.InternalPeers.DownPeers, s.peer)
 				}
 			} else {
 				external++
 				if s.estab {
 					externalEstab++
+				} else {
+					ret.Status.ExternalPeers.DownPeers = append(ret.Status.ExternalPeers.DownPeers, s.peer)
 				}
 			}
 		}

@@ -860,13 +860,17 @@ func (c *cache) Clear() {
 func (c *cache) StartSnapshot() uint64 {
 	defer c.Unlock()
 	c.Lock()
-	return c.store.StartSnapshot()
+	ret := c.store.StartSnapshot()
+	log.Infof("Started snapshot [%d]", ret)
+	return ret
 }
 
 func (c *cache) DeleteSnapshot(in uint64) error {
 	defer c.Unlock()
 	c.Lock()
-	return c.store.DeleteSnapshot(in)
+	ret := c.store.DeleteSnapshot(in)
+	log.Infof("Delete snapshot [%d](%v)", in, ret)
+	return ret
 }
 
 func (c *cache) SnapshotReader(in uint64, include bool, kinds []string) (io.ReadCloser, error) {

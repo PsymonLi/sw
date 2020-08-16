@@ -314,6 +314,12 @@ var _ = Describe("scale policy", func() {
 		//verify cluster is in good health
 		startTime = time.Now().UTC()
 
+		nwc, err := getNetworkCollection()
+		Expect(err).Should(Succeed())
+
+		//Reset ingress and egress policies
+		nwc.SetIngressSecurityPolicy(nil)
+		nwc.SetEgressSecurityPolicy(nil)
 		Eventually(func() error {
 			return ts.model.VerifyClusterStatus()
 		}).Should(Succeed())
@@ -337,11 +343,15 @@ var _ = Describe("scale policy", func() {
 		}
 		// recreate default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Restore()).ShouldNot(HaveOccurred())
+		for index := 0; index < len(nwcs); index++ {
+			nwcs[index].SetIngressSecurityPolicy(ts.model.DefaultNetworkSecurityPolicy())
+			nwcs[index].SetEgressSecurityPolicy(ts.model.DefaultNetworkSecurityPolicy())
+		}
 	})
 	Context("Scale Policy tests", func() {
 		var (
 			protoList = []string{"tcp", "udp", "icmp"}
-			portList = []string{"80", "53", "0"}
+			portList  = []string{"80", "53", "0"}
 		)
 		It("scale policy", func() {
 			if !ts.tb.HasNaplesHW() {
@@ -368,11 +378,11 @@ var _ = Describe("scale policy", func() {
 				//Create user provider Ingress policy
 				ingress_policy := ts.model.NewNetworkSecurityPolicy(fmt.Sprintf("ingress%v%v", index, index)).AddRuleForSubnets(targetPrefixList, sourcePrefixList, "any", "any", "PERMIT")
 				ingress_policy.Add(ts.model.NewNetworkSecurityPolicy(fmt.Sprintf("ingress%v%v", index, index+1)).AddRuleForSubnets(
-					targetPrefixList, sourcePrefixList, portList[index % len(portList)], protoList[index % len(protoList)], "PERMIT"))
+					targetPrefixList, sourcePrefixList, portList[index%len(portList)], protoList[index%len(protoList)], "PERMIT"))
 				//Create user provider Egress policy
 				egress_policy := ts.model.NewNetworkSecurityPolicy(fmt.Sprintf("egress%v%v", index, index)).AddRuleForSubnets(sourcePrefixList, targetPrefixList, "any", "any", "PERMIT")
 				egress_policy.Add(ts.model.NewNetworkSecurityPolicy(fmt.Sprintf("egress%v%v", index, index+1)).AddRuleForSubnets(
-					sourcePrefixList, targetPrefixList, portList[index % len(portList)], protoList[index % len(protoList)], "PERMIT"))
+					sourcePrefixList, targetPrefixList, portList[index%len(portList)], protoList[index%len(protoList)], "PERMIT"))
 
 				//Set tenant for both policies
 				ingress_policy.SetTenant(nwc.GetTenant())
@@ -416,7 +426,7 @@ var _ = Describe("scale policy", func() {
 				Expect(ts.model.PingFails(wp1)).Should(BeNil())
 
 				//Verify the traffic across networks according to policies
-				port, err := strconv.Atoi(portList[index % len(portList)])
+				port, err := strconv.Atoi(portList[index%len(portList)])
 				Expect(err).Should(BeNil())
 				proto := protoList[index%len(protoList)]
 				switch proto {
@@ -477,6 +487,13 @@ var _ = Describe("single policy", func() {
 			return ts.model.VerifyClusterStatus()
 		}).Should(Succeed())
 
+		nwc, err := getNetworkCollection()
+		Expect(err).Should(Succeed())
+
+		//Reset ingress and egress policies
+		nwc.SetIngressSecurityPolicy(nil)
+		nwc.SetEgressSecurityPolicy(nil)
+
 		// delete the default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Delete()).ShouldNot(HaveOccurred())
 	})
@@ -498,6 +515,8 @@ var _ = Describe("single policy", func() {
 		ts.model.DefaultNetworkSecurityPolicy().Delete()
 		// recreate default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Restore()).ShouldNot(HaveOccurred())
+		nwc.SetIngressSecurityPolicy(ts.model.DefaultNetworkSecurityPolicy())
+		nwc.SetEgressSecurityPolicy(ts.model.DefaultNetworkSecurityPolicy())
 	})
 	Context("Single Policy tests", func() {
 		It("Multiple rule combinations", func() {
@@ -665,6 +684,13 @@ var _ = Describe("multiple policies", func() {
 			return ts.model.VerifyClusterStatus()
 		}).Should(Succeed())
 
+		nwc, err := getNetworkCollection()
+		Expect(err).Should(Succeed())
+
+		//Reset ingress and egress policies
+		nwc.SetIngressSecurityPolicy(nil)
+		nwc.SetEgressSecurityPolicy(nil)
+
 		// delete the default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Delete()).ShouldNot(HaveOccurred())
 	})
@@ -684,6 +710,8 @@ var _ = Describe("multiple policies", func() {
 		}
 		// recreate default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Restore()).ShouldNot(HaveOccurred())
+		nwc.SetIngressSecurityPolicy(ts.model.DefaultNetworkSecurityPolicy())
+		nwc.SetEgressSecurityPolicy(ts.model.DefaultNetworkSecurityPolicy())
 	})
 	Context("user-provider policy tests", func() {
 		It("Allow TCP, Deny UDP, Same subnet", func() {
@@ -954,6 +982,13 @@ var _ = Describe("firewall policy model tests", func() {
 			return ts.model.VerifyClusterStatus()
 		}).Should(Succeed())
 
+		nwc, err := getNetworkCollection()
+		Expect(err).Should(Succeed())
+
+		//Reset ingress and egress policies
+		nwc.SetIngressSecurityPolicy(nil)
+		nwc.SetEgressSecurityPolicy(nil)
+
 		// delete the default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Delete()).ShouldNot(HaveOccurred())
 	})
@@ -973,6 +1008,9 @@ var _ = Describe("firewall policy model tests", func() {
 
 		// recreate default allow policy
 		Expect(ts.model.DefaultNetworkSecurityPolicy().Restore()).ShouldNot(HaveOccurred())
+		nwc.SetIngressSecurityPolicy(ts.model.DefaultNetworkSecurityPolicy())
+		nwc.SetEgressSecurityPolicy(ts.model.DefaultNetworkSecurityPolicy())
+
 	})
 	Context("policy model tests", func() {
 		It("Should be able to verify whitelist policies", func() {

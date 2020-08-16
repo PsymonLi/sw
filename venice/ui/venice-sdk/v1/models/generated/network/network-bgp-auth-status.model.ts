@@ -7,11 +7,12 @@ import { Validators, FormControl, FormGroup, FormArray, ValidatorFn } from '@ang
 import { minValueValidator, maxValueValidator, minLengthValidator, maxLengthValidator, required, enumValidator, patternValidator, CustomFormControl, CustomFormGroup } from '../../../utils/validators';
 import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
+import { ApiBgpAsn, IApiBgpAsn } from './api-bgp-asn.model';
 import { NetworkBGPAuthStatus_status,  } from './enums';
 
 export interface INetworkBGPAuthStatus {
     'ip-address'?: string;
-    'remote-as'?: number;
+    'remote-as'?: IApiBgpAsn;
     'status': NetworkBGPAuthStatus_status;
     '_ui'?: any;
 }
@@ -23,7 +24,7 @@ export class NetworkBGPAuthStatus extends BaseModel implements INetworkBGPAuthSt
     /** Neighbor IP Address. */
     'ip-address': string = null;
     /** ASN the neighbor belongs to. */
-    'remote-as': number = null;
+    'remote-as': ApiBgpAsn = null;
     /** Authentication status. */
     'status': NetworkBGPAuthStatus_status = null;
     public static propInfo: { [prop in keyof INetworkBGPAuthStatus]: PropInfoItem } = {
@@ -35,7 +36,7 @@ export class NetworkBGPAuthStatus extends BaseModel implements INetworkBGPAuthSt
         'remote-as': {
             description:  `ASN the neighbor belongs to.`,
             required: false,
-            type: 'number'
+            type: 'object'
         },
         'status': {
             enum: NetworkBGPAuthStatus_status,
@@ -68,6 +69,7 @@ export class NetworkBGPAuthStatus extends BaseModel implements INetworkBGPAuthSt
     */
     constructor(values?: any, setDefaults:boolean = true) {
         super();
+        this['remote-as'] = new ApiBgpAsn();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -87,12 +89,10 @@ export class NetworkBGPAuthStatus extends BaseModel implements INetworkBGPAuthSt
         } else {
             this['ip-address'] = null
         }
-        if (values && values['remote-as'] != null) {
-            this['remote-as'] = values['remote-as'];
-        } else if (fillDefaults && NetworkBGPAuthStatus.hasDefaultValue('remote-as')) {
-            this['remote-as'] = NetworkBGPAuthStatus.propInfo['remote-as'].default;
+        if (values) {
+            this['remote-as'].setValues(values['remote-as'], fillDefaults);
         } else {
-            this['remote-as'] = null
+            this['remote-as'].setValues(null, fillDefaults);
         }
         if (values && values['status'] != null) {
             this['status'] = values['status'];
@@ -109,8 +109,13 @@ export class NetworkBGPAuthStatus extends BaseModel implements INetworkBGPAuthSt
         if (!this._formGroup) {
             this._formGroup = new FormGroup({
                 'ip-address': CustomFormControl(new FormControl(this['ip-address']), NetworkBGPAuthStatus.propInfo['ip-address']),
-                'remote-as': CustomFormControl(new FormControl(this['remote-as']), NetworkBGPAuthStatus.propInfo['remote-as']),
+                'remote-as': CustomFormGroup(this['remote-as'].$formGroup, NetworkBGPAuthStatus.propInfo['remote-as'].required),
                 'status': CustomFormControl(new FormControl(this['status'], [required, enumValidator(NetworkBGPAuthStatus_status), ]), NetworkBGPAuthStatus.propInfo['status']),
+            });
+            // We force recalculation of controls under a form group
+            Object.keys((this._formGroup.get('remote-as') as FormGroup).controls).forEach(field => {
+                const control = this._formGroup.get('remote-as').get(field);
+                control.updateValueAndValidity();
             });
         }
         return this._formGroup;
@@ -123,7 +128,7 @@ export class NetworkBGPAuthStatus extends BaseModel implements INetworkBGPAuthSt
     setFormGroupValuesToBeModelValues() {
         if (this._formGroup) {
             this._formGroup.controls['ip-address'].setValue(this['ip-address']);
-            this._formGroup.controls['remote-as'].setValue(this['remote-as']);
+            this['remote-as'].setFormGroupValuesToBeModelValues();
             this._formGroup.controls['status'].setValue(this['status']);
         }
     }

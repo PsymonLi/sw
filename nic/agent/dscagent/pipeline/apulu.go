@@ -14,9 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pensando/sw/nic/agent/protos/tpmprotos"
-	"github.com/pensando/sw/nic/agent/protos/tsproto"
-
 	"github.com/gogo/protobuf/proto"
 	protoTypes "github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
@@ -33,6 +30,8 @@ import (
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/nic/agent/protos/tpmprotos"
+	"github.com/pensando/sw/nic/agent/protos/tsproto"
 	halapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
 	msapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
 	operdapi "github.com/pensando/sw/nic/infra/operd/daemon/gen/operd"
@@ -63,6 +62,7 @@ type ApuluAPI struct {
 	MetricsSvcClient        operdapi.MetricsSvcClient
 	SyslogSvcClient         operdapi.SyslogSvcClient
 	LocalInterfaces         sync.Map
+	DefaultSecPolicy        []byte
 }
 
 // NewPipelineAPI returns the implemetor of PipelineAPI
@@ -289,9 +289,9 @@ func (a *ApuluAPI) HandleVeniceCoordinates(dsc types.DistributedServiceCardStatu
 	// inject loopback so venice can be updated
 	dat, _ := lb.Marshal()
 	a.Lock()
-	defer a.Unlock()
 	if err := a.InfraAPI.Store(lb.Kind, lb.GetKey(), dat); err != nil {
 		log.Error(errors.Wrapf(types.ErrBoltDBStoreCreate, "Uplink: %s | Uplink: %v", lb.GetKey(), err))
+		a.Unlock()
 		return
 	}
 	ifEvnt := types.UpdateIfEvent{
@@ -299,6 +299,32 @@ func (a *ApuluAPI) HandleVeniceCoordinates(dsc types.DistributedServiceCardStatu
 		Intf: lb,
 	}
 	a.InfraAPI.UpdateIfChannel(ifEvnt)
+	a.Unlock()
+
+	// Create a default deny policy
+	if a.DefaultSecPolicy == nil {
+		uid := uuid.NewV4()
+		pol := netproto.NetworkSecurityPolicy{
+			TypeMeta: api.TypeMeta{
+				Kind: "NetworkSecurityPolicy",
+			},
+			ObjectMeta: api.ObjectMeta{
+				Name:      apulu.DefaultDenySecPolicy,
+				Tenant:    "default",
+				Namespace: "default",
+				UUID:      uid.String(),
+			},
+			Spec: netproto.NetworkSecurityPolicySpec{
+				AttachTenant: true,
+				Rules:        []netproto.PolicyRule{},
+				VrfName:      types.DefaulUnderlaytVrf,
+			},
+		}
+		_, err := a.HandleNetworkSecurityPolicy(types.Create, pol)
+		if err != nil {
+			log.Errorf("Creating Default deny policy failed Err: %s", err)
+		}
+	}
 }
 
 // RegisterControllerAPI ensures the handles for controller API is appropriately set up
@@ -909,6 +935,15 @@ func (a *ApuluAPI) HandleNetworkSecurityPolicy(oper types.Operation, nsp netprot
 	if err != nil {
 		log.Error(err)
 		return nil, err
+	}
+	if oper == types.Create && nsp.Name == apulu.DefaultDenySecPolicy {
+		uid, err := uuid.FromString(nsp.UUID)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		log.Infof("NetworkSecurityPolicy: %s | Op: %s | %s", nsp.GetKey(), oper, "setting default security policy")
+		a.DefaultSecPolicy = uid.Bytes()
 	}
 
 	return

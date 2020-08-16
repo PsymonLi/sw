@@ -270,6 +270,12 @@
         "established": {
           "type": "integer",
           "format": "int32"
+        },
+        "down-peers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

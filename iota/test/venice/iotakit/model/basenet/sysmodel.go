@@ -323,7 +323,7 @@ func (sm *SysModel) SetupDefaultConfig(ctx context.Context, scale, scaleData boo
 	return sm.SetupWorkloads(scale)
 }
 
-//DefaultNetworkSecurityPolicy no default policies
+// DefaultTenantNetworkSecurityPolicy no default policies
 func (sm *SysModel) DefaultNetworkSecurityPolicy() *objects.NetworkSecurityPolicyCollection {
 	return nil
 }

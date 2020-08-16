@@ -200,6 +200,23 @@ func (c *API) HandleVeniceCoordinates(obj types.DistributedServiceCardStatus) er
 		tsdb.Update(c.InfraAPI.GetDscName(), c.ResolverClient)
 
 		c.factory = rpckit.NewClientFactory(c.InfraAPI.GetDscName())
+
+		if c.evtsDispatcher != nil {
+			dsc := &cluster.DistributedServiceCard{}
+			dsc.Defaults("all")
+			dscid := c.InfraAPI.GetConfig().DSCID
+			if dscid == "" {
+				dscid = c.InfraAPI.GetDscName()
+			}
+			defObjRef := api.ObjectRef{
+				Kind:      dsc.GetKind(),
+				Name:      dscid,
+				Tenant:    dsc.GetTenant(),
+				Namespace: dsc.GetNamespace(),
+				URI:       dsc.GetSelfLink(),
+			}
+			c.evtsDispatcher.SetDefaultObjectRef(&defObjRef)
+		}
 		c.Unlock()
 
 		go func() {
@@ -295,7 +312,7 @@ func (c *API) start(ctx context.Context) error {
 
 		if c.npmClient != nil {
 			log.Infof("Controller API: %s", types.InfoConnectedToNPM)
-			c.InfraAPI.NotifyVeniceConnection()
+			c.InfraAPI.NotifyVeniceConnection(true)
 		} else {
 			// Loop forever connect to all controllers NPM, TPM and TSM. Handle cascading closures to prevent leaks
 			c.closeConnections()
@@ -329,6 +346,7 @@ func (c *API) start(ctx context.Context) error {
 
 		// TODO Watch for Mirror and NetflowSessions
 		<-watchExited
+		c.InfraAPI.NotifyVeniceConnection(false)
 		cancelNetIf()
 		<-netIfExited
 
@@ -415,9 +433,13 @@ func (c *API) WatchEventPolicies() error {
 	// populate default object reference to be used by events dispatcher
 	dsc := &cluster.DistributedServiceCard{}
 	dsc.Defaults("all")
+	dscid := c.InfraAPI.GetConfig().DSCID
+	if dscid == "" {
+		dscid = nodeName
+	}
 	defObjRef := &api.ObjectRef{
 		Kind:      dsc.GetKind(),
-		Name:      nodeName,
+		Name:      dscid,
 		Tenant:    dsc.GetTenant(),
 		Namespace: dsc.GetNamespace(),
 		URI:       dsc.GetSelfLink(),

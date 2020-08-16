@@ -52,7 +52,7 @@ type InfraAPI interface {
 	GetConfig() (cfg DistributedServiceCardStatus)
 
 	// NotifyVeniceConnection updates venice connection status from netagent
-	NotifyVeniceConnection()
+	NotifyVeniceConnection(bool)
 
 	// UpdateIfChannel updates the intf update channel
 	UpdateIfChannel(evt UpdateIfEvent)

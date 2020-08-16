@@ -684,6 +684,16 @@ func (sm *SysModel) SetupDefaultConfig(ctx context.Context, scale, scaleData boo
 		return err
 	}
 
+	defaultSgPolicies, err1 := sm.ListNetworkSecurityPolicy()
+	if err1 != nil {
+		return fmt.Errorf("Error in listing policies %v", err1)
+	}
+
+	for _, pol := range defaultSgPolicies {
+		nPolicy := &objects.NetworkSecurityPolicy{VenicePolicy: pol}
+		sm.defaultSgPolicies = append(sm.defaultSgPolicies, objects.NewNetworkSecurityPolicyCollection(nPolicy, sm.ObjClient(), sm.Tb))
+	}
+
 	err = sm.AssociateHosts()
 	if err != nil {
 		return fmt.Errorf("Error associating hosts: %s", err)
@@ -748,6 +758,19 @@ func (sm *SysModel) NetworkSecurityPolicy(name string) *objects.NetworkSecurityP
 
 //DefaultNetworkSecurityPolicy no default policies
 func (sm *SysModel) DefaultNetworkSecurityPolicy() *objects.NetworkSecurityPolicyCollection {
+	if len(sm.defaultSgPolicies) > 0 {
+		return sm.defaultSgPolicies[0]
+	}
+	return nil
+}
+
+// DefaultTenantNetworkSecurityPolicy no default policies
+func (sm *SysModel) DefaultTenantNetworkSecurityPolicy(tenant string) *objects.NetworkSecurityPolicyCollection {
+	for _, p := range sm.defaultSgPolicies {
+		if len(p.Policies) > 0 && p.Policies[0].VenicePolicy.Tenant == tenant {
+			return p
+		}
+	}
 	return nil
 }
 

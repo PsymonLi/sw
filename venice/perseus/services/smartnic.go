@@ -21,6 +21,7 @@ import (
 	msTypes "github.com/pensando/sw/nic/metaswitch/gen/agent/pds_ms"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/perseus/env"
+	"github.com/pensando/sw/venice/perseus/types"
 	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
@@ -72,6 +73,9 @@ func (c *configCache) needUpdate(in *network.RoutingConfig) bool {
 	if c.config == nil || c.config.Name != in.Name {
 		return false
 	}
+	if c.config.UUID == in.UUID && c.config.GenerationID == in.GenerationID {
+		return false
+	}
 	return true
 }
 
@@ -102,6 +106,27 @@ func (m *ServiceHandlers) connectToPegasus() {
 		m.pegasusClient = pdstypes.NewBGPSvcClient(conn)
 		m.pegasusMon = msTypes.NewEpochSvcClient(conn)
 		break
+	}
+	retries := 0
+	maxRetries := 10
+	for retries < maxRetries {
+		// check if we have come up against a pristine pegasus
+		bgp, err := m.pegasusClient.BGPGet(m.ctx, &pdstypes.BGPGetRequest{})
+		if err != nil || bgp.ApiStatus != pdstypes.ApiStatus_API_STATUS_OK {
+			retries++
+			log.Errorf("failed to get BGP state from pegasus, retry [%d]", retries)
+			time.Sleep(time.Second)
+			continue
+		}
+		if bgp.Response.Spec.LocalASN != 0 {
+			log.Errorf("perseus coming up with configured pegasus, exiting [%+v]", bgp.Response)
+			m.HandleHealthReport(types.HealthReport{Healthy: false, Reason: "Existing pegasus config on restart"})
+		}
+		break
+	}
+	if retries == maxRetries {
+		log.Errorf("could not connect to pegasus to get BGP config")
+		m.HandleHealthReport(types.HealthReport{Healthy: false, Reason: "could not connect to pegasus"})
 	}
 }
 

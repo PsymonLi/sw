@@ -561,6 +561,32 @@ func getPolicyUUID(names []string, attached bool, nw netproto.Network, infraAPI 
 	if attached == false {
 		return ids, nil
 	}
+	if len(names) == 0 {
+		log.Infof("No security policies specified applying default policy")
+		p := netproto.NetworkSecurityPolicy{
+			TypeMeta: api.TypeMeta{
+				Kind: "NetworkSecurityPolicy",
+			},
+			ObjectMeta: api.ObjectMeta{
+				Name:      DefaultDenySecPolicy,
+				Tenant:    "default",
+				Namespace: "default",
+			},
+		}
+		dat, err := infraAPI.Read(p.Kind, p.GetKey())
+		if err != nil {
+			log.Errorf("Look up failed for %s | err: %s", p.GetKey(), err)
+			return ids, err
+		}
+		obj := netproto.NetworkSecurityPolicy{}
+		err = obj.Unmarshal(dat)
+		if err != nil {
+			log.Errorf("Unmarshal failed for %s | err: %s", p.GetKey(), err)
+			return ids, err
+		}
+		ids = append(ids, obj.UUID)
+	}
+
 	for _, n := range names {
 		p := netproto.NetworkSecurityPolicy{
 			TypeMeta: api.TypeMeta{

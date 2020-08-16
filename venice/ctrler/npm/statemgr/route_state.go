@@ -5,7 +5,10 @@ package statemgr
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
+	"net"
+	"strings"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
@@ -72,6 +75,29 @@ func RoutingConfigStateFromObj(obj runtime.Object) (*RoutingConfigState, error) 
 	}
 }
 
+var reslvURLS []string
+
+func getRRCandidates() []string {
+	var returls []string
+	if str := flag.Lookup("resolver-urls"); str != nil {
+		rs := strings.Split(str.Value.String(), ",")
+		for _, r := range rs {
+			h, _, err := net.SplitHostPort(r)
+			if err != nil {
+				return nil
+			}
+			a, err := net.LookupHost(h)
+			if err != nil {
+				return nil
+			}
+			if len(a) > 0 {
+				returls = append(returls, a[0])
+			}
+		}
+	}
+	return returls
+}
+
 func convertRoutingConfig(rtcfg *RoutingConfigState) *netproto.RoutingConfig {
 	meta := api.ObjectMeta{
 		Tenant:          globals.DefaultTenant,
@@ -85,6 +111,10 @@ func convertRoutingConfig(rtcfg *RoutingConfigState) *netproto.RoutingConfig {
 	obj := &netproto.RoutingConfig{
 		TypeMeta:   rtcfg.RoutingConfig.TypeMeta,
 		ObjectMeta: meta,
+	}
+
+	if reslvURLS == nil {
+		reslvURLS = getRRCandidates()
 	}
 
 	obj.Spec = netproto.RoutingConfigSpec{}
@@ -112,6 +142,7 @@ func convertRoutingConfig(rtcfg *RoutingConfigState) *netproto.RoutingConfig {
 			}
 
 			obj.Spec.BGPConfig.Neighbors = append(obj.Spec.BGPConfig.Neighbors, neighbor)
+			obj.Spec.BGPConfig.RouteReflectors = reslvURLS
 		}
 	}
 	log.Infof("Converted Routing Config [%+v]", obj)

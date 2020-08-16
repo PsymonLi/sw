@@ -1086,6 +1086,11 @@ func (sm *SysModel) DefaultNetworkSecurityPolicy() *objects.NetworkSecurityPolic
 	return nil
 }
 
+// DefaultTenantNetworkSecurityPolicy for a tenant  - no default policies
+func (sm *SysModel) DefaultTenantNetworkSecurityPolicy(string) *objects.NetworkSecurityPolicyCollection {
+	return nil
+}
+
 // NewMirrorSession creates a new mirrorsession
 func (sm *SysModel) NewMirrorSession(name string) *objects.MirrorSessionCollection {
 	return objects.NewMirrorSession(name, sm.ObjClient(), sm.Tb)

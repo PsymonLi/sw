@@ -177,10 +177,10 @@ func (i *API) Purge() {
 }
 
 // NotifyVeniceConnection marks venice connection status to true.
-func (i *API) NotifyVeniceConnection() {
+func (i *API) NotifyVeniceConnection(up bool) {
 	i.Lock()
 	defer i.Unlock()
-	i.config.IsConnectedToVenice = true
+	i.config.IsConnectedToVenice = up
 }
 
 // UpdateIfChannel updates the intf update channel

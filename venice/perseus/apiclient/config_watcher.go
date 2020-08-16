@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pensando/sw/venice/utils/k8s"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/pensando/sw/api"
@@ -17,6 +15,7 @@ import (
 	"github.com/pensando/sw/venice/perseus/env"
 	"github.com/pensando/sw/venice/perseus/types"
 	"github.com/pensando/sw/venice/utils/balancer"
+	"github.com/pensando/sw/venice/utils/k8s"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/resolver"
@@ -55,6 +54,7 @@ type CfgWatcherService struct {
 	networkInterfaceHandler types.NetworkInterfaceEventHandler
 	routingConfigHandler    types.RoutingConfigEventHandler
 	nodeConfigHandler       types.NodeConfigEventHandler
+	healthReportHandler     types.HealthReportHandler
 }
 
 // SetSmartNICEventHandler sets handler for SmartNIC events
@@ -75,6 +75,11 @@ func (k *CfgWatcherService) SetRoutingConfigEventHandler(rtCfgfHandler types.Rou
 // SetNodeConfigEventHandler sets handler for Network Interface events
 func (k *CfgWatcherService) SetNodeConfigEventHandler(nodeCfgfHandler types.NodeConfigEventHandler) {
 	k.nodeConfigHandler = nodeCfgfHandler
+}
+
+// SetHealthReportHandler sets the handler to report health events
+func (k *CfgWatcherService) SetHealthReportHandler(in types.HealthReportHandler) {
+	k.healthReportHandler = in
 }
 
 // apiClient creates a client to API server
@@ -208,84 +213,119 @@ func (k *CfgWatcherService) runUntilCancel() {
 	k.Add(1)
 	defer k.Done()
 
-	var err error
-	dscopts := api.ListWatchOptions{FieldChangeSelector: []string{"Spec", "Status.AdmissionPhase"}}
+	startWatchers := func(done chan error) {
+		var err error
+		dscopts := api.ListWatchOptions{FieldChangeSelector: []string{"Spec", "Status.AdmissionPhase"}}
 
-	// Init SmartNIC watcher
-	k.smartNICWatcher, err = k.svcsClient.ClusterV1().DistributedServiceCard().Watch(k.ctx, &dscopts)
-	ii := 0
-	for err != nil {
-		select {
-		case <-time.After(time.Second):
+		// Init SmartNIC watcher
+		k.smartNICWatcher, err = k.svcsClient.ClusterV1().DistributedServiceCard().Watch(k.ctx, &dscopts)
+		ii := 0
+		for err != nil {
+			select {
+			case <-time.After(time.Second):
 
-			k.smartNICWatcher, err = k.svcsClient.ClusterV1().DistributedServiceCard().Watch(k.ctx, &dscopts)
-			ii++
-			if ii%10 == 0 {
-				k.logger.Errorf("Waiting for DistributedServiceCard watch to succeed for %v seconds", ii)
+				k.smartNICWatcher, err = k.svcsClient.ClusterV1().DistributedServiceCard().Watch(k.ctx, &dscopts)
+				ii++
+				if ii%10 == 0 {
+					k.logger.Errorf("Waiting for DistributedServiceCard watch to succeed for %v seconds", ii)
+				}
+			case <-k.ctx.Done():
+				close(done)
+				return
 			}
+		}
+		k.logger.Infof("DistributedServiceCard config watcher established, client: %p", k.svcsClient)
+
+		// Init NetworkInterface watcher
+		k.networkInterfaceWatcher, err = k.svcsClient.NetworkV1().NetworkInterface().Watch(k.ctx, &api.ListWatchOptions{FieldSelector: "spec.type=loopback-tep"})
+		ii = 0
+		for err != nil {
+			select {
+			case <-time.After(time.Second):
+
+				k.networkInterfaceWatcher, err = k.svcsClient.NetworkV1().NetworkInterface().Watch(k.ctx, &api.ListWatchOptions{FieldSelector: "spec.type=loopback-tep"})
+				ii++
+				if ii%10 == 0 {
+					k.logger.Errorf("Waiting for NetworkInterface watch to succeed for %v seconds", ii)
+				}
+			case <-k.ctx.Done():
+				k.stopWatchers()
+				close(done)
+				return
+			}
+		}
+		k.logger.Infof("NetworkInterface config watcher established, client: %p", k.svcsClient)
+
+		nodeopts := api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Name: k8s.GetNodeName()}, FieldChangeSelector: []string{"Spec.RoutingConfig"}}
+		k.nodeConfigWatcher, err = k.svcsClient.ClusterV1().Node().Watch(k.ctx, &nodeopts)
+		ii = 0
+		for err != nil {
+			select {
+			case <-time.After(time.Second):
+
+				k.logger.Infof("Starting Node watch with options [%+v]", nodeopts)
+				k.nodeConfigWatcher, err = k.svcsClient.ClusterV1().Node().Watch(k.ctx, &nodeopts)
+				ii++
+				if ii%10 == 0 {
+					k.logger.Errorf("Waiting for Node object watch to succeed for %v seconds", ii)
+				}
+			case <-k.ctx.Done():
+				k.stopWatchers()
+				close(done)
+				return
+			}
+		}
+		k.logger.Infof("node config watcher established, client: %p", k.svcsClient)
+
+		// Init RoutingConfig watcher
+		k.routingConfigWatcher, err = k.svcsClient.NetworkV1().RoutingConfig().Watch(k.ctx, &api.ListWatchOptions{})
+		ii = 0
+		for err != nil {
+			select {
+			case <-time.After(time.Second):
+
+				k.routingConfigWatcher, err = k.svcsClient.NetworkV1().RoutingConfig().Watch(k.ctx, &api.ListWatchOptions{})
+				ii++
+				if ii%10 == 0 {
+					k.logger.Errorf("Waiting for RoutingConfig watch to succeed for %v seconds", ii)
+				}
+			case <-k.ctx.Done():
+				k.stopWatchers()
+				close(done)
+				return
+			}
+		}
+		k.logger.Infof("RoutingConfig config watcher established, client: %p", k.svcsClient)
+		done <- nil
+	}
+
+	doneCh := make(chan error)
+	go startWatchers(doneCh)
+startWatchers:
+	for {
+		select {
+		case err, ok := <-doneCh:
+			if !ok {
+				log.Infof("channel was claosed returning")
+				return
+			}
+			if err != nil {
+				log.Infof("Start watchers failed (%s), retrying", err)
+				continue
+			}
+			break startWatchers
 		case <-k.ctx.Done():
+			doneCh <- nil
+			return
+		case <-time.After(180 * time.Second):
+			log.Errorf("Established watcher has stalled, reporting failure")
+			k.healthReportHandler(types.HealthReport{
+				Healthy: false,
+				Reason:  "Establishing watcher stalled",
+			})
 			return
 		}
 	}
-	k.logger.Infof("DistributedServiceCard config watcher established, client: %p", k.svcsClient)
-
-	// Init NetworkInterface watcher
-	k.networkInterfaceWatcher, err = k.svcsClient.NetworkV1().NetworkInterface().Watch(k.ctx, &api.ListWatchOptions{FieldSelector: "spec.type=loopback-tep"})
-	ii = 0
-	for err != nil {
-		select {
-		case <-time.After(time.Second):
-
-			k.networkInterfaceWatcher, err = k.svcsClient.NetworkV1().NetworkInterface().Watch(k.ctx, &api.ListWatchOptions{FieldSelector: "spec.type=loopback-tep"})
-			ii++
-			if ii%10 == 0 {
-				k.logger.Errorf("Waiting for NetworkInterface watch to succeed for %v seconds", ii)
-			}
-		case <-k.ctx.Done():
-			k.stopWatchers()
-			return
-		}
-	}
-	k.logger.Infof("NetworkInterface config watcher established, client: %p", k.svcsClient)
-
-	nodeopts := api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Name: k8s.GetNodeName()}}
-	k.nodeConfigWatcher, err = k.svcsClient.ClusterV1().Node().Watch(k.ctx, &nodeopts)
-	ii = 0
-	for err != nil {
-		select {
-		case <-time.After(time.Second):
-
-			k.logger.Infof("Starting Node watch with options [%+v]", nodeopts)
-			k.nodeConfigWatcher, err = k.svcsClient.ClusterV1().Node().Watch(k.ctx, &nodeopts)
-			ii++
-			if ii%10 == 0 {
-				k.logger.Errorf("Waiting for Node object watch to succeed for %v seconds", ii)
-			}
-		case <-k.ctx.Done():
-			k.stopWatchers()
-			return
-		}
-	}
-	k.logger.Infof("node config watcher established, client: %p", k.svcsClient)
-
-	// Init RoutingConfig watcher
-	k.routingConfigWatcher, err = k.svcsClient.NetworkV1().RoutingConfig().Watch(k.ctx, &api.ListWatchOptions{})
-	ii = 0
-	for err != nil {
-		select {
-		case <-time.After(time.Second):
-
-			k.routingConfigWatcher, err = k.svcsClient.NetworkV1().RoutingConfig().Watch(k.ctx, &api.ListWatchOptions{})
-			ii++
-			if ii%10 == 0 {
-				k.logger.Errorf("Waiting for RoutingConfig watch to succeed for %v seconds", ii)
-			}
-		case <-k.ctx.Done():
-			k.stopWatchers()
-			return
-		}
-	}
-	k.logger.Infof("RoutingConfig config watcher established, client: %p", k.svcsClient)
 
 	// Handle config watcher events
 	for {

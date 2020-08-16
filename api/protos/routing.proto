@@ -19,19 +19,20 @@ message HealthSpec {
 
 message HealthStatus {
     message PeeringStatus{
-        int32 Configured = 1  [(gogoproto.jsontag) = "configured"];
-        int32 Established = 2 [(gogoproto.jsontag) = "established"];
+        int32               Configured      = 1 [(gogoproto.jsontag) = "configured"];
+        int32               Established     = 2 [(gogoproto.jsontag) = "established"];
+        repeated string     DownPeers       = 3 [(gogoproto.jsontag) = "down-peers"];
     }
 
-    string RouterID             = 1 [(gogoproto.jsontag) = "router-id"];
-    PeeringStatus InternalPeers = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "internal-peers"];
-    PeeringStatus ExternalPeers = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "external-peers"];
-    int32 UnexpectedPeers       = 4 [(gogoproto.jsontag) = "unexpected-peers"];
+    string          RouterID        = 1 [(gogoproto.jsontag) = "router-id"];
+    PeeringStatus   InternalPeers   = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "internal-peers"];
+    PeeringStatus   ExternalPeers   = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "external-peers"];
+    int32           UnexpectedPeers = 4 [(gogoproto.jsontag) = "unexpected-peers"];
 }
 
 message Health {
-    api.TypeMeta T      = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
-    api.ObjectMeta O    = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
+    api.TypeMeta    T       = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta  O       = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
     option (venice.objectPrefix) = {Collection: "health"};
 
     HealthSpec      Spec    = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec"];
@@ -117,8 +118,8 @@ message NeighborStatus {
 }
 
 message NeighborFilter {
-    api.TypeMeta T      = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
-    api.ObjectMeta O    = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
+    api.TypeMeta    T   = 1 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta  O   = 2 [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
     option (venice.objectPrefix) = {Collection: "neighborfilter"};
 
     string Instance = 3 [(gogoproto.jsontag) = "instance"];
@@ -131,12 +132,12 @@ message Neighbor {
     option (venice.objectPrefix) = {Collection: "neighbors"};
 
     network.BGPNeighbor Spec    = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec"];
-    NeighborStatus Status       = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status"];
+    NeighborStatus      Status  = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status"];
 }
 
 message NeighborList {
-    api.TypeMeta T      = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
-    api.ListMeta  L      = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "list-meta,inline"];
+    api.TypeMeta  T     = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ListMeta  L     = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "list-meta,inline"];
 
     repeated Neighbor Items = 3 [(gogoproto.jsontag) = "items,"];
 }

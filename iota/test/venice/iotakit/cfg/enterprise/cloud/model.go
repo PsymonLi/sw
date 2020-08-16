@@ -760,6 +760,9 @@ func (gs *CloudCfg) GetCfgObjects() base.CfgObjects {
 	objects := base.CfgObjects{}
 	objects.Ipams = gs.Cfg.ConfigItems.IPAMPs
 	objects.Workloads = gs.Cfg.ConfigItems.TenantWorkloads
+	objects.Tenants = gs.Cfg.ConfigItems.Tenants
+	objects.SgPolicies = gs.Cfg.ConfigItems.SGPolicies
+	objects.Networks = gs.Cfg.ConfigItems.Subnets
 
 	return objects
 }

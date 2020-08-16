@@ -180,7 +180,7 @@ func (i *badInfraAPI) StoreConfig(cfg types.DistributedServiceCardStatus) {
 }
 
 // NotifyVeniceConnection notifies venice connection
-func (i *badInfraAPI) NotifyVeniceConnection() {
+func (i *badInfraAPI) NotifyVeniceConnection(bool) {
 
 }
 

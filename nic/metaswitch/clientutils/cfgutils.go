@@ -23,6 +23,9 @@ const (
 	Delete = 3
 )
 
+const DefaultIdleHoldTime = 15
+const IdleHoldtimeJitter = 10
+
 type BGPPeerCfg struct {
 	Oper   int
 	peer   types.BGPPeerSpec
@@ -65,6 +68,7 @@ type bgpNeighbor struct {
 	holdtime     uint32
 	password     string
 	localAddr    string
+	idleHoldTime uint32
 }
 
 func ip2uint32(ipstr string) uint32 {
@@ -193,6 +197,10 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 				if n.Holdtime != 0 {
 					peerHoldTime = n.Holdtime
 				}
+				idleHoldTime := n.IdleHoldTime
+				if idleHoldTime == 0 {
+					idleHoldTime = DefaultIdleHoldTime
+				}
 				newCfg.neighbors = append(newCfg.neighbors, &bgpNeighbor{
 					shutdown:     n.Shutdown,
 					ipaddress:    n.IPAddress,
@@ -203,6 +211,7 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 					holdtime:     peerHoldTime,
 					password:     n.Password,
 					localAddr:    laddr,
+					idleHoldTime: idleHoldTime,
 				})
 			}
 			log.Info(peers)
@@ -254,6 +263,7 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 					keepalive:    peerKeepAlive,
 					holdtime:     peerHoldTime,
 					localAddr:    laddr,
+					idleHoldTime: DefaultIdleHoldTime,
 				})
 			}
 			log.Info(peers)
@@ -461,6 +471,7 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 								HoldTime:     n.holdtime,
 								Ttl:          n.multihop,
 								ConnectRetry: 60,
+								IdleHoldTime: n.idleHoldTime,
 								Password:     []byte(n.password),
 							}
 							// Add Afs
@@ -544,6 +555,7 @@ func GetBGPConfiguration(old interface{}, new interface{}, oldLb string, newLb s
 					KeepAlive:    n.keepalive,
 					HoldTime:     n.holdtime,
 					Ttl:          n.multihop,
+					IdleHoldTime: n.idleHoldTime,
 					ConnectRetry: 60,
 					// TODO add Holdtime and Keepalive
 					Password: []byte(n.password),

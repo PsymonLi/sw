@@ -1,0 +1,458 @@
+{
+	"info": {
+		"_postman_id": "b158994d-6d25-465a-a781-db44b045959e",
+		"name": "CloudExamples",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Pensando0$\",\n  \"tenant\": \"default\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/v1/login",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"v1",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Loopback Interfaces",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/networkinterfaces?field-selector=spec.type=loopback-tep",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"networkinterfaces"
+					],
+					"query": [
+						{
+							"key": "field-selector",
+							"value": "spec.type=loopback-tep"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Assign Loopback IP",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": " {\n      \"kind\": \"NetworkInterface\",\n      \"api-version\": \"v1\",\n      \"meta\": {\n        \"name\": \"00ae.cd00.6be8-lo-1\"\n      },\n      \"spec\": {\n        \"admin-status\": \"up\",\n        \"type\": \"loopback-tep\",\n        \"ip-alloc-type\": \"static\",\n\t\t\t\t\"ip-config\": {\n\t\t\t\t\"ip-address\": \"31.0.0.1/32\"\n\t\t\t\t}\n      }\n    }"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/networkinterfaces/00ae.cd00.6be8-lo-1",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"networkinterfaces",
+						"00ae.cd00.6be8-lo-1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DSC Routing Config",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"kind\": \"RoutingConfig\",\n  \"meta\": {\n    \"name\": \"naples-bgp\"\n  },\n  \"spec\": {\n\t\"bgp-config\": {\n\t\t\"dsc-auto-config\": true,\n\t\t\"as-number\": 65514,\n\t\t\"keepalive-interval\": 30,\n\t\t\"holdtime\": 100,\n\t\t\"neighbors\": [\n\t\t\t{\n\t\t\t\"dsc-auto-config\": true,\n\t\t\t\"remote-as\": 65500,\n\t\t\t\"multi-hop\": 10,\n\t\t\t\"enable-address-families\": [\"ipv4-unicast\"],\n            \"password\": \"pensando\"\n\t\t\t},\n\t\t\t{\n\t\t\t\"dsc-auto-config\": true,\n\t\t\t\"remote-as\": 65514,\n\t\t\t\"multi-hop\": 10,\n\t\t\t\"enable-address-families\": [\"l2vpn-evpn\"],\n\t\t\t\"password\": \"pensando\"\n\t\t\t}\n\t\t]\n\t}\n  }\n}"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/routing-config",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"routing-config"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get DSCs",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{apigw-node1}}/configs/cluster/v1/distributedservicecards",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"cluster",
+						"v1",
+						"distributedservicecards"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Assign DSC Routing Config",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n      \"kind\": \"DistributedServiceCard\",\n      \"api-version\": \"v1\",\n      \"meta\": {\n        \"name\": \"00ae.cd00.6be8\"\n      },\n      \"spec\": {\n        \"admit\": true,\n        \"id\": \"naples2\",\n        \"ip-config\": {},\n        \"mgmt-mode\": \"network\",\n        \"network-mode\": \"oob\",\n        \"dscprofile\": \"default\",\n\t\t\"network-mode\": \"inband\",\n\t\t\"routing-config\": \"naples-bgp\"\n      }\n}"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/cluster/v1/distributedservicecards/00ae.cd00.6be8",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"cluster",
+						"v1",
+						"distributedservicecards",
+						"00ae.cd00.6be8"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RR Routing Config",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"kind\": \"RoutingConfig\",\n  \"meta\": {\n    \"name\": \"RRConfig-node1\"\n  },\n  \"spec\": {\n\t\"bgp-config\": {\n\t\t\"router-id\": \"20.1.1.1\",\n\t\t\"as-number\": 65514,\n\t\t\"keepalive-interval\": 30,\n\t\t\"holdtime\": 90,\n\t\t\"neighbors\": [\n\t\t\t{\n\t\t\t\"ip-address\": \"22.1.1.1\",\n\t\t\t\"remote-as\": 65514,\n\t\t\t\"multi-hop\": 10,\n\t\t\t\"password\": \"pensando\",\n\t\t\t\"enable-address-families\": [\"l2vpn-evpn\"]\n\t\t\t},\t\t\t\n\t\t\t{\n\t\t\t\"dsc-auto-config\": true,\n\t\t\t\"remote-as\": 65514,\n\t\t\t\"multi-hop\": 10,\n\t\t\t\"password\": \"pensando\",\n\t\t\t\"enable-address-families\": [\"l2vpn-evpn\"]\n\t\t\t}\n\t\t]\n\t}\n  }\n}"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/routing-config",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"routing-config"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Nodes",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{apigw-node1}}/configs/cluster/v1/nodes",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"cluster",
+						"v1",
+						"nodes"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Assign RR Routing Config",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"kind\": \"Node\",\n\t\"api-version\": \"v1\",\n\t\"meta\": {\n\t\t\"name\": \"20.1.1.1\"\n\t},\n\t\"spec\": {\n\t\t\"routing-config\": \"RRConfig-node1\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/cluster/v1/nodes/20.1.1.1",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"cluster",
+						"v1",
+						"nodes",
+						"20.1.1.1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateTenant",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"kind\": \"Tenant\",\n    \"api-version\": \"v1\",\n    \"meta\": {\n        \"name\": \"customer1\"\n    },\n    \"spec\": {}\n}"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/cluster/v1/tenants",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"cluster",
+						"v1",
+						"tenants"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create IPAM Policy",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"kind\": \"IPAMPolicy\",\n  \"meta\": {\n    \"name\": \"dhcp-relay1\",\n        \"tenant\": \"customer1\"\n  },\n  \"spec\": {\n        \"type\": \"dhcp-relay\",\n        \"dhcp-relay\": {\n            \"relay-servers\": [\n                {\n                    \"ip-address\": \"20.20.6.1\",\n                    \"virtual-router\": \"default\"\n                }\n            ]\n        }\n    }\n}\n"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/tenant/customer1/ipam-policies",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"tenant",
+						"customer1",
+						"ipam-policies"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Virtual Router",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"kind\": \"VirtualRouter\",\n    \"api-version\": \"v1\",\n    \"meta\": {\n        \"name\": \"vpc1\",\n        \"tenant\": \"customer1\"\n    },\n    \"spec\": {\n    \t\"type\": \"tenant\",\n    \t\"router-mac-address\": \"0000.0010.abcd\",\n    \t\"vxlan-vni\": 9000101,\n\t\t\t\"default-ipam-policy\": \"dhcp-relay1\",\n    \t\"route-import-export\": {\n    \t\t\"address-family\": \"l2vpn-evpn\",\n    \t\t\"rd-auto\": true,\n    \t\t\"rt-export\": [\n    \t\t\t{\n    \t\t\t\"type\": \"type2\",\n    \t\t\t\"admin-value\": 100,\n    \t\t\t\"assigned-value\": 100\n    \t\t\t}\n    \t\t],\n    \t\t\"rt-import\": [\n    \t\t\t{\n    \t\t\t\"type\": \"type2\",\n    \t\t\t\"admin-value\": 102,\n    \t\t\t\"assigned-value\": 100\n    \t\t\t}, \n    \t\t\t{\n    \t\t\t\"type\": \"type2\",\n    \t\t\t\"admin-value\": 101,\n    \t\t\t\"assigned-value\": 100\n    \t\t\t}\n    \t\t]\n    \t}\n    }\n} "
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/tenant/customer1/virtualrouters",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"tenant",
+						"customer1",
+						"virtualrouters"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create NetworkSecurityPolicy",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"kind\": \"NetworkSecurityPolicy\",\n  \"meta\": {\n    \"name\": \"Permit10_8\",\n    \"tenant\": \"customer1\"\n  },\n  \"spec\": {\n    \"attach-tenant\": true,\n    \"rules\": [\n    \t{\n    \t\t\"from-ip-addresses\": [\"10.0.0.0/8\"],\n    \t\t\"to-ip-addresses\": [\"10.0.0.0/8\"],\n    \t\t\"proto-ports\": [\n\t\t\t\t\t{ \"protocol\": \"any\"}\n\t\t\t],\n    \t\t\"action\": \"permit\"\n    \t}\n    ]\n  }\n}"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/security/v1/tenant/customer1/networksecuritypolicies",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"security",
+						"v1",
+						"tenant",
+						"customer1",
+						"networksecuritypolicies"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateSubnet",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"kind\": \"Network\",\n  \"meta\": {\n    \"name\": \"network2\",\n    \"tenant\": \"customer1\"\n  },\n  \"spec\": {\n    \"type\": \"routed\",\n\t\"ipv4-subnet\": \"10.2.2.0/24\",\n\t\"ipv4-gateway\": \"10.2.2.1\",\n\t\"vxlan-vni\": 8000102,\n\t\"virtual-router\": \"vpc1\",\n\t\"ingress-security-policy\": [\"Permit10_8\"],\n\t\"egress-security-policy\": [\"Permit10_8\"],\n\t\"route-import-export\": {\n        \"address-family\": \"l2vpn-evpn\",\n        \"rd-auto\": true,\n        \"rt-export\": [\n    \t\t\t{\n    \t\t\t\"type\": \"type2\",\n    \t\t\t\"admin-value\": 1000,\n    \t\t\t\"assigned-value\": 1001\n    \t\t\t}\n    \t\t],\n    \t\t\"rt-import\": [\n    \t\t\t{\n    \t\t\t\"type\": \"type2\",\n    \t\t\t\"admin-value\": 1000,\n    \t\t\t\"assigned-value\": 1001\n    \t\t\t}\n    \t\t]\n    }\n  }\n}"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/tenant/customer1/networks",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"tenant",
+						"customer1",
+						"networks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Host Interfaces",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/networkinterfaces?field-selector=status.dsc=00ae.cd00.6be8,spec.type=host-pf",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"networkinterfaces"
+					],
+					"query": [
+						{
+							"key": "field-selector",
+							"value": "status.dsc=00ae.cd00.6be8,spec.type=host-pf"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddIfToNetwork",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "   {\n      \"kind\": \"NetworkInterface\",\n      \"api-version\": \"v1\",\n      \"meta\": {\n        \"name\": \"00ae.cd00.6be8-pf-72\"\n      },\n      \"spec\": {\n        \"admin-status\": \"up\",\n        \"type\": \"host-pf\",\n        \"ip-alloc-type\": \"dhcp\",\n\t\t\t\t\"attach-tenant\": \"customer1\",\n    \t\t\"attach-network\": \"network1\"\n      }\n    }"
+				},
+				"url": {
+					"raw": "{{apigw-node1}}/configs/network/v1/networkinterfaces/00ae.cd00.6be8-pf-72",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"network",
+						"v1",
+						"networkinterfaces",
+						"00ae.cd00.6be8-pf-72"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Modules",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{apigw-node1}}/configs/diagnostics/v1/modules?field-selector=status.module=pen-pegasus",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"configs",
+						"diagnostics",
+						"v1",
+						"modules"
+					],
+					"query": [
+						{
+							"key": "field-selector",
+							"value": "status.module=pen-pegasus"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RRStatus",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{apigw-node1}}/routing/v1/20.1.1.1/health",
+					"host": [
+						"{{apigw-node1}}"
+					],
+					"path": [
+						"routing",
+						"v1",
+						"20.1.1.1",
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

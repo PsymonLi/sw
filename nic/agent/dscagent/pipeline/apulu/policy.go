@@ -18,6 +18,11 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 )
 
+const (
+	// DefaultDenySecPolicy is a default deny policy used when there are no user policies specified
+	DefaultDenySecPolicy = "_internalDefaulSecPolicy"
+)
+
 // HandleNetworkSecurityPolicy handles crud operations on nsp
 func HandleNetworkSecurityPolicy(infraAPI types.InfraAPI, client halapi.SecurityPolicySvcClient, oper types.Operation, nsp netproto.NetworkSecurityPolicy, ruleIDToAppMapping *sync.Map) error {
 	switch oper {
