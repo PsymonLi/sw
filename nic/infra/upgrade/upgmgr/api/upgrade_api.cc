@@ -14,7 +14,7 @@
 #include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/infra/upgrade/upgmgr/ipc_peer/ipc_peer.hpp"
 #include "nic/infra/upgrade/upgmgr/api/upgrade_api.hpp"
-#include "nic/apollo/include/globals.hpp"
+#include "nic/apollo/include/globals.hpp" // todo: get rid of this
 
 static sdk::event_thread::event_thread *g_upg_event_thread;
 static std::string g_tools_dir;
@@ -345,14 +345,13 @@ upg_init (upg_init_params_t *params)
     g_tools_dir = params->tools_dir;
 
     // spawn upgrademgr fsm handler thread
-    g_upg_event_thread =
-        sdk::event_thread::event_thread::factory(
-            "upg", SDK_IPC_ID_UPGMGR,
-            sdk::lib::THREAD_ROLE_CONTROL, 0x0, api::upg_event_thread_init,
-            api::upg_event_thread_exit, NULL, // message
-            sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            (THREAD_YIELD_ENABLE | THREAD_SUSPEND_DISABLE));
+    g_upg_event_thread = sdk::event_thread::event_thread::factory(
+        "upg", SDK_IPC_ID_UPGMGR,
+        sdk::lib::THREAD_ROLE_CONTROL, 0x0, api::upg_event_thread_init,
+        api::upg_event_thread_exit, NULL, // message
+        sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+        sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+        (THREAD_YIELD_ENABLE | THREAD_SUSPEND_DISABLE));
 
     if (!g_upg_event_thread) {
         UPG_TRACE_ERR("Upgrade event server thread create failure");

@@ -80,14 +80,13 @@
   followed:
   1. standard C/C++ headers
   2. third-party header files
-  3. sdk header files
+  3. nic/sdk/ header files
+  4. nic/infra/ header files
   4. application (e.g. HAL) specific header files
-  5. generated header files - e.g. ncc generated or proto compiler generated etc.
+  5. generated header files - e.g. ncc generated or proto compiler generated etc
 * when including header files, use the full pathi even if the header file is in
   the same direcotry as .cc/.c file, for example:
-
   `#include "nic/sdk/lib/ipc/ipc.hpp"`
-
 
 ## Building and making sure HAL build is fine
 1. Under sw/, do "make pull-assets"

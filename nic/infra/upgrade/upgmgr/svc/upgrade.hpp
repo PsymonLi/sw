@@ -23,12 +23,15 @@ class UpgSvcImpl final : public UpgSvc::Service {
 public:
     Status UpgRequest(ServerContext *context, const pds::UpgradeRequest *req,
                       pds::UpgradeResponse *rsp) override;
-    Status ConfigReplayReadyCheck(ServerContext *context, const pds::EmptyMsg *req,
+    Status ConfigReplayReadyCheck(ServerContext *context,
+                                  const pds::EmptyMsg *req,
                                   pds::ConfigReplayReadyRsp *rsp) override;
     Status ConfigReplayStarted(ServerContext* context, const pds::EmptyMsg *req,
                                pds::EmptyMsg *rsp) override;
     Status ConfigReplayDone(ServerContext *context, const pds::EmptyMsg *req,
                             pds::EmptyMsg *rsp) override;
 };
+
+void upg_grpc_svc_init(std::string grpc_svc_ip, uint16_t grpc_svc_port);
 
 #endif    // __UPGRADE_SVC_UPGRADE_HPP__

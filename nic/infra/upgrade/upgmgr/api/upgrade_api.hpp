@@ -29,8 +29,7 @@ typedef struct upg_ev_req_msg_s {
     upg_ev_req_msg_id_t id;                  ///< message id
     sdk::platform::sysinit_mode_t upg_mode;  ///< upgrade mode
     char fw_pkgname[MAX_FW_PKGNAME_LEN];     ///< firmware pkg name with path
-    // TODO fill other details
-    upg_status_t rsp_status;                ///< upgrade status
+    upg_status_t rsp_status;                 ///< upgrade status
 } upg_ev_req_msg_t;
 
 }    // namespace api
@@ -38,6 +37,8 @@ typedef struct upg_ev_req_msg_s {
 /// \brief upgrade initialization params
 typedef struct upg_init_params_s {
     std::string tools_dir;
+    /// IPC peer port, used in hitless upgrade only with A-B model
+    uint16_t ipc_peer_port;
 } upg_init_params_t;
 
 /// \brief     initialize upgrade manager
