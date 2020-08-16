@@ -185,6 +185,7 @@ vpc:
                     - '64.0.0.0\24'
                     - '3.1.0.0\24'
                     - '9.0.0.0\24'
+              dhcpenabled  : true
           rmap:                       # Remote IP mappings per subnet
             - id       : 2
               count    : 1
@@ -231,6 +232,7 @@ vpc:
                     - '64.0.0.0\24'
                     - '2.1.0.0\24'
                     - '9.0.0.0\24'
+              dhcpenabled  : true
             - id        : 3
               count     : 1
               vmac      : macaddr/00ae.cd00.0813
@@ -255,6 +257,7 @@ vpc:
                     - '2.1.0.0\24'
                     - '9.0.0.0\24'
                     - '64.0.0.0\24'
+              dhcpenabled  : true
         - id               : 3
           count            : 1
           v4prefixlen      : 24
@@ -294,6 +297,7 @@ vpc:
                     - '2.1.0.0\24'
                     - '3.1.0.0\24'
                     - '64.0.0.0\24'
+              dhcpenabled  : true
             - id        : 5
               count     : 1             # 1 tagged VNIC
               vmac      : macaddr/00ae.cd00.0815
@@ -318,6 +322,7 @@ vpc:
                     - '2.1.0.0\24'
                     - '3.1.0.0\24'
                     - '64.0.0.0\24'
+              dhcpenabled  : true
           rmap:                       # Remote IP mappings per subnet
             - id       : 3
               count    : 1

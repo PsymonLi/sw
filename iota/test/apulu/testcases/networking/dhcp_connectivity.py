@@ -103,10 +103,8 @@ def acquire_dhcp_ips(workload_pairs):
 
     workloads.clear()
     for pair in workload_pairs:
-        if pair[0].vnic.DhcpEnabled:
-            workloads[pair[0]] = True
-        if pair[1].vnic.DhcpEnabled:
-            workloads[pair[1]] = True
+        workloads[pair[0]] = True
+        workloads[pair[1]] = True
 
     if not api.IsSimulation():
         req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
@@ -163,6 +161,12 @@ def Setup(tc):
         conn_utils.GetWorkloadType(tc.iterators),
         conn_utils.GetWorkloadScope(tc.iterators),
     )
+
+    tc.workload_pairs = [
+        workload_pair
+        for workload_pair in tc.workload_pairs
+        if workload_pair[0].vnic.DhcpEnabled and workload_pair[1].vnic.DhcpEnabled
+    ]
 
     for pair in tc.workload_pairs:
         api.Logger.info(

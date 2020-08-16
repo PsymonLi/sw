@@ -188,6 +188,7 @@ vpc:
                     - '9.0.0.0\24'
                     - '10.0.200.0\24'
                     - '64.0.0.0\24'
+              dhcpenabled  : true
           rmap:                       # Remote IP mappings per subnet
             - id       : 2
               count    : 1
@@ -258,6 +259,7 @@ vpc:
                     - '2.1.0.0\24'
                     - '10.0.200.0\24'
                     - '64.0.0.0\24'
+              dhcpenabled  : true
             - id        : 4
               count     : 1             # 1 tagged VNIC
               vmac      : macaddr/00ae.cd00.000e
@@ -281,6 +283,7 @@ vpc:
                     - '2.1.0.0\24'
                     - '10.0.200.0\24'
                     - '64.0.0.0\24'
+              dhcpenabled  : true
           rmap:                       # Remote IP mappings per subnet
             - id       : 5
               count    : 1
@@ -334,6 +337,7 @@ vpc:
                     - '2.1.0.0\24'
                     - '9.0.0.0\24'
                     - '10.0.200.0\24'
+              dhcpenabled  : true
         # For node1 this is a service route (twice NAT), for node2 a local vnic
         - id               : 101
           count            : 1
@@ -372,6 +376,7 @@ vpc:
                     - '3.1.0.0\24'
                     - '9.0.0.0\24'
                     - '64.0.0.0\24'
+              dhcpenabled  : true
       nexthop:
         - id         : 3
           type       : overlay
