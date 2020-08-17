@@ -263,6 +263,32 @@ func VpcNetworkCollection(tenant, vpc string, client objClient.ObjClient) (*Netw
 	return nwc, nil
 }
 
+func VpcAttachedNetworkCollection(tenant, vpc string, client objClient.ObjClient, testbed *testbed.TestBed) (*NetworkCollection, error) {
+	nwc, err := VpcNetworkCollection(tenant, vpc, client)
+	if err != nil {
+		return nil, err
+	}
+
+	/* return only the subnets that are attached to host-pfs */
+	nwIfs, err := GetAllPFNetworkInterfacesForTenant(tenant, client, testbed)
+	if err != nil {
+		return nil, err
+	}
+
+	newNwc := NetworkCollection{subnets: []*Network{}, CollectionCommon: nwc.CollectionCommon}
+	for _, nw := range nwc.subnets {
+		for _, intf := range nwIfs.Interfaces {
+			if intf.Spec.AttachNetwork == nw.Name && intf.Spec.AttachTenant == tenant {
+				newNwc.subnets = append(newNwc.subnets, nw)
+				break
+			}
+		}
+	}
+
+	log.Infof("GetNetworkCollectionFromVPC: returning subnets: %v", len(newNwc.subnets))
+	return &newNwc, nil
+}
+
 // returns the subnet collection of default config
 func DefaultNetworkCollection(client objClient.ObjClient) (*NetworkCollection, error) {
 	ten, err := client.ListTenant()

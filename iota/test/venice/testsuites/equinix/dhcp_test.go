@@ -54,7 +54,6 @@ var _ = Describe("IPAM Tests", func() {
 		Eventually(func() error {
 			return ts.model.VerifyClusterStatus()
 		}).Should(Succeed())
-
 	})
 	AfterEach(func() {
 
@@ -69,12 +68,17 @@ var _ = Describe("IPAM Tests", func() {
 				return
 			}
 
+			nw := make(map[string]*objects.NetworkCollection)
+			vpc := make(map[string]*objects.VpcObjCollection)
+			defIpam := make(map[string]string)
+
 			for _, t := range tenants {
 				log.Infof("Default IPAM Policy on VPC on tenant %v", t)
 				vpcc, err := objects.TenantVPCCollection(t, ts.model.ConfigClient(), ts.model.Testbed())
 				Expect(err).Should(Succeed())
 				vpcName := vpcc.Objs[0].Obj.Name
 				defaultIpam := vpcc.Objs[0].Obj.Spec.DefaultIPAMPolicy
+
 				ip, err := objects.GetIPAMPolicy(ts.model.ConfigClient(), defaultIpam, t)
 				Expect(err).Should(Succeed())
 				serverip := ip.PolicyObj.Spec.DHCPRelay.Servers[0].IPAddress
@@ -90,17 +94,23 @@ var _ = Describe("IPAM Tests", func() {
 				Expect(err).Should(Succeed())
 				selNetwork := nwc.Any(1)
 
+				nw[t] = selNetwork
+				vpc[t] = vpcc
+				defIpam[t] = defaultIpam
+			}
+
+			for _, t := range tenants {
 				// verify ipam on subnet
-				verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, t)
+				verifyIPAMonSubnet(nw[t].Subnets()[0].Name, customIpam, t)
 
 				if ts.tb.HasNaplesHW() {
 					// get workload pair and validate datapath
-					wpc := ts.model.WorkloadPairs().OnNetwork(selNetwork.Subnets()[0]).Any(1)
+					wpc := ts.model.WorkloadPairs().OnNetwork(nw[t].Subnets()[0]).Any(1)
 					verifyIPAMDataPath(wpc)
 				}
 
 				// get back to default policy on VPC
-				Expect(vpcc.SetIPAM(defaultIpam)).Should(Succeed())
+				Expect(vpc[t].SetIPAM(defIpam[t])).Should(Succeed())
 
 				// delete Custom IPAM policy
 				deleteIPAMPolicy(customIpam, t)
@@ -113,6 +123,10 @@ var _ = Describe("IPAM Tests", func() {
 			if err != nil {
 				return
 			}
+
+			nw := make(map[string]*objects.NetworkCollection)
+			vpc := make(map[string]*objects.VpcObjCollection)
+			defIpam := make(map[string]string)
 
 			for _, t := range tenants {
 				log.Infof("Override/Remove IPAM policy on Subnet on tenant %v", t)
@@ -135,27 +149,36 @@ var _ = Describe("IPAM Tests", func() {
 				selNetwork := nwc.Any(1)
 				Expect(selNetwork.SetIPAMOnNetwork(selNetwork.Subnets()[0], customIpam)).Should(Succeed())
 
+				nw[t] = selNetwork
+				vpc[t] = vpcc
+				defIpam[t] = defaultIpam
+			}
+
+			for _, t := range tenants {
 				// verify ipam on subnet
-				verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, t)
+				verifyIPAMonSubnet(nw[t].Subnets()[0].Name, customIpam, t)
 
 				if ts.tb.HasNaplesHW() {
 					// get workload pair and validate datapath
-					wpc := ts.model.WorkloadPairs().OnNetwork(selNetwork.Subnets()[0]).Any(1)
+					wpc := ts.model.WorkloadPairs().OnNetwork(nw[t].Subnets()[0]).Any(1)
 					verifyIPAMDataPath(wpc)
 				}
+			}
 
+			for _, t := range tenants {
 				// remove ipam on subnet - it should point to default IPAM policy on VPC
-				Expect(selNetwork.SetIPAMOnNetwork(selNetwork.Subnets()[0], "")).Should(Succeed())
+				Expect(nw[t].SetIPAMOnNetwork(nw[t].Subnets()[0], "")).Should(Succeed())
+			}
 
+			for _, t := range tenants {
 				// verify ipam on subnet
-				verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, defaultIpam, t)
+				verifyIPAMonSubnet(nw[t].Subnets()[0].Name, defIpam[t], t)
 
 				if ts.tb.HasNaplesHW() {
 					// get workload pair and validate datapath
-					wpc := ts.model.WorkloadPairs().OnNetwork(selNetwork.Subnets()[0]).Any(1)
+					wpc := ts.model.WorkloadPairs().OnNetwork(nw[t].Subnets()[0]).Any(1)
 					verifyIPAMDataPath(wpc)
 				}
-
 				// delete Custom IPAM policy
 				deleteIPAMPolicy(customIpam, t)
 			}
@@ -167,6 +190,9 @@ var _ = Describe("IPAM Tests", func() {
 			if err != nil {
 				return
 			}
+
+			nw := make(map[string]*objects.NetworkCollection)
+			defIpam := make(map[string]string)
 
 			for _, t := range tenants {
 				log.Infof("Multiple IPAM per naples on tenant %v", t)
@@ -193,22 +219,27 @@ var _ = Describe("IPAM Tests", func() {
 				// override customIpam on one of the subnets
 				Expect(selNetwork.SetIPAMOnNetwork(selNetwork.Subnets()[0], customIpam)).Should(Succeed())
 
+				nw[t] = selNetwork
+				defIpam[t] = defaultIpam
+			}
+
+			for _, t := range tenants {
 				// verify ipam on subnets
-				verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, t)
-				verifyIPAMonSubnet(selNetwork.Subnets()[1].Name, defaultIpam, t)
+				verifyIPAMonSubnet(nw[t].Subnets()[0].Name, customIpam, t)
+				verifyIPAMonSubnet(nw[t].Subnets()[1].Name, defIpam[t], t)
 
 				if ts.tb.HasNaplesHW() {
 					// get workload pair and validate datapath - customIpam
-					wpc := ts.model.WorkloadPairs().OnNetwork(selNetwork.Subnets()[0]).Any(1)
+					wpc := ts.model.WorkloadPairs().OnNetwork(nw[t].Subnets()[0]).Any(1)
 					verifyIPAMDataPath(wpc)
 
 					// get workload pair and validate datapath - defaultIpam
-					wpc = ts.model.WorkloadPairs().OnNetwork(selNetwork.Subnets()[1]).Any(1)
+					wpc = ts.model.WorkloadPairs().OnNetwork(nw[t].Subnets()[1]).Any(1)
 					verifyIPAMDataPath(wpc)
 				}
 
 				// remove ipam on subnet - it should point to default IPAM policy on VPC
-				Expect(selNetwork.SetIPAMOnNetwork(selNetwork.Subnets()[0], "")).Should(Succeed())
+				Expect(nw[t].SetIPAMOnNetwork(nw[t].Subnets()[0], "")).Should(Succeed())
 
 				// delete Custom IPAM policy
 				deleteIPAMPolicy(customIpam, t)
@@ -222,6 +253,10 @@ var _ = Describe("IPAM Tests", func() {
 			if err != nil {
 				return
 			}
+
+			nw := make(map[string]*objects.NetworkCollection)
+			vpc := make(map[string]*objects.VpcObjCollection)
+			defIpam := make(map[string]string)
 
 			for _, t := range tenants {
 				log.Infof("Default IPAM Policy on VPC on tenant %v", t)
@@ -245,17 +280,23 @@ var _ = Describe("IPAM Tests", func() {
 				Expect(err).Should(Succeed())
 				selNetwork := nwc.Any(1)
 
+				nw[t] = selNetwork
+				vpc[t] = vpcc
+				defIpam[t] = defaultIpam
+			}
+
+			for _, t := range tenants {
 				// verify ipam on subnet
-				verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, t)
+				verifyIPAMonSubnet(nw[t].Subnets()[0].Name, customIpam, t)
 
 				if ts.tb.HasNaplesHW() {
 					// get workload pair and validate datapath
-					wpc := ts.model.WorkloadPairs().OnNetwork(selNetwork.Subnets()[0]).Any(1)
+					wpc := ts.model.WorkloadPairs().OnNetwork(nw[t].Subnets()[0]).Any(1)
 					verifyIPAMDataPath(wpc)
 				}
 
 				// get back to default policy on VPC
-				Expect(vpcc.SetIPAM(defaultIpam)).Should(Succeed())
+				Expect(vpc[t].SetIPAM(defIpam[t])).Should(Succeed())
 
 				// delete Custom IPAM policy
 				deleteIPAMPolicy(customIpam, t)
@@ -268,6 +309,11 @@ var _ = Describe("IPAM Tests", func() {
 			if err != nil {
 				return
 			}
+
+			nw := make(map[string]*objects.NetworkCollection)
+			vpc := make(map[string]*objects.VpcObjCollection)
+			defIpam := make(map[string]string)
+			serverIp := make(map[string]string)
 
 			for _, t := range tenants {
 				log.Infof("Change Servers in IPAM Policy on tenant %v", t)
@@ -290,24 +336,31 @@ var _ = Describe("IPAM Tests", func() {
 				Expect(err).Should(Succeed())
 				selNetwork := nwc.Any(1)
 
+				nw[t] = selNetwork
+				vpc[t] = vpcc
+				defIpam[t] = defaultIpam
+				serverIp[t] = serverip
+			}
+
+			for _, t := range tenants {
 				// verify ipam on subnet
-				verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, "test-policy", t)
+				verifyIPAMonSubnet(nw[t].Subnets()[0].Name, "test-policy", t)
 				var wpc *objects.WorkloadPairCollection
 				if ts.tb.HasNaplesHW() {
 					// get workload pair and validate datapath
-					wpc = ts.model.WorkloadPairs().OnNetwork(selNetwork.Subnets()[0]).Any(1)
+					wpc = ts.model.WorkloadPairs().OnNetwork(nw[t].Subnets()[0]).Any(1)
 					verifyIPAMDataPathFail(wpc)
 				}
 
 				// update test-policy
-				createIPAMPolicy("test-policy", "", t, serverip)
+				createIPAMPolicy("test-policy", "", t, serverIp[t])
 				if ts.tb.HasNaplesHW() {
 					// get workload pair and validate datapath
 					verifyIPAMDataPath(wpc)
 				}
 
 				// get back to default policy on VPC
-				Expect(vpcc.SetIPAM(defaultIpam)).Should(Succeed())
+				Expect(vpc[t].SetIPAM(defIpam[t])).Should(Succeed())
 
 				// delete test-policy
 				deleteIPAMPolicy("test-policy", t)
@@ -321,6 +374,9 @@ var _ = Describe("IPAM Tests", func() {
 				return
 			}
 
+			nw := make(map[string]*objects.NetworkCollection)
+			vpc := make(map[string]*objects.VpcObjCollection)
+			defIpam := make(map[string]string)
 			for _, t := range tenants {
 				log.Infof("Remove IPAM policy on VPC on tenant %v", t)
 				vpcc, err := objects.TenantVPCCollection(t, ts.model.ConfigClient(), ts.model.Testbed())
@@ -336,24 +392,27 @@ var _ = Describe("IPAM Tests", func() {
 				Expect(err).Should(Succeed())
 				selNetwork := nwc.Any(1)
 
+				nw[t] = selNetwork
+				vpc[t] = vpcc
+				defIpam[t] = defaultIpam
+			}
+
+			for _, t := range tenants {
 				// verify ipam on subnet
-				verifyNoIPAMonSubnet(selNetwork.Subnets()[0].Name, t)
+				verifyNoIPAMonSubnet(nw[t].Subnets()[0].Name, t)
 
 				// ping should fail as there no ipam policy configured to get DHCP ip for host
 				var wpc *objects.WorkloadPairCollection
 				if ts.tb.HasNaplesHW() {
-					wpc = ts.model.WorkloadPairs().OnNetwork(selNetwork.Subnets()[0]).Any(1)
+					wpc = ts.model.WorkloadPairs().OnNetwork(nw[t].Subnets()[0]).Any(1)
 					verifyIPAMDataPathFail(wpc)
 				}
 
 				// get back to default policy on VPC
-				Expect(vpcc.SetIPAM(defaultIpam)).Should(Succeed())
+				Expect(vpc[t].SetIPAM(defIpam[t])).Should(Succeed())
 				if ts.tb.HasNaplesHW() {
 					verifyIPAMDataPath(wpc)
 				}
-
-				// get back to default policy on VPC
-				Expect(vpcc.SetIPAM(defaultIpam)).Should(Succeed())
 			}
 		})
 
@@ -390,7 +449,8 @@ func deleteIPAMPolicy(ipam, tenant string) {
 }
 
 func GetNetworkCollectionFromVPC(vpc, tenant string) (*objects.NetworkCollection, error) {
-	return objects.VpcNetworkCollection(tenant, vpc, ts.model.ConfigClient())
+	return objects.VpcAttachedNetworkCollection(tenant, vpc,
+		ts.model.ConfigClient(), ts.model.Testbed())
 }
 
 func VerifyIPAMPropagation(ipam, tenant string) error {
