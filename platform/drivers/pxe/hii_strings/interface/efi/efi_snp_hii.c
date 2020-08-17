@@ -87,6 +87,7 @@ NIC_HII_PACKAGE_INFO    *Nic = NULL;
 IONIC_NIC_HII_INFO      *NicHii = NULL;
 EFI_HII_HANDLE          HiiHandle = NULL;
 int                     fetch_number;
+int                     fetch_len;
 
 /**
  * Identify settings to be exposed via HII
@@ -278,8 +279,13 @@ static void ionic_hii_process( struct efi_ifr_builder *ifr ,UINT16 FormId,UINT8 
         } else if (Cmd == HII_BUILD_VARSTORE) {
             if((NicHiiPtr->Type == EFI_IFR_NUMERIC_OP) || (NicHiiPtr->Type == EFI_IFR_STRING_OP) \
                 || (NicHiiPtr->Type == EFI_IFR_CHECKBOX_OP) || (NicHiiPtr->Type == EFI_IFR_ONE_OF_OP)) {
-                efi_snp_hii_random_guid ( &NicHiiPtr->VarstoreGuid );
-                NicHiiPtr->VarStoreId = efi_ifr_varstore_op ( ifr, &NicHiiPtr->VarstoreGuid , 1, NicHiiPtr->Setting->name);
+                if(NicHiiPtr->Show == TRUE){
+                    efi_snp_hii_random_guid ( &NicHiiPtr->VarstoreGuid );
+                    NicHiiPtr->VarStoreId = efi_ifr_varstore_op ( ifr,
+                                             &NicHiiPtr->VarstoreGuid,
+                                             NicHiiPtr->VarStoreSize,
+                                             NicHiiPtr->Setting->name);
+                }
             }
         } else if( (Cmd == HII_BUILD_FORM) &&
                    (NicHiiPtr->Type == EFI_IFR_REF_OP) ) {
@@ -594,6 +600,7 @@ static int ionic_fetch_vlan_mode (struct efi_snp_device *snpdev)
     struct ionic *ionic = netdev->priv;
     struct lif *lif = ionic->lif;
 
+    fetch_len = sizeof(UINT8);
     return lif->vlan_en;
 }
 
@@ -603,6 +610,7 @@ static int ionic_fetch_vlan_id (struct efi_snp_device *snpdev)
     struct ionic *ionic = netdev->priv;
     struct lif *lif = ionic->lif;
 
+    fetch_len = sizeof(UINT16);
     return (int) lif->vlan_id;
 }
 
@@ -612,6 +620,7 @@ static int ionic_fetch_bmc_support (struct efi_snp_device *snpdev)
     struct ionic *ionic = netdev->priv;
     struct lif *lif = ionic->lif;
 
+    fetch_len = sizeof(UINT8);
     return lif->ncsi_cap;
 }
 
@@ -620,7 +629,7 @@ static int ionic_fetch_bmc_interface (struct efi_snp_device *snpdev)
     struct net_device *netdev = snpdev->netdev;
     struct ionic *ionic = netdev->priv;
     struct lif *lif = ionic->lif;
-
+    fetch_len = sizeof(UINT8);
     if(lif->ncsi_cap == 0) return 0;
 
     return lif->oob_en;
@@ -632,16 +641,19 @@ static int ionic_fetch_blink_led (struct efi_snp_device *snpdev)
     struct ionic *ionic = netdev->priv;
     struct lif *lif = ionic->lif;
 
+    fetch_len = sizeof(UINT8);
     return lif->uid_led_on;
 }
 
 static int ionic_fetch_vis_mode (struct efi_snp_device *snpdev __unused)
 {
+    fetch_len = sizeof(UINT8);
     return 0;
 }
 
 static int ionic_fetch_vis_func (struct efi_snp_device *snpdev __unused)
 {
+    fetch_len = sizeof(UINT8);
     return 0;
 }
 
@@ -692,11 +704,9 @@ static int ionic_fetch ( struct efi_snp_device *snpdev, const char *name ) {
 static int efi_snp_hii_fetch_ionic ( struct efi_snp_device *snpdev,
                    const char *key, const char *value,
                    wchar_t **results, int *have_setting ) {
-
-    int len = 1;
     int rc;
     CHAR8 ValueKey[] = "VALUE";
-    char *buf;
+    char buf[5];
 
     /* Handle ConfigHdr components */
     if ( ( strcasecmp ( key, "GUID" ) == 0 ) ||
@@ -715,11 +725,13 @@ static int efi_snp_hii_fetch_ionic ( struct efi_snp_device *snpdev,
     }
 
     if( strcasecmp ( key, "WIDTH" ) == 0 ){
-        buf = zalloc ( len );
-        sprintf ( buf, "%x", fetch_number );
+        if(fetch_len == sizeof(UINT8)){
+            snprintf( buf, sizeof(buf), "%02X", fetch_number);
+        }else if(fetch_len == sizeof(UINT16)){
+            snprintf( buf, sizeof(buf), "%04X", fetch_number);
+        }
         rc = efi_snp_hii_append ( snpdev, ValueKey, buf, results );
         if ( have_setting ) *have_setting = 1;
-        free ( buf );
     }
     return rc;
 }
@@ -837,7 +849,7 @@ static __unused int efi_snp_hii_fetch ( struct efi_snp_device *snpdev,
  * @v have_setting	Flag indicating detection of a setting (unused)
  * @ret rc		Return status code
  */
-static int efi_snp_hii_store ( struct efi_snp_device *snpdev,
+int efi_snp_hii_store ( struct efi_snp_device *snpdev,
                     const char *key, const char *value,
                     wchar_t **results __unused,
                     int *have_setting __unused ) {
@@ -1053,26 +1065,14 @@ efi_snp_hii_extract_config ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii,
  * @ret efirc		EFI status code
  */
 static EFI_STATUS EFIAPI
-efi_snp_hii_route_config ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii,
-               EFI_STRING config, EFI_STRING *progress ) {
-    struct efi_snp_device *snpdev =
-        container_of ( hii, struct efi_snp_device, hii );
-    wchar_t *pos;
-    int rc;
-
-    DBGC ( snpdev, "SNPDEV %p RouteConfig \"%ls\"\n", snpdev, config );
-
-    /* Process all request fragments */
-    for ( pos = *progress = config ; *progress && **progress ;
-          pos = *progress + 1 ) {
-        if ( ( rc = efi_snp_hii_process ( snpdev, pos, progress,
-                          NULL, NULL,
-                          efi_snp_hii_store ) ) != 0 ) {
-            return EFIRC ( rc );
-        }
+efi_snp_hii_route_config ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii __unused,
+               EFI_STRING config __unused, EFI_STRING *progress ) {
+    if(progress == NULL) {
+        return EFI_INVALID_PARAMETER;
     }
 
-    return 0;
+    *progress = NULL;
+    return EFI_SUCCESS;
 }
 
 /**
@@ -1092,7 +1092,7 @@ efi_snp_hii_callback ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii __unused,
                EFI_QUESTION_ID question_id,
                UINT8 type __unused,
                EFI_IFR_TYPE_VALUE *value,
-               EFI_BROWSER_ACTION_REQUEST *action_request __unused ) {
+               EFI_BROWSER_ACTION_REQUEST *action_request ) {
 
     EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
     EFI_STRING      String = NULL;
@@ -1101,8 +1101,20 @@ efi_snp_hii_callback ( const EFI_HII_CONFIG_ACCESS_PROTOCOL *hii __unused,
     UINT16          Id = 0;
     UINT16          Index;
 
-    if (action != EFI_BROWSER_ACTION_CHANGING){
+    if ((action == EFI_BROWSER_ACTION_FORM_OPEN) || (action == EFI_BROWSER_ACTION_FORM_CLOSE)){
+        return EFI_SUCCESS;
+    }
+
+    if ((action == EFI_BROWSER_ACTION_CHANGING) || (action == EFI_BROWSER_ACTION_SUBMITTED)){
+        return EFI_SUCCESS;
+    }
+
+    if (action != EFI_BROWSER_ACTION_CHANGED){
         return EFI_UNSUPPORTED;
+    }
+
+    if((value == NULL) || (action_request == NULL)) {
+        return EFI_INVALID_PARAMETER;
     }
 
     Index = question_id & 0xFF00;

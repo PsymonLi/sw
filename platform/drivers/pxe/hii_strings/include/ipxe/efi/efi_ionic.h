@@ -24,6 +24,9 @@
   0x76a91526, 0x6e6e,0x471d, {0x82, 0xc1, 0x9c, 0x81, 0xcb, 0xbe,0x1a, 0x6c } \
   }
 
+#define EFI_EVENT_GROUP_READY_TO_BOOT \
+  { 0x7ce88fb3, 0x4bd7, 0x4679, { 0x87, 0xa8, 0xa8, 0xd8, 0xde, 0xe5, 0x0d, 0x2b } }
+
 #define SNP_BASE_KEY_OFFSET           0X100
 
 #define EFI_STRING_ID	UINT16
@@ -188,6 +191,7 @@ typedef struct {
     UINT8                       Type;
     EFI_GUID                    VarstoreGuid;
     UINT16                      VarStoreId;
+    UINT16                      VarStoreSize;
     UINT16                      ControlId;
     const char                  *PromptStr;
     const char                  *HelpStr;
@@ -252,6 +256,7 @@ typedef struct {
   UINT16                      SnpQuestionBaseKey;
   void                        *NicHiiInfo;
   void                        *SnpDev;
+  UINT8                       ReadyToBoot;
 } NIC_HII_PACKAGE_INFO;
 
 #pragma pack()
@@ -271,7 +276,5 @@ int
 ionic_hii_valid(void *snp);
 
 extern EFI_GUID gEfiionicHiiPackageInfoProtocol;
-
-extern UINT16 SnpMappedBaseKey[];
 
 #endif

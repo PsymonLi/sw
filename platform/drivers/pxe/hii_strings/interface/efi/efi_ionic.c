@@ -701,7 +701,12 @@ int ionic_hii_valid(void *snp)
 				);
 
 		if (!EFI_ERROR (Status)) {
-
+			//Fix PXE boot cpu error
+			if(NicPackage->ReadyToBoot == 1) {
+				if (HandleBuffer != NULL)
+					bs->FreePool(HandleBuffer);
+				return -1;
+			}
 			ptr = ((struct efi_snp_device *)NicPackage->SnpDev)->netdev;
 			ptr_mac = netdev_addr( ptr );
 
@@ -721,6 +726,71 @@ int ionic_hii_valid(void *snp)
 	return 0; //return 0 to create valid package list
 }
 
+VOID EFIAPI DummyFunction(IN EFI_EVENT Event __unused,
+                          IN VOID *Context __unused)
+{
+}
+
+EFI_STATUS CreateReadyToBootEvent(
+    IN EFI_TPL NotifyTpl, IN EFI_EVENT_NOTIFY NotifyFunction,
+    IN VOID *pNotifyContext, OUT EFI_EVENT *pEvent)
+{
+    EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
+    static EFI_GUID guidReadyToBoot = EFI_EVENT_GROUP_READY_TO_BOOT;
+    return bs->CreateEventEx(
+        EVT_NOTIFY_SIGNAL, NotifyTpl,
+        (NotifyFunction) ? NotifyFunction : DummyFunction,
+        pNotifyContext, &guidReadyToBoot,
+        pEvent
+    );
+}
+
+VOID
+EFIAPI
+ionic_ready_to_boot (
+    IN EFI_EVENT    Event,
+    IN VOID         *Context __unused)
+{
+	EFI_STATUS	Status = EFI_SUCCESS;
+	EFI_BOOT_SERVICES	*bs = efi_systab->BootServices;
+	EFI_HANDLE	*HandleBuffer = NULL;
+	UINTN		HandleNum = 0;
+	UINT32		Index;
+	NIC_HII_PACKAGE_INFO	*NicPackage = NULL;
+
+	Status = bs->LocateHandleBuffer (
+					ByProtocol,
+					&gEfiionicHiiPackageInfoProtocol,
+					NULL,
+					&HandleNum,
+					&HandleBuffer
+					);
+
+	if (EFI_ERROR (Status)) {
+		bs->CloseEvent(Event);
+		return;
+	}
+
+	for(Index = 0; Index < HandleNum; Index++) {
+
+		bs->HandleProtocol (
+			HandleBuffer[Index],
+			&gEfiionicHiiPackageInfoProtocol,
+			(VOID **) &NicPackage
+			);
+
+		NicPackage->ReadyToBoot = 1;
+
+	}
+
+	if (HandleBuffer != NULL) {
+		bs->FreePool(HandleBuffer);
+	}
+
+    bs->CloseEvent(Event);
+    return;
+}
+
 void *
 ionic_hii_init (void *snp) {
 
@@ -728,6 +798,7 @@ ionic_hii_init (void *snp) {
 	EFI_BOOT_SERVICES *bs = efi_systab->BootServices;
 	EFI_HANDLE	Handle = NULL;
 	UINT8	PackageIndex;
+	EFI_EVENT    ReadyToBootEvent;
 
 	PackageIndex = GetHiiPackageInfoIndex();
 
@@ -810,6 +881,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->VlanMode.ValueStr = NULL;
 	gNicHiiInfo->VlanMode.Callback = vlan_mode_callback;
 	gNicHiiInfo->VlanMode.Show = TRUE;
+	gNicHiiInfo->VlanMode.VarStoreSize = sizeof(UINT8);
 
 	gNicHiiInfo->VlanModeEnable.FormId = IONIC_NIC_CONFIG_FORM;
 	gNicHiiInfo->VlanModeEnable.Type = EFI_IFR_ONE_OF_OPTION_OP;
@@ -841,6 +913,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->VlanId.ValueStr = NULL;
 	gNicHiiInfo->VlanId.Callback = vlan_id_callback;
 	gNicHiiInfo->VlanId.Show = TRUE;
+	gNicHiiInfo->VlanId.VarStoreSize = sizeof(UINT16);
 	gNicHiiInfo->VlanId.ControlId = IONIC_VLAN_MODE_QUESTION;
 
 	//go-to-item
@@ -861,6 +934,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->VirtualMode.ValueStr = NULL;
 	gNicHiiInfo->VirtualMode.Callback = virtual_mode_callback;
 	gNicHiiInfo->VirtualMode.Show = FALSE;
+	gNicHiiInfo->VirtualMode.VarStoreSize = sizeof(UINT8);
 
 	gNicHiiInfo->VirtualFunc.FormId = IONIC_DEV_LEV_FORM;
 	gNicHiiInfo->VirtualFunc.Type = EFI_IFR_NUMERIC_OP;
@@ -870,6 +944,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->VirtualFunc.ValueStr = NULL;
 	gNicHiiInfo->VirtualFunc.Callback = virtual_func_callback;
 	gNicHiiInfo->VirtualFunc.Show = FALSE;
+	gNicHiiInfo->VirtualFunc.VarStoreSize = sizeof(UINT8);
 
 	gNicHiiInfo->BmcSupport.FormId = IONIC_DEV_LEV_FORM;
 	gNicHiiInfo->BmcSupport.Type = EFI_IFR_CHECKBOX_OP;
@@ -879,6 +954,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->BmcSupport.ValueStr = NULL;
 	gNicHiiInfo->BmcSupport.Show = TRUE;
 	gNicHiiInfo->BmcSupport.Suppress = TRUE;
+	gNicHiiInfo->BmcSupport.VarStoreSize = sizeof(UINT8);
 
 	gNicHiiInfo->BmcInterface.FormId = IONIC_DEV_LEV_FORM;
 	gNicHiiInfo->BmcInterface.Type = EFI_IFR_ONE_OF_OP;
@@ -889,6 +965,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->BmcInterface.Callback = bmc_interface_callback;
 	gNicHiiInfo->BmcInterface.Show = TRUE;
 	gNicHiiInfo->BmcInterface.ControlId = IONIC_BMC_SUPPORT_QUESTION;
+	gNicHiiInfo->BmcInterface.VarStoreSize = sizeof(UINT8);
 
 	gNicHiiInfo->OutofBandManage.FormId = IONIC_DEV_LEV_FORM;
 	gNicHiiInfo->OutofBandManage.Type = EFI_IFR_ONE_OF_OPTION_OP;
@@ -920,6 +997,7 @@ ionic_hii_init (void *snp) {
 	gNicHiiInfo->BLed.ValueStr = NULL;
 	gNicHiiInfo->BLed.Callback = blink_led_callback;
 	gNicHiiInfo->BLed.Show = TRUE;
+	gNicHiiInfo->BLed.VarStoreSize = sizeof(UINT8);
 
 	gNicHiiInfo->BLedEnable.FormId = IONIC_NIC_DEV_FORM;
 	gNicHiiInfo->BLedEnable.Type = EFI_IFR_ONE_OF_OPTION_OP;
@@ -1037,5 +1115,11 @@ ionic_hii_init (void *snp) {
 	}
 
 	gNicHiiPackageInfo->Handle = Handle;
+
+	CreateReadyToBootEvent(TPL_CALLBACK,
+				ionic_ready_to_boot,
+				NULL,
+				&ReadyToBootEvent
+				);
 	return (void *)gNicHiiPackageInfo;
 }

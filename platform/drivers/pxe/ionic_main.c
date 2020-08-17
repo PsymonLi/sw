@@ -341,7 +341,7 @@ int ionic_dev_setup(struct ionic_dev *idev, struct ionic_device_bar bars[],
 }
 
 /**
- * Initialize the ionic and the setup the command registers. 
+ * Initialize the ionic and the setup the command registers.
 **/
 int ionic_setup(struct ionic *ionic)
 {
@@ -965,7 +965,7 @@ int polladminq(struct lif *lif, struct ionic_admin_ctx *ctx)
 }
 
 /**
- * 
+ *
  * */
 int ionic_adminq_post_wait(struct lif *lif, struct ionic_admin_ctx *ctx)
 {
@@ -1105,7 +1105,7 @@ static int ionic_lif_add_rx_filter(struct lif *lif, const u8 *addr)
 }
 
 /**
- * Gets the mac address using a dev command and 
+ * Gets the mac address using a dev command and
  * sets the rx_filter for that mac address.
  * */
 static int ionic_lif_station_mac_addr(struct lif *lif, struct net_device *netdev)
@@ -1139,7 +1139,7 @@ static int ionic_lif_station_mac_addr(struct lif *lif, struct net_device *netdev
 		DBG2("%s ::Adding RX filter failed\n", __FUNCTION__);
 		return err;
 	}
-	
+
 	return 0;
 }
 
@@ -1266,7 +1266,7 @@ static int ionic_hii_identify(struct ionic_dev *idev, struct lif *lif)
 	lif->uid_led_on = hii_ident.uid_led_on;
 	lif->ncsi_cap = hii_ident.capabilities & (1 << IONIC_HII_CAPABILITY_NCSI);
 	ionic_add_vlan(idev, lif, hii_ident.vlan, hii_ident.vlan_en);
-	ionic_dev_cmd_oob_en(idev, devcmd_timeout, hii_ident.oob_en);
+//	ionic_dev_cmd_oob_en(idev, devcmd_timeout, hii_ident.oob_en);
 	return 0;
 }
 
@@ -1613,6 +1613,7 @@ void ionic_poll_tx(struct net_device *netdev)
 int ionic_set_system_led_cb(struct net_device *netdev, bool uid_led_status)
 {
 	struct ionic *ionic = netdev->priv;
+	struct lif *lif = ionic->lif;
 	int err;
 
 	err = ionic_dev_cmd_system_led(&ionic->idev, devcmd_timeout, uid_led_status);
@@ -1620,7 +1621,7 @@ int ionic_set_system_led_cb(struct net_device *netdev, bool uid_led_status)
 		DBG2("Failed blinking the led\n");
 		return err;
 	}
-
+	lif->uid_led_on = uid_led_status;
 	return 0;
 }
 
@@ -1647,6 +1648,7 @@ int ionic_add_vlan_cb(struct net_device *netdev, u32 vlan_id, bool vlan_en)
 int ionic_oob_en_cb(struct net_device *netdev, bool oob_en)
 {
 	struct ionic *ionic = netdev->priv;
+	struct lif *lif = ionic->lif;
 	int err;
 
 	err = ionic_dev_cmd_oob_en(&ionic->idev, devcmd_timeout, oob_en);
@@ -1654,6 +1656,6 @@ int ionic_oob_en_cb(struct net_device *netdev, bool oob_en)
 		DBG2("Failed to enable oob\n");
 		return err;
 	}
-
+	lif->oob_en = oob_en;
 	return 0;
 }
