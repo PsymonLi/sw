@@ -1,4 +1,5 @@
 nic/conf/*.json                                                     /nic/conf/
+nic/conf/hal_hw_$ASIC.json                                          /nic/conf/hal_hw.json
 nic/conf/*.ini                                                      /nic/conf/
 nic/conf/init_bins/                                                 /nic/conf/init_bins/
 nic/conf/openssl/                                                   /nic/conf/openssl/
@@ -222,6 +223,9 @@ nic/tools/speed_change.sh                                           /nic/tools/
 
 nic/sdk/third-party/avago/fw/serdes.0x1087_244D.rom                 /nic/conf/fw/
 nic/sdk/third-party/avago/fw/serdes.0x1094_244D.rom                 /nic/conf/fw/
+nic/sdk/third-party/avago/fw/serdes.0x10A4_1045.rom                 /nic/conf/fw/
+nic/sdk/third-party/avago/fw/blackhawk7_v1l8p2_ucode_image_D004_09_0x61C8.h   /nic/conf/fw/
+nic/sdk/third-party/avago/fw/blackhawk7_v2l8p2_ucode_image_D005_06_0xD090.h   /nic/conf/fw/
 nic/e2etests/go/agent/configs/golden                                /nic/conf/
 
 # lldp
@@ -291,6 +295,17 @@ nic/conf/captrace/p4-all.json                                       /nic/conf/ca
 nic/conf/captrace/pipeline-all.json                                 /nic/conf/captrace/
 nic/conf/captrace/sample-conf.json                                  /nic/conf/captrace/
 
+# elbtrace conf json files
+nic/conf/elbtrace/txdma-all.json                                    /nic/conf/elbtrace/
+nic/conf/elbtrace/rxdma-all.json                                    /nic/conf/elbtrace/
+nic/conf/elbtrace/dma-all.json                                      /nic/conf/elbtrace/
+nic/conf/elbtrace/p4-all.json                                       /nic/conf/elbtrace/
+nic/conf/elbtrace/p4eg-all.json                                     /nic/conf/elbtrace/
+nic/conf/elbtrace/p4ig-all.json                                     /nic/conf/elbtrace/
+nic/conf/elbtrace/pipeline-all.json                                 /nic/conf/elbtrace/
+nic/conf/elbtrace/rxdma-all.json                                    /nic/conf/elbtrace/
+nic/conf/elbtrace/txdma-all.json                                    /nic/conf/elbtrace/
+
 # init config profiles
 nic/conf/profiles/qos_profile_default.json                          /nic/conf/profiles/
 
@@ -315,6 +330,8 @@ nic/build/$ARCH/$PIPELINE/bin/cpldmon                               /platform/bi
 nic/build/$ARCH/$PIPELINE/bin/mctpd                                 /platform/bin/
 nic/build/$ARCH/$PIPELINE/bin/pldmd                                 /platform/bin/
 nic/build/$ARCH/$PIPELINE/bin/mctputil                              /platform/bin/
+nic/build/$ARCH/$PIPELINE/$ASIC/bin/elbtrace                        /platform/bin/
+nic/build/$ARCH/$PIPELINE/$ASIC/bin/elbmon                          /platform/bin/
 
 # Libraries
 nic/build/$ARCH/$PIPELINE/lib/libnicmgr.so                          /platform/lib/

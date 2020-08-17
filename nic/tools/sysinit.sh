@@ -5,6 +5,7 @@ export PLATFORM_DIR='/platform'
 export FWD_MODE="$1"
 export PLATFORM="$2"
 export IMAGE_TYPE="$3"
+export CMD_TIMEOUT=0
 export GOTRACEBACK='crash'
 export GODEBUG=madvdontneed=1
 
@@ -14,7 +15,27 @@ export NON_PERSISTENT_LOG_DIR='/var/log/pensando/'
 export LD_LIBRARY_PATH=$NIC_DIR/lib:$PLATFORM_DIR/lib
 export COVFILE=$NIC_DIR/conf/hw_bullseye_hal.cov
 
+# TODO elba bringup hack env. cleanup once TM init & stats issues are fixed
+export ELBA_TM_BINARY_INIT=1
+export ELBA_HAPS_NO_STATS_POLL=1
+export ELBA_NO_PERSISTANT_STATS_COLLECT=1
+
 ulimit -c unlimited
+
+# TODO elba bringup hack to pass devcmd_timeout. cleanup later
+# extract devcmd timeout value if provided as 3 or 4 arg
+if [[ "$IMAGE_TYPE" = "diag" ]]
+then
+    if [ $# -gt 3 ]
+    then
+        CMD_TIMEOUT=$4
+    fi
+else
+    if [ $# -gt 2 ]
+    then
+        CMD_TIMEOUT=$3
+    fi
+fi
 
 #Clean up any stale files from /update dir when we are doing fresh boot
 #Also clean up /data/delphi.dat to bring up delphi clean
@@ -100,7 +121,11 @@ if [[ ! -f $PLATFORM_DIR/drivers/mnet_uio_pdrv_genirq.ko ]]; then
     exit 1
 fi
 
-insmod $PLATFORM_DIR/drivers/ionic_mnic.ko affinity_mask_override=0xD &> /var/log/pensando/ionic_mnic_load.log
+if [ $CMD_TIMEOUT -gt 0 ]; then
+    insmod $PLATFORM_DIR/drivers/ionic_mnic.ko affinity_mask_override=0xD devcmd_timeout=$CMD_TIMEOUT &> /var/log/pensando/ionic_mnic_load.log
+else
+    insmod $PLATFORM_DIR/drivers/ionic_mnic.ko affinity_mask_override=0xD &> /var/log/pensando/ionic_mnic_load.log
+fi
 [[ $? -ne 0 ]] && echo "Aborting Sysinit - Unable to load mnic driver!" && exit 1
 
 insmod $PLATFORM_DIR/drivers/mnet_uio_pdrv_genirq.ko &> /var/log/pensando/mnet_uio_pdrv_genirq_load.log

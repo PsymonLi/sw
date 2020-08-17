@@ -555,26 +555,32 @@ elba_init (asic_cfg_t *cfg)
                                 "PXB/PCIE init failure, err %u", ret);
     }
 
+    // TODO elba bring up hack.
+    // do away with binary init after fixing TM initialization flow
     if (tm_binary_init) {
         SDK_TRACE_DEBUG("elba TM Binary Init ");
         ret = elba_default_config_init(cfg);
+        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret, "elba default"
+                                " config init failure, err %u", ret);
+
+        SDK_TRACE_DEBUG("elba TM Init ");
+        ret = elba_tm_init(cfg->catalog, cfg->qos_profile);
         SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-                "elba default config init failure, err %u", ret);
+                                "elba TM init failure, err %u", ret);
 
+    } else {
+        SDK_TRACE_DEBUG("elba TM Init ");
+        ret = elba_tm_init(cfg->catalog, cfg->qos_profile);
+        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                                "elba TM init failure, err %u", ret);
+
+        ret = elba_pf_init();
+        SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                                "Error intializing pf, err %u", ret);
     }
-
-    SDK_TRACE_DEBUG("elba TM Real Init ");
-    ret = elba_tm_init(cfg->catalog, cfg->qos_profile);
-    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-            "elba TM init failure, err %u", ret);
-
-    ret = elba_pf_init();
-    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-            "Error intializing pbc err %u", ret);
-
     ret = elba_tm_port_program_uplink_byte_count();
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
-            "elba TM port program defaults, err %u", ret);
+                            "elba TM port program defaults, err %u", ret);
 
     ret = elba_repl_init(cfg);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,

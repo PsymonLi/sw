@@ -1915,6 +1915,7 @@ elba_tm_alloc_hbm_buffers (elba_tm_buf_cfg_t *buf_cfg)
     return sdk::SDK_RET_OK;
 }
 
+#if 0
 static bool
 iq_disabled (tm_port_t port, uint32_t iq)
 {
@@ -2182,6 +2183,7 @@ elba_tm_program_p4_credits (elba_tm_buf_cfg_t *buf_cfg)
 
     return ret;
 }
+#endif
 
 static sdk_ret_t
 elba_tm_program_hbm_buffers (elba_tm_buf_cfg_t *buf_cfg)
@@ -2419,6 +2421,7 @@ elba_tm_program_hbm_buffers (elba_tm_buf_cfg_t *buf_cfg)
     return ret;
 }
 
+#if 0
 static sdk_ret_t
 elba_tm_program_buffers (elba_tm_buf_cfg_t *buf_cfg)
 {
@@ -2439,6 +2442,7 @@ elba_tm_program_buffers (elba_tm_buf_cfg_t *buf_cfg)
     }
     return ret;
 }
+#endif
 
 static sdk_ret_t
 elba_tm_port_program_defaults (void)
@@ -2597,12 +2601,13 @@ elba_tm_init_pbc (elba_tm_buf_cfg_t *buf_cfg)
         SDK_TRACE_ERR("Error programming port defaults %d", ret);
         return ret;
     }
-
+#if 0
     ret = elba_tm_program_buffers(buf_cfg);
     if (ret != sdk::SDK_RET_OK) {
         SDK_TRACE_ERR("Error allocating buffer configs %d", ret);
         return ret;
     }
+#endif
 
     return sdk::SDK_RET_OK;
 }

@@ -671,7 +671,7 @@ jobd/dol/elba_classicl2mc: ${JOBD_PREREQS}
 .PHONY: jobd/dol/elba_parser
 jobd/dol/elba_parser: ${JOBD_PREREQS}
 	${NICDIR}/tools/sw-env elba iris
-	${NICDIR}/run.py ${COVERAGE_OPTS} --topo parser --feature parser --modellogs
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo parser --feature parser --modellogs --microseg-enable
 
 .PHONY: jobd/dol/elba_telemetry
 jobd/dol/elba_telemetry: ${JOBD_PREREQS}
@@ -681,7 +681,7 @@ jobd/dol/elba_telemetry: ${JOBD_PREREQS}
 .PHONY: jobd/dol/elba_basetopo
 jobd/dol/elba_basetopo: ${JOBD_PREREQS}
 	${NICDIR}/tools/sw-env elba iris
-	${NICDIR}/run.py ${COVERAGE_OPTS} --topo base --feature eth_base,rdma_base --lite
+	${NICDIR}/run.py ${COVERAGE_OPTS} --topo base --feature eth_base,rdma_base --lite --microseg-enable
 
 .PHONY: jobd/dol/elba_rdma
 jobd/dol/elba_rdma: ${JOBD_PREREQS}

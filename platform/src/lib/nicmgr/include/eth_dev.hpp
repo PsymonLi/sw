@@ -46,7 +46,12 @@ namespace pt = boost::property_tree;
 #define DOORBELL_ADDR(lif_num)                                                                    \
     ((WA_DHS_ADDRESS) | (0xb << UPD_BITS_POSITION) | (lif_num << LIF_BITS_POSITION))
 
+#ifdef ELBA
+// TODO elba bring up hack. clean this once stabilized
+#define DEVCMD_TIMEOUT 30
+#else
 #define DEVCMD_TIMEOUT 5
+#endif
 #define PORT_MAC_STATS_REPORT_SIZE (1024)
 #define PORT_PB_STATS_REPORT_SIZE  (1024)
 

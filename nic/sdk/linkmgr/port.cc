@@ -1842,7 +1842,14 @@ port::port_mac_stats_persist_collect_enable(void)
     if (this->persist_stats_collect_ == false) {
         SDK_PORT_SM_TRACE(this, "Enabling persistent stats collection");
     }
+#ifdef ELBA
+    // TODO elba bring up hack. clean this once stats issues are fixed
+    if (getenv("ELBA_NO_PERSISTANT_STATS_COLLECT") == NULL) {
+        this->persist_stats_collect_ = true;
+    }
+#else
     this->persist_stats_collect_ = true;
+#endif
     return SDK_RET_OK;
 }
 
