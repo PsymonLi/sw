@@ -874,8 +874,8 @@ class NaplesManagement(EntityManagement):
             self.ipmi_handler()
             self.hdl.expect_exact("Autoboot in 0 seconds", timeout = 180)
         self.hdl.sendcontrol('C')
-        self.hdl.expect_exact("Capri#")
-        return
+        match_idx = self.hdl.expect_exact(["Capri#", "capri-gold login"])
+        return match_idx == 0
 
     @_exceptionWrapper(_errCodes.NAPLES_INIT_FOR_UPGRADE_FAILED, "Force switch to gold fw failed")
     def ForceSwitchToGoldFW(self):
@@ -883,22 +883,22 @@ class NaplesManagement(EntityManagement):
             self.__connect_to_console()
         except:
             pass
-        self.__get_capri_prompt()
-        self.hdl.sendline("boot goldfw")
-        self.hdl.expect_exact("capri-gold login", timeout = 180)
+        if self.__get_capri_prompt():
+            self.hdl.sendline("boot goldfw")
+            self.hdl.expect_exact("capri-gold login", timeout = i180)
 
-        # Do an ipmi reset again as in some cases, Server might reset twice if old image was bad.
-        #  HPE server reboots again probably because of bad init sequence or something and it forces naples to goes back
-        #  to bad image which would again force host to not comes properly.
-        self.__login()
-        self.SendlineExpect("fwupdate -s goldfw", "#", trySync=True)
-        try:
-            #Wait as HPE server might reboot again
-            self.hdl.expect_exact("capri-gold login", timeout = 300)
-        except:
-            #If did not reboot, reboot again
-            self.ipmi_handler()
-            self.hdl.expect_exact("capri-gold login", timeout = 180)
+            # Do an ipmi reset again as in some cases, Server might reset twice if old image was bad.
+            #  HPE server reboots again probably because of bad init sequence or something and it forces naples to goes back
+            #  to bad image which would again force host to not comes properly.
+            self.__login()
+            self.SendlineExpect("fwupdate -s goldfw", "#", trySync=True)
+            try:
+                #Wait as HPE server might reboot again
+                self.hdl.expect_exact("capri-gold login", timeout = 300)
+            except:
+                #If did not reboot, reboot again
+                self.ipmi_handler()
+                self.hdl.expect_exact("capri-gold login", timeout = 180)
         self.Login()
 
     @_exceptionWrapper(_errCodes.NAPLES_INIT_FOR_UPGRADE_FAILED, "Switch to gold fw failed")
@@ -1822,9 +1822,9 @@ class PenOrchestrator:
         if install_mainfw_via_host:
             # Since we are updating from host-side, this is a one-time operation
             self.__ipmi_reboot_allowed = True
-            self.__host.InstallMainFirmware()
             #Install gold fw if required.
             self.__host.InstallGoldFirmware()
+            self.__host.InstallMainFirmware()
 
         #Script that might have to run just before reboot
         # ESX would require drivers to be installed here to avoid

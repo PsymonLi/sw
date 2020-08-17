@@ -428,7 +428,7 @@ class _Testbed:
                     continue
                 else:
                     devicePipeline = devices[instance.ID]['pipeline']
-            cmd = ["timeout", "2400"]
+            cmd = ["timeout", "3000"]
 
             if self.__has_naples_device(instance):
 

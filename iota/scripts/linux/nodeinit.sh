@@ -125,7 +125,7 @@ function setup_legacy_mgmt_ip() {
         exit 0 
     fi 
     echo "Attempting to ping target: $trg_ip"
-    if ! (ping -c 5 $trg_ip); then 
+    if ! (ping -c 5 -i 0.2 $trg_ip); then 
         ../print-cores.sh 
         exit 12
     fi
@@ -169,7 +169,7 @@ function setup_pci_mgmt_ip() {
                 exit 0
             fi
             echo "Attempting to ping target: $mnic_ip"
-            if ! (ping -c 5 $mnic_ip); then
+            if ! (ping -c 5 -i 0.2 $mnic_ip); then
                 ../print-cores.sh
                 exit 14
             fi
