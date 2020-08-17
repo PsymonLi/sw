@@ -14,10 +14,10 @@
 #include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/infra/upgrade/upgmgr/ipc_peer/ipc_peer.hpp"
 #include "nic/infra/upgrade/upgmgr/api/upgrade_api.hpp"
-#include "nic/apollo/include/globals.hpp" // todo: get rid of this
 
 static sdk::event_thread::event_thread *g_upg_event_thread;
 static std::string g_tools_dir;
+static uint16_t g_peer_ipc_port;
 static ipc_peer_ctx *g_ipc_peer_ctx;
 static upg_stage_t g_current_upg_stage = UPG_STAGE_NONE;
 static bool g_config_replay_done = false;
@@ -131,7 +131,7 @@ upg_peer_init (bool client)
     uint32_t max_wait;
 
     g_ipc_peer_ctx = ipc_peer_ctx::factory(NULL,
-                                           PDS_IPC_PEER_TCP_PORT_UPGMGR,
+                                           g_peer_ipc_port,
                                            g_upg_event_thread->ev_loop());
     if (!g_ipc_peer_ctx) {
         UPG_TRACE_ERR("Peer IPC create failed");
@@ -343,6 +343,7 @@ upg_init (upg_init_params_t *params)
     }
 
     g_tools_dir = params->tools_dir;
+    g_peer_ipc_port = params->ipc_peer_port;
 
     // spawn upgrademgr fsm handler thread
     g_upg_event_thread = sdk::event_thread::event_thread::factory(
