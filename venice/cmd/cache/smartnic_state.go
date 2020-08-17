@@ -228,6 +228,8 @@ func (sm *Statemgr) UpdateSmartNIC(updObj *cluster.DistributedServiceCard, write
 						updObj.ObjectMeta.ResourceVersion = getObj.ObjectMeta.ResourceVersion
 						updObj.Spec.Admit = getObj.Spec.Admit
 						updObj.Spec.MgmtMode = getObj.Spec.MgmtMode
+						updObj.Spec.RoutingConfig = getObj.Spec.RoutingConfig
+						updObj.Spec.DSCProfile = getObj.Spec.DSCProfile
 						log.Infof("Got updated SmartNIC %+v from ApiServer: %v", getObj, getErr)
 						// Do not update local cache again here, because we may need to react to a transition
 						// (e.g. mgmtmode=network -> mgmtmode=host) and the logic that does that is in the code
