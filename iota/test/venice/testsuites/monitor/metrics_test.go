@@ -117,7 +117,7 @@ func checkMetricsFields() {
 	Expect(err).Should(BeNil())
 
 	for _, k := range types.DscMetricsList {
-		if k == "IPv4FlowDropMetrics" {
+		if k == "IPv4FlowDropMetrics" || k == "MirrorMetrics" {
 			continue
 		}
 
@@ -265,7 +265,7 @@ func checkCQMetricsFields() {
 		}
 		for _, m := range types.DscMetricsList {
 			// drop metrics are reported only on drop
-			if m == "IPv4FlowDropMetrics" || m == "RuleMetrics" {
+			if m == "IPv4FlowDropMetrics" || m == "RuleMetrics" || m == "MirrorMetrics" {
 				continue
 			}
 			cq := m + "_" + s

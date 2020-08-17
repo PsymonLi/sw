@@ -1,0 +1,46 @@
+{
+  "FileName": "mirrorstats.proto",
+  "Package": "mirrorstats",
+  "Prefix": "mirrorstats",
+  "Messages": [
+    {
+      "Name": "MirrorMetrics",
+      "Description": "Key index - Mirror Session ID",
+      "DisplayName": "Mirror Session Statistics",
+      "Fields": [
+        {
+          "Name": "Pkts",
+          "DisplayName": "Pkts",
+          "Description": "Total Mirror Packets",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "Bytes",
+          "DisplayName": "Bytes",
+          "Description": "Total Mirror Bytes",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "Pps",
+          "DisplayName": "PPS",
+          "Description": "Mirror BW Packets per second",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "Bytesps",
+          "DisplayName": "BPS",
+          "Description": "Mirror BW Bytes per second",
+          "Units": "Count",
+          "BaseType": "Counter"
+        }
+      ],
+      "Tags": [
+        "Level4"
+      ],
+      "Scope": "PerMirrorSession"
+    }
+  ]
+}

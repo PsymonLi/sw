@@ -34,6 +34,7 @@ var MetricsGroupByFieldsMap = map[string][]string{
 	"MacMetrics":             {`"name"`, `"reporterID"`, `"tenant"`},
 	"MemoryMetrics":          {`"name"`, `"reporterID"`, `"tenant"`},
 	"MgmtMacMetrics":         {`"name"`, `"reporterID"`, `"tenant"`},
+	"MirrorMetrics":          {`"name"`, `"reporterID"`, `"tenant"`, `"destination"`},
 	"Node":                   {`"name"`, `"reporterID"`, `"tenant"`},
 	"PortTemperatureMetrics": {`"name"`, `"reporterID"`, `"tenant"`},
 	"PowerMetrics":           {`"name"`, `"reporterID"`, `"tenant"`},
@@ -42,12 +43,13 @@ var MetricsGroupByFieldsMap = map[string][]string{
 
 // tagMap all column name in this list will NOT be considered as CQ field
 var tagMap = map[string]bool{
-	"time":       true,
-	"Kind":       true,
-	"Name":       true,
-	"name":       true,
-	"tenant":     true,
-	"reporterID": true,
+	"destination": true,
+	"time":        true,
+	"Kind":        true,
+	"Name":        true,
+	"name":        true,
+	"tenant":      true,
+	"reporterID":  true,
 }
 
 // ContinuousQuerySpec spec to save info for CreateContinuousQuery API

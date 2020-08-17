@@ -5,12 +5,16 @@ package mirror_test
 import (
 	//"errors"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
 	"time"
 
 	"github.com/pensando/sw/api/generated/monitoring"
+	"github.com/pensando/sw/metrics/iris/genfields"
+	cq "github.com/pensando/sw/venice/citadel/broker/continuous_query"
+	"github.com/pensando/sw/venice/utils/telemetryclient"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -412,4 +416,89 @@ var _ = Describe("Flow mirror tests", func() {
 			})
 		})
 	*/
+
+	Context("Mirror stats tests", func() {
+		It("Check MirrorMetrics fields", checkMirrorMetrics)
+	})
 })
+
+func checkMirrorMetrics() {
+	if !ts.tb.HasNaplesHW() {
+		Skip("No naples hw detected, skip checking metrics")
+	}
+	tms := time.Now().UTC().Add(time.Minute * -20).Format(time.RFC3339)
+	cqtms := time.Now().UTC().Add(time.Minute * -20).Format(time.RFC3339)
+
+	// get node collection and init telemetry client
+	vnc := ts.model.VeniceNodes()
+	err := vnc.InitTelemetryClient()
+	Expect(err).Should(BeNil())
+
+	kind := "MirrorMetrics"
+	fields := genfields.GetFieldNamesFromKind(kind)
+	Eventually(func() error {
+		By(fmt.Sprintf("checking %v\n", kind))
+
+		// query metrics
+		resp, err := vnc.QueryMetricsFields(kind, tms)
+		if err != nil {
+			fmt.Printf("query failed %v \n", err)
+			return err
+		}
+
+		// make sure metrics exists
+		err = validateResp(resp, fields, tms)
+		if err != nil {
+			return err
+		}
+
+		// query CQ metrics
+		for s := range cq.RetentionPolicyMap {
+			if s != "5minutes" {
+				continue
+			}
+			cq := kind + "_" + s
+			By(fmt.Sprintf("checking %v\n", cq))
+			resp, err := vnc.QueryMetricsFields(cq, cqtms)
+			if err != nil {
+				fmt.Printf("query failed %v \n", err)
+				return err
+			}
+
+			// make sure metrics exists
+			err = validateResp(resp, fields, cqtms)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}, time.Duration(10)*time.Minute, time.Duration(30)*time.Second).Should(Succeed())
+}
+
+func validateResp(resp *telemetryclient.MetricsQueryResponse, fields []string, tms string) error {
+	if len(resp.Results) == 0 || len(resp.Results[0].Series) == 0 {
+		res, err := json.Marshal(resp)
+		fmt.Printf("query ts %v returned(%v) %+v \n", tms, err, string(res))
+		return fmt.Errorf("no results")
+	}
+
+	for _, r := range resp.Results[0].Series {
+
+		// get index
+		cIndex := map[string]int{}
+		for i, c := range r.Columns {
+			cIndex[c] = i
+		}
+
+		for _, f := range fields {
+			if _, ok := cIndex[f]; !ok {
+				fmt.Printf("failed to find %v \n", f)
+				return fmt.Errorf("failed to find %v", f)
+			}
+			fmt.Printf("\tcheck %v \u2714 \n", f)
+		}
+	}
+
+	return nil
+}

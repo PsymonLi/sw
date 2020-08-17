@@ -2981,6 +2981,79 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   "interfaceType": "host-pf",
   "uiGroup": "LifMetrics"
 },
+  MirrorMetrics: {
+  "name": "MirrorMetrics",
+  "description": "Key index - Mirror Session ID",
+  "displayName": "Mirror Session Statistics",
+  "fields": [
+    {
+      "name": "Pkts",
+      "displayName": "Pkts",
+      "description": "Total Mirror Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "Bytes",
+      "displayName": "Bytes",
+      "description": "Total Mirror Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "Pps",
+      "displayName": "PPS",
+      "description": "Mirror BW Packets per second",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "Bytesps",
+      "displayName": "BPS",
+      "description": "Mirror BW Bytes per second",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    }
+  ],
+  "tags": [
+    "Level4"
+  ],
+  "scope": "PerMirrorSession",
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "MirrorMetrics"
+},
   NMDMetrics: {
   "name": "NMDMetrics",
   "description": "Statistics related to NMD",

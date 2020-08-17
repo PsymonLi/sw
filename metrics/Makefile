@@ -9,7 +9,8 @@ IRIS_PATHS =\
 	flowstats:nic/proto/flowstats                   \
 	sysmond:nic/proto/sysmond                       \
 	nmdmetrics:nic/agent/protos/nmd/nmdmetrics      \
-	pciemgr:platform/src/app/pciemgrd/proto
+	pciemgr:platform/src/app/pciemgrd/proto			\
+	mirrorstats:nic/proto/mirrorstats
 
 # Apulu metric jsons are hand maintained in nic/infra/operd/metrics.
 APULU_PATHS =\

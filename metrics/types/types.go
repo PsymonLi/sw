@@ -1,6 +1,6 @@
 package types
 
-// DscMetricsList is the list of metrics saved in Venice, last updated: 03/11/2020
+// DscMetricsList is the list of metrics saved in Venice, last updated: 08/05/2020
 var DscMetricsList = []string{
 	"AsicPowerMetrics",
 	"AsicTemperatureMetrics",
@@ -8,6 +8,7 @@ var DscMetricsList = []string{
 	"FteCPSMetrics",
 	"FteLifQMetrics",
 	"MacMetrics",
+	"MirrorMetrics",
 	"MgmtMacMetrics",
 	"LifMetrics",
 	"RuleMetrics",
