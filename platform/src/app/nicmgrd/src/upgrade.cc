@@ -177,13 +177,27 @@ file_exist (const char *fname)
 }
 
 void
-SaveUplinkInfo(uplink_t *up, UplinkInfo *proto_obj)
+SaveUplinkInfo(uplink_t *up, UplinkInfo *proto_obj, upg_msg_t *msg)
 {
-    proto_obj->set_key(up->id);
-    proto_obj->set_id(up->id);
-    proto_obj->set_port(up->port);
-    proto_obj->set_is_oob(up->is_oob);
-    NIC_LOG_DEBUG("Saving uplink id {} port {}", proto_obj->id(), proto_obj->port());
+    // support for devconf downgrade from 3 --> 2 handling of if index changes
+    if (msg && msg->pre_devconf_version == 3 &&
+        msg->post_devconf_version == 2) {
+#define ETH_IFINDEX_TO_UPLINK_IFINDEX_RELB(ifindex_)       \
+        ((5 << IF_TYPE_SHIFT) |                            \
+         ((ifindex_) & ~(IF_TYPE_MASK << IF_TYPE_SHIFT)))
+
+        proto_obj->set_key(up->id);
+        proto_obj->set_id(ETH_IFINDEX_TO_UPLINK_IFINDEX_RELB(up->port));
+        proto_obj->set_port(up->port);
+        proto_obj->set_is_oob(up->is_oob);
+    } else {
+        proto_obj->set_key(up->id);
+        proto_obj->set_id(up->id);
+        proto_obj->set_port(up->port);
+        proto_obj->set_is_oob(up->is_oob);
+    }
+
+    NIC_LOG_INFO("Saving uplink id {} port {}", proto_obj->id(), proto_obj->port());
 }
 
 void
@@ -262,7 +276,7 @@ upgrade_state_save_delphi (void)
 
 // returns void, as save state fails only in case of out of memory.
 void
-nicmgr_upg_hndlr::upgrade_state_save(void)
+nicmgr_upg_hndlr::upgrade_state_save(upg_msg_t *msg)
 {
     backup_mem_hdr_t *hdr;
     sdk_ret_t ret = SDK_RET_OK;
@@ -303,7 +317,7 @@ nicmgr_upg_hndlr::upgrade_state_save(void)
 
     for (auto it = up_links.begin(); it != up_links.end(); it++) {
         uplink_t *up = it->second;
-        SaveUplinkInfo(up, &uplinkinfo);
+        SaveUplinkInfo(up, &uplinkinfo, msg);
         NICMGR_BKUP_PBUF(uplinkinfo, ret, "uplink");
         SDK_ASSERT(ret == SDK_RET_OK);
     }
@@ -437,7 +451,7 @@ nicmgr_upg_hndlr::SuccessHandler(UpgCtx& upgCtx)
 
 // Handle upgrade failure
 HdlrResp
-nicmgr_upg_hndlr::FailedHandler(UpgCtx& upgCtx)
+nicmgr_upg_hndlr::FailedHandler(UpgCtx& upgCtx, upg_msg_t *msg)
 {
     HdlrResp resp = {.resp=SUCCESS, .errStr=""};
     IsUpgFailed = true;
@@ -458,7 +472,7 @@ nicmgr_upg_hndlr::FailedHandler(UpgCtx& upgCtx)
     writefile(nicmgr_rollback_state_file, "in progress", 11);
     resp.resp = INPROGRESS;
 
-    upg_handler->upgrade_state_save();
+    upg_handler->upgrade_state_save(msg);
 
     // we will run through all the state machine for nicmgr upgrade if somehow upgrade failed
     NIC_FUNC_DEBUG("Sending LinkDown event to eth drivers");
@@ -536,7 +550,7 @@ restore_eth_device_info_cb (EthDeviceInfo *EthDevProtoObj, void *arg)
     eth_dev_info->eth_res = eth_res;
     eth_dev_info->eth_spec = eth_spec;
 
-    NIC_LOG_DEBUG("Restore eth dev {}", EthDevProtoObj->eth_dev_spec().name());
+    NIC_LOG_INFO("Restore eth dev {}", EthDevProtoObj->eth_dev_spec().name());
     devmgr->RestoreDeviceGraceful(ETH, eth_dev_info);
 }
 
@@ -544,7 +558,7 @@ static void
 restore_uplink_info_cb (UplinkInfo *UplinkProtoObj,  void *arg)
 {
     UplinkProtoObj->set_id(ETH_IFINDEX_TO_UPLINK_IFINDEX(UplinkProtoObj->port()));
-    NIC_LOG_DEBUG("Restore uplink id {} port {}", UplinkProtoObj->id(), UplinkProtoObj->port());
+    NIC_LOG_INFO("Restore uplink id {} port {}", UplinkProtoObj->id(), UplinkProtoObj->port());
     devmgr->CreateUplink(UplinkProtoObj->id(), UplinkProtoObj->port(), UplinkProtoObj->is_oob());
 }
 
@@ -575,7 +589,7 @@ nicmgr_upg_hndlr::SaveStateHandler(UpgCtx& upgCtx, upg_msg_t *msg) {
     if (msg->save_state_delphi == 1) {
         upgrade_state_save_delphi();
     } else {
-        upg_handler->upgrade_state_save();
+        upg_handler->upgrade_state_save(msg);
     }
 
     return resp;
@@ -804,7 +818,7 @@ nicmgr_upg_hndlr::upg_ipc_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
         break;
     case MSG_ID_UPG_FAIL:
         upg_ctx.prevExecState = (UpgReqStateType)upg_msg->prev_exec_state;
-        rsp = FailedHandler(upg_ctx);
+        rsp = FailedHandler(upg_ctx, upg_msg);
         break;
     case MSG_ID_UPG_ABORT:
         AbortHandler(upg_ctx);

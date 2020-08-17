@@ -47,6 +47,8 @@ typedef struct upg_msg_s {
     upg_rsp_code_t rsp_code;
     uint32_t       prev_exec_state;
     uint32_t       save_state_delphi;
+    uint32_t       pre_devconf_version;
+    uint32_t       post_devconf_version;
     char rsp_err_string[UPG_RSP_ERR_STR_MAXLEN];
 } upg_msg_t;
 

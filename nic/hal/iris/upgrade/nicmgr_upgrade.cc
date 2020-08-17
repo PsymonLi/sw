@@ -98,9 +98,7 @@ nicmgr_upgrade_handler::SaveStateHandler(UpgCtx& upgCtx)
     upg_msg_t   msg;
     std::string preVer, postVer;
     const char *dev_conf_a = "1";
-
-    msg.msg_id = MSG_ID_UPG_SAVE_STATE;
-    msg.prev_exec_state = prevExecState;
+    const char *dev_conf_b = "2";
 
     HAL_TRACE_DEBUG("[nicmgr_upgrade] Handling save state msg ...");
 
@@ -110,9 +108,14 @@ nicmgr_upgrade_handler::SaveStateHandler(UpgCtx& upgCtx)
     ::upgrade::UpgCtxApi::UpgCtxGetPostUpgTableVersion(upgCtx,
                                                        ::upgrade::DEVCONFVER,
                                                        postVer);
+    msg.msg_id = MSG_ID_UPG_SAVE_STATE;
+    msg.prev_exec_state = prevExecState;
+    msg.pre_devconf_version = atoi(preVer.c_str());
+    msg.post_devconf_version = atoi(postVer.c_str());
+
     // Check if B => A.
-    if (atoi(preVer.c_str()) > atoi(postVer.c_str()) &&
-             atoi(dev_conf_a) == atoi(postVer.c_str())) {
+    if (atoi(dev_conf_b) == atoi(preVer.c_str()) &&
+        atoi(dev_conf_a) == atoi(postVer.c_str())) {
         HAL_TRACE_DEBUG("[nicmgr_upgrade] Handling B to A Downgrade msg... "
                     "preVer {} postVer {}",
                     preVer, postVer);
@@ -131,11 +134,23 @@ HdlrResp
 nicmgr_upgrade_handler::FailedHandler(UpgCtx& upgCtx)
 {
     upg_msg_t   msg;
+    std::string preVer, postVer;
+
+    HAL_TRACE_DEBUG("[nicmgr_upgrade] Handling failed msg ...");
+
+    ::upgrade::UpgCtxApi::UpgCtxGetPreUpgTableVersion(upgCtx,
+                                                      ::upgrade::DEVCONFVER,
+                                                      preVer);
+    ::upgrade::UpgCtxApi::UpgCtxGetPostUpgTableVersion(upgCtx,
+                                                       ::upgrade::DEVCONFVER,
+                                                       postVer);
 
     msg.msg_id = MSG_ID_UPG_FAIL;
     msg.prev_exec_state = prevExecState;
+    msg.pre_devconf_version = atoi(preVer.c_str());
+    msg.post_devconf_version = atoi(postVer.c_str());
 
-    HAL_TRACE_DEBUG("[nicmgr_upgrade] Handling failed msg ...");
+    // update prev state
     prevExecState = UpgStateFailed;
 
     return upg_event_notify(&msg);

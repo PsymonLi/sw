@@ -34,13 +34,13 @@ public:
     HdlrResp PostLinkUpHandler(UpgCtx& upgCtx);
     void ResetState(UpgCtx& upgCtx);
     void SuccessHandler(UpgCtx& upgCtx);
-    HdlrResp FailedHandler(UpgCtx& upgCtx);
+    HdlrResp FailedHandler(UpgCtx& upgCtx, upg_msg_t *msg);
     void AbortHandler(UpgCtx& upgCtx);
     static void upg_timer_func(void *obj);
     static void upg_ipc_handler_cb (sdk::ipc::ipc_msg_ptr msg, const void *ctxt);
     sdk_ret_t upg_shm_alloc(const char *name, uint32_t size, bool create);
     void upg_restore_states(void);
-    void upgrade_state_save(void);
+    void upgrade_state_save(upg_msg_t *msg);
 private:
     void upg_ipc_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt);
     shmmgr     *shm_mmgr_;
