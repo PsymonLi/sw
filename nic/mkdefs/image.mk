@@ -85,21 +85,19 @@ build-rootfs.cpio: build-rootfs
 	chmod a+x ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/cpio/fakeroot
 	 $(LIBRARYPATH) $(HOSTPATH) ${NICDIR}/buildroot/host/bin/fakeroot -- ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/cpio/fakeroot
 
-ifeq ($(ISSU_IMAGE),)
 .PHONY: build-image
 build-image: build-squashfs
 	${NICDIR}/upgrade_manager/meta/upgrade_metadata_restore.sh
 	$(HOSTPATH) ${NICDIR}/buildroot/board/pensando/${FW_PACKAGE_DIR}/post-image.sh
-else
-.PHONY: build-image
-build-image: build-squashfs
+
+.PHONY: build-image-issu
+build-image-issu: build-squashfs
 	mv ${NICDIR}/buildroot/${OUT_DIR}/images/Image ${NICDIR}/buildroot/${OUT_DIR}/images/Image.orig
 	cp ${NICDIR}/buildroot/output/capri_ramfs/images/Image ${NICDIR}/buildroot/${OUT_DIR}/images/Image
 	${NICDIR}/upgrade_manager/meta/upgrade_metadata_restore.sh
 	$(HOSTPATH) ${NICDIR}/buildroot/board/pensando/${FW_PACKAGE_DIR}/post-image.sh
 	rm ${NICDIR}/buildroot/${OUT_DIR}/images/Image
 	mv ${NICDIR}/buildroot/${OUT_DIR}/images/Image.orig ${NICDIR}/buildroot/${OUT_DIR}/images/Image
-endif
 
 .PHONY: build-gold-image
 build-gold-image: gold_env build-rootfs.cpio
@@ -149,6 +147,16 @@ firmware-normal: build-image
 		ln -frs ${NICDIR}/dsc_fw_${ASIC}_${RELEASE}.tar ${NICDIR}/naples_fw_${ASIC}.tar; \
 	fi
 
+.PHONY: firmware-issu
+firmware-issu: build-image-issu
+	if [ ${ASIC} == "capri" ]; then \
+		cp ${NICDIR}/buildroot/${OUT_DIR}/images/${NAPLES_FW_NAME} ${NICDIR}/dsc_fw_issu_${RELEASE}.tar; \
+		ln -frs ${NICDIR}/dsc_fw_issu_${RELEASE}.tar ${NICDIR}/${NAPLES_FW_NAME}; \
+	else \
+		cp ${NICDIR}/buildroot/${OUT_DIR}/images/${NAPLES_FW_NAME} ${NICDIR}/dsc_fw_issu_${ASIC}_${RELEASE}.tar; \
+		ln -frs ${NICDIR}/dsc_fw_issu_${ASIC}_${RELEASE}.tar ${NICDIR}/naples_fw_${ASIC}.tar; \
+	fi
+
 .PHONY: firmware-upgrade
 firmware-upgrade: build-upg-image
 	if [ ${ASIC} == "capri" ]; then \
@@ -178,6 +186,9 @@ endif
 ifeq ($(PIPELINE),iris)
 	make penctl-version
 	OUT_DIR=output/${ASIC} NAPLES_FW_NAME=naples_fw.tar FW_PACKAGE_DIR=${ASIC} make firmware-upgrade
+endif
+ifeq ($(PIPELINE),apulu)
+	OUT_DIR=output/${ASIC} NAPLES_FW_NAME=naples_fw_issu.tar FW_PACKAGE_DIR=${ASIC} make -C . firmware-issu
 endif
 	${TOOLS_DIR}/relative_link.sh ${NICDIR}/build/${ARCH}/${PIPELINE}/${ASIC}
 
