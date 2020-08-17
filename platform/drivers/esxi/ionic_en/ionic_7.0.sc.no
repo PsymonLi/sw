@@ -165,7 +165,7 @@ ionic_en_bulletin_def = {
 
       'kbUrl'       : 'http://kb.vmware.com/kb/example.html',
 
-      'componentNameSpec' : { 'name' : 'ionic-en',
+      'componentNameSpec' : { 'name' : 'Pensando-ionic-en',
                               'uistring' : driverSummary
                             },
       'componentVersionSpec' : { 'version' : fullVersion, 'uistring' : shortVersion },
