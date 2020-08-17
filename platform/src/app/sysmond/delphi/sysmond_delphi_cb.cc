@@ -59,7 +59,7 @@ delphi_cattrip_event_cb (void)
 }
 
 void
-delphi_power_event_cb (sdk::platform::sensor::system_power_t *power)
+delphi_power_event_cb (system_power_t *power)
 {
     uint64_t key = 0;
 
@@ -73,19 +73,20 @@ delphi_power_event_cb (sdk::platform::sensor::system_power_t *power)
 }
 
 void
-delphi_temp_event_cb (sdk::platform::sensor::system_temperature_t *temperature)
+delphi_temp_event_cb (system_temperature_t *temperature,
+                      sdk::platform::qsfp_temperature_t *xcvrtemp)
 {
     uint64_t key = 0;
 
     asictemp.hbm_temperature = temperature->hbmtemp;
     asictemp.local_temperature = temperature->localtemp;
     asictemp.die_temperature = temperature->dietemp;
-    asictemp.qsfp_port1_temperature = temperature->xcvrtemp[0].temperature;
-    asictemp.qsfp_port2_temperature = temperature->xcvrtemp[1].temperature;
-    asictemp.qsfp_port1_warning_temperature = temperature->xcvrtemp[0].warning_temperature;
-    asictemp.qsfp_port2_warning_temperature = temperature->xcvrtemp[1].warning_temperature;
-    asictemp.qsfp_port1_alarm_temperature = temperature->xcvrtemp[0].alarm_temperature;
-    asictemp.qsfp_port2_alarm_temperature = temperature->xcvrtemp[1].alarm_temperature;
+    asictemp.qsfp_port1_temperature = xcvrtemp[0].temperature;
+    asictemp.qsfp_port2_temperature = xcvrtemp[1].temperature;
+    asictemp.qsfp_port1_warning_temperature = xcvrtemp[0].warning_temperature;
+    asictemp.qsfp_port2_warning_temperature = xcvrtemp[1].warning_temperature;
+    asictemp.qsfp_port1_alarm_temperature = xcvrtemp[0].alarm_temperature;
+    asictemp.qsfp_port2_alarm_temperature = xcvrtemp[1].alarm_temperature;
 
     // Publish Delphi object
     delphi::objects::AsicTemperatureMetrics::Publish(key, &asictemp);

@@ -407,7 +407,7 @@ void CmdHndler::DellOEMCmdGetTemperature(void *obj, const void *cmd_pkt, ssize_t
         }
     }
 
-    rc = read_temperatures(&temperature);
+    rc = sdk::platform::sensor::read_temperatures(&temperature);
 
     resp->max_temperature = 95;
     resp->cur_temperature = temperature.hbmtemp;

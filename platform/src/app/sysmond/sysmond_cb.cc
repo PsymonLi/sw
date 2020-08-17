@@ -33,16 +33,17 @@ cattrip_event_cb (void)
 }
 
 void
-power_event_cb (sdk::platform::sensor::system_power_t *power)
+power_event_cb (system_power_t *power)
 {
     delphi_power_event_cb(power);
 }
 
 void
-temp_event_cb (sdk::platform::sensor::system_temperature_t *temperature,
+temp_event_cb (system_temperature_t *temperature,
+               sdk::platform::qsfp_temperature_t *xcvrtemp,
                sysmon_hbm_threshold_event_t hbm_event)
 {
-    delphi_temp_event_cb(temperature);
+    delphi_temp_event_cb(temperature, xcvrtemp);
     eventrecorder_temp_event_cb(temperature, hbm_event);
 }
 

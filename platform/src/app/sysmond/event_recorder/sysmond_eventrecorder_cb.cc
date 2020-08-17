@@ -12,9 +12,8 @@ eventrecorder_cattrip_event_cb (void)
 }
 
 void
-eventrecorder_temp_event_cb (
-                    sdk::platform::sensor::system_temperature_t *temperature,
-                    sysmon_hbm_threshold_event_t hbm_event)
+eventrecorder_temp_event_cb (system_temperature_t *temperature,
+                             sysmon_hbm_threshold_event_t hbm_event)
 {
     if (hbm_event == SYSMON_HBM_TEMP_ABOVE_THRESHOLD) {
         EventLogger::getInstance()->LogOverTempAlarmEvent(

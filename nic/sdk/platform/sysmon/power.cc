@@ -16,9 +16,9 @@ checkpower(void)
     static int max_pin;
     static int max_pout1;
     static int max_pout2;
-    sdk::platform::sensor::system_power_t power;
+    system_power_t power;
 
-    memset(&power, 0, sizeof(sdk::platform::sensor::system_power_t));
+    memset(&power, 0, sizeof(system_power_t));
 
     ret = sdk::platform::sensor::read_powers(&power);
     if (ret == SDK_RET_OK) {

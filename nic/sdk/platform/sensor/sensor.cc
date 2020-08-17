@@ -110,7 +110,9 @@ int read_temperatures(system_temperature_t *temperature)
     if (read_local_temperature(&temperature->localtemp) == 0 &&
         read_die_temperature(&temperature->dietemp) == 0)
     {
-        temperature->dietemp = temperature->dietemp - DIE_TEMP_STANDARD_DEVIATION;
+        // Convert localtemp and dietemp from millidegrees to degrees
+        temperature->localtemp = temperature->localtemp/1000;
+        temperature->dietemp = (temperature->dietemp - DIE_TEMP_STANDARD_DEVIATION)/1000;
         temperature->hbmtemp = cap_nwl_sbus_get_1500_temperature();
         temperature->hbmwarningtemp = 85;
         temperature->hbmcriticaltemp = 95;

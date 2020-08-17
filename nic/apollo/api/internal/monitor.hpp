@@ -31,8 +31,7 @@ power_event_cb (system_power_t *power)
 /// \param[in]  temperature temperature info
 /// \param[out] arr array to be populated
 static inline void
-populate_asic_temperature (system_temperature_t *temperature,
-                           uint64_t *arr)
+populate_asic_temperature (system_temperature_t *temperature, uint64_t *arr)
 {
     arr[asic_temp_metrics_type_t::ASIC_TEMP_METRICS_TYPE_LOCAL] =
             temperature->localtemp;
@@ -43,25 +42,24 @@ populate_asic_temperature (system_temperature_t *temperature,
 }
 
 /// \brief      populate the array based on port temperature fields
-/// \param[in]  temperature temperature info
-/// \parma[in]  phy_port physical port
+/// \param[in]  xcvrtemp port temperature info
 /// \param[out] arr array to be populated
 static inline void
-populate_port_temperature (system_temperature_t *temperature,
-                           uint32_t phy_port, uint64_t *arr)
+populate_port_temperature (sdk::platform::qsfp_temperature_t *xcvrtemp,
+                           uint64_t *arr)
 {
     arr[port_temp_metrics_type_t::PORT_TEMP_METRICS_TYPE_PORT] =
-            temperature->xcvrtemp[phy_port].temperature;
+        xcvrtemp->temperature;
     arr[port_temp_metrics_type_t::PORT_TEMP_METRICS_TYPE_WARN] =
-            temperature->xcvrtemp[phy_port].warning_temperature;
+        xcvrtemp->warning_temperature;
     arr[port_temp_metrics_type_t::PORT_TEMP_METRICS_TYPE_ALARM] =
-            temperature->xcvrtemp[phy_port].alarm_temperature;
+        xcvrtemp->alarm_temperature;
 }
 
 /// \brief     update metrics for port temperature
-/// \param[in] temperature temperature info
+/// \param[in]  xcvrtemp port temperature info
 static inline void
-port_temperature_metrics_update (system_temperature_t *temperature)
+port_temperature_metrics_update (sdk::platform::qsfp_temperature_t *xcvrtemp)
 {
     uint64_t port_temp_metrics[
         port_temp_metrics_type_t::PORT_TEMP_METRICS_TYPE_MAX] = { 0 };
@@ -70,8 +68,7 @@ port_temperature_metrics_update (system_temperature_t *temperature)
 
     num_phy_ports = g_pds_state.catalogue()->num_fp_ports();
     for (uint32_t phy_port = 1; phy_port <= num_phy_ports; phy_port++) {
-        populate_port_temperature(temperature, phy_port,
-                                  port_temp_metrics);
+        populate_port_temperature(&xcvrtemp[phy_port-1], port_temp_metrics);
         ifindex = ETH_IFINDEX(g_pds_state.catalogue()->slot(),
                               phy_port, ETH_IF_DEFAULT_CHILD_PORT);
         sdk::metrics::metrics_update(
@@ -100,6 +97,7 @@ asic_temperature_metrics_update (system_temperature_t *temperature)
 /// \param[in] hbm_event events for hbm temperature threshold
 static inline void
 temperature_event_cb (system_temperature_t *temperature,
+                      sdk::platform::qsfp_temperature_t *xcvrtemp,
                       sysmon_hbm_threshold_event_t hbm_event)
 {
     PDS_HMON_TRACE_VERBOSE("Die temperature is %dC, local temperature is "
@@ -121,7 +119,7 @@ temperature_event_cb (system_temperature_t *temperature,
         break;
     }
     asic_temperature_metrics_update(temperature);
-    port_temperature_metrics_update(temperature);
+    port_temperature_metrics_update(xcvrtemp);
 }
 
 /// \brief     event callback for asic interrupts

@@ -108,7 +108,8 @@ int read_temperatures(system_temperature_t *temperature)
     if (read_local_temperature(&temperature->localtemp) == 0 &&
         read_die_temperature(&temperature->dietemp) == 0)
     {
-        temperature->dietemp = temperature->dietemp - DIE_TEMP_STANDARD_DEVIATION;
+        temperature->localtemp = temperature->localtemp/1000;
+        temperature->dietemp = (temperature->dietemp - DIE_TEMP_STANDARD_DEVIATION)/1000;
         temperature->hbmtemp = 85;
         temperature->hbmwarningtemp = 85;
         temperature->hbmcriticaltemp = 95;

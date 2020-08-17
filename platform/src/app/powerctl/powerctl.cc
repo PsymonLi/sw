@@ -29,7 +29,7 @@ main(int argc, char *argv[])
 {
     sdk::lib::catalog  *catalog      = NULL;
     int standard_deviation = 0;
-    sdk::platform::sensor::system_voltage_t voltage;
+    system_voltage_t voltage;
     if (argc < 2) {
         usage();
     }

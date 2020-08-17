@@ -23,7 +23,8 @@ int startingfrequency_1100 = 0;
 #define AUX_FAN_TEMP_HYSTERESIS 10
 
 static void
-cpld_temp_update (sdk::platform::sensor::system_temperature_t *temperature)
+cpld_temp_update (system_temperature_t *temperature,
+                  sdk::platform::qsfp_temperature_t *xcvrtemp)
 {
     static uint32_t aux_fan_state;
     uint32_t num_phy_ports;
@@ -37,17 +38,14 @@ cpld_temp_update (sdk::platform::sensor::system_temperature_t *temperature)
 
     // walk fp ports
     num_phy_ports = g_sysmon_cfg.catalog->num_fp_ports();
-    for (uint32_t phy_port = 1; phy_port <= num_phy_ports; phy_port++) {
-        if (g_sysmon_cfg.catalog->port_type_fp(phy_port)
+    for (uint32_t port = 1; port <= num_phy_ports; port++) {
+        if (g_sysmon_cfg.catalog->port_type_fp(port)
             != port_type_t::PORT_TYPE_MGMT) {
             // adding place holders for updating qsfp temperature to cpld
-            pal_write_qsfp_temp(temperature->xcvrtemp[phy_port -1].temperature,
-                                phy_port);
-            pal_write_qsfp_alarm_temp(
-                temperature->xcvrtemp[phy_port -1].alarm_temperature, phy_port);
-            pal_write_qsfp_warning_temp(
-                temperature->xcvrtemp[phy_port -1].warning_temperature,
-                phy_port);
+            pal_write_qsfp_temp(xcvrtemp[port-1].temperature, port);
+            pal_write_qsfp_alarm_temp(xcvrtemp[port-1].alarm_temperature, port);
+            pal_write_qsfp_warning_temp(xcvrtemp[port-1].warning_temperature,
+                                        port);
         }
     }
 
@@ -111,18 +109,17 @@ checktemperature(void)
     uint32_t num_phy_ports;
     static sysmon_hbm_threshold_event_t prev_hbmtemp_event;
     sysmon_hbm_threshold_event_t hbmtemp_event;
-    sdk::platform::sensor::system_temperature_t temperature;
+    system_temperature_t temperature;
+    sdk::platform::qsfp_temperature_t xcvrtemp[MAX_FP_PORTS];
 
     ret = read_temperatures(&temperature);
     if (!ret) {
-        temperature.dietemp /= 1000;
         if (max_die_temp < temperature.dietemp) {
             SDK_HMON_TRACE_INFO("%s is : %uC",
                                 "Die temperature", temperature.dietemp);
             max_die_temp = temperature.dietemp;
         }
 
-        temperature.localtemp /= 1000;
         if (max_local_temp < temperature.localtemp) {
             SDK_HMON_TRACE_INFO("%s is : %uC",
                                 "Local temperature", temperature.localtemp);
@@ -139,8 +136,8 @@ checktemperature(void)
         for (uint32_t phy_port = 1; phy_port <= num_phy_ports; phy_port++) {
             if (g_sysmon_cfg.catalog->port_type_fp(phy_port)
                 != port_type_t::PORT_TYPE_MGMT) {
-                sdk::platform::read_qsfp_temperature(
-                    phy_port - 1, &temperature.xcvrtemp[phy_port -1]);
+                sdk::platform::read_qsfp_temperature(phy_port - 1,
+                                                     &xcvrtemp[phy_port-1]);
             }
         }
 
@@ -169,9 +166,9 @@ checktemperature(void)
             hbmtemp_event = SYSMON_HBM_TEMP_NONE;
         }
         // update temperature in cpld
-        cpld_temp_update(&temperature);
+        cpld_temp_update(&temperature, xcvrtemp);
         if (g_sysmon_cfg.temp_event_cb) {
-            g_sysmon_cfg.temp_event_cb(&temperature, hbmtemp_event);
+            g_sysmon_cfg.temp_event_cb(&temperature, xcvrtemp, hbmtemp_event);
         }
     } else {
         SDK_HMON_TRACE_ERR("Reading temperature failed");

@@ -171,7 +171,7 @@ temp_sensor_test (test_mode_e mode, int argc, char* argv[])
     int arg_option;
     int index, retval = 0;
     struct option* option;
-    sdk::platform::sensor::system_temperature_t temperature;
+    system_temperature_t temperature;
 
     /** test flags */
     int test_all=0;
@@ -239,12 +239,10 @@ temp_sensor_test (test_mode_e mode, int argc, char* argv[])
     }
 
    if (test_local_temp) {
-        temperature.localtemp /= 1000;
         retval = local_temp_sensor_test(temperature.localtemp);
    }
 
    if (test_die_temp) {
-        temperature.dietemp /= 1000;
         retval = die_temp_sensor_test(temperature.dietemp);
    }
 

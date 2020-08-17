@@ -174,13 +174,13 @@ asic_impl::set_arm_frequency(pds_clock_freq_t freq) {
 sdk_ret_t
 asic_impl::get_system_temperature(pds_system_temperature_t *temp) {
     int rv;
-    sdk::platform::sensor::system_temperature_t temperature;
+    system_temperature_t temperature;
 
     // read the temperatures
     rv = sdk::platform::sensor::read_temperatures(&temperature);
     if (rv == 0) {
-        temp->dietemp = temperature.dietemp/1000;
-        temp->localtemp = temperature.localtemp/1000;
+        temp->dietemp = temperature.dietemp;
+        temp->localtemp = temperature.localtemp;
         temp->hbmtemp = temperature.hbmtemp;
     } else {
         PDS_TRACE_ERR("Temperature reading failed");
@@ -196,7 +196,7 @@ asic_impl::get_system_temperature(pds_system_temperature_t *temp) {
 sdk_ret_t
 asic_impl::get_system_power(pds_system_power_t *pow) {
     int rv;
-    sdk::platform::sensor::system_power_t power;
+    system_power_t power;
 
     // read the power
     rv = sdk::platform::sensor::read_powers(&power);

@@ -259,6 +259,7 @@ nic/athena/tools/start-sec-agent-iota.sh                          /nic/tools/
 nic/athena/tools/$MFG-DIR/start-agent-skip-dpdk.sh                /nic/tools/
 nic/athena/tools/start-flow-logger.sh                             /nic/tools/
 nic/athena/tools/start-flow-logger-iota.sh                        /nic/tools/
+nic/athena/tools/run-pfmapp.sh                                    /nic/tools/
 nic/apollo/tools/start-nmd.sh                                     /nic/tools/
 nic/apollo/tools/store_agent_log.sh                               /nic/tools/
 nic/build/$ARCH/$PIPELINE/lib/libtrace.so                         /nic/lib/
@@ -266,6 +267,7 @@ nic/build/$ARCH/$PIPELINE/bin/athena_app                          /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/athena_cps                          /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/athena_flow_logger                  /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/athena_client                       /nic/bin/
+nic/build/$ARCH/$PIPELINE/bin/athena_pfmapp                       /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pcieutil                            /nic/bin/
 nic/build/$ARCH/$PIPELINE/lib/libfte_indexer.so                   /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsvc_athena.so                    /nic/lib/

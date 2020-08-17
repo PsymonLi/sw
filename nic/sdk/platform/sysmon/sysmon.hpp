@@ -13,6 +13,7 @@
 
 #include "lib/catalog/catalog.hpp"
 #include "platform/sensor/sensor.hpp"
+#include "platform/drivers/xcvr_qsfp.hpp"
 #include "platform/pal/include/pal_types.h"
 
 typedef enum {
@@ -60,10 +61,10 @@ typedef struct sysmon_memory_threshold_cfg_s {
 // callbacks
 typedef void (*frequency_change_event_cb_t)(uint32_t frequency);
 typedef void (*cattrip_event_cb_t)(void);
-typedef void (*power_event_cb_t)(sdk::platform::sensor::system_power_t *power);
-typedef void (*temp_event_cb_t)(
-        sdk::platform::sensor::system_temperature_t *temperature,
-        sysmon_hbm_threshold_event_t hbm_event);
+typedef void (*power_event_cb_t)(system_power_t *power);
+typedef void (*temp_event_cb_t)(system_temperature_t *temperature,
+                                sdk::platform::qsfp_temperature_t *xcvrtemp,
+                                sysmon_hbm_threshold_event_t hbm_event);
 typedef void (*memory_event_cb_t)(system_memory_t *system_memory);
 typedef void (*panic_event_cb_t)(void);
 typedef void (*postdiag_event_cb_t)(void);
