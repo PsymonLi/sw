@@ -396,7 +396,17 @@ export class PolicyhealthComponent implements OnInit, OnChanges, AfterViewInit, 
             // currData can be [ t0, t1, t2, t3, ..] and newData can be [ t2, t3...]
             // We have to remove the duplication to have [ t0, t1, t2, t3 ...]
             // currData looks like [ [  "2020-08-13T04:35:00Z",  7730.5   ], [  "2020-08-13T04:40:00Z",   7437.1  ],
-            currData.series[idx].values = _.uniqWith(currData.series[idx].values, (valA, valB) => (valA[0] === valB[0]));
+            // _.uniqWith keeps the first object of duplication, we want to keep the latest
+            const uniqueArr: any[] = [];
+            for (const val of currData.series[idx].values) {
+              const index = uniqueArr.findIndex(item => item[0] === val[0]);
+              if (index > -1 && (val[1] || val[1] === 0)) { // if value is null, still keep the early ones
+                uniqueArr[index] = val;
+              } else {
+                uniqueArr.push(val);
+              }
+            }
+            currData.series[idx].values = uniqueArr;
           });
         } else {
           return newData;
