@@ -332,13 +332,12 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
           this.controllerService.invokeRESTErrorToaster(partialSuccessSummary, error);
           this.onInvokeAPIonMultipleRecordsFailure();
         }
+        this._controllerService.publish(Eventtypes.BULKEDIT_COMPLETE, {} );
       },
       (error) => {
         this.operationOnMultiRecordsComplete.emit(error);
         this.controllerService.invokeRESTErrorToaster('Failure', error);
         this.onInvokeAPIonMultipleRecordsFailure();
-      },
-      () => {
         this._controllerService.publish(Eventtypes.BULKEDIT_COMPLETE, {} );
       }
     );
@@ -410,13 +409,12 @@ export abstract class DataComponent extends BaseComponent implements OnInit, OnD
         this.clearSelectedDataObjects();
         this.onBulkEditSuccess(veniceObjects, stagingBulkEditAction, successMsg, failureMsg);
         this.deleteStagingBuffer(buffername, failureMsg, false); // if bulked is successful  just delete tbe buffer to release resource
+        this._controllerService.publish(Eventtypes.BULKEDIT_COMPLETE, {});
       },
       (error) => {
         this._controllerService.invokeRESTErrorToaster(failureTitle, error);
         this.onBulkEditFailure(error, veniceObjects, stagingBulkEditAction, successMsg, failureMsg);
         this.deleteStagingBuffer(buffername, failureMsg, false); // just delete tbe buffer to release resource
-      },
-      () => {
         this._controllerService.publish(Eventtypes.BULKEDIT_COMPLETE, {});
       }
     );
