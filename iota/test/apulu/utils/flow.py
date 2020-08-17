@@ -6,21 +6,21 @@ import iota.test.utils.p4ctl as p4ctl
 from apollo.config.store import client as EzAccessStoreClient
 
 txRewriteFlags = {
-    'PDS_FLOW_L2L_INTRA_SUBNET' : '0x1001',
-    'PDS_FLOW_L2L_INTER_SUBNET' : '0x1405',
-    'PDS_FLOW_L2R_INTRA_SUBNET' : '0x81',
-    'PDS_FLOW_L2R_INTER_SUBNET' : '0x485',
-    'PDS_FLOW_R2L_INTRA_SUBNET' : '0x81',
-    'PDS_FLOW_R2L_INTER_SUBNET' : '0x485'
+    'PDS_FLOW_L2L_INTRA_SUBNET' : '0x2001',
+    'PDS_FLOW_L2L_INTER_SUBNET' : '0x2405',
+    'PDS_FLOW_L2R_INTRA_SUBNET' : '0x101',
+    'PDS_FLOW_L2R_INTER_SUBNET' : '0x905',
+    'PDS_FLOW_R2L_INTRA_SUBNET' : '0x101',
+    'PDS_FLOW_R2L_INTER_SUBNET' : '0x905'
 }
 
 rxRewriteFlags = {
-    'PDS_FLOW_L2L_INTRA_SUBNET' : '0x1001',
-    'PDS_FLOW_L2L_INTER_SUBNET' : '0x1405',
+    'PDS_FLOW_L2L_INTRA_SUBNET' : '0x2001',
+    'PDS_FLOW_L2L_INTER_SUBNET' : '0x2405',
     'PDS_FLOW_L2R_INTRA_SUBNET' : '0x1',
-    'PDS_FLOW_L2R_INTER_SUBNET' : '0x405',
+    'PDS_FLOW_L2R_INTER_SUBNET' : '0x805',
     'PDS_FLOW_R2L_INTRA_SUBNET' : '0x1',
-    'PDS_FLOW_R2L_INTER_SUBNET' : '0x405'
+    'PDS_FLOW_R2L_INTER_SUBNET' : '0x805'
 }
 
 def verifyFlowLogging(af, workload_pairs):

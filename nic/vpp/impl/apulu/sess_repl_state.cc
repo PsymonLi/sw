@@ -7,6 +7,8 @@
 #include <nic/apollo/p4/include/defines.h>
 #include <sess.h>
 #include "sess_restore.h"
+#include <flow_info.h>
+#include "gen/p4gen/p4/include/ftl.h"
 
 bool
 pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
@@ -51,6 +53,9 @@ pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
     ftlv4_cache_set_hash_log(0, 0, thread_index);
     ftlv4_cache_advance_count(1, thread_index);
 
+    // Fill the iflow info from the protobuf
+    pds_flow_info_program(info.id(), true, info.islocaltolocal());
+
     // Fill the Responder flow from the protobuf
     ftlv4_cache_set_key(info.responderflowsrcipv4(),
                         info.responderflowdstipv4(),
@@ -73,6 +78,9 @@ pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
     ftlv4_cache_set_epoch(info.responderflowepoch(), thread_index);
     ftlv4_cache_set_hash_log(0, 0, thread_index);
     ftlv4_cache_advance_count(1, thread_index);
+
+    // Fill the rflow info from the protobuf
+    pds_flow_info_program(info.id(), false, info.islocaltolocal());
 
     sess->id = info.id();
     sess->proto = info.ipprotocol();
@@ -109,6 +117,7 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
 {
     static thread_local ::sess_sync::SessInfo info;
     v4_flow_entry iflow, rflow;
+    flow_info_entry_t iflow_info, rflow_info;
     session_info_t session_entry;
 
     // reset all internal state
@@ -124,6 +133,10 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
                          &iflow, thread_index);
     ftlv4_get_flow_entry((ftlv4 *)sess->flow_table, sess->rflow_handle,
                          &rflow, thread_index);
+
+    // Read the iflow and rflow entries from flow info table
+    pds_flow_info_get_flow_info(iflow.session_index, true, (void *)&iflow_info);
+    pds_flow_info_get_flow_info(rflow.session_index, false, (void *)&rflow_info);
 
     info.set_id(iflow.session_index);
     info.set_state(::sess_sync::FlowState(sess->flow_state));
@@ -148,8 +161,9 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
     info.set_initiatorflownhvalid(iflow.nexthop_valid);
     info.set_initiatorflowpriority(iflow.priority);
     info.set_initiatorflowepoch(iflow.epoch);
-    info.set_islocaltolocal(iflow.is_local_to_local);
     info.set_ismisshit(iflow.force_flow_miss);
+
+    info.set_islocaltolocal(iflow_info.is_local_to_local);
 
     // responder flow attributes - server to client
     info.set_egressbd(rflow.key_metadata_flow_lkp_id);

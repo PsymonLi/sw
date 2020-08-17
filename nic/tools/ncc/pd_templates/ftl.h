@@ -59,10 +59,10 @@
 //::        tableid += 1
 //::    #endif
 //:: #endfor
-//:: 
+//::
 //:: # Generate action name to table mapping. If a hash table
 //:: # and corresponding ohash table use same action name then
-//:: # consider it as single table entry. 
+//:: # consider it as single table entry.
 //:: action2table = defaultdict(set)
 //:: for table in pddict['tables']:
 //::    if not is_table_ftl_gen(table, pddict):
@@ -70,7 +70,7 @@
 //::    #endif
 //::    for action in pddict['tables'][table]['actions']:
 //::        (actionname, actionflddict, _) = action
-//::        action2table[actionname].add(table.strip("_ohash")) 
+//::        action2table[actionname].add(table.strip("_ohash"))
 //::    #endfor
 //:: #endfor
 //::
@@ -588,6 +588,10 @@
 //::                        if pad_to_512 % 16 != 0:
 //::                            ftl_store_field(data_fields_dict, data_fields_list, '__pad_to_512b', pad_to_512 % 16, '')
 //::                        #endif
+//::                    elif is_table_pad_8(table, pipeline):
+//::                        if pad_to_512 % 8 != 0:
+//::                            ftl_store_field(data_fields_dict, data_fields_list, '__pad_to_512b', pad_to_512 % 8, '')
+//::                        #endif
 //::                    else:
 //::                        ftl_store_field(data_fields_dict, data_fields_list, '__pad_to_512b', pad_to_512, '')
 //::                    #endif
@@ -612,7 +616,7 @@
 //::                if struct_full_name in structs_gen_dict:
 //::                    continue
 //::                #endif
-//::                structs_gen_dict[struct_full_name] = 1 
+//::                structs_gen_dict[struct_full_name] = 1
 //::
 //::                ######################################
 //::                # KEY STRUCT

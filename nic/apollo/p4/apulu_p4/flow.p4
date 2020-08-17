@@ -295,8 +295,7 @@ table ipv4_flow_ohash {
 /*****************************************************************************/
 /* Additional info for flow                                                  */
 /*****************************************************************************/
-action flow_info(priority, is_local_to_local, pad) {
-    modify_field(p4i_i2e.priority, priority);
+action flow_info(is_local_to_local, pad) {
     modify_field(p4i_i2e.is_local_to_local, is_local_to_local);
     modify_field(scratch_metadata.flow_info_pad, pad);
 }

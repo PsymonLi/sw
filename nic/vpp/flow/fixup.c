@@ -12,6 +12,7 @@
 #include <sess_helper.h>
 #include <nic/vpp/infra/utils.h>
 #include "fixup.h"
+#include <flow_info.h>
 
 typedef struct ipv4_flow_params_s {
     u32 sip;
@@ -232,6 +233,9 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data,
         return;
     }
 
+    // Update l2l flag in flow info table
+    pds_flow_info_update_l2l(ses_id, false, l2l);
+
     // Also, update the session flags
     pds_session_get_rewrite_flags(ses_id, session->packet_type,
                                   &tx_rewrite, &rx_rewrite);
@@ -343,7 +347,9 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data,
         return;
     }
 
-    // Also, update the session flags
+    // Update l2l flag in flow info table
+    pds_flow_info_update_l2l(ses_id, true, l2l);
+
     // Also, update the session flags
     pds_session_get_rewrite_flags(ses_id, session->packet_type,
                                   &tx_rewrite, &rx_rewrite);

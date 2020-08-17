@@ -14,6 +14,7 @@
 #include <nic/vpp/infra/utils.h>
 #include <nic/vpp/impl/nh.h>
 #include <feature.h>
+#include <flow_info.h>
 #include "sess_repl_state_tp.h"
 
 extern void pds_flow_monitor_init(void);
@@ -1012,6 +1013,8 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
             ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_OTHERV4,
                                           thread_index);
         }
+
+        // Insert iflow into FTL cache
         ftlv4_cache_set_key(src_ip, dst_ip,
                             protocol, sport, dport, lkp_id, thread_index);
         ftlv4_cache_set_session_index(session_id, thread_index);
@@ -1053,6 +1056,11 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         lkp_id = vnet_buffer(p0)->pds_flow_data.egress_lkp_id;
         ftlv4_cache_set_napt_flag(napt, thread_index);
         ftlv4_cache_advance_count(1, thread_index);
+
+        // Insert iflow into flow info table
+        pds_flow_info_program(session_id, true, l2l);
+
+        // Insert rflow into FTL cache
         ftlv4_cache_set_key(r_src_ip, r_dst_ip,
                             protocol, r_sport, r_dport, lkp_id, thread_index);
         ftlv4_cache_set_session_index(session_id, thread_index);
@@ -1065,6 +1073,9 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         ftlv4_cache_set_hash_log(0, pds_get_flow_log_en(p0), thread_index);
         ftlv4_cache_set_napt_flag(napt, thread_index);
         ftlv4_cache_advance_count(1, thread_index);
+
+        // Insert rflow into flow info table
+        pds_flow_info_program(session_id, false, l2l);
 
         if (ip40->protocol == IP_PROTOCOL_TCP) {
             if (fm->con_track_en) {
@@ -1177,6 +1188,7 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
                 }
             }
         }
+        // Insert iflow into FTL cache
         ftlv6_cache_set_session_index(session_id);
         ftlv6_cache_set_flow_role(TCP_FLOW_INITIATOR);
         ftlv6_cache_set_epoch(pds_get_flow_epoch(p0));
@@ -1190,6 +1202,11 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         ftlv6_cache_set_hash_log(vnet_buffer(p0)->pds_flow_data.flow_hash,
                                  pds_get_flow_log_en(p0));
         ftlv6_cache_advance_count(1);
+
+        // Insert iflow into flow info table
+        pds_flow_info_program(session_id, true, l2l);
+
+        // Insert rflow into FTL cache
         lkp_id = vnet_buffer(p0)->pds_flow_data.egress_lkp_id;
         if (is_l2) {
             ftll2_cache_set_key(dst, src, ether_type, lkp_id);
@@ -1206,6 +1223,9 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         ftlv6_cache_set_update_flag(flow_exists);
         ftlv6_cache_set_hash_log(0, pds_get_flow_log_en(p0));
         ftlv6_cache_advance_count(1);
+
+        // Insert rflow into flow info table
+        pds_flow_info_program(session_id, false, l2l);
     }
     return;
 }

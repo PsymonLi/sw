@@ -133,6 +133,12 @@ def is_table_pad_16(table, pipeline):
         return True
     return False
 
+# TODO use pragmas
+def is_table_pad_8(table, pipeline):
+    if pipeline == 'apulu' and ('flow_info' in str(table)):
+        return True
+    return False
+
 def is_hash_field(field_name):
     for field in hash_field_list:
         if field_name.startswith(field):
