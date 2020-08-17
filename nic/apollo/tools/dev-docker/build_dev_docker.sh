@@ -40,6 +40,8 @@ copy_files() {
 
     vppd='nic/vpp '
     operd='nic/infra/operd '
+    upgraded='nic/infra/upgrade '
+    cored='nic/infra/core '
 
     apollod='nic/apollo '
 
@@ -107,8 +109,7 @@ copy_files() {
 
     pack_debug='nic/debug_cli nic/tools/p4ctl '
 
-    files="$nicd $nicf $p4d $pkgf $utilsd $apollod $apollof $pack_apollo $pack_debug $miscd $protobuf $metaswitch $vppd $operd"
-
+    files="$nicd $nicf $p4d $pkgf $utilsd $apollod $apollof $pack_apollo $pack_debug $miscd $protobuf $metaswitch $vppd $operd $upgraded $cored"
 
     cd /sw
     mkdir -p $DST
