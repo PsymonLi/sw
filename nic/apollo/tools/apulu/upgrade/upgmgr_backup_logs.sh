@@ -13,6 +13,7 @@ upgmgr_parse_inputs $*
 SRC=$(cat <<-END
     /var/log/pensando/pds-agent.log
     /var/log/pensando/nicmgr.log
+    /var/log/pensando/linkmgr.log
 END
 )
 DESTLOGDIR="/data/pre-upgrade-logs"
