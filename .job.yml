@@ -322,6 +322,10 @@ jobs:
     labels: ["compat-server-reboot"]
   iota/test/standalone/compat/compat-server/esx6_5-reboot-uefi:
     labels: ["compat-other-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/esx6_7-reboot-uefi:
+    labels: ["compat-other-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/esx7_0-reboot-uefi:
+    labels: ["compat-other-reboot-uefi"]
   iota/test/standalone/compat/compat-server/windows2019-reboot-uefi:
     labels: ["compat-other-reboot-uefi"]
   iota/test/standalone/compat/compat-server/rhel7u5-reboot-uefi:

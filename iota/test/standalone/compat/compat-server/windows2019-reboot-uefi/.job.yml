@@ -32,7 +32,7 @@ e2e-targets:
 #          BmOs: windows
 #
  ucs220_cascade:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -55,7 +55,7 @@ e2e-targets:
           BmOs: windows
       
  Dell_R6525:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -78,7 +78,7 @@ e2e-targets:
           BmOs: windows
 
  Dell_R6415:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -104,7 +104,7 @@ e2e-targets:
           EsxPassword: Pen0trl!
 
  Dell_R6515:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -127,7 +127,7 @@ e2e-targets:
           BmOs: windows
 
  Dell_R740:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -150,7 +150,7 @@ e2e-targets:
           BmOs: windows
 
  Dell_R640:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -172,8 +172,32 @@ e2e-targets:
        vars:
           BmOs: windows
 
+
+ Hpe_El8000:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite  compatibility_windows--skip-switch-init --enable-multi-naples --enable-multi-naples"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 72h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-42
+       count: 1
+       resources:
+         servers:
+         - type: compat-hpe-el8000
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: windows
+
  Hpe_DL325:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -196,7 +220,7 @@ e2e-targets:
           BmOs: windows
 
  Hpe_DL360:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -219,7 +243,7 @@ e2e-targets:
           BmOs: windows
 
  Hpe_DL380:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility_windows --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:

@@ -9,7 +9,7 @@ queue_name: compat
 # e2e-targets is the scheduler for CI runs to specify baremetal or virtual machine. 
 e2e-targets:
 # SuperMicro.1114S:
-#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility"]
+#   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
 #   owners: ["email:dbarsky@pensando.io"]
 #   area:
 #   sub-area:
@@ -19,7 +19,7 @@ e2e-targets:
 #     - build-iris-arm
 #     - build-iota
 #   clusters:
-#     - image: build-90
+#     - image: build-84
 #       count: 1
 #       resources:
 #         servers:
@@ -42,7 +42,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-90
+     - image: build-84
        count: 1
        resources:
          servers:
@@ -53,9 +53,9 @@ e2e-targets:
        password: vm
        vars:
           BmOs: linux
-      
+       
  Dell_R6525:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -65,7 +65,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-91
+     - image: build-85
        count: 1
        resources:
          servers:
@@ -75,10 +75,12 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
 
  Dell_R6415:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -88,7 +90,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-91
+     - image: build-85
        count: 1
        resources:
          servers:
@@ -98,13 +100,12 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
-          VmOs: linux
+          BmOs: esx
           EsxUsername: root
           EsxPassword: Pen0trl!
 
  Dell_R6515:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -114,7 +115,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-91
+     - image: build-85
        count: 1
        resources:
          servers:
@@ -124,10 +125,12 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
 
  Dell_R740:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -137,7 +140,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-91
+     - image: build-85
        count: 1
        resources:
          servers:
@@ -147,10 +150,12 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
 
  Dell_R640:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -160,7 +165,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-91
+     - image: build-85
        count: 1
        resources:
          servers:
@@ -170,10 +175,12 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
 
- Hpe_el8000:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+ Hpe_El8000:
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -183,7 +190,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-90
+     - image: build-84
        count: 1
        resources:
          servers:
@@ -193,10 +200,12 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
 
  Hpe_DL325:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -206,7 +215,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-90
+     - image: build-84
        count: 1
        resources:
          servers:
@@ -216,10 +225,12 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
 
  Hpe_DL360:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -229,7 +240,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-90
+     - image: build-84
        count: 1
        resources:
          servers:
@@ -239,10 +250,12 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
 
  Hpe_DL380:
-   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite compatibility --skip-switch-init --enable-multi-naples"]
+   commands: ["sh", "-c", "make compatibility && ./run_iota.sh --testsuite server_compat_hostpin --skip-switch-init --enable-multi-naples"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -252,7 +265,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-90
+     - image: build-84
        count: 1
        resources:
          servers:
@@ -262,7 +275,10 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: esx
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
 logfiles:
   - /sw/iota/iota_sanity_logs.tar.gz
   - /testcase_result_export/testsuite_compatibility_results.json
