@@ -140,17 +140,39 @@ typedef struct pds_device_s {
     /// NOTE: when overlay_routing_en is modified, it will take affect only
     ///        after reboot of NAPLES/DSC
     bool                   overlay_routing_en;
-    /// when symmetric_routing_en is true, outgoing inter-subnet (encapped)
-    /// traffic carries VPC's VxLAN vnid and incoming inter-subnet (encapped)
-    /// traffic is expected to come with VPC's VxLAN vnid; if
-    /// symmetric_routing_en is false (default behavior), outgoing
-    /// inter-subnet (encapped) traffic carries egress subnet's VxLAN vnid and
-    /// incoming inter-subnet (encapped) traffic is expected to come with
-    /// destination subnet's VxLAN vnid
-    /// NOTE: if the value of this attribute is updated on the fly, it will not
-    ///       affect the flows/sessions that are already created, but it will
-    ///       take affect only on the new sessions/flows created after such
-    ///       an update
+    /// when symmetric_routing_en is set to true, its called symmetric routing
+    /// and symmetric_routing_en is set to false, it is called asymmetric
+    //  routing
+    /// Below is the datapath behavior in various cases:
+    /// 1. mapping is hit (or mapping hit result is pickedi over route hit),
+    ///    intra-subnet traffic, symmetric_routing_en = true or false:
+    ///    a. encapped packets are sent out with destination subnet's vnid
+    ///    b. incoming encapped packets are expected with destination subnet's
+    ///       vnid
+    /// 2. mapping is hit (or mapping hit result is pickedi over route hit),
+    ///    inter-subnet traffic, symmetric_routing_en = true:
+    ///    a. encapped packets are sent out with destination vpc's vnid
+    ///    b. incoming encapped packets are expected with destination vpc's vnid
+    /// 3. mapping is hit (or mapping hit result is pickedi over route hit),
+    ///    inter-subnet traffic, symmetric_routing_en = false:
+    ///    a. encapped packets are sent out with destination subnet's vnid
+    ///    b. incoming encapped packets are expected with destination subnet's
+    ///        vnid
+    /// 4. route is hit (route hit result is picked over mapping),
+    ///    symmetric_routing_en = false:
+    ///    a. encapped packets are sent out with vpc's vnid
+    ///    b. incoming encapped packets are expected with destination subnet's
+    ///       vnid
+    /// 5. route is hit (route hit result is picked over mapping),
+    ///    symmetric_routing_en = true:
+    ///    a. encapped packets are sent out with destination vpc's vnid
+    ///    b. incoming encapped packets are expected with destination vpc's vnid
+    /// NOTE:
+    /// 1. by default symmetric_routing_en is false i.e., DSC is in asymmetric
+    ///    routing mode
+    /// 2. if the value of this attribute is updated on the fly, it will not
+    ///    affect the flows/sessions that are already created, but it will take
+    ///    affect only on the new sessions/flows created after such an update
     bool                   symmetric_routing_en;
     /// device profile
     pds_device_profile_t   device_profile;

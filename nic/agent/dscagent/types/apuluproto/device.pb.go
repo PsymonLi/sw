@@ -379,15 +379,35 @@ type DeviceSpec struct {
 	// NOTE: when OverlayRoutingEn is modified, it will take affect only after
 	//       next reboot of NAPLES/DSC
 	OverlayRoutingEn bool `protobuf:"varint,11,opt,name=OverlayRoutingEn,proto3" json:"OverlayRoutingEn,omitempty" meta:mandatory`
-	// when SymmetricRoutingEn is set to true, outgoing inter-subnet (encapped)
-	// traffic carries VPC's VxLAN vnid and incoming inter-subnet (encapped)
-	// traffic is expected to come with VPC's VxLAN vnid. If SymmetricRoutingEn is
-	// set to false (default behavior), outgoing inter-subnet (encapped) traffic
-	// carries egress subnet's VxLAN vnid and incoming inter-subnet (encapped)
-	// traffic is expected to come with destination subnet's VxLAN vnid
-	// NOTE: if the value of this attribute is updated on the fly, it will not
-	//       affect the flows/sessions that are already created, but it will take
-	//       affect only on the new sessions/flows created after such an update
+	// when SymmetricRoutingEn is set to true, its called symmetric routing and
+	// SymmetricRoutingEn is set to false, it is called asymmetric routing
+	// Below is the datapath behavior in various cases:
+	// 1. mapping is hit (or mapping hit result is pickedi over route hit),
+	//    intra-subnet traffic, SymmetricRoutingEn = true or false:
+	//    a. encapped packets are sent out with destination subnet's vnid
+	//    b. incoming encapped packets are expected with destination subnet's vnid
+	// 2. mapping is hit (or mapping hit result is pickedi over route hit),
+	//    inter-subnet traffic, SymmetricRoutingEn = true:
+	//    a. encapped packets are sent out with destination vpc's vnid
+	//    b. incoming encapped packets are expected with destination vpc's vnid
+	// 3. mapping is hit (or mapping hit result is pickedi over route hit),
+	//    inter-subnet traffic, SymmetricRoutingEn = false:
+	//    a. encapped packets are sent out with destination subnet's vnid
+	//    b. incoming encapped packets are expected with destination subnet's vnid
+	// 4. route is hit (route hit result is picked over mapping),
+	//    SymmetricRoutingEn = false:
+	//    a. encapped packets are sent out with vpc's vnid
+	//    b. incoming encapped packets are expected with destination subnet's vnid
+	// 5. route is hit (route hit result is picked over mapping),
+	//    SymmetricRoutingEn = true:
+	//    a. encapped packets are sent out with destination vpc's vnid
+	//    b. incoming encapped packets are expected with destination vpc's vnid
+	// NOTE:
+	// 1. by default SymmetricRoutingEn is false i.e., DSC is in asymmetric
+	//    routing mode
+	// 2. if the value of this attribute is updated on the fly, it will not
+	//    affect the flows/sessions that are already created, but it will take
+	//    affect only on the new sessions/flows created after such an update
 	SymmetricRoutingEn bool `protobuf:"varint,12,opt,name=SymmetricRoutingEn,proto3" json:"SymmetricRoutingEn,omitempty" meta:default=false`
 	// TxPolicerId, if configured, will rate limit the Tx bandwidth (bytes per
 	// second) or PPS (packets per second) of all host interfaces put together
