@@ -531,26 +531,20 @@ dependencies:
     - reference: test/verify-build
     - reference: iota/test/standalone/precheckin/linux
   nic/apollo:
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
+    - reference: nic/apollo/tools/apulu/sanity/base
     - reference: nic/infra/operd/tests/tools/sanity/apulu
     - reference: iota/test/venice
-      exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
-    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
-      exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
-    - reference: nic/apollo/tools/apulu/sanity/base
-      exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
-    - reference: nic/athena/tools/sanity/base
     - reference: iota/test/standalone/precheckin/athena
     - reference: test/ci_targets/cloud-e2e
-      exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
     - reference: test/ci_targets/controlplane-dol
-      exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
   nic/apollo/tools/dev-docker:
     - reference: nic/apollo/tools/apulu/sanity/customer-docker
-    # - reference: nic/apollo/tools/athena/sanity/customer-docker
   nic/apollo/p4/athena_p4-16:
     - reference: iota/test/standalone/precheckin/athena
   nic/athena:
     - reference: iota/test/standalone/precheckin/athena
+    - reference: nic/athena/tools/sanity/base
   nic/agent:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx
@@ -601,6 +595,14 @@ dependencies:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx
     - reference: iota/test/standalone/precheckin/linux
+  nic/infra/operd:
+    - reference: nic/infra/operd/tests/tools/sanity/base
+    - reference: nic/infra/operd/tests/tools/sanity/apulu
+    - reference: iota/test/venice
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
+  nic/infra/upgrade:
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
+    - reference: nic/apollo/tools/apulu/sanity/base
   nic/linkmgr:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx
@@ -610,11 +612,6 @@ dependencies:
     - reference: nic/apollo/tools/apulu/sanity/base
     - reference: test/ci_targets/cloud-e2e
     - reference: test/ci_targets/controlplane-dol
-  nic/infra/operd:
-    - reference: nic/infra/operd/tests/tools/sanity/base
-    - reference: nic/infra/operd/tests/tools/sanity/apulu
-    - reference: iota/test/venice
-    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
   nic/p4-hlir:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx
