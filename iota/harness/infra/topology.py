@@ -489,7 +489,7 @@ class Node(object):
                     device.SetNicUnderlayIPs(getattr(self.__inst, "NicUnderlayIPs", []))
                     device.SetNicStaticRoutes(getattr(self.__inst, "NicStaticRoutes", []))
                     device.read_from_console()
-                    warmd_processor = getattr(nic, "Processor", "capri")
+                    warmd_processor = getattr(self.__inst, "NicProcessor", "capri")
                     device.SetProcessor(types.processors.id(warmd_processor.upper()))
                     if self.__prov_spec:
                         nic_prov_spec = self.__prov_spec.nics[0].nic
