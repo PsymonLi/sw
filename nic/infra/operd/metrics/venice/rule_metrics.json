@@ -1,0 +1,19 @@
+{
+  "Package": "rulemetrics",
+  "Messages": [
+    {
+      "Name": "RuleMetrics",
+      "Description": "security policy rule statistics",
+      "DisplayName": "security policy rule statistics",
+      "Fields": [
+        {
+          "Name": "Hits",
+          "DisplayName": "Hits",
+          "Description": "Number of packets that hit the rule",
+          "Units": "Count",
+          "BaseType": "Counter"
+        }
+      ]
+    }
+  ]
+}
