@@ -116,9 +116,12 @@ ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_s
 		goto err_out;
 	}
 
+	/* The worst case wait for the install activity is about 25 minutes
+	 * when installing a new CPLD.  Normal should be about 30-35 seconds.
+	 */
 	mutex_lock(&ionic->dev_cmd_lock);
 	ionic_dev_cmd_firmware_install_status(idev);
-	err = ionic_dev_cmd_wait(ionic, devcmd_timeout);
+	err = ionic_dev_cmd_wait(ionic, 25 * 60 * HZ);
 	mutex_unlock(&ionic->dev_cmd_lock);
 	if (err) {
 		netdev_err(netdev, "firmware install failed\n");
@@ -138,7 +141,7 @@ ionic_firmware_update(struct ionic_lif *lif, const void *const fw_data, u32 fw_s
 
 	mutex_lock(&ionic->dev_cmd_lock);
 	ionic_dev_cmd_firmware_activate_status(idev);
-	err = ionic_dev_cmd_wait(ionic, devcmd_timeout);
+	err = ionic_dev_cmd_wait(ionic, 30 * HZ);
 	mutex_unlock(&ionic->dev_cmd_lock);
 	if (err) {
 		netdev_err(netdev, "firmware activation failed\n");

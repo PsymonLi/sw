@@ -1082,6 +1082,7 @@ ionic_flash_device(struct net_device *netdev, struct ethtool_flash *eflash)
 	const struct firmware *fw;
 	int err = 0;
 
+	netdev_info(netdev, "Installing firmware %s\n", eflash->data);
 	err = request_firmware(&fw, eflash->data, lif->ionic->dev);
 	if (err) {
 		netdev_err(netdev, "Failed to load firmware %s err %d\n",
@@ -1094,6 +1095,8 @@ ionic_flash_device(struct net_device *netdev, struct ethtool_flash *eflash)
 		netdev_err(netdev, "Failed to update firmware\n");
 		goto err_out;
 	}
+
+	netdev_info(netdev, "Firmware update completed\n");
 
 err_out:
 	release_firmware(fw);
