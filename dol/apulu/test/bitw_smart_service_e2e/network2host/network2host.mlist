@@ -1,0 +1,39 @@
+# Feature networking modules List for network to host scenario in bitw smart service mode
+feature:
+    id          : bitw_smart_service_e2e
+    sub         : network2host
+    package     : test.bitw_smart_service_e2e
+    module      : bitw_smart_service_e2e
+    runorder    : 101
+    enable      : True
+    ignore      : False
+
+modules:
+
+    - module:
+        name    : NH_IPV4_TCP_QINQ_VALID_TAG
+        spec    : network2host.testspec
+        args    :
+            input_pkt : SWITCH_PKT 
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=qinq
+
+    - module:
+        name    : NH_IPV4_TCP_QINQ_MOD_INNER_TAG
+        spec    : network2host.testspec
+        args    :
+            input_pkt : MOD_INNER_TAG_PKT
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=qinq
+
+    - module:
+        name    : NH_IPV4_TCP_DOT1Q_TAG
+        spec    : network2host.testspec
+        iterate :
+        args    :
+            input_pkt : SWITCH_PKT 
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://VnicEncapType=dot1q

@@ -1,0 +1,81 @@
+# Test Spec for local2remote scenarios from Network to Host in bitw smart svc mode
+selectors:
+    root: ref://store/templates/id=FLOW
+    maxlimits: 1
+    flow: filter://any
+    vnic: filter://any
+
+packets:
+    - packet:
+        id          : SWITCH_PKT # Input packet
+        payloadsize : ref://factory/payloads/id=PAYLOAD_ZERO64/size
+        template    : callback://networking/packets/GetPacketTemplateFromMapping/proto=TCP
+        encaps      : callback://networking/packets/GetHostPacketEncapFromVnic
+        headers     :
+            eth:
+                src     : ref://testcase/config/localmapping/VNIC/MACAddr
+                dst     : callback://networking/packets/GetDstMac/direction=TX
+            outerqtag:
+                vlan    : callback://networking/packets/GetVnicQTag/type=SERVICE
+            qtag:
+                vlan    : callback://networking/packets/GetVnicQTag
+            ipv4:
+                src     : ref://testcase/config/localmapping/IP
+                dst     : ref://testcase/config/remotemapping/IP
+                ttl     : 64
+            ipv6:
+                src     : ref://testcase/config/localmapping/IP
+                dst     : ref://testcase/config/remotemapping/IP
+                hlim    : 64
+            tcp:
+                sport   : 100
+                dport   : 200
+                flags   : syn
+            payload:
+                data    : ref://factory/payloads/id=PAYLOAD_ZERO64/data
+
+
+    - packet:
+        id          : MOD_INNER_TAG_PKT # Input packet
+        payloadsize : ref://factory/payloads/id=PAYLOAD_ZERO64/size
+        template    : callback://networking/packets/GetPacketTemplateFromMapping/proto=TCP
+        encaps      : callback://networking/packets/GetHostPacketEncapFromVnic
+        headers     :
+            eth:
+                src     : ref://testcase/config/localmapping/VNIC/MACAddr
+                dst     : callback://networking/packets/GetDstMac/direction=TX
+            outerqtag:
+                vlan    : callback://networking/packets/GetVnicQTag/type=SERVICE
+            qtag:
+                vlan    : 4094
+            ipv4:
+                src     : ref://testcase/config/localmapping/IP
+                dst     : ref://testcase/config/remotemapping/IP
+                ttl     : 64
+            ipv6:
+                src     : ref://testcase/config/localmapping/IP
+                dst     : ref://testcase/config/remotemapping/IP
+                hlim    : 64
+            tcp:
+                sport   : 100
+                dport   : 200
+                flags   : syn
+            payload:
+                data    : ref://factory/payloads/id=PAYLOAD_ZERO64/data
+
+
+session:
+    - step:
+        trigger:
+            packets:
+                - packet:
+                    object  : callback://common/packets/GetPacketFromMlist  
+                    port    : ref://testcase/config/switchport
+
+        expect:
+            delay    :    1
+
+            packets:
+                - packet:
+                    object  : callback://common/packets/GetPacketFromMlist
+                    port    : callback://common/packets/AnyUplinkPort
