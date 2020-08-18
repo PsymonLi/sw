@@ -11,11 +11,11 @@ void SysmondService::init() {
 }
 
 delphi::error SysmondService::OnSysmgrSystemStatusCreate(delphi::objects::SysmgrSystemStatusPtr obj) {
-    systemled_t led;
+    system_led_t led;
     if (obj->state() == ::sysmgr::Fault) {
-        led.event = NON_CRITICAL_EVENT;
+        led.event = SYSMON_LED_EVENT_NON_CRITICAL;
         TRACE_INFO(GetLogger(), "Process crashed. Setting LED");
-        sysmgrsystemled(led);
+        system_led(led);
     }
 
     return delphi::error::OK();
@@ -26,11 +26,11 @@ delphi::error SysmondService::OnSysmgrSystemStatusDelete(delphi::objects::Sysmgr
 }
 
 delphi::error SysmondService::OnSysmgrSystemStatusUpdate(delphi::objects::SysmgrSystemStatusPtr obj) {
-    systemled_t led;
+    system_led_t led;
     if (obj->state() == ::sysmgr::Fault) {
-        led.event = NON_CRITICAL_EVENT;
+        led.event = SYSMON_LED_EVENT_NON_CRITICAL;
         TRACE_INFO(GetLogger(), "Process crashed. Setting LED");
-        sysmgrsystemled(led);
+        system_led(led);
     }
 
     return delphi::error::OK();
@@ -50,9 +50,9 @@ std::string SysmondService::Name() {
 
 void SysmondService::SocketClosed() {
     TRACE_INFO(GetLogger(), "SysmondService::Delphi Crashed");
-    systemled_t led;
-        led.event = CRITICAL_EVENT;
-        sysmgrsystemled(led);
+    system_led_t led;
+        led.event = SYSMON_LED_EVENT_CRITICAL;
+        system_led(led);
 }
 
 void SysmondService::ChangeAsicFrequency(){

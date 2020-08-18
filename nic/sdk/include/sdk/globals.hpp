@@ -40,6 +40,7 @@ typedef enum sdk_ipc_event_id_s {
     SDK_IPC_EVENT_ID_HOST_DEV_DOWN   = SDK_IPC_EVENT_ID_MIN + 26,
     SDK_IPC_EVENT_ID_XCVR_STATUS     = SDK_IPC_EVENT_ID_MIN + 27,
     SDK_IPC_EVENT_ID_XCVR_DOM_STATUS = SDK_IPC_EVENT_ID_MIN + 28,
+    SDK_IPC_EVENT_ID_HII_UPDATE      = SDK_IPC_EVENT_ID_MIN + 29,    // Event from BIOS Setup Human Interface Infrastructure
     SDK_IPC_EVENT_ID_MAX             = SDK_IPC_EVENT_ID_XCVR_DOM_STATUS,
 } sdk_ipc_event_id_t;
 

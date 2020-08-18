@@ -15,14 +15,17 @@
 #include "platform/sensor/sensor.hpp"
 #include "platform/drivers/xcvr_qsfp.hpp"
 #include "platform/pal/include/pal_types.h"
+#include "include/sdk/globals.hpp"
+#include "lib/ipc/ipc.hpp"
 
 typedef enum {
-   CRITICAL_EVENT = 0,
-   NON_CRITICAL_EVENT = 1,
-   PROCESS_CRASHED_EVENT = 2,
-   EVERYTHING_WORKING = 3,
-   UKNOWN_STATE = 4
-} sysmond_led_event_t;
+   SYSMON_LED_EVENT_HII_SYSTEM_LED_ON = 0,
+   SYSMON_LED_EVENT_CRITICAL,
+   SYSMON_LED_EVENT_NON_CRITICAL,
+   SYSMON_LED_EVENT_PROCESS_CRASHED,
+   SYSMON_LED_EVENT_SYSTEM_OK,
+   SYSMON_LED_EVENT_UKNOWN_STATE
+} sysmon_led_event_t;
 
 typedef enum {
    SYSMON_HBM_TEMP_NONE = 0,
@@ -42,10 +45,10 @@ typedef enum {
     SYSMON_FILESYSTEM_USAGE_BELOW_THRESHOLD,
 } sysmon_filesystem_threshold_event_t;
 
-typedef struct systemled_s {
-    sysmond_led_event_t event;
+typedef struct system_led_s {
+    sysmon_led_event_t event;
     pal_led_color_t color;
-} systemled_t;
+} system_led_t;
 
 typedef struct system_memory_s {
     uint64_t total_mem;
@@ -57,6 +60,17 @@ typedef struct sysmon_memory_threshold_cfg_s {
     std::string  path;
     uint32_t     mem_threshold_percent;
 } sysmon_memory_threshold_cfg_t;
+
+typedef enum hii_update_type {
+    HII_UPDATE_UID_LED = 0,
+} hii_event_type_t;
+
+typedef struct {
+    hii_event_type_t type;
+    union {
+        bool uid_led_on;
+    };
+} hii_event_t;
 
 // callbacks
 typedef void (*frequency_change_event_cb_t)(uint32_t frequency);
@@ -93,7 +107,6 @@ typedef struct sysmon_cfg_s {
 } sysmon_cfg_t;
 
 int sysmon_init(sysmon_cfg_t *sysmon_cfg);
-void sysmon_ipc_init(void);
-void sysmgrsystemled(systemled_t led);
+void system_led(system_led_t led);
 
 #endif    // __SYSMON_H__

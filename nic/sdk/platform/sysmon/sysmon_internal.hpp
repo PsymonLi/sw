@@ -54,5 +54,5 @@ void checkpciehealth(void);
 void memory_threshold_cfg_init(void);
 
 extern sysmon_cfg_t g_sysmon_cfg;
-
+extern system_led_t g_hii_prev_status;
 #endif /*__SYSMOND_H__*/

@@ -16,47 +16,66 @@
 #define HEALTH_OK 1
 #define HEALTH_NOK 0
 
-systemled_t currentstatus = {UKNOWN_STATE, LED_COLOR_NONE};
+static system_led_t g_current_status = {SYSMON_LED_EVENT_UKNOWN_STATE, LED_COLOR_NONE};
+system_led_t g_hii_prev_status = {SYSMON_LED_EVENT_UKNOWN_STATE, LED_COLOR_NONE};
 
 void
-sysmgrsystemled (systemled_t led)
+system_led (system_led_t led)
 {
-
-    //Check if already at max warning level.
-    if (led.event >= currentstatus.event) {
+    // handle events when LED is set from HII
+    if (g_current_status.event == SYSMON_LED_EVENT_HII_SYSTEM_LED_ON) {
+        if (led.event < g_hii_prev_status.event) {
+            // if new event is less priority save new event state
+            g_hii_prev_status.event = led.event;
+        }
+        // return for now. Set LED once HII is turned off
         return;
     }
+
+    if (led.event > g_current_status.event) {
+        // if new event is at a higher priority ignore
+        return;
+    }
+
     switch (led.event) {
-        case CRITICAL_EVENT:
-            currentstatus.event = CRITICAL_EVENT;
-            currentstatus.color = LED_COLOR_YELLOW;
-            pal_system_set_led(LED_COLOR_YELLOW, LED_FREQUENCY_0HZ);
-            //health not ok
-            pal_cpld_set_card_status(SYSMOND_HEALTH_NOT_OK);
-            break;
-        case NON_CRITICAL_EVENT:
-            currentstatus.event = NON_CRITICAL_EVENT;
-            currentstatus.color = LED_COLOR_YELLOW;
-            pal_system_set_led(LED_COLOR_YELLOW, LED_FREQUENCY_0HZ);
-            //health not ok
-            pal_cpld_set_card_status(SYSMOND_HEALTH_NOT_OK);
-            break;
-        case PROCESS_CRASHED_EVENT:
-            currentstatus.event = PROCESS_CRASHED_EVENT;
-            currentstatus.color = LED_COLOR_YELLOW;
-            pal_system_set_led(LED_COLOR_YELLOW, LED_FREQUENCY_0HZ);
-            //health not ok
-            pal_cpld_set_card_status(SYSMOND_HEALTH_NOT_OK);
-            break;
-        case EVERYTHING_WORKING:
-            currentstatus.event = EVERYTHING_WORKING;
-            currentstatus.color = LED_COLOR_GREEN;
-            pal_system_set_led(LED_COLOR_GREEN, LED_FREQUENCY_0HZ);
-            //health ok
-            pal_cpld_set_card_status(SYSMOND_HEALTH_OK);
-            break;
-        default:
-            return;
+    case SYSMON_LED_EVENT_HII_SYSTEM_LED_ON:
+        g_hii_prev_status.event = g_current_status.event;
+        g_hii_prev_status.color = g_current_status.color;
+        g_current_status.event = SYSMON_LED_EVENT_HII_SYSTEM_LED_ON;
+        g_current_status.color = LED_COLOR_GREEN;
+        // blinking green at 2HZ
+        pal_system_set_led(LED_COLOR_GREEN, LED_FREQUENCY_2HZ);
+        break;
+    case SYSMON_LED_EVENT_CRITICAL:
+        g_current_status.event = SYSMON_LED_EVENT_CRITICAL;
+        g_current_status.color = LED_COLOR_YELLOW;
+        pal_system_set_led(LED_COLOR_YELLOW, LED_FREQUENCY_0HZ);
+        //health not ok
+        pal_cpld_set_card_status(SYSMOND_HEALTH_NOT_OK);
+        break;
+    case SYSMON_LED_EVENT_NON_CRITICAL:
+        g_current_status.event = SYSMON_LED_EVENT_NON_CRITICAL;
+        g_current_status.color = LED_COLOR_YELLOW;
+        pal_system_set_led(LED_COLOR_YELLOW, LED_FREQUENCY_0HZ);
+        //health not ok
+        pal_cpld_set_card_status(SYSMOND_HEALTH_NOT_OK);
+        break;
+    case SYSMON_LED_EVENT_PROCESS_CRASHED:
+        g_current_status.event = SYSMON_LED_EVENT_PROCESS_CRASHED;
+        g_current_status.color = LED_COLOR_YELLOW;
+        pal_system_set_led(LED_COLOR_YELLOW, LED_FREQUENCY_0HZ);
+        //health not ok
+        pal_cpld_set_card_status(SYSMOND_HEALTH_NOT_OK);
+        break;
+    case SYSMON_LED_EVENT_SYSTEM_OK:
+        g_current_status.event = SYSMON_LED_EVENT_SYSTEM_OK;
+        g_current_status.color = LED_COLOR_GREEN;
+        pal_system_set_led(LED_COLOR_GREEN, LED_FREQUENCY_0HZ);
+        //health ok
+        pal_cpld_set_card_status(SYSMOND_HEALTH_OK);
+        break;
+    default:
+        return;
     }
     return;
 }
@@ -88,7 +107,7 @@ thread_init (void)
 int
 sysmon_init (sysmon_cfg_t *sysmon_cfg)
 {
-    systemled_t led;
+    system_led_t led;
 
     if (sysmon_cfg == NULL) {
         SDK_HMON_TRACE_ERR("Invalid params, cfg is NULL");
@@ -115,8 +134,9 @@ sysmon_init (sysmon_cfg_t *sysmon_cfg)
     } else {
         SDK_HMON_TRACE_INFO("Failed to set frequency from file");
     }
-    led.event = EVERYTHING_WORKING;
-    sysmgrsystemled(led);
+
+    led.event = SYSMON_LED_EVENT_SYSTEM_OK;
+    system_led(led);
 
     thread_init();
     return 0;

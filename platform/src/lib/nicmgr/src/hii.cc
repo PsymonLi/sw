@@ -3,7 +3,6 @@
 //-----------------------------------------------------------------------------
 #include "nicmgr_utils.hpp"
 #include "nic/sdk/lib/runenv/runenv.h"
-#include "hii_ipc.hpp"
 #include "hii.hpp"
 #include "eth_if.h"
 #include "logger.hpp"

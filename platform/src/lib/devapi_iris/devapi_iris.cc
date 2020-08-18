@@ -13,7 +13,7 @@
 #include "swm.hpp"
 #include "utils.hpp"
 
-#include "nic/hal/core/event_ipc.hpp"
+#include "nic/sdk/platform/sysmon/sysmon.hpp"
 
 namespace iris {
 
@@ -1200,13 +1200,13 @@ devapi_iris::dec_num_int_mgmt_mnics(void)
 sdk_ret_t
 devapi_iris::hii_set_uid_led(bool led_on)
 {
-    hal::core::event_t event;
+    hii_event_t event;
 
     memset(&event, 0, sizeof(event));
-    event.event_id = hal::core::event_id_t::EVENT_ID_HII;
-    event.hii.type = hal::core::HII_UPDATE_UID_LED;
-    event.hii.uid_led_on = led_on;
-    sdk::ipc::broadcast(event_id_t::EVENT_ID_HII, &event, sizeof(event));
+    event.type = HII_UPDATE_UID_LED;
+    event.uid_led_on = led_on;
+    sdk::ipc::broadcast(sdk_ipc_event_id_t::SDK_IPC_EVENT_ID_HII_UPDATE,
+                        &event, sizeof(event));
 
     return SDK_RET_OK;
 }
