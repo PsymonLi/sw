@@ -504,11 +504,14 @@ func (fs *watcherFilterSet) watchEvent(ev Event) {
 	fs.lock.RLock()
 	defer fs.lock.RUnlock()
 	for _, grp := range fs.filterGrp {
+		send := true
 		for _, flt := range grp.filters {
 			if !flt(ev.Obj, nil) {
+				send = false
 				break
 			}
-
+		}
+		if send == true {
 			for _, watcher := range grp.watchers {
 				w := &Watcher{
 					Channel: watcher,
