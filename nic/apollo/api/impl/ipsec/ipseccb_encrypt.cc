@@ -11,14 +11,16 @@
 #include "nic/sdk/include/sdk/ipsec.hpp"
 #include "nic/sdk/ipsec/ipsec.hpp"
 #include "nic/sdk/asic/common/asic_mem.hpp"
-#include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/infra/core/trace.hpp"
+#include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/api/impl/ipsec/ipseccb_internal.hpp"
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/esp_ipv4_tunnel_h2n_rxdma/include/esp_ipv4_tunnel_h2n_rxdma_p4plus_ingress.h"
+
+using namespace sdk::asic::pd;
 
 namespace api {
 namespace impl {
@@ -200,14 +202,14 @@ ipseccb_encrypt_create (uint32_t hw_id, mem_addr_t base_pa,
     ctxt.key_type = ipseccb_get_crypto_key_type(spec->encryption_algo);
     ctxt.key_size = ipseccb_get_crypto_key_size(spec->encryption_algo);
 
-    ret = capri_barco_sym_alloc_key(&ctxt.key_index);
+    ret = asicpd_barco_sym_alloc_key(&ctxt.key_index);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to create key index");
         return ret;
     }
 
-    ret = capri_barco_setup_key(ctxt.key_index, ctxt.key_type,
-                                spec->encrypt_key, ctxt.key_size);
+    ret = asicpd_barco_setup_key(ctxt.key_index, ctxt.key_type,
+                                 spec->encrypt_key, ctxt.key_size);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to write key at index %u", ctxt.key_index);
         goto cleanup;
@@ -220,11 +222,11 @@ ipseccb_encrypt_create (uint32_t hw_id, mem_addr_t base_pa,
         PDS_TRACE_ERR("Failed to ipsec cb at index %u", hw_id);
         goto cleanup;
     }
-
     return ret;
 
 cleanup:
-    capri_barco_sym_free_key(ctxt.key_index);
+
+    asicpd_barco_sym_free_key(ctxt.key_index);
     return ret;
 }
 

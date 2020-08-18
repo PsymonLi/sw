@@ -12,7 +12,7 @@ struct phv_                 p;
 binding_info:
     seq             c1, k.key_metadata_local_mapping_lkp_type, KEY_TYPE_IPV4
     bcf             [!c1], binding_info_non_ipv4
-    sne             c1, k.ethernet_1_srcAddr, d.binding_info_d.addr
+    sne             c1, k.ethernet_1_srcAddr, d.binding_info_d.addr[47:0]
     nop.e
     phvwr.c1.f      p.p4i_i2e_binding_check_drop, TRUE
 

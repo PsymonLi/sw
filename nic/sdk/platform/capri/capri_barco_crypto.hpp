@@ -2,23 +2,12 @@
 #define __CAPRI_BARCO_CRYPTO_HPP__
 
 #include "include/sdk/base.hpp"
+#include "include/sdk/crypto_apis.hpp"
 #include "asic/asic.hpp"
 
 namespace sdk {
 namespace platform {
 namespace capri {
-
-typedef enum crypto_key_type_e {
-    CRYPTO_KEY_TYPE_AES128,
-    CRYPTO_KEY_TYPE_AES192,
-    CRYPTO_KEY_TYPE_AES256,
-    CRYPTO_KEY_TYPE_DES,
-    CRYPTO_KEY_TYPE_CHACHA20,
-    CRYPTO_KEY_TYPE_POLY1305,
-    CRYPTO_KEY_TYPE_HMAC,
-    CRYPTO_KEY_TYPE_MAX
-} crypto_key_type_t;
-
 
 #define CAPRI_BARCO_KEY_MEM              "key-mem"
 #define CAPRI_BARCO_KEY_DESC             "key-desc-array"
@@ -86,9 +75,9 @@ sdk_ret_t capri_barco_sym_alloc_key(int32_t *key_idx);
 sdk_ret_t capri_barco_sym_alloc_key_withid(int32_t key_idx, bool allow_dup_alloc);
 sdk_ret_t capri_barco_sym_free_key(int32_t key_idx);
 sdk_ret_t capri_barco_init_key(uint32_t key_idx, uint64_t key_addr);
-sdk_ret_t capri_barco_setup_key(uint32_t key_idx, crypto_key_type_t key_type, uint8_t *key,
+sdk_ret_t capri_barco_setup_key(uint32_t key_idx, sdk::crypto_key_type_t key_type, uint8_t *key,
         uint32_t key_size);
-sdk_ret_t capri_barco_read_key(uint32_t key_idx, crypto_key_type_t *key_type,
+sdk_ret_t capri_barco_read_key(uint32_t key_idx, sdk::crypto_key_type_t *key_type,
         uint8_t *key, uint32_t *key_size);
 sdk_ret_t capri_barco_crypto_init_tls_pad_table(void);
 sdk_ret_t capri_barco_crypto_init_ipsec_pad_table(void);
@@ -484,7 +473,7 @@ sdk_ret_t capri_barco_asym_write_key(int32_t key_idx, capri_barco_asym_key_desc_
 }    // namespace platform
 }    // namespace sdk
 
-using sdk::platform::capri::crypto_key_type_t;
+using sdk::crypto_key_type_t;
 using sdk::platform::capri::capri_barco_crypto_init;
 using sdk::platform::capri::capri_barco_sym_alloc_key;
 using sdk::platform::capri::capri_barco_sym_alloc_key_withid;

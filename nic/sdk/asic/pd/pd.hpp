@@ -8,6 +8,7 @@
 #include "asic/asic.hpp"
 #include "asic/rw/asicrw.hpp"
 #include "include/sdk/qos.hpp"
+#include "include/sdk/crypto_apis.hpp"
 #include "platform/utils/lif_manager_base.hpp"
 #include "platform/utils/program.hpp"
 
@@ -449,6 +450,10 @@ sdk_ret_t asicpd_barco_sym_hash_process_request(uint8_t hash_type,
 sdk_ret_t asicpd_barco_get_capabilities(uint8_t ring_type,
                                         bool *sw_reset_capable,
                                         bool *sw_enable_capable);
+sdk_ret_t asicpd_barco_sym_alloc_key(int32_t *key_idx);
+sdk_ret_t asicpd_barco_setup_key(uint32_t key_idx, crypto_key_type_t key_type,
+                                 uint8_t *key, uint32_t key_size);
+sdk_ret_t asicpd_barco_sym_free_key(int32_t key_idx);
 
 sdk_ret_t asicpd_table_rw_init(asic_cfg_t *cfg);
 

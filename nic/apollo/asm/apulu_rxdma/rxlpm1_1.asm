@@ -24,7 +24,7 @@ struct rxlpm1_1_d          d;
 #define data16b(a)         d.u.match1_1_16b_retrieve_d.data ## a
 
 // Define key field names
-#define key                k.lpm_metadata_lpm1_key
+#define key                k.lpm_metadata_lpm1_key[63:0]
 #define keylo              k.lpm_metadata_lpm1_key[63:0]
 #define keyhi              k.lpm_metadata_lpm1_key[127:64]
 #define base_addr          k.lpm_metadata_lpm1_base_addr

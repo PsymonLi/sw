@@ -43,6 +43,11 @@ builds:
     owners: ["email:jainvipin@pensando.io"]
     artifacts:
       - /sw/build_apulu_x86.tar.gz
+  build-apulu-x86-elba:
+    commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && make PIPELINE=apulu ASCI=elba package && find ./build -name '*.o'  | xargs rm && tar -zvcf /sw/build_apulu_x86.tar.gz /usr/src/github.com/pensando/sw/nic/build /usr/src/github.com/pensando/sw/nic/third-party/metaswitch/output/x86_64/lib*"]
+    owners: ["email:saratk@pensando.io"]
+    artifacts:
+      - /sw/build_apulu_x86.tar.gz
   build-apulu-x86-sim:
     commands: ["sh", "-c", "cd /usr/src/github.com/pensando/sw/nic && IGNORE_BUILD_PIPELINE=1 make PIPELINE=apulu FLAVOR=-venice jobd/e2e/naples-sim-image && cd .. && tar -zvcf /sw/build_apulu_sim.tar.gz nic/obj/images"]
     owners: ["email:jainvipin@pensando.io"]

@@ -12,7 +12,7 @@
 #define __IPSECCB_INTERNAL_HPP__
 
 #include "nic/sdk/asic/rw/asicrw.hpp"
-#include "nic/sdk/platform/capri/capri_tbl_rw.hpp"
+#include "nic/sdk/include/sdk/crypto_apis.hpp"
 
 
 //------------------------------------------------------------------------------

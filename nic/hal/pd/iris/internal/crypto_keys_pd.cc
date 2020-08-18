@@ -112,11 +112,12 @@ pd_crypto_write_key (pd_func_args_t *pd_func_args)
     crypto_key_t *key = args->key;
 
     #ifdef ELBA
-      sdk_ret = elba_barco_setup_key(key_idx, (crypto_key_type_t)key->key_type,
-                                    key->key, key->key_size);
+      sdk_ret = sdk::platform::elba::elba_barco_setup_key(key_idx,
+                                         (crypto_key_type_t)key->key_type,
+                                         key->key, key->key_size);
     #else
       sdk_ret = capri_barco_setup_key(key_idx, (crypto_key_type_t)key->key_type,
-                                    key->key, key->key_size);
+                                      key->key, key->key_size);
     #endif
     ret = hal_sdk_ret_to_hal_ret(sdk_ret);
 
@@ -133,8 +134,9 @@ pd_crypto_read_key (pd_func_args_t *pd_func_args)
     crypto_key_t *key = args->key;
 
     #ifdef ELBA
-      sdk_ret = elba_barco_read_key(key_idx, (crypto_key_type_t*)&key->key_type,
-                                   key->key, &key->key_size);
+      sdk_ret = sdk::platform::elba::elba_barco_read_key(key_idx,
+                                         (crypto_key_type_t*)&key->key_type,
+                                          key->key, &key->key_size);
     #else
       sdk_ret = capri_barco_read_key(key_idx, (crypto_key_type_t*)&key->key_type,
                                    key->key, &key->key_size);

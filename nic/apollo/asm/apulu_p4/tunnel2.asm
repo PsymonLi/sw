@@ -85,7 +85,7 @@ tunnel2_ipv4_encap:
     add             r7, r7, r1
     add             r1, k.rewrite_metadata_tunnel_tos, 0x45, 8
     phvwr           p.{ipv4_00_version,ipv4_00_ihl,ipv4_00_diffserv}, r1
-    or              r1, d.tunnel2_info_d.dipo, \
+    or              r1, d.tunnel2_info_d.dipo[31:0], \
                         k.rewrite_metadata_device_ipv4_addr, 32
     phvwr           p.{ipv4_00_srcAddr,ipv4_00_dstAddr}, r1
     phvwr           p.ipv4_00_ttl, 64

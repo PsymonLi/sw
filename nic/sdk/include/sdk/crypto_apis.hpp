@@ -96,10 +96,22 @@ CryptoApiHashType_Name(CryptoApiHashType value)
   return("Unknown");
 }
 
+typedef enum crypto_key_type_e {
+    CRYPTO_KEY_TYPE_AES128,
+    CRYPTO_KEY_TYPE_AES192,
+    CRYPTO_KEY_TYPE_AES256,
+    CRYPTO_KEY_TYPE_DES,
+    CRYPTO_KEY_TYPE_CHACHA20,
+    CRYPTO_KEY_TYPE_POLY1305,
+    CRYPTO_KEY_TYPE_HMAC,
+    CRYPTO_KEY_TYPE_MAX
+} crypto_key_type_t;
+
 }    // namespace sdk
 
 using sdk::CryptoApiHashType;
 using sdk::CryptoApiHashType_Name;
+using sdk::crypto_key_type_t;
 
 #endif  /* __CRYPTO_APIS_HPP__ */
 

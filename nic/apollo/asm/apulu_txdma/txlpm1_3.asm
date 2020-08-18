@@ -18,7 +18,7 @@ struct txlpm1_3_d          d;
 #define keys64b(a)         d.u.match1_3_64b_d.key ## a
 
 // Define key field names
-#define key                k.txdma_control_lpm1_key
+#define key                k.txdma_control_lpm1_key[63:0]
 #define base_addr          k.txdma_control_lpm1_base_addr
 #define curr_addr          k.txdma_control_lpm1_next_addr
 

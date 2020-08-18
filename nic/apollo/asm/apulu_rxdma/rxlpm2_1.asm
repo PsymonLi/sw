@@ -19,7 +19,7 @@ struct rxlpm2_1_d          d;
 #define keys128blo(a)      d.u.match2_1_128b_d.key ## a[63:0]
 
 // Define key field names
-#define key                k.lpm_metadata_lpm2_key
+#define key                k.lpm_metadata_lpm2_key[63:0]
 #define keylo              k.lpm_metadata_lpm2_key[63:0]
 #define keyhi              k.lpm_metadata_lpm2_key[127:64]
 #define base_addr          k.lpm_metadata_lpm2_base_addr

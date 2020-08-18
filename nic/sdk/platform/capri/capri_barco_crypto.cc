@@ -168,7 +168,7 @@ capri_barco_init_key (uint32_t key_idx, uint64_t key_addr)
 }
 
 sdk_ret_t
-capri_barco_setup_key (uint32_t key_idx, crypto_key_type_t key_type,
+capri_barco_setup_key (uint32_t key_idx, sdk::crypto_key_type_t key_type,
                        uint8_t *key, uint32_t key_size)
 {
     capri_barco_key_desc_t  key_desc;

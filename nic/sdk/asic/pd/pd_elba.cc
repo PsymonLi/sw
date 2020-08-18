@@ -1,5 +1,6 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
+#include "include/sdk/crypto_apis.hpp"
 #include "platform/elba/elba_p4.hpp"
 #include "platform/elba/elba_hbm_rw.hpp"
 #include "platform/elba/elba_tbl_rw.hpp"
@@ -45,7 +46,7 @@ extern bool g_mock_mode_;
 #define CRYPTO_KEY_SIZE_MAX     64  /* 2 * 256 bit key */
 
 typedef struct crypto_key_s {
-    crypto_key_type_t       key_type;
+    sdk::crypto_key_type_t  key_type;
     uint32_t                key_size;
     uint8_t                 key[CRYPTO_KEY_SIZE_MAX];
 } __PACK__ crypto_key_t;
@@ -1320,6 +1321,25 @@ asicpd_barco_get_capabilities (uint8_t ring_type, bool *sw_reset_capable,
 }
 
 sdk_ret_t
+asicpd_barco_sym_alloc_key (int32_t *key_idx)
+{
+    return elba_barco_sym_alloc_key(key_idx);
+}
+
+sdk_ret_t
+asicpd_barco_setup_key (uint32_t key_idx, sdk::crypto_key_type_t key_type,
+                        uint8_t *key, uint32_t key_size)
+{
+    return elba_barco_setup_key(key_idx, key_type, key, key_size);
+}
+
+sdk_ret_t
+asicpd_barco_sym_free_key(int32_t key_idx)
+{
+    return elba_barco_sym_free_key(key_idx);
+}
+
+sdk_ret_t
 asicpd_crypto_alloc_key (uint32_t *key_idx)
 {
     sdk_ret_t              sdk_ret;
@@ -1374,7 +1394,7 @@ asicpd_crypto_write_key (uint32_t key_idx, crypto_key_t *key)
 {
     sdk_ret_t              sdk_ret;
 
-    sdk_ret = elba_barco_setup_key(key_idx, (crypto_key_type_t)key->key_type,
+    sdk_ret = elba_barco_setup_key(key_idx, (sdk::crypto_key_type_t)key->key_type,
                                     key->key, key->key_size);
 
     return sdk_ret;
@@ -1385,7 +1405,7 @@ asicpd_crypto_read_key (uint32_t key_idx, crypto_key_t *key)
 {
     sdk_ret_t              sdk_ret;
 
-    sdk_ret = elba_barco_read_key(key_idx, (crypto_key_type_t*)&key->key_type,
+    sdk_ret = elba_barco_read_key(key_idx, (sdk::crypto_key_type_t*)&key->key_type,
                                    key->key, &key->key_size);
     return sdk_ret;
 }
@@ -1660,14 +1680,14 @@ asicpd_write_to_hw (bool val)
     elba_set_write_to_hw(val);
 }
 
-sdk_ret_t 
+sdk_ret_t
 asicpd_set_tcam_tbl_offset (sysinit_dom_t domain)
 {
     return elba_set_tcam_table_offset(domain);
 }
 
 sdk_ret_t
-asicpd_impl_program_tcam_table_offset (int tableid, p4pd_table_dir_en gress, 
+asicpd_impl_program_tcam_table_offset (int tableid, p4pd_table_dir_en gress,
                                        int stage, int stage_tableid)
 {
     return elba_program_tcam_table_offset(tableid, gress, stage, stage_tableid);

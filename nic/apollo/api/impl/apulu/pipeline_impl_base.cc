@@ -41,7 +41,7 @@ pipeline_impl_base::p4plus_write(uint64_t va, uint64_t pa, uint8_t *data,
         ret = sdk::asic::asic_mem_write(pa, data, size);
     }
     if (ret == SDK_RET_OK && action != P4PLUS_CACHE_ACTION_NONE) {
-        if (!sdk::platform::capri::p4plus_invalidate_cache(pa, size, action)) {
+        if (!sdk::asic::pd::asicpd_p4plus_invalidate_cache(pa, size, action)) {
             return SDK_RET_ERR;
         }
     }

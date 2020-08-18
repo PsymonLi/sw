@@ -1426,6 +1426,25 @@ asicpd_barco_get_capabilities (uint8_t ring_type, bool *sw_reset_capable,
 }
 
 sdk_ret_t
+asicpd_barco_sym_alloc_key (int32_t *key_idx)
+{
+    return capri_barco_sym_alloc_key(key_idx);
+}
+
+sdk_ret_t
+asicpd_barco_setup_key (uint32_t key_idx, sdk::crypto_key_type_t key_type,
+                        uint8_t *key, uint32_t key_size)
+{
+    return capri_barco_setup_key(key_idx, key_type, key, key_size);
+}
+
+sdk_ret_t
+asicpd_barco_sym_free_key(int32_t key_idx)
+{
+    return capri_barco_sym_free_key(key_idx);
+}
+
+sdk_ret_t
 asicpd_table_rw_init (asic_cfg_t *cfg)
 {
     return capri_table_rw_init(cfg);
