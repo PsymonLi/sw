@@ -2802,6 +2802,7 @@ int ionic_lifs_alloc(struct ionic *ionic)
 
 		if (is_master_lif(lif)) {
 			minfs = __le32_to_cpu(lif->identity->eth.min_frame_size);
+			minfs = max_t(unsigned int, minfs, ETH_MIN_MTU);
 			maxfs = __le32_to_cpu(lif->identity->eth.max_frame_size)  - ETH_HLEN - VLAN_HLEN;
 #ifdef HAVE_NETDEVICE_MIN_MAX_MTU
 #ifdef HAVE_RHEL7_EXTENDED_MIN_MAX_MTU
