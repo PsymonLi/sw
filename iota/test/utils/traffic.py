@@ -204,8 +204,8 @@ def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0, max_bw=0):
         elif not api.GlobalOptions.dryrun:
             tx_bw = iperf.GetSentMbps(cmd.stdout)
             rx_bw = iperf.GetReceivedMbps(cmd.stdout)
-            api.Logger.debug(f"Iperf Send Rate {tx_bw} Mbps")
-            api.Logger.debug(f"Iperf Receive Rate {rx_bw} Mbps ")
+            api.Logger.info(f"Iperf Send Rate {tx_bw} Mbps")
+            api.Logger.info(f"Iperf Receive Rate {rx_bw} Mbps ")
             api.Logger.debug(f"Expected Rate min:{min_bw} Mbps max:{max_bw} Mbps")
             if min_bw:
                 if float(tx_bw) < float(min_bw) or float(rx_bw) < float(min_bw):

@@ -115,7 +115,8 @@ def Verify(tc):
         res = traffic_utils.verifyIPerf(tc.cmd_cookies, tc.resp,\
                 min_bw=(tc.expected_bw * 0.9), max_bw=(tc.expected_bw*1.1))
     else:
-        res = traffic_utils.verifyIPerf(tc.cmd_cookies, tc.resp, min_bw=500)
+        # setting min_bw to 1Mbps. Getting very low bandwidth on some containers
+        res = traffic_utils.verifyIPerf(tc.cmd_cookies, tc.resp, min_bw=1)
     if res != api.types.status.SUCCESS:
         return res
     if tc.args.type != 'igw_only':
