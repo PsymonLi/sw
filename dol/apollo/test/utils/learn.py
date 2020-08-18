@@ -146,6 +146,8 @@ def GetLearnStatistics():
         return None
     yaml_str = output.split('---')[0]
     data = yaml.load(yaml_str, Loader=yaml.Loader)
+    if not isinstance(data, dict):
+        return None
     return data
 
 def ClearAllLearntMacs():

@@ -8,10 +8,12 @@
 ///
 //----------------------------------------------------------------------------
 
+#include <pthread.h>
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/lib/dpdk/dpdk.hpp"
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
+#include "nic/infra/core/core.hpp"
 #include "nic/infra/core/trace.hpp"
 #include "nic/apollo/framework/api.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
@@ -208,11 +210,48 @@ learn_thread_ipc_clear_cmd_cb (sdk::ipc::ipc_msg_ptr msg, const void *ctx)
     sdk::ipc::respond(msg, &ret, sizeof(ret));
 }
 
+static void *
+learn_thread_terminate (void *arg)
+{
+    sdk::event_thread::event_thread *thread;
+
+    thread = (sdk::event_thread::event_thread *)
+             sdk::lib::thread::find(core::PDS_THREAD_ID_LEARN);
+
+    // thread should exist as we are still running
+    SDK_ASSERT(thread != nullptr);
+
+    thread->stop();
+    thread->wait();
+    sdk::event_thread::event_thread::destroy(thread);
+    PDS_TRACE_INFO("Terminated learn thread");
+    return nullptr;
+}
+
 void
 learn_thread_init_fn (void *ctxt)
 {
+    sdk_ret_t ret;
+    pthread_t tid;
+
     // initalize learn state and dpdk_device
-    SDK_ASSERT(learn_db()->init() == SDK_RET_OK);
+    ret = learn_db()->init();
+
+    // if learn lif is not detected, terminate the learn thread
+    // other failures (OOM, initialization failures) are fatal
+    if (ret == SDK_RET_ENTRY_NOT_FOUND) {
+        // terminate the thread
+        // we could clean up event thread resources and mark learn thread to
+        // be stopped from its own context, however, this would be fragile
+        // as we would be dependent on event thread infra letting us do it,
+        // safer option is to spawn a thread to terminate learn event thread,
+        // using raw pthread since this is a temporary short lived thread
+
+        PDS_TRACE_INFO("Failed to detect learn lif, exiting learn thread");
+        pthread_create(&tid, nullptr, learn_thread_terminate, nullptr);
+        return;
+    }
+    SDK_ASSERT(ret == SDK_RET_OK);
 
     sdk::ipc::reg_request_handler(PDS_MSG_TYPE_CFG_OBJ_SET,
                                   learn_thread_api_cfg_cb, NULL);

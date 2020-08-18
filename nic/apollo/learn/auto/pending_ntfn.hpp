@@ -56,6 +56,9 @@ pending_ntfn_state_t *pending_ntfn_state(void);
 // initialize flow fixup state
 sdk_ret_t pending_ntfn_state_init(pending_ntfn_state_t *state);
 
+// release flow fixup state
+void pending_ntfn_state_release(pending_ntfn_state_t *state);
+
 // store IP delete event and fire the timer
 sdk_ret_t add_pending_ip_del_ntfn(const ep_ip_key_t *key, pds_obj_key_t subnet,
                                   pending_ntfn_type_t ntfn_type);

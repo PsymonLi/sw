@@ -31,6 +31,8 @@ learn_state::learn_state() {
     learn_lif_ = nullptr;
     ep_mac_state_ = nullptr;
     ep_ip_state_ = nullptr;
+    learn_thread_ready_ = false;
+    pend_ntfn_state_.slab = nullptr;
 
     memset(&counters_, 0, sizeof(counters_));
 
@@ -39,8 +41,42 @@ learn_state::learn_state() {
     pkt_poll_interval_msecs_ = LEARN_PKT_POLL_INTERVAL_MSEC;
 }
 
+void
+learn_state::release_resources_(pds_learn_mode_t mode)
+{
+    // if mode is none release all resources, else, release
+    // mode specific resources only
+
+    // auto mode resources
+    if (mode == PDS_LEARN_MODE_AUTO || mode == PDS_LEARN_MODE_NONE) {
+        if (vnic_objid_idxr_) {
+            rte_indexer::destroy(vnic_objid_idxr_);
+            vnic_objid_idxr_ = nullptr;
+        }
+        pending_ntfn_state_release(&pend_ntfn_state_);
+    }
+
+    // TODO: notify mode cleanup once operdb is enabled
+
+    // release common resources
+    if (mode == PDS_LEARN_MODE_NONE) {
+        if (ep_mac_state_) {
+            ep_mac_state_->~ep_mac_state();
+            ep_mac_state_ = nullptr;
+        }
+        if (ep_ip_state_) {
+            ep_ip_state_->~ep_ip_state();
+            ep_ip_state_ = nullptr;
+        }
+        if (learn_lif_) {
+            dpdk_device::destroy(learn_lif_);
+            learn_lif_ = nullptr;
+        }
+    }
+}
+
 learn_state::~learn_state() {
-    rte_indexer::destroy(vnic_objid_idxr_);
+    release_resources_();
 }
 
 sdk_ret_t
@@ -54,12 +90,12 @@ learn_state::lif_init_(void) {
     sysinit_dom_t dom = sdk::upg::init_domain();
 
     SDK_ASSERT(lif_name);
-
     // wait for uio devices to come up
     while (!uio_device_ready()) {
         if (count >= UIO_DEV_SCAN_MAX_RETRY) {
-            PDS_TRACE_ERR("UIO device not created, asserting!!");
-            //SDK_ASSERT(0);
+            PDS_TRACE_ERR( "Failed to initialize learn lif, UIO device not"
+                           "found");
+            return SDK_RET_ENTRY_NOT_FOUND;
         }
         if (0 == (count % 30)) {
             PDS_TRACE_INFO("UIO device not created yet, retry count %d", count);
@@ -106,12 +142,20 @@ learn_state::init(void) {
     // instantiate MAC and IP states
     operd_region_ = nullptr;
     vnic_objid_idxr_ = nullptr;
+    sdk_ret_t ret;
+
+    ret = lif_init_();
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
     ep_mac_state_ = new ep_mac_state();
     ep_ip_state_ = new ep_ip_state();
     if (ep_mac_state_ == nullptr || ep_ip_state_ == nullptr) {
+        release_resources_();
         return SDK_RET_OOM;
     }
-    return lif_init_();
+    learn_thread_ready_ = true;
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
@@ -139,6 +183,9 @@ learn_state::init_oper_mode(pds_learn_mode_t mode) {
     default:
         break;
     }
+    if (ret != SDK_RET_OK) {
+        release_resources_(mode);
+    }
     return ret;
 }
 
@@ -156,6 +203,9 @@ sdk_ret_t
 learn_state::walk(state_walk_cb_t walk_cb, void *user_data) {
     sdk_ret_t ret;
 
+    if (!learn_thread_ready_) {
+        return SDK_RET_OK;
+    }
     ret = ep_mac_state_->walk(walk_cb, user_data);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -168,6 +218,9 @@ sdk_ret_t
 learn_state::slab_walk(state_walk_cb_t walk_cb, void *user_data) {
     sdk_ret_t ret;
 
+    if (!learn_thread_ready_) {
+        return SDK_RET_OK;
+    }
     ret = ep_mac_state_->slab_walk(walk_cb, user_data);
     if (ret != SDK_RET_OK) {
         return ret;

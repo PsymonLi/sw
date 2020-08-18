@@ -257,10 +257,20 @@ public:
     /// \return    pointer to operd region
     sdk::operd::region_ptr operd_region(void) const { return operd_region_; }
 
+    /// \brief      return if learn thread is ready to process
+    /// \return     true if learn thread is ready, false otherwise
+    bool learn_thread_ready(void) { return learn_thread_ready_; }
+
 private:
     /// \brief      intialize learn lif device
     /// \return     #SDK_RET_OK on success, error code on failure
     sdk_ret_t lif_init_(void);
+
+    /// \brief      release resources and clean up the global state
+    /// \param[in]  mode    learn mode for modr specific realse of resources
+    ///                     by default, releases all allocated resources
+    void release_resources_(pds_learn_mode_t mode = PDS_LEARN_MODE_NONE);
+
 private:
     pds_epoch_t epoch_;                     ///< epoch for api batch
     rte_indexer *vnic_objid_idxr_;          ///< vnic object id
@@ -272,6 +282,7 @@ private:
     ep_ip_state *ep_ip_state_;              ///< endpoint IP state
     pending_ntfn_state_t pend_ntfn_state_;  ///< pending notification state
     sdk::operd::region_ptr operd_region_;   ///< operd region for learn
+    bool learn_thread_ready_;               ///< learn thread is ready to process
 };
 
 }    // namepsace learn

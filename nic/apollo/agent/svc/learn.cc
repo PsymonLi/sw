@@ -257,7 +257,10 @@ LearnSvcImpl::LearnMACGet(ServerContext *context,
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
         return Status::OK;
     }
-
+    if (!learn_db()->learn_thread_ready()) {
+        proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_ERR);
+        return Status::OK;
+    }
     if (proto_req->key_size() == 0) {
         // return all MACs learnt
         ret = ep_mac_get_all(proto_rsp);
@@ -287,7 +290,10 @@ LearnSvcImpl::LearnIPGet(ServerContext* context,
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
         return Status::OK;
     }
-
+    if (!learn_db()->learn_thread_ready()) {
+        proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_ERR);
+        return Status::OK;
+    }
     if (proto_req->filter_case() == pds::LearnIPGetRequest::kSubnetId) {
         // filter based on subnet IDs
         pds_obj_key_proto_to_api_spec(&subnet, proto_req->subnetid());
@@ -310,6 +316,10 @@ LearnSvcImpl::LearnStatsGet(ServerContext* context,
                             pds::LearnStatsGetResponse* proto_rsp) {
     sdk_ret_t ret;
 
+    if (!learn_db()->learn_thread_ready()) {
+        proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_ERR);
+        return Status::OK;
+    }
     ret = ep_learn_stats_fill(proto_rsp);
     proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
     return Status::OK;
@@ -326,7 +336,10 @@ LearnSvcImpl::LearnMACClear(ServerContext *context,
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
         return Status::OK;
     }
-
+    if (!learn_db()->learn_thread_ready()) {
+        proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_ERR);
+        return Status::OK;
+    }
     if (proto_req->key_size() == 0) {
         // clear all MACs learnt
         learn_mac_clear(NULL);
@@ -354,7 +367,10 @@ LearnSvcImpl::LearnIPClear(ServerContext* context,
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
         return Status::OK;
     }
-
+    if (!learn_db()->learn_thread_ready()) {
+        proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_ERR);
+        return Status::OK;
+    }
     if (proto_req->key_size() == 0) {
         // clear all IPs learnt
         learn_ip_clear(NULL);
@@ -377,6 +393,9 @@ LearnSvcImpl::LearnStatsClear(ServerContext* context,
                               types::Empty* proto_rsp) {
     //TODO: make it an ipc later, since it is just about counters,
     // leaving it as a direct function call
+    if (!learn_db()->learn_thread_ready()) {
+        return Status::OK;
+    }
     learn_db()->reset_counters();
     return Status::OK;
 }

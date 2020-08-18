@@ -9,6 +9,8 @@ import learn_pb2 as learn_pb2
 
 def VerifyCounter(group, index, val):
     stats = learn.GetLearnStatistics()
+    if not stats:
+        return False
     if not group in stats.keys(): return False
     ctr_group = stats[group]
     counters = {}

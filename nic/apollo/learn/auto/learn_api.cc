@@ -45,7 +45,7 @@ api_batch_commit (pds_batch_ctxt_t bctxt)
     sdk_ret_t ret;
 
     // if learning is disabled, directly commit to API thread
-    if (!learning_enabled()) {
+    if (!learning_enabled() || !learn_db()->learn_thread_ready()) {
         PDS_TRACE_DEBUG("Learning is disabled, committing API batch directly");
         return pds_batch_commit(bctxt);
     }

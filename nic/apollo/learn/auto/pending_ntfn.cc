@@ -30,6 +30,15 @@ pending_ntfn_state_init (pending_ntfn_state_t *state)
     return SDK_RET_OK;
 }
 
+void
+pending_ntfn_state_release (pending_ntfn_state_t *state)
+{
+    if (state->slab) {
+        sdk::lib::slab::destroy(state->slab);
+        state->slab = nullptr;
+    }
+}
+
 pending_ntfn_state_t *
 pending_ntfn_state (void)
 {
