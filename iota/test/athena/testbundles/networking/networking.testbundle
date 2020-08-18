@@ -39,17 +39,19 @@ testcases:
         testcase: testcases.networking.pdsctl_show
         enable  : True
 
-    -   name    : Policy_Custom_2_flows
+    -   name    : Policy_Default_Flows
         testcase: testcases.networking.policy
         enable  : True
         args    :
-            type    : policy_2
+            type    : default
 
-    -   name    : Policy_Custom_2M_flows
+    -   name    : Policy_Custom_Flows
         testcase: testcases.networking.policy
         enable  : True
         args    :
-            type    : policy_2M
+            type        : custom
+            num_vnics   : 512
+            num_flows   : 4194304
 
     #=======================================
     # Data Path Test

@@ -358,4 +358,6 @@ def configureHostIntfMtu(req, node, intf_list, mtu=1500):
         api.Trigger_AddHostCommand(req, node, cmd)
 
 
-
+def isPowerOfTwo (x): 
+    # First x in the below exp is to handle x = 0
+    return (x and (not (x & (x - 1)))) 
