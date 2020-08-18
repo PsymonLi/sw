@@ -3,6 +3,7 @@ import time
 import random
 import iota.harness.api as api
 import iota.test.iris.utils.iperf as iperf
+import iota.test.utils.hping as hping
 
 __PING_CMD = "ping"
 __PING6_CMD = "ping6"
@@ -146,18 +147,12 @@ def iperfWorkloads(workload_pairs, af="ipv4", proto="tcp", packet_size=64,
             port = api.AllocateTcpPort()
 
         serverCmd = iperf.ServerCmd(port)
-        if proto == 'udp':
-            pktsize = packet_size
-            msssize = None
-        else:
-            pktsize = None
-            msssize = packet_size
-        clientCmd = iperf.ClientCmd(server_addr, port, time, pktsize, proto, None, ipproto, bandwidth, num_of_streams, jsonOut=True, msssize=msssize)
+        clientCmd = iperf.ClientCmd(server_addr, port, time, packet_size, proto, None, ipproto, bandwidth, num_of_streams, jsonOut=True)
 
         cmd_cookie = "Server: %s(%s:%s:%d) <--> Client: %s(%s)" %\
                      (server.workload_name, server_addr, proto, port,\
                       client.workload_name, client_addr)
-        api.Logger.info("Starting Iperf test %s num-sessions %d" % (cmd_cookie, num_of_streams))
+        api.Logger.info("Starting Iperf test %s" % cmd_cookie)
         serverCmds.append(serverCmd)
         clientCmds.append(clientCmd)
         cmdDesc.append(cmd_cookie)
@@ -171,7 +166,7 @@ def iperfWorkloads(workload_pairs, af="ipv4", proto="tcp", packet_size=64,
     __sleep(sleep_time)
     client_resp = api.Trigger(clientReq)
     __sleep(3)
-    
+
     if background:
         return [cmdDesc, serverCmds, clientCmds], server_resp, client_resp
     else:
@@ -226,16 +221,6 @@ def verifyIPerf(cmd_cookies, response, exit_code=0, min_bw=0, max_bw=0):
     api.Logger.info("Number of control socket errors : {}".format(control_socker_err))
     return result
 
-def GetHping3Cmd(protocol, src_wl, destination_ip, destination_port):
-    if protocol == 'tcp':
-        cmd = (f"hping3 -S -p {int(destination_port)} -c 3 {destination_ip} -I {src_wl.interface}")
-    elif protocol == 'udp':
-        cmd = (f"hping3 --{protocol.lower()} -p {int(destination_port)} -c 3 {destination_ip} -I {src_wl.interface}")
-    else:
-        cmd = (f"hping3 --{protocol.lower()} -c 3 {destination_ip} -I {src_wl.interface}")
-
-    return cmd
-
 def PingCmdBuilder(src_wl, dest_ip, proto='icmp', af='ipv4',
         pktsize=64, args=None, count=3):
 
@@ -266,7 +251,7 @@ def PingCmdBuilder(src_wl, dest_ip, proto='icmp', af='ipv4',
                dest_port = api.AllocateUdpPort()
         else:
            dest_port = api.AllocateTcpPort()
-        cmd = GetHping3Cmd(proto, src_wl, dest_ip, dest_port)
+        cmd = hping.GetHping3Cmd(proto, src_wl, dest_ip, dest_port)
 
     return cmd
 

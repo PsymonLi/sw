@@ -1,0 +1,41 @@
+meta:
+    name    : flow_age
+    os      : [ linux ]
+    nicmode : classic
+    nics    : [ pensando ]
+
+testcases:
+    -   name    : Icmp_Ageing
+        testcase: testcases.networking.ageing
+        stress  : True
+        ignore  : False
+        iterators :
+            type    : nested
+            ipaf    : [ ipv4 ]
+            proto   : [ icmp ]
+            pktsize : [ 1500 ]
+            timeout : [ idle, drop, longlived ]
+
+    -   name    : Udp_Ageing
+        testcase: testcases.networking.ageing
+        stress  : True
+        ignore  : False
+        iterators :
+            type    : nested
+            ipaf    : [ ipv4 ]
+            proto   : [ udp ]
+            pktsize : [ 1500 ]
+            timeout : [ idle, drop, longlived ]
+
+    -   name    : Tcp_Ageing
+        testcase: testcases.networking.ageing
+        stress  : True
+        ignore  : False
+        args    :
+            timeout : 7200
+        iterators :
+            type    : nested
+            ipaf    : [ ipv4 ]
+            proto   : [ tcp ]
+            pktsize : [ 1500 ]
+            timeout : [ idle, drop, halfclose, close, rst, longlived ]

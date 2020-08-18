@@ -48,6 +48,30 @@ class SecurityProfileObject(base.ConfigObjectBase):
         self.Show()
         return
 
+    def GetTCPIdleTimeout(self):
+        return self.TCPIdleTimeout
+
+    def GetUDPIdleTimeout(self):
+        return self.UDPIdleTimeout
+
+    def GetICMPIdleTimeout(self):
+        return self.ICMPIdleTimeout
+
+    def GetTCPDropTimeout(self):
+        return self.TCPDropTimeout
+
+    def GetUDPDropTimeout(self):
+        return self.UDPDropTimeout
+
+    def GetICMPDropTimeout(self):
+        return self.ICMPDropTimeout
+
+    def GetTCPHalfcloseTimeout(self):
+        return self.TCPHalfCloseTimeout
+
+    def GetTCPCloseTimeout(self):
+        return self.TCPCloseTimeout
+
     def __repr__(self):
         return "SecurityProfile1: |ConnTrackEn: %s |DefaultFWAction: %s "\
                "|TCPIdleTimeout: %s |UDPIdleTimeout: %s |ICMPIdleTimeout: %s "\
